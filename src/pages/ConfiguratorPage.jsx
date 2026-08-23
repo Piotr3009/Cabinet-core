@@ -319,6 +319,9 @@ export default function ConfiguratorPage() {
       materials,
       projectName: project.name,
       redWarnings: found.filter((f) => f.level === 'red').map((f) => f.message),
+      // T45 F9c: the driver is sized in the FILE the same way it is on the
+      // screen — one calculator, two surfaces.
+      ledSpec: project.ledSpec,
     });
     notify('BOM exported.', 'ok');
     // eslint-disable-next-line react-hooks/exhaustive-deps

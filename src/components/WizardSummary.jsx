@@ -17,6 +17,9 @@ import { chosenTile } from '../lib/chosenDecor.js';
 import { frontOpening, frontOpeningLabel } from '../lib/frontOpening.js';
 import { pushToOpenLock, pushToOpenOn } from '../lib/pushToOpen.js';
 import { crossTabConflicts } from '../lib/wizardConflicts.js';
+import { grooveWidthMm, ledModeLabel, migrateLedSpec } from '../lib/ledSpec.js';
+import { driverSummary } from '../lib/ledDrivers.js';
+import { stripsForUnit } from '../engine/ledStrips.js';
 import { dimensionAsked, nodeVisible } from '../lib/wizardTabs.js';
 import ChosenDecorTile from './ChosenDecorTile.jsx';
 import SaveSettingsSetModal from './SaveSettingsSetModal.jsx';
@@ -103,6 +106,9 @@ export default function WizardSummary({
   const storedDesign = useProjectStore((s) => s.project.design);
   const profile = useCabinetProfileStore((s) => s.profile);
   const materials = useMaterialAssignmentStore((s) => s.materials);
+  const units = useProjectStore((s) => s.units);
+  const unitResult = useProjectStore((s) => s.unitResult);
+  const storedLedSpec = useProjectStore((s) => s.project.ledSpec);
   const audience = useUiStore((s) => s.audience);
 
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
@@ -159,6 +165,21 @@ export default function WizardSummary({
   // included)."* So the summary carries the same notes, with the same jumps,
   // read off the same reader — and coming back from one lands here rather than
   // at the top of the walk.
+  // ─── TURN 45 (CLAUDE.md F9b/F9c): THE LIGHT, IN THE ONE ENDING ───────────
+  // The summary shows the whole job, and as of this turn the job has a groove
+  // and a driver. Same readers as tab 5.6 — one calculator, two surfaces.
+  const ledSpec = useMemo(() => migrateLedSpec(storedLedSpec), [storedLedSpec]);
+  const ledDriver = useMemo(() => {
+    const lit = { ...design, lighting: { ...design.lighting, on: true } };
+    const strips = units.flatMap((u) => {
+      const result = unitResult(u.id);
+      return result ? stripsForUnit({
+        unit: u, result, design: lit, profile,
+      }) : [];
+    });
+    return driverSummary(strips, ledSpec);
+  }, [units, unitResult, design, profile, ledSpec]);
+
   const conflicts = crossTabConflicts({
     design, heights, roomHeight: Number(project.room?.height) || 0, profile,
   });
@@ -342,6 +363,23 @@ export default function WizardSummary({
             />
           ) : null;
         })}
+      </Section>
+
+      <Section
+        node="summary.lighting"
+        audience={audience}
+        title="Lighting"
+        onChange={onChangeTab ? () => onChangeTab('lighting') : null}
+        changeLabel="Back to the lighting"
+      >
+        <Row label="Groove" value={`${ledModeLabel(ledSpec)} · ${grooveWidthMm(ledSpec)} mm cut`} />
+        <Row label="Line placed" value={`${ledDriver.metres} m`} />
+        <Row
+          label="Driver"
+          value={ledDriver.plan
+            ? `${ledDriver.plan.label} · ${ledDriver.plan.volts} V (${ledDriver.totalW} W)`
+            : 'sized to the strip run — no W/m typed'}
+        />
       </Section>
 
       {extra}

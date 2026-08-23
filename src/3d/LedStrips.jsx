@@ -92,9 +92,24 @@ export default function LedStrips({
   // one flag, no mirror to fall out of step with.
   const lightOn = useMemo(() => resolveLighting(design, profile).on, [design, profile]);
 
+  // ─── TURN 45 (CLAUDE.md F9a): OFF IS A PREVIEW, NOT AN ERASER ────────────
+  //
+  // *"at OFF you still place, see and edit LED lines on carcasses."*
+  //
+  // `stripsForUnit` has answered `[]` while the light is off since T35, which
+  // made the switch an EXISTENCE switch: turn the preview off to look at the
+  // carcass in daylight and the lines you had just placed vanished. The
+  // geometry is asked for unconditionally now — the design handed to it carries
+  // `on: true` for the READ, which stores nothing — and `lightOn` below still
+  // decides the brightness, the aura and the lamps, which is all the preview
+  // ever meant. `engine/ledStrips.js` is untouched (iron rule 2).
+  const litDesign = useMemo(
+    () => ({ ...design, lighting: { ...(design?.lighting || {}), on: true } }),
+    [design],
+  );
   const strips = useMemo(() => stripsForUnit({
-    unit, result, design, profile,
-  }), [unit, result, design, profile]);
+    unit, result, design: litDesign, profile,
+  }), [unit, result, litDesign, profile]);
 
   const spec = lightingSpec(profile);
   useEffect(() => { if (strips.length && lightOn) ensureLtc(); }, [strips.length, lightOn]);

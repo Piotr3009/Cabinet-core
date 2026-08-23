@@ -56,6 +56,12 @@ import { pushToOpenLock } from '../lib/pushToOpen.js';
 // T45 F7: what is wrong, which field it belongs beside, and which screen holds
 // the culprit. A reader — it writes nothing and disables nothing.
 import { conflictsAtField, crossTabConflicts } from '../lib/wizardConflicts.js';
+// T45 F9b/F9c: the groove the LED sits in, and the driver it needs.
+import {
+  CHANNEL_MAX_MM, CHANNEL_MIN_MM, FLEXI_GROOVE_MM, LED_GROOVE_MODES, grooveWidthMm, migrateLedSpec,
+} from '../lib/ledSpec.js';
+import { driverSummary } from '../lib/ledDrivers.js';
+import { stripsForUnit } from '../engine/ledStrips.js';
 
 // ─── TURN 32 (CLAUDE.md F1), RE-SHAPED 15.08.2026 EVENING — THE MOCKUP ──────
 //
@@ -193,6 +199,10 @@ export default function WizardSettings({
   const removeDoorStyle = useProjectStore((s) => s.removeDoorStyle);
   const units = useProjectStore((s) => s.units);
   const updateUnitParamsBulk = useProjectStore((s) => s.updateUnitParamsBulk);
+  // T45 F9b/F9c: the job's LED spec, and the strips the driver is sized from.
+  const storedLedSpec = useProjectStore((s) => s.project.ledSpec);
+  const setLedSpec = useProjectStore((s) => s.setLedSpec);
+  const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
   // F8/F15 are WORKSHOP numbers — the profile's, not the project's.
   const setProfile = useCabinetProfileStore((s) => s.setProfile);
@@ -378,6 +388,25 @@ export default function WizardSettings({
   const frontMaterials = materials.filter((m) => m.category === 'front');
   const platePilot = hingePlatePilotD(profile);
   const projectRunnerVariant = resolveRunnerVariant({ design, profile });
+
+  // ─── TURN 45 (CLAUDE.md F9b/F9c): THE LED SPEC, AND WHAT IT DRIVES ───────
+  const ledSpec = useMemo(() => migrateLedSpec(storedLedSpec), [storedLedSpec]);
+  // Every strip placed on every cabinet, asked of the SAME engine function the
+  // 3D draws from and the BOM counts (R4: a claim is proven by asking the app).
+  // `stripsForUnit` answers nothing while the light is OFF, and F9a makes OFF a
+  // PREVIEW rather than an existence — so the read forces the flag on, which is
+  // a read of the geometry and changes no stored field.
+  const litDesign = useMemo(
+    () => ({ ...design, lighting: { ...design.lighting, on: true } }),
+    [design],
+  );
+  const allStrips = useMemo(() => units.flatMap((u) => {
+    const result = unitResult(u.id);
+    return result ? stripsForUnit({
+      unit: u, result, design: litDesign, profile,
+    }) : [];
+  }), [units, unitResult, litDesign, profile]);
+  const driver = useMemo(() => driverSummary(allStrips, ledSpec), [allStrips, ledSpec]);
 
   const stack = wardrobeStack(heights);
   const fit = wardrobe ? ceilingFit({ total: stack.total, roomHeight, profile }) : { gap: null, state: 'ok' };
@@ -2119,6 +2148,95 @@ export default function WizardSettings({
                       </p>
                     </section>
             </div>
+          )}
+        </>
+      )}
+
+      {tab === 'lighting' && (
+        <>
+          {show('lighting.groove') && (
+            <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="lighting.groove" data-led-groove="1">
+              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">The groove the LED sits in</span>
+              <p className="text-[11px] text-ink-400">
+                A bare flexible strip is pressed into a 4 mm slot; an aluminium channel is screwed into a
+                wider one, and how wide is the router&rsquo;s business. This is the number the CNC cuts under
+                every line placed on a carcass.
+              </p>
+              <div className="flex gap-2">
+                {LED_GROOVE_MODES.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    title={m.hint}
+                    data-led-mode={m.id}
+                    aria-pressed={ledSpec.mode === m.id}
+                    className={`flex-1 border rounded px-3 py-2 text-left transition-colors ${ledSpec.mode === m.id
+                      ? 'border-gold text-gold bg-shell-700'
+                      : 'border-shell-600 text-ink-100 hover:bg-shell-700'}`}
+                    onClick={() => setLedSpec({ mode: m.id })}
+                  >
+                    <span className="block text-sm">{m.label}</span>
+                    <span className="block text-[10px] text-ink-400 leading-snug">{m.hint}</span>
+                  </button>
+                ))}
+              </div>
+              {ledSpec.mode === 'channel' && (
+                <div className="cc-row" data-led-channel-width="1">
+                  <span className="text-[11px] text-ink-400 w-40 shrink-0">Channel width (the slot)</span>
+                  <NumberField
+                    className="cc-input w-24 text-right"
+                    data-led-channel-mm="1"
+                    value={ledSpec.channelWidth}
+                    min={CHANNEL_MIN_MM}
+                    max={CHANNEL_MAX_MM}
+                    onCommit={(v) => setLedSpec({ channelWidth: v })}
+                  />
+                  <span className="text-[11px] text-ink-400">mm</span>
+                </div>
+              )}
+              <p className="text-[11px] text-ink-200" data-led-groove-width={grooveWidthMm(ledSpec)}>
+                Groove cut under every line: <span className="text-gold">{formatMm(grooveWidthMm(ledSpec))} mm</span>
+                {ledSpec.mode === 'flexi' ? ` — the flexi strip's own ${FLEXI_GROOVE_MM} mm.` : ' — the channel you have set.'}
+              </p>
+            </section>
+          )}
+
+          {show('lighting.driver') && (
+            <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="lighting.driver" data-led-driver="1">
+              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Driver</span>
+              <div className="cc-row">
+                <span className="text-[11px] text-ink-400 w-40 shrink-0">Strip power (optional)</span>
+                <NumberField
+                  className="cc-input w-24 text-right"
+                  data-led-watts-per-metre="1"
+                  value={ledSpec.wattsPerMetre ?? ''}
+                  min={0}
+                  onCommit={(v) => setLedSpec({ wattsPerMetre: v })}
+                />
+                <span className="text-[11px] text-ink-400">W/m</span>
+                <span className="flex-1" />
+                {/* "metres shown beside it" — F9c, in as many words. */}
+                <span className="text-[11px] text-ink-200" data-led-run-m={driver.metres}>
+                  {driver.metres} m of line placed
+                </span>
+              </div>
+              {driver.plan ? (
+                <p className="text-sm text-ink-50" data-led-driver-plan={driver.plan.label}>
+                  {driver.totalW} W total → <span className="text-gold">{driver.plan.label}</span> at{' '}
+                  {driver.plan.volts} V ({driver.plan.suppliedW} W supplied, {driver.plan.headroomW} W spare).
+                </p>
+              ) : (
+                <p className="text-[11px] text-ink-400" data-led-driver-plan="">
+                  {driver.metres > 0
+                    ? 'Type the strip’s W/m and the driver sizes itself — until then the BOM orders a named spec.'
+                    : 'No lines placed yet. Put them on the carcasses from the Lighting panel, then come back.'}
+                </p>
+              )}
+              <p className="text-[10px] text-ink-400">
+                Drivers are 12 V and the smallest unit made is 60 W. The set chosen is the one that carries the
+                load and wastes least; it lands in the BOM as “{driver.plan ? driver.plan.label : 'N × driver X W'}”.
+              </p>
+            </section>
           )}
         </>
       )}

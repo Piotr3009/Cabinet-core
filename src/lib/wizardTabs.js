@@ -41,6 +41,7 @@ export function normaliseAudience(raw) {
  * The step-4 sequence, in the owner's own order and his own words:
  *
  *   5.1 Settings → 5.2 Carcases → 5.3 Fronts → 5.4 Hardware → 5.5 Production
+ *   → 5.6 Lighting
  *
  * ─── TURN 45 (CLAUDE.md F8): THE NUMBERS, AND THE ENGLISH ───────────────────
  *
@@ -71,6 +72,17 @@ export const WIZARD_TABS = [
   },
   {
     id: 'production', n: 5, label: 'Production', audience: 'factory', hint: 'The workshop’s own numbers — never the client’s',
+  },
+  // ─── TURN 45 (CLAUDE.md F9b): 5.6 LIGHTING ────────────────────────────────
+  // *"Settings gains sub-tab `5.6 Lighting`: choice `LED flexi 4 mm` (a 4 mm
+  // groove) vs `Channel` + channel width field (the router's slot width)."*
+  //
+  // A WORKSHOP tab, and the reason is in the owner's own parenthesis: a slot
+  // width is what the router cuts, and the W/m beside it is what the driver is
+  // sized from. Where a light SITS is the client's question and it is asked in
+  // the scene, on the Lighting panel, which F9a makes always alive.
+  {
+    id: 'lighting', n: 6, label: 'Lighting', audience: 'factory', hint: 'The groove the LED sits in, and the driver it needs',
   },
 ];
 
@@ -151,6 +163,10 @@ export const WIZARD_NODES = [
   { id: 'production.per-material', tab: 'production', audience: 'factory' },
   { id: 'production.box-gate', tab: 'production', audience: 'factory' },
 
+  // ── 5.6 · Lighting — the groove, and the driver arithmetic (T45 F9b/F9c) ──
+  { id: 'lighting.groove', tab: 'lighting', audience: 'factory' },
+  { id: 'lighting.driver', tab: 'lighting', audience: 'factory' },
+
   // ─── TURN 45 (CLAUDE.md F4): STEP 6 — THE WIZARD'S OWN SUMMARY ───────────
   //
   // Not a sub-tab of step 5: the wizard's SIXTH STEP, which is why `tab` says
@@ -163,6 +179,7 @@ export const WIZARD_NODES = [
   { id: 'summary.dimensions', tab: 'summary', audience: 'both' },
   { id: 'summary.hardware', tab: 'summary', audience: 'both' },
   { id: 'summary.production', tab: 'summary', audience: 'factory' },
+  { id: 'summary.lighting', tab: 'summary', audience: 'factory' },
   { id: 'summary.save-set', tab: 'summary', audience: 'factory' },
 ];
 

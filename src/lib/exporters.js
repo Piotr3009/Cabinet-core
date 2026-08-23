@@ -10,7 +10,8 @@ import {
 } from '../engine/bomInvoice.js';
 // Turn 33 (CLAUDE.md F1): the lighting block — yellow named specs, metres and
 // counts, never an invented article.
-import { lightingBomLines } from '../engine/ledStrips.js';
+import { lightingBomLines, stripsForUnit } from '../engine/ledStrips.js';
+import { applyDriverPlan, driverSummary } from './ledDrivers.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { registerLookup } from './hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
@@ -69,6 +70,11 @@ export function buildCuttingListCsv(entries, profile = getCabinetProfile()) {
 export function exportBomCsv({
   entries, design = null, profile = getCabinetProfile(), materials = [],
   projectName = 'project', redWarnings = [], lookup = registerLookup,
+  // T45 F9c: the job's LED spec, so the FILE sizes the driver the same way the
+  // screen does. Left out — every caller that predates this turn — there is no
+  // W/m and the engine's own named-spec row stands, which is what a project
+  // that has not said its W/m should get.
+  ledSpec = null,
 }) {
   const d = migrateDesign(design);
   const ready = d.drawerBoxes?.mode === 'ready';
@@ -84,7 +90,24 @@ export function exportBomCsv({
     // ─── Turn 33 (CLAUDE.md F1): the LIGHTING block rides the same file ────
     // Metres per temperature, the driver, the switch and the spots — every
     // one a yellow NAMED SPEC until the register knows an article (Q4).
-    ...lightingBomLines({ entries, design: d, profile }),
+    //
+    // ─── TURN 45 (CLAUDE.md F9c): …and the DRIVER is sized, here too ───────
+    // The screen and the file must order the same thing, so the CSV goes
+    // through the same `applyDriverPlan` the BOM panel does. With no W/m typed
+    // there is no plan, and the engine's own "sized to the strip run" row
+    // stands exactly as it did.
+    ...applyDriverPlan(
+      lightingBomLines({ entries, design: d, profile }),
+      driverSummary(
+        entries.flatMap(({ unit, result }) => stripsForUnit({
+          unit,
+          result,
+          design: { ...d, lighting: { ...d.lighting, on: true } },
+          profile,
+        })),
+        ledSpec,
+      ).plan,
+    ),
   ];
   const csv = buildBomCsvText({ summary, ironmongery, warnings: redWarnings });
   download(

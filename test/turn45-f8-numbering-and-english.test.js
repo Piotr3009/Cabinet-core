@@ -38,9 +38,10 @@ test('F8 — the sub-tabs are 5.1 … 5.N, because they ARE step 5', () => {
   assert.equal(tabNumber(6), '5.6');
   assert.deepEqual(
     visibleTabs('factory').map((t) => tabNumber(t.n)),
-    ['5.1', '5.2', '5.3', '5.4', '5.5'],
+    ['5.1', '5.2', '5.3', '5.4', '5.5', '5.6'],
   );
-  // Retail loses Production and RENUMBERS — no hole where 5.5 was.
+  // Retail loses Production and Lighting — both workshop tabs — and RENUMBERS,
+  // so there is no hole where 5.5 was.
   assert.deepEqual(
     visibleTabs('retail').map((t) => tabNumber(t.n)),
     ['5.1', '5.2', '5.3', '5.4'],
@@ -58,13 +59,13 @@ test('F8 — the strip prints it and the DOM stamps it', () => {
 test('F8 — Ustawienia → Settings, Produkcja → Production', () => {
   assert.deepEqual(
     WIZARD_TABS.map((t) => t.label),
-    ['Settings', 'Carcases', 'Fronts', 'Hardware', 'Production'],
+    ['Settings', 'Carcases', 'Fronts', 'Hardware', 'Production', 'Lighting'],
   );
   // The IDS went with the labels: an id a reader has to translate is a comment
   // that lies, and every one of them is a `data-` hook somebody greps for.
   assert.deepEqual(
     WIZARD_TABS.map((t) => t.id),
-    ['settings', 'carcases', 'fronts', 'hardware', 'production'],
+    ['settings', 'carcases', 'fronts', 'hardware', 'production', 'lighting'],
   );
   for (const n of WIZARD_NODES) {
     assert.doesNotMatch(n.id, /ustawienia|produkcja|podsumowanie/, `${n.id} is still Polish`);

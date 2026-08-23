@@ -40,14 +40,17 @@ test('the tabs are the owner’s, in his order and his words', () => {
     // T45 F8: the English sweep, by name — `Ustawienia → Settings`,
     // `Produkcja → Production` — and the numbers the strip prints are `5.N`,
     // because these are sub-tabs OF STEP 5.
-    ['1 Settings', '2 Carcases', '3 Fronts', '4 Hardware', '5 Production'],
+    ['1 Settings', '2 Carcases', '3 Fronts', '4 Hardware', '5 Production', '6 Lighting'],
   );
 });
 
 test('Next advances, Back retreats, and the ends of the sequence are ends', () => {
   assert.equal(firstTab('factory'), 'settings');
   assert.equal(tabAfter('settings', 'factory'), 'carcases');
-  assert.equal(tabAfter('production', 'factory'), null, 'T45 F4: the walk ends here and step 6 begins');
+  // T45 F9b adds `5.6 Lighting` at the end of the strip; T45 F4 took the
+  // settings' own summary off it and gave the wizard's step 6 the whole job.
+  assert.equal(tabAfter('production', 'factory'), 'lighting');
+  assert.equal(tabAfter('lighting', 'factory'), null, 'the walk ends here and step 6 begins');
   assert.equal(tabBefore('settings', 'factory'), null);
   assert.equal(tabBefore('carcases', 'factory'), 'settings');
 });

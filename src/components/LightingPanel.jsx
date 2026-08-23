@@ -165,9 +165,17 @@ export default function LightingPanel() {
     : null;
 
   // The placed strips of the selected unit, for the depth sliders' clamps.
+  // T45 F9a: `stripsForUnit` answers nothing while the light is off, and OFF is
+  // a PREVIEW now — the lines are still there and still editable. So the read
+  // forces the flag on. It is a read of the GEOMETRY; no stored field moves,
+  // and `engine/ledStrips.js` is untouched (iron rule 2).
+  const litDesign = useMemo(
+    () => ({ ...design, lighting: { ...design.lighting, on: true } }),
+    [design],
+  );
   const unitStrips = useMemo(() => (unit && result ? stripsForUnit({
-    unit, result, design, profile,
-  }) : []), [unit, result, design, profile]);
+    unit, result, design: litDesign, profile,
+  }) : []), [unit, result, litDesign, profile]);
   const stripOf = (itemId) => unitStrips.find((s) => s.id === itemId || s.itemId === itemId) || null;
 
   const hasOf = (kind, ref = null) => lighting.items.some((it) => it.unitId === unit?.id
@@ -236,12 +244,24 @@ export default function LightingPanel() {
             OFF
           </button>
         </div>
-        <p className="text-[10px] text-ink-400">
-          Internal lights — ON dims the room and lets the placed LEDs shine.
+        {/* ─── TURN 45 (CLAUDE.md F9a): ON/OFF IS A PREVIEW ─────────────────
+            *"The Lighting menu is ALWAYS alive. ON/OFF is a PREVIEW (room dim)
+            only — at OFF you still place, see and edit LED lines on
+            carcasses."*
+
+            T35 gave the owner his two big buttons and T33's whole panel folded
+            away behind them: at OFF there was no temperature, no switching, no
+            placement tools and no list — so turning the preview off to look at
+            the carcass in daylight meant losing the controls that put the light
+            on it. The flag never meant "there is no lighting in this project";
+            it meant "show me the room dark". So it dims the room, and nothing
+            else on this panel depends on it. */}
+        <p className="text-[10px] text-ink-400" data-lighting-preview-note="1">
+          A PREVIEW: ON dims the room so the placed LEDs read. The lines below are placed, seen and edited
+          either way.
         </p>
 
-        {lighting.on && (
-          <>
+        <>
             {/* ─── the choices ──────────────────────────────────────────── */}
             <div className="space-y-1">
               <span className="text-[11px] uppercase tracking-wide text-ink-400">Colour temperature</span>
@@ -594,11 +614,10 @@ export default function LightingPanel() {
             )}
 
             <p className="text-[10px] text-ink-400 pt-1 border-t border-shell-600">
-              Lighting drills nothing: strips and spots are pictures in the scene and NAMED SPEC
-              lines in the BOM — yellow until the register knows the articles.
+              A line is a picture in the scene and a purchase line in the BOM. What is CUT under it — the
+              4 mm flexi slot, or the channel width you set — is chosen on settings tab 5.6.
             </p>
-          </>
-        )}
+        </>
       </div>
     </Modal>
   );

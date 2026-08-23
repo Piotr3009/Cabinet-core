@@ -10,6 +10,41 @@ import { exportFileName, fileSafeName } from '../engine/naming.js';
 import { exportGate, panelsThatGo } from '../engine/cnc/exportGate.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { download } from './exporters.js';
+// ─── TURN 45 (CLAUDE.md F9-CNC): THE GROOVE UNDER EVERY PLACED LINE ─────────
+// Born in `reference/lisp/KIT_LED_GROOVE.lsp` (iron rule 3), cut here. It is
+// ADDITIVE and GATED: a unit with no LED line is handed back the very result
+// object it came in as, so `computeCabinet()` is never asked and the six
+// standard configs cannot move (iron rule 2).
+import { stripsForUnit } from '../engine/ledStrips.js';
+import { migrateDesign } from '../engine/design.js';
+import { LED_GROOVE_LAYER, withLedGrooves } from './ledGroove.js';
+
+/**
+ * A result with its LED grooves cut in — or the very result, when there are
+ * none. THE GATE, in one place, for both export paths.
+ *
+ * @param {object} args
+ *   result   computeCabinet() output
+ *   unit     the cabinet it is of, when the caller has one
+ *   design   the project design (the placed lines live on it)
+ *   ledSpec  the project's LED spec — 4 mm flexi, or the channel's width
+ */
+export function grooved(result, {
+  unit = null, design = null, ledSpec = null, profile = getCabinetProfile(),
+} = {}) {
+  if (!result || !unit || !design) return result;
+  const d = migrateDesign(design);
+  const items = d.lighting.items.filter((i) => i.unitId === unit.id);
+  if (!items.length) return result;
+  // The lines are placed whether the PREVIEW is on or off (F9a), so the read
+  // forces the flag — it is a read of the geometry and stores nothing.
+  const strips = stripsForUnit({
+    unit, result, design: { ...d, lighting: { ...d.lighting, on: true } }, profile,
+  });
+  return withLedGrooves({
+    result, strips, items, ledSpec,
+  });
+}
 
 // ─── CNC export ───
 // The ZIP wrapper around the pure-JS DXF generator. jszip lives HERE and not in
@@ -39,13 +74,22 @@ import { download } from './exporters.js';
  * @param {object} [profile]
  * @returns {Promise<{filename:string, files:string[]}>}
  */
-export async function exportUnitDxfZip(result, profile = getCabinetProfile(), { exportAnyway = false, project = null } = {}) {
+export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
+  exportAnyway = false, project = null,
+  // T45 F9-CNC: hand the unit, the design and the LED spec in and the grooves
+  // are cut. Left out — every caller that predates this turn — nothing changes
+  // at all, which is the gate stated as a default.
+  unit = null, design = null, ledSpec = null,
+} = {}) {
   const gate = exportGate([{ result }], { profile });
   const held = new Set(gate.held.map((h) => h.panelId));
+  const cut = grooved(result, {
+    unit, design, ledSpec, profile,
+  });
   const safe = exportAnyway || gate.ok
-    ? result
-    : { ...result, panels: (result.panels || []).filter((p) => !held.has(p.id)) };
-  const files = buildUnitDxfFiles(safe, profile);
+    ? cut
+    : { ...cut, panels: (cut.panels || []).filter((p) => !held.has(p.id)) };
+  const files = buildUnitDxfFiles(safe, profile, { userLayers: [LED_GROOVE_LAYER] });
   if (!files.length) {
     throw new Error(gate.ok
       ? 'This unit has no CNC geometry to export.'

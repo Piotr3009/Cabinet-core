@@ -24,42 +24,50 @@ import {
 // TREE and the FILTER, and that is deliberately where the rule lives.
 
 const WIZ = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
-const TOGGLE = readFileSync(new URL('../src/components/AudienceToggle.jsx', import.meta.url), 'utf8');
-const UI = readFileSync(new URL('../src/stores/uiStore.js', import.meta.url), 'utf8');
-const TOP = readFileSync(new URL('../src/components/TopBar.jsx', import.meta.url), 'utf8');
-const START = readFileSync(new URL('../src/components/StartScreen.jsx', import.meta.url), 'utf8');
+// T45 F4: step 6's own screen. It carries the `summary.*` nodes of the same
+// tree and stamps them the same way, so the audit below walks both surfaces as
+// one page — which is what they are to the hand that walks the wizard.
+const SUM = readFileSync(new URL('../src/components/WizardSummary.jsx', import.meta.url), 'utf8');
 
 // ── the sequence itself ──
 
-test('the six tabs are the owner’s six, in his order and his words', () => {
+// T45 F4 folds the sixth sub-tab — the settings' own summary — into the
+// WIZARD's step 6, which shows the whole project rather than one step of it.
+// The five that remain are the owner's five, in his order.
+test('the tabs are the owner’s, in his order and his words', () => {
   assert.deepEqual(
     WIZARD_TABS.map((t) => `${t.n} ${t.label}`),
-    ['1 Ustawienia', '2 Carcases', '3 Fronts', '4 Hardware', '5 Produkcja', '6 Podsumowanie'],
+    // T45 F8: the English sweep, by name — `Ustawienia → Settings`,
+    // `Produkcja → Production` — and the numbers the strip prints are `5.N`,
+    // because these are sub-tabs OF STEP 5.
+    ['1 Settings', '2 Carcases', '3 Fronts', '4 Hardware', '5 Production', '6 Lighting'],
   );
 });
 
 test('Next advances, Back retreats, and the ends of the sequence are ends', () => {
-  assert.equal(firstTab('factory'), 'ustawienia');
-  assert.equal(tabAfter('ustawienia', 'factory'), 'carcases');
-  assert.equal(tabAfter('produkcja', 'factory'), 'podsumowanie');
-  assert.equal(tabAfter('podsumowanie', 'factory'), null);
-  assert.equal(tabBefore('ustawienia', 'factory'), null);
-  assert.equal(tabBefore('carcases', 'factory'), 'ustawienia');
+  assert.equal(firstTab('factory'), 'settings');
+  assert.equal(tabAfter('settings', 'factory'), 'carcases');
+  // T45 F9b adds `5.6 Lighting` at the end of the strip; T45 F4 took the
+  // settings' own summary off it and gave the wizard's step 6 the whole job.
+  assert.equal(tabAfter('production', 'factory'), 'lighting');
+  assert.equal(tabAfter('lighting', 'factory'), null, 'the walk ends here and step 6 begins');
+  assert.equal(tabBefore('settings', 'factory'), null);
+  assert.equal(tabBefore('carcases', 'factory'), 'settings');
 });
 
 test('retail loses Produkcja and the rest RENUMBER — no hole where 5 was', () => {
   const retail = visibleTabs('retail');
-  assert.deepEqual(retail.map((t) => t.id), ['ustawienia', 'carcases', 'fronts', 'hardware', 'podsumowanie']);
-  assert.deepEqual(retail.map((t) => t.n), [1, 2, 3, 4, 5]);
-  assert.equal(tabAfter('hardware', 'retail'), 'podsumowanie', 'the walk skips the tab that is not there');
-  assert.equal(tabPosition('podsumowanie', 'retail'), 4);
-  assert.equal(tabPosition('produkcja', 'retail'), -1);
+  assert.deepEqual(retail.map((t) => t.id), ['settings', 'carcases', 'fronts', 'hardware']);
+  assert.deepEqual(retail.map((t) => t.n), [1, 2, 3, 4]);
+  assert.equal(tabAfter('hardware', 'retail'), null, 'the walk skips the tab that is not there');
+  assert.equal(tabPosition('hardware', 'retail'), 3);
+  assert.equal(tabPosition('production', 'retail'), -1);
 });
 
-test('factory sees all six', () => {
-  assert.equal(visibleTabs('factory').length, 6);
-  assert.equal(tabVisible('produkcja', 'factory'), true);
-  assert.equal(tabVisible('produkcja', 'retail'), false);
+test('factory sees them all', () => {
+  assert.equal(visibleTabs('factory').length, WIZARD_TABS.length);
+  assert.equal(tabVisible('production', 'factory'), true);
+  assert.equal(tabVisible('production', 'retail'), false);
 });
 
 // ── the filter ──
@@ -81,6 +89,7 @@ test('a node nobody classified is FACTORY — the safe direction', () => {
 
 test('RETAIL SEES exactly the clauses of iron rule 5 — and nothing else', () => {
   // "Retail sees: Ustawienia (read-only basics), material/colour pickers,
+  //  — T45 F8 renamed that tab `Settings`, in English, by name —
   //  drawer choice, front type + opening + shine, hardware COLOUR only,
   //  summary."
   const seen = WIZARD_NODES.filter((n) => nodeVisible(n.id, 'retail')).map((n) => n.id).sort();
@@ -94,25 +103,27 @@ test('RETAIL SEES exactly the clauses of iron rule 5 — and nothing else', () =
     'fronts.opening',
     'fronts.picker',
     'fronts.shine',
-    'fronts.style',
     'hardware.colour',
-    'podsumowanie.summary',
-    'ustawienia.ceiling',
-    'ustawienia.dimensions',
-    'ustawienia.identity',
-    'ustawienia.kitchen-heights',
+    'settings.ceiling',
+    'settings.dimensions',
+    'settings.identity',
+    'settings.kitchen-heights',
+    'summary.decors',
+    'summary.dimensions',
+    'summary.hardware',
+    'summary.project',
   ]);
 });
 
 test('every workshop node is hidden from retail, by name', () => {
   const hidden = hiddenNodes('retail');
   for (const id of [
-    'carcases.stock-board', 'carcases.sheets', 'carcases.cnc-corner', 'carcases.joinery',
+    'carcases.stock-board', 'carcases.sheets', 'carcases.cnc-corner',
     'carcases.thickness-note', 'fronts.shaker-frame', 'fronts.door-styles', 'fronts.run-materials',
     'hardware.choices', 'hardware.hinge-standard', 'hardware.hinge-plate-pilot',
     'hardware.shelf-sleeve', 'hardware.runners',
-    'produkcja.infill', 'produkcja.per-material', 'produkcja.box-gate',
-    'podsumowanie.save-set', 'ustawienia.sets',
+    'production.infill', 'production.per-material', 'production.box-gate',
+    'summary.production', 'summary.save-set', 'settings.sets',
   ]) {
     assert.ok(hidden.includes(id), `${id} must not reach a client`);
   }
@@ -125,8 +136,12 @@ test('the hardware tab keeps ONLY colour for retail (F6, in the map)', () => {
   assert.equal(visibleNodes('hardware', 'factory').length, 7);
 });
 
-test('every node names a tab that exists', () => {
-  const ids = new Set(WIZARD_TABS.map((t) => t.id));
+test('every node names a tab that exists — or the wizard’s own step 6', () => {
+  // T45 F4: the `summary.*` nodes are the WIZARD's sixth step and not a
+  // sub-tab of step 5, which is why `WIZARD_TABS` has no `summary` row. They
+  // are nodes because the FILTER is the filter — a client's summary is built
+  // smaller, never built and then hidden.
+  const ids = new Set([...WIZARD_TABS.map((t) => t.id), 'summary']);
   for (const n of WIZARD_NODES) assert.ok(ids.has(n.tab), `${n.id} points at no tab`);
 });
 
@@ -171,7 +186,11 @@ test('the surface asks `show(id)` and stamps the node it drew', () => {
   // Every node in the map is stamped on the surface, so the DOM audit can walk
   // the page and compare it with the table without the component confessing.
   for (const n of WIZARD_NODES) {
-    assert.ok(WIZ.includes(`data-wizard-node="${n.id}"`), `${n.id} is not rendered anywhere`);
+    const stamp = `data-wizard-node="${n.id}"`;
+    assert.ok(
+      WIZ.includes(stamp) || SUM.includes(stamp) || SUM.includes('data-wizard-node={node}'),
+      `${n.id} is not rendered anywhere`,
+    );
   }
 });
 
@@ -186,8 +205,11 @@ test('NO DISABLED GHOSTS — a hidden node is not built', () => {
 });
 
 test('a tab stays clickable once visited, and one ahead of the walk does not', () => {
-  assert.match(WIZ, /const \[visited, setVisited\] = useState/);
-  assert.match(WIZ, /setVisited\(\(v\) => new Set\(\[\.\.\.v, id\]\)\)/);
+  // T45 F7 lifts the walk out of this component's own `useState` so a detour to
+  // the room editor and back cannot forget it. The RULE is unchanged: a visited
+  // tab is clickable, and one ahead of the walk is not a place you can be.
+  assert.match(WIZ, /visited: visited\.includes\(id\) \? visited : \[\.\.\.visited, id\]/);
+  assert.match(WIZ, /visited\.includes\(t\.id\) \? 'visited' : 'ahead'/);
   assert.match(WIZ, /disabled=\{state === 'ahead'\}/);
 });
 
@@ -195,29 +217,24 @@ test('a head that loses its tab is not left standing on it', () => {
   assert.match(WIZ, /if \(!tabs\.some\(\(t\) => t\.id === tab\)\) setTab\(firstTab\(audience\)\);/);
 });
 
-// ── the app-level toggle ──
-
-test('the mode is APP-level, default factory, and persisted', () => {
-  assert.match(UI, /const AUDIENCE_KEY = 'cc\.audience';/);
-  assert.match(UI, /audience: loadAudience\(\),/);
-  assert.match(UI, /setAudience: \(v\) => set\(\{ audience: saveAudience\(normaliseAudience\(v\)\) \}\)/);
-  assert.match(UI, /localStorage\.setItem\(AUDIENCE_KEY, value\)/);
-  assert.match(UI, /return normaliseAudience\(localStorage\.getItem\(AUDIENCE_KEY\) \|\| DEFAULT_AUDIENCE\)/);
-});
-
-test('the toggle is in the HEADER of both screens a wizard opens from', () => {
-  assert.match(TOGGLE, /data-audience-toggle="1"/);
-  assert.match(TOGGLE, /data-audience-option=\{id\}/);
-  assert.match(TOP, /<AudienceToggle/);
-  assert.match(START, /<AudienceToggle/);
-});
+// ── the app-level head ──
+//
+// T44 shipped this as a HEADER TOGGLE, remembered in `cc.audience`. T45's F2
+// removes the toggle by name (iron rule 4) and hardwires the head to the DOOR
+// instead — see test/turn45-f2-one-codebase-two-entries.test.js, which is
+// where the three assertions that used to stand here now live. What survives
+// unchanged, and is what this file has always really been about, is that the
+// head reaches NOTHING but the drawing.
 
 test('the mode reaches nothing but the drawing', () => {
-  // It must not touch the design, the profile, the BOM or the engine.
-  assert.doesNotMatch(TOGGLE, /setDesign|setProjectDefaults|computeCabinet|engine\//);
   assert.doesNotMatch(
     readFileSync(new URL('../src/lib/wizardTabs.js', import.meta.url), 'utf8'),
     /import .* from '\.\.\/engine\//,
     'the visibility engine imports no engine at all',
+  );
+  assert.doesNotMatch(
+    readFileSync(new URL('../src/lib/appEntry.js', import.meta.url), 'utf8'),
+    /setDesign|setProjectDefaults|computeCabinet|engine\//,
+    'and neither does the door that chooses the head',
   );
 });

@@ -58,12 +58,12 @@ test('F6 — the two colour questions stay for BOTH heads', () => {
 // ══ F7 ═════════════════════════════════════════════════════════════════════
 
 test('F7 — Produkcja is factory-only, all of it', () => {
-  assert.deepEqual(visibleNodes('produkcja', 'retail'), []);
-  assert.equal(visibleNodes('produkcja', 'factory').length, 3);
+  assert.deepEqual(visibleNodes('production', 'retail'), []);
+  assert.equal(visibleNodes('production', 'factory').length, 3);
 });
 
 test('F7 — `Infill at the wall` lives here (the owner’s own TBD, pt 5)', () => {
-  assert.match(WIZ, /data-wizard-node="produkcja\.infill"/);
+  assert.match(WIZ, /data-wizard-node="production\.infill"/);
   assert.match(WIZ, /data-infill-side-width="1"/);
   assert.match(WIZ, /data-settings-section="infill"/);
 });
@@ -71,15 +71,21 @@ test('F7 — `Infill at the wall` lives here (the owner’s own TBD, pt 5)', () 
 test('F7 — the measurements are grouped PER MATERIAL, by name', () => {
   assert.match(WIZ, /const materialBlocks = \[/);
   assert.match(WIZ, /data-material-block=\{b\.key\}/);
-  assert.match(WIZ, /label: `\$\{t\.label\} — the carcass board`/);
-  assert.match(WIZ, /label: `\$\{t\.label\} — the front board`/);
+  // T45 F6: the block's title line is composed by `lib/productionNames.js` and
+  // set FULL-SIZE — *"it is the information, not a footnote"* — so the label
+  // and the suffix are now two fields the title puts together.
+  assert.match(WIZ, /data-material-block-title=\{b\.key\}/);
+  assert.match(WIZ, /boardName: boardNameOf\(t\),/);
+  assert.match(WIZ, /decorName: decorNameOf\(t, 'carcass'\),/);
+  assert.match(WIZ, /decorName: decorNameOf\(t, 'front'\),/);
   // the SAME rows and the SAME setters — a grouping is a `.map`
   assert.match(WIZ, /row: thicknessRows\.find\(\(r\) => r\.id === `carcass\$\{i \+ 1\}`\)/);
   assert.match(WIZ, /onCommit=\{\(v\) => commitMeasured\(b\.row, v\)\}/);
   assert.match(WIZ, /setSlotThickness\(b\.row\.id, \{ confirmed: e\.target\.checked \}\)/);
-  // …and the sheet size stands with the material it is for.
-  assert.match(WIZ, /sheet: i === 0/);
-  assert.match(WIZ, /\[b\.sheet\.key\]: size/);
+  // …and the sheet size stands with the material it is for — which as of T45
+  // F6 is the MATERIAL STEP, not this tab (iron rule 4, by name).
+  assert.match(WIZ, /data-front-sheets-assignment="1"/);
+  assert.doesNotMatch(WIZ.slice(WIZ.indexOf("tab === 'production'")), /<SheetSizeRow/);
 });
 
 test('F7 — 2 carcass types → 2 carcass blocks, and the box gets its own', () => {
@@ -92,21 +98,27 @@ test('F7 — 2 carcass types → 2 carcass blocks, and the box gets its own', ()
 
 // ══ F8 ═════════════════════════════════════════════════════════════════════
 
-test('F8 — the summary is grouped by tab and filtered by head', () => {
-  assert.match(WIZ, /data-summary="1"/);
-  assert.match(WIZ, /data-summary-group=\{group\.tab\}/);
-  assert.match(WIZ, /data-summary-row=\{row\.label\}/);
-  assert.match(WIZ, /data-summary-goto=\{group\.tab\}/, 'a wrong line is one click from its tab');
-  // Every row is built through `show(node)`, so a row a client may not see is
-  // a row that is NOT BUILT — the same filter the tabs use.
-  assert.match(WIZ, /const summaryRow = \(node, label, value\) => \(show\(node\)/);
-  assert.match(WIZ, /const summary = tabs\s*\n\s*\.filter\(\(t\) => t\.id !== 'podsumowanie'\)/);
+// ─── T45 F4 MOVED THE SUMMARY TO THE WIZARD'S STEP 6 ───────────────────────
+// *"Wizard step `6. Hardware` REMOVED → replaced by `6. Summary`."* T44's
+// settings-summary sub-tab and T44's hardware step were two endings to one
+// walk; F4 keeps the one that shows the WHOLE project. The rules below are the
+// same rules, asked of the screen that now carries them.
+const SUMMARY = readFileSync(new URL('../src/components/WizardSummary.jsx', import.meta.url), 'utf8');
+
+test('F8 — the summary is grouped by section and filtered by head', () => {
+  assert.match(SUMMARY, /data-summary="1"/);
+  assert.match(SUMMARY, /data-summary-section=\{node\}/);
+  assert.match(SUMMARY, /data-summary-row=\{label\}/);
+  assert.match(SUMMARY, /data-summary-change=\{node\}/, 'a wrong line is one click from its tab');
+  // Every section is built through `nodeVisible(node)`, so a section a client
+  // may not see is one that is NOT BUILT — the same filter the tabs use.
+  assert.match(SUMMARY, /if \(!nodeVisible\(node, audience\)\) return null;/);
+  assert.match(SUMMARY, /nodeVisible\('summary\.save-set', audience\)/);
 });
 
 test('F8 — the finale is its own modal, with the big Y/N and the name field', () => {
-  assert.match(WIZ, /data-open-save-set="1"/);
-  assert.match(WIZ, /<SaveSettingsSetModal/);
-  assert.match(FINALE, /Zapisać te ustawienia jako Twój standard\?/);
+  assert.match(SUMMARY, /data-open-save-set="1"/);
+  assert.match(SUMMARY, /<SaveSettingsSetModal/);
   assert.match(FINALE, /data-set-answer="yes"/);
   assert.match(FINALE, /data-set-answer="no"/);
   assert.match(FINALE, /data-set-name="1"/);

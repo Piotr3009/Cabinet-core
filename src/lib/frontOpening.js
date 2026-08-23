@@ -21,8 +21,23 @@
 // about the same question, and turn 12's lesson — one surface, one setter — is
 // the reason this file is a TRANSLATION and not a store.
 //
+// ─── TURN 45 (CLAUDE.md F5): AND THE HANDLES NOW SETTLE THE RUNNERS ────────
+//
+// *"Any handles chosen (J-pull / bar / knobs / any hands) → push-to-open is
+// forced OFF and LOCKED."* Three of the four openings put something on the door
+// for a hand to hold, and a TIP-ON drawer under a handle is a drawer that comes
+// out on the pull and re-latches on the next push — an order nobody can fill.
+//
+// So `frontOpeningPatch` writes the runner variant on the way past. It is the
+// SAME field push-to-open has always been (`design.runners.variant`, T18), the
+// rule that decides it is `lib/pushToOpen.js`, and both facts move in one write
+// and one undo step — which is why the BOM needs no sentence of its own to
+// "follow the lock": it reads the field it always read.
+//
 // Pure functions over a migrated design. `src/engine/**` is closed byte-for-
 // byte tonight (iron rule 2) and this is UI law anyway.
+
+import { lockPatchFor } from './pushToOpen.js';
 
 /** The four, in the owner's own order and his own words. */
 export const FRONT_OPENINGS = [
@@ -68,9 +83,12 @@ export function frontOpening(design) {
 export function frontOpeningPatch(design, id, { previousStyle = null } = {}) {
   const fronts = { ...(design?.fronts || {}) };
   const runners = { ...(design?.runners || {}) };
+  // T45 F5: what the handles have to say about the runners, if anything. Null
+  // for push-to-open, which is the one opening that does not settle them.
+  const lock = lockPatchFor(design, id);
 
   if (id === 'jhandle') {
-    return { fronts: { ...fronts, style: J_HANDLE_STYLE, handle: null } };
+    return { fronts: { ...fronts, style: J_HANDLE_STYLE, handle: null }, ...lock };
   }
 
   // Leaving the J-handle means the door goes back to a shape somebody chose,
@@ -88,10 +106,11 @@ export function frontOpeningPatch(design, id, { previousStyle = null } = {}) {
         style,
         handle: { type: 'bar', ...(centres > 0 ? { centres } : {}) },
       },
+      ...lock,
     };
   }
   if (id === 'knobs') {
-    return { fronts: { ...fronts, style, handle: { type: 'knob' } } };
+    return { fronts: { ...fronts, style, handle: { type: 'knob' } }, ...lock };
   }
   // push-to-open: no handle, and the drawers go on TIP-ON — the same field the
   // Hardware step's own switch writes, so the two can never disagree.

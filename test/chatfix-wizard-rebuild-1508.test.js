@@ -63,27 +63,43 @@ test('the chosen list returns, with the mini swatches', () => {
 test('spray is the colour LISTS — the picker the sources already name', () => {
   // ─── TURN 44 (CLAUDE.md F4): AND NOW IT IS A LIST AND ONLY A LIST ────────
   // The owner said it twice — "bez cholernych kafelek", and again on 23.08:
-  // *"Spray: dropdown list, NO tiles"*. The path is the same one the sources
-  // have always named; what it renders moved into MaterialChoicePanel, where
-  // there is no swatch-grid branch at all.
+  // *"Spray: dropdown list, NO tiles"*.
+  //
+  // ─── TURN 45 (CLAUDE.md F3): …IN THE PICKER'S OWN WINDOW ─────────────────
+  // The path is still the one the sources have always named. What moved is
+  // WHERE the list is drawn: `MaterialChoicePanel` holds one slot and one
+  // chosen tile now, and the list itself is in `DecorPickerModal`, which is
+  // still a list and still draws no tiles at all.
   assert.match(ws, /data-spray-picker=/);
-  const panel = readFileSync(new URL('../src/components/MaterialChoicePanel.jsx', import.meta.url), 'utf8');
-  assert.match(panel, /data-spray-list="1"/);
-  assert.match(panel, /data-spray-select="1"/);
-  assert.match(panel, /COLOUR_SYSTEMS/, 'the same RAL / F&B lists ColourPicker reads');
+  const modal = readFileSync(new URL('../src/components/DecorPickerModal.jsx', import.meta.url), 'utf8');
+  assert.match(modal, /data-spray-list="1"/);
+  assert.match(modal, /data-spray-option=/);
+  assert.match(modal, /COLOUR_SYSTEMS/, 'the same RAL / F&B lists ColourPicker reads');
 });
 
 // ── the flow's gate and the footer's order ──
-test('Next — hardware waits for BOTH saves', () => {
-  assert.match(flow, /disabled=\{blocked \|\| !gates\.carcasses \|\| !gates\.fronts\}/);
+test('the step-5 Next waits for BOTH saves — and for nothing else', () => {
+  // T45 F7: *"Next validates ONLY the current tab."* The mockup's own gate —
+  // both containers saved — is untouched; what left is T44's `blocked`, which
+  // held a joiner on step 5 for a number answered on another screen and said
+  // so in a tooltip. That conflict is stated at its field now, with a door
+  // beside it, and `Start designing` still refuses a job that cannot be built.
+  assert.match(flow, /disabled=\{!gates\.carcasses \|\| !gates\.fronts\}/);
 });
-test("the footer's order is the owner's: Save-as-set second… meaning BEFORE the gold Start", () => {
-  const saveIdx = flow.indexOf('data-save-as-set="1"');
-  const startIdx = flow.indexOf('data-start-designing="1"');
-  assert.ok(saveIdx > -1 && startIdx > -1);
-  assert.ok(saveIdx < startIdx, 'Save as set & start renders left of Start designing');
+test('the footer is ONE button now, and it starts AT ONCE', () => {
+  // ─── TURN 45 (CLAUDE.md F4 / iron rule 4) ────────────────────────────────
+  // *"(`Save as set & start` is gone; the standard was already offered at the
+  // settings finale.)"* Two buttons that both started the job, one of which
+  // grew a name field in the footer first, are one button. The OFFER survives
+  // on the summary itself — `data-open-save-set`, with the naming done in
+  // `SaveSettingsSetModal`, which is where it has had room since T44 F8.
+  assert.equal(flow.indexOf('data-save-as-set="1"'), -1, 'the second button is gone by name');
+  assert.ok(flow.indexOf('data-start-designing="1"') > -1);
   assert.match(flow, /data-start-designing="1"[\s\S]{0,120}onClick=\{\(\) => onStart\(\)\}/,
     'the primary starts AT ONCE — no naming detour');
+  const summary = readFileSync(new URL('../src/components/WizardSummary.jsx', import.meta.url), 'utf8');
+  assert.match(summary, /data-open-save-set="1"/, 'the offer is on the summary');
+  assert.match(summary, /Save these as your standard\?/);
 });
 
 // ── the hardware re-rulings ──
@@ -95,7 +111,14 @@ test('internal metal: Silver / Gold — the rail may be brass, the cup may not',
   assert.match(wh, /INTERNAL_METALS = \[\['chrome', 'Silver'\], \['gold', 'Gold'\]\]/);
 });
 test('push-to-open is the runner variant the design already carries', () => {
+  // ─── TURN 45 (CLAUDE.md F5) ──────────────────────────────────────────────
+  // Still the same field and still no new one. What changed is that the WRITE
+  // goes through the rule — *"any handles chosen → push-to-open is forced OFF
+  // and LOCKED"* — so a handled job cannot be given TIP-ON from this control
+  // any more than from the workshop's runner-variant row.
   assert.match(wh, /data-push-to-open="1"/);
-  assert.match(wh, /setDesign\(\{ runners: \{ \.\.\.design\.runners, variant: id \} \}\)/);
+  assert.match(wh, /setDesign\(pushToOpenPatch\(design, id === 'T'\)\)/);
+  const PTO = readFileSync(new URL('../src/lib/pushToOpen.js', import.meta.url), 'utf8');
+  assert.match(PTO, /runners: \{ \.\.\.\(design\?\.runners \|\| \{\}\), variant \}/);
   assert.match(wh, /TIP-ON/);
 });

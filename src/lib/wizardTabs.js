@@ -40,12 +40,26 @@ export function normaliseAudience(raw) {
 /**
  * The step-4 sequence, in the owner's own order and his own words:
  *
- *   1 Ustawienia → 2 Carcases → 3 Fronts → 4 Hardware → 5 Produkcja →
- *   6 Podsumowanie
+ *   5.1 Settings → 5.2 Carcases → 5.3 Fronts → 5.4 Hardware → 5.5 Production
+ *   → 5.6 Lighting
+ *
+ * ─── TURN 45 (CLAUDE.md F8): THE NUMBERS, AND THE ENGLISH ───────────────────
+ *
+ * *"Sub-tabs numbered `5.1 … 5.6` in the strip."* They are sub-tabs OF STEP 5,
+ * and a strip that counted 1…6 beside a wizard whose own steps count 1…6 was
+ * two numberings for one walk: "I'm on 3" meant nothing without asking which 3.
+ *
+ * And the law we broke ourselves — *"UI copy is ENGLISH"* — which T44 broke in
+ * this very list: `Ustawienia`, `Produkcja`, `Podsumowanie`. The ids went
+ * English with the labels, because an id a reader has to translate is a
+ * comment that lies.
+ *
+ * T45 F4: the sixth stop — the settings' own summary — folded into the
+ * WIZARD's step 6, which shows the whole project rather than one step of it.
  */
 export const WIZARD_TABS = [
   {
-    id: 'ustawienia', n: 1, label: 'Ustawienia', audience: 'both', hint: 'The job, its numbers and the set it starts from',
+    id: 'settings', n: 1, label: 'Settings', audience: 'both', hint: 'The job, its numbers and the set it starts from',
   },
   {
     id: 'carcases', n: 2, label: 'Carcases', audience: 'both', hint: 'How many carcass materials, and which',
@@ -57,12 +71,36 @@ export const WIZARD_TABS = [
     id: 'hardware', n: 4, label: 'Hardware', audience: 'both', hint: 'Hinges, runners, metals',
   },
   {
-    id: 'produkcja', n: 5, label: 'Produkcja', audience: 'factory', hint: 'The workshop’s own numbers — never the client’s',
+    id: 'production', n: 5, label: 'Production', audience: 'factory', hint: 'The workshop’s own numbers — never the client’s',
   },
+  // ─── TURN 45 (CLAUDE.md F9b): 5.6 LIGHTING ────────────────────────────────
+  // *"Settings gains sub-tab `5.6 Lighting`: choice `LED flexi 4 mm` (a 4 mm
+  // groove) vs `Channel` + channel width field (the router's slot width)."*
+  //
+  // A WORKSHOP tab, and the reason is in the owner's own parenthesis: a slot
+  // width is what the router cuts, and the W/m beside it is what the driver is
+  // sized from. Where a light SITS is the client's question and it is asked in
+  // the scene, on the Lighting panel, which F9a makes always alive.
   {
-    id: 'podsumowanie', n: 6, label: 'Podsumowanie', audience: 'both', hint: 'Everything chosen, in one place',
+    id: 'lighting', n: 6, label: 'Lighting', audience: 'factory', hint: 'The groove the LED sits in, and the driver it needs',
   },
 ];
+
+// ─── TURN 45 (CLAUDE.md F4): THE SIXTH SUB-TAB FOLDED INTO STEP 6 ───────────
+//
+// T44's strip ended in a `Podsumowanie` sub-tab: a summary of the settings, one
+// click from the end of the settings sequence, and then the wizard walked on to
+// a SECOND ending — step 6, "Hardware" — before it would start the job.
+//
+// F4 removes step 6 by name (*"wizard step `6. Hardware` REMOVED → replaced by
+// `6. Summary`"*, iron rule 4) and puts the whole project's summary there, in
+// miniatures, with a `Change` per section and one button. Two endings became
+// one, and the one that survived is the one that shows the WHOLE job rather
+// than one step of it.
+//
+// So the settings' own summary tab is gone from this strip, and its rows are
+// step 6's. They are still filtered by the same tree — see the `summary.*`
+// nodes below, which is why they are nodes at all.
 
 /**
  * EVERY node the sequence renders, with the tab it lives in and who may see it.
@@ -74,11 +112,11 @@ export const WIZARD_TABS = [
  */
 export const WIZARD_NODES = [
   // ── 1 · Ustawienia — the read-only basics are the client's; the rest is not ──
-  { id: 'ustawienia.identity', tab: 'ustawienia', audience: 'both' },
-  { id: 'ustawienia.sets', tab: 'ustawienia', audience: 'factory' },
-  { id: 'ustawienia.dimensions', tab: 'ustawienia', audience: 'both' },
-  { id: 'ustawienia.kitchen-heights', tab: 'ustawienia', audience: 'both' },
-  { id: 'ustawienia.ceiling', tab: 'ustawienia', audience: 'both' },
+  { id: 'settings.identity', tab: 'settings', audience: 'both' },
+  { id: 'settings.sets', tab: 'settings', audience: 'factory' },
+  { id: 'settings.dimensions', tab: 'settings', audience: 'both' },
+  { id: 'settings.kitchen-heights', tab: 'settings', audience: 'both' },
+  { id: 'settings.ceiling', tab: 'settings', audience: 'both' },
 
   // ── 2 · Carcases — the picker is the client's, the board and the CNC are not ──
   { id: 'carcases.count', tab: 'carcases', audience: 'both' },
@@ -86,17 +124,26 @@ export const WIZARD_NODES = [
   { id: 'carcases.drawers', tab: 'carcases', audience: 'both' },
   { id: 'carcases.stock-board', tab: 'carcases', audience: 'factory' },
   { id: 'carcases.sheets', tab: 'carcases', audience: 'factory' },
+  // T45 F4 / iron rule 4: ONE CNC-corner block. `carcases.joinery` was the
+  // repeated joinery table under it — the same joint, drawn twice, asked twice.
+  // The joinery TYPE still writes `design.joinery` from Settings ▸ Project
+  // settings, so the choice survives and only the repeat is gone.
   { id: 'carcases.cnc-corner', tab: 'carcases', audience: 'factory' },
-  { id: 'carcases.joinery', tab: 'carcases', audience: 'factory' },
   { id: 'carcases.thickness-note', tab: 'carcases', audience: 'factory' },
   { id: 'carcases.chosen', tab: 'carcases', audience: 'both' },
 
   // ── 3 · Fronts — shape, opening and shine are exactly what a client picks ──
   { id: 'fronts.count', tab: 'fronts', audience: 'both' },
   { id: 'fronts.picker', tab: 'fronts', audience: 'both' },
-  { id: 'fronts.style', tab: 'fronts', audience: 'both' },
+  // T45 F4 / iron rule 4: ONE front-type choice. `fronts.style` was the tail's
+  // second gallery; the PER-FRONT gallery in `fronts.count` stays, and slot 1's
+  // shape is still the project's shape.
   { id: 'fronts.opening', tab: 'fronts', audience: 'both' },
   { id: 'fronts.shine', tab: 'fronts', audience: 'both' },
+  // T45 F6: the fronts' sheet size, relocated out of Production (iron rule 4)
+  // to the step that already asks which board this is. A workshop fact, like
+  // the carcasses' own `carcases.sheets`.
+  { id: 'fronts.sheets', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.shaker-frame', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.door-styles', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.run-materials', tab: 'fronts', audience: 'factory' },
@@ -112,13 +159,28 @@ export const WIZARD_NODES = [
   { id: 'hardware.runners', tab: 'hardware', audience: 'factory' },
 
   // ── 5 · Produkcja — the whole tab is the workshop's ──
-  { id: 'produkcja.infill', tab: 'produkcja', audience: 'factory' },
-  { id: 'produkcja.per-material', tab: 'produkcja', audience: 'factory' },
-  { id: 'produkcja.box-gate', tab: 'produkcja', audience: 'factory' },
+  { id: 'production.infill', tab: 'production', audience: 'factory' },
+  { id: 'production.per-material', tab: 'production', audience: 'factory' },
+  { id: 'production.box-gate', tab: 'production', audience: 'factory' },
 
-  // ── 6 · Podsumowanie — the summary itself is both; it filters its own rows ──
-  { id: 'podsumowanie.summary', tab: 'podsumowanie', audience: 'both' },
-  { id: 'podsumowanie.save-set', tab: 'podsumowanie', audience: 'factory' },
+  // ── 5.6 · Lighting — the groove, and the driver arithmetic (T45 F9b/F9c) ──
+  { id: 'lighting.groove', tab: 'lighting', audience: 'factory' },
+  { id: 'lighting.driver', tab: 'lighting', audience: 'factory' },
+
+  // ─── TURN 45 (CLAUDE.md F4): STEP 6 — THE WIZARD'S OWN SUMMARY ───────────
+  //
+  // Not a sub-tab of step 5: the wizard's SIXTH STEP, which is why `tab` says
+  // `summary` and `WIZARD_TABS` above has no such row. They are nodes because
+  // the filter is the filter — a client's summary shows the decors, the
+  // dimensions and the hardware colour, and does not show him the workshop's
+  // measured thicknesses or its saved settings sets.
+  { id: 'summary.project', tab: 'summary', audience: 'both' },
+  { id: 'summary.decors', tab: 'summary', audience: 'both' },
+  { id: 'summary.dimensions', tab: 'summary', audience: 'both' },
+  { id: 'summary.hardware', tab: 'summary', audience: 'both' },
+  { id: 'summary.production', tab: 'summary', audience: 'factory' },
+  { id: 'summary.lighting', tab: 'summary', audience: 'factory' },
+  { id: 'summary.save-set', tab: 'summary', audience: 'factory' },
 ];
 
 const NODE_BY_ID = new Map(WIZARD_NODES.map((n) => [n.id, n]));
@@ -141,6 +203,21 @@ export function tabVisible(id, audience) {
   const who = normaliseAudience(audience);
   if (who === 'factory') return true;
   return (TAB_BY_ID.get(id)?.audience || 'factory') === 'both';
+}
+
+/**
+ * What a sub-tab is CALLED in the strip — `5.1`, `5.2`… (T45 F8).
+ *
+ * The prefix is a constant because these tabs ARE step 5: there is no world in
+ * which the settings sequence is step 4 and this says 5, since the wizard's own
+ * step list (`lib/wizardSteps.js`) puts `settings` fifth and would have to move
+ * for that to change. Stated once, read by the strip and by the tests.
+ */
+export const WIZARD_STEP_NO = 5;
+
+/** "5.3" — the number the strip prints and the DOM stamps. */
+export function tabNumber(n) {
+  return `${WIZARD_STEP_NO}.${n}`;
 }
 
 /** The tabs this head is shown, in order, renumbered so 1…N has no holes. */

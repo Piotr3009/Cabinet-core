@@ -14,7 +14,8 @@ import { exportPurchaseBomCsv } from '../lib/exporters.js';
 // with articles, yellow named specs where the registry does not know.
 import { ironmongerySummary, materialsSummary, readyBoxLines } from '../engine/bomInvoice.js';
 // Turn 33 (CLAUDE.md F1): the lighting block — yellow named specs throughout.
-import { lightingBomLines } from '../engine/ledStrips.js';
+import { lightingBomLines, stripsForUnit } from '../engine/ledStrips.js';
+import { applyDriverPlan, driverSummary } from '../lib/ledDrivers.js';
 import { registerLookup } from '../lib/hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
@@ -71,10 +72,20 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   // Its own section under the ironmongery, and the same rows ride the BOM CSV
   // (lib/exporters.js) — metres per temperature, the driver, the switch, the
   // spots. All yellow: the register knows no LED articles today (Q4).
-  const lightingLines = useMemo(
-    () => lightingBomLines({ entries, design: migrated, profile }),
-    [entries, migrated, profile],
-  );
+  // ─── TURN 45 (CLAUDE.md F9c): …AND THE DRIVER IS SIZED ───────────────────
+  // *"Result lands in the BOM as `N × driver X W`."* The engine's own driver
+  // row — qty 1, "sized to the strip run" — is the honest answer for a project
+  // that has not said its W/m, and it stands untouched when there is none. Told
+  // one, `applyDriverPlan` rewrites that one row into the order.
+  const ledSpec = useProjectStore((s) => s.project.ledSpec);
+  const lightingLines = useMemo(() => {
+    const lines = lightingBomLines({ entries, design: migrated, profile });
+    const litDesign = { ...migrated, lighting: { ...migrated.lighting, on: true } };
+    const strips = entries.flatMap(({ unit, result }) => stripsForUnit({
+      unit, result, design: litDesign, profile,
+    }));
+    return applyDriverPlan(lines, driverSummary(strips, ledSpec).plan);
+  }, [entries, migrated, profile, ledSpec]);
   // "BOM warns at the top when Check holds a RED on any counted unit."
   const redFindings = useMemo(
     () => runChecks().filter((f) => f.level === 'red'),

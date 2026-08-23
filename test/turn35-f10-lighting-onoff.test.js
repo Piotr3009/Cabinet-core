@@ -215,10 +215,16 @@ test('the two big buttons stand there instead — green ON, red OFF', () => {
   // Large: they replace two 13 px checkbox rows, so they carry a real height
   // and the panel's biggest type.
   assert.match(panel, /h-11 rounded border text-base font-semibold/);
-  // Both write the ONE state, and the body below still stands behind it.
+  // Both write the ONE state — T35's own flag, unchanged.
   assert.match(panel, /onClick=\{\(\) => setLighting\(\{ on: true \}\)\}/);
   assert.match(panel, /onClick=\{\(\) => setLighting\(\{ on: false \}\)\}/);
-  assert.match(panel, /\{lighting\.on && \(/);
+  // ─── TURN 45 (CLAUDE.md F9a): AND THE BODY STANDS EITHER WAY ─────────────
+  // *"The Lighting menu is ALWAYS alive. ON/OFF is a PREVIEW (room dim) only —
+  // at OFF you still place, see and edit LED lines on carcasses."* T35's gate
+  // folded the WHOLE panel away behind the switch, so turning the preview off
+  // to look at the carcass in daylight took the placement tools with it.
+  assert.doesNotMatch(panel, /\{lighting\.on && \(/);
+  assert.match(panel, /data-lighting-preview-note="1"/);
 });
 
 test('everything BELOW the buttons is untouched — his one sentence about it', () => {

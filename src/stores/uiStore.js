@@ -10,7 +10,8 @@ import {
 import { modalAnchorFault, withModalAnchor } from '../lib/modalLayer.js';
 // Turn 44 (CLAUDE.md iron rule 5): the vocabulary of the factory/retail mode
 // lives with the tree it filters, so this store stores a word it does not own.
-import { DEFAULT_AUDIENCE, normaliseAudience } from '../lib/wizardTabs.js';
+import { normaliseAudience } from '../lib/wizardTabs.js';
+import { entryAudience } from '../lib/appEntry.js';
 import {
   dismissedByClickAway, expired, greyMs, leaveWarning, makeMessage, pushMessage, queueMax,
   trimQueue,
@@ -70,26 +71,18 @@ function saveFlag(key, value) {
   return value;
 }
 
-// ─── TURN 44 (CLAUDE.md iron rule 5): FACTORY OR RETAIL, REMEMBERED ─────────
+// ─── TURN 45 (CLAUDE.md F2): FACTORY OR RETAIL, DECIDED AT THE DOOR ─────────
 //
-// The same pair of helpers as the flags above, one storey up because the value
-// is a WORD rather than a bit. It is normalised on the way in through the one
-// function that owns the vocabulary (`lib/wizardTabs.js`), so a hand-edited key
-// saying "workshop" opens the app in factory mode rather than in neither.
-const AUDIENCE_KEY = 'cc.audience';
-
-function loadAudience() {
-  try {
-    return normaliseAudience(localStorage.getItem(AUDIENCE_KEY) || DEFAULT_AUDIENCE);
-  } catch {
-    return DEFAULT_AUDIENCE;
-  }
-}
-
-function saveAudience(value) {
-  try { localStorage.setItem(AUDIENCE_KEY, value); } catch { /* private mode */ }
-  return value;
-}
+// T44 remembered this in `localStorage` under `cc.audience`, because T44 had a
+// header TOGGLE and a toggle's answer has to survive a reload. F2 kills the
+// toggle: *"One codebase, TWO entries: the workshop app hardwires `factory`; a
+// separate route `/client` … hardwires `retail`."*
+//
+// So there is nothing left to remember. The head is WHICH DOOR THE APP WAS
+// OPENED THROUGH, `lib/appEntry.js` reads it off the location once, and the two
+// helpers that persisted it are gone with the switch they served — a key that
+// is never written and never read is a key that lies to the next person who
+// finds it.
 
 // ─── TURN 26 (CLAUDE.md F10.3): THE BRIGHTNESS SLIDER, REMEMBERED ───────────
 //
@@ -377,24 +370,20 @@ export const useUiStore = create((set, get) => ({
     showFrontDimensions: saveFlag(FRONT_DIMS_KEY, !s.showFrontDimensions),
   })),
 
-  // ─── TURN 44 (CLAUDE.md iron rule 5): WHICH HEAD IS READING ───────────────
+  // ─── TURN 45 (CLAUDE.md F2): WHICH DOOR THIS APP WAS OPENED THROUGH ───────
   //
-  // *"App-level mode (header toggle, default `factory`, persisted) filters the
-  // tree."* It is a MODE in exactly the sense X-ray above is one — the user has
-  // said how he wants to look at the job, and nothing but him saying otherwise
-  // should change it — so it is remembered through the same two helpers and
-  // survives a reload, a new project and a closed tab.
+  // *"the workshop app hardwires `factory`; a separate route `/client` …
+  // hardwires `retail`."* It is read ONCE, at boot, from the location, and
+  // nothing in the running app moves it: there is no switch, no persistence and
+  // no second wizard — `lib/wizardTabs.js` is still the one tree and the one
+  // filter, and all this word decides is which of its rows are DRAWN.
   //
-  // It is deliberately APP-level and not project-level: a workshop showing a
-  // client the screen is a fact about the room the laptop is standing in, not
-  // about the kitchen on it. Nothing it does reaches the design, the BOM or the
-  // cut list — `lib/wizardTabs.js` is the only reader, and all it decides is
-  // what is DRAWN.
-  audience: loadAudience(),
-  setAudience: (v) => set({ audience: saveAudience(normaliseAudience(v)) }),
-  toggleAudience: () => set((s) => ({
-    audience: saveAudience(s.audience === 'retail' ? 'factory' : 'retail'),
-  })),
+  // `setAudience` survives the toggle it used to serve because the RETAIL MOUNT
+  // is a caller: a host page that mounts this app as the client's configurator
+  // says so in one line rather than by faking a URL. Nothing in the workshop
+  // app calls it, and the switch's own flip-it verb is gone with the switch.
+  audience: entryAudience(),
+  setAudience: (v) => set({ audience: normaliseAudience(v) }),
 
   // ─── One cabinet's OWN dimensions (turn 8, CLAUDE.md F7) ───
   // `showDimensions` above is the project's: each unit's W/H/D caption and the

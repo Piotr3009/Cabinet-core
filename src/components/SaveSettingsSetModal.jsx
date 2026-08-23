@@ -83,7 +83,7 @@ export default function SaveSettingsSetModal({
       )}
     >
       <div className="space-y-3" data-save-set-modal="1">
-        <p className="text-base text-ink-50">Zapisać te ustawienia jako Twój standard?</p>
+        <p className="text-base text-ink-50">Save these as your standard?</p>
         <p className="text-[11px] text-ink-400">
           Everything on the six tabs, under a name. The next job can start from it — and this project
           keeps them either way.

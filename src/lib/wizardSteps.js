@@ -11,7 +11,14 @@
 // and would have needed a second one tonight. It is a function now, and it
 // states the rule instead of computing round it.
 
-export const WIZARD_STEPS = ['info', 'type', 'scope', 'room', 'wall', 'settings', 'hardware'];
+// ─── TURN 45 (CLAUDE.md F4 / iron rule 4): STEP 6 IS THE SUMMARY ────────────
+//
+// *"Wizard step `6. Hardware` REMOVED → replaced by `6. Summary`."* Its four
+// questions already live in tab 5.4 — CLAUDE.md says so in as many words — so
+// what the wizard's last screen showed was a second copy of a screen the user
+// had walked through two clicks earlier, and then a row of two buttons that
+// both started the job.
+export const WIZARD_STEPS = ['info', 'type', 'scope', 'room', 'wall', 'settings', 'summary'];
 
 /** The steps a project of this scope actually walks. */
 export function stepsInScope(scope) {

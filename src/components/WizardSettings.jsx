@@ -15,6 +15,8 @@ import {
 } from '../engine/projectSettings.js';
 import { RUN_MATERIAL_GROUPS, runMaterialSetting } from '../engine/materials.js';
 import { drawerBoxGate, thicknessSlotRows } from '../engine/thickness.js';
+// T45 F6: the block's title line, composed once so a test can ask it.
+import { blockNeedsBoard, productionBlockTitle } from '../lib/productionNames.js';
 import { hingePlatePilotD, hingeStandard } from '../engine/cabinet.js';
 import { hingeReResolve } from '../engine/hinges.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
@@ -27,7 +29,6 @@ import ColourPicker from './ColourPicker.jsx';
 import JoineryPreview from './JoineryPreview.jsx';
 import SheenSlider from './SheenSlider.jsx';
 import WizardHardware from './WizardHardware.jsx';
-import AudienceToggle from './AudienceToggle.jsx';
 import NumberField from './NumberField.jsx';
 // ─── TURN 36 (CLAUDE.md F1): ONE SETTINGS MODAL ─────────────────────────────
 // The two rows the old panel owns and the unified one now shows are IMPORTED
@@ -42,15 +43,25 @@ import { shakerFrameMm } from '../engine/shaker.js';
 // are DATA in lib/wizardTabs.js. Nothing about who-sees-what is decided in
 // this file: it asks `show(id)` and draws or does not draw.
 import {
-  WIZARD_TABS, dimensionAsked, firstTab, nodeVisible, tabAfter, tabBefore, tabPosition,
-  visibleTabs,
+  WIZARD_TABS, dimensionAsked, firstTab, nodeVisible, tabAfter, tabBefore, tabNumber,
+  tabPosition, visibleTabs,
 } from '../lib/wizardTabs.js';
 // T44 F5: the four openings, and the fields they already write.
 import { FRONT_OPENINGS, frontOpening, frontOpeningPatch } from '../lib/frontOpening.js';
 // T44 F4: the picker that stops fighting you — full width, in the sequence.
 import MaterialChoicePanel from './MaterialChoicePanel.jsx';
-// T44 F8: the finale — "Zapisać te ustawienia jako Twój standard?"
-import SaveSettingsSetModal from './SaveSettingsSetModal.jsx';
+// T45 F5: the one rule that decides whether push-to-open is available, and the
+// one line that says why it is not.
+import { pushToOpenLock } from '../lib/pushToOpen.js';
+// T45 F7: what is wrong, which field it belongs beside, and which screen holds
+// the culprit. A reader — it writes nothing and disables nothing.
+import { conflictsAtField, crossTabConflicts } from '../lib/wizardConflicts.js';
+// T45 F9b/F9c: the groove the LED sits in, and the driver it needs.
+import {
+  CHANNEL_MAX_MM, CHANNEL_MIN_MM, FLEXI_GROOVE_MM, LED_GROOVE_MODES, grooveWidthMm, migrateLedSpec,
+} from '../lib/ledSpec.js';
+import { driverSummary } from '../lib/ledDrivers.js';
+import { stripsForUnit } from '../engine/ledStrips.js';
 
 // ─── TURN 32 (CLAUDE.md F1), RE-SHAPED 15.08.2026 EVENING — THE MOCKUP ──────
 //
@@ -142,7 +153,9 @@ function ChosenRow({ who, hex, thumb, text }) {
   );
 }
 
-export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' }) {
+export default function WizardSettings({
+  onRoomSetup, onGate, door = 'wizard', walk = null, onWalk = null, onJump = null,
+}) {
   // ─── TURN 36 (CLAUDE.md F1): TWO DOORS, ONE FORM ──────────────────────────
   //
   // The owner: "mamy new project i edit project — 2 różne setup modale, a
@@ -186,6 +199,10 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
   const removeDoorStyle = useProjectStore((s) => s.removeDoorStyle);
   const units = useProjectStore((s) => s.units);
   const updateUnitParamsBulk = useProjectStore((s) => s.updateUnitParamsBulk);
+  // T45 F9b/F9c: the job's LED spec, and the strips the driver is sized from.
+  const storedLedSpec = useProjectStore((s) => s.project.ledSpec);
+  const setLedSpec = useProjectStore((s) => s.setLedSpec);
+  const unitResult = useProjectStore((s) => s.unitResult);
   const profile = useCabinetProfileStore((s) => s.profile);
   // F8/F15 are WORKSHOP numbers — the profile's, not the project's.
   const setProfile = useCabinetProfileStore((s) => s.setProfile);
@@ -210,9 +227,16 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
   // From the EDIT door there is nothing to gate (F1): both start satisfied and
   // an edit does not re-lock them, so the fronts container is never dead under
   // the hand of somebody editing a project that already exists.
-  const [carcSaved, setCarcSaved] = useState(editDoor);
-  const [frontsSaved, setFrontsSaved] = useState(editDoor);
-  useEffect(() => { onGate?.(carcSaved, frontsSaved); }, [carcSaved, frontsSaved, onGate]);
+  //
+  // ─── TURN 45 (CLAUDE.md F7): …AND THEY SURVIVE A DETOUR ───────────────────
+  //
+  // The two SAVES are part of "where the user was". They were this component's
+  // own `useState`, so F7's one-click jump to the room — which unmounts step 5
+  // — put them back to false, and a joiner who had saved both containers came
+  // back to a Next he could not press and no idea why. They ride the lifted
+  // walk with the tab and the two stops (see `walkState` below).
+  const setCarcSaved = (v) => patchWalk({ carcSaved: v });
+  const setFrontsSaved = (v) => patchWalk({ frontsSaved: v });
   const touchCarcass = () => { if (!editDoor) setCarcSaved(false); };
   const touchFronts = () => { if (!editDoor) setFrontsSaved(false); };
 
@@ -286,8 +310,52 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
   // decides who may see what.
   const audience = useUiStore((s) => s.audience);
   const tabs = useMemo(() => visibleTabs(audience), [audience]);
-  const [tab, setTab] = useState(() => firstTab(audience));
-  const [visited, setVisited] = useState(() => new Set([firstTab(audience)]));
+  // ─── TURN 45 (CLAUDE.md F7): THE WALK IS LIFTABLE ─────────────────────────
+  //
+  // *"Fixing it returns the user STRAIGHT to where they were … Every earlier
+  // choice survives — nothing resets, nothing re-asks."*
+  //
+  // WHERE THE USER WAS is four facts: the tab, the tabs already visited, and
+  // how far into each of the two submodal walks he had got. They used to be
+  // this component's own `useState`, which meant that leaving step 5 for the
+  // room editor — the very thing F7's one-click jump does — unmounted them and
+  // put him back at 5.1 with the strip forgotten.
+  //
+  // So the walk is a VALUE the caller may hold. Given `walk`/`onWalk`, this
+  // component is controlled and the flow owns the position across a detour;
+  // left out — the Settings ▸ Project settings door, which has no detour to
+  // survive — it keeps its own state and behaves exactly as it did.
+  const [ownWalk, setOwnWalk] = useState(() => ({
+    tab: firstTab(audience), visited: [firstTab(audience)], carcStop: 'count', frontStop: 'count',
+  }));
+  const walkState = useMemo(() => {
+    const raw = (walk && walk.tab) ? walk : ownWalk;
+    const at = raw?.tab || firstTab(audience);
+    return {
+      tab: at,
+      visited: Array.isArray(raw?.visited) && raw.visited.length ? raw.visited : [at],
+      carcStop: raw?.carcStop || 'count',
+      frontStop: raw?.frontStop || 'count',
+      // From the EDIT door there is nothing to gate — the project exists — so
+      // both start satisfied and no edit re-locks them (T36 F1's rule, kept).
+      carcSaved: raw?.carcSaved ?? editDoor,
+      frontsSaved: raw?.frontsSaved ?? editDoor,
+    };
+  }, [walk, ownWalk, audience, editDoor]);
+  const patchWalk = (patch) => {
+    const next = { ...walkState, ...patch };
+    if (onWalk) onWalk(next); else setOwnWalk(next);
+  };
+  const tab = walkState.tab;
+  const visited = walkState.visited;
+  const carcStop = walkState.carcStop;
+  const frontStop = walkState.frontStop;
+  const carcSaved = walkState.carcSaved;
+  const frontsSaved = walkState.frontsSaved;
+  useEffect(() => { onGate?.(carcSaved, frontsSaved); }, [carcSaved, frontsSaved, onGate]);
+  const setTab = (id) => patchWalk({ tab: id });
+  const setCarcStop = (stop) => patchWalk({ carcStop: stop });
+  const setFrontStop = (stop) => patchWalk({ frontStop: stop });
   const show = (id) => nodeVisible(id, audience);
   // The stock board is a workshop fact; the picker itself is the client's.
   const showBoard = audience !== 'retail';
@@ -299,17 +367,8 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
 
   const goTab = (id) => {
     if (!id) return;
-    setVisited((v) => new Set([...v, id]));
-    setTab(id);
+    patchWalk({ tab: id, visited: visited.includes(id) ? visited : [...visited, id] });
   };
-
-  // ── the submodal walk inside the two long tabs (F4, F5) ──
-  // 'count' → one stop per chosen type → the tail. Each stop gets its own dot.
-  const [carcStop, setCarcStop] = useState('count');
-  const [frontStop, setFrontStop] = useState('count');
-  const [saveSetOpen, setSaveSetOpen] = useState(false);
-
-  const [setName, setSetName] = useState('');
 
   const gateOrApply = (typeId, thickness, label, apply) => {
     if (unitCount > 0 && pinsThickness(typeId) && Number(thickness) > 0 && thickness !== drawnBoardT) {
@@ -344,8 +403,73 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
   const platePilot = hingePlatePilotD(profile);
   const projectRunnerVariant = resolveRunnerVariant({ design, profile });
 
+  // ─── TURN 45 (CLAUDE.md F9b/F9c): THE LED SPEC, AND WHAT IT DRIVES ───────
+  const ledSpec = useMemo(() => migrateLedSpec(storedLedSpec), [storedLedSpec]);
+  // Every strip placed on every cabinet, asked of the SAME engine function the
+  // 3D draws from and the BOM counts (R4: a claim is proven by asking the app).
+  // `stripsForUnit` answers nothing while the light is OFF, and F9a makes OFF a
+  // PREVIEW rather than an existence — so the read forces the flag on, which is
+  // a read of the geometry and changes no stored field.
+  const litDesign = useMemo(
+    () => ({ ...design, lighting: { ...design.lighting, on: true } }),
+    [design],
+  );
+  const allStrips = useMemo(() => units.flatMap((u) => {
+    const result = unitResult(u.id);
+    return result ? stripsForUnit({
+      unit: u, result, design: litDesign, profile,
+    }) : [];
+  }), [units, unitResult, litDesign, profile]);
+  const driver = useMemo(() => driverSummary(allStrips, ledSpec), [allStrips, ledSpec]);
+
   const stack = wardrobeStack(heights);
   const fit = wardrobe ? ceilingFit({ total: stack.total, roomHeight, profile }) : { gap: null, state: 'ok' };
+  // ─── TURN 45 (CLAUDE.md F7): THE CONFLICTS, AND THE DOOR TO EACH ──────────
+  //
+  // *"A cross-tab conflict (wardrobe taller than the room) = a red note AT THE
+  // FIELD naming the culprit + a one-click jump to it (Wall/Room)."*
+  const conflicts = useMemo(
+    () => crossTabConflicts({
+      design, heights, roomHeight, profile,
+    }),
+    [design, heights, roomHeight, profile],
+  );
+  /**
+   * The note that belongs beside one dimension field, with its jump.
+   *
+   * A plain function CALLED from the JSX, deliberately — not a component
+   * declared inside this render. A component defined in a render body is a new
+   * TYPE on every render, so React tears its DOM down and builds it again each
+   * time; the button here would be replaced between the mouse-down and the
+   * mouse-up of a real click, and no click event would ever fire. The jump
+   * button looked perfect and did nothing, which is exactly the class of bug
+   * F7 exists to stop.
+   */
+  const conflictNotes = (field) => {
+    const list = conflictsAtField(conflicts, field);
+    if (!list.length) return null;
+    return list.map((c) => (
+      <div
+        key={c.code}
+        className="cc-row rounded border border-status-danger/60 bg-status-danger/10 px-2 py-1.5 mt-1"
+        data-conflict={c.code}
+        data-conflict-field={c.field}
+      >
+        <span className="text-[11px] text-status-danger flex-1">{c.message}</span>
+        {c.culprit && onJump && (
+          <button
+            type="button"
+            className="cc-btn px-2 shrink-0"
+            data-conflict-jump={c.culprit}
+            title={`Open ${c.culpritLabel} — you come straight back here`}
+            onClick={() => onJump(c.culprit)}
+          >
+            {c.jumpLabel}
+          </button>
+        )}
+      </div>
+    ));
+  };
 
   // T44 F3/F8: a set may live on this computer or on the account, so the load
   // asks both — `applyTo` (the local shelf, unchanged) is still here and is
@@ -661,12 +785,23 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
     return carcassTypes.find((t) => t.id === stop)?.label || 'Material';
   };
 
-  const frontStops = ['count', ...frontTypes.map((t) => t.id), 'tail'];
+  // T45 F6: the fronts get their own SHEETS stop, mirroring the carcasses'.
+  // The sheet-size picker is removed from Production by name (iron rule 4) and
+  // *"lives at the material step"* — the carcasses' has stood at theirs since
+  // T44, and this is the fronts'. Nothing was taken away; a row moved to the
+  // screen that already asks which board this is.
+  const frontStops = [
+    'count',
+    ...frontTypes.map((t) => t.id),
+    ...(show('fronts.sheets') ? ['sheets'] : []),
+    'tail',
+  ];
   const frontAt = frontStops.includes(frontStop) ? frontStop : 'count';
   const frontTypeAt = frontTypes.find((t) => t.id === frontAt) || null;
   const frontSubmodalNo = frontTypeAt ? frontTypes.indexOf(frontTypeAt) + 1 : 0;
   const frontStopLabel = (stop) => {
     if (stop === 'count') return 'How many colours';
+    if (stop === 'sheets') return 'Sheets assignment';
     if (stop === 'tail') return 'Shape, opening and shine';
     return frontTypes.find((t) => t.id === stop)?.label || 'Colour';
   };
@@ -676,6 +811,10 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
   // The ref remembers the shape a J-handle replaced, so turning the J off puts
   // the door back to the shape somebody chose rather than to a guess.
   const opening = frontOpening(design);
+  // T45 F5: any handles chosen → push-to-open is OFF and LOCKED. Read here so
+  // the runner-variant row below cannot quietly put a TIP-ON under a handle by
+  // the back door — the same rule, the same sentence, wherever it is asked.
+  const ptoLock = pushToOpenLock(design);
   const lastStyle = useRef(design.fronts.style);
   useEffect(() => {
     if (design.fronts.style && design.fronts.style !== 'HJ') lastStyle.current = design.fronts.style;
@@ -690,34 +829,39 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
   // picked in F4/F5, listed by name — 2 types → 2 blocks."* The rows are the
   // SAME rows (`thicknessSlotRows`) and the same setters; what changed is that
   // they stand under the material they measure instead of in one pile of six.
+  // ─── TURN 45 (CLAUDE.md F6): PRODUCTION SPEAKS THE NAME OUT LOUD ─────────
+  //
+  // *"The assigned material name per block: FULL-SIZE text (it is the
+  // information, not a footnote) — 'Carcass 1 — MFC Halifax Oak 18 mm' as the
+  // block's title line."*
+  //
+  // T44 grouped the measured thicknesses by the material they measure, which
+  // was right, and then set the material's NAME in 10 px grey at the far right
+  // of the row. A joiner at a caliper reading "Carcass 1" has to remember which
+  // board carcass 1 is; the title is the information, so the title says it.
+  //
+  // *"The sheet-size picker: REMOVED here (rule 4) — it lives at the material
+  // step."* The `sheet` field these blocks carried is gone with the rows it
+  // drew: the carcasses' sheet is chosen at the carcasses' own sheets stop
+  // (`carcases.sheets`, where it has stood since T44) and the fronts' at the
+  // fronts' — added this turn, so nothing was taken away, only moved to the
+  // screen that already asks which board this is.
+  const boardNameOf = (t) => materials.find((m) => m.id === t.material_id)?.name || null;
+  const decorNameOf = (t, kind) => chosenOf(t, kind)?.text || null;
   const materialBlocks = [
     ...carcassTypes.map((t, i) => ({
       key: `carcass${i + 1}`,
-      label: `${t.label} — the carcass board`,
-      boardName: materials.find((m) => m.id === t.material_id)?.name || 'no stock board assigned',
+      label: t.label,
+      boardName: boardNameOf(t),
+      decorName: decorNameOf(t, 'carcass'),
       row: thicknessRows.find((r) => r.id === `carcass${i + 1}`) || null,
-      sheet: i === 0
-        ? {
-          family: 'carcasses',
-          label: 'Carcasses',
-          hint: 'Sides, tops, bottoms, backs, shelves, infills and plinths.',
-          key: 'sheetCarcass',
-        }
-        : null,
     })),
     ...frontTypes.slice(0, 2).map((t, i) => ({
       key: `front${i + 1}`,
-      label: `${t.label} — the front board`,
-      boardName: materials.find((m) => m.id === t.material_id)?.name || 'no stock board assigned',
+      label: t.label,
+      boardName: boardNameOf(t),
+      decorName: decorNameOf(t, 'front'),
       row: thicknessRows.find((r) => r.id === `front${i + 1}`) || null,
-      sheet: i === 0
-        ? {
-          family: 'fronts',
-          label: 'Fronts',
-          hint: 'Doors, drawer fronts, end panels and masking boards.',
-          key: 'sheetFronts',
-        }
-        : null,
     })),
     {
       key: 'box',
@@ -725,79 +869,22 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
       boardName: (design.drawerBoxes.mode ?? 'same') === 'ready'
         ? 'Ready-made system'
         : 'Same board as the carcass',
+      decorName: null,
       row: thicknessRows.find((r) => r.id === 'box') || null,
-      sheet: null,
     },
   ];
 
-  // ─── T44 F8: THE SUMMARY, GROUPED BY TAB AND FILTERED BY HEAD ─────────────
+  // ─── TURN 45 (CLAUDE.md F4): THE SUMMARY LEFT THIS FILE ───────────────────
   //
-  // Every row names the NODE it came from, so the retail filter is the same one
-  // the tabs use — a row a client may not see is a row that is not built, not a
-  // row that is built and then hidden.
-  const summaryRow = (node, label, value) => (show(node) && value != null && value !== ''
-    ? { label, value: String(value) }
-    : null);
-  const chosenText = (t, kind) => chosenOf(t, kind)?.text || 'nothing chosen yet';
-  const summary = tabs
-    .filter((t) => t.id !== 'podsumowanie')
-    .map((t) => {
-      let rows = [];
-      if (t.id === 'ustawienia') {
-        rows = [
-          summaryRow('ustawienia.identity', 'Number', project.number || '—'),
-          summaryRow('ustawienia.identity', 'Client', project.client || '—'),
-          summaryRow('ustawienia.identity', 'Type', type.label),
-          summaryRow('ustawienia.dimensions', wardrobe ? 'Wardrobe height' : 'Tall unit height', `${heights.tall} mm`),
-          summaryRow('ustawienia.dimensions', 'Plinth height (toe kick)', `${heights.toeKick} mm`),
-          summaryRow('ustawienia.dimensions', 'Depth (all units)', `${projectDepth(design, profile)} mm`),
-          dimensionAsked('base', design.projectType)
-            ? summaryRow('ustawienia.kitchen-heights', 'Base unit height', `${heights.base} mm`) : null,
-          dimensionAsked('wall', design.projectType)
-            ? summaryRow('ustawienia.kitchen-heights', 'Wall unit height', `${heights.wall} mm`) : null,
-          dimensionAsked('wallMount', design.projectType)
-            ? summaryRow('ustawienia.kitchen-heights', 'Wall mount height', `${heights.wallMount} mm`) : null,
-          summaryRow('ustawienia.ceiling', 'To the ceiling', design.ceiling === 'flush' ? 'Yes — flush' : 'No — keep an infill'),
-        ];
-      }
-      if (t.id === 'carcases') {
-        rows = [
-          ...carcassTypes.map((ct) => summaryRow('carcases.chosen', ct.label, chosenText(ct, 'carcass'))),
-          summaryRow('carcases.drawers', 'Drawer boxes', (design.drawerBoxes.mode ?? 'same') === 'ready'
-            ? 'Ready-made system' : 'Same board as carcass'),
-          summaryRow('carcases.joinery', 'Joinery', joinery?.label || '—'),
-          summaryRow('carcases.cnc-corner', 'CNC corner', design.cncCorner === 'square' ? 'Square (hand-chisel)' : 'Dog-bone (CNC)'),
-          summaryRow('carcases.thickness-note', 'Board thickness', `${formatMm(drawnBoardT)} mm`),
-        ];
-      }
-      if (t.id === 'fronts') {
-        rows = [
-          ...frontTypes.map((ft) => summaryRow('fronts.chosen', ft.label, chosenText(ft, 'front'))),
-          summaryRow('fronts.style', 'Front type', FRONT_STYLE_OPTIONS.find((o) => o.id === design.fronts.style)?.label || '—'),
-          summaryRow('fronts.opening', 'Opening', FRONT_OPENINGS.find((o) => o.id === opening)?.label || '—'),
-          summaryRow('fronts.shine', 'Shine', `${design.sheen ?? profile.appearance.sheenScale.default} %`),
-          summaryRow('fronts.shaker-frame', 'Shaker frame', design.fronts.style === 'S' ? `${shakerFrameMm(design, profile)} mm` : null),
-        ];
-      }
-      if (t.id === 'hardware') {
-        rows = [
-          summaryRow('hardware.colour', 'Hinge finish', (design.hinges.finish || 'nickel') === 'onyx' ? 'Onyx' : 'Silver'),
-          summaryRow('hardware.colour', 'Internal metal', profile.appearance.metals[design.hardware.shelfSleeve || profile.appearance.metalDefault]?.label || '—'),
-          summaryRow('hardware.hinge-standard', 'Hinges per door', hingeStandard(design.hinges?.standard, profile)),
-          summaryRow('hardware.runners', 'Runner variant', projectRunnerVariant),
-          summaryRow('hardware.hinge-plate-pilot', 'Hinge plate pilot', `⌀${platePilot}`),
-        ];
-      }
-      if (t.id === 'produkcja') {
-        rows = [
-          summaryRow('produkcja.infill', 'Infill at the wall', `${design.infill.sideWidth} mm`),
-          ...materialBlocks.map((b) => (b.row
-            ? summaryRow('produkcja.per-material', b.label, `${formatMm(b.row.measured)} mm${b.row.confirmed ? ' · measured' : ''}`)
-            : null)),
-        ];
-      }
-      return { tab: t.id, n: t.n, label: t.label, rows: rows.filter(Boolean) };
-    });
+  // T44 built the settings' own summary here, grouped by tab and filtered by
+  // head, and the wizard then walked on to a SECOND ending. F4 folds it into the
+  // wizard's step 6 — *"the whole project in miniatures — chosen decor tiles,
+  // base dimensions, hardware — `Change` per section, and ONE button: `Start
+  // designing`"* — where it can show the job rather than one step of it.
+  //
+  // It is `components/WizardSummary.jsx` now, it reads the SAME stores through
+  // the same selectors, and every row it draws still names the node it came
+  // from, so the retail filter is the same filter.
 
   // ─── THE SEQUENCE'S NAVIGATION (F2: "Next validates only the current tab") ─
   const nextTab = tabAfter(tab, audience);
@@ -842,7 +929,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
     nextTarget = nextTab;
     nextLabel = `Next — ${labelOf(nextTab)}`;
   } else {
-    nextHint = 'Everything is answered — the wizard’s own footer starts the job.';
+    nextHint = 'Everything is answered — the wizard’s own footer goes on to the summary.';
   }
 
   return (
@@ -861,7 +948,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
           the renumbering, so retail's five read 1…5 rather than 1,2,3,4,6. */}
       <ol className="flex items-center gap-1 flex-wrap text-[11px]" data-wizard-tabs="1">
         {tabs.map((t, i) => {
-          const state = t.id === tab ? 'current' : (visited.has(t.id) ? 'visited' : 'ahead');
+          const state = t.id === tab ? 'current' : (visited.includes(t.id) ? 'visited' : 'ahead');
           return (
             <li key={t.id} className="flex items-center gap-1">
               <button
@@ -869,7 +956,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                 title={t.hint}
                 data-wizard-tab={t.id}
                 data-tab-state={state}
-                data-tab-number={t.n}
+                data-tab-number={tabNumber(t.n)}
                 disabled={state === 'ahead'}
                 className={`px-2 py-1 rounded border transition-colors ${state === 'current'
                   ? 'border-gold text-gold bg-shell-700'
@@ -878,64 +965,44 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                     : 'border-shell-700 text-ink-400 cursor-default')}`}
                 onClick={() => goTab(t.id)}
               >
-                {t.n}. {t.label}
+                {tabNumber(t.n)} {t.label}
               </button>
               {i < tabs.length - 1 && <span className="text-ink-400">›</span>}
             </li>
           );
         })}
-        {/* ─── TURN 44 (CLAUDE.md iron rule 5): THE TWIN CONTROL ─────────────
-            The head is chosen in the HEADER, which is where rule 5 puts it —
-            and the header is BEHIND this window while the wizard stands open,
-            because a modal shell closes on a pointer-down outside itself. So
-            the switch has a twin here, on the tab bar, exactly as the
-            brightness slider has one on the toolbar and one in the View menu:
-            the SAME app-level state and the same setter, so moving either
-            moves the other because there is only one value. */}
-        <li className="flex-1" />
-        <li><AudienceToggle /></li>
+        {/* ─── TURN 45 (CLAUDE.md F2 / iron rule 4): AND THE TWIN DIED TOO ──
+            T44 carried a Factory/Retail switch here because the header's own
+            was behind the modal. F2 removes the switch BY NAME, so there is no
+            twin to carry: the head is the DOOR (`lib/appEntry.js`), read once
+            at boot, and this strip only reads `audience` to decide which of one
+            tree's rows to draw. */}
       </ol>
 
       <div className="space-y-3" data-wizard-tab-body={tab}>
-      {tab === 'ustawienia' && (
+      {tab === 'settings' && (
         <>
-          {show('ustawienia.identity') && (
-            <div data-wizard-node="ustawienia.identity">
-                  {/* ── 1 · Number · Client · Type — the type is a label, never a second dropdown ── */}
-                  <div className="grid grid-cols-[150px_1fr_180px] gap-3 items-end">
-                    <label className="block">
-                      <span className="cc-label">Number</span>
-                      <input
-                        className="cc-input"
-                        value={project.number || ''}
-                        // ─── T44 F3: READ-ONLY — "chosen in step 1" ──────────────────
-                        // The number and the client are answered on the wizard's own
-                        // first screen, and a second editable copy of an answer is the
-                        // turn-12 bug in miniature. From the EDIT door there is no step 1
-                        // to have answered them, so there they stay editable.
-                        readOnly={!editDoor}
-                        title={editDoor ? undefined : 'Chosen in step 1 — go Back to change it'}
-                        data-readonly={editDoor ? undefined : '1'}
-                        onChange={(e) => setProjectInfo({ number: e.target.value })}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="cc-label">Client</span>
-                      <input
-                        className="cc-input"
-                        value={project.client || ''}
-                        readOnly={!editDoor}
-                        title={editDoor ? undefined : 'Chosen in step 1 — go Back to change it'}
-                        data-readonly={editDoor ? undefined : '1'}
-                        onChange={(e) => setProjectInfo({ client: e.target.value })}
-                      />
-                    </label>
+          {show('settings.identity') && (
+            <div data-wizard-node="settings.identity">
+                  {/* ─── TURN 45 (CLAUDE.md F2 / iron rule 4): TWO FIELDS GO ──────
+                      *"Number + Client: REMOVED from 5.1 (step 1 owns them). Type
+                      stays, read-only."*
+
+                      T44 made them read-only, which was half the answer and the
+                      worse half: a greyed copy of an answer somebody already gave
+                      is still a row the eye has to read, still a control the hand
+                      tries, and still two places the same fact is written down.
+                      Step 1 of the wizard asks for the number and the client, the
+                      summary prints them back, and the EDIT door (Settings ▸
+                      Project settings) — which has no step 1 to have asked — keeps
+                      them, because there they are the only place the fact lives.
+
+                      What stays here is the TYPE, and it stays a LABEL: step 2
+                      chose it, and a second control that could disagree with step 2
+                      is the turn-12 bug in miniature. */}
+                  <div className="grid grid-cols-[180px_1fr] gap-3 items-end">
                     <div className="block">
                       <span className="cc-label">Type</span>
-                      {/* T36 F1: a LABEL in the wizard — step 2 chose it, and a second
-                          control that could disagree with step 2 is the turn-12 bug. From
-                          the menu there IS no step 2, so the old panel's own select stands
-                          here instead. Same field, same setter, one of them shown. */}
                       {editDoor ? (
                         <select
                           className="cc-input"
@@ -956,11 +1023,39 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                         </span>
                       )}
                     </div>
+                    {/* ── the identity, SAID rather than asked (F2) ── */}
+                    {editDoor ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="block">
+                          <span className="cc-label">Number</span>
+                          <input
+                            className="cc-input"
+                            data-project-number="1"
+                            value={project.number || ''}
+                            onChange={(e) => setProjectInfo({ number: e.target.value })}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="cc-label">Client</span>
+                          <input
+                            className="cc-input"
+                            data-project-client="1"
+                            value={project.client || ''}
+                            onChange={(e) => setProjectInfo({ client: e.target.value })}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-ink-400 pb-2" data-identity-said="1">
+                        {project.number ? `No. ${project.number}` : 'No number yet'}
+                        {project.client ? ` · ${project.client}` : ''} — asked on step 1, and changed there.
+                      </p>
+                    )}
                   </div>
             </div>
           )}
-          {show('ustawienia.sets') && (
-            <div data-wizard-node="ustawienia.sets" data-wizard-sets="1" data-settings-sets="1">
+          {show('settings.sets') && (
+            <div data-wizard-node="settings.sets" data-wizard-sets="1" data-settings-sets="1">
               <SectionLabel>Saved settings set</SectionLabel>
               {/* ─── T44 F3: A DROPDOWN, AND ITS DEFAULT HAS A NAME ─────────
                   *"dropdown fed from `cc_settings_sets` (F8), default `Default
@@ -1011,8 +1106,8 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
               </p>
             </div>
           )}
-          {show('ustawienia.dimensions') && (
-            <div data-wizard-node="ustawienia.dimensions">
+          {show('settings.dimensions') && (
+            <div data-wizard-node="settings.dimensions">
                   {/* ── 3 · Dimensions, per project type ── */}
                   <div data-wizard-dimensions="1">
                     <div className="cc-row">
@@ -1069,17 +1164,22 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                         <p className="text-[11px] text-ink-200" data-total-line="1">
                           total item = wardrobe + legs = <span className="text-gold">{stack.total} mm</span>
                         </p>
-                        {fit.state === 'over' && (
-                          <p className="text-[11px] text-status-danger border border-status-danger/60 bg-status-danger/10 rounded px-2 py-1" data-ceiling-error="1">
-                            Total item {stack.total} mm is {Math.abs(fit.gap)} mm taller than the {roomHeight} mm room — lower
-                            the wardrobe or the plinth to continue.
-                          </p>
-                        )}
+                        {/* ─── T45 F7: THE RED NOTE, AT THE FIELD, WITH THE DOOR ──
+                            T44 said this in a tooltip on a disabled button two
+                            screens away and named nothing that could be acted
+                            on. It stands under the height it is about now, it
+                            NAMES the other number (the room's, or the wall's),
+                            and the button beside it opens that screen — and
+                            brings the user straight back here, with the tab, the
+                            strip and every answer where he left them. */}
+                        <div data-ceiling-error={fit.state === 'over' ? '1' : undefined}>
+                          {conflictNotes('tall')}
+                        </div>
                         {fit.state === 'question' && (
                           <div
                   className="border border-gold/60 bg-gold/5 rounded px-2 py-1.5 space-y-1"
                   data-ceiling-question="1"
-                  data-wizard-node="ustawienia.ceiling"
+                  data-wizard-node="settings.ceiling"
                 >
                             <p className="text-[11px] text-gold">
                               Only {fit.gap} mm to the ceiling. To the ceiling, with no infill?
@@ -1159,7 +1259,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                         <div
               className="grid grid-cols-6 gap-2 mt-1.5"
               data-more-dimensions="1"
-              data-wizard-node="ustawienia.kitchen-heights"
+              data-wizard-node="settings.kitchen-heights"
             >
                           {rest.map((d) => (
                             <label key={d.key} className="block">
@@ -1240,7 +1340,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
 
           {carcAt === 'count' && show('carcases.count') && (
             <div data-wizard-node="carcases.count" className="space-y-2">
-              <p className="text-sm text-ink-100">Ile typów materiału carcase?</p>
+              <p className="text-sm text-ink-100">How many carcass material types?</p>
                       <div className="cc-row">
                         <span className="text-[11px] text-ink-200">Carcass types</span>
                         {[1, 2, 3].map((n) => (
@@ -1369,43 +1469,19 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                           </div>
                 </div>
               )}
-              {show('carcases.joinery') && (
-                <div data-wizard-node="carcases.joinery">
-                        {/* ══ 8 · JOINERY TYPE — how the carcass is held together ══ */}
-                        <section className="space-y-2" data-settings-section="joinery">
-                          <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Joinery type</span>
-                          <div className="flex flex-wrap gap-2">
-                            {profile.joinery.types.map((t) => (
-                              <button
-                                key={t.id}
-                                type="button"
-                                title={t.hint}
-                                data-joinery-option={t.id}
-                                aria-pressed={joinery?.id === t.id}
-                                className={`border rounded px-3 py-2 text-left transition-colors ${joinery?.id === t.id
-                                  ? 'border-gold bg-shell-700'
-                                  : 'border-shell-600 hover:bg-shell-700'}`}
-                                onClick={() => {
-                                  touchCarcass();
-                                  setDesign({ joinery: t.id });
-                                  setJoineryOpen((v) => !v || joinery?.id !== t.id);
-                                }}
-                              >
-                                <span className="block text-sm text-ink-50">{t.label}</span>
-                                <span className="block text-[10px] text-ink-400">{t.hint}</span>
-                              </button>
-                            ))}
-                          </div>
-                          {joineryOpen && joinery ? (
-                            <div className="border border-shell-600 rounded p-2 bg-shell-800">
-                              <JoineryPreview profile={profile} joinery={joinery} />
-                            </div>
-                          ) : (
-                            <p className="text-[11px] text-ink-400">Click a joinery type again to see the joint.</p>
-                          )}
-                        </section>
-                </div>
-              )}
+              {/* ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE DUPLICATE GOES ────
+                  *"Carcases: ONE CNC-corner block (the repeated joinery table
+                  goes)."* This stop drew the corner TWICE: the CNC-corner block
+                  above, with `JoineryPreview` and the dog-bone / square choice,
+                  and then a second `Joinery type` table under it with the same
+                  drawing again. One question, asked twice, with two pictures of
+                  the same joint — which is what the owner's red pen circled.
+
+                  The joinery TYPE itself is not lost and was never this block's
+                  own: it writes `design.joinery`, and Settings ▸ Project
+                  settings (`SettingsPanel.jsx`, the panel T36 preserved whole)
+                  still offers every type the profile carries, with the same
+                  preview. What went is the repeat. */}
               {show('carcases.chosen') && (
                 <div data-wizard-node="carcases.chosen">
                           {/* the CHOSEN list — mini swatches, "jak przedtem" */}
@@ -1495,7 +1571,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
 
           {frontAt === 'count' && show('fronts.count') && (
             <div data-wizard-node="fronts.count" className="space-y-2">
-              <p className="text-sm text-ink-100">Ile kolorów frontów?</p>
+              <p className="text-sm text-ink-100">How many front colours?</p>
                       <div className="cc-row" data-wizard-fronts="1">
                         <span className="text-[11px] text-ink-200">How many front types in this project?</span>
                         {[1, 2, 3].map((n) => (
@@ -1616,63 +1692,46 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
             </div>
           )}
 
+          {frontAt === 'sheets' && show('fronts.sheets') && (
+            <div data-wizard-node="fronts.sheets" className="space-y-2" data-front-sheets-assignment="1">
+              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Sheets assignment</span>
+              <p className="text-[11px] text-ink-400">
+                Which board each front type is cut from, and the biggest sheet the shop can buy it in. The
+                same machinery the carcasses' own stop has carried since T44 — relocated out of Production
+                (T45 F6) and asked once the colours are chosen.
+              </p>
+              {frontTypes.map((t) => (
+                <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1" data-front-sheet-assign={t.id}>
+                  <span className="text-[11px] text-ink-50">{t.label}</span>
+                  {stockBoardSelect('front', t)}
+                </div>
+              ))}
+              <SheetSizeRow
+                family="fronts"
+                label="Fronts"
+                hint="Doors, drawer fronts, end panels and masking boards."
+                profile={profile}
+                onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetFronts: size } })}
+              />
+            </div>
+          )}
+
           {frontAt === 'tail' && (
             <>
-              {show('fronts.style') && (
-                <div data-wizard-node="fronts.style">
-                        {/* ══ 6 · DOOR STYLE — the gallery, the shaker number, and the workshop's
-                               own styles. The old panel's whole section, carried whole (T36 F1) ══ */}
-                        <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-settings-section="door-style">
-                          <div className="cc-row">
-                            <span className="text-[11px] uppercase tracking-[0.16em] text-gold">Door style</span>
-                            <span className="flex-1" />
-                            <button
-                              type="button"
-                              className="cc-btn px-2"
-                              data-new-style="1"
-                              onClick={() => {
-                                const id = addDoorStyle({
-                                  name: `Style ${design.doorStyles.length + 1}`,
-                                  frontType: design.fronts.style,
-                                  material_id: frontMaterials[0]?.id || null,
-                                  colour: design.colour.front,
-                                });
-                                setEditingStyle(id);
-                              }}
-                            >
-                              + New style
-                            </button>
-                          </div>
+              {/* ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE TAIL REPEAT GOES ──
+                  *"Fronts: ONE front-type choice (the tail repeat goes)."* The
+                  counting stop already gives every front slot its own shape
+                  gallery — the PER-FRONT gallery, which F4 says stays — and this
+                  tail then drew the eight styles AGAIN as a project-wide choice,
+                  with a second shaker-frame field beside it writing the same
+                  `fronts.shakerFrame` the slot card writes. Two galleries, one
+                  answer, and whichever the hand reached second won.
 
-                          {/* The gallery, not a dropdown (T15 F4) — a tile per shape with its own
-                              drawing, a filter box and a scroll. This one writes the PROJECT's
-                              shape; a front SLOT's own shape is picked in its card above. */}
-                          <FrontStyleGallery
-                            value={design.fronts.style}
-                            onPick={(id) => { touchFronts(); setDesign({ fronts: { ...design.fronts, style: id } }); }}
-                          />
-
-                          {/* T25 F3.1: shaker is equal on all four sides — ONE field, no rail/stile
-                              pair beside it, 10…200 mm. */}
-                          {design.fronts.style === 'S' && (
-                            <div className="flex items-center gap-2" data-shaker-frame="1">
-                              <span className="text-[11px] text-ink-400 w-28">Shaker frame</span>
-                              <NumberField
-                                className="cc-input w-24"
-                                value={shakerFrameMm(design, profile)}
-                                min={profile.front.types.S.frameMin}
-                                max={profile.front.types.S.frameMax}
-                                onCommit={(v) => { touchFronts(); setDesign({ fronts: { ...design.fronts, shakerFrame: v } }); }}
-                              />
-                              <span className="text-[11px] text-ink-400">
-                                mm, equal all round · {profile.front.types.S.frameMin}–{profile.front.types.S.frameMax} ·
-                                {' '}panel recessed {profile.front.types.S.recessDepth} mm
-                              </span>
-                            </div>
-                          )}
-                        </section>
-                </div>
-              )}
+                  Slot 1's shape IS the project's shape (`setProjectDefaults`
+                  in the per-front gallery's own handler, unchanged), so nothing
+                  a joiner could set has been taken away — only the second place
+                  to set it. `+ New style`, the workshop's own named styles, is
+                  untouched and stands in `fronts.door-styles` below. */}
               {show('fronts.opening') && (
                 <div data-wizard-node="fronts.opening" className="space-y-1.5" data-front-opening="1">
                   <span className="block text-[10px] uppercase tracking-wide text-ink-400">Opening</span>
@@ -1716,7 +1775,33 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
               {show('fronts.door-styles') && (
                 <div data-wizard-node="fronts.door-styles" className="border border-shell-600 rounded-lg p-3 space-y-2">
                           <div className="cc-divider" />
-                          <span className="text-[10px] uppercase tracking-wide text-ink-400">The workshop&apos;s own styles</span>
+                          {/* T45 F4: `+ New style` stood in the header of the tail
+                              gallery this turn removed. The gallery was the
+                              duplicate; the BUTTON was never part of it — it makes
+                              one of the workshop's own named styles, which is what
+                              this block is a list of. So it moves the ten lines up
+                              to the list it belongs to, and nothing is lost. */}
+                          <div className="cc-row">
+                            <span className="text-[10px] uppercase tracking-wide text-ink-400 flex-1">
+                              The workshop&apos;s own styles
+                            </span>
+                            <button
+                              type="button"
+                              className="cc-btn px-2"
+                              data-new-style="1"
+                              onClick={() => {
+                                const id = addDoorStyle({
+                                  name: `Style ${design.doorStyles.length + 1}`,
+                                  frontType: design.fronts.style,
+                                  material_id: frontMaterials[0]?.id || null,
+                                  colour: design.colour.front,
+                                });
+                                setEditingStyle(id);
+                              }}
+                            >
+                              + New style
+                            </button>
+                          </div>
 
                           {design.doorStyles.length === 0 && (
                             <p className="text-[11px] text-ink-400">
@@ -2050,20 +2135,32 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                           </span>
                         </div>
                         <div className="flex gap-1">
-                          {profile.hardware.runner.movento.variants.map((v) => (
-                            <button
-                              key={v.id}
-                              type="button"
-                              data-runner-variant-option={v.id}
-                              aria-pressed={projectRunnerVariant === v.id}
-                              title={v.hint}
-                              className={`cc-btn px-2 ${projectRunnerVariant === v.id ? 'border-gold text-gold' : ''}`}
-                              onClick={() => setRunnerVariant(v.id)}
-                            >
-                              {v.id}
-                            </button>
-                          ))}
+                          {profile.hardware.runner.movento.variants.map((v) => {
+                            // T45 F5: TIP-ON is what push-to-open IS, so a
+                            // handled job may not be given it here either.
+                            const barred = ptoLock.locked && v.id.toUpperCase() === 'T';
+                            return (
+                              <button
+                                key={v.id}
+                                type="button"
+                                data-runner-variant-option={v.id}
+                                aria-pressed={projectRunnerVariant === v.id}
+                                disabled={barred}
+                                title={barred ? ptoLock.reason : v.hint}
+                                className={`cc-btn px-2 ${projectRunnerVariant === v.id ? 'border-gold text-gold' : ''} ${
+                                  barred ? 'opacity-45 cursor-not-allowed' : ''}`}
+                                onClick={() => setRunnerVariant(v.id)}
+                              >
+                                {v.id}
+                              </button>
+                            );
+                          })}
                         </div>
+                        {ptoLock.locked && (
+                          <p className="text-[10px] text-status-warn w-full" data-runner-lock-reason="1">
+                            {ptoLock.reason}
+                          </p>
+                        )}
                       </div>
                       <p className="text-[11px] text-ink-400">
                         Every one of these is fitted by the automat and counted in the BOM. You pick the variant; it
@@ -2076,10 +2173,99 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
         </>
       )}
 
-      {tab === 'produkcja' && (
+      {tab === 'lighting' && (
         <>
-          {show('produkcja.infill') && (
-            <div data-wizard-node="produkcja.infill">
+          {show('lighting.groove') && (
+            <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="lighting.groove" data-led-groove="1">
+              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">The groove the LED sits in</span>
+              <p className="text-[11px] text-ink-400">
+                A bare flexible strip is pressed into a 4 mm slot; an aluminium channel is screwed into a
+                wider one, and how wide is the router&rsquo;s business. This is the number the CNC cuts under
+                every line placed on a carcass.
+              </p>
+              <div className="flex gap-2">
+                {LED_GROOVE_MODES.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    title={m.hint}
+                    data-led-mode={m.id}
+                    aria-pressed={ledSpec.mode === m.id}
+                    className={`flex-1 border rounded px-3 py-2 text-left transition-colors ${ledSpec.mode === m.id
+                      ? 'border-gold text-gold bg-shell-700'
+                      : 'border-shell-600 text-ink-100 hover:bg-shell-700'}`}
+                    onClick={() => setLedSpec({ mode: m.id })}
+                  >
+                    <span className="block text-sm">{m.label}</span>
+                    <span className="block text-[10px] text-ink-400 leading-snug">{m.hint}</span>
+                  </button>
+                ))}
+              </div>
+              {ledSpec.mode === 'channel' && (
+                <div className="cc-row" data-led-channel-width="1">
+                  <span className="text-[11px] text-ink-400 w-40 shrink-0">Channel width (the slot)</span>
+                  <NumberField
+                    className="cc-input w-24 text-right"
+                    data-led-channel-mm="1"
+                    value={ledSpec.channelWidth}
+                    min={CHANNEL_MIN_MM}
+                    max={CHANNEL_MAX_MM}
+                    onCommit={(v) => setLedSpec({ channelWidth: v })}
+                  />
+                  <span className="text-[11px] text-ink-400">mm</span>
+                </div>
+              )}
+              <p className="text-[11px] text-ink-200" data-led-groove-width={grooveWidthMm(ledSpec)}>
+                Groove cut under every line: <span className="text-gold">{formatMm(grooveWidthMm(ledSpec))} mm</span>
+                {ledSpec.mode === 'flexi' ? ` — the flexi strip's own ${FLEXI_GROOVE_MM} mm.` : ' — the channel you have set.'}
+              </p>
+            </section>
+          )}
+
+          {show('lighting.driver') && (
+            <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="lighting.driver" data-led-driver="1">
+              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Driver</span>
+              <div className="cc-row">
+                <span className="text-[11px] text-ink-400 w-40 shrink-0">Strip power (optional)</span>
+                <NumberField
+                  className="cc-input w-24 text-right"
+                  data-led-watts-per-metre="1"
+                  value={ledSpec.wattsPerMetre ?? ''}
+                  min={0}
+                  onCommit={(v) => setLedSpec({ wattsPerMetre: v })}
+                />
+                <span className="text-[11px] text-ink-400">W/m</span>
+                <span className="flex-1" />
+                {/* "metres shown beside it" — F9c, in as many words. */}
+                <span className="text-[11px] text-ink-200" data-led-run-m={driver.metres}>
+                  {driver.metres} m of line placed
+                </span>
+              </div>
+              {driver.plan ? (
+                <p className="text-sm text-ink-50" data-led-driver-plan={driver.plan.label}>
+                  {driver.totalW} W total → <span className="text-gold">{driver.plan.label}</span> at{' '}
+                  {driver.plan.volts} V ({driver.plan.suppliedW} W supplied, {driver.plan.headroomW} W spare).
+                </p>
+              ) : (
+                <p className="text-[11px] text-ink-400" data-led-driver-plan="">
+                  {driver.metres > 0
+                    ? 'Type the strip’s W/m and the driver sizes itself — until then the BOM orders a named spec.'
+                    : 'No lines placed yet. Put them on the carcasses from the Lighting panel, then come back.'}
+                </p>
+              )}
+              <p className="text-[10px] text-ink-400">
+                Drivers are 12 V and the smallest unit made is 60 W. The set chosen is the one that carries the
+                load and wastes least; it lands in the BOM as “{driver.plan ? driver.plan.label : 'N × driver X W'}”.
+              </p>
+            </section>
+          )}
+        </>
+      )}
+
+      {tab === 'production' && (
+        <>
+          {show('production.infill') && (
+            <div data-wizard-node="production.infill">
                     {/* ══ 9 · INFILL AT THE WALL — the filler between a unit and the wall ══ */}
                     <section className="space-y-2" data-settings-section="infill">
                       <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Infill at the wall</span>
@@ -2096,23 +2282,33 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                     </section>
             </div>
           )}
-          {show('produkcja.per-material') && (
-            <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="produkcja.per-material" data-settings-section="thickness">
+          {show('production.per-material') && (
+            <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="production.per-material" data-settings-section="thickness">
               <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">
-                Measurements &amp; sheet sizes, per material
+                Measurements, per material
               </span>
               <p className="text-[11px] text-ink-400">
                 The manufacturer never tells you the board is really 18.5 — the caliper does. Type what you
                 measured and tick it; every formula in the app computes from that number and nothing rounds
-                it. Grouped by the materials THIS job picked, in the order it picked them.
+                it. Grouped by the materials THIS job picked, in the order it picked them — and each block
+                is TITLED with the board it is about, because that is the information rather than a footnote.
+                The sheet size is chosen with the board, at the material step.
               </p>
               <ul className="space-y-2" data-thickness-slots="1">
                 {materialBlocks.map((b) => (
                   <li key={b.key} className="border border-shell-600 rounded p-2 space-y-1.5" data-material-block={b.key}>
-                    <div className="cc-row">
-                      <span className="text-[12px] text-ink-50 flex-1">{b.label}</span>
-                      <span className="text-[10px] text-ink-400">{b.boardName}</span>
-                    </div>
+                    {/* F6: FULL-SIZE, and it is the block's title line. */}
+                    <p
+                      className={`text-base leading-snug ${blockNeedsBoard(b) ? 'text-status-warn' : 'text-ink-50'}`}
+                      data-material-block-title={b.key}
+                    >
+                      {productionBlockTitle({
+                        label: b.label,
+                        boardName: b.boardName,
+                        decorName: b.decorName,
+                        thickness: b.row?.measured,
+                      })}
+                    </p>
                     {b.row && (
                       <div className="cc-row" data-thickness-slot={b.row.id}>
                         <span className="text-[11px] text-ink-400 w-24 shrink-0" title={b.row.hint}>Measured</span>
@@ -2141,15 +2337,13 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                         )}
                       </div>
                     )}
-                    {b.sheet && (
-                      <SheetSizeRow
-                        family={b.sheet.family}
-                        label={b.sheet.label}
-                        hint={b.sheet.hint}
-                        profile={profile}
-                        onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, [b.sheet.key]: size } })}
-                      />
-                    )}
+                    {/* T45 F6 / iron rule 4: the SHEET-SIZE PICKER stood here.
+                        It is removed from Production by name — *"chosen
+                        earlier, per material"* — and lives at the material
+                        step, where the question "which board is this?" is
+                        already being asked. The measured-thickness fields
+                        beside it, and the infill above, are untouched: the
+                        owner likes them. */}
                   </li>
                 ))}
               </ul>
@@ -2179,8 +2373,8 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
               )}
             </section>
           )}
-          {show('produkcja.box-gate') && (
-            <div data-wizard-node="produkcja.box-gate" className="space-y-1">
+          {show('production.box-gate') && (
+            <div data-wizard-node="production.box-gate" className="space-y-1">
               {boxGate.blocked && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded border border-status-warn text-status-warn" data-box-gate="1">
                   no drawers yet
@@ -2194,57 +2388,6 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
         </>
       )}
 
-      {tab === 'podsumowanie' && (
-        <>
-          <div data-wizard-node="podsumowanie.summary" className="space-y-2" data-summary="1">
-            <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Podsumowanie</span>
-            <p className="text-[11px] text-ink-400">
-              Everything this job has been told, grouped the way it was asked. A tab is one click away if a
-              line is wrong.
-            </p>
-            {summary.map((group) => (
-              <div key={group.tab} className="border border-shell-600 rounded p-2 space-y-1" data-summary-group={group.tab}>
-                <div className="cc-row">
-                  <span className="text-[11px] text-ink-50 flex-1">{group.n}. {group.label}</span>
-                  <button
-                    type="button"
-                    className="cc-btn-ghost px-2"
-                    data-summary-goto={group.tab}
-                    onClick={() => goTab(group.tab)}
-                  >
-                    Change…
-                  </button>
-                </div>
-                {group.rows.map((row) => (
-                  <div key={row.label} className="flex items-baseline gap-2 text-[11px]" data-summary-row={row.label}>
-                    <span className="w-40 shrink-0 text-ink-400">{row.label}</span>
-                    <span className="text-ink-100">{row.value}</span>
-                  </div>
-                ))}
-                {group.rows.length === 0 && (
-                  <p className="text-[11px] text-ink-400">Nothing to show for this head.</p>
-                )}
-              </div>
-            ))}
-          </div>
-          {show('podsumowanie.save-set') && (
-            <div data-wizard-node="podsumowanie.save-set" className="border-t border-dashed border-shell-600 pt-2">
-              <button
-                type="button"
-                className="cc-btn-gold px-3"
-                data-open-save-set="1"
-                onClick={() => setSaveSetOpen(true)}
-              >
-                Zapisać te ustawienia jako Twój standard?
-              </button>
-              <p className="text-[10px] text-ink-400 mt-1">
-                The `Keep as…` control that used to sit in Ustawienia, asked once and at the end — which is
-                the only moment a workshop has actually finished deciding.
-              </p>
-            </div>
-          )}
-        </>
-      )}
       </div>
 
       {/* ══ THE SEQUENCE'S FEET ══════════════════════════════════════════════
@@ -2281,14 +2424,10 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
         )}
       </div>
 
-      {/* ── F8's finale, its own draggable window, opened BESIDE its button ── */}
-      {saveSetOpen && (
-        <SaveSettingsSetModal
-          design={design}
-          suggestion={project.name || `${type.label} standard`}
-          onClose={() => setSaveSetOpen(false)}
-        />
-      )}
+      {/* T45 F4: the finale — *"Save these as your standard?"* — went with the
+          summary it stood under, to the wizard's own step 6
+          (components/WizardSummary.jsx). Same modal, same payload, asked once
+          and at the one moment a workshop has actually finished deciding. */}
     </div>
   );
 }

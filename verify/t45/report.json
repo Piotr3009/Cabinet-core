@@ -1,0 +1,521 @@
+{
+ "steps": [
+  {
+   "label": "F2 — the workshop door hardwires FACTORY",
+   "ok": true,
+   "detail": "data-app-entry=factory"
+  },
+  {
+   "label": "F2 — and the Factory/Retail toggle is gone from the header",
+   "ok": true,
+   "detail": "0 toggle(s) on the start screen"
+  },
+  {
+   "label": "F2 — /client hardwires RETAIL, and the store agrees",
+   "ok": true,
+   "detail": "retail / retail"
+  },
+  {
+   "label": "F2 — the ROUTE decides it, asked of the app’s own reader",
+   "ok": true,
+   "detail": "lib/appEntry.js"
+  },
+  {
+   "label": "F1a — four chains, one per edge, live on the drawing",
+   "ok": true,
+   "detail": "6 segments across bottom/left/right/top"
+  },
+  {
+   "label": "F1a — TOP = wall width + the slope’s run segment",
+   "ok": true,
+   "detail": "[3600,900]"
+  },
+  {
+   "label": "F1a — RIGHT = the slope drop + the wall stub under it",
+   "ok": true,
+   "detail": "[600,1800]"
+  },
+  {
+   "label": "F1a — the chains follow every drag, live",
+   "ok": true,
+   "detail": "run 900 → 1384.5, chain says 1384.5"
+  },
+  {
+   "label": "F1b — a recess and a chimney ride the SAME wall model as the slope",
+   "ok": true,
+   "detail": "[\"chimney\",\"recess\",\"slope\"]"
+  },
+  {
+   "label": "F1b — each is a rectangle: width + depth",
+   "ok": true,
+   "detail": "[{\"k\":\"recess\",\"w\":900,\"d\":300},{\"k\":\"chimney\",\"w\":600,\"d\":350}]"
+  },
+  {
+   "label": "F1b — a plan element drags along the wall",
+   "ok": true,
+   "detail": "1500 → 1869 mm"
+  },
+  {
+   "label": "F8 — the sub-tabs are numbered 5.1 … 5.6",
+   "ok": true,
+   "detail": "5.1 5.2 5.3 5.4 5.5 5.6"
+  },
+  {
+   "label": "F8 — …in English, by name: Settings · Production · Lighting",
+   "ok": true,
+   "detail": "5.1 Settings | 5.2 Carcases | 5.3 Fronts | 5.4 Hardware | 5.5 Production | 5.6 Lighting"
+  },
+  {
+   "label": "F8 — not one Polish word is on the screen",
+   "ok": true,
+   "detail": "[]"
+  },
+  {
+   "label": "F2 — Number and Client are SAID on 5.1, never asked",
+   "ok": true,
+   "detail": "{\"said\":true,\"numberInputs\":0,\"type\":true,\"toggles\":0,\"readonly\":0,\"tabs\":true}"
+  },
+  {
+   "label": "F2 — the Type stays, as a label",
+   "ok": true,
+   "detail": "data-wizard-type-label"
+  },
+  {
+   "label": "F2 — no Factory/Retail toggle anywhere in the wizard",
+   "ok": true,
+   "detail": "0"
+  },
+  {
+   "label": "F3 — the TAB shows ONE slot and ZERO grid",
+   "ok": true,
+   "detail": "{\"slots\":1,\"tiles\":0,\"grids\":0,\"scrollers\":0}"
+  },
+  {
+   "label": "F3 — …and no scrolling region of its own",
+   "ok": true,
+   "detail": "0 scroller(s) in the tab"
+  },
+  {
+   "label": "F3 — a SEPARATE modal: search on top, a FAMILY bar, large tiles",
+   "ok": true,
+   "detail": "{\"grid\":true,\"search\":true,\"families\":16,\"tiles\":85,\"scrollers\":1,\"onlyScroller\":true,\"gridScrolls\":2325,\"gridH\":396,\"declared\":2,\"draggable\":true,\"beside\":\"1\"}"
+  },
+  {
+   "label": "F3 — the modal carries the ONLY scrolling region",
+   "ok": true,
+   "detail": "1 scroller(s)"
+  },
+  {
+   "label": "F3 — it is the shell’s window: draggable, opened BESIDE its slot",
+   "ok": true,
+   "detail": "anchored=1"
+  },
+  {
+   "label": "F3 — the family bar filters to the timber",
+   "ok": true,
+   "detail": "85 → 39 oak"
+  },
+  {
+   "label": "F3 — one click chooses AND closes the window",
+   "ok": true,
+   "detail": "0 modal(s) left"
+  },
+  {
+   "label": "F3 — the tab now shows exactly ONE tile and zero grid",
+   "ok": true,
+   "detail": "{\"modal\":0,\"tiles\":1,\"slots\":0,\"grids\":0,\"code\":\"H1180\",\"source\":\"EGGER · ST37\",\"change\":true}"
+  },
+  {
+   "label": "F3 — swatch + code + name + ST, with Change",
+   "ok": true,
+   "detail": "H1180 · EGGER · ST37"
+  },
+  {
+   "label": "F4 — ONE CNC-corner block, and the repeated joinery table is gone",
+   "ok": true,
+   "detail": "{\"corner\":1,\"joinery\":0}"
+  },
+  {
+   "label": "F4 — the per-front gallery stays, and there is ONE of it",
+   "ok": true,
+   "detail": "1 gallery slot(s)"
+  },
+  {
+   "label": "F3 — SPRAY is a list in the same window, and draws zero tiles",
+   "ok": true,
+   "detail": "{\"list\":true,\"tiles\":0,\"options\":56}"
+  },
+  {
+   "label": "F3 — once picked, a SPRAY renders as the SAME large tile",
+   "ok": true,
+   "detail": "{\"modal\":0,\"tiles\":1,\"name\":\"9010 Pure White\"}"
+  },
+  {
+   "label": "F6 — the fronts’ own SHEETS stop exists (the picker left Production)",
+   "ok": true,
+   "detail": "walked past"
+  },
+  {
+   "label": "F5 — handles chosen → push-to-open is OFF and LOCKED",
+   "ok": true,
+   "detail": "{\"locked\":\"1\",\"disabled\":true,\"reason\":\"Handles are on the fronts — push-to-open cannot be fitted with a handle to pull.\",\"variant\":\"S\"}"
+  },
+  {
+   "label": "F5 — …with a ONE-LINE reason under it",
+   "ok": true,
+   "detail": "Handles are on the fronts — push-to-open cannot be fitted with a handle to pull."
+  },
+  {
+   "label": "F5 — the BOM follows the lock, off the app’s own resolver",
+   "ok": true,
+   "detail": "lib/pushToOpen.js"
+  },
+  {
+   "label": "F5 — handleless → available as before, both ways",
+   "ok": true,
+   "detail": "pushLocked=0"
+  },
+  {
+   "label": "F6 — every block is TITLED with the material it is about",
+   "ok": true,
+   "detail": "[\"Carcass 1 — Generic board 18 mm\",\"Front 1 — Generic board 18 mm\",\"Drawer box — Same board as the carcass 18 mm\"]"
+  },
+  {
+   "label": "F6 — …in FULL-SIZE type, not a 10 px footnote",
+   "ok": true,
+   "detail": "[16,16,16]"
+  },
+  {
+   "label": "F6 — the sheet-size picker is gone from Production",
+   "ok": true,
+   "detail": "0 sheet row(s)"
+  },
+  {
+   "label": "F6 — the measured fields and the infill are untouched",
+   "ok": true,
+   "detail": "3 measured row(s)"
+  },
+  {
+   "label": "F9b — Channel + its width, and the groove says so",
+   "ok": true,
+   "detail": "12 mm"
+  },
+  {
+   "label": "F9b — …the same number the app’s own reader answers",
+   "ok": true,
+   "detail": "lib/ledSpec.js"
+  },
+  {
+   "label": "F7 — a red note AT THE FIELD, naming the culprit",
+   "ok": true,
+   "detail": "Total item 3100 mm is 700 mm taller than the 2400 mm wall. Lower the wardrobe or the plinth here — or raise the wall.Fix"
+  },
+  {
+   "label": "F7 — …with a ONE-CLICK jump to the wall",
+   "ok": true,
+   "detail": "jump → wall"
+  },
+  {
+   "label": "F7 — visited tabs stay clickable through the error state",
+   "ok": true,
+   "detail": "6 clickable"
+  },
+  {
+   "label": "F7 — the jump opens the WALL, not a plan the job has never seen",
+   "ok": true,
+   "detail": "wall-elevation"
+  },
+  {
+   "label": "F7 — fixing it returns the user STRAIGHT to where they were",
+   "ok": true,
+   "detail": "{\"tab\":\"settings\",\"conflicts\":0,\"clickable\":6}"
+  },
+  {
+   "label": "F7 — EVERY earlier choice survived — nothing reset, nothing re-asked",
+   "ok": true,
+   "detail": "{\"finish\":\"egger:H1180_37\",\"frontColour\":{\"hex\":\"#ffffff\",\"name\":\"9010 Pure White\",\"system\":\"RAL\"},\"handle\":{\"type\":\"bar\"},\"channel\":12} vs {\"finish\":\"egger:H1180_37\",\"frontColour\":{\"hex\":\"#ffffff\",\"name\":\"9010 Pure White\",\"system\":\"RAL\"},\"handle\":{\"type\":\"bar\"},\"channel\":12}"
+  },
+  {
+   "label": "F7 — …and the strip is still walked",
+   "ok": true,
+   "detail": "6 tabs clickable"
+  },
+  {
+   "label": "F4 — step 6 is the SUMMARY: the whole project in miniatures",
+   "ok": true,
+   "detail": "[\"summary.project\",\"summary.decors\",\"summary.dimensions\",\"summary.hardware\",\"summary.production\",\"summary.lighting\",\"summary.save-set\"]"
+  },
+  {
+   "label": "F4 — the SAME single tiles the tabs show",
+   "ok": true,
+   "detail": "2 tile(s)"
+  },
+  {
+   "label": "F4 — a Change per section, and ONE button: Start designing",
+   "ok": true,
+   "detail": "{\"sections\":[\"summary.project\",\"summary.decors\",\"summary.dimensions\",\"summary.hardware\",\"summary.production\",\"summary.lighting\",\"summary.save-set\"],\"tiles\":2,\"changes\":6,\"start\":1,\"saveAsSet\":0,\"offer\":true,\"hardwareStep\":false}"
+  },
+  {
+   "label": "F4 — `Save as set & start` is gone; the standard is offered here",
+   "ok": true,
+   "detail": "data-open-save-set"
+  },
+  {
+   "label": "F4 — wizard step \"6. Hardware\" is gone",
+   "ok": true,
+   "detail": "no 6. Hardware in the flow"
+  },
+  {
+   "label": "F9a — …and it is the cabinet in hand",
+   "ok": true,
+   "detail": "{\"before\":0,\"after\":1,\"selected\":true}"
+  },
+  {
+   "label": "F9a — a cabinet is on the floor to light",
+   "ok": true,
+   "detail": "{\"before\":0,\"after\":1,\"selected\":true}"
+  },
+  {
+   "label": "F9a — ON/OFF is a PREVIEW: at OFF the panel is still alive",
+   "ok": true,
+   "detail": "{\"on\":false,\"note\":true,\"tools\":5,\"temps\":3,\"switches\":2}"
+  },
+  {
+   "label": "F9a — at OFF you still PLACE, SEE and EDIT the lines",
+   "ok": true,
+   "detail": "{\"placed\":2,\"on\":false,\"lines\":\"bottom + side\",\"items\":2,\"insets\":1}"
+  },
+  {
+   "label": "F9c — total W = W/m × metres of ALL placed lines, and the driver is sized",
+   "ok": true,
+   "detail": "{\"lines\":2,\"m\":1.3,\"W\":18.85,\"plan\":\"1 × driver 60 W\"}"
+  },
+  {
+   "label": "F9-CNC — a groove is cut under every placed line, on the panel it sits on",
+   "ok": true,
+   "detail": "2 groove(s) for 2 lines"
+  },
+  {
+   "label": "F9-CNC — …at the SPEC’s width, on the LISP’s own layer at ACI 44",
+   "ok": true,
+   "detail": "[12,12] vs 12 mm"
+  },
+  {
+   "label": "F9-CNC — GATED: hand it no line and the very same result comes back",
+   "ok": true,
+   "detail": "identity"
+  }
+ ],
+ "shots": [
+  {
+   "name": "f1a-elevation-dimensions",
+   "subject": {
+    "dom": "[data-dim]",
+    "count": [
+     "[data-dim]",
+     6
+    ],
+    "text": "3600"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true,\"count\":true}"
+  },
+  {
+   "name": "f1b-top-view",
+   "subject": {
+    "all": [
+     "[data-wall-plan-svg]",
+     "[data-plan-wall-line]",
+     "[data-plan-depth-zone]",
+     "[data-plan-kind=\"recess\"]",
+     "[data-plan-kind=\"chimney\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f8-english-everywhere",
+   "subject": {
+    "text": "5.1 Settings",
+    "none": [
+     "[data-audience-toggle]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"text\":true,\"none\":true}"
+  },
+  {
+   "name": "f2-no-toggle-no-duplicates",
+   "subject": {
+    "all": [
+     "[data-identity-said]",
+     "[data-wizard-type-label]"
+    ],
+    "none": [
+     "[data-audience-toggle]",
+     "[data-project-number]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"none\":true}"
+  },
+  {
+   "name": "t45-5.2-carcases-count",
+   "subject": {
+    "dom": "[data-wizard-node=\"carcases.count\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f3-picker-modal",
+   "subject": {
+    "all": [
+     "[data-modal-name=\"decor-picker\"]",
+     "[data-decor-search]",
+     "[data-decor-families]",
+     "[data-decor-grid]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f3-chosen-tile",
+   "subject": {
+    "all": [
+     "[data-chosen-tile]",
+     "[data-tile-code]",
+     "[data-tile-source]",
+     "[data-change-decor]"
+    ],
+    "none": [
+     "[data-decor-grid]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"none\":true}"
+  },
+  {
+   "name": "t45-5.2-carcases-summary",
+   "subject": {
+    "dom": "[data-cnc-corner]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "t45-5.3-fronts-count",
+   "subject": {
+    "dom": "[data-wizard-node=\"fronts.count\"]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "t45-5.3-spray-tile",
+   "subject": {
+    "all": [
+     "[data-chosen-tile]",
+     "[data-tile-name]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "t45-5.3-fronts-tail",
+   "subject": {
+    "dom": "[data-front-opening]"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f5-push-to-open-locked",
+   "subject": {
+    "all": [
+     "[data-push-to-open]",
+     "[data-push-lock-reason]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f6-produkcja-named",
+   "subject": {
+    "dom": "[data-material-block-title]",
+    "count": [
+     "[data-material-block-title]",
+     2
+    ]
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"count\":true}"
+  },
+  {
+   "name": "f9-driver-calc",
+   "subject": {
+    "all": [
+     "[data-led-groove]",
+     "[data-led-driver]",
+     "[data-led-watts-per-metre]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f7-conflict-jump-and-return",
+   "subject": {
+    "all": [
+     "[data-conflict]",
+     "[data-conflict-jump]",
+     "[data-wizard-dim=\"tall\"]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f4-step6-summary",
+   "subject": {
+    "all": [
+     "[data-wizard-summary]",
+     "[data-summary-section=\"summary.decors\"]",
+     "[data-start-designing]"
+    ],
+    "none": [
+     "[data-save-as-set]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true,\"none\":true}"
+  },
+  {
+   "name": "f9-lighting-off-still-edits",
+   "subject": {
+    "all": [
+     "[data-lighting-panel]",
+     "[data-lighting-preview-note]",
+     "[data-lighting-item]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f9-cnc-groove",
+   "subject": {
+    "all": [
+     "[data-lighting-panel]",
+     "[data-lighting-item]"
+    ]
+   },
+   "present": true,
+   "detail": "{\"all\":true}"
+  }
+ ]
+}

@@ -3,12 +3,10 @@ import Modal from './Modal.jsx';
 import RoomModal from './RoomModal.jsx';
 import WallElevationModal from './WallElevationModal.jsx';
 import WizardSettings from './WizardSettings.jsx';
-import WizardHardware from './WizardHardware.jsx';
+import WizardSummary from './WizardSummary.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
-import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
-import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { PROJECT_TYPES, getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
 import { migrateDesign, projectHeights } from '../engine/design.js';
 import { wizardStartBlockers } from '../engine/projectSettings.js';
@@ -56,9 +54,11 @@ export default function NewProjectFlow({
   const setProjectHeights = useProjectStore((s) => s.setProjectHeights);
   const storedDesign = useProjectStore((s) => s.project.design);
   const profile = useCabinetProfileStore((s) => s.profile);
-  const notify = useUiStore((s) => s.notify);
-  // T44 iron rule 5: the app-level head, read once and passed down.
-  const audience = useUiStore((s) => s.audience);
+  // T45 F4: the two readers this flow no longer needs. `notify` spoke for the
+  // `Save as set & start` button (removed by name, iron rule 4) and the head is
+  // read by the screens that filter on it — `WizardSettings` and
+  // `WizardSummary` — rather than being carried through here to a step that no
+  // longer exists.
 
   const [step, setStep] = useState('info');
   const [info, setInfo] = useState({ number: initialNumber, name: '', client: '' });
@@ -128,39 +128,52 @@ export default function NewProjectFlow({
     go('room');
   };
 
-  // ─── Start designing (turn 11, CLAUDE.md F9.5) ───
-  // "ask once: 'Save these settings as a set?'". ONCE is the important word: a
-  // workshop that has just spent a minute setting the job up the way it builds
-  // is one keystroke from never having to do it again, and a workshop that does
-  // not want to is one click from the canvas. It is asked HERE and nowhere else.
-  const [asking, setAsking] = useState(false);
-  const [setName, setSetName] = useState('');
+  // ─── TURN 45 (CLAUDE.md F4 / iron rule 4): `Save as set & start` IS GONE ──
+  //
+  // *"(`Save as set & start` is gone; the standard was already offered at the
+  // settings finale.)"* Two buttons that both started the job, one of which
+  // first grew a name field in the footer, were the wizard's last screen. The
+  // offer survives — *"Save these as your standard?"*, on the summary itself,
+  // with the naming done in `SaveSettingsSetModal` where it has room — and what
+  // leaves this screen is ONE button.
+  //
   // ─── CHAT FIX 15.08.2026 (evening): THE TWO CONTAINER GATES ───
-  // The mockup's rule — the fronts open when the CARCASSES are saved, and
-  // "Next — hardware" opens when BOTH containers are. WizardSettings owns the
+  // The mockup's rule — the fronts open when the CARCASSES are saved, and the
+  // step-5 Next opens when BOTH containers are. WizardSettings owns the
   // buttons; this only listens.
   const [gates, setGates] = useState({ carcasses: false, fronts: false });
-  const saveSet = useSettingsSetsStore((s) => s.save);
 
-  const start = () => {
-    setAsking(true);
-    setSetName(info.name.trim() || `${type.label} standard`);
+  // ─── TURN 45 (CLAUDE.md F4 / F7): WHERE IN STEP 5 THE USER IS ────────────
+  //
+  // The tab, the tabs already visited and how far into each of the two
+  // submodal walks he has got. It is held HERE rather than inside
+  // `WizardSettings` so that leaving step 5 — for the summary's `Change…`, or
+  // for F7's one-click jump to the room — and coming back puts him exactly
+  // where he was. *"nothing resets, nothing re-asks."*
+  const [walk, setWalk] = useState({
+    tab: null, visited: [], carcStop: 'count', frontStop: 'count', carcSaved: false, frontsSaved: false,
+  });
+
+  // ─── TURN 45 (CLAUDE.md F7): THE DETOUR, AND THE WAY BACK ────────────────
+  //
+  // *"A cross-tab conflict … + a one-click jump to it (Wall/Room). Fixing it
+  // returns the user STRAIGHT to where they were (Summary included)."*
+  //
+  // The owner's *"musiałem wszystko od nowa przechodzić — to jest chore"* was
+  // this exactly: the fix was two steps back and going back meant walking
+  // forward again. A DETOUR remembers the step it left from; the room and the
+  // wall editors return to it instead of to their own defaults, and because the
+  // walk is held here (F4) the tab, the visited strip and both submodal
+  // positions are still standing when he lands.
+  const [detour, setDetour] = useState(null);   // { back: 'settings' | 'summary' }
+  const jumpTo = (culprit) => {
+    setDetour({ back: step });
+    setStep(culprit === 'wall' ? 'wall' : 'room');
   };
-
-  const keepAndStart = async () => {
-    const name = setName.trim();
-    if (name) {
-      // T44 F8: the shelf is written synchronously inside `save`; what is
-      // awaited is only the table's answer, and it decides the WORDS rather
-      // than whether the set exists.
-      const { replaced, source } = await saveSet(name, design);
-      notify(
-        `${replaced ? `Settings set "${name}" replaced` : `Settings set "${name}" saved`}`
-        + `${source === 'db' ? ' to your account.' : ' on this computer.'}`,
-        source === 'db' ? 'ok' : 'warn',
-      );
-    }
-    onStart();
+  /** Where a room/wall editor goes when it is done. */
+  const leaveEditor = (fallback) => {
+    if (detour) { const { back } = detour; setDetour(null); setStep(back); return; }
+    setStep(fallback);
   };
 
   const index = STEPS.indexOf(step);
@@ -180,15 +193,14 @@ export default function NewProjectFlow({
   const { blockers } = useMemo(() => wizardStartBlockers({
     design, heights: projectHeights(design, profile), roomHeight, profile, assignments: assignmentData,
   }), [design, profile, roomHeight, assignmentData]);
-  const blocked = step === 'settings' && blockers.length > 0;
 
   // The room step IS the room editor, shown in place.
   if (step === 'room') {
     return (
       <RoomModal
         anchor={anchor}
-        onClose={() => setStep('scope')}
-        onApplied={() => setStep('settings')}
+        onClose={() => leaveEditor('scope')}
+        onApplied={() => leaveEditor('settings')}
       />
     );
   }
@@ -202,8 +214,8 @@ export default function NewProjectFlow({
       <WallElevationModal
         anchor={anchor}
         wallIndex={0}
-        onBack={() => setStep('scope')}
-        onSave={() => setStep('settings')}
+        onBack={() => leaveEditor('scope')}
+        onSave={() => leaveEditor('settings')}
       />
     );
   }
@@ -234,63 +246,50 @@ export default function NewProjectFlow({
               {scope === 'room' ? 'Next — room setup' : 'Next — the wall'}
             </button>
           )}
+            {/* ─── TURN 45 (CLAUDE.md F7): NEXT VALIDATES ONLY THE CURRENT TAB ─
+                T44 disabled this button whenever ANY blocker stood — including
+                a wardrobe-versus-room conflict answered on tab 5.1 — and said
+                so in a tooltip. That is the hostage: a joiner who had finished
+                the fronts could not go and look at the summary because of a
+                number on another screen, and nothing on the screen told him
+                where to go. What gates this button now is the two container
+                SAVES, which are the tabs' own answer. The conflict is stated
+                AT ITS FIELD with a door beside it, and `Start designing` — the
+                one button that commits — still refuses a job that cannot be
+                built, with the same note and the same door on the summary. */}
           {step === 'settings' && (
             <button
               type="button"
               className="cc-btn-gold"
-              disabled={blocked || !gates.carcasses || !gates.fronts}
-              title={blocked
-                ? blockers.map((b) => b.message).join('\n')
-                : (!gates.carcasses || !gates.fronts
-                  ? 'Save the carcasses and the fronts to continue'
-                  : undefined)}
+              disabled={!gates.carcasses || !gates.fronts}
+              title={!gates.carcasses || !gates.fronts
+                ? 'Save the carcasses and the fronts to continue'
+                : undefined}
+              // The hook keeps its T44 name: it is still the button that leaves
+              // step 5, and a walk written against either turn finds it.
               data-next-hardware="1"
-              onClick={() => setStep('hardware')}
+              data-next-summary="1"
+              onClick={() => setStep('summary')}
             >
-              Next — hardware
+              Next — summary
             </button>
           )}
-          {step === 'hardware' && !asking && (
-            <>
-              {/* CHAT FIX 15.08.2026 (evening): the owner's order — Start is
-                  the FIRST answer and starts at once; keeping a set is the
-                  second, and only IT asks for a name. */}
-              <button
-                type="button"
-                className="cc-btn"
-                disabled={blockers.length > 0}
-                data-save-as-set="1"
-                onClick={start}
-              >
-                Save as set &amp; start
-              </button>
-              <button
-                type="button"
-                className="cc-btn-gold"
-                disabled={blockers.length > 0}
-                title={blockers.length ? blockers.map((b) => b.message).join('\n') : undefined}
-                data-start-designing="1"
-                onClick={() => onStart()}
-              >
-                Start designing
-              </button>
-            </>
-          )}
-          {step === 'hardware' && asking && (
-            <>
-              <input
-                className="cc-input w-[220px]"
-                autoFocus
-                placeholder="Name this set…"
-                value={setName}
-                onChange={(e) => setSetName(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') keepAndStart(); }}
-              />
-              <button type="button" className="cc-btn" onClick={() => onStart()}>No, just start</button>
-              <button type="button" className="cc-btn-gold" disabled={!setName.trim()} onClick={keepAndStart}>
-                Save set &amp; start
-              </button>
-            </>
+          {/* ─── TURN 45 (CLAUDE.md F4): ONE BUTTON ──────────────────────────
+              *"and ONE button: `Start designing`."* `Save as set & start` — and
+              the name field it grew in this footer — are REMOVED by name (iron
+              rule 4). The offer itself stands on the summary above, where it
+              has a modal to be named in. */}
+          {step === 'summary' && (
+            <button
+              type="button"
+              className="cc-btn-gold"
+              disabled={blockers.length > 0}
+              title={blockers.length ? blockers.map((b) => b.message).join('\n') : undefined}
+              data-start-designing="1"
+              onClick={() => onStart()}
+            >
+              Start designing
+            </button>
           )}
         </>
       )}
@@ -452,21 +451,31 @@ export default function NewProjectFlow({
           <WizardSettings
             onRoomSetup={() => setStep('room')}
             onGate={(carcasses, fronts) => setGates({ carcasses, fronts })}
+            walk={walk}
+            onWalk={setWalk}
+            onJump={jumpTo}
           />
         )}
 
-        {step === 'hardware' && (
-          <>
-            {asking && (
-              <p className="text-sm text-gold border border-gold/50 bg-gold/5 rounded px-3 py-2">
-                Save these settings as a set? The next job starts from it by name — or start designing
-                and this project keeps them to itself.
-              </p>
-            )}
-            {/* T44 F6: the same component tab 4 renders, told the same head.
-                Two doors, one number — the wizard's last look before Start. */}
-            <WizardHardware audience={audience} />
-          </>
+        {/* ─── TURN 45 (CLAUDE.md F4): STEP 6 IS THE SUMMARY ────────────────
+            *"the whole project in miniatures — chosen decor tiles, base
+            dimensions, hardware — `Change` per section"*. The four hardware
+            questions this step used to ask a second time live in tab 5.4, which
+            is where `Change…` sends a hand that wants them. */}
+        {step === 'summary' && (
+          <WizardSummary
+            onChangeTab={(tabId) => {
+              setWalk((w) => ({
+                ...w,
+                tab: tabId,
+                visited: w.visited.includes(tabId) ? w.visited : [...w.visited, tabId],
+              }));
+              setStep('settings');
+            }}
+            onChangeStep={(stepId) => setStep(stepId)}
+            onJump={jumpTo}
+            blockers={blockers}
+          />
         )}
       </div>
     </Modal>
@@ -476,7 +485,7 @@ export default function NewProjectFlow({
 function Steps({ current, scope }) {
   const shown = stepsInScope(scope);
   const labels = {
-    info: 'Project', type: 'Type', scope: 'Scope', room: 'Room', wall: 'Wall', settings: 'Project settings', hardware: 'Hardware',
+    info: 'Project', type: 'Type', scope: 'Scope', room: 'Room', wall: 'Wall', settings: 'Project settings', summary: 'Summary',
   };
   return (
     <ol className="flex items-center gap-1.5 text-[11px]">

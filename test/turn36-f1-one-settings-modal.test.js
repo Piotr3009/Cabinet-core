@@ -143,20 +143,27 @@ test('F1 — thickness: the six measured slots and their hard gate', () => {
 });
 
 test('F1 — sheet sizes: both families, the T35 row itself', () => {
-  // T44 F4/F7: the sheet rows stand with the material they are for.
+  // T44 F4/F7 put the sheet rows with the material they are for. T45's F6
+  // finishes the move: *"The sheet-size picker: REMOVED here (rule 4) — it
+  // lives at the material step."* So BOTH families are now asked at their own
+  // Sheets assignment stop — the carcasses' since T44, the fronts' as of this
+  // turn — and Production carries none.
   assert.match(WIZ, /data-sheets-assignment="1"/);
-  // The CARCASS sheet is asked where the carcass boards are chosen (F4's
-  // "Sheets assignment"); the FRONT sheet stands in Produkcja beside the front
-  // material it is for (F7's per-material blocks). Both families, both setters.
+  assert.match(WIZ, /data-front-sheets-assignment="1"/);
   assert.match(WIZ, /family="carcasses"/);
-  assert.match(WIZ, /family: 'fronts'/);
+  assert.match(WIZ, /family="fronts"/);
   assert.match(WIZ, /sheetCarcass: size/);
-  assert.match(WIZ, /key: 'sheetFronts'/);
-  assert.match(WIZ, /\[b\.sheet\.key\]: size/);
+  assert.match(WIZ, /sheetFronts: size/);
 });
 
 test('F1 — door style: the gallery, + New style, the shaker number, the workshop styles', () => {
-  assert.match(WIZ, /data-settings-section="door-style"/);
+  // ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE TAIL REPEAT WENT ──────────
+  // *"Fronts: ONE front-type choice (the tail repeat goes)."* The
+  // `door-style` SECTION was the second gallery — the per-front cards already
+  // carry one each, and F4 keeps those. Everything the section held that was
+  // not the repeat is still here: `+ New style`, the three door-style setters,
+  // the gallery itself (in the slot card) and the shaker number.
+  assert.doesNotMatch(WIZ, /data-settings-section="door-style"/);
   assert.match(WIZ, /data-new-style="1"/);
   assert.match(WIZ, /addDoorStyle\(/);
   assert.match(WIZ, /updateDoorStyle\(/);
@@ -204,14 +211,17 @@ test('F1 — the T34 rule holds: the stock board select is on EVERY picker path'
 });
 
 test('F1 — the wizard door still gates the fronts behind the carcass save', () => {
-  assert.match(WIZ, /data-fronts-locked=\{carcSaved \? '0' : '1'\}/);
-  assert.match(WIZ, /pointer-events-none/);
-  // …and the EDIT door starts satisfied, so nothing is dead under the hand.
-  assert.match(WIZ, /useState\(editDoor\)/);
+  // T45 F7 lifted the two SAVES into the walk the flow holds, so a detour to
+  // the room editor and back cannot forget them — *"nothing resets, nothing
+  // re-asks"*. The RULE is untouched: from the wizard door both start false and
+  // any edit re-locks; from the EDIT door there is nothing to gate, both start
+  // satisfied, and no edit re-locks them.
+  assert.match(WIZ, /carcSaved: raw\?\.carcSaved \?\? editDoor,/);
+  assert.match(WIZ, /frontsSaved: raw\?\.frontsSaved \?\? editDoor,/);
   assert.match(WIZ, /const touchCarcass = \(\) => \{ if \(!editDoor\) setCarcSaved\(false\); \};/);
   assert.match(WIZ, /const touchFronts = \(\) => \{ if \(!editDoor\) setFrontsSaved\(false\); \};/);
+  assert.match(WIZ, /data-fronts-locked=\{carcSaved \? '0' : '1'\}/);
 });
-
 test('F1 — the project TYPE is editable from the edit door and a label in the wizard', () => {
   assert.match(WIZ, /data-project-type="1"/);
   assert.match(WIZ, /data-wizard-type-label="1"/);

@@ -40,7 +40,13 @@ import {
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
 // byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
-import { migrateSlope, wallSlopes } from '../lib/wallElements.js';
+import { migrateWallElement, wallElements } from '../lib/wallElements.js';
+// T45 F9b/F9c: the job's LED spec — the groove mode, the channel width and the
+// optional W/m. It rides the project beside the room for the same reason the
+// wall elements do: `migrateLighting()` is an exhaustive whitelist and
+// `src/engine/**` is closed byte-for-byte tonight (lib/ledSpec.js says it in
+// full). The day the engine reopens it moves into `design.lighting`.
+import { migrateLedSpec } from '../lib/ledSpec.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, normaliseHandle, projectHeights,
   resolveUnitDesign, setCarcassTypeCount, withFrontColour, withRunMaterial,
@@ -796,7 +802,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ...cached.project,
       room: migrateRoom(cached.project.room),
       design: migrateDesign(cached.project.design),
-      wallSlopes: wallSlopes(cached.project.wallSlopes),
+      wallSlopes: wallElements(cached.project.wallSlopes),
+      ledSpec: migrateLedSpec(cached.project.ledSpec),
     }
     : {
       id: null, name: 'Untitled project', number: '', client: '',
@@ -804,6 +811,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // Turn 44 (CLAUDE.md F1): the wall elevation's slopes, beside the room
       // rather than inside it — `setWallSlopes` says why.
       wallSlopes: [],
+      // T45 F9b: a new job's LED spec — flexi, 4 mm, no W/m typed yet.
+      ledSpec: migrateLedSpec(null),
       jc_tenant_id: null, jc_project_id: null,
     },
   units: migrateUnits(cached?.units),
@@ -893,27 +902,42 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // and `lib/wallElements.js` is the only module that knows the two lists are
   // stored apart. The day the engine reopens, `wallSlopes` moves into the room
   // beside `boxes` and nothing above this line changes.
+  // ─── TURN 45 (CLAUDE.md F1b): …AND THE LIST TAKES TWO MORE KINDS ─────────
+  //
+  // *"two NEW draggable elements — `Recess` and `Chimney` … Stored on the same
+  // wall model."* So this list is the WALL MODEL now, and `wallElements()`
+  // normalises all three kinds. The KEY keeps T44's name: a schema rename would
+  // strand every project saved between the two turns for the sake of a word,
+  // and the note above already says where the list is going when the engine
+  // reopens. The four setters below are named for what they take.
   setWallSlopes: (list) => set((s) => ({
-    project: { ...s.project, wallSlopes: wallSlopes(list) },
+    project: { ...s.project, wallSlopes: wallElements(list) },
   })),
 
   addWallSlope: (slope) => set((s) => {
-    const next = migrateSlope({ id: uid('slope'), ...slope });
+    const next = migrateWallElement({ id: uid(slope?.kind || 'slope'), ...slope });
     if (!next) return {};
-    return { project: { ...s.project, wallSlopes: [...wallSlopes(s.project.wallSlopes), next] } };
+    return { project: { ...s.project, wallSlopes: [...wallElements(s.project.wallSlopes), next] } };
   }),
 
   updateWallSlope: (id, patch) => set((s) => ({
     project: {
       ...s.project,
-      wallSlopes: wallSlopes(s.project.wallSlopes)
-        .map((v) => (v.id === id ? migrateSlope({ ...v, ...patch, id: v.id }) : v))
+      wallSlopes: wallElements(s.project.wallSlopes)
+        .map((v) => (v.id === id ? migrateWallElement({ ...v, ...patch, id: v.id }) : v))
         .filter(Boolean),
     },
   })),
 
   removeWallSlope: (id) => set((s) => ({
-    project: { ...s.project, wallSlopes: wallSlopes(s.project.wallSlopes).filter((v) => v.id !== id) },
+    project: { ...s.project, wallSlopes: wallElements(s.project.wallSlopes).filter((v) => v.id !== id) },
+  })),
+
+  // ─── TURN 45 (CLAUDE.md F9b/F9c): THE JOB'S LED SPEC ─────────────────────
+  // A PATCH setter, like every other on this store: the tab writes one field at
+  // a time and the normaliser answers for the rest.
+  setLedSpec: (patch) => set((s) => ({
+    project: { ...s.project, ledSpec: migrateLedSpec({ ...migrateLedSpec(s.project.ledSpec), ...patch }) },
   })),
 
   loadProject: (project, units) => {
@@ -938,7 +962,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // Turn 44 (CLAUDE.md F1): a saved job's slopes, normalised on the way
         // in exactly as its room and its design are. A project saved before
         // tonight has none and opens on a straight wall.
-        wallSlopes: wallSlopes(project?.wallSlopes),
+        wallSlopes: wallElements(project?.wallSlopes),
+        // …and its LED spec, normalised on the way in like everything else.
+        ledSpec: migrateLedSpec(project?.ledSpec),
       },
       units: migrateUnits(units),
       dirty: false,
@@ -989,6 +1015,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // A new job starts on a straight wall; F1's elevation is where a slope
       // is added, and it is the project's, not the last project's.
       wallSlopes: [],
+      ledSpec: migrateLedSpec(null),
       jc_tenant_id: null,
       jc_project_id: null,
     },

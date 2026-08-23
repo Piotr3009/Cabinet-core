@@ -6,7 +6,6 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import MockModeBadge from './MockModeBadge.jsx';
 // Turn 44 (CLAUDE.md iron rule 5): which head is reading — factory or retail.
-import AudienceToggle from './AudienceToggle.jsx';
 import MenuBar from './MenuBar.jsx';
 import { UNIT_CATEGORIES } from '../engine/types.js';
 // Turn 35 (CLAUDE.md F10): the View item reads the project's ONE lighting state.
@@ -375,11 +374,14 @@ export default function TopBar({
 
       <div className="flex-1" />
 
-      {/* ─── TURN 44 (CLAUDE.md iron rule 5): THE APP-LEVEL HEAD ────────────
-          In the header, on both screens a wizard opens from, default factory
-          and remembered. It filters ONE tree (lib/wizardTabs.js) and reaches
-          nothing else — no design field, no BOM line, no cut. */}
-      <AudienceToggle className="mr-1" />
+      {/* ─── TURN 45 (CLAUDE.md F2 / iron rule 4): THE TOGGLE DIED HERE ─────
+          T44 put a Factory/Retail switch in this bar. It is REMOVED by name:
+          the head is now WHICH DOOR the app was opened through — the workshop
+          app hardwires `factory`, the `/client` route hardwires `retail`
+          (lib/appEntry.js) — so there is nothing for a hand in this bar to
+          change, and no stray click that can show a client the CNC corner or
+          take the workshop's fields away from a joiner. The tree and its one
+          filter (lib/wizardTabs.js) are untouched. */}
 
       {/* ─── TURN 28 (CLAUDE.md F10): THE BRIGHTNESS, WHERE THE HAND IS ─────
           The View menu's slider gets a TWIN on the toolbar. Not a second

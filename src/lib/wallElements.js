@@ -28,9 +28,42 @@
 // Coordinates: millimetres, x along the wall from its start corner, y UP from
 // the floor. That is the elevation the drawings already publish
 // (`engine/drawings/wallElevation.js`) and the one a tape measure gives.
+//
+// ─── TURN 45 (CLAUDE.md F1): THE SAME LIST GROWS TWO MORE KINDS ─────────────
+//
+// *"Top = the wall seen from above: wall line, depth zone, and two NEW
+// draggable elements — `Recess` and `Chimney` (rectangles with width + depth,
+// double-click for numbers). Stored on the same wall model."*
+//
+// STORED ON THE SAME WALL MODEL is the clause that shapes this file. A recess
+// and a chimney are not slopes, but they are the same KIND of fact: a thing
+// this wall has, at a position along it, that a cabinet will one day have to be
+// clamped around. So the list T44 opened for slopes takes all three, keyed by
+// the same wall index, normalised by one function and read by one editor.
+//
+// The store key is still `project.wallSlopes`. That name is T44's and it is now
+// half a lie, but a schema rename would strand every project saved between the
+// two turns for the sake of a word — and T44's own note already says where this
+// list is going ("the day the engine reopens, it moves into the room beside
+// `boxes`"). It is renamed there, once, when it moves.
+//
+// A PLAN element is `{ id, kind, wall, x_mm, width, depth }`: x along the wall
+// exactly as an opening's is, and DEPTH out from the wall line — which is the
+// second axis the elevation does not have and the whole reason the top view
+// exists. The engine ignores both this turn: they are geometry for the eye, and
+// for the unit clamping a later turn will read them for.
 
 /** What a slope starts life as: the ceiling drops on the RIGHT, over a metre. */
 export const SLOPE_DEFAULTS = { side: 'R', startHeight: 1800, run: 900 };
+
+/** The three things a wall can carry, in this module's own vocabulary. */
+export const WALL_ELEMENT_KINDS = ['slope', 'recess', 'chimney'];
+
+/** The two the TOP view adds (T45 F1b), and what they start life as. */
+export const PLAN_KINDS = ['recess', 'chimney'];
+export const RECESS_DEFAULTS = { width: 900, depth: 300 };
+export const CHIMNEY_DEFAULTS = { width: 600, depth: 350 };
+export const PLAN_DEFAULTS = { recess: RECESS_DEFAULTS, chimney: CHIMNEY_DEFAULTS };
 
 /** How small an element may be made before the editor refuses to shrink it. */
 export const MIN_ELEMENT_MM = 50;
@@ -65,9 +98,84 @@ export function migrateSlope(raw) {
   };
 }
 
+/**
+ * A PLAN element — a recess or a chimney — from anything.
+ *
+ * A recess is a bite OUT of the wall (an alcove); a chimney is a lump standing
+ * PROUD of it. Both are a rectangle in plan: how wide, and how deep. The sign
+ * of the depth is not stored — the KIND says which way it goes, and a stored
+ * −300 would be a second way to say the same thing.
+ */
+export function migratePlanElement(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const kind = PLAN_KINDS.includes(raw.kind) ? raw.kind : null;
+  if (!kind) return null;
+  const wall = Math.trunc(num(raw.wall, 0));
+  if (!(wall >= 0)) return null;
+  const d = PLAN_DEFAULTS[kind];
+  return {
+    id: String(raw.id || newElementId(kind)),
+    kind,
+    wall,
+    x_mm: round4(Math.max(0, num(raw.x_mm, 0))),
+    width: round4(Math.max(MIN_ELEMENT_MM, num(raw.width, d.width))),
+    depth: round4(Math.max(MIN_ELEMENT_MM, num(raw.depth, d.depth))),
+  };
+}
+
+/** One stored wall element, whatever kind it is. */
+export function migrateWallElement(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (PLAN_KINDS.includes(raw.kind)) return migratePlanElement(raw);
+  // Anything else is read as a SLOPE, which is what the whole list was before
+  // this turn — so a project saved by T44, whose records carry no `kind` at
+  // all, opens with its slopes exactly where it left them.
+  return migrateSlope(raw);
+}
+
+/** Every stored wall element, normalised — the reader the store keeps. */
+export function wallElements(list) {
+  return (Array.isArray(list) ? list : []).map(migrateWallElement).filter(Boolean);
+}
+
 /** Every stored slope, normalised — the reader the store and the editor share. */
 export function wallSlopes(list) {
-  return (Array.isArray(list) ? list : []).map(migrateSlope).filter(Boolean);
+  return wallElements(list).filter((el) => el.kind === 'slope');
+}
+
+/** The plan elements of ONE wall, left to right. */
+export function planElementsOnWall(list, wallIndex) {
+  const index = Math.trunc(num(wallIndex, 0));
+  return wallElements(list)
+    .filter((el) => PLAN_KINDS.includes(el.kind) && el.wall === index)
+    .sort((a, b) => a.x_mm - b.x_mm);
+}
+
+/** A plan element pulled back into its wall — the same courtesy a window gets. */
+export function clampPlanElement(el, { wallWidth }) {
+  const p = migratePlanElement(el);
+  if (!p) return null;
+  const w = Math.max(0, num(wallWidth, 0));
+  const width = round4(Math.min(p.width, w || p.width));
+  return {
+    ...p,
+    width,
+    x_mm: round4(clamp(p.x_mm, 0, Math.max(0, (w || p.x_mm + width) - width))),
+  };
+}
+
+/**
+ * Move a plan element: along the wall, and in or out of it.
+ *
+ * @returns the patch for that element, never a whole list.
+ */
+export function movePlanElement(el, { dxMm = 0, ddMm = 0 }, { wallWidth }) {
+  const p = migratePlanElement(el);
+  if (!p) return {};
+  const w = Math.max(0, num(wallWidth, 0));
+  const x = clamp(p.x_mm + num(dxMm, 0), 0, Math.max(0, w - p.width));
+  const depth = Math.max(MIN_ELEMENT_MM, p.depth + num(ddMm, 0));
+  return { x_mm: round4(x), depth: round4(depth) };
 }
 
 /** The slopes of ONE wall, in a stable order. */
@@ -223,4 +331,87 @@ export function wallElevationIssues({ wallWidth, wallHeight }) {
   if (!(num(wallWidth, 0) > 0)) issues.push('The wall has no width.');
   if (!(num(wallHeight, 0) > 0)) issues.push('The wall has no height.');
   return issues;
+}
+
+// ─── F1a: THE DIMENSION CHAINS, EXACTLY AS HIS RED PEN (turn 45) ────────────
+//
+// *"Live dimension chains exactly as his red pen: top = wall width + the
+// slope's run segment; right edge = slope drop + the wall stub under it;
+// left = full height; bottom = width. They follow every drag live."*
+//
+// He drew them on a screenshot: four chains round the elevation, each broken
+// where the wall is broken. The TOP one is the interesting one — it is the wall
+// width, and then the slope's RUN called out separately, because the run is the
+// number a joiner needs and the one nothing on the screen was saying.
+//
+// The chains are arithmetic, so they are here rather than in the SVG. "They
+// follow every drag live" is then free: the editor re-renders from the store on
+// every pointer move, this function is called with the new numbers, and there is
+// no second copy of the geometry to forget to update.
+
+/** One measured segment of a chain, in elevation millimetres. */
+function seg(id, from, to, label = null) {
+  return {
+    id, from: round4(from), to: round4(to), mm: round4(Math.abs(to - from)), label,
+  };
+}
+
+/**
+ * The four chains, for a wall of this size carrying these slopes.
+ *
+ * @returns {{top:Array, right:Array, left:Array, bottom:Array}} each an array of
+ *   segments measured ALONG that edge — x for top and bottom, y for left and
+ *   right — so an SVG can draw them without knowing what any of them mean.
+ */
+export function elevationDimensionChains({
+  wallWidth = 0, wallHeight = 0, slopes = [], wallIndex = 0,
+} = {}) {
+  const w = Math.max(0, num(wallWidth, 0));
+  const h = Math.max(0, num(wallHeight, 0));
+  const list = slopesOnWall(slopes, wallIndex)
+    .map((sl) => clampSlope(sl, { wallWidth: w, wallHeight: h }))
+    .filter((sl) => sl && sl.run > 0);
+
+  // ── TOP: the wall width, and the slope's run called out under it ──
+  const top = [seg('top-width', 0, w, 'wall width')];
+  for (const sl of list) {
+    top.push(sl.side === 'L'
+      ? seg(`top-run-${sl.id}`, 0, sl.run, 'slope run')
+      : seg(`top-run-${sl.id}`, w - sl.run, w, 'slope run'));
+  }
+
+  // ── RIGHT: the slope's DROP, and the wall STUB standing under it ──
+  //
+  // Only a slope on THIS edge breaks it. A wall whose ceiling comes down on the
+  // left has a right edge that is simply its full height, and the chain says
+  // so with one segment rather than with two that add up to the same thing.
+  const onRight = list.find((sl) => sl.side === 'R') || null;
+  const right = onRight
+    ? [
+      seg(`right-drop-${onRight.id}`, onRight.startHeight, h, 'slope drop'),
+      seg(`right-stub-${onRight.id}`, 0, onRight.startHeight, 'wall under it'),
+    ]
+    : [seg('right-height', 0, h, 'height')];
+
+  // ── LEFT: the full height … unless the ceiling comes down on THIS side ──
+  const onLeft = list.find((sl) => sl.side === 'L') || null;
+  const left = onLeft
+    ? [
+      seg(`left-drop-${onLeft.id}`, onLeft.startHeight, h, 'slope drop'),
+      seg(`left-stub-${onLeft.id}`, 0, onLeft.startHeight, 'wall under it'),
+    ]
+    : [seg('left-height', 0, h, 'full height')];
+
+  // ── BOTTOM: the width, said again where a tape measure would lie ──
+  const bottom = [seg('bottom-width', 0, w, 'width')];
+
+  return {
+    top, right, left, bottom,
+  };
+}
+
+/** Every segment of every chain, flat — what a DOM audit counts. */
+export function allDimensionSegments(chains) {
+  const c = chains || {};
+  return [...(c.top || []), ...(c.right || []), ...(c.left || []), ...(c.bottom || [])];
 }

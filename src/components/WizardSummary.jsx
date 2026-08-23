@@ -273,7 +273,7 @@ export default function WizardSummary({
         node="summary.dimensions"
         audience={audience}
         title="The numbers it is cut at"
-        onChange={onChangeTab ? () => onChangeTab('ustawienia') : null}
+        onChange={onChangeTab ? () => onChangeTab('settings') : null}
         changeLabel="Back to the settings"
       >
         {projectDimensions(design, profile, heights)
@@ -316,7 +316,7 @@ export default function WizardSummary({
         node="summary.production"
         audience={audience}
         title="Production"
-        onChange={onChangeTab ? () => onChangeTab('produkcja') : null}
+        onChange={onChangeTab ? () => onChangeTab('production') : null}
         changeLabel="Back to production"
       >
         <Row label="Infill at the wall" value={`${design.infill.sideWidth} mm`} />

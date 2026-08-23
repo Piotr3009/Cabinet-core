@@ -110,7 +110,7 @@ test('F4 — the whole project in miniatures, with a Change per section', () => 
 
 test('F4 — the settings’ own summary sub-tab folded into it', () => {
   assert.equal(WIZARD_TABS.some((t) => t.id === 'podsumowanie'), false);
-  assert.equal(tabAfter('produkcja', 'factory'), null, 'the settings walk ends at Produkcja');
+  assert.equal(tabAfter('production', 'factory'), null, 'the settings walk ends at Produkcja');
   assert.doesNotMatch(WIZ, /tab === 'podsumowanie'/);
   // Its rows are step 6's, and still filtered by the same tree.
   assert.ok(WIZARD_NODES.some((n) => n.tab === 'summary'));

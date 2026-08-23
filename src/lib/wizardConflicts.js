@@ -79,7 +79,7 @@ export function crossTabConflicts({
     out.push({
       code: 'over-ceiling',
       field: 'tall',
-      tab: 'ustawienia',
+      tab: 'settings',
       // NAMING THE CULPRIT is the whole point of the sentence: the wardrobe is
       // 2200, the ROOM is 2100, and one of those two numbers is the one that
       // is wrong. The note says both, so the hand knows which it means to
@@ -96,7 +96,7 @@ export function crossTabConflicts({
     out.push({
       code: 'ceiling-question',
       field: 'tall',
-      tab: 'ustawienia',
+      tab: 'settings',
       message: `Only ${fit.gap} mm to the ceiling — answer the question below: to the ceiling, with no infill?`,
       // This one has NO culprit anywhere else: the answer is on this very
       // screen, three lines down. A jump button here would be a door to a room

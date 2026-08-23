@@ -51,7 +51,7 @@ test('F7 — a wardrobe taller than the room is a NAMED conflict, not a mood', (
   assert.equal(rest.length, 0, 'one problem, said once');
   assert.equal(c.code, 'over-ceiling');
   assert.equal(c.field, 'tall', 'the note belongs beside the height it is about');
-  assert.equal(c.tab, 'ustawienia');
+  assert.equal(c.tab, 'settings');
   // NAMING THE CULPRIT: both numbers, so the hand knows which one it means to
   // change before it has gone anywhere.
   assert.match(c.message, /2500 mm/, 'the wardrobe, stacked');
@@ -142,7 +142,7 @@ test('F7 — the helpers a surface asks: by field, by tab, and by whose turn it 
   const list = conflictsFor(design, 2100);
   assert.equal(conflictsAtField(list, 'tall').length, 1);
   assert.equal(conflictsAtField(list, 'depth').length, 0);
-  assert.equal(conflictsOnTab(list, 'ustawienia').length, 1);
+  assert.equal(conflictsOnTab(list, 'settings').length, 1);
   assert.equal(conflictsOnTab(list, 'fronts').length, 0);
   assert.equal(conflictsAtField(null, 'tall').length, 0);
 });
@@ -155,8 +155,8 @@ test('F7 — a tab is gated by its OWN answer and by nothing else', () => {
   assert.equal(tabIsBlocked('carcases', { carcassesSaved: true, frontsSaved: false }), false,
     'the fronts are not the carcasses’ business');
   // A conflict on 5.1 gates NO tab. That is the hostage-taking, named.
-  assert.equal(tabIsBlocked('ustawienia', {}), false);
-  assert.equal(tabIsBlocked('produkcja', {}), false);
+  assert.equal(tabIsBlocked('settings', {}), false);
+  assert.equal(tabIsBlocked('production', {}), false);
 });
 
 test('F7 — the flow’s Next no longer holds a joiner for another screen’s number', () => {

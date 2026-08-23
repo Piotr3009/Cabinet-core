@@ -58,12 +58,12 @@ test('F6 — the two colour questions stay for BOTH heads', () => {
 // ══ F7 ═════════════════════════════════════════════════════════════════════
 
 test('F7 — Produkcja is factory-only, all of it', () => {
-  assert.deepEqual(visibleNodes('produkcja', 'retail'), []);
-  assert.equal(visibleNodes('produkcja', 'factory').length, 3);
+  assert.deepEqual(visibleNodes('production', 'retail'), []);
+  assert.equal(visibleNodes('production', 'factory').length, 3);
 });
 
 test('F7 — `Infill at the wall` lives here (the owner’s own TBD, pt 5)', () => {
-  assert.match(WIZ, /data-wizard-node="produkcja\.infill"/);
+  assert.match(WIZ, /data-wizard-node="production\.infill"/);
   assert.match(WIZ, /data-infill-side-width="1"/);
   assert.match(WIZ, /data-settings-section="infill"/);
 });
@@ -84,7 +84,7 @@ test('F7 — the measurements are grouped PER MATERIAL, by name', () => {
   // …and the sheet size stands with the material it is for — which as of T45
   // F6 is the MATERIAL STEP, not this tab (iron rule 4, by name).
   assert.match(WIZ, /data-front-sheets-assignment="1"/);
-  assert.doesNotMatch(WIZ.slice(WIZ.indexOf("tab === 'produkcja'")), /<SheetSizeRow/);
+  assert.doesNotMatch(WIZ.slice(WIZ.indexOf("tab === 'production'")), /<SheetSizeRow/);
 });
 
 test('F7 — 2 carcass types → 2 carcass blocks, and the box gets its own', () => {

@@ -40,14 +40,25 @@ export function normaliseAudience(raw) {
 /**
  * The step-4 sequence, in the owner's own order and his own words:
  *
- *   1 Ustawienia → 2 Carcases → 3 Fronts → 4 Hardware → 5 Produkcja
+ *   5.1 Settings → 5.2 Carcases → 5.3 Fronts → 5.4 Hardware → 5.5 Production
+ *
+ * ─── TURN 45 (CLAUDE.md F8): THE NUMBERS, AND THE ENGLISH ───────────────────
+ *
+ * *"Sub-tabs numbered `5.1 … 5.6` in the strip."* They are sub-tabs OF STEP 5,
+ * and a strip that counted 1…6 beside a wizard whose own steps count 1…6 was
+ * two numberings for one walk: "I'm on 3" meant nothing without asking which 3.
+ *
+ * And the law we broke ourselves — *"UI copy is ENGLISH"* — which T44 broke in
+ * this very list: `Ustawienia`, `Produkcja`, `Podsumowanie`. The ids went
+ * English with the labels, because an id a reader has to translate is a
+ * comment that lies.
  *
  * T45 F4: the sixth stop — the settings' own summary — folded into the
  * WIZARD's step 6, which shows the whole project rather than one step of it.
  */
 export const WIZARD_TABS = [
   {
-    id: 'ustawienia', n: 1, label: 'Ustawienia', audience: 'both', hint: 'The job, its numbers and the set it starts from',
+    id: 'settings', n: 1, label: 'Settings', audience: 'both', hint: 'The job, its numbers and the set it starts from',
   },
   {
     id: 'carcases', n: 2, label: 'Carcases', audience: 'both', hint: 'How many carcass materials, and which',
@@ -59,7 +70,7 @@ export const WIZARD_TABS = [
     id: 'hardware', n: 4, label: 'Hardware', audience: 'both', hint: 'Hinges, runners, metals',
   },
   {
-    id: 'produkcja', n: 5, label: 'Produkcja', audience: 'factory', hint: 'The workshop’s own numbers — never the client’s',
+    id: 'production', n: 5, label: 'Production', audience: 'factory', hint: 'The workshop’s own numbers — never the client’s',
   },
 ];
 
@@ -89,11 +100,11 @@ export const WIZARD_TABS = [
  */
 export const WIZARD_NODES = [
   // ── 1 · Ustawienia — the read-only basics are the client's; the rest is not ──
-  { id: 'ustawienia.identity', tab: 'ustawienia', audience: 'both' },
-  { id: 'ustawienia.sets', tab: 'ustawienia', audience: 'factory' },
-  { id: 'ustawienia.dimensions', tab: 'ustawienia', audience: 'both' },
-  { id: 'ustawienia.kitchen-heights', tab: 'ustawienia', audience: 'both' },
-  { id: 'ustawienia.ceiling', tab: 'ustawienia', audience: 'both' },
+  { id: 'settings.identity', tab: 'settings', audience: 'both' },
+  { id: 'settings.sets', tab: 'settings', audience: 'factory' },
+  { id: 'settings.dimensions', tab: 'settings', audience: 'both' },
+  { id: 'settings.kitchen-heights', tab: 'settings', audience: 'both' },
+  { id: 'settings.ceiling', tab: 'settings', audience: 'both' },
 
   // ── 2 · Carcases — the picker is the client's, the board and the CNC are not ──
   { id: 'carcases.count', tab: 'carcases', audience: 'both' },
@@ -136,9 +147,9 @@ export const WIZARD_NODES = [
   { id: 'hardware.runners', tab: 'hardware', audience: 'factory' },
 
   // ── 5 · Produkcja — the whole tab is the workshop's ──
-  { id: 'produkcja.infill', tab: 'produkcja', audience: 'factory' },
-  { id: 'produkcja.per-material', tab: 'produkcja', audience: 'factory' },
-  { id: 'produkcja.box-gate', tab: 'produkcja', audience: 'factory' },
+  { id: 'production.infill', tab: 'production', audience: 'factory' },
+  { id: 'production.per-material', tab: 'production', audience: 'factory' },
+  { id: 'production.box-gate', tab: 'production', audience: 'factory' },
 
   // ─── TURN 45 (CLAUDE.md F4): STEP 6 — THE WIZARD'S OWN SUMMARY ───────────
   //
@@ -175,6 +186,21 @@ export function tabVisible(id, audience) {
   const who = normaliseAudience(audience);
   if (who === 'factory') return true;
   return (TAB_BY_ID.get(id)?.audience || 'factory') === 'both';
+}
+
+/**
+ * What a sub-tab is CALLED in the strip — `5.1`, `5.2`… (T45 F8).
+ *
+ * The prefix is a constant because these tabs ARE step 5: there is no world in
+ * which the settings sequence is step 4 and this says 5, since the wizard's own
+ * step list (`lib/wizardSteps.js`) puts `settings` fifth and would have to move
+ * for that to change. Stated once, read by the strip and by the tests.
+ */
+export const WIZARD_STEP_NO = 5;
+
+/** "5.3" — the number the strip prints and the DOM stamps. */
+export function tabNumber(n) {
+  return `${WIZARD_STEP_NO}.${n}`;
 }
 
 /** The tabs this head is shown, in order, renumbered so 1…N has no holes. */

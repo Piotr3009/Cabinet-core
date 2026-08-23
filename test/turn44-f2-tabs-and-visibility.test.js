@@ -37,31 +37,34 @@ const SUM = readFileSync(new URL('../src/components/WizardSummary.jsx', import.m
 test('the tabs are the owner’s, in his order and his words', () => {
   assert.deepEqual(
     WIZARD_TABS.map((t) => `${t.n} ${t.label}`),
-    ['1 Ustawienia', '2 Carcases', '3 Fronts', '4 Hardware', '5 Produkcja'],
+    // T45 F8: the English sweep, by name — `Ustawienia → Settings`,
+    // `Produkcja → Production` — and the numbers the strip prints are `5.N`,
+    // because these are sub-tabs OF STEP 5.
+    ['1 Settings', '2 Carcases', '3 Fronts', '4 Hardware', '5 Production'],
   );
 });
 
 test('Next advances, Back retreats, and the ends of the sequence are ends', () => {
-  assert.equal(firstTab('factory'), 'ustawienia');
-  assert.equal(tabAfter('ustawienia', 'factory'), 'carcases');
-  assert.equal(tabAfter('produkcja', 'factory'), null, 'T45 F4: the walk ends here and step 6 begins');
-  assert.equal(tabBefore('ustawienia', 'factory'), null);
-  assert.equal(tabBefore('carcases', 'factory'), 'ustawienia');
+  assert.equal(firstTab('factory'), 'settings');
+  assert.equal(tabAfter('settings', 'factory'), 'carcases');
+  assert.equal(tabAfter('production', 'factory'), null, 'T45 F4: the walk ends here and step 6 begins');
+  assert.equal(tabBefore('settings', 'factory'), null);
+  assert.equal(tabBefore('carcases', 'factory'), 'settings');
 });
 
 test('retail loses Produkcja and the rest RENUMBER — no hole where 5 was', () => {
   const retail = visibleTabs('retail');
-  assert.deepEqual(retail.map((t) => t.id), ['ustawienia', 'carcases', 'fronts', 'hardware']);
+  assert.deepEqual(retail.map((t) => t.id), ['settings', 'carcases', 'fronts', 'hardware']);
   assert.deepEqual(retail.map((t) => t.n), [1, 2, 3, 4]);
   assert.equal(tabAfter('hardware', 'retail'), null, 'the walk skips the tab that is not there');
   assert.equal(tabPosition('hardware', 'retail'), 3);
-  assert.equal(tabPosition('produkcja', 'retail'), -1);
+  assert.equal(tabPosition('production', 'retail'), -1);
 });
 
 test('factory sees them all', () => {
   assert.equal(visibleTabs('factory').length, WIZARD_TABS.length);
-  assert.equal(tabVisible('produkcja', 'factory'), true);
-  assert.equal(tabVisible('produkcja', 'retail'), false);
+  assert.equal(tabVisible('production', 'factory'), true);
+  assert.equal(tabVisible('production', 'retail'), false);
 });
 
 // ── the filter ──
@@ -83,6 +86,7 @@ test('a node nobody classified is FACTORY — the safe direction', () => {
 
 test('RETAIL SEES exactly the clauses of iron rule 5 — and nothing else', () => {
   // "Retail sees: Ustawienia (read-only basics), material/colour pickers,
+  //  — T45 F8 renamed that tab `Settings`, in English, by name —
   //  drawer choice, front type + opening + shine, hardware COLOUR only,
   //  summary."
   const seen = WIZARD_NODES.filter((n) => nodeVisible(n.id, 'retail')).map((n) => n.id).sort();
@@ -97,14 +101,14 @@ test('RETAIL SEES exactly the clauses of iron rule 5 — and nothing else', () =
     'fronts.picker',
     'fronts.shine',
     'hardware.colour',
+    'settings.ceiling',
+    'settings.dimensions',
+    'settings.identity',
+    'settings.kitchen-heights',
     'summary.decors',
     'summary.dimensions',
     'summary.hardware',
     'summary.project',
-    'ustawienia.ceiling',
-    'ustawienia.dimensions',
-    'ustawienia.identity',
-    'ustawienia.kitchen-heights',
   ]);
 });
 
@@ -115,8 +119,8 @@ test('every workshop node is hidden from retail, by name', () => {
     'carcases.thickness-note', 'fronts.shaker-frame', 'fronts.door-styles', 'fronts.run-materials',
     'hardware.choices', 'hardware.hinge-standard', 'hardware.hinge-plate-pilot',
     'hardware.shelf-sleeve', 'hardware.runners',
-    'produkcja.infill', 'produkcja.per-material', 'produkcja.box-gate',
-    'summary.production', 'summary.save-set', 'ustawienia.sets',
+    'production.infill', 'production.per-material', 'production.box-gate',
+    'summary.production', 'summary.save-set', 'settings.sets',
   ]) {
     assert.ok(hidden.includes(id), `${id} must not reach a client`);
   }

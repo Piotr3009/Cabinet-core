@@ -70,7 +70,7 @@ test('F6 — the surface draws it FULL-SIZE, as the block’s title', () => {
 // ══ the removal, and where the row went ════════════════════════════════════
 
 test('F6 — the sheet-size picker is REMOVED from Production', () => {
-  const production = WIZ.slice(WIZ.indexOf("tab === 'produkcja'"));
+  const production = WIZ.slice(WIZ.indexOf("tab === 'production'"));
   assert.doesNotMatch(production, /<SheetSizeRow/, 'not one sheet row left in Production');
   assert.doesNotMatch(WIZ, /b\.sheet/, 'and the field the blocks carried for it went too');
 });
@@ -98,5 +98,5 @@ test('F6 — the measured fields and the infill are untouched', () => {
   assert.match(WIZ, /data-slot-nominal=\{b\.row\.id\}/);
   assert.match(WIZ, /data-slot-thickness-gate="1"/, 'the recut gate still asks first');
   assert.match(WIZ, /data-infill-side-width="1"/);
-  assert.match(WIZ, /data-wizard-node="produkcja\.infill"/);
+  assert.match(WIZ, /data-wizard-node="production\.infill"/);
 });

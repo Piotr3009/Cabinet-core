@@ -43,8 +43,8 @@ import { shakerFrameMm } from '../engine/shaker.js';
 // are DATA in lib/wizardTabs.js. Nothing about who-sees-what is decided in
 // this file: it asks `show(id)` and draws or does not draw.
 import {
-  WIZARD_TABS, dimensionAsked, firstTab, nodeVisible, tabAfter, tabBefore, tabPosition,
-  visibleTabs,
+  WIZARD_TABS, dimensionAsked, firstTab, nodeVisible, tabAfter, tabBefore, tabNumber,
+  tabPosition, visibleTabs,
 } from '../lib/wizardTabs.js';
 // T44 F5: the four openings, and the fields they already write.
 import { FRONT_OPENINGS, frontOpening, frontOpeningPatch } from '../lib/frontOpening.js';
@@ -906,7 +906,7 @@ export default function WizardSettings({
                 title={t.hint}
                 data-wizard-tab={t.id}
                 data-tab-state={state}
-                data-tab-number={t.n}
+                data-tab-number={tabNumber(t.n)}
                 disabled={state === 'ahead'}
                 className={`px-2 py-1 rounded border transition-colors ${state === 'current'
                   ? 'border-gold text-gold bg-shell-700'
@@ -915,7 +915,7 @@ export default function WizardSettings({
                     : 'border-shell-700 text-ink-400 cursor-default')}`}
                 onClick={() => goTab(t.id)}
               >
-                {t.n}. {t.label}
+                {tabNumber(t.n)} {t.label}
               </button>
               {i < tabs.length - 1 && <span className="text-ink-400">›</span>}
             </li>
@@ -930,10 +930,10 @@ export default function WizardSettings({
       </ol>
 
       <div className="space-y-3" data-wizard-tab-body={tab}>
-      {tab === 'ustawienia' && (
+      {tab === 'settings' && (
         <>
-          {show('ustawienia.identity') && (
-            <div data-wizard-node="ustawienia.identity">
+          {show('settings.identity') && (
+            <div data-wizard-node="settings.identity">
                   {/* ─── TURN 45 (CLAUDE.md F2 / iron rule 4): TWO FIELDS GO ──────
                       *"Number + Client: REMOVED from 5.1 (step 1 owns them). Type
                       stays, read-only."*
@@ -1004,8 +1004,8 @@ export default function WizardSettings({
                   </div>
             </div>
           )}
-          {show('ustawienia.sets') && (
-            <div data-wizard-node="ustawienia.sets" data-wizard-sets="1" data-settings-sets="1">
+          {show('settings.sets') && (
+            <div data-wizard-node="settings.sets" data-wizard-sets="1" data-settings-sets="1">
               <SectionLabel>Saved settings set</SectionLabel>
               {/* ─── T44 F3: A DROPDOWN, AND ITS DEFAULT HAS A NAME ─────────
                   *"dropdown fed from `cc_settings_sets` (F8), default `Default
@@ -1056,8 +1056,8 @@ export default function WizardSettings({
               </p>
             </div>
           )}
-          {show('ustawienia.dimensions') && (
-            <div data-wizard-node="ustawienia.dimensions">
+          {show('settings.dimensions') && (
+            <div data-wizard-node="settings.dimensions">
                   {/* ── 3 · Dimensions, per project type ── */}
                   <div data-wizard-dimensions="1">
                     <div className="cc-row">
@@ -1129,7 +1129,7 @@ export default function WizardSettings({
                           <div
                   className="border border-gold/60 bg-gold/5 rounded px-2 py-1.5 space-y-1"
                   data-ceiling-question="1"
-                  data-wizard-node="ustawienia.ceiling"
+                  data-wizard-node="settings.ceiling"
                 >
                             <p className="text-[11px] text-gold">
                               Only {fit.gap} mm to the ceiling. To the ceiling, with no infill?
@@ -1209,7 +1209,7 @@ export default function WizardSettings({
                         <div
               className="grid grid-cols-6 gap-2 mt-1.5"
               data-more-dimensions="1"
-              data-wizard-node="ustawienia.kitchen-heights"
+              data-wizard-node="settings.kitchen-heights"
             >
                           {rest.map((d) => (
                             <label key={d.key} className="block">
@@ -1290,7 +1290,7 @@ export default function WizardSettings({
 
           {carcAt === 'count' && show('carcases.count') && (
             <div data-wizard-node="carcases.count" className="space-y-2">
-              <p className="text-sm text-ink-100">Ile typów materiału carcase?</p>
+              <p className="text-sm text-ink-100">How many carcass material types?</p>
                       <div className="cc-row">
                         <span className="text-[11px] text-ink-200">Carcass types</span>
                         {[1, 2, 3].map((n) => (
@@ -1521,7 +1521,7 @@ export default function WizardSettings({
 
           {frontAt === 'count' && show('fronts.count') && (
             <div data-wizard-node="fronts.count" className="space-y-2">
-              <p className="text-sm text-ink-100">Ile kolorów frontów?</p>
+              <p className="text-sm text-ink-100">How many front colours?</p>
                       <div className="cc-row" data-wizard-fronts="1">
                         <span className="text-[11px] text-ink-200">How many front types in this project?</span>
                         {[1, 2, 3].map((n) => (
@@ -2123,10 +2123,10 @@ export default function WizardSettings({
         </>
       )}
 
-      {tab === 'produkcja' && (
+      {tab === 'production' && (
         <>
-          {show('produkcja.infill') && (
-            <div data-wizard-node="produkcja.infill">
+          {show('production.infill') && (
+            <div data-wizard-node="production.infill">
                     {/* ══ 9 · INFILL AT THE WALL — the filler between a unit and the wall ══ */}
                     <section className="space-y-2" data-settings-section="infill">
                       <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Infill at the wall</span>
@@ -2143,8 +2143,8 @@ export default function WizardSettings({
                     </section>
             </div>
           )}
-          {show('produkcja.per-material') && (
-            <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="produkcja.per-material" data-settings-section="thickness">
+          {show('production.per-material') && (
+            <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="production.per-material" data-settings-section="thickness">
               <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">
                 Measurements, per material
               </span>
@@ -2235,8 +2235,8 @@ export default function WizardSettings({
               )}
             </section>
           )}
-          {show('produkcja.box-gate') && (
-            <div data-wizard-node="produkcja.box-gate" className="space-y-1">
+          {show('production.box-gate') && (
+            <div data-wizard-node="production.box-gate" className="space-y-1">
               {boxGate.blocked && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded border border-status-warn text-status-warn" data-box-gate="1">
                   no drawers yet

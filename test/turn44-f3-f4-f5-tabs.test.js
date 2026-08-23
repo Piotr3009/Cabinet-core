@@ -160,7 +160,11 @@ test('F4 — the tab ends with a summary of the chosen types', () => {
 // ══ F5 ═════════════════════════════════════════════════════════════════════
 
 test('F5 — the same procedure, asked in the owner’s words', () => {
-  assert.match(WIZ, /Ile kolorów frontów\?/);
+  // T45 F8, by name: `Ile kolorów frontów? → How many front colours?`. The
+  // owner's own words survive in the comment above the block, which is where
+  // the evidence belongs; the SCREEN speaks English.
+  assert.match(WIZ, /How many front colours\?/);
+  assert.doesNotMatch(WIZ, /<p className="text-sm text-ink-100">Ile /);
   assert.match(WIZ, /data-front-count=\{n\}/);
   assert.match(WIZ, /data-front-dots="1"/);
   assert.match(WIZ, /data-front-submodal=\{frontTypeAt\.id\}/);

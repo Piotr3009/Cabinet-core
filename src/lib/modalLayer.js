@@ -144,6 +144,11 @@ export const MODAL_KINDS = Object.freeze({
   // about an object — the shape that was double-clicked — so it opens beside
   // it and the guard holds it to that.
   'wall-element': { about: 'object', label: 'Wall element' },
+  // ─── TURN 44 (CLAUDE.md F8) ────────────────────────────────────────────
+  // "Zapisać te ustawienia jako Twój standard?" — the finale, asked once, at
+  // the end of the step-4 sequence. About the PROJECT's settings as a whole,
+  // and opened beside the button that asks it.
+  'save-settings-set': { about: 'project', label: 'Save these settings as a set' },
 });
 
 /** Every modal name the app knows, as a list. */

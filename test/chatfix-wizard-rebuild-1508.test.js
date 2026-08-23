@@ -61,8 +61,16 @@ test('the chosen list returns, with the mini swatches', () => {
   assert.match(ws, /loadDecorCatalogue/, 'swatch hexes come from the real catalogue');
 });
 test('spray is the colour LISTS — the picker the sources already name', () => {
+  // ─── TURN 44 (CLAUDE.md F4): AND NOW IT IS A LIST AND ONLY A LIST ────────
+  // The owner said it twice — "bez cholernych kafelek", and again on 23.08:
+  // *"Spray: dropdown list, NO tiles"*. The path is the same one the sources
+  // have always named; what it renders moved into MaterialChoicePanel, where
+  // there is no swatch-grid branch at all.
   assert.match(ws, /data-spray-picker=/);
-  assert.match(ws, /<ColourPicker\s+value=\{current\}/, 'the picker takes value=, not an invented prop');
+  const panel = readFileSync(new URL('../src/components/MaterialChoicePanel.jsx', import.meta.url), 'utf8');
+  assert.match(panel, /data-spray-list="1"/);
+  assert.match(panel, /data-spray-select="1"/);
+  assert.match(panel, /COLOUR_SYSTEMS/, 'the same RAL / F&B lists ColourPicker reads');
 });
 
 // ── the flow's gate and the footer's order ──

@@ -43,21 +43,23 @@ test('the stock-board select is ONE thing, lifted out of the decor branch', () =
 });
 
 test('the colour path and the veneer path both render it — the two holes closed', () => {
-  // The colour branch (Spraying — the DEFAULT front source).
-  const colour = SRC.slice(SRC.indexOf("if (picker === 'colour')"), SRC.indexOf("if (picker === 'veneer'"));
-  assert.match(colour, /data-spray-picker/, 'still the ColourPicker…');
-  assert.match(colour, /\{stockBoardSelect\(kind, t\)\}/, '…and now the board under it');
-
-  // The carcass veneer branch.
-  const veneer = SRC.slice(SRC.indexOf("if (picker === 'veneer'"), SRC.indexOf('// decor grid'));
-  assert.match(veneer, /<VeneerPicker/);
-  assert.match(veneer, /\{stockBoardSelect\(kind, t\)\}/);
-
-  // And the decor grid keeps it — three paths, three renders, one helper.
-  const decor = SRC.slice(SRC.indexOf('// decor grid'));
-  assert.match(decor.slice(0, decor.indexOf('const sourceSeg')), /\{stockBoardSelect\(kind, t\)\}/);
-  assert.equal((SRC.match(/\{stockBoardSelect\(kind, t\)\}/g) || []).length, 3,
-    'every picker kind renders the same select');
+  // ─── TURN 44 (CLAUDE.md F4): THE SAME LAW, ONE LEVEL UP ──────────────────
+  // T34's fix was "one select, lifted OUT of the decor branch, rendered on
+  // every path". T44 rebuilt the picker as a full-width panel and the select
+  // went up with it: `slotPicker` hands `MaterialChoicePanel` a `boardSelect`
+  // once, outside every branch, so there is no path it can be missing from —
+  // which is a stronger version of the same guarantee, not a weaker one.
+  const at = SRC.indexOf('const slotPicker = ');
+  assert.notEqual(at, -1);
+  const body = SRC.slice(at, SRC.indexOf('\n  const sourceSeg', at));
+  assert.equal(body.split('boardSelect=').length - 1, 1, 'ONE board select, outside the branches');
+  assert.match(body, /stockBoardSelect\(kind, t\)/);
+  // …and it is not behind a picker test: the only thing that can withhold it
+  // is the retail head, which may not see a stock board at all (iron rule 5).
+  assert.doesNotMatch(body, /picker === 'colour'[\s\S]{0,200}boardSelect/);
+  assert.match(SRC, /data-spray-picker=/, 'the spray path is still addressable');
+  const panel = readFileSync(new URL('../src/components/MaterialChoicePanel.jsx', import.meta.url), 'utf8');
+  assert.match(panel, /\{boardSelect\}/, 'the panel renders it whatever the category');
 });
 
 test('the Save buttons are still wired to the missing lists', () => {

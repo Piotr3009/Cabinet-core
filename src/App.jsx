@@ -12,6 +12,7 @@ import { onStorageBase } from './lib/storageBase.js';
 import { loadHardwareCatalogues } from './lib/hardwareCatalogue.js';
 import { refreshHardwareCatalogues } from './lib/hardwareHealth.js';
 import { loadHardwareRegister } from './lib/hardwareRegister.js';
+import { useSettingsSetsStore } from './stores/settingsSetsStore.js';
 
 // ─── THE KNOWLEDGE FILES (turn 19, CLAUDE.md F0.3) ──────────────────────────
 //
@@ -72,6 +73,14 @@ export default function App() {
   // table leaves an empty cache, every lookup answers null, and the BOM's
   // yellow named-spec lines do the honest talking.
   useEffect(() => { loadHardwareRegister(); }, []);
+
+  // ─── THE SAVED SETTINGS SETS (turn 44, CLAUDE.md F8) ────────────────────
+  // `cc_settings_sets`, asked once and never awaited. Mock mode, no session or
+  // a database that has not had `supabase/migrations/t44_settings_sets.sql` run
+  // against it are the same quiet answer: the store keeps `source: 'local'`,
+  // the local shelf it has used since turn 7 is the list, and the wizard says
+  // so in an amber line. Nothing here can throw and nothing here can block.
+  useEffect(() => { useSettingsSetsStore.getState().syncFromDb(); }, []);
 
   // ─── THE OTHER DOOR OUT (turn 31, CLAUDE.md F2) ─────────────────────────
   //

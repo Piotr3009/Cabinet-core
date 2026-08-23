@@ -14,6 +14,7 @@ import { migrateDesign, projectHeights } from '../engine/design.js';
 import { wizardStartBlockers } from '../engine/projectSettings.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { WIZARD_STEPS, backStep, stepsInScope } from '../lib/wizardSteps.js';
+import { T44_DEFAULTS } from '../lib/wizardTabs.js';
 
 // ─── New project (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
 //
@@ -43,6 +44,9 @@ import { WIZARD_STEPS, backStep, stepsInScope } from '../lib/wizardSteps.js';
 // can ask them without importing a `.jsx`.
 const STEPS = WIZARD_STEPS;
 
+/** Which project types open on T44's wardrobe seed (CLAUDE.md F3). */
+const isWardrobeSeed = (id) => id === 'wardrobe';
+
 export default function NewProjectFlow({
   initialNumber = '', onCancel, onStart, anchor = null,
 }) {
@@ -53,6 +57,8 @@ export default function NewProjectFlow({
   const storedDesign = useProjectStore((s) => s.project.design);
   const profile = useCabinetProfileStore((s) => s.profile);
   const notify = useUiStore((s) => s.notify);
+  // T44 iron rule 5: the app-level head, read once and passed down.
+  const audience = useUiStore((s) => s.audience);
 
   const [step, setStep] = useState('info');
   const [info, setInfo] = useState({ number: initialNumber, name: '', client: '' });
@@ -99,6 +105,20 @@ export default function NewProjectFlow({
     // placed after an edit in Design Settings would.
     setDesign({ projectType: type.id });
     setProjectHeights(heightsForProjectType(type.id, profile));
+    // ─── TURN 44 (CLAUDE.md F3): THE WARDROBE'S OWN TWO NUMBERS ────────────
+    //
+    // *"Dimensions: default height 2100, plinth 100 … depth 568."* The depth
+    // is already the profile's (T32 F1.3, and the spec keeps it: *"depth
+    // default stays 568"*); the height is not, and the plinth agrees.
+    //
+    // It is applied HERE, through the same setter, and NOT by editing the
+    // profile: iron rule 2 freezes `src/engine/**` byte-for-byte tonight, and
+    // a workshop default that moved would recut every wardrobe the six
+    // standard configs answer for. This is the SEED a new job starts on — one
+    // project's number, editable on tab 1, exactly like every other height.
+    if (isWardrobeSeed(type.id)) {
+      setProjectHeights({ tall: T44_DEFAULTS.height, toeKick: T44_DEFAULTS.plinth });
+    }
     if (!scopeTouched) setScope(type.scope);
     setStep('scope');
   };
@@ -127,11 +147,18 @@ export default function NewProjectFlow({
     setSetName(info.name.trim() || `${type.label} standard`);
   };
 
-  const keepAndStart = () => {
+  const keepAndStart = async () => {
     const name = setName.trim();
     if (name) {
-      const { replaced } = saveSet(name, design);
-      notify(replaced ? `Settings set "${name}" replaced.` : `Settings set "${name}" saved.`, 'ok');
+      // T44 F8: the shelf is written synchronously inside `save`; what is
+      // awaited is only the table's answer, and it decides the WORDS rather
+      // than whether the set exists.
+      const { replaced, source } = await saveSet(name, design);
+      notify(
+        `${replaced ? `Settings set "${name}" replaced` : `Settings set "${name}" saved`}`
+        + `${source === 'db' ? ' to your account.' : ' on this computer.'}`,
+        source === 'db' ? 'ok' : 'warn',
+      );
     }
     onStart();
   };
@@ -436,7 +463,9 @@ export default function NewProjectFlow({
                 and this project keeps them to itself.
               </p>
             )}
-            <WizardHardware />
+            {/* T44 F6: the same component tab 4 renders, told the same head.
+                Two doors, one number — the wizard's last look before Start. */}
+            <WizardHardware audience={audience} />
           </>
         )}
       </div>

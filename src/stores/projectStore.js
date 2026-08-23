@@ -37,6 +37,10 @@ import {
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
 } from '../engine/room.js';
+// Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
+// in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
+// byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
+import { migrateSlope, wallSlopes } from '../lib/wallElements.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, normaliseHandle, projectHeights,
   resolveUnitDesign, setCarcassTypeCount, withFrontColour, withRunMaterial,
@@ -788,10 +792,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // A cached project may predate room v2 — migrate on the way in, so an old
   // tab that reloads gets four walls instead of a crash.
   project: cached?.project
-    ? { ...cached.project, room: migrateRoom(cached.project.room), design: migrateDesign(cached.project.design) }
+    ? {
+      ...cached.project,
+      room: migrateRoom(cached.project.room),
+      design: migrateDesign(cached.project.design),
+      wallSlopes: wallSlopes(cached.project.wallSlopes),
+    }
     : {
       id: null, name: 'Untitled project', number: '', client: '',
       room: DEFAULT_ROOM, design: migrateDesign(null),
+      // Turn 44 (CLAUDE.md F1): the wall elevation's slopes, beside the room
+      // rather than inside it — `setWallSlopes` says why.
+      wallSlopes: [],
       jc_tenant_id: null, jc_project_id: null,
     },
   units: migrateUnits(cached?.units),
@@ -864,6 +876,46 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     },
   })),
 
+  // ─── TURN 44 (CLAUDE.md F1): THE SLOPE ──────────────────────────────────
+  //
+  // *"Add door · Add window · Add slope … Store them on the wall model the
+  // Room path already uses — ONE wall schema, no twin."*
+  //
+  // Doors and windows ARE that model: they are `room.openings`, written by the
+  // three setters directly above this one, and F1's elevation editor moves
+  // exactly those records. A slope is the one element the room has never
+  // carried — and iron rule 2 closes `src/engine/**` byte-for-byte tonight, so
+  // `migrateRoom`, which is an exhaustive whitelist, would silently drop a
+  // `room.slopes` key on the way through.
+  //
+  // So it rides the PROJECT, keyed by the SAME wall index the openings use.
+  // That is not a twin wall model: there is one wall, one index and one editor,
+  // and `lib/wallElements.js` is the only module that knows the two lists are
+  // stored apart. The day the engine reopens, `wallSlopes` moves into the room
+  // beside `boxes` and nothing above this line changes.
+  setWallSlopes: (list) => set((s) => ({
+    project: { ...s.project, wallSlopes: wallSlopes(list) },
+  })),
+
+  addWallSlope: (slope) => set((s) => {
+    const next = migrateSlope({ id: uid('slope'), ...slope });
+    if (!next) return {};
+    return { project: { ...s.project, wallSlopes: [...wallSlopes(s.project.wallSlopes), next] } };
+  }),
+
+  updateWallSlope: (id, patch) => set((s) => ({
+    project: {
+      ...s.project,
+      wallSlopes: wallSlopes(s.project.wallSlopes)
+        .map((v) => (v.id === id ? migrateSlope({ ...v, ...patch, id: v.id }) : v))
+        .filter(Boolean),
+    },
+  })),
+
+  removeWallSlope: (id) => set((s) => ({
+    project: { ...s.project, wallSlopes: wallSlopes(s.project.wallSlopes).filter((v) => v.id !== id) },
+  })),
+
   loadProject: (project, units) => {
     // ─── TURN 34 (CLAUDE.md F7): THE SHAKER FRAME A SAVED JOB WAS CUT TO ────
     // "zmienimy default z 70 na 60" — for NEW projects. A job already on the
@@ -883,6 +935,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...project,
         room: migrateRoom(project?.room),
         design: pin ? { ...migrated, ...pin } : migrated,
+        // Turn 44 (CLAUDE.md F1): a saved job's slopes, normalised on the way
+        // in exactly as its room and its design are. A project saved before
+        // tonight has none and opens on a straight wall.
+        wallSlopes: wallSlopes(project?.wallSlopes),
       },
       units: migrateUnits(units),
       dirty: false,
@@ -930,6 +986,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // untouched — so a project made today is byte-for-byte the project turn
       // 21 made.
       design: migrateDesign(prefillDesignFromCompany(design, company, getCabinetProfile())),
+      // A new job starts on a straight wall; F1's elevation is where a slope
+      // is added, and it is the project's, not the last project's.
+      wallSlopes: [],
       jc_tenant_id: null,
       jc_project_id: null,
     },

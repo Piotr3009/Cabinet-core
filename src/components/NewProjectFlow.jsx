@@ -154,6 +154,28 @@ export default function NewProjectFlow({
     tab: null, visited: [], carcStop: 'count', frontStop: 'count',
   });
 
+  // ─── TURN 45 (CLAUDE.md F7): THE DETOUR, AND THE WAY BACK ────────────────
+  //
+  // *"A cross-tab conflict … + a one-click jump to it (Wall/Room). Fixing it
+  // returns the user STRAIGHT to where they were (Summary included)."*
+  //
+  // The owner's *"musiałem wszystko od nowa przechodzić — to jest chore"* was
+  // this exactly: the fix was two steps back and going back meant walking
+  // forward again. A DETOUR remembers the step it left from; the room and the
+  // wall editors return to it instead of to their own defaults, and because the
+  // walk is held here (F4) the tab, the visited strip and both submodal
+  // positions are still standing when he lands.
+  const [detour, setDetour] = useState(null);   // { back: 'settings' | 'summary' }
+  const jumpTo = (culprit) => {
+    setDetour({ back: step });
+    setStep(culprit === 'wall' ? 'wall' : 'room');
+  };
+  /** Where a room/wall editor goes when it is done. */
+  const leaveEditor = (fallback) => {
+    if (detour) { const { back } = detour; setDetour(null); setStep(back); return; }
+    setStep(fallback);
+  };
+
   const index = STEPS.indexOf(step);
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
 
@@ -171,15 +193,14 @@ export default function NewProjectFlow({
   const { blockers } = useMemo(() => wizardStartBlockers({
     design, heights: projectHeights(design, profile), roomHeight, profile, assignments: assignmentData,
   }), [design, profile, roomHeight, assignmentData]);
-  const blocked = step === 'settings' && blockers.length > 0;
 
   // The room step IS the room editor, shown in place.
   if (step === 'room') {
     return (
       <RoomModal
         anchor={anchor}
-        onClose={() => setStep('scope')}
-        onApplied={() => setStep('settings')}
+        onClose={() => leaveEditor('scope')}
+        onApplied={() => leaveEditor('settings')}
       />
     );
   }
@@ -193,8 +214,8 @@ export default function NewProjectFlow({
       <WallElevationModal
         anchor={anchor}
         wallIndex={0}
-        onBack={() => setStep('scope')}
-        onSave={() => setStep('settings')}
+        onBack={() => leaveEditor('scope')}
+        onSave={() => leaveEditor('settings')}
       />
     );
   }
@@ -225,16 +246,25 @@ export default function NewProjectFlow({
               {scope === 'room' ? 'Next — room setup' : 'Next — the wall'}
             </button>
           )}
+            {/* ─── TURN 45 (CLAUDE.md F7): NEXT VALIDATES ONLY THE CURRENT TAB ─
+                T44 disabled this button whenever ANY blocker stood — including
+                a wardrobe-versus-room conflict answered on tab 5.1 — and said
+                so in a tooltip. That is the hostage: a joiner who had finished
+                the fronts could not go and look at the summary because of a
+                number on another screen, and nothing on the screen told him
+                where to go. What gates this button now is the two container
+                SAVES, which are the tabs' own answer. The conflict is stated
+                AT ITS FIELD with a door beside it, and `Start designing` — the
+                one button that commits — still refuses a job that cannot be
+                built, with the same note and the same door on the summary. */}
           {step === 'settings' && (
             <button
               type="button"
               className="cc-btn-gold"
-              disabled={blocked || !gates.carcasses || !gates.fronts}
-              title={blocked
-                ? blockers.map((b) => b.message).join('\n')
-                : (!gates.carcasses || !gates.fronts
-                  ? 'Save the carcasses and the fronts to continue'
-                  : undefined)}
+              disabled={!gates.carcasses || !gates.fronts}
+              title={!gates.carcasses || !gates.fronts
+                ? 'Save the carcasses and the fronts to continue'
+                : undefined}
               // The hook keeps its T44 name: it is still the button that leaves
               // step 5, and a walk written against either turn finds it.
               data-next-hardware="1"
@@ -423,6 +453,7 @@ export default function NewProjectFlow({
             onGate={(carcasses, fronts) => setGates({ carcasses, fronts })}
             walk={walk}
             onWalk={setWalk}
+            onJump={jumpTo}
           />
         )}
 
@@ -442,6 +473,8 @@ export default function NewProjectFlow({
               setStep('settings');
             }}
             onChangeStep={(stepId) => setStep(stepId)}
+            onJump={jumpTo}
+            blockers={blockers}
           />
         )}
       </div>

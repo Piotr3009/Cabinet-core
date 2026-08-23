@@ -53,6 +53,9 @@ import MaterialChoicePanel from './MaterialChoicePanel.jsx';
 // T45 F5: the one rule that decides whether push-to-open is available, and the
 // one line that says why it is not.
 import { pushToOpenLock } from '../lib/pushToOpen.js';
+// T45 F7: what is wrong, which field it belongs beside, and which screen holds
+// the culprit. A reader — it writes nothing and disables nothing.
+import { conflictsAtField, crossTabConflicts } from '../lib/wizardConflicts.js';
 
 // ─── TURN 32 (CLAUDE.md F1), RE-SHAPED 15.08.2026 EVENING — THE MOCKUP ──────
 //
@@ -145,7 +148,7 @@ function ChosenRow({ who, hex, thumb, text }) {
 }
 
 export default function WizardSettings({
-  onRoomSetup, onGate, door = 'wizard', walk = null, onWalk = null, onChangeStep = null,
+  onRoomSetup, onGate, door = 'wizard', walk = null, onWalk = null, onJump = null,
 }) {
   // ─── TURN 36 (CLAUDE.md F1): TWO DOORS, ONE FORM ──────────────────────────
   //
@@ -378,6 +381,42 @@ export default function WizardSettings({
 
   const stack = wardrobeStack(heights);
   const fit = wardrobe ? ceilingFit({ total: stack.total, roomHeight, profile }) : { gap: null, state: 'ok' };
+  // ─── TURN 45 (CLAUDE.md F7): THE CONFLICTS, AND THE DOOR TO EACH ──────────
+  //
+  // *"A cross-tab conflict (wardrobe taller than the room) = a red note AT THE
+  // FIELD naming the culprit + a one-click jump to it (Wall/Room)."*
+  const conflicts = useMemo(
+    () => crossTabConflicts({
+      design, heights, roomHeight, profile,
+    }),
+    [design, heights, roomHeight, profile],
+  );
+  /** The note that belongs beside one dimension field, with its jump. */
+  const ConflictNote = ({ field }) => {
+    const list = conflictsAtField(conflicts, field);
+    if (!list.length) return null;
+    return list.map((c) => (
+      <div
+        key={c.code}
+        className="cc-row rounded border border-status-danger/60 bg-status-danger/10 px-2 py-1.5 mt-1"
+        data-conflict={c.code}
+        data-conflict-field={c.field}
+      >
+        <span className="text-[11px] text-status-danger flex-1">{c.message}</span>
+        {c.culprit && onJump && (
+          <button
+            type="button"
+            className="cc-btn px-2 shrink-0"
+            data-conflict-jump={c.culprit}
+            title={`Open ${c.culpritLabel} — you come straight back here`}
+            onClick={() => onJump(c.culprit)}
+          >
+            {c.jumpLabel}
+          </button>
+        )}
+      </div>
+    ));
+  };
 
   // T44 F3/F8: a set may live on this computer or on the account, so the load
   // asks both — `applyTo` (the local shelf, unchanged) is still here and is
@@ -1075,12 +1114,17 @@ export default function WizardSettings({
                         <p className="text-[11px] text-ink-200" data-total-line="1">
                           total item = wardrobe + legs = <span className="text-gold">{stack.total} mm</span>
                         </p>
-                        {fit.state === 'over' && (
-                          <p className="text-[11px] text-status-danger border border-status-danger/60 bg-status-danger/10 rounded px-2 py-1" data-ceiling-error="1">
-                            Total item {stack.total} mm is {Math.abs(fit.gap)} mm taller than the {roomHeight} mm room — lower
-                            the wardrobe or the plinth to continue.
-                          </p>
-                        )}
+                        {/* ─── T45 F7: THE RED NOTE, AT THE FIELD, WITH THE DOOR ──
+                            T44 said this in a tooltip on a disabled button two
+                            screens away and named nothing that could be acted
+                            on. It stands under the height it is about now, it
+                            NAMES the other number (the room's, or the wall's),
+                            and the button beside it opens that screen — and
+                            brings the user straight back here, with the tab, the
+                            strip and every answer where he left them. */}
+                        <div data-ceiling-error={fit.state === 'over' ? '1' : undefined}>
+                          <ConflictNote field="tall" />
+                        </div>
                         {fit.state === 'question' && (
                           <div
                   className="border border-gold/60 bg-gold/5 rounded px-2 py-1.5 space-y-1"

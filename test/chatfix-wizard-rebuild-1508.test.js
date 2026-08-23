@@ -78,8 +78,13 @@ test('spray is the colour LISTS — the picker the sources already name', () => 
 });
 
 // ── the flow's gate and the footer's order ──
-test('the step-5 Next waits for BOTH saves', () => {
-  assert.match(flow, /disabled=\{blocked \|\| !gates\.carcasses \|\| !gates\.fronts\}/);
+test('the step-5 Next waits for BOTH saves — and for nothing else', () => {
+  // T45 F7: *"Next validates ONLY the current tab."* The mockup's own gate —
+  // both containers saved — is untouched; what left is T44's `blocked`, which
+  // held a joiner on step 5 for a number answered on another screen and said
+  // so in a tooltip. That conflict is stated at its field now, with a door
+  // beside it, and `Start designing` still refuses a job that cannot be built.
+  assert.match(flow, /disabled=\{!gates\.carcasses \|\| !gates\.fronts\}/);
 });
 test('the footer is ONE button now, and it starts AT ONCE', () => {
   // ─── TURN 45 (CLAUDE.md F4 / iron rule 4) ────────────────────────────────

@@ -16,6 +16,7 @@ import { loadDecorCatalogue } from '../lib/decorCatalogue.js';
 import { chosenTile } from '../lib/chosenDecor.js';
 import { frontOpening, frontOpeningLabel } from '../lib/frontOpening.js';
 import { pushToOpenLock, pushToOpenOn } from '../lib/pushToOpen.js';
+import { crossTabConflicts } from '../lib/wizardConflicts.js';
 import { dimensionAsked, nodeVisible } from '../lib/wizardTabs.js';
 import ChosenDecorTile from './ChosenDecorTile.jsx';
 import SaveSettingsSetModal from './SaveSettingsSetModal.jsx';
@@ -96,7 +97,7 @@ function Row({ label, value }) {
  *                one ending stays one ending
  */
 export default function WizardSummary({
-  onChangeTab = null, onChangeStep = null, extra = null,
+  onChangeTab = null, onChangeStep = null, onJump = null, blockers = [], extra = null,
 }) {
   const project = useProjectStore((s) => s.project);
   const storedDesign = useProjectStore((s) => s.project.design);
@@ -152,6 +153,15 @@ export default function WizardSummary({
   // T45 F5: the summary says what the BOM will order, and says WHY when the
   // handles took the choice away. One sentence, from the one rule.
   const ptoLock = pushToOpenLock(design);
+  // ─── TURN 45 (CLAUDE.md F7): "…(Summary included)" ───────────────────────
+  //
+  // *"Fixing it returns the user STRAIGHT to where they were (Summary
+  // included)."* So the summary carries the same notes, with the same jumps,
+  // read off the same reader — and coming back from one lands here rather than
+  // at the top of the walk.
+  const conflicts = crossTabConflicts({
+    design, heights, roomHeight: Number(project.room?.height) || 0, profile,
+  });
 
   return (
     <div className="space-y-3" data-wizard-summary="1" data-summary="1" data-summary-audience={audience}>
@@ -159,6 +169,64 @@ export default function WizardSummary({
         The whole job, in miniatures. Every section goes back to the screen that asked it — and comes
         straight back here with every answer intact.
       </p>
+
+      {/* ─── T45 F7: WHAT STILL STANDS BETWEEN HERE AND THE CANVAS ─────────
+          `Start designing` is the one button that commits, so it is the one
+          that still refuses a job that cannot be built — but it refuses it OUT
+          LOUD, here, beside a door to the fix, rather than in a tooltip on a
+          grey button. A materials blocker is answered on the carcases and
+          fronts tabs; a ceiling one is answered by the notes under it. */}
+      {blockers.filter((b) => b.code === 'materials').map((b) => (
+        <div
+          key={b.code}
+          className="cc-row rounded border border-status-danger/60 bg-status-danger/10 px-2 py-1.5"
+          data-blocker={b.code}
+        >
+          <span className="text-[11px] text-status-danger flex-1">{b.message}</span>
+          {onChangeTab && (
+            <button
+              type="button"
+              className="cc-btn px-2 shrink-0"
+              data-blocker-goto="carcases"
+              onClick={() => onChangeTab('carcases')}
+            >
+              Take me to it…
+            </button>
+          )}
+        </div>
+      ))}
+
+      {conflicts.map((c) => (
+        <div
+          key={c.code}
+          className="cc-row rounded border border-status-danger/60 bg-status-danger/10 px-2 py-1.5"
+          data-conflict={c.code}
+          data-conflict-field={c.field}
+        >
+          <span className="text-[11px] text-status-danger flex-1">{c.message}</span>
+          {c.culprit && onJump && (
+            <button
+              type="button"
+              className="cc-btn px-2 shrink-0"
+              data-conflict-jump={c.culprit}
+              title={`Open ${c.culpritLabel} — you come straight back to this summary`}
+              onClick={() => onJump(c.culprit)}
+            >
+              {c.jumpLabel}
+            </button>
+          )}
+          {!c.culprit && onChangeTab && (
+            <button
+              type="button"
+              className="cc-btn px-2 shrink-0"
+              data-conflict-goto={c.tab}
+              onClick={() => onChangeTab(c.tab)}
+            >
+              Take me to it…
+            </button>
+          )}
+        </div>
+      ))}
 
       <Section
         node="summary.project"

@@ -48,6 +48,9 @@ import {
 import { FRONT_OPENINGS, frontOpening, frontOpeningPatch } from '../lib/frontOpening.js';
 // T44 F4: the picker that stops fighting you — full width, in the sequence.
 import MaterialChoicePanel from './MaterialChoicePanel.jsx';
+// T45 F5: the one rule that decides whether push-to-open is available, and the
+// one line that says why it is not.
+import { pushToOpenLock } from '../lib/pushToOpen.js';
 
 // ─── TURN 32 (CLAUDE.md F1), RE-SHAPED 15.08.2026 EVENING — THE MOCKUP ──────
 //
@@ -703,6 +706,10 @@ export default function WizardSettings({
   // The ref remembers the shape a J-handle replaced, so turning the J off puts
   // the door back to the shape somebody chose rather than to a guess.
   const opening = frontOpening(design);
+  // T45 F5: any handles chosen → push-to-open is OFF and LOCKED. Read here so
+  // the runner-variant row below cannot quietly put a TIP-ON under a handle by
+  // the back door — the same rule, the same sentence, wherever it is asked.
+  const ptoLock = pushToOpenLock(design);
   const lastStyle = useRef(design.fronts.style);
   useEffect(() => {
     if (design.fronts.style && design.fronts.style !== 'HJ') lastStyle.current = design.fronts.style;
@@ -1989,20 +1996,32 @@ export default function WizardSettings({
                           </span>
                         </div>
                         <div className="flex gap-1">
-                          {profile.hardware.runner.movento.variants.map((v) => (
-                            <button
-                              key={v.id}
-                              type="button"
-                              data-runner-variant-option={v.id}
-                              aria-pressed={projectRunnerVariant === v.id}
-                              title={v.hint}
-                              className={`cc-btn px-2 ${projectRunnerVariant === v.id ? 'border-gold text-gold' : ''}`}
-                              onClick={() => setRunnerVariant(v.id)}
-                            >
-                              {v.id}
-                            </button>
-                          ))}
+                          {profile.hardware.runner.movento.variants.map((v) => {
+                            // T45 F5: TIP-ON is what push-to-open IS, so a
+                            // handled job may not be given it here either.
+                            const barred = ptoLock.locked && v.id.toUpperCase() === 'T';
+                            return (
+                              <button
+                                key={v.id}
+                                type="button"
+                                data-runner-variant-option={v.id}
+                                aria-pressed={projectRunnerVariant === v.id}
+                                disabled={barred}
+                                title={barred ? ptoLock.reason : v.hint}
+                                className={`cc-btn px-2 ${projectRunnerVariant === v.id ? 'border-gold text-gold' : ''} ${
+                                  barred ? 'opacity-45 cursor-not-allowed' : ''}`}
+                                onClick={() => setRunnerVariant(v.id)}
+                              >
+                                {v.id}
+                              </button>
+                            );
+                          })}
                         </div>
+                        {ptoLock.locked && (
+                          <p className="text-[10px] text-status-warn w-full" data-runner-lock-reason="1">
+                            {ptoLock.reason}
+                          </p>
+                        )}
                       </div>
                       <p className="text-[11px] text-ink-400">
                         Every one of these is fitted by the automat and counted in the BOM. You pick the variant; it

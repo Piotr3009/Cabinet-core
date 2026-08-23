@@ -6,6 +6,7 @@ import { migrateDesign, projectHeights } from '../engine/design.js';
 import { hardwareVariant, projectFrontThickness } from '../engine/projectSettings.js';
 import { hingeAutomat } from '../engine/hinges.js';
 import { registerLookup } from '../lib/hardwareRegister.js';
+import { pushToOpenLock, pushToOpenPatch } from '../lib/pushToOpen.js';
 
 // ─── TURN 32 (CLAUDE.md F2), RE-SHAPED 15.08.2026 EVENING ───────────────────
 //
@@ -57,6 +58,10 @@ export default function WizardHardware({ audience = 'factory' }) {
   const runnerVariant = (design.runners.variant
     || profile.hardware.runner?.movento?.defaultVariant || 'T').toUpperCase();
   const pushToOpen = runnerVariant === 'T';
+  // T45 F5: whether the handles have taken this choice away, and the one line
+  // that says why. The rule is `lib/pushToOpen.js` — one sentence, two surfaces
+  // (this control and the wizard's summary).
+  const lock = pushToOpenLock(design);
 
   const automat = useMemo(() => hingeAutomat({
     frontThickness: projectFrontThickness(design, profile, materials),
@@ -142,28 +147,47 @@ export default function WizardHardware({ audience = 'factory' }) {
       </div>
       )}
 
-      {/* ── push-to-open: the runner variant the design already carries ── */}
+      {/* ─── TURN 45 (CLAUDE.md F5): PUSH-TO-OPEN OBEYS THE HANDLES ─────────
+          *"Any handles chosen (J-pull / bar / knobs / any hands) → push-to-open
+          is forced OFF and LOCKED, with a one-line reason under it. Handleless →
+          available as before. The BOM follows the lock."*
+
+          The lock is not a second flag to be kept in step with the first: the
+          opening buttons WRITE the runner variant (`lib/frontOpening.js`, and
+          the rule is `lib/pushToOpen.js`), so by the time this control is drawn
+          the field already says soft-close and the BOM already reads it. What
+          this block adds is the honesty — the buttons are dead, they LOOK dead,
+          and the reason is under them in one line rather than in a tooltip
+          nobody hovers. */}
       {!retail && (
       <div>
         <span className="block text-[10px] uppercase tracking-wide text-ink-400 mb-1">Push-to-open</span>
-        <div className="flex gap-2" data-push-to-open="1">
+        <div className="flex gap-2" data-push-to-open="1" data-push-locked={lock.locked ? '1' : '0'}>
           {[['T', 'On'], ['S', 'Off']].map(([id, label]) => (
             <button
               key={id}
               type="button"
-              className={`cc-btn px-3 ${runnerVariant === id ? 'border-gold text-gold' : ''}`}
+              disabled={lock.locked}
+              aria-pressed={runnerVariant === id}
+              title={lock.locked ? lock.reason : undefined}
+              className={`cc-btn px-3 ${runnerVariant === id ? 'border-gold text-gold' : ''} ${
+                lock.locked ? 'opacity-45 cursor-not-allowed' : ''}`}
               data-push-option={id}
-              onClick={() => setDesign({ runners: { ...design.runners, variant: id } })}
+              onClick={() => setDesign(pushToOpenPatch(design, id === 'T'))}
             >
               {label}
             </button>
           ))}
         </div>
-        <p className="text-[10px] text-ink-400 mt-1">
-          Drawers on MOVENTO TIP-ON{pushToOpen && softClose
-            ? ' — with soft-close on, the BOM orders the TIP-ON BLUMOTION family'
-            : ''}.
-        </p>
+        {lock.locked ? (
+          <p className="text-[10px] text-status-warn mt-1" data-push-lock-reason="1">{lock.reason}</p>
+        ) : (
+          <p className="text-[10px] text-ink-400 mt-1">
+            Drawers on MOVENTO TIP-ON{pushToOpen && softClose
+              ? ' — with soft-close on, the BOM orders the TIP-ON BLUMOTION family'
+              : ''}.
+          </p>
+        )}
       </div>
       )}
 

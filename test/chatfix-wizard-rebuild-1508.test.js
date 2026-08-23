@@ -106,7 +106,14 @@ test('internal metal: Silver / Gold — the rail may be brass, the cup may not',
   assert.match(wh, /INTERNAL_METALS = \[\['chrome', 'Silver'\], \['gold', 'Gold'\]\]/);
 });
 test('push-to-open is the runner variant the design already carries', () => {
+  // ─── TURN 45 (CLAUDE.md F5) ──────────────────────────────────────────────
+  // Still the same field and still no new one. What changed is that the WRITE
+  // goes through the rule — *"any handles chosen → push-to-open is forced OFF
+  // and LOCKED"* — so a handled job cannot be given TIP-ON from this control
+  // any more than from the workshop's runner-variant row.
   assert.match(wh, /data-push-to-open="1"/);
-  assert.match(wh, /setDesign\(\{ runners: \{ \.\.\.design\.runners, variant: id \} \}\)/);
+  assert.match(wh, /setDesign\(pushToOpenPatch\(design, id === 'T'\)\)/);
+  const PTO = readFileSync(new URL('../src/lib/pushToOpen.js', import.meta.url), 'utf8');
+  assert.match(PTO, /runners: \{ \.\.\.\(design\?\.runners \|\| \{\}\), variant \}/);
   assert.match(wh, /TIP-ON/);
 });

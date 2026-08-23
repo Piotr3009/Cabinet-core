@@ -15,6 +15,7 @@ import { formatMm } from '../engine/format.js';
 import { loadDecorCatalogue } from '../lib/decorCatalogue.js';
 import { chosenTile } from '../lib/chosenDecor.js';
 import { frontOpening, frontOpeningLabel } from '../lib/frontOpening.js';
+import { pushToOpenLock, pushToOpenOn } from '../lib/pushToOpen.js';
 import { dimensionAsked, nodeVisible } from '../lib/wizardTabs.js';
 import ChosenDecorTile from './ChosenDecorTile.jsx';
 import SaveSettingsSetModal from './SaveSettingsSetModal.jsx';
@@ -148,6 +149,9 @@ export default function WizardSummary({
   const internal = design.hardware.shelfSleeve || profile.appearance.metalDefault;
   const hingeFinish = design.hinges.finish || profile.hardware.hinge?.defaultFinish || 'nickel';
   const runnerVariant = resolveRunnerVariant({ design, profile });
+  // T45 F5: the summary says what the BOM will order, and says WHY when the
+  // handles took the choice away. One sentence, from the one rule.
+  const ptoLock = pushToOpenLock(design);
 
   return (
     <div className="space-y-3" data-wizard-summary="1" data-summary="1" data-summary-audience={audience}>
@@ -230,6 +234,13 @@ export default function WizardSummary({
         )}
         {nodeVisible('hardware.runners', audience) && (
           <Row label="Runner variant" value={`MOVENTO ${runnerVariant}`} />
+        )}
+        <Row
+          label="Push-to-open"
+          value={pushToOpenOn(design, profile) ? 'On' : `Off${ptoLock.locked ? ' · locked' : ''}`}
+        />
+        {ptoLock.locked && (
+          <p className="text-[11px] text-status-warn" data-summary-push-lock="1">{ptoLock.reason}</p>
         )}
       </Section>
 

@@ -1,181 +1,180 @@
-# CLAUDE.md — TURN 44 · THE WIZARD GROWS UP: ONE WALL FIRST, AND PROJECT SETTINGS BECOMES A GUIDED SEQUENCE
+# CLAUDE.md — TURN 45 · THE WIZARD LEARNS MANNERS: T44'S ELEVEN EYE-TEST VERDICTS
 
-Dictated by the owner, 23.08.2026, with screenshots: the current settings
-step is *"do dupy — za małe, chaotyczne, wszystko naraz"*, the Egger
-window is *"okno w oknie, przesuwamy, nic nie widać, gubimy się"*. This
-turn rebuilds step 3 (Scope) and step 4 (Project settings) of the New
-project wizard into a guided, tabbed sequence. **Wardrobes are the
-subject; kitchen-only fields appear only for Kitchen.**
+The owner walked T44 screen by screen, 23.08.2026, screenshots marked in
+red. Eleven verdicts. His two loudest: the picker — *"okno w oknie,
+roll w dół, wkurw na maxa"* — and the validation that took him hostage:
+*"musiałem wszystko od nowa przechodzić — to jest chore."* And the law
+we broke ourselves: UI copy is ENGLISH; T44 shipped "Ustawienia /
+Produkcja / Podsumowanie / Zapisać te ustawienia…". He laughed at us.
+Rightly.
 
 ## Iron rules (binding)
 
-1. **Zero-stop overnight.** PR before morning. Sacrifice order, first to
-   fall first: F8 (save-set DB round-trip may fall back to
-   local-only with a named skip), F6, F5-shine. **F1, F2, F3, F4 never
-   fall.**
-2. **BYTE-IDENTITY** — this is a UI/store turn. `computeCabinet()` and
-   `src/engine/**` are untouched, byte for byte. `t44-classify` (T43's,
-   re-headed): six IDENTICAL, UNNAMED=0.
-3. **Sanctity.** No function deleted. `SettingsPanel.jsx` leaves the
-   does-not-touch list for the FIRST time since T41 — restructure is
-   licensed, deletion is not: every existing field survives, relocated.
-   Named removals only: the `Keep as…` control (relocated to F8's final
-   modal) and `Room setup…` button (belongs to Scope/Room step). Both
-   listed in the PR body.
-4. **Every modal**: draggable, opens BESIDE the trigger, never over it.
-   Tabs across the top of the step-4 sequence — the user can return to
-   any completed tab at any time; Next validates only the current tab.
-5. **Visibility engine (the reason for submodals):** every tab, submodal
-   and field carries `audience: 'factory' | 'both'`. App-level mode
-   (header toggle, default `factory`, persisted) filters the tree.
-   Retail sees: Ustawienia (read-only basics), material/colour pickers,
-   drawer choice, front type + opening + shine, hardware COLOUR only,
-   summary. Factory sees everything. One tree, one filter — never two
-   parallel wizards.
-6. **No new dependencies. Suite never --silent. One commit per feature.
-   Proofs `verify/t44/`** — a probe drives the wizard end-to-end with
-   real pointer input, screenshots every tab and submodal.
-7. **SQL PRZED push** — F8 ships `supabase/migrations/t44_settings_sets.sql`:
-   `cc_settings_sets(id uuid pk default gen_random_uuid(), name text not
-   null, payload jsonb not null, created_at timestamptz default now())`,
-   RLS enabled, owner-only policies matching the other `cc_*` tables.
-   The app degrades gracefully without it (local list + amber note).
-
-## Owner-overridable defaults baked into this spec
-
-The owner approved the plan with five details open; these defaults are
-LAW for the night unless his push edits them here: (1) depth default
-stays **568**; (2) factory/retail = app-level header toggle;
-(3) veneer picks from a LIST like spray (no tile assets exist);
-(4) opening options are exactly `push-to-open / handles / knobs /
-J-handle` — no separate "pull"; (5) `Infill at the wall` lives in
-Produkcja (his own TBD, revisit later).
+1. **Zero-stop overnight.** PR before morning. Sacrifice, first to
+   fall: F9-CNC (the groove cutting), then F1b (top view), then F8
+   (copy sweep may ship partial with a named list). **F2, F3, F4, F5,
+   F6, F7 never fall.**
+2. **BYTE-IDENTITY.** Engine untouched EXCEPT F9-CNC, which is additive
+   and gated on LED lines existing — none of the six configs carries
+   one, so `t45-classify`: six IDENTICAL, UNNAMED=0. If a config moves,
+   F9-CNC cut wrong — stop it, note it.
+3. **LISP is law** (F9-CNC only): the LED groove is born in
+   `reference/lisp/` first, application follows. Paren balance 0/0 by
+   script. No other kit is touched.
+4. **Sanctity — named removals, nothing else dies:** the
+   Factory/Retail header toggle; Number+Client fields from tab 5.1;
+   the DUPLICATE CNC-corner block in Carcases (one stays); the
+   duplicate front-type tail in Fronts (the per-front gallery stays);
+   wizard step "6. Hardware" (its fields already live in tab 5.4); the
+   sheet-size picker inside Produkcja (chosen earlier, per material);
+   the "Save as set & start" button. Each listed in the PR body.
+5. **Modals: draggable, open beside.** Visited tabs are ALWAYS
+   clickable; state NEVER resets. UI copy: English, everywhere.
+6. **No new deps. Suite never --silent. One commit per feature. Probe
+   walks the wizard, screenshots under `verify/t45/`.**
 
 ---
 
-## F1 [CRITICAL] — Scope: One wall first, and the wall gets a face
+## F1 [CRITICAL] — the wall elevation gets dimensions, and a plan view
 
-- Step 3: **One wall is the FIRST card and the default focus**; Whole
-  room second. Copy unchanged.
-- Choosing One wall opens the **wall elevation modal** (front view):
-  fields width + height; the elevation redraws live.
-- Right-hand column of buttons (styled properly, not bare):
-  `Add door` · `Add window` · `Add slope`. Each drops an element on the
-  elevation; elements are draggable on the wall and editable
-  (double-click → its small modal: position + size; slope: side L/R +
-  start height + run). Store them on the wall model the Room path
-  already uses — ONE wall schema, no twin.
-- **Save (green)** → wizard continues to Project settings. Back returns
-  without losing the wall.
+- **F1a** Live dimension chains exactly as his red pen: top = wall
+  width + the slope's run segment; right edge = slope drop + the wall
+  stub under it; left = full height; bottom = width. They follow every
+  drag live.
+- **F1b** A `Front / Top` switch in the wall modal. Top = the wall seen
+  from above: wall line, depth zone, and two NEW draggable elements —
+  `Recess` and `Chimney` (rectangles with width + depth, double-click
+  for numbers). Stored on the same wall model. Engine ignores them this
+  turn — they are geometry for the eye and for future unit clamping.
 
-Tests: store round-trip of a wall with door+window+slope; probe
-screenshots `f1-one-wall-first.png`, `f1-wall-elevation-editor.png`.
+Proofs: `f1a-elevation-dimensions.png`, `f1b-top-view.png`.
 
-## F2 [CRITICAL] — the step-4 shell: tabs, sequence, visibility
+## F2 [CRITICAL] — settings 5.1 cleaned, and the toggle dies
 
-- Replace the single scroll with a tabbed sequence:
-  `1 Ustawienia → 2 Carcases → 3 Fronts → 4 Hardware → 5 Produkcja →
-  6 Podsumowanie`. Tabs stay clickable once visited; Next advances.
-- The visibility engine of iron rule 5 lives here: one declarative map
-  `{tabId, audience}` + per-field flags. Retail simply never renders
-  factory nodes — no disabled ghosts.
+- Number + Client: REMOVED from 5.1 (step 1 owns them). Type stays,
+  read-only.
+- The Factory/Retail toggle: REMOVED. One codebase, TWO entries: the
+  workshop app hardwires `factory`; a separate route `/client` (the
+  future retail site mounts it) hardwires `retail`. The audience tree
+  from T44 stays as the single filter.
 
-Tests: tab return keeps state; retail mode renders zero factory-flagged
-nodes (DOM assert). Proof `f2-tabs-and-retail.png` (both modes side by
-side).
+Proof: `f2-no-toggle-no-duplicates.png`.
 
-## F3 [CRITICAL] — tab 1 · Ustawienia
+## F3 [CRITICAL] — the decor picker becomes a modal, as mocked
 
-- Number + Client: read-only (chosen in step 1). Type read-only.
-- **Saved settings set**: dropdown fed from `cc_settings_sets` (F8),
-  default `Default settings`. `Keep as…` REMOVED from here (rule 3).
-  `Room setup…` REMOVED (rule 3).
-- Dimensions: default height **2100**, plinth **100** with label
-  `Plinth height (toe kick)`, depth **568**; the total line stays.
-  Ceiling/infill question stays as is.
-- Base unit height / Wall unit height / Wall mount height: rendered
-  **only when project type is Kitchen** — wardrobe never sees them.
+Approved mockup, 23.08:
+- The tab shows ONE slot: `Choose decor…`. Click → a SEPARATE modal
+  (backdrop, own single scrolling grid — **no scroll-in-scroll, no
+  window-over-window, ever**): search on top, a FAMILY filter bar
+  (Oak, Walnut, Ash… — Egger's own taxonomy, supplier-agnostic for the
+  future), large tiles. Click a tile = chosen + modal closes.
+- The tab then shows exactly ONE tile (swatch + code + name + ST) with
+  `Change`. The SAME single tile is what the Summary shows.
+- Spraying: picked from the list, but once picked it renders as the
+  SAME large tile (colour swatch + name) — one chosen-decor format
+  across laminate / veneer / spraying.
 
-Proof `f3-ustawienia-wardrobe-vs-kitchen.png`.
+Tests: DOM — after choice the tab contains one tile and zero grid;
+the modal contains the only scrollable region. Proofs:
+`f3-picker-modal.png`, `f3-chosen-tile.png`.
 
-## F4 [CRITICAL] — tab 2 · Carcases, and the picker that stops fighting you
+## F4 [HIGH] — the duplicates die, and step 6 becomes the real summary
 
-- Opening question: **"Ile typów materiału carcase?"** (1–3) → that many
-  submodals, sequential, each with its own tab-dot.
-- Submodal = the NEW material picker, full-width panel (no
-  window-in-window, nothing floating over the wizard):
-  - categories separated hard: `Laminat` | `Veneer` | `Spray`;
-  - Laminat: LARGE Egger tiles (min 96 px swatch, name in full-size
-    type), a search box that actually filters as you type, source =
-    the same `egger-decors.json` + thumbs the 3D uses;
-  - Veneer: dropdown list; Spray: dropdown list, NO tiles (owner's
-    explicit order — tiles here "zakłócają całość");
-  - end of submodal: drawers for this carcase type —
-    `Same as board` / `Ready-made system`; the choice writes the flag
-    BOM already understands (runner assignment pending).
-- After the last submodal: **Sheets assignment** (material → sheet), the
-  existing machinery relocated, `audience: 'factory'`.
-- Tab ends with a summary of the chosen types → Next.
+- Carcases: ONE CNC-corner block (the repeated joinery table goes).
+- Fronts: ONE front-type choice (the tail repeat goes).
+- Wizard step `6. Hardware` REMOVED → replaced by **`6. Summary`**:
+  the whole project in miniatures — chosen decor tiles, base
+  dimensions, hardware — `Change` per section, and ONE button:
+  `Start designing`. (`Save as set & start` is gone; the standard was
+  already offered at the settings finale.)
 
-Tests: N=2 produces two submodals and two BOM material rows; search
-filters; spray renders zero tiles. Proofs `f4-picker-large.png`,
-`f4-two-types-flow.png`.
+Proof: `f4-step6-summary.png`.
 
-## F5 [HIGH] — tab 3 · Fronts
+## F5 [HIGH] — push-to-open obeys the handles
 
-- Same procedure as F4: **"Ile kolorów frontów?"** → N submodals with
-  the same picker.
-- Tail of the tab: **front type** (existing options), **opening**:
-  `push-to-open / handles / knobs / J-handle`, and **shine** — and
-  shine must actually reach the 3D material (the existing gloss param;
-  if none exists, wire the material roughness — visibly).
+Any handles chosen (J-pull / bar / knobs / any hands) → push-to-open
+is forced OFF and LOCKED, with a one-line reason under it. Handleless →
+available as before. The BOM follows the lock.
 
-Proof `f5-fronts-and-shine.png` (matte vs shine, same decor).
+Test: toggling handles flips the lock both ways. Proof:
+`f5-push-to-open-locked.png`.
 
-## F6 [HIGH] — tab 4 · Hardware
+## F6 [HIGH] — Produkcja speaks the material's name out loud
 
-- All existing hardware choices, relocated; retail sees ONLY colour.
+- The assigned material name per block: FULL-SIZE text (it is the
+  information, not a footnote) — "Carcass 1 — MFC Halifax Oak 18 mm"
+  as the block's title line.
+- The sheet-size picker: REMOVED here (rule 4) — it lives at the
+  material step. Measured-thickness fields and infill: untouched,
+  the owner likes them.
 
-Proof `f6-hardware-factory-vs-retail.png`.
+Proof: `f6-produkcja-named.png`.
 
-## F7 [HIGH] — tab 5 · Produkcja (factory-only)
+## F7 [CRITICAL] — validation stops taking hostages
 
-- `Infill at the wall` (default here, rule "defaults" pt 5).
-- **Measurements + sheet sizes per chosen material**: exactly the
-  materials picked in F4/F5, listed by name — 2 types → 2 blocks. The
-  existing measurement fields, grouped per material instead of the
-  current pile.
+- A cross-tab conflict (wardrobe taller than the room) = a red note AT
+  THE FIELD naming the culprit + a one-click jump to it (Wall/Room).
+- Fixing it returns the user STRAIGHT to where they were (Summary
+  included). Every earlier choice survives — nothing resets, nothing
+  re-asks.
+- Next validates ONLY the current tab. Visited tabs stay clickable
+  through any error state.
 
-Proof `f7-produkcja-per-material.png`.
+Test: seed the conflict, fix the room, assert every prior field value
+intact and Summary reachable in one click. Proof:
+`f7-conflict-jump-and-return.png`.
 
-## F8 [HIGH] — tab 6 · Podsumowanie + the save-set finale
+## F8 [MEDIUM] — numbering and the English sweep
 
-- Summary of every choice, grouped by tab, retail-filtered.
-- **Final separate modal**: "Zapisać te ustawienia jako Twój standard?"
-  big Y/N + name field → INSERT into `cc_settings_sets` (payload = the
-  whole settings object). The list in F3 reads from the same table.
-  Without SQL applied: local fallback + amber note, named skip.
+- Sub-tabs numbered `5.1 … 5.6` in the strip.
+- Every Polish string shipped by T44 goes English, BY NAME:
+  `Ustawienia → Settings`, `Produkcja → Production`,
+  `Podsumowanie → Summary`, `Ile kolorów frontów? → How many front
+  colours?`, the save-set finale → `Save these as your standard?` —
+  and a grep for Polish diacritics in `src/components/` returns only
+  comments.
 
-Tests: save → reload → the set appears in F3's dropdown and re-applies
-byte-equal settings. Proof `f8-save-set-roundtrip.png`.
+Proof: `f8-english-everywhere.png`.
+
+## F9 [HIGH] — lighting grows up
+
+- **F9a** The Lighting menu is ALWAYS alive. ON/OFF is a PREVIEW
+  (room dim) only — at OFF you still place, see and edit LED lines on
+  carcasses.
+- **F9b** Settings gains sub-tab `5.6 Lighting` (Summary shifts to
+  5.7... no — the wizard summary is step 6; the SETTINGS strip becomes
+  `5.1–5.6` with Lighting as 5.6 and the settings summary folded into
+  wizard step 6 per F4): choice `LED flexi 4 mm` (a 4 mm groove) vs
+  `Channel` + channel width field (the router's slot width).
+- **F9c** Optional `W/m` field → the driver calculator: total W = W/m ×
+  metres of ALL placed lines (metres shown beside it). Drivers are
+  12 V; pick the set whose summed rating ≥ total, smallest unit 60 W.
+  Result lands in the BOM as `N × driver X W`.
+- **F9-CNC [falls first]** The groove under every placed line: born in
+  `reference/lisp/` (rule 3), then the app's CNC export cuts it —
+  width = 4 mm or the channel width, on the panel the line sits on.
+  Gated on lines existing; six configs untouched.
+
+Proofs: `f9-lighting-off-still-edits.png`, `f9-driver-calc.png`,
+`f9-cnc-groove.dxf` + screenshot.
 
 ---
 
 ## Execution order
 
-F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8. Probe woven through (one wizard
-walk, every screen shot).
+F2 → F3 → F4 → F5 → F6 → F7 → F8 → F1 → F9. Sacrifice: F9-CNC, then
+F1b, then F8-partial. **F2, F3, F4, F5, F6, F7 never fall.**
 
 ## What this turn does NOT touch
 
-`computeCabinet()` and all of `src/engine/**`. The drawings system. The
-rail. The runner channel. Golden fixtures. The six configs' bytes. The
-canvas/3D beyond F5's shine wiring.
+`computeCabinet()` beyond F9-CNC's gated additive read. The drawings
+system. The rail. Runners. `cc_settings_sets` schema. Golden fixtures.
+The six configs' bytes.
 
 ## Morning audit will run
 
-Fresh clone → suite → build → t44-classify (six IDENTICAL) → relocation
-audit: every pre-existing settings field found alive in its new tab,
-the two licensed removals and nothing else → retail-mode DOM audit →
-the wizard probe re-run, every screenshot LOOKED AT → verdict → the
-owner's numbered eye-test list.
+Fresh clone → suite → build → t45-classify (six IDENTICAL) → removal
+audit against rule 4's list, nothing outside → the Polish-diacritics
+grep → LISP diff limited to the LED groove + paren 0/0 → the wizard
+probe re-run, screenshots LOOKED AT → verdict → the owner's numbered
+eye-test list.

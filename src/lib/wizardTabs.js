@@ -117,6 +117,10 @@ export const WIZARD_NODES = [
   // shape is still the project's shape.
   { id: 'fronts.opening', tab: 'fronts', audience: 'both' },
   { id: 'fronts.shine', tab: 'fronts', audience: 'both' },
+  // T45 F6: the fronts' sheet size, relocated out of Production (iron rule 4)
+  // to the step that already asks which board this is. A workshop fact, like
+  // the carcasses' own `carcases.sheets`.
+  { id: 'fronts.sheets', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.shaker-frame', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.door-styles', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.run-materials', tab: 'fronts', audience: 'factory' },

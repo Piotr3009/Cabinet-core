@@ -15,6 +15,8 @@ import {
 } from '../engine/projectSettings.js';
 import { RUN_MATERIAL_GROUPS, runMaterialSetting } from '../engine/materials.js';
 import { drawerBoxGate, thicknessSlotRows } from '../engine/thickness.js';
+// T45 F6: the block's title line, composed once so a test can ask it.
+import { blockNeedsBoard, productionBlockTitle } from '../lib/productionNames.js';
 import { hingePlatePilotD, hingeStandard } from '../engine/cabinet.js';
 import { hingeReResolve } from '../engine/hinges.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
@@ -691,12 +693,23 @@ export default function WizardSettings({
     return carcassTypes.find((t) => t.id === stop)?.label || 'Material';
   };
 
-  const frontStops = ['count', ...frontTypes.map((t) => t.id), 'tail'];
+  // T45 F6: the fronts get their own SHEETS stop, mirroring the carcasses'.
+  // The sheet-size picker is removed from Production by name (iron rule 4) and
+  // *"lives at the material step"* — the carcasses' has stood at theirs since
+  // T44, and this is the fronts'. Nothing was taken away; a row moved to the
+  // screen that already asks which board this is.
+  const frontStops = [
+    'count',
+    ...frontTypes.map((t) => t.id),
+    ...(show('fronts.sheets') ? ['sheets'] : []),
+    'tail',
+  ];
   const frontAt = frontStops.includes(frontStop) ? frontStop : 'count';
   const frontTypeAt = frontTypes.find((t) => t.id === frontAt) || null;
   const frontSubmodalNo = frontTypeAt ? frontTypes.indexOf(frontTypeAt) + 1 : 0;
   const frontStopLabel = (stop) => {
     if (stop === 'count') return 'How many colours';
+    if (stop === 'sheets') return 'Sheets assignment';
     if (stop === 'tail') return 'Shape, opening and shine';
     return frontTypes.find((t) => t.id === stop)?.label || 'Colour';
   };
@@ -724,43 +737,51 @@ export default function WizardSettings({
   // picked in F4/F5, listed by name — 2 types → 2 blocks."* The rows are the
   // SAME rows (`thicknessSlotRows`) and the same setters; what changed is that
   // they stand under the material they measure instead of in one pile of six.
+  // ─── TURN 45 (CLAUDE.md F6): PRODUCTION SPEAKS THE NAME OUT LOUD ─────────
+  //
+  // *"The assigned material name per block: FULL-SIZE text (it is the
+  // information, not a footnote) — 'Carcass 1 — MFC Halifax Oak 18 mm' as the
+  // block's title line."*
+  //
+  // T44 grouped the measured thicknesses by the material they measure, which
+  // was right, and then set the material's NAME in 10 px grey at the far right
+  // of the row. A joiner at a caliper reading "Carcass 1" has to remember which
+  // board carcass 1 is; the title is the information, so the title says it.
+  //
+  // *"The sheet-size picker: REMOVED here (rule 4) — it lives at the material
+  // step."* The `sheet` field these blocks carried is gone with the rows it
+  // drew: the carcasses' sheet is chosen at the carcasses' own sheets stop
+  // (`carcases.sheets`, where it has stood since T44) and the fronts' at the
+  // fronts' — added this turn, so nothing was taken away, only moved to the
+  // screen that already asks which board this is.
+  const boardNameOf = (t) => materials.find((m) => m.id === t.material_id)?.name || null;
+  const decorNameOf = (t, kind) => chosenOf(t, kind)?.text || null;
   const materialBlocks = [
     ...carcassTypes.map((t, i) => ({
       key: `carcass${i + 1}`,
-      label: `${t.label} — the carcass board`,
-      boardName: materials.find((m) => m.id === t.material_id)?.name || 'no stock board assigned',
+      label: t.label,
+      suffix: 'the carcass board',
+      boardName: boardNameOf(t),
+      decorName: decorNameOf(t, 'carcass'),
       row: thicknessRows.find((r) => r.id === `carcass${i + 1}`) || null,
-      sheet: i === 0
-        ? {
-          family: 'carcasses',
-          label: 'Carcasses',
-          hint: 'Sides, tops, bottoms, backs, shelves, infills and plinths.',
-          key: 'sheetCarcass',
-        }
-        : null,
     })),
     ...frontTypes.slice(0, 2).map((t, i) => ({
       key: `front${i + 1}`,
-      label: `${t.label} — the front board`,
-      boardName: materials.find((m) => m.id === t.material_id)?.name || 'no stock board assigned',
+      label: t.label,
+      suffix: 'the front board',
+      boardName: boardNameOf(t),
+      decorName: decorNameOf(t, 'front'),
       row: thicknessRows.find((r) => r.id === `front${i + 1}`) || null,
-      sheet: i === 0
-        ? {
-          family: 'fronts',
-          label: 'Fronts',
-          hint: 'Doors, drawer fronts, end panels and masking boards.',
-          key: 'sheetFronts',
-        }
-        : null,
     })),
     {
       key: 'box',
       label: 'Drawer box',
+      suffix: null,
       boardName: (design.drawerBoxes.mode ?? 'same') === 'ready'
         ? 'Ready-made system'
         : 'Same board as the carcass',
+      decorName: null,
       row: thicknessRows.find((r) => r.id === 'box') || null,
-      sheet: null,
     },
   ];
 
@@ -1577,6 +1598,30 @@ export default function WizardSettings({
             </div>
           )}
 
+          {frontAt === 'sheets' && show('fronts.sheets') && (
+            <div data-wizard-node="fronts.sheets" className="space-y-2" data-front-sheets-assignment="1">
+              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Sheets assignment</span>
+              <p className="text-[11px] text-ink-400">
+                Which board each front type is cut from, and the biggest sheet the shop can buy it in. The
+                same machinery the carcasses' own stop has carried since T44 — relocated out of Production
+                (T45 F6) and asked once the colours are chosen.
+              </p>
+              {frontTypes.map((t) => (
+                <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1" data-front-sheet-assign={t.id}>
+                  <span className="text-[11px] text-ink-50">{t.label}</span>
+                  {stockBoardSelect('front', t)}
+                </div>
+              ))}
+              <SheetSizeRow
+                family="fronts"
+                label="Fronts"
+                hint="Doors, drawer fronts, end panels and masking boards."
+                profile={profile}
+                onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetFronts: size } })}
+              />
+            </div>
+          )}
+
           {frontAt === 'tail' && (
             <>
               {/* ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE TAIL REPEAT GOES ──
@@ -2057,20 +2102,31 @@ export default function WizardSettings({
           {show('produkcja.per-material') && (
             <section className="border border-shell-600 rounded-lg p-3 space-y-2" data-wizard-node="produkcja.per-material" data-settings-section="thickness">
               <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">
-                Measurements &amp; sheet sizes, per material
+                Measurements, per material
               </span>
               <p className="text-[11px] text-ink-400">
                 The manufacturer never tells you the board is really 18.5 — the caliper does. Type what you
                 measured and tick it; every formula in the app computes from that number and nothing rounds
-                it. Grouped by the materials THIS job picked, in the order it picked them.
+                it. Grouped by the materials THIS job picked, in the order it picked them — and each block
+                is TITLED with the board it is about, because that is the information rather than a footnote.
+                The sheet size is chosen with the board, at the material step.
               </p>
               <ul className="space-y-2" data-thickness-slots="1">
                 {materialBlocks.map((b) => (
                   <li key={b.key} className="border border-shell-600 rounded p-2 space-y-1.5" data-material-block={b.key}>
-                    <div className="cc-row">
-                      <span className="text-[12px] text-ink-50 flex-1">{b.label}</span>
-                      <span className="text-[10px] text-ink-400">{b.boardName}</span>
-                    </div>
+                    {/* F6: FULL-SIZE, and it is the block's title line. */}
+                    <p
+                      className={`text-base leading-snug ${blockNeedsBoard(b) ? 'text-status-warn' : 'text-ink-50'}`}
+                      data-material-block-title={b.key}
+                    >
+                      {productionBlockTitle({
+                        label: b.label,
+                        boardName: b.boardName,
+                        decorName: b.decorName,
+                        thickness: b.row?.measured,
+                        suffix: b.suffix,
+                      })}
+                    </p>
                     {b.row && (
                       <div className="cc-row" data-thickness-slot={b.row.id}>
                         <span className="text-[11px] text-ink-400 w-24 shrink-0" title={b.row.hint}>Measured</span>
@@ -2099,15 +2155,13 @@ export default function WizardSettings({
                         )}
                       </div>
                     )}
-                    {b.sheet && (
-                      <SheetSizeRow
-                        family={b.sheet.family}
-                        label={b.sheet.label}
-                        hint={b.sheet.hint}
-                        profile={profile}
-                        onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, [b.sheet.key]: size } })}
-                      />
-                    )}
+                    {/* T45 F6 / iron rule 4: the SHEET-SIZE PICKER stood here.
+                        It is removed from Production by name — *"chosen
+                        earlier, per material"* — and lives at the material
+                        step, where the question "which board is this?" is
+                        already being asked. The measured-thickness fields
+                        beside it, and the infill above, are untouched: the
+                        owner likes them. */}
                   </li>
                 ))}
               </ul>

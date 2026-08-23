@@ -143,16 +143,17 @@ test('F1 — thickness: the six measured slots and their hard gate', () => {
 });
 
 test('F1 — sheet sizes: both families, the T35 row itself', () => {
-  // T44 F4/F7: the sheet rows stand with the material they are for.
+  // T44 F4/F7 put the sheet rows with the material they are for. T45's F6
+  // finishes the move: *"The sheet-size picker: REMOVED here (rule 4) — it
+  // lives at the material step."* So BOTH families are now asked at their own
+  // Sheets assignment stop — the carcasses' since T44, the fronts' as of this
+  // turn — and Production carries none.
   assert.match(WIZ, /data-sheets-assignment="1"/);
-  // The CARCASS sheet is asked where the carcass boards are chosen (F4's
-  // "Sheets assignment"); the FRONT sheet stands in Produkcja beside the front
-  // material it is for (F7's per-material blocks). Both families, both setters.
+  assert.match(WIZ, /data-front-sheets-assignment="1"/);
   assert.match(WIZ, /family="carcasses"/);
-  assert.match(WIZ, /family: 'fronts'/);
+  assert.match(WIZ, /family="fronts"/);
   assert.match(WIZ, /sheetCarcass: size/);
-  assert.match(WIZ, /key: 'sheetFronts'/);
-  assert.match(WIZ, /\[b\.sheet\.key\]: size/);
+  assert.match(WIZ, /sheetFronts: size/);
 });
 
 test('F1 — door style: the gallery, + New style, the shaker number, the workshop styles', () => {

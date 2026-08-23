@@ -164,7 +164,12 @@ test('F5 — the same procedure, asked in the owner’s words', () => {
   assert.match(WIZ, /data-front-count=\{n\}/);
   assert.match(WIZ, /data-front-dots="1"/);
   assert.match(WIZ, /data-front-submodal=\{frontTypeAt\.id\}/);
-  assert.match(WIZ, /const frontStops = \['count', \.\.\.frontTypes\.map\(\(t\) => t\.id\), 'tail'\];/);
+  // T45 F6 puts a SHEETS stop between the colours and the tail, mirroring the
+  // carcasses' — the sheet-size picker left Production by name (iron rule 4)
+  // and lives at the material step.
+  assert.match(WIZ, /\.\.\.frontTypes\.map\(\(t\) => t\.id\),/);
+  assert.match(WIZ, /\.\.\.\(show\('fronts\.sheets'\) \? \['sheets'\] : \[\]\),/);
+  assert.match(WIZ, /'tail',\n  \];/);
 });
 
 test('F5 — the opening options are EXACTLY the owner’s four', () => {

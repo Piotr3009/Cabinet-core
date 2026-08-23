@@ -33,11 +33,10 @@ export const NO_BOARD = 'no stock board assigned';
  *   boardName   the assigned stock board's name, or null
  *   decorName   what it is FACED in, when that is not the board's own name
  *   thickness   millimetres — the measured number the block is about
- *   suffix      "the carcass board" and friends, when the label needs one
  * @returns {string} "Carcass 1 — MFC Halifax Oak 18 mm"
  */
 export function productionBlockTitle({
-  label, boardName = null, decorName = null, thickness = null, suffix = null,
+  label, boardName = null, decorName = null, thickness = null,
 } = {}) {
   const head = String(label || 'Material').trim();
   // The BOARD is the answer when there is one: it is what the shop buys and
@@ -46,9 +45,13 @@ export function productionBlockTitle({
   // worth saying loudest of all, which is why it is in the title and not in a
   // grey line under it.
   const what = boardName || decorName || NO_BOARD;
-  const mm = Number(thickness) > 0 ? ` ${formatMm(thickness)} mm` : '';
-  const tail = suffix ? ` (${suffix})` : '';
-  return `${head} — ${what}${mm}${tail}`;
+  const mmText = Number(thickness) > 0 ? `${formatMm(thickness)} mm` : '';
+  // Half the boards a workshop stocks are NAMED after their thickness —
+  // "Generic board 18 mm", "MDF 18 mm" — and "Generic board 18 mm 18 mm" is
+  // what saying it twice looks like. The measured number is the one that
+  // matters, so it is the one that stays.
+  const already = mmText && what.trim().toLowerCase().endsWith(mmText.toLowerCase());
+  return `${head} — ${what}${mmText && !already ? ` ${mmText}` : ''}`;
 }
 
 /** Is this block still waiting for somebody to say what it is cut from? */

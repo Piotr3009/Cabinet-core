@@ -53,6 +53,8 @@ const PAD = 46;
 // The DEPTH ZONE — the band a cabinet stands in — is the project's own depth,
 // read from the design; this is only how far the picture sees past it.
 const PLAN_DEPTH_MM = 1200;
+/** The line of type that names a recess, in pixels — it is drawn above it. */
+const PLAN_LABEL_PX = 13;
 
 /**
  * @param {object} props
@@ -127,15 +129,28 @@ export default function WallElevationModal({
   }), [wallWidth, wallHeight, slopes, wallIndex]);
 
   // ── the TOP view's own arithmetic: x along the wall, y OUT from it ──
-  const planDepth = Math.max(PLAN_DEPTH_MM, ...plan.map((el) => el.depth + 200), 0);
+  // Two budgets, not one: a CHIMNEY stands into the room and is drawn BELOW the
+  // wall line, a RECESS bites backwards and is drawn ABOVE it. Measuring both
+  // against the same downward budget is what put the first recess's label off
+  // the top of the canvas — 300 mm of bite had 46 px of paper to be drawn on.
+  const planBelow = Math.max(
+    PLAN_DEPTH_MM,
+    ...plan.filter((el) => el.kind !== 'recess').map((el) => el.depth + 200),
+    0,
+  );
+  const planAbove = Math.max(0, ...plan.filter((el) => el.kind === 'recess').map((el) => el.depth));
   const planScale = Math.min(
     (VIEW_W - PAD * 2) / Math.max(wallWidth, 1),
-    (VIEW_H - PAD * 2) / Math.max(planDepth, 1),
+    (VIEW_H - PAD * 2) / Math.max(planBelow + planAbove, 1),
   );
   const px = (xMm) => PAD + xMm * planScale;
   // The wall LINE is at the top of the plan and the room is below it, which is
-  // how a joiner draws it: he stands in the room, looking at the wall.
-  const py = (dMm) => PAD + dMm * planScale;
+  // how a joiner draws it: he stands in the room, looking at the wall. It moves
+  // DOWN the paper by however deep the deepest recess is, plus the line of type
+  // that names it — and with nothing biting the wall it is at PAD, exactly
+  // where it has been since this view was drawn.
+  const wallY = PAD + planAbove * planScale + (planAbove > 0 ? PLAN_LABEL_PX : 0);
+  const py = (dMm) => wallY + dMm * planScale;
 
   // ── writing back ──
   const patchRoom = (patch) => {

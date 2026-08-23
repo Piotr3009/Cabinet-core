@@ -204,6 +204,24 @@ test('F1b — the switch, the plan drawing, and the two tools', () => {
   assert.match(MODAL, /addPlanElement\('chimney'\)/);
 });
 
+// ─── The recess is drawn ON the paper, not off the top of it ───────────────
+//
+// The first proof of this view had the recess's own label sliced in half by
+// the top edge: a recess bites BACKWARDS, it is drawn above the wall line, and
+// the wall line was nailed to PAD — 46 px — whatever was biting into it. The
+// line moves down the paper by the deepest bite plus the type that names it,
+// and the scale fits BOTH budgets rather than one.
+test('F1b — a recess is drawn ABOVE the wall line, so the line makes room for it', () => {
+  assert.match(MODAL, /const planAbove = Math\.max\(0, \.\.\.plan\.filter\(\(el\) => el\.kind === 'recess'\)/);
+  assert.match(MODAL, /const planBelow = Math\.max\(/);
+  assert.match(MODAL, /el\.kind !== 'recess'/, 'a chimney is measured downwards, a recess is not');
+  assert.match(MODAL, /Math\.max\(planBelow \+ planAbove, 1\)/, 'the scale fits both budgets');
+  assert.match(MODAL, /const wallY = PAD \+ planAbove \* planScale \+ \(planAbove > 0 \? PLAN_LABEL_PX : 0\);/);
+  assert.match(MODAL, /const py = \(dMm\) => wallY \+ dMm \* planScale;/);
+  // With nothing biting the wall the drawing is exactly where it was.
+  assert.match(MODAL, /const planAbove = Math\.max\(0,/, 'no recess → planAbove is 0 → wallY is PAD');
+});
+
 test('F1b — the DEPTH ZONE is the project’s own unit depth, read never written', () => {
   assert.match(MODAL, /import \{ projectDepth \} from '\.\.\/engine\/projectSettings\.js'/);
   assert.match(MODAL, /const unitDepth = useMemo\(/);

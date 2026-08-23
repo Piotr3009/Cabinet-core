@@ -151,7 +151,7 @@ export default function NewProjectFlow({
   // for F7's one-click jump to the room — and coming back puts him exactly
   // where he was. *"nothing resets, nothing re-asks."*
   const [walk, setWalk] = useState({
-    tab: null, visited: [], carcStop: 'count', frontStop: 'count',
+    tab: null, visited: [], carcStop: 'count', frontStop: 'count', carcSaved: false, frontsSaved: false,
   });
 
   // ─── TURN 45 (CLAUDE.md F7): THE DETOUR, AND THE WAY BACK ────────────────

@@ -80,6 +80,14 @@ import * as wizardTabs from './lib/wizardTabs.js';
 import * as wallElements from './lib/wallElements.js';
 import * as frontOpening from './lib/frontOpening.js';
 import * as settingsSetsDb from './lib/settingsSetsDb.js';
+// ─── TURN 45 (CLAUDE.md F1/F2/F5/F7/F9): the readers THIS turn's walk asks ──
+import * as appEntry from './lib/appEntry.js';
+import * as wizardConflicts from './lib/wizardConflicts.js';
+import * as pushToOpen from './lib/pushToOpen.js';
+import * as ledSpec from './lib/ledSpec.js';
+import * as ledDrivers from './lib/ledDrivers.js';
+import * as ledGroove from './lib/ledGroove.js';
+import * as ledStrips from './engine/ledStrips.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -298,6 +306,35 @@ if (typeof window !== 'undefined') {
   // All four are pure and reach nothing the page could not already compute.
   window.__ccT44 = {
     tabs: wizardTabs, wall: wallElements, opening: frontOpening, sets: settingsSetsDb,
+  };
+  // ─── TURN 45 ───────────────────────────────────────────────────────────
+  // The same reason every reader above is here, for this turn's five claims:
+  //
+  //   `entry`     F2's whole rule. "Which door was this opened through" is a
+  //               claim about a ROUTE, so the walk asks the function the store
+  //               asked rather than reading a word off the screen.
+  //   `conflicts` F7. A red note and a jump are a claim about a READING of the
+  //               project, and this is the reader both surfaces ask.
+  //   `pushToOpen` F5's lock, and the one sentence under it.
+  //   `wall`      F1a's dimension chains and F1b's plan elements.
+  //   `ledSpec` / `ledDrivers` / `ledGroove`
+  //               F9's groove width, its driver arithmetic and the CUT — so
+  //               "the DXF carries a groove" is read off the very function the
+  //               export calls, never off a picture of a DXF.
+  //
+  // All pure, and none reaches anything the page could not already compute.
+  window.__ccT45 = {
+    entry: appEntry,
+    conflicts: wizardConflicts,
+    pushToOpen,
+    wall: wallElements,
+    ledSpec,
+    ledDrivers,
+    ledGroove,
+    // The strip geometry the 3D draws and the BOM counts, so the walk can
+    // prove a claim about a CUT off the very function the export calls.
+    strips: ledStrips,
+    grooveWidth: ledSpec.grooveWidthMm,
   };
   window.__ccT39 = {
     partRegistry,

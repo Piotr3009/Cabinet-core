@@ -3,7 +3,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { useUiStore } from '../stores/uiStore.js';
-import { migrateDesign, projectHeights } from '../engine/design.js';
+import { FRONT_STYLE_OPTIONS, migrateDesign, projectHeights } from '../engine/design.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import {
   carcassSources, frontSources, pickerForSource, projectDimensions, sourceById,
@@ -283,7 +283,11 @@ export default function WizardSummary({
             </div>
           ))}
         </div>
-        <Row label="Front shape" value={design.fronts.style || 'project default'} />
+        <Row
+          label="Front shape"
+          value={FRONT_STYLE_OPTIONS.find((o) => o.id === design.fronts.style)?.label
+            || design.fronts.style || 'project default'}
+        />
         <Row label="Opening" value={frontOpeningLabel(frontOpening(design))} />
         <Row label="Drawer boxes" value={(design.drawerBoxes.mode ?? 'same') === 'ready'
           ? 'Ready-made system' : 'Same board as the carcass'}

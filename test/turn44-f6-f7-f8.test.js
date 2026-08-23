@@ -74,9 +74,10 @@ test('F7 — the measurements are grouped PER MATERIAL, by name', () => {
   // T45 F6: the block's title line is composed by `lib/productionNames.js` and
   // set FULL-SIZE — *"it is the information, not a footnote"* — so the label
   // and the suffix are now two fields the title puts together.
-  assert.match(WIZ, /suffix: 'the carcass board',/);
-  assert.match(WIZ, /suffix: 'the front board',/);
   assert.match(WIZ, /data-material-block-title=\{b\.key\}/);
+  assert.match(WIZ, /boardName: boardNameOf\(t\),/);
+  assert.match(WIZ, /decorName: decorNameOf\(t, 'carcass'\),/);
+  assert.match(WIZ, /decorName: decorNameOf\(t, 'front'\),/);
   // the SAME rows and the SAME setters — a grouping is a `.map`
   assert.match(WIZ, /row: thicknessRows\.find\(\(r\) => r\.id === `carcass\$\{i \+ 1\}`\)/);
   assert.match(WIZ, /onCommit=\{\(v\) => commitMeasured\(b\.row, v\)\}/);

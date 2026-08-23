@@ -182,7 +182,14 @@ function DecorGrid({ value, onPick }) {
 
       {/* ── THE ONE SCROLLING REGION IN THIS WINDOW ── */}
       <div
-        className="grid gap-2 overflow-y-auto cc-scroll pr-1 mt-2 flex-1 min-h-0 content-start"
+        // `auto-rows-min` is not decoration. A grid row is `auto` by default,
+        // and a tile whose picture is `loading="lazy"` inside an
+        // `overflow-hidden` button contributes almost nothing to that
+        // measurement — every row came out 15.75 px tall and every tile was
+        // clipped to a sliver, which is very likely what the owner was looking
+        // at when he said *"roll w dół, nic nie widać"*. Sized to their own
+        // content, the rows are 153 px and the grid has something to scroll.
+        className="grid gap-2 overflow-y-auto cc-scroll pr-1 mt-2 flex-1 min-h-0 content-start auto-rows-min"
         data-decor-grid="1"
         data-only-scroller="1"
         style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_SWATCH_PX + 44}px, 1fr))` }}

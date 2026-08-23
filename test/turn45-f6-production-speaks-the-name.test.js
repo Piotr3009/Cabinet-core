@@ -52,8 +52,20 @@ test('F6 — a block with no measured number yet still has a name', () => {
     'Drawer box — Ready-made system',
   );
   assert.equal(
-    productionBlockTitle({ label: 'Carcass 1', boardName: 'MFC 18', thickness: 18.5, suffix: 'the carcass board' }),
-    'Carcass 1 — MFC 18 18.5 mm (the carcass board)',
+    productionBlockTitle({ label: 'Carcass 1', boardName: 'MFC 18', thickness: 18.5 }),
+    'Carcass 1 — MFC 18 18.5 mm',
+  );
+  // Half the boards a workshop stocks are NAMED after their thickness, and
+  // "Generic board 18 mm 18 mm" is what saying it twice looks like.
+  assert.equal(
+    productionBlockTitle({ label: 'Carcass 1', boardName: 'Generic board 18 mm', thickness: 18 }),
+    'Carcass 1 — Generic board 18 mm',
+  );
+  // …but a board NAMED 18 that was MEASURED at 18.5 says both, because those
+  // are two different numbers and the caliper's is the one that cuts.
+  assert.equal(
+    productionBlockTitle({ label: 'Carcass 1', boardName: 'Generic board 18 mm', thickness: 18.5 }),
+    'Carcass 1 — Generic board 18 mm 18.5 mm',
   );
 });
 

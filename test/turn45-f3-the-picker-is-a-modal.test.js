@@ -107,6 +107,14 @@ test('F3 — ONE tile answers for a laminate, a veneer and a sprayed colour', ()
   assert.equal(spray.name, 'Hague Blue');
   assert.equal(String(spray.hex).toLowerCase(), '#1f3a5f');
   assert.equal(spray.thumb, null, 'a lacquer is a code on a tin, not a picture of a board');
+  // ─── The tile says each fact ONCE ────────────────────────────────────────
+  // The tile prints its code line and then `[source, texture]` under it. The
+  // system IS the code line for a sprayed colour, so a source that repeated it
+  // put "F&B / Hague Blue / F&B · sprayed" on the screen — the same doubling
+  // the owner circled on "RAL · sprayed · sprayed".
+  assert.equal(spray.code, 'F&B');
+  assert.equal(spray.source, null, 'the system is the code line already');
+  assert.equal(chosenTileText(spray), 'F&B · Hague Blue · sprayed');
 
   // All three answer the SAME shape — that is what "one format" means.
   for (const t of [laminate, veneer, spray]) {

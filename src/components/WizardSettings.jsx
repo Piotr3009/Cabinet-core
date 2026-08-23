@@ -227,9 +227,16 @@ export default function WizardSettings({
   // From the EDIT door there is nothing to gate (F1): both start satisfied and
   // an edit does not re-lock them, so the fronts container is never dead under
   // the hand of somebody editing a project that already exists.
-  const [carcSaved, setCarcSaved] = useState(editDoor);
-  const [frontsSaved, setFrontsSaved] = useState(editDoor);
-  useEffect(() => { onGate?.(carcSaved, frontsSaved); }, [carcSaved, frontsSaved, onGate]);
+  //
+  // ─── TURN 45 (CLAUDE.md F7): …AND THEY SURVIVE A DETOUR ───────────────────
+  //
+  // The two SAVES are part of "where the user was". They were this component's
+  // own `useState`, so F7's one-click jump to the room — which unmounts step 5
+  // — put them back to false, and a joiner who had saved both containers came
+  // back to a Next he could not press and no idea why. They ride the lifted
+  // walk with the tab and the two stops (see `walkState` below).
+  const setCarcSaved = (v) => patchWalk({ carcSaved: v });
+  const setFrontsSaved = (v) => patchWalk({ frontsSaved: v });
   const touchCarcass = () => { if (!editDoor) setCarcSaved(false); };
   const touchFronts = () => { if (!editDoor) setFrontsSaved(false); };
 
@@ -329,8 +336,12 @@ export default function WizardSettings({
       visited: Array.isArray(raw?.visited) && raw.visited.length ? raw.visited : [at],
       carcStop: raw?.carcStop || 'count',
       frontStop: raw?.frontStop || 'count',
+      // From the EDIT door there is nothing to gate — the project exists — so
+      // both start satisfied and no edit re-locks them (T36 F1's rule, kept).
+      carcSaved: raw?.carcSaved ?? editDoor,
+      frontsSaved: raw?.frontsSaved ?? editDoor,
     };
-  }, [walk, ownWalk, audience]);
+  }, [walk, ownWalk, audience, editDoor]);
   const patchWalk = (patch) => {
     const next = { ...walkState, ...patch };
     if (onWalk) onWalk(next); else setOwnWalk(next);
@@ -339,6 +350,9 @@ export default function WizardSettings({
   const visited = walkState.visited;
   const carcStop = walkState.carcStop;
   const frontStop = walkState.frontStop;
+  const carcSaved = walkState.carcSaved;
+  const frontsSaved = walkState.frontsSaved;
+  useEffect(() => { onGate?.(carcSaved, frontsSaved); }, [carcSaved, frontsSaved, onGate]);
   const setTab = (id) => patchWalk({ tab: id });
   const setCarcStop = (stop) => patchWalk({ carcStop: stop });
   const setFrontStop = (stop) => patchWalk({ frontStop: stop });
@@ -420,8 +434,18 @@ export default function WizardSettings({
     }),
     [design, heights, roomHeight, profile],
   );
-  /** The note that belongs beside one dimension field, with its jump. */
-  const ConflictNote = ({ field }) => {
+  /**
+   * The note that belongs beside one dimension field, with its jump.
+   *
+   * A plain function CALLED from the JSX, deliberately — not a component
+   * declared inside this render. A component defined in a render body is a new
+   * TYPE on every render, so React tears its DOM down and builds it again each
+   * time; the button here would be replaced between the mouse-down and the
+   * mouse-up of a real click, and no click event would ever fire. The jump
+   * button looked perfect and did nothing, which is exactly the class of bug
+   * F7 exists to stop.
+   */
+  const conflictNotes = (field) => {
     const list = conflictsAtField(conflicts, field);
     if (!list.length) return null;
     return list.map((c) => (
@@ -828,7 +852,6 @@ export default function WizardSettings({
     ...carcassTypes.map((t, i) => ({
       key: `carcass${i + 1}`,
       label: t.label,
-      suffix: 'the carcass board',
       boardName: boardNameOf(t),
       decorName: decorNameOf(t, 'carcass'),
       row: thicknessRows.find((r) => r.id === `carcass${i + 1}`) || null,
@@ -836,7 +859,6 @@ export default function WizardSettings({
     ...frontTypes.slice(0, 2).map((t, i) => ({
       key: `front${i + 1}`,
       label: t.label,
-      suffix: 'the front board',
       boardName: boardNameOf(t),
       decorName: decorNameOf(t, 'front'),
       row: thicknessRows.find((r) => r.id === `front${i + 1}`) || null,
@@ -844,7 +866,6 @@ export default function WizardSettings({
     {
       key: 'box',
       label: 'Drawer box',
-      suffix: null,
       boardName: (design.drawerBoxes.mode ?? 'same') === 'ready'
         ? 'Ready-made system'
         : 'Same board as the carcass',
@@ -1152,7 +1173,7 @@ export default function WizardSettings({
                             brings the user straight back here, with the tab, the
                             strip and every answer where he left them. */}
                         <div data-ceiling-error={fit.state === 'over' ? '1' : undefined}>
-                          <ConflictNote field="tall" />
+                          {conflictNotes('tall')}
                         </div>
                         {fit.state === 'question' && (
                           <div
@@ -2286,7 +2307,6 @@ export default function WizardSettings({
                         boardName: b.boardName,
                         decorName: b.decorName,
                         thickness: b.row?.measured,
-                        suffix: b.suffix,
                       })}
                     </p>
                     {b.row && (

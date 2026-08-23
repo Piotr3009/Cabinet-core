@@ -58,7 +58,12 @@ export function chosenTile({
       texture: 'sprayed',
       hex: c.hex || '#888888',
       thumb: null,
-      source: c.system ? `${c.system} · sprayed` : 'Sprayed',
+      // NOTHING. The tile prints `[source, texture]` on its bottom line, and
+      // the system is ALREADY the tile's code line — "RAL / 9010 Pure White /
+      // RAL · sprayed" says RAL twice, which is exactly the class of thing the
+      // owner circles in red. The line reads "sprayed", which is the one fact
+      // the two lines above it do not already carry.
+      source: null,
     };
   }
 

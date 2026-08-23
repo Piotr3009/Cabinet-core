@@ -66,8 +66,8 @@ test('F7 — a ONE-WALL job is sent to the WALL, not to a plan it has never seen
   assert.equal(c.culprit, 'wall');
   assert.match(c.message, /the wall/);
   assert.match(c.jumpLabel, /Fix the wall/);
-  assert.deepEqual(culpritScreen('wall'), { step: 'wall', label: 'the wall' });
-  assert.deepEqual(culpritScreen('room'), { step: 'room', label: 'the room' });
+  assert.deepEqual(culpritScreen('wall'), { step: 'wall', label: 'the wall', noun: 'wall' });
+  assert.deepEqual(culpritScreen('room'), { step: 'room', label: 'the room', noun: 'room' });
 });
 
 test('F7 — the ceiling QUESTION has no culprit: the answer is three lines down', () => {
@@ -174,11 +174,17 @@ test('F7 — the flow’s Next no longer holds a joiner for another screen’s n
 
 test('F7 — the red note stands AT THE FIELD, with the door beside it', () => {
   assert.match(WIZ, /import \{ conflictsAtField, crossTabConflicts \} from '\.\.\/lib\/wizardConflicts\.js'/);
-  assert.match(WIZ, /const ConflictNote = \(\{ field \}\)/);
+  // A plain function CALLED from the JSX, never a component declared inside a
+  // render: a component defined in a render body is a new TYPE every time, so
+  // React rebuilds its DOM and the button is replaced between the mouse-down
+  // and the mouse-up of a real click. The jump looked perfect and did nothing.
+  assert.match(WIZ, /const conflictNotes = \(field\) => \{/);
+  assert.match(WIZ, /\{conflictNotes\('tall'\)\}/);
+  assert.doesNotMatch(WIZ, /const ConflictNote = /);
   assert.match(WIZ, /data-conflict=\{c\.code\}/);
   assert.match(WIZ, /data-conflict-field=\{c\.field\}/);
   assert.match(WIZ, /data-conflict-jump=\{c\.culprit\}/);
-  assert.match(WIZ, /<ConflictNote field="tall" \/>/);
+
   assert.match(WIZ, /onClick=\{\(\) => onJump\(c\.culprit\)\}/);
 });
 

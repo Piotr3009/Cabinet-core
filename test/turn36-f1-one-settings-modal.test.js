@@ -211,14 +211,17 @@ test('F1 — the T34 rule holds: the stock board select is on EVERY picker path'
 });
 
 test('F1 — the wizard door still gates the fronts behind the carcass save', () => {
-  assert.match(WIZ, /data-fronts-locked=\{carcSaved \? '0' : '1'\}/);
-  assert.match(WIZ, /pointer-events-none/);
-  // …and the EDIT door starts satisfied, so nothing is dead under the hand.
-  assert.match(WIZ, /useState\(editDoor\)/);
+  // T45 F7 lifted the two SAVES into the walk the flow holds, so a detour to
+  // the room editor and back cannot forget them — *"nothing resets, nothing
+  // re-asks"*. The RULE is untouched: from the wizard door both start false and
+  // any edit re-locks; from the EDIT door there is nothing to gate, both start
+  // satisfied, and no edit re-locks them.
+  assert.match(WIZ, /carcSaved: raw\?\.carcSaved \?\? editDoor,/);
+  assert.match(WIZ, /frontsSaved: raw\?\.frontsSaved \?\? editDoor,/);
   assert.match(WIZ, /const touchCarcass = \(\) => \{ if \(!editDoor\) setCarcSaved\(false\); \};/);
   assert.match(WIZ, /const touchFronts = \(\) => \{ if \(!editDoor\) setFrontsSaved\(false\); \};/);
+  assert.match(WIZ, /data-fronts-locked=\{carcSaved \? '0' : '1'\}/);
 });
-
 test('F1 — the project TYPE is editable from the edit door and a label in the wizard', () => {
   assert.match(WIZ, /data-project-type="1"/);
   assert.match(WIZ, /data-wizard-type-label="1"/);

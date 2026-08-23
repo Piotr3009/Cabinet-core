@@ -46,8 +46,8 @@ import { ceilingFit, wardrobeStack } from '../engine/projectSettings.js';
  */
 export function culpritScreen(scope) {
   return scope === 'wall'
-    ? { step: 'wall', label: 'the wall' }
-    : { step: 'room', label: 'the room' };
+    ? { step: 'wall', label: 'the wall', noun: 'wall' }
+    : { step: 'room', label: 'the room', noun: 'room' };
 }
 
 /**
@@ -84,7 +84,7 @@ export function crossTabConflicts({
       // 2200, the ROOM is 2100, and one of those two numbers is the one that
       // is wrong. The note says both, so the hand knows which it means to
       // change before it has gone anywhere.
-      message: `Total item ${stack.total} mm is ${Math.abs(fit.gap)} mm taller than the ${room} mm ${where.label}.`
+      message: `Total item ${stack.total} mm is ${Math.abs(fit.gap)} mm taller than the ${room} mm ${where.noun}.`
         + ` Lower the wardrobe or the plinth here — or raise ${where.label}.`,
       culprit: where.step,
       culpritLabel: where.label,

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Modal from './Modal.jsx';
 import NumberField from './NumberField.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
@@ -83,7 +83,6 @@ export default function WallElevationModal({
 
   const [picked, setPicked] = useState(null);   // element id
   const [editing, setEditing] = useState(null); // { id, kind, anchor }
-  const drag = useRef(null);
   const svgRef = useRef(null);
 
   // ── writing back ──
@@ -146,38 +145,65 @@ export default function WallElevationModal({
   };
 
   // ── dragging on the wall (real pointer, one absolute move from where it started) ──
+  //
+  // The listeners go on the WINDOW rather than on the SVG, and the pointer is
+  // deliberately NOT captured. Capture retargets every later event to the
+  // element that took it, which means the second click of a double-click never
+  // reaches the shape — and double-click is how an element opens its own
+  // window (F1). Window listeners give the drag the same reach capture would
+  // (the hand may leave the picture) without stealing the gesture that follows.
+  //
+  // The move is ABSOLUTE from where the hand went down, so a hundred small
+  // events are one move and nothing accumulates rounding. `draftRef` is what
+  // keeps that honest across re-renders: the record the drag started from is
+  // held in the closure, and the room it is written back into is always the
+  // current one.
+  const draftRef = useRef(draft);
+  useEffect(() => { draftRef.current = draft; }, [draft]);
+
   const startDrag = (e, el) => {
     e.stopPropagation();
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    if (e.button !== 0) return;
     setPicked(el.id);
-    drag.current = {
-      id: el.id,
-      kind: el.kind,
-      from: { x: e.clientX, y: e.clientY },
-      opening: el.kind === 'slope' ? null : openingsOf().find((o) => o.id === el.id) || null,
-      slope: el.kind === 'slope' ? slopes.find((s) => s.id === el.id) || null : null,
+    const from = { x: e.clientX, y: e.clientY };
+    const opening = el.kind === 'slope'
+      ? null
+      : (draftRef.current.openings || []).find((o) => o.id === el.id) || null;
+    const slope = el.kind === 'slope' ? slopes.find((v) => v.id === el.id) || null : null;
+
+    const move = (ev) => {
+      if (!scale) return;
+      const dx = grid((ev.clientX - from.x) / scale);
+      // Screen-down is wall-DOWN, so the sill moves the other way.
+      const dy = grid(-(ev.clientY - from.y) / scale);
+      if (!dx && !dy) return;
+      if (el.kind === 'slope') {
+        if (!slope) return;
+        const next = dragSlope(slope, dx, { wallWidth, wallHeight });
+        if (next) {
+          setWallSlopes(normaliseSlopes(useProjectStore.getState().project.wallSlopes)
+            .map((v) => (v.id === el.id ? { ...v, run: next.run } : v)));
+        }
+        return;
+      }
+      if (!opening) return;
+      const patch = moveOpening(opening, { dxMm: dx, dyMm: dy }, { wallWidth, wallHeight });
+      const room = draftRef.current;
+      setRoom({
+        openings: (room.openings || []).map((o) => (o.id === el.id
+          ? clampOpening({ ...o, ...patch }, room)
+          : o)),
+      });
     };
-    svgRef.current.setPointerCapture?.(e.pointerId);
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
   };
-
-  const onMove = (e) => {
-    const d = drag.current;
-    if (!d || !scale) return;
-    const dx = grid((e.clientX - d.from.x) / scale);
-    // Screen-down is wall-DOWN, so the sill moves the other way.
-    const dy = grid(-(e.clientY - d.from.y) / scale);
-    if (d.kind === 'slope') {
-      if (!d.slope) return;
-      const next = dragSlope(d.slope, dx, { wallWidth, wallHeight });
-      if (next) updateSlope(d.id, { run: next.run });
-      return;
-    }
-    if (!d.opening) return;
-    updateOpening(d.id, moveOpening(d.opening, { dxMm: dx, dyMm: dy }, { wallWidth, wallHeight }));
-  };
-
-  const endDrag = () => { drag.current = null; };
 
   /** Where a small modal opens: BESIDE the element it is about (rule 15). */
   const anchorOfElement = (id) => {
@@ -258,9 +284,6 @@ export default function WallElevationModal({
                 height={VIEW_H}
                 className="bg-shell-900 border border-shell-600 rounded touch-none select-none"
                 data-wall-elevation-svg="1"
-                onPointerMove={onMove}
-                onPointerUp={endDrag}
-                onPointerLeave={endDrag}
                 onPointerDown={() => setPicked(null)}
               >
                 {/* the floor line, and the wall itself */}

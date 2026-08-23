@@ -27,6 +27,7 @@ import ColourPicker from './ColourPicker.jsx';
 import JoineryPreview from './JoineryPreview.jsx';
 import SheenSlider from './SheenSlider.jsx';
 import WizardHardware from './WizardHardware.jsx';
+import AudienceToggle from './AudienceToggle.jsx';
 import NumberField from './NumberField.jsx';
 // ─── TURN 36 (CLAUDE.md F1): ONE SETTINGS MODAL ─────────────────────────────
 // The two rows the old panel owns and the unified one now shows are IMPORTED
@@ -81,6 +82,18 @@ const isWardrobeType = (id) => id === 'wardrobe';
 
 /** What the settings-set dropdown says when no set has been chosen (T44 F3). */
 const DEFAULT_SET_LABEL = 'Default settings';
+
+/**
+ * What a project dimension is CALLED on this screen (T44 F3).
+ *
+ * `projectDimensions` is the engine's list and it names the plinth "Plinth
+ * height"; the owner's own words for the row are *"Plinth height (toe kick)"*.
+ * `src/engine/**` is frozen byte-for-byte tonight (iron rule 2) and a LABEL is
+ * a surface decision in any case, so the one word that differs is corrected
+ * here — in one function, so the wardrobe headline and the kitchen grid cannot
+ * disagree about what the row is called.
+ */
+const dimensionLabel = (d) => (d.key === 'toeKick' ? 'Plinth height (toe kick)' : d.label);
 
 // The owner's button words, per container. The profile's records keep their
 // own labels for the Settings menu; the WIZARD speaks the mockup's.
@@ -871,6 +884,16 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
             </li>
           );
         })}
+        {/* ─── TURN 44 (CLAUDE.md iron rule 5): THE TWIN CONTROL ─────────────
+            The head is chosen in the HEADER, which is where rule 5 puts it —
+            and the header is BEHIND this window while the wizard stands open,
+            because a modal shell closes on a pointer-down outside itself. So
+            the switch has a twin here, on the tab bar, exactly as the
+            brightness slider has one on the toolbar and one in the View menu:
+            the SAME app-level state and the same setter, so moving either
+            moves the other because there is only one value. */}
+        <li className="flex-1" />
+        <li><AudienceToggle /></li>
       </ol>
 
       <div className="space-y-3" data-wizard-tab-body={tab}>
@@ -1087,9 +1110,16 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                       </div>
                     ) : (
                       <div className="grid grid-cols-5 gap-2">
-                        {projectDimensions(design, profile, heights).map((d) => (
+                        {projectDimensions(design, profile, heights)
+                          .filter((d) => dimensionAsked(d.key, design.projectType))
+                          .map((d) => (
                           <label key={d.key} className="block">
-                            <span className="cc-label">{d.label}</span>
+                            {/* T44 F3: the plinth says what a joiner calls it.
+                                The list is the engine's and `src/engine/**` is
+                                frozen tonight (iron rule 2), so the WORD is
+                                corrected at the surface — which is where a
+                                label belongs anyway. */}
+                            <span className="cc-label">{dimensionLabel(d)}</span>
                             <NumberField
                               value={d.value}
                               onCommit={(v) => {
@@ -1101,7 +1131,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                               data-dimension={d.key}
                             />
                           </label>
-                        ))}
+                          ))}
                       </div>
                     )}
                     {/* ─── TURN 36 (CLAUDE.md F1): THE NUMBERS THE OLD PANEL HAD AND THIS
@@ -1133,7 +1163,7 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
             >
                           {rest.map((d) => (
                             <label key={d.key} className="block">
-                              <span className="cc-label">{d.label}</span>
+                              <span className="cc-label">{dimensionLabel(d)}</span>
                               <NumberField
                                 className="cc-input text-right"
                                 value={d.value}

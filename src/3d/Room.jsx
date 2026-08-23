@@ -1,3 +1,5 @@
+import { wallElements as wallElementList } from '../lib/wallElements.js';
+import { useProjectStore } from '../stores/projectStore.js';
 import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -85,7 +87,7 @@ function bounce(hex, profile, surface) {
 
 /** One wall: a plane with a hole per window and per door. */
 function Wall({
-  wall, height, openings, centre, showLabel, profile, onBackground,
+  wall, height, openings, centre, showLabel, profile, onBackground, slopes = [],
 }) {
   const ref = useRef(null);
 
@@ -93,10 +95,25 @@ function Wall({
     const shape = new THREE.Shape();
     const w = mm(wall.width);
     const h = mm(height);
+    // CHAT-FIX 24.08: the wall honours its slopes. The modal stored them
+    // (T44-F1), the elevation drew them — and this mesh kept drawing a
+    // rectangle, so the room lied. Side R: up the right edge only to
+    // startHeight, then the diagonal to (w - run, h); side L mirrored.
+    // Clamped, so a nonsense slope degenerates to the plain corner instead
+    // of folding the shape inside out.
+    const cutOf = (side) => {
+      const s = slopes.find((x) => x.side === side);
+      if (!s) return null;
+      const run = Math.max(0, Math.min(mm(s.run), w));
+      const top = Math.max(0, Math.min(mm(s.startHeight), h));
+      return (run > 0 && top < h) ? { run, top } : null;
+    };
+    const L = cutOf('L');
+    const R = cutOf('R');
     shape.moveTo(0, 0);
     shape.lineTo(w, 0);
-    shape.lineTo(w, h);
-    shape.lineTo(0, h);
+    if (R) { shape.lineTo(w, R.top); shape.lineTo(w - R.run, h); } else shape.lineTo(w, h);
+    if (L) { shape.lineTo(L.run, h); shape.lineTo(0, L.top); } else shape.lineTo(0, h);
     shape.closePath();
     for (const o of openings) {
       const hole = new THREE.Path();
@@ -110,7 +127,7 @@ function Wall({
       shape.holes.push(hole);
     }
     return new THREE.ShapeGeometry(shape);
-  }, [wall.width, height, openings]);
+  }, [wall.width, height, openings, slopes]);
 
   // World position of the wall's start corner, with the room centred on origin.
   const position = [mm(wall.start.x - centre.x), 0, mm(wall.start.y - centre.y)];
@@ -233,6 +250,9 @@ export default function Room({
   // the engine and tested there; the drawing is unchanged — a stub is a wall
   // record like any other, just a shorter one.
   const walls = useMemo(() => wallsInScope(room, scope), [room, scope]);
+  const wallSlopeList = useProjectStore((s) => s.project.wallSlopes);
+  const slopesOnWall = useCallback((idx) => wallElementList(wallSlopeList)
+    .filter((e) => (e.kind ?? 'slope') === 'slope' && (e.wall ?? 0) === idx), [wallSlopeList]);
   const boxes = useMemo(() => roomBoxes(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
   const height = room.height ?? 2500;
@@ -332,6 +352,7 @@ export default function Room({
           // whole wall would land in the wrong place on it — and a 1000 mm
           // return is not where anybody puts a window.
           openings={wall.stub ? [] : openingsOnWall(room, wall.index)}
+          slopes={wall.stub ? [] : slopesOnWall(wall.index)}
           centre={bounds.centre}
           showLabel={showLabels && !wall.stub}
           profile={profile}

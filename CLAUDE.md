@@ -1,382 +1,181 @@
-# CLAUDE.md — TURN 43 · THE WALL SET DRAWS WHAT THE WORKSHOP SELLS: CLEAN FRONTS, TRUE SHAKER, DRAWN DRAWERS, BOTH SECTIONS — AND THE RUNNER STAND-IN DIES
+# CLAUDE.md — TURN 44 · THE WIZARD GROWS UP: ONE WALL FIRST, AND PROJECT SETTINGS BECOMES A GUIDED SEQUENCE
 
-The owner, 20.08.2026, on the first real print of the wall set: *"pdf do
-dupy — nadal pokazuje fronty z carcasami, nie pokazuje jak ja chciałem,
-czyli fronty same bez kresek. Shaker prawdziwy — ile mam mm, tyle
-powinno być pokazane. Linie nadal są mega grube. Nóżki to jakieś klocki
-zamiast ładnej nóżki, poza tym jak widać fronty, to nie powinno być
-widać nóżek. Nie widzę przekroju w pionie ani w poziomie. Szuflady nie
-są narysowane."* On the sections, twice now: **BOTH** — a section sheet
-per wall AND an A-A through a chosen cabinet. And on the grey overlay
-runners, the same day: *"jak kod nadpisuje to go usuń"* — F7.
-
-## Why this turn exists (the trace — measured tonight, do not re-walk it)
-
-T42-F0 proved the wall PDF's BYTES and proved them on a TRIVIAL seeded
-project — three bare carcasses, no shelf, no drawer, no shaker, no
-design. Every drawing complaint above is about CONTENT, and the content
-was never in the proof. The chain itself is ONE chain: the preview SVG
-and the PDF write the same laid-out entities through the same
-`penWidth()` resolver (T41-F5a) — this is NOT the rail's two-chain
-disease. What the one chain draws is wrong in six named places:
-
-1. `/1` DRAWS THE INSIDES. `buildFrontElevation`
-   (`frontElevation.js:284–292`) draws every `isDrawn` panel;
-   `panelStyle` (`:44–60`) sends every non-edge-touching piece to
-   `SHELVES` as a dashed hidden line. On a real kitchen the fronts sheet
-   is full of green dashes — his "kreski". His standard (the Anderson
-   set): /1 is fronts, outline, handles, dimensions. Nothing else.
-2. THE SHAKER LIES ABOUT ITS FRAME. Measured on the real engine:
-   project frame 80 mm → drawn 60 mm. `frontDetail` is called with no
-   frame (`frontElevation.js:297`, `views.js:205`) and `design` never
-   reaches `wallDrawingSheets` at all, so `shakerFrameMm(null, profile)`
-   answers with the profile default every time. The function itself
-   (`shaker.js:107`) already knows how to read the project's number —
-   nobody hands it the project.
-3. EVERY LINE IS AN OUTLINE. Each carcass panel is its own rect and the
-   `CARCASE` layer maps to `PEN.OUTLINE` 0.50 (`layers.js:25`), so a
-   composed wall prints panel-edge on panel-edge on unit-outline, all
-   at the heaviest visible weight. At 1:15 on A3 that reads as a
-   marker, not a pen.
-4. THE LEGS ARE BRICKS, ON BOTH SHEETS. `frontElevation.js:302–308` and
-   the same block in `views.js` draw each leg as one bare rect —
-   measured: 8 `LEG_BLOCK` rects on /1 AND /2 of a three-unit wall. In
-   the built kitchen the plinth hides them; on the fronts sheet they
-   have no business existing at all.
-5. `/2` HAS NO DRAWERS. `buildCarcassElevation` (`views.js`) filters
-   `role !== 'drawer_box'` — measured: a BUDR's 15 drawer-box panels
-   produce ZERO entities; six runner lines float in an empty box.
-6. THE SECTIONS: horizontal EXISTS (the set's last sheet — check it
-   renders on his project; T42's census note names any wall it
-   skipped); vertical DOES NOT EXIST — no builder anywhere under
-   `src/engine/drawings/`. Never written, not regressed.
-
-And the SEVENTH, the runners (F7): overlay box 490 → ask NL 500 →
-ladder rung 500 → the LIVE bucket manifest (fetched 20.08, HTTP 200)
-tops out at **450** → `runnerEntry` null → the grey L-profile stand-in.
-Nothing overrides anything; the fallback wins by silence. T42-F2's
-probe was green because its showroom INVENTED rung 500
-(`760H500T_3000500.glb`, article "3000500T" — no such file, no such
-article exists in the shop). The missing rungs are the owner's own DATA
-task (`runner-bucket-patch.md`, delivered 20.08, NL 500–700); this
-turn's F7 makes the app honest whether or not the upload has happened.
+Dictated by the owner, 23.08.2026, with screenshots: the current settings
+step is *"do dupy — za małe, chaotyczne, wszystko naraz"*, the Egger
+window is *"okno w oknie, przesuwamy, nic nie widać, gubimy się"*. This
+turn rebuilds step 3 (Scope) and step 4 (Project settings) of the New
+project wizard into a guided, tabbed sequence. **Wardrobes are the
+subject; kitchen-only fields appear only for Kitchen.**
 
 ## Iron rules (binding)
 
-1. **Zero-stop overnight run.** Skip-and-note, PR before morning
-   regardless. Sacrifice order if the night is short, first to fall
-   first: F5b (A-A), then F5a (wall sections), then F4 (pen map).
-   **F1, F2, F3, F6 and F7 never fall.**
-2. **Engine contract: BYTE-IDENTITY.** Every feature this turn lives in
-   `src/engine/drawings/**`, the two drawing callers
-   (`DrawingModal.jsx`, `ConfiguratorPage.jsx`), `lib/drawingExport.js`,
-   and for F7 in `3d/Hardware.jsx` and `engine/checks.js` — every one a
-   READER of `computeCabinet()`'s answer, never its author.
-   `computeCabinet` is not in any feature's blast radius; **no additive
-   fields either** — three of the six configs carry drawers, so even an
-   "innocent" published extra would move their bytes. Where the A-A
-   section needs a depth the engine does not publish, it asks the
-   modules that already own the answer (the runner ladder, the profile,
-   the params) — it never teaches the engine new words.
-   `scripts/t43-classify.mjs` (T42's, re-headed), six configs
-   IDENTICAL, UNNAMED=0, empty buckets.
-3. **Sanctity — THIS TURN'S NAMED LICENCE.** The owner's instructions
-   are the quotes at the top. The licence covers, BY NAME:
-   - `frontElevation.js:302–308` — the leg-rect block: DELETED from the
-     fronts elevation (F1); its twin in `views.js` REPLACED by the leg
-     symbol (F3).
-   - `frontElevation.js` — `buildFrontElevation` gains a `frontsOnly`
-     option and a `shakerFrame` option; `frontDetail` gains the
-     threaded frame. Signature EXTENSIONS, defaulted so every existing
-     caller compiles and behaves identically unless it asks.
-   - `views.js buildCarcassElevation` — the `drawer_box` exclusion:
-     REPLACED by the drawn drawer boxes (F3).
-   - `layers.js` — no layer deleted; the PEN mapping of panel rects
-     moves to the entity (`pen:'VISIBLE'`), the layer table untouched.
-   - `3d/Hardware.jsx`, the `Runners` component — the stand-in
-     rendering: the `plain` list, `placeFace`, `placeFlange` and BOTH
-     `<Pieces>` blocks: DELETED (F7; the owner's sentence *"jak kod
-     nadpisuje to go usuń"* is the licence). `reportHardware` stays.
-   - `RightPanel.jsx:768` — the dead `|| p.part === 'RAIL-PART'`
-     condition: DELETED (T42 leftover, harmless, licensed now).
-   - `checks.js:407` — the dead `p.part !== 'RAIL-PART'` exclusion:
-     DELETED (same leftover).
-   Anything beyond this list: not deleted, not changed. Every removal
-   named in the PR body.
-4. **THE UNIT CARD DOES NOT MOVE.** The card is a workshop sheet and
-   its hidden lines are its value. Pin it: a test renders the card SVG
-   for a fixture unit BEFORE and AFTER and asserts byte-identity — with
-   exactly TWO licensed deltas, named in the test: (a) when the project
-   carries a shaker frame, the card's shaker inset moves to it (F2
-   fixes the card's lie too); (b) stroke-widths follow the F4 pen map.
-   Geometry otherwise byte-identical.
-5. **LISP untouched.** Every drawing this turn is app-side paper; the
-   kits' own FRONT views are CNC artefacts and are not the subject.
-   State it in the PR.
-6. **No new dependencies.** PDF assertions stay byte-level; content
-   assertions run on the SVG string and the entity lists, which are
-   numbers and need no rasteriser. Suite never `--silent`. One commit
-   per feature.
-7. **PROVE THE THING, NOT THE FIELD** — a content claim is asserted on
-   the ENTITY LIST or the SVG numerics, and every sheet is screenshot
-   from the real preview with real pointer input. Probes under
-   `verify/t43/`.
-8. **THE SHOWROOM IS THE SHOP.** Banned, permanently: a probe or test
-   showroom may serve ONLY rows the committed snapshot
-   `reference/hardware/movento.json` names (today byte-equal to the
-   live bucket: NL 250–450, 40 files, articles 8-digit). It may
-   fabricate GLB BYTES for those rows; it may not invent a row, a rung,
-   a variant or an article the snapshot does not carry. Wherever the
-   showroom catalogue is composed today (`lib/hardwareSource.js` and
-   the probe scripts), pin it to the snapshot, and add a suite guard:
-   showroom NLs ⊆ snapshot NLs, showroom articles ⊆ snapshot articles.
-   When the owner uploads new rungs, refreshing the snapshot is one
-   curl — the command is in `runner-bucket-patch.md`; a stale snapshot
-   makes probes CONSERVATIVE, never optimistic, which is the correct
-   direction of error.
+1. **Zero-stop overnight.** PR before morning. Sacrifice order, first to
+   fall first: F8 (save-set DB round-trip may fall back to
+   local-only with a named skip), F6, F5-shine. **F1, F2, F3, F4 never
+   fall.**
+2. **BYTE-IDENTITY** — this is a UI/store turn. `computeCabinet()` and
+   `src/engine/**` are untouched, byte for byte. `t44-classify` (T43's,
+   re-headed): six IDENTICAL, UNNAMED=0.
+3. **Sanctity.** No function deleted. `SettingsPanel.jsx` leaves the
+   does-not-touch list for the FIRST time since T41 — restructure is
+   licensed, deletion is not: every existing field survives, relocated.
+   Named removals only: the `Keep as…` control (relocated to F8's final
+   modal) and `Room setup…` button (belongs to Scope/Room step). Both
+   listed in the PR body.
+4. **Every modal**: draggable, opens BESIDE the trigger, never over it.
+   Tabs across the top of the step-4 sequence — the user can return to
+   any completed tab at any time; Next validates only the current tab.
+5. **Visibility engine (the reason for submodals):** every tab, submodal
+   and field carries `audience: 'factory' | 'both'`. App-level mode
+   (header toggle, default `factory`, persisted) filters the tree.
+   Retail sees: Ustawienia (read-only basics), material/colour pickers,
+   drawer choice, front type + opening + shine, hardware COLOUR only,
+   summary. Factory sees everything. One tree, one filter — never two
+   parallel wizards.
+6. **No new dependencies. Suite never --silent. One commit per feature.
+   Proofs `verify/t44/`** — a probe drives the wizard end-to-end with
+   real pointer input, screenshots every tab and submodal.
+7. **SQL PRZED push** — F8 ships `supabase/migrations/t44_settings_sets.sql`:
+   `cc_settings_sets(id uuid pk default gen_random_uuid(), name text not
+   null, payload jsonb not null, created_at timestamptz default now())`,
+   RLS enabled, owner-only policies matching the other `cc_*` tables.
+   The app degrades gracefully without it (local list + amber note).
+
+## Owner-overridable defaults baked into this spec
+
+The owner approved the plan with five details open; these defaults are
+LAW for the night unless his push edits them here: (1) depth default
+stays **568**; (2) factory/retail = app-level header toggle;
+(3) veneer picks from a LIST like spray (no tile assets exist);
+(4) opening options are exactly `push-to-open / handles / knobs /
+J-handle` — no separate "pull"; (5) `Infill at the wall` lives in
+Produkcja (his own TBD, revisit later).
 
 ---
 
-## F1 [CRITICAL] — /1 is FRONTS, and nothing that hides behind them
+## F1 [CRITICAL] — Scope: One wall first, and the wall gets a face
 
-The fronts sheet of a wall shows what the client sees: **fronts, end
-panels, infills, the plinth line, the unit silhouette, handles, door
-swings, unit numbers, the building fabric, the chains. Nothing else.**
+- Step 3: **One wall is the FIRST card and the default focus**; Whole
+  room second. Copy unchanged.
+- Choosing One wall opens the **wall elevation modal** (front view):
+  fields width + height; the elevation redraws live.
+- Right-hand column of buttons (styled properly, not bare):
+  `Add door` · `Add window` · `Add slope`. Each drops an element on the
+  elevation; elements are draggable on the wall and editable
+  (double-click → its small modal: position + size; slope: side L/R +
+  start height + run). Store them on the wall model the Room path
+  already uses — ONE wall schema, no twin.
+- **Save (green)** → wizard continues to Project settings. Back returns
+  without losing the wall.
 
-- `buildFrontElevation` gains `frontsOnly: true` (default `false`):
-  - drawn panels: `isFront(p)`, `role === 'end_panel'`,
-    `role === 'infill'`, `role === 'plinth'` — and no other panel;
-  - NO hidden lines of any kind — the option removes the entities, it
-    does not restyle them: `/1` must contain ZERO dashed geometry;
-  - NO legs (iron rule 3's deletion);
-  - the unit silhouette rect stays — it is what the eye reads first —
-    at `pen:'OUTLINE'`;
-  - front detail, swings, handles, unit number, chains: exactly as now.
-- `buildWallElevation` passes `frontsOnly: withFronts` — the /1 sheet
-  gets the clean view, and NOTHING ELSE in the app changes behaviour,
-  because the option defaults off (iron rule 4 pins the card).
+Tests: store round-trip of a wall with door+window+slope; probe
+screenshots `f1-one-wall-first.png`, `f1-wall-elevation-editor.png`.
 
-Tests (the thing): on the F6 project, the /1 entity list contains zero
-entities with `hidden`, zero on `SHELVES`, zero on `LEG_BLOCK`; the /1
-SVG contains no `stroke-dasharray` on geometry layers (title-block
-rules excluded by layer name); every DRAWER-FRONT and FRONT rect IS
-present.
+## F2 [CRITICAL] — the step-4 shell: tabs, sequence, visibility
 
-Proof: `f1-wall-1-fronts-clean.png` — the /1 sheet of the F6 project,
-preview, next to the same wall's /2.
+- Replace the single scroll with a tabbed sequence:
+  `1 Ustawienia → 2 Carcases → 3 Fronts → 4 Hardware → 5 Produkcja →
+  6 Podsumowanie`. Tabs stay clickable once visited; Next advances.
+- The visibility engine of iron rule 5 lives here: one declarative map
+  `{tabId, audience}` + per-field flags. Retail simply never renders
+  factory nodes — no disabled ghosts.
 
----
+Tests: tab return keeps state; retail mode renders zero factory-flagged
+nodes (DOM assert). Proof `f2-tabs-and-retail.png` (both modes side by
+side).
 
-## F2 [CRITICAL] — the shaker is drawn at THE PROJECT'S millimetres
+## F3 [CRITICAL] — tab 1 · Ustawienia
 
-The design already stores the number (`design.fronts.shakerFrame`,
-pinned per saved job by `projectStore.js:520`); the drawings never ask.
+- Number + Client: read-only (chosen in step 1). Type read-only.
+- **Saved settings set**: dropdown fed from `cc_settings_sets` (F8),
+  default `Default settings`. `Keep as…` REMOVED from here (rule 3).
+  `Room setup…` REMOVED (rule 3).
+- Dimensions: default height **2100**, plinth **100** with label
+  `Plinth height (toe kick)`, depth **568**; the total line stays.
+  Ceiling/infill question stays as is.
+- Base unit height / Wall unit height / Wall mount height: rendered
+  **only when project type is Kitchen** — wardrobe never sees them.
 
-- `wallDrawingSheets` gains `design` in its args; both callers pass
-  `project.design` (`ConfiguratorPage.jsx:377` call site,
-  `DrawingModal.jsx` wallSet memo).
-- `buildWallElevation` → `buildFrontElevation` → `frontDetail` thread
-  ONE resolved number: `shakerFrameMm(design, profile)` — resolved once
-  at the sheet level, passed down as `shakerFrame`, never re-resolved
-  per panel.
-- The unit card path (`card.js` → `buildFrontElevation`, and the top
-  view's `frontDetail` at `views.js:205`) threads the same number — the
-  card told the same lie.
-- `shakerFits` keeps deciding whether the frame fits each front, at the
-  THREADED frame — a 100 mm drawer front that cannot carry an 85 mm
-  frame stays plain, exactly as the saw would leave it.
+Proof `f3-ustawienia-wardrobe-vs-kitchen.png`.
 
-Tests: F6 project carries `shakerFrame: 85`. The drawn inner rect's
-inset on /1 equals 85.0 for every front that fits it (SVG numeric
-assert); with no design the inset equals the profile default; a front
-too small for the frame draws no inner rect. The card test of iron
-rule 4 names its delta here.
+## F4 [CRITICAL] — tab 2 · Carcases, and the picker that stops fighting you
 
-Proof: `f2-shaker-85-not-60.png` — one front close-up with the measured
-inset printed in the caption.
+- Opening question: **"Ile typów materiału carcase?"** (1–3) → that many
+  submodals, sequential, each with its own tab-dot.
+- Submodal = the NEW material picker, full-width panel (no
+  window-in-window, nothing floating over the wizard):
+  - categories separated hard: `Laminat` | `Veneer` | `Spray`;
+  - Laminat: LARGE Egger tiles (min 96 px swatch, name in full-size
+    type), a search box that actually filters as you type, source =
+    the same `egger-decors.json` + thumbs the 3D uses;
+  - Veneer: dropdown list; Spray: dropdown list, NO tiles (owner's
+    explicit order — tiles here "zakłócają całość");
+  - end of submodal: drawers for this carcase type —
+    `Same as board` / `Ready-made system`; the choice writes the flag
+    BOM already understands (runner assignment pending).
+- After the last submodal: **Sheets assignment** (material → sheet), the
+  existing machinery relocated, `audience: 'factory'`.
+- Tab ends with a summary of the chosen types → Next.
 
----
+Tests: N=2 produces two submodals and two BOM material rows; search
+filters; spray renders zero tiles. Proofs `f4-picker-large.png`,
+`f4-two-types-flow.png`.
 
-## F3 [HIGH] — /2 shows the drawers it is FOR, and the legs become legs
+## F5 [HIGH] — tab 3 · Fronts
 
-**Drawers.** `buildCarcassElevation` draws every drawer BOX as its
-front-plane opening: one solid rect per box — the stack's x-extent by
-each box's side height at its y — on the `SHELVES` layer with
-`solid: true` (the door is off; you are looking straight at it),
-`pen:'VISIBLE'`. Read the geometry from the engine's published
-`drawer_box` panels — group them per box the way `hardware3d.js`
-already reads the sides — never re-derive a height. Runner lines stay,
-now crossing real boxes instead of air.
+- Same procedure as F4: **"Ile kolorów frontów?"** → N submodals with
+  the same picker.
+- Tail of the tab: **front type** (existing options), **opening**:
+  `push-to-open / handles / knobs / J-handle`, and **shine** — and
+  shine must actually reach the 3D material (the existing gloss param;
+  if none exists, wire the material roughness — visibly).
 
-**Legs.** The bare rect is replaced (licensed) by a leg SYMBOL on /2
-only: top plate line under the carcass bottom, a thin stem, a foot
-line — three `THIN` lines per leg at the engine's own
-`legs.positions` / `legs.width`. On /1 legs do not exist (F1).
+Proof `f5-fronts-and-shine.png` (matte vs shine, same decor).
 
-Tests: F6's BUDR contributes exactly its box count of solid drawer
-rects to /2 and zero to /1; `LEG_BLOCK` entity count on /2 equals
-`legs.positions × 3` per legged unit and 0 on /1.
+## F6 [HIGH] — tab 4 · Hardware
 
-Proof: `f3-wall-2-drawers-and-legs.png`.
+- All existing hardware choices, relocated; retail sees ONLY colour.
 
----
+Proof `f6-hardware-factory-vs-retail.png`.
 
-## F4 [HIGH] — the pen map: a silhouette is heavy, a panel edge is not
+## F7 [HIGH] — tab 5 · Produkcja (factory-only)
 
-- Panel rects (all views) carry `pen:'VISIBLE'` (0.35) on the entity;
-  the composed unit silhouette rect carries `pen:'OUTLINE'` (0.50);
-  hidden stays `HIDDEN` (0.25); legs/hardware `THIN`; dimensions stay
-  ANNOTATION — the ladder itself (`layers.js PEN`) does not change,
-  only who asks for which rung.
-- Section CUT lines (F5) are the one user of `PEN.CUT` 0.70 — the
-  heaviest ink on any sheet, exactly as the table already says.
+- `Infill at the wall` (default here, rule "defaults" pt 5).
+- **Measurements + sheet sizes per chosen material**: exactly the
+  materials picked in F4/F5, listed by name — 2 types → 2 blocks. The
+  existing measurement fields, grouped per material instead of the
+  current pile.
 
-Test: an SVG stroke-width census of the F6 /1 and /2: the set of widths
-is a subset of the PEN ladder; the count of 0.50-weight geometry rects
-per sheet equals the number of drawn units (their silhouettes); no
-geometry entity resolves above 0.50 outside a section sheet.
+Proof `f7-produkcja-per-material.png`.
 
-Proof: `f4-pen-census.txt` (the census, printed) +
-`f4-line-weights.png`.
+## F8 [HIGH] — tab 6 · Podsumowanie + the save-set finale
 
----
+- Summary of every choice, grouped by tab, retail-filtered.
+- **Final separate modal**: "Zapisać te ustawienia jako Twój standard?"
+  big Y/N + name field → INSERT into `cc_settings_sets` (payload = the
+  whole settings object). The list in F3 reads from the same table.
+  Without SQL applied: local fallback + amber note, named skip.
 
-## F5 [HIGH] — the vertical sections. BOTH. The owner has said it twice.
-
-### F5a — `Wall X /3`: the wall's own section
-
-One section sheet per wall, bound after /2. The cut station is the
-CENTRELINE OF THE LEFTMOST FLOOR-BAND MEMBER; every member of every
-band whose x-range contains the station is drawn cut; members that do
-not reach the station are omitted (a section is not a collage).
-
-Drawn, per cut member, from params + profile + published answers ONLY
-(iron rule 2): the carcass profile depth × height at its base — sides,
-top and bottom boards as CUT bars of `board_t`; the back at its
-thickness; the plinth recess; shelves as CUT bars at their y and their
-depth setback; drawer boxes as side profiles — front setback to the
-runner ladder's nominal for that row (`runnerAskFor`, the module that
-owns the number since T42-F2), side height at its y; the front leaf at
-the front plane. Building fabric: floor and ceiling in red. Chains:
-heights up the right (bands), ONE depth chain along the bottom of the
-deepest cut member. Title `Wall A /3`, and under it the station:
-`section at unit 01`.
-
-### F5b — `Section A-A`: through the cabinet the owner points at
-
-- `DrawingModal`, walls list: a `Section A-A through:` dropdown listing
-  every drawable unit (the census already knows them), default
-  `— none —`. Choosing one appends a sheet `Section A-A — unit 02` to
-  the SET (in `wallDrawingSheets`, so PDF, DXF and preview all carry
-  it — one source, as ever). The choice is passed as an arg; it is NOT
-  stored in the project this turn (a drawing option, not a design
-  decision — if the owner wants it remembered, that is a sentence in a
-  future turn).
-- Content: the same section grammar as F5a applied to ONE unit at ITS
-  centreline, plus that unit's own height/depth dimension pair.
-
-Tests: F6 project → the sheet list is exactly `Wall A /1, /2, /3,
-Wall B /1, /2, /3, Horizontal section` (+ `Section A-A — unit …` when
-picked); the /3 cut-member set matches the station's x-test done in
-the test itself; every CUT entity resolves to `PEN.CUT`; the A-A sheet
-appears in the PDF page count and the DXF zip when picked and nowhere
-when not.
-
-Proofs: `f5a-wall-3-section.png`, `f5b-section-aa-through-budr.png`.
-
----
-
-## F6 [CRITICAL] — the proof project is a KITCHEN, and every sheet is looked at
-
-The T42 lesson, made law: a wall-drawing probe on a project with no
-shelf, no drawer and no shaker proves paper exists, not that it says
-anything.
-
-- The seeded project, in the probe AND mirrored as a node fixture:
-  - Wall A: BUD 600 with 2 shelves + BUDR 500 (its default drawer
-    stack) touching it, WUD 600 hung over the BUD with 1 shelf;
-  - Wall B: one BUD, plus one unit TURNED AWAY (the census sentence
-    must appear under the sheet list);
-  - design: `frontType 'S'`, `shakerFrame: 85`; handles on; room 2400;
-  - the probe builds it through the STORE's own actions, driving the
-    real app with real pointer input.
-- The probe walks EVERY sheet in the preview, screenshots each, then
-  exports the PDF and asserts bytes + page count = sheet count, and
-  exports the DXF zip and asserts one file per sheet.
-- Every F1–F5 test above runs against THIS project. A green turn is a
-  turn where this kitchen's paper is right.
-
-Proof: `f6-all-sheets-walked/` (one PNG per sheet, named as the sheet
-is), `f6-wall-pdf-probe.txt`.
-
----
-
-## F7 [HIGH] — the runner stand-in dies, and a missing article SPEAKS
-
-Owner, 20.08, after the fourth grey overlay: *"jak kod nadpisuje to go
-usuń."* The trace is in the header. Nothing overrides anything — the
-grey L-profile is a fallback that wins by silence, and the owner has
-ordered it shot. The missing rungs themselves are his own DATA upload
-(`runner-bucket-patch.md`); this feature makes the app honest whether
-or not that upload has happened yet.
-
-- `3d/Hardware.jsx`, `Runners`: DELETE the stand-in rendering — the
-  `plain` list, `placeFace`, `placeFlange` and both `<Pieces>` blocks
-  (iron rule 3). A row with no model draws NOTHING. `reportHardware`
-  stays byte-for-byte — the walk still tells a model from a hole, and
-  its `reason` strings are unchanged.
-- This is GLOBAL, by his order: offline, mock and showroom modes lose
-  the grey runner too. An empty groove and a spoken warning, never a
-  fake.
-- `engine/checks.js`: extend the T32 runner rule's own plumbing with
-  one more verdict. Catalogue LOADED and the drawer's resolved rung has
-  no article → RED, per drawer: `Runner NL500 (T): no article in
-  catalogue — upload the model or adjust the ladder.` Catalogue not
-  loaded at all → ONE amber project-level note: `hardware catalogue
-  unreachable — runners not verified`. Never a red wall per drawer for
-  a dead network.
-- Tests (node, the registry not the pixel), seeded with the COMMITTED
-  SNAPSHOT (iron rule 8):
-  - overlay wardrobe (box 490) → zero runner models mounted,
-    `reason:'no-url'`, and the red check names NL 500 and the variant;
-  - inject ONE test-local catalogue row for 500/T
-    (`setRunnerCatalogue`, test scope only — the snapshot file is not
-    edited) → the same drawer mounts a model and the red check clears;
-  - no catalogue at all → the single amber note, zero reds;
-  - a BUDR whose rung the snapshot DOES carry (450) mounts exactly as
-    before — the deletion removed a fallback, not the channel.
-
-Proofs: `f7-empty-rung-speaks.png` (the 3-D with no grey runner and the
-red check beside it), `f7-with-article-mounts.txt` (the test-local
-injection run, printed).
+Tests: save → reload → the set appears in F3's dropdown and re-applies
+byte-equal settings. Proof `f8-save-set-roundtrip.png`.
 
 ---
 
 ## Execution order
 
-F1 → F2 → F3 → F7 → F4 → F5a → F5b; F6 is woven through the drawing
-features (the project is built first, the assertions accrue per
-feature). Sacrifice order if the night is short: F5b, then F5a, then
-F4. **F1, F2, F3, F6, F7 never fall.**
+F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8. Probe woven through (one wizard
+walk, every screen shot).
 
 ## What this turn does NOT touch
 
-`computeCabinet()` and every engine module outside `drawings/`,
-`checks.js` and the named leftovers (`RightPanel.jsx`). The unit card's
-behaviour beyond the two named deltas (shaker inset, pen widths). The
-CNC/DXF machine path. The kits. The BOM — F7's check SPEAKS about the
-missing article; the BOM already prints the yellow named spec for it
-and keeps doing exactly that. The rail — T42 finished it; do not
-reopen. Golden fixtures. The six configs' bytes. The live Supabase
-bucket and `reference/hardware/movento.json` — the snapshot is refreshed
-by the OWNER's curl, never edited by a turn.
+`computeCabinet()` and all of `src/engine/**`. The drawings system. The
+rail. The runner channel. Golden fixtures. The six configs' bytes. The
+canvas/3D beyond F5's shine wiring.
 
 ## Morning audit will run
 
-Fresh clone → clean-room install → full suite → build → t43-classify
-vs main → BYTE-IDENTITY ×6, UNNAMED=0 → deletion audit against iron
-rule 3's list, anything outside fails the turn → the unit-card pin test
-read by hand → the showroom-⊆-snapshot guard read by hand → the F6
-probe re-run by the auditor, every sheet's PNG opened and LOOKED AT →
-the F7 registry probe re-run against the snapshot → verify/t43 complete
-→ verdict → the owner's numbered eye-test list.
+Fresh clone → suite → build → t44-classify (six IDENTICAL) → relocation
+audit: every pre-existing settings field found alive in its new tab,
+the two licensed removals and nothing else → retail-mode DOM audit →
+the wizard probe re-run, every screenshot LOOKED AT → verdict → the
+owner's numbered eye-test list.

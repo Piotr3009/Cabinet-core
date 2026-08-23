@@ -100,6 +100,21 @@ export default function App() {
   }, [dirty, unitCount]);
 
 
+  // ─── TURN 45 (CLAUDE.md F2): WHICH DOOR THIS APP WAS OPENED THROUGH ──────
+  //
+  // *"One codebase, TWO entries: the workshop app hardwires `factory`; a
+  // separate route `/client` … hardwires `retail`."* The word itself is read at
+  // boot by `stores/uiStore.js` (`entryAudience()`); what happens HERE is that
+  // the page SAYS which door it is, on `<html>`, so the fact is readable from
+  // outside without asking a React tree to confess. Nothing branches on it in
+  // this file: there is one app, one tree and one filter, and the head only
+  // decides which of that tree's rows are drawn.
+  const audience = useUiStore((s) => s.audience);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.setAttribute('data-app-entry', audience);
+  }, [audience]);
+
   // ─── CHAT-FIX 16.08 (owner): THE BUILD STAMP ──────────────────────────────
   // "nic nie weszło" vs "the bundle has it" cost an afternoon — from now on
   // the app SAYS which build it is: a small corner badge and one console

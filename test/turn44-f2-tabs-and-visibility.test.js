@@ -24,10 +24,6 @@ import {
 // TREE and the FILTER, and that is deliberately where the rule lives.
 
 const WIZ = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
-const TOGGLE = readFileSync(new URL('../src/components/AudienceToggle.jsx', import.meta.url), 'utf8');
-const UI = readFileSync(new URL('../src/stores/uiStore.js', import.meta.url), 'utf8');
-const TOP = readFileSync(new URL('../src/components/TopBar.jsx', import.meta.url), 'utf8');
-const START = readFileSync(new URL('../src/components/StartScreen.jsx', import.meta.url), 'utf8');
 
 // ── the sequence itself ──
 
@@ -195,29 +191,24 @@ test('a head that loses its tab is not left standing on it', () => {
   assert.match(WIZ, /if \(!tabs\.some\(\(t\) => t\.id === tab\)\) setTab\(firstTab\(audience\)\);/);
 });
 
-// ── the app-level toggle ──
-
-test('the mode is APP-level, default factory, and persisted', () => {
-  assert.match(UI, /const AUDIENCE_KEY = 'cc\.audience';/);
-  assert.match(UI, /audience: loadAudience\(\),/);
-  assert.match(UI, /setAudience: \(v\) => set\(\{ audience: saveAudience\(normaliseAudience\(v\)\) \}\)/);
-  assert.match(UI, /localStorage\.setItem\(AUDIENCE_KEY, value\)/);
-  assert.match(UI, /return normaliseAudience\(localStorage\.getItem\(AUDIENCE_KEY\) \|\| DEFAULT_AUDIENCE\)/);
-});
-
-test('the toggle is in the HEADER of both screens a wizard opens from', () => {
-  assert.match(TOGGLE, /data-audience-toggle="1"/);
-  assert.match(TOGGLE, /data-audience-option=\{id\}/);
-  assert.match(TOP, /<AudienceToggle/);
-  assert.match(START, /<AudienceToggle/);
-});
+// ── the app-level head ──
+//
+// T44 shipped this as a HEADER TOGGLE, remembered in `cc.audience`. T45's F2
+// removes the toggle by name (iron rule 4) and hardwires the head to the DOOR
+// instead — see test/turn45-f2-one-codebase-two-entries.test.js, which is
+// where the three assertions that used to stand here now live. What survives
+// unchanged, and is what this file has always really been about, is that the
+// head reaches NOTHING but the drawing.
 
 test('the mode reaches nothing but the drawing', () => {
-  // It must not touch the design, the profile, the BOM or the engine.
-  assert.doesNotMatch(TOGGLE, /setDesign|setProjectDefaults|computeCabinet|engine\//);
   assert.doesNotMatch(
     readFileSync(new URL('../src/lib/wizardTabs.js', import.meta.url), 'utf8'),
     /import .* from '\.\.\/engine\//,
     'the visibility engine imports no engine at all',
+  );
+  assert.doesNotMatch(
+    readFileSync(new URL('../src/lib/appEntry.js', import.meta.url), 'utf8'),
+    /setDesign|setProjectDefaults|computeCabinet|engine\//,
+    'and neither does the door that chooses the head',
   );
 });

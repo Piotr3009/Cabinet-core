@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import MockModeBadge from './MockModeBadge.jsx';
-import AudienceToggle from './AudienceToggle.jsx';
 import NewProjectFlow from './NewProjectFlow.jsx';
 import {
   browserStorage, deleteLocalProject, listLocalProjects, loadLocalProject,
@@ -120,10 +119,11 @@ export default function StartScreen() {
           <span className="font-semibold tracking-[0.2em] text-gold text-xl select-none">CABINET CORE</span>
           <span className="text-xs text-ink-400">Parametric cabinet &amp; fitted-furniture configurator</span>
           <span className="flex-1" />
-          {/* T44 iron rule 5: the head that will read the wizard, chosen before
-              it is opened — the switch is the same one the editor's top bar
-              carries, and the same remembered app-level state. */}
-          <AudienceToggle />
+          {/* T45 F2 / iron rule 4: the Factory/Retail switch that stood here is
+              REMOVED. The head that reads the wizard is the DOOR the app was
+              opened through — `/client` is retail, everything else is the
+              workshop (lib/appEntry.js) — and it is not a thing to be chosen
+              on the way in. */}
           <MockModeBadge />
         </header>
 

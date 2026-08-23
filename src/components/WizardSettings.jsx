@@ -27,7 +27,6 @@ import ColourPicker from './ColourPicker.jsx';
 import JoineryPreview from './JoineryPreview.jsx';
 import SheenSlider from './SheenSlider.jsx';
 import WizardHardware from './WizardHardware.jsx';
-import AudienceToggle from './AudienceToggle.jsx';
 import NumberField from './NumberField.jsx';
 // ─── TURN 36 (CLAUDE.md F1): ONE SETTINGS MODAL ─────────────────────────────
 // The two rows the old panel owns and the unified one now shows are IMPORTED
@@ -884,16 +883,12 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
             </li>
           );
         })}
-        {/* ─── TURN 44 (CLAUDE.md iron rule 5): THE TWIN CONTROL ─────────────
-            The head is chosen in the HEADER, which is where rule 5 puts it —
-            and the header is BEHIND this window while the wizard stands open,
-            because a modal shell closes on a pointer-down outside itself. So
-            the switch has a twin here, on the tab bar, exactly as the
-            brightness slider has one on the toolbar and one in the View menu:
-            the SAME app-level state and the same setter, so moving either
-            moves the other because there is only one value. */}
-        <li className="flex-1" />
-        <li><AudienceToggle /></li>
+        {/* ─── TURN 45 (CLAUDE.md F2 / iron rule 4): AND THE TWIN DIED TOO ──
+            T44 carried a Factory/Retail switch here because the header's own
+            was behind the modal. F2 removes the switch BY NAME, so there is no
+            twin to carry: the head is the DOOR (`lib/appEntry.js`), read once
+            at boot, and this strip only reads `audience` to decide which of one
+            tree's rows to draw. */}
       </ol>
 
       <div className="space-y-3" data-wizard-tab-body={tab}>
@@ -901,41 +896,25 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
         <>
           {show('ustawienia.identity') && (
             <div data-wizard-node="ustawienia.identity">
-                  {/* ── 1 · Number · Client · Type — the type is a label, never a second dropdown ── */}
-                  <div className="grid grid-cols-[150px_1fr_180px] gap-3 items-end">
-                    <label className="block">
-                      <span className="cc-label">Number</span>
-                      <input
-                        className="cc-input"
-                        value={project.number || ''}
-                        // ─── T44 F3: READ-ONLY — "chosen in step 1" ──────────────────
-                        // The number and the client are answered on the wizard's own
-                        // first screen, and a second editable copy of an answer is the
-                        // turn-12 bug in miniature. From the EDIT door there is no step 1
-                        // to have answered them, so there they stay editable.
-                        readOnly={!editDoor}
-                        title={editDoor ? undefined : 'Chosen in step 1 — go Back to change it'}
-                        data-readonly={editDoor ? undefined : '1'}
-                        onChange={(e) => setProjectInfo({ number: e.target.value })}
-                      />
-                    </label>
-                    <label className="block">
-                      <span className="cc-label">Client</span>
-                      <input
-                        className="cc-input"
-                        value={project.client || ''}
-                        readOnly={!editDoor}
-                        title={editDoor ? undefined : 'Chosen in step 1 — go Back to change it'}
-                        data-readonly={editDoor ? undefined : '1'}
-                        onChange={(e) => setProjectInfo({ client: e.target.value })}
-                      />
-                    </label>
+                  {/* ─── TURN 45 (CLAUDE.md F2 / iron rule 4): TWO FIELDS GO ──────
+                      *"Number + Client: REMOVED from 5.1 (step 1 owns them). Type
+                      stays, read-only."*
+
+                      T44 made them read-only, which was half the answer and the
+                      worse half: a greyed copy of an answer somebody already gave
+                      is still a row the eye has to read, still a control the hand
+                      tries, and still two places the same fact is written down.
+                      Step 1 of the wizard asks for the number and the client, the
+                      summary prints them back, and the EDIT door (Settings ▸
+                      Project settings) — which has no step 1 to have asked — keeps
+                      them, because there they are the only place the fact lives.
+
+                      What stays here is the TYPE, and it stays a LABEL: step 2
+                      chose it, and a second control that could disagree with step 2
+                      is the turn-12 bug in miniature. */}
+                  <div className="grid grid-cols-[180px_1fr] gap-3 items-end">
                     <div className="block">
                       <span className="cc-label">Type</span>
-                      {/* T36 F1: a LABEL in the wizard — step 2 chose it, and a second
-                          control that could disagree with step 2 is the turn-12 bug. From
-                          the menu there IS no step 2, so the old panel's own select stands
-                          here instead. Same field, same setter, one of them shown. */}
                       {editDoor ? (
                         <select
                           className="cc-input"
@@ -956,6 +935,34 @@ export default function WizardSettings({ onRoomSetup, onGate, door = 'wizard' })
                         </span>
                       )}
                     </div>
+                    {/* ── the identity, SAID rather than asked (F2) ── */}
+                    {editDoor ? (
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="block">
+                          <span className="cc-label">Number</span>
+                          <input
+                            className="cc-input"
+                            data-project-number="1"
+                            value={project.number || ''}
+                            onChange={(e) => setProjectInfo({ number: e.target.value })}
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="cc-label">Client</span>
+                          <input
+                            className="cc-input"
+                            data-project-client="1"
+                            value={project.client || ''}
+                            onChange={(e) => setProjectInfo({ client: e.target.value })}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-ink-400 pb-2" data-identity-said="1">
+                        {project.number ? `No. ${project.number}` : 'No number yet'}
+                        {project.client ? ` · ${project.client}` : ''} — asked on step 1, and changed there.
+                      </p>
+                    )}
                   </div>
             </div>
           )}

@@ -268,16 +268,56 @@ async function main() {
   //
   // The owner's own camera: standing off the right-hand end of the wall, where
   // the ceiling comes down and the return meets it — the corner in his shot.
-  await page.evaluate(`
-    const v = (${P}.views && ${P}.views.editor) || null;
-    if (v && v.camera) {
-      v.camera.position.set(3.1, 1.35, 3.4);
-      if (v.controls) { v.controls.target.set(1.15, 0.85, 0); v.controls.update(); }
-      v.camera.lookAt(1.15, 0.85, 0);
-    }
-    return Boolean(v);
+  //
+  // The frame is HIS: standing inside the room, off the right-hand end of the
+  // 4000 wall — the corner where the ceiling comes down and the return meets
+  // it. The room is centred on the origin (`roomBounds.centre`), so the wall
+  // runs along z = −1.5 and its low end is at x = +2.0; the camera stands in
+  // front of it and a little above the cut, which is where his own screenshot
+  // was taken from.
+  //
+  // It is placed FROM THE ROOM ITSELF and not from three numbers somebody
+  // guessed: the walk asks `engine/room.js roomWalls` (published on
+  // `window.__ccT46.rooms`) for the wall's own line and its INWARD normal — the
+  // same normal `wallFacesCamera` uses to decide whether the mesh is drawn at
+  // all — and stands `back` metres in front of it. Guessed coordinates put the
+  // first two attempts behind the wall, where the room auto-hides it and the
+  // frame is empty.
+  const aimCamera = async ({
+    along = 0.9, back = 3.0, up = 1.5, at = 0.9,
+  } = {}) => page.evaluate(`
+    // The canvas registers itself as 'room' (3d/Scene.jsx ViewHandle); the
+    // cabinet editor's own window is 'editor'. The walk stands in the room.
+    const v = (${P}.views && (${P}.views.room || ${P}.views.editor)) || null;
+    if (!v || !v.camera) return false;
+    const s = ${P}.project.getState();
+    const room = s.project.room;
+    const w = window.__ccT46.rooms.roomWalls(room)[0];
+    if (!w) return false;
+    const xs = room.corners.map((c) => c.x);
+    const ys = room.corners.map((c) => c.y);
+    const cx = (Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2;
+    const cy = (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2;
+    const on = (t) => ({
+      x: (w.start.x + (w.end.x - w.start.x) * t - cx) / 1000,
+      z: (w.start.y + (w.end.y - w.start.y) * t - cy) / 1000,
+    });
+    const eye = on(${along});
+    const aim = on(${at});
+    // roomWalls publishes the inward normal in PLAN coordinates as
+    // inward: {x, y}; the scene maps plan y onto world z.
+    const ix = Number(w.inward && w.inward.x) || 0;
+    const iz = Number(w.inward && w.inward.y) || 0;
+    v.camera.position.set(eye.x + ix * ${back}, ${up}, eye.z + iz * ${back});
+    if (v.controls) { v.controls.target.set(aim.x, 0.9, aim.z); v.controls.update(); }
+    v.camera.lookAt(aim.x, 0.9, aim.z);
+    v.camera.updateProjectionMatrix();
+    return { eye: [eye.x, eye.z], inward: [ix, iz] };
   `);
-  await page.sleep(700);
+  const framed = await aimCamera({ along: 0.62, back: 7.2, up: 2.1, at: 0.72 });
+  check('the walk stands where the owner stood — in front of the wall, at its low end',
+    Boolean(framed), JSON.stringify(framed));
+  await page.sleep(900);
   const stubTruth = await t46(`JSON.stringify({
     stub: t.slope.ceilingAt(4000, [{ side: 'R', startHeight: 300, run: 900 }], { wallWidth: 4000, wallHeight: 2500 }),
     poly: t.slope.ceilingPolyline({ slopes: [{ side: 'R', startHeight: 300, run: 900 }], wallWidth: 4000, wallHeight: 2500 }).length,
@@ -293,7 +333,15 @@ async function main() {
     const s = ${P}.project.getState();
     const u = s.addUnit('WARDROBE', { wall: 0, x_mm: 400 });
     const id = u.id || u;
-    ${P}.project.getState().updateUnitParams(id, { width: 600, doors: 1, shelves: 4 });
+    ${P}.project.getState().updateUnitParams(id, { width: 600, doors: 1 });
+    // Shelves and a rod through the app's own setters, so the unit is the one
+    // a joiner would have built rather than a params object nobody can make.
+    ${P}.project.getState().addShelves(id, 4);
+    const rod = ${P}.project.getState().addHangerRail(id, { withShelf: false });
+    // …and it hangs where a coat hangs. With four shelves in the box the rod is
+    // born low; 1400 is where a wardrobe rail actually goes, and it is set
+    // through the app's own setter.
+    if (rod) ${P}.project.getState().setRailHeight(id, rod, 1400);
     ${P}.ui.getState().selectUnit(id);
     return id;
   `);
@@ -306,11 +354,35 @@ async function main() {
     Math.abs(JSON.parse(station || '{}').max - 3301.8182) < 0.01, station);
 
   // THE DRAG, with a real pointer on the real canvas.
+  // WHERE THE POINTER GOES. Guessing at the middle of the canvas grabs whatever
+  // happens to be there; the walk projects the cabinet's OWN centre through the
+  // scene's OWN camera, which is the only way a drag test can be about the
+  // cabinet rather than about the framing.
   const aim = await page.evaluate(`
+    const v = (${P}.views && (${P}.views.room || ${P}.views.editor)) || null;
     const c = document.querySelector('canvas');
+    if (!v || !c) return null;
+    const s = ${P}.project.getState();
+    const u = s.units.find((x) => x.id === ${JSON.stringify(born)});
+    const room = s.project.room;
+    const w = window.__ccT46.rooms.roomWalls(room)[u.position.wall || 0];
+    const xs = room.corners.map((q) => q.x);
+    const ys = room.corners.map((q) => q.y);
+    const cx = (Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2;
+    const cy = (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2;
+    const t = (u.position.x_mm + u.params.width / 2);
+    const px = (w.start.x + w.along.x * t - cx) / 1000;
+    const pz = (w.start.y + w.along.y * t - cy) / 1000;
+    const p = new v.three.Vector3(px, (u.params.height / 2 + 100) / 1000, pz).project(v.camera);
     const r = c.getBoundingClientRect();
-    return { x: r.left + r.width * 0.5, y: r.top + r.height * 0.62, right: r.right - 8 };
+    return {
+      x: r.left + (p.x * 0.5 + 0.5) * r.width,
+      y: r.top + (-p.y * 0.5 + 0.5) * r.height,
+      right: r.right - 12,
+    };
   `);
+  check('the pointer is aimed at the cabinet, through the scene’s own camera',
+    Boolean(aim), JSON.stringify(aim));
   const before = await store(`s.units.find((u) => u.id === ${JSON.stringify(born)}).position.x_mm`);
   await page.mouse('mouseMoved', aim.x, aim.y, { buttons: 0 });
   await page.mouse('mousePressed', aim.x, aim.y);
@@ -358,10 +430,11 @@ async function main() {
   const fired = await store(`JSON.stringify(s.runChecks().filter((f) => f.check === 19).map((f) => f.message))`);
   check('F2 — the red Check fires: "Unit under slope minimum (400 mm)"',
     (JSON.parse(fired || '[]')[0] || '').includes('Unit under slope minimum (400 mm)'), fired);
-  await page.evaluate(`${P}.ui.getState().openModal('check', {}); return true;`);
-  await page.sleep(500);
-  await shot('f2-clamp-and-check', { text: 'slope minimum' });
-  await page.evaluate(`${P}.ui.getState().closeModal(); return true;`);
+  await page.evaluate(`${P}.ui.getState().setCheckOpen(true); return true;`);
+  await page.waitFor('document.querySelector("[data-check-panel]")');
+  await page.sleep(400);
+  await shot('f2-clamp-and-check', { dom: '[data-check-panel]', text: 'slope minimum' });
+  await page.evaluate(`${P}.ui.getState().setCheckOpen(false); return true;`);
 
   // …and it CLEARS when the slope goes back.
   await page.evaluate(`
@@ -373,6 +446,21 @@ async function main() {
   await page.sleep(700);
   check('F2 — …and it CLEARS the moment the unit is legal again',
     await store('s.runChecks().filter((f) => f.check === 19).length') === 0, 'no reds');
+
+  // ─── THE PENTAGON STATION ────────────────────────────────────────────────
+  //
+  // Parked at the FAR station the ceiling is under the carcass at both edges
+  // and every cut board is a TRAPEZIUM. The PENTAGON — "the tall edge keeps
+  // full height, the top edge is the diagonal" — appears a metre back, where
+  // the knee of the line falls inside the cabinet's own width. Both are the
+  // same cut; which one you get is the arithmetic's answer and not a flag. The
+  // rest of the walk stands at the pentagon, because that is the picture the
+  // owner drew.
+  await page.evaluate(`${P}.project.getState().moveUnit(${JSON.stringify(born)}, 3100, 1); return true;`);
+  await page.sleep(800);
+  check('the walk stands at the pentagon station',
+    Math.abs(await store(`s.units.find((u) => u.id === ${JSON.stringify(born)}).position.x_mm`) - 3100) < 1.5,
+    'x = 3100');
 
   // ══════════════════════════════════════════════════════════════════════════
   // F3 · THE ENGINE CUTS THE CARCASS
@@ -391,15 +479,17 @@ async function main() {
     };
   })())`);
   const cp = JSON.parse(cutPanels || '{}');
-  check('F3 — the low side is cut and the tall side keeps full height',
+  check('F3 — the low side is cut and the tall side keeps FULL height',
     cp.bur < cp.height && cp.bul === cp.height, `BUL ${cp.bul}, BUR ${cp.bur} of ${cp.height}`);
   check('F3 — the TOP drops to the level of the lowest cut side',
     cp.topY < cp.height, `top at ${cp.topY}`);
-  check('F3 — the BACK is cut on the diagonal', cp.back >= 4, `${cp.back} corners`);
+  check('F3 — the BACK is the PENTAGON: five corners, the tall edge full height',
+    cp.back === 5, `${cp.back} corners — ${JSON.stringify(cp.backPts)}`);
   check('F3 — every CUT panel’s fingerprint carries the cut',
     (cp.stamped || []).length >= 3, JSON.stringify(cp.stamped));
   writeFileSync(`${OUT}f3-panels.json`, `${JSON.stringify(cp, null, 1)}\n`);
 
+  await aimCamera({ along: 0.80, back: 3.4, up: 1.6, at: 0.84 });
   await page.evaluate(`${P}.ui.getState().setXray(true); return true;`);
   await page.sleep(900);
   await shot('f3-cut-carcass-panels', { dom: 'canvas' });
@@ -478,8 +568,6 @@ async function main() {
 
   // THE RAIL, at a fixture station.
   const rail = await page.evaluate(`
-    const s = ${P}.project.getState();
-    s.updateUnitParams(${JSON.stringify(born)}, { rail: true, rail_offset: 1400 });
     const r = ${P}.project.getState().unitResult(${JSON.stringify(born)});
     return JSON.stringify(r.assemblies.rail);
   `);
@@ -513,15 +601,8 @@ async function main() {
   // ══════════════════════════════════════════════════════════════════════════
   // F6a · THE ROOM, AND THE CUT CABINET IN IT
   // ══════════════════════════════════════════════════════════════════════════
-  await page.evaluate(`
-    const v = (${P}.views && ${P}.views.editor) || null;
-    if (v && v.camera) {
-      v.camera.position.set(4.2, 1.9, 4.6);
-      if (v.controls) { v.controls.target.set(1.0, 1.0, 0); v.controls.update(); }
-    }
-    ${P}.ui.getState().selectUnit(null);
-    return true;
-  `);
+  await aimCamera({ along: 0.62, back: 7.8, up: 2.4, at: 0.74 });
+  await page.evaluate(`${P}.ui.getState().selectUnit(null); return true;`);
   await page.sleep(900);
   check('F6a — the cut cabinet renders from the ENGINE’s own panels',
     await page.evaluate(`

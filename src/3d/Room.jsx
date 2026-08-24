@@ -126,7 +126,12 @@ function Wall({
     // ceiling has at the corner the two share — `startHeight` where the slope
     // reaches the wall's end, which is the owner's own sentence. The SAME
     // `ceilingAt`, asked at one x.
-    const cap = Number.isFinite(Number(capY)) ? Number(capY) : height;
+    // `Number(null)` is 0, not NaN — the same trap that cost this house a
+    // classifier run tonight (`puzzle.js topAt`) and that `impliedLegHeight`
+    // and `maskDepthExtra` are already named for. Written the finite way, a
+    // wall with no cap (every wall that is not a return) was capped at ZERO
+    // and drew as a flat line on the floor. The browser walk is what found it.
+    const cap = capY == null || !Number.isFinite(Number(capY)) ? height : Number(capY);
     const line = ceilingPolyline({
       slopes, wallWidth: span, wallHeight: height, from: xOffset, to: xOffset + wall.width,
     }).map((p) => ({ x: p.x, y: Math.min(p.y, cap) }));

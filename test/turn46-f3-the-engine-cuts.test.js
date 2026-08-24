@@ -10,6 +10,7 @@ import {
 } from '../src/engine/puzzle.js';
 import { canonical, dump } from '../scripts/t46-classify.mjs';
 import { slopeCutLine } from '../src/lib/slopeLine.js';
+import { resultFindings } from '../src/engine/cnc/edgeGuard.js';
 
 // ─── TURN 46 · F3 — THE ENGINE CUTS THE CARCASS (gated, LISP-shaped) ────────
 //
@@ -238,6 +239,29 @@ test('every CUT panel\'s fingerprint carries the cut (T41\'s suite law)', () => 
   assert.equal(panelOf(r, 'BOTTOM').meta?.slopeCut, undefined);
   // The CUT SIZE moves with it, which is what `partSignature` is keyed on.
   assert.notEqual(panelOf(r, 'BUR').cnc.drawn_h, panelOf(plainWardrobe(), 'BUR').cnc.drawn_h);
+});
+
+test('the lowered socket row is a CUT-OUT, and the edge guard agrees', () => {
+  // MEASURED FAULT, found by the browser walk: with the top board level at the
+  // low end, the TALL side's socket row no longer breaks its edge — it is a
+  // pocket wholly inside the board, and a cut-out is traced the OTHER way round
+  // or the cutter offsets to the wrong side of the line. Check #9 said so in
+  // the app before any test did. `cutout` is the field this house already has
+  // for exactly that (`cnc/dxf.js pocketPoints`, T34's shoe-box groove).
+  const r = cutWardrobe();
+  const bul = panelOf(r, 'BUL');
+  const sockets = bul.cnc.pockets.filter((p) => p.layer === P.puzzle.layers.socket);
+  const lowered = sockets.filter((p) => p.cutout === true);
+  assert.equal(lowered.length, 2, 'the two top-row sockets are cut-outs');
+  for (const p of lowered) {
+    assert.ok(Math.max(p.y1, p.y2) < bul.h, 'and they are inside the board, not on its edge');
+  }
+  assert.deepEqual(resultFindings(r), [], 'the edge guard has nothing to say');
+  // …and with no cut not one socket carries the field, so nothing moves.
+  for (const p of panelOf(plainWardrobe(), 'BUL').cnc.pockets) {
+    assert.equal(p.cutout, undefined);
+  }
+  assert.deepEqual(resultFindings(plainWardrobe()), []);
 });
 
 test('a cabinet standing under a ceiling higher than itself is not cut at all', () => {

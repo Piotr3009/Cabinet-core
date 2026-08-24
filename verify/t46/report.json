@@ -1,0 +1,206 @@
+{
+ "turn": 46,
+ "steps": [
+  {
+   "label": "the fixture slope is on the wall — R, startHeight 300, run 900",
+   "ok": true,
+   "detail": "{\"id\":\"slope_qv2coay\",\"kind\":\"slope\",\"wall\":0,\"side\":\"R\",\"startHeight\":300,\"run\":900}"
+  },
+  {
+   "label": "ONE ceilingAt, and the walk asks IT (R4)",
+   "ok": true,
+   "detail": "{\"flat\":2500,\"knee\":2500,\"end\":300}"
+  },
+  {
+   "label": "the wall is saved and the wizard is back",
+   "ok": true,
+   "detail": "saved=true"
+  },
+  {
+   "label": "the scribe gap is the PROJECT INFILL, and it is 40",
+   "ok": true,
+   "detail": "design.infill.sideWidth"
+  },
+  {
+   "label": "the walk stands where the owner stood — in front of the wall, at its low end",
+   "ok": true,
+   "detail": "{\"eye\":[0.48,-1.5],\"inward\":[0,1]}"
+  },
+  {
+   "label": "F1 — the return at the slope’s low end is startHeight tall, not room.height",
+   "ok": true,
+   "detail": "{\"stub\":300,\"poly\":3}"
+  },
+  {
+   "label": "F2 — the station is computed for the fixture slope",
+   "ok": true,
+   "detail": "{\"min\":0,\"max\":3301.8182}"
+  },
+  {
+   "label": "the pointer is aimed at the cabinet, through the scene’s own camera",
+   "ok": true,
+   "detail": "{\"x\":614.0174106746787,\"y\":518.27651599913,\"right\":1588}"
+  },
+  {
+   "label": "F2 — a REAL pointer drag moves the cabinet along the wall (R1)",
+   "ok": true,
+   "detail": "1700 → 3301.8182"
+  },
+  {
+   "label": "F2 — dragged to the far end it STOPS at the station, not at the wall",
+   "ok": true,
+   "detail": "x = 3301.8182"
+  },
+  {
+   "label": "F2 — …and it DID enter the slope zone (the point of the turn)",
+   "ok": true,
+   "detail": "the run starts at 3100; the unit stands at 3301.8182"
+  },
+  {
+   "label": "F2 — stopped at the station, the Check has nothing to say",
+   "ok": true,
+   "detail": "0 red(s)"
+  },
+  {
+   "label": "F2 — the red Check fires: \"Unit under slope minimum (400 mm)\"",
+   "ok": true,
+   "detail": "[\"W01: Unit under slope minimum (400 mm) — 250 mm of clear carcass at its far edge, 150 mm short. Slide it out of the slope.\"]"
+  },
+  {
+   "label": "F2 — …and it CLEARS the moment the unit is legal again",
+   "ok": true,
+   "detail": "no reds"
+  },
+  {
+   "label": "the walk stands at the pentagon station",
+   "ok": true,
+   "detail": "x = 3100"
+  },
+  {
+   "label": "F3 — the low side is cut and the tall side keeps FULL height",
+   "ok": true,
+   "detail": "BUL 2150, BUR 893.3333 of 2150"
+  },
+  {
+   "label": "F3 — the TOP drops to the level of the lowest cut side",
+   "ok": true,
+   "detail": "top at 875.3333"
+  },
+  {
+   "label": "F3 — the BACK is the PENTAGON: five corners, the tall edge full height",
+   "ok": true,
+   "detail": "5 corners — [[0,0],[600,0],[600,893.3333],[85.9091,2150],[0,2150]]"
+  },
+  {
+   "label": "F3 — every CUT panel’s fingerprint carries the cut",
+   "ok": true,
+   "detail": "[\"BUR\",\"TOP\",\"BACK\",\"W01-F\"]"
+  },
+  {
+   "label": "F4 — the door over a cut opening is a PENTAGON",
+   "ok": true,
+   "detail": "5"
+  },
+  {
+   "label": "F4 — the hinge side is FORCED to the full-height edge",
+   "ok": true,
+   "detail": "{\"hinge\":\"L\",\"forced\":true}"
+  },
+  {
+   "label": "F4 — every cup is on the tall stile; the diagonal carries none",
+   "ok": true,
+   "detail": "[575.5]"
+  },
+  {
+   "label": "F4 — the hinge-side control is GREY, with the one-line reason",
+   "ok": true,
+   "detail": "{\"present\":true,\"disabled\":true,\"value\":\"L\",\"reason\":\"Cut on the slope — the door opens from the slope, so the hinges are on the full-\"}"
+  },
+  {
+   "label": "F5 — a shelf that would pierce the diagonal does not exist",
+   "ok": true,
+   "detail": "{\"shelves\":[\"SHELF-1\",\"SHELF-2\"],\"refused\":[\"SHELF-3\",\"SHELF-4\"],\"reds\":2}"
+  },
+  {
+   "label": "F5 — …and Check #21 names every one of them, in red",
+   "ok": true,
+   "detail": "2 red(s)"
+  },
+  {
+   "label": "F5 — the rod ends where the line meets its own y",
+   "ok": true,
+   "detail": "{\"was\":[18,582],\"now\":[18,385.3636],\"lost\":196.6364}"
+  },
+  {
+   "label": "F5 — LIVE: dragged out it is whole again, dragged back it re-cuts",
+   "ok": true,
+   "detail": "{\"out\":{\"h\":2150,\"cut\":false},\"back\":{\"h\":400,\"cut\":true}}"
+  },
+  {
+   "label": "F6a — the cut cabinet renders from the ENGINE’s own panels",
+   "ok": true,
+   "detail": "panel.cnc.slopeCut is what the scene clips with"
+  }
+ ],
+ "shots": [
+  {
+   "name": "f1-wall-and-stub-meet",
+   "subject": {
+    "dom": "canvas"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f2-clamp-and-check",
+   "subject": {
+    "dom": "[data-check-panel]",
+    "text": "slope minimum"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "f3-cut-carcass-panels",
+   "subject": {
+    "dom": "canvas"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f4-cut-door-3d",
+   "subject": {
+    "dom": "canvas"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f4-hinge-forced",
+   "subject": {
+    "dom": "[data-hinge-forced]",
+    "text": "opens from the slope"
+   },
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "f5-live-recut",
+   "subject": {
+    "dom": "canvas"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f6a-room-with-cut-unit",
+   "subject": {
+    "dom": "canvas"
+   },
+   "present": true,
+   "detail": "{\"dom\":true}"
+  }
+ ],
+ "failed": 0
+}

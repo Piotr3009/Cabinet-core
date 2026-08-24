@@ -103,7 +103,16 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // the record's own, then the workshop's table) and that WHICH classes are
   // bored is a named policy with a reason per class (`engine/machining.js`).
   const recesses = profile?.appearance?.cuts?.enabled
-    ? panelRecesses(panel, drills, { thickness, skipLayers: [layers?.socket], profile })
+    ? panelRecesses(panel, drills, {
+      thickness,
+      // Turn 46 (F6a): …and the SHAKER rebate on a CUT leaf. Its pocket is a
+      // rectangle whose bounding box reaches past the diagonal, so punching it
+      // through a five-sided board is a hole partly outside its own shape —
+      // which a triangulator is entitled to refuse. A cut shaker leaf renders
+      // as a plain pentagon until a tray exists that can hold five edges.
+      skipLayers: [layers?.socket, ...(slopeCut ? [profile?.front?.types?.S?.pocketLayer] : [])],
+      profile,
+    })
     : [];
   // …and a panel whose ONLY feature is the slope cut is still a shape: a flat
   // cut door has no notch, no tab and no recess, and a `boxGeometry` would

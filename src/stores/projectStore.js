@@ -5166,29 +5166,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units,
       baseOf: (u) => unitBase(u, profile),
       wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
-      // ─── TURN 46 (CLAUDE.md F2): the 400 mm floor, measured HERE ─────────
-      // `src/engine/**` imports nothing from `src/lib/**`, and the ceiling line
-      // has to be the one the wall is drawn from — so the store asks
-      // `lib/slopeLine.js` and hands the check a number. One ceilingAt.
-      slopeShortfallOf: (unit) => {
-        const wallIndex = unit?.position?.wall ?? 0;
-        const slopes = slopesOfWall(s, wallIndex);
-        if (!slopes.length) return null;
-        const minimum = slopeMinimumMm(profile);
-        const infill = slopeInfillMm(migrateDesign(s.project.design));
-        const floorY = floorYOf(unit, null, profile);
-        const shortfallMm = slopeShortfallMm({
-          slopes,
-          wallWidth: Number(walls?.[wallIndex]?.width) || 0,
-          wallHeight: Number(s.project.room?.height) || 0,
-          x: Number(unit?.position?.x_mm) || 0,
-          width: Number(unit?.params?.width) || 0,
-          infill,
-          floorY,
-          minimum,
-        });
-        return { shortfallMm, minimumMm: minimum, clearMm: minimum - shortfallMm };
-      },
       profile,
     });
   },
@@ -5278,6 +5255,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       design: migrateDesign(s.project.design),
       materials: useMaterialAssignmentStore.getState().materials,
       wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      // ─── TURN 46 (CLAUDE.md F2): the 400 mm floor, measured HERE ─────────
+      // `src/engine/**` imports nothing from `src/lib/**`, and the ceiling line
+      // has to be the one the wall is drawn from — so the store asks
+      // `lib/slopeLine.js` and hands the check a number. One ceilingAt.
+      slopeShortfallOf: (unit) => {
+        const wallIndex = unit?.position?.wall ?? 0;
+        const slopes = slopesOfWall(s, wallIndex);
+        if (!slopes.length) return null;
+        const minimum = slopeMinimumMm(profile);
+        const infill = slopeInfillMm(migrateDesign(s.project.design));
+        const floorY = floorYOf(unit, null, profile);
+        const shortfallMm = slopeShortfallMm({
+          slopes,
+          wallWidth: Number(walls?.[wallIndex]?.width) || 0,
+          wallHeight: Number(s.project.room?.height) || 0,
+          x: Number(unit?.position?.x_mm) || 0,
+          width: Number(unit?.params?.width) || 0,
+          infill,
+          floorY,
+          minimum,
+        });
+        return { shortfallMm, minimumMm: minimum, clearMm: minimum - shortfallMm };
+      },
       profile,
     });
   },

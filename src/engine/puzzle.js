@@ -191,7 +191,17 @@ export function singleSocketThreshold(pz, boardThickness) {
  * `+ centrelineExtra` that used to sit on it is gone: the owner does not
  * remember it, it is wrong, and it skewed the whole calculation. Every socket
  * and screw law in this file reads the same half, so the delta is uniform. */
-function horizontalSocket(centreX, edgeY, dir, G, pz, out) {
+/**
+ * @param {boolean} interior  TURN 46 (F3): a socket row that no longer breaks
+ *   the panel's edge. Under a slope the TOP board lands part-way up the TALL
+ *   side, so its socket becomes a CUT-OUT wholly inside the board — and a
+ *   cut-out is traced the other way round, or the cutter offsets to the wrong
+ *   side of the line and takes the pocket out of the board instead of out of
+ *   the hole. `cutout` is the field this house already has for exactly that
+ *   (`cnc/dxf.js pocketPoints`, `cnc/edgeGuard.js pocketLoop`, T34's shoe-box
+ *   groove); the browser walk's Check #9 is what asked for it here.
+ */
+function horizontalSocket(centreX, edgeY, dir, G, pz, out, interior = false) {
   const S = G / 2;
   const inner = edgeY + dir * -S;             // pocket edge inside the panel
   const outer = edgeY + dir * pz.socketOvershoot;
@@ -199,6 +209,7 @@ function horizontalSocket(centreX, edgeY, dir, G, pz, out) {
     layer: pz.layers.socket,
     x1: centreX - pz.socketHalfWidth, y1: Math.min(inner, outer),
     x2: centreX + pz.socketHalfWidth, y2: Math.max(inner, outer),
+    ...(interior ? { cutout: true } : {}),
   });
   const holeY = inner + dir * pz.socketHoleInset;
   for (const dx of [-pz.socketHoleOffset, pz.socketHoleOffset]) {
@@ -293,8 +304,11 @@ export function sidePanelGeometry({
   // socket row to the floor. It did, for one run of the classifier.
   const topY = (topAt == null || topAt === '' || !Number.isFinite(Number(topAt)))
     ? h : Number(topAt);
+  // A top row that has moved DOWN the panel no longer breaks its edge; it is a
+  // cut-out and is traced as one (see `horizontalSocket`).
+  const topIsInterior = topY < h - 1e-9;
   for (const cx of socketCentres(w, pz, jointInset)) {
-    if (e.topSocket) horizontalSocket(cx, topY, +1, G, pz, out);
+    if (e.topSocket) horizontalSocket(cx, topY, +1, G, pz, out, topIsInterior);
     if (e.bottomSocket) horizontalSocket(cx, 0, -1, G, pz, out);
   }
 

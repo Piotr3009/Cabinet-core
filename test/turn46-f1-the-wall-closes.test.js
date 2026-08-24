@@ -118,6 +118,18 @@ test('…and the stretch away from the slope is untouched full height', () => {
   ]);
 });
 
+test('a wall with NO cap is not capped at ZERO — the Number(null) trap', () => {
+  // MEASURED FAULT, found by the browser walk: `capY` is null for every wall
+  // that is not a return, and `Number.isFinite(Number(null))` is TRUE because
+  // `Number(null)` is 0. Every main wall in the app drew as a flat line on the
+  // floor — three vertices, bounding box 4 × 0 — and the room had no wall in
+  // it at all. The guard asks "has anybody said" BEFORE reading the number,
+  // which is the idiom this house already names in `impliedLegHeight`.
+  assert.match(room, /const cap = capY == null \|\| !Number\.isFinite\(Number\(capY\)\) \? height : Number\(capY\);/);
+  assert.equal(room.includes('Number.isFinite(Number(capY)) ? Number(capY) : height'), false,
+    'the finite-first form is gone by name');
+});
+
 test('the 23.08 chat-fix is repaired BY NAME: no stub is handed slopes={[]}', () => {
   assert.equal(room.includes('slopes={wall.stub ? [] : slopesOnWall(wall.index)}'), false,
     'the line that blanked every stub is gone');

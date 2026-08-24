@@ -41,6 +41,14 @@ import { formatDimension, formatMm } from '../engine/format.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
+// ─── TURN 47 (CLAUDE.md F6): THE GHOST LINE READS THE ONE `ceilingAt` ───────
+// *"It reads `ceilingAt` — the same one, no second chain."* `3d/Room.jsx`
+// traces the wall from this very module and the engine is handed the cut from
+// it; a drag ghost that lerped its own diagonal would be the two-chain disease
+// this house has already paid for once.
+import { ceilingPolyline, slopeInfillMm } from '../lib/slopeLine.js';
+import { wallElements } from '../lib/wallElements.js';
+import { useProjectStore } from '../stores/projectStore.js';
 import { useStorageBase } from '../lib/storageBase.js';
 import {
   columnOfItem, columnOfShelf, fieldFromPos, interiorFloor, lightBelow, shelfColumns,
@@ -705,6 +713,18 @@ export default function UnitView({
 }) {
   const { camera, gl } = useThree();
   const drag = useRef(null);
+  // ─── TURN 47 (CLAUDE.md F6): THE GHOST LINE ───────────────────────────────
+  //
+  // *"During a drag into a slope zone, a ghost line shows the cut-to-be."*
+  //
+  // A cabinet driving under a slope is about to lose its top corner, and until
+  // the hand lets go there is nothing on the screen that says so — the cut
+  // arrives when the drag ends. This is the line it will be cut on, drawn while
+  // the hand is still moving, so the joiner can see where to stop.
+  //
+  // It is a HELD signal, exactly like `activeEdge` above (T14-F1.3: "a handle
+  // is lit while it is being HELD"). Nothing about it survives the release.
+  const [dragging, setDragging] = useState(false);
   // Which top edge is being DRAGGED. Purely visual: it decides which handle is
   // lit, nothing else (CLAUDE.md F3 — "click the edge → the edge highlights").
   //
@@ -831,6 +851,7 @@ export default function UnitView({
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
     drag.current = { offset: alongMm(hit) - unit.position.x_mm };
+    setDragging(true);
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
     const move = (ev) => {
@@ -848,6 +869,7 @@ export default function UnitView({
     };
     const up = () => {
       drag.current = null;
+      setDragging(false);
       if (orbitRef?.current) orbitRef.current.enabled = true;
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
@@ -878,6 +900,41 @@ export default function UnitView({
     [wallStart, along, inward, unit.position.x_mm, baseY, backInset],
   );
   const originY = mm(baseY);
+
+  // ─── TURN 47 (CLAUDE.md F6): …AND WHERE THAT LINE IS ──────────────────────
+  //
+  // The ceiling over the unit's OWN stretch of its own wall, knee by knee, less
+  // the project's scribe gap — the same three numbers `slopeCutLine` hands the
+  // engine and the same `ceilingPolyline` `3d/Room.jsx` traces the wall from.
+  // There is no fourth idea about where the ceiling is.
+  //
+  // In the UNIT's own frame, because that is the frame this group is drawn in:
+  // x from its left edge, y up from its carcass floor, z at its front face.
+  //
+  // NULL — and nothing is drawn — for every unit on every wall with no slope,
+  // and for a unit under a stretch of ceiling that never dips. That is every
+  // unit in every project before tonight.
+  const wallSlopeList = useProjectStore((s) => s.project.wallSlopes);
+  const roomHeight = useProjectStore((s) => s.project.room?.height);
+  const projectDesign = useProjectStore((s) => s.project.design);
+  const ghost = useMemo(() => {
+    if (!dragging) return null;
+    const wallIndex = unit.position?.wall ?? 0;
+    const slopes = wallElements(wallSlopeList)
+      .filter((e) => (e.kind ?? 'slope') === 'slope' && (e.wall ?? 0) === wallIndex);
+    if (!slopes.length) return null;
+    const h = Number(roomHeight) || 0;
+    if (!(h > 0) || !(W > 0)) return null;
+    const gap = slopeInfillMm(projectDesign);
+    const x0 = Number(unit.position?.x_mm) || 0;
+    const line = ceilingPolyline({
+      slopes, wallWidth: wall.width, wallHeight: h, from: x0, to: x0 + W,
+    });
+    // Under a flat stretch there is nothing to warn about.
+    if (!line.some((q) => q.y < h - 1e-6)) return null;
+    return line.map((q) => ({ x: q.x - x0, y: Math.max(0, q.y - gap - baseY) }));
+  }, [dragging, wallSlopeList, roomHeight, projectDesign, unit.position?.wall,
+    unit.position?.x_mm, wall.width, W, baseY]);
   // A turned unit pivots about the point where it meets the wall — the same
   // anchor engine/collision.js rotates its footprint about, so the picture and
   // the collision rules can never disagree about where it is.
@@ -1509,6 +1566,12 @@ export default function UnitView({
           fitted to the same furniture bounds the key light is fitted to —
           because what reads as hovering is a RUN hovering, and a per-unit
           footprint leaves a bright seam at every joint between two cabinets. */}
+
+      {/* ─── TURN 47 (CLAUDE.md F6): THE GHOST LINE ───
+          The cut-to-be, while the hand is still moving. `ghost` is null for
+          every unit that is not being dragged into a slope, so this draws
+          nothing at all in every project before tonight. */}
+      {ghost && <SlopeGhost points={ghost} depth={D} />}
 
       {/* ─── Turn 18 (CLAUDE.md F4): HIDE FRONTS ───
           Doors and drawer fronts leave the PICTURE together, and nothing else
@@ -2398,6 +2461,41 @@ export default function UnitView({
         </group>
       )}
     </group>
+  );
+}
+
+/**
+ * ─── THE GHOST LINE (turn 47, CLAUDE.md F6) ─────────────────────────────────
+ *
+ * *"During a drag into a slope zone, a ghost line shows the cut-to-be. It reads
+ * `ceilingAt` — the same one, no second chain."*
+ *
+ * The line the cabinet WILL be cut on, drawn across its front while the hand is
+ * still moving. It bends where the ceiling bends, because it is the ceiling's
+ * own polyline (F1) and not a diagonal drawn between two ends.
+ *
+ * `LineDashedMaterial` needs the distances computed once — three.js will not do
+ * it for you, and an undashed "dashed" line is the classic symptom. It is a
+ * HELPER, like `DashedGuide` below: `ccHelper` keeps it out of the bounds the
+ * camera frames and out of every render and screenshot that asks for the
+ * furniture alone.
+ */
+function SlopeGhost({ points, depth }) {
+  const line = useRef(null);
+  const geometry = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setFromPoints(points.map((p) => new THREE.Vector3(mm(p.x), mm(p.y), mm(depth) + 0.02)));
+    return g;
+  }, [points, depth]);
+  useLayoutEffect(() => { line.current?.computeLineDistances(); }, [geometry]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return (
+    <line ref={line} geometry={geometry} userData={{ ccHelper: true }} renderOrder={999}>
+      <lineDashedMaterial
+        color="#e0b64a" dashSize={mm(60)} gapSize={mm(40)}
+        depthTest={false} transparent opacity={0.95}
+      />
+    </line>
   );
 }
 

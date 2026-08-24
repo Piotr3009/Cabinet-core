@@ -39,8 +39,13 @@ import {
   bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
+// `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
+// `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
+// from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
+// shape and this file follows it.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
+  slopeCutActive, slopeHeightAt, trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
 import {
@@ -499,6 +504,32 @@ export function drawerSplitFor(type, profile) {
 
 // ─── Parameter normalisation ───
 
+/**
+ * ─── TURN 46 (CLAUDE.md F3): THE CUT, READ ONCE ─────────────────────────────
+ *
+ * The ceiling line in the UNIT's own frame: `y0` clear millimetres above the
+ * carcass floor at the unit's left edge, `y1` at its right, both ALREADY less
+ * the scribe gap. Two points, as F3 says, and the line between them is BELOW
+ * the true ceiling wherever the true line has a knee — so a cabinet cut to it
+ * clears the ceiling by construction, which is the only safe reading when the
+ * other one is a carcass 30 mm into the plaster.
+ *
+ * ANYTHING that is not a pair of real numbers is `null`, and null is the gate:
+ * no key, no cut, and the kit cuts what it cut yesterday.
+ */
+function normaliseSlopeCut(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const y0 = Number(raw.y0);
+  const y1 = Number(raw.y1);
+  if (!Number.isFinite(y0) || !Number.isFinite(y1)) return null;
+  if (!(y0 > 0) || !(y1 > 0)) return null;
+  return {
+    y0: roundTo(y0, 4),
+    y1: roundTo(y1, 4),
+    infill: Number.isFinite(Number(raw.infill)) ? roundTo(Number(raw.infill), 4) : 0,
+  };
+}
+
 function normalizeParams(raw, profile) {
   const p = raw || {};
   const type = getUnitType(p.type);
@@ -871,6 +902,25 @@ function normalizeParams(raw, profile) {
     railMount: railMountOf(hangerFromItems),
     railShelfId: railShelfIdOf(hangerFromItems),
     railItemId: hangerFromItems?.id ?? null,
+    // ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT, AS AN INPUT ─────────────────
+    //
+    // *"`paramsForEngine` hands the unit a `slopeCut` — the ceiling line in
+    // UNIT-LOCAL x (two points), already minus infill — only when the unit
+    // stands in a slope zone."*
+    //
+    // It travels the override channel every owner-standard number in this app
+    // travels: the plinth's road, the hinge standard's, the shaker frame's, the
+    // shelf-pin setback's. An INPUT in the design layer, never a formula in the
+    // engine — so a bare `computeCabinet()`, every golden fixture and all six
+    // standard configs pass NOTHING, resolve `null`, and cut exactly what the
+    // AutoLISP cuts. That null IS iron rule 2's gate, and `t46-classify` is
+    // what proves it held.
+    //
+    // Where the ceiling is, is not this file's business and never becomes it:
+    // `lib/slopeLine.js` owns the one `ceilingAt` in the app and resolves these
+    // two numbers before they get here (src/engine/** imports nothing from
+    // src/lib/** — the layering law).
+    slopeCut: normaliseSlopeCut(p.slope_cut ?? p.slopeCut),
     // Turn 30 (CLAUDE.md F19): the depth of each arm of a corner unit's L. An
     // INPUT, defaulting to the profile's, like every other number a kit has.
     cornerArm: Number(p.corner_arm_mm) > 0 ? Number(p.corner_arm_mm) : profile.cornerUnit.armMm,
@@ -1383,7 +1433,52 @@ export function computeCabinet(params, profileOverride) {
   const topW = internalWidth;
   const topH = internalDepth;
   const backW = W;
-  const backH = H;
+  // ─── TURN 46 (CLAUDE.md F3): THE ENGINE CUTS THE CARCASS ──────────────────
+  //
+  // Owner, 24.08.2026, option A: *"tniemy po skosie."*
+  //
+  // Everything below this block is `null`-gated on `cfg.slopeCut`. A cabinet
+  // that is not under a slope resolves `cut = null`, every expression falls
+  // back to the number it has always been, and `t46-classify` prints six
+  // IDENTICAL. That is not a claim about this comment; it is the shape of every
+  // line under it.
+  //
+  // WHERE THE DIAGONAL RUNS. The ceiling line is stated over the unit's WIDTH,
+  // because that is the axis it runs along: a slope belongs to a WALL, and a
+  // cabinet standing against that wall meets a different ceiling height at its
+  // left edge than at its right. Three of tonight's own laws say the same thing
+  // from three directions — F2 clamps on "ceilingAt(FAR EDGE)", F4 hangs the
+  // hinges on "the FULL-HEIGHT EDGE" of a door cut across its width, and F5
+  // shortens the rail "at the x where the line meets the rail's y". So:
+  //
+  //   BACK    spans the width  → cut on the diagonal. Pentagon or trapezium.
+  //   FRONT   spans the width  → the same cut, less the gaps (F4).
+  //   TOP     level at the LOW end's height, full depth (F3, verbatim).
+  //   SIDES   each stands at ONE x, and the ceiling over one x is ONE number,
+  //           so each side is cut to ITS OWN height — the low one to the cut
+  //           height there, the tall one keeping its full height, which is
+  //           F3's own sentence read across the pair. The material above the
+  //           level top is the two sides' own ears, and they are what close
+  //           the triangle with the front and the back.
+  //
+  // A side is cut to the LOWER of the ceiling at its two faces (it is G thick,
+  // and the ceiling drops across that G): the conservative reading, and the
+  // only safe one when the other answer is a board through the plaster.
+  const cut = cfg.slopeCut;
+  const cutAt = (x) => (cut ? slopeHeightAt({ w: W, hL: cut.y0, hR: cut.y1 }, x) : H);
+  const sideHL = cut ? Math.max(0, Math.min(H, cutAt(0), cutAt(G))) : sideH;
+  const sideHR = cut ? Math.max(0, Math.min(H, cutAt(W - G), cutAt(W))) : sideH;
+  // The top board's own top face — H with no cut, the LOW end's height with one.
+  const topY = cut ? Math.max(0, Math.min(H, cutAt(0), cutAt(W))) : H;
+  const backH = cut ? Math.max(0, Math.min(H, Math.max(cutAt(0), cutAt(W)))) : H;
+  // THE JOINTS ARE LAID OUT ON THE FULL CARCASS AND THEN CUT WITH IT. That is
+  // how a joiner builds one: the box is set out square and the top corner comes
+  // off. It is also what keeps the joints AGREEING — a side's back tabs and the
+  // back's own sockets are both derived from H, so they stay opposite each
+  // other, and each pair that ends up above the line is dropped by the same
+  // line on both boards. The one joint that MOVES is the top's, because the top
+  // board itself has moved (`topAt` below).
+  const cutOf = (hL, hR) => ({ w: W, h: H, hL, hR });
   // ─── TURN 25 (CLAUDE.md F2): ONE RESOLVED INSET, FOR THE WHOLE UNIT ──────
   //
   // Resolved HERE and once, off the cabinet's own depth, and handed to every
@@ -2286,17 +2381,45 @@ export function computeCabinet(params, profileOverride) {
   // What a D/W emits is therefore its declaration and nothing else: a plain
   // rail across the opening, the front, and the toe kick.
   if (hasSides) {
+    // ─── TURN 46 (F3): A SIDE UNDER THE DIAGONAL ───────────────────────────
+    //
+    // The joints are laid out at the FULL height and the board is then cut to
+    // its own — `trimGeometryOnSlope` walks the outline, keeps what is under
+    // the line and drops every socket, dog bone and screw that has ended up
+    // above it (a hole in air is a hole the machine plunges through the bed).
+    // With no cut the geometry object is returned BY IDENTITY, which is why
+    // the six standard configs do not move by a hundredth.
+    const sideCnc = (side, hSide) => {
+      const geom = sidePanelGeometry({
+        w: sideW,
+        h: sideH,
+        G,
+        side,
+        puzzle: pz,
+        edges: sideEdges,
+        jointInset,
+        // The TOP board is level at the low end's height, so on the TALL side
+        // its socket row lands part-way up the panel rather than on its edge.
+        topAt: cut ? topY : null,
+      });
+      return trimGeometryOnSlope(geom, { w: sideW, h: sideH, hL: hSide, hR: hSide });
+    };
     panels.push(panel({
-      id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideH, thickness: G,
-      edgeCode: codes.left, edgeLen: metres(sideH),
-      box: { x: 0, y: 0, z: G, w: G, h: sideH, d: sideW },
-      cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'L', puzzle: pz, edges: sideEdges, jointInset }) },
+      id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideHL, thickness: G,
+      edgeCode: codes.left, edgeLen: metres(sideHL),
+      box: { x: 0, y: 0, z: G, w: G, h: sideHL, d: sideW },
+      cnc: { rotated: false, drawn_w: sideW, drawn_h: sideHL, ...sideCnc('L', sideHL) },
+      // The fingerprint carries the cut — but only where there IS one, so a
+      // cabinet standing under a ceiling higher than itself is stamped with
+      // nothing and stays byte-identical (T41's suite law).
+      ...(cut && sideHL < sideH ? { meta: { slopeCut: { h: roundTo(sideHL, 4), full: roundTo(sideH, 4), topAt: roundTo(topY, 4) } } } : {}),
     }));
     panels.push(panel({
-      id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideH, thickness: G,
-      edgeCode: codes.right, edgeLen: metres(sideH),
-      box: { x: W - G, y: 0, z: G, w: G, h: sideH, d: sideW },
-      cnc: { rotated: false, drawn_w: sideW, drawn_h: sideH, ...sidePanelGeometry({ w: sideW, h: sideH, G, side: 'R', puzzle: pz, edges: sideEdges, jointInset }) },
+      id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideHR, thickness: G,
+      edgeCode: codes.right, edgeLen: metres(sideHR),
+      box: { x: W - G, y: 0, z: G, w: G, h: sideHR, d: sideW },
+      cnc: { rotated: false, drawn_w: sideW, drawn_h: sideHR, ...sideCnc('R', sideHR) },
+      ...(cut && sideHR < sideH ? { meta: { slopeCut: { h: roundTo(sideHR, 4), full: roundTo(sideH, 4), topAt: roundTo(topY, 4) } } } : {}),
     }));
   }
   const topGeom = (backTabs = true) => ({
@@ -2304,11 +2427,18 @@ export function computeCabinet(params, profileOverride) {
     ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs, jointInset }),
   });
   if (hasTopPanel) {
+    // ─── TURN 46 (F3): …AND THE TOP DROPS TO THE LOW END ───────────────────
+    // *"the top drops to the height of the lowest cut side, full depth; the
+    // triangle above it is CLOSED by the sloped edges of the two sides and the
+    // front (option A) — no extra roof board this turn."*
+    // The BOARD does not change — same width, same depth, same tabs. Only
+    // where it sits does, and `topY` is H for every cabinet with no cut.
     panels.push(panel({
       id: 'TOP', part: 'TOP', role: 'top', w: topW, h: topH, thickness: G,
       edgeCode: codes.right, edgeLen: metres(topW),
-      box: { x: G, y: H - G, z: G, w: topW, h: G, d: topH },
+      box: { x: G, y: topY - G, z: G, w: topW, h: G, d: topH },
       cnc: topGeom(),
+      ...(cut && topY < H ? { meta: { slopeCut: { level: roundTo(topY, 4), full: roundTo(H, 4) } } } : {}),
     }));
   }
   // ─── …AND THE RAIL (F1.1) ────────────────────────────────────────────────
@@ -2344,7 +2474,23 @@ export function computeCabinet(params, profileOverride) {
   }
 
   if (backStyle === 'full') {
-    const backCnc = { rotated: false, drawn_w: backW, drawn_h: backH, ...backPanelGeometry({ w: backW, h: backH, G, puzzle: pz }) };
+    // ─── TURN 46 (F3): THE BACK IS CUT ON THE SAME DIAGONAL ────────────────
+    //
+    // It spans the whole width, so it takes the line unchanged — and it is the
+    // board that carries the PENTAGON when the knee falls inside the cabinet
+    // (the tall edge keeps full height, the top edge is the diagonal, the low
+    // edge is the cut height there). Its sockets come off the FULL height, so
+    // they stay opposite the sides' tabs, and the pairs above the line are
+    // dropped from both boards by the same line.
+    const backCnc = {
+      rotated: false,
+      drawn_w: backW,
+      drawn_h: backH,
+      ...trimGeometryOnSlope(
+        backPanelGeometry({ w: backW, h: H, G, puzzle: pz }),
+        { w: backW, h: H, hL: cut ? cut.y0 : H, hR: cut ? cut.y1 : H },
+      ),
+    };
     // ─── TURN 38 (CLAUDE.md F1c): A BACK STANDS UP, HOWEVER SHORT IT IS ─────
     //
     // The owner, walking T37: the top box's back *"is laid HORIZONTAL; it must
@@ -2384,6 +2530,14 @@ export function computeCabinet(params, profileOverride) {
       edgeCode: codes.none, edgeLen: 0,
       box: { x: 0, y: 0, z: 0, w: backW, h: backH, d: G },
       cnc: backCnc,
+      ...(cut && slopeCutActive({ h: H, hL: cut.y0, hR: cut.y1 }) ? {
+        meta: {
+          slopeCut: {
+            y0: roundTo(cut.y0, 4), y1: roundTo(cut.y1, 4), full: roundTo(H, 4),
+            corners: backCnc.outline.length,
+          },
+        },
+      } : {}),
     }));
   }
 
@@ -6739,6 +6893,23 @@ export function computeCabinet(params, profileOverride) {
     } : null,
   };
 
+  // ─── TURN 46 (CLAUDE.md F3): NO HOLE IN AIR ────────────────────────────────
+  //
+  // The panels' own pockets and holes are cut with the board they are in
+  // (`trimGeometryOnSlope`); the DRILL list is built by a later pass that
+  // addresses panels by id and has never had to ask how tall one is. Under a
+  // cut it does: a plate hole on a side that has just lost 800 mm is a hole the
+  // machine plunges through the bed.
+  //
+  // One filter, gated on the cut, reading each panel's OWN cut height — so it
+  // cannot disagree with the outline beside it. With no cut the guard is not
+  // built and `drills` is the array it has always been, by identity.
+  const cutDrills = (() => {
+    if (!cut) return drills;
+    const topOf = new Map(panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || Number(p.h) || 0]));
+    return drills.filter((d) => !(topOf.has(d.panel) && Number(d.y) > topOf.get(d.panel) + 1e-6));
+  })();
+
   return {
     type: type.id,
     unitNum,
@@ -6757,7 +6928,7 @@ export function computeCabinet(params, profileOverride) {
     },
     derived,
     panels,
-    drills,
+    drills: cutDrills,
     drillSummary,
     hardware,
     totals,

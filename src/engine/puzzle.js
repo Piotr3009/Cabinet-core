@@ -751,6 +751,47 @@ export function slopeValleyBetween(cut, xa, xb) {
 }
 
 /**
+ * ─── THE ROOF LINE (T47 F2/F3) ──────────────────────────────────────────────
+ *
+ * The cut line CAPPED at the cabinet's own height: `min(h, at(x))`, with a
+ * vertex at every knee AND at every x where the line crosses that height.
+ *
+ * It is `SKY:slopeTopPts` 1:1, and it is the same walk `trimOutlineOnSlope`
+ * makes along a panel's top — which is exactly why the boards agree with the
+ * outlines. A cabinet standing wholly under its ceiling gets a FLAT line at
+ * `h`, and everything downstream falls back to the level board it always cut.
+ *
+ * The crossing is the LISP's `SKY:slopeKneeX`, generalised: solved once per
+ * segment rather than once per panel, which is what makes the pentagon's knee
+ * and a bent ceiling's knee the same arithmetic.
+ */
+export function roofLinePts(cut, h) {
+  const pts = slopeCutPts(cut);
+  if (!pts) return null;
+  const top = Number(h) || 0;
+  const out = [{ x: pts[0].x, y: Math.min(top, pts[0].y) }];
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const rise = b.y - a.y;
+    if (Math.abs(rise) > SLOPE_EPS && ((a.y < top && b.y > top) || (a.y > top && b.y < top))) {
+      out.push({ x: a.x + ((b.x - a.x) * (top - a.y)) / rise, y: top });
+    }
+    out.push({ x: b.x, y: Math.min(top, b.y) });
+  }
+  // A vertex written twice is a zero-length segment, and a zero-length segment
+  // is a board of no length. Dropped here, once — `SKY:slopeTopPts` does the
+  // same and for the same reason.
+  const clean = [];
+  for (const p of out) {
+    const last = clean[clean.length - 1];
+    if (last && Math.abs(last.x - p.x) < SLOPE_EPS && Math.abs(last.y - p.y) < SLOPE_EPS) continue;
+    clean.push(p);
+  }
+  return clean.length >= 2 ? clean : null;
+}
+
+/**
  * A stretch of the line, re-origined — the line over `[from, to]` with x
  * measured from `from` and y lowered by `dy`.
  *

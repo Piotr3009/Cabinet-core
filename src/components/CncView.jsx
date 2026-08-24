@@ -9,6 +9,7 @@ import { exportablePanels } from '../engine/cnc/groups.js';
 import { CNC_VIEWS, groupByCabinet, groupByMaterial } from '../engine/cnc/views.js';
 import { labelFit, symbolVisible } from '../engine/cnc/annotation.js';
 import { panelLabelBlock } from '../engine/cnc/dxf.js';
+import { slopeNoteText } from '../engine/cnc/partLabel.js';
 import { useElementSize, useSheetView } from '../lib/sheetView.js';
 import { partRollovers } from '../engine/cnc/rollover.js';
 // Turn 38 (F5/F10): an arc on the sheet is its own chord run — one reading of
@@ -560,6 +561,14 @@ function Part({
   };
   const [labelX, labelY] = toSheet(place, box.w / 2, box.h / 2);
   const labelTurn = place.bounds.turn || 0;
+  // ─── TURN 47 (F2/F3/F4): THE ANGLE, BESIDE THE EDGE ──────────────────────
+  // *"na CNC tez zeby bylo napisane."* The EXPORT's own formatter, at the
+  // export's own place — the part's top edge, where the cut is — so the board
+  // on the bench and the picture on the screen say the same words. '' on every
+  // part that has nothing extra to say, and then nothing is drawn.
+  const slopeNote = slopeNoteText(panel);
+  const noteMm = Math.max(annotation.partLabelMm * 0.75, 0);
+  const [noteX, noteY] = toSheet(place, box.w / 2, box.h - noteMm * 1.6);
   // Drilling and machining marks are the drawing's own geometry now — a ⌀5 hole
   // is five millimetres wide at every zoom, never the screen-space minimum turn
   // 11 gave it. Under the threshold it is not drawn at all, which is what stops
@@ -767,6 +776,17 @@ function Part({
           an SVG viewport is y-DOWN, so it is subtracted. A turned part turns its
           caption with it — the file has done that since turn 17 and the sheet
           had not, which is exactly the kind of disagreement F1.1 is about. */}
+      {slopeNote && label.visible && (
+        <text
+          x={noteX} y={noteY} textAnchor="middle"
+          fontSize={noteMm} fill="#e0b64a"
+          data-part-note={panel.id}
+          transform={labelTurn ? `rotate(${-labelTurn} ${noteX} ${noteY})` : undefined}
+          style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+        >
+          {slopeNote}
+        </text>
+      )}
       {label.visible && (
         <text
           x={labelX} y={labelY} textAnchor="middle"

@@ -46,8 +46,8 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 // shape and this file follows it.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  slopeCutActive, slopeHeightAt, slopeSegments, subSlopeCut,
-  trimGeometryOnSlope, trimOutlineOnSlope,
+  roofLinePts, slopeCutActive, slopeHeightAt, slopePeakBetween, slopeSegments,
+  slopeValleyBetween, subSlopeCut, trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
 import {
@@ -1512,8 +1512,53 @@ export function computeCabinet(params, profileOverride) {
   const cutLine = cut ? { w: W, h: H, pts: cut.pts } : null;
   const cutAt = (x) => (cutLine ? slopeHeightAt(cutLine, x) : H);
   const cutActive = Boolean(cutLine) && slopeCutActive(cutLine);
-  const sideHL = cut ? Math.max(0, Math.min(H, cutAt(0), cutAt(G))) : sideH;
-  const sideHR = cut ? Math.max(0, Math.min(H, cutAt(W - G), cutAt(W))) : sideH;
+  // ─── TURN 47 (F2/F3): THE ROOF LINE ───────────────────────────────────────
+  //
+  // The same line CAPPED at the cabinet's own height — `min(H, at(x))`, with a
+  // vertex where it crosses that height (the LISP's `SKY:slopeKneeX`, one per
+  // segment). It is what the two sides stop under and what the top boards are
+  // laid along, so the boards and the outlines cannot disagree: both are this
+  // one walk. Null with no cut, and flat at H where the ceiling clears the
+  // cabinet, which is every cabinet before tonight.
+  const roofPts = cutActive ? roofLinePts(cutLine, H) : null;
+  const roofLine = roofPts ? { w: W, h: H, pts: roofPts } : null;
+  /** The segments of the roof line over a stretch of the width, with angles. */
+  const anglesOver = (a, b) => (roofLine ? slopeSegments(roofLine)
+    .filter((sg) => sg.x1 > a + 1e-9 && sg.x0 < b - 1e-9)
+    .map((sg) => ({
+      from: roundTo(Math.max(sg.x0, a), 4),
+      to: roundTo(Math.min(sg.x1, b), 4),
+      deg: roundTo(sg.deg, 4),
+    })) : []);
+  // ─── TURN 47 (CLAUDE.md F2): THE SIDES RUN TO THE POINT ───────────────────
+  //
+  // The owner: *"BUL i BUR przedluzony do czubka skosu i ustawione ciecie pod
+  // skosem, najlepiej zeby bylo napisane jaki kat ciecia, na CNC tez zeby bylo
+  // napisane."*
+  //
+  // T46 dropped each side to the LOWER of the ceiling at its two faces — the
+  // conservative reading, and it threw away up to `G · tan β` of cabinet at
+  // every side and left the triangle above it open. T47 runs the side up to the
+  // PEAK of the line over its own two faces and takes the wedge off with a
+  // BEVEL, which is what a joiner does and what the owner asked for.
+  //
+  // The board that leaves the machine is therefore the BLANK — as tall as its
+  // highest corner — and the ANGLE is stated on the piece, on the part drawing
+  // and on the CNC sheet, because a three-axis file cannot carry a bevel
+  // through the thickness (BACKLOG 120, and the owner accepted 2-D as interim:
+  // *"narazie zrob 2D"*).
+  //
+  // It is the ROOF line that is asked, not the raw cut: a side under a stretch
+  // of ceiling higher than the cabinet keeps its full height and carries no
+  // angle at all, which is the pentagon's tall end and every uncut cabinet.
+  const sideTopAt = (a, b) => Math.max(0, Math.min(H, slopePeakBetween(roofLine, a, b)));
+  const sideHL = roofLine ? sideTopAt(0, G) : sideH;
+  const sideHR = roofLine ? sideTopAt(W - G, W) : sideH;
+  // …and the segments the board's top edge is made of. A side that spans a knee
+  // carries TWO, and the vertex between them. A flat segment is listed with
+  // `deg: 0` rather than dropped — "this edge is square here" is a fact a
+  // joiner wants stated, and it is what stops the CNC note appearing on a board
+  // that has no bevel (`slopeNoteText` prints only the angled ones).
   // The top board's own top face — H with no cut, the LOW end's height with one.
   const topY = cut ? Math.max(0, Math.min(H, cutAt(0), cutAt(W))) : H;
   const backH = cut ? Math.max(0, Math.min(H, Math.max(cutAt(0), cutAt(W)))) : H;
@@ -2471,14 +2516,39 @@ export function computeCabinet(params, profileOverride) {
       // The fingerprint carries the cut — but only where there IS one, so a
       // cabinet standing under a ceiling higher than itself is stamped with
       // nothing and stays byte-identical (T41's suite law).
-      ...(cut && sideHL < sideH ? { meta: { slopeCut: { h: roundTo(sideHL, 4), full: roundTo(sideH, 4), topAt: roundTo(topY, 4) } } } : {}),
+      ...(cut && sideHL < sideH ? {
+        meta: {
+          slopeCut: {
+            h: roundTo(sideHL, 4),
+            full: roundTo(sideH, 4),
+            topAt: roundTo(topY, 4),
+            // T47-F2: what the saw is set to, and where. In the UNIT's own x,
+            // because that is the frame the ceiling line is stated in and the
+            // frame a joiner reads off the elevation. Two entries where the
+            // ceiling bends inside the board's own 18 mm.
+            angles: anglesOver(0, G),
+            // …and the SHORT face, so the finished board can be measured.
+            low: roundTo(Math.max(0, Math.min(H, slopeValleyBetween(roofLine, 0, G))), 4),
+          },
+        },
+      } : {}),
     }));
     panels.push(panel({
       id: 'BUR', part: 'BUR', role: 'side', w: sideW, h: sideHR, thickness: G,
       edgeCode: codes.right, edgeLen: metres(sideHR),
       box: { x: W - G, y: 0, z: G, w: G, h: sideHR, d: sideW },
       cnc: { rotated: false, drawn_w: sideW, drawn_h: sideHR, ...sideCnc('R', sideHR) },
-      ...(cut && sideHR < sideH ? { meta: { slopeCut: { h: roundTo(sideHR, 4), full: roundTo(sideH, 4), topAt: roundTo(topY, 4) } } } : {}),
+      ...(cut && sideHR < sideH ? {
+        meta: {
+          slopeCut: {
+            h: roundTo(sideHR, 4),
+            full: roundTo(sideH, 4),
+            topAt: roundTo(topY, 4),
+            angles: anglesOver(W - G, W),
+            low: roundTo(Math.max(0, Math.min(H, slopeValleyBetween(roofLine, W - G, W))), 4),
+          },
+        },
+      } : {}),
     }));
   }
   const topGeom = (backTabs = true) => ({

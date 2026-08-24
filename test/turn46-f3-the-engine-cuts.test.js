@@ -162,23 +162,56 @@ test('THE SIDES: the low one is cut, the tall one keeps full height', () => {
   assert.equal(bul.h, H);
   assert.equal(bul.cnc.drawn_h, H);
   assert.equal(bul.meta?.slopeCut, undefined, 'an uncut side is stamped with nothing');
-  // The RIGHT side stands where the ceiling is 1200: "vertical edge at the LOW
-  // end equals the cut height there."
-  assert.equal(bur.h, 1200);
-  assert.equal(bur.cnc.drawn_h, 1200);
-  assert.deepEqual(bur.meta.slopeCut, { h: 1200, full: 2150, topAt: 1200 });
-  assert.equal(bur.box.h, 1200, 'and the 3-D box is the same board');
-  assert.ok(bur.cnc.outline.every(([, y]) => y <= 1200 + 1e-9), 'nothing left above the line');
+  // ─── T47-F2 AMENDS THIS ────────────────────────────────────────────────
+  // The owner: *"BUL i BUR przedluzony do czubka skosu i ustawione ciecie pod
+  // skosem."* T46 dropped the RIGHT side to 1200 — the ceiling at its LOWER
+  // face — and threw the wedge above it away. T47 runs it up to the PEAK over
+  // its own two faces (1236 here: the ceiling at x = 582, on a line falling 2
+  // in 1) and takes the wedge off as a BEVEL, whose angle the board states.
+  // The 1200 is still there: it is the SHORT face, and the record names it.
+  assert.equal(bur.h, 1236);
+  assert.equal(bur.cnc.drawn_h, 1236);
+  assert.deepEqual(bur.meta.slopeCut, {
+    h: 1236,
+    full: 2150,
+    topAt: 1200,
+    angles: [{ from: 582, to: 600, deg: 63.4349 }],
+    low: 1200,
+  });
+  assert.equal(bur.box.h, 1236, 'and the 3-D box is the same board');
+  assert.ok(bur.cnc.outline.every(([, y]) => y <= 1236 + 1e-9), 'nothing left above the blank');
 });
 
-test('…and a side is cut to the LOWER of the ceiling at its two faces', () => {
-  // A steeper line, so the 18 mm of board thickness matters: at x=0 the ceiling
-  // is 2000 and at x=G it is 2000 − 1200·18/600 = 1964. The board is cut to
-  // 1964 — the conservative reading, because the other one is 36 mm of carcass
-  // through the plaster.
+// ─── T47-F2 REVERSES THIS ONE, AND SAYS WHY ───────────────────────────────
+//
+// T46 cut a side to the LOWER of the ceiling at its two faces and called it the
+// conservative reading: "the other one is 36 mm of carcass through the
+// plaster". That is true of a board with a SQUARE top and false of one with a
+// bevel — and the owner asked for the bevel by name. So the board that leaves
+// the machine is the BLANK, as tall as its HIGHEST corner, and the wedge comes
+// off at the angle the piece states. Nothing goes through the plaster, because
+// the finished top face is the ceiling.
+test('…and a side runs UP to the peak, with the wedge taken off as a bevel', () => {
+  // The line falls 1200 over 600, so the 18 mm of board thickness matters: at
+  // x = 0 the ceiling is 2000 and at x = G it is 1964. The BLANK is 2000 — the
+  // tall corner — and the short face is 1964, at 63.4°.
   const r = computeCabinet({ ...PARAMS, slope_cut: { y0: 2000, y1: 800, infill: 40 } }, P);
-  assert.equal(panelOf(r, 'BUL').h, 1964);
-  assert.equal(panelOf(r, 'BUR').h, 800);
+  const bul = panelOf(r, 'BUL');
+  const bur = panelOf(r, 'BUR');
+  assert.equal(bul.h, 2000, 'the blank is the tall corner');
+  assert.equal(bul.meta.slopeCut.low, 1964, 'and the short face is stated');
+  assert.equal(bul.meta.slopeCut.angles[0].deg, 63.4349);
+  assert.equal(bur.h, 836);
+  assert.equal(bur.meta.slopeCut.low, 800);
+  assert.equal(bur.meta.slopeCut.angles[0].deg, 63.4349);
+  // Both faces of both boards are ON the ceiling line — which is the whole
+  // claim, and the one T46 could not make.
+  for (const [panelId, xa, xb] of [['BUL', 0, G], ['BUR', 600 - G, 600]]) {
+    const p = panelOf(r, panelId);
+    const at = (x) => 2000 - (1200 * x) / 600;
+    assert.ok(Math.abs(p.h - Math.max(at(xa), at(xb))) < 1e-6, `${panelId} blank`);
+    assert.ok(Math.abs(p.meta.slopeCut.low - Math.min(at(xa), at(xb))) < 1e-6, `${panelId} short face`);
+  }
 });
 
 test('THE TOP drops to the height of the lowest cut side, full depth', () => {

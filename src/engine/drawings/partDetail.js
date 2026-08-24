@@ -32,6 +32,7 @@ import { resolveLayer } from '../partLayers.js';
 import { arcSweep } from '../partObjects.js';
 import { dimensionEntities } from './frontElevation.js';
 import { formatMm } from '../format.js';
+import { slopeNoteText } from '../cnc/partLabel.js';
 
 /** The rectangle a panel is drawn in: its CNC frame, which may be rotated. */
 export function partSize(panel) {
@@ -203,6 +204,13 @@ export function partDetailDrawing(panel, {
     size,
     outline: panel.cnc?.outline || [],
     outlineLayer,
+    // ─── TURN 47 (F2/F3/F4): WHAT THE OUTLINE CANNOT SAY ────────────────────
+    // *"najlepiej zeby bylo napisane jaki kat ciecia."* A bevel through the
+    // thickness is invisible in a flat outline, so the detail SAYS it — the
+    // EXPORT's own formatter (engine/cnc/partLabel.js), not a second wording,
+    // exactly as the part label itself has been since turn 17. '' on every part
+    // that has nothing extra to say.
+    note: slopeNoteText(panel),
     machinings,
     legend: partLegend(outlineLayer, machinings, userLayers),
     dimensions,

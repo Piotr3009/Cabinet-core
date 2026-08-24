@@ -1,0 +1,191 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
+import { computeCabinet } from '../src/engine/cabinet.js';
+import { defaultParamsFor } from '../src/engine/types.js';
+import { roofLinePts, slopeSegDeg } from '../src/engine/puzzle.js';
+import { partLabelText, slopeNoteText } from '../src/engine/cnc/partLabel.js';
+import { panelEntities } from '../src/engine/cnc/dxf.js';
+import { partDetailDrawing } from '../src/engine/drawings/partDetail.js';
+
+// ─── TURN 47 · F2 — THE SIDES RUN TO THE POINT (CLAUDE.md F2) ───────────────
+//
+// The owner, 24.08.2026:
+//
+//   *"BUL i BUR przedluzony do czubka skosu i ustawione ciecie pod skosem,
+//   najlepiej zeby bylo napisane jaki kat ciecia, na CNC tez zeby bylo
+//   napisane."*
+//
+// T46 dropped each side to the LOWER of the ceiling at its two faces. That is
+// the honest shape for a board with a SQUARE top — and it throws `G · tan β` of
+// cabinet away at every side and leaves the triangle above it open. The owner
+// asked for the BEVEL, which is what a joiner cuts: the board runs up to the
+// peak and the wedge comes off at the ceiling's own angle.
+//
+// The three places the angle has to appear are named in F2 and asserted here:
+// the panel's own record, the part drawing, and the CNC sheet.
+
+const G = P.board.thickness;
+const PARAMS = { ...defaultParamsFor('WARDROBE', P), unit_num: '01' };
+const H = PARAMS.height;
+const cut = (over) => computeCabinet({ ...PARAMS, ...over }, P);
+const panelOf = (r, id) => r.panels.find((p) => p.id === id);
+
+// ═══ THE SIDE RUNS UP ════════════════════════════════════════════════════════
+
+test('a side is the BLANK — as tall as its highest corner, not its lowest', () => {
+  // 2000 at the left edge, falling 1200 over 600. Over BUL's own 18 mm the
+  // ceiling runs 2000 → 1964; over BUR's, 836 → 800.
+  const r = cut({ slope_cut: { y0: 2000, y1: 800, infill: 40 } });
+  assert.equal(panelOf(r, 'BUL').h, 2000);
+  assert.equal(panelOf(r, 'BUR').h, 836);
+  // …and the short face — what the finished board measures — is stated beside
+  // it, because that is the number a joiner checks the bevel against.
+  assert.equal(panelOf(r, 'BUL').meta.slopeCut.low, 1964);
+  assert.equal(panelOf(r, 'BUR').meta.slopeCut.low, 800);
+  // The blank less the short face IS `G · tan β`, which is the wedge.
+  const tanB = 1200 / 600;
+  for (const id of ['BUL', 'BUR']) {
+    const p = panelOf(r, id);
+    assert.ok(Math.abs((p.h - p.meta.slopeCut.low) - G * tanB) < 1e-6,
+      `${id}: wedge ${p.h - p.meta.slopeCut.low} vs G·tanβ ${G * tanB}`);
+  }
+});
+
+test('…and it never runs past the cabinet\'s own height', () => {
+  // The ceiling clears the carcass at the left: BUL keeps its 2150 and is
+  // stamped with nothing at all, exactly as T46 left it.
+  const r = cut({ slope_cut: { y0: 2400, y1: 1200, infill: 40 } });
+  assert.equal(panelOf(r, 'BUL').h, H);
+  assert.equal(panelOf(r, 'BUL').meta?.slopeCut, undefined);
+  assert.equal(panelOf(r, 'BUR').h, 1236);
+});
+
+test('a side under a FLAT stretch of ceiling carries no angle and no bevel', () => {
+  // The ceiling is level at 1800 over the left third and then falls. BUL stands
+  // under the flat part: it is CUT (1800 < 2150) but it is not BEVELLED.
+  const r = cut({
+    width: 900,
+    slope_cut: { pts: [{ x: 0, y: 1800 }, { x: 300, y: 1800 }, { x: 900, y: 1200 }], infill: 40 },
+  });
+  const bul = panelOf(r, 'BUL');
+  assert.equal(bul.h, 1800);
+  assert.deepEqual(bul.meta.slopeCut.angles, [{ from: 0, to: G, deg: 0 }],
+    'the edge is square here, and the record says so');
+  assert.equal(bul.meta.slopeCut.low, 1800, 'both faces at the same height');
+  assert.equal(slopeNoteText(bul), '', 'and the board says nothing about an angle');
+});
+
+// ═══ THE ANGLE IS THE SEGMENT'S OWN ══════════════════════════════════════════
+
+test('THE ANGLE IS THE SEGMENT\'S, not the cabinet\'s corner-to-corner fiction', () => {
+  // Flat at 2000 to x = 300, then falling 600 over 600 — a 45° run. BUR stands
+  // under the fall and must be cut at 45, not at the 33.7 a straight line from
+  // corner to corner would give.
+  const r = cut({
+    width: 900,
+    slope_cut: { pts: [{ x: 0, y: 2000 }, { x: 300, y: 2000 }, { x: 900, y: 1400 }], infill: 40 },
+  });
+  const bur = panelOf(r, 'BUR');
+  assert.equal(bur.meta.slopeCut.angles.length, 1);
+  assert.equal(bur.meta.slopeCut.angles[0].deg, 45);
+  assert.deepEqual(
+    [bur.meta.slopeCut.angles[0].from, bur.meta.slopeCut.angles[0].to],
+    [900 - G, 900],
+    'stated in the UNIT\'s own x, where the ceiling line is stated',
+  );
+  // The fiction, for the record: corner to corner is 33.7° and the plaster
+  // would be 11 degrees away from the board.
+  assert.equal(Math.round(slopeSegDeg(900, -600) * 10) / 10, 33.7);
+});
+
+test('A SIDE THAT SPANS A KNEE carries TWO angles and the vertex between them', () => {
+  // The knee is put INSIDE BUL's own 18 mm: flat to x = 9, then falling.
+  const r = cut({
+    slope_cut: { pts: [{ x: 0, y: 1800 }, { x: 9, y: 1800 }, { x: 600, y: 1200 }], infill: 40 },
+  });
+  const bul = panelOf(r, 'BUL');
+  assert.equal(bul.meta.slopeCut.angles.length, 2, 'two segments over one board');
+  assert.equal(bul.meta.slopeCut.angles[0].deg, 0, 'flat first');
+  assert.ok(bul.meta.slopeCut.angles[1].deg > 0, 'then the fall');
+  // The vertex between them is the knee, and it is at the knee's own x.
+  assert.equal(bul.meta.slopeCut.angles[0].to, 9);
+  assert.equal(bul.meta.slopeCut.angles[1].from, 9);
+  // The blank is the peak over the whole 18, which is the flat part's height.
+  assert.equal(bul.h, 1800);
+  // …and the board says BOTH angles, because a joiner setting one and not the
+  // other cuts the wrong wedge.
+  assert.match(slopeNoteText(bul), /CUT /);
+});
+
+// ═══ THE ANGLE IS WRITTEN WHERE A JOINER READS IT ════════════════════════════
+
+const noted = () => panelOf(cut({ slope_cut: { y0: 2000, y1: 800, infill: 40 } }), 'BUR');
+
+test('1 · ON THE PANEL\'S OWN RECORD — meta.slopeCut.angles [{from, to, deg}]', () => {
+  const bur = noted();
+  assert.deepEqual(bur.meta.slopeCut.angles, [{ from: 582, to: 600, deg: 63.4349 }]);
+});
+
+test('2 · ON THE PART DRAWING', () => {
+  const drawing = partDetailDrawing(noted(), { profile: P });
+  assert.equal(drawing.note, 'CUT 63.4°', 'one decimal, as F2 asks');
+  // …and a part with nothing extra to say adds nothing to the drawing.
+  const plain = computeCabinet(PARAMS, P).panels.find((p) => p.id === 'BUR');
+  assert.equal(partDetailDrawing(plain, { profile: P }).note, '');
+});
+
+test('3 · ON THE CNC SHEET, as text beside the edge', () => {
+  const bur = noted();
+  const ents = panelEntities(bur, [], { unitNum: '01', profile: P });
+  const texts = ents.filter((e) => e.type === 'text').map((e) => e.str);
+  assert.ok(texts.includes('CUT 63.4 DEG'), `the angle is in the file: ${JSON.stringify(texts)}`);
+  // BESIDE THE EDGE: the note sits at the top of the part, the label in its
+  // middle — two captions in one place is a caption nobody can read.
+  const note = ents.find((e) => e.type === 'text' && e.str === 'CUT 63.4 DEG');
+  const h = bur.cnc.drawn_h;
+  assert.ok(note.y > h / 2, `the note is at the cut edge (y ${note.y} of ${h})`);
+  assert.ok(note.y < h, 'and inside the board');
+  // …and a part with no cut writes exactly the entities it always wrote.
+  const plain = computeCabinet(PARAMS, P).panels.find((p) => p.id === 'BUR');
+  const plainTexts = panelEntities(plain, [], { unitNum: '01', profile: P })
+    .filter((e) => e.type === 'text').map((e) => e.str);
+  assert.equal(plainTexts.some((t) => /CUT|BEVEL|OVERSIZE/.test(t)), false,
+    `an uncut board says nothing extra: ${JSON.stringify(plainTexts)}`);
+  assert.equal(plainTexts.join(' '), partLabelText('01', plain),
+    'the part label, broken onto its own lines, and nothing else');
+});
+
+test('THE FILE SPELLS THE DEGREE MARK IN ASCII — the R12 rule, already written down', () => {
+  // engine/cnc/partLabel.js's own reason for the `x` in `597x568`, and
+  // engine/cnc/dxf.js's for the `~` ellipsis: R12 predates any agreement about
+  // what a byte above 127 means. The NUMBER and the wording are identical.
+  const bur = noted();
+  assert.equal(slopeNoteText(bur), 'CUT 63.4°');
+  assert.equal(slopeNoteText(bur, { ascii: true }), 'CUT 63.4 DEG');
+  const dxf = readFileSync(new URL('../src/engine/cnc/dxf.js', import.meta.url), 'utf8');
+  assert.match(dxf, /slopeNoteText\(panel, \{ ascii: true \}\)/);
+});
+
+test('the sheet draws the EXPORT\'s words — one formatter, not two wordings', () => {
+  const view = readFileSync(new URL('../src/components/CncView.jsx', import.meta.url), 'utf8');
+  assert.match(view, /import \{ slopeNoteText \} from '\.\.\/engine\/cnc\/partLabel\.js';/);
+  assert.match(view, /const slopeNote = slopeNoteText\(panel\);/);
+  assert.match(view, /data-part-note=\{panel\.id\}/);
+  const detail = readFileSync(new URL('../src/components/PartDetailModal.jsx', import.meta.url), 'utf8');
+  assert.match(detail, /\{drawing\.note\}/);
+});
+
+// ═══ THE ROOF LINE THE SIDES STOP UNDER ══════════════════════════════════════
+
+test('the sides are measured against the ROOF LINE — the cut, capped at H', () => {
+  // min(H, at(x)), with a vertex where the line crosses H. That crossing is the
+  // pentagon's own knee, and it is SKY:slopeKneeX generalised.
+  assert.deepEqual(roofLinePts({ pts: [{ x: 0, y: 2400 }, { x: 600, y: 1200 }] }, 2150),
+    [{ x: 0, y: 2150 }, { x: 125, y: 2150 }, { x: 600, y: 1200 }]);
+  // A cabinet wholly under its ceiling gets a FLAT line and no bevel anywhere.
+  assert.deepEqual(roofLinePts({ pts: [{ x: 0, y: 2400 }, { x: 600, y: 2300 }] }, 2150),
+    [{ x: 0, y: 2150 }, { x: 600, y: 2150 }]);
+});

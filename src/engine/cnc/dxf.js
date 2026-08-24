@@ -25,7 +25,7 @@
 // header state the true extents so any CAM package sees them immediately.
 
 import { layerTableFor } from './layers.js';
-import { partLabelText } from './partLabel.js';
+import { partLabelText, slopeNoteText } from './partLabel.js';
 import { labelBlock } from './annotation.js';
 import { turnPoint } from './layout.js';
 import { exportFileName, fileSafeName } from '../naming.js';
@@ -361,7 +361,32 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
   // line gets them stacked instead of hanging over its edges.
   const w = panel.cnc?.drawn_w ?? panel.w;
   const h = panel.cnc?.drawn_h ?? panel.h;
+  // ─── TURN 47 (CLAUDE.md F2/F3/F4): AND WHAT THE OUTLINE CANNOT SAY ───────
+  //
+  // *"najlepiej zeby bylo napisane jaki kat ciecia, na CNC tez zeby bylo
+  // napisane."*
+  //
+  // A bevel through the thickness, a vertically cut end and a 20 mm scribe
+  // allowance are all invisible in a flat outline — the file would hand the
+  // machine a rectangle and say nothing. So the board SAYS it, on the same
+  // text layer the part label uses, at the TOP edge (beside the cut) rather
+  // than in the middle (where the label is). One formatter, and the sheet draws
+  // the identical words at the identical place.
+  //
+  // A panel with nothing extra to say contributes NO ENTITY AT ALL, which is
+  // what keeps every existing file byte-identical.
+  const note = slopeNoteText(panel, { ascii: true });
   const label = panelLabel(panel, { unitNum, profile });
+  if (note) {
+    entities.push({
+      type: 'text',
+      layer: cnc.unitNumberLayer,
+      x: w / 2,
+      y: h - Math.max(cnc.labelMinHeight, cnc.labelHeight * 0.6) * 1.6,
+      h: Math.max(cnc.labelMinHeight, cnc.labelHeight * 0.6),
+      str: note,
+    });
+  }
   for (const [i, line] of label.lines.entries()) {
     entities.push({
       type: 'text',

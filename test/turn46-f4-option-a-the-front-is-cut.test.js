@@ -56,7 +56,10 @@ test('…minus the standard gap along EVERY edge, the diagonal one included', ()
   // diagonal always demands the gap.
   assert.equal(f.meta.slopeCut.roomR, 1200 - 0, 'measured from the door\'s own datum');
   const carcass = computeCabinet({ ...PARAMS, slope_cut: CUT }, P).panels.find((p) => p.id === 'BUR');
-  assert.equal(carcass.h, 1200);
+  // T47-F2: the side's BLANK runs up to the peak over its own 18 mm (1236) and
+  // its SHORT face is the 1200 the ceiling leaves at the cabinet's own edge.
+  // The door is measured against the short face, which is what it stands beside.
+  assert.equal(carcass.meta.slopeCut.low, 1200);
   assert.ok(f.meta.slopeCut.roomR <= carcass.h, 'the leaf never stands proud of its own carcass');
 });
 

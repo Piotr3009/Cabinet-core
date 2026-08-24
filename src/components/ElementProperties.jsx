@@ -864,19 +864,42 @@ export default function ElementProperties({
             <span className="cc-input block text-right opacity-70">{formatMm(panel.box?.d ?? panel.h)}</span>
           </Field>
         );
-      case 'hinge-side':
+      // ─── TURN 46 (CLAUDE.md F4): THE HINGE SIDE IS NOT A CHOICE ─────────
+      //
+      // The owner, verbatim: *"tniemy po skosie, brak wyboru otwierania, musi
+      // być od skosu."* A door cut on the slope opens FROM the slope, so its
+      // hinges live on the full-height edge and there is nothing to pick.
+      //
+      // GREY WITH THE ONE-LINE REASON, and not hidden: a control that
+      // disappears leaves a joiner wondering whether the app has lost it. The
+      // hand shown is the one the ENGINE forced onto the piece
+      // (`panel.meta.hinge`), so the select and the drilling cannot disagree.
+      case 'hinge-side': {
+        const forced = panel?.meta?.hingeForced ? panel.meta.hinge : null;
         return (
           <Field key={key} label="Hinge side">
             <select
               className="cc-input"
-              value={unit.params.hinge}
+              value={forced || unit.params.hinge}
+              disabled={Boolean(forced)}
+              data-hinge-forced={forced ? '1' : undefined}
+              title={forced
+                ? 'Cut on the slope — the door opens from the slope, so the hinges are on the full-height edge.'
+                : undefined}
               onChange={(e) => updateUnitParams(unit.id, { hinge: e.target.value })}
             >
               <option value="L">Left</option>
               <option value="R">Right</option>
             </select>
+            {forced ? (
+              <p className="text-[11px] opacity-70 mt-1" data-hinge-forced-reason="1">
+                Cut on the slope — the door opens from the slope, so the hinges are on the
+                full-height edge.
+              </p>
+            ) : null}
           </Field>
         );
+      }
       // ─── Turn 17 (CLAUDE.md F8.2): THE DRAWER'S HEIGHT, EDITED ──────────
       // It was a read-only number. It is the shelf's own control now — type a
       // millimetre, the store clamps it to the owner's rule and the drawers

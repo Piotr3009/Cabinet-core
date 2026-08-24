@@ -41,6 +41,13 @@ import {
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
 // byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
 import { migrateWallElement, wallElements } from '../lib/wallElements.js';
+// ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
+// The store is where a cabinet meets a room, so it is where the ceiling line
+// becomes a number the engine and the clamp can use. Both come out of the same
+// module the wall mesh and the elevation read — there is no second lerp here.
+import {
+  slopeCutLine, slopeInfillMm, slopeMinimumMm, slopeShortfallMm, slopeStation,
+} from '../lib/slopeLine.js';
 // T45 F9b/F9c: the job's LED spec — the groove mode, the channel width and the
 // optional W/m. It rides the project beside the room for the same reason the
 // wall elements do: `migrateLighting()` is an exhaustive whitelist and
@@ -436,14 +443,96 @@ function hingedCarcassSides(p) {
   return sides;
 }
 
+/**
+ * ─── TURN 46 (CLAUDE.md F2): THE SLOPES OVER ONE WALL ───────────────────────
+ *
+ * `project.wallSlopes` is the T44 list and it carries three kinds now
+ * (T45-F1b); a SLOPE is the only one the ceiling is made of. Normalised by the
+ * one module that owns the schema, filtered by wall index, and nothing else in
+ * this store re-reads that list for geometry.
+ */
+function slopesOfWall(state, wallIndex) {
+  return wallElements(state?.project?.wallSlopes)
+    .filter((e) => (e.kind ?? 'slope') === 'slope' && (e.wall ?? 0) === (Number(wallIndex) || 0));
+}
+
+/**
+ * The stretch of THIS wall a unit of this footprint may stand on.
+ *
+ * The owner's arrival law, 24.08: a unit may drive INTO the slope zone — that
+ * is the point of the turn — until its far edge has only 400 mm of clear
+ * carcass left under the scribe gap. Past that it is a hard stop, and
+ * `clampUnitX` enforces it the way it enforces a neighbour.
+ *
+ * @returns {{min:number,max:number}|null} null when the wall has no slope, and
+ *   then `clampUnitX` behaves exactly as it did before tonight.
+ */
+function slopeLimitFor(state, unit, wall, footprintWidth, profile) {
+  const slopes = slopesOfWall(state, unit?.position?.wall ?? 0);
+  if (!slopes.length) return null;
+  return slopeStation({
+    slopes,
+    wallWidth: Number(wall?.width) || 0,
+    wallHeight: Number(state?.project?.room?.height) || 0,
+    width: Number(footprintWidth) || 0,
+    infill: slopeInfillMm(state?.project?.design),
+    floorY: floorYOf(unit, null, profile),
+    minimum: slopeMinimumMm(profile),
+  });
+}
+
+/**
+ * ─── TURN 46 (CLAUDE.md F3/F5): THE CUT, RESOLVED ON EVERY COMPUTE ──────────
+ *
+ * *"Live: drag end re-runs the engine (the same pos_mm path every drag uses) —
+ * the cabinet re-cuts itself as it arrives under the slope."*
+ *
+ * LIVE is free, and this line is why: `paramsForEngine` runs on EVERY compute,
+ * so the cut is re-derived from where the unit is standing at that moment.
+ * There is nothing stored, nothing to invalidate and nothing to remember —
+ * exactly the mechanism T35-F12's `front_top_gap_mm` uses one field above, and
+ * for the same stated reason. Drag it under the slope and it is cut; drag it
+ * back out and the key is absent again and the kit cuts what the AutoLISP cuts.
+ *
+ * @returns {object|null} the two points, or null — and null means the key is
+ *   never written, which is iron rule 2's gate.
+ */
+function slopeCutFor(unit, design) {
+  const state = useProjectStore.getState();
+  const wallIndex = unit?.position?.wall;
+  if (wallIndex == null) return null;
+  const slopes = slopesOfWall(state, wallIndex);
+  if (!slopes.length) return null;
+  const wall = roomWalls(state.project.room)[wallIndex];
+  if (!wall) return null;
+  return slopeCutLine({
+    slopes,
+    wallWidth: Number(wall.width) || 0,
+    wallHeight: Number(state.project.room?.height) || 0,
+    x: Number(unit.position.x_mm) || 0,
+    width: Number(unit.params?.width) || 0,
+    infill: slopeInfillMm(design || state.project.design),
+    floorY: floorYOf(unit, null, getCabinetProfile()),
+  });
+}
+
 function paramsForEngine(unit, design = null) {
   const p = unit.params;
   const items = p.sections?.[0]?.items || [];
   const profile = getCabinetProfile();
+  const slopeCut = slopeCutFor(unit, design);
   return {
     ...p,
     type: unit.type,
     items,
+    // ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT ────────────────────────────
+    // On the override channel, exactly as the plinth, the hinge standard, the
+    // shaker frame and the shelf-pin setback travel — an INPUT in the design
+    // layer, never a formula in the engine. The key is ABSENT for a unit that
+    // is not under a slope (`...(x ? {k:v} : {})`, the house's own idiom for
+    // exactly this), so a bare `computeCabinet()` and every golden fixture pass
+    // nothing at all and cut what the AutoLISP cuts.
+    ...(slopeCut ? { slope_cut: slopeCut } : {}),
     // ─── Turn 8 (CLAUDE.md F4) ───
     // How far a FIX shelf and a partition stand back from the face. It is
     // supplied HERE rather than defaulted inside computeCabinet, and that is
@@ -3081,6 +3170,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       width: footprintWidth,
       wallWidth: wall.width,
       others,
+      // ─── TURN 46 (CLAUDE.md F2): …AND THE SLOPE IS A BARRIER TOO ─────────
+      // The station is solved off the SAME ceiling line the wall is drawn
+      // from, in the footprint frame this clamp already works in, so the stop
+      // lands where the eye says it should.
+      slopeLimit: slopeLimitFor(s, unit, wall, footprintWidth, getCabinetProfile()),
       // The stop that makes the side infill appear (BACKLOG #15) — and, since
       // turn 11 (F5.3), the 10 mm wall clearance instead for a cabinet whose
       // filler has been switched off, because there is no piece to leave room
@@ -5161,6 +5255,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       design: migrateDesign(s.project.design),
       materials: useMaterialAssignmentStore.getState().materials,
       wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      // ─── TURN 46 (CLAUDE.md F2): the 400 mm floor, measured HERE ─────────
+      // `src/engine/**` imports nothing from `src/lib/**`, and the ceiling line
+      // has to be the one the wall is drawn from — so the store asks
+      // `lib/slopeLine.js` and hands the check a number. One ceilingAt.
+      slopeShortfallOf: (unit) => {
+        const wallIndex = unit?.position?.wall ?? 0;
+        const slopes = slopesOfWall(s, wallIndex);
+        if (!slopes.length) return null;
+        const minimum = slopeMinimumMm(profile);
+        const infill = slopeInfillMm(migrateDesign(s.project.design));
+        const floorY = floorYOf(unit, null, profile);
+        const shortfallMm = slopeShortfallMm({
+          slopes,
+          wallWidth: Number(walls?.[wallIndex]?.width) || 0,
+          wallHeight: Number(s.project.room?.height) || 0,
+          x: Number(unit?.position?.x_mm) || 0,
+          width: Number(unit?.params?.width) || 0,
+          infill,
+          floorY,
+          minimum,
+        });
+        return { shortfallMm, minimumMm: minimum, clearMm: minimum - shortfallMm };
+      },
       profile,
     });
   },

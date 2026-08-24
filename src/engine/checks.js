@@ -132,6 +132,35 @@ export const CHECKS = Object.freeze([
   //                     network). NEVER a red wall per drawer for a dead
   //                     network: that is how a check panel becomes wallpaper.
   { n: 18, level: 'red', label: 'Runner rung with no article' },
+  // ─── TURN 46 (CLAUDE.md F2): THE 400 mm FLOOR UNDER A CUT CABINET ────────
+  //
+  // The owner, 24.08.2026, four decisions in one night: **minimum 400 mm**.
+  //
+  // A unit standing where its FULL height no longer fits is NOT an error — it
+  // is a cut unit (F3), and that is the whole point of the turn. A unit pushed
+  // past the 400 floor is a different thing: there is no cabinet left to build.
+  // `clampUnitX` normally stops it ever happening (F2's hard stop), and this
+  // is the witness — because a clamp with no witness is a clamp nobody finds
+  // out has stopped working (the house grammar, T37-F5c), and a unit can reach
+  // this state by a path that does not drag: a typed x, a room re-sized over
+  // its head, a slope edited above it.
+  { n: 19, level: 'red', label: 'Unit under slope minimum (400 mm)' },
+  // ─── TURN 46 (CLAUDE.md F4/F5): A DRAWER IS NOT CUT ON A SLOPE ───────────
+  //
+  // A door can be a pentagon; a drawer cannot — a box with a diagonal lid does
+  // not slide out of anything. The ENGINE refuses the cut and stamps the piece
+  // (`meta.slopeRefused`, warning `SLOPE_DRAWER_CROSSES`); this is the sentence
+  // in front of the joiner. Report, never fix: the stack stays whole in the cut
+  // list rather than being silently deleted off an order form somebody priced.
+  { n: 20, level: 'red', label: 'Drawer stack crosses the slope line' },
+  // ─── TURN 46 (CLAUDE.md F5): A SHELF MAY NOT PIERCE THE DIAGONAL ─────────
+  //
+  // *"Shelves exist only where their FULL span sits below the cut line."* The
+  // engine does not cut one that would, and this is what stops that being a
+  // silence: a joiner who ordered four shelves and gets two has to be told
+  // which two are missing and why. RED, because a missing shelf is a missing
+  // board on a cut list, not a matter of taste.
+  { n: 21, level: 'red', label: 'Shelf crosses the slope line' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -379,7 +408,7 @@ export function shelfHingeFindings({
  */
 export function runChecks({
   entries = [], units = null, room = null, design = null, materials = [], profile = null,
-  wallWidthOf = null,
+  wallWidthOf = null, slopeShortfallOf = null,
 } = {}) {
   const list = units || entries.map((e) => e.unit).filter(Boolean);
   const out = [];
@@ -457,6 +486,45 @@ export function runChecks({
           ...(r.zone == null ? {} : { zone: r.zone }),
         })));
       }
+    }
+
+    // ── #19 the 400 mm floor under a cut cabinet (T46-F2) ────────────────
+    //
+    // The number arrives as a NUMBER. `src/engine/**` imports nothing from
+    // `src/lib/**` (the layering law), and the ceiling line lives in
+    // `lib/slopeLine.js` because the wall mesh and the elevation read it too —
+    // so the caller asks `slopeShortfallMm` there and hands the answer down.
+    // Absent, the rule does not run, which is every caller that has no room.
+    if (typeof slopeShortfallOf === 'function') {
+      const slope = slopeShortfallOf(unit) || null;
+      if (slope && Number(slope.shortfallMm) > 0) {
+        out.push(finding(19, 'red', at(null, {
+          message: `${unitNum}: Unit under slope minimum (${Math.round(slope.minimumMm)} mm) — `
+            + `${Math.round(slope.clearMm)} mm of clear carcass at its far edge, `
+            + `${Math.round(slope.shortfallMm)} mm short. Slide it out of the slope.`,
+          subject: { unitId, editor: 'cabinet' },
+          slopeShortfallMm: round2(slope.shortfallMm),
+        })));
+      }
+    }
+
+    // ── #20/#21 the interior against the slope line (T46-F4/F5) ──────────
+    //
+    // Read off the ENGINE's own refusal rather than re-derived: the cabinet has
+    // already decided the front crosses the line, and a check that worked it
+    // out a second way would be a second opinion about one board.
+    for (const wn of result.warnings || []) {
+      const n = { SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21 }[wn.code];
+      if (!n) continue;
+      out.push(finding(n, 'red', at(wn.panel || null, {
+        message: `${unitNum}: ${wn.message}`,
+        // A REFUSED shelf has no panel to fly to — it was never cut — so the
+        // click opens the cabinet instead of pointing at a board that is not
+        // in the list. #20's drawer IS in the list and keeps its own address.
+        subject: n === 20 && wn.panel
+          ? { unitId, panelId: wn.panel, editor: 'element' }
+          : { unitId, editor: 'cabinet' },
+      })));
     }
 
     // ── #12 a fixed shoe box in the swing of a hinge arm (16.08, C) ───────

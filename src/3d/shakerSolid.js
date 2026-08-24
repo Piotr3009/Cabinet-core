@@ -51,6 +51,21 @@ const cache = new Map();
  */
 export function shakerFrontGeometry(panel, bores = []) {
   if (!isShakerFront(panel)) return null;
+  // ─── TURN 46 (CLAUDE.md F6a): A CUT LEAF IS NOT A TRAY ─────────────────────
+  //
+  // This tray is hand-built out of RECTANGLES — a ring, a back, a floor, four
+  // rebate walls and four outer edges, every one of them four corners. A leaf
+  // cut on the slope has FIVE, and a tray that drew it with four would be the
+  // scene-side twin geometry F6a exists to forbid: a rectangle where the
+  // machine cuts a pentagon.
+  //
+  // So a cut leaf falls through to `3d/panelSolid.js`, which builds the board
+  // from the ENGINE's own outline and clips it with the engine's own line. What
+  // it loses is the RECESS — a shaker's rebate on a five-sided leaf wants a
+  // tray that can hold five edges, and that is a turn of its own — so a cut
+  // shaker door renders as a plain pentagon of the right shape rather than as a
+  // rectangle of the wrong one. Named in the PR, and it is the honest half.
+  if (panel?.cnc?.slopeCut) return null;
   const s = panel?.meta?.shaker;
   const box = panel?.box;
   if (!s || !box) return null;

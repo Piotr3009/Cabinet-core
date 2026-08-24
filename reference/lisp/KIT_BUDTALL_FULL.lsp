@@ -407,3 +407,61 @@
 
 (princ "\nKIT_BUDTALL_FULL loaded. Type BUDTALL_FULL to run.")
 (princ)
+
+;;;========================================
+;; --- SLOPE CUT (T46)
+;;;========================================
+;;; The same night, the same owner, the same law - and a tall cabinet under a
+;;; slope is cut exactly as a wardrobe is:
+;;;   option A - "tniemy po skosie"
+;;;   "brak wyboru otwierania, musi byc od skosu"
+;;;   "minimum 400"
+;;;   "jak ustawimy infill 40 to 40"
+;;;
+;;; The shape is SKYLON_COMMON's `SKY:slopeCutPts`, shared with
+;;; KIT_WARDROBE_FULL, because a BUDTALL under a slope and a wardrobe under the
+;;; same slope are cut on ONE diagonal - the ceiling does not know which kit is
+;;; standing under it. This section is the kit's own calls into it.
+;;;
+;;; hL and hR are the clear height the ceiling leaves at the carcase's left and
+;;; right edges, from the carcase floor, already less the scribe gap. This kit
+;;; does not compute them and does not invent the gap.
+;;;
+;;; Nothing above this line changes - T46 iron rule 3. This section is additive.
+
+(setq BUDTALL_SLOPE_MIN_CLEAR 400.0)   ;; the owner's floor
+
+;;; Enough cabinet left to build? Asked at the LOW end, the only end that fails.
+(defun budtallSlopeFits (hL hR)
+  (>= (min hL hR) BUDTALL_SLOPE_MIN_CLEAR))
+
+;;; The hinge side, and there is no choice: the door opens FROM the slope, so
+;;; the hinges live on the full-height edge and the diagonal never carries one.
+(defun budtallSlopeHinge (hL hR)
+  (if (>= hL hR) "L" "R"))
+
+;;; The carcase, seen from the front, cut on the slope.
+(defun drawBudtallSlopeCarcaseFront (x0 y0 szerSzafki wysSzafki hL hR)
+  (SKY:drawSlopeCut x0 y0 szerSzafki wysSzafki hL hR))
+
+;;; The BACK, cut on the same diagonal.
+(defun drawBudtallSlopeBACK (x0 y0 szerBACK wysBACK unitNum hL hR / pts)
+  (setq pts (SKY:drawSlopeCut x0 y0 szerBACK wysBACK hL hR))
+  (drawText "UNIT_NUMBER" (+ x0 (/ szerBACK 2.0)) (+ y0 (/ (min hL hR) 2.0)) 40.0 unitNum)
+  pts)
+
+;;; A SIDE under the diagonal: one x, one ceiling, one height.
+(defun drawBudtallSlopeSIDE (x0 y0 szerSIDE wysSIDE unitNum hSide)
+  (SKY:drawSlopeCut x0 y0 szerSIDE wysSIDE hSide hSide))
+
+;;; The TOP board sits level at the low end's height, full depth.
+(defun budtallSlopeTopY (hL hR G)
+  (- (min hL hR) G))
+
+;;; The DOOR - a pentagon, less the standard gap on every edge including the
+;;; diagonal one.
+(defun drawBudtallSlopeFRONT (x0 y0 szerFront wysFront unitNum doorGap hL hR)
+  (SKY:drawSlopeCut x0 y0 szerFront wysFront (- hL doorGap) (- hR doorGap)))
+
+(princ "\nKIT_BUDTALL_FULL: SLOPE CUT T46 section loaded.")
+(princ)

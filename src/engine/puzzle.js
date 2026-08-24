@@ -191,7 +191,17 @@ export function singleSocketThreshold(pz, boardThickness) {
  * `+ centrelineExtra` that used to sit on it is gone: the owner does not
  * remember it, it is wrong, and it skewed the whole calculation. Every socket
  * and screw law in this file reads the same half, so the delta is uniform. */
-function horizontalSocket(centreX, edgeY, dir, G, pz, out) {
+/**
+ * @param {boolean} interior  TURN 46 (F3): a socket row that no longer breaks
+ *   the panel's edge. Under a slope the TOP board lands part-way up the TALL
+ *   side, so its socket becomes a CUT-OUT wholly inside the board — and a
+ *   cut-out is traced the other way round, or the cutter offsets to the wrong
+ *   side of the line and takes the pocket out of the board instead of out of
+ *   the hole. `cutout` is the field this house already has for exactly that
+ *   (`cnc/dxf.js pocketPoints`, `cnc/edgeGuard.js pocketLoop`, T34's shoe-box
+ *   groove); the browser walk's Check #9 is what asked for it here.
+ */
+function horizontalSocket(centreX, edgeY, dir, G, pz, out, interior = false) {
   const S = G / 2;
   const inner = edgeY + dir * -S;             // pocket edge inside the panel
   const outer = edgeY + dir * pz.socketOvershoot;
@@ -199,6 +209,7 @@ function horizontalSocket(centreX, edgeY, dir, G, pz, out) {
     layer: pz.layers.socket,
     x1: centreX - pz.socketHalfWidth, y1: Math.min(inner, outer),
     x2: centreX + pz.socketHalfWidth, y2: Math.max(inner, outer),
+    ...(interior ? { cutout: true } : {}),
   });
   const holeY = inner + dir * pz.socketHoleInset;
   for (const dx of [-pz.socketHoleOffset, pz.socketHoleOffset]) {
@@ -234,7 +245,7 @@ function verticalSocket(centreY, edgeX, dir, G, pz, out) {
  * of 120 lines of tab arithmetic.
  */
 export function sidePanelGeometry({
-  w, h, G, side, puzzle: pz, edges, jointInset = undefined,
+  w, h, G, side, puzzle: pz, edges, jointInset = undefined, topAt = null,
 }) {
   const e = {
     backTabs: true, topSocket: true, bottomSocket: true,
@@ -278,14 +289,32 @@ export function sidePanelGeometry({
   // Sockets on the top and bottom edges (they receive the TOP/BOTTOM tabs).
   // This run IS the cabinet's depth, so it takes the unit's resolved inset
   // (turn 25, CLAUDE.md F2) — and the TOP's mating tabs take the same one.
+  //
+  // ─── TURN 46 (CLAUDE.md F3): …AND THE TOP IS NOT ALWAYS ON THE TOP EDGE ──
+  //
+  // Under a slope the top board *"sits level at the LOW end's height … the
+  // triangle above it is CLOSED by the sloped edges of the two sides"*. So on
+  // the TALL side the board lands part-way UP the panel and its socket row
+  // goes with it. `topAt` is where that row is; nothing said is the top edge,
+  // which is every side panel in every cabinet before tonight, so the row is
+  // cut at exactly the y it has always been cut at.
+  // `Number(null)` is 0, not NaN — the trap this house has named twice
+  // (`impliedLegHeight`, `maskDepthExtra`). So "nobody has said" is asked
+  // BEFORE the number is read, or every side panel in the app drops its top
+  // socket row to the floor. It did, for one run of the classifier.
+  const topY = (topAt == null || topAt === '' || !Number.isFinite(Number(topAt)))
+    ? h : Number(topAt);
+  // A top row that has moved DOWN the panel no longer breaks its edge; it is a
+  // cut-out and is traced as one (see `horizontalSocket`).
+  const topIsInterior = topY < h - 1e-9;
   for (const cx of socketCentres(w, pz, jointInset)) {
-    if (e.topSocket) horizontalSocket(cx, h, +1, G, pz, out);
+    if (e.topSocket) horizontalSocket(cx, topY, +1, G, pz, out, topIsInterior);
     if (e.bottomSocket) horizontalSocket(cx, 0, -1, G, pz, out);
   }
 
   // Assembly screws along the top and bottom edges
   for (const sx of [pz.screwFromEnd, w / 2, w - pz.screwFromEnd]) {
-    if (e.topScrews) out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: sx, y: h - S, d: pz.screwDiameter });
+    if (e.topScrews) out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: sx, y: topY - S, d: pz.screwDiameter });
     if (e.bottomScrews) out.holes.push({ layer: pz.layers.screw, kind: 'screw', x: sx, y: S, d: pz.screwDiameter });
   }
   return out;
@@ -543,3 +572,122 @@ export function puzzlePreview(profile) {
     })),
   };
 }
+
+// ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT, PORTED 1:1 FROM THE LISP ────────
+//
+// The owner, 24.08.2026, option A: *"tniemy po skosie."*
+//
+// The shape is `SKYLON_COMMON.lsp SKY:slopeCutPts` (iron rule 3 — the routine
+// is born there and the application follows it), and the port is 1:1 in the
+// only way that matters: the same three answers, chosen by the same numbers.
+//
+//   NOTHING TO TRIM   both edges clear the panel → the outline is returned
+//                     UNCHANGED, by identity. That is the gate expressed in
+//                     the geometry: a panel out of the slope zone is the same
+//                     array of points it was before this function existed, so
+//                     its DXF, its fingerprint and its sheet cannot move.
+//   TRAPEZIUM         the ceiling is under the panel at both edges.
+//   PENTAGON          the tall edge keeps FULL HEIGHT and the diagonal meets
+//                     the top edge inside the panel; the corner that goes is
+//                     the one at the LOW end.
+//
+// ─── WHY IT CLIPS RATHER THAN REBUILDS ──────────────────────────────────────
+//
+// The LISP cuts a RECTANGLE, because in the kit a side panel is drawn as one.
+// In this engine the same board carries three tabs, six sockets and their dog
+// bones, and rebuilding it from four corners would throw all of that away. So
+// the cut is a HALF-PLANE CLIP of whatever outline the panel already has —
+// keep every vertex under the line, insert the crossings, and walk the line
+// itself where the boundary runs along it. On the plain rectangle the LISP
+// cuts, it returns the LISP's own four or five points to the last decimal
+// (the F3 test asserts exactly that against `SKY:slopeCutPts`'s three
+// branches); on a tabbed side it keeps every tab the cut does not reach.
+//
+// The line is stated as the two clear heights the ceiling leaves at the
+// panel's own left and right edges — `hL` and `hR`, measured from the panel's
+// y = 0 and ALREADY less the scribe gap. This function never invents a gap and
+// never asks where the ceiling is: `lib/slopeLine.js` owns that (there is one
+// `ceilingAt` in this app) and the number arrives as an input.
+
+/** The clear height the ceiling leaves at a point across a panel. */
+export function slopeHeightAt({ w, hL, hR }, x) {
+  const width = Number(w) || 0;
+  if (!(width > 0)) return Number(hL) || 0;
+  const t = Math.min(Math.max(Number(x) || 0, 0), width) / width;
+  return Number(hL) + (Number(hR) - Number(hL)) * t;
+}
+
+/** Is this panel cut at all? The gate, asked of the numbers. (SKY:slopeCutActive) */
+export function slopeCutActive({ h, hL, hR }) {
+  const top = Number(h) || 0;
+  return Number(hL) < top - 1e-9 || Number(hR) < top - 1e-9;
+}
+
+/**
+ * An outline trimmed on the slope.
+ *
+ * @param {Array<[number,number]>} outline  the panel's points, as it is cut today
+ * @param {{w:number, h:number, hL:number, hR:number}} cut
+ * @returns {Array<[number,number]>} the same array (by identity) when there is
+ *   nothing to trim; a new one otherwise.
+ */
+export function trimOutlineOnSlope(outline, { w, h, hL, hR }) {
+  const pts = Array.isArray(outline) ? outline : [];
+  if (!pts.length || !slopeCutActive({ h, hL, hR })) return outline;
+  const at = (x) => slopeHeightAt({ w, hL, hR }, x);
+  const under = (p) => p[1] <= at(p[0]) + 1e-9;
+  // Where the segment a→b crosses the line. Both are linear in x, so the
+  // crossing is solved rather than stepped towards: with
+  // f(t) = (a.y + t·Δy) − line(a.x + t·Δx), f is linear and t = f(0)/(f(0)−f(1)).
+  const cross = (a, b) => {
+    const fa = a[1] - at(a[0]);
+    const fb = b[1] - at(b[0]);
+    const d = fa - fb;
+    if (Math.abs(d) < 1e-12) return [b[0], at(b[0])];
+    const t = Math.min(Math.max(fa / d, 0), 1);
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  };
+  const out = [];
+  for (let i = 0; i < pts.length; i += 1) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    const ain = under(a);
+    const bin = under(b);
+    if (ain) out.push(a);
+    if (ain !== bin) out.push(cross(a, b));
+  }
+  // A vertex repeated by the clip is a vertex the DXF would write twice, and
+  // two coincident points on a cut path is the T25 edge-guard fault in
+  // miniature. Dropped here, once, rather than downstream in three places.
+  const clean = [];
+  for (const p of out) {
+    const last = clean[clean.length - 1];
+    if (last && Math.abs(last[0] - p[0]) < 1e-9 && Math.abs(last[1] - p[1]) < 1e-9) continue;
+    clean.push([round4(p[0]), round4(p[1])]);
+  }
+  const first = clean[0];
+  const last = clean[clean.length - 1];
+  if (clean.length > 1 && first && last
+    && Math.abs(first[0] - last[0]) < 1e-9 && Math.abs(first[1] - last[1]) < 1e-9) clean.pop();
+  return clean;
+}
+
+/**
+ * A whole panel geometry trimmed on the slope: its outline cut, and every
+ * pocket and hole that has ended up ABOVE the line dropped with the board they
+ * were in. A hole in air is a hole the machine plunges through the bed.
+ */
+export function trimGeometryOnSlope(geom, { w, h, hL, hR }) {
+  if (!geom || !slopeCutActive({ h, hL, hR })) return geom;
+  const at = (x) => slopeHeightAt({ w, hL, hR }, x);
+  return {
+    ...geom,
+    outline: trimOutlineOnSlope(geom.outline, {
+      w, h, hL, hR,
+    }),
+    pockets: (geom.pockets || []).filter((p) => Math.min(p.y1, p.y2) <= at((p.x1 + p.x2) / 2) + 1e-9),
+    holes: (geom.holes || []).filter((o) => o.y <= at(o.x) + 1e-9),
+  };
+}
+
+const round4 = (v) => Math.round(v * 1e4) / 1e4;

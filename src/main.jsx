@@ -88,6 +88,8 @@ import * as ledSpec from './lib/ledSpec.js';
 import * as ledDrivers from './lib/ledDrivers.js';
 import * as ledGroove from './lib/ledGroove.js';
 import * as ledStrips from './engine/ledStrips.js';
+import * as slopeLine from './lib/slopeLine.js';
+import * as roomEngine from './engine/room.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -335,6 +337,21 @@ if (typeof window !== 'undefined') {
     // prove a claim about a CUT off the very function the export calls.
     strips: ledStrips,
     grooveWidth: ledSpec.grooveWidthMm,
+  };
+  // ─── Turn 46 (CLAUDE.md "The slope, in numbers" / F1 / F2 / F5) ───────────
+  // ONE ceilingAt, and the walk asks IT. The turn's whole contract is that the
+  // wall mesh, the elevation, the drag clamp and the engine's cut all come out
+  // of one function — so a claim about where the ceiling is has to be read off
+  // that function rather than off a picture of a wall (R4). Pure; it reaches
+  // nothing the page could not already compute.
+  window.__ccT46 = {
+    slope: slopeLine,
+    wall: wallElements,
+    // …and the room's own wall list, so a walk can place its camera FROM THE
+    // GEOMETRY (in front of a wall, along its inward normal) instead of from
+    // three numbers somebody guessed at and that go stale the first time a
+    // default room changes.
+    rooms: roomEngine,
   };
   window.__ccT39 = {
     partRegistry,

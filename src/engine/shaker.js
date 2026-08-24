@@ -283,3 +283,98 @@ const trim = (v) => {
   const s = Number(v).toFixed(2).replace(/\.?0+$/, '');
   return s === '-0' ? '0' : s;
 };
+
+// ─── TURN 46 (CLAUDE.md F4): A SHAKER ON A PENTAGON ─────────────────────────
+//
+// *"Shaker on a pentagon: the frame follows all five edges (mitred at the
+// diagonal); `shakerFits` decides at the threaded frame as ever — too small
+// stays plain."*
+//
+// THE FRAME FOLLOWS ALL FIVE EDGES. A mitred frame of equal width is the
+// panel's own outline moved INWARD by `frame` along every edge's normal — and
+// on a diagonal the inward normal is not vertical, so the offset in y is
+// `frame · sec θ`, where `tan θ` is the line's gradient. That factor is the
+// whole of the difference between a frame that looks equal and one that is:
+// dropping the diagonal by a bare `frame` leaves a rail visibly narrower than
+// the four straight ones, which is precisely what "shaker zawsze równy" is not.
+//
+// ─── AND IT IS REFUSED, NOT SQUEEZED ────────────────────────────────────────
+//
+// The fit is asked at the LOW end, because that is where the frame runs out
+// first: a 60 mm frame on a leaf that is 2147 mm tall at one edge and 90 mm at
+// the other is two rails meeting. `frameFitProblem` is the same threaded
+// function every other front in the app is measured by (T25's law, unchanged)
+// — it is simply handed the height that decides, and a leaf that fails it is
+// cut PLAIN with the sentence the app has always printed.
+
+/**
+ * The recess of a shaker front cut on the slope.
+ *
+ * @param {object} args
+ *   w, h        the leaf's cut rectangle
+ *   frame       the project's frame width
+ *   cut         `{ hL, hR }` — the clear height at the leaf's left and right
+ *               edges IN THE SHEET'S OWN FRAME (the inside mirror), which is
+ *               the frame the outline beside it is written in.
+ * @returns {{layer:string, x1:number, y1:number, x2:number, y2:number,
+ *            depth:number, cutout:boolean, points:Array<[number,number]>}|null}
+ *   null where the frame does not fit — the leaf is then cut plain.
+ */
+export function shakerCutPocket({ w, h, frame, cut }, profile) {
+  if (!cut || !Number.isFinite(Number(cut.hL)) || !Number.isFinite(Number(cut.hR))) {
+    return shakerPocket({ w, h, frame }, profile);
+  }
+  const width = Number(w) || 0;
+  const f = Number(frame);
+  const hL = Number(cut.hL);
+  const hR = Number(cut.hR);
+  // The narrowest the leaf gets is what decides, and it is asked of the very
+  // function every straight front is asked of.
+  if (frameFitProblem({ w: width, h: Math.min(hL, hR, Number(h) || 0), frame: f }, profile)) return null;
+  const rect = shakerPanelRect({ w: width, h, frame: f }, profile);
+  if (!rect) return null;
+  // The diagonal, moved inward along its OWN normal.
+  const gradient = width > 0 ? (hR - hL) / width : 0;
+  const drop = f * Math.sqrt(1 + gradient * gradient);
+  const innerAt = (x) => hL + gradient * x - drop;
+  const round4 = (v) => Math.round(v * 1e4) / 1e4;
+  // The inset rectangle, clipped by the inset diagonal — the same half-plane
+  // clip the outline itself is cut with (`engine/puzzle.js`), so the frame and
+  // the board it is in can never disagree about where the diagonal is.
+  const corners = [[rect.x1, rect.y1], [rect.x2, rect.y1], [rect.x2, rect.y2], [rect.x1, rect.y2]];
+  const under = (p) => p[1] <= innerAt(p[0]) + 1e-9;
+  const cross = (a, b) => {
+    const fa = a[1] - innerAt(a[0]);
+    const fb = b[1] - innerAt(b[0]);
+    const d = fa - fb;
+    if (Math.abs(d) < 1e-12) return [b[0], innerAt(b[0])];
+    const t = Math.min(Math.max(fa / d, 0), 1);
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  };
+  const points = [];
+  for (let i = 0; i < corners.length; i += 1) {
+    const a = corners[i];
+    const b = corners[(i + 1) % corners.length];
+    if (under(a)) points.push([round4(a[0]), round4(a[1])]);
+    if (under(a) !== under(b)) {
+      const c = cross(a, b);
+      points.push([round4(c[0]), round4(c[1])]);
+    }
+  }
+  if (points.length < 3) return null;
+  const ys = points.map((q) => q[1]);
+  const xs = points.map((q) => q[0]);
+  return {
+    layer: rect.layer,
+    // The BOUNDING BOX stays, so every reader written before tonight — the
+    // 3-D solid, the elevation, the nesting — keeps working unchanged and a
+    // reader that understands `points` cuts the true pentagon.
+    x1: Math.min(...xs),
+    y1: Math.min(...ys),
+    x2: Math.max(...xs),
+    y2: Math.max(...ys),
+    depth: rect.depth,
+    cutout: true,
+    points,
+  };
+}

@@ -72,8 +72,21 @@ test('the rules, each with the owner’s colour', () => {
   // not be reached at all is ONE amber project note instead, because a dead
   // network is not thirty faults. The seventeen before it are untouched, which
   // is what the deep-equal below is for.
-  assert.equal(CHECKS.length, 18);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]);
+  // ─── RE-PINNED 24.08.2026 (TURN 46, CLAUDE.md F2) ────────────────────────
+  // And #19, "Unit under slope minimum (400 mm)" — the owner's own number, the
+  // night the slope became real. A unit standing where its FULL height no
+  // longer fits is NOT a fault; it is a cut cabinet (F3). A unit pushed past
+  // the 400 floor has no cabinet left in it, and `clampUnitX` stops that
+  // happening — so this rule is the WITNESS on that clamp, in the grammar #15
+  // is written in. The eighteen before it are untouched, which is what the
+  // deep-equal below is for.
+  // …and #20, "Drawer stack crosses the slope line" (T46-F4): a door can be
+  // a pentagon, a drawer cannot. The engine refuses the cut and this names it.
+  // …and #21, "Shelf crosses the slope line" (T46-F5): a shelf exists only
+  // where its FULL span sits below the line, and this names the ones that do
+  // not so a joiner is never quietly short of a board.
+  assert.equal(CHECKS.length, 21);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -96,6 +109,9 @@ test('the rules, each with the owner’s colour', () => {
     16: 'yellow',
     17: 'yellow',
     18: 'red',
+    19: 'red',
+    20: 'red',
+    21: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

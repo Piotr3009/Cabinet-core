@@ -20,7 +20,10 @@ test('the rail hangs MID-DEPTH — no longer borrowing the drawer setback', () =
   // longer fits on one line. What this test is actually about is the DEPTH —
   // mid-depth, not the drawer setback — so it is asserted as the two facts it
   // has always been, rather than as one line's formatting.
-  assert.match(c, /rail: hasRail\s*\?\s*\{/);
+  // T46-F5 wrapped the row in `railUnderCut(...)` — the rod now shortens where
+  // the slope line meets it, exactly as the bay law already shortens it at a
+  // partition. The row itself is untouched and this still asserts the DEPTH.
+  assert.match(c, /rail: hasRail\s*\?\s*railUnderCut\(\{/);
   assert.match(c, /y: railY,\s*\n?\s*x1: G,\s*\n?\s*x2: W - G,\s*\n?\s*z: \(D \+ G\) \/ 2,/);
   assert.doesNotMatch(c, /z: D - DR\.setback \} : null/);
 });

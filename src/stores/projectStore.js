@@ -46,7 +46,7 @@ import { migrateWallElement, wallElements } from '../lib/wallElements.js';
 // becomes a number the engine and the clamp can use. Both come out of the same
 // module the wall mesh and the elevation read — there is no second lerp here.
 import {
-  slopeInfillMm, slopeMinimumMm, slopeShortfallMm, slopeStation,
+  slopeCutLine, slopeInfillMm, slopeMinimumMm, slopeShortfallMm, slopeStation,
 } from '../lib/slopeLine.js';
 // T45 F9b/F9c: the job's LED spec — the groove mode, the channel width and the
 // optional W/m. It rides the project beside the room for the same reason the
@@ -481,14 +481,58 @@ function slopeLimitFor(state, unit, wall, footprintWidth, profile) {
   });
 }
 
+/**
+ * ─── TURN 46 (CLAUDE.md F3/F5): THE CUT, RESOLVED ON EVERY COMPUTE ──────────
+ *
+ * *"Live: drag end re-runs the engine (the same pos_mm path every drag uses) —
+ * the cabinet re-cuts itself as it arrives under the slope."*
+ *
+ * LIVE is free, and this line is why: `paramsForEngine` runs on EVERY compute,
+ * so the cut is re-derived from where the unit is standing at that moment.
+ * There is nothing stored, nothing to invalidate and nothing to remember —
+ * exactly the mechanism T35-F12's `front_top_gap_mm` uses one field above, and
+ * for the same stated reason. Drag it under the slope and it is cut; drag it
+ * back out and the key is absent again and the kit cuts what the AutoLISP cuts.
+ *
+ * @returns {object|null} the two points, or null — and null means the key is
+ *   never written, which is iron rule 2's gate.
+ */
+function slopeCutFor(unit, design) {
+  const state = useProjectStore.getState();
+  const wallIndex = unit?.position?.wall;
+  if (wallIndex == null) return null;
+  const slopes = slopesOfWall(state, wallIndex);
+  if (!slopes.length) return null;
+  const wall = roomWalls(state.project.room)[wallIndex];
+  if (!wall) return null;
+  return slopeCutLine({
+    slopes,
+    wallWidth: Number(wall.width) || 0,
+    wallHeight: Number(state.project.room?.height) || 0,
+    x: Number(unit.position.x_mm) || 0,
+    width: Number(unit.params?.width) || 0,
+    infill: slopeInfillMm(design || state.project.design),
+    floorY: floorYOf(unit, null, getCabinetProfile()),
+  });
+}
+
 function paramsForEngine(unit, design = null) {
   const p = unit.params;
   const items = p.sections?.[0]?.items || [];
   const profile = getCabinetProfile();
+  const slopeCut = slopeCutFor(unit, design);
   return {
     ...p,
     type: unit.type,
     items,
+    // ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT ────────────────────────────
+    // On the override channel, exactly as the plinth, the hinge standard, the
+    // shaker frame and the shelf-pin setback travel — an INPUT in the design
+    // layer, never a formula in the engine. The key is ABSENT for a unit that
+    // is not under a slope (`...(x ? {k:v} : {})`, the house's own idiom for
+    // exactly this), so a bare `computeCabinet()` and every golden fixture pass
+    // nothing at all and cut what the AutoLISP cuts.
+    ...(slopeCut ? { slope_cut: slopeCut } : {}),
     // ─── Turn 8 (CLAUDE.md F4) ───
     // How far a FIX shelf and a partition stand back from the face. It is
     // supplied HERE rather than defaulted inside computeCabinet, and that is

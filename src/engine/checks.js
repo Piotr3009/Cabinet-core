@@ -153,6 +153,14 @@ export const CHECKS = Object.freeze([
   // in front of the joiner. Report, never fix: the stack stays whole in the cut
   // list rather than being silently deleted off an order form somebody priced.
   { n: 20, level: 'red', label: 'Drawer stack crosses the slope line' },
+  // ─── TURN 46 (CLAUDE.md F5): A SHELF MAY NOT PIERCE THE DIAGONAL ─────────
+  //
+  // *"Shelves exist only where their FULL span sits below the cut line."* The
+  // engine does not cut one that would, and this is what stops that being a
+  // silence: a joiner who ordered four shelves and gets two has to be told
+  // which two are missing and why. RED, because a missing shelf is a missing
+  // board on a cut list, not a matter of taste.
+  { n: 21, level: 'red', label: 'Shelf crosses the slope line' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -500,16 +508,22 @@ export function runChecks({
       }
     }
 
-    // ── #20 a drawer stack that would have to be cut on the slope (T46) ──
+    // ── #20/#21 the interior against the slope line (T46-F4/F5) ──────────
     //
     // Read off the ENGINE's own refusal rather than re-derived: the cabinet has
     // already decided the front crosses the line, and a check that worked it
     // out a second way would be a second opinion about one board.
     for (const wn of result.warnings || []) {
-      if (wn.code !== 'SLOPE_DRAWER_CROSSES') continue;
-      out.push(finding(20, 'red', at(wn.panel || null, {
+      const n = { SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21 }[wn.code];
+      if (!n) continue;
+      out.push(finding(n, 'red', at(wn.panel || null, {
         message: `${unitNum}: ${wn.message}`,
-        subject: { unitId, panelId: wn.panel || null, editor: wn.panel ? 'element' : 'cabinet' },
+        // A REFUSED shelf has no panel to fly to — it was never cut — so the
+        // click opens the cabinet instead of pointing at a board that is not
+        // in the list. #20's drawer IS in the list and keeps its own address.
+        subject: n === 20 && wn.panel
+          ? { unitId, panelId: wn.panel, editor: 'element' }
+          : { unitId, editor: 'cabinet' },
       })));
     }
 

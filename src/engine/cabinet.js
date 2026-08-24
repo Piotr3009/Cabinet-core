@@ -2915,6 +2915,25 @@ export function computeCabinet(params, profileOverride) {
     })),
   });
 
+  // ─── TURN 46 (CLAUDE.md F5): THE INTERIOR OBEYS THE LINE ──────────────────
+  //
+  // *"Shelves exist only where their FULL span sits below the cut line (a shelf
+  // may not pierce the diagonal)."*
+  //
+  // FULL SPAN is the clause that does the work. A board is not a point: a shelf
+  // whose left end clears the ceiling and whose right end does not is a shelf
+  // sawn in half by the plaster, so the question is asked at the WORST end of
+  // its own span and never at its middle. The board is then not cut at all —
+  // that is what "exist only where" says, and a shelf is the one interior piece
+  // a joiner loses nothing by not having. It is NAMED, in red, by Check #21;
+  // nothing disappears silently.
+  //
+  // `Infinity` with no cut, so every shelf in every cabinet before tonight is
+  // emitted by exactly the expression that emitted it.
+  const shelfCeilingOver = (from, to) => (cut
+    ? Math.min(cutAt(from), cutAt(to))
+    : Infinity);
+
   for (let i = 1; i <= numShelves; i += 1) {
     const y = shelfRows[i - 1] ?? (G + ((H - 2 * G) / (numShelves + 1)) * i);
     const item = cfg.shelfItems[i - 1];
@@ -2947,6 +2966,22 @@ export function computeCabinet(params, profileOverride) {
     // exactly the arithmetic every other shelf goes through — the number in it
     // is different, and only when somebody said so.
     const shelfT = shelfThickness(item, G);
+    // TURN 46 (F5): …and this is where a shelf that would pierce the diagonal
+    // stops existing. Its TOP face is what must clear the line — the board is
+    // `shelfT` thick and `y` is its underside.
+    if (cut) {
+      const ceilingHere = shelfCeilingOver(shelfXHere, shelfXHere + shelfWHere);
+      if (y + shelfT > ceilingHere + 1e-6) {
+        warnings.push({
+          code: 'SLOPE_SHELF_CROSSES',
+          panel: `SHELF-${i}`,
+          message: `SHELF-${i}: the shelf at ${roundTo(y, 0)} mm would pierce the slope — `
+            + `the ceiling is ${roundTo(ceilingHere, 0)} mm at the low end of its span. `
+            + 'Lower it or move the unit out of the slope zone.',
+        });
+        continue;
+      }
+    }
     panels.push(panel({
       id: `SHELF-${i}`, part: 'SHELF', role: 'shelf', w: shelfWHere, h: depthHere, thickness: shelfT,
       edgeCode: codes.right, edgeLen: metres(shelfWHere),
@@ -6817,6 +6852,51 @@ export function computeCabinet(params, profileOverride) {
     } : {}),
   };
 
+  // ─── TURN 46 (CLAUDE.md F5): THE ROD ENDS WHERE THE LINE MEETS IT ─────────
+  //
+  // *"The rail (ALONE or assembly) shortens exactly as the bay law already cuts
+  // it at partitions — here the boundary is the x where the line meets the
+  // rail's y; below the meeting point the rod ends."*
+  //
+  // EXACTLY AS THE BAY LAW: a rod is already a span `x1 → x2` that a partition
+  // narrows (T32-F4's column rails are the same pair). So the slope narrows the
+  // same pair and nothing downstream — the 3-D tube, the BOM's length, check
+  // #13's opening — learns a new shape. The boundary is SOLVED, not stepped
+  // towards: the ceiling line is straight, so `x = (y − y0) · W / (y1 − y0)`
+  // is the one x at which it passes the rod's own height.
+  //
+  // `null` back means there is no rod left at all — the ceiling is under it
+  // across the whole span — and the caller drops it rather than drawing a tube
+  // of negative length.
+  const railSpanUnderCut = (x1, x2, y) => {
+    if (!cut) return { x1, x2 };
+    const startsClear = cutAt(x1) >= y - 1e-9;
+    const endsClear = cutAt(x2) >= y - 1e-9;
+    if (startsClear && endsClear) return { x1, x2 };
+    if (!startsClear && !endsClear) return null;
+    const rise = cut.y1 - cut.y0;
+    if (!(Math.abs(rise) > 1e-9)) return { x1, x2 };
+    const meet = Math.min(Math.max(((y - cut.y0) * W) / rise, x1), x2);
+    return startsClear
+      ? { x1, x2: roundTo(meet, 4) }
+      : { x1: roundTo(meet, 4), x2 };
+  };
+  const railUnderCut = (rod) => {
+    if (!rod) return rod;
+    const span = railSpanUnderCut(rod.x1, rod.x2, rod.y);
+    if (!span) return null;
+    if (span.x1 === rod.x1 && span.x2 === rod.x2) return rod;
+    return {
+      ...rod,
+      ...span,
+      slopeCut: {
+        was: [roundTo(rod.x1, 4), roundTo(rod.x2, 4)],
+        now: [roundTo(span.x1, 4), roundTo(span.x2, 4)],
+        lost: roundTo((rod.x2 - rod.x1) - (span.x2 - span.x1), 4),
+      },
+    };
+  };
+
   // ── Assemblies for the 3D view ─────────────────────────────────────────────
   const assemblies = {
     carcass: { w: W, h: H, d: D, legHeight: standHeight },
@@ -6834,7 +6914,7 @@ export function computeCabinet(params, profileOverride) {
     // so the modal can name the datum instead of showing a bare number, and so
     // check #13 has the opening it must fit in.
     rail: hasRail
-      ? {
+      ? railUnderCut({
         y: railY,
         x1: G,
         x2: W - G,
@@ -6864,10 +6944,10 @@ export function computeCabinet(params, profileOverride) {
         // would be a byte-identity delta that says nothing, the same reason
         // `drawerZone` and `shoeBoxes` come and go rather than sit there empty.
         ...(railRides ? { shelfItemId: railRides.shelfId } : {}),
-      }
+      })
       : null,
     // Turn 32 (CLAUDE.md F4): the columns' own rails, beside the unit-wide one.
-    columnRails: columnRailSets.map((set) => ({
+    columnRails: columnRailSets.map((set) => railUnderCut({
       zone: set.zone,
       y: set.railY,
       x1: set.bay.from,
@@ -6878,7 +6958,9 @@ export function computeCabinet(params, profileOverride) {
       mount: set.mount,
       itemId: set.itemId,
       ...(set.shelfItemId ? { shelfItemId: set.shelfItemId } : {}),
-    })),
+      // A column rod the ceiling has swallowed whole is dropped rather than
+      // drawn with a negative length — the same answer the unit-wide rod gets.
+    })).filter(Boolean),
     drawerZone: hasDrawers ? { top: partitionY, count: numDrawers, heights: [...drawerHeights] } : null,
     // Turn 33 (CLAUDE.md F3): what the accessories DRAW — the display glass
     // panes and the bought mechanisms' labelled placeholder bodies. Ordered

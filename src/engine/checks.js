@@ -145,6 +145,14 @@ export const CHECKS = Object.freeze([
   // this state by a path that does not drag: a typed x, a room re-sized over
   // its head, a slope edited above it.
   { n: 19, level: 'red', label: 'Unit under slope minimum (400 mm)' },
+  // ─── TURN 46 (CLAUDE.md F4/F5): A DRAWER IS NOT CUT ON A SLOPE ───────────
+  //
+  // A door can be a pentagon; a drawer cannot — a box with a diagonal lid does
+  // not slide out of anything. The ENGINE refuses the cut and stamps the piece
+  // (`meta.slopeRefused`, warning `SLOPE_DRAWER_CROSSES`); this is the sentence
+  // in front of the joiner. Report, never fix: the stack stays whole in the cut
+  // list rather than being silently deleted off an order form somebody priced.
+  { n: 20, level: 'red', label: 'Drawer stack crosses the slope line' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -490,6 +498,19 @@ export function runChecks({
           slopeShortfallMm: round2(slope.shortfallMm),
         })));
       }
+    }
+
+    // ── #20 a drawer stack that would have to be cut on the slope (T46) ──
+    //
+    // Read off the ENGINE's own refusal rather than re-derived: the cabinet has
+    // already decided the front crosses the line, and a check that worked it
+    // out a second way would be a second opinion about one board.
+    for (const wn of result.warnings || []) {
+      if (wn.code !== 'SLOPE_DRAWER_CROSSES') continue;
+      out.push(finding(20, 'red', at(wn.panel || null, {
+        message: `${unitNum}: ${wn.message}`,
+        subject: { unitId, panelId: wn.panel || null, editor: wn.panel ? 'element' : 'cabinet' },
+      })));
     }
 
     // ── #12 a fixed shoe box in the swing of a hinge arm (16.08, C) ───────

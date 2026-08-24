@@ -230,7 +230,9 @@ test('NO HOLE IN AIR: not one drill sits above its own panel\'s cut top', () => 
 test('every CUT panel\'s fingerprint carries the cut (T41\'s suite law)', () => {
   const r = cutWardrobe();
   const stamped = r.panels.filter((p) => p.meta?.slopeCut).map((p) => p.id).sort();
-  assert.deepEqual(stamped, ['BACK', 'BUR', 'TOP'].sort());
+  // F4 adds the door to the list: the front is cut on the same line and its
+  // fingerprint carries the cut too.
+  assert.deepEqual(stamped, ['01-F', 'BACK', 'BUR', 'TOP'].sort());
   // …and a panel the cut never reached carries nothing, so it stays identical.
   assert.equal(panelOf(r, 'BUL').meta?.slopeCut, undefined);
   assert.equal(panelOf(r, 'BOTTOM').meta?.slopeCut, undefined);

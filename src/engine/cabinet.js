@@ -31,7 +31,8 @@ import {
 } from './shelfBearers.js';
 // Turn 21 (CLAUDE.md F12): the owner's door-width law, as pure geometry.
 import {
-  glassAperture, isGlassFront, isShakerFront, shakerFrameMm, shakerPanelFloor, shakerPocket, shakerProblem,
+  glassAperture, isGlassFront, isShakerFront, shakerCutPocket, shakerFrameMm, shakerPanelFloor,
+  shakerPocket, shakerProblem,
 } from './shaker.js';
 import { resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
@@ -4701,17 +4702,138 @@ export function computeCabinet(params, profileOverride) {
   // and there is no two-leaf appliance door.
   const leafCount = dropsForward ? Math.min(1, doorCount) : (bayDoors.length || doorCount);
   const hingedLeafCount = dropsForward ? 0 : (bayDoors.length || doorCount);
+  // ─── TURN 46 (CLAUDE.md F4): OPTION A — THE FRONT IS CUT ON THE SLOPE ─────
+  //
+  // The owner's law, verbatim: *"tniemy po skosie, brak wyboru otwierania,
+  // musi być od skosu."*
+  //
+  // A leaf standing under the diagonal is a PENTAGON, cut on the SAME line the
+  // carcass is cut on, less the standard gap along every edge INCLUDING the
+  // diagonal one. `SLOPE_FRONT_GAP` is `P.doors.gap` — the same 3 mm that
+  // already stands between two side-by-side doors, and the same 3 the top edge
+  // demands when there is anything above it. Under a slope there always is:
+  // the ceiling.
+  //
+  // AND THE HINGE SIDE IS NOT A CHOICE. *"brak wyboru otwierania"* — the door
+  // opens FROM the slope, so the hinges live on the FULL-HEIGHT edge and the
+  // diagonal never carries one. That is decided HERE, on the piece, so the
+  // drilling pass below (which reads `meta.hinge` and has since turn 17), the
+  // 3-D and the Doors modal all get the same answer from one place. The count
+  // comes off the TALL edge through the EXISTING chain — `meta.cupY`, T36-F6's
+  // own channel for a leaf whose height is not the cabinet's.
+  //
+  // `null` for every leaf that is not under a slope, and then every front in
+  // this file is pushed exactly as it was pushed yesterday.
+  //
+  // ─── AND THE SHEET IS A MIRROR ────────────────────────────────────────────
+  //
+  // A FRONT's cut frame is the INSIDE MIRROR — origin at the leaf's bottom
+  // RIGHT corner, x running LEFT (`engine/joinery.js panelPlacement`, and the
+  // reason is written out in `engine/handles.js`: the workshop bores a door
+  // from the back and the sheet is drawn the way the door lies on the bench).
+  // T28-F2b is the scar from getting this wrong for the handle, so the two
+  // frames are named apart here and never mixed: `roomL/roomR` is what the
+  // CUSTOMER sees, `sheetL/sheetR` is what the MACHINE cuts, and the second is
+  // the first reversed. The hinge hand is decided in the ROOM's frame, which
+  // is the frame the owner's sentence is spoken in.
+  const SLOPE_FRONT_GAP = P.doors.gap;
+  const frontSlopeAt = (leafX, leafW) => {
+    if (!cut || !(leafW > 0)) return null;
+    const clear = (x) => cutAt(leafX + x) - doorY - SLOPE_FRONT_GAP;
+    const roomL = Math.max(0, clear(0));
+    const roomR = Math.max(0, clear(leafW));
+    if (!slopeCutActive({ h: frontH, hL: roomL, hR: roomR })) return null;
+    const tall = Math.min(frontH, Math.max(roomL, roomR));
+    return {
+      roomL,
+      roomR,
+      sheetL: roomR,
+      sheetR: roomL,
+      // The full-height edge. A tie (a level ceiling under the carcass top)
+      // keeps the LEFT, which is the app's own default hand.
+      hinge: roomL >= roomR ? 'L' : 'R',
+      tall,
+      low: Math.min(frontH, Math.min(roomL, roomR)),
+    };
+  };
+  /** A cut leaf's panel fields — its outline, its height, its forced hinge. */
+  const cutFrontFields = (sl, leafW) => {
+    if (!sl) return null;
+    const geom = trimGeometryOnSlope(rectGeometry(leafW, frontH), {
+      w: leafW, h: frontH, hL: sl.sheetL, hR: sl.sheetR,
+    });
+    return {
+      h: roundTo(sl.tall, 4),
+      cnc: { ...geom, drawn_w: roundTo(leafW, 4), drawn_h: roundTo(sl.tall, 4) },
+      // The ladder is run over the TALL edge's height and then kept to the
+      // cups that still land on the leaf — the diagonal edge never carries a
+      // hinge, and a cup bored past the cut is a cup in air. The margin is the
+      // cup's own screw offset, so a hinge is dropped when its PLATE would run
+      // off the board and not merely when its centre does.
+      cupY: cupY.filter((y) => y + (Number(P.hinges.cups.screwOffsetY) || 0) <= sl.tall),
+      meta: {
+        hinge: sl.hinge,
+        hingeForced: true,
+        slopeCut: {
+          // In the ROOM's frame, because that is the frame the owner's law is
+          // spoken in — the outline beside it is the sheet's mirror of these.
+          roomL: roundTo(sl.roomL, 4),
+          roomR: roundTo(sl.roomR, 4),
+          gap: roundTo(SLOPE_FRONT_GAP, 4),
+          corners: geom.outline.length,
+          tall: roundTo(sl.tall, 4),
+          low: roundTo(sl.low, 4),
+        },
+      },
+      edgeLen: metres(2 * leafW + sl.roomL + sl.roomR
+        + Math.hypot(leafW, Math.abs(sl.roomL - sl.roomR))),
+    };
+  };
+
+  /** One face leaf, cut on the slope where it stands under one. */
+  const faceLeaf = (id, leafX, hand) => {
+    const sl = frontSlopeAt(leafX, frontW);
+    const fields = cutFrontFields(sl, frontW);
+    return panel({
+      id,
+      part: 'FRONT',
+      role: 'front',
+      w: frontW,
+      h: fields ? fields.h : frontH,
+      thickness: frontT,
+      edgeCode: codes.all,
+      edgeLen: fields ? fields.edgeLen : metres(2 * frontW + 2 * frontH),
+      box: {
+        x: leafX, y: doorY, z: doorZ, w: frontW, h: fields ? fields.h : frontH, d: frontT,
+      },
+      cnc: fields ? fields.cnc : rectGeometry(frontW, frontH),
+      meta: fields
+        ? { ...fields.meta, cupY: fields.cupY, frontType: cfg.frontType }
+        : { hinge: hand, frontType: cfg.frontType },
+    });
+  };
   for (const leaf of bayDoors) {
     if (!(leaf.width > 0)) continue;
+    // TURN 46 (F4): a BAY leaf is a leaf. It takes the same cut, the same
+    // forced hand and the same ladder — the diagonal does not ask which
+    // opening it is crossing.
+    const leafSlope = frontSlopeAt(leaf.x, leaf.width);
+    const leafCut = cutFrontFields(leafSlope, leaf.width);
     panels.push(panel({
-      id: `${unitNum}-B${leaf.bay + 1}`, part: 'FRONT', role: 'front', w: leaf.width, h: frontH, thickness: frontT,
-      edgeCode: codes.all, edgeLen: metres(2 * leaf.width + 2 * frontH),
+      id: `${unitNum}-B${leaf.bay + 1}`,
+      part: 'FRONT',
+      role: 'front',
+      w: leaf.width,
+      h: leafCut ? leafCut.h : frontH,
+      thickness: frontT,
+      edgeCode: codes.all,
+      edgeLen: leafCut ? leafCut.edgeLen : metres(2 * leaf.width + 2 * frontH),
       box: {
-        x: leaf.x, y: doorY, z: doorZ, w: leaf.width, h: frontH, d: frontT,
+        x: leaf.x, y: doorY, z: doorZ, w: leaf.width, h: leafCut ? leafCut.h : frontH, d: frontT,
       },
-      cnc: rectGeometry(leaf.width, frontH),
+      cnc: leafCut ? leafCut.cnc : rectGeometry(leaf.width, frontH),
       meta: {
-        hinge: leaf.hinge,
+        ...(leafCut ? { ...leafCut.meta, cupY: leafCut.cupY } : { hinge: leaf.hinge }),
         frontType: cfg.frontType,
         bay: leaf.bay,
         // Which piece this leaf is screwed to, and — where that piece is a
@@ -4763,25 +4885,10 @@ export function computeCabinet(params, profileOverride) {
   }
 
   if (!dropsForward && !bayDoors.length && doorCount === 1) {
-    panels.push(panel({
-      id: `${unitNum}-F`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
-      edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
-      box: { x: P.doors.gap / 2, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
-      cnc: rectGeometry(frontW, frontH), meta: { hinge: cfg.hinge, frontType: cfg.frontType },
-    }));
+    panels.push(faceLeaf(`${unitNum}-F`, P.doors.gap / 2, cfg.hinge));
   } else if (!dropsForward && !bayDoors.length && doorCount === 2) {
-    panels.push(panel({
-      id: `${unitNum}-FL`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
-      edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
-      box: { x: P.doors.gap / 2, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
-      cnc: rectGeometry(frontW, frontH), meta: { hinge: 'L', frontType: cfg.frontType },
-    }));
-    panels.push(panel({
-      id: `${unitNum}-FR`, part: 'FRONT', role: 'front', w: frontW, h: frontH, thickness: frontT,
-      edgeCode: codes.all, edgeLen: metres(2 * frontW + 2 * frontH),
-      box: { x: W - P.doors.gap / 2 - frontW, y: doorY, z: doorZ, w: frontW, h: frontH, d: frontT },
-      cnc: rectGeometry(frontW, frontH), meta: { hinge: 'R', frontType: cfg.frontType },
-    }));
+    panels.push(faceLeaf(`${unitNum}-FL`, P.doors.gap / 2, 'L'));
+    panels.push(faceLeaf(`${unitNum}-FR`, W - P.doors.gap / 2 - frontW, 'R'));
   }
 
   // ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS — TWO SEGMENTS AND A DIVIDER ────
@@ -5030,12 +5137,25 @@ export function computeCabinet(params, profileOverride) {
   const shakerFrame = shakerFrameMm({ fronts: { shakerFrame: params?.shaker_frame_mm } }, P);
   const shakerFronts = panels.filter((x) => isShakerFront(x));
   for (const pnl of shakerFronts) {
-    const pocket = shakerPocket({ w: pnl.w, h: pnl.h, frame: shakerFrame }, P);
+    // TURN 46 (F4): a leaf cut on the slope takes a frame that follows all five
+    // edges, mitred at the diagonal. `shakerCutPocket` falls straight through
+    // to `shakerPocket` for a leaf with no cut, so every front in every project
+    // before tonight is machined by exactly the call it was machined by.
+    const cutPair = pnl.meta?.slopeCut
+      ? { hL: pnl.meta.slopeCut.roomR, hR: pnl.meta.slopeCut.roomL }
+      : null;
+    const pocket = shakerCutPocket({
+      w: pnl.w, h: pnl.h, frame: shakerFrame, cut: cutPair,
+    }, P);
     if (!pocket) {
       warnings.push({
         code: 'SHAKER_FRAME_TOO_WIDE',
         panel: pnl.id,
-        message: `${pnl.id}: ${shakerProblem({ w: pnl.w, h: pnl.h, frame: shakerFrame }, P)}`,
+        message: `${pnl.id}: ${shakerProblem({
+          w: pnl.w,
+          h: cutPair ? Math.min(cutPair.hL, cutPair.hR, pnl.h) : pnl.h,
+          frame: shakerFrame,
+        }, P)}`,
       });
       continue;
     }
@@ -6892,6 +7012,45 @@ export function computeCabinet(params, profileOverride) {
       order: corniceOrderRow,
     } : null,
   };
+
+  // ─── TURN 46 (CLAUDE.md F4/F5): A DRAWER IS NOT CUT ON A SLOPE ─────────────
+  //
+  // *"Drawer fronts: forbidden in the slope zone (interior law, F5) — the
+  // engine refuses a drawer stack whose top would cross the line, red Check
+  // names it."*
+  //
+  // A door can be a pentagon; a DRAWER cannot. A drawer front is the face of a
+  // box that has to slide straight out of the carcass, and a box with a
+  // diagonal lid does not slide anywhere — so the engine refuses the cut rather
+  // than performing it, and says so. What it does NOT do is silently delete a
+  // drawer somebody has ordered and priced: the stack stays whole in the cut
+  // list, wearing its own refusal, and Check #20 puts the sentence in front of
+  // the joiner in red. Report, never fix — the house grammar, and the only
+  // reading of "refuse" that cannot lose a board off an order form.
+  if (cut) {
+    for (const pnl of panels.filter((x) => x.part === 'DRAWER-FRONT' && x.box)) {
+      const from = Number(pnl.box.x) || 0;
+      const to = from + (Number(pnl.box.w) || 0);
+      const ceiling = Math.min(cutAt(from), cutAt(to));
+      const top = (Number(pnl.box.y) || 0) + (Number(pnl.box.h) || 0);
+      if (!(top > ceiling + 1e-6)) continue;
+      pnl.meta = {
+        ...(pnl.meta || {}),
+        slopeRefused: {
+          top: roundTo(top, 4),
+          ceiling: roundTo(ceiling, 4),
+          over: roundTo(top - ceiling, 4),
+        },
+      };
+      warnings.push({
+        code: 'SLOPE_DRAWER_CROSSES',
+        panel: pnl.id,
+        message: `${pnl.id}: a drawer front cannot be cut on the slope — its top is `
+          + `${roundTo(top - ceiling, 0)} mm over the line. Lower the stack or move the unit `
+          + 'out of the slope zone.',
+      });
+    }
+  }
 
   // ─── TURN 46 (CLAUDE.md F3): NO HOLE IN AIR ────────────────────────────────
   //

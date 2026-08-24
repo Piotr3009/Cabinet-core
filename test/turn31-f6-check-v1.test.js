@@ -80,8 +80,10 @@ test('the rules, each with the owner’s colour', () => {
   // happening — so this rule is the WITNESS on that clamp, in the grammar #15
   // is written in. The eighteen before it are untouched, which is what the
   // deep-equal below is for.
-  assert.equal(CHECKS.length, 19);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]);
+  // …and #20, "Drawer stack crosses the slope line" (T46-F4): a door can be
+  // a pentagon, a drawer cannot. The engine refuses the cut and this names it.
+  assert.equal(CHECKS.length, 20);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -105,6 +107,7 @@ test('the rules, each with the owner’s colour', () => {
     17: 'yellow',
     18: 'red',
     19: 'red',
+    20: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

@@ -428,40 +428,61 @@
 ;;; does not compute them and does not invent the gap.
 ;;;
 ;;; Nothing above this line changes - T46 iron rule 3. This section is additive.
+;;;
+;;; T47, the morning after: the two heights become a LINE. `pts` is a point
+;;; list ((x y) ...) in the carcase's own frame, left to right, with a vertex at
+;;; every knee, already less the scribe gap - and where the wall really is one
+;;; straight run `SKY:slopeLine` builds T46's two points and nothing moves.
 
 (setq BUDTALL_SLOPE_MIN_CLEAR 400.0)   ;; the owner's floor
 
-;;; Enough cabinet left to build? Asked at the LOW end, the only end that fails.
-(defun budtallSlopeFits (hL hR)
-  (>= (min hL hR) BUDTALL_SLOPE_MIN_CLEAR))
+;;; The straight case, still available by name: one run, two heights.
+(defun budtallSlopeLine (szerSzafki hL hR)
+  (SKY:slopeLine szerSzafki hL hR))
+
+;;; Enough cabinet left to build? Asked at the LOW POINT of the line, which
+;;; under T47 may be a knee rather than an end.
+(defun budtallSlopeFits (szerSzafki pts)
+  (>= (SKY:cutValleyBetween pts 0.0 szerSzafki) BUDTALL_SLOPE_MIN_CLEAR))
 
 ;;; The hinge side, and there is no choice: the door opens FROM the slope, so
-;;; the hinges live on the full-height edge and the diagonal never carries one.
-(defun budtallSlopeHinge (hL hR)
-  (if (>= hL hR) "L" "R"))
+;;; the hinges live on the full-height edge and the sloped edge never carries
+;;; one.
+(defun budtallSlopeHinge (szerSzafki pts)
+  (if (>= (SKY:cutHeightAt pts 0.0) (SKY:cutHeightAt pts szerSzafki)) "L" "R"))
 
-;;; The carcase, seen from the front, cut on the slope.
-(defun drawBudtallSlopeCarcaseFront (x0 y0 szerSzafki wysSzafki hL hR)
-  (SKY:drawSlopeCut x0 y0 szerSzafki wysSzafki hL hR))
+;;; The carcase, seen from the front, cut on the line.
+(defun drawBudtallSlopeCarcaseFront (x0 y0 szerSzafki wysSzafki pts)
+  (SKY:drawSlopeCut x0 y0 szerSzafki wysSzafki pts))
 
-;;; The BACK, cut on the same diagonal.
-(defun drawBudtallSlopeBACK (x0 y0 szerBACK wysBACK unitNum hL hR / pts)
-  (setq pts (SKY:drawSlopeCut x0 y0 szerBACK wysBACK hL hR))
-  (drawText "UNIT_NUMBER" (+ x0 (/ szerBACK 2.0)) (+ y0 (/ (min hL hR) 2.0)) 40.0 unitNum)
-  pts)
+;;; The BACK, cut on the same line.
+(defun drawBudtallSlopeBACK (x0 y0 szerBACK wysBACK unitNum pts / out)
+  (setq out (SKY:drawSlopeCut x0 y0 szerBACK wysBACK pts))
+  (drawText "UNIT_NUMBER" (+ x0 (/ szerBACK 2.0))
+    (/ (SKY:cutValleyBetween pts 0.0 szerBACK) 2.0) 40.0 unitNum)
+  out)
 
-;;; A SIDE under the diagonal: one x, one ceiling, one height.
-(defun drawBudtallSlopeSIDE (x0 y0 szerSIDE wysSIDE unitNum hSide)
-  (SKY:drawSlopeCut x0 y0 szerSIDE wysSIDE hSide hSide))
+;;; A SIDE under the line: it runs UP to the peak over its own two faces, less
+;;; the roof board's vertical footprint, and its top is a bevel at the segment's
+;;; own angle. The angle is printed - "na CNC tez zeby bylo napisane".
+(defun drawBudtallSlopeSIDE (x0 y0 szerSIDE wysSIDE unitNum pts xa xb G / hTop deg)
+  (setq hTop (SKY:sideTopY pts wysSIDE xa xb G))
+  (setq deg (SKY:sideCutDeg pts xa xb))
+  (SKY:drawSlopeCut x0 y0 szerSIDE wysSIDE (SKY:slopeLine szerSIDE hTop hTop))
+  (drawText "UNIT_NUMBER" (+ x0 (/ szerSIDE 2.0)) (+ y0 hTop 20.0) 30.0
+    (strcat "CUT " (rtos deg 2 1) " DEG"))
+  hTop)
 
-;;; The TOP board sits level at the low end's height, full depth.
-(defun budtallSlopeTopY (hL hR G)
-  (- (min hL hR) G))
+;;; The TOP BOARD is a ROOF: it lies ON the two sides, spans the full width,
+;;; its ends are cut vertically, one board per segment, no dog bones.
+(defun budtallSlopeRoofBoards (szerSzafki wysSzafki pts G)
+  (SKY:roofBoards szerSzafki wysSzafki pts G))
 
-;;; The DOOR - a pentagon, less the standard gap on every edge including the
-;;; diagonal one.
-(defun drawBudtallSlopeFRONT (x0 y0 szerFront wysFront unitNum doorGap hL hR)
-  (SKY:drawSlopeCut x0 y0 szerFront wysFront (- hL doorGap) (- hR doorGap)))
+;;; The DOOR - cut on the same line, less the standard gap on every edge
+;;; including the sloped one.
+(defun drawBudtallSlopeFRONT (x0 y0 szerFront wysFront unitNum doorGap pts / less)
+  (setq less (mapcar '(lambda (p) (list (car p) (- (cadr p) doorGap))) pts))
+  (SKY:drawSlopeCut x0 y0 szerFront wysFront less))
 
-(princ "\nKIT_BUDTALL_FULL: SLOPE CUT T46 section loaded.")
+(princ "\nKIT_BUDTALL_FULL: SLOPE CUT T46/T47 section loaded.")
 (princ)

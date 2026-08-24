@@ -72,18 +72,26 @@ test('no other kit mentions the slope cut at all', () => {
 // application half, written in F3 — is asserted against the SAME three cases
 // in the F3 test. Two files, one law, and the LISP is the one that states it.
 
-test('the routine states the three answers the cut can have', () => {
+// ─── T47 AMENDS THIS ONE TEST, AND SAYS SO ─────────────────────────────────
+//
+// T47's F1 is an order to this file: *"`SKY:slopeCutPts` in `SKYLON_COMMON.lsp`
+// learns the polyline"*. The three-branch `cond` this test pinned by name IS
+// what learned it — the routine now takes a POINT LIST and its top boundary is
+// `min(wys, at(x))` walked knee by knee, which returns T46's rectangle, T46's
+// trapezium and T46's two pentagons corner for corner (turn47-lisp-is-law
+// proves that against the numbers rather than against the source).
+//
+// So what survives here is the half that did not change: the KNEE IS SOLVED,
+// and it is solved with the same expression it always was.
+test('the routine states the answers the cut can have — and the knee is SOLVED', () => {
   assert.match(common, /\(defun SKY:slopeKneeX \(szer wys hL hR/);
-  assert.match(common, /\(defun SKY:slopeCutPts \(x0 y0 szer wys hL hR/);
-  assert.match(common, /\(defun SKY:slopeCutActive \(wys hL hR\)/);
-  assert.match(common, /\(defun SKY:drawSlopeCut \(x0 y0 szer wys hL hR/);
-  // NOTHING TO TRIM — the plain rectangle, so a panel out of the zone is drawn
-  // byte-for-byte as it was. That is the gate, and it is the shape's own.
-  assert.match(common, /\(\(and \(>= hL wys\) \(>= hR wys\)\)/);
-  // the trapezium, both edges under the ceiling
-  assert.match(common, /\(\(and \(< hL wys\) \(< hR wys\)\)/);
-  // the pentagon, and its knee is SOLVED
+  assert.match(common, /\(defun SKY:slopeCutPts \(x0 y0 szer wys pts/);
+  assert.match(common, /\(defun SKY:slopeCutActive \(wys pts/);
+  assert.match(common, /\(defun SKY:drawSlopeCut \(x0 y0 szer wys pts/);
+  // the pentagon's knee, on a straight run, and its own routine kept intact
   assert.match(common, /\* szer \(\/ \(- wys hL\) d\)/);
+  // …and the general form of the same solve, one per segment of the line
+  assert.match(common, /\(setq kx \(\+ ax \(\/ \(\* \(- bx ax\) \(- wys ay\)\) \(- by ay\)\)\)\)/);
 });
 
 test('the owner\'s four decisions are written into both kits, verbatim', () => {
@@ -98,11 +106,14 @@ test('the owner\'s four decisions are written into both kits, verbatim', () => {
   }
 });
 
+// T47: the two heights became a LINE, so the hinge law is asked of the line's
+// two ENDS instead of two loose numbers. The RULE is untouched — the door opens
+// FROM the slope and the hinges live on the full-height edge.
 test('the hinge side is FORCED in the LISP too — the full-height edge', () => {
   assert.match(read('KIT_WARDROBE_FULL.lsp'),
-    /\(defun wardrobeSlopeHinge \(hL hR\)\n\s*\(if \(>= hL hR\) "L" "R"\)\)/);
+    /\(defun wardrobeSlopeHinge \(szerSzafki pts\)\n\s*\(if \(>= \(SKY:cutHeightAt pts 0\.0\) \(SKY:cutHeightAt pts szerSzafki\)\) "L" "R"\)\)/);
   assert.match(read('KIT_BUDTALL_FULL.lsp'),
-    /\(defun budtallSlopeHinge \(hL hR\)\n\s*\(if \(>= hL hR\) "L" "R"\)\)/);
+    /\(defun budtallSlopeHinge \(szerSzafki pts\)\n\s*\(if \(>= \(SKY:cutHeightAt pts 0\.0\) \(SKY:cutHeightAt pts szerSzafki\)\) "L" "R"\)\)/);
 });
 
 test('the 400 floor is a named constant in both kits, not a magic number', () => {

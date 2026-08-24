@@ -1119,51 +1119,297 @@
     0.0
     (max 0.0 (min szer (* szer (/ (- wys hL) d))))))
 
-;;; The OUTLINE point list of a panel trimmed on the slope.
-;;; Walked in the same direction as every other outline in this file:
-;;; bottom-left, bottom-right, up the right edge, back along the top.
-(defun SKY:slopeCutPts (x0 y0 szer wys hL hR / kx)
-  (cond
-    ;; Nothing to trim - the plain rectangle, unchanged.
-    ((and (>= hL wys) (>= hR wys))
-      (list (list x0 y0) (list (+ x0 szer) y0)
-            (list (+ x0 szer) (+ y0 wys)) (list x0 (+ y0 wys))))
-    ;; Under the ceiling at both edges - the trapezium.
-    ((and (< hL wys) (< hR wys))
-      (list (list x0 y0) (list (+ x0 szer) y0)
-            (list (+ x0 szer) (+ y0 hR)) (list x0 (+ y0 hL))))
-    ;; The LOW end is on the right - the pentagon, right corner trimmed.
-    ((< hR wys)
-      (setq kx (SKY:slopeKneeX szer wys hL hR))
-      (list (list x0 y0) (list (+ x0 szer) y0)
-            (list (+ x0 szer) (+ y0 hR)) (list (+ x0 kx) (+ y0 wys))
-            (list x0 (+ y0 wys))))
-    ;; The LOW end is on the left - the pentagon, mirrored.
-    (T
-      (setq kx (SKY:slopeKneeX szer wys hL hR))
-      (list (list x0 y0) (list (+ x0 szer) y0)
-            (list (+ x0 szer) (+ y0 wys)) (list (+ x0 kx) (+ y0 wys))
-            (list x0 (+ y0 hL))))))
+;;;========================================
+;;; T47 - THE LINE BENDS (24.08.2026)
+;;;========================================
+;;; The owner, the next morning, three screenshots in hand:
+;;;
+;;;   "jak sie konczy skos to powinno sie zalamywac kat tam gdzie sie zalamuje
+;;;    a nie od konca do konca szafy... w tym przypadku powinno byc czesc
+;;;    prosta i od momentu zalamania skos taki sam jak reszta skosu, nie moze
+;;;    byc od konca do konca szafy bo nie mamy ten sam skos i to nie zadziala."
+;;;
+;;;   "skosy mamy tylko po jednej stronie, a moze byc tak ze beda po 2 stronach."
+;;;
+;;;   "boki sa w tym przypadku pod wiencem a nie obok, w tym przypadku jak mamy
+;;;    skosy to wieniec jest na gorze."   ...  "pionowo lico do boku."
+;;;    ...  "wieniec nie moze grubiec."
+;;;
+;;;   "BUL i BUR przedluzony do czubka skosu i ustawione ciecie pod skosem,
+;;;    najlepiej zeby bylo napisane jaki kat ciecia, na CNC tez zeby bylo
+;;;    napisane."
+;;;
+;;;   "gorny wieniec w tym przypadku nie moze miec dog bonesow."
+;;;
+;;; T46 handed this file TWO HEIGHTS and drew a straight line between them.
+;;; Where the ceiling BENDS inside the cabinet's own width that line is a
+;;; fiction: it cuts the boards at an angle the wall does not have, and the
+;;; bevel will not meet the plaster. So the cut becomes a POLYLINE.
+;;;
+;;; ---------------------------------------------------------------------------
+;;; THE CUT LINE, RESTATED ONCE
+;;;
+;;; A CUT LINE is a list of points, ((x y) (x y) ...), in the panel's own frame:
+;;; x from 0 at the panel's LEFT edge, y measured UP from y0, at least two
+;;; points, LEFT TO RIGHT, with a vertex at every knee. It is already less the
+;;; scribe gap - this file never invents a gap and never asks where the ceiling
+;;; is.
+;;;
+;;; TWO POINTS IS T46. `SKY:slopeLine` builds that pair, and every one of T46's
+;;; four answers - the rectangle, the trapezium and the two pentagons - comes
+;;; back from the general routine UNCHANGED, corner for corner. That is not a
+;;; hope, it is the shape of the routine: the top boundary of a cut panel is
+;;;
+;;;     min(wys, at(x))
+;;;
+;;; sampled at every knee of `at` AND at every x where `at` crosses the panel's
+;;; own top. On a straight line the crossing is `SKY:slopeKneeX` (kept above,
+;;; unchanged), the sampling adds nothing, and the four branches T46 spelled out
+;;; by hand fall out of one walk.
+;;;
+;;; ---------------------------------------------------------------------------
+;;; AND THE TOP BOARD IS A ROOF
+;;;
+;;; The owner corrected T46's flat lid by name: "jak chcesz zeby szafa
+;;; wygladala z wiencem poziomym jak jest skos?"  The top board LIES ON the two
+;;; sides, spans the FULL width, and its ends are cut VERTICALLY - so its
+;;; section is a PARALLELOGRAM and its two faces are the same length:
+;;;
+;;;     beta  = the segment's angle from horizontal = atan(dy / span)
+;;;     L     = span / cos(beta)          the face, side face to side face
+;;;     L_MAX = L + G * tan(beta)         the blank, lowest corner to highest
+;;;
+;;; The board is G thick MEASURED PERPENDICULAR and it does not thicken
+;;; ("wieniec nie moze grubiec"). What DOES grow is its VERTICAL footprint at
+;;; the edge, G / cos(beta), and that is a clearance fact - it is what the two
+;;; sides stop under, and it is never a thickness.
+;;;
+;;; ONE BOARD PER SEGMENT. A board does not bend at a knee.
+;;;
+;;; A three-axis machine cannot cut the two end bevels or the sides' angled
+;;; tops. This file states the DEGREES so the sheet can print them and the
+;;; joiner can set the saw; the five-axis representation is written down as
+;;; owed (BACKLOG 120), on the owner's own instruction: "narazie zrob 2D ale
+;;; zapisz do cabinet core ze to bedzie zalegle."
 
-;;; How many corners the trimmed panel has - 4 or 5. The kits print it into the
-;;; run report so a joiner reading the log knows which board is a pentagon
-;;; before he finds out at the saw.
-(defun SKY:slopeCutCorners (szer wys hL hR)
-  (length (SKY:slopeCutPts 0.0 0.0 szer wys hL hR)))
+;;; The T46 spelling: a straight line across the panel, as two points.
+(defun SKY:slopeLine (szer hL hR)
+  (list (list 0.0 hL) (list szer hR)))
+
+;;; The clear height the cut line leaves at a point across a panel.
+;;; Interpolated WITHIN the containing segment, never across the whole span -
+;;; that is the whole of T47 in one sentence. Beyond either end the line holds
+;;; its end value, which is what T46's own clamp did.
+(defun SKY:cutHeightAt (pts x / a b n i res)
+  (setq n (length pts))
+  (cond
+    ((= n 0) 0.0)
+    ((= n 1) (cadr (car pts)))
+    (T
+      (setq a (car pts))
+      (cond
+        ((<= x (car a)) (cadr a))
+        ((>= x (car (nth (1- n) pts))) (cadr (nth (1- n) pts)))
+        (T
+          (setq i 1 res nil)
+          (while (and (< i n) (null res))
+            (setq b (nth i pts))
+            (if (<= x (car b))
+              (if (< (abs (- (car b) (car a))) 1e-9)
+                (setq res (cadr b))
+                (setq res (+ (cadr a)
+                             (* (- (cadr b) (cadr a))
+                                (/ (- x (car a)) (- (car b) (car a)))))))
+              (progn (setq a b) (setq i (1+ i)))))
+          (if res res (cadr (nth (1- n) pts))))))))
 
 ;;; Is this panel cut at all? The gate, asked of the numbers.
-(defun SKY:slopeCutActive (wys hL hR)
-  (or (< hL wys) (< hR wys)))
+(defun SKY:slopeCutActive (wys pts / hit)
+  (setq hit nil)
+  (foreach p pts (if (< (cadr p) (- wys 1e-9)) (setq hit T)))
+  hit)
 
-;;; Draw it. The panel's outline on OUTLINE, and - when it really is cut - the
-;;; diagonal called out on its own layer so the elevation can print it without
-;;; the cut path being drawn twice (the T25 edge-guard lesson: two coincident
-;;; paths are offset in OPPOSITE directions by VCarve and the board is cut from
-;;; both sides).
-(defun SKY:drawSlopeCut (x0 y0 szer wys hL hR / pts)
-  (setq pts (SKY:slopeCutPts x0 y0 szer wys hL hR))
-  (makePolyline "OUTLINE" pts)
-  pts)
+;;; The TOP BOUNDARY of a panel under a cut line: min(wys, at(x)), LEFT to
+;;; RIGHT, with a vertex at every knee and at every place the line crosses the
+;;; panel's own top edge. Consecutive duplicates are dropped - a vertex written
+;;; twice is the T25 edge-guard fault in miniature.
+(defun SKY:slopeTopPts (szer wys pts / out a b ax ay bx by kx i n cap push)
+  (setq n (length pts))
+  (if (< n 2)
+    (list (list 0.0 (min wys (if (= n 1) (cadr (car pts)) wys)))
+          (list szer (min wys (if (= n 1) (cadr (car pts)) wys))))
+    (progn
+      (setq a (car pts))
+      (setq out (list (list (car a) (min wys (cadr a)))))
+      (setq i 1)
+      (while (< i n)
+        (setq b (nth i pts))
+        (setq ax (car a) ay (cadr a) bx (car b) by (cadr b))
+        (if (and (> (abs (- by ay)) 1e-9)
+                 (or (and (< ay wys) (> by wys))
+                     (and (> ay wys) (< by wys))))
+          (progn
+            (setq kx (+ ax (/ (* (- bx ax) (- wys ay)) (- by ay))))
+            (setq out (append out (list (list kx wys))))))
+        (setq out (append out (list (list bx (min wys by)))))
+        (setq a b)
+        (setq i (1+ i)))
+      ;; drop consecutive duplicates
+      (setq cap '() )
+      (foreach p out
+        (if (or (null cap)
+                (> (distance (list (car p) (cadr p))
+                             (list (car (car cap)) (cadr (car cap)))) 1e-9))
+          (setq cap (cons p cap))))
+      (reverse cap))))
+
+;;; The OUTLINE point list of a panel trimmed on the cut line.
+;;; Walked in the same direction as every other outline in this file:
+;;; bottom-left, bottom-right, up the right edge, back along the top.
+;;;
+;;; With a two-point line this returns EXACTLY what T46 returned - the
+;;; rectangle, the trapezium, or either pentagon - corner for corner.
+(defun SKY:slopeCutPts (x0 y0 szer wys pts / top)
+  (setq top (SKY:slopeTopPts szer wys pts))
+  (append (list (list x0 y0) (list (+ x0 szer) y0))
+          (mapcar '(lambda (p) (list (+ x0 (car p)) (+ y0 (cadr p))))
+                  (reverse top))))
+
+;;; How many corners the trimmed panel has. The kits print it into the run
+;;; report so a joiner reading the log knows which board is a pentagon before he
+;;; finds out at the saw - and under T47 it may be MORE than five, because the
+;;; ceiling may bend more than once over one cabinet.
+(defun SKY:slopeCutCorners (szer wys pts)
+  (length (SKY:slopeCutPts 0.0 0.0 szer wys pts)))
+
+;;; Draw it. The panel's outline on OUTLINE (the T25 edge-guard lesson: two
+;;; coincident paths are offset in OPPOSITE directions by VCarve and the board
+;;; is cut from both sides, so the diagonal is never drawn twice).
+(defun SKY:drawSlopeCut (x0 y0 szer wys pts / out)
+  (setq out (SKY:slopeCutPts x0 y0 szer wys pts))
+  (makePolyline "OUTLINE" out)
+  out)
+
+;;;----------------------------------------
+;;; THE SEGMENTS, AND THEIR ANGLES
+;;;----------------------------------------
+
+;;; The cut line as segments: ((x0 y0 x1 y1 deg) ...), left to right.
+;;; `deg` is the angle from HORIZONTAL, always positive - it is what a joiner
+;;; sets on the saw, and which way the ceiling falls is plain from the points.
+(defun SKY:slopeSegments (pts / out i n a b)
+  (setq n (length pts) i 1 out '())
+  (while (< i n)
+    (setq a (nth (1- i) pts) b (nth i pts))
+    (setq out (cons (list (car a) (cadr a) (car b) (cadr b)
+                          (SKY:slopeSegDeg (- (car b) (car a)) (- (cadr b) (cadr a))))
+                    out))
+    (setq i (1+ i)))
+  (reverse out))
+
+;;; beta, in degrees, from a run and a rise. atan of a zero run is 90.
+(defun SKY:slopeSegDeg (dx dy)
+  (if (< (abs dx) 1e-9)
+    90.0
+    (abs (* (atan (/ dy dx)) (/ 180.0 pi)))))
+
+;;; The tallest point of the cut line over a stretch of it - the "czubek
+;;; skosu" a side panel is extended to. Sampled at both ends and at every knee
+;;; between them, which is exact on a polyline and needs no search.
+(defun SKY:cutPeakBetween (pts xa xb / top)
+  (setq top (max (SKY:cutHeightAt pts xa) (SKY:cutHeightAt pts xb)))
+  (foreach p pts
+    (if (and (> (car p) xa) (< (car p) xb))
+      (setq top (max top (cadr p)))))
+  top)
+
+;;; The lowest point of the cut line over a stretch of it - the short face of a
+;;; bevelled side, and the number the joiner measures the finished board by.
+(defun SKY:cutValleyBetween (pts xa xb / low)
+  (setq low (min (SKY:cutHeightAt pts xa) (SKY:cutHeightAt pts xb)))
+  (foreach p pts
+    (if (and (> (car p) xa) (< (car p) xb))
+      (setq low (min low (cadr p)))))
+  low)
+
+;;;----------------------------------------
+;;; THE ROOF BOARD
+;;;----------------------------------------
+
+;;; The board's own length, side face to side face: L = span / cos(beta).
+;;; Both faces measure this - the ends are cut VERTICALLY ("pionowo lico do
+;;; boku"), so the section is a parallelogram and opposite sides are equal.
+(defun SKY:roofFaceLen (span deg)
+  (/ span (cos (* deg (/ pi 180.0)))))
+
+;;; The BLANK, lowest corner to highest: L_MAX = L + G * tan(beta). This is the
+;;; number that goes on the cut list, because it is what the sheet gives up.
+(defun SKY:roofBlankLen (span deg G)
+  (+ (SKY:roofFaceLen span deg) (* G (abs (/ (sin (* deg (/ pi 180.0)))
+                                             (cos (* deg (/ pi 180.0))))))))
+
+;;; The board is G thick MEASURED PERPENDICULAR and does not thicken. Its
+;;; VERTICAL footprint at the edge is G / cos(beta) - a clearance fact for the
+;;; elevation and for what the sides stop under, NEVER a thickness.
+(defun SKY:roofVertDrop (G deg)
+  (/ G (cos (* deg (/ pi 180.0)))))
+
+;;; The ROOF LINE of a cabinet: the cut line capped at the cabinet's own height,
+;;; which is the same walk `SKY:slopeTopPts` makes and therefore the same
+;;; vertices. One board per segment of it.
+(defun SKY:roofLinePts (szer wys pts)
+  (SKY:slopeTopPts szer wys pts))
+
+;;; The roof boards, left to right:
+;;;   ((x0 x1 y0 y1 deg L L_MAX vdrop) ...)
+;;; A board does not bend at a knee, so a line with an interior vertex makes
+;;; more than one board and each carries its own beta.
+(defun SKY:roofBoards (szer wys pts G / segs out span deg)
+  (setq segs (SKY:slopeSegments (SKY:roofLinePts szer wys pts)))
+  (setq out '())
+  (foreach s segs
+    (setq span (- (nth 2 s) (nth 0 s)))
+    (setq deg (nth 4 s))
+    (if (> span 1e-9)
+      (setq out (cons (list (nth 0 s) (nth 2 s) (nth 1 s) (nth 3 s) deg
+                            (SKY:roofFaceLen span deg)
+                            (SKY:roofBlankLen span deg G)
+                            (SKY:roofVertDrop G deg))
+                      out))))
+  (reverse out))
+
+;;; NO DOG BONES ON THE ROOF BOARD. The owner's ruling, stated where the shape
+;;; is: "gorny wieniec w tym przypadku nie moze miec dog bonesow." The blank is
+;;; a plain rectangle L_MAX x depth and the bevel is an ANNOTATION - a
+;;; three-axis machine cannot cut it and the sheet must not pretend otherwise.
+(defun SKY:roofBoardBlank (span deg G glebokosc)
+  (list (SKY:roofBlankLen span deg G) glebokosc))
+
+;;;----------------------------------------
+;;; THE SIDES RUN TO THE POINT
+;;;----------------------------------------
+
+;;; "BUL i BUR przedluzony do czubka skosu i ustawione ciecie pod skosem."
+;;;
+;;; A side stands over its own G of the cabinet's width, so the ceiling drops
+;;; across it and its top is a BEVEL through the thickness. The board that
+;;; leaves the machine is the BLANK - as tall as its highest corner - and the
+;;; bevel takes the wedge off. Under the roof board, so the peak is lowered by
+;;; the board's own vertical footprint.
+;;;
+;;; `xa`/`xb` are the side's own two faces in the cabinet's width.
+(defun SKY:sideTopY (pts wys xa xb G / peak deg)
+  (setq deg (SKY:slopeSegDeg (- xb xa)
+                             (- (SKY:cutHeightAt pts xb) (SKY:cutHeightAt pts xa))))
+  (setq peak (min wys (SKY:cutPeakBetween pts xa xb)))
+  (max 0.0 (- peak (SKY:roofVertDrop G deg))))
+
+;;; The angle the saw is set to for that bevel, in degrees - and the kits print
+;;; it, because the owner asked for it in as many words: "najlepiej zeby bylo
+;;; napisane jaki kat ciecia, na CNC tez zeby bylo napisane."
+(defun SKY:sideCutDeg (pts xa xb)
+  (SKY:slopeSegDeg (- xb xa)
+                   (- (SKY:cutHeightAt pts xb) (SKY:cutHeightAt pts xa))))
 
 ;;;========================================
 ;;; LOADED

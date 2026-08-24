@@ -46,7 +46,7 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 // shape and this file follows it.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  roofLinePts, slopeCutActive, slopeHeightAt, slopePeakBetween, slopeSegments,
+  roofBoards, roofLinePts, slopeCutActive, slopeHeightAt, slopeSegments,
   slopeValleyBetween, subSlopeCut, trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
@@ -1551,7 +1551,42 @@ export function computeCabinet(params, profileOverride) {
   // It is the ROOF line that is asked, not the raw cut: a side under a stretch
   // of ceiling higher than the cabinet keeps its full height and carries no
   // angle at all, which is the pentagon's tall end and every uncut cabinet.
-  const sideTopAt = (a, b) => Math.max(0, Math.min(H, slopePeakBetween(roofLine, a, b)));
+  // ─── TURN 47 (CLAUDE.md F3): …AND WHAT THEY STOP UNDER ────────────────────
+  //
+  // *"boki sa w tym przypadku pod wiencem a nie obok, w tym przypadku jak mamy
+  // skosy to wieniec jest na gorze."*
+  //
+  // The roof board LIES ON the sides, so a side stops at the board's UNDERSIDE
+  // and not at the ceiling. That underside is the ceiling less the board's own
+  // VERTICAL FOOTPRINT `G / cos β` — which is a clearance fact and not a
+  // thickness (the board is 18 perpendicular and does not thicken: *"wieniec
+  // nie moze grubiec"*). The footprint differs segment by segment, so the peak
+  // is taken per board rather than off one number.
+  const roofList = roofLine ? roofBoards(cutLine, { h: H, G }) : null;
+  // The board's underside over a stretch of the width, at its extremes. `pick`
+  // is Math.max for the BLANK (the peak the side is cut from) and Math.min for
+  // the SHORT FACE (what the finished board measures). The footprint is taken
+  // per BOARD, because it differs with the segment's own angle and the two step
+  // at a knee.
+  const sideUnder = (a, b, pick) => {
+    if (!roofList) return sideH;
+    let found = null;
+    for (const bd of roofList) {
+      if (!(bd.x1 > a + 1e-9 && bd.x0 < b - 1e-9)) continue;
+      const lo = Math.max(bd.x0, a);
+      const hi = Math.min(bd.x1, b);
+      for (const y of [slopeHeightAt(roofLine, lo) - bd.vertical,
+        slopeHeightAt(roofLine, hi) - bd.vertical]) {
+        found = found == null ? y : pick(found, y);
+      }
+    }
+    return Math.max(0, Math.min(H, found == null ? sideH : found));
+  };
+  // Rounded HERE, at the source: `G / cos β` is irrational for most angles, and
+  // a board's cut size, its box and its edging must all be the one number the
+  // sheet prints. Every other size in this file is rounded the same way.
+  const sideTopAt = (a, b) => roundTo(sideUnder(a, b, Math.max), 4);
+  const sideLowAt = (a, b) => roundTo(sideUnder(a, b, Math.min), 4);
   const sideHL = roofLine ? sideTopAt(0, G) : sideH;
   const sideHR = roofLine ? sideTopAt(W - G, W) : sideH;
   // …and the segments the board's top edge is made of. A side that spans a knee
@@ -1559,8 +1594,17 @@ export function computeCabinet(params, profileOverride) {
   // `deg: 0` rather than dropped — "this edge is square here" is a fact a
   // joiner wants stated, and it is what stops the CNC note appearing on a board
   // that has no bevel (`slopeNoteText` prints only the angled ones).
-  // The top board's own top face — H with no cut, the LOW end's height with one.
-  const topY = cut ? Math.max(0, Math.min(H, cutAt(0), cutAt(W))) : H;
+  // ─── TURN 47 (CLAUDE.md licence 2): THE FLAT LID IS GONE ──────────────────
+  //
+  // T46 dropped the top board flat to `min(cutAt(0), cutAt(W))` and left the
+  // triangle above it open. The owner rejected it by name — *"jak chcesz zeby
+  // szafa wygladala z wiencem poziomym jak jest skos?"* — and CLAUDE.md's
+  // second named licence replaces it with F3's roof board. The old behaviour
+  // does NOT survive behind a flag.
+  //
+  // What remains of `topY` is what it means with NO cut: the top face of the
+  // level board, at H, which is what every cabinet in every project cuts.
+  const topY = H;
   const backH = cut ? Math.max(0, Math.min(H, Math.max(cutAt(0), cutAt(W)))) : H;
   // THE JOINTS ARE LAID OUT ON THE FULL CARCASS AND THEN CUT WITH IT. That is
   // how a joiner builds one: the box is set out square and the top corner comes
@@ -2494,9 +2538,20 @@ export function computeCabinet(params, profileOverride) {
         puzzle: pz,
         edges: sideEdges,
         jointInset,
-        // The TOP board is level at the low end's height, so on the TALL side
-        // its socket row lands part-way up the panel rather than on its edge.
-        topAt: cut ? topY : null,
+        // ─── TURN 47 (F3): THE TOP'S SOCKETS SIT WHERE THE ROOF BOARD LANDS ─
+        //
+        // T46's lid dropped INSIDE the tall side, so its socket row became a
+        // cut-out part-way up the board. The roof board lands ON the side, so
+        // the row is back on that board's own top edge — at `hSide`, the height
+        // this very side is cut to — and is traced as the EDGE socket it is.
+        //
+        // The ROOF BOARD ITSELF carries no tab and no dog bone: the owner,
+        // *"gorny wieniec w tym przypadku nie moze miec dog bonesow."* So this
+        // row is the register the board is screwed and glued down onto rather
+        // than a puzzle joint, and it is where CLAUDE.md F3 puts it: *"the
+        // top's sockets sit where the roof board lands, on the angled edge."*
+        topAt: roofList ? hSide : null,
+        topInterior: roofList ? false : null,
       });
       // A side stands at ONE x across the width and its board is drawn in the
       // DEPTH frame, so the ceiling over it is one number across the whole
@@ -2521,14 +2576,17 @@ export function computeCabinet(params, profileOverride) {
           slopeCut: {
             h: roundTo(sideHL, 4),
             full: roundTo(sideH, 4),
-            topAt: roundTo(topY, 4),
+            // Where the TOP board lands on this side — its own cut top edge,
+            // because under T47 the board lies ON it (F3) rather than dropping
+            // to a level inside it.
+            topAt: roundTo(sideHL, 4),
             // T47-F2: what the saw is set to, and where. In the UNIT's own x,
             // because that is the frame the ceiling line is stated in and the
             // frame a joiner reads off the elevation. Two entries where the
             // ceiling bends inside the board's own 18 mm.
             angles: anglesOver(0, G),
             // …and the SHORT face, so the finished board can be measured.
-            low: roundTo(Math.max(0, Math.min(H, slopeValleyBetween(roofLine, 0, G))), 4),
+            low: roundTo(sideLowAt(0, G), 4),
           },
         },
       } : {}),
@@ -2543,9 +2601,9 @@ export function computeCabinet(params, profileOverride) {
           slopeCut: {
             h: roundTo(sideHR, 4),
             full: roundTo(sideH, 4),
-            topAt: roundTo(topY, 4),
+            topAt: roundTo(sideHR, 4),
             angles: anglesOver(W - G, W),
-            low: roundTo(Math.max(0, Math.min(H, slopeValleyBetween(roofLine, W - G, W))), 4),
+            low: roundTo(sideLowAt(W - G, W), 4),
           },
         },
       } : {}),
@@ -2555,19 +2613,86 @@ export function computeCabinet(params, profileOverride) {
     rotated: true, drawn_w: topH, drawn_h: topW,
     ...topPanelGeometry({ drawnW: topH, drawnH: topW, G, puzzle: pz, backTabs, jointInset }),
   });
-  if (hasTopPanel) {
-    // ─── TURN 46 (F3): …AND THE TOP DROPS TO THE LOW END ───────────────────
-    // *"the top drops to the height of the lowest cut side, full depth; the
-    // triangle above it is CLOSED by the sloped edges of the two sides and the
-    // front (option A) — no extra roof board this turn."*
-    // The BOARD does not change — same width, same depth, same tabs. Only
-    // where it sits does, and `topY` is H for every cabinet with no cut.
+  if (hasTopPanel && roofList) {
+    // ─── TURN 47 (CLAUDE.md F3): THE TOP BOARD IS A ROOF, NOT A LID ────────
+    //
+    // The owner's correction, and it changes the board's whole identity:
+    //
+    //   *"boki sa w tym przypadku pod wiencem a nie obok, w tym przypadku jak
+    //   mamy skosy to wieniec jest na gorze."*  …  *"pionowo lico do boku."*
+    //   …  *"wieniec nie moze grubiec."*  …  *"gorny wieniec w tym przypadku
+    //   nie moze miec dog bonesow."*
+    //
+    // It LIES ON the two sides and spans the FULL width `W`, not the `W − 2G`
+    // between them. Its ends are cut VERTICALLY, so its section is a
+    // parallelogram and both faces measure `L = span / cos β`; the BLANK the
+    // sheet gives up is `L_MAX = L + G · tan β`, lowest corner to highest, and
+    // that is what the cut list says.
+    //
+    // ONE BOARD PER SEGMENT. A board does not bend at a knee, so a ceiling that
+    // bends over the cabinet makes TOP-1, TOP-2, … left to right. One segment
+    // keeps the plain `TOP` every cut list in this app already speaks.
+    //
+    // NO DOG BONES, and no tabs: `rectGeometry` and nothing else. The register
+    // it is screwed down onto is the sides' own top socket row (above).
+    //
+    // THE BLANK IS A RECTANGLE and the bevel is an ANNOTATION — a three-axis
+    // machine cannot cut it and the sheet must not pretend otherwise. The
+    // owner accepted 2-D as interim (*"narazie zrob 2D"*) and the five-axis
+    // representation is BACKLOG 120.
+    const many = roofList.length > 1;
+    for (const bd of roofList) {
+      const id = many ? `TOP-${bd.index}` : 'TOP';
+      panels.push(panel({
+        id, part: 'TOP', role: 'top', w: bd.blankLen, h: topH, thickness: G,
+        edgeCode: codes.right, edgeLen: metres(bd.blankLen),
+        // The BOX is where the board stands in the room: its horizontal span,
+        // and the vertical envelope between its lowest underside and its
+        // highest face. `h` here is the ENVELOPE, never the thickness — the
+        // board is G perpendicular and does not thicken.
+        box: {
+          x: roundTo(bd.x0, 4),
+          y: roundTo(bd.level, 4),
+          z: G,
+          w: roundTo(bd.span, 4),
+          h: roundTo(bd.top - bd.level, 4),
+          d: topH,
+        },
+        cnc: {
+          rotated: true,
+          drawn_w: roundTo(topH, 4),
+          drawn_h: roundTo(bd.blankLen, 4),
+          ...rectGeometry(topH, roundTo(bd.blankLen, 4)),
+        },
+        meta: {
+          slopeCut: {
+            roof: true,
+            segment: bd.index,
+            of: roofList.length,
+            from: roundTo(bd.x0, 4),
+            to: roundTo(bd.x1, 4),
+            span: roundTo(bd.span, 4),
+            deg: roundTo(bd.deg, 4),
+            faceLen: roundTo(bd.faceLen, 4),
+            blankLen: roundTo(bd.blankLen, 4),
+            level: roundTo(bd.level, 4),
+            full: roundTo(H, 4),
+          },
+          // A CLEARANCE fact, for the 3-D and the elevation. NEVER a thickness:
+          // `thickness` above is G and stays G.
+          verticalFootprint: roundTo(bd.vertical, 4),
+          ...(bd.deg > 1e-9 ? { bevel: { deg: roundTo(bd.deg, 4), ends: 'both', axis: '5-AXIS' } } : {}),
+        },
+      }));
+    }
+  } else if (hasTopPanel) {
+    // No cut: the level board this engine has cut since turn 1, between the two
+    // sides, `internalWidth` wide, with its tabs and its dog bones.
     panels.push(panel({
       id: 'TOP', part: 'TOP', role: 'top', w: topW, h: topH, thickness: G,
       edgeCode: codes.right, edgeLen: metres(topW),
       box: { x: G, y: topY - G, z: G, w: topW, h: G, d: topH },
       cnc: topGeom(),
-      ...(cut && topY < H ? { meta: { slopeCut: { level: roundTo(topY, 4), full: roundTo(H, 4) } } } : {}),
     }));
   }
   // ─── …AND THE RAIL (F1.1) ────────────────────────────────────────────────

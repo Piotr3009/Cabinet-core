@@ -93,9 +93,14 @@ test('F6b — …and a vertical section is the ZY projection; the cut runs in X'
   // What the A-A CAN show is real and is not nothing: the top has dropped and
   // one side is shorter, and both come off the panels' own boxes.
   const r = computeCabinet({ ...PARAMS, slope_cut: CUT }, P);
-  const top = r.panels.find((p) => p.id === 'TOP');
+  // T47-F3: the lid became a ROOF, one board per segment, so "the top" is the
+  // lowest of them. What the A-A can show is unchanged: a lowered top and a
+  // shorter side, both off the panels' own boxes.
+  const tops = r.panels.filter((p) => p.role === 'top');
   const bur = r.panels.find((p) => p.id === 'BUR');
-  assert.ok(top.box.y < PARAMS.height - P.board.thickness, 'the section shows a lowered top');
+  assert.ok(tops.length >= 1);
+  assert.ok(Math.min(...tops.map((p) => p.box.y)) < PARAMS.height - P.board.thickness,
+    'the section shows a lowered top');
   assert.ok(bur.box.h < PARAMS.height, 'and a shorter side');
 });
 

@@ -56,11 +56,20 @@ test('…minus the standard gap along EVERY edge, the diagonal one included', ()
   // diagonal always demands the gap.
   assert.equal(f.meta.slopeCut.roomR, 1200 - 0, 'measured from the door\'s own datum');
   const carcass = computeCabinet({ ...PARAMS, slope_cut: CUT }, P).panels.find((p) => p.id === 'BUR');
-  // T47-F2: the side's BLANK runs up to the peak over its own 18 mm (1236) and
-  // its SHORT face is the 1200 the ceiling leaves at the cabinet's own edge.
-  // The door is measured against the short face, which is what it stands beside.
-  assert.equal(carcass.meta.slopeCut.low, 1200);
-  assert.ok(f.meta.slopeCut.roomR <= carcass.h, 'the leaf never stands proud of its own carcass');
+  // T47-F2/F3: the side's BLANK runs up to the peak over its own 18 mm, less
+  // the roof board's vertical footprint — it stops UNDER the board now — and
+  // its SHORT face is 1159.75. The DOOR is not measured against the carcass
+  // side at all: it stands in front of it, and its own line is the ceiling less
+  // the door gap, which is the 1200 asserted above.
+  assert.equal(carcass.meta.slopeCut.low, 1159.7508);
+  // The leaf never stands proud of the LINE its carcass is cut to. It IS taller
+  // than the carcass SIDE now — the side stops under the roof board and the
+  // board's own edge is behind the door — so the comparison is against the
+  // ceiling, which is where it always belonged.
+  const roof = computeCabinet({ ...PARAMS, slope_cut: CUT }, P).panels
+    .filter((p) => p.role === 'top');
+  const ceiling = Math.max(...roof.map((p) => p.box.y + p.box.h));
+  assert.ok(f.meta.slopeCut.roomR <= ceiling, 'the leaf never stands proud of the ceiling');
 });
 
 test('a trapezium when both edges are under the ceiling', () => {

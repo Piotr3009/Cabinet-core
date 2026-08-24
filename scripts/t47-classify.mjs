@@ -252,7 +252,7 @@ if (IS_CLI) {
     process.stdout.write('THE GATE, OPEN — each config with a fixture slope_cut that is FLAT '
       + 'for a third of its width and then falls to 55 % of its height, infill 40\n\n');
     process.stdout.write(`${'config'.padEnd(12)}${'BUL h'.padStart(9)}${'BUR h'.padStart(9)}`
-      + `${'TOP ids'.padStart(14)}${'BACK h'.padStart(9)}${'BACK pts'.padStart(10)}`
+      + `${'TOP ids'.padStart(22)}${'BACK h'.padStart(9)}${'BACK pts'.padStart(10)}`
       + `${'FRONT pts'.padStart(11)}  verdict\n`);
     let moved = 0;
     for (const cfg of STANDARD_CONFIGS) {
@@ -271,7 +271,7 @@ if (IS_CLI) {
       process.stdout.write(
         `${cfg.id.padEnd(12)}${n(of(sloped, 'BUL')?.h).padStart(9)}`
         + `${n(of(sloped, 'BUR')?.h).padStart(9)}`
-        + `${tops.padStart(14)}`
+        + `${tops.padStart(22)}`
         + `${n(of(sloped, 'BACK')?.h).padStart(9)}`
         + `${n(of(sloped, 'BACK')?.cnc?.outline?.length).padStart(10)}`
         + `${n(front?.cnc?.outline?.length).padStart(11)}`

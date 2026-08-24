@@ -246,6 +246,7 @@ function verticalSocket(centreY, edgeX, dir, G, pz, out) {
  */
 export function sidePanelGeometry({
   w, h, G, side, puzzle: pz, edges, jointInset = undefined, topAt = null,
+  topInterior = null,
 }) {
   const e = {
     backTabs: true, topSocket: true, bottomSocket: true,
@@ -306,7 +307,17 @@ export function sidePanelGeometry({
     ? h : Number(topAt);
   // A top row that has moved DOWN the panel no longer breaks its edge; it is a
   // cut-out and is traced as one (see `horizontalSocket`).
-  const topIsInterior = topY < h - 1e-9;
+  // ─── TURN 47 (CLAUDE.md F3): …AND UNDER A ROOF IT IS THE EDGE AGAIN ──────
+  //
+  // T46's top board dropped INSIDE the tall side, so its socket row became a
+  // cut-out wholly within the board. T47's roof board LIES ON the side — the
+  // owner: *"boki sa w tym przypadku pod wiencem a nie obok"* — so the row is
+  // back on the board's own top edge and is traced as an EDGE socket, with its
+  // overshoot running off the board exactly as every top socket in this app
+  // does. `topInterior` is how the caller says which it is; nothing said falls
+  // back to the question T46 asked, so every side panel cut before tonight is
+  // machined by exactly the call it was machined by.
+  const topIsInterior = topInterior == null ? topY < h - 1e-9 : Boolean(topInterior);
   for (const cx of socketCentres(w, pz, jointInset)) {
     if (e.topSocket) horizontalSocket(cx, topY, +1, G, pz, out, topIsInterior);
     if (e.bottomSocket) horizontalSocket(cx, 0, -1, G, pz, out);
@@ -789,6 +800,83 @@ export function roofLinePts(cut, h) {
     clean.push(p);
   }
   return clean.length >= 2 ? clean : null;
+}
+
+/**
+ * ─── THE ROOF BOARDS (T47 F3) ───────────────────────────────────────────────
+ *
+ * The owner's correction, and it changes the board's whole identity:
+ *
+ *   *"boki sa w tym przypadku pod wiencem a nie obok, w tym przypadku jak mamy
+ *   skosy to wieniec jest na gorze."*  …  *"pionowo lico do boku."*  …
+ *   *"wieniec nie moze grubiec."*  …  *"gorny wieniec w tym przypadku nie moze
+ *   miec dog bonesow."*
+ *
+ * T46's top board was a LID: it dropped flat to the low end's height and left
+ * the triangle above it open. The owner rejected it by name — *"jak chcesz zeby
+ * szafa wygladala z wiencem poziomym jak jest skos?"* — so the board LIES ON
+ * the two sides, spans the FULL width, and follows the ceiling.
+ *
+ * ONE BOARD PER SEGMENT of the roof line. A board does not bend at a knee.
+ *
+ * ─── THE THREE NUMBERS, AND WHY THEY ARE WHAT THEY ARE ──────────────────────
+ *
+ *     β     = the segment's angle from horizontal = atan(Δy / span)
+ *     L     = span / cos β          the FACE, side face to side face
+ *     L_MAX = L + G · tan β         the BLANK, lowest corner to highest
+ *
+ * The ends are cut VERTICALLY, so the section is a PARALLELOGRAM: the top face
+ * and the bottom face are opposite sides of it and are therefore EQUAL — both
+ * measure L. What the sheet has to give up is the parallelogram's own extent
+ * along its length, which is L plus the horizontal offset the vertical cut
+ * makes across the thickness, `G · tan β`. That is L_MAX, and it is what goes
+ * on the cut list.
+ *
+ * THICKNESS IS G, PERPENDICULAR, ALWAYS. It does not thicken. What grows is the
+ * board's VERTICAL FOOTPRINT at the edge, `G / cos β` — the vertical distance
+ * from its top face to its bottom face at one x. That is a CLEARANCE fact: it
+ * is what the two sides stop under and what the elevation draws. It is never a
+ * thickness and this module never returns it as one.
+ *
+ * @returns {Array<{index, x0, x1, y0, y1, span, deg, faceLen, blankLen,
+ *   vertical, level, rise, top}>|null}
+ *   `level` is the LOWEST point of the board's own underside and `top` the
+ *   HIGHEST point of its upper face — the two numbers a bounding box is made
+ *   of. (SKY:roofBoards.)
+ */
+export function roofBoards(cut, { h, G } = {}) {
+  const pts = roofLinePts(cut, h);
+  if (!pts) return null;
+  const t = Math.max(0, Number(G) || 0);
+  const out = [];
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const span = b.x - a.x;
+    if (!(span > SLOPE_EPS)) continue;
+    const deg = slopeSegDeg(span, b.y - a.y);
+    const rad = (deg * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const vertical = cos > SLOPE_EPS ? t / cos : t;
+    out.push({
+      index: out.length + 1,
+      x0: a.x,
+      x1: b.x,
+      y0: a.y,
+      y1: b.y,
+      span,
+      deg,
+      faceLen: cos > SLOPE_EPS ? span / cos : span,
+      blankLen: (cos > SLOPE_EPS ? span / cos : span) + t * Math.abs(Math.tan(rad)),
+      vertical,
+      rise: Math.abs(b.y - a.y),
+      // The board's bounding box in the elevation: its underside's lowest point
+      // and its upper face's highest.
+      level: Math.min(a.y, b.y) - vertical,
+      top: Math.max(a.y, b.y),
+    });
+  }
+  return out.length ? out : null;
 }
 
 /**

@@ -46,8 +46,8 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 // shape and this file follows it.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  roofBoards, roofLinePts, slopeCutActive, slopeHeightAt, slopeSegments,
-  slopeValleyBetween, subSlopeCut, trimGeometryOnSlope, trimOutlineOnSlope,
+  roofBoards, roofLinePts, slopeCutActive, slopeCutPts, slopeHeightAt, slopeReachAt,
+  slopeSegments, subSlopeCut, trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
 import {
@@ -1530,6 +1530,36 @@ export function computeCabinet(params, profileOverride) {
       to: roundTo(Math.min(sg.x1, b), 4),
       deg: roundTo(sg.deg, 4),
     })) : []);
+  // ─── TURN 47 (F4): AND THE SAME QUESTION, ASKED OUTSIDE THE CABINET ───────
+  //
+  // A scribe filler stands BESIDE the carcass, so the cut line — resolved over
+  // the unit's own width — does not cover it. `slopeReachAt` extends the end
+  // run at its own gradient, which is right wherever the filler is under the
+  // same run as the unit's edge. The SIGNED angle is what the mitre needs: a
+  // ceiling rising left-to-right opens the LEFT corner and closes the RIGHT.
+  const reachAt = (x) => (cutLine ? slopeReachAt(cutLine, x) : H);
+  const signedDeg = (a, b) => {
+    const run = b - a;
+    if (!(Math.abs(run) > 1e-9)) return 0;
+    return (Math.atan((reachAt(b) - reachAt(a)) / run) * 180) / Math.PI;
+  };
+  const infillAngles = (a, b) => {
+    const deg = Math.abs(signedDeg(a, b));
+    return [{ from: roundTo(a, 4), to: roundTo(b, 4), deg: roundTo(deg, 4) }];
+  };
+  /**
+   * The mitre where a VERTICAL filler meets a SLOPED top infill (F4).
+   *
+   * The two are the legs of a frame corner standing in one plane, and a frame
+   * corner is mitred at HALF its own interior angle. Square, that is the 45 the
+   * L corner keeps for ever; under a ceiling at β the corner opens or closes by
+   * β and the mitre is `(90 ± β) / 2`. It is 45 only where β is 0, which is
+   * exactly the case this house had before tonight.
+   */
+  const sideTopMitreDeg = (isLeft, a, b) => {
+    const deg = signedDeg(a, b);
+    return (90 + (isLeft ? deg : -deg)) / 2;
+  };
   // ─── TURN 47 (CLAUDE.md F2): THE SIDES RUN TO THE POINT ───────────────────
   //
   // The owner: *"BUL i BUR przedluzony do czubka skosu i ustawione ciecie pod
@@ -4662,38 +4692,158 @@ export function computeCabinet(params, profileOverride) {
     const faceX0 = x0 - mitreL;
     const faceLen = len + mitreL + mitreR;
 
-    panels.push(panel({
-      id: 'INFILL-T-FACE', part: 'INFILL', role: 'infill', w: faceLen, h: faceH, thickness: t,
-      // One long edge is glued into the mitre and takes no banding; the other
-      // is the visible bottom edge and does. The LISP code vocabulary has no
-      // "one long edge", so the code names the pair and the LENGTH says one.
-      edgeCode: codes.topBottom, edgeLen: metres(faceLen),
-      box: { x: faceX0, y: H, z: faceZ - t, w: faceLen, h: faceH, d: t },
-      // Cut to the long point at a mitred end: the BOTTOM corner is the one
-      // that comes away, because the face's top edge is the one that runs on to
-      // the wall over the corner.
-      cnc: chamferedRectGeometry(faceLen, faceH, { bl: mitreL, br: mitreR }),
-      meta: {
-        side: 'top', piece: 'face', segment: 'main', ends,
+    // ─── TURN 47 (CLAUDE.md F4): THE TOP INFILL UNDER A SLOPE ───────────────
+    //
+    // *"bedzie ciety jako prosta linia zwykly infill tylko zamontowany po
+    // skosie, ale laczenia beda ciete po skosie."*
+    //
+    // It stays a PLAIN RECTANGLE. It is NOT a trapezium — the piece is MOUNTED
+    // along the slope rather than cut to it, which is why only its ENDS come
+    // off at an angle. So under a bent ceiling the element becomes ONE PIECE
+    // PER SEGMENT, each a rectangle of `span / cos β` measured along its own
+    // slope, and the joins between them are cut at the angle the two segments
+    // make.
+    //
+    // …and every one of them leaves the machine 20 mm over on the CEILING edge
+    // (the face) and the WALL edge (the shelf), which is the edge that is
+    // scribed. The MITRE keeps its long point: `chamferedRectGeometry` takes
+    // the corners off the BOTTOM of the face and the ENDS of both, and the 20
+    // grows the opposite edge, so not one mitred corner moves.
+    const overT = Math.max(0, Number(AP.fillerOversize) || 0);
+    const runSegs = (() => {
+      const whole = [{
+        from: faceX0, to: faceX0 + faceLen, deg: 0, run: faceLen, mitreL, mitreR,
+        // The SHELF is not extended over a frame corner: it runs back at the
+        // ceiling and lands on top of the filler's own return arm, and
+        // extending it would put two pieces of board in the same 18 mm. So it
+        // covers the run's own length and never the mitres' long points.
+        shelfFrom: faceX0 + mitreL, shelfRun: len,
+      }];
+      if (!roofLine) return whole;
+      const xs = [faceX0,
+        ...slopeCutPts(roofLine).map((q) => q.x)
+          .filter((q) => q > faceX0 + 1e-6 && q < faceX0 + faceLen - 1e-6),
+        faceX0 + faceLen];
+      const segs = [];
+      for (let i = 1; i < xs.length; i += 1) {
+        const a = xs[i - 1];
+        const b = xs[i];
+        const deg = Math.abs(signedDeg(a, b));
+        const cos = Math.cos((deg * Math.PI) / 180);
+        const mL = i === 1 ? mitreL : 0;
+        const mR = i === xs.length - 1 ? mitreR : 0;
+        segs.push({
+          from: a,
+          to: b,
+          deg,
+          // The piece is mounted ALONG the slope, so its length is the
+          // hypotenuse of the span it covers, not the span.
+          run: cos > 1e-9 ? (b - a) / cos : (b - a),
+          shelfFrom: a + mL,
+          shelfRun: cos > 1e-9 ? (b - a - mL - mR) / cos : (b - a - mL - mR),
+          mitreL: mL,
+          mitreR: mR,
+          // Where two segments meet, each piece is cut at HALF the angle
+          // between them — the frame-corner rule again, and it is the same
+          // arithmetic `sideTopMitreDeg` uses one piece over.
+          joinL: i > 1 ? roundTo((180 - Math.abs(signedDeg(xs[i - 2], a) - signedDeg(a, b))) / 2, 4) : null,
+          joinR: i < xs.length - 1
+            ? roundTo((180 - Math.abs(signedDeg(a, b) - signedDeg(b, xs[i + 1]))) / 2, 4) : null,
+        });
+      }
+      return segs.length ? segs : whole;
+    })();
+    const manySegs = runSegs.length > 1;
+    const segId = (base, i) => (manySegs ? `${base}-${i + 1}` : base);
+
+    runSegs.forEach((sg, i) => {
+      // Rounded at the source: `span / cos β` is irrational for most angles and
+      // the cut size, the outline and the label must be the one number.
+      const segLen = roundTo(sg.run, 4);
+      const segX0 = sg.from;
+      const yTop = roofLine ? reachAt((sg.from + sg.to) / 2) : H;
+      const faceMeta = {
+        side: 'top', piece: 'face', segment: manySegs ? `main-${i + 1}` : 'main', ends,
         mitre_45: [...new Set([
-          ...mitre(ends.left === 'open'), ...mitre(ends.right === 'open'),
-          ...(mitreL || mitreR ? ['end'] : []),
+          ...mitre(i === 0 && ends.left === 'open'),
+          ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
+          ...(sg.mitreL || sg.mitreR || sg.joinL || sg.joinR ? ['end'] : []),
         ])],
-        corner: { left: mitreL, right: mitreR },
+        // THE TWO MITRES, NEVER CONFUSED (F4). The L corner of one infill piece
+        // is `face × arm`, always 90°, therefore ALWAYS 45 — the owner: *"infill
+        // mitra zawsze jest 45."* The END joins are the angle the SLOPE gives.
+        mitre: {
+          L: 45,
+          ...(sg.joinL != null ? { left: sg.joinL } : {}),
+          ...(sg.joinR != null ? { right: sg.joinR } : {}),
+        },
+        corner: { left: sg.mitreL, right: sg.mitreR },
         units: runInfill.unitIds || null,
-      },
-    }));
-    panels.push(panel({
-      id: 'INFILL-T-SHELF', part: 'INFILL', role: 'infill', w: len, h: shelfDepth, thickness: t,
-      edgeCode: codes.topBottom, edgeLen: metres(len),
-      box: { x: x0, y: H + faceH - t, z: faceZ - t - shelfDepth, w: len, h: t, d: shelfDepth },
-      cnc: rectGeometry(len, shelfDepth),
-      meta: {
-        side: 'top', piece: 'shelf', segment: 'main', ends,
-        mitre_45: [...new Set([...mitre(ends.left === 'open'), ...mitre(ends.right === 'open')])],
-        units: runInfill.unitIds || null,
-      },
-    }));
+        ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(faceH, 4) } } : {}),
+        ...(sg.deg > 1e-9 ? {
+          slopeCut: {
+            deg: roundTo(sg.deg, 4),
+            span: roundTo(sg.to - sg.from, 4),
+            along: roundTo(segLen, 4),
+            segment: i + 1,
+            of: runSegs.length,
+          },
+          // The piece is MOUNTED on the slope; the 3-D and the elevation tilt it
+          // rather than redrawing it, exactly as the shoe box's own `tilt_deg`
+          // does with its sloping bottom (T30).
+          tilt_deg: roundTo(sg.deg, 4),
+        } : {}),
+      };
+      panels.push(panel({
+        id: segId('INFILL-T-FACE', i), part: 'INFILL', role: 'infill', w: segLen, h: faceH + overT, thickness: t,
+        // One long edge is glued into the mitre and takes no banding; the other
+        // is the visible bottom edge and does. The LISP code vocabulary has no
+        // "one long edge", so the code names the pair and the LENGTH says one.
+        edgeCode: codes.topBottom, edgeLen: metres(segLen),
+        box: {
+          x: segX0, y: roofLine ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
+        },
+        // Cut to the long point at a mitred end: the BOTTOM corner is the one
+        // that comes away, because the face's top edge is the one that runs on
+        // to the wall over the corner. The +20 grows the TOP edge, which is the
+        // one against the ceiling, so no corner moves.
+        cnc: chamferedRectGeometry(segLen, faceH + overT, { bl: sg.mitreL, br: sg.mitreR }),
+        meta: faceMeta,
+      }));
+      // The SHELF is NOT extended over a frame corner (T15's own rule), so it
+      // takes the segment's own length without the mitres' long points.
+      const shelfLen = roundTo(sg.shelfRun, 4);
+      panels.push(panel({
+        id: segId('INFILL-T-SHELF', i), part: 'INFILL', role: 'infill', w: shelfLen, h: shelfDepth + overT, thickness: t,
+        edgeCode: codes.topBottom, edgeLen: metres(shelfLen),
+        box: {
+          x: sg.shelfFrom,
+          y: (roofLine ? Math.min(yTop, H) : H) + faceH - t,
+          z: faceZ - t - shelfDepth,
+          w: sg.to - sg.from - sg.mitreL - sg.mitreR,
+          h: t,
+          d: shelfDepth,
+        },
+        cnc: rectGeometry(shelfLen, shelfDepth + overT),
+        meta: {
+          side: 'top', piece: 'shelf', segment: manySegs ? `main-${i + 1}` : 'main', ends,
+          mitre_45: [...new Set([
+            ...mitre(i === 0 && ends.left === 'open'),
+            ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
+          ])],
+          mitre: {
+            L: 45,
+            ...(sg.joinL != null ? { left: sg.joinL } : {}),
+            ...(sg.joinR != null ? { right: sg.joinR } : {}),
+          },
+          units: runInfill.unitIds || null,
+          // The shelf runs BACK at the ceiling and lands on the wall, so its
+          // scribed edge is its back one.
+          ...(overT > 0 ? { oversize: { mm: overT, edge: 'back', nominal: roundTo(shelfDepth, 4) } } : {}),
+          ...(sg.deg > 1e-9 ? { tilt_deg: roundTo(sg.deg, 4) } : {}),
+        },
+      }));
+    });
 
     // The OPEN end (the fourth condition): the element mitres at 45° in plan
     // and carries on along the side of the end cabinet to the back wall — a
@@ -4916,22 +5066,119 @@ export function computeCabinet(params, profileOverride) {
     const cornerMitre = Math.max(0, Number(params?.run_top_infill?.sideMitre?.[label]) || 0);
     const takesMitre = cornerMitre > 0 && cornerMitre <= infillW;
 
+    // ─── TURN 47 (CLAUDE.md F4): THE INFILL OBEYS THE SLOPE ─────────────────
+    //
+    // The owner's screenshot 1: the filler ran full height under a sloping
+    // ceiling and the room lied. It is trimmed on the SAME line as every other
+    // board — no second reading of where the ceiling is.
+    //
+    // …with one thing this piece needs and no carcass board does: it stands
+    // BESIDE the cabinet, in the gap at the wall, and the cut line is resolved
+    // over the unit's OWN width. `reach` extends the end run at its own
+    // gradient (see `slopeReachAt`), which is right wherever the filler is
+    // under the same run as the unit's edge — and where it is not, the +20
+    // below and the site trim are exactly what covers it.
+    //
+    // ─── …AND LEAVES 20 mm OVER ON THE WALL EDGE ────────────────────────────
+    //
+    // *"wszystkie infille jak mamy ustawione na 40 mm to CNC powinien rysowac o
+    // 20 mm szerszy (docinanie na miejscu przez stolarzy)."*
+    //
+    // The extra goes on the OUTER edge — the one against the plaster — and the
+    // MITRE keeps its long point exactly where the geometry put it, because a
+    // mitre is a JOINT and not an allowance. In the piece's own cut frame that
+    // is x = 0 for a left-hand filler (which is the wall end) and x = width for
+    // a right-hand one; either way the mitred corner stays at the inner end and
+    // the board simply grows away from it, so the SAME `chamferedRectGeometry`
+    // call is right with the wider number.
+    //
+    // The BOX stays the NOMINAL piece — that is what stands in the room once
+    // the joiner has planed it in — while `w` is the CUT size the sheet gives
+    // up. `meta.oversize` names the edge and the nominal so nobody prices the
+    // extra.
+    const over = Math.max(0, Number(AP.fillerOversize) || 0);
+    const cutW = infillW + over;
+    // The filler's own stretch of the line, in ITS frame: local x = 0 at the
+    // WALL for a left filler and at the CARCASS for a right one.
+    const faceFrom = isLeft ? -cutW : W;
+    const faceCut = cutLine
+      ? subSlopeCut(cutLine, faceFrom, faceFrom + cutW, { dy: y, reach: true })
+      : null;
+    // The line is sampled over the piece's OWN span in the unit's frame; the
+    // outline it trims is in the piece's frame before the shift above, so the
+    // two agree by construction.
+    const faceH2 = faceCut
+      ? Math.min(h, Math.max(0, roundTo(faceCut.pts.reduce((hi, q) => Math.max(hi, q.y), 0), 4)))
+      : h;
+    // ─── AND THE PIECE GROWS AWAY FROM ITS OWN ORIGIN ───────────────────────
+    //
+    // The extra 20 goes on the WALL edge, which is local x = 0 for a LEFT-hand
+    // filler and local x = width for a RIGHT-hand one. So the left one's
+    // outline runs from −20 rather than from 0: its frame stays pinned to the
+    // NOMINAL piece — `box.x + x` is still where a point is in the room, which
+    // is what the mitre joint is checked with — and the allowance hangs off the
+    // wall end where it belongs. Negative x in a cut outline is this engine's
+    // own idiom already: every side panel's tabs run to −G.
+    const shift = isLeft ? -over : 0;
+    const faceGeom = (() => {
+      const base = takesMitre
+        ? chamferedRectGeometry(cutW, h, isLeft ? { tr: cornerMitre } : { tl: cornerMitre })
+        : rectGeometry(cutW, h);
+      const cutGeom = faceCut ? trimGeometryOnSlope(base, { w: cutW, h, pts: faceCut.pts }) : base;
+      if (!shift) return cutGeom;
+      return {
+        ...cutGeom,
+        outline: cutGeom.outline.map(([px, py]) => [roundTo(px + shift, 4), py]),
+        pockets: (cutGeom.pockets || []).map((k) => ({
+          ...k, x1: roundTo(k.x1 + shift, 4), x2: roundTo(k.x2 + shift, 4),
+        })),
+        holes: (cutGeom.holes || []).map((k) => ({ ...k, x: roundTo(k.x + shift, 4) })),
+      };
+    })();
+
     // Arm B — the face. Spans the gap, flush with the door line.
     panels.push(panel({
-      id: `INFILL-${side}-FACE`, part: 'INFILL', role: 'infill', w: infillW, h, thickness: t,
-      edgeCode: codes.right, edgeLen: metres(h),
-      box: { x: isLeft ? -infillW : W, y, z: infillFaceZ - t, w: infillW, h, d: t },
+      id: `INFILL-${side}-FACE`, part: 'INFILL', role: 'infill', w: cutW, h: faceH2, thickness: t,
+      edgeCode: codes.right, edgeLen: metres(faceH2),
+      box: { x: isLeft ? -infillW : W, y, z: infillFaceZ - t, w: infillW, h: faceH2, d: t },
       // The corner that comes away is the one the top infill is on: the RIGHT
       // of a left-hand filler, the LEFT of a right-hand one — always the inner
       // edge, always at the top.
-      cnc: takesMitre
-        ? chamferedRectGeometry(infillW, h, isLeft ? { tr: cornerMitre } : { tl: cornerMitre })
-        : rectGeometry(infillW, h),
+      cnc: { drawn_w: roundTo(cutW, 4), drawn_h: roundTo(faceH2, 4), ...faceGeom },
       meta: {
         side: label,
         piece: 'face',
         shape: infillW >= SI.minLWidth ? 'L' : 'strip',
         ...(takesMitre ? { corner: cornerMitre, mitre_45: ['end'] } : {}),
+        // ─── THE TWO MITRES, AND THEY ARE NEVER CONFUSED (F4) ──────────────
+        //
+        // `mitre_45` keeps its name and its meaning — nothing downstream is
+        // renamed — and the DEGREES travel beside it.
+        //
+        //   THE L CORNER of one infill piece is `face × arm`, always 90°, and
+        //   therefore ALWAYS MITRE 45. The owner: *"infill mitra zawsze jest
+        //   45."* It does not move under a slope, because the two arms of the L
+        //   are still square to each other.
+        //
+        //   THE SIDE × TOP JUNCTION is a vertical piece meeting a SLOPED one,
+        //   so the mitre is half of THAT angle — (90 ± β) / 2 — and it is 45
+        //   only where β is 0. Confusing the two would put a 45 on a joint the
+        //   ceiling has opened to 63.
+        mitre: {
+          L: 45,
+          ...(takesMitre ? { deg: roundTo(sideTopMitreDeg(isLeft, faceFrom, faceFrom + cutW), 4) } : {}),
+        },
+        ...(over > 0 ? {
+          oversize: { mm: over, edge: isLeft ? 'left' : 'right', nominal: roundTo(infillW, 4) },
+        } : {}),
+        ...(faceCut && faceH2 < h ? {
+          slopeCut: {
+            h: roundTo(faceH2, 4),
+            full: roundTo(h, 4),
+            corners: faceGeom.outline.length,
+            angles: infillAngles(faceFrom, faceFrom + cutW),
+          },
+        } : {}),
       },
     }));
 
@@ -4940,15 +5187,33 @@ export function computeCabinet(params, profileOverride) {
     // into a 12 mm gap, and a workshop cutting a 12 mm filler cuts a strip.
     if (infillW >= SI.minLWidth) {
       const armDepth = SI.returnDepth;
+      // The arm stands at the carcass's own edge, so it takes that stretch of
+      // the line. It gets NO oversize: it is screwed to the carcass side and
+      // touches no wall — there is nothing to scribe it to, and 20 mm of spare
+      // board on a piece that has to end flush is 20 mm in the way.
+      const armFrom = isLeft ? -t : W;
+      const armCut = cutLine
+        ? subSlopeCut(cutLine, armFrom, armFrom + t, { dy: y, reach: true })
+        : null;
+      const armH = armCut
+        ? Math.min(h, Math.max(0, roundTo(armCut.pts.reduce((hi, q) => Math.max(hi, q.y), 0), 4)))
+        : h;
       panels.push(panel({
-        id: `INFILL-${side}-ARM`, part: 'INFILL', role: 'infill', w: armDepth, h, thickness: t,
+        id: `INFILL-${side}-ARM`, part: 'INFILL', role: 'infill', w: armDepth, h: armH, thickness: t,
         edgeCode: codes.none, edgeLen: 0,
         box: {
           x: isLeft ? -t : W, y,
-          z: infillFaceZ - t - armDepth, w: t, h, d: armDepth,
+          z: infillFaceZ - t - armDepth, w: t, h: armH, d: armDepth,
         },
-        cnc: rectGeometry(armDepth, h),
-        meta: { side: label, piece: 'arm', shape: 'L' },
+        cnc: { drawn_w: roundTo(armDepth, 4), drawn_h: roundTo(armH, 4), ...rectGeometry(armDepth, armH) },
+        meta: {
+          side: label,
+          piece: 'arm',
+          shape: 'L',
+          // The L corner again, and it is 45 whatever the ceiling does.
+          mitre: { L: 45 },
+          ...(armCut && armH < h ? { slopeCut: { h: roundTo(armH, 4), full: roundTo(h, 4) } } : {}),
+        },
       }));
     }
   }

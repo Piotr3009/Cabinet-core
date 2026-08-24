@@ -122,7 +122,11 @@ export function slopeNoteText(panel, { ascii = false } = {}) {
   }
   const over = panel?.meta?.oversize;
   if (over && Number(over.mm) > 0) {
-    parts.push(`OVERSIZE +${Math.round(Number(over.mm))}${ascii ? ' - ' : ' — '}TRIM ON SITE`);
+    // …and the NOMINAL beside it, so nobody prices the extra (F4). The board on
+    // the bench is 60 wide and the job is 40; both numbers are on it.
+    const nom = Number(over.nominal);
+    parts.push(`OVERSIZE +${Math.round(Number(over.mm))}${ascii ? ' - ' : ' — '}TRIM ON SITE`
+      + (Number.isFinite(nom) ? ` (NOM ${Math.round(nom * 10) / 10})` : ''));
   }
   return parts.join(ascii ? ' | ' : ' | ');
 }

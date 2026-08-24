@@ -126,7 +126,11 @@ test('pin, move the unit 150 mm, and the filler is 150 mm wider', () => {
   // automatic filler has used since turn 6 (an L in section, not a new part).
   const face = panelOf(id, 'INFILL-L-FACE');
   assert.ok(face, 'the piece is emitted');
-  assert.equal(face.w, 190);
+  // T47-F4: `w` is the CUT size and carries the 20 mm scribe allowance on the
+  // WALL edge; the box is the 190 the gap actually is.
+  assert.equal(face.w, 190 + P.autoParts.fillerOversize);
+  assert.equal(face.box.w, 190);
+  assert.equal(face.meta.oversize.nominal, 190);
   assert.equal(face.role, 'infill');
   assert.ok(panelOf(id, 'INFILL-L-ARM'), 'and past minLWidth it still gets its return arm');
 

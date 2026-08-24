@@ -136,8 +136,14 @@ test('the section is an L: a 40 face and an 80 shelf, mitred at 45°', () => {
   const shelf = panelOf(ids[0], 'INFILL-T-SHELF');
   const unit = unitOf(ids[0]);
 
-  assert.equal(face.h, T.defaultHeight, 'the face is the height a workshop calls "40"');
-  assert.equal(shelf.h, T.shelfDepth, 'and the shelf is the horizontal leg');
+  // T47-F4: every infill leaves the machine 20 mm over on the edge it is
+  // scribed to (`autoParts.fillerOversize`). `w`/`h` are the CUT size, the BOX
+  // is the nominal piece that stands in the room, and `meta.oversize` names
+  // the edge and the nominal so nobody prices the extra.
+  assert.equal(face.h, T.defaultHeight + P.autoParts.fillerOversize,
+    'the face is the height a workshop calls "40", plus the scribe');
+  assert.equal(face.box.h, T.defaultHeight);
+  assert.equal(shelf.h, T.shelfDepth + P.autoParts.fillerOversize, 'and the shelf is the horizontal leg');
 
   // The face stands ON the units and finishes in the plane of the DOORS — the
   // same plane the end panel and the vertical filler finish in (F3/F4).
@@ -146,7 +152,9 @@ test('the section is an L: a 40 face and an 80 shelf, mitred at 45°', () => {
   assert.equal(face.box.z + face.box.d, doorFace);
 
   // The shelf hangs off the TOP of the face and runs back into the room.
-  assert.equal(shelf.box.y + shelf.box.h, face.box.y + face.h, 'the two meet at the top corner');
+  // T47-F4: the two meet at the top of the NOMINAL face — `face.h` carries the
+  // scribe allowance now, and an allowance is not part of the joint.
+  assert.equal(shelf.box.y + shelf.box.h, face.box.y + face.box.h, 'the two meet at the top corner');
   assert.equal(shelf.box.z + shelf.box.d, face.box.z, 'and behind the face, not in front of it');
   assert.equal(shelf.box.d, T.shelfDepth);
 
@@ -280,7 +288,12 @@ test('a gap wide enough takes an L: a face in the door plane, an arm on the carc
   const doorFace = unit.params.depth + P.doors.gap + unit.params.front_t;
 
   // Arm B: closes the gap, flush with the doors.
-  assert.equal(face.w, 60, 'the width of the gap it closes');
+  // T47-F4: every infill leaves the machine 20 mm over on the edge it is
+  // scribed to (`autoParts.fillerOversize`). `w`/`h` are the CUT size, the BOX
+  // is the nominal piece that stands in the room, and `meta.oversize` names
+  // the edge and the nominal so nobody prices the extra.
+  assert.equal(face.w, 60 + P.autoParts.fillerOversize, 'the gap it closes, plus the scribe');
+  assert.equal(face.box.w, 60, 'the width of the gap it closes');
   assert.equal(face.box.x, -60);
   assert.equal(face.box.x + face.box.w, 0, 'up to the carcass side');
   assert.equal(face.box.z + face.box.d, doorFace, 'and in the plane of the doors');
@@ -297,6 +310,9 @@ test('a gap wide enough takes an L: a face in the door plane, an arm on the carc
     assert.equal(p.box.y, -P.baseUnit.legHeight, 'to the floor, past the legs');
     assert.equal(p.h, unit.params.height + P.baseUnit.legHeight);
   }
+  // The ARM takes no oversize: it is screwed to the carcass side and touches no
+  // wall, so there is nothing to scribe it to (T47-F4).
+  assert.equal(arm.meta.oversize, undefined);
   assert.equal(face.meta.shape, 'L');
 });
 
@@ -306,7 +322,12 @@ test('a gap too narrow for the board stays a plain strip, and says so', () => {
   store().moveUnit(id, -5000, 0);
 
   const face = panelOf(id, 'INFILL-L-FACE');
-  assert.equal(face.w, 12);
+  // T47-F4: every infill leaves the machine 20 mm over on the edge it is
+  // scribed to (`autoParts.fillerOversize`). `w`/`h` are the CUT size, the BOX
+  // is the nominal piece that stands in the room, and `meta.oversize` names
+  // the edge and the nominal so nobody prices the extra.
+  assert.equal(face.w, 12 + P.autoParts.fillerOversize);
+  assert.equal(face.box.w, 12);
   assert.equal(face.meta.shape, 'strip');
   assert.equal(panelOf(id, 'INFILL-L-ARM'), undefined,
     'an 18 mm return does not go into a 12 mm gap, and pretending otherwise is a part that cannot be made');

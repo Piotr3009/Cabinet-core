@@ -53,6 +53,8 @@
 // exists. The engine ignores both this turn: they are geometry for the eye, and
 // for the unit clamping a later turn will read them for.
 
+import { ceilingAt } from './slopeLine.js';
+
 /** What a slope starts life as: the ceiling drops on the RIGHT, over a metre. */
 export const SLOPE_DEFAULTS = { side: 'R', startHeight: 1800, run: 900 };
 
@@ -225,22 +227,22 @@ export function slopePolygon(slope, { wallWidth, wallHeight }) {
  * How high the wall still is at a point along it — full height everywhere the
  * slopes do not reach. What a cabinet would have to duck under, and what the
  * elevation draws its ceiling line from.
+ *
+ * ─── TURN 46: THE LERP LEAVES THIS FILE ─────────────────────────────────────
+ *
+ * CLAUDE.md, 24.08: *"`ceilingAt(x)` is THAT function — write it ONCE
+ * (`lib/slopeLine.js` or beside `wallElements`), and every consumer below
+ * imports it. Two independent lerps in two files is the two-chain disease and
+ * fails the turn."*
+ *
+ * It used to lerp here, and `3d/Room.jsx` lerped a second time for the wall
+ * mesh — two chains, and the owner's screenshot is what a room looks like when
+ * they disagree. The arithmetic now lives in `lib/slopeLine.js` and this is a
+ * one-line call into it: the SAME numbers to the last decimal (this function's
+ * turn-44 tests are unchanged and still pass), from one place.
  */
 export function wallHeightAt(xMm, slopes, { wallWidth, wallHeight }) {
-  const w = Math.max(0, num(wallWidth, 0));
-  const h = Math.max(0, num(wallHeight, 0));
-  const x = clamp(num(xMm, 0), 0, w);
-  let top = h;
-  for (const raw of wallSlopes(slopes)) {
-    const s = clampSlope(raw, { wallWidth: w, wallHeight: h });
-    if (!s || s.run <= 0) continue;
-    if (s.side === 'L') {
-      if (x <= s.run) top = Math.min(top, s.startHeight + ((h - s.startHeight) * x) / s.run);
-    } else if (x >= w - s.run) {
-      top = Math.min(top, s.startHeight + ((h - s.startHeight) * (w - x)) / s.run);
-    }
-  }
-  return round4(top);
+  return ceilingAt(xMm, wallSlopes(slopes), { wallWidth, wallHeight });
 }
 
 /**

@@ -1,4 +1,5 @@
 import { wallElements as wallElementList } from '../lib/wallElements.js';
+import { ceilingAt, ceilingPolyline } from '../lib/slopeLine.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCallback, useMemo, useRef } from 'react';
 import * as THREE from 'three';
@@ -85,35 +86,59 @@ function bounce(hex, profile, surface) {
   return new THREE.Color(hex).multiplyScalar(Math.max(0, Math.min(1, amount)));
 }
 
-/** One wall: a plane with a hole per window and per door. */
+/**
+ * One wall: a plane with a hole per window and per door.
+ *
+ * ─── TURN 46 F1: THE WALL CLOSES, AND THE STUB CLOSES WITH IT ───────────────
+ *
+ * `xOffset`/`spanWidth` are how a STUB says which fragment of its wall it is.
+ * A stub is not a wall of its own — `engine/room.js truncateWall` cuts a real
+ * wall back to `wall_stub_mm` and keeps its index — so it inherits that wall's
+ * ceiling line OVER ITS OWN x RANGE, which is the whole of F1's geometry.
+ * A full wall passes 0 and its own width and nothing changes for it.
+ */
 function Wall({
   wall, height, openings, centre, showLabel, profile, onBackground, slopes = [],
+  xOffset = 0, spanWidth = null, capY = null,
 }) {
   const ref = useRef(null);
 
   const geometry = useMemo(() => {
     const shape = new THREE.Shape();
     const w = mm(wall.width);
-    const h = mm(height);
-    // CHAT-FIX 24.08: the wall honours its slopes. The modal stored them
-    // (T44-F1), the elevation drew them — and this mesh kept drawing a
-    // rectangle, so the room lied. Side R: up the right edge only to
-    // startHeight, then the diagonal to (w - run, h); side L mirrored.
-    // Clamped, so a nonsense slope degenerates to the plain corner instead
-    // of folding the shape inside out.
-    const cutOf = (side) => {
-      const s = slopes.find((x) => x.side === side);
-      if (!s) return null;
-      const run = Math.max(0, Math.min(mm(s.run), w));
-      const top = Math.max(0, Math.min(mm(s.startHeight), h));
-      return (run > 0 && top < h) ? { run, top } : null;
-    };
-    const L = cutOf('L');
-    const R = cutOf('R');
+    // ─── TURN 46 F1: ONE ceilingAt, IMPORTED (CLAUDE.md, "The slope, in
+    // numbers") ─────────────────────────────────────────────────────────────
+    //
+    // The CHAT-FIX of 24.08 taught this mesh to cut itself on the slope, and it
+    // did it with a lerp of its OWN — a second chain beside
+    // `wallElements.wallHeightAt`'s. *"Two independent lerps in two files is
+    // the two-chain disease and fails the turn."* So the diagonal is gone from
+    // here: `lib/slopeLine.js ceilingPolyline` hands back the ceiling over this
+    // wall's own stretch, knee by knee, and the shape is TRACED rather than
+    // derived. Same wall, same numbers, one source.
+    const span = Number(spanWidth) > 0 ? Number(spanWidth) : wall.width;
+    // ─── …AND THE CORNER CAP (F1: "the return stub at the slope's low end is
+    // `startHeight` tall") ─────────────────────────────────────────────────
+    //
+    // A RETURN runs perpendicular to the wall the slope is on, so the ceiling
+    // over it never changes: walking along the return does not move along the
+    // sloped wall's x at all. Its height is therefore the ONE number the
+    // ceiling has at the corner the two share — `startHeight` where the slope
+    // reaches the wall's end, which is the owner's own sentence. The SAME
+    // `ceilingAt`, asked at one x.
+    const cap = Number.isFinite(Number(capY)) ? Number(capY) : height;
+    const line = ceilingPolyline({
+      slopes, wallWidth: span, wallHeight: height, from: xOffset, to: xOffset + wall.width,
+    }).map((p) => ({ x: p.x, y: Math.min(p.y, cap) }));
     shape.moveTo(0, 0);
     shape.lineTo(w, 0);
-    if (R) { shape.lineTo(w, R.top); shape.lineTo(w - R.run, h); } else shape.lineTo(w, h);
-    if (L) { shape.lineTo(L.run, h); shape.lineTo(0, L.top); } else shape.lineTo(0, h);
+    // Up the far edge to the ceiling there, then back along the ceiling to the
+    // near edge. With no slope the line is two points at full height and this
+    // traces exactly the rectangle it traced before turn 44.
+    for (let i = line.length - 1; i >= 0; i -= 1) {
+      const px = Math.min(Math.max(line[i].x - xOffset, 0), wall.width);
+      shape.lineTo(mm(px), mm(Math.min(line[i].y, height)));
+    }
     shape.closePath();
     for (const o of openings) {
       const hole = new THREE.Path();
@@ -127,7 +152,7 @@ function Wall({
       shape.holes.push(hole);
     }
     return new THREE.ShapeGeometry(shape);
-  }, [wall.width, height, openings, slopes]);
+  }, [wall.width, height, openings, slopes, xOffset, spanWidth, capY]);
 
   // World position of the wall's start corner, with the room centred on origin.
   const position = [mm(wall.start.x - centre.x), 0, mm(wall.start.y - centre.y)];
@@ -250,12 +275,51 @@ export default function Room({
   // the engine and tested there; the drawing is unchanged — a stub is a wall
   // record like any other, just a shorter one.
   const walls = useMemo(() => wallsInScope(room, scope), [room, scope]);
+  // ─── TURN 46 F1: WHICH FRAGMENT OF ITS WALL A STUB IS ─────────────────────
+  //
+  // Asked of the geometry rather than stored on it: a stub keeps its wall's
+  // `index` and its `along` direction (engine/room.js `truncateWall`), so how
+  // far along that wall it starts is the projection of its own start corner
+  // onto that direction. No engine record grows a field, and a wall that is not
+  // a stub answers 0 by the same arithmetic.
+  const fullWalls = useMemo(() => roomWalls(room), [room]);
+  const fullWidthOf = useCallback(
+    (index) => Number(fullWalls[index]?.width) || null,
+    [fullWalls],
+  );
+  const stubOffset = useCallback((w) => {
+    const full = fullWalls[w.index];
+    if (!full || !w.stub) return 0;
+    const dx = w.start.x - full.start.x;
+    const dy = w.start.y - full.start.y;
+    return Math.max(0, Math.round((dx * full.along.x + dy * full.along.y) * 1e4) / 1e4);
+  }, [fullWalls]);
   const wallSlopeList = useProjectStore((s) => s.project.wallSlopes);
   const slopesOnWall = useCallback((idx) => wallElementList(wallSlopeList)
     .filter((e) => (e.kind ?? 'slope') === 'slope' && (e.wall ?? 0) === idx), [wallSlopeList]);
   const boxes = useMemo(() => roomBoxes(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
   const height = room.height ?? 2500;
+  // ─── TURN 46 F1: THE CEILING OVER A RETURN ────────────────────────────────
+  //
+  // *"The return stub at the slope's low end is `startHeight` tall, not
+  // `room.height`."* A return meets the main wall at a corner, and the ceiling
+  // at that corner is one number — so the return's whole outline is capped by
+  // it. Read from the MAIN wall's own slopes through the same `ceilingAt`
+  // every other consumer reads, at the x where the two walls meet.
+  const stubCap = useCallback((w) => {
+    if (!w?.stub || !walls.length) return null;
+    const main = walls[0];
+    if (!main || main.stub) return null;
+    const near = (a, b) => Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6;
+    let cornerX = null;
+    if (near(w.end, main.start) || near(w.start, main.start)) cornerX = 0;
+    else if (near(w.start, main.end) || near(w.end, main.end)) cornerX = main.width;
+    if (cornerX == null) return null;
+    return ceilingAt(cornerX, slopesOnWall(main.index), {
+      wallWidth: main.width, wallHeight: height,
+    });
+  }, [walls, slopesOnWall, height]);
 
   const floor = useMemo(() => {
     const shape = new THREE.Shape();
@@ -352,7 +416,16 @@ export default function Room({
           // whole wall would land in the wrong place on it — and a 1000 mm
           // return is not where anybody puts a window.
           openings={wall.stub ? [] : openingsOnWall(room, wall.index)}
-          slopes={wall.stub ? [] : slopesOnWall(wall.index)}
+          // ─── TURN 46 F1 (CLAUDE.md rule 4, the repair BY NAME) ───────────
+          // The chat-fix of 23.08 handed every stub `slopes={[]}`, and THAT is
+          // the gap in the owner's screenshot: the ceiling cut itself, the
+          // return wall beside it did not, and the two stopped meeting. A stub
+          // is a FRAGMENT OF ITS WALL and inherits its wall's line over its own
+          // x range. One line changes; nothing else about it is licensed.
+          slopes={slopesOnWall(wall.index)}
+          xOffset={stubOffset(wall)}
+          spanWidth={fullWidthOf(wall.index)}
+          capY={stubCap(wall)}
           centre={bounds.centre}
           showLabel={showLabels && !wall.stub}
           profile={profile}

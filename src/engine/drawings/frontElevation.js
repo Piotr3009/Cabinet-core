@@ -310,6 +310,62 @@ export function chainDimensions({ edges, at, direction, offset, textHeight, labe
 }
 
 /**
+ * ─── TURN 47 (CLAUDE.md F5): THE OUTLINE, WHERE THE PANEL HAS ONE ───────────
+ *
+ * `null` — draw the bounding rectangle, exactly as this file has since turn 6 —
+ * unless ALL of these hold:
+ *
+ *   · the panel's cut outline has MORE THAN FOUR POINTS (F5's own condition:
+ *     four is a rectangle and the rectangle is already right),
+ *   · the panel is not drawn TURNED, and its cut frame is the same size as its
+ *     elevation box. A side panel's outline is in the DEPTH × HEIGHT plane and
+ *     a top's is rotated; tracing either onto an XY elevation would draw a
+ *     600 mm board where an 18 mm edge belongs. The frame check is what keeps
+ *     the sentence honest rather than merely short.
+ *
+ * The result is a closed run of SEGMENTS rather than a new entity kind, because
+ * every renderer in this house already draws a line and CLAUDE.md's F5 is one
+ * `if` in two files — *"nothing else in the drawings system changes."*
+ *
+ * @returns {Array<[number,number,number,number]>|null} `[x1, y1, x2, y2]` in
+ *   the DRAWING's own frame.
+ */
+export function elevationOutline(panel) {
+  // ─── A BOARD THAT SAYS WHAT IT LOOKS LIKE FROM THE FRONT ──────────────────
+  //
+  // Two of tonight's boards cannot be traced from their cut outline, and both
+  // for the same reason: the outline is not in this projection. A SIDE's is in
+  // the depth plane (its bevel is through the thickness); a ROOF BOARD's is the
+  // blank, drawn TURNED. Their bounding boxes hide the very thing this feature
+  // exists to show — a roof board's box is a big rectangle over the whole
+  // triangle. So each states its own elevation profile once, in the engine, in
+  // its box's frame, and this traces it. One reader, no second geometry.
+  const said = panel?.meta?.elevation;
+  if (Array.isArray(said) && said.length >= 3 && panel.box) {
+    return said.map((a, i) => {
+      const b = said[(i + 1) % said.length];
+      return [panel.box.x + a[0], panel.box.y + a[1], panel.box.x + b[0], panel.box.y + b[1]];
+    });
+  }
+  const pts = panel?.cnc?.outline;
+  if (!Array.isArray(pts) || pts.length <= 4) return null;
+  if (panel.cnc?.rotated) return null;
+  const box = panel.box;
+  if (!box) return null;
+  const dw = Number(panel.cnc?.drawn_w);
+  const dh = Number(panel.cnc?.drawn_h);
+  if (!Number.isFinite(dw) || !Number.isFinite(dh)) return null;
+  if (Math.abs(dw - box.w) > 1e-6 || Math.abs(dh - box.h) > 1e-6) return null;
+  const out = [];
+  for (let i = 0; i < pts.length; i += 1) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    out.push([box.x + a[0], box.y + a[1], box.x + b[0], box.y + b[1]]);
+  }
+  return out;
+}
+
+/**
  * Build the front elevation of one unit.
  *
  * @param {object} result   computeCabinet() output
@@ -339,11 +395,24 @@ export function buildFrontElevation(result, {
   // composed wall print as a marker.
   for (const p of panels) {
     const style = panelStyle(p, { width: W, height: H });
-    entities.push({
-      ...rect(style.layer, p.box.x, p.box.y, p.box.w, p.box.h),
-      hidden: style.hidden,
-      pen: style.hidden ? 'HIDDEN' : 'VISIBLE',
-    });
+    const shared = { hidden: style.hidden, pen: style.hidden ? 'HIDDEN' : 'VISIBLE' };
+    // ─── TURN 47 (CLAUDE.md F5): THE PENTAGON REACHES PAPER ─────────────────
+    //
+    // T46-F6b's own finding, and its own one-sentence fix: *"the elevation
+    // traces the panel's outline where it has one, and its bounding rectangle
+    // where it does not."*
+    //
+    // Every piece on an elevation was a RECTANGLE assembled from the panel's
+    // box, so a door cut on the slope printed as the rectangle it came out of
+    // — in the one projection that CAN hold the cut (a section is the ZY
+    // projection and the diagonal runs in X). One `if`, and the board on the
+    // paper is the board on the sheet.
+    const traced = elevationOutline(p);
+    if (traced) {
+      entities.push(...traced.map((seg) => ({ ...line(style.layer, ...seg), ...shared })));
+      continue;
+    }
+    entities.push({ ...rect(style.layer, p.box.x, p.box.y, p.box.w, p.box.h), ...shared });
   }
 
   // ── the outline of the whole carcass, over the panels (LISP

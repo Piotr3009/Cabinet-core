@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1590.5mm" height="2613.5mm"
+ viewBox="0 0 1590.5 2613.5" data-cc-drawing="front-elevation">
+<rect x="0" y="0" width="1590.5" height="2613.5" fill="#ffffff"/>
+<line x1="100.5" y1="2250.5" x2="118.5" y2="2250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="118.5" y1="2250.5" x2="118.5" y2="656.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="118.5" y1="656.5" x2="100.5" y2="680.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="100.5" y1="680.5" x2="100.5" y2="2250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="1282.5" y1="2250.5" x2="1300.5" y2="2250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="1300.5" y1="2250.5" x2="1300.5" y2="785.486" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="1300.5" y1="785.486" x2="1282.5" y2="755.486" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="1282.5" y1="755.486" x2="1282.5" y2="2250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="100.5" y1="680.5" x2="400.5" y2="280.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="400.5" y1="280.5" x2="400.5" y2="250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="400.5" y1="250.5" x2="100.5" y2="650.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="100.5" y1="650.5" x2="100.5" y2="680.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="400.5" y1="268.5" x2="1000.5" y2="268.5" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" stroke-linecap="round" data-layer="SHELVES"/>
+<line x1="1000.5" y1="268.5" x2="1000.5" y2="250.5" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" stroke-linecap="round" data-layer="SHELVES"/>
+<line x1="1000.5" y1="250.5" x2="400.5" y2="250.5" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" stroke-linecap="round" data-layer="SHELVES"/>
+<line x1="400.5" y1="250.5" x2="400.5" y2="268.5" stroke="#009A3D" stroke-width="0.25" stroke-dasharray="6 4" stroke-linecap="round" data-layer="SHELVES"/>
+<line x1="1000.5" y1="285.486" x2="1300.5" y2="785.486" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="1300.5" y1="785.486" x2="1300.5" y2="750.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="1300.5" y1="750.5" x2="1000.5" y2="250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="1000.5" y1="250.5" x2="1000.5" y2="285.486" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<rect x="118.5" y="2232.5" width="1164" height="18" fill="none" stroke="#111111" stroke-width="0.35" data-layer="CARCASE"/>
+<line x1="102" y1="2250.5" x2="699" y2="2250.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="699" y1="2250.5" x2="699" y2="651.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="699" y1="651.5" x2="400.5" y2="253.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="400.5" y1="253.5" x2="102" y2="253.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="102" y1="253.5" x2="102" y2="2250.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="702" y1="2250.5" x2="1299" y2="2250.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="1299" y1="2250.5" x2="1299" y2="253.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="1299" y1="253.5" x2="1000.5" y2="253.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="1000.5" y1="253.5" x2="702" y2="751" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<line x1="702" y1="751" x2="702" y2="2250.5" stroke="#D400D4" stroke-width="0.35" stroke-linecap="round" data-layer="DOORS"/>
+<rect x="100.5" y="100.5" width="1200" height="2150" fill="none" stroke="#111111" stroke-width="0.5" data-layer="CARCASE"/>
+<rect x="162" y="313.5" width="477" height="1877" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<line x1="699" y1="1252" x2="102" y2="253.5" stroke="#8A8A8A" stroke-width="0.13" stroke-linecap="round" data-layer="DOOR_SWING" data-cc="door-swing"/>
+<line x1="699" y1="1252" x2="102" y2="2250.5" stroke="#8A8A8A" stroke-width="0.13" stroke-linecap="round" data-layer="DOOR_SWING" data-cc="door-swing"/>
+<rect x="762" y="313.5" width="477" height="1877" fill="none" stroke="#D400D4" stroke-width="0.35" data-layer="DOORS"/>
+<line x1="702" y1="1252" x2="1299" y2="253.5" stroke="#8A8A8A" stroke-width="0.13" stroke-linecap="round" data-layer="DOOR_SWING" data-cc="door-swing"/>
+<line x1="702" y1="1252" x2="1299" y2="2250.5" stroke="#8A8A8A" stroke-width="0.13" stroke-linecap="round" data-layer="DOOR_SWING" data-cc="door-swing"/>
+<rect x="118.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<rect x="1204.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<rect x="118.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<rect x="1204.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<rect x="661.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<text x="700.5" y="1175.5" font-size="120" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#009A3D" text-anchor="middle" dominant-baseline="central" data-layer="UNIT_NUMBER">01</text>
+<line x1="100.5" y1="2386.5" x2="100.5" y2="2553.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="1300.5" y1="2386.5" x2="1300.5" y2="2553.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="100.5" y1="2490.5" x2="1300.5" y2="2490.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="60" y1="2531" x2="141" y2="2450" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="1260" y1="2531" x2="1341" y2="2450" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<text x="700.5" y="2450" font-size="90" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#1B2A4A" text-anchor="middle" dominant-baseline="central" data-layer="DIMENSIONS">1200</text>
+<line x1="1336.5" y1="2350.5" x2="1503.5" y2="2350.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="1336.5" y1="100.5" x2="1503.5" y2="100.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="1440.5" y1="2350.5" x2="1440.5" y2="100.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="1400" y1="2391" x2="1481" y2="2310" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="1400" y1="141" x2="1481" y2="60" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<text x="1440.5" y="1225.5" font-size="90" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#1B2A4A" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 1440.5 1225.5)" data-layer="DIMENSIONS">2250</text>
+</svg>

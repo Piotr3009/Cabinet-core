@@ -1617,6 +1617,31 @@ export function computeCabinet(params, profileOverride) {
   // sheet prints. Every other size in this file is rounded the same way.
   const sideTopAt = (a, b) => roundTo(sideUnder(a, b, Math.max), 4);
   const sideLowAt = (a, b) => roundTo(sideUnder(a, b, Math.min), 4);
+  /**
+   * A bevelled side, seen from the front (T47-F5): the board's own outline in
+   * its box's frame, with the wedge taken off the top. A side spanning a knee
+   * carries the knee's own vertex, so the shape on the paper is the shape the
+   * saw makes and not a straight chord across it.
+   */
+  const bevelProfile = (a, b, blank) => {
+    if (!roofList) return null;
+    const top = [];
+    for (const bd of roofList) {
+      if (!(bd.x1 > a + 1e-9 && bd.x0 < b - 1e-9)) continue;
+      for (const q of [Math.max(bd.x0, a), Math.min(bd.x1, b)]) {
+        const y = Math.max(0, Math.min(blank, slopeHeightAt(roofLine, q) - bd.vertical));
+        const last = top[top.length - 1];
+        const pt = [roundTo(q - a, 4), roundTo(y, 4)];
+        // Two boards meeting over one side step the underside, and the step is
+        // real: it is the two footprints, `G / cos β` apart. Only a repeated
+        // POINT is dropped.
+        if (last && Math.abs(last[0] - pt[0]) < 1e-9 && Math.abs(last[1] - pt[1]) < 1e-9) continue;
+        top.push(pt);
+      }
+    }
+    if (top.length < 2) return null;
+    return [[0, 0], [roundTo(b - a, 4), 0], ...[...top].reverse()];
+  };
   const sideHL = roofLine ? sideTopAt(0, G) : sideH;
   const sideHR = roofLine ? sideTopAt(W - G, W) : sideH;
   // …and the segments the board's top edge is made of. A side that spans a knee
@@ -2618,6 +2643,10 @@ export function computeCabinet(params, profileOverride) {
             // …and the SHORT face, so the finished board can be measured.
             low: roundTo(sideLowAt(0, G), 4),
           },
+          // The BEVEL, seen from the front (T47-F5): 18 mm wide and `G · tan β`
+          // of wedge off the top. The CNC outline is in the DEPTH plane and
+          // cannot show it; the box is a rectangle and would hide it.
+          ...(bevelProfile(0, G, sideHL) ? { elevation: bevelProfile(0, G, sideHL) } : {}),
         },
       } : {}),
     }));
@@ -2635,6 +2664,7 @@ export function computeCabinet(params, profileOverride) {
             angles: anglesOver(W - G, W),
             low: roundTo(sideLowAt(W - G, W), 4),
           },
+          ...(bevelProfile(W - G, W, sideHR) ? { elevation: bevelProfile(W - G, W, sideHR) } : {}),
         },
       } : {}),
     }));
@@ -2711,6 +2741,22 @@ export function computeCabinet(params, profileOverride) {
           // A CLEARANCE fact, for the 3-D and the elevation. NEVER a thickness:
           // `thickness` above is G and stays G.
           verticalFootprint: roundTo(bd.vertical, 4),
+          // ─── AND WHAT IT LOOKS LIKE FROM THE FRONT (T47-F5) ─────────────
+          //
+          // The board's own PARALLELOGRAM, in its box's frame: the ends are cut
+          // VERTICALLY, so the two faces are parallel and the two ends are
+          // upright. Its bounding box is a big rectangle over the whole
+          // triangle, and an elevation that drew that would show a solid board
+          // where there is an 18 mm one lying on a slope. The CNC outline
+          // cannot help here — it is the blank, drawn TURNED, in the sheet's
+          // own frame — so the shape the eye needs is stated once, here, and
+          // `drawings/frontElevation.js` traces it.
+          elevation: [
+            [0, roundTo(bd.y0 - bd.vertical - bd.level, 4)],
+            [roundTo(bd.span, 4), roundTo(bd.y1 - bd.vertical - bd.level, 4)],
+            [roundTo(bd.span, 4), roundTo(bd.y1 - bd.level, 4)],
+            [0, roundTo(bd.y0 - bd.level, 4)],
+          ],
           ...(bd.deg > 1e-9 ? { bevel: { deg: roundTo(bd.deg, 4), ends: 'both', axis: '5-AXIS' } } : {}),
         },
       }));

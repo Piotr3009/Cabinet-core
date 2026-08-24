@@ -171,6 +171,24 @@ export function partLegend(outlineLayer, machinings, userLayers = []) {
 }
 
 /**
+ * The board the detail traces: its own cut outline where it has one, and its
+ * bounding rectangle where it does not (T47-F5).
+ *
+ * "Has one" is two points or more — anything less is not a path a machine could
+ * follow, and drawing nothing is what T25-F1.4 made a part of no size do
+ * downstream. Here the piece still has a SIZE to show, so the rectangle is the
+ * honest fallback and the window is never blank.
+ */
+export function detailOutline(panel, size) {
+  const pts = panel?.cnc?.outline;
+  if (Array.isArray(pts) && pts.length >= 2) return pts;
+  const w = Number(size?.w) || 0;
+  const h = Number(size?.h) || 0;
+  if (!(w > 0) || !(h > 0)) return [];
+  return [[0, 0], [w, 0], [w, h], [0, h]];
+}
+
+/**
  * The whole right-hand drawing: outline, machinings, legend and the two
  * dimensions that are ALWAYS visible (F7.3).
  *
@@ -202,7 +220,14 @@ export function partDetailDrawing(panel, {
   return {
     id: panel.id,
     size,
-    outline: panel.cnc?.outline || [],
+    // ─── TURN 47 (CLAUDE.md F5): THE PENTAGON REACHES PAPER, HERE TOO ───────
+    //
+    // The same one sentence the elevation gets: *"the part sheet traces the
+    // panel's outline where it has one, and its bounding rectangle where it
+    // does not."* The detail has always published the outline — what it did NOT
+    // do is fall back, so a piece whose geometry carries no outline (a part of
+    // no size, T25-F1.4) drew nothing at all and the window came up blank.
+    outline: detailOutline(panel, size),
     outlineLayer,
     // ─── TURN 47 (F2/F3/F4): WHAT THE OUTLINE CANNOT SAY ────────────────────
     // *"najlepiej zeby bylo napisane jaki kat ciecia."* A bevel through the

@@ -1066,6 +1066,106 @@
       (list 100.0 (+ 100.0 spacing) (+ 100.0 (* 2.0 spacing)) (- wys 100.0)))))
 
 ;;;========================================
+;;; T46 - THE SLOPE CUT (24.08.2026)
+;;;========================================
+;;; Owner, 24.08.2026, screenshot in hand: "sufit sie scina, ale sciana juz nie
+;;; - nie laczy sie. I mebel pozwala sie na dojechanie do skosu. Przeciez to
+;;; nie ma sensu." And his decision, the same night, option A:
+;;;
+;;;   "tniemy po skosie, brak wyboru otwierania, musi byc od skosu."
+;;;
+;;; WE CUT ON THE SLOPE. This is that cut, and it is written HERE - once, in
+;;; the shared file - because it is the same cut on every board it touches:
+;;; the carcase seen from the front, the back panel, the side under the
+;;; diagonal and the door over the opening. A routine per kit would be four
+;;; diagonals that have to agree, and they would not.
+;;;
+;;; THE SHAPE. A panel is a rectangle `szer` x `wys` at (x0,y0). The ceiling
+;;; over it is a straight line: `hL` millimetres of clear height at the panel's
+;;; LEFT edge and `hR` at its RIGHT, both measured UP FROM y0 and both already
+;;; less the scribe gap (the project's infill - the app resolves it before it
+;;; gets here; this routine never invents a number).
+;;;
+;;; Three answers, and which one comes back is decided by the numbers rather
+;;; than by a flag:
+;;;
+;;;   NOTHING TO TRIM   both edges clear the panel. The four points of the
+;;;                     rectangle, in the order every outline in this file
+;;;                     walks - so a panel out of the slope zone is drawn
+;;;                     byte-for-byte as it was drawn before this section
+;;;                     existed. That is the gate, and it is the shape's own.
+;;;   THE TRAPEZIUM     the ceiling is under the panel at BOTH edges: the top
+;;;                     edge IS the diagonal, corner to corner.
+;;;   THE PENTAGON      the tall edge keeps FULL HEIGHT and the diagonal meets
+;;;                     the top edge inside the panel. Five points, and the
+;;;                     corner that goes is the one at the LOW end. This is the
+;;;                     shape CLAUDE.md names: "vertical edge at the LOW end
+;;;                     equals the cut height there, the top edge is the
+;;;                     diagonal, the tall edge keeps full height".
+;;;
+;;; The knee is SOLVED, not searched: h(x) = hL + (hR - hL) * x / szer, so the
+;;; x at which the ceiling reaches the panel's own top is
+;;;
+;;;     kx = szer * (wys - hL) / (hR - hL)
+;;;
+;;; which is exact at every gradient and needs no tolerance. The denominator is
+;;; never zero on this branch - a level ceiling cannot be under the panel at
+;;; one edge and over it at the other.
+
+;;; Where the diagonal crosses the panel's own top edge, from x0.
+(defun SKY:slopeKneeX (szer wys hL hR / d)
+  (setq d (- hR hL))
+  (if (equal d 0.0 1e-9)
+    0.0
+    (max 0.0 (min szer (* szer (/ (- wys hL) d))))))
+
+;;; The OUTLINE point list of a panel trimmed on the slope.
+;;; Walked in the same direction as every other outline in this file:
+;;; bottom-left, bottom-right, up the right edge, back along the top.
+(defun SKY:slopeCutPts (x0 y0 szer wys hL hR / kx)
+  (cond
+    ;; Nothing to trim - the plain rectangle, unchanged.
+    ((and (>= hL wys) (>= hR wys))
+      (list (list x0 y0) (list (+ x0 szer) y0)
+            (list (+ x0 szer) (+ y0 wys)) (list x0 (+ y0 wys))))
+    ;; Under the ceiling at both edges - the trapezium.
+    ((and (< hL wys) (< hR wys))
+      (list (list x0 y0) (list (+ x0 szer) y0)
+            (list (+ x0 szer) (+ y0 hR)) (list x0 (+ y0 hL))))
+    ;; The LOW end is on the right - the pentagon, right corner trimmed.
+    ((< hR wys)
+      (setq kx (SKY:slopeKneeX szer wys hL hR))
+      (list (list x0 y0) (list (+ x0 szer) y0)
+            (list (+ x0 szer) (+ y0 hR)) (list (+ x0 kx) (+ y0 wys))
+            (list x0 (+ y0 wys))))
+    ;; The LOW end is on the left - the pentagon, mirrored.
+    (T
+      (setq kx (SKY:slopeKneeX szer wys hL hR))
+      (list (list x0 y0) (list (+ x0 szer) y0)
+            (list (+ x0 szer) (+ y0 wys)) (list (+ x0 kx) (+ y0 wys))
+            (list x0 (+ y0 hL))))))
+
+;;; How many corners the trimmed panel has - 4 or 5. The kits print it into the
+;;; run report so a joiner reading the log knows which board is a pentagon
+;;; before he finds out at the saw.
+(defun SKY:slopeCutCorners (szer wys hL hR)
+  (length (SKY:slopeCutPts 0.0 0.0 szer wys hL hR)))
+
+;;; Is this panel cut at all? The gate, asked of the numbers.
+(defun SKY:slopeCutActive (wys hL hR)
+  (or (< hL wys) (< hR wys)))
+
+;;; Draw it. The panel's outline on OUTLINE, and - when it really is cut - the
+;;; diagonal called out on its own layer so the elevation can print it without
+;;; the cut path being drawn twice (the T25 edge-guard lesson: two coincident
+;;; paths are offset in OPPOSITE directions by VCarve and the board is cut from
+;;; both sides).
+(defun SKY:drawSlopeCut (x0 y0 szer wys hL hR / pts)
+  (setq pts (SKY:slopeCutPts x0 y0 szer wys hL hR))
+  (makePolyline "OUTLINE" pts)
+  pts)
+
+;;;========================================
 ;;; LOADED
 ;;;========================================
 (princ "\nSKYLON_COMMON v1.0 loaded.")

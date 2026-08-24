@@ -1420,3 +1420,86 @@
 
 (princ "\nKIT_WARDROBE_FULL: DOOR TOP EDGE T35 section loaded.")
 (princ)
+
+;;;========================================
+;; --- SLOPE CUT (T46)
+;;;========================================
+;;; Owner, 24.08.2026, four decisions in one night, verbatim:
+;;;   option A - "tniemy po skosie"
+;;;   "brak wyboru otwierania, musi byc od skosu"
+;;;   "minimum 400"
+;;;   "jak ustawimy infill 40 to 40"  (the scribe gap IS the project infill)
+;;;
+;;; A wardrobe standing under a sloping ceiling is CUT ON THE SLOPE. This
+;;; section is that cut for THIS kit; the shape itself is SKYLON_COMMON's
+;;; `SKY:slopeCutPts`, because the back, the front and the carcase elevation
+;;; are all the same diagonal and a routine per board would be three diagonals
+;;; that have to agree.
+;;;
+;;; hL and hR are the CLEAR HEIGHT the ceiling leaves at the carcase's left and
+;;; right edges, measured from the carcase floor and ALREADY less the scribe
+;;; gap. This kit does not compute them and does not invent the gap - it is
+;;; handed two numbers, which is the same road `topDemand` travels in the DOOR
+;;; TOP EDGE (T35) section above.
+;;;
+;;; Nothing above this line changes - T46 iron rule 3. This section is additive.
+
+(setq SLOPE_MIN_CLEAR 400.0)   ;; the owner's floor: less than this is no cabinet
+
+;;; The clear height at a point across the carcase, from its left edge.
+(defun wardrobeSlopeHeightAt (szerSzafki hL hR x)
+  (if (equal szerSzafki 0.0 1e-9)
+    hL
+    (+ hL (/ (* (- hR hL) x) szerSzafki))))
+
+;;; Is there enough cabinet left to build? The owner's 400, asked at the LOW
+;;; end - which is the only end that can fail.
+(defun wardrobeSlopeFits (hL hR)
+  (>= (min hL hR) SLOPE_MIN_CLEAR))
+
+;;; WHICH SIDE THE HINGES GO ON - and there is no choice about it.
+;;; "brak wyboru otwierania, musi byc od skosu": the door opens FROM the slope,
+;;; so the hinges live on the FULL-HEIGHT edge and the diagonal edge never
+;;; carries one. Returns the hinge side in the kit's own vocabulary.
+(defun wardrobeSlopeHinge (hL hR)
+  (if (>= hL hR) "L" "R"))
+
+;;; The CARCASE, seen from the front, cut on the slope. The pentagon the owner
+;;; drew: the low end at its cut height, the diagonal across the top, the tall
+;;; end at full height.
+(defun drawWardrobeSlopeCarcaseFront (x0 y0 szerSzafki wysSzafki hL hR)
+  (SKY:drawSlopeCut x0 y0 szerSzafki wysSzafki hL hR))
+
+;;; The BACK panel, cut on the same diagonal. It spans the whole carcase, so it
+;;; takes hL and hR unchanged.
+(defun drawWardrobeSlopeBACK (x0 y0 szerBACK wysBACK unitNum hL hR / pts)
+  (setq pts (SKY:drawSlopeCut x0 y0 szerBACK wysBACK hL hR))
+  (drawText "UNIT_NUMBER" (+ x0 (/ szerBACK 2.0)) (+ y0 (/ (min hL hR) 2.0)) 40.0 unitNum)
+  pts)
+
+;;; A SIDE panel under the diagonal. A side stands at ONE x across the carcase,
+;;; so the ceiling over it is one number and its board is cut to that number -
+;;; `SKY:slopeCutPts` is still what cuts it, with both its edges at the same
+;;; height, and answers with the rectangle that is the honest shape there. The
+;;; carcase's pentagon is carried by the back, the front and the elevation
+;;; above; the two sides carry its two ENDS.
+(defun drawWardrobeSlopeSIDE (x0 y0 szerSIDE wysSIDE unitNum hSide)
+  (SKY:drawSlopeCut x0 y0 szerSIDE wysSIDE hSide hSide))
+
+;;; The TOP board. It sits LEVEL at the low end's height, full depth; the
+;;; triangle above it is closed by the front and the back (option A - no extra
+;;; roof board this turn).
+(defun wardrobeSlopeTopY (hL hR G)
+  (- (min hL hR) G))
+
+;;; The DOOR over a cut opening - a pentagon, cut on the same diagonal, less
+;;; the standard gap on every edge INCLUDING the diagonal one.
+(defun drawWardrobeSlopeFRONT (x0 y0 szerFront wysFront unitNum doorGap hL hR / pts)
+  (setq pts (SKY:drawSlopeCut x0 y0 szerFront wysFront
+              (- hL doorGap) (- hR doorGap)))
+  (drawText "UNIT_NUMBER" (+ x0 (/ szerFront 2.0))
+    (/ (+ (- hL doorGap) (- hR doorGap)) 4.0) 40.0 unitNum)
+  pts)
+
+(princ "\nKIT_WARDROBE_FULL: SLOPE CUT T46 section loaded.")
+(princ)

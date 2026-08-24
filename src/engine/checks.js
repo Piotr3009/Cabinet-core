@@ -132,6 +132,19 @@ export const CHECKS = Object.freeze([
   //                     network). NEVER a red wall per drawer for a dead
   //                     network: that is how a check panel becomes wallpaper.
   { n: 18, level: 'red', label: 'Runner rung with no article' },
+  // ─── TURN 46 (CLAUDE.md F2): THE 400 mm FLOOR UNDER A CUT CABINET ────────
+  //
+  // The owner, 24.08.2026, four decisions in one night: **minimum 400 mm**.
+  //
+  // A unit standing where its FULL height no longer fits is NOT an error — it
+  // is a cut unit (F3), and that is the whole point of the turn. A unit pushed
+  // past the 400 floor is a different thing: there is no cabinet left to build.
+  // `clampUnitX` normally stops it ever happening (F2's hard stop), and this
+  // is the witness — because a clamp with no witness is a clamp nobody finds
+  // out has stopped working (the house grammar, T37-F5c), and a unit can reach
+  // this state by a path that does not drag: a typed x, a room re-sized over
+  // its head, a slope edited above it.
+  { n: 19, level: 'red', label: 'Unit under slope minimum (400 mm)' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -379,7 +392,7 @@ export function shelfHingeFindings({
  */
 export function runChecks({
   entries = [], units = null, room = null, design = null, materials = [], profile = null,
-  wallWidthOf = null,
+  wallWidthOf = null, slopeShortfallOf = null,
 } = {}) {
   const list = units || entries.map((e) => e.unit).filter(Boolean);
   const out = [];
@@ -455,6 +468,26 @@ export function runChecks({
           subject: { unitId, editor: 'cabinet' },
           railShortfallMm: round2(-room),
           ...(r.zone == null ? {} : { zone: r.zone }),
+        })));
+      }
+    }
+
+    // ── #19 the 400 mm floor under a cut cabinet (T46-F2) ────────────────
+    //
+    // The number arrives as a NUMBER. `src/engine/**` imports nothing from
+    // `src/lib/**` (the layering law), and the ceiling line lives in
+    // `lib/slopeLine.js` because the wall mesh and the elevation read it too —
+    // so the caller asks `slopeShortfallMm` there and hands the answer down.
+    // Absent, the rule does not run, which is every caller that has no room.
+    if (typeof slopeShortfallOf === 'function') {
+      const slope = slopeShortfallOf(unit) || null;
+      if (slope && Number(slope.shortfallMm) > 0) {
+        out.push(finding(19, 'red', at(null, {
+          message: `${unitNum}: Unit under slope minimum (${Math.round(slope.minimumMm)} mm) — `
+            + `${Math.round(slope.clearMm)} mm of clear carcass at its far edge, `
+            + `${Math.round(slope.shortfallMm)} mm short. Slide it out of the slope.`,
+          subject: { unitId, editor: 'cabinet' },
+          slopeShortfallMm: round2(slope.shortfallMm),
         })));
       }
     }

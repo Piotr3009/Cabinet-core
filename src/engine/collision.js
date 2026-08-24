@@ -626,6 +626,9 @@ export function clampUnitDepth({ depth, x, width, wall, walls, others = [], back
  *   width      the unit's width
  *   wallWidth  the wall it stands on
  *   others     [{left,right}] footprints of the OTHER units on the same wall
+ *   slopeLimit {min,max} the stretch of wall the slope leaves legal for a unit
+ *              of this width (turn 46, F2) — `lib/slopeLine.js slopeStation`.
+ *              null on every wall with no slope, and then nothing changes.
  *   wallMargin the gap the unit must leave at EACH end of the wall. Turn 4: a
  *              unit does not travel all the way to the wall any more — it stops
  *              one infill width short, and the filler that closes that gap
@@ -633,7 +636,9 @@ export function clampUnitDepth({ depth, x, width, wall, walls, others = [], back
  *              landing: within `unitMagnet` of it the unit sits exactly there,
  *              so the gap is EXACTLY the infill width and not 19.4 mm.
  */
-export function clampUnitX({ x, current, width, wallWidth, others = [], wallMargin = 0 }, profile) {
+export function clampUnitX({
+  x, current, width, wallWidth, others = [], wallMargin = 0, slopeLimit = null,
+}, profile) {
   const magnet = profile.editor.unitMagnet;
   const clearance = profile.editor.minUnitGap;
   const margin = Math.max(0, Number(wallMargin) || 0);
@@ -647,6 +652,28 @@ export function clampUnitX({ x, current, width, wallWidth, others = [], wallMarg
 
   let low = wallMin;
   let high = wallMax;
+  // ─── TURN 46 (CLAUDE.md F2): THE ARRIVAL LAW ─────────────────────────────
+  //
+  // The owner, 24.08.2026, on watching a wardrobe drive under a slope: *"mebel
+  // pozwala się na dojechanie do skosu. Przecież to nie ma sensu."*
+  //
+  //   *"the unit MAY enter the slope zone (that is the point of this turn)
+  //   down to the station where `ceilingAt(far edge) − infill ≥ 400 + legs`.
+  //   Past that: hard stop."*
+  //
+  // A slope is a BARRIER, and this file already knows exactly one way to treat
+  // a barrier: it narrows the free slot the unit is standing in, before the
+  // magnet is applied, so the stop is a HARD STOP a fast drag cannot jump. It
+  // arrives as two numbers rather than as a ceiling, because `src/engine/**`
+  // imports nothing from `src/lib/**` (the layering law) — `lib/slopeLine.js
+  // slopeStation` solves the inequality exactly and hands the answer down.
+  //
+  // Absent — every unit on every wall with no slope on it, which is every unit
+  // in every project before tonight — the two lines below do nothing at all.
+  if (slopeLimit) {
+    if (Number.isFinite(Number(slopeLimit.min))) low = Math.max(low, Number(slopeLimit.min));
+    if (Number.isFinite(Number(slopeLimit.max))) high = Math.min(high, Number(slopeLimit.max));
+  }
   for (const o of others) {
     // Which side an obstacle is on is decided on the RAW footprints: a unit
     // standing flush against its neighbour is on that neighbour's right, not

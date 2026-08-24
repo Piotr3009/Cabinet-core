@@ -41,6 +41,13 @@ import {
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
 // byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
 import { migrateWallElement, wallElements } from '../lib/wallElements.js';
+// ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
+// The store is where a cabinet meets a room, so it is where the ceiling line
+// becomes a number the engine and the clamp can use. Both come out of the same
+// module the wall mesh and the elevation read — there is no second lerp here.
+import {
+  slopeInfillMm, slopeMinimumMm, slopeShortfallMm, slopeStation,
+} from '../lib/slopeLine.js';
 // T45 F9b/F9c: the job's LED spec — the groove mode, the channel width and the
 // optional W/m. It rides the project beside the room for the same reason the
 // wall elements do: `migrateLighting()` is an exhaustive whitelist and
@@ -434,6 +441,44 @@ function hingedCarcassSides(p) {
   if (on(first) && hinge(first) === 'L') sides.push('BUL');
   if (on(last) && hinge(last) === 'R') sides.push('BUR');
   return sides;
+}
+
+/**
+ * ─── TURN 46 (CLAUDE.md F2): THE SLOPES OVER ONE WALL ───────────────────────
+ *
+ * `project.wallSlopes` is the T44 list and it carries three kinds now
+ * (T45-F1b); a SLOPE is the only one the ceiling is made of. Normalised by the
+ * one module that owns the schema, filtered by wall index, and nothing else in
+ * this store re-reads that list for geometry.
+ */
+function slopesOfWall(state, wallIndex) {
+  return wallElements(state?.project?.wallSlopes)
+    .filter((e) => (e.kind ?? 'slope') === 'slope' && (e.wall ?? 0) === (Number(wallIndex) || 0));
+}
+
+/**
+ * The stretch of THIS wall a unit of this footprint may stand on.
+ *
+ * The owner's arrival law, 24.08: a unit may drive INTO the slope zone — that
+ * is the point of the turn — until its far edge has only 400 mm of clear
+ * carcass left under the scribe gap. Past that it is a hard stop, and
+ * `clampUnitX` enforces it the way it enforces a neighbour.
+ *
+ * @returns {{min:number,max:number}|null} null when the wall has no slope, and
+ *   then `clampUnitX` behaves exactly as it did before tonight.
+ */
+function slopeLimitFor(state, unit, wall, footprintWidth, profile) {
+  const slopes = slopesOfWall(state, unit?.position?.wall ?? 0);
+  if (!slopes.length) return null;
+  return slopeStation({
+    slopes,
+    wallWidth: Number(wall?.width) || 0,
+    wallHeight: Number(state?.project?.room?.height) || 0,
+    width: Number(footprintWidth) || 0,
+    infill: slopeInfillMm(state?.project?.design),
+    floorY: floorYOf(unit, null, profile),
+    minimum: slopeMinimumMm(profile),
+  });
 }
 
 function paramsForEngine(unit, design = null) {
@@ -3081,6 +3126,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       width: footprintWidth,
       wallWidth: wall.width,
       others,
+      // ─── TURN 46 (CLAUDE.md F2): …AND THE SLOPE IS A BARRIER TOO ─────────
+      // The station is solved off the SAME ceiling line the wall is drawn
+      // from, in the footprint frame this clamp already works in, so the stop
+      // lands where the eye says it should.
+      slopeLimit: slopeLimitFor(s, unit, wall, footprintWidth, getCabinetProfile()),
       // The stop that makes the side infill appear (BACKLOG #15) — and, since
       // turn 11 (F5.3), the 10 mm wall clearance instead for a cabinet whose
       // filler has been switched off, because there is no piece to leave room
@@ -5072,6 +5122,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units,
       baseOf: (u) => unitBase(u, profile),
       wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      // ─── TURN 46 (CLAUDE.md F2): the 400 mm floor, measured HERE ─────────
+      // `src/engine/**` imports nothing from `src/lib/**`, and the ceiling line
+      // has to be the one the wall is drawn from — so the store asks
+      // `lib/slopeLine.js` and hands the check a number. One ceilingAt.
+      slopeShortfallOf: (unit) => {
+        const wallIndex = unit?.position?.wall ?? 0;
+        const slopes = slopesOfWall(s, wallIndex);
+        if (!slopes.length) return null;
+        const minimum = slopeMinimumMm(profile);
+        const infill = slopeInfillMm(migrateDesign(s.project.design));
+        const floorY = floorYOf(unit, null, profile);
+        const shortfallMm = slopeShortfallMm({
+          slopes,
+          wallWidth: Number(walls?.[wallIndex]?.width) || 0,
+          wallHeight: Number(s.project.room?.height) || 0,
+          x: Number(unit?.position?.x_mm) || 0,
+          width: Number(unit?.params?.width) || 0,
+          infill,
+          floorY,
+          minimum,
+        });
+        return { shortfallMm, minimumMm: minimum, clearMm: minimum - shortfallMm };
+      },
       profile,
     });
   },

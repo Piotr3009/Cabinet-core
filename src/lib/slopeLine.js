@@ -164,3 +164,89 @@ export function ceilingPolyline({
   const xs = [lo, ...slopeBreakXs(slopes, { wallWidth: w }).filter((x) => x > lo && x < hi), hi];
   return xs.map((x) => ({ x: round4(x), y: ceilingAt(x, slopes, { wallWidth: w, wallHeight: h }) }));
 }
+
+// ─── F2: THE ARRIVAL LAW ────────────────────────────────────────────────────
+//
+// *"the unit MAY enter the slope zone (that is the point of this turn) down to
+// the station where `ceilingAt(far edge) − infill ≥ 400 + legs`. Past that:
+// hard stop."*
+//
+// FAR EDGE is the unit's edge that is deeper into the slope — the right edge
+// under a slope on the R, the left edge under one on the L. The station is
+// therefore a bound on the unit's own x, and it is solved rather than searched:
+// on a straight run the inequality is linear in x, so the answer is exact and a
+// 1 mm drag cannot step over it.
+
+/**
+ * The stretch of wall a unit of this width may stand on, given the slopes.
+ *
+ * @returns {{min:number, max:number}} the unit's own x, clamped to the wall.
+ *   `min > max` never comes back — a wall with no legal station answers with
+ *   the flat part it does have, and the Check (#19) is what says the unit does
+ *   not fit under this slope at all.
+ */
+export function slopeStation({
+  slopes, wallWidth, wallHeight, width, infill = 0, floorY = 0, minimum = 400,
+} = {}) {
+  const w = Math.max(0, num(wallWidth, 0));
+  const h = Math.max(0, num(wallHeight, 0));
+  const uw = Math.max(0, num(width, 0));
+  const need = Math.max(0, num(minimum, 0)) + Math.max(0, num(floorY, 0))
+    + Math.max(0, num(infill, 0));
+  let min = 0;
+  let max = Math.max(0, w - uw);
+  for (const raw of Array.isArray(slopes) ? slopes : []) {
+    const s = fit(raw, w, h);
+    if (!s) continue;
+    // Where the ceiling itself reaches `need`. Below `startHeight` the whole
+    // slope zone is out of bounds; above `h` the slope never bites.
+    if (need <= s.startHeight) continue;
+    if (need >= h) {
+      // Not even the flat ceiling is high enough — nothing this module can do
+      // about that, and #19 reports it. Leave the wall as it is.
+      continue;
+    }
+    // On side R the ceiling at x is startHeight + (h − startHeight)·(w − x)/run.
+    // Solving for `need` gives the x past which the ceiling is too low:
+    const drop = h - s.startHeight;
+    const reach = (s.run * (need - s.startHeight)) / drop;   // distance from the wall END
+    if (s.side === 'R') {
+      // The far edge is the unit's RIGHT edge: x + uw ≤ w − reach.
+      max = Math.min(max, round4(w - reach - uw));
+    } else {
+      // Mirrored: the far edge is the unit's LEFT edge, x ≥ reach.
+      min = Math.max(min, round4(reach));
+    }
+  }
+  min = clamp(min, 0, Math.max(0, w - uw));
+  max = clamp(max, 0, Math.max(0, w - uw));
+  if (max < min) max = min;
+  return { min: round4(min), max: round4(max) };
+}
+
+/**
+ * How far UNDER the minimum a unit standing here is — 0 when it is legal.
+ *
+ * The Check (#19) reports this number, and the clamp above is what normally
+ * stops it ever being non-zero. A clamp with no witness is a clamp nobody finds
+ * out has stopped working (the house grammar, T37-F5c), and a unit can arrive
+ * here by a path that does not drag: a typed x, a room resized under it, a
+ * slope edited over its head.
+ */
+export function slopeShortfallMm({
+  slopes, wallWidth, wallHeight, x = 0, width = 0, infill = 0, floorY = 0, minimum = 400,
+} = {}) {
+  const w = Math.max(0, num(wallWidth, 0));
+  const h = Math.max(0, num(wallHeight, 0));
+  const uw = Math.max(0, num(width, 0));
+  const left = num(x, 0);
+  const gap = Math.max(0, num(infill, 0));
+  const base = Math.max(0, num(floorY, 0));
+  const need = Math.max(0, num(minimum, 0));
+  if (!(uw > 0) || !(h > 0)) return 0;
+  const clear = Math.min(
+    ceilingAt(left, slopes, { wallWidth: w, wallHeight: h }),
+    ceilingAt(left + uw, slopes, { wallWidth: w, wallHeight: h }),
+  ) - gap - base;
+  return clear >= need ? 0 : round4(need - clear);
+}

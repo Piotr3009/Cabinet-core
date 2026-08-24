@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { mm } from './constants.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { cncRect, notchedOutline, socketNotches, tabOutlines } from '../engine/socketFace.js';
+// Turn 46 (F6a): the ONE cut, imported — never a second diagonal in the scene.
+import { slopeCutActive, trimOutlineOnSlope } from '../engine/puzzle.js';
 import { panelPlacement } from '../engine/joinery.js';
 import { panelRecesses, recessKey } from '../engine/recesses.js';
 
@@ -74,6 +76,10 @@ export function panelSolids(panel, layers, profile, drills = []) {
   const thickness = thicknessOf(panel, placement);
   if (!(w > 0) || !(h > 0) || !(thickness > 0)) return NOTHING;
   const radius = Math.max(0, (Number(profile?.cnc?.toolDiameter) || 0) / 2);
+  // Turn 46 (F6a): the engine's own cut, or null on every panel that has none.
+  const slopeCut = panel?.cnc?.slopeCut
+    && slopeCutActive({ h, hL: panel.cnc.slopeCut.hL, hR: panel.cnc.slopeCut.hR })
+    ? panel.cnc.slopeCut : null;
 
   // ─── TURN 20 (CLAUDE.md F8.1): EVERY FEATURE, AS AN ABSENCE ──────────────
   // The SOCKET layer is skipped: turn 11 cuts it out of the outline already,
@@ -99,7 +105,10 @@ export function panelSolids(panel, layers, profile, drills = []) {
   const recesses = profile?.appearance?.cuts?.enabled
     ? panelRecesses(panel, drills, { thickness, skipLayers: [layers?.socket], profile })
     : [];
-  if (!notches.length && !tabs.length && !recesses.length) return NOTHING;
+  // …and a panel whose ONLY feature is the slope cut is still a shape: a flat
+  // cut door has no notch, no tab and no recess, and a `boxGeometry` would
+  // render it as the rectangle it is not.
+  if (!notches.length && !tabs.length && !recesses.length && !slopeCut) return NOTHING;
 
   const key = [
     panel.part,
@@ -108,6 +117,9 @@ export function panelSolids(panel, layers, profile, drills = []) {
     // The tabs are part of the SHAPE, so two panels that differ only in their
     // tabs must not share a cached solid.
     ...tabs.map((t) => t.map(([x, y]) => `${x},${y}`).join(';')),
+    // Two leaves that differ only in where the ceiling cuts them are two
+    // different boards, so the cut is part of the key.
+    slopeCut ? `slope:${slopeCut.hL},${slopeCut.hR}` : '',
     recessKey(recesses),
   ].join('|');
 
@@ -121,7 +133,7 @@ export function panelSolids(panel, layers, profile, drills = []) {
   }
 
   const built = build({
-    w, h, thickness, radius, notches, tabs, recesses, placement, box: panel.box,
+    w, h, thickness, radius, notches, tabs, recesses, placement, box: panel.box, slopeCut,
   });
   cache.set(key, built);
   if (cache.size > CACHE_LIMIT) {
@@ -152,7 +164,7 @@ function thicknessOf(panel, placement) {
 }
 
 function build({
-  w, h, thickness, radius, notches, tabs = [], recesses = [], placement, box,
+  w, h, thickness, radius, notches, tabs = [], recesses = [], placement, box, slopeCut = null,
 }) {
   const shapeOf = (points) => new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y))));
   const extrudeShape = (shape) => new THREE.ExtrudeGeometry(shape, {
@@ -164,9 +176,17 @@ function build({
   });
   const extrude = (points) => extrudeShape(shapeOf(points));
 
-  const outline = notchedOutline({
+  // ─── TURN 46 (CLAUDE.md F6a): THE SCENE READS THE ENGINE'S OWN CUT ───────
+  //
+  // *"the cut cabinet renders from the engine's own panels — no scene-side twin
+  // geometry."* A board is built here from its rectangle plus its notches, so a
+  // panel cut on the slope needs the LINE — and it is the ENGINE's line
+  // (`panel.cnc.slopeCut`, in the panel's own drawn frame), clipped by the very
+  // function that cut the outline on the sheet. There is no second opinion in
+  // this file about where the ceiling is, which is the whole of the F6a claim.
+  const outline = trimOutlineOnSlope(notchedOutline({
     w, h, notches, radius,
-  });
+  }), { w, h, hL: slopeCut ? slopeCut.hL : h, hR: slopeCut ? slopeCut.hR : h });
 
   // ─── TURN 20 (CLAUDE.md F8.1): THE MATERIAL IS ACTUALLY GONE ─────────────
   //

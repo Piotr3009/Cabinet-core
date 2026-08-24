@@ -1,0 +1,106 @@
+T46 · F3/F4 — THE VERTICES OF A CUT WARDROBE
+════════════════════════════════════════════════════════════════════════
+
+THE FIXTURE
+  wall              4000 × 2500 mm
+  slope             side R, startHeight 300, run 900
+  scribe gap        40 mm  (the project's infill — owner, 24.08)
+  unit              WARDROBE 600 × 2150 × 568, board 18
+  legs              100 mm
+
+F2 — THE ARRIVAL LAW
+  station           x ∈ [0, 3301.8182]
+  far edge          3901.8182 mm along the wall
+  ceiling there     540 mm
+  clear carcass     400 mm   ← the owner's 400, exactly
+
+THE CUT, IN UNIT-LOCAL x (already minus the infill and the legs)
+  y at x=0          1866.6666 mm
+  y at x=600        400 mm
+  low end           R
+
+F3 — THE PANELS
+────────────────────────────────────────────────────────────────────────
+
+BUL
+  cut size          550 × 2150   →   550 × 1822.6666
+  sits at y         0   →   0
+  corners           34   →   24
+  fingerprint       {"h":1822.6666,"full":2150,"topAt":400}
+
+BUR
+  cut size          550 × 2150   →   550 × 400
+  sits at y         0   →   0
+  corners           34   →   14
+  fingerprint       {"h":400,"full":2150,"topAt":400}
+
+TOP
+  cut size          550 × 564   →   550 × 564
+  sits at y         2132   →   382
+  corners           64   →   64
+  fingerprint       {"level":400,"full":2150}
+
+BOTTOM
+  cut size          550 × 564   →   550 × 564
+  sits at y         0   →   0
+  corners           64   →   64
+  fingerprint       (not cut — stamped with nothing)
+
+BACK
+  cut size          600 × 2150   →   600 × 1866.6666
+  sits at y         0   →   0
+  corners           4   →   4
+  vertices          (0, 0) → (600, 0) → (600, 400) → (0, 1866.6666)
+  fingerprint       {"y0":1866.6666,"y1":400,"full":2150,"corners":4}
+
+
+F4 — THE FRONT
+────────────────────────────────────────────────────────────────────────
+
+01-F
+  cut size          597 × 2147   →   597 × 1859.9999
+  corners           4   →   4
+  vertices          (0, 0) → (597, 0) → (597, 1859.9999) → (0, 400.6667)
+  hinge             L   →   L   (FORCED — "brak wyboru otwierania, musi byc od skosu")
+  cups              y 100, y 490, y 880, y 1270, y 1660
+
+
+THE PENTAGON STATION — the same cabinet a metre back (x = 3100)
+────────────────────────────────────────────────────────────────────────
+  the cut          y 2360 at x=0  →  y 893.3333 at x=600
+  carcass height   2150 — the line is OVER it at the tall edge
+
+BUL
+  cut size          550 × 2150
+  corners           34
+
+BUR
+  cut size          550 × 893.3333
+  corners           14
+
+BACK
+  cut size          600 × 2150
+  corners           5
+  vertices          (0, 0) → (600, 0) → (600, 893.3333) → (85.9091, 2150) → (0, 2150)
+
+01-F  (the door — option A)
+  cut size          597 × 2147
+  corners           5
+  vertices          (0, 0) → (597, 0) → (597, 2147) → (512.5909, 2147) → (0, 894)
+  hinge             L  (FORCED to the full-height edge)
+  shaker recess     (60, 60) → (537, 60) → (537, 2048.2018) → (60, 882.2018)
+
+  The vertices above are the ones `SKY:slopeCutPts` returns for the same
+  three numbers — SKYLON_COMMON.lsp, and the LISP is where the shape is
+  stated (iron rule 3). `test/turn46-f3-the-engine-cuts.test.js` asserts the
+  port against all three of its branches.
+
+
+THE GATE
+────────────────────────────────────────────────────────────────────────
+  holes left in air   0
+  panels stamped cut  BUL, BUR, TOP, BACK, 01-F
+  warnings            (none)
+
+  …and with NO slope_cut the same call is byte-identical to today:
+  run  node scripts/t46-classify.mjs --dump  on the base and on this branch.

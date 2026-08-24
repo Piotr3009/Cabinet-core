@@ -93,6 +93,46 @@ for (const b of sloped.panels.filter((p) => p.role === 'front')) {
   w(`  cups              ${cups.length ? cups.map((d) => `y ${n(d.y)}`).join(', ') : '(none)'}\n`);
 }
 
+// ─── AND THE PENTAGON, which the last station does not show ─────────────────
+//
+// Parked at the far station the ceiling is under the carcass at BOTH edges, so
+// every cut board comes out a TRAPEZIUM. The PENTAGON — "the tall edge keeps
+// full height, the top edge is the diagonal" — appears one metre back, where
+// the knee of the ceiling line falls INSIDE the cabinet's own width. Both are
+// the same cut and the same function; which one you get is the arithmetic's
+// answer and not a flag, so both are printed.
+const PENT_X = 3100;
+const pentCut = slopeCutLine({
+  slopes: SLOPES, ...WALL, x: PENT_X, width: PARAMS.width, infill: INFILL, floorY: FLOOR_Y,
+});
+const pent = computeCabinet({ ...PARAMS, slope_cut: pentCut }, P);
+
+w('\n\nTHE PENTAGON STATION — the same cabinet a metre back (x = 3100)\n');
+w('────────────────────────────────────────────────────────────────────────\n');
+w(`  the cut          y ${n(pentCut.y0)} at x=0  →  y ${n(pentCut.y1)} at x=${PARAMS.width}\n`);
+w(`  carcass height   ${n(PARAMS.height)} — the line is OVER it at the tall edge\n`);
+for (const id of ['BUL', 'BUR', 'BACK']) {
+  const b = of(pent, id);
+  if (!b) continue;
+  w(`\n${id}\n`);
+  w(`  cut size          ${n(b.cnc?.drawn_w ?? b.w)} × ${n(b.cnc?.drawn_h ?? b.h)}\n`);
+  w(`  corners           ${b.cnc?.outline?.length ?? 0}\n`);
+  if ((b.cnc?.outline?.length ?? 0) <= 8) w(`  vertices          ${pts(b.cnc?.outline)}\n`);
+}
+for (const b of pent.panels.filter((x) => x.role === 'front')) {
+  w(`\n${b.id}  (the door — option A)\n`);
+  w(`  cut size          ${n(b.cnc?.drawn_w ?? b.w)} × ${n(b.cnc?.drawn_h ?? b.h)}\n`);
+  w(`  corners           ${b.cnc?.outline?.length ?? 0}\n`);
+  if ((b.cnc?.outline?.length ?? 0) <= 8) w(`  vertices          ${pts(b.cnc?.outline)}\n`);
+  w(`  hinge             ${b.meta?.hinge}${b.meta?.hingeForced ? '  (FORCED to the full-height edge)' : ''}\n`);
+  const shaker = (b.cnc?.pockets || []).find((k) => Array.isArray(k.points));
+  if (shaker) w(`  shaker recess     ${pts(shaker.points)}\n`);
+}
+w('\n  The vertices above are the ones `SKY:slopeCutPts` returns for the same\n');
+w('  three numbers — SKYLON_COMMON.lsp, and the LISP is where the shape is\n');
+w('  stated (iron rule 3). `test/turn46-f3-the-engine-cuts.test.js` asserts the\n');
+w('  port against all three of its branches.\n');
+
 w('\n\nTHE GATE\n');
 w('────────────────────────────────────────────────────────────────────────\n');
 const drillTops = new Map(sloped.panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || p.h]));

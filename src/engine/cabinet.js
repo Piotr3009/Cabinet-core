@@ -2491,6 +2491,18 @@ export function computeCabinet(params, profileOverride) {
         backPanelGeometry({ w: backW, h: H, G, puzzle: pz }),
         { w: backW, h: H, hL: cut ? cut.y0 : H, hR: cut ? cut.y1 : H },
       ),
+      // ─── TURN 46 (F6a): …AND THE SCENE READS THE SAME CUT ────────────────
+      // *"the cut cabinet renders from the engine's own panels — no scene-side
+      // twin geometry."* `3d/panelSolid.js` builds a board from a rectangle
+      // plus its notches, so a pentagon needs the LINE, not a second opinion
+      // about where the ceiling is. It is published in the panel's OWN drawn
+      // frame and the scene clips with the very function that cut the outline
+      // beside it (`engine/puzzle.js trimOutlineOnSlope`). One law, two
+      // readers. Absent — every panel with no cut — and the scene falls back
+      // to the box it has always drawn.
+      ...(cut && slopeCutActive({ h: H, hL: cut.y0, hR: cut.y1 })
+        ? { slopeCut: { hL: roundTo(cut.y0, 4), hR: roundTo(cut.y1, 4) } }
+        : {}),
     };
     // ─── TURN 38 (CLAUDE.md F1c): A BACK STANDS UP, HOWEVER SHORT IT IS ─────
     //
@@ -4799,7 +4811,14 @@ export function computeCabinet(params, profileOverride) {
     });
     return {
       h: roundTo(sl.tall, 4),
-      cnc: { ...geom, drawn_w: roundTo(leafW, 4), drawn_h: roundTo(sl.tall, 4) },
+      cnc: {
+        ...geom,
+        drawn_w: roundTo(leafW, 4),
+        drawn_h: roundTo(sl.tall, 4),
+        // F6a: the line in the SHEET's frame, for the scene to clip with (see
+        // the BACK above). The leaf's outline is already cut to it.
+        slopeCut: { hL: roundTo(sl.sheetL, 4), hR: roundTo(sl.sheetR, 4) },
+      },
       // The ladder is run over the TALL edge's height and then kept to the
       // cups that still land on the leaf — the diagonal edge never carries a
       // hinge, and a cup bored past the cut is a cup in air. The margin is the

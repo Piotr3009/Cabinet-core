@@ -1,166 +1,292 @@
-# CLAUDE.md — TURN 46 · THE SLOPE BECOMES REAL: WALLS CLOSE, UNITS ARRIVE, AND THE CABINET IS CUT ON THE SLOPE
+# CLAUDE.md — TURN 47 · THE LINE BENDS: A REAL CEILING, A ROOF-BOARD TOP, AND THE PENTAGON ON PAPER
 
-The owner, 24.08.2026, screenshot in hand: *"sufit się ścina, ale
-ściana już nie — nie łączy się. I mebel pozwala się na dojechanie do
-skosu. Przecież to nie ma sensu."* And his four decisions, same night,
-verbatim law: **option A — "tniemy po skosie"** (the door itself is cut
-on the slope, and there is NO hinge-side choice: *"brak wyboru
-otwierania, musi być od skosu"*); **minimum 400 mm**; interior rules as
-proposed; **scribe gap = the project's infill** (*"jak ustawimy infill
-40 to 40"*). One night, the whole thing — his order.
+The owner, 24.08.2026, three screenshots in hand. His rulings, verbatim
+law:
 
-## The slope, in numbers (one definition, used everywhere)
+* **The line bends where the ceiling bends.** *"jak sie konczy skos to
+  powinno sie zalamywac kat tam gdzie sie zalamuje a nei od konca do
+  konca szafy... w tym przypadku powinno byc czesc prosta i od momentu
+  zalamania skos taki sam jak reszta skosu, nie moze byc od konca do
+  konca szafy bo nie mamy ten sam skos i to nie zadziala."*
+* **Two slopes are possible.** *"skosy mamy tylko po jednej stronie, a
+  moze byc tak ze beda po 2 stronach."*
+* **The top board sits ON the sides, not between them.** *"boki sa w
+  tym przypadku pod wiencem a nie obok, w tym przypadku jak mamy skosy
+  to wieniec jest na gorze."* Ends cut VERTICALLY: *"pionowo lico do
+  boku."* And: *"wieniec nie moze grubiec"* — the board is 18 mm,
+  measured perpendicular, always.
+* **No dog bones on that top board.** *"gorny wieniec w tym przypadku
+  nie moze miec dog bonesow."*
+* **The sides run up to the point.** *"BUL i BUR przedluzony do czubka
+  skosu i ustawione ciecie pod skosem, najlepiej zeby bylo napisane
+  jaki kat ciecia, na CNC tez zeby bylo napisane."*
+* **The infill is cut on the slope, and it is a plain board.** *"bedzie
+  ciety jako prosta linia zwykly infill tylko zamontowany po skosie,
+  ale laczenia beda ciete po skosie."* The L-corner keeps its 45:
+  *"infill mitra zawsze jest 45."*
+* **The infill leaves the machine oversize.** *"wszystkie infille jak
+  mamy ustawione na 40 mm to CNC powinien rysowac o 20 mm szerszy
+  (docinanie na miejscu przez stolarzy)."*
+* **Five-axis waits, and it is written down.** *"narazie zrob 2D ale
+  zapisz do cabinet core ze to bedzie zalegle bo napewno musimy do tego
+  wrocic, ale tez pokaz kat ile stopni bedzie latwiej rysowac w
+  przyszlosci."*
 
-A slope on wall `i`: `{ side: 'L'|'R', startHeight, run }` from
-`project.wallSlopes` (T44-F1 schema, normalised by
-`lib/wallElements.js`). The ceiling line over the wall's x axis:
-full `room.height` until the run begins, then linear down to
-`startHeight` at the wall's end. `ceilingAt(x)` is THAT function — write
-it ONCE (`lib/slopeLine.js` or beside `wallElements`), and every
-consumer below imports it. Two independent lerps in two files is the
-two-chain disease and fails the turn.
+T46 gave the cabinet a cut. It gave it the WRONG cut whenever the
+ceiling bends inside the cabinet's own width, and it dropped the top
+board flat at the low end instead of laying it on the sides. This turn
+fixes the line first, then rebuilds what stands on it.
+
+## The line, in numbers (one definition, still used everywhere)
+
+`ceilingAt(x)` stays exactly as T46 left it — one function,
+`lib/slopeLine.js`, imported by every consumer. It ALREADY reads both
+`L` and `R` slopes and it ALREADY knows where the knees are
+(`slopeBreakXs`, `ceilingPolyline`). Nothing about the ceiling needs
+inventing.
+
+What is wrong is one layer up. `slopeCutLine` samples the ceiling at
+the unit's two edges and hands the engine `{y0, y1}` — a STRAIGHT line
+between them. `cutHeightAt` then lerps along it. Where a knee falls
+inside the unit, that straight line is a fiction: it cuts the boards at
+an angle the wall does not have. That is the owner's ruling, and it is
+a production defect — the CNC gets a bevel that will not meet the
+plaster.
+
+**The cut becomes a POLYLINE, in unit-local x, and it is the same
+polyline `ceilingPolyline` already returns:**
+
+```
+slope_cut = {
+  axis: 'width',
+  pts: [{x, y}, …],   // ≥2, left→right, a vertex at every knee
+  infill: number,     // the project's scribe gap, unchanged
+}
+```
+
+`pts` is `ceilingPolyline` over the unit's own span, minus the scribe
+gap, minus `floorY` — the same three subtractions T46 already makes,
+applied to every vertex rather than to two ends. A unit under a single
+straight run yields two points and its geometry is **unchanged from
+T46**: prove that, it is the safety net for this whole rewrite.
+
+Consequences that must be honoured, not worked around:
+
+* A panel may now carry **more than five corners**. Nothing may assume
+  five. `trimOutlineOnSlope` walks the polyline; it does not special-case
+  a count.
+* **Two slopes in one unit** fall out for free — a wall with an L and an
+  R slope gives a polyline that descends, runs flat, and descends again.
+  No separate code path. Prove it with a fixture.
+* `cutHeightAt(cut, x)` interpolates **within the containing segment**,
+  not across the whole span.
 
 ## Iron rules (binding)
 
 1. **Zero-stop overnight.** PR before morning regardless. Sacrifice,
-   first to fall: F6b (the A-A drawing proof of a cut unit — the
-   drawings already draw panels, this is only its screenshot), then
-   F5-polish (drag ghost line). **F1–F5 core never fall.**
-2. **BYTE-IDENTITY.** All engine work is GATED on a `slopeCut` input no
-   config carries: `t46-classify` — six IDENTICAL, UNNAMED=0. If one
-   moves, the gate leaks: stop, note.
-3. **LISP IS LAW — FIRST.** The slope edge cut is born in
-   `reference/lisp/`: one shared routine (SKYLON_COMMON) that trims a
-   side panel's top corner on a diagonal, called from
-   `KIT_WARDROBE_FULL` and `KIT_BUDTALL_FULL`. Other kits untouched —
-   say so in the PR. Paren balance 0/0 by script. The application
-   follows the LISP, never the reverse.
-4. **Sanctity.** Nothing deleted. My own chat-fix error is REPAIRED by
-   name: `Room.jsx` gave stubs `slopes=[]` (23.08) — that line changes,
-   nothing else about it.
-5. **Modals draggable, beside. English copy. No new deps. Suite never
-   --silent. One commit per feature. Probes `verify/t46/`, real pointer
-   input.**
+   first to fall: **F6** (the drag ghost line — T46's second casualty,
+   still owed). Second: the ANGLE ANNOTATIONS of F2/F3 (the cuts
+   themselves never fall, only the text that names their degrees).
+   **F1–F5 core never fall.**
+2. **BYTE-IDENTITY.** Every engine change stays gated on `slope_cut`,
+   which no golden config carries. `t47-classify` (copy
+   `t46-classify.mjs`, keep it runnable from inside `scripts/` with its
+   relative imports intact): six IDENTICAL, UNNAMED=0. If one moves,
+   the gate leaks — stop that cut and note it.
+3. **LISP IS LAW — FIRST.** `SKY:slopeCutPts` in `SKYLON_COMMON.lsp`
+   learns the polyline; the roof-board top and the angled side tops are
+   stated there before any JS. Callers stay
+   `KIT_WARDROBE_FULL` + `KIT_BUDTALL_FULL` — **no other kit is
+   touched**, and the PR says so. Paren balance 0/0 by script, all 13
+   kits.
+4. **Sanctity, with two NAMED licences.** Nothing else is deleted or
+   rewritten. The two licences, both by the owner's ruling above:
+   * `slopeCutLine`'s `{y0, y1}` return **becomes** `{pts}`. Every
+     reader moves with it in the same commit. `cutEnds` keeps working
+     (it reads the first and last vertex).
+   * `cabinet.js`'s `topY = min(cutAt(0), cutAt(W))` — T46's flat top
+     board dropped to the low end — **is replaced** by the roof board of
+     F3. The old behaviour does not survive behind a flag; the owner
+     rejected it by name (*"jak chcesz zeby szafa wygladala z wiencem
+     poziomym jak jest skos?"*).
+5. **Modals draggable and beside. English copy. Zero new deps. No SQL
+   this turn. Suite never `--silent`. One commit per feature. Every
+   screenshot LOOKED AT. Probes committed under `verify/t47/`, real
+   pointer input.**
 
 ---
 
-## F1 [CRITICAL] — the wall closes: the stub honours the slope
+## F1 [CRITICAL] — the line bends
 
-The return stub at the slope's low end is `startHeight` tall, not
-`room.height` — `Room.jsx` passes the wall's slopes to stubs and the
-stub's own outline is cut by the SAME `ceilingAt` (a stub is a fragment
-of its wall; it inherits the wall's line over its x range). The gap in
-the owner's screenshot dies.
+**LISP first.** `SKY:slopeCutPts` takes a list of points instead of two
+heights and returns the trimmed outline for any board under it. The
+routine is written once in `SKYLON_COMMON.lsp` and the two kits call it
+unchanged in shape. Paren 0/0.
 
-Proof: `f1-wall-and-stub-meet.png` (the exact camera of his shot).
+Then, in this order:
 
-## F2 [CRITICAL] — arrival law: clamp + minimum 400
+1. `lib/slopeLine.js` — `slopeCutLine` returns `{axis, pts, infill}`
+   built from `ceilingPolyline` over `[x, x+width]`, every vertex minus
+   `infill` minus `floorY`. `cutHeightAt` finds the segment containing
+   `x` and interpolates inside it. `cutEnds` unchanged in meaning.
+2. `engine/puzzle.js` — `slopeHeightAt`, `trimOutlineOnSlope`,
+   `trimGeometryOnSlope`, `slopeCutActive` all take the polyline. No
+   corner count is assumed anywhere.
+3. `engine/cabinet.js` — `normaliseSlopeCut` accepts `pts`, rejects
+   anything with fewer than two finite vertices, and returns `null`
+   (no cut) rather than guessing.
 
-- Dragging a unit along a sloped wall: the unit MAY enter the slope
-  zone (that is the point of this turn) **down to the station where
-  `ceilingAt(far edge) − infill ≥ 400 + legs`**. Past that: hard stop.
-- A unit standing where its FULL height no longer fits is not an
-  error — it is a CUT unit (F3). A unit pushed past the 400 floor is
-  refused with a red Check: `Unit under slope minimum (400 mm)`.
-- The scribe gap to the sloped ceiling is **the project's infill
-  value** — one number, the one the owner already sets.
+**Prove it, in the suite:**
 
-Tests: clamp station computed and asserted for the fixture slope;
-the Check fires and clears. Proof: `f2-clamp-and-check.png`.
+* a unit under one straight run — outline **identical** to T46, vertex
+  for vertex,
+* a unit straddling a knee — the vertex is IN the panel's outline at the
+  knee's own x, and the two segments carry the two different angles,
+* a unit under an L slope and an R slope at once — descends, runs flat,
+  descends,
+* a unit under a flat ceiling — `slope_cut` absent, engine byte-identical.
 
-## F3 [CRITICAL] — the engine cuts the carcass (gated, LISP-shaped)
+## F2 [HIGH] — the sides run to the point
 
-`paramsForEngine` hands the unit a `slopeCut` — the ceiling line in
-UNIT-LOCAL x (two points), already minus infill — only when the unit
-stands in a slope zone. In the engine, gated on it:
+`BUL` and `BUR` stop at the ceiling line, not at the low end's height.
+Each side's top edge is **cut at the angle of the segment it sits
+under**; a side that spans a knee carries two angles and the vertex
+between them.
 
-- **Sides**: the side whose x sits under the diagonal becomes a
-  PENTAGON — vertical front edge full? No: vertical edge at the LOW
-  end equals the cut height there, the top edge is the diagonal, the
-  tall edge keeps full height. Emit the shape the way the CNC editor
-  already understands cut paths (the LISP routine of rule 3 is the
-  mirror of this cut).
-- **Top board**: sits level at the LOW end's height minus nothing —
-  the top drops to the height of the lowest cut side, full depth; the
-  triangle above it is CLOSED by the sloped edges of the two sides
-  and the front (option A) — no extra roof board this turn.
-- **Back**: cut on the same diagonal.
-- **Fingerprints**: every cut panel's fingerprint carries the cut, so
-  T41's suite law keeps holding.
+The angle is stated where a joiner reads it: on the panel's own record
+(`meta.slopeCut.angles: [{from, to, deg}]`), on the part drawing, and on
+the CNC sheet as text beside the edge — `CUT 47.7°`, one decimal.
 
-Tests (the thing): a WARDROBE with a fixture `slopeCut` → the panel
-list holds pentagon sides with the asserted vertices, a lowered top,
-a cut back; WITHOUT `slopeCut` → byte-identical to today (the gate).
-Proofs: `f3-cut-carcass-panels.png` + `verify/t46/f3-vertices.txt`.
+## F3 [HIGH] — the top board is a roof, not a lid
 
-## F4 [CRITICAL] — option A: the front is cut on the slope
+The owner's correction, and it changes the board's whole identity: the
+top board **lies ON the two sides**, spanning the FULL width `W`, not
+the `W − 2G` between them.
 
-The owner's law, verbatim: *"tniemy po skosie, brak wyboru otwierania,
-musi być od skosu."*
+```
+β    = the segment's angle from horizontal = atan(Δy / span)
+L    = W / cos β                  // the lower face, side face to side face
+L_MAX= L + G · tan β              // the blank: lowest corner to highest corner
+```
 
-- The door over a cut opening is a PENTAGON — cut on the same
-  diagonal, minus the standard gaps along every edge including the
-  diagonal one.
-- **Hinge side is FORCED — no user choice**: hinges live on the
-  full-height edge, the door opens from the slope end. The hinge-side
-  control disappears for a cut door (grey with the one-line reason).
-  Hinge count comes from the tall edge's height through the EXISTING
-  chain (T41-F4's column law) — the diagonal edge never carries a
-  hinge.
-- Shaker on a pentagon: the frame follows all five edges (mitred at
-  the diagonal); `shakerFits` decides at the threaded frame as ever —
-  too small stays plain.
-- Drawer fronts: **forbidden in the slope zone** (interior law, F5) —
-  the engine refuses a drawer stack whose top would cross the line,
-  red Check names it.
+Both faces measure `L` — the ends are cut VERTICALLY (owner: *"pionowo
+lico do boku"*), so the section is a parallelogram and the two faces are
+equal. `L_MAX` is what the sheet must give up, and it is the number
+that goes on the cut list.
 
-Tests: pentagon front vertices asserted; hinge drills only on the tall
-edge; the hinge-side control locked in the UI. Proofs:
-`f4-cut-door-3d.png`, `f4-hinge-forced.png`.
+Rules on this board:
 
-## F5 [HIGH] — the interior obeys the line, live
+* **Thickness is 18 mm, perpendicular, always.** It does not thicken.
+  Its VERTICAL footprint at the edge is `G / cos β`, and that is a
+  clearance fact, not a board fact — carry it as
+  `meta.verticalFootprint` for the 3-D and the elevation, never as
+  thickness.
+* **No dog bones on it.** Owner's ruling. It carries no joint relief at
+  all this turn.
+* **One board per segment.** A board does not bend at a knee. Where the
+  polyline has an interior vertex, the top becomes one panel per
+  segment, each with its own `β`, `L` and `L_MAX`, ids suffixed
+  `TOP-1`, `TOP-2`, … in left-to-right order.
+* **The blank is a rectangle**, `L_MAX × depth`, and the bevel is an
+  ANNOTATION: `BEVEL 47.7° BOTH ENDS · 5-AXIS`. A three-axis machine
+  cannot cut it and the sheet must not pretend otherwise.
 
-- Shelves exist only where their FULL span sits below the cut line
-  (a shelf may not pierce the diagonal). The rail (ALONE or assembly)
-  shortens exactly as the bay law already cuts it at partitions —
-  here the boundary is the x where the line meets the rail's y; below
-  the meeting point the rod ends. Drawers: forbidden in the zone
-  (F4).
-- **Live**: drag end re-runs the engine (the same pos_mm path every
-  drag uses) — the cabinet re-cuts itself as it arrives under the
-  slope. During the drag, a ghost line shows the cut-to-be
-  (sacrificable polish, rule 1).
+The sides' joints move with it: the top's sockets sit where the roof
+board lands, on the angled edge. Layout stays T46's — set out square on
+the full carcass, then cut with it.
 
-Tests: shelf beyond the line refused with the Check; rail length at a
-fixture station asserted. Proof: `f5-live-recut.gif-or-png`.
+## F4 [HIGH] — the infill obeys the slope, and leaves oversize
 
-## F6 [HIGH] — the paper and the eyes
+**Cut.** The side infill is trimmed on the ceiling line like any other
+board — same polyline, same angle. Today it runs full height and the
+room lies (owner's screenshot 1).
 
-- **F6a** 3D: the room already tells the truth (F1); the cut cabinet
-  renders from the engine's own panels — no scene-side twin geometry.
-- **F6b** Drawings: nothing new to build — T43's sheets draw panels;
-  the proof is one A-A through a cut wardrobe showing the pentagon.
-  (First to fall, rule 1.)
+**Shape.** The top infill stays a PLAIN rectangle, mounted along the
+slope. It is not a trapezium. Only its ENDS are cut, at the angle the
+slope gives.
 
-Proofs: `f6a-room-with-cut-unit.png`, `f6b-section-cut-unit.png`.
+**Two different mitres, and they must not be confused:**
 
----
+* the **L corner** of one infill piece — `face × arm`, always 90°,
+  therefore **always mitre 45°**. Unchanged, untouched, owner's ruling.
+* the **side infill × top infill** junction — the angle between a
+  vertical piece and a sloped one, so the mitre is half of THAT angle.
+  `mitre_45` must carry a computed number here instead of the constant.
+  Keep the field name (nothing downstream is renamed); carry the degrees
+  in `meta.mitre.deg`.
+
+**Oversize.** `fillerOversize: 20` joins `frontOversize` and
+`bottomOversize` in `engine/profile.js` — the house idiom, not a new
+mechanism. Every infill leaves the machine **20 mm over on the WALL
+edge only**. The mitre is a JOINT, not an allowance: it keeps its long
+point exactly as computed, and the 20 goes on the opposite edge. The
+CNC sheet stamps `OVERSIZE +20 — TRIM ON SITE`, and the cut list shows
+the nominal beside it so nobody prices the extra.
+
+## F5 [HIGH] — the pentagon reaches paper
+
+T46-F6b's own finding, and its own one-sentence fix: **the elevation
+traces the panel's outline where it has one, and its bounding rectangle
+where it does not.**
+
+* `engine/drawings/frontElevation.js` L343 — `rect(…p.box…)` becomes a
+  polyline over `p.cnc.outline` when that outline has more than four
+  points, `rect` otherwise.
+* `engine/drawings/partDetail.js` — the same `if`, so the part sheet
+  shows the real board.
+
+Nothing else in the drawings system changes. No new sheets, no new
+dimension chains, no title-block work.
+
+## F6 [LOW] — the ghost line
+
+During a drag into a slope zone, a ghost line shows the cut-to-be. It
+reads `ceilingAt` — the same one, no second chain. **First to fall.**
+
+## The backlog gets two entries
+
+`BACKLOG.md` continues its numbering (last is 119). Add, in the file's
+own voice and language:
+
+* **120. [HIGH] Eksport 3-D dla 5-osi.** The roof board and the angled
+  side tops are BEVELS through the thickness. A three-axis DXF cannot
+  carry them, so T47 ships the blank plus a degrees annotation and the
+  owner accepted that as interim (*"narazie zrob 2D"*). What is owed: a
+  3-D representation the five-axis can read, and angled drilling for the
+  same reason. Owner: *"napewno musimy do tego wrocic."*
+* **121. [MEDIUM] Relief na wypuscie zamiast dog bone w gniezdzie.**
+  For fixed shelves, the corner relief a router radius demands should
+  live on the TAB (two corners chamfered ~3×3 for a ⌀6 cutter), not as
+  dog-bone circles in the mortise, which surface on a visible face. The
+  tab then seats fully — a shallower dog bone leaves a gap and puts the
+  joint on glue. Geometry, therefore `reference/lisp/panel_joints.lsp`
+  first. Discussed 24.08.2026; not decided, not started.
 
 ## Execution order
 
-F1 → F2 → LISP(rule 3) → F3 → F4 → F5 → F6. One night, the whole
-thing — the owner's order. Sacrifice only per rule 1.
+`F1` → `F2` → `F3` → `F4` → `F5` → `F6`. F1 is the foundation: F2 and
+F3 read angles OFF the polyline, and computing them from a fictional
+straight line would ship a correct-looking board with the wrong bevel.
+Do not reorder.
+
+One commit per feature. The suite runs, in full, at every one.
 
 ## What this turn does NOT touch
 
-The six configs' bytes. Kits other than WARDROBE/BUDTALL. The wizard
-(T45). The drawings system's code. Runners' catalogue. The rail's T42
-model. `cc_*` schema — **no SQL this turn**.
+The six golden configs' bytes. Kits other than WARDROBE/BUDTALL. The
+wizard. The runners' catalogue. The rail. The `cc_*` schema — **no SQL
+this turn**. The drawings system beyond F5's two `if`s. Shaker geometry
+(a cut leaf stays the plain pentagon T46 left it — its recess is still
+owed and still named).
 
 ## Morning audit will run
 
-Fresh clone → suite → build → t46-classify (six IDENTICAL) → LISP diff
-limited to the shared routine + two kits, paren 0/0 → the gate audit
-(no `slopeCut`, no change — byte-proved) → vertex probes re-run → every
-screenshot LOOKED AT, the owner's own camera angle first → verdict →
-the numbered eye-test list.
+Fresh clone → install → suite (never `--silent`) → build →
+`t47-classify` (six IDENTICAL, UNNAMED=0) → paren balance 13/13 0/0 with
+no kit but the two named touched → the polyline audit (single-run unit
+byte-identical to T46; knee unit carries the vertex; two-slope fixture
+descends-flat-descends) → `L`, `L_MAX` and `β` re-derived by hand
+against the panel record → the oversize audit (+20 on the wall edge,
+mitre long point untouched) → both drawings rasterised and LOOKED AT →
+every screenshot looked at, the owner's own camera angle first →
+verdict → the numbered eye-test list.

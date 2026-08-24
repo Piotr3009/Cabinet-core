@@ -574,72 +574,262 @@ export function puzzlePreview(profile) {
 }
 
 // ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT, PORTED 1:1 FROM THE LISP ────────
+// ─── TURN 47 (CLAUDE.md F1): …AND THE LINE BENDS ────────────────────────────
 //
 // The owner, 24.08.2026, option A: *"tniemy po skosie."*
+// And the morning after: *"nie moze byc od konca do konca szafy bo nie mamy
+// ten sam skos i to nie zadziala."*
 //
 // The shape is `SKYLON_COMMON.lsp SKY:slopeCutPts` (iron rule 3 — the routine
-// is born there and the application follows it), and the port is 1:1 in the
-// only way that matters: the same three answers, chosen by the same numbers.
+// is born there and the application follows it). T46 handed it TWO HEIGHTS;
+// T47 hands it a LINE, and this file is the port of that line.
 //
-//   NOTHING TO TRIM   both edges clear the panel → the outline is returned
-//                     UNCHANGED, by identity. That is the gate expressed in
-//                     the geometry: a panel out of the slope zone is the same
-//                     array of points it was before this function existed, so
-//                     its DXF, its fingerprint and its sheet cannot move.
-//   TRAPEZIUM         the ceiling is under the panel at both edges.
-//   PENTAGON          the tall edge keeps FULL HEIGHT and the diagonal meets
-//                     the top edge inside the panel; the corner that goes is
-//                     the one at the LOW end.
+// ─── THE CUT, RESTATED ONCE ─────────────────────────────────────────────────
+//
+// A cut is `{ w, h, pts }` — the panel's width, the panel's height, and the
+// clear height the ceiling leaves ACROSS it as a polyline:
+//
+//     pts = [{x, y}, …]   ≥2, left→right, a vertex at every knee,
+//                         x in the PANEL's own frame, y from the panel's y = 0,
+//                         ALREADY less the scribe gap.
+//
+// `{ w, h, hL, hR }` is still read, and it is not a second chain: it is the
+// two-vertex spelling of the same line, which is what T46's pair always was.
+// `slopeCutPts` is the one place the two spellings meet, every function below
+// goes through it, and a two-point line produces T46's arithmetic EXPRESSION
+// FOR EXPRESSION — not merely a number that rounds the same.
+//
+// ─── WHAT THE THREE ANSWERS BECAME ──────────────────────────────────────────
+//
+//   NOTHING TO TRIM   the line clears the panel everywhere → the outline is
+//                     returned UNCHANGED, by identity. That is the gate
+//                     expressed in the geometry: a panel out of the slope zone
+//                     is the same array of points it was before this function
+//                     existed, so its DXF, its fingerprint and its sheet cannot
+//                     move.
+//   TRAPEZIUM         the line is under the panel at both edges.
+//   PENTAGON          the tall edge keeps FULL HEIGHT and the line meets the
+//                     top edge inside the panel.
+//   …AND ANY NUMBER OF CORNERS BEYOND THAT. A panel under a ceiling that bends
+//                     twice has SEVEN, and nothing in this file counts them.
+//                     `SKY:slopeCutCorners` says the same thing in the LISP.
 //
 // ─── WHY IT CLIPS RATHER THAN REBUILDS ──────────────────────────────────────
 //
 // The LISP cuts a RECTANGLE, because in the kit a side panel is drawn as one.
 // In this engine the same board carries three tabs, six sockets and their dog
 // bones, and rebuilding it from four corners would throw all of that away. So
-// the cut is a HALF-PLANE CLIP of whatever outline the panel already has —
-// keep every vertex under the line, insert the crossings, and walk the line
-// itself where the boundary runs along it. On the plain rectangle the LISP
-// cuts, it returns the LISP's own four or five points to the last decimal
-// (the F3 test asserts exactly that against `SKY:slopeCutPts`'s three
-// branches); on a tabbed side it keeps every tab the cut does not reach.
+// the cut is a CLIP of whatever outline the panel already has — keep every
+// vertex under the line, insert the crossings, and walk the LINE ITSELF
+// (knee by knee) wherever the boundary runs along it.
 //
-// The line is stated as the two clear heights the ceiling leaves at the
-// panel's own left and right edges — `hL` and `hR`, measured from the panel's
-// y = 0 and ALREADY less the scribe gap. This function never invents a gap and
-// never asks where the ceiling is: `lib/slopeLine.js` owns that (there is one
-// `ceilingAt` in this app) and the number arrives as an input.
+// That last clause is the whole of T47 in this file. T46 clipped against ONE
+// half-plane and the boundary it walked was a chord; T47 walks the polyline, so
+// a board under a knee carries the knee's own vertex at the knee's own x and
+// its two edges carry the two different angles.
+//
+// The line is never invented here and this function never asks where the
+// ceiling is: `lib/slopeLine.js` owns that (there is one `ceilingAt` in this
+// app) and the points arrive as an input.
 
-/** The clear height the ceiling leaves at a point across a panel. */
-export function slopeHeightAt({ w, hL, hR }, x) {
-  const width = Number(w) || 0;
-  if (!(width > 0)) return Number(hL) || 0;
-  const t = Math.min(Math.max(Number(x) || 0, 0), width) / width;
-  return Number(hL) + (Number(hR) - Number(hL)) * t;
-}
+const SLOPE_EPS = 1e-9;
 
-/** Is this panel cut at all? The gate, asked of the numbers. (SKY:slopeCutActive) */
-export function slopeCutActive({ h, hL, hR }) {
-  const top = Number(h) || 0;
-  return Number(hL) < top - 1e-9 || Number(hR) < top - 1e-9;
+/**
+ * The line of a cut, normalised — `[{x, y}, …]`, left to right, at least two.
+ *
+ * `pts` wins where it is given. `hL`/`hR` is the TWO-VERTEX SPELLING of the
+ * same thing and is what every T46 caller, fixture and saved project speaks; it
+ * resolves to exactly the pair it always was, at x = 0 and x = w.
+ */
+export function slopeCutPts(cut) {
+  if (!cut) return null;
+  if (Array.isArray(cut.pts) && cut.pts.length >= 2) {
+    const pts = cut.pts
+      .map((p) => ({ x: Number(p?.x), y: Number(p?.y) }))
+      .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+      .sort((a, b) => a.x - b.x);
+    return pts.length >= 2 ? pts : null;
+  }
+  const hL = Number(cut.hL);
+  const hR = Number(cut.hR);
+  if (!Number.isFinite(hL) || !Number.isFinite(hR)) return null;
+  const w = Number(cut.w) || 0;
+  return [{ x: 0, y: hL }, { x: w, y: hR }];
 }
 
 /**
- * An outline trimmed on the slope.
+ * The clear height the line leaves at a point across a panel.
+ *
+ * T47: interpolated WITHIN the containing segment, never across the whole span.
+ * Beyond either end the line holds its end value, which is exactly what T46's
+ * `clamp(x, 0, width) / width` did.
+ *
+ * The interpolation is written `a.y + (b.y − a.y) · ((x − a.x) / span)` and not
+ * `a.y + ((b.y − a.y) · (x − a.x)) / span`, because on a two-point line the
+ * first is T46's own expression to the last bit of the mantissa and the second
+ * is not. Byte-identity is a claim about arithmetic, not about rounding.
+ */
+export function slopeHeightAt(cut, x) {
+  const pts = slopeCutPts(cut);
+  if (!pts) return 0;
+  const xv = Number(x) || 0;
+  const last = pts[pts.length - 1];
+  if (xv <= pts[0].x) return pts[0].y;
+  if (xv >= last.x) return last.y;
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    if (xv <= b.x) {
+      const span = b.x - a.x;
+      if (!(span > SLOPE_EPS)) return b.y;
+      return a.y + (b.y - a.y) * ((xv - a.x) / span);
+    }
+  }
+  return last.y;
+}
+
+/** Is this panel cut at all? The gate, asked of the numbers. (SKY:slopeCutActive) */
+export function slopeCutActive(cut) {
+  const top = Number(cut?.h) || 0;
+  const pts = slopeCutPts(cut);
+  if (!pts) return false;
+  return pts.some((p) => p.y < top - SLOPE_EPS);
+}
+
+/**
+ * The line as SEGMENTS, each with the angle it makes with the horizontal.
+ *
+ * `deg` is always POSITIVE — it is what a joiner sets on the saw, and which way
+ * the ceiling falls is plain from the two y's. (SKY:slopeSegments.)
+ */
+export function slopeSegments(cut) {
+  const pts = slopeCutPts(cut);
+  if (!pts) return [];
+  const out = [];
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    out.push({
+      x0: a.x, y0: a.y, x1: b.x, y1: b.y, deg: slopeSegDeg(b.x - a.x, b.y - a.y),
+    });
+  }
+  return out;
+}
+
+/** beta, in degrees from horizontal, from a run and a rise. (SKY:slopeSegDeg.) */
+export function slopeSegDeg(dx, dy) {
+  const run = Number(dx) || 0;
+  const rise = Number(dy) || 0;
+  if (Math.abs(run) < SLOPE_EPS) return 90;
+  return Math.abs(Math.atan(rise / run) * (180 / Math.PI));
+}
+
+/**
+ * The tallest point of the line between two x's — the "czubek skosu" a side
+ * panel is run up to (F2). Sampled at both ends and at every knee between them,
+ * which is EXACT on a polyline and needs no search. (SKY:cutPeakBetween.)
+ */
+export function slopePeakBetween(cut, xa, xb) {
+  const pts = slopeCutPts(cut);
+  if (!pts) return 0;
+  const lo = Math.min(Number(xa) || 0, Number(xb) || 0);
+  const hi = Math.max(Number(xa) || 0, Number(xb) || 0);
+  let top = Math.max(slopeHeightAt(cut, lo), slopeHeightAt(cut, hi));
+  for (const p of pts) if (p.x > lo && p.x < hi) top = Math.max(top, p.y);
+  return top;
+}
+
+/** …and the lowest, which is the short face of a bevel. (SKY:cutValleyBetween.) */
+export function slopeValleyBetween(cut, xa, xb) {
+  const pts = slopeCutPts(cut);
+  if (!pts) return 0;
+  const lo = Math.min(Number(xa) || 0, Number(xb) || 0);
+  const hi = Math.max(Number(xa) || 0, Number(xb) || 0);
+  let low = Math.min(slopeHeightAt(cut, lo), slopeHeightAt(cut, hi));
+  for (const p of pts) if (p.x > lo && p.x < hi) low = Math.min(low, p.y);
+  return low;
+}
+
+/**
+ * A stretch of the line, re-origined — the line over `[from, to]` with x
+ * measured from `from` and y lowered by `dy`.
+ *
+ * This is what lets a DOOR LEAF, a SIDE INFILL or any other piece that does not
+ * start at the unit's own left edge be cut on the SAME line as the carcass
+ * rather than on a second one sampled for it. Every knee inside the stretch
+ * survives; the two ends are added.
+ *
+ * `reach` extends the first and last SEGMENT beyond the line's own ends, at
+ * their own gradient. It is for the pieces that stand OUTSIDE the cabinet — the
+ * side infill in the gap between the carcass and the wall — where the ceiling
+ * carries on and the cut line, resolved over the unit's own width, stops. It is
+ * off by default and every carcass board takes the default.
+ */
+export function subSlopeCut(cut, from, to, { dy = 0, reach = false } = {}) {
+  const pts = slopeCutPts(cut);
+  if (!pts) return null;
+  const a = Math.min(Number(from) || 0, Number(to) || 0);
+  const b = Math.max(Number(from) || 0, Number(to) || 0);
+  const drop = Number(dy) || 0;
+  const at = (x) => (reach ? slopeReachAt(cut, x) : slopeHeightAt(cut, x));
+  const xs = [a, ...pts.map((p) => p.x).filter((x) => x > a + SLOPE_EPS && x < b - SLOPE_EPS), b];
+  return { pts: xs.map((x) => ({ x: x - a, y: at(x) - drop })) };
+}
+
+/**
+ * The height of the line at an x that may lie OUTSIDE it, by extending the end
+ * segment at its own gradient.
+ *
+ * The cut is resolved over the unit's own width, so a piece standing beside the
+ * unit — a scribe filler in the 40 mm gap at the wall — has no line over it.
+ * Holding the end value (what `slopeHeightAt` does, and what every carcass
+ * board wants) would leave that filler standing proud of a ceiling that is
+ * still falling. Extending the run is right wherever the filler is under the
+ * same run as the unit's own edge, which is every case but a knee inside the
+ * filler's own 40 mm — and THAT case is what the +20 oversize and the site trim
+ * (F4) exist for.
+ */
+export function slopeReachAt(cut, x) {
+  const pts = slopeCutPts(cut);
+  if (!pts) return 0;
+  const xv = Number(x) || 0;
+  const first = pts[0];
+  const last = pts[pts.length - 1];
+  if (xv < first.x) {
+    const b = pts[1];
+    const span = b.x - first.x;
+    if (!(span > SLOPE_EPS)) return first.y;
+    return first.y + (b.y - first.y) * ((xv - first.x) / span);
+  }
+  if (xv > last.x) {
+    const a = pts[pts.length - 2];
+    const span = last.x - a.x;
+    if (!(span > SLOPE_EPS)) return last.y;
+    return a.y + (last.y - a.y) * ((xv - a.x) / span);
+  }
+  return slopeHeightAt(cut, xv);
+}
+
+/**
+ * An outline trimmed on the line.
  *
  * @param {Array<[number,number]>} outline  the panel's points, as it is cut today
- * @param {{w:number, h:number, hL:number, hR:number}} cut
+ * @param {{w:number, h:number, pts?:Array, hL?:number, hR?:number}} cut
  * @returns {Array<[number,number]>} the same array (by identity) when there is
  *   nothing to trim; a new one otherwise.
  */
-export function trimOutlineOnSlope(outline, { w, h, hL, hR }) {
+export function trimOutlineOnSlope(outline, cut) {
   const pts = Array.isArray(outline) ? outline : [];
-  if (!pts.length || !slopeCutActive({ h, hL, hR })) return outline;
-  const at = (x) => slopeHeightAt({ w, hL, hR }, x);
-  const under = (p) => p[1] <= at(p[0]) + 1e-9;
-  // Where the segment a→b crosses the line. Both are linear in x, so the
-  // crossing is solved rather than stepped towards: with
-  // f(t) = (a.y + t·Δy) − line(a.x + t·Δx), f is linear and t = f(0)/(f(0)−f(1)).
-  const cross = (a, b) => {
+  if (!pts.length || !slopeCutActive(cut)) return outline;
+  const line = slopeCutPts(cut);
+  const at = (x) => slopeHeightAt(cut, x);
+  const under = (p) => p[1] <= at(p[0]) + SLOPE_EPS;
+  // Where the segment a→b crosses the line. Both are linear in x WITHIN one
+  // segment of the line, so the crossing is solved rather than stepped towards:
+  // with f(t) = (a.y + t·Δy) − line(a.x + t·Δx), f is linear and
+  // t = f(0)/(f(0)−f(1)). T46's own three lines, and on a two-point line this
+  // is called exactly once per edge and is T46's own answer.
+  const solve = (a, b) => {
     const fa = a[1] - at(a[0]);
     const fb = b[1] - at(b[0]);
     const d = fa - fb;
@@ -647,46 +837,91 @@ export function trimOutlineOnSlope(outline, { w, h, hL, hR }) {
     const t = Math.min(Math.max(fa / d, 0), 1);
     return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
   };
+  // …and where the EDGE spans more than one segment of the line, it is split at
+  // the knees first. f is linear only inside one segment; solving across a knee
+  // is exactly the fiction T47 exists to remove, one scale down.
+  const crossings = (a, b) => {
+    const lo = Math.min(a[0], b[0]);
+    const hi = Math.max(a[0], b[0]);
+    const knees = line.map((p) => p.x).filter((x) => x > lo + SLOPE_EPS && x < hi - SLOPE_EPS);
+    if (!knees.length) {
+      return under(a) === under(b) ? [] : [solve(a, b)];
+    }
+    const dx = b[0] - a[0];
+    const ts = knees
+      .map((x) => (x - a[0]) / dx)
+      .filter((t) => t > 0 && t < 1)
+      .sort((p, q) => p - q);
+    const pointAt = (t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    const out = [];
+    let prev = a;
+    for (const t of [...ts, 1]) {
+      const next = t === 1 ? b : pointAt(t);
+      if (under(prev) !== under(next)) out.push(solve(prev, next));
+      prev = next;
+    }
+    return out;
+  };
   const out = [];
   for (let i = 0; i < pts.length; i += 1) {
     const a = pts[i];
     const b = pts[(i + 1) % pts.length];
-    const ain = under(a);
-    const bin = under(b);
-    if (ain) out.push(a);
-    if (ain !== bin) out.push(cross(a, b));
+    if (under(a)) out.push(a);
+    for (const c of crossings(a, b)) out.push(c);
+  }
+  // ─── AND THE LINE'S OWN KNEES GO IN ──────────────────────────────────────
+  //
+  // Wherever the clipped boundary runs ALONG the ceiling — both ends of a step
+  // lying on the line — the piece of boundary between them IS the ceiling, and
+  // the ceiling bends. Without this the board would carry a chord where the
+  // wall has a knee, which is the defect in one sentence. On a two-point line
+  // there are no interior knees and this loop does nothing at all, which is why
+  // the single-run panel comes out of T47 vertex for vertex as it came out of
+  // T46.
+  const onLine = (p) => Math.abs(p[1] - at(p[0])) <= 1e-6;
+  const bent = [];
+  for (let i = 0; i < out.length; i += 1) {
+    const p = out[i];
+    const q = out[(i + 1) % out.length];
+    bent.push(p);
+    if (out.length < 2 || !onLine(p) || !onLine(q)) continue;
+    const lo = Math.min(p[0], q[0]);
+    const hi = Math.max(p[0], q[0]);
+    const knees = line
+      .filter((k) => k.x > lo + SLOPE_EPS && k.x < hi - SLOPE_EPS)
+      .map((k) => [k.x, k.y]);
+    knees.sort((m, n) => (p[0] <= q[0] ? m[0] - n[0] : n[0] - m[0]));
+    for (const k of knees) bent.push(k);
   }
   // A vertex repeated by the clip is a vertex the DXF would write twice, and
   // two coincident points on a cut path is the T25 edge-guard fault in
   // miniature. Dropped here, once, rather than downstream in three places.
   const clean = [];
-  for (const p of out) {
+  for (const p of bent) {
     const last = clean[clean.length - 1];
-    if (last && Math.abs(last[0] - p[0]) < 1e-9 && Math.abs(last[1] - p[1]) < 1e-9) continue;
+    if (last && Math.abs(last[0] - p[0]) < SLOPE_EPS && Math.abs(last[1] - p[1]) < SLOPE_EPS) continue;
     clean.push([round4(p[0]), round4(p[1])]);
   }
   const first = clean[0];
   const last = clean[clean.length - 1];
   if (clean.length > 1 && first && last
-    && Math.abs(first[0] - last[0]) < 1e-9 && Math.abs(first[1] - last[1]) < 1e-9) clean.pop();
+    && Math.abs(first[0] - last[0]) < SLOPE_EPS && Math.abs(first[1] - last[1]) < SLOPE_EPS) clean.pop();
   return clean;
 }
 
 /**
- * A whole panel geometry trimmed on the slope: its outline cut, and every
- * pocket and hole that has ended up ABOVE the line dropped with the board they
+ * A whole panel geometry trimmed on the line: its outline cut, and every
+ * pocket and hole that has ended up ABOVE it dropped with the board they
  * were in. A hole in air is a hole the machine plunges through the bed.
  */
-export function trimGeometryOnSlope(geom, { w, h, hL, hR }) {
-  if (!geom || !slopeCutActive({ h, hL, hR })) return geom;
-  const at = (x) => slopeHeightAt({ w, hL, hR }, x);
+export function trimGeometryOnSlope(geom, cut) {
+  if (!geom || !slopeCutActive(cut)) return geom;
+  const at = (x) => slopeHeightAt(cut, x);
   return {
     ...geom,
-    outline: trimOutlineOnSlope(geom.outline, {
-      w, h, hL, hR,
-    }),
-    pockets: (geom.pockets || []).filter((p) => Math.min(p.y1, p.y2) <= at((p.x1 + p.x2) / 2) + 1e-9),
-    holes: (geom.holes || []).filter((o) => o.y <= at(o.x) + 1e-9),
+    outline: trimOutlineOnSlope(geom.outline, cut),
+    pockets: (geom.pockets || []).filter((p) => Math.min(p.y1, p.y2) <= at((p.x1 + p.x2) / 2) + SLOPE_EPS),
+    holes: (geom.holes || []).filter((o) => o.y <= at(o.x) + SLOPE_EPS),
   };
 }
 

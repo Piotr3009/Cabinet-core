@@ -155,7 +155,9 @@ test('LIVE: the same pos_mm path every drag uses re-cuts the cabinet', () => {
   const inside = useProjectStore.getState().units.find((u) => u.id === id);
   const params = paramsForEngine(inside);
   assert.ok(params.slope_cut, 'the cut is resolved on the way into the engine');
-  assert.ok(params.slope_cut.y0 > params.slope_cut.y1, 'the ceiling falls to the right');
+  // T47 (licence 1): the two heights are the line's two ENDS now.
+  const pts = params.slope_cut.pts;
+  assert.ok(pts[0].y > pts[pts.length - 1].y, 'the ceiling falls to the right');
   const after = useProjectStore.getState().unitResult(id);
   const bur = after.panels.find((p) => p.id === 'BUR');
   assert.ok(bur.h < after.params.height, `the far side is cut: ${bur.h} of ${after.params.height}`);

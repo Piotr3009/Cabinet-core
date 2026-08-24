@@ -40,8 +40,11 @@ test('THE DOOR IS A PENTAGON, cut on the same diagonal', () => {
   // low corner is the one at sheet x = 0.
   assert.deepEqual(f.cnc.outline, [[0, 0], [597, 0], [597, 2147], [473.5, 2147], [0, 1200]]);
   assert.equal(f.h, 2147, 'the cut rectangle is the TALL edge');
+  // T47: `knees` joins the record — EMPTY here, because this leaf stands under
+  // one straight run. Its outline above is UNCHANGED vertex for vertex, which
+  // is F1's safety net asserted on the door.
   assert.deepEqual(f.meta.slopeCut, {
-    roomL: 2394, roomR: 1200, gap: 3, corners: 5, tall: 2147, low: 1200,
+    roomL: 2394, roomR: 1200, gap: 3, corners: 5, tall: 2147, low: 1200, knees: [],
   });
 });
 

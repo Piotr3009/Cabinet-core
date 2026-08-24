@@ -46,7 +46,8 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 // shape and this file follows it.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  slopeCutActive, slopeHeightAt, trimGeometryOnSlope, trimOutlineOnSlope,
+  slopeCutActive, slopeHeightAt, slopeSegments, subSlopeCut,
+  trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
 import {
@@ -507,26 +508,60 @@ export function drawerSplitFor(type, profile) {
 
 /**
  * ─── TURN 46 (CLAUDE.md F3): THE CUT, READ ONCE ─────────────────────────────
+ * ─── TURN 47 (CLAUDE.md F1): …AND IT IS A LINE, NOT A PAIR ──────────────────
  *
- * The ceiling line in the UNIT's own frame: `y0` clear millimetres above the
- * carcass floor at the unit's left edge, `y1` at its right, both ALREADY less
- * the scribe gap. Two points, as F3 says, and the line between them is BELOW
- * the true ceiling wherever the true line has a knee — so a cabinet cut to it
- * clears the ceiling by construction, which is the only safe reading when the
- * other one is a carcass 30 mm into the plaster.
+ * The ceiling line in the UNIT's own frame: `pts`, clear millimetres above the
+ * carcass floor at each x across the unit, left to right, a vertex at every
+ * knee, ALREADY less the scribe gap.
  *
- * ANYTHING that is not a pair of real numbers is `null`, and null is the gate:
- * no key, no cut, and the kit cuts what it cut yesterday.
+ * T46 read TWO NUMBERS and drew a straight line between them, and defended it
+ * as the conservative reading. The owner rejected the defence by name — *"nie
+ * moze byc od konca do konca szafy bo nie mamy ten sam skos i to nie
+ * zadziala"* — because a board bevelled to a line the wall does not have does
+ * not meet the plaster, however much clearance it leaves. So the line arrives
+ * bent, from the one function that has always known where the knees are.
+ *
+ * THE PAIR IS STILL READ, and it is not a second chain: `{y0, y1}` is the
+ * TWO-VERTEX SPELLING of the same line — at `x0` (or 0) and `x1` (or the unit's
+ * own width) — which is exactly the pair T46 meant by it. Every T46 fixture,
+ * every saved project and the whole T46 suite therefore resolve to the same two
+ * points they always described, and `test/turn47-f1-the-line-bends.test.js`
+ * asserts that the geometry that comes out is unchanged vertex for vertex.
+ *
+ * ANYTHING that is not a line of at least two real vertices is `null`, and null
+ * is the gate: no key, no cut, and the kit cuts what it cut yesterday. It never
+ * guesses — a half-stated line is refused rather than completed.
  */
-function normaliseSlopeCut(raw) {
+function normaliseSlopeCut(raw, width = 0) {
   if (!raw || typeof raw !== 'object') return null;
-  const y0 = Number(raw.y0);
-  const y1 = Number(raw.y1);
-  if (!Number.isFinite(y0) || !Number.isFinite(y1)) return null;
-  if (!(y0 > 0) || !(y1 > 0)) return null;
+  const W = Number(width) || 0;
+  const src = Array.isArray(raw.pts)
+    ? raw.pts.map((p) => ({ x: Number(p?.x), y: Number(p?.y) }))
+    // T46's spelling, resolved to the two vertices it always was.
+    : [
+      { x: Number.isFinite(Number(raw.x0)) ? Number(raw.x0) : 0, y: Number(raw.y0) },
+      { x: Number.isFinite(Number(raw.x1)) ? Number(raw.x1) : W, y: Number(raw.y1) },
+    ];
+  const pts = src
+    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y) && p.y > 0)
+    .sort((a, b) => a.x - b.x)
+    .map((p) => ({ x: roundTo(p.x, 4), y: roundTo(p.y, 4) }));
+  // A knee written twice is a zero-length segment, and a zero-length segment is
+  // a division this file would rather not do. Dropped here, once.
+  const line = [];
+  for (const p of pts) {
+    const last = line[line.length - 1];
+    if (last && Math.abs(last.x - p.x) < 1e-9) {
+      // Two vertices at one x: the ceiling cannot be in two places, so the
+      // LOWER wins — a ceiling is the underside of everything above it.
+      if (p.y < last.y) line[line.length - 1] = p;
+      continue;
+    }
+    line.push(p);
+  }
+  if (line.length < 2) return null;
   return {
-    y0: roundTo(y0, 4),
-    y1: roundTo(y1, 4),
+    pts: line,
     infill: Number.isFinite(Number(raw.infill)) ? roundTo(Number(raw.infill), 4) : 0,
   };
 }
@@ -921,7 +956,7 @@ function normalizeParams(raw, profile) {
     // `lib/slopeLine.js` owns the one `ceilingAt` in the app and resolves these
     // two numbers before they get here (src/engine/** imports nothing from
     // src/lib/** — the layering law).
-    slopeCut: normaliseSlopeCut(p.slope_cut ?? p.slopeCut),
+    slopeCut: normaliseSlopeCut(p.slope_cut ?? p.slopeCut, Number(p.width) || 0),
     // Turn 30 (CLAUDE.md F19): the depth of each arm of a corner unit's L. An
     // INPUT, defaulting to the profile's, like every other number a kit has.
     cornerArm: Number(p.corner_arm_mm) > 0 ? Number(p.corner_arm_mm) : profile.cornerUnit.armMm,
@@ -1466,7 +1501,17 @@ export function computeCabinet(params, profileOverride) {
   // and the ceiling drops across that G): the conservative reading, and the
   // only safe one when the other answer is a board through the plaster.
   const cut = cfg.slopeCut;
-  const cutAt = (x) => (cut ? slopeHeightAt({ w: W, hL: cut.y0, hR: cut.y1 }, x) : H);
+  // ─── TURN 47 (CLAUDE.md F1): THE LINE BENDS ───────────────────────────────
+  //
+  // One object, built once, and every cut in this file is asked of THIS and of
+  // nothing else: the unit's width, the unit's height, and the ceiling line
+  // across it as a polyline. `slopeHeightAt` interpolates inside the containing
+  // segment, so a knee at 300 mm is a knee at 300 mm and not a smear across the
+  // whole cabinet. With no cut it is null and every expression below falls back
+  // to the number it has always been.
+  const cutLine = cut ? { w: W, h: H, pts: cut.pts } : null;
+  const cutAt = (x) => (cutLine ? slopeHeightAt(cutLine, x) : H);
+  const cutActive = Boolean(cutLine) && slopeCutActive(cutLine);
   const sideHL = cut ? Math.max(0, Math.min(H, cutAt(0), cutAt(G))) : sideH;
   const sideHR = cut ? Math.max(0, Math.min(H, cutAt(W - G), cutAt(W))) : sideH;
   // The top board's own top face — H with no cut, the LOW end's height with one.
@@ -1479,7 +1524,12 @@ export function computeCabinet(params, profileOverride) {
   // other, and each pair that ends up above the line is dropped by the same
   // line on both boards. The one joint that MOVES is the top's, because the top
   // board itself has moved (`topAt` below).
-  const cutOf = (hL, hR) => ({ w: W, h: H, hL, hR });
+  // A stretch of the same line, in a piece's OWN frame — a door leaf standing
+  // at `x`, a filler standing beside the carcass. One line, sub-sampled; never
+  // a second line sampled for the piece. `dy` drops it into the piece's own
+  // y = 0, and `reach` extends the end run for a piece that stands OUTSIDE the
+  // cabinet's width (F4's scribe fillers).
+  const cutOver = (from, to, opts) => (cutLine ? subSlopeCut(cutLine, from, to, opts) : null);
   // ─── TURN 25 (CLAUDE.md F2): ONE RESOLVED INSET, FOR THE WHOLE UNIT ──────
   //
   // Resolved HERE and once, off the cabinet's own depth, and handed to every
@@ -2403,7 +2453,15 @@ export function computeCabinet(params, profileOverride) {
         // its socket row lands part-way up the panel rather than on its edge.
         topAt: cut ? topY : null,
       });
-      return trimGeometryOnSlope(geom, { w: sideW, h: sideH, hL: hSide, hR: hSide });
+      // A side stands at ONE x across the width and its board is drawn in the
+      // DEPTH frame, so the ceiling over it is one number across the whole
+      // board: the line handed here is level at the side's own cut height. The
+      // ANGLE it is bevelled at is F2's, and it travels on the panel's record
+      // rather than in this outline (a 3-axis outline cannot hold a bevel —
+      // BACKLOG 120).
+      return trimGeometryOnSlope(geom, {
+        w: sideW, h: sideH, pts: [{ x: 0, y: hSide }, { x: sideW, y: hSide }],
+      });
     };
     panels.push(panel({
       id: 'BUL', part: 'BUL', role: 'side', w: sideW, h: sideHL, thickness: G,
@@ -2489,7 +2547,7 @@ export function computeCabinet(params, profileOverride) {
       drawn_h: backH,
       ...trimGeometryOnSlope(
         backPanelGeometry({ w: backW, h: H, G, puzzle: pz }),
-        { w: backW, h: H, hL: cut ? cut.y0 : H, hR: cut ? cut.y1 : H },
+        cutLine || { w: backW, h: H, pts: [{ x: 0, y: H }, { x: backW, y: H }] },
       ),
       // ─── TURN 46 (F6a): …AND THE SCENE READS THE SAME CUT ────────────────
       // *"the cut cabinet renders from the engine's own panels — no scene-side
@@ -2500,8 +2558,17 @@ export function computeCabinet(params, profileOverride) {
       // beside it (`engine/puzzle.js trimOutlineOnSlope`). One law, two
       // readers. Absent — every panel with no cut — and the scene falls back
       // to the box it has always drawn.
-      ...(cut && slopeCutActive({ h: H, hL: cut.y0, hR: cut.y1 })
-        ? { slopeCut: { hL: roundTo(cut.y0, 4), hR: roundTo(cut.y1, 4) } }
+      // T47: the LINE, not its two ends. `hL`/`hR` stay beside it because the
+      // scene's cache key and every T46 reader speak them, and they are exactly
+      // what they always were — the first and last vertex (`cutEnds`).
+      ...(cutActive
+        ? {
+          slopeCut: {
+            pts: cutLine.pts.map((q) => ({ x: roundTo(q.x, 4), y: roundTo(q.y, 4) })),
+            hL: roundTo(cutLine.pts[0].y, 4),
+            hR: roundTo(cutLine.pts[cutLine.pts.length - 1].y, 4),
+          },
+        }
         : {}),
     };
     // ─── TURN 38 (CLAUDE.md F1c): A BACK STANDS UP, HOWEVER SHORT IT IS ─────
@@ -2543,10 +2610,16 @@ export function computeCabinet(params, profileOverride) {
       edgeCode: codes.none, edgeLen: 0,
       box: { x: 0, y: 0, z: 0, w: backW, h: backH, d: G },
       cnc: backCnc,
-      ...(cut && slopeCutActive({ h: H, hL: cut.y0, hR: cut.y1 }) ? {
+      ...(cutActive ? {
         meta: {
           slopeCut: {
-            y0: roundTo(cut.y0, 4), y1: roundTo(cut.y1, 4), full: roundTo(H, 4),
+            y0: roundTo(cutLine.pts[0].y, 4),
+            y1: roundTo(cutLine.pts[cutLine.pts.length - 1].y, 4),
+            full: roundTo(H, 4),
+            // T47: how many times the ceiling bends over THIS cabinet, and
+            // where. A back under a wall that bends twice is a heptagon, and
+            // nothing in this file assumes five.
+            knees: cutLine.pts.slice(1, -1).map((q) => roundTo(q.x, 4)),
             corners: backCnc.outline.length,
           },
         },
@@ -4783,15 +4856,30 @@ export function computeCabinet(params, profileOverride) {
   // CUSTOMER sees, `sheetL/sheetR` is what the MACHINE cuts, and the second is
   // the first reversed. The hinge hand is decided in the ROOM's frame, which
   // is the frame the owner's sentence is spoken in.
+  //
+  // ─── TURN 47 (F1): AND THE LEAF TAKES ITS OWN STRETCH OF THE LINE ─────────
+  //
+  // T46 sampled the ceiling at the leaf's two edges. A leaf is narrower than
+  // the cabinet, so a knee inside it was smeared exactly as a knee inside the
+  // carcass was — the same fault, one board down. `cutOver` hands the leaf the
+  // SAME line over its own span, knees and all, and the two frames stay named
+  // apart: `roomPts` is what the customer sees, `sheetPts` is that mirrored.
   const SLOPE_FRONT_GAP = P.doors.gap;
   const frontSlopeAt = (leafX, leafW) => {
-    if (!cut || !(leafW > 0)) return null;
-    const clear = (x) => cutAt(leafX + x) - doorY - SLOPE_FRONT_GAP;
-    const roomL = Math.max(0, clear(0));
-    const roomR = Math.max(0, clear(leafW));
-    if (!slopeCutActive({ h: frontH, hL: roomL, hR: roomR })) return null;
-    const tall = Math.min(frontH, Math.max(roomL, roomR));
+    if (!cutLine || !(leafW > 0)) return null;
+    const sub = cutOver(leafX, leafX + leafW, { dy: doorY + SLOPE_FRONT_GAP });
+    if (!sub) return null;
+    const roomPts = sub.pts.map((q) => ({ x: q.x, y: Math.max(0, q.y) }));
+    const roomL = roomPts[0].y;
+    const roomR = roomPts[roomPts.length - 1].y;
+    if (!slopeCutActive({ w: leafW, h: frontH, pts: roomPts })) return null;
+    const tall = Math.min(frontH, roomPts.reduce((hi, q) => Math.max(hi, q.y), 0));
     return {
+      roomPts,
+      // The SHEET is the inside mirror: x runs from the leaf's bottom RIGHT.
+      // The whole line turns with it, which is the one place T46's `sheetL =
+      // roomR` swap has to become a walk rather than a swap.
+      sheetPts: roomPts.map((q) => ({ x: roundTo(leafW - q.x, 4), y: q.y })).reverse(),
       roomL,
       roomR,
       sheetL: roomR,
@@ -4800,14 +4888,14 @@ export function computeCabinet(params, profileOverride) {
       // keeps the LEFT, which is the app's own default hand.
       hinge: roomL >= roomR ? 'L' : 'R',
       tall,
-      low: Math.min(frontH, Math.min(roomL, roomR)),
+      low: Math.min(frontH, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
     };
   };
   /** A cut leaf's panel fields — its outline, its height, its forced hinge. */
   const cutFrontFields = (sl, leafW) => {
     if (!sl) return null;
     const geom = trimGeometryOnSlope(rectGeometry(leafW, frontH), {
-      w: leafW, h: frontH, hL: sl.sheetL, hR: sl.sheetR,
+      w: leafW, h: frontH, pts: sl.sheetPts,
     });
     return {
       h: roundTo(sl.tall, 4),
@@ -4817,7 +4905,11 @@ export function computeCabinet(params, profileOverride) {
         drawn_h: roundTo(sl.tall, 4),
         // F6a: the line in the SHEET's frame, for the scene to clip with (see
         // the BACK above). The leaf's outline is already cut to it.
-        slopeCut: { hL: roundTo(sl.sheetL, 4), hR: roundTo(sl.sheetR, 4) },
+        slopeCut: {
+          pts: sl.sheetPts.map((q) => ({ x: roundTo(q.x, 4), y: roundTo(q.y, 4) })),
+          hL: roundTo(sl.sheetL, 4),
+          hR: roundTo(sl.sheetR, 4),
+        },
       },
       // The ladder is run over the TALL edge's height and then kept to the
       // cups that still land on the leaf — the diagonal edge never carries a
@@ -4833,14 +4925,19 @@ export function computeCabinet(params, profileOverride) {
           // spoken in — the outline beside it is the sheet's mirror of these.
           roomL: roundTo(sl.roomL, 4),
           roomR: roundTo(sl.roomR, 4),
+          // …and every knee between them, in the ROOM's frame.
+          knees: sl.roomPts.slice(1, -1).map((q) => roundTo(q.x, 4)),
           gap: roundTo(SLOPE_FRONT_GAP, 4),
           corners: geom.outline.length,
           tall: roundTo(sl.tall, 4),
           low: roundTo(sl.low, 4),
         },
       },
-      edgeLen: metres(2 * leafW + sl.roomL + sl.roomR
-        + Math.hypot(leafW, Math.abs(sl.roomL - sl.roomR))),
+      // The banded edges: two verticals, the bottom, and the CUT edge — which
+      // under a bent line is the sum of its own segments and not one hypotenuse.
+      edgeLen: metres(leafW + sl.roomL + sl.roomR
+        + sl.roomPts.slice(1).reduce((run, q, i) => run
+          + Math.hypot(q.x - sl.roomPts[i].x, q.y - sl.roomPts[i].y), 0)),
     };
   };
 
@@ -6887,15 +6984,31 @@ export function computeCabinet(params, profileOverride) {
   // `null` back means there is no rod left at all — the ceiling is under it
   // across the whole span — and the caller drops it rather than drawing a tube
   // of negative length.
+  const railMeetX = (x1, x2, y, fromLeft) => {
+    const segs = slopeSegments(cutLine).filter((sg) => sg.x1 > x1 && sg.x0 < x2);
+    const walk = fromLeft ? segs : [...segs].reverse();
+    for (const sg of walk) {
+      const rise = sg.y1 - sg.y0;
+      if (!(Math.abs(rise) > 1e-9)) continue;
+      const hit = sg.x0 + ((y - sg.y0) * (sg.x1 - sg.x0)) / rise;
+      if (hit >= sg.x0 - 1e-9 && hit <= sg.x1 + 1e-9) {
+        return roundTo(Math.min(Math.max(hit, x1), x2), 4);
+      }
+    }
+    return null;
+  };
   const railSpanUnderCut = (x1, x2, y) => {
     if (!cut) return { x1, x2 };
     const startsClear = cutAt(x1) >= y - 1e-9;
     const endsClear = cutAt(x2) >= y - 1e-9;
     if (startsClear && endsClear) return { x1, x2 };
     if (!startsClear && !endsClear) return null;
-    const rise = cut.y1 - cut.y0;
-    if (!(Math.abs(rise) > 1e-9)) return { x1, x2 };
-    const meet = Math.min(Math.max(((y - cut.y0) * W) / rise, x1), x2);
+    // T47: SOLVED WITHIN THE SEGMENT THAT CONTAINS IT. The line is straight
+    // only between two knees, so the x at which it passes the rod's own height
+    // is looked for one segment at a time — walking from the clear end, which
+    // is the end the rod survives at.
+    const meet = railMeetX(x1, x2, y, startsClear);
+    if (meet == null) return { x1, x2 };
     return startsClear
       ? { x1, x2: roundTo(meet, 4) }
       : { x1: roundTo(meet, 4), x2 };

@@ -140,10 +140,14 @@ test('the ceiling line arrives in UNIT-LOCAL x, already minus the infill', () =>
     infill: 40,
     floorY: 100,
   });
-  assert.equal(line.x0, 0, 'x is the UNIT\'s own, not the wall\'s');
-  assert.equal(line.x1, 600);
-  assert.equal(line.y0, 2115.5556, 'ceiling 2255.56 less 40 scribe less 100 legs');
-  assert.equal(line.y1, 648.8889, 'ceiling 788.89 at the far edge, less the same two');
+  // T47 (licence 1): the return is `{pts}` now, and this unit stands under ONE
+  // straight run — so it is TWO points, and they are T46's own two numbers to
+  // the fourth decimal. That is the safety net, asserted where T46 asserted it.
+  assert.equal(line.pts.length, 2, 'one straight run is two vertices');
+  assert.equal(line.pts[0].x, 0, 'x is the UNIT\'s own, not the wall\'s');
+  assert.equal(line.pts[1].x, 600);
+  assert.equal(line.pts[0].y, 2115.5556, 'ceiling 2255.56 less 40 scribe less 100 legs');
+  assert.equal(line.pts[1].y, 648.8889, 'ceiling 788.89 at the far edge, less the same two');
   assert.equal(line.infill, 40);
   assert.equal(line.low, 'R');
 });
@@ -206,8 +210,11 @@ test('THE BACK is cut on the same diagonal — and it is the PENTAGON', () => {
   assert.deepEqual(back.cnc.outline, [[0, 0], [600, 0], [600, 1200], [125, 2150], [0, 2150]]);
   assert.equal(back.cnc.outline.length, 5, 'five corners: a pentagon');
   assert.equal(back.h, H, 'its cut rectangle is still the full height at the tall edge');
+  // T47: `knees` joins the record — EMPTY here, because this unit stands
+  // under one straight run. A cabinet the ceiling bends over lists the x of
+  // every bend, and its back is a hexagon or better.
   assert.deepEqual(back.meta.slopeCut, {
-    y0: 2400, y1: 1200, full: 2150, corners: 5,
+    y0: 2400, y1: 1200, full: 2150, corners: 5, knees: [],
   });
 });
 

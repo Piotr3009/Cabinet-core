@@ -102,6 +102,8 @@ import {
 import {
   runFor as shareOutRunFor, shareOutFor, shareOutPlan, widthFixed,
 } from '../engine/shareOut.js';
+// Turn 50 (CLAUDE.md F3): nothing is built bigger than the room it stands in.
+import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
@@ -2880,6 +2882,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // that overhangs its own carcass is not a box, it is a mistake.
       const hostW = Number(riderHost.params?.width);
       if (Number.isFinite(hostW) && hostW > 0) unit.params.width = hostW;
+      // ─── TURN 50 (CLAUDE.md F3): …AND BORN INSIDE THE ROOM ────────────────
+      //
+      // The owner's own case: *"dlaczego pozwala system dodawać top box powyżej
+      // rozmiaru pokoju? to powinno być blokada."*  A box arrives with the
+      // profile's 500 and stands on a wardrobe's top, so in a 2500 room on a
+      // 2250 wardrobe it was born 750 mm through the ceiling.
+      //
+      // BORN FITTED, exactly as T37 made it born matched to its host's width,
+      // and for the same reason: this height has never been typed, so cutting
+      // it to what is left is not the app overruling anybody. What IS refused
+      // is a room with less headroom than a top box's own minimum — there the
+      // add is blocked, with the room's figure in the sentence, which is the
+      // "blokada" he asked for.
+      const born = riderBornHeight({
+        unit,
+        host: riderHost,
+        room: state.project.room,
+        profile,
+        minHeight: minHeightOf(typeId, profile),
+      });
+      if (born.refuse) return { id: null, error: born.refuse };
+      if (born.height != null) unit.params.height = born.height;
     }
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
@@ -2977,6 +3001,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // has pressed the bar's SECOND button, and the new cabinet is added by
   // `addUnit` — the same call the library makes — before the widths are
   // written, so it is in the run the plan is applied to.
+  /**
+   * ─── TURN 50 (CLAUDE.md F3): MAY THIS UNIT BE GIVEN THIS SIZE? ───────────
+   *
+   * The owner: *"dlaczego pozwala system dodawać top box powyżej rozmiaru
+   * pokoju? to powinno być blokada."*
+   *
+   * The RULE is `engine/roomFit.js` and none of it is here. What is here is the
+   * plumbing the two surfaces would otherwise each have to do — the room, and
+   * the cabinet a top box is standing on — so the parameter panel and the size
+   * modal ask ONE question and get ONE sentence back.
+   *
+   * It REFUSES; it does not clamp. `updateUnitParams` still clamps every number
+   * the APP moves (a project-wide height push, a drag against a neighbour) and
+   * is untouched. This is the other case: a number somebody typed.
+   *
+   * @returns {{key, limit, wanted, message}|null} null when the size is fine
+   */
+  roomFitRefusalFor: (unitId, patch) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const host = unit.params?.rides_on
+      ? s.units.find((u) => u.id === unit.params.rides_on) || null
+      : null;
+    return roomFitRefusal({
+      unit, patch, room: s.project.room, host, profile: getCabinetProfile(),
+    });
+  },
+
+  /** Every unit that is ALREADY bigger than its room — Check's own list (F3). */
+  roomFitFaults: () => roomFitFaults(get().units, get().project.room, getCabinetProfile()),
+
   shareOutRun: (unitId, { extra = 0 } = {}) => runBatch(() => {
     const profile = getCabinetProfile();
     const state = get();

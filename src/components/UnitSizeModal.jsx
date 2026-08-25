@@ -38,6 +38,7 @@ export default function UnitSizeModal() {
   const notify = useUiStore((s) => s.notify);
   const units = useProjectStore((s) => s.units);
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
+  const roomFitRefusalFor = useProjectStore((s) => s.roomFitRefusalFor);
 
   const unitId = args?.unitId || null;
   const unit = useMemo(() => units.find((u) => u.id === unitId) || null, [units, unitId]);
@@ -80,6 +81,16 @@ export default function UnitSizeModal() {
 
   /** One field, straight into the existing setter. */
   const set = (key) => (value) => {
+    // ─── TURN 50 (CLAUDE.md F3): …AND THE ROOM REFUSES FIRST ────────────────
+    //
+    // The owner: *"dlaczego pozwala system dodawać top box powyżej rozmiaru
+    // pokoju? to powinno być blokada."*  CLAUDE.md names the two surfaces where
+    // the guard sits — the parameter panel and THIS window — because they are
+    // the two places a number is TYPED. Still no rule of this window's own: the
+    // question is the store's (`roomFitRefusalFor` → `engine/roomFit.js`), and
+    // what this does with the answer is print it.
+    const no = roomFitRefusalFor(unit.id, { [key]: value });
+    if (no) { notify(no.message, 'warn'); return; }
     const res = updateUnitParams(unit.id, { [key]: value });
     // The setter's own clamp SPEAKS when it refuses — "Width limited to 600 mm
     // by 02" — and this window is the surface it speaks through. Nothing here

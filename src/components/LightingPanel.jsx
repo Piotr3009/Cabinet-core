@@ -87,6 +87,33 @@ function LightArt({ kind }) {
       </svg>
     );
   }
+  // ─── TURN 48 (CLAUDE.md F7): `top_under` GETS ITS OWN PICTURE ─────────────
+  //
+  // It had none. The chain of `if`s above ended at `top` and everything after
+  // it fell through to the SPOTS drawing at the bottom of this function — and
+  // the call site, knowing that, asked for `kind="top"` instead. So the control
+  // that puts a strip on the UNDERSIDE of the top board, shining DOWN into the
+  // cabinet, was illustrated by a strip sitting ON TOP of it and washing UP the
+  // wall. The owner's screenshot is of exactly that.
+  //
+  // The two are opposites and the drawing has to say so, so this one is the
+  // other one turned inside out: the top board is INSIDE the carcass outline,
+  // the strip is UNDER it, and the rays go DOWN onto a shelf.
+  if (kind === 'top_under') {
+    return (
+      <svg width="72" height="44" viewBox="0 0 72 44" fill="none" aria-hidden className="opacity-80 shrink-0">
+        {/* the carcass, face on, with its TOP BOARD drawn as its own line */}
+        <rect x="14" y="4" width="44" height="36" stroke={stroke} strokeWidth="1.2" />
+        <path d="M14 11 L58 11" stroke={stroke} strokeWidth="1.2" />
+        {/* the strip on the UNDERSIDE of that board — inside the cabinet */}
+        <rect x="22" y="12" width="28" height="3" fill={led} />
+        {/* …washing DOWN, which is the whole difference from the one above */}
+        <path d="M26 19 L24 27 M36 19 L36 29 M46 19 L48 27" stroke={led} strokeWidth="1" opacity="0.7" />
+        {/* the shelf it lands on */}
+        <path d="M18 33 L54 33" stroke={stroke} strokeWidth="0.6" strokeDasharray="2 3" />
+      </svg>
+    );
+  }
   return (
     <svg width="72" height="44" viewBox="0 0 72 44" fill="none" aria-hidden className="opacity-80 shrink-0">
       {/* a wall unit, spots beneath */}
@@ -457,7 +484,9 @@ export default function LightingPanel() {
                       od góry tylko — a nie ma od dołu jak półka" — the same
                       strip on the UNDERSIDE of the top, shining down. */}
                   <div className="flex items-start gap-2" data-lighting-tool="top_under">
-                    <LightArt kind="top" />
+                    {/* T48-F7: its OWN drawing — it used to borrow `top`'s, which
+                        shows a strip washing UP off the carcass. */}
+                    <LightArt kind="top_under" />
                     <div className="flex-1 space-y-1">
                       <span className="text-[11px] text-ink-100">{KIND_WORDS.top_under}</span>
                       <button

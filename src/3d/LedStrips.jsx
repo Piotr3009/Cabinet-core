@@ -65,13 +65,31 @@ const HALF_PI = Math.PI / 2;
 // side line (long axis local Y) gets one extra quarter-turn in the plane —
 // the fade stays ACROSS the line, the full strength runs its length.
 const Q_Z90 = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, HALF_PI));
+
+// ─── TURN 48 (CLAUDE.md F7): WHICH WAY A STRIP LOOKS, STATED ────────────────
+//
+// F7 is about `top_under` being drawn by a neighbour's picture in the lighting
+// panel, and asks for the 3-D emission of the same variant to be VERIFIED.
+// It was already right — `top_under` fell into the `else` below and shone DOWN
+// — but "right by falling through" is exactly how the panel's own bug happened
+// one file over: a kind nobody named ended up wearing the answer meant for
+// another. So the two sets are written down. A kind that is in neither still
+// falls to DOWN, which is what a strip does unless somebody says otherwise, and
+// a kind that is in BOTH is a contradiction a reader can see.
+const EMITS_UP = new Set(['top']);                            // -Z → +Y, up the wall
+const EMITS_DOWN = new Set(['shelf', 'bottom', 'top_under']); // -Z → -Y, into the cabinet
+
 function orientation(s) {
   // Returns { q, long: 'x'|'y' } — q aims local -Z along the emit direction,
   // `long` says which LOCAL axis carries the strip's length after q.
   const e = new THREE.Euler();
-  if (s.kind === 'top') e.set(HALF_PI, 0, 0);          // -Z → +Y (up)
-  else if (s.kind === 'side') e.set(0, s.side === 'R' ? HALF_PI : -HALF_PI, 0); // -Z → ∓X (into the cabinet)
-  else e.set(-HALF_PI, 0, 0);                          // shelf, bottom: -Z → -Y (down)
+  const up = EMITS_UP.has(s.kind);
+  // DOWN is the default as well as a list: a strip nobody has classified shines
+  // down, which is what a shelf strip does and what a joiner expects.
+  const down = EMITS_DOWN.has(s.kind) || (!up && s.kind !== 'side');
+  if (up) e.set(HALF_PI, 0, 0);                        // -Z → +Y (up)
+  else if (down) e.set(-HALF_PI, 0, 0);                // -Z → -Y (down)
+  else e.set(0, s.side === 'R' ? HALF_PI : -HALF_PI, 0); // -Z → ∓X (into the cabinet)
   const q = new THREE.Quaternion().setFromEuler(e);
   // Down/up rotations keep local X = world X (the strips run along width);
   // the side rotation keeps local Y = world Y (the line runs top-to-bottom).

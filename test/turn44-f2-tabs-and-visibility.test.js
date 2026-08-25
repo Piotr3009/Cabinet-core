@@ -209,8 +209,15 @@ test('a tab stays clickable once visited, and one ahead of the walk does not', (
   // the room editor and back cannot forget it. The RULE is unchanged: a visited
   // tab is clickable, and one ahead of the walk is not a place you can be.
   assert.match(WIZ, /visited: visited\.includes\(id\) \? visited : \[\.\.\.visited, id\]/);
-  assert.match(WIZ, /visited\.includes\(t\.id\) \? 'visited' : 'ahead'/);
-  assert.match(WIZ, /disabled=\{state === 'ahead'\}/);
+  // ─── TURN 49 (CLAUDE.md F7): …IN A NEW PROJECT ──────────────────────────
+  // *"A NEW project keeps its chain — the steps carry each other and skipping
+  // one would leave a hole."* That is this rule and it is untouched. What
+  // changed is that the EDIT door — an existing project, where everything is
+  // already answered and the owner opens the window to change ONE thing — has
+  // no chain to keep: *"nie potrzebujemy sztywnego lancucha."*
+  assert.match(WIZ, /const ahead = !visited\.includes\(t\.id\);/);
+  assert.match(WIZ, /const canJump = editDoor \|\| !ahead;/);
+  assert.match(WIZ, /disabled=\{!canJump\}/);
 });
 
 test('a head that loses its tab is not left standing on it', () => {

@@ -11,7 +11,7 @@ import { PROJECT_TYPES, getProjectType, heightsForProjectType } from '../engine/
 import { migrateDesign, projectHeights } from '../engine/design.js';
 import { wizardStartBlockers } from '../engine/projectSettings.js';
 import { useHistoryStore } from '../stores/historyStore.js';
-import { WIZARD_STEPS, backStep, stepsInScope } from '../lib/wizardSteps.js';
+import { DEFAULT_SCOPE, WIZARD_STEPS, backStep, stepsInScope } from '../lib/wizardSteps.js';
 import { T44_DEFAULTS } from '../lib/wizardTabs.js';
 
 // ─── New project (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
@@ -19,7 +19,8 @@ import { T44_DEFAULTS } from '../lib/wizardTabs.js';
 // Five steps, and the whole point of them is that a workshop can click STRAIGHT
 // THROUGH on the defaults in about ten seconds. Every answer has one already
 // filled in: the number is proposed, the name and the client are optional, the
-// type is a kitchen, the scope follows the type, the settings are the last set
+// type is a kitchen, the scope is ONE WALL (turn 49, F1 — it used to follow the
+// type, and the owner's answer was "zawsze"), the settings are the last set
 // used or the project's own. Nothing here is a decision that cannot be changed
 // from the menu five minutes later, and the copy says so where it matters.
 //
@@ -63,8 +64,17 @@ export default function NewProjectFlow({
   const [step, setStep] = useState('info');
   const [info, setInfo] = useState({ number: initialNumber, name: '', client: '' });
   const [typeId, setTypeId] = useState(PROJECT_TYPES[0].id);
-  const [scope, setScope] = useState(PROJECT_TYPES[0].scope);
-  const [scopeTouched, setScopeTouched] = useState(false);
+  // ─── TURN 49 (CLAUDE.md F1): ONE WALL, ALWAYS ─────────────────────────────
+  //
+  // *"default powinno sie ustawic na one wall, zawsze."* The flow used to open
+  // on `PROJECT_TYPES[0].scope` — a kitchen, so a whole room — and then the
+  // TYPE wrote the scope again on every touch of a card (`scopeTouched` was the
+  // flag that stopped it overwriting a hand). Both are gone: the opening answer
+  // is `DEFAULT_SCOPE` and nothing but the scope cards ever writes it, which is
+  // what "always" means. The type's own suggestion survives as the SENTENCE on
+  // the scope step — *"A kitchen usually starts as a whole room"* — which is
+  // advice a joiner can take in one click and not a decision taken for him.
+  const [scope, setScope] = useState(DEFAULT_SCOPE);
   const [created, setCreated] = useState(false);
 
   const type = getProjectType(typeId);
@@ -96,6 +106,11 @@ export default function NewProjectFlow({
       newProject(name, { number, client: info.client.trim() });
       setCreated(true);
     }
+    // T49 F1: the scope is written the moment the project exists, so a job
+    // abandoned before step 3 is still a ONE WALL job rather than the engine
+    // default's room. It writes whatever the flow currently holds, so coming
+    // back to step 1 and pressing Next again cannot undo a choice made later.
+    setDesign({ scope });
     setStep('type');
   };
 
@@ -119,7 +134,8 @@ export default function NewProjectFlow({
     if (isWardrobeSeed(type.id)) {
       setProjectHeights({ tall: T44_DEFAULTS.height, toeKick: T44_DEFAULTS.plinth });
     }
-    if (!scopeTouched) setScope(type.scope);
+    // T49 F1: the type no longer writes the scope. It suggests one, on the
+    // scope step, in a sentence.
     setStep('scope');
   };
 
@@ -199,6 +215,10 @@ export default function NewProjectFlow({
     return (
       <RoomModal
         anchor={anchor}
+        // T49 F2: the wizard's door. The canned shapes — Rectangle, L-shape,
+        // + Box — do not render on it: *"a room ustawienie z gory to usun
+        // boxy, to bez sensu."* They are untouched behind the menu door.
+        wizard
         onClose={() => leaveEditor('scope')}
         onApplied={() => leaveEditor('settings')}
       />
@@ -230,7 +250,21 @@ export default function NewProjectFlow({
       footer={(
         <>
           <button type="button" className="cc-btn" onClick={onCancel}>Cancel</button>
-          {index > 0 && (
+          {/* ─── TURN 49 (CLAUDE.md F3): ONE BACK AT A TIME ─────────────────
+              *"jak mamy otwarty modal to inne przyciski z glownego modalu nie
+              powinny byc widoczne, to sie myli."* On STEP 5 the settings
+              sequence draws its own navigation row — a Back that walks the
+              submodal stops and the sub-tabs — and this footer drew a second
+              Back and a second Next an inch under it. The owner pressed the
+              wrong one, and he was right to: two buttons with the same word
+              and different destinations is not a choice anybody can make.
+
+              So on step 5 this footer stands down. It is NOT Back's behaviour
+              that changed — F3 forbids that, and the arithmetic below
+              (`backStep`) is the same function the sequence now calls when it
+              has nowhere of its own left to go. *"jak zniknie 2x back to
+              automatycznie bedzie poprawny back dzialal jak dziala."* */}
+          {index > 0 && step !== 'settings' && (
             <button
               type="button"
               className="cc-btn"
@@ -247,33 +281,23 @@ export default function NewProjectFlow({
             </button>
           )}
             {/* ─── TURN 45 (CLAUDE.md F7): NEXT VALIDATES ONLY THE CURRENT TAB ─
-                T44 disabled this button whenever ANY blocker stood — including
+                T44 disabled step 5's Next whenever ANY blocker stood — including
                 a wardrobe-versus-room conflict answered on tab 5.1 — and said
                 so in a tooltip. That is the hostage: a joiner who had finished
                 the fronts could not go and look at the summary because of a
                 number on another screen, and nothing on the screen told him
-                where to go. What gates this button now is the two container
-                SAVES, which are the tabs' own answer. The conflict is stated
-                AT ITS FIELD with a door beside it, and `Start designing` — the
-                one button that commits — still refuses a job that cannot be
-                built, with the same note and the same door on the summary. */}
-          {step === 'settings' && (
-            <button
-              type="button"
-              className="cc-btn-gold"
-              disabled={!gates.carcasses || !gates.fronts}
-              title={!gates.carcasses || !gates.fronts
-                ? 'Save the carcasses and the fronts to continue'
-                : undefined}
-              // The hook keeps its T44 name: it is still the button that leaves
-              // step 5, and a walk written against either turn finds it.
-              data-next-hardware="1"
-              data-next-summary="1"
-              onClick={() => setStep('summary')}
-            >
-              Next — summary
-            </button>
-          )}
+                where to go. What gates it now is the two container SAVES, which
+                are the tabs' own answer. The conflict is stated AT ITS FIELD
+                with a door beside it, and `Start designing` — the one button
+                that commits — still refuses a job that cannot be built.
+
+                ─── TURN 49 (CLAUDE.md F3): …AND IT IS NOT DRAWN HERE ─────────
+                The gate is unchanged and so is the button: both saves, the same
+                tooltip, the same `data-next-summary` / `data-next-hardware`
+                hooks a walk written against either turn looks for. It is drawn
+                at the END OF THE SEQUENCE'S OWN ROW instead of a second time in
+                this footer, because two Nexts an inch apart is what the owner
+                circled. `WizardSettings` is handed `onStepNext` below. */}
           {/* ─── TURN 45 (CLAUDE.md F4): ONE BUTTON ──────────────────────────
               *"and ONE button: `Start designing`."* `Save as set & start` — and
               the name field it grew in this footer — are REMOVED by name (iron
@@ -294,7 +318,14 @@ export default function NewProjectFlow({
         </>
       )}
     >
-      <div className="space-y-4">
+      <div
+        className="space-y-4"
+        // T49 F3: which step this is, and where the two container gates stand.
+        // The walk reads them rather than inferring them from a disabled
+        // button — the button it used to read is now the sequence's own.
+        data-wizard-step={step}
+        data-wizard-gates={`${gates.carcasses ? 'carcasses' : ''}${gates.carcasses && gates.fronts ? '+' : ''}${gates.fronts ? 'fronts' : ''}` || 'none'}
+      >
         <Steps current={step} scope={scope} />
 
         {step === 'info' && (
@@ -374,7 +405,7 @@ export default function NewProjectFlow({
                   className={`border rounded p-2.5 text-left transition-colors ${typeId === t.id
                     ? 'border-gold bg-shell-700'
                     : 'border-shell-600 hover:bg-shell-700'}`}
-                  onClick={() => { setTypeId(t.id); if (!scopeTouched) setScope(t.scope); }}
+                  onClick={() => setTypeId(t.id)}
                   onDoubleClick={commitType}
                 >
                   <span className="block text-sm text-ink-50">{t.label}</span>
@@ -416,7 +447,6 @@ export default function NewProjectFlow({
                     : 'border-shell-600 hover:bg-shell-700'}`}
                   onClick={() => {
                     setScope(id);
-                    setScopeTouched(true);
                     // One wall goes STRAIGHT to the wall (F1). Whole room waits
                     // for Next, exactly as it did, because the plan editor is a
                     // bigger decision than a click on a card.
@@ -454,6 +484,16 @@ export default function NewProjectFlow({
             walk={walk}
             onWalk={setWalk}
             onJump={jumpTo}
+            // T49 F3: the ONE navigation row. When the sequence has nowhere of
+            // its own left to go it reaches the STEP either side of it, through
+            // exactly the arithmetic this footer used (`backStep`) and exactly
+            // the destination its Next had.
+            onStepBack={() => setStep(backStep(step, scope))}
+            onStepNext={() => setStep('summary')}
+            // The WORDS stay this file's: it is the step that knows where its
+            // Next goes, and "Next — summary" is what the button has said since
+            // T45 F4 replaced step 6 with the summary.
+            stepNextLabel="Next — summary"
           />
         )}
 

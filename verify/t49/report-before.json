@@ -1,0 +1,46 @@
+{
+ "steps": [
+  {
+   "label": "BEFORE — the carcass material dialog has the board and NO sheet size",
+   "ok": true,
+   "detail": "{\"board\":1,\"sheet\":0,\"options\":[],\"stops\":[\"count\",\"c1\",\"sheets\",\"summary\"]}"
+  },
+  {
+   "label": "BEFORE — the front colour dialog has the board and NO sheet size",
+   "ok": true,
+   "detail": "{\"board\":1,\"sheet\":0,\"options\":[],\"strip\":3,\"stops\":[\"count\",\"f1\",\"sheets\",\"tail\"]}"
+  }
+ ],
+ "shots": [
+  {
+   "name": "before-carc-1-count.png",
+   "note": "carcasses · stop 1 — how many types",
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "before-carc-2-material-dialog.png",
+   "note": "carcasses · DIALOG 2 (T48) — the board, and no sheet size",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true}"
+  },
+  {
+   "name": "before-carc-3-sheets-stop.png",
+   "note": "carcasses · DIALOG 3 (T48) — the board AGAIN, and the sheet size",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true,\"text\":true}"
+  },
+  {
+   "name": "before-front-2-colour-dialog.png",
+   "note": "fronts · DIALOG 2 (T48) — the colour and the board, and no sheet size",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true}"
+  },
+  {
+   "name": "before-front-3-sheets-stop.png",
+   "note": "fronts · DIALOG 3 (T48) — the board AGAIN, and the sheet size",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true,\"text\":true}"
+  }
+ ]
+}

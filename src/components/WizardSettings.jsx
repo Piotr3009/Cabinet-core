@@ -155,6 +155,14 @@ function ChosenRow({ who, hex, thumb, text }) {
 
 export default function WizardSettings({
   onRoomSetup, onGate, door = 'wizard', walk = null, onWalk = null, onJump = null,
+  // ─── TURN 49 (CLAUDE.md F3): THE ONE NAVIGATION ROW ───────────────────────
+  // Given these, the sequence's own footer is the ONLY one on the screen: the
+  // wizard's step-5 footer stands down and hands over the two ends of its walk.
+  // `onStepBack` is called where the sequence has no earlier tab of its own —
+  // 5.1 — and `onStepNext` where it has no later one. Left out (the Settings ▸
+  // Project settings door, which is not inside a wizard step) the row behaves
+  // exactly as it did.
+  onStepBack = null, onStepNext = null, stepNextLabel = 'Next — summary',
 }) {
   // ─── TURN 36 (CLAUDE.md F1): TWO DOORS, ONE FORM ──────────────────────────
   //
@@ -682,6 +690,87 @@ export default function WizardSettings({
     );
   };
 
+  // ─── TURN 49 (CLAUDE.md F4 / F6): THE SHEET, WITH THE BOARD ──────────────
+  //
+  // The owner, 25.08.2026, of the carcasses: *"przy carcasach jest 2 stopnie
+  // wybierania … a dlaczego nie dodac rozmiar plyty w pierwszym modalu i drugi
+  // usunac, jeden mniej bedzie."* And the warning that came with it, which is
+  // iron rule 3's case in point: *"jest funkcja wyboru materials size, jumbo
+  // etc — tez trzeba bedzie przeniesc do pierwszego wyboru materialow, inaczej
+  // zniknie nam ta funkcja."*
+  //
+  // So this is that function, moved and not lost. It is the SAME `SheetSizeRow`
+  // the old stop drew and the Settings menu draws — imported from
+  // `SettingsPanel.jsx`, one implementation, never a copy — writing the same
+  // `profile.cnc.sheetCarcass` / `sheetFronts`, with every option it has ever
+  // had (the profile's `sheetOptions`, jumbo among them, and `Other…` with its
+  // two typed numbers). What changed is which screen it stands on: the one that
+  // already asks which board this is.
+  //
+  // It keeps the removed stop's own DOM hooks — `data-sheets-assignment`,
+  // `data-sheet-assign` and the `carcases.sheets` / `fronts.sheets` nodes — so
+  // a walk written against T44 or T45 finds the control where the joiner now
+  // finds it, and the audience filter is the same filter.
+  //
+  // ONE ROW PER FAMILY, shown in each of that family's dialogs: a sheet size is
+  // a fact about what the shop can BUY, not about one slot, and it has never
+  // been per-type. Three carcass dialogs show one answer three times, which is
+  // the truth; three answers would not be.
+  // The two families are written OUT, not folded into one parameterised row.
+  // Every literal the old stops carried — `family="carcasses"`, `sheetCarcass:
+  // size`, `data-sheets-assignment` and their front-side twins — is still a
+  // literal in this file, which is how the tests written against T36, T44 and
+  // T45 can go on asking for the control by the words it was written in. A
+  // clever ternary would have moved the control and hidden it from its own
+  // proofs at the same time, which is the pair of things iron rule 3 exists to
+  // stop happening together.
+  const sheetSizeRow = (kind, t) => {
+    if (kind === 'carcass') {
+      if (!show('carcases.sheets')) return null;
+      return (
+        <div
+          className="space-y-1 border-t border-dashed border-shell-600 pt-2"
+          data-wizard-node="carcases.sheets"
+          data-sheets-assignment="1"
+          data-sheet-assign={t.id}
+        >
+          <SheetSizeRow
+            family="carcasses"
+            label="Carcasses"
+            hint="Sides, tops, bottoms, backs, shelves, infills and plinths."
+            profile={profile}
+            onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetCarcass: size } })}
+          />
+          <p className="text-[10px] text-ink-400">
+            The biggest sheet the shop can buy this board in — jumbo included. One answer for every
+            carcass board, asked here because this is where the board is chosen.
+          </p>
+        </div>
+      );
+    }
+    if (!show('fronts.sheets')) return null;
+    return (
+      <div
+        className="space-y-1 border-t border-dashed border-shell-600 pt-2"
+        data-wizard-node="fronts.sheets"
+        data-front-sheets-assignment="1"
+        data-front-sheet-assign={t.id}
+      >
+        <SheetSizeRow
+          family="fronts"
+          label="Fronts"
+          hint="Doors, drawer fronts, end panels and masking boards."
+          profile={profile}
+          onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetFronts: size } })}
+        />
+        <p className="text-[10px] text-ink-400">
+          The biggest sheet the shop can buy this board in — jumbo included. One answer for every
+          front board, asked here because this is where the board is chosen.
+        </p>
+      </div>
+    );
+  };
+
   // ─── TURN 44 (CLAUDE.md F4): THE PICKER, REBUILT AND RELOCATED ───────────
   //
   // The owner on the shipped one: *"okno w oknie, przesuwamy, nic nie widać,
@@ -694,7 +783,7 @@ export default function WizardSettings({
   // arguments, same source resolution, same handlers, and the same stock-board
   // select standing under whichever body the category asks for. What changed is
   // what it hands back — which is the restructure this turn licences.
-  const slotPicker = (kind, t, { title = null, footer = null } = {}) => {
+  const slotPicker = (kind, t, { title = null, footer = null, sheets = false } = {}) => {
     const list = kind === 'carcass' ? carcassSources(profile) : frontSources(profile);
     const src = sourceById(list, t.source) || sourceById(list, kind === 'carcass' ? 'egger' : 'laminate');
     const picker = pickerForSource(src);
@@ -712,6 +801,8 @@ export default function WizardSettings({
           categoryStrip={sourceSeg(kind, t, { big: true })}
           boardSelect={show(kind === 'carcass' ? 'carcases.stock-board' : 'fronts.picker')
             && showBoard ? stockBoardSelect(kind, t) : null}
+          // T49 F4/F6: …and the sheet it is bought in, under it.
+          sheetSize={sheets ? sheetSizeRow(kind, t) : null}
           value={t.finish_id}
           colour={kind === 'carcass' ? design.colour.carcass : t.colour}
           onDecor={(id) => (kind === 'carcass'
@@ -769,10 +860,22 @@ export default function WizardSettings({
   // question, then one per chosen type, then the tab's own tail. The list is
   // derived from the types rather than remembered, so changing the count from 3
   // to 1 cannot strand the walk on a type that no longer exists.
+  // ─── TURN 49 (CLAUDE.md F4): THE CARCASS ASKS ONCE ───────────────────────
+  //
+  // *"przy carcasach jest 2 stopnie wybierania … a dlaczego nie dodac rozmiar
+  // plyty w pierwszym modalu i drugi usunac, jeden mniej bedzie."*
+  //
+  // The walk was: pick Egger, then a stock board, then THE STOCK BOARD AGAIN
+  // with the sheet size beside it. The middle screen asked nothing the first
+  // one had not already asked; only the sheet was new. So the stop is gone and
+  // the sheet moved UP into the material dialog (`sheetSizeRow` above), where
+  // the board it is a sheet of is already being chosen.
+  //
+  // The dialog AFTER it — the dog bones and the CNC corner — is untouched:
+  // *"to tak musi byc, to zostaw."*
   const carcStops = [
     'count',
     ...carcassTypes.map((t) => t.id),
-    ...(show('carcases.sheets') ? ['sheets'] : []),
     'summary',
   ];
   const carcAt = carcStops.includes(carcStop) ? carcStop : 'count';
@@ -780,30 +883,38 @@ export default function WizardSettings({
   const carcSubmodalNo = carcTypeAt ? carcassTypes.indexOf(carcTypeAt) + 1 : 0;
   const carcStopLabel = (stop) => {
     if (stop === 'count') return 'How many types';
-    if (stop === 'sheets') return 'Sheets assignment';
     if (stop === 'summary') return 'What was chosen';
-    return carcassTypes.find((t) => t.id === stop)?.label || 'Material';
+    // T49 F4: a type's own dialog now says what it asks — the board AND its
+    // sheet, which is the whole reason the second stop could go.
+    return `${carcassTypes.find((t) => t.id === stop)?.label || 'Material'} — board and sheet`;
   };
 
-  // T45 F6: the fronts get their own SHEETS stop, mirroring the carcasses'.
-  // The sheet-size picker is removed from Production by name (iron rule 4) and
-  // *"lives at the material step"* — the carcasses' has stood at theirs since
-  // T44, and this is the fronts'. Nothing was taken away; a row moved to the
-  // screen that already asks which board this is.
+  // ─── TURN 49 (CLAUDE.md F6): THE FRONTS' 2 AND 3 BECOME ONE ──────────────
+  //
+  // *"modal front nr 2 i 3 moze byc polaczony … tak samo jak Carcases."*
+  //
+  // T45 F6 gave the fronts a SHEETS stop of their own, mirroring the
+  // carcasses' — which was right then and is the same repeat now that F4 has
+  // shown what it was: the stop re-drew the stock-board select each colour
+  // dialog had already drawn, and only the sheet was new. So it gets the same
+  // treatment, and the sheet stands under the board in the colour dialog
+  // (`sheetSizeRow` above), keeping every hook and the `fronts.sheets` node.
   const frontStops = [
     'count',
     ...frontTypes.map((t) => t.id),
-    ...(show('fronts.sheets') ? ['sheets'] : []),
     'tail',
   ];
   const frontAt = frontStops.includes(frontStop) ? frontStop : 'count';
   const frontTypeAt = frontTypes.find((t) => t.id === frontAt) || null;
   const frontSubmodalNo = frontTypeAt ? frontTypes.indexOf(frontTypeAt) + 1 : 0;
   const frontStopLabel = (stop) => {
-    if (stop === 'count') return 'How many colours';
-    if (stop === 'sheets') return 'Sheets assignment';
+    // T49 F5: the first stop asks for the NUMBER and the TYPE — the owner's own
+    // heading, and the dot's tooltip says the same as the screen.
+    if (stop === 'count') return 'How many types and colours';
     if (stop === 'tail') return 'Shape, opening and shine';
-    return frontTypes.find((t) => t.id === stop)?.label || 'Colour';
+    // T49 F6: a colour's own dialog says what it asks — the colour, the board
+    // AND its sheet, which is the whole reason the third stop could go.
+    return `${frontTypes.find((t) => t.id === stop)?.label || 'Colour'} — colour, board and sheet`;
   };
 
   // ─── T44 F5: WHICH OF THE FOUR OPENINGS THIS JOB IS ON ────────────────────
@@ -928,8 +1039,38 @@ export default function WizardSettings({
   } else if (nextTab) {
     nextTarget = nextTab;
     nextLabel = `Next — ${labelOf(nextTab)}`;
+  } else if (onStepNext) {
+    // ─── T49 F3: THE END OF THE SEQUENCE IS THE END OF THE STEP ────────────
+    // T45 ended the walk on a sentence — *"the wizard's own footer goes on to
+    // the summary"* — because that footer really did carry a second Next. It
+    // does not any more, so the chain the joiner has been walking ends where
+    // that button went, with the SAME gate (both containers saved), the same
+    // sentence and the same DOM hooks a walk written against T44 or T45 looks
+    // for. One row, one Next, and it means what it says.
+    nextTarget = 'step';
+    nextLabel = stepNextLabel;
+    nextBlocked = !carcSaved || !frontsSaved;
+    nextHint = nextBlocked ? 'Save the carcasses and the fronts to continue' : '';
+    goNext = onStepNext;
   } else {
-    nextHint = 'Everything is answered — the wizard’s own footer goes on to the summary.';
+    nextHint = 'Everything is answered.';
+  }
+  // T49 F7: through the EDIT door the chain is a convenience and not a road —
+  // the strip above jumps anywhere, and the footer commits from where you are.
+  if (editDoor && !nextBlocked) {
+    nextHint = 'Every step above is one click away — change what you came for and press Update and save.';
+  }
+
+  // ─── T49 F3: …AND THE BACK AT THE START OF IT IS THE STEP'S ───────────────
+  // On 5.1 there is no earlier TAB, so this row's Back used to be a dead grey
+  // button with a live one an inch below it. It is the live one now, and it
+  // calls the flow's own `backStep(step, scope)` — the arithmetic F3 forbids
+  // touching, untouched. Everything else about Back is exactly where it was:
+  // inside a container's walk it steps back one submodal stop, and between tabs
+  // it steps back one tab.
+  if (!backTarget && onStepBack) {
+    backTarget = 'step';
+    goBack = onStepBack;
   }
 
   return (
@@ -946,18 +1087,34 @@ export default function WizardSettings({
           Ustawienia must never mean walking the whole thing again — and one
           ahead of the walk is not yet a place you can be. `visibleTabs` does
           the renumbering, so retail's five read 1…5 rather than 1,2,3,4,6. */}
-      <ol className="flex items-center gap-1 flex-wrap text-[11px]" data-wizard-tabs="1">
+      <ol className="flex items-center gap-1 flex-wrap text-[11px]" data-wizard-tabs="1" data-wizard-jumpable={editDoor ? '1' : '0'}>
         {tabs.map((t, i) => {
-          const state = t.id === tab ? 'current' : (visited.includes(t.id) ? 'visited' : 'ahead');
+          // ─── TURN 49 (CLAUDE.md F7): EDITING IS NOT A CHAIN ───────────────
+          //
+          // *"jak juz mamy edit setup to powinno byc mozliwosc przeskakiwania z
+          // 5.1 do 5.4 etc, bo juz bylo ustawione i nie potrzebujemy sztywnego
+          // lancucha — bo zmieniamy tylko niektore itemy."*
+          //
+          // A NEW project keeps its chain: the steps carry each other and
+          // skipping one would leave a hole, which is why a tab one AHEAD of
+          // the walk is not yet a place you can be. An EXISTING project is the
+          // opposite case — everything is already answered, and the owner opens
+          // this window to change ONE thing. So through the EDIT door every tab
+          // is a place you can be, in any order, back and forth, and it reads
+          // as one: an answered step is `visited`, which it is.
+          const ahead = !visited.includes(t.id);
+          const state = t.id === tab ? 'current' : ((editDoor || !ahead) ? 'visited' : 'ahead');
+          const canJump = editDoor || !ahead;
           return (
             <li key={t.id} className="flex items-center gap-1">
               <button
                 type="button"
-                title={t.hint}
+                title={editDoor ? `${t.hint} — jump straight here` : t.hint}
                 data-wizard-tab={t.id}
                 data-tab-state={state}
+                data-tab-jump={canJump ? '1' : '0'}
                 data-tab-number={tabNumber(t.n)}
-                disabled={state === 'ahead'}
+                disabled={!canJump}
                 className={`px-2 py-1 rounded border transition-colors ${state === 'current'
                   ? 'border-gold text-gold bg-shell-700'
                   : (state === 'visited'
@@ -1327,7 +1484,10 @@ export default function WizardSettings({
                   title={carcStopLabel(stop)}
                   data-carcass-dot={stop}
                   data-dot-state={stop === carcAt ? 'current' : (carcStops.indexOf(stop) < carcStops.indexOf(carcAt) ? 'done' : 'ahead')}
-                  disabled={carcStops.indexOf(stop) > carcStops.indexOf(carcAt)}
+                  // T49 F7: the same ruling one level down. A new project walks
+                  // its chain; an existing one is already answered, so through
+                  // the EDIT door a dot ahead of the walk is a place you can be.
+                  disabled={!editDoor && carcStops.indexOf(stop) > carcStops.indexOf(carcAt)}
                   className={`w-2.5 h-2.5 rounded-full border ${stop === carcAt
                     ? 'bg-gold border-gold'
                     : (carcStops.indexOf(stop) < carcStops.indexOf(carcAt) ? 'bg-shell-600 border-shell-600' : 'border-shell-600')}`}
@@ -1390,6 +1550,9 @@ export default function WizardSettings({
             <div data-wizard-node="carcases.picker" data-carcass-submodal={carcTypeAt.id}>
               {slotPicker('carcass', carcTypeAt, {
                 title: `${carcTypeAt.label} — ${carcSubmodalNo} of ${carcassTypes.length}`,
+                // T49 F4: the sheet size, in the FIRST dialog. The second one
+                // is gone and this is where everything it owned now stands.
+                sheets: true,
                 footer: show('carcases.drawers') ? (
                   <div data-wizard-node="carcases.drawers">
                             {/* drawer boxes — asked once per project (T32 F7), lives with the boxes */}
@@ -1417,29 +1580,23 @@ export default function WizardSettings({
             </div>
           )}
 
-          {carcAt === 'sheets' && show('carcases.sheets') && (
-            <div data-wizard-node="carcases.sheets" className="space-y-2" data-sheets-assignment="1">
-              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Sheets assignment</span>
-              <p className="text-[11px] text-ink-400">
-                Which board each carcass type is cut from, and the biggest sheet the shop can buy it in.
-                The same machinery as ever — relocated, and asked once the materials are chosen.
-              </p>
-              {carcassTypes.map((t) => (
-                <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1" data-sheet-assign={t.id}>
-                  <span className="text-[11px] text-ink-50">{t.label}</span>
-                  {stockBoardSelect('carcass', t)}
-                </div>
-              ))}
-              <SheetSizeRow
-                family="carcasses"
-                label="Carcasses"
-                hint="Sides, tops, bottoms, backs, shelves, infills and plinths."
-                profile={profile}
-                onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetCarcass: size } })}
-              />
-            </div>
-          )}
+          {/* ─── TURN 49 (CLAUDE.md F4 / iron rule 4): THE SECOND STOP IS GONE ─
+              It drew, in order: a heading, a sentence, one `stockBoardSelect`
+              per carcass type — the SAME select the material dialog had already
+              drawn for the type the joiner was standing in — and the carcasses'
+              `SheetSizeRow`. Everything but the sheet was a repeat; the sheet
+              was the one thing that was not, and it is why the merge had to
+              carry it rather than drop it (*"inaczej zniknie nam ta funkcja"*).
 
+              Where each of them lives now:
+                · Stock board select     → the material dialog, per type, where
+                                           it has ALSO stood since T34.
+                · Board thickness gate   → with it, unchanged.
+                · Sheet size (jumbo etc.)→ the material dialog, `sheetSizeRow`,
+                                           with every option it ever had.
+                · `carcases.sheets` node → the same id on that block, so the
+                                           audience filter is the same filter.
+              `scripts/t49-classify.mjs --survivors` asserts all four by hook. */}
           {carcAt === 'summary' && (
             <>
               {show('carcases.cnc-corner') && (
@@ -1558,7 +1715,9 @@ export default function WizardSettings({
                   title={frontStopLabel(stop)}
                   data-front-dot={stop}
                   data-dot-state={stop === frontAt ? 'current' : (frontStops.indexOf(stop) < frontStops.indexOf(frontAt) ? 'done' : 'ahead')}
-                  disabled={frontStops.indexOf(stop) > frontStops.indexOf(frontAt)}
+                  // T49 F7: as the carcasses' dots — jumpable through the EDIT
+                  // door, a strict chain in a new project.
+                  disabled={!editDoor && frontStops.indexOf(stop) > frontStops.indexOf(frontAt)}
                   className={`w-2.5 h-2.5 rounded-full border ${stop === frontAt
                     ? 'bg-gold border-gold'
                     : (frontStops.indexOf(stop) < frontStops.indexOf(frontAt) ? 'bg-shell-600 border-shell-600' : 'border-shell-600')}`}
@@ -1571,7 +1730,20 @@ export default function WizardSettings({
 
           {frontAt === 'count' && show('fronts.count') && (
             <div data-wizard-node="fronts.count" className="space-y-2">
-              <p className="text-sm text-ink-100">How many front colours?</p>
+              {/* ─── TURN 49 (CLAUDE.md F5): TYPES FIRST, COLOURS LATER ──────
+                  The owner, 25.08.2026: *"na pierwszym etapie wybieramy type of
+                  fronts, a pozniej next etapy kolory."*
+
+                  His heading, in his words, and BIGGER than T44's 13 px line —
+                  it is the question the screen is asking, not a caption over
+                  it. What he picks here is the NUMBER and the TYPE (the shape:
+                  slab, shaker, J-pull…), and nothing else: the category strip
+                  that stood in every card — Spraying / Veneer / Laminate — is
+                  a COLOUR question, and it belongs to the steps that follow.
+                  It is not lost: it is the FULL-WIDTH strip at the top of each
+                  front's own colour dialog, where it has stood since T44 F4 and
+                  where it is four times the size it was in the card. */}
+              <p className="text-base text-ink-50" data-fronts-heading="1">How many types and colours?</p>
                       <div className="cc-row" data-wizard-fronts="1">
                         <span className="text-[11px] text-ink-200">How many front types in this project?</span>
                         {[1, 2, 3].map((n) => (
@@ -1617,13 +1789,17 @@ export default function WizardSettings({
                                   </span>
                                 </span>
                               </button>
+                              {/* T49 F5: the source strip is GONE from this card
+                                  — no colour picker and no laminate list at this
+                                  stage. What is left is the way ON to the colour,
+                                  which is navigation and not a choice. */}
                               <div className="cc-row">
-                                {sourceSeg('front', t)}
                                 <span className="flex-1" />
                                 <button
                                   type="button"
                                   className={`cc-btn px-2 ${matOpen ? 'border-gold text-gold' : ''}`}
                                   data-material-slot={`front:${t.id}`}
+                                  title="Its colour and its board — the next step of this walk"
                                   onClick={() => setFrontStop(t.id)}
                                 >
                                   Choose…
@@ -1688,34 +1864,30 @@ export default function WizardSettings({
             <div data-wizard-node="fronts.picker" data-front-submodal={frontTypeAt.id}>
               {slotPicker('front', frontTypeAt, {
                 title: `${frontTypeAt.label} — ${frontSubmodalNo} of ${frontTypes.length}`,
+                // T49 F6: the sheet size, in the SAME dialog as the colour and
+                // the board. Modal 3 is gone and this is where it now stands.
+                sheets: true,
               })}
             </div>
           )}
 
-          {frontAt === 'sheets' && show('fronts.sheets') && (
-            <div data-wizard-node="fronts.sheets" className="space-y-2" data-front-sheets-assignment="1">
-              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Sheets assignment</span>
-              <p className="text-[11px] text-ink-400">
-                Which board each front type is cut from, and the biggest sheet the shop can buy it in. The
-                same machinery the carcasses' own stop has carried since T44 — relocated out of Production
-                (T45 F6) and asked once the colours are chosen.
-              </p>
-              {frontTypes.map((t) => (
-                <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1" data-front-sheet-assign={t.id}>
-                  <span className="text-[11px] text-ink-50">{t.label}</span>
-                  {stockBoardSelect('front', t)}
-                </div>
-              ))}
-              <SheetSizeRow
-                family="fronts"
-                label="Fronts"
-                hint="Doors, drawer fronts, end panels and masking boards."
-                profile={profile}
-                onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetFronts: size } })}
-              />
-            </div>
-          )}
+          {/* ─── TURN 49 (CLAUDE.md F6 / iron rule 4): THE THIRD STOP IS GONE ─
+              *"modal front nr 2 i 3 moze byc polaczony … tak samo jak
+              Carcases."* It drew a heading, a sentence, one `stockBoardSelect`
+              per front type — the SAME select the colour dialog had already
+              drawn for the type the joiner was standing in — and the fronts'
+              `SheetSizeRow`. Everything but the sheet was a repeat.
 
+              Where each of them lives now:
+                · Stock board select      → the colour dialog, per type, where it
+                                            has ALSO stood since T34.
+                · Front thickness gate    → with it, unchanged, and it still
+                                            re-cuts every door in the job.
+                · Sheet size (jumbo etc.) → the colour dialog, `sheetSizeRow`,
+                                            with every option it ever had.
+                · `fronts.sheets` node    → the same id on that block, so the
+                                            audience filter is the same filter.
+              `scripts/t49-classify.mjs --survivors` asserts all four by hook. */}
           {frontAt === 'tail' && (
             <>
               {/* ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE TAIL REPEAT GOES ──
@@ -1767,8 +1939,9 @@ export default function WizardSettings({
                         <SheenSlider design={design} setDesign={setDesign} profile={profile} />
                   <p className="text-[10px] text-ink-400">
                     The shine reaches the 3D material: `roughness = 1 − sheen ÷ 100`, on every sprayed
-                    surface in the scene (src/3d/materials.js). A laminate is a foil and keeps the sheen
-                    that came on the board.
+                    AND VENEERED surface in the scene (src/3d/materials.js, T49 F9 — a veneer is a
+                    timber face under lacquer and the gloss of that lacquer is this number). A laminate
+                    is a foil and keeps the sheen that came on the board.
                   </p>
                 </div>
               )}
@@ -2404,6 +2577,7 @@ export default function WizardSettings({
           type="button"
           className="cc-btn px-3"
           data-tab-back="1"
+          data-tab-back-target={backTarget || undefined}
           disabled={!backTarget}
           onClick={goBack}
         >
@@ -2415,6 +2589,12 @@ export default function WizardSettings({
             type="button"
             className="cc-btn-gold px-3"
             data-tab-next="1"
+            data-tab-next-target={nextTarget}
+            // T49 F3: the step-5 Next, drawn HERE now. It keeps both of the
+            // hooks the wizard's footer carried, so a walk written against T44
+            // ("next hardware") or T45 ("next summary") finds the same button.
+            data-next-hardware={nextTarget === 'step' ? '1' : undefined}
+            data-next-summary={nextTarget === 'step' ? '1' : undefined}
             disabled={nextBlocked}
             title={nextBlocked ? nextHint : undefined}
             onClick={goNext}

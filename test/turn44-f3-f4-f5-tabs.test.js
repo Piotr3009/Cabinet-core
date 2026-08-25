@@ -144,11 +144,22 @@ test('F4 — the drawers question closes each submodal, and writes the BOM’s f
   assert.match(WIZ, /\['same', 'Same board as carcass'\], \['ready', 'Ready-made system'\]/);
 });
 
-test('F4 — the sheets assignment comes AFTER the last submodal, factory only', () => {
-  assert.match(WIZ, /\.\.\.\(show\('carcases\.sheets'\) \? \['sheets'\] : \[\]\),/);
+test('F4 — the sheets assignment is asked once, IN the material dialog, factory only', () => {
+  // ─── TURN 49 (CLAUDE.md F4): THE SECOND STOP WENT ────────────────────────
+  // *"przy carcasach jest 2 stopnie wybierania … a dlaczego nie dodac rozmiar
+  // plyty w pierwszym modalu i drugi usunac, jeden mniej bedzie."* T44 put the
+  // sheets on a stop of their OWN, after the last submodal; that stop also
+  // re-drew the stock-board select the submodal had already drawn, and only the
+  // sheet was new. So the stop is gone and the sheet is in the first dialog —
+  // where the board it is a sheet of is chosen — with every hook it had.
+  assert.doesNotMatch(WIZ, /\.\.\.\(show\('carcases\.sheets'\) \? \['sheets'\] : \[\]\),/);
   assert.match(WIZ, /data-sheets-assignment="1"/);
   assert.match(WIZ, /data-sheet-assign=\{t\.id\}/);
   assert.match(WIZ, /family="carcasses"/);
+  assert.match(WIZ, /data-wizard-node="carcases\.sheets"/, 'same node, same audience filter');
+  // …and it is drawn because the material dialog ASKED for it.
+  assert.match(WIZ, /sheetSize=\{sheets \? sheetSizeRow\(kind, t\) : null\}/);
+  assert.match(WIZ, /sheets: true,/);
 });
 
 test('F4 — the tab ends with a summary of the chosen types', () => {
@@ -163,7 +174,9 @@ test('F5 — the same procedure, asked in the owner’s words', () => {
   // T45 F8, by name: `Ile kolorów frontów? → How many front colours?`. The
   // owner's own words survive in the comment above the block, which is where
   // the evidence belongs; the SCREEN speaks English.
-  assert.match(WIZ, /How many front colours\?/);
+  // T49 F5 re-worded it on the owner's order — types first, colours later —
+  // and made it bigger. It is still English, which is what F8's law asks.
+  assert.match(WIZ, /How many types and colours\?/);
   assert.doesNotMatch(WIZ, /<p className="text-sm text-ink-100">Ile /);
   assert.match(WIZ, /data-front-count=\{n\}/);
   assert.match(WIZ, /data-front-dots="1"/);
@@ -172,7 +185,10 @@ test('F5 — the same procedure, asked in the owner’s words', () => {
   // carcasses' — the sheet-size picker left Production by name (iron rule 4)
   // and lives at the material step.
   assert.match(WIZ, /\.\.\.frontTypes\.map\(\(t\) => t\.id\),/);
-  assert.match(WIZ, /\.\.\.\(show\('fronts\.sheets'\) \? \['sheets'\] : \[\]\),/);
+  // T49 F6 merges the fronts' modals 2 and 3 exactly as F4 merged the
+  // carcasses' — the stop is gone, the sheet row is in the colour dialog.
+  assert.doesNotMatch(WIZ, /\.\.\.\(show\('fronts\.sheets'\) \? \['sheets'\] : \[\]\),/);
+  assert.match(WIZ, /data-front-sheets-assignment="1"/);
   assert.match(WIZ, /'tail',\n  \];/);
 });
 
@@ -243,7 +259,12 @@ test('F5 — the SHINE reaches the 3D material: the formula is the engine’s', 
   // so the slider and the scene cannot disagree about what a 60 looks like.
   assert.match(WIZ, /<SheenSlider design=\{design\} setDesign=\{setDesign\} profile=\{profile\} \/>/);
   const mats = readFileSync(new URL('../src/3d/materials.js', import.meta.url), 'utf8');
-  assert.match(mats, /roughness: sprayed && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
+  // ─── TURN 49 (CLAUDE.md F9): SPRAY *AND VENEER* ─────────────────────────
+  // *"suwak powinien dzialac tylko na spray i veneer, nie na laminat."* The
+  // gate widened by one word; the FORMULA — which is what this test is about —
+  // did not move, and it is still the engine's one function.
+  assert.match(mats, /roughness: sheenDriven && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
+  assert.match(mats, /const sheenDriven = sprayed \|\| veneer;/);
   assert.equal(roughnessFromSheen(5, P).toFixed(2), '0.95', 'dead matt');
   assert.equal(roughnessFromSheen(100, P).toFixed(2), '0.00', 'full gloss');
   assert.notEqual(roughnessFromSheen(5, P), roughnessFromSheen(100, P), 'matte and shine are different surfaces');

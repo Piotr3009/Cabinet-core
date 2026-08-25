@@ -84,7 +84,17 @@ test('the step-5 Next waits for BOTH saves — and for nothing else', () => {
   // held a joiner on step 5 for a number answered on another screen and said
   // so in a tooltip. That conflict is stated at its field now, with a door
   // beside it, and `Start designing` still refuses a job that cannot be built.
-  assert.match(flow, /disabled=\{!gates\.carcasses \|\| !gates\.fronts\}/);
+  //
+  // ─── TURN 49 (CLAUDE.md F3): THE SAME GATE, ONE ROW LOWER ────────────────
+  // The button moved — the wizard's footer drew a second Back and a second
+  // Next an inch under the sequence's own row, and the owner pressed the wrong
+  // one — so the gate is asserted where the button now is. It is the SAME
+  // gate: both containers saved, and nothing else.
+  const wiz = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
+  assert.match(wiz, /nextBlocked = !carcSaved \|\| !frontsSaved;/);
+  assert.match(wiz, /'Save the carcasses and the fronts to continue'/);
+  // …and the flow is still told where the two saves stand.
+  assert.match(flow, /onGate=\{\(carcasses, fronts\) => setGates\(\{ carcasses, fronts \}\)\}/);
 });
 test('the footer is ONE button now, and it starts AT ONCE', () => {
   // ─── TURN 45 (CLAUDE.md F4 / iron rule 4) ────────────────────────────────

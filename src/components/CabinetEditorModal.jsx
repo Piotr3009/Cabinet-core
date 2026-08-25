@@ -18,6 +18,8 @@ import useContextGuard from '../3d/contextGuard.jsx';
 import { Environment } from '../3d/Scene.jsx';
 import { mm } from '../3d/constants.js';
 import { surfaceFor, outlineFor } from '../3d/materials.js';
+// T49 F9: whether this piece is cut from a veneered board (lib, not engine).
+import { panelIsVeneered } from '../lib/veneerSheen.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -856,8 +858,11 @@ function ExplodingPart({
     // has been coming out white in this window since turn 12.
     frontColour: own ? (own.colour?.hex || null) : (unitDesign?.colour?.hex || null),
     sheen,
+    // T49 F9: veneer answers the slider too — asked of the slot, because a
+    // front veneer is stored as the decor it borrows its picture from.
+    veneered: design ? panelIsVeneered(p, unit, design) : false,
     ...(own ? { finish: own.finish } : {}),
-  }), [p, finishes, profile, unitDesign, sheen, own]);
+  }), [p, unit, design, finishes, profile, unitDesign, sheen, own]);
 
   // The selected part goes gold, the same signal a dragged shelf gives in the
   // room — one colour for "this is the one you have hold of" (rule 14 territory:

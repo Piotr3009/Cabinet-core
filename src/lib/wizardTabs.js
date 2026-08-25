@@ -65,7 +65,7 @@ export const WIZARD_TABS = [
     id: 'carcases', n: 2, label: 'Carcases', audience: 'both', hint: 'How many carcass materials, and which',
   },
   {
-    id: 'fronts', n: 3, label: 'Fronts', audience: 'both', hint: 'How many front colours, the shape, the opening and the shine',
+    id: 'fronts', n: 3, label: 'Fronts', audience: 'both', hint: 'How many types and colours, the shape, the opening and the shine',
   },
   {
     id: 'hardware', n: 4, label: 'Hardware', audience: 'both', hint: 'Hinges, runners, metals',
@@ -123,6 +123,12 @@ export const WIZARD_NODES = [
   { id: 'carcases.picker', tab: 'carcases', audience: 'both' },
   { id: 'carcases.drawers', tab: 'carcases', audience: 'both' },
   { id: 'carcases.stock-board', tab: 'carcases', audience: 'factory' },
+  // ─── TURN 49 (CLAUDE.md F4): THE SHEET MOVED, THE NODE DID NOT ───────────
+  // *"a dlaczego nie dodac rozmiar plyty w pierwszym modalu i drugi usunac."*
+  // The carcasses' second stop is gone and its sheet-size row stands in the
+  // MATERIAL dialog now, under the stock board it is a sheet of. Same id, same
+  // tab, same audience — a workshop fact either way — because who may see it
+  // did not change when where it is drawn did.
   { id: 'carcases.sheets', tab: 'carcases', audience: 'factory' },
   // T45 F4 / iron rule 4: ONE CNC-corner block. `carcases.joinery` was the
   // repeated joinery table under it — the same joint, drawn twice, asked twice.
@@ -143,6 +149,11 @@ export const WIZARD_NODES = [
   // T45 F6: the fronts' sheet size, relocated out of Production (iron rule 4)
   // to the step that already asks which board this is. A workshop fact, like
   // the carcasses' own `carcases.sheets`.
+  // ─── TURN 49 (CLAUDE.md F6): …AND ONE DIALOG FURTHER IN ──────────────────
+  // *"modal front nr 2 i 3 moze byc polaczony … tak samo jak Carcases."* The
+  // fronts' own sheets STOP is gone the way the carcasses' went, and this row
+  // is drawn inside the colour dialog, under the board it is a sheet of. Same
+  // id, same tab, same audience.
   { id: 'fronts.sheets', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.shaker-frame', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.door-styles', tab: 'fronts', audience: 'factory' },

@@ -96,8 +96,16 @@ test('F6 — it lives at the material step: the carcasses’ stop, and now the f
   assert.match(WIZ, /data-front-sheets-assignment="1"/);
   assert.match(WIZ, /family="fronts"/);
   assert.match(WIZ, /sheetFronts: size/);
-  assert.match(WIZ, /\.\.\.\(show\('fronts\.sheets'\) \? \['sheets'\] : \[\]\),/);
-  assert.match(WIZ, /if \(stop === 'sheets'\) return 'Sheets assignment';/);
+  // ─── TURN 49 (CLAUDE.md F4 / F6): ONE DIALOG FURTHER IN ─────────────────
+  // *"modal front nr 2 i 3 moze byc polaczony … tak samo jak Carcases."* Both
+  // families' sheets STOPS are gone: the stop re-drew the stock-board select
+  // the material dialog had already drawn, and only the sheet was new. The row
+  // itself did not move an inch further than the screen before it — it is in
+  // the material dialog, under the board it is a sheet of, and the assertions
+  // above (the hooks, the families, the two profile fields) still find it.
+  assert.doesNotMatch(WIZ, /\.\.\.\(show\('fronts\.sheets'\) \? \['sheets'\] : \[\]\),/);
+  assert.match(WIZ, /data-wizard-node="fronts\.sheets"/);
+  assert.match(WIZ, /sheetSize=\{sheets \? sheetSizeRow\(kind, t\) : null\}/);
   // It is a WORKSHOP row, like the carcasses'.
   assert.ok(WIZARD_NODES.some((n) => n.id === 'fronts.sheets' && n.tab === 'fronts'));
   assert.ok(hiddenNodes('retail').includes('fronts.sheets'));

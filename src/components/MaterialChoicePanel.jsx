@@ -48,13 +48,21 @@ import DecorPickerModal from './DecorPickerModal.jsx';
  *   picker        'decor' | 'veneer' | 'colour' — engine/projectSettings.js
  *   categoryStrip the surface's own source buttons, rendered as the categories
  *   boardSelect   the stock-board select, or null when the head may not see it
+ *   sheetSize     TURN 49 (F4/F6): the biggest sheet this board can be bought
+ *                 in — jumbo and the rest. It stands UNDER the board select
+ *                 because it is the same question one step further on ("which
+ *                 board, and how big a sheet of it"), and it is here at all
+ *                 because the owner asked for the two in one dialog: *"a
+ *                 dlaczego nie dodac rozmiar plyty w pierwszym modalu i drugi
+ *                 usunac, jeden mniej bedzie."* Null when the head may not see
+ *                 it — a sheet size is a workshop fact.
  *   value         the finish id currently chosen (decor / veneer)
  *   colour        the sprayed colour currently chosen
  *   onDecor / onVeneer / onColour / onClear
  *   footer        what closes the submodal — the drawers question, and Next
  */
 export default function MaterialChoicePanel({
-  kind, slot, picker, categoryStrip = null, boardSelect = null,
+  kind, slot, picker, categoryStrip = null, boardSelect = null, sheetSize = null,
   value = null, colour = null, onDecor, onVeneer, onColour, onClear = null,
   footer = null, title = null,
 }) {
@@ -127,6 +135,8 @@ export default function MaterialChoicePanel({
       )}
 
       {boardSelect}
+      {/* T49 F4/F6: the sheet, under the board it is a sheet of. */}
+      {sheetSize}
       {footer}
 
       {open && picker && (

@@ -86,8 +86,13 @@ test('F8 — Podsumowanie → Summary', () => {
   assert.match(FLOW, /Next — summary/);
 });
 
-test('F8 — Ile kolorów frontów? → How many front colours?', () => {
-  assert.match(WIZ, /How many front colours\?/);
+test('F8 — Ile kolorów frontów? → How many types and colours?', () => {
+  // ─── TURN 49 (CLAUDE.md F5): THE OWNER RE-WORDED THE QUESTION ────────────
+  // *"na pierwszym etapie wybieramy type of fronts, a pozniej next etapy
+  // kolory."* The heading is his, in his words and larger than T45's; F8's law
+  // is that the screen speaks ENGLISH, and it still does.
+  assert.match(WIZ, /How many types and colours\?/);
+  assert.doesNotMatch(WIZ, /How many front colours\?/, 'the T45 wording it replaced');
   assert.match(WIZ, /How many carcass material types\?/, '…and the carcasses’ own question with it');
   // The owner's words survive in the COMMENT above the block, which is where
   // the evidence belongs.

@@ -1797,6 +1797,20 @@ export const DEFAULT_CABINET_PROFILE = {
       // `thickness: null` = the project's front thickness, which is what a
       // workshop means by "same as the doors".
       thickness: null,
+
+      // ─── TURN 50 (CLAUDE.md F4): …WITH ONE EXCEPTION ────────────────────
+      //
+      // The owner: *"w kuchni jak dodamy niską szafkę do wysokiej bez panela,
+      // powinien się dodać panel automatycznie."*
+      //
+      // How big a STEP between two neighbours makes a side that shows. A
+      // worktop's own thickness is not a step and a 100 mm difference in a run
+      // of base units is not either; a base unit against a tall one is a metre
+      // and a half of raw board at eye level, which is the case he is
+      // describing. 300 is where the line is drawn — above any plinth or
+      // worktop difference a run can have, well below the smallest real step
+      // between a base cabinet and a tall one.
+      autoStepMm: 300,
       defaultHeight: 'floor',       // 'floor' | 'carcass' ('unit' is the old name)
       // ─── Turn 13 (CLAUDE.md F4) ───
       // The owner's bug: a WALL unit's end panel ran to the FLOOR — a masking

@@ -104,6 +104,10 @@ import {
 } from '../engine/shareOut.js';
 // Turn 50 (CLAUDE.md F3): nothing is built bigger than the room it stands in.
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
+// Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
+import {
+  autoEndPanelJunctions, autoEndPanelMessage, withDeclined,
+} from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
@@ -1937,6 +1941,103 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{id:string|null, ids?:string[], error:string|null}}
    */
+  /**
+   * ─── TURN 50 (CLAUDE.md F4): A LOW UNIT MEETING A TALL ONE GROWS ITS OWN ──
+   *
+   * The owner: *"w kuchni jak dodamy niską szafkę do wysokiej bez panela,
+   * powinien się dodać panel automatycznie — i informacja na środku monitora:
+   * system dodał panel wykończeniowy, chcesz to go usuń, naciśnij prawym
+   * myszką i usuń panel."*
+   *
+   * WHICH junctions is `engine/endPanelAuto.js` and none of it is here. What is
+   * here is the ADD, and it is the ordinary one: `addEndPanel`, the same call
+   * the right-click menu makes, with the same defaults, the same collision
+   * refusal and the same piece out the other end — *"a real end panel, on the
+   * same board and the same rules as one added by hand — not a special case."*
+   *
+   * The one thing it adds is `auto_added: true` on the slot, which reaches the
+   * cut piece as `meta.autoAdded` and is what lets a later turn tell the two
+   * apart and the message be said ONCE per panel rather than on every redraw.
+   *
+   * @returns {Array<{unitId, side, panelId, message}>} what was added
+   */
+  growAutoEndPanels: () => runBatch(() => {
+    const profile = getCabinetProfile();
+    const design = () => migrateDesign(get().project.design);
+    const made = [];
+    // Asked of the units as they stand, then again after each add: adding a
+    // panel widens a cabinet, which can close the next junction along. One
+    // pass per junction found, and never more passes than there are junctions.
+    let guard = 0;
+    for (;;) {
+      const wanted = autoEndPanelJunctions(get().units, profile);
+      const next = wanted.find((j) => !made.some((m) => m.unitId === j.unitId && m.side === j.side));
+      if (!next || guard > 64) break;
+      guard += 1;
+      let res = get().addEndPanel(next.unitId, { side: next.side, applyToAll: false });
+      if (!res.id) {
+        // ─── MAKING ROOM FOR IT ────────────────────────────────────────────
+        //
+        // A cabinet butted hard against its neighbour has 0 mm free, and the
+        // panel that finishes the joint is a real board that has to go
+        // SOMEWHERE — so the LOW unit slides along by the panel's thickness.
+        // That is what a joiner does with the tape: the tall cabinet is what
+        // the board is screwed to and is the fixed point; the run beside it
+        // moves. Only the low one, and only away from the junction.
+        //
+        // WHY IT TAKES THREE MOVES AND NOT ONE. `editor.unitMagnet` is 40 mm,
+        // so a cabinet asked to stand 25 mm off its neighbour snaps straight
+        // back onto it — which is right for a hand on a drag and wrong here.
+        // So the unit is first taken clear of the magnet, the panel is added by
+        // the ORDINARY call (with its ordinary room check, which now passes),
+        // and the unit is then brought back — where the magnet lands it exactly
+        // on the new panel's outer face, which is where it belongs. The three
+        // are inside one `runBatch`, so it is still one undo step.
+        //
+        // If it cannot move — a wall, another cabinet — the refusal stands and
+        // NOTHING is said: a joint that is already tight is not a fault the
+        // joiner has to act on.
+        const low = get().units.find((u) => u.id === next.otherId);
+        const thick = Number(design().endPanel?.thickness) > 0
+          ? Number(design().endPanel.thickness)
+          : (Number(low?.params?.front_t) || profile.front.thickness);
+        const magnet = Number(profile.editor?.unitMagnet) || 0;
+        if (low && thick > 0) {
+          const home = Number(low.position?.x_mm) || 0;
+          const sign = next.side === 'R' ? 1 : -1;
+          get().moveUnit(low.id, home + sign * (thick + magnet * 2), 0);
+          res = get().addEndPanel(next.unitId, { side: next.side, applyToAll: false });
+          get().moveUnit(low.id, home + sign * thick, 0);
+        }
+      }
+      if (!res.id) {
+        made.push({ ...next, panelId: null, message: null, refused: res.error });
+        continue;
+      }
+      set((st) => ({
+        units: st.units.map((u) => (u.id === next.unitId
+          ? {
+            ...u,
+            params: {
+              ...u.params,
+              end_panels: (u.params.end_panels || []).map((ep) => (ep.id === res.id
+                ? { ...ep, auto_added: true }
+                : ep)),
+            },
+          }
+          : u)),
+      }));
+      const unit = get().units.find((u) => u.id === next.unitId);
+      made.push({
+        ...next,
+        panelId: res.id,
+        message: autoEndPanelMessage(unit?.params?.unit_num || ''),
+      });
+    }
+    if (made.some((m) => m.panelId)) get().refreshAutoParts();
+    return made;
+  }),
+
   addEndPanel: (unitId, { side = 'L', height = null, thickness = null, applyToAll = null } = {}) => {
     if (side === 'B') {
       const results = ['L', 'R'].map((one) => get().addEndPanel(unitId, { side: one, height, thickness, applyToAll }));
@@ -2012,9 +2113,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   removeEndPanel: (unitId, panelId) => {
+    // ─── TURN 50 (CLAUDE.md F4): REMOVING IT BY HAND IS FINAL ──────────────
+    //
+    // *"Removing it by hand is final for that junction: it does not come back
+    // on the next redraw, or the message becomes a nag."*
+    //
+    // Which side it was on is remembered — on the cabinet that carried it, so
+    // the record travels with the project — and `autoEndPanelJunctions` never
+    // offers that junction again. It is written for ANY panel taken off, not
+    // only an auto one: a joiner who removes the panel he put there himself has
+    // said the same thing about the same joint.
+    const going = get().units.find((u) => u.id === unitId)
+      ?.params?.end_panels?.find((ep) => ep.id === panelId) || null;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId
-        ? { ...u, params: { ...u.params, end_panels: (u.params.end_panels || []).filter((ep) => ep.id !== panelId) } }
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            end_panels: (u.params.end_panels || []).filter((ep) => ep.id !== panelId),
+            ...(going ? { end_panel_declined: withDeclined(u, going.side) } : {}),
+          },
+        }
         : u)),
     }));
     get().refreshAutoParts();
@@ -2970,6 +3090,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       useUiStore.getState().offerShareOut(unit.id);
     } else {
       useUiStore.getState().clearShareOut();
+    }
+    // ─── TURN 50 (CLAUDE.md F4): …AND A JUNCTION THAT NEEDS FINISHING ──────
+    //
+    // *"w kuchni jak DODAMY niską szafkę do wysokiej bez panela"* — the add is
+    // the moment he names, so this is where the question is asked. The message
+    // is a GREY, which in this app is the centre of the screen on its own
+    // clock — *"informacja na środku monitora"* — and it names the way back
+    // out, which is the second half of his sentence.
+    for (const grown of get().growAutoEndPanels()) {
+      if (grown.message) useUiStore.getState().notify(grown.message, 'info');
     }
     return { id: unit.id, error: null, wall: placed.wall };
   },

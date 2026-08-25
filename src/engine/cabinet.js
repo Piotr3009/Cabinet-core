@@ -5265,6 +5265,15 @@ export function computeCabinet(params, profileOverride) {
         // block shows what the piece is rather than what was asked for.
         below_mm: drop,
         panelId: ep?.id || null,
+        // ─── TURN 50 (CLAUDE.md F4): WHO PUT THIS BOARD HERE ────────────────
+        //
+        // *"It carries `meta.autoAdded: true`, so a later turn can tell the two
+        // apart, and so the message can be shown once per panel rather than on
+        // every redraw."*  It is the SAME piece either way — same board, same
+        // rules, same cut list — and this is a note about where it came from,
+        // never a difference in what it is. ABSENT on a panel a hand added, so
+        // every project before tonight cuts byte for byte what it always did.
+        ...(ep?.auto_added ? { autoAdded: true } : {}),
       },
     }));
   }

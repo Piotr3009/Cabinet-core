@@ -225,6 +225,35 @@ function newUnit(typeId, profile, index, design) {
       // same thing off the same property, so a bare kit call agrees.
       // eslint-disable-next-line no-nested-ternary
       doors: type.supports.doors ? (type.frontOpens ? true : false) : null,
+      // ─── TURN 48 (CLAUDE.md F3): THE PLINTH DEFAULTS ON ────────────────────
+      //
+      // The owner, 25.08.2026: the plinth is ON by default — standing carcasses
+      // only, never a hung WUD.
+      //
+      // WHERE IT LIVES MATTERS AS MUCH AS WHAT IT SAYS. Turn 4 made the plinth a
+      // DECISION rather than an automatic (BACKLOG #16: no ghost rows in the cut
+      // list) and that was right about the cut list and wrong about the default —
+      // a base unit without a toe kick is not a thing this workshop builds, so
+      // every single one was being ticked by hand. What changes is the ANSWER a
+      // new cabinet arrives with, not who owns the question: it is still one
+      // untick away, the panel's control is unmoved, and the check that speaks
+      // when a standing unit has none is unmoved too.
+      //
+      // It is written HERE, where a unit is BORN in a project, and NOT in
+      // `defaultParamsFor()`. A bare `computeCabinet(defaultParamsFor(id))` is
+      // the golden fixtures' own contract and reproduces the LISP kit and
+      // nothing else; moving this line one file over would put a PLINTH panel
+      // into all six of them and break iron rule 2 by a whole part.
+      //
+      // WHICH TYPES is not a list. `takesPlinth` is the engine's own gate —
+      // `(type.plinth ?? type.legs) && mount === 'floor'`, the same function
+      // the right panel shows the control from and the same one `checks.js`
+      // warns off — so the owner's seven (BUD, BUDR, SINK, LOW, BUDTALL,
+      // FRIDGE, WARDROBE) are answered by asking rather than by naming, and a
+      // WUD hanging on the wall is refused by the same sentence that has always
+      // refused it a plinth. A LOADED project never comes through here: it opens
+      // exactly as it was saved.
+      ...(takesPlinth(type.id, profile) ? { plinth: true } : {}),
       sections: [{ width_mm: params.width, items }],
       materials: {},
     },

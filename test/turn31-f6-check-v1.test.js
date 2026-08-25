@@ -251,6 +251,11 @@ test('#6 a base run standing with no plinth — yellow', () => {
   project();
   const u = store().addUnit('BUD');
   store().updateUnitParams(u.id, { width: 600, doors: { count: 1 } });
+  // T48-F3: a standing carcass is BORN with its plinth, so the fault this check
+  // speaks about has to be created before the check can be asked about it. The
+  // check itself is untouched — and it is exactly why the default is a default
+  // and not an automatic: a joiner who takes the toe kick off is still told.
+  store().removePlinth(u.id);
   const before = of(6);
   assert.equal(before.length, 1, 'no #6 raised for a plinth-less base unit');
   assert.equal(before[0].level, 'yellow');

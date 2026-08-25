@@ -309,9 +309,13 @@ test('…and so is a bulk recolour, and a bulk plinth run', () => {
     assert.equal(history().past.length, depth + 1);
   }
   // …and three Ctrl+Zs put the project back where it started, not nine.
+  // T48-F3: "where it started" for a standing carcass now includes its plinth —
+  // the plinth is ON at birth, so the bulk act above is a no-op the undo puts
+  // back to TRUE. The claim this test makes is about the STACK, and it is the
+  // same claim: three acts, three entries, three undos.
   for (let i = 0; i < 3; i += 1) history().undo();
   for (const id of ids) {
-    assert.equal(unitOf(id).params.plinth ?? false, false);
+    assert.equal(unitOf(id).params.plinth ?? false, true);
     assert.equal(unitOf(id).params.front_type_id ?? null, null);
   }
 });

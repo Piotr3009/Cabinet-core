@@ -2728,14 +2728,35 @@ export function computeCabinet(params, profileOverride) {
     const many = roofList.length > 1;
     for (const bd of roofList) {
       const id = many ? `TOP-${bd.index}` : 'TOP';
+      // ─── CHAT-FIX 25.08.2026: THE BOARD, NOT ITS ENVELOPE ──────────────────
+      //
+      // The owner, screenshot in hand: *"dziwne boxy mi sie robia zamiast
+      // normalnie pochyly top."* The box below WAS the envelope — the AABB
+      // over the whole tilted board — and with no tilt in the meta the scene
+      // drew that envelope as a solid crate. So, for a sloped segment, the
+      // box becomes the BOARD ITSELF lying level (its true `faceLen × G`),
+      // and the meta says how to lean it: about the Z axis, through the roof
+      // line at its LOW end, by the segment's own β — signed CCW, so a fall
+      // to the right leans clockwise. Rotating a level board of perpendicular
+      // thickness G about Z gives a vertical footprint of exactly
+      // `G / cos β`, which is `bd.vertical` — the underside lands on the cut
+      // sides to the millimetre. A level segment keeps the old box and no
+      // tilt: nothing to lean.
+      const lowRight = bd.y1 < bd.y0 - 1e-9;
+      const sloped = bd.deg > 1e-9;
+      const xLow = lowRight ? bd.x1 : bd.x0;
+      const yLow = lowRight ? bd.y1 : bd.y0;
       panels.push(panel({
         id, part: 'TOP', role: 'top', w: bd.blankLen, h: topH, thickness: G,
         edgeCode: codes.right, edgeLen: metres(bd.blankLen),
-        // The BOX is where the board stands in the room: its horizontal span,
-        // and the vertical envelope between its lowest underside and its
-        // highest face. `h` here is the ENVELOPE, never the thickness — the
-        // board is G perpendicular and does not thicken.
-        box: {
+        box: sloped ? {
+          x: roundTo(lowRight ? xLow - bd.faceLen : xLow, 4),
+          y: roundTo(yLow - G, 4),
+          z: G,
+          w: roundTo(bd.faceLen, 4),
+          h: G,
+          d: topH,
+        } : {
           x: roundTo(bd.x0, 4),
           y: roundTo(bd.level, 4),
           z: G,
@@ -2766,6 +2787,13 @@ export function computeCabinet(params, profileOverride) {
           // A CLEARANCE fact, for the 3-D and the elevation. NEVER a thickness:
           // `thickness` above is G and stays G.
           verticalFootprint: roundTo(bd.vertical, 4),
+          // Chat-fix 25.08.2026: how the scene leans the level board — about
+          // Z, through the roof line at the low end, signed CCW.
+          ...(sloped ? {
+            tilt_deg: roundTo(lowRight ? -bd.deg : bd.deg, 4),
+            tilt_axis: 'z',
+            tilt_pivot: { x: roundTo(xLow, 4), y: roundTo(yLow, 4) },
+          } : {}),
           // ─── AND WHAT IT LOOKS LIKE FROM THE FRONT (T47-F5) ─────────────
           //
           // The board's own PARALLELOGRAM, in its box's frame: the ends are cut
@@ -4862,7 +4890,16 @@ export function computeCabinet(params, profileOverride) {
           // The piece is MOUNTED on the slope; the 3-D and the elevation tilt it
           // rather than redrawing it, exactly as the shoe box's own `tilt_deg`
           // does with its sloping bottom (T30).
-          tilt_deg: roundTo(sg.deg, 4),
+          //
+          // Chat-fix 25.08.2026: …and now the scene CAN — the deg is SIGNED
+          // (CCW about Z; a fall to the right leans clockwise), the axis is
+          // named, and the pivot is the CEILING at the low end, so the top
+          // edge lands on the line it fills to.
+          tilt_deg: roundTo(reachAt(sg.to) < reachAt(sg.from) ? -sg.deg : sg.deg, 4),
+          tilt_axis: 'z',
+          tilt_pivot: reachAt(sg.to) < reachAt(sg.from)
+            ? { x: roundTo(sg.to, 4), y: roundTo(reachAt(sg.to), 4) }
+            : { x: roundTo(sg.from, 4), y: roundTo(reachAt(sg.from), 4) },
         } : {}),
       };
       panels.push(panel({
@@ -4871,7 +4908,22 @@ export function computeCabinet(params, profileOverride) {
         // is the visible bottom edge and does. The LISP code vocabulary has no
         // "one long edge", so the code names the pair and the LENGTH says one.
         edgeCode: codes.topBottom, edgeLen: metres(segLen),
-        box: {
+        box: sg.deg > 1e-9 ? (() => {
+          // Chat-fix 25.08.2026: the level band the scene will lean — its true
+          // `along × faceH`, hung from the ceiling at the LOW end. Same rule as
+          // the roof board above.
+          const lowR = reachAt(sg.to) < reachAt(sg.from);
+          const xL = lowR ? sg.to : sg.from;
+          const yL = lowR ? reachAt(sg.to) : reachAt(sg.from);
+          return {
+            x: roundTo(lowR ? xL - segLen : xL, 4),
+            y: roundTo(yL - faceH, 4),
+            z: faceZ - t,
+            w: segLen,
+            h: faceH,
+            d: t,
+          };
+        })() : {
           x: segX0, y: roofLine ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
         },
         // Cut to the long point at a mitred end: the BOTTOM corner is the one
@@ -4887,7 +4939,23 @@ export function computeCabinet(params, profileOverride) {
       panels.push(panel({
         id: segId('INFILL-T-SHELF', i), part: 'INFILL', role: 'infill', w: shelfLen, h: shelfDepth + overT, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(shelfLen),
-        box: {
+        box: sg.deg > 1e-9 ? (() => {
+          // Chat-fix 25.08.2026: the shelf leans WITH its face — same axis,
+          // its own low end on the ceiling line, top surface on that line.
+          const xa = sg.shelfFrom;
+          const xb = roundTo(sg.to - sg.mitreR, 4);
+          const lowR = reachAt(xb) < reachAt(xa);
+          const xL = lowR ? xb : xa;
+          const yL = lowR ? reachAt(xb) : reachAt(xa);
+          return {
+            x: roundTo(lowR ? xL - shelfLen : xL, 4),
+            y: roundTo(yL - t, 4),
+            z: faceZ - t - shelfDepth,
+            w: shelfLen,
+            h: t,
+            d: shelfDepth,
+          };
+        })() : {
           x: sg.shelfFrom,
           y: (roofLine ? Math.min(yTop, H) : H) + faceH - t,
           z: faceZ - t - shelfDepth,
@@ -4898,6 +4966,19 @@ export function computeCabinet(params, profileOverride) {
         cnc: rectGeometry(shelfLen, shelfDepth + overT),
         meta: {
           side: 'top', piece: 'shelf', segment: manySegs ? `main-${i + 1}` : 'main', ends,
+          // Chat-fix 25.08.2026: leans with its face — same axis, own low end.
+          ...(sg.deg > 1e-9 ? (() => {
+            const xa = sg.shelfFrom;
+            const xb = roundTo(sg.to - sg.mitreR, 4);
+            const lowR = reachAt(xb) < reachAt(xa);
+            return {
+              tilt_deg: roundTo(lowR ? -sg.deg : sg.deg, 4),
+              tilt_axis: 'z',
+              tilt_pivot: lowR
+                ? { x: xb, y: roundTo(reachAt(xb), 4) }
+                : { x: roundTo(xa, 4), y: roundTo(reachAt(xa), 4) },
+            };
+          })() : {}),
           mitre_45: [...new Set([
             ...mitre(i === 0 && ends.left === 'open'),
             ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
@@ -4911,7 +4992,8 @@ export function computeCabinet(params, profileOverride) {
           // The shelf runs BACK at the ceiling and lands on the wall, so its
           // scribed edge is its back one.
           ...(overT > 0 ? { oversize: { mm: overT, edge: 'back', nominal: roundTo(shelfDepth, 4) } } : {}),
-          ...(sg.deg > 1e-9 ? { tilt_deg: roundTo(sg.deg, 4) } : {}),
+          // (tilt: signed deg + axis + pivot, stated at the head of this meta —
+          // chat-fix 25.08.2026 replaced T47's bare positive tilt_deg here.)
         },
       }));
     });

@@ -168,7 +168,12 @@ test('…MOUNTED along the slope: its length is the hypotenuse, and it tilts', (
   assert.equal(face.meta.slopeCut.span, 600, 'the ground it covers');
   assert.equal(face.meta.slopeCut.along, 848.5281, '…and the board that covers it');
   assert.ok(Math.abs(face.w - 600 / Math.cos(Math.PI / 4)) < 1e-3);
-  assert.equal(face.meta.tilt_deg, 45, 'the 3-D tilts it rather than redrawing it');
+  // Chat-fix 25.08.2026: the deg is SIGNED now — CCW about Z, so THIS fall
+  // (left-high, right-low) leans clockwise — and the scene finally can tilt
+  // it: the axis is named and the pivot hangs on the ceiling at the low end.
+  assert.equal(face.meta.tilt_deg, -45, 'the 3-D tilts it rather than redrawing it');
+  assert.equal(face.meta.tilt_axis, 'z');
+  assert.deepEqual(face.meta.tilt_pivot, { x: 600, y: 1400 });
   // The SHELF runs back at the ceiling, so it is the same length.
   assert.equal(byId(cut, 'INFILL-T-SHELF').w, 848.5281);
 });

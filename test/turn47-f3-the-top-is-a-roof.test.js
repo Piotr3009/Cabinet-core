@@ -38,10 +38,27 @@ const ONE = { slope_cut: { pts: [{ x: 0, y: 2000 }, { x: 600, y: 1400 }], infill
 
 // ═══ IT LIES ON THE SIDES, AND SPANS THE FULL WIDTH ═════════════════════════
 
+// Chat-fix 25.08.2026: the box is the LEVEL BOARD (its true faceLen × G) and
+// the lean lives in the meta — so a claim about where the board STANDS is
+// proved by doing the rotation, the same arithmetic the scene's group does.
+const spin = ([x, y], pv, deg) => {
+  const a = (deg * Math.PI) / 180;
+  const dx = x - pv.x;
+  const dy = y - pv.y;
+  return [pv.x + dx * Math.cos(a) - dy * Math.sin(a),
+    pv.y + dx * Math.sin(a) + dy * Math.cos(a)];
+};
+
 test('the board spans the FULL width W, not the W − 2G between the sides', () => {
   const [top] = tops(cut(ONE));
-  assert.equal(top.box.x, 0);
-  assert.equal(top.box.w, 600, 'wall of the cabinet to wall of the cabinet');
+  const pv = top.meta.tilt_pivot;
+  const deg = top.meta.tilt_deg;
+  // The TOP edge is what hangs on the roof line — spin that, not the underside.
+  const [leftX] = spin([top.box.x, top.box.y + top.box.h], pv, deg);
+  const [rightX] = spin([top.box.x + top.box.w, top.box.y + top.box.h], pv, deg);
+  assert.ok(Math.abs(Math.min(leftX, rightX) - 0) < 1e-3, 'leant, it starts at 0');
+  assert.ok(Math.abs(Math.max(leftX, rightX) - 600) < 1e-3, 'wall of the cabinet to wall of the cabinet');
+  assert.ok(Math.abs(top.box.w - top.meta.slopeCut.faceLen) < 1e-3, 'and the box IS the board');
   // The lid it replaces was `internalWidth` — 600 − 2·18 = 564 — and sat at G.
   const lid = computeCabinet(PARAMS, P).panels.find((p) => p.id === 'TOP');
   assert.equal(lid.box.x, G);
@@ -55,9 +72,11 @@ test('…and the SIDES stop under it, by its own vertical footprint', () => {
   assert.ok(Math.abs(top.meta.verticalFootprint - foot) < 1e-3, `${top.meta.verticalFootprint}`);
   // BUL's own 18 mm of the ceiling peaks at 2000; it stops `foot` under that.
   assert.ok(Math.abs(r.panels.find((p) => p.id === 'BUL').h - (2000 - foot)) < 1e-3);
-  // …and the board's own lowest underside IS the low side's short face, which
-  // is what "lies on" means when it is measured rather than asserted.
-  assert.equal(top.box.y, r.panels.find((p) => p.id === 'BUR').meta.slopeCut.low);
+  // …and the leant board's lowest underside IS the low side's short face —
+  // the pivot sits on the roof line, and a level board of perpendicular G
+  // leant about Z hangs exactly G / cos β below it, vertically.
+  assert.ok(Math.abs((top.meta.tilt_pivot.y - foot)
+    - r.panels.find((p) => p.id === 'BUR').meta.slopeCut.low) < 1e-3);
 });
 
 // ═══ L, L_MAX AND β ═════════════════════════════════════════════════════════
@@ -106,9 +125,10 @@ test('…and the VERTICAL FOOTPRINT is G / cos β — carried as clearance, neve
     const beta = Math.atan((2000 - y1) / 600);
     assert.ok(Math.abs(top.meta.verticalFootprint - G / Math.cos(beta)) < 1e-3);
     assert.notEqual(top.thickness, top.meta.verticalFootprint, 'the two are never the same field');
-    // The 3-D box's `h` is the board's vertical ENVELOPE — its footprint plus
-    // its rise — and not its thickness either.
-    assert.ok(Math.abs(top.box.h - (top.meta.verticalFootprint + (2000 - y1))) < 1e-3);
+    // Chat-fix 25.08.2026: the 3-D box is the BOARD (h = G, leant in the
+    // scene) — the envelope is gone, and the footprint stays what it always
+    // was: a clearance fact, never a box dimension.
+    assert.equal(top.box.h, G);
   }
   // A LEVEL board's footprint is exactly G, which is what makes the flat
   // segment the ordinary board this engine has always cut.
@@ -161,10 +181,17 @@ test('ONE BOARD PER SEGMENT — a board does not bend at a knee', () => {
   assert.deepEqual(boards.map((p) => p.meta.slopeCut.span), [300, 600]);
   assert.deepEqual(boards.map((p) => p.meta.slopeCut.blankLen), [300, 866.5281]);
   // Between them they span the whole width, edge to edge, with no gap and no
-  // overlap — a roof with a hole in it is not a roof.
+  // overlap — a roof with a hole in it is not a roof. The level board is
+  // asserted as it stands; the leant one by DOING the rotation (chat-fix
+  // 25.08.2026: the box is the level board, the lean is the meta's).
   assert.equal(boards[0].box.x, 0);
-  assert.equal(boards[0].box.x + boards[0].box.w, boards[1].box.x);
-  assert.equal(boards[1].box.x + boards[1].box.w, 900);
+  assert.equal(boards[0].box.x + boards[0].box.w, 300);
+  const pv = boards[1].meta.tilt_pivot;
+  const topY = boards[1].box.y + boards[1].box.h;
+  const [lx] = spin([boards[1].box.x, topY], pv, boards[1].meta.tilt_deg);
+  const [rx] = spin([boards[1].box.x + boards[1].box.w, topY], pv, boards[1].meta.tilt_deg);
+  assert.ok(Math.abs(Math.min(lx, rx) - 300) < 1e-3, 'the leant board starts at the knee');
+  assert.ok(Math.abs(Math.max(lx, rx) - 900) < 1e-3, '…and ends at the wall');
 });
 
 test('…and a ceiling that bends twice makes THREE', () => {

@@ -647,15 +647,26 @@ export function MovingPanel({
   // is a picture — the board (and its stop rail, which carries the same meta)
   // rotates about the shelf's back-bottom edge by the profile's 15°. Positive
   // rotation about x drops the FRONT edge, which is what a shoe shelf does.
+  //
+  // ─── CHAT-FIX 25.08.2026: …AND THE SLOPE'S BOARDS LEAN ABOUT Z ────────────
+  // The owner: *"dziwne boxy mi sie robia zamiast normalnie pochyly top."*
+  // The roof board and the top infill run ALONG the width, so their lean is
+  // about the Z axis — `meta.tilt_axis: 'z'`, deg signed CCW, pivot on the
+  // line the piece hangs from. The shoe shelf carries no axis and keeps its
+  // x-rotation to the letter.
   const tiltDeg = Number(p.meta?.tilt_deg) || 0;
   const tiltPivot = p.meta?.tilt_pivot || null;
   if (!tiltDeg || !tiltPivot) return body;
+  const rad = THREE.MathUtils.degToRad(tiltDeg);
+  const px = mm(Number(tiltPivot.x) || 0);
+  const py = mm(Number(tiltPivot.y) || 0);
+  const pz = mm(Number(tiltPivot.z) || 0);
   return (
     <group
-      position={[0, mm(tiltPivot.y), mm(tiltPivot.z)]}
-      rotation={[THREE.MathUtils.degToRad(tiltDeg), 0, 0]}
+      position={[px, py, pz]}
+      rotation={p.meta?.tilt_axis === 'z' ? [0, 0, rad] : [rad, 0, 0]}
     >
-      <group position={[0, -mm(tiltPivot.y), -mm(tiltPivot.z)]}>{body}</group>
+      <group position={[-px, -py, -pz]}>{body}</group>
     </group>
   );
 }

@@ -247,13 +247,21 @@ test('THE TOP IS A ROOF — the flat lid at the low end is gone', () => {
   const tops = r.panels.filter((p) => p.role === 'top');
   assert.equal(tops.length, 2, 'the roof line bends at the pentagon\'s knee, so two boards');
   assert.deepEqual(tops.map((p) => p.id), ['TOP-1', 'TOP-2']);
-  // Not one of them is the old lid: it was `internalWidth` wide, between the
-  // sides, with tabs and dog bones, sitting level at 1200 − G.
+  // Not one of them is the old lid — and since chat-fix 25.08.2026 the box is
+  // the LEVEL BOARD ITSELF (h = G) with the lean in the meta, not the AABB
+  // envelope, so the old `box.y` comparison is replaced by the model's own
+  // marks: a sloped segment names its axis, a level one carries no lean.
   for (const top of tops) {
-    assert.notEqual(top.box.y, 1200 - G);
     assert.equal(top.meta.slopeCut.roof, true);
     assert.equal(top.cnc.outline.length, 4, 'a plain rectangle: no tabs');
     assert.equal(top.cnc.pockets.length, 0, 'and NO DOG BONES');
+    assert.equal(top.box.h, G, 'the box is the board, G thick — never an envelope');
+    if (top.meta.slopeCut.deg > 1e-9) {
+      assert.equal(top.meta.tilt_axis, 'z', `${top.id}: a sloped board leans about Z`);
+      assert.ok(top.meta.tilt_pivot, `${top.id}: …about a stated pivot`);
+    } else {
+      assert.equal(top.meta.tilt_axis, undefined, `${top.id}: a level board does not lean`);
+    }
   }
   // The two together span the FULL width, not the `W − 2G` between the sides.
   assert.equal(tops[0].box.x, 0);

@@ -11,7 +11,7 @@ import { PROJECT_TYPES, getProjectType, heightsForProjectType } from '../engine/
 import { migrateDesign, projectHeights } from '../engine/design.js';
 import { wizardStartBlockers } from '../engine/projectSettings.js';
 import { useHistoryStore } from '../stores/historyStore.js';
-import { WIZARD_STEPS, backStep, stepsInScope } from '../lib/wizardSteps.js';
+import { DEFAULT_SCOPE, WIZARD_STEPS, backStep, stepsInScope } from '../lib/wizardSteps.js';
 import { T44_DEFAULTS } from '../lib/wizardTabs.js';
 
 // ─── New project (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
@@ -19,7 +19,8 @@ import { T44_DEFAULTS } from '../lib/wizardTabs.js';
 // Five steps, and the whole point of them is that a workshop can click STRAIGHT
 // THROUGH on the defaults in about ten seconds. Every answer has one already
 // filled in: the number is proposed, the name and the client are optional, the
-// type is a kitchen, the scope follows the type, the settings are the last set
+// type is a kitchen, the scope is ONE WALL (turn 49, F1 — it used to follow the
+// type, and the owner's answer was "zawsze"), the settings are the last set
 // used or the project's own. Nothing here is a decision that cannot be changed
 // from the menu five minutes later, and the copy says so where it matters.
 //
@@ -63,8 +64,17 @@ export default function NewProjectFlow({
   const [step, setStep] = useState('info');
   const [info, setInfo] = useState({ number: initialNumber, name: '', client: '' });
   const [typeId, setTypeId] = useState(PROJECT_TYPES[0].id);
-  const [scope, setScope] = useState(PROJECT_TYPES[0].scope);
-  const [scopeTouched, setScopeTouched] = useState(false);
+  // ─── TURN 49 (CLAUDE.md F1): ONE WALL, ALWAYS ─────────────────────────────
+  //
+  // *"default powinno sie ustawic na one wall, zawsze."* The flow used to open
+  // on `PROJECT_TYPES[0].scope` — a kitchen, so a whole room — and then the
+  // TYPE wrote the scope again on every touch of a card (`scopeTouched` was the
+  // flag that stopped it overwriting a hand). Both are gone: the opening answer
+  // is `DEFAULT_SCOPE` and nothing but the scope cards ever writes it, which is
+  // what "always" means. The type's own suggestion survives as the SENTENCE on
+  // the scope step — *"A kitchen usually starts as a whole room"* — which is
+  // advice a joiner can take in one click and not a decision taken for him.
+  const [scope, setScope] = useState(DEFAULT_SCOPE);
   const [created, setCreated] = useState(false);
 
   const type = getProjectType(typeId);
@@ -96,6 +106,11 @@ export default function NewProjectFlow({
       newProject(name, { number, client: info.client.trim() });
       setCreated(true);
     }
+    // T49 F1: the scope is written the moment the project exists, so a job
+    // abandoned before step 3 is still a ONE WALL job rather than the engine
+    // default's room. It writes whatever the flow currently holds, so coming
+    // back to step 1 and pressing Next again cannot undo a choice made later.
+    setDesign({ scope });
     setStep('type');
   };
 
@@ -119,7 +134,8 @@ export default function NewProjectFlow({
     if (isWardrobeSeed(type.id)) {
       setProjectHeights({ tall: T44_DEFAULTS.height, toeKick: T44_DEFAULTS.plinth });
     }
-    if (!scopeTouched) setScope(type.scope);
+    // T49 F1: the type no longer writes the scope. It suggests one, on the
+    // scope step, in a sentence.
     setStep('scope');
   };
 
@@ -374,7 +390,7 @@ export default function NewProjectFlow({
                   className={`border rounded p-2.5 text-left transition-colors ${typeId === t.id
                     ? 'border-gold bg-shell-700'
                     : 'border-shell-600 hover:bg-shell-700'}`}
-                  onClick={() => { setTypeId(t.id); if (!scopeTouched) setScope(t.scope); }}
+                  onClick={() => setTypeId(t.id)}
                   onDoubleClick={commitType}
                 >
                   <span className="block text-sm text-ink-50">{t.label}</span>
@@ -416,7 +432,6 @@ export default function NewProjectFlow({
                     : 'border-shell-600 hover:bg-shell-700'}`}
                   onClick={() => {
                     setScope(id);
-                    setScopeTouched(true);
                     // One wall goes STRAIGHT to the wall (F1). Whole room waits
                     // for Next, exactly as it did, because the plan editor is a
                     // bigger decision than a click on a card.

@@ -103,6 +103,10 @@ import {
 // Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
 import { settleRiders } from '../engine/topBox.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
+// T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
+// It lives in `lib/` and not in the engine on purpose (T45's own argument):
+// `computeCabinet()` cannot reach it, so a project with no line cannot move.
+import { grooved } from '../lib/cncExport.js';
 import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith, topNeighbourDemand } from '../engine/doors.js';
@@ -6018,6 +6022,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       u.params?.part_edits || null,
     ),
   })),
+
+  /**
+   * ─── TURN 48 (CLAUDE.md F5): THE SAME UNIT, AS THE MACHINE SEES IT ────────
+   *
+   * T45's own named debt, paid. The LED groove `lib/ledGroove.js` computes has
+   * been cut on the way to the DXF since T45 — but only there. Every surface
+   * that DRAWS a sheet (the CNC preview, the tree, the material sections, the
+   * per-sheet DXF) read `unitResult`, which is the engine's answer and knows
+   * nothing about a strip, so the pocket the joiner was going to cut was in the
+   * file and not on the picture of the file.
+   *
+   * So there is ONE answer for the sheet, and this is it: the unit's result
+   * with its grooves in. `unitResult` stays exactly what it is — the 3-D, the
+   * BOM and the checks are unchanged — and everything that speaks to the
+   * machine asks HERE, so the preview and the export cannot disagree about what
+   * is cut.
+   *
+   * GATED, and the gate is `grooved()`'s own: a unit with no LED line is handed
+   * back the VERY OBJECT `unitResult` produced, identity included. A project
+   * without lighting sees not one changed byte anywhere.
+   */
+  unitCncResult: (unitId) => {
+    const result = get().unitResult(unitId);
+    if (!result) return null;
+    const unit = get().units.find((u) => u.id === unitId) || null;
+    return grooved(result, {
+      unit,
+      design: get().project.design,
+      ledSpec: get().project.ledSpec,
+      profile: getCabinetProfile(),
+    });
+  },
 
   // ─── The tools (F9.1) ─────────────────────────────────────────────────────
   //

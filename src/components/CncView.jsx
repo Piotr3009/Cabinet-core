@@ -17,6 +17,8 @@ import { arcPoints } from '../engine/partObjects.js';
 // Turn 38 (F3): the CNC table plus this project's own layers — one list.
 import { allLayers, resolveLayer } from '../engine/partLayers.js';
 import { clampMenuPosition } from '../lib/menuPlacement.js';
+// T48-F5: the groove's own layer record — the layer `ledMakeLayers` declares.
+import { LED_GROOVE_LAYER } from '../lib/ledGroove.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 
 // ─── CNC view ───
@@ -60,7 +62,11 @@ const HEADROOM_GAPS = 4;
 export default function CncView() {
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const units = useProjectStore((s) => s.units);
-  const unitResult = useProjectStore((s) => s.unitResult);
+  // T48-F5: the sheet reads the CNC answer — the unit's result with its LED
+  // grooves cut in. `unitResult` is the engine's answer and knows nothing about
+  // a strip; a cabinet with no line is handed back that very object, so a
+  // project without lighting draws exactly what it drew yesterday.
+  const unitCncResult = useProjectStore((s) => s.unitCncResult);
   const profile = useCabinetProfileStore((s) => s.profile);
   const hiddenUnits = useUiStore((s) => s.cncHiddenUnits);
   const hiddenParts = useUiStore((s) => s.cncHiddenParts);
@@ -104,14 +110,14 @@ export default function CncView() {
     const out = [];
     for (const unit of units) {
       if (hiddenUnits[unit.id]) continue;
-      const result = unitResult(unit.id);
+      const result = unitCncResult(unit.id);
       if (!result) continue;
       const panels = exportablePanels(result.panels).filter((p) => !hiddenParts[unit.id]?.[p.id]);
       if (!panels.length) continue;
       out.push({ unit, result, panels });
     }
     return out;
-  }, [units, unitResult, hiddenUnits, hiddenParts]);
+  }, [units, unitCncResult, hiddenUnits, hiddenParts]);
 
   // ─── The two views (turn 15, CLAUDE.md F9) ──────────────────────────────
   //
@@ -269,8 +275,22 @@ export default function CncView() {
   // layer would be a sheet that draws something it will not name. `allLayers`
   // is the one list — the CNC table, then this project's own — so the sheet's
   // legend and the editor's overlay show the same names in the same order.
-  const legend = allLayers(projectLayers).filter((l) => layerCounts.has(l.name));
-  const colourOf = useMemo(() => (name) => resolveLayer(name, projectLayers).screen, [projectLayers]);
+  // ─── TURN 48 (CLAUDE.md F5): THE SHEET KNOWS THE LED LAYER ────────────────
+  //
+  // The groove reaches the sheet tonight, and a sheet that DRAWS something it
+  // will not NAME is exactly what the legend's own note above forbids.
+  // `LED_GROOVE` is a USER layer (T45's decision, and iron rule 2's reason for
+  // it: the engine's own table is untouched), so it is handed in beside the
+  // project's own — ONE list, which both the legend and the ink read, so the
+  // two cannot disagree about a colour.
+  const sheetLayers = useMemo(
+    () => [...allLayers(projectLayers), LED_GROOVE_LAYER],
+    [projectLayers],
+  );
+  const legend = sheetLayers.filter((l) => layerCounts.has(l.name));
+  const colourOf = useMemo(() => (name) => (
+    sheetLayers.find((l) => l.name === name)?.screen ?? resolveLayer(name, projectLayers).screen
+  ), [sheetLayers, projectLayers]);
   const toggle = (name) => setHidden((prev) => {
     const next = new Set(prev);
     if (next.has(name)) next.delete(name); else next.add(name);

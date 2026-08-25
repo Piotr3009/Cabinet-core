@@ -33,7 +33,7 @@ import { cncAssignmentWarning } from '../engine/bom.js';
 
 export default function CncTree() {
   const units = useProjectStore((s) => s.units);
-  const unitResult = useProjectStore((s) => s.unitResult);
+  const unitCncResult = useProjectStore((s) => s.unitCncResult);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const notify = useUiStore((s) => s.notify);
@@ -90,10 +90,14 @@ export default function CncTree() {
     return () => cancelAnimationFrame(id);
   }, [focus]);
 
+  // T48-F5: the same one answer the CNC preview draws — the unit's result with
+  // its LED grooves cut in. The tree, the material sections and the per-sheet
+  // DXF all hang off `sheets`, so asking once here is what stops the picture and
+  // the file disagreeing about what the machine cuts.
   const sheets = useMemo(() => units.map((u) => {
-    const result = unitResult(u.id);
+    const result = unitCncResult(u.id);
     return { unit: u, result, parts: result ? exportablePanels(result.panels) : [] };
-  }), [units, unitResult]);
+  }), [units, unitCncResult]);
 
   const shownIds = (unitId, parts) => parts
     .filter((p) => !hiddenParts[unitId]?.[p.id])

@@ -45,9 +45,18 @@
 
 import { grooveWidthMm } from './ledSpec.js';
 
-/** The layer the LISP declares, and the colour it declares it at. */
+/**
+ * The layer the LISP declares, and the colour it declares it at.
+ *
+ * T48-F5 adds `screen`, which is the PREVIEW's ink and not a conversion of the
+ * ACI — exactly as every row of `engine/cnc/layers.js` carries one (BISCUIT_4MM
+ * is ACI 40 and draws `#ffb066`). 44 is what the DXF states, because that is
+ * what `ledMakeLayers` declares; `#c8a24a` is what the sheet paints, and it is
+ * the app's own LED ink — the same warm gold `components/LightingPanel.jsx`
+ * draws a strip in — so one thing has one colour wherever it appears.
+ */
 export const LED_GROOVE_LAYER = Object.freeze({
-  name: 'LED_GROOVE', aci: 44, label: 'LED groove', kind: 'pocket',
+  name: 'LED_GROOVE', aci: 44, screen: '#c8a24a', label: 'LED groove', kind: 'pocket',
 });
 
 // ─── TURN 48 (CLAUDE.md F4): THE GROOVE OUTGROWS THE PROFILE ────────────────

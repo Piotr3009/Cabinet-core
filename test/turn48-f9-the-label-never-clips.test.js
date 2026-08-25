@@ -137,10 +137,20 @@ test('the CNC view asks for the whole words, and points at the part', () => {
   // Just clear of the part's RIGHT edge, start-anchored, with a leader back to
   // the outline — the layout stacks parts left to right with `cnc.layoutGap`
   // between them, so right is where the open sheet is.
-  assert.match(VIEW, /const anchor = label\.outside \? 'start' : 'middle';/);
-  assert.match(VIEW, /const x = label\.outside \? labelX \+ box\.w \/ 2 \+ label\.size \* 1\.2 : labelX;/);
+  //
+  // …measured off `place`, which is the part's rectangle ON THE SHEET with the
+  // layout's TURN already in it. Offsetting from the centre by the part's own
+  // drawn half-width would be right for a plain part and point sideways out of
+  // a turned one — a top, a shelf, a drawer side, which is exactly the class of
+  // narrow part this feature exists for.
+  assert.match(VIEW, /const tx = outside \? place\.x \+ place\.w \+ label\.size \* 1\.2 : labelX;/);
+  assert.match(VIEW, /const ty = outside \? place\.y \+ place\.h \/ 2 : labelY;/);
+  assert.match(VIEW, /x1=\{place\.x \+ place\.w\} y1=\{ty\}/);
   assert.match(VIEW, /data-part-label-leader=\{panel\.id\}/);
-  assert.match(VIEW, /data-part-label-outside=\{label\.outside \? '1' : '0'\}/);
-  // A label that FITS is drawn exactly where turn 18 put it: inside, centred.
-  assert.match(VIEW, /x=\{x\} y=\{labelY\} textAnchor=\{anchor\}/);
+  assert.match(VIEW, /data-part-label-outside=\{outside \? '1' : '0'\}/);
+  // A label that FITS is drawn exactly where turn 18 put it: inside, centred,
+  // and carrying its part's own rotation. One that stepped OUT is read
+  // horizontally — it is an annotation standing in the open sheet.
+  assert.match(VIEW, /textAnchor=\{outside \? 'start' : 'middle'\}/);
+  assert.match(VIEW, /transform=\{!outside && labelTurn \? `rotate\(\$\{-labelTurn\} \$\{tx\} \$\{ty\}\)` : undefined\}/);
 });

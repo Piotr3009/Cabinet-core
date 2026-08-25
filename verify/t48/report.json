@@ -1,6 +1,6 @@
 {
   "turn": 48,
-  "when": "2026-08-25T13:00:49.283Z",
+  "when": "2026-08-25T13:14:01.330Z",
   "steps": [
     {
       "label": "the app boots, a 4200 × 3000 room is loaded and the canvas is up",
@@ -115,7 +115,7 @@
     {
       "label": "F9 — a cabinet parked at the wall grows its scribe filler",
       "ok": true,
-      "detail": "{\"id\":\"u_hvpedf2\",\"at\":40,\"infill\":40,\"parts\":[\"INFILL-L-FACE 60x2250\",\"INFILL-L-ARM 60x2250\"]}"
+      "detail": "{\"id\":\"u_3f233qi\",\"at\":40,\"infill\":40,\"parts\":[\"INFILL-L-FACE 60x2250\",\"INFILL-L-ARM 60x2250\"]}"
     },
     {
       "label": "F9 — the sheet is showing the narrow strip",
@@ -187,182 +187,182 @@
         "canvas": 1052,
         "labels": [
           {
-            "uuid": "05977ca6-0737-41c5-8ba5-07c5a5c39dd2",
+            "uuid": "a1df9ee3-5fe2-404d-8349-2e0fa853e996",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 8.928
           },
           {
-            "uuid": "c59f3a36-eb14-430b-aa39-bd88a31cacd1",
+            "uuid": "f8d71d6b-3361-4f3e-bfa2-4d6a9cea7b1a",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 7.433
           },
           {
-            "uuid": "d82a9ebb-d0f3-436d-b055-e14e75160519",
+            "uuid": "b03b1a2b-9036-4366-8360-642fa58ea21b",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 5.939
           },
           {
-            "uuid": "b3c245ac-4a51-4577-b594-f98182bba337",
+            "uuid": "607aebcc-2f8e-45a8-a698-2377fd86b2a0",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 7.433
           },
           {
-            "uuid": "c6cfa5ef-f8f5-4fd5-a22e-482b13ffc777",
+            "uuid": "3121f0b6-2b4e-428c-b00e-69623af7cb73",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 9.049
           },
           {
-            "uuid": "e0a322b2-f587-46a2-bbd3-9cee5475d9e6",
+            "uuid": "7d14e78f-c6a8-4866-84c2-1b8b192e3ce0",
             "text": "600",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.547
           },
           {
-            "uuid": "9d38ea43-0b91-4244-a028-9317712386ea",
+            "uuid": "488f4669-8a00-4ea0-96c5-2e02b94a32ff",
             "text": "100",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.587
           },
           {
-            "uuid": "06f3e86f-1f6f-47b2-b522-67e6b488d90e",
+            "uuid": "a2ea4bf4-07cc-453a-a0dc-b4bec22689e5",
             "text": "2150",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.487
           },
           {
-            "uuid": "b5724b09-365f-4e5f-8a3e-c7535ee0c023",
+            "uuid": "229f967b-d631-46a7-aaf4-dd89b8d591f2",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 8.664
           },
           {
-            "uuid": "36687978-033e-4b11-b718-2b32f3a80e5a",
+            "uuid": "d42074b7-7430-4011-a92e-6fb28968ede6",
             "text": "W 600",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.547
           },
           {
-            "uuid": "6e94c91f-4cde-40d5-ae82-3bfde7144e5c",
+            "uuid": "ea2ddee0-dd71-4a06-9a62-148bc99682e8",
             "text": "internal 564",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.505
           },
           {
-            "uuid": "7de6b744-d249-4572-83f7-d4f4d81ddd6a",
+            "uuid": "4a5a814b-45ad-4932-99e3-73b428418912",
             "text": "D 558",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.871
           },
           {
-            "uuid": "9eaa2277-9230-4d6a-81ac-061d58633edb",
+            "uuid": "25b80838-42c6-45aa-a668-87a1c5ad34e8",
             "text": "toe kick 100",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.587
           },
           {
-            "uuid": "1ff0d8b4-925f-4340-b068-c38cc6f626af",
+            "uuid": "4556bc6c-b82a-4c38-91cf-bb9dbe3a7dfa",
             "text": "H 2150",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.487
           },
           {
-            "uuid": "10d252c8-1e8d-4249-9ac6-eecce5d88bf6",
+            "uuid": "0f6a6248-4598-4e4c-b9c8-017964286507",
             "text": "infill 40",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.39
           },
           {
-            "uuid": "d50af15b-1fa8-44ed-b8d8-56aa90ee530f",
+            "uuid": "97a7cbaa-a069-451a-88b5-e454998ef202",
             "text": "600",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.547
           },
           {
-            "uuid": "4fc23b2a-4e54-40a3-a8ff-111d300287a6",
+            "uuid": "dbd4db2e-9835-4971-b944-11436e43ad85",
             "text": "100",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.587
           },
           {
-            "uuid": "14fb0c00-2bbb-4220-af4c-a137f6f13eec",
+            "uuid": "78142f57-806a-4ee1-84d9-7c340456f4d7",
             "text": "2150",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.487
           },
           {
-            "uuid": "fbc27ba9-4da8-43da-8f15-9a947d6dc0f1",
+            "uuid": "e643c815-417a-40f4-8e26-59c6ce741b55",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 8.664
           },
           {
-            "uuid": "14614977-9572-45f3-ab05-e211b7d9e23e",
+            "uuid": "dfd8c73c-3976-4763-af6b-cea701512244",
             "text": "W 600",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.547
           },
           {
-            "uuid": "ae8aa19a-a18a-4993-942c-22435be6dafe",
+            "uuid": "0dd4a109-eb90-4084-a2f4-adfc17f765f4",
             "text": "internal 564",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.505
           },
           {
-            "uuid": "e1c7e37d-f961-4d13-b238-4837f658265f",
+            "uuid": "c35e439e-a416-4647-8c75-8b1f827da199",
             "text": "D 558",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.871
           },
           {
-            "uuid": "a657e68e-a274-4824-8e57-376de03df1b9",
+            "uuid": "f0423a3b-7bc7-4be0-bb1c-c185888e0621",
             "text": "toe kick 100",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.587
           },
           {
-            "uuid": "caf4c08c-7e71-4090-9812-5b3000e418a0",
+            "uuid": "4260567c-1acc-4f81-97fb-655684eb2a15",
             "text": "H 2150",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.487
           },
           {
-            "uuid": "37af26d2-9116-458c-ba51-92e32ac47f7a",
+            "uuid": "74f99a2f-5cfa-4ab5-b55e-5da132e1818d",
             "text": "1800 mm",
             "px": 27.04,
             "wants": 27.04,
             "depth": 8.479
           },
           {
-            "uuid": "0a4ac13b-2534-4d96-bdc0-5bf28d6fdca3",
+            "uuid": "146d34eb-b067-4021-89d4-5e8fae36a4f9",
             "text": "1200 mm",
             "px": 27.04,
             "wants": 27.04,
@@ -374,182 +374,182 @@
         "canvas": 1052,
         "labels": [
           {
-            "uuid": "05977ca6-0737-41c5-8ba5-07c5a5c39dd2",
+            "uuid": "a1df9ee3-5fe2-404d-8349-2e0fa853e996",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 3.13
           },
           {
-            "uuid": "c59f3a36-eb14-430b-aa39-bd88a31cacd1",
+            "uuid": "f8d71d6b-3361-4f3e-bfa2-4d6a9cea7b1a",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 1.633
           },
           {
-            "uuid": "d82a9ebb-d0f3-436d-b055-e14e75160519",
+            "uuid": "b03b1a2b-9036-4366-8360-642fa58ea21b",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 0.136
           },
           {
-            "uuid": "b3c245ac-4a51-4577-b594-f98182bba337",
+            "uuid": "607aebcc-2f8e-45a8-a698-2377fd86b2a0",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 1.633
           },
           {
-            "uuid": "c6cfa5ef-f8f5-4fd5-a22e-482b13ffc777",
+            "uuid": "3121f0b6-2b4e-428c-b00e-69623af7cb73",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 3.216
           },
           {
-            "uuid": "e0a322b2-f587-46a2-bbd3-9cee5475d9e6",
+            "uuid": "7d14e78f-c6a8-4866-84c2-1b8b192e3ce0",
             "text": "600",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.68
           },
           {
-            "uuid": "9d38ea43-0b91-4244-a028-9317712386ea",
+            "uuid": "488f4669-8a00-4ea0-96c5-2e02b94a32ff",
             "text": "100",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.721
           },
           {
-            "uuid": "06f3e86f-1f6f-47b2-b522-67e6b488d90e",
+            "uuid": "a2ea4bf4-07cc-453a-a0dc-b4bec22689e5",
             "text": "2150",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.651
           },
           {
-            "uuid": "b5724b09-365f-4e5f-8a3e-c7535ee0c023",
+            "uuid": "229f967b-d631-46a7-aaf4-dd89b8d591f2",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 2.859
           },
           {
-            "uuid": "36687978-033e-4b11-b718-2b32f3a80e5a",
+            "uuid": "d42074b7-7430-4011-a92e-6fb28968ede6",
             "text": "W 600",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.68
           },
           {
-            "uuid": "6e94c91f-4cde-40d5-ae82-3bfde7144e5c",
+            "uuid": "ea2ddee0-dd71-4a06-9a62-148bc99682e8",
             "text": "internal 564",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.638
           },
           {
-            "uuid": "7de6b744-d249-4572-83f7-d4f4d81ddd6a",
+            "uuid": "4a5a814b-45ad-4932-99e3-73b428418912",
             "text": "D 558",
             "px": 27.04,
             "wants": 27.04,
             "depth": 3.005
           },
           {
-            "uuid": "9eaa2277-9230-4d6a-81ac-061d58633edb",
+            "uuid": "25b80838-42c6-45aa-a668-87a1c5ad34e8",
             "text": "toe kick 100",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.721
           },
           {
-            "uuid": "1ff0d8b4-925f-4340-b068-c38cc6f626af",
+            "uuid": "4556bc6c-b82a-4c38-91cf-bb9dbe3a7dfa",
             "text": "H 2150",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.651
           },
           {
-            "uuid": "10d252c8-1e8d-4249-9ac6-eecce5d88bf6",
+            "uuid": "0f6a6248-4598-4e4c-b9c8-017964286507",
             "text": "infill 40",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.583
           },
           {
-            "uuid": "d50af15b-1fa8-44ed-b8d8-56aa90ee530f",
+            "uuid": "97a7cbaa-a069-451a-88b5-e454998ef202",
             "text": "600",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.68
           },
           {
-            "uuid": "4fc23b2a-4e54-40a3-a8ff-111d300287a6",
+            "uuid": "dbd4db2e-9835-4971-b944-11436e43ad85",
             "text": "100",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.721
           },
           {
-            "uuid": "14fb0c00-2bbb-4220-af4c-a137f6f13eec",
+            "uuid": "78142f57-806a-4ee1-84d9-7c340456f4d7",
             "text": "2150",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.651
           },
           {
-            "uuid": "fbc27ba9-4da8-43da-8f15-9a947d6dc0f1",
+            "uuid": "e643c815-417a-40f4-8e26-59c6ce741b55",
             "text": null,
             "px": 26,
             "wants": 26,
             "depth": 2.859
           },
           {
-            "uuid": "14614977-9572-45f3-ab05-e211b7d9e23e",
+            "uuid": "dfd8c73c-3976-4763-af6b-cea701512244",
             "text": "W 600",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.68
           },
           {
-            "uuid": "ae8aa19a-a18a-4993-942c-22435be6dafe",
+            "uuid": "0dd4a109-eb90-4084-a2f4-adfc17f765f4",
             "text": "internal 564",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.638
           },
           {
-            "uuid": "e1c7e37d-f961-4d13-b238-4837f658265f",
+            "uuid": "c35e439e-a416-4647-8c75-8b1f827da199",
             "text": "D 558",
             "px": 27.04,
             "wants": 27.04,
             "depth": 3.005
           },
           {
-            "uuid": "a657e68e-a274-4824-8e57-376de03df1b9",
+            "uuid": "f0423a3b-7bc7-4be0-bb1c-c185888e0621",
             "text": "toe kick 100",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.721
           },
           {
-            "uuid": "caf4c08c-7e71-4090-9812-5b3000e418a0",
+            "uuid": "4260567c-1acc-4f81-97fb-655684eb2a15",
             "text": "H 2150",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.651
           },
           {
-            "uuid": "37af26d2-9116-458c-ba51-92e32ac47f7a",
+            "uuid": "74f99a2f-5cfa-4ab5-b55e-5da132e1818d",
             "text": "1800 mm",
             "px": 27.04,
             "wants": 27.04,
             "depth": 2.618
           },
           {
-            "uuid": "0a4ac13b-2534-4d96-bdc0-5bf28d6fdca3",
+            "uuid": "146d34eb-b067-4021-89d4-5e8fae36a4f9",
             "text": "1200 mm",
             "px": 27.04,
             "wants": 27.04,
@@ -762,8 +762,8 @@
       "worstDeltaPx": 0
     },
     "f2": {
-      "unitId": "u_pli2xrr",
-      "other": "u_pldte8r",
+      "unitId": "u_1yp1et4",
+      "other": "u_255qh4b",
       "returns": [
         "INFILL-TL-FACE",
         "INFILL-TL-SHELF",
@@ -812,7 +812,7 @@
       ]
     },
     "f1": {
-      "unitId": "u_3nob7cl",
+      "unitId": "u_gp5tl8p",
       "shoeBox": 18,
       "shoeBoxSaysSo": true,
       "shoeShelf": 58,
@@ -827,7 +827,7 @@
       }
     },
     "f4f5": {
-      "unitId": "u_pli2xrr",
+      "unitId": "u_1yp1et4",
       "shelfId": "SHELF-1",
       "onEngine": 0,
       "onSheet": 1,

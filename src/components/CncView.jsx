@@ -828,30 +828,42 @@ function Part({
         // parts left to right with `cnc.layoutGap` between them and the last
         // part in a row has open sheet beside it; centred vertically, so the
         // leader is a short horizontal line and reads as one.
-        const anchor = label.outside ? 'start' : 'middle';
-        const x = label.outside ? labelX + box.w / 2 + label.size * 1.2 : labelX;
+        //
+        // THE PART'S RECTANGLE ON THE SHEET, and not its own drawn box: `place`
+        // is what the layout put down, TURN included, so `place.x + place.w` is
+        // the edge a joiner can see. Offsetting by `box.w / 2` from the centre
+        // would be right for a plain part and point sideways out of a TURNED
+        // one — a top, a shelf, a drawer side — which is exactly the class of
+        // narrow part this feature exists for.
+        //
+        // …and an outside block is NOT turned with its part. It is an
+        // annotation standing in the open sheet, so it is read horizontally;
+        // the label INSIDE an outline still carries the part's own rotation.
+        const outside = label.outside;
+        const tx = outside ? place.x + place.w + label.size * 1.2 : labelX;
+        const ty = outside ? place.y + place.h / 2 : labelY;
         return (
           <g>
-            {label.outside && (
+            {outside && (
               <line
-                x1={labelX + box.w / 2} y1={labelY} x2={x - label.size * 0.35} y2={labelY}
+                x1={place.x + place.w} y1={ty} x2={tx - label.size * 0.35} y2={ty}
                 stroke="#d6d6d2" strokeWidth={1} vectorEffect="non-scaling-stroke"
                 data-part-label-leader={panel.id}
               />
             )}
             <text
-              x={x} y={labelY} textAnchor={anchor}
+              x={tx} y={ty} textAnchor={outside ? 'start' : 'middle'}
               fontSize={label.size} fill="#d6d6d2"
               data-part-label={panel.id}
-              data-part-label-outside={label.outside ? '1' : '0'}
-              transform={labelTurn ? `rotate(${-labelTurn} ${x} ${labelY})` : undefined}
+              data-part-label-outside={outside ? '1' : '0'}
+              transform={!outside && labelTurn ? `rotate(${-labelTurn} ${tx} ${ty})` : undefined}
               style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
             >
               {label.lines.map((line) => (
                 <tspan
                   key={line.text + line.dy}
-                  x={x}
-                  y={labelY - line.dy}
+                  x={tx}
+                  y={ty - line.dy}
                   dominantBaseline="central"
                 >
                   {line.text}

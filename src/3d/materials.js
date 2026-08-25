@@ -344,6 +344,10 @@ export function surfaceFor({
   // veneer, which is stored as the decor it borrows its picture from).
   const veneer = veneered || (!isDecor && finish?.kind === 'veneer');
   const sheenDriven = sprayed || veneer;
+  // How glossy this finish is asked to be, 0…1 — the inverse of the roughness
+  // the slider already yields, so the coat and the probe below cannot drift
+  // from the surface they sit on. One number, one source.
+  const gloss = sheen != null ? 1 - roughnessFromSheen(sheen, profile) : 1;
 
   return {
     colour: paint
@@ -362,7 +366,28 @@ export function surfaceFor({
     sheenDriven,
     // Piotr's scale drives the lacquered surface; board keeps its family number.
     roughness: sheenDriven && sheen != null ? roughnessFromSheen(sheen, profile) : pbr.roughness,
-    clearcoat: pbr.clearcoat,
+    // ─── CHAT-FIX 25.08.2026: DEAD MATT MUST NOT SHINE ───────────────────────
+    //
+    // The owner, at 5 %: *"nadal sie swieci … jak dam 5 procent polysku to
+    // spray sie swieci."* He is right, and T49 only did half the job. The
+    // slider moved ROUGHNESS while `clearcoat` stayed pinned at the lacquer's
+    // 0.35 with a `clearcoatRoughness` of 0.12 — and a clearcoat is a SECOND,
+    // mirror-smooth layer laid OVER the paint. Roughening the paint under it
+    // changes nothing about what that layer reflects, so dead matt kept a
+    // gloss coat on top of it. The environment probe was pinned the same way.
+    //
+    // Physically a dead matt lacquer has NO gloss coat, so the COAT rides the
+    // slider, on the SAME `1 − sheen/max` the roughness already uses (`gloss`):
+    // at 5 % it is all but gone, at 100 % it is the full lacquer number this
+    // profile carries.
+    //
+    // `envMapIntensity` is deliberately NOT touched. It was tempting — but the
+    // 0.25 is the hotfix of 08.08 ("a quarter of a NEUTRAL studio … so white
+    // stays white"), it is a weak probe of a neutral map rather than a mirror,
+    // and the shine the owner saw is the coat. One cause, one change.
+    // Untouched too: laminate (`sheenDriven` false keeps its family numbers),
+    // metalness, and the orange peel.
+    clearcoat: sheenDriven && sheen != null ? pbr.clearcoat * gloss : pbr.clearcoat,
     clearcoatRoughness: pbr.clearcoatRoughness,
     metalness: sprayed ? (A.spray?.metalness ?? 0) : pbr.metalness,
     // 0 switches the probe off for this material only — the scene keeps it for

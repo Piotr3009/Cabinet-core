@@ -123,7 +123,28 @@ test('a sprayed front is lacquer, tinted by the colour, with no environment on i
   // not tint it (CLAUDE.md F1.4 — spray stays envMap-free).
   assert.equal(s.envMapIntensity, 0.25,
     'a QUARTER of a neutral synthetic studio (hotfix 08.08) — gloss for the clearcoat, no colour the scene could lend');
-  assert.equal(s.clearcoat, P.appearance.materials.lacquer.clearcoat, 'lacquer, not melamine');
+  // ─── AMENDED 25.08.2026 ───────────────────────────────────────────────────
+  // This line read the CLEARCOAT as the signature of "lacquer, not melamine".
+  // It cannot any more: the owner, at 5 % on the slider — *"nadal sie swieci"* —
+  // and the coat is why, so the coat now rides the sheen like the roughness
+  // does. At this fixture's project sheen it is a fraction of the lacquer
+  // number, which is the point.
+  //
+  // The signature moves to the top of the scale, where the coat IS the
+  // profile's lacquer, and to `clearcoatRoughness`, which never moved.
+  const atFullGloss = surfaceFor({
+    role: door.role,
+    materialRole: door.material_role,
+    finishExposed: door.finish_exposed,
+    finishes,
+    profile: P,
+    frontColour: finishes.front.hex,
+    sheen: P.appearance?.sheen?.max ?? 100,
+  });
+  assert.equal(atFullGloss.clearcoat, P.appearance.materials.lacquer.clearcoat,
+    'lacquer, not melamine — at full gloss the coat is the lacquer number itself');
+  assert.ok(s.clearcoat < P.appearance.materials.lacquer.clearcoat,
+    'and below full gloss it is less, because a matt lacquer has less coat on it');
   assert.equal(s.clearcoatRoughness, P.appearance.materials.lacquer.clearcoatRoughness);
   assert.equal(s.normalScale, 0, 'peel is OFF by default — the 2 mm sine aliased into moiré (hotfix 08.08)');
 });

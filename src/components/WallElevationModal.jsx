@@ -194,18 +194,30 @@ export default function WallElevationModal({
     setPicked(opening.id);
   };
 
-  const addSlope = () => {
+  // ─── CHAT-FIX 25.08.2026: THE SIDE IS THE BUTTON ─────────────────────────
+  //
+  // The owner: *"jak dodajesz skos to nawet sie nie domyslilem ze trzeba
+  // nacisnac 2 razy zeby dodac drugi skos — powinien byc przycisk lewy i prawy
+  // skos."* One "Add slope" that always landed on the SAME default side made
+  // the second slope invisible: press it twice and the second one arrives on
+  // top of the first, so nothing appears to happen. The side moves into the
+  // button, where it can be seen before it is pressed.
+  //
+  // A side that already carries a slope offers nothing to add: that button is
+  // disabled and says why, rather than silently stacking a second one.
+  const addSlope = (side = SLOPE_DEFAULTS.side) => {
     const slope = {
       id: newElementId('slope'),
       kind: 'slope',
       wall: wallIndex,
-      side: SLOPE_DEFAULTS.side,
+      side,
       startHeight: Math.min(SLOPE_DEFAULTS.startHeight, Math.max(0, wallHeight - 200)),
       run: Math.min(SLOPE_DEFAULTS.run, Math.max(0, wallWidth / 2)),
     };
     setWallSlopes([...all, slope]);
     setPicked(slope.id);
   };
+  const hasSlopeOn = (side) => slopes.some((s) => s.side === side);
 
   // ─── TURN 45 (CLAUDE.md F1b): THE TWO THE TOP VIEW ADDS ───────────────────
   //
@@ -674,23 +686,35 @@ export default function WallElevationModal({
               {(view === 'front' ? [
                 ['door', 'Add door', 'A doorway — it stands on the floor', () => addOpening('door')],
                 ['window', 'Add window', 'A window — it has a sill', () => addOpening('window')],
-                ['slope', 'Add slope', 'A ceiling that comes down at one end', addSlope],
+                ['slope-left', 'Slope left', hasSlopeOn('left')
+                  ? 'This wall already has a left slope'
+                  : 'A ceiling coming down at the LEFT end',
+                () => addSlope('left'), hasSlopeOn('left')],
+                ['slope-right', 'Slope right', hasSlopeOn('right')
+                  ? 'This wall already has a right slope'
+                  : 'A ceiling coming down at the RIGHT end',
+                () => addSlope('right'), hasSlopeOn('right')],
               ] : [
                 ['recess', 'Add recess', `An alcove — ${RECESS_DEFAULTS.width} × ${RECESS_DEFAULTS.depth} to start`,
                   () => addPlanElement('recess')],
                 ['chimney', 'Add chimney', `A breast standing proud — ${CHIMNEY_DEFAULTS.width} × ${CHIMNEY_DEFAULTS.depth}`,
                   () => addPlanElement('chimney')],
-              ]).map(([id, label, hint, run]) => (
+              ]).map(([id, label, hint, run, off = false]) => (
                 <button
                   key={id}
                   type="button"
                   title={hint}
+                  disabled={off}
                   data-elevation-add={id}
-                  className="w-full border border-shell-600 rounded px-2.5 py-2 text-left bg-shell-800 hover:border-gold hover:bg-shell-700 transition-colors"
+                  className={`w-full border rounded px-2.5 py-2 text-left transition-colors ${
+                    off
+                      ? 'border-shell-700 bg-shell-800/50 opacity-45 cursor-not-allowed'
+                      : 'border-shell-600 bg-shell-800 hover:border-gold hover:bg-shell-700'
+                  }`}
                   onClick={run}
                 >
                   <span className="flex items-center gap-2">
-                    <ToolArt kind={id} />
+                    <ToolArt kind={id.startsWith('slope') ? 'slope' : id} />
                     <span className="min-w-0">
                       <span className="block text-[12px] text-ink-50">{label}</span>
                       <span className="block text-[10px] text-ink-400 leading-snug">{hint}</span>
@@ -852,6 +876,11 @@ function ToolArt({ kind }) {
  * ONE element's numbers — position and size, and for a slope the side, the
  * start height and the run. Opened by a double-click on the element and placed
  * BESIDE it by the shell, which is rule 15 and this turn's rule 4.
+ *
+ * Chat-fix 25.08.2026, the owner: *"modal powieksz x 2 bo mamy miejsce."* At
+ * 320 px every label/field row was squeezed into a strip beside a drawing that
+ * has the whole screen to itself; at 640 the numbers and their names sit on one
+ * line without wrapping.
  */
 function ElementModal({
   element, opening, anchor, wallWidth, wallHeight, onOpening, onSlope, onPlan, onRemove, onClose,
@@ -869,7 +898,7 @@ function ElementModal({
       name="wall-element"
       title={TITLES[element.kind] || 'Wall element'}
       anchor={anchor}
-      width="w-[320px]"
+      width="w-[640px]"
       onClose={onClose}
       footer={(
         <>

@@ -53,17 +53,33 @@ test('Back from the wall returns to the scope card, and never to the room editor
   assert.equal(backStep('info', 'wall'), 'info');
 });
 
-// ── the three tools, styled rather than bare ──
+// ── the tools, styled rather than bare ──
 
-test('the elevation offers Add door · Add window · Add slope, as real buttons', () => {
+// ─── AMENDED 25.08.2026 ─────────────────────────────────────────────────────
+// T44 gave the elevation three tools, the third being a single `Add slope`
+// that always landed on the same default side. The owner, after T49: *"jak
+// dodajesz skos to nawet sie nie domyslilem ze trzeba nacisnac 2 razy zeby
+// dodac drugi skos — powinien byc przycisk lewy i prawy skos."* Pressing it
+// twice put the second slope on top of the first, so nothing appeared to
+// happen. The side moved INTO the button, where it can be read before it is
+// pressed, and the one tool became two. Everything else this test guards —
+// the hook, the owner's order, the styling, the drawing — is unchanged.
+test('the elevation offers Add door · Add window · Slope left · Slope right, as real buttons', () => {
   assert.match(modal, /data-elevation-add=\{id\}/, 'every tool carries the hook');
-  for (const label of ['Add door', 'Add window', 'Add slope']) {
+  for (const label of ['Add door', 'Add window', 'Slope left', 'Slope right']) {
     assert.ok(modal.includes(`'${label}'`), `${label} is there`);
   }
-  // …and in the owner's order: door, window, slope.
+  // …and in the owner's order: door, window, then the two slopes.
   assert.ok(modal.indexOf("'Add door'") < modal.indexOf("'Add window'"));
-  assert.ok(modal.indexOf("'Add window'") < modal.indexOf("'Add slope'"));
-  assert.match(modal, /border border-shell-600 rounded px-2\.5 py-2/, 'the tools are styled, not bare links');
+  assert.ok(modal.indexOf("'Add window'") < modal.indexOf("'Slope left'"));
+  assert.ok(modal.indexOf("'Slope left'") < modal.indexOf("'Slope right'"));
+  // A side that already carries a slope offers nothing to add.
+  assert.match(modal, /hasSlopeOn\('left'\)/, 'the left button knows whether it is taken');
+  assert.match(modal, /hasSlopeOn\('right'\)/, 'and so does the right');
+  assert.match(modal, /disabled=\{off\}/, 'and says so by going quiet, not by stacking a second slope');
+  assert.match(modal, /rounded px-2\.5 py-2/, 'the tools are styled, not bare links');
+  assert.match(modal, /border-shell-600 bg-shell-800 hover:border-gold/,
+    'and an available tool keeps the shell border it always had');
   assert.match(modal, /function ToolArt/, 'each tool carries its own drawing');
 });
 

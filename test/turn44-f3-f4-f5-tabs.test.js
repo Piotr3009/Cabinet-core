@@ -185,7 +185,10 @@ test('F5 — the same procedure, asked in the owner’s words', () => {
   // carcasses' — the sheet-size picker left Production by name (iron rule 4)
   // and lives at the material step.
   assert.match(WIZ, /\.\.\.frontTypes\.map\(\(t\) => t\.id\),/);
-  assert.match(WIZ, /\.\.\.\(show\('fronts\.sheets'\) \? \['sheets'\] : \[\]\),/);
+  // T49 F6 merges the fronts' modals 2 and 3 exactly as F4 merged the
+  // carcasses' — the stop is gone, the sheet row is in the colour dialog.
+  assert.doesNotMatch(WIZ, /\.\.\.\(show\('fronts\.sheets'\) \? \['sheets'\] : \[\]\),/);
+  assert.match(WIZ, /data-front-sheets-assignment="1"/);
   assert.match(WIZ, /'tail',\n  \];/);
 });
 

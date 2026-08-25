@@ -149,6 +149,11 @@ export const WIZARD_NODES = [
   // T45 F6: the fronts' sheet size, relocated out of Production (iron rule 4)
   // to the step that already asks which board this is. A workshop fact, like
   // the carcasses' own `carcases.sheets`.
+  // ─── TURN 49 (CLAUDE.md F6): …AND ONE DIALOG FURTHER IN ──────────────────
+  // *"modal front nr 2 i 3 moze byc polaczony … tak samo jak Carcases."* The
+  // fronts' own sheets STOP is gone the way the carcasses' went, and this row
+  // is drawn inside the colour dialog, under the board it is a sheet of. Same
+  // id, same tab, same audience.
   { id: 'fronts.sheets', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.shaker-frame', tab: 'fronts', audience: 'factory' },
   { id: 'fronts.door-styles', tab: 'fronts', audience: 'factory' },

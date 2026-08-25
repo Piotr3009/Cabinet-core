@@ -889,15 +889,19 @@ export default function WizardSettings({
     return `${carcassTypes.find((t) => t.id === stop)?.label || 'Material'} — board and sheet`;
   };
 
-  // T45 F6: the fronts get their own SHEETS stop, mirroring the carcasses'.
-  // The sheet-size picker is removed from Production by name (iron rule 4) and
-  // *"lives at the material step"* — the carcasses' has stood at theirs since
-  // T44, and this is the fronts'. Nothing was taken away; a row moved to the
-  // screen that already asks which board this is.
+  // ─── TURN 49 (CLAUDE.md F6): THE FRONTS' 2 AND 3 BECOME ONE ──────────────
+  //
+  // *"modal front nr 2 i 3 moze byc polaczony … tak samo jak Carcases."*
+  //
+  // T45 F6 gave the fronts a SHEETS stop of their own, mirroring the
+  // carcasses' — which was right then and is the same repeat now that F4 has
+  // shown what it was: the stop re-drew the stock-board select each colour
+  // dialog had already drawn, and only the sheet was new. So it gets the same
+  // treatment, and the sheet stands under the board in the colour dialog
+  // (`sheetSizeRow` above), keeping every hook and the `fronts.sheets` node.
   const frontStops = [
     'count',
     ...frontTypes.map((t) => t.id),
-    ...(show('fronts.sheets') ? ['sheets'] : []),
     'tail',
   ];
   const frontAt = frontStops.includes(frontStop) ? frontStop : 'count';
@@ -907,9 +911,10 @@ export default function WizardSettings({
     // T49 F5: the first stop asks for the NUMBER and the TYPE — the owner's own
     // heading, and the dot's tooltip says the same as the screen.
     if (stop === 'count') return 'How many types and colours';
-    if (stop === 'sheets') return 'Sheets assignment';
     if (stop === 'tail') return 'Shape, opening and shine';
-    return frontTypes.find((t) => t.id === stop)?.label || 'Colour';
+    // T49 F6: a colour's own dialog says what it asks — the colour, the board
+    // AND its sheet, which is the whole reason the third stop could go.
+    return `${frontTypes.find((t) => t.id === stop)?.label || 'Colour'} — colour, board and sheet`;
   };
 
   // ─── T44 F5: WHICH OF THE FOUR OPENINGS THIS JOB IS ON ────────────────────
@@ -1833,34 +1838,30 @@ export default function WizardSettings({
             <div data-wizard-node="fronts.picker" data-front-submodal={frontTypeAt.id}>
               {slotPicker('front', frontTypeAt, {
                 title: `${frontTypeAt.label} — ${frontSubmodalNo} of ${frontTypes.length}`,
+                // T49 F6: the sheet size, in the SAME dialog as the colour and
+                // the board. Modal 3 is gone and this is where it now stands.
+                sheets: true,
               })}
             </div>
           )}
 
-          {frontAt === 'sheets' && show('fronts.sheets') && (
-            <div data-wizard-node="fronts.sheets" className="space-y-2" data-front-sheets-assignment="1">
-              <span className="block text-[11px] uppercase tracking-[0.16em] text-gold">Sheets assignment</span>
-              <p className="text-[11px] text-ink-400">
-                Which board each front type is cut from, and the biggest sheet the shop can buy it in. The
-                same machinery the carcasses' own stop has carried since T44 — relocated out of Production
-                (T45 F6) and asked once the colours are chosen.
-              </p>
-              {frontTypes.map((t) => (
-                <div key={t.id} className="border border-shell-600 rounded p-2 space-y-1" data-front-sheet-assign={t.id}>
-                  <span className="text-[11px] text-ink-50">{t.label}</span>
-                  {stockBoardSelect('front', t)}
-                </div>
-              ))}
-              <SheetSizeRow
-                family="fronts"
-                label="Fronts"
-                hint="Doors, drawer fronts, end panels and masking boards."
-                profile={profile}
-                onChange={(size) => setProfile({ ...profile, cnc: { ...profile.cnc, sheetFronts: size } })}
-              />
-            </div>
-          )}
+          {/* ─── TURN 49 (CLAUDE.md F6 / iron rule 4): THE THIRD STOP IS GONE ─
+              *"modal front nr 2 i 3 moze byc polaczony … tak samo jak
+              Carcases."* It drew a heading, a sentence, one `stockBoardSelect`
+              per front type — the SAME select the colour dialog had already
+              drawn for the type the joiner was standing in — and the fronts'
+              `SheetSizeRow`. Everything but the sheet was a repeat.
 
+              Where each of them lives now:
+                · Stock board select      → the colour dialog, per type, where it
+                                            has ALSO stood since T34.
+                · Front thickness gate    → with it, unchanged, and it still
+                                            re-cuts every door in the job.
+                · Sheet size (jumbo etc.) → the colour dialog, `sheetSizeRow`,
+                                            with every option it ever had.
+                · `fronts.sheets` node    → the same id on that block, so the
+                                            audience filter is the same filter.
+              `scripts/t49-classify.mjs --survivors` asserts all four by hook. */}
           {frontAt === 'tail' && (
             <>
               {/* ─── TURN 45 (CLAUDE.md F4 / iron rule 4): THE TAIL REPEAT GOES ──

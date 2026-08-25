@@ -4081,6 +4081,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // is a filler's job and not a cabinet's.
     addPlusMinGapMm: 100,
 
+    // ─── TURN 50 (CLAUDE.md F2): THE SHARE-OUT ────────────────────────────
+    //
+    // The owner, 25.08.2026: *"jak dodaję ostatnią szafkę do ściany i zostanie
+    // mniej niż 400 mm … czy chcesz wyśrodkować?"*
+    shareOut: {
+      // His own number. Under this much leftover at the wall, the bar offers.
+      gapMm: 400,
+
+      // …and the width past which a shared-out cabinet is OFFERED as two
+      // rather than taken as one (decision 2 at the top of CLAUDE.md — the app
+      // never adds a cabinet on its own).
+      //
+      // The owner's own worked example names both ends of the bracket: 3900
+      // over six is 650 of front, *"wider than one door should be"*, and seven
+      // at 557 is the answer it offers instead. So the line falls between the
+      // two, and 620 is where it is drawn: 600 is the workshop's standard
+      // cabinet and 620 is that cabinet with the scribe shared into it, which
+      // is exactly what a share-out is for. Past it the run is being asked to
+      // carry a cabinet nobody would have chosen, and the app SAYS so rather
+      // than building it.
+      //
+      // It is deliberately NOT `doors.singleDoorMaxWidth`: that number decides
+      // how many leaves a carcass takes (705 → two), which is a different
+      // question from how wide a carcass a joiner wants in a run.
+      maxWidthMm: 620,
+    },
+
     // ─── TURN 31 (CLAUDE.md F2): THE THREE MESSAGE LEVELS ─────────────────
     //
     // The owner, 15.08.2026, on a toast slot of one that erased itself every
@@ -4903,6 +4930,10 @@ export function migrateCabinetProfile(profile) {
       // profile saved before the message levels existed comes back with a grey
       // that expires rather than one that hangs on `undefined` milliseconds.
       messages: { ...D.ui.messages, ...profile.ui?.messages },
+      // Turn 50 (CLAUDE.md F2): likewise — a profile saved before the share-out
+      // existed comes back with the owner's 400 and 620 rather than with two
+      // undefineds that would offer the bar over every gap in the app.
+      shareOut: { ...D.ui.shareOut, ...profile.ui?.shareOut },
     },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's

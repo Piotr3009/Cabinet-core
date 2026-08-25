@@ -94,9 +94,14 @@ import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import {
-  buildRuns, impliedLegHeight, paddedSpan, runInfillParams, runMaskParams, runMemberIds,
-  runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals, verticalsInBand,
+  buildRuns, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
+  runMemberIds, runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
+  verticalsInBand,
 } from '../engine/runs.js';
+// Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
+import {
+  runFor as shareOutRunFor, shareOutFor, shareOutPlan, widthFixed,
+} from '../engine/shareOut.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
@@ -2930,8 +2935,137 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // The plinth and the top infill are decisions and wait to be asked for
     // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
     get().refreshAutoParts(unit.id);
+    // ─── TURN 50 (CLAUDE.md F2): …AND THE GAP IT LEFT IS OFFERED ───────────
+    //
+    // *"jak dodaję ostatnią szafkę do ściany i zostanie mniej niż 400 mm …
+    // czy chcesz wyśrodkować?"*  The question is asked HERE because this is
+    // the moment he describes — a cabinet has just been added to a run. What
+    // decides is `engine/shareOut.js`, which answers null for every add that
+    // leaves a real gap or none at all; the bar draws only when it does not.
+    if (shareOutFor(get().units, unit.id, { walls, wallMargin: wallMarginOf(get(), unit) }, profile)) {
+      useUiStore.getState().offerShareOut(unit.id);
+    } else {
+      useUiStore.getState().clearShareOut();
+    }
     return { id: unit.id, error: null, wall: placed.wall };
   },
+
+  // ─── TURN 50 (CLAUDE.md F2): THE RUN IS SHARED OUT, EQUALLY, ONCE ────────
+  //
+  // The owner: *"jak dodaję ostatnią szafkę do ściany i zostanie mniej niż 400
+  // mm … czy chcesz wyśrodkować? i wtedy wszystkie szafy się ustawią w jednej
+  // szerokości od ściany do ściany, oczywiście odejmując infill."*
+  //
+  // The arithmetic is `engine/shareOut.js` and none of it is here. What is here
+  // is the WRITE, and it is deliberately the most ordinary write in this store:
+  // `updateUnitParams` per cabinet, the same clamp every typed width goes
+  // through, inside ONE `runBatch` so Ctrl+Z takes the whole run back — *"tylko
+  // jednorazowe, z możliwością zrobienia Undo — ale to już mamy."*
+  //
+  // ─── WHY THE WIDTHS ARE WRITTEN OUTWARD FROM THE LEFT ─────────────────────
+  //
+  // Every cabinet in the run is growing, and a cabinet grows to the RIGHT
+  // (`clampUnitWidth` moves the far edge). Written left to right, cabinet 2 is
+  // still where it was when cabinet 1 grows into it, and the clamp refuses.
+  // So each cabinet is MOVED to where the plan puts it and THEN widened, left
+  // to right — which is the order a joiner sets a run out in, and it is why no
+  // notice about "limited by 02" comes out of a share-out that fits.
+  //
+  // ─── AND IT NEVER ADDS A CABINET ─────────────────────────────────────────
+  //
+  // Decision 2, at the top of CLAUDE.md. `extra` is passed only when the joiner
+  // has pressed the bar's SECOND button, and the new cabinet is added by
+  // `addUnit` — the same call the library makes — before the widths are
+  // written, so it is in the run the plan is applied to.
+  shareOutRun: (unitId, { extra = 0 } = {}) => runBatch(() => {
+    const profile = getCabinetProfile();
+    const state = get();
+    const walls = roomWalls(state.project.room);
+    // The RUN, not the OFFER: the 400 mm gate decides whether the BAR appears
+    // (`shareOutFor`), and a button that second-guessed the click that reached
+    // it would be a button that sometimes does nothing.
+    // The MARGIN the placement keeps at a wall is the project's own infill
+    // width, and the plan has to know it or every share-out comes back with
+    // three "Width limited by the wall" notices on a run that fits perfectly.
+    const wallMargin = wallMarginOf(state, state.units.find((u) => u.id === unitId));
+    const offer = shareOutRunFor(state.units, unitId, { walls, wallMargin }, profile);
+    if (!offer) return { ok: false, message: 'Nothing to share out on this run.', widths: [] };
+
+    let plan = shareOutPlan(offer.run, offer.context, profile, { extra });
+    if (!plan.ok) {
+      return {
+        ok: false,
+        message: plan.reason === 'nothing-to-widen'
+          ? 'Every cabinet in this run has its width imposed — there is nothing to share the gap into.'
+          : 'This run has no room to share out.',
+        widths: [],
+      };
+    }
+
+    // The EXTRA cabinet, when the joiner asked for one. A copy of the run's
+    // last non-fixed cabinet, added beside it, at the plan's own width.
+    if (extra > 0) {
+      const seed = [...offer.run.units].reverse().find((u) => !widthFixed(u))
+        || offer.run.units[offer.run.units.length - 1];
+      const born = get().addUnit(seed.type, { near: seed.id, side: 'R' });
+      if (born.error || !born.id) {
+        return { ok: false, message: born.error || 'There is no room for another cabinet here.', widths: [] };
+      }
+      // The run has changed shape, so the plan is asked again OF THE RUN THAT
+      // NOW EXISTS rather than patched — one derivation, and the new cabinet is
+      // in it like any other.
+      const after = shareOutRunFor(get().units, born.id, { walls, wallMargin }, profile)
+        || shareOutRunFor(get().units, unitId, { walls, wallMargin }, profile);
+      const nextRun = after ? after.run : offer.run;
+      plan = shareOutPlan(nextRun, after ? after.context : offer.context, profile, {});
+      if (!plan.ok) return { ok: false, message: 'This run has no room to share out.', widths: [] };
+    }
+
+    // ─── WHERE THE RUN NOW STANDS ─────────────────────────────────────────
+    //
+    // *"wtedy wszystkie szafy się ustawią w jednej szerokości od ściany do
+    // ściany, oczywiście odejmując infill."*  So the run is laid out from the
+    // LEFT EDGE of the stretch it may occupy — `runEndGap`'s own `from`, which
+    // is the wall or the neighbour beside it — plus the side infill that stands
+    // there, and each cabinet follows the one before it.
+    const runNow = shareOutRunFor(get().units, unitId, { walls, wallMargin }, profile);
+    const run = runNow ? runNow.run : offer.run;
+    const units = run.units;
+    const wantOf = new Map(plan.widths.map((w) => [w.id, w.to]));
+
+    // `cursor` is the OUTSIDE of everything placed so far — end panels
+    // included, exactly as `paddedSpan` measures. It starts where the PLAN says
+    // the run starts, so the arithmetic and the placement cannot disagree about
+    // the first millimetre.
+    let cursor = Math.max(0, Number(plan.startAt) || 0);
+    const notices = [];
+    for (const u of units) {
+      const pad = paddedSpan(u).pad || { left: 0, right: 0 };
+      // A cabinet grows to the RIGHT, so it is put where the plan wants it
+      // FIRST and widened there: written the other way round, cabinet 1 would
+      // grow into a cabinet 2 that has not moved yet and the clamp would
+      // rightly refuse it.
+      get().moveUnit(u.id, cursor + Math.max(0, pad.left), 0);
+      const want = wantOf.get(u.id);
+      if (want != null) {
+        const res = get().updateUnitParams(u.id, { width: want });
+        for (const n of res?.notices || []) notices.push(n);
+      }
+      const now = get().units.find((v) => v.id === u.id);
+      cursor += Math.max(0, pad.left)
+        + (Number(now?.params?.width) || 0)
+        + Math.max(0, pad.right);
+    }
+    notices.push(...get().refreshAutoParts());
+    return {
+      ok: true,
+      message: null,
+      widths: plan.widths,
+      each: plan.each,
+      last: plan.last,
+      notices,
+    };
+  }),
 
   removeUnit: (unitId) => {
     // T36 F7: a rider whose main goes is ORPHANED, not moved and not deleted —

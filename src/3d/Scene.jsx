@@ -392,7 +392,20 @@ function Lights({
   const pillars = useMemo(() => {
     const cfg = studio.pillars || {};
     const forward = mm(cfg.forwardMm ?? 900);
-    const outset = mm(cfg.outsetMm ?? 200);
+    // ─── CHAT-FIX 25.08.2026 (late): THEY STAND FURTHER IN ────────────────
+    //
+    // The owner: *"przysuń je trochę bardziej do środka pokoju, bo wygląda
+    // jakbyśmy boki mieli podświetlone albo źle pomalowane."* Standing PAST
+    // the ends of the run, each pillar was almost edge-on to the cabinet
+    // beside it — a grazing angle at close range, which is the one place
+    // Fresnel works against you: the end cabinets came back hotter than the
+    // middle and read as a different colour.
+    //
+    // So the pair moves IN, expressed as a share of the run's half-length
+    // rather than a distance past its end: at 0.55 they sit a little past
+    // half way out from the centre, so the run's ends are lit ACROSS rather
+    // than from alongside. The number is in the profile, to be turned.
+    const spread = Number.isFinite(Number(cfg.spread)) ? Number(cfg.spread) : 0.55;
     const height = roomHeight > 0 ? roomHeight : mm(2700);
     const out = [];
     for (const { wall, bounds } of runs || []) {
@@ -405,8 +418,8 @@ function Lights({
       // is "in front", exactly as it does for the band above.
       for (const side of [-1, 1]) {
         const position = alongX
-          ? [centre[0] + side * (width / 2 + outset), height / 2, bounds.max[2] + forward]
-          : [bounds.max[0] + forward, height / 2, centre[2] + side * (depth / 2 + outset)];
+          ? [centre[0] + side * (width / 2) * spread, height / 2, bounds.max[2] + forward]
+          : [bounds.max[0] + forward, height / 2, centre[2] + side * (depth / 2) * spread];
         // ─── CHAT-FIX 25.08.2026 (late): THEY AIM ACROSS ────────────────────
         //
         // The owner asked the right question: *"czy słupy świecą na wprost jak
@@ -427,9 +440,12 @@ function Lights({
         // reflection at the floor). The angle falls out of the geometry, so a
         // six-metre kitchen and a 600 vanity each get the angle they deserve
         // instead of a hard-coded 45°.
+        // Still aiming ACROSS: the far END of the run, not the far pillar — so
+        // the rake covers the last cabinet even though the pillar no longer
+        // stands beside it.
         const target = alongX
-          ? [centre[0] - side * (width / 2 + outset), height / 2, bounds.max[2]]
-          : [bounds.max[0], height / 2, centre[2] - side * (depth / 2 + outset)];
+          ? [centre[0] - side * (width / 2), height / 2, bounds.max[2]]
+          : [bounds.max[0], height / 2, centre[2] - side * (depth / 2)];
         out.push({
           key: `${wall}:${side}`,
           position,

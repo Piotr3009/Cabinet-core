@@ -2238,7 +2238,12 @@ export const DEFAULT_CABINET_PROFILE = {
         colour: '#ffffff',
         widthMm: 260, // the slab's width — a tall window, not a line
         forwardMm: 900, // how far in front of the fronts they stand
-        outsetMm: 200, // and how far past each end of the run
+        // How far OUT along the run each pillar stands, as a share of its
+        // half-length: 1 would put them at the very ends, 0 both at the
+        // centre. The owner, seeing the end cabinets come back hot — *"wygląda
+        // jakbyśmy boki mieli podświetlone"* — asked for them further in, so
+        // they light the run's ends across it instead of from alongside.
+        spread: 0.55,
       },
       // The points are OFF and still here — the pillars replace what they were
       // for. Flip to true and both pairs come back exactly as T14 and T16

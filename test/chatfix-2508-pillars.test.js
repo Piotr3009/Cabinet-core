@@ -46,7 +46,7 @@ test('the points are OFF and still there — the pillars took their job', () => 
 test('the profile carries the pillars, and every number is named', () => {
   const p = P.appearance.studio.pillars;
   assert.ok(p, 'the pillars exist');
-  for (const k of ['intensity', 'colour', 'widthMm', 'forwardMm', 'outsetMm']) {
+  for (const k of ['intensity', 'colour', 'widthMm', 'forwardMm', 'spread']) {
     assert.ok(p[k] !== undefined, `${k} is in the profile, not buried in JSX`);
   }
   assert.ok(p.forwardMm > 0, 'they stand IN FRONT of the fronts — a reflection needs facing');
@@ -70,9 +70,15 @@ test('a stored profile gains the pillars whole; a tuned one keeps its own', () =
     '…and the keys it did not name still arrive');
 });
 
-test('TWO per run, one past each end — the owner\'s count', () => {
-  assert.match(SCENE, /for \(const side of \[-1, 1\]\)/, 'one at each end of the run');
-  assert.match(SCENE, /outsetMm \?\? 200/, 'stepped out past the last cabinet');
+test('TWO per run, standing IN from the ends — the owner\'s count and his correction', () => {
+  assert.match(SCENE, /for \(const side of \[-1, 1\]\)/, 'one each side of the run');
+  // Past the ends they were nearly edge-on to the last cabinet at close range,
+  // and it came back hot: *"wygląda jakbyśmy boki mieli podświetlone albo źle
+  // pomalowane."* So the position is a SHARE of the half-length now.
+  assert.match(SCENE, /side \* \(width \/ 2\) \* spread/, 'a share of the half-length');
+  assert.ok(!SCENE.includes('width / 2 + outset'), 'and the old past-the-end offset is gone');
+  assert.ok(P.appearance.studio.pillars.spread < 1,
+    'inside the ends, not past them');
   assert.match(SCENE, /ccLight: 'pillar'/, 'tagged by role like every other lamp');
   assert.match(SCENE, /rectAreaLight/, 'an AREA source — a point is what printed the circles');
 });
@@ -93,8 +99,8 @@ test('they AIM across the run, at the far end — not straight out', () => {
   // No fixed rotation any more — the angle falls out of the geometry, so a six
   // metre kitchen and a 600 vanity each get their own.
   assert.match(SCENE, /const target = alongX/, 'each pillar has a target');
-  assert.match(SCENE, /centre\[0\] - side \* \(width \/ 2 \+ outset\)/,
-    'and it is the OPPOSITE end of its own run');
+  assert.match(SCENE, /centre\[0\] - side \* \(width \/ 2\)/,
+    'and it is the far END of its own run — not the far pillar');
   assert.ok(!SCENE.includes('rotation={[0, p.alongX ? 0 : Math.PI / 2, 0]}'),
     'the fixed rotation is gone');
   assert.match(SCENE, /light\.lookAt\(target\[0\], target\[1\], target\[2\]\)/,
@@ -103,7 +109,7 @@ test('they AIM across the run, at the far end — not straight out', () => {
 });
 
 test('the aim is HORIZONTAL — a tilted pillar would light the floor', () => {
-  assert.match(SCENE, /const target = alongX\s*\n\s*\? \[centre\[0\] - side \* \(width \/ 2 \+ outset\), height \/ 2/,
+  assert.match(SCENE, /\? \[centre\[0\] - side \* \(width \/ 2\), height \/ 2/,
     'the target sits at the pillar\'s own height');
 });
 

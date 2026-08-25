@@ -1055,6 +1055,11 @@ export default function WizardSettings({
   } else {
     nextHint = 'Everything is answered.';
   }
+  // T49 F7: through the EDIT door the chain is a convenience and not a road —
+  // the strip above jumps anywhere, and the footer commits from where you are.
+  if (editDoor && !nextBlocked) {
+    nextHint = 'Every step above is one click away — change what you came for and press Update and save.';
+  }
 
   // ─── T49 F3: …AND THE BACK AT THE START OF IT IS THE STEP'S ───────────────
   // On 5.1 there is no earlier TAB, so this row's Back used to be a dead grey
@@ -1082,18 +1087,34 @@ export default function WizardSettings({
           Ustawienia must never mean walking the whole thing again — and one
           ahead of the walk is not yet a place you can be. `visibleTabs` does
           the renumbering, so retail's five read 1…5 rather than 1,2,3,4,6. */}
-      <ol className="flex items-center gap-1 flex-wrap text-[11px]" data-wizard-tabs="1">
+      <ol className="flex items-center gap-1 flex-wrap text-[11px]" data-wizard-tabs="1" data-wizard-jumpable={editDoor ? '1' : '0'}>
         {tabs.map((t, i) => {
-          const state = t.id === tab ? 'current' : (visited.includes(t.id) ? 'visited' : 'ahead');
+          // ─── TURN 49 (CLAUDE.md F7): EDITING IS NOT A CHAIN ───────────────
+          //
+          // *"jak juz mamy edit setup to powinno byc mozliwosc przeskakiwania z
+          // 5.1 do 5.4 etc, bo juz bylo ustawione i nie potrzebujemy sztywnego
+          // lancucha — bo zmieniamy tylko niektore itemy."*
+          //
+          // A NEW project keeps its chain: the steps carry each other and
+          // skipping one would leave a hole, which is why a tab one AHEAD of
+          // the walk is not yet a place you can be. An EXISTING project is the
+          // opposite case — everything is already answered, and the owner opens
+          // this window to change ONE thing. So through the EDIT door every tab
+          // is a place you can be, in any order, back and forth, and it reads
+          // as one: an answered step is `visited`, which it is.
+          const ahead = !visited.includes(t.id);
+          const state = t.id === tab ? 'current' : ((editDoor || !ahead) ? 'visited' : 'ahead');
+          const canJump = editDoor || !ahead;
           return (
             <li key={t.id} className="flex items-center gap-1">
               <button
                 type="button"
-                title={t.hint}
+                title={editDoor ? `${t.hint} — jump straight here` : t.hint}
                 data-wizard-tab={t.id}
                 data-tab-state={state}
+                data-tab-jump={canJump ? '1' : '0'}
                 data-tab-number={tabNumber(t.n)}
-                disabled={state === 'ahead'}
+                disabled={!canJump}
                 className={`px-2 py-1 rounded border transition-colors ${state === 'current'
                   ? 'border-gold text-gold bg-shell-700'
                   : (state === 'visited'
@@ -1463,7 +1484,10 @@ export default function WizardSettings({
                   title={carcStopLabel(stop)}
                   data-carcass-dot={stop}
                   data-dot-state={stop === carcAt ? 'current' : (carcStops.indexOf(stop) < carcStops.indexOf(carcAt) ? 'done' : 'ahead')}
-                  disabled={carcStops.indexOf(stop) > carcStops.indexOf(carcAt)}
+                  // T49 F7: the same ruling one level down. A new project walks
+                  // its chain; an existing one is already answered, so through
+                  // the EDIT door a dot ahead of the walk is a place you can be.
+                  disabled={!editDoor && carcStops.indexOf(stop) > carcStops.indexOf(carcAt)}
                   className={`w-2.5 h-2.5 rounded-full border ${stop === carcAt
                     ? 'bg-gold border-gold'
                     : (carcStops.indexOf(stop) < carcStops.indexOf(carcAt) ? 'bg-shell-600 border-shell-600' : 'border-shell-600')}`}
@@ -1691,7 +1715,9 @@ export default function WizardSettings({
                   title={frontStopLabel(stop)}
                   data-front-dot={stop}
                   data-dot-state={stop === frontAt ? 'current' : (frontStops.indexOf(stop) < frontStops.indexOf(frontAt) ? 'done' : 'ahead')}
-                  disabled={frontStops.indexOf(stop) > frontStops.indexOf(frontAt)}
+                  // T49 F7: as the carcasses' dots — jumpable through the EDIT
+                  // door, a strict chain in a new project.
+                  disabled={!editDoor && frontStops.indexOf(stop) > frontStops.indexOf(frontAt)}
                   className={`w-2.5 h-2.5 rounded-full border ${stop === frontAt
                     ? 'bg-gold border-gold'
                     : (frontStops.indexOf(stop) < frontStops.indexOf(frontAt) ? 'bg-shell-600 border-shell-600' : 'border-shell-600')}`}

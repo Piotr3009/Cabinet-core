@@ -220,8 +220,10 @@ test('F7 — the jump is a DETOUR: it remembers the step it left from', () => {
 
 test('F7 — visited tabs stay clickable through any error state', () => {
   // Nothing about a conflict reaches the strip: the only thing that disables a
-  // tab is being AHEAD of the walk.
-  assert.match(WIZ, /disabled=\{state === 'ahead'\}/);
+  // tab is being AHEAD of the walk — and, since T49 F7, only in a NEW project.
+  // Through the EDIT door there is no chain to be ahead of.
+  assert.match(WIZ, /const canJump = editDoor \|\| !ahead;/);
+  assert.match(WIZ, /disabled=\{!canJump\}/);
   assert.doesNotMatch(WIZ, /disabled=\{[^}]*conflict/);
   assert.doesNotMatch(WIZ, /disabled=\{[^}]*blocker/);
   // …and the walk survives the detour, so landing back on the strip finds it

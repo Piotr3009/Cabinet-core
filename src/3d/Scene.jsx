@@ -495,7 +495,20 @@ function Lights({
   // ─── F10.3: THE SLIDER ───────────────────────────────────────────────────
   // One multiplier on every lamp, so the RATIOS the rig was balanced at are
   // exactly the ones turn 10 measured whatever it is set to.
-  const gain = Number(brightness) > 0 ? Number(brightness) : 1;
+  //
+  // ─── TURN 50 (CLAUDE.md F14): …TIMES THE RIG'S OWN BASE ──────────────────
+  //
+  // The owner: *"default oświetlenia jasności … teraz 100 to niech będzie jakby
+  // teraz było 75."*  So the WHOLE rig is scaled at its base, HERE, in the one
+  // expression every lamp below already multiplies by — not by editing five
+  // intensities, which would scatter one decision across five numbers and lose
+  // the ability to tune any of them on its own.
+  //
+  // `appearance.studio.baseGain` is that number (0.75). What the slider calls
+  // 100 % now lands where 75 % landed; its min, max, step and default are
+  // untouched.
+  const baseGain = Number(studio.baseGain) > 0 ? Number(studio.baseGain) : 1;
+  const gain = (Number(brightness) > 0 ? Number(brightness) : 1) * baseGain;
 
   // A RectAreaLight without the LTC tables lights NOTHING and reflects in
   // nothing — silently, no warning. Until tonight they were loaded only by

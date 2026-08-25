@@ -1037,7 +1037,23 @@ export const DEFAULT_CABINET_PROFILE = {
   // The LIST (order, labels, category, scope) is engine/projectTypes.js; the
   // millimetres are here, because millimetres are always here.
   projectTypes: {
-    wardrobe: { heights: { tall: 2400 } },
+    // ─── TURN 50 (CLAUDE.md F13): THE WARDROBE OVERRIDES NOTHING ──────────
+    //
+    // The owner, 25.08.2026: *"default wysokości szaf 2150."*  F13: *"this
+    // feature is to make sure it is the ONLY one."*
+    //
+    // This row said `{ tall: 2400 }`, which made THREE default heights for one
+    // cabinet: 2400 here, 2100 in the wizard's own seed (T44-F3's literal, now
+    // gone), and the 2150 that `projectHeights.tall` and
+    // `wardrobe.defaults.height` have both carried all along. A new wardrobe
+    // job opened at 2400 or at 2100 depending on which door it came in by.
+    //
+    // A wardrobe is built to the project's own TALL height, which is 2150, and
+    // that is now the only place the figure lives. The row stays — with nothing
+    // in it — because the MECHANISM is not the fault and the vanity below still
+    // uses it; a workshop that really does build 2400 wardrobes puts one number
+    // back here and nothing else changes.
+    wardrobe: { heights: {} },
     // A vanity carcass hangs or stands under a basin, and 770 + 100 legs + a
     // top is a worktop at 890 — too high for a bathroom.
     vanity: { heights: { base: 600 } },
@@ -2186,6 +2202,26 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // The second is `spots` below — the studio jupiters Piotr asked for by name.
     studio: {
+      // ─── TURN 50 (CLAUDE.md F14): THE WHOLE RIG SHIPS A QUARTER DARKER ───
+      //
+      // The owner, 25.08.2026: *"default oświetlenia jasności … teraz 100 to
+      // niech będzie jakby teraz było 75."*
+      //
+      // ONE NAMED NUMBER, multiplied into the same `gain` the brightness slider
+      // already produces (`3d/Scene.jsx`). It is deliberately NOT mixed into the
+      // lamps' own intensities: the bands, the pillars, the key, the fill and
+      // the rim keep their own numbers so each can still be tuned on its own,
+      // and every ratio turn 10 measured survives untouched.
+      //
+      // NAMED CONSEQUENCE: the CEILING drops with it. What the slider calls
+      // 100 % now lands where 75 % landed, so the top of the slider is a
+      // quarter dimmer than it could reach yesterday — which is what was asked
+      // for. If a bright kitchen ever needs the old maximum, THIS is the one
+      // number to raise, and CLAUDE.md F14 is the paragraph to come back to.
+      //
+      // Nothing else about the slider changes: its min, max, step and default
+      // stay exactly as the profile has them.
+      baseGain: 0.75,
       ambient: 0.2,
       key: 1.0,
       fill: 0.55,
@@ -2245,10 +2281,22 @@ export const DEFAULT_CABINET_PROFILE = {
       pillars: {
         // The scale a RectAreaLight works on is NOT the scale a point light
         // does. The LED halos — the only area lights this app had before
-        // tonight, and the only ones known to read correctly — run at 22, and
-        // the first cut of the pillars guessed 3.2. Seven times too little,
-        // which is most of why the owner saw nothing.
-        intensity: 22,
+        // T47, and the only ones known to read correctly — run at 22, and the
+        // first cut of the pillars guessed 3.2. Seven times too little, which
+        // is most of why the owner saw nothing.
+        //
+        // ─── TURN 50 (CLAUDE.md F14): …AND THEN HALVED, ON THEIR OWN ────────
+        //
+        // The owner, the same evening, on the showroom pillars specifically:
+        // *"za jasno świecą, ściemnij o połowę."*  22 → 11, its own number,
+        // changed on its own — which is exactly why `baseGain` above is kept
+        // out of the individual lamps: it lets this one move alone.
+        //
+        // THE TWO REDUCTIONS COMPOUND, and that is intended. A pillar ends the
+        // night at 11 × 0.75 = 8.25 of the gain it had at 22, which is 37.5 %
+        // of what it was. If that turns out to be a quarter too dark it is THIS
+        // number that comes back up, not `baseGain`.
+        intensity: 11,
         colour: '#ffffff',
         widthMm: 260, // the slab's width — a tall window, not a line
         forwardMm: 900, // how far in front of the fronts they stand

@@ -172,10 +172,21 @@ test('a kitchen IS the standard, so it changes no heights; the two that differ s
     'the profile heights ARE the kitchen — overriding them here would be two sources for one number');
   assert.deepEqual(heightsForProjectType('kitchen', P), standard);
 
-  // A fitted wardrobe is taller and a vanity is lower. Both are in
-  // profile.projectTypes, so a workshop that builds otherwise edits one file.
-  assert.equal(heightsForProjectType('wardrobe', P).tall, P.projectTypes.wardrobe.heights.tall);
+  // ─── T50-F13: A WARDROBE IS THE STANDARD TOO, NOW ───────────────────────
+  // This row said `{ tall: 2400 }` and made a third default height for one
+  // cabinet (2400 here, 2100 in the wizard's own seed, 2150 in the profile).
+  // The owner: *"default wysokości szaf 2150."*  So a wardrobe overrides
+  // nothing and takes the project's own tall height, which IS 2150.
+  assert.deepEqual(heightOverridesFor('wardrobe', P), {}, 'nothing of its own any more');
+  assert.equal(heightsForProjectType('wardrobe', P).tall, standard.tall);
+  assert.equal(heightsForProjectType('wardrobe', P).tall, 2150, 'his own number');
   assert.equal(heightsForProjectType('wardrobe', P).base, standard.base, 'and nothing else moves with it');
+  // The MECHANISM is untouched — a workshop that really does build 2400
+  // wardrobes puts one number back and nothing else changes.
+  assert.equal(
+    heightsForProjectType('wardrobe', { ...P, projectTypes: { ...P.projectTypes, wardrobe: { heights: { tall: 2400 } } } }).tall,
+    2400,
+  );
   assert.equal(heightsForProjectType('vanity', P).base, P.projectTypes.vanity.heights.base);
   assert.ok(heightsForProjectType('vanity', P).base < standard.base, 'a basin is lower than a worktop');
 });

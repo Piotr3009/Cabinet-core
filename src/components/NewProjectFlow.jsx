@@ -12,7 +12,7 @@ import { migrateDesign, projectHeights } from '../engine/design.js';
 import { wizardStartBlockers } from '../engine/projectSettings.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { DEFAULT_SCOPE, WIZARD_STEPS, backStep, stepsInScope } from '../lib/wizardSteps.js';
-import { T44_DEFAULTS } from '../lib/wizardTabs.js';
+import { wardrobeSeed } from '../lib/wizardTabs.js';
 
 // ─── New project (turn 7, CLAUDE.md F2 / BACKLOG #41) ───
 //
@@ -124,15 +124,23 @@ export default function NewProjectFlow({
     //
     // *"Dimensions: default height 2100, plinth 100 … depth 568."* The depth
     // is already the profile's (T32 F1.3, and the spec keeps it: *"depth
-    // default stays 568"*); the height is not, and the plinth agrees.
+    // default stays 568"*); the height was not, and the plinth agreed.
     //
-    // It is applied HERE, through the same setter, and NOT by editing the
-    // profile: iron rule 2 freezes `src/engine/**` byte-for-byte tonight, and
-    // a workshop default that moved would recut every wardrobe the six
-    // standard configs answer for. This is the SEED a new job starts on — one
+    // ─── TURN 50 (CLAUDE.md F13): …AND NOW IT READS THE PROFILE ────────────
+    //
+    // The owner, 25.08: *"default wysokości szaf 2150."*  T44 wrote 2100 as a
+    // literal beside the wizard, with its reason: iron rule 2 froze
+    // `src/engine/**` that night so the seed could not go in the profile. The
+    // consequence is what F13 ends — a wardrobe STARTED here opened at 2100
+    // while `projectHeights.tall` said 2150, so the same cabinet had two
+    // default heights depending on which door it came in by.
+    //
+    // `wardrobeSeed(profile)` is that one number now. Still applied HERE and
+    // through the same setter, so it is still the SEED a job starts on — one
     // project's number, editable on tab 1, exactly like every other height.
     if (isWardrobeSeed(type.id)) {
-      setProjectHeights({ tall: T44_DEFAULTS.height, toeKick: T44_DEFAULTS.plinth });
+      const seed = wardrobeSeed(profile);
+      setProjectHeights({ tall: seed.height, toeKick: seed.plinth });
     }
     // T49 F1: the type no longer writes the scope. It suggests one, on the
     // scope step, in a sentence.

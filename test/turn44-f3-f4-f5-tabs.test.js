@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
-  T44_DEFAULTS, TILE_SWATCH_PX, WARDROBE_DEPTH_MM, dimensionAsked,
+  wardrobeSeed, TILE_SWATCH_PX, WARDROBE_DEPTH_MM, dimensionAsked,
 } from '../src/lib/wizardTabs.js';
 import {
   FRONT_OPENINGS, FRONT_OPENING_IDS, J_HANDLE_STYLE, frontOpening, frontOpeningLabel,
@@ -63,7 +63,20 @@ test('F3 — the plinth says what it is, and the totals line stays', () => {
 });
 
 test('F3 — the owner’s baked-in defaults: 2100 · 100 · 568', () => {
-  assert.deepEqual(T44_DEFAULTS, { height: 2100, plinth: 100, depth: 568 });
+  // ─── T50-F13: THE SEED READS THE PROFILE ────────────────────────────────
+  // T44 wrote `{ height: 2100, plinth: 100, depth: 568 }` as a literal, with
+  // its reason: iron rule 2 froze `src/engine/**` that night. The owner has
+  // since ruled *"default wysokości szaf 2150"*, and F13 asks that the number
+  // live in ONE place — so the seed is derived, and it is the profile's own.
+  assert.deepEqual(wardrobeSeed(P), {
+    height: P.projectHeights.tall,
+    plinth: P.projectHeights.toeKick,
+    depth: P.wardrobe.defaults.depth,
+  });
+  assert.equal(wardrobeSeed(P).height, 2150, 'which is his 2150');
+  // …and a workshop that moves its own tall height moves the seed with it,
+  // which is the whole of "one place".
+  assert.equal(wardrobeSeed({ ...P, projectHeights: { ...P.projectHeights, tall: 2400 } }).height, 2400);
   assert.equal(WARDROBE_DEPTH_MM, 568);
   // The DEPTH is already the profile's own — the spec keeps it ("depth default
   // stays 568"), and `projectDepth` has answered 568 for a wardrobe since T32.
@@ -73,11 +86,11 @@ test('F3 — the owner’s baked-in defaults: 2100 · 100 · 568', () => {
   // byte-for-byte tonight, and a moved profile number would recut every
   // wardrobe the six standard configs answer for.
   const flow = readFileSync(new URL('../src/components/NewProjectFlow.jsx', import.meta.url), 'utf8');
-  assert.match(flow, /setProjectHeights\(\{ tall: T44_DEFAULTS\.height, toeKick: T44_DEFAULTS\.plinth \}\)/);
+  assert.match(flow, /setProjectHeights\(\{ tall: seed\.height, toeKick: seed\.plinth \}\)/);
   assert.match(flow, /if \(isWardrobeSeed\(type\.id\)\)/);
   // …and the profile it sits on is untouched: 2150 is still the workshop's.
   assert.equal(projectHeights(migrateDesign({ projectType: 'wardrobe' }), P).tall, 2150);
-  assert.equal(projectHeights(migrateDesign({}), P).toeKick, T44_DEFAULTS.plinth);
+  assert.equal(projectHeights(migrateDesign({}), P).toeKick, wardrobeSeed(P).plinth);
 });
 
 test('F3 — a wardrobe never sees the three kitchen heights', () => {

@@ -807,6 +807,37 @@ export function runChecks({
     }));
   }
 
+  // ── #21 the slope took a hinge off a door (T50-F7) ──────────────────────
+  //
+  // The owner: *"jak drzwi się zmniejszają, automatycznie usuwamy zawiasy tam
+  // gdzie jest skos."*  It does — and *"Check reports what was removed, per
+  // door — the app never silently changes a drilling pattern."*
+  //
+  // Both numbers are on the PIECE (`meta.slopeCut.hinges`), written by the same
+  // pass that re-ran the ladder, so this rule reads them rather than deriving a
+  // second opinion about how many hinges a cut door takes.
+  //
+  // It is a NOTICE and not a fault: nothing is wrong, the app has done the
+  // right thing, and the joiner is being told that it did. Yellow, per door.
+  for (const entry of entries) {
+    for (const pnl of entry.result?.panels || []) {
+      const h = pnl?.meta?.slopeCut?.hinges;
+      if (!h || !(Number(h.was) > Number(h.now))) continue;
+      const num = entry.unit?.params?.unit_num || entry.result?.unitNum || entry.unit?.id || '';
+      const gone = Number(h.was) - Number(h.now);
+      out.push(finding(21, 'yellow', {
+        unitId: entry.unit?.id || null,
+        unitNum: num,
+        panelId: pnl.id,
+        message: `${num} ${pnl.id}: the slope took ${gone} hinge${gone === 1 ? '' : 's'} off this door — `
+          + `${h.was} became ${h.now}, re-spaced over what is left of the leaf.`,
+        subject: { unitId: entry.unit?.id || null, panelId: pnl.id, editor: 'element' },
+        hingesWas: Number(h.was),
+        hingesNow: Number(h.now),
+      }));
+    }
+  }
+
   // ── #20 a unit that is ALREADY bigger than its room (T50-F3) ─────────────
   //
   // The owner: *"dlaczego pozwala system dodawać top box powyżej rozmiaru

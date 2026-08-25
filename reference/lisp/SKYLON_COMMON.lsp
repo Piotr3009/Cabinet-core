@@ -719,12 +719,19 @@
   (makePolyline "OUTLINE" pts)
   
   ;; Puzzle sockets - TOP edge
-  (drawRect "PUZZLE_SOCKET" (+ x0 95.0 -25.5) (+ y0 wys (- S)) (+ x0 95.0 25.5) (+ y0 wys 6.0))
-  (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 -24.5) (+ y0 wys (- S) 1.0) 3.75)
-  (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 24.5) (+ y0 wys (- S) 1.0) 3.75)
-  (drawRect "PUZZLE_SOCKET" (+ x0 szer -95.0 -25.5) (+ y0 wys (- S)) (+ x0 szer -95.0 25.5) (+ y0 wys 6.0))
-  (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 szer -95.0 -24.5) (+ y0 wys (- S) 1.0) 3.75)
-  (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 szer -95.0 24.5) (+ y0 wys (- S) 1.0) 3.75)
+  ;; T50 (CLAUDE.md F8): NOT under a slope. The roof board carries no tab, so
+  ;; a socket on the cut edge has nothing to catch and its dog bones surface
+  ;; on a visible edge for nothing - the board is glued and screwed down onto
+  ;; the bevel and the joint is not a puzzle. The law is stated above, beside
+  ;; SKY:slopeCutPts. Flat ceiling, no switch set: drawn exactly as ever.
+  (if (not (SKY:slopeOn))
+    (progn
+      (drawRect "PUZZLE_SOCKET" (+ x0 95.0 -25.5) (+ y0 wys (- S)) (+ x0 95.0 25.5) (+ y0 wys 6.0))
+      (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 -24.5) (+ y0 wys (- S) 1.0) 3.75)
+      (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 24.5) (+ y0 wys (- S) 1.0) 3.75)
+      (drawRect "PUZZLE_SOCKET" (+ x0 szer -95.0 -25.5) (+ y0 wys (- S)) (+ x0 szer -95.0 25.5) (+ y0 wys 6.0))
+      (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 szer -95.0 -24.5) (+ y0 wys (- S) 1.0) 3.75)
+      (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 szer -95.0 24.5) (+ y0 wys (- S) 1.0) 3.75)))
   ;; Puzzle sockets - BOTTOM edge
   (drawRect "PUZZLE_SOCKET" (+ x0 95.0 -25.5) (- y0 6.0) (+ x0 95.0 25.5) (+ y0 S))
   (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 -24.5) (+ y0 S -1.0) 3.75)
@@ -739,9 +746,15 @@
   (drawRect "PUZZLE_DOG_BONES" (+ x0 szer) (- t3y 30.0) (+ x0 szer G) (+ t3y 30.0))
   
   ;; Screws
-  (drawCircle "SCREWS_3MM" (+ x0 50.0) (+ y0 wys (- S)) 1.5)
-  (drawCircle "SCREWS_3MM" (+ x0 szer -50.0) (+ y0 wys (- S)) 1.5)
-  (drawCircle "SCREWS_3MM" midX (+ y0 wys (- S)) 1.5)
+  ;; T50 (CLAUDE.md F8): the TOP row goes with the top sockets - the law says
+  ;; "and no top screw row", and `sideCnc` in the application turns topSocket
+  ;; and topScrews off together. The BOTTOM row is untouched: it screws into
+  ;; the bottom panel, which is there whatever the ceiling does.
+  (if (not (SKY:slopeOn))
+    (progn
+      (drawCircle "SCREWS_3MM" (+ x0 50.0) (+ y0 wys (- S)) 1.5)
+      (drawCircle "SCREWS_3MM" (+ x0 szer -50.0) (+ y0 wys (- S)) 1.5)
+      (drawCircle "SCREWS_3MM" midX (+ y0 wys (- S)) 1.5)))
   (drawCircle "SCREWS_3MM" (+ x0 50.0) (+ y0 S) 1.5)
   (drawCircle "SCREWS_3MM" (+ x0 szer -50.0) (+ y0 S) 1.5)
   (drawCircle "SCREWS_3MM" midX (+ y0 S) 1.5)
@@ -801,12 +814,19 @@
   (makePolyline "OUTLINE" pts)
   
   ;; Puzzle sockets - TOP edge
-  (drawRect "PUZZLE_SOCKET" (+ x0 95.0 -25.5) (+ y0 wys (- S)) (+ x0 95.0 25.5) (+ y0 wys 6.0))
-  (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 -24.5) (+ y0 wys (- S) 1.0) 3.75)
-  (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 24.5) (+ y0 wys (- S) 1.0) 3.75)
-  (drawRect "PUZZLE_SOCKET" (+ x0 szer -95.0 -25.5) (+ y0 wys (- S)) (+ x0 szer -95.0 25.5) (+ y0 wys 6.0))
-  (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 szer -95.0 -24.5) (+ y0 wys (- S) 1.0) 3.75)
-  (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 szer -95.0 24.5) (+ y0 wys (- S) 1.0) 3.75)
+  ;; T50 (CLAUDE.md F8): NOT under a slope. The roof board carries no tab, so
+  ;; a socket on the cut edge has nothing to catch and its dog bones surface
+  ;; on a visible edge for nothing - the board is glued and screwed down onto
+  ;; the bevel and the joint is not a puzzle. The law is stated above, beside
+  ;; SKY:slopeCutPts. Flat ceiling, no switch set: drawn exactly as ever.
+  (if (not (SKY:slopeOn))
+    (progn
+      (drawRect "PUZZLE_SOCKET" (+ x0 95.0 -25.5) (+ y0 wys (- S)) (+ x0 95.0 25.5) (+ y0 wys 6.0))
+      (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 -24.5) (+ y0 wys (- S) 1.0) 3.75)
+      (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 24.5) (+ y0 wys (- S) 1.0) 3.75)
+      (drawRect "PUZZLE_SOCKET" (+ x0 szer -95.0 -25.5) (+ y0 wys (- S)) (+ x0 szer -95.0 25.5) (+ y0 wys 6.0))
+      (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 szer -95.0 -24.5) (+ y0 wys (- S) 1.0) 3.75)
+      (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 szer -95.0 24.5) (+ y0 wys (- S) 1.0) 3.75)))
   ;; Puzzle sockets - BOTTOM edge
   (drawRect "PUZZLE_SOCKET" (+ x0 95.0 -25.5) (- y0 6.0) (+ x0 95.0 25.5) (+ y0 S))
   (drawCircle "PUZZLE_HOLES_7_5MM" (+ x0 95.0 -24.5) (+ y0 S -1.0) 3.75)
@@ -821,9 +841,15 @@
   (drawRect "PUZZLE_DOG_BONES" (- x0 G) (- t3y 30.0) x0 (+ t3y 30.0))
   
   ;; Screws
-  (drawCircle "SCREWS_3MM" (+ x0 50.0) (+ y0 wys (- S)) 1.5)
-  (drawCircle "SCREWS_3MM" (+ x0 szer -50.0) (+ y0 wys (- S)) 1.5)
-  (drawCircle "SCREWS_3MM" midX (+ y0 wys (- S)) 1.5)
+  ;; T50 (CLAUDE.md F8): the TOP row goes with the top sockets - the law says
+  ;; "and no top screw row", and `sideCnc` in the application turns topSocket
+  ;; and topScrews off together. The BOTTOM row is untouched: it screws into
+  ;; the bottom panel, which is there whatever the ceiling does.
+  (if (not (SKY:slopeOn))
+    (progn
+      (drawCircle "SCREWS_3MM" (+ x0 50.0) (+ y0 wys (- S)) 1.5)
+      (drawCircle "SCREWS_3MM" (+ x0 szer -50.0) (+ y0 wys (- S)) 1.5)
+      (drawCircle "SCREWS_3MM" midX (+ y0 wys (- S)) 1.5)))
   (drawCircle "SCREWS_3MM" (+ x0 50.0) (+ y0 S) 1.5)
   (drawCircle "SCREWS_3MM" (+ x0 szer -50.0) (+ y0 S) 1.5)
   (drawCircle "SCREWS_3MM" midX (+ y0 S) 1.5)
@@ -1304,10 +1330,48 @@
 ;;; screwed down onto the bevel; the joint is NOT a puzzle.
 ;;;
 ;;; Application follows this law in src/engine/cabinet.js (sideCnc: the
-;;; KIT_SINK edges flag, topSocket/topScrews off under a roof). The
-;;; kit-level gate HERE - drawBUL/drawBUR skipping their "Puzzle sockets -
-;;; TOP edge" block when the slope is on - is NAMED DEBT for the next
-;;; slope turn: the kits do not yet take the slope as an argument.
+;;; KIT_SINK edges flag, topSocket/topScrews off under a roof).
+;;;
+;;; TURN 50 (CLAUDE.md F8) - THE DEBT IS PAID.
+;;;
+;;; T47 wrote here that the kit-level gate was "NAMED DEBT for the next slope
+;;; turn: the kits do not yet take the slope as an argument". This is that
+;;; turn, and CLAUDE.md F8 says it in as many words: drawBUL/drawBUR take the
+;;; slope and skip their "Puzzle sockets - TOP edge" block when it is on.
+;;;
+;;; HOW IT ARRIVES. Not as an argument. `defun` in AutoLISP has fixed arity,
+;;; so a seventh parameter on drawBUL would break every call site in every
+;;; kit - and CLAUDE.md is explicit that SKYLON_COMMON.lsp is the ONLY LISP
+;;; file this turn touches. So the slope is a MODULE-LEVEL SWITCH that this
+;;; file owns and that the kits do not have to know about: a kit that never
+;;; calls SKY:setSlope draws exactly what it drew last night, hole for hole.
+;;;
+;;; THE TOP SCREW ROW GOES WITH IT. The law three lines above says "no
+;;; top-board sockets, no dog-bone reliefs for them and NO TOP SCREW ROW",
+;;; and the application obeys all three (topSocket AND topScrews off under a
+;;; roof). A gate that dropped the sockets and left the screws would be the
+;;; kit and the app disagreeing about the same edge.
+;;;
+;;; The three routines below are the whole of it, and they are here rather
+;;; than beside drawBUL because this is where the law is written.
+;;;----------------------------------------
+
+;;; The slope, as the kits' own switch. `pts` is a cut line - the same
+;;; ((x y) ...) list SKY:slopeCutPts takes - or nil for a flat ceiling.
+(defun SKY:setSlope (pts)
+  (setq *SKY:SLOPE-PTS* pts))
+
+;;; Put it back. A kit that has finished a sloped carcass calls this before
+;;; the next one, or the next one inherits somebody else's ceiling.
+(defun SKY:clearSlope ()
+  (setq *SKY:SLOPE-PTS* nil))
+
+;;; Is a slope on? Two points is the fewest a line can have; anything less is
+;;; nobody having said, which is a flat ceiling.
+(defun SKY:slopeOn ()
+  (and (boundp '*SKY:SLOPE-PTS*)
+       *SKY:SLOPE-PTS*
+       (> (length *SKY:SLOPE-PTS*) 1)))
 ;;;----------------------------------------
 
 ;;;----------------------------------------

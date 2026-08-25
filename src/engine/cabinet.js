@@ -5237,9 +5237,38 @@ export function computeCabinet(params, profileOverride) {
     const top = Math.max(0, Number(ep?.top_mm) || 0);
     const panelH = H + drop + top;
     if (panelH <= 0 || t <= 0) continue;
+    // ─── TURN 50 (CLAUDE.md F5): AN END PANEL STOPS AT THE SLOPE ────────────
+    //
+    // The owner, 25.08.2026: *"end panele nie powinny się ciągnąć do płaskiego
+    // sufitu jak jest skos — koniecznie muszą się zakończyć na skosie."*
+    //
+    // It takes the treatment the SIDES took in T47, because it is the same
+    // board in the same place: a plate standing at ONE x, spanning the DEPTH.
+    // The slope runs along the WALL, so the ceiling over an end panel's depth
+    // is one number — the board is cut LEVEL and the wedge comes off through
+    // its thickness as a BEVEL, with the angle stated on the piece, on the part
+    // drawing and on the CNC sheet (`slopeNoteText` reads `meta.slopeCut.angles`).
+    //
+    // It stands OUTSIDE the carcass, so the line is taken with `reach: true` —
+    // the end run extended at its own gradient, exactly as the side infill
+    // beside it does (T47-F4) and for exactly the same reason.
+    //
+    // `dy` is the panel's own y origin: a panel dropped to the floor starts
+    // BELOW the carcass base, and its ceiling is that much further up its own
+    // board. Gated on `cutLine` like every other line in this file, so a flat
+    // room's end panel is byte-identical.
+    const epFrom = side === 'L' ? -t : W;
+    const epY = drop > 0 ? -drop : 0;
+    const epCut = cutLine
+      ? subSlopeCut(cutLine, epFrom, epFrom + t, { dy: epY, reach: true })
+      : null;
+    const epH = epCut
+      ? Math.min(panelH, Math.max(0, roundTo(epCut.pts.reduce((hi, q) => Math.max(hi, q.y), 0), 4)))
+      : panelH;
+    const epAngles = epCut && epH < panelH ? infillAngles(epFrom, epFrom + t) : null;
     panels.push(panel({
-      id: `END-${side}`, part: 'END-PANEL', role: 'end_panel', w: endPanelDepth, h: panelH, thickness: t,
-      edgeCode: codes.all, edgeLen: metres(2 * endPanelDepth + 2 * panelH),
+      id: `END-${side}`, part: 'END-PANEL', role: 'end_panel', w: endPanelDepth, h: epH, thickness: t,
+      edgeCode: codes.all, edgeLen: metres(2 * endPanelDepth + 2 * epH),
       // `drop > 0 ? -drop : 0` and not `-drop`: negative zero is a real value in
       // JS and a box.y of -0 fails an === check downstream for no reason.
       // …and it therefore STARTS at the wall, which in the unit's own frame is
@@ -5247,13 +5276,16 @@ export function computeCabinet(params, profileOverride) {
       // how much further off the wall this run has been stood (turn 28, F9).
       box: {
         x: side === 'L' ? -t : W,
-        y: drop > 0 ? -drop : 0,
+        y: epY,
         z: wallGap + insetBack > 0 ? -(wallGap + insetBack) : 0,
         w: t,
-        h: panelH,
+        h: epH,
         d: endPanelDepth,
       },
-      cnc: rectGeometry(endPanelDepth, panelH),
+      cnc: {
+        ...rectGeometry(endPanelDepth, epH),
+        ...(epH < panelH ? { drawn_w: roundTo(endPanelDepth, 4), drawn_h: roundTo(epH, 4) } : {}),
+      },
       meta: {
         side: side === 'L' ? 'left' : 'right',
         // What this piece IS, resolved — so the panel and the label say the
@@ -5265,6 +5297,19 @@ export function computeCabinet(params, profileOverride) {
         // block shows what the piece is rather than what was asked for.
         below_mm: drop,
         panelId: ep?.id || null,
+        // ─── TURN 50 (CLAUDE.md F5): …AND WHERE THE CEILING CUT IT ─────────
+        //
+        // Present only where the slope actually shortened the board, so a flat
+        // room's end panel carries exactly the meta it always did. `angles` is
+        // what `cnc/partLabel.js slopeNoteText` prints as `CUT 27.5°`, which is
+        // the "angle stated on the part and on the CNC sheet" F5 asks for.
+        ...(epH < panelH ? {
+          slopeCut: {
+            h: roundTo(epH, 4),
+            full: roundTo(panelH, 4),
+            ...(epAngles ? { angles: epAngles } : {}),
+          },
+        } : {}),
         // ─── TURN 50 (CLAUDE.md F4): WHO PUT THIS BOARD HERE ────────────────
         //
         // *"It carries `meta.autoAdded: true`, so a later turn can tell the two
@@ -5607,12 +5652,53 @@ export function computeCabinet(params, profileOverride) {
       low: Math.min(frontH, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
     };
   };
+  /**
+   * ─── TURN 50 (CLAUDE.md F7): THE LADDER, RE-RUN OVER WHAT IS LEFT ─────────
+   *
+   * The owner: *"jak drzwi się zmniejszają, automatycznie usuwamy zawiasy tam
+   * gdzie jest skos."*
+   *
+   * WHICH HEIGHT. A hinge is screwed to the leaf's FULL-HEIGHT EDGE — that is
+   * T46-F4's own law and `sl.hinge` is where it is decided — so the ladder is
+   * run over THAT edge's height and not over the leaf's tallest point, which
+   * under a bent ceiling may be a knee in the middle of a door with nothing to
+   * screw to.
+   *
+   * BY THE SAME RULE. `hingeRows` is the function that spaces a full door, and
+   * it is handed the shortened height: three hinges become two where two is
+   * what a door of that height takes, and the outer pair lands where the outer
+   * pair lands on any door that size. A joiner who has written his OWN list
+   * (`cfg.hingeRows`) still wins — `hingeRows` returns his list first, filtered
+   * to the board that is left — which is the standing law about hand edits.
+   *
+   * AND THE CUP STILL HAS TO FIT. The re-spaced rows are then kept to the ones
+   * whose PLATE lands on the board, which is T46's own margin: a hinge dropped
+   * when its centre fits but its screws do not is a hinge nobody can fit.
+   */
+  const slopeCupY = (sl) => {
+    const stile = sl.hinge === 'R' ? sl.roomR : sl.roomL;
+    const leafH = Math.max(0, Math.min(frontH, stile));
+    const margin = Number(P.hinges.cups.screwOffsetY) || 0;
+    const rows = hingeRows({
+      height: leafH,
+      rule: hingeRule,
+      standard: cfg.hingeStandard,
+      own: cfg.hingeRows,
+      doorHeight: leafH,
+      twoBelowMm: cfg.hingeTwoBelowMm,
+    }, P);
+    return rows
+      .map((c) => roundTo(c - overlayBase + cfg.doorExtend, 4))
+      .filter((y) => y >= 0 && y + margin <= leafH);
+  };
+
   /** A cut leaf's panel fields — its outline, its height, its forced hinge. */
   const cutFrontFields = (sl, leafW) => {
     if (!sl) return null;
     const geom = trimGeometryOnSlope(rectGeometry(leafW, frontH), {
       w: leafW, h: frontH, pts: sl.sheetPts,
     });
+    const fieldsCupY = slopeCupY(sl);
     return {
       h: roundTo(sl.tall, 4),
       cnc: {
@@ -5627,16 +5713,30 @@ export function computeCabinet(params, profileOverride) {
           hR: roundTo(sl.sheetR, 4),
         },
       },
-      // The ladder is run over the TALL edge's height and then kept to the
-      // cups that still land on the leaf — the diagonal edge never carries a
-      // hinge, and a cup bored past the cut is a cup in air. The margin is the
-      // cup's own screw offset, so a hinge is dropped when its PLATE would run
-      // off the board and not merely when its centre does.
-      cupY: cupY.filter((y) => y + (Number(P.hinges.cups.screwOffsetY) || 0) <= sl.tall),
+      // ─── TURN 50 (CLAUDE.md F7): A HINGE THAT HAS NO DOOR GOES ──────────
+      //
+      // The owner: *"jak drzwi się zmniejszają, automatycznie usuwamy zawiasy
+      // tam gdzie jest skos."*  T46 kept the FULL-DOOR ladder and simply
+      // dropped the rows that ran off the board, which leaves a 2150 wardrobe
+      // cut to 900 wearing two hinges at 100 and 490 and nothing above — the
+      // top of the leaf unsupported and the spacing a full door's.
+      //
+      // *"The remaining hinges re-space over what is LEFT of the leaf, by the
+      // same rule that spaces them on a full door."*  So the ladder is RUN
+      // AGAIN over the height of the HINGE STILE — the full-height edge, which
+      // is the edge a hinge is screwed to — through `hingeRows`, the same
+      // function that spaces a full door. `slopeCupY` is where that happens.
+      cupY: fieldsCupY,
       meta: {
         hinge: sl.hinge,
         hingeForced: true,
         slopeCut: {
+          // ─── TURN 50 (F7): WHAT THE SLOPE TOOK OFF THIS DOOR ──────────────
+          // *"Check reports what was removed, per door — the app never
+          // silently changes a drilling pattern."*  Both numbers, on the piece,
+          // so `engine/checks.js` rule #21 reads them rather than re-deriving a
+          // ladder of its own.
+          hinges: { was: cupY.length, now: fieldsCupY.length },
           // In the ROOM's frame, because that is the frame the owner's law is
           // spoken in — the outline beside it is the sheet's mirror of these.
           roomL: roundTo(sl.roomL, 4),
@@ -6008,8 +6108,24 @@ export function computeCabinet(params, profileOverride) {
     // edges, mitred at the diagonal. `shakerCutPocket` falls straight through
     // to `shakerPocket` for a leaf with no cut, so every front in every project
     // before tonight is machined by exactly the call it was machined by.
+    // ─── TURN 50 (CLAUDE.md F6): THE RECESS FOLLOWS THE CUT, KNEES AND ALL ──
+    //
+    // T46 handed the pocket the two EDGE heights and it drew one straight
+    // diagonal between them. T47 then made the ceiling a POLYLINE, and a shaker
+    // under a knee has been getting a straight chord across it ever since —
+    // the same smear T47 fixed for the carcass, one board down, and the debt
+    // T46 named. The leaf already carries its own stretch of the line in the
+    // SHEET's frame (`cnc.slopeCut.pts`, which is what the outline beside it
+    // was cut with), so the frame and the board it is in are one line.
+    //
+    // The pair is still passed as a FALLBACK, so a saved project or a fixture
+    // that carries only `{roomL, roomR}` reads exactly as it always did.
     const cutPair = pnl.meta?.slopeCut
-      ? { hL: pnl.meta.slopeCut.roomR, hR: pnl.meta.slopeCut.roomL }
+      ? {
+        hL: pnl.meta.slopeCut.roomR,
+        hR: pnl.meta.slopeCut.roomL,
+        ...(Array.isArray(pnl.cnc?.slopeCut?.pts) ? { pts: pnl.cnc.slopeCut.pts } : {}),
+      }
       : null;
     const pocket = shakerCutPocket({
       w: pnl.w, h: pnl.h, frame: shakerFrame, cut: cutPair,
@@ -6020,7 +6136,16 @@ export function computeCabinet(params, profileOverride) {
         panel: pnl.id,
         message: `${pnl.id}: ${shakerProblem({
           w: pnl.w,
-          h: cutPair ? Math.min(cutPair.hL, cutPair.hR, pnl.h) : pnl.h,
+          // The narrowest the leaf gets ANYWHERE, which under a bent line may
+          // be a knee rather than an edge.
+          h: cutPair
+            ? Math.min(
+              ...(Array.isArray(cutPair.pts) && cutPair.pts.length
+                ? cutPair.pts.map((q) => Number(q.y) || 0)
+                : [cutPair.hL, cutPair.hR]),
+              pnl.h,
+            )
+            : pnl.h,
           frame: shakerFrame,
         }, P)}`,
       });

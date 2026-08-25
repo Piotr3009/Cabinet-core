@@ -321,60 +321,130 @@ const trim = (v) => {
  *   null where the frame does not fit — the leaf is then cut plain.
  */
 export function shakerCutPocket({ w, h, frame, cut }, profile) {
-  if (!cut || !Number.isFinite(Number(cut.hL)) || !Number.isFinite(Number(cut.hR))) {
-    return shakerPocket({ w, h, frame }, profile);
-  }
+  const line = cutLinePts(cut, w);
+  if (!line) return shakerPocket({ w, h, frame }, profile);
   const width = Number(w) || 0;
   const f = Number(frame);
-  const hL = Number(cut.hL);
-  const hR = Number(cut.hR);
   // The narrowest the leaf gets is what decides, and it is asked of the very
   // function every straight front is asked of.
-  if (frameFitProblem({ w: width, h: Math.min(hL, hR, Number(h) || 0), frame: f }, profile)) return null;
+  const low = line.reduce((lo, q) => Math.min(lo, q.y), Infinity);
+  if (frameFitProblem({ w: width, h: Math.min(low, Number(h) || 0), frame: f }, profile)) return null;
   const rect = shakerPanelRect({ w: width, h, frame: f }, profile);
   if (!rect) return null;
-  // The diagonal, moved inward along its OWN normal.
-  const gradient = width > 0 ? (hR - hL) / width : 0;
-  const drop = f * Math.sqrt(1 + gradient * gradient);
-  const innerAt = (x) => hL + gradient * x - drop;
-  const round4 = (v) => Math.round(v * 1e4) / 1e4;
-  // The inset rectangle, clipped by the inset diagonal — the same half-plane
-  // clip the outline itself is cut with (`engine/puzzle.js`), so the frame and
-  // the board it is in can never disagree about where the diagonal is.
-  const corners = [[rect.x1, rect.y1], [rect.x2, rect.y1], [rect.x2, rect.y2], [rect.x1, rect.y2]];
-  const under = (p) => p[1] <= innerAt(p[0]) + 1e-9;
-  const cross = (a, b) => {
-    const fa = a[1] - innerAt(a[0]);
-    const fb = b[1] - innerAt(b[0]);
-    const d = fa - fb;
-    if (Math.abs(d) < 1e-12) return [b[0], innerAt(b[0])];
-    const t = Math.min(Math.max(fa / d, 0), 1);
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
-  };
-  const points = [];
-  for (let i = 0; i < corners.length; i += 1) {
-    const a = corners[i];
-    const b = corners[(i + 1) % corners.length];
-    if (under(a)) points.push([round4(a[0]), round4(a[1])]);
-    if (under(a) !== under(b)) {
-      const c = cross(a, b);
-      points.push([round4(c[0]), round4(c[1])]);
+
+  // ─── THE FRAME FOLLOWS THE LINE, SEGMENT BY SEGMENT (T50-F6) ─────────────
+  //
+  // Each straight run of the ceiling is moved INWARD along its OWN normal, so
+  // the rail under it is `frame` wide measured square to it — `frame · sec θ`
+  // in y, which is T46's factor per segment rather than once across the leaf.
+  // The inner boundary is the LOWER ENVELOPE of those offset lines: on a
+  // convex fall that is the exact inward offset, and on a valley it is
+  // conservative, which is the safe direction (a rail is never narrower than
+  // the frame, only wider).
+  const offsets = [];
+  for (let i = 1; i < line.length; i += 1) {
+    const a = line[i - 1];
+    const b = line[i];
+    const run = b.x - a.x;
+    if (!(Math.abs(run) > 1e-9)) continue;
+    const m = (b.y - a.y) / run;
+    offsets.push({ m, c: a.y - m * a.x - f * Math.sqrt(1 + m * m) });
+  }
+  if (!offsets.length) return null;
+  const innerAt = (x) => offsets.reduce((lo, o) => Math.min(lo, o.c + o.m * x), Infinity);
+
+  // Where the envelope BENDS: the line's own knees, and every crossing of two
+  // offset lines. Both are exact and there are at most a handful of each.
+  const bends = new Set(line.slice(1, -1).map((q) => q.x));
+  for (let i = 0; i < offsets.length; i += 1) {
+    for (let k = i + 1; k < offsets.length; k += 1) {
+      const dm = offsets[i].m - offsets[k].m;
+      if (Math.abs(dm) < 1e-12) continue;
+      bends.add((offsets[k].c - offsets[i].c) / dm);
     }
   }
-  if (points.length < 3) return null;
-  const ys = points.map((q) => q[1]);
-  const xs = points.map((q) => q[0]);
+
+  const round4 = (v) => Math.round(v * 1e4) / 1e4;
+  const ceilingOf = (x) => Math.min(rect.y2, innerAt(x));
+  // Every x the top boundary could change direction at, inside the recess.
+  const xs = [rect.x1, ...[...bends].filter((x) => x > rect.x1 + 1e-9 && x < rect.x2 - 1e-9), rect.x2]
+    .sort((a, b) => a - b);
+  // …plus where it crosses the recess's own flat top, which it does linearly
+  // between two consecutive bends.
+  const top = [];
+  for (let i = 0; i < xs.length; i += 1) {
+    const x = xs[i];
+    if (i > 0) {
+      const px = xs[i - 1];
+      const pa = innerAt(px) - rect.y2;
+      const pb = innerAt(x) - rect.y2;
+      if ((pa > 0) !== (pb > 0) && Math.abs(pa - pb) > 1e-12) {
+        const t = pa / (pa - pb);
+        top.push({ x: px + (x - px) * t, y: rect.y2 });
+      }
+    }
+    top.push({ x, y: ceilingOf(x) });
+  }
+  // A recess whose top boundary has fallen through its own floor is a leaf
+  // with no panel left — cut it plain and say so, exactly as a frame that will
+  // not fit is refused rather than squeezed.
+  if (top.every((q) => q.y <= rect.y1 + 1e-9)) return null;
+
+  const points = [
+    [round4(rect.x1), round4(rect.y1)],
+    [round4(rect.x2), round4(rect.y1)],
+    ...[...top].reverse().map((q) => [round4(q.x), round4(Math.max(rect.y1, q.y))]),
+  ];
+  // Two identical vertices in a row are one vertex — a knee that lands on the
+  // recess's own corner, and a flat ceiling whose envelope never bends.
+  const clean = points.filter((q, i) => {
+    const prev = points[(i - 1 + points.length) % points.length];
+    return Math.abs(prev[0] - q[0]) > 1e-9 || Math.abs(prev[1] - q[1]) > 1e-9;
+  });
+  if (clean.length < 3) return null;
+  const ys = clean.map((q) => q[1]);
+  const xsOut = clean.map((q) => q[0]);
   return {
     layer: rect.layer,
     // The BOUNDING BOX stays, so every reader written before tonight — the
     // 3-D solid, the elevation, the nesting — keeps working unchanged and a
-    // reader that understands `points` cuts the true pentagon.
-    x1: Math.min(...xs),
+    // reader that understands `points` cuts the true polygon.
+    x1: Math.min(...xsOut),
     y1: Math.min(...ys),
-    x2: Math.max(...xs),
+    x2: Math.max(...xsOut),
     y2: Math.max(...ys),
     depth: rect.depth,
     cutout: true,
-    points,
+    points: clean,
   };
+}
+
+/**
+ * The cut line a front carries, as points in ITS OWN sheet frame — or null
+ * where there is no cut at all.
+ *
+ * ─── TURN 50 (CLAUDE.md F6): T46'S NAMED DEBT, PAID ─────────────────────────
+ *
+ * T46 took `{ hL, hR }` — the clear height at the leaf's two edges — and drew
+ * one straight diagonal between them. T47 then made the ceiling a POLYLINE, and
+ * a shaker under a knee has been getting a straight chord across it ever since:
+ * the same smear T47 fixed for the carcass, one board down. A cut carrying
+ * `pts` answers with them; a cut carrying only the pair answers with the two
+ * vertices that pair always WAS, so every fixture and every saved project reads
+ * straight.
+ */
+function cutLinePts(cut, w) {
+  if (!cut) return null;
+  const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : NaN);
+  if (Array.isArray(cut.pts) && cut.pts.length >= 2) {
+    const pts = cut.pts
+      .map((q) => ({ x: num(q?.x), y: num(q?.y) }))
+      .filter((q) => Number.isFinite(q.x) && Number.isFinite(q.y))
+      .sort((a, b) => a.x - b.x);
+    return pts.length >= 2 ? pts : null;
+  }
+  const hL = num(cut.hL);
+  const hR = num(cut.hR);
+  if (!Number.isFinite(hL) || !Number.isFinite(hR)) return null;
+  return [{ x: 0, y: hL }, { x: Number(w) || 0, y: hR }];
 }

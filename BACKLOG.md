@@ -149,9 +149,6 @@ BUDR: potwierdzenie warsztatowe 0.70 / holdery SINK bez oklejki / cokół per ci
     dystans, a nie zmniejszony slot. Limit: `profile.editor.maxInset`.
 33. [CRITICAL] Precyzja 0.5 mm end-to-end: wyświetlanie/pola/snap/etykiety pokazują
     połówki (196.5), zero Math.round na mm w UI; silnik już liczy dokładnie.
-34. [HIGH] Strzałki wymiarowe architektoniczne: cienkie linie (czerwień/granat),
-    groty kreskowe/otwarte jak na rzutach, koniec z wypełnionymi balonami;
-    BUG: groty odwrócone — naprawić.
 35. [HIGH] BUG preset CNC "Carcass only": ma znaczyć "wszystko NIE-sprayowane"
     (korpusy, półki, skrzynki, plecy) i wykluczać widoczne/wykańczane: fronty,
     drzwi, infille, plinth, end panele, spodnią widoczną wiszących.

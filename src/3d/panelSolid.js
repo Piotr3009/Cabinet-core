@@ -65,6 +65,45 @@ export function machinedPanelGeometry(panel, layers, profile, drills = []) {
 export function panelSolids(panel, layers, profile, drills = []) {
   const placement = panelPlacement(panel);
   if (!placement || !panel?.box) return NOTHING;
+  // ─── CHAT-FIX 25.08.2026 (part two): THE ROOF BOARD'S ENDS ARE VERTICAL ──
+  //
+  // The owner, red pen on both corners: *"katy nie sa poucinane."* His law,
+  // 24.08: *"pionowo lico do boku."* The leant board rendered as a rotated
+  // BOX, so its ends stood perpendicular to the board and the lower corners
+  // poked `G·sin β` past the plumb line at each end. The true section is a
+  // PARALLELOGRAM — ends vertical AFTER the lean, which in the board's own
+  // level frame means the underside is shifted `G·tan β` toward the LOW end.
+  // Its overall run is then `L + G·tan β` — the very `L_MAX` the cut list
+  // already prints, so the scene and the sheet finally say one number.
+  //
+  // Sides' bevel (part one, below) is untouched; a LEVEL top keeps the plain
+  // box it has always been.
+  if (panel.part === 'TOP' && panel.meta?.tilt_axis === 'z'
+    && Number.isFinite(Number(panel.meta?.tilt_deg)) && panel.meta?.tilt_pivot) {
+    const bx = panel.box;
+    const shear = bx.h * Math.tan(Math.abs(Number(panel.meta.tilt_deg)) * (Math.PI / 180));
+    const sign = Number(panel.meta.tilt_pivot.x) >= bx.x + bx.w / 2 ? 1 : -1;
+    const key = `ROOF|${bx.w}|${bx.h}|${bx.d}|${shear.toFixed(4)}|${sign}`;
+    const hit = cache.get(key);
+    if (hit) {
+      cache.delete(key);
+      cache.set(key, hit);
+      return hit;
+    }
+    const geometry = shearedRoofGeometry(bx, shear * sign);
+    applyBoxUVs(geometry, bx);
+    geometry.computeBoundingSphere();
+    const built = { solid: geometry, cuts: null };
+    cache.set(key, built);
+    if (cache.size > CACHE_LIMIT) {
+      const oldest = cache.keys().next().value;
+      const dropped = cache.get(oldest);
+      dropped?.solid?.dispose();
+      dropped?.cuts?.dispose();
+      cache.delete(oldest);
+    }
+    return built;
+  }
   const notches = socketNotches(panel, layers);
   // ─── Turn 12 (CLAUDE.md F6.2): the OTHER half of the joint ───
   // A socket is a POCKET and a TAB is part of the OUTLINE, and turn 11 only
@@ -173,6 +212,41 @@ export function panelSolids(panel, layers, profile, drills = []) {
 }
 
 const NOTHING = { solid: null, cuts: null };
+
+/**
+ * The roof board with VERTICAL ends (chat-fix 25.08.2026, part two).
+ *
+ * Box-centred like every solid here: x is the board's run, y its perpendicular
+ * G, z its depth. The TOP face keeps the box's own [−w/2, w/2]; the UNDERSIDE
+ * is shifted by `shift` (signed toward the low end), so after the scene's
+ * lean the ends stand plumb — *"pionowo lico do boku."* Non-indexed, so
+ * `computeVertexNormals` gives the flat facets a board has.
+ */
+function shearedRoofGeometry(box, shift) {
+  const hw = mm(box.w) / 2;
+  const hh = mm(box.h) / 2;
+  const hd = mm(box.d) / 2;
+  const s = mm(shift);
+  // Eight corners: t = top face, b = underside (shifted); L/R ends, F/K front/back.
+  const tLF = [-hw, hh, hd]; const tRF = [hw, hh, hd];
+  const tLK = [-hw, hh, -hd]; const tRK = [hw, hh, -hd];
+  const bLF = [-hw + s, -hh, hd]; const bRF = [hw + s, -hh, hd];
+  const bLK = [-hw + s, -hh, -hd]; const bRK = [hw + s, -hh, -hd];
+  const quads = [
+    [tLF, tRF, tRK, tLK], // top
+    [bRF, bLF, bLK, bRK], // underside
+    [bLF, bRF, tRF, tLF], // front
+    [bRK, bLK, tLK, tRK], // back
+    [bLK, bLF, tLF, tLK], // low/left end — vertical after the lean
+    [bRF, bRK, tRK, tRF], // high/right end
+  ];
+  const pos = [];
+  for (const [a, b, c, d] of quads) pos.push(...a, ...b, ...c, ...a, ...c, ...d);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 /**
  * The wedge off a cut side's top, seen from the front (chat-fix 25.08.2026).

@@ -644,10 +644,13 @@ export default function RoomModal({
             </div>
           )}
 
+          {/* T49 F2: the third sentence explains the + Box, which the WIZARD
+              door does not draw. A paragraph about a button that is not on the
+              screen is the same offence as the button itself. */}
           <p className="text-[11px] text-ink-400 leading-relaxed">
             Walls that face away from the camera hide themselves in the 3D view, so looking down at the room
             gives a plan view. Windows and doors are drawn as openings — they do not yet block units.
-            A BOX does: it stands floor to ceiling and a cabinet stops at it, exactly as it stops at a wall.
+            {!wizard && ' A BOX does: it stands floor to ceiling and a cabinet stops at it, exactly as it stops at a wall.'}
           </p>
         </div>
       </div>

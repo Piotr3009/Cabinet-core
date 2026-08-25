@@ -42,6 +42,12 @@ test('F2 — the canned row is gated on the door, not deleted', () => {
   assert.match(ROOM, /const setPreset = \(kind\) => \{/);
 });
 
+test('F2 — and the sentence that explains + Box goes with the button', () => {
+  // A paragraph about a control that is not on the screen is the same offence
+  // as the control. The menu door keeps both.
+  assert.match(ROOM, /\{!wizard && ' A BOX does: it stands floor to ceiling/);
+});
+
 test('F2 — the ENGINE that made the canned shapes is untouched', () => {
   // Iron rule 2: nothing this turn goes near `src/engine/**`. `rectCorners`,
   // `lCorners` and the box list are exactly what they were — which is also why

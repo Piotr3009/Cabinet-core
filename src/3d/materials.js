@@ -255,6 +255,16 @@ export function decorPlacement(surface, panel, profile) {
 export function surfaceFor({
   role, materialRole = null, finishExposed = false, finishes, profile, frontColour = null, sheen = null,
   finish: resolvedFinish = undefined,
+  // ─── TURN 49 (CLAUDE.md F9) ───────────────────────────────────────────────
+  // "this piece is cut from a VENEERED board", asked of the material slot it
+  // wears rather than of the finish it is painted with. A carcass veneer says
+  // so in its own finish (`kind: 'veneer'`) and needs no help; a FRONT veneer
+  // borrows an EGGER scan (T20 F12.3) and is stored as a decor, so the finish
+  // alone cannot tell a veneered door from a laminate one. `lib/veneerSheen.js`
+  // reads the front type's own `source` and the callers hand the answer in.
+  // Left out — a preview, a swatch, a test with no design — it is false, and
+  // the picture is exactly what it was.
+  veneered = false,
 }) {
   const A = profile.appearance;
   // The engine's own answer, with the role as the fallback for a caller (a test,
@@ -329,8 +339,11 @@ export function surfaceFor({
   // scene for the environment probe, the metalness and the orange peel a gun
   // leaves, and a veneer is none of those things. This is a lacquer's gloss on
   // a timber face, and it is one number.
-  const veneered = !isDecor && finish?.kind === 'veneer';
-  const sheenDriven = sprayed || veneered;
+  // A VENEER, by either of the two things that can say so: the finish itself
+  // (a carcass veneer, `veneer:oak-natural`) or the slot's own source (a front
+  // veneer, which is stored as the decor it borrows its picture from).
+  const veneer = veneered || (!isDecor && finish?.kind === 'veneer');
+  const sheenDriven = sprayed || veneer;
 
   return {
     colour: paint

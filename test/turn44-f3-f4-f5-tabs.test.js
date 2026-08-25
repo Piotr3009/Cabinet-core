@@ -264,7 +264,7 @@ test('F5 — the SHINE reaches the 3D material: the formula is the engine’s', 
   // gate widened by one word; the FORMULA — which is what this test is about —
   // did not move, and it is still the engine's one function.
   assert.match(mats, /roughness: sheenDriven && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
-  assert.match(mats, /const sheenDriven = sprayed \|\| veneered;/);
+  assert.match(mats, /const sheenDriven = sprayed \|\| veneer;/);
   assert.equal(roughnessFromSheen(5, P).toFixed(2), '0.95', 'dead matt');
   assert.equal(roughnessFromSheen(100, P).toFixed(2), '0.00', 'full gloss');
   assert.notEqual(roughnessFromSheen(5, P), roughnessFromSheen(100, P), 'matte and shine are different surfaces');

@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
-import { finishById, roughnessFromSheen } from '../src/engine/design.js';
+import { finishById, migrateDesign, roughnessFromSheen } from '../src/engine/design.js';
+import {
+  VENEER_SOURCE, frontsAreVeneered, isVeneerSource, panelIsVeneered, sourceOfSlot,
+} from '../src/lib/veneerSheen.js';
 import { getVeneers, veneerFinishId } from '../src/engine/veneers.js';
 import { surfaceFor } from '../src/3d/materials.js';
 
@@ -106,14 +109,100 @@ test('F9 — a piece that goes to the booth still answers, whatever it is faced 
 });
 
 test('F9 — the gate is one named line, and the formula did not move', () => {
-  assert.match(MATS, /const veneered = !isDecor && finish\?\.kind === 'veneer';/);
-  assert.match(MATS, /const sheenDriven = sprayed \|\| veneered;/);
+  assert.match(MATS, /const veneer = veneered \|\| \(!isDecor && finish\?\.kind === 'veneer'\);/);
+  assert.match(MATS, /const sheenDriven = sprayed \|\| veneer;/);
+  assert.match(MATS, /veneered = false,/, 'and the caller may say so for a front');
   assert.match(MATS, /roughness: sheenDriven && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
   // Only the ROUGHNESS widened. The three things `sprayed` decides — the probe,
   // the metalness and the gun's orange peel — still ask `sprayed`.
   assert.match(MATS, /metalness: sprayed \?/);
   assert.match(MATS, /envMapIntensity: sprayed \?/);
   assert.match(MATS, /normalScale: sprayed \?/);
+});
+
+// ══ the front's own veneer, which the finish alone cannot name ═════════════
+
+test('F9 — a VENEERED FRONT answers the slider, even though it is stored as a decor', () => {
+  // Turn 20 F12.3: *"a FRONT's veneer picks from the 85-decor catalogue"* — it
+  // borrows an EGGER scan because a veneer has no picture of its own — so a
+  // veneered door and a laminate door faced in the same decor are the SAME
+  // finish object. Gate the slider on the finish alone and the commonest veneer
+  // in the shop goes on ignoring it.
+  const veneeredFront = migrateDesign({
+    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'veneer', finish_id: 'dark_walnut' }] },
+  });
+  const laminateFront = migrateDesign({
+    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'laminate', finish_id: 'dark_walnut' }] },
+  });
+  const door = { id: '01-F', role: 'front', material_role: 'front', finish_exposed: false };
+
+  assert.equal(panelIsVeneered(door, null, veneeredFront), true);
+  assert.equal(panelIsVeneered(door, null, laminateFront), false, 'a laminate is not a veneer');
+
+  const rough = (design, sheen) => surfaceFor({
+    role: 'front',
+    materialRole: 'front',
+    finishes: { carcass: LAMINATE, front: LAMINATE },
+    finish: LAMINATE,
+    profile: P,
+    sheen,
+    veneered: panelIsVeneered(door, null, design),
+  }).roughness;
+  assert.notEqual(rough(veneeredFront, 5), rough(veneeredFront, 100), 'the veneered door moves');
+  assert.equal(rough(laminateFront, 5), rough(laminateFront, 100), '…and the laminate one does not');
+});
+
+test('F9 — an END PANEL and an INFILL follow the doors, because the ENGINE routes them', () => {
+  // `materialSlotOf` is the engine's own answer to "which type does this piece
+  // wear", and it says `front` for a door, an end panel and an infill alike.
+  // So a veneered job's end panel is a veneer too — which is the bug turn 8
+  // fixed for the COLOUR and this is the same routing for the gloss.
+  const veneered = migrateDesign({
+    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'veneer' }] },
+    carcass: { types: [{ id: 'c1', label: 'Carcass 1', source: 'egger' }] },
+  });
+  for (const role of ['front', 'end_panel', 'infill']) {
+    const panel = { id: `01-${role}`, role, material_role: 'front' };
+    assert.equal(panelIsVeneered(panel, null, veneered), true, role);
+  }
+  // …and a carcass side of the same job is NOT, because its own type is Egger.
+  assert.equal(panelIsVeneered({ id: '01-SL', role: 'side', material_role: 'board' }, null, veneered), false);
+  // The cornice is bought moulding with no role at all, and it is finished with
+  // the doors — so it asks the fronts as a whole.
+  assert.equal(frontsAreVeneered(veneered), true);
+  assert.equal(frontsAreVeneered(migrateDesign({})), false);
+  assert.equal(frontsAreVeneered(null), false, 'no design is not a veneer');
+});
+
+test('F9 — the reader names the source once, and an unanswered slot is not a veneer', () => {
+  assert.equal(VENEER_SOURCE, 'veneer');
+  assert.equal(isVeneerSource('veneer'), true);
+  assert.equal(isVeneerSource('laminate'), false);
+  assert.equal(isVeneerSource(null), false, 'nobody said is not a yes');
+  assert.equal(isVeneerSource(undefined), false);
+
+  const design = migrateDesign({
+    carcass: { types: [{ id: 'c1', label: 'Carcass 1', source: 'veneer' }] },
+    fronts: { types: [{ id: 'f1', label: 'Front 1', source: 'spray' }] },
+  });
+  assert.equal(sourceOfSlot(design, { kind: 'carcass', typeId: 'c1' }), 'veneer');
+  assert.equal(sourceOfSlot(design, { kind: 'front', typeId: 'f1' }), 'spray');
+  // A run piece on its own board, or an override from an older project: the
+  // slot names no type, so there is nothing to read and it is not a veneer.
+  assert.equal(sourceOfSlot(design, { kind: 'run', typeId: null }), null);
+  assert.equal(sourceOfSlot(design, null), null);
+  assert.equal(sourceOfSlot(null, { kind: 'front', typeId: 'f1' }), null);
+});
+
+test('F9 — the three surfaces that draw a panel all ask, and none of them guesses', () => {
+  for (const f of ['src/3d/UnitView.jsx', 'src/components/PartDetailModal.jsx', 'src/components/CabinetEditorModal.jsx']) {
+    const text = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+    assert.match(text, /veneered: design \? panelIsVeneered\(/, f);
+    assert.match(text, /from '\.\.\/lib\/veneerSheen\.js'/, `${f} imports the reader`);
+  }
+  // …and the cornice, which is not a panel, asks the fronts.
+  const view = readFileSync(new URL('../src/3d/UnitView.jsx', import.meta.url), 'utf8');
+  assert.match(view, /veneered: frontsAreVeneered\(design\)/);
 });
 
 test('F9 — and the slider says what it does', () => {

@@ -1,0 +1,307 @@
+{
+ "steps": [
+  {
+   "label": "F1 — the app agrees the default scope is One Wall",
+   "ok": true,
+   "detail": "lib/wizardSteps.js DEFAULT_SCOPE"
+  },
+  {
+   "label": "F3 — one row of navigation on step 1 · Project",
+   "ok": true,
+   "detail": "1 nav row(s) [modal], 0 Back, 1 Next (Cancel: 1, header ← Back: 0)"
+  },
+  {
+   "label": "F1 — the project is created as a ONE WALL job, before step 3 is reached",
+   "ok": true,
+   "detail": "design.scope = wall"
+  },
+  {
+   "label": "F1 — One Wall is lit on arrival, even for a KITCHEN (which suggests a room)",
+   "ok": true,
+   "detail": "{\"wall\":true,\"room\":false,\"first\":true}"
+  },
+  {
+   "label": "F3 — one row of navigation on step 3 · Scope",
+   "ok": true,
+   "detail": "1 nav row(s) [modal], 1 Back, 1 Next (Cancel: 1, header ← Back: 0)"
+  },
+  {
+   "label": "F2 — the wizard’s room step draws NO canned shapes and no + Box",
+   "ok": true,
+   "detail": "{\"door\":\"wizard\",\"presets\":0,\"boxButton\":0,\"plan\":1}"
+  },
+  {
+   "label": "F3 — one row of navigation on the room step",
+   "ok": true,
+   "detail": "1 nav row(s) [modal], 0 Back, 0 Next (Cancel: 1, header ← Back: 0)"
+  },
+  {
+   "label": "F3 — the wall dialog’s footer is hidden while its element window is open",
+   "ok": true,
+   "detail": "1 modal footer(s) on screen — the element window’s, and nothing under it"
+  },
+  {
+   "label": "F3 — and the shell says so, on the window underneath",
+   "ok": true,
+   "detail": "data-modal-covered"
+  },
+  {
+   "label": "F8 — the dialog asks for FLAT, and it is wall − run",
+   "ok": true,
+   "detail": "flat 2700 + run 900 = 3600 (wall 3600)"
+  },
+  {
+   "label": "F8 — typing FLAT writes the RUN, and the sum is still the wall",
+   "ok": true,
+   "detail": "flat 2400 → run 1200"
+  },
+  {
+   "label": "F8 — and the app’s own arithmetic agrees",
+   "ok": true,
+   "detail": "lib/slopeFlat.js"
+  },
+  {
+   "label": "F8 — with TWO slopes the Flat field steps aside, and each is entered by its own run",
+   "ok": true,
+   "detail": "{\"flat\":0,\"run\":1,\"note\":\"two-slopes\",\"onWall\":2}"
+  },
+  {
+   "label": "F8 — and the wall really carries one fall at each end",
+   "ok": true,
+   "detail": "sides: LR"
+  },
+  {
+   "label": "F3 — one row of navigation on the wall step",
+   "ok": true,
+   "detail": "1 nav row(s) [modal], 1 Back, 0 Next (Cancel: 0, header ← Back: 1)"
+  },
+  {
+   "label": "F3 — one row of navigation on step 5 · Project settings (5.1)",
+   "ok": true,
+   "detail": "1 nav row(s) [sequence], 1 Back, 1 Next (Cancel: 1, header ← Back: 0)"
+  },
+  {
+   "label": "F7 — a NEW project keeps its chain: every tab ahead of the walk is shut",
+   "ok": true,
+   "detail": "5.1✓ 5.2✗ 5.3✗ 5.4✗ 5.5✗ 5.6✗"
+  },
+  {
+   "label": "F4 — the carcass dialog carries the board AND the sheet size, in one screen",
+   "ok": true,
+   "detail": "{\"board\":1,\"sheet\":1,\"options\":[\"Jumbo 2070 × 2800\",\"Standard 1220 × 2440\",\"10 ft 1020 × 3050\",\"Other…\"],\"stops\":[\"count\",\"c1\",\"summary\"]}"
+  },
+  {
+   "label": "F4 — and the SIZE control keeps every option, jumbo included",
+   "ok": true,
+   "detail": "Jumbo 2070 × 2800 | Standard 1220 × 2440 | 10 ft 1020 × 3050 | Other…"
+  },
+  {
+   "label": "F4 — the second stop is gone: count → one per type → the CNC corner",
+   "ok": true,
+   "detail": "count,c1,summary"
+  },
+  {
+   "label": "F3 — one row of navigation on 5.2 Carcases · the material dialog",
+   "ok": true,
+   "detail": "1 nav row(s) [sequence], 1 Back, 1 Next (Cancel: 1, header ← Back: 0)"
+  },
+  {
+   "label": "F5 — the first fronts step asks for TYPES AND COLOURS, and asks it big",
+   "ok": true,
+   "detail": "How many types and colours?"
+  },
+  {
+   "label": "F5 — the NUMBER and the TYPE are on it; no colour picker, no laminate list",
+   "ok": true,
+   "detail": "{\"heading\":\"How many types and colours?\",\"sources\":0,\"styles\":1,\"counts\":3}"
+  },
+  {
+   "label": "F6 — the front dialog carries the colour, the board AND the sheet size",
+   "ok": true,
+   "detail": "{\"board\":1,\"sheet\":1,\"options\":[\"Jumbo 2070 × 2800\",\"Standard 1220 × 2440\",\"10 ft 1020 × 3050\",\"Other…\"],\"strip\":3,\"stops\":[\"count\",\"f1\",\"tail\"]}"
+  },
+  {
+   "label": "F6 — with every sheet option, jumbo included",
+   "ok": true,
+   "detail": "Jumbo 2070 × 2800 | Standard 1220 × 2440 | 10 ft 1020 × 3050 | Other…"
+  },
+  {
+   "label": "F6 — the third stop is gone: count → one per colour → the tail",
+   "ok": true,
+   "detail": "count,f1,tail"
+  },
+  {
+   "label": "F5 — and the source strip is HERE, full width, where the colour is chosen",
+   "ok": true,
+   "detail": "3 category buttons in the dialog"
+  },
+  {
+   "label": "F3 — one row of navigation on 5.3 Fronts · the colour dialog",
+   "ok": true,
+   "detail": "1 nav row(s) [sequence], 1 Back, 1 Next (Cancel: 1, header ← Back: 0)"
+  },
+  {
+   "label": "F9 — SPRAY moves with the slider",
+   "ok": true,
+   "detail": "[0.95,0]"
+  },
+  {
+   "label": "F9 — VENEER moves too",
+   "ok": true,
+   "detail": "[0.95,0]"
+  },
+  {
+   "label": "F9 — and LAMINATE does not",
+   "ok": true,
+   "detail": "[0.58,0.58]"
+  },
+  {
+   "label": "F3 — one row, one Back, one Next, on every tab of step 5",
+   "ok": true,
+   "detail": "fronts:1/1B/1N  hardware:1/1B/1N  production:1/1B/1N  lighting:1/1B/1N"
+  },
+  {
+   "label": "F3 — one row of navigation on step 6 · Summary",
+   "ok": true,
+   "detail": "1 nav row(s) [modal], 1 Back, 0 Next (Cancel: 1, header ← Back: 0)"
+  },
+  {
+   "label": "F7 — through the EDIT door every tab is a place you can be",
+   "ok": true,
+   "detail": "5.1✓ 5.2✓ 5.3✓ 5.4✓ 5.5✓ 5.6✓"
+  },
+  {
+   "label": "F7 — 5.1 → 5.4 in one move",
+   "ok": true,
+   "detail": "landed on hardware"
+  },
+  {
+   "label": "F7 — back and forth, in any order",
+   "ok": true,
+   "detail": "5.4 → 5.1 → 5.6, landed on lighting"
+  },
+  {
+   "label": "F7 — an edit made on 5.1 reaches the project",
+   "ok": true,
+   "detail": "toeKick = 120"
+  },
+  {
+   "label": "F7 — the edit left the project dirty",
+   "ok": true,
+   "detail": "dirty = true"
+  },
+  {
+   "label": "F7 — a finished setup may commit",
+   "ok": true,
+   "detail": "Update and save enabled: true"
+  },
+  {
+   "label": "F7 — Update and save commits from 5.6 and closes, without walking the chain",
+   "ok": true,
+   "detail": "dirty true → false, modal null"
+  },
+  {
+   "label": "F7 — and the change it committed is the one that was typed on 5.1",
+   "ok": true,
+   "detail": "toeKick = 120"
+  }
+ ],
+ "shots": [
+  {
+   "name": "f1-scope-one-wall.png",
+   "note": "step 3 · the scope arrives answered — One wall, for a kitchen",
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "f2-room-step-no-canned-boxes.png",
+   "note": "the room editor through the WIZARD door — the plan, and no Rectangle / L-shape / + Box",
+   "present": true,
+   "detail": "{\"dom\":true,\"none\":true}"
+  },
+  {
+   "name": "f8-flat-one-slope.png",
+   "note": "ONE slope — Flat and Run together, and they add up to the wall",
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  },
+  {
+   "name": "f8-flat-typed-run-follows.png",
+   "note": "Flat typed as 2400 on a 3600 wall — the Run field followed to 1200",
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f8-two-slopes-flat-steps-aside.png",
+   "note": "TWO slopes, one at each end — no Flat field, and the one short line that says why",
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true,\"none\":true}"
+  },
+  {
+   "name": "f7-new-project-keeps-its-chain.png",
+   "note": "a NEW project on 5.1 — the tabs ahead are not yet places you can be",
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "after-carc-1-count.png",
+   "note": "carcasses · stop 1 — how many types",
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "after-carc-2-merged-dialog.png",
+   "note": "carcasses · THE MERGED DIALOG — the board and the sheet size (jumbo among them) in one place",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true,\"text\":true}"
+  },
+  {
+   "name": "f4-carc-3-cnc-corner-untouched.png",
+   "note": "the dialog AFTER it — dog bones and the CNC corner, untouched",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true}"
+  },
+  {
+   "name": "f5-fronts-types-first.png",
+   "note": "fronts · stop 1 — the number and the type, and nothing about colour",
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true,\"none\":true}"
+  },
+  {
+   "name": "after-front-2-merged-dialog.png",
+   "note": "fronts · THE MERGED DIALOG — the category strip, the colour, the board and the sheet size",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true,\"text\":true}"
+  },
+  {
+   "name": "f9-sheen-says-what-it-does.png",
+   "note": "the slider, saying what it drives — and that a laminate keeps its own finish",
+   "present": true,
+   "detail": "{\"dom\":true,\"text\":true}"
+  },
+  {
+   "name": "f3-one-row-at-the-summary.png",
+   "note": "step 6 · the summary — the wizard’s own footer, and nothing under it",
+   "present": true,
+   "detail": "{\"dom\":true,\"count\":true}"
+  },
+  {
+   "name": "f7-edit-door-every-tab-live.png",
+   "note": "the EDIT door — 5.1 … 5.6 all live, and Update and save in the footer",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true}"
+  },
+  {
+   "name": "f7-jumped-5-1-to-5-4.png",
+   "note": "5.4 Hardware, reached in one click from 5.1 — and the commit button is right there",
+   "present": true,
+   "detail": "{\"dom\":true,\"all\":true}"
+  },
+  {
+   "name": "f7-updated-and-saved.png",
+   "note": "after Update and save — the project is on the shelf and the window has gone",
+   "present": true,
+   "detail": "{\"text\":true}"
+  }
+ ]
+}

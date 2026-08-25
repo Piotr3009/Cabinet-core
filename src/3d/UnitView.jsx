@@ -58,6 +58,12 @@ import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { drawerFrontDimsVisible, frontDimensionRows } from '../engine/frontDimensions.js';
 import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
 import { panelFinish } from '../engine/materials.js';
+// ─── TURN 49 (CLAUDE.md F9): AND WHETHER IT IS A VENEER ────────────────────
+// The finish alone cannot say for a FRONT — a front veneer borrows an EGGER
+// scan (T20 F12.3) and is stored as a decor — so the piece's own material SLOT
+// is asked instead. Two engine readers, called; nothing in `src/engine/**` is
+// edited by this turn.
+import { frontsAreVeneered, panelIsVeneered } from '../lib/veneerSheen.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { panelSolids } from './panelSolid.js';
@@ -1685,6 +1691,10 @@ export default function UnitView({
             // one, the unit's otherwise.
             frontColour: own?.overridden ? (own.colour?.hex || null) : frontColour,
             sheen,
+            // T49 F9: is this piece cut from a VENEERED board? The finish alone
+            // cannot say for a front — a front veneer borrows an EGGER scan and
+            // is stored as a decor — so the slot's own source answers.
+            veneered: design ? panelIsVeneered(p, unit, design) : false,
             ...(own ? { finish: own.finish } : {}),
           });
         return (
@@ -2081,6 +2091,9 @@ export default function UnitView({
               profile,
               frontColour,
               sheen,
+              // T49 F9: bought moulding, finished with the doors — so it is
+              // veneered when the doors are.
+              veneered: frontsAreVeneered(design),
             })}
           outline={outlines ? outlineFor(profile, { contour }) : null}
         />

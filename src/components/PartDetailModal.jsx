@@ -6,6 +6,8 @@ import { MovingPanel } from '../3d/UnitView.jsx';
 import EditorRig from '../3d/EditorRig.jsx';
 import { mm } from '../3d/constants.js';
 import { outlineFor, surfaceFor } from '../3d/materials.js';
+// T49 F9: whether this piece is cut from a veneered board (lib, not engine).
+import { panelIsVeneered } from '../lib/veneerSheen.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -2049,8 +2051,11 @@ function PartCanvas({ unit, panel, design, profile, drills = [] }) {
     profile,
     frontColour: own?.overridden ? (own.colour?.hex || null) : (unitDesign?.colour?.hex || null),
     sheen,
+    // T49 F9: veneer answers the slider too — asked of the slot, because a
+    // front veneer is stored as the decor it borrows its picture from.
+    veneered: design ? panelIsVeneered(panel, unit, design) : false,
     ...(own ? { finish: own.finish } : {}),
-  }), [panel, finishes, profile, unitDesign, sheen, own]);
+  }), [panel, unit, design, finishes, profile, unitDesign, sheen, own]);
 
   const box = panel.box;
   const span = Math.max(box.w, box.h, box.d);

@@ -73,6 +73,12 @@ import * as shoeBox from './engine/shoeBox.js';
 import * as deleteElement from './engine/deleteElement.js';
 import * as shaker from './engine/shaker.js';
 import * as design from './engine/design.js';
+// ─── TURN 49 (CLAUDE.md F3 / F8 / F9) — what tonight's walk has to ASK ──────
+import * as slopeFlat from './lib/slopeFlat.js';
+import * as modalStack from './lib/modalStack.js';
+import * as wizardSteps from './lib/wizardSteps.js';
+import * as viewMaterials from './3d/materials.js';
+import * as veneers from './engine/veneers.js';
 // Turn 35 (CLAUDE.md F4): the context guard's own counters, readable before the
 // first canvas has mounted — see below.
 import * as contextGuard from './3d/contextGuard.jsx';
@@ -380,6 +386,31 @@ if (typeof window !== 'undefined') {
   //
   // Both pure, and neither reaches anything the page could not already compute.
   window.__ccT48 = { items, annotation };
+  // ─── Turn 49 (CLAUDE.md F1 / F3 / F8 / F9) ───────────────────────────────
+  //
+  // Four laws no picture can prove, and the walk asks the APP for every one of
+  // them rather than reading them off a screenshot (R4):
+  //
+  //   `steps`      F1's `DEFAULT_SCOPE` and the step list that follows from it.
+  //   `modalStack` F3's `isCovered` — "is there a window over this one", which
+  //                is what decides whether a footer is drawn at all.
+  //   `slopeFlat`  F8's `flat + run = wall width` and the rule about when the
+  //                Flat field is asked, so the dialog's arithmetic is read off
+  //                the very functions it calls.
+  //   `surface`    F9's `surfaceFor`, with the veneer catalogue beside it, so
+  //                "the sheen moves spray and veneer and not laminate" is
+  //                measured on the same function the scene paints from.
+  //
+  // All pure, and none reaches anything the page could not already compute —
+  // the same rule every block on this list is here under.
+  window.__ccT49 = {
+    steps: wizardSteps,
+    modalStack,
+    slopeFlat,
+    surface: viewMaterials,
+    veneers,
+    finishById: design.finishById,
+  };
   window.__ccT46 = {
     slope: slopeLine,
     wall: wallElements,

@@ -37,6 +37,13 @@
 // ─── WHAT THIS IS NOT ───────────────────────────────────────────────────────
 //
 // It is not `ceilingAt`, it is not the cut line, and it is not the engine.
+//
+// (The width parameter is named `wallWidthMm` rather than `wallWidth` on
+// purpose: `wallWidth` is an EXPORT of `engine/room.js`, and `test/imports.js`
+// reads a bare use of an exported name as a missing import. A positional
+// parameter that shadows a house export is exactly the ambiguity that test
+// exists to find, so the parameter says its unit instead — which the house's
+// own `xMm` / `dxMm` already do.)
 // Nothing here is stored: `flat` is a way of TYPING a run and is derived from
 // the wall the moment it is shown. F8 says so in as many words — *"this is the
 // DIALOG's arithmetic only"* — and it is why this file imports nothing.
@@ -51,14 +58,14 @@ const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
  * Clamped to the wall at both ends: a run longer than the wall leaves no flat
  * at all (0, not a negative), and a run of nothing leaves the whole wall.
  */
-export function flatFromRun(run, wallWidth) {
-  const w = Math.max(0, num(wallWidth, 0));
+export function flatFromRun(run, wallWidthMm) {
+  const w = Math.max(0, num(wallWidthMm, 0));
   return round4(clamp(w - Math.max(0, num(run, 0)), 0, w));
 }
 
 /** …and the run a given flat leaves. The same line, read the other way. */
-export function runFromFlat(flat, wallWidth) {
-  const w = Math.max(0, num(wallWidth, 0));
+export function runFromFlat(flat, wallWidthMm) {
+  const w = Math.max(0, num(wallWidthMm, 0));
   return round4(clamp(w - Math.max(0, num(flat, 0)), 0, w));
 }
 

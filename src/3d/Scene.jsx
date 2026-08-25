@@ -13,6 +13,10 @@ import UnitView from './UnitView.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
 import AddPlus from './AddPlus.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
+// The LTC tables every RectAreaLight needs — the bands and the pillars are
+// RectAreaLights, and without these they light nothing at all (chat-fix
+// 25.08.2026). Lazy and once per app; see ensureLtc's own note.
+import { ensureLtc } from './LedStrips.jsx';
 import { useViewHandle } from './viewHandle.js';
 import { balanceRig, brightnessScale } from '../engine/lighting.js';
 // Turn 33 (CLAUDE.md F2): the demo's one dim factor — derived, never stored.
@@ -228,6 +232,44 @@ export function Environment({ intensity, on }) {
  * fractions of the rig distance, exactly as the key, fill, rim and points are,
  * so the whole rig scales with the job instead of being tuned for one kitchen.
  */
+/**
+ * ONE pillar — a vertical area light that AIMS (chat-fix 25.08.2026, late).
+ *
+ * `rotation` could not express this: the angle is not a constant, it is
+ * whatever it takes to look from this end of the run at the other, and that
+ * depends on how long the run is and how far the pillar stands off the fronts.
+ * So the light is told where to LOOK and three works the angle out.
+ *
+ * `Object3D.lookAt` turns a LIGHT so that its local −Z points at the target —
+ * and −Z is exactly the face a RectAreaLight emits from. The aim is horizontal
+ * (the target sits at the pillar's own height): tilting one down would throw
+ * its reflection onto the floor instead of into the doors.
+ */
+function Pillar({
+  position, target, width, height, intensity, colour,
+}) {
+  const ref = useRef(null);
+  const aim = target.join(',');
+  const at = position.join(',');
+  useEffect(() => {
+    const light = ref.current;
+    if (!light) return;
+    light.lookAt(target[0], target[1], target[2]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [at, aim]);
+  return (
+    <rectAreaLight
+      ref={ref}
+      userData={{ ccLight: 'pillar' }}
+      position={position}
+      width={width}
+      height={height}
+      intensity={intensity}
+      color={colour}
+    />
+  );
+}
+
 function Lights({
   roomHeight, roomWidth, shadow, studio, subject, brightness = 1, runs = [],
 }) {
@@ -362,15 +404,37 @@ function Lights({
       // stood off the fronts. `alongX` decides which axis is "along" and which
       // is "in front", exactly as it does for the band above.
       for (const side of [-1, 1]) {
+        const position = alongX
+          ? [centre[0] + side * (width / 2 + outset), height / 2, bounds.max[2] + forward]
+          : [bounds.max[0] + forward, height / 2, centre[2] + side * (depth / 2 + outset)];
+        // ─── CHAT-FIX 25.08.2026 (late): THEY AIM ACROSS ────────────────────
+        //
+        // The owner asked the right question: *"czy słupy świecą na wprost jak
+        // są w rogach, czy świecą pod kątem 45 stopni, czyli w kierunku
+        // przeciwnego narożnika?"* They were aiming straight out, and that is
+        // the WEAKEST setting there is for gloss.
+        //
+        // FRESNEL: the more grazing the angle a light strikes a surface at,
+        // the MORE of it that surface reflects. It is why a kitchen looks its
+        // best from an angle and washed-out head on. A pillar firing
+        // perpendicular lights its own patch and reflects only in the piece
+        // directly opposite it; aimed at the FAR end of the run it rakes the
+        // whole length at a grazing angle, and every front along the way
+        // returns a highlight.
+        //
+        // So each pillar looks at the far end of its own run, at the same
+        // height it stands at (a horizontal aim — tilting one would throw the
+        // reflection at the floor). The angle falls out of the geometry, so a
+        // six-metre kitchen and a 600 vanity each get the angle they deserve
+        // instead of a hard-coded 45°.
+        const target = alongX
+          ? [centre[0] - side * (width / 2 + outset), height / 2, bounds.max[2]]
+          : [bounds.max[0], height / 2, centre[2] - side * (depth / 2 + outset)];
         out.push({
           key: `${wall}:${side}`,
-          position: alongX
-            ? [centre[0] + side * (width / 2 + outset), height / 2, bounds.max[2] + forward]
-            : [bounds.max[0] + forward, height / 2, centre[2] + side * (depth / 2 + outset)],
+          position,
+          target,
           height,
-          // Facing the fronts: a slab's emitting side is its +z, so a run along
-          // x needs it turned to look back at the wall, and a run along z
-          // needs the quarter turn as well.
           alongX,
         });
       }
@@ -414,6 +478,14 @@ function Lights({
   // One multiplier on every lamp, so the RATIOS the rig was balanced at are
   // exactly the ones turn 10 measured whatever it is set to.
   const gain = Number(brightness) > 0 ? Number(brightness) : 1;
+
+  // A RectAreaLight without the LTC tables lights NOTHING and reflects in
+  // nothing — silently, no warning. Until tonight they were loaded only by
+  // the LED strips, so a kitchen with no LED in it had its whole showroom
+  // rig dead. Loaded here the moment this rig has an area light to draw.
+  useEffect(() => {
+    if (bands.length || pillars.length) ensureLtc();
+  }, [bands.length, pillars.length]);
 
   return (
     <>
@@ -525,15 +597,14 @@ function Lights({
           −x, and +π/2 takes (0,0,−1) to (−1,0,0). The first cut had −π/2,
           which is +x — backwards again, for the same reason. */}
       {pillars.map((p) => (
-        <rectAreaLight
+        <Pillar
           key={`ccPillar${p.key}`}
-          userData={{ ccLight: 'pillar' }}
           position={p.position}
-          rotation={[0, p.alongX ? 0 : Math.PI / 2, 0]}
+          target={p.target}
           width={mm(studio.pillars?.widthMm ?? 260)}
           height={p.height}
-          intensity={(studio.pillars?.intensity ?? 3.2) * gain}
-          color={studio.pillars?.colour ?? '#ffffff'}
+          intensity={(studio.pillars?.intensity ?? 22) * gain}
+          colour={studio.pillars?.colour ?? '#ffffff'}
         />
       ))}
       {spots.map((s, i) => (

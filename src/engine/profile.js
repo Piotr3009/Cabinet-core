@@ -2229,7 +2229,12 @@ export const DEFAULT_CABINET_PROFILE = {
       // would light their backs and gloss nothing. Two per run, one at each
       // end (owner's call), floor to ceiling (his call too).
       pillars: {
-        intensity: 3.2,
+        // The scale a RectAreaLight works on is NOT the scale a point light
+        // does. The LED halos — the only area lights this app had before
+        // tonight, and the only ones known to read correctly — run at 22, and
+        // the first cut of the pillars guessed 3.2. Seven times too little,
+        // which is most of why the owner saw nothing.
+        intensity: 22,
         colour: '#ffffff',
         widthMm: 260, // the slab's width — a tall window, not a line
         forwardMm: 900, // how far in front of the fronts they stand

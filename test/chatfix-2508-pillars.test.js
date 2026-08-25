@@ -83,23 +83,67 @@ test('floor to ceiling, and centred on that height', () => {
   assert.match(SCENE, /height \/ 2/, 'a slab is positioned at its centre, so half the height');
 });
 
-test('they FACE the fronts — the emitting side points AT the cabinets', () => {
-  // A RectAreaLight emits along its local −Z. The pillar stands at a LARGER z
-  // than the run (in front of the fronts), so it must emit toward −z: no
-  // rotation. For a run along z it stands at a larger x and must emit toward
-  // −x, and +π/2 takes (0,0,−1) to (−1,0,0).
+test('they AIM across the run, at the far end — not straight out', () => {
+  // The owner: *"czy słupy świecą na wprost jak są w rogach, czy pod kątem 45
+  // stopni, czyli w kierunku przeciwnego narożnika?"* Straight out is the
+  // weakest setting for gloss: FRESNEL means a grazing angle reflects more, so
+  // a pillar raking the whole length returns a highlight in every front along
+  // it, where a perpendicular one lights its own patch alone.
   //
-  // The first cut had π and −π/2 — both exactly backwards, which sent the
-  // light into the wall behind the camera and cost the owner every highlight:
-  // *"straciłem połysk całkowicie … nic nie odbija."*
-  assert.match(SCENE, /rotation=\{\[0, p\.alongX \? 0 : Math\.PI \/ 2, 0\]\}/,
-    'no turn along x, a positive quarter along z');
-  assert.ok(!SCENE.includes('p.alongX ? Math.PI : -Math.PI / 2'),
-    'and the backwards pair is gone');
+  // No fixed rotation any more — the angle falls out of the geometry, so a six
+  // metre kitchen and a 600 vanity each get their own.
+  assert.match(SCENE, /const target = alongX/, 'each pillar has a target');
+  assert.match(SCENE, /centre\[0\] - side \* \(width \/ 2 \+ outset\)/,
+    'and it is the OPPOSITE end of its own run');
+  assert.ok(!SCENE.includes('rotation={[0, p.alongX ? 0 : Math.PI / 2, 0]}'),
+    'the fixed rotation is gone');
+  assert.match(SCENE, /light\.lookAt\(target\[0\], target\[1\], target\[2\]\)/,
+    'three works the angle out — lookAt turns a LIGHT so its −Z faces the target');
   assert.match(SCENE, /bounds\.max\[2\] \+ forward/, 'stood off the fronts, not behind them');
+});
+
+test('the aim is HORIZONTAL — a tilted pillar would light the floor', () => {
+  assert.match(SCENE, /const target = alongX\s*\n\s*\? \[centre\[0\] - side \* \(width \/ 2 \+ outset\), height \/ 2/,
+    'the target sits at the pillar\'s own height');
+});
+
+test('the pillars run at the scale area lights actually need', () => {
+  assert.equal(P.appearance.studio.pillars.intensity, 22,
+    'the LED halos read correctly at 22; the first cut guessed 3.2');
 });
 
 test('the bands and the key light are untouched by this fix', () => {
   assert.match(SCENE, /ccLight: 'band'/, 'the overhead bands stay — they carry the spread');
   assert.match(SCENE, /ccLight: 'key'/, 'and the key still casts the shadows');
+});
+
+// ─── CHAT-FIX 25.08.2026 (late) — THE TABLES THE AREA LIGHTS NEED ───────────
+//
+// The pillars went in facing the wrong way, that was fixed, and the owner
+// still saw nothing: *"dalej nie widzę słupów światła w odbiciu."*
+//
+// The cause was older than either. A RectAreaLight needs the LTC lookup
+// tables, and `RectAreaLightUniformsLib.init()` was called from ONE place —
+// inside `LedStrips`, behind `strips.length && lightOn`. That was correct
+// when the LED halos were the only area lights in the app. The showroom rig
+// added two more kinds and inherited the dependency: a kitchen with no LED in
+// it never loaded the tables, so every band and every pillar lit nothing and
+// reflected in nothing, with no error anywhere.
+
+const LED = readFileSync(new URL('../src/3d/LedStrips.jsx', import.meta.url), 'utf8');
+
+test('the LTC tables are loadable by anyone who draws an area light', () => {
+  assert.match(LED, /export function ensureLtc\(\)/,
+    'no longer private to the strips');
+  assert.match(LED, /RectAreaLightUniformsLib\.init\(\)/, 'and it is still what loads them');
+  assert.match(LED, /let ltcReady = false/, 'once per app, not per light');
+});
+
+test('the rig loads them itself the moment it has a band or a pillar', () => {
+  assert.match(SCENE, /import \{ ensureLtc \} from '\.\/LedStrips\.jsx'/,
+    'the rig asks for them by name');
+  assert.match(SCENE, /if \(bands\.length \|\| pillars\.length\) ensureLtc\(\)/,
+    'loaded when there is an area light to draw');
+  assert.match(SCENE, /\[bands\.length, pillars\.length\]/,
+    'and only when that changes — a project with neither pays nothing');
 });

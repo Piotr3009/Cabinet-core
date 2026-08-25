@@ -28,8 +28,22 @@ import { lightingSpec, resolveLighting, stripsForUnit } from '../engine/ledStrip
 // (`appearance.lighting.*`) — never a literal here.
 
 // The LTC lookup tables RectAreaLight needs — once per app, not per strip.
+//
+// ─── CHAT-FIX 25.08.2026: AND NOT ONLY FOR THE STRIPS ───────────────────────
+//
+// This used to be called from THIS file alone, behind `strips.length &&
+// lightOn` — which was right when the LED halos were the only RectAreaLights
+// in the app. The evening's showroom rig added two more kinds (the overhead
+// bands and the pillars) and they inherited a dependency nobody had noticed:
+// without the LTC tables a RectAreaLight lights NOTHING and reflects in
+// nothing, silently. A kitchen with no LED in it therefore had its whole
+// showroom rig dead, which is exactly what the owner saw: *"dalej nie widzę
+// słupów światła w odbiciu."*
+//
+// So it is exported and the rig calls it too. Still once per app, still lazy —
+// a project that has neither strips nor a run pays nothing.
 let ltcReady = false;
-function ensureLtc() {
+export function ensureLtc() {
   if (!ltcReady) {
     RectAreaLightUniformsLib.init();
     ltcReady = true;

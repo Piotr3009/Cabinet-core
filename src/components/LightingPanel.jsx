@@ -87,6 +87,33 @@ function LightArt({ kind }) {
       </svg>
     );
   }
+  // ─── TURN 48 (CLAUDE.md F7): `top_under` GETS ITS OWN PICTURE ─────────────
+  //
+  // It had none. The chain of `if`s above ended at `top` and everything after
+  // it fell through to the SPOTS drawing at the bottom of this function — and
+  // the call site, knowing that, asked for `kind="top"` instead. So the control
+  // that puts a strip on the UNDERSIDE of the top board, shining DOWN into the
+  // cabinet, was illustrated by a strip sitting ON TOP of it and washing UP the
+  // wall. The owner's screenshot is of exactly that.
+  //
+  // The two are opposites and the drawing has to say so, so this one is the
+  // other one turned inside out: the top board is INSIDE the carcass outline,
+  // the strip is UNDER it, and the rays go DOWN onto a shelf.
+  if (kind === 'top_under') {
+    return (
+      <svg width="72" height="44" viewBox="0 0 72 44" fill="none" aria-hidden className="opacity-80 shrink-0">
+        {/* the carcass, face on, with its TOP BOARD drawn as its own line */}
+        <rect x="14" y="4" width="44" height="36" stroke={stroke} strokeWidth="1.2" />
+        <path d="M14 11 L58 11" stroke={stroke} strokeWidth="1.2" />
+        {/* the strip on the UNDERSIDE of that board — inside the cabinet */}
+        <rect x="22" y="12" width="28" height="3" fill={led} />
+        {/* …washing DOWN, which is the whole difference from the one above */}
+        <path d="M26 19 L24 27 M36 19 L36 29 M46 19 L48 27" stroke={led} strokeWidth="1" opacity="0.7" />
+        {/* the shelf it lands on */}
+        <path d="M18 33 L54 33" stroke={stroke} strokeWidth="0.6" strokeDasharray="2 3" />
+      </svg>
+    );
+  }
   return (
     <svg width="72" height="44" viewBox="0 0 72 44" fill="none" aria-hidden className="opacity-80 shrink-0">
       {/* a wall unit, spots beneath */}
@@ -178,12 +205,44 @@ export default function LightingPanel() {
   }) : []), [unit, result, litDesign, profile]);
   const stripOf = (itemId) => unitStrips.find((s) => s.id === itemId || s.itemId === itemId) || null;
 
-  const hasOf = (kind, ref = null) => lighting.items.some((it) => it.unitId === unit?.id
-    && it.kind === kind && (ref == null || it.ref === ref));
+  // ─── TURN 48 (CLAUDE.md F6): ONE BUTTON, BOTH WAYS ────────────────────────
+  //
+  // The owner, 25.08.2026: *"mamy przycisk dodania LED, to i ten sam przycisk
+  // usuwa LED — proste."*
+  //
+  // Every placement control here was `disabled={hasOf(…)}`: press it once and
+  // it went grey, and the only way back was to find the line in the list below
+  // and press its ×. A control that does a thing and then refuses to undo it is
+  // a control with half a job. So the SAME button removes what it added, and it
+  // says which it is going to do.
+  //
+  // Nothing new is built: `removeLightingItem` has existed since T33 and is
+  // what the list's own × calls. What is new is that the button knows the item
+  // it made — `itemOf`, which is the `hasOf` this panel already had, answering
+  // WHICH rather than WHETHER.
+  const itemOf = (kind, ref = null) => lighting.items.find((it) => it.unitId === unit?.id
+    && it.kind === kind && (ref == null || it.ref === ref)) || null;
+  const hasOf = (kind, ref = null) => Boolean(itemOf(kind, ref));
 
   const add = (item, said) => {
     addLightingItem(item);
     notify(said);
+  };
+
+  /**
+   * The toggle itself. `make()` is called only when there is nothing there, so
+   * a control whose item is expensive to describe does not build it to throw it
+   * away — and the two sentences are the two things that just happened, said in
+   * the tense the joiner will read them in.
+   */
+  const toggle = (kind, ref, make, added, removed) => {
+    const there = itemOf(kind, ref);
+    if (there) {
+      removeLightingItem(there.id);
+      notify(removed);
+      return;
+    }
+    add(make(), added);
   };
 
   // The items list, labelled by unit number so two wardrobes read apart.
@@ -317,17 +376,20 @@ export default function LightingPanel() {
                 <LightArt kind="shelf" />
                 <div className="flex-1 space-y-1">
                   <span className="text-[11px] text-ink-100">{KIND_WORDS.shelf}</span>
-                  {shelfPanel && !shelfItem && (
+                  {shelfPanel && (
                     <button
                       type="button"
                       className="cc-btn w-full text-[11px]"
                       data-lighting-add-shelf={shelfPanel.id}
-                      onClick={() => add(
-                        { unitId: unit.id, kind: 'shelf', ref: shelfPanel.id },
+                      data-lighting-on={shelfItem ? '1' : '0'}
+                      onClick={() => toggle(
+                        'shelf', shelfPanel.id,
+                        () => ({ unitId: unit.id, kind: 'shelf', ref: shelfPanel.id }),
                         `LED under ${shelfPanel.id} · ${numOf(unit.id)} — slide it front to back below.`,
+                        `LED removed from ${shelfPanel.id} · ${numOf(unit.id)}.`,
                       )}
                     >
-                      Add LED under this shelf ({shelfPanel.id})
+                      {shelfItem ? 'Remove LED' : 'Add LED'} under this shelf ({shelfPanel.id})
                     </button>
                   )}
                   {shelfPanel && shelfItem && (
@@ -358,14 +420,17 @@ export default function LightingPanel() {
                             type="button"
                             className="cc-btn px-2 text-[11px] flex-1"
                             data-lighting-add-side={side}
-                            disabled={hasOf('side', side)}
+                            data-lighting-on={hasOf('side', side) ? '1' : '0'}
                             title="A 4 mm line, top to bottom, on the interior face"
-                            onClick={() => add(
-                              { unitId: unit.id, kind: 'side', ref: side },
+                            onClick={() => toggle(
+                              'side', side,
+                              () => ({ unitId: unit.id, kind: 'side', ref: side }),
                               `4 mm side line · ${side} · ${numOf(unit.id)}.`,
+                              `Side line removed · ${side} · ${numOf(unit.id)}.`,
                             )}
                           >
-                            {side === 'L' ? 'Left side' : 'Right side'}
+                            {hasOf('side', side) ? 'Remove ' : 'Add '}
+                            {side === 'L' ? 'left side' : 'right side'}
                           </button>
                         ))}
                       </div>
@@ -380,13 +445,15 @@ export default function LightingPanel() {
                         type="button"
                         className="cc-btn w-full text-[11px]"
                         data-lighting-add-bottom="1"
-                        disabled={hasOf('bottom')}
-                        onClick={() => add(
-                          { unitId: unit.id, kind: 'bottom' },
+                        data-lighting-on={hasOf('bottom') ? '1' : '0'}
+                        onClick={() => toggle(
+                          'bottom', null,
+                          () => ({ unitId: unit.id, kind: 'bottom' }),
                           `Bottom strip at the plinth · ${numOf(unit.id)}.`,
+                          `Bottom strip removed · ${numOf(unit.id)}.`,
                         )}
                       >
-                        Add under {unit.params.unit_num}
+                        {hasOf('bottom') ? 'Remove from' : 'Add under'} {unit.params.unit_num}
                       </button>
                     </div>
                   </div>
@@ -399,14 +466,16 @@ export default function LightingPanel() {
                         type="button"
                         className="cc-btn w-full text-[11px]"
                         data-lighting-add-top="1"
-                        disabled={hasOf('top')}
+                        data-lighting-on={hasOf('top') ? '1' : '0'}
                         title="Above the cabinet, washing upward — the wardrobe-to-ceiling wash"
-                        onClick={() => add(
-                          { unitId: unit.id, kind: 'top' },
+                        onClick={() => toggle(
+                          'top', null,
+                          () => ({ unitId: unit.id, kind: 'top' }),
                           `Top wash · ${numOf(unit.id)}.`,
+                          `Top wash removed · ${numOf(unit.id)}.`,
                         )}
                       >
-                        Add above {unit.params.unit_num}
+                        {hasOf('top') ? 'Remove above' : 'Add above'} {unit.params.unit_num}
                       </button>
                     </div>
                   </div>
@@ -415,21 +484,25 @@ export default function LightingPanel() {
                       od góry tylko — a nie ma od dołu jak półka" — the same
                       strip on the UNDERSIDE of the top, shining down. */}
                   <div className="flex items-start gap-2" data-lighting-tool="top_under">
-                    <LightArt kind="top" />
+                    {/* T48-F7: its OWN drawing — it used to borrow `top`'s, which
+                        shows a strip washing UP off the carcass. */}
+                    <LightArt kind="top_under" />
                     <div className="flex-1 space-y-1">
                       <span className="text-[11px] text-ink-100">{KIND_WORDS.top_under}</span>
                       <button
                         type="button"
                         className="cc-btn w-full text-[11px]"
                         data-lighting-add-top-under="1"
-                        disabled={hasOf('top_under')}
+                        data-lighting-on={hasOf('top_under') ? '1' : '0'}
                         title="On the underside of the top board, shining down into the cabinet — the top behaves like one more shelf"
-                        onClick={() => add(
-                          { unitId: unit.id, kind: 'top_under' },
+                        onClick={() => toggle(
+                          'top_under', null,
+                          () => ({ unitId: unit.id, kind: 'top_under' }),
                           `Under-the-top strip · ${numOf(unit.id)}.`,
+                          `Under-the-top strip removed · ${numOf(unit.id)}.`,
                         )}
                       >
-                        Add under the top · {unit.params.unit_num}
+                        {hasOf('top_under') ? 'Remove from' : 'Add under'} the top · {unit.params.unit_num}
                       </button>
                     </div>
                   </div>
@@ -443,14 +516,18 @@ export default function LightingPanel() {
                           type="button"
                           className="cc-btn w-full text-[11px]"
                           data-lighting-add-spot="1"
-                          disabled={hasOf('spot')}
+                          data-lighting-on={hasOf('spot') ? '1' : '0'}
                           title="Small spotlights under a kitchen wall unit, evenly spaced"
-                          onClick={() => add(
-                            { unitId: unit.id, kind: 'spot', count: spec.spot.defaultCount },
+                          onClick={() => toggle(
+                            'spot', null,
+                            () => ({ unitId: unit.id, kind: 'spot', count: spec.spot.defaultCount }),
                             `${spec.spot.defaultCount} spotlights under ${numOf(unit.id)}.`,
+                            `Spotlights removed from ${numOf(unit.id)}.`,
                           )}
                         >
-                          Add {spec.spot.defaultCount} spots under {unit.params.unit_num}
+                          {hasOf('spot')
+                            ? `Remove the spots under ${unit.params.unit_num}`
+                            : `Add ${spec.spot.defaultCount} spots under ${unit.params.unit_num}`}
                         </button>
                       </div>
                     </div>

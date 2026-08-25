@@ -31,7 +31,11 @@ test('the FIGURE is pickable — an invisible catchment, not a visible button', 
   const chain = read('3d/DimensionChain.jsx');
   // A dimension caption is a sprite: a billboard with no thickness, and F7's
   // pixel-hunting all over again. Same answer, same pattern.
-  assert.match(chain, /ccDimensionPick: row\.key/);
+  // T48-F8 lifted the catchment into its own `PickBox` (it needs a ref, and a
+  // ref needs a component), so the row's key travels one hop as a prop. It is
+  // the same key on the same userData.
+  assert.match(chain, /rowKey=\{row\.key\}/);
+  assert.match(chain, /ccDimensionPick: rowKey/);
   assert.match(chain, /visible=\{false\}/);
   assert.match(chain, /onDoubleClick=\{\(e\) => \{ e\.stopPropagation\(\); onPick\(e\); \}\}/);
   // A dimension that grew a visible button would be a drawing with a button on
@@ -42,7 +46,15 @@ test('the FIGURE is pickable — an invisible catchment, not a visible button', 
 
 test('…and it is sized off the LABEL, so it scales with the drawing', () => {
   const chain = read('3d/DimensionChain.jsx');
-  assert.match(chain, /args=\{\[style\.labelHeight \* 3, style\.labelHeight \* 1\.6, style\.labelHeight\]\}/);
+  // ─── T48-F8 ─────────────────────────────────────────────────────────────
+  // The claim is unchanged — the catchment is the LABEL's size, in the label's
+  // own three proportions — and the UNIT changed with the label's. A world box
+  // under a screen-sized caption is a caption you can see and cannot hit:
+  // bigger than its target across a room, smaller than it up close. So the box
+  // takes the same law from the same one file, on a unit cube, and the size is
+  // the ref's so the two cannot disagree.
+  assert.match(chain, /labelPixelHeight\(style\.labelHeight\),\s*\n\s*\(box, h\) => box\.scale\.set\(h \* 3, h \* 1\.6, h\),/);
+  assert.match(chain, /<boxGeometry args=\{\[1, 1, 1\]\} \/>/);
 });
 
 test('BOTH the width and the height figure carry the gesture', () => {

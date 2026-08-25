@@ -103,12 +103,20 @@ import {
 // Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
 import { settleRiders } from '../engine/topBox.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
+// T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
+// It lives in `lib/` and not in the engine on purpose (T45's own argument):
+// `computeCabinet()` cannot reach it, so a project with no line cannot move.
+import { grooved } from '../lib/cncExport.js';
 import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith, topNeighbourDemand } from '../engine/doors.js';
 import {
-  centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
+  centredShelfPos, drawersInEngineOrder, evenShelfPositions, floorLawedItem, nextHangerOffset,
+  shelvesInEngineOrder,
 } from '../engine/items.js';
+// T48-F1: the floor a piece may not fall through — the engine's own answer to
+// "where is the top face of the carcass bottom", asked rather than re-derived.
+import { interiorFloor } from '../engine/shelfHeights.js';
 // ─── TURN 35 (CLAUDE.md F1): the rail's datum, answered where it is knowable ─
 import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
 // T37-F1: a piece selection spans cabinets — each member carries its own unit.
@@ -221,6 +229,35 @@ function newUnit(typeId, profile, index, design) {
       // same thing off the same property, so a bare kit call agrees.
       // eslint-disable-next-line no-nested-ternary
       doors: type.supports.doors ? (type.frontOpens ? true : false) : null,
+      // ─── TURN 48 (CLAUDE.md F3): THE PLINTH DEFAULTS ON ────────────────────
+      //
+      // The owner, 25.08.2026: the plinth is ON by default — standing carcasses
+      // only, never a hung WUD.
+      //
+      // WHERE IT LIVES MATTERS AS MUCH AS WHAT IT SAYS. Turn 4 made the plinth a
+      // DECISION rather than an automatic (BACKLOG #16: no ghost rows in the cut
+      // list) and that was right about the cut list and wrong about the default —
+      // a base unit without a toe kick is not a thing this workshop builds, so
+      // every single one was being ticked by hand. What changes is the ANSWER a
+      // new cabinet arrives with, not who owns the question: it is still one
+      // untick away, the panel's control is unmoved, and the check that speaks
+      // when a standing unit has none is unmoved too.
+      //
+      // It is written HERE, where a unit is BORN in a project, and NOT in
+      // `defaultParamsFor()`. A bare `computeCabinet(defaultParamsFor(id))` is
+      // the golden fixtures' own contract and reproduces the LISP kit and
+      // nothing else; moving this line one file over would put a PLINTH panel
+      // into all six of them and break iron rule 2 by a whole part.
+      //
+      // WHICH TYPES is not a list. `takesPlinth` is the engine's own gate —
+      // `(type.plinth ?? type.legs) && mount === 'floor'`, the same function
+      // the right panel shows the control from and the same one `checks.js`
+      // warns off — so the owner's seven (BUD, BUDR, SINK, LOW, BUDTALL,
+      // FRIDGE, WARDROBE) are answered by asking rather than by naming, and a
+      // WUD hanging on the wall is refused by the same sentence that has always
+      // refused it a plinth. A LOADED project never comes through here: it opens
+      // exactly as it was saved.
+      ...(takesPlinth(type.id, profile) ? { plinth: true } : {}),
       sections: [{ width_mm: params.width, items }],
       materials: {},
     },
@@ -3354,7 +3391,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
-        return { ...u, params: { ...u.params, sections: [{ ...section, items: [...section.items, { id, ...item }] }] } };
+        // T48-F1: THE FLOOR IS LAW — an element is BORN legal (`onTheFloor`).
+        const born = onTheFloor(u, { id, ...item });
+        return { ...u, params: { ...u.params, sections: [{ ...section, items: [...section.items, born] }] } };
       }),
     }));
     // A shelf added at a position someone else already occupies is a collision
@@ -4454,7 +4493,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const section = u.params.sections[0];
       return {
         ...u,
-        params: { ...u.params, sections: [{ ...section, items: section.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) }] },
+        // T48-F1: …and it STAYS legal. The same one station, on the other door
+        // in: a typed number, a drag, a modal's patch and an imported project
+        // all arrive here, and none of them may put a piece under the floor.
+        params: {
+          ...u.params,
+          sections: [{
+            ...section,
+            items: section.items.map((i) => (i.id === itemId ? onTheFloor(u, { ...i, ...patch }) : i)),
+          }],
+        },
       };
     }),
   })),
@@ -5975,6 +6023,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     ),
   })),
 
+  /**
+   * ─── TURN 48 (CLAUDE.md F5): THE SAME UNIT, AS THE MACHINE SEES IT ────────
+   *
+   * T45's own named debt, paid. The LED groove `lib/ledGroove.js` computes has
+   * been cut on the way to the DXF since T45 — but only there. Every surface
+   * that DRAWS a sheet (the CNC preview, the tree, the material sections, the
+   * per-sheet DXF) read `unitResult`, which is the engine's answer and knows
+   * nothing about a strip, so the pocket the joiner was going to cut was in the
+   * file and not on the picture of the file.
+   *
+   * So there is ONE answer for the sheet, and this is it: the unit's result
+   * with its grooves in. `unitResult` stays exactly what it is — the 3-D, the
+   * BOM and the checks are unchanged — and everything that speaks to the
+   * machine asks HERE, so the preview and the export cannot disagree about what
+   * is cut.
+   *
+   * GATED, and the gate is `grooved()`'s own: a unit with no LED line is handed
+   * back the VERY OBJECT `unitResult` produced, identity included. A project
+   * without lighting sees not one changed byte anywhere.
+   */
+  unitCncResult: (unitId) => {
+    const result = get().unitResult(unitId);
+    if (!result) return null;
+    const unit = get().units.find((u) => u.id === unitId) || null;
+    return grooved(result, {
+      unit,
+      design: get().project.design,
+      ledSpec: get().project.ledSpec,
+      profile: getCabinetProfile(),
+    });
+  },
+
   // ─── The tools (F9.1) ─────────────────────────────────────────────────────
   //
   // Three actions, and every one of them is `withPartEdit` and friends — the
@@ -6488,6 +6568,70 @@ function splitBoundariesFor(unit, profile, zone, result) {
     // The divider is cut at the carcass board (cabinet.js cuts it `G` thick),
     // and its `y` is its underside — the same datum a shelf's `pos_mm` is on.
     .map((d) => ({ at: d.y, thickness: G }));
+}
+
+// ─── THE FLOOR IS LAW — THE ONE STATION (turn 48, CLAUDE.md F1) ─────────────
+//
+// The owner, 25.08.2026: *"zaden element nie moze spasc ponizej podlogi —
+// fizycznie to sie wyklucza."*
+//
+// MEASURED FAULT, and it is two symptoms of one cause. `addShoeBox` floored its
+// `pos_mm` at `Math.max(0, …)` and so did `setShoeBox`, and zero is the OUTSIDE
+// of the carcass — the underside of the bottom board. So a shoe box asked for
+// at the bottom of a wardrobe came back with all seven of its boards standing
+// at y = 0, inside the 18 mm of board under them, and a shoe SHELF dropped to
+// the same place by the same arithmetic. Neither is a fault of the shoe box or
+// of the shoe shelf. Both are the floor being read as zero.
+//
+// ONE LAW, ONE STATION. The arithmetic is `engine/items.js floorClampedPos`,
+// born beside `centredShelfPos` because it is the same question asked one step
+// earlier, and this is the only place in the store that calls it — from the two
+// doors every element in the app walks through, `addItem` and `updateItem`. A
+// shoe-shelf clamp plus a shoe-box clamp would have been two answers to one
+// question and the next element would have arrived with neither.
+//
+// WHAT IT DOES NOT TOUCH. An element already above the floor is handed back the
+// very object it came in as (`floorLawedItem` returns its argument), so nothing
+// legal moves by a hundredth. `computeCabinet()` never sees this function — a
+// golden is `defaultParamsFor()` handed straight to the engine, with no store
+// and no items at all — which is why the six stay byte-identical (iron rule 2).
+
+/**
+ * The carcass floor of one unit: the bottom panel's TOP face.
+ *
+ * A carcass whose bottom is not a BOARD (an open frame, a type that says so)
+ * has no board for a piece to sink into, and its floor is zero. The question is
+ * asked of the TYPE rather than assumed, because assuming it is how zero got to
+ * be the floor in the first place.
+ */
+function carcassFloorOf(unit, profile) {
+  // `?? 'panel'` is `engine/cabinet.js`'s own idiom for this key (`hasBottom`,
+  // L1453): the key is absent on almost every type and its absence means the
+  // carcass HAS a bottom. Reading it as 'none' would put the floor back at zero
+  // for the whole app, which is the fault this feature exists to remove.
+  if ((getUnitType(unit?.type)?.carcass?.bottom ?? 'panel') !== 'panel') return 0;
+  return interiorFloor(unit?.params?.board_t ?? profile.board.thickness);
+}
+
+/**
+ * How far one element's box reaches BELOW its own `pos_mm`.
+ *
+ * Every element the app places today has its datum on its lowest face, so this
+ * is 0 for all of them. It is a function and not a `0` written into the call
+ * because the law is about the element's LOWEST POINT and not about its datum:
+ * the day something is hung with a bracket that reaches down, this is the one
+ * line that has to change and the clamp itself does not.
+ */
+function dropBelowOf() {
+  return 0;
+}
+
+/** One element, on or above its carcass's floor — the whole of F1, applied. */
+function onTheFloor(unit, item, profile = getCabinetProfile()) {
+  return floorLawedItem(item, {
+    floor: carcassFloorOf(unit, profile),
+    dropBelow: dropBelowOf(item),
+  });
 }
 
 /** The band this unit's shelves may live in, read off the engine result. */

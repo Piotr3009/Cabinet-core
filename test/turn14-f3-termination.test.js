@@ -45,10 +45,14 @@ const resultOf = (id) => computeCabinet(paramsForEngine(unitOf(id)), P);
 const panelOf = (id, panelId) => resultOf(id).panels.find((p) => p.id === panelId);
 const endsOf = (id) => panelOf(id, 'INFILL-T-FACE')?.meta?.ends;
 /** Where the run's element starts and finishes, in WALL millimetres. */
+// T48-F2: the SPAN a run covers is the piece that stands in the room — the
+// BOX. `face.w` is the blank, and the blank now leaves the machine 20 mm long
+// for the site cut (*"plus 20 mm dluzsze na odciecie, z jednej strony"*), which
+// is an allowance and not a length the run reaches to.
 const spanOf = (id) => {
   const face = panelOf(id, 'INFILL-T-FACE');
   const x = unitOf(id).position.x_mm;
-  return { from: face.box.x + x, to: face.box.x + face.w + x };
+  return { from: face.box.x + x, to: face.box.x + face.box.w + x };
 };
 
 const place = (type, x) => {

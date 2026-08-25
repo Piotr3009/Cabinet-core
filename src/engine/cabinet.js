@@ -4771,25 +4771,79 @@ export function computeCabinet(params, profileOverride) {
     // in it.
     const faceZ = D + P.doors.gap + frontT;
     const ends = runInfill.ends || { left: 'wall', right: 'wall' };
-    // A 45° cut on the long edge of both strips is what makes the L; a 45° cut
-    // on an END is the picture-frame corner where the piece turns.
-    const mitre = (open) => ['long', ...(open ? ['end'] : [])];
-
-    // ─── Turn 15 (CLAUDE.md F6): the corner against a SIDE INFILL ───
-    // Where the element stops against a ceiling-height filler, the two stand in
-    // one plane and make a frame corner — so the face runs to its LONG POINT
-    // over that corner and is cut back at 45°, and the filler loses the
-    // matching triangle (see the vertical infill below). `engine/runs.js`
-    // decides whether there is room for the cut at all; here it is only ever a
-    // number, and 0 is the square corner every run had before this turn.
+    // ─── TURN 48 (CLAUDE.md F2): THE L IS DEAD. TWO PLAIN BOARDS. ───────────
     //
-    // The SHELF is not extended. It runs back at the ceiling and lands on top
-    // of the filler's own return arm; extending it would put two pieces of
-    // board in the same 18 mm.
-    const mitreL = Math.max(0, Number(runInfill.mitre?.left) || 0);
-    const mitreR = Math.max(0, Number(runInfill.mitre?.right) || 0);
-    const faceX0 = x0 - mitreL;
-    const faceLen = len + mitreL + mitreR;
+    // The owner, 25.08.2026, in full:
+    //
+    //   *"zamiast L shape … pomyslem zeby na wizualizacji tylko zrobic jedna
+    //   deske jak plinth i tyle. … infill pionowy nie ruszamy. natomiast na CNC
+    //   robisz tak: dlugosc infila poziomego nad szafa = rysujesz 2 deski =
+    //   dlugosc infila x 60 mm, plus 20 mm dluzsze na odciecie, z jednej
+    //   strony."*  — and on the widths: *"zostaw jedna 60 a druga nominal 80
+    //   bez zmian."*  — and on the corner: *"jak zakreca i mamy infill z boku
+    //   to sie robi mitre, ale to rzadko."*  — and: *"nie rob adnotacji —
+    //   stolarze wiedza."*
+    //
+    // Turn 6 built this element as an L in section: a face strip and a shelf
+    // strip mitred along their long edges and glued, cut to their long points,
+    // and — since turn 15 — the face running on over a side filler to a second
+    // 45° that was chamfered into its own outline. All of that is overruled.
+    // The element is TWO PLAIN RECTANGLES that leave the machine square, and
+    // what happens at a corner happens on site, off the 20 mm the boards are
+    // sent out long.
+    //
+    // So `mitre_45` no longer carries 'long' anywhere on this part: the only
+    // 45° left is 'end', and only where two RUNS meet — the turning corner (an
+    // OPEN end, which grows a return), and the joins a bent ceiling makes
+    // between one segment and the next, whose angles are exactly what T47
+    // computed and are untouched below.
+    const mitre = (open) => (open ? ['end'] : []);
+
+    // ─── …AND THE LONG POINT GOES WITH IT (turn 15's corner, overruled) ─────
+    //
+    // T15 ran the face on over a ceiling-height side filler to a long point and
+    // chamfered the bottom corner back at 45°. A plain board cannot carry a
+    // long point — extended square it would sit ON the filler it is supposed to
+    // meet — so the face is the run's own length, exactly as the shelf board has
+    // always been, and the site-cut allowance below is what the corner is cut
+    // from. The NUMBER survives as a record on the part (`meta.corner`), because
+    // it is still true that this end turns against a filler and a joiner reading
+    // the part wants to know which end that is.
+    //
+    // THE SIDE INFILL IS NOT TOUCHED — *"infill pionowy nie ruszamy"* — so it
+    // keeps the matching triangle T15 cut into it. That is the owner's ruling
+    // taken literally, and it is named as an open question in the PR rather
+    // than quietly resolved here.
+    const cornerL = Math.max(0, Number(runInfill.mitre?.left) || 0);
+    const cornerR = Math.max(0, Number(runInfill.mitre?.right) || 0);
+    const faceX0 = x0;
+    const faceLen = len;
+
+    // ─── THE SITE-CUT ALLOWANCE (F2): +20 ON THE LENGTH, ONE END ────────────
+    //
+    // *"plus 20 mm dluzsze na odciecie, z jednej strony."*
+    //
+    // It is `autoParts.fillerOversize` and not a bare 20, for the same reason
+    // the widths below are arithmetic: a workshop that trims 25 changes ONE
+    // number and every infill in the app follows. It is the same allowance in
+    // kind as T47's scribe — leave it long, the joiner fits it — asked of the
+    // other axis.
+    //
+    // WHICH END. The end where the run meets its neighbour: the turning corner
+    // if there is one, otherwise the wall. A board with two outer ends (a run
+    // of one piece) takes ONE, because a joiner scribes one end and butts the
+    // other; a MIDDLE segment of a bent run has no outer end at all — both of
+    // its ends are machine-cut joins — and takes none.
+    //
+    // NO ANNOTATION GOES WITH IT — *"nie rob adnotacji — stolarze wiedza"*.
+    // The part's own record says so (`meta.lengthOversize`) and nothing is
+    // printed on the sheet.
+    const allowanceEnd = (isFirst, isLast) => {
+      if (isFirst && isLast) return (ends.left === 'open' && ends.right !== 'open') ? 'left' : 'right';
+      if (isFirst) return 'left';
+      if (isLast) return 'right';
+      return null;
+    };
 
     // ─── TURN 47 (CLAUDE.md F4): THE TOP INFILL UNDER A SLOPE ───────────────
     //
@@ -4805,18 +4859,21 @@ export function computeCabinet(params, profileOverride) {
     //
     // …and every one of them leaves the machine 20 mm over on the CEILING edge
     // (the face) and the WALL edge (the shelf), which is the edge that is
-    // scribed. The MITRE keeps its long point: `chamferedRectGeometry` takes
-    // the corners off the BOTTOM of the face and the ENDS of both, and the 20
-    // grows the opposite edge, so not one mitred corner moves.
+    // scribed.
+    //
+    // T48-F2 amends the last sentence T47 wrote here. It read "the MITRE keeps
+    // its long point: `chamferedRectGeometry` takes the corners off the BOTTOM
+    // of the face and the ENDS of both". There is no long point any more — the
+    // corner L is overruled, both boards are plain rectangles, and the second
+    // 20 (on the LENGTH, one end) is what the corner is cut from on site.
     const overT = Math.max(0, Number(AP.fillerOversize) || 0);
     const runSegs = (() => {
+      // T48-F2: both boards are the RUN's own length. There is no long point
+      // to add at one end and none to leave off at the other, so the face and
+      // the shelf span the same x — two rectangles, cut from one number.
       const whole = [{
-        from: faceX0, to: faceX0 + faceLen, deg: 0, run: faceLen, mitreL, mitreR,
-        // The SHELF is not extended over a frame corner: it runs back at the
-        // ceiling and lands on top of the filler's own return arm, and
-        // extending it would put two pieces of board in the same 18 mm. So it
-        // covers the run's own length and never the mitres' long points.
-        shelfFrom: faceX0 + mitreL, shelfRun: len,
+        from: faceX0, to: faceX0 + faceLen, deg: 0, run: faceLen,
+        shelfFrom: faceX0, shelfRun: len,
       }];
       if (!roofLine) return whole;
       const xs = [faceX0,
@@ -4829,8 +4886,6 @@ export function computeCabinet(params, profileOverride) {
         const b = xs[i];
         const deg = Math.abs(signedDeg(a, b));
         const cos = Math.cos((deg * Math.PI) / 180);
-        const mL = i === 1 ? mitreL : 0;
-        const mR = i === xs.length - 1 ? mitreR : 0;
         segs.push({
           from: a,
           to: b,
@@ -4838,10 +4893,10 @@ export function computeCabinet(params, profileOverride) {
           // The piece is mounted ALONG the slope, so its length is the
           // hypotenuse of the span it covers, not the span.
           run: cos > 1e-9 ? (b - a) / cos : (b - a),
-          shelfFrom: a + mL,
-          shelfRun: cos > 1e-9 ? (b - a - mL - mR) / cos : (b - a - mL - mR),
-          mitreL: mL,
-          mitreR: mR,
+          // T48-F2: the shelf board is the face board's own span, because
+          // neither carries a corner long point any more.
+          shelfFrom: a,
+          shelfRun: cos > 1e-9 ? (b - a) / cos : (b - a),
           // Where two segments meet, each piece is cut at HALF the angle
           // between them — the frame-corner rule again, and it is the same
           // arithmetic `sideTopMitreDeg` uses one piece over.
@@ -4861,24 +4916,37 @@ export function computeCabinet(params, profileOverride) {
       const segLen = roundTo(sg.run, 4);
       const segX0 = sg.from;
       const yTop = roofLine ? reachAt((sg.from + sg.to) / 2) : H;
+      // T48-F2: the site-cut allowance, on ONE end of this board.
+      const overEnd = allowanceEnd(i === 0, i === runSegs.length - 1);
+      const overLen = overEnd ? overT : 0;
+      const cutLen = roundTo(segLen + overLen, 4);
+      const lengthOversize = overEnd && overLen > 0
+        ? { lengthOversize: { mm: overLen, end: overEnd, nominal: roundTo(segLen, 4) } }
+        : {};
       const faceMeta = {
         side: 'top', piece: 'face', segment: manySegs ? `main-${i + 1}` : 'main', ends,
+        // T48-F2: 'long' is gone with the L. What is left is 'end', and only
+        // where two RUNS meet — the turning corner, and a segment-to-segment
+        // join a bent ceiling makes.
         mitre_45: [...new Set([
           ...mitre(i === 0 && ends.left === 'open'),
           ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
-          ...(sg.mitreL || sg.mitreR || sg.joinL || sg.joinR ? ['end'] : []),
+          ...(sg.joinL || sg.joinR ? ['end'] : []),
         ])],
-        // THE TWO MITRES, NEVER CONFUSED (F4). The L corner of one infill piece
-        // is `face × arm`, always 90°, therefore ALWAYS 45 — the owner: *"infill
-        // mitra zawsze jest 45."* The END joins are the angle the SLOPE gives.
-        mitre: {
-          L: 45,
-          ...(sg.joinL != null ? { left: sg.joinL } : {}),
-          ...(sg.joinR != null ? { right: sg.joinR } : {}),
-        },
-        corner: { left: sg.mitreL, right: sg.mitreR },
+        // The L's own 45 (`mitre.L`) died with the L. The joins the SLOPE makes
+        // are exactly what T47 computed and are stated only when there is one.
+        ...(sg.joinL != null || sg.joinR != null ? {
+          mitre: {
+            ...(sg.joinL != null ? { left: sg.joinL } : {}),
+            ...(sg.joinR != null ? { right: sg.joinR } : {}),
+          },
+        } : {}),
+        // Which end turns against a ceiling-height side filler, and by how much
+        // — a record, not a cut (T15's chamfer is overruled; see above).
+        corner: { left: i === 0 ? cornerL : 0, right: i === runSegs.length - 1 ? cornerR : 0 },
         units: runInfill.unitIds || null,
         ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(faceH, 4) } } : {}),
+        ...lengthOversize,
         ...(sg.deg > 1e-9 ? {
           slopeCut: {
             deg: roundTo(sg.deg, 4),
@@ -4903,7 +4971,11 @@ export function computeCabinet(params, profileOverride) {
         } : {}),
       };
       panels.push(panel({
-        id: segId('INFILL-T-FACE', i), part: 'INFILL', role: 'infill', w: segLen, h: faceH + overT, thickness: t,
+        // BOARD A — the face. `faceH + overT` is 40 + 20 = 60 AS ARITHMETIC:
+        // the owner's *"jedna 60"* is the nominal the joiner typed plus the
+        // wall allowance, so a project with a 50 mm infill gets 70 and nobody
+        // has to remember to change a literal.
+        id: segId('INFILL-T-FACE', i), part: 'INFILL', role: 'infill', w: cutLen, h: faceH + overT, thickness: t,
         // One long edge is glued into the mitre and takes no banding; the other
         // is the visible bottom edge and does. The LISP code vocabulary has no
         // "one long edge", so the code names the pair and the LENGTH says one.
@@ -4930,20 +5002,27 @@ export function computeCabinet(params, profileOverride) {
         // that comes away, because the face's top edge is the one that runs on
         // to the wall over the corner. The +20 grows the TOP edge, which is the
         // one against the ceiling, so no corner moves.
-        cnc: chamferedRectGeometry(segLen, faceH + overT, { bl: sg.mitreL, br: sg.mitreR }),
+        // T48-F2: a PLAIN RECTANGLE. `chamferedRectGeometry`'s corner mitre is
+        // overruled — the board leaves the machine square and 20 long, and the
+        // corner, when there is one, is cut on site.
+        cnc: rectGeometry(cutLen, faceH + overT),
         meta: faceMeta,
       }));
       // The SHELF is NOT extended over a frame corner (T15's own rule), so it
       // takes the segment's own length without the mitres' long points.
       const shelfLen = roundTo(sg.shelfRun, 4);
+      const shelfCutLen = roundTo(shelfLen + overLen, 4);
       panels.push(panel({
-        id: segId('INFILL-T-SHELF', i), part: 'INFILL', role: 'infill', w: shelfLen, h: shelfDepth + overT, thickness: t,
+        // BOARD B — the shelf. *"a druga nominal 80 bez zmian"*: the nominal is
+        // the profile's own `shelfDepth` and the wall allowance is the same
+        // `fillerOversize` T47 put on it. Nothing about its WIDTH moves tonight.
+        id: segId('INFILL-T-SHELF', i), part: 'INFILL', role: 'infill', w: shelfCutLen, h: shelfDepth + overT, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(shelfLen),
         box: sg.deg > 1e-9 ? (() => {
           // Chat-fix 25.08.2026: the shelf leans WITH its face — same axis,
           // its own low end on the ceiling line, top surface on that line.
           const xa = sg.shelfFrom;
-          const xb = roundTo(sg.to - sg.mitreR, 4);
+          const xb = roundTo(sg.to, 4);
           const lowR = reachAt(xb) < reachAt(xa);
           const xL = lowR ? xb : xa;
           const yL = lowR ? reachAt(xb) : reachAt(xa);
@@ -4959,17 +5038,24 @@ export function computeCabinet(params, profileOverride) {
           x: sg.shelfFrom,
           y: (roofLine ? Math.min(yTop, H) : H) + faceH - t,
           z: faceZ - t - shelfDepth,
-          w: sg.to - sg.from - sg.mitreL - sg.mitreR,
+          w: sg.to - sg.from,
           h: t,
           d: shelfDepth,
         },
-        cnc: rectGeometry(shelfLen, shelfDepth + overT),
+        cnc: rectGeometry(shelfCutLen, shelfDepth + overT),
         meta: {
           side: 'top', piece: 'shelf', segment: manySegs ? `main-${i + 1}` : 'main', ends,
+          // ─── T48-F2: IN THE DATA AND ON THE SHEET, NOT IN THE ROOM ───────
+          // *"na wizualizacji tylko zrobic jedna deske jak plinth i tyle."*
+          // The board is cut, priced, labelled and exported like every other
+          // part; the SCENE draws one board, the face, the way it draws one
+          // board for a plinth. This is the flag the 3-D reads, and it is a
+          // general one: any part that is data rather than a body says so here.
+          scene: 'sheet-only',
           // Chat-fix 25.08.2026: leans with its face — same axis, own low end.
           ...(sg.deg > 1e-9 ? (() => {
             const xa = sg.shelfFrom;
-            const xb = roundTo(sg.to - sg.mitreR, 4);
+            const xb = roundTo(sg.to, 4);
             const lowR = reachAt(xb) < reachAt(xa);
             return {
               tilt_deg: roundTo(lowR ? -sg.deg : sg.deg, 4),
@@ -4982,12 +5068,15 @@ export function computeCabinet(params, profileOverride) {
           mitre_45: [...new Set([
             ...mitre(i === 0 && ends.left === 'open'),
             ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
+            ...(sg.joinL || sg.joinR ? ['end'] : []),
           ])],
-          mitre: {
-            L: 45,
-            ...(sg.joinL != null ? { left: sg.joinL } : {}),
-            ...(sg.joinR != null ? { right: sg.joinR } : {}),
-          },
+          ...(sg.joinL != null || sg.joinR != null ? {
+            mitre: {
+              ...(sg.joinL != null ? { left: sg.joinL } : {}),
+              ...(sg.joinR != null ? { right: sg.joinR } : {}),
+            },
+          } : {}),
+          ...lengthOversize,
           units: runInfill.unitIds || null,
           // The shelf runs BACK at the ceiling and lands on the wall, so its
           // scribed edge is its back one.
@@ -5013,14 +5102,19 @@ export function computeCabinet(params, profileOverride) {
         edgeCode: codes.topBottom, edgeLen: metres(returnDepth),
         box: { x: xFace, y: H, z: faceZ - returnDepth, w: t, h: faceH, d: returnDepth },
         cnc: rectGeometry(returnDepth, faceH),
-        meta: { side: 'top', piece: 'face', segment: `return-${side}`, mitre_45: ['long', 'end'] },
+        // T48-F2: 'long' dies with the L; 'end' survives, because this IS the
+        // turning corner — the one place two RUNS meet.
+        meta: { side: 'top', piece: 'face', segment: `return-${side}`, mitre_45: ['end'] },
       }));
       panels.push(panel({
         id: `INFILL-T${tag}-SHELF`, part: 'INFILL', role: 'infill', w: returnDepth, h: shelfDepth, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(returnDepth),
         box: { x: xShelf, y: H + faceH - t, z: faceZ - returnDepth, w: shelfDepth, h: t, d: returnDepth },
         cnc: rectGeometry(returnDepth, shelfDepth),
-        meta: { side: 'top', piece: 'shelf', segment: `return-${side}`, mitre_45: ['long', 'end'] },
+        meta: {
+          side: 'top', piece: 'shelf', segment: `return-${side}`, mitre_45: ['end'],
+          scene: 'sheet-only',
+        },
       }));
     }
   }

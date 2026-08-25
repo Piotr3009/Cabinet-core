@@ -122,9 +122,16 @@ test('R11 — every remaining `DimLabel` in the scene is a CHIP, and it is named
       + 'it is not a dimension: red is reserved for Check',
     ],
   };
+  // ─── T48-F8 SHARPENS THE DETECTOR, NOT THE RULE ─────────────────────────
+  // This asked who IMPORTS `DimLabel.jsx`. Since F8 that file also owns the
+  // constant-pixel size law (`useScreenScale`), and `3d/DimensionChain.jsx`
+  // imports it — CLAUDE.md F8 asks for ONE file, so the chain's own sprite
+  // takes the rule from there rather than copying it. Importing a RULE is not
+  // labelling a dimension, and R11's claim is exactly what it was: what is
+  // asserted is who MOUNTS the chip.
   const users = FILES
     .filter((f) => f.path.startsWith('3d/') && f.path !== '3d/DimLabel.jsx')
-    .filter((f) => /from '\.\/DimLabel\.jsx'/.test(f.src))
+    .filter((f) => /<DimLabel/.test(f.src))
     .map((f) => f.path)
     .sort();
   assert.deepEqual(users, Object.keys(CHIPS).sort(), 'a module started labelling dimensions again');

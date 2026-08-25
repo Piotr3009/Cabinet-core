@@ -208,10 +208,23 @@ function labelBox(panel) {
  * the file, so they cannot disagree". The only thing the two do differently is
  * the SIZE, and that is one profile number (`cnc.exportLabelScale`).
  */
-export function panelLabelBlock(panel, { unitNum, profile, mmPerPx = 1, minPx = 0 }) {
+export function panelLabelBlock(panel, {
+  unitNum, profile, mmPerPx = 1, minPx = 0,
+  // ─── TURN 48 (CLAUDE.md F9): 'outside' IS THE PREVIEW'S ANSWER ───────────
+  // *"Preview only; the DXF text is already whole."* The FILE keeps turn 16's
+  // ladder exactly — a caption that does not fit its board is truncated and
+  // then dropped, because a DXF has nowhere to put a leader that the machine
+  // will not also try to cut, and because a label that wandered outside its own
+  // outline in a nesting file would land on the part beside it. The GLASS is
+  // where a joiner reads the size, and on the glass it steps out and stays
+  // whole. Default 'truncate' — every caller that predates tonight, the DXF
+  // writer included, gets exactly the block it got yesterday.
+  onOverflow = 'truncate',
+}) {
   const cnc = profile.cnc;
   const box = labelBox(panel);
   return labelBlock({
+    onOverflow,
     text: partLabelText(unitNum, panel),
     sizeMm: profile.cnc.annotation.partLabelMm,
     boxW: box.w,

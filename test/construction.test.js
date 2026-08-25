@@ -130,12 +130,35 @@ test('the filler is the exact width of the gap it closes', () => {
 
 // ─── #16: the plinth and the top infill are asked for ───
 
-test('a newly placed unit has NO plinth and NO top infill', () => {
+// ─── T48-F3 AMENDS THIS ─────────────────────────────────────────────────────
+// ─── OVERRULED, 25.08.2026 ──────────────────────────────────────────────────
+//
+// The owner, 25.08.2026: the PLINTH IS ON BY DEFAULT — standing carcasses
+// only, never a hung WUD. It is still one untick away and the control has not
+// moved; what changed is the answer a new cabinet arrives with
+// (stores/projectStore.js `newUnit`, T48-F3).
+//
+// #16's rule was "no ghost rows in the cut list" and it still holds for the TOP
+// INFILL, which is a decision about a room. The plinth is not: a base unit
+// without a toe kick is not a thing this workshop builds, and every single one
+// was being ticked by hand. So a STANDING carcass arrives with one and the top
+// infill is still asked for.
+test('a newly placed STANDING unit arrives with a plinth — and still no top infill', () => {
   const id = withUnit('BUD');
-  assert.equal(unitOf(id).params.plinth, false);
+  assert.equal(unitOf(id).params.plinth, true);
+  assert.equal(partsOf(id, 'PLINTH').length, 1, 'the toe kick is cut from the moment it is placed');
   assert.equal(unitOf(id).params.top_infill_mm, 0);
-  assert.equal(partsOf(id, 'PLINTH').length, 0, 'nothing in the cut list nobody ordered');
-  assert.equal(partsOf(id, 'INFILL').length, 0);
+  assert.equal(partsOf(id, 'INFILL').length, 0, 'nothing in the cut list nobody ordered');
+  // …and it is still a DECISION: one untick and it is gone.
+  store().removePlinth(id);
+  assert.equal(unitOf(id).params.plinth, false);
+  assert.equal(partsOf(id, 'PLINTH').length, 0);
+});
+
+test('a HUNG unit never grows one — "never a hung WUD"', () => {
+  const id = withUnit('WUD');
+  assert.equal(unitOf(id).params.plinth ?? false, false);
+  assert.equal(partsOf(id, 'PLINTH').length, 0);
 });
 
 test('adding the plinth and the top infill makes them real; removing them makes them gone', () => {

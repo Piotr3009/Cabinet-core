@@ -1,0 +1,855 @@
+{
+  "turn": 48,
+  "when": "2026-08-25T13:14:01.330Z",
+  "steps": [
+    {
+      "label": "the app boots, a 4200 × 3000 room is loaded and the canvas is up",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F3 — a standing carcass is BORN with its plinth; a hung WUD is not",
+      "ok": true,
+      "detail": "{\"BUD\":true,\"BUDTALL\":true,\"WARDROBE\":true,\"WUD\":false}"
+    },
+    {
+      "label": "F1 — a shoe box asked for at y = 0 lands ON the floor, and says so",
+      "ok": true,
+      "detail": "{\"pos\":18}"
+    },
+    {
+      "label": "F1 — …and so does a shoe shelf",
+      "ok": true,
+      "detail": "{\"pos\":58}"
+    },
+    {
+      "label": "F1 — NOTHING the wardrobe cuts stands below its own floor",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "label": "F1 — the LAW, asked: 0 → 18 clamped, 900 → 900 untouched",
+      "ok": true,
+      "detail": "{\"pos\":18,\"clamped\":true}"
+    },
+    {
+      "label": "F2 — the run cuts TWO boards where the L stood",
+      "ok": true,
+      "detail": "INFILL-T-FACE, INFILL-T-SHELF"
+    },
+    {
+      "label": "F2 — both are PLAIN RECTANGLES — four corners, no mitre in the piece",
+      "ok": true,
+      "detail": "{\"faceCorners\":4,\"shelfCorners\":4}"
+    },
+    {
+      "label": "F2 — board A is 60 tall (40 + 20) and board B is 100 (80 + 20)",
+      "ok": true,
+      "detail": "{\"A\":[1220,60],\"B\":[1220,100]}"
+    },
+    {
+      "label": "F2 — the two boards are cut from ONE length",
+      "ok": true,
+      "detail": "{\"A\":1220,\"B\":1220}"
+    },
+    {
+      "label": "F2 — +20 on the LENGTH, ONE stated end, and the fitted piece is the run",
+      "ok": true,
+      "detail": "{\"mm\":20,\"end\":\"right\",\"nominal\":1200}"
+    },
+    {
+      "label": "F2 — the SHELF board is data and not a body in the room",
+      "ok": true,
+      "detail": "{\"shelf\":\"sheet-only\"}"
+    },
+    {
+      "label": "F2 — the frame has the FACE board in it, and no shelf board (R3)",
+      "ok": true,
+      "detail": "INFILL-T-FACE, INFILL-TL-FACE, INFILL-TR-FACE"
+    },
+    {
+      "label": "F8 — the scene is drawing dimension figures to measure",
+      "ok": true,
+      "detail": "{\"sprites\":29}"
+    },
+    {
+      "label": "F8 — the SAME label measures the same height in pixels, far and close",
+      "ok": true,
+      "detail": "{\"measured\":25,\"worstDeltaPx\":0,\"sample\":[{\"text\":null,\"wants\":26,\"far\":26,\"close\":26,\"farDepth\":8.928,\"closeDepth\":3.13},{\"text\":null,\"wants\":26,\"far\":26,\"close\":26,\"farDepth\":7.433,\"closeDepth\":1.633},{\"text\":null,\"wants\":26,\"far\":26,\"close\":26,\"farDepth\":7.433,\"closeDepth\":1.633}]}"
+    },
+    {
+      "label": "F8 — …and it is the height the label ASKED for, to the hundredth",
+      "ok": true,
+      "detail": "{\"asked\":\"26, 27.04\",\"worstOffByPx\":0}"
+    },
+    {
+      "label": "F8 — …and it really was two different distances",
+      "ok": true,
+      "detail": "chip: 8.928m → 3.13m | chip: 7.433m → 1.633m"
+    },
+    {
+      "label": "F7 — `top_under` no longer borrows the top wash's drawing",
+      "ok": true,
+      "detail": "{\"same\":false,\"under\":526,\"up\":367}"
+    },
+    {
+      "label": "F6 — the button ADDS a strip and says what it will do next",
+      "ok": true,
+      "detail": "{\"n\":1,\"on\":\"1\",\"label\":\"Remove from the top · T01\"}"
+    },
+    {
+      "label": "F6 — …and THE SAME button removes it — \"proste\"",
+      "ok": true,
+      "detail": "{\"n\":0,\"on\":\"0\",\"label\":\"Add under the top · T01\"}"
+    },
+    {
+      "label": "F5 — the ENGINE's answer has no groove; the SHEET's answer has one",
+      "ok": true,
+      "detail": "{\"engine\":0,\"sheet\":1}"
+    },
+    {
+      "label": "F4 — and the slot is the profile PLUS 10 at each end",
+      "ok": true,
+      "detail": "{\"profile\":560,\"slot\":580,\"extra\":10}"
+    },
+    {
+      "label": "F9 — a cabinet parked at the wall grows its scribe filler",
+      "ok": true,
+      "detail": "{\"id\":\"u_3f233qi\",\"at\":40,\"infill\":40,\"parts\":[\"INFILL-L-FACE 60x2250\",\"INFILL-L-ARM 60x2250\"]}"
+    },
+    {
+      "label": "F9 — the sheet is showing the narrow strip",
+      "ok": true,
+      "detail": "INFILL-L-FACE 60x2250 | INFILL-L-ARM 60x2250"
+    },
+    {
+      "label": "F9 — zoomed in, the label is above the readable floor and is drawn",
+      "ok": true,
+      "detail": "{\"steps\":3,\"seen\":2}"
+    },
+    {
+      "label": "F9 — the FILE still truncates (a DXF has nowhere to put a leader)",
+      "ok": true,
+      "detail": "01 / FILL~ / 30x6~"
+    },
+    {
+      "label": "F9 — and the GLASS keeps every digit, stepping outside instead",
+      "ok": true,
+      "detail": "01 / FILLER-1 / 30x611"
+    },
+    {
+      "label": "F9 — a label really did step outside its outline on the live sheet",
+      "ok": true,
+      "detail": "2× — INFILL-L-FACE: T01INFILL-L-FACE60x2250"
+    }
+  ],
+  "shots": [
+    {
+      "name": "walk-1-infill-in-view.png",
+      "note": "F2 — the top infill over a run of two talls: ONE board, its face in the plane of the fronts, like a plinth"
+    },
+    {
+      "name": "walk-1b-infill-close.png",
+      "note": "F2 — the same board, close: ONE plain strip across the run's head. No L, no shelf board hanging behind it."
+    },
+    {
+      "name": "walk-2-dimensions-far.png",
+      "note": "F8 — the same scene from 9 m: the dimension figures"
+    },
+    {
+      "name": "walk-3-dimensions-close.png",
+      "note": "F8 — …and from 2.2 m. The figures are the same height."
+    },
+    {
+      "name": "walk-4-lighting-panel.png",
+      "note": "F6/F7 — the placement tools. `top_under` has its own drawing: the strip UNDER the top board, washing DOWN."
+    },
+    {
+      "name": "walk-5-led-added.png",
+      "note": "F6 — one press: the strip is placed and the button now reads Remove."
+    },
+    {
+      "name": "walk-6-cnc-sheet.png",
+      "note": "F5/F2/F3 — the CNC preview of the run: LED_GROOVE in the legend (the groove reached the sheet), the top infill's TWO boards laid out with their own labels, and the plinth cut because a standing carcass is born with one."
+    },
+    {
+      "name": "walk-7-the-scribe-filler.png",
+      "note": "F9 — the run's own scribe filler on the sheet, zoomed to where a joiner reads it: 60 mm wide, and its label used to lose a digit off 2250."
+    },
+    {
+      "name": "walk-8-label-outside.png",
+      "note": "F9 — INFILL-L-FACE, three times life size: the label stands clear of its own narrow strip on a leader, and not one digit of its size has been cut."
+    }
+  ],
+  "measurements": {
+    "f8": {
+      "far": {
+        "canvas": 1052,
+        "labels": [
+          {
+            "uuid": "a1df9ee3-5fe2-404d-8349-2e0fa853e996",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 8.928
+          },
+          {
+            "uuid": "f8d71d6b-3361-4f3e-bfa2-4d6a9cea7b1a",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 7.433
+          },
+          {
+            "uuid": "b03b1a2b-9036-4366-8360-642fa58ea21b",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 5.939
+          },
+          {
+            "uuid": "607aebcc-2f8e-45a8-a698-2377fd86b2a0",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 7.433
+          },
+          {
+            "uuid": "3121f0b6-2b4e-428c-b00e-69623af7cb73",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 9.049
+          },
+          {
+            "uuid": "7d14e78f-c6a8-4866-84c2-1b8b192e3ce0",
+            "text": "600",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.547
+          },
+          {
+            "uuid": "488f4669-8a00-4ea0-96c5-2e02b94a32ff",
+            "text": "100",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.587
+          },
+          {
+            "uuid": "a2ea4bf4-07cc-453a-a0dc-b4bec22689e5",
+            "text": "2150",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.487
+          },
+          {
+            "uuid": "229f967b-d631-46a7-aaf4-dd89b8d591f2",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 8.664
+          },
+          {
+            "uuid": "d42074b7-7430-4011-a92e-6fb28968ede6",
+            "text": "W 600",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.547
+          },
+          {
+            "uuid": "ea2ddee0-dd71-4a06-9a62-148bc99682e8",
+            "text": "internal 564",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.505
+          },
+          {
+            "uuid": "4a5a814b-45ad-4932-99e3-73b428418912",
+            "text": "D 558",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.871
+          },
+          {
+            "uuid": "25b80838-42c6-45aa-a668-87a1c5ad34e8",
+            "text": "toe kick 100",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.587
+          },
+          {
+            "uuid": "4556bc6c-b82a-4c38-91cf-bb9dbe3a7dfa",
+            "text": "H 2150",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.487
+          },
+          {
+            "uuid": "0f6a6248-4598-4e4c-b9c8-017964286507",
+            "text": "infill 40",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.39
+          },
+          {
+            "uuid": "97a7cbaa-a069-451a-88b5-e454998ef202",
+            "text": "600",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.547
+          },
+          {
+            "uuid": "dbd4db2e-9835-4971-b944-11436e43ad85",
+            "text": "100",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.587
+          },
+          {
+            "uuid": "78142f57-806a-4ee1-84d9-7c340456f4d7",
+            "text": "2150",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.487
+          },
+          {
+            "uuid": "e643c815-417a-40f4-8e26-59c6ce741b55",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 8.664
+          },
+          {
+            "uuid": "dfd8c73c-3976-4763-af6b-cea701512244",
+            "text": "W 600",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.547
+          },
+          {
+            "uuid": "0dd4a109-eb90-4084-a2f4-adfc17f765f4",
+            "text": "internal 564",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.505
+          },
+          {
+            "uuid": "c35e439e-a416-4647-8c75-8b1f827da199",
+            "text": "D 558",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.871
+          },
+          {
+            "uuid": "f0423a3b-7bc7-4be0-bb1c-c185888e0621",
+            "text": "toe kick 100",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.587
+          },
+          {
+            "uuid": "4260567c-1acc-4f81-97fb-655684eb2a15",
+            "text": "H 2150",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.487
+          },
+          {
+            "uuid": "74f99a2f-5cfa-4ab5-b55e-5da132e1818d",
+            "text": "1800 mm",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.479
+          },
+          {
+            "uuid": "146d34eb-b067-4021-89d4-5e8fae36a4f9",
+            "text": "1200 mm",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 8.479
+          }
+        ]
+      },
+      "close": {
+        "canvas": 1052,
+        "labels": [
+          {
+            "uuid": "a1df9ee3-5fe2-404d-8349-2e0fa853e996",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 3.13
+          },
+          {
+            "uuid": "f8d71d6b-3361-4f3e-bfa2-4d6a9cea7b1a",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 1.633
+          },
+          {
+            "uuid": "b03b1a2b-9036-4366-8360-642fa58ea21b",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 0.136
+          },
+          {
+            "uuid": "607aebcc-2f8e-45a8-a698-2377fd86b2a0",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 1.633
+          },
+          {
+            "uuid": "3121f0b6-2b4e-428c-b00e-69623af7cb73",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 3.216
+          },
+          {
+            "uuid": "7d14e78f-c6a8-4866-84c2-1b8b192e3ce0",
+            "text": "600",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.68
+          },
+          {
+            "uuid": "488f4669-8a00-4ea0-96c5-2e02b94a32ff",
+            "text": "100",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.721
+          },
+          {
+            "uuid": "a2ea4bf4-07cc-453a-a0dc-b4bec22689e5",
+            "text": "2150",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.651
+          },
+          {
+            "uuid": "229f967b-d631-46a7-aaf4-dd89b8d591f2",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 2.859
+          },
+          {
+            "uuid": "d42074b7-7430-4011-a92e-6fb28968ede6",
+            "text": "W 600",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.68
+          },
+          {
+            "uuid": "ea2ddee0-dd71-4a06-9a62-148bc99682e8",
+            "text": "internal 564",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.638
+          },
+          {
+            "uuid": "4a5a814b-45ad-4932-99e3-73b428418912",
+            "text": "D 558",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 3.005
+          },
+          {
+            "uuid": "25b80838-42c6-45aa-a668-87a1c5ad34e8",
+            "text": "toe kick 100",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.721
+          },
+          {
+            "uuid": "4556bc6c-b82a-4c38-91cf-bb9dbe3a7dfa",
+            "text": "H 2150",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.651
+          },
+          {
+            "uuid": "0f6a6248-4598-4e4c-b9c8-017964286507",
+            "text": "infill 40",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.583
+          },
+          {
+            "uuid": "97a7cbaa-a069-451a-88b5-e454998ef202",
+            "text": "600",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.68
+          },
+          {
+            "uuid": "dbd4db2e-9835-4971-b944-11436e43ad85",
+            "text": "100",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.721
+          },
+          {
+            "uuid": "78142f57-806a-4ee1-84d9-7c340456f4d7",
+            "text": "2150",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.651
+          },
+          {
+            "uuid": "e643c815-417a-40f4-8e26-59c6ce741b55",
+            "text": null,
+            "px": 26,
+            "wants": 26,
+            "depth": 2.859
+          },
+          {
+            "uuid": "dfd8c73c-3976-4763-af6b-cea701512244",
+            "text": "W 600",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.68
+          },
+          {
+            "uuid": "0dd4a109-eb90-4084-a2f4-adfc17f765f4",
+            "text": "internal 564",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.638
+          },
+          {
+            "uuid": "c35e439e-a416-4647-8c75-8b1f827da199",
+            "text": "D 558",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 3.005
+          },
+          {
+            "uuid": "f0423a3b-7bc7-4be0-bb1c-c185888e0621",
+            "text": "toe kick 100",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.721
+          },
+          {
+            "uuid": "4260567c-1acc-4f81-97fb-655684eb2a15",
+            "text": "H 2150",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.651
+          },
+          {
+            "uuid": "74f99a2f-5cfa-4ab5-b55e-5da132e1818d",
+            "text": "1800 mm",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.618
+          },
+          {
+            "uuid": "146d34eb-b067-4021-89d4-5e8fae36a4f9",
+            "text": "1200 mm",
+            "px": 27.04,
+            "wants": 27.04,
+            "depth": 2.618
+          }
+        ]
+      },
+      "pair": [
+        {
+          "text": null,
+          "wants": 26,
+          "far": 26,
+          "close": 26,
+          "farDepth": 8.928,
+          "closeDepth": 3.13
+        },
+        {
+          "text": null,
+          "wants": 26,
+          "far": 26,
+          "close": 26,
+          "farDepth": 7.433,
+          "closeDepth": 1.633
+        },
+        {
+          "text": null,
+          "wants": 26,
+          "far": 26,
+          "close": 26,
+          "farDepth": 7.433,
+          "closeDepth": 1.633
+        },
+        {
+          "text": null,
+          "wants": 26,
+          "far": 26,
+          "close": 26,
+          "farDepth": 9.049,
+          "closeDepth": 3.216
+        },
+        {
+          "text": "600",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.547,
+          "closeDepth": 2.68
+        },
+        {
+          "text": "100",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.587,
+          "closeDepth": 2.721
+        },
+        {
+          "text": "2150",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.487,
+          "closeDepth": 2.651
+        },
+        {
+          "text": null,
+          "wants": 26,
+          "far": 26,
+          "close": 26,
+          "farDepth": 8.664,
+          "closeDepth": 2.859
+        },
+        {
+          "text": "W 600",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.547,
+          "closeDepth": 2.68
+        },
+        {
+          "text": "internal 564",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.505,
+          "closeDepth": 2.638
+        },
+        {
+          "text": "D 558",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.871,
+          "closeDepth": 3.005
+        },
+        {
+          "text": "toe kick 100",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.587,
+          "closeDepth": 2.721
+        },
+        {
+          "text": "H 2150",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.487,
+          "closeDepth": 2.651
+        },
+        {
+          "text": "infill 40",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.39,
+          "closeDepth": 2.583
+        },
+        {
+          "text": "600",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.547,
+          "closeDepth": 2.68
+        },
+        {
+          "text": "100",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.587,
+          "closeDepth": 2.721
+        },
+        {
+          "text": "2150",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.487,
+          "closeDepth": 2.651
+        },
+        {
+          "text": null,
+          "wants": 26,
+          "far": 26,
+          "close": 26,
+          "farDepth": 8.664,
+          "closeDepth": 2.859
+        },
+        {
+          "text": "W 600",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.547,
+          "closeDepth": 2.68
+        },
+        {
+          "text": "internal 564",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.505,
+          "closeDepth": 2.638
+        },
+        {
+          "text": "D 558",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.871,
+          "closeDepth": 3.005
+        },
+        {
+          "text": "toe kick 100",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.587,
+          "closeDepth": 2.721
+        },
+        {
+          "text": "H 2150",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.487,
+          "closeDepth": 2.651
+        },
+        {
+          "text": "1800 mm",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.479,
+          "closeDepth": 2.618
+        },
+        {
+          "text": "1200 mm",
+          "wants": 27.04,
+          "far": 27.04,
+          "close": 27.04,
+          "farDepth": 8.479,
+          "closeDepth": 2.618
+        }
+      ],
+      "worstDeltaPx": 0
+    },
+    "f2": {
+      "unitId": "u_1yp1et4",
+      "other": "u_255qh4b",
+      "returns": [
+        "INFILL-TL-FACE",
+        "INFILL-TL-SHELF",
+        "INFILL-TR-FACE",
+        "INFILL-TR-SHELF"
+      ],
+      "boards": [
+        {
+          "id": "INFILL-T-FACE",
+          "cut": [
+            1220,
+            60
+          ],
+          "box": [
+            1200,
+            40
+          ],
+          "corners": 4,
+          "lengthOversize": {
+            "mm": 20,
+            "end": "right",
+            "nominal": 1200
+          },
+          "long": false,
+          "scene": null
+        },
+        {
+          "id": "INFILL-T-SHELF",
+          "cut": [
+            1220,
+            100
+          ],
+          "box": [
+            1200,
+            18
+          ],
+          "corners": 4,
+          "lengthOversize": {
+            "mm": 20,
+            "end": "right",
+            "nominal": 1200
+          },
+          "long": false,
+          "scene": "sheet-only"
+        }
+      ]
+    },
+    "f1": {
+      "unitId": "u_gp5tl8p",
+      "shoeBox": 18,
+      "shoeBoxSaysSo": true,
+      "shoeShelf": 58,
+      "below": [],
+      "law": {
+        "pos": 18,
+        "clamped": true
+      },
+      "legal": {
+        "pos": 900,
+        "clamped": false
+      }
+    },
+    "f4f5": {
+      "unitId": "u_1yp1et4",
+      "shelfId": "SHELF-1",
+      "onEngine": 0,
+      "onSheet": 1,
+      "width": 12,
+      "length": 580,
+      "profileLength": 560,
+      "extra": 10
+    },
+    "f9": {
+      "file": [
+        "01",
+        "FILL~",
+        "30x6~"
+      ],
+      "glass": [
+        "01",
+        "FILLER-1",
+        "30x611"
+      ],
+      "outside": true
+    }
+  },
+  "passed": 28,
+  "failed": 0
+}

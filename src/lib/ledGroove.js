@@ -50,6 +50,30 @@ export const LED_GROOVE_LAYER = Object.freeze({
   name: 'LED_GROOVE', aci: 44, label: 'LED groove', kind: 'pocket',
 });
 
+// ─── TURN 48 (CLAUDE.md F4): THE GROOVE OUTGROWS THE PROFILE ────────────────
+//
+// The owner, 25.08.2026: *"dluzszy niz profil o 10 mm z KAZDEJ strony …
+// zaokraglenie bita, nikt nie chce uzywac dlutka na rogach."*
+//
+// The LISP came FIRST and states the rule and the reason (iron rule 3):
+// `reference/lisp/KIT_LED_GROOVE.lsp`, section A2, `(defun ledGrooveEndExtra
+// ( / ) 10.0)`. A router bit is round; a pocket cut to the profile's exact
+// length ends in two radii and an aluminium channel is square, so somebody has
+// to square two corners with a chisel on every board with a light in it. Ten
+// millimetres of overrun at each end puts the radius past the profile, where
+// nothing has to sit.
+//
+// It is a LENGTH rule and only a length rule. The WIDTH is untouched and so is
+// the centreline — a groove that grew sideways would move the light, which is
+// the very thing the "centred on the line" rule above exists to stop.
+//
+// The number is here because this file is where the application does its
+// arithmetic, and `test/turn45-f9-cnc-the-groove.test.js` PARSES the LISP off
+// disk and holds the two to each other. Change 10.0 in the kit and the test
+// fails until this follows — which is what "LISP is law" has to mean in
+// practice rather than in a comment.
+export const GROOVE_END_EXTRA_MM = 10;
+
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 const round3 = (v) => Math.round(v * 1e3) / 1e3;
 
@@ -140,12 +164,17 @@ export function grooveForStrip(strip, panel, widthMm) {
   // that is the axis the slot's own width replaces — centred, as the LISP
   // says, so an 80 mm inset puts the light at 80 rather than at 82.
   const half = w / 2;
+  // T48-F4: …and the LONG way runs `GROOVE_END_EXTRA_MM` past the profile at
+  // EACH end. `min`/`max` first, exactly as the LISP does it: a strip's box is
+  // handed over in whichever order it was built, and taking the extra off the
+  // near end when the near end is the far one would SHORTEN the pocket by 20.
+  const e = GROOVE_END_EXTRA_MM;
   const rect = runX >= runY
     ? {
-      x1: Math.min(x1, x2), x2: Math.max(x1, x2), c: (y1 + y2) / 2, along: 'x',
+      x1: Math.min(x1, x2) - e, x2: Math.max(x1, x2) + e, c: (y1 + y2) / 2, along: 'x',
     }
     : {
-      y1: Math.min(y1, y2), y2: Math.max(y1, y2), c: (x1 + x2) / 2, along: 'y',
+      y1: Math.min(y1, y2) - e, y2: Math.max(y1, y2) + e, c: (x1 + x2) / 2, along: 'y',
     };
 
   const pts = rect.along === 'x'

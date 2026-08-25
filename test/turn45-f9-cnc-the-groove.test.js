@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
-  LED_GROOVE_LAYER, grooveCount, grooveForStrip, panelForStrip, panelPlane, withLedGrooves,
+  GROOVE_END_EXTRA_MM, LED_GROOVE_LAYER, grooveCount, grooveForStrip, panelForStrip, panelPlane,
+  withLedGrooves,
 } from '../src/lib/ledGroove.js';
 import { grooved } from '../src/lib/cncExport.js';
 import { T45_LISP_FILE, balanceOfKits, parenBalance } from '../scripts/t45-paren-balance.mjs';
@@ -29,6 +30,17 @@ import { STANDARD_CONFIGS, canonical } from '../scripts/t45-classify.mjs';
 // is touched."*
 //
 // It did not fall. This file is what holds it to all four clauses.
+//
+// ─── TURN 48 (CLAUDE.md F4) EXTENDS THE LAW, IN THE SAME FILE ───────────────
+//
+// The owner, 25.08.2026: *"dluzszy niz profil o 10 mm z KAZDEJ strony …
+// zaokraglenie bita, nikt nie chce uzywac dlutka na rogach."*
+//
+// The slot outgrows the profile by 10 mm at EACH end. CLAUDE.md F4 names THIS
+// file as the place the two are held to each other, so the new constant is
+// parsed off the kit exactly as the widths already are, and the length
+// assertion below moves with it. Nothing about the WIDTH or the CENTRELINE
+// changes — a groove that grew sideways would move the light.
 
 const LISP = readFileSync(new URL(`../reference/lisp/${T45_LISP_FILE}`, import.meta.url), 'utf8');
 
@@ -62,15 +74,36 @@ test('F9-CNC — the groove is BORN in reference/lisp/, and balances 0/0', () =>
 test('F9-CNC — the LISP declares the layer, the rule and the two widths', () => {
   assert.match(LISP, /\(defun ledMakeLayers/);
   assert.match(LISP, /"LED_GROOVE" "_C" "44"/);
-  assert.match(LISP, /\(defun drawLedGroove \(x1 y1 x2 y2 width \/ half\)/);
+  // T48-F4 widened the signature: `extra`, `lo` and `hi` are its locals.
+  assert.match(LISP, /\(defun drawLedGroove \(x1 y1 x2 y2 width \/ half extra lo hi\)/);
   assert.match(LISP, /\(defun ledGrooveOnPanel \(lines width \/ ln\)/);
   assert.match(LISP, /\(defun ledFlexiWidth \( \/ \) 4\.0\)/);
+  // T48-F4: …and the END EXTRA, named, in its own section.
+  assert.match(LISP, /\(defun ledGrooveEndExtra \( \/ \) 10\.0\)/);
+  assert.match(LISP, /\(setq extra \(ledGrooveEndExtra\)\)/, 'and drawLedGroove uses it');
+  // min/max, not "x1 first": a line handed over the other way round would come
+  // back 20 mm SHORTER instead of 20 longer.
+  assert.match(LISP, /\(- \(min x1 x2\) extra\)/);
+  assert.match(LISP, /\(\+ \(max x1 x2\) extra\)/);
+  assert.match(LISP, /\(- \(min y1 y2\) extra\)/);
+  assert.match(LISP, /\(\+ \(max y1 y2\) extra\)/);
   // THE GATE, in the LISP itself: no lines, no layer, no rectangle.
   assert.match(LISP, /\(if lines/);
   // CENTRED on the line — the rule the application has to obey.
   assert.match(LISP, /\(setq half \(\/ width 2\.0\)\)/);
   assert.match(LISP, /\(- y1 half\)/);
   assert.match(LISP, /\(\+ y1 half\)/);
+});
+
+test('T48-F4 — the LISP owns the number, and the APPLICATION reads it off disk', () => {
+  // The whole of "LISP is law" in one assertion: the kit's own line is parsed
+  // and the JS constant is held to it. Change 10.0 in the kit and this fails
+  // until `src/lib/ledGroove.js` follows.
+  const m = /\(defun ledGrooveEndExtra \( \/ \) ([-0-9.]+)\)/.exec(LISP);
+  assert.ok(m, 'ledGrooveEndExtra is not in KIT_LED_GROOVE.lsp');
+  assert.equal(GROOVE_END_EXTRA_MM, Number(m[1]),
+    'the application states a different overrun from the law');
+  assert.equal(GROOVE_END_EXTRA_MM, 10, '10 at each end — 20 overall');
 });
 
 test('F9-CNC — the APPLICATION follows it: same layer, same colour, same rule', () => {
@@ -143,9 +176,16 @@ test('F9-CNC — the slot is the SPEC’s width, and CENTRED on the line', () =>
     assert.equal(Math.max(...xs) - Math.min(...xs), width, `${JSON.stringify(spec)} cuts ${width} mm`);
     assert.ok(Math.abs((Math.min(...xs) + Math.max(...xs)) / 2 - centre) < 0.01,
       'centred on the line — 80 mm in puts the light at 80, not at 82');
-    // …and it runs the LENGTH of the line, on the other axis.
+    // …and it runs the LENGTH of the line, on the other axis — T48-F4: PLUS
+    // the bit's overrun at each end, so the channel's square end is not sitting
+    // in the cutter's radius.
     const ys = g.pts.map((p) => p[1]);
-    assert.equal(Math.max(...ys) - Math.min(...ys), strip.box.w);
+    assert.equal(Math.max(...ys) - Math.min(...ys), strip.box.w + 2 * GROOVE_END_EXTRA_MM);
+    // The pocket is still CENTRED on the profile, end to end: the 10 is the
+    // same at both ends, not 20 at one.
+    const along = (v) => v - (strip.box.x - shelf.box.x);
+    assert.equal(along(Math.min(...ys)), -GROOVE_END_EXTRA_MM);
+    assert.equal(along(Math.max(...ys)), strip.box.w + GROOVE_END_EXTRA_MM);
     assert.equal(g.layer, 'LED_GROOVE');
     assert.equal(g.closed, true, 'a pocket, not a profile');
     assert.equal(g.pts.length, 4);

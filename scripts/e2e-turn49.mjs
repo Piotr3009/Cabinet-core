@@ -566,6 +566,32 @@ async function main() {
   check('F9 — SPRAY moves with the slider', sheen.spray[0] !== sheen.spray[1], JSON.stringify(sheen.spray));
   check('F9 — VENEER moves too', sheen.veneer[0] !== sheen.veneer[1], JSON.stringify(sheen.veneer));
   check('F9 — and LAMINATE does not', sheen.laminate[0] === sheen.laminate[1], JSON.stringify(sheen.laminate));
+
+  // …and the half a finish cannot answer: a VENEERED FRONT is stored as the
+  // decor it borrows its picture from (T20 F12.3), so the piece's own material
+  // SLOT is what says it is a veneer.
+  const frontVeneer = await page.evaluate(`
+    const t = window.__ccT49;
+    const P = window.__cc.profile.getState().profile;
+    const laminate = t.finishById(P, 'dark_walnut');
+    const door = { id: '01-F', role: 'front', material_role: 'front' };
+    const design = (src) => window.__ccT49.veneerSheen && ({
+      fronts: { types: [{ id: 'f1', label: 'Front 1', source: src, finish_id: 'dark_walnut' }] },
+    });
+    const rough = (src, sheenValue) => t.surface.surfaceFor({
+      role: 'front', materialRole: 'front', finishes: { carcass: laminate, front: laminate },
+      finish: laminate, profile: P, sheen: sheenValue,
+      veneered: t.veneerSheen.panelIsVeneered(door, null, design(src)),
+    }).roughness;
+    return {
+      veneerFront: [rough('veneer', 5), rough('veneer', 100)],
+      laminateFront: [rough('laminate', 5), rough('laminate', 100)],
+    };
+  `);
+  check('F9 — a VENEERED FRONT moves, though its finish is a decor',
+    frontVeneer.veneerFront[0] !== frontVeneer.veneerFront[1], JSON.stringify(frontVeneer.veneerFront));
+  check('F9 — and a LAMINATE front faced in the SAME decor does not',
+    frontVeneer.laminateFront[0] === frontVeneer.laminateFront[1], JSON.stringify(frontVeneer.laminateFront));
   await shot('f9-sheen-says-what-it-does',
     { dom: '[data-sheen-scope]', text: 'Sprayed and veneered surfaces' },
     'the slider, saying what it drives — and that a laminate keeps its own finish');

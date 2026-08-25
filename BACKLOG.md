@@ -906,3 +906,32 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
     przeszkadzać, właściwym rozwiązaniem jest ROZSUNIĘCIE układu
     (`cnc.layoutGap`) dla części, których etykieta nie mieści się w obrysie,
     a nie powrót do ucinania.
+
+### DOPISANE W TURZE 49
+
+124. [LOW] **Modal ściany ma DWA przyciski Back.** Powłoka rysuje `← Back` obok
+    tytułu (T23 F1.2 — okno zagnieżdżone), a stopka okna elewacji ma swój
+    własny `Back` (T44 F1). Oba wołają tę samą funkcję i idą w to samo miejsce,
+    więc to NIE jest pomyłka ze zrzutu właściciela (tam dwa Backi szły w dwa
+    różne miejsca) — ale to nadal dwa przyciski z tym samym słowem. Usunięcie
+    jednego z nich jest KASOWANIEM, a tura 49 ma tylko dwie nazwane licencje
+    (scalenie carcasów i scalenie frontów), więc zostawione właścicielowi do
+    rozstrzygnięcia. Widać to na `verify/t49/f8-flat-one-slope.png`. Jeśli ma
+    zniknąć stopkowy — to jedna linia w `components/WallElevationModal.jsx`.
+125. [LOW] **Na kroku 5 w stopce kreatora zostaje samotny `Cancel`.** F3 mówi
+    *„dokładnie jeden rząd nawigacji"* i tak jest: `Back`/`Next` rysuje tylko
+    sekwencja. `Cancel` nie jest nawigacją — porzuca całą robotę, nie ma
+    bliźniaka w rzędzie sekwencji i żadna ręka szukająca „Back" nie trafi w
+    słowo „Cancel". Zostawiony świadomie, bo skasowanie go byłoby usunięciem
+    jedynej jawnej drogi wyjścia z kreatora (zostałby tylko × i Escape). Do
+    rozstrzygnięcia przez właściciela — widać na każdej klatce kroku 5.
+126. [MEDIUM] **Front „Veneer" jest zapisywany jako DEKOR, nie jako fornir.**
+    T20 F12.3 zdecydowało, że fornir na FRONCIE wybiera się z katalogu 85
+    dekorów (pożycza skan EGGER-a, bo własnego zdjęcia jeszcze nie ma), więc
+    forniowane drzwi mają `finish_id: 'decor:H1180_37'` — identycznie jak
+    laminat w tym samym dekorze. T49-F9 obchodzi to czytając `source` typu
+    frontu (`lib/veneerSheen.js`), i to działa — ale to OBEJŚCIE, nie model.
+    Wszystko, co pyta wyłącznie o `finish.kind` (BOM, etykiety, rysunki), nadal
+    widzi tam laminat. Właściwe rozwiązanie: fornir na froncie dostaje własny
+    `kind: 'veneer'` z pożyczonym obrazkiem — to zmiana w `src/engine/**`, więc
+    nie w tej turze (żelazna zasada 2). Do zaplanowania.

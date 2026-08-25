@@ -79,6 +79,7 @@ import * as modalStack from './lib/modalStack.js';
 import * as wizardSteps from './lib/wizardSteps.js';
 import * as viewMaterials from './3d/materials.js';
 import * as veneers from './engine/veneers.js';
+import * as veneerSheen from './lib/veneerSheen.js';
 // Turn 35 (CLAUDE.md F4): the context guard's own counters, readable before the
 // first canvas has mounted — see below.
 import * as contextGuard from './3d/contextGuard.jsx';
@@ -409,6 +410,9 @@ if (typeof window !== 'undefined') {
     slopeFlat,
     surface: viewMaterials,
     veneers,
+    // F9's other half: whether a piece is cut from a VENEERED board, which the
+    // finish alone cannot say for a front.
+    veneerSheen,
     finishById: design.finishById,
   };
   window.__ccT46 = {

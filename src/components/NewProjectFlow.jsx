@@ -215,6 +215,10 @@ export default function NewProjectFlow({
     return (
       <RoomModal
         anchor={anchor}
+        // T49 F2: the wizard's door. The canned shapes — Rectangle, L-shape,
+        // + Box — do not render on it: *"a room ustawienie z gory to usun
+        // boxy, to bez sensu."* They are untouched behind the menu door.
+        wizard
         onClose={() => leaveEditor('scope')}
         onApplied={() => leaveEditor('settings')}
       />

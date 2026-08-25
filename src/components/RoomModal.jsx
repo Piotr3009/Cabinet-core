@@ -33,7 +33,29 @@ const PLAN_H = 260;
  * stays the existing one instead of becoming a second room editor to keep in
  * step. Left out, both fall back to what turn 3 did.
  */
-export default function RoomModal({ onClose = null, onApplied = null, anchor: anchorProp = null }) {
+// ─── TURN 49 (CLAUDE.md F2): THE CANNED SHAPES LEAVE THE WIZARD'S DOOR ──────
+//
+// The owner, 25.08.2026: *"a room ustawienie z gory to usun boxy, to bez
+// sensu."*
+//
+// A new project's room step opened with a row of PRE-MADE shapes — Rectangle,
+// L-shape, + Box — three canned outlines offered before anybody had said a word
+// about the job. That is the "z góry" he objects to: a plan arrives already
+// pretending to be somebody's kitchen, and every one of the three has to be
+// undone before the real room can be typed in.
+//
+// So the row does not render in the WIZARD. It is not deleted — iron rule 4,
+// and it never was the row's fault: from Settings ▸ Room setup, editing a room
+// that already exists, "make this a rectangle again" is exactly the button a
+// hand reaches for. Same editor, same three buttons, the menu door only.
+//
+// What a room needs INSTEAD is the wall editor — drawing walls by direction and
+// length — and that is T50's, with its own spec. It is deliberately not begun
+// here: the rest of this editor (drag a wall, type its length, the openings,
+// the guard) is untouched and is what a room is drawn with tonight.
+export default function RoomModal({
+  onClose = null, onApplied = null, anchor: anchorProp = null, wizard = false,
+}) {
   const room = useProjectStore((s) => s.project.room);
   const units = useProjectStore((s) => s.units);
   const setRoom = useProjectStore((s) => s.setRoom);
@@ -330,16 +352,18 @@ export default function RoomModal({ onClose = null, onApplied = null, anchor: an
         </button>
       </>}
     >
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4" data-room-door={wizard ? 'wizard' : 'menu'}>
         {/* ── plan ── */}
         <div>
           <div className="cc-row mb-2">
             <span className="text-xs uppercase tracking-wide text-ink-200">Plan (top view)</span>
-            {/* A one-wall job has no shape to choose (turn 14, F1.5b). */}
-            {scope === 'room' && (
-              <div className="flex gap-1">
-                <button type="button" className="cc-btn" onClick={() => setPreset('rect')}>Rectangle</button>
-                <button type="button" className="cc-btn" onClick={() => setPreset('L')}>L-shape</button>
+            {/* A one-wall job has no shape to choose (turn 14, F1.5b) — and
+                from turn 49 (F2) neither does a job being STARTED: the canned
+                shapes are the menu door's, where there is a room to reshape. */}
+            {scope === 'room' && !wizard && (
+              <div className="flex gap-1" data-room-presets="1">
+                <button type="button" className="cc-btn" data-room-preset="rect" onClick={() => setPreset('rect')}>Rectangle</button>
+                <button type="button" className="cc-btn" data-room-preset="L" onClick={() => setPreset('L')}>L-shape</button>
                 {/* F10.3: a chimney, a pillar, a boxed pipe. */}
                 <button type="button" className="cc-btn" data-insert-box="1" onClick={insertBox}>+ Box</button>
               </div>

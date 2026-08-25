@@ -141,10 +141,15 @@ test('the menu names the five bulk entries and only those', () => {
   const selection = [fakeUnit('u1'), fakeUnit('u2'), fakeUnit('u3')];
   const actions = menuActions({ unit: selection[0], selection, panelPart: 'BUL', store: {} });
   const bulk = actions.filter((a) => /\(3\)$/.test(a.label)).map((a) => a.id);
+  // T50-F10: `add-doors` left this menu — the owner: *"w prawym przycisku
+  // myszy menu nie powinno być Add doors."*  The BULK action is not lost with
+  // it: `MultiUnitPanel.jsx` has carried its own "Add doors (n)" over a
+  // multi-selection since T45, through `projectStore.addDoorsBulk`, which is
+  // what this entry was reaching for.
   assert.deepEqual(bulk, [
     'end-panel-L', 'end-panel-R', 'end-panel-B',
     'pin-infill-L', 'pin-infill-R',
-    'plinth', 'add-doors', 'unit-colour',
+    'plinth', 'unit-colour',
   ]);
   // …and the entries that are NOT bulk say nothing about a count, which is what
   // stops the menu quietly doing three things where it says one.

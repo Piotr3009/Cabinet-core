@@ -935,3 +935,36 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
     widzi tam laminat. Właściwe rozwiązanie: fornir na froncie dostaje własny
     `kind: 'veneer'` z pożyczonym obrazkiem — to zmiana w `src/engine/**`, więc
     nie w tej turze (żelazna zasada 2). Do zaplanowania.
+
+### DOPISANE W TURZE 50
+
+127. [LOW] **Wymiary jednej szafki nie mają już żadnych drzwi.** T50-F10 na
+    polecenie właściciela (*„w prawym przycisku myszy menu nie powinno być Add
+    doors oraz Show dimensions — dimension już mamy na górze"*) usunęło wpis
+    `Show all dimensions` z menu kontekstowego. Sam MECHANIZM nie został
+    skasowany (żelazna zasada 4): `uiStore.unitDimensions`,
+    `toggleUnitDimensions` i `clearUnitDimensions` są nietknięte, a
+    `3d/Scene.jsx` nadal z nich rysuje — ale menu było ich JEDYNYMI drzwiami,
+    więc dziś nikt nie może włączyć łańcucha wymiarów dla POJEDYNCZEJ szafki.
+    To, co zostało, to przełącznik na górnej belce, który rysuje ten sam
+    łańcuch (`engine/dimensions.js dimensionCarriers`) nad KAŻDĄ szafką — i to
+    jest dokładnie odpowiedź właściciela. Zostawione tak celowo. Jeśli
+    kiedykolwiek ma wrócić per-szafka, to jeden wpis z `group: 'dimensions'` i
+    grupa wraca sama (test T14-F6.3 to sprawdza).
+128. [LOW] **Skrócone drzwi pod skosem w szafie dostają drabinę `tall`, która
+    nie skaluje się w dół.** T50-F7 przelicza zawiasy po skróceniu leafa *„by
+    the same rule that spaces them on a full door"* — czyli `hingeRows` z
+    regułą TYPU. Dla WARDROBE to `tall`, a `tall` przy 700 mm nadal daje PIĘĆ
+    zawiasów w rozstawie 124 mm. To jest ten sam kształt błędu, który T38-F1b
+    naprawił dla top boxa jednym słowem (`hingeRule: 'low'` — *„nobody hangs a
+    500 mm door on five hinges"*). Nie zmieniamy tego tutaj, bo CLAUDE.md F7
+    mówi wprost „ta sama reguła", a zmiana reguły to decyzja właściciela.
+    Propozycja: leaf ucięty poniżej `hinges.rules.low.threeHingeMaxHeight`
+    liczy się drabiną `low`, tak jak każde inne drzwi tej wysokości w tej
+    aplikacji. Do rozstrzygnięcia przez właściciela.
+129. [LOW] **`+ Box` wrócił do kreatora razem z F12.** T49-F2 ukrył cały rząd
+    (Rectangle / L-shape / + Box) w kreatorze; T50-F12 kazał zrównać oba
+    wejścia i wysłać wersję kreatora — czyli usunąć gotowe kształty. `+ Box`
+    nigdy nie był gotowym kształtem (to komin, słup, obudowana rura), więc
+    rysuje się teraz w OBU drzwiach. Jeśli właściciel chciał, żeby w kreatorze
+    nie było też pudełek, to jest jedna linia w `components/RoomModal.jsx`.

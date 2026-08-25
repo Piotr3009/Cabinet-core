@@ -904,7 +904,9 @@ export default function WizardSettings({
   const frontTypeAt = frontTypes.find((t) => t.id === frontAt) || null;
   const frontSubmodalNo = frontTypeAt ? frontTypes.indexOf(frontTypeAt) + 1 : 0;
   const frontStopLabel = (stop) => {
-    if (stop === 'count') return 'How many colours';
+    // T49 F5: the first stop asks for the NUMBER and the TYPE — the owner's own
+    // heading, and the dot's tooltip says the same as the screen.
+    if (stop === 'count') return 'How many types and colours';
     if (stop === 'sheets') return 'Sheets assignment';
     if (stop === 'tail') return 'Shape, opening and shine';
     return frontTypes.find((t) => t.id === stop)?.label || 'Colour';
@@ -1697,7 +1699,20 @@ export default function WizardSettings({
 
           {frontAt === 'count' && show('fronts.count') && (
             <div data-wizard-node="fronts.count" className="space-y-2">
-              <p className="text-sm text-ink-100">How many front colours?</p>
+              {/* ─── TURN 49 (CLAUDE.md F5): TYPES FIRST, COLOURS LATER ──────
+                  The owner, 25.08.2026: *"na pierwszym etapie wybieramy type of
+                  fronts, a pozniej next etapy kolory."*
+
+                  His heading, in his words, and BIGGER than T44's 13 px line —
+                  it is the question the screen is asking, not a caption over
+                  it. What he picks here is the NUMBER and the TYPE (the shape:
+                  slab, shaker, J-pull…), and nothing else: the category strip
+                  that stood in every card — Spraying / Veneer / Laminate — is
+                  a COLOUR question, and it belongs to the steps that follow.
+                  It is not lost: it is the FULL-WIDTH strip at the top of each
+                  front's own colour dialog, where it has stood since T44 F4 and
+                  where it is four times the size it was in the card. */}
+              <p className="text-base text-ink-50" data-fronts-heading="1">How many types and colours?</p>
                       <div className="cc-row" data-wizard-fronts="1">
                         <span className="text-[11px] text-ink-200">How many front types in this project?</span>
                         {[1, 2, 3].map((n) => (
@@ -1743,13 +1758,17 @@ export default function WizardSettings({
                                   </span>
                                 </span>
                               </button>
+                              {/* T49 F5: the source strip is GONE from this card
+                                  — no colour picker and no laminate list at this
+                                  stage. What is left is the way ON to the colour,
+                                  which is navigation and not a choice. */}
                               <div className="cc-row">
-                                {sourceSeg('front', t)}
                                 <span className="flex-1" />
                                 <button
                                   type="button"
                                   className={`cc-btn px-2 ${matOpen ? 'border-gold text-gold' : ''}`}
                                   data-material-slot={`front:${t.id}`}
+                                  title="Its colour and its board — the next step of this walk"
                                   onClick={() => setFrontStop(t.id)}
                                 >
                                   Choose…

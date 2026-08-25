@@ -174,7 +174,9 @@ test('F5 — the same procedure, asked in the owner’s words', () => {
   // T45 F8, by name: `Ile kolorów frontów? → How many front colours?`. The
   // owner's own words survive in the comment above the block, which is where
   // the evidence belongs; the SCREEN speaks English.
-  assert.match(WIZ, /How many front colours\?/);
+  // T49 F5 re-worded it on the owner's order — types first, colours later —
+  // and made it bigger. It is still English, which is what F8's law asks.
+  assert.match(WIZ, /How many types and colours\?/);
   assert.doesNotMatch(WIZ, /<p className="text-sm text-ink-100">Ile /);
   assert.match(WIZ, /data-front-count=\{n\}/);
   assert.match(WIZ, /data-front-dots="1"/);

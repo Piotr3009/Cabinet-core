@@ -65,7 +65,7 @@ export const WIZARD_TABS = [
     id: 'carcases', n: 2, label: 'Carcases', audience: 'both', hint: 'How many carcass materials, and which',
   },
   {
-    id: 'fronts', n: 3, label: 'Fronts', audience: 'both', hint: 'How many front colours, the shape, the opening and the shine',
+    id: 'fronts', n: 3, label: 'Fronts', audience: 'both', hint: 'How many types and colours, the shape, the opening and the shine',
   },
   {
     id: 'hardware', n: 4, label: 'Hardware', audience: 'both', hint: 'Hinges, runners, metals',

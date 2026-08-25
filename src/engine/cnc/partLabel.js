@@ -128,7 +128,10 @@ export function slopeNoteText(panel, { ascii = false } = {}) {
     parts.push(`OVERSIZE +${Math.round(Number(over.mm))}${ascii ? ' - ' : ' — '}TRIM ON SITE`
       + (Number.isFinite(nom) ? ` (NOM ${Math.round(nom * 10) / 10})` : ''));
   }
-  return parts.join(ascii ? ' | ' : ' | ');
+  // Joined with a SEMICOLON and not a bar: the note wraps by words on a narrow
+  // board (`cnc/dxf.js panelNoteBlock`), and a lone `|` at the head of a line
+  // reads as a character in the instruction rather than as a separator.
+  return parts.join('; ');
 }
 
 /**

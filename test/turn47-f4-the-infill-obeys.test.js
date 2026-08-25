@@ -5,7 +5,7 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { slopeNoteText } from '../src/engine/cnc/partLabel.js';
-import { panelEntities } from '../src/engine/cnc/dxf.js';
+import { panelEntities, panelNoteBlock } from '../src/engine/cnc/dxf.js';
 
 // ─── TURN 47 · F4 — THE INFILL OBEYS THE SLOPE, AND LEAVES OVERSIZE ─────────
 //
@@ -106,10 +106,15 @@ test('the CNC sheet stamps it, and the nominal is beside it', () => {
   const left = byId(r, 'INFILL-L-FACE');
   assert.equal(slopeNoteText(left), 'OVERSIZE +20 — TRIM ON SITE (NOM 40)');
   assert.equal(slopeNoteText(left, { ascii: true }), 'OVERSIZE +20 - TRIM ON SITE (NOM 40)');
+  // On a 60 mm filler the words go DOWN the board rather than across it — the
+  // turn-16 lettering rule, and the note would rather be small than half-said.
+  const block = panelNoteBlock(left, { profile: P, ascii: true });
+  assert.equal(block.lines.map((l) => l.text).join(' '), 'OVERSIZE +20 - TRIM ON SITE (NOM 40)');
+  assert.equal(block.lines.some((l) => l.text.endsWith('~')), false, 'nothing half-said');
   const texts = panelEntities(left, [], { unitNum: '01', profile: P })
-    .filter((e) => e.type === 'text').map((e) => e.str);
-  assert.ok(texts.some((t) => t.includes('OVERSIZE +20')), JSON.stringify(texts));
-  assert.ok(texts.some((t) => t.includes('NOM 40')), 'the nominal, so nobody prices the extra');
+    .filter((e) => e.type === 'text').map((e) => e.str).join(' ');
+  assert.ok(texts.includes('OVERSIZE'), texts);
+  assert.ok(texts.includes('NOM 40'), 'the nominal, so nobody prices the extra');
 });
 
 // ═══ THE CUT ════════════════════════════════════════════════════════════════

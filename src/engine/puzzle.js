@@ -799,7 +799,21 @@ export function roofLinePts(cut, h) {
     if (last && Math.abs(last.x - p.x) < SLOPE_EPS && Math.abs(last.y - p.y) < SLOPE_EPS) continue;
     clean.push(p);
   }
-  return clean.length >= 2 ? clean : null;
+  // …and a vertex the line does not actually BEND at is not a knee either. The
+  // cap puts one in wherever the ceiling bends ABOVE the cabinet — both sides
+  // of it come out flat at `h` — and two abutting boards of the same angle is
+  // two boards where the joiner cuts one. A board does not bend at a knee; it
+  // also does not stop at a straight.
+  const bent = [clean[0]];
+  for (let i = 1; i < clean.length - 1; i += 1) {
+    const a = bent[bent.length - 1];
+    const b = clean[i];
+    const c = clean[i + 1];
+    const straight = Math.abs((b.y - a.y) * (c.x - b.x) - (c.y - b.y) * (b.x - a.x)) < 1e-6;
+    if (!straight) bent.push(b);
+  }
+  if (clean.length > 1) bent.push(clean[clean.length - 1]);
+  return bent.length >= 2 ? bent : null;
 }
 
 /**

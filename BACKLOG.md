@@ -782,3 +782,41 @@ dało się je odszukać po jego numerze, a nie tylko po fazie.
     Formatka jest poprawna; punkt nie jest przeliczony do jej własnej ramy.
     Dokładnie ta sama choroba, którą F1 wyleczył dla półki, na drugim boarcie.
     Do tury 28 razem z resztą zebranych rzeczy.
+
+120. [HIGH] **Eksport 3-D dla 5 osi — wieniec dachowy i skosy boków są FAZAMI
+    przez grubość.** Tura 47 dała skosowi prawdziwą linię (łamana, nie prosta
+    od końca do końca szafy), wieniec położyła NA bokach — `L = W / cos β`,
+    blank `L_MAX = L + G · tg β`, lico cięte pionowo — a boki przedłużyła do
+    czubka skosu z cięciem pod skosem. Wszystkie trzy rzeczy są FAZĄ PRZEZ
+    GRUBOŚĆ, a płaski DXF R12 (dialekt, który VCarve u właściciela czyta) nie
+    ma jak jej zapisać: plik dostaje BLANK — prostokąt `L_MAX × głębokość` dla
+    wieńca, prostokąt do czubka dla boku — plus adnotację ze stopniami
+    (`BEVEL 47.7 DEG BOTH ENDS - 5-AXIS`, `CUT 47.7 DEG`) na tej samej warstwie
+    tekstu, na której siedzi etykieta części. Właściciel przyjął to jako
+    tymczasowe, własnymi słowami: *„narazie zrob 2D ale zapisz do cabinet core
+    ze to bedzie zalegle bo napewno musimy do tego wrocic, ale tez pokaz kat
+    ile stopni bedzie latwiej rysowac w przyszlosci."* Zalega więc: **(a)**
+    reprezentacja 3-D, którą pięcioosiowa przeczyta — bryła albo ścieżka z
+    wektorem narzędzia, nie płaski obrys; **(b)** WIERCENIE POD KĄTEM z tego
+    samego powodu — otwór w bocie ciętym pod skosem nie jest prostopadły do
+    lica; **(c)** decyzja, czy blank zostaje na arkuszu w takim rozmiarze, czy
+    pięcioosiowa dostaje własny format. Kąt jest już policzony i jest NA
+    elemencie (`meta.slopeCut.angles`, `meta.bevel.deg`,
+    `meta.verticalFootprint`), więc nie ma czego wyliczać od nowa — jest co
+    zapisać. Właściciel: *„napewno musimy do tego wrocic."*
+
+121. [MEDIUM] **Relief na WYPUŚCIE zamiast dog bone'a w gnieździe.** Przy
+    półkach stałych promień freza zostawia w narożniku gniazda materiał, którego
+    prosty wypust nie obejdzie — dziś rozwiązuje to DOG BONE: dwa kółka w
+    gnieździe, poszerzające narożnik do średnicy freza. Problem jest taki, że
+    gniazdo bywa na LICU, które widać, a dog bone jest wtedy dziurą w widocznej
+    płaszczyźnie. Właściwe miejsce na ten sam relief to WYPUST: dwa narożniki
+    ścięte ~3 × 3 dla freza ⌀6, po stronie, której i tak nie widać. Wypust
+    siada wtedy CAŁĄ długością — a płytszy dog bone zostawia szczelinę i
+    stawia połączenie na kleju zamiast na drewnie. To jest GEOMETRIA, więc
+    zaczyna się od `reference/lisp/panel_joints.lsp` i dopiero potem idzie do
+    `engine/puzzle.js`; trzeba przy tym rozstrzygnąć, co z połączeniami, które
+    już mają dog bone'y (korpus, plecy) — zostają, czy przechodzą razem.
+    Rozmawiane 24.08.2026 przy okazji wieńca dachowego (który dog bone'ów mieć
+    NIE MOŻE — decyzja właściciela, tura 47 F3). Nie rozstrzygnięte, nie
+    zaczęte.

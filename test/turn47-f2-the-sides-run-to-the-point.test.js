@@ -7,7 +7,7 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { roofLinePts, slopeSegDeg } from '../src/engine/puzzle.js';
 import { partLabelText, slopeNoteText } from '../src/engine/cnc/partLabel.js';
-import { panelEntities } from '../src/engine/cnc/dxf.js';
+import { panelEntities, panelNoteBlock } from '../src/engine/cnc/dxf.js';
 import { partDetailDrawing } from '../src/engine/drawings/partDetail.js';
 
 // ─── TURN 47 · F2 — THE SIDES RUN TO THE POINT (CLAUDE.md F2) ───────────────
@@ -164,13 +164,21 @@ test('3 · ON THE CNC SHEET, as text beside the edge', () => {
   const bur = noted();
   const ents = panelEntities(bur, [], { unitNum: '01', profile: P });
   const texts = ents.filter((e) => e.type === 'text').map((e) => e.str);
-  assert.ok(texts.includes('CUT 63.4 DEG'), `the angle is in the file: ${JSON.stringify(texts)}`);
+  // It is laid out INSIDE the part like every other caption on this sheet
+  // (turn 16's lettering rule), so on a 550-wide board it stacks — the WORDS
+  // are what must survive, and none of them is truncated.
+  const noteBlock = panelNoteBlock(bur, { profile: P, ascii: true });
+  assert.equal(noteBlock.lines.map((l) => l.text).join(' '), 'CUT 63.4 DEG');
+  assert.equal(noteBlock.lines.some((l) => l.text.endsWith('~')), false, 'nothing half-said');
+  assert.ok(texts.join(' ').includes('CUT'), `the angle is in the file: ${JSON.stringify(texts)}`);
   // BESIDE THE EDGE: the note sits at the top of the part, the label in its
   // middle — two captions in one place is a caption nobody can read.
-  const note = ents.find((e) => e.type === 'text' && e.str === 'CUT 63.4 DEG');
+  const notes = ents.filter((e) => e.type === 'text' && /CUT|63\.4/.test(e.str));
   const h = bur.cnc.drawn_h;
-  assert.ok(note.y > h / 2, `the note is at the cut edge (y ${note.y} of ${h})`);
-  assert.ok(note.y < h, 'and inside the board');
+  for (const n of notes) {
+    assert.ok(n.y > h / 2, `the note is at the cut edge (y ${n.y} of ${h})`);
+    assert.ok(n.y < h, 'and inside the board');
+  }
   // …and a part with no cut writes exactly the entities it always wrote.
   const plain = computeCabinet(PARAMS, P).panels.find((p) => p.id === 'BUR');
   const plainTexts = panelEntities(plain, [], { unitNum: '01', profile: P })
@@ -179,6 +187,7 @@ test('3 · ON THE CNC SHEET, as text beside the edge', () => {
     `an uncut board says nothing extra: ${JSON.stringify(plainTexts)}`);
   assert.equal(plainTexts.join(' '), partLabelText('01', plain),
     'the part label, broken onto its own lines, and nothing else');
+  assert.equal(panelNoteBlock(plain, { profile: P, ascii: true }).visible, false);
 });
 
 test('THE FILE SPELLS THE DEGREE MARK IN ASCII — the R12 rule, already written down', () => {
@@ -189,13 +198,14 @@ test('THE FILE SPELLS THE DEGREE MARK IN ASCII — the R12 rule, already written
   assert.equal(slopeNoteText(bur), 'CUT 63.4°');
   assert.equal(slopeNoteText(bur, { ascii: true }), 'CUT 63.4 DEG');
   const dxf = readFileSync(new URL('../src/engine/cnc/dxf.js', import.meta.url), 'utf8');
-  assert.match(dxf, /slopeNoteText\(panel, \{ ascii: true \}\)/);
+  assert.match(dxf, /panelNoteBlock\(panel, \{ profile, ascii: true \}\)/);
+  assert.match(dxf, /const ellipsis = ascii \? '~' : '…';/, 'and the ellipsis follows the same rule');
 });
 
 test('the sheet draws the EXPORT\'s words — one formatter, not two wordings', () => {
   const view = readFileSync(new URL('../src/components/CncView.jsx', import.meta.url), 'utf8');
-  assert.match(view, /import \{ slopeNoteText \} from '\.\.\/engine\/cnc\/partLabel\.js';/);
-  assert.match(view, /const slopeNote = slopeNoteText\(panel\);/);
+  assert.match(view, /import \{ panelLabelBlock, panelNoteBlock \} from '\.\.\/engine\/cnc\/dxf\.js';/);
+  assert.match(view, /const slopeNote = panelNoteBlock\(panel, \{ profile, mmPerPx, minPx: annotation\.minLabelPx \}\);/);
   assert.match(view, /data-part-note=\{panel\.id\}/);
   const detail = readFileSync(new URL('../src/components/PartDetailModal.jsx', import.meta.url), 'utf8');
   assert.match(detail, /\{drawing\.note\}/);

@@ -1,0 +1,93 @@
+{
+ "turn": 47,
+ "base": "http://127.0.0.1:4173/",
+ "ok": true,
+ "steps": [
+  {
+   "label": "TWO SLOPES on one wall — the case T44 allowed and no walk had driven",
+   "ok": true,
+   "detail": "[[\"R\",300,900],[\"L\",1400,1200]]"
+  },
+  {
+   "label": "the LINE the app computes descends, runs flat, and descends (F1)",
+   "ok": true,
+   "detail": "[{\"x\":0,\"y\":1400},{\"x\":1200,\"y\":2500},{\"x\":3100,\"y\":2500},{\"x\":4000,\"y\":300}]"
+  },
+  {
+   "label": "the wizard is finished and the room is on the canvas",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "a 900 wardrobe is standing on the flat part of the wall",
+   "ok": true,
+   "detail": "u_4ghmali"
+  },
+  {
+   "label": "the drag moved the cabinet into the slope zone (R1: CDP pointer)",
+   "ok": true,
+   "detail": "{\"x\":2925}"
+  },
+  {
+   "label": "THE TOP IS A ROOF: one board per segment, and NO DOG BONES (F3)",
+   "ok": true,
+   "detail": "[{\"id\":\"TOP-1\",\"w\":260.9091,\"deg\":0,\"L\":260.9091,\"LMAX\":260.9091,\"foot\":18,\"dogbones\":0},{\"id\":\"TOP-2\",\"w\":1731.8908,\"deg\":67.751,\"L\":1687.8908,\"LMAX\":1731.8908,\"foot\":47.5395,\"dogbones\":0}]"
+  },
+  {
+   "label": "…and L = span / cos β with L_MAX = L + G · tan β, re-derived here",
+   "ok": true,
+   "detail": "[{\"id\":\"TOP-2\",\"w\":1731.8908,\"deg\":67.751,\"L\":1687.8908,\"LMAX\":1731.8908,\"foot\":47.5395,\"dogbones\":0}]"
+  },
+  {
+   "label": "THE SIDES RUN TO THE POINT, and each says its angle (F2)",
+   "ok": true,
+   "detail": "{\"h\":584.2383,\"meta\":{\"h\":584.2383,\"full\":2150,\"topAt\":584.2383,\"angles\":[{\"from\":882,\"to\":900,\"deg\":67.751}],\"low\":540.2383}}"
+  },
+  {
+   "label": "THE BACK carries the cut, and its corner count is its own (F1)",
+   "ok": true,
+   "detail": "{\"corners\":5,\"knees\":[175]}"
+  },
+  {
+   "label": "the sheet says what the outline cannot — one formatter, two spellings",
+   "ok": true,
+   "detail": "{\"cut\":\"CUT 47.7°\",\"bevel\":\"BEVEL 47.7° BOTH ENDS · 5-AXIS\",\"over\":\"OVERSIZE +20 — TRIM ON SITE (NOM 40)\",\"ascii\":\"BEVEL 47.7 DEG BOTH ENDS - 5-AXIS\"}"
+  },
+  {
+   "label": "THE PENTAGON REACHES PAPER: the elevation traces the cut boards (F5)",
+   "ok": true,
+   "detail": "[[\"BUL\",4],[\"BUR\",4],[\"TOP-1\",4],[\"TOP-2\",4],[\"BACK\",5],[\"W01-FL\",5]]"
+  },
+  {
+   "label": "…and the sheet DRAWS the notes, beside the parts they belong to",
+   "ok": true,
+   "detail": "[\"CUT 67.8°\",\"BEVEL 67.8°BOTH ENDS· 5-AXIS\"]"
+  }
+ ],
+ "shots": [
+  {
+   "name": "walk-1-wall-two-slopes.png",
+   "note": "the wall elevation with the ceiling down at both ends"
+  },
+  {
+   "name": "walk-2-unit-on-the-flat.png",
+   "note": "the cabinet before it meets the slope"
+  },
+  {
+   "name": "walk-3-ghost-line-mid-drag.png",
+   "note": "F6 — the cut-to-be, while the hand is still moving"
+  },
+  {
+   "name": "walk-4-cut-cabinet.png",
+   "note": "F1–F3 — the cabinet, cut, with the hand let go"
+  },
+  {
+   "name": "walk-4b-cut-cabinet-close.png",
+   "note": "F2/F3 — the roof board on the sides, close"
+  },
+  {
+   "name": "walk-5-cnc-sheet.png",
+   "note": "the CNC sheet — the notes beside the cut edges"
+  }
+ ]
+}

@@ -243,7 +243,19 @@ export default function DimLabel({
   const h0 = LABEL_WORLD_BASE * scale;
 
   return (
-    <sprite ref={ref} position={position} scale={[h0 * aspect, h0, 1]} renderOrder={10}>
+    <sprite
+      ref={ref}
+      position={position}
+      scale={[h0 * aspect, h0, 1]}
+      renderOrder={10}
+      // T48-F8: the height this label MEANS to be, in CSS pixels, on the object
+      // itself (R7: never a `data-*` on an R3F object). An acceptance walk can
+      // then measure the sprite the way three draws it and hold the two to each
+      // other, which is a claim about the law rather than about a screenshot —
+      // and it tells a label apart from the other sprites in the scene, which
+      // are CONTROLS and are world-sized on purpose (3d/AddPlus.jsx).
+      userData={{ ccLabelPx: px }}
+    >
       {/* `allowOverride` — a label is TOOL, and tool casts no shadow. Without
           it the sprite renders into the contact-shadow depth pass (turn 9,
           CLAUDE.md F1.3) and prints a small dark square on the floor beside the

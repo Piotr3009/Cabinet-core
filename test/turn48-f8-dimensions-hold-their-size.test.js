@@ -52,8 +52,15 @@ test('every sprite in the scene that carries a number goes through it', () => {
   assert.equal((CHAIN.match(/useScreenScale\(/g) || []).length, 2, 'the caption and its catchment');
   // A `scale=` that is not a first-frame default is a size that stopped
   // following the camera.
-  assert.match(LABEL, /<sprite ref=\{ref\} position=\{position\} scale=\{\[h0 \* aspect, h0, 1\]\}/);
+  assert.match(LABEL, /ref=\{ref\}\n\s+position=\{position\}\n\s+scale=\{\[h0 \* aspect, h0, 1\]\}/);
   assert.match(CHAIN, /ref=\{ref\}\n\s+position=\{position\}\n\s+scale=\{\[h \* aspect, h, 1\]\}/);
+  // …and each says how tall it MEANS to be, in CSS pixels, on the object itself
+  // (R7: never a `data-*` on an R3F object). That is what lets the acceptance
+  // walk measure a sprite the way three draws it and hold the two to each
+  // other — and what tells a LABEL apart from the run's own "+" controls, which
+  // are world-sized on purpose.
+  assert.match(LABEL, /userData=\{\{ ccLabelPx: px \}\}/);
+  assert.match(CHAIN, /ccLabelPx: labelPixelHeight\(h\),/);
 });
 
 // ══ BOTH PROJECTIONS ═══════════════════════════════════════════════════════

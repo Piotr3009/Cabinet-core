@@ -363,7 +363,14 @@ function DimensionValue({ position, text, style }) {
       // `data-*` on an R3F object) beside the height the eye measures, and
       // nothing in the app reads either back.
       userData={{
-        ccHelper: true, ccNoBounds: true, ccDimensionText: text, ccDimensionHeight: h,
+        ccHelper: true,
+        ccNoBounds: true,
+        ccDimensionText: text,
+        ccDimensionHeight: h,
+        // T48-F8: …and the height it means to be ON SCREEN, beside the world
+        // number it is derived from. Same key `DimLabel` puts on its own chips,
+        // so a walk measures both kinds with one question.
+        ccLabelPx: labelPixelHeight(h),
       }}
     >
       {/* `allowOverride={false}` — a dimension is TOOL, and tool casts no

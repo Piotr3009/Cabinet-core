@@ -571,6 +571,13 @@ function Part({
   // from the board any more, because it no longer computes one.
   const label = panelLabelBlock(panel, {
     unitNum, profile, mmPerPx, minPx: annotation.minLabelPx,
+    // ─── TURN 48 (CLAUDE.md F9): NEVER CUT A DIGIT ─────────────────────────
+    // The owner's audit: `TOP-1` came out `TOP~` and `260.9x540` came out
+    // `260.9x5~`. The second is not an abbreviation, it is a SIZE with a digit
+    // taken off it, and 5 is a number a joiner will read. On the glass the
+    // block steps outside the outline and keeps its words; the FILE keeps turn
+    // 16's ladder, because a DXF has nowhere to put a leader.
+    onOverflow: 'outside',
   });
   // The part's own centre, in sheet coordinates — via `toSheet`, so a part laid
   // down TURNED carries its caption round with it exactly as the file does.
@@ -813,26 +820,47 @@ function Part({
           ))}
         </text>
       )}
-      {label.visible && (
-        <text
-          x={labelX} y={labelY} textAnchor="middle"
-          fontSize={label.size} fill="#d6d6d2"
-          data-part-label={panel.id}
-          transform={labelTurn ? `rotate(${-labelTurn} ${labelX} ${labelY})` : undefined}
-          style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
-        >
-          {label.lines.map((line) => (
-            <tspan
-              key={line.text + line.dy}
-              x={labelX}
-              y={labelY - line.dy}
-              dominantBaseline="central"
+      {label.visible && (() => {
+        // ─── T48-F9: WHERE THE BLOCK GOES ───────────────────────────────────
+        // Inside the outline, centred both ways, exactly as turn 18 left it —
+        // unless it did not fit, and then it stands just clear of the part's
+        // RIGHT edge with a leader back to it. Right, because the layout stacks
+        // parts left to right with `cnc.layoutGap` between them and the last
+        // part in a row has open sheet beside it; centred vertically, so the
+        // leader is a short horizontal line and reads as one.
+        const anchor = label.outside ? 'start' : 'middle';
+        const x = label.outside ? labelX + box.w / 2 + label.size * 1.2 : labelX;
+        return (
+          <g>
+            {label.outside && (
+              <line
+                x1={labelX + box.w / 2} y1={labelY} x2={x - label.size * 0.35} y2={labelY}
+                stroke="#d6d6d2" strokeWidth={1} vectorEffect="non-scaling-stroke"
+                data-part-label-leader={panel.id}
+              />
+            )}
+            <text
+              x={x} y={labelY} textAnchor={anchor}
+              fontSize={label.size} fill="#d6d6d2"
+              data-part-label={panel.id}
+              data-part-label-outside={label.outside ? '1' : '0'}
+              transform={labelTurn ? `rotate(${-labelTurn} ${x} ${labelY})` : undefined}
+              style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
             >
-              {line.text}
-            </tspan>
-          ))}
-        </text>
-      )}
+              {label.lines.map((line) => (
+                <tspan
+                  key={line.text + line.dy}
+                  x={x}
+                  y={labelY - line.dy}
+                  dominantBaseline="central"
+                >
+                  {line.text}
+                </tspan>
+              ))}
+            </text>
+          </g>
+        );
+      })()}
     </g>
   );
 }

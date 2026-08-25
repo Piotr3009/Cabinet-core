@@ -123,6 +123,12 @@ export const WIZARD_NODES = [
   { id: 'carcases.picker', tab: 'carcases', audience: 'both' },
   { id: 'carcases.drawers', tab: 'carcases', audience: 'both' },
   { id: 'carcases.stock-board', tab: 'carcases', audience: 'factory' },
+  // ─── TURN 49 (CLAUDE.md F4): THE SHEET MOVED, THE NODE DID NOT ───────────
+  // *"a dlaczego nie dodac rozmiar plyty w pierwszym modalu i drugi usunac."*
+  // The carcasses' second stop is gone and its sheet-size row stands in the
+  // MATERIAL dialog now, under the stock board it is a sheet of. Same id, same
+  // tab, same audience — a workshop fact either way — because who may see it
+  // did not change when where it is drawn did.
   { id: 'carcases.sheets', tab: 'carcases', audience: 'factory' },
   // T45 F4 / iron rule 4: ONE CNC-corner block. `carcases.joinery` was the
   // repeated joinery table under it — the same joint, drawn twice, asked twice.

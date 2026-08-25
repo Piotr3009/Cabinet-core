@@ -144,11 +144,22 @@ test('F4 — the drawers question closes each submodal, and writes the BOM’s f
   assert.match(WIZ, /\['same', 'Same board as carcass'\], \['ready', 'Ready-made system'\]/);
 });
 
-test('F4 — the sheets assignment comes AFTER the last submodal, factory only', () => {
-  assert.match(WIZ, /\.\.\.\(show\('carcases\.sheets'\) \? \['sheets'\] : \[\]\),/);
+test('F4 — the sheets assignment is asked once, IN the material dialog, factory only', () => {
+  // ─── TURN 49 (CLAUDE.md F4): THE SECOND STOP WENT ────────────────────────
+  // *"przy carcasach jest 2 stopnie wybierania … a dlaczego nie dodac rozmiar
+  // plyty w pierwszym modalu i drugi usunac, jeden mniej bedzie."* T44 put the
+  // sheets on a stop of their OWN, after the last submodal; that stop also
+  // re-drew the stock-board select the submodal had already drawn, and only the
+  // sheet was new. So the stop is gone and the sheet is in the first dialog —
+  // where the board it is a sheet of is chosen — with every hook it had.
+  assert.doesNotMatch(WIZ, /\.\.\.\(show\('carcases\.sheets'\) \? \['sheets'\] : \[\]\),/);
   assert.match(WIZ, /data-sheets-assignment="1"/);
   assert.match(WIZ, /data-sheet-assign=\{t\.id\}/);
   assert.match(WIZ, /family="carcasses"/);
+  assert.match(WIZ, /data-wizard-node="carcases\.sheets"/, 'same node, same audience filter');
+  // …and it is drawn because the material dialog ASKED for it.
+  assert.match(WIZ, /sheetSize=\{sheets \? sheetSizeRow\(kind, t\) : null\}/);
+  assert.match(WIZ, /sheets: true,/);
 });
 
 test('F4 — the tab ends with a summary of the chosen types', () => {

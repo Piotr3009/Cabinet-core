@@ -1617,6 +1617,23 @@ export function computeCabinet(params, profileOverride) {
   // sheet prints. Every other size in this file is rounded the same way.
   const sideTopAt = (a, b) => roundTo(sideUnder(a, b, Math.max), 4);
   const sideLowAt = (a, b) => roundTo(sideUnder(a, b, Math.min), 4);
+  // ─── CHAT-FIX 25.08.2026: THE BEVEL, AT ONE FACE ─────────────────────────
+  //
+  // The owner, screenshot in hand: *"bur jest nadal prosto ciety a powinien
+  // byc po skosie … patrzac od czola."* The 3-D needs the board's top edge AT
+  // EACH FACE of its 18 mm, and `sideUnder(x, x)` cannot say it — its strict
+  // interval test drops a degenerate span that lands on a segment boundary
+  // and answers `sideH`. So: the SAME `roofList`, the SAME `slopeHeightAt`,
+  // read at one x. No second chain — a point read of the one truth.
+  const sideEdgeAt = (x) => {
+    if (!roofList) return sideH;
+    for (const bd of roofList) {
+      if (x < bd.x0 - 1e-9 || x > bd.x1 + 1e-9) continue;
+      return roundTo(Math.max(0, Math.min(H,
+        slopeHeightAt(roofLine, Math.max(bd.x0, Math.min(bd.x1, x))) - bd.vertical)), 4);
+    }
+    return sideH;
+  };
   /**
    * A bevelled side, seen from the front (T47-F5): the board's own outline in
    * its box's frame, with the wedge taken off the top. A side spanning a knee
@@ -2591,22 +2608,23 @@ export function computeCabinet(params, profileOverride) {
         G,
         side,
         puzzle: pz,
-        edges: sideEdges,
+        // ─── CHAT-FIX 25.08.2026: A CUT CARCASS DRILLS NO TOP-BOARD SOCKETS ─
+        //
+        // The owner, screenshot in hand: *"bul lub bur nadal ma dog bonesy, a
+        // mowilismy ze jak jest skos to dog bonesy znikaja."* T47 put the
+        // socket row on the cut edge — executing CLAUDE.md F3's own sentence —
+        // but the roof board carries NO tab (F3), so a socket there has
+        // nothing to catch and its dog bones surface on a visible edge for
+        // nothing. The board is glued and screwed down; the joint is not a
+        // puzzle. So under a roof the row is OFF — the same `edges` flag
+        // KIT_SINK has always used for a carcass with no top panel, not a new
+        // mechanism. The law is stated at `SKY:slopeCutPts` in
+        // SKYLON_COMMON.lsp; the kit-level LISP gate is named debt for the
+        // next slope turn.
+        edges: roofList
+          ? { ...sideEdges, topSocket: false, topScrews: false }
+          : sideEdges,
         jointInset,
-        // ─── TURN 47 (F3): THE TOP'S SOCKETS SIT WHERE THE ROOF BOARD LANDS ─
-        //
-        // T46's lid dropped INSIDE the tall side, so its socket row became a
-        // cut-out part-way up the board. The roof board lands ON the side, so
-        // the row is back on that board's own top edge — at `hSide`, the height
-        // this very side is cut to — and is traced as the EDGE socket it is.
-        //
-        // The ROOF BOARD ITSELF carries no tab and no dog bone: the owner,
-        // *"gorny wieniec w tym przypadku nie moze miec dog bonesow."* So this
-        // row is the register the board is screwed and glued down onto rather
-        // than a puzzle joint, and it is where CLAUDE.md F3 puts it: *"the
-        // top's sockets sit where the roof board lands, on the angled edge."*
-        topAt: roofList ? hSide : null,
-        topInterior: roofList ? false : null,
       });
       // A side stands at ONE x across the width and its board is drawn in the
       // DEPTH frame, so the ceiling over it is one number across the whole
@@ -2642,6 +2660,10 @@ export function computeCabinet(params, profileOverride) {
             angles: anglesOver(0, G),
             // …and the SHORT face, so the finished board can be measured.
             low: roundTo(sideLowAt(0, G), 4),
+            // CHAT-FIX 25.08.2026: the top edge AT EACH FACE of the 18 mm, so
+            // the scene can show the wedge from the front. `a` is the outer
+            // face (x = 0), `b` the inner (x = G); the blank `h` is their max.
+            bevel3d: { a: sideEdgeAt(0), b: sideEdgeAt(G) },
           },
           // The BEVEL, seen from the front (T47-F5): 18 mm wide and `G · tan β`
           // of wedge off the top. The CNC outline is in the DEPTH plane and
@@ -2663,6 +2685,9 @@ export function computeCabinet(params, profileOverride) {
             topAt: roundTo(sideHR, 4),
             angles: anglesOver(W - G, W),
             low: roundTo(sideLowAt(W - G, W), 4),
+            // CHAT-FIX 25.08.2026: as on BUL — `a` inner face (x = W − G),
+            // `b` outer (x = W); the blank `h` is their max.
+            bevel3d: { a: sideEdgeAt(W - G), b: sideEdgeAt(W) },
           },
           ...(bevelProfile(W - G, W, sideHR) ? { elevation: bevelProfile(W - G, W, sideHR) } : {}),
         },

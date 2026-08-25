@@ -1291,6 +1291,26 @@
   out)
 
 ;;;----------------------------------------
+;;; LAW (25.08.2026, the owner, screenshot in hand):
+;;;
+;;;   "bul lub bur nadal ma dog bonesy, a mowilismy ze jak jest skos to
+;;;    dog bonesy znikaja."
+;;;
+;;; A carcass cut on the slope drills NO top-board sockets, no dog-bone
+;;; reliefs for them and no top screw row. The roof board carries no tab
+;;; (owner, 24.08: "gorny wieniec w tym przypadku nie moze miec dog
+;;; bonesow") - so a socket on the cut edge has nothing to catch and its
+;;; bones surface on a visible edge for nothing. The board is glued and
+;;; screwed down onto the bevel; the joint is NOT a puzzle.
+;;;
+;;; Application follows this law in src/engine/cabinet.js (sideCnc: the
+;;; KIT_SINK edges flag, topSocket/topScrews off under a roof). The
+;;; kit-level gate HERE - drawBUL/drawBUR skipping their "Puzzle sockets -
+;;; TOP edge" block when the slope is on - is NAMED DEBT for the next
+;;; slope turn: the kits do not yet take the slope as an argument.
+;;;----------------------------------------
+
+;;;----------------------------------------
 ;;; THE SEGMENTS, AND THEIR ANGLES
 ;;;----------------------------------------
 

@@ -130,18 +130,20 @@ test('NO DOG BONES ON THAT BOARD — and no tabs either: the blank is a rectangl
   assert.ok(lid.cnc.outline.length > 4, 'and its tabs');
 });
 
-test('the sides still carry the socket row the board lands on', () => {
-  // F3: *"the top's sockets sit where the roof board lands, on the angled
-  // edge."* The board has no tab, so this row is the register it is screwed and
-  // glued down onto — but it MOVES with the board, which is the rule.
+test('the sides carry NO socket row under a roof — overruled 25.08.2026', () => {
+  // F3 said the row moves to where the board lands. The owner struck it down:
+  // *"jak jest skos to dog bonesy znikaja."* The board has no tab, so the row
+  // caught nothing and its bones surfaced on a visible edge. Under a roof the
+  // row is OFF — the KIT_SINK `edges` flag — and the board is glued and
+  // screwed onto the bevel. The law lives beside `SKY:slopeCutPts`.
   const r = cut(ONE);
   for (const id of ['BUL', 'BUR']) {
     const p = r.panels.find((q) => q.id === id);
     const rows = p.cnc.pockets
       .filter((k) => k.layer === P.puzzle.layers.socket)
       .map((k) => Math.max(k.y1, k.y2));
-    assert.ok(rows.some((y) => Math.abs(y - (p.h + P.puzzle.socketOvershoot)) < 1e-3),
-      `${id}: the row is at the board's landing — saw ${rows.join(', ')}`);
+    assert.equal(rows.some((y) => y > p.h - P.board.thickness), false,
+      `${id}: no row at the cut edge — saw ${rows.join(', ') || 'none'}`);
   }
 });
 

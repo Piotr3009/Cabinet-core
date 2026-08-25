@@ -83,6 +83,15 @@ export function panelSolids(panel, layers, profile, drills = []) {
   const slopeCut = panel?.cnc?.slopeCut
     && slopeCutActive({ w, h, ...panel.cnc.slopeCut })
     ? panel.cnc.slopeCut : null;
+  // ─── CHAT-FIX 25.08.2026: THE WEDGE, SEEN FROM THE FRONT ─────────────────
+  // The owner: *"bur jest nadal prosto ciety a powinien byc po skosie …
+  // patrzac od czola."* A side's CNC outline lives in the DEPTH plane and
+  // cannot hold the bevel through the 18 mm, so the blank rendered square.
+  // The engine now states the top edge at EACH face (`meta.slopeCut.bevel3d`,
+  // world heights at the board's two x faces) and the solid tilts its top
+  // vertices between them. Sides only, cut only — everything else unchanged.
+  const bevel3d = slopeCut && (panel.part === 'BUL' || panel.part === 'BUR')
+    && panel.meta?.slopeCut?.bevel3d ? panel.meta.slopeCut.bevel3d : null;
 
   // ─── TURN 20 (CLAUDE.md F8.1): EVERY FEATURE, AS AN ABSENCE ──────────────
   // The SOCKET layer is skipped: turn 11 cuts it out of the outline already,
@@ -135,6 +144,8 @@ export function panelSolids(panel, layers, profile, drills = []) {
       ? `slope:${(slopeCut.pts || [{ x: 0, y: slopeCut.hL }, { x: w, y: slopeCut.hR }])
         .map((p) => `${p.x},${p.y}`).join(';')}`
       : '',
+    // Two sides that differ only in the wedge off their top are two boards.
+    bevel3d ? `bevel:${bevel3d.a},${bevel3d.b}` : '',
     recessKey(recesses),
   ].join('|');
 
@@ -148,7 +159,7 @@ export function panelSolids(panel, layers, profile, drills = []) {
   }
 
   const built = build({
-    w, h, thickness, radius, notches, tabs, recesses, placement, box: panel.box, slopeCut,
+    w, h, thickness, radius, notches, tabs, recesses, placement, box: panel.box, slopeCut, bevel3d,
   });
   cache.set(key, built);
   if (cache.size > CACHE_LIMIT) {
@@ -162,6 +173,36 @@ export function panelSolids(panel, layers, profile, drills = []) {
 }
 
 const NOTHING = { solid: null, cuts: null };
+
+/**
+ * The wedge off a cut side's top, seen from the front (chat-fix 25.08.2026).
+ *
+ * After `build`'s basis the geometry sits in WORLD axes about the box centre:
+ * a side's 18 mm runs along world x, its height along world y. The blank was
+ * extruded to the PEAK over its own thickness — `max(a, b)` — so every vertex
+ * on that flat top is moved down to the ceiling line at its own face,
+ * interpolated through the thickness. `a` is the edge height at `box.x`, `b`
+ * at `box.x + box.w`, both from the engine's own record — this function
+ * invents no geometry, it only applies the engine's two numbers.
+ */
+function bevelTopEdge(geometry, box, { a, b }) {
+  const pos = geometry.attributes.position;
+  const cx = mm(box.x + box.w / 2);
+  const cy = mm(box.y + box.h / 2);
+  const yTop = mm(box.y + box.h) - cy;
+  const x0 = mm(box.x) - cx;
+  const span = mm(box.w) || 1;
+  const ya = mm(a) - cy;
+  const yb = mm(b) - cy;
+  const eps = 1e-4;
+  for (let i = 0; i < pos.count; i += 1) {
+    if (Math.abs(pos.getY(i) - yTop) < eps) {
+      const t = Math.min(1, Math.max(0, (pos.getX(i) - x0) / span));
+      pos.setY(i, ya + (yb - ya) * t);
+    }
+  }
+  pos.needsUpdate = true;
+}
 
 /**
  * How thick the board is along its own normal.
@@ -180,6 +221,7 @@ function thicknessOf(panel, placement) {
 
 function build({
   w, h, thickness, radius, notches, tabs = [], recesses = [], placement, box, slopeCut = null,
+  bevel3d = null,
 }) {
   const shapeOf = (points) => new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y))));
   const extrudeShape = (shape) => new THREE.ExtrudeGeometry(shape, {
@@ -264,6 +306,10 @@ function build({
   // covered on the day it lands.
   const flipped = u.clone().cross(v).dot(into) < 0;
   if (flipped) reverseWinding(geometry);
+  // The wedge comes off HERE — after the basis (vertices are in world axes
+  // about the box centre, so the board's 18 mm runs along world x) and before
+  // the normals, so the tilted top face shades as the plane it is.
+  if (bevel3d) bevelTopEdge(geometry, box, bevel3d);
   geometry.computeVertexNormals();
   // The grain is a CABINET-SPACE rule and must not follow the nesting (F1).
   applyBoxUVs(geometry, box);

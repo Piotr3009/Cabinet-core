@@ -175,7 +175,14 @@ test('THE SIDES: the low one is cut, the tall one keeps full height', () => {
   assert.equal(bul.h, 2132);
   assert.equal(bul.cnc.drawn_h, 2132);
   assert.deepEqual(bul.meta.slopeCut, {
-    h: 2132, full: 2150, topAt: 2132, angles: [{ from: 0, to: 18, deg: 0 }], low: 2132,
+    h: 2132,
+    full: 2150,
+    topAt: 2132,
+    angles: [{ from: 0, to: 18, deg: 0 }],
+    low: 2132,
+    // Chat-fix 25.08.2026: the top edge at each face, for the scene's wedge.
+    // Level board over this side, so both faces sit at the same 2132.
+    bevel3d: { a: 2132, b: 2132 },
   });
   assert.equal(bur.h, 1195.7508);
   assert.equal(bur.cnc.drawn_h, 1195.7508);
@@ -185,6 +192,9 @@ test('THE SIDES: the low one is cut, the tall one keeps full height', () => {
     topAt: 1195.7508,
     angles: [{ from: 582, to: 600, deg: 63.4349 }],
     low: 1159.7508,
+    // …and here the wedge is real: inner face at the peak, outer at the low —
+    // their difference is G·tan 63.4349° = 36, which is `h − low` exactly.
+    bevel3d: { a: 1195.7508, b: 1159.7508 },
   });
   assert.equal(bur.box.h, 1195.7508, 'and the 3-D box is the same board');
   assert.ok(bur.cnc.outline.every(([, y]) => y <= 1195.7508 + 1e-9), 'nothing above the blank');
@@ -252,21 +262,25 @@ test('THE TOP IS A ROOF — the flat lid at the low end is gone', () => {
 });
 
 // ─── T47-F3 AMENDS THIS ───────────────────────────────────────────────────
-// T46's lid dropped INSIDE the tall side, so its socket row landed part-way up
-// the face. T47's roof board LIES ON the side, so the row is back on the
-// board's own top edge — which is F3's own sentence: *"the top's sockets sit
-// where the roof board lands, on the angled edge."* The row still MOVES with
-// the board; it moves to a different place.
-test('…and the side takes the top\'s socket row where the roof board lands', () => {
+// ─── OVERRULED, 25.08.2026 ──────────────────────────────────────────────────
+//
+// This test held CLAUDE.md F3's sentence — "the top's sockets sit where the
+// roof board lands, on the angled edge" — and the owner, screenshot in hand,
+// struck that sentence down: *"bul lub bur nadal ma dog bonesy, a mowilismy ze
+// jak jest skos to dog bonesy znikaja."* The roof board carries no tab, so a
+// socket there catches nothing and its bones surface on a visible edge for
+// nothing. Under a roof the row is OFF — the KIT_SINK flag, not a new
+// mechanism — and the assertion flips with the law.
+test('…and the cut side drills NO top-board socket row — the joint is not a puzzle', () => {
   const r = cutWardrobe();
   for (const id of ['BUL', 'BUR']) {
     const p = panelOf(r, id);
     const socketYs = p.cnc.pockets
       .filter((k) => k.layer === P.puzzle.layers.socket)
       .map((k) => Math.max(k.y1, k.y2));
-    assert.ok(socketYs.some((y) => Math.abs(y - (p.h + P.puzzle.socketOvershoot)) < 1e-6),
-      `${id}: the top row sits at the board's own top (${p.h}) — saw ${socketYs.join(', ')}`);
-    assert.equal(socketYs.some((y) => y > p.h + P.puzzle.socketOvershoot + 1e-6), false,
+    assert.equal(socketYs.some((y) => y > p.h - P.board.thickness), false,
+      `${id}: no socket row at the cut edge — saw ${socketYs.join(', ') || 'none'}`);
+    assert.equal(socketYs.some((y) => y > p.h + 1e-6), false,
       `${id}: nothing left above the cut`);
   }
 });

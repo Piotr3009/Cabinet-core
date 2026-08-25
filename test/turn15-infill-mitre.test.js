@@ -118,7 +118,25 @@ function mitredRun() {
 const panelsOf = (id) => computeCabinet(paramsForEngine(store().units.find((u) => u.id === id)), P).panels;
 const byId = (id, panelId) => panelsOf(id).find((p) => p.id === panelId);
 
-test('THE FIX: the corner is one 45° plane, cut into both pieces', () => {
+// ─── T48-F2 AMENDS THIS ─────────────────────────────────────────────────────
+// ─── OVERRULED, 25.08.2026 ──────────────────────────────────────────────────
+//
+// The owner, 25.08.2026: *"zamiast L shape … pomyslem zeby na wizualizacji
+// tylko zrobic jedna deske jak plinth i tyle. … infill pionowy nie ruszamy.
+// natomiast na CNC robisz tak: dlugosc infila poziomego nad szafa = rysujesz
+// 2 deski = dlugosc infila x 60 mm, plus 20 mm dluzsze na odciecie, z jednej
+// strony."*  — and on the corner: *"jak zakreca i mamy infill z boku to sie
+// robi mitre, ale to rzadko."*
+//
+// T15 cut this corner into BOTH pieces on the machine, and half of that is
+// struck down. The SIDE filler is untouched — *"infill pionowy nie ruszamy"* —
+// so its own 45° is exactly what T15 shipped and is asserted below unchanged.
+// The TOP infill is a plain board now: it does not run to a long point, it is
+// not chamfered, and the corner — which the owner calls rare — is cut on site
+// off the 20 mm the board leaves the machine long. So what this test holds is
+// the half that survives, plus the number the part still carries so a joiner
+// knows which end turns.
+test('THE FIX, HALF OVERRULED: the filler keeps its 45°, the top board is cut on site', () => {
   const a = mitredRun();
   const unit = store().units.find((u) => u.id === a);
   const run = unit.params.run_top_infill;
@@ -130,20 +148,20 @@ test('THE FIX: the corner is one 45° plane, cut into both pieces', () => {
   const face = byId(a, 'INFILL-T-FACE');
   const filler = byId(a, 'INFILL-L-FACE');
 
-  // The two 45° cuts are the SAME line in the unit's own frame, which is what
-  // makes this a joint rather than two pieces ending near each other.
-  //
-  //   the filler's cut runs   (x = 0,  y = H)      → (x = −m, y = H + m)
-  //   the face's cut runs     (x = −m, y = H + m)  → (x = 0,  y = H)
+  // THE SIDE FILLER: not one line. Its cut runs (x = 0, y = H) → (x = −m,
+  // y = H + m) in the unit's own frame, exactly where T15 put it.
   const H = face.box.y;
   const fillerPts = filler.cnc.outline.map(([x, y]) => [filler.box.x + x, filler.box.y + y]);
-  const facePts = face.cnc.outline.map(([x, y]) => [face.box.x + x, face.box.y + y]);
   const has = (pts, x, y) => pts.some(([px, py]) => Math.abs(px - x) < 1e-6 && Math.abs(py - y) < 1e-6);
-
   assert.ok(has(fillerPts, 0, H), 'the filler comes to the inner corner');
   assert.ok(has(fillerPts, -m, H + m), 'and runs 45° out to its outer edge');
-  assert.ok(has(facePts, 0, H), 'the face comes to the same inner corner');
-  assert.ok(has(facePts, -m, H + m), 'from the same outer point');
+
+  // THE TOP BOARD: a rectangle, starting at the run's own offset — no long
+  // point, no chamfer. The corner is a record on the part, not a cut in it.
+  assert.equal(face.cnc.outline.length, 4, 'four corners: a plain board');
+  assert.equal(face.box.x, run.offset, 'it no longer reaches over the filler');
+  assert.equal(face.meta.corner.left, m, 'and it still says which end turns, and by how much');
+  assert.equal(face.meta.mitre_45.includes('long'), false);
 });
 
 test('the filler is CUT to the same size — only its outline moves', () => {
@@ -181,19 +199,27 @@ test('the filler is CUT to the same size — only its outline moves', () => {
   assert.deepEqual(filler.meta.mitre_45, ['end']);
 });
 
-test('the top infill face runs to its LONG POINT over the corner', () => {
+// ─── OVERRULED, 25.08.2026 — the long point is gone with the L ──────────────
+// The owner, 25.08.2026: *"zamiast L shape … pomyslem zeby na wizualizacji
+// tylko zrobic jedna deske jak plinth i tyle. … infill pionowy nie ruszamy.
+// natomiast na CNC robisz tak: dlugosc infila poziomego nad szafa = rysujesz
+// 2 deski = dlugosc infila x 60 mm, plus 20 mm dluzsze na odciecie, z jednej
+// strony."*  — and on the corner: *"jak zakreca i mamy infill z boku to sie
+// robi mitre, ale to rzadko."*
+test('the top infill face is the RUN\'s own length, plus the site cut', () => {
   const a = mitredRun();
   const unit = store().units.find((u) => u.id === a);
   const run = unit.params.run_top_infill;
   const face = byId(a, 'INFILL-T-FACE');
+  const OVER = P.autoParts.fillerOversize;
 
-  assert.equal(face.w, run.length + run.mitre.left + run.mitre.right,
-    'the long edge carries on over the corner; the short one stops at the filler');
-  assert.equal(face.box.x, run.offset - run.mitre.left);
-  // The SHELF is not extended. It runs back at the ceiling and lands on top of
-  // the filler's own return arm; extending it would put two pieces of board in
-  // the same 18 mm.
-  assert.equal(byId(a, 'INFILL-T-SHELF').w, run.length);
+  assert.equal(face.box.w, run.length, 'the piece over the units is the run');
+  assert.equal(face.w, run.length + OVER, 'and the blank is 20 longer, for the site cut');
+  assert.deepEqual(face.meta.lengthOversize, { mm: OVER, end: 'right', nominal: run.length });
+  assert.equal(face.box.x, run.offset, 'it starts where the run starts — no long point');
+  // BOTH boards are cut from the same length now: there is no corner for one of
+  // them to reach over and the other to stop short of.
+  assert.equal(byId(a, 'INFILL-T-SHELF').w, run.length + OVER);
 });
 
 test('the ARM is still screwed on, and still refuses the cut (#51)', () => {
@@ -218,7 +244,10 @@ test('a run with no such corner cuts exactly what it cut before', () => {
   // rest of the outline is exactly what it was. That is this turn's one named
   // infill delta and it is the same 20 on every piece.
   const OVER = P.autoParts.fillerOversize;
-  assert.deepEqual(face.cnc.outline, [[0, 0], [600, 0], [600, 100 + OVER], [0, 100 + OVER]]);
+  // T48-F2: …and the LENGTH carries the site cut on one end, so the rectangle
+  // is 620 × 120 rather than 600 × 120. It is still a rectangle.
+  assert.deepEqual(face.cnc.outline,
+    [[0, 0], [600 + OVER, 0], [600 + OVER, 100 + OVER], [0, 100 + OVER]]);
   assert.equal(filler.cnc.outline.length, 4);
   assert.deepEqual(filler.cnc.outline,
     [[-OVER, 0], [120, 0], [120, filler.h], [-OVER, filler.h]]);

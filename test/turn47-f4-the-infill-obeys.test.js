@@ -167,7 +167,10 @@ test('…MOUNTED along the slope: its length is the hypotenuse, and it tilts', (
   assert.equal(face.meta.slopeCut.deg, 45);
   assert.equal(face.meta.slopeCut.span, 600, 'the ground it covers');
   assert.equal(face.meta.slopeCut.along, 848.5281, '…and the board that covers it');
-  assert.ok(Math.abs(face.w - 600 / Math.cos(Math.PI / 4)) < 1e-3);
+  // T48-F2: `w` is the BLANK and now carries the site-cut allowance on one
+  // end; `slopeCut.along` is still the board that covers the ground.
+  const OVER = P.autoParts.fillerOversize;
+  assert.ok(Math.abs(face.w - (600 / Math.cos(Math.PI / 4) + OVER)) < 1e-3);
   // Chat-fix 25.08.2026: the deg is SIGNED now — CCW about Z, so THIS fall
   // (left-high, right-low) leans clockwise — and the scene finally can tilt
   // it: the axis is named and the pivot hangs on the ceiling at the low end.
@@ -175,7 +178,7 @@ test('…MOUNTED along the slope: its length is the hypotenuse, and it tilts', (
   assert.equal(face.meta.tilt_axis, 'z');
   assert.deepEqual(face.meta.tilt_pivot, { x: 600, y: 1400 });
   // The SHELF runs back at the ceiling, so it is the same length.
-  assert.equal(byId(cut, 'INFILL-T-SHELF').w, 848.5281);
+  assert.equal(byId(cut, 'INFILL-T-SHELF').w, 848.5281 + OVER);
 });
 
 test('…and ONE PIECE PER SEGMENT, with the join cut at the angle the slope gives', () => {
@@ -186,7 +189,12 @@ test('…and ONE PIECE PER SEGMENT, with the join cut at the angle the slope giv
   }, P);
   const faces = infills(cut).filter((p) => p.meta.piece === 'face' && p.meta.side === 'top');
   assert.deepEqual(faces.map((p) => p.id), ['INFILL-T-FACE-1', 'INFILL-T-FACE-2']);
-  assert.deepEqual(faces.map((p) => p.w), [300, 848.5281]);
+  // T48-F2: each END segment carries the site-cut allowance on its OUTER end —
+  // the first on the left, the last on the right. A MIDDLE segment would carry
+  // none: both of its ends are machine-cut joins.
+  const OVER = P.autoParts.fillerOversize;
+  assert.deepEqual(faces.map((p) => p.w), [300 + OVER, 848.5281 + OVER]);
+  assert.deepEqual(faces.map((p) => p.meta.lengthOversize.end), ['left', 'right']);
   // A flat run meeting a 45° fall makes 135° between the two pieces, so each is
   // cut at 67.5 — half of it, which is the frame-corner rule.
   assert.equal(faces[0].meta.mitre.right, 67.5);
@@ -195,10 +203,24 @@ test('…and ONE PIECE PER SEGMENT, with the join cut at the angle the slope giv
 
 // ═══ THE TWO MITRES, NEVER CONFUSED ═════════════════════════════════════════
 
-test('the L CORNER of one infill piece is ALWAYS 45 — under any ceiling', () => {
+// ─── T48-F2 AMENDS THIS ─────────────────────────────────────────────────────
+// ─── OVERRULED, 25.08.2026 — for the TOP infill only ────────────────────────
+//
+// The owner: *"zamiast L shape … jedna deske jak plinth i tyle. … infill
+// pionowy nie ruszamy."*
+//
+// The TOP infill has no L any more, so it has no L corner and no 45 to state.
+// The SIDE infill still has both — its face and its arm are still one L, and
+// *"infill pionowy nie ruszamy"* is the whole of why — so T47's sentence
+// ("infill mitra zawsze jest 45") stands exactly where it still applies.
+test('the L CORNER of a SIDE infill is ALWAYS 45 — under any ceiling', () => {
   for (const over of [{}, FALL, { slope_cut: { pts: [{ x: 0, y: 2000 }, { x: 600, y: 400 }], infill: 40 } }]) {
     for (const p of infills(build(over))) {
-      assert.equal(p.meta.mitre.L, 45, `${p.id}: "infill mitra zawsze jest 45"`);
+      if (p.meta.side === 'top') {
+        assert.equal(p.meta.mitre?.L, undefined, `${p.id}: the L is dead on the top infill`);
+      } else {
+        assert.equal(p.meta.mitre.L, 45, `${p.id}: "infill mitra zawsze jest 45"`);
+      }
     }
   }
 });
@@ -239,7 +261,10 @@ test('`mitre_45` keeps its name and its meaning — nothing downstream is rename
   });
   const face = byId(r, 'INFILL-T-FACE');
   assert.ok(Array.isArray(face.meta.mitre_45), 'still the list every reader speaks');
-  assert.ok(face.meta.mitre_45.includes('long'));
+  // T48-F2: what it CONTAINS changed with the L — 'long' is gone, 'end'
+  // survives at the turning corner. The name and the shape did not.
+  assert.equal(face.meta.mitre_45.includes('long'), false);
+  assert.ok(face.meta.mitre_45.includes('end'), 'the left end is open — the run turns there');
   assert.equal(byId(r, 'INFILL-L-FACE').meta.mitre_45[0], 'end');
 });
 

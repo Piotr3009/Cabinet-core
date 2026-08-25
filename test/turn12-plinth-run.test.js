@@ -187,12 +187,24 @@ test('turning one unit\'s plinth off splits the kick in two', () => {
   assert.equal(plinthOf(c).w, 600);
 });
 
+// ─── T48-F3 AMENDS THE SET-UP, NOT THE RULE ─────────────────────────────────
+//
+// The owner, 25.08.2026: the PLINTH IS ON BY DEFAULT — standing carcasses
+// only, never a hung WUD. It is still one untick away and the control has not
+// moved; what changed is the answer a new cabinet arrives with
+// (stores/projectStore.js `newUnit`, T48-F3).
+//
+// The rule this test holds — a unit with no plinth is in no plinth run — is
+// unchanged. What changed is that a unit no longer STARTS without one, so the
+// state has to be asked for instead of inherited.
 test('no plinth = no plinth', () => {
   project();
   const { id } = store().addUnit('BUD');
+  store().removePlinth(id);
   assert.equal(plinthOf(id), null);
   // …and a whole run of them stays empty.
   const { id: other } = store().addUnit('BUD');
+  store().removePlinth(other);
   assert.equal(plinthOf(other), null);
 });
 

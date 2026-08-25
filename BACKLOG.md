@@ -820,3 +820,92 @@ dało się je odszukać po jego numerze, a nie tylko po fazie.
     Rozmawiane 24.08.2026 przy okazji wieńca dachowego (który dog bone'ów mieć
     NIE MOŻE — decyzja właściciela, tura 47 F3). Nie rozstrzygnięte, nie
     zaczęte.
+
+## TURA 48 — PODŁOGA, DESKA I ETYKIETA — ✅ WYKONANA (25.08.2026)
+
+Dziewięć funkcji, dziewięć dowiezionych. **F9 była wyznaczona jako jedyna
+ofiara i nie padła.** STOP z F1 też nie zadziałał — klamra podłogi nie ruszyła
+żadnego z sześciu wzorców, więc idzie bez bramki, a nie za flagą.
+
+Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
+`t48-classify` względem T47 (`f586f8c`) **sześć IDENTICAL, UNNAMED 0** ·
+`--infill` CLEAN · `--census` CLEAN · `--cut` 6/6 ·
+`t48-paren-balance --against f586f8c` **13/13 po 0/0, ruszył się TYLKO
+`KIT_LED_GROOVE.lsp`** · `e2e-turn48` **28/28**, prawdziwy pointer, 9 zdjęć.
+
+* **F1 — podłoga jest prawem.** *„zaden element nie moze spasc ponizej podlogi
+  — fizycznie to sie wyklucza."* ZMIERZONY BŁĄD, dwa objawy i jedna przyczyna:
+  `addShoeBox`, `setShoeBox` i półka na buty klamrowały `pos_mm` przez
+  `Math.max(0, …)`, a zero to SPÓD dna, nie podłoga skrzyni. JEDNO prawo
+  (`engine/items.js floorClampedPos`, obok `centredShelfPos`), JEDNA stacja
+  (`projectStore onTheFloor`, z `addItem` i `updateItem`), więc wstawienie,
+  przeciągnięcie, wpisana liczba i wczytany projekt to ta sama reguła.
+  Klamrowany jest NAJNIŻSZY PUNKT elementu, nie jego baza. Element, który
+  prawo złapało, mówi o tym sam (`meta.floorClamped`); element już legalny
+  wraca TYM SAMYM obiektem. Test: `test/turn48-f1-the-floor-is-law.test.js`.
+* **F2 — górny infill to DESKA, a arkusz tnie DWIE.** Silnik daje dwa zwykłe
+  prostokąty: `(bieg + 20) × (40 + 20)` i `(bieg + 20) × (80 + 20)` — szerokości
+  jako ARYTMETYKA, nigdy gołe 60. +20 na DŁUGOŚCI, z JEDNEJ nazwanej strony
+  (`meta.lengthOversize`), **bez adnotacji** (*„stolarze wiedza"*). Narożne L
+  znika z geometrii: `chamferedRectGeometry` już nie dotyka INFILL-T, `mitre.L`
+  i flaga `'long'` umierają, a `mitre_45` zostaje tylko tam, gdzie spotykają
+  się dwa BIEGI. Scena rysuje JEDNĄ deskę, jak plinth (`meta.scene:
+  'sheet-only'` na drugiej). **Infille pionowe — ani jednej linii.**
+  Testy strażnicze L zaktualizowane z notą OVERRULED i cytatem.
+* **F3 — plinth domyślnie ON.** W `newUnit` (ścieżka tworzenia w store), NIE w
+  `defaultParamsFor()` — wzorce czytają te defaulty i plinth tam to cała
+  dodatkowa CZĘŚĆ w każdym z sześciu. Które typy — pyta `takesPlinth`, własna
+  bramka silnika, nigdy lista.
+* **F4 — LISP pierwszy.** `ledGrooveEndExtra` rodzi się w
+  `KIT_LED_GROOVE.lsp` (sekcja A2) z cytatem i POWODEM: frez jest okrągły,
+  kieszeń docięta w punkt kończy się dwoma promieniami, a profil jest
+  prostokątny — *„nikt nie chce uzywac dlutka na rogach."* JS czyta tę liczbę
+  z prawa: test parsuje kit z dysku.
+* **F5 — rowek dociera na arkusz** (zaległość nazwana w T45, spłacona).
+  `projectStore.unitCncResult` — JEDNA odpowiedź, o którą pyta podgląd CNC,
+  drzewko, sekcje materiałowe i DXF arkusza. `LED_GROOVE` dostał kolor ekranu,
+  więc legenda nazywa to, co arkusz rysuje. `grooved()` tnie RAZ.
+* **F6 — jeden przycisk.** *„mamy przycisk dodania LED, to i ten sam przycisk
+  usuwa LED — proste."* Ten sam przycisk, na wszystkich sześciu narzędziach,
+  przez `removeLightingItem`, który istnieje od T33.
+* **F7 — `top_under` ma swój rysunek**, a światło świeci w dół. Wariant nie
+  miał gałęzi w `LightArt` i spadał na rysunek SPOTÓW, więc wywołanie prosiło
+  o `kind="top"` — obrazek pokazywał pasek NA wieńcu świecący DO GÓRY.
+  Emisja 3-D **była już poprawna** (wpadała w `else` i świeciła w dół) — to
+  jest weryfikacja, o którą F7 prosi, i nic w niej nie trzeba było naprawiać.
+  Prawo jest teraz zapisane, a nie domyślne: `EMITS_UP` / `EMITS_DOWN`.
+* **F8 — wymiary trzymają rozmiar na ekranie.** *„zeby zawsze wymiary byly
+  takie same niezaleznie jak bardzo sie odsuniemy od mebla."* `useScreenScale`
+  w `3d/DimLabel.jsx` i nigdzie indziej; obie projekcje (perspektywa i orto);
+  głębokość WIDOKOWA, nie odległość do kamery; obie macierze odświeżane w
+  klatce. Łańcuchy wymiarowe IMPORTUJĄ prawo zamiast je kopiować, a
+  catchment podwójnego kliknięcia idzie za nim. Żaden ustawiony przez
+  właściciela stosunek się nie ruszył. Zmierzone: **25 etykiet, 8,93 m i
+  3,13 m, najgorsza różnica 0,00 px.**
+* **F9 — etykieta CNC nigdy nie utnie liczby.** `TOP~` to skrót, `260.9x5~` to
+  ROZMIAR z uciętą cyfrą. Drabina T16 dostaje nowy środkowy szczebel: łam na
+  więcej linii → **wyjdź POZA obrys** z odnośnikiem → schowaj. Tylko podgląd;
+  plik zostaje przy drabinie T16, bo DXF nie ma gdzie położyć odnośnika,
+  którego maszyna też by nie wycięła. Prawdziwy przypadek: PANTRY tnie dwa
+  paski FILLER 30 × 611 i oba czytały `30x6~`.
+
+### DOPISANE W TURZE 48
+
+122. [MEDIUM] **Narożnik infilla jest teraz cięty według dwóch różnych reguł.**
+    T48-F2 zabrał górnemu infillowi jego połowę narożnika z T15 (zwykła deska
+    nie może mieć długiego rogu), a infill PIONOWY zachował swój trójkąt, bo
+    *„infill pionowy nie ruszamy"* zostało wzięte dosłownie. Na rzadkim biegu,
+    który zakręca przy filerze do sufitu, pionowy jest ścięty pod 45° na
+    maszynie, a górna deska jest docinana na miejscu z tych 20 mm. Właściciel
+    sam nazwał ten narożnik rzadkim (*„ale to rzadko"*), więc to nie jest błąd
+    — to niedomknięta decyzja. Jeśli filer ma zostać ścięty na kwadrat razem z
+    deską, to jedna gałąź w bloku infilla bocznego w `engine/cabinet.js` i
+    jeden test. Do rozstrzygnięcia przez właściciela.
+123. [LOW] **Etykieta, która wyszła poza obrys, może wejść na sąsiada.**
+    Konsekwencja F9 na ciasno ułożonym arkuszu: odnośnik kładzie słowa nad
+    paskiem obok (`verify/t48/walk-8-label-outside.png` to pokazuje). To jest
+    świadomy wybór z tej reguły — etykietę w złym miejscu oko rozstrzyga w
+    sekundę, a rozmiaru z brakującą cyfrą nie rozstrzyga wcale. Gdyby to miało
+    przeszkadzać, właściwym rozwiązaniem jest ROZSUNIĘCIE układu
+    (`cnc.layoutGap`) dla części, których etykieta nie mieści się w obrysie,
+    a nie powrót do ucinania.

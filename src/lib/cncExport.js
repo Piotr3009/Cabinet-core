@@ -17,7 +17,7 @@ import { download } from './exporters.js';
 // standard configs cannot move (iron rule 2).
 import { stripsForUnit } from '../engine/ledStrips.js';
 import { migrateDesign } from '../engine/design.js';
-import { LED_GROOVE_LAYER, withLedGrooves } from './ledGroove.js';
+import { LED_GROOVE_LAYER, grooveCount, withLedGrooves } from './ledGroove.js';
 
 /**
  * A result with its LED grooves cut in — or the very result, when there are
@@ -33,6 +33,14 @@ export function grooved(result, {
   unit = null, design = null, ledSpec = null, profile = getCabinetProfile(),
 } = {}) {
   if (!result || !unit || !design) return result;
+  // ─── TURN 48 (CLAUDE.md F5): CUT ONCE ───────────────────────────────────
+  // The sheet asks for its grooves through the store now (`unitCncResult`), and
+  // the export button then hands that same result here on its way to the file.
+  // Without this line the pocket would be added twice — two identical closed
+  // polylines on the same layer, which a nesting program cuts TWICE. So a
+  // result that already carries its grooves is handed back as it is, which is
+  // the same answer the gate below gives a cabinet with no line at all.
+  if (grooveCount(result) > 0) return result;
   const d = migrateDesign(design);
   const items = d.lighting.items.filter((i) => i.unitId === unit.id);
   if (!items.length) return result;

@@ -114,7 +114,13 @@ test('the BOM counts an end panel against the front sheet, not the carcass sheet
     `the whole panel lands on the front material (${withPanel.totals.front_area_m2} vs ${area})`);
   assert.equal(withPanel.totals.board_area_m2, bare.totals.board_area_m2,
     'and nothing of it lands on the carcass board');
-  assert.equal(bare.totals.front_area_m2, 0, 'a doorless unit has no front area at all to hide it in');
+  // T48-F3: a standing carcass arrives with its PLINTH, and a plinth is front
+  // material — so "no front area at all" is no longer the way to say that the
+  // end panel has nowhere to hide. The claim is the same one, made exactly:
+  // whatever front area the bare unit has, the panel ADDS its own to it.
+  assert.equal(bare.totals.front_area_m2 > 0, true, 'the plinth is the bare unit\'s only front area');
+  assert.ok(withPanel.totals.front_area_m2 > bare.totals.front_area_m2,
+    'and the end panel lands on top of it, not on the carcass board');
 });
 
 // ─── the interactive top edge ───

@@ -89,12 +89,24 @@ test('the top infill is 40 by default and never taller than the space left', () 
   assert.equal(topInfillToCeiling({ unitTop: 2600, roomHeight: 2500 }), 0);
 });
 
-test('the top infill is a real panel, and it grows with the drag', () => {
-  // Turn 6 (CLAUDE.md F4) makes this an L in section — a face strip and a
-  // shelf, mitred together — and one element for a whole RUN. A unit on its
-  // own is a run of one, which is what a bare computeCabinet() call is, so the
-  // numbers below are that unit's own width. The four end conditions and the
-  // multi-cabinet case live in test/run-infill.test.js.
+// ─── T48-F2 AMENDS THIS ─────────────────────────────────────────────────────
+// ─── OVERRULED, 25.08.2026 ──────────────────────────────────────────────────
+//
+// The owner, 25.08.2026: *"zamiast L shape … pomyslem zeby na wizualizacji
+// tylko zrobic jedna deske jak plinth i tyle. … natomiast na CNC robisz tak:
+// dlugosc infila poziomego nad szafa = rysujesz 2 deski = dlugosc infila x
+// 60 mm, plus 20 mm dluzsze na odciecie, z jednej strony."*
+//
+// This test held turn 6's "L in section". It is TWO PLAIN BOARDS now, and each
+// of them leaves the machine 20 mm LONG on one end for the site cut — so the
+// two `w` assertions below move from the nominal run to the nominal plus the
+// allowance, and `meta.lengthOversize` names the end it hangs off. The widths
+// are untouched, and are still arithmetic: 40 + 20 and 80 + 20.
+test('the top infill is TWO BOARDS, and they grow with the drag', () => {
+  // One element for a whole RUN. A unit on its own is a run of one, which is
+  // what a bare computeCabinet() call is, so the numbers below are that unit's
+  // own width. The four end conditions and the multi-cabinet case live in
+  // test/run-infill.test.js.
   const r = computeCabinet(base({ top_infill_mm: 40 }), P);
   const face = r.panels.find((p) => p.id === 'INFILL-T-FACE');
   const shelf = r.panels.find((p) => p.id === 'INFILL-T-SHELF');
@@ -103,16 +115,26 @@ test('the top infill is a real panel, and it grows with the drag', () => {
   // idiom). `meta.oversize.nominal` is the finished size, and the box is the
   // nominal piece — what stands in the room once the joiner has planed it in.
   const OVER = P.autoParts.fillerOversize;
-  assert.equal(face.w, 600);
-  assert.equal(face.h, 40 + OVER);
+  // T48-F2: the LENGTH carries the site-cut allowance on ONE end, and the box
+  // is still the nominal run — what stands over the units once it is cut in.
+  assert.equal(face.w, 600 + OVER, 'the blank is the run plus the site cut');
+  assert.equal(face.box.w, 600, 'and the piece that stands in the room is the run');
+  assert.deepEqual(face.meta.lengthOversize, { mm: OVER, end: 'right', nominal: 600 });
+  assert.equal(face.h, 40 + OVER, 'BOARD A: the owner\'s "jedna 60" — 40 + 20, as arithmetic');
   assert.deepEqual(face.meta.oversize, { mm: OVER, edge: 'top', nominal: 40 });
   assert.equal(face.box.h, 40, 'the piece that stands in the room is the nominal');
   assert.equal(face.box.y, 770, 'it starts at the top of the carcass');
   assert.equal(face.role, 'infill');
-  assert.equal(shelf.w, 600);
-  assert.equal(shelf.h, P.autoParts.topInfill.shelfDepth + OVER, 'the horizontal leg, plus the scribe');
+  assert.equal(shelf.w, 600 + OVER, 'the second board is cut from the same length');
+  assert.deepEqual(shelf.meta.lengthOversize, { mm: OVER, end: 'right', nominal: 600 });
+  assert.equal(shelf.h, P.autoParts.topInfill.shelfDepth + OVER,
+    'BOARD B: "a druga nominal 80 bez zmian" — 80 plus the same scribe');
   assert.deepEqual(shelf.meta.oversize,
     { mm: OVER, edge: 'back', nominal: P.autoParts.topInfill.shelfDepth });
+  // …and NEITHER is an L any more: two plain rectangles, four corners each.
+  assert.equal(face.cnc.outline.length, 4);
+  assert.equal(shelf.cnc.outline.length, 4);
+  assert.equal(face.meta.mitre_45.includes('long'), false, 'the L\'s long-edge 45 is gone');
 
   const taller = computeCabinet(base({ top_infill_mm: 380 }), P);
   const tallerFace = taller.panels.find((p) => p.id === 'INFILL-T-FACE');

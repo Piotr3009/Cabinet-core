@@ -22,6 +22,11 @@ import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
 import { useMaterialAssignmentStore } from './stores/materialAssignmentStore.js';
 import * as dxf from './engine/cnc/dxf.js';
+// ─── TURN 48 (CLAUDE.md iron rule 5) ───────────────────────────────────────
+// The two pure laws tonight's walk has to be able to ASK rather than
+// photograph: the floor clamp (F1) and the label layout (F9).
+import * as items from './engine/items.js';
+import * as annotation from './engine/cnc/annotation.js';
 import * as hardware3d from './engine/hardware3d.js';
 import * as runners from './engine/runners.js';
 import * as hinges from './engine/hinges.js';
@@ -362,6 +367,19 @@ if (typeof window !== 'undefined') {
     partLabel,
     elevation: frontElevation,
   };
+  // ─── Turn 48 (CLAUDE.md F1 / F9) ─────────────────────────────────────────
+  //
+  // Two laws no picture can prove, and the walk asks the APP for both rather
+  // than reading them off a screenshot (R4):
+  //
+  //   `items`       THE FLOOR IS LAW — `floorClampedPos` / `floorLawedItem`,
+  //                 so "a shoe box asked for at zero lands ON the floor" is
+  //                 read off the very function the store calls.
+  //   `annotation`  the label layout — so "the sheet never cuts a digit" is
+  //                 read off `labelBlock`, not off a picture of some type.
+  //
+  // Both pure, and neither reaches anything the page could not already compute.
+  window.__ccT48 = { items, annotation };
   window.__ccT46 = {
     slope: slopeLine,
     wall: wallElements,

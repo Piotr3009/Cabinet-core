@@ -1,6 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { mm } from './constants.js';
+// T48-F8: the constant-pixel law, imported rather than copied — CLAUDE.md asks
+// for ONE file and `DimLabel` is it.
+import { labelPixelHeight, useScreenScale } from './DimLabel.jsx';
 import { dimensionSet } from '../engine/dimensionArrows.js';
 import { formatDimension } from '../engine/format.js';
 
@@ -170,6 +173,39 @@ export default function DimensionChain({
  * in one place (R11) rather than a `DimLabel` every module reaches for with its
  * own tone, its own rounding and its own offset.
  */
+/**
+ * The catchment on the FIGURE (turn 31, CLAUDE.md F8), sized off the label's own
+ * drawn height so it grows and shrinks with the drawing — and invisible, because
+ * a dimension that grew a visible button would be a drawing with a button on it.
+ *
+ * T48-F8: the label holds a constant PIXEL size now, so its target has to as
+ * well. A world-sized box under a screen-sized label is a label you can see and
+ * cannot hit — bigger than its target across a room, smaller than it up close —
+ * which would be a worse control than the one F8 set out to fix. Same law, same
+ * one file, applied to the box's own three proportions.
+ */
+function PickBox({
+  position, style, rowKey, onPick,
+}) {
+  const ref = useScreenScale(
+    labelPixelHeight(style.labelHeight),
+    (box, h) => box.scale.set(h * 3, h * 1.6, h),
+  );
+  return (
+    <mesh
+      ref={ref}
+      position={position}
+      visible={false}
+      userData={{ ccHelper: true, ccNoBounds: true, ccDimensionPick: rowKey }}
+      onDoubleClick={(e) => { e.stopPropagation(); onPick(e); }}
+    >
+      {/* A UNIT box: the SIZE is the ref's, so the two cannot disagree. */}
+      <boxGeometry args={[1, 1, 1]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
+}
+
 function Value({
   row, plane, at, style, onPick = null,
 }) {
@@ -189,15 +225,7 @@ function Value({
         // label's own drawn height so it grows and shrinks with the drawing,
         // and invisible — a dimension that grew a visible button would be a
         // drawing with a button on it.
-        <mesh
-          position={position}
-          visible={false}
-          userData={{ ccHelper: true, ccNoBounds: true, ccDimensionPick: row.key }}
-          onDoubleClick={(e) => { e.stopPropagation(); onPick(e); }}
-        >
-          <boxGeometry args={[style.labelHeight * 3, style.labelHeight * 1.6, style.labelHeight]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
+        <PickBox position={position} style={style} rowKey={row.key} onPick={onPick} />
       )}
     </>
   );
@@ -230,6 +258,12 @@ function Value({
  * number stays legible instead of turning into a gold word on a dark ground.
  * That is precisely how the partition chain behaved before turn 26.
  */
+// ─── TURN 48 (CLAUDE.md F8): …AND IT HOLDS ITS SIZE ON SCREEN ──────────────
+// The law is `3d/DimLabel.jsx`'s — ONE file, as CLAUDE.md asks — and this
+// sprite IMPORTS it rather than copying it. `style.labelHeight` stays the
+// datum: it is the profile's own tuning (T29's ×1.3 on the chain's 0.8 of
+// DimLabel's 0.055) and `labelPixelHeight` converts that ratio to pixels, so
+// every relative size the owner has ever set survives untouched.
 function DimensionValue({ position, text, style }) {
   const texture = useMemo(() => {
     // ─── TURN 29 (CLAUDE.md F4): A THIRD BIGGER, HALF THE WEIGHT ───────────
@@ -311,14 +345,16 @@ function DimensionValue({ position, text, style }) {
   useEffect(() => () => texture.dispose(), [texture]);
 
   // Turn 25's own size was 0.044 — `DimLabel`'s 0.055 at the chain's scale of
-  // 0.8. Turn 29 (CLAUDE.md F4) is that × 1.3, and it is the number the eye
-  // measures: the walk reads the mounted sprite's scale and checks the ratio.
+  // 0.8. Turn 29 (CLAUDE.md F4) is that × 1.3. T48-F8 keeps that number as the
+  // RATIO and makes what the eye measures a pixel height.
   const h = style.labelHeight;
-  const w = h * (texture.userData.aspect || 3);
+  const aspect = texture.userData.aspect || 3;
+  const ref = useScreenScale(labelPixelHeight(h), (sprite, live) => sprite.scale.set(live * aspect, live, 1));
   return (
     <sprite
+      ref={ref}
       position={position}
-      scale={[w, h, 1]}
+      scale={[h * aspect, h, 1]}
       renderOrder={10}
       // ─── TURN 29 (CLAUDE.md F2/F4): WHAT THIS LABEL ACTUALLY SAYS ─────────
       // The value is rasterised into a canvas, so a walk counting the numbers
@@ -327,7 +363,14 @@ function DimensionValue({ position, text, style }) {
       // `data-*` on an R3F object) beside the height the eye measures, and
       // nothing in the app reads either back.
       userData={{
-        ccHelper: true, ccNoBounds: true, ccDimensionText: text, ccDimensionHeight: h,
+        ccHelper: true,
+        ccNoBounds: true,
+        ccDimensionText: text,
+        ccDimensionHeight: h,
+        // T48-F8: …and the height it means to be ON SCREEN, beside the world
+        // number it is derived from. Same key `DimLabel` puts on its own chips,
+        // so a walk measures both kinds with one question.
+        ccLabelPx: labelPixelHeight(h),
       }}
     >
       {/* `allowOverride={false}` — a dimension is TOOL, and tool casts no

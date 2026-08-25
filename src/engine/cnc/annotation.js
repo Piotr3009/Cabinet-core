@@ -234,19 +234,47 @@ export function splitLines(words, n) {
  *   ellipsis   what a truncated line ends with — ASCII `~` for both the sheet
  *              and the file, for the reason engine/cnc/partLabel.js gives about
  *              the multiplication sign
+ *   onOverflow what happens when the readable floor is WIDER than the part:
+ *              'truncate' (default, and what every caller before T48 gets) or
+ *              'outside' — see below.
  *
- * @returns {{visible:boolean, size:number, step:number, width:number,
- *            height:number, lines:{text:string, dy:number}[]}}
+ * ─── TURN 48 (CLAUDE.md F9): A LABEL NEVER CUTS A DIGIT ─────────────────────
+ *
+ * The owner's audit, 25.08.2026: on a narrow board `TOP-1` came out as `TOP~`
+ * and `260.9x540` as `260.9x5~`.
+ *
+ * The second one is the fault, and it is worse than an abbreviation: `TOP~` is
+ * plainly cut off, but `260.9x5~` is a SIZE, and `5` is a number a joiner will
+ * read. A label that turns 540 into 5 is not shortened, it is wrong — and it is
+ * wrong in the one place on the sheet a workshop trusts absolutely.
+ *
+ * Turn 16 wrote the ladder as "draw it → truncate it → hide it", and truncation
+ * was the humane middle step. It still is FOR A WORD: `INFILL-T-SHELF~` is a
+ * part code a joiner can still place. It is not humane for a MEASUREMENT, and
+ * the layout cannot tell the two apart — so the middle step is replaced rather
+ * than made clever. The order is now:
+ *
+ *   1. break onto more lines           (`maxLines`, already here since T18)
+ *   2. step OUTSIDE the outline        (this — the caller draws a leader)
+ *   3. hide it                         (unchanged: below the pixel floor)
+ *
+ * `outside: true` is the block saying "I did not fit, and I am whole". It is
+ * the CALLER's business where to put it and how to point at it, because only
+ * the caller knows what is beside the part — which is why this stays a pure
+ * function that answers a question rather than one that draws.
+ *
+ * @returns {{visible:boolean, outside:boolean, size:number, step:number,
+ *            width:number, height:number, lines:{text:string, dy:number}[]}}
  *   `dy` is each line's offset from the block's CENTRE, positive UP — the
  *   drawing's own frame. A DXF adds it; an SVG viewport subtracts it.
  */
 export function labelBlock({
   text, sizeMm, boxW = Infinity, boxH = Infinity,
   maxLines = 1, fillRatio = 1, lineGap = 0, minSize = 0,
-  mmPerPx = 1, minPx = 0, ellipsis = '~',
+  mmPerPx = 1, minPx = 0, ellipsis = '~', onOverflow = 'truncate',
 }) {
   const hidden = {
-    visible: false, size: 0, step: 0, width: 0, height: 0, lines: [],
+    visible: false, outside: false, size: 0, step: 0, width: 0, height: 0, lines: [],
   };
   const full = String(text ?? '').trim();
   const wanted = Number(sizeMm) || 0;
@@ -293,18 +321,32 @@ export function labelBlock({
   // drawing, and it decides only whether a thing is drawn, never how big it is.
   if (minPx > 0 && mmPerPx > 0 && size / mmPerPx < minPx) return hidden;
 
+  /** The block, as it stands — `outside` says whether it fitted. */
+  const laid = (list, outside) => {
+    const n = list.length;
+    return {
+      visible: true,
+      outside,
+      size,
+      step,
+      width: list.reduce((m, l) => Math.max(m, textWidthMm(l, size)), 0),
+      height: n * size + (n - 1) * gap * size,
+      lines: list.map((line, i) => ({ text: line, dy: ((n - 1) / 2 - i) * step })),
+    };
+  };
+
+  // ─── T48-F9: DOES IT ACTUALLY FIT? ────────────────────────────────────────
+  // `size` is the fitted size UNLESS the millimetre floor won, which is the one
+  // case a line comes out wider than the part. Asked before anything is cut, so
+  // the answer is about the WORDS rather than about what is left of them.
+  const overflows = Number.isFinite(innerW)
+    && lines.some((line) => textWidthMm(line, size) > innerW + 1e-9);
+  if (overflows && onOverflow === 'outside') return laid(lines, true);
+
   const shown = lines
     .map((line) => (Number.isFinite(innerW) ? truncateToWidth(line, innerW, size, ellipsis) : line))
     .filter((line) => line.length);
   if (!shown.length) return hidden;
 
-  const n = shown.length;
-  return {
-    visible: true,
-    size,
-    step,
-    width: shown.reduce((m, l) => Math.max(m, textWidthMm(l, size)), 0),
-    height: n * size + (n - 1) * gap * size,
-    lines: shown.map((line, i) => ({ text: line, dy: ((n - 1) / 2 - i) * step })),
-  };
+  return laid(shown, false);
 }

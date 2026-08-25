@@ -150,38 +150,55 @@ const runUnit = (ends, returns) => computeCabinet({
 
 const pieceOf = (r, id) => r.panels.find((p) => p.id === id);
 
-test('the L: the face and the shelf share the joint square, and close it', () => {
+// ─── T48-F2 AMENDS THIS ─────────────────────────────────────────────────────
+// ─── OVERRULED, 25.08.2026 ──────────────────────────────────────────────────
+//
+// The owner, 25.08.2026: *"zamiast L shape … pomyslem zeby na wizualizacji
+// tylko zrobic jedna deske jak plinth i tyle. … infill pionowy nie ruszamy.
+// natomiast na CNC robisz tak: dlugosc infila poziomego nad szafa = rysujesz
+// 2 deski = dlugosc infila x 60 mm, plus 20 mm dluzsze na odciecie, z jednej
+// strony."*  — and on the corner: *"jak zakreca i mamy infill z boku to sie
+// robi mitre, ale to rzadko."*
+//
+// This module cut the solid that made the top infill READ as an L: the face's
+// top edge chamfered back, the shelf moved forward onto the joint. Both cuts
+// are struck down. The scene draws ONE board — the face, standing in the plane
+// of the fronts like a plinth — and the shelf board is on the sheet, not in the
+// room. So `infillMitre` answers null for both of them on a walled run, and
+// what this test holds is that it does.
+test('the L IS DEAD: one plain board in the room, and the shelf is not in it', () => {
   const r = runUnit({ left: 'wall', right: 'wall' }, {});
-  const face = infillSolid(pieceOf(r, 'INFILL-T-FACE'));
-  const shelf = infillSolid(pieceOf(r, 'INFILL-T-SHELF'));
-  assertClosed(face, 'face');
-  assertClosed(shelf, 'shelf');
+  const facePanel = pieceOf(r, 'INFILL-T-FACE');
+  const shelfPanel = pieceOf(r, 'INFILL-T-SHELF');
 
+  assert.equal(infillSolid(facePanel), null, 'no cut at all — the caller draws the plain box');
+  assert.equal(infillSolid(shelfPanel), null, 'and the shelf board is not a body in the room');
+  assert.equal(shelfPanel.meta.scene, 'sheet-only', 'it says so itself');
+
+  // The two boxes still stand where they stood: the face in the plane of the
+  // fronts, the shelf behind it at the top. Nothing about the ASSEMBLY moved —
+  // only the joint between the two pieces, which is now made on site.
   const faceZ = 558 + P.doors.gap + 25;         // depth + gap + front thickness
-  const top = 2100 + T.defaultHeight;
-
-  // The face is full height at the FRONT and one thickness short at the back.
-  assert.ok(has(face, [0, top, faceZ]));
-  assert.ok(has(face, [0, top - G, faceZ - G]));
-  // The shelf is full depth at the TOP and comes to the joint at the bottom.
-  assert.ok(has(shelf, [0, top, faceZ - T.shelfDepth]), 'the shelf runs its full 80 at the top');
-  assert.ok(has(shelf, [0, top, faceZ]), 'and reaches the face’s own outer plane');
-  assert.ok(has(shelf, [0, top - G, faceZ - G]), 'the two meet on ONE line — the mitre');
-
-  // The section they make together is 40 × 80, not 40 × 98: a mitred piece is
-  // measured to its long point, which is what `meta.mitre_45` has always meant.
-  const zs = [...face.vertices, ...shelf.vertices].map((v) => v[2]);
-  assert.equal(Math.max(...zs) - Math.min(...zs), T.shelfDepth);
+  assert.equal(facePanel.box.z + facePanel.box.d, faceZ);
+  assert.equal(facePanel.box.y, 2100);
+  assert.equal(shelfPanel.box.z + shelfPanel.box.d, facePanel.box.z);
+  assert.equal(shelfPanel.box.y + shelfPanel.box.h, facePanel.box.y + facePanel.box.h);
 });
 
-test('an open end turns the corner as a picture frame, not as two boxes', () => {
+// ─── T48-F2: THE TURNING CORNER IS THE ONE 45° THAT SURVIVES ────────────────
+// *"jak zakreca i mamy infill z boku to sie robi mitre, ale to rzadko."*
+// CLAUDE.md F2 draws the line in as many words: `mitre_45` survives ONLY where
+// two RUNS meet. An open end IS the run turning, and the return that grows
+// there is a second run in the same plane — so the picture frame is still cut,
+// on the FACES. The shelf boards are on the sheet and not in the room, so
+// there is no second frame behind this one.
+test('an open end still turns the corner as a picture frame — on the faces', () => {
   const r = runUnit({ left: 'open', right: 'wall' }, { left: 200 });
   const mainFace = infillSolid(pieceOf(r, 'INFILL-T-FACE'));
-  const mainShelf = infillSolid(pieceOf(r, 'INFILL-T-SHELF'));
   const retFace = infillSolid(pieceOf(r, 'INFILL-TL-FACE'));
-  const retShelf = infillSolid(pieceOf(r, 'INFILL-TL-SHELF'));
-  for (const [label, s] of [['main face', mainFace], ['main shelf', mainShelf],
-    ['return face', retFace], ['return shelf', retShelf]]) assertClosed(s, label);
+  for (const [label, s] of [['main face', mainFace], ['return face', retFace]]) assertClosed(s, label);
+  assert.equal(infillSolid(pieceOf(r, 'INFILL-T-SHELF')), null, 'no second frame behind it');
+  assert.equal(infillSolid(pieceOf(r, 'INFILL-TL-SHELF')), null);
 
   const faceZ = 558 + P.doors.gap + 25;
 
@@ -192,22 +209,18 @@ test('an open end turns the corner as a picture frame, not as two boxes', () => 
   assert.equal(has(mainFace, [0, 2100, faceZ - G]), false, 'the corner square is NOT hers');
   assert.ok(has(retFace, [0, 2100, faceZ]), 'the return meets it on the same line');
   assert.ok(has(retFace, [G, 2100, faceZ - G]));
-
-  // …and on the shelves, over a square as wide as a shelf is deep.
-  const top = 2100 + T.defaultHeight;
-  assert.ok(has(mainShelf, [0, top, faceZ]), 'main shelf reaches the corner');
-  assert.ok(has(mainShelf, [T.shelfDepth, top, faceZ - T.shelfDepth]), 'and is cut back by 80 at the rear');
-  assert.ok(has(retShelf, [0, top, faceZ]));
-  assert.ok(has(retShelf, [T.shelfDepth, top, faceZ - T.shelfDepth]));
 });
 
 test('a WALLED end is not mitred — there is no corner to turn', () => {
   const r = runUnit({ left: 'wall', right: 'wall' }, {});
-  const face = infillSolid(pieceOf(r, 'INFILL-T-FACE'));
+  // T48-F2: with no turning corner and no L, there is nothing to cut at all —
+  // `infillMitre` says so and the scene draws the box the engine handed it.
+  assert.equal(infillSolid(pieceOf(r, 'INFILL-T-FACE')), null);
+  const box = pieceOf(r, 'INFILL-T-FACE').box;
   const faceZ = 558 + P.doors.gap + 25;
-  // Square ends: the strip reaches the corner at the back as well as the front.
-  assert.ok(has(face, [0, 2100, faceZ - G]));
-  assert.ok(has(face, [600, 2100, faceZ - G]));
+  assert.equal(box.z + box.d, faceZ, 'square ends, square back — a plain board');
+  assert.equal(box.x, 0);
+  assert.equal(box.w, 600);
 });
 
 // ─── what it must NOT touch ─────────────────────────────────────────────────
@@ -224,13 +237,17 @@ test('nothing here reaches the cut list', () => {
   // on the piece's WALL edge (`autoParts.fillerOversize`, the drawer front's own
   // idiom). `meta.oversize.nominal` is the finished size, and the box is the
   // nominal piece — what stands in the room once the joiner has planed it in.
-  assert.equal(face.w, 600, 'the LONG POINT is untouched — a mitre is a joint');
+  // T48-F2 (OVERRULED, 25.08.2026): there is no long point to leave untouched.
+  // The blank is the run plus the site cut on ONE end, the L's own 45 is gone,
+  // and the 'end' flag survives because both ends of this run turn a corner.
+  assert.equal(face.w, 600 + OVER, 'the run, plus the 20 the joiner cuts off');
+  assert.equal(face.box.w, 600, 'and the piece in the room is the run');
   assert.equal(face.h, T.defaultHeight + OVER);
   assert.equal(shelf.h, T.shelfDepth + OVER);
-  assert.ok(face.meta.mitre_45.includes('long'));
-  assert.ok(face.meta.mitre_45.includes('end'));
-  assert.equal(face.meta.mitre.L, 45, 'the L corner is ALWAYS 45');
-  assert.ok(r.csvLines.some((l) => l.includes(`,INFILL-T-FACE,600,${40 + OVER},`)));
+  assert.equal(face.meta.mitre_45.includes('long'), false, 'the L is dead');
+  assert.ok(face.meta.mitre_45.includes('end'), 'the turning corner is not');
+  assert.equal(face.meta.mitre?.L, undefined, 'and the L\'s own 45 with it');
+  assert.ok(r.csvLines.some((l) => l.includes(`,INFILL-T-FACE,${600 + OVER},${40 + OVER},`)));
 });
 
 test('a piece with no mitre to make is left alone', () => {

@@ -268,66 +268,59 @@ export function infillMitre(panel) {
 
   if (meta.side !== 'top') return null;
   const isFace = meta.piece === 'face';
-  const isShelf = meta.piece === 'shelf';
-  if (!isFace && !isShelf) return null;
+  // A shelf board is not a body in the room any more (T48-F2), so the only
+  // piece with a solid to cut is the face — but a piece that is NEITHER is
+  // still nothing this function knows how to answer, and says so.
+  if (!isFace && meta.piece !== 'shelf') return null;
 
   const segment = String(meta.segment || 'main');
   const ends = meta.ends || {};
   const planes = [];
 
+  // ─── TURN 48 (CLAUDE.md F2): THE L IS OVERRULED ─────────────────────────
+  //
+  // The owner, 25.08.2026: *"zamiast L shape … pomyslem zeby na wizualizacji
+  // tylko zrobic jedna deske jak plinth i tyle."*
+  //
+  // Turn 6 built the top infill as an L in section and this module cut the
+  // solid that made it read as one: the face's top edge chamfered back to meet
+  // a shelf that had itself been moved forward to the joint. Both cuts go. The
+  // element is TWO PLAIN BOARDS now, and the SCENE draws one of them — the
+  // face, standing in the plane of the fronts like a plinth. The shelf board is
+  // cut, priced and exported, and is not a body in the room (`meta.scene ===
+  // 'sheet-only'`, engine/cabinet.js).
+  //
+  // WHAT SURVIVES is the sentence CLAUDE.md F2 draws the line at: a 45° where
+  // two RUNS meet. An OPEN end is the run turning the corner, and the return
+  // that grows there is a second run in the same plane — so the plan mitre
+  // between them is still cut, on the faces, and reads as a picture frame.
+  //
+  // THE SIDE INFILL IS NOT TOUCHED. Its own corner (above) is exactly what T15
+  // shipped — *"infill pionowy nie ruszamy"*.
   if (segment === 'main') {
     // ── the long run along the wall ──
-    const t = isFace ? box.d : box.h;
-    if (isFace) {
-      const faceBox = { ...box };
-      // The L: the top of the face is cut back to meet the shelf behind it.
-      planes.push(chamferPlane(faceBox, 'y', +1, 'z', -1, t));
-      // …and each OPEN end turns the corner, so it is cut in plan as well.
-      if (ends.left === 'open') planes.push(chamferPlane(faceBox, 'x', -1, 'z', -1, t));
-      if (ends.right === 'open') planes.push(chamferPlane(faceBox, 'x', +1, 'z', -1, t));
-      // Turn 15 (F6): where it stops against a ceiling-height filler it runs to
-      // its LONG POINT over the corner and comes to a point — the same cut the
-      // filler takes, on the same plane, which is what makes it a joint rather
-      // than two pieces ending near each other. The corner that comes away is
-      // the BOTTOM one, because the top edge is what runs on over the corner.
-      const cL = Math.max(0, Number(meta.corner?.left) || 0);
-      const cR = Math.max(0, Number(meta.corner?.right) || 0);
-      if (cL) planes.push(chamferPlane(faceBox, 'x', -1, 'y', -1, cL));
-      if (cR) planes.push(chamferPlane(faceBox, 'x', +1, 'y', -1, cR));
-      return { box: faceBox, planes };
-    }
-    // The shelf, MOVED forward to its long point (see above). Its length does
-    // not change — a mitred piece is cut to the same 80 mm — it is where the
-    // 80 is measured FROM that moves: from the face's outer plane, not from
-    // behind the face's thickness.
-    const shelfBox = { ...box, z: box.z + t };
-    planes.push(chamferPlane(shelfBox, 'y', -1, 'z', +1, t));
-    // In plan the two shelves mitre over a square as wide as a shelf is deep.
-    if (ends.left === 'open') planes.push(chamferPlane(shelfBox, 'x', -1, 'z', -1, box.d));
-    if (ends.right === 'open') planes.push(chamferPlane(shelfBox, 'x', +1, 'z', -1, box.d));
-    return { box: shelfBox, planes };
+    if (!isFace) return null;
+    const t = box.d;
+    const faceBox = { ...box };
+    // Each OPEN end turns the corner, and only that is cut in plan.
+    if (ends.left === 'open') planes.push(chamferPlane(faceBox, 'x', -1, 'z', -1, t));
+    if (ends.right === 'open') planes.push(chamferPlane(faceBox, 'x', +1, 'z', -1, t));
+    // A board with no turning corner takes no cut at all — the caller draws the
+    // plain box, which is the whole of the owner's ruling.
+    return planes.length ? { box: faceBox, planes } : null;
   }
 
   // ── the return, running back to the wall ──
+  //
+  // T48-F2: the L's own quarter-turn is gone with the L; the RETURN's face is a
+  // plain board too. What is kept is the corner where it meets the main face,
+  // because that is the turning corner — the one place two RUNS meet.
   const left = segment === 'return-left';
-  if (isFace) {
-    const t = box.w;
-    const faceBox = { ...box };
-    // The L, turned a quarter: the top of the return face meets the return
-    // shelf, which is INBOARD of it.
-    planes.push(chamferPlane(faceBox, 'y', +1, 'x', left ? +1 : -1, t));
-    // …and the corner where it meets the main face.
-    planes.push(chamferPlane(faceBox, 'x', left ? +1 : -1, 'z', +1, t));
-    return { box: faceBox, planes };
-  }
-
-  // The return shelf, moved sideways to its own long point — measured from the
-  // return face's outer plane, the same move the main shelf makes forward.
-  const t = box.h;
-  const shelfBox = left ? { ...box, x: box.x - t } : { ...box, x: box.x + t };
-  planes.push(chamferPlane(shelfBox, 'y', -1, 'x', left ? -1 : +1, t));
-  planes.push(chamferPlane(shelfBox, 'x', left ? +1 : -1, 'z', +1, box.w));
-  return { box: shelfBox, planes };
+  if (!isFace) return null;
+  const t = box.w;
+  const faceBox = { ...box };
+  planes.push(chamferPlane(faceBox, 'x', left ? +1 : -1, 'z', +1, t));
+  return { box: faceBox, planes };
 }
 
 /** The mitred solid for one infill strip, or null when it takes no mitre. */

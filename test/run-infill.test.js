@@ -107,14 +107,18 @@ test('a run of three carries ONE top infill, on the first unit, spanning all thr
   const ids = run(3, 1000);
 
   const owner = infillsOf(ids[0]).filter((p) => p.meta.segment === 'main');
-  assert.equal(owner.length, 2, 'a face and a shelf — the two strips of the L');
+  // T48-F2 (OVERRULED, 25.08.2026): still TWO parts, and they are no longer
+  // "the two strips of the L" — they are two plain boards.
+  assert.equal(owner.length, 2, 'two boards — the face and the shelf');
   const face = panelOf(ids[0], 'INFILL-T-FACE');
   const shelf = panelOf(ids[0], 'INFILL-T-SHELF');
+  const OVER = P.autoParts.fillerOversize;
 
   // Both ends are open in the middle of a 4 m wall, so the element finishes
-  // flush with the outside of the run: 3 × 600.
-  assert.equal(face.w, 1800, 'ONE piece for the whole run, not three of 600');
-  assert.equal(shelf.w, 1800);
+  // flush with the outside of the run: 3 × 600 — plus the site cut on one end.
+  assert.equal(face.box.w, 1800, 'ONE piece for the whole run, not three of 600');
+  assert.equal(face.w, 1800 + OVER, 'and the blank leaves the machine 20 long');
+  assert.equal(shelf.w, 1800 + OVER);
 
   // …and the other two cabinets carry nothing at all.
   for (const id of ids.slice(1)) {
@@ -126,10 +130,22 @@ test('a run of three carries ONE top infill, on the first unit, spanning all thr
   const bom = buildBom(store().units.map((u) => ({ unit: u, result: computeCabinet(paramsForEngine(u), P) })));
   const faces = bom.units.flatMap((u) => u.rows).filter((r) => r.id === 'INFILL-T-FACE');
   assert.equal(faces.length, 1);
-  assert.equal(faces[0].w, 1800);
+  assert.equal(faces[0].w, 1800 + OVER, 'the cut list prices the blank');
 });
 
-test('the section is an L: a 40 face and an 80 shelf, mitred at 45°', () => {
+// ─── T48-F2 AMENDS THIS ─────────────────────────────────────────────────────
+// ─── OVERRULED, 25.08.2026 ──────────────────────────────────────────────────
+//
+// The owner, 25.08.2026: *"zamiast L shape … pomyslem zeby na wizualizacji
+// tylko zrobic jedna deske jak plinth i tyle. … natomiast na CNC robisz tak:
+// dlugosc infila poziomego nad szafa = rysujesz 2 deski = dlugosc infila x
+// 60 mm, plus 20 mm dluzsze na odciecie, z jednej strony."*
+//
+// The SECTION is no longer an L. The two boards are still 40 and 80 nominal —
+// *"zostaw jedna 60 a druga nominal 80 bez zmian"* — and they still stand where
+// they stood, but the 45° that glued them along their long edges is gone with
+// the L, so the two `mitre_45.includes('long')` assertions flip.
+test('the section is TWO BOARDS: a 40 face and an 80 shelf, neither mitred to the other', () => {
   project();
   const ids = run(2, 1000);
   const face = panelOf(ids[0], 'INFILL-T-FACE');
@@ -158,10 +174,13 @@ test('the section is an L: a 40 face and an 80 shelf, mitred at 45°', () => {
   assert.equal(shelf.box.z + shelf.box.d, face.box.z, 'and behind the face, not in front of it');
   assert.equal(shelf.box.d, T.shelfDepth);
 
-  // The mitre is a FLAG on the piece, which is what the workshop needs on the
-  // sheet (CLAUDE.md F4: "paski z flagą mitre_45 na właściwych krawędziach").
-  assert.ok(face.meta.mitre_45.includes('long'));
-  assert.ok(shelf.meta.mitre_45.includes('long'));
+  // The mitre is still a FLAG on the piece — the list every reader speaks — and
+  // what it no longer carries is 'long'. A 45° on this part means one thing
+  // now: where two RUNS meet.
+  assert.ok(Array.isArray(face.meta.mitre_45));
+  assert.equal(face.meta.mitre_45.includes('long'), false, 'the L is dead');
+  assert.equal(shelf.meta.mitre_45.includes('long'), false);
+  assert.equal(face.meta.mitre?.L, undefined, 'and so is the L\'s own 45');
 });
 
 // ─── the four end conditions ───

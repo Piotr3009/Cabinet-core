@@ -888,7 +888,7 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
 
 ### DOPISANE W TURZE 48
 
-122. [MEDIUM] **Narożnik infilla jest teraz cięty według dwóch różnych reguł.**
+122. [ZAMKNIĘTE W TURZE 50 — F11] **Narożnik infilla jest teraz cięty według dwóch różnych reguł.**
     T48-F2 zabrał górnemu infillowi jego połowę narożnika z T15 (zwykła deska
     nie może mieć długiego rogu), a infill PIONOWY zachował swój trójkąt, bo
     *„infill pionowy nie ruszamy"* zostało wzięte dosłownie. Na rzadkim biegu,
@@ -898,6 +898,14 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
     — to niedomknięta decyzja. Jeśli filer ma zostać ścięty na kwadrat razem z
     deską, to jedna gałąź w bloku infilla bocznego w `engine/cabinet.js` i
     jeden test. Do rozstrzygnięcia przez właściciela.
+    → ROZSTRZYGNIĘTE. CLAUDE.md T50-F11: *„Make the pair agree: where the top
+    is a plain board, the side that meets it is cut square too."*  Filer
+    wychodzi z maszyny prostokątny, `meta.corner` zostaje jako ZAPIS (dokładnie
+    tak jak na górnej desce), `mitre_45` i `mitre.deg` znikają — nie ma już
+    złącza, które by je opisywały — a sam narożnik docina się na miejscu z tych
+    samych 20 mm, z którymi obie deski wyjeżdżają dłuższe. `sideTopMitreDeg`
+    zostaje w `engine/cabinet.js`, poprawne i nieużywane, na dzień w którym
+    górna deska wróci do długiego rogu.
 123. [LOW] **Etykieta, która wyszła poza obrys, może wejść na sąsiada.**
     Konsekwencja F9 na ciasno ułożonym arkuszu: odnośnik kładzie słowa nad
     paskiem obok (`verify/t48/walk-8-label-outside.png` to pokazuje). To jest

@@ -128,15 +128,21 @@ const byId = (id, panelId) => panelsOf(id).find((p) => p.id === panelId);
 // strony."*  — and on the corner: *"jak zakreca i mamy infill z boku to sie
 // robi mitre, ale to rzadko."*
 //
-// T15 cut this corner into BOTH pieces on the machine, and half of that is
-// struck down. The SIDE filler is untouched — *"infill pionowy nie ruszamy"* —
-// so its own 45° is exactly what T15 shipped and is asserted below unchanged.
-// The TOP infill is a plain board now: it does not run to a long point, it is
-// not chamfered, and the corner — which the owner calls rare — is cut on site
-// off the 20 mm the board leaves the machine long. So what this test holds is
-// the half that survives, plus the number the part still carries so a joiner
-// knows which end turns.
-test('THE FIX, HALF OVERRULED: the filler keeps its 45°, the top board is cut on site', () => {
+// T15 cut this corner into BOTH pieces on the machine. T48-F2 struck down the
+// TOP board's half — a plain board cannot carry a long point — and left the
+// side filler mitred, because *"infill pionowy nie ruszamy"* was taken
+// literally. T48 raised the consequence against itself (BACKLOG 122): on a run
+// that turns a corner the filler was cut at 45° on the machine for a long point
+// that no longer exists.
+//
+// ─── T50-F11: ONE RULE AGAIN ────────────────────────────────────────────────
+//
+// *"Make the pair agree: where the top is a plain board, the side that meets it
+// is cut square too."*  So BOTH pieces leave the machine square now, both carry
+// the corner as a RECORD (`meta.corner`), and the corner itself is cut on site
+// out of the 20 mm allowance each of them is sent out long with. What this test
+// holds is that pair, agreeing.
+test('T50-F11: the pair AGREE — both square off the machine, both carrying the number', () => {
   const a = mitredRun();
   const unit = store().units.find((u) => u.id === a);
   const run = unit.params.run_top_infill;
@@ -148,13 +154,17 @@ test('THE FIX, HALF OVERRULED: the filler keeps its 45°, the top board is cut o
   const face = byId(a, 'INFILL-T-FACE');
   const filler = byId(a, 'INFILL-L-FACE');
 
-  // THE SIDE FILLER: not one line. Its cut runs (x = 0, y = H) → (x = −m,
-  // y = H + m) in the unit's own frame, exactly where T15 put it.
+  // THE SIDE FILLER: a plain board too, from T50-F11. Its outline is the
+  // rectangle its `w × h` says it is — the 45° that ran out to (−m, H + m) is
+  // gone with the long point it was cutting to.
   const H = face.box.y;
   const fillerPts = filler.cnc.outline.map(([x, y]) => [filler.box.x + x, filler.box.y + y]);
   const has = (pts, x, y) => pts.some(([px, py]) => Math.abs(px - x) < 1e-6 && Math.abs(py - y) < 1e-6);
-  assert.ok(has(fillerPts, 0, H), 'the filler comes to the inner corner');
-  assert.ok(has(fillerPts, -m, H + m), 'and runs 45° out to its outer edge');
+  assert.ok(has(fillerPts, 0, H + m), 'the filler runs square past the top board\u2019s underside');
+  assert.ok(!has(fillerPts, -m, H + m) || !has(fillerPts, 0, H),
+    'and the 45\u00b0 that used to join the two is not cut into it any more');
+  assert.equal(filler.meta.mitre_45, undefined, 'so there is no 45\u00b0 note on it either');
+  assert.equal(filler.meta.corner, m, '\u2026but the NUMBER is still on the part');
 
   // THE TOP BOARD: a rectangle, starting at the run's own offset — no long
   // point, no chamfer. The corner is a record on the part, not a cut in it.
@@ -183,20 +193,14 @@ test('the filler is CUT to the same size — only its outline moves', () => {
   assert.equal(Math.max(...xs), width, 'and the inner edge is exactly where it was');
   assert.equal(Math.max(...xs) - Math.min(...xs), filler.w, 'the outline still spans the full width');
   assert.equal(Math.max(...ys) - Math.min(...ys), filler.h, '…and the full height');
-  // THE DELTA: it is no longer a rectangle.
-  // FIVE points now, not four: the 100 mm chamfer used to eat the whole 100 mm
-  // width and left a triangle; with the 20 hanging off the wall end there is a
-  // square 20 beyond it. The MITRE ITSELF has not moved — its long point is
-  // still (width, h − m) and its short point still (0, h), in the piece's own
-  // frame — which is the claim, and the joint test above measures it in the
-  // room's frame.
-  assert.equal(filler.cnc.outline.length, 5);
-  const m = store().units.find((u) => u.id === a).params.run_top_infill.sideMitre.left;
-  const has = (x, y) => filler.cnc.outline.some(([px, py]) => Math.abs(px - x) < 1e-6 && Math.abs(py - y) < 1e-6);
-  assert.ok(has(width, filler.h - m), 'the mitre\'s long point is where it always was');
-  assert.ok(has(width - m, filler.h), 'and so is its short point');
-  assert.notDeepEqual(filler.cnc.outline, [[0, 0], [filler.w, 0], [filler.w, filler.h], [0, filler.h]]);
-  assert.deepEqual(filler.meta.mitre_45, ['end']);
+  // THE DELTA, T50-F11: it is a RECTANGLE again — the four corners its own
+  // `w × h` describes, shifted so the allowance hangs off the wall end. The
+  // chamfer that made it five went with the long point it was cutting to.
+  assert.equal(filler.cnc.outline.length, 4, 'four corners: a plain board');
+  assert.deepEqual(filler.cnc.outline, [
+    [-OVER, 0], [width, 0], [width, filler.h], [-OVER, filler.h],
+  ]);
+  assert.equal(filler.meta.mitre_45, undefined, 'and no 45\u00b0 note on a butt joint');
 });
 
 // ─── OVERRULED, 25.08.2026 — the long point is gone with the L ──────────────

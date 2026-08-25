@@ -5364,8 +5364,28 @@ export function computeCabinet(params, profileOverride) {
     // engine/runs.js (`infillCornerMitre`) and handed to the END unit that owns
     // this filler. 0 — every run before this turn, and every filler too narrow
     // to take a 45° at all — is the square corner, byte for byte.
+    //
+    // ─── TURN 50 (CLAUDE.md F11 / BACKLOG 122): ONE RULE AGAIN ──────────────
+    //
+    // T48-F2 took the TOP infill's half of that corner away — a plain board
+    // cannot carry a long point — and left the VERTICAL one mitred, because
+    // *"infill pionowy nie ruszamy"* was taken literally. T48 raised the
+    // consequence against itself (BACKLOG 122): on a run that turns a corner
+    // the vertical was being cut at 45° on the machine for a long point that no
+    // longer exists, while the board it meets was being trimmed square on site
+    // out of its own 20 mm.
+    //
+    // *"Make the pair agree: where the top is a plain board, the side that
+    // meets it is cut square too."*  The top IS a plain board — always, since
+    // T48-F2 — so the side is square, always. The NUMBER survives as
+    // `meta.corner`, exactly as it survives on the top board and for the same
+    // reason: it is still true that this end turns against a filler, and a
+    // joiner reading the part wants to know which end that is. What the corner
+    // is actually cut from is the same 20 mm site allowance the top is cut
+    // from, which is `over` below.
     const cornerMitre = Math.max(0, Number(params?.run_top_infill?.sideMitre?.[label]) || 0);
-    const takesMitre = cornerMitre > 0 && cornerMitre <= infillW;
+    const takesMitre = false;
+    const turnsCorner = cornerMitre > 0 && cornerMitre <= infillW;
 
     // ─── TURN 47 (CLAUDE.md F4): THE INFILL OBEYS THE SLOPE ─────────────────
     //
@@ -5450,7 +5470,10 @@ export function computeCabinet(params, profileOverride) {
         side: label,
         piece: 'face',
         shape: infillW >= SI.minLWidth ? 'L' : 'strip',
-        ...(takesMitre ? { corner: cornerMitre, mitre_45: ['end'] } : {}),
+        // T50-F11: the NUMBER, as a record. `mitre_45` is gone with the cut —
+        // this end is a BUTT now, and a note that said 45 would send a joiner
+        // to the saw for a joint that is not there.
+        ...(turnsCorner ? { corner: cornerMitre } : {}),
         // ─── THE TWO MITRES, AND THEY ARE NEVER CONFUSED (F4) ──────────────
         //
         // `mitre_45` keeps its name and its meaning — nothing downstream is
@@ -5461,10 +5484,13 @@ export function computeCabinet(params, profileOverride) {
         //   45."* It does not move under a slope, because the two arms of the L
         //   are still square to each other.
         //
-        //   THE SIDE × TOP JUNCTION is a vertical piece meeting a SLOPED one,
-        //   so the mitre is half of THAT angle — (90 ± β) / 2 — and it is 45
-        //   only where β is 0. Confusing the two would put a 45 on a joint the
-        //   ceiling has opened to 63.
+        //   THE SIDE × TOP JUNCTION was a vertical piece meeting a SLOPED one,
+        //   so the mitre was half of THAT angle — (90 ± β) / 2, 45 only where β
+        //   is 0. T50-F11 ends that joint: the top is a plain board and this
+        //   one is cut square to meet it, so there is no second mitre left to
+        //   confuse with the first. `sideTopMitreDeg` stays where it is —
+        //   T47 derived it and it is right; it simply has no joint to describe
+        //   while the top infill is two plain rectangles.
         mitre: {
           L: 45,
           ...(takesMitre ? { deg: roundTo(sideTopMitreDeg(isLeft, faceFrom, faceFrom + cutW), 4) } : {}),

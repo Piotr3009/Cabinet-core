@@ -2201,7 +2201,44 @@ export const DEFAULT_CABINET_PROFILE = {
       // The jupiters are OFF and not deleted — the owner: *"narazie wylacz,
       // ale nie usuwaj — w razie czego poprosimy, wlacz spoty."* Flip to true
       // and every number below comes back exactly as turn 10 tuned it.
-      spotsOn: false,
+      // The jupiters are back ON — the owner, 25.08 evening: *"czyli spoty
+      // zaswiecamy spowrotem."* They were never the four circles he
+      // photographed; that was `points`, below. Left as a named flag so they
+      // can be taken out again without hunting for them.
+      spotsOn: true,
+      // ─── CHAT-FIX 25.08.2026: THE PILLARS, AND WHY THE POINTS GO ───────────
+      //
+      // The four hot circles on the owner's screenshot were `points` — the
+      // eye-level pair at 1650 and the low pair at 500, `decay: 2`. They exist
+      // for a real reason (T14: a specular highlight is the MIRROR of the
+      // source, so a lamp at 3 m and an eye at 1.65 m can only meet on a
+      // vertical door when the viewer looks up at it — which nobody does), and
+      // the owner is right that killing them kills the gloss: *"jak zgasisz
+      // dolne to nie bedzie polysku na kuchni."*
+      //
+      // His own answer is better than lowering them: *"a jakby zamiast kolek
+      // dał od góry do dołu pas światła, coś jak ledy w szafie, ale na ścianie?
+      // wtedy będzie widoczne na każdej wysokości."* A VERTICAL source spans
+      // every height at once, so an eye at 1650 sees its upper part reflected
+      // and an eye at the plinth sees its lower — one source doing what three
+      // horizontal ones would. And it reflects in a lacquered door the way a
+      // window does, which is what a showroom actually looks like.
+      //
+      // They stand IN FRONT of the fronts, on the viewer's side: a reflection
+      // shows what faces the door, so a strip on the wall BEHIND the units
+      // would light their backs and gloss nothing. Two per run, one at each
+      // end (owner's call), floor to ceiling (his call too).
+      pillars: {
+        intensity: 3.2,
+        colour: '#ffffff',
+        widthMm: 260, // the slab's width — a tall window, not a line
+        forwardMm: 900, // how far in front of the fronts they stand
+        outsetMm: 200, // and how far past each end of the run
+      },
+      // The points are OFF and still here — the pillars replace what they were
+      // for. Flip to true and both pairs come back exactly as T14 and T16
+      // tuned them.
+      pointsOn: false,
       // ─── The shadow budget (turn 10, CLAUDE.md F1.4) ───
       // At most this many lights in the whole rig own a shadow map. It is a
       // COST rule, and the working view is where the cost is felt: every caster
@@ -4611,6 +4648,8 @@ export function migrateCabinetProfile(profile) {
         // project saved before today gains them whole and one that has tuned
         // its own tube keeps every number it set.
         band: { ...D.appearance.studio.band, ...profile.appearance?.studio?.band },
+        // …and the pillars with it (chat-fix 25.08.2026, the evening).
+        pillars: { ...D.appearance.studio.pillars, ...profile.appearance?.studio?.pillars },
         // ─── Turn 10 (CLAUDE.md F1/F5) ───
         // The lights that are LISTS — the jupiters and the glints — merge like
         // the other lists in this file: a stored profile that names them wins

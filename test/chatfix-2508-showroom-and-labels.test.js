@@ -57,13 +57,20 @@ test('a profile saved before today gains the band whole; a tuned one keeps its o
     '…and the keys it did not name still arrive');
 });
 
-test('the jupiters are OFF, and still there — the owner: "wylacz, ale nie usuwaj"', () => {
-  assert.equal(P.appearance.studio.spotsOn, false, 'dark by default');
+test('the jupiters are gated by a flag — and by evening the owner turned them back on', () => {
+  // ─── AMENDED 25.08.2026, the same day ─────────────────────────────────────
+  // This test was written when the spots were the suspect and shipped dark.
+  // They were the wrong lamps: the four circles were `points`, and the owner,
+  // once shown that: *"czyli spoty zaswiecamy spowrotem."* What this test is
+  // really for is the GATE — that they can be switched without being deleted —
+  // and that is what it now guards, at whatever the shipped default is.
+  assert.equal(typeof P.appearance.studio.spotsOn, 'boolean', 'the flag exists');
+  assert.equal(P.appearance.studio.spotsOn, true, 'and by the owner\'s evening ruling they are on');
   assert.ok(Array.isArray(P.appearance.studio.spots) && P.appearance.studio.spots.length > 0,
-    'and every one of them is still in the rig, with its own numbers');
+    'every one of them is in the rig, with its own numbers');
   assert.match(SCENE, /if \(studio\.spotsOn === false\) return \[\]/,
     'gated by the flag, not deleted');
-  assert.match(SCENE, /<spotLight/, 'the element itself survives, for the day he asks');
+  assert.match(SCENE, /<spotLight/, 'the element itself survives either way');
 });
 
 test('ONE band per run — grouped by wall, an empty wall gets none', () => {

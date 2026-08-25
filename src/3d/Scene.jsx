@@ -335,6 +335,49 @@ function Lights({
     };
   }), [runs, studio.band]);
 
+  // ─── CHAT-FIX 25.08.2026 (evening): THE PILLARS ─────────────────────────────
+  //
+  // The owner's own idea, and a better one than three horizontal tubes:
+  // *"zamiast kolek dał od góry do dołu pas światła … wtedy będzie widoczne na
+  // każdej wysokości."* A VERTICAL slab spans every eye height at once, so the
+  // gloss reads at 1650 and at the plinth from ONE source — and it reflects in
+  // a lacquered door the way a window does.
+  //
+  // They stand IN FRONT of the fronts, on the viewer's side, because a
+  // reflection shows what FACES the door. Two per run, one past each end (the
+  // owner's call), and floor to ceiling (his too), so they read as tall windows
+  // flanking the job rather than as lamps.
+  const pillars = useMemo(() => {
+    const cfg = studio.pillars || {};
+    const forward = mm(cfg.forwardMm ?? 900);
+    const outset = mm(cfg.outsetMm ?? 200);
+    const height = roomHeight > 0 ? roomHeight : mm(2700);
+    const out = [];
+    for (const { wall, bounds } of runs || []) {
+      const width = bounds.max[0] - bounds.min[0];
+      const depth = bounds.max[2] - bounds.min[2];
+      const alongX = width >= depth;
+      const centre = [0, 1, 2].map((i) => (bounds.min[i] + bounds.max[i]) / 2);
+      // One at each END of the run, stepped out past the last cabinet, and
+      // stood off the fronts. `alongX` decides which axis is "along" and which
+      // is "in front", exactly as it does for the band above.
+      for (const side of [-1, 1]) {
+        out.push({
+          key: `${wall}:${side}`,
+          position: alongX
+            ? [centre[0] + side * (width / 2 + outset), height / 2, bounds.max[2] + forward]
+            : [bounds.max[0] + forward, height / 2, centre[2] + side * (depth / 2 + outset)],
+          height,
+          // Facing the fronts: a slab's emitting side is its +z, so a run along
+          // x needs it turned to look back at the wall, and a run along z
+          // needs the quarter turn as well.
+          alongX,
+        });
+      }
+    }
+    return out;
+  }, [runs, studio.pillars, roomHeight]);
+
   // ─── TURN 26 (CLAUDE.md F10): THE CEILING SOURCE, AND WHAT IT COSTS ───────
   //
   // "One broad ceiling source at real ceiling height above the tall units, set
@@ -466,6 +509,23 @@ function Lights({
           color={studio.band?.colour ?? '#ffffff'}
         />
       ))}
+      {/* ─── The pillars (chat-fix 25.08.2026, the owner's own idea) ───
+          Vertical slabs standing in front of the run, floor to ceiling. Turned
+          to FACE the fronts: a run along x has its fronts looking toward +z, so
+          the pillar looks back along −z (a half turn); a run along z takes the
+          quarter turn instead. */}
+      {pillars.map((p) => (
+        <rectAreaLight
+          key={`ccPillar${p.key}`}
+          userData={{ ccLight: 'pillar' }}
+          position={p.position}
+          rotation={[0, p.alongX ? Math.PI : -Math.PI / 2, 0]}
+          width={mm(studio.pillars?.widthMm ?? 260)}
+          height={p.height}
+          intensity={(studio.pillars?.intensity ?? 3.2) * gain}
+          color={studio.pillars?.colour ?? '#ffffff'}
+        />
+      ))}
       {spots.map((s, i) => (
         <spotLight
           key={`ccSpot${i}`}
@@ -532,7 +592,11 @@ function Lights({
 
           `p.y` is still honoured where `yMm` is absent, so the example pair in
           profile.js and any rig a workshop has already written keep working. */}
-      {(studio.points || []).map((p, i) => (
+      {/* Chat-fix 25.08.2026: gated. These four were the owner's hot circles;
+          the pillars above do their job — the gloss at every eye height — with
+          a source that has no centre to burn. `pointsOn: true` brings them
+          back with every number T14 and T16 tuned. */}
+      {(studio.pointsOn === false ? [] : (studio.points || [])).map((p, i) => (
         <pointLight
           key={`ccPoint${i}`}
           userData={{ ccLight: 'point' }}

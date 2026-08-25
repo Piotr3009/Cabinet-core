@@ -1,198 +1,192 @@
-# CLAUDE.md — TURN 48 · THE FLOOR IS LAW, THE INFILL IS A BOARD, AND THE LED FINALLY REACHES THE SHEET
+# CLAUDE.md — TURN 49 · THE WIZARD STOPS ASKING TWICE
 
-The owner, 25.08.2026. His rulings, verbatim law:
+The owner, 25.08.2026, screenshot in hand. His rulings, verbatim law:
 
-* **The floor.** *"zaden element nie moze spasc ponizej podlogi — fizycznie
-  to sie wyklucza."*
-* **The top infill.** *"zamiast L shape … pomyslem zeby na wizualizacji
-  tylko zrobic jedna deske jak plinth i tyle. … infill pionowy nie ruszamy.
-  natomiast na CNC robisz tak: dlugosc infila poziomego nad szafa = rysujesz
-  2 deski = dlugosc infila x 60 mm, plus 20 mm dluzsze na odciecie, z jednej
-  strony."* On the widths: *"zostaw jedna 60 a druga nominal 80 bez zmian."*
-  On the corner: *"jak zakreca i mamy infill z boku to sie robi mitre, ale
-  to rzadko."* And: *"nie rob adnotacji — stolarze wiedza."*
-* **The plinth.** Default ON — standing carcasses only, never a hung WUD.
-* **The LED groove.** Longer than the profile by **10 mm at EACH end**
-  (+20 overall) — *"zaokraglenie bita, nikt nie chce uzywac dlutka na
-  rogach."* And it must reach the CNC sheet at last.
-* **The LED button.** *"mamy przycisk dodania LED, to i ten sam przycisk
-  usuwa LED — proste."*
-* **The dimensions.** Constant size on screen: *"zeby zawsze wymiary byly
-  takie same niezaleznie jak bardzo sie odsuniemy od mebla."*
+* **The scope.** *"default powinno sie ustawic na one wall, zawsze."* And
+  the room: *"a room ustawienie z gory to usun boxy, to bez sensu."*
+* **The two Backs.** *"jak mamy otwarty modal to inne przyciski z glownego
+  modalu nie powinny byc widoczne, to sie myli."* And on the Back that
+  jumped too far: *"jak zniknie 2x back to automatycznie bedzie poprawny
+  back dzialal jak dziala — poprostu byly 2 i to bylo confuse."*
+* **The carcasses.** *"przy carcasach jest 2 stopnie wybierania … a
+  dlaczego nie dodac rozmiar plyty w pierwszym modalu i drugi usunac, jeden
+  mniej bedzie."* And the warning that goes with it: *"jest funkcja wyboru
+  materials size, jumbo etc — tez trzeba bedzie przeniesc do pierwszego
+  wyboru materialow, inaczej zniknie nam ta funkcja."*
+* **The fronts.** *"na pierwszym etapie wybieramy type of fronts, a pozniej
+  next etapy kolory."* And: *"modal front nr 2 i 3 moze byc polaczony …
+  tak samo jak Carcases."*
+* **The slope, in the wall dialog.** *"flat jest ok chyba. poza tym jak
+  beda 2 skosy to wtedy skosy musisz dac a nie flat."*
+* **Editing a setup.** *"jak juz mamy edit setup to powinno byc
+  mozliwosc przeskakiwania z 5.1 do 5.4 … i jest po zmianie przycisk
+  update and save."*
+* **The sheen.** *"suwak powinien dzialac tylko na spray i veneer, nie na
+  laminat — na laminat zostaw jak jest."*
 
-Nine features. One sacrifice allowed, named at the bottom. F1 and F2 are
-engine work and go first, so the whole night stands on green goldens.
+This turn touches the WIZARD and the wall dialog. It is the first turn in
+a while that moves no geometry at all: the engine is not edited, and the
+six goldens must not move by a byte.
+
+**Branch from main AFTER T48 is merged.** T48 changes the store's create
+path (the plinth default) and this turn works next door to it; starting
+from an older main will collide there.
 
 ## Iron rules (binding)
 
 1. **Zero-stop overnight.** PR before morning regardless. Sacrifice, first
-   and only: **F9** (the CNC label clipping). **F1–F8 never fall.**
-2. **BYTE-IDENTITY.** `t48-classify` (copy `t47-classify.mjs`, runnable
-   from inside `scripts/` with its relative imports intact): six IDENTICAL,
-   UNNAMED=0. The six goldens carry no infill run, no LED and no slope, so
-   nothing here may move them. **F1 is the one that could:** if the floor
-   clamp shifts a golden, that golden HAS a part below its own floor today —
-   that is a FINDING, not a licence. STOP that feature, write the finding
-   into the PR, and ship the clamp gated so the goldens stay byte-identical
-   until the owner rules.
-3. **LISP IS LAW — FIRST, where a LISP owns the ground.** F4's law is born
-   in `reference/lisp/KIT_LED_GROOVE.lsp` before any JS. **No other LISP
-   file is touched** — the infill has never had a drawing law of its own
-   and two plain rectangles need none; say so in the PR. Paren balance
-   13/13 at 0/0 by script.
-4. **Sanctity, with ONE named licence.** The top infill's L-shaped
-   geometry — the face+arm single part and `chamferedRectGeometry`'s
-   corner mitre on INFILL-T — **dies**, by the owner's ruling quoted
-   above. Every test that guarded the L updates to the new law with an
-   OVERRULED note and the quote (the house pattern from 25.08's dog-bone
-   fix). Nothing else is deleted or reshaped.
+   and only: **F6** (merging the fronts' modals 2 and 3 — convenience,
+   where F5 carries the real change). **F1–F5 and F7–F10 never fall.**
+2. **BYTE-IDENTITY.** `t49-classify` (copy `t48-classify.mjs`, runnable
+   from inside `scripts/`): six IDENTICAL, UNNAMED=0. **Nothing in this
+   turn has any business near the engine.** If a golden moves, something
+   was edited that should not have been — stop and say so.
+3. **NOTHING IS LOST, ONLY MOVED.** Two dialogs are merged and the room's
+   canned boxes go, and the owner named the danger himself: the material
+   SIZE choice (jumbo and the rest) must SURVIVE the merge, in the first
+   dialog. Before deleting any step, list every control it owns and show
+   in the PR where each one now lives — or that the owner ordered it gone.
+   A control that quietly disappears is the failure this turn is most
+   likely to produce.
+4. **Sanctity, with TWO named licences**, both ordered above: the second
+   carcass dialog is removed (its controls move to the first), and the
+   fronts' dialogs 2 and 3 become one. Nothing else is deleted.
 5. **Suite in full at every commit, never `--silent`. One commit per
-   feature. Zero new dependencies. No SQL. Modals draggable and beside.
-   English copy. Every screenshot LOOKED AT — and `verify/t48/` includes a
-   frame WITH the infills in view: 25.08's lesson, a turn that never
-   photographed the part that was wrong.**
+   feature. Zero new dependencies. No SQL. No LISP file is touched.
+   Modals draggable and beside. English copy. Every screenshot LOOKED
+   AT — and `verify/t49/` shows each merged dialog BEFORE and AFTER, so
+   the owner can see for himself that nothing went missing.**
 
 ---
 
-## F1 [CRITICAL] — the floor is law
+## F1 [HIGH] — the scope arrives as One Wall
 
-One law in the engine, not two patches: **no element's box may reach below
-the carcass floor.** The shoe shelf and the drawer land inside the bottom
-today (owner's finding); the law catches them and every element anyone
-adds later, in ONE place — the same station that places an element in its
-zone (`centredShelfPos`'s neighbourhood), clamped so the element's LOWEST
-point sits at or above the carcass's own floor (the bottom panel's top
-face).
+A new project opens with the scope already set to **One Wall**, every
+time. It is what the owner starts from, and choosing it by hand every
+time is a click that never had a reason.
 
-* The clamp states itself: when it moves an element, the element's record
-  says so (`meta.floorClamped: true`) so a later turn can see which ones
-  the law caught.
-* Prove it: a shoe shelf and a drawer asked for at y = 0 land ON the
-  floor, not in it; an element already legal does not move by a
-  hundredth; the six goldens are byte-identical (rule 2's stop applies).
+## F2 [HIGH] — the room's canned boxes are gone
 
-## F2 [HIGH] — the top infill is a BOARD, and the sheet cuts TWO
+The pre-made room boxes come out of the wizard — *"to bez sensu."* The
+room path itself stays (a project can still be a room); it is the
+pre-filled box shapes that go, so nothing arrives pretending to be
+someone's kitchen. What a room needs instead is the wall editor, and that
+is **T50's** work, not this turn's: do not start it here.
 
-The owner's whole ruling, executed on every layer at once — the PARTS are
-the truth, the scene shows the ASSEMBLY:
+## F3 [HIGH] — one Back at a time
 
-**The engine emits TWO plain rectangles** where INFILL-T lives today:
+When a dialog is open, the buttons of the dialog UNDERNEATH are not
+visible. The owner's screenshot shows two Backs and two Nexts stacked
+within an inch of each other, and he pressed the wrong one.
 
-```
-INFILL-T-A : (runLen + 20) × 60                       — the face board
-INFILL-T-B : (runLen + 20) × (80 + oversize as today) — the shelf board
-```
+* The open dialog covers the one beneath it, or the lower one's footer is
+  hidden while a child is open — either way, **exactly one row of
+  navigation is visible at any moment**.
+* **Do not touch Back's behaviour.** The owner: *"automatycznie bedzie
+  poprawny back dzialal."* The step-back logic is correct today and the
+  confusion was two buttons, not one wrong button. Changing it as well
+  would be fixing something that is not broken.
 
-* `60` is the face's own arithmetic as it stands (nominal 40 + the wall
-  oversize 20) — keep it AS ARITHMETIC, never a bare 60, so a project
-  with another infill width still computes itself. The shelf keeps
-  nominal 80 and its existing width oversize, unchanged.
-* **+20 on the LENGTH, ONE end** — the site-cut allowance, on the end
-  where the run meets its neighbour (the turning corner or the wall);
-  state which end in the part's own record
-  (`meta.lengthOversize: { mm: 20, end }`). **NO new annotation text** —
-  *"stolarze wiedza"* — the existing oversize record is enough.
-* **The corner L is GONE from the geometry**: no face+arm single part, no
-  45° corner mitre inside a piece. `mitre_45` survives ONLY where two
-  RUNS meet — the turning corner the owner named as rare, and the
-  segment-to-segment joins a bent ceiling makes (their angles exactly as
-  T47 left them).
-* **CNC / DXF / BOM speak in the two boards** — two outlines, two labels,
-  two rows. The cut list prices two pieces.
+## F4 [HIGH] — the carcass asks once
 
-**The scene shows ONE board, like the plinth**: the face board, its face
-in the plane of the fronts, full run length. Under a slope it leans with
-the tilt mechanism shipped 25.08 — one plain board, one lean, which is
-the whole point of this ruling. The shelf board exists in the data and on
-the sheet, not as a second body in the room.
+Today: pick Egger, then a stock board, then the stock board AGAIN with the
+sheet size. The middle step goes and its controls move UP into the first
+material dialog: **the board choice and the SHEET SIZE (jumbo and the
+rest) in one place**.
 
-**The side infills are untouched.** Not one line.
+* **The size control keeps every option it has today** — this is rule 3's
+  case in point, and the owner said it in as many words.
+* The dialog after it (dog bones and the CNC corner) is **untouched** —
+  *"to tak musi byc, to zostaw."*
+* Prove it: a project set up through the new single dialog produces the
+  same material and size record as the old two did.
 
-Update the L's guards (`test/turn47-f4`, `turn15-infill-mitre`,
-`run-infill`, `autoparts` where they touch INFILL-T) to the new law, each
-with the OVERRULED note and the owner's quote.
+## F5 [HIGH] — the fronts ask for TYPES first, colours later
 
-## F3 [HIGH] — the plinth defaults ON, standing units only
+The first fronts step asks for **how many types and colours** — its
+heading in those words, and larger than it is today. On that step the
+owner picks the NUMBER and the TYPE, nothing else: **no colour picker, no
+laminate list at this stage.** Colours belong to the steps that follow.
 
-New STANDING carcasses (BUD, BUDR, SINK, LOW, BUDTALL, FRIDGE, WARDROBE)
-arrive with the plinth ON. A hung WUD never grows one. **The switch lives
-where a new unit is BORN (the store's create path), not in the engine's
-defaults** — the goldens read those defaults and must not move by a byte.
-An existing project opens exactly as it was saved.
+## F6 [MEDIUM] — the fronts' second and third dialogs become one
 
-## F4 [HIGH] — LISP first: the groove outgrows the profile by 10 each end
+Same treatment as the carcasses: two dialogs into one, every control
+surviving the move (rule 3). **First to fall if the night is short** —
+the owner gets F5's ordering either way.
 
-`KIT_LED_GROOVE.lsp` learns the law: **the slot runs the profile's length
-plus 10 mm at EACH end** (+20 overall) — the cutter's radius is why, and
-the owner said it in one line: nobody chisels a corner. The constant
-lives in the LISP header the way `centrelineExtra` does, named, with the
-ruling quoted. `src/lib/ledGroove.js` follows it, and
-`test/turn45-f9-cnc-the-groove.test.js` holds the two to each other as it
-always has.
+## F7 [HIGH] — EDITING a setup is not a chain: jump straight to the step
 
-## F5 [HIGH] — the groove reaches the sheet (T45's named debt, paid)
+The owner: *"jak juz mamy edit setup to powinno byc mozliwosc
+przeskakiwania z 5.1 do 5.4 etc, bo juz bylo ustawione i nie potrzebujemy
+sztywnego lancucha — bo zmieniamy tylko niektore itemy, i jest po zmianie
+przycisk update and save."*
 
-The groove `lib/ledGroove.js` computes finally lands on the panel it is
-cut into: a pocket on the panel's CNC record, on the layer
-`ledMakeLayers` declares, through to the DXF and the CNC preview. Gated
-on the strip existing — a project without LED moves nothing. Prove the
-rectangle against the LISP's own, F4's +10s included.
+A NEW project keeps its chain — the steps carry each other and skipping
+one would leave a hole. **Editing an existing setup is the opposite
+case**: everything is already answered, and the owner opens it to change
+one thing.
 
-## F6 [HIGH] — one button: the LED toggles
+* In EDIT mode every step header is clickable: 5.1 → 5.4 in one move, in
+  any order, back and forth.
+* The footer carries **Update and save** — it commits from wherever the
+  user stands, without walking the rest of the chain.
+* The chain in NEW-project mode is untouched: this is a second mode of the
+  same wizard, not a rewrite of the first.
+* An unanswered step, if one exists in an old project, still says so — a
+  jump may not commit a setup that was never finished.
 
-The control that adds a strip removes it when one is there — same button,
-its label honest both ways (`Add LED` / `Remove LED`). No second control,
-no hunting in a panel. The store's `removeLightingItem` already exists;
-this wires the button, not a new mechanism.
+## F8 [HIGH] — the wall dialog takes FLAT, and steps aside for two slopes
 
-## F7 [HIGH] — `top_under` gets its own picture, and its light points down
+A slope is entered today as `run` — the length of the fall. The architect
+gives the flat stretch instead, so the dialog takes **Flat**: the distance
+from the opposite corner to where the slope begins, with `flat + run =
+wall width`. Type either, the other follows; the sum is always the wall.
 
-`LightArt` has no branch for `top_under` — the variant falls through to a
-neighbour's drawing and shows a strip washing UP over the cabinet
-(owner's screenshot). Draw its own: the strip UNDER the top board, inside
-the carcass, washing DOWN. **And verify the 3-D emission for the same
-variant** — if the light itself points up, fix it here, named in the PR.
+**With TWO slopes on one wall, the Flat field steps aside and each slope
+is entered by its own `run`** — the owner's own ruling, and the reason is
+his: with slopes at both ends there is no single "flat" to name, and a
+field that means two things is worse than a field that means one. Say so
+in the dialog in one short line when the second slope appears.
 
-## F8 [HIGH] — dimensions hold their size on screen
+Nothing about `ceilingAt`, the cut line or the engine changes — this is
+the DIALOG's arithmetic only.
 
-`DimLabel` is a sprite at a fixed SCENE size, so distance scales it —
-tiny far away, huge up close (owner's finding). Scale it against camera
-distance so the label holds a constant PIXEL size. ONE file — every
-consumer (ruler, hover, chains, room, unit view) inherits the fix, which
-is why `DimLabel` exists. Mind the capture path (`renderCapture`) and any
-orthographic camera: constant means constant everywhere. Prove it the
-only honest way: two screenshots of one scene, far and close, the label
-the same height to the pixel — both in `verify/t48/`.
+## F9 [HIGH] — the sheen moves veneer too, and leaves laminate alone
 
-## F9 [MEDIUM] — the CNC label never clips into a lie
+`materials.js` gates the sheen on `sprayed`, so the slider does nothing
+to anything else. The owner's ruling: it drives **spray AND veneer**, and
+**laminate keeps the roughness it has** — a laminate arrives from the
+factory with its own finish and no slider changes that.
 
-A narrow board's label truncates: `TOP-1` shows as `TOP~`, `260.9x540` as
-`260.9x5~` — and 5 is a number a joiner will read (owner's audit finding,
-25.08). A label that does not fit its part breaks the line or steps
-outside the outline with a leader — **it never cuts a digit**. Preview
-only; the DXF text is already whole.
+## F10 [LOW] — BACKLOG 34 is done, and comes off the list
+
+The owner, 25.08: *"strzalki sa zrobione — usun z backlogu."* Remove
+entry 34. **Do not renumber anything** — the code cites backlog numbers in
+its comments, so the numbers are identifiers and the gaps are correct.
 
 ## Execution order
 
-`F1` → `F2` → `F3` → `F4` → `F5` → `F6` → `F7` → `F8` → `F9`. Engine
-first (F1, F2) on green goldens; the LISP law (F4) before its application
-(F5); the eyes' features last.
+`F1` → `F2` → `F3` → `F4` → `F5` → `F6` → `F7` → `F8` → `F9` → `F10`.
+The two merges (F4, F6) come after F3, so the navigation is already honest when
+the dialogs change shape.
 
 ## What this turn does NOT touch
 
-The six goldens' bytes. The side infills. The wizard (T49 owns it). The
-slope kits and the sides' LISP gate (named debt for the next slope turn).
-The drawings system. The runners, the rail, the `cc_*` schema — **no SQL
-this turn**. `KIT_LED_GROOVE.lsp` is the only LISP file that moves.
+The engine, in any file — and therefore the goldens' bytes. Any LISP
+file. The wall EDITOR (drawing walls by direction and length: **T50**,
+with its own spec — do not begin it here). The slope geometry, the cut
+line, the drawings, the CNC. The `cc_*` schema — **no SQL this turn**.
+Back's step logic (F3 says why).
 
 ## Morning audit will run
 
-Fresh clone → install → suite (never `--silent`) → build → `t48-classify`
-(six IDENTICAL, UNNAMED=0 — with F1's stop honoured if it fired) → paren
-13/13, only `KIT_LED_GROOVE.lsp` moved → the floor probe (elements asked
-below the floor land ON it) → the infill probe (TWO rectangles on the
-sheet, arithmetic not bare numbers, +20 on one stated end; ONE board in
-the scene, leaning under a slope) → the groove probe (LISP rectangle =
-sheet rectangle, F4's +10s included) → the two dimension screenshots
-measured against each other → every screenshot LOOKED AT, infills in
-frame → verdict → the numbered eye-test list.
+Fresh clone → install → suite (never `--silent`) → build → `t49-classify`
+(six IDENTICAL, UNNAMED=0) → **the survivors' audit: every control the two
+merged dialogs used to own, listed against where it lives now, with the
+sheet-size control named first** → the wizard walked end to end on real
+pointer input, one navigation row visible at every step → the Flat field
+proved both ways (`flat + run = wall width`, and stepping aside when a
+second slope appears) → edit mode jumped 5.1 → 5.4 and committed with Update and save, while a NEW project still walks its chain → the sheen proved on all three finishes (spray
+moves, veneer moves, laminate does not) → BACKLOG 34 gone and nothing
+renumbered → before/after screenshots of both merged dialogs, LOOKED AT →
+verdict → the numbered eye-test list.

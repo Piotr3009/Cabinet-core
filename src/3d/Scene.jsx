@@ -406,6 +406,26 @@ function Lights({
     // half way out from the centre, so the run's ends are lit ACROSS rather
     // than from alongside. The number is in the profile, to be turned.
     const spread = Number.isFinite(Number(cfg.spread)) ? Number(cfg.spread) : 0.55;
+    // ─── CHAT-FIX 25.08.2026 (night): ONE, FROM THE SIDE ──────────────────
+    //
+    // The owner, looking at the pair: *"widzę dwa duże paski … przez to że są
+    // symetryczne wydają się jakby były częścią mebla, a nie są."* He is
+    // right — a real room reflects ASYMMETRICALLY, because its windows are not
+    // arranged around the viewer. Two mirrored streaks read as a pattern, and
+    // a pattern reads as decor.
+    //
+    // His own next thought is the better rig: *"całkiem dać nie na
+    // przeciwległej ścianie, tylko na prawej od mebli, gdzieś w połowie."*
+    // A source off to one SIDE fires almost along the fronts, which is the
+    // most grazing angle available and so the strongest highlight there is
+    // (Fresnel). It is a window at the end of a kitchen.
+    //
+    // Both live behind numbers: `count: 1` drops the mirror, and a `spread`
+    // above 1 walks the survivor out past the end of the run and toward the
+    // side wall. `sides` says which one it stands on.
+    const count = Number(cfg.count) === 2 ? 2 : 1;
+    const first = String(cfg.side || 'right') === 'left' ? -1 : 1;
+    const sides = count === 2 ? [-1, 1] : [first];
     const height = roomHeight > 0 ? roomHeight : mm(2700);
     const out = [];
     for (const { wall, bounds } of runs || []) {
@@ -416,7 +436,7 @@ function Lights({
       // One at each END of the run, stepped out past the last cabinet, and
       // stood off the fronts. `alongX` decides which axis is "along" and which
       // is "in front", exactly as it does for the band above.
-      for (const side of [-1, 1]) {
+      for (const side of sides) {
         const position = alongX
           ? [centre[0] + side * (width / 2) * spread, height / 2, bounds.max[2] + forward]
           : [bounds.max[0] + forward, height / 2, centre[2] + side * (depth / 2) * spread];

@@ -46,7 +46,7 @@ test('the points are OFF and still there — the pillars took their job', () => 
 test('the profile carries the pillars, and every number is named', () => {
   const p = P.appearance.studio.pillars;
   assert.ok(p, 'the pillars exist');
-  for (const k of ['intensity', 'colour', 'widthMm', 'forwardMm', 'spread']) {
+  for (const k of ['intensity', 'colour', 'widthMm', 'forwardMm', 'spread', 'count', 'side']) {
     assert.ok(p[k] !== undefined, `${k} is in the profile, not buried in JSX`);
   }
   assert.ok(p.forwardMm > 0, 'they stand IN FRONT of the fronts — a reflection needs facing');
@@ -70,16 +70,17 @@ test('a stored profile gains the pillars whole; a tuned one keeps its own', () =
     '…and the keys it did not name still arrive');
 });
 
-test('TWO per run, standing IN from the ends — the owner\'s count and his correction', () => {
-  assert.match(SCENE, /for \(const side of \[-1, 1\]\)/, 'one each side of the run');
-  // Past the ends they were nearly edge-on to the last cabinet at close range,
-  // and it came back hot: *"wygląda jakbyśmy boki mieli podświetlone albo źle
-  // pomalowane."* So the position is a SHARE of the half-length now.
-  assert.match(SCENE, /side \* \(width \/ 2\) \* spread/, 'a share of the half-length');
-  assert.ok(!SCENE.includes('width / 2 + outset'), 'and the old past-the-end offset is gone');
-  assert.ok(P.appearance.studio.pillars.spread < 1,
-    'inside the ends, not past them');
-  assert.match(SCENE, /ccLight: 'pillar'/, 'tagged by role like every other lamp');
+test('ONE per run by default, from the side — the owner\'s correction', () => {
+  // The mirrored pair read as decor: *"przez to że są symetryczne wydają się
+  // jakby były częścią mebla, a nie są."* A real room reflects from one side.
+  assert.equal(P.appearance.studio.pillars.count, 1, 'one, not a mirrored pair');
+  assert.equal(P.appearance.studio.pillars.side, 'right', 'and it stands on the right');
+  assert.ok(P.appearance.studio.pillars.spread > 1,
+    'out PAST the end of the run, toward the side wall — so it fires along the fronts');
+  assert.match(SCENE, /const sides = count === 2 \? \[-1, 1\] : \[first\]/,
+    'the count is a number, so the pair is one word away');
+  assert.match(SCENE, /for \(const side of sides\)/, 'and the loop follows it');
+  assert.match(SCENE, /side \* \(width \/ 2\) \* spread/, 'position is a share of the half-length');
   assert.match(SCENE, /rectAreaLight/, 'an AREA source — a point is what printed the circles');
 });
 

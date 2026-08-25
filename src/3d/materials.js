@@ -308,6 +308,30 @@ export function surfaceFor({
   // list and the CNC output are exactly what they were.
   const sprayed = (finishExposed || finish?.kind === 'spray') && !isDecor;
 
+  // ─── TURN 49 (CLAUDE.md F9): THE SHEEN MOVES VENEER TOO ────────────────────
+  //
+  // The owner, 25.08.2026: *"suwak powinien dzialac tylko na spray i veneer,
+  // nie na laminat — na laminat zostaw jak jest."*
+  //
+  // The slider drove `sprayed` and nothing else, and `sprayed` is "does this
+  // piece go to the spray booth". A VENEERED piece does not — it is a timber
+  // face — but it is still LACQUERED, and the gloss of that lacquer is chosen
+  // by the same number and ordered from the same supplier as the doors'. So a
+  // veneer that could not answer the slider was a real board in the workshop
+  // whose picture never changed.
+  //
+  // A LAMINATE keeps the roughness it has, and the reason is the owner's:
+  // *"na laminat zostaw jak jest."* A foil board arrives from the factory with
+  // its own finish on it and no slider in the world changes that — which is why
+  // `isDecor` disqualifies a piece here exactly as it does above.
+  //
+  // Only the ROUGHNESS moves. `sprayed` itself is untouched — it is read by the
+  // scene for the environment probe, the metalness and the orange peel a gun
+  // leaves, and a veneer is none of those things. This is a lacquer's gloss on
+  // a timber face, and it is one number.
+  const veneered = !isDecor && finish?.kind === 'veneer';
+  const sheenDriven = sprayed || veneered;
+
   return {
     colour: paint
       ? colour(paint)
@@ -320,8 +344,11 @@ export function surfaceFor({
     fallback: isDecor && finish.scanAlongGrainMm > 0 && finish.fallback ? finish.fallback : null,
     fallbackHex: finish?.hex || null,
     sprayed,
-    // Piotr's scale drives the sprayed surface; board keeps its family number.
-    roughness: sprayed && sheen != null ? roughnessFromSheen(sheen, profile) : pbr.roughness,
+    // T49 F9: what the SLIDER drives — spray and veneer. A laminate keeps its
+    // family number, which is the owner's ruling and the truth about a foil.
+    sheenDriven,
+    // Piotr's scale drives the lacquered surface; board keeps its family number.
+    roughness: sheenDriven && sheen != null ? roughnessFromSheen(sheen, profile) : pbr.roughness,
     clearcoat: pbr.clearcoat,
     clearcoatRoughness: pbr.clearcoatRoughness,
     metalness: sprayed ? (A.spray?.metalness ?? 0) : pbr.metalness,
@@ -345,6 +372,7 @@ export function contourSurface(profile) {
     fallback: null,
     fallbackHex: null,
     sprayed: false,
+    sheenDriven: false,
     roughness: 1,
     clearcoat: 0,
     clearcoatRoughness: 1,

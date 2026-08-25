@@ -16,6 +16,17 @@ import {
  *
  * It applies to the pieces that go to the spray booth and to nothing else: a
  * melamine carcass is a foil board and its sheen came with the board.
+ *
+ * ─── TURN 49 (CLAUDE.md F9): …AND TO VENEER ────────────────────────────────
+ *
+ * The owner, 25.08.2026: *"suwak powinien dzialac tylko na spray i veneer, nie
+ * na laminat — na laminat zostaw jak jest."*
+ *
+ * A veneered piece does not go to the spray booth, but it IS lacquered, and the
+ * gloss of that lacquer is chosen by this number and ordered from the same
+ * supplier as the doors'. A laminate is not: it arrives faced, and no slider
+ * changes a foil. The rule is one line in `src/3d/materials.js` (`sheenDriven`)
+ * and this sentence is the same rule said out loud.
  */
 export default function SheenSlider({ design, setDesign, profile }) {
   const steps = sheenSteps(profile);
@@ -46,8 +57,9 @@ export default function SheenSlider({ design, setDesign, profile }) {
       <div className="flex justify-between text-[10px] text-ink-400">
         {ticks.map((v) => <span key={v}>{v}</span>)}
       </div>
-      <p className="text-[11px] text-ink-400">
-        Sprayed surfaces only — doors, fronts, end panels, fillers. {S.min} % is dead matt,
+      <p className="text-[11px] text-ink-400" data-sheen-scope="1">
+        Sprayed and veneered surfaces — doors, fronts, end panels, fillers, and a timber face under
+        lacquer. A laminate keeps the finish it came with. {S.min} % is dead matt,
         {' '}{S.max} % is full gloss; the renderer takes roughness&nbsp;
         {roughnessFromSheen(value, profile).toFixed(2)} from it.
       </p>

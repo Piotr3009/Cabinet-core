@@ -1939,8 +1939,9 @@ export default function WizardSettings({
                         <SheenSlider design={design} setDesign={setDesign} profile={profile} />
                   <p className="text-[10px] text-ink-400">
                     The shine reaches the 3D material: `roughness = 1 − sheen ÷ 100`, on every sprayed
-                    surface in the scene (src/3d/materials.js). A laminate is a foil and keeps the sheen
-                    that came on the board.
+                    AND VENEERED surface in the scene (src/3d/materials.js, T49 F9 — a veneer is a
+                    timber face under lacquer and the gloss of that lacquer is this number). A laminate
+                    is a foil and keeps the sheen that came on the board.
                   </p>
                 </div>
               )}

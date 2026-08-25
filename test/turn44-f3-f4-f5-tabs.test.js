@@ -259,7 +259,12 @@ test('F5 — the SHINE reaches the 3D material: the formula is the engine’s', 
   // so the slider and the scene cannot disagree about what a 60 looks like.
   assert.match(WIZ, /<SheenSlider design=\{design\} setDesign=\{setDesign\} profile=\{profile\} \/>/);
   const mats = readFileSync(new URL('../src/3d/materials.js', import.meta.url), 'utf8');
-  assert.match(mats, /roughness: sprayed && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
+  // ─── TURN 49 (CLAUDE.md F9): SPRAY *AND VENEER* ─────────────────────────
+  // *"suwak powinien dzialac tylko na spray i veneer, nie na laminat."* The
+  // gate widened by one word; the FORMULA — which is what this test is about —
+  // did not move, and it is still the engine's one function.
+  assert.match(mats, /roughness: sheenDriven && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
+  assert.match(mats, /const sheenDriven = sprayed \|\| veneered;/);
   assert.equal(roughnessFromSheen(5, P).toFixed(2), '0.95', 'dead matt');
   assert.equal(roughnessFromSheen(100, P).toFixed(2), '0.00', 'full gloss');
   assert.notEqual(roughnessFromSheen(5, P), roughnessFromSheen(100, P), 'matte and shine are different surfaces');

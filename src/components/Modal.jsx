@@ -1,9 +1,17 @@
 import {
-  useCallback, useEffect, useLayoutEffect, useRef, useState,
+  useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore,
 } from 'react';
 import { clampToViewport, maximiseInViewport, placeAnchoredModal } from '../lib/menuPlacement.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
+// ─── TURN 49 (CLAUDE.md F3): ONE ROW OF NAVIGATION AT A TIME ────────────────
+// The shell knows which windows are open and which of them is on top, so a
+// window with a CHILD over it does not draw its footer. Implemented once, here,
+// exactly as rule 15 is — see `lib/modalStack.js` for why it is a render-order
+// sequence and not an effect-order count.
+import {
+  closeWindow, isCovered, nextWindowSeq, openWindow, openWindows, subscribeWindows,
+} from '../lib/modalStack.js';
 import { useUiStore } from '../stores/uiStore.js';
 
 // ─── THE MODAL SHELL (turn 12, CLAUDE.md rule 15 / F2) ──────────────────────
@@ -121,6 +129,19 @@ export default function Modal({
   fullscreen = false,
 }) {
   const box = useRef(null);
+  // ─── TURN 49 (CLAUDE.md F3): THIS WINDOW'S PLACE IN THE STACK ─────────────
+  // Its ticket is taken on the FIRST RENDER — a lazy initialiser, which runs
+  // once — because React renders parents before children and runs their effects
+  // the other way round. `covered` is "somebody opened a window over me", and
+  // the only thing it changes is whether the FOOTER is drawn: the × and Escape
+  // are untouched, so a covered window is never a window you cannot leave.
+  const [windowSeq] = useState(() => nextWindowSeq());
+  useEffect(() => {
+    openWindow(windowSeq);
+    return () => closeWindow(windowSeq);
+  }, [windowSeq]);
+  const stack = useSyncExternalStore(subscribeWindows, openWindows, openWindows);
+  const covered = isCovered(windowSeq, stack);
   // ─── TURN 31 (CLAUDE.md F1): ONE CLOSE PATH ────────────────────────────────
   // Every window in the app closes through the store's `closeModal`, and the
   // shell now knows that rather than each caller having to remember it. A
@@ -339,6 +360,9 @@ export default function Modal({
         data-modal-side={big ? 'maximised' : (at?.side || '')}
         data-modal-maximised={big ? '1' : '0'}
         data-modal-fullscreen={fullscreen && big ? '1' : undefined}
+        // T49 F3: a window with another one over it. Readable from outside,
+        // like every other fact about the shell — the walk asserts on it.
+        data-modal-covered={covered ? '1' : '0'}
         className={`fixed cc-panel pointer-events-auto ${big ? '' : `${width} ${dock ? '' : 'max-h-[90vh]'}`} flex flex-col shadow-xl ${className}`}
         style={full ? {
           left: full.left, top: full.top, width: full.width, height: full.height, visibility: 'visible',
@@ -430,7 +454,14 @@ export default function Modal({
           </button>
         </div>
         <div className={`${fullscreen && big ? 'p-0 overflow-hidden' : 'p-4 overflow-y-auto'} flex-1 min-h-0`}>{children}</div>
-        {footer && <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2">{footer}</div>}
+        {/* T49 F3: the lower window's footer is HIDDEN while a child stands
+            over it — *"jak mamy otwarty modal to inne przyciski z glownego
+            modalu nie powinny byc widoczne, to sie myli."* Nothing about where
+            those buttons GO has changed; they are simply not drawn under the
+            window the hand is actually using. */}
+        {footer && !covered && (
+          <div className="px-4 py-3 border-t border-shell-600 flex justify-end gap-2" data-modal-footer="1">{footer}</div>
+        )}
       </div>
     </div>
   );

@@ -155,6 +155,14 @@ function ChosenRow({ who, hex, thumb, text }) {
 
 export default function WizardSettings({
   onRoomSetup, onGate, door = 'wizard', walk = null, onWalk = null, onJump = null,
+  // ─── TURN 49 (CLAUDE.md F3): THE ONE NAVIGATION ROW ───────────────────────
+  // Given these, the sequence's own footer is the ONLY one on the screen: the
+  // wizard's step-5 footer stands down and hands over the two ends of its walk.
+  // `onStepBack` is called where the sequence has no earlier tab of its own —
+  // 5.1 — and `onStepNext` where it has no later one. Left out (the Settings ▸
+  // Project settings door, which is not inside a wizard step) the row behaves
+  // exactly as it did.
+  onStepBack = null, onStepNext = null, stepNextLabel = 'Next — summary',
 }) {
   // ─── TURN 36 (CLAUDE.md F1): TWO DOORS, ONE FORM ──────────────────────────
   //
@@ -928,8 +936,33 @@ export default function WizardSettings({
   } else if (nextTab) {
     nextTarget = nextTab;
     nextLabel = `Next — ${labelOf(nextTab)}`;
+  } else if (onStepNext) {
+    // ─── T49 F3: THE END OF THE SEQUENCE IS THE END OF THE STEP ────────────
+    // T45 ended the walk on a sentence — *"the wizard's own footer goes on to
+    // the summary"* — because that footer really did carry a second Next. It
+    // does not any more, so the chain the joiner has been walking ends where
+    // that button went, with the SAME gate (both containers saved), the same
+    // sentence and the same DOM hooks a walk written against T44 or T45 looks
+    // for. One row, one Next, and it means what it says.
+    nextTarget = 'step';
+    nextLabel = stepNextLabel;
+    nextBlocked = !carcSaved || !frontsSaved;
+    nextHint = nextBlocked ? 'Save the carcasses and the fronts to continue' : '';
+    goNext = onStepNext;
   } else {
-    nextHint = 'Everything is answered — the wizard’s own footer goes on to the summary.';
+    nextHint = 'Everything is answered.';
+  }
+
+  // ─── T49 F3: …AND THE BACK AT THE START OF IT IS THE STEP'S ───────────────
+  // On 5.1 there is no earlier TAB, so this row's Back used to be a dead grey
+  // button with a live one an inch below it. It is the live one now, and it
+  // calls the flow's own `backStep(step, scope)` — the arithmetic F3 forbids
+  // touching, untouched. Everything else about Back is exactly where it was:
+  // inside a container's walk it steps back one submodal stop, and between tabs
+  // it steps back one tab.
+  if (!backTarget && onStepBack) {
+    backTarget = 'step';
+    goBack = onStepBack;
   }
 
   return (
@@ -2404,6 +2437,7 @@ export default function WizardSettings({
           type="button"
           className="cc-btn px-3"
           data-tab-back="1"
+          data-tab-back-target={backTarget || undefined}
           disabled={!backTarget}
           onClick={goBack}
         >
@@ -2415,6 +2449,12 @@ export default function WizardSettings({
             type="button"
             className="cc-btn-gold px-3"
             data-tab-next="1"
+            data-tab-next-target={nextTarget}
+            // T49 F3: the step-5 Next, drawn HERE now. It keeps both of the
+            // hooks the wizard's footer carried, so a walk written against T44
+            // ("next hardware") or T45 ("next summary") finds the same button.
+            data-next-hardware={nextTarget === 'step' ? '1' : undefined}
+            data-next-summary={nextTarget === 'step' ? '1' : undefined}
             disabled={nextBlocked}
             title={nextBlocked ? nextHint : undefined}
             onClick={goNext}

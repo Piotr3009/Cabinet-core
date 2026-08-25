@@ -160,7 +160,14 @@ test('F7 — a tab is gated by its OWN answer and by nothing else', () => {
 });
 
 test('F7 — the flow’s Next no longer holds a joiner for another screen’s number', () => {
-  assert.match(FLOW, /disabled=\{!gates\.carcasses \|\| !gates\.fronts\}/);
+  // ─── TURN 49 (CLAUDE.md F3): THE SAME GATE, ONE ROW LOWER ────────────────
+  // The step-5 Next is drawn at the end of the SEQUENCE's own navigation row
+  // now, because the flow's footer drew a second Back and a second Next an inch
+  // under it. The gate did not move an inch: both containers saved, and F7's
+  // ruling — no hostage for another screen's number — holds exactly as it did.
+  const WIZS = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
+  assert.match(WIZS, /nextBlocked = !carcSaved \|\| !frontsSaved;/);
+  assert.doesNotMatch(WIZS, /nextBlocked = blockers/, 'no all-blockers gate reappeared in the sequence');
   assert.doesNotMatch(FLOW, /disabled=\{blocked \|\|/, 'T44’s all-blockers gate is gone');
   assert.doesNotMatch(FLOW, /const blocked = /);
   // `Start designing` — the one button that commits — still refuses a job that

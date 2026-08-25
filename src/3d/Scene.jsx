@@ -510,16 +510,26 @@ function Lights({
         />
       ))}
       {/* ─── The pillars (chat-fix 25.08.2026, the owner's own idea) ───
-          Vertical slabs standing in front of the run, floor to ceiling. Turned
-          to FACE the fronts: a run along x has its fronts looking toward +z, so
-          the pillar looks back along −z (a half turn); a run along z takes the
-          quarter turn instead. */}
+          Vertical slabs standing in front of the run, floor to ceiling.
+
+          ─── CORRECTED, the same evening ───
+          A RectAreaLight emits from its FRONT face, along its local −Z. The
+          pillars stand in FRONT of the fronts — at a LARGER z than the
+          cabinets for a run along x — so to light them it must emit toward
+          −z, which is NO rotation at all. The first cut turned it by π and
+          sent every one of them into the wall behind the camera: the owner,
+          *"straciłem połysk całkowicie … nic nie odbija."* Nothing was too
+          weak; it was pointed backwards.
+
+          Run along z: the pillar sits at a larger x, so it must emit toward
+          −x, and +π/2 takes (0,0,−1) to (−1,0,0). The first cut had −π/2,
+          which is +x — backwards again, for the same reason. */}
       {pillars.map((p) => (
         <rectAreaLight
           key={`ccPillar${p.key}`}
           userData={{ ccLight: 'pillar' }}
           position={p.position}
-          rotation={[0, p.alongX ? Math.PI : -Math.PI / 2, 0]}
+          rotation={[0, p.alongX ? 0 : Math.PI / 2, 0]}
           width={mm(studio.pillars?.widthMm ?? 260)}
           height={p.height}
           intensity={(studio.pillars?.intensity ?? 3.2) * gain}

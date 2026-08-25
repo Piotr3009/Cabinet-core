@@ -83,9 +83,19 @@ test('floor to ceiling, and centred on that height', () => {
   assert.match(SCENE, /height \/ 2/, 'a slab is positioned at its centre, so half the height');
 });
 
-test('they FACE the fronts, and turn with the run', () => {
-  assert.match(SCENE, /rotation=\{\[0, p\.alongX \? Math\.PI : -Math\.PI \/ 2, 0\]\}/,
-    'a half turn for a run along x, a quarter for one along z');
+test('they FACE the fronts — the emitting side points AT the cabinets', () => {
+  // A RectAreaLight emits along its local −Z. The pillar stands at a LARGER z
+  // than the run (in front of the fronts), so it must emit toward −z: no
+  // rotation. For a run along z it stands at a larger x and must emit toward
+  // −x, and +π/2 takes (0,0,−1) to (−1,0,0).
+  //
+  // The first cut had π and −π/2 — both exactly backwards, which sent the
+  // light into the wall behind the camera and cost the owner every highlight:
+  // *"straciłem połysk całkowicie … nic nie odbija."*
+  assert.match(SCENE, /rotation=\{\[0, p\.alongX \? 0 : Math\.PI \/ 2, 0\]\}/,
+    'no turn along x, a positive quarter along z');
+  assert.ok(!SCENE.includes('p.alongX ? Math.PI : -Math.PI / 2'),
+    'and the backwards pair is gone');
   assert.match(SCENE, /bounds\.max\[2\] \+ forward/, 'stood off the fronts, not behind them');
 });
 

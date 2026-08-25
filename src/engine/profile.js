@@ -1718,6 +1718,24 @@ export const DEFAULT_CABINET_PROFILE = {
       sideOverhang: 10,
       minUnits: 2,          // "select 2+ base cabinets"
     },
+    // ─── TURN 47 (CLAUDE.md F4): EVERY INFILL LEAVES THE MACHINE OVERSIZE ──
+    //
+    // The owner, 24.08.2026: *"wszystkie infille jak mamy ustawione na 40 mm to
+    // CNC powinien rysowac o 20 mm szerszy (docinanie na miejscu przez
+    // stolarzy)."*
+    //
+    // A scribe filler is fitted to a wall, and a wall is not straight. The
+    // workshop has always cut them long and planed them in on site; what was
+    // missing is that the FILE did not say so, so the machine cut the nominal
+    // and the joiner had nothing to take off.
+    //
+    // It is the same idiom as the drawer's `frontOversize` and `bottomOversize`
+    // (`drawers`, below): a number in the profile that a workshop can change,
+    // added to ONE edge of the piece, with the nominal still stated so nobody
+    // prices the extra. And it goes on the WALL edge only — a mitre is a JOINT,
+    // not an allowance, and its long point is exactly where the geometry puts
+    // it.
+    fillerOversize: 20,
     topInfill: {
       defaultHeight: 40,    // the visible face; "40" is what a workshop says
       minHeight: 10,

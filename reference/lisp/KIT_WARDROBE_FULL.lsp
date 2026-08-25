@@ -1446,60 +1446,93 @@
 
 (setq SLOPE_MIN_CLEAR 400.0)   ;; the owner's floor: less than this is no cabinet
 
+;;;----------------------------------------
+;;; T47 - AND THE LINE BENDS (24.08.2026)
+;;;----------------------------------------
+;;; The owner, the morning after: "jak sie konczy skos to powinno sie
+;;; zalamywac kat tam gdzie sie zalamuje a nie od konca do konca szafy."
+;;;
+;;; So this kit no longer hands the shared routine two heights. It hands it the
+;;; LINE - `pts`, a point list ((x y) ...) in the carcase's own frame, left to
+;;; right, with a vertex at every knee, already less the scribe gap. Where the
+;;; wall really is one straight run, `SKY:slopeLine` builds the two points T46
+;;; passed and every board comes out corner for corner as it did.
+;;;
+;;; Nothing above this line changes - iron rule 3. This section is T46's, with
+;;; the line bent.
+
+;;; The straight case, still available by name: one run, two heights.
+(defun wardrobeSlopeLine (szerSzafki hL hR)
+  (SKY:slopeLine szerSzafki hL hR))
+
 ;;; The clear height at a point across the carcase, from its left edge.
-(defun wardrobeSlopeHeightAt (szerSzafki hL hR x)
-  (if (equal szerSzafki 0.0 1e-9)
-    hL
-    (+ hL (/ (* (- hR hL) x) szerSzafki))))
+(defun wardrobeSlopeHeightAt (pts x)
+  (SKY:cutHeightAt pts x))
 
 ;;; Is there enough cabinet left to build? The owner's 400, asked at the LOW
-;;; end - which is the only end that can fail.
-(defun wardrobeSlopeFits (hL hR)
-  (>= (min hL hR) SLOPE_MIN_CLEAR))
+;;; point of the line - which is the only place that can fail, and under T47
+;;; that point may be a KNEE rather than an end.
+(defun wardrobeSlopeFits (szerSzafki pts)
+  (>= (SKY:cutValleyBetween pts 0.0 szerSzafki) SLOPE_MIN_CLEAR))
 
 ;;; WHICH SIDE THE HINGES GO ON - and there is no choice about it.
 ;;; "brak wyboru otwierania, musi byc od skosu": the door opens FROM the slope,
 ;;; so the hinges live on the FULL-HEIGHT edge and the diagonal edge never
-;;; carries one. Returns the hinge side in the kit's own vocabulary.
-(defun wardrobeSlopeHinge (hL hR)
-  (if (>= hL hR) "L" "R"))
+;;; carries one.
+(defun wardrobeSlopeHinge (szerSzafki pts)
+  (if (>= (SKY:cutHeightAt pts 0.0) (SKY:cutHeightAt pts szerSzafki)) "L" "R"))
 
-;;; The CARCASE, seen from the front, cut on the slope. The pentagon the owner
-;;; drew: the low end at its cut height, the diagonal across the top, the tall
-;;; end at full height.
-(defun drawWardrobeSlopeCarcaseFront (x0 y0 szerSzafki wysSzafki hL hR)
-  (SKY:drawSlopeCut x0 y0 szerSzafki wysSzafki hL hR))
+;;; The CARCASE, seen from the front, cut on the line. Four corners under one
+;;; straight run; more where the ceiling bends over the cabinet's own width.
+(defun drawWardrobeSlopeCarcaseFront (x0 y0 szerSzafki wysSzafki pts)
+  (SKY:drawSlopeCut x0 y0 szerSzafki wysSzafki pts))
 
-;;; The BACK panel, cut on the same diagonal. It spans the whole carcase, so it
-;;; takes hL and hR unchanged.
-(defun drawWardrobeSlopeBACK (x0 y0 szerBACK wysBACK unitNum hL hR / pts)
-  (setq pts (SKY:drawSlopeCut x0 y0 szerBACK wysBACK hL hR))
-  (drawText "UNIT_NUMBER" (+ x0 (/ szerBACK 2.0)) (+ y0 (/ (min hL hR) 2.0)) 40.0 unitNum)
-  pts)
+;;; The BACK panel, cut on the same line. It spans the whole carcase, so it
+;;; takes the line unchanged.
+(defun drawWardrobeSlopeBACK (x0 y0 szerBACK wysBACK unitNum pts / out)
+  (setq out (SKY:drawSlopeCut x0 y0 szerBACK wysBACK pts))
+  (drawText "UNIT_NUMBER" (+ x0 (/ szerBACK 2.0))
+    (/ (SKY:cutValleyBetween pts 0.0 szerBACK) 2.0) 40.0 unitNum)
+  out)
 
-;;; A SIDE panel under the diagonal. A side stands at ONE x across the carcase,
-;;; so the ceiling over it is one number and its board is cut to that number -
-;;; `SKY:slopeCutPts` is still what cuts it, with both its edges at the same
-;;; height, and answers with the rectangle that is the honest shape there. The
-;;; carcase's pentagon is carried by the back, the front and the elevation
-;;; above; the two sides carry its two ENDS.
-(defun drawWardrobeSlopeSIDE (x0 y0 szerSIDE wysSIDE unitNum hSide)
-  (SKY:drawSlopeCut x0 y0 szerSIDE wysSIDE hSide hSide))
+;;; A SIDE panel under the line - and T47 is where it changes.
+;;;
+;;; "BUL i BUR przedluzony do czubka skosu i ustawione ciecie pod skosem,
+;;;  najlepiej zeby bylo napisane jaki kat ciecia."
+;;;
+;;; It is no longer dropped to the low end. It runs UP to the peak of the line
+;;; over its own two faces, less the roof board's vertical footprint, and its
+;;; top is a BEVEL at the segment's own angle. The board drawn here is the
+;;; BLANK; the angle is printed beside it because a three-axis file cannot
+;;; carry the bevel (BACKLOG 120).
+(defun drawWardrobeSlopeSIDE (x0 y0 szerSIDE wysSIDE unitNum pts xa xb G / hTop deg)
+  (setq hTop (SKY:sideTopY pts wysSIDE xa xb G))
+  (setq deg (SKY:sideCutDeg pts xa xb))
+  (SKY:drawSlopeCut x0 y0 szerSIDE wysSIDE (SKY:slopeLine szerSIDE hTop hTop))
+  (drawText "UNIT_NUMBER" (+ x0 (/ szerSIDE 2.0)) (+ y0 hTop 20.0) 30.0
+    (strcat "CUT " (rtos deg 2 1) " DEG"))
+  hTop)
 
-;;; The TOP board. It sits LEVEL at the low end's height, full depth; the
-;;; triangle above it is closed by the front and the back (option A - no extra
-;;; roof board this turn).
-(defun wardrobeSlopeTopY (hL hR G)
-  (- (min hL hR) G))
+;;; The TOP BOARD - and this is the correction the owner made by name:
+;;; "jak chcesz zeby szafa wygladala z wiencem poziomym jak jest skos?"
+;;;
+;;; It is a ROOF, not a lid. It LIES ON the two sides, spans the FULL width,
+;;; its ends are cut VERTICALLY, and there is ONE BOARD PER SEGMENT.
+;;;   L     = span / cos(beta)
+;;;   L_MAX = L + G * tan(beta)      the blank, and what the cut list says
+;;; It is G thick measured perpendicular and it does not thicken; its vertical
+;;; footprint G / cos(beta) is clearance, never thickness. NO DOG BONES.
+(defun wardrobeSlopeRoofBoards (szerSzafki wysSzafki pts G)
+  (SKY:roofBoards szerSzafki wysSzafki pts G))
 
-;;; The DOOR over a cut opening - a pentagon, cut on the same diagonal, less
-;;; the standard gap on every edge INCLUDING the diagonal one.
-(defun drawWardrobeSlopeFRONT (x0 y0 szerFront wysFront unitNum doorGap hL hR / pts)
-  (setq pts (SKY:drawSlopeCut x0 y0 szerFront wysFront
-              (- hL doorGap) (- hR doorGap)))
+;;; The DOOR over a cut opening - cut on the same line, less the standard gap
+;;; on every edge INCLUDING the sloped one.
+(defun drawWardrobeSlopeFRONT (x0 y0 szerFront wysFront unitNum doorGap pts / less out)
+  (setq less (mapcar '(lambda (p) (list (car p) (- (cadr p) doorGap))) pts))
+  (setq out (SKY:drawSlopeCut x0 y0 szerFront wysFront less))
   (drawText "UNIT_NUMBER" (+ x0 (/ szerFront 2.0))
-    (/ (+ (- hL doorGap) (- hR doorGap)) 4.0) 40.0 unitNum)
-  pts)
+    (/ (SKY:cutValleyBetween less 0.0 szerFront) 2.0) 40.0 unitNum)
+  out)
 
-(princ "\nKIT_WARDROBE_FULL: SLOPE CUT T46 section loaded.")
+(princ "\nKIT_WARDROBE_FULL: SLOPE CUT T46/T47 section loaded.")
 (princ)

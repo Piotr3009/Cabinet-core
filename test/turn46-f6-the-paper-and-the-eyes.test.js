@@ -34,10 +34,17 @@ test('F6a — the LINE the scene clips with is published by the engine, per pane
   const r = computeCabinet({ ...PARAMS, slope_cut: CUT }, P);
   const back = r.panels.find((p) => p.id === 'BACK');
   const front = r.panels.find((p) => p.part === 'FRONT');
-  assert.deepEqual(back.cnc.slopeCut, { hL: 2400, hR: 1200 });
+  // T47 (licence 1): the LINE is published beside the two ends it always was.
+  // The ends are UNCHANGED — this is a unit under one straight run, so the line
+  // is two points and they are those two numbers.
+  assert.deepEqual(back.cnc.slopeCut, {
+    pts: [{ x: 0, y: 2400 }, { x: 600, y: 1200 }], hL: 2400, hR: 1200,
+  });
   // The FRONT's is in the SHEET's frame — the inside mirror — because that is
   // the frame its outline is in and the frame the scene rebuilds it in.
-  assert.deepEqual(front.cnc.slopeCut, { hL: 1200, hR: 2394 });
+  assert.deepEqual(front.cnc.slopeCut, {
+    pts: [{ x: 0, y: 1200 }, { x: 597, y: 2394 }], hL: 1200, hR: 2394,
+  });
   // …and every one of them cuts the panel's own rectangle to the panel's own
   // outline, which is the parity the claim is made of.
   for (const p of [back, front]) {
@@ -58,8 +65,11 @@ test('F6a — a panel with no cut publishes nothing, and the scene draws its box
   assert.match(solid, /if \(!notches\.length && !tabs\.length && !recesses\.length && !slopeCut\) return NOTHING;/);
 });
 
+// T47 (licence 1): the key is the whole LINE now — two leaves under the same
+// two ends but a different knee between them are two different boards, and a
+// key made of the ends alone would hand the second one the first one's solid.
 test('F6a — two leaves cut differently are two different cached boards', () => {
-  assert.match(solid, /slopeCut \? `slope:\$\{slopeCut\.hL\},\$\{slopeCut\.hR\}` : ''/);
+  assert.match(solid, /slope:\$\{\(slopeCut\.pts \|\| \[\{ x: 0, y: slopeCut\.hL \}, \{ x: w, y: slopeCut\.hR \}\]\)/);
 });
 
 // ─── F6b — NAMED, AND NOT DELIVERED (iron rule 1's first sacrifice) ─────────
@@ -83,9 +93,14 @@ test('F6b — …and a vertical section is the ZY projection; the cut runs in X'
   // What the A-A CAN show is real and is not nothing: the top has dropped and
   // one side is shorter, and both come off the panels' own boxes.
   const r = computeCabinet({ ...PARAMS, slope_cut: CUT }, P);
-  const top = r.panels.find((p) => p.id === 'TOP');
+  // T47-F3: the lid became a ROOF, one board per segment, so "the top" is the
+  // lowest of them. What the A-A can show is unchanged: a lowered top and a
+  // shorter side, both off the panels' own boxes.
+  const tops = r.panels.filter((p) => p.role === 'top');
   const bur = r.panels.find((p) => p.id === 'BUR');
-  assert.ok(top.box.y < PARAMS.height - P.board.thickness, 'the section shows a lowered top');
+  assert.ok(tops.length >= 1);
+  assert.ok(Math.min(...tops.map((p) => p.box.y)) < PARAMS.height - P.board.thickness,
+    'the section shows a lowered top');
   assert.ok(bur.box.h < PARAMS.height, 'and a shorter side');
 });
 

@@ -219,12 +219,18 @@ test('nothing here reaches the cut list', () => {
   const r = runUnit({ left: 'open', right: 'open' }, { left: 200, right: 200 });
   const face = pieceOf(r, 'INFILL-T-FACE');
   const shelf = pieceOf(r, 'INFILL-T-SHELF');
-  assert.equal(face.w, 600);
-  assert.equal(face.h, T.defaultHeight);
-  assert.equal(shelf.h, T.shelfDepth);
+  const OVER = P.autoParts.fillerOversize;
+  // T47-F4: `w`/`h` are the CUT size and now carry the +20 scribe allowance
+  // on the piece's WALL edge (`autoParts.fillerOversize`, the drawer front's own
+  // idiom). `meta.oversize.nominal` is the finished size, and the box is the
+  // nominal piece — what stands in the room once the joiner has planed it in.
+  assert.equal(face.w, 600, 'the LONG POINT is untouched — a mitre is a joint');
+  assert.equal(face.h, T.defaultHeight + OVER);
+  assert.equal(shelf.h, T.shelfDepth + OVER);
   assert.ok(face.meta.mitre_45.includes('long'));
   assert.ok(face.meta.mitre_45.includes('end'));
-  assert.ok(r.csvLines.some((l) => l.includes(',INFILL-T-FACE,600,40,')));
+  assert.equal(face.meta.mitre.L, 45, 'the L corner is ALWAYS 45');
+  assert.ok(r.csvLines.some((l) => l.includes(`,INFILL-T-FACE,600,${40 + OVER},`)));
 });
 
 test('a piece with no mitre to make is left alone', () => {

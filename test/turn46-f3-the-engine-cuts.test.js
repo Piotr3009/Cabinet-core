@@ -6,7 +6,7 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import {
-  slopeCutActive, slopeHeightAt, trimGeometryOnSlope, trimOutlineOnSlope,
+  sidePanelGeometry, slopeCutActive, slopeHeightAt, trimGeometryOnSlope, trimOutlineOnSlope,
 } from '../src/engine/puzzle.js';
 import { canonical, dump } from '../scripts/t46-classify.mjs';
 import { slopeCutLine } from '../src/lib/slopeLine.js';
@@ -140,10 +140,14 @@ test('the ceiling line arrives in UNIT-LOCAL x, already minus the infill', () =>
     infill: 40,
     floorY: 100,
   });
-  assert.equal(line.x0, 0, 'x is the UNIT\'s own, not the wall\'s');
-  assert.equal(line.x1, 600);
-  assert.equal(line.y0, 2115.5556, 'ceiling 2255.56 less 40 scribe less 100 legs');
-  assert.equal(line.y1, 648.8889, 'ceiling 788.89 at the far edge, less the same two');
+  // T47 (licence 1): the return is `{pts}` now, and this unit stands under ONE
+  // straight run — so it is TWO points, and they are T46's own two numbers to
+  // the fourth decimal. That is the safety net, asserted where T46 asserted it.
+  assert.equal(line.pts.length, 2, 'one straight run is two vertices');
+  assert.equal(line.pts[0].x, 0, 'x is the UNIT\'s own, not the wall\'s');
+  assert.equal(line.pts[1].x, 600);
+  assert.equal(line.pts[0].y, 2115.5556, 'ceiling 2255.56 less 40 scribe less 100 legs');
+  assert.equal(line.pts[1].y, 648.8889, 'ceiling 788.89 at the far edge, less the same two');
   assert.equal(line.infill, 40);
   assert.equal(line.low, 'R');
 });
@@ -152,51 +156,119 @@ test('THE SIDES: the low one is cut, the tall one keeps full height', () => {
   const r = cutWardrobe();
   const bul = panelOf(r, 'BUL');
   const bur = panelOf(r, 'BUR');
-  // The line at the LEFT side's two faces is 2400 and 2364 — both over the
-  // 2150 carcass, so BUL keeps every millimetre it had. F3: "the tall edge
-  // keeps full height."
-  assert.equal(bul.h, H);
-  assert.equal(bul.cnc.drawn_h, H);
-  assert.equal(bul.meta?.slopeCut, undefined, 'an uncut side is stamped with nothing');
-  // The RIGHT side stands where the ceiling is 1200: "vertical edge at the LOW
-  // end equals the cut height there."
-  assert.equal(bur.h, 1200);
-  assert.equal(bur.cnc.drawn_h, 1200);
-  assert.deepEqual(bur.meta.slopeCut, { h: 1200, full: 2150, topAt: 1200 });
-  assert.equal(bur.box.h, 1200, 'and the 3-D box is the same board');
-  assert.ok(bur.cnc.outline.every(([, y]) => y <= 1200 + 1e-9), 'nothing left above the line');
+  // ─── T47 AMENDS THIS, TWICE, AND SAYS WHY ──────────────────────────────
+  //
+  // F2, the owner: *"BUL i BUR przedluzony do czubka skosu i ustawione ciecie
+  // pod skosem."* T46 dropped a side to the LOWER of the ceiling at its two
+  // faces and threw the wedge above it away. T47 runs it up to the PEAK and
+  // takes the wedge off as a BEVEL, whose angle the board states.
+  //
+  // F3, the same owner: *"boki sa w tym przypadku pod wiencem a nie obok."* The
+  // top board LIES ON the sides now, so a side stops at that board's UNDERSIDE
+  // — the ceiling less its VERTICAL FOOTPRINT `G / cos β`, which is 18 under a
+  // level board and 40.25 under this one's 63.4°.
+  //
+  // So the LEFT side, under the flat stretch of roof at 2150, stops at 2132 —
+  // and it IS cut now, where T46 left it untouched, because there is a board on
+  // top of it. And the RIGHT side stops at 1195.75: the ceiling's peak over its
+  // own 18 mm (1236) less that 40.25.
+  assert.equal(bul.h, 2132);
+  assert.equal(bul.cnc.drawn_h, 2132);
+  assert.deepEqual(bul.meta.slopeCut, {
+    h: 2132, full: 2150, topAt: 2132, angles: [{ from: 0, to: 18, deg: 0 }], low: 2132,
+  });
+  assert.equal(bur.h, 1195.7508);
+  assert.equal(bur.cnc.drawn_h, 1195.7508);
+  assert.deepEqual(bur.meta.slopeCut, {
+    h: 1195.7508,
+    full: 2150,
+    topAt: 1195.7508,
+    angles: [{ from: 582, to: 600, deg: 63.4349 }],
+    low: 1159.7508,
+  });
+  assert.equal(bur.box.h, 1195.7508, 'and the 3-D box is the same board');
+  assert.ok(bur.cnc.outline.every(([, y]) => y <= 1195.7508 + 1e-9), 'nothing above the blank');
 });
 
-test('…and a side is cut to the LOWER of the ceiling at its two faces', () => {
-  // A steeper line, so the 18 mm of board thickness matters: at x=0 the ceiling
-  // is 2000 and at x=G it is 2000 − 1200·18/600 = 1964. The board is cut to
-  // 1964 — the conservative reading, because the other one is 36 mm of carcass
-  // through the plaster.
+// ─── T47-F2 REVERSES THIS ONE, AND SAYS WHY ───────────────────────────────
+//
+// T46 cut a side to the LOWER of the ceiling at its two faces and called it the
+// conservative reading: "the other one is 36 mm of carcass through the
+// plaster". That is true of a board with a SQUARE top and false of one with a
+// bevel — and the owner asked for the bevel by name. So the board that leaves
+// the machine is the BLANK, as tall as its HIGHEST corner, and the wedge comes
+// off at the angle the piece states. Nothing goes through the plaster, because
+// the finished top face is the ceiling.
+test('…and a side runs UP to the peak, with the wedge taken off as a bevel', () => {
+  // The line falls 1200 over 600 — one 63.4349° run, under the carcass at both
+  // ends, so the roof is ONE board and its vertical footprint is 18/cos β =
+  // 40.2492. Each side stops at that board's underside: the ceiling's peak over
+  // its own 18 mm, less 40.2492.
   const r = computeCabinet({ ...PARAMS, slope_cut: { y0: 2000, y1: 800, infill: 40 } }, P);
-  assert.equal(panelOf(r, 'BUL').h, 1964);
-  assert.equal(panelOf(r, 'BUR').h, 800);
+  const bul = panelOf(r, 'BUL');
+  const bur = panelOf(r, 'BUR');
+  const foot = 18 / Math.cos(Math.atan(1200 / 600));
+  const at = (x) => 2000 - (1200 * x) / 600;
+  for (const [panelId, xa, xb] of [['BUL', 0, G], ['BUR', 600 - G, 600]]) {
+    const p = panelOf(r, panelId);
+    assert.ok(Math.abs(p.h - (Math.max(at(xa), at(xb)) - foot)) < 1e-3, `${panelId} blank ${p.h}`);
+    assert.ok(Math.abs(p.meta.slopeCut.low - (Math.min(at(xa), at(xb)) - foot)) < 1e-3,
+      `${panelId} short face ${p.meta.slopeCut.low}`);
+    assert.equal(p.meta.slopeCut.angles[0].deg, 63.4349);
+    // The wedge the bevel takes off is `G · tan β` whatever the board stops
+    // under — the footprint moves both faces down together.
+    assert.ok(Math.abs((p.h - p.meta.slopeCut.low) - G * 2) < 1e-3, `${panelId} wedge`);
+  }
+  assert.equal(bul.h, 1959.7508);
+  assert.equal(bur.h, 795.7508);
 });
 
-test('THE TOP drops to the height of the lowest cut side, full depth', () => {
+// ─── T47-F3 REPLACES THIS ONE OUTRIGHT (CLAUDE.md licence 2) ──────────────
+//
+// T46 dropped the top board flat to the low end and left the triangle above it
+// open. The owner rejected it BY NAME: *"jak chcesz zeby szafa wygladala z
+// wiencem poziomym jak jest skos?"* — and CLAUDE.md's second named licence says
+// the old behaviour does not survive behind a flag. The board is a ROOF: it
+// lies ON the sides, spans the FULL width, and there is one per segment.
+// T47's own file proves the numbers; what is kept here is that the LID is gone.
+test('THE TOP IS A ROOF — the flat lid at the low end is gone', () => {
   const r = cutWardrobe();
   const plain = panelOf(plainWardrobe(), 'TOP');
-  const top = panelOf(r, 'TOP');
-  assert.equal(top.w, plain.w, 'the BOARD does not change…');
-  assert.equal(top.h, plain.h, '…same width, same depth');
-  assert.deepEqual(top.cnc.outline, plain.cnc.outline, 'nor its tabs');
-  assert.equal(top.box.y, 1200 - G, 'only where it SITS: level at the low end');
-  assert.deepEqual(top.meta.slopeCut, { level: 1200, full: 2150 });
+  const tops = r.panels.filter((p) => p.role === 'top');
+  assert.equal(tops.length, 2, 'the roof line bends at the pentagon\'s knee, so two boards');
+  assert.deepEqual(tops.map((p) => p.id), ['TOP-1', 'TOP-2']);
+  // Not one of them is the old lid: it was `internalWidth` wide, between the
+  // sides, with tabs and dog bones, sitting level at 1200 − G.
+  for (const top of tops) {
+    assert.notEqual(top.box.y, 1200 - G);
+    assert.equal(top.meta.slopeCut.roof, true);
+    assert.equal(top.cnc.outline.length, 4, 'a plain rectangle: no tabs');
+    assert.equal(top.cnc.pockets.length, 0, 'and NO DOG BONES');
+  }
+  // The two together span the FULL width, not the `W − 2G` between the sides.
+  assert.equal(tops[0].box.x, 0);
+  assert.equal(tops[1].box.x + tops[1].box.w, 600);
+  assert.ok(plain.w < 600, 'where the old lid was the internal width');
 });
 
-test('…and the tall side takes the top\'s socket row part-way up its face', () => {
+// ─── T47-F3 AMENDS THIS ───────────────────────────────────────────────────
+// T46's lid dropped INSIDE the tall side, so its socket row landed part-way up
+// the face. T47's roof board LIES ON the side, so the row is back on the
+// board's own top edge — which is F3's own sentence: *"the top's sockets sit
+// where the roof board lands, on the angled edge."* The row still MOVES with
+// the board; it moves to a different place.
+test('…and the side takes the top\'s socket row where the roof board lands', () => {
   const r = cutWardrobe();
-  const bul = panelOf(r, 'BUL');
-  const socketYs = bul.cnc.pockets
-    .filter((p) => p.layer === P.puzzle.layers.socket)
-    .map((p) => Math.max(p.y1, p.y2));
-  assert.ok(socketYs.some((y) => Math.abs(y - (1200 + P.puzzle.socketOvershoot)) < 1e-6),
-    `the top row sits at the level top (1200), not at 2150 — saw ${socketYs.join(', ')}`);
-  assert.equal(socketYs.some((y) => y > 2100), false, 'and there is no row left up at the carcass top');
+  for (const id of ['BUL', 'BUR']) {
+    const p = panelOf(r, id);
+    const socketYs = p.cnc.pockets
+      .filter((k) => k.layer === P.puzzle.layers.socket)
+      .map((k) => Math.max(k.y1, k.y2));
+    assert.ok(socketYs.some((y) => Math.abs(y - (p.h + P.puzzle.socketOvershoot)) < 1e-6),
+      `${id}: the top row sits at the board's own top (${p.h}) — saw ${socketYs.join(', ')}`);
+    assert.equal(socketYs.some((y) => y > p.h + P.puzzle.socketOvershoot + 1e-6), false,
+      `${id}: nothing left above the cut`);
+  }
 });
 
 test('THE BACK is cut on the same diagonal — and it is the PENTAGON', () => {
@@ -206,8 +278,11 @@ test('THE BACK is cut on the same diagonal — and it is the PENTAGON', () => {
   assert.deepEqual(back.cnc.outline, [[0, 0], [600, 0], [600, 1200], [125, 2150], [0, 2150]]);
   assert.equal(back.cnc.outline.length, 5, 'five corners: a pentagon');
   assert.equal(back.h, H, 'its cut rectangle is still the full height at the tall edge');
+  // T47: `knees` joins the record — EMPTY here, because this unit stands
+  // under one straight run. A cabinet the ceiling bends over lists the x of
+  // every bend, and its back is a hexagon or better.
   assert.deepEqual(back.meta.slopeCut, {
-    y0: 2400, y1: 1200, full: 2150, corners: 5,
+    y0: 2400, y1: 1200, full: 2150, corners: 5, knees: [],
   });
 });
 
@@ -233,29 +308,39 @@ test('every CUT panel\'s fingerprint carries the cut (T41\'s suite law)', () => 
   const stamped = r.panels.filter((p) => p.meta?.slopeCut).map((p) => p.id).sort();
   // F4 adds the door to the list: the front is cut on the same line and its
   // fingerprint carries the cut too.
-  assert.deepEqual(stamped, ['01-F', 'BACK', 'BUR', 'TOP'].sort());
+  // T47-F3: the lid became two roof boards, and BUL is cut now too — there is
+  // a board lying on it (`boki … pod wiencem`).
+  assert.deepEqual(stamped, ['01-F', 'BACK', 'BUL', 'BUR', 'TOP-1', 'TOP-2'].sort());
   // …and a panel the cut never reached carries nothing, so it stays identical.
-  assert.equal(panelOf(r, 'BUL').meta?.slopeCut, undefined);
   assert.equal(panelOf(r, 'BOTTOM').meta?.slopeCut, undefined);
   // The CUT SIZE moves with it, which is what `partSignature` is keyed on.
   assert.notEqual(panelOf(r, 'BUR').cnc.drawn_h, panelOf(plainWardrobe(), 'BUR').cnc.drawn_h);
 });
 
-test('the lowered socket row is a CUT-OUT, and the edge guard agrees', () => {
-  // MEASURED FAULT, found by the browser walk: with the top board level at the
-  // low end, the TALL side's socket row no longer breaks its edge — it is a
-  // pocket wholly inside the board, and a cut-out is traced the OTHER way round
-  // or the cutter offsets to the wrong side of the line. Check #9 said so in
-  // the app before any test did. `cutout` is the field this house already has
-  // for exactly that (`cnc/dxf.js pocketPoints`, T34's shoe-box groove).
+// ─── T47-F3 AMENDS THIS, AND THE MECHANISM SURVIVES ───────────────────────
+//
+// T46's MEASURED FAULT: with the top board level at the low end, the TALL
+// side's socket row no longer broke its edge — it was a pocket wholly inside
+// the board, and a cut-out is traced the OTHER way round or the cutter offsets
+// to the wrong side of the line. Check #9 said so in the app before any test
+// did, and `cutout` is the field this house already has for it.
+//
+// T47's roof board lies ON the side, so that row is back ON THE EDGE and no
+// longer needs the flag — `topInterior` is how the engine says which it is, and
+// `sidePanelGeometry` still cuts an interior row as a cut-out for any caller
+// that asks for one. What the edge guard has to say is the part that matters,
+// and it still has nothing.
+test('a socket row on the board\'s edge is an EDGE socket, and the guard agrees', () => {
   const r = cutWardrobe();
   const bul = panelOf(r, 'BUL');
   const sockets = bul.cnc.pockets.filter((p) => p.layer === P.puzzle.layers.socket);
-  const lowered = sockets.filter((p) => p.cutout === true);
-  assert.equal(lowered.length, 2, 'the two top-row sockets are cut-outs');
-  for (const p of lowered) {
-    assert.ok(Math.max(p.y1, p.y2) < bul.h, 'and they are inside the board, not on its edge');
-  }
+  assert.equal(sockets.some((p) => p.cutout === true), false,
+    'the row breaks the edge again, so it is not traced as a cut-out');
+  // The mechanism is still there for a row that really is interior.
+  const interior = sidePanelGeometry({
+    w: 550, h: 2150, G, side: 'L', puzzle: P.puzzle, topAt: 1200,
+  }).pockets.filter((p) => p.layer === P.puzzle.layers.socket && p.cutout === true);
+  assert.equal(interior.length, 2, 'an interior row is still a cut-out');
   assert.deepEqual(resultFindings(r), [], 'the edge guard has nothing to say');
   // …and with no cut not one socket carries the field, so nothing moves.
   for (const p of panelOf(plainWardrobe(), 'BUL').cnc.pockets) {

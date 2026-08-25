@@ -101,7 +101,13 @@ test('the filler is the exact width of the gap it closes', () => {
   const id = withUnit('BUD');
   store().moveUnit(id, -2000, 0);
   const infill = partsOf(id, 'INFILL').find((p) => p.meta.side === 'left' && p.meta.piece === 'face');
-  assert.equal(infill.w, INFILL);
+  // T47-F4: `w`/`h` are the CUT size and now carry the +20 scribe allowance
+  // on the piece's WALL edge (`autoParts.fillerOversize`, the drawer front's own
+  // idiom). `meta.oversize.nominal` is the finished size, and the box is the
+  // nominal piece — what stands in the room once the joiner has planed it in.
+  assert.equal(infill.w, INFILL + P.autoParts.fillerOversize);
+  assert.equal(infill.box.w, INFILL, 'the gap it closes is the nominal');
+  assert.equal(infill.meta.oversize.nominal, INFILL);
   // Turn 6 (CLAUDE.md F4): to the FLOOR, past the legs — a filler that stops at
   // the carcass base leaves a slot beside the plinth.
   assert.equal(infill.h, unitOf(id).params.height + P.baseUnit.legHeight);
@@ -113,8 +119,13 @@ test('the filler is the exact width of the gap it closes', () => {
   store().moveUnit(id, -2000, 0);
   assert.equal(unitOf(id).position.x_mm, 40);
   const left = partsOf(id, 'INFILL').filter((p) => p.meta.side === 'left');
-  assert.equal(left.find((p) => p.meta.piece === 'face').w, 40);
+  assert.equal(left.find((p) => p.meta.piece === 'face').w, 40 + P.autoParts.fillerOversize);
+  assert.equal(left.find((p) => p.meta.piece === 'face').box.w, 40);
+  // The ARM takes NO oversize: it is screwed to the carcass side and touches no
+  // wall, so there is nothing to scribe it to and 20 mm of spare board on a
+  // piece that has to end flush is 20 mm in the way (T47-F4).
   assert.equal(left.find((p) => p.meta.piece === 'arm').w, P.autoParts.sideInfill.returnDepth);
+  assert.equal(left.find((p) => p.meta.piece === 'arm').meta.oversize, undefined);
 });
 
 // ─── #16: the plinth and the top infill are asked for ───
@@ -139,7 +150,12 @@ test('adding the plinth and the top infill makes them real; removing them makes 
   const height = store().addTopInfill(id);
   assert.equal(height, P.autoParts.topInfill.defaultHeight, 'the default is 40');
   const top = partsOf(id, 'INFILL').find((p) => p.meta.side === 'top');
-  assert.equal(top.h, 40);
+  // T47-F4: `w`/`h` are the CUT size and now carry the +20 scribe allowance
+  // on the piece's WALL edge (`autoParts.fillerOversize`, the drawer front's own
+  // idiom). `meta.oversize.nominal` is the finished size, and the box is the
+  // nominal piece — what stands in the room once the joiner has planed it in.
+  assert.equal(top.h, 40 + P.autoParts.fillerOversize);
+  assert.equal(top.box.h, 40);
 
   // The drag and the double-click still work on what is there. The number is
   // read off the room rather than written down: a tall unit leaves less air
@@ -147,7 +163,8 @@ test('adding the plinth and the top infill makes them real; removing them makes 
   const headroom = 2500 - (unitOf(id).params.height + P.projectHeights.toeKick);
   const partWay = headroom - 50;
   assert.equal(store().setTopInfill(id, partWay), partWay);
-  assert.equal(partsOf(id, 'INFILL').find((p) => p.meta.side === 'top').h, partWay);
+  assert.equal(partsOf(id, 'INFILL').find((p) => p.meta.side === 'top').h,
+    partWay + P.autoParts.fillerOversize);
   const toCeiling = store().fillToCeiling(id);
   // Turn 5 (BACKLOG #29): a new base unit arrives at the PROJECT's base height,
   // not at the kit's own default — so the gap to the ceiling is measured from

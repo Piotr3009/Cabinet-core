@@ -77,8 +77,11 @@ export function panelSolids(panel, layers, profile, drills = []) {
   if (!(w > 0) || !(h > 0) || !(thickness > 0)) return NOTHING;
   const radius = Math.max(0, (Number(profile?.cnc?.toolDiameter) || 0) / 2);
   // Turn 46 (F6a): the engine's own cut, or null on every panel that has none.
+  // Turn 47 (F1): …and that cut is a LINE now, so the scene clips on the line.
+  // `slopeCutActive` reads `pts` where the engine published them and the two
+  // ends where it did not, which is the same board either way.
   const slopeCut = panel?.cnc?.slopeCut
-    && slopeCutActive({ h, hL: panel.cnc.slopeCut.hL, hR: panel.cnc.slopeCut.hR })
+    && slopeCutActive({ w, h, ...panel.cnc.slopeCut })
     ? panel.cnc.slopeCut : null;
 
   // ─── TURN 20 (CLAUDE.md F8.1): EVERY FEATURE, AS AN ABSENCE ──────────────
@@ -128,7 +131,10 @@ export function panelSolids(panel, layers, profile, drills = []) {
     ...tabs.map((t) => t.map(([x, y]) => `${x},${y}`).join(';')),
     // Two leaves that differ only in where the ceiling cuts them are two
     // different boards, so the cut is part of the key.
-    slopeCut ? `slope:${slopeCut.hL},${slopeCut.hR}` : '',
+    slopeCut
+      ? `slope:${(slopeCut.pts || [{ x: 0, y: slopeCut.hL }, { x: w, y: slopeCut.hR }])
+        .map((p) => `${p.x},${p.y}`).join(';')}`
+      : '',
     recessKey(recesses),
   ].join('|');
 
@@ -195,7 +201,9 @@ function build({
   // this file about where the ceiling is, which is the whole of the F6a claim.
   const outline = trimOutlineOnSlope(notchedOutline({
     w, h, notches, radius,
-  }), { w, h, hL: slopeCut ? slopeCut.hL : h, hR: slopeCut ? slopeCut.hR : h });
+  }), slopeCut
+    ? { w, h, ...slopeCut }
+    : { w, h, pts: [{ x: 0, y: h }, { x: w, y: h }] });
 
   // ─── TURN 20 (CLAUDE.md F8.1): THE MATERIAL IS ACTUALLY GONE ─────────────
   //

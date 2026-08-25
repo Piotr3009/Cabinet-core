@@ -98,16 +98,25 @@ test('the top infill is a real panel, and it grows with the drag', () => {
   const r = computeCabinet(base({ top_infill_mm: 40 }), P);
   const face = r.panels.find((p) => p.id === 'INFILL-T-FACE');
   const shelf = r.panels.find((p) => p.id === 'INFILL-T-SHELF');
+  // T47-F4: `w`/`h` are the CUT size and now carry the +20 scribe allowance
+  // on the piece's WALL edge (`autoParts.fillerOversize`, the drawer front's own
+  // idiom). `meta.oversize.nominal` is the finished size, and the box is the
+  // nominal piece — what stands in the room once the joiner has planed it in.
+  const OVER = P.autoParts.fillerOversize;
   assert.equal(face.w, 600);
-  assert.equal(face.h, 40);
+  assert.equal(face.h, 40 + OVER);
+  assert.deepEqual(face.meta.oversize, { mm: OVER, edge: 'top', nominal: 40 });
+  assert.equal(face.box.h, 40, 'the piece that stands in the room is the nominal');
   assert.equal(face.box.y, 770, 'it starts at the top of the carcass');
   assert.equal(face.role, 'infill');
   assert.equal(shelf.w, 600);
-  assert.equal(shelf.h, P.autoParts.topInfill.shelfDepth, 'the horizontal leg of the L');
+  assert.equal(shelf.h, P.autoParts.topInfill.shelfDepth + OVER, 'the horizontal leg, plus the scribe');
+  assert.deepEqual(shelf.meta.oversize,
+    { mm: OVER, edge: 'back', nominal: P.autoParts.topInfill.shelfDepth });
 
   const taller = computeCabinet(base({ top_infill_mm: 380 }), P);
   const tallerFace = taller.panels.find((p) => p.id === 'INFILL-T-FACE');
-  assert.equal(tallerFace.h, 380);
+  assert.equal(tallerFace.h, 380 + P.autoParts.fillerOversize);
   assert.ok(tallerFace.area_m2 > face.area_m2, 'the BOM area follows the height');
 
   // Below the minimum it is not a piece at all.
@@ -173,13 +182,21 @@ test('the side fillers are panels on the correct side of the unit', () => {
   const r = computeCabinet(base({ side_infill_left_mm: 12, side_infill_right_mm: 18 }), P);
   const left = r.panels.find((p) => p.id === 'INFILL-L-FACE');
   const right = r.panels.find((p) => p.id === 'INFILL-R-FACE');
-  assert.equal(left.w, 12);
+  // T47-F4: `w`/`h` are the CUT size and now carry the +20 scribe allowance
+  // on the piece's WALL edge (`autoParts.fillerOversize`, the drawer front's own
+  // idiom). `meta.oversize.nominal` is the finished size, and the box is the
+  // nominal piece — what stands in the room once the joiner has planed it in.
+  const OV = P.autoParts.fillerOversize;
+  assert.equal(left.w, 12 + OV);
+  assert.equal(left.box.w, 12, 'the gap it closes is still 12');
+  assert.deepEqual(left.meta.oversize, { mm: OV, edge: 'left', nominal: 12 });
   // …and it runs to the FLOOR now, past the legs: a filler that stops at the
   // carcass base leaves a slot beside the plinth.
   assert.equal(left.h, 770 + P.baseUnit.legHeight);
   assert.equal(left.box.x, -12, 'outside the carcass, against the wall');
-  assert.equal(right.w, 18);
+  assert.equal(right.w, 18 + OV);
   assert.equal(right.box.x, 600);
+  assert.deepEqual(right.meta.oversize, { mm: OV, edge: 'right', nominal: 18 });
   assert.equal(r.csvLines.filter((l) => /,INFILL-[LR]-FACE,/.test(l)).length, 2);
 });
 

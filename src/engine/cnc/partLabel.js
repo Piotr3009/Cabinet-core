@@ -74,6 +74,67 @@ export function shelfTypeTag(panel) {
 }
 
 /**
+ * ─── WHAT A CUT BOARD SAYS ABOUT ITS ANGLE (turn 47, CLAUDE.md F2/F3/F4) ────
+ *
+ * The owner, 24.08.2026: *"ustawione ciecie pod skosem, najlepiej zeby bylo
+ * napisane jaki kat ciecia, na CNC tez zeby bylo napisane."*
+ *
+ * Three notes, one formatter, because they are all the same sentence — THIS
+ * BOARD IS NOT WHAT ITS OUTLINE SAYS IT IS:
+ *
+ *   CUT 63.4 DEG                      a side's top is a bevel through the
+ *                                     thickness (F2). Two angles where the
+ *                                     ceiling bends inside the board's own G.
+ *   BEVEL 47.7 DEG BOTH ENDS - 5-AXIS the roof board's ends are cut VERTICALLY
+ *                                     and the blank is a rectangle (F3). A
+ *                                     three-axis machine cannot cut it and the
+ *                                     sheet must not pretend otherwise.
+ *   OVERSIZE +20 - TRIM ON SITE       an infill leaves 20 mm over on its WALL
+ *                                     edge (F4), and the nominal is beside it.
+ *
+ * ─── WHY `DEG` IN THE FILE AND `°` ON THE GLASS ─────────────────────────────
+ *
+ * The same reason this file gives about the multiplication sign, and it is the
+ * same mechanism `truncateToWidth`'s `ellipsis` already uses: R12 predates any
+ * agreement about what a byte above 127 means, so a degree sign written into a
+ * DXF is a coin toss between code pages and a note the machine mis-decodes is
+ * worse than a plain one. The NUMBER, the wording and the decimal place are
+ * identical either way — only the mark differs, and only where it has to.
+ *
+ * @param {object} panel  an engine panel record
+ * @param {{ascii?:boolean}} opts  `ascii` for the DXF writer; the sheet's own
+ *   spelling is the default.
+ * @returns {string} '' where the board has nothing extra to say.
+ */
+export function slopeNoteText(panel, { ascii = false } = {}) {
+  const deg = (v) => `${(Math.round(Number(v) * 10) / 10).toFixed(1)}${ascii ? ' DEG' : '°'}`;
+  const dot = ascii ? ' - ' : ' · ';
+  const parts = [];
+  const bevel = panel?.meta?.bevel;
+  if (bevel && Number(bevel.deg) > 0) {
+    parts.push(`BEVEL ${deg(bevel.deg)} BOTH ENDS${dot}5-AXIS`);
+  }
+  const angles = panel?.meta?.slopeCut?.angles;
+  if (!bevel && Array.isArray(angles)) {
+    for (const a of angles) {
+      if (Number(a?.deg) > 0) parts.push(`CUT ${deg(a.deg)}`);
+    }
+  }
+  const over = panel?.meta?.oversize;
+  if (over && Number(over.mm) > 0) {
+    // …and the NOMINAL beside it, so nobody prices the extra (F4). The board on
+    // the bench is 60 wide and the job is 40; both numbers are on it.
+    const nom = Number(over.nominal);
+    parts.push(`OVERSIZE +${Math.round(Number(over.mm))}${ascii ? ' - ' : ' — '}TRIM ON SITE`
+      + (Number.isFinite(nom) ? ` (NOM ${Math.round(nom * 10) / 10})` : ''));
+  }
+  // Joined with a SEMICOLON and not a bar: the note wraps by words on a narrow
+  // board (`cnc/dxf.js panelNoteBlock`), and a lone `|` at the head of a line
+  // reads as a character in the instruction rather than as a separator.
+  return parts.join('; ');
+}
+
+/**
  * `F-01 BUR 597x568` — the cabinet, the part, the cut size.
  *
  * …and on a SHELF, the kind it is: `F-01 SHELF-1 564x520 (FIX)`.

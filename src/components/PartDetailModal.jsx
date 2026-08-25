@@ -1459,6 +1459,28 @@ function PartDrawing({
             />
           )}
 
+          {/* ─── TURN 47 (F2/F3/F4): THE ANGLE, ON THE PART DRAWING ─────────
+              *"najlepiej zeby bylo napisane jaki kat ciecia."* A bevel through
+              the thickness, a vertically cut end and a 20 mm scribe allowance
+              are all invisible in a flat outline. The words are the EXPORT's
+              own (`engine/cnc/partLabel.js slopeNoteText`), so the sheet, the
+              file and this drawing cannot word them differently. The group is
+              flipped for y-up, so the caption is un-flipped to read. */}
+          {drawing.note && (
+            <text
+              x={size.w / 2}
+              y={-(size.h + drawing.textHeight * 0.9)}
+              transform={`scale(1 -1) translate(0 ${-2 * (size.h + drawing.textHeight * 0.9)})`}
+              textAnchor="middle"
+              fill="#e0b64a"
+              fontSize={drawing.textHeight}
+              data-part-note
+              style={{ fontFamily: 'ui-monospace, Menlo, Consolas, monospace' }}
+            >
+              {drawing.note}
+            </text>
+          )}
+
           {drawing.machinings.map((m) => {
             if (hidden.has(m.layer)) return null;
             const colour = resolveLayer(m.layer, userLayers).screen;

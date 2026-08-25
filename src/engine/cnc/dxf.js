@@ -25,7 +25,7 @@
 // header state the true extents so any CAM package sees them immediately.
 
 import { layerTableFor } from './layers.js';
-import { partLabelText } from './partLabel.js';
+import { partLabelText, slopeNoteText } from './partLabel.js';
 import { labelBlock } from './annotation.js';
 import { turnPoint } from './layout.js';
 import { exportFileName, fileSafeName } from '../naming.js';
@@ -230,6 +230,69 @@ export function panelLabelBlock(panel, { unitNum, profile, mmPerPx = 1, minPx = 
 }
 
 /**
+ * ─── AND WHAT THE OUTLINE CANNOT SAY, LAID OUT THE SAME WAY (turn 47) ───────
+ *
+ * The bevel, the cut angle and the scribe allowance (`partLabel.js
+ * slopeNoteText`) are a caption like any other, so they obey turn 16's rule
+ * like any other: *"a caption is N millimetres tall on the sheet at every zoom,
+ * it is laid out INSIDE the outline of the thing it names, and where it will
+ * not fit it TRUNCATES and then HIDES — it never grows into its neighbour."*
+ *
+ * The FIRST run of this got that wrong — the note was drawn at a fixed size and
+ * `BEVEL 67.8° BOTH ENDS · 5-AXIS` ran clean across the part beside it on the
+ * sheet. The eye is what caught it, which is what looking at the picture is
+ * for. So it goes through `labelBlock` with the part's own box, exactly as the
+ * part label does, and a note too long for its board is truncated and then
+ * dropped rather than printed over the neighbour.
+ *
+ * It is SMALLER than the part label on purpose (`noteScale`): the label is what
+ * the board IS and the note is what to do to it, and the two must not compete.
+ */
+export function panelNoteBlock(panel, {
+  profile, mmPerPx = 1, minPx = 0, ascii = false,
+}) {
+  const cnc = profile.cnc;
+  const box = labelBox(panel);
+  const text = slopeNoteText(panel, { ascii });
+  const ellipsis = ascii ? '~' : '…';
+  const at = (sizeMm) => labelBlock({
+    text,
+    sizeMm,
+    boxW: box.w,
+    boxH: box.h,
+    // MORE lines than the part label allows, and that is the difference between
+    // the two: a label is a NAME and reads best on one line, a note is an
+    // INSTRUCTION and reads fine stacked. A scribe filler is 60 mm wide and
+    // 2250 tall — the only way `OVERSIZE +20 — TRIM ON SITE (NOM 40)` fits on
+    // it at a legible height is DOWN it.
+    maxLines: Math.max(cnc.labelMaxLines, 6),
+    fillRatio: cnc.labelFillRatio,
+    lineGap: cnc.labelLineGap,
+    minSize: cnc.labelMinHeight,
+    mmPerPx,
+    minPx,
+    ellipsis,
+  });
+  // ─── AND IT WOULD RATHER BE SMALL THAN HALF-SAID ────────────────────────
+  //
+  // `labelBlock` maximises SIZE, which for a NAME is right — `01 BUR 5~` still
+  // tells a joiner which board he is holding. For an INSTRUCTION it is not:
+  // `+20 - TRI~` is worse than nothing, because nobody can act on it. So the
+  // note steps its size down until the words survive whole, and only takes a
+  // truncated block when even the readability floor cannot hold them.
+  let block = at(cnc.annotation.partLabelMm * 0.7);
+  const cut = (b) => b.visible && b.lines.some((l) => l.text.endsWith(ellipsis));
+  for (let size = cnc.annotation.partLabelMm * 0.7; cut(block) && size > cnc.labelMinHeight;) {
+    size = Math.max(cnc.labelMinHeight, size * 0.7);
+    const next = at(size);
+    if (!next.visible) break;
+    block = next;
+    if (size <= cnc.labelMinHeight) break;
+  }
+  return block;
+}
+
+/**
  * …and the same block AS THE FILE WRITES IT: the same words and the same line
  * breaks, at half the height (turn 18, CLAUDE.md F1.2).
  *
@@ -361,7 +424,37 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
   // line gets them stacked instead of hanging over its edges.
   const w = panel.cnc?.drawn_w ?? panel.w;
   const h = panel.cnc?.drawn_h ?? panel.h;
+  // ─── TURN 47 (CLAUDE.md F2/F3/F4): AND WHAT THE OUTLINE CANNOT SAY ───────
+  //
+  // *"najlepiej zeby bylo napisane jaki kat ciecia, na CNC tez zeby bylo
+  // napisane."*
+  //
+  // A bevel through the thickness, a vertically cut end and a 20 mm scribe
+  // allowance are all invisible in a flat outline — the file would hand the
+  // machine a rectangle and say nothing. So the board SAYS it, on the same
+  // text layer the part label uses, at the TOP edge (beside the cut) rather
+  // than in the middle (where the label is). One formatter, and the sheet draws
+  // the identical words at the identical place.
+  //
+  // A panel with nothing extra to say contributes NO ENTITY AT ALL, which is
+  // what keeps every existing file byte-identical.
+  const note = panelNoteBlock(panel, { profile, ascii: true });
   const label = panelLabel(panel, { unitNum, profile });
+  if (note.visible) {
+    // At the part's TOP EDGE — beside the cut, not in the middle where the
+    // label is — and laid out inside the part's own box, so it can never grow
+    // into the board next to it on the sheet.
+    for (const [i, l] of note.lines.entries()) {
+      entities.push({
+        type: 'text',
+        layer: cnc.unitNumberLayer,
+        x: w / 2,
+        y: h - note.size * 1.2 - i * note.step,
+        h: note.size,
+        str: l.text,
+      });
+    }
+  }
   for (const [i, line] of label.lines.entries()) {
     entities.push({
       type: 'text',

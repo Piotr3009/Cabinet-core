@@ -1,0 +1,110 @@
+
+── one straight run 2000 → 1400 ──
+  ok  TOP: L = 600/cos 45° = 848.5281 (record 848.5281)
+  ok  TOP: L_MAX = L + 18·tan 45° = 866.5281 (record 866.5281, cut size 866.5281)
+  ok  TOP: footprint = 18/cos 45° = 25.4558 (record 25.4558)
+  ok  TOP: thickness is 18 and does NOT thicken
+  ok  TOP: no dog bones (0 pockets)
+  ok  TOP: spans 0..600 of the FULL width
+  ok  TOP: β = atan(Δy/span) = 45.0000° (record 45)
+  ok  INFILL-T-FACE: +20 on the top edge, nominal 40
+  ok  INFILL-T-FACE: the ceiling edge is +20
+  ok  INFILL-T-FACE: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-SHELF: +20 on the back edge, nominal 80
+  ok  INFILL-T-SHELF: the wall edge is +20
+  ok  INFILL-T-SHELF: the L corner is 45, whatever the ceiling does
+  ok  INFILL-L-FACE: +20 on the left edge, nominal 40
+  ok  INFILL-L-FACE: the allowance hangs off x = -20
+  ok  INFILL-L-FACE: the L corner is 45, whatever the ceiling does
+  ok  INFILL-L-ARM: no oversize, and it touches no wall
+  ok  INFILL-R-FACE: +20 on the right edge, nominal 40
+  ok  INFILL-R-FACE: and the far edge is +20
+  ok  INFILL-R-FACE: the L corner is 45, whatever the ceiling does
+  ok  INFILL-R-ARM: no oversize, and it touches no wall
+
+── a knee: flat 2000 to 300, then 1400 ──
+  ok  TOP-1: L = 300/cos 0° = 300.0000 (record 300)
+  ok  TOP-1: L_MAX = L + 18·tan 0° = 300.0000 (record 300, cut size 300)
+  ok  TOP-1: footprint = 18/cos 0° = 18.0000 (record 18)
+  ok  TOP-1: thickness is 18 and does NOT thicken
+  ok  TOP-1: no dog bones (0 pockets)
+  ok  TOP-1: spans 0..300 of the FULL width
+  ok  TOP-1: β = atan(Δy/span) = 0.0000° (record 0)
+  ok  TOP-2: L = 600/cos 45° = 848.5281 (record 848.5281)
+  ok  TOP-2: L_MAX = L + 18·tan 45° = 866.5281 (record 866.5281, cut size 866.5281)
+  ok  TOP-2: footprint = 18/cos 45° = 25.4558 (record 25.4558)
+  ok  TOP-2: thickness is 18 and does NOT thicken
+  ok  TOP-2: no dog bones (0 pockets)
+  ok  TOP-2: spans 300..900 of the FULL width
+  ok  TOP-2: β = atan(Δy/span) = 45.0000° (record 45)
+  ok  INFILL-T-FACE-1: +20 on the top edge, nominal 40
+  ok  INFILL-T-FACE-1: the ceiling edge is +20
+  ok  INFILL-T-FACE-1: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-SHELF-1: +20 on the back edge, nominal 80
+  ok  INFILL-T-SHELF-1: the wall edge is +20
+  ok  INFILL-T-SHELF-1: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-FACE-2: +20 on the top edge, nominal 40
+  ok  INFILL-T-FACE-2: the ceiling edge is +20
+  ok  INFILL-T-FACE-2: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-SHELF-2: +20 on the back edge, nominal 80
+  ok  INFILL-T-SHELF-2: the wall edge is +20
+  ok  INFILL-T-SHELF-2: the L corner is 45, whatever the ceiling does
+  ok  INFILL-L-FACE: +20 on the left edge, nominal 40
+  ok  INFILL-L-FACE: the allowance hangs off x = -20
+  ok  INFILL-L-FACE: the L corner is 45, whatever the ceiling does
+  ok  INFILL-L-ARM: no oversize, and it touches no wall
+  ok  INFILL-R-FACE: +20 on the right edge, nominal 40
+  ok  INFILL-R-FACE: and the far edge is +20
+  ok  INFILL-R-FACE: the L corner is 45, whatever the ceiling does
+  ok  INFILL-R-ARM: no oversize, and it touches no wall
+
+── two slopes: 1600 up, flat, down to 1500 ──
+  ok  TOP-1: L = 300/cos 53.1301° = 500.0000 (record 500)
+  ok  TOP-1: L_MAX = L + 18·tan 53.1301° = 524.0000 (record 524, cut size 524)
+  ok  TOP-1: footprint = 18/cos 53.1301° = 30.0000 (record 30)
+  ok  TOP-1: thickness is 18 and does NOT thicken
+  ok  TOP-1: no dog bones (0 pockets)
+  ok  TOP-1: spans 0..300 of the FULL width
+  ok  TOP-1: β = atan(Δy/span) = 53.1301° (record 53.1301)
+  ok  TOP-2: L = 600/cos 0° = 600.0000 (record 600)
+  ok  TOP-2: L_MAX = L + 18·tan 0° = 600.0000 (record 600, cut size 600)
+  ok  TOP-2: footprint = 18/cos 0° = 18.0000 (record 18)
+  ok  TOP-2: thickness is 18 and does NOT thicken
+  ok  TOP-2: no dog bones (0 pockets)
+  ok  TOP-2: spans 300..900 of the FULL width
+  ok  TOP-2: β = atan(Δy/span) = 0.0000° (record 0)
+  ok  TOP-3: L = 300/cos 59.0362° = 583.0945 (record 583.0952)
+  ok  TOP-3: L_MAX = L + 18·tan 59.0362° = 613.0944 (record 613.0952, cut size 613.0952)
+  ok  TOP-3: footprint = 18/cos 59.0362° = 34.9857 (record 34.9857)
+  ok  TOP-3: thickness is 18 and does NOT thicken
+  ok  TOP-3: no dog bones (0 pockets)
+  ok  TOP-3: spans 900..1200 of the FULL width
+  ok  TOP-3: β = atan(Δy/span) = 59.0362° (record 59.0362)
+  ok  INFILL-T-FACE-1: +20 on the top edge, nominal 40
+  ok  INFILL-T-FACE-1: the ceiling edge is +20
+  ok  INFILL-T-FACE-1: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-SHELF-1: +20 on the back edge, nominal 80
+  ok  INFILL-T-SHELF-1: the wall edge is +20
+  ok  INFILL-T-SHELF-1: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-FACE-2: +20 on the top edge, nominal 40
+  ok  INFILL-T-FACE-2: the ceiling edge is +20
+  ok  INFILL-T-FACE-2: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-SHELF-2: +20 on the back edge, nominal 80
+  ok  INFILL-T-SHELF-2: the wall edge is +20
+  ok  INFILL-T-SHELF-2: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-FACE-3: +20 on the top edge, nominal 40
+  ok  INFILL-T-FACE-3: the ceiling edge is +20
+  ok  INFILL-T-FACE-3: the L corner is 45, whatever the ceiling does
+  ok  INFILL-T-SHELF-3: +20 on the back edge, nominal 80
+  ok  INFILL-T-SHELF-3: the wall edge is +20
+  ok  INFILL-T-SHELF-3: the L corner is 45, whatever the ceiling does
+  ok  INFILL-L-FACE: +20 on the left edge, nominal 40
+  ok  INFILL-L-FACE: the allowance hangs off x = -20
+  ok  INFILL-L-FACE: the L corner is 45, whatever the ceiling does
+  ok  INFILL-L-ARM: no oversize, and it touches no wall
+  ok  INFILL-R-FACE: +20 on the right edge, nominal 40
+  ok  INFILL-R-FACE: and the far edge is +20
+  ok  INFILL-R-FACE: the L corner is 45, whatever the ceiling does
+  ok  INFILL-R-ARM: no oversize, and it touches no wall
+
+EVERY NUMBER RE-DERIVED BY HAND AGREES.

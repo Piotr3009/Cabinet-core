@@ -19,8 +19,10 @@
 // So this module owns the line and nothing else does. `wallElements.js`
 // `wallHeightAt` is a one-line call into it (its own lerp is gone), the wall
 // mesh (`3d/Room.jsx`) traces `ceilingPolyline`, the drag clamp asks
-// `slopeStation`, and the engine is handed `slopeCutLine`'s two points and
-// never computes a ceiling at all.
+// `slopeStation`, and the engine is handed `slopeCutLine`'s POINTS and never
+// computes a ceiling at all. T47 made that a POLYLINE — `ceilingPolyline`'s
+// own vertices, knees and all — and the sentence is unchanged: one function
+// answers where the ceiling is, and everything else asks it.
 //
 // ─── WHY THE ENGINE IS HANDED POINTS AND NOT THIS MODULE ────────────────────
 //
@@ -29,8 +31,8 @@
 // the CUT as an input, exactly as it takes the plinth, the hinge standard and
 // the shaker frame: `paramsForEngine` resolves it here and hands two points
 // down. A bare `computeCabinet()` is handed none and cuts what the AutoLISP
-// cuts, which is what makes tonight's byte-identity gate hold
-// (`scripts/t46-classify.mjs`).
+// cuts, which is what makes the byte-identity gate hold
+// (`scripts/t46-classify.mjs`, and T47's `scripts/t47-classify.mjs`).
 //
 // ─── THE SCHEMA, RESTATED ONCE ──────────────────────────────────────────────
 //
@@ -172,11 +174,35 @@ export function ceilingPolyline({
 // floor (the legs, or a wall unit's mount height). So the cut handed down is
 // the ceiling line, minus the project's infill, minus `floorY`.
 //
-// TWO POINTS, per CLAUDE.md F3, and the reason a knee inside the unit does not
-// need a third: a straight line between the two edge values is BELOW the true
-// ceiling everywhere the true line has a knee, so a cabinet cut to it clears
-// the ceiling by construction. It is the conservative reading, which is the
-// only safe one when the alternative is a carcass 30 mm into the plaster.
+// ─── TURN 47 (CLAUDE.md F1): AND IT IS A POLYLINE ───────────────────────────
+//
+// The owner, the morning after T46, screenshot in hand:
+//
+//   *"jak sie konczy skos to powinno sie zalamywac kat tam gdzie sie zalamuje a
+//   nie od konca do konca szafy… w tym przypadku powinno byc czesc prosta i od
+//   momentu zalamania skos taki sam jak reszta skosu, nie moze byc od konca do
+//   konca szafy bo nie mamy ten sam skos i to nie zadziala."*
+//
+// T46 sampled the ceiling at the unit's two edges and handed the engine a
+// STRAIGHT LINE between them. It defended that as "the conservative reading —
+// below the true ceiling everywhere the true line has a knee, so the cabinet
+// clears the plaster by construction". The defence is true about the CLEARANCE
+// and false about the CUT: a board bevelled to a line the wall does not have
+// meets the plaster at an angle, and the joiner has a gap he cannot close. It
+// is a production defect, and the owner named it as one.
+//
+// So the cut is the CEILING'S OWN POLYLINE, and there is nothing to invent:
+// `ceilingPolyline` (above, T46's own) already puts a vertex at every knee.
+// The three subtractions T46 made to two ends are made to EVERY vertex.
+//
+// TWO SLOPES IN ONE UNIT fall out for free — a wall with an L slope and an R
+// slope gives a line that descends, runs flat, and descends again. There is no
+// second code path, because there was never a first one: it is the same
+// `ceilingAt`, sampled at the same knees.
+//
+// A UNIT UNDER ONE STRAIGHT RUN yields TWO points, and its geometry is
+// unchanged from T46 vertex for vertex. That is the safety net for the whole
+// rewrite and `test/turn47-f1-the-line-bends.test.js` asserts it.
 
 /**
  * The slope cut for a unit standing at `x` on this wall, or NULL when the unit
@@ -194,8 +220,11 @@ export function ceilingPolyline({
  *   width       the unit's width
  *   infill      the project's infill — the scribe gap (owner, 24.08)
  *   floorY      how far the carcass floor stands above the room floor
- * @returns {{axis:'width', x0:number, y0:number, x1:number, y1:number,
- *            infill:number, low:'L'|'R'}|null}
+ * @returns {{axis:'width', pts:Array<{x:number,y:number}>, infill:number,
+ *            low:'L'|'R'}|null}
+ *   `pts` is UNIT-LOCAL: x from 0 at the unit's left edge, y clear millimetres
+ *   above the carcass floor, left to right, a vertex at every knee, always at
+ *   least two.
  */
 export function slopeCutLine({
   slopes, wallWidth, wallHeight, x = 0, width = 0, infill = 0, floorY = 0,
@@ -207,43 +236,119 @@ export function slopeCutLine({
   const gap = Math.max(0, num(infill, 0));
   const base = Math.max(0, num(floorY, 0));
   if (!(uw > 0) || !(h > 0)) return null;
-  const yL = ceilingAt(left, slopes, { wallWidth: w, wallHeight: h });
-  const yR = ceilingAt(left + uw, slopes, { wallWidth: w, wallHeight: h });
   // Neither edge is under a slope AND no knee between them dips — the unit is
   // under a flat ceiling and there is no cut at all. `isCut` over the unit's
   // own span answers the middle case (a unit straddling a ridge).
   if (!isCut(slopes, { wallWidth: w, wallHeight: h, from: left, to: left + uw })) return null;
+  // ONE call, and it is the one that already knows where the knees are. Every
+  // vertex takes the same three subtractions T46 made to its two ends: into the
+  // unit's frame, less the scribe gap, less the carcass floor.
+  const line = ceilingPolyline({
+    slopes, wallWidth: w, wallHeight: h, from: left, to: left + uw,
+  });
+  const pts = line.map((p) => ({ x: round4(p.x - left), y: round4(p.y - gap - base) }));
+  if (pts.length < 2) return null;
+  const first = pts[0];
+  const last = pts[pts.length - 1];
   return {
     axis: 'width',
-    x0: 0,
-    y0: round4(yL - gap - base),
-    x1: round4(uw),
-    y1: round4(yR - gap - base),
+    pts,
     infill: round4(gap),
-    low: yR <= yL ? 'R' : 'L',
+    low: last.y <= first.y ? 'R' : 'L',
   };
 }
 
-/** The clear carcass height the cut leaves at a point along the unit. */
-export function cutHeightAt(cut, xMm) {
-  if (!cut) return Infinity;
-  const span = num(cut.x1, 0) - num(cut.x0, 0);
-  if (!(Math.abs(span) > 1e-9)) return round4(num(cut.y0, 0));
-  const t = (num(xMm, 0) - num(cut.x0, 0)) / span;
-  return round4(num(cut.y0, 0) + (num(cut.y1, 0) - num(cut.y0, 0)) * t);
+/**
+ * The line of a cut, normalised — `[{x, y}, …]`, left to right, at least two.
+ *
+ * A cut carrying `pts` answers with them. A cut carrying T46's `{y0, y1}` pair
+ * answers with the two vertices that pair always WAS, which is what keeps every
+ * fixture, every saved project and the whole T46 suite reading straight: the
+ * straight run is not a special case of the polyline, it is a polyline of two
+ * points.
+ */
+export function cutPoints(cut) {
+  if (!cut) return null;
+  if (Array.isArray(cut.pts)) {
+    const pts = cut.pts
+      .map((p) => ({ x: num(p?.x, NaN), y: num(p?.y, NaN) }))
+      .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+      .sort((a, b) => a.x - b.x);
+    return pts.length >= 2 ? pts : null;
+  }
+  const y0 = num(cut.y0, NaN);
+  const y1 = num(cut.y1, NaN);
+  if (!Number.isFinite(y0) || !Number.isFinite(y1)) return null;
+  return [{ x: num(cut.x0, 0), y: y0 }, { x: num(cut.x1, 0), y: y1 }];
 }
 
-/** Which end of a cut unit is the LOW one, and which keeps its height. */
+/**
+ * The clear carcass height the cut leaves at a point along the unit.
+ *
+ * T47: interpolated WITHIN the containing segment, never across the whole span.
+ * Beyond either end the line holds its end value — which is exactly what T46's
+ * own clamp did, and what `engine/puzzle.js slopeHeightAt` does beside it.
+ */
+export function cutHeightAt(cut, xMm) {
+  const pts = cutPoints(cut);
+  if (!pts) return Infinity;
+  const x = num(xMm, 0);
+  const last = pts[pts.length - 1];
+  if (x <= pts[0].x) return round4(pts[0].y);
+  if (x >= last.x) return round4(last.y);
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    if (x <= b.x) {
+      const span = b.x - a.x;
+      if (!(span > 1e-9)) return round4(b.y);
+      return round4(a.y + (b.y - a.y) * ((x - a.x) / span));
+    }
+  }
+  return round4(last.y);
+}
+
+/**
+ * Which end of a cut unit is the LOW one, and which keeps its height.
+ *
+ * T47: it reads the FIRST AND LAST VERTEX of the line, which on a straight run
+ * is the same pair of numbers it always read. `lowY`/`tallY` stay the two ENDS
+ * — for the lowest point ANYWHERE on the line (which may now be a knee) ask
+ * `cutValley`.
+ */
 export function cutEnds(cut) {
-  if (!cut) return null;
-  const y0 = num(cut.y0, 0);
-  const y1 = num(cut.y1, 0);
+  const pts = cutPoints(cut);
+  if (!pts) return null;
+  const y0 = pts[0].y;
+  const y1 = pts[pts.length - 1].y;
   return {
     low: y1 <= y0 ? 'R' : 'L',
     tall: y1 <= y0 ? 'L' : 'R',
     lowY: round4(Math.min(y0, y1)),
     tallY: round4(Math.max(y0, y1)),
   };
+}
+
+/**
+ * The LOWEST point of the line, wherever it falls.
+ *
+ * Under T46 that was always an end. Under a bent line it may be a knee — a
+ * ceiling that comes down from both sides has its low points at the two ends,
+ * and one that comes down into a valley has it in the middle — so anything
+ * asking "is there enough cabinet left" has to ask the whole line, not its
+ * ends. (`SKY:cutValleyBetween`, the LISP's own.)
+ */
+export function cutValley(cut) {
+  const pts = cutPoints(cut);
+  if (!pts) return Infinity;
+  return round4(pts.reduce((lo, p) => Math.min(lo, p.y), Infinity));
+}
+
+/** The tallest point of the line — the "czubek skosu" a side is run up to. */
+export function cutPeak(cut) {
+  const pts = cutPoints(cut);
+  if (!pts) return Infinity;
+  return round4(pts.reduce((hi, p) => Math.max(hi, p.y), -Infinity));
 }
 
 // ─── F2: THE ARRIVAL LAW ────────────────────────────────────────────────────

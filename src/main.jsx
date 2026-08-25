@@ -90,6 +90,11 @@ import * as ledGroove from './lib/ledGroove.js';
 import * as ledStrips from './engine/ledStrips.js';
 import * as slopeLine from './lib/slopeLine.js';
 import * as roomEngine from './engine/room.js';
+// Turn 47: the polyline cut, the roof board's arithmetic and the one formatter
+// that words a bevel — published for the acceptance walk below.
+import * as puzzle from './engine/puzzle.js';
+import * as partLabel from './engine/cnc/partLabel.js';
+import * as frontElevation from './engine/drawings/frontElevation.js';
 import { useCompanyDefaultsStore } from './stores/companyDefaultsStore.js';
 
 // ─── The end-to-end handle (turn 11, CLAUDE.md F10) ─────────────────────────
@@ -344,6 +349,19 @@ if (typeof window !== 'undefined') {
   // of one function — so a claim about where the ceiling is has to be read off
   // that function rather than off a picture of a wall (R4). Pure; it reaches
   // nothing the page could not already compute.
+  // ─── Turn 47 (CLAUDE.md iron rule 5: "real pointer input") ───────────────
+  //
+  // The walk has to be able to ask the APP for the three things this turn
+  // computes and no picture can prove: the polyline the cut becomes, the roof
+  // board's L / L_MAX / β, and the words the sheet stamps beside a bevel. All
+  // three are pure and reach nothing the page could not already compute — the
+  // same rule every block on this list is here under.
+  window.__ccT47 = {
+    slope: slopeLine,
+    puzzle,
+    partLabel,
+    elevation: frontElevation,
+  };
   window.__ccT46 = {
     slope: slopeLine,
     wall: wallElements,

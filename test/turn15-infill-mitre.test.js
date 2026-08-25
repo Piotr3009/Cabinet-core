@@ -151,13 +151,32 @@ test('the filler is CUT to the same size — only its outline moves', () => {
   const filler = byId(a, 'INFILL-L-FACE');
   const width = store().units.find((u) => u.id === a).params.side_infill_left_mm;
 
-  assert.equal(filler.w, width, 'the cut piece is still as wide as the gap');
+  // T47-F4: the CUT piece is the gap plus the scribe allowance on its WALL
+  // edge, and the MITRE keeps its long point — which is the whole of "the
+  // mitre is a JOINT, not an allowance". The outline grows away from the
+  // corner, so the corner has not moved at all (the test above measures it).
+  const OVER = P.autoParts.fillerOversize;
+  assert.equal(filler.w, width + OVER, 'the cut piece is the gap plus the scribe');
+  assert.equal(filler.box.w, width, 'and the piece that stands in the room is the gap');
+  assert.deepEqual(filler.meta.oversize, { mm: OVER, edge: 'left', nominal: width });
   const xs = filler.cnc.outline.map(([x]) => x);
   const ys = filler.cnc.outline.map(([, y]) => y);
+  assert.equal(Math.min(...xs), -OVER, 'the allowance hangs off the WALL end');
+  assert.equal(Math.max(...xs), width, 'and the inner edge is exactly where it was');
   assert.equal(Math.max(...xs) - Math.min(...xs), filler.w, 'the outline still spans the full width');
   assert.equal(Math.max(...ys) - Math.min(...ys), filler.h, '…and the full height');
   // THE DELTA: it is no longer a rectangle.
-  assert.equal(filler.cnc.outline.length, 4);
+  // FIVE points now, not four: the 100 mm chamfer used to eat the whole 100 mm
+  // width and left a triangle; with the 20 hanging off the wall end there is a
+  // square 20 beyond it. The MITRE ITSELF has not moved — its long point is
+  // still (width, h − m) and its short point still (0, h), in the piece's own
+  // frame — which is the claim, and the joint test above measures it in the
+  // room's frame.
+  assert.equal(filler.cnc.outline.length, 5);
+  const m = store().units.find((u) => u.id === a).params.run_top_infill.sideMitre.left;
+  const has = (x, y) => filler.cnc.outline.some(([px, py]) => Math.abs(px - x) < 1e-6 && Math.abs(py - y) < 1e-6);
+  assert.ok(has(width, filler.h - m), 'the mitre\'s long point is where it always was');
+  assert.ok(has(width - m, filler.h), 'and so is its short point');
   assert.notDeepEqual(filler.cnc.outline, [[0, 0], [filler.w, 0], [filler.w, filler.h], [0, filler.h]]);
   assert.deepEqual(filler.meta.mitre_45, ['end']);
 });
@@ -194,9 +213,15 @@ test('a run with no such corner cuts exactly what it cut before', () => {
   }, P);
   const face = solo.panels.find((p) => p.id === 'INFILL-T-FACE');
   const filler = solo.panels.find((p) => p.id === 'INFILL-L-FACE');
-  assert.deepEqual(face.cnc.outline, [[0, 0], [600, 0], [600, 100], [0, 100]]);
+  // T47-F4: every infill leaves the machine 20 over on the edge it is scribed
+  // to — the CEILING for the top face, the WALL for the side filler — and the
+  // rest of the outline is exactly what it was. That is this turn's one named
+  // infill delta and it is the same 20 on every piece.
+  const OVER = P.autoParts.fillerOversize;
+  assert.deepEqual(face.cnc.outline, [[0, 0], [600, 0], [600, 100 + OVER], [0, 100 + OVER]]);
   assert.equal(filler.cnc.outline.length, 4);
-  assert.deepEqual(filler.cnc.outline, [[0, 0], [120, 0], [120, filler.h], [0, filler.h]]);
+  assert.deepEqual(filler.cnc.outline,
+    [[-OVER, 0], [120, 0], [120, filler.h], [-OVER, filler.h]]);
   assert.equal(filler.meta.mitre_45, undefined);
 });
 

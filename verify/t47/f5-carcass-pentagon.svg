@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="990.5mm" height="2613.5mm"
+ viewBox="0 0 990.5 2613.5" data-cc-drawing="front-elevation">
+<rect x="0" y="0" width="990.5" height="2613.5" fill="#ffffff"/>
+<line x1="100.5" y1="2250.5" x2="118.5" y2="2250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="118.5" y1="2250.5" x2="118.5" y2="118.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="118.5" y1="118.5" x2="100.5" y2="118.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="100.5" y1="118.5" x2="100.5" y2="2250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="682.5" y1="2250.5" x2="700.5" y2="2250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="700.5" y1="2250.5" x2="700.5" y2="1090.749" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="700.5" y1="1090.749" x2="682.5" y2="1054.749" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="682.5" y1="1054.749" x2="682.5" y2="2250.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="100.5" y1="118.5" x2="225.5" y2="118.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="225.5" y1="118.5" x2="225.5" y2="100.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="225.5" y1="100.5" x2="100.5" y2="100.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="100.5" y1="100.5" x2="100.5" y2="118.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="225.5" y1="140.749" x2="700.5" y2="1090.749" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="700.5" y1="1090.749" x2="700.5" y2="1050.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="700.5" y1="1050.5" x2="225.5" y2="100.5" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<line x1="225.5" y1="100.5" x2="225.5" y2="140.749" stroke="#111111" stroke-width="0.35" stroke-linecap="round" data-layer="CARCASE"/>
+<rect x="118.5" y="2232.5" width="564" height="18" fill="none" stroke="#111111" stroke-width="0.35" data-layer="CARCASE"/>
+<rect x="100.5" y="100.5" width="600" height="2150" fill="none" stroke="#111111" stroke-width="0.5" data-layer="CARCASE"/>
+<rect x="118.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<rect x="604.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<rect x="118.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<rect x="604.5" y="2250.5" width="78" height="100" fill="none" stroke="#8A8A8A" stroke-width="0.18" data-layer="LEG_BLOCK"/>
+<text x="400.5" y="1175.5" font-size="120" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#009A3D" text-anchor="middle" dominant-baseline="central" data-layer="UNIT_NUMBER">01</text>
+<line x1="100.5" y1="2386.5" x2="100.5" y2="2553.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="700.5" y1="2386.5" x2="700.5" y2="2553.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="100.5" y1="2490.5" x2="700.5" y2="2490.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="60" y1="2531" x2="141" y2="2450" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="660" y1="2531" x2="741" y2="2450" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<text x="400.5" y="2450" font-size="90" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#1B2A4A" text-anchor="middle" dominant-baseline="central" data-layer="DIMENSIONS">600</text>
+<line x1="736.5" y1="2350.5" x2="903.5" y2="2350.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="736.5" y1="100.5" x2="903.5" y2="100.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="840.5" y1="2350.5" x2="840.5" y2="100.5" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="800" y1="2391" x2="881" y2="2310" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<line x1="800" y1="141" x2="881" y2="60" stroke="#1B2A4A" stroke-width="0.18" stroke-linecap="round" data-layer="DIMENSIONS"/>
+<text x="840.5" y="1225.5" font-size="90" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" fill="#1B2A4A" text-anchor="middle" dominant-baseline="central" transform="rotate(-90 840.5 1225.5)" data-layer="DIMENSIONS">2250</text>
+</svg>

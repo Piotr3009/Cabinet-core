@@ -1,4 +1,5 @@
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { COLORS } from './constants.js';
 
@@ -34,6 +35,124 @@ import { COLORS } from './constants.js';
 // It is a LOOK change and it moves nothing: the same sprite, the same
 // billboarding, the same `allowOverride` rule that keeps a label out of the
 // shadow pass.
+
+// ─── TURN 48 (CLAUDE.md F8): A LABEL HOLDS ITS SIZE ON SCREEN ───────────────
+//
+// The owner, 25.08.2026: *"zeby zawsze wymiary byly takie same niezaleznie jak
+// bardzo sie odsuniemy od mebla."*
+//
+// MEASURED FAULT. A sprite is sized in WORLD units, so three.js draws it
+// smaller the further away it is — which is right for a board and wrong for a
+// caption. `DimLabel` asked for 0.055 world units, which is 55 mm of furniture,
+// so the number that says how wide a cabinet is shrank with the cabinet: a hair
+// of type across a room, a banner with your nose against a drawer front. A
+// drawing office's figures are the one thing on a drawing that does NOT scale.
+//
+// THE LAW, and it is three lines of arithmetic. A perspective camera shows a
+// world height of `2·tan(fov/2)·depth` across the viewport; an orthographic one
+// shows `(top − bottom)/zoom`, whatever the depth. Divide either by the
+// viewport's height IN PIXELS and you have the world size of one pixel at that
+// distance. Multiply by the pixel height you want and the sprite is that many
+// pixels tall — at any distance, through any zoom, in both projections.
+//
+// `depth` is the VIEW-SPACE depth (−z in camera space), not the straight-line
+// distance to the camera: screen size falls off with the projected depth, and a
+// label at the edge of a wide viewport would otherwise come out a little large.
+//
+// ─── ONE FILE, EVERY CONSUMER ───────────────────────────────────────────────
+//
+// The ruler, the hover readout, the room's wall captions, the unit view and the
+// aura all mount `DimLabel`, so they inherit this by being what they already
+// are. The dimension CHAINS own their own sprite (`3d/DimensionChain.jsx`
+// `DimensionValue`, deliberately — R11: a dimension's caption is one decision
+// in one place), so they import the law from here rather than copying it. Two
+// sprites, one rule, and the rule lives in the file CLAUDE.md names.
+//
+// ─── AND THE RELATIVE SIZES DO NOT MOVE ─────────────────────────────────────
+//
+// Every caption in this app is tuned as a multiple of `DimLabel`'s own 0.055 —
+// the chain's 0.8 of it, T29's ×1.3 on top of that (0.0572 in the profile), the
+// `scale` a caller passes. Those are the owner's own tuning and none of it is
+// this feature's business. So the WORLD number stays the datum and is converted:
+// `labelPixelHeight(0.055) === LABEL_PX_BASE`, and every ratio anybody ever set
+// survives to the pixel.
+//
+// ─── THE CAPTURE PATH ───────────────────────────────────────────────────────
+//
+// `3d/renderCapture.js` hides every sprite before it takes a picture (`isChrome`
+// — a label is TOOL, and a render is of the furniture), so nothing here reaches
+// a 4K still and the drawing buffer's own size never enters this arithmetic.
+// The viewport read below is the CANVAS's CSS height, which is what "pixels on
+// screen" means to the person looking at it. The day a label belongs in a
+// render, this comment is the line to come back to.
+
+/** The world height `DimLabel` drew at before F8 — the datum every relative
+ *  caption size in this app is expressed against.
+ *
+ *  Module-scope, like the two below it: `labelPixelHeight` and `useScreenScale`
+ *  are the whole of what anybody outside this file needs, and an export nothing
+ *  imports is what T31-F12's sweep is there to catch. */
+const LABEL_WORLD_BASE = 0.055;
+
+/** …and what that is worth ON SCREEN, in CSS pixels. Large enough that the
+ *  44 px type inside the 68 px canvas lands around 17 px tall, which is the
+ *  size the app's own `cc-label` is set in. */
+const LABEL_PX_BASE = 26;
+
+/** One of the old world heights → the pixel height that replaces it. */
+export function labelPixelHeight(worldHeight) {
+  return (LABEL_PX_BASE * (Number(worldHeight) || 0)) / LABEL_WORLD_BASE;
+}
+
+/**
+ * The world size of ONE PIXEL, at `depth` in front of `camera`.
+ *
+ * @param {THREE.Camera} camera
+ * @param {number} viewportHeightPx  the canvas's CSS height
+ * @param {number} depth             view-space depth (−z), ignored by an
+ *                                   orthographic camera, which has no falloff
+ */
+function worldPerPixel(camera, viewportHeightPx, depth) {
+  const px = Math.max(1, Number(viewportHeightPx) || 0);
+  if (!camera) return 0;
+  if (camera.isOrthographicCamera) {
+    const zoom = Math.abs(Number(camera.zoom)) || 1;
+    return Math.abs(camera.top - camera.bottom) / zoom / px;
+  }
+  const fov = ((Number(camera.fov) || 0) * Math.PI) / 180;
+  return (2 * Math.tan(fov / 2) * Math.max(0, Number(depth) || 0)) / px;
+}
+
+const VIEW = new THREE.Vector3();
+
+/**
+ * Hold an object at a constant PIXEL size, whatever the camera does.
+ *
+ * @param {number} pxHeight  how tall it should be, in CSS pixels
+ * @param {(object, worldHeight:number) => void} apply  what "that tall" means
+ *   for this object — a sprite sets `scale` from its aspect, a hit box from its
+ *   own proportions. The caller owns the shape; this owns the size.
+ * @returns {import('react').MutableRefObject} the ref to hang on the object
+ */
+export function useScreenScale(pxHeight, apply) {
+  const ref = useRef(null);
+  const viewportH = useThree((state) => state.size.height);
+  useFrame(({ camera }) => {
+    const object = ref.current;
+    if (!object || !camera) return;
+    // Both matrices refreshed HERE rather than trusted: three updates them
+    // inside `render()`, which runs after this, so reading them raw would size
+    // every label to where it and the camera were one frame ago — visible as a
+    // shimmer the whole time an orbit is moving.
+    object.updateWorldMatrix(true, false);
+    camera.updateMatrixWorld();
+    VIEW.setFromMatrixPosition(object.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+    const h = pxHeight * worldPerPixel(camera, viewportH, -VIEW.z);
+    if (h > 0) apply(object, h);
+  });
+  return ref;
+}
+
 export default function DimLabel({
   position, text, scale = 1, tone = 'dim', colour = null, variant = 'bubble',
 }) {
@@ -113,11 +232,18 @@ export default function DimLabel({
 
   useEffect(() => () => texture.dispose(), [texture]);
 
-  const h = 0.055 * scale;
-  const w = h * (texture.userData.aspect || 3);
+  // T48-F8: the size is now a PIXEL height, and `scale` still means exactly
+  // what it meant — a multiple of the app's own caption size.
+  const aspect = texture.userData.aspect || 3;
+  const px = LABEL_PX_BASE * (Number(scale) || 0);
+  const ref = useScreenScale(px, (sprite, h) => sprite.scale.set(h * aspect, h, 1));
+  // The world height this used to be, kept as the FIRST FRAME's value: the
+  // frame loop has not run when the sprite mounts, and a label that appears at
+  // scale 0 for one frame is a flicker on every hover.
+  const h0 = LABEL_WORLD_BASE * scale;
 
   return (
-    <sprite position={position} scale={[w, h, 1]} renderOrder={10}>
+    <sprite ref={ref} position={position} scale={[h0 * aspect, h0, 1]} renderOrder={10}>
       {/* `allowOverride` — a label is TOOL, and tool casts no shadow. Without
           it the sprite renders into the contact-shadow depth pass (turn 9,
           CLAUDE.md F1.3) and prints a small dark square on the floor beside the

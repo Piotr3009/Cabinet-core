@@ -33,10 +33,18 @@ test('F4 the rendered label is a THIRD bigger — the number the eye measures', 
   assert.ok(Math.abs(style.labelHeight / BEFORE.heightM - 1.3) < 1e-9,
     `${style.labelHeight} is ${(style.labelHeight / BEFORE.heightM).toFixed(3)}× 0.044`);
   // …and it is the SPRITE's height, not the canvas's: a bigger canvas at the
-  // same world size is a sharper label of exactly the same size, which is not
-  // what was asked for.
+  // same size is a sharper label of exactly the same size, which is not what
+  // was asked for.
+  //
+  // ─── T48-F8 CHANGES THE UNIT, NOT THE RATIO ────────────────────────────
+  // The owner, 25.08.2026: *"zeby zawsze wymiary byly takie same niezaleznie
+  // jak bardzo sie odsuniemy od mebla."* The sprite is sized in PIXELS now,
+  // and `style.labelHeight` is still the number it is sized FROM —
+  // `labelPixelHeight` converts this turn's ×1.3 straight through, so the
+  // assertion above (the ratio to turn 25's 0.044) is untouched and the one
+  // below follows the world height into the converter.
   assert.match(CHAIN, /const h = style\.labelHeight;/);
-  assert.match(CHAIN, /scale=\{\[w, h, 1\]\}/);
+  assert.match(CHAIN, /useScreenScale\(labelPixelHeight\(h\)/);
   assert.doesNotMatch(CHAIN, /const h = 0\.0\d+;/, 'no literal size left in the component');
 });
 

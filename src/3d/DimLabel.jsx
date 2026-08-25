@@ -94,6 +94,41 @@ import { COLORS } from './constants.js';
  *  imports is what T31-F12's sweep is there to catch. */
 const LABEL_WORLD_BASE = 0.055;
 
+// ─── CHAT-FIX 25.08.2026: HALF WAY, NOT ALL THE WAY ─────────────────────────
+//
+// T48-F8 pinned the label to a constant PIXEL height, and the owner is right
+// that it went too far: *"pozostawienie takiego samego wymiaru dimension przy
+// odsowaniu szafy nie byl dobry pomysl … niech sie pomniejszaja przez pol …
+// nie calkowicie jak przedtem."* The morning audit had already found the
+// symptom — pull back in a room and the captions collide, because nothing
+// shrinks to make room.
+//
+// Three behaviours, and the owner wants the middle one:
+//
+//   before T48   screen size ∝ 1/d      shrinks away to nothing
+//   T48          screen size ∝ 1        never shrinks, so they overlap
+//   HERE         screen size ∝ 1/√d     shrinks HALF as fast as the world
+//
+// Half in the exponent, which is what "przez pol" means for a size that falls
+// off with distance: double the distance and the caption loses about 30 %, not
+// all of it and not none. Legible far away, out of each other's way.
+//
+// `REF_DEPTH` is where the correction is neutral — at that depth the label is
+// exactly the pixel height T48 asked for, so every relative caption size in the
+// app still lands where the owner tuned it. The two clamps stop the ends of the
+// scale from misbehaving: without them a very far label returns to a speck and
+// a very near one to a banner, which are the two complaints this file has now
+// had one of each.
+const REF_DEPTH = 3;
+const MIN_FACTOR = 0.55;
+const MAX_FACTOR = 1.8;
+
+/** How much of the perspective fall-off to give back, at this view depth. */
+function halfWay(depth) {
+  const d = Math.max(1e-3, depth);
+  return Math.min(MAX_FACTOR, Math.max(MIN_FACTOR, Math.sqrt(REF_DEPTH / d)));
+}
+
 /** …and what that is worth ON SCREEN, in CSS pixels. Large enough that the
  *  44 px type inside the 68 px canvas lands around 17 px tall, which is the
  *  size the app's own `cc-label` is set in. */
@@ -147,7 +182,8 @@ export function useScreenScale(pxHeight, apply) {
     object.updateWorldMatrix(true, false);
     camera.updateMatrixWorld();
     VIEW.setFromMatrixPosition(object.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
-    const h = pxHeight * worldPerPixel(camera, viewportH, -VIEW.z);
+    const depth = -VIEW.z;
+    const h = pxHeight * halfWay(depth) * worldPerPixel(camera, viewportH, depth);
     if (h > 0) apply(object, h);
   });
   return ref;

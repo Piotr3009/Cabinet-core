@@ -2178,6 +2178,30 @@ export const DEFAULT_CABINET_PROFILE = {
       rim: 0.3,
       exposure: 1.0,
       shadowPadding: 600,
+      // ─── CHAT-FIX 25.08.2026: THE SHOWROOM BANDS ───────────────────────────
+      //
+      // The owner, four hot circles on a four-metre run: *"4 reflektory takie
+      // skupione na szafe"*, and what he wants instead is a showroom —
+      // *"ma byc jak w studio, jak showroom"* — with the gloss still reading:
+      // *"chce zeby polysk byl widoczny."*
+      //
+      // A tube as long as the run, hung above the fronts and set a little
+      // proud of them. Even along the whole length because the source is as
+      // long as the thing it lights, and a long soft streak in a gloss door
+      // instead of a hard white dot. One band per run: an L kitchen gets two,
+      // which is how a real showroom lights a corner.
+      band: {
+        intensity: 2.2,
+        colour: '#ffffff',
+        aboveMm: 700, // above the tallest cabinet in the run
+        forwardMm: 250, // proud of the fronts, the way a tube hangs
+        widthMm: 400, // the tube's own width — the short side of the source
+        spillMm: 300, // past each end, so the last cabinet is lit like the rest
+      },
+      // The jupiters are OFF and not deleted — the owner: *"narazie wylacz,
+      // ale nie usuwaj — w razie czego poprosimy, wlacz spoty."* Flip to true
+      // and every number below comes back exactly as turn 10 tuned it.
+      spotsOn: false,
       // ─── The shadow budget (turn 10, CLAUDE.md F1.4) ───
       // At most this many lights in the whole rig own a shadow map. It is a
       // COST rule, and the working view is where the cost is felt: every caster
@@ -4583,6 +4607,10 @@ export function migrateCabinetProfile(profile) {
         // tuned the share keeps it.
         ceiling: { ...D.appearance.studio.ceiling, ...profile.appearance?.studio?.ceiling },
         brightness: { ...D.appearance.studio.brightness, ...profile.appearance?.studio?.brightness },
+        // Chat-fix 25.08.2026: the showroom bands merge the same way, so a
+        // project saved before today gains them whole and one that has tuned
+        // its own tube keeps every number it set.
+        band: { ...D.appearance.studio.band, ...profile.appearance?.studio?.band },
         // ─── Turn 10 (CLAUDE.md F1/F5) ───
         // The lights that are LISTS — the jupiters and the glints — merge like
         // the other lists in this file: a stored profile that names them wins

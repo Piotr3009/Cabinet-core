@@ -78,8 +78,16 @@ test('the falloff is the VIEW-SPACE depth, not the distance to the camera', () =
   // Screen size falls off with the projected depth. Using the straight-line
   // distance would make a label at the edge of a wide viewport a little large —
   // which is exactly the kind of "nearly constant" this feature is replacing.
+  //
+  // AMENDED 25.08.2026: `-VIEW.z` is now read into a named `depth` first,
+  // because the chat-fix of that date needs the same number twice — once for
+  // the world-per-pixel and once for `halfWay`, which gives back only HALF the
+  // perspective fall-off (the owner: *"niech sie pomniejszaja przez pol"*).
+  // Same quantity, same source, one name.
   assert.match(LABEL, /VIEW\.setFromMatrixPosition\(object\.matrixWorld\)\.applyMatrix4\(camera\.matrixWorldInverse\);/);
-  assert.match(LABEL, /worldPerPixel\(camera, viewportH, -VIEW\.z\)/);
+  assert.match(LABEL, /const depth = -VIEW\.z;/, 'the view-space depth, named once');
+  assert.match(LABEL, /worldPerPixel\(camera, viewportH, depth\)/, 'and it is what the falloff reads');
+  assert.match(LABEL, /halfWay\(depth\)/, '…and what the half-way correction reads');
 });
 
 test('both matrices are refreshed in the frame, not trusted', () => {

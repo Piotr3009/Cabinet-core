@@ -229,7 +229,7 @@ export function Environment({ intensity, on }) {
  * so the whole rig scales with the job instead of being tuned for one kitchen.
  */
 function Lights({
-  roomHeight, roomWidth, shadow, studio, subject, brightness = 1,
+  roomHeight, roomWidth, shadow, studio, subject, brightness = 1, runs = [],
 }) {
   const key = useRef(null);
   // The box the shadow map has to cover, in scene units. Falls back to the room
@@ -274,13 +274,66 @@ function Lights({
   const keyCasts = studio.keyCastsShadow !== false;
   const budget = studio.shadowCasters ?? 2;
   const spots = useMemo(() => {
+    // ─── CHAT-FIX 25.08.2026: THE JUPITERS STEP BACK ─────────────────────────
+    // The owner, four hot circles on a four-metre run: *"narazie wylacz, ale
+    // nie usuwaj — w razie czego poprosimy, wlacz spoty."* So they are GATED,
+    // not deleted: `studio.spotsOn: false` ships them dark and one word in the
+    // profile brings them back, with every number they were tuned at intact.
+    if (studio.spotsOn === false) return [];
     let left = Math.max(0, budget - (keyCasts ? 1 : 0));
     return (studio.spots || []).map((s) => {
       const casts = Boolean(s.castShadow) && left > 0;
       if (casts) left -= 1;
       return { ...s, casts };
     });
-  }, [studio.spots, keyCasts, budget]);
+  }, [studio.spots, studio.spotsOn, keyCasts, budget]);
+
+  // ─── CHAT-FIX 25.08.2026: THE SHOWROOM BANDS ────────────────────────────────
+  //
+  // A point light falls off with the SQUARE of distance (`decay={2}`, three's
+  // own default and physically right), so on a four-metre run the cabinet under
+  // the lamp burns and the one three metres away goes dark. That is the owner's
+  // *"4 reflektory takie skupione na szafe"*, and no amount of re-aiming fixes
+  // it: the geometry is wrong, not the aim.
+  //
+  // A RectAreaLight as long as the run does fix it. The light arrives evenly
+  // along the whole front because the SOURCE is as long as the thing it lights,
+  // which is exactly why a showroom hangs tubes and not spotlights.
+  //
+  // And it is what keeps the owner's gloss: *"chce zeby polysk byl widoczny."*
+  // An area source reflects in a lacquered door as a long soft streak — a
+  // showroom tube in a gloss front — where a point source gives the hard white
+  // dot he photographed. Wider source, better highlight, not less of one.
+  //
+  // Two things it cannot do, so they stay as they are: a RectAreaLight casts NO
+  // shadow in three, which is why the key `directionalLight` below is untouched
+  // — the bands give the spread and the sheen, the key gives the solidity. And
+  // it takes no `decay`, which is the whole point.
+  const bands = useMemo(() => (runs || []).map(({ wall, bounds }) => {
+    const width = bounds.max[0] - bounds.min[0];
+    const depth = bounds.max[2] - bounds.min[2];
+    // ALONG the run: whichever way the cabinets are longer is the way the tube
+    // hangs. A run against the back wall runs in x, one down the side runs in z.
+    const alongX = width >= depth;
+    const centre = [0, 1, 2].map((i) => (bounds.min[i] + bounds.max[i]) / 2);
+    const over = mm(studio.band?.aboveMm ?? 700);
+    const spill = mm(studio.band?.spillMm ?? 300);
+    return {
+      wall,
+      // Set FORWARD of the fronts by a little, the way a tube sits proud of the
+      // units rather than buried in the wall behind them.
+      position: [
+        centre[0] + (alongX ? 0 : mm(studio.band?.forwardMm ?? 250)),
+        bounds.max[1] + over,
+        centre[2] + (alongX ? mm(studio.band?.forwardMm ?? 250) : 0),
+      ],
+      // As long as the run, plus a little past each end so the last cabinet is
+      // lit like the ones in the middle.
+      width: (alongX ? width : depth) + spill * 2,
+      height: mm(studio.band?.widthMm ?? 400),
+      alongX,
+    };
+  }), [runs, studio.band]);
 
   // ─── TURN 26 (CLAUDE.md F10): THE CEILING SOURCE, AND WHAT IT COSTS ───────
   //
@@ -396,6 +449,23 @@ function Lights({
           CLAUDE.md rule 13). `decay={2}` is three's own default in r0.180 and
           is written out anyway, because it is the reason the intensities in
           profile are in the twenties rather than around 1. */}
+      {/* ─── The showroom bands (chat-fix 25.08.2026) ───
+          One per run, hung above the fronts and turned to face DOWN. Rotated
+          about x by −90° so the emitting face looks at the floor, then about y
+          when the run goes the other way, so the tube always lies ALONG the
+          cabinets rather than across them. */}
+      {bands.map((b) => (
+        <rectAreaLight
+          key={`ccBand${b.wall}`}
+          userData={{ ccLight: 'band' }}
+          position={b.position}
+          rotation={[-Math.PI / 2, 0, b.alongX ? 0 : Math.PI / 2]}
+          width={b.width}
+          height={b.height}
+          intensity={(studio.band?.intensity ?? 2.2) * gain}
+          color={studio.band?.colour ?? '#ffffff'}
+        />
+      ))}
       {spots.map((s, i) => (
         <spotLight
           key={`ccSpot${i}`}
@@ -805,13 +875,37 @@ function ToneMapping({ exposure }) {
  * do not exist before that — and only when the units change, so an orbit does
  * not walk 400 meshes per frame.
  */
-function ShadowFit({ signal, unitsRef, onFit }) {
+function ShadowFit({ signal, unitsRef, onFit, units = [], onRuns = null }) {
   useEffect(() => {
     const id = requestAnimationFrame(() => {
-      onFit(furnitureBounds(Object.values(unitsRef.current).filter(Boolean)));
+      const groups = Object.values(unitsRef.current).filter(Boolean);
+      onFit(furnitureBounds(groups));
+      // ─── CHAT-FIX 25.08.2026: ONE BAND PER RUN ──────────────────────────
+      //
+      // The owner, on the four hot spots: *"z drugiej strony 4 reflektory
+      // takie skupione na szafe"* — and on an L kitchen: one band across both
+      // arms would not be *"naturalnie"*. In a real showroom the tubes run
+      // ALONG the run, and a corner has two, one per arm.
+      //
+      // A RUN is the cabinets on one wall, so the bands are grouped by wall
+      // and each gets the bounds of its own group. A wall with nothing on it
+      // gets no band — an empty wall needs no light — which is also why this
+      // is keyed on the FURNITURE and not on the room.
+      if (!onRuns) return;
+      const byWall = new Map();
+      for (const u of units) {
+        const group = unitsRef.current?.[u.id];
+        if (!group) continue;
+        const wall = u.position?.wall ?? 0;
+        if (!byWall.has(wall)) byWall.set(wall, []);
+        byWall.get(wall).push(group);
+      }
+      onRuns([...byWall.entries()]
+        .map(([wall, gs]) => ({ wall, bounds: furnitureBounds(gs) }))
+        .filter((r) => r.bounds));
     });
     return () => cancelAnimationFrame(id);
-  }, [signal, unitsRef, onFit]);
+  }, [signal, unitsRef, onFit, units, onRuns]);
   return null;
 }
 
@@ -1061,6 +1155,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // reason the wall and the floor are.
   const background = profile.appearance.room?.background || '#fafaf8';
   const [subject, setSubject] = useState(null);
+  // Chat-fix 25.08.2026: one bounds per RUN, so the showroom bands can hang one
+  // tube along each — an L kitchen gets two, a straight wall one.
+  const [runs, setRuns] = useState([]);
   // Recomputed with the units, not per frame: a door swing is decided by where
   // the cabinets stand, and that only changes when one of them moves.
   const wallGaps = useMemo(
@@ -1134,10 +1231,17 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         shadow={profile.render.shadow.normal}
         studio={studio}
         subject={subject}
+        runs={runs}
         // Turn 26 (CLAUDE.md F10.3): the View menu's slider, remembered.
         brightness={brightnessScale(brightness, profile) * demoDim}
       />
-      <ShadowFit signal={results} unitsRef={unitGroups} onFit={setSubject} />
+      <ShadowFit
+        signal={results}
+        unitsRef={unitGroups}
+        onFit={setSubject}
+        units={units}
+        onRuns={setRuns}
+      />
       {/* ─── Turn 17 (CLAUDE.md F11): the ruler ───
           Mounted always, drawn only when it is on. It reaches nothing: its
           state is the ui store's and it writes to no project field. */}

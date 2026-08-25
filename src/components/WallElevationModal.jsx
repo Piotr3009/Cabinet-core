@@ -13,9 +13,16 @@ import { getCabinetProfile } from '../engine/profile.js';
 import {
   CHIMNEY_DEFAULTS, MIN_ELEMENT_MM, PLAN_DEFAULTS, RECESS_DEFAULTS, SLOPE_DEFAULTS,
   clampPlanElement, dragSlope, elevationDimensionChains, elevationElements, moveOpening,
-  movePlanElement, newElementId, planElementsOnWall, slopePolygon, wallElevationIssues,
+  movePlanElement, newElementId, planElementsOnWall, slopePolygon, slopesOnWall, wallElevationIssues,
   wallElements as normaliseWallElements, wallSlopes as normaliseSlopes,
 } from '../lib/wallElements.js';
+// ─── TURN 49 (CLAUDE.md F8): THE DIALOG'S OWN ARITHMETIC ────────────────────
+// `flat + run = wall width`, and the rule about when Flat is asked at all. Pure
+// functions in a lib, so a node test can hold the dialog to its word — nothing
+// about `ceilingAt`, the cut line or the engine is involved.
+import {
+  TWO_SLOPES_NOTE, flatFieldShown, flatFromRun, runFromFlat,
+} from '../lib/slopeFlat.js';
 
 // ─── THE WALL, AND IT GETS A FACE (turn 44, CLAUDE.md F1) ───────────────────
 //
@@ -83,6 +90,11 @@ export default function WallElevationModal({
   // slope in the front view cannot drop a chimney the top view put there.
   const all = useMemo(() => normaliseWallElements(storedSlopes), [storedSlopes]);
   const slopes = useMemo(() => normaliseSlopes(storedSlopes), [storedSlopes]);
+  // T49 F8: the slopes of THIS wall, which is what decides whether the Flat
+  // field has one meaning. `slopesOnWall` is the reader `elevationElements` and
+  // the dimension chains already use, so there is no second answer to "how many
+  // slopes has this wall".
+  const slopesHere = useMemo(() => slopesOnWall(storedSlopes, wallIndex), [storedSlopes, wallIndex]);
   const plan = useMemo(() => planElementsOnWall(storedSlopes, wallIndex), [storedSlopes, wallIndex]);
   const walls = useMemo(() => roomWalls(draft), [draft]);
   const wall = walls[wallIndex] || walls[0] || null;
@@ -730,6 +742,10 @@ export default function WallElevationModal({
           anchor={editing.anchor}
           wallWidth={wallWidth}
           wallHeight={wallHeight}
+          // T49 F8: how many slopes THIS wall carries. With two the Flat field
+          // steps aside — *"jak beda 2 skosy to wtedy skosy musisz dac a nie
+          // flat"* — and each slope is entered by its own run.
+          slopeCount={slopesHere.length}
           opening={editingElement.kind === 'door' || editingElement.kind === 'window'
             ? openingsOf().find((o) => o.id === editingElement.id) || null
             : null}
@@ -839,6 +855,7 @@ function ToolArt({ kind }) {
  */
 function ElementModal({
   element, opening, anchor, wallWidth, wallHeight, onOpening, onSlope, onPlan, onRemove, onClose,
+  slopeCount = 1,
 }) {
   const isSlope = element.kind === 'slope';
   // T45 F1b: *"rectangles with width + depth, double-click for numbers"* — the
@@ -939,6 +956,30 @@ function ElementModal({
               />
               <span className="text-[11px] text-ink-400">mm</span>
             </label>
+            {/* ─── TURN 49 (CLAUDE.md F8): FLAT, AND THE RUN IT LEAVES ────────
+                A slope is entered today as `run` — the length of the fall. The
+                ARCHITECT gives the flat stretch instead: how far the ceiling
+                stays up, measured from the opposite corner. So the dialog takes
+                either, and `flat + run = wall width` is the whole of it: type
+                one and the other follows, and the sum is always the wall.
+
+                Nothing is STORED but the run. `flat` is a way of typing it,
+                derived from the wall the moment it is shown — `ceilingAt`, the
+                cut line and the engine are exactly what they were. */}
+            {flatFieldShown(slopeCount) && (
+              <label className="cc-row" data-slope-flat-row="1">
+                <span className="text-[11px] text-ink-400 w-24 shrink-0">Flat</span>
+                <NumberField
+                  className="cc-input w-24 text-right"
+                  data-slope-flat="1"
+                  value={flatFromRun(element.run, wallWidth)}
+                  min={0}
+                  max={wallWidth}
+                  onCommit={(v) => onSlope({ run: runFromFlat(v, wallWidth) })}
+                />
+                <span className="text-[11px] text-ink-400">mm from the far corner</span>
+              </label>
+            )}
             <label className="cc-row">
               <span className="text-[11px] text-ink-400 w-24 shrink-0">Run</span>
               <NumberField
@@ -951,9 +992,21 @@ function ElementModal({
               />
               <span className="text-[11px] text-ink-400">mm</span>
             </label>
-            <p className="text-[10px] text-ink-400">
-              How high the wall still is at that end, and how far along it takes to reach the ceiling.
-            </p>
+            {flatFieldShown(slopeCount) ? (
+              <p className="text-[10px] text-ink-400" data-slope-note="flat">
+                How high the wall still is at that end, and how far along it takes to reach the ceiling.
+                {' '}Flat and run always add up to the {formatMm(wallWidth)} mm wall — type either one.
+              </p>
+            ) : (
+              /* T49 F8: *"jak beda 2 skosy to wtedy skosy musisz dac a nie
+                 flat."* With a fall at both ends the level part is between
+                 them, so there is no distance from a corner to call "flat" —
+                 and a field that means two things is worse than one that means
+                 one. One short line, and the runs do the talking. */
+              <p className="text-[10px] text-status-warn" data-slope-note="two-slopes">
+                {TWO_SLOPES_NOTE}
+              </p>
+            )}
           </>
         ) : (
           <>

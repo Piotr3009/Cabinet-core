@@ -310,3 +310,129 @@ export function nextHangerOffset({ band, positions = [], zoneBase, fallback }, p
   const want = fallback == null || !Number.isFinite(Number(fallback)) ? highest : Number(fallback);
   return Math.max(E.minShelfGap, Math.min(want, highest));
 }
+
+// ─── THE FLOOR IS LAW (turn 48, CLAUDE.md F1) ───────────────────────────────
+//
+// The owner, 25.08.2026: *"zaden element nie moze spasc ponizej podlogi —
+// fizycznie to sie wyklucza."*
+//
+// He is describing a shoe shelf and a shoe box he had asked for low in a
+// wardrobe, both of which arrived sitting INSIDE the bottom board. Neither is a
+// bug in the shoe shelf or a bug in the shoe box: both are placed by the same
+// number — `pos_mm`, an element's own underside in cabinet millimetres — and
+// that number was floored at ZERO, which is the OUTSIDE of the carcass. Zero is
+// where the bottom board starts. The first 18 mm above it is board.
+//
+// ─── WHY ONE LAW AND NOT TWO PATCHES ────────────────────────────────────────
+//
+// A shoe-shelf clamp plus a shoe-box clamp would be two answers to one
+// question, and the third element somebody adds next month would arrive with
+// neither. So this is written where `centredShelfPos` lives, because it is the
+// same station: the pure function the STORE calls when it puts a piece
+// somewhere. Every element the store places — today's shelf, shoe shelf, shoe
+// box, partition, rail, and whatever a later turn invents — walks through it,
+// and an element that never existed when this was written is caught anyway.
+//
+// ─── WHAT "THE FLOOR" IS ────────────────────────────────────────────────────
+//
+// The CARCASS's own floor: the bottom panel's TOP FACE. Not zero, which is the
+// underside of that panel and belongs to the panel; not the drag band's `min`,
+// which is the floor plus the workshop's own minimum clear gap and is a
+// different, softer rule (a shelf may be pushed to the floor by a clamp, but a
+// joiner may not ask for one below it). A carcass with no bottom board at all
+// has a floor of zero, and the caller says which it has.
+//
+// ─── WHAT "THE LOWEST POINT" IS ─────────────────────────────────────────────
+//
+// `pos_mm` is a datum, not a shape. Every element in the app today has its
+// datum ON its lowest face, so `dropBelow` is 0 for all of them — but it is a
+// parameter rather than an assumption, because the next piece somebody hangs
+// (a basket on runners, a rod with a bracket that reaches down) will not, and
+// the law has to be about the BOX and not about the datum. What is clamped is
+// the element's lowest point; where it is put is the datum that follows.
+//
+// Pure arithmetic on three numbers — no profile, no store, no engine result.
+// `computeCabinet()` never calls it, which is why the six goldens cannot move
+// (iron rule 2: a golden is `defaultParamsFor()` handed straight to the engine,
+// with no store and no items at all).
+
+/**
+ * The floor law, applied to one asked-for position.
+ *
+ * @param {object} args
+ *   pos        the element's own datum — its underside, in cabinet mm
+ *   floor      the carcass floor: the bottom panel's TOP face
+ *   dropBelow  how far the element's box reaches BELOW its datum (0 for
+ *              everything the app places today)
+ * @returns {{pos:number, clamped:boolean}} the legal datum, and whether the
+ *   law had to move it. `clamped` is false to the hundredth for a piece that
+ *   was already legal — an element the law does not catch is not touched.
+ */
+export function floorClampedPos({ pos, floor = 0, dropBelow = 0 }) {
+  // `pos == null` FIRST, and not `Number.isFinite(Number(pos))` alone:
+  // `Number(null)` is 0, so "nobody said where" would read as "the underside of
+  // the carcass" and every element with no position would be lifted onto the
+  // floor by a law that was never asked about it. That is the trap this house
+  // has been bitten by twice — `sidePanelGeometry`'s `topAt` (T46) and
+  // `railSupportTops`' `stackTop` — and both times the fix was to ask "has
+  // anybody said" before reading the number.
+  if (pos == null) return { pos, clamped: false };
+  const want = Number(pos);
+  const f = Number(floor) || 0;
+  const drop = Math.max(0, Number(dropBelow) || 0);
+  if (!Number.isFinite(want)) return { pos, clamped: false };
+  const lowest = want - drop;
+  if (lowest >= f) return { pos: want, clamped: false };
+  return { pos: f + drop, clamped: true };
+}
+
+// ─── WHAT AN ELEMENT'S `pos_mm` IS MEASURED FROM ────────────────────────────
+//
+// Almost every one of them: the carcass. `pos_mm` is an absolute height in
+// cabinet millimetres, zero at the underside of the bottom board — the datum a
+// shelf has carried since turn 1 and the datum the shoe shelf and the shoe box
+// took from it.
+//
+// ONE element does not, and it is deliberate rather than an oversight: a RAIL's
+// number is a height above THE NEAREST THING UNDER IT (T35 F1, the owner's own
+// ruling — *"drążek ustawiamy zawsze od najbliższej czegoś od dołu"*), so its
+// support is already at or above the floor and clamping its offset to the floor
+// would push every rod in the app 18 mm up for no reason.
+//
+// The DEFAULT is the carcass, and that is the load-bearing half of this table:
+// an element nobody has invented yet is caught by the law because it says
+// nothing, rather than missed by it because nobody remembered to add a line.
+// Only the exception opts out, and it has to say so out loud.
+//
+// Module-scope and not exported: `posDatumOf` below is the whole of the public
+// question, and an exported table nothing imports is what T31-F12's sweep is
+// there to catch.
+const POS_DATUM = Object.freeze({ hanger: 'support' });
+
+/** Which datum this element's `pos_mm` is on — 'carcass' unless it says so. */
+export function posDatumOf(item) {
+  return POS_DATUM[item?.kind] || 'carcass';
+}
+
+/**
+ * The same law, applied to an ELEMENT RECORD — and STATED on it when it fires.
+ *
+ * `meta.floorClamped: true` is the element saying the law caught it, so a later
+ * turn can find the pieces that were asked for below the floor instead of
+ * guessing which ones moved. An element the law does not catch is handed back
+ * as the VERY OBJECT it came in as, identity included: nothing is rewritten to
+ * carry a `floorClamped: false` nobody asked for.
+ *
+ * @param {object} item      an item record (`{ kind, pos_mm, … }`)
+ * @param {object} args      floor, dropBelow — as `floorClampedPos`
+ * @returns {object} the item, or a clamped copy of it
+ */
+export function floorLawedItem(item, { floor = 0, dropBelow = 0 } = {}) {
+  if (!item || item.pos_mm == null || !Number.isFinite(Number(item.pos_mm))) return item;
+  // A number that is not a height above the carcass floor is not this law's
+  // business — see POS_DATUM above.
+  if (posDatumOf(item) !== 'carcass') return item;
+  const { pos, clamped } = floorClampedPos({ pos: item.pos_mm, floor, dropBelow });
+  if (!clamped) return item;
+  return { ...item, pos_mm: pos, meta: { ...(item.meta || {}), floorClamped: true } };
+}

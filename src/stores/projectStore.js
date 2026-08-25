@@ -107,8 +107,12 @@ import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith, topNeighbourDemand } from '../engine/doors.js';
 import {
-  centredShelfPos, drawersInEngineOrder, evenShelfPositions, nextHangerOffset, shelvesInEngineOrder,
+  centredShelfPos, drawersInEngineOrder, evenShelfPositions, floorLawedItem, nextHangerOffset,
+  shelvesInEngineOrder,
 } from '../engine/items.js';
+// T48-F1: the floor a piece may not fall through — the engine's own answer to
+// "where is the top face of the carcass bottom", asked rather than re-derived.
+import { interiorFloor } from '../engine/shelfHeights.js';
 // ─── TURN 35 (CLAUDE.md F1): the rail's datum, answered where it is knowable ─
 import { railDatumFor, railSupportTops } from '../engine/railDatum.js';
 // T37-F1: a piece selection spans cabinets — each member carries its own unit.
@@ -3354,7 +3358,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: s.units.map((u) => {
         if (u.id !== unitId) return u;
         const section = u.params.sections?.[0] || { width_mm: u.params.width, items: [] };
-        return { ...u, params: { ...u.params, sections: [{ ...section, items: [...section.items, { id, ...item }] }] } };
+        // T48-F1: THE FLOOR IS LAW — an element is BORN legal (`onTheFloor`).
+        const born = onTheFloor(u, { id, ...item });
+        return { ...u, params: { ...u.params, sections: [{ ...section, items: [...section.items, born] }] } };
       }),
     }));
     // A shelf added at a position someone else already occupies is a collision
@@ -4454,7 +4460,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const section = u.params.sections[0];
       return {
         ...u,
-        params: { ...u.params, sections: [{ ...section, items: section.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) }] },
+        // T48-F1: …and it STAYS legal. The same one station, on the other door
+        // in: a typed number, a drag, a modal's patch and an imported project
+        // all arrive here, and none of them may put a piece under the floor.
+        params: {
+          ...u.params,
+          sections: [{
+            ...section,
+            items: section.items.map((i) => (i.id === itemId ? onTheFloor(u, { ...i, ...patch }) : i)),
+          }],
+        },
       };
     }),
   })),
@@ -6488,6 +6503,70 @@ function splitBoundariesFor(unit, profile, zone, result) {
     // The divider is cut at the carcass board (cabinet.js cuts it `G` thick),
     // and its `y` is its underside — the same datum a shelf's `pos_mm` is on.
     .map((d) => ({ at: d.y, thickness: G }));
+}
+
+// ─── THE FLOOR IS LAW — THE ONE STATION (turn 48, CLAUDE.md F1) ─────────────
+//
+// The owner, 25.08.2026: *"zaden element nie moze spasc ponizej podlogi —
+// fizycznie to sie wyklucza."*
+//
+// MEASURED FAULT, and it is two symptoms of one cause. `addShoeBox` floored its
+// `pos_mm` at `Math.max(0, …)` and so did `setShoeBox`, and zero is the OUTSIDE
+// of the carcass — the underside of the bottom board. So a shoe box asked for
+// at the bottom of a wardrobe came back with all seven of its boards standing
+// at y = 0, inside the 18 mm of board under them, and a shoe SHELF dropped to
+// the same place by the same arithmetic. Neither is a fault of the shoe box or
+// of the shoe shelf. Both are the floor being read as zero.
+//
+// ONE LAW, ONE STATION. The arithmetic is `engine/items.js floorClampedPos`,
+// born beside `centredShelfPos` because it is the same question asked one step
+// earlier, and this is the only place in the store that calls it — from the two
+// doors every element in the app walks through, `addItem` and `updateItem`. A
+// shoe-shelf clamp plus a shoe-box clamp would have been two answers to one
+// question and the next element would have arrived with neither.
+//
+// WHAT IT DOES NOT TOUCH. An element already above the floor is handed back the
+// very object it came in as (`floorLawedItem` returns its argument), so nothing
+// legal moves by a hundredth. `computeCabinet()` never sees this function — a
+// golden is `defaultParamsFor()` handed straight to the engine, with no store
+// and no items at all — which is why the six stay byte-identical (iron rule 2).
+
+/**
+ * The carcass floor of one unit: the bottom panel's TOP face.
+ *
+ * A carcass whose bottom is not a BOARD (an open frame, a type that says so)
+ * has no board for a piece to sink into, and its floor is zero. The question is
+ * asked of the TYPE rather than assumed, because assuming it is how zero got to
+ * be the floor in the first place.
+ */
+function carcassFloorOf(unit, profile) {
+  // `?? 'panel'` is `engine/cabinet.js`'s own idiom for this key (`hasBottom`,
+  // L1453): the key is absent on almost every type and its absence means the
+  // carcass HAS a bottom. Reading it as 'none' would put the floor back at zero
+  // for the whole app, which is the fault this feature exists to remove.
+  if ((getUnitType(unit?.type)?.carcass?.bottom ?? 'panel') !== 'panel') return 0;
+  return interiorFloor(unit?.params?.board_t ?? profile.board.thickness);
+}
+
+/**
+ * How far one element's box reaches BELOW its own `pos_mm`.
+ *
+ * Every element the app places today has its datum on its lowest face, so this
+ * is 0 for all of them. It is a function and not a `0` written into the call
+ * because the law is about the element's LOWEST POINT and not about its datum:
+ * the day something is hung with a bracket that reaches down, this is the one
+ * line that has to change and the clamp itself does not.
+ */
+function dropBelowOf() {
+  return 0;
+}
+
+/** One element, on or above its carcass's floor — the whole of F1, applied. */
+function onTheFloor(unit, item, profile = getCabinetProfile()) {
+  return floorLawedItem(item, {
+    floor: carcassFloorOf(unit, profile),
+    dropBelow: dropBelowOf(item),
+  });
 }
 
 /** The band this unit's shelves may live in, read off the engine result. */

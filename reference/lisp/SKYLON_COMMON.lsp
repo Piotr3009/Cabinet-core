@@ -1375,6 +1375,66 @@
 ;;;----------------------------------------
 
 ;;;----------------------------------------
+;;; LAW (26.08.2026, the owner, with the door in his hand):
+;;;
+;;;   "puszka troche odstaje od lica ... drzwi maja 18 minus 6 daje 12, a
+;;;    puszka jest na glebokosc 11, wiec nie powinno byc widoczne. moze
+;;;    puszka jest oka, ale otwor jest za gleboki?"
+;;;
+;;; He is right, and the last four words are the whole of it. The CUP is the
+;;; only hole in these kits that does not go through, and its depth has always
+;;; been measured against THE BOARD. On a SHAKER the board is not what is under
+;;; the cup: the rebate is cut in the OUTER face, so where the cup lands in the
+;;; panel field there is `boardT - recessD` of material and nothing more. An
+;;; 18 mm shaker with a 6 mm rebate leaves 12; an 11 mm cup bored into it
+;;; leaves ONE millimetre of floor instead of seven, and one millimetre reads
+;;; through a sprayed face. At 16 mm board it would break out altogether.
+;;;
+;;; THE RULE: the bore takes the thickness AT THE CUP.
+;;;
+;;;   FULL BOARD  where the whole cup lands on the shaker's FRAME - the frame
+;;;               is not rebated, so the board is all there.
+;;;   LESS THE REBATE  where ANY of the cup reaches the panel field. The cup is
+;;;               a circle, so what decides is its FAR edge - `cupX + cupDia/2`
+;;;               from the hinge edge - and not its centre. A 35 mm cup at
+;;;               21.5 mm reaches 39 mm in, so a 60 mm frame carries it whole
+;;;               and a 30 mm frame does not.
+;;;
+;;; A PLAIN door has no rebate: `recessD` is 0, the thickness at the cup is the
+;;; board, and every number below is what it has always been - hole for hole.
+;;;
+;;; AND A FRONT TOO THIN TO TAKE A CUP IS REPORTED, NOT BORED SHALLOWER. A
+;;; silently shortened cup is a hinge that does not hold, discovered by a
+;;; customer. `SKY:cupTooThin` is the question; the application asks it in Check
+;;; (src/engine/checks.js) and says which door.
+;;;
+;;; Application follows this law in src/engine/doors.js (`cupThicknessAtBore`,
+;;; `cupBoreOf`).
+;;;----------------------------------------
+
+;;; The material UNDER THE CUP. `frameW` is the shaker frame; `recessD` the
+;;; rebate cut in the outer face; `cupX` the cup CENTRE from the hinge edge;
+;;; `cupDia` the cup. A plain door passes recessD 0 and gets boardT back.
+(defun SKY:cupThickness (boardT frameW recessD cupX cupDia)
+  (if (or (<= recessD 0.0)
+          (<= (+ cupX (/ cupDia 2.0)) frameW))
+    boardT
+    (- boardT recessD)))
+
+;;; How deep the cup may be bored. `want` is the hinge's own depth (11 for the
+;;; Hafele these kits draw); `keep` the floor that must remain so the bore stays
+;;; BLIND on any board this workshop cuts fronts from.
+(defun SKY:cupDepth (boardT frameW recessD cupX cupDia want keep / atCup)
+  (setq atCup (SKY:cupThickness boardT frameW recessD cupX cupDia))
+  (max 0.0 (min want (- atCup keep))))
+
+;;; Is this front too thin to take the cup the hinge actually needs? Answered
+;;; from the same two routines, so the report and the bore cannot disagree.
+(defun SKY:cupTooThin (boardT frameW recessD cupX cupDia want keep)
+  (< (SKY:cupDepth boardT frameW recessD cupX cupDia want keep) want))
+;;;----------------------------------------
+
+;;;----------------------------------------
 ;;; THE SEGMENTS, AND THEIR ANGLES
 ;;;----------------------------------------
 

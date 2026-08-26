@@ -52,6 +52,9 @@ import { takesPlinth } from './autoparts.js';
 import { riderIsOrphaned, riderOverlapMm } from './topBox.js';
 // Turn 50 (CLAUDE.md F3): …and is it standing INSIDE the room?
 import { roomFitFaults } from './roomFit.js';
+// T51 (CLAUDE.md F5): the ONE derivation of how deep a cup may go, so the
+// report and the bore cannot disagree about the same door.
+import { cupBoreOf } from './doors.js';
 import { panelWeight } from './lifts.js';
 // Turn 38 (CLAUDE.md F9): the two guards on what a hand has drawn on a print.
 import { manualGeometryFaults } from './partEdits.js';
@@ -805,6 +808,46 @@ export function runChecks({
       subject: { unitId: unit.id, editor: 'cabinet' },
       overlapMm: over.mm,
     }));
+  }
+
+  // ── #22 a front too thin to take a cup (T51-F5) ─────────────────────────
+  //
+  // The owner, 26.08.2026, with the door in his hand: *"puszka trochę odstaje
+  // od lica … drzwi mają 18 minus 6 daje 12, a puszka jest na głębokość 11 …
+  // może puszka jest oka, ale otwór jest za głęboki?"*
+  //
+  // The bore is measured against the material AT THE CUP now (`engine/doors.js
+  // cupThicknessAtBore`, following `SKY:cupThickness` in the LISP). Where that
+  // leaves less than the hinge actually needs, the bore is still CLAMPED — a
+  // cup must never break out while somebody reads a report — and CLAUDE.md is
+  // explicit about the other half: *"Report in Check when a front is too thin
+  // to take a cup at all, rather than silently boring a shallower one."*
+  //
+  // A shortened cup is a hinge that does not hold, found by a customer. RED.
+  for (const entry of entries) {
+    const num = entry.unit?.params?.unit_num || entry.result?.unitNum || entry.unit?.id || '';
+    for (const pnl of entry.result?.panels || []) {
+      if (pnl.part !== 'FRONT' || pnl.meta?.appliance) continue;
+      const bore = cupBoreOf(pnl, profile);
+      if (!bore || !bore.short) continue;
+      const where = pnl.meta?.shaker
+        ? `its ${Math.round(pnl.meta.shaker.frame)} mm shaker frame is narrower than the cup reaches, so the cup lands in the ${Math.round(bore.thicknessAtCup)} mm panel field`
+        : (pnl.meta?.glass
+          ? `the cup reaches past its ${Math.round(pnl.meta.glass.frame || 0)} mm frame into the glass aperture`
+          : `there is only ${Math.round(bore.thicknessAtCup)} mm of board under it`);
+      out.push(finding(22, 'red', {
+        unitId: entry.unit?.id || null,
+        unitNum: num,
+        panelId: pnl.id,
+        message: `${num}: this front cannot take a ${bore.wanted} mm hinge cup — ${where}, `
+          + `so the bore stops at ${Math.round(bore.depth * 10) / 10} mm. `
+          + 'Use a thinner front style, a wider frame, or a shallow-cup hinge.',
+        subject: { unitId: entry.unit?.id || null, editor: 'cabinet' },
+        boreMm: bore.depth,
+        wantedMm: bore.wanted,
+        thicknessAtCupMm: bore.thicknessAtCup,
+      }));
+    }
   }
 
   // ── #21 the slope took a hinge off a door (T50-F7) ──────────────────────

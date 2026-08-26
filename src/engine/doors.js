@@ -431,12 +431,80 @@ export function doorHingeDatum(panel) {
   return {
     // The cabinet's +z runs from the wall towards the room, so a front's box.z
     // IS its inner face and `box.z + box.d` is the face the customer sees.
-    // A shaker's `meta.shaker.depth` is deliberately not consulted: the rebate
-    // is in the outer face and moves neither plane.
+    // A shaker's `meta.shaker.depth` moves NEITHER PLANE — the rebate is cut
+    // in the outer face — so the datum is the datum for every leaf type.
+    //
+    // ─── TURN 51 (CLAUDE.md F5) ─────────────────────────────────────────────
+    //
+    // What the rebate DOES move is how much material stands under the cup, and
+    // this used to say the rebate was "deliberately not consulted" full stop.
+    // That sentence was right about the two planes and wrong about the bore:
+    // `thickness` here is the BOARD, and the bore must be measured against the
+    // board AT THE CUP, which on a shaker is less. See `cupThicknessAtBore`.
     innerZ: Number(box.z),
     outerZ: Number(box.z) + thickness,
     thickness,
   };
+}
+
+/**
+ * ─── TURN 51 (CLAUDE.md F5): THE MATERIAL UNDER THE CUP ─────────────────────
+ *
+ * The owner, 26.08.2026, with the door in his hand:
+ *
+ *   *"puszka trochę odstaje od lica … drzwi mają 18 minus 6 daje 12, a puszka
+ *   jest na głębokość 11, więc nie powinno być widoczne. może puszka jest oka,
+ *   ale otwór jest za głęboki?"*
+ *
+ * He is right, and the last four words are the whole of it. The cup is the one
+ * hole in this app that does not go through, and its depth was measured against
+ * THE BOARD. On a shaker the board is not what is under the cup: the rebate is
+ * cut in the OUTER face, so where the cup lands in the panel field there is
+ * `thickness − rebate` and nothing more. 18 − 6 = 12; an 11 mm cup leaves ONE
+ * millimetre of floor instead of seven, and one millimetre reads through a
+ * sprayed face. At 16 mm board it would break out altogether — which is the
+ * fault `cupFloorKeepMm` exists to prevent and was measuring the wrong
+ * thickness to catch.
+ *
+ * THE RULE — born in `reference/lisp/SKYLON_COMMON.lsp` (`SKY:cupThickness`),
+ * iron rule 3, and this is the application following it:
+ *
+ *   FULL BOARD       where the WHOLE cup lands on the shaker's frame — the
+ *                    frame is not rebated, so the board is all there.
+ *   LESS THE REBATE  where ANY of the cup reaches the panel field. The cup is
+ *                    a circle, so what decides is its FAR EDGE — `xFromHingeEdge
+ *                    + diameter/2` — and not its centre. A ⌀35 cup at 21.5
+ *                    reaches 39 mm in: a 60 mm frame carries it whole, a 30 mm
+ *                    frame does not.
+ *
+ * A GLASS front is the same sentence with the rebate going all the way through:
+ * the aperture is a hole, and a cup that reached it would be a cup in fresh
+ * air. It is measured at the frame and REFUSED beyond it (thickness 0), so the
+ * report below names it rather than the app boring into nothing.
+ *
+ * A PLAIN door has no rebate and gets its board back, to the millimetre.
+ *
+ * @returns {number} the material under the cup, in mm
+ */
+export function cupThicknessAtBore(panel, profile) {
+  const thickness = Number(panel?.box?.d) || 0;
+  if (!(thickness > 0)) return 0;
+  const cups = profile?.hinges?.cups || {};
+  const centre = Number(cups.xFromHingeEdge) || 0;
+  const reach = centre + (Number(cups.diameter) || 0) / 2;
+
+  const glass = panel.meta?.glass;
+  if (glass) {
+    const frame = Number(glass.frame) || 0;
+    // Past the frame there is no material at all — it is the aperture.
+    return reach <= frame ? thickness : 0;
+  }
+  const shaker = panel.meta?.shaker;
+  if (!shaker) return thickness;
+  const frame = Number(shaker.frame) || 0;
+  const rebate = Math.max(0, Number(shaker.depth) || 0);
+  if (!(rebate > 0)) return thickness;
+  return reach <= frame ? thickness : Math.max(0, thickness - rebate);
 }
 
 /**
@@ -455,6 +523,30 @@ export function cupBoreOf(panel, profile) {
   const wanted = Number(profile?.hardware?.hinge?.cupDepth) || 0;
   if (!(wanted > 0)) return null;
   const keep = Number(profile?.hardware?.hinge?.cupFloorKeepMm ?? 1);
-  const depth = Math.min(wanted, Math.max(0, datum.thickness - keep));
-  return { ...datum, depth, floorZ: datum.innerZ + depth };
+  // ─── TURN 51 (CLAUDE.md F5): AGAINST THE THICKNESS AT THE CUP ───────────
+  //
+  // Not `datum.thickness`, which is the BOARD. On a shaker whose frame is
+  // narrower than the cup's reach, the board is 18 and the material under the
+  // cup is 12 — and clamping against 18 left one millimetre of floor where
+  // seven were wanted. `SKY:cupDepth` is the same arithmetic in the LISP.
+  const atCup = cupThicknessAtBore(panel, profile);
+  const depth = Math.min(wanted, Math.max(0, atCup - keep));
+  return {
+    ...datum,
+    // The board is still the board — the two planes and the leaf's own
+    // thickness are unchanged, and everything that hangs a hinge off them
+    // reads exactly what it read.
+    thicknessAtCup: atCup,
+    depth,
+    floorZ: datum.innerZ + depth,
+    // ─── …AND A FRONT TOO THIN TO TAKE ONE IS REPORTED, NOT BORED SHALLOW ──
+    //
+    // *"Report in Check when a front is too thin to take a cup at all, rather
+    // than silently boring a shallower one."*  A shortened cup is a hinge that
+    // does not hold, found by a customer. The bore is still clamped — nothing
+    // is allowed to break out while somebody reads the report — and this says
+    // the clamp had to do something.
+    short: depth < wanted - 1e-6,
+    wanted,
+  };
 }

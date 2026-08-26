@@ -1,0 +1,212 @@
+{
+  "turn": 52,
+  "branch": "claude/turn-52-execution-aks5az",
+  "base": "34f5fc1",
+  "features": [
+    {
+      "id": "F1",
+      "title": "the run shares out from EITHER end, and takes every cabinet",
+      "status": "shipped",
+      "commit": "636b706",
+      "proof": [
+        "test/turn52-f1-the-run-shares-out-from-either-end.test.js",
+        "verify/t52/f1-the-run-before-parked-right.png",
+        "verify/t52/f1-the-run-shared-out-from-the-right.png"
+      ],
+      "measured": {
+        "before": {
+          "leftEdgeMm": 308,
+          "widths": [
+            600,
+            600,
+            600,
+            600,
+            600,
+            650
+          ],
+          "shadowMm": 2,
+          "runs_seen_by_buildRuns": 2
+        },
+        "bar": {
+          "gapMm": 308,
+          "eachMm": 653
+        },
+        "after": {
+          "leftEdgeMm": 40,
+          "widths": [
+            653,
+            653,
+            653,
+            653,
+            653,
+            655
+          ],
+          "rightEdgeMm": 3960,
+          "notices": 0
+        },
+        "anchor": "right",
+        "runUnits": 6
+      }
+    },
+    {
+      "id": "F2",
+      "title": "the cup does not show through the face",
+      "status": "shipped",
+      "commit": "bb91905",
+      "proof": [
+        "test/turn52-f2-the-cup-hides.test.js",
+        "verify/t52/f2-shaker-25mm-face.png",
+        "verify/t52/f2-shaker-25mm-stile.png",
+        "verify/t52/f2-shaker-18mm-face.png",
+        "verify/t52/f2-shaker-18mm-stile.png"
+      ],
+      "measured": {
+        "scene_frame_mm": {
+          "25mm_shaker": {
+            "door": [
+              -12.5,
+              12.5
+            ],
+            "cup_memberA": [
+              -21.7,
+              -1.5
+            ],
+            "arm_memberB": [
+              -100.8,
+              -26.6
+            ],
+            "crossings": 0
+          },
+          "18mm_shaker": {
+            "door": [
+              -9,
+              9
+            ],
+            "cup_memberA": [
+              -18.2,
+              2.0
+            ],
+            "arm_memberB": [
+              -97.3,
+              -23.1
+            ],
+            "crossings": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "F3",
+      "title": "LISP first: the dog-bone counts follow the height",
+      "status": "shipped",
+      "commit": "ac65cf1",
+      "proof": [
+        "reference/lisp/SKYLON_COMMON.lsp",
+        "test/turn52-f3-the-dog-bones-follow-the-height.test.js"
+      ],
+      "measured": {
+        "switch_three_below": 600,
+        "switch_one_at_or_below": 300,
+        "derived_floor": 346,
+        "probe": {
+          "700": 3,
+          "500": 2,
+          "280": 1
+        },
+        "goldens_shortest_height_mm": 720
+      }
+    },
+    {
+      "id": "F4",
+      "title": "the leftover, once more, and the bar tells the truth",
+      "status": "shipped",
+      "commit": "334faeb",
+      "proof": [
+        "test/turn52-f4-the-bar-tells-the-truth.test.js"
+      ],
+      "measured": {
+        "bar_said_mm": 653,
+        "built_mm": 653,
+        "t51_said_mm": 660,
+        "cause": "ShareOutBar called shareOutPlan with no wallMargin"
+      }
+    },
+    {
+      "id": "F5",
+      "title": "LISP first: the watch drawer",
+      "status": "shipped",
+      "commit": "21e9f1e",
+      "proof": [
+        "reference/lisp/KIT_WATCH_DRAWER.lsp",
+        "test/turn52-f5-the-watch-drawer.test.js",
+        "verify/t52/f5-the-watch-drawer-lit.png",
+        "verify/t52/f5-the-pockets-and-the-light.png"
+      ],
+      "measured": {
+        "dividerT": 9,
+        "insideDepthMm": 60,
+        "pocketTargetMm": 95,
+        "pocketRowDepthMm": 110,
+        "pocketMinMm": 60,
+        "pockets_at_500_inner": 5,
+        "pockets_at_800_inner": 8,
+        "built_on_900_wardrobe": {
+          "pockets": 7,
+          "pocketWidthMm": 92.3,
+          "sections": 3,
+          "parts": 14
+        },
+        "check_rule": 23
+      }
+    }
+  ],
+  "iron_rules": {
+    "zero_stop": "all five shipped; nothing sacrificed",
+    "byte_identity": {
+      "identical": 6,
+      "unnamed": 0
+    },
+    "lisp_first": {
+      "kits": 14,
+      "all_balanced": true,
+      "moved": [
+        "SKYLON_COMMON.lsp",
+        "KIT_WATCH_DRAWER.lsp (new)"
+      ]
+    },
+    "sanctity": "nothing deleted",
+    "suite": {
+      "tests": 4606,
+      "pass": 4606,
+      "fail": 0,
+      "silent": false
+    },
+    "dependencies_added": 0
+  },
+  "findings": [
+    {
+      "n": 1,
+      "about": "F2",
+      "text": "CLAUDE.md's F2 diagnosis names a procedural cup cylinder removed by the chat fix of 14.08.2026. The fault it predicts does NOT reproduce: measured in the room view and the cabinet editor, on a 25 mm shaker at both a 60 mm and a 30 mm frame, nothing of a hinge crosses the door's outer face."
+    },
+    {
+      "n": 2,
+      "about": "F2",
+      "text": "hardware.hinge.cupFloorKeepMm is 1. An 18 mm shaker whose cup overhangs the frame has 12 mm at the cup and is bored 11, leaving ONE millimetre of floor — which SKYLON_COMMON.lsp's own note calls unacceptable. That is the BORE, ruled out of scope tonight, so the number is untouched and this is written down instead."
+    },
+    {
+      "n": 3,
+      "about": "paren count",
+      "text": "CLAUDE.md asks for 13/13. F5 adds a fourteenth kit, which is what iron rule 3 asks for. 14/14 at 0/0, and the count is derived from the folder rather than typed in both the script and the suite."
+    }
+  ],
+  "not_touched": [
+    "the six goldens' bytes",
+    "the DXF export's emptiness",
+    "the lighting rig",
+    "the warehouse",
+    "runGap",
+    "hardware.hinge.cupFloorKeepMm"
+  ],
+  "screenshots": 8
+}

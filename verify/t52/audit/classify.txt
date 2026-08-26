@@ -1,0 +1,10 @@
+WARDROBE    IDENTICAL  f49a8c107dd6e66908412262c8c0c91613fe9d1523cce844b7ce68648a1f37c3
+BUD         IDENTICAL  44d091b837b08075fd155719253b85b9cc8c65437395a1d8b2f31b80d3b2db4c
+WUD         IDENTICAL  3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7
+BUDR        IDENTICAL  1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2
+BUDR4       IDENTICAL  583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17
+PANTRY      IDENTICAL  4df94682e4f80424aa770ffad3e5e143eb8e14902372ec2193fd4acb9e452289
+
+EXPECTED BUCKETS: none. F3 CUTS — it changes how many tenons a back edge takes — but only BELOW 600 mm, and the shortest of the six is 720 (--tabs). F5 cuts a whole tray, and only where a drawer ITEM asks for one, which no default parameter of any of the six does (--watch). F1 and F4 have no run to reach (--plan). F2 publishes four numbers on a hinge INSTANCE and moves a model in the scene — computeCabinet calls neither.
+IF A GOLDEN MOVED:  iron rule 2 — write it up as a FINDING. Do not name a bucket for it.
+UNNAMED:          0

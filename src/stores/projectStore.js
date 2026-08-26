@@ -5678,6 +5678,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }),
   })),
 
+  /**
+   * ─── TURN 52 (CLAUDE.md F5, decision 3): ONE DRAWER'S WATCH INSERT ───────
+   *
+   * *"The insert is its own BOM line, addable to any drawer — not a drawer
+   * type. That way a customer can have it in one drawer of six."*
+   *
+   * A FLAG on the drawer ITEM, orthogonal to its `variant`, so it composes
+   * with everything a drawer already is: a belt/tie drawer can carry one, an
+   * internal drawer can carry one, a column drawer can carry one. It goes
+   * through `updateItem`, which is the road every other per-drawer answer
+   * takes — one undo step, one recompute.
+   *
+   * It never refuses. A drawer too shallow to take the insert is REPORTED
+   * (`engine/cabinet.js` cuts nothing, Check #23 says which drawer and by how
+   * much) rather than silently squashed — a joiner is allowed to ask, and the
+   * app is obliged to answer in words.
+   */
+  setDrawerWatchInsert: (unitId, itemId, on) => {
+    get().updateItem(unitId, itemId, { watch_insert: on === true });
+    return on === true;
+  },
+
   /** The project's hinge standard: 2 or 3 (turn 17, CLAUDE.md F7.1). */
   setHingeStandard: (n) => set((s) => {
     const design = migrateDesign(s.project.design);

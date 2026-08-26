@@ -91,7 +91,10 @@ test('F11.4 — a box part already carries the three things F11.4 names', () => 
   // the feature (F11.4).
   const front = r.panels.find((p) => p.id === 'DR1-F2');
   for (const f of elementFields(front)) {
-    assert.ok(['drawer-height', 'runner-variant', 'front-board', 'material'].includes(f), f);
+  // T52 (CLAUDE.md F5, decision 3): …and 'watch-insert', the switch that fits
+  // the tray. Addable to ANY drawer, so it is a field on the drawer and not a
+  // fourth entry in the wardrobe's variant row.
+    assert.ok(['drawer-height', 'runner-variant', 'watch-insert', 'front-board', 'material'].includes(f), f);
   }
 });
 

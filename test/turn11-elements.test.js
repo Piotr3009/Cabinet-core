@@ -90,7 +90,10 @@ test('…and the drawer BOX is a piece you can open and edit', () => {
     // Turn 17 F8.2: with the fronts off, the BOX is what a joiner clicks — so
     // the drawer's height is edited on it as well as on its front, and since
     // turn 18 (CLAUDE.md F6.4) so is the RUNNER it is fitted with.
-    assert.deepEqual(elementFields(p), ['drawer-height', 'runner-variant', 'material']);
+  // T52 (CLAUDE.md F5, decision 3): …and 'watch-insert', the switch that fits
+  // the tray. Addable to ANY drawer, so it is a field on the drawer and not a
+  // fourth entry in the wardrobe's variant row.
+    assert.deepEqual(elementFields(p), ['drawer-height', 'runner-variant', 'watch-insert', 'material']);
     // …but it is NOT clicked in the room: it is inside a shut cabinet, and the
     // turn-13 verdict (a click on a cabinet selects the cabinet) is untouched.
     assert.equal(isMainViewElement(p), false, `${p.id} must not be clickable in the room`);

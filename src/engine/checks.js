@@ -850,6 +850,43 @@ export function runChecks({
     }
   }
 
+  // ── #23 a drawer too shallow to take a watch insert (T52-F5) ────────────
+  //
+  // CLAUDE.md, of the watch drawer: *"Report in Check when a drawer is too
+  // shallow to take the insert rather than shipping a squashed one."*
+  //
+  // The ENGINE has already refused it (`engine/cabinet.js`, following
+  // `SKY:watchDrawerTooShallow` in `reference/lisp/KIT_WATCH_DRAWER.lsp`): no
+  // tray was cut, no pane was ordered and no strip was bought. This is the
+  // other half — saying which drawer, and by how much — because a joiner who
+  // asked for an insert and got silence would build the drawer and find out
+  // afterwards.
+  //
+  // It reads the engine's own warning rather than re-deriving the fit: two
+  // answers to "does it go in" is exactly how a picture and a cut part come to
+  // disagree. RED, because the customer asked for it and it is not there.
+  for (const entry of entries) {
+    const num = entry.unit?.params?.unit_num || entry.result?.unitNum || entry.unit?.id || '';
+    for (const w of entry.result?.warnings || []) {
+      if (w?.code !== 'watch_insert_refused') continue;
+      const where = w.zone == null ? `drawer ${w.drawer}` : `drawer ${w.drawer} of column ${Number(w.zone) + 1}`;
+      const why = w.reason === 'too-shallow'
+        ? `it is ${Math.round(Number(w.has_height_mm) || 0)} mm inside and the insert needs ${Math.round(Number(w.needs_height_mm) || 0)}`
+        : `the box is too ${w.reason === 'too-narrow' ? 'narrow' : 'short'} for a row of pockets`;
+      out.push(finding(23, 'red', {
+        unitId: entry.unit?.id || null,
+        unitNum: num,
+        message: `${num}: ${where} cannot take the watch insert — ${why}. `
+          + 'Nothing was cut. Make the drawer deeper, or put the insert in another one.',
+        subject: { unitId: entry.unit?.id || null, editor: 'cabinet' },
+        drawer: w.drawer,
+        reason: w.reason,
+        needsHeightMm: Number(w.needs_height_mm) || 0,
+        hasHeightMm: Number(w.has_height_mm) || 0,
+      }));
+    }
+  }
+
   // ── #21 the slope took a hinge off a door (T50-F7) ──────────────────────
   //
   // The owner: *"jak drzwi się zmniejszają, automatycznie usuwamy zawiasy tam

@@ -86,6 +86,11 @@ import {
 // Turn 33 (CLAUDE.md F11): the insert catalogue — specs with nominals, never
 // articles; the BOM line names the nominal that drops into the box.
 import { insertFor } from './drawerInserts.js';
+// T52 (CLAUDE.md F5): the watch drawer's INSERT — its own tray, its own BOM
+// line, and not one millimetre of the drawer box.
+import {
+  drawerBoxInterior, watchDrawerFit, watchDrawerSpec, watchInsertOn, watchInsertParts,
+} from './watchDrawer.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import { impliedLegHeight, maskDepthExtra, standsOnLegHeight } from './runs.js';
@@ -1896,6 +1901,9 @@ export function computeCabinet(params, profileOverride) {
   // 4 mm is the picture's own thickness, the same convention the glass door
   // draws with; the ORDER line carries only the width and depth.
   const drawerGlassPanes = [];
+  // T52 (CLAUDE.md F5): what each watch insert came out as — published so the
+  // BOM, the 3D and the acceptance walk read ONE derivation.
+  const watchInsertsBuilt = [];
 
   // ─── TURN 33 (CLAUDE.md F6): THE BEHIND-DOOR LAW, NAMED ONCE ──────────────
   //
@@ -3988,6 +3996,10 @@ export function computeCabinet(params, profileOverride) {
         // Turn 33 (F3): which drawers order an insert (and glass) — the boxes
         // themselves are cut exactly as every column box is.
         variants: list.map((d) => (DRAWER_VARIANTS.includes(d?.variant) ? d.variant : null)),
+        // T52 (CLAUDE.md F5, decision 3): the WATCH INSERT is a flag ON a
+        // drawer and not a drawer type, so it rides beside `variants` rather
+        // than inside them — a customer can have it in one drawer of six.
+        watchInserts: list.map((d) => watchInsertOn(d)),
         heights,
         offsets,
         sideHs,
@@ -7105,6 +7117,95 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── TURN 52 (CLAUDE.md F5): THE WATCH DRAWER'S INSERT ───────────────────
+  //
+  // The owner: *"szuflada z przegródkami na zegarki, krawaty etc … oczywiście
+  // szuflada nasza standardowa, tylko przegródki z 9 mm zrób."*
+  //
+  // *"szuflada nasza standardowa"* is the whole of why this is HERE and not up
+  // in the drawer builders: the BOX is untouched. Its sides, its box front and
+  // back, its bottom, its runners and every hole in it are cut exactly as they
+  // were, and this reads their finished positions back off the panels
+  // (`drawerBoxInterior`) to work out what will drop into them. A drawer with
+  // no insert is not asked, and a project with none costs one `.some()`.
+  //
+  // ONE PLACE for every drawer path — the full-width zone, the column stacks
+  // and the BUDR ladder alike — because they all end up in `panels` with a
+  // `meta.drawer` on them, and the tray only ever wanted the finished hole.
+  //
+  // Decision 3: the insert is a FLAG on a drawer item, orthogonal to
+  // `variant`, so a customer can have it in one drawer of six.
+  const watchGlassPanes = [];
+  {
+    const wantsWatch = (index, zone) => {
+      if (zone == null) return watchInsertOn(cfg.drawerItems?.[index - 1]);
+      const set = columnDrawerSets.find((c) => c.zone === zone);
+      return Boolean(set?.watchInserts?.[index - 1]);
+    };
+    const boxes = new Map();
+    for (const pnl of panels) {
+      if (pnl.role !== 'drawer_box' || !pnl.box) continue;
+      const key = `${pnl.meta?.zone ?? ''}|${pnl.meta?.drawer}`;
+      if (!boxes.has(key)) boxes.set(key, { index: Number(pnl.meta?.drawer), zone: pnl.meta?.zone ?? null });
+    }
+    const born = [];
+    for (const { index, zone } of boxes.values()) {
+      if (!Number.isFinite(index) || !wantsWatch(index, zone)) continue;
+      const mine = panels.filter((x) => (x.meta?.zone ?? null) === zone);
+      const interior = drawerBoxInterior(mine, index);
+      if (!interior) continue;
+      const fit = watchDrawerFit(interior, P);
+      if (!fit.ok) {
+        // *"Report in Check when a drawer is too shallow to take the insert
+        // rather than shipping a squashed one."*  Nothing is cut, and the
+        // warning travels on the result the way every other one does.
+        warnings.push({
+          code: 'watch_insert_refused',
+          drawer: index,
+          zone,
+          reason: fit.reason,
+          needs_height_mm: roundTo(fit.needsHeight, 1),
+          has_height_mm: roundTo(interior.height, 1),
+          message: fit.reason === 'too-shallow'
+            ? `Drawer ${index} is ${roundTo(interior.height, 0)} mm inside and the watch insert needs ${roundTo(fit.needsHeight, 0)} mm — it is not cut.`
+            : `Drawer ${index} is too ${fit.reason === 'too-narrow' ? 'narrow' : 'short'} for a watch insert — it is not cut.`,
+        });
+        continue;
+      }
+      const made = watchInsertParts(interior, P, { drawer: index });
+      if (!made) continue;
+      for (const q of made.parts) {
+        panels.push(panel({
+          id: zone == null ? q.id : `${q.id}-Z${zone}`,
+          part: q.part,
+          role: q.role,
+          w: q.w,
+          h: q.h,
+          thickness: q.thickness,
+          edgeCode: codes.none,
+          edgeLen: 0,
+          box: q.box,
+          cnc: q.cnc,
+          meta: zone == null ? q.meta : { ...q.meta, zone },
+        }));
+      }
+      watchGlassPanes.push({ zone, drawer: index, box: made.glass.box, liftsOut: true });
+      born.push({
+        zone,
+        drawer: index,
+        pockets: made.layout.pockets.count,
+        pocket_w_mm: roundTo(made.layout.pockets.width, 1),
+        pocket_d_mm: roundTo(made.layout.pockets.depth, 1),
+        inside_mm: made.layout.pockets.inside,
+        sections: made.layout.sections.count,
+        glass_w_mm: roundTo(made.glass.box.w, 1),
+        glass_d_mm: roundTo(made.glass.box.d, 1),
+        led_mm: roundTo(made.layout.led.length, 1),
+      });
+    }
+    watchInsertsBuilt.push(...born);
+  }
+
   // ─── TURN 36 (CLAUDE.md F5): THE GRAIN, PER ROLE ─────────────────────────
   //
   // The owner's law, verbatim: *"szuflady w pionie, wzdłuż słojów; fronty
@@ -7268,6 +7369,43 @@ export function computeCabinet(params, profileOverride) {
         orderInsert(set.variants?.[i - 1], set.boxW - 2 * GB, set.dl - 2 * GB);
       }
     }
+  }
+
+  // ─── TURN 52 (CLAUDE.md F5, decision 3): THE INSERT'S OWN BOM LINE ───────
+  //
+  // *"The insert is its own BOM line, addable to any drawer — not a drawer
+  // type. That way a customer can have it in one drawer of six."*
+  //
+  // It is CUT and not bought: its base, its four rails, its row rail and every
+  // divider are already in `panels` and are on the sheet like any other board.
+  // So this line is the ASSEMBLY — which drawer, how many pockets and how big
+  // — plus the two things that really ARE ordered: the lift-out pane
+  // (decision 1) and the strip that lights the watches (decision 2).
+  for (const w of watchInsertsBuilt) {
+    const where = w.zone == null ? `drawer ${w.drawer}` : `drawer ${w.drawer}, column ${w.zone + 1}`;
+    hw('watch_insert', 'Watch / tie drawer insert', 1, 'pcs', {
+      drawer: w.drawer,
+      ...(w.zone == null ? {} : { zone: w.zone }),
+      pockets: w.pockets,
+      pocket_w_mm: w.pocket_w_mm,
+      pocket_d_mm: w.pocket_d_mm,
+      inside_mm: w.inside_mm,
+      sections: w.sections,
+    },
+    `Watch / tie insert · ${where} · ${w.pockets} pockets at ${w.pocket_w_mm} × ${w.pocket_d_mm} mm, `
+      + `${w.inside_mm} mm deep · ${w.sections} long section${w.sections === 1 ? '' : 's'} behind`);
+    // Decision 1: the pane LIFTS OUT. It bears on a rebate in the top of the
+    // frame and nothing holds it down, which is why it is ordered to the
+    // rebate's own size and not to the drawer's.
+    hw('drawer_glass', 'Glass — watch insert, lift-out', 1, 'pcs',
+      { drawer: w.drawer, ...(w.zone == null ? {} : { zone: w.zone }), width_mm: w.glass_w_mm, depth_mm: w.glass_d_mm },
+      `Glass ${w.glass_w_mm} × ${w.glass_d_mm} mm · lifts out · ${where}`);
+    // Decision 2: the strip lights the WATCHES. Ordered by the metre like every
+    // other run in this app, from the same catalogue — the groove it sits in is
+    // T48's own law and is cut in the front rail.
+    hw('led_strip', 'LED strip', roundTo(w.led_mm / 1000, 3), 'm',
+      { drawer: w.drawer, ...(w.zone == null ? {} : { zone: w.zone }), length_mm: w.led_mm, aimed_at: 'contents' },
+      `LED strip ${w.led_mm} mm · in the watch insert's front rail, aimed at the watches · ${where}`);
   }
 
   // ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS, ORDERED TO THE OPENING ─
@@ -7965,6 +8103,12 @@ export function computeCabinet(params, profileOverride) {
     // panes and the bought mechanisms' labelled placeholder bodies. Ordered
     // in the hardware list; never cut, never drilled.
     drawerGlass: drawerGlassPanes,
+    // T52 (CLAUDE.md F5): the watch insert's own lift-out pane and the tray it
+    // sits in. Present only where a drawer asked for one — the same "absent
+    // rather than empty" rule `drawerZone` and `shoeBoxes` keep, so no
+    // standard config grows a key.
+    ...(watchGlassPanes.length ? { watchGlass: watchGlassPanes } : {}),
+    ...(watchInsertsBuilt.length ? { watchInserts: watchInsertsBuilt } : {}),
     wardrobeKits: wardrobeKitBodies,
     // ─── Turn 34 (CLAUDE.md F4): the shoe boxes, as the kit measured them ───
     // The slope, the widths, the runner and where the pilots went. Published

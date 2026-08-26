@@ -31,7 +31,11 @@ export function drawerOf(panel) {
   const n = Number(panel?.meta?.drawer);
   if (!(n > 0)) return null;
   if (panel.part === 'DRAWER-FRONT') return n;
-  return panel.role === 'drawer_box' ? n : null;
+  // T52 (CLAUDE.md F5): the WATCH INSERT rides its drawer too. It is a tray
+  // sitting in the box — pull the drawer and it comes out with it — and a tray
+  // that stayed behind in the carcass would be the same fault T23 found in a
+  // hinge that stayed shut while its door opened.
+  return panel.role === 'drawer_box' || panel.role === 'watch_insert' ? n : null;
 }
 
 /**

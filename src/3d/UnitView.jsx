@@ -11,6 +11,35 @@ import { mm, MM, COLORS } from './constants.js';
 // glass is ordered, never machined here — so it is a constant in the view
 // rather than a number in the profile a workshop might mistake for a spec.
 const GLASS_PANE_MM = 4;
+
+// ─── TURN 52 (CLAUDE.md F5, decision 2): THE WATCH INSERT'S OWN LIGHT ───────
+// The strip is 4 mm — the app's own flexi, the same width the groove is cut to
+// (`reference/lisp/KIT_LED_GROOVE.lsp ledFlexiWidth`) — and it stands a hair
+// proud of the rail's inner face so it reads as a strip and not as a stripe
+// painted on the board.
+const WATCH_LED_WIDTH_MM = 4;
+const WATCH_LED_STANDOFF_M = 0.0015;
+// The warm white the app's own strips are drawn in, and how hard this one
+// throws. It is a PICTURE — nothing here reaches a hole, a cut or a BOM line,
+// which is the same standing every number in `profile.lighting` has.
+const WATCH_LED_HEX = '#ffe9c2';
+const WATCH_LED_LUX = 6;
+// …and how far the beam is turned DOWN off the horizontal. A rect area light
+// emits along its own −z; a rotation of −θ about x carries that to
+// (0, −sin θ, −cos θ) — back into the drawer AND down onto the watches.
+const WATCH_LED_TILT_RAD = 0.5;
+/**
+ * How far up the FRONT RAIL the line runs — under the glass, at the watches.
+ *
+ * Measured from the rail's OWN bottom edge (`box.y`, which is the top of the
+ * tray's base), which is the frame `engine/watchDrawer.js` publishes it in as
+ * `led.railY`. Measuring it from the tray's floor instead would put the strip
+ * one board thickness high, and the light would graze the glass.
+ */
+const watchLedRailY = (profile) => {
+  const s = watchDrawerSpec(profile);
+  return s.insideDepthMm - s.glassT - s.ledBelowGlassMm;
+};
 import {
   contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor,
   panelOutlineOffset,
@@ -34,6 +63,13 @@ import PartMachining from './PartMachining.jsx';
 import { shakerFrontGeometry } from './shakerSolid.js';
 import { isShakerFront } from '../engine/shaker.js';
 import { panelRecesses } from '../engine/recesses.js';
+// T52 (CLAUDE.md F5): where the watch insert's strip runs in its front rail —
+// the ENGINE's own number, so the picture and the groove agree.
+import { watchDrawerSpec } from '../engine/watchDrawer.js';
+// The LTC tables a RectAreaLight needs. Lazy and once per app — the room calls
+// it too, and calling it twice is a no-op; without it the insert's strip would
+// light nothing at all (the same chat-fix T33's own strips needed).
+import { ensureLtc } from './LedStrips.jsx';
 import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import DimensionChain from './DimensionChain.jsx';
@@ -682,6 +718,83 @@ export function MovingPanel({
   );
 }
 
+
+/**
+ * ─── TURN 52 (CLAUDE.md F5): THE INSERT'S PANE AND ITS LIGHT ────────────────
+ *
+ * Rendered INSIDE the drawer's own moving group — as `children` of the front
+ * rail's `MovingPanel`, exactly the way a hinge is a child of its door (T23).
+ * That is not tidiness: a pane left behind in the carcass while its drawer
+ * slides out is the very fault the owner found in a hinge that stayed shut,
+ * and it is worse than not drawing it.
+ *
+ * DECISION 1 — the pane LIFTS OUT. It bears on a rebate cut in the top of the
+ * tray's four rails and nothing holds it down, so it is drawn sitting DOWN in
+ * the frame: the 4 mm lip of rail standing proud of it all round is the
+ * picture of that decision.
+ *
+ * DECISION 2 — the LED lights the WATCHES. The strip is on the INNER face of
+ * the FRONT rail, under the glass, and the area light on the same line is
+ * turned back and DOWN into the tray. A line along the top of the frame would
+ * light the pane, which is a shop display and not a wardrobe.
+ *
+ * @param {object} props
+ *   rail   the WATCH-RAIL-FRONT panel — the piece that carries the light
+ *   pane   the assembly's own `watchGlass` row for this drawer, or null
+ *   pivot  the rail's own MovingPanel origin, in THREE units
+ */
+function WatchInsertLight({ rail, pane, pivot, profile }) {
+  const y = watchLedRailY(profile);
+  return (
+    <>
+      {pane && (
+        <mesh
+          position={[
+            mm(pane.box.x + pane.box.w / 2) - pivot[0],
+            mm(pane.box.y + pane.box.h / 2) - pivot[1],
+            mm(pane.box.z + pane.box.d / 2) - pivot[2],
+          ]}
+          userData={{ ccWatchGlass: rail.meta.drawer, ccNoBounds: true }}
+        >
+          <boxGeometry args={[mm(pane.box.w), mm(pane.box.h), mm(pane.box.d)]} />
+          <meshPhysicalMaterial
+            color="#eef3f4"
+            transparent
+            opacity={0.35}
+            roughness={0.05}
+            metalness={0}
+            transmission={0.9}
+            thickness={0.004}
+          />
+        </mesh>
+      )}
+      <group
+        position={[
+          mm(rail.box.x + rail.box.w / 2) - pivot[0],
+          mm(rail.box.y + y) - pivot[1],
+          mm(rail.box.z) - pivot[2] - WATCH_LED_STANDOFF_M / 2,
+        ]}
+        userData={{ ccWatchLed: rail.meta.drawer, ccNoBounds: true }}
+      >
+        <mesh userData={{ ccWatchLedStrip: rail.meta.drawer, ccNoBounds: true }}>
+          <boxGeometry args={[mm(rail.box.w), mm(WATCH_LED_WIDTH_MM), WATCH_LED_STANDOFF_M]} />
+          <meshStandardMaterial
+            color={WATCH_LED_HEX}
+            emissive={WATCH_LED_HEX}
+            emissiveIntensity={6}
+            roughness={0.4}
+            toneMapped={false}
+          />
+        </mesh>
+        <rectAreaLight
+          rotation={[-WATCH_LED_TILT_RAD, 0, 0]}
+          args={[WATCH_LED_HEX, WATCH_LED_LUX, mm(rail.box.w), 0.03]}
+        />
+      </group>
+    </>
+  );
+}
+
 export default function UnitView({
   unit, result, wall, walls = null, roomCentre, selected, snapStep, onSelect, onMove, onMoveToWall,
   onMoveShelf, onShelfDragState,
@@ -733,6 +846,12 @@ export default function UnitView({
   // An index into this cabinet's own zones, or null.
   zoneHint = null,
 }) {
+  // ─── TURN 52 (CLAUDE.md F5, decision 2) ─────────────────────────────────
+  // The watch insert's strip is a RectAreaLight, and a RectAreaLight without
+  // the LTC tables lights NOTHING — the same chat-fix T33's own strips needed.
+  // Lazy and idempotent; a cabinet with no insert pays one boolean.
+  const litInserts = (result?.assemblies?.watchInserts || []).length;
+  useEffect(() => { if (litInserts > 0) ensureLtc(); }, [litInserts]);
   const { camera, gl } = useThree();
   const drag = useRef(null);
   // ─── TURN 47 (CLAUDE.md F6): THE GHOST LINE ───────────────────────────────
@@ -1714,6 +1833,21 @@ export default function UnitView({
             // hinge does. Turn 19 hung the model on the carcass beside the cup
             // and it stayed shut while the door opened; the model comes through
             // here now, on the same specs the plate is resolved from.
+            {...(!contour && p.role === 'watch_insert' && p.meta?.led ? {
+              children: (
+                <WatchInsertLight
+                  rail={p}
+                  pane={(result.assemblies.watchGlass || []).find((g) => Number(g.drawer) === Number(p.meta.drawer)
+                    && (g.zone ?? null) === (p.meta.zone ?? null)) || null}
+                  pivot={[
+                    mm(p.box.x + p.box.w / 2),
+                    mm(p.box.y + p.box.h / 2),
+                    mm(p.box.z + p.box.d / 2),
+                  ]}
+                  profile={profile}
+                />
+              ),
+            } : {})}
             {...(front === 'door' && (showHinges || xray) ? {
               children: (
                 <DoorHinges

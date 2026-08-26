@@ -279,6 +279,18 @@ export const PART_REGISTRY = {
     id: 'drawer_insert', name: 'Drawer inserts', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Shoe insert, belt / tie divider — a bought tray',
   },
+  // ─── TURN 52 (CLAUDE.md F5, decision 3) ────────────────────────────────
+  // *"The insert is its own BOM line, addable to any drawer — not a drawer
+  // type. That way a customer can have it in one drawer of six."*
+  //
+  // It is CUT, not bought — its frame and dividers are in the cut list and on
+  // the sheet like every other board — so this line is the ASSEMBLY: which
+  // drawer, how many pockets, how big they are. A joiner reads one line and
+  // knows what he is making.
+  watch_insert: {
+    id: 'watch_insert', name: 'Watch / tie drawer insert', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Cut, not bought — the frame and dividers are on the sheet. One line per drawer that carries one',
+  },
   kit_trouser: {
     id: 'kit_trouser', name: 'Trouser pull-out', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism',
@@ -494,6 +506,14 @@ export const HARDWARE_TO_PART_ID = {
   mirror: 'mirror',
   cornice: 'cornice',
   drawer_insert: 'drawer_insert',
+  // ─── TURN 52 (CLAUDE.md F5) ──────────────────────────────────────────────
+  // The watch insert's own line (decision 3), and the strip that lights it
+  // (decision 2). `led_strip` already had a registry row — it is what
+  // `engine/ledStrips.js lightingBomLines()` emits — and this is the first
+  // time `computeCabinet()` itself emits one, so the ROLE map has to know it
+  // as well as the lighting map does. Same part, same product, one row.
+  watch_insert: 'watch_insert',
+  led_strip: 'led_strip',
   // `hw(\`wardrobe_kit_\${kit.kind}\`, …)` — one role per WARDROBE_KIT_KINDS
   // entry. A template literal is still a role string a BOM has to know.
   wardrobe_kit_trouser: 'kit_trouser',

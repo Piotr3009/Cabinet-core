@@ -305,7 +305,9 @@ const FIELDS = {
   // A per-drawer override of the project's own answer, in the colour
   // hierarchy's own shape, and reachable from the front and from the box for
   // the same reason the height is.
-  'drawer-front': ['drawer-height', 'runner-variant', 'front-board', 'material'],
+  // T52 (CLAUDE.md F5, decision 3): the WATCH INSERT is offered on the drawer
+  // itself and on its face, because both are the drawer a joiner clicks.
+  'drawer-front': ['drawer-height', 'runner-variant', 'watch-insert', 'front-board', 'material'],
   'masking-panel': ['masking-depth', 'material'],
   // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
   // stack — that is what F8 edits, on the unit — so what is said about one
@@ -313,7 +315,7 @@ const FIELDS = {
   // Turn 17 (CLAUDE.md F8.2): with the fronts off, the BOX is what a joiner
   // clicks — so the drawer's height is edited on it as well as on its front.
   // One field id, one control, two places it can be reached from.
-  drawer: ['drawer-height', 'runner-variant', 'material'],
+  drawer: ['drawer-height', 'runner-variant', 'watch-insert', 'material'],
   // ─── Turn 34 (CLAUDE.md F4): the shoe box's own three decisions ──────────
   // The owner named exactly these on 16.08 and no others: fix or drawer
   // ("jeżeli nie jest szuflada to powinien być fix"), one divider or none

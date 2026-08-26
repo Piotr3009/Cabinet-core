@@ -47,10 +47,40 @@
 // anywhere in the run, and every FIXED cabinet's own width — none of those are
 // share-out material and all of them stand in the same span.
 //
+// ─── TURN 52 (CLAUDE.md F1): FROM EITHER END, AND EVERY CABINET ─────────────
+//
+// The owner, 26.08.2026: *"chodziło o to żeby były zawsze equal, i to działa —
+// ale od lewej, a nie od prawej strony, czyli od jednej strony."*  And:
+// *"jak robię po prawej, to proponuje tylko 1 lub 2 szafki i nadal nie może
+// przesunąć reszty."*
+//
+// Two faults, one feature.
+//
+//   (a) SCOPE. `buildRuns` breaks a run at `autoParts.topInfill.runGap` — ONE
+//       MILLIMETRE — so six cabinets with a 2 mm shadow in them were two runs
+//       and the share-out only ever saw the one the hand had touched. The
+//       share-out now asks `buildWallRuns` (engine/runs.js), which is the same
+//       LEVEL and no gap rule at all: *every cabinet on this wall at this
+//       level, wall to wall*. `runGap` itself is untouched, because a top
+//       infill really cannot bridge a hole.
+//
+//   (b) DIRECTION. The lay-out ran from the run's left edge whichever end the
+//       room was at, so a run reached from the RIGHT grew the wrong way and
+//       stopped against whatever it met. The plan now says which end it is
+//       ANCHORED on — `anchor`, `startAt` and `endAt` below — and the anchor is
+//       the end the gap is NOT at: a gap on the right lays the run from the
+//       LEFT wall rightwards, a gap on the left from the RIGHT wall leftwards.
+//       Either way it finishes flush on both walls, because the arithmetic
+//       says it must:
+//
+//           (wall clear − infill − infill − fixed-width cabinets)
+//           ────────────────────────────────────────────────────  = each
+//                            movable count
+//
 // Pure functions — no React, no store, no three.js.
 
 import { getUnitType } from './types.js';
-import { buildRuns, paddedSpan, runEndGap } from './runs.js';
+import { buildWallRuns, paddedSpan, runEndGap } from './runs.js';
 
 const round1 = (v) => Math.round(v);
 
@@ -95,6 +125,26 @@ function padOf(unit) {
  * the larger of the two — and the margin only applies where the end is against
  * a WALL. A run that butts onto a neighbour reserves nothing there.
  *
+ * ─── TURN 52 (CLAUDE.md F1): BOTH INFILLS, ALWAYS ──────────────────────────
+ *
+ * *"T51 reserves the filler that EXISTS and not the one that WILL exist: at a
+ * 4000 wall with 40 on the left and a 260 gap on the right, it offered 660
+ * each (6 × 660 = 3960, leaving 40 — one filler, not two). Correct is
+ * (4000 − 40 − 40) ÷ 6 = 653."*
+ *
+ * The rule that gets that right is already the one written above and it is
+ * worth saying in the owner's terms: a filler is reserved at EVERY end where
+ * the run will meet a WALL once it has been shared out, whether or not one
+ * stands there now — because the share-out is what puts it there.
+ * `left.from` / `right.to` are the run's BOUNDARIES (the wall, or the
+ * neighbour beside it), so "the boundary is the wall" is the whole test and
+ * the cabinet's own `side_infill_*_mm` only ever raises the answer.
+ *
+ * What made T51 offer 660 was not this function: it was the BAR, which called
+ * `shareOutPlan` without `wallMargin` at all, so the end with no filler on it
+ * yet reserved nothing (T52 F4 — `3d/ShareOutBar.jsx`). With the margin passed,
+ * the arithmetic below IS the owner's sentence.
+ *
  * Getting this wrong is not academic: the plan would ask for 4000 across three
  * cabinets, the clamp would give 3920, and every share-out would come back with
  * three "Width limited by the wall" notices on a run that fits perfectly.
@@ -114,7 +164,7 @@ function reservedAt(run, { left, right, wallWidth, wallMargin }) {
 /**
  * The plan for one run.
  *
- * @param {object} run       one entry from buildRuns()
+ * @param {object} run       one entry from buildWallRuns() (or buildRuns())
  * @param {object} context   { wallWidth, others } — as runEndGap takes them
  * @param {object} profile
  * @param {object} options   { extra } — share it out over ONE MORE cabinet
@@ -167,6 +217,21 @@ export function shareOutPlan(
   const n = movable.length + Math.max(0, Math.trunc(extra));
   const share = clear - infills - pads - fixed;
 
+  // ─── TURN 52 (CLAUDE.md F1b): WHICH END IS THE RUN ANCHORED ON? ──────────
+  //
+  // *"od lewej, a nie od prawej strony, czyli od jednej strony."*
+  //
+  // The end the LEFTOVER is at is the end the run grows INTO, so the anchor is
+  // the other one — a gap on the right anchors the run on the LEFT wall, a gap
+  // on the left anchors it on the RIGHT. Measured from the CARCASS
+  // (`bodyGap`), which is the leftover the joiner is looking at and the same
+  // number `shareOutGapSpan` stands the bar in, so the bar and the lay-out can
+  // never disagree about which end this is.
+  //
+  // A tie — the two ends equally free — anchors LEFT, which is every run in
+  // every project before tonight and is what keeps a centred run where it is.
+  const anchor = right.bodyGap >= left.bodyGap ? 'left' : 'right';
+
   const base = {
     gap: round1(gap),
     clear: round1(clear),
@@ -178,6 +243,10 @@ export function shareOutPlan(
     widths: [],
     tooWide: false,
     alternative: null,
+    anchor,
+    startAt: round1(left.from + reserved.left),
+    endAt: round1(right.to - reserved.right),
+    reserved,
   };
 
   if (!movable.length) return { ...base, ok: false, reason: 'nothing-to-widen' };
@@ -217,6 +286,18 @@ export function shareOutPlan(
     // whatever is reserved there. The store lays the cabinets out from it, so
     // the plan and the placement cannot disagree about the first millimetre.
     startAt: round1(left.from + reserved.left),
+    // ─── TURN 52 (CLAUDE.md F1b): …AND WHERE IT FINISHES ──────────────────
+    //
+    // The mirror of `startAt`: the right boundary less whatever is reserved
+    // there. A run ANCHORED ON THE RIGHT is laid out backwards from this, and
+    // the two agree by construction — the widths, the pads and the fixed
+    // cabinets add up to `clear − infills`, which is exactly `endAt −
+    // startAt`. That identity is what makes the run finish flush on BOTH
+    // walls whichever end it was laid from, and `test/turn52-f1-*` asserts it
+    // rather than trusting it.
+    endAt: round1(right.to - reserved.right),
+    anchor,
+    gapSide: anchor === 'left' ? 'right' : 'left',
     reserved,
     alternative: tooWide && !extra
       ? shareOutPlan(run, { wallWidth, others, wallMargin }, profile, { extra: 1 })
@@ -265,7 +346,10 @@ export function shareOutFor(units, unitId, { walls = [], wallMargin = 0 } = {}, 
  * button that sometimes does nothing.
  */
 export function runFor(units, unitId, { walls = [], wallMargin = 0 } = {}, profile) {
-  const run = buildRuns(units, profile).find((r) => r.units.some((u) => u.id === unitId));
+  // T52 (F1a): `buildWallRuns`, not `buildRuns` — the share-out's scope is the
+  // whole WALL at this level and a millimetre shadow may not split it. See the
+  // header.
+  const run = buildWallRuns(units, profile).find((r) => r.units.some((u) => u.id === unitId));
   if (!run) return null;
   const wallWidth = walls?.[run.wall]?.width ?? 0;
   const others = units.filter((u) => (u.position?.wall ?? 0) === run.wall

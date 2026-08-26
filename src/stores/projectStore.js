@@ -105,7 +105,7 @@ import {
 } from '../engine/runs.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
-  runFor as shareOutRunFor, shareOutFor, shareOutPlan, widthFixed,
+  runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan, widthFixed,
 } from '../engine/shareOut.js';
 // Turn 50 (CLAUDE.md F3): nothing is built bigger than the room it stands in.
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
@@ -2100,13 +2100,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         useUiStore.getState().clearShareOut();
         return { grown: [], strays, offered: false };
       }
-      const walls = roomWalls(s.project.room);
-      const offer = shareOutFor(
-        s.units, unit.id, { walls, wallMargin: wallMarginOf(s, unit) }, getCabinetProfile(),
-      );
-      if (offer) useUiStore.getState().offerShareOut(unit.id);
+      // T52 (CLAUDE.md F4): through `shareOutSubject` — the SAME derivation the
+      // bar reads and the SAME one `shareOutRun` applies. Three callers, one
+      // wall margin, one plan.
+      const offer = shareOutSubject(s, unit.id, getCabinetProfile(), { gated: true });
+      if (offer?.plan) useUiStore.getState().offerShareOut(unit.id);
       else useUiStore.getState().clearShareOut();
-      return { grown: [], strays, offered: Boolean(offer) };
+      return { grown: [], strays, offered: Boolean(offer?.plan) };
     } finally {
       settling = false;
     }
@@ -3360,21 +3360,33 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   /** Every unit that is ALREADY bigger than its room — Check's own list (F3). */
   roomFitFaults: () => roomFitFaults(get().units, get().project.room, getCabinetProfile()),
 
+  /**
+   * ─── TURN 52 (CLAUDE.md F4): WHAT THE BAR READS ──────────────────────────
+   *
+   * The share-out standing at one cabinet — the run, the plan, and the gap the
+   * bar stands in — resolved by `shareOutSubject`, which is the SAME derivation
+   * `shareOutRun` applies. The bar used to work all three out for itself with
+   * no wall margin, and that is the forty millimetres the owner lost.
+   *
+   * Gated: it is the OFFER, so the 400 mm threshold applies and the bar goes
+   * when the gap closes.
+   */
+  shareOutView: (unitId) => shareOutSubject(get(), unitId, getCabinetProfile(), { gated: true }),
+
   shareOutRun: (unitId, { extra = 0 } = {}) => runBatch(() => {
     const profile = getCabinetProfile();
     const state = get();
-    const walls = roomWalls(state.project.room);
-    // The RUN, not the OFFER: the 400 mm gate decides whether the BAR appears
-    // (`shareOutFor`), and a button that second-guessed the click that reached
-    // it would be a button that sometimes does nothing.
+    // The RUN, not the OFFER: the 400 mm gate decides whether the BAR appears,
+    // and a button that second-guessed the click that reached it would be a
+    // button that sometimes does nothing.
     // The MARGIN the placement keeps at a wall is the project's own infill
     // width, and the plan has to know it or every share-out comes back with
     // three "Width limited by the wall" notices on a run that fits perfectly.
-    const wallMargin = wallMarginOf(state, state.units.find((u) => u.id === unitId));
-    const offer = shareOutRunFor(state.units, unitId, { walls, wallMargin }, profile);
+    const offer = shareOutSubject(state, unitId, profile);
     if (!offer) return { ok: false, message: 'Nothing to share out on this run.', widths: [] };
+    const { walls, wallMargin } = offer;
 
-    let plan = shareOutPlan(offer.run, offer.context, profile, { extra });
+    let plan = extra ? shareOutPlan(offer.run, offer.context, profile, { extra }) : offer.plan;
     if (!plan.ok) {
       return {
         ok: false,
@@ -3408,13 +3420,27 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     //
     // *"wtedy wszystkie szafy się ustawią w jednej szerokości od ściany do
     // ściany, oczywiście odejmując infill."*  So the run is laid out from the
-    // LEFT EDGE of the stretch it may occupy — `runEndGap`'s own `from`, which
-    // is the wall or the neighbour beside it — plus the side infill that stands
+    // EDGE of the stretch it may occupy — `runEndGap`'s own boundary, which is
+    // the wall or the neighbour beside it — plus the side infill that stands
     // there, and each cabinet follows the one before it.
+    //
+    // ─── TURN 52 (CLAUDE.md F1b): FROM WHICHEVER END THE ROOM IS AT ────────
+    //
+    // The owner: *"chodziło o to żeby były zawsze equal, i to działa — ale od
+    // lewej, a nie od prawej strony, czyli od jednej strony."*  T50 and T51 laid
+    // every run out from its LEFT edge, so a run reached from the right grew
+    // the wrong way and stopped against whatever it met.
+    //
+    // The PLAN says which end (`plan.anchor`, engine/shareOut.js): the anchor is
+    // the end the leftover is NOT at. Anchored LEFT the cursor walks forwards
+    // from `startAt`; anchored RIGHT it walks BACKWARDS from `endAt`. Both
+    // finish flush on both walls, because the widths, the pads and the fixed
+    // cabinets add up to exactly `endAt − startAt`.
     const runNow = shareOutRunFor(get().units, unitId, { walls, wallMargin }, profile);
     const run = runNow ? runNow.run : offer.run;
     const units = run.units;
     const wantOf = new Map(plan.widths.map((w) => [w.id, w.to]));
+    const fromRight = plan.anchor === 'right';
 
     // ─── WHERE EVERY CABINET FINISHES, WORKED OUT FIRST ───────────────────
     //
@@ -3423,7 +3449,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // says the run starts, so the arithmetic and the placement cannot disagree
     // about the first millimetre.
     const goesTo = new Map();
-    {
+    if (fromRight) {
+      // Backwards from the right boundary: each cabinet's RIGHT outside edge is
+      // the cursor, so `x` is the cursor less its own right pad and width.
+      let cursor = Math.max(0, Number(plan.endAt) || 0);
+      for (const u of [...units].reverse()) {
+        const pad = paddedSpan(u).pad || { left: 0, right: 0 };
+        const want = wantOf.get(u.id) ?? (Number(u.params?.width) || 0);
+        const x = cursor - Math.max(0, pad.right) - want;
+        goesTo.set(u.id, { x: Math.max(0, x), width: want });
+        cursor = x - Math.max(0, pad.left);
+      }
+    } else {
       let cursor = Math.max(0, Number(plan.startAt) || 0);
       for (const u of units) {
         const pad = paddedSpan(u).pad || { left: 0, right: 0 };
@@ -3484,10 +3521,26 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // …and the whole lay-out runs with the settle suppressed: it makes dozens
     // of moves, and settling after each of them would grow panels round a run
     // that is still half in its old positions.
+    //
+    // ─── TURN 52 (CLAUDE.md F1b): …AND THE ORDER FOLLOWS THE ANCHOR ────────
+    //
+    // "From the right" above is the ANCHORED-LEFT case said in full: the run
+    // grows rightwards into the leftover, so the last cabinet moves into clear
+    // wall first and each one before it grows into the space the one after it
+    // has just vacated.
+    //
+    // Anchored RIGHT the run grows LEFTWARDS and the order turns over with it:
+    // cabinet 1 moves left into the leftover first, and because a cabinet grows
+    // by `gap / n` while it moves by the whole of what is ahead of it, its new
+    // right edge never reaches the neighbour that has not moved yet. Either way
+    // the second pass is the other direction, idempotent, and settles anything
+    // the first could not finish.
+    const outward = fromRight ? units : [...units].reverse();
+    const back = fromRight ? [...units].reverse() : units;
     withRunStoodDown(units.map((u) => u.id), () => withoutSettling(() => {
-      for (const u of [...units].reverse()) place(u);
+      for (const u of outward) place(u);
       notices.length = 0;                     // the first pass is the rehearsal
-      for (const u of units) place(u);
+      for (const u of back) place(u);
     }));
     notices.push(...get().refreshAutoParts());
     // One settle, at the end, on the run that now exists.
@@ -7117,6 +7170,47 @@ function freeBesideUnit(state, unit, side) {
  * project's infill width, so the gap the unit leaves IS the filler that closes
  * it — which is what makes the filler appear by itself when the unit parks.
  */
+// ─── TURN 52 (CLAUDE.md F4): ONE NUMBER, COMPUTED ONCE ─────────────────────
+//
+// *"Whatever F1 computes, the BAR must show the same number the cabinets will
+// end up at. Where the two disagree today the owner reads the bar, builds to it
+// and finds forty millimetres missing at the wall."*
+//
+// And they DID disagree, for one reason: `3d/ShareOutBar.jsx` called
+// `shareOutFor(units, id, { walls }, profile)` — no `wallMargin` — so the end
+// of the run with no filler standing on it yet reserved NOTHING, and the bar
+// offered 660 each on a wall where the store was about to build 653. That is
+// the owner's forty millimetres, and it was a missing argument.
+//
+// One number now means one DERIVATION, not two that agree. This is it: the
+// walls, the wall margin, the run and the plan, resolved together. The BAR
+// reads it (through `shareOutView`), `settleLayout` decides whether to offer
+// with it, and `shareOutRun` applies it. Nothing computes a share-out anywhere
+// else in this store.
+//
+// `gated` is the only difference between the three callers and it is the OFFER
+// question, not the arithmetic: the bar and the settle want the 400 mm gate
+// (`shareOutOffered`), the ACTION never does — a button that second-guessed the
+// click that reached it would be a button that sometimes does nothing.
+function shareOutSubject(state, unitId, profile, { gated = false } = {}) {
+  const unit = state.units.find((u) => u.id === unitId) || null;
+  if (!unit) return null;
+  const walls = roomWalls(state.project.room);
+  const wallMargin = wallMarginOf(state, unit);
+  const found = shareOutRunFor(state.units, unitId, { walls, wallMargin }, profile);
+  if (!found) return null;
+  const plan = gated
+    ? shareOutOffered(found.run, found.context, profile)
+    : shareOutPlan(found.run, found.context, profile, {});
+  return {
+    ...found,
+    walls,
+    wallMargin,
+    plan: plan || null,
+    span: shareOutGapSpan(found.run, found.context),
+  };
+}
+
 function wallMarginOf(state, unit = null) {
   const profile = getCabinetProfile();
   // ─── Turn 11 (CLAUDE.md F5.3) ───

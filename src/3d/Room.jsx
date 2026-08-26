@@ -367,7 +367,9 @@ export default function Room({
   // a four-walled room, which is not the job. The list is `wallsInScope`, in
   // the engine and tested there; the drawing is unchanged — a stub is a wall
   // record like any other, just a shorter one.
-  const walls = useMemo(() => wallsInScope(room, scope), [room, scope]);
+  // T51 (CLAUDE.md F8): the returns take the workshop's own length when the
+  // room has not stated one — the same answer the plan and the placement give.
+  const walls = useMemo(() => wallsInScope(room, scope, profile), [room, scope, profile]);
   // ─── TURN 46 F1: WHICH FRAGMENT OF ITS WALL A STUB IS ─────────────────────
   //
   // Asked of the geometry rather than stored on it: a stub keeps its wall's

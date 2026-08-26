@@ -183,12 +183,30 @@ export function wallWidth(room, index) {
 // project can be switched back to "whole room" without having lost anything.
 // What changes is which walls are DRAWN and OFFERED, and that is this function.
 
-/** How far each side stub runs forward, when there are stubs at all. */
-export const DEFAULT_WALL_STUB = 1000;
+/**
+ * How far each side stub runs forward, when there are stubs at all.
+ *
+ * ─── TURN 51 (CLAUDE.md F8): 1000 → 2000 ────────────────────────────────────
+ *
+ * The owner: *"default bocznych ścian zrób na 2000 mm, nie jak teraz 1500."*
+ * (It was 1000, not 1500 — the 1500 is a number he has typed into that field.
+ * The instruction is the same either way.)
+ *
+ * *"One number, in the profile, read by everything that starts a room."*  The
+ * number IS `profile.room.sideWallMm`; this is the fallback for a caller with
+ * no profile to hand, and the two are held equal by a test, because two
+ * literals that must agree is exactly how a default drifts apart.
+ */
+export const DEFAULT_WALL_STUB = 2000;
 
-export function wallStub(room) {
+export function wallStub(room, profile = null) {
   const v = Number(room?.wall_stub_mm);
-  return Number.isFinite(v) && v >= 0 ? v : DEFAULT_WALL_STUB;
+  if (Number.isFinite(v) && v >= 0) return v;
+  // T51 (F8): the workshop's own number when there is a profile to ask, the
+  // house's when there is not. A room that STATES a length still wins — that is
+  // a joiner's answer, and a changed default must never re-draw a saved job.
+  const said = Number(profile?.room?.sideWallMm);
+  return Number.isFinite(said) && said >= 0 ? said : DEFAULT_WALL_STUB;
 }
 
 /** A wall record cut back to `length`, keeping the end named by `keep`. */
@@ -217,11 +235,14 @@ function truncateWall(wall, keep, length) {
  *
  * @param {object} room
  * @param {'room'|'wall'} scope   the project's own (engine/design.js)
+ * @param {object|null} profile   T51 (F8): whose `room.sideWallMm` decides how
+ *   long the two returns are when the room has not said. Optional, so every
+ *   caller that has no profile to hand still gets the house's own answer.
  */
-export function wallsInScope(room, scope = 'room') {
+export function wallsInScope(room, scope = 'room', profile = null) {
   const walls = roomWalls(room);
   if (scope !== 'wall' || walls.length < 3) return walls;
-  const stub = wallStub(room);
+  const stub = wallStub(room, profile);
   if (stub <= 0) return [walls[0]];
   return [
     walls[0],

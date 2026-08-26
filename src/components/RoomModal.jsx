@@ -109,7 +109,9 @@ export default function RoomModal({
   // The editor offered four walls for a job whose scope says there is one. The
   // list is the engine's (`wallsInScope`), so the plan, the wall rows and the
   // 3D scene cannot disagree about what this project has.
-  const shown = useMemo(() => wallsInScope(draft, scope), [draft, scope]);
+  // T51 (CLAUDE.md F8): …and the two returns are as long as the WORKSHOP says
+  // when this room has not said — `profile.room.sideWallMm`, 2000 from tonight.
+  const shown = useMemo(() => wallsInScope(draft, scope, getCabinetProfile()), [draft, scope]);
   const editable = useMemo(() => shown.filter((w) => !w.stub), [shown]);
   const bounds = useMemo(() => roomBounds(draft), [draft]);
   const shapeIssues = useMemo(() => validateRoomShape(draft.corners), [draft.corners]);
@@ -551,7 +553,7 @@ export default function RoomModal({
               <div>
                 <span className="cc-label">Side returns (mm, 0 = none)</span>
                 <NumberField
-                  value={wallStub(draft)}
+                  value={wallStub(draft, getCabinetProfile())}
                   min={0}
                   onCommit={(v) => patch({ wall_stub_mm: Math.max(0, Number(v) || 0) })}
                 />

@@ -1435,6 +1435,75 @@
 ;;;----------------------------------------
 
 ;;;----------------------------------------
+;;; THE DOG BONES FOLLOW THE CABINET'S HEIGHT (turn 52, CLAUDE.md F3)
+;;;----------------------------------------
+;;;
+;;; The owner, 26.08.2026:
+;;;
+;;;   "jak niska szafka ponizej 600 mm to juz zrob 2 dog bonesy, a jak ponizej
+;;;    300 to jeden dog bones - na plecach i BUL i BUR."
+;;;
+;;; drawBUL, drawBUR and drawBACK below cut THREE tenons down the back edge -
+;;; 95 in from each end and one on the middle - and three dog bones with them.
+;;; That is right for a full-height carcass and wrong for a low one, and the
+;;; owner has now given the two numbers he wants it decided by.
+;;;
+;;; THE RULE, and it is HIS, not a derivation:
+;;;
+;;;   at or under 300      ONE tenon, on the panel's own middle
+;;;   under 600            TWO, `e` in from each end
+;;;   600 and over         THREE, which is every kit in this folder
+;;;
+;;; WHY 300 IS "AT OR UNDER" AND NOT "UNDER". The application's LOW_CABINET
+;;; minimum height is EXACTLY 300 (`lowCabinet.minHeight`), so a rule written
+;;; as `< 300` could never fire on the one cabinet it exists for - the feature
+;;; would ship dead. He said "ponizej 300" of a cabinet he can only build AT
+;;; 300, so the boundary belongs inside the rule. 600 keeps the ordinary
+;;; reading: at 600 there are still three.
+;;;
+;;; THE FLOOR THE THREE-TENON NUMBER MAY NOT GO BELOW. Turn 8 derived it from
+;;; the geometry and the derivation still stands as a LIMIT, even though the
+;;; owner's 600 has replaced it as the switch:
+;;;
+;;;   190   the two outer centres, 95 in from each end
+;;; + 120   each outer tenon's own footprint plus the middle one's, both ends:
+;;;         2 x 2 x max(tenon half width 25, dog bone half height 30)
+;;; +  36   the minimum bridge - one board thickness on EACH side of the middle
+;;;         tenon, because a middle tenon opens TWO gaps and not one
+;;; = 346
+;;;
+;;; Below 346 the three would COLLIDE. The owner's 600 is well clear of it and
+;;; a workshop that lowers the switch must never take it under 346, which is
+;;; what `SKY:middleTabFloor` is for and what the application's test asserts.
+;;;
+;;; Application follows this law in src/engine/puzzle.js (`tabCentres`), and it
+;;; reaches BUL, BUR and the BACK by one route: the back's side sockets are cut
+;;; at the very centres the sides' tenons are, so it cannot fall out of step.
+;;;----------------------------------------
+
+;;; The floor the three-tenon switch may not be set below - turn 8's own
+;;; derivation, kept as a LIMIT now that the switch itself is the owner's.
+(defun SKY:middleTabFloor (e tabHalf boneHalf boardT)
+  (+ (* e 2.0) (* (max tabHalf boneHalf) 4.0) (* boardT 2.0)))
+
+;;; How many tenons - and therefore how many dog bones - a run of `len` takes.
+;;; `three` is the owner's 600 and `one` his 300; the boundaries are his own
+;;; words with the 300 taken as AT-or-under (see the note above).
+(defun SKY:tabCount (len one three)
+  (cond ((<= len one) 1)
+        ((< len three) 2)
+        (T 3)))
+
+;;; And where they go. One tenon sits on the panel's own middle; two sit `e` in
+;;; from each end; three are those two with the middle between them.
+(defun SKY:tabCentres (len e one three / n)
+  (setq n (SKY:tabCount len one three))
+  (cond ((= n 1) (list (/ len 2.0)))
+        ((= n 2) (list e (- len e)))
+        (T (list e (/ len 2.0) (- len e)))))
+;;;----------------------------------------
+
+;;;----------------------------------------
 ;;; THE SEGMENTS, AND THEIR ANGLES
 ;;;----------------------------------------
 

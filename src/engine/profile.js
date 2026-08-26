@@ -507,7 +507,38 @@ export const DEFAULT_CABINET_PROFILE = {
     // has two sockets below `singleSocketBelow`. `LOW_CABINET.minHeight` is 300,
     // so the case is reachable from the UI. test/low-tabs.test.js recomputes the
     // number on every run, so it and the reasoning cannot drift apart.
-    middleTabBelow: 346,
+    //
+    // ─── TURN 52 (CLAUDE.md F3): 346 IS THE FLOOR NOW, NOT THE SWITCH ──────
+    //
+    // The owner, 26.08.2026: *"jak niska szafka poniżej 600 mm to już zrób 2
+    // dog bonesy, a jak poniżej 300 to jeden dog bones — na plecach i BUL i
+    // BUR."*
+    //
+    // So this is the OWNER'S NUMBER from tonight and no longer the derived one.
+    // The derivation above (190 + 120 + 36 = 346) stops being the explanation
+    // of THIS field and becomes the FLOOR it may never go below: under 346 the
+    // three dog bones genuinely collide, so a workshop that lowers the switch
+    // past it is asking for a hole through the middle of a panel rather than a
+    // joint. `engine/puzzle.js middleTabThreshold` still computes it and
+    // `test/low-tabs.test.js` still holds this number above it.
+    //
+    // LISP IS LAW, FIRST (iron rule 3): born in `reference/lisp/
+    // SKYLON_COMMON.lsp` as `SKY:tabCount` / `SKY:tabCentres` /
+    // `SKY:middleTabFloor`, and this is the application following it.
+    middleTabBelow: 600,   // 26.08.2026 (T52-F3), was 346 — the derived floor
+    // ─── …AND ONE TAB ON A REALLY LOW CARCASS ──────────────────────────────
+    //
+    // *"a jak poniżej 300 to jeden dog bones."*  At or under this there is ONE
+    // tenon, on the panel's own middle line — the twin, on the height axis, of
+    // `singleSocketBelow` on the depth axis.
+    //
+    // AT OR UNDER, and the boundary is the whole of it: `lowCabinet.minHeight`
+    // is EXACTLY 300, so a rule written as `< 300` could never fire on the one
+    // cabinet it exists for and the feature would ship dead. He said "poniżej
+    // 300" of a cabinet he can only build AT 300. `middleTabBelow` above keeps
+    // the ordinary reading — at 600 there are still three — because 600 is not
+    // a boundary anything is pinned to.
+    singleTabAtOrBelow: 300,
     screwDiameter: 3,
     screwFromEnd: 50,          // screws at 50, mid, length−50
     // ─── TURN 24 (CLAUDE.md F4): `centrelineExtra` IS GONE ─────────────────

@@ -1215,6 +1215,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
   // Turn 50 (CLAUDE.md F2): one click, one batch, one undo step.
   const shareOutRun = useProjectStore((s) => s.shareOutRun);
+  // T52 (CLAUDE.md F4): one derivation, read by the bar.
+  const shareOutView = useProjectStore((s) => s.shareOutView);
   const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
@@ -1250,6 +1252,16 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const unitDimensions = useUiStore((s) => s.unitDimensions);
   // Turn 50 (CLAUDE.md F2): which run, if any, has a leftover worth offering.
   const shareOutOffer = useUiStore((s) => s.shareOutOffer);
+  // ─── TURN 52 (CLAUDE.md F4): ONE NUMBER, COMPUTED ONCE ───────────────────
+  // The bar's whole subject — run, plan and the gap it stands in — resolved by
+  // the STORE (`shareOutSubject`), which is the same derivation `shareOutRun`
+  // applies. Re-derived whenever the units move, which is what `units` is
+  // doing in this dependency list; the bar itself now does arithmetic about
+  // nothing but where in the room to hang the strip.
+  const shareOutNow = useMemo(
+    () => (shareOutOffer?.unitId ? shareOutView(shareOutOffer.unitId) : null),
+    [shareOutOffer, units, shareOutView],
+  );
   const clearShareOut = useUiStore((s) => s.clearShareOut);
   const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
   const dimensionColour = useUiStore((s) => s.dimensionColour);
@@ -1762,11 +1774,13 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           and ignoring it costs no click. */}
       {!contourView && !shelfDrag && shareOutOffer && (
         <ShareOutBar
-          units={units}
           walls={walls}
           roomCentre={bounds.centre}
           offer={shareOutOffer}
-          profile={profile}
+          // T52 (CLAUDE.md F4): the STORE's own resolution — the same call
+          // `shareOutRun` applies, wall margin and all — so the number on the
+          // strip is the number the cabinets end up at.
+          view={shareOutNow}
           onShare={(unitId, opts) => {
             const res = shareOutRun(unitId, opts);
             clearShareOut();

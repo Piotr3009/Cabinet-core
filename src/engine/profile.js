@@ -4128,6 +4128,28 @@ export const DEFAULT_CABINET_PROFILE = {
   // Not the room's SHAPE — that is the project's (engine/room.js). This is what
   // the workshop knows about walls in general.
   room: {
+    // ─── TURN 51 (CLAUDE.md F8): THE SIDE WALLS' DEFAULT ──────────────────
+    //
+    // The owner, 26.08.2026: *"default bocznych ścian zrób na 2000 mm, nie jak
+    // teraz 1500."*
+    //
+    // A ONE-WALL job is drawn as the wall plus, optionally, a RETURN at each
+    // end — the two side walls he means, the field the room editor calls
+    // "Side returns". Turn 14 shipped them at 1000 and they have been 1000
+    // ever since; the 1500 in his sentence is a number he has typed into that
+    // field rather than one the app ever defaulted to. The instruction is one
+    // instruction either way, and this is it.
+    //
+    // *"One number, in the profile, read by everything that starts a room."*
+    // This is the number. `engine/room.js DEFAULT_WALL_STUB` is the fallback
+    // for a caller with no profile to hand, and the two are held EQUAL by
+    // `test/turn51-f8-the-side-walls.test.js` — two literals that must agree
+    // is exactly how a default drifts apart.
+    //
+    // A room that STATES its own length still wins: that is a joiner's answer,
+    // and a changed default must never re-draw a saved job.
+    sideWallMm: 2000,
+
     // EVERY unit stands this far off the wall behind it. Base, wall and tall
     // alike, and not because anybody asked for a gap: because a wall is not
     // flat and a hung cabinet needs somewhere for its bracket to be.

@@ -18,16 +18,16 @@ const DEFAULT_ROOM_DEPTH = 3000;
 const DEFAULT_ROOM_HEIGHT = 2500;
 
 /**
- * ─── TURN 50 (CLAUDE.md F1): THE ROOM MODEL'S OWN MINIMUM, NAMED ────────────
- *
- * *"If a segment would produce a wall shorter than the room model's own
- * minimum, say so at the field rather than accepting it."*
+ * ─── THE ROOM MODEL'S OWN MINIMUM, NAMED (turn 50; kept at turn 51) ─────────
  *
  * The number is not new — the typed-length field in `components/RoomModal.jsx`
  * has floored at 100 since turn 14, and `validateRoomShape` below refuses a
- * wall of under 1 mm outright. What is new is that it has a NAME, so the wall
- * editor's message, the typed-length field and the shape check are one answer
- * rather than three literals that can drift apart.
+ * wall of under 1 mm outright. What turn 50 added was the NAME.
+ *
+ * T51 reverted the wall editor that named it (F1), and `drawn_walls` went with
+ * it because nothing but that editor ever read it. This stayed: the typed
+ * length field still floors here, and putting the literal 100 back into a
+ * component would be undoing a good thing for the sake of a tidy revert.
  */
 export const MIN_WALL_LENGTH = 100;
 
@@ -104,17 +104,6 @@ export function migrateRoom(room) {
   // this turn opens with the defaults and nothing to migrate.
   const stub = Number(room.wall_stub_mm);
   const boxes = Array.isArray(room.boxes) ? room.boxes.map(migrateBox).filter(Boolean) : [];
-  // ─── TURN 50 (CLAUDE.md F1): HOW MANY OF THESE WALLS WERE DRAWN ───────────
-  //
-  // *"an open chain is a valid one-wall or L job and must not be forced
-  // closed."* The polygon still has to close — a floor is cut from something —
-  // so what an open chain leaves behind is a room whose LAST edge nobody typed.
-  // This records how many leading walls the joiner actually drew, and the plan
-  // draws the rest in grey exactly as turn 14's stubs are drawn.
-  //
-  // Optional, like `wall_stub_mm` and `boxes` above: a project saved before
-  // tonight has nothing to migrate and every wall of it counts as drawn.
-  const drawn = Number(room.drawn_walls);
   return normalizeRoom({
     schema: ROOM_SCHEMA,
     height,
@@ -122,7 +111,6 @@ export function migrateRoom(room) {
     openings,
     ...(Number.isFinite(stub) && stub >= 0 ? { wall_stub_mm: stub } : {}),
     ...(boxes.length ? { boxes } : {}),
-    ...(Number.isFinite(drawn) && drawn > 0 ? { drawn_walls: Math.trunc(drawn) } : {}),
   });
 }
 
@@ -196,22 +184,29 @@ export function wallWidth(room, index) {
 // What changes is which walls are DRAWN and OFFERED, and that is this function.
 
 /**
- * Which walls of this room were DRAWN (turn 50, F1) — every one of them, unless
- * an open chain said otherwise. A wall past this count exists because the
- * polygon had to close, and the plan says so instead of pretending it was typed.
+ * How far each side stub runs forward, when there are stubs at all.
+ *
+ * ─── TURN 51 (CLAUDE.md F8): 1000 → 2000 ────────────────────────────────────
+ *
+ * The owner: *"default bocznych ścian zrób na 2000 mm, nie jak teraz 1500."*
+ * (It was 1000, not 1500 — the 1500 is a number he has typed into that field.
+ * The instruction is the same either way.)
+ *
+ * *"One number, in the profile, read by everything that starts a room."*  The
+ * number IS `profile.room.sideWallMm`; this is the fallback for a caller with
+ * no profile to hand, and the two are held equal by a test, because two
+ * literals that must agree is exactly how a default drifts apart.
  */
-export function drawnWalls(room) {
-  const n = Number(room?.drawn_walls);
-  const walls = roomWalls(room).length;
-  return Number.isFinite(n) && n > 0 ? Math.min(Math.trunc(n), walls) : walls;
-}
+export const DEFAULT_WALL_STUB = 2000;
 
-/** How far each side stub runs forward, when there are stubs at all. */
-export const DEFAULT_WALL_STUB = 1000;
-
-export function wallStub(room) {
+export function wallStub(room, profile = null) {
   const v = Number(room?.wall_stub_mm);
-  return Number.isFinite(v) && v >= 0 ? v : DEFAULT_WALL_STUB;
+  if (Number.isFinite(v) && v >= 0) return v;
+  // T51 (F8): the workshop's own number when there is a profile to ask, the
+  // house's when there is not. A room that STATES a length still wins — that is
+  // a joiner's answer, and a changed default must never re-draw a saved job.
+  const said = Number(profile?.room?.sideWallMm);
+  return Number.isFinite(said) && said >= 0 ? said : DEFAULT_WALL_STUB;
 }
 
 /** A wall record cut back to `length`, keeping the end named by `keep`. */
@@ -240,11 +235,14 @@ function truncateWall(wall, keep, length) {
  *
  * @param {object} room
  * @param {'room'|'wall'} scope   the project's own (engine/design.js)
+ * @param {object|null} profile   T51 (F8): whose `room.sideWallMm` decides how
+ *   long the two returns are when the room has not said. Optional, so every
+ *   caller that has no profile to hand still gets the house's own answer.
  */
-export function wallsInScope(room, scope = 'room') {
+export function wallsInScope(room, scope = 'room', profile = null) {
   const walls = roomWalls(room);
   if (scope !== 'wall' || walls.length < 3) return walls;
-  const stub = wallStub(room);
+  const stub = wallStub(room, profile);
   if (stub <= 0) return [walls[0]];
   return [
     walls[0],
@@ -429,8 +427,23 @@ export function roomBoxes(room) {
   return (room?.boxes || []).map(migrateBox).filter(Boolean);
 }
 
-/** The four plan corners of a box, anticlockwise from its near-left. */
+/**
+ * The four plan corners of a box, anticlockwise from its near-left.
+ *
+ * ─── TURN 51 (CLAUDE.md F1): …OR THE FOUR IT ALREADY CARRIES ───────────────
+ *
+ * A box in `room.boxes` is typed as a rectangle on the room's own axes, so its
+ * corners are arithmetic. A CHIMNEY drawn on a wall is not: it stands on that
+ * wall's line, and on an L-shaped or an imported room that line is at an angle.
+ * `wallPlanObstacles` below hands its corners over already turned, and this
+ * takes them as given rather than squaring them back up — an axis-aligned
+ * bounding box round a chimney on a 45° wall is a chimney half a metre wider
+ * than the one the joiner drew, and a cabinet would stop short of nothing.
+ */
 export function boxCorners(box) {
+  if (Array.isArray(box?.corners) && box.corners.length >= 3) {
+    return box.corners.map((c) => ({ x: round4(Number(c.x) || 0), y: round4(Number(c.y) || 0) }));
+  }
   const b = migrateBox(box);
   return [
     { x: b.x, y: b.y },
@@ -438,6 +451,105 @@ export function boxCorners(box) {
     { x: b.x + b.w, y: b.y + b.d },
     { x: b.x, y: b.y + b.d },
   ];
+}
+
+// ─── TURN 51 (CLAUDE.md F1): A RECESS AND A CHIMNEY ARE PART OF THE ROOM ────
+//
+// The owner: *"zostaw dodawanie wnęki i boxa jak wcześniej, ale żeby
+// działało."*  T45 gave the wall editor a top view with `Add recess` and
+// `Add chimney` on it, and both of them WORKED as far as the modal: the
+// element is stored on `project.wallSlopes`, listed under "On this wall", and
+// drawn in the plan the moment it is added.
+//
+// And then nothing. `3d/Room.jsx` and the placement clamp both read that list
+// through `kind === 'slope'`, so past the modal's own window a recess did not
+// exist: the room did not show one and no cabinet ever stopped at a chimney.
+// That is the whole of *"żeby działało"* — the drawing was never the problem.
+//
+// This is the crossing, and it is deliberately the SAME record `room.boxes`
+// already is: a chimney is a box that happens to have been drawn on a wall, so
+// it reaches the placement by the route a box has taken since turn 14 and no
+// call site learns a second obstacle kind.
+//
+// ─── AND A RECESS IS NOT AN OBSTACLE ───────────────────────────────────────
+//
+// An alcove is room, not building. A cabinet standing in one is the entire
+// reason a joiner draws it, so a recess is returned for the VIEW and never for
+// the clamp — `obstacles: false` on the record, and `wallPlanObstacles` filters
+// on it rather than on the kind, so the day a third kind arrives the rule is
+// still one word.
+
+/** Is this plan element something a cabinet has to stop at? */
+export function planElementBlocks(el) {
+  return (el?.kind ?? '') === 'chimney';
+}
+
+/**
+ * One wall-plan element, placed in the ROOM's own plan frame.
+ *
+ * The element is drawn in its wall's frame — `x_mm` along the wall from its
+ * start corner, `depth` measured from the wall FACE — and this turns that into
+ * the four corners the room measures everything else by. A CHIMNEY stands
+ * proud, so it runs INWARD from the face; a RECESS is cut into the wall, so it
+ * runs the other way and never reaches the floor a cabinet stands on.
+ *
+ * @returns {{id,kind,label,corners,x,y,w,d,blocks}|null}
+ */
+export function planElementFootprint(el, wall) {
+  if (!el || !wall) return null;
+  const width = Math.max(0, Number(el.width) || 0);
+  const depth = Math.max(0, Number(el.depth) || 0);
+  if (!(width > 0) || !(depth > 0)) return null;
+  const x0 = Math.max(0, Number(el.x_mm) || 0);
+  const along = wall.along || { x: 1, y: 0 };
+  const inward = wall.inward || { x: 0, y: 1 };
+  // A chimney stands INTO the room; a recess is cut the other way, out through
+  // the wall it is drawn on.
+  const sign = planElementBlocks(el) ? 1 : -1;
+  const at = (u, v) => ({
+    x: round4(wall.start.x + along.x * u + inward.x * v * sign),
+    y: round4(wall.start.y + along.y * u + inward.y * v * sign),
+  });
+  const corners = [at(x0, 0), at(x0 + width, 0), at(x0 + width, depth), at(x0, depth)];
+  const xs = corners.map((c) => c.x);
+  const ys = corners.map((c) => c.y);
+  const minX = Math.min(...xs);
+  const minY = Math.min(...ys);
+  return {
+    id: String(el.id || `plan_${el.kind}`),
+    kind: el.kind,
+    label: el.kind === 'chimney' ? 'a chimney on this wall' : 'a recess in this wall',
+    corners,
+    // The bounding box, for anything that only knows how to read one. Never
+    // used for the clamp, which reads `corners` through `boxCorners` above.
+    x: round4(minX),
+    y: round4(minY),
+    w: round4(Math.max(...xs) - minX),
+    d: round4(Math.max(...ys) - minY),
+    blocks: planElementBlocks(el),
+  };
+}
+
+/**
+ * Every wall-plan element of a room, as room-frame footprints.
+ *
+ * @param {object} room
+ * @param {Array} elements  `project.wallSlopes` — the T44/T45 list, any kind
+ * @param {object} options  `{ blocking: true }` returns only what a cabinet
+ *                          has to stop at, which is what the placement wants.
+ */
+export function wallPlanObstacles(room, elements, { blocking = false } = {}) {
+  const walls = roomWalls(room);
+  const out = [];
+  for (const el of elements || []) {
+    if (el?.kind !== 'recess' && el?.kind !== 'chimney') continue;
+    if (blocking && !planElementBlocks(el)) continue;
+    const wall = walls[Number(el.wall) || 0];
+    if (!wall) continue;
+    const foot = planElementFootprint(el, wall);
+    if (foot) out.push(foot);
+  }
+  return out;
 }
 
 /** The sides a box offers to the same two gestures a wall does. */

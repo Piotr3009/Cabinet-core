@@ -95,6 +95,26 @@ export function exportStamp(now = new Date()) {
 }
 
 /**
+ * ─── TURN 51 (CLAUDE.md F7): THE WAREHOUSE'S OWN STAMP ─────────────────────
+ *
+ * `YYYY-MM-DD HH-mm`, because CLAUDE.md F7 writes the materials filename out in
+ * full and that is the shape it asks for:
+ *
+ *   `Cabinet Core - {project} - {YYYY-MM-DD HH-mm} - materials.csv`
+ *
+ * It is HERE and not in `engine/warehouse.js` for T31-F5's reason, which holds
+ * whatever the shape is: this file is the one authority on what a written file
+ * is called, and a second `getMonth()` anywhere in `src/` is how two exports
+ * start disagreeing about what time it is. The FAMILY stamp above is unchanged
+ * and is still what every other export in the app uses.
+ */
+export function warehouseStamp(now = new Date()) {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`
+    + ` ${p(now.getHours())}-${p(now.getMinutes())}`;
+}
+
+/**
  * The ONE name every export the app writes is built from.
  *
  * @param {object} args

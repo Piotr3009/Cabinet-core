@@ -548,18 +548,61 @@ export function runEndGap(run, side, { wallWidth = 0, others = [] } = {}) {
   const spans = others.filter((u) => !mine.has(u.id)).map(paddedSpan);
   const unit = side === 'left' ? run.units[0] : run.units[run.units.length - 1];
 
+  // ─── TURN 51 (CLAUDE.md F4): TWO EDGES, BECAUSE THERE ARE TWO QUESTIONS ──
+  //
+  // *"`runEndGap` measures from `paddedSpan`, which includes the fillers — so
+  // the engine reads zero where the owner sees a gap … The gap is measured from
+  // the CABINET BODY to the wall, ignoring the scribe filler that stands in it:
+  // at a 40 filler and a 300 shadow, the bar says 340, and the filler returns
+  // to its 40 once the run is shared out."*
+  //
+  // CAN A CABINET GO HERE?  That is measured to the PADDED edge, and it has to
+  // be: a run's own end panel is a real board and nothing may stand in it.
+  // `addPlusPoints` asks exactly this and `test/add-plus.test.js` holds it to
+  // the answer — *"an END PANEL is part of the unit, so it eats into the gap"*.
+  // `gap` / `from` / `to` are that measurement and are untouched.
+  //
+  // WHAT IS LEFT OVER?  That is measured from the CABINET BODY. What the joiner
+  // sees at the end of a run is carcass to wall, and the scribe filler standing
+  // in it is not a shadow — it is a piece that gets re-cut the moment the run
+  // is shared out. Read off the padded edge instead, the app was short by
+  // whatever board hung off the end unit, and at a panel taken right to the
+  // wall it read ZERO where he could see forty.
+  //
+  // So both come back and each caller reads the one it means. `bodyGap` is the
+  // share-out's, and nothing else's.
+  const body = side === 'left'
+    ? (Number(unit.position?.x_mm) || 0)
+    : (Number(unit.position?.x_mm) || 0) + (Number(unit.params?.width) || 0);
+
   if (side === 'left') {
     const edge = run.left;
     // The nearest thing standing to the LEFT of this run. Nothing there means
     // the wall, which is at 0.
     const blocked = spans.filter((s) => s.right <= edge + 1e-6).map((s) => s.right);
     const from = blocked.length ? Math.max(...blocked) : 0;
-    return { gap: Math.max(0, edge - from), from, to: edge, unit };
+    return {
+      gap: Math.max(0, edge - from),
+      from,
+      to: edge,
+      bodyGap: Math.max(0, body - from),
+      bodyTo: body,
+      bodyFrom: from,
+      unit,
+    };
   }
   const edge = run.right;
   const blocked = spans.filter((s) => s.left >= edge - 1e-6).map((s) => s.left);
   const to = blocked.length ? Math.min(...blocked) : (Number(wallWidth) || 0);
-  return { gap: Math.max(0, to - edge), from: edge, to, unit };
+  return {
+    gap: Math.max(0, to - edge),
+    from: edge,
+    to,
+    bodyGap: Math.max(0, to - body),
+    bodyFrom: body,
+    bodyTo: to,
+    unit,
+  };
 }
 
 /**

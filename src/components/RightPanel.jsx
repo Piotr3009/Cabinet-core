@@ -48,6 +48,10 @@ export default function RightPanel() {
 
   const units = useProjectStore((s) => s.units);
   const room = useProjectStore((s) => s.project.room);
+  // T51 (CLAUDE.md F1): a chimney drawn on a wall is an obstacle like a box in
+  // the plan, so Check has to be handed the list it lives on or it reports a
+  // clean unit standing through one.
+  const wallSlopes = useProjectStore((s) => s.project.wallSlopes);
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   // Turn 50 (CLAUDE.md F3): may this unit be given this size at all?
   const roomFitRefusalFor = useProjectStore((s) => s.roomFitRefusalFor);
@@ -120,7 +124,7 @@ export default function RightPanel() {
   // Turn 22 (CLAUDE.md F1.1): the per-unit cornice option, resolved. A stored
   // value this workshop does not buy reads as 'none' rather than as itself.
   const corniceValue = unit ? corniceOption(unit.params.cornice, profile) : 0;
-  const issues = unit && result ? validateUnit(unit, result, { room, units }) : [];
+  const issues = unit && result ? validateUnit(unit, result, { room, units, wallSlopes }) : [];
   const items = unit?.params.sections?.[0]?.items || [];
   // TOP-DOWN, from engine/items.js: the first row of every list below is the
   // piece nearest the ceiling, exactly as the 3D view shows it (BACKLOG #1).

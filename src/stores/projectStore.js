@@ -36,6 +36,7 @@ import {
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
+  wallPlanObstacles,
 } from '../engine/room.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
@@ -54,6 +55,10 @@ import {
 // `src/engine/**` is closed byte-for-byte tonight (lib/ledSpec.js says it in
 // full). The day the engine reopens it moves into `design.lighting`.
 import { migrateLedSpec } from '../lib/ledSpec.js';
+// T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
+// room with one window and a showroom want different rigs, and a saved job
+// should reopen looking as it did."*
+import { defaultLightRig, migrateLightRig } from '../engine/lightRig.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, normaliseHandle, projectHeights,
   resolveUnitDesign, setCarcassTypeCount, withFrontColour, withRunMaterial,
@@ -106,7 +111,7 @@ import {
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
 // Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
 import {
-  autoEndPanelJunctions, autoEndPanelMessage, withDeclined,
+  autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
@@ -154,6 +159,58 @@ import { dirtyGate } from './dirtyGate.js';
 const CACHE_KEY = 'cc.project.cache.v1';
 
 const uid = (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 9)}`;
+
+// ─── TURN 51 (CLAUDE.md F2): THE SETTLE GUARD ───────────────────────────────
+//
+// `settleLayout` grows the auto end panels, and `growAutoEndPanels` widens
+// cabinets through `updateUnitParams`, which settles the layout. That is an
+// unfloored loop and the suite finds it as a blown stack rather than as a bug
+// with a name, which is why CLAUDE.md names it in advance.
+//
+// Module scope, not store state: it is not a fact about the project, it is a
+// fact about the call currently on the stack, and a re-render must never see
+// it. The OUTERMOST call does the work and every inner one returns at once.
+let settling = false;
+
+/**
+ * Run `fn` with the settle suppressed, then put the flag back where it was.
+ *
+ * `shareOutRun` is the caller this exists for: it makes dozens of moves and
+ * width edits laying a run out, and a full settle after each of them would be
+ * both wrong (the run is mid-flight — half the cabinets are still where they
+ * were) and slow. It settles ONCE, at the end, like every other action.
+ */
+function withoutSettling(fn) {
+  const was = settling;
+  settling = true;
+  try { return fn(); } finally { settling = was; }
+}
+
+// ─── …AND THE RUN'S OWN AUTO-PARTS, WHILE IT IS BEING LAID OUT ─────────────
+//
+// The owner: *"szafki się nigdy nie powiększają w lewą stronę … nie są w stanie
+// przesunąć innej szafki."*  And his rule: *"nachodzenie na siebie to sztywna
+// zasada, jest niedopuszczalne, więc wymuszenie przesunięcia."*
+//
+// `shareOutRun` already lays the run out with a cursor and writes right to
+// left, which is correct. What defeated it is that the FILLERS are obstacles —
+// `panelObstaclesFor` labels them `filler` — and they are only recomputed at
+// the very END of the lay-out. So every move was clamped against infills sized
+// for the OLD widths: a 40 mm scribe filler standing where the plan wants
+// 340 mm of cabinet refuses the move, the cabinet does not grow, and the run
+// "never widens to the left".
+//
+// So the run's own auto-parts step out of the obstacle set for the duration and
+// are put back by `refreshAutoParts` after. A cabinet may still not overlap
+// another CABINET — that rule is absolute and is untouched: only the boards
+// this same lay-out is about to re-cut are stood down.
+let layingOut = null;
+
+function withRunStoodDown(unitIds, fn) {
+  const was = layingOut;
+  layingOut = new Set(unitIds);
+  try { return fn(); } finally { layingOut = was; }
+}
 
 /** A zone index, or null for "the whole width" — `Number(null)` is 0, so ask. */
 const zoneIndexOf = (v) => (v == null || !Number.isFinite(Number(v)) ? null : Math.trunc(Number(v)));
@@ -941,6 +998,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       design: migrateDesign(cached.project.design),
       wallSlopes: wallElements(cached.project.wallSlopes),
       ledSpec: migrateLedSpec(cached.project.ledSpec),
+      lightRig: migrateLightRig(cached.project.lightRig),
     }
     : {
       id: null, name: 'Untitled project', number: '', client: '',
@@ -950,6 +1008,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       wallSlopes: [],
       // T45 F9b: a new job's LED spec — flexi, 4 mm, no W/m typed yet.
       ledSpec: migrateLedSpec(null),
+      // T51 F6: SHOWROOM, adjusted to whatever the profile's pillars are — so a
+      // project opened with the panel untouched looks exactly as it did before
+      // tonight. `engine/lightRig.js defaultLightRig` says why.
+      lightRig: defaultLightRig(getCabinetProfile()),
       jc_tenant_id: null, jc_project_id: null,
     },
   units: migrateUnits(cached?.units),
@@ -1077,6 +1139,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     project: { ...s.project, ledSpec: migrateLedSpec({ ...migrateLedSpec(s.project.ledSpec), ...patch }) },
   })),
 
+  // ─── TURN 51 (CLAUDE.md F6 · decision 1): THE LIGHT RIG, WITH THE PROJECT ─
+  //
+  // *"Light settings live WITH THE PROJECT, not globally — a room with one
+  // window and a showroom want different rigs, and a saved job should reopen
+  // looking as it did."*
+  //
+  // A PATCH setter, like `setLedSpec` above: the panel writes one lamp at a
+  // time and `engine/lightRig.js` answers for the rest.
+  setLightRig: (patch) => set((s) => {
+    const now = migrateLightRig(s.project.lightRig);
+    const next = migrateLightRig({
+      preset: patch?.preset ?? now.preset,
+      lamps: { ...now.lamps, ...(patch?.lamps || {}) },
+    });
+    return { project: { ...s.project, lightRig: next } };
+  }),
+
   loadProject: (project, units) => {
     // ─── TURN 34 (CLAUDE.md F7): THE SHAKER FRAME A SAVED JOB WAS CUT TO ────
     // "zmienimy default z 70 na 60" — for NEW projects. A job already on the
@@ -1102,6 +1181,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         wallSlopes: wallElements(project?.wallSlopes),
         // …and its LED spec, normalised on the way in like everything else.
         ledSpec: migrateLedSpec(project?.ledSpec),
+        // T51 F6: …and its LIGHT RIG. A job saved before tonight has none and
+        // opens on the rig it was drawn under, which is the default.
+        lightRig: project?.lightRig
+          ? migrateLightRig(project.lightRig)
+          : defaultLightRig(getCabinetProfile()),
       },
       units: migrateUnits(units),
       dirty: false,
@@ -1153,6 +1237,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // is added, and it is the project's, not the last project's.
       wallSlopes: [],
       ledSpec: migrateLedSpec(null),
+      lightRig: defaultLightRig(getCabinetProfile()),
       jc_tenant_id: null,
       jc_project_id: null,
     },
@@ -1961,6 +2046,117 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {Array<{unitId, side, panelId, message}>} what was added
    */
+  // ─── TURN 51 (CLAUDE.md F2 + F3): THE LAYOUT SETTLES ITSELF ──────────────
+  //
+  // Two of the owner's rulings, 26.08.2026, and they are one mechanism:
+  //
+  //   *"nie działa ustawianie automatyczne, nie ma zapytania, nie pokazuje się
+  //   a jest poniżej 400."*
+  //   *"jak dojedziesz to już nie wymusza panela, a powinno: dojeżdżam — panel
+  //   się pojawia, nie dojeżdżam — panel znika. proste."*
+  //
+  // T50 hung both on `addUnit` alone. The owner reaches a sub-400 gap by
+  // DRAGGING or by RESIZING, and neither of those had ever asked him anything.
+  // So there is ONE action, called at the end of every edit that can move a
+  // cabinet's edge — `addUnit`, `moveUnit`, `removeUnit`, and
+  // `updateUnitParams` when a width, depth or height has actually moved.
+  //
+  // A COLOUR CHANGE MUST NOT PAY FOR IT, which is why the last one is
+  // conditional: `updateUnitParams` is how a decor, a hinge side and a part
+  // edit are written too, and none of those can create or close a junction.
+  //
+  // It does three things, in this order and for this reason:
+  //
+  //   1. PRUNE. An automatic panel whose junction has gone is taken off, and a
+  //      DECLINE whose junction has gone is forgotten. Before the grow, so a
+  //      panel that should have moved with the hand does not survive one pass
+  //      as a stray while a fresh one is added beside it.
+  //   2. GROW. T50's own `growAutoEndPanels`, unchanged.
+  //   3. OFFER. The share-out for the focused unit, re-derived — which is what
+  //      makes a DRAG ask the question a click asked at T50.
+  //
+  // The guard is `settling`, at module scope, and it exists because step 2
+  // widens cabinets through `updateUnitParams`, which lands back here.
+  settleLayout: (focusId = null) => {
+    if (settling) return { grown: [], strays: 0, offered: false };
+    settling = true;
+    // ONE BATCH. The prune and the grow are each a `runBatch` of their own, and
+    // the actions that call this are not batched at all — so without this the
+    // settle closes two batches at depth 0 and the history stack takes THREE
+    // steps for one typed width. `test/turn12-undo.test.js` is what says so,
+    // and it says it about the owner's Ctrl+Z, not about a counter.
+    return runBatch(() => {
+    try {
+      const strays = get().pruneAutoEndPanels();
+      for (const grown of get().growAutoEndPanels()) {
+        if (grown.message) useUiStore.getState().notify(grown.message, 'info');
+      }
+      const s = get();
+      const unit = focusId ? s.units.find((u) => u.id === focusId) : null;
+      if (!unit) {
+        // Nothing in focus — a removal, or an edit to a unit that has gone.
+        // The standing offer is dropped rather than left pointing at a run
+        // that may no longer exist.
+        useUiStore.getState().clearShareOut();
+        return { grown: [], strays, offered: false };
+      }
+      const walls = roomWalls(s.project.room);
+      const offer = shareOutFor(
+        s.units, unit.id, { walls, wallMargin: wallMarginOf(s, unit) }, getCabinetProfile(),
+      );
+      if (offer) useUiStore.getState().offerShareOut(unit.id);
+      else useUiStore.getState().clearShareOut();
+      return { grown: [], strays, offered: Boolean(offer) };
+    } finally {
+      settling = false;
+    }
+    });
+  },
+
+  /**
+   * ─── TURN 51 (CLAUDE.md F3): THE PANEL VANISHES WITH THE HAND ────────────
+   *
+   * *"dojeżdżam — panel się pojawia, nie dojeżdżam — panel znika."*
+   *
+   * WHICH panels are strays is `engine/endPanelAuto.js autoEndPanelStrays` and
+   * none of it is here. What is here is the REMOVAL, and it goes through the
+   * ordinary `removeEndPanel` — the same call the right-click menu makes — so
+   * a vanished panel leaves the cut list, the BOM and the CNC sheet by the
+   * routes that already exist.
+   *
+   * A panel the joiner put there HIMSELF is never touched: `auto_added` is the
+   * whole test.
+   *
+   * @returns {number} how many strays were cleared
+   */
+  pruneAutoEndPanels: () => runBatch(() => {
+    const profile = getCabinetProfile();
+    const { panels, declines } = autoEndPanelStrays(get().units, profile);
+    for (const stray of panels) {
+      // `removeEndPanel` takes the panel off and re-derives the auto parts —
+      // which is what closes the gap the board was standing in.
+      get().removeEndPanel(stray.unitId, stray.panelId, { decline: false });
+    }
+    // …and a junction the joiner cleared by hand is FORGOTTEN once it stops
+    // existing, which is the second half of F3: move the cabinet away and back
+    // and it is a new junction, so it may be offered again.
+    if (declines.length) {
+      set((st) => ({
+        units: st.units.map((u) => {
+          const mine = declines.filter((d) => d.unitId === u.id).map((d) => d.side);
+          if (!mine.length) return u;
+          const kept = (u.params.end_panel_declined || []).filter((sd) => !mine.includes(sd));
+          const params = { ...u.params };
+          if (kept.length) params.end_panel_declined = kept;
+          else delete params.end_panel_declined;
+          return { ...u, params };
+        }),
+      }));
+    }
+    if (panels.length) get().refreshAutoParts();
+    return panels.length + declines.length;
+  }),
+
   growAutoEndPanels: () => runBatch(() => {
     const profile = getCabinetProfile();
     const design = () => migrateDesign(get().project.design);
@@ -2112,7 +2308,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return { id, error: null };
   },
 
-  removeEndPanel: (unitId, panelId) => {
+  /**
+   * @param {object} options  `decline` — does taking this panel off SAY
+   *   something about the junction? True for a hand (T50, below). False for
+   *   T51's prune, which takes a panel off because its junction has ceased to
+   *   exist: nobody declined anything, and recording a decline would silently
+   *   forbid the panel on the day the junction came back.
+   */
+  removeEndPanel: (unitId, panelId, { decline = true } = {}) => {
     // ─── TURN 50 (CLAUDE.md F4): REMOVING IT BY HAND IS FINAL ──────────────
     //
     // *"Removing it by hand is final for that junction: it does not come back
@@ -2123,6 +2326,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // offers that junction again. It is written for ANY panel taken off, not
     // only an auto one: a joiner who removes the panel he put there himself has
     // said the same thing about the same joint.
+    //
+    // ─── TURN 51 (CLAUDE.md F3): …WHILE THAT JUNCTION LASTS ────────────────
+    //
+    // *"A panel the owner deleted by hand stays deleted while that junction
+    // lasts; move the cabinet away and back and it is a new junction, so it
+    // may return."*  The decline is still written here and is still final —
+    // what changed is that `pruneAutoEndPanels` forgets it once the junction
+    // it was about has gone.
     const going = get().units.find((u) => u.id === unitId)
       ?.params?.end_panels?.find((ep) => ep.id === panelId) || null;
     set((s) => ({
@@ -2132,7 +2343,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           params: {
             ...u.params,
             end_panels: (u.params.end_panels || []).filter((ep) => ep.id !== panelId),
-            ...(going ? { end_panel_declined: withDeclined(u, going.side) } : {}),
+            ...(going && decline ? { end_panel_declined: withDeclined(u, going.side) } : {}),
           },
         }
         : u)),
@@ -2923,7 +3134,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *           not a second path: a template that could land on top of a
    *           neighbour would be exactly the bug turn 3 phase 4 closed off.
    */
-  addUnit: (typeId, { params = null, near = null, side = null } = {}) => {
+  addUnit: (typeId, { params = null, near = null, side = null } = {}) => runBatch(() => {
     const profile = getCabinetProfile();
     const state = get();
     // ─── TURN 24 (CLAUDE.md F3.1): NO THICKNESS, NO DRAWERS ─────────────────
@@ -3047,7 +3258,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
             .map(unitSpan),
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
-          ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: roomBoxes(state.project.room) }),
+          ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) }),
         ],
         near: onThisWall ? unitSpan(beside) : null,
         side: onThisWall ? side : null,
@@ -3079,30 +3290,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // The plinth and the top infill are decisions and wait to be asked for
     // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
     get().refreshAutoParts(unit.id);
-    // ─── TURN 50 (CLAUDE.md F2): …AND THE GAP IT LEFT IS OFFERED ───────────
+    // ─── TURN 51 (CLAUDE.md F2 + F3): …AND THE LAYOUT SETTLES ──────────────
     //
-    // *"jak dodaję ostatnią szafkę do ściany i zostanie mniej niż 400 mm …
-    // czy chcesz wyśrodkować?"*  The question is asked HERE because this is
-    // the moment he describes — a cabinet has just been added to a run. What
-    // decides is `engine/shareOut.js`, which answers null for every add that
-    // leaves a real gap or none at all; the bar draws only when it does not.
-    if (shareOutFor(get().units, unit.id, { walls, wallMargin: wallMarginOf(get(), unit) }, profile)) {
-      useUiStore.getState().offerShareOut(unit.id);
-    } else {
-      useUiStore.getState().clearShareOut();
-    }
-    // ─── TURN 50 (CLAUDE.md F4): …AND A JUNCTION THAT NEEDS FINISHING ──────
-    //
-    // *"w kuchni jak DODAMY niską szafkę do wysokiej bez panela"* — the add is
-    // the moment he names, so this is where the question is asked. The message
-    // is a GREY, which in this app is the centre of the screen on its own
-    // clock — *"informacja na środku monitora"* — and it names the way back
-    // out, which is the second half of his sentence.
-    for (const grown of get().growAutoEndPanels()) {
-      if (grown.message) useUiStore.getState().notify(grown.message, 'info');
-    }
+    // T50 wrote the share-out offer and the auto end panel out here, in the
+    // add, and NOWHERE ELSE — which is the owner's *"nie działa ustawianie
+    // automatyczne, nie ma zapytania"*: he reaches a sub-400 gap by dragging,
+    // and a drag asked nothing. Both are `settleLayout` now, and every action
+    // that can move a cabinet's edge ends by calling it.
+    get().settleLayout(unit.id);
     return { id: unit.id, error: null, wall: placed.wall };
-  },
+  }),
 
   // ─── TURN 50 (CLAUDE.md F2): THE RUN IS SHARED OUT, EQUALLY, ONCE ────────
   //
@@ -3268,10 +3465,33 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }
       get().moveUnit(u.id, to.x, 0, { magnet: false });
     };
-    for (const u of [...units].reverse()) place(u);
-    notices.length = 0;                       // the first pass is the rehearsal
-    for (const u of units) place(u);
+    // ─── TURN 51 (CLAUDE.md F2): THE RUN'S OWN FILLERS STAND DOWN ──────────
+    //
+    // The owner: *"szafki się nigdy nie powiększają w lewą stronę … nie są w
+    // stanie przesunąć innej szafki."*  This is why. The cursor arithmetic
+    // above is right and the right-to-left order is right; what refused every
+    // move was the SCRIBE FILLERS, which `panelObstaclesFor` hands to the
+    // clamp as obstacles and which are only recomputed at the very end. Each
+    // one was sized for the width the run had a moment ago, so cabinet 1 asked
+    // to grow 300 mm into a 40 mm filler was told no by a board this same
+    // lay-out is about to re-cut.
+    //
+    // They step out for the duration and `refreshAutoParts` puts them back at
+    // their new sizes. CABINET-ON-CABINET OVERLAP IS UNTOUCHED and stays
+    // absolutely forbidden — *"nachodzenie na siebie to sztywna zasada"* — it
+    // is only the auto-parts of THIS run that stand down.
+    //
+    // …and the whole lay-out runs with the settle suppressed: it makes dozens
+    // of moves, and settling after each of them would grow panels round a run
+    // that is still half in its old positions.
+    withRunStoodDown(units.map((u) => u.id), () => withoutSettling(() => {
+      for (const u of [...units].reverse()) place(u);
+      notices.length = 0;                     // the first pass is the rehearsal
+      for (const u of units) place(u);
+    }));
     notices.push(...get().refreshAutoParts());
+    // One settle, at the end, on the run that now exists.
+    get().settleLayout(unitId);
     return {
       ok: true,
       message: null,
@@ -3282,13 +3502,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     };
   }),
 
-  removeUnit: (unitId) => {
+  removeUnit: (unitId) => runBatch(() => {
     // T36 F7: a rider whose main goes is ORPHANED, not moved and not deleted —
     // the joiner is shown a red fault and decides. `settleRiders` leaves it
     // exactly where it is, because its link no longer names a cabinet.
     set((s) => ({ units: settleRiders(s.units.filter((u) => u.id !== unitId), getCabinetProfile()) }));
     get().refreshAutoParts();
-  },
+    // T51 (CLAUDE.md F3): taking a cabinet out UNMAKES a junction, and the
+    // panel that finished it has nothing left to finish. There is no unit to
+    // focus, so the standing share-out offer is dropped with it.
+    get().settleLayout(null);
+  }),
 
   /**
    * Edit a unit's parameters.
@@ -3302,7 +3526,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{applied:object, notices:string[]}}
    */
-  updateUnitParams: (unitId, patch) => {
+  updateUnitParams: (unitId, patch) => runBatch(() => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { applied: {}, notices: [] };
@@ -3316,7 +3540,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
 
     if (patch.width != null) {
       const spans = wallObstacles({
-        wall, walls, depth: unit.params.depth, others, boxes: roomBoxes(s.project.room),
+        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
       });
       const clamp = clampUnitWidth({
         width: Number(patch.width) || 0,
@@ -3416,8 +3640,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // The clamp above keeps the unit inside its slot without moving it; this
     // re-runs the position clamp anyway, so a unit that was already overlapping
     // (an imported project, a room change) still settles legally.
-    if (applied.width != null) get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
-    if (patch.height != null || applied.width != null) get().reclampShelves(unitId);
+    // T51: this internal re-clamp is part of the SAME edit, so it must not
+    // settle a layout that is still half-applied — the settle comes once, at
+    // the bottom of this function, on the state the joiner actually asked for.
+    withoutSettling(() => {
+      if (applied.width != null) get().moveUnit(unitId, get().units.find((u) => u.id === unitId)?.position.x_mm ?? 0, 0);
+      if (patch.height != null || applied.width != null) get().reclampShelves(unitId);
+    });
     notices.push(...get().refreshAutoParts());
     // ─── TURN 38 (CLAUDE.md F9): THE RESIZE RULE ─────────────────────────
     // Asked ONLY where a cut size could have moved. A patch that is nothing
@@ -3427,8 +3656,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // all, which is the "must NOT clear anything" half of the rule.
     const onlyEdits = Object.keys(patch).length === 1 && patch.part_edits !== undefined;
     if (!onlyEdits) get().dropResizedPartEdits();
+    // ─── TURN 51 (CLAUDE.md F2): …AND A RESIZE IS THE OTHER WAY HE GETS THERE
+    //
+    // *"nie pokazuje się a jest poniżej 400."*  Typing 550 into a width leaves
+    // exactly the gap he is describing, and until tonight nothing asked.
+    //
+    // ONLY where a dimension has actually moved. `updateUnitParams` is also how
+    // a decor, a hinge side, a shelf and a part edit are written, and none of
+    // those can open or close a gap — *"a colour change must not pay for it"*.
+    if (applied.width != null || applied.depth != null || applied.height != null) {
+      get().settleLayout(unitId);
+    }
     return { applied, notices };
-  },
+  }),
 
   // ── project heights (turn 5, BACKLOG #29) ────────────────────────────────
   // A kitchen is built to ONE set of heights. They live with the project, a new
@@ -3521,7 +3761,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *           and cabinet 1 is then refused the width the plan gave it. The
    *           default is TRUE, which is every drag and every other caller.
    */
-  moveUnit: (unitId, xRaw, snapStep, { magnet = true } = {}) => {
+  // T51: ONE ACTION, ONE BATCH. `refreshAutoParts` and `settleLayout` are each
+  // a batch of their own, and an unbatched action that calls both closes two at
+  // depth 0 — which is two entries on the undo stack for one drag. Ctrl+Z is
+  // the owner's, and it takes back what he did, not half of it.
+  moveUnit: (unitId, xRaw, snapStep, { magnet = true } = {}) => runBatch(() => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
@@ -3537,7 +3781,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       others: obstaclesFor(s, unit),
       // A chimney breast stops a cabinet exactly as a neighbour does
       // (turn 14, CLAUDE.md F10.3).
-      boxes: roomBoxes(s.project.room),
+      boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
     });
     // A rotated unit covers a different stretch of wall than its nominal
     // width, so the clamp is given the FOOTPRINT — and the offset between the
@@ -3593,8 +3837,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }));
     // Moving changes which gaps exist — and a gap is a filler.
     get().refreshAutoParts();
+    // ─── TURN 51 (CLAUDE.md F2 + F3): …AND A DRAG IS HOW HE REACHES THE GAP ─
+    //
+    // *"nie działa ustawianie automatyczne, nie ma zapytania, nie pokazuje się
+    // a jest poniżej 400."*  This is the moment he means. It is also
+    // *"dojeżdżam — panel się pojawia, nie dojeżdżam — panel znika"*: a
+    // junction is made and unmade by exactly this call.
+    get().settleLayout(unitId);
     return { ...result, x };
-  },
+  }),
 
   /**
    * ─── Re-home a unit (turn 11, CLAUDE.md F4.1) ───
@@ -3651,7 +3902,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
             && obstructs(unit, u))
           .map(unitSpan),
         ...boxSpansOnWall({
-          wall: walls[wallIndex], depth: unit.params.depth, boxes: roomBoxes(get().project.room),
+          wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(get().project.room, get().project.wallSlopes),
         }),
       ],
     }, getCabinetProfile());
@@ -3723,7 +3974,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && obstructs(unit, u))
           .map(unitSpan),
         ...boxSpansOnWall({
-          wall: walls[wallIndex], depth: unit.params.depth, boxes: roomBoxes(s.project.room),
+          wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
         }),
       ],
     }, getCabinetProfile());
@@ -6637,6 +6888,24 @@ function obstructs(unit, other, profile = getCabinetProfile()) {
   return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
 }
 
+/**
+ * ─── TURN 51 (CLAUDE.md F1): EVERYTHING THE PLAN PUTS IN THE WAY ───────────
+ *
+ * A box typed into the room's plan, and a CHIMNEY drawn on a wall — which is
+ * the same fact arriving by the other door, and which until tonight reached
+ * nothing at all (see `engine/room.js wallPlanObstacles`).
+ *
+ * One function, so the six places that clamp against the plan cannot end up
+ * knowing about different halves of it. A RECESS is not here on purpose: an
+ * alcove is room, and a cabinet standing in one is why it was drawn.
+ */
+function planObstaclesOf(room, wallSlopeList) {
+  return [
+    ...roomBoxes(room),
+    ...wallPlanObstacles(room, wallElements(wallSlopeList), { blocking: true }),
+  ];
+}
+
 function neighboursOf(state, unit) {
   // Every wall, not just this one: a unit around the corner is a neighbour the
   // moment its footprint reaches into this one's depth (engine/collision.js
@@ -6664,7 +6933,12 @@ function panelObstaclesFor(state, unit, profile = getCabinetProfile()) {
   const verticals = unitVerticals(
     state.units.filter((u) => u.id !== unit.id && !already.has(u.id)),
     profile,
-  );
+  )
+    // ─── TURN 51 (CLAUDE.md F2): …EXCEPT THE ONES BEING RE-CUT ─────────────
+    // See `withRunStoodDown`. A share-out is about to re-cut every filler in
+    // this run, so clamping against the widths they had a moment ago is
+    // clamping against boards that are on their way to the bin.
+    .filter((v) => !(layingOut && layingOut.has(v.unitId)));
   return verticalsInBand(verticals, band, profile.editor.levelOverlapMm).map((v) => ({
     wall: v.wall,
     x_mm: v.from,
@@ -6803,7 +7077,7 @@ function freeBesideUnit(state, unit, side) {
     walls,
     depth: unit.params.depth,
     others: obstaclesFor(state, unit),
-    boxes: roomBoxes(state.project.room),
+    boxes: planObstaclesOf(state.project.room, state.project.wallSlopes),
   });
   // WHICH SIDE an obstacle is on is decided on the CARCASS, and how far away it
   // is on the padded span. That distinction is what lets this report a negative
@@ -7137,7 +7411,7 @@ export function validateUnit(unit, result, context = {}) {
       roomHeight: context.room.height,
       // Same wall or around the corner — both are an overlap on the floor.
       others: wallObstacles({
-        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: roomBoxes(context.room),
+        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: planObstaclesOf(context.room, context.wallSlopes),
       })
         .map((o) => ({ left: o.left, right: o.right, label: o.label })),
     }));

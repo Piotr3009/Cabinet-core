@@ -138,7 +138,21 @@ export function shareOutPlan(
   // beside it. `paddedSpan` is what `runEndGap` measures to, so an end panel is
   // inside this span and is taken out again below.
   const clear = Math.max(0, right.to - left.from);
-  const gap = Math.max(0, left.gap) + Math.max(0, right.gap);
+  // ─── TURN 51 (CLAUDE.md F4): THE LEFTOVER IS MEASURED FROM THE CARCASS ────
+  //
+  // *"at a 40 filler and a 300 shadow, the bar says 340, and the filler returns
+  // to its 40 once the run is shared out."*
+  //
+  // `bodyGap` is carcass-to-wall (engine/runs.js `runEndGap`), which is the gap
+  // the joiner is looking at. `gap` — the padded one, measured to the outside
+  // of whatever board hangs off the end unit — is what decides whether another
+  // CABINET could stand there, and it is not this question. Read off `gap`, the
+  // bar was short by the panel and, at a panel taken to the wall, said ZERO
+  // where he could see forty.
+  //
+  // `clear` above is untouched and must be: it runs boundary to boundary — the
+  // wall, or the neighbouring run — and neither of those is this run's own edge.
+  const gap = Math.max(0, left.bodyGap) + Math.max(0, right.bodyGap);
 
   const reserved = reservedAt(run, {
     left, right, wallWidth, wallMargin,
@@ -269,12 +283,15 @@ export function runFor(units, unitId, { walls = [], wallMargin = 0 } = {}, profi
 export function shareOutGapSpan(run, { wallWidth = 0, others = [] } = {}) {
   const left = runEndGap(run, 'left', { wallWidth, others });
   const right = runEndGap(run, 'right', { wallWidth, others });
-  const pick = right.gap >= left.gap ? right : left;
+  // T51 (F4): the bar stands in the leftover the JOINER sees, which is measured
+  // from the carcass — so it reaches over the scribe filler rather than
+  // starting past it.
+  const pick = right.bodyGap >= left.bodyGap ? right : left;
   return {
-    side: right.gap >= left.gap ? 'right' : 'left',
-    from: pick.from,
-    to: pick.to,
-    gap: pick.gap,
+    side: right.bodyGap >= left.bodyGap ? 'right' : 'left',
+    from: pick.bodyFrom,
+    to: pick.bodyTo,
+    gap: pick.bodyGap,
     wall: run.wall,
     mount: run.mount,
     top: run.top,

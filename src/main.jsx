@@ -21,6 +21,7 @@ import * as hardwareRegister from './lib/hardwareRegister.js';
 import { useCabinetProfileStore } from './stores/cabinetProfileStore.js';
 import { useHistoryStore, watchProjectHistory } from './stores/historyStore.js';
 import { useMaterialAssignmentStore } from './stores/materialAssignmentStore.js';
+import { useWarehouseStore } from './stores/warehouseStore.js';
 import * as dxf from './engine/cnc/dxf.js';
 // ─── TURN 48 (CLAUDE.md iron rule 5) ───────────────────────────────────────
 // The two pure laws tonight's walk has to be able to ASK rather than
@@ -133,6 +134,11 @@ if (typeof window !== 'undefined') {
     // assignments, so the walk has to be able to make some before it can check
     // that the sheet splits on them. Same store, same rule as the other four.
     materials: useMaterialAssignmentStore,
+    // T51 (CLAUDE.md F7): the warehouse, for the same reason as the five
+    // above — a claim about a MATERIAL LIST has to be read off the list, and
+    // the acceptance walk types a row, imports a CSV and asks whether the
+    // import overwrote or duplicated.
+    warehouse: useWarehouseStore,
   };
   // ─── Turn 18 (CLAUDE.md F7) ───
   // Three ENGINE modules the walk has to be able to ask questions of, for the

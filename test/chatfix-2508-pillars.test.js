@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { defaultLightRig } from '../src/engine/lightRig.js';
 import { readFileSync } from 'node:fs';
 
 import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
@@ -77,9 +78,26 @@ test('ONE per run by default, from the side — the owner\'s correction', () => 
   assert.equal(P.appearance.studio.pillars.side, 'right', 'and it stands on the right');
   assert.ok(P.appearance.studio.pillars.spread > 1,
     'out PAST the end of the run, toward the side wall — so it fires along the fronts');
-  assert.match(SCENE, /const sides = count === 2 \? \[-1, 1\] : \[first\]/,
-    'the count is a number, so the pair is one word away');
+  // ─── SUPERSEDED IN PLACE BY T51 · F6 ──────────────────────────────────
+  //
+  // The owner asked for a light PANEL built like a room — *"lewa ściana, sufit
+  // i prawa ściana … włącz/wyłącz światło poszczególną lampę"* — so there is a
+  // switch for a LEFT WALL and a switch for a RIGHT one, and a switch with no
+  // lamp behind it does nothing. BOTH pillars are built now.
+  //
+  // What this test protects is unchanged and is asserted one layer up instead:
+  // the DEFAULT is still ONE, on the right, so a project nobody has touched is
+  // lit by exactly the lamps it was lit by before the panel existed. The scene
+  // no longer decides that; `engine/lightRig.js defaultLightRig` does, off the
+  // very same `count` and `side` above.
+  assert.match(SCENE, /const sides = \[-1, 1\]/, 'both are built, so both switches have a lamp');
   assert.match(SCENE, /for \(const side of sides\)/, 'and the loop follows it');
+  assert.match(SCENE, /lamp: side < 0 \? 'leftWall' : 'rightWall'/, 'each names which wall it is');
+  {
+    const rig = defaultLightRig(P);
+    assert.equal(rig.lamps.rightWall.on, true, 'the default still lights the right');
+    assert.equal(rig.lamps.leftWall.on, false, '…and still leaves the left dark');
+  }
   assert.match(SCENE, /side \* \(width \/ 2\) \* spread/, 'position is a share of the half-length');
   assert.match(SCENE, /rectAreaLight/, 'an AREA source — a point is what printed the circles');
 });

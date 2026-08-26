@@ -161,7 +161,15 @@ test('F1.5a — a wall moved by exactly what was typed moves by exactly that', (
 
 // ─── F1.5b — one wall is one wall ───────────────────────────────────────────
 
-test('F1.5b — "one wall" scope shows the wall and two 1000 mm returns', () => {
+test('F1.5b — "one wall" scope shows the wall and two returns', () => {
+  // ─── THE LENGTH CHANGED AT T51 · F8, AND NOTHING ELSE HERE DID ──────────
+  //
+  // The owner, 26.08.2026: *"default bocznych ścian zrób na 2000 mm."*  T14
+  // shipped 1000 and this test said "CLAUDE.md asks for 1000 mm", which it did,
+  // then. What the test is FOR is the shape — the wall, one return at each end,
+  // never the room, both running forward — and that is untouched. The length is
+  // read from the constant rather than repeated, so the next change moves one
+  // number and not two.
   const room = migrateRoom({ height: 2500, corners: rectCorners(4000, 3000) });
   assert.equal(wallStub(room), DEFAULT_WALL_STUB);
   const shown = wallsInScope(room, 'wall');
@@ -170,7 +178,7 @@ test('F1.5b — "one wall" scope shows the wall and two 1000 mm returns', () => 
   assert.equal(Math.round(shown[0].width), 4000);
   for (const stub of shown.slice(1)) {
     assert.equal(stub.stub, true);
-    assert.equal(Math.round(stub.width), 1000, 'CLAUDE.md asks for 1000 mm');
+    assert.equal(Math.round(stub.width), DEFAULT_WALL_STUB, 'T51 F8 asks for 2000 mm');
   }
   // Both returns touch the main wall's ends and run FORWARD, into the room.
   const main = shown[0];

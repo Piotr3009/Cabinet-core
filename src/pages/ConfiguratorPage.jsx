@@ -3,6 +3,8 @@ import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
+// T51 (CLAUDE.md F7): Database ▸ Materials opens the WAREHOUSE.
+import WarehouseModal from '../components/WarehouseModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
 import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
@@ -513,6 +515,7 @@ export default function ConfiguratorPage() {
         {/* Turn 31 (CLAUDE.md F6): the Check panel — a LIST of findings, not toasts. */}
         {checkOpen && <CheckPanel />}
         {modal === 'room' && <RoomModal />}
+        {modal === 'warehouse' && <WarehouseModal />}
         {modal === 'design' && <DesignSettingsModal />}
         {modal === 'auth' && <AuthModal />}
         {/* Turn 22 (CLAUDE.md F2b.2 / F3): Database ▸ Company defaults. */}

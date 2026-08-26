@@ -99,7 +99,7 @@ function bounce(hex, profile, surface) {
  */
 function Wall({
   wall, height, openings, centre, showLabel, profile, onBackground, slopes = [],
-  xOffset = 0, spanWidth = null, capY = null,
+  xOffset = 0, spanWidth = null, capY = null, planElements = [],
 }) {
   const ref = useRef(null);
 
@@ -156,8 +156,28 @@ function Wall({
       hole.closePath();
       shape.holes.push(hole);
     }
+    // ─── TURN 51 (CLAUDE.md F1): …AND A RECESS IS A HOLE TOO ────────────────
+    //
+    // An alcove is floor-to-ceiling by its own schema — width along the wall
+    // and depth into it, and no height field anywhere — so the hole is the
+    // full height of the wall over its own stretch. The BACK of the alcove and
+    // its two reveals are drawn below; without the hole they would be three
+    // boards standing behind a wall nobody can see through.
+    for (const el of planElements) {
+      if (el.kind !== 'recess') continue;
+      const x1 = mm(Math.max(0, el.x_mm));
+      const x2 = mm(Math.min(wall.width, el.x_mm + el.width));
+      if (!(x2 > x1)) continue;
+      const hole = new THREE.Path();
+      hole.moveTo(x1, 0);
+      hole.lineTo(x2, 0);
+      hole.lineTo(x2, mm(height));
+      hole.lineTo(x1, mm(height));
+      hole.closePath();
+      shape.holes.push(hole);
+    }
     return new THREE.ShapeGeometry(shape);
-  }, [wall.width, height, openings, slopes, xOffset, spanWidth, capY]);
+  }, [wall.width, height, openings, slopes, xOffset, spanWidth, capY, planElements]);
 
   // World position of the wall's start corner, with the room centred on origin.
   const position = [mm(wall.start.x - centre.x), 0, mm(wall.start.y - centre.y)];
@@ -247,6 +267,74 @@ function Wall({
             allowOverride={false}
           />
         </mesh>
+        {/* ─── TURN 51 (CLAUDE.md F1): THE RECESSES AND THE CHIMNEYS ───────
+            Drawn in the WALL's own frame, which is the only frame where this
+            is one line of arithmetic: the group is already standing at the
+            wall's start corner and turned onto its line, so local +X runs
+            ALONG the wall and local +Z runs INTO the room (engine/room.js
+            `roomWalls`). An L-shaped room and an imported DXF outline need no
+            case of their own.
+
+            A CHIMNEY stands proud — a solid, floor to ceiling, in the room's
+            own wall tone so it reads as building rather than as furniture,
+            which is exactly what a box in the plan does. A RECESS is the same
+            box turned the other way: the wall above has a hole cut in it over
+            this stretch, and what is drawn here is the alcove's BACK and its
+            two reveals, so the hole reads as a depth and not as a doorway. */}
+        {planElements.map((el) => {
+          const w = mm(Math.max(0, el.width));
+          const d = mm(Math.max(0, el.depth));
+          const h = mm(height);
+          const cx = mm(el.x_mm + el.width / 2);
+          const colour = tone(profile, 'wall', COLORS.wall);
+          const glow = bounce(tone(profile, 'wall', COLORS.wall), profile, 'wall');
+          if (el.kind === 'chimney') {
+            return (
+              <group key={el.id} userData={{ ccWallPlan: el.id }}>
+                <mesh position={[cx, h / 2, d / 2]} receiveShadow raycast={null}>
+                  <boxGeometry args={[w, h, d]} />
+                  <meshLambertMaterial color={colour} emissive={glow} allowOverride={false} />
+                </mesh>
+                {/* Its own arris, for the reason the opening reveals below have
+                    one: a breast painted the same white as the wall behind it
+                    is a breast nobody can see, and the owner has to be able to
+                    tell that what he drew is there. */}
+                <lineSegments position={[cx, h / 2, d]} raycast={null}>
+                  <edgesGeometry args={[new THREE.PlaneGeometry(w, h)]} />
+                  <lineBasicMaterial color="#8a8a90" allowOverride={false} />
+                </lineSegments>
+              </group>
+            );
+          }
+          // The alcove: a back, and a reveal down each side. Nothing is needed
+          // at the top or the bottom — the ceiling and the floor are already
+          // there and an alcove is cut between them.
+          return (
+            <group key={el.id} userData={{ ccWallPlan: el.id }}>
+              <mesh position={[cx, h / 2, -d]} receiveShadow raycast={null}>
+                <planeGeometry args={[w, h]} />
+                <meshLambertMaterial color={colour} emissive={glow} side={THREE.DoubleSide} allowOverride={false} />
+              </mesh>
+              {[-1, 1].map((sideSign) => (
+                <mesh
+                  key={sideSign}
+                  position={[cx + (sideSign * w) / 2, h / 2, -d / 2]}
+                  rotation={[0, Math.PI / 2, 0]}
+                  receiveShadow
+                  raycast={null}
+                >
+                  <planeGeometry args={[d, h]} />
+                  <meshLambertMaterial color={colour} emissive={glow} side={THREE.DoubleSide} allowOverride={false} />
+                </mesh>
+              ))}
+              {/* …and the arris where the alcove meets the wall face. */}
+              <lineSegments position={[cx, h / 2, 0.001]} raycast={null}>
+                <edgesGeometry args={[new THREE.PlaneGeometry(w, h)]} />
+                <lineBasicMaterial color="#8a8a90" allowOverride={false} />
+              </lineSegments>
+            </group>
+          );
+        })}
         {/* the opening reveals, so a hole reads as a hole and not as a gap */}
         {openings.map((o) => (
           <lineSegments key={o.id} position={[0, 0, 0.001]}>
@@ -302,6 +390,16 @@ export default function Room({
   const wallSlopeList = useProjectStore((s) => s.project.wallSlopes);
   const slopesOnWall = useCallback((idx) => wallElementList(wallSlopeList)
     .filter((e) => (e.kind ?? 'slope') === 'slope' && (e.wall ?? 0) === idx), [wallSlopeList]);
+  // ─── TURN 51 (CLAUDE.md F1): THE RECESSES AND CHIMNEYS OF ONE WALL ───────
+  //
+  // The same list, read for the other two kinds it has carried since T45 —
+  // and which this file has quietly filtered out ever since, which is the
+  // whole of the owner's *"żeby działało"*: he drew an alcove, the app stored
+  // it, listed it, drew it in the modal's top view, and then the ROOM did not
+  // have one.
+  const planOnWall = useCallback((idx) => wallElementList(wallSlopeList)
+    .filter((e) => (e.kind === 'recess' || e.kind === 'chimney') && (e.wall ?? 0) === idx),
+  [wallSlopeList]);
   const boxes = useMemo(() => roomBoxes(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
   const height = room.height ?? 2500;
@@ -421,6 +519,13 @@ export default function Room({
           // whole wall would land in the wrong place on it — and a 1000 mm
           // return is not where anybody puts a window.
           openings={wall.stub ? [] : openingsOnWall(room, wall.index)}
+          // ─── TURN 51 (CLAUDE.md F1): …AND WHAT THE TOP VIEW PUT ON IT ────
+          // A recess and a chimney are drawn on THIS wall, so they travel with
+          // it. Not onto a stub, for the opening's own reason above: a 1000 mm
+          // return is not where anybody draws an alcove, and a width measured
+          // along the whole wall would land in the wrong place on a fragment
+          // of it.
+          planElements={wall.stub ? [] : planOnWall(wall.index)}
           // ─── TURN 46 F1 (CLAUDE.md rule 4, the repair BY NAME) ───────────
           // The chat-fix of 23.08 handed every stub `slopes={[]}`, and THAT is
           // the gap in the owner's screenshot: the ceiling cut itself, the

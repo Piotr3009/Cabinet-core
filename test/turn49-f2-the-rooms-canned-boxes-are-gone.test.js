@@ -29,57 +29,73 @@ test('F2 — the editor knows which door it came through, and the flow says so',
   assert.match(step, /\n\s+wizard\n/, 'the wizard door is declared');
 });
 
-// ─── SUPERSEDED BY TURN 50 · F12 ────────────────────────────────────────────
+// ─── SUPERSEDED BY TURN 50 · F12, AND REVERSED BY TURN 51 · F1 ─────────────
 //
-// T49 gated the canned row on the door, and the owner then noticed that the two
-// doors differ. CLAUDE.md T50-F12: *"Make them the same screen … if he has not
-// said by the time this feature is reached, ship the wizard's version in both
-// (no canned shapes anywhere)."* He has not, so `Rectangle` and `L-shape` are
-// drawn in NEITHER door from turn 50.
+// T49 gated the canned row on the door. T50-F12 made the two doors one screen
+// by taking `Rectangle` and `L-shape` out of BOTH, and said the WALL EDITOR
+// replaced them. The owner walked that the next morning, 26.08.2026:
 //
-// That is not a deletion, and the two tests below are what says why: what the
-// canned shapes made, the WALL EDITOR now makes and names — a rectangle is four
-// typed segments (T50-F1), which is the owner's own answer to how a room is
-// drawn. And `+ Box` was never a canned shape at all; it is a chimney, a pillar,
-// a boxed pipe, and T49 hid it in the wizard only by association with the row it
-// stood in. It is drawn in both doors now.
-test('F2/T50-F12 — the canned SHAPES are in neither door, and the wall editor is why', () => {
-  assert.doesNotMatch(ROOM, /data-room-preset="rect"/, 'no Rectangle button, either door');
-  assert.doesNotMatch(ROOM, /data-room-preset="L"/, 'no L-shape button, either door');
-  assert.doesNotMatch(ROOM, /const setPreset = /, 'and no handler left standing behind them');
-  // What replaced them, in the same corner of the same screen.
-  assert.match(ROOM, /data-draw-walls="1"/, 'the wall editor is the door to a shape now');
-  assert.match(ROOM, /data-wall-editor="1"/, 'and it is a real editor, not a preset');
+//   *"drawing room w ogóle nie ma sensu — cofnij całkowicie to i zostaw
+//   dodawanie wnęki i boxa jak wcześniej, ale żeby działało."*
+//
+// With the replacement struck out the two buttons come back, and T51's own F1
+// names them: *"Rectangle, L-shape, + Box, Import DXF plan stays and must
+// WORK"*, and *"Settings ▸ Room setup and the wizard's room step must show the
+// SAME screen."*  So: ONE screen, FOUR tools, BOTH doors.
+test('F1/T51 — the four tools are drawn, in one screen, in both doors', () => {
+  assert.match(ROOM, /data-room-preset="rect"/, 'Rectangle is back');
+  assert.match(ROOM, /data-room-preset="L"/, 'L-shape is back');
+  assert.match(ROOM, /data-insert-box="1"/, '+ Box stands beside them');
+  assert.match(ROOM, /Import DXF plan/, 'and so does the DXF import');
+  assert.match(ROOM, /const setPreset = \(kind\) => \{/, 'with the handler the two shapes need');
+  // ONE screen: the row is drawn on no condition at all — not the door it was
+  // opened by, and (T51-F1's own bug) not the scope either.
+  assert.match(
+    ROOM,
+    /data-room-tools="1"[\s\S]{0,400}data-insert-box="1"/,
+    'the four live in one row',
+  );
+  assert.doesNotMatch(ROOM, /\{wizard && [\s\S]{0,80}data-room-preset/, 'no door gate');
 });
 
-test('F2/T50-F12 — + Box stands in BOTH doors, with the sentence that explains it', () => {
-  assert.match(ROOM, /data-insert-box="1"[\s\S]{0,60}insertBox/, 'the button');
-  assert.match(ROOM, /const insertBox = \(\) => \{/, 'and both functions behind it');
+test('F1/T51 — the wall editor is gone, surface and module', () => {
+  assert.doesNotMatch(ROOM, /^import .*wallDraw/m, 'the module is not imported');
+  assert.doesNotMatch(ROOM, /data-draw-walls|data-wall-editor|data-wall-draft/, 'and no surface is left');
+});
+
+// ─── F1/T51: THE BUG THE SCOPE GATE WAS ────────────────────────────────────
+//
+// T50's own test asserted `{scope === 'room' && (` around the tools row and
+// called it right — *"a one-wall job has no plan to put a chimney in"*. It has:
+// the plan draws the whole room in either scope, a chimney is a chimney, and
+// the owner's *"nie pokazuje się"* was literally true because in a ONE-WALL
+// job there was no button on the screen at all.
+test('F1/T51 — + Box is reachable in a ONE-WALL job, which is where it was not', () => {
+  const row = ROOM.slice(ROOM.indexOf('data-room-tools="1"'), ROOM.indexOf('data-insert-box="1"'));
+  assert.doesNotMatch(row, /scope === 'room'/, 'the scope no longer gates the row');
+  assert.match(ROOM, /const insertBox = \(\) => \{/, 'and both functions behind it stand');
   assert.match(ROOM, /const removeBox = \(id\) => \{/);
-  // The gate is on the SCOPE only — a one-wall job has no plan to put a chimney
-  // in — and no longer on which door the editor was opened by.
-  assert.match(ROOM, /\{scope === 'room' && \(/, 'scope decides, the door does not');
-  assert.doesNotMatch(ROOM, /scope === 'room' && !wizard &&/, 'the T49 gate is gone');
-  assert.match(ROOM, /' A BOX does: it stands floor to ceiling/, 'and the paragraph is unconditional too');
+  assert.match(ROOM, /' A BOX does: it stands floor to ceiling/, 'the paragraph is unconditional');
   assert.doesNotMatch(ROOM, /\{!wizard && ' A BOX does/, 'no longer hung off the door');
 });
 
 test('F2 — the ENGINE that made the canned shapes is untouched', () => {
-  // Iron rule 2: nothing this turn goes near `src/engine/**`. `rectCorners`,
-  // `lCorners` and the box list are exactly what they were — which is also why
-  // the menu door loses nothing at all.
+  // `rectCorners`, `lCorners` and the box list are exactly what they were,
+  // which is why nothing had to be rebuilt to put the two buttons back.
   const rect = rectCorners(4000, 3000);
   assert.equal(rect.length, 4);
   assert.equal(lCorners(4000, 3000, 1000, 1000).length, 6);
   assert.deepEqual(roomBoxes(migrateRoom({})), []);
 });
 
-test('F2 — the wall editor was T50\u2019s, and T50 is where it arrived', () => {
-  // T49 asserted the opposite of this line — *"that is T50's work, not this
-  // turn's: do not start it here"* — and it held for T49's whole diff. The turn
-  // it was waiting for is this one, so what the assertion protects now is that
-  // the editor lives in its own ENGINE module and not as a second geometry
-  // grown inside a React component.
-  assert.match(ROOM, /from '\.\.\/engine\/wallDraw\.js'/, 'the arithmetic is the engine\u2019s');
+test('F2 — the wall editor came at T50 and went at T51', () => {
+  // T49 refused to start it, T50 built it, and the owner struck it out the
+  // morning after: *"drawing room w og\u00f3le nie ma sensu \u2014 cofnij ca\u0142kowicie
+  // to."*  So the module is gone and this is what the assertion protects now:
+  // it did not come back into the COMPONENT on its way out. A bearing computed
+  // in a React file is the second geometry T49 refused, whichever turn writes
+  // it.
+  assert.doesNotMatch(ROOM, /^import .*wallDraw/m, 'the wall editor module is not imported');
+  assert.doesNotMatch(ROOM, /data-draw-walls|data-wall-editor|data-wall-draft/, 'and none of its surface is left');
   assert.doesNotMatch(ROOM, /Math\.atan2/, 'and no bearing is computed in the surface');
 });

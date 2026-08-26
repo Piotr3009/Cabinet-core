@@ -36,6 +36,7 @@ import {
 } from '../engine/collision.js';
 import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
+  wallPlanObstacles,
 } from '../engine/room.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
@@ -3047,7 +3048,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
             .map(unitSpan),
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
-          ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: roomBoxes(state.project.room) }),
+          ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) }),
         ],
         near: onThisWall ? unitSpan(beside) : null,
         side: onThisWall ? side : null,
@@ -3316,7 +3317,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
 
     if (patch.width != null) {
       const spans = wallObstacles({
-        wall, walls, depth: unit.params.depth, others, boxes: roomBoxes(s.project.room),
+        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
       });
       const clamp = clampUnitWidth({
         width: Number(patch.width) || 0,
@@ -3537,7 +3538,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       others: obstaclesFor(s, unit),
       // A chimney breast stops a cabinet exactly as a neighbour does
       // (turn 14, CLAUDE.md F10.3).
-      boxes: roomBoxes(s.project.room),
+      boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
     });
     // A rotated unit covers a different stretch of wall than its nominal
     // width, so the clamp is given the FOOTPRINT — and the offset between the
@@ -3651,7 +3652,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
             && obstructs(unit, u))
           .map(unitSpan),
         ...boxSpansOnWall({
-          wall: walls[wallIndex], depth: unit.params.depth, boxes: roomBoxes(get().project.room),
+          wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(get().project.room, get().project.wallSlopes),
         }),
       ],
     }, getCabinetProfile());
@@ -3723,7 +3724,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && obstructs(unit, u))
           .map(unitSpan),
         ...boxSpansOnWall({
-          wall: walls[wallIndex], depth: unit.params.depth, boxes: roomBoxes(s.project.room),
+          wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
         }),
       ],
     }, getCabinetProfile());
@@ -6637,6 +6638,24 @@ function obstructs(unit, other, profile = getCabinetProfile()) {
   return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
 }
 
+/**
+ * ─── TURN 51 (CLAUDE.md F1): EVERYTHING THE PLAN PUTS IN THE WAY ───────────
+ *
+ * A box typed into the room's plan, and a CHIMNEY drawn on a wall — which is
+ * the same fact arriving by the other door, and which until tonight reached
+ * nothing at all (see `engine/room.js wallPlanObstacles`).
+ *
+ * One function, so the six places that clamp against the plan cannot end up
+ * knowing about different halves of it. A RECESS is not here on purpose: an
+ * alcove is room, and a cabinet standing in one is why it was drawn.
+ */
+function planObstaclesOf(room, wallSlopeList) {
+  return [
+    ...roomBoxes(room),
+    ...wallPlanObstacles(room, wallElements(wallSlopeList), { blocking: true }),
+  ];
+}
+
 function neighboursOf(state, unit) {
   // Every wall, not just this one: a unit around the corner is a neighbour the
   // moment its footprint reaches into this one's depth (engine/collision.js
@@ -6803,7 +6822,7 @@ function freeBesideUnit(state, unit, side) {
     walls,
     depth: unit.params.depth,
     others: obstaclesFor(state, unit),
-    boxes: roomBoxes(state.project.room),
+    boxes: planObstaclesOf(state.project.room, state.project.wallSlopes),
   });
   // WHICH SIDE an obstacle is on is decided on the CARCASS, and how far away it
   // is on the padded span. That distinction is what lets this report a negative
@@ -7137,7 +7156,7 @@ export function validateUnit(unit, result, context = {}) {
       roomHeight: context.room.height,
       // Same wall or around the corner — both are an overlap on the floor.
       others: wallObstacles({
-        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: roomBoxes(context.room),
+        wall, walls, depth: unit.params?.depth ?? 0, others, boxes: planObstaclesOf(context.room, context.wallSlopes),
       })
         .map((o) => ({ left: o.left, right: o.right, label: o.label })),
     }));

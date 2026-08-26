@@ -976,3 +976,16 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
     nigdy nie był gotowym kształtem (to komin, słup, obudowana rura), więc
     rysuje się teraz w OBU drzwiach. Jeśli właściciel chciał, żeby w kreatorze
     nie było też pudełek, to jest jedna linia w `components/RoomModal.jsx`.
+130. [LOW] **Słupy showroomu zostały ściemnione z DWÓCH stron naraz.** T50-F14
+    wykonuje polecenie właściciela z 25.08 (*„za jasno świecą, ściemnij o
+    połowę"*): `appearance.studio.pillars.intensity` 22 → 11, plus nowy
+    `appearance.studio.baseGain: 0.75` na całym rigu. Niezależnie od tego, tej
+    samej nocy właściciel wypchnął na `main` własną poprawkę: zamiast
+    LUSTRZANEJ PARY jest teraz JEDEN słup (`count: 1`, `side: 'right'`,
+    `spread: 1.7`, `widthMm: 420`) — co samo w sobie zabiera połowę światła.
+    Po scaleniu trzy redukcje się mnożą: jedna lampa zamiast dwóch, przy 11
+    zamiast 22, razy 0.75. To jest znacznie ciemniej niż F14 zakładało, gdy
+    pisało „o ćwierć". Zostawione na 11, bo CLAUDE.md F14 podaje tę liczbę
+    wprost — ale jeśli pokój ma wyglądać za ciemno, podnosi się WŁAŚNIE
+    `pillars.intensity`, samodzielnie, i po to `baseGain` jest trzymany poza
+    lampami. Do rozstrzygnięcia przez właściciela, na oko.

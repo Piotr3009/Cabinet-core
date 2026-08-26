@@ -139,7 +139,7 @@ test('F14 · the individual lamps keep their own numbers, so each can still be t
   assert.equal(P.appearance.studio.band.intensity, 2.2);
 });
 
-test('F14 · the PILLARS are halved separately, and the two reductions compound', () => {
+test('F14 · the PILLARS are halved separately, and the reductions compound', () => {
   // *"za jasno świecą, ściemnij o połowę."*  22 → 11, its own number.
   assert.equal(P.appearance.studio.pillars.intensity, 11);
   // A pillar ends the night at 11 × 0.75 = 8.25 of the gain it had at 22 —
@@ -148,6 +148,22 @@ test('F14 · the PILLARS are halved separately, and the two reductions compound'
   const now = P.appearance.studio.pillars.intensity * P.appearance.studio.baseGain;
   assert.equal(now, 8.25);
   assert.equal(Math.round((now / 22) * 1000) / 10, 37.5, 'per cent of what a pillar was');
+
+  // ─── …AND A THIRD REDUCTION ARRIVED FROM THE OTHER SIDE ─────────────────
+  // While this turn was being written the owner pushed his own chat-fix to
+  // main: the mirrored PAIR became ONE pillar, which by itself halves the
+  // light. Merged, the three compose — one lamp instead of two, at 11 instead
+  // of 22, times 0.75 — which is a good deal darker than F14 was reasoning
+  // about. Kept at 11 because CLAUDE.md names the number; recorded here and in
+  // BACKLOG 130 so the owner can raise THIS one alone, which is the whole
+  // reason `baseGain` is kept out of the lamps.
+  assert.equal(P.appearance.studio.pillars.count, 1, 'his own chat-fix, merged');
+  const before = 22 * 2;                       // two pillars, 25.08 morning
+  const after = P.appearance.studio.pillars.intensity
+    * P.appearance.studio.pillars.count * P.appearance.studio.baseGain;
+  assert.equal(after, 8.25);
+  assert.equal(Math.round((after / before) * 1000) / 10, 18.8,
+    'per cent of the light the pillars threw before either change');
 });
 
 test('F14 · nothing else about the slider changes', () => {
@@ -156,8 +172,10 @@ test('F14 · nothing else about the slider changes', () => {
   // them. Whatever block holds them, it is not `studio.baseGain`.
   const profileSrc = readFileSync(new URL('engine/profile.js', SRC), 'utf8');
   assert.ok(profileSrc.includes('baseGain: 0.75'), 'the one number');
-  assert.equal((profileSrc.match(/baseGain/g) || []).length <= 3, true,
-    'stated once, and explained beside itself');
+  // Stated ONCE as a value. Every other mention is prose explaining it — the
+  // paragraph above it, and the pillars' own note about the two compounding.
+  const stated = (profileSrc.match(/^\s*baseGain: /gm) || []).length;
+  assert.equal(stated, 1, 'one number, in one place');
   assert.ok(brightness === null || typeof brightness === 'object');
 });
 

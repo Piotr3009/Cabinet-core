@@ -2296,6 +2296,21 @@ export const DEFAULT_CABINET_PROFILE = {
         // night at 11 × 0.75 = 8.25 of the gain it had at 22, which is 37.5 %
         // of what it was. If that turns out to be a quarter too dark it is THIS
         // number that comes back up, not `baseGain`.
+        //
+        // ─── AND A THIRD REDUCTION ARRIVED FROM THE OTHER SIDE ─────────────
+        //
+        // While T50 was being written the owner pushed his own chat-fix to
+        // main: the mirrored PAIR became ONE pillar (`count: 1`, below), which
+        // by itself halves the light in the room. Merged, the three compose —
+        // one lamp instead of two, at 11 instead of 22, times 0.75 — and the
+        // room is a good deal darker than F14 was reasoning about when it said
+        // "a quarter".
+        //
+        // Kept at 11 because CLAUDE.md F14 names the number and the owner's own
+        // *"za jasno świecą, ściemnij o połowę"* is what it is executing. But
+        // this is the paragraph to come back to, and THIS is the number to
+        // raise: it moves alone, which is the whole reason `baseGain` is kept
+        // out of the lamps. BACKLOG 130.
         intensity: 11,
         colour: '#ffffff',
         widthMm: 420, // the slab's width — a tall window, not a line

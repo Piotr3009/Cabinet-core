@@ -1,217 +1,183 @@
-# CLAUDE.md — TURN 51 · WHAT T50 GOT WRONG, THE HINGE, THE LIGHT PANEL, AND THE WAREHOUSE
+# CLAUDE.md — TURN 52 · THE RUN SHARES OUT FROM EITHER END, THE CUP HIDES, AND THE WATCH DRAWER
 
-The owner, 26.08.2026, after walking T50. His rulings, verbatim law:
+The owner, 26.08.2026, walking T51. His rulings, verbatim law:
 
-* **The wall editor goes.** *"drawing room w ogóle nie ma sensu — cofnij
-  całkowicie to i zostaw dodawanie wnęki i boxa jak wcześniej, ale żeby
-  działało. ten sposób rysowania nie ma sensu."*
-* **The share-out never fired.** *"nie działa ustawianie automatyczne, nie ma
-  zapytania, nie pokazuje się a jest poniżej 400."* And on why cabinets would
-  not grow: *"szafki się nigdy nie powiększają w lewą stronę … nie są w stanie
-  przesunąć innej szafki."* His ruling: *"nachodzenie na siebie to sztywna
-  zasada, jest niedopuszczalne, więc wymuszenie przesunięcia."*
-* **The end panel must follow the hand.** *"jak dojedziesz to już nie wymusza
-  panela, a powinno: dojeżdżam — panel się pojawia, nie dojeżdżam — panel
-  znika. proste."*
-* **The hinge cup shows through.** *"puszka trochę odstaje od lica … drzwi mają
-  18 minus 6 daje 12, a puszka jest na głębokość 11, więc nie powinno być
-  widoczne. może puszka jest oka, ale otwór jest za głęboki?"* He was right.
-* **Side walls.** *"default bocznych ścian zrób na 2000 mm, nie jak teraz
-  1500."*
-* **The light panel.** *"robimy w Light coś na wzór pokoju, czyli lewa ściana,
-  sufit i prawa ściana, i wtedy włącz/wyłącz światło poszczególną lampę."*
-* **The warehouse.** As mocked up and agreed 25.08 — same model and same CSV
-  columns as Production Core, separate table, own categories.
+* **The share-out is one-sided.** *"chodziło o to żeby były zawsze equal, i to
+  działa — ale od lewej, a nie od prawej strony, czyli od jednej strony."*
+  And: *"jak robię po prawej, to proponuje tylko 1 lub 2 szafki i nadal nie
+  może przesunąć reszty."*
+* **The cup still shows.** *"nie działa — nadal widać zawiasy."* On a 25 mm
+  shaker, where T51's fix cannot even fire.
+* **The dog bones.** *"jak niska szafka poniżej 600 mm to już zrób 2 dog
+  bonesy, a jak poniżej 300 to jeden dog bones — na plecach i BUL i BUR."*
+* **The watch drawer.** *"szuflada z przegródkami na zegarki, krawaty etc …
+  szkło i podświetlenie … rama z Eggera ale podświetlone zegarki … oczywiście
+  szuflada nasza standardowa, tylko przegródki z 9 mm zrób, i szuflada płytka
+  w środku, myślę że około 60 mm."*
 
-Eight features. The first four are corrections to last night's work and go
-first: a wrong feature in a user's hands costs more than a missing one.
-
-## Three decisions taken FOR the owner — veto any
-
-He left for the day; these cannot wait and are written here to be struck out
-in one line.
-
-1. **Light settings live WITH THE PROJECT**, not globally — a room with one
-   window and a showroom want different rigs, and a saved job should reopen
-   looking as it did.
-2. **A lamp has ON/OFF and a strength, and does not slide along its wall.**
-   Position stays the rig's arithmetic. Sliding is a second feature and can
-   come when the panel has proved itself.
-3. **The warehouse exports TWO ways** — the whole catalogue, and the materials
-   used by the open project. Both were asked for at once (*"nazwa projektu"* on
-   a global catalogue), and they are two different documents: a catalogue and
-   a shopping list.
+Five features. F1–F3 are corrections to work already in his hands and go
+first. F5 is new geometry and is the one that may fall.
 
 ## Iron rules (binding)
 
-1. **Zero-stop overnight.** PR before morning regardless. Sacrifices, in this
-   order: **F8** first, then the light panel's PRESETS (F6's switches never
-   fall), then the warehouse's CSV IMPORT (its list and its editing never
-   fall). **F1–F5 never fall.**
-2. **BYTE-IDENTITY.** `t51-classify`: six IDENTICAL, UNNAMED = 0. F2, F3 and
-   F5 touch the engine. F5 changes a BORE — if a golden moves, that golden has
-   a shaker front and the bore genuinely changed depth, which is a FINDING to
-   write up, not a licence.
-3. **LISP IS LAW — FIRST, for F5.** The cup bore is a drilling; its depth rule
-   is born in `reference/lisp/` before any JS. No other LISP file moves. Paren
-   13/13 at 0/0.
-4. **Sanctity, with ONE named licence:** `src/engine/wallDraw.js` and the
-   drawing UI in `RoomModal.jsx` are REMOVED — the owner's ruling above. What
-   T49/T50 kept beside them (Rectangle, L-shape, + Box, Import DXF plan) stays
-   and must WORK, which is F1's real job.
+1. **Zero-stop overnight.** PR before morning regardless. Sacrifices, in
+   order: **F5** first (the watch drawer — new work), then **F4**. **F1, F2
+   and F3 never fall.**
+2. **BYTE-IDENTITY.** `t52-classify`: six IDENTICAL, UNNAMED = 0. F3 and F4
+   touch drillings; if a golden moves, that is a FINDING to write up, not a
+   licence.
+3. **LISP IS LAW — FIRST for F4 and F5.** Dog-bone counts and the insert's
+   geometry are cut on the machine, so they are born in `reference/lisp/`
+   before any JS. Paren 13/13 at 0/0.
+4. **Sanctity.** Nothing is deleted.
 5. **Suite in full at every commit, never `--silent`. One commit per feature.
-   Zero new dependencies. Modals draggable and beside. English copy. Every
-   screenshot LOOKED AT. `verify/t51/` shows: a box added and VISIBLE in the
-   room, a share-out fired by a DRAG, a panel appearing and vanishing as a
-   cabinet is moved in and out, and the light panel.**
+   Zero new dependencies. English copy. Every screenshot LOOKED AT.
+   `verify/t52/` shows: a run shared out from the RIGHT end, a shaker door
+   with no cup visible through its face, and the watch drawer lit.**
 
 ---
 
-## F1 [CRITICAL] — the wall editor is reverted, and boxes work
+## F1 [CRITICAL] — the run shares out from EITHER end, and takes every cabinet
 
-Remove `engine/wallDraw.js`, its test, and the drawing UI added to
-`RoomModal.jsx` by T50-F1. `engine/room.js`'s additions go with it unless
-something else has come to depend on them — check, do not assume. No later
-commit touched `RoomModal.jsx` or `room.js`, so the revert is isolated.
+Two faults, one feature, both diagnosed already.
 
-**Then the half that matters**: Rectangle, L-shape, + Box and Import DXF plan
-must WORK. The owner has reported twice that a box added in Room settings does
-not appear in the room. The chain (`insertBox → draft → apply → setRoom →
-room.boxes → roomBoxes → Room.jsx`) is complete and unconditional on
-inspection, so something breaks it in practice — find it by USING it, not by
-reading it: add a box in the wizard, add one in Settings ▸ Room setup, with
-scope One wall and with scope Room, and watch which of the four fails.
+**(a) The run breaks at a millimetre.** `buildRuns` starts a new run when the
+gap between two cabinets exceeds `profile.autoParts.topInfill.runGap`, which
+is **1 mm**. That number is right for what it was written for — whether two
+cabinets share one top filler — and far too tight for this. Six cabinets with
+one 2 mm shadow between them are TWO runs, so the share-out divides the one
+the hand touched and refuses to move the rest. That is exactly the owner's
+*"proponuje tylko 1 lub 2 szafki i nadal nie może przesunąć reszty."*
 
-Also: Settings ▸ Room setup and the wizard's room step must show the SAME
-screen (T50-F12, which fell).
+The share-out gets its OWN definition of scope, and it is the owner's own
+sentence: **every cabinet on this wall at this mount height, wall to wall** —
+whatever millimetre shadows stand between them. `runGap` is NOT changed;
+nothing else may inherit this.
 
-## F2 [CRITICAL] — the share-out fires whenever the layout changes
+**(b) It only lays out from the left.** The cursor starts at the run's left
+edge, so a run reached from the right end grows the wrong way and stops
+against whatever it meets. The lay-out anchors on the end the gap is at: a
+gap on the right means the run is laid from the LEFT wall rightwards, and a
+gap on the left means it is laid from the RIGHT wall leftwards. Either way it
+finishes flush on both walls, because the arithmetic below says it must.
 
-**Diagnosed already — this is the fix, not a search.** T50 hung the offer on
-`addUnit` alone. The owner reaches a sub-400 gap by DRAGGING or by RESIZING,
-and nothing asked.
+**The arithmetic, in the owner's own words** — assert it in the test exactly
+so:
 
-One store action, `settleLayout(focusId)`, called at the end of `addUnit`,
-`moveUnit`, `removeUnit`, and `updateUnitParams` (the last only when a width,
-depth or height actually moved — a colour change must not pay for it). It
-does two things: grows the auto end panels (F3) and re-derives the share-out
-offer for the focused unit.
+```
+(wall clear − infill − infill − fixed-width cabinets) ÷ movable count = each
+```
 
-**It needs a recursion guard.** `growAutoEndPanels` widens cabinets through
-`updateUnitParams`, which now settles the layout — an unfloored loop, and the
-suite finds it as a blown stack. A module-scope `settling` flag, outermost
-call does the work, inner ones return at once.
+**Both infills, always.** T51 reserves the filler that EXISTS and not the one
+that will exist: at a 4000 wall with 40 on the left and a 260 gap on the
+right, it offered 660 each (6 × 660 = 3960, leaving 40 — one filler, not
+two). Correct is `(4000 − 40 − 40) ÷ 6 = 653`. Reserve a filler at EVERY end
+where the run will meet a wall after the share-out, whether or not one stands
+there now. The bar's own figure must equal what the cabinets end up at.
 
-**And the cabinets must MOVE.** The owner: *"nachodzenie na siebie to sztywna
-zasada … wymuszenie przesunięcia."* `shareOutRun` already lays the run out
-with a cursor and writes right-to-left, which is correct — but the FILLERS
-are obstacles (`panelObstaclesFor` labels them `filler`) and they are only
-recomputed at the very end, so every move is clamped against infills sized for
-the OLD widths. Take the run's own auto-parts out of the obstacle set for the
-duration of the lay-out, and restore them after. A cabinet may still not
-overlap another CABINET — that rule is absolute.
+**And they must move.** Cabinet-on-cabinet overlap stays absolutely
+forbidden — the owner: *"nachodzenie na siebie to sztywna zasada."* The run's
+own auto-parts come out of the obstacle set for the duration of the lay-out
+(T51's own note says why) and are restored after.
 
-## F3 [HIGH] — the end panel appears and vanishes with the hand
+## F2 [CRITICAL] — the cup does not show through the face
 
-Same fix, same `settleLayout`: *"dojeżdżam — panel się pojawia, nie dojeżdżam —
-panel znika."* An automatic panel (`meta.autoAdded`) whose junction no longer
-exists is REMOVED, not left behind. A panel the owner deleted by hand stays
-deleted while that junction lasts; move the cabinet away and back and it is a
-new junction, so it may return.
+The owner's screenshot: a **25 mm** shaker, rebate 6, so 19 mm of material
+under an 11 mm cup — seven millimetres of floor, and the cup is still visible
+on the face. T51's F5 was a real fix for a real fault (a thin front bored
+through) but it **cannot fire here**, so this is a different fault and it is
+in the SCENE, not the bore.
 
-## F4 [HIGH] — the leftover is measured from the CARCASS
+Start where the cup's body is placed through the door's thickness:
+`engine/hardware3d.js` reads `cupDepth: bore?.depth`, which is right, and
+`3d/Hardware.jsx` sets the cylinder at `z + cupDepth/2` against a comment that
+assumes a 25 mm door. Check the SIGN and the datum: `innerZ` is the door's
+INNER face and the cup is bored from it, so the body must run from `innerZ`
+INTO the board, and the boss must stand proud on the CARCASS side. If either
+runs the other way the cup reaches the face.
 
-`runEndGap` measures from `paddedSpan`, which includes the fillers — so the
-engine reads zero where the owner sees a gap, and the offer never appears. The
-gap is measured from the CABINET BODY to the wall, ignoring the scribe filler
-that stands in it: at a 40 filler and a 300 shadow, the bar says 340, and the
-filler returns to its 40 once the run is shared out.
+Prove it by measurement, not by eye: assert the cup body's far plane sits at
+`innerZ + bore.depth` and that the boss lies entirely at `z < innerZ`. Then
+photograph a shaker door at 25 mm and at 18 mm.
 
-## F5 [HIGH] — LISP first: the cup bore respects the shaker's rebate
+## F3 [HIGH] — LISP first: the dog-bone counts follow the cabinet's height
 
-The owner's own diagnosis, and it is right. `doorHingeDatum` takes the door's
-FULL thickness from `box.d` and says so in a comment — *"a shaker's
-`meta.shaker.depth` is deliberately not consulted"*. For an 18 mm shaker with
-a 6 mm rebate that leaves 12 mm of material where the cup sits, but the bore
-is computed as `min(11, 18 − 1) = 11`, so 1 mm of floor remains instead of
-seven and the cup reads through the face. At 16 mm it would bore straight
-through — `cupFloorKeepMm` exists to prevent exactly that and is measuring the
-wrong thickness.
+The owner: two dog bones below 600, one below 300, on the BACK and on BUL and
+BUR. Today `middleTabBelow: 346` decides three-versus-two and nothing ever
+yields one.
 
-The bore takes the thickness AT THE CUP: full where the cup lands on the
-shaker's frame, less the rebate where it lands in the panel field. State the
-rule in LISP first. Report in Check when a front is too thin to take a cup at
-all, rather than silently boring a shallower one.
+* **346 → 600** for the third tab. Note in the profile that this is now the
+  OWNER'S number, not the derived one — the comment currently explains 346 as
+  `190 + 120 + 36` from the socket geometry, and that explanation stops being
+  true. Keep the derivation in the note as the FLOOR it must not go below.
+* **A new threshold at 300 for a single tab.** `LOW_CABINET.minHeight` is
+  exactly 300, so `< 300` can never fire — it is `<= 300`, and say so in the
+  note, or the feature ships dead.
+* Born in `reference/lisp/` first, as every drilling rule is.
 
-## F6 [HIGH] — the light panel, built like a room
+## F4 [MEDIUM] — the leftover, once more, and the bar tells the truth
 
-In Lighting: **ceiling, left wall, right wall, facing** — each with an ON/OFF
-and a strength. That is the model the owner asked for, and it is the room he
-is standing in.
+Whatever F1 computes, the BAR must show the same number the cabinets will end
+up at. Where the two disagree today the owner reads the bar, builds to it and
+finds forty millimetres missing at the wall. One number, computed once,
+displayed and applied.
 
-* The existing rig maps onto it: the overhead bands are CEILING, the showroom
-  pillars are the WALLS. Nothing is invented; the panel drives what is there.
-* **Presets** as a starting point — `Showroom`, `Bright`, `Moody`,
-  `Neutral` (flat, for judging a colour). A preset sets the four; the owner
-  then tunes. *(First to fall after F8.)*
-* **THE EXPORT IGNORES THE PANEL.** `renderCapture` and every PDF render with
-  ONE fixed rig, whatever the switches say. A client compares a render against
-  an Egger sample, and two renders of the same decor must not differ because
-  somebody flipped a lamp. Say this in the panel, in one line.
-* Settings save with the project (decision 1).
+## F5 [HIGH] — the watch drawer
 
-## F7 [HIGH] — the materials warehouse
+*"szuflada nasza standardowa, tylko przegródki"* — so this is an INSERT, not
+a new drawer type. It drops into a standard drawer box and the box is
+untouched.
 
-As mocked up and agreed on 25.08. Database ▸ Materials opens the warehouse,
-not the design modal.
+**The numbers**, from the trade and from the owner:
 
-* **Model, exactly Production Core's**: `item_number` (auto), `name`,
-  `category`, `subcategory`, `size`, `thickness`, `color`, `unit`,
-  `cost_per_unit`, `image_url`, `jc_uuid`, `notes`.
-* **Own table**, not shared with PC. Own categories: sheets, timber, hinges,
-  runners, other hardware, bead, drawer pins, paints, consumables. A material
-  with no category lands in **Others**.
-* **Subcategories flat** — a text field, one level, renameable in bulk. No
-  tree.
-* **List with departments down the left and counts**, a photo per row, code
-  under the name, and a draggable card on click with the picture enlarged.
-* **Price** comes from an import or is typed; the record says WHICH, so a
-  re-import cannot silently overwrite a hand-typed figure without saying so.
-* **`jc_uuid` from day one.** On import from JoineryCore, match on it:
-  **overwrite the existing row, never add a second.** Say in the UI that
-  automatic linking to JC requires importing the JC list first.
-* **CSV**: the same columns as PC so the two files interchange. Two exports
-  (decision 3), named:
-  `Cabinet Core - {project} - {YYYY-MM-DD HH-mm} - materials.csv`
-* **RLS on the table.** Degrades gracefully with no network: the warehouse
-  opens, says it is offline, and does not lose a typed row.
+* **Divider stock 9 mm** (owner). **Inside depth 60 mm** (owner) — the trade
+  standard is ~50 mm for a watch pocket, so 60 carries a chronograph and a
+  lining. Note both in the profile.
+* **Pocket ~110 × 95** on a 900 drawer, five across; the count follows the
+  width, never a fixed five. A watch case runs 30–48 mm, so a pocket must
+  never fall below 60 mm clear.
+* **ONE row of pockets, at the FRONT.** Behind it, long sections for ties,
+  cufflinks and straps. Three rows of pockets is a known mistake: the back row
+  cannot be reached once the drawer is in.
+* **Frame in the carcass decor** (Egger), like every other part — it takes the
+  project's material, it is not special-cased.
+* **Glass over the pockets, LED in a rebate in the frame**, aimed at the
+  watches rather than at the eye. The strip is the one the app already
+  places — same catalogue, same groove law (T48's +10 each end).
 
-## F8 [LOW] — side walls default to 2000
+**Three decisions taken FOR the owner — veto any.** He was asked and left:
 
-*"default bocznych ścian zrób na 2000 mm."* One number, in the profile, read
-by everything that starts a room. **First to fall.**
+1. **The glass LIFTS OUT.** A fixed pane looks better and makes a watch
+   unreachable without opening the whole drawer; a lift-out pane is what a
+   joiner would fit.
+2. **The LED lights the WATCHES**, not the glass. Lighting the pane makes a
+   shop display; lighting the contents makes a wardrobe.
+3. **The insert is its own BOM line**, addable to any drawer — not a drawer
+   type. That way a customer can have it in one drawer of six.
+
+CNC: the divider slots, the frame, the rebate for the glass and the LED
+groove. Report in Check when a drawer is too shallow to take the insert
+rather than shipping a squashed one.
 
 ## Execution order
 
-`F1` → `F2` → `F3` → `F4` → `F5` → `F6` → `F7` → `F8`. The corrections first,
-then the bore, then the two new things. F2 and F3 share one mechanism and are
-one commit if that reads better.
+`F1` → `F2` → `F3` → `F4` → `F5`. Corrections first; the new drawer last,
+where it can fall without taking anything with it.
 
 ## What this turn does NOT touch
 
 The six goldens' bytes. The DXF export's emptiness — still its own CRITICAL,
-still not this turn. The dog-bone thresholds (no number from the owner). The
-slope geometry. Every LISP file but the one F5 needs.
+still not this turn. The lighting rig (the owner: *"lights działają super"*).
+The warehouse. `runGap` itself (F1 says why).
 
 ## Morning audit will run
 
-Fresh clone → install → suite (never `--silent`) → build → `t51-classify` →
-paren 13/13 → the box probe (added in all four ways, VISIBLE in the room) →
-the share-out probe (fired by a drag, by a resize, and cabinets that MOVED
-rather than refused) → the panel probe (appears on approach, vanishes on
-retreat, stays gone when deleted) → the bore probe (an 18 mm shaker leaves
-real floor under the cup; a too-thin front is reported, not bored) → the light
-panel walked, and a capture proved IDENTICAL with the switches flipped → the
-warehouse: a row typed, a CSV round-tripped, a JC import matched on `jc_uuid`
-overwriting rather than duplicating → every screenshot LOOKED AT → verdict →
-the numbered eye-test list.
+Fresh clone → install → suite (never `--silent`) → build → `t52-classify` →
+paren 13/13 → the share-out probe: a six-cabinet run with a 2 mm shadow in it
+shared out as ONE run, from the right end, arithmetic checked by hand against
+`(wall − 2 fillers − fixed) ÷ movable`, and the bar's figure equal to the
+built widths → the cup probe: body plane and boss plane measured, at 25 mm and
+at 18 mm → the dog-bone probe: 700, 500 and 280 mm cabinets yielding three,
+two and one → the watch drawer: pockets counted against the drawer width, the
+LED groove matching the LISP → every screenshot LOOKED AT → verdict → the
+numbered eye-test list.

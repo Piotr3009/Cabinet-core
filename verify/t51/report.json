@@ -1,0 +1,269 @@
+{
+  "turn": 51,
+  "at": "2026-08-26T08:51:44.887Z",
+  "base": "http://127.0.0.1:4173/",
+  "steps": [
+    {
+      "label": "the app is up, with a 4 × 3 m room and nothing in it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F1 — the four tools stand, and the wall editor is gone",
+      "ok": true,
+      "detail": "{\"rect\":1,\"L\":1,\"box\":1,\"dxf\":1,\"draw\":0}"
+    },
+    {
+      "label": "F1 — + Box is on screen in a ONE-WALL job (it was NOT)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F1 — …and the box reaches the room",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F1 — a cabinet STOPS at the breast (2600) rather than driving through it",
+      "ok": true,
+      "detail": "right edge 2600"
+    },
+    {
+      "label": "F1 — …and stands IN the alcove, which is why one is drawn",
+      "ok": true,
+      "detail": "x=400"
+    },
+    {
+      "label": "a run of five, and one parked clear of it — nothing offered",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F2 — DRIVING a cabinet up to the run FIRES the share-out (T50 asked on the ADD only)",
+      "ok": true,
+      "detail": "\"u_1hj4ohk\""
+    },
+    {
+      "label": "F2 — a RESIZE fires it too",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F2 — …and a colour/hinge change does NOT pay for it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F2 — the run is laid out to the wall, and every cabinet MOVED",
+      "ok": true,
+      "detail": "right edge 3960, widths 653/653/653/653/653/655"
+    },
+    {
+      "label": "F2 — no cabinet overlaps another — the rule that is absolute",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F2 — and NOT ONE \"limited by\" notice: the fillers stood down",
+      "ok": true,
+      "detail": "[]"
+    },
+    {
+      "label": "F3 — parked apart, there is no panel",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F3 — *dojeżdżam* — the panel APPEARS",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F3 — *nie dojeżdżam* — it VANISHES, rather than being left behind",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F3 — removed by hand, it STAYS gone while that junction lasts",
+      "ok": true,
+      "detail": "{\"panels\":0,\"declined\":[\"R\"]}"
+    },
+    {
+      "label": "F3 — …but away and back is a NEW junction, so it may return",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F6 — the panel is a ROOM: ceiling, left wall, right wall, facing",
+      "ok": true,
+      "detail": "ceiling,leftWall,rightWall,facing"
+    },
+    {
+      "label": "F6 — each lamp has an ON/OFF and a strength",
+      "ok": true,
+      "detail": "4/4"
+    },
+    {
+      "label": "F6 — the four presets are offered",
+      "ok": true,
+      "detail": "showroom,bright,moody,neutral"
+    },
+    {
+      "label": "F6 — and the panel SAYS the export ignores it",
+      "ok": true,
+      "detail": "Renders and PDFs ignore these switches — they always use one"
+    },
+    {
+      "label": "F6 — the EDITOR changes when a lamp is switched",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F6 — THE EXPORT IGNORES THE PANEL: the export rig is IDENTICAL, lamp for lamp",
+      "ok": true,
+      "detail": "8 lamps carry a fixed number"
+    },
+    {
+      "label": "F7 — Database ▸ Materials opens the WAREHOUSE, with nine departments and Others",
+      "ok": true,
+      "detail": "sheets,timber,hinges,runners,other_hardware,bead,drawer_pins,paints,consumables,others"
+    },
+    {
+      "label": "F7 — it says it is offline and keeps working",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F7 — a row TYPED reaches the warehouse, numbered automatically",
+      "ok": true,
+      "detail": "[{\"n\":\"18mm MDF\",\"c\":\"0001\",\"p\":42,\"src\":\"typed\"}]"
+    },
+    {
+      "label": "F7 — …and the record says the price was TYPED",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F7 — a JC import matched on jc_uuid OVERWROTE, never duplicated",
+      "ok": true,
+      "detail": "2 rows"
+    },
+    {
+      "label": "F7 — …keeping the shelf label (item_number 0001)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "label": "F7 — …and the hand-typed price change is REPORTED, not silent",
+      "ok": true,
+      "detail": "[{\"name\":\"18mm MDF\",\"item_number\":\"0001\",\"was\":42,\"now\":50}]"
+    },
+    {
+      "label": "F7 — TWO exports, named as CLAUDE.md writes them",
+      "ok": true,
+      "detail": "[\"Cabinet Core - Full catalogue - 2026-08-26 08-51 - materials.csv\",\"Cabinet Core - T51 walk - 2026-08-26 08-51 - materials.csv\"]"
+    },
+    {
+      "label": "F8 — a one-wall job’s side returns default to 2000",
+      "ok": true,
+      "detail": "the field reads 2000"
+    }
+  ],
+  "shots": [
+    {
+      "name": "f1-box-one-wall-job.png",
+      "note": "a BOX added in a ONE-WALL job — the case that had no button at all",
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "f1-recess-and-chimney-in-the-room.png",
+      "note": "an ALCOVE and a BREAST, drawn in the wall editor and now standing in the room — read off the live scene, not off the picture",
+      "present": true,
+      "detail": "{\"scene\":true}"
+    },
+    {
+      "name": "f1-cabinet-in-the-alcove.png",
+      "note": "the cabinet standing INSIDE the alcove — an alcove is room, not building",
+      "present": true,
+      "detail": "{\"scene\":true}"
+    },
+    {
+      "name": "f2-run-before.png",
+      "note": "the run BEFORE: five cabinets from the wall and one parked at the far end",
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "f2-share-out-fired-by-a-drag.png",
+      "note": "the SHARE-OUT BAR, standing in the leftover gap — put there by a MOVE, which is the owner’s \"nie ma zapytania\" exactly",
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "f2-run-after.png",
+      "note": "the run AFTER: shared out to the wall, every cabinet widened and moved, no infill refusing it",
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "f3-panel-away.png",
+      "note": "the low unit parked clear of the tall one: no junction, and no panel",
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "f3-panel-appears.png",
+      "note": "driven up: the app has grown the finishing end panel, and said so",
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "f3-panel-vanishes.png",
+      "note": "driven away again: the junction is gone and so is the board",
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "f6-the-light-panel.png",
+      "note": "THE LIGHT PANEL: a room with four sides, each with a switch and a strength, the four presets, and the export notice in gold",
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f6-the-room-as-it-ships.png",
+      "note": "the room lit by the rig as it ships",
+      "present": true,
+      "detail": "{\"text\":true}"
+    },
+    {
+      "name": "f6-the-room-with-the-lamps-flipped.png",
+      "note": "every switch flipped — the ROOM is visibly different and the export rig has not moved a candela",
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f7-a-row-typed.png",
+      "note": "the MATERIAL CARD: the picture enlarged, every field of the model, and \"typed by hand\" under the price",
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f7-the-warehouse.png",
+      "note": "THE WAREHOUSE: departments and counts down the left, a photo per row, the code under the name, the import report naming the reprice, and the two exports",
+      "present": true,
+      "detail": "{\"all\":true}"
+    },
+    {
+      "name": "f8-side-walls-2000.png",
+      "note": "a ONE-WALL job: the two side returns, 2000 mm each",
+      "present": true,
+      "detail": "{\"all\":true}"
+    }
+  ],
+  "totals": {
+    "steps": 33,
+    "passed": 33,
+    "failed": 0
+  }
+}

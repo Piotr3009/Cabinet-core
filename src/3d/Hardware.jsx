@@ -50,9 +50,9 @@ import { dimensionStyle } from '../engine/dimensionArrows.js';
 // right place, every frame. The answer is that every part of one was INSIDE
 // solid board:
 //
-//   • the CUP is bored into the back of the door, so the cylinder turn 7 drew
-//     at `z + cupDepth/2` sits entirely within the door's 25 mm — visible in
-//     X-ray, where the board is translucent, and in nothing else;
+//   • the CUP is bored into the back of the door, so the body sits entirely
+//     within the leaf — visible in X-ray, where the board is translucent, and
+//     in nothing else;
 //   • the ARM and the PLATE are inside the carcass, behind a shut door.
 //
 // Two things were missing and both are here now.
@@ -61,6 +61,30 @@ import { dimensionStyle } from '../engine/dimensionArrows.js';
 //   turn 7 with the comment "the cup body standing proud of the door's back
 //   face", and nothing ever drew it. It is the part of a hinge a joiner
 //   actually sees when he opens a cabinet, and it was the one part missing.
+//
+// ─── TURN 52 (CLAUDE.md F2): AND THE SENTENCE ABOVE WAS OUT OF DATE ────────
+//
+// The paragraph above described the PROCEDURAL cup, boss and arm, and put a
+// number in the reader's hand — a cylinder half the cup's depth inside a door
+// it called 25 mm. Those stand-ins were REMOVED by the chat fix of 14.08.2026
+// (see the note beside the pick surface below); the comment outlived them, and
+// it is the only place in this app that ever said which WAY a cup runs through
+// a door. A number nobody can measure is a number nobody can be wrong about
+// out loud, and this turn was written against it.
+//
+// The law lives in the ENGINE now and nowhere else — `engine/doors.js
+// cupBodyPlanes`, published per hinge by `engine/hardware3d.js` as `cupFrom` /
+// `cupTo` / `bossFrom` / `bossTo` / `seatZ`:
+//
+//   the CUP runs from the door's INNER face INTO the board, and its far plane
+//   is the BORE'S OWN FLOOR — `innerZ + bore.depth`, never the profile's
+//   nominal;
+//   the BOSS runs the other way, out into the carcass opening, entirely at
+//   `z < innerZ`.
+//
+// This file consumes `seatZ` and measures nothing of its own.
+// `test/turn52-f2-the-cup-hides.test.js` asserts both planes rather than
+// photographing them.
 //
 //   THE SWING. The cup and the boss are screwed to the DOOR. They were drawn in
 //   a static group, so opening a door left them behind in the air where the
@@ -604,6 +628,24 @@ export { hingeSpecsFor } from '../engine/hinges.js';
  *   pivot   [x, y, z] in THREE units — the door group's origin
  *   specs   the engine's per-door hinge resolution, for the model and finish
  */
+/**
+ * ─── TURN 52 (CLAUDE.md F2): WHERE THE BODY IS SET DOWN ────────────────────
+ *
+ * The model's own datum is its FLANGE PLANE (`cliptop.fileDatum`, T30 F1), and
+ * the flange stands on the door's inner face — which is `z`, and is `seatZ` for
+ * every leaf the hinge actually fits. Where the BORE had to be shortened (a
+ * thin front; a shaker whose ⌀35 cup overhangs a narrow frame — T51's F5) the
+ * hole is less deep than the cup, and seating the model on `z` regardless drew
+ * ⌀35 of steel in board the machine never removed. `seatZ` brings it back out
+ * by exactly that shortfall, so the drawn cup's floor lands on the BORE's floor
+ * and the flange stands proud — which is what a hinge in too shallow a hole
+ * really does. Check names that leaf already; the picture stops denying it.
+ *
+ * The fallback is `z` so nothing here depends on an instance built by an older
+ * engine.
+ */
+const seatOf = (h) => (Number.isFinite(Number(h?.seatZ)) ? Number(h.seatZ) : Number(h?.z) || 0);
+
 export function DoorHinges({
   items, profile, colour, pivot, specs = null, storageBase = '',
   surface = 'room', scope = '', onEditHinge = null, openDeg = 0,
@@ -741,7 +783,7 @@ export function DoorHinges({
           key={`hm${items[i].panelId}-${items[i].y}`}
           object={m.model}
           position={[
-            mm(items[i].x) - pivot[0], mm(items[i].y) - pivot[1], mm(items[i].z) - pivot[2],
+            mm(items[i].x) - pivot[0], mm(items[i].y) - pivot[1], mm(seatOf(items[i])) - pivot[2],
           ]}
         />
       ) : null))}
@@ -759,7 +801,7 @@ export function DoorHinges({
           object={m.model}
           profile={profile}
           position={[
-            mm(items[i].x) - pivot[0], mm(items[i].y) - pivot[1], mm(items[i].z) - pivot[2],
+            mm(items[i].x) - pivot[0], mm(items[i].y) - pivot[1], mm(seatOf(items[i])) - pivot[2],
           ]}
           angle={swing}
         />

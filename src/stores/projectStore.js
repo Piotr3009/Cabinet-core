@@ -94,9 +94,20 @@ import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
 import {
-  buildRuns, impliedLegHeight, paddedSpan, runInfillParams, runMaskParams, runMemberIds,
-  runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals, verticalsInBand,
+  buildRuns, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
+  runMemberIds, runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
+  verticalsInBand,
 } from '../engine/runs.js';
+// Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
+import {
+  runFor as shareOutRunFor, shareOutFor, shareOutPlan, widthFixed,
+} from '../engine/shareOut.js';
+// Turn 50 (CLAUDE.md F3): nothing is built bigger than the room it stands in.
+import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
+// Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
+import {
+  autoEndPanelJunctions, autoEndPanelMessage, withDeclined,
+} from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
@@ -1930,6 +1941,103 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{id:string|null, ids?:string[], error:string|null}}
    */
+  /**
+   * ─── TURN 50 (CLAUDE.md F4): A LOW UNIT MEETING A TALL ONE GROWS ITS OWN ──
+   *
+   * The owner: *"w kuchni jak dodamy niską szafkę do wysokiej bez panela,
+   * powinien się dodać panel automatycznie — i informacja na środku monitora:
+   * system dodał panel wykończeniowy, chcesz to go usuń, naciśnij prawym
+   * myszką i usuń panel."*
+   *
+   * WHICH junctions is `engine/endPanelAuto.js` and none of it is here. What is
+   * here is the ADD, and it is the ordinary one: `addEndPanel`, the same call
+   * the right-click menu makes, with the same defaults, the same collision
+   * refusal and the same piece out the other end — *"a real end panel, on the
+   * same board and the same rules as one added by hand — not a special case."*
+   *
+   * The one thing it adds is `auto_added: true` on the slot, which reaches the
+   * cut piece as `meta.autoAdded` and is what lets a later turn tell the two
+   * apart and the message be said ONCE per panel rather than on every redraw.
+   *
+   * @returns {Array<{unitId, side, panelId, message}>} what was added
+   */
+  growAutoEndPanels: () => runBatch(() => {
+    const profile = getCabinetProfile();
+    const design = () => migrateDesign(get().project.design);
+    const made = [];
+    // Asked of the units as they stand, then again after each add: adding a
+    // panel widens a cabinet, which can close the next junction along. One
+    // pass per junction found, and never more passes than there are junctions.
+    let guard = 0;
+    for (;;) {
+      const wanted = autoEndPanelJunctions(get().units, profile);
+      const next = wanted.find((j) => !made.some((m) => m.unitId === j.unitId && m.side === j.side));
+      if (!next || guard > 64) break;
+      guard += 1;
+      let res = get().addEndPanel(next.unitId, { side: next.side, applyToAll: false });
+      if (!res.id) {
+        // ─── MAKING ROOM FOR IT ────────────────────────────────────────────
+        //
+        // A cabinet butted hard against its neighbour has 0 mm free, and the
+        // panel that finishes the joint is a real board that has to go
+        // SOMEWHERE — so the LOW unit slides along by the panel's thickness.
+        // That is what a joiner does with the tape: the tall cabinet is what
+        // the board is screwed to and is the fixed point; the run beside it
+        // moves. Only the low one, and only away from the junction.
+        //
+        // WHY IT TAKES THREE MOVES AND NOT ONE. `editor.unitMagnet` is 40 mm,
+        // so a cabinet asked to stand 25 mm off its neighbour snaps straight
+        // back onto it — which is right for a hand on a drag and wrong here.
+        // So the unit is first taken clear of the magnet, the panel is added by
+        // the ORDINARY call (with its ordinary room check, which now passes),
+        // and the unit is then brought back — where the magnet lands it exactly
+        // on the new panel's outer face, which is where it belongs. The three
+        // are inside one `runBatch`, so it is still one undo step.
+        //
+        // If it cannot move — a wall, another cabinet — the refusal stands and
+        // NOTHING is said: a joint that is already tight is not a fault the
+        // joiner has to act on.
+        const low = get().units.find((u) => u.id === next.otherId);
+        const thick = Number(design().endPanel?.thickness) > 0
+          ? Number(design().endPanel.thickness)
+          : (Number(low?.params?.front_t) || profile.front.thickness);
+        const magnet = Number(profile.editor?.unitMagnet) || 0;
+        if (low && thick > 0) {
+          const home = Number(low.position?.x_mm) || 0;
+          const sign = next.side === 'R' ? 1 : -1;
+          get().moveUnit(low.id, home + sign * (thick + magnet * 2), 0);
+          res = get().addEndPanel(next.unitId, { side: next.side, applyToAll: false });
+          get().moveUnit(low.id, home + sign * thick, 0);
+        }
+      }
+      if (!res.id) {
+        made.push({ ...next, panelId: null, message: null, refused: res.error });
+        continue;
+      }
+      set((st) => ({
+        units: st.units.map((u) => (u.id === next.unitId
+          ? {
+            ...u,
+            params: {
+              ...u.params,
+              end_panels: (u.params.end_panels || []).map((ep) => (ep.id === res.id
+                ? { ...ep, auto_added: true }
+                : ep)),
+            },
+          }
+          : u)),
+      }));
+      const unit = get().units.find((u) => u.id === next.unitId);
+      made.push({
+        ...next,
+        panelId: res.id,
+        message: autoEndPanelMessage(unit?.params?.unit_num || ''),
+      });
+    }
+    if (made.some((m) => m.panelId)) get().refreshAutoParts();
+    return made;
+  }),
+
   addEndPanel: (unitId, { side = 'L', height = null, thickness = null, applyToAll = null } = {}) => {
     if (side === 'B') {
       const results = ['L', 'R'].map((one) => get().addEndPanel(unitId, { side: one, height, thickness, applyToAll }));
@@ -2005,9 +2113,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   removeEndPanel: (unitId, panelId) => {
+    // ─── TURN 50 (CLAUDE.md F4): REMOVING IT BY HAND IS FINAL ──────────────
+    //
+    // *"Removing it by hand is final for that junction: it does not come back
+    // on the next redraw, or the message becomes a nag."*
+    //
+    // Which side it was on is remembered — on the cabinet that carried it, so
+    // the record travels with the project — and `autoEndPanelJunctions` never
+    // offers that junction again. It is written for ANY panel taken off, not
+    // only an auto one: a joiner who removes the panel he put there himself has
+    // said the same thing about the same joint.
+    const going = get().units.find((u) => u.id === unitId)
+      ?.params?.end_panels?.find((ep) => ep.id === panelId) || null;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId
-        ? { ...u, params: { ...u.params, end_panels: (u.params.end_panels || []).filter((ep) => ep.id !== panelId) } }
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            end_panels: (u.params.end_panels || []).filter((ep) => ep.id !== panelId),
+            ...(going ? { end_panel_declined: withDeclined(u, going.side) } : {}),
+          },
+        }
         : u)),
     }));
     get().refreshAutoParts();
@@ -2875,6 +3002,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // that overhangs its own carcass is not a box, it is a mistake.
       const hostW = Number(riderHost.params?.width);
       if (Number.isFinite(hostW) && hostW > 0) unit.params.width = hostW;
+      // ─── TURN 50 (CLAUDE.md F3): …AND BORN INSIDE THE ROOM ────────────────
+      //
+      // The owner's own case: *"dlaczego pozwala system dodawać top box powyżej
+      // rozmiaru pokoju? to powinno być blokada."*  A box arrives with the
+      // profile's 500 and stands on a wardrobe's top, so in a 2500 room on a
+      // 2250 wardrobe it was born 750 mm through the ceiling.
+      //
+      // BORN FITTED, exactly as T37 made it born matched to its host's width,
+      // and for the same reason: this height has never been typed, so cutting
+      // it to what is left is not the app overruling anybody. What IS refused
+      // is a room with less headroom than a top box's own minimum — there the
+      // add is blocked, with the room's figure in the sentence, which is the
+      // "blokada" he asked for.
+      const born = riderBornHeight({
+        unit,
+        host: riderHost,
+        room: state.project.room,
+        profile,
+        minHeight: minHeightOf(typeId, profile),
+      });
+      if (born.refuse) return { id: null, error: born.refuse };
+      if (born.height != null) unit.params.height = born.height;
     }
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
@@ -2930,8 +3079,208 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // The plinth and the top infill are decisions and wait to be asked for
     // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
     get().refreshAutoParts(unit.id);
+    // ─── TURN 50 (CLAUDE.md F2): …AND THE GAP IT LEFT IS OFFERED ───────────
+    //
+    // *"jak dodaję ostatnią szafkę do ściany i zostanie mniej niż 400 mm …
+    // czy chcesz wyśrodkować?"*  The question is asked HERE because this is
+    // the moment he describes — a cabinet has just been added to a run. What
+    // decides is `engine/shareOut.js`, which answers null for every add that
+    // leaves a real gap or none at all; the bar draws only when it does not.
+    if (shareOutFor(get().units, unit.id, { walls, wallMargin: wallMarginOf(get(), unit) }, profile)) {
+      useUiStore.getState().offerShareOut(unit.id);
+    } else {
+      useUiStore.getState().clearShareOut();
+    }
+    // ─── TURN 50 (CLAUDE.md F4): …AND A JUNCTION THAT NEEDS FINISHING ──────
+    //
+    // *"w kuchni jak DODAMY niską szafkę do wysokiej bez panela"* — the add is
+    // the moment he names, so this is where the question is asked. The message
+    // is a GREY, which in this app is the centre of the screen on its own
+    // clock — *"informacja na środku monitora"* — and it names the way back
+    // out, which is the second half of his sentence.
+    for (const grown of get().growAutoEndPanels()) {
+      if (grown.message) useUiStore.getState().notify(grown.message, 'info');
+    }
     return { id: unit.id, error: null, wall: placed.wall };
   },
+
+  // ─── TURN 50 (CLAUDE.md F2): THE RUN IS SHARED OUT, EQUALLY, ONCE ────────
+  //
+  // The owner: *"jak dodaję ostatnią szafkę do ściany i zostanie mniej niż 400
+  // mm … czy chcesz wyśrodkować? i wtedy wszystkie szafy się ustawią w jednej
+  // szerokości od ściany do ściany, oczywiście odejmując infill."*
+  //
+  // The arithmetic is `engine/shareOut.js` and none of it is here. What is here
+  // is the WRITE, and it is deliberately the most ordinary write in this store:
+  // `updateUnitParams` per cabinet, the same clamp every typed width goes
+  // through, inside ONE `runBatch` so Ctrl+Z takes the whole run back — *"tylko
+  // jednorazowe, z możliwością zrobienia Undo — ale to już mamy."*
+  //
+  // ─── WHY THE WIDTHS ARE WRITTEN OUTWARD FROM THE LEFT ─────────────────────
+  //
+  // Every cabinet in the run is growing, and a cabinet grows to the RIGHT
+  // (`clampUnitWidth` moves the far edge). Written left to right, cabinet 2 is
+  // still where it was when cabinet 1 grows into it, and the clamp refuses.
+  // So each cabinet is MOVED to where the plan puts it and THEN widened, left
+  // to right — which is the order a joiner sets a run out in, and it is why no
+  // notice about "limited by 02" comes out of a share-out that fits.
+  //
+  // ─── AND IT NEVER ADDS A CABINET ─────────────────────────────────────────
+  //
+  // Decision 2, at the top of CLAUDE.md. `extra` is passed only when the joiner
+  // has pressed the bar's SECOND button, and the new cabinet is added by
+  // `addUnit` — the same call the library makes — before the widths are
+  // written, so it is in the run the plan is applied to.
+  /**
+   * ─── TURN 50 (CLAUDE.md F3): MAY THIS UNIT BE GIVEN THIS SIZE? ───────────
+   *
+   * The owner: *"dlaczego pozwala system dodawać top box powyżej rozmiaru
+   * pokoju? to powinno być blokada."*
+   *
+   * The RULE is `engine/roomFit.js` and none of it is here. What is here is the
+   * plumbing the two surfaces would otherwise each have to do — the room, and
+   * the cabinet a top box is standing on — so the parameter panel and the size
+   * modal ask ONE question and get ONE sentence back.
+   *
+   * It REFUSES; it does not clamp. `updateUnitParams` still clamps every number
+   * the APP moves (a project-wide height push, a drag against a neighbour) and
+   * is untouched. This is the other case: a number somebody typed.
+   *
+   * @returns {{key, limit, wanted, message}|null} null when the size is fine
+   */
+  roomFitRefusalFor: (unitId, patch) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const host = unit.params?.rides_on
+      ? s.units.find((u) => u.id === unit.params.rides_on) || null
+      : null;
+    return roomFitRefusal({
+      unit, patch, room: s.project.room, host, profile: getCabinetProfile(),
+    });
+  },
+
+  /** Every unit that is ALREADY bigger than its room — Check's own list (F3). */
+  roomFitFaults: () => roomFitFaults(get().units, get().project.room, getCabinetProfile()),
+
+  shareOutRun: (unitId, { extra = 0 } = {}) => runBatch(() => {
+    const profile = getCabinetProfile();
+    const state = get();
+    const walls = roomWalls(state.project.room);
+    // The RUN, not the OFFER: the 400 mm gate decides whether the BAR appears
+    // (`shareOutFor`), and a button that second-guessed the click that reached
+    // it would be a button that sometimes does nothing.
+    // The MARGIN the placement keeps at a wall is the project's own infill
+    // width, and the plan has to know it or every share-out comes back with
+    // three "Width limited by the wall" notices on a run that fits perfectly.
+    const wallMargin = wallMarginOf(state, state.units.find((u) => u.id === unitId));
+    const offer = shareOutRunFor(state.units, unitId, { walls, wallMargin }, profile);
+    if (!offer) return { ok: false, message: 'Nothing to share out on this run.', widths: [] };
+
+    let plan = shareOutPlan(offer.run, offer.context, profile, { extra });
+    if (!plan.ok) {
+      return {
+        ok: false,
+        message: plan.reason === 'nothing-to-widen'
+          ? 'Every cabinet in this run has its width imposed — there is nothing to share the gap into.'
+          : 'This run has no room to share out.',
+        widths: [],
+      };
+    }
+
+    // The EXTRA cabinet, when the joiner asked for one. A copy of the run's
+    // last non-fixed cabinet, added beside it, at the plan's own width.
+    if (extra > 0) {
+      const seed = [...offer.run.units].reverse().find((u) => !widthFixed(u))
+        || offer.run.units[offer.run.units.length - 1];
+      const born = get().addUnit(seed.type, { near: seed.id, side: 'R' });
+      if (born.error || !born.id) {
+        return { ok: false, message: born.error || 'There is no room for another cabinet here.', widths: [] };
+      }
+      // The run has changed shape, so the plan is asked again OF THE RUN THAT
+      // NOW EXISTS rather than patched — one derivation, and the new cabinet is
+      // in it like any other.
+      const after = shareOutRunFor(get().units, born.id, { walls, wallMargin }, profile)
+        || shareOutRunFor(get().units, unitId, { walls, wallMargin }, profile);
+      const nextRun = after ? after.run : offer.run;
+      plan = shareOutPlan(nextRun, after ? after.context : offer.context, profile, {});
+      if (!plan.ok) return { ok: false, message: 'This run has no room to share out.', widths: [] };
+    }
+
+    // ─── WHERE THE RUN NOW STANDS ─────────────────────────────────────────
+    //
+    // *"wtedy wszystkie szafy się ustawią w jednej szerokości od ściany do
+    // ściany, oczywiście odejmując infill."*  So the run is laid out from the
+    // LEFT EDGE of the stretch it may occupy — `runEndGap`'s own `from`, which
+    // is the wall or the neighbour beside it — plus the side infill that stands
+    // there, and each cabinet follows the one before it.
+    const runNow = shareOutRunFor(get().units, unitId, { walls, wallMargin }, profile);
+    const run = runNow ? runNow.run : offer.run;
+    const units = run.units;
+    const wantOf = new Map(plan.widths.map((w) => [w.id, w.to]));
+
+    // ─── WHERE EVERY CABINET FINISHES, WORKED OUT FIRST ───────────────────
+    //
+    // `cursor` is the OUTSIDE of everything placed so far — end panels
+    // included, exactly as `paddedSpan` measures — and it starts where the PLAN
+    // says the run starts, so the arithmetic and the placement cannot disagree
+    // about the first millimetre.
+    const goesTo = new Map();
+    {
+      let cursor = Math.max(0, Number(plan.startAt) || 0);
+      for (const u of units) {
+        const pad = paddedSpan(u).pad || { left: 0, right: 0 };
+        const want = wantOf.get(u.id) ?? (Number(u.params?.width) || 0);
+        goesTo.set(u.id, { x: cursor + Math.max(0, pad.left), width: want });
+        cursor += Math.max(0, pad.left) + want + Math.max(0, pad.right);
+      }
+    }
+
+    // ─── AND THEY ARE WRITTEN FROM THE RIGHT ──────────────────────────────
+    //
+    // Every cabinet in a share-out is GROWING, and a cabinet grows to the RIGHT
+    // (`clampUnitWidth` moves the far edge). Written left to right, cabinet 1
+    // is asked to grow into a cabinet 2 that has not moved yet and the clamp
+    // rightly refuses — which is a run that comes back six "Width limited by
+    // 02" notices and one cabinet wider than it was.
+    //
+    // From the RIGHT there is always room: the last cabinet moves into clear
+    // wall and grows into clear wall, and each one before it grows into the
+    // space the one after it has just vacated.
+    //
+    // The second pass is left to right and idempotent — it settles anything the
+    // first pass could not finish (a run that SHRANK, which a share-out can do
+    // when a fixed cabinet takes more room than it used to). A cabinet already
+    // where it belongs costs one clamp and moves nothing.
+    const notices = [];
+    // …with the MAGNET off. It is a hand's convenience — it butts a dragged
+    // cabinet onto its neighbour from 40 mm away — and it is exactly wrong for
+    // a position somebody has worked out: cabinet 2 moved to 676 to make room
+    // for cabinet 1 gets snapped back to 640, and cabinet 1 is then refused the
+    // width the plan gave it.
+    const place = (u) => {
+      const to = goesTo.get(u.id);
+      if (!to) return;
+      get().moveUnit(u.id, to.x, 0, { magnet: false });
+      if (wantOf.has(u.id)) {
+        const res = get().updateUnitParams(u.id, { width: to.width });
+        for (const n of res?.notices || []) notices.push(n);
+      }
+      get().moveUnit(u.id, to.x, 0, { magnet: false });
+    };
+    for (const u of [...units].reverse()) place(u);
+    notices.length = 0;                       // the first pass is the rehearsal
+    for (const u of units) place(u);
+    notices.push(...get().refreshAutoParts());
+    return {
+      ok: true,
+      message: null,
+      widths: plan.widths,
+      each: plan.each,
+      last: plan.last,
+      notices,
+    };
+  }),
 
   removeUnit: (unitId) => {
     // T36 F7: a rider whose main goes is ORPHANED, not moved and not deleted —
@@ -3162,7 +3511,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /** Slide a unit along the wall: snapped, then hard-clamped into its free slot. */
-  moveUnit: (unitId, xRaw, snapStep) => {
+  /**
+   * @param {object} opts
+   *   magnet  false for a COMPUTED layout (turn 50, F2). `editor.unitMagnet` is
+   *           a hand's convenience — it butts a dragged cabinet onto its
+   *           neighbour from 40 mm away — and it is exactly wrong for a
+   *           position somebody has worked out: a share-out that moves cabinet
+   *           2 to 676 to make room for cabinet 1 gets it snapped back to 640,
+   *           and cabinet 1 is then refused the width the plan gave it. The
+   *           default is TRUE, which is every drag and every other caller.
+   */
+  moveUnit: (unitId, xRaw, snapStep, { magnet = true } = {}) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
@@ -3217,7 +3576,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // filler has been switched off, because there is no piece to leave room
       // for.
       wallMargin: wallMarginOf(s, unit),
-    }, getCabinetProfile());
+    }, magnet
+      ? getCabinetProfile()
+      : (() => {
+        const p = getCabinetProfile();
+        return { ...p, editor: { ...p.editor, unitMagnet: 0 } };
+      })());
     const x = result.x - lead;
 
     set((st) => ({

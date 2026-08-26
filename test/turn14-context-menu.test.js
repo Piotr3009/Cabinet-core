@@ -7,6 +7,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { menuActions, groupedActions, MENU_GROUPS } from '../src/lib/contextActions.js';
 
@@ -29,16 +30,25 @@ test('F6.1 — "Edit cabinet" is FIRST, and it is framed', () => {
   }
 });
 
-test('F6.2 — "Show all dimensions" is LAST', () => {
+test('F6.2/T50-F10 — "Show all dimensions" has LEFT the menu', () => {
+  // T14 put it last, in its own group, because it is a way of LOOKING rather
+  // than something done to a cabinet. T50-F10 takes the entry out altogether —
+  // the owner: *"dimension już mamy na górze"* — and what is last now is the
+  // last thing that BUILDS.
   for (const type of ['WARDROBE', 'BUD', 'WUD']) {
     const actions = menu(type);
-    assert.equal(actions[actions.length - 1].id, 'dimensions', `${type}`);
+    assert.ok(!actions.some((a) => a.id === 'dimensions'), `${type}: the entry is gone`);
+    assert.equal(actions[actions.length - 1].id, 'delete', `${type}`);
   }
 });
 
 test('F6.3 — the sections are [top infill + plinth] | [all end panels] | [the rest]', () => {
   const groups = groupedActions(menu('WARDROBE'));
-  assert.deepEqual(groups.map((g) => g.id), ['edit', 'run-pieces', 'end-panels', 'rest', 'dimensions']);
+  // T50-F10: the `dimensions` group is EMPTY now that its one entry has gone,
+  // so it is not drawn. `MENU_GROUPS` still names it (below) — the ORDER is a
+  // table, and a group with nothing in it is a group nothing is in, not a group
+  // that has been deleted.
+  assert.deepEqual(groups.map((g) => g.id), ['edit', 'run-pieces', 'end-panels', 'rest']);
 
   const runPieces = groups.find((g) => g.id === 'run-pieces').actions.map((a) => a.id);
   // Turn 25 (CLAUDE.md F12.3): the TOP CORNICE joins them, as three entries
@@ -55,7 +65,10 @@ test('F6.3 — the sections are [top infill + plinth] | [all end panels] | [the 
   assert.deepEqual(panels, ['end-panel-L', 'end-panel-R', 'end-panel-B'], 'every masking panel');
 
   // …and the rule between them is drawn once per boundary, never at the top.
-  assert.equal(groups.length - 1, 4, 'four delicate lines for five sections');
+  // T50-F10: FOUR sections now, because the `dimensions` group's one entry has
+  // left the menu and `groupedActions` does not draw a group with nothing in it.
+  assert.equal(groups.length, 4, 'four sections since the dimensions entry left');
+  assert.equal(groups.length - 1, 3, 'three delicate lines for four sections');
 });
 
 test('F6.3 — a WALL unit’s run group carries the masking panel with the top infill', () => {
@@ -106,10 +119,33 @@ test('F6 — nothing that was reachable stopped being reachable', () => {
   // offered a wardrobe is still offered, minus the one the owner deleted.
   const ids = menu('WARDROBE').map((a) => a.id);
   const turn13 = [
-    'dimensions', 'end-panel-L', 'end-panel-R', 'end-panel-B',
+    'end-panel-L', 'end-panel-R', 'end-panel-B',
     'top-infill', 'side-infill', 'pin-infill-L', 'pin-infill-R',
-    'plinth', 'add-doors', 'unit-colour', 'edit-cabinet', 'save-template',
+    'plinth', 'unit-colour', 'edit-cabinet', 'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
   ];
   for (const id of turn13) assert.ok(ids.includes(id), `${id} went missing`);
+
+  // ─── T50-F10: THE TWO THE OWNER ASKED FOR, AND WHERE THEY LIVE NOW ───────
+  // Iron rule 4: the ENTRIES go, the ACTIONS stay reachable, and this is where
+  // that is asserted rather than promised.
+  assert.ok(!ids.includes('add-doors'));
+  assert.ok(!ids.includes('dimensions'));
+  const panel = readFileSync(new URL('../src/components/RightPanel.jsx', import.meta.url), 'utf8');
+  const plus = readFileSync(new URL('../src/components/AddItemsModal.jsx', import.meta.url), 'utf8');
+  const multi = readFileSync(new URL('../src/components/MultiUnitPanel.jsx', import.meta.url), 'utf8');
+  assert.match(panel, /addDoorsToUnit/, 'Add doors: the right-hand panel');
+  assert.match(plus, /addDoors\(unit\.id\)/, '…the plus modal');
+  assert.match(multi, /addDoorsBulk\(ids\)/, '…and a multi-selection');
+
+  const top = readFileSync(new URL('../src/components/TopBar.jsx', import.meta.url), 'utf8');
+  const bar = readFileSync(new URL('../src/components/CanvasToolbar.jsx', import.meta.url), 'utf8');
+  assert.match(top, /label: 'Dimensions'/, 'Dimensions: the top bar — *"już mamy na górze"*');
+  assert.match(bar, /Hide dimensions' : 'Show dimensions/, '…and the canvas toolbar');
+  // …and the per-cabinet MECHANISM is not deleted, which is the other half of
+  // rule 4: the store still holds it and the scene still draws from it.
+  const ui = readFileSync(new URL('../src/stores/uiStore.js', import.meta.url), 'utf8');
+  assert.match(ui, /toggleUnitDimensions: \(unitId\) =>/);
+  const scene = readFileSync(new URL('../src/3d/Scene.jsx', import.meta.url), 'utf8');
+  assert.match(scene, /wanted: Object\.keys\(unitDimensions\)/);
 });

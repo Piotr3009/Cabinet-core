@@ -114,9 +114,19 @@ test('the aim is HORIZONTAL — a tilted pillar would light the floor', () => {
     'the target sits at the pillar\'s own height');
 });
 
-test('the pillars run at the scale area lights actually need', () => {
-  assert.equal(P.appearance.studio.pillars.intensity, 22,
-    'the LED halos read correctly at 22; the first cut guessed 3.2');
+test('the pillars run at the scale area lights actually need — HALVED (T50-F14)', () => {
+  // 25.08, the first cut: 3.2, and the owner saw nothing. The LED halos — the
+  // only area lights known to read correctly — run at 22, so 22 it became.
+  //
+  // ─── AND THEN, THE SAME EVENING ─────────────────────────────────────────
+  // *"za jasno świecą, ściemnij o połowę."*  22 → 11, its OWN number, changed
+  // on its own — which is exactly why `appearance.studio.baseGain` (F14) is
+  // kept out of the individual lamps.
+  assert.equal(P.appearance.studio.pillars.intensity, 11);
+  // The two reductions COMPOUND, and that is intended: a pillar ends the night
+  // at 11 × 0.75 = 8.25 of the gain it had at 22 — 37.5 % of what it was.
+  assert.equal(P.appearance.studio.baseGain, 0.75);
+  assert.equal(P.appearance.studio.pillars.intensity * P.appearance.studio.baseGain, 8.25);
 });
 
 test('the bands and the key light are untouched by this fix', () => {

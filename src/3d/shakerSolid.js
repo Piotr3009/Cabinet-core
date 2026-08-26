@@ -19,11 +19,15 @@ import { isShakerFront } from '../engine/shaker.js';
 //
 // ─── WHAT THE FACES ARE ─────────────────────────────────────────────────────
 //
-//   front ring    4 quads, at +t/2 — the frame the eye reads as the shaker
-//   rebate walls  4 quads, from +t/2 down to +t/2 − depth — THE SHADOW
-//   panel floor   1 quad, at +t/2 − depth
-//   back          1 quad, at −t/2
-//   outer sides   4 quads
+//   front ring    the frame the eye reads as the shaker, at +t/2
+//   rebate walls  one per recess edge, +t/2 down to +t/2 − depth — THE SHADOW
+//   panel floor   at +t/2 − depth
+//   back          at −t/2
+//   outer sides   one per board edge
+//
+// T50-F6: "one per edge" and not "four". A leaf cut on the slope has five or
+// six, and both rings come from the ENGINE's own outlines — a rectangle is the
+// four-edge case and no branch anywhere says "rectangle".
 //
 // Every normal is written out explicitly, so the light falls into the recess
 // instead of across it: an auto-computed normal on a shared vertex would round
@@ -51,21 +55,19 @@ const cache = new Map();
  */
 export function shakerFrontGeometry(panel, bores = []) {
   if (!isShakerFront(panel)) return null;
-  // ─── TURN 46 (CLAUDE.md F6a): A CUT LEAF IS NOT A TRAY ─────────────────────
+  // ─── TURN 50 (CLAUDE.md F6): T46'S NAMED DEBT, PAID ────────────────────────
   //
-  // This tray is hand-built out of RECTANGLES — a ring, a back, a floor, four
-  // rebate walls and four outer edges, every one of them four corners. A leaf
-  // cut on the slope has FIVE, and a tray that drew it with four would be the
-  // scene-side twin geometry F6a exists to forbid: a rectangle where the
-  // machine cuts a pentagon.
+  // T46 wrote here: *"a cut leaf falls through to `3d/panelSolid.js` … What it
+  // loses is the RECESS — a shaker's rebate on a five-sided leaf wants a tray
+  // that can hold five edges, and that is a turn of its own."*  This is that
+  // turn, and the owner named it himself: *"shaker nie powinien znikać jak
+  // najedziemy na skos, powinien się renderować razem z drzwiami."*
   //
-  // So a cut leaf falls through to `3d/panelSolid.js`, which builds the board
-  // from the ENGINE's own outline and clips it with the engine's own line. What
-  // it loses is the RECESS — a shaker's rebate on a five-sided leaf wants a
-  // tray that can hold five edges, and that is a turn of its own — so a cut
-  // shaker door renders as a plain pentagon of the right shape rather than as a
-  // rectangle of the wrong one. Named in the PR, and it is the honest half.
-  if (panel?.cnc?.slopeCut) return null;
+  // The tray is built out of POLYGONS now instead of rectangles, and the
+  // rectangle is the four-corner case of one. Both polygons come from the
+  // ENGINE — the leaf's own cut outline and the pocket's own `points`, both in
+  // the sheet's frame — so the picture and the machine cannot disagree about
+  // where the diagonal is, which is the whole of F6a's law.
   const s = panel?.meta?.shaker;
   const box = panel?.box;
   if (!s || !box) return null;
@@ -74,7 +76,26 @@ export function shakerFrontGeometry(panel, bores = []) {
   const w = Number(box.w) || 0;
   const h = Number(box.h) || 0;
   const t = Number(box.d) || 0;
-  if (!(frame > 0) || !(depth > 0) || !(w > 2 * frame) || !(h > 2 * frame) || !(t > depth)) return null;
+  if (!(frame > 0) || !(depth > 0) || !(t > depth)) return null;
+  const cut = Boolean(panel?.cnc?.slopeCut);
+  if (!cut && (!(w > 2 * frame) || !(h > 2 * frame))) return null;
+  // The two outlines, in the MESH's own centred millimetres. `x = w/2 − CNC x`
+  // is the inside mirror the bores below are translated by, and for the same
+  // reason: the workshop bores a door from the back and the sheet is drawn the
+  // way the door lies on the bench (`engine/joinery.js panelPlacement`).
+  const toMesh = (q) => [w / 2 - q[0], q[1] - h / 2];
+  const pocket = (panel?.cnc?.pockets || []).find((k) => Array.isArray(k.points) && k.points.length >= 3)
+    || null;
+  const outerPts = cut && Array.isArray(panel?.cnc?.outline) && panel.cnc.outline.length >= 3
+    ? panel.cnc.outline.map(toMesh)
+    : [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]];
+  const innerPts = pocket
+    ? pocket.points.map(toMesh)
+    : [
+      [-(w / 2 - frame), -(h / 2 - frame)], [w / 2 - frame, -(h / 2 - frame)],
+      [w / 2 - frame, h / 2 - frame], [-(w / 2 - frame), h / 2 - frame],
+    ];
+  if (innerPts.length < 3 || outerPts.length < 3) return null;
 
   // ─── TURN 26 (CLAUDE.md R10 / F3.3): THE TRAY CARRIES ITS DRILLING ───────
   //
@@ -88,7 +109,11 @@ export function shakerFrontGeometry(panel, bores = []) {
   // hinge hands are two geometries, and sharing one would put a cup on the
   // wrong stile.
   const cuts = normaliseBores(bores, w, h, t);
-  const key = `${w}|${h}|${t}|${frame}|${depth}|${boreKey(cuts)}`;
+  // The two polygons are part of the KEY: two leaves of one size under two
+  // different stretches of ceiling are two geometries, and sharing one would
+  // put somebody else's diagonal on this door.
+  const key = `${w}|${h}|${t}|${frame}|${depth}|${boreKey(cuts)}`
+    + `|${polyKey(outerPts)}|${polyKey(innerPts)}`;
   const hit = cache.get(key);
   if (hit) {
     cache.delete(key);
@@ -96,7 +121,7 @@ export function shakerFrontGeometry(panel, bores = []) {
     return hit;
   }
 
-  const built = buildTray(w, h, t, frame, depth, cuts);
+  const built = buildTray(w, h, t, depth, cuts, outerPts, innerPts);
   cache.set(key, built);
   if (cache.size > CACHE_LIMIT) {
     const oldest = cache.keys().next().value;
@@ -155,19 +180,59 @@ export function clearShakerCache() {
   cache.clear();
 }
 
+/** A polygon, as a cache key: enough digits that two real leaves differ. */
+const polyKey = (pts) => pts.map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`).join(';');
+
+/** Twice the signed area — positive when the ring is counter-clockwise. */
+function area2(pts) {
+  let a = 0;
+  for (let i = 0; i < pts.length; i += 1) {
+    const p = pts[i];
+    const q = pts[(i + 1) % pts.length];
+    a += p[0] * q[1] - q[0] * p[1];
+  }
+  return a;
+}
+
+/** The same ring, counter-clockwise, so every normal below is one formula. */
+const ccw = (pts) => (area2(pts) < 0 ? [...pts].reverse() : pts);
+
+/** A closed ring as a THREE.Shape, in scene units. */
+function ringShape(pts) {
+  return new THREE.Shape(pts.map((q) => new THREE.Vector2(mm(q[0]), mm(q[1]))));
+}
+
+/** …and as a Path, for a hole. */
+function ringPath(pts) {
+  const path = new THREE.Path();
+  pts.forEach((q, i) => {
+    if (i === 0) path.moveTo(mm(q[0]), mm(q[1]));
+    else path.lineTo(mm(q[0]), mm(q[1]));
+  });
+  path.closePath();
+  return path;
+}
+
 /**
- * A board `w × h × t` with a `depth`-deep rectangular recess in its +z face,
- * leaving `frame` standing on all four sides.
+ * A board `w × h × t` with a `depth`-deep recess sunk into its +z face.
  *
- * Coordinates are the mesh's own — centred on the origin, in scene units.
+ * ─── TURN 50 (CLAUDE.md F6): BOTH RINGS ARE POLYGONS ───────────────────────
+ *
+ * Turn 25 built this out of eleven hand-wound RECTANGLES, which is why a leaf
+ * cut on the slope could not have one. It is the same eleven faces; the four
+ * rebate walls and the four outer edges are now ONE WALL PER EDGE of whatever
+ * ring it is given, and a rectangle is the four-edge case. A flat leaf comes
+ * out of it corner for corner as it always did — the rectangle is passed in as
+ * four points and no branch anywhere says "rectangle".
+ *
+ * Coordinates are the mesh's own — centred on the origin, in millimetres in,
+ * scene units out.
  */
-function buildTray(w, h, t, frame, depth, cuts = []) {
-  const X = mm(w) / 2;
-  const Y = mm(h) / 2;
+function buildTray(w, h, t, depth, cuts = [], outerPts = null, innerPts = null) {
   const Z = mm(t) / 2;
-  const ix = mm(w / 2 - frame);      // inner half-width of the recess
-  const iy = mm(h / 2 - frame);
   const floorZ = Z - mm(depth);
+  const outer = ccw(outerPts);
+  const inner = ccw(innerPts);
 
   const pos = [];
   const nor = [];
@@ -185,26 +250,19 @@ function buildTray(w, h, t, frame, depth, cuts = []) {
 
   // ── the two faces that carry holes, as triangulated shapes ──
   //
-  // The frame's face is a ring — an outer rectangle with the recess punched out
-  // of it — and the leaf's BACK is the plane every cup is bored from, so both
-  // are built as `THREE.Shape`s with the bores as extra hole paths rather than
-  // as the four hand-wound quads turn 25 used. A hole in a face is what makes
-  // the bore under it visible at all.
-  const ring = new THREE.Shape([
-    new THREE.Vector2(-X, -Y), new THREE.Vector2(X, -Y),
-    new THREE.Vector2(X, Y), new THREE.Vector2(-X, Y),
-  ]);
-  ring.holes.push(rect(-ix, -iy, ix, iy));
-  const back = new THREE.Shape([
-    new THREE.Vector2(-X, -Y), new THREE.Vector2(X, -Y),
-    new THREE.Vector2(X, Y), new THREE.Vector2(-X, Y),
-  ]);
-  const panelFloor = new THREE.Shape([
-    new THREE.Vector2(-ix, -iy), new THREE.Vector2(ix, -iy),
-    new THREE.Vector2(ix, iy), new THREE.Vector2(-ix, iy),
-  ]);
+  // The frame's face is a RING — the board's outline with the recess punched
+  // out of it — and the leaf's BACK is the plane every cup is bored from, so
+  // both are built as `THREE.Shape`s with the bores as extra hole paths rather
+  // than as hand-wound quads. A hole in a face is what makes the bore under it
+  // visible at all.
+  const ring = ringShape(outer);
+  ring.holes.push(ringPath(inner));
+  const back = ringShape(outer);
+  const panelFloor = ringShape(inner);
 
-  const inFrame = (c) => Math.abs(mm(c.x)) > ix - mm(c.r) || Math.abs(mm(c.y)) > iy - mm(c.r);
+  // Is this bore under the FRAME or under the panel? Asked of the recess's own
+  // ring rather than of two half-widths, so it is right on a cut leaf too.
+  const inFrame = (c) => !pointInRing(inner, c.x, c.y, c.r);
   for (const c of cuts) {
     // Every bore opens on the BACK, because that is the face the bit enters.
     back.holes.push(circle(mm(c.x), mm(c.y), mm(c.r)));
@@ -219,39 +277,51 @@ function buildTray(w, h, t, frame, depth, cuts = []) {
   parts.push(face(panelFloor, floorZ, FRONT));
   parts.push(face(back, -Z, BACK));
 
-  // ── the rebate's four walls: THE SHADOW ──
+  // ── the rebate's walls: THE SHADOW ──
   //
-  // Each faces INWARD, towards the middle of the panel, which is what makes the
-  // top wall dark when the light is high and the side walls dark when it is low.
+  // Each faces INWARD, towards the middle of the recess, which is what makes
+  // the top wall dark when the light is high and the side walls dark when it is
+  // low.
   //
   // ─── TURN 27 (CLAUDE.md F3): AND THEY WERE WOUND INSIDE OUT ─────────────
   //
-  // The owner: the 6 mm recess works, but it has no side walls at all — the
-  // panel reads as a hole straight through the door.
+  // Turn 25 declared the right INWARD normal on each of these and wound the
+  // triangles the other way round. A rasteriser culls on the WINDING and not on
+  // the normal, so all four walls were front-facing AWAY from the recess —
+  // invisible from the room, and what showed through the gap was whatever stood
+  // behind the door. A shadow needs a wall to be cast by, and there were none.
   //
-  // He is right, and it is the one thing that can go wrong with a hand-built
-  // face while every number in it is correct: turn 25 declared the right
-  // INWARD normal on each of these four quads and wound the triangles the
-  // other way round. A rasteriser culls on the WINDING and not on the normal,
-  // so all four walls were front-facing AWAY from the recess — invisible from
-  // the room, and what showed through the gap was whatever stood behind the
-  // door. A shadow needs a wall to be cast by, and there were none.
-  //
-  // Wound the other way now, so the visible side of each is the side its
-  // normal points at. The FLOOR was never the problem and has not moved, and
-  // the corners meet exactly as they always did: the top and bottom walls run
-  // the full ±ix and the side walls the full ±iy, so the four share their end
-  // edges and there is no gap at a corner to see through.
-  quad([-ix, iy, Z], [-ix, iy, floorZ], [ix, iy, floorZ], [ix, iy, Z], [0, -1, 0]);
-  quad([ix, -iy, Z], [ix, -iy, floorZ], [-ix, -iy, floorZ], [-ix, -iy, Z], [0, 1, 0]);
-  quad([-ix, -iy, Z], [-ix, -iy, floorZ], [-ix, iy, floorZ], [-ix, iy, Z], [1, 0, 0]);
-  quad([ix, iy, Z], [ix, iy, floorZ], [ix, -iy, floorZ], [ix, -iy, Z], [-1, 0, 0]);
+  // On a counter-clockwise ring the interior is to the LEFT of each edge, so
+  // the inward normal is `(−dy, dx)` normalised — one formula for four edges or
+  // for six.
+  for (let i = 0; i < inner.length; i += 1) {
+    const a = inner[i];
+    const b = inner[(i + 1) % inner.length];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy);
+    if (!(len > 1e-9)) continue;
+    const n = [-dy / len, dx / len, 0];
+    const A = [mm(a[0]), mm(a[1])];
+    const B = [mm(b[0]), mm(b[1])];
+    quad([B[0], B[1], Z], [B[0], B[1], floorZ], [A[0], A[1], floorZ], [A[0], A[1], Z], n);
+  }
 
-  // ── the four outer edges ──
-  quad([-X, -Y, -Z], [X, -Y, -Z], [X, -Y, Z], [-X, -Y, Z], [0, -1, 0]);
-  quad([X, Y, -Z], [-X, Y, -Z], [-X, Y, Z], [X, Y, Z], [0, 1, 0]);
-  quad([-X, Y, -Z], [-X, -Y, -Z], [-X, -Y, Z], [-X, Y, Z], [-1, 0, 0]);
-  quad([X, -Y, -Z], [X, Y, -Z], [X, Y, Z], [X, -Y, Z], [1, 0, 0]);
+  // ── the outer edges ──
+  // The same walk, facing the other way: on a CCW ring the OUTSIDE is to the
+  // right of each edge, so the outward normal is `(dy, −dx)`.
+  for (let i = 0; i < outer.length; i += 1) {
+    const a = outer[i];
+    const b = outer[(i + 1) % outer.length];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len = Math.hypot(dx, dy);
+    if (!(len > 1e-9)) continue;
+    const n = [dy / len, -dx / len, 0];
+    const A = [mm(a[0]), mm(a[1])];
+    const B = [mm(b[0]), mm(b[1])];
+    quad([A[0], A[1], -Z], [B[0], B[1], -Z], [B[0], B[1], Z], [A[0], A[1], Z], n);
+  }
 
   // ── and the wall and floor of every bore ──
   // Drilled from the BACK (−Z) towards the face, so a bore `depth` deep has its
@@ -269,11 +339,11 @@ function buildTray(w, h, t, frame, depth, cuts = []) {
       // Facing the bore's own axis, so the light falls INTO it.
       const n0 = [-Math.cos((a0 + a1) / 2), -Math.sin((a0 + a1) / 2), 0];
       //
-      // Turn 27 (CLAUDE.md F3): wound to match, for the same reason the four
-      // rebate walls above are. These carried the right normal and the wrong
-      // winding too, so a ⌀35 cup in a shaker leaf was a hole you looked
-      // THROUGH rather than into — the owner's own sentence about the recess,
-      // said again on a smaller radius.
+      // Turn 27 (CLAUDE.md F3): wound to match, for the same reason the rebate
+      // walls above are. These carried the right normal and the wrong winding
+      // too, so a ⌀35 cup in a shaker leaf was a hole you looked THROUGH rather
+      // than into — the owner's own sentence about the recess, said again on a
+      // smaller radius.
       quad([p0[0], p0[1], -Z], [p0[0], p0[1], stop], [p1[0], p1[1], stop], [p1[0], p1[1], -Z], n0);
       if (c.through) continue;
       pos.push(cx, cy, stop, p1[0], p1[1], stop, p0[0], p0[1], stop);
@@ -310,18 +380,33 @@ function buildTray(w, h, t, frame, depth, cuts = []) {
   return geo;
 }
 
+/** Is a disc of radius `r` about (x, y) wholly inside this ring? */
+function pointInRing(pts, x, y, r = 0) {
+  let inside = false;
+  for (let i = 0, k = pts.length - 1; i < pts.length; k = i, i += 1) {
+    const a = pts[i];
+    const b = pts[k];
+    if ((a[1] > y) !== (b[1] > y)
+      && x < ((b[0] - a[0]) * (y - a[1])) / (b[1] - a[1]) + a[0]) inside = !inside;
+  }
+  if (!inside || !(r > 0)) return inside;
+  // …and clear of every edge by its own radius, which is what the rectangle's
+  // `|x| > ix − r` test said before the ring became a polygon.
+  for (let i = 0; i < pts.length; i += 1) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const len2 = dx * dx + dy * dy;
+    if (!(len2 > 1e-12)) continue;
+    const tt = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / len2));
+    if (Math.hypot(x - (a[0] + dx * tt), y - (a[1] + dy * tt)) < r) return false;
+  }
+  return true;
+}
+
 /** How many sides a bore is drawn with — 3d/panelSolid.js uses the same. */
 const HOLE_SEGMENTS = 14;
-
-const rect = (x0, y0, x1, y1) => {
-  const path = new THREE.Path();
-  path.moveTo(x0, y0);
-  path.lineTo(x0, y1);
-  path.lineTo(x1, y1);
-  path.lineTo(x1, y0);
-  path.closePath();
-  return path;
-};
 
 /**
  * A bore's mouth, as the SAME polygon its wall is built from.

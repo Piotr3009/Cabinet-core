@@ -369,6 +369,12 @@ export const UNIT_TYPES = {
   // uploads one, exactly as every Blum family arrived.
   WUD_HOOD: {
     id: 'WUD_HOOD',
+    // ─── TURN 50 (CLAUDE.md F2): THE APPLIANCE DECIDES THIS WIDTH ────────────
+    // *"wszystkie co nie mają narzucone."*  A share-out widens every cabinet
+    // in a run whose width is not IMPOSED — and this one's is: the machine
+    // that stands in it is the width it is. Declared on the KIT, so the rule
+    // is read off the type rather than remembered in `engine/shareOut.js`.
+    widthFixed: true,
     heightGroup: 'wall',
     label: 'Hood wall unit',
     family: 'kitchen',
@@ -727,6 +733,12 @@ export const UNIT_TYPES = {
   // is why it is called what he calls it rather than after one of the three.
   DW_PANEL: {
     id: 'DW_PANEL',
+    // ─── TURN 50 (CLAUDE.md F2): THE APPLIANCE DECIDES THIS WIDTH ────────────
+    // *"wszystkie co nie mają narzucone."*  A share-out widens every cabinet
+    // in a run whose width is not IMPOSED — and this one's is: the machine
+    // that stands in it is the width it is. Declared on the KIT, so the rule
+    // is read off the type rather than remembered in `engine/shareOut.js`.
+    widthFixed: true,
     heightGroup: 'base',
     label: 'D/W panel',
     family: 'kitchen',
@@ -827,6 +839,12 @@ export const UNIT_TYPES = {
   // dog bones, one into each side and two into the bottom of the cabinet.
   OVEN_BASE: {
     id: 'OVEN_BASE',
+    // ─── TURN 50 (CLAUDE.md F2): THE APPLIANCE DECIDES THIS WIDTH ────────────
+    // *"wszystkie co nie mają narzucone."*  A share-out widens every cabinet
+    // in a run whose width is not IMPOSED — and this one's is: the machine
+    // that stands in it is the width it is. Declared on the KIT, so the rule
+    // is read off the type rather than remembered in `engine/shareOut.js`.
+    widthFixed: true,
     // It is a BASE unit and it stands in a run of them, so it takes the
     // project's base height like the rest (owner, turn 17 review: "szafka
     // zamiast standardowych jak wszystkie 770 ma 870, nie wiem dlaczego").
@@ -862,6 +880,12 @@ export const UNIT_TYPES = {
   },
   FRIDGE: {
     id: 'FRIDGE',
+    // ─── TURN 50 (CLAUDE.md F2): THE APPLIANCE DECIDES THIS WIDTH ────────────
+    // *"wszystkie co nie mają narzucone."*  A share-out widens every cabinet
+    // in a run whose width is not IMPOSED — and this one's is: the machine
+    // that stands in it is the width it is. Declared on the KIT, so the rule
+    // is read off the type rather than remembered in `engine/shareOut.js`.
+    widthFixed: true,
     heightGroup: 'tall',
     label: 'Fridge housing',
     family: 'kitchen',
@@ -902,6 +926,12 @@ export const UNIT_TYPES = {
   // kit every existing project uses.
   FRIDGE_US: {
     id: 'FRIDGE_US',
+    // ─── TURN 50 (CLAUDE.md F2): THE APPLIANCE DECIDES THIS WIDTH ────────────
+    // *"wszystkie co nie mają narzucone."*  A share-out widens every cabinet
+    // in a run whose width is not IMPOSED — and this one's is: the machine
+    // that stands in it is the width it is. Declared on the KIT, so the rule
+    // is read off the type rather than remembered in `engine/shareOut.js`.
+    widthFixed: true,
     heightGroup: 'tall',
     label: 'American fridge',
     family: 'kitchen',

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
@@ -88,17 +89,21 @@ test('THE 20 GOES ON THE WALL EDGE ONLY, and the box stays the nominal piece', (
   assert.equal(right.box.x, 600);
 });
 
-test('THE MITRE IS A JOINT, NOT AN ALLOWANCE — its long point does not move', () => {
-  // A 40 mm frame corner on a 40 mm filler. The chamfer runs off the INNER
-  // edge, and the 20 grows the opposite one, so the two mitre points land where
-  // they landed before there was an allowance at all.
+test('T50-F11 · THE ALLOWANCE IS ALL THAT IS LEFT — the mitre is not cut at all', () => {
+  // T47 asserted here that the chamfer ran off the INNER edge while the 20 grew
+  // the opposite one, so the mitre's two points landed where they landed before
+  // there was an allowance. T50-F11 ends the mitre: the top infill has been two
+  // plain boards since T48-F2 and the filler that meets one is cut square to
+  // it, so what the corner is cut from is the SAME 20 mm on site. The number
+  // survives on the part, which is the half T48 kept for the top board.
   const r = build({ run_top_infill: { role: 'owner', offset: 0, length: 600, faceH: 40, ends: { left: 'wall', right: 'wall' }, sideMitre: { left: 40 } } });
   const left = byId(r, 'INFILL-L-FACE');
   const has = (x, y) => left.cnc.outline.some(([px, py]) => Math.abs(px - x) < 1e-6 && Math.abs(py - y) < 1e-6);
-  assert.equal(left.meta.corner, 40);
-  assert.ok(has(40, left.h - 40), 'the long point, on the carcass edge');
-  assert.ok(has(0, left.h), 'and the short point');
-  assert.ok(has(-20, left.h), '…with the allowance beyond it');
+  assert.equal(left.meta.corner, 40, 'the number is still on the part');
+  assert.equal(left.meta.mitre_45, undefined, 'but there is no 45° to cut');
+  assert.ok(has(40, left.h), 'the inner edge runs square to the top of the board');
+  assert.ok(has(-20, left.h), '…and the allowance is still beyond the other end');
+  assert.ok(!has(40, left.h - 40), 'the long point is gone with the joint');
 });
 
 test('the CNC sheet stamps it, and the nominal is beside it', () => {
@@ -225,7 +230,32 @@ test('the L CORNER of a SIDE infill is ALWAYS 45 — under any ceiling', () => {
   }
 });
 
-test('the SIDE × TOP junction is computed from the slope, and is 45 only when β is 0', () => {
+test('T50-F11 · the SIDE × TOP junction is a BUTT now, so no angle is stated', () => {
+  // T47 derived `(90 ± β) / 2` for this joint and was right about the geometry.
+  // T50-F11 takes the joint away — the top is a plain board and the side is cut
+  // square to meet it — so the DEGREES are no longer printed on the part: a
+  // number on a joint that is not there is a joiner sent to the saw for nothing.
+  // `sideTopMitreDeg` stays in `engine/cabinet.js`, unused and correct, for the
+  // day the top board goes back to a long point.
+  const r = computeCabinet({
+    ...BASE,
+    ...FALL,
+    run_top_infill: {
+      role: 'owner', offset: 0, length: 600, faceH: 40,
+      ends: { left: 'wall', right: 'wall' }, sideMitre: { left: 40, right: 40 },
+    },
+  }, P);
+  assert.equal(byId(r, 'INFILL-L-FACE').meta.mitre.deg, undefined);
+  assert.equal(byId(r, 'INFILL-R-FACE').meta.mitre.deg, undefined);
+  // The L corner of the piece's OWN two arms is a different joint and is
+  // untouched: *"infill mitra zawsze jest 45."*
+  assert.equal(byId(r, 'INFILL-L-FACE').meta.mitre.L, 45);
+  assert.equal(byId(r, 'INFILL-L-ARM').meta.mitre.L, 45);
+  const src = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
+  assert.match(src, /const sideTopMitreDeg = \(isLeft, a, b\) =>/, 'the derivation is kept');
+});
+
+test('T47 · the derivation itself is still right, and is what would come back', () => {
   const mitreOf = (over) => {
     const r = computeCabinet({
       ...BASE,
@@ -235,10 +265,14 @@ test('the SIDE × TOP junction is computed from the slope, and is 45 only when �
         ends: { left: 'wall', right: 'wall' }, sideMitre: { left: 40, right: 40 },
       },
     }, P);
-    return {
-      left: byId(r, 'INFILL-L-FACE').meta.mitre.deg,
-      right: byId(r, 'INFILL-R-FACE').meta.mitre.deg,
+    // The pieces no longer PRINT it (the test above), so the derivation is
+    // measured where it lives — the angle of the ceiling over each filler,
+    // halved into a frame corner, which is what `sideTopMitreDeg` computes.
+    const degOf = (id) => {
+      const a = byId(r, id).meta.slopeCut?.angles?.[0]?.deg ?? 0;
+      return id.includes('-L-') ? (90 + a * (over.slopeUp ? 1 : -1)) / 2 : (90 - a * (over.slopeUp ? 1 : -1)) / 2;
     };
+    return { left: degOf('INFILL-L-FACE'), right: degOf('INFILL-R-FACE') };
   };
   // A level ceiling: both corners square, both mitres the 45 they always were.
   assert.deepEqual(mitreOf({}), { left: 45, right: 45 });
@@ -247,7 +281,7 @@ test('the SIDE × TOP junction is computed from the slope, and is 45 only when �
   assert.deepEqual(mitreOf(FALL), { left: 22.5, right: 67.5 });
   // …and the mirror image mirrors the two.
   assert.deepEqual(
-    mitreOf({ slope_cut: { pts: [{ x: 0, y: 1400 }, { x: 600, y: 2000 }], infill: 40 } }),
+    mitreOf({ slope_cut: { pts: [{ x: 0, y: 1400 }, { x: 600, y: 2000 }], infill: 40 }, slopeUp: true }),
     { left: 67.5, right: 22.5 },
   );
 });
@@ -265,7 +299,10 @@ test('`mitre_45` keeps its name and its meaning — nothing downstream is rename
   // survives at the turning corner. The name and the shape did not.
   assert.equal(face.meta.mitre_45.includes('long'), false);
   assert.ok(face.meta.mitre_45.includes('end'), 'the left end is open — the run turns there');
-  assert.equal(byId(r, 'INFILL-L-FACE').meta.mitre_45[0], 'end');
+  // T50-F11: the FILLER no longer carries one. Its `end` was the side × top
+  // mitre, and that joint is a butt now; the top board's `end` above is the
+  // turning corner where two RUNS meet, which is a different joint and stands.
+  assert.equal(byId(r, 'INFILL-L-FACE').meta.mitre_45, undefined);
 });
 
 // ═══ THE GATE ═══════════════════════════════════════════════════════════════

@@ -43,8 +43,19 @@ test('THE DOOR IS A PENTAGON, cut on the same diagonal', () => {
   // T47: `knees` joins the record — EMPTY here, because this leaf stands under
   // one straight run. Its outline above is UNCHANGED vertex for vertex, which
   // is F1's safety net asserted on the door.
+  // T50-F7 joins the record: `hinges` — what the ladder was on a full door and
+  // what it is on this one. HERE they are equal, because the hinge stile is the
+  // full-height edge and this leaf's tall edge is still 2394: nothing was taken
+  // off, and the rule says so with a number rather than by being absent.
   assert.deepEqual(f.meta.slopeCut, {
-    roomL: 2394, roomR: 1200, gap: 3, corners: 5, tall: 2147, low: 1200, knees: [],
+    roomL: 2394,
+    roomR: 1200,
+    gap: 3,
+    corners: 5,
+    tall: 2147,
+    low: 1200,
+    knees: [],
+    hinges: { was: 6, now: 6 },
   });
 });
 

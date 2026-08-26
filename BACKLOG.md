@@ -888,7 +888,7 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
 
 ### DOPISANE W TURZE 48
 
-122. [MEDIUM] **Narożnik infilla jest teraz cięty według dwóch różnych reguł.**
+122. [ZAMKNIĘTE W TURZE 50 — F11] **Narożnik infilla jest teraz cięty według dwóch różnych reguł.**
     T48-F2 zabrał górnemu infillowi jego połowę narożnika z T15 (zwykła deska
     nie może mieć długiego rogu), a infill PIONOWY zachował swój trójkąt, bo
     *„infill pionowy nie ruszamy"* zostało wzięte dosłownie. Na rzadkim biegu,
@@ -898,6 +898,14 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
     — to niedomknięta decyzja. Jeśli filer ma zostać ścięty na kwadrat razem z
     deską, to jedna gałąź w bloku infilla bocznego w `engine/cabinet.js` i
     jeden test. Do rozstrzygnięcia przez właściciela.
+    → ROZSTRZYGNIĘTE. CLAUDE.md T50-F11: *„Make the pair agree: where the top
+    is a plain board, the side that meets it is cut square too."*  Filer
+    wychodzi z maszyny prostokątny, `meta.corner` zostaje jako ZAPIS (dokładnie
+    tak jak na górnej desce), `mitre_45` i `mitre.deg` znikają — nie ma już
+    złącza, które by je opisywały — a sam narożnik docina się na miejscu z tych
+    samych 20 mm, z którymi obie deski wyjeżdżają dłuższe. `sideTopMitreDeg`
+    zostaje w `engine/cabinet.js`, poprawne i nieużywane, na dzień w którym
+    górna deska wróci do długiego rogu.
 123. [LOW] **Etykieta, która wyszła poza obrys, może wejść na sąsiada.**
     Konsekwencja F9 na ciasno ułożonym arkuszu: odnośnik kładzie słowa nad
     paskiem obok (`verify/t48/walk-8-label-outside.png` to pokazuje). To jest
@@ -935,3 +943,49 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
     widzi tam laminat. Właściwe rozwiązanie: fornir na froncie dostaje własny
     `kind: 'veneer'` z pożyczonym obrazkiem — to zmiana w `src/engine/**`, więc
     nie w tej turze (żelazna zasada 2). Do zaplanowania.
+
+### DOPISANE W TURZE 50
+
+127. [LOW] **Wymiary jednej szafki nie mają już żadnych drzwi.** T50-F10 na
+    polecenie właściciela (*„w prawym przycisku myszy menu nie powinno być Add
+    doors oraz Show dimensions — dimension już mamy na górze"*) usunęło wpis
+    `Show all dimensions` z menu kontekstowego. Sam MECHANIZM nie został
+    skasowany (żelazna zasada 4): `uiStore.unitDimensions`,
+    `toggleUnitDimensions` i `clearUnitDimensions` są nietknięte, a
+    `3d/Scene.jsx` nadal z nich rysuje — ale menu było ich JEDYNYMI drzwiami,
+    więc dziś nikt nie może włączyć łańcucha wymiarów dla POJEDYNCZEJ szafki.
+    To, co zostało, to przełącznik na górnej belce, który rysuje ten sam
+    łańcuch (`engine/dimensions.js dimensionCarriers`) nad KAŻDĄ szafką — i to
+    jest dokładnie odpowiedź właściciela. Zostawione tak celowo. Jeśli
+    kiedykolwiek ma wrócić per-szafka, to jeden wpis z `group: 'dimensions'` i
+    grupa wraca sama (test T14-F6.3 to sprawdza).
+128. [LOW] **Skrócone drzwi pod skosem w szafie dostają drabinę `tall`, która
+    nie skaluje się w dół.** T50-F7 przelicza zawiasy po skróceniu leafa *„by
+    the same rule that spaces them on a full door"* — czyli `hingeRows` z
+    regułą TYPU. Dla WARDROBE to `tall`, a `tall` przy 700 mm nadal daje PIĘĆ
+    zawiasów w rozstawie 124 mm. To jest ten sam kształt błędu, który T38-F1b
+    naprawił dla top boxa jednym słowem (`hingeRule: 'low'` — *„nobody hangs a
+    500 mm door on five hinges"*). Nie zmieniamy tego tutaj, bo CLAUDE.md F7
+    mówi wprost „ta sama reguła", a zmiana reguły to decyzja właściciela.
+    Propozycja: leaf ucięty poniżej `hinges.rules.low.threeHingeMaxHeight`
+    liczy się drabiną `low`, tak jak każde inne drzwi tej wysokości w tej
+    aplikacji. Do rozstrzygnięcia przez właściciela.
+129. [LOW] **`+ Box` wrócił do kreatora razem z F12.** T49-F2 ukrył cały rząd
+    (Rectangle / L-shape / + Box) w kreatorze; T50-F12 kazał zrównać oba
+    wejścia i wysłać wersję kreatora — czyli usunąć gotowe kształty. `+ Box`
+    nigdy nie był gotowym kształtem (to komin, słup, obudowana rura), więc
+    rysuje się teraz w OBU drzwiach. Jeśli właściciel chciał, żeby w kreatorze
+    nie było też pudełek, to jest jedna linia w `components/RoomModal.jsx`.
+130. [LOW] **Słupy showroomu zostały ściemnione z DWÓCH stron naraz.** T50-F14
+    wykonuje polecenie właściciela z 25.08 (*„za jasno świecą, ściemnij o
+    połowę"*): `appearance.studio.pillars.intensity` 22 → 11, plus nowy
+    `appearance.studio.baseGain: 0.75` na całym rigu. Niezależnie od tego, tej
+    samej nocy właściciel wypchnął na `main` własną poprawkę: zamiast
+    LUSTRZANEJ PARY jest teraz JEDEN słup (`count: 1`, `side: 'right'`,
+    `spread: 1.7`, `widthMm: 420`) — co samo w sobie zabiera połowę światła.
+    Po scaleniu trzy redukcje się mnożą: jedna lampa zamiast dwóch, przy 11
+    zamiast 22, razy 0.75. To jest znacznie ciemniej niż F14 zakładało, gdy
+    pisało „o ćwierć". Zostawione na 11, bo CLAUDE.md F14 podaje tę liczbę
+    wprost — ale jeśli pokój ma wyglądać za ciemno, podnosi się WŁAŚNIE
+    `pillars.intensity`, samodzielnie, i po to `baseGain` jest trzymany poza
+    lampami. Do rozstrzygnięcia przez właściciela, na oko.

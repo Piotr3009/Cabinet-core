@@ -390,26 +390,25 @@ export function menuActions({
     });
   }
 
-  // ── 4b. doors, and the colour (turn 13, CLAUDE.md F5.3) ──
+  // ── 4b. the colour (turn 13, CLAUDE.md F5.3) ──
   //
-  // Two entries the menu never had. "Add doors" was a button at the bottom of
-  // the right panel and nowhere else, which is a long way from the cabinet when
-  // the cabinet is what you are looking at; the colour had no unit-level
-  // control at all until F3, which is the bug this turn opened with.
-  {
-    const hasDoors = Boolean(unit.params.doors) && unit.params.doors !== false;
-    if (type.supports?.doors !== false) {
-      actions.push({
-        id: 'add-doors',
-        label: forAll('Add doors'),
-        disabled: hasDoors && !many,
-        hint: hasDoors && !many
-          ? 'This cabinet already has its doors'
-          : 'Hang the doors this width calls for — one or two, on the unit’s own hinge side',
-        run: () => store.addDoors?.(targets),
-      });
-    }
-  }
+  // ─── TURN 50 (CLAUDE.md F10): "ADD DOORS" LEAVES THIS MENU ───────────────
+  //
+  // The owner, 25.08.2026: *"w prawym przycisku myszy menu nie powinno być Add
+  // doors oraz Show dimensions."*
+  //
+  // The ENTRY goes; the ACTION does not (iron rule 4). `projectStore.addDoors`
+  // is untouched and is reached from three places, all of them still there:
+  //
+  //   · the RIGHT-HAND PANEL — `components/RightPanel.jsx`, the button this
+  //     entry was added in turn 13 to duplicate;
+  //   · the PLUS MODAL — `components/AddItemsModal.jsx`, "Add doors" beside
+  //     the items, where a cabinet is being fitted out;
+  //   · a MULTI-SELECTION — `components/MultiUnitPanel.jsx addDoorsBulk`,
+  //     which is what `forAll('Add doors')` was reaching for here.
+  //
+  // The colour stays: it had no unit-level control at all before turn 13 and
+  // still has none anywhere else.
   // ─── Turn 17 (CLAUDE.md F8.1): THE DRAWER FRONTS COME OFF ────────────────
   // The same idiom as turn 15's Remove doors, on the kit whose fronts ARE its
   // face — so the boxes can be worked on and their heights edited. Offered only
@@ -479,18 +478,25 @@ export function menuActions({
   actions.push({ id: 'delete', label: 'Delete', danger: true, run: () => store.removeUnit?.(unit.id) });
 
   // ── LAST: the numbers (F6.2) ──
-  // A toggle, not a one-way door: the same entry turns them off, which is what
-  // makes it usable twice in a row on the same cabinet. It is a way of LOOKING
-  // rather than something done to a cabinet, so it sits below everything that
-  // builds — its own group, and therefore its own gold rule above it.
-  actions.push({
-    id: 'dimensions',
-    group: 'dimensions',
-    label: 'Show all dimensions',
-    checked: Boolean(dimensions),
-    hint: 'Every dimension of THIS cabinet on the scene — width, height, depth, shelves, fronts',
-    run: () => store.toggleUnitDimensions?.(unit.id),
-  });
+  //
+  // ─── TURN 50 (CLAUDE.md F10): "SHOW ALL DIMENSIONS" LEAVES THIS MENU ─────
+  //
+  // The owner, and he gives the reason in the same breath: *"dimension już mamy
+  // na górze."*  It is on the TOP BAR (View ▸ Dimensions) and on the canvas
+  // toolbar (Show dimensions), and what those draw is the SAME CHAIN this entry
+  // drew — `engine/dimensions.js dimensionCarriers`, over every cabinet instead
+  // of over one.
+  //
+  // The MECHANISM is not deleted (iron rule 4): `uiStore.unitDimensions`,
+  // `toggleUnitDimensions` and `clearUnitDimensions` are exactly what they
+  // were, and `3d/Scene.jsx` still draws from them. What has gone is this
+  // menu's door onto it, which is what the owner asked for. Named in the PR and
+  // written into BACKLOG, because a mechanism with no door is worth him
+  // knowing about.
+  //
+  // The `dimensions` argument stays in this function's signature for the same
+  // reason: the caller still knows the answer, and a rule that has to be
+  // re-plumbed to come back is a rule that does not come back.
 
   // The GROUPS, applied last and in one place (F6.3). An entry that has not
   // named its own belongs to "the rest", which is what makes this a default

@@ -305,8 +305,40 @@ export function dimensionsFor(rows, projectType) {
 /** The wardrobe depth the step opens at, and the sentence that says why. */
 export const WARDROBE_DEPTH_MM = 568;
 
-/** The height and plinth this turn's step-4 opens a wardrobe at (F3). */
-export const T44_DEFAULTS = { height: 2100, plinth: 100, depth: WARDROBE_DEPTH_MM };
+// ─── TURN 50 (CLAUDE.md F13): 2150 LIVES IN ONE PLACE ───────────────────────
+//
+// The owner, 25.08.2026: *"default wysokości szaf 2150."*  CLAUDE.md F13:
+// *"this feature is to make sure it is the ONLY one. Find every other 2150
+// (and every other default height a wardrobe can arrive with, in the store's
+// create path, in the wizard and in any fixture that ships to a user) and make
+// each of them read the profile rather than repeat the figure."*
+//
+// THERE WAS ONE, AND IT WAS HERE. T44's F3 wrote *"Dimensions: default height
+// 2100, plinth 100"* as a literal, deliberately and with its reason stated in
+// `NewProjectFlow.jsx`: iron rule 2 froze `src/engine/**` that night, so the
+// seed could not be put in the profile and was put beside the wizard instead.
+// The consequence is the one F13 exists to end — a wardrobe STARTED in the
+// wizard opened at 2100 while `projectHeights.tall` said 2150, so the same
+// cabinet had two default heights depending on which door it came in by.
+//
+// It reads the profile now. `plinth` is `projectHeights.toeKick` (100, the same
+// number it repeated) and `depth` stays the wardrobe kit's own — the depth was
+// never the disagreement and `WARDROBE_DEPTH_MM` above is what
+// `wardrobe.defaults.depth` carries.
+//
+// A FUNCTION and not a constant, because a profile is a thing a workshop
+// changes: a frozen object read at import time is the same literal with extra
+// steps.
+export function wardrobeSeed(profile) {
+  const heights = profile?.projectHeights || {};
+  return {
+    height: Number(heights.tall) > 0 ? Number(heights.tall) : 2150,
+    plinth: Number(heights.toeKick) >= 0 ? Number(heights.toeKick) : 100,
+    depth: Number(profile?.wardrobe?.defaults?.depth) > 0
+      ? Number(profile.wardrobe.defaults.depth)
+      : WARDROBE_DEPTH_MM,
+  };
+}
 
 /**
  * How big an Egger tile's swatch is, at the smallest (F4).

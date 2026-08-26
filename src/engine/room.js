@@ -17,6 +17,20 @@ const DEFAULT_ROOM_WIDTH = 4000;
 const DEFAULT_ROOM_DEPTH = 3000;
 const DEFAULT_ROOM_HEIGHT = 2500;
 
+/**
+ * ─── TURN 50 (CLAUDE.md F1): THE ROOM MODEL'S OWN MINIMUM, NAMED ────────────
+ *
+ * *"If a segment would produce a wall shorter than the room model's own
+ * minimum, say so at the field rather than accepting it."*
+ *
+ * The number is not new — the typed-length field in `components/RoomModal.jsx`
+ * has floored at 100 since turn 14, and `validateRoomShape` below refuses a
+ * wall of under 1 mm outright. What is new is that it has a NAME, so the wall
+ * editor's message, the typed-length field and the shape check are one answer
+ * rather than three literals that can drift apart.
+ */
+export const MIN_WALL_LENGTH = 100;
+
 export const DEFAULT_ROOM = {
   schema: ROOM_SCHEMA,
   height: DEFAULT_ROOM_HEIGHT,
@@ -90,6 +104,17 @@ export function migrateRoom(room) {
   // this turn opens with the defaults and nothing to migrate.
   const stub = Number(room.wall_stub_mm);
   const boxes = Array.isArray(room.boxes) ? room.boxes.map(migrateBox).filter(Boolean) : [];
+  // ─── TURN 50 (CLAUDE.md F1): HOW MANY OF THESE WALLS WERE DRAWN ───────────
+  //
+  // *"an open chain is a valid one-wall or L job and must not be forced
+  // closed."* The polygon still has to close — a floor is cut from something —
+  // so what an open chain leaves behind is a room whose LAST edge nobody typed.
+  // This records how many leading walls the joiner actually drew, and the plan
+  // draws the rest in grey exactly as turn 14's stubs are drawn.
+  //
+  // Optional, like `wall_stub_mm` and `boxes` above: a project saved before
+  // tonight has nothing to migrate and every wall of it counts as drawn.
+  const drawn = Number(room.drawn_walls);
   return normalizeRoom({
     schema: ROOM_SCHEMA,
     height,
@@ -97,6 +122,7 @@ export function migrateRoom(room) {
     openings,
     ...(Number.isFinite(stub) && stub >= 0 ? { wall_stub_mm: stub } : {}),
     ...(boxes.length ? { boxes } : {}),
+    ...(Number.isFinite(drawn) && drawn > 0 ? { drawn_walls: Math.trunc(drawn) } : {}),
   });
 }
 
@@ -168,6 +194,17 @@ export function wallWidth(room, index) {
 // still what the floor is cut from and what placement measures against, and a
 // project can be switched back to "whole room" without having lost anything.
 // What changes is which walls are DRAWN and OFFERED, and that is this function.
+
+/**
+ * Which walls of this room were DRAWN (turn 50, F1) — every one of them, unless
+ * an open chain said otherwise. A wall past this count exists because the
+ * polygon had to close, and the plan says so instead of pretending it was typed.
+ */
+export function drawnWalls(room) {
+  const n = Number(room?.drawn_walls);
+  const walls = roomWalls(room).length;
+  return Number.isFinite(n) && n > 0 ? Math.min(Math.trunc(n), walls) : walls;
+}
 
 /** How far each side stub runs forward, when there are stubs at all. */
 export const DEFAULT_WALL_STUB = 1000;

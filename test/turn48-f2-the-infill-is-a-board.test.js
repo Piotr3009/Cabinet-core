@@ -275,7 +275,18 @@ test('the SIDE infill is not touched by one line — "infill pionowy nie ruszamy
     assert.equal(p.meta.shape, 'L', `${id} is still an L`);
     assert.equal(p.meta.mitre.L, 45, `${id} keeps its own 45`);
   }
-  // …including the corner T15 cuts into it where a top infill stops against it.
+  // ─── …AND THE ONE THING T48 LEFT, WHICH T50-F11 FINISHED ─────────────────
+  //
+  // T48 asserted here that the filler "still loses its triangle", and raised
+  // the consequence against itself in BACKLOG 122: the top board had become a
+  // plain rectangle and the filler was still being cut at 45° on the machine
+  // for a long point that no longer existed. CLAUDE.md T50-F11: *"Make the pair
+  // agree: where the top is a plain board, the side that meets it is cut square
+  // too."*
+  //
+  // Everything above this line is untouched — the filler is still an L, still
+  // mitred 45 along its own two arms, still cut, still the same piece. What has
+  // gone is the corner it used to lose to a joint the top board no longer makes.
   const cornered = computeCabinet({
     ...BASE,
     height: 2100,
@@ -286,5 +297,11 @@ test('the SIDE infill is not touched by one line — "infill pionowy nie ruszamy
     },
   }, P);
   const filler = byId(cornered, 'INFILL-L-FACE');
-  assert.ok(filler.cnc.outline.length > 4, 'the filler still loses its triangle');
+  assert.equal(filler.cnc.outline.length, 4, 'a plain board, like the one it meets');
+  assert.equal(filler.meta.corner, 100, 'and it still says which end turns, and by how much');
+  // …and the board it meets is a plain rectangle too, which is the whole of
+  // "the pair agree". (Its OWN corner number comes from `run_top_infill.mitre`,
+  // which this fixture does not state — `sideMitre` is the filler's half.)
+  const top = byId(cornered, 'INFILL-T-FACE');
+  assert.equal(top.cnc.outline.length, 4, 'exactly as the top board is');
 });

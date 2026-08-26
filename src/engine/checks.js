@@ -50,6 +50,8 @@ import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
 // Turn 36 (CLAUDE.md F7): is this top box standing on anything?
 import { riderIsOrphaned, riderOverlapMm } from './topBox.js';
+// Turn 50 (CLAUDE.md F3): …and is it standing INSIDE the room?
+import { roomFitFaults } from './roomFit.js';
 import { panelWeight } from './lifts.js';
 // Turn 38 (CLAUDE.md F9): the two guards on what a hand has drawn on a print.
 import { manualGeometryFaults } from './partEdits.js';
@@ -803,6 +805,67 @@ export function runChecks({
       subject: { unitId: unit.id, editor: 'cabinet' },
       overlapMm: over.mm,
     }));
+  }
+
+  // ── #21 the slope took a hinge off a door (T50-F7) ──────────────────────
+  //
+  // The owner: *"jak drzwi się zmniejszają, automatycznie usuwamy zawiasy tam
+  // gdzie jest skos."*  It does — and *"Check reports what was removed, per
+  // door — the app never silently changes a drilling pattern."*
+  //
+  // Both numbers are on the PIECE (`meta.slopeCut.hinges`), written by the same
+  // pass that re-ran the ladder, so this rule reads them rather than deriving a
+  // second opinion about how many hinges a cut door takes.
+  //
+  // It is a NOTICE and not a fault: nothing is wrong, the app has done the
+  // right thing, and the joiner is being told that it did. Yellow, per door.
+  for (const entry of entries) {
+    for (const pnl of entry.result?.panels || []) {
+      const h = pnl?.meta?.slopeCut?.hinges;
+      if (!h || !(Number(h.was) > Number(h.now))) continue;
+      const num = entry.unit?.params?.unit_num || entry.result?.unitNum || entry.unit?.id || '';
+      const gone = Number(h.was) - Number(h.now);
+      out.push(finding(21, 'yellow', {
+        unitId: entry.unit?.id || null,
+        unitNum: num,
+        panelId: pnl.id,
+        message: `${num} ${pnl.id}: the slope took ${gone} hinge${gone === 1 ? '' : 's'} off this door — `
+          + `${h.was} became ${h.now}, re-spaced over what is left of the leaf.`,
+        subject: { unitId: entry.unit?.id || null, panelId: pnl.id, editor: 'element' },
+        hingesWas: Number(h.was),
+        hingesNow: Number(h.now),
+      }));
+    }
+  }
+
+  // ── #20 a unit that is ALREADY bigger than its room (T50-F3) ─────────────
+  //
+  // The owner: *"dlaczego pozwala system dodawać top box powyżej rozmiaru
+  // pokoju? to powinno być blokada."*  The block is at the two places a number
+  // is TYPED (`engine/roomFit.js`, through the parameter panel and the size
+  // modal). This is the OTHER half of F3, and it is the half that matters to
+  // somebody opening a job saved before tonight:
+  //
+  //   *"An existing project that already contains such a unit opens unchanged
+  //   and says so in Check, rather than being silently resized under the
+  //   owner's hands."*
+  //
+  // So the project is not touched. It is REPORTED, by exactly the rule that
+  // would have refused the number, asked of the size the unit already has —
+  // one rule, so a saved job and a typed number can never disagree.
+  if (room) {
+    for (const fault of roomFitFaults(list, room, profile)) {
+      const num = fault.unit.params?.unit_num || fault.unit.id;
+      out.push(finding(20, 'red', {
+        unitId: fault.unit.id,
+        unitNum: num,
+        panelId: null,
+        message: `${num}: ${fault.message}`,
+        subject: { unitId: fault.unit.id, editor: 'cabinet' },
+        dimension: fault.key,
+        limitMm: fault.limit,
+      }));
+    }
   }
 
   // ─── TURN 40 (CLAUDE.md F4b): NO TWINS, WHATEVER PRODUCED THEM ───────────

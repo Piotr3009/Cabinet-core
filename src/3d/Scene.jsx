@@ -12,6 +12,8 @@ import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
 import AddPlus from './AddPlus.jsx';
+// Turn 50 (CLAUDE.md F2, decision 1): the share-out is offered AT THE GAP.
+import ShareOutBar from './ShareOutBar.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
 // The LTC tables every RectAreaLight needs — the bands and the pillars are
 // RectAreaLights, and without these they light nothing at all (chat-fix
@@ -513,7 +515,20 @@ function Lights({
   // ─── F10.3: THE SLIDER ───────────────────────────────────────────────────
   // One multiplier on every lamp, so the RATIOS the rig was balanced at are
   // exactly the ones turn 10 measured whatever it is set to.
-  const gain = Number(brightness) > 0 ? Number(brightness) : 1;
+  //
+  // ─── TURN 50 (CLAUDE.md F14): …TIMES THE RIG'S OWN BASE ──────────────────
+  //
+  // The owner: *"default oświetlenia jasności … teraz 100 to niech będzie jakby
+  // teraz było 75."*  So the WHOLE rig is scaled at its base, HERE, in the one
+  // expression every lamp below already multiplies by — not by editing five
+  // intensities, which would scatter one decision across five numbers and lose
+  // the ability to tune any of them on its own.
+  //
+  // `appearance.studio.baseGain` is that number (0.75). What the slider calls
+  // 100 % now lands where 75 % landed; its min, max, step and default are
+  // untouched.
+  const baseGain = Number(studio.baseGain) > 0 ? Number(studio.baseGain) : 1;
+  const gain = (Number(brightness) > 0 ? Number(brightness) : 1) * baseGain;
 
   // A RectAreaLight without the LTC tables lights NOTHING and reflects in
   // nothing — silently, no warning. Until tonight they were loaded only by
@@ -1142,6 +1157,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
   const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
   const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
+  // Turn 50 (CLAUDE.md F2): one click, one batch, one undo step.
+  const shareOutRun = useProjectStore((s) => s.shareOutRun);
   const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const selectUnit = useUiStore((s) => s.selectUnit);
@@ -1175,6 +1192,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const openLibraryToInsert = useUiStore((s) => s.openLibraryToInsert);
   const showDimensions = useUiStore((s) => s.showDimensions);
   const unitDimensions = useUiStore((s) => s.unitDimensions);
+  // Turn 50 (CLAUDE.md F2): which run, if any, has a leftover worth offering.
+  const shareOutOffer = useUiStore((s) => s.shareOutOffer);
+  const clearShareOut = useUiStore((s) => s.clearShareOut);
   const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
@@ -1674,6 +1694,28 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           walls={walls}
           roomCentre={bounds.centre}
           colour={profile.appearance.worktop.colour}
+        />
+      )}
+
+      {/* ─── TURN 50 (CLAUDE.md F2): THE SHARE-OUT BAR, IN THE GAP ────────
+          Decision 1 at the top of CLAUDE.md, and the reason it is here rather
+          than in the middle of the screen: it is read where the problem is,
+          and ignoring it costs no click. */}
+      {!contourView && !shelfDrag && shareOutOffer && (
+        <ShareOutBar
+          units={units}
+          walls={walls}
+          roomCentre={bounds.centre}
+          offer={shareOutOffer}
+          profile={profile}
+          onShare={(unitId, opts) => {
+            const res = shareOutRun(unitId, opts);
+            clearShareOut();
+            if (res && !res.ok && res.message) notify(res.message, 'warn');
+            else if (res?.ok) {
+              notify(`Run shared out — ${res.widths.length} cabinet(s) at ${Math.round(res.each)} mm. Ctrl+Z takes it back.`, 'ok');
+            }
+          }}
         />
       )}
 

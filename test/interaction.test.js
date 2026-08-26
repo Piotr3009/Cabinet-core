@@ -143,10 +143,16 @@ test('the menu offers what the unit has, and always offers the basics', () => {
     'side-infill', 'pin-infill-L', 'pin-infill-R',
     // Turn 17 (F8.1): "Drawer fronts" — the same idiom as Remove doors, on the
     // kits that have a stack. A WARDROBE has one (internal, behind its doors).
-    'plinth', 'add-doors', 'drawer-fronts', 'unit-colour',
+    // ─── TURN 50 (CLAUDE.md F10): TWO ENTRIES LEAVE ────────────────────────
+    // The owner: *"w prawym przycisku myszy menu nie powinno być Add doors oraz
+    // Show dimensions — dimension już mamy na górze."*  Both are GONE from this
+    // list and neither ACTION is: `addDoors` is on the right-hand panel, in the
+    // plus modal and on a multi-selection; the per-cabinet dimension chain is
+    // what the top bar's Dimensions and the toolbar's "Show dimensions" draw,
+    // over every cabinet instead of over one.
+    'plinth', 'drawer-fronts', 'unit-colour',
     'save-template',
     'center-shelves', 'rotate-90', 'back-to-wall', 'side-to-wall', 'delete',
-    'dimensions',
   ]);
 
   // Nothing is DISABLED any more, and that is the point of the rewrite: turn 4's
@@ -170,7 +176,10 @@ test('the menu offers what the unit has, and always offers the basics', () => {
     store,
   });
   const byId = new Map(dressed.map((a) => [a.id, a]));
-  assert.equal(byId.get('dimensions').checked, true);
+  // T50-F10: `dimensions` is no longer an entry. The ARGUMENT stays in the
+  // signature — the caller still knows the answer, and a rule that has to be
+  // re-plumbed to come back is a rule that does not come back.
+  assert.equal(byId.has('dimensions'), false);
   assert.equal(byId.get('end-panel-L').checked, true, 'the left panel is there, and says so');
   assert.equal(byId.get('end-panel-R').checked, false);
   // "Both" is ticked only when BOTH are there (BACKLOG #31): the store adds them
@@ -226,11 +235,10 @@ test('every toggle flips the way it is currently set — both ways', () => {
   run(bare, 'top-infill');
   run(bare, 'plinth');
   run(bare, 'side-infill');
-  run(bare, 'dimensions');
   // …and the filler switch turns them OFF, because on a bare unit they are on:
   // the side infill is derived from where the cabinet stands (BACKLOG #15), so
   // the question is never "add one", it is "does this cabinet take one".
-  assert.deepEqual(called, [['ep+', 'L'], ['top+'], ['plinth+'], ['side', false], ['dims', 'u1']]);
+  assert.deepEqual(called, [['ep+', 'L'], ['top+'], ['plinth+'], ['side', false]]);
 
   // Everything fitted: every one of them TAKES IT OFF. This is the half turn 4
   // did not have, and the reason a joiner had to go to the panel.

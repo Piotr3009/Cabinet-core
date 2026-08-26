@@ -49,6 +49,8 @@ export default function RightPanel() {
   const units = useProjectStore((s) => s.units);
   const room = useProjectStore((s) => s.project.room);
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
+  // Turn 50 (CLAUDE.md F3): may this unit be given this size at all?
+  const roomFitRefusalFor = useProjectStore((s) => s.roomFitRefusalFor);
   const removeItem = useProjectStore((s) => s.removeItem);
   const updateItem = useProjectStore((s) => s.updateItem);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
@@ -289,7 +291,18 @@ export default function RightPanel() {
                 </span>
                 <NumberField
                   value={unit.params[key]}
+                  data-unit-size-field={key}
                   onCommit={(v) => {
+                    // ─── TURN 50 (CLAUDE.md F3): THE ROOM REFUSES FIRST ─────
+                    //
+                    // *"dlaczego pozwala system dodawać top box powyżej rozmiaru
+                    // pokoju? to powinno być blokada."*  This is the parameter
+                    // panel — one of the two places CLAUDE.md names as where the
+                    // number is ACCEPTED — so the refusal is here, before the
+                    // setter, and the sentence names the room's own figure.
+                    // Nothing is clamped and nothing is applied.
+                    const no = roomFitRefusalFor(unit.id, { [key]: v });
+                    if (no) { notify(no.message, 'warn'); return; }
                     // Growing a unit is a move: it stops at the neighbour, the
                     // end of the wall or the far side of the room, and says so.
                     const { notices } = updateUnitParams(unit.id, { [key]: v });

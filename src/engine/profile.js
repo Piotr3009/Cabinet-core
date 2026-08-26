@@ -1037,7 +1037,23 @@ export const DEFAULT_CABINET_PROFILE = {
   // The LIST (order, labels, category, scope) is engine/projectTypes.js; the
   // millimetres are here, because millimetres are always here.
   projectTypes: {
-    wardrobe: { heights: { tall: 2400 } },
+    // ─── TURN 50 (CLAUDE.md F13): THE WARDROBE OVERRIDES NOTHING ──────────
+    //
+    // The owner, 25.08.2026: *"default wysokości szaf 2150."*  F13: *"this
+    // feature is to make sure it is the ONLY one."*
+    //
+    // This row said `{ tall: 2400 }`, which made THREE default heights for one
+    // cabinet: 2400 here, 2100 in the wizard's own seed (T44-F3's literal, now
+    // gone), and the 2150 that `projectHeights.tall` and
+    // `wardrobe.defaults.height` have both carried all along. A new wardrobe
+    // job opened at 2400 or at 2100 depending on which door it came in by.
+    //
+    // A wardrobe is built to the project's own TALL height, which is 2150, and
+    // that is now the only place the figure lives. The row stays — with nothing
+    // in it — because the MECHANISM is not the fault and the vanity below still
+    // uses it; a workshop that really does build 2400 wardrobes puts one number
+    // back here and nothing else changes.
+    wardrobe: { heights: {} },
     // A vanity carcass hangs or stands under a basin, and 770 + 100 legs + a
     // top is a worktop at 890 — too high for a bathroom.
     vanity: { heights: { base: 600 } },
@@ -1797,6 +1813,20 @@ export const DEFAULT_CABINET_PROFILE = {
       // `thickness: null` = the project's front thickness, which is what a
       // workshop means by "same as the doors".
       thickness: null,
+
+      // ─── TURN 50 (CLAUDE.md F4): …WITH ONE EXCEPTION ────────────────────
+      //
+      // The owner: *"w kuchni jak dodamy niską szafkę do wysokiej bez panela,
+      // powinien się dodać panel automatycznie."*
+      //
+      // How big a STEP between two neighbours makes a side that shows. A
+      // worktop's own thickness is not a step and a 100 mm difference in a run
+      // of base units is not either; a base unit against a tall one is a metre
+      // and a half of raw board at eye level, which is the case he is
+      // describing. 300 is where the line is drawn — above any plinth or
+      // worktop difference a run can have, well below the smallest real step
+      // between a base cabinet and a tall one.
+      autoStepMm: 300,
       defaultHeight: 'floor',       // 'floor' | 'carcass' ('unit' is the old name)
       // ─── Turn 13 (CLAUDE.md F4) ───
       // The owner's bug: a WALL unit's end panel ran to the FLOOR — a masking
@@ -2172,6 +2202,26 @@ export const DEFAULT_CABINET_PROFILE = {
     //
     // The second is `spots` below — the studio jupiters Piotr asked for by name.
     studio: {
+      // ─── TURN 50 (CLAUDE.md F14): THE WHOLE RIG SHIPS A QUARTER DARKER ───
+      //
+      // The owner, 25.08.2026: *"default oświetlenia jasności … teraz 100 to
+      // niech będzie jakby teraz było 75."*
+      //
+      // ONE NAMED NUMBER, multiplied into the same `gain` the brightness slider
+      // already produces (`3d/Scene.jsx`). It is deliberately NOT mixed into the
+      // lamps' own intensities: the bands, the pillars, the key, the fill and
+      // the rim keep their own numbers so each can still be tuned on its own,
+      // and every ratio turn 10 measured survives untouched.
+      //
+      // NAMED CONSEQUENCE: the CEILING drops with it. What the slider calls
+      // 100 % now lands where 75 % landed, so the top of the slider is a
+      // quarter dimmer than it could reach yesterday — which is what was asked
+      // for. If a bright kitchen ever needs the old maximum, THIS is the one
+      // number to raise, and CLAUDE.md F14 is the paragraph to come back to.
+      //
+      // Nothing else about the slider changes: its min, max, step and default
+      // stay exactly as the profile has them.
+      baseGain: 0.75,
       ambient: 0.2,
       key: 1.0,
       fill: 0.55,
@@ -2231,10 +2281,37 @@ export const DEFAULT_CABINET_PROFILE = {
       pillars: {
         // The scale a RectAreaLight works on is NOT the scale a point light
         // does. The LED halos — the only area lights this app had before
-        // tonight, and the only ones known to read correctly — run at 22, and
-        // the first cut of the pillars guessed 3.2. Seven times too little,
-        // which is most of why the owner saw nothing.
-        intensity: 22,
+        // T47, and the only ones known to read correctly — run at 22, and the
+        // first cut of the pillars guessed 3.2. Seven times too little, which
+        // is most of why the owner saw nothing.
+        //
+        // ─── TURN 50 (CLAUDE.md F14): …AND THEN HALVED, ON THEIR OWN ────────
+        //
+        // The owner, the same evening, on the showroom pillars specifically:
+        // *"za jasno świecą, ściemnij o połowę."*  22 → 11, its own number,
+        // changed on its own — which is exactly why `baseGain` above is kept
+        // out of the individual lamps: it lets this one move alone.
+        //
+        // THE TWO REDUCTIONS COMPOUND, and that is intended. A pillar ends the
+        // night at 11 × 0.75 = 8.25 of the gain it had at 22, which is 37.5 %
+        // of what it was. If that turns out to be a quarter too dark it is THIS
+        // number that comes back up, not `baseGain`.
+        //
+        // ─── AND A THIRD REDUCTION ARRIVED FROM THE OTHER SIDE ─────────────
+        //
+        // While T50 was being written the owner pushed his own chat-fix to
+        // main: the mirrored PAIR became ONE pillar (`count: 1`, below), which
+        // by itself halves the light in the room. Merged, the three compose —
+        // one lamp instead of two, at 11 instead of 22, times 0.75 — and the
+        // room is a good deal darker than F14 was reasoning about when it said
+        // "a quarter".
+        //
+        // Kept at 11 because CLAUDE.md F14 names the number and the owner's own
+        // *"za jasno świecą, ściemnij o połowę"* is what it is executing. But
+        // this is the paragraph to come back to, and THIS is the number to
+        // raise: it moves alone, which is the whole reason `baseGain` is kept
+        // out of the lamps. BACKLOG 130.
+        intensity: 11,
         colour: '#ffffff',
         widthMm: 420, // the slab's width — a tall window, not a line
         forwardMm: 900, // how far in front of the fronts it stands
@@ -4087,6 +4164,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // is a filler's job and not a cabinet's.
     addPlusMinGapMm: 100,
 
+    // ─── TURN 50 (CLAUDE.md F2): THE SHARE-OUT ────────────────────────────
+    //
+    // The owner, 25.08.2026: *"jak dodaję ostatnią szafkę do ściany i zostanie
+    // mniej niż 400 mm … czy chcesz wyśrodkować?"*
+    shareOut: {
+      // His own number. Under this much leftover at the wall, the bar offers.
+      gapMm: 400,
+
+      // …and the width past which a shared-out cabinet is OFFERED as two
+      // rather than taken as one (decision 2 at the top of CLAUDE.md — the app
+      // never adds a cabinet on its own).
+      //
+      // The owner's own worked example names both ends of the bracket: 3900
+      // over six is 650 of front, *"wider than one door should be"*, and seven
+      // at 557 is the answer it offers instead. So the line falls between the
+      // two, and 620 is where it is drawn: 600 is the workshop's standard
+      // cabinet and 620 is that cabinet with the scribe shared into it, which
+      // is exactly what a share-out is for. Past it the run is being asked to
+      // carry a cabinet nobody would have chosen, and the app SAYS so rather
+      // than building it.
+      //
+      // It is deliberately NOT `doors.singleDoorMaxWidth`: that number decides
+      // how many leaves a carcass takes (705 → two), which is a different
+      // question from how wide a carcass a joiner wants in a run.
+      maxWidthMm: 620,
+    },
+
     // ─── TURN 31 (CLAUDE.md F2): THE THREE MESSAGE LEVELS ─────────────────
     //
     // The owner, 15.08.2026, on a toast slot of one that erased itself every
@@ -4909,6 +5013,10 @@ export function migrateCabinetProfile(profile) {
       // profile saved before the message levels existed comes back with a grey
       // that expires rather than one that hangs on `undefined` milliseconds.
       messages: { ...D.ui.messages, ...profile.ui?.messages },
+      // Turn 50 (CLAUDE.md F2): likewise — a profile saved before the share-out
+      // existed comes back with the owner's 400 and 620 rather than with two
+      // undefineds that would offer the bar over every gap in the app.
+      shareOut: { ...D.ui.shareOut, ...profile.ui?.shareOut },
     },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's

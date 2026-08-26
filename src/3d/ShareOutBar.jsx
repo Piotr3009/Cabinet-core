@@ -1,0 +1,133 @@
+import { useMemo } from 'react';
+import * as THREE from 'three';
+import { Html } from '@react-three/drei';
+import { mm } from './constants.js';
+import { shareOutFor, shareOutGapSpan, shareOutPlan } from '../engine/shareOut.js';
+import { getUnitType } from '../engine/types.js';
+import { formatMm } from '../engine/format.js';
+
+// ─── THE SHARE-OUT, OFFERED AT THE GAP (turn 50, CLAUDE.md F2 · decision 1) ──
+//
+// The owner asked for *"duży napis"* — a big notice. CLAUDE.md takes a decision
+// FOR him and writes it at the top for him to strike out in one line:
+//
+//   *"The share-out is offered as a BAR at the gap, not a modal in the middle
+//   of the screen … a modal in the centre is dismissed reflexively by the tenth
+//   time, and this one re-sizes every cabinet in the run. A strip that appears
+//   IN the leftover gap — `Zostało 312 mm · Rozłożyć równo?` and one button —
+//   is read where the problem is, and ignoring it costs no click."*
+//
+// So: a strip, standing in the leftover gap, at the height the run stands at.
+// It is `<Html>` and not a sprite because it carries WORDS and a BUTTON, and a
+// canvas-drawn button is a button with no focus ring, no hover state and no
+// keyboard. `AddPlus` beside it is a sprite because a plus is a glyph.
+//
+// ─── AND IT NEVER ADDS A CABINET (decision 2) ───────────────────────────────
+//
+//   *"A share-out that would make the fronts too wide OFFERS the extra cabinet
+//   rather than silently doing it … The bar then says so and offers seven, at
+//   557 mm as a second button. It never adds a cabinet on its own."*
+//
+// Two buttons, then, and only in that case. Both are one click and both are one
+// undo step; neither is a default that happens if you look away.
+//
+// It is a TOOL: `ccHelper` on the anchor group, so nothing here can reach a
+// render or a contact shadow — the same contract `AddPlus` and the dimension
+// labels keep.
+
+/**
+ * @param {object} props
+ *   units       every unit in the project
+ *   walls       engine/room.js roomWalls()
+ *   roomCentre  the plan centre the scene is built about
+ *   offer       uiStore.shareOutOffer — { unitId } or null
+ *   profile
+ *   onShare     (unitId, { extra }) — the store's `shareOutRun`
+ */
+export default function ShareOutBar({
+  units, walls, roomCentre, offer, profile, onShare,
+}) {
+  const found = useMemo(() => {
+    if (!offer?.unitId) return null;
+    return shareOutFor(units, offer.unitId, { walls }, profile);
+  }, [units, walls, offer, profile]);
+
+  const placed = useMemo(() => {
+    if (!found) return null;
+    const { run, wallWidth } = found;
+    const others = units.filter((u) => (u.position?.wall ?? 0) === run.wall
+      && getUnitType(u.type).mount === run.mount);
+    const span = shareOutGapSpan(run, { wallWidth, others });
+    const plan = shareOutPlan(run, { wallWidth, others }, profile, {});
+    const wall = walls[run.wall] || walls[0];
+    if (!wall || !plan.ok) return { plan, span, world: null };
+    // The middle of the gap, at the run's own top, a cabinet's depth forward —
+    // which is where the eye already is when it reads the leftover.
+    const along = (span.from + span.to) / 2;
+    const depth = Number(run.units[0]?.params?.depth) || 0;
+    const world = new THREE.Vector3(
+      mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+    )
+      .addScaledVector(new THREE.Vector3(wall.along.x, 0, wall.along.y), mm(along))
+      .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(depth / 2))
+      .setY(mm(Math.max(0, run.top) * 0.6));
+    return { plan, span, world };
+  }, [found, units, walls, roomCentre, profile]);
+
+  if (!found || !placed?.world) return null;
+  const { plan, span } = placed;
+
+  return (
+    <group userData={{ ccHelper: true }} position={placed.world.toArray()}>
+      <Html
+        center
+        zIndexRange={[40, 30]}
+        // It is a tool standing in a gap between two carcasses; without this it
+        // would be half-swallowed by whichever one is nearer the camera.
+        style={{ pointerEvents: 'auto' }}
+      >
+        <div
+          className="flex items-center gap-2 whitespace-nowrap rounded border border-gold/60
+            bg-shell-900/95 px-2.5 py-1.5 text-[11px] text-ink-100 shadow-lg backdrop-blur-sm"
+          data-share-out-bar={span.gap}
+          data-share-out-each={plan.each}
+        >
+          <span className="text-gold">{formatMm(span.gap)} mm left over</span>
+          <span className="text-ink-400">·</span>
+          {plan.reason === 'nothing-to-widen' ? (
+            // *"If that leaves nothing to widen, the bar says so instead of
+            // offering."* A run of a dishwasher and an oven housing is a run
+            // whose widths are the appliances', and there is nothing to share.
+            <span className="text-ink-300" data-share-out-blocked="1">
+              every cabinet here has its width imposed — nothing to share it into
+            </span>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="cc-btn-gold px-2 py-0.5"
+                data-share-out-go="1"
+                title={`Every cabinet in this run that is not an appliance becomes ${formatMm(plan.each)} mm wide. One click, and Ctrl+Z takes it back.`}
+                onClick={() => onShare(offer.unitId, { extra: 0 })}
+              >
+                Share it out equally · {formatMm(plan.each)} mm each
+              </button>
+              {/* ─── DECISION 2: THE EXTRA CABINET IS OFFERED, NEVER TAKEN ── */}
+              {plan.tooWide && plan.alternative?.ok && (
+                <button
+                  type="button"
+                  className="cc-btn px-2 py-0.5"
+                  data-share-out-extra="1"
+                  title={`${formatMm(plan.each)} mm is a wider front than one door should be. One more cabinet brings it to ${formatMm(plan.alternative.each)} mm.`}
+                  onClick={() => onShare(offer.unitId, { extra: 1 })}
+                >
+                  …or {plan.alternative.n} cabinets at {formatMm(plan.alternative.each)} mm
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </Html>
+    </group>
+  );
+}

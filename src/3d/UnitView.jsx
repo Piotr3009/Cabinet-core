@@ -297,6 +297,11 @@ export function MovingPanel({
   // whose cups and cup screws the scene did not show. The tray takes the same
   // `engine/recesses.js` records every other board reads, and bores them
   // itself — one solid, which is turn 25's own reason for building it by hand.
+  // ─── TURN 50 (CLAUDE.md F6): …AND A CUT LEAF IS A TRAY TOO ──────────────
+  // T46 sent a leaf cut on the slope to `panelSolids` and it lost its recess —
+  // the owner: *"shaker nie powinien znikać jak najedziemy na skos, powinien
+  // się renderować razem z drzwiami."*  The tray holds a polygon now, so the
+  // line below is unchanged and it is `shakerSolid.js` that stopped refusing.
   const shaker = useMemo(() => {
     if (mitre) return null;
     if (!isShakerFront(p) || !profile?.appearance?.cuts?.enabled) return shakerFrontGeometry(p);

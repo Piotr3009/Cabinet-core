@@ -283,8 +283,44 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       disabled: !type.supports.rail || (Boolean(rail) && zones.length <= 1),
       why: rail ? 'already fitted' : 'not for this type',
     },
-    { id: 'cargo', label: 'Cargo pull-out', disabled: true, soon: true },
-    { id: 'bins', label: 'Waste bins', disabled: true, soon: true },
+    // ─── TURN 50 (CLAUDE.md F9): THE MENU ASKS WHAT KIND OF FURNITURE ─────
+    //
+    // The owner, 25.08.2026: *"cargo pull-out i waste bin po wyborze wardrobe w
+    // ogóle nie ma sensu — tylko w kitchen. to ważne, żeby się menu ustawiało
+    // pod typ mebla."*
+    //
+    // These two were the only entries in this list that never asked. Every
+    // other one has read the TYPE since it was written — `type.supports.rail`,
+    // `type.family !== 'wardrobe'` — each with its reason in the row; these
+    // were hard-coded `disabled: true, soon: true` and stood there on a
+    // wardrobe offering a kitchen fitting.
+    //
+    // *"available where the family makes sense, absent with a reason where it
+    // does not."*  So `families` is the SAME mechanism said once: an entry that
+    // names its families is not rendered outside them (`shown`, below), and
+    // where it IS rendered it answers to the ordinary `disabled`/`why` the rest
+    // of the list answers to. NO NEW MECHANISM — `type.family` is what decides,
+    // exactly as it decides the trouser pull-out three rows down.
+    //
+    // They stay `soon` in a KITCHEN, because a cargo pull-out is not built
+    // tonight and CLAUDE.md does not ask for one. What F9 asks for is that the
+    // menu stop offering it where it could never make sense.
+    {
+      id: 'cargo',
+      label: 'Cargo pull-out',
+      families: ['kitchen'],
+      disabled: true,
+      soon: true,
+      why: 'a kitchen fitting',
+    },
+    {
+      id: 'bins',
+      label: 'Waste bins',
+      families: ['kitchen'],
+      disabled: true,
+      soon: true,
+      why: 'a kitchen fitting',
+    },
     // ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS GO LIVE ──────────────
     // Each is a BOM named spec + the room it takes in the scene (a labelled
     // placeholder until the owner supplies a GLB). ZERO holes ride them.
@@ -316,7 +352,13 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // hid three kinds behind a click. The per-family filter below is kept for
   // the day he wants it back:
   // const shown = showAll ? kinds : kinds.filter((k) => offered.includes(k.id));
-  const shown = kinds;
+  //
+  // ─── TURN 50 (CLAUDE.md F9): …EXCEPT WHERE THE FAMILY SAYS NOT AT ALL ────
+  // *"absent with a reason where it does not."*  An entry that names its
+  // families is drawn inside them and nowhere else — the owner's *"w ogóle nie
+  // ma sensu"* is ABSENT rather than greyed, because a greyed row a joiner can
+  // never use is still a row he reads every time he opens this list.
+  const shown = kinds.filter((k) => !k.families || k.families.includes(type.family));
 
   return (
     <div className="space-y-1" data-add-items="1">
@@ -327,6 +369,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
             disabled={kind.disabled}
             aria-expanded={addItemKind === kind.id}
             data-add-kind={kind.id}
+            data-add-family={kind.families ? kind.families.join(',') : undefined}
+            title={kind.disabled ? (kind.why || 'not for this type') : undefined}
             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors
               disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-shell-700 ${
               addItemKind === kind.id ? 'bg-shell-700 text-gold' : 'text-ink-100'}`}

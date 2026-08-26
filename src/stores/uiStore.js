@@ -399,6 +399,23 @@ export const useUiStore = create((set, get) => ({
   }),
   clearUnitDimensions: () => set({ unitDimensions: {} }),
 
+  // ─── TURN 50 (CLAUDE.md F2): THE SHARE-OUT OFFER ─────────────────────────
+  //
+  // *"jak dodaję ostatnią szafkę do ściany i zostanie mniej niż 400 mm … czy
+  // chcesz wyśrodkować?"*  A cabinet has just gone in and left a gap too small
+  // to be a cabinet. This is the OFFER, and it is view state exactly like
+  // everything else in this file: which unit was added, so the scene knows
+  // which run to draw the bar at.
+  //
+  // Decision 1 at the top of CLAUDE.md — a BAR at the gap, not a modal in the
+  // middle of the screen — and the corollary is here: ignoring it costs no
+  // click, so the offer is cleared by the next thing that happens rather than
+  // by a Dismiss button. `null` is "nothing on offer", which is the state the
+  // app is in for all but a second or two of its life.
+  shareOutOffer: null,               // { unitId } | null
+  offerShareOut: (unitId) => set({ shareOutOffer: unitId ? { unitId } : null }),
+  clearShareOut: () => set({ shareOutOffer: null }),
+
   // Which ink the dimensions are drawn in (turn 5, BACKLOG #34).
   // A drawing office uses one or the other; the hexes themselves live in
   // profile.dimensions.colours, so this is only WHICH, never what.

@@ -3219,29 +3219,58 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const units = run.units;
     const wantOf = new Map(plan.widths.map((w) => [w.id, w.to]));
 
+    // ─── WHERE EVERY CABINET FINISHES, WORKED OUT FIRST ───────────────────
+    //
     // `cursor` is the OUTSIDE of everything placed so far — end panels
-    // included, exactly as `paddedSpan` measures. It starts where the PLAN says
-    // the run starts, so the arithmetic and the placement cannot disagree about
-    // the first millimetre.
-    let cursor = Math.max(0, Number(plan.startAt) || 0);
+    // included, exactly as `paddedSpan` measures — and it starts where the PLAN
+    // says the run starts, so the arithmetic and the placement cannot disagree
+    // about the first millimetre.
+    const goesTo = new Map();
+    {
+      let cursor = Math.max(0, Number(plan.startAt) || 0);
+      for (const u of units) {
+        const pad = paddedSpan(u).pad || { left: 0, right: 0 };
+        const want = wantOf.get(u.id) ?? (Number(u.params?.width) || 0);
+        goesTo.set(u.id, { x: cursor + Math.max(0, pad.left), width: want });
+        cursor += Math.max(0, pad.left) + want + Math.max(0, pad.right);
+      }
+    }
+
+    // ─── AND THEY ARE WRITTEN FROM THE RIGHT ──────────────────────────────
+    //
+    // Every cabinet in a share-out is GROWING, and a cabinet grows to the RIGHT
+    // (`clampUnitWidth` moves the far edge). Written left to right, cabinet 1
+    // is asked to grow into a cabinet 2 that has not moved yet and the clamp
+    // rightly refuses — which is a run that comes back six "Width limited by
+    // 02" notices and one cabinet wider than it was.
+    //
+    // From the RIGHT there is always room: the last cabinet moves into clear
+    // wall and grows into clear wall, and each one before it grows into the
+    // space the one after it has just vacated.
+    //
+    // The second pass is left to right and idempotent — it settles anything the
+    // first pass could not finish (a run that SHRANK, which a share-out can do
+    // when a fixed cabinet takes more room than it used to). A cabinet already
+    // where it belongs costs one clamp and moves nothing.
     const notices = [];
-    for (const u of units) {
-      const pad = paddedSpan(u).pad || { left: 0, right: 0 };
-      // A cabinet grows to the RIGHT, so it is put where the plan wants it
-      // FIRST and widened there: written the other way round, cabinet 1 would
-      // grow into a cabinet 2 that has not moved yet and the clamp would
-      // rightly refuse it.
-      get().moveUnit(u.id, cursor + Math.max(0, pad.left), 0);
-      const want = wantOf.get(u.id);
-      if (want != null) {
-        const res = get().updateUnitParams(u.id, { width: want });
+    // …with the MAGNET off. It is a hand's convenience — it butts a dragged
+    // cabinet onto its neighbour from 40 mm away — and it is exactly wrong for
+    // a position somebody has worked out: cabinet 2 moved to 676 to make room
+    // for cabinet 1 gets snapped back to 640, and cabinet 1 is then refused the
+    // width the plan gave it.
+    const place = (u) => {
+      const to = goesTo.get(u.id);
+      if (!to) return;
+      get().moveUnit(u.id, to.x, 0, { magnet: false });
+      if (wantOf.has(u.id)) {
+        const res = get().updateUnitParams(u.id, { width: to.width });
         for (const n of res?.notices || []) notices.push(n);
       }
-      const now = get().units.find((v) => v.id === u.id);
-      cursor += Math.max(0, pad.left)
-        + (Number(now?.params?.width) || 0)
-        + Math.max(0, pad.right);
-    }
+      get().moveUnit(u.id, to.x, 0, { magnet: false });
+    };
+    for (const u of [...units].reverse()) place(u);
+    notices.length = 0;                       // the first pass is the rehearsal
+    for (const u of units) place(u);
     notices.push(...get().refreshAutoParts());
     return {
       ok: true,
@@ -3482,7 +3511,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /** Slide a unit along the wall: snapped, then hard-clamped into its free slot. */
-  moveUnit: (unitId, xRaw, snapStep) => {
+  /**
+   * @param {object} opts
+   *   magnet  false for a COMPUTED layout (turn 50, F2). `editor.unitMagnet` is
+   *           a hand's convenience — it butts a dragged cabinet onto its
+   *           neighbour from 40 mm away — and it is exactly wrong for a
+   *           position somebody has worked out: a share-out that moves cabinet
+   *           2 to 676 to make room for cabinet 1 gets it snapped back to 640,
+   *           and cabinet 1 is then refused the width the plan gave it. The
+   *           default is TRUE, which is every drag and every other caller.
+   */
+  moveUnit: (unitId, xRaw, snapStep, { magnet = true } = {}) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
@@ -3537,7 +3576,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // filler has been switched off, because there is no piece to leave room
       // for.
       wallMargin: wallMarginOf(s, unit),
-    }, getCabinetProfile());
+    }, magnet
+      ? getCabinetProfile()
+      : (() => {
+        const p = getCabinetProfile();
+        return { ...p, editor: { ...p.editor, unitMagnet: 0 } };
+      })());
     const x = result.x - lead;
 
     set((st) => ({

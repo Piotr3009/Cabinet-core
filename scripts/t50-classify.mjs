@@ -308,13 +308,77 @@ export const SURVIVORS = [
     file: 'src/components/WizardSettings.jsx',
     now: 'fronts · the colour dialog — the FULL-WIDTH category strip it has carried since T44',
   },
-  // ── the wizard's room step, stripped of its canned shapes (F2) ──
+  // ── the wizard's room step, stripped of its canned shapes (T49-F2) ──
+  //
+  // T49 asked for `data-room-presets=` here, because that turn's answer was
+  // "the row is the MENU door's". T50-F12 overrules it — *"ship the wizard's
+  // version in both (no canned shapes anywhere)"* — so the row is gone from
+  // both doors and the audit asks the question F12 leaves behind instead: is
+  // what the shapes MADE still reachable?
   {
     was: 'wizard · room step',
-    control: 'Rectangle / L-shape / + Box',
-    hook: 'data-room-presets=',
+    control: 'Rectangle / L-shape (the canned outlines)',
+    hook: 'data-draw-walls=',
     file: 'src/components/RoomModal.jsx',
-    now: 'Settings ▸ Room setup — the same editor, the same buttons, the menu door only',
+    now: 'SUPERSEDED (T50-F12) — a rectangle is four typed segments in the WALL EDITOR (F1), '
+      + 'which is the owner\u2019s own answer to how a room is drawn. Both doors, same screen.',
+  },
+  {
+    was: 'wizard · room step',
+    control: '+ Box (a chimney, a pillar, a boxed pipe)',
+    hook: 'data-insert-box=',
+    file: 'src/components/RoomModal.jsx',
+    now: 'BOTH doors (T50-F12) — it was never a canned shape and T49 hid it only by '
+      + 'association with the row it stood in',
+  },
+  // ── the two entries that left the CONTEXT MENU (T50-F10) ──
+  //
+  // Iron rule 4: *"F10 removes two ENTRIES from a context menu — the actions
+  // behind them stay, reachable where they already are, and the PR says where."*
+  // This is where that is asked of the FILES rather than promised.
+  {
+    was: 'right-click menu · Add doors',
+    control: 'Add doors (one cabinet)',
+    hook: 'addDoorsToUnit',
+    file: 'src/components/RightPanel.jsx',
+    now: 'the right-hand panel — the button T13 added the menu entry to duplicate',
+  },
+  {
+    was: 'right-click menu · Add doors',
+    control: 'Add doors (from the plus)',
+    hook: 'addDoors(unit.id)',
+    file: 'src/components/AddItemsModal.jsx',
+    now: 'the plus modal, beside the items — where a cabinet is fitted out',
+  },
+  {
+    was: 'right-click menu · Add doors',
+    control: 'Add doors (a selection)',
+    hook: 'addDoorsBulk(ids)',
+    file: 'src/components/MultiUnitPanel.jsx',
+    now: 'a multi-selection — what `forAll(\'Add doors\')` was reaching for',
+  },
+  {
+    was: 'right-click menu · Show all dimensions',
+    control: 'Every dimension of a cabinet on the scene',
+    hook: "label: 'Dimensions'",
+    file: 'src/components/TopBar.jsx',
+    now: 'the top bar — *\"dimension ju\u017c mamy na g\u00f3rze\"*, and it draws the SAME chain '
+      + '(`engine/dimensions.js dimensionCarriers`) over every cabinet',
+  },
+  {
+    was: 'right-click menu · Show all dimensions',
+    control: '…and on the canvas toolbar',
+    hook: 'Show dimensions',
+    file: 'src/components/CanvasToolbar.jsx',
+    now: 'the toolbar over the room',
+  },
+  {
+    was: 'right-click menu · Show all dimensions',
+    control: 'The per-cabinet mechanism itself',
+    hook: 'toggleUnitDimensions: (unitId) =>',
+    file: 'src/stores/uiStore.js',
+    now: 'NOT DELETED — the store still holds it and `3d/Scene.jsx` still draws from it. '
+      + 'What has gone is the menu\u2019s door onto it (BACKLOG 127).',
   },
 ];
 

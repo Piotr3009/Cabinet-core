@@ -1,0 +1,219 @@
+{
+ "turn": 50,
+ "when": "#566 · 2026-08-26 00:41 UTC · b45a45d",
+ "steps": 27,
+ "failed": 0,
+ "shots": 12,
+ "shotsMissingSubject": 0,
+ "rows": [
+  {
+   "label": "the app is up, with a 4 × 3 m room and nothing in it",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F12 — one room screen: no canned shapes in either door, + Box in both",
+   "ok": true,
+   "detail": "{\"draw\":1,\"box\":1,\"presets\":0}"
+  },
+  {
+   "label": "F1 — the editor opens, and asks for the first corner",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1 — pointing right and clicking lays the first wall down",
+   "ok": true,
+   "detail": "1 segment(s)"
+  },
+  {
+   "label": "F1 — …and its length is TYPED",
+   "ok": true,
+   "detail": "field reads 3600"
+  },
+  {
+   "label": "F1 — the angle field carries 90, to be overtyped",
+   "ok": true,
+   "detail": "reads 90"
+  },
+  {
+   "label": "F1 — a change of direction is 90° by default",
+   "ok": true,
+   "detail": "[\"3600\",\"2400\"]"
+  },
+  {
+   "label": "F1 — …unless you type another angle: the third wall takes the 45",
+   "ok": true,
+   "detail": "[\"Wall 1mm0°\",\"Wall 2mm90°\",\"Wall 3mm135°\"]"
+  },
+  {
+   "label": "F1 — Undo takes back ONE segment, not the wall",
+   "ok": true,
+   "detail": "2 left of 3"
+  },
+  {
+   "label": "F1 — the outline becomes the room, and the app knows which walls were DRAWN",
+   "ok": true,
+   "detail": "{\"corners\":3,\"drawn\":2}"
+  },
+  {
+   "label": "F2 — six 600 mm cabinets leave a gap too small for a seventh",
+   "ok": true,
+   "detail": "6 cabinets, 300 mm left (offer under 400)"
+  },
+  {
+   "label": "F2 — …so the app offers the share-out, at the moment the last one goes in",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F2 — it is a BAR at the gap, not a modal in the middle of the screen",
+   "ok": true,
+   "detail": "{\"gap\":\"260\",\"each\":\"643\",\"text\":\"260 mm left over\\n·\\nShare it out equally · 643 mm each\\n…or 7 cabinets at 551 mm\"}"
+  },
+  {
+   "label": "F2 — every cabinet is one width, wall to wall, less the two scribes",
+   "ok": true,
+   "detail": "[600,600,600,600,600,600] → [636,636,636,636,636,640] at x {\"left\":40,\"right\":3860,\"wall\":3900}"
+  },
+  {
+   "label": "F2 — and ONE Ctrl+Z takes the whole run back",
+   "ok": true,
+   "detail": "[600,600,600,600,600,600]"
+  },
+  {
+   "label": "F3 — a height that will not fit is refused, with the ROOM’s figure in it",
+   "ok": true,
+   "detail": "01: the room is 2500 mm and this stands 100 mm off the floor — 2600 mm will not fit. 2400 mm is what is left."
+  },
+  {
+   "label": "F3 — the owner’s own case: a top box with no headroom is BLOCKED",
+   "ok": true,
+   "detail": "The room is 2300 mm and this stands 2250 mm off the floor — there is only 50 mm left, and a top box needs 200."
+  },
+  {
+   "label": "F4 — a low unit beside a tall one grows the panel, stamped as the app’s own",
+   "ok": true,
+   "detail": "[{\"side\":\"R\",\"auto\":true}]"
+  },
+  {
+   "label": "F4 — …and the app says what it did, and how to undo it",
+   "ok": true,
+   "detail": "T01: the app added a finishing end panel where this meets the cabinet beside it — right-click it and Remove if you do not want it."
+  },
+  {
+   "label": "F5 — the end panel under the slope STOPS at it, and states its angle",
+   "ok": true,
+   "detail": "{\"id\":\"END-R\",\"w\":606,\"h\":1202,\"cut\":{\"h\":1202.25,\"full\":2250,\"angles\":[{\"from\":600,\"to\":625,\"deg\":33.0239}]},\"unitId\":\"u_0wnbirx\"}"
+  },
+  {
+   "label": "F7 — the cut door lost hinges, and the record says how many",
+   "ok": true,
+   "detail": "{\"id\":\"W01-F\",\"cut\":true,\"corners\":4,\"pocket\":1,\"points\":4,\"hinges\":{\"was\":6,\"now\":5},\"cups\":5}"
+  },
+  {
+   "label": "F6 — a shaker leaf under the slope keeps its recess, and the recess follows the cut",
+   "ok": true,
+   "detail": "{\"cut\":true,\"corners\":4,\"pocketPts\":4,\"shaker\":true}"
+  },
+  {
+   "label": "F9 — on a WARDROBE, the cargo pull-out and the waste bins are ABSENT",
+   "ok": true,
+   "detail": "[\"drawers\",\"overlay_drawers\",\"shelves\",\"shoe_box\",\"partition\",\"hanger\",\"pulldown\",\"trouser\",\"tie_rack\"]"
+  },
+  {
+   "label": "F9 — …and on a KITCHEN cabinet they are there, where they make sense",
+   "ok": true,
+   "detail": "[\"drawers\",\"overlay_drawers\",\"shelves\",\"shoe_box\",\"partition\",\"hanger\",\"cargo\",\"bins\",\"pulldown\",\"trouser\",\"tie_rack\"]"
+  },
+  {
+   "label": "F10 — neither \"Add doors\" nor \"Show all dimensions\" is in the menu",
+   "ok": true,
+   "detail": "[\"edit-cabinet\",\"rename\",\"plinth\",\"end-panel-L\",\"end-panel-R\",\"end-panel-B\",\"side-infill\",\"pin-infill-L\",\"pin-infill-R\",\"unit-colour\",\"save-template\",\"center-shelves\",\"rotate-90\",\"back-to-wall\",\"side-to-wall\",\"delete\"]"
+  },
+  {
+   "label": "F13 — 2150, and the two places that carry it agree",
+   "ok": true,
+   "detail": "{\"tall\":2150,\"kit\":2150,\"baseGain\":0.75,\"pillars\":11}"
+  },
+  {
+   "label": "F14 — the rig ships at 0.75 of its base, and a pillar at 11 × 0.75 = 8.25",
+   "ok": true,
+   "detail": "baseGain 0.75, pillars 11"
+  }
+ ],
+ "pictures": [
+  {
+   "name": "f1-wall-editor-mid-draw.png",
+   "note": "the wall editor MID-DRAW: one wall down, its length typed, the turn field carrying 90",
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f1-wall-editor-overtyped-angle.png",
+   "note": "three walls: two right angles taken by default, the third overtyped to 45°",
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f1-open-chain-is-an-L.png",
+   "note": "an OPEN chain, about to be finished: two walls typed, nothing snapped shut, and Finish offering to leave it open",
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f2-run-before.png",
+   "note": "BEFORE: six 600 mm cabinets and a leftover under 400 mm, with the bar standing IN the gap",
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f2-run-after.png",
+   "note": "AFTER: one width from wall to wall, the two 40 mm scribes left for the fillers",
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f4-the-panel-grows-itself.png",
+   "note": "the message in the middle of the screen: the app added a panel, and where the way out is",
+   "present": true,
+   "detail": "{\"all\":true,\"text\":true}"
+  },
+  {
+   "name": "f5-end-panel-cut.png",
+   "note": "the CUT end panel on the bench: it stops at the slope, and the sheet says at what angle",
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f6-shaker-cut-with-its-door.png",
+   "note": "the shaker door cut on the slope, with its recess rendered WITH it — T46’s named debt, paid",
+   "present": true,
+   "detail": "{\"dom\":true}"
+  },
+  {
+   "name": "f9-wardrobe-menu-no-kitchen-fittings.png",
+   "note": "Add items on a WARDROBE: no cargo pull-out, no waste bins — *\"w ogóle nie ma sensu\"*",
+   "present": true,
+   "detail": "{\"none\":true,\"count\":true}"
+  },
+  {
+   "name": "f9-kitchen-menu-has-them.png",
+   "note": "the same list on a KITCHEN cabinet — *\"tylko w kitchen\"*",
+   "present": true,
+   "detail": "{\"all\":true}"
+  },
+  {
+   "name": "f10-context-menu-two-entries-gone.png",
+   "note": "the right-click menu with the two entries gone — the actions are on the panel and the top bar",
+   "present": true,
+   "detail": "{\"none\":true,\"count\":true}"
+  },
+  {
+   "name": "f14-the-studio-a-quarter-darker.png",
+   "note": "the studio at its shipped brightness — one number (baseGain 0.75) and the pillars halved on their own",
+   "present": true,
+   "detail": "{\"dom\":true}"
+  }
+ ]
+}

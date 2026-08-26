@@ -211,8 +211,14 @@ test('F2 · it is ONCE: no flag is written, and nothing recalculates later', () 
   const store = readFileSync(new URL('../src/stores/projectStore.js', import.meta.url), 'utf8');
   const action = store.slice(store.indexOf('  shareOutRun:'), store.indexOf('  removeUnit:'));
   assert.ok(action.includes('runBatch'), 'ONE undo step — *"z możliwością zrobienia Undo"*');
-  assert.ok(action.includes("updateUnitParams(u.id, { width: want })"),
+  assert.ok(action.includes('updateUnitParams(u.id, { width: to.width })'),
     'written through the ordinary width setter, with the ordinary clamp');
+  // …from the RIGHT, because every cabinet in a share-out is growing and a
+  // cabinet grows into the space the one after it has just vacated.
+  assert.ok(action.includes('for (const u of [...units].reverse()) place(u);'));
+  // …and with the MAGNET off: it is a hand's convenience and it is exactly
+  // wrong for a position somebody has worked out.
+  assert.ok(action.includes('{ magnet: false }'));
 });
 
 // ─── THE STORE, END TO END ─────────────────────────────────────────────────

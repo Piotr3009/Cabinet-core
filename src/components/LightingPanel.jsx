@@ -7,6 +7,12 @@ import { migrateDesign } from '../engine/design.js';
 import {
   lightingSpec, resolveLighting, stripsForUnit, switchChoicesFor,
 } from '../engine/ledStrips.js';
+// T51 (CLAUDE.md F6): the room's own four lamps — ceiling, left wall, right
+// wall, facing — and the one fixed rig every export uses.
+import {
+  EXPORT_NOTICE, PRESET_IDS, RIG_HINTS, RIG_LABELS, RIG_LAMPS, RIG_PRESETS,
+  STRENGTH_MAX, STRENGTH_MIN, STRENGTH_STEP, matchesPreset, migrateLightRig, rigFromPreset,
+} from '../engine/lightRig.js';
 import { getUnitType } from '../engine/types.js';
 // T37-F1: the piece selection spans cabinets — members are keyed, not bare refs.
 import { memberKey } from '../lib/selection.js';
@@ -144,6 +150,10 @@ export default function LightingPanel() {
   const updateLightingItem = useProjectStore((s) => s.updateLightingItem);
   const updateLightingItemsBulk = useProjectStore((s) => s.updateLightingItemsBulk);
   const removeLightingItem = useProjectStore((s) => s.removeLightingItem);
+  // T51 (CLAUDE.md F6 · decision 1): the rig is the PROJECT'S, so it is read
+  // and written exactly where the LED spec is.
+  const storedRig = useProjectStore((s) => s.project.lightRig);
+  const setLightRig = useProjectStore((s) => s.setLightRig);
   // ─── TURN 36 (CLAUDE.md F2): THE SELECTED STRIPS MOVE AS ONE ──────────────
   //
   // "LED strips: inset and depth to all selected." A strip is not a panel and
@@ -158,6 +168,7 @@ export default function LightingPanel() {
   const profile = useCabinetProfileStore((s) => s.profile);
 
   const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
+  const rig = useMemo(() => migrateLightRig(storedRig), [storedRig]);
   const spec = lightingSpec(profile);
   const lighting = useMemo(() => resolveLighting(design, profile), [design, profile]);
   /** The strips this edit reaches: the whole ticked set, or the one in hand. */
@@ -319,6 +330,106 @@ export default function LightingPanel() {
           A PREVIEW: ON dims the room so the placed LEDs read. The lines below are placed, seen and edited
           either way.
         </p>
+
+        {/* ─── TURN 51 (CLAUDE.md F6): THE ROOM'S OWN LAMPS ────────────────
+            The owner, 26.08.2026: *"robimy w Light coś na wzór pokoju, czyli
+            lewa ściana, sufit i prawa ściana, i wtedy włącz/wyłącz światło
+            poszczególną lampę."*
+
+            Four lamps in the order you meet them standing in the room, each
+            with a switch and a strength. Nothing is invented: the mapping onto
+            the rig that is already there is `engine/lightRig.js`'s, and this
+            panel drives it.
+
+            DECISION 2, taken for him at the top of CLAUDE.md: a lamp has ON/OFF
+            and a strength and does NOT slide along its wall. Position stays the
+            rig's arithmetic. */}
+        <div className="space-y-2" data-light-rig="1">
+          <div className="cc-row">
+            <span className="text-[11px] uppercase tracking-wide text-ink-400">The room</span>
+            <span className="flex-1" />
+            <span className="text-[10px] text-ink-500">
+              {matchesPreset(rig) ? RIG_PRESETS[rig.preset].label : `${RIG_PRESETS[rig.preset].label} · tuned`}
+            </span>
+          </div>
+
+          {/* The PRESETS — a starting point, and then he tunes. */}
+          <div className="flex gap-1 flex-wrap" data-light-presets="1">
+            {PRESET_IDS.map((id) => (
+              <button
+                key={id}
+                type="button"
+                data-light-preset={id}
+                title={RIG_PRESETS[id].hint}
+                aria-pressed={rig.preset === id && matchesPreset(rig)}
+                className={`cc-btn px-2 text-[11px] ${
+                  rig.preset === id && matchesPreset(rig) ? 'border-gold text-ink-50' : ''}`}
+                onClick={() => setLightRig(rigFromPreset(id))}
+              >
+                {RIG_PRESETS[id].label}
+              </button>
+            ))}
+          </div>
+
+          <ul className="space-y-1" data-light-lamps="1">
+            {RIG_LAMPS.map((id) => {
+              const on = rig.lamps[id].on;
+              return (
+                <li key={id} className="border border-shell-600 rounded p-2 space-y-1" data-light-lamp={id}>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      data-light-switch={id}
+                      aria-pressed={on}
+                      title={on ? `Turn the ${RIG_LABELS[id].toLowerCase()} off` : `Turn the ${RIG_LABELS[id].toLowerCase()} on`}
+                      className={`w-11 h-6 rounded-full border shrink-0 relative transition-colors ${
+                        on ? 'bg-status-ok border-status-ok' : 'border-shell-600 bg-shell-800'}`}
+                      onClick={() => setLightRig({ lamps: { [id]: { ...rig.lamps[id], on: !on } } })}
+                    >
+                      <span
+                        className={`absolute top-0.5 w-4 h-4 rounded-full transition-all ${
+                          on ? 'left-6 bg-shell-900' : 'left-0.5 bg-ink-400'}`}
+                      />
+                    </button>
+                    <span className="text-sm text-ink-50 flex-1">{RIG_LABELS[id]}</span>
+                    <span className="text-[11px] text-ink-400 tabular-nums w-10 text-right" data-light-strength-read={id}>
+                      {on ? `${Math.round(rig.lamps[id].strength * 100)}%` : 'off'}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-ink-500 leading-snug">{RIG_HINTS[id]}</p>
+                  <input
+                    type="range"
+                    className="w-full"
+                    data-light-strength={id}
+                    min={STRENGTH_MIN}
+                    max={STRENGTH_MAX}
+                    step={STRENGTH_STEP}
+                    value={rig.lamps[id].strength}
+                    disabled={!on}
+                    aria-label={`${RIG_LABELS[id]} strength`}
+                    onChange={(e) => setLightRig({
+                      lamps: { [id]: { ...rig.lamps[id], strength: Number(e.target.value) } },
+                    })}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* ─── AND THE ONE LINE THAT HAS TO BE SAID (CLAUDE.md F6) ────────
+              *"THE EXPORT IGNORES THE PANEL … Say this in the panel, in one
+              line."*  Here it is, and it is not a footnote in grey nobody
+              reads: a joiner who has just made the room moody needs to know
+              his client's render did not move. */}
+          <p
+            className="text-[10px] px-2 py-1 rounded border border-gold/40 bg-gold/5 text-ink-300 leading-snug"
+            data-light-export-note="1"
+          >
+            {EXPORT_NOTICE}
+          </p>
+        </div>
+
+        <div className="cc-divider" />
 
         <>
             {/* ─── the choices ──────────────────────────────────────────── */}

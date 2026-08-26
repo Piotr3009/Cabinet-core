@@ -55,6 +55,10 @@ import {
 // `src/engine/**` is closed byte-for-byte tonight (lib/ledSpec.js says it in
 // full). The day the engine reopens it moves into `design.lighting`.
 import { migrateLedSpec } from '../lib/ledSpec.js';
+// T51 (CLAUDE.md F6 · decision 1): the light rig lives WITH THE PROJECT — *"a
+// room with one window and a showroom want different rigs, and a saved job
+// should reopen looking as it did."*
+import { defaultLightRig, migrateLightRig } from '../engine/lightRig.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, normaliseHandle, projectHeights,
   resolveUnitDesign, setCarcassTypeCount, withFrontColour, withRunMaterial,
@@ -994,6 +998,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       design: migrateDesign(cached.project.design),
       wallSlopes: wallElements(cached.project.wallSlopes),
       ledSpec: migrateLedSpec(cached.project.ledSpec),
+      lightRig: migrateLightRig(cached.project.lightRig),
     }
     : {
       id: null, name: 'Untitled project', number: '', client: '',
@@ -1003,6 +1008,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       wallSlopes: [],
       // T45 F9b: a new job's LED spec — flexi, 4 mm, no W/m typed yet.
       ledSpec: migrateLedSpec(null),
+      // T51 F6: SHOWROOM, adjusted to whatever the profile's pillars are — so a
+      // project opened with the panel untouched looks exactly as it did before
+      // tonight. `engine/lightRig.js defaultLightRig` says why.
+      lightRig: defaultLightRig(getCabinetProfile()),
       jc_tenant_id: null, jc_project_id: null,
     },
   units: migrateUnits(cached?.units),
@@ -1130,6 +1139,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     project: { ...s.project, ledSpec: migrateLedSpec({ ...migrateLedSpec(s.project.ledSpec), ...patch }) },
   })),
 
+  // ─── TURN 51 (CLAUDE.md F6 · decision 1): THE LIGHT RIG, WITH THE PROJECT ─
+  //
+  // *"Light settings live WITH THE PROJECT, not globally — a room with one
+  // window and a showroom want different rigs, and a saved job should reopen
+  // looking as it did."*
+  //
+  // A PATCH setter, like `setLedSpec` above: the panel writes one lamp at a
+  // time and `engine/lightRig.js` answers for the rest.
+  setLightRig: (patch) => set((s) => {
+    const now = migrateLightRig(s.project.lightRig);
+    const next = migrateLightRig({
+      preset: patch?.preset ?? now.preset,
+      lamps: { ...now.lamps, ...(patch?.lamps || {}) },
+    });
+    return { project: { ...s.project, lightRig: next } };
+  }),
+
   loadProject: (project, units) => {
     // ─── TURN 34 (CLAUDE.md F7): THE SHAKER FRAME A SAVED JOB WAS CUT TO ────
     // "zmienimy default z 70 na 60" — for NEW projects. A job already on the
@@ -1155,6 +1181,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         wallSlopes: wallElements(project?.wallSlopes),
         // …and its LED spec, normalised on the way in like everything else.
         ledSpec: migrateLedSpec(project?.ledSpec),
+        // T51 F6: …and its LIGHT RIG. A job saved before tonight has none and
+        // opens on the rig it was drawn under, which is the default.
+        lightRig: project?.lightRig
+          ? migrateLightRig(project.lightRig)
+          : defaultLightRig(getCabinetProfile()),
       },
       units: migrateUnits(units),
       dirty: false,
@@ -1206,6 +1237,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // is added, and it is the project's, not the last project's.
       wallSlopes: [],
       ledSpec: migrateLedSpec(null),
+      lightRig: defaultLightRig(getCabinetProfile()),
       jc_tenant_id: null,
       jc_project_id: null,
     },

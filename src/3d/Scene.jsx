@@ -15,6 +15,9 @@ import AddPlus from './AddPlus.jsx';
 // Turn 50 (CLAUDE.md F2, decision 1): the share-out is offered AT THE GAP.
 import ShareOutBar from './ShareOutBar.jsx';
 import { captureRender, furnitureBounds } from './renderCapture.js';
+// T51 (CLAUDE.md F6): the panel's four lamps, and the ONE fixed rig an export
+// uses whatever the switches say.
+import { exportGain, lampGain } from '../engine/lightRig.js';
 // The LTC tables every RectAreaLight needs — the bands and the pillars are
 // RectAreaLights, and without these they light nothing at all (chat-fix
 // 25.08.2026). Lazy and once per app; see ensureLtc's own note.
@@ -248,7 +251,7 @@ export function Environment({ intensity, on }) {
  * its reflection onto the floor instead of into the doors.
  */
 function Pillar({
-  position, target, width, height, intensity, colour,
+  position, target, width, height, intensity, exportIntensity, colour,
 }) {
   const ref = useRef(null);
   const aim = target.join(',');
@@ -262,7 +265,7 @@ function Pillar({
   return (
     <rectAreaLight
       ref={ref}
-      userData={{ ccLight: 'pillar' }}
+      userData={{ ccLight: 'pillar', ccExportIntensity: exportIntensity }}
       position={position}
       width={width}
       height={height}
@@ -273,7 +276,8 @@ function Pillar({
 }
 
 function Lights({
-  roomHeight, roomWidth, shadow, studio, subject, brightness = 1, runs = [],
+  roomHeight, roomWidth, shadow, studio, subject, brightness = 1, runs = [], rig = null,
+  profile = null,
 }) {
   const key = useRef(null);
   // The box the shadow map has to cover, in scene units. Falls back to the room
@@ -425,9 +429,17 @@ function Lights({
     // Both live behind numbers: `count: 1` drops the mirror, and a `spread`
     // above 1 walks the survivor out past the end of the run and toward the
     // side wall. `sides` says which one it stands on.
-    const count = Number(cfg.count) === 2 ? 2 : 1;
-    const first = String(cfg.side || 'right') === 'left' ? -1 : 1;
-    const sides = count === 2 ? [-1, 1] : [first];
+    // ─── TURN 51 (CLAUDE.md F6): BOTH SIDES ARE BUILT; THE PANEL LIGHTS THEM ─
+    //
+    // The rig ships ONE pillar, on the right (`count: 1`, `side: 'right'`), and
+    // the owner's panel has a switch for a LEFT WALL and a switch for a RIGHT
+    // one. A switch with no lamp behind it is a switch that does nothing, so
+    // both are built here and each carries WHICH WALL IT IS.
+    //
+    // Nothing gets brighter by default: `engine/lightRig.js defaultLightRig`
+    // reads the very same `count`/`side` and ships the left OFF, so a project
+    // nobody has touched is lit by exactly the lamps it was lit by last night.
+    const sides = [-1, 1];
     const height = roomHeight > 0 ? roomHeight : mm(2700);
     const out = [];
     for (const { wall, bounds } of runs || []) {
@@ -470,6 +482,9 @@ function Lights({
           : [bounds.max[0], height / 2, centre[2] - side * (depth / 2)];
         out.push({
           key: `${wall}:${side}`,
+          // −1 is the run's LEFT end and +1 its right, which is the owner's own
+          // left and right when he is standing in front of it.
+          lamp: side < 0 ? 'leftWall' : 'rightWall',
           position,
           target,
           height,
@@ -530,6 +545,32 @@ function Lights({
   const baseGain = Number(studio.baseGain) > 0 ? Number(studio.baseGain) : 1;
   const gain = (Number(brightness) > 0 ? Number(brightness) : 1) * baseGain;
 
+  // ─── TURN 51 (CLAUDE.md F6): THE LIGHT PANEL, BUILT LIKE A ROOM ──────────
+  //
+  // The owner: *"robimy w Light coś na wzór pokoju, czyli lewa ściana, sufit i
+  // prawa ściana, i wtedy włącz/wyłącz światło poszczególną lampę."*
+  //
+  // The MAPPING is `engine/lightRig.js` and none of it is here: the bands are
+  // the CEILING, the pillars are the WALLS, and the key, the fill and the spots
+  // are FACING. This file multiplies, and has no opinion about which is which.
+  //
+  // TWO NUMBERS PER LAMP, and the second one is the whole of F6's hard rule:
+  //
+  //   `lamp(id)`   what the PANEL says — what the joiner is looking at.
+  //   `fixed(id)`  what an EXPORT uses, WHATEVER the switches say. It rides on
+  //                the light as `ccExportIntensity` and `3d/renderCapture.js`
+  //                swaps to it for the duration of a capture. *"A client
+  //                compares a render against an Egger sample, and two renders
+  //                of the same decor must not differ because somebody flipped
+  //                a lamp."*
+  //
+  // The AMBIENT, the HEMISPHERE and the RIM are not on the panel and carry no
+  // export number: they are the room's base light, they are the same in the
+  // editor and in a still, and a panel that could turn the scene black is a
+  // panel whose first use is an accident.
+  const lamp = (id) => lampGain(rig, id);
+  const fixed = (id) => exportGain(profile, id);
+
   // A RectAreaLight without the LTC tables lights NOTHING and reflects in
   // nothing — silently, no warning. Until tonight they were loaded only by
   // the LED strips, so a kitchen with no LED in it had its whole showroom
@@ -561,9 +602,9 @@ function Lights({
       <primitive object={target} />
       <directionalLight
         ref={key}
-        userData={{ ccLight: 'key' }}
+        userData={{ ccLight: 'key', ccExportIntensity: studio.key * gain * fixed('facing') }}
         position={[fit.centre[0] + distance * 0.55, fit.centre[1] + distance * 0.85, fit.centre[2] + distance * 0.7]}
-        intensity={studio.key * gain}
+        intensity={studio.key * gain * lamp('facing')}
         // Turn 10 (CLAUDE.md F1.4) makes this a profile decision rather than a
         // fact of the file, because the alternative — handing the shadow to a
         // jupiter and letting the key light only — had to be tried by LOOKING.
@@ -592,9 +633,9 @@ function Lights({
           gain is exactly the kind of cost CLAUDE.md rules out of the working
           view. */}
       <directionalLight
-        userData={{ ccLight: 'fill' }}
+        userData={{ ccLight: 'fill', ccExportIntensity: studio.fill * gain * fixed('facing') }}
         position={[fit.centre[0] - distance * 0.8, fit.centre[1] + distance * 0.5, fit.centre[2] + distance * 0.55]}
-        intensity={studio.fill * gain}
+        intensity={studio.fill * gain * lamp('facing')}
       />
       {/* Rim, from behind and above: the light that draws a bright edge down
           the side of a white cabinet standing against a white wall. It is what
@@ -623,12 +664,15 @@ function Lights({
       {bands.map((b) => (
         <rectAreaLight
           key={`ccBand${b.wall}`}
-          userData={{ ccLight: 'band' }}
+          userData={{
+            ccLight: 'band',
+            ccExportIntensity: (studio.band?.intensity ?? 2.2) * gain * fixed('ceiling'),
+          }}
           position={b.position}
           rotation={[-Math.PI / 2, 0, b.alongX ? 0 : Math.PI / 2]}
           width={b.width}
           height={b.height}
-          intensity={(studio.band?.intensity ?? 2.2) * gain}
+          intensity={(studio.band?.intensity ?? 2.2) * gain * lamp('ceiling')}
           color={studio.band?.colour ?? '#ffffff'}
         />
       ))}
@@ -654,21 +698,28 @@ function Lights({
           target={p.target}
           width={mm(studio.pillars?.widthMm ?? 260)}
           height={p.height}
-          intensity={(studio.pillars?.intensity ?? 22) * gain}
+          // WHICH WALL this pillar is. `side` is −1 at the run's left and +1 at
+          // its right (the memo above), which is the owner's own left and right
+          // when he is standing in front of the run.
+          intensity={(studio.pillars?.intensity ?? 22) * gain * lamp(p.lamp)}
+          exportIntensity={(studio.pillars?.intensity ?? 22) * gain * fixed(p.lamp)}
           colour={studio.pillars?.colour ?? '#ffffff'}
         />
       ))}
       {spots.map((s, i) => (
         <spotLight
           key={`ccSpot${i}`}
-          userData={{ ccLight: 'spot' }}
+          userData={{
+            ccLight: 'spot',
+            ccExportIntensity: s.intensity * balance.spotScale * gain * fixed('facing'),
+          }}
           position={[
             fit.centre[0] + distance * s.x,
             fit.centre[1] + distance * s.y,
             fit.centre[2] + distance * s.z,
           ]}
           target={target}
-          intensity={s.intensity * balance.spotScale * gain}
+          intensity={s.intensity * balance.spotScale * gain * lamp('facing')}
           color={s.colour}
           angle={s.angle}
           penumbra={s.penumbra}
@@ -695,10 +746,13 @@ function Lights({
           furniture already hides. */}
       {balance.enabled && balance.ceiling && (
         <spotLight
-          userData={{ ccLight: 'ceiling' }}
+          userData={{
+            ccLight: 'ceiling',
+            ccExportIntensity: balance.ceiling.intensity * gain * fixed('ceiling'),
+          }}
           position={balance.ceiling.position}
           target={target}
-          intensity={balance.ceiling.intensity * gain}
+          intensity={balance.ceiling.intensity * gain * lamp('ceiling')}
           color={balance.ceiling.colour}
           angle={balance.ceiling.angle}
           penumbra={balance.ceiling.penumbra}
@@ -1137,6 +1191,8 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const unitGroups = useRef({});
   const room = useProjectStore((s) => s.project.room);
   const design = useProjectStore((s) => s.project.design);
+  // T51 (CLAUDE.md F6 · decision 1): the light rig lives with the PROJECT.
+  const lightRig = useProjectStore((s) => s.project.lightRig);
   const units = useProjectStore((s) => s.units);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const moveUnitToWall = useProjectStore((s) => s.moveUnitToWall);
@@ -1433,6 +1489,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         studio={studio}
         subject={subject}
         runs={runs}
+        // T51 F6 (decision 1): the rig is the PROJECT'S.
+        rig={lightRig}
+        profile={profile}
         // Turn 26 (CLAUDE.md F10.3): the View menu's slider, remembered.
         brightness={brightnessScale(brightness, profile) * demoDim}
       />

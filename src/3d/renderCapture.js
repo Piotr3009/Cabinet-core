@@ -136,9 +136,38 @@ export function captureRender({ gl, scene, camera }, job) {
     }
   });
 
+  // ─── TURN 51 (CLAUDE.md F6): THE EXPORT IGNORES THE PANEL ────────────────
+  //
+  // *"`renderCapture` and every PDF render with ONE fixed rig, whatever the
+  // switches say. A client compares a render against an Egger sample, and two
+  // renders of the same decor must not differ because somebody flipped a
+  // lamp."*
+  //
+  // The light itself carries the answer. `3d/Scene.jsx` stamps every lamp the
+  // panel can reach with `ccExportIntensity` — what that lamp is worth under
+  // the FIXED rig (`engine/lightRig.js exportRig`) — and this swaps to it for
+  // the duration of the capture and puts the panel's number back afterwards.
+  //
+  // It is done on the LIGHT rather than by re-rendering the scene with another
+  // rig because that is the only way the two can be guaranteed identical: there
+  // is one scene graph, and the capture reads a number off it.
+  //
+  // A lamp with no stamp is one the panel cannot reach — the ambient, the
+  // hemisphere, the rim — and is left exactly as the editor has it.
+  scene.traverse((object) => {
+    const fixed = object.userData?.ccExportIntensity;
+    if (!Number.isFinite(Number(fixed))) return;
+    const prev = object.intensity;
+    object.intensity = Number(fixed);
+    undo(() => { object.intensity = prev; });
+  });
+
   // The lighting balance. The editor runs a high ambient so the walls read
   // white with no tone mapping (turn 4); a still can afford less ambient and
   // more key, which is what puts modelling back into a matt white side panel.
+  //
+  // It multiplies whatever stands after the swap above, which is the fixed rig
+  // — so the render's own rebalance is applied to one rig and one rig only.
   scene.traverse((object) => {
     const role = object.userData?.ccLight;
     const scale = role && job.lightScale?.[role];

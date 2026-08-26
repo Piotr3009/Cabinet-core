@@ -178,16 +178,25 @@ test('F10.3 — it scales EVERY source, so the ratios never move', () => {
   const view = read('3d/Scene.jsx');
   // Every lamp the rig mounts is multiplied by the same `gain`. A slider that
   // touched one of them would be a slider that re-lights the scene.
+  // T51 (CLAUDE.md F6) put a per-lamp factor after `gain` on the four the light
+  // panel can reach — `* lamp('ceiling')` and friends. `gain` is still on every
+  // one of them, which is the whole of F10.3: the SLIDER moves them all
+  // together and no ratio it was tuned at can drift. The panel is a different
+  // control with a different job, and the two multiply.
   for (const lamp of [
     /intensity=\{studio\.ambient \* gain\}/,
     /intensity=\{studio\.hemisphere\.intensity \* gain\}/,
-    /intensity=\{studio\.key \* gain\}/,
-    /intensity=\{studio\.fill \* gain\}/,
+    /intensity=\{studio\.key \* gain(?: \* lamp\('facing'\))?\}/,
+    /intensity=\{studio\.fill \* gain(?: \* lamp\('facing'\))?\}/,
     /intensity=\{studio\.rim \* gain\}/,
-    /intensity=\{s\.intensity \* balance\.spotScale \* gain\}/,
+    /intensity=\{s\.intensity \* balance\.spotScale \* gain(?: \* lamp\('facing'\))?\}/,
     /intensity=\{p\.intensity \* gain\}/,
-    /intensity=\{balance\.ceiling\.intensity \* gain\}/,
+    /intensity=\{balance\.ceiling\.intensity \* gain(?: \* lamp\('ceiling'\))?\}/,
   ]) assert.match(view, lamp, `a lamp is not scaled: ${lamp}`);
+  // …and the two lamps the panel drives through a component of their own carry
+  // it too, so "every source" stays literally true.
+  assert.match(view, /\(studio\.band\?\.intensity \?\? 2\.2\) \* gain \* lamp\('ceiling'\)/);
+  assert.match(view, /\(studio\.pillars\?\.intensity \?\? 22\) \* gain \* lamp\(p\.lamp\)/);
   // …and there is exactly ONE gain in the file.
   assert.equal((view.match(/const gain = /g) || []).length, 1);
 });

@@ -112,6 +112,13 @@ export const MODAL_KINDS = Object.freeze({
   drawing: { about: 'project', label: 'Drawing' },
   'new-project': { about: 'project', label: 'New project' },
   'hand-edits': { about: 'project', label: 'This part carries manual edits' },
+  // ─── TURN 51 (CLAUDE.md F7): THE WAREHOUSE, AND ONE MATERIAL ───────────
+  // The warehouse is the WORKSHOP'S stock and concerns no object on the
+  // canvas, so it is a project window. A material CARD is about one row and
+  // opens beside it — *"a draggable card on click"* — which is what 'object'
+  // means here.
+  warehouse: { about: 'project', label: 'Materials warehouse' },
+  'material-card': { about: 'object', label: 'Material' },
   'save-template': { about: 'object', label: 'Save as template' },
   element: { about: 'object', label: 'Element' },
   // TURN 42 F1: the hanging rod's own window. It is about a thing on the

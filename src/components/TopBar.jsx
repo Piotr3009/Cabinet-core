@@ -283,10 +283,17 @@ export default function TopBar({
     // behind it standing beside a menu with nothing behind it. Nothing is lost:
     // this is a reorder, not a cull.
     buildDatabaseMenu({
-      // The one of the three that is real today. Design Settings is where the
-      // assignment lives, so that is where the entry goes rather than to a
-      // second screen that would have to be kept in step with it.
-      onMaterials: (e) => openModal('design', { anchor: anchorOfEvent(e) }),
+      // ─── TURN 51 (CLAUDE.md F7): …AND NOW THERE IS A SECOND SCREEN ──────
+      //
+      // *"Database ▸ Materials opens the warehouse, not the design modal."*
+      //
+      // T11's note above was right for T11: the assignment lived in Design
+      // Settings and a second screen would have had to be kept in step with
+      // it. The warehouse is not that screen — it is the workshop's STOCK, one
+      // table, twelve columns, its own categories — and Design Settings is
+      // still where a project's materials are ASSIGNED. Two different
+      // questions, and this entry was answering the wrong one.
+      onMaterials: (e) => openModal('warehouse', { anchor: anchorOfEvent(e) }),
       // Turn 22 (CLAUDE.md F2b.2): the second one that is real.
       onCompanyDefaults: (e) => openModal('company-defaults', { anchor: anchorOfEvent(e) }),
       // Turn 39 (CLAUDE.md F3): the third.

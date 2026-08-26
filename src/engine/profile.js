@@ -2298,14 +2298,20 @@ export const DEFAULT_CABINET_PROFILE = {
         // number that comes back up, not `baseGain`.
         intensity: 11,
         colour: '#ffffff',
-        widthMm: 260, // the slab's width — a tall window, not a line
-        forwardMm: 900, // how far in front of the fronts they stand
-        // How far OUT along the run each pillar stands, as a share of its
-        // half-length: 1 would put them at the very ends, 0 both at the
-        // centre. The owner, seeing the end cabinets come back hot — *"wygląda
-        // jakbyśmy boki mieli podświetlone"* — asked for them further in, so
-        // they light the run's ends across it instead of from alongside.
-        spread: 0.55,
+        widthMm: 420, // the slab's width — a tall window, not a line
+        forwardMm: 900, // how far in front of the fronts it stands
+        // ONE, not a mirrored pair: the owner, 25.08 night — *"dwa paski …
+        // przez to że są symetryczne wydają się jakby były częścią mebla."* A
+        // real room reflects from one side, and asymmetry is what makes it
+        // read as a reflection rather than as decor.
+        count: 1,
+        side: 'right',
+        // How far OUT along the run it stands, as a share of the half-length.
+        // Below 1 it is inside the run; ABOVE 1 it walks out past the end,
+        // toward the side wall — which is where the owner wanted to see it:
+        // *"na prawej ścianie od mebli, gdzieś w połowie."* From there it
+        // fires almost ALONG the fronts, the most grazing angle there is.
+        spread: 1.7,
       },
       // The points are OFF and still here — the pillars replace what they were
       // for. Flip to true and both pairs come back exactly as T14 and T16

@@ -349,6 +349,57 @@ PROBES.f5 = () => {
   };
 };
 
+/**
+ * F6 — THE STRIPS. Two gates, and either one is enough.
+ *
+ * A plinth or an infill is a DECISION and waits to be asked for (turn 4's own
+ * law), so no default config cuts one at all. And even where one existed, the
+ * split needs a RUN element — `run_plinth.spans`, written by the store — which
+ * a bare `computeCabinet` never receives.
+ *
+ * Per config: how many plinth parts and how many infill parts it cuts, and
+ * whether its params carry a run element. Then the engine asked for a run long
+ * enough to split, so the law is shown to bite.
+ */
+PROBES.f6 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const plinths = (result.panels || []).filter((p) => p.role === 'plinth').length;
+    const infills = (result.panels || []).filter((p) => p.role === 'infill').length;
+    const run = params.run_plinth ?? params.run_top_infill ?? null;
+    return {
+      id: cfg.id,
+      cells: [String(plinths), String(infills), run == null ? '(none)' : 'YES'],
+      ok: plinths === 0 && infills === 0 && run == null,
+    };
+  });
+  // …and the same engine asked for the owner's own worked example.
+  const spans = [650, 650, 650, 650, 600].map((w, i) => ({ id: `u${i}`, width: w }));
+  const asked = computeCabinet({
+    ...defaultParamsFor('BUD', P),
+    unit_num: '01',
+    plinth: true,
+    run_plinth: {
+      role: 'owner', offset: 0, length: 3200, unitIds: spans.map((s) => s.id), spans,
+    },
+  }, P);
+  const strips = (asked.panels || []).filter((p) => p.role === 'plinth');
+  rows.push({
+    id: 'asked for one',
+    cells: [String(strips.length), '0', strips.map((p) => p.w).join(' + ')],
+    ok: strips.length === 2 && strips[0].w === 1950 && strips[1].w === 1250,
+  });
+  return {
+    head: 'F6 · THE STRIPS — a plinth or an infill waits to be asked for, and no golden asks',
+    columns: ['plinth parts', 'infill parts', 'run element'],
+    rows,
+    note: 'The split needs a run element’s `spans`, which only the store writes.',
+    verdict: [
+      'CLEAN — not one of the six cuts a plinth or an infill at all, so the split reaches none of them. And the law bites: 3200 over 650s becomes 1950 + 1250, his own two numbers.',
+      'NOT CLEAN — a golden cut a strip, or the worked example does not come out. STOP (iron rule 2).',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

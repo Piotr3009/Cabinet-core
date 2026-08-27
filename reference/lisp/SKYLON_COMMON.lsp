@@ -1668,6 +1668,56 @@
        (- (cadr f) (- (SKY:cutHeightAt pts xb) (SKY:roofVertDrop G (SKY:sideCutDeg pts xa xb))))))
 
 ;;;----------------------------------------
+;;; PLINTHS AND INFILLS: VERTICAL, AND SPLIT AT A CABINET EDGE  (turn 53, F6)
+;;;----------------------------------------
+
+;;; The owner, 27.08.2026:
+;;;
+;;;   "infille i plinthy ukladaj na CNC w pionie zawsze i dziel tak, zeby sie
+;;;    rowno z szafka ktoras - zeby nie przekroczylo wysokosci materialu. przy
+;;;    okazji rozwiazemy problem oversizu."
+;;;
+;;; ...and his own worked example, which is the assertion:
+;;;
+;;;   "plyta ma 2400 a plinth wychodzi 3200 - zobacz jakie mamy szafki:
+;;;    3 x 650 = 1950, reszta drugi pasek. laczenie zawsze rowno z szafka, a nie
+;;;    na srodku szafki."
+;;;
+;;; THREE CLAUSES, AND THEY ARE ONE LAW.
+;;;
+;;;   VERTICAL. The piece's LENGTH runs along the board's HEIGHT. That is what
+;;;   makes the grain run along the piece and the banded edge banded along the
+;;;   grain - the same "cut standing" rule the plinth already keeps and the
+;;;   infill did not.
+;;;
+;;;   SPLIT AT A CABINET EDGE. A joint in the middle of a cabinet is a joint the
+;;;   eye finds. So a strip takes WHOLE CABINET WIDTHS while the sum still fits
+;;;   the board, and closes the moment the next one would not.
+;;;
+;;;   AND THE SPLIT IS WHAT CLOSES THE OVERSIZE. No plinth or infill strip may
+;;;   exceed the sheet, so what is left for the oversize check to flag is a
+;;;   SINGLE CABINET wider than the board - which no split can save, and which
+;;;   is a fault about the cabinet rather than about the strip.
+;;;
+;;; `szer` is the list of cabinet widths, left to right; `plyta` is the board's
+;;; own height. The answer is the strips, each as (length n-cabinets).
+(defun SKY:stripsAtCabinetEdges (szer plyta / out cur n w)
+  (setq out '() cur 0.0 n 0)
+  (foreach w szer
+    (if (and (> cur 0.0) (> (+ cur w) plyta))
+      (progn (setq out (cons (list cur n) out)) (setq cur 0.0 n 0)))
+    (setq cur (+ cur w) n (1+ n)))
+  (if (> n 0) (setq out (cons (list cur n) out)))
+  (reverse out))
+
+;;; ...and the one thing a split cannot save: a cabinet wider than the board.
+;;; The check that used to flag every long plinth flags only this now.
+(defun SKY:stripOversize (szer plyta / worst w)
+  (setq worst 0.0)
+  (foreach w szer (if (> w plyta) (setq worst (max worst w))))
+  worst)
+
+;;;----------------------------------------
 ;;; THE INFILLS ON THE SLOPE - ONE LAW: 3D DRAWS WHAT CNC CUTS  (turn 53, F3)
 ;;;----------------------------------------
 

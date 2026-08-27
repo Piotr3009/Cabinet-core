@@ -58,6 +58,12 @@ import {
 import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
 // Turn 36 (CLAUDE.md F5): the owner's grain law, per ROLE, in one table.
 import { applyGrainAxis } from './grain.js';
+// T53 (F6): the strip law, born in `reference/lisp/SKYLON_COMMON.lsp`
+// (`SKY:stripsAtCabinetEdges`) — a plinth or an infill longer than the board is
+// split, and only ever on a cabinet's own edge.
+import {
+  oversizeCabinets, splitStretchAtEdges, stripLimitMm, stripsAtCabinetEdges,
+} from './strips.js';
 // ─── TURN 40 (CLAUDE.md F3b): OVERLAY DRAWERS IN A WARDROBE ────────────────
 // Where the stack STOPS, where the fixed shelf goes and where the shortened
 // door starts. It computes no runner row and no box side: the BUDR ladder
@@ -4702,7 +4708,69 @@ export function computeCabinet(params, profileOverride) {
   const plinthMember = runPlinth?.role === 'member';
   const plinthLength = runPlinth?.role === 'owner' ? Number(runPlinth.length) || W : W;
   const plinthX = runPlinth?.role === 'owner' ? Number(runPlinth.offset) || 0 : 0;
-  if (wantsPlinth && !plinthMember) {
+  // ─── TURN 53 (CLAUDE.md F6): A PLINTH LONGER THAN THE BOARD IS STRIPS ────
+  //
+  // *"infille i plinthy układaj na CNC w pionie zawsze i dziel tak, żeby się
+  // równo z szafką którąś — żeby nie przekroczyło wysokości materiału."*
+  //
+  // The strips are `engine/strips.js` and none of the arithmetic is here: the
+  // run element carries the cabinets' own widths (`spans`), the board's height
+  // comes off the project's material rather than a literal, and a joint may
+  // only land where a cabinet ends. A run that already fits gives ONE strip —
+  // the whole piece — so every plinth in every project shorter than a board is
+  // byte-for-byte the board it was, and a bare `computeCabinet()` (no run
+  // element at all) never reaches this code.
+  const plinthLimit = stripLimitMm(P, 'carcasses');
+  const plinthStrips = runPlinth?.role === 'owner' && Array.isArray(runPlinth.spans)
+    && plinthLength > plinthLimit
+    ? stripsAtCabinetEdges(runPlinth.spans, plinthLimit)
+    : null;
+  // …and the one thing a split cannot save. *"the check that used to flag the
+  // oversize now flags only a single cabinet wider than the board (which no
+  // split can save)."*  The strip carries the names, so check #7 and the sheet
+  // can say WHICH cabinet rather than only that something is too big.
+  const plinthTooWide = runPlinth?.role === 'owner' && Array.isArray(runPlinth.spans)
+    ? oversizeCabinets(runPlinth.spans, plinthLimit)
+    : [];
+  if (wantsPlinth && !plinthMember && plinthStrips && plinthStrips.length > 1) {
+    const t = AP.plinth.thickness ?? G;
+    for (const strip of plinthStrips) {
+      panels.push(panel({
+        id: `PLINTH-${strip.index}`,
+        part: 'PLINTH',
+        role: 'plinth',
+        w: strip.length,
+        h: plinthH,
+        thickness: t,
+        edgeCode: codes.topBottom,
+        edgeLen: metres(2 * strip.length),
+        box: {
+          x: plinthX + strip.from,
+          y: -plinthH,
+          z: D - AP.plinth.setback - t,
+          w: strip.length,
+          h: plinthH,
+          d: t,
+        },
+        // A strip is a plain rectangle: the appliance relief (`notchedPlinth`)
+        // belongs to the cabinet it is in front of, and a DROP front on a run
+        // long enough to need strips is named in the verdict as a case this
+        // turn does not compose — refuse-and-report rather than a quiet wrong
+        // outline.
+        cnc: rectGeometry(strip.length, plinthH),
+        meta: {
+          run: true,
+          unitIds: strip.unitIds,
+          strip: {
+            index: strip.index,
+            of: strip.of,
+            limit: plinthLimit,
+            ...(plinthTooWide.length ? { oversize: plinthTooWide } : {}),
+          },
+        },
+      }));
+    }
+  } else if (wantsPlinth && !plinthMember) {
     const t = AP.plinth.thickness ?? G;
     panels.push(panel({
       id: 'PLINTH', part: 'PLINTH', role: 'plinth', w: plinthLength, h: plinthH, thickness: t,
@@ -4997,17 +5065,49 @@ export function computeCabinet(params, profileOverride) {
       }
       return segs.length ? segs : whole;
     })();
-    const manySegs = runSegs.length > 1;
+    // ─── TURN 53 (CLAUDE.md F6): …AND THE TWO LAWS COMPOSE ─────────────────
+    //
+    // *"Where F3's segmented top infill already breaks at a knee, the two laws
+    // compose: a segment that is still too long splits again, at a cabinet
+    // edge."*
+    //
+    // So the knee decides first (it is a fact about the ceiling), and then any
+    // stretch still longer than the board is split on a cabinet line. A run
+    // that fits the board is one stretch and is untouched, which is every run
+    // in every project shorter than 2 metres and a bit.
+    const infillLimit = stripLimitMm(P, 'carcasses');
+    const cabinetEdges = Array.isArray(runInfill.spans)
+      ? runInfill.spans.flatMap((s) => [Number(s.from) || 0,
+        (Number(s.from) || 0) + (Number(s.width) || 0)])
+      : [];
+    const runSegsSplit = runSegs.flatMap((sg) => {
+      const pieces = splitStretchAtEdges(sg.from, sg.to, cabinetEdges, infillLimit);
+      if (pieces.length <= 1) return [sg];
+      return pieces.map((p) => {
+        const deg = Math.abs(infSignedDeg(p.from, p.to));
+        const cos = Math.cos((deg * Math.PI) / 180);
+        return {
+          ...sg,
+          from: p.from,
+          to: p.to,
+          deg,
+          run: cos > 1e-9 ? (p.to - p.from) / cos : (p.to - p.from),
+          shelfFrom: p.from,
+          shelfRun: cos > 1e-9 ? (p.to - p.from) / cos : (p.to - p.from),
+        };
+      });
+    });
+    const manySegs = runSegsSplit.length > 1;
     const segId = (base, i) => (manySegs ? `${base}-${i + 1}` : base);
 
-    runSegs.forEach((sg, i) => {
+    runSegsSplit.forEach((sg, i) => {
       // Rounded at the source: `span / cos β` is irrational for most angles and
       // the cut size, the outline and the label must be the one number.
       const segLen = roundTo(sg.run, 4);
       const segX0 = sg.from;
       const yTop = infRoof ? infReachAt((sg.from + sg.to) / 2) : H;
       // T48-F2: the site-cut allowance, on ONE end of this board.
-      const overEnd = allowanceEnd(i === 0, i === runSegs.length - 1);
+      const overEnd = allowanceEnd(i === 0, i === runSegsSplit.length - 1);
       const overLen = overEnd ? overT : 0;
       const cutLen = roundTo(segLen + overLen, 4);
       const lengthOversize = overEnd && overLen > 0
@@ -5020,7 +5120,7 @@ export function computeCabinet(params, profileOverride) {
         // join a bent ceiling makes.
         mitre_45: [...new Set([
           ...mitre(i === 0 && ends.left === 'open'),
-          ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
+          ...mitre(i === runSegsSplit.length - 1 && ends.right === 'open'),
           ...(sg.joinL || sg.joinR ? ['end'] : []),
         ])],
         // The L's own 45 (`mitre.L`) died with the L. The joins the SLOPE makes
@@ -5033,7 +5133,7 @@ export function computeCabinet(params, profileOverride) {
         } : {}),
         // Which end turns against a ceiling-height side filler, and by how much
         // — a record, not a cut (T15's chamfer is overruled; see above).
-        corner: { left: i === 0 ? cornerL : 0, right: i === runSegs.length - 1 ? cornerR : 0 },
+        corner: { left: i === 0 ? cornerL : 0, right: i === runSegsSplit.length - 1 ? cornerR : 0 },
         units: runInfill.unitIds || null,
         ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(faceH, 4) } } : {}),
         ...lengthOversize,
@@ -5043,7 +5143,7 @@ export function computeCabinet(params, profileOverride) {
             span: roundTo(sg.to - sg.from, 4),
             along: roundTo(segLen, 4),
             segment: i + 1,
-            of: runSegs.length,
+            of: runSegsSplit.length,
           },
           // The piece is MOUNTED on the slope; the 3-D and the elevation tilt it
           // rather than redrawing it, exactly as the shoe box's own `tilt_deg`
@@ -5157,7 +5257,7 @@ export function computeCabinet(params, profileOverride) {
           })() : {}),
           mitre_45: [...new Set([
             ...mitre(i === 0 && ends.left === 'open'),
-            ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
+            ...mitre(i === runSegsSplit.length - 1 && ends.right === 'open'),
             ...(sg.joinL || sg.joinR ? ['end'] : []),
           ])],
           ...(sg.joinL != null || sg.joinR != null ? {

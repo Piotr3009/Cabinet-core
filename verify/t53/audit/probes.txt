@@ -70,5 +70,20 @@ The stamp is written by the store; computeCabinet only ever reads it.
 
 CLEAN — not one of the six is a rider or carries one, so the list, the offset and the clamp reach none of them. And the stamp still bites: a cabinet with a box above gives up the door gap.
 
+F6 · THE STRIPS — a plinth or an infill waits to be asked for, and no golden asks
+
+subject        plinth parts  infill parts  run element  
+WARDROBE       0             0             (none)       
+BUD            0             0             (none)       
+WUD            0             0             (none)       
+BUDR           0             0             (none)       
+BUDR4          0             0             (none)       
+PANTRY         0             0             (none)       
+asked for one  2             0             1950 + 1250  
+
+The split needs a run element’s `spans`, which only the store writes.
+
+CLEAN — not one of the six cuts a plinth or an infill at all, so the split reaches none of them. And the law bites: 3200 over 650s becomes 1950 + 1250, his own two numbers.
+
 ────────────────────────────────────────────────────────────────────────
-5 probe(s), every one CLEAN — no feature of tonight reaches a golden.
+6 probe(s), every one CLEAN — no feature of tonight reaches a golden.

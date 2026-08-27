@@ -12,7 +12,7 @@ KIT_SINK.lsp                  1184   1184        0     13
 KIT_WARDROBE_FULL.lsp         2246   2246        0     14
 KIT_WATCH_DRAWER.lsp            76     76        0      8
 KIT_WUD_FULL.lsp               736    736        0     13
-SKYLON_COMMON.lsp             3438   3438        0     14
+SKYLON_COMMON.lsp             3470   3470        0     14
 
 14 kit(s), every one 0/0.
 

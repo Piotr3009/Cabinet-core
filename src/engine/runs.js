@@ -791,6 +791,17 @@ function runTopInfill(run, {
       })?.pts || null)
       : null,
     unitIds: run.units.map((u) => u.id),
+    // T53 (F6): the cabinets under the run, in the OWNER's frame, so a board
+    // too long for the sheet can be split on a cabinet line and never in the
+    // middle of one. `from`/`to` rather than a bare width, because the run
+    // element's own x0 is `offset` and a piece may start before its first
+    // cabinet (the reserved filler) — the boundaries are what a joint may land
+    // on, and they are stated as boundaries.
+    spans: run.units.map((u) => ({
+      id: u.id,
+      width: Number(u.params?.width) || 0,
+      from: (Number(u.position?.x_mm) || 0) - ownerX,
+    })),
   };
 }
 
@@ -939,6 +950,16 @@ export function segmentPlinth(segment) {
     offset: left - (Number(owner.position?.x_mm) || 0),
     length,
     unitIds: segment.map((u) => u.id),
+    // ─── TURN 53 (CLAUDE.md F6): THE CABINETS UNDER IT, WITH THEIR WIDTHS ──
+    //
+    // *"dziel tak, żeby się równo z szafką którąś … łączenie zawsze równo z
+    // szafką, a nie na środku szafki."*
+    //
+    // A joint may only land on a cabinet edge, so the piece has to know where
+    // those edges are. The ids were already here; the WIDTHS travel with them
+    // now, which is the whole of what `engine/strips.js` needs and is one more
+    // field on a record the engine already receives.
+    spans: segment.map((u) => ({ id: u.id, width: Number(u.params?.width) || 0 })),
   };
 }
 

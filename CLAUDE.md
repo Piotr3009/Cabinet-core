@@ -1,13 +1,18 @@
-# CLAUDE.md — TURN 53 · the gate, the empty DXF, and the slope's infills
+# CLAUDE.md — TURN 53 · the big night: the gate, the empty DXF, the slope's infills, the watch drawer v2 and the drawn room
 
 Nightly run. Full autonomy, zero questions, zero stops. You never halt: a
 feature that cannot land whole is skipped-and-noted in the verdict, never a
-reason to stop the run. Sacrifice from **F7 downward**; **F1 and F2 do not
+reason to stop the run. Sacrifice from **F10 downward**; **F1 and F2 do not
 fall.** The PR must be open before morning **regardless** of how much of the
 list survived the night.
 
 Branch from `main` (`a002df3`, T52 merged). One commit per feature, in order
-F1 → F7, plus the closing acceptance-walk commit.
+F1 → F10, plus the closing acceptance-walk commit.
+
+The owner sleeps through this run. Where his word was needed and not given,
+the decision is TAKEN, written in the feature below, and listed again at the
+top of the verdict under **DECISIONS TAKEN FOR THE OWNER — veto in one line**.
+Nothing is invented silently; everything invented is named.
 
 ---
 
@@ -26,22 +31,31 @@ the branch with `t53-classify.mjs`, compare. Expected buckets: **none** —
 - F6 splits pieces longer than a board; no golden's plinth or infill exists in
   a default config at all (they wait to be asked for — turn 4).
 - F7 moves shoe fronts; no golden carries a shoe item.
+- F8 cuts only where a drawer item asks for a watch insert; no default does
+  (T52's own `--watch` proof pattern).
+- F9 changes a bore-depth CLAMP that binds only where the leaf is thinner
+  than cup + keep; every golden's fronts are full thickness — **measure this
+  one with a probe**, it is the likeliest to surprise.
+- F10 is a room-drawing UI writing `project.room.corners`; `computeCabinet`
+  never sees a room.
 
-Add a per-feature `--probe` for each of the above, the way T52's `--tabs`,
-`--plan` and `--watch` turned the argument into an exit code. If a golden
-moves anyway: iron rule — **write it up as a FINDING. Do not name a bucket
-for it.**
+Add a per-feature `--probe` for each, the way T52's `--tabs`, `--plan` and
+`--watch` turned the argument into an exit code. If a golden moves anyway:
+iron rule — **write it up as a FINDING. Do not name a bucket for it.**
 
-**3 · LISP IS LAW, FIRST.** F3's slope-infill geometry, F4's bevel direction
-and F6's splitting rule are cut on the machine, so they are **born in
-`reference/lisp/`** (SKYLON_COMMON.lsp — infill/plinth sections; the slope
-sections F4 touches) before any JS. `scripts/t53-paren-balance.mjs`: every
-kit at **0/0** — the shelf is **14 files** since T52 (`KIT_WATCH_DRAWER.lsp`);
-derive the count.
+**3 · LISP IS LAW, FIRST.** F3's slope-infill geometry, F4's bevel direction,
+F6's splitting rule and F8's insert v2 geometry are cut on the machine, so
+they are **born in `reference/lisp/`** (SKYLON_COMMON.lsp for F3/F4/F6;
+KIT_WATCH_DRAWER.lsp for F8) before any JS.
+`scripts/t53-paren-balance.mjs`: every kit at **0/0** — the shelf is **14
+files** since T52; derive the count.
 
-**4 · SANCTITY.** Zero functions deleted without a named licence. None is
-granted tonight. If a deletion looks necessary, write the case in the verdict
-and leave the function standing. Every removal of any line is accounted for.
+**4 · SANCTITY.** Zero functions deleted without a named licence. Tonight
+carries exactly ONE, scoped to F8: the T52 watch insert's **in-frame glass
+rebate and front-rail LED groove** may be removed, because the owner has
+re-specified both onto the shelf above (his words in F8). Nothing else. If a
+second deletion looks necessary, write the case in the verdict and leave the
+function standing. Every removed line is accounted for.
 
 **5 · THE WALK.** Full suite at every commit, never `--silent`; read results
 with `grep -E "^# (tests|pass|fail)"`, never `tail`. `npm install` never
@@ -80,9 +94,8 @@ live store, to the millimetre.
 the bar stands on the add**. After a share-out: 80 − 80 = **0 → the bar does
 not stand again** — which also closes the T52 verdict's own note about the
 bar returning over two scribes. One cause, two bugs, one line of arithmetic.
-The gate moves; `shareOutPlan`'s published `gap` does not change meaning —
-the BAR's label still reads the visible leftover (`span`/`bodyGap` of the gap
-side), which is the number the owner reads.
+The gate moves; the BAR's label still reads the visible leftover
+(`span`/`bodyGap` of the gap side), which is the number the owner reads.
 
 **(b) The ✕.** The bar gets a dismiss cross at its right end (the house ✕
 rule). Clicking it dismisses the offer **for this gap**: store the offered
@@ -117,13 +130,13 @@ bytes? headers with no entities? wrong panels selected?), where it broke
 
 Then fix it, and **prove it the workshop's way**: build a seeded test project
 (a real one — a run of BUD/BUDR with drawers, one wardrobe with a slope, a
-shoe box; never fabricated catalogue rows), export, and assert on the FILES:
-per expected part a DXF whose entity count is > 0 and whose extents match the
-part's `cnc` geometry within tolerance; drillings present where the engine
-says holes are; the slope note text where F3/F4 give a piece an angle. Commit
-one sample DXF set under `verify/t53/dxf/` and open at least one in a viewer
-for a screenshot. A green suite that never opened the file is exactly how
-this stayed broken for five days.
+shoe box, one watch drawer; never fabricated catalogue rows), export, and
+assert on the FILES: per expected part a DXF whose entity count is > 0 and
+whose extents match the part's `cnc` geometry within tolerance; drillings
+present where the engine says holes are; the slope note text where F3/F4 give
+a piece an angle. Commit one sample DXF set under `verify/t53/dxf/` and open
+at least one in a viewer for a screenshot. A green suite that never opened
+the file is exactly how this stayed broken for five days.
 
 ---
 
@@ -139,10 +152,9 @@ Same disease three ways, and it is the disease the grain rule already killed
 once: **two sources of truth**. The CNC path carries the slope
 (`meta.slopeCut.angles`, the DXF, the part label); the 3D solid ignores it.
 The law, stated once and asserted: **every piece the machine cuts on the
-slope is drawn cut in the room.** LISP first (iron rule 3): state the
-infill-on-slope geometry in `SKYLON_COMMON.lsp` beside the slope sections;
-`engine` follows it; the 3D consumes the engine's outline and measures
-nothing of its own.
+slope is drawn cut in the room.** LISP first (iron rule 3); the engine
+follows; the 3D consumes the engine's outline and measures nothing of its
+own.
 
 **(a) The vertical (side) infill.** `engine/mitre.js infillMitre` cuts the
 vertical member's solid for exactly one thing — the 45° `meta.corner` at the
@@ -156,10 +168,9 @@ use it, do not restate it.
 `faceH`, ends from `runEnd(..., roomHeight)`, zero `ceilingPolyline`. Under a
 slope the piece stands above the ceiling line — *"poza ścianami"*. It becomes
 **segments behind the ceiling polyline**: broken at every knee, each
-segment's top edge following its own stretch (straight under a flat stretch,
-raked under a raked one), never crossing the polyline, never entering the
-triangle where the wall has ended. Segment joints land on cabinet boundaries
-where F6's law reaches this piece.
+segment's top edge following its own stretch, never crossing the polyline,
+never entering the triangle where the wall has ended. Segment joints land on
+cabinet boundaries where F6's law reaches this piece.
 
 **(c) The vertical run to the ceiling.** `projectStore.sideInfillToCeiling`
 and `endPanelToCeiling` read `room.height` flat. Under a slope the target is
@@ -312,8 +323,7 @@ divergence:
 stays the T37 rule — *"rozszerz front szuflady, tak żeby zostało po prawej i
 po lewej od BUL i BUR około 10 mm"* — and `frontH = 120` stays the kit's
 number. Neither is overturned by tonight; if the owner wants the drawer
-width-law instead, that is his one line to say in the morning, not yours to
-assume.
+width-law instead, that is his one line to say in the morning.
 
 Assert: the shoe face coplanar with a drawer front in the same carcass; the
 gap between shoe face and the front below equal to the drawer front gap; no
@@ -324,24 +334,197 @@ and after.
 
 ---
 
+## F8 [MEDIUM] · the watch drawer v2 — his re-specification, word for word
+
+The owner walked T52's insert and re-specified it (27.08). His words are the
+spec; T52's decisions 1 and 2 (glass in the frame, LED in the front rail) are
+**vetoed by these words** and move to the shelf above — the ONE sanctity
+licence of the night covers exactly that removal.
+
+> *"szuflada z zegarkami powinna być jako osobna pozycja, pod szufladami —
+> czyli pozycja 3. dodajesz normalne szuflady i później masz: czy chcesz
+> dodać szufladę (nad nimi, z zegarkami). wtedy dokładamy taką szufladę już
+> bez możliwości sterowania wysokością — zawsze stała wysokość. i wtedy
+> opcja: dodać szybę ponad szufladą — wtedy wycinamy w półce otwór, offset od
+> półki na 50 mm, i wstawiamy szybę w ten otwór. i dookoła tej szyby masz LED
+> od spodu, offset około 15 mm na LED. i dodajesz do opcji kilka
+> zaproponowanych i zaprojektowanych układów na te zegarki i krawaty i paski
+> — otwiera się nowy modal z 4 propozycjami rozmieszczenia. i wybierasz
+> finish: spray (jak finish wszystkiego), czy oak, walnut."*
+
+**(a) The interior menu.** "Watch drawer" becomes **position 3, under
+Drawers**, its own entry. Flow: with a drawer stack present, the entry adds
+the watch drawer **on top of the stack**. **Fixed height, no slider**: the
+height is one derived number in the profile (insert law: 60 inside + 9 base
++ clearances + box), stated beside its derivation.
+
+**(b) The glass moves to the SHELF above.** When the option is on and a
+shelf sits directly above the watch drawer: the shelf gets a cut opening,
+**50 mm offset from every shelf edge**, and the pane sits IN the opening.
+LISP first: the opening and its offsets in KIT_WATCH_DRAWER.lsp (or the
+shelf's own section) before the JS. DECISION TAKEN: the pane sits **flush
+with the shelf top** (a proud pane on a wardrobe shelf catches every
+sleeve); rebate depth = glass thickness. Veto in one line.
+
+**(c) The LED rings the glass from BELOW**: strip on the shelf's underside,
+**~15 mm offset outside the opening**, firing DOWN onto the watches — the
+T52 law ("the LED lights the WATCHES, not the glass") stands, relocated. The
+strip follows the T48 groove law where a groove is cut (+10 mm past the
+profile at each end; restate no number of it). BOM: the pane and the strip
+are their own lines, tied to the shelf.
+
+**(d) No shelf above → the option is disabled with a reason** shown on
+hover ("needs a shelf directly above"), never silently hidden. DECISION
+TAKEN, veto in one line.
+
+**(e) The layouts modal.** Choosing the insert (or "Layout…" on an existing
+one) opens a NEW modal — draggable, beside the clicked drawer — with **4
+designed layouts**, each a small top-view schematic card. All four keep the
+T52 hard law: **ONE pocket row, at the FRONT** (the back row is unreachable);
+what varies is the REAR field. Ship exactly these four, drawn in the LISP as
+parametric variants:
+
+  1. **Classic** — front pocket row; rear: 4 long sections (ties/straps).
+     T52's default, unchanged.
+  2. **Cufflinks** — front pocket row; rear: a 2-row grid of small cells
+     (~70×70 target, count follows width by the pocket rule) plus one long
+     section at the back edge.
+  3. **Ties** — front pocket row; rear: 5–6 narrow long sections, dividers
+     9 mm, for ties laid flat.
+  4. **Belts** — front pocket row; rear: two wide channels (rolled belts,
+     ~110 target width) plus one shallow accessories tray section.
+
+  Default = Classic. The choice is stored on the item, drives the LISP
+  variant, the parts, the BOM and the 3D. DECISION TAKEN (the four designs
+  above are mine, built strictly inside his categories "zegarki, krawaty,
+  paski"); veto or redraw in one line each.
+
+**(f) Finish.** A selector on the insert: **Spray / Oak / Walnut** — Spray
+follows the project's spray finish, Oak and Walnut map to the project's wood
+decor set. Default: the project decor (T52's standing rule for the frame).
+Drives materials in BOM and the 3D texture.
+
+**(g) Migration.** A saved project with a T52 v1 insert loads: the in-frame
+glass flag becomes the shelf-glass option where a shelf sits above,
+otherwise it is dropped and Check #23's neighbour names it ("glass needs a
+shelf above — re-add when one exists"). DECISION TAKEN, veto in one line.
+
+Assert: menu position; fixed height (no height param accepted); opening
+offsets 50/50/50/50 in the shelf's CNC; LED offset ~15 outside the opening,
+underside; all four layouts produce parts that sum to the tray width to the
+millimetre and never break the 60 mm pocket floor; finish selector drives
+BOM material; v1 project migrates. Screenshots: the menu entry; the modal
+with 4 cards; the lit shelf-glass over the drawer; each layout's tray with
+fronts off.
+
+---
+
+## F9 [LOW] · one millimetre of floor stops being legal
+
+T52 finding 2, standing since the morning audit: `hardware.hinge
+.cupFloorKeepMm` is **1**, and an 18 mm shaker whose ⌀35 cup overhangs the
+frame is bored to leave ONE millimetre under the cup — which
+SKYLON_COMMON.lsp's own note calls unacceptable (*"one millimetre reads
+through a sprayed face"*).
+
+DECISION TAKEN for the owner (veto in one line): **`cupFloorKeepMm: 3`.**
+Where 3 mm cannot be kept, the bore SHORTENS (the existing clamp) and where
+the shortened bore no longer seats the hinge, the existing `cupTooThin`
+check names the leaf — refuse-and-report, the house way, never a 1 mm floor.
+LISP first: the keep constant and its note in SKYLON_COMMON beside the cup
+maths. Probe this feature in `t53-classify` explicitly: every golden's
+fronts are full thickness and must not move; a leaf that WAS at 1 mm floor
+now bores 2 less and F2's own seatZ law (T52) draws the hinge standing
+proud, which is the truth.
+
+Assert: keep = 3 end to end (LISP, profile, bore, DXF drilling depth);
+goldens untouched; the T52 F2 planes test still green with the new keep.
+
+---
+
+## F10 [BIG · first sacrifice] · the DRAWN room — CAD-style, closed like real walls
+
+> *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w CAD: linia od
+> punktu zero, rysujesz w którym kierunku i wpisujesz numer, enter — i linia
+> narysowana. później następna linia, kierunek zawsze 90 stopni, i to samo:
+> wpisujesz milimetry, enter, etc. na końcu ostatnią linię łapiesz i łączysz
+> — zawsze łączysz, taki catch, żeby pokój był zawsze połączony (jak w życiu
+> ściany). później klikamy na ścianę i się pokazuje ściana w pionie (jak
+> 'one wall') i edycja: okno, drzwi, skosy — w standardzie. modal 2× większy
+> — rysowanie."*
+
+He asked for a mockup before code; he then ordered the big night knowing he
+sleeps. So: **the first commit of this feature is the MOCKUP** — a static,
+committed screenshot of the drawing modal in `verify/t53/f10-mockup.png` —
+and the implementation follows it; every choice his words did not fix is a
+DECISION TAKEN below, and the whole feature is the night's **first
+sacrifice** if time runs short.
+
+**The flow, his:**
+
+- Entry beside the existing room setup: **"Draw room"** (the simple
+  width/height "one wall" path STAYS untouched). The modal is **2× the
+  current one-wall modal**, draggable, beside the trigger.
+- TOP view canvas. Origin marked at (0,0). Cursor direction sets the
+  segment's direction, **snapped to the four axes (ortho, always 90°)**; a
+  numeric field takes millimetres; **Enter commits the segment** and the
+  cursor stands at its end. Backspace / Undo removes the last segment.
+- **The catch:** when the pen nears the start point it snaps and highlights;
+  Enter (or click) on it **closes the room**. The room is ALWAYS closed —
+  "jak w życiu ściany". DECISION TAKEN: a **Close** button also exists and
+  completes the minimal ortho path home (one segment when aligned, an L of
+  two when not) — the catch made one-click. Veto in one line.
+- A closed outline **saves to `project.room.corners`** — the shape
+  `migrateRoom` already speaks — and the walls derive from `roomWalls` as
+  everywhere else.
+- **Click a wall** (in this modal's top view, and in the room afterwards):
+  the existing per-wall elevation opens — doors, windows, slopes, exactly
+  the standard editor, unchanged.
+
+**Scope fences, so the night cannot drown:**
+
+- A **4-corner rectangle drawn this way must be flawless** end to end:
+  drawn, closed, saved, furnished, exported.
+- **More than 4 corners is best-effort**: the drawing, closing, saving and
+  wall elevations must work for any closed rectilinear outline; where
+  DOWNSTREAM (placement, collision, share-out, exports) breaks on a >4-wall
+  room, it is **skip-and-note per breakage** — a numbered finding each, not
+  a reason to halt and not tonight's to fix. L-shape CABINETS stay parked;
+  an L-shaped ROOM outline merely existing is not the cabinet work.
+- Validation: zero/negative lengths refuse; a self-crossing outline refuses
+  with a message; minimum 4 segments.
+
+Assert: draw 4000 → 3000 → 4000 → catch = the same room `rectCorners(4000,
+3000)` makes, byte-equal corners; undo removes a segment; self-cross
+refuses; a 6-corner outline saves and its six walls each open the elevation.
+Screenshots: the mockup; a drawn rectangle mid-flow (number typed, ghost
+segment); the catch highlight; a 6-corner room saved with a wall elevation
+open.
+
+---
+
 ## OUT OF SCOPE TONIGHT
 
 The lighting rig (*"lights działają super"*). `runGap`. The 400 threshold
-itself. The warehouse and its SQL. `hardware.hinge.cupFloorKeepMm` (T52
-finding 2 — the owner's word pending). The watch drawer v2 (16 — mockup
-first). The CAD room drawing (11 — mockup first). L-shape. The wieniec's own
-slope cut (correct; F4 touches sides only). Kesseböhmer STEP 238384.
+itself. The warehouse and its SQL. L-shape **cabinets**. The wieniec's own
+slope cut (correct; F4 touches sides only). The three BLOCKED items awaiting
+the owner's drawings (drawer above doors, dishwasher, corner L). Kesseböhmer
+STEP 238384 (*"zostaw, nie rób"*). Egger licensing. The runner manifest's
+missing NL 500–700 (storage bucket, not repo).
 
 ---
 
 ## THE MORNING
 
 `verify/t53/`: screenshots per feature (named for what they show, before/after
-where telling), `dxf/` samples (F2), `audit/` (classify, paren, per-feature
-probes), `EYE-TEST.md` (the owner's walk, numbered, with the two-or-three
-things to tell us about), `report.json`, `verdict.md` — iron rules answered
-in a table, per feature: his words, the diagnosis, what shipped, what was
-measured, findings written up rather than waved through.
+where telling), `dxf/` samples (F2), `f10-mockup.png` first, `audit/`
+(classify, paren, per-feature probes), `EYE-TEST.md` (the owner's walk,
+numbered), `report.json`, `verdict.md` — which opens with **DECISIONS TAKEN
+FOR THE OWNER — veto in one line** (F8: flush pane, disabled-with-reason,
+the four layouts, migration; F9: keep = 3; F10: the Close button — plus any
+the night added), then the iron rules answered in a table, then per feature:
+his words, the diagnosis, what shipped, what was measured, findings written
+up rather than waved through.
 
 The suite, the build, `t53-classify` (6 IDENTICAL, UNNAMED 0), paren (14
 kits, every one 0/0), the probes — all in the verdict as numbers. One commit

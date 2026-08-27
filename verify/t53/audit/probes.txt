@@ -128,5 +128,21 @@ Every golden's fronts are full thickness: 11 + 3 = 14 is the bite point.
 
 CLEAN — every golden leaf has material to spare over the bite point and not one bore was shortened. And the clamp bites: a 16 mm shaker with a 6 mm rebate bores to the material less the keep, and says it is short.
 
+F10 · THE DRAWN ROOM — the engine never sees a room, and the drawing agrees with the room engine
+
+subject               params    room keys  
+WARDROBE              14        none       
+BUD                   14        none       
+WUD                   16        none       
+BUDR                  14        none       
+BUDR4                 14        none       
+PANTRY                14        none       
+drawn 4000/3000/4000  1 home    equals rectCorners
+drawRoom.js imports   1         ./room.js  
+
+computeCabinet(params, profile): a golden has no room, no wall and no corner list to move.
+
+CLEAN — not one of the six carries a room key, the drawn rectangle is byte-equal to rectCorners(4000, 3000), and the drawing module imports nothing but the room engine.
+
 ────────────────────────────────────────────────────────────────────────
-9 probe(s), every one CLEAN — no feature of tonight reaches a golden.
+10 probe(s), every one CLEAN — no feature of tonight reaches a golden.

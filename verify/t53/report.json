@@ -1,0 +1,184 @@
+{
+  "turn": 53,
+  "branch": "claude/turn-53-h17u76",
+  "base": "a002df3",
+  "suite": { "tests": 4727, "pass": 4727, "fail": 0 },
+  "build": "clean",
+  "dependenciesAdded": 0,
+  "byteIdentity": {
+    "script": "scripts/t53-classify.mjs",
+    "configs": ["WARDROBE", "BUD", "WUD", "BUDR", "BUDR4", "PANTRY"],
+    "identical": 6,
+    "unnamed": 0,
+    "buckets": [],
+    "probes": {
+      "f1": "CLEAN", "f2": "CLEAN", "f3": "CLEAN", "f4": "CLEAN", "f5": "CLEAN",
+      "f6": "CLEAN", "f7": "CLEAN", "f8": "CLEAN", "f9": "CLEAN", "f10": "CLEAN"
+    }
+  },
+  "parenBalance": { "script": "scripts/t53-paren-balance.mjs", "kits": 14, "unbalanced": 0 },
+  "sanctity": {
+    "licences": 1,
+    "scope": "F8 — the T52 watch insert's in-frame glass rebate and front-rail LED groove",
+    "removed": ["drawWatchGlassRebate", "drawWatchLed", "rebate", "ledPath"],
+    "accountedFor": true,
+    "secondDeletionTaken": false
+  },
+  "decisionsTaken": [
+    { "id": 1, "feature": "F8b", "decision": "the pane is flush with the shelf top; rebate depth = glass thickness" },
+    { "id": 2, "feature": "F8d", "decision": "no shelf above → the glass option is greyed with the reason on it, never hidden" },
+    { "id": 3, "feature": "F8e", "decision": "four layouts — Classic, Cufflinks, Ties, Belts — inside his three categories" },
+    { "id": 4, "feature": "F8g", "decision": "a v1 insert migrates; with no shelf the pane is dropped and Check names it" },
+    { "id": 5, "feature": "F9", "decision": "cupFloorKeepMm: 3" },
+    { "id": 6, "feature": "F10", "decision": "a Close button completes the minimal ortho path home" },
+    { "id": 7, "feature": "F10", "decision": "2x is measured on the drawing: 560x300 becomes 800x430; the window 820 → 1160 px" },
+    { "id": 8, "feature": "F10", "decision": "clicking a wall saves the outline first, because the elevation edits project.room" },
+    { "id": 9, "feature": "F2", "decision": "the DXF's dangling CONTINUOUS / STANDARD references are left standing and written up" }
+  ],
+  "features": [
+    {
+      "id": "F1", "title": "the share-out gate counts the scribe, and the bar gets its ✕",
+      "status": "shipped", "commit": "1ab2f13",
+      "tests": "test/turn53-f1-the-gate-counts-the-scribe.test.js (12)",
+      "measured": {
+        "wallMm": 4000, "cabinets": "6 x 600 from the left",
+        "bareWallMm": 360, "leftScribeReserveMm": 40, "planGapBefore": 400,
+        "gateBefore": "400 >= 400 → silent", "gateAfter": "400 - 80 = 320 < 400 → the bar stands on the add",
+        "afterShareOut": "80 - 80 = 0 → it does not stand again",
+        "barLabelMm": 360, "eachMm": 653
+      },
+      "proof": ["verify/t53/f1-the-bar-stands-on-the-add.png", "verify/t53/f1-the-bar-with-its-cross.png", "verify/t53/f1-gone-after-the-cross-and-still-gone.png"]
+    },
+    {
+      "id": "F2", "title": "the DXF export, OPENED", "status": "shipped",
+      "commit": "5b20184", "amendedBy": "the acceptance walk",
+      "tests": "test/turn53-f2-the-dxf-is-opened.test.js (9)",
+      "diagnosis": {
+        "empty": false,
+        "where": "nowhere in the writer — engine/cnc/dxf.js is the production serialiser, group code for group code",
+        "since": "the writer has never been empty",
+        "realBug": "two shoe battens shared one id (SHOE1-BATTEN); a panel id is the file name, so the ZIP carried one"
+      },
+      "measured": {
+        "files": 81, "bytes": 495743, "geometryEntities": 1692,
+        "drillingsMatchedToEngine": 328, "toleranceMm": 0.05,
+        "slopeNotes": 21, "noteTexts": ["CUT 28.8 DEG", "BEVEL 28.8 DEG BOTH ENDS - 5-AXIS"],
+        "acadver": "AC1009"
+      },
+      "walkFound": "the seed's rake never reached a cabinet, so 'slope notes: 0' was true and hollow; the rake now cuts and the reader knows an R12 file says DEG, not °",
+      "proof": ["verify/t53/dxf/", "verify/t53/audit/dxf.txt", "verify/t53/f2-dxf-in-a-viewer.png"]
+    },
+    {
+      "id": "F3", "title": "the slope's infills: 3D draws what CNC cuts", "status": "shipped",
+      "commit": "eb028e3", "tests": "test/turn53-f3-the-infills-follow-the-slope.test.js (11)",
+      "lispFirst": ["SKY:vertInfillTopY", "SKY:vertInfillDeg", "SKY:infillSegsUnder", "SKY:cutPtsBetween"],
+      "measured": { "panelsCarryingTheCut": 9, "sourceOfTruth": "one — the engine outline, consumed by the 3D" },
+      "proof": ["verify/t53/f3-f4-the-run-under-the-slope.png"]
+    },
+    {
+      "id": "F4", "title": "BUL/BUR on the slope: the wedge was never taken off", "status": "shipped",
+      "commit": "a46d0d6", "tests": "test/turn53-f4-the-bevel-runs-the-right-way.test.js (9)",
+      "diagnosis": "not a mirrored sign: the engine was right on both rakes. bevelTopEdge was gated on panel.cnc.slopeCut, which a side never has — a side's outline is deliberately a square blank",
+      "measured": { "bevelledSidesEmitted": 4, "roofBoard": "untouched — L, L_MAX and footprint asserted unchanged" },
+      "proof": ["verify/t53/f4-the-corner-close-up-right-slope.png"]
+    },
+    {
+      "id": "F5", "title": "top boxes side by side on one main", "status": "shipped",
+      "commit": "3bf6dc9", "tests": "test/turn53-f5-top-boxes-stand-side-by-side.test.js (12)",
+      "diagnosis": "settleRiders wrote x = host.x_mm hard; riddenBy was a Map host→ONE rider; the add-plus on a box fell through to the last main",
+      "measured": { "hostWidthMm": 1200, "boxWidthsMm": [600, 600], "boxXsMm": [1700, 2300], "thirdBox": "refused in words" },
+      "proof": ["verify/t53/f5-two-top-boxes-side-by-side.png", "verify/t53/f5-the-third-box-refuses.png"]
+    },
+    {
+      "id": "F6", "title": "plinths and infills: vertical, split at a cabinet edge", "status": "shipped",
+      "commit": "7108b74", "tests": "test/turn53-f6-strips-split-at-a-cabinet-edge.test.js (11)",
+      "lispFirst": ["SKY:stripsAtCabinetEdges", "SKY:stripOversize"],
+      "measured": {
+        "hisExample": { "boardMm": 2400, "plinthMm": 3200, "strips": [1950, 1250] },
+        "onTheWalk": { "wallMm": 6000, "cabinets": "5 x 650", "plinthMm": 3250, "strips": [1950, 1300] },
+        "infillAddedToStandingParts": true
+      },
+      "proof": ["verify/t53/f6-the-cut-sheet-with-a-split-plinth.png"]
+    },
+    {
+      "id": "F7", "title": "the shoe fronts come under the drawer-front law", "status": "shipped",
+      "commit": "f2475d5", "tests": "test/turn53-f7-the-shoe-front-joins-the-drawer-law.test.js (10)",
+      "measured": {
+        "before": { "drawerFrontPlaneZ": 493, "shoeFaceZ": 540, "proudMm": 47, "boxFloorInsideStackMm": 36, "overlapWithFrontBelowMm": 31 },
+        "after": { "drawerFrontPlaneZ": 483, "shoeFaceZ": 483, "coplanar": true, "gapKept": true, "faceVertical": true },
+        "unchanged": ["box", "slope floor", "battens", "runners", "T37 width rule", "frontH = 120"]
+      },
+      "proof": ["verify/t53/f7-the-shoe-front-on-the-drawer-plane.png", "verify/t53/f7-the-shoe-front-behind-the-doors.png"]
+    },
+    {
+      "id": "F8", "title": "the watch drawer v2 — his re-specification", "status": "shipped",
+      "commit": "94af592", "tests": "test/turn53-f8-the-watch-drawer-v2.test.js (19)",
+      "lispFirst": ["SKY:watchShelfOpening", "SKY:watchShelfLedRing", "SKY:watchRearField", "drawWatchShelfOpening", "drawWatchShelfLed", "WATCH_GLASS_OPENING"],
+      "measured": {
+        "menuPosition": 3, "fixedHeightMm": 140, "refusedAtMm": 139,
+        "shelfOpeningOffsetMm": 50, "ledOffsetMm": 15, "paneFlushWithShelfTop": true,
+        "layouts": ["classic", "cufflinks", "ties", "belts"],
+        "onTheWalk": { "pockets": 8, "pocketWidthMm": 91.6, "sections": 4, "lanes": 1, "paneMm": [768, 428], "inShelf": "SHELF-1" }
+      },
+      "proof": ["verify/t53/f8-the-menu-entry-position-3.png", "verify/t53/f8-the-four-layouts.png", "verify/t53/f8-the-glass-in-the-shelf-above.png", "verify/t53/f8-the-watch-drawer-in-the-wardrobe.png"]
+    },
+    {
+      "id": "F9", "title": "one millimetre of floor stops being legal", "status": "shipped",
+      "commit": "78d52fc", "tests": "test/turn53-f9-one-millimetre-of-floor.test.js (7)",
+      "lispFirst": ["SKY:cupFloorKeep"],
+      "measured": {
+        "keepBefore": 1, "keepAfter": 3,
+        "goldenLeaves": { "thicknessAtCupMm": 25, "headroomMm": 11, "boresShortened": 0 },
+        "clampBites": "a 16 mm shaker with a 6 mm rebate bores to the material less the keep and reports short"
+      },
+      "proof": ["verify/t53/audit/probes.txt"]
+    },
+    {
+      "id": "F10", "title": "the DRAWN room, CAD-style", "status": "shipped",
+      "commits": ["ef6caaf (mockup)", "293197d (implementation)"],
+      "tests": "test/turn53-f10-the-drawn-room.test.js (21)",
+      "measured": {
+        "hisSequence": "4000 → 3000 → 4000 → catch",
+        "cornersByteEqualToRectCorners": true,
+        "modal": { "elevationCanvas": [560, 300], "drawCanvas": [800, 430], "windowPx": 1160 },
+        "downstream": {
+          "rectangle4Walls": { "stages": 11, "ok": 11 },
+          "drawnL6Walls": { "stages": 11, "ok": 11, "walls": [4000, 1500, 2000, 2500, 6000, 4000], "dxfFiles": 22, "dxfEntities": 461 }
+        },
+        "bugsFoundInItself": [
+          "the ortho Close could lay the closing wall down an existing one, and the corner list absorbed it silently",
+          "the canvas framed itself on the cursor, so the pen slid under the hand and the direction read wrong"
+        ]
+      },
+      "proof": ["verify/t53/f10-mockup.png", "verify/t53/f10-the-door-in-room-setup.png", "verify/t53/f10-mid-flow-the-ghost-segment.png", "verify/t53/f10-the-catch-at-the-start-point.png", "verify/t53/f10-six-walls-closed.png", "verify/t53/f10-six-corner-room-wall-elevation.png", "verify/t53/audit/f10-downstream.txt"]
+    }
+  ],
+  "findings": [
+    { "n": 1, "feature": "F2", "text": "the DXF cites CONTINUOUS on every layer row and an implicit STANDARD text style, neither defined in TABLES. Left standing: the production writer emits the identical construct and imports cleanly, and BLOCKERS #8 records the cost of an unverified dialect change." },
+    { "n": 2, "feature": "F2", "text": "the 'empty DXF' report is not reproducible and its real cause is unknown. The next step is HIS file: which project, which export button, and what landed in the folder." },
+    { "n": 3, "feature": "—", "text": "a plain 900 wardrobe with default fronts raises SHAKER_FRAME_TOO_WIDE. A default-profile question, unrelated to tonight's ten, left standing rather than quietly retuned." }
+  ],
+  "testsAmended": [
+    "test/turn12-plinth-run.test.js (F6)",
+    "test/turn36-f7-top-box.test.js (F5)",
+    "test/turn37-f5-top-box.test.js (F5)",
+    "test/turn41-f1-the-sheet-stands-up.test.js (F6)",
+    "test/turn46-f6-the-paper-and-the-eyes.test.js (F4)",
+    "test/turn51-f4-the-leftover-is-the-carcass.test.js (F1a)",
+    "test/turn51-f5-the-cup-respects-the-rebate.test.js (F9)",
+    "test/turn52-f2-the-cup-hides.test.js (F9)",
+    "test/turn52-f5-the-watch-drawer.test.js (F8 — the sanctity licence)"
+  ],
+  "scripts": [
+    "scripts/t53-classify.mjs",
+    "scripts/t53-paren-balance.mjs",
+    "scripts/t53-dxf-audit.mjs",
+    "scripts/t53-dxf-view.mjs",
+    "scripts/t53-f10-mockup.mjs",
+    "scripts/t53-f10-downstream.mjs",
+    "scripts/t53-f10-walk.mjs",
+    "scripts/t53-walk.mjs"
+  ],
+  "screenshots": 21,
+  "skipped": []
+}

@@ -188,9 +188,19 @@ export function seedProject() {
   const a = S().addUnit('BUD');
   const b = S().addUnit('BUDR', { near: a.id, side: 'R' });
   const w = S().addUnit('WARDROBE', { near: b.id, side: 'R' });
-  // A slope over the wardrobe's end of the wall.
+  // A slope over the wardrobe's end of the wall — and it has to REACH one.
+  //
+  // The first cut of this seed asked for `startHeight: 1900, run: 900`, which
+  // on a 6000 wall falls from the ceiling at x = 5100 to 1900 at the corner.
+  // The tallest thing under it is 2150, and the rake never gets below 2150
+  // before the run ends — so not one panel in the whole job carried an angle,
+  // and the audit's own "slope notes in the files: 0" was TRUE and hollow.
+  // CLAUDE.md's F2 asks for *"the slope note text where F3/F4 give a piece an
+  // angle"*, and a seed with no angle in it cannot answer that. This rake
+  // falls to 1400 over 2000, so it crosses 2150 inside W02's own span and the
+  // last wardrobe really is cut.
   S().addWallSlope({
-    wall: 0, side: 'R', startHeight: 1900, run: 900,
+    wall: 0, side: 'R', startHeight: 1400, run: 2000,
   });
   // …drawers and the WATCH DRAWER inside it, which is where they go.
   const wu = S().units.find((u) => u.id === w.id);
@@ -377,7 +387,13 @@ export function slopeNotes({ files }) {
   const notes = [];
   for (const f of files) {
     for (const t of readDxf(f.dxf).texts) {
-      if (t.str && /[°]|slope|SL /i.test(t.str)) notes.push({ file: f.name, text: t.str });
+      // The files are ASCII (R12, and BLOCKERS #8 settled the dialect), so the
+      // note reads `CUT 22.6 DEG` and not `CUT 22.6°`. A reader that looks only
+      // for the degree sign reports an honest-looking zero over a file that
+      // says the angle in words.
+      if (t.str && /[°]|\bDEG\b|BEVEL|OVERSIZE|slope/i.test(t.str)) {
+        notes.push({ file: f.name, text: t.str });
+      }
     }
   }
   return notes;

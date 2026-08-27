@@ -161,10 +161,32 @@ test('F2 — and no cabinet in the seeded job repeats a panel id', () => {
 // ─── THE SLOPE NOTE ───────────────────────────────────────────────────────
 
 test('F2 — the slope note the sheet stamps also reaches the FILE', () => {
-  // The reader is over the whole seeded job; where F3/F4 give a piece an angle
-  // the note rides the part label into the DXF. The count is reported by the
-  // audit either way — an honest zero is a measurement, not a pass.
+  // ─── AMENDED THE SAME NIGHT, AND THE AMENDMENT IS THE POINT ────────────
+  //
+  // This test first accepted an honest zero: *"the count is reported by the
+  // audit either way."*  It was zero, and it was hollow — the seed's rake fell
+  // from the ceiling to 1900 over 900 mm at the end of a 6000 wall, and the
+  // tallest thing under it is 2150, so the slope never reached a cabinet and
+  // not one panel in the job carried an angle. A measurement of nothing is not
+  // a measurement of the thing CLAUDE.md asked for: *"the slope note text
+  // where F3/F4 give a piece an angle."*
+  //
+  // The seed's rake now crosses 2150 inside the last wardrobe's own span, and
+  // the reader knows that an R12 file says `DEG` and not `°`. So the claim is
+  // made properly: the note is IN the files, with the angle in it.
   const notes = slopeNotes(exported);
-  assert.ok(Array.isArray(notes));
+  assert.ok(notes.length > 0, 'the seeded job really does cut something on the rake');
   for (const n of notes) assert.ok(n.text.length > 0, 'a note with words in it');
+  assert.ok(notes.some((n) => /\d+(\.\d+)? DEG/.test(n.text)),
+    'and the angle itself is on the part, in words the machine’s reader can print');
+  assert.ok(notes.some((n) => /BEVEL/.test(n.text)),
+    '…including the bevel F4 puts on a side under the rake');
+  // It rides the PART, not a stray caption: every note stands in a file that
+  // carries geometry of its own.
+  for (const n of notes) {
+    const file = exported.files.find((f) => f.name === n.file);
+    const e = readDxf(file.dxf).entities;
+    const geometry = (e.POLYLINE || 0) + (e.CIRCLE || 0) + (e.ARC || 0) + (e.LINE || 0);
+    assert.ok(geometry > 0, `${n.file} has geometry under its note`);
+  }
 });

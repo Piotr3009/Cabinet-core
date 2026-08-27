@@ -19,9 +19,3 @@ SKYLON_COMMON.lsp             3472   3472        0     14
 SKY:infillSegsUnder — defined in [SKYLON_COMMON.lsp], called from [nowhere yet]
   One law, one file, and its two vertical readers stand beside it. ✓
   14/14 at 0/0 — the shelf as it stands, derived not typed.
-
-reference/lisp/ vs a002df3:
-  M  reference/lisp/KIT_WATCH_DRAWER.lsp
-  M  reference/lisp/SKYLON_COMMON.lsp
-
-No other kit is touched. ✓

@@ -13,3 +13,8 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 .idea/
+
+# Screenshot scaffolds: the HTML a verify/ script renders to shoot a PNG.
+# The PICTURE is the evidence and it is committed; the page that produced it
+# is rebuilt by the script on demand.
+verify/**/.*.html

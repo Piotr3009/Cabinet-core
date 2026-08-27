@@ -1,183 +1,348 @@
-# CLAUDE.md — TURN 52 · THE RUN SHARES OUT FROM EITHER END, THE CUP HIDES, AND THE WATCH DRAWER
+# CLAUDE.md — TURN 53 · the gate, the empty DXF, and the slope's infills
 
-The owner, 26.08.2026, walking T51. His rulings, verbatim law:
+Nightly run. Full autonomy, zero questions, zero stops. You never halt: a
+feature that cannot land whole is skipped-and-noted in the verdict, never a
+reason to stop the run. Sacrifice from **F7 downward**; **F1 and F2 do not
+fall.** The PR must be open before morning **regardless** of how much of the
+list survived the night.
 
-* **The share-out is one-sided.** *"chodziło o to żeby były zawsze equal, i to
-  działa — ale od lewej, a nie od prawej strony, czyli od jednej strony."*
-  And: *"jak robię po prawej, to proponuje tylko 1 lub 2 szafki i nadal nie
-  może przesunąć reszty."*
-* **The cup still shows.** *"nie działa — nadal widać zawiasy."* On a 25 mm
-  shaker, where T51's fix cannot even fire.
-* **The dog bones.** *"jak niska szafka poniżej 600 mm to już zrób 2 dog
-  bonesy, a jak poniżej 300 to jeden dog bones — na plecach i BUL i BUR."*
-* **The watch drawer.** *"szuflada z przegródkami na zegarki, krawaty etc …
-  szkło i podświetlenie … rama z Eggera ale podświetlone zegarki … oczywiście
-  szuflada nasza standardowa, tylko przegródki z 9 mm zrób, i szuflada płytka
-  w środku, myślę że około 60 mm."*
-
-Five features. F1–F3 are corrections to work already in his hands and go
-first. F5 is new geometry and is the one that may fall.
-
-## Iron rules (binding)
-
-1. **Zero-stop overnight.** PR before morning regardless. Sacrifices, in
-   order: **F5** first (the watch drawer — new work), then **F4**. **F1, F2
-   and F3 never fall.**
-2. **BYTE-IDENTITY.** `t52-classify`: six IDENTICAL, UNNAMED = 0. F3 and F4
-   touch drillings; if a golden moves, that is a FINDING to write up, not a
-   licence.
-3. **LISP IS LAW — FIRST for F4 and F5.** Dog-bone counts and the insert's
-   geometry are cut on the machine, so they are born in `reference/lisp/`
-   before any JS. Paren 13/13 at 0/0.
-4. **Sanctity.** Nothing is deleted.
-5. **Suite in full at every commit, never `--silent`. One commit per feature.
-   Zero new dependencies. English copy. Every screenshot LOOKED AT.
-   `verify/t52/` shows: a run shared out from the RIGHT end, a shaker door
-   with no cup visible through its face, and the watch drawer lit.**
+Branch from `main` (`a002df3`, T52 merged). One commit per feature, in order
+F1 → F7, plus the closing acceptance-walk commit.
 
 ---
 
-## F1 [CRITICAL] — the run shares out from EITHER end, and takes every cabinet
+## THE IRON RULES
 
-Two faults, one feature, both diagnosed already.
+**1 · ZERO-STOP.** Above. Skip-and-note, never halt. PR open before morning.
 
-**(a) The run breaks at a millimetre.** `buildRuns` starts a new run when the
-gap between two cabinets exceeds `profile.autoParts.topInfill.runGap`, which
-is **1 mm**. That number is right for what it was written for — whether two
-cabinets share one top filler — and far too tight for this. Six cabinets with
-one 2 mm shadow between them are TWO runs, so the share-out divides the one
-the hand touched and refuses to move the rest. That is exactly the owner's
-*"proponuje tylko 1 lub 2 szafki i nadal nie może przesunąć reszty."*
+**2 · BYTE-IDENTITY.** Write `scripts/t53-classify.mjs` (re-head T52's; derive
+the kit count, never type it). Six goldens **IDENTICAL, UNNAMED = 0**, proven
+the three-line way: `--dump` on the base with `t52-classify.mjs`, `--dump` on
+the branch with `t53-classify.mjs`, compare. Expected buckets: **none** —
 
-The share-out gets its OWN definition of scope, and it is the owner's own
-sentence: **every cabinet on this wall at this mount height, wall to wall** —
-whatever millimetre shadows stand between them. `runGap` is NOT changed;
-nothing else may inherit this.
+- F1 is a run over a room; a golden has neither.
+- F3 and F4 cut only under a `slopeCut`; no golden carries one.
+- F5 moves riders; no golden carries a top box.
+- F6 splits pieces longer than a board; no golden's plinth or infill exists in
+  a default config at all (they wait to be asked for — turn 4).
+- F7 moves shoe fronts; no golden carries a shoe item.
 
-**(b) It only lays out from the left.** The cursor starts at the run's left
-edge, so a run reached from the right end grows the wrong way and stops
-against whatever it meets. The lay-out anchors on the end the gap is at: a
-gap on the right means the run is laid from the LEFT wall rightwards, and a
-gap on the left means it is laid from the RIGHT wall leftwards. Either way it
-finishes flush on both walls, because the arithmetic below says it must.
+Add a per-feature `--probe` for each of the above, the way T52's `--tabs`,
+`--plan` and `--watch` turned the argument into an exit code. If a golden
+moves anyway: iron rule — **write it up as a FINDING. Do not name a bucket
+for it.**
 
-**The arithmetic, in the owner's own words** — assert it in the test exactly
-so:
+**3 · LISP IS LAW, FIRST.** F3's slope-infill geometry, F4's bevel direction
+and F6's splitting rule are cut on the machine, so they are **born in
+`reference/lisp/`** (SKYLON_COMMON.lsp — infill/plinth sections; the slope
+sections F4 touches) before any JS. `scripts/t53-paren-balance.mjs`: every
+kit at **0/0** — the shelf is **14 files** since T52 (`KIT_WATCH_DRAWER.lsp`);
+derive the count.
 
-```
-(wall clear − infill − infill − fixed-width cabinets) ÷ movable count = each
-```
+**4 · SANCTITY.** Zero functions deleted without a named licence. None is
+granted tonight. If a deletion looks necessary, write the case in the verdict
+and leave the function standing. Every removal of any line is accounted for.
 
-**Both infills, always.** T51 reserves the filler that EXISTS and not the one
-that will exist: at a 4000 wall with 40 on the left and a 260 gap on the
-right, it offered 660 each (6 × 660 = 3960, leaving 40 — one filler, not
-two). Correct is `(4000 − 40 − 40) ÷ 6 = 653`. Reserve a filler at EVERY end
-where the run will meet a wall after the share-out, whether or not one stands
-there now. The bar's own figure must equal what the cabinets end up at.
+**5 · THE WALK.** Full suite at every commit, never `--silent`; read results
+with `grep -E "^# (tests|pass|fail)"`, never `tail`. `npm install` never
+silent. `npm run build` clean. English copy everywhere in the UI — Polish in
+UI strings was T44's failure and it is not repeated. Zero new dependencies.
+Browser verification with committed screenshots in `verify/t53/`, **every one
+looked at** before the verdict claims anything about it. All modals draggable,
+opening beside — never covering — the clicked object. Every search/filter
+field ships the ✕ clear button (house rule, 23.08).
 
-**And they must move.** Cabinet-on-cabinet overlap stays absolutely
-forbidden — the owner: *"nachodzenie na siebie to sztywna zasada."* The run's
-own auto-parts come out of the obstacle set for the duration of the lay-out
-(T51's own note says why) and are restored after.
+**THE HOUSE OVERLAP LAW** (owner, 27.08, filed in Petros): *"nie pozwalamy na
+nachodzenie się materiałów na siebie, chyba że ja sobie tego zażyczę."* No two
+boards may overlap in geometry — anywhere, ever, unless he asked. F4, F5 and
+F7 each close a breach of it. Do not open a new one.
 
-## F2 [CRITICAL] — the cup does not show through the face
+---
 
-The owner's screenshot: a **25 mm** shaker, rebate 6, so 19 mm of material
-under an 11 mm cup — seven millimetres of floor, and the cup is still visible
-on the face. T51's F5 was a real fix for a real fault (a thin front bored
-through) but it **cannot fire here**, so this is a different fault and it is
-in the SCENE, not the bore.
+## F1 [CRITICAL] · the share-out gate, and the ✕
 
-Start where the cup's body is placed through the door's thickness:
-`engine/hardware3d.js` reads `cupDepth: bore?.depth`, which is right, and
-`3d/Hardware.jsx` sets the cylinder at `z + cupDepth/2` against a comment that
-assumes a 25 mm door. Check the SIGN and the datum: `innerZ` is the door's
-INNER face and the cup is bored from it, so the body must run from `innerZ`
-INTO the board, and the boss must stand proud on the CARCASS side. If either
-runs the other way the cup reaches the face.
+> *"jak dołożę nową szafę lub cupboard, i zostaje mniej niż 400 to muszę
+> przesunąć żeby się pojawiła ta informacja … czyli działa w 99 procentach."*
+> *"musi też być przycisk dismiss — jak nie chcę tego robić teraz, muszę coś
+> nacisnąć. pamiętaj krzyżyk zasada."*
 
-Prove it by measurement, not by eye: assert the cup body's far plane sits at
-`innerZ + bore.depth` and that the boss lies entirely at `z < innerZ`. Then
-photograph a shaker door at 25 mm and at 18 mm.
+**(a) The gate counts a scribe as leftover — diagnosed, with numbers.**
+`engine/shareOut.js`: `plan.gap = left.bodyGap + right.bodyGap` — the SUM of
+both ends — and `shareOutOffered` refuses at `gap >= 400`. Fill a 4000 wall
+from the left: the last add leaves **360** of bare wall (what the owner sees),
+but the left end's bodyGap is **40** — the scribe's own reserve, not free
+space — so the gate reads **400 ≥ 400** and stays silent. Nudge the cabinet
+1 mm toward the gap: 399, and the bar appears. Reproduced headless on the
+live store, to the millimetre.
 
-## F3 [HIGH] — LISP first: the dog-bone counts follow the cabinet's height
+**The fix:** the gate compares the leftover **less what is already reserved**:
+`gap − reserved.total`. On the same numbers: add → 400 − 80 = **320 < 400 →
+the bar stands on the add**. After a share-out: 80 − 80 = **0 → the bar does
+not stand again** — which also closes the T52 verdict's own note about the
+bar returning over two scribes. One cause, two bugs, one line of arithmetic.
+The gate moves; `shareOutPlan`'s published `gap` does not change meaning —
+the BAR's label still reads the visible leftover (`span`/`bodyGap` of the gap
+side), which is the number the owner reads.
 
-The owner: two dog bones below 600, one below 300, on the BACK and on BUL and
-BUR. Today `middleTabBelow: 346` decides three-versus-two and nothing ever
-yields one.
+**(b) The ✕.** The bar gets a dismiss cross at its right end (the house ✕
+rule). Clicking it dismisses the offer **for this gap**: store the offered
+plan's signature (wall, mount, rounded `startAt`/`endAt`/`gap`) in the UI
+store; `settleLayout` does not re-offer while the current plan's signature
+matches the dismissed one; any geometry change that alters the signature
+(move, add, remove, width) clears it, and so does loading a project. Without
+the signature the very next settle would resurrect the bar it just closed.
 
-* **346 → 600** for the third tab. Note in the profile that this is now the
-  OWNER'S number, not the derived one — the comment currently explains 346 as
-  `190 + 120 + 36` from the socket geometry, and that explanation stops being
-  true. Keep the derivation in the note as the FLOOR it must not go below.
-* **A new threshold at 300 for a single tab.** `LOW_CABINET.minHeight` is
-  exactly 300, so `< 300` can never fire — it is `<= 300`, and say so in the
-  note, or the feature ships dead.
-* Born in `reference/lisp/` first, as every drilling rule is.
+Assert both in `test/turn53-f1-…`: the owner's fill-the-wall sequence offers
+**on the add**; the shared-out run does not re-offer; dismiss holds across a
+settle and lifts on a real geometry change. Screenshots: the bar standing
+immediately after an add into a sub-400 gap; the bar with its ✕; the bar gone
+after ✕ and still gone after an unrelated settle.
 
-## F4 [MEDIUM] — the leftover, once more, and the bar tells the truth
+Files: `engine/shareOut.js`, `stores/uiStore.js`, `stores/projectStore.js`,
+`3d/ShareOutBar.jsx`. `runGap` is not touched. The 400 itself is not touched.
 
-Whatever F1 computes, the BAR must show the same number the cabinets will end
-up at. Where the two disagree today the owner reads the bar, builds to it and
-finds forty millimetres missing at the wall. One number, computed once,
-displayed and applied.
+---
 
-## F5 [HIGH] — the watch drawer
+## F2 [CRITICAL] · the DXF export is EMPTY
 
-*"szuflada nasza standardowa, tylko przegródki"* — so this is an INSERT, not
-a new drawer type. It drops into a standard drawer box and the box is
-untouched.
+Fifth day standing (handover, 22–26.08): *"DXF eksport PUSTY — bez tego CNC
+nie dostaje nic."* The single most valuable output of this application
+produces nothing.
 
-**The numbers**, from the trade and from the owner:
+The cause is **not diagnosed** — diagnosing it is the first half of the
+feature, and the finding goes in the verdict in full: what was empty (zero
+bytes? headers with no entities? wrong panels selected?), where it broke
+(`engine/cnc/dxf.js`? the Output wiring? the panel filter?), and since when
+(bisect if the history answers cheaply).
 
-* **Divider stock 9 mm** (owner). **Inside depth 60 mm** (owner) — the trade
-  standard is ~50 mm for a watch pocket, so 60 carries a chronograph and a
-  lining. Note both in the profile.
-* **Pocket ~110 × 95** on a 900 drawer, five across; the count follows the
-  width, never a fixed five. A watch case runs 30–48 mm, so a pocket must
-  never fall below 60 mm clear.
-* **ONE row of pockets, at the FRONT.** Behind it, long sections for ties,
-  cufflinks and straps. Three rows of pockets is a known mistake: the back row
-  cannot be reached once the drawer is in.
-* **Frame in the carcass decor** (Egger), like every other part — it takes the
-  project's material, it is not special-cased.
-* **Glass over the pockets, LED in a rebate in the frame**, aimed at the
-  watches rather than at the eye. The strip is the one the app already
-  places — same catalogue, same groove law (T48's +10 each end).
+Then fix it, and **prove it the workshop's way**: build a seeded test project
+(a real one — a run of BUD/BUDR with drawers, one wardrobe with a slope, a
+shoe box; never fabricated catalogue rows), export, and assert on the FILES:
+per expected part a DXF whose entity count is > 0 and whose extents match the
+part's `cnc` geometry within tolerance; drillings present where the engine
+says holes are; the slope note text where F3/F4 give a piece an angle. Commit
+one sample DXF set under `verify/t53/dxf/` and open at least one in a viewer
+for a screenshot. A green suite that never opened the file is exactly how
+this stayed broken for five days.
 
-**Three decisions taken FOR the owner — veto any.** He was asked and left:
+---
 
-1. **The glass LIFTS OUT.** A fixed pane looks better and makes a watch
-   unreachable without opening the whole drawer; a lift-out pane is what a
-   joiner would fit.
-2. **The LED lights the WATCHES**, not the glass. Lighting the pane makes a
-   shop display; lighting the contents makes a wardrobe.
-3. **The insert is its own BOM line**, addable to any drawer — not a drawer
-   type. That way a customer can have it in one drawer of six.
+## F3 [HIGH] · the slope's infills — one law: 3D DRAWS WHAT CNC CUTS
 
-CNC: the divider slots, the frame, the rebate for the glass and the LED
-groove. Report in Check when a drawer is too shallow to take the insert
-rather than shipping a squashed one.
+> *"top infill po skosie w ogóle nie działa … jakoś dziwnie się rysuje gdzieś
+> poza ścianami."*
+> *"najdziwniejsze jest to, że pionowy infill na CNC się tnie pod skosem, ale
+> na wizualizacji pokazuje prosto."*
+> *"slope — tylko infill się nie rysuje po skosie, a jest na CNC."*
 
-## Execution order
+Same disease three ways, and it is the disease the grain rule already killed
+once: **two sources of truth**. The CNC path carries the slope
+(`meta.slopeCut.angles`, the DXF, the part label); the 3D solid ignores it.
+The law, stated once and asserted: **every piece the machine cuts on the
+slope is drawn cut in the room.** LISP first (iron rule 3): state the
+infill-on-slope geometry in `SKYLON_COMMON.lsp` beside the slope sections;
+`engine` follows it; the 3D consumes the engine's outline and measures
+nothing of its own.
 
-`F1` → `F2` → `F3` → `F4` → `F5`. Corrections first; the new drawer last,
-where it can fall without taking anything with it.
+**(a) The vertical (side) infill.** `engine/mitre.js infillMitre` cuts the
+vertical member's solid for exactly one thing — the 45° `meta.corner` at the
+top-infill joint — and nothing for the slope. Give the vertical's solid its
+slope plane from the same numbers the CNC already carries; the top end of the
+piece in the room matches `slopeHeightAt` at its own x. The T48 mitre where
+it meets a sloped top infill (`sideTopMitreDeg`) already knows the angle —
+use it, do not restate it.
 
-## What this turn does NOT touch
+**(b) The run top infill.** `engine/runs.js runTopInfill` is flat: one
+`faceH`, ends from `runEnd(..., roomHeight)`, zero `ceilingPolyline`. Under a
+slope the piece stands above the ceiling line — *"poza ścianami"*. It becomes
+**segments behind the ceiling polyline**: broken at every knee, each
+segment's top edge following its own stretch (straight under a flat stretch,
+raked under a raked one), never crossing the polyline, never entering the
+triangle where the wall has ended. Segment joints land on cabinet boundaries
+where F6's law reaches this piece.
 
-The six goldens' bytes. The DXF export's emptiness — still its own CRITICAL,
-still not this turn. The lighting rig (the owner: *"lights działają super"*).
-The warehouse. `runGap` itself (F1 says why).
+**(c) The vertical run to the ceiling.** `projectStore.sideInfillToCeiling`
+and `endPanelToCeiling` read `room.height` flat. Under a slope the target is
+`slopeHeightAt` at the piece's own x on that wall.
 
-## Morning audit will run
+**(d) The slope infill (the board over a cabinet, T51's infill-as-board).**
+On the CNC, not drawn on the slope in the room. Same law, same source: the
+solid takes the cut outline the CNC file takes.
 
-Fresh clone → install → suite (never `--silent`) → build → `t52-classify` →
-paren 13/13 → the share-out probe: a six-cabinet run with a 2 mm shadow in it
-shared out as ONE run, from the right end, arithmetic checked by hand against
-`(wall − 2 fillers − fixed) ÷ movable`, and the bar's figure equal to the
-built widths → the cup probe: body plane and boss plane measured, at 25 mm and
-at 18 mm → the dog-bone probe: 700, 500 and 280 mm cabinets yielding three,
-two and one → the watch drawer: pockets counted against the drawer width, the
-LED groove matching the LISP → every screenshot LOOKED AT → verdict → the
-numbered eye-test list.
+Tests hold engine outline ⇄ CNC geometry equal per piece (the T48 pattern:
+parse what the machine gets, compare with what the room draws). Screenshots:
+a sloped wall with a run under it — vertical infill cut, top infill in
+segments behind the polyline, slope infill lying on the rake; before/after
+of the piece that used to float outside the wall.
+
+---
+
+## F4 [HIGH] · BUL/BUR on the slope: the bevel runs the WRONG WAY
+
+> *"zamiast BUL obciąć pod kątem pasującym do wieńca, to się nachodzą
+> materiały na siebie."*
+> *"wygląda na to, że cięcia istniejące na BUL i BUR są odwrotnie — zobacz SS."*
+> And the correction: *"nie cięcie wieńca — on już jest dobrze cięty. BUL i
+> BUR."*
+
+**The roof board is CORRECT. Do not touch it.** The sides are the fault: the
+existing T47 bevel on the side's top edge is **mirrored** — on the owner's
+screenshot the blank's HIGH edge faces the ROOM, leaving a wedge of side
+standing proud past the roof line at the corner, overlapping the board that
+should lie flat on it. The short face of the bevel must be on the fall side;
+the high point of the blank always toward the peak, never toward the room.
+
+Same error family as the lighting rig's backwards rotations: a sign, per
+side. **LISP first:** check `SKY:slopeCutPts` and the T47 side sections in
+the LISP — if the LISP is right, the JS diverged (suspect seam:
+`cabinet.js` T47 block, `sideUnder`'s blank/short-face pick per `isLeft` and
+the bevel emit on the side panels); if the LISP itself is mirrored, fix the
+LISP first and the JS follows. Then the overlap is gone **by cutting, not by
+adding**: no patch piece, ever — the house overlap law above.
+
+Assert per side, both slopes (left slope and right slope): blank high point
+on the peak side; the side's top face coplanar with the roof's underside
+along the shared stretch; the stated angle on the piece equal in the room,
+on the part drawing and on the CNC sheet. Screenshots: the T52-style corner
+close-up, left and right, where the wedge used to stand.
+
+---
+
+## F5 [HIGH] · top boxes: side by side on one main, never one inside another
+
+> *"top box łamią zasadę — nakłada się jeden na drugi, a nie może. poza tym
+> jak dodaję plusik po lewej, to on się nie pojawia po lewej, tylko jeden w
+> drugim."*
+
+Diagnosed: the model is **1 main = 1 rider at the main's own x**.
+`engine/topBox.js settleRiders` writes the rider `x = host.x_mm` — hard;
+`riddenBy` is a Map host→ONE rider (a second silently shadows the first);
+`hostForRider` hands every box on the span the same host — so two boxes get
+one x and stand **exactly inside each other**, and the left add-plus places a
+box beside, only for the very next settle to snap it back onto the host's x.
+
+The model turns over:
+
+- a rider keeps **its own x**, clamped inside the host's span (a box may not
+  hang past its main's edges);
+- a host carries a **list** of riders (`ridden_by` becomes the list; every
+  reader — `doors.js topNeighbourDemand`, checks #14's orphan question, the
+  clamp — goes list-aware; a saved project with the old scalar migrates on
+  load);
+- **rider–rider overlap is forbidden** — same clamp discipline cabinets have,
+  the house overlap law again;
+- add-plus L/R on a top box places the new box **beside the clicked box**,
+  clamped to the host span; no room on that side → the add refuses with a
+  message, exactly as a cabinet add against a wall does;
+- `settleRiders` still snaps **y** to the host's top and rides the host's
+  moves; it stops confiscating x.
+
+Assert: two boxes on one 1200 main sit side by side and survive a settle;
+plus-L lands left; the third box that does not fit refuses; the old
+single-scalar project loads and keeps its one box where it was. Screenshots:
+two boxes side by side on one main; the refusal message.
+
+---
+
+## F6 [MEDIUM] · plinths and infills: VERTICAL on the sheet, split at a cabinet edge
+
+> *"infille i plinthy układaj na CNC w pionie zawsze i dziel tak, żeby się
+> równo z szafką którąś — żeby nie przekroczyło wysokości materiału. przy
+> okazji rozwiążemy problem oversizu."*
+> The worked example, his: *"płyta ma 2400 a plinth wychodzi 3200 — zobacz
+> jakie mamy szafki: 3 × 650 = 1950, reszta drugi pasek. łączenie zawsze
+> równo z szafką, a nie na środku szafki."*
+
+The law, LISP-first (SKYLON_COMMON, beside the plinth/infill sections), then
+engine, then nesting:
+
+- these pieces nest **vertically** on the sheet — the piece's length runs
+  along the board's height. Verify plinths already do (*"plinthy już chyba
+  mamy pionowo"* — check, and if any path lays them flat it comes under the
+  law tonight);
+- a piece longer than the **assigned board's real height** (the project's
+  material, never a hardcoded 2400/2070) splits into strips;
+- the split point is **always a cabinet boundary**: take whole cabinet widths
+  while the sum fits — his example is the assertion, literally:
+  board 2400, plinth 3200 over 650s → 3 × 650 = **1950** first strip (a
+  fourth would be 2600 > 2400), **1250** the second; a joint never lands
+  mid-cabinet;
+- grain follows the single-source rule already in force: the cut orientation
+  IS the grain, and the room draws what was cut — vertical strips carry
+  vertical grain, stated on the piece for the nester, no per-role override;
+- this **closes the oversize problem** for these parts: no plinth or infill
+  strip may exceed the sheet, and the check that used to flag the oversize
+  now flags only a single cabinet wider than the board (which no split can
+  save).
+
+Where F3's segmented top infill already breaks at a knee, the two laws
+compose: a segment that is still too long splits again, at a cabinet edge.
+
+Assert the worked example number for number; assert no joint mid-cabinet
+across a randomized run of widths; assert the limit reads the assigned
+board. Screenshot: the cut sheet with a split plinth, joint on the cabinet
+line.
+
+---
+
+## F7 [MEDIUM] · the shoe fronts come under the drawer-front law
+
+> *"szuflada lub półka na buty powinny mieć te same zasady co szuflady …
+> nie licuje się z frontem, nie licuje się z innymi szufladami, nie wiem
+> dlaczego front zachodzi na szufladę na dole."*
+
+Diagnosed — the shoe front is a **parallel world** (`engine/shoeBox.js` +
+its own case in `cabinet.js shoeBoxBoxFor`), and every symptom is one
+divergence:
+
+- **its own Z plane** (`setbackX = 3` off its own datum) while drawer fronts
+  share theirs — the shoe face stands off the common plane. It moves onto
+  **the exact plane the DRAWER-FRONT panels emit** (read it from the
+  drawer-front box, do not restate the formula);
+- **the double −G**: above a stack, `above = partY − G` then
+  `posZ = above − G` — the box floor lands a board-thickness INSIDE the
+  drawer zone, so the face overlaps the drawer front below. One −G goes;
+- **no front gap**: the shoe face butts at zero while every drawer front
+  keeps the front gap. It keeps the same gap to the front below and above;
+- **the face is VERTICAL, always.** The shoe SHELF's 15° tilt is interior
+  design and stays; the face riding the tilt is the crooked front on his
+  screenshot and it stops.
+
+**What does NOT change, because it is his own standing law:** the face width
+stays the T37 rule — *"rozszerz front szuflady, tak żeby zostało po prawej i
+po lewej od BUL i BUR około 10 mm"* — and `frontH = 120` stays the kit's
+number. Neither is overturned by tonight; if the owner wants the drawer
+width-law instead, that is his one line to say in the morning, not yours to
+assume.
+
+Assert: the shoe face coplanar with a drawer front in the same carcass; the
+gap between shoe face and the front below equal to the drawer front gap; no
+overlap with the front below (the house law); the face vertical over a
+tilted shelf; box, slope floor, battens, runners byte-identical to before.
+Screenshots: the owner's own scene rebuilt — stack + shoe above — before
+and after.
+
+---
+
+## OUT OF SCOPE TONIGHT
+
+The lighting rig (*"lights działają super"*). `runGap`. The 400 threshold
+itself. The warehouse and its SQL. `hardware.hinge.cupFloorKeepMm` (T52
+finding 2 — the owner's word pending). The watch drawer v2 (16 — mockup
+first). The CAD room drawing (11 — mockup first). L-shape. The wieniec's own
+slope cut (correct; F4 touches sides only). Kesseböhmer STEP 238384.
+
+---
+
+## THE MORNING
+
+`verify/t53/`: screenshots per feature (named for what they show, before/after
+where telling), `dxf/` samples (F2), `audit/` (classify, paren, per-feature
+probes), `EYE-TEST.md` (the owner's walk, numbered, with the two-or-three
+things to tell us about), `report.json`, `verdict.md` — iron rules answered
+in a table, per feature: his words, the diagnosis, what shipped, what was
+measured, findings written up rather than waved through.
+
+The suite, the build, `t53-classify` (6 IDENTICAL, UNNAMED 0), paren (14
+kits, every one 0/0), the probes — all in the verdict as numbers. One commit
+per feature. The PR open before morning, whatever fell.

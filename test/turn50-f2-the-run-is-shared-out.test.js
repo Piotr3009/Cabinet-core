@@ -215,7 +215,20 @@ test('F2 · it is ONCE: no flag is written, and nothing recalculates later', () 
     'written through the ordinary width setter, with the ordinary clamp');
   // …from the RIGHT, because every cabinet in a share-out is growing and a
   // cabinet grows into the space the one after it has just vacated.
-  assert.ok(action.includes('for (const u of [...units].reverse()) place(u);'));
+  //
+  // ─── UPDATED BY T52 (CLAUDE.md F1b) ─────────────────────────────────────
+  // "From the right" was written when a run could only be laid out from its
+  // LEFT edge, and it is that case said in full. T52 anchors the lay-out on
+  // the end the leftover is NOT at, so the ORDER turns over with the anchor:
+  // `outward` is the reversed list for a run anchored LEFT — turn 50's own
+  // behaviour, unchanged for every run it ever laid out — and the forward one
+  // for a run anchored right. The mechanism is asserted rather than the
+  // literal line, and `test/turn52-f1-the-run-shares-out-from-either-end.js`
+  // holds the behaviour on both anchors.
+  assert.ok(action.includes("const outward = fromRight ? units : [...units].reverse();"),
+    'the growing order follows the anchor');
+  assert.ok(action.includes('const fromRight = plan.anchor === ') || action.includes("plan.anchor === 'right'"),
+    'and the anchor is the PLAN’s, not a second opinion');
   // …and with the MAGNET off: it is a hand's convenience and it is exactly
   // wrong for a position somebody has worked out.
   assert.ok(action.includes('{ magnet: false }'));

@@ -550,3 +550,76 @@ export function cupBoreOf(panel, profile) {
     wanted,
   };
 }
+
+// ─── TURN 52 (CLAUDE.md F2): THE CUP DOES NOT SHOW THROUGH THE FACE ─────────
+//
+// The owner, 26.08.2026, of a 25 mm shaker: *"nie działa — nadal widać
+// zawiasy."*  T51's F5 was a real fix for a real fault — a thin front bored
+// through — and on THIS door it cannot even fire: 25 less a 6 mm rebate is 19
+// mm of material under an 11 mm cup, and the bore is the number it always was.
+//
+// So the question is not the BORE, it is where the body is PUT — and until
+// tonight no file in this app said, in one place, which way the cup runs
+// through the door's thickness. `3d/Hardware.jsx` carried the only sentence
+// about it, in a comment ("the cylinder turn 7 drew at `z + cupDepth/2` sits
+// entirely within the door's 25 mm") describing a procedural cylinder that has
+// not existed since the chat fix of 14.08.2026 removed the stand-ins. A number
+// nobody can measure is a number nobody can be wrong about out loud.
+//
+// THE LAW, said once, here:
+//
+//   THE DATUM is the door's INNER face (`doorHingeDatum`, turn 26). The
+//   cabinet's +z runs from the wall towards the room, so the bit enters at
+//   `innerZ` and travels in +z.
+//
+//   THE CUP runs FROM `innerZ` INTO the board, and its far plane is the bore's
+//   own floor — `innerZ + bore.depth`, never `innerZ + the profile's nominal`.
+//   On a leaf whose bore had to be shortened those two are different numbers,
+//   and drawing the cup to the nominal puts ⌀35 of steel in board the machine
+//   never removed: the deeper it goes the less floor is left between it and the
+//   face, which is the owner's sentence from the other side.
+//
+//   THE BOSS — the cup's body, standing proud of the door's back face — runs
+//   the OTHER way, `bossHeight` out of the leaf into the CARCASS opening. It
+//   lies entirely at `z < innerZ`. If either of those runs the other way round,
+//   the cup reaches the face.
+//
+// `seatZ` is where the MODEL's flange plane is set down so its cup floor lands
+// on the bore floor. It is `innerZ` for every leaf the hinge actually fits, and
+// it comes OUT of the board by the shortfall where it does not — which is what
+// a hinge in too shallow a hole really does. Check already names that leaf
+// (T51 `cupTooThin`); this stops the picture from denying it.
+/**
+ * Where the cup body and its boss sit through the leaf's thickness.
+ *
+ * @param {object} panel   an engine FRONT panel record
+ * @param {object} profile
+ * @returns {{
+ *   innerZ:number, outerZ:number, cupFrom:number, cupTo:number,
+ *   bossFrom:number, bossTo:number, seatZ:number, depth:number,
+ *   wanted:number, short:boolean,
+ * }|null}
+ */
+export function cupBodyPlanes(panel, profile) {
+  const bore = cupBoreOf(panel, profile);
+  if (!bore) return null;
+  const boss = Math.max(0, Number(profile?.hardware?.hinge?.bossHeight) || 0);
+  // ≤ 0: how far the body must come BACK out of the leaf for its cup floor to
+  // land on the bore floor. Zero wherever the hinge fits, which is every door
+  // in every project the app has cut.
+  const shortfall = bore.depth - bore.wanted;
+  return {
+    innerZ: bore.innerZ,
+    outerZ: bore.outerZ,
+    // INTO the board, from the face the bit enters.
+    cupFrom: bore.innerZ,
+    cupTo: bore.innerZ + bore.depth,
+    // …and PROUD, on the carcass side. Both planes are below `innerZ`.
+    bossFrom: bore.innerZ - boss,
+    bossTo: bore.innerZ,
+    seatZ: bore.innerZ + shortfall,
+    depth: bore.depth,
+    wanted: bore.wanted,
+    short: bore.short,
+  };
+}

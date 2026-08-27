@@ -21,9 +21,15 @@ const dir = new URL('../reference/lisp/', import.meta.url);
 const read = (name) => readFileSync(new URL(name, dir), 'utf8');
 const common = read(T47_SHARED);
 
-test('all 13 kits balance 0/0, and none has a stray closing paren', () => {
+// ─── UPDATED BY T52 (CLAUDE.md F5) ─────────────────────────────────────────
+// The shelf grew a fourteenth file: `KIT_WATCH_DRAWER.lsp`, the watch drawer's
+// insert, born in the LISP before any JS exactly as iron rule 3 asks. The
+// COUNT is not the assertion — every file balancing at 0/0 is — so it is
+// derived from the folder rather than typed, and a fifteenth kit needs no edit
+// here.
+test('every kit balances 0/0, and none has a stray closing paren', () => {
   const rows = balanceOfKits();
-  assert.equal(rows.length, 13, 'the whole shelf is read');
+  assert.ok(rows.length >= 13, `the whole shelf is read — ${rows.length} files`);
   for (const r of rows) {
     assert.equal(r.balance, 0, `${r.name} balance`);
     assert.equal(r.negativeAt, null, `${r.name} has a ) that closes nothing`);

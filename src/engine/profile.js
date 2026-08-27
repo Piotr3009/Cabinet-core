@@ -507,7 +507,38 @@ export const DEFAULT_CABINET_PROFILE = {
     // has two sockets below `singleSocketBelow`. `LOW_CABINET.minHeight` is 300,
     // so the case is reachable from the UI. test/low-tabs.test.js recomputes the
     // number on every run, so it and the reasoning cannot drift apart.
-    middleTabBelow: 346,
+    //
+    // ─── TURN 52 (CLAUDE.md F3): 346 IS THE FLOOR NOW, NOT THE SWITCH ──────
+    //
+    // The owner, 26.08.2026: *"jak niska szafka poniżej 600 mm to już zrób 2
+    // dog bonesy, a jak poniżej 300 to jeden dog bones — na plecach i BUL i
+    // BUR."*
+    //
+    // So this is the OWNER'S NUMBER from tonight and no longer the derived one.
+    // The derivation above (190 + 120 + 36 = 346) stops being the explanation
+    // of THIS field and becomes the FLOOR it may never go below: under 346 the
+    // three dog bones genuinely collide, so a workshop that lowers the switch
+    // past it is asking for a hole through the middle of a panel rather than a
+    // joint. `engine/puzzle.js middleTabThreshold` still computes it and
+    // `test/low-tabs.test.js` still holds this number above it.
+    //
+    // LISP IS LAW, FIRST (iron rule 3): born in `reference/lisp/
+    // SKYLON_COMMON.lsp` as `SKY:tabCount` / `SKY:tabCentres` /
+    // `SKY:middleTabFloor`, and this is the application following it.
+    middleTabBelow: 600,   // 26.08.2026 (T52-F3), was 346 — the derived floor
+    // ─── …AND ONE TAB ON A REALLY LOW CARCASS ──────────────────────────────
+    //
+    // *"a jak poniżej 300 to jeden dog bones."*  At or under this there is ONE
+    // tenon, on the panel's own middle line — the twin, on the height axis, of
+    // `singleSocketBelow` on the depth axis.
+    //
+    // AT OR UNDER, and the boundary is the whole of it: `lowCabinet.minHeight`
+    // is EXACTLY 300, so a rule written as `< 300` could never fire on the one
+    // cabinet it exists for and the feature would ship dead. He said "poniżej
+    // 300" of a cabinet he can only build AT 300. `middleTabBelow` above keeps
+    // the ordinary reading — at 600 there are still three — because 600 is not
+    // a boundary anything is pinned to.
+    singleTabAtOrBelow: 300,
     screwDiameter: 3,
     screwFromEnd: 50,          // screws at 50, mid, length−50
     // ─── TURN 24 (CLAUDE.md F4): `centrelineExtra` IS GONE ─────────────────
@@ -4068,6 +4099,85 @@ export const DEFAULT_CABINET_PROFILE = {
       { id: 'shoe', label: 'Shoe drawer insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
       { id: 'belt_tie', label: 'Belt/tie divider insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
     ],
+  },
+
+  // ─── TURN 52 (CLAUDE.md F5): THE WATCH DRAWER ────────────────────────────
+  //
+  // The owner, 26.08.2026:
+  //
+  //   *"szuflada z przegródkami na zegarki, krawaty etc … szkło i
+  //   podświetlenie … rama z Eggera ale podświetlone zegarki … oczywiście
+  //   szuflada nasza standardowa, tylko przegródki z 9 mm zrób, i szuflada
+  //   płytka w środku, myślę że około 60 mm."*
+  //
+  // *"szuflada nasza standardowa, tylko przegródki"* — an INSERT, not a drawer
+  // type. The box is untouched; the tray drops into it and is its own BOM line
+  // (decision 3), so a customer can have it in one drawer of six.
+  //
+  // LISP IS LAW, FIRST (iron rule 3): every rule these numbers feed is born in
+  // `reference/lisp/KIT_WATCH_DRAWER.lsp`. `engine/watchDrawer.js` follows it
+  // and `test/turn52-f5-the-watch-drawer.test.js` holds the two together.
+  //
+  // NOTHING HERE REACHES AN EXISTING HOLE. Every rectangle these numbers cut is
+  // in a piece that did not exist before this turn, and the six goldens carry
+  // no insert at all.
+  watchDrawer: {
+    // ─── THE OWNER'S TWO NUMBERS ──────────────────────────────────────────
+    // *"przegródki z 9 mm zrób"* — the divider stock, and the frame and base
+    // are cut from the same board because a tray made of two thicknesses is a
+    // tray with an offcut problem.
+    dividerT: 9,
+    frameT: 9,
+    baseT: 9,
+    // *"szuflada płytka w środku, myślę że około 60 mm."*  The TRADE standard
+    // is about 50 mm for a watch pocket; 60 carries a chronograph and a
+    // lining, which is why his number is the better one and is the one kept.
+    // Both are written down because the next reader will ask.
+    insideDepthMm: 60,          // owner, 26.08.2026 — trade standard is ~50
+    // ─── THE POCKET ───────────────────────────────────────────────────────
+    //
+    // CLAUDE.md: *"Pocket ~110 × 95 … five across; the count follows the
+    // width, never a fixed five. A watch case runs 30–48 mm, so a pocket must
+    // never fall below 60 mm clear."*
+    //
+    // 110 is the pocket's DEPTH front-to-back and 95 its WIDTH: a watch lies
+    // across its cushion, so the long way is the way the drawer runs. Five
+    // across is what those numbers give an insert of about 500 mm inside width
+    // — 5 × 95 + 4 × 9 = 511 — which is a 600 mm drawer. A 900 mm drawer gets
+    // EIGHT by the same rule, and that is the point of having a rule.
+    pocketTargetMm: 95,
+    pocketRowDepthMm: 110,
+    // THE FLOOR, and it is the one number the count gives way to keep. A watch
+    // CASE is 30–48 mm across; a pocket under this will not take one.
+    pocketMinMm: 60,
+    // ─── AND THE LONG SECTIONS BEHIND IT ──────────────────────────────────
+    // *"ONE row of pockets, at the FRONT. Behind it, long sections for ties,
+    // cufflinks and straps."*  A tie wants LENGTH, so these are aimed wide and
+    // there are few of them — never the pocket rule again.
+    sectionTargetMm: 220,
+    // ─── DECISION 1: THE GLASS LIFTS OUT ──────────────────────────────────
+    // 4 mm is what a drawer is glazed with (the same pane the display drawer
+    // has taken since T33). It bears on a rebate cut in the top of all four
+    // rails and nothing holds it down — no bead, no stop, no screw.
+    glassT: 4,
+    // How far the pane bears ON the rail. 5 of a 9 mm rail, which leaves a 4 mm
+    // lip standing proud of the glass all round: 5 + 4 = 9, and the pane sits
+    // DOWN in the frame rather than on top of it. A bearing as wide as the rail
+    // would be a rail with nothing left of it.
+    glassBearingMm: 5,
+    // How deep a divider is housed in the rail it stands against. A housing,
+    // not a through slot: 3 of a 9 mm rail leaves two thirds of the board.
+    slotDepthMm: 3,
+    // ─── DECISION 2: THE LED LIGHTS THE WATCHES ───────────────────────────
+    // How far UNDER the glass the strip runs, in the inner face of the front
+    // rail. Below the pane, firing back and down across the pockets: a groove
+    // in the rail's top face would light the pane, which is a shop display.
+    // The GROOVE itself is the app's own (`lib/ledGroove.js`, T48's +10 mm at
+    // each end) — same catalogue, same law, not a second one.
+    ledBelowGlassMm: 12,
+    // Air over the glass, and the hair the tray is inset by so it lifts out.
+    headroomMm: 2,
+    clearanceMm: 2,
   },
 
   // ─── TURN 33 (CLAUDE.md F1/F2): THE LED SYSTEM'S OWN NUMBERS ──────────────

@@ -1,0 +1,14 @@
+THE DOG-BONE COUNTS — why F3 cuts without moving a golden
+
+config      height   tabs  centres
+WARDROBE    2150     3     95 · 1075 · 2055
+BUD         770      3     95 · 385 · 675
+WUD         720      3     95 · 360 · 625
+BUDR        770      3     95 · 385 · 675
+BUDR4       770      3     95 · 385 · 675
+PANTRY      2100     3     95 · 1050 · 2005
+
+the switches: three below 600, one at or under 300
+the probe:    700 → 3   500 → 2   280 → 1
+
+CLEAN — every one of the six is at least 600 mm tall, so every one cuts the three tenons it always cut. And the rule is awake: 700, 500 and 280 give three, two and one.

@@ -183,7 +183,10 @@ test('F4.2 — a drawer box is an element with its own detail view', () => {
   const box = r.panels.find((p) => p.role === 'drawer_box');
   assert.equal(elementKind(box), 'drawer');
   // Turn 18 (CLAUDE.md F6.4) adds the drawer's own runner variant beside it.
-  assert.deepEqual(elementFields(box), ['drawer-height', 'runner-variant', 'material']);
+  // T52 (CLAUDE.md F5, decision 3): …and 'watch-insert', the switch that fits
+  // the tray. Addable to ANY drawer, so it is a field on the drawer and not a
+  // fourth entry in the wardrobe's variant row.
+  assert.deepEqual(elementFields(box), ['drawer-height', 'runner-variant', 'watch-insert', 'material']);
 });
 
 // ─── F7 — hinges ────────────────────────────────────────────────────────────

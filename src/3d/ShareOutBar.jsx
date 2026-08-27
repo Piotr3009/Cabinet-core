@@ -2,8 +2,6 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { mm } from './constants.js';
-import { shareOutFor, shareOutGapSpan, shareOutPlan } from '../engine/shareOut.js';
-import { getUnitType } from '../engine/types.js';
 import { formatMm } from '../engine/format.js';
 
 // ─── THE SHARE-OUT, OFFERED AT THE GAP (turn 50, CLAUDE.md F2 · decision 1) ──
@@ -34,31 +32,41 @@ import { formatMm } from '../engine/format.js';
 // It is a TOOL: `ccHelper` on the anchor group, so nothing here can reach a
 // render or a contact shadow — the same contract `AddPlus` and the dimension
 // labels keep.
+//
+// ─── TURN 52 (CLAUDE.md F4): IT NO LONGER DOES ITS OWN ARITHMETIC ───────────
+//
+// *"Whatever F1 computes, the BAR must show the same number the cabinets will
+// end up at. Where the two disagree today the owner reads the bar, builds to it
+// and finds forty millimetres missing at the wall. One number, computed once,
+// displayed and applied."*
+//
+// This file worked the run, the gap and the plan out for itself and called
+// `shareOutPlan` WITHOUT `wallMargin` — so the end of the run with no filler
+// standing on it yet reserved nothing, and the bar said 660 each where the
+// store was about to build 653. Forty millimetres, in a missing argument.
+//
+// It takes the STORE's own resolution now (`projectStore.shareOutView`, which
+// is `shareOutSubject` — the same call `shareOutRun` applies). There is no
+// second derivation left to disagree with the first, and this component does
+// arithmetic about nothing but WHERE IN THE ROOM to hang the strip.
 
 /**
  * @param {object} props
- *   units       every unit in the project
  *   walls       engine/room.js roomWalls()
  *   roomCentre  the plan centre the scene is built about
  *   offer       uiStore.shareOutOffer — { unitId } or null
- *   profile
+ *   view        projectStore.shareOutView(unitId) — the ONE resolution (F4):
+ *               { run, plan, span, wallMargin, … }, or null when nothing stands
  *   onShare     (unitId, { extra }) — the store's `shareOutRun`
  */
 export default function ShareOutBar({
-  units, walls, roomCentre, offer, profile, onShare,
+  walls, roomCentre, offer, view, onShare,
 }) {
-  const found = useMemo(() => {
-    if (!offer?.unitId) return null;
-    return shareOutFor(units, offer.unitId, { walls }, profile);
-  }, [units, walls, offer, profile]);
+  const found = view && view.plan ? view : null;
 
   const placed = useMemo(() => {
     if (!found) return null;
-    const { run, wallWidth } = found;
-    const others = units.filter((u) => (u.position?.wall ?? 0) === run.wall
-      && getUnitType(u.type).mount === run.mount);
-    const span = shareOutGapSpan(run, { wallWidth, others });
-    const plan = shareOutPlan(run, { wallWidth, others }, profile, {});
+    const { run, plan, span } = found;
     const wall = walls[run.wall] || walls[0];
     if (!wall || !plan.ok) return { plan, span, world: null };
     // The middle of the gap, at the run's own top, a cabinet's depth forward —
@@ -72,7 +80,7 @@ export default function ShareOutBar({
       .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(depth / 2))
       .setY(mm(Math.max(0, run.top) * 0.6));
     return { plan, span, world };
-  }, [found, units, walls, roomCentre, profile]);
+  }, [found, walls, roomCentre]);
 
   if (!found || !placed?.world) return null;
   const { plan, span } = placed;

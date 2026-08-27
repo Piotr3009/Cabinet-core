@@ -7,6 +7,8 @@ import {
   elementActions, elementFields, elementLabel, boardParamFor,
 } from '../engine/elements.js';
 import { getUnitType } from '../engine/types.js';
+// T52 (CLAUDE.md F5): which drawer ITEM the clicked drawer is.
+import { drawerItemOf } from '../engine/watchDrawer.js';
 import { doorExtendMm, doorHeightOf } from '../engine/doors.js';
 import { minDrawerFrontHeight } from '../engine/cabinet.js';
 import { drawerHeightValue, drawerRefOf } from '../engine/drawerRef.js';
@@ -88,6 +90,8 @@ export default function ElementProperties({
   const resetDrawerHeights = useProjectStore((s) => s.resetDrawerHeights);
   // Turn 18 (CLAUDE.md F6.4): …and which runner it is fitted with.
   const setDrawerRunnerVariant = useProjectStore((s) => s.setDrawerRunnerVariant);
+  // T52 (CLAUDE.md F5, decision 3): …and whether it carries the watch insert.
+  const setDrawerWatchInsert = useProjectStore((s) => s.setDrawerWatchInsert);
   const moveElement = useProjectStore((s) => s.moveElement);
   // Turn 24 (CLAUDE.md F11): a partition's field measures from its LEFT
   // NEIGHBOUR, so this row needs to know what else is in the cabinet — read off
@@ -997,6 +1001,57 @@ export default function ElementProperties({
               {own ? 'this drawer’s own — click it again for the project’s' : 'the project’s'}
               {'. '}
               Same gaps, same pockets, same drilling either way.
+            </p>
+          </div>
+        );
+      }
+      // ─── TURN 52 (CLAUDE.md F5, decision 3): THE WATCH INSERT ──────────
+      //
+      // *"The insert is its own BOM line, addable to any drawer — not a drawer
+      // type. That way a customer can have it in one drawer of six."*
+      //
+      // So it is a SWITCH on the drawer a joiner has clicked, beside its runner
+      // and its height, and not a fourth entry in the wardrobe's variant row.
+      // Turning it on cuts the tray (frame, dividers, glass rebate and the LED
+      // groove), orders the lift-out pane and buys the strip; turning it off
+      // takes all three away again.
+      //
+      // A drawer too shallow to take one is REPORTED rather than squashed —
+      // the engine refuses it and Check #23 says which drawer and by how much
+      // — so the switch is never disabled here: the joiner is allowed to ask,
+      // and the app is obliged to answer in words.
+      case 'watch-insert': {
+        const n = Number(panel.meta?.drawer);
+        if (!Number.isFinite(n) || n < 1) return null;
+        const item = drawerItemOf(unit, n, panel.meta?.zone ?? null);
+        if (!item) return null;
+        const on = item.watch_insert === true;
+        const made = unitResult(unit.id);
+        const built = (made?.assemblies?.watchInserts || []).find((w) => Number(w.drawer) === n);
+        const refused = (made?.warnings || [])
+          .find((w) => w?.code === 'watch_insert_refused' && Number(w.drawer) === n);
+        return (
+          <div key={key} className="col-span-2 space-y-1" data-watch-insert-drawer={n}>
+            <Field label="Watch insert">
+              <button
+                type="button"
+                data-watch-insert-toggle={on ? 'on' : 'off'}
+                aria-pressed={on}
+                className={`cc-btn w-full ${on ? 'border-gold text-gold' : ''}`}
+                title="Pockets for watches at the front, long sections for ties behind, glass over them and a strip lighting the contents"
+                onClick={() => setDrawerWatchInsert(unit.id, item.id, !on)}
+              >
+                {on ? 'Fitted' : 'Not fitted'}
+              </button>
+            </Field>
+            <p className="text-[11px] text-ink-400">
+              {!on && 'One row of pockets at the front, long sections behind, a lift-out glass over them and an LED aimed at the watches.'}
+              {on && built && `${built.pockets} pockets at ${formatMm(built.pocket_w_mm)} × ${formatMm(built.pocket_d_mm)} mm, `
+                + `${formatMm(built.inside_mm)} mm deep · ${built.sections} long section${built.sections === 1 ? '' : 's'} behind · `
+                + `glass ${formatMm(built.glass_w_mm)} × ${formatMm(built.glass_d_mm)} mm, lifts out.`}
+              {on && !built && (refused
+                ? refused.message
+                : 'This drawer cannot take one — see Check.')}
             </p>
           </div>
         );

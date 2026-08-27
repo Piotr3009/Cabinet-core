@@ -29,7 +29,7 @@
  * @returns {{hinges:Array, runners:Array, legs:Array, rails:Array}}
  */
 import { panelPlacement } from './joinery.js';
-import { cupBoreOf, doorHingeDatum } from './doors.js';
+import { cupBodyPlanes, cupBoreOf, doorHingeDatum } from './doors.js';
 import { machiningFor } from './machining.js';
 import { getUnitType } from './types.js';
 // T42-F1: two kinds of rail, and the scene routes on which. One law, imported
@@ -276,6 +276,15 @@ export function doorHingeInstances(panel, {
   // the procedural cylinder to it and the guard measures against it, and two
   // readings of one number is how this turn's fault got in.
   const bore = cupBoreOf(panel, profile);
+  // ─── TURN 52 (CLAUDE.md F2): …AND WHERE THE BODY SITS IN IT ─────────────
+  //
+  // The two planes of the cup and the two of its boss, from the ONE law
+  // (`engine/doors.js cupBodyPlanes`). They travel on the instance for exactly
+  // the reason the bore does — *"two readings of one number is how this turn's
+  // fault got in"* — and this turn's fault was worse than two readings: the
+  // only sentence in the app about which WAY the cup runs through the board
+  // was a comment in the view describing a cylinder that had been deleted.
+  const planes = cupBodyPlanes(panel, profile);
 
   const cups = profile.hinges.cups;
   const right = panel.meta?.hinge === 'R';
@@ -314,6 +323,17 @@ export function doorHingeInstances(panel, {
     outerZ: datum.outerZ,
     thickness: datum.thickness,
     cupDepth: bore?.depth ?? 0,
+    // The cup runs from `innerZ` INTO the board; its far plane IS the bore's
+    // floor. The boss runs the other way, out into the carcass opening.
+    cupFrom: planes?.cupFrom ?? datum.innerZ,
+    cupTo: planes?.cupTo ?? datum.innerZ,
+    bossFrom: planes?.bossFrom ?? datum.innerZ,
+    bossTo: planes?.bossTo ?? datum.innerZ,
+    // Where the MODEL's flange plane is set down. `innerZ` for every leaf the
+    // hinge fits; back out of the board by the shortfall where the bore had to
+    // be shortened, so the drawn cup can never be deeper than the hole.
+    seatZ: planes?.seatZ ?? datum.innerZ,
+    cupShort: Boolean(planes?.short),
     // …and the plate, on the face of the piece this door hangs from, at the
     // same distance from the front edge the engine drills the plate screws at
     // (profile.hinges.xFromFrontEdge).

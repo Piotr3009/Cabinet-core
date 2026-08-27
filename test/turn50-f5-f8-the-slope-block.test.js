@@ -228,9 +228,15 @@ test('F7 · a flat door raises nothing at all', () => {
 
 // ─── F8 · LISP IS LAW: THE KITS LEARN THE SLOPE ────────────────────────────
 
-test('F8 · thirteen kits, thirteen zeroes', () => {
+// ─── UPDATED BY T52 (CLAUDE.md F5) ─────────────────────────────────────────
+// The shelf grew a fourteenth file: `KIT_WATCH_DRAWER.lsp`, the watch drawer's
+// insert, born in the LISP before any JS exactly as iron rule 3 asks. The
+// COUNT is not the assertion — every file balancing at 0/0 is — so it is
+// derived from the folder rather than typed, and a fifteenth kit needs no edit
+// here.
+test('F8 · every kit, every zero', () => {
   const rows = balanceOfKits();
-  assert.equal(rows.length, 13, 'thirteen files under reference/lisp/');
+  assert.ok(rows.length >= 13, `${rows.length} files under reference/lisp/`);
   for (const r of rows) {
     assert.equal(r.balance, 0, `${r.name} is ${r.balance} out`);
     assert.equal(r.negativeAt, null, `${r.name} has a stray ) at line ${r.negativeAt}`);

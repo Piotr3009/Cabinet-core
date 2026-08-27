@@ -120,16 +120,13 @@ export function paddedSpan(unit) {
 }
 
 /**
- * Group units into runs.
+ * The units of one WALL at one LEVEL, keyed `wall|mount|top`.
  *
- * A run breaks on any of four things, and each of them is a physical fact
- * rather than a convenience:
- *   - a different WALL or a different LEVEL — obviously;
- *   - a TURNED unit, which has no "along the wall" to share;
- *   - a different TOP HEIGHT, because one board cannot lie on two heights;
- *   - a GAP, because a board that bridges nothing is a board hanging in air.
+ * The first half of `buildRuns` — the part that is about where a cabinet
+ * STANDS rather than about what board could lie across it. Split out in turn 52
+ * so the share-out can borrow the level and refuse the gap (`buildWallRuns`).
  */
-export function buildRuns(units, profile) {
+function levelGroups(units, profile) {
   const groups = new Map();
   for (const unit of units) {
     const rotation = (((Number(unit.position?.rotation_deg) || 0) % 360) + 360) % 360;
@@ -144,6 +141,58 @@ export function buildRuns(units, profile) {
     if (list) list.push(unit);
     else groups.set(key, [unit]);
   }
+  return groups;
+}
+
+// ─── TURN 52 (CLAUDE.md F1a): THE SHARE-OUT GETS ITS OWN SCOPE ──────────────
+//
+// The owner, walking T51: *"jak robie po prawej, to proponuje tylko 1 lub 2
+// szafki i nadal nie moze przesunac reszty."*
+//
+// The diagnosis is `buildRuns` above, and the number is `runGap` — ONE
+// MILLIMETRE. That number is right for what it was written for: whether two
+// cabinets share ONE top filler, where a board that bridges a 2 mm shadow is a
+// board hanging in air. It is far too tight for the question the share-out
+// asks, and six cabinets with one 2 mm shadow between them are TWO runs — so
+// the share-out divides the one the hand touched and refuses to move the rest.
+//
+// So the share-out gets its OWN definition of scope, and it is the owner's own
+// sentence: **every cabinet on this wall at this level, wall to wall**,
+// whatever millimetre shadows stand between them. `runGap` IS NOT CHANGED and
+// nothing else may inherit this — `buildRuns` is still what decides where a
+// top infill, a cornice, a masking panel or a plinth is one length, and all
+// four of those are boards that really cannot bridge a hole.
+//
+// The LEVEL is the same fact `buildRuns` uses (`wall|mount|top`): one shelf
+// line, one stretch of wall. Only the GAP break is dropped.
+/**
+ * The runs of a room with the GAP RULE DROPPED — one run per wall per level.
+ *
+ * Same shape as `buildRuns`' entries, so every consumer of a run —
+ * `runEndGap`, `paddedSpan`, `shareOutPlan` — takes one unchanged.
+ */
+export function buildWallRuns(units, profile) {
+  const runs = [];
+  for (const [key, list] of levelGroups(units, profile)) {
+    const [wall, mount] = key.split('|');
+    const sorted = [...list].sort((a, b) => paddedSpan(a).left - paddedSpan(b).left);
+    runs.push(makeRun(sorted, wall, mount, profile));
+  }
+  return runs;
+}
+
+/**
+ * Group units into runs.
+ *
+ * A run breaks on any of four things, and each of them is a physical fact
+ * rather than a convenience:
+ *   - a different WALL or a different LEVEL — obviously;
+ *   - a TURNED unit, which has no "along the wall" to share;
+ *   - a different TOP HEIGHT, because one board cannot lie on two heights;
+ *   - a GAP, because a board that bridges nothing is a board hanging in air.
+ */
+export function buildRuns(units, profile) {
+  const groups = levelGroups(units, profile);
 
   const tolerance = profile.autoParts.topInfill.runGap;
   const runs = [];

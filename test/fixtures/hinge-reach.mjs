@@ -79,6 +79,13 @@ export function hingeReach(leaf, h, deg, cliptop = C) {
   const phi = (leaf.meta?.hinge === 'R' ? 1 : -1) * ((deg * Math.PI) / 180);
   const hingeEdgeX = leaf.meta?.hinge === 'R' ? leaf.box.x + leaf.box.w : leaf.box.x;
   const midZ = leaf.box.z + leaf.box.d / 2;
+  // ─── TURN 52 (CLAUDE.md F2) ───────────────────────────────────────────────
+  // Where the SCENE sets the body down (`engine/hardware3d.js seatZ`, the law
+  // in `engine/doors.js cupBodyPlanes`): the door's inner face for every leaf
+  // the hinge fits, and back out of the board by the shortfall where the bore
+  // had to be shortened. Identical to `h.z` on every leaf this file has ever
+  // measured, which is why no number here moves.
+  const seat = Number.isFinite(Number(h.seatZ)) ? Number(h.seatZ) : h.z;
 
   let a = -Infinity;
   let b = -Infinity;
@@ -89,7 +96,7 @@ export function hingeReach(leaf, h, deg, cliptop = C) {
         for (const cz of [row.min[2], row.max[2]]) {
           const lx = s * (cx - D.x);
           const lz = cz - D.z;
-          if (member === 'A') { a = Math.max(a, h.z + lz); continue; }
+          if (member === 'A') { a = Math.max(a, seat + lz); continue; }
           // fold about (s·pivot.x, pivot.z), in the cup's own frame…
           const dx = lx - s * pivot.x;
           const dz = lz - pivot.z;
@@ -97,7 +104,7 @@ export function hingeReach(leaf, h, deg, cliptop = C) {
           const fz = pivot.z + (-dx * Math.sin(phi) + dz * Math.cos(phi));
           // …into the room, and back into the leaf's frame.
           const ex = h.x + fx - hingeEdgeX;
-          const ez = h.z + fz - midZ;
+          const ez = seat + fz - midZ;
           b = Math.max(b, midZ + (ex * Math.sin(phi) + ez * Math.cos(phi)));
         }
       }

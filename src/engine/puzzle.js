@@ -70,11 +70,32 @@ export function tabPointsDown(edgeY, centreX, G, pz) {
  * middle tab is not cut and the panel has two — the same answer, on the other
  * axis, as `socketCentres()` gives a shallow carcass.
  *
+ * ─── TURN 52 (CLAUDE.md F3): THE COUNTS ARE THE OWNER'S NOW ────────────────
+ *
+ * *"jak niska szafka poniżej 600 mm to już zrób 2 dog bonesy, a jak poniżej
+ * 300 to jeden dog bones — na plecach i BUL i BUR."*
+ *
+ * Two changes and both are his:
+ *
+ *   the three-tab switch is 600, not turn 8's derived 346. That derivation is
+ *   still true and is still computed (`middleTabThreshold` below) — it is the
+ *   FLOOR the switch may not go under, and the profile says so beside the
+ *   number;
+ *   a NEW step at `singleTabAtOrBelow`: one tab, on the panel's own middle.
+ *   AT OR UNDER, because `lowCabinet.minHeight` is exactly 300 and `< 300`
+ *   could never fire.
+ *
+ * LISP IS LAW, FIRST: `reference/lisp/SKYLON_COMMON.lsp` `SKY:tabCount` /
+ * `SKY:tabCentres`, and this is the same three-way `cond`.
+ *
  * Everything downstream follows from this one function: the side panel's tabs
- * and their dog bones, the back panel's mating sockets and its screw rows.
+ * and their dog bones, the back panel's mating sockets and its screw rows — so
+ * *"na plecach i BUL i BUR"* is one change and not three.
  */
 export function tabCentres(length, pz) {
   const e = pz.tabCentresFromEnd;
+  const one = Number(pz.singleTabAtOrBelow) || 0;
+  if (one > 0 && length <= one) return [length / 2];
   const threshold = Number(pz.middleTabBelow) || 0;
   if (threshold > 0 && length < threshold) return [e, length - e];
   return [e, length / 2, length - e];
@@ -87,6 +108,15 @@ export function tabCentres(length, pz) {
  *
  * Two gaps have to stay open (middle-to-left and middle-to-right), so the
  * bridge is counted twice where the socket rule counts it once.
+ */
+/**
+ * ─── TURN 52 (CLAUDE.md F3): …AND IT IS THE FLOOR, NOT THE SWITCH ──────────
+ *
+ * The switch is `profile.puzzle.middleTabBelow` and it is the OWNER'S 600 from
+ * tonight. This is still exactly what turn 8 derived and it still means what it
+ * meant — the length under which three dog bones COLLIDE — so it is what the
+ * switch may never be set below. `test/low-tabs.test.js` holds the profile's
+ * number above it rather than equal to it.
  */
 export function middleTabThreshold(pz, boardThickness) {
   const half = Math.max(pz.tabHalfWidth, pz.dogboneHalfHeight);

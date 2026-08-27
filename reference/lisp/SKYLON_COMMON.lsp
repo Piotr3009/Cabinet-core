@@ -1625,6 +1625,49 @@
                    (- (SKY:cutHeightAt pts xb) (SKY:cutHeightAt pts xa))))
 
 ;;;----------------------------------------
+;;; WHICH WAY THE BEVEL RUNS  (turn 53, F4)
+;;;----------------------------------------
+
+;;; The owner, 27.08.2026, screenshot in hand:
+;;;
+;;;   "zamiast BUL obciac pod katem pasujacym do wienca, to sie nachodza
+;;;    materialy na siebie."
+;;;   "wyglada na to, ze ciecia istniejace na BUL i BUR sa odwrotnie."
+;;;   ...and the correction that scopes it: "nie ciecie wienca - on juz jest
+;;;    dobrze ciety. BUL i BUR."
+;;;
+;;; THE ROOF BOARD IS CORRECT. DO NOT TOUCH IT. What is stated here is the law
+;;; the SIDES are cut by, because a law that lives only in a renderer is a law
+;;; that can be forgotten by the next renderer:
+;;;
+;;;   THE HIGH POINT OF THE BLANK IS ALWAYS TOWARD THE PEAK, NEVER TOWARD THE
+;;;   ROOM. The short face of the bevel is on the FALL side.
+;;;
+;;; It follows from the geometry rather than from a preference: the side's top
+;;; is the roof board's UNDERSIDE at that face - `SKY:cutHeightAt` less the
+;;; board's own vertical footprint - and the ceiling is higher on the peak side
+;;; by definition. State it anyway. A wedge left uncut leaves the blank standing
+;;; proud past the roof line at the corner, and the two boards then overlap -
+;;; which the house forbids ("nie pozwalamy na nachodzenie sie materialow na
+;;; siebie").
+;;;
+;;;   ((ya yb) high)   ya at xa, yb at xb, and which face carries the high point
+(defun SKY:sideBevelFaces (pts wys xa xb G / ya yb deg drop)
+  (setq deg (SKY:sideCutDeg pts xa xb))
+  (setq drop (SKY:roofVertDrop G deg))
+  (setq ya (max 0.0 (min wys (- (SKY:cutHeightAt pts xa) drop))))
+  (setq yb (max 0.0 (min wys (- (SKY:cutHeightAt pts xb) drop))))
+  (list (list ya yb) (if (>= ya yb) "xa" "xb")))
+
+;;; ...and the check that says the law is kept: the side's top at each face is
+;;; the roof board's underside there, to the millimetre. Anything HIGHER is the
+;;; wedge left on, and the wedge left on is an overlap.
+(defun SKY:sideBevelOverlap (pts wys xa xb G / f)
+  (setq f (car (SKY:sideBevelFaces pts wys xa xb G)))
+  (max (- (car f) (- (SKY:cutHeightAt pts xa) (SKY:roofVertDrop G (SKY:sideCutDeg pts xa xb))))
+       (- (cadr f) (- (SKY:cutHeightAt pts xb) (SKY:roofVertDrop G (SKY:sideCutDeg pts xa xb))))))
+
+;;;----------------------------------------
 ;;; THE INFILLS ON THE SLOPE - ONE LAW: 3D DRAWS WHAT CNC CUTS  (turn 53, F3)
 ;;;----------------------------------------
 

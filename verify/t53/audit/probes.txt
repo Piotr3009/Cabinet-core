@@ -40,5 +40,20 @@ The run’s own ceiling line is written by the STORE, and a golden never meets t
 
 CLEAN — not one of the six is under a rake, so not one of them grows a cut. And the gate bites: a cabinet that IS under one cuts.
 
+F4 · THE SIDES’ BEVEL — a wedge exists only under a rake, and no golden stands under one
+
+subject        sides     cut       with a bevel  
+WARDROBE       2         0         0             
+BUD            2         0         0             
+WUD            2         0         0             
+BUDR           2         0         0             
+BUDR4          2         0         0             
+PANTRY         2         0         0             
+asked for one  2         2         2             
+
+The fix itself is in 3d/panelSolid.js — a renderer computeCabinet has never called.
+
+CLEAN — not one of the six has a bevelled side. And under a rake that falls RIGHT, both blanks carry their high point on the LEFT: toward the peak.
+
 ────────────────────────────────────────────────────────────────────────
-3 probe(s), every one CLEAN — no feature of tonight reaches a golden.
+4 probe(s), every one CLEAN — no feature of tonight reaches a golden.

@@ -264,6 +264,51 @@ PROBES.f3 = () => {
   };
 };
 
+/**
+ * F4 — THE SIDES' BEVEL. The same gate as F3, measured on the two boards the
+ * feature is about: a golden's BUL and BUR carry no `meta.slopeCut` at all, so
+ * they publish no `bevel3d` and the scene has nothing to take off them. And
+ * tonight's fix is in `3d/panelSolid.js` — a RENDERER — which `computeCabinet`
+ * has never called.
+ */
+PROBES.f4 = () => {
+  const rows = goldens().map(({ cfg, result }) => {
+    const sides = (result.panels || []).filter((p) => p.part === 'BUL' || p.part === 'BUR');
+    const cut = sides.filter((p) => p.meta?.slopeCut).length;
+    const bevel = sides.filter((p) => p.meta?.slopeCut?.bevel3d).length;
+    return {
+      id: cfg.id,
+      cells: [String(sides.length), String(cut), String(bevel)],
+      ok: cut === 0 && bevel === 0,
+    };
+  });
+  const asked = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    slope_cut: { axis: 'width', infill: 20, low: 'R', pts: [{ x: 0, y: 2000 }, { x: 600, y: 1400 }] },
+  }, P);
+  const askedSides = (asked.panels || []).filter((p) => p.part === 'BUL' || p.part === 'BUR');
+  const bevels = askedSides.filter((p) => p.meta?.slopeCut?.bevel3d);
+  rows.push({
+    id: 'asked for one',
+    cells: [String(askedSides.length), String(askedSides.filter((p) => p.meta?.slopeCut).length),
+      String(bevels.length)],
+    // …and the high face is on the peak side on BOTH of them, which is the law.
+    ok: bevels.length === 2 && bevels.every((p) => p.meta.slopeCut.bevel3d.a
+      >= p.meta.slopeCut.bevel3d.b),
+  });
+  return {
+    head: 'F4 · THE SIDES’ BEVEL — a wedge exists only under a rake, and no golden stands under one',
+    columns: ['sides', 'cut', 'with a bevel'],
+    rows,
+    note: 'The fix itself is in 3d/panelSolid.js — a renderer computeCabinet has never called.',
+    verdict: [
+      'CLEAN — not one of the six has a bevelled side. And under a rake that falls RIGHT, both blanks carry their high point on the LEFT: toward the peak.',
+      'NOT CLEAN — a golden grew a bevel, or a blank’s high point faces the room. STOP (iron rule 2).',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

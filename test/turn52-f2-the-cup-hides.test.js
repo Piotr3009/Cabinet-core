@@ -112,14 +112,24 @@ test('F2 — a bore that had to be shortened pulls the BODY back with it', () =>
   // overhangs. 16 − 6 = 10 of material, so the bore is 9 and not 11 — and a
   // body seated on the nominal would put two millimetres of ⌀35 steel in board
   // the machine never removed.
+  //
+  // AMENDED BY T53 · F9: the floor under a cup was ONE millimetre and is THREE
+  // (*"one millimetre reads through a sprayed face"*, SKYLON_COMMON.lsp). So
+  // the same 10 mm of material takes a 7 mm bore, and the shortfall the body
+  // comes back out by is 4 rather than 2. The CLAIM this test makes — that the
+  // drawn cup's floor lands on the BORE's floor and the flange stands proud —
+  // is untouched, and is asserted below off the numbers rather than the
+  // literals.
   const leaf = front(16, { shaker: { frame: 30, depth: 6 } });
   const bore = cupBoreOf(leaf, P);
   assert.equal(bore.thicknessAtCup, 10);
-  assert.equal(bore.depth, 9);
+  assert.equal(P.hardware.hinge.cupFloorKeepMm, 3, 'T53 F9');
+  assert.equal(bore.depth, 7, '10 − the 3 mm floor');
   assert.equal(bore.short, true, 'and Check says so — T51');
 
   const planes = cupBodyPlanes(leaf, P);
-  assert.equal(planes.seatZ, planes.innerZ - 2, 'the body comes BACK out by the shortfall');
+  assert.equal(planes.seatZ, planes.innerZ - (H.cupDepth - bore.depth),
+    'the body comes BACK out by the shortfall');
   assert.equal(planes.seatZ + H.cupDepth, planes.cupTo,
     'so the drawn cup’s floor lands on the BORE’s floor, to the millimetre');
   assert.equal(planes.cupTo, planes.innerZ + bore.depth);

@@ -3101,7 +3101,24 @@ export const DEFAULT_CABINET_PROFILE = {
       // How much board a blind cup must leave under it. The bore is clamped to
       // `thickness − this` so an 18 mm front cannot be drilled through by a law
       // written for a 25 mm one (engine/doors.js `cupBoreOf`).
-      cupFloorKeepMm: 1,
+      //
+      // ─── TURN 53 (CLAUDE.md F9): ONE MILLIMETRE STOPS BEING LEGAL ───────
+      //
+      // T52's finding 2, standing since its morning audit. This was ONE, and
+      // one is not a number: an 18 mm shaker whose ⌀35 cup overhangs the frame
+      // was bored to leave a single millimetre of skin — and
+      // SKYLON_COMMON.lsp's own note says what that is worth, *"one millimetre
+      // reads through a sprayed face"*. The ring telegraphs the first time the
+      // door is knocked, and it is found by the customer.
+      //
+      // DECISION TAKEN for the owner (veto in one line): THREE.
+      //
+      // Where three cannot be kept the bore SHORTENS — the existing clamp in
+      // `engine/doors.js cupBoreOf`, unchanged — and where the shortened bore
+      // no longer seats the hinge the existing `cupTooThin` check names the
+      // leaf. Refuse and report, the house way, never a 1 mm floor. The law is
+      // stated in `SKY:cupFloorKeep` beside the cup maths it belongs to.
+      cupFloorKeepMm: 3,
       bossHeight: 16,        // the cup body standing proud of the door's back face
       armLength: 62,         // cup centre → the far end of the arm, along the depth
       armWidth: 22,          // across the door's height

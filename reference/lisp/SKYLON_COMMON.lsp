@@ -1432,6 +1432,23 @@
 ;;; from the same two routines, so the report and the bore cannot disagree.
 (defun SKY:cupTooThin (boardT frameW recessD cupX cupDia want keep)
   (< (SKY:cupDepth boardT frameW recessD cupX cupDia want keep) want))
+
+;;; ─── THE FLOOR UNDER THE CUP  (turn 53, F9) ───────────────────────────────
+;;;
+;;; `keep` above is how much board a BLIND cup must leave under it, and until
+;;; tonight this workshop's number was ONE MILLIMETRE. It is not a number: an
+;;; 18 mm shaker whose 35 mm cup overhangs the frame was bored to leave one
+;;; millimetre of skin, and ONE MILLIMETRE READS THROUGH A SPRAYED FACE - the
+;;; bore telegraphs as a ring the first time the door is knocked, and it is
+;;; found by the customer.
+;;;
+;;; DECISION TAKEN for the owner, veto in one line: THREE.
+;;;
+;;; Where three cannot be kept, `SKY:cupDepth` above SHORTENS THE BORE - it
+;;; already does, and that is the whole mechanism - and `SKY:cupTooThin` names
+;;; the leaf so a joiner is told rather than sold a hinge that does not hold.
+;;; Refuse and report, the house way, never a one millimetre floor.
+(defun SKY:cupFloorKeep ( / ) 3.0)
 ;;;----------------------------------------
 
 ;;;----------------------------------------

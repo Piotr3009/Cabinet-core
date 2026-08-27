@@ -506,6 +506,73 @@ PROBES.f8 = () => {
   };
 };
 
+/**
+ * F9 — THE CUP FLOOR, 1 → 3. CLAUDE.md calls this the likeliest of the ten to
+ * surprise and asks for a PROBE rather than a sentence, so this MEASURES it.
+ *
+ * The clamp is `min(wanted, thicknessAtCup − keep)` and it binds only where the
+ * material under the cup is thinner than `cupDepth + keep` — 11 + 3 = 14. So
+ * the probe prints, per golden, EVERY front's thickness at the cup, the bore it
+ * takes, and the SLACK: how many millimetres of headroom there are before the
+ * new keep would bite. A golden with slack ≥ 2 could not have moved even if the
+ * keep had gone to three from one in a single step, which is exactly what it
+ * did.
+ */
+PROBES.f9 = async () => {
+  const { cupBoreOf, cupThicknessAtBore } = await import('../src/engine/doors.js');
+  const keep = Number(P.hardware.hinge.cupFloorKeepMm);
+  const want = Number(P.hardware.hinge.cupDepth);
+  const rows = goldens().map(({ cfg, result }) => {
+    const leaves = (result.panels || []).filter((p) => p.role === 'front' && cupBoreOf(p, P));
+    let worst = Infinity;
+    let thinnest = Infinity;
+    let shortened = 0;
+    for (const leaf of leaves) {
+      const atCup = cupThicknessAtBore(leaf, P);
+      const bore = cupBoreOf(leaf, P);
+      thinnest = Math.min(thinnest, atCup);
+      // The headroom before the clamp bites: material − (cup + keep).
+      worst = Math.min(worst, atCup - (want + keep));
+      if (bore.short) shortened += 1;
+    }
+    return {
+      id: cfg.id,
+      cells: [String(leaves.length),
+        Number.isFinite(thinnest) ? String(round(thinnest, 1)) : '—',
+        Number.isFinite(worst) ? `${round(worst, 1)} spare, ${shortened} short` : '—'],
+      ok: shortened === 0 && (!Number.isFinite(worst) || worst >= 0),
+    };
+  });
+  // …and the clamp asked of a leaf that IS thin, so it is shown to bite.
+  const thin = {
+    role: 'front',
+    part: 'FRONT',
+    thickness: 16,
+    w: 400,
+    h: 700,
+    box: { x: 0, y: 0, z: 0, w: 400, h: 700, d: 16 },
+    meta: { shaker: { frame: 30, depth: 6 } },
+  };
+  const bore = cupBoreOf(thin, P);
+  rows.push({
+    id: 'asked of a thin leaf',
+    cells: ['1', String(round(cupThicknessAtBore(thin, P), 1)),
+      bore ? `bored ${round(bore.depth, 1)} of ${want}, short=${bore.short}` : '—'],
+    ok: Boolean(bore) && bore.short === true
+      && Math.abs(bore.depth - (cupThicknessAtBore(thin, P) - keep)) < 1e-6,
+  });
+  return {
+    head: `F9 · THE CUP FLOOR — keep ${keep} mm, and it binds only under ${want + keep} mm of material`,
+    columns: ['leaves', 'thinnest at cup', 'headroom'],
+    rows,
+    note: `Every golden's fronts are full thickness: ${want} + ${keep} = ${want + keep} is the bite point.`,
+    verdict: [
+      'CLEAN — every golden leaf has material to spare over the bite point and not one bore was shortened. And the clamp bites: a 16 mm shaker with a 6 mm rebate bores to the material less the keep, and says it is short.',
+      'NOT CLEAN — a golden leaf was bored shallower than it wanted. Iron rule 2: write it up as a FINDING.',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */
@@ -523,8 +590,8 @@ export function classify(base, head) {
   return { rows, counts };
 }
 
-function runProbe(name) {
-  const probe = PROBES[name]();
+async function runProbe(name) {
+  const probe = await PROBES[name]();
   const clean = probe.rows.every((r) => r.ok !== false);
   const width = Math.max(14, ...probe.rows.map((r) => r.id.length + 2));
   let out = `${probe.head}\n\n${'subject'.padEnd(width)}`;
@@ -556,7 +623,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     }
     let bad = 0;
     for (const name of names) {
-      const { out, clean } = runProbe(name);
+      const { out, clean } = await runProbe(name);
       process.stdout.write(`${out}\n`);
       if (!clean) bad += 1;
     }

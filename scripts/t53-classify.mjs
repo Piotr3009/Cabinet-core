@@ -573,6 +573,62 @@ PROBES.f9 = async () => {
   };
 };
 
+/**
+ * F10 — THE DRAWN ROOM. *"F10 is a room-drawing UI writing `project.room
+ * .corners`; `computeCabinet` never sees a room."*
+ *
+ * Which is a claim about the ENGINE's door, so the probe asks the door rather
+ * than the drawing: not one of the six configs carries a room key, `computeCabinet`
+ * takes (params, profile) and nothing else, and the drawing module — imported
+ * here so a stray import would show — reaches nothing the cabinet engine does.
+ * Then the drawing's own answer is checked against the room engine's, because
+ * the ONLY way F10 could move a golden is by making a different corner list of
+ * the same room, and that is a comparison, not an opinion.
+ */
+PROBES.f10 = async () => {
+  const draw = await import('../src/engine/drawRoom.js');
+  const { rectCorners } = await import('../src/engine/room.js');
+  const ROOM_KEYS = ['room', 'corners', 'room_corners', 'walls', 'wall_index'];
+  const rows = STANDARD_CONFIGS.map((cfg) => {
+    const params = { ...defaultParamsFor(cfg.id, P), unit_num: '01' };
+    const found = ROOM_KEYS.filter((k) => k in params);
+    return {
+      id: cfg.id,
+      cells: [String(Object.keys(params).length), found.length ? found.join(',') : 'none'],
+      ok: found.length === 0,
+    };
+  });
+  // The drawing's rectangle IS the room engine's rectangle — byte for byte.
+  let p = draw.newPath();
+  for (const [dir, len] of [['E', 4000], ['S', 3000], ['W', 4000]]) p = draw.addSegment(p, dir, len).path;
+  const home = draw.closePath(p);
+  const drawn = JSON.stringify(draw.cornersOfPath(home.path));
+  const made = JSON.stringify(rectCorners(4000, 3000));
+  rows.push({
+    id: 'drawn 4000/3000/4000',
+    cells: [`${home.added} home`, drawn === made ? 'equals rectCorners' : 'DIFFERS'],
+    ok: drawn === made,
+  });
+  // …and the module the UI draws with reaches no part of the cabinet engine.
+  const src = readFileSync(new URL('../src/engine/drawRoom.js', import.meta.url), 'utf8');
+  const imports = [...src.matchAll(/from\s*'([^']+)'/g)].map((m) => m[1]);
+  rows.push({
+    id: 'drawRoom.js imports',
+    cells: [String(imports.length), imports.join(' ') || 'none'],
+    ok: imports.every((i) => i === './room.js'),
+  });
+  return {
+    head: 'F10 · THE DRAWN ROOM — the engine never sees a room, and the drawing agrees with the room engine',
+    columns: ['params', 'room keys'],
+    rows,
+    note: 'computeCabinet(params, profile): a golden has no room, no wall and no corner list to move.',
+    verdict: [
+      'CLEAN — not one of the six carries a room key, the drawn rectangle is byte-equal to rectCorners(4000, 3000), and the drawing module imports nothing but the room engine.',
+      'NOT CLEAN — something here reaches the cabinet engine. Iron rule 2: write it up as a FINDING.',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

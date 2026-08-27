@@ -168,6 +168,12 @@ export const MODAL_KINDS = Object.freeze({
   // an OBJECT — the drawer that was asked from — so it opens BESIDE it and the
   // guard holds it to that, exactly as the rail's window is held.
   'watch-layout': { about: 'object', label: 'Watch drawer layout' },
+  // ─── TURN 53 (CLAUDE.md F10) ───────────────────────────────────────────
+  // *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w CAD."*  A
+  // PROJECT window: it draws the whole room and not a thing on the canvas —
+  // and it still opens beside the button that asked for it, which is what the
+  // shell does with an anchor whatever the column says.
+  'draw-room': { about: 'project', label: 'Draw room' },
 });
 
 /** Every modal name the app knows, as a list. */

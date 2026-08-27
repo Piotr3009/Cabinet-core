@@ -1,0 +1,30 @@
+T53 · F10 — THE SCOPE FENCE, MEASURED
+
+the drawn RECTANGLE (4 walls)
+  ok    draw + close                    4 corners, 1 wall(s) home, 0 fault(s)
+  ok    save to project.room.corners    applied
+  ok    roomWalls                       4 walls: 4000 / 3000 / 4000 / 3000 mm
+  ok    every wall has an elevation     4 of 4
+  ok    place on wall 1                 placed
+  ok    a run of three                  3 cabinets
+  ok    place on wall 4                 x = 1200 mm
+  ok    collision refused               held at 2300 mm
+  ok    share-out resolves              stands, nothing to offer
+  ok    checks run                      0 finding(s), 0 error(s)
+  ok    DXF export                      22 file(s), 461 entit(y|ies)
+
+the drawn L (6 walls)
+  ok    draw + close                    6 corners, 1 wall(s) home, 0 fault(s)
+  ok    save to project.room.corners    applied
+  ok    roomWalls                       6 walls: 4000 / 1500 / 2000 / 2500 / 6000 / 4000 mm
+  ok    every wall has an elevation     6 of 6
+  ok    place on wall 1                 placed
+  ok    a run of three                  3 cabinets
+  ok    place on wall 6                 x = 1700 mm
+  ok    collision refused               held at 2300 mm
+  ok    share-out resolves              stands, nothing to offer
+  ok    checks run                      0 finding(s), 0 error(s)
+  ok    DXF export                      22 file(s), 461 entit(y|ies)
+
+THE RECTANGLE IS FLAWLESS end to end: drawn, closed, saved, furnished, checked, exported.
+THE SIX-WALL ROOM: nothing downstream broke — best-effort came out whole.

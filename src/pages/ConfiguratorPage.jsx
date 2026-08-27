@@ -3,6 +3,7 @@ import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
+import DrawRoomModal from '../components/DrawRoomModal.jsx';
 // T51 (CLAUDE.md F7): Database ▸ Materials opens the WAREHOUSE.
 import WarehouseModal from '../components/WarehouseModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
@@ -516,6 +517,11 @@ export default function ConfiguratorPage() {
         {/* Turn 31 (CLAUDE.md F6): the Check panel — a LIST of findings, not toasts. */}
         {checkOpen && <CheckPanel />}
         {modal === 'room' && <RoomModal />}
+        {/* ─── TURN 53 (CLAUDE.md F10): the drawn room ───────────────────
+            *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w CAD."*
+            It opens FROM Room setup, beside the button, and the simple
+            width/height path it stands next to is untouched. */}
+        {modal === 'draw-room' && <DrawRoomModal />}
         {modal === 'warehouse' && <WarehouseModal />}
         {modal === 'design' && <DesignSettingsModal />}
         {modal === 'auth' && <AuthModal />}

@@ -94,8 +94,12 @@ import {
 import { insertFor } from './drawerInserts.js';
 // T52 (CLAUDE.md F5): the watch drawer's INSERT — its own tray, its own BOM
 // line, and not one millimetre of the drawer box.
+// T53 (CLAUDE.md F8): …re-specified by the owner. The pane and the strip move
+// to the SHELF above (`shelfGlassPlan`), the rear field is one of four designed
+// layouts (`watchLayoutOf`), and the insert wears a finish of its own.
 import {
-  drawerBoxInterior, watchDrawerFit, watchDrawerSpec, watchInsertOn, watchInsertParts,
+  WATCH_LAYERS, drawerBoxInterior, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
+  watchFinishOf, watchInsertOn, watchInsertParts, watchLayoutOf,
 } from './watchDrawer.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
@@ -7486,7 +7490,12 @@ export function computeCabinet(params, profileOverride) {
         });
         continue;
       }
-      const made = watchInsertParts(interior, P, { drawer: index });
+      // T53 (F8e): the LAYOUT the item asks for. Four designs, one pocket row.
+      const wItem = zone == null
+        ? (cfg.drawerItems?.[index - 1] || null)
+        : (columnDrawerSets.find((c) => c.zone === zone)?.items?.[index - 1] || null);
+      const wLayout = watchLayoutOf(wItem).id;
+      const made = watchInsertParts(interior, P, { drawer: index, layout: wLayout });
       if (!made) continue;
       for (const q of made.parts) {
         panels.push(panel({
@@ -7503,18 +7512,116 @@ export function computeCabinet(params, profileOverride) {
           meta: zone == null ? q.meta : { ...q.meta, zone },
         }));
       }
-      watchGlassPanes.push({ zone, drawer: index, box: made.glass.box, liftsOut: true });
+      // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP, UPSTAIRS ──
+      //
+      // *"opcja: dodać szybę ponad szufladą — wtedy wycinamy w półce otwór,
+      // offset od półki na 50 mm, i wstawiamy szybę w ten otwór. i dookoła tej
+      // szyby masz LED od spodu, offset około 15 mm na LED."*
+      //
+      // The option is ON the item, and it needs A SHELF DIRECTLY ABOVE. Where
+      // there is none the option is refused IN WORDS (F8d) rather than
+      // silently ignored — the same refuse-and-report this engine keeps about
+      // a drawer too shallow for the tray, three lines up.
+      const wantsGlass = wItem?.watch_shelf_glass === true;
+      const drawerTop = interior.at.y + interior.height;
+      const shelfAbove = panels
+        .filter((q) => q.part === 'SHELF' && q.box && q.box.y >= drawerTop - 1e-6
+          && (q.meta?.zone ?? null) === zone)
+        .sort((a, b) => a.box.y - b.box.y)[0] || null;
+      let shelfGlass = null;
+      if (wantsGlass && !shelfAbove) {
+        warnings.push({
+          code: 'watch_glass_needs_shelf',
+          drawer: index,
+          zone,
+          message: `Drawer ${index}'s glass needs a shelf directly above it — add one, and the opening is cut in it.`,
+        });
+      } else if (wantsGlass && shelfAbove) {
+        const plan = shelfGlassPlan({ w: shelfAbove.box.w, d: shelfAbove.box.d }, P);
+        if (!plan) {
+          warnings.push({
+            code: 'watch_glass_shelf_too_small',
+            drawer: index,
+            zone,
+            message: `The shelf above drawer ${index} is too small for a ${P.watchDrawer.openingOffsetMm} mm offset opening — the glass is not cut.`,
+          });
+        } else {
+          // The opening and its rebate are cut IN THE SHELF, on the shelf's own
+          // board. Two operations, two layers: a through cut and a rebate are
+          // different tools (`reference/lisp/KIT_WATCH_DRAWER.lsp`).
+          shelfAbove.cnc = {
+            ...shelfAbove.cnc,
+            pockets: [
+              ...(shelfAbove.cnc?.pockets || []),
+              {
+                layer: WATCH_LAYERS.opening,
+                depth: shelfAbove.thickness,
+                face: 'A',
+                cutout: true,
+                x1: plan.opening.x1,
+                y1: plan.opening.y1,
+                x2: plan.opening.x2,
+                y2: plan.opening.y2,
+              },
+              {
+                layer: WATCH_LAYERS.rebate,
+                depth: plan.rebate.depth,
+                face: 'A',
+                x1: plan.rebate.x1,
+                y1: plan.rebate.y1,
+                x2: plan.rebate.x2,
+                y2: plan.rebate.y2,
+              },
+            ],
+          };
+          shelfAbove.meta = {
+            ...(shelfAbove.meta || {}),
+            watch_glass: { drawer: index, ...plan.offsets, flush: true },
+          };
+          // The pane, ordered and never cut — FLUSH with the shelf's top.
+          shelfGlass = {
+            zone,
+            drawer: index,
+            shelfId: shelfAbove.id,
+            box: {
+              x: shelfAbove.box.x + plan.rebate.x1,
+              y: shelfAbove.box.y + shelfAbove.box.h - plan.glass.t,
+              z: shelfAbove.box.z + plan.rebate.y1,
+              w: plan.glass.w,
+              h: plan.glass.t,
+              d: plan.glass.d,
+            },
+            flush: true,
+            led: {
+              ...plan.led,
+              shelfId: shelfAbove.id,
+              // On the UNDERSIDE, firing DOWN onto the watches — T52's own law
+              // relocated, never repealed.
+              y: shelfAbove.box.y,
+            },
+          };
+          watchGlassPanes.push(shelfGlass);
+        }
+      }
       born.push({
         zone,
         drawer: index,
+        layout: wLayout,
+        finish: watchFinishOf(wItem),
         pockets: made.layout.pockets.count,
         pocket_w_mm: roundTo(made.layout.pockets.width, 1),
         pocket_d_mm: roundTo(made.layout.pockets.depth, 1),
         inside_mm: made.layout.pockets.inside,
         sections: made.layout.sections.count,
-        glass_w_mm: roundTo(made.glass.box.w, 1),
-        glass_d_mm: roundTo(made.glass.box.d, 1),
-        led_mm: roundTo(made.layout.led.length, 1),
+        lanes: made.layout.sections.lanes,
+        shelf_glass: shelfGlass
+          ? {
+            shelf: shelfGlass.shelfId,
+            glass_w_mm: roundTo(shelfGlass.box.w, 1),
+            glass_d_mm: roundTo(shelfGlass.box.d, 1),
+            led_mm: roundTo(shelfGlass.led.lengthMm, 1),
+          }
+          : null,
       });
     }
     watchInsertsBuilt.push(...born);
@@ -7705,21 +7812,45 @@ export function computeCabinet(params, profileOverride) {
       pocket_d_mm: w.pocket_d_mm,
       inside_mm: w.inside_mm,
       sections: w.sections,
+      lanes: w.lanes,
+      // T53 (F8e/F8f): which of the four designs, and what it is finished in.
+      layout: w.layout,
+      ...(w.finish ? { finish: w.finish } : {}),
     },
-    `Watch / tie insert · ${where} · ${w.pockets} pockets at ${w.pocket_w_mm} × ${w.pocket_d_mm} mm, `
-      + `${w.inside_mm} mm deep · ${w.sections} long section${w.sections === 1 ? '' : 's'} behind`);
-    // Decision 1: the pane LIFTS OUT. It bears on a rebate in the top of the
-    // frame and nothing holds it down, which is why it is ordered to the
-    // rebate's own size and not to the drawer's.
-    hw('drawer_glass', 'Glass — watch insert, lift-out', 1, 'pcs',
-      { drawer: w.drawer, ...(w.zone == null ? {} : { zone: w.zone }), width_mm: w.glass_w_mm, depth_mm: w.glass_d_mm },
-      `Glass ${w.glass_w_mm} × ${w.glass_d_mm} mm · lifts out · ${where}`);
-    // Decision 2: the strip lights the WATCHES. Ordered by the metre like every
-    // other run in this app, from the same catalogue — the groove it sits in is
-    // T48's own law and is cut in the front rail.
-    hw('led_strip', 'LED strip', roundTo(w.led_mm / 1000, 3), 'm',
-      { drawer: w.drawer, ...(w.zone == null ? {} : { zone: w.zone }), length_mm: w.led_mm, aimed_at: 'contents' },
-      `LED strip ${w.led_mm} mm · in the watch insert's front rail, aimed at the watches · ${where}`);
+    `Watch / tie insert · ${where} · ${w.layout} · ${w.pockets} pockets at ${w.pocket_w_mm} × ${w.pocket_d_mm} mm, `
+      + `${w.inside_mm} mm deep · ${w.sections} across in ${w.lanes} lane${w.lanes === 1 ? '' : 's'} behind`
+      + `${w.finish ? ` · ${w.finish}` : ''}`);
+    // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP ARE THE SHELF'S ─
+    //
+    // *"wtedy wycinamy w półce otwór … i dookoła tej szyby masz LED od spodu."*
+    //
+    // They are ordered only where the option is ON and a shelf is actually
+    // there, and each line names THE SHELF it belongs to — because that is the
+    // board the joiner takes to the machine and the board the glazier measures.
+    // A drawer whose glass was asked for with no shelf above buys nothing and
+    // Check #23 says why (F8d/F8g).
+    if (w.shelf_glass) {
+      hw('drawer_glass', 'Glass — watch drawer, in the shelf above', 1, 'pcs',
+        {
+          drawer: w.drawer,
+          ...(w.zone == null ? {} : { zone: w.zone }),
+          shelf: w.shelf_glass.shelf,
+          width_mm: w.shelf_glass.glass_w_mm,
+          depth_mm: w.shelf_glass.glass_d_mm,
+          flush: true,
+        },
+        `Glass ${w.shelf_glass.glass_w_mm} × ${w.shelf_glass.glass_d_mm} mm · flush in ${w.shelf_glass.shelf}, over ${where}`);
+      hw('led_strip', 'LED strip', roundTo(w.shelf_glass.led_mm / 1000, 3), 'm',
+        {
+          drawer: w.drawer,
+          ...(w.zone == null ? {} : { zone: w.zone }),
+          shelf: w.shelf_glass.shelf,
+          length_mm: w.shelf_glass.led_mm,
+          aimed_at: 'contents',
+        },
+        `LED strip ${w.shelf_glass.led_mm} mm · ringing the glass on the underside of ${w.shelf_glass.shelf}, `
+          + `firing down onto ${where}`);
+    }
   }
 
   // ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS, ORDERED TO THE OPENING ─

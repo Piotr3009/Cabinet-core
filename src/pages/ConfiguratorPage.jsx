@@ -27,6 +27,7 @@ import UnitFinishModal from '../components/UnitFinishModal.jsx';
 import FrontGapModal from '../components/FrontGapModal.jsx';
 import LightingPanel from '../components/LightingPanel.jsx';
 import UnitSizeModal from '../components/UnitSizeModal.jsx';
+import WatchLayoutModal from '../components/WatchLayoutModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
@@ -575,6 +576,10 @@ export default function ConfiguratorPage() {
         {modal === 'lighting' && <LightingPanel />}
         {/* Turn 31 (CLAUDE.md F8): the width/height figure, double-clicked. */}
         {modal === 'unit-size' && <UnitSizeModal />}
+        {/* T53 (CLAUDE.md F8e): the watch drawer's four layouts, its glass and
+            its finish — a NEW window, draggable, opening beside the drawer it
+            was asked from. */}
+        {modal === 'watch-layout' && <WatchLayoutModal />}
         {/* ─── Turn 23 (CLAUDE.md F9.3) ───
             "This part carries manual edits — recompute drops them, continue?"
             It is not a modal in the `modal` slot: it is raised by the STATE of

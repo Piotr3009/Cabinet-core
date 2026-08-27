@@ -452,6 +452,60 @@ PROBES.f7 = () => {
   };
 };
 
+/**
+ * F8 — THE WATCH DRAWER v2. T52's own `--watch` proof, kept and re-pointed: the
+ * insert is built ONLY where a drawer ITEM carries `watch_insert`, and no
+ * default parameter of any of the six does. Tonight adds the SHELF's opening,
+ * which needs the same flag AND a shelf above it — two gates, either enough.
+ */
+PROBES.f8 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const items = (params.sections?.[0]?.items || []).filter((i) => i?.kind === 'drawer');
+    const asks = items.filter((i) => i?.watch_insert === true).length;
+    const parts = (result.panels || []).filter((p) => p.role === 'watch_insert').length;
+    const cut = (result.panels || []).filter((p) => (p.cnc?.pockets || [])
+      .some((k) => /WATCH_GLASS/.test(String(k.layer)))).length;
+    return {
+      id: cfg.id,
+      cells: [String(items.length), String(asks), `${parts} parts, ${cut} shelves cut`],
+      ok: asks === 0 && parts === 0 && cut === 0 && result.assemblies?.watchInserts == null,
+    };
+  });
+  // …and the same engine asked a drawer that DOES want one, with a shelf above.
+  const wanted = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    width: 900,
+    sections: [{
+      width_mm: 900,
+      items: [
+        { id: 'd1', kind: 'drawer', index: 1, height_mm: 140, watch_insert: true, watch_shelf_glass: true, watch_layout: 'belts' },
+        { id: 'sh1', kind: 'shelf', pos_mm: 900 },
+      ],
+    }],
+  }, P);
+  const built = wanted.assemblies?.watchInserts?.[0] || null;
+  const shelves = (wanted.panels || []).filter((p) => (p.cnc?.pockets || [])
+    .some((k) => /WATCH_GLASS/.test(String(k.layer)))).length;
+  rows.push({
+    id: 'asked for one',
+    cells: ['1', '1', built
+      ? `${(wanted.panels || []).filter((p) => p.role === 'watch_insert').length} parts, ${shelves} shelves cut`
+      : 'NOTHING'],
+    ok: Boolean(built) && built.layout === 'belts' && shelves === 1,
+  });
+  return {
+    head: 'F8 · THE WATCH DRAWER — the insert is a FLAG on a drawer item, and no default carries it',
+    columns: ['drawer items', 'asking', 'what came out'],
+    rows,
+    note: 'The shelf opening needs the flag AND a shelf above — two gates, either enough.',
+    verdict: [
+      'CLEAN — not one of the six carries a drawer that asks for an insert, so not one grows a part, a key or a cut shelf. And the gate is a gate: a drawer that DOES ask gets a whole tray and its shelf gets the opening.',
+      'NOT CLEAN — the insert is reaching a cabinet that never asked, or the gate is dead. STOP (iron rule 2).',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

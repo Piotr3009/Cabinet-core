@@ -122,6 +122,12 @@ import {
 import {
   isLeftSide, minRiderWidth, riddenList, riderFreeWidth, riderSlot, settleRiders,
 } from '../engine/topBox.js';
+// T53 (CLAUDE.md F8): the watch drawer's own entry, its four layouts, its
+// finish and the shelf it puts its glass in.
+import {
+  DEFAULT_WATCH_LAYOUT, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
+  watchDrawerFixedHeight,
+} from '../engine/watchDrawer.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
 // It lives in `lib/` and not in the engine on purpose (T45's own argument):
@@ -990,10 +996,47 @@ const migrateUnitRidden = (u) => {
   return { ...u, params: { ...u.params, ridden_by: riddenList(value) } };
 };
 
+/**
+ * ─── TURN 53 (CLAUDE.md F8g): A T52 INSERT LOADS ───────────────────────────
+ *
+ * *"A saved project with a T52 v1 insert loads: the in-frame glass flag becomes
+ * the shelf-glass option where a shelf sits above, otherwise it is dropped and
+ * Check #23's neighbour names it."*
+ *
+ * A v1 insert had its pane IN THE TRAY, unconditionally — there was no flag to
+ * read, which is why the migration is "has it never said?" rather than "what
+ * did it say?". So a v1 insert asks for the glass, and the ENGINE is what
+ * decides whether it can have it: a shelf directly above gets the opening; no
+ * shelf gets `watch_glass_needs_shelf`, the pane is not cut, and Check #23 says
+ * so in words. One mechanism, both halves of his sentence.
+ *
+ * DECISION TAKEN, veto in one line.
+ */
+const migrateUnitWatch = (u) => {
+  const items = u?.params?.sections?.[0]?.items;
+  if (!Array.isArray(items)) return u;
+  let touched = false;
+  const next = items.map((i) => {
+    if (i?.kind !== 'drawer' || i.watch_insert !== true) return i;
+    if ('watch_shelf_glass' in i && 'watch_layout' in i) return i;
+    touched = true;
+    return {
+      ...i,
+      // v1 had a pane; it asks for one upstairs now.
+      watch_shelf_glass: 'watch_shelf_glass' in i ? i.watch_shelf_glass : true,
+      // …and v1 had exactly one arrangement, which is CLASSIC.
+      watch_layout: i.watch_layout || DEFAULT_WATCH_LAYOUT,
+    };
+  });
+  if (!touched) return u;
+  const sections = u.params.sections.map((sec, n) => (n === 0 ? { ...sec, items: next } : sec));
+  return { ...u, params: { ...u.params, sections } };
+};
+
 const migrateUnits = (units) => (Array.isArray(units)
-  ? units.map((u) => migrateUnitRidden(
+  ? units.map((u) => migrateUnitWatch(migrateUnitRidden(
     migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))),
-  ))
+  )))
   : []);
 
 function loadCache() {
@@ -5892,6 +5935,108 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   setDrawerWatchInsert: (unitId, itemId, on) => {
     get().updateItem(unitId, itemId, { watch_insert: on === true });
     return on === true;
+  },
+
+  /**
+   * ─── TURN 53 (CLAUDE.md F8a): THE WATCH DRAWER IS ITS OWN ENTRY ──────────
+   *
+   * The owner, 27.08.2026: *"szuflada z zegarkami powinna być jako osobna
+   * pozycja, pod szufladami — czyli pozycja 3. dodajesz normalne szuflady i
+   * później masz: czy chcesz dodać szufladę (nad nimi, z zegarkami). wtedy
+   * dokładamy taką szufladę już bez możliwości sterowania wysokością — zawsze
+   * stała wysokość."*
+   *
+   * So: it is added ON TOP of the stack that is already there, at ONE derived
+   * height (`watchDrawerFixedHeight` — 60 inside + the tray's base + the
+   * headroom + the box's own seat + the front-to-side delta, stated beside its
+   * derivation), and there is no slider. A cabinet with NO drawer stack is
+   * refused in words, because *"dodajesz normalne szuflady i później"* is the
+   * order he asked for.
+   *
+   * It is an ordinary drawer item carrying the flag, so everything a drawer
+   * already is — the box, the runners, the front, the undo step — is untouched.
+   */
+  addWatchDrawer: (unitId, zone = null) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, error: 'That cabinet has gone.' };
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
+    const zoneOf = (i) => (i?.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    const items = unit.params.sections?.[0]?.items || [];
+    const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone);
+    if (!stack.length) {
+      return {
+        ok: false,
+        error: 'Add the drawers first — the watch drawer goes on top of a stack.',
+      };
+    }
+    if (stack.some((i) => i.watch_insert === true)) {
+      return { ok: false, error: 'This stack already has a watch drawer.' };
+    }
+    const height = watchDrawerFixedHeight(profile);
+    const index = stack.reduce((m, i) => Math.max(m, Number(i.index) || 0), 0) + 1;
+    const item = {
+      id: uid('drawer'),
+      kind: 'drawer',
+      index,
+      mount: stack[0]?.mount || 'overlay',
+      ...(wantZone == null ? {} : { zone: wantZone }),
+      height_mm: height,
+      watch_insert: true,
+      watch_layout: DEFAULT_WATCH_LAYOUT,
+    };
+    get().addItem(unitId, item);
+    return { ok: true, id: item.id, height, index };
+  },
+
+  /** Which of the four designed layouts this insert is (T53 F8e). */
+  setWatchLayout: (unitId, itemId, layoutId) => {
+    const hit = WATCH_LAYOUTS.find((l) => l.id === layoutId) || WATCH_LAYOUTS[0];
+    get().updateItem(unitId, itemId, { watch_layout: hit.id });
+    return hit.id;
+  },
+
+  /** Spray / Oak / Walnut, or the project's own decor (T53 F8f). */
+  setWatchFinish: (unitId, itemId, finishId) => {
+    const hit = WATCH_FINISHES.find((f) => f.id === finishId)?.id || null;
+    get().updateItem(unitId, itemId, { watch_finish: hit });
+    return hit;
+  },
+
+  /**
+   * The pane over the drawer — and it is cut in the SHELF ABOVE (T53 F8b).
+   *
+   * *"opcja: dodać szybę ponad szufladą — wtedy wycinamy w półce otwór."*
+   *
+   * The option is stored whether or not a shelf is there; the ENGINE is what
+   * refuses in words when there is none (`watch_glass_needs_shelf`), which is
+   * the same refuse-and-report the insert itself keeps about a shallow drawer.
+   * `watchShelfAbove` below is what the SURFACE asks so it can grey the control
+   * and say why, rather than hiding it (F8d).
+   */
+  setWatchShelfGlass: (unitId, itemId, on) => {
+    get().updateItem(unitId, itemId, { watch_shelf_glass: on === true });
+    return on === true;
+  },
+
+  /**
+   * Is there a shelf directly above this drawer? — F8d's reason, in one call.
+   *
+   * Asked of the RESULT, so the answer is the very shelf the engine would cut
+   * the opening in. `null` means there is none, and the surface says so on
+   * hover instead of hiding the option.
+   */
+  watchShelfAbove: (unitId, index, zone = null) => {
+    const result = get().unitResult(unitId);
+    if (!result) return null;
+    const mine = result.panels.filter((p) => (p.meta?.zone ?? null) === (zone ?? null));
+    const interior = drawerBoxInterior(mine, index);
+    if (!interior) return null;
+    const top = interior.at.y + interior.height;
+    return mine
+      .filter((p) => p.part === 'SHELF' && p.box && p.box.y >= top - 1e-6)
+      .sort((a, b) => a.box.y - b.box.y)[0] || null;
   },
 
   /** The project's hinge standard: 2 or 3 (turn 17, CLAUDE.md F7.1). */

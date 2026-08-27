@@ -163,6 +163,11 @@ export const MODAL_KINDS = Object.freeze({
   // the end of the step-4 sequence. About the PROJECT's settings as a whole,
   // and opened beside the button that asks it.
   'save-settings-set': { about: 'project', label: 'Save these settings as a set' },
+  // ─── TURN 53 (CLAUDE.md F8e) ───────────────────────────────────────────
+  // *"otwiera się nowy modal z 4 propozycjami rozmieszczenia."*  It is about
+  // an OBJECT — the drawer that was asked from — so it opens BESIDE it and the
+  // guard holds it to that, exactly as the rail's window is held.
+  'watch-layout': { about: 'object', label: 'Watch drawer layout' },
 });
 
 /** Every modal name the app knows, as a list. */

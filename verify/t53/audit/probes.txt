@@ -98,5 +98,20 @@ asked for one  1           9           z 493 vs 493, gap 3
 
 CLEAN — not one of the six carries a shoe box, so the plane, the floor and the gap reach none of them. And the law bites: the face is coplanar with the drawer front and keeps the stack’s own gap.
 
+F8 · THE WATCH DRAWER — the insert is a FLAG on a drawer item, and no default carries it
+
+subject        drawer items  asking    what came out  
+WARDROBE       0             0         0 parts, 0 shelves cut
+BUD            0             0         0 parts, 0 shelves cut
+WUD            0             0         0 parts, 0 shelves cut
+BUDR           0             0         0 parts, 0 shelves cut
+BUDR4          0             0         0 parts, 0 shelves cut
+PANTRY         0             0         0 parts, 0 shelves cut
+asked for one  1             1         14 parts, 1 shelves cut
+
+The shelf opening needs the flag AND a shelf above — two gates, either enough.
+
+CLEAN — not one of the six carries a drawer that asks for an insert, so not one grows a part, a key or a cut shelf. And the gate is a gate: a drawer that DOES ask gets a whole tray and its shelf gets the opening.
+
 ────────────────────────────────────────────────────────────────────────
-7 probe(s), every one CLEAN — no feature of tonight reaches a golden.
+8 probe(s), every one CLEAN — no feature of tonight reaches a golden.

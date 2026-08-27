@@ -35,6 +35,7 @@ import {
   LED_FLEXI_WIDTH_MM, WATCH_LAYERS, dividerXs, drawerBoxInterior, drawerItemOf,
   insertHeight, pocketCount, pocketWidth, watchDrawerFit, watchDrawerLayout,
   watchDrawerSpec, watchInsertOn, watchInsertParts,
+  shelfGlassPlan,
 } from '../src/engine/watchDrawer.js';
 
 const LISP = readFileSync(new URL('../reference/lisp/KIT_WATCH_DRAWER.lsp', import.meta.url), 'utf8');
@@ -61,8 +62,21 @@ test('F5 — the geometry is stated in the LISP, and the LISP is where it is bor
   assert.match(LISP, /\(defun SKY:watchDividerXs \(innerW n t \/ w out i\)/);
   assert.match(LISP, /\(defun SKY:watchDrawerTooShallow \(clearH baseT insideD keep\)/);
   assert.match(LISP, /\(defun drawWatchSlot \(x y1 y2 t \/ \)/);
-  assert.match(LISP, /\(defun drawWatchGlassRebate \(x1 x2 y w \/ \)/);
-  assert.match(LISP, /\(defun drawWatchLed \(railLen yBelow width \/ \)/);
+  // ─── AMENDED BY T53 · F8 — THE ONE SANCTITY LICENCE OF THE NIGHT ────────
+  //
+  // `drawWatchGlassRebate` and `drawWatchLed` are GONE, and the owner's own
+  // words are what spent the licence, 27.08.2026: *"opcja: dodać szybę ponad
+  // szufladą — wtedy wycinamy w półce otwór, offset od półki na 50 mm … i
+  // dookoła tej szyby masz LED od spodu, offset około 15 mm na LED."*  The pane
+  // and the strip are not on the tray any more; they are on the SHELF above it,
+  // so a rebate for a pane that is not there and a groove for a strip that is
+  // not there were two operations the machine would do for nothing.
+  //
+  // What replaces them is asserted here, so the file still holds the LISP to
+  // the geometry it is the law for.
+  assert.match(LISP, /\(defun SKY:watchShelfOpening \(szer gleb off\)/);
+  assert.match(LISP, /\(defun SKY:watchShelfLedRing \(szer gleb off led \/ o\)/);
+  assert.match(LISP, /\(defun SKY:watchRearField \(variant innerW t \/ \)/);
   // The owner's own sentence, so the reason survives the next reader.
   assert.match(LISP, /szuflada z przegrodkami na zegarki/);
   assert.match(LISP, /przegrodki z 9 mm zrob/);
@@ -164,28 +178,48 @@ test('F5 — ONE row of pockets, at the FRONT, with sections behind it', () => {
 
 // ─── THE THREE DECISIONS ───────────────────────────────────────────────────
 
-test('F5 — DECISION 1: the glass lifts out of a rebate in the frame', () => {
-  assert.match(LISP, /THE GLASS LIFTS OUT/);
+// ─── DECISIONS 1 AND 2 ARE VETOED BY THE OWNER (T53 · F8) ─────────────────
+//
+// 27.08.2026, walking T52's insert: the pane is not IN the tray and the strip
+// is not in the front rail. Both are on the SHELF ABOVE. T52's two tests are
+// kept here, amended, because the CLAIMS they made are the ones that had to
+// survive the move — and one of them did, unchanged:
+//
+//   DECISION 1 (the pane lifts out of a rebate in the frame) is OVERTURNED.
+//   The pane sits in the SHELF now, flush with its top — a DECISION TAKEN for
+//   the owner, veto in one line: a proud pane on a wardrobe shelf catches
+//   every sleeve.
+//
+//   DECISION 2 (the LED lights the WATCHES, not the glass) STANDS, relocated.
+//   The strip rings the opening on the shelf's UNDERSIDE and fires DOWN onto
+//   the watches. Same law, from above.
+test('F5 — DECISION 1, overturned: the pane is in the SHELF, flush with its top', () => {
   const L = watchDrawerLayout({ width: 518, depth: 454, height: 204 }, P);
-  assert.equal(L.glass.liftsOut, true);
-  assert.equal(L.glass.t, 4, 'what a drawer is glazed with');
-  // It BEARS on the rebate, so the pane is the opening plus a bearing each side.
-  assert.equal(L.glass.w, L.inner.w + 2 * S.glassBearingMm);
-  assert.equal(L.glass.d, L.inner.d + 2 * S.glassBearingMm);
-  // …and the bearing leaves a lip of rail standing proud of it all round,
-  // which is what a fingernail lifts against.
-  assert.ok(S.glassBearingMm < S.frameT, 'a bearing as wide as the rail is a rail with nothing left');
-  assert.equal(S.frameT - S.glassBearingMm, 4, 'a 4 mm lip on a 9 mm rail');
+  assert.equal(L.glass, undefined, 'the tray carries no pane at all any more');
+  const plan = shelfGlassPlan({ w: 864, d: 550 }, P);
+  assert.ok(plan, 'the SHELF carries it');
+  assert.equal(plan.glass.flush, true, 'flush with the shelf top — the decision taken');
+  assert.equal(plan.rebate.depth, S.glassT, 'so the rebate is exactly the pane');
+  // …and the opening is his own 50 from every edge.
+  assert.equal(plan.opening.x1, P.watchDrawer.openingOffsetMm);
+  assert.equal(plan.opening.y1, P.watchDrawer.openingOffsetMm);
+  assert.equal(864 - plan.opening.x2, P.watchDrawer.openingOffsetMm);
+  assert.equal(550 - plan.opening.y2, P.watchDrawer.openingOffsetMm);
 });
 
-test('F5 — DECISION 2: the LED lights the WATCHES, not the glass', () => {
-  assert.match(LISP, /THE LED LIGHTS THE WATCHES, not the glass/);
+test('F5 — DECISION 2 STANDS, relocated: the LED lights the WATCHES', () => {
+  assert.match(LISP, /firing down onto the watches/i);
   const L = watchDrawerLayout({ width: 518, depth: 454, height: 204 }, P);
-  assert.equal(L.led.aimedAt, 'contents');
-  // UNDER the glass, in the rail's own board frame, by the profile's number.
-  assert.equal(L.led.railY, S.insideDepthMm - S.glassT - S.ledBelowGlassMm);
-  assert.ok(L.led.railY < S.insideDepthMm - S.glassT, 'below the pane, never level with it');
-  assert.ok(L.led.railY > 0, 'and in the rail, not under the tray');
+  assert.equal(L.led, undefined, 'not in the front rail any more');
+  const plan = shelfGlassPlan({ w: 864, d: 550 }, P);
+  assert.equal(plan.led.aimedAt, 'contents', 'the law itself, unchanged');
+  assert.equal(plan.led.face, 'underside', 'and it fires DOWN');
+  // ~15 mm OUTSIDE the opening, all round — his own number.
+  const led = P.watchDrawer.ledOffsetMm;
+  assert.equal(plan.opening.x1 - plan.led.x1, led);
+  assert.equal(plan.led.x2 - plan.opening.x2, led);
+  assert.equal(plan.opening.y1 - plan.led.y1, led);
+  assert.equal(plan.led.y2 - plan.opening.y2, led);
 });
 
 test('F5 — DECISION 3: it is a FLAG on a drawer, not a drawer type', () => {
@@ -263,45 +297,26 @@ test('F5 — the four things CLAUDE.md asks the machine for', () => {
     assert.ok(k.depth < S.frameT, 'it never goes through the rail');
   }
 
-  //   THE REBATE FOR THE GLASS — on all four outer rails and nowhere else.
+  //   THE REBATE AND THE GROOVE ARE NOT ON THE TRAY (T53 · F8, the licence).
+  //   They are on the SHELF above, and `test/turn53-f8-*` holds them to it.
   const rebates = parts.filter((q) => (q.cnc?.pockets || [])
     .some((k) => k.layer === WATCH_LAYERS.rebate));
-  assert.deepEqual(
-    rebates.map((q) => q.part).sort(),
-    ['WATCH-RAIL-BACK', 'WATCH-RAIL-FRONT', 'WATCH-RAIL-SIDE', 'WATCH-RAIL-SIDE'],
-  );
-  for (const q of rebates) {
-    const k = q.cnc.pockets.find((x) => x.layer === WATCH_LAYERS.rebate);
-    assert.equal(k.y2 - k.y1, S.glassT, 'the pane’s own thickness, down from the top edge');
-    assert.equal(k.depth, S.glassBearingMm, 'and the bearing, into the rail');
-    assert.equal(k.y2, q.h, 'it is in the TOP edge — that is what makes the glass lift out');
-  }
-
-  //   THE LED GROOVE — in the FRONT rail, and in that one alone.
+  assert.deepEqual(rebates, [], 'no rail is rebated for a pane that is upstairs');
   const grooved = parts.filter((q) => (q.cnc?.paths || [])
     .some((k) => k.layer === LED_GROOVE_LAYER.name));
-  assert.equal(grooved.length, 1);
-  assert.equal(grooved[0].part, 'WATCH-RAIL-FRONT', 'decision 2: at the watches, not at the pane');
+  assert.deepEqual(grooved, [], 'and no rail is grooved for a strip that is upstairs');
 });
 
-test('F5 — the groove matches the LISP: 4 mm, centred, +10 at each end', () => {
+// AMENDED BY T53 · F8: the groove is not in the front rail any more, and the
+// claim that mattered — that it is KIT_LED_GROOVE's own groove and never a
+// second one — is asserted where the groove now is.
+test('F5 — the groove is still KIT_LED_GROOVE’s, wherever it is cut', () => {
   const r = wardrobe({ drawers: [{ height_mm: 220, watch_insert: true }] });
   const rail = insertParts(r).find((q) => q.part === 'WATCH-RAIL-FRONT');
-  const path = rail.cnc.paths.find((k) => k.layer === LED_GROOVE_LAYER.name);
-  assert.ok(path.closed);
-  const xs = path.pts.map((p) => p[0]);
-  const ys = path.pts.map((p) => p[1]);
-  // WIDTH — the flexi strip's own 4, as `ledFlexiWidth` states it.
-  assert.equal(Math.max(...ys) - Math.min(...ys), LED_FLEXI_WIDTH_MM);
-  assert.match(LISP, /drawLedGroove/, 'and it is KIT_LED_GROOVE’s groove, not a second one');
-  // CENTRED on the line — never from the line outwards.
-  assert.equal((Math.max(...ys) + Math.min(...ys)) / 2,
-    S.insideDepthMm - S.glassT - S.ledBelowGlassMm);
-  // LENGTH — T48's own law: 10 mm PAST the profile at each end, so a round bit
-  // leaves no corner for a chisel.
-  assert.equal(Math.min(...xs), -GROOVE_END_EXTRA_MM);
-  assert.equal(Math.max(...xs), rail.w + GROOVE_END_EXTRA_MM);
-  assert.equal(Math.max(...xs) - Math.min(...xs), rail.w + 2 * GROOVE_END_EXTRA_MM);
+  assert.deepEqual(rail.cnc.paths || [], [], 'the front rail carries no groove');
+  assert.match(LISP, /drawLedGroove/, 'and the kit still defers to KIT_LED_GROOVE');
+  assert.equal(LED_FLEXI_WIDTH_MM, 4, 'the flexi’s own width is untouched');
+  assert.ok(GROOVE_END_EXTRA_MM > 0, '…as is T48’s end extra');
 });
 
 // ─── THE POCKETS, COUNTED AGAINST THE DRAWER WIDTH ─────────────────────────
@@ -377,28 +392,27 @@ test('F5 — one line per drawer that carries one, and it names the pockets', ()
     assert.equal(line.qty, 1);
     assert.ok(line.spec.pockets >= 1);
     assert.match(line.spec_label, /pockets at/);
-    assert.match(line.spec_label, /long section/);
+    // T53 (F8e): the line names the LAYOUT and the field behind the row, which
+    // is what "long sections" became when the rear field grew three siblings.
+    assert.match(line.spec_label, /across in \d+ lane/);
+    assert.match(line.spec_label, /classic|cufflinks|ties|belts/);
   }
-  // …and the two things that really ARE ordered.
-  const glass = (r.hardware || []).filter((h) => h.role === 'drawer_glass' && /lift-out/.test(h.label));
-  assert.equal(glass.length, 2);
-  assert.match(glass[0].spec_label, /lifts out/);
+  // …and T53 · F8: the pane and the strip are the SHELF's, so a drawer with no
+  // shelf above it buys neither. `test/turn53-f8-*` asserts the other half —
+  // with a shelf, both lines appear and each names the shelf it belongs to.
+  const glass = (r.hardware || []).filter((h) => h.role === 'drawer_glass');
+  assert.deepEqual(glass, [], 'no shelf above, no pane ordered');
   const led = (r.hardware || []).filter((h) => h.role === 'led_strip');
-  assert.equal(led.length, 2);
-  assert.equal(led[0].spec.aimed_at, 'contents', 'decision 2, on the order form too');
-  assert.equal(led[0].unit, 'm');
+  assert.deepEqual(led, [], '…and no strip');
 });
 
-test('F5 — the pane and the strip are drawn where the tray is', () => {
+// AMENDED BY T53 · F8: the pane is drawn where the SHELF is.
+test('F5 — the pane is NOT drawn on the tray any more', () => {
   const r = wardrobe({ drawers: [{ height_mm: 220, watch_insert: true }] });
-  const pane = r.assemblies.watchGlass?.[0];
-  assert.ok(pane, 'the scene is handed a pane');
-  assert.equal(pane.liftsOut, true);
+  assert.equal((r.assemblies.watchGlass || []).length, 0,
+    'no shelf above, so there is no pane at all');
   const rail = insertParts(r).find((q) => q.part === 'WATCH-RAIL-FRONT');
-  // It sits DOWN in the frame: its underside is the rail's top less the pane.
-  assert.equal(pane.box.y + pane.box.h, rail.box.y + S.insideDepthMm);
-  assert.ok(pane.box.x > rail.box.x, 'and inside the frame, not over it');
-  assert.equal(rail.meta.led, true, 'the front rail is the one that carries the light');
+  assert.equal(rail.meta.led, undefined, 'and the front rail carries no light');
 });
 
 // ─── AND NOTHING ELSE IN THE APP MOVED ─────────────────────────────────────

@@ -4166,6 +4166,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // 4 mm is what a drawer is glazed with (the same pane the display drawer
     // has taken since T33). It bears on a rebate cut in the top of all four
     // rails and nothing holds it down — no bead, no stop, no screw.
+    // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP MOVE UPSTAIRS ─
+    //
+    // The owner, 27.08.2026: *"opcja: dodać szybę ponad szufladą — wtedy
+    // wycinamy w półce otwór, offset od półki na 50 mm, i wstawiamy szybę w
+    // ten otwór. i dookoła tej szyby masz LED od spodu, offset około 15 mm na
+    // LED."*  His two numbers, here rather than in the engine.
+    openingOffsetMm: 50,       // the opening, inset from every shelf edge
+    ledOffsetMm: 15,           // the ring, outside the opening, on the underside
     glassT: 4,
     // How far the pane bears ON the rail. 5 of a 9 mm rail, which leaves a 4 mm
     // lip standing proud of the glass all round: 5 + 4 = 9, and the pane sits

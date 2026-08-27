@@ -52,10 +52,110 @@ import { GROOVE_END_EXTRA_MM, LED_GROOVE_LAYER } from '../lib/ledGroove.js';
 export const WATCH_LAYERS = Object.freeze({
   slot: 'WATCH_DIVIDER_SLOT',
   rebate: 'WATCH_GLASS_REBATE',
+  // T53 (F8b): the pane is IN THE SHELF now, so the shelf carries a through cut
+  // as well as the rebate round it. Two operations, two layers — a cut-out and
+  // a rebate are different tools and a machine must not guess from a depth.
+  opening: 'WATCH_GLASS_OPENING',
 });
 
 /** The strip the insert lights with: the app's own flexi, 4 mm. */
 export const LED_FLEXI_WIDTH_MM = 4;
+
+/**
+ * ─── TURN 53 (CLAUDE.md F8e): THE FOUR LAYOUTS ─────────────────────────────
+ *
+ * The owner, 27.08.2026: *"i dodajesz do opcji kilka zaproponowanych i
+ * zaprojektowanych układów na te zegarki i krawaty i paski — otwiera się nowy
+ * modal z 4 propozycjami rozmieszczenia."*
+ *
+ * ALL FOUR KEEP THE T52 HARD LAW: ONE pocket row, at the FRONT, because the
+ * back row cannot be reached once the drawer is in. What varies is the REAR
+ * FIELD, and only that — so a layout is a pair of numbers about that field and
+ * never a second geometry.
+ *
+ *   `across`   how many cells across the width. `null` means "by the pocket
+ *              rule at this layout's own target", a number means exactly that
+ *              many (belts wants TWO channels whatever the drawer measures).
+ *   `rows`     how many lanes deep the rear field is divided into.
+ *   `backStrip` one more lane at the back edge — the long section a pair of
+ *              cufflink grids wants behind it, the accessories tray a pair of
+ *              belt channels wants.
+ *
+ * DECISION TAKEN for the owner (veto or redraw in one line each): the four
+ * designs are mine, built strictly inside his categories *"zegarki, krawaty,
+ * paski"*. Default is CLASSIC, which is T52's own and is unchanged.
+ */
+export const WATCH_LAYOUTS = Object.freeze([
+  {
+    id: 'classic',
+    label: 'Classic',
+    hint: 'Front pocket row; behind it long sections for ties and straps.',
+    across: null,
+    targetMm: 220,
+    minMm: 60,
+    rows: 1,
+    backStrip: false,
+  },
+  {
+    id: 'cufflinks',
+    label: 'Cufflinks',
+    hint: 'Front pocket row; a two-row grid of small cells, and one long section at the back.',
+    across: null,
+    targetMm: 70,
+    minMm: 55,
+    rows: 2,
+    backStrip: true,
+  },
+  {
+    id: 'ties',
+    label: 'Ties',
+    hint: 'Front pocket row; narrow long sections for ties laid flat.',
+    across: null,
+    targetMm: 95,
+    minMm: 60,
+    rows: 1,
+    backStrip: false,
+  },
+  {
+    id: 'belts',
+    label: 'Belts',
+    hint: 'Front pocket row; two wide channels for rolled belts, and a shallow tray behind.',
+    across: 2,
+    targetMm: 110,
+    minMm: 60,
+    rows: 1,
+    backStrip: true,
+  },
+]);
+
+export const DEFAULT_WATCH_LAYOUT = 'classic';
+
+/** The layout this drawer item asks for — CLASSIC where it has never said. */
+export function watchLayoutOf(item) {
+  const said = String(item?.watch_layout || '').toLowerCase();
+  return WATCH_LAYOUTS.find((l) => l.id === said) || WATCH_LAYOUTS[0];
+}
+
+/**
+ * ─── TURN 53 (CLAUDE.md F8f): THE FINISH ───────────────────────────────────
+ *
+ * *"i wybierasz finish: spray (jak finish wszystkiego), czy oak, walnut."*
+ *
+ * SPRAY follows the project's spray finish; OAK and WALNUT map onto the
+ * project's wood decor set. The default is the project decor, which is T52's
+ * standing rule for the frame and is what `null` means here.
+ */
+export const WATCH_FINISHES = Object.freeze([
+  { id: 'spray', label: 'Spray', hint: 'The project’s own sprayed finish.' },
+  { id: 'oak', label: 'Oak', hint: 'The project’s oak decor.' },
+  { id: 'walnut', label: 'Walnut', hint: 'The project’s walnut decor.' },
+]);
+
+/** The finish this insert wears, or null for the project's own decor. */
+export function watchFinishOf(item) {
+  const said = String(item?.watch_finish || '').toLowerCase();
+  return WATCH_FINISHES.find((f) => f.id === said)?.id || null;
+}
 
 /** The watch-drawer block of a profile, with every field present. */
 export function watchDrawerSpec(profile) {
@@ -76,6 +176,13 @@ export function watchDrawerSpec(profile) {
     ledBelowGlassMm: num(w.ledBelowGlassMm, 12),
     headroomMm: num(w.headroomMm, 2),
     clearanceMm: num(w.clearanceMm, 2),
+    // ─── TURN 53 (CLAUDE.md F8b/F8c): THE OWNER'S TWO NEW OFFSETS ──────────
+    // *"wycinamy w półce otwór, offset od półki na 50 mm"* and *"dookoła tej
+    // szyby masz LED od spodu, offset około 15 mm na LED."*  His numbers, on
+    // the profile like every other, so a workshop that wants 60 and 20 changes
+    // two lines and nothing in the engine moves.
+    openingOffsetMm: num(w.openingOffsetMm, 50),
+    ledOffsetMm: num(w.ledOffsetMm, 15),
   };
 }
 
@@ -191,13 +298,13 @@ export function watchDrawerFit(clear, profile) {
  * @param {{width:number, depth:number, height:number}} clear
  * @returns {object|null} null where it does not fit — `watchDrawerFit` says why
  */
-export function watchDrawerLayout(clear, profile) {
+export function watchDrawerLayout(clear, profile, { layout = DEFAULT_WATCH_LAYOUT } = {}) {
   const s = watchDrawerSpec(profile);
   const fit = watchDrawerFit(clear, profile);
   if (!fit.ok) return null;
+  const variant = WATCH_LAYOUTS.find((l) => l.id === layout) || WATCH_LAYOUTS[0];
 
-  // The tray is inset a hair from the box so it lifts out with a fingernail —
-  // the same courtesy decision 1 asks of the glass.
+  // The tray is inset a hair from the box so it lifts out with a fingernail.
   const trayW = Number(clear.width) - 2 * s.clearanceMm;
   const trayD = Number(clear.depth) - 2 * s.clearanceMm;
   const innerW = trayW - 2 * s.frameT;
@@ -208,76 +315,168 @@ export function watchDrawerLayout(clear, profile) {
   const xs = dividerXs(innerW, n, s.dividerT);
 
   // ONE row, at the FRONT. `pocketRowDepthMm` is the row's own depth, clamped
-  // so it can never eat the sections behind it: below that a "row of pockets"
+  // so it can never eat the field behind it: below that a "row of pockets"
   // with nothing behind it is a cutlery tray, not a watch drawer.
   const rowD = Math.min(s.pocketRowDepthMm, innerD - s.dividerT - s.pocketMinMm);
-  const sectionD = innerD - rowD - s.dividerT;
-  // Behind the row: LONG sections. As few as will keep each one near the
-  // target, because a tie wants length and a strap wants width — never the
-  // pocket rule again.
-  let sections = Math.round((innerW + s.dividerT) / (s.sectionTargetMm + s.dividerT));
-  if (sections < 1) sections = 1;
-  while (sections > 1 && pocketWidth(innerW, sections, s.dividerT) < s.pocketMinMm) sections -= 1;
-  const sectionW = pocketWidth(innerW, sections, s.dividerT);
+  const fieldD = innerD - rowD - s.dividerT;
+
+  // ─── TURN 53 (CLAUDE.md F8e): THE REAR FIELD, PER LAYOUT ────────────────
+  //
+  // How many ACROSS is the pocket rule again, at this layout's own target and
+  // floor — except where the layout states a count, which BELTS does: two
+  // channels is what a rolled belt wants whatever the drawer measures.
+  const acrossOf = () => {
+    if (Number.isFinite(variant.across)) return Math.max(1, Math.trunc(variant.across));
+    let k = Math.round((innerW + s.dividerT) / (variant.targetMm + s.dividerT));
+    if (k < 1) k = 1;
+    while (k > 1 && pocketWidth(innerW, k, s.dividerT) < variant.minMm) k -= 1;
+    return k;
+  };
+  const across = acrossOf();
+  // How many LANES deep — the layout's own rows, plus the back strip when it
+  // asks for one. A field too shallow for the lanes it wants gives them up one
+  // at a time rather than shipping a lane under the pocket floor.
+  let lanes = Math.max(1, Math.trunc(variant.rows)) + (variant.backStrip ? 1 : 0);
+  while (lanes > 1
+    && (fieldD - (lanes - 1) * s.dividerT) / lanes < s.pocketMinMm) lanes -= 1;
+  const laneD = (fieldD - (lanes - 1) * s.dividerT) / lanes;
+  const sectionW = pocketWidth(innerW, across, s.dividerT);
 
   const wallH = s.insideDepthMm;
   return {
     ok: true,
     spec: s,
+    layout: variant.id,
     // The tray itself, in the box's interior frame.
     tray: {
       w: trayW, d: trayD, h: s.baseT + wallH, inset: s.clearanceMm,
     },
     inner: { w: innerW, d: innerD },
-    // ─── THE POCKETS ────────────────────────────────────────────────────────
+    // ─── THE POCKETS — the same row in all four layouts ─────────────────────
     pockets: {
       count: n,
       width: pw,
       depth: rowD,
-      // …and how deep they are DOWNWARDS, which is the owner's own 60.
       inside: wallH,
-      // The divider between the row and the sections behind it: one rail, at
-      // `rowD` from the tray's inside front.
       dividerXs: xs,
     },
-    // ─── AND THE LONG SECTIONS BEHIND THEM ──────────────────────────────────
+    // ─── AND THE REAR FIELD, WHICH IS WHAT THE LAYOUT DECIDES ───────────────
     sections: {
-      count: sections,
+      count: across,
       width: sectionW,
-      depth: sectionD,
-      dividerXs: dividerXs(innerW, sections, s.dividerT),
+      depth: laneD,
+      lanes,
+      // The back strip is the LAST lane when the layout asks for one, and it is
+      // one long section rather than a divided row.
+      backStrip: Boolean(variant.backStrip) && lanes > 1,
+      dividerXs: dividerXs(innerW, across, s.dividerT),
+      field: fieldD,
     },
-    // ─── DECISION 1: THE GLASS LIFTS OUT ────────────────────────────────────
+    // ─── DECISION 1 AND 2 ARE VETOED BY THE OWNER (F8, the ONE licence) ─────
     //
-    // It bears on a rebate cut in the top of all four rails, so its pane is the
-    // inner opening PLUS the two bearings on each axis. Nothing holds it down.
-    glass: {
-      w: innerW + 2 * s.glassBearingMm,
-      d: innerD + 2 * s.glassBearingMm,
-      t: s.glassT,
-      bearing: s.glassBearingMm,
-      liftsOut: true,
-      // Where its underside sits: the tray's own top, less the rebate.
-      atY: s.baseT + wallH - s.glassT,
-    },
-    // ─── DECISION 2: THE LED LIGHTS THE WATCHES ─────────────────────────────
-    //
-    // In the INNER face of the FRONT rail, `ledBelowGlassMm` under the glass,
-    // firing back and down across the pockets. A groove in the rail's TOP face
-    // would light the pane, which is a shop display.
-    led: {
-      // The line, in the front rail's own board frame — the two ends of the
-      // PROFILE, which is what `drawLedGroove` takes. T48's +10 each end is the
-      // GROOVE's law and is applied there, never restated here.
-      length: trayW,
-      atY: s.baseT + wallH - s.glassT - s.ledBelowGlassMm,
-      // …and the same line in the FRONT RAIL's own board frame, which is what
-      // the groove is actually cut in.
-      railY: wallH - s.glassT - s.ledBelowGlassMm,
-      width: LED_FLEXI_WIDTH_MM,
-      aimedAt: 'contents',
-    },
+    // T52 put the pane in the tray's own frame and the LED in the front rail.
+    // 27.08: *"opcja: dodać szybę ponad szufladą — wtedy wycinamy w półce
+    // otwór … i dookoła tej szyby masz LED od spodu."*  Both move to the SHELF
+    // ABOVE (`shelfGlassPlan`, below), so neither is on this tray at all — and
+    // the T52 law they carried, THE LED LIGHTS THE WATCHES AND NOT THE GLASS,
+    // is not overturned but relocated: the strip fires DOWN onto the watches.
     fit,
+  };
+}
+
+/**
+ * ─── TURN 53 (CLAUDE.md F8a): THE HEIGHT IS FIXED, AND DERIVED ─────────────
+ *
+ * *"wtedy dokładamy taką szufladę już bez możliwości sterowania wysokością —
+ * zawsze stała wysokość."*
+ *
+ * ONE derived number, stated beside its derivation and never typed:
+ *
+ *     60  the owner's own inside depth (`insideDepthMm`)
+ *   +  9  the tray's base (`baseT`)
+ *   +  2  headroom over the tray (`headroomMm`)
+ *   ────
+ *     71  the CLEAR interior a drawer must have — `watchDrawerFit`'s own
+ *         `needsHeight`, read from it rather than restated
+ *
+ *   + 15  the box's bottom sits that far up its sides
+ *         (`baseDrawerUnit.runnerPocketWidth`)
+ *   + 18  …and is that thick (`board.thickness`)
+ *   + 36  the drawer BOX's own front-to-side delta (`frontToSideDelta`) — the
+ *         invariant the wardrobe's stack has been built on since turn 2
+ *   ────
+ *    140  the FRONT height a watch drawer is always cut at
+ *
+ * Every term is a profile number, so a workshop that changes its inside depth
+ * or its runner gets a new fixed height and nobody has to remember to change a
+ * literal. The answer is CHECKED against the engine in `test/turn53-f8-*`: a
+ * drawer built at this height really does take the insert and one a millimetre
+ * under it does not, which is what makes it a derivation rather than a guess.
+ */
+export function watchDrawerFixedHeight(profile) {
+  const s = watchDrawerSpec(profile);
+  const delta = Number(profile?.wardrobe?.drawers?.frontToSideDelta) || 36;
+  const bottomT = Number(profile?.board?.thickness) || 18;
+  const seat = Number(profile?.baseDrawerUnit?.runnerPocketWidth) || 0;
+  return Math.round(insertHeight(profile) + s.headroomMm + seat + bottomT + delta);
+}
+
+/**
+ * ─── TURN 53 (CLAUDE.md F8b/F8c): THE GLASS, AND THE LED, IN THE SHELF ─────
+ *
+ * *"wtedy wycinamy w półce otwór, offset od półki na 50 mm, i wstawiamy szybę
+ * w ten otwór. i dookoła tej szyby masz LED od spodu, offset około 15 mm na
+ * LED."*
+ *
+ * In the SHELF's own board frame: an opening inset `openingOffsetMm` (50) from
+ * all four edges, a rebate one glass thickness deep round it, and the LED ring
+ * `ledOffsetMm` (15) OUTSIDE the opening on the shelf's UNDERSIDE.
+ *
+ * DECISION TAKEN (veto in one line): the pane sits FLUSH WITH THE SHELF TOP —
+ * a proud pane on a wardrobe shelf catches every sleeve — so the rebate depth
+ * IS the glass thickness.
+ *
+ * @param {{w:number, d:number}} shelf  the shelf board's own width and depth
+ * @returns {object|null} null where the shelf is too small to take an opening
+ */
+export function shelfGlassPlan(shelf, profile) {
+  const s = watchDrawerSpec(profile);
+  const w = Math.max(0, Number(shelf?.w) || 0);
+  const d = Math.max(0, Number(shelf?.d) || 0);
+  const off = s.openingOffsetMm;
+  const led = s.ledOffsetMm;
+  const openW = w - 2 * off;
+  const openD = d - 2 * off;
+  // The ring has to stand ON the shelf, not off its edge, or the strip is
+  // fixed to air. A shelf that cannot hold both is refused and the caller
+  // reports it, which is the house way.
+  if (!(openW > 0) || !(openD > 0)) return null;
+  if (!(off - led > 0)) return null;
+  return {
+    opening: {
+      x1: off, y1: off, x2: off + openW, y2: off + openD, w: openW, d: openD,
+    },
+    // Flush: the pane drops into a rebate exactly its own thickness deep.
+    rebate: {
+      x1: off - s.glassT,
+      y1: off - s.glassT,
+      x2: off + openW + s.glassT,
+      y2: off + openD + s.glassT,
+      depth: s.glassT,
+      flush: true,
+    },
+    glass: {
+      w: openW + 2 * s.glassT, d: openD + 2 * s.glassT, t: s.glassT, flush: true,
+    },
+    led: {
+      x1: off - led, y1: off - led, x2: off + openW + led, y2: off + openD + led,
+      width: LED_FLEXI_WIDTH_MM,
+      face: 'underside',
+      aimedAt: 'contents',
+      // The ring's own run, for the BOM's metres.
+      lengthMm: 2 * ((openW + 2 * led) + (openD + 2 * led)),
+    },
+    offsets: { opening: off, led },
   };
 }
 
@@ -336,44 +535,26 @@ const slot = (x, t, h, depth, face) => ({
   layer: WATCH_LAYERS.slot, depth, face, x1: x, y1: 0, x2: x + t, y2: h,
 });
 
-/**
- * The glass rebate along the TOP edge of a rail — decision 1.
- *
- * `glassT` tall from the top edge, `bearing` deep into the board's thickness.
- * On a 9 mm rail with a 5 mm bearing that leaves a 4 mm lip standing proud of
- * the pane all round, which is what makes it lift out with a fingernail
- * instead of needing a bead.
- */
-const rebate = (len, h, s) => ({
-  layer: WATCH_LAYERS.rebate,
-  depth: s.glassBearingMm,
-  face: 'A',
-  x1: 0,
-  y1: h - s.glassT,
-  x2: len,
-  y2: h,
-});
-
-/**
- * The LED groove in the front rail — decision 2.
- *
- * The GROOVE's own law is `reference/lisp/KIT_LED_GROOVE.lsp` and the app's
- * `lib/ledGroove.js`: 4 mm wide, CENTRED on the line, and running
- * `GROOVE_END_EXTRA_MM` (T48's 10) PAST the profile at each end so a round bit
- * leaves no corner for a chisel. Not one number of it is restated here — this
- * says only WHERE the line runs, which is decision 2's business.
- */
-const ledPath = (len, y) => {
-  const half = LED_FLEXI_WIDTH_MM / 2;
-  const e = GROOVE_END_EXTRA_MM;
-  return {
-    layer: LED_GROOVE_LAYER.name,
-    closed: true,
-    pts: [
-      [-e, y - half], [len + e, y - half], [len + e, y + half], [-e, y + half],
-    ],
-  };
-};
+// ─── THE ONE SANCTITY LICENCE OF THE NIGHT (turn 53, CLAUDE.md F8) ─────────
+//
+// T52's `rebate()` — the glass rebate along the top of all four rails — and
+// `ledPath()` — the LED groove in the inner face of the front rail — ARE GONE,
+// and this note is the account CLAUDE.md's iron rule 4 asks for.
+//
+// The licence is the owner's own re-specification, 27.08.2026: *"opcja: dodać
+// szybę ponad szufladą — wtedy wycinamy w półce otwór, offset od półki na
+// 50 mm, i wstawiamy szybę w ten otwór. i dookoła tej szyby masz LED od spodu,
+// offset około 15 mm na LED."*  The pane and the strip are not on the tray any
+// more; they are on the SHELF ABOVE it (`shelfGlassPlan`). A rebate cut for a
+// pane that is not there, and a groove for a strip that is not there, are two
+// operations the machine would perform on every rail for nothing.
+//
+// WHAT IS NOT OVERTURNED is T52's law about the light — THE LED LIGHTS THE
+// WATCHES, NOT THE GLASS — which is why the ring fires DOWN from the shelf's
+// underside. Relocated, not repealed.
+//
+// Nothing else in this file is removed. The slot, the frame, the row rail and
+// the dividers are T52's, to the millimetre.
 
 /**
  * Every piece of one insert, in the DRAWER BOX's own frame.
@@ -384,8 +565,8 @@ const ledPath = (len, y) => {
  * @param {object} opts       { drawer } — the index the parts are keyed on
  * @returns {{parts:Array, glass:object, layout:object}|null}
  */
-export function watchInsertParts(interior, profile, { drawer = 1 } = {}) {
-  const L = watchDrawerLayout(interior, profile);
+export function watchInsertParts(interior, profile, { drawer = 1, layout = DEFAULT_WATCH_LAYOUT } = {}) {
+  const L = watchDrawerLayout(interior, profile, { layout });
   if (!L) return null;
   const s = L.spec;
   const at = interior.at || { x: 0, y: 0, z: 0 };
@@ -433,37 +614,35 @@ export function watchInsertParts(interior, profile, { drawer = 1 } = {}) {
   // The FRONT rail carries the pocket dividers' housings, the glass rebate and
   // the LED groove; the back and the two sides carry the rebate alone.
   const front = board(trayW, wallH, s.frameT);
-  front.pockets = [
-    ...L.pockets.dividerXs.map((x) => slot(s.frameT + x, s.dividerT, wallH, s.slotDepthMm, 'A')),
-    rebate(trayW, wallH, s),
-  ];
-  front.paths = [ledPath(trayW, L.led.railY)];
+  // T53 (F8): the pocket housings alone. The glass rebate is gone with the
+  // glass — see the licence above.
+  front.pockets = L.pockets.dividerXs.map(
+    (x) => slot(s.frameT + x, s.dividerT, wallH, s.slotDepthMm, 'A'),
+  );
   push('WRF', 'WATCH-RAIL-FRONT',
     { x: x0, y: yWall, z: rowFrontZ, w: trayW, h: wallH, d: s.frameT },
-    front, { rail: 'front', led: true });
+    front, { rail: 'front' });
 
   const back = board(trayW, wallH, s.frameT);
-  back.pockets = [
-    ...L.sections.dividerXs.map((x) => slot(s.frameT + x, s.dividerT, wallH, s.slotDepthMm, 'A')),
-    rebate(trayW, wallH, s),
-  ];
+  back.pockets = L.sections.dividerXs.map(
+    (x) => slot(s.frameT + x, s.dividerT, wallH, s.slotDepthMm, 'A'),
+  );
   push('WRB', 'WATCH-RAIL-BACK',
     { x: x0, y: yWall, z: z0, w: trayW, h: wallH, d: s.frameT },
     back, { rail: 'back' });
 
   for (const [tag, x] of [['WRL', x0], ['WRR', x0 + trayW - s.frameT]]) {
     const side = board(railLen, wallH, s.frameT);
-    side.pockets = [rebate(railLen, wallH, s)];
     push(tag, 'WATCH-RAIL-SIDE',
       { x, y: yWall, z: z0 + s.frameT, w: s.frameT, h: wallH, d: railLen },
       side, { rail: tag === 'WRL' ? 'left' : 'right' });
   }
 
-  // ─── THE RAIL BETWEEN THE ROW AND THE SECTIONS ─────────────────────────
+  // ─── THE RAIL BETWEEN THE ROW AND THE REAR FIELD ───────────────────────
   //
   // ONE row of pockets, at the front (*"the back row cannot be reached once the
   // drawer is in"*). This is the rail that says so, and it is housed on BOTH
-  // faces: pockets in front of it, long sections behind.
+  // faces: pockets in front of it, the layout's own field behind.
   const row = board(innerW, wallH, s.dividerT);
   row.pockets = [
     ...L.pockets.dividerXs.map((x) => slot(x, s.dividerT, wallH, s.slotDepthMm, 'A')),
@@ -473,7 +652,7 @@ export function watchInsertParts(interior, profile, { drawer = 1 } = {}) {
     { x: x0 + s.frameT, y: yWall, z: rowRailZ, w: innerW, h: wallH, d: s.dividerT },
     row, { rail: 'row' });
 
-  // ─── THE DIVIDERS ──────────────────────────────────────────────────────
+  // ─── THE POCKET DIVIDERS ───────────────────────────────────────────────
   L.pockets.dividerXs.forEach((x, i) => {
     push(`WP${i + 1}`, 'WATCH-DIVIDER',
       {
@@ -481,27 +660,46 @@ export function watchInsertParts(interior, profile, { drawer = 1 } = {}) {
       },
       board(L.pockets.depth, wallH, s.dividerT), { divider: 'pocket', index: i + 1 });
   });
-  L.sections.dividerXs.forEach((x, i) => {
-    push(`WS${i + 1}`, 'WATCH-DIVIDER',
-      {
-        x: x0 + s.frameT + x, y: yWall, z: sectionsBackZ, w: s.dividerT, h: wallH, d: L.sections.depth,
-      },
-      board(L.sections.depth, wallH, s.dividerT), { divider: 'section', index: i + 1 });
-  });
 
-  // ─── AND THE PANE, WHICH IS ORDERED AND NEVER CUT ──────────────────────
-  const glass = {
-    drawer,
-    box: {
-      x: x0 + s.frameT - s.glassBearingMm,
-      y: yWall + wallH - s.glassT,
-      z: z0 + s.frameT - s.glassBearingMm,
-      w: L.glass.w,
-      h: s.glassT,
-      d: L.glass.d,
-    },
-    liftsOut: true,
-  };
+  // ─── AND THE REAR FIELD, LANE BY LANE (T53 · F8e) ──────────────────────
+  //
+  // The layout decides two things and only two: how many cells ACROSS, and how
+  // many LANES deep. Everything below is those two numbers laid out — the lane
+  // rails between the lanes, and each lane's own dividers. A BACK STRIP is the
+  // last lane taken whole: one long section rather than a divided row, which is
+  // what a cufflink grid wants behind it and what a pair of belt channels wants.
+  const laneD = L.sections.depth;
+  for (let lane = 0; lane < L.sections.lanes; lane += 1) {
+    const laneBackZ = sectionsBackZ + lane * (laneD + s.dividerT);
+    const isBackStrip = L.sections.backStrip && lane === L.sections.lanes - 1;
+    // The rail BEHIND this lane, where there is another lane behind it.
+    if (lane > 0) {
+      push(`WL${lane}`, 'WATCH-RAIL-LANE',
+        {
+          x: x0 + s.frameT,
+          y: yWall,
+          z: laneBackZ - s.dividerT,
+          w: innerW,
+          h: wallH,
+          d: s.dividerT,
+        },
+        board(innerW, wallH, s.dividerT), { rail: 'lane', index: lane });
+    }
+    if (isBackStrip) continue;      // one long section: no dividers in it
+    L.sections.dividerXs.forEach((x, i) => {
+      push(`WS${lane + 1}-${i + 1}`, 'WATCH-DIVIDER',
+        {
+          x: x0 + s.frameT + x, y: yWall, z: laneBackZ, w: s.dividerT, h: wallH, d: laneD,
+        },
+        board(laneD, wallH, s.dividerT), { divider: 'section', lane: lane + 1, index: i + 1 });
+    });
+  }
 
-  return { parts: P, glass, layout: L };
+  // ─── AND THE PANE IS NOT HERE ANY MORE ─────────────────────────────────
+  //
+  // T52 returned a `glass` box on the tray. The owner moved it upstairs, so the
+  // pane belongs to the SHELF (`shelfGlassPlan`) and this answer is the tray
+  // alone. `glass: null` rather than a missing key, so a reader that asked for
+  // it gets an answer instead of `undefined`.
+  return { parts: P, glass: null, layout: L };
 }

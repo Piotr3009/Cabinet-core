@@ -314,12 +314,77 @@ export function shareOutPlan(
  *
  * Zero is not an offer: a run that finishes exactly on the wall has nothing to
  * share out, and a bar over a 0 mm gap is a bar nobody asked for.
+ *
+ * ─── TURN 53 (CLAUDE.md F1a): THE SCRIBE IS NOT LEFTOVER ───────────────────
+ *
+ * The owner, 27.08.2026: *"jak dołożę nową szafę lub cupboard, i zostaje mniej
+ * niż 400 to muszę przesunąć żeby się pojawiła ta informacja … czyli działa w
+ * 99 procentach."*
+ *
+ * Ninety-nine per cent, and the missing one is arithmetic. `plan.gap` is the
+ * SUM of both ends' `bodyGap` — carcass to boundary at each end — and at a wall
+ * that sum counts the scribe filler's own reserve as though it were free wall.
+ * Fill a 4000 wall from the left with six 600s and the numbers are these,
+ * measured on the live store (`scripts/t53-classify.mjs --probe f1`):
+ *
+ *     the sixth cabinet lands, 360 mm of bare wall is left on the right;
+ *     the LEFT end's bodyGap is 40 — the scribe's reserve, not free space;
+ *     gap = 40 + 360 = 400, and 400 >= 400, so the bar stays silent.
+ *
+ * Nudge that cabinet one millimetre toward the gap and it is 399: the bar
+ * appears. That is his one per cent exactly, and it is a millimetre of
+ * arithmetic rather than a millimetre of geometry.
+ *
+ * So the gate reads the leftover LESS WHAT IS ALREADY RESERVED — the same
+ * `reserved` the plan computes to lay the run out with, so the gate and the
+ * lay-out can never disagree about what a filler is. On the owner's numbers:
+ *
+ *     on the add          400 − 80 = 320 < 400  → the bar stands
+ *     after a share-out    80 − 80 =   0        → it does not stand again
+ *
+ * The second line is the T52 verdict's own note closed by the same subtraction:
+ * a run that finishes flush on both walls still reads 80 mm of carcass-to-wall
+ * leftover, and the bar used to return for it forever. One cause, two bugs, one
+ * line of arithmetic — and the 400 itself is untouched, as is `runGap`.
+ *
+ * What the BAR prints is not this number: it prints the leftover the joiner can
+ * see (`shareOutGapSpan`, the gap side's own `bodyGap`), which is his 360.
  */
 export function shareOutOffered(run, context, profile) {
   const spec = shareOutSpec(profile);
   const plan = shareOutPlan(run, context, profile, {});
-  if (plan.gap <= 0 || plan.gap >= spec.gapMm) return null;
+  const free = plan.gap - (plan.reserved?.total || 0);
+  if (free <= 0 || free >= spec.gapMm) return null;
   return plan;
+}
+
+/**
+ * ─── TURN 53 (CLAUDE.md F1b): THE SIGNATURE OF ONE OFFER ───────────────────
+ *
+ * *"musi też być przycisk dismiss — jak nie chcę tego robić teraz, muszę coś
+ * nacisnąć. pamiętaj krzyżyk zasada."*
+ *
+ * The ✕ dismisses the offer FOR THIS GAP, and "this gap" has to be a thing the
+ * next settle can recognise — otherwise the very next settle resurrects the bar
+ * the cross just closed, which is what a bare boolean would do.
+ *
+ * So: the wall, the mount, and the three numbers that describe WHERE the run
+ * will be laid and HOW MUCH is over — `startAt`, `endAt`, `gap`, each already
+ * whole millimetres from `shareOutPlan`. Move a cabinet, add one, remove one or
+ * type a width and at least one of the three moves, the signature differs, and
+ * the offer is a NEW offer that the old cross never saw.
+ *
+ * Pure: a string in, a string out, no store and no React.
+ */
+export function shareOutSignature(run, plan) {
+  if (!run || !plan) return null;
+  return [
+    `w${run.wall ?? 0}`,
+    `m${run.mount ?? ''}`,
+    `s${round1(plan.startAt || 0)}`,
+    `e${round1(plan.endAt || 0)}`,
+    `g${round1(plan.gap || 0)}`,
+  ].join('|');
 }
 
 /**

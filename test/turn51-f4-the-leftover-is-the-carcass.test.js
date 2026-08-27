@@ -69,7 +69,26 @@ test('F4 — an END PANEL at the wall: the engine read ZERO where he sees 40', (
   assert.equal(right.bodyGap, 40, 'but there are 40 mm of leftover, and the bar must say so');
 });
 
-test('F4 — …and that is the difference between an offer and silence', () => {
+// ─── AMENDED BY T53 · F1a — AND THE AMENDMENT IS NAMED ─────────────────────
+//
+// T51's measurement is untouched and still the point of this file: the leftover
+// is read from the CARCASS, so this run reads 80 where the padded edge read 0.
+//
+// What T53 overturns is the second line of the old test — that 80 was therefore
+// an OFFER. Every millimetre of that 80 is RESERVED: 40 at the left wall for
+// the scribe this run has not been given yet, 40 at the right for the panel
+// standing in it. The wall is full. The owner, 27.08:
+//
+//   *"jak dołożę nową szafę lub cupboard, i zostaje mniej niż 400 to muszę
+//   przesunąć żeby się pojawiła ta informacja."*
+//
+// …and the same subtraction that makes the bar appear on his add is what stops
+// it standing forever over two fillers — the T52 verdict's own note. So the
+// gate is `gap − reserved.total`, and here that is zero.
+//
+// The measurement below is T51's, to the millimetre. Only the verdict on it
+// moved, and `test/turn53-f1-*` is where the new one is argued.
+test('F4 — …and that is the difference between a leftover and a full wall', () => {
   const units = [bud('A', 40), bud('B', 640, 3320, {
     end_panels: [{ id: 'ep', side: 'R', thickness: 40 }],
   })];
@@ -77,7 +96,19 @@ test('F4 — …and that is the difference between an offer and silence', () => 
   const ctx = { wallWidth: WALL, others: units, wallMargin: 40 };
   const plan = shareOutPlan(run, ctx, P, {});
   assert.equal(plan.gap, 80, 'the two carcass ends: 40 at the wall, 40 at the panel');
-  assert.ok(shareOutOffered(run, ctx, P), 'so the bar is offered');
+  assert.equal(plan.reserved.total, 80, '…and both of them are already spoken for');
+  assert.equal(shareOutOffered(run, ctx, P), null,
+    'so there is no leftover to offer — T53 F1a');
+
+  // Give the same run a real leftover — 300 mm of bare wall — and it offers.
+  const shorter = [bud('A', 40), bud('B', 640, 3020, {
+    end_panels: [{ id: 'ep', side: 'R', thickness: 40 }],
+  })];
+  const run2 = buildRuns(shorter, P)[0];
+  const ctx2 = { wallWidth: WALL, others: shorter, wallMargin: 40 };
+  const plan2 = shareOutPlan(run2, ctx2, P, {});
+  assert.equal(plan2.gap, 380, '40 at the left wall, 340 of bare wall past the panel');
+  assert.ok(shareOutOffered(run2, ctx2, P), 'and 380 − 80 = 300, which is under his 400');
 });
 
 test('F4 — the arithmetic of the WIDTHS is untouched by any of this', () => {

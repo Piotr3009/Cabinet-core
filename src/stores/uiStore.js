@@ -416,6 +416,30 @@ export const useUiStore = create((set, get) => ({
   offerShareOut: (unitId) => set({ shareOutOffer: unitId ? { unitId } : null }),
   clearShareOut: () => set({ shareOutOffer: null }),
 
+  // ─── TURN 53 (CLAUDE.md F1b): …AND THE ✕ ─────────────────────────────────
+  //
+  // *"musi też być przycisk dismiss — jak nie chcę tego robić teraz, muszę coś
+  // nacisnąć. pamiętaj krzyżyk zasada."*
+  //
+  // T50's line above — *"ignoring it costs no click, so the offer is cleared by
+  // the next thing that happens rather than by a Dismiss button"* — is what the
+  // owner has just overruled, and he is right: the next thing that happens is
+  // very often another settle over the same gap, so the bar he ignored came
+  // straight back. The house ✕ rule applies and this is it.
+  //
+  // What is remembered is not "dismissed" but WHICH OFFER was dismissed:
+  // `engine/shareOut.js shareOutSignature` — wall, mount, startAt, endAt, gap.
+  // `settleLayout` refuses to re-offer while the signature it computes matches
+  // this one; any geometry change that moves one of those numbers makes a
+  // different signature, and the bar returns because it is a different offer.
+  // Loading a project clears it, because it belongs to the drawing on screen.
+  shareOutDismissed: null,           // signature string | null
+  dismissShareOut: (signature) => set({
+    shareOutOffer: null,
+    shareOutDismissed: signature || null,
+  }),
+  clearShareOutDismissed: () => set({ shareOutDismissed: null }),
+
   // Which ink the dimensions are drawn in (turn 5, BACKLOG #34).
   // A drawing office uses one or the other; the hexes themselves live in
   // profile.dimensions.colours, so this is only WHICH, never what.

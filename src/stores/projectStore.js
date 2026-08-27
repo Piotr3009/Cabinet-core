@@ -105,7 +105,8 @@ import {
 } from '../engine/runs.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
-  runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan, widthFixed,
+  runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan,
+  shareOutSignature, widthFixed,
 } from '../engine/shareOut.js';
 // Turn 50 (CLAUDE.md F3): nothing is built bigger than the room it stands in.
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
@@ -1202,6 +1203,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // F3's law), and each correction says so in its grey note. A healed-open
     // project is honestly DIRTY: it changed, and the note names how.
     get().healFrontGaps();
+    // T53 (F1b): a ✕ belongs to the drawing it was clicked on. Opening another
+    // job must not carry a dismissal onto a gap in somebody else's room.
+    useUiStore.getState().clearShareOutDismissed();
+    useUiStore.getState().clearShareOut();
   },
 
   /**
@@ -2104,8 +2109,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // bar reads and the SAME one `shareOutRun` applies. Three callers, one
       // wall margin, one plan.
       const offer = shareOutSubject(s, unit.id, getCabinetProfile(), { gated: true });
-      if (offer?.plan) useUiStore.getState().offerShareOut(unit.id);
-      else useUiStore.getState().clearShareOut();
+      // ─── TURN 53 (CLAUDE.md F1b): THE ✕ HOLDS, AND ONLY OVER THIS GAP ────
+      //
+      // *"musi też być przycisk dismiss — jak nie chcę tego robić teraz, muszę
+      // coś nacisnąć."*
+      //
+      // Without the signature the cross would be a click that lasts until the
+      // next settle — which is usually the same second — so what is compared is
+      // the OFFER and not the fact of a dismissal. Same wall, same mount, same
+      // startAt/endAt/gap: the joiner has already answered this question, and
+      // the bar stays down. Anything else is a new question and it is asked.
+      const ui = useUiStore.getState();
+      if (offer?.plan) {
+        const signature = shareOutSignature(offer.run, offer.plan);
+        if (signature && signature === ui.shareOutDismissed) {
+          ui.clearShareOut();
+          return { grown: [], strays, offered: false, dismissed: true };
+        }
+        // A different offer: the old cross has nothing to say about it, and
+        // keeping it would silence a gap the joiner never saw.
+        if (ui.shareOutDismissed) ui.clearShareOutDismissed();
+        ui.offerShareOut(unit.id);
+      } else {
+        ui.clearShareOut();
+      }
       return { grown: [], strays, offered: Boolean(offer?.plan) };
     } finally {
       settling = false;
@@ -7230,6 +7257,10 @@ function shareOutSubject(state, unitId, profile, { gated = false } = {}) {
     wallMargin,
     plan: plan || null,
     span: shareOutGapSpan(found.run, found.context),
+    // T53 (F1b): the ✕ dismisses THIS offer, and this is what "this" means.
+    // Published here so the bar hands back the same string `settleLayout`
+    // compares — one derivation, again.
+    signature: plan ? shareOutSignature(found.run, plan) : null,
   };
 }
 

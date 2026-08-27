@@ -165,6 +165,57 @@ PROBES.f1 = () => {
   };
 };
 
+/**
+ * F2 — THE DXF EXPORT. A writer DOWNSTREAM of the engine… with one exception,
+ * and the exception is the whole point of this probe.
+ *
+ * The fix tonight is in `engine/cabinet.js`: a drawer shoe box's two battens
+ * shared one panel id, so the ZIP kept one of them and the machine never got
+ * the other. Changing a panel id IS changing the engine's output — so the claim
+ * is not "the export is downstream", it is that NO GOLDEN HAS A SHOE BOX.
+ *
+ * Per config: how many shoe-box items its default parameters carry, how many
+ * `SHOE*` panels come out, and how many of those are battens. Then the same
+ * engine asked a wardrobe that DOES have one, so the rename is shown to have
+ * happened rather than to have been described.
+ */
+PROBES.f2 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const items = (params.sections || []).flatMap((s) => s?.items || []);
+    const shoes = items.filter((i) => i?.kind === 'shoe_box').length;
+    const panels = (result.panels || []).filter((p) => /^SHOE\d/.test(p.id));
+    const battens = panels.filter((p) => /BATTEN/.test(p.id)).length;
+    return {
+      id: cfg.id,
+      cells: [String(shoes), String(panels.length), String(battens)],
+      ok: shoes === 0 && panels.length === 0 && battens === 0,
+    };
+  });
+  // …and the engine asked for one, so the gate is a gate and not a dead branch.
+  const asked = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    width: 900,
+    sections: [{ width_mm: 900, items: [{ id: 'sb1', kind: 'shoe_box', variant: 'D', dividers: 1 }] }],
+  }, P);
+  const battens = (asked.panels || []).filter((p) => /BATTEN/.test(p.id)).map((p) => p.id);
+  rows.push({
+    id: 'asked for one',
+    cells: ['1', String((asked.panels || []).filter((p) => /^SHOE\d/.test(p.id)).length), battens.join(' + ')],
+    ok: battens.length === 2 && new Set(battens).size === 2,
+  });
+  return {
+    head: 'F2 · THE DXF EXPORT — the one engine change is a shoe box, and no golden has one',
+    columns: ['shoe items', 'SHOE panels', 'battens'],
+    rows,
+    note: 'The battens used to share one id — and one file name, and one ZIP entry.',
+    verdict: [
+      'CLEAN — not one of the six carries a shoe box, so the rename cannot reach a golden. And the two battens really are two.',
+      'NOT CLEAN — a golden has a shoe box, or the two battens are still one name. STOP (iron rule 2).',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

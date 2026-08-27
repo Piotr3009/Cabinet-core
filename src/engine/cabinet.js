@@ -4383,9 +4383,28 @@ export function computeCabinet(params, profileOverride) {
         batten: 'BATTEN',
         front: 'FR',
       }[piece.role] || piece.role.toUpperCase();
+      // ─── TURN 53 (CLAUDE.md F2): TWO BATTENS, TWO NAMES ────────────────────
+      //
+      // Found by OPENING THE FILES rather than by reading the code. A DRAWER
+      // shoe box on a wardrobe hinged both sides cuts TWO battens — one per
+      // hinged side — and both of them were `SHOE1-BATTEN`. A panel id is the
+      // DXF's file name (`dxfFileName`), and the per-unit export is a ZIP: two
+      // entries with one name is ONE entry, so the second batten never reached
+      // the machine. It is also the key the tick tree, the part edits and the
+      // material assignment are all held by, so hiding one hid both and a
+      // pencil mark drawn on one appeared on the other.
+      //
+      // The SIDE is what tells them apart and the piece has carried it since
+      // T34 — the same `piece.side` the box's own two walls are named by (SL /
+      // SR). Only the ID moves: `part` stays `SHOEBOX-BATTEN`, which is the
+      // code `engine/partRegistry.js` resolves and the BOM counts, so not a
+      // line of the bill of materials changes.
+      const idSuffix = piece.role === 'batten'
+        ? `${suffix}-${piece.side === 'L' ? 'L' : 'R'}`
+        : suffix;
       const geom = rectGeometry(piece.w, piece.h);
       panels.push(panel({
-        id: `SHOE${idx}-${suffix}`,
+        id: `SHOE${idx}-${idSuffix}`,
         part: `SHOEBOX-${suffix}`,
         // The FRONT is a front and rides the front laws; every other piece is
         // a box board. `family` on the piece says which board it is cut from:

@@ -10,3 +10,20 @@ PANTRY        false               false          (none)
 
 CLEAN — not one of the six has a run to share out, and not one carries a mark of it.
 
+F2 · THE DXF EXPORT — the one engine change is a shoe box, and no golden has one
+
+subject        shoe items  SHOE panels  battens   
+WARDROBE       0           0            0         
+BUD            0           0            0         
+WUD            0           0            0         
+BUDR           0           0            0         
+BUDR4          0           0            0         
+PANTRY         0           0            0         
+asked for one  1           9            SHOE1-BATTEN-L + SHOE1-BATTEN-R
+
+The battens used to share one id — and one file name, and one ZIP entry.
+
+CLEAN — not one of the six carries a shoe box, so the rename cannot reach a golden. And the two battens really are two.
+
+────────────────────────────────────────────────────────────────────────
+2 probe(s), every one CLEAN — no feature of tonight reaches a golden.

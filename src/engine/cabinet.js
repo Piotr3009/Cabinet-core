@@ -4802,6 +4802,65 @@ export function computeCabinet(params, profileOverride) {
     // in it.
     const faceZ = D + P.doors.gap + frontT;
     const ends = runInfill.ends || { left: 'wall', right: 'wall' };
+    // ─── TURN 53 (CLAUDE.md F3b): THE RUN'S OWN CEILING, NOT THE OWNER'S ────
+    //
+    // The owner, 27.08: *"top infill po skosie w ogóle nie działa … jakoś
+    // dziwnie się rysuje gdzieś poza ścianami."*
+    //
+    // DIAGNOSED. This block took its ceiling from `roofLine` — the OWNER
+    // unit's own slope cut — and the owner of a run is its FIRST cabinet.
+    // A run of five whose slope falls over the LAST one gives that first
+    // cabinet no cut at all, so `roofLine` is null, the whole board is one
+    // flat rectangle at `H`, and it stands above the ceiling for the length of
+    // the rake. That is his *"poza ścianami"*, and it is a scope error rather
+    // than a geometry one.
+    //
+    // The RUN carries its own line now (`engine/runs.js runTopInfill`), sampled
+    // over the run's whole span from the same `slopeCutLine` every other piece
+    // is cut from, in this unit's own frame. Where it is absent — no slope on
+    // the wall, or a caller that predates tonight — the owner's `roofLine` is
+    // used exactly as it was, so a straight room is byte-for-byte what it was.
+    const runCeil = Array.isArray(runInfill.ceiling) && runInfill.ceiling.length >= 2
+      ? runInfill.ceiling.map((q) => ({
+        x: roundTo(x0 + (Number(q.x) || 0), 4), y: Number(q.y) || 0,
+      }))
+      : null;
+    const infRoof = runCeil ? true : Boolean(roofLine);
+    /** The ceiling over the RUN at x, in this unit's frame. */
+    const infReachAt = runCeil
+      ? (x) => {
+        const pts = runCeil;
+        if (x <= pts[0].x) {
+          const b = pts[1];
+          const span = b.x - pts[0].x;
+          return span > 1e-9 ? pts[0].y + ((b.y - pts[0].y) * (x - pts[0].x)) / span : pts[0].y;
+        }
+        const last = pts[pts.length - 1];
+        if (x >= last.x) {
+          const a = pts[pts.length - 2];
+          const span = last.x - a.x;
+          return span > 1e-9 ? a.y + ((last.y - a.y) * (x - a.x)) / span : last.y;
+        }
+        for (let i = 1; i < pts.length; i += 1) {
+          const a = pts[i - 1];
+          const b = pts[i];
+          if (x <= b.x) {
+            const span = b.x - a.x;
+            return span > 1e-9 ? a.y + ((b.y - a.y) * (x - a.x)) / span : a.y;
+          }
+        }
+        return last.y;
+      }
+      : reachAt;
+    const infSignedDeg = (a, b) => {
+      const runX = b - a;
+      if (!(Math.abs(runX) > 1e-9)) return 0;
+      return (Math.atan((infReachAt(b) - infReachAt(a)) / runX) * 180) / Math.PI;
+    };
+    /** Where the line BENDS over the run — a segment boundary and nothing else. */
+    const infBreaks = runCeil
+      ? runCeil.map((q) => q.x)
+      : (roofLine ? slopeCutPts(roofLine).map((q) => q.x) : []);
     // ─── TURN 48 (CLAUDE.md F2): THE L IS DEAD. TWO PLAIN BOARDS. ───────────
     //
     // The owner, 25.08.2026, in full:
@@ -4906,16 +4965,16 @@ export function computeCabinet(params, profileOverride) {
         from: faceX0, to: faceX0 + faceLen, deg: 0, run: faceLen,
         shelfFrom: faceX0, shelfRun: len,
       }];
-      if (!roofLine) return whole;
+      if (!infRoof) return whole;
       const xs = [faceX0,
-        ...slopeCutPts(roofLine).map((q) => q.x)
+        ...infBreaks
           .filter((q) => q > faceX0 + 1e-6 && q < faceX0 + faceLen - 1e-6),
         faceX0 + faceLen];
       const segs = [];
       for (let i = 1; i < xs.length; i += 1) {
         const a = xs[i - 1];
         const b = xs[i];
-        const deg = Math.abs(signedDeg(a, b));
+        const deg = Math.abs(infSignedDeg(a, b));
         const cos = Math.cos((deg * Math.PI) / 180);
         segs.push({
           from: a,
@@ -4931,9 +4990,9 @@ export function computeCabinet(params, profileOverride) {
           // Where two segments meet, each piece is cut at HALF the angle
           // between them — the frame-corner rule again, and it is the same
           // arithmetic `sideTopMitreDeg` uses one piece over.
-          joinL: i > 1 ? roundTo((180 - Math.abs(signedDeg(xs[i - 2], a) - signedDeg(a, b))) / 2, 4) : null,
+          joinL: i > 1 ? roundTo((180 - Math.abs(infSignedDeg(xs[i - 2], a) - infSignedDeg(a, b))) / 2, 4) : null,
           joinR: i < xs.length - 1
-            ? roundTo((180 - Math.abs(signedDeg(a, b) - signedDeg(b, xs[i + 1]))) / 2, 4) : null,
+            ? roundTo((180 - Math.abs(infSignedDeg(a, b) - infSignedDeg(b, xs[i + 1]))) / 2, 4) : null,
         });
       }
       return segs.length ? segs : whole;
@@ -4946,7 +5005,7 @@ export function computeCabinet(params, profileOverride) {
       // the cut size, the outline and the label must be the one number.
       const segLen = roundTo(sg.run, 4);
       const segX0 = sg.from;
-      const yTop = roofLine ? reachAt((sg.from + sg.to) / 2) : H;
+      const yTop = infRoof ? infReachAt((sg.from + sg.to) / 2) : H;
       // T48-F2: the site-cut allowance, on ONE end of this board.
       const overEnd = allowanceEnd(i === 0, i === runSegs.length - 1);
       const overLen = overEnd ? overT : 0;
@@ -4994,11 +5053,11 @@ export function computeCabinet(params, profileOverride) {
           // (CCW about Z; a fall to the right leans clockwise), the axis is
           // named, and the pivot is the CEILING at the low end, so the top
           // edge lands on the line it fills to.
-          tilt_deg: roundTo(reachAt(sg.to) < reachAt(sg.from) ? -sg.deg : sg.deg, 4),
+          tilt_deg: roundTo(infReachAt(sg.to) < infReachAt(sg.from) ? -sg.deg : sg.deg, 4),
           tilt_axis: 'z',
-          tilt_pivot: reachAt(sg.to) < reachAt(sg.from)
-            ? { x: roundTo(sg.to, 4), y: roundTo(reachAt(sg.to), 4) }
-            : { x: roundTo(sg.from, 4), y: roundTo(reachAt(sg.from), 4) },
+          tilt_pivot: infReachAt(sg.to) < infReachAt(sg.from)
+            ? { x: roundTo(sg.to, 4), y: roundTo(infReachAt(sg.to), 4) }
+            : { x: roundTo(sg.from, 4), y: roundTo(infReachAt(sg.from), 4) },
         } : {}),
       };
       panels.push(panel({
@@ -5015,9 +5074,9 @@ export function computeCabinet(params, profileOverride) {
           // Chat-fix 25.08.2026: the level band the scene will lean — its true
           // `along × faceH`, hung from the ceiling at the LOW end. Same rule as
           // the roof board above.
-          const lowR = reachAt(sg.to) < reachAt(sg.from);
+          const lowR = infReachAt(sg.to) < infReachAt(sg.from);
           const xL = lowR ? sg.to : sg.from;
-          const yL = lowR ? reachAt(sg.to) : reachAt(sg.from);
+          const yL = lowR ? infReachAt(sg.to) : infReachAt(sg.from);
           return {
             x: roundTo(lowR ? xL - segLen : xL, 4),
             y: roundTo(yL - faceH, 4),
@@ -5027,7 +5086,7 @@ export function computeCabinet(params, profileOverride) {
             d: t,
           };
         })() : {
-          x: segX0, y: roofLine ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
+          x: segX0, y: infRoof ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
         },
         // Cut to the long point at a mitred end: the BOTTOM corner is the one
         // that comes away, because the face's top edge is the one that runs on
@@ -5054,9 +5113,9 @@ export function computeCabinet(params, profileOverride) {
           // its own low end on the ceiling line, top surface on that line.
           const xa = sg.shelfFrom;
           const xb = roundTo(sg.to, 4);
-          const lowR = reachAt(xb) < reachAt(xa);
+          const lowR = infReachAt(xb) < infReachAt(xa);
           const xL = lowR ? xb : xa;
-          const yL = lowR ? reachAt(xb) : reachAt(xa);
+          const yL = lowR ? infReachAt(xb) : infReachAt(xa);
           return {
             x: roundTo(lowR ? xL - shelfLen : xL, 4),
             y: roundTo(yL - t, 4),
@@ -5067,7 +5126,7 @@ export function computeCabinet(params, profileOverride) {
           };
         })() : {
           x: sg.shelfFrom,
-          y: (roofLine ? Math.min(yTop, H) : H) + faceH - t,
+          y: (infRoof ? Math.min(yTop, H) : H) + faceH - t,
           z: faceZ - t - shelfDepth,
           w: sg.to - sg.from,
           h: t,
@@ -5087,13 +5146,13 @@ export function computeCabinet(params, profileOverride) {
           ...(sg.deg > 1e-9 ? (() => {
             const xa = sg.shelfFrom;
             const xb = roundTo(sg.to, 4);
-            const lowR = reachAt(xb) < reachAt(xa);
+            const lowR = infReachAt(xb) < infReachAt(xa);
             return {
               tilt_deg: roundTo(lowR ? -sg.deg : sg.deg, 4),
               tilt_axis: 'z',
               tilt_pivot: lowR
-                ? { x: xb, y: roundTo(reachAt(xb), 4) }
-                : { x: roundTo(xa, 4), y: roundTo(reachAt(xa), 4) },
+                ? { x: xb, y: roundTo(infReachAt(xb), 4) }
+                : { x: roundTo(xa, 4), y: roundTo(infReachAt(xa), 4) },
             };
           })() : {}),
           mitre_45: [...new Set([
@@ -5128,10 +5187,21 @@ export function computeCabinet(params, profileOverride) {
       const xFace = side === 'left' ? outer : outer - t;
       const xShelf = side === 'left' ? outer + t : outer - t - shelfDepth;
       const tag = side === 'left' ? 'L' : 'R';
+      // ─── TURN 53 (CLAUDE.md F3b): THE RETURN HANGS WHERE THE FACE HANGS ──
+      //
+      // The main face sits ON the cabinet under a flat ceiling (`y = H`, top at
+      // `H + faceH`) and HANGS FROM the ceiling under a rake (top at the line).
+      // The return is the same element turning the corner, so it takes the same
+      // band at its own x — otherwise it floats half a metre above the board it
+      // is mitred to, which is the *"poza ścianami"* fault seen end-on.
+      const retTop = infRoof
+        ? Math.min(infReachAt(outer), H + faceH)
+        : H + faceH;
+      const retY = roundTo(retTop - faceH, 4);
       panels.push(panel({
         id: `INFILL-T${tag}-FACE`, part: 'INFILL', role: 'infill', w: returnDepth, h: faceH, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(returnDepth),
-        box: { x: xFace, y: H, z: faceZ - returnDepth, w: t, h: faceH, d: returnDepth },
+        box: { x: xFace, y: retY, z: faceZ - returnDepth, w: t, h: faceH, d: returnDepth },
         cnc: rectGeometry(returnDepth, faceH),
         // T48-F2: 'long' dies with the L; 'end' survives, because this IS the
         // turning corner — the one place two RUNS meet.
@@ -5140,7 +5210,9 @@ export function computeCabinet(params, profileOverride) {
       panels.push(panel({
         id: `INFILL-T${tag}-SHELF`, part: 'INFILL', role: 'infill', w: returnDepth, h: shelfDepth, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(returnDepth),
-        box: { x: xShelf, y: H + faceH - t, z: faceZ - returnDepth, w: shelfDepth, h: t, d: returnDepth },
+        box: {
+          x: xShelf, y: roundTo(retY + faceH - t, 4), z: faceZ - returnDepth, w: shelfDepth, h: t, d: returnDepth,
+        },
         cnc: rectGeometry(returnDepth, shelfDepth),
         meta: {
           side: 'top', piece: 'shelf', segment: `return-${side}`, mitre_45: ['end'],
@@ -5456,6 +5528,13 @@ export function computeCabinet(params, profileOverride) {
     const faceCut = cutLine
       ? subSlopeCut(cutLine, faceFrom, faceFrom + cutW, { dy: y, reach: true })
       : null;
+    // T53 (F3a): the same line over the piece's own BODY. The blank above runs
+    // from the wall end and carries the scribe allowance; the body is the
+    // nominal piece the room draws, and it is what the solid is cut to.
+    const bodyFrom = isLeft ? -infillW : W;
+    const bodyCut = cutLine
+      ? subSlopeCut(cutLine, bodyFrom, bodyFrom + infillW, { dy: y, reach: true })
+      : null;
     // The line is sampled over the piece's OWN span in the unit's frame; the
     // outline it trims is in the piece's frame before the shift above, so the
     // two agree by construction.
@@ -5535,6 +5614,36 @@ export function computeCabinet(params, profileOverride) {
             full: roundTo(h, 4),
             corners: faceGeom.outline.length,
             angles: infillAngles(faceFrom, faceFrom + cutW),
+            // ─── TURN 53 (CLAUDE.md F3a): 3D DRAWS WHAT CNC CUTS ────────────
+            //
+            // The owner, 27.08: *"najdziwniejsze jest to, że pionowy infill na
+            // CNC się tnie pod skosem, ale na wizualizacji pokazuje prosto."*
+            //
+            // He is describing two sources of truth. The CUT above really is
+            // trimmed to the ceiling (`trimGeometryOnSlope`); the BOX below is
+            // a plain rectangle `infillW × faceH2`, and `faceH2` is the PEAK
+            // over the piece — so the solid in the room stood square to the
+            // peak while the machine cut the rake.
+            //
+            // `top` is the line the solid is cut on, and it is the SAME
+            // `cutLine` the outline came from — sampled over the piece's OWN
+            // BODY rather than over its blank, because the blank carries the
+            // 20 mm scribe allowance and the body is what stands in the room.
+            // One source, two spans, and `engine/mitre.js infillMitre` clips
+            // the solid to it. LISP: `SKY:vertInfillTopY` / `SKY:vertInfillDeg`.
+            //
+            // Points are in the UNIT's frame — the same x as `box.x` and the
+            // same y datum as `box.y` — so the 3-D needs no second arithmetic.
+            // `subSlopeCut` answers in the SUB-SPAN's own frame (x from 0 at
+            // `bodyFrom`, y already dropped by the piece's base), so the shift
+            // back into the unit's frame is `bodyFrom` on x and `y` on y — the
+            // two numbers `box.x` and `box.y` are themselves made of.
+            ...(bodyCut ? {
+              top: bodyCut.pts.map((q) => ({
+                x: roundTo(bodyFrom + q.x, 4),
+                y: roundTo(y + q.y, 4),
+              })),
+            } : {}),
           },
         } : {}),
       },

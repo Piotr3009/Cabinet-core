@@ -25,5 +25,20 @@ The battens used to share one id — and one file name, and one ZIP entry.
 
 CLEAN — not one of the six carries a shoe box, so the rename cannot reach a golden. And the two battens really are two.
 
+F3 · THE SLOPE’S INFILLS — every cut is gated on a slopeCut, and no golden has one
+
+subject        slope_cut  cut panels  infill panels  
+WARDROBE       (none)     0           0              
+BUD            (none)     0           0              
+WUD            (none)     0           0              
+BUDR           (none)     0           0              
+BUDR4          (none)     0           0              
+PANTRY         (none)     0           0              
+asked for one  YES        5           0              
+
+The run’s own ceiling line is written by the STORE, and a golden never meets the store.
+
+CLEAN — not one of the six is under a rake, so not one of them grows a cut. And the gate bites: a cabinet that IS under one cuts.
+
 ────────────────────────────────────────────────────────────────────────
-2 probe(s), every one CLEAN — no feature of tonight reaches a golden.
+3 probe(s), every one CLEAN — no feature of tonight reaches a golden.

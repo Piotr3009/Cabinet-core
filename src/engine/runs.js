@@ -720,7 +720,7 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
  *   returns:{left:number|null, right:number|null}, unitIds:string[] }}
  */
 function runTopInfill(run, {
-  wallWidth, roomHeight, frontFaceDepth, verticals = null,
+  wallWidth, roomHeight, frontFaceDepth, verticals = null, runCutOf = null,
 }, profile) {
   const T = profile.autoParts.topInfill;
   // The face height a member asked for. A run is one height: the tallest
@@ -765,6 +765,31 @@ function runTopInfill(run, {
       left: infillCornerMitre(left, faceH, run.top + faceH, T.runGap),
       right: infillCornerMitre(right, faceH, run.top + faceH, T.runGap),
     },
+    // ─── TURN 53 (CLAUDE.md F3b): THE RUN'S OWN CEILING ────────────────────
+    //
+    // *"top infill po skosie w ogóle nie działa … jakoś dziwnie się rysuje
+    // gdzieś poza ścianami."*
+    //
+    // The engine used to take its ceiling from the OWNER unit's own slope cut,
+    // and the owner of a run is its FIRST cabinet — so a run whose rake falls
+    // over the LAST one was drawn flat at room height for the whole length of
+    // the slope, standing outside the wall. The line belongs to the RUN, so it
+    // travels with the run element, exactly as the mitres above do and for the
+    // same stated reason.
+    //
+    // It is the caller's `runCutOf` — the store's `slopeCutLine`, which is the
+    // one function every other slope-cut piece in this app is cut from — asked
+    // over this run's own span. `null` where the wall has no slope, which is
+    // the gate: `computeCabinet` then reads nothing new and cuts what it cut.
+    //
+    // Points are in the OWNER's frame on x (the same datum `offset` uses) and
+    // clear millimetres above the carcass floor on y, so `cabinet.js` needs no
+    // conversion and cannot invent a second one.
+    ceiling: runCutOf
+      ? (runCutOf({
+        run, from: left.x, to: right.x, owner, length,
+      })?.pts || null)
+      : null,
     unitIds: run.units.map((u) => u.id),
   };
 }
@@ -777,7 +802,9 @@ function runTopInfill(run, {
  *
  * @returns {Map<string, object|null>} unit id → the parameter to store
  */
-export function runInfillParams(units, { walls, roomHeight, frontFaceDepthOf }, profile) {
+export function runInfillParams(units, {
+  walls, roomHeight, frontFaceDepthOf, runCutOf = null,
+}, profile) {
   const depthOf = frontFaceDepthOf || (() => 0);
   const out = new Map(units.map((u) => [u.id, null]));
   // Worked out ONCE for the room and handed to every run (turn 14, F3): the
@@ -790,6 +817,10 @@ export function runInfillParams(units, { walls, roomHeight, frontFaceDepthOf }, 
       wallWidth,
       roomHeight,
       verticals,
+      // T53 (F3b): the run's own stretch of the ceiling line, from the caller
+      // that owns the room. Absent — every caller that predates tonight — the
+      // element carries no ceiling and nothing downstream changes.
+      runCutOf,
       frontFaceDepth: {
         left: depthOf(run.units[0]),
         right: depthOf(run.units[run.units.length - 1]),

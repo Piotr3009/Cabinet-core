@@ -216,6 +216,54 @@ PROBES.f2 = () => {
   };
 };
 
+/**
+ * F3 — THE SLOPE'S INFILLS. Everything tonight cuts is gated on a `slopeCut`,
+ * and no golden carries one: `defaultParamsFor` states no `slope_cut`, and the
+ * key is written only by `projectStore.paramsForEngine` for a unit standing
+ * under a rake in a ROOM. A golden is `computeCabinet` of one cabinet with no
+ * room at all.
+ *
+ * Per config: whether its params carry a slope cut, how many of its panels come
+ * out with `meta.slopeCut`, and how many infill panels it has at all. Then the
+ * same engine asked a cabinet that IS under a rake, so the gate is shown to be
+ * a gate rather than a dead branch.
+ */
+PROBES.f3 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const cut = params.slope_cut ?? params.slopeCut ?? null;
+    const sloped = (result.panels || []).filter((p) => p.meta?.slopeCut).length;
+    const infills = (result.panels || []).filter((p) => p.role === 'infill').length;
+    return {
+      id: cfg.id,
+      cells: [cut == null ? '(none)' : 'YES', String(sloped), String(infills)],
+      ok: cut == null && sloped === 0,
+    };
+  });
+  // …and the engine asked for one: a wardrobe under a rake that falls across
+  // its own width, which really does cut.
+  const asked = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    slope_cut: { axis: 'width', infill: 20, low: 'R', pts: [{ x: 0, y: 1800 }, { x: 600, y: 1200 }] },
+  }, P);
+  const cutParts = (asked.panels || []).filter((p) => p.meta?.slopeCut).length;
+  rows.push({
+    id: 'asked for one',
+    cells: ['YES', String(cutParts), String((asked.panels || []).filter((p) => p.role === 'infill').length)],
+    ok: cutParts > 0,
+  });
+  return {
+    head: 'F3 · THE SLOPE’S INFILLS — every cut is gated on a slopeCut, and no golden has one',
+    columns: ['slope_cut', 'cut panels', 'infill panels'],
+    rows,
+    note: 'The run’s own ceiling line is written by the STORE, and a golden never meets the store.',
+    verdict: [
+      'CLEAN — not one of the six is under a rake, so not one of them grows a cut. And the gate bites: a cabinet that IS under one cuts.',
+      'NOT CLEAN — a golden is being cut on a slope it does not stand under. STOP (iron rule 2).',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

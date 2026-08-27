@@ -47,6 +47,7 @@ import { migrateWallElement, wallElements } from '../lib/wallElements.js';
 // becomes a number the engine and the clamp can use. Both come out of the same
 // module the wall mesh and the elevation read — there is no second lerp here.
 import {
+  ceilingAt, ceilingPolyline,
   slopeCutLine, slopeInfillMm, slopeMinimumMm, slopeShortfallMm, slopeStation,
 } from '../lib/slopeLine.js';
 // T45 F9b/F9c: the job's LED spec — the groove mode, the channel width and the
@@ -603,6 +604,41 @@ function slopeLimitFor(state, unit, wall, footprintWidth, profile) {
  * @returns {object|null} the two points, or null — and null means the key is
  *   never written, which is iron rule 2's gate.
  */
+/**
+ * ─── TURN 53 (CLAUDE.md F3c): "TO THE CEILING" MEANS THIS CEILING ──────────
+ *
+ * *"slope — tylko infill się nie rysuje po skosie, a jest na CNC."*
+ *
+ * `sideInfillToCeiling` and `endPanelToCeiling` read `room.height` — the room's
+ * FLAT headroom — so a filler double-clicked to the ceiling under a rake was
+ * given the height of a ceiling that is not over it, and stood through the
+ * plaster. The height is `ceilingAt` at THE PIECE'S OWN X on that wall, which
+ * is the one function the wall mesh, the elevation, the drag clamp and the
+ * engine's own cut all already ask (T46's "one ceilingAt").
+ *
+ * The piece's own x is the carcass edge it stands against: the unit's left edge
+ * for a left-hand piece, its right edge for a right-hand one. Off the slope, or
+ * on a wall with none, this is `room.height` to the millimetre — which is what
+ * keeps every straight room exactly as it was.
+ */
+function ceilingOverPiece(state, unit, side) {
+  const roomH = Number(state?.project?.room?.height) || 0;
+  const wallIndex = unit?.position?.wall;
+  if (wallIndex == null) return roomH;
+  const slopes = slopesOfWall(state, wallIndex);
+  if (!slopes.length) return roomH;
+  const wall = roomWalls(state.project.room)[wallIndex];
+  if (!wall) return roomH;
+  const x0 = Number(unit.position?.x_mm) || 0;
+  const x = side === 'right' || side === 'R'
+    ? x0 + (Number(unit.params?.width) || 0)
+    : x0;
+  return ceilingAt(x, slopes, {
+    wallWidth: Number(wall.width) || 0,
+    wallHeight: roomH,
+  });
+}
+
 function slopeCutFor(unit, design) {
   const state = useProjectStore.getState();
   const wallIndex = unit?.position?.wall;
@@ -1692,6 +1728,36 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         + (Number(u.params?.depth) || 0)
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
+      // ─── TURN 53 (CLAUDE.md F3b): THE RUN'S OWN STRETCH OF THE CEILING ───
+      //
+      // *"top infill po skosie w ogóle nie działa … jakoś dziwnie się rysuje
+      // gdzieś poza ścianami."*
+      //
+      // The engine read the ceiling off the OWNER unit's own slope cut, and the
+      // owner of a run is its first cabinet — so a run whose rake falls over
+      // the LAST one drew a flat board at room height right across it. The line
+      // is the RUN's, so the room hands the run its own stretch of it.
+      //
+      // It is `slopeCutLine` — the SAME function `paramsForEngine` cuts every
+      // carcass with — asked over the run's span instead of one cabinet's, with
+      // the OWNER's floor as the datum, because the owner's frame is the frame
+      // `runInfill.offset` is already stated in. One function, one datum, one
+      // ceiling.
+      runCutOf: ({ run, from, to, owner }) => {
+        const slopes = slopesOfWall(s, run.wall);
+        if (!slopes.length) return null;
+        const wall = walls[run.wall];
+        if (!wall) return null;
+        return slopeCutLine({
+          slopes,
+          wallWidth: Number(wall.width) || 0,
+          wallHeight: roomHeight,
+          x: from,
+          width: Math.max(0, to - from),
+          infill: slopeInfillMm(design),
+          floorY: floorYOf(owner, null, profile),
+        });
+      },
     }, profile);
 
     // ─── …and the PLINTH, the same way (turn 12, CLAUDE.md F8) ───
@@ -2499,7 +2565,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return 0;
     const profile = getCabinetProfile();
-    const headroom = Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile));
+    // T53 (F3c): the CEILING OVER THIS PIECE, not the room's flat headroom —
+    // the same one `ceilingAt` every other reader asks. A filler typed taller
+    // than the rake allows is clamped by the rake, which is what a joiner would
+    // find with a tape.
+    const headroom = Math.max(0, ceilingOverPiece(s, unit, side) - unitTopOf(unit, profile));
     const top = Math.min(Math.max(snapTo(Number(topMm) || 0, profile.editor.mmStep), 0), headroom);
     const key = side === 'R' ? 'side_infill_right_top_mm' : 'side_infill_left_top_mm';
     set((st) => ({
@@ -2548,7 +2618,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const profile = getCabinetProfile();
     return get().setSideInfillTop(
       unitId, side,
-      Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile)),
+      Math.max(0, ceilingOverPiece(s, unit, side) - unitTopOf(unit, profile)),
     );
   },
 
@@ -2558,9 +2628,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return 0;
     const profile = getCabinetProfile();
+    const panel = (unit.params?.end_panels || []).find((p) => p.id === panelId) || null;
+    const side = panel?.side === 'R' ? 'right' : 'left';
     return get().setEndPanelTop(
       unitId, panelId,
-      Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile)),
+      Math.max(0, ceilingOverPiece(s, unit, side) - unitTopOf(unit, profile)),
     );
   },
 

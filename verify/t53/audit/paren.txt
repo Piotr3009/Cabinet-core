@@ -1,0 +1,26 @@
+kit                           open  close  balance  depth
+KIT_BUDR_FULL.lsp             3280   3280        0     11
+KIT_BUDTALL_FULL.lsp           765    765        0     13
+KIT_BUD_FULL.lsp               700    700        0     13
+KIT_DOOR_DOUBLE.lsp           1238   1238        0      9
+KIT_FRIDGE.lsp                1087   1087        0     13
+KIT_LED_GROOVE.lsp              53     53        0      6
+KIT_LOW_CABINET_FULL.lsp       952    952        0     12
+KIT_SASH_STANDARD.lsp          144    144        0      7
+KIT_SHOE_BOX.lsp               499    499        0      8
+KIT_SINK.lsp                  1184   1184        0     13
+KIT_WARDROBE_FULL.lsp         2246   2246        0     14
+KIT_WATCH_DRAWER.lsp            76     76        0      8
+KIT_WUD_FULL.lsp               736    736        0     13
+SKYLON_COMMON.lsp             3400   3400        0     14
+
+14 kit(s), every one 0/0.
+
+SKY:infillSegsUnder — defined in [SKYLON_COMMON.lsp], called from [nowhere yet]
+  One law, one file, and its two vertical readers stand beside it. ✓
+  14/14 at 0/0 — the shelf as it stands, derived not typed.
+
+reference/lisp/ vs a002df3:
+  M  reference/lisp/SKYLON_COMMON.lsp
+
+No other kit is touched. ✓

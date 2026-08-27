@@ -237,6 +237,40 @@ function faceNormal(solid, face) {
  * @param {object} panel  an engine panel record with `box` and `meta`
  * @returns {{box:object, planes:Array}|null} null when the piece takes no mitre
  */
+/**
+ * ─── TURN 53 (CLAUDE.md F3): THE CEILING LINE, AS HALF-SPACES ──────────────
+ *
+ * One plane per segment of the line, each keeping everything BELOW it:
+ *
+ *     keep  n · p ≤ d   with   n = [−m, 1, 0]   d = y0 − m·x0
+ *
+ * which reads `y ≤ y0 + m (x − x0)` — the segment's own line, extended. `pts`
+ * are in the same frame the box is (the unit's x, the carcass floor's y), so
+ * there is no conversion and therefore nothing to get wrong between the file
+ * and the room.
+ *
+ * A line that is FLAT at the box's own top produces no plane at all, which is
+ * what keeps every filler in every straight room the board it has always been.
+ */
+export function slopePlanes(box, pts) {
+  if (!Array.isArray(pts) || pts.length < 2) return [];
+  const top = box.y + box.h;
+  const out = [];
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const run = Number(b.x) - Number(a.x);
+    if (!(Math.abs(run) > 1e-9)) continue;
+    const m = (Number(b.y) - Number(a.y)) / run;
+    const d = Number(a.y) - m * Number(a.x);
+    // A segment that lies on (or above) the board's own top cuts nothing.
+    const hiWithin = Math.max(Number(a.y), Number(b.y));
+    if (hiWithin >= top - 1e-6 && Math.abs(m) < 1e-9) continue;
+    out.push({ n: [-m, 1, 0], d });
+  }
+  return out;
+}
+
 export function infillMitre(panel) {
   const meta = panel?.meta;
   const box = panel?.box;
@@ -258,12 +292,35 @@ export function infillMitre(panel) {
   // the vertical infill is untouched, which is why a run without this corner
   // draws exactly the box it drew before.
   if (meta.side === 'left' || meta.side === 'right') {
+    if (meta.piece !== 'face') return null;
     const corner = Math.max(0, Number(meta.corner) || 0);
-    if (meta.piece !== 'face' || !corner) return null;
-    // The corner nearest the top infill: the INNER edge, at the top. For a
-    // left-hand filler that is +X, for a right-hand one −X.
-    const sign = meta.side === 'left' ? +1 : -1;
-    return { box: { ...box }, planes: [chamferPlane(box, 'x', sign, 'y', +1, corner)] };
+    const planes = [];
+    if (corner) {
+      // The corner nearest the top infill: the INNER edge, at the top. For a
+      // left-hand filler that is +X, for a right-hand one −X.
+      const sign = meta.side === 'left' ? +1 : -1;
+      planes.push(chamferPlane(box, 'x', sign, 'y', +1, corner));
+    }
+    // ─── TURN 53 (CLAUDE.md F3a): THE VERTICAL INFILL IS CUT ON THE SLOPE ──
+    //
+    // *"najdziwniejsze jest to, że pionowy infill na CNC się tnie pod skosem,
+    // ale na wizualizacji pokazuje prosto."*
+    //
+    // And it did: the CNC outline was trimmed to the ceiling and the SOLID was
+    // a plain box as tall as the PEAK, so the filler stood square through the
+    // rake. The law is stated in `reference/lisp/SKYLON_COMMON.lsp` — EVERY
+    // PIECE THE MACHINE CUTS ON THE SLOPE IS DRAWN CUT IN THE ROOM — and this
+    // is the room's half of it.
+    //
+    // Nothing is measured here. `meta.slopeCut.top` is the ceiling line the
+    // engine already cut the outline from, in the piece's own frame, and each
+    // of its segments becomes one half-space. A filler is 40 mm of width, so a
+    // knee inside one is a curiosity rather than a case — but a bent line
+    // simply gives two planes and `clipAll` takes both, which is exact for a
+    // line that descends (or rises) monotonically across the piece and
+    // conservative for the pathological one that does not.
+    for (const plane of slopePlanes(box, meta.slopeCut?.top)) planes.push(plane);
+    return planes.length ? { box: { ...box }, planes } : null;
   }
 
   if (meta.side !== 'top') return null;

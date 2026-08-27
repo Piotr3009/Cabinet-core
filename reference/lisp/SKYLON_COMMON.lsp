@@ -1624,6 +1624,78 @@
   (SKY:slopeSegDeg (- xb xa)
                    (- (SKY:cutHeightAt pts xb) (SKY:cutHeightAt pts xa))))
 
+;;;----------------------------------------
+;;; THE INFILLS ON THE SLOPE - ONE LAW: 3D DRAWS WHAT CNC CUTS  (turn 53, F3)
+;;;----------------------------------------
+
+;;; The owner, 27.08.2026, three ways round one disease:
+;;;
+;;;   "top infill po skosie w ogole nie dziala ... jakos dziwnie sie rysuje
+;;;    gdzies poza scianami."
+;;;   "najdziwniejsze jest to, ze pionowy infill na CNC sie tnie pod skosem,
+;;;    ale na wizualizacji pokazuje prosto."
+;;;   "slope - tylko infill sie nie rysuje po skosie, a jest na CNC."
+;;;
+;;; The disease is TWO SOURCES OF TRUTH, which is the fault the grain rule
+;;; already killed once. The CNC path carries the slope; the solid in the room
+;;; measured the ceiling for itself and got a different answer. So the law is
+;;; stated here, once, and both readers ask it:
+;;;
+;;;   EVERY PIECE THE MACHINE CUTS ON THE SLOPE IS DRAWN CUT IN THE ROOM.
+;;;
+;;; Nothing below is new geometry. It is the SAME `SKY:cutHeightAt` walk the
+;;; roof board and the sides already take, asked of the three pieces that were
+;;; asking themselves.
+
+;;; The top of a VERTICAL member standing between `xa` and `xb` - a side infill,
+;;; an end panel taken to the ceiling, a filler run up past the units.
+;;;
+;;; Its top is the ceiling AT ITS OWN X, and where the ceiling falls across its
+;;; thickness that top is a BEVEL: the blank is as tall as the higher face and
+;;; the wedge comes off, exactly as `SKY:sideTopY` does one piece over. Reading
+;;; `wys` instead - the room height - is what drew a filler standing through the
+;;; plaster.
+(defun SKY:vertInfillTopY (pts wys xa xb)
+  (min wys (SKY:cutPeakBetween pts xa xb)))
+
+;;; ...and the angle the saw is set to for it. Zero under a flat ceiling, which
+;;; is what makes every filler in every straight room the board it always was.
+(defun SKY:vertInfillDeg (pts xa xb)
+  (SKY:slopeSegDeg (- xb xa)
+                   (- (SKY:cutHeightAt pts xb) (SKY:cutHeightAt pts xa))))
+
+;;; A HORIZONTAL run of infill under a bent ceiling is not one board and it is
+;;; not one plane: it is ONE PIECE PER SEGMENT of the ceiling line, each mounted
+;;; along its own stretch. This is that walk, over `xa`..`xb`, and it is the
+;;; same list `SKY:roofBoards` is built from - a knee inside the run splits the
+;;; piece there and nowhere else.
+;;;
+;;;   ((x0 x1 y0 y1 deg along) ...)
+;;;
+;;; `along` is the piece's own length, span / cos(beta): it is MOUNTED on the
+;;; slope, so it is longer than the span it covers. `y0`/`y1` are the ceiling at
+;;; its two ends, which is the line its top edge follows - never above it, and
+;;; never inside the triangle where the wall has ended.
+(defun SKY:infillSegsUnder (pts xa xb / segs out sg x0 x1 y0 y1 deg)
+  (setq segs (SKY:slopeSegments (SKY:cutPtsBetween pts xa xb)))
+  (setq out '())
+  (foreach sg segs
+    (setq x0 (nth 0 sg) x1 (nth 1 sg))
+    (setq y0 (SKY:cutHeightAt pts x0) y1 (SKY:cutHeightAt pts x1))
+    (setq deg (SKY:slopeSegDeg (- x1 x0) (- y1 y0)))
+    (setq out (cons (list x0 x1 y0 y1 deg (SKY:roofFaceLen (- x1 x0) deg)) out)))
+  (reverse out))
+
+;;; The stretch of the cut line between two x, with a vertex at every knee
+;;; inside it and one at each end. A polyline sampled at its knees is exact;
+;;; a polyline sampled at a step rounds every knee off.
+(defun SKY:cutPtsBetween (pts xa xb / out p)
+  (setq out (list (list xa (SKY:cutHeightAt pts xa))))
+  (foreach p pts
+    (if (and (> (car p) (+ xa 1e-6)) (< (car p) (- xb 1e-6)))
+      (setq out (cons (list (car p) (cadr p)) out))))
+  (reverse (cons (list xb (SKY:cutHeightAt pts xb)) out)))
+
 ;;;========================================
 ;;; LOADED
 ;;;========================================

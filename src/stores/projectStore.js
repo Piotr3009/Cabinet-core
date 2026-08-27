@@ -119,7 +119,9 @@ import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
 // Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
-import { settleRiders } from '../engine/topBox.js';
+import {
+  isLeftSide, minRiderWidth, riddenList, riderFreeWidth, riderSlot, settleRiders,
+} from '../engine/topBox.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
 // It lives in `lib/` and not in the engine on purpose (T45's own argument):
@@ -969,8 +971,29 @@ function migrateUnitType(unit) {
   return { ...unit, type: resolved, params: { ...unit.params, type: resolved } };
 }
 
+/**
+ * ─── TURN 53 (CLAUDE.md F5g): ONE BOX BECOMES A LIST OF ONE ────────────────
+ *
+ * `ridden_by` was ONE id and is a LIST now, because a main may carry several
+ * top boxes side by side. A project saved before tonight carries the scalar, so
+ * it is normalised on the way in — the same door every other migration on this
+ * page uses, and the same rule: ABSENT stays absent, so a cabinet that carries
+ * nothing gains no param.
+ *
+ * The rider's own link (`rides_on`) is untouched, which is what keeps the box
+ * exactly where it was: the new model reads the rider's OWN x rather than
+ * confiscating the host's, so a one-box project opens looking identical.
+ */
+const migrateUnitRidden = (u) => {
+  const value = u?.params?.ridden_by;
+  if (value == null || Array.isArray(value)) return u;
+  return { ...u, params: { ...u.params, ridden_by: riddenList(value) } };
+};
+
 const migrateUnits = (units) => (Array.isArray(units)
-  ? units.map((u) => migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))))
+  ? units.map((u) => migrateUnitRidden(
+    migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))),
+  ))
   : []);
 
 function loadCache() {
@@ -3289,13 +3312,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // on nothing — and check #14 says so in red rather than the app refusing
     // to add what the joiner asked for.
     const riderOf = getUnitType(typeId).ridesOn;
+    // ─── TURN 53 (CLAUDE.md F5): THE PLUS ON A TOP BOX MEANS ITS HOST ──────
+    //
+    // *"jak dodaję plusik po lewej, to on się nie pojawia po lewej, tylko
+    // jeden w drugim."*
+    //
+    // Half of that is this line. `beside` is the box the plus was clicked on,
+    // and a box fails the `!ridesOn` test — so the search fell through to the
+    // LAST main in the project and the new box was born on a cabinet the
+    // joiner had not pointed at. A plus on a box means "another one beside
+    // THIS", so the host is the clicked box's own host.
+    const besideHost = beside && getUnitType(beside.type).ridesOn && beside.params?.rides_on
+      ? state.units.find((u) => u.id === beside.params.rides_on) || null
+      : null;
     const riderHost = riderOf
-      ? [beside, ...[...state.units].reverse()].find((u) => u
+      ? [besideHost, beside, ...[...state.units].reverse()].find((u) => u
         && getUnitType(u.type).family === riderOf
         && !getUnitType(u.type).ridesOn)
       : null;
     if (riderHost) {
-      placed = { wall: riderHost.position?.wall ?? 0, x: riderHost.position?.x_mm ?? 0 };
       unit.params.rides_on = riderHost.id;
       // ─── TURN 37 (CLAUDE.md F5a): BORN MATCHED ────────────────────────────
       //
@@ -3334,6 +3369,46 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       });
       if (born.refuse) return { id: null, error: born.refuse };
       if (born.height != null) unit.params.height = born.height;
+      // ─── TURN 53 (CLAUDE.md F5): BESIDE THE CLICKED BOX, OR REFUSED ──────
+      //
+      // *"add-plus L/R on a top box places the new box BESIDE the clicked box,
+      // clamped to the host span; no room on that side → the add refuses with
+      // a message, exactly as a cabinet add against a wall does."*
+      //
+      // The width was matched to the host above — which is right for the FIRST
+      // box and wrong for the second, because two boxes of the host's full
+      // width cannot both stand on it. So a box going in beside another takes
+      // the gap it is being put in, and the refusal carries the number.
+      const onHost = state.units.filter((u) => u.params?.rides_on === riderHost.id);
+      if (onHost.length) {
+        const gap = riderSlot(riderHost, onHost, 0, { beside, side });
+        if (gap == null) {
+          return {
+            id: null,
+            error: `There is no room for another top box${side ? ` to the ${isLeftSide(side) ? 'left' : 'right'}` : ''} on ${riderHost.params?.unit_num || 'this cabinet'} — make one narrower, or put it on another main.`,
+          };
+        }
+        // The FREE stretch on that side is what the new box may be, so it is
+        // born to fit rather than born too wide and clamped into a neighbour.
+        const free = riderFreeWidth(riderHost, onHost, { beside, side });
+        if (free < minRiderWidth(profile)) {
+          return {
+            id: null,
+            error: `Only ${formatMm(free)} mm free${side ? ` to the ${isLeftSide(side) ? 'left' : 'right'}` : ''} on ${riderHost.params?.unit_num || 'this cabinet'} — not enough for a top box.`,
+          };
+        }
+        unit.params.width = Math.round(free);
+      }
+      const x = riderSlot(riderHost, onHost, unit.params.width, { beside, side });
+      placed = {
+        wall: riderHost.position?.wall ?? 0,
+        x: x == null ? (riderHost.position?.x_mm ?? 0) : x,
+      };
+      // T53 (F5): the OFFSET is the box's state — where it stands ON its main —
+      // so it is written at birth beside the x, and `settleRiders` reads it
+      // rather than re-deriving a position from an absolute the host may move
+      // out from under.
+      unit.params.rides_offset_mm = Math.max(0, placed.x - (riderHost.position?.x_mm ?? 0));
     }
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
@@ -3982,8 +4057,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
 
     set((st) => ({
       // T36 F7: …and every top box rides the main it stands on.
+      //
+      // T53 (F5): a dragged BOX writes its own OFFSET. The offset is the state
+      // — where the box stands on its main — so a hand that moves the box moves
+      // the offset, and `settleRiders` then agrees with the drag instead of
+      // undoing it on the next pass. A main that moves carries its boxes along
+      // by the same number, untouched.
       units: settleRiders(
-        st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
+        st.units.map((u) => {
+          if (u.id !== unitId) return u;
+          const moved = { ...u, position: { ...u.position, x_mm: x } };
+          const type = getUnitType(u.type);
+          if (!type.ridesOn) return moved;
+          const host = st.units.find((h) => h.id === u.params?.rides_on) || null;
+          if (!host) return moved;
+          return {
+            ...moved,
+            params: {
+              ...moved.params,
+              rides_offset_mm: Math.max(0, x - (Number(host.position?.x_mm) || 0)),
+            },
+          };
+        }),
         getCabinetProfile(),
       ),
     }));

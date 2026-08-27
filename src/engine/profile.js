@@ -816,6 +816,13 @@ export const DEFAULT_CABINET_PROFILE = {
     topBox: {
       defaults: { width: 600, height: 500, depth: 568 },
       minHeight: 200,
+      // ─── TURN 53 (CLAUDE.md F5): …AND A MINIMUM WIDTH ─────────────────────
+      // One main may carry SEVERAL boxes side by side now, so "is there room
+      // for another one" is a question with a number behind it. The same
+      // workshop judgement as `minHeight` one line up — under 200 the doors are
+      // not worth hanging — asked of the other axis, and a DEFAULT: a shop that
+      // disagrees changes one line.
+      minWidth: 200,
     },
 
     drawers: {

@@ -195,7 +195,21 @@ test('F7 — an ordinary wardrobe is never a rider and never a fault', () => {
   assert.equal(riderIsOrphaned(null, units()), false);
   // …and a top box may not ride another top box.
   const a = useProjectStore.getState().addUnit('WARDROBE_TOP');
+  assert.ok(a.id, a.error || '');
+  assert.notEqual(byId(a.id).params.rides_on, a.id, 'it does not ride itself');
+  // ─── AMENDED BY T53 · F5, AND THE AMENDMENT IS NAMED ────────────────────
+  //
+  // T36 added a SECOND box here and asserted only that the two did not ride
+  // each other. They did not — they stood EXACTLY INSIDE each other, on the
+  // same main at the same x, which is the fault the owner reported on 27.08:
+  // *"top box łamią zasadę — nakłada się jeden na drugi, a nie może."*
+  //
+  // A main 600 wide carrying a 600 box has no room for another, so the second
+  // add REFUSES now and says so — the same answer a cabinet add against a wall
+  // gives. The claim T36 was making is kept below and made stronger: whatever
+  // happens, a box never rides a box.
   const b = useProjectStore.getState().addUnit('WARDROBE_TOP');
-  assert.notEqual(byId(a.id).params.rides_on, byId(b.id).id);
-  assert.notEqual(byId(b.id).params.rides_on, byId(a.id).id);
+  assert.equal(b.id, null, 'no room on the only main — refused, not stacked');
+  assert.match(b.error, /no room for another top box/i);
+  assert.equal(units().filter((u) => u.type === 'WARDROBE_TOP').length, 1);
 });

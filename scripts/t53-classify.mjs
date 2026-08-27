@@ -60,6 +60,7 @@ import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
 import { buildWallRuns } from '../src/engine/runs.js';
 import { shareOutPlan, widthFixed } from '../src/engine/shareOut.js';
+import { topNeighbourDemand } from '../src/engine/doors.js';
 
 // `--dump` has to run on the BASE as well as on the branch — that is the whole
 // comparison — so anything this turn INTRODUCED is imported lazily inside the
@@ -305,6 +306,45 @@ PROBES.f4 = () => {
     verdict: [
       'CLEAN — not one of the six has a bevelled side. And under a rake that falls RIGHT, both blanks carry their high point on the LEFT: toward the peak.',
       'NOT CLEAN — a golden grew a bevel, or a blank’s high point faces the room. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F5 — TOP BOXES. Everything tonight moves is a RIDER — `WARDROBE_TOP` — and
+ * no golden is one, carries one, or is on a wall where one could stand. The
+ * `ridden_by` stamp is written by the STORE (`settleRiders`), which
+ * `computeCabinet` never meets; the only reader inside the engine is
+ * `doors.js topNeighbourDemand`, and it reads a param no default config has.
+ */
+PROBES.f5 = () => {
+  const rows = goldens().map(({ cfg, params }) => ({
+    id: cfg.id,
+    cells: [
+      String(Boolean(params.rides_on)),
+      params.ridden_by == null ? '(none)' : JSON.stringify(params.ridden_by),
+      params.rides_offset_mm == null ? '(none)' : String(params.rides_offset_mm),
+    ],
+    ok: !params.rides_on && params.ridden_by == null && params.rides_offset_mm == null,
+  }));
+  // …and the door law the stamp drives, asked both ways of the very function
+  // that reads it, so the gate is shown to be a gate rather than a dead branch:
+  // a cabinet with a box above gives up the door gap, one with nothing does not.
+  const withBox = topNeighbourDemand({ ridden_by: ['u_box'] }, P);
+  const without = topNeighbourDemand({}, P);
+  rows.push({
+    id: 'the stamp, asked',
+    cells: ['false', '["u_box"]', `${without} \u2192 ${withBox}`],
+    ok: withBox > 0 && without === 0,
+  });
+  return {
+    head: 'F5 · TOP BOXES — a rider is a unit type no golden is or carries',
+    columns: ['rides_on', 'ridden_by', 'offset / gap'],
+    rows,
+    note: 'The stamp is written by the store; computeCabinet only ever reads it.',
+    verdict: [
+      'CLEAN — not one of the six is a rider or carries one, so the list, the offset and the clamp reach none of them. And the stamp still bites: a cabinet with a box above gives up the door gap.',
+      'NOT CLEAN — a golden carries a rider mark. STOP (iron rule 2).',
     ],
   };
 };

@@ -55,5 +55,20 @@ The fix itself is in 3d/panelSolid.js — a renderer computeCabinet has never ca
 
 CLEAN — not one of the six has a bevelled side. And under a rake that falls RIGHT, both blanks carry their high point on the LEFT: toward the peak.
 
+F5 · TOP BOXES — a rider is a unit type no golden is or carries
+
+subject           rides_on  ridden_by  offset / gap  
+WARDROBE          false     (none)     (none)        
+BUD               false     (none)     (none)        
+WUD               false     (none)     (none)        
+BUDR              false     (none)     (none)        
+BUDR4             false     (none)     (none)        
+PANTRY            false     (none)     (none)        
+the stamp, asked  false     ["u_box"]  0 → 3         
+
+The stamp is written by the store; computeCabinet only ever reads it.
+
+CLEAN — not one of the six is a rider or carries one, so the list, the offset and the clamp reach none of them. And the stamp still bites: a cabinet with a box above gives up the door gap.
+
 ────────────────────────────────────────────────────────────────────────
-4 probe(s), every one CLEAN — no feature of tonight reaches a golden.
+5 probe(s), every one CLEAN — no feature of tonight reaches a golden.

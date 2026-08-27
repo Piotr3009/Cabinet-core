@@ -400,6 +400,58 @@ PROBES.f6 = () => {
   };
 };
 
+/**
+ * F7 — THE SHOE FRONT. Everything tonight moves belongs to a `shoe_box` ITEM,
+ * and no default config carries one — a shoe box is asked for, like every other
+ * interior fitting (turn 4's law). Per config: shoe items, SHOE panels. Then
+ * the engine asked for one, so the three corrections are shown to have
+ * happened.
+ */
+PROBES.f7 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const items = (params.sections || []).flatMap((s) => s?.items || []);
+    const shoes = items.filter((i) => i?.kind === 'shoe_box').length;
+    const parts = (result.panels || []).filter((p) => p.meta?.shoe_role).length;
+    return {
+      id: cfg.id,
+      cells: [String(shoes), String(parts), '(none)'],
+      ok: shoes === 0 && parts === 0,
+    };
+  });
+  const asked = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    width: 900,
+    doors: true,
+    sections: [{
+      width_mm: 900,
+      items: [
+        { id: 'd1', kind: 'drawer', index: 1, height_mm: 200 },
+        { id: 'sb1', kind: 'shoe_box', variant: 'D', dividers: 1 },
+      ],
+    }],
+  }, P);
+  const face = (asked.panels || []).find((p) => p.meta?.shoe_role === 'front');
+  const front = (asked.panels || []).find((p) => p.part === 'DRAWER-FRONT');
+  const gap = face && front ? face.box.y - (front.box.y + front.box.h) : null;
+  rows.push({
+    id: 'asked for one',
+    cells: ['1', String((asked.panels || []).filter((p) => p.meta?.shoe_role).length),
+      `z ${face?.box?.z} vs ${front?.box?.z}, gap ${gap}`],
+    ok: Boolean(face && front) && face.box.z === front.box.z
+      && gap === P.wardrobe.drawers.gap,
+  });
+  return {
+    head: 'F7 · THE SHOE FRONT — it belongs to an item no default config carries',
+    columns: ['shoe items', 'shoe parts', 'the face, asked'],
+    rows,
+    verdict: [
+      'CLEAN — not one of the six carries a shoe box, so the plane, the floor and the gap reach none of them. And the law bites: the face is coplanar with the drawer front and keeps the stack’s own gap.',
+      'NOT CLEAN — a golden grew a shoe part, or the face is not on the drawer front’s plane. STOP (iron rule 2).',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

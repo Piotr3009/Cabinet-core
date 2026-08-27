@@ -1289,7 +1289,9 @@ export function shelfMaterial(item) {
  * 80 high, all vertical — and only the BOTTOM inside is sloped, which is the
  * owner's own reading, confirmed word for word.
  */
-function shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }) {
+function shoeBoxBoxFor(piece, plan, {
+  boxX, boxZ, G, frontPlaneZ = null, faceY = null,
+}) {
   const y = plan.posZ;
   const wallH = piece.h;
   const t = piece.thickness;
@@ -1371,10 +1373,32 @@ function shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }) {
       // − 20) lands 10 in from BUL and leaves 10 to BUR, overhanging the box
       // it hangs on and covering the batten-and-runner zone behind it.
       const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
+      // ─── TURN 53 (CLAUDE.md F7): THE DRAWER-FRONT LAW, IN THREE NUMBERS ──
+      //
+      // *"szuflada lub półka na buty powinny mieć te same zasady co szuflady …
+      // nie licuje się z frontem, nie licuje się z innymi szufladami, nie wiem
+      // dlaczego front zachodzi na szufladę na dole."*
+      //
+      //   THE PLANE — `frontPlaneZ` is the very z the DRAWER-FRONT panels of
+      //   this carcass came out on, read rather than restated. The kit's own
+      //   `SHOE_SETBACK_X` datum stays where it belongs: on the BOX, whose
+      //   runners really do mount 3 mm behind the front. It was never the
+      //   FACE's datum, and using it there is what stood the face 47 mm proud.
+      //
+      //   THE GAP — the face keeps the drawer stack's own gap under it, so it
+      //   reads as the next front up rather than as a lid resting on the one
+      //   below. The double −G above is what made it an overlap; this is what
+      //   makes it a JOINT.
+      //
+      //   VERTICAL — and it always was: the tilt travels on the shoe box's
+      //   BOTTOM (`meta.tilt_deg`), which is the shelf the shoes stand on, and
+      //   has never been on this piece. `frontH` (the kit's 120) and the T37
+      //   width law are untouched, as CLAUDE.md instructs.
+      const faceZ = Number.isFinite(Number(frontPlaneZ)) ? Number(frontPlaneZ) : boxZ + depth;
       return {
         x: bayFrom + (plan.openingW - piece.w) / 2,
-        y,
-        z: boxZ + depth,
+        y: Number.isFinite(Number(faceY)) ? Number(faceY) : y,
+        z: faceZ,
         w: piece.w,
         h: wallH,
         d: t,
@@ -4340,12 +4364,49 @@ export function computeCabinet(params, profileOverride) {
       // POSITION — his field, "Height from bay floor", default 0 (on the
       // floor), *"or directly above the drawer stack when the bay has
       // drawers"* ("pozycja jak proponujesz"). A number he has typed wins.
-      const stackTop = hasDrawers && spec.zone == null ? partitionY - G : null;
+      // T53 (F7): the TOP FACE of the board that closes the stack — see below.
+      const stackTop = hasDrawers && spec.zone == null ? partitionY + G : null;
       const colStack = spec.zone != null
         ? columnDrawerSets.find((s) => s.zone === spec.zone)
         : null;
-      const above = colStack ? colStack.partY - G : stackTop;
-      const posZ = spec.pos_mm ?? (above != null && above > 0 ? roundTo(above - G, 0) : 0);
+      // ─── TURN 53 (CLAUDE.md F7): THE BOX STANDS ON THE BOARD, NOT IN IT ────
+      //
+      // The owner, 27.08: *"nie wiem dlaczego front zachodzi na szufladę na
+      // dole."*
+      //
+      // MEASURED on his own case — a 900 wardrobe, two 200 drawers, a shoe box
+      // above — before anything was changed:
+      //
+      //     the drawer stack's PARTITION occupies y 426 … 444
+      //     the top drawer FRONT finishes at              421
+      //     the shoe box's floor was written at           390
+      //
+      // 390 is not "directly above the drawer stack": it is 36 mm INSIDE it,
+      // through the partition board and past the front below. The line read
+      // `partY − G` and then took a SECOND board off it — the double −G — and
+      // neither subtraction was ever right, because the box does not stand at
+      // the partition's underside or at its middle. IT STANDS ON IT: `partY +
+      // G`, the top face of the board, which is where a joiner would put it and
+      // the only y at which no two boards share a millimetre (the house overlap
+      // law, 27.08).
+      const above = colStack ? colStack.partY + G : stackTop;
+      const posZ = spec.pos_mm ?? (above != null && above > 0 ? roundTo(above, 0) : 0);
+      // ─── …AND THE FACE IS PLACED BY THE FRONT LAW, NOT BY THE BOX ─────────
+      //
+      // *"nie licuje się z frontem, nie licuje się z innymi szufladami."*
+      //
+      // A drawer's BOX and its FRONT are two different placements, and so are
+      // these: the box stands on the board above the stack; the FACE hangs
+      // where the next front up hangs — the drawer front's own top edge plus
+      // the drawer stack's own gap. Read off the panels already emitted, so
+      // there is no second formula to drift.
+      const frontBelow = panels
+        .filter((p) => p.part === 'DRAWER-FRONT' && p.box
+          && p.box.y + p.box.h <= posZ + 1e-6)
+        .reduce((m, p) => Math.max(m, p.box.y + p.box.h), Number.NEGATIVE_INFINITY);
+      const faceY = Number.isFinite(frontBelow)
+        ? roundTo(frontBelow + DR.gap, 4)
+        : roundTo(posZ + DR.gap, 4);
       const plan = shoeBoxPlan({
         openingW: opening,
         depth,
@@ -4366,9 +4427,32 @@ export function computeCabinet(params, profileOverride) {
         zone: spec.zone,
         bayFrom: from,
         plan,
+        // T53 (F7): where the FACE hangs, decided by the front law rather than
+        // by the box it is screwed to. See the block above.
+        faceY,
       });
     }
   }
+  // ─── TURN 53 (CLAUDE.md F7): THE FRONT PLANE, READ NOT RESTATED ──────────
+  //
+  // The owner, 27.08: *"szuflada lub półka na buty powinny mieć te same zasady
+  // co szuflady … nie licuje się z frontem, nie licuje się z innymi
+  // szufladami."*
+  //
+  // The shoe face stood on its OWN datum — `D − frontT − SHOE_SETBACK_X`, the
+  // kit's 3 mm — while every drawer front in the same carcass stands at
+  // `D − setback − frontT`. On the owner's own 568-deep wardrobe that is 540
+  // against 493: the face stood 47 mm proud of the plane it is meant to be
+  // flush with.
+  //
+  // So it is READ off the drawer front rather than restated: whatever plane
+  // this cabinet's DRAWER-FRONT panels came out on is the plane the shoe face
+  // lands on, and a cabinet with no drawers falls back to the same one formula
+  // those panels are built from. One plane, one source, and no way for the two
+  // to drift apart again.
+  const drawerFrontPlaneZ = panels.find((p) => p.part === 'DRAWER-FRONT' && p.box)?.box?.z
+    ?? (D - DR.setback - frontT);
+
   // The pieces themselves, and the carcass sides' drilling. One pass, so the
   // panel ids and the drill panel ids cannot disagree.
   for (const [n, entry] of shoeBoxPlans.entries()) {
@@ -4422,7 +4506,9 @@ export function computeCabinet(params, profileOverride) {
         thickness: piece.thickness,
         edgeCode: codesFor(piece.role),
         edgeLen: metres(piece.role === 'front' ? 2 * piece.w + 2 * piece.h : piece.w),
-        box: shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }),
+        box: shoeBoxBoxFor(piece, plan, {
+          boxX, boxZ, G, frontPlaneZ: drawerFrontPlaneZ, faceY: entry.faceY,
+        }),
         cnc: {
           ...geom,
           pockets: piece.pockets,

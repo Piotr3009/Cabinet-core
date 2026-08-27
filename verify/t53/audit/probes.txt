@@ -85,5 +85,18 @@ The split needs a run element’s `spans`, which only the store writes.
 
 CLEAN — not one of the six cuts a plinth or an infill at all, so the split reaches none of them. And the law bites: 3200 over 650s becomes 1950 + 1250, his own two numbers.
 
+F7 · THE SHOE FRONT — it belongs to an item no default config carries
+
+subject        shoe items  shoe parts  the face, asked  
+WARDROBE       0           0           (none)           
+BUD            0           0           (none)           
+WUD            0           0           (none)           
+BUDR           0           0           (none)           
+BUDR4          0           0           (none)           
+PANTRY         0           0           (none)           
+asked for one  1           9           z 493 vs 493, gap 3
+
+CLEAN — not one of the six carries a shoe box, so the plane, the floor and the gap reach none of them. And the law bites: the face is coplanar with the drawer front and keeps the stack’s own gap.
+
 ────────────────────────────────────────────────────────────────────────
-6 probe(s), every one CLEAN — no feature of tonight reaches a golden.
+7 probe(s), every one CLEAN — no feature of tonight reaches a golden.

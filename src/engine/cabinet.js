@@ -1589,7 +1589,48 @@ export function computeCabinet(params, profileOverride) {
   // laid along, so the boards and the outlines cannot disagree: both are this
   // one walk. Null with no cut, and flat at H where the ceiling clears the
   // cabinet, which is every cabinet before tonight.
-  const roofPts = cutActive ? roofLinePts(cutLine, H) : null;
+  // ─── TURN 54 (CLAUDE.md F2): THE PEAK — NO THIRD PIECE ────────────────────
+  //
+  // The owner, screenshot in hand: *"lewy czyli dolny skos działa super, górny
+  // znowu jakieś małe kawałki — po prostu przedłuż wieniec i wywal jakiś mały
+  // kawałek z BUR. tylko na BUR, nie na BUL."* Corrected on the mockup:
+  // *"wieniec zielony ok i do wieńca dochodzi BUR i tyle, i ucięty pod skosem
+  // dokładnie tak samo jak BUL."*
+  //
+  // Where the cut line crosses the cabinet's own height INSIDE the peak-side
+  // side's G, `roofLinePts`' cap at H used to end the raked board at the
+  // crossing and emit a capped stub NARROWER THAN ITS OWN THICKNESS between
+  // the crossing and the outer face — the owner's "mały kawałek", a board no
+  // saw can make. The rule (SKY:roofPeakPts, LISP first): such a crossing is
+  // DROPPED — the raked segment runs on its own rake to the side's OUTER
+  // face, and the side under it is bevelled at β clean across its thickness,
+  // exactly as the fall side always was. A capped FLAT stretch wider than G
+  // is real furniture and stays, byte for byte.
+  const roofPeakMerge = (pts) => {
+    if (!pts || pts.length < 3) return pts;
+    const out = pts.map((q) => ({ x: q.x, y: q.y }));
+    const flat = (a, b) => Math.abs(a.y - H) < 1e-6 && Math.abs(b.y - H) < 1e-6;
+    const n = out.length;
+    // The RIGHT peak: last segment a capped flat stub narrower than G.
+    if (flat(out[n - 2], out[n - 1]) && out[n - 1].x - out[n - 2].x <= G + 1e-6
+      && out[n - 3].y < H - 1e-6) {
+      const a = out[n - 3];
+      const b = out[n - 2];
+      const m = (b.y - a.y) / (b.x - a.x);
+      out.splice(n - 2, 2, { x: out[n - 1].x, y: roundTo(b.y + m * (out[n - 1].x - b.x), 4) });
+      return out;
+    }
+    // …and the LEFT peak, mirrored.
+    if (flat(out[0], out[1]) && out[1].x - out[0].x <= G + 1e-6 && out[2].y < H - 1e-6) {
+      const b = out[1];
+      const c = out[2];
+      const m = (c.y - b.y) / (c.x - b.x);
+      out.splice(0, 2, { x: out[0].x, y: roundTo(b.y + m * (out[0].x - b.x), 4) });
+      return out;
+    }
+    return out;
+  };
+  const roofPts = cutActive ? roofPeakMerge(roofLinePts(cutLine, H)) : null;
   const roofLine = roofPts ? { w: W, h: H, pts: roofPts } : null;
   /** The segments of the roof line over a stretch of the width, with angles. */
   const anglesOver = (a, b) => (roofLine ? slopeSegments(roofLine)
@@ -1664,7 +1705,13 @@ export function computeCabinet(params, profileOverride) {
   // thickness (the board is 18 perpendicular and does not thicken: *"wieniec
   // nie moze grubiec"*). The footprint differs segment by segment, so the peak
   // is taken per board rather than off one number.
-  const roofList = roofLine ? roofBoards(cutLine, { h: H, G }) : null;
+  // T54-F2: the boards are cut from the MERGED roof line (`roofPts`), never
+  // re-derived from the raw cut — `roofBoards` would re-cap at H and put the
+  // peak stub back. The cap has already been taken (and the peak merged), so
+  // the ceiling handed here is the line itself, uncapped.
+  const roofList = roofLine
+    ? roofBoards({ w: W, h: H, pts: roofPts }, { h: Number.MAX_SAFE_INTEGER, G })
+    : null;
   // The board's underside over a stretch of the width, at its extremes. `pick`
   // is Math.max for the BLANK (the peak the side is cut from) and Math.min for
   // the SHORT FACE (what the finished board measures). The footprint is taken

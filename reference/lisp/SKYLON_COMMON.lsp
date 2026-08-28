@@ -1944,6 +1944,52 @@
       (setq out (cons (list (nth 2 p) (nth 3 p)) out))
       (reverse out))))
 
+;;;----------------------------------------
+;;; T54 - THE PEAK: NO THIRD PIECE  (28.08.2026, F2)
+;;;----------------------------------------
+;;; The owner, screenshot in hand: "lewy czyli dolny skos dziala super, gorny
+;;; znowu jakies male kawalki - po prostu przedluz wieniec i wywal jakis maly
+;;; kawalek z BUR. tylko na BUR, nie na BUL."  Corrected on the mockup:
+;;; "wieniec zielony ok i do wienca dochodzi BUR i tyle, i uciety pod skosem
+;;; dokladnie tak samo jak BUL."
+;;;
+;;; Where the cut line crosses the cabinet's own height INSIDE the peak-side
+;;; side's G, the cap at H (SKY:slopeTopPts) used to end the raked roof at the
+;;; crossing and leave a capped stub NARROWER THAN ITS OWN THICKNESS between
+;;; the crossing and the outer face - a board no saw can make. The rule: that
+;;; crossing is DROPPED - the raked segment runs on its own rake to the
+;;; side's OUTER face and the side is bevelled at beta clean across its
+;;; thickness, the identical treatment the fall side always had. A capped
+;;; FLAT stretch wider than G is real furniture and stays.
+(defun SKY:roofPeakPts (szer wys pts G / out n a b c m)
+  (setq out (SKY:slopeTopPts szer wys pts))
+  (setq n (length out))
+  (if (>= n 3)
+    (progn
+      ;; the RIGHT peak: last segment flat at wys, narrower than G
+      (setq a (nth (- n 3) out) b (nth (- n 2) out) c (nth (- n 1) out))
+      (if (and (equal (cadr b) wys 1e-6) (equal (cadr c) wys 1e-6)
+               (<= (- (car c) (car b)) (+ G 1e-6))
+               (< (cadr a) (- wys 1e-6)))
+        (progn
+          (setq m (/ (- (cadr b) (cadr a)) (- (car b) (car a))))
+          (setq out (append
+                      (reverse (cddr (reverse out)))
+                      (list (list (car c) (+ (cadr b) (* m (- (car c) (car b))))))))))
+      ;; the LEFT peak, mirrored
+      (setq n (length out))
+      (if (>= n 3)
+        (progn
+          (setq a (nth 0 out) b (nth 1 out) c (nth 2 out))
+          (if (and (equal (cadr a) wys 1e-6) (equal (cadr b) wys 1e-6)
+                   (<= (- (car b) (car a)) (+ G 1e-6))
+                   (< (cadr c) (- wys 1e-6)))
+            (progn
+              (setq m (/ (- (cadr c) (cadr b)) (- (car c) (car b))))
+              (setq out (cons (list (car a) (+ (cadr b) (* m (- (car a) (car b)))))
+                              (cddr out)))))))))
+  out)
+
 ;;; The trio's pivots, stated as functions so the JS mirrors arithmetic and
 ;;; not prose. x_lo is the segment's own low end on the CEILING.
 (defun SKY:trioFacePivot (pts x_lo)

@@ -1,0 +1,121 @@
+════════ PROBE f1 ════════
+F1 · THE TRIO — three pieces, three lines, gated on a slope_cut no golden carries
+
+subject          slope_cut   cut panels  tilted panels  
+WARDROBE         (none)      0           0              
+BUD              (none)      0           0              
+WUD              (none)      0           0              
+BUDR             (none)      0           0              
+BUDR4            (none)      0           0              
+PANTRY           (none)      0           0              
+the audit scene  YES         trio emittedworst residual 0.0006 mm
+
+The residual is the trio law measured through the scene's own rotation: FACE top → ceiling, FACE bottom and TOP top → cutReach, SHELF top → the roof's underside.
+
+CLEAN — not one of the six is under a rake, and the audit scene lands the trio on its three lines to a hundredth.
+
+exit=0
+
+════════ PROBE f2 ════════
+F2 · THE PEAK — no third piece, the rake runs to the outer face, the side is bevelled
+
+subject         slope_cut   TOP boards  cut panels  
+WARDROBE        (none)      1           0           
+BUD             (none)      1           0           
+WUD             (none)      1           0           
+BUDR            (none)      1           0           
+BUDR4           (none)      1           0           
+PANTRY          (none)      1           0           
+peak RIGHT      no stub     roof to the outer faceside bevelled
+peak LEFT       no stub     roof to the outer faceside bevelled
+
+CLEAN — no golden stands under a rake, and at both peaks the stub is dead, the roof reaches the outer face and the side is cut like BUL.
+
+exit=0
+
+════════ PROBE f3 ════════
+F3 · THE DOOR LEAF — cut only under a slope_cut, and no golden carries one
+
+subject         leaves      cut (meta)  cut (sheet)  
+WARDROBE        1           0           0            
+BUD             1           0           0            
+WUD             1           0           0            
+BUDR            3           0           0            
+BUDR4           4           0           0            
+PANTRY          1           0           0            
+asked for one   cut         worst overhang 0.0000 mmflat leaf byte-identical
+
+CLEAN — no golden leaf is cut; a leaf under the rake keeps every vertex under its line; a leaf under a flat stretch does not move by a byte.
+
+exit=0
+
+════════ PROBE f4 ════════
+F4 · THE WATCH DRAWER — 40 + 9 + 2 + 15 + 18 + 36 = 120, and no golden asks
+
+subject         asking items  watch parts  assembly key  
+WARDROBE        0             0            (none)        
+BUD             0             0            (none)        
+WUD             0             0            (none)        
+BUDR            0             0            (none)        
+BUDR4           0             0            (none)        
+PANTRY          0             0            (none)        
+the derivation  derives 120   120 fits     119 refuses   
+
+The click wiring (scene + menu) is UI: it opens a modal and cannot reach computeCabinet.
+
+CLEAN — not one of the six carries an insert, the derivation answers 120, and 119 refuses.
+
+exit=0
+
+════════ PROBE f5 ════════
+F5 · LED ICONS + SCENE LIGHT — UI, and the export rig never hears of it
+
+subject         sceneLight key  lighting key  
+WARDROBE        (none)          (none)        
+BUD             (none)          (none)        
+WUD             (none)          (none)        
+BUDR            (none)          (none)        
+BUDR4           (none)          (none)        
+PANTRY          (none)          (none)        
+the export rig  6 stamps        none reads the slider
+the icons       gated on the panelhelper — no render sees it
+
+CLEAN — no golden carries a lighting key, no export stamp reads the slider, and the icons live behind the panel gate as helpers.
+
+exit=0
+
+════════ PROBE f6 ════════
+F6 · THE DIMENSION TIMER — 30 000 ms of quiet flips the existing toggle, off only
+
+subject         idle ms     the clock   
+WARDROBE        no engine key—           
+BUD             no engine key—           
+WUD             no engine key—           
+BUDR            no engine key—           
+BUDR4           no engine key—           
+PANTRY          no engine key—           
+the clock       30000 ms    cancellable, never fires early
+
+lib/dimensionSleep.js imports nothing from the engine; the timer never turns dimensions ON.
+
+CLEAN — the profile says 30 000, the clock cancels clean, and the only write is the hide.
+
+exit=0
+
+════════ PROBE f7 ════════
+F7 · THE SHOE DRAWER — a standard drawer with an 80 side, and no golden carries one
+
+subject         shoe items  old-world boards  
+WARDROBE        0           0                 
+BUD             0           0                 
+WUD             0           0                 
+BUDR            0           0                 
+BUDR4           0           0                 
+PANTRY          0           0                 
+the proof       board for board, the same cutside 80 (law 80)  
+the graves      13 kits (derived)KIT_SHOE_BOX buried
+
+CLEAN — no golden carries a shoe, the shoe drawer equals the plain drawer board for board, and the old world is buried (13 kits, derived).
+
+exit=0
+

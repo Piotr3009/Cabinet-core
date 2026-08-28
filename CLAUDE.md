@@ -1,9 +1,10 @@
 # CLAUDE.md — TURN 54 · the slope, DESIGNED TO THE MILLIMETRE this time
 
 Nightly run. Full autonomy, zero questions, zero stops. Skip-and-note, never
-halt; PR open before morning regardless. Sacrifice from **F6 downward**;
-**F1 and F2 do not fall.** Branch from `main`. One commit per feature,
-F1 → F6, plus the acceptance walk.
+halt; PR open before morning regardless. Sacrifice from **F8 downward**
+(F8 first, then F7, F6…); **F1 and F2 do not fall.** Branch from `main`.
+One commit per feature, F1 → F8 (F8 ships its MOCKUP commit first), plus the
+acceptance walk.
 
 **Why this spec reads like a drawing office put it out:** the slope family is
 on its SEVENTH pass (T46, T47×2, T48, T50×2, T53×2 + a chat-fix) and the
@@ -15,9 +16,6 @@ in millimetres. **You execute; you do not interpret.** Where these numbers and
 any older comment in the code disagree, THESE NUMBERS WIN and the comment is
 corrected to match.
 
-Out of tonight, into T55 (already agreed with the owner): the Draw-room v2
-product surgery and the shoe-drawer rebuild. Do not touch either.
-
 ---
 
 ## THE IRON RULES
@@ -25,12 +23,15 @@ product surgery and the shoe-drawer rebuild. Do not touch either.
 **1 · ZERO-STOP.** As above.
 
 **2 · BYTE-IDENTITY.** `scripts/t54-classify.mjs` (re-head T53's; derive the
-kit count — the shelf is still **14**, the shoe kit dies in T55 not tonight).
+kit count — the shelf starts at 14 and F7 buries KIT_SHOE_BOX, so the walk
+ends at **13**; derive, never type).
 Six goldens **IDENTICAL, UNNAMED = 0**, three-line proof (base dump with
 `t53-classify.mjs`, head with t54, compare). Expected buckets: **none** — F1,
 F2, F3 cut only under `slope_cut` (no golden carries one); F4 changes a
 watch-insert derivation and the click wiring (no golden carries an insert);
-F5 and F6 are UI visibility/timers. A `--probe` per feature, exit codes.
+F5 and F6 are UI visibility/timers; F7 cuts only where a shoe item exists
+(no golden carries one) and F8 is room UI writing `project.room` (no golden
+meets a room). A `--probe` per feature, exit codes.
 A golden that moves = FINDING, never a bucket.
 
 **3 · LISP IS LAW, FIRST.** F1's trio law and F3's leaf-under-slope law are
@@ -41,10 +42,13 @@ F3 in the kit that owns the door leaf. F4's `WATCH_INSIDE 60 → 40` lands in
 KIT_WATCH_DRAWER.lsp with the trade note amended. Paren: **14 kits, every one
 0/0**, count derived.
 
-**4 · SANCTITY.** ONE narrow licence tonight: **the peak-side patch piece of
-F2** — whatever emission puts a board in the peak band that is not one of the
-five named pieces — dies, and its grave is named in the verdict. Nothing else
-is deleted. `chatfix-2508-slope-tilt.test.js` is AMENDED (it currently holds
+**4 · SANCTITY.** THREE licences tonight, each enumerated below and each
+grave named in the verdict: (1) **F2's peak patch piece**; (2) **F7's old
+shoe world** — `engine/shoeBox.js`, the shoe plan/box case in `cabinet.js`,
+the steps and battens, `reference/lisp/KIT_SHOE_BOX.lsp`; (3) **F8's old
+room-setup UI** — the Rectangle / L-shape / + Box buttons and the old plan
+editor content (the DATA of existing Box elements in saved projects is NOT
+deleted — see F8.2). Nothing outside these three lists is deleted. `chatfix-2508-slope-tilt.test.js` is AMENDED (it currently holds
 the fault green) and names its amendment; amended ≠ deleted.
 
 **5 · THE WALK.** Full suite every commit, never `--silent`, grep not tail.
@@ -298,19 +302,118 @@ wins: **30 000 ms**, a profile/UI constant, veto "60".
 
 ---
 
+## F7 [HIGH] · the shoe becomes a DRAWER — the parallel world dies
+
+Owner, screenshot in hand: *"prosiłem żeby cała szuflada miała logikę
+szuflad, czyli wiercenie, runners etc etc, głębokość etc — tylko wysokość
+miała być mniejsza. usuń stary kod na shoes i zrób z logiką drawers."* That
+sentence is licence (2) and the whole design.
+
+1. **The kill list (licence 2, verbatim):** `engine/shoeBox.js` whole;
+   `shoeBoxPlan` and `shoeBoxBoxFor` and the shoe emission block in
+   `cabinet.js`; the step/batten pieces and their DXF names; the shoe entries
+   in checks that police the dead geometry; `reference/lisp/KIT_SHOE_BOX.lsp`
+   (paren walks 14 → 13, derived). The tilted shoe SHELF (15°, T33) is a
+   DIFFERENT entity and is NOT touched. Old shoe tests are replaced by F7's
+   and each replacement is named in-file.
+2. **The new thing is not new:** a standard drawer stack item with
+   `variant: 'shoe'`, cut by the SAME code path as every drawer — sides,
+   back, bottom, puzzle drilling, runner picked from the Blum manifest by the
+   same NL law, `setback` 50, `frontToSideDelta` 36, the depth law — with
+   exactly ONE dimensional override: **side height = `drawers.shoeSideMm` =
+   80** (his old number; veto "inna wysokość: N"). DECISION TAKEN (veto:
+   "spadek dna zostaje"): the bottom is FLAT and standard — *"cała logika
+   szuflad"* leaves no floor slope and no battens.
+3. **The front obeys the drawer-front law** — plane, stack split, gap,
+   oversize — DECISION TAKEN for the owner's open question (veto: "T37
+   zostaje" restores the 10 mm reveal as a width-only override). The fixed
+   120 face dies with the old world.
+4. **The menu:** the "Shoe box" interior row becomes the shoe drawer —
+   adding this variant into the unit's drawer stack at the clicked zone; no
+   height slider (the 80 is law), everything else exactly the drawer row.
+5. **Migration:** a saved project with old shoe items loads each as a
+   `variant:'shoe'` drawer in the same zone; steps and battens vanish; the
+   Check names the conversion once per unit ("shoe rebuilt as a drawer —
+   review fronts"). A T5x fixture with the old shoe is committed and the
+   loader test proves it.
+6. **Proof, board for board:** build a shoe drawer and a plain drawer of the
+   same width/depth in the same carcass — assert every emitted board, hole
+   pattern, runner id and DXF outline EQUAL except the side height (and the
+   parts that derive from it), field by field, listed in the test. Probe:
+   goldens carry no shoe.
+
+Screens: the owner's stack scene rebuilt — shoe face in the front rhythm,
+box open showing a plain flat drawer at 80; the migrated old project.
+
+---
+
+## F8 [BIG · first sacrifice] · Draw-room v2 — the ONLY door to a room
+
+Owner: *"to nie ma być opcja, tylko miało być rysowanie całego room… stara
+wersja miała być usunięta… miało nas przenieść do modalu rysowania
+profesjonalnego rooms… modal miał być 2 razy większy."* Then: *"box też
+wylatuje"* and *"po wszystkim proszę o możliwość edycji każdej ściany."* And
+the live fault: *"nie pokazuje kierunku rysowania, tylko rysuje na wprost."*
+His veto of T53's decision 7 stands: 2× means the WINDOW.
+
+1. **Mockup first** — commit `verify/t54/f8-mockup.png` before a line of
+   code: the approved chat mockup — big drawing canvas left; right column:
+   Wall length field (with ✕), the direction hint, the WALLS list where every
+   row is `n · direction — length` with an **Elevation…** and an editable
+   length; Room height (mm) moved INTO this modal; **Import DXF plan…**
+   moved in; footer Undo wall / Close / Save room. No Rectangle, no L-shape,
+   no + Box anywhere.
+2. **The removals (licence 3):** the old Room-setup content dies — Rectangle,
+   L-shape, **+ Box creation** and the old plan editor. Every entry point
+   that opened Room setup now opens THIS modal directly; opening with an
+   existing room PRELOADS its corners as a closed path with the walls list
+   live. DECISION TAKEN (veto: "wywal boxy i z projektów"): existing Box
+   ELEMENTS in saved projects keep rendering and colliding — only their
+   creation UI is gone.
+3. **2×, literally:** the one-wall window is 820 px wide → this window is
+   **1640 px**, height to suit (~940), clamped to `min(1640, viewport−32)`
+   with the canvas scaling inside; the drawing canvas itself is ≥ 2× the
+   one-wall canvas AREA at every clamp. Draggable by its bar, opens beside
+   the trigger.
+4. **The pointer fix (the owner's live fault):** the direction is read from
+   `pointermove` on **window** while the modal is open — the same
+   rect-relative arithmetic, so nothing else changes; cursor outside the
+   canvas rect ⇒ crosshair off. ASSERT in the browser walk: with NO click,
+   moving the pointer into all four quadrants around the pen flips the label
+   right / left / away / toward you — the exact symptom, tested.
+5. **Wall editing, the law:** committing a new length L' on wall k keeps
+   every direction: corner[k+1..last] translate by (L'−L)·dir(k); the ring
+   re-closes; a result that self-crosses or drops a wall under 100 mm
+   REFUSES with the message and reverts. On the drawn rectangle this
+   reproduces the old Rectangle behaviour exactly (change wall 1 to 3500 ⇒
+   wall 3 reads 3500, walls 2/4 untouched) — asserted number for number; on
+   a 6-wall L a worked example is asserted in the test.
+6. **Nothing downstream moves:** T53's eleven-stage walk (×2 rooms) re-runs
+   green, plus a twelfth stage — edit a wall, then place, collide, share
+   out, export. Elevation… opens the standard per-wall editor unchanged.
+7. Probe: no golden meets a room; the classify stays 6/0.
+
+Screens: the mockup; the modal open FROM the room entry with an existing
+4-wall room preloaded; the ghost following the cursor in four directions
+(composite); a wall length edited with the room re-closed; the self-cross
+refusal; the 6-wall room furnished and exported.
+
+---
+
 ## OUT OF SCOPE TONIGHT
-T55's surgeries: Draw-room v2 (the only-path rebuild, the removals, the 2×
-window, wall editing, the pointer fix) and the shoe rebuild + KIT_SHOE
-deletion. The lighting RIG (the export rig is asserted, not touched).
-`runGap`. The warehouse. Kesseböhmer. L-shape cabinets.
+The lighting RIG (the export rig is asserted, not touched). `runGap`. The
+warehouse and its SQL. Kesseböhmer. L-shape cabinets. The watch layouts'
+four designs (they stand as shipped).
 
 ## THE MORNING
-`verify/t54/`: screenshots per feature (named), `audit/` (classify, paren,
-f1–f6 probe outputs with the worst residuals printed), `EYE-TEST.md` (the
+`verify/t54/`: screenshots per feature (named), `f8-mockup.png` first,
+`audit/` (classify, paren, f1–f8 probe outputs with the worst residuals
+printed), `EYE-TEST.md` (the
 owner's walk, numbered — start it with the trio close-up), `report.json`,
 `verdict.md` opening with **DECISIONS TAKEN FOR THE OWNER — veto in one
 line** (the 40-is-cut-size ruling · shelf-under-roof · icon clamp · 30 s ·
-anything the night adds), then the iron rules answered, then per feature: his
+shoe: flat bottom, side 80, drawer-front law · boxes stay in old projects ·
+window clamp · anything the night adds), then the iron rules answered, then per feature: his
 words, the law, the numbers measured, findings written not waved. Suite,
-build, classify 6/0, paren 14×0/0, probes — as numbers. PR open, whatever
-fell.
+build, classify 6/0, paren **13**×0/0 (post-F7, derived), probes — as
+numbers. PR open, whatever fell.

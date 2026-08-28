@@ -49,19 +49,20 @@ test('ONE routine, in the SHARED file, called from exactly the two kits', () => 
 });
 
 test('no other kit mentions the slope cut at all', () => {
+  // T54-F7 AMENDED (28.08.2026): KIT_SHOE_BOX.lsp is DELETED under licence 2 —
+  // the shoe is now a standard drawer (variant:'shoe', side 80) and the shelf
+  // walks 14 → 13. It is removed from this census, and the T30 note that its
+  // own `;; === SLOPE LAW ===` (the SHOE RAIL's tilt) was not T46's diagonal
+  // dies with the file. The replacement lives in
+  // test/turn54-f7-the-shoe-drawer.test.js.
   const others = ['KIT_BUD_FULL.lsp', 'KIT_BUDR_FULL.lsp', 'KIT_WUD_FULL.lsp',
-    'KIT_SINK.lsp', 'KIT_FRIDGE.lsp', 'KIT_SHOE_BOX.lsp', 'KIT_LOW_CABINET_FULL.lsp',
+    'KIT_SINK.lsp', 'KIT_FRIDGE.lsp', 'KIT_LOW_CABINET_FULL.lsp',
     'KIT_DOOR_DOUBLE.lsp', 'KIT_SASH_STANDARD.lsp', 'KIT_LED_GROOVE.lsp'];
   for (const name of others) {
     assert.equal(read(name).includes('slopeCut'), false, `${name} is untouched`);
     assert.equal(read(name).includes('SKY:slope'), false, `${name} is untouched`);
     assert.equal(read(name).includes('SLOPE CUT (T46)'), false, `${name} is untouched`);
   }
-  // KIT_SHOE_BOX's own `;; === SLOPE LAW ===` is the SHOE RAIL's tilt and has
-  // been there since T30. It is named here so a future reader does not read
-  // the word `SLOPE` in that file as tonight's work and go looking for a
-  // second diagonal.
-  assert.match(read('KIT_SHOE_BOX.lsp'), /;; === SLOPE LAW ===/);
 });
 
 // ── the SHAPE the routine returns, read out of the LISP itself ──

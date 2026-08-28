@@ -53,9 +53,6 @@ import {
 import {
   resolveRunnerVariant, runnerAskFor, runnerPairSpec, syncRodFor,
 } from './runners.js';
-// Turn 34 (CLAUDE.md F4): the shoe box's geometry, matched to
-// reference/lisp/KIT_SHOE_BOX.lsp. This file cuts what that module answers.
-import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
 // Turn 36 (CLAUDE.md F5): the owner's grain law, per ROLE, in one table.
 import { applyGrainAxis } from './grain.js';
 // T53 (F6): the strip law, born in `reference/lisp/SKYLON_COMMON.lsp`
@@ -661,11 +658,6 @@ function normalizeParams(raw, profile) {
   // placeholder body in the view; ZERO holes ride any of them (rule 3: no
   // published fixing pattern exists).
   const wardrobeKitItems = items.filter((i) => WARDROBE_KIT_KINDS.includes(i?.kind));
-  // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ────────────────────────────────
-  // Its own item kind, per column or full width. Two mounting variants over
-  // one construction, and every number comes from KIT_SHOE_BOX.lsp through
-  // engine/shoeBox.js — this file cuts what that one says.
-  const shoeBoxItems = items.filter((i) => i?.kind === 'shoe_box');
 
   // ─── TURN 27 (CLAUDE.md F2.1): THE APPLIANCE IS WHAT IS INSIDE ───────────
   //
@@ -867,24 +859,6 @@ function normalizeParams(raw, profile) {
       kind: i.kind,
       zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
       pos_mm: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
-    })),
-    // ─── Turn 34 (CLAUDE.md F4): the shoe boxes, normalised ────────────────
-    // `variant` 'F' (fix, screwed from outside) or 'D' (drawer, side runners);
-    // `pos_mm` is the owner's "Height from bay floor" field, default 0 — or
-    // directly above the drawer stack when the bay has drawers, which is
-    // resolved below where the stack's own top is known. `dividers` is 0 or 1
-    // — "jedna lub 0 przegródek — 2 nie mają sensu".
-    shoeBoxes: shoeBoxItems.map((i) => ({
-      id: i.id || null,
-      zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
-      variant: i.variant === 'D' || i.variant === 'drawer' ? 'D' : 'F',
-      dividers: Number(i.dividers) >= 1 ? 1 : 0,
-      // T36 F3: the front is a SWITCH, default ON — anything but an explicit
-      // `false` is the box every project has had since T34.
-      front: i.front !== false,
-      pos_mm: Number.isFinite(Number(i.pos_mm)) && Number(i.pos_mm) >= 0 ? Number(i.pos_mm) : null,
-      depth_mm: Number(i.depth_mm) > 0 ? Number(i.depth_mm) : null,
-      runner_nl: Number(i.runner_nl) > 0 ? Number(i.runner_nl) : null,
     })),
     columnRails: columnRailItems.map((i) => ({
       zone: Math.trunc(Number(i.zone)),
@@ -1284,134 +1258,6 @@ export function shelfMaterial(item) {
   };
 }
 
-/**
- * ─── TURN 34 (CLAUDE.md F4): WHERE ONE SHOE-BOX PIECE STANDS IN THE ROOM ───
- *
- * The 3D box for one piece of the shoe box, in the cabinet's own frame
- * (x across, y up, z front-to-back with z = 0 at the BACK). The kit is drawn
- * flat and this is the assembly: the box is rectangular and LEVEL — walls all
- * 80 high, all vertical — and only the BOTTOM inside is sloped, which is the
- * owner's own reading, confirmed word for word.
- */
-function shoeBoxBoxFor(piece, plan, {
-  boxX, boxZ, G, frontPlaneZ = null, faceY = null,
-}) {
-  const y = plan.posZ;
-  const wallH = piece.h;
-  const t = piece.thickness;
-  const depth = plan.depth;
-  switch (piece.role) {
-    case 'side':
-      return {
-        x: piece.side === 'L' ? boxX : boxX + plan.boxW - t,
-        y,
-        z: boxZ,
-        w: t,
-        h: wallH,
-        d: depth,
-      };
-    case 'back':
-      return {
-        x: boxX + G, y, z: boxZ, w: plan.innerW, h: wallH, d: t,
-      };
-    case 'boxFront':
-      return {
-        x: boxX + G, y, z: boxZ + depth - t, w: plan.innerW, h: wallH, d: t,
-      };
-    case 'bottom':
-      // Seated 6 mm into every wall; drawn at the box floor, and the SLOPE
-      // itself travels on the piece (`meta.shoe_slope`) for the view to tilt.
-      return {
-        x: boxX + G - plan.slope.grooveDepth,
-        y,
-        z: boxZ + G - plan.slope.grooveDepth,
-        w: piece.w,
-        h: t,
-        d: piece.h,
-      };
-    case 'divider':
-      // ACROSS the width — "od lewej do prawej, jak będą 2 rzędy butów" —
-      // standing on the slope at mid-run.
-      return {
-        x: boxX + G,
-        y: y + (piece.seat?.heightMm || 0),
-        z: boxZ + G + (piece.seat?.atRunMm || 0),
-        w: plan.innerW,
-        h: wallH,
-        d: t,
-      };
-    case 'batten': {
-      // CHAT-FIX 16.08 (owner): the 30 × 70 batten per hinged side, along the
-      // box — solid in the infill zone, so its OUTER face touches the bay
-      // side and its INNER face lands exactly 30 in, where the runner mounts.
-      //
-      // ─── T37-F6, 17.08.2026: IT STEPS BACK ────────────────────────────────
-      // *"cofnij o około 30 mm do tyłu (skróć) ten klocek"*. `d` was `depth`
-      // (the box's whole depth) until this date; it is now the batten's OWN
-      // length, which `shoeBox.js` has already shortened by 30. `z` stays
-      // `boxZ` — the box's back — so the 30 mm it gives up is the 30 nearest
-      // the room, which is the "do tyłu" he asked for and the room the door's
-      // arc now has. Everything else about the board is untouched.
-      const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
-      return {
-        x: piece.side === 'L' ? bayFrom : bayFrom + plan.openingW - t,
-        y,
-        z: boxZ,
-        w: t,
-        h: piece.h,
-        d: piece.w,
-      };
-    }
-    case 'front': {
-      // Mounted from INSIDE — nothing visible on the face — and standing
-      // proud of the box front by its own thickness.
-      //
-      // ─── T37-F6, 17.08.2026: CENTRED IN THE BAY, WHATEVER ITS WIDTH ───────
-      // This used to read "the FIX face sits at the bay's left edge, the
-      // DRAWER face sits at the box's left edge", which was the same sentence
-      // twice while the drawer face WAS the box's width. It is not any more —
-      // *"rozszerz front szuflady, tak żeby zostało po prawej i po lewej od
-      // BUR i BUL około 10 mm"* — so the law is stated once, as what it always
-      // physically was: the face is CENTRED IN THE BAY OPENING. FIX (face =
-      // opening) lands at `bayFrom` exactly as before; DRAWER (face = opening
-      // − 20) lands 10 in from BUL and leaves 10 to BUR, overhanging the box
-      // it hangs on and covering the batten-and-runner zone behind it.
-      const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
-      // ─── TURN 53 (CLAUDE.md F7): THE DRAWER-FRONT LAW, IN THREE NUMBERS ──
-      //
-      // *"szuflada lub półka na buty powinny mieć te same zasady co szuflady …
-      // nie licuje się z frontem, nie licuje się z innymi szufladami, nie wiem
-      // dlaczego front zachodzi na szufladę na dole."*
-      //
-      //   THE PLANE — `frontPlaneZ` is the very z the DRAWER-FRONT panels of
-      //   this carcass came out on, read rather than restated. The kit's own
-      //   `SHOE_SETBACK_X` datum stays where it belongs: on the BOX, whose
-      //   runners really do mount 3 mm behind the front. It was never the
-      //   FACE's datum, and using it there is what stood the face 47 mm proud.
-      //
-      //   THE GAP — the face keeps the drawer stack's own gap under it, so it
-      //   reads as the next front up rather than as a lid resting on the one
-      //   below. The double −G above is what made it an overlap; this is what
-      //   makes it a JOINT.
-      //
-      //   VERTICAL — and it always was: the tilt travels on the shoe box's
-      //   BOTTOM (`meta.tilt_deg`), which is the shelf the shoes stand on, and
-      //   has never been on this piece. `frontH` (the kit's 120) and the T37
-      //   width law are untouched, as CLAUDE.md instructs.
-      const faceZ = Number.isFinite(Number(frontPlaneZ)) ? Number(frontPlaneZ) : boxZ + depth;
-      return {
-        x: bayFrom + (plan.openingW - piece.w) / 2,
-        y: Number.isFinite(Number(faceY)) ? Number(faceY) : y,
-        z: faceZ,
-        w: piece.w,
-        h: wallH,
-        d: t,
-      };
-    }
-    default:
-      return { x: boxX, y, z: boxZ, w: piece.w, h: wallH, d: t };
-  }
-}
 
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
   return {
@@ -2164,8 +2010,18 @@ export function computeCabinet(params, profileOverride) {
       const ceilingHere = i + 1 < numDrawers
         ? G + acc                        // the next drawer's own base
         : (partitionY > 0 ? partitionY : H - (hasTopPanel ? G : 0));
+      // ─── TURN 54 (CLAUDE.md F7): THE SHOE DRAWER'S ONE OVERRIDE ──────────
+      // The owner: *"prosiłem żeby cała szuflada miała logikę szuflad …
+      // tylko wysokość miała być mniejsza."* A `variant: 'shoe'` drawer is
+      // cut by THIS code path — sides, back, bottom, drilling, runner — with
+      // exactly ONE dimensional override: its side height is the law's own
+      // `drawers.shoeSideMm` (his old 80; veto "inna wysokość: N"), never
+      // the front-minus-delta arithmetic. Everything that derives from the
+      // side derives from the 80.
       const resolved = resolveBoxSide({
-        wanted: drawerHeights[i] - DR.frontToSideDelta,
+        wanted: cfg.drawerItems[i]?.variant === 'shoe'
+          ? (Number(DR.shoeSideMm) || 80)
+          : drawerHeights[i] - DR.frontToSideDelta,
         base: G + zoneOffsets[i],
         ceiling: ceilingHere,
         boxBoardT: GB,
@@ -4097,8 +3953,12 @@ export function computeCabinet(params, profileOverride) {
         offsets.push(acc);
         acc += heights[i] + DR.gap;
         const ceilingHere = i + 1 < heights.length ? G + acc : partY;
+        // T54-F7: the shoe drawer's one override, the column twin of the
+        // full-width law above — side height = `drawers.shoeSideMm`.
         const resolved = resolveBoxSide({
-          wanted: heights[i] - DR.frontToSideDelta,
+          wanted: list[i]?.variant === 'shoe'
+            ? (Number(DR.shoeSideMm) || 80)
+            : heights[i] - DR.frontToSideDelta,
           base: G + offsets[i],
           ceiling: ceilingHere,
           boxBoardT: GB,
@@ -4422,226 +4282,6 @@ export function computeCabinet(params, profileOverride) {
         },
       });
     }
-  }
-
-  // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX, CUT AND DRILLED ────────────────
-  //
-  // The owner, 16.08.2026: *"jeżeli nie jest szuflada to powinien być fix, nie
-  // z pinami — tu jest błąd"*. So the T33 pinned 15° shelf is no longer what a
-  // NEW shoe accessory makes; this is. ONE construction, TWO mounting laws —
-  // *"jak zrobimy szufladę to tę samą skrzyneczkę wykorzystamy, tylko dodamy
-  // prowadnice po bokach i zwęzimy"* — and every millimetre of it comes out of
-  // `engine/shoeBox.js`, which mirrors `reference/lisp/KIT_SHOE_BOX.lsp`
-  // constant for constant (iron rule 3).
-  //
-  // Nothing about the T33 shelf moves: a saved project built as the pinned
-  // shelf keeps rendering exactly as saved. No silent migration.
-  const shoeBoxPlans = [];
-  if (Array.isArray(cfg.shoeBoxes) && cfg.shoeBoxes.length) {
-    for (const spec of cfg.shoeBoxes) {
-      const bay = spec.zone != null ? bays[spec.zone] : null;
-      if (spec.zone != null && !bay) continue;          // a column that left
-      const from = bay ? bay.from : G;
-      const opening = bay ? bay.size : internalWidth;
-      // Which of THIS bay's sides carries a hinged door's swing — the ONE
-      // `dpSideLaw` object T33-F6 wrote, read by another reader, exactly as
-      // the column drawer stacks read it. A bay bounded by a PARTITION needs
-      // no infill there: the divider is the wall the runner mounts on.
-      const atLeftEnd = !bay || bay.index === 0;
-      const atRightEnd = !bay || bay.index === bays.length - 1;
-      const hingedLeft = atLeftEnd && dpSideLaw.left;
-      const hingedRight = atRightEnd && dpSideLaw.right;
-      // The box depth: the usable interior less the front, unless the item
-      // says otherwise. The same subtraction the drawer stack makes.
-      const usable = D - G - frontT - DR.setback;
-      const depth = spec.depth_mm ?? Math.max(0, roundTo(usable, 0));
-      // POSITION — his field, "Height from bay floor", default 0 (on the
-      // floor), *"or directly above the drawer stack when the bay has
-      // drawers"* ("pozycja jak proponujesz"). A number he has typed wins.
-      // T53 (F7): the TOP FACE of the board that closes the stack — see below.
-      const stackTop = hasDrawers && spec.zone == null ? partitionY + G : null;
-      const colStack = spec.zone != null
-        ? columnDrawerSets.find((s) => s.zone === spec.zone)
-        : null;
-      // ─── TURN 53 (CLAUDE.md F7): THE BOX STANDS ON THE BOARD, NOT IN IT ────
-      //
-      // The owner, 27.08: *"nie wiem dlaczego front zachodzi na szufladę na
-      // dole."*
-      //
-      // MEASURED on his own case — a 900 wardrobe, two 200 drawers, a shoe box
-      // above — before anything was changed:
-      //
-      //     the drawer stack's PARTITION occupies y 426 … 444
-      //     the top drawer FRONT finishes at              421
-      //     the shoe box's floor was written at           390
-      //
-      // 390 is not "directly above the drawer stack": it is 36 mm INSIDE it,
-      // through the partition board and past the front below. The line read
-      // `partY − G` and then took a SECOND board off it — the double −G — and
-      // neither subtraction was ever right, because the box does not stand at
-      // the partition's underside or at its middle. IT STANDS ON IT: `partY +
-      // G`, the top face of the board, which is where a joiner would put it and
-      // the only y at which no two boards share a millimetre (the house overlap
-      // law, 27.08).
-      const above = colStack ? colStack.partY + G : stackTop;
-      const posZ = spec.pos_mm ?? (above != null && above > 0 ? roundTo(above, 0) : 0);
-      // ─── …AND THE FACE IS PLACED BY THE FRONT LAW, NOT BY THE BOX ─────────
-      //
-      // *"nie licuje się z frontem, nie licuje się z innymi szufladami."*
-      //
-      // A drawer's BOX and its FRONT are two different placements, and so are
-      // these: the box stands on the board above the stack; the FACE hangs
-      // where the next front up hangs — the drawer front's own top edge plus
-      // the drawer stack's own gap. Read off the panels already emitted, so
-      // there is no second formula to drift.
-      const frontBelow = panels
-        .filter((p) => p.part === 'DRAWER-FRONT' && p.box
-          && p.box.y + p.box.h <= posZ + 1e-6)
-        .reduce((m, p) => Math.max(m, p.box.y + p.box.h), Number.NEGATIVE_INFINITY);
-      const faceY = Number.isFinite(frontBelow)
-        ? roundTo(frontBelow + DR.gap, 4)
-        : roundTo(posZ + DR.gap, 4);
-      const plan = shoeBoxPlan({
-        openingW: opening,
-        depth,
-        boardT: G,
-        frontT,
-        variant: spec.variant,
-        dividers: spec.dividers,
-        front: spec.front,
-        posZ,
-        hingedLeft,
-        hingedRight,
-        runnerNl: spec.runner_nl,
-        profile: P,
-      });
-      for (const w of plan.warnings) warnings.push({ ...w, item: spec.id || null });
-      shoeBoxPlans.push({
-        id: spec.id || `shoe_box:${spec.zone ?? 'w'}`,
-        zone: spec.zone,
-        bayFrom: from,
-        plan,
-        // T53 (F7): where the FACE hangs, decided by the front law rather than
-        // by the box it is screwed to. See the block above.
-        faceY,
-      });
-    }
-  }
-  // ─── TURN 53 (CLAUDE.md F7): THE FRONT PLANE, READ NOT RESTATED ──────────
-  //
-  // The owner, 27.08: *"szuflada lub półka na buty powinny mieć te same zasady
-  // co szuflady … nie licuje się z frontem, nie licuje się z innymi
-  // szufladami."*
-  //
-  // The shoe face stood on its OWN datum — `D − frontT − SHOE_SETBACK_X`, the
-  // kit's 3 mm — while every drawer front in the same carcass stands at
-  // `D − setback − frontT`. On the owner's own 568-deep wardrobe that is 540
-  // against 493: the face stood 47 mm proud of the plane it is meant to be
-  // flush with.
-  //
-  // So it is READ off the drawer front rather than restated: whatever plane
-  // this cabinet's DRAWER-FRONT panels came out on is the plane the shoe face
-  // lands on, and a cabinet with no drawers falls back to the same one formula
-  // those panels are built from. One plane, one source, and no way for the two
-  // to drift apart again.
-  const drawerFrontPlaneZ = panels.find((p) => p.part === 'DRAWER-FRONT' && p.box)?.box?.z
-    ?? (D - DR.setback - frontT);
-
-  // The pieces themselves, and the carcass sides' drilling. One pass, so the
-  // panel ids and the drill panel ids cannot disagree.
-  for (const [n, entry] of shoeBoxPlans.entries()) {
-    const { plan } = entry;
-    const idx = n + 1;
-    const codesFor = (role) => (role === 'front' ? codes.all : codes.right);
-    // The box stands centred in its bay: the FIX box fills the opening, the
-    // DRAWER box is narrower by its runners and any infill, so it is set in.
-    const boxX = roundTo(entry.bayFrom + (plan.openingW - plan.boxW) / 2, 4);
-    const boxZ = roundTo(D - frontT - P.wardrobeAccessories.shoeBox.setbackX - plan.depth, 4);
-    for (const piece of plan.panels) {
-      const suffix = {
-        side: piece.side === 'L' ? 'SL' : 'SR',
-        back: 'BK',
-        boxFront: 'BF',
-        bottom: 'BT',
-        divider: 'DV',
-        batten: 'BATTEN',
-        front: 'FR',
-      }[piece.role] || piece.role.toUpperCase();
-      // ─── TURN 53 (CLAUDE.md F2): TWO BATTENS, TWO NAMES ────────────────────
-      //
-      // Found by OPENING THE FILES rather than by reading the code. A DRAWER
-      // shoe box on a wardrobe hinged both sides cuts TWO battens — one per
-      // hinged side — and both of them were `SHOE1-BATTEN`. A panel id is the
-      // DXF's file name (`dxfFileName`), and the per-unit export is a ZIP: two
-      // entries with one name is ONE entry, so the second batten never reached
-      // the machine. It is also the key the tick tree, the part edits and the
-      // material assignment are all held by, so hiding one hid both and a
-      // pencil mark drawn on one appeared on the other.
-      //
-      // The SIDE is what tells them apart and the piece has carried it since
-      // T34 — the same `piece.side` the box's own two walls are named by (SL /
-      // SR). Only the ID moves: `part` stays `SHOEBOX-BATTEN`, which is the
-      // code `engine/partRegistry.js` resolves and the BOM counts, so not a
-      // line of the bill of materials changes.
-      const idSuffix = piece.role === 'batten'
-        ? `${suffix}-${piece.side === 'L' ? 'L' : 'R'}`
-        : suffix;
-      const geom = rectGeometry(piece.w, piece.h);
-      panels.push(panel({
-        id: `SHOE${idx}-${idSuffix}`,
-        part: `SHOEBOX-${suffix}`,
-        // The FRONT is a front and rides the front laws; every other piece is
-        // a box board. `family` on the piece says which board it is cut from:
-        // FIX front = CARCASS board (it covers the cut edges of a carcass-board
-        // box), DRAWER front = the FRONTS family like every other front.
-        role: piece.role === 'front' ? 'front' : 'shelf',
-        w: piece.w,
-        h: piece.h,
-        thickness: piece.thickness,
-        edgeCode: codesFor(piece.role),
-        edgeLen: metres(piece.role === 'front' ? 2 * piece.w + 2 * piece.h : piece.w),
-        box: shoeBoxBoxFor(piece, plan, {
-          boxX, boxZ, G, frontPlaneZ: drawerFrontPlaneZ, faceY: entry.faceY,
-        }),
-        cnc: {
-          ...geom,
-          pockets: piece.pockets,
-          // "pamiętaj, żeby dno były słoje w poprzek" — the grain runs along
-          // the WIDTH, and the piece SAYS SO, so nesting keeps that axis.
-          grain: piece.grain,
-        },
-        meta: {
-          shoe_box: entry.id,
-          // The item behind it, under the name every removal path already
-          // reads (`removeElement` → `removeItem`): deleting ANY board of the
-          // box deletes the BOX, because a box with one wall missing is not a
-          // thing anybody asked for.
-          itemId: entry.id,
-          shoe_role: piece.role,
-          shoe_variant: plan.variant,
-          zone: entry.zone,
-          index: idx,
-          ...(piece.family ? { material_family: piece.family } : {}),
-          ...(piece.seat ? { shoe_divider_seat: piece.seat } : {}),
-          // The BOTTOM is the only sloped thing in the box — the walls are
-          // rectangular and level, which is the owner's own reading. It leans
-          // on the SAME mechanism the T33 shoe shelf leans on (`tilt_deg` +
-          // `tilt_pivot`, 3d/UnitView.jsx), pivoting about its FRONT edge so
-          // the back rises to the slope's own derived angle.
-          ...(piece.role === 'bottom' ? {
-            shoe_slope: plan.slope,
-            tilt_deg: plan.slope.angleDeg,
-            tilt_pivot: {
-              y: plan.posZ,
-              z: roundTo(boxZ + G - plan.slope.grooveDepth + piece.h, 4),
-            },
-          } : {}),
-        },
-      }));
-    }
-    // The carcass sides' own holes are emitted in the DRILLING PASS below,
-    // where `addDrill` lives and where every other hole in this file is put
-    // on a board — one place, one rounding, one record.
   }
 
   // BUDR: parts grouped by kind (all sides, then all box fronts/backs, then all
@@ -7435,31 +7075,6 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
-  // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX'S CARCASS-SIDE HOLES ───────────
-  //
-  // The kit's E section, mapped into this file's own side frame. The kit
-  // measures local x from the CARCASS FRONT EDGE and local y above the BAY
-  // FLOOR; BUL's frame already has x = 0 at the front edge and BUR's is its
-  // mirror (the runner rows and the hinge plates above have used exactly that
-  // pair since turn 3), and the bay floor is the carcass bottom's top face.
-  //
-  //   FIX    → 3 × ⌀3 THROUGH-pilots per side, driven from OUTSIDE the
-  //            carcass — "środek: nie widać nic" — at the box's mid height
-  //            (posZ + 40), 50 from each box end and the middle.
-  //   DRAWER → the side runner's ⌀5 euro fixings: the face at frontT + 3 from
-  //            the carcass front edge, the first hole +37 from that face and
-  //            the rear one at the NL's own column off the owner's sheet. An
-  //            NL the sheet does not carry drills NOTHING and says so —
-  //            `shoeBoxPlan` has already pushed that warning.
-  for (const entry of shoeBoxPlans) {
-    for (const hole of entry.plan.drills) {
-      const sideId = hole.side === 'L' ? 'BUL' : 'BUR';
-      if (!panels.some((pp) => pp.id === sideId)) continue;
-      const x = sideId === 'BUR' ? sideW - hole.x : hole.x;
-      addDrill(sideId, hole.kind, hole.layer, x, G + hole.y, hole.d);
-    }
-  }
-
   // Wall-unit hangers: two holes per side panel, measured off the back edge.
   if (type.hangers) {
     const HG = P.wallUnit.hangers;
@@ -8124,25 +7739,6 @@ export function computeCabinet(params, profileOverride) {
       `${kit.label} · ${roundTo(kit.box.w, 0)} mm opening`);
   }
 
-  // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX'S BOUGHT HALF ──────────────────
-  //
-  // The BOX ITSELF is CUT and needs no line here — its six boards are in the
-  // cutting list like every other board, on the project carcass board.
-  // What is BOUGHT is the DRAWER variant's side runners, and they are a NEW
-  // family whose articles nobody has: iron rule 9, so the line is a YELLOW
-  // NAMED SPEC (13 mm per side, the NL, the system's name) and never an
-  // invented number. The FIX variant buys nothing — it is screwed.
-  for (const entry of shoeBoxPlans) {
-    const spec = shoeRunnerSpec(entry.plan, P);
-    if (!spec) continue;
-    hw('shoe_runner_pairs', 'Shoe-box side runners', 1, 'pairs',
-      { ...spec, zone: entry.zone, box_width_mm: roundTo(entry.plan.boxW, 0) },
-      [`${spec.system}`,
-        spec.nl ? `NL ${spec.nl}` : 'NL off the sheet',
-        `${spec.width_mm} mm per side`,
-        spec.note].filter(Boolean).join(' · '));
-  }
-
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────
   //
   // The COUNT is untouched — it is `centres.length × doorCount`, the same
@@ -8786,7 +8382,7 @@ export function computeCabinet(params, profileOverride) {
         // ABSENT on an alone rail — and that absence is iron rule 2 doing its
         // work: a `shelfItemId: null` published on all six standard configs
         // would be a byte-identity delta that says nothing, the same reason
-        // `drawerZone` and `shoeBoxes` come and go rather than sit there empty.
+        // `drawerZone` comes and goes rather than sitting there empty.
         ...(railRides ? { shelfItemId: railRides.shelfId } : {}),
       })
       : null,
@@ -8812,38 +8408,11 @@ export function computeCabinet(params, profileOverride) {
     drawerGlass: drawerGlassPanes,
     // T52 (CLAUDE.md F5): the watch insert's own lift-out pane and the tray it
     // sits in. Present only where a drawer asked for one — the same "absent
-    // rather than empty" rule `drawerZone` and `shoeBoxes` keep, so no
+    // rather than empty" rule `drawerZone` keeps, so no
     // standard config grows a key.
     ...(watchGlassPanes.length ? { watchGlass: watchGlassPanes } : {}),
     ...(watchInsertsBuilt.length ? { watchInserts: watchInsertsBuilt } : {}),
     wardrobeKits: wardrobeKitBodies,
-    // ─── Turn 34 (CLAUDE.md F4): the shoe boxes, as the kit measured them ───
-    // The slope, the widths, the runner and where the pilots went. Published
-    // so the modal, the 3D and the walk read ONE set of numbers.
-    //
-    // The key appears ONLY when there is a box, and that is iron rule 2 doing
-    // its work rather than a tidiness preference: "no standard config contains
-    // the shoe box … so F4 contributes ZERO deltas to the fingerprint set". An
-    // empty list published on every cabinet in the app would be a delta on all
-    // six configs that says nothing — the same reason `drawerZone` is absent
-    // rather than empty on a cabinet with no drawers. Readers use `?? []`.
-    ...(shoeBoxPlans.length ? { shoeBoxes: shoeBoxPlans.map((e) => ({
-      id: e.id,
-      zone: e.zone,
-      variant: e.plan.variant,
-      openingW: e.plan.openingW,
-      boxW: e.plan.boxW,
-      innerW: e.plan.innerW,
-      depth: e.plan.depth,
-      posZ: e.plan.posZ,
-      dividers: e.plan.dividers,
-      front: e.plan.front,
-      slope: e.plan.slope,
-      hinged: e.plan.hinged,
-      runner: e.plan.runner,
-      boxFrontX: e.plan.boxFrontX,
-      axisY: e.plan.axisY,
-    })) } : {}),
     // ─── TURN 40 (CLAUDE.md F3b): THE OVERLAY STACK, AS THE KIT MEASURED IT ─
     //
     // The key appears ONLY where a wardrobe actually carries one — the same

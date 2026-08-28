@@ -1045,10 +1045,55 @@ const migrateUnitWatch = (u) => {
   return { ...u, params: { ...u.params, sections } };
 };
 
+/**
+ * ─── TURN 54 (CLAUDE.md F7.5): A SAVED SHOE BOX LOADS AS A DRAWER ───────────
+ *
+ * The owner: *"usuń stary kod na shoes i zrób z logiką drawers."* The old
+ * world (engine/shoeBox.js, the seven SHOEBOX-* boards, the steps and
+ * battens) died under licence 2, so a saved `shoe_box` ITEM has nothing left
+ * to cut it. It loads as what it became: a `variant:'shoe'` DRAWER in the
+ * same zone, appended to that zone's stack, at the height the side law
+ * derives (shoeSideMm + frontToSideDelta). The item keeps its id, is stamped
+ * `migrated_from: 'shoe_box'`, and Check #12 names the conversion once per
+ * unit ("shoe rebuilt as a drawer — review fronts"). Steps and battens
+ * simply vanish — there is no code left that could cut one.
+ */
+const migrateUnitShoe = (u) => {
+  const items = u?.params?.sections?.[0]?.items;
+  if (!Array.isArray(items) || !items.some((i) => i?.kind === 'shoe_box')) return u;
+  const DR = getCabinetProfile().wardrobe.drawers;
+  const height = (Number(DR.shoeSideMm) || 80) + (Number(DR.frontToSideDelta) || 36);
+  const zoneOf = (i) => (i?.zone == null || !Number.isFinite(Number(i.zone))
+    ? null : Math.trunc(Number(i.zone)));
+  const nextIndex = (zone) => items
+    .filter((i) => i?.kind === 'drawer' && zoneOf(i) === zone)
+    .reduce((m, i) => Math.max(m, Number(i.index) || 0), 0) + 1;
+  const minted = new Map();
+  const next = items.map((i) => {
+    if (i?.kind !== 'shoe_box') return i;
+    const zone = zoneOf(i);
+    const bump = minted.get(zone) || 0;
+    minted.set(zone, bump + 1);
+    const stackMount = items.find((q) => q?.kind === 'drawer' && zoneOf(q) === zone)?.mount;
+    return {
+      id: i.id || uid('drawer'),
+      kind: 'drawer',
+      index: nextIndex(zone) + bump,
+      mount: stackMount === 'internal' ? 'internal' : 'overlay',
+      height_mm: height,
+      variant: 'shoe',
+      migrated_from: 'shoe_box',
+      ...(zone == null ? {} : { zone }),
+    };
+  });
+  const sections = u.params.sections.map((sec, n) => (n === 0 ? { ...sec, items: next } : sec));
+  return { ...u, params: { ...u.params, sections } };
+};
+
 const migrateUnits = (units) => (Array.isArray(units)
-  ? units.map((u) => migrateUnitWatch(migrateUnitRidden(
+  ? units.map((u) => migrateUnitShoe(migrateUnitWatch(migrateUnitRidden(
     migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))),
-  )))
+  ))))
   : []);
 
 function loadCache() {
@@ -4861,44 +4906,51 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
-   * ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ─────────────────────────────────
+   * ─── TURN 54 (CLAUDE.md F7): THE SHOE IS A DRAWER ─────────────────────────
    *
-   * The owner, 16.08.2026: *"jeżeli nie jest szuflada to powinien być fix, nie
-   * z pinami — tu jest błąd"*. ONE construction, TWO mounting laws — the
-   * variant is the only thing that changes at the door.
+   * The owner, screenshot in hand: *"prosiłem żeby cała szuflada miała logikę
+   * szuflad, czyli wiercenie, runners etc etc, głębokość etc — tylko wysokość
+   * miała być mniejsza. usuń stary kod na shoes i zrób z logiką drawers."*
    *
-   * An ITEM like a shelf, one per column (two shoe boxes in one opening is a
-   * thing nobody can fit). The engine cuts the seven boards and drills the
-   * carcass sides; this stores the joiner's four decisions and nothing else.
+   * That sentence is licence 2 and the whole design: T34's `addShoeBox` /
+   * `setShoeBox` (and the parallel world they fed) are gone, and what the
+   * menu row adds is a STANDARD drawer item with `variant: 'shoe'` in the
+   * stack at the clicked zone — the same append `addWatchDrawer` does one
+   * entry up. The side is the law's own 80 (`drawers.shoeSideMm`); the front
+   * obeys the drawer-front law with the stack, at the height that derives
+   * from the side (80 + frontToSideDelta). No height slider.
    */
-  addShoeBox: (unitId, { variant = 'F', zone = null, dividers = 1, pos_mm = null } = {}) => {
+  addShoeDrawer: (unitId, zone = null) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
+    const type = getUnitType(unit.type);
+    if (!type.supports.drawers || type.drawerStyle === 'budr') return null;
     const wantZone = zone == null ? null : Math.trunc(Number(zone));
     const items = unit.params.sections?.[0]?.items || [];
     const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
       ? null : Math.trunc(Number(i.zone)));
-    if (items.some((i) => i.kind === 'shoe_box' && zoneOf(i) === wantZone)) return null;
-    return get().addItem(unitId, {
-      kind: 'shoe_box',
-      variant: variant === 'D' ? 'D' : 'F',
-      dividers: Number(dividers) >= 1 ? 1 : 0,
-      ...(pos_mm == null ? {} : { pos_mm: Math.max(0, Math.round(Number(pos_mm) || 0)) }),
+    const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone);
+    if (stack.some((i) => i.variant === 'shoe')) return null;
+    const profile = getCabinetProfile();
+    const DR = profile.wardrobe.drawers;
+    const height = (Number(DR.shoeSideMm) || 80) + (Number(DR.frontToSideDelta) || 36);
+    const index = stack.length
+      ? Math.max(...stack.map((i) => Number(i.index) || 0)) + 1
+      : 1;
+    const mount = stack.length
+      ? (stack[stack.length - 1].mount === 'internal' ? 'internal' : 'overlay')
+      : 'overlay';
+    const item = {
+      id: uid('drawer'),
+      kind: 'drawer',
+      index,
+      mount,
+      height_mm: height,
+      variant: 'shoe',
       ...(wantZone == null ? {} : { zone: wantZone }),
-    });
-  },
-
-  /** One shoe box's own fields, patched on the item. */
-  setShoeBox: (unitId, itemId, patch) => {
-    const clean = {};
-    if (patch?.variant != null) clean.variant = patch.variant === 'D' ? 'D' : 'F';
-    if (patch?.dividers != null) clean.dividers = Number(patch.dividers) >= 1 ? 1 : 0;
-    // T36 F3: the decorative face, on or off. Stored as a plain boolean so an
-    // item that has never been asked (every box before this turn) reads ON.
-    if (patch?.front != null) clean.front = patch.front !== false && patch.front !== 'false';
-    if (patch?.pos_mm != null) clean.pos_mm = Math.max(0, Math.round(Number(patch.pos_mm) || 0));
-    if (!Object.keys(clean).length) return null;
-    return get().updateItem(unitId, itemId, clean);
+    };
+    get().addItem(unitId, item);
+    return item.id;
   },
 
   /**

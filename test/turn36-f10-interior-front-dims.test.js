@@ -21,12 +21,31 @@ import {
 // "in a unit with doors, the front dimensions of ANY interior element —
 // drawer fronts, the shoe box's front, anything future — render only while
 // the doors are open. Door dims and doorless units untouched."
+//
+// T54-F7 AMENDED (28.08.2026): `kind: 'shoe_box'` and its SHOE1-* face died
+// under licence 2 — the shoe is a `variant: 'shoe'` DRAWER now, cut by the
+// drawer code (replacement world: test/turn54-f7-the-shoe-drawer.test.js).
+// The F10 LAW is untouched and still tested in full: the geometric interior
+// predicate, "hidden while shut, shown when open", doorless untouched. Where
+// the shoe BOX's face played the interior front, the shoe DRAWER's front
+// (`01-DF1`, a DRAWER-FRONT behind the leaf at z 518 vs 596) plays it now.
 
 const unit = (type, over = {}) => computeCabinet({
   ...defaultParamsFor(type, P), unit_num: '01', ...over,
 }, P);
 
-const SHOE = { id: 'sb1', kind: 'shoe_box', variant: 'F', dividers: 1 };
+// T54-F7: the migrated shape `migrateUnitShoe` mints — one standard drawer,
+// variant 'shoe', front height = shoeSideMm 80 + frontToSideDelta 36 = 116.
+const DR = P.wardrobe.drawers;
+const SHOE = {
+  id: 'sd1',
+  kind: 'drawer',
+  index: 1,
+  mount: 'overlay',
+  height_mm: (Number(DR.shoeSideMm) || 80) + (Number(DR.frontToSideDelta) || 36),
+  variant: 'shoe',
+  migrated_from: 'shoe_box',
+};
 const wardrobe = (over = {}) => unit('WARDROBE', { width: 900, ...over });
 const withShoe = (over = {}) => wardrobe({ sections: [{ items: [SHOE] }], ...over });
 
@@ -36,13 +55,15 @@ const idsIn = (rows) => new Set(rows.map((x) => x.a).concat(rows.map((x) => x.b)
 // ═══ 1. WHAT IS INTERIOR ════════════════════════════════════════════════════
 
 test('F10 — a front BEHIND the carcass face is interior; one in FRONT of it is not', () => {
+  // T54-F7 AMENDED (28.08.2026): SHOE1-* died with the shoe box; the shoe's
+  // face is the shoe DRAWER's front now (turn54-f7-the-shoe-drawer.test.js).
   const r = withShoe({ doors: { count: 1 } });
   const rects = frontRects(r);
-  const shoe = rects.find((f) => f.id.startsWith('SHOE1-'));
+  const shoe = rects.find((f) => f.kind === 'drawer');
   const door = rects.find((f) => f.id === '01-F');
-  assert.ok(shoe && door, 'a leaf and a shoe-box face');
+  assert.ok(shoe && door, 'a leaf and a shoe-drawer front');
   assert.equal(door.interior, false, 'the leaf hangs in FRONT of the carcass');
-  assert.equal(shoe.interior, true, 'the box\'s face stands behind it');
+  assert.equal(shoe.interior, true, 'the shoe\'s face stands behind it');
   assert.ok(shoe.z < door.z, 'and the geometry says so');
 });
 
@@ -67,31 +88,35 @@ test('F10 — the predicate answers nothing where there is nothing to answer', (
   assert.equal(isInteriorFront({ box: { z: 0, d: 560 } }, 600), true);
 });
 
-// ═══ 2. THE SHOE BOX IS NOT A DOOR ══════════════════════════════════════════
+// ═══ 2. THE SHOE (a drawer since T54-F7) IS NOT A DOOR ══════════════════════
 
-test('F10 — a DOORLESS wardrobe with a shoe box in it has no doors', () => {
+test('F10 — a DOORLESS wardrobe with a shoe drawer in it has no doors', () => {
+  // T54-F7 AMENDED (28.08.2026): the shoe-box face that once COUNTED AS A
+  // DOOR is dead; the shoe drawer's front is a DRAWER-FRONT and must not
+  // count either — the same latent bug, answered by the same law.
   const r = withShoe({ doors: false });
-  assert.equal(unitHasDoors(r), false, 'a shoe-box face is not something to open');
-  // …which is the latent bug the generalisation closes: before it, this unit
-  // counted as doored and would have hidden its own drawer fronts with
-  // nothing standing in the way.
+  assert.equal(unitHasDoors(r), false, 'a shoe drawer\'s face is not something to open');
+  // …so nothing is ever hidden on it with no leaf standing in the way.
   assert.equal(drawerFrontDimsVisible(r, null), true);
 });
 
 test('F10 — a DOORED wardrobe still knows which of its fronts is the door', () => {
+  // T54-F7 AMENDED (28.08.2026): 'SHOE1-FR' died; the shoe's face is the
+  // drawer front '01-DF1' (turn54-f7-the-shoe-drawer.test.js).
   const r = withShoe({ doors: { count: 1 } });
   assert.equal(unitHasDoors(r), true);
-  assert.equal(doorsAreOpen(r, { 'SHOE1-FR': 1 }), false, 'opening the box is not opening a door');
+  assert.equal(doorsAreOpen(r, { '01-DF1': 1 }), false, 'opening the shoe is not opening a door');
   assert.equal(doorsAreOpen(r, { '01-F': 1 }), true);
 });
 
 // ═══ 3. CLOSED HIDES, OPEN SHOWS ════════════════════════════════════════════
 
-test('F10 — CLOSED: the shoe box\'s own figures are gone', () => {
+test('F10 — CLOSED: the shoe drawer\'s own figures are gone', () => {
+  // T54-F7 AMENDED (28.08.2026): SHOE1-* → the shoe drawer's front.
   const r = withShoe({ doors: { count: 1 } });
-  const shoeId = frontRects(r).find((f) => f.id.startsWith('SHOE1-')).id;
+  const shoeId = frontRects(r).find((f) => f.kind === 'drawer').id;
   const shut = idsIn(rowsFor(r, false));
-  assert.equal(shut.has(shoeId), false, 'not one figure about the box\'s face');
+  assert.equal(shut.has(shoeId), false, 'not one figure about the shoe\'s face');
   const open = idsIn(rowsFor(r, true));
   assert.equal(open.has(shoeId), true, 'and it is back when the leaf swings');
 });
@@ -138,10 +163,14 @@ test('F10 — a DOORLESS unit is untouched: the filter takes nothing off it', ()
   assert.deepEqual(withoutDrawerFrontRows(bankRows, bank), bankRows);
 });
 
-test('F10 — the SHOE BOX with its front switched OFF (F3) has nothing to hide', () => {
+test('F10 — the SHOE with its front OFF has nothing to hide', () => {
+  // T54-F7 AMENDED (28.08.2026): the shoe box's `front: false` switch (T33-F3)
+  // died with the kind. A DRAWER goes frontless the drawer way — T32-F4's
+  // `mount: 'internal'` — and the F10 answer must be the same: no face, no
+  // interior figure. (Replacement world: turn54-f7-the-shoe-drawer.test.js.)
   const r = wardrobe({
     doors: { count: 1 },
-    sections: [{ items: [{ ...SHOE, front: false }] }],
+    sections: [{ items: [{ ...SHOE, mount: 'internal' }] }],
   });
   assert.deepEqual(interiorFrontIds(r), [], 'no face, no interior figure');
   assert.equal(unitHasDoors(r), true, '…and the leaf is still a leaf');

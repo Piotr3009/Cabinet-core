@@ -429,6 +429,65 @@ PROBES.f6 = async () => {
   };
 };
 
+/**
+ * F7 — THE SHOE DRAWER. No golden carries a shoe item; a shoe drawer IS a
+ * plain drawer of the same numbers, board for board, and the old world is
+ * dead (the kit count is 13, derived).
+ */
+PROBES.f7 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const items = (params.sections || []).flatMap((s) => s?.items || []);
+    return {
+      id: cfg.id,
+      cells: [String(items.filter((i) => i?.kind === 'shoe_box' || i?.variant === 'shoe').length),
+        String((result.panels || []).filter((p) => /SHOEBOX|BATTEN/.test(p.id)).length)],
+      ok: items.every((i) => i?.kind !== 'shoe_box' && i?.variant !== 'shoe')
+        && (result.panels || []).every((p) => !/SHOEBOX|BATTEN/.test(p.id)),
+    };
+  });
+  const DR = P.wardrobe.drawers;
+  const front = (Number(DR.shoeSideMm) || 80) + (Number(DR.frontToSideDelta) || 36);
+  const build = (variant) => computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    width: 900,
+    sections: [{
+      width_mm: 900,
+      items: [{
+        id: 'd1', kind: 'drawer', index: 1, height_mm: front, ...(variant ? { variant } : {}),
+      }],
+    }],
+  }, P);
+  const boards = (r) => (r.panels || [])
+    .filter((p) => p.role === 'drawer_box' || p.part === 'DRAWER-FRONT')
+    .map((p) => ({ ...p, meta: { ...p.meta, variant: undefined } }));
+  const plain = build(null);
+  const shoe = build('shoe');
+  const equal = canonical(boards(plain)) === canonical(boards(shoe))
+    && canonical(plain.drills) === canonical(shoe.drills);
+  const side = boards(shoe).find((p) => p.part === 'DRAWER-SIDE');
+  rows.push({
+    id: 'the proof',
+    cells: [equal ? 'board for board, the same cut' : 'THE WORLDS DIVERGE',
+      `side ${side?.h} (law ${DR.shoeSideMm})`],
+    ok: equal && side?.h === DR.shoeSideMm,
+  });
+  rows.push({
+    id: 'the graves',
+    cells: [`${kitCount()} kits (derived)`, kitCount() === 13 ? 'KIT_SHOE_BOX buried' : 'STILL BREATHING'],
+    ok: kitCount() === 13,
+  });
+  return {
+    head: 'F7 · THE SHOE DRAWER — a standard drawer with an 80 side, and no golden carries one',
+    columns: ['shoe items', 'old-world boards'],
+    rows,
+    verdict: [
+      'CLEAN — no golden carries a shoe, the shoe drawer equals the plain drawer board for board, and the old world is buried (13 kits, derived).',
+      'NOT CLEAN — a golden grew a shoe part, or the two worlds diverge. STOP (iron rule 2).',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

@@ -70,7 +70,6 @@ import * as dimensions from './engine/dimensions.js';
 import * as frontDimensions from './engine/frontDimensions.js';
 // Turn 34 (CLAUDE.md F1/F4/F7/F8): the four readers the acceptance walk asks.
 import * as projectSettings from './engine/projectSettings.js';
-import * as shoeBox from './engine/shoeBox.js';
 import * as deleteElement from './engine/deleteElement.js';
 import * as shaker from './engine/shaker.js';
 import * as design from './engine/design.js';
@@ -250,7 +249,7 @@ if (typeof window !== 'undefined') {
   // decision both doors run, and a claim about the shaker pin off the function
   // `loadProject` calls. All four are pure.
   window.__ccT34 = {
-    projectSettings, shoeBox, deleteElement, shaker, design,
+    projectSettings, deleteElement, shaker, design,
   };
   // ─── Turn 35 (CLAUDE.md F4) ───
   // The WebGL guard, for the same reason every reader above is here: F4's proof

@@ -18,6 +18,15 @@
 //   the record         `meta.floorClamped: true` on the element the law caught
 //   the non-effect     a legal element is not moved by a hundredth, and the six
 //                      goldens are byte-identical (iron rule 2)
+//
+// T54-F7 AMENDED (28.08.2026): the shoe BOX world this file was born on
+// (`addShoeBox`/`setShoeBox`, the SHOEBOX-* boards) died under licence 2 —
+// the shoe is a STANDARD drawer (`variant:'shoe'`, addShoeDrawer) with no
+// `pos_mm` of its own, so the store walks it through the same two doors as
+// every drawer. The LAW is untouched; the shoe-box specimens below are
+// replaced by living ones (the shoe SHELF, which T54 did not touch, and the
+// shoe DRAWER), and the drawer world's own proof lives in
+// test/turn54-f7-the-shoe-drawer.test.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -118,7 +127,11 @@ test('the ONE exception says so out loud, and the DEFAULT catches the rest', () 
   assert.equal(floorLawedItem(rod, { floor: G }), rod);
   // Everything else — including a kind invented after this was written — is on
   // the carcass datum by DEFAULT and is therefore caught.
-  for (const kind of ['shelf', 'shoe_box', 'partition', 'drawer', 'a-kind-nobody-has-invented-yet']) {
+  // T54-F7 AMENDED (28.08.2026): 'shoe_box' left this list because the KIND is
+  // dead — a saved one loads as a `variant:'shoe'` DRAWER (migrateUnitShoe),
+  // so it can never reach the doors; 'drawer' below and the invented kind
+  // already hold the default. Replacement: turn54-f7-the-shoe-drawer.test.js.
+  for (const kind of ['shelf', 'partition', 'drawer', 'a-kind-nobody-has-invented-yet']) {
     assert.equal(posDatumOf({ kind }), 'carcass', `${kind} is on the carcass datum`);
     assert.equal(floorLawedItem({ kind, pos_mm: 0 }, { floor: G }).pos_mm, G);
   }
@@ -137,42 +150,48 @@ test('a SHOE SHELF asked for at y = 0 lands ON the floor, not in it', () => {
   }
 });
 
-test('a SHOE BOX asked for at y = 0 lands ON the floor — all seven boards', () => {
+// T54-F7 AMENDED (28.08.2026): the SHOE BOX specimens died with their world
+// (licence 2) — `addShoeBox`/`setShoeBox` and the SHOEBOX-* boards are gone,
+// and the shoe DRAWER that replaced them carries no `pos_mm` for the law to
+// clamp: it stands in the stack, on the floor BY CONSTRUCTION. The dead
+// tests' living claims are re-held below on the shoe DRAWER (the boards) and
+// the shoe SHELF (the doors); the drawer's own field-by-field proof lives in
+// test/turn54-f7-the-shoe-drawer.test.js.
+
+test('a SHOE DRAWER stands ON the floor by construction — every board it cuts', () => {
   const id = wardrobe();
-  const itemId = store().addShoeBox(id, { variant: 'F', dividers: 1, pos_mm: 0 });
-  assert.ok(itemOf(id, itemId).pos_mm >= G);
-  assert.equal(itemOf(id, itemId).meta.floorClamped, true, 'and the record says the law caught it');
+  const itemId = store().addShoeDrawer(id, null);
+  assert.ok(itemId, 'the wardrobe accepts the shoe drawer');
+  const item = itemOf(id, itemId);
+  assert.equal(item.kind, 'drawer');
+  assert.equal(item.variant, 'shoe');
   const result = store().unitResult(id);
-  const boards = result.panels.filter((p) => p.box && String(p.part).startsWith('SHOEBOX'));
-  assert.ok(boards.length >= 5, 'the shoe box is actually cut');
-  for (const p of boards) {
+  const boards = result.panels.filter((p) => p.box && String(p.part).startsWith('DRAWER'));
+  assert.ok(boards.length >= 4, 'the shoe drawer is actually cut — sides, back, bottom');
+  for (const p of elementPanels(result)) {
     assert.ok(p.box.y >= G - 1e-6, `${p.id} stands at ${p.box.y}, on or above the floor`);
   }
 });
 
-test('the DRAWER variant of the shoe box obeys the same one law', () => {
+test('…and EDITING a pos-placed element back down to zero is refused the same way', () => {
+  // T54-F7 AMENDED (28.08.2026): this held `setShoeBox`; that door is gone.
+  // The claim — the SECOND door (`updateItem`) clamps a typed number exactly
+  // as a placement is — is alive, held here on the shoe SHELF (untouched by
+  // T54). Replacement for the shoe box: turn54-f7-the-shoe-drawer.test.js.
   const id = wardrobe();
-  const itemId = store().addShoeBox(id, { variant: 'D', dividers: 1, pos_mm: 0 });
-  assert.ok(itemOf(id, itemId).pos_mm >= G);
-  const result = store().unitResult(id);
-  for (const p of result.panels.filter((x) => x.box && String(x.part).startsWith('SHOEBOX'))) {
-    assert.ok(p.box.y >= G - 1e-6, `${p.id} stands at ${p.box.y}`);
-  }
-});
-
-test('…and EDITING one back down to zero is refused the same way', () => {
-  const id = wardrobe();
-  const itemId = store().addShoeBox(id, { variant: 'F', dividers: 1, pos_mm: 600 });
+  const itemId = store().addItem(id, { kind: 'shelf', variant: 'shoe', pos_mm: 600 });
   assert.equal(itemOf(id, itemId).pos_mm, 600);
   assert.equal(itemOf(id, itemId).meta, undefined, 'placed legally, so nothing was stated');
-  store().setShoeBox(id, itemId, { pos_mm: 0 });
+  store().updateItem(id, itemId, { pos_mm: 0 });
   assert.ok(itemOf(id, itemId).pos_mm >= G, 'a typed number is clamped exactly as a placement is');
   assert.equal(itemOf(id, itemId).meta.floorClamped, true);
 });
 
 test('an element placed legally is not moved by the law', () => {
+  // T54-F7 AMENDED (28.08.2026): the specimen was a shoe box at 900; the shoe
+  // SHELF (alive) holds the same non-effect on the same datum.
   const id = wardrobe();
-  const itemId = store().addShoeBox(id, { variant: 'F', dividers: 1, pos_mm: 900 });
+  const itemId = store().addItem(id, { kind: 'shelf', variant: 'shoe', pos_mm: 900 });
   assert.equal(itemOf(id, itemId).pos_mm, 900);
   assert.equal(itemOf(id, itemId).meta, undefined);
 });
@@ -180,7 +199,9 @@ test('an element placed legally is not moved by the law', () => {
 test('NOTHING an ordinary wardrobe cuts stands below its own floor', () => {
   const id = wardrobe();
   store().addShelves(id, 3);
-  store().addShoeBox(id, { variant: 'F', dividers: 1, pos_mm: 0 });
+  // T54-F7 AMENDED (28.08.2026): the shoe box here became the shoe DRAWER —
+  // same census, the living kind (turn54-f7-the-shoe-drawer.test.js).
+  store().addShoeDrawer(id, null);
   store().addItem(id, { kind: 'shelf', variant: 'shoe', pos_mm: 0 });
   const result = store().unitResult(id);
   const below = elementPanels(result).filter((p) => p.box.y < G - 1e-6).map((p) => p.id);

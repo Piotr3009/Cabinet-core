@@ -382,9 +382,15 @@ test('what a unit offers is decided by its FAMILY, as data', () => {
   // drawers — *"nadal nie mamy szuflad nawierzchniowych"*. Two kinds of drawer
   // and the list says which is which, which is what "clearly distinguished"
   // asks for.
+  // T54-F7 AMENDED (28.08.2026): 'shoe_box' left this list with its world —
+  // the shoe is a `variant:'shoe'` DRAWER now, added into the unit's drawer
+  // stack by the menu row (addShoeDrawer), so it no longer has an offer row
+  // of its own. Row order otherwise unchanged. The replacement lives in
+  // test/turn54-f7-the-shoe-drawer.test.js. (The CHAT-FIX 16.08 slot note
+  // died with the row.)
   assert.deepEqual(
     P.itemsByContext.wardrobe,
-    ['shelves', 'shoe_box' /* CHAT-FIX 16.08: the box took the shelf's slot in the offer */, 'hanger', 'drawers', 'overlay_drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
+    ['shelves', 'hanger', 'drawers', 'overlay_drawers', 'partition', 'pulldown', 'trouser', 'tie_rack'],
   );
   // A kitchen unit is not offered a hanging rail first, and a wardrobe is.
   assert.ok(!P.itemsByContext.kitchen.includes('hanger'));

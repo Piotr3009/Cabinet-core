@@ -75,14 +75,9 @@ export const CNC_LAYERS = [
   { name: 'DRAWER_BOTTOM_POCKET', aci: 2, screen: '#ffe066', label: 'Bottom groove', kind: 'pocket' },
   // Wall-unit hanger cut-outs in the back panel (KIT_WUD_FULL L192).
   { name: 'HANGER_HOLE',        aci: 4,  screen: '#4dd4c8', label: 'Hanger cut-out', kind: 'pocket' },
-  // ─── Turn 34 (CLAUDE.md F4): the SHOE BOX's two new layers ───
-  // Straight out of KIT_SHOE_BOX.lsp `shoeMakeLayers`, ACI colours included:
-  // the sloped bottom's groove (6 deep, in all four walls) and the side
-  // runner's ⌀5 euro fixings in the carcass side. `SCREWS_3MM` is REUSED for
-  // the FIX variant's three through-pilots — the kit reuses it, so we do.
-  // NO TEXT STYLE rides either of them (the 02.08 VCarve crash law).
-  { name: 'SHOE_GROOVE_6MM',    aci: 1,  screen: '#ff9f43', label: 'Shoe groove',   kind: 'pocket' },
-  { name: 'SHOE_RUNNER_5MM',    aci: 5,  screen: '#5fd0ff', label: 'Shoe runner ⌀5', kind: 'hole' },
+  // T54-F7: the shoe box's two layers (SHOE_GROOVE_6MM, SHOE_RUNNER_5MM)
+  // died with KIT_SHOE_BOX — the shoe drawer machines on the drawer's own
+  // layers (licence 2; the grave is named in the verdict).
   // Elevation-view outline layer. The CNC section of the LISP draws on OUTLINE,
   // the TOP/FRONT views on CARCASE; both mean "this is the edge of the part",
   // so a panel that arrives on either is drawn the same way.

@@ -67,7 +67,11 @@ const KITS = readdirSync(LISP_DIR).filter((f) => f.endsWith('.lsp')).sort();
 test('rule 3 — there ARE kits to check, and the list is not silently empty', () => {
   assert.ok(KITS.length >= 12, `only ${KITS.length} kits found in reference/lisp/`);
   assert.ok(KITS.includes('KIT_WARDROBE_FULL.lsp'), 'the kit this turn edits');
-  assert.ok(KITS.includes('KIT_SHOE_BOX.lsp'), 'T34’s kit, the VERIFY SECOND gate');
+  // T54-F7 AMENDED (28.08.2026): KIT_SHOE_BOX.lsp is deleted under licence 2 —
+  // the shoe is a standard drawer now (variant 'shoe', side 80) and the shoe
+  // kit's grave is asserted here; the replacement coverage lives in
+  // test/turn54-f7-the-shoe-drawer.test.js. The paren walk is 13 kits, derived.
+  assert.ok(!KITS.includes('KIT_SHOE_BOX.lsp'), 'T54-F7 killed the shoe kit — it must stay dead');
 });
 
 for (const kit of KITS) {

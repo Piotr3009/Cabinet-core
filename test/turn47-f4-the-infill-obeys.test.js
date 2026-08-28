@@ -29,6 +29,15 @@ import { panelEntities, panelNoteBlock } from '../src/engine/cnc/dxf.js';
 //     — *"infill mitra zawsze jest 45."*
 //   the side × top junction is a vertical piece meeting a SLOPED one, so the
 //     mitre is half of THAT angle and is 45 only where β is 0.
+//
+// ─── T54-F1 AMENDED (28.08.2026) ────────────────────────────────────────────
+// Two reach functions now, not one: the CARCASS (sides, roof, back, fronts)
+// is cut on cutReach(x) = ceil(x) − infill/cosβ, while the infills in this
+// file SCRIBE TO THE PLASTER and stay on the ceiling (ceilReach) itself — so
+// every side-infill number below is unchanged BY LAW, not by accident. Of
+// the top trio, only INFILL-T-FACE keeps the ceiling pivot; the roof TOP
+// moved to cutReach and INFILL-T-SHELF moved UNDER the roof — amended where
+// asserted below.
 
 const OVER = P.autoParts.fillerOversize;
 const BASE = {
@@ -134,6 +143,9 @@ test('THE SIDE INFILL IS CUT ON THE CEILING LINE — the room stops lying', () =
   // It stands OUTSIDE the cabinet, so the run is extended at its own gradient:
   // the ceiling at the cabinet's right edge is 1400 and 40 mm further on it is
   // 1360 — plus the 100 mm of leg the filler runs down past.
+  // T54-F1 AMENDED (28.08.2026): still the CEILING line, now by name — the
+  // side infill scribes to the plaster, so it stays on ceilReach while the
+  // carcass moved down to cutReach; 1500 is unchanged under the new law.
   assert.equal(after.h, 1500);
   assert.equal(after.meta.slopeCut.angles[0].deg, 45);
 });
@@ -182,8 +194,32 @@ test('…MOUNTED along the slope: its length is the hypotenuse, and it tilts', (
   assert.equal(face.meta.tilt_deg, -45, 'the 3-D tilts it rather than redrawing it');
   assert.equal(face.meta.tilt_axis, 'z');
   assert.deepEqual(face.meta.tilt_pivot, { x: 600, y: 1400 });
-  // The SHELF runs back at the ceiling, so it is the same length.
-  assert.equal(byId(cut, 'INFILL-T-SHELF').w, 848.5281 + OVER);
+  // T54-F1 AMENDED (28.08.2026): of the trio, this piece ALONE keeps the
+  // ceiling pivot — the roof TOP moved to cutReach and the shelf under the
+  // roof — and on a raked segment its BOX height is the RESERVE itself, so
+  // after the spin its top edge lies on ceilReach and its bottom on
+  // cutReach: box h = infill (40), cut piece = infill + 20, and the meta now
+  // states the cut height and the rotated corners.
+  assert.equal(face.box.h, 40, "box height = the reserve (the owner's 40)");
+  assert.equal(face.h, 60, 'cut piece = infill + 20 scribe oversize');
+  assert.equal(face.meta.slopeCut.cutHeight, 40, 'the sheet states the CUT height');
+  assert.equal(face.box.y + face.box.h, 1400, 'pre-spin, the top edge hangs on the pivot line');
+  assert.equal(face.meta.elevation.length, 4, 'raked meta carries the rotated corners');
+  // T54-F1 AMENDED (28.08.2026): the shelf no longer runs back AT the
+  // ceiling — it sits UNDER the roof, its top face on the roof's underside —
+  // but the roof line is the ceiling lowered parallel by infill/cosβ, so
+  // over one segment the span, and therefore the length, is the SAME number.
+  const shelf = byId(cut, 'INFILL-T-SHELF');
+  assert.equal(shelf.w, 848.5281 + OVER);
+  const CUT_LO = 1400 - 40 / Math.cos(Math.PI / 4);      // cutReach at x = 600
+  const SHELF_PIV = CUT_LO - 18 / Math.cos(Math.PI / 4); // the roof's underside there
+  assert.equal(shelf.meta.tilt_deg, -45);
+  assert.equal(shelf.meta.tilt_pivot.x, 600);
+  assert.ok(Math.abs(shelf.meta.tilt_pivot.y - SHELF_PIV) <= 0.01,
+    `shelf pivot ${shelf.meta.tilt_pivot.y} vs cutReach − G/cosβ = ${SHELF_PIV}`);
+  assert.ok(Math.abs(shelf.box.y + shelf.box.h - shelf.meta.tilt_pivot.y) <= 0.01,
+    'pre-spin, the shelf top edge hangs on ITS pivot line');
+  assert.equal(shelf.meta.elevation.length, 4, 'the shelf carries its corners too');
 });
 
 test('…and ONE PIECE PER SEGMENT, with the join cut at the angle the slope gives', () => {
@@ -197,6 +233,10 @@ test('…and ONE PIECE PER SEGMENT, with the join cut at the angle the slope giv
   // T48-F2: each END segment carries the site-cut allowance on its OUTER end —
   // the first on the left, the last on the right. A MIDDLE segment would carry
   // none: both of its ends are machine-cut joins.
+  // T54-F1 AMENDED (28.08.2026): the FACE still splits at the CEILING's own
+  // knee (x = 300) — the carcass line's knee shifts to the mitred-offset
+  // intersection, but that is the roof's business, not the strip's — so both
+  // widths and both 67.5s stand.
   const OVER = P.autoParts.fillerOversize;
   assert.deepEqual(faces.map((p) => p.w), [300 + OVER, 848.5281 + OVER]);
   assert.deepEqual(faces.map((p) => p.meta.lengthOversize.end), ['left', 'right']);

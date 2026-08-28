@@ -785,11 +785,25 @@ function runTopInfill(run, {
     // Points are in the OWNER's frame on x (the same datum `offset` uses) and
     // clear millimetres above the carcass floor on y, so `cabinet.js` needs no
     // conversion and cannot invent a second one.
-    ceiling: runCutOf
-      ? (runCutOf({
-        run, from: left.x, to: right.x, owner, length,
-      })?.pts || null)
-      : null,
+    //
+    // T54 (CLAUDE.md F1): the line is the CEILING now (`slopeCutLine` stopped
+    // subtracting the scribe reserve), so the reserve travels BESIDE it —
+    // `ceilingInfill` — and the engine takes `cutReach = ceiling −
+    // infill / cos β` per segment. Null where there is no line, exactly as the
+    // line itself.
+    ...((() => {
+      const runCut = runCutOf
+        ? runCutOf({
+          run, from: left.x, to: right.x, owner, length,
+        })
+        : null;
+      return {
+        ceiling: runCut?.pts || null,
+        ceilingInfill: runCut && Number.isFinite(Number(runCut.infill))
+          ? Number(runCut.infill)
+          : null,
+      };
+    })()),
     unitIds: run.units.map((u) => u.id),
     // T53 (F6): the cabinets under the run, in the OWNER's frame, so a board
     // too long for the sheet can be split on a cabinet line and never in the

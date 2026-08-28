@@ -21,6 +21,9 @@ import { SHAPES, elevationSvg } from '../scripts/t47-shots.mjs';
 // new dimension chains, no title-block work.
 
 const PARAMS = { ...defaultParamsFor('WARDROBE', P), unit_num: '01', doors: 1 };
+// T54-F1 AMENDED (28.08.2026): y0/y1 are now the CEILING line and infill is the
+// top strip's CUT height — the carcass is cut on the lowered line
+// cutReach(x) = ceil(x) − infill/cos β, not on the ceiling itself.
 const CUT = { y0: 2400, y1: 1200, infill: 40 };
 const cut = (over = {}) => computeCabinet({ ...PARAMS, slope_cut: CUT, ...over }, P);
 const plain = () => computeCabinet(PARAMS, P);
@@ -62,8 +65,13 @@ test('a CUT panel is traced, corner for corner, in the drawing\'s own frame', ()
     assert.deepEqual([x1, y1], [back.box.x + a[0], back.box.y + a[1]]);
     assert.deepEqual([x2, y2], [back.box.x + b[0], back.box.y + b[1]]);
   });
-  // …and the diagonal really is in there: the knee at x = 125, y = 2150.
-  assert.ok(segs.some(([x1, y1]) => Math.abs(x1 - 125) < 1e-6 && Math.abs(y1 - 2150) < 1e-6));
+  // …and the diagonal really is in there: the knee where the cut line meets
+  // the cabinet's own top, y = H = 2150.
+  // T54-F1 AMENDED (28.08.2026): the back follows the LOWERED carcass line, so
+  // the knee moved from the ceiling's x = 125 to cutReach's crossing: ceiling
+  // y = 2400 − 2x (tan β = 2, cos β = 1/√5), cutReach(x) = 2400 − 2x − 40/cos β
+  // = 2310.55728 − 2x; = 2150 at x = 80.27864045 → 80.2786 on the sheet.
+  assert.ok(segs.some(([x1, y1]) => Math.abs(x1 - 80.2786) < 1e-6 && Math.abs(y1 - 2150) < 1e-6));
 });
 
 test('THE DOOR is a pentagon on the elevation too', () => {

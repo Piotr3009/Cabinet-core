@@ -17,6 +17,12 @@ import { useProjectStore, paramsForEngine } from '../src/stores/projectStore.js'
 //   Drawers: forbidden in the zone (F4)."*
 //   *"Live: drag end re-runs the engine (the same pos_mm path every drag uses)
 //   — the cabinet re-cuts itself as it arrives under the slope."*
+//
+// T54-F1 AMENDED (28.08.2026): "the cut line" the interior obeys is now
+// cutReach(x) = ceil(x) − infill / cos β — slope_cut.pts is the CEILING and the
+// carcass line is the ceiling lowered by the face strip's reserve per segment
+// (carcassCutPts). Every expected number below is recomputed on the lowered
+// line; the T46 law's words ("full span below the cut line") are unchanged.
 
 const PARAMS = { ...defaultParamsFor('WARDROBE', P), unit_num: '01' };
 const CUT = { y0: 2400, y1: 1200, infill: 40 };
@@ -35,9 +41,12 @@ test('a shelf whose FULL SPAN clears the line is cut; one that pierces it is not
 });
 
 test('the question is asked at the WORST END of the span, never at the middle', () => {
-  // The line falls to 1240 at the shelf's right-hand end and is 2382 at its
-  // left. A shelf at 1500 clears the MIDDLE of the diagonal (1811) and is still
-  // sawn in half by the plaster at its right end — so it does not exist.
+  // T54-F1 AMENDED (28.08.2026): the numbers below are the CARCASS line
+  // (ceiling − 40/cos β = ceiling − 89.44), not the ceiling itself.
+  // The cut line falls to 1150.56 at the shelf's right-hand end (x = 580) and
+  // is 2270.56 at its left (x = 20). A shelf at 1500 clears the MIDDLE of the
+  // diagonal (1710.56 at x = 300) and is still sawn in half at its right end —
+  // so it does not exist.
   const r = computeCabinet({
     ...PARAMS,
     items: [{ kind: 'shelf', id: 's1', pos_mm: 1500 }],
@@ -50,18 +59,20 @@ test('the question is asked at the WORST END of the span, never at the middle', 
 });
 
 test('it is the shelf\'s TOP face that must clear — the board has a thickness', () => {
-  // The ceiling over the span is 1240. A 1200 mm shelf 18 thick tops out at
-  // 1218 and survives; move it to 1230 and its top is 1248 — 8 mm into the
-  // plaster — and it does not.
+  // T54-F1 AMENDED (28.08.2026): the shelf clears the CARCASS line, ceiling
+  // 1240 lowered by 40/cos β = 89.44 → 1150.56 over the span. A 1120 mm shelf
+  // 18 thick tops out at 1138 and survives; move it to 1140 — its UNDERSIDE
+  // still below the line — and its top is 1158, 7.4 mm through the line, and
+  // it does not. (Was 1200/1230 against the ceiling's own 1240.)
   const under = computeCabinet({
     ...PARAMS,
-    items: [{ kind: 'shelf', id: 's1', pos_mm: 1200 }],
+    items: [{ kind: 'shelf', id: 's1', pos_mm: 1120 }],
     slope_cut: CUT,
   }, P);
   assert.equal(under.panels.filter((p) => p.part === 'SHELF').length, 1);
   const over = computeCabinet({
     ...PARAMS,
-    items: [{ kind: 'shelf', id: 's1', pos_mm: 1230 }],
+    items: [{ kind: 'shelf', id: 's1', pos_mm: 1140 }],
     slope_cut: CUT,
   }, P);
   assert.equal(over.panels.filter((p) => p.part === 'SHELF').length, 0);
@@ -90,11 +101,14 @@ test('the rod ends where the line meets its own y — the bay law, one axis over
   const plain = computeCabinet(railParams, P).assemblies.rail;
   assert.deepEqual([plain.x1, plain.x2], [18, 582]);
   const cutRail = computeCabinet({ ...railParams, slope_cut: CUT }, P).assemblies.rail;
-  // line(x) = 2400 − 2x; the rod hangs at 1418, so they meet at x = 491.
+  // T54-F1 AMENDED (28.08.2026): the rod obeys the CARCASS line, not the
+  // ceiling — cut(x) = (2400 − 89.4427) − 2x = 2310.5573 − 2x (the ceiling
+  // lowered by 40/cos β, β = atan 2); the rod hangs at 1418, so they meet at
+  // x = 446.2787 (was 491 on the raw ceiling).
   assert.equal(cutRail.y, 1418);
   assert.equal(cutRail.x1, 18, 'the tall end is untouched');
-  assert.equal(cutRail.x2, 491, 'and the rod stops exactly where the ceiling reaches it');
-  assert.deepEqual(cutRail.slopeCut, { was: [18, 582], now: [18, 491], lost: 91 });
+  assert.equal(cutRail.x2, 446.2787, 'and the rod stops exactly where the cut line reaches it');
+  assert.deepEqual(cutRail.slopeCut, { was: [18, 582], now: [18, 446.2787], lost: 135.7213 });
 });
 
 test('…mirrored, and dropped entirely when the ceiling is under it all the way', () => {
@@ -102,7 +116,9 @@ test('…mirrored, and dropped entirely when the ceiling is under it all the way
     ...railParams, slope_cut: { y0: 1200, y1: 2400, infill: 40 },
   }, P).assemblies.rail;
   assert.equal(mirror.x2, 582, 'the tall end is on the right now');
-  assert.equal(mirror.x1, 109);
+  // T54-F1 AMENDED (28.08.2026): cut(x) = 1110.5573 + 2x meets 1418 at
+  // x = 153.7214 (was 109 on the raw ceiling 1200 + 2x).
+  assert.equal(mirror.x1, 153.7214);
   const drowned = computeCabinet({
     ...railParams, slope_cut: { y0: 1000, y1: 600, infill: 40 },
   }, P).assemblies.rail;

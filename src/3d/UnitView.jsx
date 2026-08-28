@@ -63,6 +63,9 @@ import PartMachining from './PartMachining.jsx';
 import { shakerFrontGeometry } from './shakerSolid.js';
 import { isShakerFront } from '../engine/shaker.js';
 import { panelRecesses } from '../engine/recesses.js';
+// T54-F1: the ghost line draws the CARCASS cut — the engine's own offset of
+// the ceiling — so the drag hint and the boards cannot disagree.
+import { carcassCutPts } from '../engine/puzzle.js';
 // T52 (CLAUDE.md F5): where the watch insert's strip runs in its front rail —
 // the ENGINE's own number, so the picture and the groove agree.
 import { watchDrawerSpec } from '../engine/watchDrawer.js';
@@ -1073,7 +1076,11 @@ export default function UnitView({
     });
     // Under a flat stretch there is nothing to warn about.
     if (!line.some((q) => q.y < h - 1e-6)) return null;
-    return line.map((q) => ({ x: q.x - x0, y: Math.max(0, q.y - gap - baseY) }));
+    // T54-F1: the ghost shows where the CARCASS will be cut, and the carcass
+    // line is the ceiling less `infill / cos β` per segment — the same
+    // `carcassCutPts` the engine cuts with, never a second arithmetic.
+    const ceil = line.map((q) => ({ x: q.x - x0, y: q.y - baseY }));
+    return carcassCutPts({ pts: ceil }, gap).map((q) => ({ x: q.x, y: Math.max(0, q.y) }));
   }, [dragging, wallSlopeList, roomHeight, projectDesign, unit.position?.wall,
     unit.position?.x_mm, wall.width, W, baseY]);
   // A turned unit pivots about the point where it meets the wall — the same

@@ -26,6 +26,14 @@ import { slopeNoteText } from '../src/engine/cnc/partLabel.js';
 // trigonometry, and then compared with what the engine published. A test that
 // restated the engine's own formula would prove only that the formula is
 // spelled the same in two places.
+//
+// T54-F1 AMENDED (28.08.2026): the roof no longer rides the CEILING — it rides
+// the carcass CUT line, cutReach(x) = ceil(x) − infill / cos β per segment
+// (`carcassCutPts`, the mitred offset). Every formula in this file is
+// unchanged; the LINE it runs on dropped by the reserve, so the absolute
+// heights fell by infill / cos β and a knee between two βs shifted to the
+// intersection of the two LOWERED segment lines. The T47 identity above —
+// roof, not lid — stands untouched.
 
 const G = P.board.thickness;
 const PARAMS = { ...defaultParamsFor('WARDROBE', P), unit_num: '01' };
@@ -70,8 +78,11 @@ test('…and the SIDES stop under it, by its own vertical footprint', () => {
   const [top] = tops(r);
   const foot = G / Math.cos(Math.PI / 4);
   assert.ok(Math.abs(top.meta.verticalFootprint - foot) < 1e-3, `${top.meta.verticalFootprint}`);
-  // BUL's own 18 mm of the ceiling peaks at 2000; it stops `foot` under that.
-  assert.ok(Math.abs(r.panels.find((p) => p.id === 'BUL').h - (2000 - foot)) < 1e-3);
+  // T54-F1 AMENDED (28.08.2026): the side stops under the ROOF LINE, which is
+  // now cutReach = ceiling − infill / cos β — over BUL's own 18 mm the line
+  // peaks at 2000 − 40/cos 45° = 1943.4315, and it stops `foot` under THAT.
+  const reserve = 40 / Math.cos(Math.PI / 4);
+  assert.ok(Math.abs(r.panels.find((p) => p.id === 'BUL').h - ((2000 - reserve) - foot)) < 1e-3);
   // …and the leant board's lowest underside IS the low side's short face —
   // the pivot sits on the roof line, and a level board of perpendicular G
   // leant about Z hangs exactly G / cos β below it, vertically.
@@ -178,19 +189,30 @@ test('ONE BOARD PER SEGMENT — a board does not bend at a knee', () => {
   assert.equal(boards.length, 2);
   assert.deepEqual(boards.map((p) => p.id), ['TOP-1', 'TOP-2'], 'left to right');
   assert.deepEqual(boards.map((p) => p.meta.slopeCut.deg), [0, 45], 'each with its own β');
-  assert.deepEqual(boards.map((p) => p.meta.slopeCut.span), [300, 600]);
-  assert.deepEqual(boards.map((p) => p.meta.slopeCut.blankLen), [300, 866.5281]);
+  // T54-F1 AMENDED (28.08.2026): the boards ride the LOWERED line, and at a
+  // knee its vertex is the INTERSECTION of the two lowered segments (the
+  // mitred offset), no longer the ceiling's own knee at 300. Re-derived:
+  //   flat run lowered by 40/cos 0° = 40           → y = 1960;
+  //   raked run lowered by 40/cos 45° = 40√2       → through (300, 1943.4315)
+  //     at slope −1, i.e. y = 2300 − 40√2 − x;
+  //   1960 = 2300 − 40√2 − x  ⇒  knee x = 340 − 40√2 = 283.4315.
+  // So the flat board spans 283.4315, the raked one 900 − 283.4315 = 616.5685
+  // of plan, faceLen = 616.5685/cos 45° = 871.9595, blank = + G·tan 45° = 889.9595.
+  const kneeX = 340 - 40 * Math.SQRT2; // = 283.43146
+  assert.deepEqual(boards.map((p) => p.meta.slopeCut.span), [283.4315, 616.5685]);
+  assert.deepEqual(boards.map((p) => p.meta.slopeCut.blankLen), [283.4315, 889.9595]);
   // Between them they span the whole width, edge to edge, with no gap and no
   // overlap — a roof with a hole in it is not a roof. The level board is
   // asserted as it stands; the leant one by DOING the rotation (chat-fix
   // 25.08.2026: the box is the level board, the lean is the meta's).
   assert.equal(boards[0].box.x, 0);
-  assert.equal(boards[0].box.x + boards[0].box.w, 300);
+  assert.equal(boards[0].box.x + boards[0].box.w, 283.4315, 'the flat board ends at the mitred knee');
+  assert.ok(Math.abs(283.4315 - kneeX) < 1e-3, '…and 283.4315 IS 340 − 40√2, re-derived');
   const pv = boards[1].meta.tilt_pivot;
   const topY = boards[1].box.y + boards[1].box.h;
   const [lx] = spin([boards[1].box.x, topY], pv, boards[1].meta.tilt_deg);
   const [rx] = spin([boards[1].box.x + boards[1].box.w, topY], pv, boards[1].meta.tilt_deg);
-  assert.ok(Math.abs(Math.min(lx, rx) - 300) < 1e-3, 'the leant board starts at the knee');
+  assert.ok(Math.abs(Math.min(lx, rx) - kneeX) < 1e-3, 'the leant board starts at the knee');
   assert.ok(Math.abs(Math.max(lx, rx) - 900) < 1e-3, '…and ends at the wall');
 });
 
@@ -260,12 +282,17 @@ test('the roof over a PENTAGON is two boards: the flat top, then the fall', () =
   const r = cut({ slope_cut: { y0: 2400, y1: 1200, infill: 40 } });
   const boards = tops(r);
   assert.equal(boards.length, 2);
-  // The cut line crosses H = 2150 at x = 125 — the pentagon's own knee, and the
-  // same 125 the BACK's outline carries.
-  assert.equal(boards[0].meta.slopeCut.to, 125);
-  assert.equal(boards[1].meta.slopeCut.from, 125);
+  // T54-F1 AMENDED (28.08.2026): the roof line is cutReach capped at H, so the
+  // pentagon's knee is where the LOWERED line crosses H — no longer the
+  // ceiling's own 125. Re-derived: β = atan 2 ⇒ cos β = 1/√5, reserve =
+  // 40√5 = 89.4427; the lowered fall runs 2310.5573 → 1110.5573 and crosses
+  // H = 2150 at x = 125 − 20√5 = 80.2786.
+  const kneeX = 125 - 20 * Math.sqrt(5); // = 80.27864
+  assert.ok(Math.abs(boards[0].meta.slopeCut.to - kneeX) < 1e-3);
+  assert.equal(boards[0].meta.slopeCut.to, boards[1].meta.slopeCut.from,
+    'one knee, shared to the byte');
   const back = r.panels.find((p) => p.id === 'BACK');
-  assert.ok(back.cnc.outline.some(([x, y]) => x === 125 && y === H),
+  assert.ok(back.cnc.outline.some(([x, y]) => Math.abs(x - kneeX) < 1e-3 && y === H),
     'the board and the outline agree, because they are the same walk');
   assert.equal(boards[0].meta.slopeCut.deg, 0, 'level under the flat ceiling');
   assert.equal(boards[1].meta.slopeCut.deg, 63.4349);

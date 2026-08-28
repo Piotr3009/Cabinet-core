@@ -47,6 +47,7 @@ import { migrateWallElement, wallElements } from '../lib/wallElements.js';
 // becomes a number the engine and the clamp can use. Both come out of the same
 // module the wall mesh and the elevation read — there is no second lerp here.
 import {
+  ceilingAt, ceilingPolyline,
   slopeCutLine, slopeInfillMm, slopeMinimumMm, slopeShortfallMm, slopeStation,
 } from '../lib/slopeLine.js';
 // T45 F9b/F9c: the job's LED spec — the groove mode, the channel width and the
@@ -105,7 +106,8 @@ import {
 } from '../engine/runs.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
-  runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan, widthFixed,
+  runFor as shareOutRunFor, shareOutGapSpan, shareOutOffered, shareOutPlan,
+  shareOutSignature, widthFixed,
 } from '../engine/shareOut.js';
 // Turn 50 (CLAUDE.md F3): nothing is built bigger than the room it stands in.
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
@@ -117,7 +119,15 @@ import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
 // Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
-import { settleRiders } from '../engine/topBox.js';
+import {
+  isLeftSide, minRiderWidth, riddenList, riderFreeWidth, riderSlot, settleRiders,
+} from '../engine/topBox.js';
+// T53 (CLAUDE.md F8): the watch drawer's own entry, its four layouts, its
+// finish and the shelf it puts its glass in.
+import {
+  DEFAULT_WATCH_LAYOUT, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
+  watchDrawerFixedHeight,
+} from '../engine/watchDrawer.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
 // It lives in `lib/` and not in the engine on purpose (T45's own argument):
@@ -602,6 +612,41 @@ function slopeLimitFor(state, unit, wall, footprintWidth, profile) {
  * @returns {object|null} the two points, or null — and null means the key is
  *   never written, which is iron rule 2's gate.
  */
+/**
+ * ─── TURN 53 (CLAUDE.md F3c): "TO THE CEILING" MEANS THIS CEILING ──────────
+ *
+ * *"slope — tylko infill się nie rysuje po skosie, a jest na CNC."*
+ *
+ * `sideInfillToCeiling` and `endPanelToCeiling` read `room.height` — the room's
+ * FLAT headroom — so a filler double-clicked to the ceiling under a rake was
+ * given the height of a ceiling that is not over it, and stood through the
+ * plaster. The height is `ceilingAt` at THE PIECE'S OWN X on that wall, which
+ * is the one function the wall mesh, the elevation, the drag clamp and the
+ * engine's own cut all already ask (T46's "one ceilingAt").
+ *
+ * The piece's own x is the carcass edge it stands against: the unit's left edge
+ * for a left-hand piece, its right edge for a right-hand one. Off the slope, or
+ * on a wall with none, this is `room.height` to the millimetre — which is what
+ * keeps every straight room exactly as it was.
+ */
+function ceilingOverPiece(state, unit, side) {
+  const roomH = Number(state?.project?.room?.height) || 0;
+  const wallIndex = unit?.position?.wall;
+  if (wallIndex == null) return roomH;
+  const slopes = slopesOfWall(state, wallIndex);
+  if (!slopes.length) return roomH;
+  const wall = roomWalls(state.project.room)[wallIndex];
+  if (!wall) return roomH;
+  const x0 = Number(unit.position?.x_mm) || 0;
+  const x = side === 'right' || side === 'R'
+    ? x0 + (Number(unit.params?.width) || 0)
+    : x0;
+  return ceilingAt(x, slopes, {
+    wallWidth: Number(wall.width) || 0,
+    wallHeight: roomH,
+  });
+}
+
 function slopeCutFor(unit, design) {
   const state = useProjectStore.getState();
   const wallIndex = unit?.position?.wall;
@@ -932,8 +977,66 @@ function migrateUnitType(unit) {
   return { ...unit, type: resolved, params: { ...unit.params, type: resolved } };
 }
 
+/**
+ * ─── TURN 53 (CLAUDE.md F5g): ONE BOX BECOMES A LIST OF ONE ────────────────
+ *
+ * `ridden_by` was ONE id and is a LIST now, because a main may carry several
+ * top boxes side by side. A project saved before tonight carries the scalar, so
+ * it is normalised on the way in — the same door every other migration on this
+ * page uses, and the same rule: ABSENT stays absent, so a cabinet that carries
+ * nothing gains no param.
+ *
+ * The rider's own link (`rides_on`) is untouched, which is what keeps the box
+ * exactly where it was: the new model reads the rider's OWN x rather than
+ * confiscating the host's, so a one-box project opens looking identical.
+ */
+const migrateUnitRidden = (u) => {
+  const value = u?.params?.ridden_by;
+  if (value == null || Array.isArray(value)) return u;
+  return { ...u, params: { ...u.params, ridden_by: riddenList(value) } };
+};
+
+/**
+ * ─── TURN 53 (CLAUDE.md F8g): A T52 INSERT LOADS ───────────────────────────
+ *
+ * *"A saved project with a T52 v1 insert loads: the in-frame glass flag becomes
+ * the shelf-glass option where a shelf sits above, otherwise it is dropped and
+ * Check #23's neighbour names it."*
+ *
+ * A v1 insert had its pane IN THE TRAY, unconditionally — there was no flag to
+ * read, which is why the migration is "has it never said?" rather than "what
+ * did it say?". So a v1 insert asks for the glass, and the ENGINE is what
+ * decides whether it can have it: a shelf directly above gets the opening; no
+ * shelf gets `watch_glass_needs_shelf`, the pane is not cut, and Check #23 says
+ * so in words. One mechanism, both halves of his sentence.
+ *
+ * DECISION TAKEN, veto in one line.
+ */
+const migrateUnitWatch = (u) => {
+  const items = u?.params?.sections?.[0]?.items;
+  if (!Array.isArray(items)) return u;
+  let touched = false;
+  const next = items.map((i) => {
+    if (i?.kind !== 'drawer' || i.watch_insert !== true) return i;
+    if ('watch_shelf_glass' in i && 'watch_layout' in i) return i;
+    touched = true;
+    return {
+      ...i,
+      // v1 had a pane; it asks for one upstairs now.
+      watch_shelf_glass: 'watch_shelf_glass' in i ? i.watch_shelf_glass : true,
+      // …and v1 had exactly one arrangement, which is CLASSIC.
+      watch_layout: i.watch_layout || DEFAULT_WATCH_LAYOUT,
+    };
+  });
+  if (!touched) return u;
+  const sections = u.params.sections.map((sec, n) => (n === 0 ? { ...sec, items: next } : sec));
+  return { ...u, params: { ...u.params, sections } };
+};
+
 const migrateUnits = (units) => (Array.isArray(units)
-  ? units.map((u) => migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))))
+  ? units.map((u) => migrateUnitWatch(migrateUnitRidden(
+    migrateUnitFrontStyle(migrateUnitShelves(migrateUnitType(u))),
+  )))
   : []);
 
 function loadCache() {
@@ -1202,6 +1305,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // F3's law), and each correction says so in its grey note. A healed-open
     // project is honestly DIRTY: it changed, and the note names how.
     get().healFrontGaps();
+    // T53 (F1b): a ✕ belongs to the drawing it was clicked on. Opening another
+    // job must not carry a dismissal onto a gap in somebody else's room.
+    useUiStore.getState().clearShareOutDismissed();
+    useUiStore.getState().clearShareOut();
   },
 
   /**
@@ -1687,6 +1794,36 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         + (Number(u.params?.depth) || 0)
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
+      // ─── TURN 53 (CLAUDE.md F3b): THE RUN'S OWN STRETCH OF THE CEILING ───
+      //
+      // *"top infill po skosie w ogóle nie działa … jakoś dziwnie się rysuje
+      // gdzieś poza ścianami."*
+      //
+      // The engine read the ceiling off the OWNER unit's own slope cut, and the
+      // owner of a run is its first cabinet — so a run whose rake falls over
+      // the LAST one drew a flat board at room height right across it. The line
+      // is the RUN's, so the room hands the run its own stretch of it.
+      //
+      // It is `slopeCutLine` — the SAME function `paramsForEngine` cuts every
+      // carcass with — asked over the run's span instead of one cabinet's, with
+      // the OWNER's floor as the datum, because the owner's frame is the frame
+      // `runInfill.offset` is already stated in. One function, one datum, one
+      // ceiling.
+      runCutOf: ({ run, from, to, owner }) => {
+        const slopes = slopesOfWall(s, run.wall);
+        if (!slopes.length) return null;
+        const wall = walls[run.wall];
+        if (!wall) return null;
+        return slopeCutLine({
+          slopes,
+          wallWidth: Number(wall.width) || 0,
+          wallHeight: roomHeight,
+          x: from,
+          width: Math.max(0, to - from),
+          infill: slopeInfillMm(design),
+          floorY: floorYOf(owner, null, profile),
+        });
+      },
     }, profile);
 
     // ─── …and the PLINTH, the same way (turn 12, CLAUDE.md F8) ───
@@ -2104,8 +2241,30 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // bar reads and the SAME one `shareOutRun` applies. Three callers, one
       // wall margin, one plan.
       const offer = shareOutSubject(s, unit.id, getCabinetProfile(), { gated: true });
-      if (offer?.plan) useUiStore.getState().offerShareOut(unit.id);
-      else useUiStore.getState().clearShareOut();
+      // ─── TURN 53 (CLAUDE.md F1b): THE ✕ HOLDS, AND ONLY OVER THIS GAP ────
+      //
+      // *"musi też być przycisk dismiss — jak nie chcę tego robić teraz, muszę
+      // coś nacisnąć."*
+      //
+      // Without the signature the cross would be a click that lasts until the
+      // next settle — which is usually the same second — so what is compared is
+      // the OFFER and not the fact of a dismissal. Same wall, same mount, same
+      // startAt/endAt/gap: the joiner has already answered this question, and
+      // the bar stays down. Anything else is a new question and it is asked.
+      const ui = useUiStore.getState();
+      if (offer?.plan) {
+        const signature = shareOutSignature(offer.run, offer.plan);
+        if (signature && signature === ui.shareOutDismissed) {
+          ui.clearShareOut();
+          return { grown: [], strays, offered: false, dismissed: true };
+        }
+        // A different offer: the old cross has nothing to say about it, and
+        // keeping it would silence a gap the joiner never saw.
+        if (ui.shareOutDismissed) ui.clearShareOutDismissed();
+        ui.offerShareOut(unit.id);
+      } else {
+        ui.clearShareOut();
+      }
       return { grown: [], strays, offered: Boolean(offer?.plan) };
     } finally {
       settling = false;
@@ -2472,7 +2631,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return 0;
     const profile = getCabinetProfile();
-    const headroom = Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile));
+    // T53 (F3c): the CEILING OVER THIS PIECE, not the room's flat headroom —
+    // the same one `ceilingAt` every other reader asks. A filler typed taller
+    // than the rake allows is clamped by the rake, which is what a joiner would
+    // find with a tape.
+    const headroom = Math.max(0, ceilingOverPiece(s, unit, side) - unitTopOf(unit, profile));
     const top = Math.min(Math.max(snapTo(Number(topMm) || 0, profile.editor.mmStep), 0), headroom);
     const key = side === 'R' ? 'side_infill_right_top_mm' : 'side_infill_left_top_mm';
     set((st) => ({
@@ -2521,7 +2684,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const profile = getCabinetProfile();
     return get().setSideInfillTop(
       unitId, side,
-      Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile)),
+      Math.max(0, ceilingOverPiece(s, unit, side) - unitTopOf(unit, profile)),
     );
   },
 
@@ -2531,9 +2694,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return 0;
     const profile = getCabinetProfile();
+    const panel = (unit.params?.end_panels || []).find((p) => p.id === panelId) || null;
+    const side = panel?.side === 'R' ? 'right' : 'left';
     return get().setEndPanelTop(
       unitId, panelId,
-      Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile)),
+      Math.max(0, ceilingOverPiece(s, unit, side) - unitTopOf(unit, profile)),
     );
   },
 
@@ -3190,13 +3355,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // on nothing — and check #14 says so in red rather than the app refusing
     // to add what the joiner asked for.
     const riderOf = getUnitType(typeId).ridesOn;
+    // ─── TURN 53 (CLAUDE.md F5): THE PLUS ON A TOP BOX MEANS ITS HOST ──────
+    //
+    // *"jak dodaję plusik po lewej, to on się nie pojawia po lewej, tylko
+    // jeden w drugim."*
+    //
+    // Half of that is this line. `beside` is the box the plus was clicked on,
+    // and a box fails the `!ridesOn` test — so the search fell through to the
+    // LAST main in the project and the new box was born on a cabinet the
+    // joiner had not pointed at. A plus on a box means "another one beside
+    // THIS", so the host is the clicked box's own host.
+    const besideHost = beside && getUnitType(beside.type).ridesOn && beside.params?.rides_on
+      ? state.units.find((u) => u.id === beside.params.rides_on) || null
+      : null;
     const riderHost = riderOf
-      ? [beside, ...[...state.units].reverse()].find((u) => u
+      ? [besideHost, beside, ...[...state.units].reverse()].find((u) => u
         && getUnitType(u.type).family === riderOf
         && !getUnitType(u.type).ridesOn)
       : null;
     if (riderHost) {
-      placed = { wall: riderHost.position?.wall ?? 0, x: riderHost.position?.x_mm ?? 0 };
       unit.params.rides_on = riderHost.id;
       // ─── TURN 37 (CLAUDE.md F5a): BORN MATCHED ────────────────────────────
       //
@@ -3235,6 +3412,46 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       });
       if (born.refuse) return { id: null, error: born.refuse };
       if (born.height != null) unit.params.height = born.height;
+      // ─── TURN 53 (CLAUDE.md F5): BESIDE THE CLICKED BOX, OR REFUSED ──────
+      //
+      // *"add-plus L/R on a top box places the new box BESIDE the clicked box,
+      // clamped to the host span; no room on that side → the add refuses with
+      // a message, exactly as a cabinet add against a wall does."*
+      //
+      // The width was matched to the host above — which is right for the FIRST
+      // box and wrong for the second, because two boxes of the host's full
+      // width cannot both stand on it. So a box going in beside another takes
+      // the gap it is being put in, and the refusal carries the number.
+      const onHost = state.units.filter((u) => u.params?.rides_on === riderHost.id);
+      if (onHost.length) {
+        const gap = riderSlot(riderHost, onHost, 0, { beside, side });
+        if (gap == null) {
+          return {
+            id: null,
+            error: `There is no room for another top box${side ? ` to the ${isLeftSide(side) ? 'left' : 'right'}` : ''} on ${riderHost.params?.unit_num || 'this cabinet'} — make one narrower, or put it on another main.`,
+          };
+        }
+        // The FREE stretch on that side is what the new box may be, so it is
+        // born to fit rather than born too wide and clamped into a neighbour.
+        const free = riderFreeWidth(riderHost, onHost, { beside, side });
+        if (free < minRiderWidth(profile)) {
+          return {
+            id: null,
+            error: `Only ${formatMm(free)} mm free${side ? ` to the ${isLeftSide(side) ? 'left' : 'right'}` : ''} on ${riderHost.params?.unit_num || 'this cabinet'} — not enough for a top box.`,
+          };
+        }
+        unit.params.width = Math.round(free);
+      }
+      const x = riderSlot(riderHost, onHost, unit.params.width, { beside, side });
+      placed = {
+        wall: riderHost.position?.wall ?? 0,
+        x: x == null ? (riderHost.position?.x_mm ?? 0) : x,
+      };
+      // T53 (F5): the OFFSET is the box's state — where it stands ON its main —
+      // so it is written at birth beside the x, and `settleRiders` reads it
+      // rather than re-deriving a position from an absolute the host may move
+      // out from under.
+      unit.params.rides_offset_mm = Math.max(0, placed.x - (riderHost.position?.x_mm ?? 0));
     }
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
@@ -3883,8 +4100,28 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
 
     set((st) => ({
       // T36 F7: …and every top box rides the main it stands on.
+      //
+      // T53 (F5): a dragged BOX writes its own OFFSET. The offset is the state
+      // — where the box stands on its main — so a hand that moves the box moves
+      // the offset, and `settleRiders` then agrees with the drag instead of
+      // undoing it on the next pass. A main that moves carries its boxes along
+      // by the same number, untouched.
       units: settleRiders(
-        st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, x_mm: x } } : u)),
+        st.units.map((u) => {
+          if (u.id !== unitId) return u;
+          const moved = { ...u, position: { ...u.position, x_mm: x } };
+          const type = getUnitType(u.type);
+          if (!type.ridesOn) return moved;
+          const host = st.units.find((h) => h.id === u.params?.rides_on) || null;
+          if (!host) return moved;
+          return {
+            ...moved,
+            params: {
+              ...moved.params,
+              rides_offset_mm: Math.max(0, x - (Number(host.position?.x_mm) || 0)),
+            },
+          };
+        }),
         getCabinetProfile(),
       ),
     }));
@@ -5700,6 +5937,108 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return on === true;
   },
 
+  /**
+   * ─── TURN 53 (CLAUDE.md F8a): THE WATCH DRAWER IS ITS OWN ENTRY ──────────
+   *
+   * The owner, 27.08.2026: *"szuflada z zegarkami powinna być jako osobna
+   * pozycja, pod szufladami — czyli pozycja 3. dodajesz normalne szuflady i
+   * później masz: czy chcesz dodać szufladę (nad nimi, z zegarkami). wtedy
+   * dokładamy taką szufladę już bez możliwości sterowania wysokością — zawsze
+   * stała wysokość."*
+   *
+   * So: it is added ON TOP of the stack that is already there, at ONE derived
+   * height (`watchDrawerFixedHeight` — 60 inside + the tray's base + the
+   * headroom + the box's own seat + the front-to-side delta, stated beside its
+   * derivation), and there is no slider. A cabinet with NO drawer stack is
+   * refused in words, because *"dodajesz normalne szuflady i później"* is the
+   * order he asked for.
+   *
+   * It is an ordinary drawer item carrying the flag, so everything a drawer
+   * already is — the box, the runners, the front, the undo step — is untouched.
+   */
+  addWatchDrawer: (unitId, zone = null) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, error: 'That cabinet has gone.' };
+    const wantZone = zone == null ? null : Math.trunc(Number(zone));
+    const zoneOf = (i) => (i?.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    const items = unit.params.sections?.[0]?.items || [];
+    const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone);
+    if (!stack.length) {
+      return {
+        ok: false,
+        error: 'Add the drawers first — the watch drawer goes on top of a stack.',
+      };
+    }
+    if (stack.some((i) => i.watch_insert === true)) {
+      return { ok: false, error: 'This stack already has a watch drawer.' };
+    }
+    const height = watchDrawerFixedHeight(profile);
+    const index = stack.reduce((m, i) => Math.max(m, Number(i.index) || 0), 0) + 1;
+    const item = {
+      id: uid('drawer'),
+      kind: 'drawer',
+      index,
+      mount: stack[0]?.mount || 'overlay',
+      ...(wantZone == null ? {} : { zone: wantZone }),
+      height_mm: height,
+      watch_insert: true,
+      watch_layout: DEFAULT_WATCH_LAYOUT,
+    };
+    get().addItem(unitId, item);
+    return { ok: true, id: item.id, height, index };
+  },
+
+  /** Which of the four designed layouts this insert is (T53 F8e). */
+  setWatchLayout: (unitId, itemId, layoutId) => {
+    const hit = WATCH_LAYOUTS.find((l) => l.id === layoutId) || WATCH_LAYOUTS[0];
+    get().updateItem(unitId, itemId, { watch_layout: hit.id });
+    return hit.id;
+  },
+
+  /** Spray / Oak / Walnut, or the project's own decor (T53 F8f). */
+  setWatchFinish: (unitId, itemId, finishId) => {
+    const hit = WATCH_FINISHES.find((f) => f.id === finishId)?.id || null;
+    get().updateItem(unitId, itemId, { watch_finish: hit });
+    return hit;
+  },
+
+  /**
+   * The pane over the drawer — and it is cut in the SHELF ABOVE (T53 F8b).
+   *
+   * *"opcja: dodać szybę ponad szufladą — wtedy wycinamy w półce otwór."*
+   *
+   * The option is stored whether or not a shelf is there; the ENGINE is what
+   * refuses in words when there is none (`watch_glass_needs_shelf`), which is
+   * the same refuse-and-report the insert itself keeps about a shallow drawer.
+   * `watchShelfAbove` below is what the SURFACE asks so it can grey the control
+   * and say why, rather than hiding it (F8d).
+   */
+  setWatchShelfGlass: (unitId, itemId, on) => {
+    get().updateItem(unitId, itemId, { watch_shelf_glass: on === true });
+    return on === true;
+  },
+
+  /**
+   * Is there a shelf directly above this drawer? — F8d's reason, in one call.
+   *
+   * Asked of the RESULT, so the answer is the very shelf the engine would cut
+   * the opening in. `null` means there is none, and the surface says so on
+   * hover instead of hiding the option.
+   */
+  watchShelfAbove: (unitId, index, zone = null) => {
+    const result = get().unitResult(unitId);
+    if (!result) return null;
+    const mine = result.panels.filter((p) => (p.meta?.zone ?? null) === (zone ?? null));
+    const interior = drawerBoxInterior(mine, index);
+    if (!interior) return null;
+    const top = interior.at.y + interior.height;
+    return mine
+      .filter((p) => p.part === 'SHELF' && p.box && p.box.y >= top - 1e-6)
+      .sort((a, b) => a.box.y - b.box.y)[0] || null;
+  },
+
   /** The project's hinge standard: 2 or 3 (turn 17, CLAUDE.md F7.1). */
   setHingeStandard: (n) => set((s) => {
     const design = migrateDesign(s.project.design);
@@ -7230,6 +7569,10 @@ function shareOutSubject(state, unitId, profile, { gated = false } = {}) {
     wallMargin,
     plan: plan || null,
     span: shareOutGapSpan(found.run, found.context),
+    // T53 (F1b): the ✕ dismisses THIS offer, and this is what "this" means.
+    // Published here so the bar hands back the same string `settleLayout`
+    // compares — one derivation, again.
+    signature: plan ? shareOutSignature(found.run, plan) : null,
   };
 }
 

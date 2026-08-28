@@ -167,8 +167,17 @@ test('F1 — the DRAWER BOTTOM is not on the list and did not move', () => {
 test('F1 — the list is the owner\'s six part names and nothing has crept on', () => {
   // Seven items in his sentence, six part names — SL and SR are both
   // `DRAWER-SIDE`. Pinned so that a later turn adding a role has to say so.
+  //
+  // ─── AND T53 · F6 SAYS SO ────────────────────────────────────────────────
+  // The owner, 27.08.2026: *"infille i plinthy układaj na CNC w pionie
+  // ZAWSZE"* — one word about two pieces. The PLINTH was already here and
+  // really was nested standing; the INFILL was not, so a long filler came off
+  // the saw lying down and banded across its own grain. It is the SEVENTH
+  // role, added deliberately, and named here because this test is exactly the
+  // place a later turn has to say so.
   assert.deepEqual([...CUT_STANDING_PARTS].sort(), [
-    'DRAWER-BOX-BACK', 'DRAWER-BOX-FRONT', 'DRAWER-FRONT', 'DRAWER-SIDE', 'END-PANEL', 'PLINTH',
+    'DRAWER-BOX-BACK', 'DRAWER-BOX-FRONT', 'DRAWER-FRONT', 'DRAWER-SIDE', 'END-PANEL',
+    'INFILL', 'PLINTH',
   ]);
   for (const part of ['SHELF', 'TOP', 'BOTTOM', 'BUL', 'BUR', 'BACK', 'FRONT', 'DRAWER-BOTTOM']) {
     assert.equal(cutStanding(part), false, `${part} is not on the owner's list`);

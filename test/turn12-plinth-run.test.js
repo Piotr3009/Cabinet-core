@@ -168,7 +168,19 @@ test('a fourth unit pushed against the run JOINS it — the plinth extends', () 
   store().updateUnitParams(id, { width: 600 });
   store().moveUnit(id, 1800, 0);
   store().addPlinth(id);
-  assert.equal(plinthOf(ids[0]).w, 2400, 'the toe kick grew to take it in');
+  // ─── AMENDED BY T53 · F6, AND THE AMENDMENT IS NAMED ────────────────────
+  //
+  // The claim T12 makes is unchanged and is still the point of this file: the
+  // toe kick GREW to take the fourth cabinet in, and the new unit cuts nothing
+  // of its own. What changed is that a 2400 mm toe kick no longer fits the
+  // workshop's board (2790 × 2060), and the owner's ruling of 27.08 is that it
+  // becomes STRIPS split on a cabinet line: *"dziel tak, żeby się równo z
+  // szafką którąś … łączenie zawsze równo z szafką, a nie na środku szafki."*
+  // So it is 1800 + 600 — three cabinets and one — and the two of them are the
+  // 2400 this test has always asserted.
+  const strips = store().unitResult(ids[0]).panels.filter((p) => p.role === 'plinth');
+  assert.equal(strips.reduce((n, p) => n + p.w, 0), 2400, 'the toe kick grew to take it in');
+  assert.deepEqual(strips.map((p) => p.w), [1800, 600], 'in strips, split on a cabinet edge');
   assert.equal(plinthOf(id), null, 'and the new unit cuts nothing of its own');
 });
 

@@ -58,6 +58,12 @@ import {
 import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
 // Turn 36 (CLAUDE.md F5): the owner's grain law, per ROLE, in one table.
 import { applyGrainAxis } from './grain.js';
+// T53 (F6): the strip law, born in `reference/lisp/SKYLON_COMMON.lsp`
+// (`SKY:stripsAtCabinetEdges`) — a plinth or an infill longer than the board is
+// split, and only ever on a cabinet's own edge.
+import {
+  oversizeCabinets, splitStretchAtEdges, stripLimitMm, stripsAtCabinetEdges,
+} from './strips.js';
 // ─── TURN 40 (CLAUDE.md F3b): OVERLAY DRAWERS IN A WARDROBE ────────────────
 // Where the stack STOPS, where the fixed shelf goes and where the shortened
 // door starts. It computes no runner row and no box side: the BUDR ladder
@@ -88,8 +94,12 @@ import {
 import { insertFor } from './drawerInserts.js';
 // T52 (CLAUDE.md F5): the watch drawer's INSERT — its own tray, its own BOM
 // line, and not one millimetre of the drawer box.
+// T53 (CLAUDE.md F8): …re-specified by the owner. The pane and the strip move
+// to the SHELF above (`shelfGlassPlan`), the rear field is one of four designed
+// layouts (`watchLayoutOf`), and the insert wears a finish of its own.
 import {
-  drawerBoxInterior, watchDrawerFit, watchDrawerSpec, watchInsertOn, watchInsertParts,
+  WATCH_LAYERS, drawerBoxInterior, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
+  watchFinishOf, watchInsertOn, watchInsertParts, watchLayoutOf,
 } from './watchDrawer.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
@@ -1283,7 +1293,9 @@ export function shelfMaterial(item) {
  * 80 high, all vertical — and only the BOTTOM inside is sloped, which is the
  * owner's own reading, confirmed word for word.
  */
-function shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }) {
+function shoeBoxBoxFor(piece, plan, {
+  boxX, boxZ, G, frontPlaneZ = null, faceY = null,
+}) {
   const y = plan.posZ;
   const wallH = piece.h;
   const t = piece.thickness;
@@ -1365,10 +1377,32 @@ function shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }) {
       // − 20) lands 10 in from BUL and leaves 10 to BUR, overhanging the box
       // it hangs on and covering the batten-and-runner zone behind it.
       const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
+      // ─── TURN 53 (CLAUDE.md F7): THE DRAWER-FRONT LAW, IN THREE NUMBERS ──
+      //
+      // *"szuflada lub półka na buty powinny mieć te same zasady co szuflady …
+      // nie licuje się z frontem, nie licuje się z innymi szufladami, nie wiem
+      // dlaczego front zachodzi na szufladę na dole."*
+      //
+      //   THE PLANE — `frontPlaneZ` is the very z the DRAWER-FRONT panels of
+      //   this carcass came out on, read rather than restated. The kit's own
+      //   `SHOE_SETBACK_X` datum stays where it belongs: on the BOX, whose
+      //   runners really do mount 3 mm behind the front. It was never the
+      //   FACE's datum, and using it there is what stood the face 47 mm proud.
+      //
+      //   THE GAP — the face keeps the drawer stack's own gap under it, so it
+      //   reads as the next front up rather than as a lid resting on the one
+      //   below. The double −G above is what made it an overlap; this is what
+      //   makes it a JOINT.
+      //
+      //   VERTICAL — and it always was: the tilt travels on the shoe box's
+      //   BOTTOM (`meta.tilt_deg`), which is the shelf the shoes stand on, and
+      //   has never been on this piece. `frontH` (the kit's 120) and the T37
+      //   width law are untouched, as CLAUDE.md instructs.
+      const faceZ = Number.isFinite(Number(frontPlaneZ)) ? Number(frontPlaneZ) : boxZ + depth;
       return {
         x: bayFrom + (plan.openingW - piece.w) / 2,
-        y,
-        z: boxZ + depth,
+        y: Number.isFinite(Number(faceY)) ? Number(faceY) : y,
+        z: faceZ,
         w: piece.w,
         h: wallH,
         d: t,
@@ -4334,12 +4368,49 @@ export function computeCabinet(params, profileOverride) {
       // POSITION — his field, "Height from bay floor", default 0 (on the
       // floor), *"or directly above the drawer stack when the bay has
       // drawers"* ("pozycja jak proponujesz"). A number he has typed wins.
-      const stackTop = hasDrawers && spec.zone == null ? partitionY - G : null;
+      // T53 (F7): the TOP FACE of the board that closes the stack — see below.
+      const stackTop = hasDrawers && spec.zone == null ? partitionY + G : null;
       const colStack = spec.zone != null
         ? columnDrawerSets.find((s) => s.zone === spec.zone)
         : null;
-      const above = colStack ? colStack.partY - G : stackTop;
-      const posZ = spec.pos_mm ?? (above != null && above > 0 ? roundTo(above - G, 0) : 0);
+      // ─── TURN 53 (CLAUDE.md F7): THE BOX STANDS ON THE BOARD, NOT IN IT ────
+      //
+      // The owner, 27.08: *"nie wiem dlaczego front zachodzi na szufladę na
+      // dole."*
+      //
+      // MEASURED on his own case — a 900 wardrobe, two 200 drawers, a shoe box
+      // above — before anything was changed:
+      //
+      //     the drawer stack's PARTITION occupies y 426 … 444
+      //     the top drawer FRONT finishes at              421
+      //     the shoe box's floor was written at           390
+      //
+      // 390 is not "directly above the drawer stack": it is 36 mm INSIDE it,
+      // through the partition board and past the front below. The line read
+      // `partY − G` and then took a SECOND board off it — the double −G — and
+      // neither subtraction was ever right, because the box does not stand at
+      // the partition's underside or at its middle. IT STANDS ON IT: `partY +
+      // G`, the top face of the board, which is where a joiner would put it and
+      // the only y at which no two boards share a millimetre (the house overlap
+      // law, 27.08).
+      const above = colStack ? colStack.partY + G : stackTop;
+      const posZ = spec.pos_mm ?? (above != null && above > 0 ? roundTo(above, 0) : 0);
+      // ─── …AND THE FACE IS PLACED BY THE FRONT LAW, NOT BY THE BOX ─────────
+      //
+      // *"nie licuje się z frontem, nie licuje się z innymi szufladami."*
+      //
+      // A drawer's BOX and its FRONT are two different placements, and so are
+      // these: the box stands on the board above the stack; the FACE hangs
+      // where the next front up hangs — the drawer front's own top edge plus
+      // the drawer stack's own gap. Read off the panels already emitted, so
+      // there is no second formula to drift.
+      const frontBelow = panels
+        .filter((p) => p.part === 'DRAWER-FRONT' && p.box
+          && p.box.y + p.box.h <= posZ + 1e-6)
+        .reduce((m, p) => Math.max(m, p.box.y + p.box.h), Number.NEGATIVE_INFINITY);
+      const faceY = Number.isFinite(frontBelow)
+        ? roundTo(frontBelow + DR.gap, 4)
+        : roundTo(posZ + DR.gap, 4);
       const plan = shoeBoxPlan({
         openingW: opening,
         depth,
@@ -4360,9 +4431,32 @@ export function computeCabinet(params, profileOverride) {
         zone: spec.zone,
         bayFrom: from,
         plan,
+        // T53 (F7): where the FACE hangs, decided by the front law rather than
+        // by the box it is screwed to. See the block above.
+        faceY,
       });
     }
   }
+  // ─── TURN 53 (CLAUDE.md F7): THE FRONT PLANE, READ NOT RESTATED ──────────
+  //
+  // The owner, 27.08: *"szuflada lub półka na buty powinny mieć te same zasady
+  // co szuflady … nie licuje się z frontem, nie licuje się z innymi
+  // szufladami."*
+  //
+  // The shoe face stood on its OWN datum — `D − frontT − SHOE_SETBACK_X`, the
+  // kit's 3 mm — while every drawer front in the same carcass stands at
+  // `D − setback − frontT`. On the owner's own 568-deep wardrobe that is 540
+  // against 493: the face stood 47 mm proud of the plane it is meant to be
+  // flush with.
+  //
+  // So it is READ off the drawer front rather than restated: whatever plane
+  // this cabinet's DRAWER-FRONT panels came out on is the plane the shoe face
+  // lands on, and a cabinet with no drawers falls back to the same one formula
+  // those panels are built from. One plane, one source, and no way for the two
+  // to drift apart again.
+  const drawerFrontPlaneZ = panels.find((p) => p.part === 'DRAWER-FRONT' && p.box)?.box?.z
+    ?? (D - DR.setback - frontT);
+
   // The pieces themselves, and the carcass sides' drilling. One pass, so the
   // panel ids and the drill panel ids cannot disagree.
   for (const [n, entry] of shoeBoxPlans.entries()) {
@@ -4383,9 +4477,28 @@ export function computeCabinet(params, profileOverride) {
         batten: 'BATTEN',
         front: 'FR',
       }[piece.role] || piece.role.toUpperCase();
+      // ─── TURN 53 (CLAUDE.md F2): TWO BATTENS, TWO NAMES ────────────────────
+      //
+      // Found by OPENING THE FILES rather than by reading the code. A DRAWER
+      // shoe box on a wardrobe hinged both sides cuts TWO battens — one per
+      // hinged side — and both of them were `SHOE1-BATTEN`. A panel id is the
+      // DXF's file name (`dxfFileName`), and the per-unit export is a ZIP: two
+      // entries with one name is ONE entry, so the second batten never reached
+      // the machine. It is also the key the tick tree, the part edits and the
+      // material assignment are all held by, so hiding one hid both and a
+      // pencil mark drawn on one appeared on the other.
+      //
+      // The SIDE is what tells them apart and the piece has carried it since
+      // T34 — the same `piece.side` the box's own two walls are named by (SL /
+      // SR). Only the ID moves: `part` stays `SHOEBOX-BATTEN`, which is the
+      // code `engine/partRegistry.js` resolves and the BOM counts, so not a
+      // line of the bill of materials changes.
+      const idSuffix = piece.role === 'batten'
+        ? `${suffix}-${piece.side === 'L' ? 'L' : 'R'}`
+        : suffix;
       const geom = rectGeometry(piece.w, piece.h);
       panels.push(panel({
-        id: `SHOE${idx}-${suffix}`,
+        id: `SHOE${idx}-${idSuffix}`,
         part: `SHOEBOX-${suffix}`,
         // The FRONT is a front and rides the front laws; every other piece is
         // a box board. `family` on the piece says which board it is cut from:
@@ -4397,7 +4510,9 @@ export function computeCabinet(params, profileOverride) {
         thickness: piece.thickness,
         edgeCode: codesFor(piece.role),
         edgeLen: metres(piece.role === 'front' ? 2 * piece.w + 2 * piece.h : piece.w),
-        box: shoeBoxBoxFor(piece, plan, { boxX, boxZ, G }),
+        box: shoeBoxBoxFor(piece, plan, {
+          boxX, boxZ, G, frontPlaneZ: drawerFrontPlaneZ, faceY: entry.faceY,
+        }),
         cnc: {
           ...geom,
           pockets: piece.pockets,
@@ -4683,7 +4798,69 @@ export function computeCabinet(params, profileOverride) {
   const plinthMember = runPlinth?.role === 'member';
   const plinthLength = runPlinth?.role === 'owner' ? Number(runPlinth.length) || W : W;
   const plinthX = runPlinth?.role === 'owner' ? Number(runPlinth.offset) || 0 : 0;
-  if (wantsPlinth && !plinthMember) {
+  // ─── TURN 53 (CLAUDE.md F6): A PLINTH LONGER THAN THE BOARD IS STRIPS ────
+  //
+  // *"infille i plinthy układaj na CNC w pionie zawsze i dziel tak, żeby się
+  // równo z szafką którąś — żeby nie przekroczyło wysokości materiału."*
+  //
+  // The strips are `engine/strips.js` and none of the arithmetic is here: the
+  // run element carries the cabinets' own widths (`spans`), the board's height
+  // comes off the project's material rather than a literal, and a joint may
+  // only land where a cabinet ends. A run that already fits gives ONE strip —
+  // the whole piece — so every plinth in every project shorter than a board is
+  // byte-for-byte the board it was, and a bare `computeCabinet()` (no run
+  // element at all) never reaches this code.
+  const plinthLimit = stripLimitMm(P, 'carcasses');
+  const plinthStrips = runPlinth?.role === 'owner' && Array.isArray(runPlinth.spans)
+    && plinthLength > plinthLimit
+    ? stripsAtCabinetEdges(runPlinth.spans, plinthLimit)
+    : null;
+  // …and the one thing a split cannot save. *"the check that used to flag the
+  // oversize now flags only a single cabinet wider than the board (which no
+  // split can save)."*  The strip carries the names, so check #7 and the sheet
+  // can say WHICH cabinet rather than only that something is too big.
+  const plinthTooWide = runPlinth?.role === 'owner' && Array.isArray(runPlinth.spans)
+    ? oversizeCabinets(runPlinth.spans, plinthLimit)
+    : [];
+  if (wantsPlinth && !plinthMember && plinthStrips && plinthStrips.length > 1) {
+    const t = AP.plinth.thickness ?? G;
+    for (const strip of plinthStrips) {
+      panels.push(panel({
+        id: `PLINTH-${strip.index}`,
+        part: 'PLINTH',
+        role: 'plinth',
+        w: strip.length,
+        h: plinthH,
+        thickness: t,
+        edgeCode: codes.topBottom,
+        edgeLen: metres(2 * strip.length),
+        box: {
+          x: plinthX + strip.from,
+          y: -plinthH,
+          z: D - AP.plinth.setback - t,
+          w: strip.length,
+          h: plinthH,
+          d: t,
+        },
+        // A strip is a plain rectangle: the appliance relief (`notchedPlinth`)
+        // belongs to the cabinet it is in front of, and a DROP front on a run
+        // long enough to need strips is named in the verdict as a case this
+        // turn does not compose — refuse-and-report rather than a quiet wrong
+        // outline.
+        cnc: rectGeometry(strip.length, plinthH),
+        meta: {
+          run: true,
+          unitIds: strip.unitIds,
+          strip: {
+            index: strip.index,
+            of: strip.of,
+            limit: plinthLimit,
+            ...(plinthTooWide.length ? { oversize: plinthTooWide } : {}),
+          },
+        },
+      }));
+    }
+  } else if (wantsPlinth && !plinthMember) {
     const t = AP.plinth.thickness ?? G;
     panels.push(panel({
       id: 'PLINTH', part: 'PLINTH', role: 'plinth', w: plinthLength, h: plinthH, thickness: t,
@@ -4783,6 +4960,65 @@ export function computeCabinet(params, profileOverride) {
     // in it.
     const faceZ = D + P.doors.gap + frontT;
     const ends = runInfill.ends || { left: 'wall', right: 'wall' };
+    // ─── TURN 53 (CLAUDE.md F3b): THE RUN'S OWN CEILING, NOT THE OWNER'S ────
+    //
+    // The owner, 27.08: *"top infill po skosie w ogóle nie działa … jakoś
+    // dziwnie się rysuje gdzieś poza ścianami."*
+    //
+    // DIAGNOSED. This block took its ceiling from `roofLine` — the OWNER
+    // unit's own slope cut — and the owner of a run is its FIRST cabinet.
+    // A run of five whose slope falls over the LAST one gives that first
+    // cabinet no cut at all, so `roofLine` is null, the whole board is one
+    // flat rectangle at `H`, and it stands above the ceiling for the length of
+    // the rake. That is his *"poza ścianami"*, and it is a scope error rather
+    // than a geometry one.
+    //
+    // The RUN carries its own line now (`engine/runs.js runTopInfill`), sampled
+    // over the run's whole span from the same `slopeCutLine` every other piece
+    // is cut from, in this unit's own frame. Where it is absent — no slope on
+    // the wall, or a caller that predates tonight — the owner's `roofLine` is
+    // used exactly as it was, so a straight room is byte-for-byte what it was.
+    const runCeil = Array.isArray(runInfill.ceiling) && runInfill.ceiling.length >= 2
+      ? runInfill.ceiling.map((q) => ({
+        x: roundTo(x0 + (Number(q.x) || 0), 4), y: Number(q.y) || 0,
+      }))
+      : null;
+    const infRoof = runCeil ? true : Boolean(roofLine);
+    /** The ceiling over the RUN at x, in this unit's frame. */
+    const infReachAt = runCeil
+      ? (x) => {
+        const pts = runCeil;
+        if (x <= pts[0].x) {
+          const b = pts[1];
+          const span = b.x - pts[0].x;
+          return span > 1e-9 ? pts[0].y + ((b.y - pts[0].y) * (x - pts[0].x)) / span : pts[0].y;
+        }
+        const last = pts[pts.length - 1];
+        if (x >= last.x) {
+          const a = pts[pts.length - 2];
+          const span = last.x - a.x;
+          return span > 1e-9 ? a.y + ((last.y - a.y) * (x - a.x)) / span : last.y;
+        }
+        for (let i = 1; i < pts.length; i += 1) {
+          const a = pts[i - 1];
+          const b = pts[i];
+          if (x <= b.x) {
+            const span = b.x - a.x;
+            return span > 1e-9 ? a.y + ((b.y - a.y) * (x - a.x)) / span : a.y;
+          }
+        }
+        return last.y;
+      }
+      : reachAt;
+    const infSignedDeg = (a, b) => {
+      const runX = b - a;
+      if (!(Math.abs(runX) > 1e-9)) return 0;
+      return (Math.atan((infReachAt(b) - infReachAt(a)) / runX) * 180) / Math.PI;
+    };
+    /** Where the line BENDS over the run — a segment boundary and nothing else. */
+    const infBreaks = runCeil
+      ? runCeil.map((q) => q.x)
+      : (roofLine ? slopeCutPts(roofLine).map((q) => q.x) : []);
     // ─── TURN 48 (CLAUDE.md F2): THE L IS DEAD. TWO PLAIN BOARDS. ───────────
     //
     // The owner, 25.08.2026, in full:
@@ -4887,16 +5123,16 @@ export function computeCabinet(params, profileOverride) {
         from: faceX0, to: faceX0 + faceLen, deg: 0, run: faceLen,
         shelfFrom: faceX0, shelfRun: len,
       }];
-      if (!roofLine) return whole;
+      if (!infRoof) return whole;
       const xs = [faceX0,
-        ...slopeCutPts(roofLine).map((q) => q.x)
+        ...infBreaks
           .filter((q) => q > faceX0 + 1e-6 && q < faceX0 + faceLen - 1e-6),
         faceX0 + faceLen];
       const segs = [];
       for (let i = 1; i < xs.length; i += 1) {
         const a = xs[i - 1];
         const b = xs[i];
-        const deg = Math.abs(signedDeg(a, b));
+        const deg = Math.abs(infSignedDeg(a, b));
         const cos = Math.cos((deg * Math.PI) / 180);
         segs.push({
           from: a,
@@ -4912,24 +5148,56 @@ export function computeCabinet(params, profileOverride) {
           // Where two segments meet, each piece is cut at HALF the angle
           // between them — the frame-corner rule again, and it is the same
           // arithmetic `sideTopMitreDeg` uses one piece over.
-          joinL: i > 1 ? roundTo((180 - Math.abs(signedDeg(xs[i - 2], a) - signedDeg(a, b))) / 2, 4) : null,
+          joinL: i > 1 ? roundTo((180 - Math.abs(infSignedDeg(xs[i - 2], a) - infSignedDeg(a, b))) / 2, 4) : null,
           joinR: i < xs.length - 1
-            ? roundTo((180 - Math.abs(signedDeg(a, b) - signedDeg(b, xs[i + 1]))) / 2, 4) : null,
+            ? roundTo((180 - Math.abs(infSignedDeg(a, b) - infSignedDeg(b, xs[i + 1]))) / 2, 4) : null,
         });
       }
       return segs.length ? segs : whole;
     })();
-    const manySegs = runSegs.length > 1;
+    // ─── TURN 53 (CLAUDE.md F6): …AND THE TWO LAWS COMPOSE ─────────────────
+    //
+    // *"Where F3's segmented top infill already breaks at a knee, the two laws
+    // compose: a segment that is still too long splits again, at a cabinet
+    // edge."*
+    //
+    // So the knee decides first (it is a fact about the ceiling), and then any
+    // stretch still longer than the board is split on a cabinet line. A run
+    // that fits the board is one stretch and is untouched, which is every run
+    // in every project shorter than 2 metres and a bit.
+    const infillLimit = stripLimitMm(P, 'carcasses');
+    const cabinetEdges = Array.isArray(runInfill.spans)
+      ? runInfill.spans.flatMap((s) => [Number(s.from) || 0,
+        (Number(s.from) || 0) + (Number(s.width) || 0)])
+      : [];
+    const runSegsSplit = runSegs.flatMap((sg) => {
+      const pieces = splitStretchAtEdges(sg.from, sg.to, cabinetEdges, infillLimit);
+      if (pieces.length <= 1) return [sg];
+      return pieces.map((p) => {
+        const deg = Math.abs(infSignedDeg(p.from, p.to));
+        const cos = Math.cos((deg * Math.PI) / 180);
+        return {
+          ...sg,
+          from: p.from,
+          to: p.to,
+          deg,
+          run: cos > 1e-9 ? (p.to - p.from) / cos : (p.to - p.from),
+          shelfFrom: p.from,
+          shelfRun: cos > 1e-9 ? (p.to - p.from) / cos : (p.to - p.from),
+        };
+      });
+    });
+    const manySegs = runSegsSplit.length > 1;
     const segId = (base, i) => (manySegs ? `${base}-${i + 1}` : base);
 
-    runSegs.forEach((sg, i) => {
+    runSegsSplit.forEach((sg, i) => {
       // Rounded at the source: `span / cos β` is irrational for most angles and
       // the cut size, the outline and the label must be the one number.
       const segLen = roundTo(sg.run, 4);
       const segX0 = sg.from;
-      const yTop = roofLine ? reachAt((sg.from + sg.to) / 2) : H;
+      const yTop = infRoof ? infReachAt((sg.from + sg.to) / 2) : H;
       // T48-F2: the site-cut allowance, on ONE end of this board.
-      const overEnd = allowanceEnd(i === 0, i === runSegs.length - 1);
+      const overEnd = allowanceEnd(i === 0, i === runSegsSplit.length - 1);
       const overLen = overEnd ? overT : 0;
       const cutLen = roundTo(segLen + overLen, 4);
       const lengthOversize = overEnd && overLen > 0
@@ -4942,7 +5210,7 @@ export function computeCabinet(params, profileOverride) {
         // join a bent ceiling makes.
         mitre_45: [...new Set([
           ...mitre(i === 0 && ends.left === 'open'),
-          ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
+          ...mitre(i === runSegsSplit.length - 1 && ends.right === 'open'),
           ...(sg.joinL || sg.joinR ? ['end'] : []),
         ])],
         // The L's own 45 (`mitre.L`) died with the L. The joins the SLOPE makes
@@ -4955,7 +5223,7 @@ export function computeCabinet(params, profileOverride) {
         } : {}),
         // Which end turns against a ceiling-height side filler, and by how much
         // — a record, not a cut (T15's chamfer is overruled; see above).
-        corner: { left: i === 0 ? cornerL : 0, right: i === runSegs.length - 1 ? cornerR : 0 },
+        corner: { left: i === 0 ? cornerL : 0, right: i === runSegsSplit.length - 1 ? cornerR : 0 },
         units: runInfill.unitIds || null,
         ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(faceH, 4) } } : {}),
         ...lengthOversize,
@@ -4965,7 +5233,7 @@ export function computeCabinet(params, profileOverride) {
             span: roundTo(sg.to - sg.from, 4),
             along: roundTo(segLen, 4),
             segment: i + 1,
-            of: runSegs.length,
+            of: runSegsSplit.length,
           },
           // The piece is MOUNTED on the slope; the 3-D and the elevation tilt it
           // rather than redrawing it, exactly as the shoe box's own `tilt_deg`
@@ -4975,11 +5243,11 @@ export function computeCabinet(params, profileOverride) {
           // (CCW about Z; a fall to the right leans clockwise), the axis is
           // named, and the pivot is the CEILING at the low end, so the top
           // edge lands on the line it fills to.
-          tilt_deg: roundTo(reachAt(sg.to) < reachAt(sg.from) ? -sg.deg : sg.deg, 4),
+          tilt_deg: roundTo(infReachAt(sg.to) < infReachAt(sg.from) ? -sg.deg : sg.deg, 4),
           tilt_axis: 'z',
-          tilt_pivot: reachAt(sg.to) < reachAt(sg.from)
-            ? { x: roundTo(sg.to, 4), y: roundTo(reachAt(sg.to), 4) }
-            : { x: roundTo(sg.from, 4), y: roundTo(reachAt(sg.from), 4) },
+          tilt_pivot: infReachAt(sg.to) < infReachAt(sg.from)
+            ? { x: roundTo(sg.to, 4), y: roundTo(infReachAt(sg.to), 4) }
+            : { x: roundTo(sg.from, 4), y: roundTo(infReachAt(sg.from), 4) },
         } : {}),
       };
       panels.push(panel({
@@ -4996,9 +5264,9 @@ export function computeCabinet(params, profileOverride) {
           // Chat-fix 25.08.2026: the level band the scene will lean — its true
           // `along × faceH`, hung from the ceiling at the LOW end. Same rule as
           // the roof board above.
-          const lowR = reachAt(sg.to) < reachAt(sg.from);
+          const lowR = infReachAt(sg.to) < infReachAt(sg.from);
           const xL = lowR ? sg.to : sg.from;
-          const yL = lowR ? reachAt(sg.to) : reachAt(sg.from);
+          const yL = lowR ? infReachAt(sg.to) : infReachAt(sg.from);
           return {
             x: roundTo(lowR ? xL - segLen : xL, 4),
             y: roundTo(yL - faceH, 4),
@@ -5008,7 +5276,7 @@ export function computeCabinet(params, profileOverride) {
             d: t,
           };
         })() : {
-          x: segX0, y: roofLine ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
+          x: segX0, y: infRoof ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
         },
         // Cut to the long point at a mitred end: the BOTTOM corner is the one
         // that comes away, because the face's top edge is the one that runs on
@@ -5035,9 +5303,9 @@ export function computeCabinet(params, profileOverride) {
           // its own low end on the ceiling line, top surface on that line.
           const xa = sg.shelfFrom;
           const xb = roundTo(sg.to, 4);
-          const lowR = reachAt(xb) < reachAt(xa);
+          const lowR = infReachAt(xb) < infReachAt(xa);
           const xL = lowR ? xb : xa;
-          const yL = lowR ? reachAt(xb) : reachAt(xa);
+          const yL = lowR ? infReachAt(xb) : infReachAt(xa);
           return {
             x: roundTo(lowR ? xL - shelfLen : xL, 4),
             y: roundTo(yL - t, 4),
@@ -5048,7 +5316,7 @@ export function computeCabinet(params, profileOverride) {
           };
         })() : {
           x: sg.shelfFrom,
-          y: (roofLine ? Math.min(yTop, H) : H) + faceH - t,
+          y: (infRoof ? Math.min(yTop, H) : H) + faceH - t,
           z: faceZ - t - shelfDepth,
           w: sg.to - sg.from,
           h: t,
@@ -5068,18 +5336,18 @@ export function computeCabinet(params, profileOverride) {
           ...(sg.deg > 1e-9 ? (() => {
             const xa = sg.shelfFrom;
             const xb = roundTo(sg.to, 4);
-            const lowR = reachAt(xb) < reachAt(xa);
+            const lowR = infReachAt(xb) < infReachAt(xa);
             return {
               tilt_deg: roundTo(lowR ? -sg.deg : sg.deg, 4),
               tilt_axis: 'z',
               tilt_pivot: lowR
-                ? { x: xb, y: roundTo(reachAt(xb), 4) }
-                : { x: roundTo(xa, 4), y: roundTo(reachAt(xa), 4) },
+                ? { x: xb, y: roundTo(infReachAt(xb), 4) }
+                : { x: roundTo(xa, 4), y: roundTo(infReachAt(xa), 4) },
             };
           })() : {}),
           mitre_45: [...new Set([
             ...mitre(i === 0 && ends.left === 'open'),
-            ...mitre(i === runSegs.length - 1 && ends.right === 'open'),
+            ...mitre(i === runSegsSplit.length - 1 && ends.right === 'open'),
             ...(sg.joinL || sg.joinR ? ['end'] : []),
           ])],
           ...(sg.joinL != null || sg.joinR != null ? {
@@ -5109,10 +5377,21 @@ export function computeCabinet(params, profileOverride) {
       const xFace = side === 'left' ? outer : outer - t;
       const xShelf = side === 'left' ? outer + t : outer - t - shelfDepth;
       const tag = side === 'left' ? 'L' : 'R';
+      // ─── TURN 53 (CLAUDE.md F3b): THE RETURN HANGS WHERE THE FACE HANGS ──
+      //
+      // The main face sits ON the cabinet under a flat ceiling (`y = H`, top at
+      // `H + faceH`) and HANGS FROM the ceiling under a rake (top at the line).
+      // The return is the same element turning the corner, so it takes the same
+      // band at its own x — otherwise it floats half a metre above the board it
+      // is mitred to, which is the *"poza ścianami"* fault seen end-on.
+      const retTop = infRoof
+        ? Math.min(infReachAt(outer), H + faceH)
+        : H + faceH;
+      const retY = roundTo(retTop - faceH, 4);
       panels.push(panel({
         id: `INFILL-T${tag}-FACE`, part: 'INFILL', role: 'infill', w: returnDepth, h: faceH, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(returnDepth),
-        box: { x: xFace, y: H, z: faceZ - returnDepth, w: t, h: faceH, d: returnDepth },
+        box: { x: xFace, y: retY, z: faceZ - returnDepth, w: t, h: faceH, d: returnDepth },
         cnc: rectGeometry(returnDepth, faceH),
         // T48-F2: 'long' dies with the L; 'end' survives, because this IS the
         // turning corner — the one place two RUNS meet.
@@ -5121,7 +5400,9 @@ export function computeCabinet(params, profileOverride) {
       panels.push(panel({
         id: `INFILL-T${tag}-SHELF`, part: 'INFILL', role: 'infill', w: returnDepth, h: shelfDepth, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(returnDepth),
-        box: { x: xShelf, y: H + faceH - t, z: faceZ - returnDepth, w: shelfDepth, h: t, d: returnDepth },
+        box: {
+          x: xShelf, y: roundTo(retY + faceH - t, 4), z: faceZ - returnDepth, w: shelfDepth, h: t, d: returnDepth,
+        },
         cnc: rectGeometry(returnDepth, shelfDepth),
         meta: {
           side: 'top', piece: 'shelf', segment: `return-${side}`, mitre_45: ['end'],
@@ -5437,6 +5718,13 @@ export function computeCabinet(params, profileOverride) {
     const faceCut = cutLine
       ? subSlopeCut(cutLine, faceFrom, faceFrom + cutW, { dy: y, reach: true })
       : null;
+    // T53 (F3a): the same line over the piece's own BODY. The blank above runs
+    // from the wall end and carries the scribe allowance; the body is the
+    // nominal piece the room draws, and it is what the solid is cut to.
+    const bodyFrom = isLeft ? -infillW : W;
+    const bodyCut = cutLine
+      ? subSlopeCut(cutLine, bodyFrom, bodyFrom + infillW, { dy: y, reach: true })
+      : null;
     // The line is sampled over the piece's OWN span in the unit's frame; the
     // outline it trims is in the piece's frame before the shift above, so the
     // two agree by construction.
@@ -5516,6 +5804,36 @@ export function computeCabinet(params, profileOverride) {
             full: roundTo(h, 4),
             corners: faceGeom.outline.length,
             angles: infillAngles(faceFrom, faceFrom + cutW),
+            // ─── TURN 53 (CLAUDE.md F3a): 3D DRAWS WHAT CNC CUTS ────────────
+            //
+            // The owner, 27.08: *"najdziwniejsze jest to, że pionowy infill na
+            // CNC się tnie pod skosem, ale na wizualizacji pokazuje prosto."*
+            //
+            // He is describing two sources of truth. The CUT above really is
+            // trimmed to the ceiling (`trimGeometryOnSlope`); the BOX below is
+            // a plain rectangle `infillW × faceH2`, and `faceH2` is the PEAK
+            // over the piece — so the solid in the room stood square to the
+            // peak while the machine cut the rake.
+            //
+            // `top` is the line the solid is cut on, and it is the SAME
+            // `cutLine` the outline came from — sampled over the piece's OWN
+            // BODY rather than over its blank, because the blank carries the
+            // 20 mm scribe allowance and the body is what stands in the room.
+            // One source, two spans, and `engine/mitre.js infillMitre` clips
+            // the solid to it. LISP: `SKY:vertInfillTopY` / `SKY:vertInfillDeg`.
+            //
+            // Points are in the UNIT's frame — the same x as `box.x` and the
+            // same y datum as `box.y` — so the 3-D needs no second arithmetic.
+            // `subSlopeCut` answers in the SUB-SPAN's own frame (x from 0 at
+            // `bodyFrom`, y already dropped by the piece's base), so the shift
+            // back into the unit's frame is `bodyFrom` on x and `y` on y — the
+            // two numbers `box.x` and `box.y` are themselves made of.
+            ...(bodyCut ? {
+              top: bodyCut.pts.map((q) => ({
+                x: roundTo(bodyFrom + q.x, 4),
+                y: roundTo(y + q.y, 4),
+              })),
+            } : {}),
           },
         } : {}),
       },
@@ -7172,7 +7490,12 @@ export function computeCabinet(params, profileOverride) {
         });
         continue;
       }
-      const made = watchInsertParts(interior, P, { drawer: index });
+      // T53 (F8e): the LAYOUT the item asks for. Four designs, one pocket row.
+      const wItem = zone == null
+        ? (cfg.drawerItems?.[index - 1] || null)
+        : (columnDrawerSets.find((c) => c.zone === zone)?.items?.[index - 1] || null);
+      const wLayout = watchLayoutOf(wItem).id;
+      const made = watchInsertParts(interior, P, { drawer: index, layout: wLayout });
       if (!made) continue;
       for (const q of made.parts) {
         panels.push(panel({
@@ -7189,18 +7512,116 @@ export function computeCabinet(params, profileOverride) {
           meta: zone == null ? q.meta : { ...q.meta, zone },
         }));
       }
-      watchGlassPanes.push({ zone, drawer: index, box: made.glass.box, liftsOut: true });
+      // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP, UPSTAIRS ──
+      //
+      // *"opcja: dodać szybę ponad szufladą — wtedy wycinamy w półce otwór,
+      // offset od półki na 50 mm, i wstawiamy szybę w ten otwór. i dookoła tej
+      // szyby masz LED od spodu, offset około 15 mm na LED."*
+      //
+      // The option is ON the item, and it needs A SHELF DIRECTLY ABOVE. Where
+      // there is none the option is refused IN WORDS (F8d) rather than
+      // silently ignored — the same refuse-and-report this engine keeps about
+      // a drawer too shallow for the tray, three lines up.
+      const wantsGlass = wItem?.watch_shelf_glass === true;
+      const drawerTop = interior.at.y + interior.height;
+      const shelfAbove = panels
+        .filter((q) => q.part === 'SHELF' && q.box && q.box.y >= drawerTop - 1e-6
+          && (q.meta?.zone ?? null) === zone)
+        .sort((a, b) => a.box.y - b.box.y)[0] || null;
+      let shelfGlass = null;
+      if (wantsGlass && !shelfAbove) {
+        warnings.push({
+          code: 'watch_glass_needs_shelf',
+          drawer: index,
+          zone,
+          message: `Drawer ${index}'s glass needs a shelf directly above it — add one, and the opening is cut in it.`,
+        });
+      } else if (wantsGlass && shelfAbove) {
+        const plan = shelfGlassPlan({ w: shelfAbove.box.w, d: shelfAbove.box.d }, P);
+        if (!plan) {
+          warnings.push({
+            code: 'watch_glass_shelf_too_small',
+            drawer: index,
+            zone,
+            message: `The shelf above drawer ${index} is too small for a ${P.watchDrawer.openingOffsetMm} mm offset opening — the glass is not cut.`,
+          });
+        } else {
+          // The opening and its rebate are cut IN THE SHELF, on the shelf's own
+          // board. Two operations, two layers: a through cut and a rebate are
+          // different tools (`reference/lisp/KIT_WATCH_DRAWER.lsp`).
+          shelfAbove.cnc = {
+            ...shelfAbove.cnc,
+            pockets: [
+              ...(shelfAbove.cnc?.pockets || []),
+              {
+                layer: WATCH_LAYERS.opening,
+                depth: shelfAbove.thickness,
+                face: 'A',
+                cutout: true,
+                x1: plan.opening.x1,
+                y1: plan.opening.y1,
+                x2: plan.opening.x2,
+                y2: plan.opening.y2,
+              },
+              {
+                layer: WATCH_LAYERS.rebate,
+                depth: plan.rebate.depth,
+                face: 'A',
+                x1: plan.rebate.x1,
+                y1: plan.rebate.y1,
+                x2: plan.rebate.x2,
+                y2: plan.rebate.y2,
+              },
+            ],
+          };
+          shelfAbove.meta = {
+            ...(shelfAbove.meta || {}),
+            watch_glass: { drawer: index, ...plan.offsets, flush: true },
+          };
+          // The pane, ordered and never cut — FLUSH with the shelf's top.
+          shelfGlass = {
+            zone,
+            drawer: index,
+            shelfId: shelfAbove.id,
+            box: {
+              x: shelfAbove.box.x + plan.rebate.x1,
+              y: shelfAbove.box.y + shelfAbove.box.h - plan.glass.t,
+              z: shelfAbove.box.z + plan.rebate.y1,
+              w: plan.glass.w,
+              h: plan.glass.t,
+              d: plan.glass.d,
+            },
+            flush: true,
+            led: {
+              ...plan.led,
+              shelfId: shelfAbove.id,
+              // On the UNDERSIDE, firing DOWN onto the watches — T52's own law
+              // relocated, never repealed.
+              y: shelfAbove.box.y,
+            },
+          };
+          watchGlassPanes.push(shelfGlass);
+        }
+      }
       born.push({
         zone,
         drawer: index,
+        layout: wLayout,
+        finish: watchFinishOf(wItem),
         pockets: made.layout.pockets.count,
         pocket_w_mm: roundTo(made.layout.pockets.width, 1),
         pocket_d_mm: roundTo(made.layout.pockets.depth, 1),
         inside_mm: made.layout.pockets.inside,
         sections: made.layout.sections.count,
-        glass_w_mm: roundTo(made.glass.box.w, 1),
-        glass_d_mm: roundTo(made.glass.box.d, 1),
-        led_mm: roundTo(made.layout.led.length, 1),
+        lanes: made.layout.sections.lanes,
+        shelf_glass: shelfGlass
+          ? {
+            shelf: shelfGlass.shelfId,
+            glass_w_mm: roundTo(shelfGlass.box.w, 1),
+            glass_d_mm: roundTo(shelfGlass.box.d, 1),
+            led_mm: roundTo(shelfGlass.led.lengthMm, 1),
+          }
+          : null,
       });
     }
     watchInsertsBuilt.push(...born);
@@ -7391,21 +7812,45 @@ export function computeCabinet(params, profileOverride) {
       pocket_d_mm: w.pocket_d_mm,
       inside_mm: w.inside_mm,
       sections: w.sections,
+      lanes: w.lanes,
+      // T53 (F8e/F8f): which of the four designs, and what it is finished in.
+      layout: w.layout,
+      ...(w.finish ? { finish: w.finish } : {}),
     },
-    `Watch / tie insert · ${where} · ${w.pockets} pockets at ${w.pocket_w_mm} × ${w.pocket_d_mm} mm, `
-      + `${w.inside_mm} mm deep · ${w.sections} long section${w.sections === 1 ? '' : 's'} behind`);
-    // Decision 1: the pane LIFTS OUT. It bears on a rebate in the top of the
-    // frame and nothing holds it down, which is why it is ordered to the
-    // rebate's own size and not to the drawer's.
-    hw('drawer_glass', 'Glass — watch insert, lift-out', 1, 'pcs',
-      { drawer: w.drawer, ...(w.zone == null ? {} : { zone: w.zone }), width_mm: w.glass_w_mm, depth_mm: w.glass_d_mm },
-      `Glass ${w.glass_w_mm} × ${w.glass_d_mm} mm · lifts out · ${where}`);
-    // Decision 2: the strip lights the WATCHES. Ordered by the metre like every
-    // other run in this app, from the same catalogue — the groove it sits in is
-    // T48's own law and is cut in the front rail.
-    hw('led_strip', 'LED strip', roundTo(w.led_mm / 1000, 3), 'm',
-      { drawer: w.drawer, ...(w.zone == null ? {} : { zone: w.zone }), length_mm: w.led_mm, aimed_at: 'contents' },
-      `LED strip ${w.led_mm} mm · in the watch insert's front rail, aimed at the watches · ${where}`);
+    `Watch / tie insert · ${where} · ${w.layout} · ${w.pockets} pockets at ${w.pocket_w_mm} × ${w.pocket_d_mm} mm, `
+      + `${w.inside_mm} mm deep · ${w.sections} across in ${w.lanes} lane${w.lanes === 1 ? '' : 's'} behind`
+      + `${w.finish ? ` · ${w.finish}` : ''}`);
+    // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP ARE THE SHELF'S ─
+    //
+    // *"wtedy wycinamy w półce otwór … i dookoła tej szyby masz LED od spodu."*
+    //
+    // They are ordered only where the option is ON and a shelf is actually
+    // there, and each line names THE SHELF it belongs to — because that is the
+    // board the joiner takes to the machine and the board the glazier measures.
+    // A drawer whose glass was asked for with no shelf above buys nothing and
+    // Check #23 says why (F8d/F8g).
+    if (w.shelf_glass) {
+      hw('drawer_glass', 'Glass — watch drawer, in the shelf above', 1, 'pcs',
+        {
+          drawer: w.drawer,
+          ...(w.zone == null ? {} : { zone: w.zone }),
+          shelf: w.shelf_glass.shelf,
+          width_mm: w.shelf_glass.glass_w_mm,
+          depth_mm: w.shelf_glass.glass_d_mm,
+          flush: true,
+        },
+        `Glass ${w.shelf_glass.glass_w_mm} × ${w.shelf_glass.glass_d_mm} mm · flush in ${w.shelf_glass.shelf}, over ${where}`);
+      hw('led_strip', 'LED strip', roundTo(w.shelf_glass.led_mm / 1000, 3), 'm',
+        {
+          drawer: w.drawer,
+          ...(w.zone == null ? {} : { zone: w.zone }),
+          shelf: w.shelf_glass.shelf,
+          length_mm: w.shelf_glass.led_mm,
+          aimed_at: 'contents',
+        },
+        `LED strip ${w.shelf_glass.led_mm} mm · ringing the glass on the underside of ${w.shelf_glass.shelf}, `
+          + `firing down onto ${where}`);
+    }
   }
 
   // ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS, ORDERED TO THE OPENING ─

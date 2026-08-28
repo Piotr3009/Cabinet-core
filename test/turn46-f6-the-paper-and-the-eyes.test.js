@@ -62,7 +62,16 @@ test('F6a — a panel with no cut publishes nothing, and the scene draws its box
   assert.equal(slopeCutActive({ h: 2150, hL: 2150, hR: 2150 }), false);
   // …and the early return that sends a featureless panel to a boxGeometry now
   // asks about the cut too, or a flat cut door would be drawn as a rectangle.
-  assert.match(solid, /if \(!notches\.length && !tabs\.length && !recesses\.length && !slopeCut\) return NOTHING;/);
+  //
+  // T53 (F4) adds `!bevel3d` to the same list, and for the same reason one
+  // storey along: a side's wedge is NOT in its outline (a three-axis machine
+  // cannot cut a bevel, so it rides the part's record), and a gate that asks
+  // only about the outline is exactly what left every BUL and BUR square at
+  // the peak. The clause T46 pinned is still here, unchanged, with one more
+  // feature beside it.
+  assert.match(solid, /if \(!notches\.length && !tabs\.length && !recesses\.length && !slopeCut/);
+  assert.match(solid, /&& !bevel3d\) return NOTHING;/,
+    'T53 F4: …and a board whose only feature is the wedge is a shape too');
 });
 
 // T47 (licence 1): the key is the whole LINE now — two leaves under the same

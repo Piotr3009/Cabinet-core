@@ -129,7 +129,34 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // The engine now states the top edge at EACH face (`meta.slopeCut.bevel3d`,
   // world heights at the board's two x faces) and the solid tilts its top
   // vertices between them. Sides only, cut only — everything else unchanged.
-  const bevel3d = slopeCut && (panel.part === 'BUL' || panel.part === 'BUR')
+  //
+  // ─── TURN 53 (CLAUDE.md F4): …AND THE GATE WAS DEAD ──────────────────────
+  //
+  // The owner, 27.08, screenshot in hand: *"zamiast BUL obciąć pod kątem
+  // pasującym do wieńca, to się nachodzą materiały na siebie"* — and *"wygląda
+  // na to, że cięcia istniejące na BUL i BUR są odwrotnie"*.
+  //
+  // DIAGNOSED, and it is not a mirrored sign. The chat-fix above required
+  // `slopeCut` — `panel.cnc.slopeCut` — and a SIDE NEVER HAS ONE. Its CNC
+  // outline is deliberately a square blank (`engine/cabinet.js`: *"a side
+  // stands at ONE x across the width and its board is drawn in the DEPTH
+  // frame, so the ceiling over it is one number"*), because a three-axis
+  // machine cannot cut a bevel and the angle rides the part's record instead.
+  // So `slopeCut` was null on every BUL and BUR ever built, `bevel3d` was null
+  // with it, and `bevelTopEdge` HAS NEVER RUN. The wedge was never taken off:
+  // the blank stood square at the PEAK across its whole 18 mm, proud of the
+  // roof line at the low face, and overlapped the board that should lie flat
+  // on it. That is the owner's screenshot, and it reads as "the cut is on the
+  // wrong side" because the high edge is on BOTH sides.
+  //
+  // The engine's numbers were right all along and are asserted so in
+  // `test/turn53-f4-*`: `bevel3d.a`/`.b` are the roof board's own underside at
+  // the board's two faces, and the high one is always on the PEAK side. The
+  // law is stated in `reference/lisp/SKYLON_COMMON.lsp SKY:sideBevelFaces`.
+  //
+  // So the gate is the RECORD, which is the thing that says there is a wedge —
+  // never the outline, which by design cannot.
+  const bevel3d = (panel.part === 'BUL' || panel.part === 'BUR')
     && panel.meta?.slopeCut?.bevel3d ? panel.meta.slopeCut.bevel3d : null;
 
   // ─── TURN 20 (CLAUDE.md F8.1): EVERY FEATURE, AS AN ABSENCE ──────────────
@@ -168,7 +195,10 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // …and a panel whose ONLY feature is the slope cut is still a shape: a flat
   // cut door has no notch, no tab and no recess, and a `boxGeometry` would
   // render it as the rectangle it is not.
-  if (!notches.length && !tabs.length && !recesses.length && !slopeCut) return NOTHING;
+  // T53 (F4): …and a board whose ONLY feature is the WEDGE is a shape too. A
+  // side always has tabs, so this never bit — but a gate that depends on
+  // another feature being present is exactly the fault F4 is about.
+  if (!notches.length && !tabs.length && !recesses.length && !slopeCut && !bevel3d) return NOTHING;
 
   const key = [
     panel.part,

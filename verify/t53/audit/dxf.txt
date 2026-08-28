@@ -1,0 +1,91 @@
+THE DXF EXPORT, OPENED — the seeded job, every file read back
+
+file                          kind         bytes   geom  holes  texts
+01-BUL.dxf                    part          5746     22     14      2
+01-BUR.dxf                    part          5712     22     14      2
+01-TOP.dxf                    part          5771      7      0      2
+01-BOTTOM.dxf                 part          5867      7      0      3
+01-BACK.dxf                   part          6468     45     34      2
+01-PLINTH.dxf                 part           818      1      0      1
+01-sheet.dxf                  sheet        28542    104            12
+DR01-BUL.dxf                  part          6436     31     23      3
+DR01-BUR.dxf                  part          6408     31     23      3
+DR01-TOP.dxf                  part          5866      7      0      3
+DR01-BOTTOM.dxf               part          5869      7      0      3
+DR01-BACK.dxf                 part          6563     45     34      3
+DR01-D1-SL.dxf                part          1906      3      0      3
+DR01-D1-SR.dxf                part          1906      3      0      3
+DR01-D2-SL.dxf                part          1888      3      0      3
+DR01-D2-SR.dxf                part          1888      3      0      3
+DR01-D3-SL.dxf                part          1885      3      0      3
+DR01-D3-SR.dxf                part          1885      3      0      3
+DR01-D1-BF.dxf                part          1224      3      2      3
+DR01-D1-BB.dxf                part          1053      1      0      3
+DR01-D2-BF.dxf                part          1233      3      2      3
+DR01-D2-BB.dxf                part          1062      1      0      3
+DR01-D3-BF.dxf                part          1189      3      2      3
+DR01-D3-BB.dxf                part          1018      1      0      3
+DR01-D1-DNO.dxf               part          1320      5      4      3
+DR01-D2-DNO.dxf               part          1320      5      4      3
+DR01-D3-DNO.dxf               part          1320      5      4      3
+DR01-F1.dxf                   part          1538      4      2      2
+DR01-F2.dxf                   part          1536      4      2      2
+DR01-F3.dxf                   part          1117      3      2      2
+DR01-sheet.dxf                sheet        47920    177            66
+W01-BUL.dxf                   part          5282     22     16      2
+W01-BUR.dxf                   part          5478     22     16      4
+W01-TOP-1.dxf                 part           952      1      0      2
+W01-TOP-2.dxf                 part          1357      1      0      5
+W01-BOTTOM.dxf                part          5868      7      0      3
+W01-BACK.dxf                  part          6559     45     34      2
+W01-PARTITION.dxf             part          1022      1      0      3
+W01-D1-SL.dxf                 part          1753      3      0      2
+W01-D1-SR.dxf                 part          1753      3      0      2
+W01-D1-BF.dxf                 part           929      1      0      2
+W01-D1-BB.dxf                 part           929      1      0      2
+W01-D1-DNO.dxf                part          1031      1      0      3
+W01-D2-SL.dxf                 part          1749      3      0      2
+W01-D2-SR.dxf                 part          1749      3      0      2
+W01-D2-BF.dxf                 part           925      1      0      2
+W01-D2-BB.dxf                 part           925      1      0      2
+W01-D2-DNO.dxf                part          1031      1      0      3
+W01-DF1.dxf                   part          1320      2      0      2
+W01-DF2.dxf                   part          1328      2      0      2
+W01-PLINTH.dxf                part           819      1      0      1
+W01-D2-WB.dxf                 part          1018      1      0      3
+W01-D2-WRF.dxf                part          2214      5      0      1
+W01-D2-WRB.dxf                part          1217      2      0      1
+W01-D2-WRL.dxf                part           920      1      0      2
+W01-D2-WRR.dxf                part           920      1      0      2
+W01-D2-WRW.dxf                part          2555      6      0      1
+W01-D2-WP1.dxf                part          1006      1      0      3
+W01-D2-WP2.dxf                part          1006      1      0      3
+W01-D2-WP3.dxf                part          1006      1      0      3
+W01-D2-WP4.dxf                part          1006      1      0      3
+W01-D2-WS1-1.dxf              part           930      1      0      2
+W01-sheet.dxf                 sheet        44145    143            72
+W02-BUL.dxf                   part          5654     26     20      4
+W02-BUR.dxf                   part          4830     22     17      4
+W02-TOP.dxf                   part          1436      1      0      6
+W02-BOTTOM.dxf                part          5868      7      0      3
+W02-BACK.dxf                  part          4812     31     23      2
+W02-SHOE1-SL.dxf              part          1320      2      0      2
+W02-SHOE1-SR.dxf              part          1320      2      0      2
+W02-SHOE1-BK.dxf              part          1200      2      0      1
+W02-SHOE1-BF.dxf              part          1190      2      0      1
+W02-SHOE1-BT.dxf              part          1050      1      0      3
+W02-SHOE1-DV.dxf              part           812      1      0      1
+W02-SHOE1-BATTEN-L.dxf        part           940      1      0      2
+W02-SHOE1-BATTEN-R.dxf        part           940      1      0      2
+W02-SHOE1-FR.dxf              part           920      1      0      2
+W02-FL.dxf                    part          2779     20     18      2
+W02-FR.dxf                    part          2775     20     18      2
+W02-sheet.dxf                 sheet        33182    140            39
+all-materials.dxf             material    159739    564           189
+
+81 files, 495743 bytes, 1692 geometry entities, 328 drillings matched to the engine's own.
+slope notes in the files: 21 — 28.8 DEG · BEVEL · 28.8 DEG BOTH
+
+written to verify/t53/dxf/ — 81 files
+
+CLEAN — every file parses, carries geometry, covers its own part, declares every layer it stands on, and no two parts share a name.

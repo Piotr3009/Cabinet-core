@@ -58,9 +58,12 @@ import { formatMm } from '../engine/format.js';
  *   view        projectStore.shareOutView(unitId) — the ONE resolution (F4):
  *               { run, plan, span, wallMargin, … }, or null when nothing stands
  *   onShare     (unitId, { extra }) — the store's `shareOutRun`
+ *   onDismiss   (signature) — the ✕ (T53 F1b); the offer is closed for THIS
+ *               gap, and `settleLayout` will not raise it again while the
+ *               plan's signature is unchanged.
  */
 export default function ShareOutBar({
-  walls, roomCentre, offer, view, onShare,
+  walls, roomCentre, offer, view, onShare, onDismiss,
 }) {
   const found = view && view.plan ? view : null;
 
@@ -134,6 +137,25 @@ export default function ShareOutBar({
               )}
             </>
           )}
+          {/* ─── TURN 53 (CLAUDE.md F1b): THE ✕ ────────────────────────────
+              *"musi też być przycisk dismiss — jak nie chcę tego robić teraz,
+              muszę coś nacisnąć. pamiętaj krzyżyk zasada."*
+
+              The house cross, at the right end where every other one in this
+              app stands. It closes the offer for THIS gap only: the plan's
+              signature goes to the store, and the bar returns the moment a
+              move, an add, a removal or a typed width makes it a different
+              offer. */}
+          <button
+            type="button"
+            className="ml-1 rounded px-1 text-ink-400 hover:bg-shell-800 hover:text-ink-100"
+            data-share-out-dismiss="1"
+            aria-label="Dismiss"
+            title="Not now — this leftover stays as it is. The offer returns if anything moves."
+            onClick={() => onDismiss?.(view?.signature || null)}
+          >
+            ✕
+          </button>
         </div>
       </Html>
     </group>

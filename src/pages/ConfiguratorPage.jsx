@@ -3,6 +3,7 @@ import TopBar from '../components/TopBar.jsx';
 import LibraryPanel from '../components/LibraryPanel.jsx';
 import RightPanel from '../components/RightPanel.jsx';
 import RoomModal from '../components/RoomModal.jsx';
+import DrawRoomModal from '../components/DrawRoomModal.jsx';
 // T51 (CLAUDE.md F7): Database ▸ Materials opens the WAREHOUSE.
 import WarehouseModal from '../components/WarehouseModal.jsx';
 import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
@@ -27,6 +28,7 @@ import UnitFinishModal from '../components/UnitFinishModal.jsx';
 import FrontGapModal from '../components/FrontGapModal.jsx';
 import LightingPanel from '../components/LightingPanel.jsx';
 import UnitSizeModal from '../components/UnitSizeModal.jsx';
+import WatchLayoutModal from '../components/WatchLayoutModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
@@ -515,6 +517,11 @@ export default function ConfiguratorPage() {
         {/* Turn 31 (CLAUDE.md F6): the Check panel — a LIST of findings, not toasts. */}
         {checkOpen && <CheckPanel />}
         {modal === 'room' && <RoomModal />}
+        {/* ─── TURN 53 (CLAUDE.md F10): the drawn room ───────────────────
+            *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w CAD."*
+            It opens FROM Room setup, beside the button, and the simple
+            width/height path it stands next to is untouched. */}
+        {modal === 'draw-room' && <DrawRoomModal />}
         {modal === 'warehouse' && <WarehouseModal />}
         {modal === 'design' && <DesignSettingsModal />}
         {modal === 'auth' && <AuthModal />}
@@ -575,6 +582,10 @@ export default function ConfiguratorPage() {
         {modal === 'lighting' && <LightingPanel />}
         {/* Turn 31 (CLAUDE.md F8): the width/height figure, double-clicked. */}
         {modal === 'unit-size' && <UnitSizeModal />}
+        {/* T53 (CLAUDE.md F8e): the watch drawer's four layouts, its glass and
+            its finish — a NEW window, draggable, opening beside the drawer it
+            was asked from. */}
+        {modal === 'watch-layout' && <WatchLayoutModal />}
         {/* ─── Turn 23 (CLAUDE.md F9.3) ───
             "This part carries manual edits — recompute drops them, continue?"
             It is not a modal in the `modal` slot: it is raised by the STATE of

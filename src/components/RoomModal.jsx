@@ -14,6 +14,7 @@ import {
 } from '../engine/room.js';
 import { proposeRoomFromDxf } from '../engine/dxfImport.js';
 import { formatMm, snap } from '../engine/format.js';
+import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { getCabinetProfile } from '../engine/profile.js';
 
 // Room v2 (CLAUDE.md turn 3, phase 3): the room is a list of walls, edited as a
@@ -83,6 +84,8 @@ export default function RoomModal({
   const anchor = anchorProp || anchorFromStore;
   const closeModal = onClose || closeFromStore;
   const notify = useUiStore((s) => s.notify);
+  // T53 F10: the drawing window opens FROM here, beside its own button.
+  const openModal = useUiStore((s) => s.openModal);
 
   const [draft, setDraft] = useState(() => migrateRoom(room));
   // ─── Turn 14 (CLAUDE.md F10): WHAT IS SELECTED, AND WHAT IS BEING DRAGGED ──
@@ -406,6 +409,23 @@ export default function RoomModal({
               <button type="button" className="cc-btn" data-room-preset="L" onClick={() => setPreset('L')}>L-shape</button>
               {/* F10.3: a chimney, a pillar, a boxed pipe. */}
               <button type="button" className="cc-btn" data-insert-box="1" onClick={insertBox}>+ Box</button>
+              {/* ─── TURN 53 (CLAUDE.md F10): DRAW ROOM ────────────────────
+                  *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w
+                  CAD."*  A FIFTH tool beside the four F1 named, and not a
+                  replacement for any of them: the simple width/height path
+                  stays exactly as it is, which is F10's own fence — *"the
+                  simple width/height 'one wall' path STAYS untouched."*
+                  T50's wall editor was struck out for replacing them; this
+                  one is a door that opens next to them. */}
+              <button
+                type="button"
+                className="cc-btn"
+                data-room-draw="1"
+                title="Draw the room wall by wall, as in CAD — a direction, a number, Enter"
+                onClick={(e) => openModal('draw-room', { anchor: anchorOfEvent(e) })}
+              >
+                Draw room…
+              </button>
             </div>
           </div>
 

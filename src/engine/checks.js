@@ -868,6 +868,25 @@ export function runChecks({
   for (const entry of entries) {
     const num = entry.unit?.params?.unit_num || entry.result?.unitNum || entry.unit?.id || '';
     for (const w of entry.result?.warnings || []) {
+      // ─── TURN 53 (CLAUDE.md F8d/F8g): AND THE GLASS SAYS WHY TOO ─────────
+      //
+      // *"No shelf above → the option is disabled with a reason, never silently
+      // hidden."*  And the migration's own case: *"a saved project with a T52
+      // v1 insert loads: the in-frame glass flag becomes the shelf-glass option
+      // where a shelf sits above, otherwise it is dropped and Check #23's
+      // neighbour names it."*  One mechanism does both — the pane is not cut,
+      // and this is where the joiner is told.
+      if (w?.code === 'watch_glass_needs_shelf' || w?.code === 'watch_glass_shelf_too_small') {
+        out.push(finding(23, 'yellow', {
+          unitId: entry.unit?.id || null,
+          unitNum: num,
+          message: `${num}: ${w.message} The drawer and its tray are cut exactly as asked; only the pane is not.`,
+          subject: { unitId: entry.unit?.id || null, editor: 'cabinet' },
+          drawer: w.drawer,
+          reason: w.code,
+        }));
+        continue;
+      }
       if (w?.code !== 'watch_insert_refused') continue;
       const where = w.zone == null ? `drawer ${w.drawer}` : `drawer ${w.drawer} of column ${Number(w.zone) + 1}`;
       const why = w.reason === 'too-shallow'

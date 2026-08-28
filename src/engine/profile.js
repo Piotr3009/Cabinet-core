@@ -816,6 +816,13 @@ export const DEFAULT_CABINET_PROFILE = {
     topBox: {
       defaults: { width: 600, height: 500, depth: 568 },
       minHeight: 200,
+      // ─── TURN 53 (CLAUDE.md F5): …AND A MINIMUM WIDTH ─────────────────────
+      // One main may carry SEVERAL boxes side by side now, so "is there room
+      // for another one" is a question with a number behind it. The same
+      // workshop judgement as `minHeight` one line up — under 200 the doors are
+      // not worth hanging — asked of the other axis, and a DEFAULT: a shop that
+      // disagrees changes one line.
+      minWidth: 200,
     },
 
     drawers: {
@@ -3094,7 +3101,24 @@ export const DEFAULT_CABINET_PROFILE = {
       // How much board a blind cup must leave under it. The bore is clamped to
       // `thickness − this` so an 18 mm front cannot be drilled through by a law
       // written for a 25 mm one (engine/doors.js `cupBoreOf`).
-      cupFloorKeepMm: 1,
+      //
+      // ─── TURN 53 (CLAUDE.md F9): ONE MILLIMETRE STOPS BEING LEGAL ───────
+      //
+      // T52's finding 2, standing since its morning audit. This was ONE, and
+      // one is not a number: an 18 mm shaker whose ⌀35 cup overhangs the frame
+      // was bored to leave a single millimetre of skin — and
+      // SKYLON_COMMON.lsp's own note says what that is worth, *"one millimetre
+      // reads through a sprayed face"*. The ring telegraphs the first time the
+      // door is knocked, and it is found by the customer.
+      //
+      // DECISION TAKEN for the owner (veto in one line): THREE.
+      //
+      // Where three cannot be kept the bore SHORTENS — the existing clamp in
+      // `engine/doors.js cupBoreOf`, unchanged — and where the shortened bore
+      // no longer seats the hinge the existing `cupTooThin` check names the
+      // leaf. Refuse and report, the house way, never a 1 mm floor. The law is
+      // stated in `SKY:cupFloorKeep` beside the cup maths it belongs to.
+      cupFloorKeepMm: 3,
       bossHeight: 16,        // the cup body standing proud of the door's back face
       armLength: 62,         // cup centre → the far end of the arm, along the depth
       armWidth: 22,          // across the door's height
@@ -4159,6 +4183,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // 4 mm is what a drawer is glazed with (the same pane the display drawer
     // has taken since T33). It bears on a rebate cut in the top of all four
     // rails and nothing holds it down — no bead, no stop, no screw.
+    // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP MOVE UPSTAIRS ─
+    //
+    // The owner, 27.08.2026: *"opcja: dodać szybę ponad szufladą — wtedy
+    // wycinamy w półce otwór, offset od półki na 50 mm, i wstawiamy szybę w
+    // ten otwór. i dookoła tej szyby masz LED od spodu, offset około 15 mm na
+    // LED."*  His two numbers, here rather than in the engine.
+    openingOffsetMm: 50,       // the opening, inset from every shelf edge
+    ledOffsetMm: 15,           // the ring, outside the opening, on the underside
     glassT: 4,
     // How far the pane bears ON the rail. 5 of a 9 mm rail, which leaves a 4 mm
     // lip standing proud of the glass all round: 5 + 4 = 9, and the pane sits

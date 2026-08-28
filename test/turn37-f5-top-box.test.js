@@ -23,6 +23,8 @@ import { riderOverlapMm, settleRiders } from '../src/engine/topBox.js';
 import { grainRun } from '../src/engine/decors.js';
 import { CHECKS, runChecks } from '../src/engine/checks.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
+// T53 (F5): the stamp is a LIST now, and this is its one reader.
+import { riddenList } from '../src/engine/topBox.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { unitTop } from '../src/engine/runs.js';
 
@@ -169,9 +171,14 @@ test('F5e — a top box is an ABOVE NEIGHBOUR, beside the infill and the cornice
     P.doors.gap);
 });
 
+// T53 (F5): `ridden_by` is a LIST now — one main may carry several boxes side
+// by side, and a Map that held one silently shadowed the second. The claim this
+// test makes is unchanged and is the important one: the main KNOWS what is on
+// it, and the stamp is ABSENT when nothing is.
 test('F5e — settleRiders STAMPS the host, and un-stamps it when the box goes', () => {
   const { main, box } = pair(900);
-  assert.equal(unitOf(main).params.ridden_by, box, 'the main knows what is on it');
+  assert.deepEqual(riddenList(unitOf(main).params.ridden_by), [box],
+    'the main knows what is on it');
   store().removeUnit(box);
   assert.equal('ridden_by' in unitOf(main).params, false,
     'and the stamp is ABSENT, not null, when the box leaves');

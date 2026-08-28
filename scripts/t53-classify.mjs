@@ -1,0 +1,708 @@
+#!/usr/bin/env node
+// ─── THE BYTE-IDENTITY CONTRACT (turn 53, CLAUDE.md iron rule 2) ────────────
+//
+// T52's classifier, RE-HEADED rather than reused, because the header IS the
+// argument and the argument is tonight's. CLAUDE.md, 27.08:
+//
+//   *"Six goldens IDENTICAL, UNNAMED = 0, proven the three-line way … Expected
+//   buckets: none."*
+//
+// Ten features, and the claim is made feature by feature rather than once at
+// the end. Every one of them has a `--probe`, the way T52's `--tabs`, `--plan`
+// and `--watch` turned the argument into an exit code — because an argument
+// that is only prose is an argument nobody re-runs.
+//
+// ─── WHY NOT ONE OF THE TEN CAN MOVE A GOLDEN ───────────────────────────────
+//
+//   F1   is a run over a ROOM. A golden is `computeCabinet` of one cabinet with
+//        no room, no wall and no run. `--probe f1`.
+//   F2   is the DXF EXPORT — a writer downstream of the engine. It reads the
+//        panels a golden already has and writes files; it hands nothing back.
+//   F3   cuts only under a `slopeCut`, and no golden carries one. `--probe f3`.
+//   F4   is the same gate: a bevel that only exists where a slope does.
+//   F5   moves RIDERS. No golden carries a top box. `--probe f5`.
+//   F6   splits a piece longer than a board. No golden's plinth or infill
+//        exists in a default config at all — they wait to be asked for (turn
+//        4's law). `--probe f6`.
+//   F7   moves SHOE FRONTS. No golden carries a shoe item. `--probe f7`.
+//   F8   cuts only where a drawer item asks for a watch insert. No default
+//        does — T52's own `--watch` proof, kept and re-pointed. `--probe f8`.
+//   F9   changes the bore-depth CLAMP `cupFloorKeepMm`, 1 → 3. It binds only
+//        where the leaf is thinner than cup + keep, and every golden's fronts
+//        are full thickness. CLAUDE.md calls this the likeliest to surprise and
+//        asks for a PROBE rather than a sentence: `--probe f9` measures every
+//        front of every golden against the clamp and prints the slack.
+//   F10  is a room-drawing UI writing `project.room.corners`. `computeCabinet`
+//        never sees a room. `--probe f10`.
+//
+// If a golden moves anyway: iron rule 2 — **write it up as a FINDING. Do not
+// name a bucket for it.**
+//
+// Usage — the three lines every classifier in this house has taken:
+//
+//     node scripts/t52-classify.mjs --dump > /tmp/base.json     # on the base
+//     node scripts/t53-classify.mjs --dump > /tmp/head.json     # on the branch
+//     node scripts/t53-classify.mjs /tmp/base.json /tmp/head.json
+//
+//     node scripts/t53-classify.mjs --probe        # all ten, one exit code
+//     node scripts/t53-classify.mjs --probe f9     # one of them
+//
+// The KIT COUNT is DERIVED from the folder, never typed (iron rule 3).
+//
+// Zero dependencies beyond the engine and node:crypto.
+
+import { createHash } from 'node:crypto';
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
+import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
+import { computeCabinet } from '../src/engine/cabinet.js';
+import { defaultParamsFor } from '../src/engine/types.js';
+import { buildWallRuns } from '../src/engine/runs.js';
+import { shareOutPlan, widthFixed } from '../src/engine/shareOut.js';
+import { topNeighbourDemand } from '../src/engine/doors.js';
+
+// `--dump` has to run on the BASE as well as on the branch — that is the whole
+// comparison — so anything this turn INTRODUCED is imported lazily inside the
+// probe that needs it. A static import of tonight's own module would turn "the
+// goldens did not move" into a syntax error on the base.
+
+// The six standard configs are T34's through T52's, unchanged — the same set,
+// so a T52 dump and a T53 dump are directly comparable.
+export const STANDARD_CONFIGS = [
+  { id: 'WARDROBE', drawers: false },
+  { id: 'BUD', drawers: false },
+  { id: 'WUD', drawers: false },
+  { id: 'BUDR', drawers: true },
+  { id: 'BUDR4', drawers: true },
+  { id: 'PANTRY', drawers: true },
+];
+
+/** Key-sorted JSON, so two runs of the same engine serialise identically. */
+export function canonical(value) {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value === undefined ? null : value);
+  }
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+  const keys = Object.keys(value).sort();
+  return `{${keys.map((k) => `${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}`;
+}
+
+export function sha256(text) {
+  return createHash('sha256').update(text).digest('hex');
+}
+
+export function dump() {
+  const out = {};
+  for (const cfg of STANDARD_CONFIGS) {
+    let result;
+    try {
+      result = computeCabinet({ ...defaultParamsFor(cfg.id, P), unit_num: '01' }, P);
+    } catch (e) {
+      out[cfg.id] = { error: e.message };
+      continue;
+    }
+    const text = canonical(result);
+    out[cfg.id] = { drawers: cfg.drawers, sha256: sha256(text), tree: JSON.parse(text) };
+  }
+  return out;
+}
+
+/** Every kit on the shelf — DERIVED, never typed (iron rule 3). */
+export function kitCount(dir = 'reference/lisp') {
+  return readdirSync(dir).filter((f) => f.toLowerCase().endsWith('.lsp')).length;
+}
+
+const round = (v, n = 3) => Math.round(v * 10 ** n) / 10 ** n;
+
+/** Every golden, computed once — the probes share it rather than re-deriving. */
+function goldens() {
+  return STANDARD_CONFIGS.map((cfg) => {
+    const params = { ...defaultParamsFor(cfg.id, P), unit_num: '01' };
+    return { cfg, params, result: computeCabinet(params, P) };
+  });
+}
+
+// ─── THE PROBES ─────────────────────────────────────────────────────────────
+//
+// Each returns `{ head, columns, rows, clean, verdict }`. One shape, so the CLI
+// prints them all the same way and `--probe` with no name runs the lot.
+
+export const PROBES = {};
+
+/**
+ * F1 — THE SHARE-OUT GATE. A run over a ROOM; a golden has neither.
+ *
+ * Two halves, and both are printed. The MODULE: `shareOutPlan` of a run of one
+ * cabinet with no wall has nothing to share. The CONFIG: not one of the six
+ * carries a mark of the share-out (`width_fixed`), so nothing in a golden's
+ * parameters can reach it either.
+ */
+PROBES.f1 = () => {
+  const rows = STANDARD_CONFIGS.map((cfg) => {
+    const params = { ...defaultParamsFor(cfg.id, P), unit_num: '01' };
+    const unit = {
+      id: cfg.id, type: cfg.id, params, position: { wall: 0, x_mm: 0, rotation_deg: 0 },
+    };
+    const runs = buildWallRuns([unit], P);
+    const plan = runs.length
+      ? shareOutPlan(runs[0], { wallWidth: 0, others: [unit] }, P, {})
+      : null;
+    return {
+      id: cfg.id,
+      cells: [String(Boolean(plan && plan.ok)), String(widthFixed(unit)),
+        params.width_fixed == null ? '(none)' : String(params.width_fixed)],
+      ok: !(plan && plan.ok) && params.width_fixed == null,
+    };
+  });
+  return {
+    head: 'F1 · THE SHARE-OUT GATE — a run over a room, and a golden has neither',
+    columns: ['has a run to share', 'width imposed', 'mark on the config'],
+    rows,
+    verdict: [
+      'CLEAN — not one of the six has a run to share out, and not one carries a mark of it.',
+      'NOT CLEAN — the share-out is reaching a cabinet that is not in a run. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F2 — THE DXF EXPORT. A writer DOWNSTREAM of the engine… with one exception,
+ * and the exception is the whole point of this probe.
+ *
+ * The fix tonight is in `engine/cabinet.js`: a drawer shoe box's two battens
+ * shared one panel id, so the ZIP kept one of them and the machine never got
+ * the other. Changing a panel id IS changing the engine's output — so the claim
+ * is not "the export is downstream", it is that NO GOLDEN HAS A SHOE BOX.
+ *
+ * Per config: how many shoe-box items its default parameters carry, how many
+ * `SHOE*` panels come out, and how many of those are battens. Then the same
+ * engine asked a wardrobe that DOES have one, so the rename is shown to have
+ * happened rather than to have been described.
+ */
+PROBES.f2 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const items = (params.sections || []).flatMap((s) => s?.items || []);
+    const shoes = items.filter((i) => i?.kind === 'shoe_box').length;
+    const panels = (result.panels || []).filter((p) => /^SHOE\d/.test(p.id));
+    const battens = panels.filter((p) => /BATTEN/.test(p.id)).length;
+    return {
+      id: cfg.id,
+      cells: [String(shoes), String(panels.length), String(battens)],
+      ok: shoes === 0 && panels.length === 0 && battens === 0,
+    };
+  });
+  // …and the engine asked for one, so the gate is a gate and not a dead branch.
+  const asked = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    width: 900,
+    sections: [{ width_mm: 900, items: [{ id: 'sb1', kind: 'shoe_box', variant: 'D', dividers: 1 }] }],
+  }, P);
+  const battens = (asked.panels || []).filter((p) => /BATTEN/.test(p.id)).map((p) => p.id);
+  rows.push({
+    id: 'asked for one',
+    cells: ['1', String((asked.panels || []).filter((p) => /^SHOE\d/.test(p.id)).length), battens.join(' + ')],
+    ok: battens.length === 2 && new Set(battens).size === 2,
+  });
+  return {
+    head: 'F2 · THE DXF EXPORT — the one engine change is a shoe box, and no golden has one',
+    columns: ['shoe items', 'SHOE panels', 'battens'],
+    rows,
+    note: 'The battens used to share one id — and one file name, and one ZIP entry.',
+    verdict: [
+      'CLEAN — not one of the six carries a shoe box, so the rename cannot reach a golden. And the two battens really are two.',
+      'NOT CLEAN — a golden has a shoe box, or the two battens are still one name. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F3 — THE SLOPE'S INFILLS. Everything tonight cuts is gated on a `slopeCut`,
+ * and no golden carries one: `defaultParamsFor` states no `slope_cut`, and the
+ * key is written only by `projectStore.paramsForEngine` for a unit standing
+ * under a rake in a ROOM. A golden is `computeCabinet` of one cabinet with no
+ * room at all.
+ *
+ * Per config: whether its params carry a slope cut, how many of its panels come
+ * out with `meta.slopeCut`, and how many infill panels it has at all. Then the
+ * same engine asked a cabinet that IS under a rake, so the gate is shown to be
+ * a gate rather than a dead branch.
+ */
+PROBES.f3 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const cut = params.slope_cut ?? params.slopeCut ?? null;
+    const sloped = (result.panels || []).filter((p) => p.meta?.slopeCut).length;
+    const infills = (result.panels || []).filter((p) => p.role === 'infill').length;
+    return {
+      id: cfg.id,
+      cells: [cut == null ? '(none)' : 'YES', String(sloped), String(infills)],
+      ok: cut == null && sloped === 0,
+    };
+  });
+  // …and the engine asked for one: a wardrobe under a rake that falls across
+  // its own width, which really does cut.
+  const asked = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    slope_cut: { axis: 'width', infill: 20, low: 'R', pts: [{ x: 0, y: 1800 }, { x: 600, y: 1200 }] },
+  }, P);
+  const cutParts = (asked.panels || []).filter((p) => p.meta?.slopeCut).length;
+  rows.push({
+    id: 'asked for one',
+    cells: ['YES', String(cutParts), String((asked.panels || []).filter((p) => p.role === 'infill').length)],
+    ok: cutParts > 0,
+  });
+  return {
+    head: 'F3 · THE SLOPE’S INFILLS — every cut is gated on a slopeCut, and no golden has one',
+    columns: ['slope_cut', 'cut panels', 'infill panels'],
+    rows,
+    note: 'The run’s own ceiling line is written by the STORE, and a golden never meets the store.',
+    verdict: [
+      'CLEAN — not one of the six is under a rake, so not one of them grows a cut. And the gate bites: a cabinet that IS under one cuts.',
+      'NOT CLEAN — a golden is being cut on a slope it does not stand under. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F4 — THE SIDES' BEVEL. The same gate as F3, measured on the two boards the
+ * feature is about: a golden's BUL and BUR carry no `meta.slopeCut` at all, so
+ * they publish no `bevel3d` and the scene has nothing to take off them. And
+ * tonight's fix is in `3d/panelSolid.js` — a RENDERER — which `computeCabinet`
+ * has never called.
+ */
+PROBES.f4 = () => {
+  const rows = goldens().map(({ cfg, result }) => {
+    const sides = (result.panels || []).filter((p) => p.part === 'BUL' || p.part === 'BUR');
+    const cut = sides.filter((p) => p.meta?.slopeCut).length;
+    const bevel = sides.filter((p) => p.meta?.slopeCut?.bevel3d).length;
+    return {
+      id: cfg.id,
+      cells: [String(sides.length), String(cut), String(bevel)],
+      ok: cut === 0 && bevel === 0,
+    };
+  });
+  const asked = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    slope_cut: { axis: 'width', infill: 20, low: 'R', pts: [{ x: 0, y: 2000 }, { x: 600, y: 1400 }] },
+  }, P);
+  const askedSides = (asked.panels || []).filter((p) => p.part === 'BUL' || p.part === 'BUR');
+  const bevels = askedSides.filter((p) => p.meta?.slopeCut?.bevel3d);
+  rows.push({
+    id: 'asked for one',
+    cells: [String(askedSides.length), String(askedSides.filter((p) => p.meta?.slopeCut).length),
+      String(bevels.length)],
+    // …and the high face is on the peak side on BOTH of them, which is the law.
+    ok: bevels.length === 2 && bevels.every((p) => p.meta.slopeCut.bevel3d.a
+      >= p.meta.slopeCut.bevel3d.b),
+  });
+  return {
+    head: 'F4 · THE SIDES’ BEVEL — a wedge exists only under a rake, and no golden stands under one',
+    columns: ['sides', 'cut', 'with a bevel'],
+    rows,
+    note: 'The fix itself is in 3d/panelSolid.js — a renderer computeCabinet has never called.',
+    verdict: [
+      'CLEAN — not one of the six has a bevelled side. And under a rake that falls RIGHT, both blanks carry their high point on the LEFT: toward the peak.',
+      'NOT CLEAN — a golden grew a bevel, or a blank’s high point faces the room. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F5 — TOP BOXES. Everything tonight moves is a RIDER — `WARDROBE_TOP` — and
+ * no golden is one, carries one, or is on a wall where one could stand. The
+ * `ridden_by` stamp is written by the STORE (`settleRiders`), which
+ * `computeCabinet` never meets; the only reader inside the engine is
+ * `doors.js topNeighbourDemand`, and it reads a param no default config has.
+ */
+PROBES.f5 = () => {
+  const rows = goldens().map(({ cfg, params }) => ({
+    id: cfg.id,
+    cells: [
+      String(Boolean(params.rides_on)),
+      params.ridden_by == null ? '(none)' : JSON.stringify(params.ridden_by),
+      params.rides_offset_mm == null ? '(none)' : String(params.rides_offset_mm),
+    ],
+    ok: !params.rides_on && params.ridden_by == null && params.rides_offset_mm == null,
+  }));
+  // …and the door law the stamp drives, asked both ways of the very function
+  // that reads it, so the gate is shown to be a gate rather than a dead branch:
+  // a cabinet with a box above gives up the door gap, one with nothing does not.
+  const withBox = topNeighbourDemand({ ridden_by: ['u_box'] }, P);
+  const without = topNeighbourDemand({}, P);
+  rows.push({
+    id: 'the stamp, asked',
+    cells: ['false', '["u_box"]', `${without} \u2192 ${withBox}`],
+    ok: withBox > 0 && without === 0,
+  });
+  return {
+    head: 'F5 · TOP BOXES — a rider is a unit type no golden is or carries',
+    columns: ['rides_on', 'ridden_by', 'offset / gap'],
+    rows,
+    note: 'The stamp is written by the store; computeCabinet only ever reads it.',
+    verdict: [
+      'CLEAN — not one of the six is a rider or carries one, so the list, the offset and the clamp reach none of them. And the stamp still bites: a cabinet with a box above gives up the door gap.',
+      'NOT CLEAN — a golden carries a rider mark. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F6 — THE STRIPS. Two gates, and either one is enough.
+ *
+ * A plinth or an infill is a DECISION and waits to be asked for (turn 4's own
+ * law), so no default config cuts one at all. And even where one existed, the
+ * split needs a RUN element — `run_plinth.spans`, written by the store — which
+ * a bare `computeCabinet` never receives.
+ *
+ * Per config: how many plinth parts and how many infill parts it cuts, and
+ * whether its params carry a run element. Then the engine asked for a run long
+ * enough to split, so the law is shown to bite.
+ */
+PROBES.f6 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const plinths = (result.panels || []).filter((p) => p.role === 'plinth').length;
+    const infills = (result.panels || []).filter((p) => p.role === 'infill').length;
+    const run = params.run_plinth ?? params.run_top_infill ?? null;
+    return {
+      id: cfg.id,
+      cells: [String(plinths), String(infills), run == null ? '(none)' : 'YES'],
+      ok: plinths === 0 && infills === 0 && run == null,
+    };
+  });
+  // …and the same engine asked for the owner's own worked example.
+  const spans = [650, 650, 650, 650, 600].map((w, i) => ({ id: `u${i}`, width: w }));
+  const asked = computeCabinet({
+    ...defaultParamsFor('BUD', P),
+    unit_num: '01',
+    plinth: true,
+    run_plinth: {
+      role: 'owner', offset: 0, length: 3200, unitIds: spans.map((s) => s.id), spans,
+    },
+  }, P);
+  const strips = (asked.panels || []).filter((p) => p.role === 'plinth');
+  rows.push({
+    id: 'asked for one',
+    cells: [String(strips.length), '0', strips.map((p) => p.w).join(' + ')],
+    ok: strips.length === 2 && strips[0].w === 1950 && strips[1].w === 1250,
+  });
+  return {
+    head: 'F6 · THE STRIPS — a plinth or an infill waits to be asked for, and no golden asks',
+    columns: ['plinth parts', 'infill parts', 'run element'],
+    rows,
+    note: 'The split needs a run element’s `spans`, which only the store writes.',
+    verdict: [
+      'CLEAN — not one of the six cuts a plinth or an infill at all, so the split reaches none of them. And the law bites: 3200 over 650s becomes 1950 + 1250, his own two numbers.',
+      'NOT CLEAN — a golden cut a strip, or the worked example does not come out. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F7 — THE SHOE FRONT. Everything tonight moves belongs to a `shoe_box` ITEM,
+ * and no default config carries one — a shoe box is asked for, like every other
+ * interior fitting (turn 4's law). Per config: shoe items, SHOE panels. Then
+ * the engine asked for one, so the three corrections are shown to have
+ * happened.
+ */
+PROBES.f7 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const items = (params.sections || []).flatMap((s) => s?.items || []);
+    const shoes = items.filter((i) => i?.kind === 'shoe_box').length;
+    const parts = (result.panels || []).filter((p) => p.meta?.shoe_role).length;
+    return {
+      id: cfg.id,
+      cells: [String(shoes), String(parts), '(none)'],
+      ok: shoes === 0 && parts === 0,
+    };
+  });
+  const asked = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    width: 900,
+    doors: true,
+    sections: [{
+      width_mm: 900,
+      items: [
+        { id: 'd1', kind: 'drawer', index: 1, height_mm: 200 },
+        { id: 'sb1', kind: 'shoe_box', variant: 'D', dividers: 1 },
+      ],
+    }],
+  }, P);
+  const face = (asked.panels || []).find((p) => p.meta?.shoe_role === 'front');
+  const front = (asked.panels || []).find((p) => p.part === 'DRAWER-FRONT');
+  const gap = face && front ? face.box.y - (front.box.y + front.box.h) : null;
+  rows.push({
+    id: 'asked for one',
+    cells: ['1', String((asked.panels || []).filter((p) => p.meta?.shoe_role).length),
+      `z ${face?.box?.z} vs ${front?.box?.z}, gap ${gap}`],
+    ok: Boolean(face && front) && face.box.z === front.box.z
+      && gap === P.wardrobe.drawers.gap,
+  });
+  return {
+    head: 'F7 · THE SHOE FRONT — it belongs to an item no default config carries',
+    columns: ['shoe items', 'shoe parts', 'the face, asked'],
+    rows,
+    verdict: [
+      'CLEAN — not one of the six carries a shoe box, so the plane, the floor and the gap reach none of them. And the law bites: the face is coplanar with the drawer front and keeps the stack’s own gap.',
+      'NOT CLEAN — a golden grew a shoe part, or the face is not on the drawer front’s plane. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F8 — THE WATCH DRAWER v2. T52's own `--watch` proof, kept and re-pointed: the
+ * insert is built ONLY where a drawer ITEM carries `watch_insert`, and no
+ * default parameter of any of the six does. Tonight adds the SHELF's opening,
+ * which needs the same flag AND a shelf above it — two gates, either enough.
+ */
+PROBES.f8 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const items = (params.sections?.[0]?.items || []).filter((i) => i?.kind === 'drawer');
+    const asks = items.filter((i) => i?.watch_insert === true).length;
+    const parts = (result.panels || []).filter((p) => p.role === 'watch_insert').length;
+    const cut = (result.panels || []).filter((p) => (p.cnc?.pockets || [])
+      .some((k) => /WATCH_GLASS/.test(String(k.layer)))).length;
+    return {
+      id: cfg.id,
+      cells: [String(items.length), String(asks), `${parts} parts, ${cut} shelves cut`],
+      ok: asks === 0 && parts === 0 && cut === 0 && result.assemblies?.watchInserts == null,
+    };
+  });
+  // …and the same engine asked a drawer that DOES want one, with a shelf above.
+  const wanted = computeCabinet({
+    ...defaultParamsFor('WARDROBE', P),
+    unit_num: 'W01',
+    width: 900,
+    sections: [{
+      width_mm: 900,
+      items: [
+        { id: 'd1', kind: 'drawer', index: 1, height_mm: 140, watch_insert: true, watch_shelf_glass: true, watch_layout: 'belts' },
+        { id: 'sh1', kind: 'shelf', pos_mm: 900 },
+      ],
+    }],
+  }, P);
+  const built = wanted.assemblies?.watchInserts?.[0] || null;
+  const shelves = (wanted.panels || []).filter((p) => (p.cnc?.pockets || [])
+    .some((k) => /WATCH_GLASS/.test(String(k.layer)))).length;
+  rows.push({
+    id: 'asked for one',
+    cells: ['1', '1', built
+      ? `${(wanted.panels || []).filter((p) => p.role === 'watch_insert').length} parts, ${shelves} shelves cut`
+      : 'NOTHING'],
+    ok: Boolean(built) && built.layout === 'belts' && shelves === 1,
+  });
+  return {
+    head: 'F8 · THE WATCH DRAWER — the insert is a FLAG on a drawer item, and no default carries it',
+    columns: ['drawer items', 'asking', 'what came out'],
+    rows,
+    note: 'The shelf opening needs the flag AND a shelf above — two gates, either enough.',
+    verdict: [
+      'CLEAN — not one of the six carries a drawer that asks for an insert, so not one grows a part, a key or a cut shelf. And the gate is a gate: a drawer that DOES ask gets a whole tray and its shelf gets the opening.',
+      'NOT CLEAN — the insert is reaching a cabinet that never asked, or the gate is dead. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F9 — THE CUP FLOOR, 1 → 3. CLAUDE.md calls this the likeliest of the ten to
+ * surprise and asks for a PROBE rather than a sentence, so this MEASURES it.
+ *
+ * The clamp is `min(wanted, thicknessAtCup − keep)` and it binds only where the
+ * material under the cup is thinner than `cupDepth + keep` — 11 + 3 = 14. So
+ * the probe prints, per golden, EVERY front's thickness at the cup, the bore it
+ * takes, and the SLACK: how many millimetres of headroom there are before the
+ * new keep would bite. A golden with slack ≥ 2 could not have moved even if the
+ * keep had gone to three from one in a single step, which is exactly what it
+ * did.
+ */
+PROBES.f9 = async () => {
+  const { cupBoreOf, cupThicknessAtBore } = await import('../src/engine/doors.js');
+  const keep = Number(P.hardware.hinge.cupFloorKeepMm);
+  const want = Number(P.hardware.hinge.cupDepth);
+  const rows = goldens().map(({ cfg, result }) => {
+    const leaves = (result.panels || []).filter((p) => p.role === 'front' && cupBoreOf(p, P));
+    let worst = Infinity;
+    let thinnest = Infinity;
+    let shortened = 0;
+    for (const leaf of leaves) {
+      const atCup = cupThicknessAtBore(leaf, P);
+      const bore = cupBoreOf(leaf, P);
+      thinnest = Math.min(thinnest, atCup);
+      // The headroom before the clamp bites: material − (cup + keep).
+      worst = Math.min(worst, atCup - (want + keep));
+      if (bore.short) shortened += 1;
+    }
+    return {
+      id: cfg.id,
+      cells: [String(leaves.length),
+        Number.isFinite(thinnest) ? String(round(thinnest, 1)) : '—',
+        Number.isFinite(worst) ? `${round(worst, 1)} spare, ${shortened} short` : '—'],
+      ok: shortened === 0 && (!Number.isFinite(worst) || worst >= 0),
+    };
+  });
+  // …and the clamp asked of a leaf that IS thin, so it is shown to bite.
+  const thin = {
+    role: 'front',
+    part: 'FRONT',
+    thickness: 16,
+    w: 400,
+    h: 700,
+    box: { x: 0, y: 0, z: 0, w: 400, h: 700, d: 16 },
+    meta: { shaker: { frame: 30, depth: 6 } },
+  };
+  const bore = cupBoreOf(thin, P);
+  rows.push({
+    id: 'asked of a thin leaf',
+    cells: ['1', String(round(cupThicknessAtBore(thin, P), 1)),
+      bore ? `bored ${round(bore.depth, 1)} of ${want}, short=${bore.short}` : '—'],
+    ok: Boolean(bore) && bore.short === true
+      && Math.abs(bore.depth - (cupThicknessAtBore(thin, P) - keep)) < 1e-6,
+  });
+  return {
+    head: `F9 · THE CUP FLOOR — keep ${keep} mm, and it binds only under ${want + keep} mm of material`,
+    columns: ['leaves', 'thinnest at cup', 'headroom'],
+    rows,
+    note: `Every golden's fronts are full thickness: ${want} + ${keep} = ${want + keep} is the bite point.`,
+    verdict: [
+      'CLEAN — every golden leaf has material to spare over the bite point and not one bore was shortened. And the clamp bites: a 16 mm shaker with a 6 mm rebate bores to the material less the keep, and says it is short.',
+      'NOT CLEAN — a golden leaf was bored shallower than it wanted. Iron rule 2: write it up as a FINDING.',
+    ],
+  };
+};
+
+/**
+ * F10 — THE DRAWN ROOM. *"F10 is a room-drawing UI writing `project.room
+ * .corners`; `computeCabinet` never sees a room."*
+ *
+ * Which is a claim about the ENGINE's door, so the probe asks the door rather
+ * than the drawing: not one of the six configs carries a room key, `computeCabinet`
+ * takes (params, profile) and nothing else, and the drawing module — imported
+ * here so a stray import would show — reaches nothing the cabinet engine does.
+ * Then the drawing's own answer is checked against the room engine's, because
+ * the ONLY way F10 could move a golden is by making a different corner list of
+ * the same room, and that is a comparison, not an opinion.
+ */
+PROBES.f10 = async () => {
+  const draw = await import('../src/engine/drawRoom.js');
+  const { rectCorners } = await import('../src/engine/room.js');
+  const ROOM_KEYS = ['room', 'corners', 'room_corners', 'walls', 'wall_index'];
+  const rows = STANDARD_CONFIGS.map((cfg) => {
+    const params = { ...defaultParamsFor(cfg.id, P), unit_num: '01' };
+    const found = ROOM_KEYS.filter((k) => k in params);
+    return {
+      id: cfg.id,
+      cells: [String(Object.keys(params).length), found.length ? found.join(',') : 'none'],
+      ok: found.length === 0,
+    };
+  });
+  // The drawing's rectangle IS the room engine's rectangle — byte for byte.
+  let p = draw.newPath();
+  for (const [dir, len] of [['E', 4000], ['S', 3000], ['W', 4000]]) p = draw.addSegment(p, dir, len).path;
+  const home = draw.closePath(p);
+  const drawn = JSON.stringify(draw.cornersOfPath(home.path));
+  const made = JSON.stringify(rectCorners(4000, 3000));
+  rows.push({
+    id: 'drawn 4000/3000/4000',
+    cells: [`${home.added} home`, drawn === made ? 'equals rectCorners' : 'DIFFERS'],
+    ok: drawn === made,
+  });
+  // …and the module the UI draws with reaches no part of the cabinet engine.
+  const src = readFileSync(new URL('../src/engine/drawRoom.js', import.meta.url), 'utf8');
+  const imports = [...src.matchAll(/from\s*'([^']+)'/g)].map((m) => m[1]);
+  rows.push({
+    id: 'drawRoom.js imports',
+    cells: [String(imports.length), imports.join(' ') || 'none'],
+    ok: imports.every((i) => i === './room.js'),
+  });
+  return {
+    head: 'F10 · THE DRAWN ROOM — the engine never sees a room, and the drawing agrees with the room engine',
+    columns: ['params', 'room keys'],
+    rows,
+    note: 'computeCabinet(params, profile): a golden has no room, no wall and no corner list to move.',
+    verdict: [
+      'CLEAN — not one of the six carries a room key, the drawn rectangle is byte-equal to rectCorners(4000, 3000), and the drawing module imports nothing but the room engine.',
+      'NOT CLEAN — something here reaches the cabinet engine. Iron rule 2: write it up as a FINDING.',
+    ],
+  };
+};
+
+// ─── THE COMPARISON ─────────────────────────────────────────────────────────
+
+/** Compare two dumps, config by config. */
+export function classify(base, head) {
+  const rows = [];
+  const counts = { IDENTICAL: 0, UNNAMED: 0 };
+  for (const cfg of STANDARD_CONFIGS) {
+    const b = base[cfg.id];
+    const h = head[cfg.id];
+    const same = b?.sha256 && b.sha256 === h?.sha256;
+    if (same) counts.IDENTICAL += 1;
+    else counts.UNNAMED += 1;
+    rows.push(`${cfg.id.padEnd(12)}${same ? 'IDENTICAL' : 'UNNAMED  '}  ${h?.sha256 || h?.error || '(missing)'}`);
+  }
+  return { rows, counts };
+}
+
+async function runProbe(name) {
+  const probe = await PROBES[name]();
+  const clean = probe.rows.every((r) => r.ok !== false);
+  const width = Math.max(14, ...probe.rows.map((r) => r.id.length + 2));
+  let out = `${probe.head}\n\n${'subject'.padEnd(width)}`;
+  const colW = probe.columns.map((c) => Math.max(c.length + 2, 10));
+  probe.columns.forEach((c, i) => { out += c.padEnd(colW[i]); });
+  out += '\n';
+  for (const r of probe.rows) {
+    out += r.id.padEnd(width);
+    r.cells.forEach((c, i) => { out += String(c).padEnd(colW[i]); });
+    out += `${r.ok === false ? '  ← ' : ''}\n`;
+  }
+  if (probe.note) out += `\n${probe.note}\n`;
+  out += `\n${clean ? probe.verdict[0] : probe.verdict[1]}\n`;
+  return { out, clean };
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const argv = process.argv.slice(2);
+  const probeAt = argv.indexOf('--probe');
+  if (argv.includes('--dump')) {
+    process.stdout.write(`${JSON.stringify(dump())}\n`);
+  } else if (probeAt >= 0) {
+    const only = argv[probeAt + 1] && !argv[probeAt + 1].startsWith('--')
+      ? argv[probeAt + 1].toLowerCase() : null;
+    const names = only ? [only] : Object.keys(PROBES);
+    if (only && !PROBES[only]) {
+      process.stdout.write(`no probe named ${only} — have [${Object.keys(PROBES).join(', ')}]\n`);
+      process.exit(2);
+    }
+    let bad = 0;
+    for (const name of names) {
+      const { out, clean } = await runProbe(name);
+      process.stdout.write(`${out}\n`);
+      if (!clean) bad += 1;
+    }
+    if (names.length > 1) {
+      process.stdout.write(`${'─'.repeat(72)}\n${names.length} probe(s), ${bad === 0
+        ? 'every one CLEAN — no feature of tonight reaches a golden.'
+        : `${bad} NOT CLEAN. Iron rule 2: write it up as a FINDING.`}\n`);
+    }
+    process.exit(bad === 0 ? 0 : 1);
+  } else if (argv.length >= 2) {
+    const base = JSON.parse(readFileSync(argv[0], 'utf8'));
+    const head = JSON.parse(readFileSync(argv[1], 'utf8'));
+    const { rows, counts } = classify(base, head);
+    process.stdout.write(`${rows.join('\n')}\n\n`);
+    process.stdout.write('EXPECTED BUCKETS: none. Every feature of tonight is gated on something no default config carries — a room, a slope, a top box, a shoe item, a watch insert, a plinth, or a leaf too thin for a cup. `--probe` argues each one as an exit code.\n');
+    process.stdout.write('IF A GOLDEN MOVED:  iron rule 2 — write it up as a FINDING. Do not name a bucket for it.\n');
+    process.stdout.write(`UNNAMED:          ${counts.UNNAMED}\n`);
+    process.exit(counts.UNNAMED === 0 ? 0 : 1);
+  } else {
+    const d = dump();
+    for (const cfg of STANDARD_CONFIGS) {
+      process.stdout.write(`${cfg.id.padEnd(12)} drawers=${cfg.drawers ? 'yes' : 'no '}  ${d[cfg.id].sha256 || d[cfg.id].error}\n`);
+    }
+    process.stdout.write(`\n${kitCount()} kits on the shelf.\n`);
+  }
+}

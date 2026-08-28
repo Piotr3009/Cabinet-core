@@ -1263,6 +1263,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
     [shareOutOffer, units, shareOutView],
   );
   const clearShareOut = useUiStore((s) => s.clearShareOut);
+  const dismissShareOut = useUiStore((s) => s.dismissShareOut);
   const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
   const dimensionColour = useUiStore((s) => s.dimensionColour);
   const showOutlines = useUiStore((s) => s.showOutlines);
@@ -1781,6 +1782,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           // `shareOutRun` applies, wall margin and all — so the number on the
           // strip is the number the cabinets end up at.
           view={shareOutNow}
+          // T53 (CLAUDE.md F1b): the house ✕. It closes the offer for THIS gap
+          // — the plan's signature — and `settleLayout` keeps it closed until
+          // the geometry makes a different one.
+          onDismiss={(signature) => dismissShareOut(signature)}
           onShare={(unitId, opts) => {
             const res = shareOutRun(unitId, opts);
             clearShareOut();

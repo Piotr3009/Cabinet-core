@@ -208,6 +208,19 @@ export const CUT_GRAIN_AXIS_BY_PART = Object.freeze({
  * that lies flat — *"dno — słoje w poprzek"* — so it keeps its own stated
  * answer and is laid exactly where it was laid yesterday.
  */
+/**
+ * ─── TURN 53 (CLAUDE.md F6): …AND THE INFILL JOINS THEM ────────────────────
+ *
+ * The owner, 27.08.2026: *"infille i plinthy układaj na CNC w pionie ZAWSZE"*
+ * — one word about two pieces. The PLINTH has been on this list since T40 and
+ * really was nested standing (measured: a 600 × 100 toe kick is laid 100 across
+ * × 600 up the page). The INFILL was not on it, so it fell through to the
+ * fallback and a long filler came off the saw LYING DOWN, banded across its own
+ * grain. That is the half of his sentence that was not already true.
+ *
+ * It is the SEVENTH role, added in the one place the note two paragraphs down
+ * says the seventh goes.
+ */
 export const CUT_STANDING_PARTS = Object.freeze([
   'DRAWER-SIDE',
   'DRAWER-BOX-FRONT',
@@ -215,6 +228,7 @@ export const CUT_STANDING_PARTS = Object.freeze([
   'DRAWER-FRONT',
   'PLINTH',
   'END-PANEL',
+  'INFILL',
 ]);
 
 const CUT_STANDING_SET = new Set(CUT_STANDING_PARTS);

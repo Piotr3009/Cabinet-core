@@ -1432,6 +1432,23 @@
 ;;; from the same two routines, so the report and the bore cannot disagree.
 (defun SKY:cupTooThin (boardT frameW recessD cupX cupDia want keep)
   (< (SKY:cupDepth boardT frameW recessD cupX cupDia want keep) want))
+
+;;; ─── THE FLOOR UNDER THE CUP  (turn 53, F9) ───────────────────────────────
+;;;
+;;; `keep` above is how much board a BLIND cup must leave under it, and until
+;;; tonight this workshop's number was ONE MILLIMETRE. It is not a number: an
+;;; 18 mm shaker whose 35 mm cup overhangs the frame was bored to leave one
+;;; millimetre of skin, and ONE MILLIMETRE READS THROUGH A SPRAYED FACE - the
+;;; bore telegraphs as a ring the first time the door is knocked, and it is
+;;; found by the customer.
+;;;
+;;; DECISION TAKEN for the owner, veto in one line: THREE.
+;;;
+;;; Where three cannot be kept, `SKY:cupDepth` above SHORTENS THE BORE - it
+;;; already does, and that is the whole mechanism - and `SKY:cupTooThin` names
+;;; the leaf so a joiner is told rather than sold a hinge that does not hold.
+;;; Refuse and report, the house way, never a one millimetre floor.
+(defun SKY:cupFloorKeep ( / ) 3.0)
 ;;;----------------------------------------
 
 ;;;----------------------------------------
@@ -1623,6 +1640,171 @@
 (defun SKY:sideCutDeg (pts xa xb)
   (SKY:slopeSegDeg (- xb xa)
                    (- (SKY:cutHeightAt pts xb) (SKY:cutHeightAt pts xa))))
+
+;;;----------------------------------------
+;;; WHICH WAY THE BEVEL RUNS  (turn 53, F4)
+;;;----------------------------------------
+
+;;; The owner, 27.08.2026, screenshot in hand:
+;;;
+;;;   "zamiast BUL obciac pod katem pasujacym do wienca, to sie nachodza
+;;;    materialy na siebie."
+;;;   "wyglada na to, ze ciecia istniejace na BUL i BUR sa odwrotnie."
+;;;   ...and the correction that scopes it: "nie ciecie wienca - on juz jest
+;;;    dobrze ciety. BUL i BUR."
+;;;
+;;; THE ROOF BOARD IS CORRECT. DO NOT TOUCH IT. What is stated here is the law
+;;; the SIDES are cut by, because a law that lives only in a renderer is a law
+;;; that can be forgotten by the next renderer:
+;;;
+;;;   THE HIGH POINT OF THE BLANK IS ALWAYS TOWARD THE PEAK, NEVER TOWARD THE
+;;;   ROOM. The short face of the bevel is on the FALL side.
+;;;
+;;; It follows from the geometry rather than from a preference: the side's top
+;;; is the roof board's UNDERSIDE at that face - `SKY:cutHeightAt` less the
+;;; board's own vertical footprint - and the ceiling is higher on the peak side
+;;; by definition. State it anyway. A wedge left uncut leaves the blank standing
+;;; proud past the roof line at the corner, and the two boards then overlap -
+;;; which the house forbids ("nie pozwalamy na nachodzenie sie materialow na
+;;; siebie").
+;;;
+;;;   ((ya yb) high)   ya at xa, yb at xb, and which face carries the high point
+(defun SKY:sideBevelFaces (pts wys xa xb G / ya yb deg drop)
+  (setq deg (SKY:sideCutDeg pts xa xb))
+  (setq drop (SKY:roofVertDrop G deg))
+  (setq ya (max 0.0 (min wys (- (SKY:cutHeightAt pts xa) drop))))
+  (setq yb (max 0.0 (min wys (- (SKY:cutHeightAt pts xb) drop))))
+  (list (list ya yb) (if (>= ya yb) "xa" "xb")))
+
+;;; ...and the check that says the law is kept: the side's top at each face is
+;;; the roof board's underside there, to the millimetre. Anything HIGHER is the
+;;; wedge left on, and the wedge left on is an overlap.
+(defun SKY:sideBevelOverlap (pts wys xa xb G / f)
+  (setq f (car (SKY:sideBevelFaces pts wys xa xb G)))
+  (max (- (car f) (- (SKY:cutHeightAt pts xa) (SKY:roofVertDrop G (SKY:sideCutDeg pts xa xb))))
+       (- (cadr f) (- (SKY:cutHeightAt pts xb) (SKY:roofVertDrop G (SKY:sideCutDeg pts xa xb))))))
+
+;;;----------------------------------------
+;;; PLINTHS AND INFILLS: VERTICAL, AND SPLIT AT A CABINET EDGE  (turn 53, F6)
+;;;----------------------------------------
+
+;;; The owner, 27.08.2026:
+;;;
+;;;   "infille i plinthy ukladaj na CNC w pionie zawsze i dziel tak, zeby sie
+;;;    rowno z szafka ktoras - zeby nie przekroczylo wysokosci materialu. przy
+;;;    okazji rozwiazemy problem oversizu."
+;;;
+;;; ...and his own worked example, which is the assertion:
+;;;
+;;;   "plyta ma 2400 a plinth wychodzi 3200 - zobacz jakie mamy szafki:
+;;;    3 x 650 = 1950, reszta drugi pasek. laczenie zawsze rowno z szafka, a nie
+;;;    na srodku szafki."
+;;;
+;;; THREE CLAUSES, AND THEY ARE ONE LAW.
+;;;
+;;;   VERTICAL. The piece's LENGTH runs along the board's HEIGHT. That is what
+;;;   makes the grain run along the piece and the banded edge banded along the
+;;;   grain - the same "cut standing" rule the plinth already keeps and the
+;;;   infill did not.
+;;;
+;;;   SPLIT AT A CABINET EDGE. A joint in the middle of a cabinet is a joint the
+;;;   eye finds. So a strip takes WHOLE CABINET WIDTHS while the sum still fits
+;;;   the board, and closes the moment the next one would not.
+;;;
+;;;   AND THE SPLIT IS WHAT CLOSES THE OVERSIZE. No plinth or infill strip may
+;;;   exceed the sheet, so what is left for the oversize check to flag is a
+;;;   SINGLE CABINET wider than the board - which no split can save, and which
+;;;   is a fault about the cabinet rather than about the strip.
+;;;
+;;; `szer` is the list of cabinet widths, left to right; `plyta` is the board's
+;;; own height. The answer is the strips, each as (length n-cabinets).
+(defun SKY:stripsAtCabinetEdges (szer plyta / out cur n w)
+  (setq out '() cur 0.0 n 0)
+  (foreach w szer
+    (if (and (> cur 0.0) (> (+ cur w) plyta))
+      (progn (setq out (cons (list cur n) out)) (setq cur 0.0 n 0)))
+    (setq cur (+ cur w) n (1+ n)))
+  (if (> n 0) (setq out (cons (list cur n) out)))
+  (reverse out))
+
+;;; ...and the one thing a split cannot save: a cabinet wider than the board.
+;;; The check that used to flag every long plinth flags only this now.
+(defun SKY:stripOversize (szer plyta / worst w)
+  (setq worst 0.0)
+  (foreach w szer (if (> w plyta) (setq worst (max worst w))))
+  worst)
+
+;;;----------------------------------------
+;;; THE INFILLS ON THE SLOPE - ONE LAW: 3D DRAWS WHAT CNC CUTS  (turn 53, F3)
+;;;----------------------------------------
+
+;;; The owner, 27.08.2026, three ways round one disease:
+;;;
+;;;   "top infill po skosie w ogole nie dziala ... jakos dziwnie sie rysuje
+;;;    gdzies poza scianami."
+;;;   "najdziwniejsze jest to, ze pionowy infill na CNC sie tnie pod skosem,
+;;;    ale na wizualizacji pokazuje prosto."
+;;;   "slope - tylko infill sie nie rysuje po skosie, a jest na CNC."
+;;;
+;;; The disease is TWO SOURCES OF TRUTH, which is the fault the grain rule
+;;; already killed once. The CNC path carries the slope; the solid in the room
+;;; measured the ceiling for itself and got a different answer. So the law is
+;;; stated here, once, and both readers ask it:
+;;;
+;;;   EVERY PIECE THE MACHINE CUTS ON THE SLOPE IS DRAWN CUT IN THE ROOM.
+;;;
+;;; Nothing below is new geometry. It is the SAME `SKY:cutHeightAt` walk the
+;;; roof board and the sides already take, asked of the three pieces that were
+;;; asking themselves.
+
+;;; The top of a VERTICAL member standing between `xa` and `xb` - a side infill,
+;;; an end panel taken to the ceiling, a filler run up past the units.
+;;;
+;;; Its top is the ceiling AT ITS OWN X, and where the ceiling falls across its
+;;; thickness that top is a BEVEL: the blank is as tall as the higher face and
+;;; the wedge comes off, exactly as `SKY:sideTopY` does one piece over. Reading
+;;; `wys` instead - the room height - is what drew a filler standing through the
+;;; plaster.
+(defun SKY:vertInfillTopY (pts wys xa xb)
+  (min wys (SKY:cutPeakBetween pts xa xb)))
+
+;;; ...and the angle the saw is set to for it. Zero under a flat ceiling, which
+;;; is what makes every filler in every straight room the board it always was.
+(defun SKY:vertInfillDeg (pts xa xb)
+  (SKY:slopeSegDeg (- xb xa)
+                   (- (SKY:cutHeightAt pts xb) (SKY:cutHeightAt pts xa))))
+
+;;; A HORIZONTAL run of infill under a bent ceiling is not one board and it is
+;;; not one plane: it is ONE PIECE PER SEGMENT of the ceiling line, each mounted
+;;; along its own stretch. This is that walk, over `xa`..`xb`, and it is the
+;;; same list `SKY:roofBoards` is built from - a knee inside the run splits the
+;;; piece there and nowhere else.
+;;;
+;;;   ((x0 x1 y0 y1 deg along) ...)
+;;;
+;;; `along` is the piece's own length, span / cos(beta): it is MOUNTED on the
+;;; slope, so it is longer than the span it covers. `y0`/`y1` are the ceiling at
+;;; its two ends, which is the line its top edge follows - never above it, and
+;;; never inside the triangle where the wall has ended.
+(defun SKY:infillSegsUnder (pts xa xb / segs out sg x0 x1 y0 y1 deg)
+  (setq segs (SKY:slopeSegments (SKY:cutPtsBetween pts xa xb)))
+  (setq out '())
+  (foreach sg segs
+    (setq x0 (nth 0 sg) x1 (nth 1 sg))
+    (setq y0 (SKY:cutHeightAt pts x0) y1 (SKY:cutHeightAt pts x1))
+    (setq deg (SKY:slopeSegDeg (- x1 x0) (- y1 y0)))
+    (setq out (cons (list x0 x1 y0 y1 deg (SKY:roofFaceLen (- x1 x0) deg)) out)))
+  (reverse out))
+
+;;; The stretch of the cut line between two x, with a vertex at every knee
+;;; inside it and one at each end. A polyline sampled at its knees is exact;
+;;; a polyline sampled at a step rounds every knee off.
+(defun SKY:cutPtsBetween (pts xa xb / out p)
+  (setq out (list (list xa (SKY:cutHeightAt pts xa))))
+  (foreach p pts
+    (if (and (> (car p) (+ xa 1e-6)) (< (car p) (- xb 1e-6)))
+      (setq out (cons (list (car p) (cadr p)) out))))
+  (reverse (cons (list xb (SKY:cutHeightAt pts xb)) out)))
 
 ;;;========================================
 ;;; LOADED

@@ -1,0 +1,148 @@
+F1 · THE SHARE-OUT GATE — a run over a room, and a golden has neither
+
+subject       has a run to share  width imposed  mark on the config  
+WARDROBE      false               false          (none)              
+BUD           false               false          (none)              
+WUD           false               false          (none)              
+BUDR          false               false          (none)              
+BUDR4         false               false          (none)              
+PANTRY        false               false          (none)              
+
+CLEAN — not one of the six has a run to share out, and not one carries a mark of it.
+
+F2 · THE DXF EXPORT — the one engine change is a shoe box, and no golden has one
+
+subject        shoe items  SHOE panels  battens   
+WARDROBE       0           0            0         
+BUD            0           0            0         
+WUD            0           0            0         
+BUDR           0           0            0         
+BUDR4          0           0            0         
+PANTRY         0           0            0         
+asked for one  1           9            SHOE1-BATTEN-L + SHOE1-BATTEN-R
+
+The battens used to share one id — and one file name, and one ZIP entry.
+
+CLEAN — not one of the six carries a shoe box, so the rename cannot reach a golden. And the two battens really are two.
+
+F3 · THE SLOPE’S INFILLS — every cut is gated on a slopeCut, and no golden has one
+
+subject        slope_cut  cut panels  infill panels  
+WARDROBE       (none)     0           0              
+BUD            (none)     0           0              
+WUD            (none)     0           0              
+BUDR           (none)     0           0              
+BUDR4          (none)     0           0              
+PANTRY         (none)     0           0              
+asked for one  YES        5           0              
+
+The run’s own ceiling line is written by the STORE, and a golden never meets the store.
+
+CLEAN — not one of the six is under a rake, so not one of them grows a cut. And the gate bites: a cabinet that IS under one cuts.
+
+F4 · THE SIDES’ BEVEL — a wedge exists only under a rake, and no golden stands under one
+
+subject        sides     cut       with a bevel  
+WARDROBE       2         0         0             
+BUD            2         0         0             
+WUD            2         0         0             
+BUDR           2         0         0             
+BUDR4          2         0         0             
+PANTRY         2         0         0             
+asked for one  2         2         2             
+
+The fix itself is in 3d/panelSolid.js — a renderer computeCabinet has never called.
+
+CLEAN — not one of the six has a bevelled side. And under a rake that falls RIGHT, both blanks carry their high point on the LEFT: toward the peak.
+
+F5 · TOP BOXES — a rider is a unit type no golden is or carries
+
+subject           rides_on  ridden_by  offset / gap  
+WARDROBE          false     (none)     (none)        
+BUD               false     (none)     (none)        
+WUD               false     (none)     (none)        
+BUDR              false     (none)     (none)        
+BUDR4             false     (none)     (none)        
+PANTRY            false     (none)     (none)        
+the stamp, asked  false     ["u_box"]  0 → 3         
+
+The stamp is written by the store; computeCabinet only ever reads it.
+
+CLEAN — not one of the six is a rider or carries one, so the list, the offset and the clamp reach none of them. And the stamp still bites: a cabinet with a box above gives up the door gap.
+
+F6 · THE STRIPS — a plinth or an infill waits to be asked for, and no golden asks
+
+subject        plinth parts  infill parts  run element  
+WARDROBE       0             0             (none)       
+BUD            0             0             (none)       
+WUD            0             0             (none)       
+BUDR           0             0             (none)       
+BUDR4          0             0             (none)       
+PANTRY         0             0             (none)       
+asked for one  2             0             1950 + 1250  
+
+The split needs a run element’s `spans`, which only the store writes.
+
+CLEAN — not one of the six cuts a plinth or an infill at all, so the split reaches none of them. And the law bites: 3200 over 650s becomes 1950 + 1250, his own two numbers.
+
+F7 · THE SHOE FRONT — it belongs to an item no default config carries
+
+subject        shoe items  shoe parts  the face, asked  
+WARDROBE       0           0           (none)           
+BUD            0           0           (none)           
+WUD            0           0           (none)           
+BUDR           0           0           (none)           
+BUDR4          0           0           (none)           
+PANTRY         0           0           (none)           
+asked for one  1           9           z 493 vs 493, gap 3
+
+CLEAN — not one of the six carries a shoe box, so the plane, the floor and the gap reach none of them. And the law bites: the face is coplanar with the drawer front and keeps the stack’s own gap.
+
+F8 · THE WATCH DRAWER — the insert is a FLAG on a drawer item, and no default carries it
+
+subject        drawer items  asking    what came out  
+WARDROBE       0             0         0 parts, 0 shelves cut
+BUD            0             0         0 parts, 0 shelves cut
+WUD            0             0         0 parts, 0 shelves cut
+BUDR           0             0         0 parts, 0 shelves cut
+BUDR4          0             0         0 parts, 0 shelves cut
+PANTRY         0             0         0 parts, 0 shelves cut
+asked for one  1             1         14 parts, 1 shelves cut
+
+The shelf opening needs the flag AND a shelf above — two gates, either enough.
+
+CLEAN — not one of the six carries a drawer that asks for an insert, so not one grows a part, a key or a cut shelf. And the gate is a gate: a drawer that DOES ask gets a whole tray and its shelf gets the opening.
+
+F9 · THE CUP FLOOR — keep 3 mm, and it binds only under 14 mm of material
+
+subject               leaves    thinnest at cup  headroom  
+WARDROBE              1         25               11 spare, 0 short
+BUD                   1         25               11 spare, 0 short
+WUD                   1         25               11 spare, 0 short
+BUDR                  0         —                —         
+BUDR4                 0         —                —         
+PANTRY                1         25               11 spare, 0 short
+asked of a thin leaf  1         10               bored 7 of 11, short=true
+
+Every golden's fronts are full thickness: 11 + 3 = 14 is the bite point.
+
+CLEAN — every golden leaf has material to spare over the bite point and not one bore was shortened. And the clamp bites: a 16 mm shaker with a 6 mm rebate bores to the material less the keep, and says it is short.
+
+F10 · THE DRAWN ROOM — the engine never sees a room, and the drawing agrees with the room engine
+
+subject               params    room keys  
+WARDROBE              14        none       
+BUD                   14        none       
+WUD                   16        none       
+BUDR                  14        none       
+BUDR4                 14        none       
+PANTRY                14        none       
+drawn 4000/3000/4000  1 home    equals rectCorners
+drawRoom.js imports   1         ./room.js  
+
+computeCabinet(params, profile): a golden has no room, no wall and no corner list to move.
+
+CLEAN — not one of the six carries a room key, the drawn rectangle is byte-equal to rectCorners(4000, 3000), and the drawing module imports nothing but the room engine.
+
+────────────────────────────────────────────────────────────────────────
+10 probe(s), every one CLEAN — no feature of tonight reaches a golden.

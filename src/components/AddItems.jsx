@@ -7,6 +7,7 @@ import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js
 import { getUnitType } from '../engine/types.js';
 import { hangerOf } from '../engine/items.js';
 import { formatMm } from '../engine/format.js';
+import { watchDrawerFixedHeight } from '../engine/watchDrawer.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 
 // ─── "What goes inside" (turn 4, BACKLOG #10; turn 12, CLAUDE.md F5.1) ──────
@@ -43,6 +44,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // TURN 40 (CLAUDE.md F3b): the OVERLAY stack — fronts on the wardrobe, doors
   // above them, and never a 30 mm hinge strip.
   const addOverlayDrawers = useProjectStore((s) => s.addOverlayDrawers);
+  // T53 (F8a): the watch drawer's own entry — position 3, fixed height.
+  const addWatchDrawer = useProjectStore((s) => s.addWatchDrawer);
   const addShelves = useProjectStore((s) => s.addShelves);
   const addPartition = useProjectStore((s) => s.addPartition);
   const addHangerRail = useProjectStore((s) => s.addHangerRail);
@@ -249,6 +252,23 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       label: 'Drawers (overlay)',
       disabled: !type.supports.drawers || ratioDrawers || type.family !== 'wardrobe',
       why: ratioDrawers ? 'this kit IS its drawers' : 'a wardrobe thing',
+    },
+    // ─── TURN 53 (CLAUDE.md F8a): THE WATCH DRAWER, AT POSITION 3 ──────────
+    //
+    // The owner, 27.08.2026: *"szuflada z zegarkami powinna być jako osobna
+    // pozycja, pod szufladami — czyli pozycja 3. dodajesz normalne szuflady i
+    // później masz: czy chcesz dodać szufladę (nad nimi, z zegarkami)."*
+    //
+    // Third, under the two drawer entries, and it says in its own row why it
+    // is unavailable rather than vanishing: a stack has to exist first, because
+    // the watch drawer goes ON TOP of one.
+    {
+      id: 'watch_drawer',
+      label: 'Watch drawer',
+      disabled: !type.supports.drawers || ratioDrawers || !existingDrawers,
+      why: ratioDrawers
+        ? 'this kit IS its drawers'
+        : (existingDrawers ? 'not for this type' : 'add the drawers first'),
     },
     { id: 'shelves', label: 'Shelves', disabled: !type.supports.shelves, why: 'not for this type' },
     // ─── TURN 34 (CLAUDE.md F4) + CHAT-FIX 16.08 (owner): THE SHOE BOX ──────
@@ -570,6 +590,42 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                   One construction, two mounting laws. The four decisions the
                   owner named on 16.08 and nothing else: fix or drawer, a
                   divider or none, which bay, and how high off the bay floor. */}
+              {/* ─── TURN 53 (CLAUDE.md F8a): THE WATCH DRAWER ─────────────
+                  *"dodajesz normalne szuflady i później masz: czy chcesz dodać
+                  szufladę (nad nimi, z zegarkami). wtedy dokładamy taką
+                  szufladę już bez możliwości sterowania wysokością — zawsze
+                  stała wysokość."*
+
+                  So there is NO height field here, and its absence is the
+                  feature: the number is derived once (`watchDrawerFixedHeight`)
+                  and stated below beside what it is made of. */}
+              {kind.id === 'watch_drawer' && (
+                <>
+                  <button
+                    type="button"
+                    className="cc-btn-gold w-full"
+                    data-add-watch-drawer="1"
+                    onClick={() => {
+                      const res = addWatchDrawer(unit.id, zones.length > 1 ? drawerZone : null);
+                      if (!res?.ok) { notify(res?.error || 'The watch drawer was not added.', 'warn'); return; }
+                      notify(`Watch drawer added on top of the stack — ${formatMm(res.height)} mm, fixed. `
+                        + 'Open it to choose one of the four layouts.', 'ok');
+                      done();
+                    }}
+                  >
+                    Add a watch drawer on top
+                  </button>
+                  <p className="text-[11px] text-ink-400">
+                    One fixed height — {formatMm(watchDrawerFixedHeight(profile))} mm — because the tray
+                    inside it is fixed: {profile.watchDrawer?.insideDepthMm ?? 60} mm of inside depth on a{' '}
+                    {profile.watchDrawer?.baseT ?? 9} mm base, plus the box&apos;s own seat and its
+                    front-to-side delta. There is no slider, and that is the point.
+                    {' '}Choosing a layout, the glass over it and its finish all live in the drawer&apos;s
+                    own window.
+                  </p>
+                </>
+              )}
+
               {kind.id === 'shoe_box' && (
                 <>
                   <div className="space-y-1">

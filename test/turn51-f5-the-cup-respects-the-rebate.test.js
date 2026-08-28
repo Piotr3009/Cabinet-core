@@ -88,7 +88,16 @@ test('F5 — CLAUDE.md’s own case: at 16 mm it used to bore straight through',
   const bore = cupBoreOf(leaf, P);
   // The OLD rule: min(11, 16 − 1) = 11 into 10 mm of material — a through hole.
   assert.ok(bore.depth < 10, 'the bore stays inside the material');
-  assert.equal(bore.depth, 9, '10 − the 1 mm floor the profile keeps');
+  // ─── AMENDED BY T53 · F9, AND THE AMENDMENT IS NAMED ────────────────────
+  //
+  // The floor was ONE millimetre and is THREE. One is not a number: it reads
+  // through a sprayed face the first time the door is knocked
+  // (SKYLON_COMMON.lsp's own note, and T52's finding 2). The CLAIM this test
+  // makes is untouched — the bore stays inside the material and is REPORTED
+  // rather than silently shortened — and it is now made with two millimetres
+  // more board under the cup.
+  assert.equal(P.hardware.hinge.cupFloorKeepMm, 3, 'T53 F9: the decision taken');
+  assert.equal(bore.depth, 7, '10 − the 3 mm floor the profile keeps');
   assert.equal(bore.short, true, 'and it is REPORTED, not silently shortened');
   assert.equal(bore.wanted, 11);
 });

@@ -105,6 +105,11 @@
 (defun watchMakeLayers ( / )
   (command "._LAYER" "_N" "WATCH_DIVIDER_SLOT" "_C" "41" "WATCH_DIVIDER_SLOT" "")
   (command "._LAYER" "_N" "WATCH_GLASS_REBATE" "_C" "42" "WATCH_GLASS_REBATE" "")
+  ;; T53 (F8b): the pane is IN THE SHELF above now, so the shelf carries a
+  ;; through cut as well as the rebate round it. Two operations, two layers -
+  ;; a cut-out and a rebate are different tools and a machine must not have to
+  ;; guess which from a depth.
+  (command "._LAYER" "_N" "WATCH_GLASS_OPENING" "_C" "43" "WATCH_GLASS_OPENING" "")
 )
 
 ;;;========================================
@@ -188,51 +193,94 @@
 ;;;========================================
 ;;; D. THE REBATE THE GLASS LIFTS OUT OF (decision 1)
 ;;;========================================
+;;; D+E. THE GLASS AND THE LED - RE-SPECIFIED BY THE OWNER (turn 53, F8)
+;;;========================================
 ;;;
-;;; A rebate along the TOP inside edge of a rail: `w` wide (the pane's bearing)
-;;; and running the rail's whole length. The pane drops onto it and lifts out
-;;; with a fingernail, which is decision 1 and the reason there is no bead.
+;;; THE ONE SANCTITY LICENCE OF THE NIGHT, and it is his own words that spend
+;;; it. 27.08.2026:
 ;;;
-;;; It is drawn on the rail's own board, along x, because that is how a rail
-;;; lies on the bed. `y` is the rail's inside edge on that board.
+;;;   "...i wtedy opcja: dodac szybe ponad szuflada - wtedy wycinamy w polce
+;;;    otwor, offset od polki na 50 mm, i wstawiamy szybe w ten otwor. i dookola
+;;;    tej szyby masz LED od spodu, offset okolo 15 mm na LED."
+;;;
+;;; T52's `drawWatchGlassRebate` (a rebate in the top of all four rails) and
+;;; `drawWatchLed` (a groove in the inner face of the front rail) are REMOVED,
+;;; because the pane and the strip are no longer on the tray at all: they are on
+;;; the SHELF ABOVE it. Both are accounted for here rather than deleted in
+;;; silence, and the T52 rule they carried - THE LED LIGHTS THE WATCHES, NOT
+;;; THE GLASS - is not overturned. It is relocated: the strip now fires DOWN
+;;; from the shelf's underside onto the watches, which is the same law from
+;;; above.
+;;;
+;;; THE OPENING, in the SHELF's own board frame: inset `off` (50) from all four
+;;; edges. DECISION TAKEN for the owner, veto in one line: the pane sits FLUSH
+;;; WITH THE SHELF TOP, so the rebate is exactly the glass thickness - a proud
+;;; pane on a wardrobe shelf catches every sleeve.
 
-(defun drawWatchGlassRebate (x1 x2 y w / )
-  (drawRect "WATCH_GLASS_REBATE" x1 y x2 (+ y w))
+(defun SKY:watchShelfOpening (szer gleb off)
+  (list off off (- szer off) (- gleb off))
+)
+
+(defun drawWatchShelfOpening (szer gleb off glassT / o)
+  (setq o (SKY:watchShelfOpening szer gleb off))
+  ;; The cut-out itself...
+  (drawRect "WATCH_GLASS_OPENING" (nth 0 o) (nth 1 o) (nth 2 o) (nth 3 o))
+  ;; ...and the rebate round it, one glass thickness deep, so the pane finishes
+  ;; level with the shelf.
+  (drawRect "WATCH_GLASS_REBATE"
+            (- (nth 0 o) glassT) (- (nth 1 o) glassT)
+            (+ (nth 2 o) glassT) (+ (nth 3 o) glassT))
+)
+
+;;; THE LED RINGS THE GLASS FROM BELOW: on the shelf's UNDERSIDE, `led` (about
+;;; 15) OUTSIDE the opening on every side, firing down onto the watches. Cut by
+;;; KIT_LED_GROOVE's own `drawLedGroove`, to KIT_LED_GROOVE's own law -
+;;; INCLUDING the T48 rule that the slot runs `ledGrooveEndExtra` past the
+;;; profile at each end. There is no second groove rule in this file and there
+;;; must never be one.
+
+(defun SKY:watchShelfLedRing (szer gleb off led / o)
+  (setq o (SKY:watchShelfOpening szer gleb off))
+  (list (- (nth 0 o) led) (- (nth 1 o) led) (+ (nth 2 o) led) (+ (nth 3 o) led))
+)
+
+(defun drawWatchShelfLed (szer gleb off led width / r)
+  (setq r (SKY:watchShelfLedRing szer gleb off led))
+  (drawLedGroove (nth 0 r) (nth 1 r) (nth 2 r) (nth 1 r) width)
+  (drawLedGroove (nth 0 r) (nth 3 r) (nth 2 r) (nth 3 r) width)
+  (drawLedGroove (nth 0 r) (nth 1 r) (nth 0 r) (nth 3 r) width)
+  (drawLedGroove (nth 2 r) (nth 1 r) (nth 2 r) (nth 3 r) width)
 )
 
 ;;;========================================
-;;; E. THE LED, AIMED AT THE WATCHES (decision 2)
+;;; G. THE FOUR LAYOUTS (turn 53, F8e)
 ;;;========================================
 ;;;
-;;; KIT_LED_GROOVE's own `drawLedGroove` cuts it, on KIT_LED_GROOVE's own layer,
-;;; to KIT_LED_GROOVE's own law - INCLUDING the T48 rule that the slot runs
-;;; `ledGrooveEndExtra` (10 mm) PAST the profile at each end so a round bit
-;;; leaves no corner for a chisel. There is no second groove rule in this file
-;;; and there must never be one.
+;;;   "i dodajesz do opcji kilka zaproponowanych i zaprojektowanych ukladow na
+;;;    te zegarki i krawaty i paski - otwiera sie nowy modal z 4 propozycjami
+;;;    rozmieszczenia."
 ;;;
-;;; WHERE it goes is this file's business and it is decision 2: the INNER face
-;;; of the front rail, BELOW the glass rebate, so the strip fires back and down
-;;; across the pockets. A groove in the rail's top face would light the pane.
+;;; ALL FOUR KEEP THE T52 HARD LAW: one pocket row, at the FRONT, because the
+;;; back row cannot be reached once the drawer is in. What varies is the REAR
+;;; FIELD, and only that.
 ;;;
-;;; `railLen` is the rail's own length and `yBelow` how far under the rebate the
-;;; line runs.
+;;;   classic    4 long sections (ties / straps) - T52's own, unchanged
+;;;   cufflinks  a 2-row grid of small cells (~70) plus one long section behind
+;;;   ties       5-6 narrow long sections, for ties laid flat
+;;;   belts      two wide channels (~110, rolled belts) plus a shallow tray
+;;;
+;;; The variant answers TWO numbers about the rear field - how many across, and
+;;; how many rows deep - and everything else is the pocket rule already written
+;;; above. A variant is therefore a pair, never a second geometry.
 
-(defun drawWatchLed (railLen yBelow width / )
-  (drawLedGroove 0.0 yBelow railLen yBelow width)
+(defun SKY:watchRearField (variant innerW t / )
+  (cond
+    ((= variant "cufflinks") (list (SKY:watchPocketCount innerW 70.0 t 55.0) 2 T))
+    ((= variant "ties")      (list (SKY:watchPocketCount innerW 150.0 t 60.0) 1 nil))
+    ((= variant "belts")     (list (SKY:watchPocketCount innerW 110.0 t 60.0) 1 T))
+    (T                       (list (SKY:watchPocketCount innerW 220.0 t 60.0) 1 nil))
+  )
 )
-
-;;;========================================
-;;; F. IS THE DRAWER DEEP ENOUGH TO TAKE ONE?
-;;;========================================
-;;;
-;;; CLAUDE.md: "Report in Check when a drawer is too shallow to take the insert
-;;; rather than shipping a squashed one."
-;;;
-;;; The tray stands on the drawer's own bottom, so what it needs is its BASE
-;;; plus the owner's 60 of inside depth plus a hair of air over the glass. A
-;;; drawer with less inside height than that is REPORTED and the insert is not
-;;; cut - the same honesty `SKY:cupTooThin` keeps about a front too thin for a
-;;; cup.
 
 (defun SKY:watchInsertHeight (baseT insideD)
   (+ baseT insideD)
@@ -242,5 +290,5 @@
   (< clearH (+ (SKY:watchInsertHeight baseT insideD) keep))
 )
 
-(princ "\nKIT_WATCH_DRAWER.lsp loaded — WATCH_DIVIDER_SLOT / WATCH_GLASS_REBATE, SKY:watchPocketCount, SKY:watchDividerXs, drawWatchSlots, drawWatchGlassRebate, drawWatchLed.")
+(princ "\nKIT_WATCH_DRAWER.lsp loaded - WATCH_DIVIDER_SLOT / WATCH_GLASS_OPENING / WATCH_GLASS_REBATE, SKY:watchPocketCount, SKY:watchDividerXs, SKY:watchShelfOpening, SKY:watchShelfLedRing, SKY:watchRearField, drawWatchSlots, drawWatchShelfOpening, drawWatchShelfLed.")
 (princ)

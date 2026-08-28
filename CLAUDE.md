@@ -1,10 +1,10 @@
 # CLAUDE.md — TURN 54 · the slope, DESIGNED TO THE MILLIMETRE this time
 
 Nightly run. Full autonomy, zero questions, zero stops. Skip-and-note, never
-halt; PR open before morning regardless. Sacrifice from **F8 downward**
-(F8 first, then F7, F6…); **F1 and F2 do not fall.** Branch from `main`.
-One commit per feature, F1 → F8 (F8 ships its MOCKUP commit first), plus the
-acceptance walk.
+halt; PR open before morning regardless. Tonight executes **F1 → F7 ONLY** — F8 below is FROZEN and must not be
+started under any reading. Sacrifice from **F7 downward**; **F1 and F2 do
+not fall.** HARD GATE: F7 begins only after F1–F6 are committed, suite
+green, probes CLEAN. One commit per feature, plus the acceptance walk.
 
 **Why this spec reads like a drawing office put it out:** the slope family is
 on its SEVENTH pass (T46, T47×2, T48, T50×2, T53×2 + a chat-fix) and the
@@ -45,10 +45,8 @@ KIT_WATCH_DRAWER.lsp with the trade note amended. Paren: **14 kits, every one
 **4 · SANCTITY.** THREE licences tonight, each enumerated below and each
 grave named in the verdict: (1) **F2's peak patch piece**; (2) **F7's old
 shoe world** — `engine/shoeBox.js`, the shoe plan/box case in `cabinet.js`,
-the steps and battens, `reference/lisp/KIT_SHOE_BOX.lsp`; (3) **F8's old
-room-setup UI** — the Rectangle / L-shape / + Box buttons and the old plan
-editor content (the DATA of existing Box elements in saved projects is NOT
-deleted — see F8.2). Nothing outside these three lists is deleted. `chatfix-2508-slope-tilt.test.js` is AMENDED (it currently holds
+the steps and battens, `reference/lisp/KIT_SHOE_BOX.lsp`; (3) reserved for T55's
+F8 and UNUSED tonight. Nothing outside lists (1) and (2) is deleted. `chatfix-2508-slope-tilt.test.js` is AMENDED (it currently holds
 the fault green) and names its amendment; amended ≠ deleted.
 
 **5 · THE WALK.** Full suite every commit, never `--silent`, grep not tail.
@@ -347,7 +345,7 @@ box open showing a plain flat drawer at 80; the migrated old project.
 
 ---
 
-## F8 [BIG · first sacrifice] · Draw-room v2 — the ONLY door to a room
+## F8 · Draw-room v2 — **FROZEN TONIGHT. DO NOT EXECUTE.** (T55 spec, kept here so the morning veto round has the full text)
 
 Owner: *"to nie ma być opcja, tylko miało być rysowanie całego room… stara
 wersja miała być usunięta… miało nas przenieść do modalu rysowania
@@ -401,13 +399,12 @@ refusal; the 6-wall room furnished and exported.
 ---
 
 ## OUT OF SCOPE TONIGHT
-The lighting RIG (the export rig is asserted, not touched). `runGap`. The
-warehouse and its SQL. Kesseböhmer. L-shape cabinets. The watch layouts'
-four designs (they stand as shipped).
+**F8 in its entirety — frozen for T55.** The lighting RIG (the export rig
+is asserted, not touched). `runGap`. The warehouse and its SQL. Kesseböhmer.
+L-shape cabinets. The watch layouts' four designs (they stand as shipped).
 
 ## THE MORNING
-`verify/t54/`: screenshots per feature (named), `f8-mockup.png` first,
-`audit/` (classify, paren, f1–f8 probe outputs with the worst residuals
+`verify/t54/`: screenshots per feature (named), `audit/` (classify, paren, f1–f7 probe outputs with the worst residuals
 printed), `EYE-TEST.md` (the
 owner's walk, numbered — start it with the trio close-up), `report.json`,
 `verdict.md` opening with **DECISIONS TAKEN FOR THE OWNER — veto in one

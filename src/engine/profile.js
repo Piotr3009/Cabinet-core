@@ -4446,6 +4446,14 @@ export const DEFAULT_CABINET_PROFILE = {
     // corner of an eye and short enough that it is plainly about the click
     // that just happened rather than a state the app is in.
     saveConfirmMs: 2000,
+    // ─── TURN 54 (CLAUDE.md F6): DIMENSIONS GO TO SLEEP ────────────────────
+    // The owner: *"wyłączenie dimension po 30 sekundach lub po minucie"* —
+    // first number wins (veto "60"). A profile constant, like every other
+    // interval in this block, so a workshop that wants the minute changes ONE
+    // number. The mechanism is `lib/dimensionSleep.js`; the timer flips the
+    // existing Hide-dimensions toggle through the store's own action and
+    // never turns dimensions ON.
+    dimensionsIdleMs: 30000,
   },
 
   // ─── Editor defaults ───

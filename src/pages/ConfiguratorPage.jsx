@@ -34,6 +34,8 @@ import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
 import FrontGapWarnings from '../components/FrontGapWarnings.jsx';
 import { useUiStore } from '../stores/uiStore.js';
+// T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
+import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
 import { getProjectType } from '../engine/projectTypes.js';
 import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
 import { elementLabel } from '../engine/elements.js';
@@ -239,6 +241,33 @@ export default function ConfiguratorPage() {
   }, [selectedElement, selectedUnitId, clearElement, clearSelection,
     units, unitResult, removeItem, removeUnit, removeFront, deleteSelectedElement,
     notify, undo, redo]);
+
+  // ─── TURN 54 (CLAUDE.md F6): DIMENSIONS GO TO SLEEP AFTER 30 SECONDS ─────
+  //
+  // The owner: *"wyłączenie dimension po 30 sekundach lub po minucie"* — the
+  // first number wins, and it is the profile's `ui.dimensionsIdleMs` (30 000;
+  // veto "60"). While dimensions are SHOWN in the 3-D view, any interaction —
+  // pointer down or move, a key, a wheel (every camera move arrives as one of
+  // these) — resets the clock; at 30 s of quiet the app flips the EXISTING
+  // Hide-dimensions toggle through the store's own action, so Undo and state
+  // stay coherent. Hidden (or the CNC lens) ⇒ no timer at all; the timer
+  // never turns dimensions ON; nothing persists across sessions. The clock
+  // itself is `lib/dimensionSleep.js`, tested with fake timers.
+  const showDimensionsNow = useUiStore((s) => s.showDimensions);
+  useEffect(() => {
+    if (!showDimensionsNow || viewMode !== '3d') return undefined;
+    const sleep = createDimensionSleep({
+      idleMs: dimensionsIdleMs(profile),
+      hide: () => useUiStore.getState().setShowDimensions(false),
+    });
+    sleep.touch();
+    const events = ['pointerdown', 'pointermove', 'keydown', 'wheel'];
+    for (const name of events) window.addEventListener(name, sleep.touch, true);
+    return () => {
+      for (const name of events) window.removeEventListener(name, sleep.touch, true);
+      sleep.cancel();
+    };
+  }, [showDimensionsNow, viewMode, profile]);
 
   // The 3D canvas hands us a capture function for the PDF export.
   const captureRef = useRef(null);

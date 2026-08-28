@@ -207,6 +207,228 @@ PROBES.f1 = () => {
   };
 };
 
+/**
+ * F2 — THE PEAK CENSUS. The same slope gate as F1, measured at the peak: the
+ * band [cutReach − 120, ceilReach] over the peak-side G may hold exactly the
+ * allowed census, and no roof board may be narrower than its own thickness.
+ */
+PROBES.f2 = () => {
+  const rows = goldens().map(({ cfg, params, result }) => ({
+    id: cfg.id,
+    cells: [params.slope_cut == null ? '(none)' : 'YES',
+      String((result.panels || []).filter((p) => p.part === 'TOP').length),
+      String((result.panels || []).filter((p) => p.meta?.slopeCut).length)],
+    ok: params.slope_cut == null
+      && (result.panels || []).every((p) => !p.meta?.slopeCut),
+  }));
+  const G = P.board.thickness;
+  const H = defaultParamsFor('WARDROBE', P).height;
+  const W = 600;
+  for (const [name, pts, peak] of [
+    ['peak RIGHT', [{ x: 0, y: H - 636 }, { x: W, y: H - 636 + 710 }], 'R'],
+    ['peak LEFT', [{ x: 0, y: H - 636 + 710 }, { x: W, y: H - 636 }], 'L'],
+  ]) {
+    const r = computeCabinet({
+      ...defaultParamsFor('WARDROBE', P),
+      unit_num: 'W01',
+      top_infill_mm: 40,
+      slope_cut: { axis: 'width', infill: 40, low: peak === 'R' ? 'L' : 'R', pts },
+    }, P);
+    const tops = (r.panels || []).filter((p) => p.part === 'TOP');
+    const stub = tops.find((t) => (t.meta?.slopeCut?.span ?? t.box.w) <= G + 1e-6);
+    const raked = tops.find((t) => (t.meta?.slopeCut?.deg ?? 0) > 1);
+    const reaches = raked
+      && (peak === 'R' ? raked.meta.slopeCut.to === W : raked.meta.slopeCut.from === 0);
+    const side = (r.panels || []).find((p) => p.id === (peak === 'R' ? 'BUR' : 'BUL'));
+    const bevel = side?.meta?.slopeCut?.bevel3d;
+    rows.push({
+      id: name,
+      cells: [stub ? `STUB ${stub.id}` : 'no stub',
+        reaches ? 'roof to the outer face' : 'ROOF SHORT',
+        bevel && Math.abs(bevel.a - bevel.b) > 1 ? 'side bevelled' : 'SIDE SQUARE'],
+      ok: !stub && Boolean(reaches) && Boolean(bevel) && Math.abs(bevel.a - bevel.b) > 1,
+    });
+  }
+  return {
+    head: 'F2 · THE PEAK — no third piece, the rake runs to the outer face, the side is bevelled',
+    columns: ['slope_cut', 'TOP boards', 'cut panels'],
+    rows,
+    verdict: [
+      'CLEAN — no golden stands under a rake, and at both peaks the stub is dead, the roof reaches the outer face and the side is cut like BUL.',
+      'NOT CLEAN — a kawałek survives at a peak, or a golden moved. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F3 — THE DOOR LEAF. The same gate: no golden's leaf carries a cut; a leaf
+ * under a rake is cut with every vertex under its line; a leaf under a flat
+ * stretch is byte-identical.
+ */
+PROBES.f3 = () => {
+  const rows = goldens().map(({ cfg, result }) => {
+    const leaves = (result.panels || []).filter((p) => p.role === 'front');
+    return {
+      id: cfg.id,
+      cells: [String(leaves.length),
+        String(leaves.filter((p) => p.meta?.slopeCut).length),
+        String(leaves.filter((p) => p.cnc?.slopeCut).length)],
+      ok: leaves.every((p) => !p.meta?.slopeCut && !p.cnc?.slopeCut),
+    };
+  });
+  const PARAMS = { ...defaultParamsFor('WARDROBE', P), unit_num: 'W01' };
+  const W = PARAMS.width;
+  const cut = { infill: 40, pts: [{ x: 0, y: 2000 }, { x: W, y: 1400 }] };
+  const r = computeCabinet({ ...PARAMS, slope_cut: cut }, P);
+  const leaf = (r.panels || []).find((p) => p.id === 'W01-F');
+  const beta = Math.atan(600 / W);
+  const line = (x) => 2000 - x - 40 / Math.cos(beta) - Number(P.doors.gap);
+  let worst = 0;
+  if (leaf?.cnc?.outline) {
+    for (const [sx, sy] of leaf.cnc.outline) {
+      const x = leaf.box.x + leaf.w - sx;
+      worst = Math.max(worst, sy - line(x));
+    }
+  }
+  const flatA = computeCabinet({ ...PARAMS }, P).panels.find((p) => p.id === 'W01-F');
+  const flatB = computeCabinet({
+    ...PARAMS,
+    slope_cut: { infill: 40, pts: [{ x: 0, y: 2800 }, { x: W, y: 2650 }] },
+  }, P).panels.find((p) => p.id === 'W01-F');
+  rows.push({
+    id: 'asked for one',
+    cells: [leaf?.meta?.slopeCut ? 'cut' : 'NOT CUT',
+      `worst overhang ${worst.toFixed(4)} mm`,
+      canonical(flatA) === canonical(flatB) ? 'flat leaf byte-identical' : 'FLAT LEAF MOVED'],
+    ok: Boolean(leaf?.meta?.slopeCut) && worst <= 0.01 && canonical(flatA) === canonical(flatB),
+  });
+  return {
+    head: 'F3 · THE DOOR LEAF — cut only under a slope_cut, and no golden carries one',
+    columns: ['leaves', 'cut (meta)', 'cut (sheet)'],
+    rows,
+    verdict: [
+      'CLEAN — no golden leaf is cut; a leaf under the rake keeps every vertex under its line; a leaf under a flat stretch does not move by a byte.',
+      'NOT CLEAN — a golden leaf grew a cut, or a vertex stands above the line. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F4 — THE WATCH DRAWER. No golden carries an insert; the derivation answers
+ * 120 and refuses 119. The click wiring is UI and cannot reach a golden.
+ */
+PROBES.f4 = async () => {
+  const { watchDrawerFit, watchDrawerFixedHeight } = await import('../src/engine/watchDrawer.js');
+  const rows = goldens().map(({ cfg, params, result }) => {
+    const items = (params.sections || []).flatMap((s) => s?.items || []);
+    return {
+      id: cfg.id,
+      cells: [String(items.filter((i) => i?.watch_insert === true).length),
+        String((result.panels || []).filter((p) => p.role === 'watch_insert').length),
+        result.assemblies?.watchInserts == null ? '(none)' : 'YES'],
+      ok: items.every((i) => i?.watch_insert !== true)
+        && (result.panels || []).every((p) => p.role !== 'watch_insert')
+        && result.assemblies?.watchInserts == null,
+    };
+  });
+  const H = watchDrawerFixedHeight(P);
+  const clearOf = (front) => front - P.baseDrawerUnit.runnerPocketWidth
+    - P.board.thickness - P.wardrobe.drawers.frontToSideDelta;
+  const fits = watchDrawerFit({ width: 500, height: clearOf(120), depth: 450 }, P).ok;
+  const refuses = !watchDrawerFit({ width: 500, height: clearOf(119), depth: 450 }, P).ok;
+  rows.push({
+    id: 'the derivation',
+    cells: [`derives ${H}`, fits ? '120 fits' : '120 REFUSED', refuses ? '119 refuses' : '119 FITS'],
+    ok: H === 120 && fits && refuses,
+  });
+  return {
+    head: 'F4 · THE WATCH DRAWER — 40 + 9 + 2 + 15 + 18 + 36 = 120, and no golden asks',
+    columns: ['asking items', 'watch parts', 'assembly key'],
+    rows,
+    note: 'The click wiring (scene + menu) is UI: it opens a modal and cannot reach computeCabinet.',
+    verdict: [
+      'CLEAN — not one of the six carries an insert, the derivation answers 120, and 119 refuses.',
+      'NOT CLEAN — an insert reached a golden, or the derivation drifted. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F5 — THE LED ICONS + SCENE LIGHT. Pure UI plus a per-project multiplier the
+ * EXPORT RIG never reads — proven off the sources, the way T53's f10 proved
+ * the drawing module reaches no engine.
+ */
+PROBES.f5 = () => {
+  const rows = goldens().map(({ cfg, params }) => ({
+    id: cfg.id,
+    cells: [params.sceneLight == null ? '(none)' : 'LEAKED',
+      params.lighting == null ? '(none)' : 'LEAKED'],
+    ok: params.sceneLight == null && params.lighting == null,
+  }));
+  const scene = readFileSync(new URL('../src/3d/Scene.jsx', import.meta.url), 'utf8');
+  const icons = readFileSync(new URL('../src/3d/LedIcons.jsx', import.meta.url), 'utf8');
+  const stamps = [...scene.matchAll(/ccExportIntensity:[^,}]*/g)].map((m) => m[0]);
+  rows.push({
+    id: 'the export rig',
+    cells: [`${stamps.length} stamps`,
+      stamps.every((s) => !/sceneScale|sceneLight/.test(s)) ? 'none reads the slider' : 'A STAMP LEAKS'],
+    ok: stamps.length >= 6 && stamps.every((s) => !/sceneScale|sceneLight/.test(s)),
+  });
+  rows.push({
+    id: 'the icons',
+    cells: [/s\.modal === 'lighting'/.test(icons) ? 'gated on the panel' : 'UNGATED',
+      /ccHelper/.test(icons) ? 'helper — no render sees it' : 'IN THE RENDER'],
+    ok: /s\.modal === 'lighting'/.test(icons) && /ccHelper/.test(icons),
+  });
+  return {
+    head: 'F5 · LED ICONS + SCENE LIGHT — UI, and the export rig never hears of it',
+    columns: ['sceneLight key', 'lighting key'],
+    rows,
+    verdict: [
+      'CLEAN — no golden carries a lighting key, no export stamp reads the slider, and the icons live behind the panel gate as helpers.',
+      'NOT CLEAN — the slider leaks into an export stamp, or a golden moved. STOP (iron rule 2).',
+    ],
+  };
+};
+
+/**
+ * F6 — THE DIMENSION TIMER. A UI clock flipping an existing uiStore toggle;
+ * the engine never hears of it.
+ */
+PROBES.f6 = async () => {
+  const { createDimensionSleep, dimensionsIdleMs } = await import('../src/lib/dimensionSleep.js');
+  const rows = goldens().map(({ cfg, params }) => ({
+    id: cfg.id,
+    cells: ['no engine key', '—'],
+    ok: !('dimensions_idle_ms' in params),
+  }));
+  const lib = readFileSync(new URL('../src/lib/dimensionSleep.js', import.meta.url), 'utf8');
+  const page = readFileSync(new URL('../src/pages/ConfiguratorPage.jsx', import.meta.url), 'utf8');
+  let fired = 0;
+  const sleep = createDimensionSleep({ idleMs: 1, hide: () => { fired += 1; } });
+  sleep.touch();
+  sleep.cancel();
+  rows.push({
+    id: 'the clock',
+    cells: [`${dimensionsIdleMs(P)} ms`,
+      /return \{ touch, cancel, armed/.test(lib) && fired === 0 ? 'cancellable, never fires early' : 'BROKEN'],
+    ok: dimensionsIdleMs(P) === 30000 && fired === 0
+      && !/from '\.\.\/engine\//.test(lib)
+      && /setShowDimensions\(false\)/.test(page)
+      && !/setShowDimensions\(true\)/.test(page.slice(page.indexOf('DIMENSIONS GO TO SLEEP'), page.indexOf('captureRef'))),
+  });
+  return {
+    head: 'F6 · THE DIMENSION TIMER — 30 000 ms of quiet flips the existing toggle, off only',
+    columns: ['idle ms', 'the clock'],
+    rows,
+    note: 'lib/dimensionSleep.js imports nothing from the engine; the timer never turns dimensions ON.',
+    verdict: [
+      'CLEAN — the profile says 30 000, the clock cancels clean, and the only write is the hide.',
+      'NOT CLEAN — the timer reaches the engine or can turn dimensions on. STOP (iron rule 2).',
+    ],
+  };
+};
+
 // ─── THE COMPARISON ─────────────────────────────────────────────────────────
 
 /** Compare two dumps, config by config. */

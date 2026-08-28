@@ -1015,13 +1015,24 @@ const migrateUnitRidden = (u) => {
 const migrateUnitWatch = (u) => {
   const items = u?.params?.sections?.[0]?.items;
   if (!Array.isArray(items)) return u;
+  // ─── TURN 54 (CLAUDE.md F4.4): THE HEIGHT IS DERIVED, SO IT RE-DERIVES ────
+  //
+  // The owner re-sized the watch drawer (*"120 proszę"* — insideDepthMm
+  // 60 → 40, and `watchDrawerFixedHeight` derives 120 from it). The height
+  // was STORED on the item when the drawer was added, so a T53 project would
+  // load carrying a 140 nobody can edit. A derived number re-derives on
+  // load: any watch drawer whose stored height is not tonight's derivation
+  // takes the derivation, and no stored 140 survives anywhere.
+  const derived = watchDrawerFixedHeight(getCabinetProfile());
   let touched = false;
   const next = items.map((i) => {
     if (i?.kind !== 'drawer' || i.watch_insert !== true) return i;
-    if ('watch_shelf_glass' in i && 'watch_layout' in i) return i;
+    const reHeight = Number(i.height_mm) !== derived;
+    if ('watch_shelf_glass' in i && 'watch_layout' in i && !reHeight) return i;
     touched = true;
     return {
       ...i,
+      ...(reHeight ? { height_mm: derived } : {}),
       // v1 had a pane; it asks for one upstairs now.
       watch_shelf_glass: 'watch_shelf_glass' in i ? i.watch_shelf_glass : true,
       // …and v1 had exactly one arrangement, which is CLASSIC.

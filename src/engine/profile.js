@@ -4157,7 +4157,16 @@ export const DEFAULT_CABINET_PROFILE = {
     // is about 50 mm for a watch pocket; 60 carries a chronograph and a
     // lining, which is why his number is the better one and is the one kept.
     // Both are written down because the next reader will ask.
-    insideDepthMm: 60,          // owner, 26.08.2026 — trade standard is ~50
+    //
+    // T54-F4 (28.08.2026): the owner re-sized — *"120 proszę."* The front
+    // height DERIVES (`watchDrawerFixedHeight`: 40 + 9 + 2 + 15 + 18 + 36 =
+    // 120), so this is the one number that moves: 60 → 40. TRADE NOTE,
+    // amended (his veto line, written beside the number): at 40 a 44–48 mm
+    // chronograph will no longer lie flat — it rests on its crown or stands
+    // proud of the glass line. The 26.08 note above stays as history; the
+    // pocket floor (60 CLEAR WIDTH, below) is across, not down, and does not
+    // move. (KIT_WATCH_DRAWER.lsp carries the same amendment — LISP first.)
+    insideDepthMm: 40,          // owner, 28.08.2026 — "120 proszę"; trade standard is ~50
     // ─── THE POCKET ───────────────────────────────────────────────────────
     //
     // CLAUDE.md: *"Pocket ~110 × 95 … five across; the count follows the

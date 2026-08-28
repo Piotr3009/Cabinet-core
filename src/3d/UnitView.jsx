@@ -832,7 +832,7 @@ export default function UnitView({
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
   selectedElement = null, selectedElements = [],
-  onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
+  onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onEditWatch, onAddItems,
   // ─── TURN 42 (CLAUDE.md F1): THE ALONE ROD'S OWN TWO VERBS ───────────────
   // `onEditRail(itemId, at)` opens the hanging-rail window; `onMoveRail(itemId,
   // offsetMm)` writes the item's `pos_mm`. Both are the rod's, and neither is
@@ -1912,6 +1912,17 @@ export default function UnitView({
               // right button belongs to the menu and to the orbit; the middle
               // one to the pan. Neither is a grab.
               if (((e.nativeEvent || e).button ?? 0) !== 0) return;
+              // ─── TURN 54 (CLAUDE.md F4.1): A WATCH TRAY PIECE OPENS ITS OWN ──
+              // MODAL. The rails, the dividers, the base — until tonight a
+              // click on any of them fell through to "drag the cabinet", and
+              // NO click in the whole app opened `watch-layout`. The pieces
+              // carry the drawer index in their meta — used, never guessed
+              // by y — and the modal opens BESIDE the click (house law).
+              if (p.role === 'watch_insert' && p.meta?.drawer && onEditWatch) {
+                e.stopPropagation();
+                onEditWatch(p.meta.drawer, p.meta.zone ?? null, { x: e.clientX, y: e.clientY });
+                return;
+              }
               // ─── Turn 9 (CLAUDE.md F4.1/F4.2): which axis this drag is on ───
               //
               // A shelf you have not touched yet behaves as it always has —
@@ -1996,6 +2007,21 @@ export default function UnitView({
               // does to a cabinet — so a front does both: it swings, and its
               // hinge side is what the modal is about.
               if (front && onToggleFront) onToggleFront(p.id);
+              // ─── TURN 54 (CLAUDE.md F4.1): …AND A WATCH DRAWER'S OWN PIECES
+              // OPEN THE WATCH LAYOUT. The front (after its slide above) and
+              // the box of a drawer that carries the insert route to
+              // `watch-layout` rather than the generic drawer editor — its
+              // height is the law (120, derived), so the layout is what there
+              // is to edit. The piece says which drawer; the ITEM says it is
+              // a watch one.
+              if (p.meta?.drawer && onEditWatch
+                && (unit.params?.sections?.[0]?.items || []).some((i) => i?.kind === 'drawer'
+                  && i.watch_insert === true
+                  && Number(i.index) === Number(p.meta.drawer)
+                  && ((i.zone ?? null) === (p.meta.zone ?? null)))) {
+                onEditWatch(p.meta.drawer, p.meta.zone ?? null, { x: e.clientX, y: e.clientY });
+                return;
+              }
               // ─── TURN 20 (CLAUDE.md F11.1): A DRAWER BOX OPENS THE DRAWER ──
               // A side, the box front or back, the bottom — the parts that are
               // the DRAWER rather than its face. The FRONT keeps its slide:

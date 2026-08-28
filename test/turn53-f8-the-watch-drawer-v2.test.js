@@ -85,7 +85,11 @@ test('F8a — the watch drawer is added ON TOP of a stack, and refuses without o
 
 test('F8a — the height is FIXED, and it is a derivation the engine agrees with', () => {
   const H = watchDrawerFixedHeight(P);
-  assert.equal(H, 140, 'his 60 inside, the tray’s base, the headroom, the seat and the delta');
+  // T54-F4 AMENDED (28.08.2026): the owner re-sized — *"120 proszę"* — and
+  // the derivation answered without a code change, which is the whole claim
+  // this test makes: 40 inside + 9 base + 2 headroom + 15 seat + 18 bottom +
+  // 36 delta = 120 (was 140 over his 60 inside).
+  assert.equal(H, 120, 'his 40 inside, the tray’s base, the headroom, the seat and the delta');
   // The claim, checked against the engine: at H the insert is cut, at H − 1 it
   // is refused. That is what makes it a derivation rather than a guess.
   const at = (h) => {

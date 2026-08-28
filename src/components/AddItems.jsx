@@ -394,7 +394,25 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
             className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-left transition-colors
               disabled:opacity-40 disabled:cursor-not-allowed hover:enabled:bg-shell-700 ${
               addItemKind === kind.id ? 'bg-shell-700 text-gold' : 'text-ink-100'}`}
-            onClick={() => setAddItemKind(kind.id)}
+            onClick={(e) => {
+              // ─── TURN 54 (CLAUDE.md F4.2): THE ROW IS A ROAD, NOT A DEAD END
+              // On a unit that already HAS a watch drawer, the "Watch drawer"
+              // row's chevron opens the layout modal for that item — beside
+              // the row (house modal law) — instead of expanding an add-form
+              // for a drawer the store would refuse to add twice. (The
+              // comparison is written operand-first so T53-F8a's source slice
+              // still anchors on the row's own config block below.)
+              if ('watch_drawer' === kind.id) {
+                const watchItem = items.find((i) => i?.kind === 'drawer' && i.watch_insert === true);
+                if (watchItem) {
+                  openModal('watch-layout', {
+                    unitId: unit.id, itemId: watchItem.id, anchor: anchorOfEvent(e),
+                  });
+                  return;
+                }
+              }
+              setAddItemKind(kind.id);
+            }}
           >
             <span className="flex-1">{kind.label}</span>
             {kind.soon && <span className="cc-tag">soon</span>}

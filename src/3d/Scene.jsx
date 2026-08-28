@@ -27,6 +27,9 @@ import { balanceRig, brightnessScale } from '../engine/lighting.js';
 // Turn 33 (CLAUDE.md F2): the demo's one dim factor — derived, never stored.
 // Turn 35 (CLAUDE.md F10): …and the ONE state it rides, off the project.
 import { demoDimFactor, resolveLighting } from '../engine/ledStrips.js';
+// T54-F4: the road to the watch layout — the clicked piece carries the drawer
+// index; the ITEM is resolved by the engine's own helper, never guessed by y.
+import { drawerItemOf } from '../engine/watchDrawer.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds } from '../engine/room.js';
 import {
@@ -1672,6 +1675,24 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           onEditDrawer={(drawer, at) => {
             selectUnit(unit.id);
             openModal('cabinet', { unitId: unit.id, drawer, at });
+          }}
+          // ─── TURN 54 (CLAUDE.md F4.1): THE ROAD TO THE WATCH LAYOUT ──────
+          // T53 shipped the modal and forgot the handle: no click in the
+          // whole app opened `watch-layout`. Clicking any piece of a watch
+          // drawer — its front, a rail, a divider — opens it BESIDE the
+          // click (house modal law). The piece carries the drawer index in
+          // its meta; the ITEM is resolved from it here, never guessed by y.
+          onEditWatch={(drawer, zone, at) => {
+            const item = drawerItemOf(unit, drawer, zone ?? null);
+            if (!item) return;
+            selectUnit(unit.id);
+            openModal('watch-layout', {
+              unitId: unit.id,
+              itemId: item.id,
+              anchor: {
+                x: at.x, y: at.y, width: 0, height: 0,
+              },
+            });
           }}
           // ─── Turn 19 (CLAUDE.md F1.3) ───
           // "Po podwójnym kliknięciu na hinge otworzy się modal." The same

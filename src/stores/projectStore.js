@@ -60,6 +60,7 @@ import { migrateLedSpec } from '../lib/ledSpec.js';
 // room with one window and a showroom want different rigs, and a saved job
 // should reopen looking as it did."*
 import { defaultLightRig, migrateLightRig } from '../engine/lightRig.js';
+import { migrateSceneLight } from '../engine/lighting.js';
 import {
   HEIGHT_KEYS, migrateDesign, normaliseDoorStyle, normaliseHandle, projectHeights,
   resolveUnitDesign, setCarcassTypeCount, withFrontColour, withRunMaterial,
@@ -1113,6 +1114,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       wallSlopes: wallElements(cached.project.wallSlopes),
       ledSpec: migrateLedSpec(cached.project.ledSpec),
       lightRig: migrateLightRig(cached.project.lightRig),
+      // T54 F5.3: the scene light rides the project, like the rig above.
+      sceneLight: migrateSceneLight(cached.project.sceneLight),
     }
     : {
       id: null, name: 'Untitled project', number: '', client: '',
@@ -1126,6 +1129,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // project opened with the panel untouched looks exactly as it did before
       // tonight. `engine/lightRig.js defaultLightRig` says why.
       lightRig: defaultLightRig(getCabinetProfile()),
+      // T54 F5.3: a fresh job's scene light is today's 1.0 — nothing moves.
+      sceneLight: migrateSceneLight(null),
       jc_tenant_id: null, jc_project_id: null,
     },
   units: migrateUnits(cached?.units),
@@ -1270,6 +1275,20 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return { project: { ...s.project, lightRig: next } };
   }),
 
+  // ─── TURN 54 (CLAUDE.md F5.3): THE SCENE LIGHT, WITH THE PROJECT ─────────
+  //
+  // The owner: *"ustawienie światła pokoju, czyli sceny, poniżej LED."* One
+  // number, clamped by `engine/lighting.js sceneLightScale` (0.4×–1.5×,
+  // default 1). It lives BESIDE `design`, exactly as the rig does, because
+  // `migrateLighting`'s whitelist would silently drop it inside. Exports
+  // never read it — the T51 iron rule is asserted in turn54-f5's own test.
+  setSceneLight: (patch) => set((s) => ({
+    project: {
+      ...s.project,
+      sceneLight: migrateSceneLight({ ...s.project.sceneLight, ...(patch || {}) }),
+    },
+  })),
+
   loadProject: (project, units) => {
     // ─── TURN 34 (CLAUDE.md F7): THE SHAKER FRAME A SAVED JOB WAS CUT TO ────
     // "zmienimy default z 70 na 60" — for NEW projects. A job already on the
@@ -1300,6 +1319,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         lightRig: project?.lightRig
           ? migrateLightRig(project.lightRig)
           : defaultLightRig(getCabinetProfile()),
+        // T54 F5.3: …and its scene light; absent — every job saved before
+        // tonight — is 1.0, the picture it was drawn under.
+        sceneLight: migrateSceneLight(project?.sceneLight),
       },
       units: migrateUnits(units),
       dirty: false,
@@ -1356,6 +1378,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       wallSlopes: [],
       ledSpec: migrateLedSpec(null),
       lightRig: defaultLightRig(getCabinetProfile()),
+      sceneLight: migrateSceneLight(null),
       jc_tenant_id: null,
       jc_project_id: null,
     },

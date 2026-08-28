@@ -55,6 +55,7 @@ import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
 import DrillRings from './DrillRings.jsx';
 import LedStrips from './LedStrips.jsx';
+import LedIcons from './LedIcons.jsx';
 
 // A stable empty list: a fresh [] would rebuild every panel solid on every
 // render.
@@ -2481,6 +2482,16 @@ export default function UnitView({
           only and a glowing strip is exactly what it exists to remove. */}
       {!contour && (
         <LedStrips unit={unit} result={result} design={design} />
+      )}
+
+      {/* ─── TURN 54 (CLAUDE.md F5): THE LED ICONS, WHILE LIGHTING IS OPEN ──
+          The owner: "po otwarciu modalu Lighting ikony LED mają być widoczne
+          … ludzie nie wiedzą, że takie funkcje istnieją." Two clickable
+          sprites per unit — left LED, right LED — visible on EVERY unit
+          while the existing Lighting panel is open, gone the moment it
+          closes. Pure UI (ccHelper): nothing is added to the cabinets. */}
+      {!contour && (
+        <LedIcons unit={unit} W={W} H={H} D={D} />
       )}
 
       {/* ─── TURN 33 (CLAUDE.md F3): THE DISPLAY DRAWER'S GLASS ──────────────

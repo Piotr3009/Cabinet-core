@@ -75,8 +75,8 @@ import { overlayDrawerItems, overlayPlan } from './overlayDrawers.js';
 // KIT_WARDROBE_FULL.lsp, mirrored in engine/splitDoors.js. This file cuts what
 // that one says; it does not decide any of it.
 import {
-  SPLIT_SEG_GAP, splitDoorLineY, splitDoorSegments, splitDoorShelfD, splitDoorShelfW,
-  splitSegmentHingeRows, splitTopFor,
+  SPLIT_SEG_GAP, splitDoorHingeCount, splitDoorLineY, splitDoorSegments, splitDoorShelfD,
+  splitDoorShelfW, splitSegmentHingeRows, splitTopFor,
 } from './splitDoors.js';
 // ─── TURN 35 (CLAUDE.md F1): the rail hangs from the nearest thing below it ──
 import { railSupportTops, resolveRailAxis } from './railDatum.js';
@@ -6160,6 +6160,22 @@ export function computeCabinet(params, profileOverride) {
       hinge: roomL >= roomR ? 'L' : 'R',
       tall,
       low: Math.min(frontH, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
+      // ─── TURN 54 (CLAUDE.md F3.4): THE ANGLE, STATED ON THE PIECE ────────
+      // *"leaf DXF outline = the cut polygon, angle noted like the sides
+      // (`CUT β DEG`)"* — the same `meta.slopeCut.angles` the sides publish,
+      // in the UNIT's own x, so `slopeNoteText` prints the door's cut exactly
+      // as it prints BUL's. Until tonight a cut leaf's sheet said NOTHING.
+      angles: roomPts.slice(1).map((q, i) => {
+        const a = roomPts[i];
+        const span = q.x - a.x;
+        return {
+          from: roundTo(leafX + a.x, 4),
+          to: roundTo(leafX + q.x, 4),
+          deg: roundTo(span > 1e-9
+            ? Math.abs((Math.atan((q.y - a.y) / span) * 180) / Math.PI)
+            : 90, 4),
+        };
+      }),
     };
   };
   /**
@@ -6257,6 +6273,8 @@ export function computeCabinet(params, profileOverride) {
           corners: geom.outline.length,
           tall: roundTo(sl.tall, 4),
           low: roundTo(sl.low, 4),
+          // T54-F3.4: the saw's own number, printed on the sheet (`CUT β°`).
+          angles: sl.angles,
         },
       },
       // The banded edges: two verticals, the bottom, and the CUT edge — which
@@ -6441,32 +6459,109 @@ export function computeCabinet(params, profileOverride) {
       const own = Array.isArray(said)
         ? said.map(Number).filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
         : null;
+      // ─── TURN 54 (CLAUDE.md F3): A SPLIT SEGMENT TAKES THE PARENT'S CUT ──
+      //
+      // The owner's screenshot: *"shaker się robi pod skosem ale całe drzwi
+      // już nie."* This pass replaced a CUT leaf with two RECTANGLES while
+      // `...leaf.meta` still copied the parent's `slopeCut` onto them — so
+      // the shaker detail raked (it reads the meta) while the segment's own
+      // outline, box and sheet stood square into the triangle. One consumer
+      // got the line, the other never heard of it.
+      //
+      // The law (KIT_DOOR_DOUBLE.lsp, T54 section — LISP first): each segment
+      // takes the SAME line, lowered by its own y — the parent's line
+      // sub-set, never a second reading of the ceiling. A segment wholly
+      // under the line keeps its rectangle byte for byte, which is every
+      // split door in every flat room.
+      const parentPts = Array.isArray(leaf.cnc?.slopeCut?.pts) ? leaf.cnc.slopeCut.pts : null;
+      const segPts = parentPts
+        ? parentPts.map((q) => ({ x: q.x, y: roundTo(Math.max(0, q.y - seg.y), 4) }))
+        : null;
+      const segCut = segPts && slopeCutActive({ w: leaf.w, h: seg.h, pts: segPts })
+        ? segPts : null;
+      const segTall = segCut
+        ? Math.min(seg.h, segCut.reduce((hi, q) => Math.max(hi, q.y), 0))
+        : seg.h;
+      // The hinge stile of a CUT segment is what is LEFT of its hinge edge —
+      // T50-F7's own sentence, said for a segment: the ladder re-runs over
+      // that height by the same rule, and a cup whose screws run off the
+      // board is dropped, never moved.
+      const segStile = segCut
+        ? (() => {
+          const roomAt = leaf.meta?.hinge === 'R' ? segCut[0] : segCut[segCut.length - 1];
+          // sheet frame is the inside mirror: room L edge = sheet's far end.
+          return Math.max(0, Math.min(seg.h, roomAt.y));
+        })()
+        : seg.h;
+      const segCount = segCut ? splitDoorHingeCount(segStile) : seg.hinges;
+      const margin = Number(P.hinges.cups.screwOffsetY) || 0;
       const local = own && own.length
         ? own.map((v) => roundTo(v - base, 4))
-        : splitSegmentHingeRows(seg.h, seg.hinges, P.hinges.endOffset).map((v) => roundTo(v, 4));
+        : splitSegmentHingeRows(segCut ? segStile : seg.h, segCount, P.hinges.endOffset)
+          .map((v) => roundTo(v, 4))
+          .filter((v) => !segCut || (v >= 0 && v + margin <= segStile));
       // What this segment is ACTUALLY drilled for, which is what the BOM buys
       // and what `assemblies.splitDoors` publishes. Identical to the kit's own
       // count wherever nobody has said anything, which is every cabinet that
       // has not been edited by hand.
       seg.hinges = local.length;
+      const segGeom = segCut
+        ? trimGeometryOnSlope(rectGeometry(leaf.w, seg.h), { w: leaf.w, h: seg.h, pts: segCut })
+        : rectGeometry(leaf.w, seg.h);
       return panel({
         id: `${leaf.id}-${seg.id}`,
         part: 'FRONT',
         role: 'front',
         w: leaf.w,
-        h: seg.h,
+        h: roundTo(segTall, 4),
         thickness: leaf.thickness,
         edgeCode: codes.all,
-        edgeLen: metres(2 * leaf.w + 2 * seg.h),
+        edgeLen: metres(2 * leaf.w + 2 * segTall),
         box: {
-          x: leaf.box.x, y: leaf.box.y + seg.y, z: leaf.box.z, w: leaf.w, h: seg.h, d: leaf.thickness,
+          x: leaf.box.x,
+          y: leaf.box.y + seg.y,
+          z: leaf.box.z,
+          w: leaf.w,
+          h: roundTo(segTall, 4),
+          d: leaf.thickness,
         },
-        cnc: rectGeometry(leaf.w, seg.h),
+        cnc: segCut
+          ? {
+            ...segGeom,
+            drawn_w: roundTo(leaf.w, 4),
+            drawn_h: roundTo(segTall, 4),
+            // The line in the SHEET's frame, for the scene to clip with —
+            // exactly as the parent leaf published it (T46-F6a).
+            slopeCut: {
+              pts: segCut,
+              hL: roundTo(segCut[0].y, 4),
+              hR: roundTo(segCut[segCut.length - 1].y, 4),
+            },
+          }
+          : rectGeometry(leaf.w, seg.h),
         meta: {
           ...leaf.meta,
           split: seg.id === 'T' ? 'top' : 'bottom',
           splitOf: leaf.id,
           splitTopMm: topH,
+          // T54-F3: the segment's OWN slope record — the parent's, sub-set to
+          // this band — so the shaker, the Check and the sheet all read the
+          // piece that exists, not the leaf that was replaced.
+          ...(leaf.meta?.slopeCut ? {
+            slopeCut: segCut
+              ? {
+                ...leaf.meta.slopeCut,
+                roomL: roundTo(Math.max(0, Math.min(seg.h,
+                  (leaf.meta.slopeCut.roomL ?? seg.h) - seg.y)), 4),
+                roomR: roundTo(Math.max(0, Math.min(seg.h,
+                  (leaf.meta.slopeCut.roomR ?? seg.h) - seg.y)), 4),
+                tall: roundTo(segTall, 4),
+                low: roundTo(segCut.reduce((lo, q) => Math.min(lo, q.y), Infinity), 4),
+                corners: segGeom.outline.length,
+                hinges: { was: seg.hinges, now: local.length },
+              }
+              : undefined,
+          } : {}),
           // The cup ladder in the SEGMENT's own frame (what the sheet drills)
           // and the plate ladder in the CARCASS's (what the side is bored at).
           // Two frames, one list, computed once — so a picture and a sheet
@@ -6661,7 +6756,20 @@ export function computeCabinet(params, profileOverride) {
       });
       continue;
     }
-    pnl.cnc.pockets = [...(pnl.cnc.pockets || []), pocket];
+    // ─── TURN 54 (CLAUDE.md F3.4): THE RAKED POCKET REACHES THE FILE ───────
+    // `shakerCutPocket` publishes its raked polygon as `points`, but the two
+    // writers — `cnc/dxf.js pocketPoints` and the CNC view — have read `pts`
+    // since T34's shoe groove. So the raked pocket reached the DXF as its
+    // BOUNDING BOX and the machine cut a square recess under a raked frame.
+    // The polygon is handed over under the readers' own field, only where a
+    // rake made one — a flat shaker's pocket is byte-identical.
+    // …stored in the WINDING the readers share for a cut-out (the edge rules
+    // and `pocketPoints` both flip a cutout's pts on read, so the stored loop
+    // runs opposite to the traced one — the shoe groove's own convention).
+    pnl.cnc.pockets = [...(pnl.cnc.pockets || []),
+      cutPair && Array.isArray(pocket.points) && pocket.points.length >= 3
+        ? { ...pocket, pts: [...pocket.points].reverse().map(([qx, qy]) => [qx, qy]) }
+        : pocket];
     // What the 3-D solid and the handle law both need, on the piece: the frame
     // that was actually cut, and how deep the panel floor sits. `thickness`
     // itself is UNTOUCHED and stays the full board — F3.5.

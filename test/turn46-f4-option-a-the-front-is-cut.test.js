@@ -63,6 +63,9 @@ test('THE DOOR IS A PENTAGON, cut on the same diagonal', () => {
   // off, and the rule says so with a number rather than by being absent.
   // T54-F1 AMENDED (28.08.2026): roomL/roomR/low re-read off the lowered
   // line (was 2394 / 1200 / 1200 when the pts WERE the carcass line).
+  // T54-F3 AMENDED (28.08.2026): `angles` joins the record — the door's cut
+  // is stated on the sheet exactly as the sides state theirs (`CUT β°`),
+  // which until tonight a cut leaf never said.
   assert.deepEqual(f.meta.slopeCut, {
     roomL: 2304.5573,
     roomR: 1110.5573,
@@ -72,6 +75,7 @@ test('THE DOOR IS A PENTAGON, cut on the same diagonal', () => {
     low: 1110.5573,
     knees: [],
     hinges: { was: 6, now: 6 },
+    angles: [{ from: 1.5, to: 598.5, deg: 63.4349 }],
   });
 });
 

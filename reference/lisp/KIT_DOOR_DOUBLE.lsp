@@ -662,5 +662,53 @@
     "  Handle: " handleInside " from inside"))
   (princ))
 
+;;;========================================
+;;; T54 - THE LEAF UNDER THE SLOPE  (28.08.2026, F3)
+;;;========================================
+;;; The owner, screenshot in hand: "shaker sie robi pod skosem ale cale drzwi
+;;; juz nie."  One consumer of the line raked its detail while the leaf stood
+;;; a full rectangle into the triangle. One source, one law, stated where the
+;;; door leaf lives:
+;;;
+;;;   THE LEAF'S LAW. leafCeil(x) = the line above the door, less topGap -
+;;;   the same clearance a front keeps to what is above it everywhere else
+;;;   (the project's front gap; this kit never invents a number and never
+;;;   asks where the ceiling is - the LINE arrives from the shared slope
+;;;   section of SKYLON_COMMON, resolved over the leaf's own span, exactly
+;;;   as the carcass boards receive theirs).
+;;;
+;;;   THE OUTLINE. Leaf = its own rectangle INTERSECTED with the half-plane
+;;;   below leafCeil: the top edge is a single beta cut. PER LEAF - double
+;;;   doors are each clipped by the line over their OWN span; a leaf wholly
+;;;   under a flat stretch stays the rectangle it always was, byte for byte.
+;;;
+;;;   THE SPLIT. A split leaf's two segments take the SAME line, each over
+;;;   its own band - the parent's line lowered by the segment's own y. The
+;;;   segment is never re-measured against the ceiling: one line, sub-set,
+;;;   or the divider and the diagonal drift apart.
+;;;
+;;;   THE SHAKER. The frame inset follows the cut edge PARALLEL at the flat
+;;;   law's inset - the offset each raked stretch takes is frame / cos(beta)
+;;;   in y, which is the same offset the shaker pocket routine has cut since
+;;;   T50. The leaf now stands cut around it.
+;;;
+;;;   THE HINGES. The ladder runs over the HINGE STILE - the full-height
+;;;   edge - and every cup keeps its edge distances ON THE CUT OUTLINE. A
+;;;   cup whose centre would stand above the cut edge is dropped, never
+;;;   moved.
+;;;
+;;;   THE SHEET. The cut leaf's outline is the cut polygon, the angle is
+;;;   stated on the piece (CUT beta DEG) exactly as the sides state theirs,
+;;;   and the elevation draws the same polygon. Three surfaces, one line.
+
+;;; leafCeil at x: the line over the leaf, less the front's top clearance.
+;;; `lineAt` is the resolved line above the door in the leaf's own frame.
+(defun SKY:leafCeilAt (lineAt x topGap)
+  (- (lineAt x) topGap))
+
+;;; The segment's own line: the parent leaf's, lowered by the segment's y.
+(defun SKY:leafSegLineY (parentY segY)
+  (- parentY segY))
+
 (princ "\nKIT_DOOR_DOUBLE loaded. Type DOOR_DOUBLE to run.")
 (princ)

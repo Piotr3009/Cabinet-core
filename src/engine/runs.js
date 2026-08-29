@@ -772,10 +772,29 @@ function runTopInfill(run, {
     // the other half of the joint — the side infill — belongs to a DIFFERENT
     // unit at the far end of the run, and this is the one description of the
     // run every one of them already receives.
-    mitre: {
-      left: infillCornerMitre(left, faceH, run.top + faceH, T.runGap),
-      right: infillCornerMitre(right, faceH, run.top + faceH, T.runGap),
-    },
+    //
+    // T55 (29.08.2026, the owner, on the second corner's screenshot): *"45
+    // stopni mitre ucięto do zawijania, gdzie ustaliliśmy że nie ma zawijania
+    // jak jest skos."* The 45° is the WRAP's own joint, and the wrap is dead
+    // under a rake — so where the ceiling's EDGE segment rakes, the mitre at
+    // that end is ZERO and the strip finishes with its plain plumb cut
+    // against whatever stands there (the vertical infill, which is NOT
+    // touched). A flat edge keeps its picture-frame 45° exactly as before.
+    mitre: (() => {
+      const edgeRakes = (side) => {
+        const cut = runCutOf
+          ? runCutOf({ run, from: left.x, to: right.x, owner, length })
+          : null;
+        const pts = cut?.pts;
+        if (!pts || pts.length < 2) return false;
+        const [a, b] = side === 'left' ? [pts[0], pts[1]] : [pts[pts.length - 2], pts[pts.length - 1]];
+        return Math.abs((b.y - a.y)) > 1e-9;
+      };
+      return {
+        left: edgeRakes('left') ? 0 : infillCornerMitre(left, faceH, run.top + faceH, T.runGap),
+        right: edgeRakes('right') ? 0 : infillCornerMitre(right, faceH, run.top + faceH, T.runGap),
+      };
+    })(),
     // ─── TURN 53 (CLAUDE.md F3b): THE RUN'S OWN CEILING ────────────────────
     //
     // *"top infill po skosie w ogóle nie działa … jakoś dziwnie się rysuje

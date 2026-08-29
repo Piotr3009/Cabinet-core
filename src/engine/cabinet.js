@@ -5027,7 +5027,13 @@ export function computeCabinet(params, profileOverride) {
         } : {}),
         // Which end turns against a ceiling-height side filler, and by how much
         // — a record, not a cut (T15's chamfer is overruled; see above).
-        corner: { left: i === 0 ? cornerL : 0, right: i === runSegsSplit.length - 1 ? cornerR : 0 },
+        // T55 (29.08.2026, the owner): the 45 is the WRAP's joint and the wrap
+        // is dead under a rake — a raked edge segment carries NO corner, in
+        // the element's numbers (runs.js) and, belt-and-braces, here.
+        corner: {
+          left: i === 0 && !(sg.deg > 1e-9) ? cornerL : 0,
+          right: i === runSegsSplit.length - 1 && !(sg.deg > 1e-9) ? cornerR : 0,
+        },
         units: runInfill.unitIds || null,
         ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(bandH, 4) } } : {}),
         ...lengthOversize,

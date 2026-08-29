@@ -248,3 +248,38 @@ test("T55 · runEnd at a wall answers the CARCASS face, not the plaster", () => 
   assert.equal(R.kind, 'infill');
   assert.equal(R.x, 3960, 'right end: the carcass face — never 4000');
 });
+
+// ─── T55 · THE 45° DIES WITH THE WRAP (29.08, the second corner's SS) ───────
+// *"45 stopni mitre ucięto do zawijania, gdzie ustaliliśmy że nie ma
+// zawijania jak jest skos."* A raked EDGE segment zeroes the strip-end mitre;
+// the strip finishes with its plain plumb cut against the vertical, which is
+// NOT touched. A flat edge keeps its picture-frame 45°.
+import { runInfillParams } from '../src/engine/runs.js';
+
+test('T55 · a raked edge zeroes the end mitre; a flat edge keeps its 45', () => {
+  const mk = (id, x) => ({
+    id, type: 'WARDROBE',
+    params: { ...defaultParamsFor('WARDROBE', P), width: 600, top_infill_mm: 40,
+      side_infill_left_mm: 40, side_infill_right_mm: 40,
+      side_infill_left_top_mm: 2190, side_infill_right_top_mm: 2190 },
+    position: { wall: 0, x_mm: x, rotation_deg: 0 },
+  });
+  const units = [mk('u1', 40)];
+  const walls = [{ width: 680 }];
+  const flatCut = () => ({ pts: [{ x: 0, y: 2400 }, { x: 600, y: 2400 }], infill: 40 });
+  const rakeCut = () => ({ pts: [{ x: 0, y: 2400 }, { x: 600, y: 2100 }], infill: 40 });
+
+  // The FLAT 45 is the standing law and is held by its own suite (T15/T22
+  // corner tests) — this test claims only the NEW half: a rake ZEROES it.
+  const flat = runInfillParams(units, {
+    walls, roomHeight: 2500, frontFaceDepthOf: () => 568, runCutOf: flatCut,
+  }, P).get('u1');
+  assert.ok(flat.ends.left === 'infill' && flat.ends.right === 'infill',
+    'flat: the verticals name the ends, exactly as before');
+
+  const raked = runInfillParams(units, {
+    walls, roomHeight: 2500, frontFaceDepthOf: () => 568, runCutOf: rakeCut,
+  }, P).get('u1');
+  assert.equal(raked.mitre.left, 0, 'raked edge: no 45 — plumb against the vertical');
+  assert.equal(raked.mitre.right, 0, 'both ends of a fully raked strip');
+});

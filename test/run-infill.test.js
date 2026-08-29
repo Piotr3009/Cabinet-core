@@ -199,10 +199,15 @@ test('END 1 — the run reaches the WALL, and finishes on it', () => {
   // and the run still reaches the wall — the gap is a scribe and the piece on
   // top runs over it. In the owner's own frame the piece therefore starts a
   // clearance to the LEFT of the carcass.
+  // Turn 8 parked the unit a clearance off the plaster and ran the piece OVER
+  // the scribe gap to the wall. T55 AMENDED (29.08.2026, the owner):
+  // *"powinieneś skrócić infill przysufitowy … dlaczego wystaje poza
+  // carcass?"* — the piece now stops PLUMB on the end carcass's outer face;
+  // the vertical side infill runs to the ceiling and owns the gap.
   assert.equal(unitOf(ids[0]).position.x_mm, P.room.wallBackClearance, 'parked at the side stop');
   assert.equal(
-    panelOf(ids[0], 'INFILL-T-FACE').box.x + unitOf(ids[0]).position.x_mm, 0,
-    'it starts at the wall',
+    panelOf(ids[0], 'INFILL-T-FACE').box.x, 0,
+    'it starts on the carcass face — never over the scribe gap (T55)',
   );
   assert.equal(infillsOf(ids[0]).filter((p) => p.meta.segment === 'return-left').length, 0,
     'a wall needs no corner turned');
@@ -216,9 +221,11 @@ test('END 2 — the run reaches a vertical L-INFILL, and finishes on it', () => 
 
   assert.equal(unitOf(ids[0]).params.side_infill_left_mm, 40, 'the filler is there');
   assert.equal(endsOf(ids[0]).left, 'infill');
-  // It runs OVER the filler and out to the wall: the filler closes the gap, so
-  // the line the eye follows is unbroken to the corner of the room.
-  assert.equal(panelOf(ids[0], 'INFILL-T-FACE').box.x, -40);
+  // T55 AMENDED (29.08.2026, the owner): the vertical filler runs to the
+  // ceiling and OWNS the gap — the top piece stops PLUMB on the carcass face
+  // beside it, never over the scribe to the plaster.
+  assert.equal(panelOf(ids[0], 'INFILL-T-FACE').box.x, 0,
+    'starts on the carcass face (T55)');
   assert.equal(infillsOf(ids[0]).filter((p) => p.meta.segment === 'return-left').length, 0);
 });
 

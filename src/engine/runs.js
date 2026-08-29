@@ -530,7 +530,17 @@ export function runEnd(run, side, { wallWidth, roomHeight, verticals = null }, p
   const atWall = tolerance + Math.max(0, Number(profile.room?.wallBackClearance) || 0);
 
   // 1 — the wall itself.
-  if (Math.abs(outerEdge - wallAt) <= atWall) return { kind: 'wall', x: wallAt };
+  //
+  // T55 (29.08.2026, the owner's ruling — supersedes the T8 sentence above):
+  // *"infill boczny zawsze przy skosie idzie do sufitu … powinieneś skrócić
+  // infill przysufitowy do infilla bocznego … jeśli nie ma panelu, kończysz
+  // tak jak jest szafa — na końcu BUL lub BUL i tniesz w pionie. Dlaczego
+  // wystaje poza carcass?"* The top piece does NOT run over the scribe gap
+  // to the plaster any more: at a wall end it stops PLUMB on the outer face
+  // of the end CARCASS, and the vertical side infill — which runs to the
+  // ceiling — closes the gap above. `kind` stays 'wall' (the mitre and ends
+  // semantics are unchanged); only the x the piece is cut to moves.
+  if (Math.abs(outerEdge - wallAt) <= atWall) return { kind: 'wall', x: carcassEdge };
 
   // 2 — ANYTHING standing all the way up between this end and the wall
   //     (turn 14, CLAUDE.md F3; #55). The element butts into its near face:
@@ -561,13 +571,14 @@ export function runEnd(run, side, { wallWidth, roomHeight, verticals = null }, p
     };
   }
 
-  // 3 — a vertical L-infill that stops short of the ceiling: a scribe strip
-  //     closing the gap. The element runs OVER it and finishes on the wall,
-  //     which is what "ends on it" means for a piece lying on top. (One that
-  //     DOES reach the ceiling was caught above, and is stood on rather than
-  //     covered.)
+  // 3 — a vertical L-infill closing the gap to the plaster.
+  //     T55 (29.08.2026, the owner — supersedes the "runs OVER it" sentence
+  //     that stood here): *"infill boczny zawsze przy skosie idzie do sufitu
+  //     … skróć infill przysufitowy do infilla bocznego."* The vertical owns
+  //     the gap and runs to the ceiling; the top piece stops PLUMB on the
+  //     carcass face beside it. `kind` stays 'infill'; only the x moves.
   const infill = Number(unit.params?.[side === 'left' ? 'side_infill_left_mm' : 'side_infill_right_mm']) || 0;
-  if (infill >= profile.autoParts.sideInfill.minWidth) return { kind: 'infill', x: wallAt };
+  if (infill >= profile.autoParts.sideInfill.minWidth) return { kind: 'infill', x: carcassEdge };
 
   // 4 — open. It finishes flush with the outside of the last thing in the run
   //     and turns the corner from there.

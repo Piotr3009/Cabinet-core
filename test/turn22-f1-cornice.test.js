@@ -171,8 +171,14 @@ test('F1.3 a run between two walls STOPS at both, with no mitre and no return', 
   assert.deepEqual(el.ends, { left: 'wall', right: 'wall' });
   assert.deepEqual(el.mitres, { left: false, right: false });
   assert.deepEqual(el.returns, { left: null, right: null });
-  assert.equal(el.length, 1220, 'wall to wall');
-  assert.equal(el.offset, -10, 'measured in the owner unit’s own frame');
+  // T55 AMENDED (29.08.2026): `runEnd`'s wall case stops on the CARCASS face
+  // now (the owner: *"dlaczego wystaje poza carcass"*), and the cornice —
+  // sharing that law — spans carcass to carcass, not plaster to plaster.
+  // If the owner rules the CORNICE should still reach the walls, that is his
+  // one line and this case splits; until then, one end law for every top
+  // piece.
+  assert.equal(el.length, 1200, 'carcass face to carcass face (T55)');
+  assert.equal(el.offset, 0, 'measured in the owner unit’s own frame');
 });
 
 test('F1.3 an OPEN end mitres 45° and returns along the side to the back wall', () => {

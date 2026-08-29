@@ -133,10 +133,12 @@ test('F3.2 — a scribe filler UNDER the run is covered; one taken to the ceilin
   store().addTopInfill(tall);
   assert.equal(unitOf(tall).params.side_infill_left_mm, 40, 'the filler is there');
 
-  // Turn 6's answer, unchanged: a filler that stops at the cabinet's top is
-  // something the piece on top runs OVER, out to the wall.
+  // T55 AMENDED (29.08.2026, the owner): the vertical owns the gap and runs
+  // to the ceiling — the top piece stops PLUMB on the carcass face either
+  // way. Turn 6's "runs OVER, out to the wall" is retired.
   assert.equal(endsOf(tall).left, 'infill');
-  assert.equal(Math.round(spanOf(tall).from), 0, 'over the filler and on to the wall');
+  assert.equal(Math.round(spanOf(tall).from), Math.round(unitOf(tall).position.x_mm),
+    'on the carcass face — never over the scribe (T55)');
 
   // …and taken to the ceiling it is a piece the top infill must END on.
   store().sideInfillToCeiling(tall, 'L');

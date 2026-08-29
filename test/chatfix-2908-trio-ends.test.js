@@ -221,3 +221,30 @@ test('T55 · a fully FLAT ceiling keeps both corners exactly as before', () => {
     assert.ok(flat2.panels.find((p) => p.id === id), `${id} stands on the flat`);
   }
 });
+
+// ─── T55 · THE END LAW (29.08, panel B, owner's "ok"): at a wall the top ────
+// piece stops PLUMB on the end CARCASS face — the scribe gap belongs to the
+// vertical, which runs to the ceiling. Proven straight at `runEnd`, the one
+// function every top piece (infill and cornice alike) takes its ends from.
+import { runEnd } from '../src/engine/runs.js';
+
+test("T55 · runEnd at a wall answers the CARCASS face, not the plaster", () => {
+  const unit = (x, sideL, sideR) => ({
+    id: 'u1', type: 'WARDROBE',
+    params: {
+      ...defaultParamsFor('WARDROBE', P),
+      width: 600, top_infill_mm: 40,
+      side_infill_left_mm: sideL, side_infill_right_mm: sideR,
+    },
+    position: { wall: 0, x_mm: x, rotation_deg: 0 },
+  });
+  const ctx = { wallWidth: 4000, roomHeight: 2500, verticals: [] };
+  // Parked at the left stop, 40 mm scribe filling to the plaster:
+  const L = runEnd({ wall: 0, units: [unit(40, 40, 0)], top: 2150 }, 'left', ctx, P);
+  assert.equal(L.kind, 'infill', 'the scribe vertical names the end');
+  assert.equal(L.x, 40, 'left end: the carcass face — never 0 (the plaster)');
+  // And the mirror at the right wall:
+  const R = runEnd({ wall: 0, units: [unit(3360, 0, 40)], top: 2150 }, 'right', ctx, P);
+  assert.equal(R.kind, 'infill');
+  assert.equal(R.x, 3960, 'right end: the carcass face — never 4000');
+});

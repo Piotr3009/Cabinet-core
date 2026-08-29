@@ -283,3 +283,22 @@ test('T55 · a raked edge zeroes the end mitre; a flat edge keeps its 45', () =>
   assert.equal(raked.mitre.left, 0, 'raked edge: no 45 — plumb against the vertical');
   assert.equal(raked.mitre.right, 0, 'both ends of a fully raked strip');
 });
+
+// ─── T55 · MILION PROCENT (29.08): the raked strip never enters the mitre ───
+// path — an OPEN end under a rake cuts NOTHING here, so the scene's gate
+// (`!mitre`) finally lets the piece into panelSolids' leant body. A FLAT
+// open end keeps its plan 45 exactly as T48 wrote it.
+import { infillMitre } from '../src/engine/mitre.js';
+
+test('T55 · raked FACE with an OPEN end: infillMitre answers null', () => {
+  const base = {
+    box: { x: 0, y: 2110, z: 550, w: 780, h: 40, d: 18 },
+    meta: { side: 'top', piece: 'face', segment: 'main', ends: { left: 'infill', right: 'open' } },
+  };
+  const raked = { ...base, meta: { ...base.meta, slopeCut: { deg: 39.7 }, tilt_axis: 'z' } };
+  assert.equal(infillMitre(raked), null,
+    'a raked strip owns no plan mitre — the leant path owns the whole body');
+  const flat = infillMitre(base);
+  assert.ok(flat && flat.planes.length === 1,
+    'a FLAT open end still turns its picture-frame 45 (T48 law untouched)');
+});

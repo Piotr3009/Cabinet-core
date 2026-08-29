@@ -357,6 +357,14 @@ export function infillMitre(panel) {
   if (segment === 'main') {
     // ── the long run along the wall ──
     if (!isFace) return null;
+    // ─── T55 (29.08.2026, the owner — MILION PROCENT) ────────────────────
+    // *"nie ma zawijania jak jest skos … 45 stopni mitre ucięto do
+    // zawijania."* A RAKED strip owns NO plan mitre at all: its whole body —
+    // the lean, the parallelogram, the plumb ends — is the leant path in
+    // 3d/panelSolid.js, and THIS return of a spec was the very thing that
+    // kept the piece OUT of that path (UnitView draws a mitre-spec'd panel
+    // the old way). One raked answer: nothing to cut here.
+    if (meta.slopeCut) return null;
     const t = box.d;
     const faceBox = { ...box };
     // Each OPEN end turns the corner, and only that is cut in plan.

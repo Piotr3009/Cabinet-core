@@ -164,3 +164,60 @@ test('a FLAT band never enters the sheared branch — the plain path as ever', (
   assert.ok(shelf, 'the flat wrap still exists');
   assert.equal(shelf.meta?.scene, 'sheet-only', 'and stays off the room, on the sheet');
 });
+
+// ─── T55 (29.08, the owner's second telling): RETURNS ARE LEVEL-END ONLY ────
+//
+// *"TR — jak jest skos, to musi znikać. Nie zawija — zakańczasz prosto."*
+// A raked EDGE segment kills the picture-frame return at that end; a flat
+// edge keeps it exactly as before. Proven on the run element the store hands
+// down, both mixes.
+
+const RUN = (ceiling, returns) => computeCabinet({
+  ...defaultParamsFor('WARDROBE', P),
+  unit_num: '01',
+  run_top_infill: {
+    role: 'owner', offset: 0, length: 600,
+    faceH: P.autoParts.topInfill.defaultHeight,
+    shelfDepth: P.autoParts.topInfill.shelfDepth,
+    ends: { left: 'open', right: 'open' },
+    returns,
+    ...(ceiling ? { ceiling, ceilingInfill: 40 } : {}),
+  },
+}, P);
+
+test('T55 · a RAKED end grows no return; a FLAT end keeps its corner', () => {
+  // Ceiling flat on the LEFT half, raked down on the RIGHT half.
+  const mixed = RUN(
+    [{ x: 0, y: 2400 }, { x: 300, y: 2400 }, { x: 600, y: 2100 }],
+    { left: 150, right: 150 },
+  );
+  assert.ok(mixed.panels.find((p) => p.id === 'INFILL-TL-FACE'),
+    'flat left end: the return face stands');
+  assert.ok(mixed.panels.find((p) => p.id === 'INFILL-TL-SHELF'),
+    'flat left end: and its shelf');
+  assert.equal(mixed.panels.find((p) => p.id === 'INFILL-TR-FACE'), undefined,
+    'raked right end: no return face — the run finishes straight');
+  assert.equal(mixed.panels.find((p) => p.id === 'INFILL-TR-SHELF'), undefined,
+    'raked right end: no return shelf either');
+});
+
+test('T55 · a fully RAKED ceiling grows no return at either end', () => {
+  const raked = RUN(
+    [{ x: 0, y: 2400 }, { x: 600, y: 2100 }],
+    { left: 150, right: 150 },
+  );
+  for (const id of ['INFILL-TL-FACE', 'INFILL-TL-SHELF', 'INFILL-TR-FACE', 'INFILL-TR-SHELF']) {
+    assert.equal(raked.panels.find((p) => p.id === id), undefined, `${id} does not exist`);
+  }
+  // …and the strip itself is the ONE board the law promises.
+  const tops = raked.panels.filter((p) => /^INFILL-T/.test(p.id));
+  assert.deepEqual(tops.map((p) => p.id.replace(/-\d+$/, '')).sort(),
+    ['INFILL-T-FACE'], 'one board, full stop');
+});
+
+test('T55 · a fully FLAT ceiling keeps both corners exactly as before', () => {
+  const flat2 = RUN(null, { left: 150, right: 150 });
+  for (const id of ['INFILL-TL-FACE', 'INFILL-TL-SHELF', 'INFILL-TR-FACE', 'INFILL-TR-SHELF']) {
+    assert.ok(flat2.panels.find((p) => p.id === id), `${id} stands on the flat`);
+  }
+});

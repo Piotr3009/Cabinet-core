@@ -68,7 +68,9 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // which is exactly how it kept slipping past the roof's shear and out of
   // plumb. The branch needs a box and a lean, nothing more.
   const leant = panel?.box
-    && (panel.part === 'TOP' || /^INFILL-T-(FACE|SHELF)/.test(String(panel.id)))
+    && (panel.part === 'TOP' || /^INFILL-T-FACE/.test(String(panel.id)))
+    // (T55, 29.08: the raked SHELF is deleted at the engine, so the leant
+    // branch reads TOP and the FACE strip — nothing else ever leans here.)
     && panel.meta?.tilt_axis === 'z'
     && Number.isFinite(Number(panel.meta?.tilt_deg)) && panel.meta?.tilt_pivot;
   if (leant) {

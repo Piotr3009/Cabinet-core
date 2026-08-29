@@ -1207,6 +1207,16 @@
 ;;; joint here does. Nothing is stored, so nothing migrates: a saved job
 ;;; simply recomputes to fewer boards.
 ;;;
+;;; AND THE OPEN-END RETURN IS LEVEL-ONLY (29.08.2026, the owner's second
+;;; telling): "TR - jak jest skos, to musi znikac. Nie zawija - zakanczasz
+;;; prosto." Where the ceiling's EDGE segment rakes, the run finishes
+;;; STRAIGHT: no TL/TR picture-frame pair is born at that end - not in the
+;;; room, not on the sheet, not in the bill. A flat end keeps its corner
+;;; exactly as T15/T48 wrote it. And per the same telling the raked-wrap
+;;; machinery (the raked shelf box, its pivot, its lean) is DELETED from the
+;;; engine, not gated - the old L-shape-era wrap under a rake has no code
+;;; left to run.
+;;;
 ;;; TWO POINTS IS T46. `SKY:slopeLine` builds that pair, and every one of T46's
 ;;; four answers - the rectangle, the trapezium and the two pentagons - comes
 ;;; back from the general routine UNCHANGED, corner for corner. That is not a

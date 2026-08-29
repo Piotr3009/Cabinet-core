@@ -5001,15 +5001,12 @@ export function computeCabinet(params, profileOverride) {
         h: bandH,
         d: t,
       } : null;
-      const shelfBoxRaked = sg.deg > 1e-9 ? {
-        x: roundTo(segLowR ? segXL - shelfLen : segXL, 4),
-        y: roundTo(segYL - segResDrop - segRoofDrop - t, 4),
-        z: faceZ - t - shelfDepth,
-        w: shelfLen,
-        h: t,
-        d: shelfDepth,
-      } : null;
-      const shelfPivotY = roundTo(segYL - segResDrop - segRoofDrop, 4);
+      // ─── T55 DELETION (29.08.2026, the owner's order, second telling) ─────
+      // *"cały stary kod i logikę z L-shape'owym infillem i zawinięciami
+      // miałeś usunąć i zrobić od nowa"* — the raked-wrap machinery that
+      // stood here (`shelfBoxRaked`, `shelfPivotY`, the shelf's tilt meta) is
+      // DELETED, not gated. Under a rake the infill is ONE board; the wrap —
+      // shelf and the open-end returns alike — is a LEVEL thing only.
       const faceMeta = {
         side: 'top', piece: 'face', segment: manySegs ? `main-${i + 1}` : 'main', ends,
         // T48-F2: 'long' is gone with the L. What is left is 'end', and only
@@ -5091,16 +5088,15 @@ export function computeCabinet(params, profileOverride) {
       }));
       // The SHELF is NOT extended over a frame corner (T15's own rule), so it
       // takes the segment's own length without the mitres' long points.
-      // (`shelfLen` is hoisted above, beside the two raked boxes.)
       //
       // T55 SIMPLIFICATION (29.08.2026, owner): *"dodaj pod skosem deskę jak
       // prosty infill BEZ ZAWIJANIA ... zawijanie się wyłącza od strony
       // skosu, nie wyłączaj od strony prostej."* UNDER A RAKE THE INFILL IS
       // ONE BOARD — the face strip alone. The SHELF (board B, the wrap) is a
-      // LEVEL-stretch piece only: this push is gated on the segment being
-      // flat, so a raked segment emits no shelf — not to the room, not to
-      // the sheet, not to the bill. The raked hoists above (`shelfBoxRaked`,
-      // `shelfPivotY`) stay as the law's history and are simply never read.
+      // LEVEL-stretch piece only, and — on the owner's second telling — its
+      // raked machinery is DELETED, not gated: the raked box, the raked
+      // pivot, the shelf's tilt meta and its raked elevation are gone from
+      // this file. What follows is the FLAT shelf, whole and unchanged.
       const shelfCutLen = roundTo(shelfLen + overLen, 4);
       if (!(sg.deg > 1e-9)) panels.push(panel({
         // BOARD B — the shelf. *"a druga nominal 80 bez zmian"*: the nominal is
@@ -5108,13 +5104,7 @@ export function computeCabinet(params, profileOverride) {
         // `fillerOversize` T47 put on it. Nothing about its WIDTH moves tonight.
         id: segId('INFILL-T-SHELF', i), part: 'INFILL', role: 'infill', w: shelfCutLen, h: shelfDepth + overT, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(shelfLen),
-        // Chat-fix 25.08.2026 hung the shelf from the ceiling — congruent
-        // with the roof, the owner's audit measured. T54-F1 RESOLUTION
-        // (veto: "shelf pod wieńcem"): the SHELF sits UNDER the roof, its
-        // top face on the roof's underside — the ceiling less the strip's
-        // reserve (`cutReach`) less the roof board's own vertical footprint
-        // `G / cos β`. Same axis, same low end.
-        box: shelfBoxRaked || {
+        box: {
           x: sg.shelfFrom,
           y: (infRoof ? Math.min(yTop, H) : H) + faceH - t,
           z: faceZ - t - shelfDepth,
@@ -5132,17 +5122,8 @@ export function computeCabinet(params, profileOverride) {
           // board for a plinth. This is the flag the 3-D reads, and it is a
           // general one: any part that is data rather than a body says so here.
           scene: 'sheet-only',
-          // Chat-fix 25.08.2026: leans with its face — same axis, own low end.
-          // T54-F1: …but hangs UNDER the roof, so the pivot is
-          // `(x_lo, cutReach(x_lo) − G / cos β)` — the roof's underside at the
-          // low end — never the ceiling (that was the stack the owner
-          // measured).
-          ...(sg.deg > 1e-9 ? {
-            tilt_deg: roundTo(segLowR ? -sg.deg : sg.deg, 4),
-            tilt_axis: 'z',
-            tilt_pivot: { x: segXL, y: shelfPivotY },
-            ...segElevation(shelfBoxRaked),
-          } : {}),
+          // (T55 DELETION, 29.08.2026: the raked tilt/pivot/elevation spread
+          // that stood here is gone with the raked shelf itself.)
           mitre_45: [...new Set([
             ...mitre(i === 0 && ends.left === 'open'),
             ...mitre(i === runSegsSplit.length - 1 && ends.right === 'open'),
@@ -5169,8 +5150,18 @@ export function computeCabinet(params, profileOverride) {
     // and carries on along the side of the end cabinet to the back wall — a
     // picture-frame corner made of two strips, which is the only way to finish
     // an end that has nothing to finish against.
+    //
+    // T55 (29.08.2026, the owner): *"TR — jak jest skos, to musi znikać. Nie
+    // zawija — zakańczasz prosto."* A RETURN is a LEVEL-end piece only: where
+    // the edge segment of the ceiling rakes, the run finishes STRAIGHT and no
+    // TL/TR pair is born — not in the room, not on the sheet, not in the
+    // bill. A flat end keeps its picture-frame corner exactly as before.
     for (const [side, returnDepth] of Object.entries(runInfill.returns || {})) {
       if (!(Number(returnDepth) > 0)) continue;
+      const edgeSeg = side === 'left'
+        ? runSegsSplit[0]
+        : runSegsSplit[runSegsSplit.length - 1];
+      if (infRoof && edgeSeg && edgeSeg.deg > 1e-9) continue;
       const outer = side === 'left' ? x0 : x0 + len;      // the corner, in plan
       const xFace = side === 'left' ? outer : outer - t;
       const xShelf = side === 'left' ? outer + t : outer - t - shelfDepth;

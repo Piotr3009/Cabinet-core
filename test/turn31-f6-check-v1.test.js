@@ -45,6 +45,11 @@ const of = (n) => check().filter((f) => f.check === n);
 test('the rules, each with the owner’s colour', () => {
   // 16.08.2026 (chat-fix, decision C): rule 12 joined — "Shoe box × hinge
   // collision" — eleven became twelve.
+  // T54-F7 AMENDED (28.08.2026): that rule's subject is dead — the fixed shoe
+  // box and its hinge clash went to the grave with engine/shoeBox.js (licence
+  // 2). The NUMBER is re-used: #12 is now the YELLOW migration notice "Shoe
+  // box rebuilt as a drawer", asserted with the rest of the new world in
+  // test/turn54-f7-the-shoe-drawer.test.js.
   // T35-F1: and rule 13, "Rail × obstacle above" — the fault the rail's own
   // datum brought with it. Report, never auto-fix; the twelve before it are
   // untouched, which is what the list below is for.
@@ -101,7 +106,10 @@ test('the rules, each with the owner’s colour', () => {
     9: 'red',
     10: 'red',
     11: 'red',
-    12: 'red',
+    // T54-F7 AMENDED (28.08.2026): was 'red' (shoe box × hinge collision).
+    // The old shoe world died; #12 is now the once-per-unit migration notice,
+    // a warning and not a gate — see turn54-f7-the-shoe-drawer.test.js.
+    12: 'yellow',
     13: 'red',
     14: 'red',
     15: 'red',

@@ -44,7 +44,11 @@ test('a job uses a HANDFUL of the registry, not all of it', () => {
     assert.ok(usage[id]?.qty > 0, `a wardrobe uses ${id}`);
   }
   // …and the ones it obviously does not.
-  for (const id of ['shoe_box_carcase', 'top_box_carcase', 'drawer_bottom', 'led_strip', 'extractor']) {
+  // T54-F7 AMENDED (28.08.2026): `shoe_box_carcase` died with the shoe-box
+  // world (licence 2) — a shoe is a `variant:'shoe'` DRAWER now, priced by the
+  // drawer rows; the replacement pins live in test/turn54-f7-the-shoe-drawer.test.js.
+  // `drawer_box_side` stands in: a plain no-drawer wardrobe uses none of it.
+  for (const id of ['drawer_box_side', 'top_box_carcase', 'drawer_bottom', 'led_strip', 'extractor']) {
     assert.equal(usage[id], undefined, `a plain wardrobe does not use ${id}`);
   }
 });

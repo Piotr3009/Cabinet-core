@@ -55,6 +55,7 @@ import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
 import DrillRings from './DrillRings.jsx';
 import LedStrips from './LedStrips.jsx';
+import LedIcons from './LedIcons.jsx';
 
 // A stable empty list: a fresh [] would rebuild every panel solid on every
 // render.
@@ -63,6 +64,9 @@ import PartMachining from './PartMachining.jsx';
 import { shakerFrontGeometry } from './shakerSolid.js';
 import { isShakerFront } from '../engine/shaker.js';
 import { panelRecesses } from '../engine/recesses.js';
+// T54-F1: the ghost line draws the CARCASS cut — the engine's own offset of
+// the ceiling — so the drag hint and the boards cannot disagree.
+import { carcassCutPts } from '../engine/puzzle.js';
 // T52 (CLAUDE.md F5): where the watch insert's strip runs in its front rail —
 // the ENGINE's own number, so the picture and the groove agree.
 import { watchDrawerSpec } from '../engine/watchDrawer.js';
@@ -829,7 +833,7 @@ export default function UnitView({
   // is the same id the BOM prints and the CNC sheet lays out — so there is no
   // second identity to keep in step with it.
   selectedElement = null, selectedElements = [],
-  onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onAddItems,
+  onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onEditWatch, onAddItems,
   // ─── TURN 42 (CLAUDE.md F1): THE ALONE ROD'S OWN TWO VERBS ───────────────
   // `onEditRail(itemId, at)` opens the hanging-rail window; `onMoveRail(itemId,
   // offsetMm)` writes the item's `pos_mm`. Both are the rod's, and neither is
@@ -1073,7 +1077,11 @@ export default function UnitView({
     });
     // Under a flat stretch there is nothing to warn about.
     if (!line.some((q) => q.y < h - 1e-6)) return null;
-    return line.map((q) => ({ x: q.x - x0, y: Math.max(0, q.y - gap - baseY) }));
+    // T54-F1: the ghost shows where the CARCASS will be cut, and the carcass
+    // line is the ceiling less `infill / cos β` per segment — the same
+    // `carcassCutPts` the engine cuts with, never a second arithmetic.
+    const ceil = line.map((q) => ({ x: q.x - x0, y: q.y - baseY }));
+    return carcassCutPts({ pts: ceil }, gap).map((q) => ({ x: q.x, y: Math.max(0, q.y) }));
   }, [dragging, wallSlopeList, roomHeight, projectDesign, unit.position?.wall,
     unit.position?.x_mm, wall.width, W, baseY]);
   // A turned unit pivots about the point where it meets the wall — the same
@@ -1905,6 +1913,17 @@ export default function UnitView({
               // right button belongs to the menu and to the orbit; the middle
               // one to the pan. Neither is a grab.
               if (((e.nativeEvent || e).button ?? 0) !== 0) return;
+              // ─── TURN 54 (CLAUDE.md F4.1): A WATCH TRAY PIECE OPENS ITS OWN ──
+              // MODAL. The rails, the dividers, the base — until tonight a
+              // click on any of them fell through to "drag the cabinet", and
+              // NO click in the whole app opened `watch-layout`. The pieces
+              // carry the drawer index in their meta — used, never guessed
+              // by y — and the modal opens BESIDE the click (house law).
+              if (p.role === 'watch_insert' && p.meta?.drawer && onEditWatch) {
+                e.stopPropagation();
+                onEditWatch(p.meta.drawer, p.meta.zone ?? null, { x: e.clientX, y: e.clientY });
+                return;
+              }
               // ─── Turn 9 (CLAUDE.md F4.1/F4.2): which axis this drag is on ───
               //
               // A shelf you have not touched yet behaves as it always has —
@@ -1989,6 +2008,21 @@ export default function UnitView({
               // does to a cabinet — so a front does both: it swings, and its
               // hinge side is what the modal is about.
               if (front && onToggleFront) onToggleFront(p.id);
+              // ─── TURN 54 (CLAUDE.md F4.1): …AND A WATCH DRAWER'S OWN PIECES
+              // OPEN THE WATCH LAYOUT. The front (after its slide above) and
+              // the box of a drawer that carries the insert route to
+              // `watch-layout` rather than the generic drawer editor — its
+              // height is the law (120, derived), so the layout is what there
+              // is to edit. The piece says which drawer; the ITEM says it is
+              // a watch one.
+              if (p.meta?.drawer && onEditWatch
+                && (unit.params?.sections?.[0]?.items || []).some((i) => i?.kind === 'drawer'
+                  && i.watch_insert === true
+                  && Number(i.index) === Number(p.meta.drawer)
+                  && ((i.zone ?? null) === (p.meta.zone ?? null)))) {
+                onEditWatch(p.meta.drawer, p.meta.zone ?? null, { x: e.clientX, y: e.clientY });
+                return;
+              }
               // ─── TURN 20 (CLAUDE.md F11.1): A DRAWER BOX OPENS THE DRAWER ──
               // A side, the box front or back, the bottom — the parts that are
               // the DRAWER rather than its face. The FRONT keeps its slide:
@@ -2448,6 +2482,16 @@ export default function UnitView({
           only and a glowing strip is exactly what it exists to remove. */}
       {!contour && (
         <LedStrips unit={unit} result={result} design={design} />
+      )}
+
+      {/* ─── TURN 54 (CLAUDE.md F5): THE LED ICONS, WHILE LIGHTING IS OPEN ──
+          The owner: "po otwarciu modalu Lighting ikony LED mają być widoczne
+          … ludzie nie wiedzą, że takie funkcje istnieją." Two clickable
+          sprites per unit — left LED, right LED — visible on EVERY unit
+          while the existing Lighting panel is open, gone the moment it
+          closes. Pure UI (ccHelper): nothing is added to the cabinets. */}
+      {!contour && (
+        <LedIcons unit={unit} W={W} H={H} D={D} />
       )}
 
       {/* ─── TURN 33 (CLAUDE.md F3): THE DISPLAY DRAWER'S GLASS ──────────────

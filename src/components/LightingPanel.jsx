@@ -13,6 +13,8 @@ import {
   EXPORT_NOTICE, PRESET_IDS, RIG_HINTS, RIG_LABELS, RIG_LAMPS, RIG_PRESETS,
   STRENGTH_MAX, STRENGTH_MIN, STRENGTH_STEP, matchesPreset, migrateLightRig, rigFromPreset,
 } from '../engine/lightRig.js';
+// T54-F5.3: the scene-light law — one clamp, engine-owned, both readers.
+import { SCENE_LIGHT_MAX, SCENE_LIGHT_MIN, sceneLightScale } from '../engine/lighting.js';
 import { getUnitType } from '../engine/types.js';
 // T37-F1: the piece selection spans cabinets — members are keyed, not bare refs.
 import { memberKey } from '../lib/selection.js';
@@ -154,6 +156,10 @@ export default function LightingPanel() {
   // and written exactly where the LED spec is.
   const storedRig = useProjectStore((s) => s.project.lightRig);
   const setLightRig = useProjectStore((s) => s.setLightRig);
+  // T54-F5.3: the scene light — the project's, clamped by the engine's law.
+  const sceneLightRaw = useProjectStore((s) => s.project.sceneLight?.scale);
+  const setSceneLight = useProjectStore((s) => s.setSceneLight);
+  const sceneScale = sceneLightScale(sceneLightRaw);
   // ─── TURN 36 (CLAUDE.md F2): THE SELECTED STRIPS MOVE AS ONE ──────────────
   //
   // "LED strips: inset and depth to all selected." A strip is not a panel and
@@ -650,6 +656,37 @@ export default function LightingPanel() {
                   spots — the strip goes where the selection is.
                 </p>
               )}
+            </div>
+
+            {/* ─── TURN 54 (CLAUDE.md F5.3): THE SCENE LIGHT, UNDER THE LED ──
+                The owner: "ustawienie światła pokoju, czyli sceny, poniżej
+                LED." One slider, the PROJECT's (0.4×–1.5×, default 1.0 over
+                the studio's baseGain 0.75). It turns the live room lamps up
+                and down together; the T51 iron rule stands: renders and PDFs
+                ignore it — the fixed rig only. */}
+            <div className="space-y-1 pt-1 border-t border-shell-600" data-scene-light="1">
+              <span className="text-[11px] uppercase tracking-wide text-ink-400">
+                Scene light
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min={SCENE_LIGHT_MIN}
+                  max={SCENE_LIGHT_MAX}
+                  step={0.05}
+                  value={sceneScale}
+                  data-scene-light-slider="1"
+                  className="flex-1 accent-gold"
+                  onChange={(e) => setSceneLight({ scale: Number(e.target.value) })}
+                />
+                <span className="text-[11px] text-ink-300 w-10 text-right" data-scene-light-read="1">
+                  {sceneScale.toFixed(2)}×
+                </span>
+              </div>
+              <p className="text-[10px] text-ink-400">
+                The room&apos;s own light, saved with the project. Renders and PDFs ignore this
+                slider — they always use the one fixed rig.
+              </p>
             </div>
 
             {/* ─── what is placed ───────────────────────────────────────── */}

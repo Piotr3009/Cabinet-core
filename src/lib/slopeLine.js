@@ -174,6 +174,19 @@ export function ceilingPolyline({
 // floor (the legs, or a wall unit's mount height). So the cut handed down is
 // the ceiling line, minus the project's infill, minus `floorY`.
 //
+// ─── TURN 54 (CLAUDE.md F1): …MINUS THE INFILL NO LONGER ────────────────────
+//
+// The sentence above is AMENDED, history kept. Subtracting the owner's 40
+// VERTICALLY here, and then treating the result as both the ceiling (the top
+// strip hung from it) and the carcass line (the sides were cut to it), is the
+// stack the owner's audit measured — three boards on one line. The line handed
+// down is now THE CEILING, minus `floorY` only, and the `infill` number rides
+// beside it on the record: the ENGINE takes the carcass reserve per segment as
+// `infill / cos β` (`engine/puzzle.js carcassCutPts`, the LISP's
+// `SKY:carcassCutPts`), because the 40 is the FACE strip's CUT height mounted
+// along the slope, not a vertical gap. On a flat stretch `cos β = 1` and the
+// reserve is exactly the infill — the degenerate case, byte for byte.
+//
 // ─── TURN 47 (CLAUDE.md F1): AND IT IS A POLYLINE ───────────────────────────
 //
 // The owner, the morning after T46, screenshot in hand:
@@ -241,12 +254,14 @@ export function slopeCutLine({
   // own span answers the middle case (a unit straddling a ridge).
   if (!isCut(slopes, { wallWidth: w, wallHeight: h, from: left, to: left + uw })) return null;
   // ONE call, and it is the one that already knows where the knees are. Every
-  // vertex takes the same three subtractions T46 made to its two ends: into the
-  // unit's frame, less the scribe gap, less the carcass floor.
+  // vertex takes TWO subtractions now (T54-F1): into the unit's frame, less
+  // the carcass floor. The scribe reserve is NOT subtracted here any more —
+  // it rides on the record as `infill` and the engine takes it per segment as
+  // `infill / cos β`, which is the strip's cut height mounted along the slope.
   const line = ceilingPolyline({
     slopes, wallWidth: w, wallHeight: h, from: left, to: left + uw,
   });
-  const pts = line.map((p) => ({ x: round4(p.x - left), y: round4(p.y - gap - base) }));
+  const pts = line.map((p) => ({ x: round4(p.x - left), y: round4(p.y - base) }));
   if (pts.length < 2) return null;
   const first = pts[0];
   const last = pts[pts.length - 1];

@@ -12,8 +12,9 @@
 // that simply is not printed, on a document a workshop buys timber from. So the
 // walk below is DELIBERATELY greedy: every unit type in `types.js`, each one
 // driven through every feature the engine will emit a panel for — doors,
-// plinth, shelves, rail, drawers, the wardrobe interior, a shoe box of each
-// variant, partitions, split doors, end panels, top infill, side infill, a
+// plinth, shelves, rail, drawers, the wardrobe interior, a shoe drawer
+// (T54-F7: the shoe box world died; a shoe is a `variant:'shoe'` DRAWER now),
+// partitions, split doors, end panels, top infill, side infill, a
 // bottom mask, a cornice — and the assertion is on the SET of part names the
 // engine produced, not on a list somebody typed.
 
@@ -33,7 +34,7 @@ import {
 
 // ─── The walk ───────────────────────────────────────────────────────────────
 
-/** A full wardrobe interior: shelves fixed and loose, drawers, rails, partitions, two shoe boxes. */
+/** A full wardrobe interior: shelves fixed and loose, drawers (a shoe drawer among them), rails, partitions. */
 const INTERIOR = [
   { id: 'sf0', kind: 'shelf', variant: 'fixed', pos_mm: 500 },
   { id: 's1', kind: 'shelf', pos_mm: 800 },
@@ -50,8 +51,14 @@ const INTERIOR = [
   { id: 'h2', kind: 'hanger', mount: 'shelf', shelf_id: 'sf0', pos_mm: 1700 },
   { id: 'p1', kind: 'partition', x_mm: 300 },
   { id: 'p2', kind: 'partition', x_mm: 900 },
-  { id: 'sb1', kind: 'shoe_box', variant: 'F', dividers: 1, pos_mm: 300 },
-  { id: 'sb2', kind: 'shoe_box', variant: 'D', dividers: 1, pos_mm: 900 },
+  // T54-F7 AMENDED (28.08.2026): the two `kind:'shoe_box'` items (variants F
+  // and D) died with their world — engine/shoeBox.js, the SHOEBOX-* boards,
+  // the steps and battens, all buried under licence 2; the replacement law
+  // lives in test/turn54-f7-the-shoe-drawer.test.js. What a shoe is NOW walks
+  // here instead: a STANDARD drawer with `variant: 'shoe'`, cut by the same
+  // drawer code with side height `drawers.shoeSideMm` (80) as its one
+  // override — so its boards reach the cut list as DRAWER-* names.
+  { id: 'sd1', kind: 'drawer', index: 3, variant: 'shoe', mount: 'overlay' },
 ];
 
 /** Every way this app knows of asking the engine for panels, per unit type. */
@@ -158,7 +165,11 @@ test('the walk itself ran — every unit type, every feature, no engine throw', 
   assert.equal(WALK.failures.length, 0, `computeCabinet threw:\n${WALK.failures.join('\n')}`);
   assert.ok(WALK.runs >= 400, `expected a greedy walk, got ${WALK.runs} runs`);
   // A walk that produced three part names has not walked anything.
-  assert.ok(WALK.partNames.size >= 30, `only ${WALK.partNames.size} distinct part names — the walk is not walking`);
+  // T54-F7 AMENDED (28.08.2026): threshold 30 → 28. The shoe box world's
+  // eight SHOEBOX-* names left the vocabulary with it (licence 2); the walk's
+  // shoe drawer emits DRAWER-* names instead, and the source-scan test below
+  // pins the full 28. turn54-f7-the-shoe-drawer.test.js owns the new world.
+  assert.ok(WALK.partNames.size >= 28, `only ${WALK.partNames.size} distinct part names — the walk is not walking`);
 });
 
 test('ZERO unmapped part names — the casement drop bug cannot happen here', () => {
@@ -201,10 +212,13 @@ test('every lighting role maps to a real registry id', () => {
 // SECOND way, against `cabinet.js` itself, which is the one and only file that
 // writes `panel.part` in this app.
 //
-// Three producers, and there are no others:
-//   `part: 'X'`             the literal, 28 of them
+// Two producers, and there are no others:
+//   `part: 'X'`             the literal
 //   `board(id, 'X', …)`     the L-shape corner unit's own helper
-//   `part: \`SHOEBOX-\${s}\`` the shoe box, whose suffixes come off one map
+// T54-F7 AMENDED (28.08.2026): the third producer —
+// `part: \`SHOEBOX-\${s}\``, whose suffixes came off one map — died with the
+// shoe box world (licence 2); test/turn54-f7-the-shoe-drawer.test.js owns the
+// shoe drawer that replaced it.
 
 const ENGINE_SRC = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
 
@@ -212,31 +226,37 @@ function partNamesInSource() {
   const names = new Set();
   for (const m of ENGINE_SRC.matchAll(/part:\s*'([^']+)'/g)) names.add(m[1]);
   for (const m of ENGINE_SRC.matchAll(/\bboard\(\s*`[^`]*`\s*,\s*'([^']+)'/g)) names.add(m[1]);
-  // The shoe box suffix map, read where it is written rather than copied.
-  const suffixBlock = ENGINE_SRC.match(/const suffix = \{([\s\S]*?)\}\[piece\.role\]/);
-  if (suffixBlock) {
-    // Two characters minimum: the map's `side` row is a ternary on
-    // `piece.side === 'L'`, and 'L' / 'R' there are the QUESTION, not an answer.
-    // Every real suffix — SL SR BK BF BT DV FR BATTEN — is two or more.
-    for (const m of suffixBlock[1].matchAll(/'([A-Z0-9]{2,})'/g)) names.add(`SHOEBOX-${m[1]}`);
-  }
+  // T54-F7 AMENDED (28.08.2026): the shoe box suffix-map scan
+  // (`const suffix = {…}[piece.role]` → SHOEBOX-*) is deleted — the map it
+  // read is gone from cabinet.js with the rest of the shoe box world
+  // (licence 2). The shoe drawer's boards are plain `part: 'DRAWER-…'`
+  // literals the first scan already sees; turn54-f7-the-shoe-drawer.test.js
+  // proves them board for board.
   return names;
 }
 
-test('the source scan finds the whole vocabulary — 36 names, not the 35 a walk reaches', () => {
+test('the source scan finds the whole vocabulary — 28 names, after T54-F7 buried the eight SHOEBOX-*', () => {
   // T42-F1: 37 → 36. `RAIL-PART` is not a part name any more — the rail's
   // partitioner is not cut, in the engine or in KIT_WARDROBE_FULL.lsp — and its
-  // registry row went with it. One name left the vocabulary; the scan's own
-  // three canaries below say the regexes did not drift.
+  // registry row went with it.
+  // T54-F7 AMENDED (28.08.2026): 36 → 28. The shoe box world died under
+  // licence 2 and took its eight names — SHOEBOX-SL/-SR/-BK/-BF/-BT/-DV/-FR
+  // and SHOEBOX-BATTEN — with it; a shoe is a `variant:'shoe'` DRAWER now and
+  // its boards are the DRAWER-* names already counted here. The replacement
+  // proof lives in test/turn54-f7-the-shoe-drawer.test.js. The scan's own
+  // canaries below say the regexes did not drift.
   const names = partNamesInSource();
-  assert.ok(names.size >= 36, `the scan found only ${names.size} part names — its regexes have drifted from cabinet.js`);
-  // Three canaries: one plain literal, one board() helper name, one shoe box
-  // suffix. If any of the three stops being found the scan is broken, not the
-  // registry, and this test says which.
+  assert.ok(names.size >= 28, `the scan found only ${names.size} part names — its regexes have drifted from cabinet.js`);
+  // Two canaries: one plain literal, one board() helper name. If either stops
+  // being found the scan is broken, not the registry, and this test says
+  // which. (T54-F7: the SHOEBOX-BATTEN suffix canary died with its producer.)
   assert.ok(names.has('BUL'), 'the `part:` literal scan is broken');
   assert.ok(names.has('SIDE'), 'the board() helper scan is broken');
-  assert.ok(names.has('SHOEBOX-BATTEN'), 'the shoe box suffix scan is broken');
   assert.ok(names.has('SHOE-RAIL'), 'the stop rail is gone from the engine — or the scan is');
+  // The graves stay closed: no SHOEBOX-* name may ever come back out of
+  // cabinet.js under this turn's law.
+  const risen = [...names].filter((n) => n.startsWith('SHOEBOX')).sort();
+  assert.deepEqual(risen, [], `the buried shoe box world re-emits: ${risen.join(', ')}`);
 });
 
 test('ZERO unmapped part names IN THE SOURCE — the stricter half of the same rule', () => {
@@ -332,15 +352,22 @@ test('TOP and BOTTOM are one board; BACK and DRAWER-BOTTOM are not', () => {
   assert.notEqual(ELEMENT_TO_PART_ID.FRONT, ELEMENT_TO_PART_ID.BUL);
 });
 
-test('the three drawer-box boards collapse; the shoe box body collapses too', () => {
+test('the three drawer-box boards collapse; the shoe box rows are GONE, not orphaned', () => {
   assert.equal(ELEMENT_TO_PART_ID['DRAWER-SIDE'], 'drawer_box_side');
   assert.equal(ELEMENT_TO_PART_ID['DRAWER-BOX-FRONT'], 'drawer_box_side');
   assert.equal(ELEMENT_TO_PART_ID['DRAWER-BOX-BACK'], 'drawer_box_side');
-  for (const p of ['SHOEBOX-BT', 'SHOEBOX-BK', 'SHOEBOX-SL', 'SHOEBOX-SR', 'SHOEBOX-BF', 'SHOEBOX-DV', 'SHOEBOX-BATTEN']) {
-    assert.equal(ELEMENT_TO_PART_ID[p], 'shoe_box_carcase', p);
-  }
-  // …but the shoe box FRONT is a drawer front, because that is what it is cut from.
-  assert.equal(ELEMENT_TO_PART_ID['SHOEBOX-FR'], 'drawer_front');
+  // T54-F7 AMENDED (28.08.2026): the eight SHOEBOX-* → shoe_box_carcase /
+  // drawer_front mappings died with their world (licence 2) — a shoe is a
+  // `variant:'shoe'` DRAWER whose boards route through the three lines above
+  // and whose front is a DRAWER-FRONT; turn54-f7-the-shoe-drawer.test.js
+  // proves it board for board. What stands HERE is that the graves are empty:
+  // an orphan row is this file's own forbidden state.
+  const shoeboxRows = Object.keys(ELEMENT_TO_PART_ID).filter((n) => n.startsWith('SHOEBOX')).sort();
+  assert.deepEqual(shoeboxRows, [], `dead SHOEBOX-* rows still mapped: ${shoeboxRows.join(', ')}`);
+  assert.equal(PART_REGISTRY.shoe_box_carcase, undefined, 'shoe_box_carcase must be gone from the registry');
+  assert.equal(PART_REGISTRY.shoe_runner, undefined, 'shoe_runner must be gone from the registry');
+  // The tilted shoe SHELF (T33) is a DIFFERENT entity and is NOT touched.
+  assert.equal(ELEMENT_TO_PART_ID['SHOE-RAIL'], 'shelf');
 });
 
 test('a top box’s carcase routes to its own row, and nobody else’s does', () => {

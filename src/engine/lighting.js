@@ -254,6 +254,31 @@ export function balanceRig({
  * set to. A slider that touched one lamp would be a slider that re-lights the
  * scene, and this one only turns it up.
  */
+// ─── TURN 54 (CLAUDE.md F5.3): THE SCENE LIGHT, PER PROJECT ────────────────
+//
+// The owner: *"ustawienie światła pokoju, czyli sceny, poniżej LED."* One
+// slider in the Lighting panel, stored ON THE PROJECT (like the T51 rig,
+// beside `design` — `migrateLighting`'s whitelist would drop it), riding the
+// LIVE lamps only. The bounds are the owner's own: 0.4× to 1.5×, default =
+// today's 1.0 over `baseGain` 0.75. The IRON rule stands and is asserted:
+// exports and PDFs ignore this number — the fixed rig only.
+
+export const SCENE_LIGHT_MIN = 0.4;
+export const SCENE_LIGHT_MAX = 1.5;
+
+/** The project's scene-light multiplier, clamped; "nothing said" is 1. */
+export function sceneLightScale(value) {
+  if (value == null || value === '' || typeof value === 'boolean') return 1;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(SCENE_LIGHT_MAX, Math.max(SCENE_LIGHT_MIN, n));
+}
+
+/** The stored record, normalised — the same shape `migrateLightRig` keeps. */
+export function migrateSceneLight(stored) {
+  return { scale: sceneLightScale(stored?.scale) };
+}
+
 export function brightnessScale(value, profile) {
   const B = profile?.appearance?.studio?.brightness || {};
   const min = Number.isFinite(Number(B.min)) ? num(B.min) : 0.5;

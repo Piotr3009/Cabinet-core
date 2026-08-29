@@ -81,10 +81,13 @@ export const CHECKS = Object.freeze([
   { n: 9, level: 'red', label: 'Outline faults' },
   { n: 10, level: 'red', label: 'Drill faults' },
   { n: 11, level: 'red', label: 'Carcass gap in a run' },
-  // CHAT-FIX 16.08 (owner, decision C): a FULL-WIDTH fixed shoe box behind a
-  // hinged door stands where the arm swings — "jest clash hinges i fix shelf
-  // i nie pokazuje tego problemu". Report, never fix (the house grammar).
-  { n: 12, level: 'red', label: 'Shoe box × hinge collision' },
+  // CHAT-FIX 16.08 (owner, decision C) gave 12 to the fixed shoe box's hinge
+  // clash. T54-F7 buried that world (licence 2: engine/shoeBox.js, the
+  // emission, KIT_SHOE_BOX.lsp — the grave is named in the verdict), so the
+  // number is re-used for the world that replaced it: the migration notice.
+  // *"the Check names the conversion once per unit"* — a saved shoe box
+  // loads as a `variant:'shoe'` DRAWER, and this row says so in words.
+  { n: 12, level: 'yellow', label: 'Shoe box rebuilt as a drawer' },
   // ─── TURN 35 (CLAUDE.md F1): the rail's own datum brought its own fault ──
   // A rod hung a number above its support can end up through the board over
   // it. The law is REPORT, never auto-fix — "never an auto-fix" is the spec's
@@ -532,27 +535,22 @@ export function runChecks({
       })));
     }
 
-    // ── #12 a fixed shoe box in the swing of a hinge arm (16.08, C) ───────
+    // ── #12 the shoe box was REBUILT as a drawer (T54-F7) ─────────────────
+    //
+    // The owner: *"usuń stary kod na shoes i zrób z logiką drawers."* The
+    // store's migration turned each saved `shoe_box` item into a
+    // `variant:'shoe'` drawer in the same zone and stamped it, and this row
+    // says so ONCE PER UNIT — the fronts moved from the old fixed 120 face
+    // to the drawer-front law, and a joiner reviewing an old job should hear
+    // it from the Check, not discover it on the saw.
     {
-      const centres = result?.drillSummary?.hinge_centers || [];
-      const boxes = (result?.assemblies?.shoeBoxes || []).filter((b) => b.variant === 'F');
-      for (const b of boxes) {
-        // The box's FRONT band: from its floor to the top of the 120 front.
-        const from = Number(b.posZ) || 0;
-        // The band the swing meets: the box floor to the top of the 120 front.
-        const to = from + 120;
-        for (const y of centres) {
-          if (y >= from - 1e-6 && y <= to + 1e-6) {
-            const frontPanel = (result.panels || []).find(
-              (pp) => pp.part === 'SHOEBOX-FR' && pp.meta?.itemId === b.id,
-            );
-            out.push(finding(12, 'red', at(frontPanel?.id || null, {
-              message: `${unitNum}: fixed shoe box stands in the swing of the hinge at ${Math.round(y)} — raise the box or move the hinge`,
-              subject: { unitId, ...(frontPanel ? { panelId: frontPanel.id } : {}), editor: 'element' },
-            })));
-            break;
-          }
-        }
+      const converted = (unit.params?.sections?.[0]?.items || [])
+        .filter((i) => i?.kind === 'drawer' && i?.migrated_from === 'shoe_box');
+      if (converted.length) {
+        out.push(finding(12, 'yellow', at(null, {
+          message: `${unitNum}: shoe rebuilt as a drawer — review fronts`,
+          subject: { unitId, editor: 'cabinet' },
+        })));
       }
     }
 

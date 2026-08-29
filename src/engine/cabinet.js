@@ -46,16 +46,13 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 // shape and this file follows it.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  roofBoards, roofLinePts, slopeCutActive, slopeCutPts, slopeHeightAt, slopeReachAt,
+  carcassCutPts, roofBoards, roofLinePts, slopeCutActive, slopeCutPts, slopeHeightAt, slopeReachAt,
   slopeSegments, subSlopeCut, trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
 import {
   resolveRunnerVariant, runnerAskFor, runnerPairSpec, syncRodFor,
 } from './runners.js';
-// Turn 34 (CLAUDE.md F4): the shoe box's geometry, matched to
-// reference/lisp/KIT_SHOE_BOX.lsp. This file cuts what that module answers.
-import { shoeBoxPlan, shoeRunnerSpec } from './shoeBox.js';
 // Turn 36 (CLAUDE.md F5): the owner's grain law, per ROLE, in one table.
 import { applyGrainAxis } from './grain.js';
 // T53 (F6): the strip law, born in `reference/lisp/SKYLON_COMMON.lsp`
@@ -75,8 +72,8 @@ import { overlayDrawerItems, overlayPlan } from './overlayDrawers.js';
 // KIT_WARDROBE_FULL.lsp, mirrored in engine/splitDoors.js. This file cuts what
 // that one says; it does not decide any of it.
 import {
-  SPLIT_SEG_GAP, splitDoorLineY, splitDoorSegments, splitDoorShelfD, splitDoorShelfW,
-  splitSegmentHingeRows, splitTopFor,
+  SPLIT_SEG_GAP, splitDoorHingeCount, splitDoorLineY, splitDoorSegments, splitDoorShelfD,
+  splitDoorShelfW, splitSegmentHingeRows, splitTopFor,
 } from './splitDoors.js';
 // ─── TURN 35 (CLAUDE.md F1): the rail hangs from the nearest thing below it ──
 import { railSupportTops, resolveRailAxis } from './railDatum.js';
@@ -661,11 +658,6 @@ function normalizeParams(raw, profile) {
   // placeholder body in the view; ZERO holes ride any of them (rule 3: no
   // published fixing pattern exists).
   const wardrobeKitItems = items.filter((i) => WARDROBE_KIT_KINDS.includes(i?.kind));
-  // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX ────────────────────────────────
-  // Its own item kind, per column or full width. Two mounting variants over
-  // one construction, and every number comes from KIT_SHOE_BOX.lsp through
-  // engine/shoeBox.js — this file cuts what that one says.
-  const shoeBoxItems = items.filter((i) => i?.kind === 'shoe_box');
 
   // ─── TURN 27 (CLAUDE.md F2.1): THE APPLIANCE IS WHAT IS INSIDE ───────────
   //
@@ -867,24 +859,6 @@ function normalizeParams(raw, profile) {
       kind: i.kind,
       zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
       pos_mm: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
-    })),
-    // ─── Turn 34 (CLAUDE.md F4): the shoe boxes, normalised ────────────────
-    // `variant` 'F' (fix, screwed from outside) or 'D' (drawer, side runners);
-    // `pos_mm` is the owner's "Height from bay floor" field, default 0 — or
-    // directly above the drawer stack when the bay has drawers, which is
-    // resolved below where the stack's own top is known. `dividers` is 0 or 1
-    // — "jedna lub 0 przegródek — 2 nie mają sensu".
-    shoeBoxes: shoeBoxItems.map((i) => ({
-      id: i.id || null,
-      zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
-      variant: i.variant === 'D' || i.variant === 'drawer' ? 'D' : 'F',
-      dividers: Number(i.dividers) >= 1 ? 1 : 0,
-      // T36 F3: the front is a SWITCH, default ON — anything but an explicit
-      // `false` is the box every project has had since T34.
-      front: i.front !== false,
-      pos_mm: Number.isFinite(Number(i.pos_mm)) && Number(i.pos_mm) >= 0 ? Number(i.pos_mm) : null,
-      depth_mm: Number(i.depth_mm) > 0 ? Number(i.depth_mm) : null,
-      runner_nl: Number(i.runner_nl) > 0 ? Number(i.runner_nl) : null,
     })),
     columnRails: columnRailItems.map((i) => ({
       zone: Math.trunc(Number(i.zone)),
@@ -1284,134 +1258,6 @@ export function shelfMaterial(item) {
   };
 }
 
-/**
- * ─── TURN 34 (CLAUDE.md F4): WHERE ONE SHOE-BOX PIECE STANDS IN THE ROOM ───
- *
- * The 3D box for one piece of the shoe box, in the cabinet's own frame
- * (x across, y up, z front-to-back with z = 0 at the BACK). The kit is drawn
- * flat and this is the assembly: the box is rectangular and LEVEL — walls all
- * 80 high, all vertical — and only the BOTTOM inside is sloped, which is the
- * owner's own reading, confirmed word for word.
- */
-function shoeBoxBoxFor(piece, plan, {
-  boxX, boxZ, G, frontPlaneZ = null, faceY = null,
-}) {
-  const y = plan.posZ;
-  const wallH = piece.h;
-  const t = piece.thickness;
-  const depth = plan.depth;
-  switch (piece.role) {
-    case 'side':
-      return {
-        x: piece.side === 'L' ? boxX : boxX + plan.boxW - t,
-        y,
-        z: boxZ,
-        w: t,
-        h: wallH,
-        d: depth,
-      };
-    case 'back':
-      return {
-        x: boxX + G, y, z: boxZ, w: plan.innerW, h: wallH, d: t,
-      };
-    case 'boxFront':
-      return {
-        x: boxX + G, y, z: boxZ + depth - t, w: plan.innerW, h: wallH, d: t,
-      };
-    case 'bottom':
-      // Seated 6 mm into every wall; drawn at the box floor, and the SLOPE
-      // itself travels on the piece (`meta.shoe_slope`) for the view to tilt.
-      return {
-        x: boxX + G - plan.slope.grooveDepth,
-        y,
-        z: boxZ + G - plan.slope.grooveDepth,
-        w: piece.w,
-        h: t,
-        d: piece.h,
-      };
-    case 'divider':
-      // ACROSS the width — "od lewej do prawej, jak będą 2 rzędy butów" —
-      // standing on the slope at mid-run.
-      return {
-        x: boxX + G,
-        y: y + (piece.seat?.heightMm || 0),
-        z: boxZ + G + (piece.seat?.atRunMm || 0),
-        w: plan.innerW,
-        h: wallH,
-        d: t,
-      };
-    case 'batten': {
-      // CHAT-FIX 16.08 (owner): the 30 × 70 batten per hinged side, along the
-      // box — solid in the infill zone, so its OUTER face touches the bay
-      // side and its INNER face lands exactly 30 in, where the runner mounts.
-      //
-      // ─── T37-F6, 17.08.2026: IT STEPS BACK ────────────────────────────────
-      // *"cofnij o około 30 mm do tyłu (skróć) ten klocek"*. `d` was `depth`
-      // (the box's whole depth) until this date; it is now the batten's OWN
-      // length, which `shoeBox.js` has already shortened by 30. `z` stays
-      // `boxZ` — the box's back — so the 30 mm it gives up is the 30 nearest
-      // the room, which is the "do tyłu" he asked for and the room the door's
-      // arc now has. Everything else about the board is untouched.
-      const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
-      return {
-        x: piece.side === 'L' ? bayFrom : bayFrom + plan.openingW - t,
-        y,
-        z: boxZ,
-        w: t,
-        h: piece.h,
-        d: piece.w,
-      };
-    }
-    case 'front': {
-      // Mounted from INSIDE — nothing visible on the face — and standing
-      // proud of the box front by its own thickness.
-      //
-      // ─── T37-F6, 17.08.2026: CENTRED IN THE BAY, WHATEVER ITS WIDTH ───────
-      // This used to read "the FIX face sits at the bay's left edge, the
-      // DRAWER face sits at the box's left edge", which was the same sentence
-      // twice while the drawer face WAS the box's width. It is not any more —
-      // *"rozszerz front szuflady, tak żeby zostało po prawej i po lewej od
-      // BUR i BUL około 10 mm"* — so the law is stated once, as what it always
-      // physically was: the face is CENTRED IN THE BAY OPENING. FIX (face =
-      // opening) lands at `bayFrom` exactly as before; DRAWER (face = opening
-      // − 20) lands 10 in from BUL and leaves 10 to BUR, overhanging the box
-      // it hangs on and covering the batten-and-runner zone behind it.
-      const bayFrom = boxX - (plan.openingW - plan.boxW) / 2;
-      // ─── TURN 53 (CLAUDE.md F7): THE DRAWER-FRONT LAW, IN THREE NUMBERS ──
-      //
-      // *"szuflada lub półka na buty powinny mieć te same zasady co szuflady …
-      // nie licuje się z frontem, nie licuje się z innymi szufladami, nie wiem
-      // dlaczego front zachodzi na szufladę na dole."*
-      //
-      //   THE PLANE — `frontPlaneZ` is the very z the DRAWER-FRONT panels of
-      //   this carcass came out on, read rather than restated. The kit's own
-      //   `SHOE_SETBACK_X` datum stays where it belongs: on the BOX, whose
-      //   runners really do mount 3 mm behind the front. It was never the
-      //   FACE's datum, and using it there is what stood the face 47 mm proud.
-      //
-      //   THE GAP — the face keeps the drawer stack's own gap under it, so it
-      //   reads as the next front up rather than as a lid resting on the one
-      //   below. The double −G above is what made it an overlap; this is what
-      //   makes it a JOINT.
-      //
-      //   VERTICAL — and it always was: the tilt travels on the shoe box's
-      //   BOTTOM (`meta.tilt_deg`), which is the shelf the shoes stand on, and
-      //   has never been on this piece. `frontH` (the kit's 120) and the T37
-      //   width law are untouched, as CLAUDE.md instructs.
-      const faceZ = Number.isFinite(Number(frontPlaneZ)) ? Number(frontPlaneZ) : boxZ + depth;
-      return {
-        x: bayFrom + (plan.openingW - piece.w) / 2,
-        y: Number.isFinite(Number(faceY)) ? Number(faceY) : y,
-        z: faceZ,
-        w: piece.w,
-        h: wallH,
-        d: t,
-      };
-    }
-    default:
-      return { x: boxX, y, z: boxZ, w: piece.w, h: wallH, d: t };
-  }
-}
 
 function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, meta }) {
   return {
@@ -1525,6 +1371,8 @@ export function computeCabinet(params, profileOverride) {
   // from three directions — F2 clamps on "ceilingAt(FAR EDGE)", F4 hangs the
   // hinges on "the FULL-HEIGHT EDGE" of a door cut across its width, and F5
   // shortens the rail "at the x where the line meets the rail's y". So:
+  // (T54-F1: "the diagonal" below is the CARCASS line `cutReach`, not the
+  // ceiling — the numbers win over the older words, per tonight's spec.)
   //
   //   BACK    spans the width  → cut on the diagonal. Pentagon or trapezium.
   //   FRONT   spans the width  → the same cut, less the gaps (F4).
@@ -1548,7 +1396,35 @@ export function computeCabinet(params, profileOverride) {
   // segment, so a knee at 300 mm is a knee at 300 mm and not a smear across the
   // whole cabinet. With no cut it is null and every expression below falls back
   // to the number it has always been.
-  const cutLine = cut ? { w: W, h: H, pts: cut.pts } : null;
+  //
+  // ─── TURN 54 (CLAUDE.md F1): TWO REACH FUNCTIONS, NOT ONE ─────────────────
+  //
+  // The owner's audit, 28.08 (spadek w prawo, β = 26.5651°, infill 40, W = 600,
+  // ceiling 2000 → 1700): TOP, INFILL-T-FACE and INFILL-T-SHELF all hung from
+  // ONE line — the ceiling — and stacked (*"infill powyżej skosu odwrotnie
+  // ustawiony"*). The root was that `slope_cut.pts` served as the CEILING for
+  // the strip and as the CARCASS LINE for everything else, and the two are not
+  // one line. The law (SKYLON_COMMON.lsp T54 section — LISP first):
+  //
+  //   ceilReach(x) = ceil(x)                        — the ceiling (`ceilLine`).
+  //   cutReach(x)  = ceil(x) − infill / cos β(x)    — the carcass CUT line.
+  //
+  // So `cutLine` — the line the CARCASS is cut on: sides, back, roof, fronts
+  // and the interior clamps — is the ceiling lowered by the FACE strip's own
+  // reserve, per segment (`carcassCutPts`), and `ceilLine` is consumed only by
+  // the strip's top, and by the scribe pieces that run to the plaster (the
+  // side infill, the end panel). With no `infill` on the cut the two lines are
+  // one, which is every caller that predates tonight, byte for byte.
+  const ceilLine = cut ? { w: W, h: H, pts: cut.pts } : null;
+  const slopeReserve = cut ? Math.max(0, Number(cut.infill) || 0) : 0;
+  const cutLine = ceilLine
+    ? {
+      w: W,
+      h: H,
+      pts: carcassCutPts(ceilLine, slopeReserve)
+        .map((q) => ({ x: roundTo(q.x, 4), y: roundTo(q.y, 4) })),
+    }
+    : null;
   const cutAt = (x) => (cutLine ? slopeHeightAt(cutLine, x) : H);
   const cutActive = Boolean(cutLine) && slopeCutActive(cutLine);
   // ─── TURN 47 (F2/F3): THE ROOF LINE ───────────────────────────────────────
@@ -1559,7 +1435,48 @@ export function computeCabinet(params, profileOverride) {
   // laid along, so the boards and the outlines cannot disagree: both are this
   // one walk. Null with no cut, and flat at H where the ceiling clears the
   // cabinet, which is every cabinet before tonight.
-  const roofPts = cutActive ? roofLinePts(cutLine, H) : null;
+  // ─── TURN 54 (CLAUDE.md F2): THE PEAK — NO THIRD PIECE ────────────────────
+  //
+  // The owner, screenshot in hand: *"lewy czyli dolny skos działa super, górny
+  // znowu jakieś małe kawałki — po prostu przedłuż wieniec i wywal jakiś mały
+  // kawałek z BUR. tylko na BUR, nie na BUL."* Corrected on the mockup:
+  // *"wieniec zielony ok i do wieńca dochodzi BUR i tyle, i ucięty pod skosem
+  // dokładnie tak samo jak BUL."*
+  //
+  // Where the cut line crosses the cabinet's own height INSIDE the peak-side
+  // side's G, `roofLinePts`' cap at H used to end the raked board at the
+  // crossing and emit a capped stub NARROWER THAN ITS OWN THICKNESS between
+  // the crossing and the outer face — the owner's "mały kawałek", a board no
+  // saw can make. The rule (SKY:roofPeakPts, LISP first): such a crossing is
+  // DROPPED — the raked segment runs on its own rake to the side's OUTER
+  // face, and the side under it is bevelled at β clean across its thickness,
+  // exactly as the fall side always was. A capped FLAT stretch wider than G
+  // is real furniture and stays, byte for byte.
+  const roofPeakMerge = (pts) => {
+    if (!pts || pts.length < 3) return pts;
+    const out = pts.map((q) => ({ x: q.x, y: q.y }));
+    const flat = (a, b) => Math.abs(a.y - H) < 1e-6 && Math.abs(b.y - H) < 1e-6;
+    const n = out.length;
+    // The RIGHT peak: last segment a capped flat stub narrower than G.
+    if (flat(out[n - 2], out[n - 1]) && out[n - 1].x - out[n - 2].x <= G + 1e-6
+      && out[n - 3].y < H - 1e-6) {
+      const a = out[n - 3];
+      const b = out[n - 2];
+      const m = (b.y - a.y) / (b.x - a.x);
+      out.splice(n - 2, 2, { x: out[n - 1].x, y: roundTo(b.y + m * (out[n - 1].x - b.x), 4) });
+      return out;
+    }
+    // …and the LEFT peak, mirrored.
+    if (flat(out[0], out[1]) && out[1].x - out[0].x <= G + 1e-6 && out[2].y < H - 1e-6) {
+      const b = out[1];
+      const c = out[2];
+      const m = (c.y - b.y) / (c.x - b.x);
+      out.splice(0, 2, { x: out[0].x, y: roundTo(b.y + m * (out[0].x - b.x), 4) });
+      return out;
+    }
+    return out;
+  };
+  const roofPts = cutActive ? roofPeakMerge(roofLinePts(cutLine, H)) : null;
   const roofLine = roofPts ? { w: W, h: H, pts: roofPts } : null;
   /** The segments of the roof line over a stretch of the width, with angles. */
   const anglesOver = (a, b) => (roofLine ? slopeSegments(roofLine)
@@ -1576,7 +1493,10 @@ export function computeCabinet(params, profileOverride) {
   // run at its own gradient, which is right wherever the filler is under the
   // same run as the unit's edge. The SIGNED angle is what the mitre needs: a
   // ceiling rising left-to-right opens the LEFT corner and closes the RIGHT.
-  const reachAt = (x) => (cutLine ? slopeReachAt(cutLine, x) : H);
+  // T54-F1: it reaches for the CEILING (`ceilLine`), because its consumers are
+  // the pieces that scribe to the plaster — the side infill, the end panel,
+  // the strip's own fallback — never the carcass. The carcass asks `cutAt`.
+  const reachAt = (x) => (ceilLine ? slopeReachAt(ceilLine, x) : H);
   const signedDeg = (a, b) => {
     const run = b - a;
     if (!(Math.abs(run) > 1e-9)) return 0;
@@ -1631,7 +1551,13 @@ export function computeCabinet(params, profileOverride) {
   // thickness (the board is 18 perpendicular and does not thicken: *"wieniec
   // nie moze grubiec"*). The footprint differs segment by segment, so the peak
   // is taken per board rather than off one number.
-  const roofList = roofLine ? roofBoards(cutLine, { h: H, G }) : null;
+  // T54-F2: the boards are cut from the MERGED roof line (`roofPts`), never
+  // re-derived from the raw cut — `roofBoards` would re-cap at H and put the
+  // peak stub back. The cap has already been taken (and the peak merged), so
+  // the ceiling handed here is the line itself, uncapped.
+  const roofList = roofLine
+    ? roofBoards({ w: W, h: H, pts: roofPts }, { h: Number.MAX_SAFE_INTEGER, G })
+    : null;
   // The board's underside over a stretch of the width, at its extremes. `pick`
   // is Math.max for the BLANK (the peak the side is cut from) and Math.min for
   // the SHORT FACE (what the finished board measures). The footprint is taken
@@ -2084,8 +2010,18 @@ export function computeCabinet(params, profileOverride) {
       const ceilingHere = i + 1 < numDrawers
         ? G + acc                        // the next drawer's own base
         : (partitionY > 0 ? partitionY : H - (hasTopPanel ? G : 0));
+      // ─── TURN 54 (CLAUDE.md F7): THE SHOE DRAWER'S ONE OVERRIDE ──────────
+      // The owner: *"prosiłem żeby cała szuflada miała logikę szuflad …
+      // tylko wysokość miała być mniejsza."* A `variant: 'shoe'` drawer is
+      // cut by THIS code path — sides, back, bottom, drilling, runner — with
+      // exactly ONE dimensional override: its side height is the law's own
+      // `drawers.shoeSideMm` (his old 80; veto "inna wysokość: N"), never
+      // the front-minus-delta arithmetic. Everything that derives from the
+      // side derives from the 80.
       const resolved = resolveBoxSide({
-        wanted: drawerHeights[i] - DR.frontToSideDelta,
+        wanted: cfg.drawerItems[i]?.variant === 'shoe'
+          ? (Number(DR.shoeSideMm) || 80)
+          : drawerHeights[i] - DR.frontToSideDelta,
         base: G + zoneOffsets[i],
         ceiling: ceilingHere,
         boxBoardT: GB,
@@ -2788,24 +2724,29 @@ export function computeCabinet(params, profileOverride) {
       const sloped = bd.deg > 1e-9;
       const xLow = lowRight ? bd.x1 : bd.x0;
       const yLow = lowRight ? bd.y1 : bd.y0;
+      // T54-F1: the box, named once — the elevation below is stated in ITS
+      // frame, so the two cannot drift apart again (the chat-fix moved the box
+      // off the envelope and left the elevation behind; the wall sheet drew
+      // the raked board `faceLen − span` out of place).
+      const topBox = sloped ? {
+        x: roundTo(lowRight ? xLow - bd.faceLen : xLow, 4),
+        y: roundTo(yLow - G, 4),
+        z: G,
+        w: roundTo(bd.faceLen, 4),
+        h: G,
+        d: topH,
+      } : {
+        x: roundTo(bd.x0, 4),
+        y: roundTo(bd.level, 4),
+        z: G,
+        w: roundTo(bd.span, 4),
+        h: roundTo(bd.top - bd.level, 4),
+        d: topH,
+      };
       panels.push(panel({
         id, part: 'TOP', role: 'top', w: bd.blankLen, h: topH, thickness: G,
         edgeCode: codes.right, edgeLen: metres(bd.blankLen),
-        box: sloped ? {
-          x: roundTo(lowRight ? xLow - bd.faceLen : xLow, 4),
-          y: roundTo(yLow - G, 4),
-          z: G,
-          w: roundTo(bd.faceLen, 4),
-          h: G,
-          d: topH,
-        } : {
-          x: roundTo(bd.x0, 4),
-          y: roundTo(bd.level, 4),
-          z: G,
-          w: roundTo(bd.span, 4),
-          h: roundTo(bd.top - bd.level, 4),
-          d: topH,
-        },
+        box: topBox,
         cnc: {
           rotated: true,
           drawn_w: roundTo(topH, 4),
@@ -2846,11 +2787,16 @@ export function computeCabinet(params, profileOverride) {
           // cannot help here — it is the blank, drawn TURNED, in the sheet's
           // own frame — so the shape the eye needs is stated once, here, and
           // `drawings/frontElevation.js` traces it.
+          // T54-F1: stated in the ACTUAL box's frame (`topBox`), not the old
+          // envelope's — the chat-fix moved the box and this stayed, so the
+          // wall sheet drew a raked board `faceLen − span` to one side and
+          // `G/cosβ − G` low. On a level segment `topBox` IS the envelope and
+          // every number below is byte-identical to what it was.
           elevation: [
-            [0, roundTo(bd.y0 - bd.vertical - bd.level, 4)],
-            [roundTo(bd.span, 4), roundTo(bd.y1 - bd.vertical - bd.level, 4)],
-            [roundTo(bd.span, 4), roundTo(bd.y1 - bd.level, 4)],
-            [0, roundTo(bd.y0 - bd.level, 4)],
+            [roundTo(bd.x0 - topBox.x, 4), roundTo(bd.y0 - bd.vertical - topBox.y, 4)],
+            [roundTo(bd.x0 - topBox.x + bd.span, 4), roundTo(bd.y1 - bd.vertical - topBox.y, 4)],
+            [roundTo(bd.x0 - topBox.x + bd.span, 4), roundTo(bd.y1 - topBox.y, 4)],
+            [roundTo(bd.x0 - topBox.x, 4), roundTo(bd.y0 - topBox.y, 4)],
           ],
           ...(bd.deg > 1e-9 ? { bevel: { deg: roundTo(bd.deg, 4), ends: 'both', axis: '5-AXIS' } } : {}),
         },
@@ -4007,8 +3953,12 @@ export function computeCabinet(params, profileOverride) {
         offsets.push(acc);
         acc += heights[i] + DR.gap;
         const ceilingHere = i + 1 < heights.length ? G + acc : partY;
+        // T54-F7: the shoe drawer's one override, the column twin of the
+        // full-width law above — side height = `drawers.shoeSideMm`.
         const resolved = resolveBoxSide({
-          wanted: heights[i] - DR.frontToSideDelta,
+          wanted: list[i]?.variant === 'shoe'
+            ? (Number(DR.shoeSideMm) || 80)
+            : heights[i] - DR.frontToSideDelta,
           base: G + offsets[i],
           ceiling: ceilingHere,
           boxBoardT: GB,
@@ -4332,226 +4282,6 @@ export function computeCabinet(params, profileOverride) {
         },
       });
     }
-  }
-
-  // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX, CUT AND DRILLED ────────────────
-  //
-  // The owner, 16.08.2026: *"jeżeli nie jest szuflada to powinien być fix, nie
-  // z pinami — tu jest błąd"*. So the T33 pinned 15° shelf is no longer what a
-  // NEW shoe accessory makes; this is. ONE construction, TWO mounting laws —
-  // *"jak zrobimy szufladę to tę samą skrzyneczkę wykorzystamy, tylko dodamy
-  // prowadnice po bokach i zwęzimy"* — and every millimetre of it comes out of
-  // `engine/shoeBox.js`, which mirrors `reference/lisp/KIT_SHOE_BOX.lsp`
-  // constant for constant (iron rule 3).
-  //
-  // Nothing about the T33 shelf moves: a saved project built as the pinned
-  // shelf keeps rendering exactly as saved. No silent migration.
-  const shoeBoxPlans = [];
-  if (Array.isArray(cfg.shoeBoxes) && cfg.shoeBoxes.length) {
-    for (const spec of cfg.shoeBoxes) {
-      const bay = spec.zone != null ? bays[spec.zone] : null;
-      if (spec.zone != null && !bay) continue;          // a column that left
-      const from = bay ? bay.from : G;
-      const opening = bay ? bay.size : internalWidth;
-      // Which of THIS bay's sides carries a hinged door's swing — the ONE
-      // `dpSideLaw` object T33-F6 wrote, read by another reader, exactly as
-      // the column drawer stacks read it. A bay bounded by a PARTITION needs
-      // no infill there: the divider is the wall the runner mounts on.
-      const atLeftEnd = !bay || bay.index === 0;
-      const atRightEnd = !bay || bay.index === bays.length - 1;
-      const hingedLeft = atLeftEnd && dpSideLaw.left;
-      const hingedRight = atRightEnd && dpSideLaw.right;
-      // The box depth: the usable interior less the front, unless the item
-      // says otherwise. The same subtraction the drawer stack makes.
-      const usable = D - G - frontT - DR.setback;
-      const depth = spec.depth_mm ?? Math.max(0, roundTo(usable, 0));
-      // POSITION — his field, "Height from bay floor", default 0 (on the
-      // floor), *"or directly above the drawer stack when the bay has
-      // drawers"* ("pozycja jak proponujesz"). A number he has typed wins.
-      // T53 (F7): the TOP FACE of the board that closes the stack — see below.
-      const stackTop = hasDrawers && spec.zone == null ? partitionY + G : null;
-      const colStack = spec.zone != null
-        ? columnDrawerSets.find((s) => s.zone === spec.zone)
-        : null;
-      // ─── TURN 53 (CLAUDE.md F7): THE BOX STANDS ON THE BOARD, NOT IN IT ────
-      //
-      // The owner, 27.08: *"nie wiem dlaczego front zachodzi na szufladę na
-      // dole."*
-      //
-      // MEASURED on his own case — a 900 wardrobe, two 200 drawers, a shoe box
-      // above — before anything was changed:
-      //
-      //     the drawer stack's PARTITION occupies y 426 … 444
-      //     the top drawer FRONT finishes at              421
-      //     the shoe box's floor was written at           390
-      //
-      // 390 is not "directly above the drawer stack": it is 36 mm INSIDE it,
-      // through the partition board and past the front below. The line read
-      // `partY − G` and then took a SECOND board off it — the double −G — and
-      // neither subtraction was ever right, because the box does not stand at
-      // the partition's underside or at its middle. IT STANDS ON IT: `partY +
-      // G`, the top face of the board, which is where a joiner would put it and
-      // the only y at which no two boards share a millimetre (the house overlap
-      // law, 27.08).
-      const above = colStack ? colStack.partY + G : stackTop;
-      const posZ = spec.pos_mm ?? (above != null && above > 0 ? roundTo(above, 0) : 0);
-      // ─── …AND THE FACE IS PLACED BY THE FRONT LAW, NOT BY THE BOX ─────────
-      //
-      // *"nie licuje się z frontem, nie licuje się z innymi szufladami."*
-      //
-      // A drawer's BOX and its FRONT are two different placements, and so are
-      // these: the box stands on the board above the stack; the FACE hangs
-      // where the next front up hangs — the drawer front's own top edge plus
-      // the drawer stack's own gap. Read off the panels already emitted, so
-      // there is no second formula to drift.
-      const frontBelow = panels
-        .filter((p) => p.part === 'DRAWER-FRONT' && p.box
-          && p.box.y + p.box.h <= posZ + 1e-6)
-        .reduce((m, p) => Math.max(m, p.box.y + p.box.h), Number.NEGATIVE_INFINITY);
-      const faceY = Number.isFinite(frontBelow)
-        ? roundTo(frontBelow + DR.gap, 4)
-        : roundTo(posZ + DR.gap, 4);
-      const plan = shoeBoxPlan({
-        openingW: opening,
-        depth,
-        boardT: G,
-        frontT,
-        variant: spec.variant,
-        dividers: spec.dividers,
-        front: spec.front,
-        posZ,
-        hingedLeft,
-        hingedRight,
-        runnerNl: spec.runner_nl,
-        profile: P,
-      });
-      for (const w of plan.warnings) warnings.push({ ...w, item: spec.id || null });
-      shoeBoxPlans.push({
-        id: spec.id || `shoe_box:${spec.zone ?? 'w'}`,
-        zone: spec.zone,
-        bayFrom: from,
-        plan,
-        // T53 (F7): where the FACE hangs, decided by the front law rather than
-        // by the box it is screwed to. See the block above.
-        faceY,
-      });
-    }
-  }
-  // ─── TURN 53 (CLAUDE.md F7): THE FRONT PLANE, READ NOT RESTATED ──────────
-  //
-  // The owner, 27.08: *"szuflada lub półka na buty powinny mieć te same zasady
-  // co szuflady … nie licuje się z frontem, nie licuje się z innymi
-  // szufladami."*
-  //
-  // The shoe face stood on its OWN datum — `D − frontT − SHOE_SETBACK_X`, the
-  // kit's 3 mm — while every drawer front in the same carcass stands at
-  // `D − setback − frontT`. On the owner's own 568-deep wardrobe that is 540
-  // against 493: the face stood 47 mm proud of the plane it is meant to be
-  // flush with.
-  //
-  // So it is READ off the drawer front rather than restated: whatever plane
-  // this cabinet's DRAWER-FRONT panels came out on is the plane the shoe face
-  // lands on, and a cabinet with no drawers falls back to the same one formula
-  // those panels are built from. One plane, one source, and no way for the two
-  // to drift apart again.
-  const drawerFrontPlaneZ = panels.find((p) => p.part === 'DRAWER-FRONT' && p.box)?.box?.z
-    ?? (D - DR.setback - frontT);
-
-  // The pieces themselves, and the carcass sides' drilling. One pass, so the
-  // panel ids and the drill panel ids cannot disagree.
-  for (const [n, entry] of shoeBoxPlans.entries()) {
-    const { plan } = entry;
-    const idx = n + 1;
-    const codesFor = (role) => (role === 'front' ? codes.all : codes.right);
-    // The box stands centred in its bay: the FIX box fills the opening, the
-    // DRAWER box is narrower by its runners and any infill, so it is set in.
-    const boxX = roundTo(entry.bayFrom + (plan.openingW - plan.boxW) / 2, 4);
-    const boxZ = roundTo(D - frontT - P.wardrobeAccessories.shoeBox.setbackX - plan.depth, 4);
-    for (const piece of plan.panels) {
-      const suffix = {
-        side: piece.side === 'L' ? 'SL' : 'SR',
-        back: 'BK',
-        boxFront: 'BF',
-        bottom: 'BT',
-        divider: 'DV',
-        batten: 'BATTEN',
-        front: 'FR',
-      }[piece.role] || piece.role.toUpperCase();
-      // ─── TURN 53 (CLAUDE.md F2): TWO BATTENS, TWO NAMES ────────────────────
-      //
-      // Found by OPENING THE FILES rather than by reading the code. A DRAWER
-      // shoe box on a wardrobe hinged both sides cuts TWO battens — one per
-      // hinged side — and both of them were `SHOE1-BATTEN`. A panel id is the
-      // DXF's file name (`dxfFileName`), and the per-unit export is a ZIP: two
-      // entries with one name is ONE entry, so the second batten never reached
-      // the machine. It is also the key the tick tree, the part edits and the
-      // material assignment are all held by, so hiding one hid both and a
-      // pencil mark drawn on one appeared on the other.
-      //
-      // The SIDE is what tells them apart and the piece has carried it since
-      // T34 — the same `piece.side` the box's own two walls are named by (SL /
-      // SR). Only the ID moves: `part` stays `SHOEBOX-BATTEN`, which is the
-      // code `engine/partRegistry.js` resolves and the BOM counts, so not a
-      // line of the bill of materials changes.
-      const idSuffix = piece.role === 'batten'
-        ? `${suffix}-${piece.side === 'L' ? 'L' : 'R'}`
-        : suffix;
-      const geom = rectGeometry(piece.w, piece.h);
-      panels.push(panel({
-        id: `SHOE${idx}-${idSuffix}`,
-        part: `SHOEBOX-${suffix}`,
-        // The FRONT is a front and rides the front laws; every other piece is
-        // a box board. `family` on the piece says which board it is cut from:
-        // FIX front = CARCASS board (it covers the cut edges of a carcass-board
-        // box), DRAWER front = the FRONTS family like every other front.
-        role: piece.role === 'front' ? 'front' : 'shelf',
-        w: piece.w,
-        h: piece.h,
-        thickness: piece.thickness,
-        edgeCode: codesFor(piece.role),
-        edgeLen: metres(piece.role === 'front' ? 2 * piece.w + 2 * piece.h : piece.w),
-        box: shoeBoxBoxFor(piece, plan, {
-          boxX, boxZ, G, frontPlaneZ: drawerFrontPlaneZ, faceY: entry.faceY,
-        }),
-        cnc: {
-          ...geom,
-          pockets: piece.pockets,
-          // "pamiętaj, żeby dno były słoje w poprzek" — the grain runs along
-          // the WIDTH, and the piece SAYS SO, so nesting keeps that axis.
-          grain: piece.grain,
-        },
-        meta: {
-          shoe_box: entry.id,
-          // The item behind it, under the name every removal path already
-          // reads (`removeElement` → `removeItem`): deleting ANY board of the
-          // box deletes the BOX, because a box with one wall missing is not a
-          // thing anybody asked for.
-          itemId: entry.id,
-          shoe_role: piece.role,
-          shoe_variant: plan.variant,
-          zone: entry.zone,
-          index: idx,
-          ...(piece.family ? { material_family: piece.family } : {}),
-          ...(piece.seat ? { shoe_divider_seat: piece.seat } : {}),
-          // The BOTTOM is the only sloped thing in the box — the walls are
-          // rectangular and level, which is the owner's own reading. It leans
-          // on the SAME mechanism the T33 shoe shelf leans on (`tilt_deg` +
-          // `tilt_pivot`, 3d/UnitView.jsx), pivoting about its FRONT edge so
-          // the back rises to the slope's own derived angle.
-          ...(piece.role === 'bottom' ? {
-            shoe_slope: plan.slope,
-            tilt_deg: plan.slope.angleDeg,
-            tilt_pivot: {
-              y: plan.posZ,
-              z: roundTo(boxZ + G - plan.slope.grooveDepth + piece.h, 4),
-            },
-          } : {}),
-        },
-      }));
-    }
-    // The carcass sides' own holes are emitted in the DRILLING PASS below,
-    // where `addDrill` lives and where every other hole in this file is put
-    // on a board — one place, one rounding, one record.
   }
 
   // BUDR: parts grouped by kind (all sides, then all box fronts/backs, then all
@@ -5015,10 +4745,14 @@ export function computeCabinet(params, profileOverride) {
       if (!(Math.abs(runX) > 1e-9)) return 0;
       return (Math.atan((infReachAt(b) - infReachAt(a)) / runX) * 180) / Math.PI;
     };
-    /** Where the line BENDS over the run — a segment boundary and nothing else. */
+    /** Where the line BENDS over the run — a segment boundary and nothing else.
+     * T54-F1: the STRIP hangs from the CEILING, so its knees are the
+     * CEILING's own (`ceilLine`) — never the capped carcass roof's, whose
+     * mitred offset shifts a knee sideways and whose cap at H invents a
+     * vertex the ceiling does not have (the peak-side kawałek, F2's census). */
     const infBreaks = runCeil
       ? runCeil.map((q) => q.x)
-      : (roofLine ? slopeCutPts(roofLine).map((q) => q.x) : []);
+      : (ceilLine && infRoof ? slopeCutPts(ceilLine).map((q) => q.x) : []);
     // ─── TURN 48 (CLAUDE.md F2): THE L IS DEAD. TWO PLAIN BOARDS. ───────────
     //
     // The owner, 25.08.2026, in full:
@@ -5190,12 +4924,37 @@ export function computeCabinet(params, profileOverride) {
     const manySegs = runSegsSplit.length > 1;
     const segId = (base, i) => (manySegs ? `${base}-${i + 1}` : base);
 
+    // ─── TURN 54 (CLAUDE.md F1): THE TRIO'S OWN NUMBERS ─────────────────────
+    //
+    // The reserve the carcass gave up below the ceiling — the FACE strip's own
+    // cut height, `slope_cut.infill` (the owner's 40). For a RUN the line
+    // travels with the run element, so its reserve does too
+    // (`runs.js runTopInfill`); a solo cabinet reads its own cut. Zero — every
+    // caller that predates tonight — leaves the flat arithmetic alone.
+    const segReserve = runCeil
+      ? (Math.max(0, Number(runInfill.ceilingInfill) || 0) || slopeReserve)
+      : slopeReserve;
     runSegsSplit.forEach((sg, i) => {
       // Rounded at the source: `span / cos β` is irrational for most angles and
       // the cut size, the outline and the label must be the one number.
       const segLen = roundTo(sg.run, 4);
       const segX0 = sg.from;
       const yTop = infRoof ? infReachAt((sg.from + sg.to) / 2) : H;
+      // T54-F1 per-segment numbers. On a raked stretch the FACE's CUT HEIGHT
+      // is the reserve itself (owner's ruling: the 40 is the cut size, mounted
+      // along the slope; veto "40 w pionie"), so its bottom edge lands on
+      // `cutReach` — two parallel lines a perpendicular `infill` apart. On a
+      // flat stretch, and wherever no reserve was handed down, the band is the
+      // `faceH` it has always been.
+      const segRaked = sg.deg > 1e-9;
+      const segCos = Math.cos((sg.deg * Math.PI) / 180) > 1e-9
+        ? Math.cos((sg.deg * Math.PI) / 180) : 1;
+      const bandH = segRaked && segReserve > 0 ? segReserve : faceH;
+      // The roof board's vertical footprint under this segment — what the
+      // SHELF hangs below (`cutReach − G / cos β`, its top face on the roof's
+      // underside; veto "shelf pod wieńcem").
+      const segResDrop = segRaked && segReserve > 0 ? segReserve / segCos : 0;
+      const segRoofDrop = G / segCos;
       // T48-F2: the site-cut allowance, on ONE end of this board.
       const overEnd = allowanceEnd(i === 0, i === runSegsSplit.length - 1);
       const overLen = overEnd ? overT : 0;
@@ -5203,6 +4962,51 @@ export function computeCabinet(params, profileOverride) {
       const lengthOversize = overEnd && overLen > 0
         ? { lengthOversize: { mm: overLen, end: overEnd, nominal: roundTo(segLen, 4) } }
         : {};
+      // T54-F1 (parity, three surfaces): the piece's ROTATED corners in its
+      // box's own frame, so `drawings/frontElevation.js elevationOutline`
+      // traces the leant band instead of the level rectangle — the same
+      // mechanism the roof board has carried since T47-F5. Emitted only for a
+      // raked segment; a flat piece's box needs no help.
+      const segElevation = (box, pv) => {
+        if (!(sg.deg > 1e-9)) return {};
+        const lowR = infReachAt(sg.to) < infReachAt(sg.from);
+        const th = ((lowR ? -sg.deg : sg.deg) * Math.PI) / 180;
+        const corners = [
+          [box.x, box.y], [box.x + box.w, box.y],
+          [box.x + box.w, box.y + box.h], [box.x, box.y + box.h],
+        ].map(([qx, qy]) => {
+          const dx = qx - pv.x;
+          const dy = qy - pv.y;
+          return [
+            roundTo(pv.x + dx * Math.cos(th) - dy * Math.sin(th) - box.x, 4),
+            roundTo(pv.y + dx * Math.sin(th) + dy * Math.cos(th) - box.y, 4),
+          ];
+        });
+        return { elevation: corners };
+      };
+      // The two raked boxes, hoisted so the meta's elevation can rotate the
+      // same corners the scene leans — one set of numbers, two readers.
+      const segLowR = infReachAt(sg.to) < infReachAt(sg.from);
+      const segXL = segLowR ? roundTo(sg.to, 4) : roundTo(sg.from, 4);
+      const segYL = roundTo(segLowR ? infReachAt(sg.to) : infReachAt(sg.from), 4);
+      const shelfLen = roundTo(sg.shelfRun, 4);
+      const faceBoxRaked = sg.deg > 1e-9 ? {
+        x: roundTo(segLowR ? segXL - segLen : segXL, 4),
+        y: roundTo(segYL - bandH, 4),
+        z: faceZ - t,
+        w: segLen,
+        h: bandH,
+        d: t,
+      } : null;
+      const shelfBoxRaked = sg.deg > 1e-9 ? {
+        x: roundTo(segLowR ? segXL - shelfLen : segXL, 4),
+        y: roundTo(segYL - segResDrop - segRoofDrop - t, 4),
+        z: faceZ - t - shelfDepth,
+        w: shelfLen,
+        h: t,
+        d: shelfDepth,
+      } : null;
+      const shelfPivotY = roundTo(segYL - segResDrop - segRoofDrop, 4);
       const faceMeta = {
         side: 'top', piece: 'face', segment: manySegs ? `main-${i + 1}` : 'main', ends,
         // T48-F2: 'long' is gone with the L. What is left is 'end', and only
@@ -5225,7 +5029,7 @@ export function computeCabinet(params, profileOverride) {
         // — a record, not a cut (T15's chamfer is overruled; see above).
         corner: { left: i === 0 ? cornerL : 0, right: i === runSegsSplit.length - 1 ? cornerR : 0 },
         units: runInfill.unitIds || null,
-        ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(faceH, 4) } } : {}),
+        ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(bandH, 4) } } : {}),
         ...lengthOversize,
         ...(sg.deg > 1e-9 ? {
           slopeCut: {
@@ -5234,6 +5038,9 @@ export function computeCabinet(params, profileOverride) {
             along: roundTo(segLen, 4),
             segment: i + 1,
             of: runSegsSplit.length,
+            // T54-F1: the strip's cut height under this rake — the reserve
+            // itself, so the sheet, the elevation and the scene say one number.
+            cutHeight: roundTo(bandH, 4),
           },
           // The piece is MOUNTED on the slope; the 3-D and the elevation tilt it
           // rather than redrawing it, exactly as the shoe box's own `tilt_deg`
@@ -5243,11 +5050,11 @@ export function computeCabinet(params, profileOverride) {
           // (CCW about Z; a fall to the right leans clockwise), the axis is
           // named, and the pivot is the CEILING at the low end, so the top
           // edge lands on the line it fills to.
-          tilt_deg: roundTo(infReachAt(sg.to) < infReachAt(sg.from) ? -sg.deg : sg.deg, 4),
+          tilt_deg: roundTo(segLowR ? -sg.deg : sg.deg, 4),
           tilt_axis: 'z',
-          tilt_pivot: infReachAt(sg.to) < infReachAt(sg.from)
-            ? { x: roundTo(sg.to, 4), y: roundTo(infReachAt(sg.to), 4) }
-            : { x: roundTo(sg.from, 4), y: roundTo(infReachAt(sg.from), 4) },
+          tilt_pivot: { x: segXL, y: segYL },
+          // T54-F1 (parity): the leant band's own corners, for the elevation.
+          ...segElevation(faceBoxRaked, { x: segXL, y: segYL }),
         } : {}),
       };
       panels.push(panel({
@@ -5255,27 +5062,18 @@ export function computeCabinet(params, profileOverride) {
         // the owner's *"jedna 60"* is the nominal the joiner typed plus the
         // wall allowance, so a project with a 50 mm infill gets 70 and nobody
         // has to remember to change a literal.
-        id: segId('INFILL-T-FACE', i), part: 'INFILL', role: 'infill', w: cutLen, h: faceH + overT, thickness: t,
+        id: segId('INFILL-T-FACE', i), part: 'INFILL', role: 'infill', w: cutLen, h: bandH + overT, thickness: t,
         // One long edge is glued into the mitre and takes no banding; the other
         // is the visible bottom edge and does. The LISP code vocabulary has no
         // "one long edge", so the code names the pair and the LENGTH says one.
         edgeCode: codes.topBottom, edgeLen: metres(segLen),
-        box: sg.deg > 1e-9 ? (() => {
-          // Chat-fix 25.08.2026: the level band the scene will lean — its true
-          // `along × faceH`, hung from the ceiling at the LOW end. Same rule as
-          // the roof board above.
-          const lowR = infReachAt(sg.to) < infReachAt(sg.from);
-          const xL = lowR ? sg.to : sg.from;
-          const yL = lowR ? infReachAt(sg.to) : infReachAt(sg.from);
-          return {
-            x: roundTo(lowR ? xL - segLen : xL, 4),
-            y: roundTo(yL - faceH, 4),
-            z: faceZ - t,
-            w: segLen,
-            h: faceH,
-            d: t,
-          };
-        })() : {
+        // Chat-fix 25.08.2026: the level band the scene will lean, hung from
+        // the ceiling at the LOW end. T54-F1: its height is `bandH` — the
+        // reserve — so after the lean its top edge lies on `ceilReach` and
+        // its bottom edge on `cutReach`, parallel lines a perpendicular
+        // `infill` apart. Same pivot as always: the CEILING at the low end —
+        // this piece alone keeps it.
+        box: faceBoxRaked || {
           x: segX0, y: infRoof ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
         },
         // Cut to the long point at a mitred end: the BOTTOM corner is the one
@@ -5285,12 +5083,12 @@ export function computeCabinet(params, profileOverride) {
         // T48-F2: a PLAIN RECTANGLE. `chamferedRectGeometry`'s corner mitre is
         // overruled — the board leaves the machine square and 20 long, and the
         // corner, when there is one, is cut on site.
-        cnc: rectGeometry(cutLen, faceH + overT),
+        cnc: rectGeometry(cutLen, bandH + overT),
         meta: faceMeta,
       }));
       // The SHELF is NOT extended over a frame corner (T15's own rule), so it
       // takes the segment's own length without the mitres' long points.
-      const shelfLen = roundTo(sg.shelfRun, 4);
+      // (`shelfLen` is hoisted above, beside the two raked boxes.)
       const shelfCutLen = roundTo(shelfLen + overLen, 4);
       panels.push(panel({
         // BOARD B — the shelf. *"a druga nominal 80 bez zmian"*: the nominal is
@@ -5298,23 +5096,13 @@ export function computeCabinet(params, profileOverride) {
         // `fillerOversize` T47 put on it. Nothing about its WIDTH moves tonight.
         id: segId('INFILL-T-SHELF', i), part: 'INFILL', role: 'infill', w: shelfCutLen, h: shelfDepth + overT, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(shelfLen),
-        box: sg.deg > 1e-9 ? (() => {
-          // Chat-fix 25.08.2026: the shelf leans WITH its face — same axis,
-          // its own low end on the ceiling line, top surface on that line.
-          const xa = sg.shelfFrom;
-          const xb = roundTo(sg.to, 4);
-          const lowR = infReachAt(xb) < infReachAt(xa);
-          const xL = lowR ? xb : xa;
-          const yL = lowR ? infReachAt(xb) : infReachAt(xa);
-          return {
-            x: roundTo(lowR ? xL - shelfLen : xL, 4),
-            y: roundTo(yL - t, 4),
-            z: faceZ - t - shelfDepth,
-            w: shelfLen,
-            h: t,
-            d: shelfDepth,
-          };
-        })() : {
+        // Chat-fix 25.08.2026 hung the shelf from the ceiling — congruent
+        // with the roof, the owner's audit measured. T54-F1 RESOLUTION
+        // (veto: "shelf pod wieńcem"): the SHELF sits UNDER the roof, its
+        // top face on the roof's underside — the ceiling less the strip's
+        // reserve (`cutReach`) less the roof board's own vertical footprint
+        // `G / cos β`. Same axis, same low end.
+        box: shelfBoxRaked || {
           x: sg.shelfFrom,
           y: (infRoof ? Math.min(yTop, H) : H) + faceH - t,
           z: faceZ - t - shelfDepth,
@@ -5333,18 +5121,16 @@ export function computeCabinet(params, profileOverride) {
           // general one: any part that is data rather than a body says so here.
           scene: 'sheet-only',
           // Chat-fix 25.08.2026: leans with its face — same axis, own low end.
-          ...(sg.deg > 1e-9 ? (() => {
-            const xa = sg.shelfFrom;
-            const xb = roundTo(sg.to, 4);
-            const lowR = infReachAt(xb) < infReachAt(xa);
-            return {
-              tilt_deg: roundTo(lowR ? -sg.deg : sg.deg, 4),
-              tilt_axis: 'z',
-              tilt_pivot: lowR
-                ? { x: xb, y: roundTo(infReachAt(xb), 4) }
-                : { x: roundTo(xa, 4), y: roundTo(infReachAt(xa), 4) },
-            };
-          })() : {}),
+          // T54-F1: …but hangs UNDER the roof, so the pivot is
+          // `(x_lo, cutReach(x_lo) − G / cos β)` — the roof's underside at the
+          // low end — never the ceiling (that was the stack the owner
+          // measured).
+          ...(sg.deg > 1e-9 ? {
+            tilt_deg: roundTo(segLowR ? -sg.deg : sg.deg, 4),
+            tilt_axis: 'z',
+            tilt_pivot: { x: segXL, y: shelfPivotY },
+            ...segElevation(shelfBoxRaked, { x: segXL, y: shelfPivotY }),
+          } : {}),
           mitre_45: [...new Set([
             ...mitre(i === 0 && ends.left === 'open'),
             ...mitre(i === runSegsSplit.length - 1 && ends.right === 'open'),
@@ -5552,8 +5338,11 @@ export function computeCabinet(params, profileOverride) {
     // room's end panel is byte-identical.
     const epFrom = side === 'L' ? -t : W;
     const epY = drop > 0 ? -drop : 0;
-    const epCut = cutLine
-      ? subSlopeCut(cutLine, epFrom, epFrom + t, { dy: epY, reach: true })
+    // T54-F1: the CEILING line — an end panel scribes to the plaster, so it is
+    // one of the two pieces (with the side infill) that keep `ceilLine` when
+    // the carcass moved down to `cutReach`.
+    const epCut = ceilLine
+      ? subSlopeCut(ceilLine, epFrom, epFrom + t, { dy: epY, reach: true })
       : null;
     const epH = epCut
       ? Math.min(panelH, Math.max(0, roundTo(epCut.pts.reduce((hi, q) => Math.max(hi, q.y), 0), 4)))
@@ -5714,16 +5503,19 @@ export function computeCabinet(params, profileOverride) {
     const cutW = infillW + over;
     // The filler's own stretch of the line, in ITS frame: local x = 0 at the
     // WALL for a left filler and at the CARCASS for a right one.
+    // T54-F1: the CEILING line, both blank and body — the side infill is a
+    // scribe piece and runs to the plaster; the carcass line moved down to
+    // `cutReach` and this piece did not.
     const faceFrom = isLeft ? -cutW : W;
-    const faceCut = cutLine
-      ? subSlopeCut(cutLine, faceFrom, faceFrom + cutW, { dy: y, reach: true })
+    const faceCut = ceilLine
+      ? subSlopeCut(ceilLine, faceFrom, faceFrom + cutW, { dy: y, reach: true })
       : null;
     // T53 (F3a): the same line over the piece's own BODY. The blank above runs
     // from the wall end and carries the scribe allowance; the body is the
     // nominal piece the room draws, and it is what the solid is cut to.
     const bodyFrom = isLeft ? -infillW : W;
-    const bodyCut = cutLine
-      ? subSlopeCut(cutLine, bodyFrom, bodyFrom + infillW, { dy: y, reach: true })
+    const bodyCut = ceilLine
+      ? subSlopeCut(ceilLine, bodyFrom, bodyFrom + infillW, { dy: y, reach: true })
       : null;
     // The line is sampled over the piece's OWN span in the unit's frame; the
     // outline it trims is in the piece's frame before the shift above, so the
@@ -5849,8 +5641,10 @@ export function computeCabinet(params, profileOverride) {
       // touches no wall — there is nothing to scribe it to, and 20 mm of spare
       // board on a piece that has to end flush is 20 mm in the way.
       const armFrom = isLeft ? -t : W;
-      const armCut = cutLine
-        ? subSlopeCut(cutLine, armFrom, armFrom + t, { dy: y, reach: true })
+      // T54-F1: the arm belongs to the scribe filler and runs up with its
+      // face — the ceiling line, as the face and the body above.
+      const armCut = ceilLine
+        ? subSlopeCut(ceilLine, armFrom, armFrom + t, { dy: y, reach: true })
         : null;
       const armH = armCut
         ? Math.min(h, Math.max(0, roundTo(armCut.pts.reduce((hi, q) => Math.max(hi, q.y), 0), 4)))
@@ -6006,6 +5800,22 @@ export function computeCabinet(params, profileOverride) {
       hinge: roomL >= roomR ? 'L' : 'R',
       tall,
       low: Math.min(frontH, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
+      // ─── TURN 54 (CLAUDE.md F3.4): THE ANGLE, STATED ON THE PIECE ────────
+      // *"leaf DXF outline = the cut polygon, angle noted like the sides
+      // (`CUT β DEG`)"* — the same `meta.slopeCut.angles` the sides publish,
+      // in the UNIT's own x, so `slopeNoteText` prints the door's cut exactly
+      // as it prints BUL's. Until tonight a cut leaf's sheet said NOTHING.
+      angles: roomPts.slice(1).map((q, i) => {
+        const a = roomPts[i];
+        const span = q.x - a.x;
+        return {
+          from: roundTo(leafX + a.x, 4),
+          to: roundTo(leafX + q.x, 4),
+          deg: roundTo(span > 1e-9
+            ? Math.abs((Math.atan((q.y - a.y) / span) * 180) / Math.PI)
+            : 90, 4),
+        };
+      }),
     };
   };
   /**
@@ -6103,6 +5913,8 @@ export function computeCabinet(params, profileOverride) {
           corners: geom.outline.length,
           tall: roundTo(sl.tall, 4),
           low: roundTo(sl.low, 4),
+          // T54-F3.4: the saw's own number, printed on the sheet (`CUT β°`).
+          angles: sl.angles,
         },
       },
       // The banded edges: two verticals, the bottom, and the CUT edge — which
@@ -6287,32 +6099,109 @@ export function computeCabinet(params, profileOverride) {
       const own = Array.isArray(said)
         ? said.map(Number).filter((v) => Number.isFinite(v)).sort((a, b) => a - b)
         : null;
+      // ─── TURN 54 (CLAUDE.md F3): A SPLIT SEGMENT TAKES THE PARENT'S CUT ──
+      //
+      // The owner's screenshot: *"shaker się robi pod skosem ale całe drzwi
+      // już nie."* This pass replaced a CUT leaf with two RECTANGLES while
+      // `...leaf.meta` still copied the parent's `slopeCut` onto them — so
+      // the shaker detail raked (it reads the meta) while the segment's own
+      // outline, box and sheet stood square into the triangle. One consumer
+      // got the line, the other never heard of it.
+      //
+      // The law (KIT_DOOR_DOUBLE.lsp, T54 section — LISP first): each segment
+      // takes the SAME line, lowered by its own y — the parent's line
+      // sub-set, never a second reading of the ceiling. A segment wholly
+      // under the line keeps its rectangle byte for byte, which is every
+      // split door in every flat room.
+      const parentPts = Array.isArray(leaf.cnc?.slopeCut?.pts) ? leaf.cnc.slopeCut.pts : null;
+      const segPts = parentPts
+        ? parentPts.map((q) => ({ x: q.x, y: roundTo(Math.max(0, q.y - seg.y), 4) }))
+        : null;
+      const segCut = segPts && slopeCutActive({ w: leaf.w, h: seg.h, pts: segPts })
+        ? segPts : null;
+      const segTall = segCut
+        ? Math.min(seg.h, segCut.reduce((hi, q) => Math.max(hi, q.y), 0))
+        : seg.h;
+      // The hinge stile of a CUT segment is what is LEFT of its hinge edge —
+      // T50-F7's own sentence, said for a segment: the ladder re-runs over
+      // that height by the same rule, and a cup whose screws run off the
+      // board is dropped, never moved.
+      const segStile = segCut
+        ? (() => {
+          const roomAt = leaf.meta?.hinge === 'R' ? segCut[0] : segCut[segCut.length - 1];
+          // sheet frame is the inside mirror: room L edge = sheet's far end.
+          return Math.max(0, Math.min(seg.h, roomAt.y));
+        })()
+        : seg.h;
+      const segCount = segCut ? splitDoorHingeCount(segStile) : seg.hinges;
+      const margin = Number(P.hinges.cups.screwOffsetY) || 0;
       const local = own && own.length
         ? own.map((v) => roundTo(v - base, 4))
-        : splitSegmentHingeRows(seg.h, seg.hinges, P.hinges.endOffset).map((v) => roundTo(v, 4));
+        : splitSegmentHingeRows(segCut ? segStile : seg.h, segCount, P.hinges.endOffset)
+          .map((v) => roundTo(v, 4))
+          .filter((v) => !segCut || (v >= 0 && v + margin <= segStile));
       // What this segment is ACTUALLY drilled for, which is what the BOM buys
       // and what `assemblies.splitDoors` publishes. Identical to the kit's own
       // count wherever nobody has said anything, which is every cabinet that
       // has not been edited by hand.
       seg.hinges = local.length;
+      const segGeom = segCut
+        ? trimGeometryOnSlope(rectGeometry(leaf.w, seg.h), { w: leaf.w, h: seg.h, pts: segCut })
+        : rectGeometry(leaf.w, seg.h);
       return panel({
         id: `${leaf.id}-${seg.id}`,
         part: 'FRONT',
         role: 'front',
         w: leaf.w,
-        h: seg.h,
+        h: roundTo(segTall, 4),
         thickness: leaf.thickness,
         edgeCode: codes.all,
-        edgeLen: metres(2 * leaf.w + 2 * seg.h),
+        edgeLen: metres(2 * leaf.w + 2 * segTall),
         box: {
-          x: leaf.box.x, y: leaf.box.y + seg.y, z: leaf.box.z, w: leaf.w, h: seg.h, d: leaf.thickness,
+          x: leaf.box.x,
+          y: leaf.box.y + seg.y,
+          z: leaf.box.z,
+          w: leaf.w,
+          h: roundTo(segTall, 4),
+          d: leaf.thickness,
         },
-        cnc: rectGeometry(leaf.w, seg.h),
+        cnc: segCut
+          ? {
+            ...segGeom,
+            drawn_w: roundTo(leaf.w, 4),
+            drawn_h: roundTo(segTall, 4),
+            // The line in the SHEET's frame, for the scene to clip with —
+            // exactly as the parent leaf published it (T46-F6a).
+            slopeCut: {
+              pts: segCut,
+              hL: roundTo(segCut[0].y, 4),
+              hR: roundTo(segCut[segCut.length - 1].y, 4),
+            },
+          }
+          : rectGeometry(leaf.w, seg.h),
         meta: {
           ...leaf.meta,
           split: seg.id === 'T' ? 'top' : 'bottom',
           splitOf: leaf.id,
           splitTopMm: topH,
+          // T54-F3: the segment's OWN slope record — the parent's, sub-set to
+          // this band — so the shaker, the Check and the sheet all read the
+          // piece that exists, not the leaf that was replaced.
+          ...(leaf.meta?.slopeCut ? {
+            slopeCut: segCut
+              ? {
+                ...leaf.meta.slopeCut,
+                roomL: roundTo(Math.max(0, Math.min(seg.h,
+                  (leaf.meta.slopeCut.roomL ?? seg.h) - seg.y)), 4),
+                roomR: roundTo(Math.max(0, Math.min(seg.h,
+                  (leaf.meta.slopeCut.roomR ?? seg.h) - seg.y)), 4),
+                tall: roundTo(segTall, 4),
+                low: roundTo(segCut.reduce((lo, q) => Math.min(lo, q.y), Infinity), 4),
+                corners: segGeom.outline.length,
+                hinges: { was: seg.hinges, now: local.length },
+              }
+              : undefined,
+          } : {}),
           // The cup ladder in the SEGMENT's own frame (what the sheet drills)
           // and the plate ladder in the CARCASS's (what the side is bored at).
           // Two frames, one list, computed once — so a picture and a sheet
@@ -6507,7 +6396,20 @@ export function computeCabinet(params, profileOverride) {
       });
       continue;
     }
-    pnl.cnc.pockets = [...(pnl.cnc.pockets || []), pocket];
+    // ─── TURN 54 (CLAUDE.md F3.4): THE RAKED POCKET REACHES THE FILE ───────
+    // `shakerCutPocket` publishes its raked polygon as `points`, but the two
+    // writers — `cnc/dxf.js pocketPoints` and the CNC view — have read `pts`
+    // since T34's shoe groove. So the raked pocket reached the DXF as its
+    // BOUNDING BOX and the machine cut a square recess under a raked frame.
+    // The polygon is handed over under the readers' own field, only where a
+    // rake made one — a flat shaker's pocket is byte-identical.
+    // …stored in the WINDING the readers share for a cut-out (the edge rules
+    // and `pocketPoints` both flip a cutout's pts on read, so the stored loop
+    // runs opposite to the traced one — the shoe groove's own convention).
+    pnl.cnc.pockets = [...(pnl.cnc.pockets || []),
+      cutPair && Array.isArray(pocket.points) && pocket.points.length >= 3
+        ? { ...pocket, pts: [...pocket.points].reverse().map(([qx, qy]) => [qx, qy]) }
+        : pocket];
     // What the 3-D solid and the handle law both need, on the piece: the frame
     // that was actually cut, and how deep the panel floor sits. `thickness`
     // itself is UNTOUCHED and stays the full board — F3.5.
@@ -7170,31 +7072,6 @@ export function computeCabinet(params, profileOverride) {
           addDrill(sideId, 'runner', RN.layer, x, rowY, RN.holeDiameter);
         }
       }
-    }
-  }
-
-  // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX'S CARCASS-SIDE HOLES ───────────
-  //
-  // The kit's E section, mapped into this file's own side frame. The kit
-  // measures local x from the CARCASS FRONT EDGE and local y above the BAY
-  // FLOOR; BUL's frame already has x = 0 at the front edge and BUR's is its
-  // mirror (the runner rows and the hinge plates above have used exactly that
-  // pair since turn 3), and the bay floor is the carcass bottom's top face.
-  //
-  //   FIX    → 3 × ⌀3 THROUGH-pilots per side, driven from OUTSIDE the
-  //            carcass — "środek: nie widać nic" — at the box's mid height
-  //            (posZ + 40), 50 from each box end and the middle.
-  //   DRAWER → the side runner's ⌀5 euro fixings: the face at frontT + 3 from
-  //            the carcass front edge, the first hole +37 from that face and
-  //            the rear one at the NL's own column off the owner's sheet. An
-  //            NL the sheet does not carry drills NOTHING and says so —
-  //            `shoeBoxPlan` has already pushed that warning.
-  for (const entry of shoeBoxPlans) {
-    for (const hole of entry.plan.drills) {
-      const sideId = hole.side === 'L' ? 'BUL' : 'BUR';
-      if (!panels.some((pp) => pp.id === sideId)) continue;
-      const x = sideId === 'BUR' ? sideW - hole.x : hole.x;
-      addDrill(sideId, hole.kind, hole.layer, x, G + hole.y, hole.d);
     }
   }
 
@@ -7862,25 +7739,6 @@ export function computeCabinet(params, profileOverride) {
       `${kit.label} · ${roundTo(kit.box.w, 0)} mm opening`);
   }
 
-  // ─── TURN 34 (CLAUDE.md F4): THE SHOE BOX'S BOUGHT HALF ──────────────────
-  //
-  // The BOX ITSELF is CUT and needs no line here — its six boards are in the
-  // cutting list like every other board, on the project carcass board.
-  // What is BOUGHT is the DRAWER variant's side runners, and they are a NEW
-  // family whose articles nobody has: iron rule 9, so the line is a YELLOW
-  // NAMED SPEC (13 mm per side, the NL, the system's name) and never an
-  // invented number. The FIX variant buys nothing — it is screwed.
-  for (const entry of shoeBoxPlans) {
-    const spec = shoeRunnerSpec(entry.plan, P);
-    if (!spec) continue;
-    hw('shoe_runner_pairs', 'Shoe-box side runners', 1, 'pairs',
-      { ...spec, zone: entry.zone, box_width_mm: roundTo(entry.plan.boxW, 0) },
-      [`${spec.system}`,
-        spec.nl ? `NL ${spec.nl}` : 'NL off the sheet',
-        `${spec.width_mm} mm per side`,
-        spec.note].filter(Boolean).join(' · '));
-  }
-
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────
   //
   // The COUNT is untouched — it is `centres.length × doorCount`, the same
@@ -8524,7 +8382,7 @@ export function computeCabinet(params, profileOverride) {
         // ABSENT on an alone rail — and that absence is iron rule 2 doing its
         // work: a `shelfItemId: null` published on all six standard configs
         // would be a byte-identity delta that says nothing, the same reason
-        // `drawerZone` and `shoeBoxes` come and go rather than sit there empty.
+        // `drawerZone` comes and goes rather than sitting there empty.
         ...(railRides ? { shelfItemId: railRides.shelfId } : {}),
       })
       : null,
@@ -8550,38 +8408,11 @@ export function computeCabinet(params, profileOverride) {
     drawerGlass: drawerGlassPanes,
     // T52 (CLAUDE.md F5): the watch insert's own lift-out pane and the tray it
     // sits in. Present only where a drawer asked for one — the same "absent
-    // rather than empty" rule `drawerZone` and `shoeBoxes` keep, so no
+    // rather than empty" rule `drawerZone` keeps, so no
     // standard config grows a key.
     ...(watchGlassPanes.length ? { watchGlass: watchGlassPanes } : {}),
     ...(watchInsertsBuilt.length ? { watchInserts: watchInsertsBuilt } : {}),
     wardrobeKits: wardrobeKitBodies,
-    // ─── Turn 34 (CLAUDE.md F4): the shoe boxes, as the kit measured them ───
-    // The slope, the widths, the runner and where the pilots went. Published
-    // so the modal, the 3D and the walk read ONE set of numbers.
-    //
-    // The key appears ONLY when there is a box, and that is iron rule 2 doing
-    // its work rather than a tidiness preference: "no standard config contains
-    // the shoe box … so F4 contributes ZERO deltas to the fingerprint set". An
-    // empty list published on every cabinet in the app would be a delta on all
-    // six configs that says nothing — the same reason `drawerZone` is absent
-    // rather than empty on a cabinet with no drawers. Readers use `?? []`.
-    ...(shoeBoxPlans.length ? { shoeBoxes: shoeBoxPlans.map((e) => ({
-      id: e.id,
-      zone: e.zone,
-      variant: e.plan.variant,
-      openingW: e.plan.openingW,
-      boxW: e.plan.boxW,
-      innerW: e.plan.innerW,
-      depth: e.plan.depth,
-      posZ: e.plan.posZ,
-      dividers: e.plan.dividers,
-      front: e.plan.front,
-      slope: e.plan.slope,
-      hinged: e.plan.hinged,
-      runner: e.plan.runner,
-      boxFrontX: e.plan.boxFrontX,
-      axisY: e.plan.axisY,
-    })) } : {}),
     // ─── TURN 40 (CLAUDE.md F3b): THE OVERLAY STACK, AS THE KIT MEASURED IT ─
     //
     // The key appears ONLY where a wardrobe actually carries one — the same

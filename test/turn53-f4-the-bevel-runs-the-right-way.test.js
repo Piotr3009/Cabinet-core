@@ -28,6 +28,13 @@
 //
 // THE OVERLAP IS GONE BY CUTTING, NOT BY ADDING — the house law, 27.08:
 // *"nie pozwalamy na nachodzenie się materiałów na siebie."*  No patch piece.
+//
+// T54-F1 AMENDED (28.08.2026): the carcass is no longer cut on the ceiling
+// polyline itself — `slope_cut.pts` is now THE CEILING, and everything carcass
+// (sides included) is cut on cutReach(x) = ceil(x) − infill/cos β per segment.
+// So the side's top at each face is now `cutReach − G/cos β`, not
+// `ceiling − G/cos β` as the diagnosis above states; the direction law and the
+// blank/short-face pick are untouched. The history above is left as written.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -39,6 +46,9 @@ import { defaultParamsFor } from '../src/engine/types.js';
 
 const G = P.board?.thickness ?? 18;
 const W = 600;
+// T54-F1 AMENDED (28.08.2026): named, because the fixture's infill is now
+// load-bearing — it is the strip's CUT height and lowers the carcass line.
+const INFILL = 20;
 
 /** A wardrobe under a rake, cut on its own width. */
 function underARake(pts) {
@@ -48,7 +58,7 @@ function underARake(pts) {
     width: W,
     height: 2150,
     slope_cut: {
-      axis: 'width', infill: 20, low: pts[0].y >= pts[pts.length - 1].y ? 'R' : 'L', pts,
+      axis: 'width', infill: INFILL, low: pts[0].y >= pts[pts.length - 1].y ? 'R' : 'L', pts,
     },
   }, P);
 }
@@ -63,6 +73,23 @@ const lineAt = (pts, x) => {
     }
   }
   return pts[pts.length - 1].y;
+};
+
+// T54-F1 AMENDED (28.08.2026): the carcass CUT line — the ceiling lowered by
+// infill/cos β on its own segment (both fixtures are single-segment, so no
+// mitred knee arises here). This is the line sides, roof and back now consume.
+const cutLineAt = (pts, x) => {
+  for (let i = 1; i < pts.length; i += 1) {
+    if (x <= pts[i].x + 1e-9) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      const span = b.x - a.x;
+      if (span <= 1e-9) return a.y - INFILL;
+      const cosB = span / Math.hypot(span, b.y - a.y);
+      return a.y + ((b.y - a.y) * (x - a.x)) / span - INFILL / cosB;
+    }
+  }
+  return pts[pts.length - 1].y - INFILL;
 };
 
 const FALLS_RIGHT = [{ x: 0, y: 2000 }, { x: W, y: 1400 }];
@@ -101,9 +128,12 @@ for (const [name, pts] of [['falls to the right', FALLS_RIGHT], ['falls to the l
     assert.ok(drop > G, `${drop} mm — G / cos β, thicker in the vertical than the board is`);
     for (const [id, xa, xb] of [['BUL', 0, G], ['BUR', W - G, W]]) {
       const { a, b } = r.panels.find((q) => q.id === id).meta.slopeCut.bevel3d;
-      assert.ok(Math.abs(a - (lineAt(pts, xa) - drop)) < 0.01,
-        `${id} at x=${xa}: ${a} is the ceiling less the board's own footprint`);
-      assert.ok(Math.abs(b - (lineAt(pts, xb) - drop)) < 0.01,
+      // T54-F1 AMENDED (28.08.2026): the roof rides the carcass CUT line
+      // (ceiling − infill/cos β), so the side's face meets ITS underside there
+      // — expectation lowered from lineAt to cutLineAt, tolerance unchanged.
+      assert.ok(Math.abs(a - (cutLineAt(pts, xa) - drop)) < 0.01,
+        `${id} at x=${xa}: ${a} is the carcass cut line less the board's own footprint`);
+      assert.ok(Math.abs(b - (cutLineAt(pts, xb) - drop)) < 0.01,
         `${id} at x=${xb}: ${b} likewise`);
     }
   });
@@ -155,7 +185,10 @@ test('F4 — no wedge stands proud of the roof line: the house overlap law', () 
     for (const [id, xa, xb] of [['BUL', 0, G], ['BUR', W - G, W]]) {
       const { a, b } = r.panels.find((q) => q.id === id).meta.slopeCut.bevel3d;
       for (const [x, y] of [[xa, a], [xb, b]]) {
-        assert.ok(y <= lineAt(pts, x) - drop + 0.01,
+        // T54-F1 AMENDED (28.08.2026): the roof line is now the carcass CUT
+        // line, so the bound is TIGHTENED from lineAt to cutLineAt — a side
+        // that only cleared the old ceiling-based line would now fail.
+        assert.ok(y <= cutLineAt(pts, x) - drop + 0.01,
           `${id} at x=${x}: ${y} never reaches into the board above it`);
       }
     }
@@ -174,6 +207,9 @@ test('F4 — the roof board is NOT touched: “on już jest dobrze cięty”', (
   const r = underARake(FALLS_RIGHT);
   const roof = r.panels.find((q) => q.id === 'TOP' && q.meta?.slopeCut?.roof);
   // Its own numbers, unchanged: L = span/cos β, L_MAX = L + G·tan β.
+  // T54-F1 AMENDED (28.08.2026): the same formulas now ride the carcass CUT
+  // line; a uniform per-segment lowering keeps β and the span, so every number
+  // below stands as it did — asserted unchanged on purpose.
   const deg = roof.meta.slopeCut.deg;
   const rad = (deg * Math.PI) / 180;
   assert.ok(Math.abs(roof.meta.slopeCut.faceLen - W / Math.cos(rad)) < 0.01, 'L');

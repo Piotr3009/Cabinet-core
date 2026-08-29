@@ -1,0 +1,15 @@
+F1 · THE TRIO — three pieces, three lines, gated on a slope_cut no golden carries
+
+subject          slope_cut   cut panels  tilted panels  
+WARDROBE         (none)      0           0              
+BUD              (none)      0           0              
+WUD              (none)      0           0              
+BUDR             (none)      0           0              
+BUDR4            (none)      0           0              
+PANTRY           (none)      0           0              
+the audit scene  YES         trio emittedworst residual 0.0006 mm
+
+The residual is the trio law measured through the scene's own rotation: FACE top → ceiling, FACE bottom and TOP top → cutReach, SHELF top → the roof's underside.
+
+CLEAN — not one of the six is under a rake, and the audit scene lands the trio on its three lines to a hundredth.
+

@@ -27,6 +27,10 @@ const common = read(T47_SHARED);
 // COUNT is not the assertion — every file balancing at 0/0 is — so it is
 // derived from the folder rather than typed, and a fifteenth kit needs no edit
 // here.
+// T54-F7 AMENDED (28.08.2026): the shelf is back to 13 — KIT_SHOE_BOX.lsp died
+// under licence 2 (the shoe is a standard drawer now, cut by the drawer law);
+// the replacement lives in test/turn54-f7-the-shoe-drawer.test.js. The count
+// stays derived, so nothing here typed a 14.
 test('every kit balances 0/0, and none has a stray closing paren', () => {
   const rows = balanceOfKits();
   assert.ok(rows.length >= 13, `the whole shelf is read — ${rows.length} files`);
@@ -47,8 +51,12 @@ test('ONE routine, in the SHARED file, called from exactly the two kits', () => 
 });
 
 test('no other kit has heard of the polyline, the roof or the bevel', () => {
+  // T54-F7 AMENDED (28.08.2026): KIT_SHOE_BOX.lsp is removed from this list
+  // because the file itself is dead (licence 2 — the shoe became a standard
+  // drawer, no kit of its own); the replacement coverage lives in
+  // test/turn54-f7-the-shoe-drawer.test.js. Every living kit stays listed.
   const others = ['KIT_BUD_FULL.lsp', 'KIT_BUDR_FULL.lsp', 'KIT_WUD_FULL.lsp',
-    'KIT_SINK.lsp', 'KIT_FRIDGE.lsp', 'KIT_SHOE_BOX.lsp', 'KIT_LOW_CABINET_FULL.lsp',
+    'KIT_SINK.lsp', 'KIT_FRIDGE.lsp', 'KIT_LOW_CABINET_FULL.lsp',
     'KIT_DOOR_DOUBLE.lsp', 'KIT_SASH_STANDARD.lsp', 'KIT_LED_GROOVE.lsp'];
   for (const name of others) {
     const text = read(name);

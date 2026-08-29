@@ -18,6 +18,10 @@ import { slopeCutActive, trimOutlineOnSlope } from '../src/engine/puzzle.js';
 
 const solid = readFileSync(new URL('../src/3d/panelSolid.js', import.meta.url), 'utf8');
 const PARAMS = { ...defaultParamsFor('WARDROBE', P), unit_num: '01' };
+// T54-F1 AMENDED (28.08.2026): `slope_cut` now means the CEILING polyline plus
+// the strip's CUT height (`infill`); the engine itself lowers the carcass line
+// by `infill / cos β` per segment (`carcassCutPts`). The record here is
+// unchanged — what it MEANS moved, and the expectations below moved with it.
 const CUT = { y0: 2400, y1: 1200, infill: 40 };
 
 test('F6a — the scene imports the ENGINE\'s cut; it has none of its own', () => {
@@ -35,15 +39,24 @@ test('F6a — the LINE the scene clips with is published by the engine, per pane
   const back = r.panels.find((p) => p.id === 'BACK');
   const front = r.panels.find((p) => p.part === 'FRONT');
   // T47 (licence 1): the LINE is published beside the two ends it always was.
-  // The ends are UNCHANGED — this is a unit under one straight run, so the line
-  // is two points and they are those two numbers.
+  // T54-F1 AMENDED (28.08.2026): the published line is now `cutReach` — the
+  // ceiling lowered by `infill / cos β` per segment — because the CARCASS is
+  // cut on it, not on the ceiling (the ceiling is the scribe pieces' line).
+  // One straight run, β = atan(1200/600) = 63.4349°, cos β = 0.4472136, so the
+  // vertical reserve is 40 / cos β = 89.4427: 2400 − 89.4427 = 2310.5573 and
+  // 1200 − 89.4427 = 1110.5573. Still two points — a straight ceiling lowers
+  // to a straight line, parallel, no knee appears.
   assert.deepEqual(back.cnc.slopeCut, {
-    pts: [{ x: 0, y: 2400 }, { x: 600, y: 1200 }], hL: 2400, hR: 1200,
+    pts: [{ x: 0, y: 2310.5573 }, { x: 600, y: 1110.5573 }], hL: 2310.5573, hR: 1110.5573,
   });
   // The FRONT's is in the SHEET's frame — the inside mirror — because that is
   // the frame its outline is in and the frame the scene rebuilds it in.
+  // T54-F1 AMENDED (28.08.2026): the leaf is carcass, so it takes the SAME
+  // lowered line over its own span (x 1.5…598.5, gradient −2), less the door
+  // gap 3: room 2307.5573−3 = 2304.5573 → 1113.5573−3 = 1110.5573; mirrored to
+  // the sheet that is 1110.5573 at x 0 and 2304.5573 at x 597.
   assert.deepEqual(front.cnc.slopeCut, {
-    pts: [{ x: 0, y: 1200 }, { x: 597, y: 2394 }], hL: 1200, hR: 2394,
+    pts: [{ x: 0, y: 1110.5573 }, { x: 597, y: 2304.5573 }], hL: 1110.5573, hR: 2304.5573,
   });
   // …and every one of them cuts the panel's own rectangle to the panel's own
   // outline, which is the parity the claim is made of.

@@ -274,14 +274,41 @@ test('F5 — the CUT and the DRAWN FRAME did not move: this states, it does not 
   assert.equal(df.cnc.drawn_w, undefined);
 });
 
-test('F5 — the shoe box keeps its own statement, which came first', () => {
+test('F5 — the shoe box keeps its own statement, which came first'
+  + ' — T54-F7 AMENDED (28.08.2026): the box died; its answer lives on in the shoe DRAWER', () => {
+  // ─── T54-F7 AMENDED (28.08.2026) ──────────────────────────────────────────
+  //
+  // The owner: *"usuń stary kod na shoes i zrób z logiką drawers."* The shoe
+  // box world — `kind:'shoe_box'`, `engine/shoeBox.js`, every SHOEBOX-* panel
+  // including the SHOEBOX-BT this test read — is DELETED under licence 2; the
+  // replacement suite is test/turn54-f7-the-shoe-drawer.test.js. A shoe is a
+  // STANDARD drawer (`kind:'drawer', variant:'shoe'`, side height
+  // `drawers.shoeSideMm`), so the statement turn 34 F4 pinned on SHOEBOX-BT —
+  // "pamiętaj, żeby dno były słoje w poprzek" — is not weakened, it is
+  // INHERITED: the shoe's bottom is a DRAWER-BOTTOM and the owner's table
+  // already says `w`. Asserted here on the new world, board for board.
+  const DR = P.wardrobe.drawers;
   const r = computeCabinet({
     ...defaultParamsFor('WARDROBE', P),
     unit_num: '01',
     width: 900,
-    sections: [{ items: [{ id: 'sb1', kind: 'shoe_box', variant: 'F', dividers: 1 }] }],
+    sections: [{
+      width_mm: 900,
+      items: [{
+        id: 'sd1', kind: 'drawer', index: 1,
+        height_mm: DR.shoeSideMm + DR.frontToSideDelta, variant: 'shoe',
+      }],
+    }],
   }, P);
-  const bottom = r.panels.find((p) => p.part === 'SHOEBOX-BT');
-  assert.ok(bottom, 'the box is built');
-  assert.equal(bottom.cnc.grain, 'w', 'turn 34 F4 said it first and still says it');
+  const bottom = r.panels.find((p) => p.part === 'DRAWER-BOTTOM');
+  assert.ok(bottom, 'the shoe drawer is built by the drawer code');
+  assert.equal(bottom.cnc.grain, 'w', 'dno — słoje w poprzek: the answer the shoe box gave first');
+  for (const part of ['DRAWER-SIDE', 'DRAWER-BOX-FRONT', 'DRAWER-BOX-BACK', 'DRAWER-FRONT']) {
+    const p = r.panels.find((x) => x.part === part);
+    assert.ok(p, `${part} is in the shoe drawer`);
+    assert.equal(p.cnc.grain, 'h', `${part}: w pionie, wzdłuż słojów — the drawer table answers`);
+  }
+  // …and no board of the dead world is cut any more.
+  assert.equal(r.panels.some((p) => /^SHOEBOX-/.test(p.part || '')), false,
+    'no SHOEBOX-* panel exists (licence 2)');
 });

@@ -28,6 +28,15 @@ import {
 // and the owner named it as a production defect. So the cut becomes the
 // CEILING'S OWN POLYLINE.
 //
+// T54-F1 AMENDED (28.08.2026): `slope_cut.pts` is now literally the CEILING
+// (`slopeCutLine` no longer subtracts the infill; it rides beside the pts as
+// the record's `infill` field) and the CARCASS is cut on the lowered line
+// cutReach(x) = ceil(x) − infill/cos β per segment (`carcassCutPts`) — at a
+// knee the lowered vertex is the mitred intersection of the two lowered
+// segments, so its x may shift off the ceiling's own knee x. The polyline law
+// of this file is untouched; the expected NUMBERS in the cabinet-level blocks
+// below are restated on the lowered line. With infill 0 the two lines are one.
+//
 // CLAUDE.md asks for four proofs, and they are the four blocks below.
 
 const PARAMS = { ...defaultParamsFor('WARDROBE', P), unit_num: '01' };
@@ -199,10 +208,16 @@ test('…and the height at a point is read INSIDE the containing segment', () =>
 });
 
 test('a cabinet under the knee: the BACK carries the vertex and says where it is', () => {
+  // T54-F1 AMENDED (28.08.2026): the carcass is cut on cutReach = ceiling −
+  // infill/cos β per segment, so the BACK's knee is the MITRED intersection of
+  // the two lowered segments, no longer the ceiling's own (300, 2000). Flat
+  // run: 2000 − 40 = 1960. 45° fall: 2000 − 40/cos 45° = 2000 − 56.5685 lands
+  // the lowered fall on y = 1943.4315 − (x − 300), which meets 1960 at
+  // x = 300 − 40·(√2 − 1) = 283.4315.
   const r = computeCabinet({ ...PARAMS, width: 900, slope_cut: KNEE }, P);
   const back = r.panels.find((p) => p.id === 'BACK');
-  assert.deepEqual(back.meta.slopeCut.knees, [300], 'the record names the bend');
-  assert.ok(back.cnc.outline.some(([x, y]) => x === 300 && y === 2000),
+  assert.deepEqual(back.meta.slopeCut.knees, [283.4315], 'the record names the bend');
+  assert.ok(back.cnc.outline.some(([x, y]) => x === 283.4315 && y === 1960),
     `the knee is a corner of the board: ${JSON.stringify(back.cnc.outline)}`);
   assert.equal(back.cnc.outline.length, 5);
 });
@@ -218,7 +233,13 @@ test('NOTHING assumes five corners — a ceiling that bends twice makes seven', 
   assert.equal(out.length, 6, 'four on the line, two on the floor');
   const r = computeCabinet({ ...PARAMS, width: 1200, slope_cut: twice }, P);
   const back = r.panels.find((p) => p.id === 'BACK');
-  assert.deepEqual(back.meta.slopeCut.knees, [300, 900]);
+  // T54-F1 AMENDED (28.08.2026): the BACK's knees are the mitred-offset
+  // intersections of the lowered segments, not the ceiling's [300, 900].
+  // Rise 3-4-5 (cos = 0.6): drop 40/0.6 = 66.6667, so y = 1533.3333 + (4/3)x
+  // meets the lowered flat (2000 − 40 = 1960) at x = 320 exactly. Fall
+  // 3-5-√34 (cos = 300/√340000): drop 77.746, so y = 1922.254 − (5/3)(x − 900)
+  // meets 1960 at x = 877.3524.
+  assert.deepEqual(back.meta.slopeCut.knees, [320, 877.3524]);
   assert.equal(back.meta.slopeCut.corners, back.cnc.outline.length);
   assert.ok(back.cnc.outline.length > 5, `${back.cnc.outline.length} corners`);
 });
@@ -247,8 +268,15 @@ test('TWO SLOPES: the line descends, runs flat, and descends again', () => {
   assert.deepEqual(line.pts.map((p) => p.x), [0, 800, 2300, 3000]);
   // No separate code path: it is the same `ceilingPolyline` the wall mesh
   // traces, minus the scribe gap, and nothing else.
+  // T54-F1 AMENDED (28.08.2026): the scribe gap is NOT subtracted here any
+  // more — subtracting the 40 vertically and handing the result down as both
+  // ceiling and carcass line is the stack the owner's audit measured. The pts
+  // are the CEILING itself (minus floorY only) and the infill rides BESIDE
+  // them on the record; the engine lowers per segment (`carcassCutPts`,
+  // infill / cos β).
   const raw = ceilingPolyline({ ...wall, from: 0, to: 3000 });
-  assert.deepEqual(line.pts, raw.map((p) => ({ x: p.x, y: p.y - 40 })));
+  assert.deepEqual(line.pts, raw.map((p) => ({ x: p.x, y: p.y })));
+  assert.equal(line.infill, 40, 'the scribe gap rides on the record, unspent');
 });
 
 test('TWO SLOPES: the cabinet under it is cut on all three segments', () => {
@@ -262,8 +290,13 @@ test('TWO SLOPES: the cabinet under it is cut on all three segments', () => {
   // falls bite: the board is a hexagon with its top edge flat in the middle.
   const top = back.cnc.outline.filter(([, y]) => y > 1900);
   assert.ok(top.length >= 2, `the middle stays full height: ${JSON.stringify(back.cnc.outline)}`);
-  assert.ok(back.cnc.outline.some(([, y]) => Math.abs(y - 1760) < 1e-6), 'the left end is cut');
-  assert.ok(back.cnc.outline.some(([, y]) => Math.abs(y - 1560) < 1e-6), 'and so is the right');
+  // T54-F1 AMENDED (28.08.2026): the pts are now the CEILING and the carcass
+  // is cut on cutReach = ceiling − infill/cos β per segment, so the board's
+  // ends sit BELOW the handed 1760/1560. Left rise is 45° (800 across, 800
+  // up): 1760 − 40/cos 45° = 1760 − 56.5685 = 1703.4315. Right fall is 700
+  // across, 1000 down (cos = 700/√1490000): 1560 − 69.7517 = 1490.2483.
+  assert.ok(back.cnc.outline.some(([, y]) => Math.abs(y - 1703.4315) < 1e-6), 'the left end is cut');
+  assert.ok(back.cnc.outline.some(([, y]) => Math.abs(y - 1490.2483) < 1e-6), 'and so is the right');
   // Both LOW points are ends here, but the machinery answers the question of
   // the whole line rather than of its ends (a valley between two ridges is the
   // case that is not an end).

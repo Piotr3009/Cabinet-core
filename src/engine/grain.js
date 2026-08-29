@@ -23,7 +23,8 @@
 // is no "up the piece", and the house already has the owner's answer for a
 // flat bottom, from the shoe box on 16.08: *"pamiętaj, żeby dno były słoje w
 // poprzek"* — the grain runs across the width. `w`, exactly as
-// `engine/shoeBox.js` cuts its own bottom.
+// the old shoe box cut its own bottom (T54-F7: that world is gone; the shoe
+// drawer's bottom is the drawer's).
 //
 // ─── WHY A STATEMENT AND NOT A ROTATION ─────────────────────────────────────
 //

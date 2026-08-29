@@ -135,10 +135,9 @@ export const PART_REGISTRY = {
     id: 'top_box_carcase', name: 'Top box carcase', group: G('board'), unit: 'm²', materialType: 'board',
     note: 'The small box that rides on a wardrobe — its own row because it is often cut from an offcut',
   },
-  shoe_box_carcase: {
-    id: 'shoe_box_carcase', name: 'Shoe box carcase', group: G('board'), unit: 'm²', materialType: 'board',
-    note: 'The seven boards of KIT_SHOE_BOX — body, dividers and batten',
-  },
+  // T54-F7: `shoe_box_carcase` is DELETED with the world it priced — the
+  // shoe is a standard drawer now (licence 2; the grave is named in the
+  // verdict). The tilted shoe SHELF's rail below is a different entity.
 
   // ─── FRONT ────────────────────────────────────────────────────────────────
   door: {
@@ -147,7 +146,7 @@ export const PART_REGISTRY = {
   },
   drawer_front: {
     id: 'drawer_front', name: 'Drawer fronts', group: G('front'), unit: 'm²', materialType: 'front',
-    note: 'Drawer fronts and shoe box fronts',
+    note: 'Drawer fronts — the shoe drawer’s face included (T54-F7)',
   },
   false_front: {
     id: 'false_front', name: 'False fronts', group: G('front'), unit: 'm²', materialType: 'front',
@@ -215,10 +214,8 @@ export const PART_REGISTRY = {
     id: 'runner_sync_rod', name: 'Runner sync rods', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'One per wide drawer — Blum’s own threshold, turn 18',
   },
-  shoe_runner: {
-    id: 'shoe_runner', name: 'Shoe box runners', group: G('hardware'), unit: 'pairs', materialType: 'hardware',
-    note: 'Side-mount, its own product and its own price',
-  },
+  // T54-F7: `shoe_runner` DELETED — the shoe drawer buys the same Blum
+  // runner every drawer buys, by the same NL law.
   leg: {
     id: 'leg', name: 'Legs', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Chosen from the plinth height — see profile.materials.legRules (F4)',
@@ -446,17 +443,10 @@ export const ELEMENT_TO_PART_ID = {
   'DRAWER-BOX-BACK': 'drawer_box_side',
   'DRAWER-BOTTOM': 'drawer_bottom',
 
-  // KIT_SHOE_BOX (turn 34). Seven boards: bottom, back, two sides, top, the
-  // divider and the batten — one carcase material; the FRONT is a drawer front,
-  // because that is exactly what a joiner cuts it from.
-  'SHOEBOX-BT': 'shoe_box_carcase',
-  'SHOEBOX-BK': 'shoe_box_carcase',
-  'SHOEBOX-SL': 'shoe_box_carcase',
-  'SHOEBOX-SR': 'shoe_box_carcase',
-  'SHOEBOX-BF': 'shoe_box_carcase',
-  'SHOEBOX-DV': 'shoe_box_carcase',
-  'SHOEBOX-BATTEN': 'shoe_box_carcase',
-  'SHOEBOX-FR': 'drawer_front',
+  // KIT_SHOE_BOX (turn 34) put seven SHOEBOX-* boards here. T54-F7 buried
+  // that world (licence 2): a shoe is a `variant:'shoe'` DRAWER now, so its
+  // boards arrive as DRAWER-SIDE/-BOX-FRONT/-BOX-BACK/-BOTTOM above and its
+  // front as a DRAWER-FRONT — no row of its own to keep in step.
 };
 
 /**
@@ -493,7 +483,6 @@ export const HARDWARE_TO_PART_ID = {
   hinges: 'hinge',
   runner_pairs: 'runner',
   runner_sync_rods: 'runner_sync_rod',
-  shoe_runner_pairs: 'shoe_runner',
   legs: 'leg',
   rail: 'rail_tube',
   shelf_pins: 'shelf_pin',
@@ -556,7 +545,6 @@ const EDGE_OF_PART = {
   back: 'edge_carcase',
   plinth: 'edge_carcase',
   top_box_carcase: 'edge_carcase',
-  shoe_box_carcase: 'edge_carcase',
   drawer_box_side: 'edge_carcase',
   drawer_bottom: 'edge_carcase',
   shelf: 'edge_shelf',

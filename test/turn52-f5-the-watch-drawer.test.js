@@ -115,14 +115,20 @@ test('F5 — the count law is the LISP’s, arm for arm', () => {
 
 // ─── THE OWNER'S NUMBERS ───────────────────────────────────────────────────
 
-test('F5 — nine millimetre dividers and sixty inside, both from him', () => {
+test('F5 — nine millimetre dividers and forty inside, both from him', () => {
   assert.equal(S.dividerT, 9, '*"przegródki z 9 mm zrób"*');
   assert.equal(S.frameT, 9, 'and the frame from the same board');
-  assert.equal(S.insideDepthMm, 60, '*"szuflada płytka w środku, myślę że około 60 mm"*');
-  // CLAUDE.md asks for BOTH numbers to be noted: the trade standard is ~50 and
-  // 60 is his, because 60 carries a chronograph and a lining.
+  // T54-F4 AMENDED (28.08.2026): the owner re-sized — *"120 proszę"* — and
+  // the front height derives, so the inside depth is the number that moved:
+  // his 26.08 "około 60 mm" (asserted here since T52) became 40. The 60
+  // stays in profile.js as history, with the amended trade note beside the
+  // new number (a 44–48 chronograph no longer lies flat — his veto line).
+  assert.equal(S.insideDepthMm, 40, '*"120 proszę"* — 40 + 9 + 2 + 15 + 18 + 36 = 120');
+  // CLAUDE.md asks for BOTH numbers to be noted: the trade standard is ~50 —
+  // still written beside his, tonight with the chronograph consequence.
   const src = readFileSync(new URL('../src/engine/profile.js', import.meta.url), 'utf8');
   assert.match(src, /trade standard is ~50/, 'the trade number is written down beside his');
+  assert.match(src, /chronograph will no longer lie flat/, 'and the 40\'s own cost is named');
 });
 
 test('F5 — a pocket never falls below 60 mm clear, whatever the drawer', () => {

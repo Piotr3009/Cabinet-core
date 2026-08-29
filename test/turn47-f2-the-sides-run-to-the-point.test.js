@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor } from '../src/engine/types.js';
-import { roofLinePts, slopeSegDeg } from '../src/engine/puzzle.js';
+import { carcassCutPts, roofLinePts, slopeSegDeg } from '../src/engine/puzzle.js';
 import { partLabelText, slopeNoteText } from '../src/engine/cnc/partLabel.js';
 import { panelEntities, panelNoteBlock } from '../src/engine/cnc/dxf.js';
 import { partDetailDrawing } from '../src/engine/drawings/partDetail.js';
@@ -34,6 +34,17 @@ import { partDetailDrawing } from '../src/engine/drawings/partDetail.js';
 // the ceiling less that board's VERTICAL FOOTPRINT `G / cos β`. So every height
 // below is a peak less a footprint, and the two are asserted apart so a later
 // turn can see which one moved.
+//
+// ─── T54-F1 AMENDED (28.08.2026) ────────────────────────────────────────────
+//
+// Two reach functions, not one: `slope_cut.pts` is now the CEILING, and the
+// CARCASS — these sides included — is cut on the lowered line
+// `cutReach(x) = ceil(x) − infill / cos β` (`carcassCutPts`). The roof boards
+// lie on THAT line, so every expected height below drops by the segment's own
+// reserve (40 / cos β on a rake, exactly 40 on a flat). The footprint law and
+// the wedge law are untouched — the same formulas, on the lowered line — and a
+// knee's vertex is now the MITRED intersection of the two lowered segments, so
+// its x shifts from the ceiling's own knee x.
 
 const G = P.board.thickness;
 const PARAMS = { ...defaultParamsFor('WARDROBE', P), unit_num: '01' };
@@ -45,18 +56,22 @@ const panelOf = (r, id) => r.panels.find((p) => p.id === id);
 
 test('a side is the BLANK — as tall as its highest corner, not its lowest', () => {
   // 2000 at the left edge, falling 1200 over 600 — one 63.4349° run, one roof
-  // board, footprint 18 / cos β = 40.2492. Over BUL's own 18 mm the ceiling
-  // runs 2000 → 1964; over BUR's, 836 → 800. Each side stops 40.2492 under.
+  // board, footprint 18 / cos β = 40.2492.
+  // T54-F1 AMENDED (28.08.2026): the sides now stop under the roof on the
+  // CARCASS line, the ceiling less the strip's reserve 40 / cos β = 89.4427 —
+  // over BUL's own 18 mm the cut line runs 1910.5573 → 1874.5573; over BUR's,
+  // 746.5573 → 710.5573. Each side stops 40.2492 under THAT.
   const r = cut({ slope_cut: { y0: 2000, y1: 800, infill: 40 } });
   const foot = 18 / Math.cos(Math.atan(1200 / 600));
-  assert.ok(Math.abs(panelOf(r, 'BUL').h - (2000 - foot)) < 1e-3);
-  assert.ok(Math.abs(panelOf(r, 'BUR').h - (836 - foot)) < 1e-3);
-  assert.equal(panelOf(r, 'BUL').h, 1959.7508);
-  assert.equal(panelOf(r, 'BUR').h, 795.7508);
+  const reserve = 40 / Math.cos(Math.atan(1200 / 600));
+  assert.ok(Math.abs(panelOf(r, 'BUL').h - (2000 - reserve - foot)) < 1e-3);
+  assert.ok(Math.abs(panelOf(r, 'BUR').h - (836 - reserve - foot)) < 1e-3);
+  assert.equal(panelOf(r, 'BUL').h, 1870.3081);
+  assert.equal(panelOf(r, 'BUR').h, 706.3081);
   // …and the short face — what the finished board measures — is stated beside
   // it, because that is the number a joiner checks the bevel against.
-  assert.equal(panelOf(r, 'BUL').meta.slopeCut.low, 1923.7508);
-  assert.equal(panelOf(r, 'BUR').meta.slopeCut.low, 759.7508);
+  assert.equal(panelOf(r, 'BUL').meta.slopeCut.low, 1834.3081);
+  assert.equal(panelOf(r, 'BUR').meta.slopeCut.low, 670.3081);
   // The blank less the short face IS `G · tan β`, which is the wedge — and it
   // does not care what the board stops under, because the footprint moves both
   // faces down together.
@@ -69,14 +84,18 @@ test('a side is the BLANK — as tall as its highest corner, not its lowest', ()
 });
 
 test('…and it never runs past the cabinet\'s own height', () => {
-  // The ceiling clears the carcass at the left, so the roof line is FLAT at
-  // 2150 there and BUL stops one plain board thickness under it — 2132, not
-  // 2150, because there is a board lying on it now (F3).
+  // T54-F1 AMENDED (28.08.2026): it is the CARCASS line that clears the
+  // carcass at the left now (2400 − 89.4427 = 2310.5573 > 2150), so the roof
+  // line is still FLAT at 2150 there and BUL stops one plain board thickness
+  // under it — 2132, not 2150, because there is a board lying on it (F3).
   const r = cut({ slope_cut: { y0: 2400, y1: 1200, infill: 40 } });
   assert.equal(panelOf(r, 'BUL').h, H - G);
   assert.equal(panelOf(r, 'BUL').meta.slopeCut.angles[0].deg, 0, 'and square there');
-  // The right side is under the 63.4349° board: peak 1236 less its 40.2492.
-  assert.equal(panelOf(r, 'BUR').h, 1195.7508);
+  // The right side is under the 63.4349° board: carcass peak 1146.5573
+  // (ceiling 1236 less the 89.4427 reserve) less its 40.2492 footprint.
+  // T54-F1 AMENDED (28.08.2026): was 1195.7508 = 1236 − 40.2492 off the
+  // ceiling itself.
+  assert.equal(panelOf(r, 'BUR').h, 1106.3081);
   // Not one board goes past the cabinet's own height.
   for (const p of r.panels) {
     if (p.box) assert.ok(p.box.y + p.box.h <= H + 1e-6, `${p.id} at ${p.box.y + p.box.h}`);
@@ -91,12 +110,15 @@ test('a side under a FLAT stretch of ceiling carries no angle and no bevel', () 
     slope_cut: { pts: [{ x: 0, y: 1800 }, { x: 300, y: 1800 }, { x: 900, y: 1200 }], infill: 40 },
   });
   const bul = panelOf(r, 'BUL');
-  // 1800 less a level board's own 18 — `G / cos 0` is G, so a flat roof board
-  // is exactly the board this engine has always cut.
-  assert.equal(bul.h, 1782);
+  // 1800 less the strip's reserve (flat: cos β = 1, so exactly the 40) less a
+  // level board's own 18 — `G / cos 0` is G, so a flat roof board is exactly
+  // the board this engine has always cut.
+  // T54-F1 AMENDED (28.08.2026): was 1782 = 1800 − 18 off the ceiling; the
+  // carcass line on a flat stretch is the ceiling less exactly `infill`.
+  assert.equal(bul.h, 1742);
   assert.deepEqual(bul.meta.slopeCut.angles, [{ from: 0, to: G, deg: 0 }],
     'the edge is square here, and the record says so');
-  assert.equal(bul.meta.slopeCut.low, 1782, 'both faces at the same height');
+  assert.equal(bul.meta.slopeCut.low, 1742, 'both faces at the same height');
   assert.equal(slopeNoteText(bul), '', 'and the board says nothing about an angle');
 });
 
@@ -106,6 +128,9 @@ test('THE ANGLE IS THE SEGMENT\'S, not the cabinet\'s corner-to-corner fiction',
   // Flat at 2000 to x = 300, then falling 600 over 600 — a 45° run. BUR stands
   // under the fall and must be cut at 45, not at the 33.7 a straight line from
   // corner to corner would give.
+  // T54-F1 AMENDED (28.08.2026): the numbers here HOLD — lowering a segment by
+  // its own reserve keeps its β, and the mitred carcass knee (283.4315, left
+  // of the ceiling's 300) leaves BUR [882, 900] wholly on the 45° run.
   const r = cut({
     width: 900,
     slope_cut: { pts: [{ x: 0, y: 2000 }, { x: 300, y: 2000 }, { x: 900, y: 1400 }], infill: 40 },
@@ -124,20 +149,29 @@ test('THE ANGLE IS THE SEGMENT\'S, not the cabinet\'s corner-to-corner fiction',
 });
 
 test('A SIDE THAT SPANS A KNEE carries TWO angles and the vertex between them', () => {
-  // The knee is put INSIDE BUL's own 18 mm: flat to x = 9, then falling.
+  // The knee is put INSIDE BUL's own 18 mm.
+  // T54-F1 AMENDED (28.08.2026): the knee the side carries is the CARCASS
+  // line's — the mitred intersection of the two lowered segments — which sits
+  // LEFT of the ceiling's knee by `infill · (1 − cos β) / sin β` (here, at 45°,
+  // 40 · (√2 − 1) = 16.5685). The old fixture's ceiling knee at x = 9 would put
+  // the carcass knee off the board (clamped to x = 0, one segment), so the
+  // ceiling knee moves to x = 25 and the CARCASS knee lands at
+  // 25 − 16.5685 = 8.4315 — inside BUL's 18 mm, same intent, same rigor.
   const r = cut({
-    slope_cut: { pts: [{ x: 0, y: 1800 }, { x: 9, y: 1800 }, { x: 600, y: 1200 }], infill: 40 },
+    slope_cut: { pts: [{ x: 0, y: 1800 }, { x: 25, y: 1800 }, { x: 600, y: 1225 }], infill: 40 },
   });
   const bul = panelOf(r, 'BUL');
   assert.equal(bul.meta.slopeCut.angles.length, 2, 'two segments over one board');
   assert.equal(bul.meta.slopeCut.angles[0].deg, 0, 'flat first');
   assert.ok(bul.meta.slopeCut.angles[1].deg > 0, 'then the fall');
-  // The vertex between them is the knee, and it is at the knee's own x.
-  assert.equal(bul.meta.slopeCut.angles[0].to, 9);
-  assert.equal(bul.meta.slopeCut.angles[1].from, 9);
-  // The blank is the peak over the whole 18 — the flat part's height, less that
-  // flat board's own 18.
-  assert.equal(bul.h, 1782);
+  // The vertex between them is the knee, and it is at the CARCASS knee's own x
+  // (T54-F1: the mitred-offset intersection, not the ceiling's 25).
+  assert.equal(bul.meta.slopeCut.angles[0].to, 8.4315);
+  assert.equal(bul.meta.slopeCut.angles[1].from, 8.4315);
+  // The blank is the peak over the whole 18 — the flat part's carcass height
+  // (1800 − 40), less that flat board's own 18.
+  // T54-F1 AMENDED (28.08.2026): was 1782 = 1800 − 18 off the ceiling.
+  assert.equal(bul.h, 1742);
   // …and the board says BOTH angles, because a joiner setting one and not the
   // other cuts the wrong wedge.
   assert.match(slopeNoteText(bul), /CUT /);
@@ -148,6 +182,8 @@ test('A SIDE THAT SPANS A KNEE carries TWO angles and the vertex between them', 
 const noted = () => panelOf(cut({ slope_cut: { y0: 2000, y1: 800, infill: 40 } }), 'BUR');
 
 test('1 · ON THE PANEL\'S OWN RECORD — meta.slopeCut.angles [{from, to, deg}]', () => {
+  // T54-F1 (28.08.2026): unchanged by the new law — lowering the one segment
+  // by its reserve keeps its β and its x-extent, so the record reads the same.
   const bur = noted();
   assert.deepEqual(bur.meta.slopeCut.angles, [{ from: 582, to: 600, deg: 63.4349 }]);
 });
@@ -216,9 +252,29 @@ test('the sheet draws the EXPORT\'s words — one formatter, not two wordings', 
 test('the sides are measured against the ROOF LINE — the cut, capped at H', () => {
   // min(H, at(x)), with a vertex where the line crosses H. That crossing is the
   // pentagon's own knee, and it is SKY:slopeKneeX generalised.
+  // T54-F1 AMENDED (28.08.2026): the line handed to roofLinePts is now the
+  // CARCASS line (carcassCutPts of the ceiling, per the reserve) — with no
+  // infill the two are one line, so these two direct reads stand byte for byte.
   assert.deepEqual(roofLinePts({ pts: [{ x: 0, y: 2400 }, { x: 600, y: 1200 }] }, 2150),
     [{ x: 0, y: 2150 }, { x: 125, y: 2150 }, { x: 600, y: 1200 }]);
   // A cabinet wholly under its ceiling gets a FLAT line and no bevel anywhere.
   assert.deepEqual(roofLinePts({ pts: [{ x: 0, y: 2400 }, { x: 600, y: 2300 }] }, 2150),
     [{ x: 0, y: 2150 }, { x: 600, y: 2150 }]);
+  // T54-F1 AMENDED (28.08.2026): with the 40 infill the pipeline is
+  // roofLinePts(carcassCutPts(ceiling, 40), H) — the whole 63.4349° line drops
+  // by 40 / cos β = 89.4427, so the H-crossing knee slides LEFT: the ceiling's
+  // 125 becomes 80.2786 on the lowered line.
+  const reserve = 40 / Math.cos(Math.atan(1200 / 600));
+  const lowered = carcassCutPts({ pts: [{ x: 0, y: 2400 }, { x: 600, y: 1200 }] }, 40);
+  assert.equal(lowered.length, 2);
+  assert.ok(Math.abs(lowered[0].y - (2400 - reserve)) < 1e-9, `left ${lowered[0].y}`);
+  assert.ok(Math.abs(lowered[1].y - (1200 - reserve)) < 1e-9, `right ${lowered[1].y}`);
+  const roof = roofLinePts({ pts: lowered }, 2150);
+  assert.equal(roof.length, 3, 'flat cap, knee, fall');
+  assert.equal(roof[0].y, 2150);
+  assert.equal(roof[1].y, 2150);
+  assert.ok(Math.abs(roof[1].x - (600 * (2150 - (2400 - reserve)) / -1200)) < 1e-9,
+    `the knee is solved on the LOWERED line (x ${roof[1].x})`);
+  assert.ok(Math.abs(roof[1].x - 80.2786) < 1e-3, `80.2786, not the ceiling's 125 (x ${roof[1].x})`);
+  assert.ok(Math.abs(roof[2].y - (1200 - reserve)) < 1e-9);
 });

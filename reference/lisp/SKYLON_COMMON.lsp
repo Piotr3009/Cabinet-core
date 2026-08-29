@@ -1181,6 +1181,17 @@
 ;;; scribe gap - this file never invents a gap and never asks where the ceiling
 ;;; is.
 ;;;
+;;; T54 CORRECTION (28.08.2026) - the sentence above is AMENDED, history kept:
+;;; "already less the scribe gap" subtracted the owner's 40 VERTICALLY, and the
+;;; owner's audit measured the consequence - the roof, the strip and the shelf
+;;; stacked on one line ("infill powyzej skosu odwrotnie ustawiony"). The line
+;;; handed down is now THE CEILING itself (less only the carcass floor), and
+;;; the scribe reserve is taken HERE, per segment, as infill / cos(beta) -
+;;; because the 40 is the FACE STRIP'S CUT HEIGHT and the strip is MOUNTED
+;;; ALONG the slope. The owner's ruling stands in the T54 section below
+;;; (SKY:carcassCutPts); a kit that trims a carcass consumes THAT line, and
+;;; the ceiling itself is consumed only by the pieces that scribe to plaster.
+;;;
 ;;; TWO POINTS IS T46. `SKY:slopeLine` builds that pair, and every one of T46's
 ;;; four answers - the rectangle, the trapezium and the two pentagons - comes
 ;;; back from the general routine UNCHANGED, corner for corner. That is not a
@@ -1790,7 +1801,11 @@
   (setq segs (SKY:slopeSegments (SKY:cutPtsBetween pts xa xb)))
   (setq out '())
   (foreach sg segs
-    (setq x0 (nth 0 sg) x1 (nth 1 sg))
+    ;; T54 (28.08.2026): a segment is (x0 y0 x1 y1 deg), so the far end is
+    ;; nth 2 - the T53 text read nth 1, which is y0, and fed a HEIGHT in as an
+    ;; x. Spec rule: where the numbers and an older line disagree, the numbers
+    ;; win and the line is corrected.
+    (setq x0 (nth 0 sg) x1 (nth 2 sg))
     (setq y0 (SKY:cutHeightAt pts x0) y1 (SKY:cutHeightAt pts x1))
     (setq deg (SKY:slopeSegDeg (- x1 x0) (- y1 y0)))
     (setq out (cons (list x0 x1 y0 y1 deg (SKY:roofFaceLen (- x1 x0) deg)) out)))
@@ -1805,6 +1820,187 @@
     (if (and (> (car p) (+ xa 1e-6)) (< (car p) (- xb 1e-6)))
       (setq out (cons (list (car p) (cadr p)) out))))
   (reverse (cons (list xb (SKY:cutHeightAt pts xb)) out)))
+
+;;;========================================
+;;; T54 - THE TRIO: TWO REACH FUNCTIONS, NOT ONE  (28.08.2026)
+;;;========================================
+;;; The owner's audit, 28.08.2026, measured (spadek w prawo, beta = 26.5651,
+;;; infill 40, W = 600, ceiling 2000 -> 1700): TOP, INFILL-T-FACE and
+;;; INFILL-T-SHELF all carried tilt_pivot = (600, 1700) - the CEILING at the
+;;; low end - and after rotation all three laid their top edge ON the ceiling.
+;;; TOP-top -> ceiling = 0.00 (should be one 40 band down), TOP and FACE
+;;; overlapped 18 mm for the full length, SHELF was congruent with TOP, and
+;;; FACE-bottom stopped 4.72 mm short of the cut line (40 along the slope is
+;;; not 40 vertical). His words: "infill powyzej skosu odwrotnie ustawiony."
+;;; And the house law it breaks (Petros, 27.08): "nie pozwalamy na nachodzenie
+;;; sie materialow na siebie, chyba ze ja sobie tego zazycze."
+;;;
+;;; THE ROOT: one reach - the ceiling - fed every pivot. The chat-fix of 25.08
+;;; wrote "the pivot is the line the piece hangs from" and then hung all three
+;;; pieces from the same line.
+;;;
+;;; THE LAW - two reach functions, in one frame (x along the unit, y up from
+;;; the carcass floor, beta the segment's own rake angle, infill the project's
+;;; scribe number, G the board thickness):
+;;;
+;;;   ceilReach(x) = the ceiling polyline itself.
+;;;   cutReach(x)  = ceilReach(x) - infill / cos(beta)   the carcass CUT line.
+;;;
+;;; DECISION TAKEN FOR THE OWNER (veto: "40 w pionie"): the 40 stays the CUT
+;;; size of the strip; the vertical gap grows to 40 / cos(beta) under a rake.
+;;; The alternative - 40 vertical - would print a different cut height per
+;;; segment (40 * cos(beta)) on every sheet, the offcut-and-mistake machine.
+;;;
+;;; PER SEGMENT (x_lo = the end where ceilReach is LOWER):
+;;;
+;;;   INFILL-T-FACE   rectangle, cut height = infill (+20 scribe on the
+;;;                   ceiling edge), length span / cos(beta). Pivot at
+;;;                   (x_lo, ceilReach(x_lo)) - the CEILING; this piece alone
+;;;                   keeps the old pivot. After rotation its top edge lies on
+;;;                   ceilReach and its bottom edge on cutReach - two parallel
+;;;                   lines a perpendicular `infill` apart.
+;;;   TOP (the roof)  pivot at (x_lo, cutReach(x_lo)) - the CUT line, not the
+;;;                   ceiling. Its top face lies on cutReach, so
+;;;                   FACE-bottom - TOP-top = 0 by construction.
+;;;   INFILL-T-SHELF  UNDER the roof, its top face on the roof's underside:
+;;;                   pivot at (x_lo, cutReach(x_lo) - G / cos(beta)).
+;;;                   DECISION TAKEN (veto: "shelf pod wiencem"): T47 wrote
+;;;                   "wieniec jest na gorze... shelf board" - a shelf ON the
+;;;                   roof would re-enter the FACE band, so it sits UNDER.
+;;;
+;;; DISJOINT, MEASURED: every pair of the trio intersects with area 0 (shared
+;;; edges allowed). That is the Petros law as geometry, not as an eyeball.
+;;;
+;;; THE SIDES AND THE BACK consume cutReach where they took the old line:
+;;; blank top = peak of (cutReach - G / cos(beta)) over the side's own two
+;;; faces, angle stated, and nothing pokes above cutReach anywhere.
+
+;;; The ceiling reach - the polyline itself, by its T47 name. Two names for
+;;; two reaches, so no caller can take one for the other again.
+(defun SKY:ceilReachAt (pts x)
+  (SKY:cutHeightAt pts x))
+
+;;; The vertical reserve the face strip consumes: infill / cos(beta) on a
+;;; raked stretch and exactly infill on a flat one - the degenerate case,
+;;; which is today's flat behaviour to the byte.
+(defun SKY:cutReachDrop (infill deg)
+  (/ infill (cos (* deg (/ pi 180.0)))))
+
+;;; The rake angle of the segment CONTAINING x - the first segment whose far
+;;; end reaches x; beyond the ends, the end segment's own angle.
+(defun SKY:segDegAt (pts x / segs deg sg)
+  (setq segs (SKY:slopeSegments pts))
+  (if (null segs)
+    0.0
+    (progn
+      (setq deg (nth 4 (car segs)))
+      (foreach sg segs
+        (if (>= x (nth 0 sg)) (setq deg (nth 4 sg))))
+      deg)))
+
+;;; The carcass cut line at one x: the ceiling less the strip's own reserve,
+;;; taken with the containing segment's beta.
+(defun SKY:cutReachAt (pts infill x)
+  (- (SKY:ceilReachAt pts x)
+     (SKY:cutReachDrop infill (SKY:segDegAt pts x))))
+
+;;; The carcass cut POLYLINE: every ceiling segment lowered by its own
+;;; reserve - parallel to the ceiling at PERPENDICULAR distance `infill`,
+;;; which is the face strip's cut height mounted along the slope. Where two
+;;; lowered segments of different beta meet, the vertex is their
+;;; INTERSECTION - the mitre the two strips' bottom edges actually make -
+;;; clamped inside the pair so the walk stays left to right.
+(defun SKY:carcassCutPts (pts infill / segs out a b m1 m2 p q ax ay bx by
+                          cx cy dx dy x y drop)
+  (if (or (null pts) (< (length pts) 2) (<= infill 1e-9))
+    pts
+    (progn
+      (setq segs '())
+      (setq a (car pts))
+      (foreach b (cdr pts)
+        (setq drop (SKY:cutReachDrop infill
+                     (SKY:slopeSegDeg (- (car b) (car a))
+                                      (- (cadr b) (cadr a)))))
+        (setq segs (cons (list (car a) (- (cadr a) drop)
+                               (car b) (- (cadr b) drop))
+                         segs))
+        (setq a b))
+      (setq segs (reverse segs))
+      (setq out (list (list (nth 0 (car segs)) (nth 1 (car segs)))))
+      (setq p (car segs))
+      (foreach q (cdr segs)
+        (setq ax (nth 0 p) ay (nth 1 p) bx (nth 2 p) by (nth 3 p))
+        (setq cx (nth 0 q) cy (nth 1 q) dx (nth 2 q) dy (nth 3 q))
+        (setq m1 (if (> (abs (- bx ax)) 1e-9) (/ (- by ay) (- bx ax)) 0.0))
+        (setq m2 (if (> (abs (- dx cx)) 1e-9) (/ (- dy cy) (- dx cx)) 0.0))
+        (if (< (abs (- m1 m2)) 1e-9)
+          (setq x cx y cy)
+          (progn
+            (setq x (/ (- (+ cy (* m1 ax)) ay (* m2 cx)) (- m1 m2)))
+            (setq x (max ax (min dx x)))
+            (setq y (+ ay (* m1 (- x ax))))))
+        (setq out (cons (list x y) out))
+        (setq p q))
+      (setq out (cons (list (nth 2 p) (nth 3 p)) out))
+      (reverse out))))
+
+;;;----------------------------------------
+;;; T54 - THE PEAK: NO THIRD PIECE  (28.08.2026, F2)
+;;;----------------------------------------
+;;; The owner, screenshot in hand: "lewy czyli dolny skos dziala super, gorny
+;;; znowu jakies male kawalki - po prostu przedluz wieniec i wywal jakis maly
+;;; kawalek z BUR. tylko na BUR, nie na BUL."  Corrected on the mockup:
+;;; "wieniec zielony ok i do wienca dochodzi BUR i tyle, i uciety pod skosem
+;;; dokladnie tak samo jak BUL."
+;;;
+;;; Where the cut line crosses the cabinet's own height INSIDE the peak-side
+;;; side's G, the cap at H (SKY:slopeTopPts) used to end the raked roof at the
+;;; crossing and leave a capped stub NARROWER THAN ITS OWN THICKNESS between
+;;; the crossing and the outer face - a board no saw can make. The rule: that
+;;; crossing is DROPPED - the raked segment runs on its own rake to the
+;;; side's OUTER face and the side is bevelled at beta clean across its
+;;; thickness, the identical treatment the fall side always had. A capped
+;;; FLAT stretch wider than G is real furniture and stays.
+(defun SKY:roofPeakPts (szer wys pts G / out n a b c m)
+  (setq out (SKY:slopeTopPts szer wys pts))
+  (setq n (length out))
+  (if (>= n 3)
+    (progn
+      ;; the RIGHT peak: last segment flat at wys, narrower than G
+      (setq a (nth (- n 3) out) b (nth (- n 2) out) c (nth (- n 1) out))
+      (if (and (equal (cadr b) wys 1e-6) (equal (cadr c) wys 1e-6)
+               (<= (- (car c) (car b)) (+ G 1e-6))
+               (< (cadr a) (- wys 1e-6)))
+        (progn
+          (setq m (/ (- (cadr b) (cadr a)) (- (car b) (car a))))
+          (setq out (append
+                      (reverse (cddr (reverse out)))
+                      (list (list (car c) (+ (cadr b) (* m (- (car c) (car b))))))))))
+      ;; the LEFT peak, mirrored
+      (setq n (length out))
+      (if (>= n 3)
+        (progn
+          (setq a (nth 0 out) b (nth 1 out) c (nth 2 out))
+          (if (and (equal (cadr a) wys 1e-6) (equal (cadr b) wys 1e-6)
+                   (<= (- (car b) (car a)) (+ G 1e-6))
+                   (< (cadr c) (- wys 1e-6)))
+            (progn
+              (setq m (/ (- (cadr c) (cadr b)) (- (car c) (car b))))
+              (setq out (cons (list (car a) (+ (cadr b) (* m (- (car a) (car b)))))
+                              (cddr out)))))))))
+  out)
+
+;;; The trio's pivots, stated as functions so the JS mirrors arithmetic and
+;;; not prose. x_lo is the segment's own low end on the CEILING.
+(defun SKY:trioFacePivot (pts x_lo)
+  (list x_lo (SKY:ceilReachAt pts x_lo)))
+
+(defun SKY:trioRoofPivot (pts infill x_lo)
+  (list x_lo (SKY:cutReachAt pts infill x_lo)))
+
+(defun SKY:trioShelfPivot (pts infill G x_lo)
+  (list x_lo (- (SKY:cutReachAt pts infill x_lo)
+                (SKY:roofVertDrop G (SKY:segDegAt pts x_lo)))))
 
 ;;;========================================
 ;;; LOADED

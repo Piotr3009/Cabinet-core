@@ -301,15 +301,11 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // side of the door. ACI 42, again unused by the LISP's table.
     HANDLES_5MM: 42,
     // ─── TURN 34 (CLAUDE.md F4): TWO NEW NAMES, AND THEY ARE A KIT'S ───────
-    // `reference/lisp/KIT_SHOE_BOX.lsp shoeMakeLayers` — so unlike the four
-    // above these two ARE the LISP's, written by the kit delivered with the
-    // T34 spec, ACI colours included. The sloped bottom's groove (6 deep, in
-    // all four walls of the box) and the side runner's ⌀5 euro fixings in the
-    // carcass side. The FIX variant's three through-pilots reuse SCREWS_3MM
-    // exactly as the kit reuses it. NO TEXT STYLE rides either of them — the
-    // 02.08 VCarve crash law.
-    SHOE_GROOVE_6MM: 1,
-    SHOE_RUNNER_5MM: 5,
+    // T54-F7 AMENDED (28.08.2026): SHOE_GROOVE_6MM and SHOE_RUNNER_5MM died
+    // with KIT_SHOE_BOX.lsp under licence (2) — the shoe is now a standard
+    // drawer (variant:'shoe', side height 80) machined entirely on the
+    // drawer's own layers, so the T34 kit layers left this contract table.
+    // The replacement lives in test/turn54-f7-the-shoe-drawer.test.js.
     // ─── TURN 35 (CLAUDE.md F8): ONE NEW NAME, AND IT IS A DIAMETER ───────
     // "Settings → Hardware gains Hinge plate pilot: ⌀3 / ⌀5 (default 5). The
     // CNC hinge-plate pilots take the chosen diameter, the layer name carries

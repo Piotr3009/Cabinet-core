@@ -31,6 +31,19 @@
 // `src/engine/cabinet.js` names them apart by the side each already carries.
 // The BOM part code `SHOEBOX-BATTEN` is untouched, so not a line of the bill
 // changes.
+//
+// T54-F7 AMENDED (28.08.2026): the shoe-box world above is HISTORY. Under
+// licence 2 the owner killed it — *"usuń stary kod na shoes i zrób z logiką
+// drawers"* — so `engine/shoeBox.js`, the SHOEBOX-* panels, the battens and
+// steps are gone and a shoe is a STANDARD drawer item `{ kind: 'drawer',
+// variant: 'shoe' }` with one override (side height = drawers.shoeSideMm =
+// 80). The batten test below is amended in place: the batten pair it pinned
+// no longer exists (its replacement suite is
+// test/turn54-f7-the-shoe-drawer.test.js); the LIVING law it carried — a
+// panel id IS the file name, a ZIP keeps ONE entry per name — is re-asserted
+// against the shoe drawer's own parts. The seeded job's `kind: 'shoe_box'`
+// item now emits nothing (dead kind), so the export counts below stand on
+// the surviving cabinets.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -122,31 +135,39 @@ test('F2 — no entity stands on a layer the LAYER table never declares', () => 
 
 // ─── THE PART THE MACHINE NEVER GOT ───────────────────────────────────────
 
-test('F2 — the shoe box’s two battens have two names, and two files', () => {
-  // The shape that reproduces it: a wardrobe wide enough to be hinged BOTH
-  // ways, with a drawer shoe box behind the doors.
+test('F2 — the shoe cuts as a DRAWER, and every part still has its own file', () => {
+  // T54-F7 AMENDED (28.08.2026): this test pinned the two battens
+  // (`SHOE1-BATTEN-L/R`, part `SHOEBOX-BATTEN`) whose shared name was T53's
+  // finding. The battens DIED with the shoe-box world (licence 2 — owner:
+  // *"usuń stary kod na shoes i zrób z logiką drawers"*); the shoe drawer's
+  // own suite is test/turn54-f7-the-shoe-drawer.test.js. What LIVES here and
+  // is not weakened: a panel id IS the DXF file name and a ZIP keeps ONE
+  // entry per name — re-asserted on the same 900 wardrobe, now carrying the
+  // new world's shoe: a standard drawer item with `variant: 'shoe'`.
   const result = computeCabinet({
     ...defaultParamsFor('WARDROBE', P),
     unit_num: 'W01',
     width: 900,
-    sections: [{ width_mm: 900, items: [{ id: 'sb1', kind: 'shoe_box', variant: 'D', dividers: 1 }] }],
+    sections: [{
+      width_mm: 900,
+      items: [{ id: 's1', kind: 'drawer', index: 1, height_mm: 116, variant: 'shoe' }],
+    }],
   }, P);
 
-  const battens = result.panels.filter((p) => /BATTEN/.test(p.id));
-  assert.equal(battens.length, 2, 'a hinged side each way, a batten each');
-  assert.equal(new Set(battens.map((p) => p.id)).size, 2, 'two ids, not one');
-  assert.deepEqual(battens.map((p) => p.id).sort(), ['SHOE1-BATTEN-L', 'SHOE1-BATTEN-R']);
+  // The grave, checked by name: no batten, no SHOEBOX-* part, anywhere.
+  assert.deepEqual(result.panels.filter((p) => /BATTEN|SHOEBOX/.test(p.id) || /BATTEN|SHOEBOX/.test(p.part)), [],
+    'the shoe-box world is dead — no batten, no SHOEBOX part');
 
-  // …and the BOM code is untouched, because the bill counts the part and not
-  // the file.
-  assert.deepEqual(battens.map((p) => p.part), ['SHOEBOX-BATTEN', 'SHOEBOX-BATTEN']);
+  // The shoe is the DRAWER law's own boards — sides, box front/back, bottom.
+  const box = result.panels.filter((p) => /^D1-/.test(p.id)).map((p) => p.id).sort();
+  assert.deepEqual(box, ['D1-BB', 'D1-BF', 'D1-DNO', 'D1-SL', 'D1-SR'],
+    'a standard drawer box, cut by the same code path as every drawer');
 
   // The consequence the joiner felt: a ZIP keeps ONE entry per name.
   const files = buildUnitDxfFiles(result, P, {});
   const names = files.map((f) => f.name);
   assert.equal(new Set(names).size, names.length, 'every part of this cabinet has its own file');
-  assert.ok(names.includes('W01-SHOE1-BATTEN-L.dxf'));
-  assert.ok(names.includes('W01-SHOE1-BATTEN-R.dxf'));
+  for (const id of box) assert.ok(names.includes(`W01-${id}.dxf`), `W01-${id}.dxf reaches the machine`);
 });
 
 test('F2 — and no cabinet in the seeded job repeats a panel id', () => {

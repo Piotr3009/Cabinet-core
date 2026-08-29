@@ -48,6 +48,15 @@
 ;;;                           okolo 60 mm". The trade standard is about 50 for a
 ;;;                           watch pocket; 60 carries a chronograph and a
 ;;;                           lining, which is why he is right to say 60.
+;;;
+;;;   T54 AMENDMENT (28.08.2026) - the owner re-sized: "120 prosze." The
+;;;   front height is DERIVED (40 + 9 + 2 + 15 + 18 + 36 = 120), so the one
+;;;   number that moves is the INSIDE DEPTH: 60 -> 40. TRADE NOTE, amended:
+;;;   at 40 a 44-48 mm chronograph will no longer lie flat in its pocket -
+;;;   it rests on the crown or stands proud of the glass line. That is his
+;;;   veto line, written beside the number as the house asks; the 60 above
+;;;   stays as history. The POCKET FLOOR (60 clear width) is untouched -
+;;;   that number is ACROSS the pocket, not down it.
 ;;;   POCKET        about 110 deep x 95 wide. A watch CASE runs 30-48 mm across,
 ;;;                           so a pocket must NEVER fall below 60 mm clear -
 ;;;                           that is the floor, and the count is what gives

@@ -924,6 +924,63 @@ export function roofBoards(cut, { h, G } = {}) {
 }
 
 /**
+ * ─── T54 (F1): THE CARCASS CUT LINE — cutReach, NOT the ceiling ─────────────
+ *
+ * The owner's audit, 28.08: the roof, the strip and the shelf all hung from
+ * ONE line — the ceiling — and stacked. The law (SKY:carcassCutPts,
+ * SKYLON_COMMON.lsp T54 section — LISP first, iron rule 3):
+ *
+ *     ceilReach(x) = the ceiling polyline itself (`slope_cut.pts`).
+ *     cutReach(x)  = ceilReach(x) − infill / cos β(x)  — the carcass CUT line.
+ *
+ * The owner's 40 is the FACE strip's CUT HEIGHT, mounted along the slope, so
+ * the vertical reserve it consumes is `infill / cos β` on a raked stretch and
+ * exactly `infill` on a flat one (cos β = 1 — the degenerate case, which is
+ * the flat cabinet's own arithmetic). DECISION TAKEN for the owner (veto:
+ * "40 w pionie"): the 40 stays the CUT size; the vertical gap grows.
+ *
+ * Each segment is lowered by ITS OWN reserve — parallel to the ceiling at
+ * PERPENDICULAR distance `infill` — and where two lowered segments of
+ * different β meet, the vertex is their INTERSECTION: the mitre the two face
+ * strips' bottom edges actually make, clamped inside the pair so the walk
+ * stays left to right. `infill` 0 (every caller that passes none) returns the
+ * points unchanged, which is the whole T46–T53 behaviour to the byte.
+ */
+export function carcassCutPts(cut, infill) {
+  const pts = slopeCutPts(cut);
+  if (!pts) return null;
+  const drop = Math.max(0, Number(infill) || 0);
+  if (!(drop > 0)) return pts.map((p) => ({ x: p.x, y: p.y }));
+  const segs = [];
+  for (let i = 1; i < pts.length; i += 1) {
+    const a = pts[i - 1];
+    const b = pts[i];
+    const deg = slopeSegDeg(b.x - a.x, b.y - a.y);
+    const cos = Math.cos((deg * Math.PI) / 180);
+    const v = cos > SLOPE_EPS ? drop / cos : drop;
+    segs.push({
+      ax: a.x, ay: a.y - v, bx: b.x, by: b.y - v,
+    });
+  }
+  const out = [{ x: segs[0].ax, y: segs[0].ay }];
+  for (let i = 1; i < segs.length; i += 1) {
+    const p = segs[i - 1];
+    const q = segs[i];
+    const m1 = Math.abs(p.bx - p.ax) > SLOPE_EPS ? (p.by - p.ay) / (p.bx - p.ax) : 0;
+    const m2 = Math.abs(q.bx - q.ax) > SLOPE_EPS ? (q.by - q.ay) / (q.bx - q.ax) : 0;
+    if (Math.abs(m1 - m2) < 1e-9) {
+      out.push({ x: q.ax, y: q.ay });
+    } else {
+      let x = (q.ay - p.ay + m1 * p.ax - m2 * q.ax) / (m1 - m2);
+      x = Math.max(p.ax, Math.min(q.bx, x));
+      out.push({ x, y: p.ay + m1 * (x - p.ax) });
+    }
+  }
+  out.push({ x: segs[segs.length - 1].bx, y: segs[segs.length - 1].by });
+  return out;
+}
+
+/**
  * A stretch of the line, re-origined — the line over `[from, to]` with x
  * measured from `from` and y lowered by `dy`.
  *

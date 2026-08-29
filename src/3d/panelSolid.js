@@ -63,27 +63,20 @@ export function machinedPanelGeometry(panel, layers, profile, drills = []) {
  *   which is what tells the caller to use a `boxGeometry` as it always has.
  */
 export function panelSolids(panel, layers, profile, drills = []) {
-  const placement = panelPlacement(panel);
-  if (!placement || !panel?.box) return NOTHING;
-  // ─── CHAT-FIX 25.08.2026 (part two): THE ROOF BOARD'S ENDS ARE VERTICAL ──
-  //
-  // The owner, red pen on both corners: *"katy nie sa poucinane."* His law,
-  // 24.08: *"pionowo lico do boku."* The leant board rendered as a rotated
-  // BOX, so its ends stood perpendicular to the board and the lower corners
-  // poked `G·sin β` past the plumb line at each end. The true section is a
-  // PARALLELOGRAM — ends vertical AFTER the lean, which in the board's own
-  // level frame means the underside is shifted `G·tan β` toward the LOW end.
-  // Its overall run is then `L + G·tan β` — the very `L_MAX` the cut list
-  // already prints, so the scene and the sheet finally say one number.
-  //
-  // Sides' bevel (part one, below) is untouched; a LEVEL top keeps the plain
-  // box it has always been.
-  if (panel.part === 'TOP' && panel.meta?.tilt_axis === 'z'
-    && Number.isFinite(Number(panel.meta?.tilt_deg)) && panel.meta?.tilt_pivot) {
+  // Chat-fix 29.08.2026: the leant-board branch stands BEFORE the placement
+  // guard — the strip is an INFILL and `panelPlacement` has no seat for it,
+  // which is exactly how it kept slipping past the roof's shear and out of
+  // plumb. The branch needs a box and a lean, nothing more.
+  const leant = panel?.box
+    && (panel.part === 'TOP' || /^INFILL-T-(FACE|SHELF)/.test(String(panel.id)))
+    && panel.meta?.tilt_axis === 'z'
+    && Number.isFinite(Number(panel.meta?.tilt_deg)) && panel.meta?.tilt_pivot;
+  if (leant) {
     const bx = panel.box;
-    const shear = bx.h * Math.tan(Math.abs(Number(panel.meta.tilt_deg)) * (Math.PI / 180));
-    const sign = Number(panel.meta.tilt_pivot.x) >= bx.x + bx.w / 2 ? 1 : -1;
-    const key = `ROOF|${bx.w}|${bx.h}|${bx.d}|${shear.toFixed(4)}|${sign}`;
+    const tiltRad = Number(panel.meta.tilt_deg) * (Math.PI / 180);
+    const shear = bx.h * Math.tan(Math.abs(tiltRad));
+    const sign = tiltRad > 0 ? -1 : 1;
+    const key = `LEANT|${panel.part}|${panel.id}|${bx.w}|${bx.h}|${bx.d}|${shear.toFixed(4)}|${sign}`;
     const hit = cache.get(key);
     if (hit) {
       cache.delete(key);
@@ -104,6 +97,25 @@ export function panelSolids(panel, layers, profile, drills = []) {
     }
     return built;
   }
+  const placement = panelPlacement(panel);
+  if (!placement || !panel?.box) return NOTHING;
+  // ─── CHAT-FIX 25.08.2026 (part two): THE ROOF BOARD'S ENDS ARE VERTICAL ──
+  //
+  // The owner, red pen on both corners: *"katy nie sa poucinane."* His law,
+  // 24.08: *"pionowo lico do boku."* The leant board rendered as a rotated
+  // BOX, so its ends stood perpendicular to the board and the lower corners
+  // poked `G·sin β` past the plumb line at each end. The true section is a
+  // PARALLELOGRAM — ends vertical AFTER the lean, which in the board's own
+  // level frame means the underside is shifted `G·tan β` toward the LOW end.
+  // Its overall run is then `L + G·tan β` — the very `L_MAX` the cut list
+  // already prints, so the scene and the sheet finally say one number.
+  //
+  // Sides' bevel (part one, below) is untouched; a LEVEL top keeps the plain
+  // box it has always been.
+  // Chat-fix 29.08.2026: the branch itself moved ABOVE the placement guard
+  // (the strip is an INFILL and `panelPlacement` has no seat for it), grew the
+  // strip and the shelf, and reads its shear sign from the SIGNED `tilt_deg`.
+  // The words above stay as the law's history; the code lives at the top.
   const notches = socketNotches(panel, layers);
   // ─── Turn 12 (CLAUDE.md F6.2): the OTHER half of the joint ───
   // A socket is a POCKET and a TAB is part of the OUTLINE, and turn 11 only

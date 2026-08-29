@@ -238,7 +238,17 @@ for (const [name, CUT] of [['fall to the RIGHT (the audit scene)', AUDIT_R], ['f
       // ends square, so the parity claim is about the two LONG EDGES: the
       // drawing's top and bottom edges lie on the rotated board's own lines,
       // at all three stations, to 0.05 (the DXF audit's own tolerance).
-      const stated = said.map(([ex, ey]) => [p.box.x + ex, p.box.y + ey]);
+      //
+      // AMENDED, chat-fix 29.08.2026: the strip's and the shelf's elevation is
+      // now the FITTED PARALLELOGRAM in the box's LEVEL frame (ends plumb
+      // after the lean — the owner's "wąsik" audit), so those two are LEANT
+      // here exactly as the scene leans them before the long-edge comparison.
+      // The TOP's elevation was already stated leant (25.08) and passes as it
+      // stands. The DXF half below is UNTOUCHED — the blank stays the blank.
+      const stated = said
+        .map(([ex, ey]) => [p.box.x + ex, p.box.y + ey])
+        .map((q) => (id === 'TOP' ? q
+          : spin(q, p.meta.tilt_pivot, p.meta.tilt_deg)));
       const statedBottom = edgeAt(stated[0], stated[1]);
       const statedTop = edgeAt(stated[3], stated[2]);
       const spunBottom = edgeAt(spun[0], spun[1]);

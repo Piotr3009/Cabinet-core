@@ -4967,22 +4967,25 @@ export function computeCabinet(params, profileOverride) {
       // traces the leant band instead of the level rectangle — the same
       // mechanism the roof board has carried since T47-F5. Emitted only for a
       // raked segment; a flat piece's box needs no help.
-      const segElevation = (box, pv) => {
-        if (!(sg.deg > 1e-9)) return {};
+      // Chat-fix 29.08.2026: the band's TRUE section is a PARALLELOGRAM — ends
+      // cut VERTICALLY after the lean (the roof's own 25.08 law, extended to
+      // the two boards that lean with it). The old body rotated the RECTANGLE's
+      // corners, so the wall sheet drew the lower corners `h·sin β` past the
+      // plumb line at each end — the owner's "wąsik", on paper. In the box's
+      // level frame a plumb end means the underside shifts `h·tan(tilt)`
+      // toward the LOW end; the scene's sheared solid says the same numbers
+      // (3d/panelSolid.js), so the sheet and the room finally agree here too.
+      const segElevation = (box) => {
+        if (!(sg.deg > 1e-9) || !box) return {};
         const lowR = infReachAt(sg.to) < infReachAt(sg.from);
         const th = ((lowR ? -sg.deg : sg.deg) * Math.PI) / 180;
-        const corners = [
-          [box.x, box.y], [box.x + box.w, box.y],
-          [box.x + box.w, box.y + box.h], [box.x, box.y + box.h],
-        ].map(([qx, qy]) => {
-          const dx = qx - pv.x;
-          const dy = qy - pv.y;
-          return [
-            roundTo(pv.x + dx * Math.cos(th) - dy * Math.sin(th) - box.x, 4),
-            roundTo(pv.y + dx * Math.sin(th) + dy * Math.cos(th) - box.y, 4),
-          ];
-        });
-        return { elevation: corners };
+        const dx = roundTo(-box.h * Math.tan(th), 4);
+        return {
+          elevation: [
+            [dx, 0], [roundTo(box.w + dx, 4), 0],
+            [roundTo(box.w, 4), roundTo(box.h, 4)], [0, roundTo(box.h, 4)],
+          ],
+        };
       };
       // The two raked boxes, hoisted so the meta's elevation can rotate the
       // same corners the scene leans — one set of numbers, two readers.
@@ -5054,7 +5057,7 @@ export function computeCabinet(params, profileOverride) {
           tilt_axis: 'z',
           tilt_pivot: { x: segXL, y: segYL },
           // T54-F1 (parity): the leant band's own corners, for the elevation.
-          ...segElevation(faceBoxRaked, { x: segXL, y: segYL }),
+          ...segElevation(faceBoxRaked),
         } : {}),
       };
       panels.push(panel({
@@ -5129,7 +5132,7 @@ export function computeCabinet(params, profileOverride) {
             tilt_deg: roundTo(segLowR ? -sg.deg : sg.deg, 4),
             tilt_axis: 'z',
             tilt_pivot: { x: segXL, y: shelfPivotY },
-            ...segElevation(shelfBoxRaked, { x: segXL, y: shelfPivotY }),
+            ...segElevation(shelfBoxRaked),
           } : {}),
           mitre_45: [...new Set([
             ...mitre(i === 0 && ends.left === 'open'),

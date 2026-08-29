@@ -1,0 +1,157 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
+import { computeCabinet } from '../src/engine/cabinet.js';
+import { defaultParamsFor } from '../src/engine/types.js';
+import { panelSolids } from '../src/3d/panelSolid.js';
+import { mm } from '../src/3d/constants.js';
+
+// ─── CHAT-FIX 29.08.2026 — THE STRIP'S ENDS ARE VERTICAL TOO ────────────────
+//
+// The owner's T54 audit, measured on the live engine: the roof came under the
+// 25.08 shear, but the two boards that LEAN WITH it never did. The strip
+// (INFILL-T-FACE) rendered as a rotated RECTANGLE, so its lower corners stood
+// `bandH·sin β` = 17.9 mm past the plumb line at each end — the exact "wąsik"
+// on his BUR screenshot, and the lone piece hanging beside W03 on the
+// two-knee run (the strip's end reaching into the neighbour's band: the house
+// overlap law broken by a render). The SHELF is `scene: 'sheet-only'`, so its
+// fault lived on the WALL SHEET: `segElevation` rotated the rectangle's
+// corners and the paper drew the same poke.
+//
+// One law, three readers: the scene's solid (panelSolid.js, the roof's own
+// sheared branch extended), the sheet's outline (`meta.elevation`, now the
+// parallelogram in the box's level frame) and the CNC blank (UNTOUCHED — the
+// board leaves the machine square, T48-F2, and the corner is cut on site).
+//
+// The shear's direction now reads the SIGNED `tilt_deg` itself: underside
+// toward the LOW end = `−h·tan(tilt)`. Both rakes below prove the sign.
+
+const PARAMS = {
+  ...defaultParamsFor('WARDROBE', P),
+  unit_num: '01',
+  side_infill_left_mm: 40,
+  side_infill_right_mm: 40,
+  top_infill_mm: 40,
+};
+const H = PARAMS.height;
+const W = PARAMS.width;
+
+const spin = ([x, y], pv, deg) => {
+  const a = (deg * Math.PI) / 180;
+  const dx = x - pv.x;
+  const dy = y - pv.y;
+  return [pv.x + dx * Math.cos(a) - dy * Math.sin(a),
+    pv.y + dx * Math.sin(a) + dy * Math.cos(a)];
+};
+
+const RAKES = [
+  ['fall to the RIGHT (peak at BUL)',
+    { pts: [{ x: 0, y: H - 150 }, { x: W, y: H - 150 - W * 0.5 }], infill: 40 }],
+  ['fall to the LEFT (peak at BUR — the owner\'s screenshot)',
+    { pts: [{ x: 0, y: H - 150 - W * 0.5 }, { x: W, y: H - 150 }], infill: 40 }],
+];
+
+for (const [name, slope] of RAKES) {
+  test(`the strip's SOLID stands plumb at x = 0 and x = W — ${name}`, () => {
+    const r = computeCabinet({ ...PARAMS, slope_cut: slope }, P);
+    const face = r.panels.find((p) => p.id === 'INFILL-T-FACE');
+    assert.ok(face, 'the strip exists under the rake');
+    const built = panelSolids(face, P.puzzle.layers, P);
+    assert.ok(built?.solid, 'the leant strip now has its own sheared solid');
+    const pos = built.solid.attributes.position;
+    const cx = face.box.x + face.box.w / 2;
+    const cy = face.box.y + face.box.h / 2;
+    const xs = new Set();
+    for (let i = 0; i < pos.count; i += 1) {
+      const wx = pos.getX(i) / mm(1) + cx;
+      const wy = pos.getY(i) / mm(1) + cy;
+      const [rx] = spin([wx, wy], face.meta.tilt_pivot, face.meta.tilt_deg);
+      xs.add(Math.round(rx * 100) / 100);
+    }
+    const lines = [...xs].sort((a, b) => a - b);
+    assert.equal(lines.length, 2,
+      `two plumb lines and nothing between — saw ${lines.join(', ')}`);
+    assert.ok(Math.abs(lines[0] - 0) < 0.05, `one end at x = 0 (saw ${lines[0]})`);
+    assert.ok(Math.abs(lines[1] - W) < 0.05, `one end at x = ${W} (saw ${lines[1]})`);
+  });
+
+  test(`the sheet's own outline says the same parallelogram — ${name}`, () => {
+    const r = computeCabinet({ ...PARAMS, slope_cut: slope }, P);
+    for (const id of ['INFILL-T-FACE', 'INFILL-T-SHELF']) {
+      const p = r.panels.find((q) => q.id === id);
+      assert.ok(p?.meta?.elevation, `${id} carries its elevation`);
+      const world = p.meta.elevation.map(([lx, ly]) => spin(
+        [lx + p.box.x, ly + p.box.y], p.meta.tilt_pivot, p.meta.tilt_deg,
+      ));
+      // Ends vertical: corner 0 under corner 3, corner 1 under corner 2.
+      assert.ok(Math.abs(world[0][0] - world[3][0]) <= 0.01,
+        `${id} left end plumb (Δ=${(world[0][0] - world[3][0]).toFixed(3)})`);
+      assert.ok(Math.abs(world[1][0] - world[2][0]) <= 0.01,
+        `${id} right end plumb (Δ=${(world[1][0] - world[2][0]).toFixed(3)})`);
+      // And nothing outside the piece's own span.
+      for (const [wx] of world) {
+        assert.ok(wx >= -0.01 && wx <= W + 0.01,
+          `${id} corner inside [0, ${W}] (saw ${wx.toFixed(3)})`);
+      }
+    }
+  });
+
+  test(`the trio's three joints hold to a hundredth — ${name}`, () => {
+    const r = computeCabinet({ ...PARAMS, slope_cut: slope }, P);
+    const beta = Math.atan(0.5);
+    const cos = Math.cos(beta);
+    const a = slope.pts[0];
+    const b = slope.pts[1];
+    const ceil = (x) => a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x);
+    const cut = (x) => ceil(x) - 40 / cos;
+    const edge = (p, top) => {
+      const pts = top
+        ? [p.meta.elevation[3], p.meta.elevation[2]]
+        : [p.meta.elevation[0], p.meta.elevation[1]];
+      return pts.map(([lx, ly]) => spin(
+        [lx + p.box.x, ly + p.box.y], p.meta.tilt_pivot, p.meta.tilt_deg,
+      ));
+    };
+    const at = ([[x1, y1], [x2, y2]], X) => y1 + ((y2 - y1) * (X - x1)) / (x2 - x1);
+    const face = r.panels.find((q) => q.id === 'INFILL-T-FACE');
+    const roof = r.panels.find((q) => q.id === 'TOP');
+    const fTop = edge(face, true);
+    const fBot = edge(face, false);
+    for (const X of [50, W / 2, W - 50]) {
+      assert.ok(Math.abs(ceil(X) - at(fTop, X)) <= 0.01, `FACE top on ceiling @${X}`);
+      assert.ok(Math.abs(cut(X) - at(fBot, X)) <= 0.01, `FACE bottom on cutReach @${X}`);
+    }
+    // The roof's top edge, read from its OWN sheared solid (order-proof): the
+    // two plumb ends stand at x = 0 and x = W, and the highest leant vertex on
+    // each is the top edge's end. T54-F1 hung the roof from cutReach — that
+    // edge must meet the strip's bottom, joint for joint.
+    const rBuilt = panelSolids(roof, P.puzzle.layers, P);
+    const rp = rBuilt.solid.attributes.position;
+    const rcx = roof.box.x + roof.box.w / 2;
+    const rcy = roof.box.y + roof.box.h / 2;
+    let top0 = -Infinity;
+    let topW = -Infinity;
+    for (let i = 0; i < rp.count; i += 1) {
+      const [rx, ry] = spin(
+        [rp.getX(i) / mm(1) + rcx, rp.getY(i) / mm(1) + rcy],
+        roof.meta.tilt_pivot, roof.meta.tilt_deg,
+      );
+      if (Math.abs(rx - 0) < 0.05) top0 = Math.max(top0, ry);
+      if (Math.abs(rx - W) < 0.05) topW = Math.max(topW, ry);
+    }
+    const rTop = [[0, top0], [W, topW]];
+    for (const X of [50, W / 2, W - 50]) {
+      assert.ok(Math.abs(at(fBot, X) - at(rTop, X)) <= 0.01,
+        `FACE bottom meets ROOF top @${X} (Δ=${(at(fBot, X) - at(rTop, X)).toFixed(4)})`);
+    }
+  });
+}
+
+test('a FLAT band never enters the sheared branch — the plain path as ever', () => {
+  const flat = computeCabinet(PARAMS, P);
+  const face = flat.panels.find((p) => p.id === 'INFILL-T-FACE');
+  assert.ok(face, 'the flat strip exists');
+  assert.equal(face.meta?.tilt_axis, undefined, 'nothing tells it to lean');
+  assert.equal(face.meta?.elevation, undefined, 'and it states no elevation');
+});

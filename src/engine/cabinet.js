@@ -4934,79 +4934,105 @@ export function computeCabinet(params, profileOverride) {
     const segReserve = runCeil
       ? (Math.max(0, Number(runInfill.ceilingInfill) || 0) || slopeReserve)
       : slopeReserve;
+    // ─── T55 · THE RAKED STRIP, WRITTEN FRESH (29.08.2026, the owner's order:
+    // "usuń stary kod i zrób od nowa") ─────────────────────────────────────
+    // Under a rake the top infill is ONE BOARD and nothing else. This module
+    // owns the whole of it: the parallelogram (plumb ends — 29.08 law), the
+    // knee joins on the half-angle (the only mitre a rake knows), the signed
+    // lean and its pivot on the ceiling's low end, the sheet/scene parity
+    // corners, the site allowance on a run-end. No shelf, no returns, no
+    // picture-frame 45, no corner — those are LEVEL things and live only in
+    // the level path below. The numbers are T54-F1's, unchanged, so the trio
+    // laws (top on ceiling, bottom on cutReach, 0.0006 mm) hold as measured.
+    const emitRakedStrip = (sg, i) => {
+      const segLen = roundTo(sg.run, 4);
+      const cos = Math.cos((sg.deg * Math.PI) / 180) > 1e-9
+        ? Math.cos((sg.deg * Math.PI) / 180) : 1;
+      const bandH = segReserve > 0 ? segReserve : faceH;
+      const lowR = infReachAt(sg.to) < infReachAt(sg.from);
+      const xL = lowR ? roundTo(sg.to, 4) : roundTo(sg.from, 4);
+      const yL = roundTo(lowR ? infReachAt(sg.to) : infReachAt(sg.from), 4);
+      const overEnd = allowanceEnd(i === 0, i === runSegsSplit.length - 1);
+      const overLen = overEnd ? overT : 0;
+      const cutLen = roundTo(segLen + overLen, 4);
+      const box = {
+        x: roundTo(lowR ? xL - segLen : xL, 4),
+        y: roundTo(yL - bandH, 4),
+        z: faceZ - t,
+        w: segLen,
+        h: bandH,
+        d: t,
+      };
+      const th = ((lowR ? -sg.deg : sg.deg) * Math.PI) / 180;
+      const dx = roundTo(-box.h * Math.tan(th), 4);
+      panels.push(panel({
+        id: segId('INFILL-T-FACE', i),
+        part: 'INFILL',
+        role: 'infill',
+        w: cutLen,
+        h: bandH + overT,
+        thickness: t,
+        edgeCode: codes.topBottom,
+        edgeLen: metres(segLen),
+        box,
+        cnc: rectGeometry(cutLen, bandH + overT),
+        meta: {
+          side: 'top',
+          piece: 'face',
+          segment: manySegs ? `main-${i + 1}` : 'main',
+          ends,
+          // The knee is the rake's ONLY joint: two pieces meet on the
+          // half-angle, exactly as the owner drew it. 'end' marks the cut for
+          // the labeller; the angles are T47's.
+          mitre_45: (sg.joinL || sg.joinR) ? ['end'] : [],
+          ...(sg.joinL != null || sg.joinR != null ? {
+            mitre: {
+              ...(sg.joinL != null ? { left: sg.joinL } : {}),
+              ...(sg.joinR != null ? { right: sg.joinR } : {}),
+            },
+          } : {}),
+          corner: { left: 0, right: 0 },
+          units: runInfill.unitIds || null,
+          ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(bandH, 4) } } : {}),
+          ...(overEnd && overLen > 0
+            ? { lengthOversize: { mm: overLen, end: overEnd, nominal: roundTo(segLen, 4) } }
+            : {}),
+          slopeCut: {
+            deg: roundTo(sg.deg, 4),
+            span: roundTo(sg.to - sg.from, 4),
+            along: roundTo(segLen, 4),
+            segment: i + 1,
+            of: runSegsSplit.length,
+            cutHeight: roundTo(bandH, 4),
+          },
+          tilt_deg: roundTo(lowR ? -sg.deg : sg.deg, 4),
+          tilt_axis: 'z',
+          tilt_pivot: { x: xL, y: yL },
+          // Parity, three surfaces: a PARALLELOGRAM — the underside shifted
+          // h·tan(tilt) toward the low end, ends plumb after the lean.
+          elevation: [
+            [dx, 0], [roundTo(box.w + dx, 4), 0],
+            [roundTo(box.w, 4), roundTo(box.h, 4)], [0, roundTo(box.h, 4)],
+          ],
+        },
+      }));
+    };
     runSegsSplit.forEach((sg, i) => {
+      if (sg.deg > 1e-9) { emitRakedStrip(sg, i); return; }
+      // ─── THE LEVEL PATH — physically untouched behaviour ─────────────────
       // Rounded at the source: `span / cos β` is irrational for most angles and
       // the cut size, the outline and the label must be the one number.
       const segLen = roundTo(sg.run, 4);
       const segX0 = sg.from;
       const yTop = infRoof ? infReachAt((sg.from + sg.to) / 2) : H;
-      // T54-F1 per-segment numbers. On a raked stretch the FACE's CUT HEIGHT
-      // is the reserve itself (owner's ruling: the 40 is the cut size, mounted
-      // along the slope; veto "40 w pionie"), so its bottom edge lands on
-      // `cutReach` — two parallel lines a perpendicular `infill` apart. On a
-      // flat stretch, and wherever no reserve was handed down, the band is the
-      // `faceH` it has always been.
-      const segRaked = sg.deg > 1e-9;
-      const segCos = Math.cos((sg.deg * Math.PI) / 180) > 1e-9
-        ? Math.cos((sg.deg * Math.PI) / 180) : 1;
-      const bandH = segRaked && segReserve > 0 ? segReserve : faceH;
-      // The roof board's vertical footprint under this segment — what the
-      // SHELF hangs below (`cutReach − G / cos β`, its top face on the roof's
-      // underside; veto "shelf pod wieńcem").
-      const segResDrop = segRaked && segReserve > 0 ? segReserve / segCos : 0;
-      const segRoofDrop = G / segCos;
-      // T48-F2: the site-cut allowance, on ONE end of this board.
+      const bandH = faceH;
       const overEnd = allowanceEnd(i === 0, i === runSegsSplit.length - 1);
       const overLen = overEnd ? overT : 0;
       const cutLen = roundTo(segLen + overLen, 4);
       const lengthOversize = overEnd && overLen > 0
         ? { lengthOversize: { mm: overLen, end: overEnd, nominal: roundTo(segLen, 4) } }
         : {};
-      // T54-F1 (parity, three surfaces): the piece's ROTATED corners in its
-      // box's own frame, so `drawings/frontElevation.js elevationOutline`
-      // traces the leant band instead of the level rectangle — the same
-      // mechanism the roof board has carried since T47-F5. Emitted only for a
-      // raked segment; a flat piece's box needs no help.
-      // Chat-fix 29.08.2026: the band's TRUE section is a PARALLELOGRAM — ends
-      // cut VERTICALLY after the lean (the roof's own 25.08 law, extended to
-      // the two boards that lean with it). The old body rotated the RECTANGLE's
-      // corners, so the wall sheet drew the lower corners `h·sin β` past the
-      // plumb line at each end — the owner's "wąsik", on paper. In the box's
-      // level frame a plumb end means the underside shifts `h·tan(tilt)`
-      // toward the LOW end; the scene's sheared solid says the same numbers
-      // (3d/panelSolid.js), so the sheet and the room finally agree here too.
-      const segElevation = (box) => {
-        if (!(sg.deg > 1e-9) || !box) return {};
-        const lowR = infReachAt(sg.to) < infReachAt(sg.from);
-        const th = ((lowR ? -sg.deg : sg.deg) * Math.PI) / 180;
-        const dx = roundTo(-box.h * Math.tan(th), 4);
-        return {
-          elevation: [
-            [dx, 0], [roundTo(box.w + dx, 4), 0],
-            [roundTo(box.w, 4), roundTo(box.h, 4)], [0, roundTo(box.h, 4)],
-          ],
-        };
-      };
-      // The two raked boxes, hoisted so the meta's elevation can rotate the
-      // same corners the scene leans — one set of numbers, two readers.
-      const segLowR = infReachAt(sg.to) < infReachAt(sg.from);
-      const segXL = segLowR ? roundTo(sg.to, 4) : roundTo(sg.from, 4);
-      const segYL = roundTo(segLowR ? infReachAt(sg.to) : infReachAt(sg.from), 4);
       const shelfLen = roundTo(sg.shelfRun, 4);
-      const faceBoxRaked = sg.deg > 1e-9 ? {
-        x: roundTo(segLowR ? segXL - segLen : segXL, 4),
-        y: roundTo(segYL - bandH, 4),
-        z: faceZ - t,
-        w: segLen,
-        h: bandH,
-        d: t,
-      } : null;
-      // ─── T55 DELETION (29.08.2026, the owner's order, second telling) ─────
-      // *"cały stary kod i logikę z L-shape'owym infillem i zawinięciami
-      // miałeś usunąć i zrobić od nowa"* — the raked-wrap machinery that
-      // stood here (`shelfBoxRaked`, `shelfPivotY`, the shelf's tilt meta) is
-      // DELETED, not gated. Under a rake the infill is ONE board; the wrap —
-      // shelf and the open-end returns alike — is a LEVEL thing only.
       const faceMeta = {
         side: 'top', piece: 'face', segment: manySegs ? `main-${i + 1}` : 'main', ends,
         // T48-F2: 'long' is gone with the L. What is left is 'end', and only
@@ -5027,41 +5053,10 @@ export function computeCabinet(params, profileOverride) {
         } : {}),
         // Which end turns against a ceiling-height side filler, and by how much
         // — a record, not a cut (T15's chamfer is overruled; see above).
-        // T55 (29.08.2026, the owner): the 45 is the WRAP's joint and the wrap
-        // is dead under a rake — a raked edge segment carries NO corner, in
-        // the element's numbers (runs.js) and, belt-and-braces, here.
-        corner: {
-          left: i === 0 && !(sg.deg > 1e-9) ? cornerL : 0,
-          right: i === runSegsSplit.length - 1 && !(sg.deg > 1e-9) ? cornerR : 0,
-        },
+        corner: { left: i === 0 ? cornerL : 0, right: i === runSegsSplit.length - 1 ? cornerR : 0 },
         units: runInfill.unitIds || null,
         ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(bandH, 4) } } : {}),
         ...lengthOversize,
-        ...(sg.deg > 1e-9 ? {
-          slopeCut: {
-            deg: roundTo(sg.deg, 4),
-            span: roundTo(sg.to - sg.from, 4),
-            along: roundTo(segLen, 4),
-            segment: i + 1,
-            of: runSegsSplit.length,
-            // T54-F1: the strip's cut height under this rake — the reserve
-            // itself, so the sheet, the elevation and the scene say one number.
-            cutHeight: roundTo(bandH, 4),
-          },
-          // The piece is MOUNTED on the slope; the 3-D and the elevation tilt it
-          // rather than redrawing it, exactly as the shoe box's own `tilt_deg`
-          // does with its sloping bottom (T30).
-          //
-          // Chat-fix 25.08.2026: …and now the scene CAN — the deg is SIGNED
-          // (CCW about Z; a fall to the right leans clockwise), the axis is
-          // named, and the pivot is the CEILING at the low end, so the top
-          // edge lands on the line it fills to.
-          tilt_deg: roundTo(segLowR ? -sg.deg : sg.deg, 4),
-          tilt_axis: 'z',
-          tilt_pivot: { x: segXL, y: segYL },
-          // T54-F1 (parity): the leant band's own corners, for the elevation.
-          ...segElevation(faceBoxRaked),
-        } : {}),
       };
       panels.push(panel({
         // BOARD A — the face. `faceH + overT` is 40 + 20 = 60 AS ARITHMETIC:
@@ -5073,13 +5068,7 @@ export function computeCabinet(params, profileOverride) {
         // is the visible bottom edge and does. The LISP code vocabulary has no
         // "one long edge", so the code names the pair and the LENGTH says one.
         edgeCode: codes.topBottom, edgeLen: metres(segLen),
-        // Chat-fix 25.08.2026: the level band the scene will lean, hung from
-        // the ceiling at the LOW end. T54-F1: its height is `bandH` — the
-        // reserve — so after the lean its top edge lies on `ceilReach` and
-        // its bottom edge on `cutReach`, parallel lines a perpendicular
-        // `infill` apart. Same pivot as always: the CEILING at the low end —
-        // this piece alone keeps it.
-        box: faceBoxRaked || {
+        box: {
           x: segX0, y: infRoof ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
         },
         // Cut to the long point at a mitred end: the BOTTOM corner is the one
@@ -5095,16 +5084,12 @@ export function computeCabinet(params, profileOverride) {
       // The SHELF is NOT extended over a frame corner (T15's own rule), so it
       // takes the segment's own length without the mitres' long points.
       //
-      // T55 SIMPLIFICATION (29.08.2026, owner): *"dodaj pod skosem deskę jak
-      // prosty infill BEZ ZAWIJANIA ... zawijanie się wyłącza od strony
-      // skosu, nie wyłączaj od strony prostej."* UNDER A RAKE THE INFILL IS
-      // ONE BOARD — the face strip alone. The SHELF (board B, the wrap) is a
-      // LEVEL-stretch piece only, and — on the owner's second telling — its
-      // raked machinery is DELETED, not gated: the raked box, the raked
-      // pivot, the shelf's tilt meta and its raked elevation are gone from
-      // this file. What follows is the FLAT shelf, whole and unchanged.
+      // T55 (29.08.2026, the owner, rewritten from scratch): the rake owns
+      // NOTHING here any more — a raked segment left this loop at the top,
+      // into `emitRakedStrip`, one board and done. Everything from here down
+      // is the LEVEL path, whole and unchanged: face, wrap shelf, corners.
       const shelfCutLen = roundTo(shelfLen + overLen, 4);
-      if (!(sg.deg > 1e-9)) panels.push(panel({
+      panels.push(panel({
         // BOARD B — the shelf. *"a druga nominal 80 bez zmian"*: the nominal is
         // the profile's own `shelfDepth` and the wall allowance is the same
         // `fillerOversize` T47 put on it. Nothing about its WIDTH moves tonight.

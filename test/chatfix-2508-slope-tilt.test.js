@@ -160,11 +160,15 @@ test('the TRIO hangs on THREE lines — face on the ceiling, roof on the cut, sh
   // T54-F1 AMENDED (28.08.2026): the chat-fix version of this test was called
   // "the top infill face and shelf lean the same way, hung from the ceiling"
   // and asserted the very stack the owner measured. The trio's law now:
+  // T55 AMENDED (29.08.2026, the owner's simplification): the SHELF left the
+  // rake — *"dodaj pod skosem deskę jak prosty infill BEZ ZAWIJANIA"* — so
+  // the three-line law is now a TWO-line law and the shelf is asserted
+  // ABSENT. History above stays as written.
   const r = build(FALL);
   const face = byId(r, 'INFILL-T-FACE');
-  const shelf = byId(r, 'INFILL-T-SHELF');
   const top = byId(r, 'TOP');
-  for (const p of [face, shelf]) {
+  assert.equal(byId(r, 'INFILL-T-SHELF'), undefined, 'no shelf under a rake (T55)');
+  for (const p of [face]) {
     assert.ok(p, 'the piece exists');
     assert.equal(p.meta.tilt_axis, 'z', 'about Z');
     assert.ok(p.meta.tilt_pivot, 'with a pivot');
@@ -181,9 +185,8 @@ test('the TRIO hangs on THREE lines — face on the ceiling, roof on the cut, sh
     'and its band is the reserve — the 40 is the CUT size (veto: "40 w pionie")');
   assert.ok(Math.abs(top.meta.tilt_pivot.y - (ceilLow - RESERVE_45)) < 0.01,
     'TOP pivots one reserve down');
-  assert.ok(Math.abs(shelf.meta.tilt_pivot.y
-    - (ceilLow - RESERVE_45 - G / Math.cos(Math.PI / 4))) < 0.01,
-    'SHELF pivots under the roof: cutReach − G / cos β (veto: "shelf pod wieńcem")');
+  // (T55, 29.08: the SHELF-pivot line that closed this test is retired with
+  // the piece — its absence is asserted at the top.)
 });
 
 test('no slope — no lean anywhere, and the shoe shelf keeps its own', () => {

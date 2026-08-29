@@ -177,32 +177,35 @@ PROBES.f1 = () => {
   const face = by('INFILL-T-FACE');
   const top = by('TOP');
   const shelf = by('INFILL-T-SHELF');
-  if (face && top && shelf) {
+  // T55 law (29.08.2026, the owner's simplification): under a rake the infill
+  // is ONE board — the shelf must be ABSENT here, and the residual is the
+  // DUET's: FACE on its two lines, TOP's top on cutReach. `foot` stays above
+  // as the flat law's number; the rake no longer spends it.
+  void foot;
+  if (face && top) {
     const f = spunCorners(face);
     const t = spunCorners(top);
-    const s = spunCorners(shelf);
     for (const x of [0, W / 2, W]) {
       worst = Math.max(worst,
         Math.abs(edgeAt(f[3], f[2])(x) - ceil(x)),
         Math.abs(edgeAt(f[0], f[1])(x) - (ceil(x) - res)),
-        Math.abs(edgeAt(t[3], t[2])(x) - (ceil(x) - res)),
-        Math.abs(edgeAt(s[3], s[2])(x) - (ceil(x) - res - foot)));
+        Math.abs(edgeAt(t[3], t[2])(x) - (ceil(x) - res)));
     }
   }
   rows.push({
     id: 'the audit scene',
-    cells: ['YES', face && top && shelf ? 'trio emitted' : 'MISSING',
+    cells: ['YES', face && top ? (shelf ? 'SHELF LEAKED' : 'duet · shelf absent') : 'MISSING',
       `worst residual ${worst.toFixed(4)} mm`],
-    ok: Boolean(face && top && shelf) && worst <= 0.01,
+    ok: Boolean(face && top) && !shelf && worst <= 0.01,
   });
   return {
-    head: 'F1 · THE TRIO — three pieces, three lines, gated on a slope_cut no golden carries',
+    head: 'F1 · THE DUET — two pieces on a rake (T55: the wrap is level-only), gated on a slope_cut no golden carries',
     columns: ['slope_cut', 'cut panels', 'tilted panels'],
     rows,
-    note: 'The residual is the trio law measured through the scene\'s own rotation: FACE top → ceiling, FACE bottom and TOP top → cutReach, SHELF top → the roof\'s underside.',
+    note: 'The residual is the duet law measured through the scene\'s own rotation: FACE top → ceiling, FACE bottom and TOP top → cutReach. The SHELF is asserted ABSENT under the rake (owner, 29.08).',
     verdict: [
-      'CLEAN — not one of the six is under a rake, and the audit scene lands the trio on its three lines to a hundredth.',
-      'NOT CLEAN — a golden grew a tilt, or the trio missed its lines. STOP (iron rule 2).',
+      'CLEAN — not one of the six is under a rake, the shelf stayed off the rake, and the duet lands on its lines to a hundredth.',
+      'NOT CLEAN — a golden grew a tilt, the shelf leaked onto the rake, or the duet missed its lines. STOP (iron rule 2).',
     ],
   };
 };

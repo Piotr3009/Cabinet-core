@@ -238,7 +238,10 @@ test('…and under a slope it LEANS, with the 25.08 tilt mechanism', () => {
   assert.equal(face.meta.tilt_axis, 'z');
   assert.deepEqual(face.meta.tilt_pivot, { x: 600, y: 1400 }, 'the ceiling at the LOW end');
   assert.equal(face.cnc.outline.length, 4, 'one plain board, one lean — which is the point of the ruling');
-  assert.equal(byId(r, 'INFILL-T-SHELF').meta.scene, 'sheet-only', 'and still only ONE of them leans');
+  // T55 AMENDED (29.08.2026): under a rake the infill IS one board — the
+  // shelf is not a second leaner, it is ABSENT (*"prosty infill BEZ
+  // ZAWIJANIA"*). Its sheet-only flat life is asserted in the flat tests.
+  assert.equal(byId(r, 'INFILL-T-SHELF'), undefined, 'one board, full stop (T55)');
 });
 
 // ═══ CNC / DXF / BOM SPEAK IN THE TWO BOARDS ════════════════════════════════

@@ -78,7 +78,11 @@ for (const [name, slope] of RAKES) {
 
   test(`the sheet's own outline says the same parallelogram — ${name}`, () => {
     const r = computeCabinet({ ...PARAMS, slope_cut: slope }, P);
-    for (const id of ['INFILL-T-FACE', 'INFILL-T-SHELF']) {
+    // T55 law (29.08, the owner): under a rake the infill is ONE board — the
+    // shelf is asserted ABSENT, and the parallelogram claim runs on the FACE.
+    assert.equal(r.panels.find((p) => p.id === 'INFILL-T-SHELF'), undefined,
+      'no shelf under a rake');
+    for (const id of ['INFILL-T-FACE']) {
       const p = r.panels.find((q) => q.id === id);
       assert.ok(p?.meta?.elevation, `${id} carries its elevation`);
       const world = p.meta.elevation.map(([lx, ly]) => spin(
@@ -154,4 +158,9 @@ test('a FLAT band never enters the sheared branch — the plain path as ever', (
   assert.ok(face, 'the flat strip exists');
   assert.equal(face.meta?.tilt_axis, undefined, 'nothing tells it to lean');
   assert.equal(face.meta?.elevation, undefined, 'and it states no elevation');
+  // T55 law (29.08): the wrap is a LEVEL-stretch piece — on the flat it
+  // stays exactly as T47 wrote it, sheet-only flag and all.
+  const shelf = flat.panels.find((p) => p.id === 'INFILL-T-SHELF');
+  assert.ok(shelf, 'the flat wrap still exists');
+  assert.equal(shelf.meta?.scene, 'sheet-only', 'and stays off the room, on the sheet');
 });

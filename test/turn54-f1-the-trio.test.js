@@ -171,27 +171,25 @@ for (const [name, CUT] of [['fall to the RIGHT (the audit scene)', AUDIT_R], ['f
     }
   });
 
-  test(`F1.3 · ${name} — the SHELF sits UNDER the roof, its top on the roof's underside`, () => {
+  test(`F1.3 · ${name} — under a RAKE the SHELF does not exist (T55 law, 29.08)`, () => {
+    // AMENDED 29.08.2026, the owner's simplification after seven passes at
+    // this family: *"dodaj pod skosem deskę jak prosty infill BEZ ZAWIJANIA
+    // ... usuń to wszystko z infillami pod skosem."* Under a rake the infill
+    // is the FACE STRIP ALONE; board B — the wrap this test used to place
+    // under the roof — is a LEVEL-stretch piece only. The old body (pivot at
+    // cutReach − G/cos β, top on the roof's underside) stays in history as
+    // the T54-F1 resolution it was; the law it measured is now retired
+    // together with the piece.
     const r = build({ slope_cut: CUT }.slope_cut);
-    const shelf = byId(r, 'INFILL-T-SHELF');
-    const top = byId(r, 'TOP');
-    assert.ok(shelf, 'the shelf exists');
-    const beta = betaOf(CUT);
-    assert.ok(Math.abs(shelf.meta.tilt_pivot.y - (cutAt(xLo) - G / Math.cos(beta))) < 0.01,
-      'pivot at cutReach − G / cos β (veto: "shelf pod wieńcem")');
-    const [, , s2, s3] = spunCorners(shelf);
-    const shelfTop = edgeAt(s3, s2);
-    // The roof's underside: its top face less the vertical footprint.
-    const [t0, t1] = spunCorners(top);
-    const topBottom = edgeAt(t0, t1);
-    for (const x of stations) {
-      assert.ok(Math.abs(shelfTop(x) - topBottom(x)) <= 0.01, `SHELFtop = TOPbottom at ${x}`);
-    }
+    assert.equal(byId(r, 'INFILL-T-SHELF'), undefined,
+      'no shelf under a rake — not in the room, not on the sheet, not in the bill');
   });
 
   test(`F1.4 · ${name} — DISJOINT, the Petros law, measured as geometry`, () => {
     const r = build({ slope_cut: CUT }.slope_cut);
-    const trio = ['TOP', 'INFILL-T-FACE', 'INFILL-T-SHELF'].map((id) => byId(r, id));
+    // AMENDED 29.08.2026 (T55 law): the shelf left the rake, so the Petros
+    // measurement runs on the DUET that remains.
+    const trio = ['TOP', 'INFILL-T-FACE'].map((id) => byId(r, id));
     for (let i = 0; i < trio.length; i += 1) {
       for (let j = i + 1; j < trio.length; j += 1) {
         const area = overlapArea(spunCorners(trio[i]), spunCorners(trio[j]));
@@ -228,7 +226,9 @@ for (const [name, CUT] of [['fall to the RIGHT (the audit scene)', AUDIT_R], ['f
 
   test(`F1.8 · ${name} — parity: elevation meta and DXF extents land on the rotated corners (0.05)`, () => {
     const r = build({ slope_cut: CUT }.slope_cut);
-    for (const id of ['TOP', 'INFILL-T-FACE', 'INFILL-T-SHELF']) {
+    // AMENDED 29.08.2026 (T55 law): the shelf does not exist under a rake,
+    // so parity is claimed for the two boards that do.
+    for (const id of ['TOP', 'INFILL-T-FACE']) {
       const p = byId(r, id);
       const said = p.meta.elevation;
       assert.ok(Array.isArray(said) && said.length >= 4, `${id} publishes its elevation`);
@@ -335,9 +335,13 @@ test('F1.7 · the run: every segment of a two-knee polyline passes the three sta
   // The knee joins — half the angle between neighbours — are unchanged law.
   const joined = faces.filter((p) => p.meta.mitre?.left != null || p.meta.mitre?.right != null);
   assert.ok(joined.length >= 2, 'the knee joins survive');
-  // …and the shelves hang under a roof that is not theirs to overlap.
-  for (const s of shelves.filter((p) => p.meta.tilt_deg)) {
-    assert.ok(s.meta.tilt_pivot.y < ceil(s.meta.tilt_pivot.x) - 0.01, 'shelf below the ceiling');
+  // AMENDED 29.08.2026 (T55 law): the wrap is a LEVEL-stretch piece only —
+  // one shelf for the flat middle, none for the two raked ends, and no shelf
+  // anywhere carries a lean.
+  assert.equal(shelves.length, 1, 'exactly one shelf — the flat middle segment');
+  for (const s of shelves) {
+    assert.equal(s.meta.tilt_deg, undefined, 'a shelf never leans');
+    assert.equal(s.meta.slopeCut, undefined, 'and never carries a slope cut');
   }
   assert.ok(worst <= 0.01, `worst residual ${worst.toFixed(4)} ≤ 0.01`);
 });

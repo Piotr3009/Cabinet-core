@@ -1192,6 +1192,21 @@
 ;;; (SKY:carcassCutPts); a kit that trims a carcass consumes THAT line, and
 ;;; the ceiling itself is consumed only by the pieces that scribe to plaster.
 ;;;
+;;; T55 SIMPLIFICATION (29.08.2026) - UNDER A RAKE THE INFILL IS ONE BOARD.
+;;; The owner, after seven passes at this family: "dodaj pod skosem deske jak
+;;; prosty infill BEZ ZAWIJANIA ... zawijanie sie wylacza od strony skosu,
+;;; nie wylaczaj od strony prostej" and "usun to wszystko z infillami pod
+;;; skosem". THE LAW: on a RAKED stretch the top infill is the FACE STRIP
+;;; ALONE - a parallelogram, cut height = the project's infill, mounted along
+;;; the slope, ends plumb (29.08 chat-fix). The SHELF (board B, the wrap) is
+;;; a LEVEL-stretch piece ONLY: it exists on flat segments exactly as T47
+;;; wrote it, and it does not exist - not in the room, not on the sheet, not
+;;; in the bill - where the ceiling rakes. A wall that is part level, part
+;;; raked wraps on its level segments and carries the single strip on its
+;;; raked ones; the two meet at the knee on the half-angle, as every knee
+;;; joint here does. Nothing is stored, so nothing migrates: a saved job
+;;; simply recomputes to fewer boards.
+;;;
 ;;; TWO POINTS IS T46. `SKY:slopeLine` builds that pair, and every one of T46's
 ;;; four answers - the rectangle, the trapezium and the two pentagons - comes
 ;;; back from the general routine UNCHANGED, corner for corner. That is not a

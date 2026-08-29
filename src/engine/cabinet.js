@@ -5092,8 +5092,17 @@ export function computeCabinet(params, profileOverride) {
       // The SHELF is NOT extended over a frame corner (T15's own rule), so it
       // takes the segment's own length without the mitres' long points.
       // (`shelfLen` is hoisted above, beside the two raked boxes.)
+      //
+      // T55 SIMPLIFICATION (29.08.2026, owner): *"dodaj pod skosem deskę jak
+      // prosty infill BEZ ZAWIJANIA ... zawijanie się wyłącza od strony
+      // skosu, nie wyłączaj od strony prostej."* UNDER A RAKE THE INFILL IS
+      // ONE BOARD — the face strip alone. The SHELF (board B, the wrap) is a
+      // LEVEL-stretch piece only: this push is gated on the segment being
+      // flat, so a raked segment emits no shelf — not to the room, not to
+      // the sheet, not to the bill. The raked hoists above (`shelfBoxRaked`,
+      // `shelfPivotY`) stay as the law's history and are simply never read.
       const shelfCutLen = roundTo(shelfLen + overLen, 4);
-      panels.push(panel({
+      if (!(sg.deg > 1e-9)) panels.push(panel({
         // BOARD B — the shelf. *"a druga nominal 80 bez zmian"*: the nominal is
         // the profile's own `shelfDepth` and the wall allowance is the same
         // `fillerOversize` T47 put on it. Nothing about its WIDTH moves tonight.

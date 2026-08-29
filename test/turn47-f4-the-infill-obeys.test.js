@@ -205,21 +205,13 @@ test('…MOUNTED along the slope: its length is the hypotenuse, and it tilts', (
   assert.equal(face.meta.slopeCut.cutHeight, 40, 'the sheet states the CUT height');
   assert.equal(face.box.y + face.box.h, 1400, 'pre-spin, the top edge hangs on the pivot line');
   assert.equal(face.meta.elevation.length, 4, 'raked meta carries the rotated corners');
-  // T54-F1 AMENDED (28.08.2026): the shelf no longer runs back AT the
-  // ceiling — it sits UNDER the roof, its top face on the roof's underside —
-  // but the roof line is the ceiling lowered parallel by infill/cosβ, so
-  // over one segment the span, and therefore the length, is the SAME number.
-  const shelf = byId(cut, 'INFILL-T-SHELF');
-  assert.equal(shelf.w, 848.5281 + OVER);
-  const CUT_LO = 1400 - 40 / Math.cos(Math.PI / 4);      // cutReach at x = 600
-  const SHELF_PIV = CUT_LO - 18 / Math.cos(Math.PI / 4); // the roof's underside there
-  assert.equal(shelf.meta.tilt_deg, -45);
-  assert.equal(shelf.meta.tilt_pivot.x, 600);
-  assert.ok(Math.abs(shelf.meta.tilt_pivot.y - SHELF_PIV) <= 0.01,
-    `shelf pivot ${shelf.meta.tilt_pivot.y} vs cutReach − G/cosβ = ${SHELF_PIV}`);
-  assert.ok(Math.abs(shelf.box.y + shelf.box.h - shelf.meta.tilt_pivot.y) <= 0.01,
-    'pre-spin, the shelf top edge hangs on ITS pivot line');
-  assert.equal(shelf.meta.elevation.length, 4, 'the shelf carries its corners too');
+  // T55 AMENDED (29.08.2026, the owner's simplification): the SHELF left the
+  // rake — *"usuń to wszystko z infillami pod skosem ... prosty infill BEZ
+  // ZAWIJANIA"* — so the T54 shelf-under-the-roof paragraph above is history
+  // and the piece is asserted ABSENT here. The wrap lives on LEVEL stretches
+  // only (proved beside the two-board CNC tests below).
+  assert.equal(byId(cut, 'INFILL-T-SHELF'), undefined,
+    'no shelf under a rake (T55)');
 });
 
 test('…and ONE PIECE PER SEGMENT, with the join cut at the angle the slope gives', () => {

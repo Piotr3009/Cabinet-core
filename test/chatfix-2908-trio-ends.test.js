@@ -302,3 +302,39 @@ test('T55 · raked FACE with an OPEN end: infillMitre answers null', () => {
   assert.ok(flat && flat.planes.length === 1,
     'a FLAT open end still turns its picture-frame 45 (T48 law untouched)');
 });
+
+// ─── T55 · THE FOSSIL DIES AT THE DOOR (30.08, "tnij") ──────────────────────
+// The owner's own cache, 1:1: a stored two-point chord over a wall with a
+// knee. Opening the project must recompute every run element — no nudge, no
+// toggle, no yesterday's arithmetic.
+import { migrateRoom as mr2, rectCorners as rc2 } from '../src/engine/room.js';
+import { useProjectStore } from '../src/stores/projectStore.js';
+
+test('T55 · loadProject recomputes run elements — the stored chord dies unopened', () => {
+  const S = () => useProjectStore.getState();
+  const fossil = {
+    role: 'owner', offset: 0, length: 600, faceH: 40, shelfDepth: 80, thickness: null,
+    ends: { left: 'open', right: 'open' }, returns: { left: 599, right: 599 },
+    mitre: { left: 0, right: 0 },
+    ceiling: [{ x: 0, y: 1767.2778 }, { x: 600, y: 2233.9444 }],   // the chord
+    ceilingInfill: 40, unitIds: ['u1'], spans: [{ id: 'u1', width: 600, from: 0 }],
+    sideMitre: { left: 0, right: 0 },
+  };
+  S().loadProject({
+    id: 'loc_x', name: 'fossil', number: '1', client: '',
+    room: mr2({ height: 2500, corners: rc2(4000, 3000) }),
+    design: { infill: { sideWidth: 40 } },
+    wallSlopes: [{ id: 's1', kind: 'slope', wall: 0, side: 'L', startHeight: 1800, run: 900 }],
+  }, [{
+    id: 'u1', type: 'WARDROBE',
+    position: { wall: 0, x_mm: 455.5, rotation_deg: 0 },
+    params: {
+      ...defaultParamsFor('WARDROBE', P), width: 600, unit_num: 'W01',
+      top_infill_mm: 40, run_top_infill: fossil,
+    },
+  }]);
+  const u = S().units.find((x) => x.id === 'u1');
+  const c = u.params.run_top_infill?.ceiling;
+  assert.ok(Array.isArray(c) && c.length === 3,
+    `opened project carries the KNEE (${c?.length} pts) — the chord is dead on arrival`);
+});

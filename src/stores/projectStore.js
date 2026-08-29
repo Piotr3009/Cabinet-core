@@ -1383,6 +1383,22 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // F3's law), and each correction says so in its grey note. A healed-open
     // project is honestly DIRTY: it changed, and the note names how.
     get().healFrontGaps();
+    // ─── T55 (30.08.2026, the owner: "tnij") — THE FOSSIL DIES AT THE DOOR ──
+    // A saved `run_top_infill` (and every run element beside it) was TRUSTED
+    // on open and recomputed only on the first touch — so a cabinet placed
+    // two days ago carried a two-point chord of a ceiling that has knees, and
+    // the owner watched a strip fly through his corner while every fresh
+    // repro was clean. Proven on his own cache, 1:1: load → 2 pts, one nudge
+    // → 3 pts and the knee. The stored element is a PREVIEW at best; the
+    // truth is computed. So opening a project runs the same full sweep every
+    // mutation runs, and no scene ever again renders yesterday's arithmetic.
+    const wasDirtyAfterHeal = get().dirty;
+    get().refreshAutoParts();
+    // The sweep recomputes DERIVED elements — the reader normalising its own
+    // cache, not the user changing the document. T31's law stands: an opened
+    // project is clean (unless healFrontGaps above honestly dirtied it — that
+    // verdict is preserved, not overwritten).
+    set({ dirty: wasDirtyAfterHeal });
     // T53 (F1b): a ✕ belongs to the drawing it was clicked on. Opening another
     // job must not carry a dismissal onto a gap in somebody else's room.
     useUiStore.getState().clearShareOutDismissed();

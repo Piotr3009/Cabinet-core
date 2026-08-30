@@ -80,6 +80,9 @@ const spin = ([x, y], pivot, deg) => {
 
 /** A panel's four elevation corners, rotated as the scene rotates them. */
 const spunCorners = (p) => {
+  // T55 (CLAUDE.md F1): the raked strip states its four corners in the room
+  // frame outright — the single source of truth, read verbatim, no spin.
+  if (Array.isArray(p.meta?.corners)) return p.meta.corners;
   const b = p.box;
   const corners = [[b.x, b.y], [b.x + b.w, b.y], [b.x + b.w, b.y + b.h], [b.x, b.y + b.h]];
   if (!p.meta?.tilt_deg || !p.meta?.tilt_pivot) return corners;
@@ -135,12 +138,18 @@ for (const [name, CUT] of [['fall to the RIGHT (the audit scene)', AUDIT_R], ['f
     const r = build({ slope_cut: CUT }.slope_cut);
     const face = byId(r, 'INFILL-T-FACE');
     assert.ok(face, 'the strip exists');
-    assert.equal(face.box.h, INFILL, 'its band is the reserve — the cut height');
+    // T55 (CLAUDE.md F1): the pivot/lean meta is gone with the shear split —
+    // the strip states its FOUR CORNERS in the room frame outright, and the
+    // cut height lives on the slopeCut record.
+    assert.equal(face.meta.slopeCut.cutHeight, INFILL,
+      'its band is the reserve — the cut height');
     assert.equal(face.h, INFILL + P.autoParts.fillerOversize,
       '+20 scribe oversize on the ceiling edge, as today');
-    // The pivot: the CEILING at the low end — this piece alone keeps it.
-    assert.ok(Math.abs(face.meta.tilt_pivot.x - xLo) < 1e-6);
-    assert.ok(Math.abs(face.meta.tilt_pivot.y - at(xLo)) < 0.01);
+    assert.ok(Array.isArray(face.meta.corners) && face.meta.corners.length === 4,
+      'the four corners are stated, explicitly');
+    // Ends plumb BY CONSTRUCTION: each end's two corners share their x.
+    assert.equal(face.meta.corners[0][0], face.meta.corners[3][0], 'left end plumb');
+    assert.equal(face.meta.corners[1][0], face.meta.corners[2][0], 'right end plumb');
     const [c0, c1, c2, c3] = spunCorners(face);
     const topEdge = edgeAt(c3, c2);
     const bottomEdge = edgeAt(c0, c1);
@@ -193,10 +202,12 @@ for (const [name, CUT] of [['fall to the RIGHT (the audit scene)', AUDIT_R], ['f
     for (let i = 0; i < trio.length; i += 1) {
       for (let j = i + 1; j < trio.length; j += 1) {
         const area = overlapArea(spunCorners(trio[i]), spunCorners(trio[j]));
-        // Shared edges allowed: the pieces' numbers are each rounded to 4 dp
-        // at their own source, so a shared 670 mm edge can carry a rounding
-        // sliver of up to ~0.07 mm² (0.0001 mm × length) — never a band.
-        assert.ok(area <= 0.1,
+        // Shared edges allowed: the FACE's corners are stated exactly (T55
+        // F1) while the TOP still spins through its 4-dp-rounded angle, so a
+        // shared 670 mm edge can carry a rounding sliver of up to ~0.5 mm²
+        // (0.0007 mm × length) — a film thinner than a paint coat, never a
+        // band of material.
+        assert.ok(area <= 0.5,
           `${trio[i].id} ∩ ${trio[j].id} has area ${area.toFixed(4)} — shared edges only`);
       }
     }
@@ -228,50 +239,54 @@ for (const [name, CUT] of [['fall to the RIGHT (the audit scene)', AUDIT_R], ['f
     const r = build({ slope_cut: CUT }.slope_cut);
     // AMENDED 29.08.2026 (T55 law): the shelf does not exist under a rake,
     // so parity is claimed for the two boards that do.
-    for (const id of ['TOP', 'INFILL-T-FACE']) {
-      const p = byId(r, id);
+    // ─── T55 AMENDED (30.08.2026, CLAUDE.md F1): the strip's parity is the
+    // FOUR CORNERS now — one record, three readers. The TOP keeps its T54
+    // claim word for word.
+    {
+      const p = byId(r, 'TOP');
       const said = p.meta.elevation;
-      assert.ok(Array.isArray(said) && said.length >= 4, `${id} publishes its elevation`);
+      assert.ok(Array.isArray(said) && said.length >= 4, 'TOP publishes its elevation');
       const spun = spunCorners(p);
-      // The elevation is stated in the BOX's own frame. The TOP's ends are
-      // cut VERTICALLY (its section is a parallelogram) while the rotated box
-      // ends square, so the parity claim is about the two LONG EDGES: the
-      // drawing's top and bottom edges lie on the rotated board's own lines,
-      // at all three stations, to 0.05 (the DXF audit's own tolerance).
-      //
-      // AMENDED, chat-fix 29.08.2026: the strip's and the shelf's elevation is
-      // now the FITTED PARALLELOGRAM in the box's LEVEL frame (ends plumb
-      // after the lean — the owner's "wąsik" audit), so those two are LEANT
-      // here exactly as the scene leans them before the long-edge comparison.
-      // The TOP's elevation was already stated leant (25.08) and passes as it
-      // stands. The DXF half below is UNTOUCHED — the blank stays the blank.
-      const stated = said
-        .map(([ex, ey]) => [p.box.x + ex, p.box.y + ey])
-        .map((q) => (id === 'TOP' ? q
-          : spin(q, p.meta.tilt_pivot, p.meta.tilt_deg)));
+      const stated = said.map(([ex, ey]) => [p.box.x + ex, p.box.y + ey]);
       const statedBottom = edgeAt(stated[0], stated[1]);
       const statedTop = edgeAt(stated[3], stated[2]);
       const spunBottom = edgeAt(spun[0], spun[1]);
       const spunTop = edgeAt(spun[3], spun[2]);
       for (const x of stations) {
         assert.ok(Math.abs(statedTop(x) - spunTop(x)) <= 0.05,
-          `${id}: the drawing's top edge is the leant board's at ${x}`);
+          `TOP: the drawing's top edge is the leant board's at ${x}`);
         assert.ok(Math.abs(statedBottom(x) - spunBottom(x)) <= 0.05,
-          `${id}: …and its underside at ${x}`);
+          `TOP: …and its underside at ${x}`);
       }
-      // DXF extents: the cut piece is the blank the sheet gives up — in the
-      // SHEET's own frame (the TOP is drawn TURNED, so the drawn dims are the
-      // authority, exactly as `cnc/dxf.js` writes them).
-      assert.ok(p.cnc.outline.length >= 4, `${id} has a sheet outline`);
+      assert.ok(p.cnc.outline.length >= 4, 'TOP has a sheet outline');
       const xs = p.cnc.outline.map((q) => q[0]);
       const ys = p.cnc.outline.map((q) => q[1]);
       const dw = p.cnc.drawn_w ?? p.w;
       const dh = p.cnc.drawn_h ?? p.h;
       assert.ok(Math.abs((Math.max(...xs) - Math.min(...xs)) - dw) <= 0.05
         && Math.abs((Math.max(...ys) - Math.min(...ys)) - dh) <= 0.05,
-      `${id}: DXF extents are the blank`);
+      'TOP: DXF extents are the blank');
       assert.ok(Math.abs(Math.max(dw, dh) - p.w) <= 0.05 && Math.abs(Math.min(dw, dh) - p.h) <= 0.05,
-        `${id}: and the blank is the cut list's own pair`);
+        'TOP: and the blank is the cut list\'s own pair');
+    }
+    {
+      const p = byId(r, 'INFILL-T-FACE');
+      const said = p.meta.corners;
+      assert.ok(Array.isArray(said) && said.length === 4, 'the strip states its corners');
+      // The sheet outline is the SAME parallelogram, turned into the cut
+      // frame: four points, extents = drawn dims, and each plumb end leans by
+      // exactly β inside the blank (|Δx| per end = cut height · tan β).
+      const beta = betaOf(CUT);
+      assert.equal(p.cnc.outline.length, 4, 'four corners, four points, no more');
+      const xs = p.cnc.outline.map((q) => q[0]);
+      const ys = p.cnc.outline.map((q) => q[1]);
+      assert.ok(Math.abs((Math.max(...xs) - Math.min(...xs)) - p.cnc.drawn_w) <= 0.05
+        && Math.abs((Math.max(...ys) - Math.min(...ys)) - p.cnc.drawn_h) <= 0.05,
+      'the strip: DXF extents are the drawn dims');
+      const leanX = Math.abs(p.cnc.outline[3][0] - p.cnc.outline[0][0]);
+      assert.ok(Math.abs(leanX - p.h * Math.tan(beta)) <= 0.05,
+        'the plumb ends lean by β inside the blank');
+      assert.ok(Math.abs(p.cnc.drawn_h - p.h) <= 0.05, 'cut height is the cut list\'s own');
     }
   });
 }
@@ -325,13 +340,14 @@ test('F1.7 · the run: every segment of a two-knee polyline passes the three sta
     const [c0, c1, c2, c3] = spunCorners(face);
     const topEdge = edgeAt(c3, c2);
     const bottomEdge = edgeAt(c0, c1);
-    const from = face.meta.tilt_deg < 0 ? face.meta.tilt_pivot.x - m.span : face.meta.tilt_pivot.x;
+    // T55 (F1): the segment's own span is read off its stated corners.
+    const from = face.meta.corners[0][0];
     for (const x of [from, from + m.span / 2, from + m.span]) {
       worst = Math.max(worst, Math.abs(topEdge(x) - ceil(x)), Math.abs(bottomEdge(x) - (ceil(x) - res)));
       assert.ok(Math.abs(topEdge(x) - ceil(x)) <= 0.01, `segment top on the run ceiling at ${x}`);
       assert.ok(Math.abs(bottomEdge(x) - (ceil(x) - res)) <= 0.01, `segment bottom one reserve down at ${x}`);
     }
-    assert.equal(face.box.h, INFILL, 'each raked piece is the reserve band');
+    assert.equal(m.cutHeight, INFILL, 'each raked piece is the reserve band');
   }
   // The knee joins — half the angle between neighbours — are unchanged law.
   const joined = faces.filter((p) => p.meta.mitre?.left != null || p.meta.mitre?.right != null);

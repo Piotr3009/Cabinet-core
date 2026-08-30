@@ -1970,6 +1970,39 @@
       (reverse out))))
 
 ;;;----------------------------------------
+;;; T55 - THE FOUR CORNERS, EXPLICIT  (30.08.2026, F1)
+;;;----------------------------------------
+;;; The parked fix of 30.08, now due. The owner: "prosty kawalek, zawijanie
+;;; likwidujemy."  Under a rake the top infill is ONE straight board - FACE
+;;; only - a parallelogram with plumb ends. The engine states its FOUR CORNER
+;;; COORDINATES explicitly, in the room frame, and those four corners are the
+;;; SINGLE SOURCE OF TRUTH for the 3-D mesh, the 2-D drawing and the DXF
+;;; outline. Nothing downstream re-derives the shape: no scene shear, no
+;;; scene rotation, no second sampler. The corner maths is the slope sampling
+;;; law the carcass already obeys (SKY:ceilReachAt / SKY:cutReachDrop - the
+;;; TOP PANEL / CORNICE precedent), taken as-is.
+;;;
+;;;   yA   = ceilReach(xA)          yB = ceilReach(xB)
+;;;   resV = infill / cos(beta)     the vertical band (40 stays the CUT size)
+;;;
+;;;   corners, counter-clockwise from the xA-end bottom:
+;;;     (xA  yA - resV)  (xB  yB - resV)  (xB  yB)  (xA  yA)
+;;;
+;;; Ends plumb BY CONSTRUCTION - each end's two corners share their x. The
+;;; sheet outline is the SAME parallelogram turned into the cut frame: the
+;;; long edges run along the board, the plumb ends lean by beta inside the
+;;; blank. The T54 shear/rotation rendering of this board is DELETED with
+;;; this law, not gated.
+(defun SKY:infillCorners (pts infill xA xB / yA yB resV)
+  (setq yA (SKY:ceilReachAt pts xA))
+  (setq yB (SKY:ceilReachAt pts xB))
+  (setq resV (SKY:cutReachDrop infill (SKY:segDegAt pts (/ (+ xA xB) 2.0))))
+  (list (list xA (- yA resV))
+        (list xB (- yB resV))
+        (list xB yB)
+        (list xA yA)))
+
+;;;----------------------------------------
 ;;; T54 - THE PEAK: NO THIRD PIECE  (28.08.2026, F2)
 ;;;----------------------------------------
 ;;; The owner, screenshot in hand: "lewy czyli dolny skos dziala super, gorny

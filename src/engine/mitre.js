@@ -319,12 +319,13 @@ export function infillMitre(panel) {
   // into its return, cut on the faces, reading as a picture frame.
   if (segment === 'main' || /^main-\d+$/.test(segment)) {
     // The ceiling BOARD (no lean) is cut on its line, the side infill's own
-    // law; a RAKED strip (leant) owns no cut here — panelSolid draws it.
+    // law. The RAKED strip never arrives here at all (T55 F1): it carries its
+    // four corners (`meta.corners`) and the scene builds its mesh from them
+    // directly — the old slope-cut interception is deleted, licensed T55.
     if (meta.slopeCut?.board && Array.isArray(meta.slopeCut.top)) {
       const planes = slopePlanes(box, meta.slopeCut.top.map((q) => ({ x: box.x + q.x, y: box.y + q.y })));
       return planes.length ? { box: { ...box }, planes } : null;
     }
-    if (meta.slopeCut) return null;
     const t = box.d;
     const faceBox = { ...box };
     // Each OPEN end turns the corner, and only that is cut in plan.

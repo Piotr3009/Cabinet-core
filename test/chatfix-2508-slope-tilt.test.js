@@ -168,20 +168,20 @@ test('the TRIO hangs on THREE lines — face on the ceiling, roof on the cut, sh
   const face = byId(r, 'INFILL-T-FACE');
   const top = byId(r, 'TOP');
   assert.equal(byId(r, 'INFILL-T-SHELF'), undefined, 'no shelf under a rake (T55)');
-  for (const p of [face]) {
-    assert.ok(p, 'the piece exists');
-    assert.equal(p.meta.tilt_axis, 'z', 'about Z');
-    assert.ok(p.meta.tilt_pivot, 'with a pivot');
-    assert.ok(p.meta.tilt_deg < 0, 'clockwise under this fall');
-    // The box's top edge starts AT its own pivot — each piece hangs from its
-    // OWN line now, so this holds for all three and the lines differ.
-    assert.ok(Math.abs((p.box.y + p.box.h) - p.meta.tilt_pivot.y) < 0.01,
-      `${p.id}: top edge under its own pivot`);
-  }
+  // T55 AMENDED (30.08.2026, CLAUDE.md F1): the FACE's tilt meta died with
+  // the shear/rotation split (licensed deletion) — it states its FOUR
+  // CORNERS in the room frame instead: top edge ON the ceiling, bottom edge
+  // one vertical reserve below it, ends plumb.
+  assert.ok(face, 'the piece exists');
+  assert.equal(face.meta.tilt_axis, undefined, 'no lean meta on the strip');
+  assert.ok(Array.isArray(face.meta.corners) && face.meta.corners.length === 4,
+    'the four corners, stated');
   const ceilLow = H - 150 - W;
-  assert.ok(Math.abs(face.meta.tilt_pivot.y - ceilLow) < 0.01,
-    'FACE alone keeps the ceiling pivot');
-  assert.equal(face.box.h, INFILL,
+  assert.ok(Math.abs(face.meta.corners[2][1] - ceilLow) < 0.01,
+    'FACE top corner on the ceiling at the low end');
+  assert.ok(Math.abs(face.meta.corners[1][1] - (ceilLow - RESERVE_45)) < 0.01,
+    'FACE bottom corner one vertical reserve below it');
+  assert.equal(face.meta.slopeCut.cutHeight, INFILL,
     'and its band is the reserve — the 40 is the CUT size (veto: "40 w pionie")');
   assert.ok(Math.abs(top.meta.tilt_pivot.y - (ceilLow - RESERVE_45)) < 0.01,
     'TOP pivots one reserve down');

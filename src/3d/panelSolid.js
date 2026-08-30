@@ -63,14 +63,42 @@ export function machinedPanelGeometry(panel, layers, profile, drills = []) {
  *   which is what tells the caller to use a `boxGeometry` as it always has.
  */
 export function panelSolids(panel, layers, profile, drills = []) {
+  // ─── T55 (CLAUDE.md F1): THE BOARD THAT KNOWS ITS OWN CORNERS ────────────
+  // The raked top-infill strip publishes its four corners in the room frame
+  // (`meta.corners`, engine/cabinet.js — the single source of truth). Its
+  // mesh is those corners extruded through the board, verbatim: no shear, no
+  // scene rotation, nothing re-derived. The old shear/rotation split for this
+  // board is deleted — a licensed T55 deletion. Before the placement guard,
+  // because the strip is an INFILL and `panelPlacement` has no seat for it.
+  const saidCorners = panel?.box && Array.isArray(panel.meta?.corners)
+    && panel.meta.corners.length === 4 ? panel.meta.corners : null;
+  if (saidCorners) {
+    const key = `CORNERS|${panel.id}|${saidCorners.map((c) => c.join(',')).join(';')}|${panel.box.d}`;
+    const hit = cache.get(key);
+    if (hit) {
+      cache.delete(key);
+      cache.set(key, hit);
+      return hit;
+    }
+    const geometry = cornersPrismGeometry(saidCorners, panel.box);
+    applyBoxUVs(geometry, panel.box);
+    geometry.computeBoundingSphere();
+    const built = { solid: geometry, cuts: null };
+    cache.set(key, built);
+    if (cache.size > CACHE_LIMIT) {
+      const oldest = cache.keys().next().value;
+      const dropped = cache.get(oldest);
+      dropped?.solid?.dispose();
+      dropped?.cuts?.dispose();
+      cache.delete(oldest);
+    }
+    return built;
+  }
   // Chat-fix 29.08.2026: the leant-board branch stands BEFORE the placement
-  // guard — the strip is an INFILL and `panelPlacement` has no seat for it,
-  // which is exactly how it kept slipping past the roof's shear and out of
-  // plumb. The branch needs a box and a lean, nothing more.
+  // guard. T55 F1: the ROOF BOARD alone leans here now — the raked strip left
+  // for the corners branch above.
   const leant = panel?.box
-    && (panel.part === 'TOP' || /^INFILL-T-FACE/.test(String(panel.id)))
-    // (T55, 29.08: the raked SHELF is deleted at the engine, so the leant
-    // branch reads TOP and the FACE strip — nothing else ever leans here.)
+    && panel.part === 'TOP'
     && panel.meta?.tilt_axis === 'z'
     && Number.isFinite(Number(panel.meta?.tilt_deg)) && panel.meta?.tilt_pivot;
   if (leant) {
@@ -256,6 +284,36 @@ export function panelSolids(panel, layers, profile, drills = []) {
 }
 
 const NOTHING = { solid: null, cuts: null };
+
+/**
+ * The raked strip, extruded from its four room-frame corners (T55, CLAUDE.md
+ * F1). The engine's `meta.corners` are the single source of truth; this
+ * function invents no geometry — it lifts the four points through the board's
+ * thickness. Centred on the panel's own box, exactly as every solid here is,
+ * so the caller places the mesh unchanged.
+ */
+function cornersPrismGeometry(corners, box) {
+  const cx = mm(box.x + box.w / 2);
+  const cy = mm(box.y + box.h / 2);
+  const hd = mm(box.d) / 2;
+  const ring = corners.map(([x, y]) => [mm(x) - cx, mm(y) - cy]);
+  const F = ring.map(([x, y]) => [x, y, hd]);
+  const K = ring.map(([x, y]) => [x, y, -hd]);
+  const quads = [
+    [F[0], F[1], F[2], F[3]],   // front cap (+z), corners are CCW already
+    [K[3], K[2], K[1], K[0]],   // back cap (−z), reversed
+  ];
+  for (let i = 0; i < 4; i += 1) {
+    const j = (i + 1) % 4;
+    quads.push([K[i], K[j], F[j], F[i]]);
+  }
+  const pos = [];
+  for (const [a, b, c, d] of quads) pos.push(...a, ...b, ...c, ...a, ...c, ...d);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
 /**
  * The roof board with VERTICAL ends (chat-fix 25.08.2026, part two).

@@ -24,6 +24,12 @@ import { migrateDesign } from './design.js';
 import { getUnitType } from './types.js';
 import { getProjectType } from './projectTypes.js';
 import { roundTo } from './format.js';
+// T55 (CLAUDE.md F7): the SAME roof law the carcass is cut with — named
+// source: `slopeHeightAt` over `carcassCutLineOf` (engine/puzzle.js, the T54
+// two-reach law, the TOP PANEL / CORNICE precedent). Never a second sampler.
+import {
+  carcassCutLineOf, roofLinePts, slopeCutActive, slopeHeightAt,
+} from './puzzle.js';
 
 /** The five placement kinds the owner dictated, 15.08.2026. */
 export const LIGHTING_KINDS = ['shelf', 'side', 'bottom', 'top', 'spot'];
@@ -200,6 +206,33 @@ export function stripsForUnit({
   const hex = lighting.temperatureEntry?.hex || '#fff3e0';
   const out = [];
 
+  // ─── T55 (CLAUDE.md F7): THE LED LEARNS THE RAKE — LEVEL RUNS ONLY ───────
+  // The owner: *"skos bez LED … pionowych i poziomych łatwiej."*
+  // The roof is the carcass's OWN: `slopeHeightAt` over `carcassCutLineOf`
+  // (the engine echoes the line it was cut with on `result.params.slope_cut`)
+  // capped at H — the same walk `roofLinePts` gives the top boards. A flat
+  // room has no line, `raked` is false, and every strip below is byte for
+  // byte what it always was.
+  const cutLine = carcassCutLineOf(result?.params?.slope_cut || null, W, H, profile);
+  const raked = Boolean(cutLine) && slopeCutActive(cutLine);
+  const roofAt = (x) => (raked ? Math.min(H, slopeHeightAt(cutLine, x)) : H);
+  /** LEVEL stretches of the roof polyline inside [x0, x1] — no strip on the
+   * diagonal, each run trimmed to its own span at its own height. */
+  const levelRuns = (x0, x1) => {
+    if (!raked) return [{ from: x0, to: x1, y: H }];
+    const pts = roofLinePts(cutLine, H) || [];
+    const runs = [];
+    for (let i = 1; i < pts.length; i += 1) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      if (Math.abs(b.y - a.y) > 1e-6) continue;          // the diagonal: no strip
+      const from = Math.max(x0, Math.min(a.x, b.x));
+      const to = Math.min(x1, Math.max(a.x, b.x));
+      if (to - from > 1e-6) runs.push({ from, to, y: Math.min(H, a.y) });
+    }
+    return runs;
+  };
+
   // ─── TURN 34 (CLAUDE.md F2): THE EDGE OFFSET ──────────────────────────────
   // "nie ma możliwości ustawienia jak daleko od edge" (owner, 16.08.2026).
   // ONE number per strip, applied along DEPTH and to nothing else: the strip
@@ -263,17 +296,22 @@ export function stripsForUnit({
     } else if (item.kind === 'side') {
       // The owner's 4 mm line, top to bottom, on the INTERIOR face — flush
       // with the carcass front edge, full interior height.
+      // T55 (F7): under the rake the vertical strip ENDS AT THE ROOF over its
+      // own x — sampled conservatively across its own thickness, minus the
+      // same board insets it has always kept. A flat roof answers H and the
+      // strip is the strip it always was.
       const line = spec.strip.sideLineWidth;
       const x = item.ref === 'R' ? W - G - t : G;
+      const topY = Math.min(roofAt(x), roofAt(x + t));
       out.push({
         id: item.id,
         kind: 'side',
         side: item.ref === 'R' ? 'R' : 'L',
         box: {
-          x, y: G, z: D - line - inset, w: t, h: Math.max(0, H - 2 * G), d: line,
+          x, y: G, z: D - line - inset, w: t, h: Math.max(0, topY - 2 * G), d: line,
         },
         round: false,
-        length_mm: Math.max(0, H - 2 * G),
+        length_mm: Math.max(0, topY - 2 * G),
         inset_mm: inset,
         temperature: lighting.temperature,
         hex,
@@ -296,17 +334,24 @@ export function stripsForUnit({
     } else if (item.kind === 'top') {
       // "Nad szafą w górę" — on top of the carcass at the front, washing the
       // wall or the ceiling above a wardrobe.
-      out.push({
-        id: item.id,
-        kind: 'top',
-        box: {
-          x: G, y: H, z: D - sw - inset, w: Math.max(0, W - 2 * G), h: t, d: sw,
-        },
-        round: false,
-        length_mm: Math.max(0, W - 2 * G),
-        inset_mm: inset,
-        temperature: lighting.temperature,
-        hex,
+      // T55 (F7): only on LEVEL stretches of the roof polyline, each piece
+      // trimmed to its stretch's span at its stretch's own height — NO strip
+      // along the diagonal, nothing proud of the carcass. A flat roof is one
+      // level stretch and the strip is byte for byte what it always was.
+      levelRuns(G, W - G).forEach((run, i, all) => {
+        out.push({
+          id: all.length === 1 ? item.id : `${item.id}:${i}`,
+          kind: 'top',
+          box: {
+            x: run.from, y: run.y, z: D - sw - inset, w: Math.max(0, run.to - run.from), h: t, d: sw,
+          },
+          round: false,
+          length_mm: Math.max(0, run.to - run.from),
+          inset_mm: inset,
+          temperature: lighting.temperature,
+          hex,
+          ...(all.length === 1 ? {} : { itemId: item.id }),
+        });
       });
     } else if (item.kind === 'top_under') {
       // ─── CHAT-FIX 16.08 (owner): UNDER the top — "mamy ledy na górnym
@@ -314,17 +359,22 @@ export function stripsForUnit({
       // The same strip the top wash is, hung on the UNDERSIDE of the top
       // board, shining down into the cabinet — the top behaves like one more
       // shelf. Same width law, same inset, same everything.
-      out.push({
-        id: item.id,
-        kind: 'top_under',
-        box: {
-          x: G, y: H - G - t, z: D - sw - inset, w: Math.max(0, W - 2 * G), h: t, d: sw,
-        },
-        round: false,
-        length_mm: Math.max(0, W - 2 * G),
-        inset_mm: inset,
-        temperature: lighting.temperature,
-        hex,
+      // T55 (F7): the same level-runs law as the wash above — the underside
+      // of a raked roof takes no strip; a level stretch takes its own.
+      levelRuns(G, W - G).forEach((run, i, all) => {
+        out.push({
+          id: all.length === 1 ? item.id : `${item.id}:${i}`,
+          kind: 'top_under',
+          box: {
+            x: run.from, y: run.y - G - t, z: D - sw - inset, w: Math.max(0, run.to - run.from), h: t, d: sw,
+          },
+          round: false,
+          length_mm: Math.max(0, run.to - run.from),
+          inset_mm: inset,
+          temperature: lighting.temperature,
+          hex,
+          ...(all.length === 1 ? {} : { itemId: item.id }),
+        });
       });
     } else if (item.kind === 'spot') {
       // Kitchen WALL units only — the owner's "małe spotlighty w szafkach

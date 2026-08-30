@@ -46,7 +46,8 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 // shape and this file follows it.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  carcassCutPts, roofBoards, roofLinePts, slopeCutActive, slopeCutPts, slopeHeightAt, slopeReachAt,
+  carcassCutLineOf, carcassCutPts, roofBoards, roofLinePts, slopeCutActive, slopeCutPts,
+  slopeHeightAt, slopeReachAt, slopeReserveOf,
   slopeSegments, subSlopeCut, trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
@@ -1407,19 +1408,12 @@ export function computeCabinet(params, profileOverride) {
   const ceilLine = cut ? { w: W, h: H, pts: cut.pts } : null;
   // The rake band and the carcass cut under it NEVER grow past the profile's
   // strip nominal — "pas 40 bez zmian" (30.08); an extended infill grows the
-  // LEVEL board only.
+  // LEVEL board only. T55 (F7): the reserve and the cut line are ONE
+  // construction now (engine/puzzle.js `slopeReserveOf`/`carcassCutLineOf`),
+  // shared with the LED module so no second sampler can drift from this one.
   const stripNom = Math.max(0, Number(P.autoParts?.topInfill?.defaultHeight) || 0);
-  const slopeReserve = cut
-    ? Math.max(0, Math.min(Number(cut.infill) || 0, stripNom || (Number(cut.infill) || 0)))
-    : 0;
-  const cutLine = ceilLine
-    ? {
-      w: W,
-      h: H,
-      pts: carcassCutPts(ceilLine, slopeReserve)
-        .map((q) => ({ x: roundTo(q.x, 4), y: roundTo(q.y, 4) })),
-    }
-    : null;
+  const slopeReserve = slopeReserveOf(cut, P);
+  const cutLine = carcassCutLineOf(cut, W, H, P);
   const cutAt = (x) => (cutLine ? slopeHeightAt(cutLine, x) : H);
   const cutActive = Boolean(cutLine) && slopeCutActive(cutLine);
   // ─── TURN 47 (F2/F3): THE ROOF LINE ───────────────────────────────────────
@@ -8538,6 +8532,11 @@ export function computeCabinet(params, profileOverride) {
       ...(type.doorExtend ? { door_extend: cfg.doorExtend } : {}),
       ...(fridge ? { fridge_h: cfg.fridgeH } : {}),
       ...(type.mount === 'wall' ? { mount_height: cfg.mountHeight } : {}),
+      // T55 (CLAUDE.md F7): the LINE this carcass was cut with, echoed so the
+      // LED module samples the SAME roof law (never a second sampler). Absent
+      // on every flat unit — every golden — and on a line that never reaches
+      // the carcass, so an uncut cabinet is byte-for-byte an uncut cabinet.
+      ...(cut && cutActive ? { slope_cut: cut } : {}),
     },
     derived,
     panels,

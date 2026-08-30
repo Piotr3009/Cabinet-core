@@ -7,6 +7,7 @@ import {
 } from '../src/engine/lighting.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
+import { ledIconsOn } from '../src/stores/uiStore.js';
 
 // ─── T54 · F5 — THE LED ICONS SHOW WHILE LIGHTING IS OPEN, AND THE ROOM
 // LIGHT LIVES UNDER THEM ────────────────────────────────────────────────────
@@ -29,10 +30,31 @@ const unitView = readFileSync(new URL('../src/3d/UnitView.jsx', import.meta.url)
 const scene = readFileSync(new URL('../src/3d/Scene.jsx', import.meta.url), 'utf8');
 const panel = readFileSync(new URL('../src/components/LightingPanel.jsx', import.meta.url), 'utf8');
 
-test('F5.1 · the icons exist on EVERY unit while the panel is open — and only then', () => {
-  // The gate IS the feature: the panel-open read, and nothing else.
-  assert.match(icons, /const lightingOpen = useUiStore\(\(s\) => s\.modal === 'lighting'\);/);
-  assert.match(icons, /if \(!lightingOpen\) return null;/);
+test('F5.1 · the icons exist on EVERY unit while the panel is open', () => {
+  // ─── AMENDED IN TURN 58 (F4), with the quote — the house rule for a
+  // guard whose claim has been overruled ────────────────────────────────────
+  //
+  // This asserted the GATE, line for line:
+  //
+  //     assert.match(icons, /const lightingOpen = useUiStore\(\(s\) =>
+  //       s\.modal === 'lighting'\);/);
+  //     assert.match(icons, /if \(!lightingOpen\) return null;/);
+  //
+  // OVERRULED, and by name: turn 58's second licensed deletion takes that gate
+  // out of the component. What is overruled is the "AND ONLY THEN" — a modal
+  // being open is not a way of looking at a cabinet, so the icons could be
+  // learnt but never kept on while working.
+  //
+  // WHAT THIS TEST WAS FOR IS NOT OVERRULED and is asserted harder than
+  // before: opening the Lighting panel STILL shows the icons on every unit,
+  // which is the owner's *"ludzie nie wiedzą, że takie funkcje istnieją"*.
+  // It is now a rule with one home (`uiStore.ledIconsOn`) rather than a gate
+  // inside a sprite, so it is asked of the law and not of the file.
+  assert.equal(ledIconsOn({ ledIcons: false, modal: 'lighting' }), true,
+    'the panel still brings them out — T54-F5\'s whole purpose, kept');
+  assert.equal(ledIconsOn({ ledIcons: false, modal: null }), false,
+    'and a joiner who has not asked for them still sees yesterday\'s scene');
+  assert.match(icons, /useUiStore\(ledIconsOn\)/, 'one reading, and it is the law\'s');
   // No selected-unit gate anywhere in the component: visible on every unit.
   // (The word appears in the header PROSE naming the fault; the assertion is
   // about the code — no read of the selection state exists.)

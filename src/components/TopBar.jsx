@@ -67,6 +67,8 @@ export default function TopBar({
   const xray = useUiStore((s) => s.xray);
   const toggleXray = useUiStore((s) => s.toggleXray);
   const toggleContourView = useUiStore((s) => s.toggleContourView);
+  const ledIcons = useUiStore((s) => s.ledIcons);
+  const toggleLedIcons = useUiStore((s) => s.toggleLedIcons);
   const hideFronts = useUiStore((s) => s.hideFronts);
   // Turn 25 (CLAUDE.md F13): project-wide, remembered.
   const showFrontDimensions = useUiStore((s) => s.showFrontDimensions);
@@ -244,6 +246,19 @@ export default function TopBar({
           checked: contourView,
           disabled: viewMode !== '3d',
           run: toggleContourView,
+        },
+        {
+          // ─── TURN 58 (F4): THE LED ICONS GET A DOOR OF THEIR OWN ────────
+          // Until tonight the only way to see them was to open the Lighting
+          // panel and leave it open (T54-F5). That is a fine way to LEARN the
+          // feature and a poor way to USE it: the moment the panel closed to
+          // reach anything else, the icons went. Here they are a way of
+          // LOOKING, beside X-ray and Contour view, and remembered like both.
+          label: 'LED icons',
+          hint: 'Clickable L LED / R LED badges on every cabinet — click one to put a strip down that side. Opening the Lighting panel still shows them.',
+          checked: ledIcons,
+          disabled: viewMode !== '3d',
+          run: toggleLedIcons,
         },
       ],
     },

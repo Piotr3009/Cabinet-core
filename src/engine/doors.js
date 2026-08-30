@@ -390,6 +390,100 @@ export function bayDoorsAvailable(bays = []) {
   return bays.some((b) => b.left.kind === 'partition' || b.right.kind === 'partition');
 }
 
+// ─── TURN 58 (F2): A HINGE HAS ONE HAND, AND BOTH ENDS OF IT FOLLOW ─────────
+//
+// `reference/lisp/KIT_WARDROBE_FULL.lsp` section G1 states it, and this is the
+// engine following (iron rule 1). Two functions, because the law is two
+// sentences: WHICH HAND, and then — derived, never picked again — WHICH BOARD.
+
+/**
+ * The hand a leaf actually opens on. (`SKY:leafHand`.)
+ *
+ * The FULL-HEIGHT edge wins the hinge: T46's *"brak wyboru otwierania"* — the
+ * door opens FROM the slope, so the hinges live on the tall edge and the
+ * diagonal never carries one. A tie — a level ceiling over this leaf — keeps
+ * the app's own default hand, which is what every cabinet in a level room has
+ * always been given and is what keeps this turn off every golden.
+ *
+ * `pts` is the leaf's own stretch of the ceiling, in the leaf's frame, exactly
+ * as the one sampler in `cabinet.js` hands it over. Nothing here samples a
+ * ceiling; T57-F0a's scar is a second reading of one line.
+ *
+ * @param {Array<{x:number,y:number}>|null} pts
+ * @param {'L'|'R'} typed  the hand a joiner asked for
+ * @returns {'L'|'R'}
+ */
+export function leafHandOn(pts, typed = 'L') {
+  if (!Array.isArray(pts) || pts.length < 2) return typed;
+  const yl = Number(pts[0].y);
+  const yr = Number(pts[pts.length - 1].y);
+  if (!(Number.isFinite(yl) && Number.isFinite(yr))) return typed;
+  if (yl > yr) return 'L';
+  if (yr > yl) return 'R';
+  return typed;
+}
+
+/**
+ * WHICH CARCASS SIDES CARRY A HINGED DOOR — read OFF the plan.
+ *
+ * ─── THE TABLE THIS REPLACES (turn 58's licensed deletion) ──────────────────
+ *
+ * `projectStore.hingedCarcassSides` answered this with a hand-rolled pair of
+ * ifs over the RAW typed hinge:
+ *
+ *     if (on(first) && hinge(first) === 'L') sides.push('BUL');
+ *     if (on(last)  && hinge(last)  === 'R') sides.push('BUR');
+ *
+ * It was right about the SHAPE — the first bay's left boundary is always BUL
+ * and the last bay's right is always BUR — and it was a SECOND ANSWER to the
+ * question `bayDoorPlan` already answers, which is the fault "one path per job"
+ * is written against. Being a second answer, it could not hear the ceiling: on
+ * a wardrobe under a slope the plan re-hands a leaf and the table went on
+ * reserving the board the joiner had typed.
+ *
+ * So the sides are DERIVED from the plan's own `hingeOn`, and there is nothing
+ * left to keep in step. `width` and `gap` place a leaf's edges and have no say
+ * in which boundary carries it, so the boundary answer is theirs to ignore.
+ *
+ * @returns {string[]|undefined} undefined when there are no per-bay doors,
+ *   which leaves the engine's own `doorCount` rule exactly where it was for
+ *   every cabinet in the app but this one shape.
+ */
+/**
+ * The bay boundaries as far as the CARCASS is concerned, for `n` bays.
+ *
+ * Only two boundaries in any cabinet can ever be a carcass side, and which two
+ * does not depend on where the partitions stand: the FIRST bay's left boundary
+ * is always BUL and the LAST bay's right is always BUR. Everything between is a
+ * partition, and a leaf hung on one reserves nothing on the carcass.
+ *
+ * That invariant is why the design layer can answer this question at all — it
+ * runs before the engine has cut a partition, so it has no panel to measure.
+ * Stating the invariant HERE, once, is what stops the store from growing a
+ * second reading of the partition geometry to answer a question the geometry
+ * has no say in.
+ */
+export function carcassBaysFor(n) {
+  const count = Math.max(0, Number(n) || 0);
+  if (!count) return [];
+  const bounds = [
+    boundaryAt('side', 0, 0, 'BUL'),
+    ...Array.from({ length: count - 1 }, (_, i) => boundaryAt('partition', 0, 0, `VPART-${i + 1}`)),
+    boundaryAt('side', 0, 0, 'BUR'),
+  ];
+  return Array.from({ length: count }, (_, i) => ({
+    index: i, from: 0, to: 0, size: 0, left: bounds[i], right: bounds[i + 1],
+  }));
+}
+
+export function hingedCarcassSidesOf({ bays = [], modes = [] } = {}) {
+  if (!Array.isArray(modes) || !modes.length) return undefined;
+  if (!Array.isArray(bays) || !bays.length) return [];
+  const plan = bayDoorPlan({ bays, modes });
+  const sides = plan.filter((l) => !l.onPartition).map((l) => l.hingeOn);
+  return [...new Set(sides)].filter((id) => id === 'BUL' || id === 'BUR').sort();
+}
+
 // ─── THE MOUNTING DATUM (turn 26, CLAUDE.md F1.2) ───────────────────────────
 //
 // The owner's hinge pierced the front of his doors, and the reason it could is

@@ -159,12 +159,24 @@ export function balanceOfKits(dir = LISP_DIR) {
  * question, and the two answers are merged and sorted so the report reads the
  * same before and after the commit that adds it.
  */
-export function lispDiffAgainst(ref) {
-  const out = execSync(`git diff --name-status ${ref} -- ${LISP_DIR}`, { encoding: 'utf8' });
+/**
+ * ─── TURN 58: …AND A CLOSED WINDOW HAS NO WORKING TREE ────────────────────
+ * `to` is optional and defaults to the working tree, which is what every
+ * caller before tonight got by not passing it. Given a second ref the diff is
+ * between TWO COMMITS, and an untracked file in today's folder is none of that
+ * window's business — which is what lets turn 57's own guard go on asserting
+ * turn 57's claim ("exactly one kit was born, and no other moved") after turn
+ * 58 has legitimately amended a different kit. A claim about a finished turn
+ * is a fact about two commits, not about whatever is on disk tonight.
+ */
+export function lispDiffAgainst(ref, to = null) {
+  const range = to ? `${ref} ${to}` : ref;
+  const out = execSync(`git diff --name-status ${range} -- ${LISP_DIR}`, { encoding: 'utf8' });
   const tracked = out.split('\n').filter(Boolean).map((row) => {
     const [status, ...rest] = row.split('\t');
     return { status: status[0], file: rest.join('\t') };
   });
+  if (to) return tracked.sort((a, b) => a.file.localeCompare(b.file));
   const untracked = execSync(`git ls-files --others --exclude-standard -- ${LISP_DIR}`, { encoding: 'utf8' })
     .split('\n').filter(Boolean)
     .filter((f) => f.toLowerCase().endsWith('.lsp'))

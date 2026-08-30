@@ -37,7 +37,7 @@ import {
 import { jpullSpec, resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
 import {
-  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, topDemandMm,
+  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, leafHandOn, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
@@ -1919,6 +1919,22 @@ export function computeCabinet(params, profileOverride) {
   // this file is: a bare `computeCabinet()` is handed none and every fixture,
   // every golden and all six standard configs are answered by exactly the
   // expression that answered them yesterday.
+  // ─── TURN 58 (F2): …AND WHAT THIS NUMBER STILL CANNOT HEAR ───────────────
+  //
+  // The design layer's answer is now READ OFF `bayDoorPlan` rather than picked
+  // from a static table (`doors.js hingedCarcassSidesOf`, this turn's licensed
+  // deletion), so there is one derivation of "which carcass side carries a
+  // leaf" and not two. It is still answered over the hands a joiner TYPED,
+  // because it is answered HERE — hundreds of lines before the ceiling line is
+  // resolved into leaves — and the drawer geometry below depends on it.
+  //
+  // NAMED, NOT HIDDEN: on a wardrobe that has bay doors AND drawers AND stands
+  // under a slope that re-hands an outer leaf, the DRAWER PANEL standoff is
+  // still reserved on the side the joiner typed. The holes that fault used to
+  // put in the wrong board are fixed (`bayDoorsHanded`, and the plate pass that
+  // reads it); this is the same lie's last room, and closing it means the
+  // standoff decision moving to AFTER the leaves are cut — a bigger move than
+  // this turn is licensed for. BACKLOG carries it.
   const statedHinged = Array.isArray(cfg.hingedCarcassSides) ? cfg.hingedCarcassSides : null;
   const dpSideLaw = statedHinged
     ? { left: statedHinged.includes('BUL'), right: statedHinged.includes('BUR') }
@@ -5746,7 +5762,14 @@ export function computeCabinet(params, profileOverride) {
       sheetR: roomL,
       // The full-height edge. A tie (a level ceiling under the carcass top)
       // keeps the LEFT, which is the app's own default hand.
-      hinge: roomL >= roomR ? 'L' : 'R',
+      //
+      // T58-F2: the rule itself moved to `engine/doors.js leafHandOn`, which is
+      // the LISP's `SKY:leafHand` in JavaScript. It did not move because this
+      // reading was wrong — it moved because a SECOND reader needed the same
+      // answer (the boundary a bay leaf hangs on) and two copies of a hand rule
+      // is exactly how a leaf came to be drilled on one side and hung on the
+      // other. The sampling above is still the only sampling there is.
+      hinge: leafHandOn(roomPts, 'L'),
       tall,
       low: Math.min(full, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
       // ─── TURN 54 (CLAUDE.md F3.4): THE ANGLE, STATED ON THE PIECE ────────
@@ -5767,6 +5790,48 @@ export function computeCabinet(params, profileOverride) {
       }),
     };
   };
+
+  // ─── TURN 58 (F2): THE BOUNDARY FOLLOWS THE HAND ─────────────────────────
+  //
+  // MEASURED ON main cd399cf. A 1800 × 2150 wardrobe, one partition at 900,
+  // bay leaves typed [L, R], under a ceiling rising 1200 → 2150:
+  //
+  //   leaf W01-B1   drilled hand = R (forced)   hung on = BUL
+  //   plate holes   BUL 6, BUR 12
+  //
+  // `bayDoorPlan` picked each leaf's boundary from the hand a joiner TYPED,
+  // and then the ceiling overruled the hand — so the cups went in the leaf's
+  // right stile and the ⌀5 plate pattern went into the board on its left. Six
+  // holes with no hinge in them, and a door that hangs on neither side. It is
+  // T41-F4's fault shape ("four bored holes with no hinge in them") one board
+  // down, and a slope is the only thing that can produce it, which is why it
+  // survived every level-room test in the suite.
+  //
+  // THE LAW (KIT_WARDROBE_FULL.lsp G1): a hinge has ONE hand. The plan is run
+  // AGAIN over the hands the ceiling actually forced, so `hingeOn`,
+  // `hingeFace` and `onPartition` are all derived from the same answer the
+  // cups are bored to. The re-plan is not cosmetic: flipping a hand changes
+  // which leaf covers a partition, so the widths move with it.
+  //
+  // WHY IT IS SAFE. `frontSlopeAt` returns null wherever the ceiling does not
+  // actually cut the leaf — which is EVERY leaf in a level room — so `handed`
+  // is `params.bay_doors` unchanged, `bayDoorPlan` is called with exactly what
+  // it was called with yesterday, and the re-plan is skipped outright. Only a
+  // bay leaf under a live slope can move a byte here.
+  const bayDoorsHanded = (() => {
+    if (!bayDoors.length) return bayDoors;
+    const handed = params.bay_doors.map((mode, i) => {
+      const leaf = bayDoors.find((l) => l.bay === i);
+      if (!leaf) return mode;
+      const sl = frontSlopeAt(leaf.x, leaf.width);
+      return sl && sl.hinge !== leaf.hinge ? { ...mode, hinge: sl.hinge } : mode;
+    });
+    if (handed.every((m, i) => m === params.bay_doors[i])) return bayDoors;
+    return bayDoorPlan({
+      bays: doorBaysHere, modes: handed, width: W, gap: P.doors.gap,
+    });
+  })();
+
   /**
    * ─── TURN 50 (CLAUDE.md F7): THE LADDER, RE-RUN OVER WHAT IS LEFT ─────────
    *
@@ -5896,7 +5961,7 @@ export function computeCabinet(params, profileOverride) {
         : { hinge: hand, frontType: cfg.frontType },
     });
   };
-  for (const leaf of bayDoors) {
+  for (const leaf of bayDoorsHanded) {
     if (!(leaf.width > 0)) continue;
     // TURN 46 (F4): a BAY leaf is a leaf. It takes the same cut, the same
     // forced hand and the same ladder — the diagonal does not ask which
@@ -6634,8 +6699,8 @@ export function computeCabinet(params, profileOverride) {
   // exactly as a face door does, and a middle bay's hangs on nothing but its
   // partitions. Drilling `hingedSides` regardless would have bored a plate
   // pattern into a side no door is hung on.
-  const platedSides = bayDoors.length
-    ? [...new Set(bayDoors.filter((l) => !l.onPartition).map((l) => l.hingeOn))]
+  const platedSides = bayDoorsHanded.length
+    ? [...new Set(bayDoorsHanded.filter((l) => !l.onPartition).map((l) => l.hingeOn))]
     : hingedSides;
   for (const sideId of platedSides) {
     const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
@@ -6665,7 +6730,7 @@ export function computeCabinet(params, profileOverride) {
   // These are this turn's ONLY new CNC entities, they are a NAMED class
   // (HINGES_5MM on a VPART), and they exist only where a door is actually hung
   // on a partition — never in a golden default.
-  for (const leaf of bayDoors) {
+  for (const leaf of bayDoorsHanded) {
     if (!leaf.onPartition) continue;
     const part = panels.find((p) => p.id === leaf.hingeOn);
     if (!part) continue;
@@ -8327,7 +8392,7 @@ export function computeCabinet(params, profileOverride) {
     ),
     side_hinge_holes_y: hingedLeafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
-    hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
+    hinged_sides: bayDoorsHanded.length ? bayDoorsHanded.map((l) => l.hingeOn) : hingedSides,
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
     front_cup_x_from_hinge_edge: cups.xFromHingeEdge,
     // ─── TURN 25 (CLAUDE.md F4): where every handle on this cabinet sits ────

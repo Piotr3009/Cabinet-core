@@ -308,7 +308,6 @@ test('F1.7 · the run: every segment of a two-knee polyline passes the three sta
     },
   }, P);
   const faces = r.panels.filter((p) => /^INFILL-T-FACE-\d$/.test(p.id));
-  const shelves = r.panels.filter((p) => /^INFILL-T-SHELF-\d$/.test(p.id));
   assert.equal(faces.length, 3, 'one strip piece per ceiling segment — the knees split, nothing else');
   const ceil = (x) => slopeHeightAt({ pts: RUN_CEIL }, x);
   let worst = 0;
@@ -335,14 +334,8 @@ test('F1.7 · the run: every segment of a two-knee polyline passes the three sta
   // The knee joins — half the angle between neighbours — are unchanged law.
   const joined = faces.filter((p) => p.meta.mitre?.left != null || p.meta.mitre?.right != null);
   assert.ok(joined.length >= 2, 'the knee joins survive');
-  // AMENDED 29.08.2026 (T55 law): the wrap is a LEVEL-stretch piece only —
-  // one shelf for the flat middle, none for the two raked ends, and no shelf
-  // anywhere carries a lean.
-  assert.equal(shelves.length, 1, 'exactly one shelf — the flat middle segment');
-  for (const s of shelves) {
-    assert.equal(s.meta.tilt_deg, undefined, 'a shelf never leans');
-    assert.equal(s.meta.slopeCut, undefined, 'and never carries a slope cut');
-  }
+  assert.equal(r.panels.filter((p) => /^INFILL-T-SHELF/.test(p.id)).length, 0,
+    'no shelf board anywhere — the piece is one plain board per segment');
   assert.ok(worst <= 0.01, `worst residual ${worst.toFixed(4)} ≤ 0.01`);
 });
 

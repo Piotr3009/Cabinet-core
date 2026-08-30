@@ -1728,20 +1728,7 @@ export default function UnitView({
           is not recomputed, the BOM and the CNC sheet read it unchanged, and
           the params never hear about this. It is a lens over the same cabinet,
           which is what makes it different in kind from "Remove doors". */}
-      {/* ─── TURN 48 (CLAUDE.md F2): A PART MAY BE DATA RATHER THAN A BODY ──
-          The owner, 25.08.2026: *"pomyslem zeby na wizualizacji tylko zrobic
-          jedna deske jak plinth i tyle."* The top infill is TWO boards on the
-          sheet and ONE board in the room — the face, standing in the plane of
-          the fronts exactly as a plinth does. The shelf board is cut, priced,
-          labelled and exported like every other part; it is simply not a second
-          body over the joiner's head.
-
-          `meta.scene === 'sheet-only'` is the engine saying so, and it is
-          deliberately general rather than a test for INFILL-T: the next part
-          that belongs on the sheet and not in the picture says the same word
-          and this filter already knows about it. */}
-      {result.panels.filter((p) => p.box && p.meta?.scene !== 'sheet-only'
-        && !(hideFronts && frontKind(p))).map((p) => {
+      {result.panels.filter((p) => p.box && !(hideFronts && frontKind(p))).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         // ─── Turn 9 (CLAUDE.md F4.1) ───
         // What can be selected as an ELEMENT. It is the engine's own `shelf`

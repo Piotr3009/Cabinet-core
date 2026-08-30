@@ -726,7 +726,7 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
  * left carcass edge — because that is the frame computeCabinet builds boxes in.
  *
  * @returns {null | {
- *   role:'owner', offset:number, length:number, faceH:number, shelfDepth:number,
+ *   role:'owner', offset:number, length:number, faceH:number,
  *   thickness:number|null, ends:{left:string,right:string},
  *   returns:{left:number|null, right:number|null}, unitIds:string[] }}
  */
@@ -760,7 +760,6 @@ function runTopInfill(run, {
     offset: left.x - ownerX,
     length,
     faceH,
-    shelfDepth: T.shelfDepth,
     thickness: T.thickness,
     ends: { left: left.kind, right: right.kind },
     returns: {

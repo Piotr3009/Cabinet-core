@@ -36,7 +36,7 @@ import { panelEntities, panelNoteBlock } from '../src/engine/cnc/dxf.js';
 // file SCRIBE TO THE PLASTER and stay on the ceiling (ceilReach) itself — so
 // every side-infill number below is unchanged BY LAW, not by accident. Of
 // the top trio, only INFILL-T-FACE keeps the ceiling pivot; the roof TOP
-// moved to cutReach and INFILL-T-SHELF moved UNDER the roof — amended where
+// moved to cutReach — amended where
 // asserted below.
 
 const OVER = P.autoParts.fillerOversize;
@@ -69,8 +69,7 @@ test('EVERY infill leaves the machine 20 over — on the edge it is SCRIBED to',
   assert.deepEqual(seen['INFILL-L-FACE'], { mm: 20, edge: 'left', nominal: 40 });
   assert.deepEqual(seen['INFILL-R-FACE'], { mm: 20, edge: 'right', nominal: 40 });
   assert.deepEqual(seen['INFILL-T-FACE'], { mm: 20, edge: 'top', nominal: 40 });
-  assert.deepEqual(seen['INFILL-T-SHELF'],
-    { mm: 20, edge: 'back', nominal: P.autoParts.topInfill.shelfDepth });
+  assert.equal(seen['INFILL-T-SHELF'], undefined, 'there is no shelf board to scribe');
   // …and the ARM, which touches no wall, takes none: 20 mm of spare board on a
   // piece that has to end flush is 20 mm in the way.
   assert.equal(seen['INFILL-L-ARM'], null);

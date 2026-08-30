@@ -102,14 +102,13 @@ test('the top infill is 40 by default and never taller than the space left', () 
 // two `w` assertions below move from the nominal run to the nominal plus the
 // allowance, and `meta.lengthOversize` names the end it hangs off. The widths
 // are untouched, and are still arithmetic: 40 + 20 and 80 + 20.
-test('the top infill is TWO BOARDS, and they grow with the drag', () => {
+test('the top infill is ONE BOARD, and it grows with the drag', () => {
   // One element for a whole RUN. A unit on its own is a run of one, which is
   // what a bare computeCabinet() call is, so the numbers below are that unit's
   // own width. The four end conditions and the multi-cabinet case live in
   // test/run-infill.test.js.
   const r = computeCabinet(base({ top_infill_mm: 40 }), P);
   const face = r.panels.find((p) => p.id === 'INFILL-T-FACE');
-  const shelf = r.panels.find((p) => p.id === 'INFILL-T-SHELF');
   // T47-F4: `w`/`h` are the CUT size and now carry the +20 scribe allowance
   // on the piece's WALL edge (`autoParts.fillerOversize`, the drawer front's own
   // idiom). `meta.oversize.nominal` is the finished size, and the box is the
@@ -125,15 +124,9 @@ test('the top infill is TWO BOARDS, and they grow with the drag', () => {
   assert.equal(face.box.h, 40, 'the piece that stands in the room is the nominal');
   assert.equal(face.box.y, 770, 'it starts at the top of the carcass');
   assert.equal(face.role, 'infill');
-  assert.equal(shelf.w, 600 + OVER, 'the second board is cut from the same length');
-  assert.deepEqual(shelf.meta.lengthOversize, { mm: OVER, end: 'right', nominal: 600 });
-  assert.equal(shelf.h, P.autoParts.topInfill.shelfDepth + OVER,
-    'BOARD B: "a druga nominal 80 bez zmian" — 80 plus the same scribe');
-  assert.deepEqual(shelf.meta.oversize,
-    { mm: OVER, edge: 'back', nominal: P.autoParts.topInfill.shelfDepth });
-  // …and NEITHER is an L any more: two plain rectangles, four corners each.
-  assert.equal(face.cnc.outline.length, 4);
-  assert.equal(shelf.cnc.outline.length, 4);
+  assert.equal(r.panels.filter((p) => p.id === 'INFILL-T-SHELF').length, 0,
+    'the shelf board is gone: ONE plain board and nothing else');
+  assert.equal(face.cnc.outline.length, 4, 'a plain rectangle, four corners');
   assert.equal(face.meta.mitre_45.includes('long'), false, 'the L\'s long-edge 45 is gone');
 
   const taller = computeCabinet(base({ top_infill_mm: 380 }), P);

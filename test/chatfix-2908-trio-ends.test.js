@@ -15,7 +15,7 @@ import { mm } from '../src/3d/constants.js';
 // `bandH·sin β` = 17.9 mm past the plumb line at each end — the exact "wąsik"
 // on his BUR screenshot, and the lone piece hanging beside W03 on the
 // two-knee run (the strip's end reaching into the neighbour's band: the house
-// overlap law broken by a render). The SHELF is `scene: 'sheet-only'`, so its
+// overlap law broken by a render). There is no shelf board at all, so
 // fault lived on the WALL SHEET: `segElevation` rotated the rectangle's
 // corners and the paper drew the same poke.
 //
@@ -158,11 +158,8 @@ test('a FLAT band never enters the sheared branch — the plain path as ever', (
   assert.ok(face, 'the flat strip exists');
   assert.equal(face.meta?.tilt_axis, undefined, 'nothing tells it to lean');
   assert.equal(face.meta?.elevation, undefined, 'and it states no elevation');
-  // T55 law (29.08): the wrap is a LEVEL-stretch piece — on the flat it
-  // stays exactly as T47 wrote it, sheet-only flag and all.
-  const shelf = flat.panels.find((p) => p.id === 'INFILL-T-SHELF');
-  assert.ok(shelf, 'the flat wrap still exists');
-  assert.equal(shelf.meta?.scene, 'sheet-only', 'and stays off the room, on the sheet');
+  assert.equal(flat.panels.find((p) => p.id === 'INFILL-T-SHELF'), undefined,
+    'and there is no wrap board behind it');
 });
 
 // ─── T55 (29.08, the owner's second telling): RETURNS ARE LEVEL-END ONLY ────
@@ -178,7 +175,6 @@ const RUN = (ceiling, returns) => computeCabinet({
   run_top_infill: {
     role: 'owner', offset: 0, length: 600,
     faceH: P.autoParts.topInfill.defaultHeight,
-    shelfDepth: P.autoParts.topInfill.shelfDepth,
     ends: { left: 'open', right: 'open' },
     returns,
     ...(ceiling ? { ceiling, ceilingInfill: 40 } : {}),
@@ -193,12 +189,10 @@ test('T55 · a RAKED end grows no return; a FLAT end keeps its corner', () => {
   );
   assert.ok(mixed.panels.find((p) => p.id === 'INFILL-TL-FACE'),
     'flat left end: the return face stands');
-  assert.ok(mixed.panels.find((p) => p.id === 'INFILL-TL-SHELF'),
-    'flat left end: and its shelf');
   assert.equal(mixed.panels.find((p) => p.id === 'INFILL-TR-FACE'), undefined,
     'raked right end: no return face — the run finishes straight');
-  assert.equal(mixed.panels.find((p) => p.id === 'INFILL-TR-SHELF'), undefined,
-    'raked right end: no return shelf either');
+  assert.equal(mixed.panels.find((p) => p.id === 'INFILL-TL-SHELF'), undefined,
+    'and no return shelf on the flat end either — the shelf does not exist');
 });
 
 test('T55 · a fully RAKED ceiling grows no return at either end', () => {
@@ -217,8 +211,11 @@ test('T55 · a fully RAKED ceiling grows no return at either end', () => {
 
 test('T55 · a fully FLAT ceiling keeps both corners exactly as before', () => {
   const flat2 = RUN(null, { left: 150, right: 150 });
-  for (const id of ['INFILL-TL-FACE', 'INFILL-TL-SHELF', 'INFILL-TR-FACE', 'INFILL-TR-SHELF']) {
+  for (const id of ['INFILL-TL-FACE', 'INFILL-TR-FACE']) {
     assert.ok(flat2.panels.find((p) => p.id === id), `${id} stands on the flat`);
+  }
+  for (const id of ['INFILL-TL-SHELF', 'INFILL-TR-SHELF']) {
+    assert.equal(flat2.panels.find((p) => p.id === id), undefined, `${id} does not exist`);
   }
 });
 
@@ -334,7 +331,7 @@ test('T55 · loadProject recomputes run elements — the stored chord dies unope
     },
   }]);
   const u = S().units.find((x) => x.id === 'u1');
-  const c = u.params.run_top_infill?.ceiling;
+  const c = S().runElements[u.id]?.top_infill?.ceiling;
   assert.ok(Array.isArray(c) && c.length === 3,
     `opened project carries the KNEE (${c?.length} pts) — the chord is dead on arrival`);
 });

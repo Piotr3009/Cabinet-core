@@ -30,6 +30,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const notify = useUiStore((s) => s.notify);
   const allResults = useProjectStore((s) => s.allResults);
+  const runElements = useProjectStore((s) => s.runElements);
   const units = useProjectStore((s) => s.units);   // the subscription that re-runs the BOM
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
   const materials = useMaterialAssignmentStore((s) => s.materials);
@@ -43,7 +44,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
 
   const [tab, setTab] = useState('parts');
   const runChecks = useProjectStore((s) => s.runChecks);
-  const entries = useMemo(() => allResults(), [units, allResults]);
+  const entries = useMemo(() => allResults(), [units, runElements, allResults]);
   // The design and the profile go in so every row carries the finish it is cut
   // from — a sprayed front says "RAL 3005 Wine Red spray", an overridden shelf
   // says its own material (turn 9, CLAUDE.md F4.5 / F6.3). Turn 32 (F5): and

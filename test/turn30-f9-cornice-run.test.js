@@ -111,7 +111,7 @@ test('F9 the RUN is not re-derived: one moulding across adjacent cabinets, as be
   // in turn 22's own shape: ONE OWNER carrying the whole moulding, and the
   // rest MEMBERS pointing at it. That shape is what "one moulding across the
   // run" is, and it is exactly what a bulk press must produce.
-  const runs = ids.map((id) => unitOf(id).params.run_cornice);
+  const runs = ids.map((id) => store().runElements[id]?.cornice ?? null);
   assert.ok(runs.every(Boolean), 'every cabinet carries the run');
   const owners = runs.filter((r) => r.role === 'owner');
   assert.equal(owners.length, 1, 'ONE moulding, not three');

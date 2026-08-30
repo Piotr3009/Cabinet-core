@@ -43,12 +43,12 @@ const build = (over = {}, profile = P) => computeCabinet({ ...BASE, top_infill_m
 const byId = (r, id) => r.panels.find((p) => p.id === id);
 const tops = (r) => r.panels.filter((p) => p.part === 'INFILL' && p.meta.side === 'top');
 
-// ═══ TWO PLAIN RECTANGLES ═══════════════════════════════════════════════════
+// ═══ ONE PLAIN RECTANGLE ════════════════════════════════════════════════════
 
-test('the engine emits TWO boards where the L used to be, and both are rectangles', () => {
+test('the engine emits ONE board where the L used to be, and it is a rectangle', () => {
   const r = build();
   const boards = tops(r);
-  assert.equal(boards.length, 2, 'two boards — "rysujesz 2 deski"');
+  assert.equal(boards.length, 1, 'one board');
   for (const p of boards) {
     assert.equal(p.cnc.outline.length, 4, `${p.id} is a rectangle`);
     assert.deepEqual(p.cnc.outline, [[0, 0], [p.w, 0], [p.w, p.h], [0, p.h]],
@@ -68,15 +68,9 @@ test('BOARD A is (run + 20) × 60, and the 60 is ARITHMETIC', () => {
   assert.equal(byId(build({}, P25), 'INFILL-T-FACE').h, T.defaultHeight + 25);
 });
 
-test('BOARD B is (run + 20) × (80 + the same oversize) — "nominal 80 bez zmian"', () => {
-  const shelf = byId(build(), 'INFILL-T-SHELF');
-  assert.equal(shelf.w, 600 + OVER);
-  assert.equal(shelf.h, T.shelfDepth + OVER, '80 + 20');
-  assert.deepEqual(shelf.meta.oversize, { mm: OVER, edge: 'back', nominal: T.shelfDepth },
-    'the width oversize is T47\'s own, on the scribed edge, unchanged');
-  // The nominal is the profile's, not a literal either.
-  const P120 = { ...P, autoParts: { ...P.autoParts, topInfill: { ...T, shelfDepth: 120 } } };
-  assert.equal(byId(build({}, P120), 'INFILL-T-SHELF').h, 120 + OVER);
+test('there is no BOARD B — the shelf does not exist', () => {
+  assert.equal(byId(build(), 'INFILL-T-SHELF'), undefined,
+    'not in the room, not on the sheet, not in the bill');
 });
 
 // ═══ +20 ON THE LENGTH, ONE END, STATED ═════════════════════════════════════
@@ -98,7 +92,6 @@ test('…and it goes on the TURNING CORNER when there is one', () => {
       offset: 0,
       length: 600,
       faceH: T.defaultHeight,
-      shelfDepth: T.shelfDepth,
       ends: { left: 'open', right: 'wall' },
       returns: { left: 200 },
     },
@@ -145,7 +138,6 @@ test('no 45° corner mitre inside a piece — not even against a side filler', (
       offset: 0,
       length: 600,
       faceH: T.defaultHeight,
-      shelfDepth: T.shelfDepth,
       ends: { left: 'infill', right: 'wall' },
       mitre: { left: T.defaultHeight },
       sideMitre: { left: T.defaultHeight },
@@ -162,7 +154,7 @@ test('no 45° corner mitre inside a piece — not even against a side filler', (
 test('`mitre_45` no longer says "long" anywhere on the top infill', () => {
   const cases = [
     {},
-    { run_top_infill: { role: 'owner', offset: 0, length: 600, faceH: T.defaultHeight, shelfDepth: T.shelfDepth, ends: { left: 'open', right: 'open' }, returns: { left: 200, right: 200 } } },
+    { run_top_infill: { role: 'owner', offset: 0, length: 600, faceH: T.defaultHeight, ends: { left: 'open', right: 'open' }, returns: { left: 200, right: 200 } } },
     { slope_cut: { pts: [{ x: 0, y: 2400 }, { x: 600, y: 1800 }], infill: T.defaultHeight } },
   ];
   for (const over of cases) {
@@ -181,7 +173,7 @@ test('…and the 45 that SURVIVES is the turning corner, and the slope\'s own jo
   //     carry 'end', which is the picture frame the owner calls rare.
   const turned = build({
     run_top_infill: {
-      role: 'owner', offset: 0, length: 600, faceH: T.defaultHeight, shelfDepth: T.shelfDepth,
+      role: 'owner', offset: 0, length: 600, faceH: T.defaultHeight,
       ends: { left: 'open', right: 'wall' }, returns: { left: 200 },
     },
   });
@@ -204,12 +196,10 @@ test('…and the 45 that SURVIVES is the turning corner, and the slope\'s own jo
 
 // ═══ THE SCENE SHOWS ONE BOARD ══════════════════════════════════════════════
 
-test('the scene shows ONE board, like the plinth — the shelf is data, not a body', () => {
+test('the scene shows ONE board, like the plinth', () => {
   const r = build();
   const face = byId(r, 'INFILL-T-FACE');
-  const shelf = byId(r, 'INFILL-T-SHELF');
-  assert.equal(shelf.meta.scene, 'sheet-only', 'the shelf board says it is not in the room');
-  assert.equal(face.meta.scene, undefined, 'and the face board says nothing, so it is drawn');
+  assert.equal(byId(r, 'INFILL-T-SHELF'), undefined, 'there is no second board');
   // …and it is drawn as a plain box: nothing left for the mitre cutter to do.
   assert.equal(infillSolid(face), null);
 });
@@ -238,34 +228,27 @@ test('…and under a slope it LEANS, with the 25.08 tilt mechanism', () => {
   assert.equal(face.meta.tilt_axis, 'z');
   assert.deepEqual(face.meta.tilt_pivot, { x: 600, y: 1400 }, 'the ceiling at the LOW end');
   assert.equal(face.cnc.outline.length, 4, 'one plain board, one lean — which is the point of the ruling');
-  // T55 AMENDED (29.08.2026): under a rake the infill IS one board — the
-  // shelf is not a second leaner, it is ABSENT (*"prosty infill BEZ
-  // ZAWIJANIA"*). Its sheet-only flat life is asserted in the flat tests.
-  assert.equal(byId(r, 'INFILL-T-SHELF'), undefined, 'one board, full stop (T55)');
+  assert.equal(byId(r, 'INFILL-T-SHELF'), undefined, 'one board, full stop');
 });
 
-// ═══ CNC / DXF / BOM SPEAK IN THE TWO BOARDS ════════════════════════════════
+// ═══ CNC / DXF / BOM SPEAK IN ONE BOARD ═════════════════════════════════════
 
-test('two outlines, two labels, two rows', () => {
+test('one outline, one label, one row', () => {
   const r = build();
   const boards = tops(r);
 
-  // TWO OUTLINES.
-  assert.equal(boards.filter((p) => p.cnc?.outline?.length === 4).length, 2);
+  assert.equal(boards.filter((p) => p.cnc?.outline?.length === 4).length, 1);
 
-  // TWO LABELS, and each says its own cut size.
   const labels = boards.map((p) => partLabelText(r.unitNum, p));
-  assert.deepEqual(labels, ['01 INFILL-T-FACE 620x60', '01 INFILL-T-SHELF 620x100']);
+  assert.deepEqual(labels, ['01 INFILL-T-FACE 620x60']);
 
-  // TWO ROWS on the cut list, priced as two pieces.
   const rows = buildBom([{ unit: { id: 'u1', params: {} }, result: r }])
     .units.flatMap((u) => u.rows).filter((row) => String(row.id).startsWith('INFILL-T'));
-  assert.equal(rows.length, 2);
-  assert.deepEqual(rows.map((row) => [row.w, row.h]), [[620, 60], [620, 100]]);
+  assert.equal(rows.length, 1);
+  assert.deepEqual(rows.map((row) => [row.w, row.h]), [[620, 60]]);
 
-  // TWO FILES out of the DXF writer, each a closed rectangle on its own sheet.
   const files = buildUnitDxfFiles(r, P).filter((f) => f.name.includes('INFILL-T'));
-  assert.equal(files.length, 2);
+  assert.equal(files.length, 1);
 });
 
 // ═══ THE SIDE INFILLS ARE NOT TOUCHED ═══════════════════════════════════════
@@ -295,7 +278,7 @@ test('the SIDE infill is not touched by one line — "infill pionowy nie ruszamy
     height: 2100,
     side_infill_left_mm: 120,
     run_top_infill: {
-      role: 'owner', offset: 0, length: 600, faceH: 100, shelfDepth: T.shelfDepth,
+      role: 'owner', offset: 0, length: 600, faceH: 100,
       ends: { left: 'infill', right: 'wall' }, sideMitre: { left: 100 },
     },
   }, P);

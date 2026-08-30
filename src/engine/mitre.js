@@ -1,31 +1,16 @@
-// ─── The 45° mitre, as geometry (turn 8, CLAUDE.md F6) ───
+// ─── The 45° mitre, as geometry ───
 //
-// The top infill is an L in section: a face strip standing on the units and a
-// shelf running back off the top of it, the two mitred at 45° and glued. The
-// engine has said so since turn 6 — `meta.mitre_45` carries the flag and the
-// cut list is right — but the 3D drew both strips as plain boxes butted end to
-// face. Piotr's verdict: "nie ma opcji, będzie źle wyglądać".
+// Two boxes meeting at a corner do not turn a corner — they overlap by the
+// corner square and z-fight. A picture frame is mitred for exactly that reason,
+// so this module cuts the solids. Pure geometry, no three.js: a 45° plane
+// through a box is arithmetic and belongs where node can check it.
 //
-// He is right, and it is not only the joint. The four end conditions include
-// one where the element TURNS THE CORNER and runs back to the wall, and two
-// boxes meeting at a corner do not turn a corner — they overlap by the corner
-// square and z-fight through each other. A picture frame is mitred for exactly
-// that reason.
+// Nothing here reaches the cut list. A mitred piece is CUT as a rectangle to
+// its long point and the mitre is a setting on the saw — `meta.mitre_45`
+// already tells the workshop. This is what the piece LOOKS like.
 //
-// So this module cuts the solids. It is pure geometry with no three.js in it,
-// which is the point: a 45° plane through a box is arithmetic, and arithmetic
-// belongs somewhere it can be checked in node rather than by eye on a screen
-// (CLAUDE.md F6 asks for a test on the chamfer's vertices).
-//
-// ─── WHAT IT DOES NOT DO ───
-// Nothing here reaches the cut list. The BOM and the DXF are unchanged: a
-// mitred piece is CUT as a rectangle to its long point and the mitre is a
-// setting on the saw, which is exactly what `meta.mitre_45` already tells the
-// workshop. This is what the piece LOOKS like.
-//
-// Coordinates are the unit's own millimetres — the frame every `panel.box` is
-// already in — so a caller hands over a box and gets back the same solid it
-// would have drawn, with the corners taken off.
+// Coordinates are the unit's own millimetres, the frame every `panel.box` is
+// already in.
 
 /** A tolerance in millimetres. Two vertices closer than this are one vertex. */
 const EPS = 1e-6;
@@ -324,46 +309,17 @@ export function infillMitre(panel) {
   }
 
   if (meta.side !== 'top') return null;
-  const isFace = meta.piece === 'face';
-  // A shelf board is not a body in the room any more (T48-F2), so the only
-  // piece with a solid to cut is the face — but a piece that is NEITHER is
-  // still nothing this function knows how to answer, and says so.
-  if (!isFace && meta.piece !== 'shelf') return null;
+  if (meta.piece !== 'face') return null;
 
   const segment = String(meta.segment || 'main');
   const ends = meta.ends || {};
   const planes = [];
 
-  // ─── TURN 48 (CLAUDE.md F2): THE L IS OVERRULED ─────────────────────────
-  //
-  // The owner, 25.08.2026: *"zamiast L shape … pomyslem zeby na wizualizacji
-  // tylko zrobic jedna deske jak plinth i tyle."*
-  //
-  // Turn 6 built the top infill as an L in section and this module cut the
-  // solid that made it read as one: the face's top edge chamfered back to meet
-  // a shelf that had itself been moved forward to the joint. Both cuts go. The
-  // element is TWO PLAIN BOARDS now, and the SCENE draws one of them — the
-  // face, standing in the plane of the fronts like a plinth. The shelf board is
-  // cut, priced and exported, and is not a body in the room (`meta.scene ===
-  // 'sheet-only'`, engine/cabinet.js).
-  //
-  // WHAT SURVIVES is the sentence CLAUDE.md F2 draws the line at: a 45° where
-  // two RUNS meet. An OPEN end is the run turning the corner, and the return
-  // that grows there is a second run in the same plane — so the plan mitre
-  // between them is still cut, on the faces, and reads as a picture frame.
-  //
-  // THE SIDE INFILL IS NOT TOUCHED. Its own corner (above) is exactly what T15
-  // shipped — *"infill pionowy nie ruszamy"*.
+  // The only 45° left is where two RUNS meet: an OPEN end turning the corner
+  // into its return, cut on the faces, reading as a picture frame.
   if (segment === 'main') {
-    // ── the long run along the wall ──
-    if (!isFace) return null;
-    // ─── T55 (29.08.2026, the owner — MILION PROCENT) ────────────────────
-    // *"nie ma zawijania jak jest skos … 45 stopni mitre ucięto do
-    // zawijania."* A RAKED strip owns NO plan mitre at all: its whole body —
-    // the lean, the parallelogram, the plumb ends — is the leant path in
-    // 3d/panelSolid.js, and THIS return of a spec was the very thing that
-    // kept the piece OUT of that path (UnitView draws a mitre-spec'd panel
-    // the old way). One raked answer: nothing to cut here.
+    // A RAKED strip owns no plan mitre — the leant path in 3d/panelSolid.js
+    // owns its whole body.
     if (meta.slopeCut) return null;
     const t = box.d;
     const faceBox = { ...box };
@@ -376,12 +332,8 @@ export function infillMitre(panel) {
   }
 
   // ── the return, running back to the wall ──
-  //
-  // T48-F2: the L's own quarter-turn is gone with the L; the RETURN's face is a
-  // plain board too. What is kept is the corner where it meets the main face,
-  // because that is the turning corner — the one place two RUNS meet.
+  // The corner where it meets the main face: the one place two RUNS meet.
   const left = segment === 'return-left';
-  if (!isFace) return null;
   const t = box.w;
   const faceBox = { ...box };
   planes.push(chamferPlane(faceBox, 'x', left ? +1 : -1, 'z', +1, t));

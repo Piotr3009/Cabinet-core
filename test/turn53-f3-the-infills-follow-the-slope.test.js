@@ -140,9 +140,9 @@ function runUnderASlope() {
 
 test('F3b — the run carries its OWN ceiling, not the owner cabinet’s', () => {
   const ids = runUnderASlope();
-  const owner = store().units.find((u) => u.params.run_top_infill?.role === 'owner');
+  const owner = store().units.find((u) => store().runElements[u.id]?.top_infill?.role === 'owner');
   assert.ok(owner, 'a run with an owner');
-  const el = owner.params.run_top_infill;
+  const el = store().runElements[owner.id].top_infill;
   assert.ok(Array.isArray(el.ceiling) && el.ceiling.length >= 2, 'the line travels with the run');
   // …and the owner cabinet itself is NOWHERE NEAR the slope, which is exactly
   // the case that used to draw a flat board.
@@ -155,7 +155,7 @@ test('F3b — the run carries its OWN ceiling, not the owner cabinet’s', () =>
 
 test('F3b — the top infill breaks at the knee and follows the rake past it', () => {
   const ids = runUnderASlope();
-  const owner = store().units.find((u) => u.params.run_top_infill?.role === 'owner');
+  const owner = store().units.find((u) => store().runElements[u.id]?.top_infill?.role === 'owner');
   const faces = find(owner.id, /^INFILL-T-FACE(-\d+)?$/);
   assert.ok(faces.length >= 2, `${faces.length} segments — one per stretch of the line`);
   const sloped = faces.filter((p) => p.meta?.slopeCut);
@@ -167,8 +167,8 @@ test('F3b — the top infill breaks at the knee and follows the rake past it', (
 
 test('F3b — no segment of the run stands above the ceiling line', () => {
   const ids = runUnderASlope();
-  const owner = store().units.find((u) => u.params.run_top_infill?.role === 'owner');
-  const el = owner.params.run_top_infill;
+  const owner = store().units.find((u) => store().runElements[u.id]?.top_infill?.role === 'owner');
+  const el = store().runElements[owner.id].top_infill;
   const x0 = el.offset || 0;
   const at = (x) => {
     const pts = el.ceiling.map((q) => ({ x: x0 + q.x, y: q.y }));
@@ -196,7 +196,7 @@ test('F3b — no segment of the run stands above the ceiling line', () => {
 
 test('F3b — the RETURN hangs in the same band as the face it turns from', () => {
   const ids = runUnderASlope();
-  const owner = store().units.find((u) => u.params.run_top_infill?.role === 'owner');
+  const owner = store().units.find((u) => store().runElements[u.id]?.top_infill?.role === 'owner');
   const faces = find(owner.id, /^INFILL-T-FACE(-\d+)?$/);
   const right = find(owner.id, /^INFILL-TR-FACE$/)[0];
   if (!right) return; // no open right end in this arrangement
@@ -216,8 +216,8 @@ test('F3b — a STRAIGHT room’s run infill is byte-for-byte what it was', () =
   }
   for (const id of ids) store().updateUnitParams(id, { top_infill_mm: 60 });
   store().refreshAutoParts();
-  const owner = store().units.find((u) => u.params.run_top_infill?.role === 'owner');
-  assert.equal(owner.params.run_top_infill.ceiling, null, 'no slope, no line');
+  const owner = store().units.find((u) => store().runElements[u.id]?.top_infill?.role === 'owner');
+  assert.equal(store().runElements[owner.id].top_infill.ceiling, null, 'no slope, no line');
   const faces = find(owner.id, /^INFILL-T-FACE(-\d+)?$/);
   assert.equal(faces.length, 1, 'one board, unbroken');
   assert.equal(faces[0].meta.slopeCut, undefined);

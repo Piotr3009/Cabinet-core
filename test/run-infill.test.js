@@ -6,9 +6,9 @@
 //   the vertical filler is an L — arm B closing the gap in the plane of the
 //   doors, arm A screwed to the carcass side and running back;
 //
-//   the top infill is ONE CONTINUOUS ELEMENT FOR A WHOLE RUN, in section a
-//   40 mm face and an 80 mm shelf mitred at 45°, and it finishes in one of four
-//   ways depending on what is at the end of the run.
+//   the top infill is ONE CONTINUOUS ELEMENT FOR A WHOLE RUN, one plain 40 mm
+//   board, and it finishes in one of four ways depending on what is at the end
+//   of the run.
 //
 // The four end conditions are the reason this file is long. They are not
 // variants of one another — a wall, a filler, a panel already at the ceiling
@@ -107,18 +107,14 @@ test('a run of three carries ONE top infill, on the first unit, spanning all thr
   const ids = run(3, 1000);
 
   const owner = infillsOf(ids[0]).filter((p) => p.meta.segment === 'main');
-  // T48-F2 (OVERRULED, 25.08.2026): still TWO parts, and they are no longer
-  // "the two strips of the L" — they are two plain boards.
-  assert.equal(owner.length, 2, 'two boards — the face and the shelf');
+  assert.equal(owner.length, 1, 'one plain board — the face');
   const face = panelOf(ids[0], 'INFILL-T-FACE');
-  const shelf = panelOf(ids[0], 'INFILL-T-SHELF');
   const OVER = P.autoParts.fillerOversize;
 
   // Both ends are open in the middle of a 4 m wall, so the element finishes
   // flush with the outside of the run: 3 × 600 — plus the site cut on one end.
   assert.equal(face.box.w, 1800, 'ONE piece for the whole run, not three of 600');
   assert.equal(face.w, 1800 + OVER, 'and the blank leaves the machine 20 long');
-  assert.equal(shelf.w, 1800 + OVER);
 
   // …and the other two cabinets carry nothing at all.
   for (const id of ids.slice(1)) {
@@ -133,53 +129,32 @@ test('a run of three carries ONE top infill, on the first unit, spanning all thr
   assert.equal(faces[0].w, 1800 + OVER, 'the cut list prices the blank');
 });
 
-// ─── T48-F2 AMENDS THIS ─────────────────────────────────────────────────────
-// ─── OVERRULED, 25.08.2026 ──────────────────────────────────────────────────
-//
-// The owner, 25.08.2026: *"zamiast L shape … pomyslem zeby na wizualizacji
-// tylko zrobic jedna deske jak plinth i tyle. … natomiast na CNC robisz tak:
-// dlugosc infila poziomego nad szafa = rysujesz 2 deski = dlugosc infila x
-// 60 mm, plus 20 mm dluzsze na odciecie, z jednej strony."*
-//
-// The SECTION is no longer an L. The two boards are still 40 and 80 nominal —
-// *"zostaw jedna 60 a druga nominal 80 bez zmian"* — and they still stand where
-// they stood, but the 45° that glued them along their long edges is gone with
-// the L, so the two `mitre_45.includes('long')` assertions flip.
-test('the section is TWO BOARDS: a 40 face and an 80 shelf, neither mitred to the other', () => {
+test('the section is ONE BOARD: a plain 40 face, no shelf behind it', () => {
   project();
   const ids = run(2, 1000);
   const face = panelOf(ids[0], 'INFILL-T-FACE');
-  const shelf = panelOf(ids[0], 'INFILL-T-SHELF');
   const unit = unitOf(ids[0]);
 
-  // T47-F4: every infill leaves the machine 20 mm over on the edge it is
-  // scribed to (`autoParts.fillerOversize`). `w`/`h` are the CUT size, the BOX
-  // is the nominal piece that stands in the room, and `meta.oversize` names
-  // the edge and the nominal so nobody prices the extra.
+  // Every infill leaves the machine 20 mm over on the edge it is scribed to
+  // (`autoParts.fillerOversize`). `w`/`h` are the CUT size, the BOX is the
+  // nominal piece in the room, `meta.oversize` names the edge and the nominal.
   assert.equal(face.h, T.defaultHeight + P.autoParts.fillerOversize,
     'the face is the height a workshop calls "40", plus the scribe');
   assert.equal(face.box.h, T.defaultHeight);
-  assert.equal(shelf.h, T.shelfDepth + P.autoParts.fillerOversize, 'and the shelf is the horizontal leg');
 
-  // The face stands ON the units and finishes in the plane of the DOORS — the
-  // same plane the end panel and the vertical filler finish in (F3/F4).
+  // It stands ON the units and finishes in the plane of the DOORS — the same
+  // plane the end panel and the vertical filler finish in (F3/F4).
   const doorFace = unit.params.depth + P.doors.gap + unit.params.front_t;
   assert.equal(face.box.y, unit.params.height);
   assert.equal(face.box.z + face.box.d, doorFace);
 
-  // The shelf hangs off the TOP of the face and runs back into the room.
-  // T47-F4: the two meet at the top of the NOMINAL face — `face.h` carries the
-  // scribe allowance now, and an allowance is not part of the joint.
-  assert.equal(shelf.box.y + shelf.box.h, face.box.y + face.box.h, 'the two meet at the top corner');
-  assert.equal(shelf.box.z + shelf.box.d, face.box.z, 'and behind the face, not in front of it');
-  assert.equal(shelf.box.d, T.shelfDepth);
+  // And there is no second board behind it, anywhere.
+  assert.equal(infillsOf(ids[0]).filter((p) => p.meta.piece === 'shelf').length, 0,
+    'the shelf board does not exist — not in the room, not on the sheet');
 
-  // The mitre is still a FLAG on the piece — the list every reader speaks — and
-  // what it no longer carries is 'long'. A 45° on this part means one thing
-  // now: where two RUNS meet.
+  // A 45° on this part means one thing: where two RUNS meet.
   assert.ok(Array.isArray(face.meta.mitre_45));
   assert.equal(face.meta.mitre_45.includes('long'), false, 'the L is dead');
-  assert.equal(shelf.meta.mitre_45.includes('long'), false);
   assert.equal(face.meta.mitre?.L, undefined, 'and so is the L\'s own 45');
 });
 
@@ -261,20 +236,17 @@ test('END 4 — nothing at all: the corner is mitred and the piece turns it', ()
 
   for (const [tag, side] of [['L', 'left'], ['R', 'right']]) {
     const face = panelOf(ids[0], `INFILL-T${tag}-FACE`);
-    const shelf = panelOf(ids[0], `INFILL-T${tag}-SHELF`);
     assert.ok(face, `${side} return face`);
-    assert.ok(shelf, `${side} return shelf`);
+    assert.equal(panelOf(ids[0], `INFILL-T${tag}-SHELF`), undefined,
+      `${side} return is one board too`);
 
     // It runs along the SIDE of the end cabinet, back to the wall.
     assert.equal(face.w, depth, 'from the door face to the back wall');
     assert.equal(face.box.z, -P.room.wallBackClearance, 'and it reaches the wall behind the carcass');
     assert.equal(face.box.z + face.box.d, depth - P.room.wallBackClearance);
     assert.equal(face.h, T.defaultHeight, 'same section as the piece it turns off');
-    assert.equal(shelf.w, depth);
-    assert.equal(shelf.h, T.shelfDepth);
 
-    // A picture-frame corner: 45° on the long edge (the L) AND on the end
-    // where the two strips meet.
+    // A picture-frame corner: 45° where the two runs meet.
     assert.ok(face.meta.mitre_45.includes('end'), 'the return is mitred at the corner');
     assert.ok(main.meta.mitre_45.includes('end'), 'and so is the piece it meets');
 
@@ -294,7 +266,7 @@ test('one end open and one end walled gives one return, not two', () => {
 
   assert.deepEqual(endsOf(ids[0]), { left: 'wall', right: 'open' });
   const returns = infillsOf(ids[0]).filter((p) => p.meta.segment?.startsWith('return'));
-  assert.equal(returns.length, 2, 'a face and a shelf, on the open end only');
+  assert.equal(returns.length, 1, 'one face, on the open end only');
   assert.ok(returns.every((p) => p.meta.segment === 'return-right'));
 });
 
@@ -396,8 +368,8 @@ test('every strip of both Ls is in the BOM as front material, with its mitres', 
   const ids2 = rows.map((r) => r.id).sort();
   assert.deepEqual(ids2, [
     'INFILL-L-ARM', 'INFILL-L-FACE',
-    'INFILL-T-FACE', 'INFILL-T-SHELF',
-    'INFILL-TR-FACE', 'INFILL-TR-SHELF',
+    'INFILL-T-FACE',
+    'INFILL-TR-FACE',
   ]);
 
   for (const r of rows) {

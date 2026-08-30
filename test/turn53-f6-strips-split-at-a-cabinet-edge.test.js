@@ -124,11 +124,11 @@ function longRun(widths) {
 
 test('F6 — a run longer than the board cuts STRIPS, and they sum to the run', () => {
   longRun([650, 650, 650, 650, 600]);
-  const owner = store().units.find((u) => u.params.run_plinth?.role === 'owner');
+  const owner = store().units.find((u) => store().runElements[u.id]?.plinth?.role === 'owner');
   assert.ok(owner);
   const limit = stripLimitMm(P, 'carcasses');
   const strips = store().unitResult(owner.id).panels.filter((p) => p.role === 'plinth');
-  assert.ok(strips.length > 1, `${strips.length} strips on a ${owner.params.run_plinth.length} run`);
+  assert.ok(strips.length > 1, `${strips.length} strips on a ${store().runElements[owner.id].plinth.length} run`);
   assert.equal(strips.reduce((n, p) => n + p.w, 0), 3200, 'the whole toe kick');
   for (const s of strips) {
     assert.ok(s.w <= limit, `${s.id} is ${s.w} ≤ ${limit}`);
@@ -141,7 +141,7 @@ test('F6 — a run longer than the board cuts STRIPS, and they sum to the run', 
 
 test('F6 — a run that FITS the board is one board, exactly as it was', () => {
   longRun([600, 600, 600]);
-  const owner = store().units.find((u) => u.params.run_plinth?.role === 'owner');
+  const owner = store().units.find((u) => store().runElements[u.id]?.plinth?.role === 'owner');
   const plinths = store().unitResult(owner.id).panels.filter((p) => p.role === 'plinth');
   assert.equal(plinths.length, 1, 'one piece');
   assert.equal(plinths[0].id, 'PLINTH', 'under its own old name');
@@ -151,7 +151,7 @@ test('F6 — a run that FITS the board is one board, exactly as it was', () => {
 
 test('F6 — the strips lie side by side in the room, with no overlap', () => {
   longRun([650, 650, 650, 650, 600]);
-  const owner = store().units.find((u) => u.params.run_plinth?.role === 'owner');
+  const owner = store().units.find((u) => store().runElements[u.id]?.plinth?.role === 'owner');
   const strips = store().unitResult(owner.id).panels.filter((p) => p.role === 'plinth');
   let edge = null;
   for (const s of strips) {
@@ -166,7 +166,7 @@ test('F6 — the strips lie side by side in the room, with no overlap', () => {
 
 test('F6 — every strip is nested STANDING: the length runs up the sheet', () => {
   longRun([650, 650, 650, 650, 600]);
-  const owner = store().units.find((u) => u.params.run_plinth?.role === 'owner');
+  const owner = store().units.find((u) => store().runElements[u.id]?.plinth?.role === 'owner');
   for (const s of store().unitResult(owner.id).panels.filter((p) => p.role === 'plinth')) {
     // Turn 90 puts the drawn WIDTH — the strip's length — up the page.
     assert.equal(sheetTurn(s), 90, `${s.id} stands up the sheet`);

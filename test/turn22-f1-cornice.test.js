@@ -300,12 +300,12 @@ test('F1.4 the cornice is a HARDWARE line — and produces no cut piece at all',
   // Not one panel more, not one panel changed. This is the whole of "fixtures
   // ZERO, fingerprint delta ZERO": the CNC export, the cut list and the DXF
   // all read `panels`, and `panels` has not moved.
-  assert.equal(withCornice.panels.length, plain.panels.length + 2, 'only the infill it mounts on');
+  assert.equal(withCornice.panels.length, plain.panels.length + 1, 'only the infill it mounts on');
   const key = (p) => `${p.id}|${p.w}x${p.h}x${p.thickness}|${p.box?.x},${p.box?.y},${p.box?.z}`;
   const plainKeys = new Set(plain.panels.map(key));
   const extra = withCornice.panels.filter((p) => !plainKeys.has(key(p)));
-  assert.deepEqual(extra.map((p) => p.part).sort(), ['INFILL', 'INFILL'],
-    'the two pieces of the top infill, which is a cut piece and already was');
+  assert.deepEqual(extra.map((p) => p.part).sort(), ['INFILL'],
+    'the one piece of the top infill, which is a cut piece and already was');
   assert.equal(withCornice.panels.filter((p) => /cornice/i.test(p.part)).length, 0);
   assert.equal(withCornice.drills.length, plain.drills.length, 'and nothing new is drilled');
 
@@ -374,10 +374,10 @@ test('F1 setting a cornice asks for the infill it is fixed to, and builds ONE ru
   assert.ok(Number(unitOf(a.id).params.top_infill_mm) >= P.autoParts.cornice.infillHeight,
     'the 40 mm infill it mounts on is there');
 
-  const owner = unitOf(a.id).params.run_cornice;
+  const owner = store().runElements[a.id]?.cornice;
   assert.equal(owner.role, 'owner');
   assert.equal(owner.height, 70);
-  assert.equal(unitOf(b.id).params.run_cornice.role, 'member');
+  assert.equal(store().runElements[b.id].cornice.role, 'member');
   assert.equal(owner.unitIds.length, 2, 'one moulding over the two of them');
 
   // …and the BOM carries the metres exactly once.
@@ -391,10 +391,10 @@ test('F1 the option flips back to none and takes the moulding with it', () => {
   project(2700, 6000);
   const a = store().addUnit('WARDROBE');
   store().setCornice(a.id, 100);
-  assert.equal(unitOf(a.id).params.run_cornice.height, 100);
+  assert.equal(store().runElements[a.id].cornice.height, 100);
   store().setCornice(a.id, 0);
   assert.equal(unitOf(a.id).params.cornice, 0);
-  assert.equal(unitOf(a.id).params.run_cornice, null);
+  assert.equal(store().runElements[a.id]?.cornice ?? null, null);
   assert.equal(store().unitResult(a.id).assemblies.cornice, null);
 });
 

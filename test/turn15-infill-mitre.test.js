@@ -145,11 +145,11 @@ const byId = (id, panelId) => panelsOf(id).find((p) => p.id === panelId);
 test('T50-F11: the pair AGREE — both square off the machine, both carrying the number', () => {
   const a = mitredRun();
   const unit = store().units.find((u) => u.id === a);
-  const run = unit.params.run_top_infill;
+  const run = store().runElements[unit.id]?.top_infill;
   const m = run.mitre.left;
   assert.ok(m > 0, 'the corner is mitred');
   assert.equal(m, run.faceH, 'the mitre is the top infill\'s own height — equal legs, 45°');
-  assert.equal(unit.params.run_top_infill.sideMitre.left, m, 'the filler is told about its own corner');
+  assert.equal(store().runElements[unit.id].top_infill.sideMitre.left, m, 'the filler is told about its own corner');
 
   const face = byId(a, 'INFILL-T-FACE');
   const filler = byId(a, 'INFILL-L-FACE');
@@ -213,7 +213,7 @@ test('the filler is CUT to the same size — only its outline moves', () => {
 test('the top infill face is the RUN\'s own length, plus the site cut', () => {
   const a = mitredRun();
   const unit = store().units.find((u) => u.id === a);
-  const run = unit.params.run_top_infill;
+  const run = store().runElements[unit.id]?.top_infill;
   const face = byId(a, 'INFILL-T-FACE');
   const OVER = P.autoParts.fillerOversize;
 
@@ -221,9 +221,7 @@ test('the top infill face is the RUN\'s own length, plus the site cut', () => {
   assert.equal(face.w, run.length + OVER, 'and the blank is 20 longer, for the site cut');
   assert.deepEqual(face.meta.lengthOversize, { mm: OVER, end: 'right', nominal: run.length });
   assert.equal(face.box.x, run.offset, 'it starts where the run starts — no long point');
-  // BOTH boards are cut from the same length now: there is no corner for one of
-  // them to reach over and the other to stop short of.
-  assert.equal(byId(a, 'INFILL-T-SHELF').w, run.length + OVER);
+  assert.equal(byId(a, 'INFILL-T-SHELF'), undefined, 'one board — there is no second');
 });
 
 test('the ARM is still screwed on, and still refuses the cut (#51)', () => {

@@ -1210,6 +1210,9 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   const sceneLightRaw = useProjectStore((s) => s.project.sceneLight?.scale);
   const sceneScale = sceneLightScale(sceneLightRaw);
   const units = useProjectStore((s) => s.units);
+  // T55 ("tnij"): run elements left `params` for `state.runElements`; a wall
+  // or slope edit moves THEM without touching a unit, so the memo listens.
+  const runElements = useProjectStore((s) => s.runElements);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const moveUnitToWall = useProjectStore((s) => s.moveUnitToWall);
   const allResults = useProjectStore((s) => s.allResults);
@@ -1323,7 +1326,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
   // dependency and costs nothing on a drag, which never touches it. `design` is
   // already subscribed to above — the room needs it for the finishes — so this
   // is a dependency and not a second subscription.
-  const results = useMemo(() => allResults(), [units, design, allResults]);
+  const results = useMemo(() => allResults(), [units, design, runElements, allResults]);
   // ─── TURN 28 (CLAUDE.md F8.2): A RUN OF IDENTICAL CABINETS DIMENSIONS ONCE ─
   //
   // Six identical base units in a row drew six identical chains of the same six

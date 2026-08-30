@@ -66,8 +66,7 @@ test('the named parts land on the side CLAUDE.md puts them on', () => {
   }
 
   // OUT of it
-  // Turn 6 (CLAUDE.md F4) splits both infills into the two strips of an L.
-  for (const id of ['PLINTH', 'INFILL-T-FACE', 'INFILL-T-SHELF', 'INFILL-L-FACE', 'END-R']) {
+  for (const id of ['PLINTH', 'INFILL-T-FACE', 'INFILL-L-FACE', 'END-R']) {
     const p = at(r, id);
     assert.ok(p, `${id} is missing from this unit`);
     assert.equal(p.finish_exposed, true, `${id} is a finished surface`);

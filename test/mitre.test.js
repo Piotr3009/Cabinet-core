@@ -140,7 +140,6 @@ const runUnit = (ends, returns) => computeCabinet({
     offset: 0,
     length: 600,
     faceH: T.defaultHeight,
-    shelfDepth: T.shelfDepth,
     thickness: null,
     ends,
     returns,
@@ -160,29 +159,19 @@ const pieceOf = (r, id) => r.panels.find((p) => p.id === id);
 // strony."*  — and on the corner: *"jak zakreca i mamy infill z boku to sie
 // robi mitre, ale to rzadko."*
 //
-// This module cut the solid that made the top infill READ as an L: the face's
-// top edge chamfered back, the shelf moved forward onto the joint. Both cuts
-// are struck down. The scene draws ONE board — the face, standing in the plane
-// of the fronts like a plinth — and the shelf board is on the sheet, not in the
-// room. So `infillMitre` answers null for both of them on a walled run, and
-// what this test holds is that it does.
-test('the L IS DEAD: one plain board in the room, and the shelf is not in it', () => {
+// This module cut the solid that made the top infill READ as an L. Both cuts
+// are struck down and the shelf board does not exist: the scene draws ONE
+// board — the face, standing in the plane of the fronts like a plinth.
+test('the L IS DEAD: one plain board in the room, and no shelf anywhere', () => {
   const r = runUnit({ left: 'wall', right: 'wall' }, {});
   const facePanel = pieceOf(r, 'INFILL-T-FACE');
-  const shelfPanel = pieceOf(r, 'INFILL-T-SHELF');
 
   assert.equal(infillSolid(facePanel), null, 'no cut at all — the caller draws the plain box');
-  assert.equal(infillSolid(shelfPanel), null, 'and the shelf board is not a body in the room');
-  assert.equal(shelfPanel.meta.scene, 'sheet-only', 'it says so itself');
+  assert.equal(pieceOf(r, 'INFILL-T-SHELF'), undefined, 'and there is no shelf board to cut');
 
-  // The two boxes still stand where they stood: the face in the plane of the
-  // fronts, the shelf behind it at the top. Nothing about the ASSEMBLY moved —
-  // only the joint between the two pieces, which is now made on site.
   const faceZ = 558 + P.doors.gap + 25;         // depth + gap + front thickness
   assert.equal(facePanel.box.z + facePanel.box.d, faceZ);
   assert.equal(facePanel.box.y, 2100);
-  assert.equal(shelfPanel.box.z + shelfPanel.box.d, facePanel.box.z);
-  assert.equal(shelfPanel.box.y + shelfPanel.box.h, facePanel.box.y + facePanel.box.h);
 });
 
 // ─── T48-F2: THE TURNING CORNER IS THE ONE 45° THAT SURVIVES ────────────────
@@ -191,14 +180,14 @@ test('the L IS DEAD: one plain board in the room, and the shelf is not in it', (
 // two RUNS meet. An open end IS the run turning, and the return that grows
 // there is a second run in the same plane — so the picture frame is still cut,
 // on the FACES. The shelf boards are on the sheet and not in the room, so
-// there is no second frame behind this one.
+// there is no second board behind this one.
 test('an open end still turns the corner as a picture frame — on the faces', () => {
   const r = runUnit({ left: 'open', right: 'wall' }, { left: 200 });
   const mainFace = infillSolid(pieceOf(r, 'INFILL-T-FACE'));
   const retFace = infillSolid(pieceOf(r, 'INFILL-TL-FACE'));
   for (const [label, s] of [['main face', mainFace], ['return face', retFace]]) assertClosed(s, label);
-  assert.equal(infillSolid(pieceOf(r, 'INFILL-T-SHELF')), null, 'no second frame behind it');
-  assert.equal(infillSolid(pieceOf(r, 'INFILL-TL-SHELF')), null);
+  assert.equal(pieceOf(r, 'INFILL-T-SHELF'), undefined, 'no second board behind it');
+  assert.equal(pieceOf(r, 'INFILL-TL-SHELF'), undefined);
 
   const faceZ = 558 + P.doors.gap + 25;
 
@@ -231,7 +220,6 @@ test('nothing here reaches the cut list', () => {
   // change starts shortening pieces to their short point, this fails.
   const r = runUnit({ left: 'open', right: 'open' }, { left: 200, right: 200 });
   const face = pieceOf(r, 'INFILL-T-FACE');
-  const shelf = pieceOf(r, 'INFILL-T-SHELF');
   const OVER = P.autoParts.fillerOversize;
   // T47-F4: `w`/`h` are the CUT size and now carry the +20 scribe allowance
   // on the piece's WALL edge (`autoParts.fillerOversize`, the drawer front's own
@@ -243,7 +231,6 @@ test('nothing here reaches the cut list', () => {
   assert.equal(face.w, 600 + OVER, 'the run, plus the 20 the joiner cuts off');
   assert.equal(face.box.w, 600, 'and the piece in the room is the run');
   assert.equal(face.h, T.defaultHeight + OVER);
-  assert.equal(shelf.h, T.shelfDepth + OVER);
   assert.equal(face.meta.mitre_45.includes('long'), false, 'the L is dead');
   assert.ok(face.meta.mitre_45.includes('end'), 'the turning corner is not');
   assert.equal(face.meta.mitre?.L, undefined, 'and the L\'s own 45 with it');

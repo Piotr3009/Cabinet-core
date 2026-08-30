@@ -1754,13 +1754,6 @@ export const DEFAULT_CABINET_PROFILE = {
       defaultHeight: 40,    // the visible face; "40" is what a workshop says
       minHeight: 10,
       thickness: null,
-      // ─── Turn 6 (CLAUDE.md F4 / BACKLOG #20) ───
-      // The top infill is an L in section: a face strip standing on the units
-      // and a shelf running back off the top of it, the two mitred at 45° and
-      // glued. `shelfDepth` is the horizontal leg. It is what stops the piece
-      // reading as a flap of board stuck to the front of a run — and it is what
-      // the joiner actually screws to the ceiling or the wall.
-      shelfDepth: 80,
       // How close two units have to stand to be ONE run. The clamp lands them
       // edge to edge, so this only absorbs the 0.5 mm grid.
       runGap: 1,

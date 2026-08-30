@@ -41,6 +41,7 @@ export default function AssignMaterialsModal() {
   const openPart = useUiStore((s) => s.modalArgs?.partId) || null;
 
   const allResults = useProjectStore((s) => s.allResults);
+  const runElements = useProjectStore((s) => s.runElements);
   const units = useProjectStore((s) => s.units);
   const design = useProjectStore((s) => s.project.design);
   const profile = useCabinetProfileStore((s) => s.profile);
@@ -69,7 +70,7 @@ export default function AssignMaterialsModal() {
   // that is not there all leave the sample list standing (iron rule 6).
   useEffect(() => { loadMaterials?.().catch(() => {}); }, [loadMaterials]);
 
-  const entries = useMemo(() => allResults(), [units, allResults]);
+  const entries = useMemo(() => allResults(), [units, runElements, allResults]);
   const usage = useMemo(
     () => projectPartUsage(entries, { profile, design }),
     [entries, profile, design],

@@ -672,8 +672,20 @@ function paramsForEngine(unit, design = null) {
   const items = p.sections?.[0]?.items || [];
   const profile = getCabinetProfile();
   const slopeCut = slopeCutFor(unit, design);
+  // ─── T55 ("tnij"): THE RUN ELEMENTS RIDE HERE, NOT IN PARAMS ─────────────
+  // Derived on every sweep, held in `state.runElements`, handed to the engine
+  // at compute time. `params` never carries one, so no save path can
+  // fossilise one. Absent — a bare computeCabinet(), every golden fixture —
+  // nothing is passed and the kit cuts what the AutoLISP cuts.
+  const elements = useProjectStore.getState().runElements?.[unit.id] || null;
   return {
     ...p,
+    ...(elements ? {
+      run_top_infill: elements.top_infill,
+      run_plinth: elements.plinth,
+      run_mask: elements.mask,
+      run_cornice: elements.cornice,
+    } : {}),
     type: unit.type,
     items,
     // ─── TURN 46 (CLAUDE.md F3): THE SLOPE CUT ────────────────────────────
@@ -1179,6 +1191,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       jc_tenant_id: null, jc_project_id: null,
     },
   units: migrateUnits(cached?.units),
+  // T55 ("tnij"): derived run elements, keyed by unit id — in memory only.
+  // The boot sweep and every mutation rebuild it; nothing serialises it.
+  runElements: {},
   dirty: false,
 
   // ── project / room ───────────────────────────────────────────────────────
@@ -1369,6 +1384,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         sceneLight: migrateSceneLight(project?.sceneLight),
       },
       units: migrateUnits(units),
+      runElements: {},
       dirty: false,
     });
     // ─── TURN 39 (CLAUDE.md F2): AND ITS OWN ASSIGNED MATERIALS ─────────────
@@ -1444,6 +1460,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       jc_project_id: null,
     },
     units: [],
+    runElements: {},
     dirty: false,
   }),
 
@@ -1977,31 +1994,39 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       for (const refusal of corniceRefusals(element)) notices.push(refusal.message);
     }
 
-    set({
-      units: next.map((u) => {
-        const run = runParams.get(u.id) ?? null;
-        const plinthRun = plinthParams.get(u.id) ?? null;
-        const maskRun = maskParams.get(u.id) ?? null;
-        const corniceRun = corniceParams.get(u.id) ?? null;
-        // Reference equality matters here: this runs on every drag frame, and
-        // writing a fresh object each time would re-render every unit in the
-        // scene for a run nobody touched.
-        if (sameRun(u.params.run_top_infill, run)
-          && sameRun(u.params.run_plinth, plinthRun)
-          && sameRun(u.params.run_mask, maskRun)
-          && sameRun(u.params.run_cornice, corniceRun)) return u;
-        return {
-          ...u,
-          params: {
-            ...u.params,
-            run_top_infill: run,
-            run_plinth: plinthRun,
-            run_mask: maskRun,
-            run_cornice: corniceRun,
-          },
-        };
-      }),
-    });
+    // ─── T55 ("tnij"): THE WRITER IS DEAD ────────────────────────────────────
+    // Run elements are DERIVED. They live in `state.runElements`, keyed by
+    // unit — never in `params`, so no save path can fossilise one.
+    const prevElements = get().runElements || {};
+    let elementsMoved = false;
+    const runElements = {};
+    for (const u of next) {
+      const entry = {
+        top_infill: runParams.get(u.id) ?? null,
+        plinth: plinthParams.get(u.id) ?? null,
+        mask: maskParams.get(u.id) ?? null,
+        cornice: corniceParams.get(u.id) ?? null,
+      };
+      if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice) continue;
+      const prev = prevElements[u.id];
+      // Reference equality matters here: this runs on every drag frame, and a
+      // fresh object for an unchanged run would re-render every unit in the
+      // scene for a run nobody touched.
+      if (prev && sameRun(prev.top_infill, entry.top_infill)
+        && sameRun(prev.plinth, entry.plinth)
+        && sameRun(prev.mask, entry.mask)
+        && sameRun(prev.cornice, entry.cornice)) {
+        runElements[u.id] = prev;
+      } else {
+        runElements[u.id] = entry;
+        elementsMoved = true;
+      }
+    }
+    if (!elementsMoved) {
+      const prevIds = Object.keys(prevElements);
+      elementsMoved = prevIds.length !== Object.keys(runElements).length;
+    }
+    set(elementsMoved ? { units: next, runElements } : { units: next });
 
     // ─── TURN 32 (CLAUDE.md F3): THE GAPS FIX THEMSELVES ─────────────────────
     // This is the one choke point every unit-creation, neighbour change,

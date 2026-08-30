@@ -88,7 +88,7 @@ test('F3.1 — a WUD run wraps past a tall unit’s end panel until the panel go
   // something hanging above it: nothing changes, exactly as turn 8 behaved.
   assert.equal(endsOf(a).left, 'open', 'a carcass-height panel blocks nothing');
   assert.equal(
-    resultOf(a).panels.filter((p) => p.meta?.segment === 'return-left').length, 2,
+    resultOf(a).panels.filter((p) => p.meta?.segment === 'return-left').length, 1,
     'and the element turns the corner and runs back to the wall, over the panel',
   );
 

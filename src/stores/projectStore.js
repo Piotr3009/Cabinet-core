@@ -16,6 +16,10 @@ import { layerNameFault, makeUserLayer, normaliseUserLayers } from '../engine/pa
 import { getCabinetProfile } from '../engine/profile.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
 import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
+// T58-F4: the engine's own two readings — the cut LINE over this carcass, and
+// whether that line actually bites it. Asked exactly as `computeCabinet` asks
+// them, so the menu and the sweep cannot disagree with the cabinet.
+import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
   defaultParamsFor, getUnitType, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
@@ -2062,7 +2066,88 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // through it untouched.
     get().settleSlopeDoorPartitions();
 
+    // ─── T58 (CLAUDE.md F4): A PULL-DOWN CANNOT LIVE UNDER A SLOPE ─────────
+    // The same choke point, the same family, the same notify style — and a
+    // BROADER trigger than the one above: not the flip, but the slope simply
+    // being ACTIVE, knee or straight.
+    get().settleSlopePulldowns();
+
     return notices;
+  },
+
+  /**
+   * ─── TURN 58 (CLAUDE.md F4): THE PULL-DOWN GOES WHEN THE SLOPE ARRIVES ───
+   *
+   * The owner: *"jak się zaczyna skos, to ma zniknąć — nie tylko jak się
+   * pojawi diverter, ale też jak jest sam. Szafa ze skosem nie może mieć
+   * pull-down, bo to jest zawsze na wysokości."*
+   *
+   * The kit's own numbers agree with him: it parks HIGH (the rod axis and its
+   * arm live in the top of the opening) and its swing sweeps the top front —
+   * which is precisely the air a rake takes away.
+   *
+   * THE TRIGGER is the slope being ACTIVE over the unit, and nothing narrower.
+   * T55-F3's sweep beside this one acts on a FLIP; this one does not wait for
+   * one, because a wardrobe under a straight rake has no flip and still has no
+   * room for a pull-down. `slopeCutFor` is the store's one reading of "is
+   * there a rake over this unit" and `slopeCutActive` the engine's one reading
+   * of "does it actually bite" — this asks both and invents neither.
+   *
+   * It acts on the TRANSITION: a unit with no pull-down passes through
+   * untouched, so a settled scene costs one filter and says nothing.
+   */
+  /**
+   * Is there a LIVE rake over this cabinet? (turn 58, F4)
+   *
+   * The one reading both halves of F4 ask: the sweep that removes a fitted
+   * pull-down, and the Add-items row that refuses a new one. A second reading
+   * of "is this unit under a slope" is how the two could come to disagree —
+   * the menu offering what the store would take straight back off.
+   */
+  unitUnderSlope: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return false;
+    const profile = getCabinetProfile();
+    const cut = slopeCutFor(unit, null);
+    if (!cut) return false;
+    // `slopeCutActive` asks about the CUT LINE over this carcass, not about
+    // the raw rake — the same two calls, in the same order, `computeCabinet`
+    // makes (`carcassCutLineOf` then `slopeCutActive`).
+    const line = carcassCutLineOf(
+      cut,
+      Number(unit.params.width) || 0,
+      Number(unit.params.height) || 0,
+      profile,
+    );
+    return Boolean(line && slopeCutActive(line));
+  },
+
+  settleSlopePulldowns: () => {
+    const profile = getCabinetProfile();
+    for (const unit of get().units) {
+      const items = unit.params.sections?.[0]?.items || [];
+      const kits = items.filter((i) => i?.kind === 'pulldown_rail');
+      if (!kits.length) continue;
+      if (!get().unitUnderSlope(unit.id)) continue;
+      const keep = items.filter((i) => i?.kind !== 'pulldown_rail');
+      set((st) => ({
+        units: st.units.map((u) => (u.id === unit.id
+          ? {
+            ...u,
+            params: {
+              ...u.params,
+              sections: [{ ...(u.params.sections?.[0] || { width_mm: u.params.width }), items: keep }],
+            },
+          }
+          : u)),
+      }));
+      useUiStore.getState().notify(
+        kits.length === 1
+          ? 'The slope removed the pull-down rail — it parks at the top, where the rake now is.'
+          : `The slope removed ${kits.length} pull-down rails — they park at the top, where the rake now is.`,
+        'warn',
+      );
+    }
   },
 
   /**
@@ -2490,6 +2575,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       for (const grown of get().growAutoEndPanels()) {
         if (grown.message) useUiStore.getState().notify(grown.message, 'info');
       }
+      // ─── T58 (CLAUDE.md F4): …AND HERE TOO ────────────────────────────
+      // The sweep is idempotent — it acts only on the TRANSITION, a unit that
+      // has a pull-down AND a live rake — so running it at both choke points
+      // costs a settled scene one filter and catches the slope however it
+      // arrived. `refreshAutoParts` alone was not enough: a slope added
+      // straight onto a unit reaches this action, not that one.
+      get().settleSlopePulldowns();
       const s = get();
       const unit = focusId ? s.units.find((u) => u.id === focusId) : null;
       if (!unit) {

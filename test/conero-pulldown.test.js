@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { computeCabinet } from '../src/engine/cabinet.js';
-import { getCabinetProfile } from '../src/engine/profile.js';
+import { getCabinetProfile, migrateCabinetProfile } from '../src/engine/profile.js';
 
 const P = getCabinetProfile();
 const K = P.wardrobeAccessories.kits.pulldown_rail;
@@ -39,4 +39,23 @@ test('CONERO · the BOM line carries the article beside the opening', () => {
   assert.ok(line, 'one purchase line');
   assert.equal(line.spec.article, K.conero.article);
   assert.ok(line.spec_label.includes(K.conero.article));
+});
+
+
+test('CONERO · a stale stored profile cannot outvote the catalogue (the lighting law)', () => {
+  // A profile persisted BEFORE today: old kit sizes, no conero block.
+  const stale = JSON.parse(JSON.stringify(P));
+  stale.wardrobeAccessories = {
+    ...stale.wardrobeAccessories,
+    pulldownSuggestMm: 1234,                       // the owner's own threshold
+    kits: {
+      trouser: { label: 'Trouser pull-out', bodyHeight: 120, posMm: 900 },
+      tie_rack: { label: 'Tie rack', bodyHeight: 300, posMm: 1100 },
+      pulldown_rail: { label: 'Pull-down rail', bodyHeight: 140, topDrop: 50 },
+    },
+  };
+  const out = migrateCabinetProfile(stale);
+  assert.equal(out.wardrobeAccessories.kits.pulldown_rail.bodyHeight, K.bodyHeight);
+  assert.equal(out.wardrobeAccessories.kits.pulldown_rail.conero.file, K.conero.file);
+  assert.equal(out.wardrobeAccessories.pulldownSuggestMm, 1234, 'his threshold survives');
 });

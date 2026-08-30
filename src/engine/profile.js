@@ -4764,6 +4764,14 @@ export function migrateCabinetProfile(profile) {
       runners: { ...D.wardrobe.runners, ...profile.wardrobe?.runners },
       rail: { ...D.wardrobe.rail, ...profile.wardrobe?.rail },
     },
+    // 30.08 (the lighting law again): a stored profile was outvoting the code —
+    // old kit sizes, no CONERO source. The CATALOGUE (kits) is the app's;
+    // the owner's own thresholds beside it stay his.
+    wardrobeAccessories: {
+      ...D.wardrobeAccessories,
+      ...profile.wardrobeAccessories,
+      kits: JSON.parse(JSON.stringify(D.wardrobeAccessories.kits)),
+    },
     baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
     projectHeights: { ...D.projectHeights, ...profile.projectHeights },
     projectTypes: { ...D.projectTypes, ...profile.projectTypes },

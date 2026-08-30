@@ -4702,8 +4702,8 @@ export function computeCabinet(params, profileOverride) {
       }))
       : null;
     const infRoof = runCeil ? true : Boolean(roofLine);
-    /** The ceiling over the RUN at x, in this unit's frame. */
-    const infReachAt = runCeil
+    /** The bare ceiling over the RUN at x, in this unit's frame. */
+    const ceilReachAt = runCeil
       ? (x) => {
         const pts = runCeil;
         if (x <= pts[0].x) {
@@ -4728,19 +4728,34 @@ export function computeCabinet(params, profileOverride) {
         return last.y;
       }
       : reachAt;
+    // ─── THE STRIP'S OWN LINE (the top panel's law, moved here) ────────────
+    // min(ceiling, seat): where the ceiling rides ABOVE the cabinet the strip
+    // SITS on its own top (`capY`), and it lies onto the rake only from the
+    // point the ceiling crosses that seat. Every knee below is THIS line's.
+    const capY = roundTo(H + faceH, 4);
+    const infReachAt = infRoof ? (x) => Math.min(ceilReachAt(x), capY) : ceilReachAt;
     const infSignedDeg = (a, b) => {
       const runX = b - a;
       if (!(Math.abs(runX) > 1e-9)) return 0;
       return (Math.atan((infReachAt(b) - infReachAt(a)) / runX) * 180) / Math.PI;
     };
-    /** Where the line BENDS over the run — a segment boundary and nothing else.
-     * T54-F1: the STRIP hangs from the CEILING, so its knees are the
-     * CEILING's own (`ceilLine`) — never the capped carcass roof's, whose
-     * mitred offset shifts a knee sideways and whose cap at H invents a
-     * vertex the ceiling does not have (the peak-side kawałek, F2's census). */
-    const infBreaks = runCeil
-      ? runCeil.map((q) => q.x)
-      : (ceilLine && infRoof ? slopeCutPts(ceilLine).map((q) => q.x) : []);
+    /** Where the STRIP's line bends: the ceiling's knees, plus the points the
+     * ceiling crosses the seat (`capY`) — a knee this line owns and the bare
+     * ceiling does not. */
+    const ceilPts = runCeil
+      || (ceilLine && infRoof ? slopeCutPts(ceilLine).map((q) => ({ x: q.x, y: q.y })) : null);
+    const capCross = [];
+    if (infRoof && Array.isArray(ceilPts)) {
+      for (let i = 1; i < ceilPts.length; i += 1) {
+        const a = ceilPts[i - 1];
+        const b = ceilPts[i];
+        if (!Number.isFinite(a.y) || !Number.isFinite(b.y)) continue;
+        if ((a.y - capY) * (b.y - capY) < -1e-9) {
+          capCross.push(roundTo(a.x + ((capY - a.y) / (b.y - a.y)) * (b.x - a.x), 4));
+        }
+      }
+    }
+    const infBreaks = ceilPts ? [...ceilPts.map((q) => q.x), ...capCross] : [];
     /** A 45° only where two RUNS meet: the turning corner, and a knee join. */
     const mitre = (open) => (open ? ['end'] : []);
 
@@ -4772,30 +4787,42 @@ export function computeCabinet(params, profileOverride) {
       }];
       if (!infRoof) return whole;
       const xs = [faceX0,
-        ...infBreaks
+        ...[...infBreaks].sort((p, q) => p - q)
           .filter((q) => q > faceX0 + 1e-6 && q < faceX0 + faceLen - 1e-6),
         faceX0 + faceLen];
-      const segs = [];
+      // Spans of the STRIP's line, then neighbours the seat flattened into one
+      // board are merged back — a ceiling knee riding above the seat is not a
+      // knee of this line.
+      const raw = [];
       for (let i = 1; i < xs.length; i += 1) {
         const a = xs[i - 1];
         const b = xs[i];
-        const deg = Math.abs(infSignedDeg(a, b));
+        if (!(b - a > 1e-6)) continue;
+        raw.push({ from: a, to: b, deg: infSignedDeg(a, b) });
+      }
+      const merged = [];
+      for (const sp of raw) {
+        const prev = merged[merged.length - 1];
+        if (prev && Math.abs(prev.deg - sp.deg) < 1e-6) prev.to = sp.to;
+        else merged.push({ ...sp });
+      }
+      const segs = merged.map((sp, i) => {
+        const deg = Math.abs(sp.deg);
         const cos = Math.cos((deg * Math.PI) / 180);
-        segs.push({
-          from: a,
-          to: b,
+        return {
+          from: sp.from,
+          to: sp.to,
           deg,
           // The piece is mounted ALONG the slope, so its length is the
           // hypotenuse of the span it covers, not the span.
-          run: cos > 1e-9 ? (b - a) / cos : (b - a),
+          run: cos > 1e-9 ? (sp.to - sp.from) / cos : (sp.to - sp.from),
           // Where two segments meet, each piece is cut at HALF the angle
-          // between them — the frame-corner rule again, and it is the same
-          // arithmetic `sideTopMitreDeg` uses one piece over.
-          joinL: i > 1 ? roundTo((180 - Math.abs(infSignedDeg(xs[i - 2], a) - infSignedDeg(a, b))) / 2, 4) : null,
-          joinR: i < xs.length - 1
-            ? roundTo((180 - Math.abs(infSignedDeg(a, b) - infSignedDeg(b, xs[i + 1]))) / 2, 4) : null,
-        });
-      }
+          // between them — the frame-corner rule again.
+          joinL: i > 0 ? roundTo((180 - Math.abs(merged[i - 1].deg - sp.deg)) / 2, 4) : null,
+          joinR: i < merged.length - 1
+            ? roundTo((180 - Math.abs(sp.deg - merged[i + 1].deg)) / 2, 4) : null,
+        };
+      });
       return segs.length ? segs : whole;
     })();
     // ─── TURN 53 (CLAUDE.md F6): …AND THE TWO LAWS COMPOSE ─────────────────

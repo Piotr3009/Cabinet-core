@@ -201,10 +201,11 @@ test('T55 · a fully RAKED ceiling grows no return at either end', () => {
   for (const id of ['INFILL-TL-FACE', 'INFILL-TL-SHELF', 'INFILL-TR-FACE', 'INFILL-TR-SHELF']) {
     assert.equal(raked.panels.find((p) => p.id === id), undefined, `${id} does not exist`);
   }
-  // …and the strip itself is the ONE board the law promises.
+  // …and every top piece is the STRIP — seat and rake segments of one line,
+  // never a wrap (the seat law: min(ceiling, H + faceH), the top panel's own).
   const tops = raked.panels.filter((p) => /^INFILL-T/.test(p.id));
-  assert.deepEqual(tops.map((p) => p.id.replace(/-\d+$/, '')).sort(),
-    ['INFILL-T-FACE'], 'one board, full stop');
+  assert.deepEqual([...new Set(tops.map((p) => p.id.replace(/-\d+$/, '')))],
+    ['INFILL-T-FACE'], 'strip pieces only, full stop');
 });
 
 test('T55 · a fully FLAT ceiling keeps both corners exactly as before', () => {

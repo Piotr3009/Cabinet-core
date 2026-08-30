@@ -5707,16 +5707,33 @@ export function computeCabinet(params, profileOverride) {
   // carcass was — the same fault, one board down. `cutOver` hands the leaf the
   // SAME line over its own span, knees and all, and the two frames stay named
   // apart: `roomPts` is what the customer sees, `sheetPts` is that mirrored.
+  //
+  // ─── TURN 57 (CLAUDE.md F0a): AND IT ANSWERS FOR A PIECE, NOT ONLY A LEAF ─
+  //
+  // Two optional numbers, both defaulted to what every caller before tonight
+  // passed by not passing anything, so those calls are byte-identical:
+  //
+  //   `dy`  the piece's own datum — a leaf's bottom is `doorY`, a SPLIT
+  //         segment's is `doorY + seg.y`, and the line has to be lowered onto
+  //         whichever it is;
+  //   `h`   the piece's own full height, which is what `slopeCutActive` asks
+  //         about and what caps the tall corner.
+  //
+  // They exist so that F0a's re-cut after a trim can call THIS sampler — the
+  // one that cuts every leaf at birth — instead of growing a second one beside
+  // it. One ceiling, one reader.
   const SLOPE_FRONT_GAP = P.doors.gap;
-  const frontSlopeAt = (leafX, leafW) => {
+  const frontSlopeAt = (leafX, leafW, opts) => {
     if (!cutLine || !(leafW > 0)) return null;
-    const sub = cutOver(leafX, leafX + leafW, { dy: doorY + SLOPE_FRONT_GAP });
+    const datum = opts?.dy ?? (doorY + SLOPE_FRONT_GAP);
+    const full = opts?.h ?? frontH;
+    const sub = cutOver(leafX, leafX + leafW, { dy: datum });
     if (!sub) return null;
     const roomPts = sub.pts.map((q) => ({ x: q.x, y: Math.max(0, q.y) }));
     const roomL = roomPts[0].y;
     const roomR = roomPts[roomPts.length - 1].y;
-    if (!slopeCutActive({ w: leafW, h: frontH, pts: roomPts })) return null;
-    const tall = Math.min(frontH, roomPts.reduce((hi, q) => Math.max(hi, q.y), 0));
+    if (!slopeCutActive({ w: leafW, h: full, pts: roomPts })) return null;
+    const tall = Math.min(full, roomPts.reduce((hi, q) => Math.max(hi, q.y), 0));
     return {
       roomPts,
       // The SHEET is the inside mirror: x runs from the leaf's bottom RIGHT.
@@ -5731,7 +5748,7 @@ export function computeCabinet(params, profileOverride) {
       // keeps the LEFT, which is the app's own default hand.
       hinge: roomL >= roomR ? 'L' : 'R',
       tall,
-      low: Math.min(frontH, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
+      low: Math.min(full, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
       // ─── TURN 54 (CLAUDE.md F3.4): THE ANGLE, STATED ON THE PIECE ────────
       // *"leaf DXF outline = the cut polygon, angle noted like the sides
       // (`CUT β DEG`)"* — the same `meta.slopeCut.angles` the sides publish,
@@ -6225,6 +6242,87 @@ export function computeCabinet(params, profileOverride) {
   // applied AFTER the drilling — or applied to the box and not to the panel —
   // would leave a cup 21.5 from where the edge used to be, which is a door
   // that does not shut.
+  //
+  // ─── TURN 57 (CLAUDE.md F0a): AND A TRIM MUST NOT FLATTEN A CUT LEAF ─────
+  //
+  // The owner's live symptom, 30.08.2026: the shaker "phantom sheet" appears
+  // the EXACT MOMENT the wall-clearance message fires. Two unrelated things
+  // arriving together, which is always one thing.
+  //
+  // The chain: a front edge enters `neighbourReachMm` of a wall → the
+  // clearance engine wakes → the yellow message AND the store's auto-heal
+  // apply a micro-trim in the SAME recompute ("gaps should fix themselves",
+  // T32). 1.5 mm was enough, because the applier below wrote
+  // `...rectGeometry(w, pnl.h)` over EVERY front's outline — a slope-cut
+  // leaf's cut polygon included. `cnc.slopeCut` survived the overwrite, so
+  // `3d/shakerSolid.js` read "cut" beside a rectangular outline and built a
+  // full-height tray with a diagonal pocket inside it. That tray is the
+  // phantom.
+  //
+  // THE LAW. A trimmed leaf that carries `slopeCut` is RE-CUT from its own
+  // ceiling line at its NEW span — not patched, not scaled, and not sampled
+  // by a second reader written for the trim. `frontSlopeAt` is the sampler
+  // that cuts every leaf at birth and it is the sampler used here; the
+  // geometry comes out of `trimGeometryOnSlope ∘ rectGeometry`, which is the
+  // pair that cut it the first time. One job, one path.
+  //
+  // WHICH SPAN. The trim takes `left` off the ROOM-left edge and `right` off
+  // the room-right, so the leaf now stands over `[x + left, x + left + w]` —
+  // and `x + left` is exactly what the applier already writes to `box.x`.
+  //
+  // WHICH DATUM. `box.y + gap`, which is `doorY + gap` for a leaf and
+  // `doorY + seg.y + gap` for a SPLIT segment — the same lowering the split
+  // pass above did by hand. One expression answers for both, so a split leaf
+  // standing under a rake is re-cut by this law too rather than by a second
+  // one written for it later.
+  //
+  // WHAT DOES NOT MOVE. The HAND and the DRILLING. Rule 9 is still the law —
+  // *"the cups travel WITH the edge on every correction; the drilling pattern
+  // is untouchable"* — so the ladder is not re-spaced because a board got
+  // 1.5 mm narrower, and a door whose plates are already screwed to the
+  // carcass is never re-handed by a millimetre of clearance.
+  const slopeAfterTrim = (pnl, newX, newW) => {
+    // A FLAT front has no line and never had one: it keeps `rectGeometry`
+    // byte for byte, which is every trimmed front in every level room.
+    if (!pnl.meta?.slopeCut) return null;
+    const sl = frontSlopeAt(newX, newW, {
+      dy: (pnl.box ? pnl.box.y : doorY) + SLOPE_FRONT_GAP,
+      h: pnl.h,
+    });
+    if (!sl) return { cleared: true };
+    const geom = trimGeometryOnSlope(rectGeometry(newW, pnl.h), {
+      w: newW, h: pnl.h, pts: sl.sheetPts,
+    });
+    return {
+      cleared: false,
+      h: roundTo(sl.tall, 4),
+      cnc: {
+        ...geom,
+        drawn_w: roundTo(newW, 4),
+        drawn_h: roundTo(sl.tall, 4),
+        slopeCut: {
+          pts: sl.sheetPts.map((q) => ({ x: roundTo(q.x, 4), y: roundTo(q.y, 4) })),
+          hL: roundTo(sl.sheetL, 4),
+          hR: roundTo(sl.sheetR, 4),
+        },
+      },
+      // The record the Check, the sheet note and the shaker pocket all read —
+      // refreshed where the geometry moved, and left alone where it did not.
+      // `hinges` and `gap` are the drilling's own numbers and stay.
+      slopeCutMeta: {
+        roomL: roundTo(sl.roomL, 4),
+        roomR: roundTo(sl.roomR, 4),
+        knees: sl.roomPts.slice(1, -1).map((q) => roundTo(q.x, 4)),
+        corners: geom.outline.length,
+        tall: roundTo(sl.tall, 4),
+        low: roundTo(sl.low, 4),
+        angles: sl.angles,
+      },
+      edgeLen: metres(newW + sl.roomL + sl.roomR
+        + sl.roomPts.slice(1).reduce((run, q, i) => run
+          + Math.hypot(q.x - sl.roomPts[i].x, q.y - sl.roomPts[i].y), 0)),
+    };
+  };
   const edgeTrim = params?.front_edge_trim || null;
   if (edgeTrim) {
     for (const pnl of panels.filter((x) => x.role === 'front')) {
@@ -6252,16 +6350,48 @@ export function computeCabinet(params, profileOverride) {
         });
         continue;
       }
+      const newX = pnl.box ? roundTo(pnl.box.x + left, 4) : left;
+      const recut = slopeAfterTrim(pnl, newX, w);
       pnl.w = w;
-      pnl.edgeLen = metres(2 * w + 2 * pnl.h);
-      pnl.cnc = { ...pnl.cnc, ...rectGeometry(w, pnl.h) };
-      if (pnl.box) pnl.box = { ...pnl.box, x: roundTo(pnl.box.x + left, 4), w };
+      if (!recut) {
+        // FLAT — the path every front took before tonight, unchanged.
+        pnl.edgeLen = metres(2 * w + 2 * pnl.h);
+        pnl.cnc = { ...pnl.cnc, ...rectGeometry(w, pnl.h) };
+      } else if (recut.cleared) {
+        // The span that is LEFT stands wholly under the ceiling: there is no
+        // cut on this leaf any more. It is cut PLAIN and it says so — the
+        // record goes, rather than staying behind to contradict the outline,
+        // and a Check line names the leaf (F5, `checks.js` rule #24).
+        pnl.edgeLen = metres(2 * w + 2 * pnl.h);
+        pnl.cnc = { ...pnl.cnc, ...rectGeometry(w, pnl.h) };
+        delete pnl.cnc.slopeCut;
+        warnings.push({
+          code: 'FRONT_TRIM_CUT_CLEARED',
+          panel: pnl.id,
+          message: `${pnl.id}: a correction of ${left} + ${right} mm leaves the leaf `
+            + 'clear of the ceiling — it is cut plain, with no diagonal.',
+        });
+      } else {
+        pnl.edgeLen = recut.edgeLen;
+        pnl.h = recut.h;
+        pnl.cnc = { ...pnl.cnc, ...recut.cnc };
+      }
+      if (pnl.box) {
+        pnl.box = {
+          ...pnl.box, x: newX, w, ...(recut && !recut.cleared ? { h: recut.h } : {}),
+        };
+      }
       pnl.meta = {
         ...pnl.meta,
         // What was done, on the piece, so the sheet and the BOM can say so
         // (rule 17: "narrowing a front changes BOM and drilling").
         edgeTrim: { left, right },
+        ...(recut && recut.cleared ? { slopeCut: undefined } : {}),
+        ...(recut && !recut.cleared
+          ? { slopeCut: { ...pnl.meta.slopeCut, ...recut.slopeCutMeta } }
+          : {}),
       };
+      if (recut && recut.cleared) delete pnl.meta.slopeCut;
     }
   }
 

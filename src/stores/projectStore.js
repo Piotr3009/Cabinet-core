@@ -138,7 +138,8 @@ import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith, topNeighbourDemand } from '../engine/doors.js';
 import {
-  centredShelfPos, drawersInEngineOrder, evenShelfPositions, floorLawedItem, nextHangerOffset,
+  centredShelfPos, drawersInEngineOrder, evenShelfPositions, floorLawedItem,
+  isPinnedShelf, nextHangerOffset,
   shelvesInEngineOrder,
 } from '../engine/items.js';
 // T48-F1: the floor a piece may not fall through — the engine's own answer to
@@ -5735,14 +5736,66 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * With NO divider there is exactly one segment and it is the band itself, so
    * this is the same single call turn 9 wrote, over the same two numbers.
    */
-  redistributeShelves: (unitId) => {
+  /**
+   * ─── TURN 58 (CLAUDE.md F3.2): CENTRING IS PER BAY, NEVER ACROSS ─────────
+   *
+   * The owner: *"Centrujemy tylko prawy lub lewy bay… nie robimy na przemian
+   * ze wszystkich bayów."*
+   *
+   * MEASURED ON 6c50653. An 1800 × 2200 wardrobe, partition at 900, two
+   * shelves in bay 0 and three in bay 1 — each already on its own even ladder.
+   * Press Even and all five come back as ONE ladder of five (363.5, 727.5,
+   * 1091, 1454.5, 1818.5) dealt out to whichever shelf was nearest: a ladder
+   * straight through the partition.
+   *
+   * THE CULPRIT, named: this segmented the band only VERTICALLY, by crossbars.
+   * The word `zone` did not appear in it — while `shelfBandSegmentsFor` has
+   * taken a `zone` argument all along.
+   *
+   * THE LAW. Invoked from a shelf's or a bay's context → THAT bay. Invoked on
+   * the whole unit → every bay gets its OWN ladder, one at a time, and never
+   * one ladder through a partition. A unit with no partition has exactly one
+   * bay and is answered by the identical arithmetic it was answered by
+   * yesterday, which is what keeps every flat cabinet still.
+   *
+   * @param {string} unitId
+   * @param {number|null} zone  a bay index, or null for "every bay, each on
+   *   its own"
+   */
+  redistributeShelves: (unitId, zone = null) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return;
     const profile = getCabinetProfile();
-    const segments = shelfBandSegmentsFor(unit, profile);
     const items = unit.params.sections[0].items;
-    const shelves = shelvesInEngineOrder(items);
+    // WHICH BAYS to work, and one at a time. `zoneIndexOf` is the store's own
+    // reading of an item's zone, so "which bay is this shelf in" is asked here
+    // exactly the way the add asks it.
+    const zones = [...new Set(shelvesInEngineOrder(items).map((sh) => zoneIndexOf(sh.zone)))];
+    const bays = zone == null ? (zones.length ? zones : [null]) : [zoneIndexOf(zone)];
+    for (const bay of bays) get().redistributeShelvesInBay(unitId, bay);
+    // Even spacing can still be too tight when the band is short; the clamp has
+    // the final word, as it does for every other path.
+    get().reclampShelves(unitId);
+  },
+
+  /** ONE bay's own ladder. The loop above is the only caller that matters. */
+  redistributeShelvesInBay: (unitId, bay = null) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return;
+    const profile = getCabinetProfile();
+    const items = unit.params.sections[0].items;
+    // ─── T58-F3.1: A PINNED SHELF IS A BOUNDARY, NOT A PASSENGER ──────────
+    // *"ona już jest ustawiona na stałe."*  A fixed shelf something is hung on
+    // never moves, and it CUTS the ladder the way a split crossbar does —
+    // shelves below centre up to it, shelves above from it. One more boundary
+    // kind for `bandSegments`, never a second segmenter.
+    const pinned = shelvesInEngineOrder(items)
+      .filter((sh) => zoneIndexOf(sh.zone) === bay && isPinnedShelf(sh, items));
+    const segments = shelfBandSegmentsFor(unit, profile, bay, null, pinned.map((sh) => sh.pos_mm));
+    const shelves = shelvesInEngineOrder(items)
+      .filter((sh) => zoneIndexOf(sh.zone) === bay && !isPinnedShelf(sh, items));
     // Which segment each shelf is in NOW. A shelf keeps its side of the
     // divider — Even is a spacing button, not a re-arrangement, and a board
     // that jumped the crossbar because the count came out neater would be the
@@ -5775,9 +5828,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
     }));
-    // Even spacing can still be too tight when the band is short; the clamp has
-    // the final word, as it does for every other path.
-    get().reclampShelves(unitId);
   },
 
   /**
@@ -8029,11 +8079,17 @@ function splitBoundaryPositions(unit, profile, zone = null, precomputed = null) 
  * at once (the Even button, the add-shelf placement) rather than on one piece.
  * One segment, the band itself, wherever nothing crosses it (T37-F4a).
  */
-function shelfBandSegmentsFor(unit, profile, zone = null, precomputed = null) {
+function shelfBandSegmentsFor(unit, profile, zone = null, precomputed = null, pinnedAt = []) {
   const result = precomputed || computeCabinet(paramsForEngine(unit), profile);
+  const G = unit.params.board_t ?? profile.board.thickness;
   return bandSegments({
     band: shelfBandFor(unit, profile, zone, result),
-    boundaries: splitBoundariesFor(unit, profile, zone, result),
+    // T58-F3.1: a PINNED shelf joins the split crossbars as a boundary — the
+    // same list, one more kind. `bandSegments` is not asked to learn anything.
+    boundaries: [
+      ...splitBoundariesFor(unit, profile, zone, result),
+      ...pinnedAt.filter((y) => Number.isFinite(y)).map((y) => ({ at: y, thickness: G })),
+    ],
   }, profile);
 }
 

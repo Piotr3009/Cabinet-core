@@ -148,18 +148,71 @@ export function nextShelfPos({ band, positions = [] }, profile) {
  *   boardT     the new shelf's thickness
  * @returns {number|null} the bottom face, or null when nothing fits
  */
-export function centredShelfPos({ band, positions = [], boardT = 0 }, profile) {
-  const E = profile.editor;
+/**
+ * ─── TURN 58 (CLAUDE.md F3): THE ONE OPENING-FINDER ────────────────────────
+ *
+ * THE CLEAR OPENINGS in a band, given what already stands in it.
+ *
+ * There were two readings of this: `centredShelfPos` built a face list to find
+ * the biggest gap, and the Even button segmented the band a second way in the
+ * store. Two answers to "where is there room" is how a shelf came to be added
+ * into one opening and then spaced into another. This is the ONE answer, and
+ * both callers ask it — the add takes the biggest opening, the Even button
+ * takes the segments to space within.
+ *
+ * `boundaries` are the boards an opening may NOT cross — a split crossbar
+ * (T37-F4a, *"powinna być traktowana jak koniec szafy"*) and, from tonight, a
+ * PINNED shelf. They are handed in rather than looked up, so this stays a pure
+ * function of numbers and the store keeps the job of knowing what is where.
+ *
+ * @returns {Array<{from:number,to:number,size:number}>} bottom-up
+ */
+export function shelfOpeningsIn({
+  band, positions = [], boundaries = [], boardT = 0,
+}) {
   const t = Math.max(0, Number(boardT) || 0);
-  const taken = positions.filter((p) => Number.isFinite(p)).sort((a, b) => a - b);
+  const taken = [...positions, ...boundaries]
+    .filter((p) => Number.isFinite(p))
+    .sort((a, b) => a - b);
   // floor → S1 underside, S1 top → S2 underside, … Sn top → ceiling.
   const faces = [band.floor, ...taken.flatMap((y) => [y, y + t]), band.ceiling];
-
-  let best = null;
+  const out = [];
   for (let i = 0; i < faces.length - 1; i += 2) {
-    const size = faces[i + 1] - faces[i];
-    if (!best || size > best.size) best = { from: faces[i], size };
+    out.push({ from: faces[i], to: faces[i + 1], size: faces[i + 1] - faces[i] });
   }
+  return out;
+}
+
+/**
+ * ─── TURN 58 (CLAUDE.md F3.1): A SHELF SOMETHING HANGS ON IS PINNED ────────
+ *
+ * The owner, of the fixed shelf a hanging rail is mounted to: *"ona już jest
+ * ustawiona na stałe."*  The link is the one T37-F2 built — an item with
+ * `mount: 'shelf'` naming this shelf's id — so this reads the assembly that
+ * already exists rather than inventing a flag for it.
+ *
+ * A pinned shelf is never moved by centring, and it CUTS the ladder exactly as
+ * a split crossbar does: one more boundary kind for the same segmenter, never
+ * a second segmenter.
+ */
+export function isPinnedShelf(shelf, items = []) {
+  if (shelf?.kind !== 'shelf' || !shelf.id) return false;
+  return items.some((i) => i && i !== shelf
+    && String(i.mount || '') === 'shelf' && i.shelf_id === shelf.id);
+}
+
+export function centredShelfPos({
+  band, positions = [], boundaries = [], boardT = 0,
+}, profile) {
+  const E = profile.editor;
+  const t = Math.max(0, Number(boardT) || 0);
+  // T58-F3: the openings come from the ONE finder above — this used to walk
+  // its own face list, which was the second reading.
+  const openings = shelfOpeningsIn({
+    band, positions, boundaries, boardT: t,
+  });
+  let best = null;
+  for (const o of openings) if (!best || o.size > best.size) best = o;
   // A shelf and the two clear openings it leaves. Below this the piece would be
   // fitted tighter than the workshop's own minimum and the caller says "no room"
   // rather than the clamp quietly stacking it on its neighbour.

@@ -2012,13 +2012,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       };
       if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice) continue;
       const prev = prevElements[u.id];
-      // Reference equality matters here: this runs on every drag frame, and a
-      // fresh object for an unchanged run would re-render every unit in the
-      // scene for a run nobody touched.
-      if (prev && sameRun(prev.top_infill, entry.top_infill)
-        && sameRun(prev.plinth, entry.plinth)
-        && sameRun(prev.mask, entry.mask)
-        && sameRun(prev.cornice, entry.cornice)) {
+      // Reference equality matters (drag frames), and the test is BYTE
+      // equality of the WHOLE element — a field list here rotted twice
+      // (T25 height, 30.08 ceiling) and each rot froze a stale board.
+      if (prev && JSON.stringify(prev) === JSON.stringify(entry)) {
         runElements[u.id] = prev;
       } else {
         runElements[u.id] = entry;
@@ -7501,57 +7498,6 @@ function obstaclesFor(state, unit, profile = getCabinetProfile()) {
 
 /** Height of a unit's top above the floor — where its top infill starts. */
 const unitTopOf = unitTop;
-
-/**
- * Are these two run descriptions the same piece of wood?
- *
- * Compared field by field rather than by JSON, because this is called on every
- * frame of a drag: a fresh object written each time would re-render every unit
- * in the scene for a run nobody has touched.
- */
-function sameRun(a, b) {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (a.role !== b.role) return false;
-  // Turn 15 (CLAUDE.md F6): the SIDE mitre is carried by every unit in the run,
-  // members included — it is the end units' own corner — so it is compared for
-  // both roles. Miss it here and dragging a filler to the ceiling would leave
-  // the corner square until something else forced a redraw.
-  if (!sameCorner(a.sideMitre, b.sideMitre)) return false;
-  if (a.role === 'member') return a.ownerId === b.ownerId;
-  // ─── TURN 25 (CLAUDE.md F12.1): THE CORNICE'S OWN HEIGHT ─────────────────
-  //
-  // THE DIAGNOSIS. Option 100 shipped in turn 22 and the owner only ever got
-  // 70, and neither the profile geometry nor the panel option nor the resolver
-  // was at fault — all three carry 100 correctly, and `verify/t25/cornice-100.md`
-  // shows them doing it. What was at fault is THIS comparison.
-  //
-  // The list below was written for the top infill, the plinth and the masking
-  // board, none of which has a height: they are all "one board, this long,
-  // ending like this". A cornice is the first run element whose IDENTITY
-  // includes a height, and turn 22 added it to the callers without extending
-  // this. So switching a unit from 70 to 100 produced a genuinely new element
-  // — same offset, same length, same faceH, same ends, same returns, same
-  // mitres — that this function called identical, and `refreshAutoParts`
-  // returned the unit untouched with its 70 still on it.
-  //
-  // Every other field is compared because a moulding that differs in it is a
-  // different length of timber; height and projection are exactly that.
-  if ((Number(a.height) || 0) !== (Number(b.height) || 0)) return false;
-  if ((Number(a.projection) || 0) !== (Number(b.projection) || 0)) return false;
-  return a.offset === b.offset && a.length === b.length && a.faceH === b.faceH
-    && a.depth === b.depth
-    && a.shelfDepth === b.shelfDepth
-    && a.ends?.left === b.ends?.left && a.ends?.right === b.ends?.right
-    && a.returns?.left === b.returns?.left && a.returns?.right === b.returns?.right
-    && sameCorner(a.mitre, b.mitre);
-}
-
-/** Two `{left, right}` mitre answers, treating "absent" and "0" as the same. */
-function sameCorner(a, b) {
-  return (Number(a?.left) || 0) === (Number(b?.left) || 0)
-    && (Number(a?.right) || 0) === (Number(b?.right) || 0);
-}
 
 /**
  * A unit as the plain numbers engine/collision.js works with — END PANELS

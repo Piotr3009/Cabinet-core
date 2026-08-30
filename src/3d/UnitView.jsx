@@ -23,23 +23,22 @@ const WATCH_LED_STANDOFF_M = 0.0015;
 // throws. It is a PICTURE — nothing here reaches a hole, a cut or a BOM line,
 // which is the same standing every number in `profile.lighting` has.
 const WATCH_LED_HEX = '#ffe9c2';
-const WATCH_LED_LUX = 6;
-// …and how far the beam is turned DOWN off the horizontal. A rect area light
-// emits along its own −z; a rotation of −θ about x carries that to
-// (0, −sin θ, −cos θ) — back into the drawer AND down onto the watches.
-const WATCH_LED_TILT_RAD = 0.5;
-/**
- * How far up the FRONT RAIL the line runs — under the glass, at the watches.
- *
- * Measured from the rail's OWN bottom edge (`box.y`, which is the top of the
- * tray's base), which is the frame `engine/watchDrawer.js` publishes it in as
- * `led.railY`. Measuring it from the tray's floor instead would put the strip
- * one board thickness high, and the light would graze the glass.
- */
-const watchLedRailY = (profile) => {
-  const s = watchDrawerSpec(profile);
-  return s.insideDepthMm - s.glassT - s.ledBelowGlassMm;
-};
+// ─── TURN 57 (CLAUDE.md F0b): 6 → 40, AND THE REASON IS THE FIXTURE ────────
+// T52's 6 was set for ONE 4 mm strip lying along the front rail of a tray, a
+// hand's width from the watches. T53 moved the light to a RING round the
+// opening in the shelf above, which is a different fixture: four times the
+// length, firing DOWN through half a tray's depth of air, and — since the
+// pane became glass — read through 4 mm of it. At 6 the ring measured 7 grey
+// levels of difference on the drawing buffer between lit and dark, which is
+// a light nobody can see. It is a PICTURE number, the same standing every
+// number in `profile.lighting` has; the scene's own rig is untouched.
+const WATCH_LED_LUX = 40;
+// ─── TURN 57 (CLAUDE.md F0b): THE RAIL'S OWN LINE IS GONE WITH THE RAIL ────
+// `WATCH_LED_TILT_RAD` and `watchLedRailY` measured the strip up the FRONT
+// RAIL — T52's home for it. T53 moved the light to the SHELF's underside, and
+// they have measured nothing since. They go out with the branch that read
+// them (`WatchShelfGlass`, below): dead code beside live code is how a pane
+// stopped being drawn for two turns without anybody noticing.
 import {
   contourSurface, decorFailed, decorPlacement, decorTexture, onDecorLoad, outlineFor,
   panelOutlineOffset,
@@ -69,7 +68,6 @@ import { panelRecesses } from '../engine/recesses.js';
 import { carcassCutPts } from '../engine/puzzle.js';
 // T52 (CLAUDE.md F5): where the watch insert's strip runs in its front rail —
 // the ENGINE's own number, so the picture and the groove agree.
-import { watchDrawerSpec } from '../engine/watchDrawer.js';
 // The LTC tables a RectAreaLight needs. Lazy and once per app — the room calls
 // it too, and calling it twice is a no-op; without it the insert's strip would
 // light nothing at all (the same chat-fix T33's own strips needed).
@@ -730,64 +728,112 @@ export function MovingPanel({
 
 
 /**
- * ─── TURN 52 (CLAUDE.md F5): THE INSERT'S PANE AND ITS LIGHT ────────────────
+ * ─── TURN 57 (CLAUDE.md F0b): THE WATCH PANE IS GLASS, NOT A BOARD ─────────
  *
- * Rendered INSIDE the drawer's own moving group — as `children` of the front
- * rail's `MovingPanel`, exactly the way a hinge is a child of its door (T23).
- * That is not tidiness: a pane left behind in the carcass while its drawer
- * slides out is the very fault the owner found in a hinge that stayed shut,
- * and it is worse than not drawing it.
+ * The owner, live 30.08.2026: *"nie przezroczysta i nie widać szuflady w
+ * środku przez szybę — szkoda."*
  *
- * DECISION 1 — the pane LIFTS OUT. It bears on a rebate cut in the top of the
- * tray's four rails and nothing holds it down, so it is drawn sitting DOWN in
- * the frame: the 4 mm lip of rail standing proud of it all round is the
- * picture of that decision.
+ * WHAT WAS ACTUALLY WRONG. T52 drew the pane and its light inside the
+ * DRAWER's own moving group, as children of the front rail's `MovingPanel`,
+ * behind the gate `p.role === 'watch_insert' && p.meta?.led`. T53 then moved
+ * both to the SHELF — the opening and its rebate are cut in the shelf board
+ * (`engine/watchDrawer.js shelfGlassPlan`) and the LED runs round the
+ * underside of that opening — and no `watch_insert` panel has carried
+ * `meta.led` since. So the gate has been false on every cabinet for two
+ * turns: there was no pane mesh in the scene AT ALL, and the "glass" the
+ * owner was looking at was the shadowed opening itself.
  *
- * DECISION 2 — the LED lights the WATCHES. The strip is on the INNER face of
- * the FRONT rail, under the glass, and the area light on the same line is
- * turned back and DOWN into the tray. A line along the top of the frame would
- * light the pane, which is a shop display and not a wardrobe.
+ * Two consequences, both fixed by drawing it where the engine puts it:
+ *
+ *   1. THE PANE IS IN THE SHELF, so it belongs to the CARCASS and not to the
+ *      drawer. Hung off the drawer it would have slid out with it — T52's own
+ *      note about a hinge that stayed shut, the other way round.
+ *   2. THE LED RING IS ON THE SHELF'S UNDERSIDE, round the opening, firing
+ *      DOWN onto the watches — `plan.led`, the engine's own rectangle. The
+ *      pane is above it, so the ring READS THROUGH the glass, which is the
+ *      picture the owner asked for.
+ *
+ * THIS IS A PICTURE AND NOTHING ELSE. No engine byte moves: the cut, the
+ * rebate and the BOM line are T53/T55 law and are untouched. 4 mm of glass is
+ * ordered, never machined.
+ *
+ * HOW IT READS AS GLASS. Low opacity so the pockets and the watches beneath
+ * are plainly visible; a faint cool tint; a near-zero roughness so it takes a
+ * specular highlight off the fixed rig and reads as a surface rather than as
+ * a hole. `depthWrite` is OFF — a transparent surface that writes depth
+ * rejects everything drawn behind it afterwards, which is exactly how a pane
+ * turns into a board — and the mesh carries a `renderOrder` so it is laid
+ * over the interior rather than sorted against it. In X-RAY the pane stands
+ * further back still: that view exists to show the mechanism through the
+ * boards, and glass is the last thing that may hide it. In CONTOUR it is not
+ * drawn at all, which is what every other pane in this file does.
  *
  * @param {object} props
- *   rail   the WATCH-RAIL-FRONT panel — the piece that carries the light
- *   pane   the assembly's own `watchGlass` row for this drawer, or null
- *   pivot  the rail's own MovingPanel origin, in THREE units
+ *   pane   the assembly's own `watchGlass` row — box, and its `led` rectangle
+ *   shelf  the panel the opening is cut in (`pane.shelfId`), or null
+ *   xray   is the X-ray view on
  */
-function WatchInsertLight({ rail, pane, pivot, profile }) {
-  const y = watchLedRailY(profile);
+function WatchShelfGlass({ pane, shelf, xray = false }) {
+  // A `rectAreaLight` contributes NOTHING until three's LTC tables are
+  // uploaded, and the app's own lazy initialiser is the one place that does it
+  // (`LedStrips.jsx ensureLtc`, exported for exactly this). Without it the
+  // ring above would be four glowing strips lighting an unlit drawer — which
+  // is half of what the owner was looking at.
+  ensureLtc();
+  const led = pane?.led || null;
+  // The ring, in the UNIT's own frame: the engine states it in the shelf's
+  // own (x across the width, y across the depth), on the underside.
+  const ring = useMemo(() => {
+    if (!led || !shelf?.box) return [];
+    const x0 = shelf.box.x + Math.min(led.x1, led.x2);
+    const x1 = shelf.box.x + Math.max(led.x1, led.x2);
+    const z0 = shelf.box.z + Math.min(led.y1, led.y2);
+    const z1 = shelf.box.z + Math.max(led.y1, led.y2);
+    const t = Number(led.width) || WATCH_LED_WIDTH_MM;
+    return [
+      { x: (x0 + x1) / 2, z: z0, w: x1 - x0, d: t },
+      { x: (x0 + x1) / 2, z: z1, w: x1 - x0, d: t },
+      { x: x0, z: (z0 + z1) / 2, w: t, d: z1 - z0 },
+      { x: x1, z: (z0 + z1) / 2, w: t, d: z1 - z0 },
+    ];
+  }, [led, shelf]);
+  if (!pane?.box) return null;
+  const ledY = Number(led?.y);
+  const lightY = Number.isFinite(ledY) ? ledY : pane.box.y;
   return (
     <>
-      {pane && (
-        <mesh
-          position={[
-            mm(pane.box.x + pane.box.w / 2) - pivot[0],
-            mm(pane.box.y + pane.box.h / 2) - pivot[1],
-            mm(pane.box.z + pane.box.d / 2) - pivot[2],
-          ]}
-          userData={{ ccWatchGlass: rail.meta.drawer, ccNoBounds: true }}
-        >
-          <boxGeometry args={[mm(pane.box.w), mm(pane.box.h), mm(pane.box.d)]} />
-          <meshPhysicalMaterial
-            color="#eef3f4"
-            transparent
-            opacity={0.35}
-            roughness={0.05}
-            metalness={0}
-            transmission={0.9}
-            thickness={0.004}
-          />
-        </mesh>
-      )}
-      <group
+      <mesh
         position={[
-          mm(rail.box.x + rail.box.w / 2) - pivot[0],
-          mm(rail.box.y + y) - pivot[1],
-          mm(rail.box.z) - pivot[2] - WATCH_LED_STANDOFF_M / 2,
+          mm(pane.box.x + pane.box.w / 2),
+          mm(pane.box.y + pane.box.h / 2),
+          mm(pane.box.z + pane.box.d / 2),
         ]}
-        userData={{ ccWatchLed: rail.meta.drawer, ccNoBounds: true }}
+        renderOrder={2}
+        userData={{ ccWatchGlass: pane.drawer, ccNoBounds: true }}
       >
-        <mesh userData={{ ccWatchLedStrip: rail.meta.drawer, ccNoBounds: true }}>
-          <boxGeometry args={[mm(rail.box.w), mm(WATCH_LED_WIDTH_MM), WATCH_LED_STANDOFF_M]} />
+        <boxGeometry args={[mm(pane.box.w), mm(pane.box.h), mm(pane.box.d)]} />
+        <meshPhysicalMaterial
+          color="#e6f1f2"
+          transparent
+          opacity={xray ? 0.08 : 0.2}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+          roughness={0.03}
+          metalness={0}
+          transmission={0.95}
+          thickness={mm(pane.box.h)}
+          ior={1.52}
+          specularIntensity={1}
+          envMapIntensity={1.4}
+        />
+      </mesh>
+      {!xray && ring.map((s) => (
+        <mesh
+          key={`wled-${s.x}-${s.z}`}
+          position={[mm(s.x), mm(lightY) - WATCH_LED_STANDOFF_M / 2, mm(s.z)]}
+          userData={{ ccWatchLedStrip: pane.drawer, ccNoBounds: true }}
+        >
+          <boxGeometry args={[mm(s.w), WATCH_LED_STANDOFF_M, mm(s.d)]} />
           <meshStandardMaterial
             color={WATCH_LED_HEX}
             emissive={WATCH_LED_HEX}
@@ -796,11 +842,22 @@ function WatchInsertLight({ rail, pane, pivot, profile }) {
             toneMapped={false}
           />
         </mesh>
+      ))}
+      {!xray && led && (
+        // ONE area light for the ring, aimed STRAIGHT DOWN into the tray. A
+        // rect area light emits along its own −z, and −π/2 about x carries
+        // that to (0, −1, 0): the owner's law from T52 — the LED lights the
+        // WATCHES, never the pane — said for the shelf it now lives in.
         <rectAreaLight
-          rotation={[-WATCH_LED_TILT_RAD, 0, 0]}
-          args={[WATCH_LED_HEX, WATCH_LED_LUX, mm(rail.box.w), 0.03]}
+          position={[
+            mm(pane.box.x + pane.box.w / 2),
+            mm(lightY) - WATCH_LED_STANDOFF_M,
+            mm(pane.box.z + pane.box.d / 2),
+          ]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          args={[WATCH_LED_HEX, WATCH_LED_LUX, mm(pane.box.w), mm(pane.box.d)]}
         />
-      </group>
+      )}
     </>
   );
 }
@@ -1834,21 +1891,10 @@ export default function UnitView({
             // hinge does. Turn 19 hung the model on the carcass beside the cup
             // and it stayed shut while the door opened; the model comes through
             // here now, on the same specs the plate is resolved from.
-            {...(!contour && p.role === 'watch_insert' && p.meta?.led ? {
-              children: (
-                <WatchInsertLight
-                  rail={p}
-                  pane={(result.assemblies.watchGlass || []).find((g) => Number(g.drawer) === Number(p.meta.drawer)
-                    && (g.zone ?? null) === (p.meta.zone ?? null)) || null}
-                  pivot={[
-                    mm(p.box.x + p.box.w / 2),
-                    mm(p.box.y + p.box.h / 2),
-                    mm(p.box.z + p.box.d / 2),
-                  ]}
-                  profile={profile}
-                />
-              ),
-            } : {})}
+            // T57 F0b: the watch pane and its LED ring are NOT hung off the
+            // drawer any more — the opening is cut in the SHELF, so they belong
+            // to the carcass with it. Drawn by `WatchShelfGlass` below, beside
+            // the display drawer's own pane.
             {...(front === 'door' && (showHinges || xray) ? {
               children: (
                 <DoorHinges
@@ -2513,6 +2559,21 @@ export default function UnitView({
             thickness={0.004}
           />
         </mesh>
+      ))}
+
+      {/* ─── TURN 57 (CLAUDE.md F0b): THE WATCH PANE, AS GLASS ───────────────
+          The owner: "nie przezroczysta i nie widać szuflady w środku przez
+          szybę — szkoda." It sits in the SHELF the engine cut the opening in,
+          so it stands still while the drawer slides — and its LED ring is on
+          that shelf's underside, reading up through the glass. A picture: no
+          cut, no rebate, no BOM line is touched. */}
+      {!contour && (result.assemblies.watchGlass || []).map((pane) => (
+        <WatchShelfGlass
+          key={`watch-glass-${pane.zone ?? 'w'}-${pane.drawer}`}
+          pane={pane}
+          shelf={(result.panels || []).find((q) => q.id === pane.shelfId) || null}
+          xray={xray}
+        />
       ))}
 
       {/* Selection (turn 6, CLAUDE.md F5): a thin dashed navy box standing

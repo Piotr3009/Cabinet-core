@@ -31,23 +31,31 @@ export function coneroSrc(profile, storageBase = '') {
 }
 
 /**
- * A composed clone for ONE opening: arms at the sides, rod stretched between.
+ * A composed clone for ONE opening — the owner's three laws (30.08):
+ *   1. the bases' OUTER faces touch the cabinet sides — span = the opening;
+ *   2. the rod stretches between them, keeping the file's own rod-into-arm
+ *      engagement at every width;
+ *   3. base underside to rail top = `totalHmm` (830 on the sheet), so the
+ *      whole frame is scaled vertically to it;
+ * and one look: dark powder-grey metal, the product's own, not the file's white.
  *
  * @param {string} url        from coneroSrc()
  * @param {number} openingMm  the column's clear width (instance w)
- * @param {object} c          the profile's conero block (gaps, native rail)
+ * @param {number} totalHmm   base underside → rail top, in mm
  * @returns {THREE.Object3D|null}  in FILE units, bbox corner at origin;
  *   `userData.ccUnitToMm` says what one file unit is in millimetres
  */
-export function coneroClone(url, openingMm, c) {
+export function coneroClone(url, openingMm, totalHmm) {
   const entry = glbSource(url);
   if (!entry?.loaded) return null;
   const clone = glbClone(url);
   if (!clone) return null;
+  // The clone has never rendered, so its world matrices are identity — every
+  // Box3 below would miss the seat shift without this one line.
+  clone.updateMatrixWorld(true);
   // Blender export is metres; a future re-export in mm keeps working: the
   // measured width decides, never a guess.
   const unitToMm = entry.size.x < 5 ? 1000 : 1;
-  const gap = Math.max(0, Number(c?.sideGapMm) || 0) / unitToMm;
   const want = Math.max(1, Number(openingMm) || 1) / unitToMm;
 
   let rod = null;
@@ -55,12 +63,16 @@ export function coneroClone(url, openingMm, c) {
   clone.traverse((o) => {
     const n = String(o.name || '');
     if (/-re$|-li$/.test(n)) arms.push(o);
-    else if (/^3d-\d/.test(n) && o.parent === clone) rod = rod || o;
+    else if (/^3d-/.test(n)) rod = rod || o;
   });
-  // The rod is the widest top-level child when names ever change.
-  if (!rod) {
+  // `glbClone` wraps the scene in a group, so the three named nodes are
+  // GRANDCHILDREN — never trust parenthood, only names; and when names ever
+  // change, the widest SIBLING of the arms is the rod.
+  if ((!rod || arms.includes(rod)) && arms.length) {
     let best = 0;
-    for (const o of clone.children) {
+    rod = null;
+    for (const o of arms[0].parent?.children || []) {
+      if (arms.includes(o)) continue;
       const b = new THREE.Box3().setFromObject(o);
       const w = b.max.x - b.min.x;
       if (w > best) { best = w; rod = o; }
@@ -68,9 +80,11 @@ export function coneroClone(url, openingMm, c) {
   }
   if (rod && !arms.includes(rod)) {
     const b0 = new THREE.Box3().setFromObject(rod);
-    const native = b0.max.x - b0.min.x;
+    const nativeRail = b0.max.x - b0.min.x;
     const cx = (b0.min.x + b0.max.x) / 2;
-    const sx = Math.max(0.05, (want - 2 * gap) / native);
+    // Keep the file's own rod-into-arm engagement: the rod grows by exactly
+    // what the frame grows, so its ends sit in the sleeves at any width.
+    const sx = Math.max(0.05, (nativeRail + (want - entry.size.x)) / nativeRail);
     rod.scale.x *= sx;
     // stretch about its own centre, then park that centre mid-opening
     rod.position.x += (cx - cx * sx) + (want / 2 - cx);
@@ -78,8 +92,18 @@ export function coneroClone(url, openingMm, c) {
   for (const arm of arms) {
     const b = new THREE.Box3().setFromObject(arm);
     const left = /-li$/.test(String(arm.name || ''));
-    arm.position.x += left ? (gap - b.min.x) : (want - gap - b.max.x);
+    // Law 1: the base's outer face ON the side — zero gap.
+    arm.position.x += left ? (0 - b.min.x) : (want - b.max.x);
   }
+  // Law 3: the frame's height is the sheet's number.
+  const hTarget = Math.max(1, Number(totalHmm) || 0) / unitToMm;
+  if (Number(totalHmm) > 0 && entry.size.y > 1e-6) {
+    clone.scale.y *= hTarget / entry.size.y;
+  }
+  // The look: one dark metal on every mesh (the clone shares the file's
+  // white materials otherwise).
+  const metal = new THREE.MeshStandardMaterial({ color: 0x35373b, metalness: 0.7, roughness: 0.45 });
+  clone.traverse((o) => { if (o.isMesh) o.material = metal; });
   clone.userData.ccUnitToMm = unitToMm;
   return clone;
 }

@@ -1214,13 +1214,13 @@ function KitWalls({ k, colour }) {
  * pose, so nothing is animated — the group only places and stretches it.
  */
 function ConeroPulldown({ k, colour, profile, storageBase }) {
-  const c = profile?.wardrobeAccessories?.kits?.pulldown_rail?.conero;
+  const bodyH = Number(profile?.wardrobeAccessories?.kits?.pulldown_rail?.bodyHeight) || 0;
   const url = coneroSrc(profile, storageBase);
   const [, force] = useReducer((n) => n + 1, 0);
   useEffect(() => (url ? onGlbLoad(url, force) : undefined), [url]);
   const model = useMemo(
-    () => (url && !glbFailed(url) && glbSource(url)?.loaded ? coneroClone(url, k.w, c) : null),
-    [url, k.w, c, glbFailed(url), glbSource(url)?.loaded],
+    () => (url && !glbFailed(url) && glbSource(url)?.loaded ? coneroClone(url, k.w, bodyH) : null),
+    [url, k.w, bodyH, glbFailed(url), glbSource(url)?.loaded],
   );
   const fit = useMemo(() => {
     if (!model) return null;

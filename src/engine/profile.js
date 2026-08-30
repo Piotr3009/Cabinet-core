@@ -975,9 +975,9 @@ export const DEFAULT_CABINET_PROFILE = {
       tie_rack: { label: 'Tie rack', bodyHeight: 300, posMm: 1100 },
       pulldown_rail: {
         label: 'Pull-down rail',
-        // The REAL mechanism now (30.08): CONERO's own envelope — closed, arms
-        // up, rod on top. `topDrop` = the parked ROD's default from the top.
-        bodyHeight: 704,
+        // The REAL mechanism (30.08, the owner's sheet): base underside to
+        // rail top = 830. `topDrop` = the parked ROD's default from the top.
+        bodyHeight: 830,
         topDrop: 50,
         // The one GLB the owner supplied (Kesseböhmer/Rejs CONERO, set 730).
         // Bucket is the shop; offline truth here is only what the sheet says:
@@ -987,8 +987,6 @@ export const DEFAULT_CABINET_PROFILE = {
           path: 'lifts/conero/',
           file: 'conero-pantograf-730.glb',
           article: '674367/674569',
-          railNativeMm: 730,
-          sideGapMm: 27,
         },
       },
     },

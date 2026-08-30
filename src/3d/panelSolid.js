@@ -6,6 +6,7 @@ import { cncRect, notchedOutline, socketNotches, tabOutlines } from '../engine/s
 import { slopeCutActive, trimOutlineOnSlope } from '../engine/puzzle.js';
 import { panelPlacement } from '../engine/joinery.js';
 import { panelRecesses, recessKey } from '../engine/recesses.js';
+import { jpullLayers, jpullKey } from './jpullProfile.js';
 
 // ─── The board with the joint cut into it (turn 11, CLAUDE.md F6) ───────────
 //
@@ -164,6 +165,13 @@ export function panelSolids(panel, layers, profile, drills = []) {
   const slopeCut = panel?.cnc?.slopeCut
     && slopeCutActive({ w, h, ...panel.cnc.slopeCut })
     ? panel.cnc.slopeCut : null;
+  // ─── TURN 57 (CLAUDE.md F3): THE J-PULL IS PART OF THE SHAPE ─────────────
+  // The engine states which edge is machined and over what span
+  // (`cnc.jpull`, engine/cabinet.js — one law, and this file never re-decides
+  // it). A board that carries one is built as three slabs through its own
+  // thickness rather than one, which is what makes the recess real material
+  // that is genuinely absent instead of a stripe drawn on a slab.
+  const jpull = panel?.cnc?.jpull?.edge ? panel.cnc.jpull : null;
   // ─── CHAT-FIX 25.08.2026: THE WEDGE, SEEN FROM THE FRONT ─────────────────
   // The owner: *"bur jest nadal prosto ciety a powinien byc po skosie …
   // patrzac od czola."* A side's CNC outline lives in the DEPTH plane and
@@ -240,7 +248,9 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // T53 (F4): …and a board whose ONLY feature is the WEDGE is a shape too. A
   // side always has tabs, so this never bit — but a gate that depends on
   // another feature being present is exactly the fault F4 is about.
-  if (!notches.length && !tabs.length && !recesses.length && !slopeCut && !bevel3d) return NOTHING;
+  if (!notches.length && !tabs.length && !recesses.length && !slopeCut && !bevel3d && !jpull) {
+    return NOTHING;
+  }
 
   const key = [
     panel.part,
@@ -257,6 +267,8 @@ export function panelSolids(panel, layers, profile, drills = []) {
       : '',
     // Two sides that differ only in the wedge off their top are two boards.
     bevel3d ? `bevel:${bevel3d.a},${bevel3d.b}` : '',
+    // Two leaves that differ only in where their J runs are two boards.
+    jpullKey(jpull),
     recessKey(recesses),
   ].join('|');
 
@@ -270,7 +282,18 @@ export function panelSolids(panel, layers, profile, drills = []) {
   }
 
   const built = build({
-    w, h, thickness, radius, notches, tabs, recesses, placement, box: panel.box, slopeCut, bevel3d,
+    w,
+    h,
+    thickness,
+    radius,
+    notches,
+    tabs,
+    recesses,
+    placement,
+    box: panel.box,
+    slopeCut,
+    bevel3d,
+    jpull,
   });
   cache.set(key, built);
   if (cache.size > CACHE_LIMIT) {
@@ -397,7 +420,7 @@ function thicknessOf(panel, placement) {
 
 function build({
   w, h, thickness, radius, notches, tabs = [], recesses = [], placement, box, slopeCut = null,
-  bevel3d = null,
+  bevel3d = null, jpull = null,
 }) {
   const shapeOf = (points) => new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y))));
   const extrudeShape = (shape) => new THREE.ExtrudeGeometry(shape, {
@@ -434,12 +457,55 @@ function build({
   const board = shapeOf(outline);
   for (const f of recesses) board.holes.push(recessPath(f));
 
+  // ─── TURN 57 (CLAUDE.md F3): THE J-PULL, AS THREE SLABS ──────────────────
+  //
+  // The owner: *"nie zapomnij o cieniowaniu po routerowaniu, zeby bylo widac
+  // cien."*
+  //
+  // A J-pull board is not a slab with a stripe on it. Its section is three
+  // layers through the thickness — the lip out to the edge, the slot with
+  // 40 mm gone, the rear leg set back by the relief — so it is EXTRUDED as
+  // three, each from its own outline and each translated to its own depth.
+  // The material is genuinely absent, every wall is a real surface, and the
+  // shadow the owner asked for is the one the renderer already draws for
+  // every other cut in the project. `computeVertexNormals` below then shades
+  // the walls as the planes they are.
+  //
+  // The outlines come from `3d/jpullProfile.js`, which is the ONE home for the
+  // shape: `shakerSolid.js` builds its own tray and can call the same producer
+  // for the same board, and neither builder decides where the J goes — the
+  // engine already did (`cnc.jpull`, one law).
+  const jLayers = jpull
+    ? jpullLayers({
+      outline, w, h, thickness, edge: jpull.edge, from: jpull.from, to: jpull.to, profile: jpull.profile,
+    })
+    : null;
+
   // The board, and then each tab standing off its edge. They are separate
   // extrusions merged into one buffer rather than one polygon, because a tab
   // that shares an edge with the board is a self-touching outline and the
   // triangulator is entitled to refuse it. Merged, it is still ONE draw call
   // and still one cached geometry per panel configuration.
-  const parts = [extrudeShape(board), ...tabs.map((t) => extrude(t))];
+  const boardParts = jLayers
+    ? jLayers.map((layer) => {
+      const shape = shapeOf(layer.pts);
+      // A recess is cut from the machined face, so it belongs to every slab
+      // its own depth reaches into — and to all three when it goes through.
+      for (const f of recesses) {
+        const deep = f.through ? thickness : Number(f.depth) || 0;
+        if (deep > layer.z0 + SLAB_EPS) shape.holes.push(recessPath(f));
+      }
+      const g = new THREE.ExtrudeGeometry(shape, {
+        depth: mm(layer.depth), bevelEnabled: false, curveSegments: 1,
+      });
+      // Each slab sits at its own depth through the board. z = 0 is the
+      // MACHINED face and +z runs into the board, so the lip is the slab a
+      // person is looking at.
+      g.translate(0, 0, mm(layer.z0));
+      return g;
+    })
+    : [extrudeShape(board)];
+  const parts = [...boardParts, ...tabs.map((t) => extrude(t))];
   const geometry = parts.length === 1 ? parts[0] : mergeGeometries(parts, false);
   if (parts.length > 1) for (const g of parts) g.dispose();
 
@@ -534,6 +600,9 @@ function recessPath(f) {
 
 /** How many sides a drilled hole is drawn with. */
 const HOLE_SEGMENTS = 14;
+
+/** A hundredth of a millimetre — whether a recess reaches into a slab at all. */
+const SLAB_EPS = 0.01;
 
 /**
  * The walls and floors of every recess, as one buffer in the panel's own frame.

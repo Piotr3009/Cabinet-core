@@ -83,8 +83,13 @@ test('F6a — a panel with no cut publishes nothing, and the scene draws its box
   // the peak. The clause T46 pinned is still here, unchanged, with one more
   // feature beside it.
   assert.match(solid, /if \(!notches\.length && !tabs\.length && !recesses\.length && !slopeCut/);
-  assert.match(solid, /&& !bevel3d\) return NOTHING;/,
-    'T53 F4: …and a board whose only feature is the wedge is a shape too');
+  // T57 F3 AMENDED (30.08.2026): `&& !jpull` joins the same list, for the same
+  // reason two storeys along — a J-pull is a section that changes THROUGH the
+  // thickness, it is not in the outline either, and a front whose only feature
+  // is its machined edge is a shape too. The clause T46 pinned and the one T53
+  // added are both still here, unchanged, with one more feature beside them.
+  assert.match(solid, /&& !bevel3d && !jpull\) \{/,
+    'T57 F3: …and a board whose only feature is its J-pull edge is a shape too');
 });
 
 // T47 (licence 1): the key is the whole LINE now — two leaves under the same

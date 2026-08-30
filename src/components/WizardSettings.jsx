@@ -34,7 +34,7 @@ import NumberField from './NumberField.jsx';
 // The two rows the old panel owns and the unified one now shows are IMPORTED
 // from it rather than copied — one implementation, two surfaces, so the sheet
 // buttons and the hinge block cannot drift between the doors.
-import { HingeHardware, SheetSizeRow } from './SettingsPanel.jsx';
+import { HingeHardware, JpullHardware, SheetSizeRow } from './SettingsPanel.jsx';
 // Turn 33 (CLAUDE.md F8): the shaker frame's one resolver — the same number
 // the engine cuts pockets to and the settings panel edits.
 import { shakerFrameMm } from '../engine/shaker.js';
@@ -2231,6 +2231,20 @@ export default function WizardSettings({
                           profile={profile}
                           frontThickness={frontBoard}
                           onChange={setHingeHardware}
+                        />
+                      </div>
+
+                      {/* ─── T57 F4.2 — THE J-PULL'S OWN MILLIMETRES ─────────────
+                          Beside the hinge hardware, because it answers the same
+                          kind of question — how this WORKSHOP machines the thing
+                          it fits. The old panel's own block, imported rather than
+                          copied, exactly as the hinge block above is. It draws
+                          nothing at all unless the project is on J-pull. */}
+                      <div data-wizard-node="hardware.jpull">
+                        <JpullHardware
+                          design={design}
+                          profile={profile}
+                          setProfile={setProfile}
                         />
                       </div>
 

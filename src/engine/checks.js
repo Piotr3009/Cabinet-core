@@ -169,6 +169,24 @@ export const CHECKS = Object.freeze([
   // which two are missing and why. RED, because a missing shelf is a missing
   // board on a cut list, not a matter of taste.
   { n: 21, level: 'red', label: 'Shelf crosses the slope line' },
+  // ─── TURN 57 (CLAUDE.md F5): THE J-PULL SAYS WHY ─────────────────────────
+  //
+  // A J-pull is the whole handle: there is nothing screwed to the front, so a
+  // leaf that quietly did not get its machining is a door with NO WAY TO OPEN
+  // IT, and nobody finds out until it is hung. Two things the engine can say
+  // about a run, and they are different:
+  //
+  //   REFUSED  the edge is shorter than the run's own start, so there is no
+  //            leaf to machine. The engine cuts nothing and never slides the
+  //            run down to make it fit — a J at ankle height is not a handle.
+  //            RED: that leaf needs a decision from a person.
+  //   CLAMPED  there is room for a run but not for all of it, so the leaf gets
+  //            the run it can hold. YELLOW: the app has done the right thing
+  //            and is saying that it did.
+  //
+  // Both name the UNIT and the LEAF, because "a door somewhere is short of a
+  // handle" is not a sentence anybody can act on.
+  { n: 25, level: 'red', label: 'J-pull run does not fit the leaf' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -925,6 +943,31 @@ export function runChecks({
           + 'the door partition carries its plates while the forcing stands.',
         subject: { unitId: entry.unit?.id || null, panelId: pnl.id, editor: 'element' },
         partitionId: pnl.meta.hingeOn,
+      }));
+    }
+  }
+
+  // ── #25 the J-pull run does not fit the leaf (T57-F5) ───────────────────
+  //
+  // Read off the engine's own warnings rather than re-derived, so the sentence
+  // in front of the joiner and the record on the piece cannot disagree about
+  // which leaf or by how much. `engine/handles.js` decided it once; this says
+  // it in the house voice.
+  for (const entry of entries) {
+    const num = entry.unit?.params?.unit_num || entry.result?.unitNum || entry.unit?.id || '';
+    for (const w of entry.result?.warnings || []) {
+      if (w?.code !== 'JPULL_EDGE_TOO_SHORT' && w?.code !== 'JPULL_RUN_CLAMPED') continue;
+      const refused = w.code === 'JPULL_EDGE_TOO_SHORT';
+      out.push(finding(25, refused ? 'red' : 'yellow', {
+        unitId: entry.unit?.id || null,
+        unitNum: num,
+        panelId: w.panel,
+        message: `${num} ${w.panel}: ${String(w.message).replace(`${w.panel}: `, '')} `
+          + (refused
+            ? 'Nothing is machined on it — this leaf has no handle at all until the run is moved or the leaf grows.'
+            : 'It is machined with the run it can hold.'),
+        subject: { unitId: entry.unit?.id || null, panelId: w.panel, editor: 'element' },
+        reason: refused ? 'too-short' : 'clamped',
       }));
     }
   }

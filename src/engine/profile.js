@@ -180,6 +180,44 @@ export const DEFAULT_CABINET_PROFILE = {
     bar: { rodDiameter: 12, standoff: 32, postDiameter: 10, overhang: 20 },
     knob: { diameter: 30, standoff: 22, stemDiameter: 8 },
     finish: 'gold',
+    // ─── TURN 57 (CLAUDE.md F2.1): THE J-PULL, WHICH BUYS NOTHING ──────────
+    //
+    // A handle system with no hardware: the front's own edge is machined and
+    // nothing is screwed to it. It sits in the HANDLES block because that is
+    // the axis it lives on — a J-pull is how a door is HELD, not what its
+    // face looks like, and a grooved door with a J edge has to be sayable.
+    //
+    // Every number here is the owner's, measured off `J_hand.dxf` on an 18 mm
+    // board, and every one of them is stated FIRST in
+    // `reference/lisp/KIT_FRONT_JPULL.lsp` — this block follows that kit and
+    // `test/turn57-f2-the-jpull-system.test.js` reads the kit off disk and
+    // holds the two together, so there is no second copy of the drawing.
+    //
+    // Read exactly the way `doors.gap` is: a workshop overrides one of them in
+    // its own profile and every front in every project follows.
+    jpull: {
+      // The STOPPED RUN on a tall door. The owner, 30.08.2026: "500 mm,
+      // zaczyna sie od dolu frontu okolo 700 mm."
+      runMm: 500,
+      fromBottomMm: 700,
+      // The router's lead-in — "wjazd po luku, nie ostre, lukowate". A
+      // PLACEHOLDER: the owner has said the routing itself comes later
+      // ("routerowanie bedziemy robic pozniej"), so this is the one number in
+      // the block that is a stand-in rather than a measurement, and it is
+      // named so that tuning it is one edit.
+      rampR: 25,
+      // ─── THE SECTION, AND IT CLOSES: 4.212 + 10 + 3.788 = 18.000 ────────
+      lipT: 4.212,      // the visible hook of the J, 30 proud of the relief
+      slotW: 10,        // the finger slot
+      slotDepth: 40,    // …how far back it runs from the edge
+      slotR: 5,         // …and its rounded bottom (45 to the arc's tangent)
+      rearLeg: 3.788,
+      reliefMm: 30,     // the back face cut down — the finger clearance
+      // Named for the OPERATION and not for a size, because every size above
+      // is one the owner will tune and a layer whose name moved with them
+      // would hand VCarve a different tool mapping on every job.
+      layer: 'JPULL_EDGE',
+    },
   },
 
   // ─── TURN 31 (CLAUDE.md F4.4 / F4.4a): APPLIANCE FACES ────────────────────

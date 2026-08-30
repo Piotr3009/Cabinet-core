@@ -59,6 +59,14 @@ export const FRONT_STYLE_OPTIONS = [
  */
 export function normaliseHandle(raw) {
   if (!raw || typeof raw !== 'object') return null;
+  // ─── TURN 57 (CLAUDE.md F2): AND THE THIRD SYSTEM IS `jpull` ─────────────
+  // A J-pull is a HANDLE SYSTEM — how the front is held — and this gate is
+  // where a project's answer to that question is let in or thrown away. Until
+  // tonight anything that was not a bar or a knob became `null`, which is why
+  // a J could only be said on the PATTERN axis (front style `HJ`) and why
+  // "shaker AND J-pull" was unsayable. It carries no centres: there is
+  // nothing to space, because there is nothing screwed on.
+  if (raw.type === 'jpull') return { type: 'jpull' };
   const type = raw.type === 'knob' ? 'knob' : (raw.type === 'bar' ? 'bar' : null);
   if (!type) return null;
   const centres = Number(raw.centres);

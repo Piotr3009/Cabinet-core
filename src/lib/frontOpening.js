@@ -44,29 +44,49 @@ export const FRONT_OPENINGS = [
   { id: 'push', label: 'Push-to-open', hint: 'No handle at all — MOVENTO TIP-ON on the drawers.' },
   { id: 'handles', label: 'Handles', hint: 'A bar handle, screwed on. The BOM counts one per front.' },
   { id: 'knobs', label: 'Knobs', hint: 'A knob, screwed on.' },
-  { id: 'jhandle', label: 'J-handle', hint: 'Machined into the door itself — the Handleless J-type shape.' },
+  { id: 'jhandle', label: 'J-pull handleless', hint: 'Machined into the front\'s own edge — nothing is screwed on.' },
 ];
 
 export const FRONT_OPENING_IDS = FRONT_OPENINGS.map((o) => o.id);
 
-/** The shape id a J-handle IS. */
+/**
+ * The shape id a J-handle USED TO BE — kept for the projects that carry it.
+ *
+ * ─── TURN 57 (CLAUDE.md, THE DOCTRINE CORRECTED IN THE OPEN) ────────────────
+ *
+ * This file's own comment above calls a J-handle "a SHAPE, which is what a
+ * J-handle is". That was wrong, and it is corrected here rather than quietly
+ * rewritten: a J-pull is a HANDLE SYSTEM — how the front is HELD — and the
+ * face pattern is a separate axis entirely. Putting the J on the pattern axis
+ * made "shaker AND J-pull" unsayable, and a grooved door with a J edge is a
+ * kitchen the owner sells.
+ *
+ * So `jhandle` now writes `fronts.handle = { type: 'jpull' }` (engine/handles.js
+ * — the module that has owned "how is this front gripped" since turn 25) and
+ * leaves the STYLE alone. `HJ` stays declared, and stays READ, because every
+ * project saved before tonight says `style: 'HJ'` and must go on reading as a
+ * J-pull kitchen.
+ */
 export const J_HANDLE_STYLE = 'HJ';
 
 /**
  * Which of the four this project is on.
  *
- * The J-handle is read FIRST because it is a shape: a door machined with a J
- * has no handle to screw on, so a leftover `handle` record under it is a stale
- * answer to a question the shape has already settled.
+ * T57: the HANDLE SYSTEM is asked first, because that is where the answer now
+ * lives. The `HJ` style is still read after it, and only after it, so a
+ * project saved before tonight still opens on J-pull — and one saved since
+ * reads the same whatever shape its fronts are, which is the whole point of
+ * putting the J on its own axis.
  *
  * @param {object} design a MIGRATED design (engine/design.js migrateDesign)
  * @returns {'push'|'handles'|'knobs'|'jhandle'}
  */
 export function frontOpening(design) {
-  if (design?.fronts?.style === J_HANDLE_STYLE) return 'jhandle';
   const type = design?.fronts?.handle?.type;
+  if (type === 'jpull') return 'jhandle';
   if (type === 'bar') return 'handles';
   if (type === 'knob') return 'knobs';
+  if (design?.fronts?.style === J_HANDLE_STYLE) return 'jhandle';
   return 'push';
 }
 
@@ -88,7 +108,10 @@ export function frontOpeningPatch(design, id, { previousStyle = null } = {}) {
   const lock = lockPatchFor(design, id);
 
   if (id === 'jhandle') {
-    return { fronts: { ...fronts, style: J_HANDLE_STYLE, handle: null }, ...lock };
+    // T57: the HANDLE, not the shape. The style is left exactly as the person
+    // chose it — a shaker door with a J edge is a shaker door with a J edge —
+    // and the engine machines the leaf's own edge off `handle.type`.
+    return { fronts: { ...fronts, handle: { type: 'jpull' } }, ...lock };
   }
 
   // Leaving the J-handle means the door goes back to a shape somebody chose,

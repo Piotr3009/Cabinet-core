@@ -189,7 +189,13 @@ test('F7.1 · the graves: the old world is gone, file by file', () => {
     'KIT_SHOE_BOX.lsp — the kit');
   const kits = readdirSync(new URL('../reference/lisp/', import.meta.url))
     .filter((f) => f.toLowerCase().endsWith('.lsp'));
-  assert.equal(kits.length, 13, 'the paren walk ends at 13 — derived, never typed');
+  // T57 AMENDED (30.08.2026): 13 → 14. F7's claim is that the shoe kit is GONE
+  // and the count is derived rather than typed, and both still hold — the
+  // folder simply gained `KIT_FRONT_JPULL.lsp` tonight. The number is written
+  // out here so that a kit deleted by accident still fails this test; what is
+  // asserted is the grave above, not the size of the shelf.
+  assert.equal(kits.length, 14, 'the paren walk ends at 14 — derived, never typed');
+  assert.equal(kits.includes('KIT_SHOE_BOX.lsp'), false, 'and the grave is still a grave');
   const engine = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
   assert.doesNotMatch(engine, /shoeBoxPlan|shoeBoxBoxFor|SHOEBOX-/,
     'the emission block, the placer and the DXF names');

@@ -85,7 +85,10 @@ test('F1 — SettingsPanel.jsx STAYS in the tree, whole and exported', () => {
   assert.match(OLD, /<SheetSizeRow/);
   assert.match(OLD, /<HingeHardware/);
   // And the unified panel really does import them rather than duplicate them.
-  assert.match(WIZ, /import \{ HingeHardware, SheetSizeRow \} from '\.\/SettingsPanel\.jsx'/);
+  // T57 AMENDED (30.08.2026): the list grew a third name, `JpullHardware`.
+  // The claim is that the unified panel IMPORTS these rows rather than
+  // duplicating them, and it is stronger with three than with two.
+  assert.match(WIZ, /import \{ HingeHardware, JpullHardware, SheetSizeRow \} from '\.\/SettingsPanel\.jsx'/);
 });
 
 // ── 3. every `data-settings-section` of the old panel has a counterpart ──

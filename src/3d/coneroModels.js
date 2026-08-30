@@ -81,13 +81,18 @@ export function coneroClone(url, openingMm, totalHmm) {
   if (rod && !arms.includes(rod)) {
     const b0 = new THREE.Box3().setFromObject(rod);
     const nativeRail = b0.max.x - b0.min.x;
-    const cx = (b0.min.x + b0.max.x) / 2;
     // Keep the file's own rod-into-arm engagement: the rod grows by exactly
     // what the frame grows, so its ends sit in the sleeves at any width.
     const sx = Math.max(0.05, (nativeRail + (want - entry.size.x)) / nativeRail);
     rod.scale.x *= sx;
-    // stretch about its own centre, then park that centre mid-opening
-    rod.position.x += (cx - cx * sx) + (want / 2 - cx);
+    // Park it mid-opening the way the arms are parked below: MEASURE the box
+    // after the scale, then shift by the measured miss. The 30.08 bug was a
+    // predicted shift that assumed the pivot at x=0 — this file's rod scales
+    // about its own centre, so the "correction" alone pushed the rod 175 mm
+    // right on a 560 opening, out past the side.
+    clone.updateMatrixWorld(true);
+    const b1 = new THREE.Box3().setFromObject(rod);
+    rod.position.x += want / 2 - (b1.min.x + b1.max.x) / 2;
   }
   for (const arm of arms) {
     const b = new THREE.Box3().setFromObject(arm);

@@ -108,6 +108,8 @@ import { panelSolids } from './panelSolid.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
 import { drawerMotion } from '../engine/drawerMotion.js';
+// T58-F6: what a closing door covers — geometry, asked once.
+import { coveredByLeaf, pullOutsOf } from '../engine/covers.js';
 import {
   boxPolyhedron, clipAll, infillMitre, solidTriangles,
 } from '../engine/mitre.js';
@@ -2046,7 +2048,20 @@ export default function UnitView({
               // double-clicking it is turn 3's and is the first thing anybody
               // does to a cabinet — so a front does both: it swings, and its
               // hinge side is what the modal is about.
-              if (front && onToggleFront) onToggleFront(p.id);
+              // ─── T58 (CLAUDE.md F6): A CLOSING DOOR CLOSES WHAT IT
+              // COVERS. The view knows what is on screen, so the view gathers
+              // the candidates; `engine/covers.js` decides which of them this
+              // leaf stands in front of, by geometry and by nothing else. The
+              // store shuts them only when the leaf is SHUTTING — opening one
+              // opens nothing.
+              if (front && onToggleFront) {
+                onToggleFront(p.id, {
+                  fronts: coveredByLeaf(p, pullOutsOf(result.panels)),
+                  kits: coveredByLeaf(p, (hardware.kits || [])
+                    .filter((k) => k?.box)
+                    .map((k) => ({ id: k.id || k.role, box: k.box }))),
+                });
+              }
               // ─── TURN 54 (CLAUDE.md F4.1): …AND A WATCH DRAWER'S OWN PIECES
               // OPEN THE WATCH LAYOUT. The front (after its slide above) and
               // the box of a drawer that carries the insert route to

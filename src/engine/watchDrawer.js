@@ -137,18 +137,25 @@ export function watchLayoutOf(item) {
 }
 
 /**
- * ─── TURN 53 (CLAUDE.md F8f): THE FINISH ───────────────────────────────────
+ * ─── TURN 53 (CLAUDE.md F8f) → T55 (F5): THE FINISH — TWO CHOICES ──────────
  *
- * *"i wybierasz finish: spray (jak finish wszystkiego), czy oak, walnut."*
+ * T53 offered Spray / Oak / Walnut. The owner, 30.08.2026: *"usuń po prostu …
+ * zrobimy sprayed (color frontów) albo carcass"* and *"zostaw project jako
+ * carcass — teraźniejsze ustawienie."*  OAK and WALNUT are DELETED (licensed
+ * T55 deletion), physically. What survives:
  *
- * SPRAY follows the project's spray finish; OAK and WALNUT map onto the
- * project's wood decor set. The default is the project decor, which is T52's
- * standing rule for the frame and is what `null` means here.
+ *   PROJECT  (null — no record on the item) — the project's own decor,
+ *            exactly today's default, which reads as the carcass.
+ *   SPRAYED  ('spray') — the project's front spray colour.
+ *
+ * And T55 wires the value THROUGH: the insert parts carry it on their records
+ * at birth (`meta.watch_finish`, engine/cabinet.js), the one material
+ * resolution honours it (engine/materials.js `resolvePanelMaterial` — the
+ * same call the 3-D, the BOM and the sheet already read), so the picture and
+ * the bill finally say what the control chose.
  */
 export const WATCH_FINISHES = Object.freeze([
-  { id: 'spray', label: 'Spray', hint: 'The project’s own sprayed finish.' },
-  { id: 'oak', label: 'Oak', hint: 'The project’s oak decor.' },
-  { id: 'walnut', label: 'Walnut', hint: 'The project’s walnut decor.' },
+  { id: 'spray', label: 'Sprayed', hint: 'The project’s front spray colour.' },
 ]);
 
 /** The finish this insert wears, or null for the project's own decor. */
@@ -189,6 +196,23 @@ export function watchDrawerSpec(profile) {
 /** Is this drawer item carrying the insert? Decision 3 — a flag, not a type. */
 export function watchInsertOn(item) {
   return item?.watch_insert === true;
+}
+
+/**
+ * ─── T55 (CLAUDE.md F4): WHAT COUNTS AS A SHELF BOARD ──────────────────────
+ *
+ * The owner: *"z automatycznym dodaniem leda dookoła szyby … na półce która
+ * jest wymuszona nad szufladami."*  The pane over a watch drawer is cut in
+ * the board DIRECTLY ABOVE it — and the auto board a drawer bank forces is
+ * `part: 'PARTITION'` (role `shelf`), a fixed shelf in everything but name.
+ * Two askers used to ask `part === 'SHELF'` and both refused it.
+ *
+ * ONE law, ONE definition, TWO callers: the engine's `shelfAbove` filter
+ * (cabinet.js) and the store's `watchShelfAbove` (projectStore.js). A
+ * VERTICAL partition (`VPART`) is not a shelf and is not matched.
+ */
+export function isShelfBoard(p) {
+  return p?.part === 'SHELF' || (p?.part === 'PARTITION' && p?.role === 'shelf');
 }
 
 /**
@@ -587,17 +611,58 @@ export function watchInsertParts(interior, profile, { drawer = 1, layout = DEFAU
   const sectionsBackZ = z0 + s.frameT;
 
   const P = [];
-  const push = (id, part, box, cnc, meta = {}) => P.push({
-    id: `D${drawer}-${id}`,
-    part,
-    role: 'watch_insert',
-    w: cnc.__w,
-    h: cnc.__h,
-    thickness: cnc.__t,
-    box,
-    cnc: { outline: cnc.outline, pockets: cnc.pockets, holes: cnc.holes, layer: cnc.layer, ...(cnc.paths ? { paths: cnc.paths } : {}) },
-    meta: { drawer, ...meta },
-  });
+  // ─── T55 (CLAUDE.md F6): THE GRAIN, BORN HORIZONTAL ────────────────────────
+  // The owner, verbatim (a Petros iron rule): *"wszystkie przegródki muszą
+  // być w poziomie słoje nie w pionie"* and *"jak mamy oklejać to musi być
+  // wzdłuż słojów nigdy w poprzek — to jest święta zasada w sheet goods."*
+  //
+  // Every insert board is therefore DRAWN STANDING — its length up the sheet,
+  // the same convention every drawer-box board is cut in — and states
+  // `grain: 'h'` on the record at birth. The single-source rule stands: the
+  // cut decides the grain (`cnc/layout.js sheetLay` reads the statement), the
+  // 3-D renders what was cut, and the figure runs along the piece — which, as
+  // fitted, is horizontal on every rail, divider and the base. No per-role
+  // visual overrides. The 90° turn below is rigid (never a mirror), so a
+  // face-A housing stays a face-A housing.
+  const standUp = (g) => {
+    const L = g.__w;
+    const S2 = g.__h;
+    return {
+      ...g,
+      rotated: true,
+      drawn_w: S2,
+      drawn_h: L,
+      grain: 'h',
+      outline: rect(S2, L).outline,
+      pockets: (g.pockets || []).map((k) => ({
+        ...k, x1: S2 - k.y2, y1: k.x1, x2: S2 - k.y1, y2: k.x2,
+      })),
+    };
+  };
+  const push = (id, part, box, cnc, meta = {}) => {
+    const drawn = standUp(cnc);
+    return P.push({
+      id: `D${drawer}-${id}`,
+      part,
+      role: 'watch_insert',
+      w: cnc.__w,
+      h: cnc.__h,
+      thickness: cnc.__t,
+      box,
+      cnc: {
+        rotated: drawn.rotated,
+        drawn_w: drawn.drawn_w,
+        drawn_h: drawn.drawn_h,
+        grain: drawn.grain,
+        outline: drawn.outline,
+        pockets: drawn.pockets,
+        holes: drawn.holes,
+        layer: drawn.layer,
+        ...(drawn.paths ? { paths: drawn.paths } : {}),
+      },
+      meta: { drawer, ...meta },
+    });
+  };
   const board = (w, h, t) => {
     const g = rect(w, h);
     g.__w = w; g.__h = h; g.__t = t;

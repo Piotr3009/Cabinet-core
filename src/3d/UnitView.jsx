@@ -219,6 +219,12 @@ function useDecor(surface, panel, profile) {
  */
 function useMitre(panel) {
   const built = useMemo(() => {
+    // ─── T55 (CLAUDE.md F1): the raked strip carries its own four corners ──
+    // (`meta.corners`, the engine's single source of truth) and its mesh is
+    // built from them in panelSolids — the board does not pass through
+    // `infillMitre` at all. The old interception there is deleted, licensed
+    // this turn.
+    if (Array.isArray(panel?.meta?.corners)) return null;
     const spec = infillMitre(panel);
     if (!spec) return null;
     const solid = clipAll(boxPolyhedron(spec.box), spec.planes);

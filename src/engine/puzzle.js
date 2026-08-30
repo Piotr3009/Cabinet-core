@@ -981,6 +981,30 @@ export function carcassCutPts(cut, infill) {
 }
 
 /**
+ * ─── T55 (CLAUDE.md F7): THE ONE CUT-LINE CONSTRUCTION, SHARED ─────────────
+ *
+ * The reserve the face strip consumes off the ceiling — `slope_cut.infill`
+ * clamped to the profile's strip nominal ("pas 40 bez zmian", 30.08) — and
+ * the carcass CUT line built from it. Extracted from `computeCabinet` so the
+ * LED module samples the SAME roof law (`slopeHeightAt` over these points,
+ * the T54 two-reach law) the carcass is cut with, never a second sampler.
+ */
+export function slopeReserveOf(cut, profile) {
+  if (!cut) return 0;
+  const stripNom = Math.max(0, Number(profile?.autoParts?.topInfill?.defaultHeight) || 0);
+  return Math.max(0, Math.min(Number(cut.infill) || 0, stripNom || (Number(cut.infill) || 0)));
+}
+
+/** The carcass CUT line — ceilReach less the reserve — as computeCabinet builds it. */
+export function carcassCutLineOf(cut, W, H, profile) {
+  if (!cut) return null;
+  const pts = carcassCutPts({ w: W, h: H, pts: cut.pts }, slopeReserveOf(cut, profile));
+  return pts
+    ? { w: W, h: H, pts: pts.map((q) => ({ x: round4(q.x), y: round4(q.y) })) }
+    : null;
+}
+
+/**
  * A stretch of the line, re-origined — the line over `[from, to]` with x
  * measured from `from` and y lowered by `dy`.
  *

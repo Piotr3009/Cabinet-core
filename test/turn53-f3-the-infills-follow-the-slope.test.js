@@ -168,11 +168,14 @@ test('F3b — the top infill breaks at the knee and follows the rake past it', (
       assert.equal(p.meta.tilt_deg, undefined, 'and never leans');
     } else {
       assert.ok(p.meta.slopeCut.deg > 1, `${p.meta.slopeCut.deg}° — the rake’s own angle`);
-      assert.equal(p.meta.tilt_axis, 'z', 'the scene leans it');
-      assert.ok(Number.isFinite(p.meta.tilt_deg));
+      // T55 (CLAUDE.md F1): the raked band states its FOUR CORNERS in the
+      // room frame — the scene extrudes them; the lean meta is dead.
+      assert.ok(Array.isArray(p.meta.corners) && p.meta.corners.length === 4,
+        'the corners are stated');
+      assert.equal(p.meta.tilt_axis, undefined, 'and the shear/rotation split is dead');
     }
   }
-  assert.ok(sloped.some((p) => Number.isFinite(p.meta.tilt_deg)), 'the rake really grows a band');
+  assert.ok(sloped.some((p) => Array.isArray(p.meta.corners)), 'the rake really grows a band');
 });
 
 test('F3b — no segment of the run stands above the ceiling line', () => {

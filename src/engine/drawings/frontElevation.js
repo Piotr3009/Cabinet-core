@@ -340,6 +340,17 @@ export function elevationOutline(panel) {
   // exists to show — a roof board's box is a big rectangle over the whole
   // triangle. So each states its own elevation profile once, in the engine, in
   // its box's frame, and this traces it. One reader, no second geometry.
+  // ─── T55 (CLAUDE.md F1): THE FOUR CORNERS, TRACED VERBATIM ────────────────
+  // The raked top-infill strip states its corners in the ROOM frame — the
+  // engine's single source of truth — so the drawing traces them with no
+  // frame shift, no rotation and no re-derivation.
+  const corners = panel?.meta?.corners;
+  if (Array.isArray(corners) && corners.length >= 3) {
+    return corners.map((a, i) => {
+      const b = corners[(i + 1) % corners.length];
+      return [a[0], a[1], b[0], b[1]];
+    });
+  }
   const said = panel?.meta?.elevation;
   if (Array.isArray(said) && said.length >= 3 && panel.box) {
     return said.map((a, i) => {

@@ -170,14 +170,25 @@ test('the ARM is cut on the same line too — nothing runs into the plaster', ()
 
 // ═══ THE SHAPE ══════════════════════════════════════════════════════════════
 
-test('THE TOP INFILL STAYS A PLAIN RECTANGLE — it is not a trapezium', () => {
+test('THE TOP INFILL IS THE PARALLELOGRAM ITS CORNERS SAY — plumb ends, on the sheet too', () => {
+  // T55 AMENDED (30.08.2026, CLAUDE.md F1): the four corners are the single
+  // source of truth, and the DXF outline is the SAME parallelogram turned
+  // into the cut frame — plumb ends leaning by β inside the blank, no longer
+  // a square blank with a site cut.
   const cut = build(FALL);
   const face = byId(cut, 'INFILL-T-FACE');
-  assert.equal(face.cnc.outline.length, 4, 'four corners: a rectangle');
-  assert.deepEqual(face.cnc.outline, [[0, 0], [face.w, 0], [face.w, face.h], [0, face.h]]);
+  assert.equal(face.cnc.outline.length, 4, 'four corners: a parallelogram');
+  const lean = roundish(face.h * Math.tan(Math.PI / 4)); // 45° fall → the ends lean by h
+  assert.deepEqual(face.cnc.outline, [
+    [lean, 0], [roundish(lean + face.w), 0], [face.w, face.h], [0, face.h],
+  ]);
+  assert.equal(face.cnc.drawn_w, roundish(face.w + lean), 'the blank holds the lean');
+  assert.equal(face.cnc.drawn_h, face.h);
 });
 
-test('…MOUNTED along the slope: its length is the hypotenuse, and it tilts', () => {
+const roundish = (v) => Math.round(v * 10000) / 10000;
+
+test('…MOUNTED along the slope: its length is the hypotenuse, and its corners say where', () => {
   const cut = build(FALL);
   const face = byId(cut, 'INFILL-T-FACE');
   assert.equal(face.meta.slopeCut.deg, 45);
@@ -187,23 +198,20 @@ test('…MOUNTED along the slope: its length is the hypotenuse, and it tilts', (
   // end; `slopeCut.along` is still the board that covers the ground.
   const OVER = P.autoParts.fillerOversize;
   assert.ok(Math.abs(face.w - (600 / Math.cos(Math.PI / 4) + OVER)) < 1e-3);
-  // Chat-fix 25.08.2026: the deg is SIGNED now — CCW about Z, so THIS fall
-  // (left-high, right-low) leans clockwise — and the scene finally can tilt
-  // it: the axis is named and the pivot hangs on the ceiling at the low end.
-  assert.equal(face.meta.tilt_deg, -45, 'the 3-D tilts it rather than redrawing it');
-  assert.equal(face.meta.tilt_axis, 'z');
-  assert.deepEqual(face.meta.tilt_pivot, { x: 600, y: 1400 });
-  // T54-F1 AMENDED (28.08.2026): of the trio, this piece ALONE keeps the
-  // ceiling pivot — the roof TOP moved to cutReach and the shelf under the
-  // roof — and on a raked segment its BOX height is the RESERVE itself, so
-  // after the spin its top edge lies on ceilReach and its bottom on
-  // cutReach: box h = infill (40), cut piece = infill + 20, and the meta now
-  // states the cut height and the rotated corners.
-  assert.equal(face.box.h, 40, "box height = the reserve (the owner's 40)");
+  // T55 AMENDED (30.08.2026, CLAUDE.md F1): the tilt/pivot meta died with the
+  // shear/rotation split (licensed deletion). The engine states the FOUR
+  // CORNERS in the room frame — top edge on the ceiling, bottom edge one
+  // vertical reserve (40 / cos β) below it, ends plumb.
+  assert.equal(face.meta.tilt_deg, undefined, 'no lean meta — the corners are the law');
+  assert.equal(face.meta.tilt_axis, undefined);
+  const resV = 40 / Math.cos(Math.PI / 4);
+  assert.deepEqual(face.meta.corners, [
+    [0, roundish(2000 - resV)], [600, roundish(1400 - resV)], [600, 1400], [0, 2000],
+  ]);
   assert.equal(face.h, 60, 'cut piece = infill + 20 scribe oversize');
   assert.equal(face.meta.slopeCut.cutHeight, 40, 'the sheet states the CUT height');
-  assert.equal(face.box.y + face.box.h, 1400, 'pre-spin, the top edge hangs on the pivot line');
-  assert.equal(face.meta.elevation.length, 4, 'raked meta carries the rotated corners');
+  assert.equal(face.box.y, roundish(1400 - resV), 'the box is the corners\' own bounds');
+  assert.equal(face.box.y + face.box.h, 2000, '…up to the ceiling\'s high end');
   // T55 AMENDED (29.08.2026, the owner's simplification): the SHELF left the
   // rake — *"usuń to wszystko z infillami pod skosem ... prosty infill BEZ
   // ZAWIJANIA"* — so the T54 shelf-under-the-roof paragraph above is history

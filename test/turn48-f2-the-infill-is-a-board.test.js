@@ -216,8 +216,12 @@ test('…its face in the plane of the fronts, over the full run', () => {
   assert.equal(face.box.y, 2100, 'standing on the carcass');
 });
 
-test('…and under a slope it LEANS, with the 25.08 tilt mechanism', () => {
+test('…and under a slope it STATES ITS FOUR CORNERS — the T55 F1 law', () => {
   // T47-F4's own fixture: a 45° fall across a 600 wardrobe, 2000 → 1400.
+  // T55 AMENDED (30.08.2026, CLAUDE.md F1): the 25.08 tilt mechanism is dead
+  // for this board (licensed deletion, with the shear split) — the engine
+  // states the four corners in the room frame and everything downstream
+  // consumes them verbatim.
   const r = computeCabinet({
     ...defaultParamsFor('WARDROBE', P),
     unit_num: '01',
@@ -225,10 +229,12 @@ test('…and under a slope it LEANS, with the 25.08 tilt mechanism', () => {
     slope_cut: { pts: [{ x: 0, y: 2000 }, { x: 600, y: 1400 }], infill: T.defaultHeight },
   }, P);
   const face = byId(r, 'INFILL-T-FACE');
-  assert.equal(face.meta.tilt_deg, -45, 'a fall to the right leans clockwise — the SIGNED deg');
-  assert.equal(face.meta.tilt_axis, 'z');
-  assert.deepEqual(face.meta.tilt_pivot, { x: 600, y: 1400 }, 'the ceiling at the LOW end');
-  assert.equal(face.cnc.outline.length, 4, 'one plain board, one lean — which is the point of the ruling');
+  assert.equal(face.meta.tilt_deg, undefined, 'no lean meta — the corners are the law');
+  assert.ok(Array.isArray(face.meta.corners) && face.meta.corners.length === 4,
+    'the four corners, stated');
+  assert.equal(face.meta.corners[3][1], 2000, 'top edge on the ceiling at the high end');
+  assert.equal(face.meta.corners[2][1], 1400, '…and at the low end');
+  assert.equal(face.cnc.outline.length, 4, 'one board, one parallelogram — the point of the ruling');
   assert.equal(byId(r, 'INFILL-T-SHELF'), undefined, 'one board, full stop');
 });
 

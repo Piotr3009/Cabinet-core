@@ -1970,6 +1970,60 @@
       (reverse out))))
 
 ;;;----------------------------------------
+;;; T55 - THE FOUR CORNERS, EXPLICIT  (30.08.2026, F1)
+;;;----------------------------------------
+;;; The parked fix of 30.08, now due. The owner: "prosty kawalek, zawijanie
+;;; likwidujemy."  Under a rake the top infill is ONE straight board - FACE
+;;; only - a parallelogram with plumb ends. The engine states its FOUR CORNER
+;;; COORDINATES explicitly, in the room frame, and those four corners are the
+;;; SINGLE SOURCE OF TRUTH for the 3-D mesh, the 2-D drawing and the DXF
+;;; outline. Nothing downstream re-derives the shape: no scene shear, no
+;;; scene rotation, no second sampler. The corner maths is the slope sampling
+;;; law the carcass already obeys (SKY:ceilReachAt / SKY:cutReachDrop - the
+;;; TOP PANEL / CORNICE precedent), taken as-is.
+;;;
+;;;   yA   = ceilReach(xA)          yB = ceilReach(xB)
+;;;   resV = infill / cos(beta)     the vertical band (40 stays the CUT size)
+;;;
+;;;   corners, counter-clockwise from the xA-end bottom:
+;;;     (xA  yA - resV)  (xB  yB - resV)  (xB  yB)  (xA  yA)
+;;;
+;;; Ends plumb BY CONSTRUCTION - each end's two corners share their x. The
+;;; sheet outline is the SAME parallelogram turned into the cut frame: the
+;;; long edges run along the board, the plumb ends lean by beta inside the
+;;; blank. The T54 shear/rotation rendering of this board is DELETED with
+;;; this law, not gated.
+(defun SKY:infillCorners (pts infill xA xB / yA yB resV)
+  (setq yA (SKY:ceilReachAt pts xA))
+  (setq yB (SKY:ceilReachAt pts xB))
+  (setq resV (SKY:cutReachDrop infill (SKY:segDegAt pts (/ (+ xA xB) 2.0))))
+  (list (list xA (- yA resV))
+        (list xB (- yB resV))
+        (list xB yB)
+        (list xA yA)))
+
+;;;----------------------------------------
+;;; T55 - THE LED LEARNS THE RAKE: LEVEL RUNS ONLY  (30.08.2026, F7)
+;;;----------------------------------------
+;;; The owner: "skos bez LED ... pionowych i poziomych latwiej."
+;;;
+;;; THE LAW: no strip along the diagonal, ever.
+;;;   - A HORIZONTAL strip exists only on a LEVEL stretch of the roof
+;;;     polyline, trimmed to that stretch's own span at that stretch's own
+;;;     height.
+;;;   - A VERTICAL side strip under the rake ends at the roof height at its
+;;;     own x, minus the same board insets it has always kept.
+;;;   - The roof is sampled with the CARCASS'S OWN law - SKY:cutReachAt over
+;;;     the cut line, capped at the cabinet height (the roofLinePts walk) -
+;;;     never a second sampler. (Stated HERE and not in KIT_LED_GROOVE:
+;;;     T47's census law keeps every SKY:cut* reference in this one file.)
+;;;   - The bill's metres follow the trimmed strips.
+;;; A flat room has no line and every strip is byte for byte what it was.
+(defun SKY:ledRoofTopAt (pts infill x wys)
+  (min wys (SKY:cutReachAt pts infill x))
+)
+
+;;;----------------------------------------
 ;;; T54 - THE PEAK: NO THIRD PIECE  (28.08.2026, F2)
 ;;;----------------------------------------
 ;;; The owner, screenshot in hand: "lewy czyli dolny skos dziala super, gorny

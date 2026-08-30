@@ -46,7 +46,8 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 // shape and this file follows it.
 import {
   sidePanelGeometry, topPanelGeometry, backPanelGeometry, socketPanelGeometry, rectGeometry,
-  carcassCutPts, roofBoards, roofLinePts, slopeCutActive, slopeCutPts, slopeHeightAt, slopeReachAt,
+  carcassCutLineOf, carcassCutPts, roofBoards, roofLinePts, slopeCutActive, slopeCutPts,
+  slopeHeightAt, slopeReachAt, slopeReserveOf,
   slopeSegments, subSlopeCut, trimGeometryOnSlope, trimOutlineOnSlope,
   chamferedRectGeometry, tabCentres, resolvedJointInset,
 } from './puzzle.js';
@@ -95,7 +96,7 @@ import { insertFor } from './drawerInserts.js';
 // to the SHELF above (`shelfGlassPlan`), the rear field is one of four designed
 // layouts (`watchLayoutOf`), and the insert wears a finish of its own.
 import {
-  WATCH_LAYERS, drawerBoxInterior, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
+  WATCH_LAYERS, drawerBoxInterior, isShelfBoard, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
   watchFinishOf, watchInsertOn, watchInsertParts, watchLayoutOf,
 } from './watchDrawer.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
@@ -1407,19 +1408,12 @@ export function computeCabinet(params, profileOverride) {
   const ceilLine = cut ? { w: W, h: H, pts: cut.pts } : null;
   // The rake band and the carcass cut under it NEVER grow past the profile's
   // strip nominal — "pas 40 bez zmian" (30.08); an extended infill grows the
-  // LEVEL board only.
+  // LEVEL board only. T55 (F7): the reserve and the cut line are ONE
+  // construction now (engine/puzzle.js `slopeReserveOf`/`carcassCutLineOf`),
+  // shared with the LED module so no second sampler can drift from this one.
   const stripNom = Math.max(0, Number(P.autoParts?.topInfill?.defaultHeight) || 0);
-  const slopeReserve = cut
-    ? Math.max(0, Math.min(Number(cut.infill) || 0, stripNom || (Number(cut.infill) || 0)))
-    : 0;
-  const cutLine = ceilLine
-    ? {
-      w: W,
-      h: H,
-      pts: carcassCutPts(ceilLine, slopeReserve)
-        .map((q) => ({ x: roundTo(q.x, 4), y: roundTo(q.y, 4) })),
-    }
-    : null;
+  const slopeReserve = slopeReserveOf(cut, P);
+  const cutLine = carcassCutLineOf(cut, W, H, P);
   const cutAt = (x) => (cutLine ? slopeHeightAt(cutLine, x) : H);
   const cutActive = Boolean(cutLine) && slopeCutActive(cutLine);
   // ─── TURN 47 (F2/F3): THE ROOF LINE ───────────────────────────────────────
@@ -4877,48 +4871,80 @@ export function computeCabinet(params, profileOverride) {
         : slopeReserve;
       return stripNom ? Math.min(raw, stripNom) : raw;
     })();
-    // ─── T55 · THE RAKED STRIP, WRITTEN FRESH (29.08.2026, the owner's order:
-    // "usuń stary kod i zrób od nowa") ─────────────────────────────────────
-    // Under a rake the top infill is ONE BOARD and nothing else. This module
-    // owns the whole of it: the parallelogram (plumb ends — 29.08 law), the
-    // knee joins on the half-angle (the only mitre a rake knows), the signed
-    // lean and its pivot on the ceiling's low end, the sheet/scene parity
-    // corners, the site allowance on a run-end. No shelf, no returns, no
-    // picture-frame 45, no corner — those are LEVEL things and live only in
-    // the level path below. The numbers are T54-F1's, unchanged, so the trio
-    // laws (top on ceiling, bottom on cutReach, 0.0006 mm) hold as measured.
+    // ─── T55 · THE FOUR CORNERS, EXPLICIT (30.08.2026, CLAUDE.md F1) ────────
+    // The parked fix of 30.08, now due. The owner: *"prosty kawałek,
+    // zawijanie likwidujemy."* Under a rake the top infill is ONE straight
+    // board — FACE only — a parallelogram with plumb ends, and the engine
+    // states its FOUR CORNER COORDINATES explicitly, in the room frame
+    // (`meta.corners`, CCW from the from-end bottom). Those four corners are
+    // the SINGLE SOURCE OF TRUTH: the 3-D mesh extrudes them verbatim
+    // (3d/panelSolid.js), the 2-D drawing traces them verbatim
+    // (drawings/frontElevation.js), and the DXF outline is the SAME
+    // parallelogram turned into the cut frame HERE — nothing downstream
+    // re-derives the shape. The corner maths is the carcass's own slope
+    // sampling law, `infReachAt` (`ceilReachAt`/`slopeHeightAt`, the TOP
+    // PANEL / CORNICE precedent) — never a second sampler. Stated in LISP
+    // first: SKYLON_COMMON.lsp `SKY:infillCorners`. The T54 shear/rotation
+    // rendering split for this board (`tilt_*` meta + the scene shear) is
+    // DELETED with this law — a licensed T55 deletion, not a gate.
     const emitRakedStrip = (sg, i) => {
       const segLen = roundTo(sg.run, 4);
       const cos = Math.cos((sg.deg * Math.PI) / 180) > 1e-9
         ? Math.cos((sg.deg * Math.PI) / 180) : 1;
       const bandH = segReserve > 0 ? segReserve : faceH;
-      const lowR = infReachAt(sg.to) < infReachAt(sg.from);
-      const xL = lowR ? roundTo(sg.to, 4) : roundTo(sg.from, 4);
-      const yL = roundTo(lowR ? infReachAt(sg.to) : infReachAt(sg.from), 4);
+      const resV = bandH / cos;
+      const yFrom = infReachAt(sg.from);
+      const yTo = infReachAt(sg.to);
+      const corners = [
+        [roundTo(sg.from, 4), roundTo(yFrom - resV, 4)],
+        [roundTo(sg.to, 4), roundTo(yTo - resV, 4)],
+        [roundTo(sg.to, 4), roundTo(yTo, 4)],
+        [roundTo(sg.from, 4), roundTo(yFrom, 4)],
+      ];
+      const yLo = Math.min(corners[0][1], corners[1][1]);
+      const yHi = Math.max(corners[2][1], corners[3][1]);
+      const box = {
+        x: roundTo(sg.from, 4),
+        y: roundTo(yLo, 4),
+        z: faceZ - t,
+        w: roundTo(sg.to - sg.from, 4),
+        h: roundTo(yHi - yLo, 4),
+        d: t,
+      };
       const overEnd = allowanceEnd(i === 0, i === segsFinal.length - 1);
       const overLen = overEnd ? overT : 0;
       const cutLen = roundTo(segLen + overLen, 4);
-      const box = {
-        x: roundTo(lowR ? xL - segLen : xL, 4),
-        y: roundTo(yL - bandH, 4),
-        z: faceZ - t,
-        w: segLen,
-        h: bandH,
-        d: t,
-      };
-      const th = ((lowR ? -sg.deg : sg.deg) * Math.PI) / 180;
-      const dx = roundTo(-box.h * Math.tan(th), 4);
+      const cutH = roundTo(bandH + overT, 4);
+      // The sheet: the corners turned into the cut frame (x along the board).
+      // The plumb ends lean by the rake inside the blank — the shape the
+      // machine cuts is the shape the room shows, corner for corner.
+      const lean = Math.atan((yTo - yFrom) / ((sg.to - sg.from) || 1));
+      const shift = roundTo(cutH * Math.tan(lean), 4);
+      const xOff = Math.max(0, -shift);
+      const outline = [
+        [roundTo(xOff, 4), 0],
+        [roundTo(xOff + cutLen, 4), 0],
+        [roundTo(xOff + cutLen + shift, 4), cutH],
+        [roundTo(xOff + shift, 4), cutH],
+      ];
       panels.push(panel({
         id: segId('INFILL-T-FACE', i),
         part: 'INFILL',
         role: 'infill',
         w: cutLen,
-        h: bandH + overT,
+        h: cutH,
         thickness: t,
         edgeCode: codes.topBottom,
         edgeLen: metres(segLen),
         box,
-        cnc: rectGeometry(cutLen, bandH + overT),
+        cnc: {
+          drawn_w: roundTo(cutLen + Math.abs(shift), 4),
+          drawn_h: cutH,
+          outline,
+          pockets: [],
+          holes: [],
+          layer: 'OUTLINE',
+        },
         meta: {
           side: 'top',
           piece: 'face',
@@ -4944,15 +4970,7 @@ export function computeCabinet(params, profileOverride) {
             of: segsFinal.length,
             cutHeight: roundTo(bandH, 4),
           },
-          tilt_deg: roundTo(lowR ? -sg.deg : sg.deg, 4),
-          tilt_axis: 'z',
-          tilt_pivot: { x: xL, y: yL },
-          // Parity, three surfaces: a PARALLELOGRAM — the underside shifted
-          // h·tan(tilt) toward the low end, ends plumb after the lean.
-          elevation: [
-            [dx, 0], [roundTo(box.w + dx, 4), 0],
-            [roundTo(box.w, 4), roundTo(box.h, 4)], [0, roundTo(box.h, 4)],
-          ],
+          corners,
         },
       }));
     };
@@ -7286,6 +7304,13 @@ export function computeCabinet(params, profileOverride) {
         ? (cfg.drawerItems?.[index - 1] || null)
         : (columnDrawerSets.find((c) => c.zone === zone)?.items?.[index - 1] || null);
       const wLayout = watchLayoutOf(wItem).id;
+      // T55 (CLAUDE.md F5): the finish rides EVERY insert part's own record
+      // from birth — it used to die in `born.finish` below and reach neither
+      // the 3-D nor the BOM. `resolvePanelMaterial` (engine/materials.js) is
+      // the one reader, so the picture, the bill and the sheet hear the same
+      // answer. `null` — Project — leaves the record clean and the part on
+      // the carcass resolution it has always taken.
+      const wFinish = watchFinishOf(wItem);
       const made = watchInsertParts(interior, P, { drawer: index, layout: wLayout });
       if (!made) continue;
       for (const q of made.parts) {
@@ -7300,7 +7325,11 @@ export function computeCabinet(params, profileOverride) {
           edgeLen: 0,
           box: q.box,
           cnc: q.cnc,
-          meta: zone == null ? q.meta : { ...q.meta, zone },
+          meta: {
+            ...q.meta,
+            ...(zone == null ? {} : { zone }),
+            ...(wFinish ? { watch_finish: wFinish } : {}),
+          },
         }));
       }
       // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP, UPSTAIRS ──
@@ -7315,8 +7344,10 @@ export function computeCabinet(params, profileOverride) {
       // a drawer too shallow for the tray, three lines up.
       const wantsGlass = wItem?.watch_shelf_glass === true;
       const drawerTop = interior.at.y + interior.height;
+      // T55 (CLAUDE.md F4): `isShelfBoard` — the forced PARTITION over a
+      // drawer bank IS a shelf here. One law, one definition, two callers.
       const shelfAbove = panels
-        .filter((q) => q.part === 'SHELF' && q.box && q.box.y >= drawerTop - 1e-6
+        .filter((q) => isShelfBoard(q) && q.box && q.box.y >= drawerTop - 1e-6
           && (q.meta?.zone ?? null) === zone)
         .sort((a, b) => a.box.y - b.box.y)[0] || null;
       let shelfGlass = null;
@@ -7398,7 +7429,7 @@ export function computeCabinet(params, profileOverride) {
         zone,
         drawer: index,
         layout: wLayout,
-        finish: watchFinishOf(wItem),
+        finish: wFinish,
         pockets: made.layout.pockets.count,
         pocket_w_mm: roundTo(made.layout.pockets.width, 1),
         pocket_d_mm: roundTo(made.layout.pockets.depth, 1),
@@ -8501,6 +8532,11 @@ export function computeCabinet(params, profileOverride) {
       ...(type.doorExtend ? { door_extend: cfg.doorExtend } : {}),
       ...(fridge ? { fridge_h: cfg.fridgeH } : {}),
       ...(type.mount === 'wall' ? { mount_height: cfg.mountHeight } : {}),
+      // T55 (CLAUDE.md F7): the LINE this carcass was cut with, echoed so the
+      // LED module samples the SAME roof law (never a second sampler). Absent
+      // on every flat unit — every golden — and on a line that never reaches
+      // the carcass, so an uncut cabinet is byte-for-byte an uncut cabinet.
+      ...(cut && cutActive ? { slope_cut: cut } : {}),
     },
     derived,
     panels,

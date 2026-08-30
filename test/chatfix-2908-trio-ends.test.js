@@ -54,20 +54,19 @@ const RAKES = [
 
 for (const [name, slope] of RAKES) {
   test(`the strip's SOLID stands plumb at x = 0 and x = W — ${name}`, () => {
+    // T55 AMENDED (30.08.2026, CLAUDE.md F1): the mesh is built from the
+    // engine's own FOUR CORNERS, verbatim — no shear, no scene rotation — so
+    // the plumb-ends claim reads the solid's vertices with NO spin at all.
     const r = computeCabinet({ ...PARAMS, slope_cut: slope }, P);
     const face = r.panels.find((p) => p.id === 'INFILL-T-FACE');
     assert.ok(face, 'the strip exists under the rake');
     const built = panelSolids(face, P.puzzle.layers, P);
-    assert.ok(built?.solid, 'the leant strip now has its own sheared solid');
+    assert.ok(built?.solid, 'the strip has its own corners solid');
     const pos = built.solid.attributes.position;
     const cx = face.box.x + face.box.w / 2;
-    const cy = face.box.y + face.box.h / 2;
     const xs = new Set();
     for (let i = 0; i < pos.count; i += 1) {
-      const wx = pos.getX(i) / mm(1) + cx;
-      const wy = pos.getY(i) / mm(1) + cy;
-      const [rx] = spin([wx, wy], face.meta.tilt_pivot, face.meta.tilt_deg);
-      xs.add(Math.round(rx * 100) / 100);
+      xs.add(Math.round((pos.getX(i) / mm(1) + cx) * 100) / 100);
     }
     const lines = [...xs].sort((a, b) => a - b);
     assert.equal(lines.length, 2,
@@ -76,7 +75,7 @@ for (const [name, slope] of RAKES) {
     assert.ok(Math.abs(lines[1] - W) < 0.05, `one end at x = ${W} (saw ${lines[1]})`);
   });
 
-  test(`the sheet's own outline says the same parallelogram — ${name}`, () => {
+  test(`the engine's stated corners say the same parallelogram — ${name}`, () => {
     const r = computeCabinet({ ...PARAMS, slope_cut: slope }, P);
     // T55 law (29.08, the owner): under a rake the infill is ONE board — the
     // shelf is asserted ABSENT, and the parallelogram claim runs on the FACE.
@@ -84,10 +83,11 @@ for (const [name, slope] of RAKES) {
       'no shelf under a rake');
     for (const id of ['INFILL-T-FACE']) {
       const p = r.panels.find((q) => q.id === id);
-      assert.ok(p?.meta?.elevation, `${id} carries its elevation`);
-      const world = p.meta.elevation.map(([lx, ly]) => spin(
-        [lx + p.box.x, ly + p.box.y], p.meta.tilt_pivot, p.meta.tilt_deg,
-      ));
+      // T55 (F1): the corners are stated in the ROOM frame outright — read
+      // verbatim, no box offset, no spin.
+      const world = p?.meta?.corners;
+      assert.ok(Array.isArray(world) && world.length === 4,
+        `${id} states its four corners`);
       // Ends vertical: corner 0 under corner 3, corner 1 under corner 2.
       assert.ok(Math.abs(world[0][0] - world[3][0]) <= 0.01,
         `${id} left end plumb (Δ=${(world[0][0] - world[3][0]).toFixed(3)})`);
@@ -109,14 +109,10 @@ for (const [name, slope] of RAKES) {
     const b = slope.pts[1];
     const ceil = (x) => a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x);
     const cut = (x) => ceil(x) - 40 / cos;
-    const edge = (p, top) => {
-      const pts = top
-        ? [p.meta.elevation[3], p.meta.elevation[2]]
-        : [p.meta.elevation[0], p.meta.elevation[1]];
-      return pts.map(([lx, ly]) => spin(
-        [lx + p.box.x, ly + p.box.y], p.meta.tilt_pivot, p.meta.tilt_deg,
-      ));
-    };
+    // T55 (F1): the strip's edges are read off its stated corners, verbatim.
+    const edge = (p, top) => (top
+      ? [p.meta.corners[3], p.meta.corners[2]]
+      : [p.meta.corners[0], p.meta.corners[1]]);
     const at = ([[x1, y1], [x2, y2]], X) => y1 + ((y2 - y1) * (X - x1)) / (x2 - x1);
     const face = r.panels.find((q) => q.id === 'INFILL-T-FACE');
     const roof = r.panels.find((q) => q.id === 'TOP');
@@ -280,21 +276,26 @@ test('T55 · a raked edge zeroes the end mitre; a flat edge keeps its 45', () =>
   assert.equal(raked.mitre.right, 0, 'both ends of a fully raked strip');
 });
 
-// ─── T55 · MILION PROCENT (29.08): the raked strip never enters the mitre ───
-// path — an OPEN end under a rake cuts NOTHING here, so the scene's gate
-// (`!mitre`) finally lets the piece into panelSolids' leant body. A FLAT
+// ─── T55 · MILION PROCENT (29.08 → 30.08, F1): the raked strip never enters ─
+// the mitre path AT ALL — it carries its FOUR CORNERS (`meta.corners`) and
+// the scene builds its mesh from them in panelSolids; the old slope-cut
+// interception inside `infillMitre` is DELETED, licensed this turn. A FLAT
 // open end keeps its plan 45 exactly as T48 wrote it.
 import { infillMitre } from '../src/engine/mitre.js';
 
-test('T55 · raked FACE with an OPEN end: infillMitre answers null', () => {
-  const base = {
+test('T55 · the raked FACE carries its corners and panelSolids serves it whole', () => {
+  const r = computeCabinet({ ...PARAMS, slope_cut: RAKES[0][1] }, P);
+  const face = r.panels.find((p) => p.id === 'INFILL-T-FACE');
+  assert.ok(Array.isArray(face.meta.corners) && face.meta.corners.length === 4,
+    'the corners are the record the scene routes on');
+  assert.equal(face.meta.tilt_axis, undefined,
+    'no lean meta — the shear/rotation split is dead (licensed T55 deletion)');
+  const built = panelSolids(face, P.puzzle.layers, P);
+  assert.ok(built?.solid, 'panelSolids owns the whole body');
+  const flat = infillMitre({
     box: { x: 0, y: 2110, z: 550, w: 780, h: 40, d: 18 },
     meta: { side: 'top', piece: 'face', segment: 'main', ends: { left: 'infill', right: 'open' } },
-  };
-  const raked = { ...base, meta: { ...base.meta, slopeCut: { deg: 39.7 }, tilt_axis: 'z' } };
-  assert.equal(infillMitre(raked), null,
-    'a raked strip owns no plan mitre — the leant path owns the whole body');
-  const flat = infillMitre(base);
+  });
   assert.ok(flat && flat.planes.length === 1,
     'a FLAT open end still turns its picture-frame 45 (T48 law untouched)');
 });

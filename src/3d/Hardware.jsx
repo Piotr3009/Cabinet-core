@@ -17,8 +17,9 @@ import {
   rigHidesBody,
 } from './hingeModels.js';
 import { shelfSupportMetal } from './hardwareFinish.js';
-import { coneroClone, coneroSrc } from './coneroModels.js';
+import { coneroClone, coneroPose, coneroSrc } from './coneroModels.js';
 import { glbFailed, glbSource, onGlbLoad } from './glbSource.js';
+import { useUiStore } from '../stores/uiStore.js';
 
 // Turn 31 (CLAUDE.md F7): the catchment around every handle and hinge.
 import HoverAura from './HoverAura.jsx';
@@ -1207,11 +1208,14 @@ function KitWalls({ k, colour }) {
 }
 
 /**
- * ─── 30.08: THE CONERO PULL-DOWN, CLOSED ───────────────────────────────────
+ * ─── 30.08: THE CONERO PULL-DOWN ────────────────────────────────────────────
  * Bases at the middle of the depth, 27 mm off each side; the rod parks at the
  * TOP of the instance box (`k.y + k.h` is the owner's "wys. drążka od góry"
  * measured down from the carcass top by the engine). File pose IS the closed
- * pose, so nothing is animated — the group only places and stretches it.
+ * pose — and a CLICK on the mechanism swings it down 90° and back, on the two
+ * axes the owner marked in green, with MovingPanel's own easing so a rail
+ * lowers at the same tempo a door opens. The switch is `openKits`, NOT
+ * `openFronts`: open-all-doors keeps meaning doors.
  */
 function ConeroPulldown({ k, colour, profile, storageBase }) {
   const bodyH = Number(profile?.wardrobeAccessories?.kits?.pulldown_rail?.bodyHeight) || 0;
@@ -1222,6 +1226,20 @@ function ConeroPulldown({ k, colour, profile, storageBase }) {
     () => (url && !glbFailed(url) && glbSource(url)?.loaded ? coneroClone(url, k.w, bodyH) : null),
     [url, k.w, bodyH, glbFailed(url), glbSource(url)?.loaded],
   );
+  // The lift's own switch — keyed the way the element itself is keyed below.
+  const kitKey = k.id || k.role;
+  const target = useUiStore((s) => (s.openKits?.[kitKey] ?? 0));
+  const toggleKit = useUiStore((s) => s.toggleKit);
+  const amount = useRef(0);
+  useFrame((_, delta) => {
+    if (!model) return;
+    // Frame-rate independent easing: fast at the start, settled in ~0.35 s —
+    // MovingPanel's own line, so the rail moves at the tempo of every door.
+    if (Math.abs(amount.current - target) < 0.001) { amount.current = target; } else {
+      amount.current += (target - amount.current) * Math.min(1, delta * 8);
+    }
+    coneroPose(model, amount.current);
+  });
   const fit = useMemo(() => {
     if (!model) return null;
     const u = model.userData.ccUnitToMm || 1;
@@ -1242,6 +1260,11 @@ function ConeroPulldown({ k, colour, profile, storageBase }) {
           // rod (file top) at the instance top; bases land mid-depth by centring
           position={[0, mm(k.h - fit.hMm), mm(k.d / 2 - fit.dMm / 2)]}
           scale={[mm(fit.u), mm(fit.u), mm(fit.u)]}
+          // The click IS the entry point, the way a door's leaf is: tap the
+          // mechanism, it lowers; tap again, it parks.
+          onClick={(e) => { e.stopPropagation(); toggleKit(kitKey); }}
+          onPointerOver={(e) => { e.stopPropagation(); document.body.style.cursor = 'pointer'; }}
+          onPointerOut={() => { document.body.style.cursor = ''; }}
         >
           <primitive object={model} />
         </group>

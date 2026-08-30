@@ -858,6 +858,20 @@ export const useUiStore = create((set, get) => ({
     return { openFronts: rest };
   }),
 
+  // ─── 30.08: THE CONERO PULL-DOWN, LOWERED OR PARKED ───────────────────────
+  // The owner's two green points made the rail a mechanism, and a mechanism
+  // the scene can swing needs the same kind of switch a door has. It is NOT
+  // in `openFronts` on purpose: that map is doors, and turn 25's open-all
+  // button must keep meaning doors — a press that also dropped every
+  // pull-down rail in the project would be a surprise. Purely visual, like
+  // every front animation above: nothing here reaches the engine.
+  openKits: {},                      // { [kitId]: 0 | 1 }
+  toggleKit: (kitId) => set((s) => {
+    if (!kitId) return {};
+    const next = (s.openKits[kitId] ?? 0) > 0.5 ? 0 : 1;
+    return { openKits: { ...s.openKits, [kitId]: next } };
+  }),
+
   // ─── OPEN / CLOSE ALL DOORS (turn 25, CLAUDE.md F15) ────────────────────
   //
   // "First press opens every door in the project, second closes them."

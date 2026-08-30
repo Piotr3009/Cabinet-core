@@ -1,0 +1,42 @@
+[
+ {
+  "label": "the wardrobe stands and carries a pull-down body",
+  "ok": true,
+  "detail": "{\"unitId\":\"u_ywq02mk\",\"key\":\"pulldown_rail_3e7pnyy\",\"kits\":[{\"id\":\"pulldown_rail_3e7pnyy\",\"kind\":\"pulldown_rail\"}]}"
+ },
+ {
+  "label": "R3 — the rod mesh is in the frame, parked",
+  "ok": true,
+  "detail": "{\"y\":2.0725980079506985,\"z\":-1.2264254998243413}"
+ },
+ {
+  "label": "the click flipped the switch to LOWERED",
+  "ok": true,
+  "detail": "{\"target\":1}"
+ },
+ {
+  "label": "R3 — the rod mesh is in the frame, lowered",
+  "ok": true,
+  "detail": "{\"y\":1.381979431260359,\"z\":-0.4870069231340016}"
+ },
+ {
+  "label": "the tube travelled OUT — the swing’s own ~0.6 m throw",
+  "ok": true,
+  "detail": "dz=0.739 m"
+ },
+ {
+  "label": "…and DOWN to the plate line",
+  "ok": true,
+  "detail": "dy=-0.691 m"
+ },
+ {
+  "label": "…and back to PARKED",
+  "ok": true,
+  "detail": "{\"target\":0}"
+ },
+ {
+  "label": "second click parks it exactly where it started",
+  "ok": true,
+  "detail": "{\"y\":2.0725980079506985,\"z\":-1.2264254998243413}"
+ }
+]

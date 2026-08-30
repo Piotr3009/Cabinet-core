@@ -33,7 +33,7 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 
 import { glbSource, clearGlbSources } from '../src/3d/glbSource.js';
-import { coneroClone } from '../src/3d/coneroModels.js';
+import { CONERO_AXES, coneroClone, coneroPose } from '../src/3d/coneroModels.js';
 
 /** One named box-mesh whose world bbox is exactly [min..max] per axis. */
 function boxNode(name, min, max) {
@@ -115,4 +115,69 @@ test('CONERO · 858 opening — the native width, where the old error hid at \u2
 
 test('CONERO · 900 opening — wider than the file, same three truths', () => {
   assertLaws(900);
+});
+
+// ─── 30.08 · THE SWING — the owner's two green points, as law ───────────────
+//
+// Axis A through both plate centres carries the whole frame 90° forward and
+// down; axis B in the rod's own tube turns the rod BACK by the same angle, so
+// the handle hangs plumb the whole way — "rail i rączka też się przekręca jak
+// się opuszcza". Fraction 0 must be the approved closed picture to the byte,
+// and the swing is built OUTSIDE the height scale so the lowered arm keeps
+// its length.
+
+function poseRig(openingMm, totalHmm) {
+  const url = `mem://conero/pose/${openingMm}`;
+  seedConero(url);
+  const model = coneroClone(url, openingMm, totalHmm);
+  assert.ok(model?.userData?.ccConero, 'the rig rides on the clone');
+  return model;
+}
+
+test('CONERO · fraction 0 is the approved closed picture, to the byte', () => {
+  const model = poseRig(800, 830);
+  model.updateMatrixWorld(true);
+  const before = new THREE.Box3().setFromObject(model);
+  coneroPose(model, 1);
+  coneroPose(model, 0);
+  model.updateMatrixWorld(true);
+  const after = new THREE.Box3().setFromObject(model);
+  assert.ok(before.min.distanceTo(after.min) < EPS && before.max.distanceTo(after.max) < EPS,
+    'a full swing and back leaves the closed box exactly where it was');
+});
+
+test('CONERO · fraction 1 — the tube lands on the 90° arc, forward and down', () => {
+  const totalHmm = 830;
+  const model = poseRig(800, totalHmm);
+  const seat = { y: -0.0138, z: -0.2107 };
+  const kY = (totalHmm / 1000) / (0.6907 - seat.y);
+  const A = { y: (CONERO_AXES.plate.y - seat.y) * kY, z: CONERO_AXES.plate.z - seat.z };
+  const tube = { y: (CONERO_AXES.tube.y - seat.y) * kY, z: CONERO_AXES.tube.z - seat.z };
+  const dy = tube.y - A.y;
+  const dz = tube.z - A.z;
+  // rotation.x = +90°: (Δy, Δz) → (−Δz, +Δy) — toward +z, the way a drawer
+  // slides out, and DOWN to the plate line.
+  const wantY = A.y - dz;
+  const wantZ = A.z + dy;
+  coneroPose(model, 1);
+  model.updateMatrixWorld(true);
+  const at = new THREE.Vector3();
+  model.userData.ccConero.rodPivot.getWorldPosition(at);
+  assert.ok(Math.abs(at.y - wantY) < EPS && Math.abs(at.z - wantZ) < EPS,
+    `tube at (y ${at.y}, z ${at.z}) = arc point (y ${wantY}, z ${wantZ})`);
+  assert.ok(at.z > tube.z + 0.1, 'the rod came out in FRONT of the wardrobe');
+  assert.ok(at.y < tube.y - 0.1, 'and DOWN toward the plate line');
+});
+
+test('CONERO · fraction 1 — the handle hangs plumb (axis B counter-turn)', () => {
+  const model = poseRig(800, 830);
+  coneroPose(model, 1);
+  model.updateMatrixWorld(true);
+  let rod = null;
+  model.traverse((o) => { if (o.name === NAME_ROD) rod = o; });
+  const a = rod.localToWorld(new THREE.Vector3(0, 0, 0));
+  const b = rod.localToWorld(new THREE.Vector3(0, -1, 0));
+  const v = b.sub(a);
+  assert.ok(Math.abs(v.x) < EPS && Math.abs(v.z) < EPS && v.y < 0,
+    `local "down" is world down at full open, not (${v.x}, ${v.y}, ${v.z})`);
 });

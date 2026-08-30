@@ -2037,7 +2037,97 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // auto-fix still says what it did.
     get().healFrontGaps();
 
+    // ─── T55 (CLAUDE.md F3): THE SLOPE FLIPS A DOOR → THE PARTITION ─────────
+    // The one choke point again: every slope change, move and load funnels
+    // through here, and the sweep below acts only on the TRANSITION — a
+    // forced leaf whose hinge edge has no wood — so a settled scene passes
+    // through it untouched.
+    get().settleSlopeDoorPartitions();
+
     return notices;
+  },
+
+  /**
+   * ─── T55 (CLAUDE.md F3): THE SLOPE FLIPS A DOOR → THE DOOR PARTITION ──────
+   *
+   * The owner, verbatim: *"wymuszamy tylko jak się orientacja drzwi zmienia
+   * na skosach … nie wymuszamy przez wielkość szafy absolutnie nie"* and
+   * *"usunięcie wszystkiego co mogłoby nam rozwalić układ czyli drążki
+   * szuflady etc … klient ustawi wszystko sobie od nowa."*
+   *
+   * WHY: under a rake both leaves are forced to one hand (T46 law), and the
+   * flipped leaf's hinges then land mid-cabinet where no carcass side exists.
+   * A door needs wood to hang on.
+   *
+   * THE TRIGGER: a leaf whose FORCED hinge (`meta.hingeForced`) puts its
+   * hinge edge on a line with NO carcass side. Cabinet width is NEVER a
+   * trigger — no slope, no forcing.
+   *
+   * THE ACTION, once per transition (a leaf already hung on standing wood is
+   * settled and never re-triggers):
+   *   1. the unit's interior fitting is CLEARED — rods, drawers, shelves,
+   *      inserts (the owner's licence above). Partitions and doors stay.
+   *   2. the DOOR-MOUNT PARTITION is inserted on the hinge line — the same
+   *      partition bay doors hinge on (T21/F9 machinery), reused, never a
+   *      second one.
+   *   3. the leaves move onto the bays with their forced hands, so the
+   *      flipped leaf hinges ON the partition and its plates drill into it
+   *      by the existing partition drilling law (T21 F12.2).
+   *   4. a notify says what happened; Check #24 names the partition while
+   *      the forcing stands.
+   */
+  settleSlopeDoorPartitions: () => {
+    const profile = getCabinetProfile();
+    for (const unit of get().units) {
+      const result = get().unitResult(unit.id);
+      if (!result) continue;
+      const G = Number(unit.params.board_t) || profile.board.thickness;
+      const W = Number(unit.params.width) || 0;
+      const tol = (Number(profile.doors.gap) || 3) + 1;
+      const leaves = (result.panels || []).filter((p) => p.part === 'FRONT'
+        && p.role === 'front' && p.meta?.hingeForced === true && p.box);
+      const flipped = leaves.find((leaf) => {
+        const edge = leaf.meta.hinge === 'R' ? leaf.box.x + leaf.box.w : leaf.box.x;
+        // A hinge edge on the carcass side has its wood — never a trigger.
+        if (leaf.meta.hinge === 'R' ? edge >= W - G - tol : edge <= G + tol) return false;
+        // Wood already standing on the line AND the leaf hung on it — the
+        // transition is behind us; this is the settled state.
+        const wood = (result.panels || []).find((p) => p.part === 'VPART'
+          && Number.isFinite(Number(p.meta?.x_mm))
+          && edge >= Number(p.meta.x_mm) - tol && edge <= Number(p.meta.x_mm) + G + tol);
+        return !(wood && leaf.meta.hingeOn === wood.id);
+      });
+      if (!flipped) continue;
+      const hand = flipped.meta.hinge;
+      const edge = hand === 'R' ? flipped.box.x + flipped.box.w : flipped.box.x;
+      runBatch(() => {
+        // 1. The interior goes — the owner's sentence is the licence. The
+        //    partitions (and the doors) stay.
+        const section = unit.params.sections?.[0] || { width_mm: unit.params.width, items: [] };
+        const keep = (section.items || []).filter((i) => i.kind === 'partition');
+        set((st) => ({
+          units: st.units.map((u2) => (u2.id === unit.id
+            ? { ...u2, params: { ...u2.params, sections: [{ ...section, items: keep }] } }
+            : u2)),
+        }));
+        // 2. The door-mount partition, centred under the hinge line — unless
+        //    one is already standing there (then it becomes the door-mount).
+        //    `front_mm: 0` is what lets it reach the door plane and carry a
+        //    door at all (T21 F8: "setback 0 is load-bearing").
+        const standing = keep.find((i) => Number.isFinite(Number(i.x_mm))
+          && edge >= Number(i.x_mm) - tol && edge <= Number(i.x_mm) + G + tol);
+        const pid = standing ? standing.id : get().addPartition(unit.id, edge - G / 2);
+        if (pid) get().updateItem(unit.id, pid, { front_mm: 0 });
+        // 3. The doors onto the bays, forced hands kept — T21/F9's own law
+        //    hangs the flipped leaf on the partition and drills its plates.
+        const bays = get().bayDoorsFor(unit.id);
+        if (bays.length > 1) get().setBayDoors(unit.id, bays.map(() => ({ door: 'one', hinge: hand })));
+      });
+      useUiStore.getState().notify(
+        'Slope flipped the doors — a door partition was added and the interior was cleared.',
+        'warn',
+      );
+    }
   },
 
   /**

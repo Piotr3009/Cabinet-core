@@ -904,6 +904,31 @@ export function runChecks({
     }
   }
 
+  // ── #24 the slope flipped a door onto its partition (T55-F3) ─────────────
+  //
+  // The owner: *"wymuszamy tylko jak się orientacja drzwi zmienia na
+  // skosach."* Under a rake the flipped leaf's forced hinge edge has no
+  // carcass side, so the store inserted the door-mount partition on that line
+  // and the leaf hangs on it (projectStore `settleSlopeDoorPartitions`).
+  // While the forcing stands, Check NAMES the partition — a notice, not a
+  // fault: the app did the right thing and is saying that it did.
+  for (const entry of entries) {
+    for (const pnl of entry.result?.panels || []) {
+      if (pnl?.meta?.hingeForced !== true || !pnl?.meta?.hingeOn) continue;
+      if (!String(pnl.meta.hingeOn).startsWith('VPART')) continue;
+      const num = entry.unit?.params?.unit_num || entry.result?.unitNum || entry.unit?.id || '';
+      out.push(finding(24, 'yellow', {
+        unitId: entry.unit?.id || null,
+        unitNum: num,
+        panelId: pnl.id,
+        message: `${num} ${pnl.id}: the slope forced this door's hinge onto ${pnl.meta.hingeOn} — `
+          + 'the door partition carries its plates while the forcing stands.',
+        subject: { unitId: entry.unit?.id || null, panelId: pnl.id, editor: 'element' },
+        partitionId: pnl.meta.hingeOn,
+      }));
+    }
+  }
+
   // ── #21 the slope took a hinge off a door (T50-F7) ──────────────────────
   //
   // The owner: *"jak drzwi się zmniejszają, automatycznie usuwamy zawiasy tam

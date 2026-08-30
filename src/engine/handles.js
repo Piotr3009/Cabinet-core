@@ -33,11 +33,34 @@
 //
 // Pure functions — no React, no three.js, no store (engine rule).
 
-/** The two things a person picks. */
+/**
+ * The things a person picks.
+ *
+ * ─── TURN 57 (CLAUDE.md F2): AND THE THIRD IS NOT A THING AT ALL ───────────
+ *
+ * A J-PULL IS A HANDLE SYSTEM. Two axes, never merged:
+ *
+ *   FACE PATTERN   slab, shaker, grooved, glass, ...   what it LOOKS like
+ *   HANDLE SYSTEM  bar, knob, none, J-PULL             how it is HELD
+ *
+ * A grooved door with a J edge has to be possible, and it is only possible if
+ * the two are separate — so the J lives HERE, on the module that has owned
+ * "how is this front gripped" since turn 25, and not in a pattern registry.
+ * The law itself is `reference/lisp/KIT_FRONT_JPULL.lsp`; this file follows it
+ * and takes its numbers from the profile, which takes them from that kit.
+ *
+ * It is a system with no hardware. Nothing is screwed to a J-pull front and
+ * nothing is drilled in one: the edge is machined instead, and `resolveHandle`
+ * answers with an EDGE record rather than a hole list.
+ */
 export const HANDLE_TYPES = [
   { id: 'bar', label: 'Bar', hint: 'A round bar on two posts' },
   { id: 'knob', label: 'Knob', hint: 'One screw, one hole' },
+  { id: 'jpull', label: 'J-pull handleless', hint: 'Machined into the front\'s own edge — nothing is screwed on' },
 ];
+
+/** The only edges a J can be machined on. A diagonal is not one of them. */
+export const JPULL_EDGES = ['TOP', 'L', 'R'];
 
 /** The screw centres a bar comes in. A typed number is accepted too (F4). */
 export const BAR_CENTRES = [96, 128, 160, 192, 224];
@@ -301,6 +324,21 @@ export function resolveHandle({
   const chosen = own || project;
   if (!chosen || !chosen.type) return null;
 
+  // ─── TURN 57 (CLAUDE.md F2.1): THE J IS ANSWERED FIRST, AND WHOLE ────────
+  //
+  // Before a single line of hardware arithmetic. That is the LICENCE the turn
+  // grants, spent exactly here and nowhere else: on a jpull front the handle
+  // and its drilling are *never born*, rather than born and then filtered out
+  // somewhere downstream. A `bar` record that existed for one function call
+  // before being dropped would eventually be read by something — the BOM, the
+  // wall elevation, a hover aura — and a J-pull kitchen would quietly buy
+  // handles.
+  if (chosen.type === 'jpull') {
+    return resolveJpull({
+      panel, handleClass, hinge, deviation: Boolean(own),
+    }, profile);
+  }
+
   const spec = handleSpec(profile);
   const type = chosen.type === 'knob' ? 'knob' : 'bar';
   const centres = type === 'knob'
@@ -364,6 +402,253 @@ export function resolveHandle({
     deviation: Boolean(own),
     class: handleClass,
     problem,
+  };
+}
+
+// ─── TURN 57 (CLAUDE.md F1/F2): THE J-PULL, FROM THE LISP DOWN ──────────────
+//
+// Every number below comes out of `profile.handles.jpull`, and every number
+// there is the one `reference/lisp/KIT_FRONT_JPULL.lsp` states. There is no
+// third copy: `test/turn57-f2-the-jpull-system.test.js` reads the kit off disk
+// and holds the profile to it.
+
+/** The J-pull block of a profile, with every field present. */
+export function jpullSpec(profile) {
+  const j = profile?.handles?.jpull || {};
+  const num = (v, d) => (Number.isFinite(Number(v)) ? Number(v) : d);
+  return {
+    // The stopped run — the owner's "500 mm, zaczyna sie od dolu frontu
+    // okolo 700 mm", and the lead-in radius he will tune later.
+    runMm: num(j.runMm, 500),
+    fromBottomMm: num(j.fromBottomMm, 700),
+    rampR: num(j.rampR, 25),
+    // …and the section itself, measured off `J_hand.dxf` on an 18 mm board.
+    lipT: num(j.lipT, 4.212),
+    slotW: num(j.slotW, 10),
+    slotDepth: num(j.slotDepth, 40),
+    slotR: num(j.slotR, 5),
+    rearLeg: num(j.rearLeg, 3.788),
+    reliefMm: num(j.reliefMm, 30),
+    layer: j.layer || 'JPULL_EDGE',
+  };
+}
+
+/**
+ * WHICH EDGE — one function, one answer. (`SKY:jpullEdge`.)
+ *
+ * The owner's table, made executable, in the ROOM's frame — the frame his
+ * sentence is spoken in:
+ *
+ *   wall-door    null   "na szafkach wiszacych nie rob J". A wall door is
+ *                       gripped from below and "to juz robi program": the
+ *                       existing front geometry stands, and nothing at all is
+ *                       machined. null is the answer, not an absence of one.
+ *   horizontal   TOP    every drawer front, and every front that drops.
+ *   base-door    TOP    full width.
+ *   tall-door    the VERTICAL edge OPPOSITE the hinge — the opening side, the
+ *                       edge a hand reaches for.
+ *
+ * The tall rule is one `if` and that is the whole of it, which is what makes
+ * the forced hand under a rake free: `meta.hinge` flips (T46/T55), and this
+ * flips with it without ever hearing that a slope exists.
+ *
+ * A DIAGONAL is unsayable rather than merely forbidden — there are three
+ * answers and none of them is a raked edge.
+ *
+ * @param {string|null} handleClass  one of HANDLE_CLASSES
+ * @param {string} hinge  'L' | 'R', in the ROOM's frame
+ * @returns {'TOP'|'L'|'R'|null}
+ */
+export function jpullEdgeOf(handleClass, hinge) {
+  if (handleClass === 'wall-door') return null;
+  if (handleClass === 'horizontal' || handleClass === 'base-door') return 'TOP';
+  if (handleClass === 'tall-door') return hinge === 'R' ? 'L' : 'R';
+  return null;
+}
+
+/**
+ * …and the same edge in the SHEET's frame, which is where it is cut.
+ *
+ * THE INSIDE MIRROR (engine/joinery.js `panelPlacement`): a front's cut frame
+ * has its origin at the leaf's bottom RIGHT corner with x running LEFT,
+ * because the workshop bores a door from the back and the sheet is drawn the
+ * way the door lies on the bench. So a ROOM-left edge is at sheet x = w and a
+ * room-right edge is at sheet x = 0 — the two names swap.
+ *
+ * T28-F2b is the scar from getting exactly this wrong for the handle, and it
+ * is why the two frames are NAMED APART here and never mixed rather than
+ * being one letter that means different things in different functions.
+ *
+ * (A pleasant consequence, derived and not assumed: on a tall door the J's
+ * SHEET letter is the same letter as the hinge's ROOM one, because opposite
+ * and mirrored cancel. It is written out as two steps anyway — a coincidence
+ * relied on is a coincidence that breaks when one of the two rules changes.)
+ */
+export function jpullSheetEdge(roomEdge) {
+  if (roomEdge === 'TOP') return 'TOP';
+  if (roomEdge === 'L') return 'R';
+  if (roomEdge === 'R') return 'L';
+  return null;
+}
+
+/**
+ * HOW FAR ALONG — the stopped run. (`SKY:jpullRun`.)
+ *
+ * A TOP edge runs the full width and there is nothing to decide. A tall door's
+ * runs `runMm` starting `fromBottomMm` up the leaf's OWN bottom edge, and the
+ * height of the edge it is cut on gets a say.
+ *
+ * Three answers, and the difference between the last two is the point:
+ *
+ *   edgeH <= fromBottomMm   null — REFUSED. There is no leaf above the start
+ *                           of the run; the engine says so and does not slide
+ *                           the run down, because a J at ankle height is not a
+ *                           handle.
+ *   from + run > edgeH      CLAMPED, and it says it was: a 900 mm leaf under a
+ *                           rake gets the run it can hold and a Check line
+ *                           names it.
+ *   otherwise               the owner's own 700 → 1200.
+ *
+ * @param {number} edgeH  the height of the EDGE the J is cut on — which under
+ *   a rake is the SHORT side of the leaf, not the leaf's tallest point
+ * @returns {{from:number,to:number,clamped:boolean}|null}
+ */
+export function jpullRunOf(edgeH, spec) {
+  const h = Number(edgeH) || 0;
+  const from = spec.fromBottomMm;
+  const want = from + spec.runMm;
+  if (!(h > from)) return null;
+  if (want > h) return { from, to: h, clamped: true };
+  return { from, to: want, clamped: false };
+}
+
+/**
+ * The height of the edge the J is cut on.
+ *
+ * A flat leaf: its own height, both sides. A SLOPE-CUT leaf: the height at
+ * THAT edge, which the piece already publishes in the room's frame
+ * (`meta.slopeCut.roomL` / `roomR`, engine/cabinet.js). Under a rake the hinge
+ * is forced onto the tall edge, so the J's edge is the SHORT one — and a run
+ * measured against the leaf's tallest point would be a run hanging in the air
+ * above a door that is not there.
+ *
+ * A leaf that is BOTH trimmed and slope-cut has already been re-cut by F0a
+ * before this is asked, because the trim applier runs earlier in the file —
+ * so `roomL`/`roomR` are the refreshed numbers and not the stale ones.
+ */
+export function jpullEdgeHeight(panel, roomEdge) {
+  const h = Number(panel?.h) || 0;
+  const cut = panel?.meta?.slopeCut;
+  if (!cut || roomEdge === 'TOP') return h;
+  const at = roomEdge === 'L' ? cut.roomL : cut.roomR;
+  return Number.isFinite(Number(at)) ? Math.min(h, Number(at)) : h;
+}
+
+/** `J-PULL TOP`, or `J-PULL R 700-1200` for a stopped run. ASCII, upper case. */
+export function jpullNoteText(sheetEdge, run) {
+  if (!sheetEdge) return null;
+  if (!run) return `J-PULL ${sheetEdge}`;
+  return `J-PULL ${sheetEdge} ${Math.round(run.from)}-${Math.round(run.to)}`;
+}
+
+/**
+ * The whole answer for one J-pull front.
+ *
+ * Never a hole and never a handle: `holes` is empty by construction, so every
+ * consumer that counts holes — the drilling, the BOM's handle line, the 3-D
+ * mount — is already right about this front without being told about J-pulls.
+ *
+ * @returns {{system:'jpull', class:string, edge:string|null, sheetEdge:string|null,
+ *   run:object|null, note:string|null, profile:object, holes:Array, cut:boolean,
+ *   problem:string|null, reason:string|null}}
+ *   `cut` is the one the caller acts on: true where the edge is machined —
+ *   including a run the leaf clamped short — and false for a wall door and for
+ *   an edge that refused.
+ */
+export function resolveJpull({
+  panel, handleClass, hinge = 'L', deviation = false,
+}, profile) {
+  const spec = jpullSpec(profile);
+  const edge = jpullEdgeOf(handleClass, hinge);
+  const common = {
+    system: 'jpull',
+    type: 'jpull',
+    class: handleClass,
+    holes: [],
+    deviation,
+    profile: {
+      lipT: spec.lipT,
+      slotW: spec.slotW,
+      slotDepth: spec.slotDepth,
+      slotR: spec.slotR,
+      rearLeg: spec.rearLeg,
+      reliefMm: spec.reliefMm,
+      rampR: spec.rampR,
+      // 40 + 5, a CONSEQUENCE — stated so the machine is not set 5 mm shallow
+      // by a workshop that changed the slot depth and left a 45 behind.
+      reachDepth: spec.slotDepth + spec.slotR,
+    },
+  };
+  if (!edge) {
+    // A wall door, and the owner's own sentence. No machining, and no handle
+    // either — the front is finished as it stands.
+    return {
+      ...common,
+      edge: null,
+      sheetEdge: null,
+      run: null,
+      note: null,
+      problem: null,
+      reason: 'wall-door',
+      cut: false,
+    };
+  }
+  const sheetEdge = jpullSheetEdge(edge);
+  if (edge === 'TOP') {
+    return {
+      ...common,
+      edge,
+      sheetEdge,
+      run: null,
+      note: jpullNoteText(sheetEdge, null),
+      problem: null,
+      reason: null,
+      cut: true,
+    };
+  }
+  const edgeH = jpullEdgeHeight(panel, edge);
+  const run = jpullRunOf(edgeH, spec);
+  if (!run) {
+    // REFUSED, in words, and nothing is cut. Never a guess at a lower start.
+    return {
+      ...common,
+      edge,
+      sheetEdge,
+      run: null,
+      note: null,
+      reason: 'too-short',
+      cut: false,
+      problem: `the J-pull starts ${trim(spec.fromBottomMm)} mm up and this edge is only `
+        + `${trim(edgeH)} mm — there is no leaf to machine.`,
+    };
+  }
+  return {
+    ...common,
+    edge,
+    sheetEdge,
+    run,
+    note: jpullNoteText(sheetEdge, run),
+    // A CLAMPED run is still cut. That is the whole difference between the
+    // clamp and the refusal, and it is stated as a flag rather than inferred
+    // from which of two `reason` strings is set: a shorter run is a working
+    // handle, and a run that starts above the top of the door is not a handle
+    // at all.
+    cut: true,
+    reason: run.clamped ? 'clamped' : null,
+    problem: run.clamped
+      ? `the J-pull run is cut short to ${trim(run.to - run.from)} mm — a ${trim(spec.runMm)} mm run `
+        + `from ${trim(spec.fromBottomMm)} mm would run off a ${trim(edgeH)} mm edge.`
+      : null,
   };
 }
 

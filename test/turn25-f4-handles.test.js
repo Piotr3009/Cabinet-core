@@ -239,7 +239,12 @@ test('F4.3 — the mount point and the axis ARE the contract, and they are publi
   assert.equal(P.handles.finish, 'gold');
   assert.ok(P.appearance.metals.gold.colour);
   assert.ok(P.appearance.metals.silver.colour);
-  assert.equal(HANDLE_TYPES.map((t) => t.id).join(','), 'bar,knob');
+  // T57 AMENDED (30.08.2026): `bar,knob` → `bar,knob,jpull`. T25's claim is
+  // about the CONTRACT a model mounts against — the point, the axis and the
+  // type word — and that is untouched. What changed is the list of systems a
+  // person may pick: a J-pull is a HANDLE SYSTEM (CLAUDE.md T57 F2), and it
+  // mounts no model at all, which is why nothing above it moved.
+  assert.equal(HANDLE_TYPES.map((t) => t.id).join(','), 'bar,knob,jpull');
 });
 
 // ─── F4.4 — moving one moves all ────────────────────────────────────────────

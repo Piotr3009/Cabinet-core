@@ -34,7 +34,7 @@ import {
   glassAperture, isGlassFront, isShakerFront, shakerCutPocket, shakerFrameMm, shakerPanelFloor,
   shakerPocket, shakerProblem,
 } from './shaker.js';
-import { resolveHandle } from './handles.js';
+import { jpullSpec, resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
 import {
   bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, topDemandMm,
@@ -7011,6 +7011,62 @@ export function computeCabinet(params, profileOverride) {
       frame: pnl.meta?.shaker?.frame ?? null,
     }, P);
     if (!resolved) continue;
+    // ─── TURN 57 (CLAUDE.md F2.1): A J-PULL FRONT, WHICH BUYS NOTHING ──────
+    //
+    // The system answers whole and answers early. There is no `meta.handle`
+    // on a J-pull front and there are no `handle` drills, and neither is
+    // suppressed here — `resolveHandle` never made them (the turn's licence,
+    // spent at the source). What lands instead is the EDGE MACHINING on the
+    // piece's own `cnc`, which is where every other machining operation on a
+    // front already lives.
+    //
+    // THE FRAME. `edge` is the ROOM's letter — what the customer sees and the
+    // frame the owner's sentence is spoken in — and `sheetEdge` is that
+    // mirrored for the bench (`engine/joinery.js panelPlacement`: origin at
+    // the leaf's bottom RIGHT, x running left). The NOTE names the sheet's
+    // edge because the note is read beside the cut. T28-F2b is the scar.
+    //
+    // A WALL DOOR resolves to no edge at all — "na szafkach wiszacych nie rob
+    // J" — and takes neither machining nor handle. It still says so on the
+    // piece, because a front that is silently different from its neighbours
+    // is the thing a joiner finds out about on site.
+    if (resolved.system === 'jpull') {
+      pnl.meta.jpull = {
+        edge: resolved.edge,
+        sheetEdge: resolved.sheetEdge,
+        class: resolved.class,
+        ...(resolved.run ? { run: { ...resolved.run } } : {}),
+        ...(resolved.reason ? { reason: resolved.reason } : {}),
+        ...(resolved.problem ? { problem: resolved.problem } : {}),
+      };
+      // MACHINED WHERE IT IS CUT — `resolved.cut`, and not "where there is no
+      // problem". A CLAMPED run carries a problem sentence and is still cut:
+      // a run the leaf shortened is a working handle, and only the refusal
+      // (no leaf above the run's start) and the wall door leave the edge
+      // untouched.
+      if (resolved.cut) {
+        pnl.cnc = {
+          ...pnl.cnc,
+          jpull: {
+            layer: jpullSpec(P).layer,
+            edge: resolved.sheetEdge,
+            ...(resolved.run
+              ? { from: roundTo(resolved.run.from, 4), to: roundTo(resolved.run.to, 4) }
+              : {}),
+            note: resolved.note,
+            profile: { ...resolved.profile },
+          },
+        };
+      }
+      if (resolved.problem) {
+        warnings.push({
+          code: resolved.reason === 'clamped' ? 'JPULL_RUN_CLAMPED' : 'JPULL_EDGE_TOO_SHORT',
+          panel: pnl.id,
+          message: `${pnl.id}: ${resolved.problem}`,
+        });
+      }
+      continue;
+    }
     if (resolved.problem) {
       warnings.push({ code: 'HANDLE_DOES_NOT_FIT', panel: pnl.id, message: `${pnl.id}: ${resolved.problem}` });
     }

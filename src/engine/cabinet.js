@@ -4969,7 +4969,7 @@ export function computeCabinet(params, profileOverride) {
         // Only the visible bottom edge is banded; the LENGTH says one.
         edgeCode: codes.topBottom, edgeLen: metres(segLen),
         box: {
-          x: segX0, y: infRoof ? Math.min(yTop, H) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
+          x: segX0, y: infRoof ? roundTo(yTop - bandH, 4) : H, z: faceZ - t, w: sg.to - sg.from, h: faceH, d: t,
         },
         // A plain rectangle, 20 long; the corner is cut on site.
         cnc: rectGeometry(cutLen, bandH + overT),

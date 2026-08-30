@@ -314,8 +314,10 @@ test('F1.7 · the run: every segment of a two-knee polyline passes the three sta
   for (const face of faces) {
     const m = face.meta.slopeCut;
     if (!m) {
-      // The flat middle: sits at min(ceiling, H) exactly as T53-F3b left it.
-      assert.ok(Math.abs((face.box.y + face.box.h) - Math.min(ceil(face.box.x), 2150 + 40)) < 40 + 0.01);
+      // The flat middle hangs from the CEILING, exactly as a raked piece does —
+      // the one law that lets the two meet at a knee.
+      assert.ok(Math.abs((face.box.y + face.box.h) - ceil(face.box.x)) < 0.01,
+        'a level segment tops out on the ceiling above it, not on the carcass');
       continue;
     }
     const beta = (m.deg * Math.PI) / 180;

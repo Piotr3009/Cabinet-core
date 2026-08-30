@@ -171,14 +171,26 @@ test('F1.3 a run between two walls STOPS at both, with no mitre and no return', 
   assert.deepEqual(el.ends, { left: 'wall', right: 'wall' });
   assert.deepEqual(el.mitres, { left: false, right: false });
   assert.deepEqual(el.returns, { left: null, right: null });
-  // T55 AMENDED (29.08.2026): `runEnd`'s wall case stops on the CARCASS face
-  // now (the owner: *"dlaczego wystaje poza carcass"*), and the cornice —
-  // sharing that law — spans carcass to carcass, not plaster to plaster.
-  // If the owner rules the CORNICE should still reach the walls, that is his
+  // T55 AMENDED (29.08.2026): `runEnd`'s wall case stopped on the CARCASS face
+  // (the owner: *"dlaczego wystaje poza carcass"*), and the cornice — sharing
+  // that law — spanned carcass to carcass.
+  //
+  // T58-F5 AMENDED AGAIN, and this file's own next sentence is why. It said:
+  // *"If the owner rules the CORNICE should still reach the walls, that is his
   // one line and this case splits; until then, one end law for every top
-  // piece.
-  assert.equal(el.length, 1200, 'carcass face to carcass face (T55)');
-  assert.equal(el.offset, 0, 'measured in the owner unit’s own frame');
+  // piece."*  His T58 line is about the top INFILL — *"niech górny się
+  // przedłuży do ściany — jak było wcześniej"* — and ONE END LAW is still the
+  // rule here, so the cornice moves back with it, to exactly the 1220 it had
+  // before 4ddff96 shortened both.
+  //
+  // FLAGGED for the owner, not decided here: if the cornice was meant to stay
+  // on the carcass while the infill reaches the wall, that is the line that
+  // splits this case in two.
+  assert.equal(el.length, 1220, 'wall to wall — one end law for every top piece (T58-F5)');
+  // …and the offset moves with the length: the owner unit stands 10 mm off the
+  // plaster, so a piece that starts AT the plaster starts 10 before it. Same
+  // frame as ever, one end law (T58-F5).
+  assert.equal(el.offset, -10, 'measured in the owner unit’s own frame');
 });
 
 test('F1.3 an OPEN end mitres 45° and returns along the side to the back wall', () => {

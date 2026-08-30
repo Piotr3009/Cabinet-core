@@ -133,12 +133,18 @@ test('F3.2 — a scribe filler UNDER the run is covered; one taken to the ceilin
   store().addTopInfill(tall);
   assert.equal(unitOf(tall).params.side_infill_left_mm, 40, 'the filler is there');
 
-  // T55 AMENDED (29.08.2026, the owner): the vertical owns the gap and runs
-  // to the ceiling — the top piece stops PLUMB on the carcass face either
-  // way. Turn 6's "runs OVER, out to the wall" is retired.
+  // T55 AMENDED (29.08.2026): the vertical owned the gap and the top piece
+  // stopped PLUMB on the carcass face EITHER WAY — which made both halves of
+  // this test the same answer and quietly emptied its own title.
+  //
+  // T58-F5 AMENDED AGAIN (the owner: *"niech górny się przedłuży do ściany —
+  // jak było wcześniej"*), and the title means something again: a SCRIBE
+  // filler is COVERED — the top piece runs over it to the plaster — and a
+  // filler taken to the CEILING is not, because it is a blocker and the run
+  // ends on its face. Two halves, two answers, exactly as written on the tin.
   assert.equal(endsOf(tall).left, 'infill');
-  assert.equal(Math.round(spanOf(tall).from), Math.round(unitOf(tall).position.x_mm),
-    'on the carcass face — never over the scribe (T55)');
+  assert.equal(Math.round(spanOf(tall).from), 0,
+    'the scribe filler is COVERED: the piece runs over it to the wall (T58-F5)');
 
   // …and taken to the ceiling it is a piece the top infill must END on.
   store().sideInfillToCeiling(tall, 'L');

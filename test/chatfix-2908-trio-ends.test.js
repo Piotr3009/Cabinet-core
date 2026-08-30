@@ -220,7 +220,18 @@ test('T55 · a fully FLAT ceiling keeps both corners exactly as before', () => {
 // function every top piece (infill and cornice alike) takes its ends from.
 import { runEnd } from '../src/engine/runs.js';
 
-test("T55 · runEnd at a wall answers the CARCASS face, not the plaster", () => {
+// ─── AMENDED IN TURN 58 (F5), with the quote — the house rule for a guard
+// whose claim the owner has taken back ────────────────────────────────────
+//
+// T58: *"jak dojeżdżamy szafą do ściany i się pojawia infill boczny, to niech
+// górny się przedłuży do ściany — jak było wcześniej."*
+//
+// What is OVERRULED is this claim OFF A SLOPE. T55's own sentences are all
+// about the rake — *"infill boczny ZAWSZE PRZY SKOSIE idzie do sufitu"* — and
+// under one the answer is unchanged, which is what the `raked` half below now
+// asserts. So the guard did not lose a claim; it gained the condition its
+// claim always had.
+test("T55/T58 · runEnd at a wall: the carcass face UNDER a rake, the plaster off one", () => {
   const unit = (x, sideL, sideR) => ({
     id: 'u1', type: 'WARDROBE',
     params: {
@@ -230,15 +241,29 @@ test("T55 · runEnd at a wall answers the CARCASS face, not the plaster", () => 
     },
     position: { wall: 0, x_mm: x, rotation_deg: 0 },
   });
-  const ctx = { wallWidth: 4000, roomHeight: 2500, verticals: [] };
-  // Parked at the left stop, 40 mm scribe filling to the plaster:
-  const L = runEnd({ wall: 0, units: [unit(40, 40, 0)], top: 2150 }, 'left', ctx, P);
+  const raked = {
+    wallWidth: 4000, roomHeight: 2500, verticals: [], raked: true,
+  };
+  const flat = { wallWidth: 4000, roomHeight: 2500, verticals: [] };
+
+  // UNDER A RAKE — T55's law, unchanged. Parked at the left stop, 40 mm
+  // scribe filling to the plaster:
+  const L = runEnd({ wall: 0, units: [unit(40, 40, 0)], top: 2150 }, 'left', raked, P);
   assert.equal(L.kind, 'infill', 'the scribe vertical names the end');
   assert.equal(L.x, 40, 'left end: the carcass face — never 0 (the plaster)');
   // And the mirror at the right wall:
-  const R = runEnd({ wall: 0, units: [unit(3360, 0, 40)], top: 2150 }, 'right', ctx, P);
+  const R = runEnd({ wall: 0, units: [unit(3360, 0, 40)], top: 2150 }, 'right', raked, P);
   assert.equal(R.kind, 'infill');
   assert.equal(R.x, 3960, 'right end: the carcass face — never 4000');
+
+  // OFF A RAKE — T58's restoration. The top piece runs OVER the scribe to the
+  // plaster and caps the corner; `kind` is unchanged, only the x moves back.
+  const Lflat = runEnd({ wall: 0, units: [unit(40, 40, 0)], top: 2150 }, 'left', flat, P);
+  assert.equal(Lflat.kind, 'infill', 'the end is still named by the vertical');
+  assert.equal(Lflat.x, 0, 'left end: the plaster — "jak było wcześniej"');
+  const Rflat = runEnd({ wall: 0, units: [unit(3360, 0, 40)], top: 2150 }, 'right', flat, P);
+  assert.equal(Rflat.kind, 'infill');
+  assert.equal(Rflat.x, 4000, 'right end: the plaster');
 });
 
 // ─── T55 · THE 45° DIES WITH THE WRAP (29.08, the second corner's SS) ───────

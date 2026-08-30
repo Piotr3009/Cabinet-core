@@ -1317,24 +1317,47 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     project: { ...s.project, wallSlopes: wallElements(list) },
   })),
 
-  addWallSlope: (slope) => set((s) => {
+  // ─── TURN 58 (CLAUDE.md F5): A RAKE CHANGES THE ROOM, SO THE ROOM'S OWN
+  // PIECES ARE RE-CUT ────────────────────────────────────────────────────────
+  //
+  // These three were pure `set`s. The run elements — the top infill above all
+  // — are built from the ROOM (`refreshAutoParts` → `runTopInfill`), and from
+  // tonight one of their answers depends on whether the run is raked: off a
+  // slope the top piece runs to the wall, under one it stops plumb on the
+  // carcass (T55). Without the refresh the element kept whatever it was built
+  // with, so adding a rake left yesterday's board on the cabinet until some
+  // unrelated act happened to rebuild it.
+  //
+  // It is the same call every other room-shaped mutator on this store already
+  // makes, and it is idempotent.
+  addWallSlope: (slope) => {
     const next = migrateWallElement({ id: uid(slope?.kind || 'slope'), ...slope });
-    if (!next) return {};
-    return { project: { ...s.project, wallSlopes: [...wallElements(s.project.wallSlopes), next] } };
-  }),
+    if (!next) return null;
+    set((s) => ({
+      project: { ...s.project, wallSlopes: [...wallElements(s.project.wallSlopes), next] },
+    }));
+    get().refreshAutoParts();
+    return next.id;
+  },
 
-  updateWallSlope: (id, patch) => set((s) => ({
-    project: {
-      ...s.project,
-      wallSlopes: wallElements(s.project.wallSlopes)
-        .map((v) => (v.id === id ? migrateWallElement({ ...v, ...patch, id: v.id }) : v))
-        .filter(Boolean),
-    },
-  })),
+  updateWallSlope: (id, patch) => {
+    set((s) => ({
+      project: {
+        ...s.project,
+        wallSlopes: wallElements(s.project.wallSlopes)
+          .map((v) => (v.id === id ? migrateWallElement({ ...v, ...patch, id: v.id }) : v))
+          .filter(Boolean),
+      },
+    }));
+    get().refreshAutoParts();
+  },
 
-  removeWallSlope: (id) => set((s) => ({
-    project: { ...s.project, wallSlopes: wallElements(s.project.wallSlopes).filter((v) => v.id !== id) },
-  })),
+  removeWallSlope: (id) => {
+    set((s) => ({
+      project: { ...s.project, wallSlopes: wallElements(s.project.wallSlopes).filter((v) => v.id !== id) },
+    }));
+    get().refreshAutoParts();
+  },
 
   // ─── TURN 45 (CLAUDE.md F9b/F9c): THE JOB'S LED SPEC ─────────────────────
   // A PATCH setter, like every other on this store: the tab writes one field at
@@ -1946,6 +1969,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // the OWNER's floor as the datum, because the owner's frame is the frame
       // `runInfill.offset` is already stated in. One function, one datum, one
       // ceiling.
+      // T58-F5: the top infill runs to the WALL again off a slope, and stops
+      // plumb on the carcass under one (T55). The store owns the room, so the
+      // store answers — with the SAME `unitUnderSlope` F4 asks, never a second
+      // reading of the same fact.
+      isRaked: (u) => get().unitUnderSlope(u.id),
       runCutOf: ({ run, from, to, owner }) => {
         const slopes = slopesOfWall(s, run.wall);
         if (!slopes.length) return null;

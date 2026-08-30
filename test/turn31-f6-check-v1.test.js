@@ -90,8 +90,18 @@ test('the rules, each with the owner’s colour', () => {
   // …and #21, "Shelf crosses the slope line" (T46-F5): a shelf exists only
   // where its FULL span sits below the line, and this names the ones that do
   // not so a joiner is never quietly short of a board.
-  assert.equal(CHECKS.length, 21);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]);
+  // ─── RE-PINNED 30.08.2026 (TURN 57, CLAUDE.md F5) ───────────────────────
+  // And #25, "J-pull run does not fit the leaf". A J-pull IS the whole handle
+  // — nothing is screwed to the front — so a leaf that quietly missed its
+  // machining is a door with no way to open it, and nobody finds out until it
+  // is hung. RED for the refusal (no leaf above the run's start, nothing cut),
+  // yellow for the clamp (the run it can hold, and the app says it shortened
+  // it). The twenty-one before it are untouched, which is what the deep-equal
+  // below is for. The number is 25 and not 22 because #22, #23 and #24 are
+  // already emitted by T52/T53/T55 — they were never given rows in this
+  // registry, which is a gap this turn found and did not widen.
+  assert.equal(CHECKS.length, 22);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -120,6 +130,7 @@ test('the rules, each with the owner’s colour', () => {
     19: 'red',
     20: 'red',
     21: 'red',
+    25: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

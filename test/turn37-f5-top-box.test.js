@@ -129,7 +129,9 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // RE-PINNED 20.08.2026 (T43-F7): and #18, the runner rung with no article.
   // RE-PINNED 24.08.2026 (T46-F2): and #19, the 400 mm floor under a cut
   // cabinet. Rule 15 is still the fifteenth and still says what it said.
-  assert.equal(CHECKS.length, 21);
+  // RE-PINNED 30.08.2026 (T57-F5): and #25, the J-pull run that does not fit
+  // its leaf. Rule 15 is still the fifteenth and still says what it said.
+  assert.equal(CHECKS.length, 22);
   assert.equal(CHECKS[14].n, 15);
 });
 

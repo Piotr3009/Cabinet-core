@@ -207,7 +207,10 @@ test('F5 — the same procedure, asked in the owner’s words', () => {
 
 test('F5 — the opening options are EXACTLY the owner’s four', () => {
   assert.deepEqual(FRONT_OPENING_IDS, ['push', 'handles', 'knobs', 'jhandle']);
-  assert.deepEqual(FRONT_OPENINGS.map((o) => o.label), ['Push-to-open', 'Handles', 'Knobs', 'J-handle']);
+  // T57 AMENDED (30.08.2026): 'J-handle' → 'J-pull handleless'. The owner's
+  // FOUR are still exactly four and still in his order; the fourth is called
+  // what he calls it now that it is a real handle system rather than a shape.
+  assert.deepEqual(FRONT_OPENINGS.map((o) => o.label), ['Push-to-open', 'Handles', 'Knobs', 'J-pull handleless']);
   assert.equal(frontOpeningLabel('knobs'), 'Knobs');
   assert.equal(frontOpeningLabel('nonsense'), 'Push-to-open');
   // "no separate 'pull'" — the spec says so in as many words.
@@ -216,10 +219,16 @@ test('F5 — the opening options are EXACTLY the owner’s four', () => {
 
 test('F5 — not one of the four invents a field: each writes what the project carries', () => {
   const base = migrateDesign({});
-  // J-handle IS the shape.
+  // ─── T57 AMENDED (30.08.2026): THE J IS NOT THE SHAPE ──────────────────
+  // This line used to read "J-handle IS the shape" and wrote `style: 'HJ'`
+  // with `handle: null`. That was the wrong axis, and CLAUDE.md T57 says so
+  // in the open: a J-pull is a HANDLE SYSTEM — how the front is HELD — and
+  // the face pattern is a separate question. On the pattern axis "shaker AND
+  // J-pull" was unsayable, which is a kitchen the owner sells. So the patch
+  // writes the HANDLE and leaves the shape exactly as somebody chose it.
   const j = frontOpeningPatch(base, 'jhandle');
-  assert.equal(j.fronts.style, J_HANDLE_STYLE);
-  assert.equal(j.fronts.handle, null);
+  assert.deepEqual(j.fronts.handle, { type: 'jpull' });
+  assert.equal(j.fronts.style, base.fronts.style, 'the shape is not touched');
   assert.equal(frontOpening(migrateDesign(j)), 'jhandle');
   // handles / knobs write the handle record engine/handles.js already fits.
   const h = frontOpeningPatch(base, 'handles');
@@ -235,14 +244,27 @@ test('F5 — not one of the four invents a field: each writes what the project c
   assert.equal(frontOpening(migrateDesign(p)), 'push');
 });
 
-test('F5 — leaving the J-handle puts the door back to the shape somebody chose', () => {
+test('F5 — the J-pull leaves the shape alone, and a legacy HJ still comes back', () => {
+  // ─── T57 AMENDED (30.08.2026) ──────────────────────────────────────────
+  // There is nothing to put back any more, because nothing was taken away: a
+  // SHAKER door that goes on J-pull is a shaker door with a J edge, which is
+  // the whole reason the J moved to the handle axis.
   const shaker = migrateDesign({ fronts: { style: 'S' } });
   const asJ = migrateDesign(frontOpeningPatch(shaker, 'jhandle'));
-  assert.equal(asJ.fronts.style, 'HJ');
-  const back = frontOpeningPatch(asJ, 'handles', { previousStyle: 'S' });
-  assert.equal(back.fronts.style, 'S', 'the shape it replaced');
-  // …and with nothing remembered it falls to Flat, the plain slab, never to HJ.
-  assert.equal(frontOpeningPatch(asJ, 'handles').fronts.style, 'F');
+  assert.equal(asJ.fronts.style, 'S', 'still a shaker');
+  assert.deepEqual(asJ.fronts.handle, { type: 'jpull' });
+  assert.equal(frontOpening(asJ), 'jhandle');
+  const back = migrateDesign(frontOpeningPatch(asJ, 'handles'));
+  assert.equal(back.fronts.style, 'S', 'and it is still a shaker on the way out');
+  assert.deepEqual(back.fronts.handle, { type: 'bar' });
+
+  // …and T44's own path is still honoured for every project SAVED with it:
+  // `style: 'HJ'` and no handle still reads as J-pull, and leaving it still
+  // puts the door back to the shape somebody chose — or to Flat.
+  const legacy = migrateDesign({ fronts: { style: J_HANDLE_STYLE, handle: null } });
+  assert.equal(frontOpening(legacy), 'jhandle', 'a project saved before tonight');
+  assert.equal(frontOpeningPatch(legacy, 'handles', { previousStyle: 'S' }).fronts.style, 'S');
+  assert.equal(frontOpeningPatch(legacy, 'handles').fronts.style, 'F');
 });
 
 test('F5 — a handle’s CENTRES survive a round trip through the four', () => {

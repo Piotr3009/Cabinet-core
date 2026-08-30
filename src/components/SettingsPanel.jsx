@@ -33,6 +33,7 @@ import VeneerPicker from './VeneerPicker.jsx';
 import ColourPicker from './ColourPicker.jsx';
 import FrontStyleGallery, { FrontStyleArt } from './FrontStyleGallery.jsx';
 import NumberField from './NumberField.jsx';
+import { jpullSpec } from '../engine/handles.js';
 import { shakerFrameMm } from '../engine/shaker.js';
 
 // ─── THE SETTINGS SURFACE (turn 12, CLAUDE.md F1) ───────────────────────────
@@ -895,6 +896,91 @@ export default function SettingsPanel({ onRoomSetup = null }) {
             </div>
           ))}
         </div>
+        {/* ─── TURN 57 (CLAUDE.md F4.2): THE J-PULL'S OWN MILLIMETRES ───────
+            Shown only where the project is actually ON J-pull, beside the rest
+            of the hardware, because that is the question it answers: how this
+            workshop's J is machined. A shop that never chooses J-pull never
+            sees a row of numbers about it.
+
+            They are PROFILE numbers, not project ones — the same standing the
+            hinge-plate pilot above has — so `setProfile` writes them and every
+            front in every project follows on the next recompute. The engine
+            reads them live through `handles.js jpullSpec`, which is how
+            `doors.gap` is read, and the law they answer to is
+            `reference/lisp/KIT_FRONT_JPULL.lsp`.
+
+            THE RAMP RADIUS IS A PLACEHOLDER. The owner: "routerowanie
+            bedziemy robic pozniej." It is here, named and editable, so that
+            tuning it is one field and not a code change. */}
+        {design.fronts?.handle?.type === 'jpull' && (
+          <div className="space-y-1" data-jpull-settings="1">
+            <span className="text-[11px] uppercase tracking-wide text-ink-300">
+              J-pull handleless
+            </span>
+            {[
+              {
+                k: 'runMm', label: 'Run length', min: 50, max: 3000,
+                hint: 'How long the machined run is on a tall door. A base door and every drawer front take the whole top edge instead.',
+              },
+              {
+                k: 'fromBottomMm', label: 'Run starts at', min: 0, max: 3000,
+                hint: 'Measured up from the leaf\'s own bottom edge. A leaf shorter than this takes no J at all, and the Check says which one.',
+              },
+              {
+                k: 'rampR', label: 'Lead-in radius', min: 0, max: 200,
+                hint: 'The arc the cutter is walked in on at each end of a stopped run — never a square stop. A placeholder until the routing is set.',
+              },
+              {
+                k: 'lipT', label: 'Front lip', min: 1, max: 40,
+                hint: 'The visible hook of the J, standing proud of the relieved back.',
+              },
+              {
+                k: 'slotW', label: 'Finger slot', min: 4, max: 40,
+                hint: 'How wide the slot is through the board\'s thickness — what your hand goes into.',
+              },
+              {
+                k: 'slotDepth', label: 'Slot depth', min: 5, max: 120,
+                hint: 'How far the slot runs back from the edge.',
+              },
+              {
+                k: 'slotR', label: 'Slot bottom radius', min: 0, max: 40,
+                hint: 'The rounded bottom of the slot. Depth plus this is how far the tool reaches.',
+              },
+              {
+                k: 'rearLeg', label: 'Rear leg', min: 1, max: 40,
+                hint: 'Lip + slot + leg must add up to the board — the owner\'s section closes on 18 mm.',
+              },
+              {
+                k: 'reliefMm', label: 'Rear relief', min: 0, max: 120,
+                hint: 'How far the back face is cut down from the edge — the finger clearance.',
+              },
+            ].map((f) => (
+              <div key={f.k} className="cc-row" data-jpull-field={f.k}>
+                <div className="flex flex-col flex-1">
+                  <span className="text-sm text-ink-100">{f.label}</span>
+                  <span className="text-[11px] text-ink-400">{f.hint}</span>
+                </div>
+                <NumberField
+                  className="cc-input w-24"
+                  value={jpullSpec(profile)[f.k]}
+                  min={f.min}
+                  max={f.max}
+                  integer={false}
+                  decimals={3}
+                  onCommit={(v) => setProfile({
+                    ...profile,
+                    handles: {
+                      ...profile.handles,
+                      jpull: { ...jpullSpec(profile), [f.k]: v },
+                    },
+                  })}
+                />
+                <span className="text-[11px] text-ink-400">mm</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* ─── Turn 17 (CLAUDE.md F7.1): STANDARD HINGES ────────────────────
             How many hinges this JOB hangs a door on. Three is what every kit
             has drilled since turn 1, so a project that never touches this is

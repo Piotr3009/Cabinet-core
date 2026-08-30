@@ -181,18 +181,16 @@ const RUN = (ceiling, returns) => computeCabinet({
   },
 }, P);
 
-test('T55 · a RAKED end grows no return; a FLAT end keeps its corner', () => {
+test('a ceiling with ANY rake grows no return at all — not even on its flat end', () => {
   // Ceiling flat on the LEFT half, raked down on the RIGHT half.
   const mixed = RUN(
     [{ x: 0, y: 2400 }, { x: 300, y: 2400 }, { x: 600, y: 2100 }],
     { left: 150, right: 150 },
   );
-  assert.ok(mixed.panels.find((p) => p.id === 'INFILL-TL-FACE'),
-    'flat left end: the return face stands');
-  assert.equal(mixed.panels.find((p) => p.id === 'INFILL-TR-FACE'), undefined,
-    'raked right end: no return face — the run finishes straight');
-  assert.equal(mixed.panels.find((p) => p.id === 'INFILL-TL-SHELF'), undefined,
-    'and no return shelf on the flat end either — the shelf does not exist');
+  for (const id of ['INFILL-TL-FACE', 'INFILL-TR-FACE']) {
+    assert.equal(mixed.panels.find((p) => p.id === id), undefined,
+      `${id}: under a slope the run finishes straight at BOTH ends`);
+  }
 });
 
 test('T55 · a fully RAKED ceiling grows no return at either end', () => {

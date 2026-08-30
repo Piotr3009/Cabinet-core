@@ -159,7 +159,7 @@ test('`mitre_45` no longer says "long" anywhere on the top infill', () => {
   ];
   for (const over of cases) {
     for (const p of tops(build(over))) {
-      assert.equal(p.meta.mitre_45.includes('long'), false, `${p.id}: the L is dead`);
+      assert.equal((p.meta.mitre_45 || []).includes('long'), false, `${p.id}: the L is dead`);
       assert.equal(p.meta.mitre?.L, undefined, `${p.id}: and so is its 45`);
     }
   }
@@ -180,8 +180,9 @@ test('…and the 45 that SURVIVES is the turning corner, and the slope\'s own jo
   assert.ok(byId(turned, 'INFILL-T-FACE').meta.mitre_45.includes('end'));
   assert.deepEqual(byId(turned, 'INFILL-TL-FACE').meta.mitre_45, ['end']);
 
-  // 3 — a bent ceiling joins segment to segment, at EXACTLY T47's angles: a
-  //     flat run meeting a 45° fall makes 135°, so each piece is cut at 67.5.
+  // 3 — a bent ceiling joins segment to segment at T47's angles (135° → 67.5
+  //     each), and carries NO 45 at all: under a rake the board neither wraps
+  //     nor mitres — *"nie zawija — zakańczasz prosto"*.
   const bent = computeCabinet({
     ...BASE,
     width: 900,
@@ -191,7 +192,7 @@ test('…and the 45 that SURVIVES is the turning corner, and the slope\'s own jo
   const faces = tops(bent).filter((p) => p.meta.piece === 'face');
   assert.equal(faces[0].meta.mitre.right, 67.5);
   assert.equal(faces[1].meta.mitre.left, 67.5);
-  for (const p of faces) assert.ok(p.meta.mitre_45.includes('end'));
+  for (const p of faces) assert.deepEqual(p.meta.mitre_45 || [], []);
 });
 
 // ═══ THE SCENE SHOWS ONE BOARD ══════════════════════════════════════════════

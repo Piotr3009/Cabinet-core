@@ -4888,10 +4888,6 @@ export function computeCabinet(params, profileOverride) {
           piece: 'face',
           segment: manySegs ? `main-${i + 1}` : 'main',
           ends,
-          // The knee is the rake's ONLY joint: two pieces meet on the
-          // half-angle, exactly as the owner drew it. 'end' marks the cut for
-          // the labeller; the angles are T47's.
-          mitre_45: (sg.joinL || sg.joinR) ? ['end'] : [],
           ...(sg.joinL != null || sg.joinR != null ? {
             mitre: {
               ...(sg.joinL != null ? { left: sg.joinL } : {}),
@@ -4944,10 +4940,9 @@ export function computeCabinet(params, profileOverride) {
         // T48-F2: 'long' is gone with the L. What is left is 'end', and only
         // where two RUNS meet — the turning corner, and a segment-to-segment
         // join a bent ceiling makes.
-        mitre_45: [...new Set([
+        mitre_45: infRoof ? [] : [...new Set([
           ...mitre(i === 0 && ends.left === 'open'),
           ...mitre(i === runSegsSplit.length - 1 && ends.right === 'open'),
-          ...(sg.joinL || sg.joinR ? ['end'] : []),
         ])],
         // The L's own 45 (`mitre.L`) died with the L. The joins the SLOPE makes
         // are exactly what T47 computed and are stated only when there is one.
@@ -4977,29 +4972,14 @@ export function computeCabinet(params, profileOverride) {
       }));
     });
 
-    // The OPEN end: the element mitres at 45° in plan and carries on to the
-    // back wall — a picture-frame corner. LEVEL ends only: *"jak jest skos, to
-    // musi znikać. Nie zawija — zakańczasz prosto."*
-    for (const [side, returnDepth] of Object.entries(runInfill.returns || {})) {
+    // The OPEN end wraps to the back wall — a picture-frame corner. A LEVEL
+    // ceiling only: *"jak jest skos, to musi znikać. Nie zawija."*
+    for (const [side, returnDepth] of Object.entries(infRoof ? {} : (runInfill.returns || {}))) {
       if (!(Number(returnDepth) > 0)) continue;
-      const edgeSeg = side === 'left'
-        ? runSegsSplit[0]
-        : runSegsSplit[runSegsSplit.length - 1];
-      if (infRoof && edgeSeg && edgeSeg.deg > 1e-9) continue;
       const outer = side === 'left' ? x0 : x0 + len;      // the corner, in plan
       const xFace = side === 'left' ? outer : outer - t;
       const tag = side === 'left' ? 'L' : 'R';
-      // ─── TURN 53 (CLAUDE.md F3b): THE RETURN HANGS WHERE THE FACE HANGS ──
-      //
-      // The main face sits ON the cabinet under a flat ceiling (`y = H`, top at
-      // `H + faceH`) and HANGS FROM the ceiling under a rake (top at the line).
-      // The return is the same element turning the corner, so it takes the same
-      // band at its own x — otherwise it floats half a metre above the board it
-      // is mitred to, which is the *"poza ścianami"* fault seen end-on.
-      const retTop = infRoof
-        ? Math.min(infReachAt(outer), H + faceH)
-        : H + faceH;
-      const retY = roundTo(retTop - faceH, 4);
+      const retY = roundTo(H, 4);
       panels.push(panel({
         id: `INFILL-T${tag}-FACE`, part: 'INFILL', role: 'infill', w: returnDepth, h: faceH, thickness: t,
         edgeCode: codes.topBottom, edgeLen: metres(returnDepth),

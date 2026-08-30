@@ -23,6 +23,11 @@ const WATCH_LED_STANDOFF_M = 0.0015;
 // throws. It is a PICTURE — nothing here reaches a hole, a cut or a BOM line,
 // which is the same standing every number in `profile.lighting` has.
 const WATCH_LED_HEX = '#ffe9c2';
+// ─── TURN 58 (CLAUDE.md F7, the owner's amendment): SMOKY BROWN, NEVER GREY ─
+// *"przezroczysta lub jakaś bardziej smoky brąz, a nie szara — nic nie
+// widać."*  Warm, dark enough to read as glass at a grazing angle, light
+// enough that the watches under it are the thing you look at.
+const WATCH_GLASS_HEX = '#6b4f3a';
 // ─── TURN 57 (CLAUDE.md F0b): 6 → 40, AND THE REASON IS THE FIXTURE ────────
 // T52's 6 was set for ONE 4 mm strip lying along the front rail of a tray, a
 // hand's width from the watches. T53 moved the light to a RING round the
@@ -792,12 +797,21 @@ function WatchShelfGlass({ pane, shelf, xray = false }) {
     const z0 = shelf.box.z + Math.min(led.y1, led.y2);
     const z1 = shelf.box.z + Math.max(led.y1, led.y2);
     const t = Number(led.width) || WATCH_LED_WIDTH_MM;
-    return [
-      { x: (x0 + x1) / 2, z: z0, w: x1 - x0, d: t },
-      { x: (x0 + x1) / 2, z: z1, w: x1 - x0, d: t },
-      { x: x0, z: (z0 + z1) / 2, w: t, d: z1 - z0 },
-      { x: x1, z: (z0 + z1) / 2, w: t, d: z1 - z0 },
-    ];
+    // ─── TURN 58 (CLAUDE.md F7, the owner's amendment) ───────────────────
+    // *"światło powinno być z tyłu na półce — przy zamkniętej fajnie
+    // oświetla."*
+    //
+    // It was a RING — four strips, front, back and both sides. The FRONT one
+    // is the fault he is looking at: it sits at the shelf's front edge and
+    // floodlights the drawer fronts below it, which is light spilling out of
+    // the cabinet instead of into it. The other two rake across the pane.
+    //
+    // ONE STRIP, AT THE REAR. `z` runs from the wall forward, so `z0` is the
+    // back of the aperture: the light washes FORWARD under the pane, over the
+    // watches, and nothing of it reaches the fronts. With the drawer shut it
+    // glows the interior through the glass, which is the whole of his
+    // sentence.
+    return [{ x: (x0 + x1) / 2, z: z0, w: x1 - x0, d: t }];
   }, [led, shelf]);
   if (!pane?.box) return null;
   const ledY = Number(led?.y);
@@ -814,16 +828,42 @@ function WatchShelfGlass({ pane, shelf, xray = false }) {
         userData={{ ccWatchGlass: pane.drawer, ccNoBounds: true }}
       >
         <boxGeometry args={[mm(pane.box.w), mm(pane.box.h), mm(pane.box.d)]} />
+        {/* ─── TURN 58 (CLAUDE.md F7, the owner's amendment) ───────────────
+            *"nie przezroczysta i nie widać szuflady w środku przez szybę …
+            przezroczysta lub jakaś bardziej smoky brąz, a nie szara — nic nie
+            widać."*
+
+            TWO FAULTS, and the opacity was neither of them.
+
+            1. TRANSMISSION. `transmission: 0.95` puts this material on
+               three's TRANSMISSION pass, which renders the backdrop into its
+               own target — and where that pass has nothing to give it, the
+               pane comes back a flat slab and `opacity` is not even consulted.
+               T57 lowered the number and the glass stayed shut, which is
+               exactly what a property nobody reads looks like. It is gone:
+               plain alpha blending is what a 4 mm pane over a drawer needs,
+               and it is the one path in this file that cannot silently fail.
+
+            2. THE TINT WAS GREY. `#e6f1f2` is a cold blue-grey, and the owner
+               named it: *"a nie szara"*. It is SMOKY BROWN now, which is his
+               other word, and it is dark enough to read as glass and light
+               enough to see the watches through.
+
+            AND THE KEY, which is this file's own law twenty lines up: a
+            material three has already compiled a program for does not grow a
+            new one when a flag changes. `transparent` and the X-ray opacity
+            are part of that program, so the material is remounted when they
+            move — the same trap T11 wrote down for X-ray and T57 walked into
+            here. */}
         <meshPhysicalMaterial
-          color="#e6f1f2"
+          key={`watchglass-${xray ? 'xray' : 'solid'}`}
+          color={WATCH_GLASS_HEX}
           transparent
-          opacity={xray ? 0.08 : 0.2}
+          opacity={xray ? 0.06 : 0.24}
           depthWrite={false}
           side={THREE.DoubleSide}
-          roughness={0.03}
+          roughness={0.05}
           metalness={0}
-          transmission={0.95}
-          thickness={mm(pane.box.h)}
           ior={1.52}
           specularIntensity={1}
           envMapIntensity={1.4}
@@ -851,10 +891,13 @@ function WatchShelfGlass({ pane, shelf, xray = false }) {
         // that to (0, −1, 0): the owner's law from T52 — the LED lights the
         // WATCHES, never the pane — said for the shelf it now lives in.
         <rectAreaLight
+          // T58-F7: at the REAR with its strip, and no wider than the
+          // aperture — a light still centred over the whole pane would put
+          // back exactly the spill the strip above just stopped.
           position={[
             mm(pane.box.x + pane.box.w / 2),
             mm(lightY) - WATCH_LED_STANDOFF_M,
-            mm(pane.box.z + pane.box.d / 2),
+            mm(ring[0]?.z ?? (pane.box.z + pane.box.d / 2)),
           ]}
           rotation={[-Math.PI / 2, 0, 0]}
           args={[WATCH_LED_HEX, WATCH_LED_LUX, mm(pane.box.w), mm(pane.box.d)]}

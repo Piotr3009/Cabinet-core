@@ -1567,7 +1567,10 @@
 ;;; a second reading of one ceiling.
 ;;;
 ;;; The full-height edge WINS the hinge. A level ceiling over the leaf ties,
-;;; and a tie keeps the hand that was typed.
+;;; and a tie keeps the hand that was typed. This app's default hand is "L",
+;;; so a tie in the engine resolves to "L" - which is what every leaf in a
+;;; level room has been given since turn 1, and is exactly why writing this
+;;; rule down moves no byte on any cabinet that is not under a slope.
 (defun SKY:leafHand (pts hand / yl yr)
   (if (or (null pts) (< (length pts) 2))
     hand

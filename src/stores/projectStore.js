@@ -15,7 +15,7 @@ import {
 import { layerNameFault, makeUserLayer, normaliseUserLayers } from '../engine/partLayers.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
-import { doorBays } from '../engine/doors.js';
+import { carcassBaysFor, doorBays, hingedCarcassSidesOf } from '../engine/doors.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
   defaultParamsFor, getUnitType, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
@@ -540,23 +540,35 @@ function budrDrawerIndex(unit, ref) {
 
 /** Interior items -> the count/flag shape the engine consumes. */
 /**
- * Which CARCASS sides carry a hinged door — the design layer's own answer.
+ * Which CARCASS sides carry a hinged door — asked of the ONE law that knows.
  *
- * Returns null when the unit has no per-bay doors, which leaves the engine's
- * `doorCount` rule exactly where it was for every cabinet in the app but this
- * one shape.
+ * ─── TURN 58 (F2): THE STATIC TABLE IS GONE (licensed deletion 1) ──────────
+ *
+ * What stood here was a hand-rolled pair of ifs over the RAW typed hinge:
+ *
+ *     if (on(first) && hinge(first) === 'L') sides.push('BUL');
+ *     if (on(last)  && hinge(last)  === 'R') sides.push('BUR');
+ *
+ * It read the right SHAPE off the bays — the first bay's left boundary is
+ * always BUL, the last bay's right is always BUR — and it was a SECOND ANSWER
+ * to the question `engine/doors.js bayDoorPlan` has answered since turn 21.
+ * Being a second answer, it could not hear the ceiling: under a slope the plan
+ * re-hands a leaf (T46's forced hand, and T58-F2's re-plan behind it) and this
+ * table went on reserving the board a joiner had TYPED. The drawer standoff,
+ * which is the only thing that reads it, was then taken off the wrong side.
+ *
+ * So the table dies and the question is asked ONCE, of the module that owns
+ * doors. The bays are built from the same partitions the engine cuts from, so
+ * both readers are looking at one cabinet.
+ *
+ * Returns undefined when the unit has no per-bay doors, which leaves the
+ * engine's `doorCount` rule exactly where it was for every cabinet in the app
+ * but this one shape.
  */
 function hingedCarcassSides(p) {
-  const bays = Array.isArray(p?.bay_doors) ? p.bay_doors : null;
-  if (!bays || !bays.length) return undefined;
-  const on = (m) => String(m?.door ?? 'none').toLowerCase() !== 'none';
-  const hinge = (m) => (String(m?.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L');
-  const first = bays[0];
-  const last = bays[bays.length - 1];
-  const sides = [];
-  if (on(first) && hinge(first) === 'L') sides.push('BUL');
-  if (on(last) && hinge(last) === 'R') sides.push('BUR');
-  return sides;
+  const modes = Array.isArray(p?.bay_doors) ? p.bay_doors : null;
+  if (!modes || !modes.length) return undefined;
+  return hingedCarcassSidesOf({ bays: carcassBaysFor(modes.length), modes });
 }
 
 /**

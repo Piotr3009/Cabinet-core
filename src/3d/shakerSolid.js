@@ -55,6 +55,22 @@ const cache = new Map();
  */
 export function shakerFrontGeometry(panel, bores = []) {
   if (!isShakerFront(panel)) return null;
+  // ─── TURN 57 (CLAUDE.md F3): A BOARD WITH A J IS BUILT BY THE OTHER ONE ──
+  //
+  // The tray below is eleven hand-wound faces and every one of its walls runs
+  // in the FACE plane, from the front of the board down to the pocket floor.
+  // It has no vertex along the thickness axis at all — which is exactly what a
+  // J-pull is: a section that CHANGES through the board (lip, slot, rear leg).
+  // A tray cannot hold one, and pretending otherwise would draw a stripe.
+  //
+  // So a shaker front that carries a J falls through to `panelSolid.js`, which
+  // extrudes through the thickness and can. It loses nothing: the shaker
+  // pocket is a POCKET on the piece (`cnc.pockets`), and `engine/recesses.js`
+  // turns it into a real recess there — the same absence, cut by the builder
+  // that can also cut the edge. T46 wrote the mirror image of this note when a
+  // CUT leaf fell the other way; the rule underneath both is the same one —
+  // the board goes to the builder that can express its whole shape.
+  if (panel?.cnc?.jpull?.edge) return null;
   // ─── TURN 50 (CLAUDE.md F6): T46'S NAMED DEBT, PAID ────────────────────────
   //
   // T46 wrote here: *"a cut leaf falls through to `3d/panelSolid.js` … What it

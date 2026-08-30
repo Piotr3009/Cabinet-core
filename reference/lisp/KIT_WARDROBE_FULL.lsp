@@ -1536,3 +1536,122 @@
 
 (princ "\nKIT_WARDROBE_FULL: SLOPE CUT T46/T47 section loaded.")
 (princ)
+
+;;;========================================
+;;; G. TURN 58 - THE HAND A LEAF OPENS ON, AND THE SHOE COMES HOME
+;;;========================================
+;;; Two laws, written here before any JavaScript reads them (iron rule 1).
+;;; Both belong to the WARDROBE and to nothing else: only a wardrobe stands
+;;; under a cut ceiling, and only a wardrobe carries bay leaves and a shoe
+;;; shelf. Neither law is mentioned in any other kit.
+;;;
+;;;----------------------------------------
+;;; G1. A HINGE HAS ONE HAND, AND BOTH ENDS OF IT FOLLOW
+;;;----------------------------------------
+;;; THE FAULT THIS SECTION EXISTS TO FORBID, measured on main 30.08.2026:
+;;; a 1800 x 2150 wardrobe with one partition at 900, bay leaves typed
+;;; [L, R], under a ceiling rising 1200 -> 2150 across the width. The left
+;;; leaf came out DRILLED on its right stile - the slope forces the hand to
+;;; the full-height edge (T46: "brak wyboru otwierania", the door opens FROM
+;;; the slope) - and HUNG on BUL, because the boundary was picked from the
+;;; hand a joiner had TYPED. Cups in one stile, plates in the opposite board:
+;;; a door that cannot be hung.
+;;;
+;;; THE LAW. A hinge has ONE hand. The ceiling decides it where the ceiling
+;;; cuts the leaf; the typed hand stands everywhere else. The boundary the
+;;; leaf hangs on is DERIVED from that one answer and is never picked again.
+;;;
+;;; `pts' is the leaf's own stretch of the ceiling line, in the leaf's frame,
+;;; exactly as SKY:slopeCutPts hands it to every other cut in this kit - no
+;;; second sampler is written here, and that is deliberate: T57-F0a's scar is
+;;; a second reading of one ceiling.
+;;;
+;;; The full-height edge WINS the hinge. A level ceiling over the leaf ties,
+;;; and a tie keeps the hand that was typed.
+(defun SKY:leafHand (pts hand / yl yr)
+  (if (or (null pts) (< (length pts) 2))
+    hand
+    (progn
+      (setq yl (cadr (car pts)))
+      (setq yr (cadr (last pts)))
+      (cond
+        ((> yl yr) "L")
+        ((> yr yl) "R")
+        (T hand)
+      )
+    )
+  )
+)
+
+;;; …and the board the plates go in follows the hand. `leftId'/`rightId' are
+;;; the two boundaries of the leaf's own bay - "BUL"/"BUR" where the bay
+;;; touches the carcase, a partition's own name where it does not.
+(defun SKY:leafBoundary (hand leftId rightId)
+  (if (= hand "L") leftId rightId)
+)
+
+;;; THE CHECK a paren count cannot make: the two ends agree. Given the leaf's
+;;; ceiling and its typed hand, the stile the cups go in and the board the
+;;; plates go in are answered by ONE call, so they cannot disagree.
+(defun SKY:leafHinge (pts hand leftId rightId / h)
+  (setq h (SKY:leafHand pts hand))
+  (list h (SKY:leafBoundary h leftId rightId))
+)
+
+;;;----------------------------------------
+;;; G2. THE SHOE SHELF COMES HOME
+;;;----------------------------------------
+;;; T54-F7 buried the shoe BOX and its kit with it ("usun stary kod na shoes
+;;; i zrob z logika drawers") - and the TILTED SHOE SHELF, which that licence
+;;; named as a DIFFERENT entity and did NOT touch, lost its LISP home in the
+;;; same grave. Since that night its 15 degrees and its stop rail have lived
+;;; in JavaScript alone, which is iron rule 1 broken by accident rather than
+;;; by decision. The shelf is cut in this kit, so the law comes home here -
+;;; added LINES in the kit that owns the wardrobe, not a kit of its own: the
+;;; shelf is not a product, it is a wardrobe shelf set at an angle.
+;;;
+;;; NO NEW HOLE PATTERN. The shoe shelf rests on the STANDARD 7.5 pin rows
+;;; this kit has drilled since turn 1 (drawWardrobeShelfHolesBUL/-BUR above);
+;;; the workshop sets the FRONT pair lower and the board leans. That is a
+;;; hand on a pin, not a drilling change, and nothing below drills anything.
+;;;
+;;; OWNER'S NUMBER, 15.08.2026: the shelf tilts 15 degrees.
+(defun shoeTiltDeg ( / ) 15)
+;;; The stop rail (listwa) that keeps the shoes on the slope. Its SECTION is a
+;;; seed, not the owner's drawing - he named the piece, not the numbers - and
+;;; it is owner-tunable exactly like the tilt above.
+(defun shoeRailH ( / ) 60)
+(defun shoeRailT ( / ) 18)
+
+;;; The BLANK is a plain rectangle. A board that leans is still cut square:
+;;; the angle is set by the pins it rests on, so no cut on this sheet carries
+;;; it and no note on this sheet claims it does.
+(defun drawWardrobeSHOE_SHELF (x0 y0 szerP glP unitNum shelfNum / midX midY)
+  (drawRect "OUTLINE" x0 y0 szerP glP)
+  (setq midX (+ x0 (/ szerP 2.0)))
+  (setq midY (+ y0 (/ glP 2.0)))
+  (drawText "UNIT_NUMBER" midX midY 30.0
+    (strcat unitNum " SHOE-SHELF-" (itoa shelfNum)))
+)
+
+;;; The RAIL, cut with the board and listed beside it. It ships UNDRILLED -
+;;; no line in this kit fixes a listwa, so the fixing is the workshop's own,
+;;; exactly the way the WINE lattice travels. Its length is the shelf's own
+;;; width; there is no second arithmetic for it.
+(defun drawWardrobeSHOE_RAIL (x0 y0 szerP unitNum shelfNum / midX midY)
+  (drawRect "OUTLINE" x0 y0 szerP (shoeRailH))
+  (setq midX (+ x0 (/ szerP 2.0)))
+  (setq midY (+ y0 (/ (shoeRailH) 2.0)))
+  (drawText "UNIT_NUMBER" midX midY 30.0
+    (strcat unitNum " SHOE-RAIL-" (itoa shelfNum)))
+)
+
+;;; The pair, as one thing. A shoe shelf is a shelf AND a rail; asking for one
+;;; and forgetting the other is the way this feature has always been got wrong.
+(defun SKY:shoeShelfPair (x0 y0 szerP glP unitNum shelfNum)
+  (drawWardrobeSHOE_SHELF x0 y0 szerP glP unitNum shelfNum)
+  (drawWardrobeSHOE_RAIL x0 (+ y0 glP 20.0) szerP unitNum shelfNum)
+)
+
+(princ "\nKIT_WARDROBE_FULL: T58 hinge-hand and shoe-shelf section loaded.")
+(princ)

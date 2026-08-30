@@ -87,11 +87,18 @@ test('F4 — Settings surfaces the run, the start and every profile constant', (
   for (const label of ['Run length', 'Run starts at', 'Lead-in radius', 'Front lip', 'Finger slot']) {
     assert.ok(SETTINGS.includes(label), `"${label}" is the label a person reads`);
   }
-  assert.match(SETTINGS, /<NumberField[\s\S]{0,400}?jpullSpec\(profile\)\[f\.k\]/, 'a real editable field');
+  assert.match(SETTINGS, /<NumberField[\s\S]{0,400}?value=\{spec\[f\.k\]\}/, 'a real editable field');
   // It writes the PROFILE, which is where the block lives, and only where the
   // project is actually on J-pull — a shop that never chooses it never sees it.
-  assert.match(SETTINGS, /design\.fronts\?\.handle\?\.type === 'jpull'/);
+  assert.match(SETTINGS, /handle\?\.type !== 'jpull'\) return null/);
   assert.match(SETTINGS, /setProfile\(\{[\s\S]{0,200}?jpull:/);
+  // …and it is EXPORTED and RENDERED, because the body of SettingsPanel is not
+  // drawn anywhere any more. A row written into it would be a control nobody
+  // could reach — which is the fault F0b spent tonight fixing one storey up.
+  assert.match(SETTINGS, /export function JpullHardware/);
+  assert.match(WIZ, /import \{ HingeHardware, JpullHardware, SheetSizeRow \}/);
+  assert.match(WIZ, /<JpullHardware/);
+  assert.match(WIZ, /data-wizard-node="hardware\.jpull"/);
 });
 
 test('F4 — and the engine reads them live, the way doors.gap is read', () => {

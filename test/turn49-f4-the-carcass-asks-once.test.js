@@ -63,7 +63,10 @@ test('F4 — every control the removed stop owned answers to its own hook', () =
 test('F4 — the SIZE control keeps every option it has today, jumbo included', () => {
   // The row is the SAME component the Settings menu draws — imported, never
   // copied — so "every option" is the profile's own list and cannot drift.
-  assert.match(WIZ, /import \{ HingeHardware, SheetSizeRow \} from '\.\/SettingsPanel\.jsx'/);
+  // T57 AMENDED (30.08.2026): the list grew a third name, `JpullHardware`.
+  // The claim is that the unified panel IMPORTS these rows rather than
+  // duplicating them, and it is stronger with three than with two.
+  assert.match(WIZ, /import \{ HingeHardware, JpullHardware, SheetSizeRow \} from '\.\/SettingsPanel\.jsx'/);
   assert.match(SETTINGS, /export function SheetSizeRow\(/);
   const ids = P.cnc.sheetOptions.map((o) => o.id);
   assert.deepEqual(ids, ['jumbo', 'standard', 'tenfoot', 'other']);

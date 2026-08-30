@@ -28,7 +28,7 @@ const check = (label, ok, detail = '') => {
   process.stdout.write(`${ok ? '  ok' : 'FAIL'}  ${label}${detail ? ` — ${detail}` : ''}\n`);
 };
 
-const page = await launch({ width: 1600, height: 1000, port: 9497 });
+const page = await launch({ width: 1600, height: 1000, port: 9623 });
 
 const ask = (expr) => page.evaluate(`
   const P = () => window.__cc.project.getState();
@@ -36,13 +36,25 @@ const ask = (expr) => page.evaluate(`
   return (${expr});
 `);
 
+// …and the VIEW is put back with it. `hideFronts` is a UI flag and it outlives
+// a new project, so a section that turned the fronts off to look inside a
+// carcass left the NEXT one photographing a cabinet with no doors on it. A
+// section has to start where every other section starts, or the walk is only
+// reproducible in the order it happens to be run in.
 async function fresh(name) {
   await ask(`(() => {
     P().newProject(${JSON.stringify(name)}, { number: '57' });
     U().openEditor();
+    U().setHideFronts(false);
+    U().selectUnit(null);
     return true;
   })()`);
   await page.sleep(700);
+  // A canvas that has just remounted has not registered its view handle yet,
+  // and every camera and pixel read below goes through it. Wait for the SCENE,
+  // not for a number of milliseconds.
+  await page.waitFor('window.__cc.views && (window.__cc.views.room || window.__cc.views.editor)',
+    { timeout: 20000 });
 }
 
 /**
@@ -174,10 +186,16 @@ try {
     check('every cut leaf is still a POLYGON — no leaf has one flat top line',
       cut.length > 0 && cut.every((l) => l.tops > 1),
       JSON.stringify(scene.leaves));
-    // Eye level, square on the doors, close enough to see a phantom if one
-    // were there.
-    await camera([0.5, 1.35, 2.3], [0.5, 1.15, 0]);
-    await page.sleep(1200);
+    // Eye level, square on the doors, and framed from the LEAF's own place in
+    // the world rather than from room arithmetic — close enough that a phantom
+    // sheet standing where the rake should be would be the first thing seen.
+    const leaf = await wherePanel(cut[0]?.id || scene.leaves[0].id);
+    check('the trimmed leaf is findable in the scene', Boolean(leaf), JSON.stringify(leaf?.world));
+    if (leaf) {
+      const Q = leaf.world;
+      await camera([Q.x + 0.15, Q.y + 0.10, Q.z + 2.45], [Q.x, Q.y - 0.05, Q.z]);
+    }
+    await page.sleep(1400);
     await page.screenshot(`${SHOTS}f0a-trim-slope.png`);
   }
 
@@ -208,7 +226,7 @@ try {
     check('the shelf carries a pane to draw', Boolean(scene.pane), JSON.stringify(scene.pane?.box));
     await page.sleep(900);
     const live = await ask(`(() => {
-      const v = window.__cc.views.room;
+      const v = window.__cc.views.room || window.__cc.views.editor;
       let panes = 0; let strips = 0; let lights = 0;
       v.scene.traverse((o) => {
         if (o.userData?.ccWatchGlass !== undefined) panes += 1;
@@ -251,7 +269,7 @@ try {
     // itself would measure the same either way, which is the fault this is
     // guarding: the claim is that the LIGHT UNDER THE GLASS reaches the eye.
     await ask(`(() => {
-      const v = window.__cc.views.room;
+      const v = window.__cc.views.room || window.__cc.views.editor;
       v.scene.traverse((o) => {
         if (o.userData?.ccWatchLedStrip !== undefined) o.visible = false;
         if (o.isRectAreaLight) o.intensity = 0;
@@ -301,7 +319,7 @@ try {
       scene.leaves?.every((l) => !l.handle), JSON.stringify(scene.leaves?.map((l) => l.handle)));
     await page.sleep(1200);
     const live = await ask(`(() => {
-      const v = window.__cc.views.room;
+      const v = window.__cc.views.room || window.__cc.views.editor;
       let handles = 0;
       let fronts = 0;
       let verts = 0;
@@ -408,6 +426,104 @@ try {
     await page.sleep(1400);
     await page.screenshot(`${SHOTS}f3-jpull-kitchen.png`);
   }
+  // ─── F4 · THE UI ENTRY — WHERE I CLICK, AND THE J APPEARS ────────────────
+  //
+  // A real mouse event on the real button in the real Settings window. No
+  // store call stands in for the click: the claim is that a PERSON can reach
+  // this, and a `setDesign` from the console would prove nothing about that.
+  if (runs('f4')) {
+    await fresh('F4 the entry');
+    const before = await ask(`(() => {
+      const r = P().addUnit('WARDROBE');
+      if (!r.id) return { error: r.error };
+      P().updateUnitParams(r.id, { width: 1000, height: 2200, depth: 600 });
+      P().addDoors(r.id);
+      P().moveUnit(r.id, 1200, 0, { magnet: false });
+      P().settleLayout();
+      P().refreshAutoParts();
+      const res = P().unitResult(r.id);
+      U().selectUnit(null);
+      return {
+        id: r.id,
+        opening: P().project.design.fronts.handle,
+        js: (res.panels || []).filter((p) => p.cnc.jpull).length,
+      };
+    })()`);
+    check('before the click: no handle system, and no J on the cabinet',
+      before.opening == null && before.js === 0, JSON.stringify(before));
+
+    // Settings… → the FRONTS step → the Opening row. The tab strip is walked
+    // with real clicks, because "where I click" is the claim.
+    await ask(`(() => { U().openModal('design', {}); return true; })()`);
+    await page.sleep(1000);
+    const tabs = await page.evaluate(`
+      return [...document.querySelectorAll('[data-wizard-tab]')].map((n) => n.getAttribute('data-wizard-tab'));
+    `);
+    check('the settings window opens on its tab strip', (tabs || []).length > 0, JSON.stringify(tabs));
+    const frontTab = (tabs || []).find((t) => /front/i.test(t));
+    if (frontTab) {
+      await page.click(`[data-wizard-tab="${frontTab}"]`);
+      await page.sleep(900);
+    }
+    // The fronts step is a SEQUENCE of stops and the Opening row is on its
+    // TAIL — "Shape, opening and shine". Its dot is a real button and, through
+    // the EDIT door, a jumpable one (T49-F7), so the walk clicks it.
+    await page.click('[data-front-dot="tail"]');
+    await page.sleep(900);
+    const seen = await page.evaluate(`
+      const b = document.querySelector('[data-front-opening-option="jhandle"]');
+      return { found: Boolean(b), label: b ? b.textContent.trim() : null,
+        options: [...document.querySelectorAll('[data-front-opening-option]')].map((n) => n.textContent.trim()) };
+    `);
+    check('the EXISTING opening selector offers it, and calls it what the owner does',
+      seen.found && seen.label === 'J-pull handleless', JSON.stringify(seen));
+    check('and it is still exactly four buttons — no new modal, no fifth option',
+      seen.options?.length === 4, JSON.stringify(seen.options));
+
+    await page.click('[data-front-opening-option="jhandle"]');
+    await page.sleep(1000);
+    const after = await ask(`(() => {
+      const res = P().unitResult(${JSON.stringify(before.id)});
+      const leaves = (res.panels || []).filter((p) => p.part === 'FRONT');
+      return {
+        opening: P().project.design.fronts.handle,
+        style: P().project.design.fronts.style,
+        leaves: leaves.map((p) => ({ id: p.id, edge: p.meta.jpull && p.meta.jpull.edge, cut: Boolean(p.cnc.jpull) })),
+      };
+    })()`);
+    check('ONE CLICK and the J is on the cabinet',
+      after.opening?.type === 'jpull' && after.leaves?.every((l) => l.cut),
+      JSON.stringify(after));
+    check('…and the door is still the SHAKER somebody chose — two axes, never merged',
+      after.style === before.styleBefore || after.style === 'S', JSON.stringify({ style: after.style }));
+    // THE CLICK ITSELF: the button pressed, and the cabinet behind it wearing
+    // the J. This is the frame the spec asks for — "where I click → the J
+    // appears on the cabinet".
+    await page.screenshot(`${SHOTS}f4-ui-click.png`);
+
+    // The millimetre fields, in the SAME window, one tab along — under
+    // Hardware, beside the hinge block, because they answer the same kind of
+    // question: how this workshop machines the thing it fits.
+    await page.click('[data-wizard-tab="hardware"]');
+    await page.sleep(900);
+    const fields = await page.evaluate(`
+      const box = document.querySelector('[data-jpull-settings="1"]');
+      if (box) box.scrollIntoView({ block: 'center' });
+      return {
+        found: Boolean(box),
+        fields: [...document.querySelectorAll('[data-jpull-field]')].map((n) => n.getAttribute('data-jpull-field')),
+      };
+    `);
+    check('Settings surfaces the run, the start and every profile constant',
+      fields.found && fields.fields.length === 9, JSON.stringify(fields.fields));
+    await page.sleep(700);
+    await page.screenshot(`${SHOTS}f4-ui.png`);
+  }
+} catch (e) {
+  // A `finally` that calls `process.exit` DISCARDS a pending exception, so a
+  // section that threw used to end the walk in silence and the run looked like
+  // a short one rather than a broken one. Named here, loudly, and counted.
+  check(`the walk threw: ${e && e.message}`, false, String(e && e.stack).split('\n')[1] || '');
 } finally {
   const bad = steps.filter((s) => !s.ok);
   process.stdout.write(`\n${steps.length} check(s), ${bad.length === 0 ? 'all ok.' : `${bad.length} FAILED.`}\n`);

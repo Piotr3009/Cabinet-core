@@ -331,8 +331,11 @@ export function infillMitre(panel) {
     return planes.length ? { box: faceBox, planes } : null;
   }
 
-  // ── the return, running back to the wall ──
-  // The corner where it meets the main face: the one place two RUNS meet.
+  // ── the return, running back to the wall — and NOTHING else ──
+  // Segment pieces of a bent ceiling ('main-1', 'main-2', …) used to FALL
+  // THROUGH to here and get cut as if they were returns — the fossil the
+  // owner kept seeing. They are not returns: no cut, ever.
+  if (segment !== 'return-left' && segment !== 'return-right') return null;
   const left = segment === 'return-left';
   const t = box.w;
   const faceBox = { ...box };

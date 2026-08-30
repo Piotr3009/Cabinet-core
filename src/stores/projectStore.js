@@ -668,15 +668,18 @@ function slopeCutFor(unit, design) {
 }
 
 function paramsForEngine(unit, design = null) {
-  const p = unit.params;
+  // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
+  // run_* are destructured OUT of the saved params before anything spreads,
+  // so a fossil written by any older build is structurally unreachable. The
+  // engine hears run elements from ONE place: state.runElements, this sweep.
+  const {
+    run_top_infill: _fossilTop, run_plinth: _fossilPlinth,
+    run_mask: _fossilMask, run_cornice: _fossilCornice,
+    ...p
+  } = unit.params;
   const items = p.sections?.[0]?.items || [];
   const profile = getCabinetProfile();
   const slopeCut = slopeCutFor(unit, design);
-  // ─── T55 ("tnij"): THE RUN ELEMENTS RIDE HERE, NOT IN PARAMS ─────────────
-  // Derived on every sweep, held in `state.runElements`, handed to the engine
-  // at compute time. `params` never carries one, so no save path can
-  // fossilise one. Absent — a bare computeCabinet(), every golden fixture —
-  // nothing is passed and the kit cuts what the AutoLISP cuts.
   const elements = useProjectStore.getState().runElements?.[unit.id] || null;
   return {
     ...p,

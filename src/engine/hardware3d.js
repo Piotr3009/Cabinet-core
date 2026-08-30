@@ -71,7 +71,9 @@ export function wardrobeKitInstances(result) {
   const kits = result?.assemblies?.wardrobeKits;
   if (!Array.isArray(kits) || !kits.length) return [];
   return kits.map((k) => {
-    const inset = Math.min(40, k.box.w / 10);
+    // The pull-down is a real model now (30.08): bases sit AT the sides, so
+    // its instance spans the full opening; the others keep the placeholder inset.
+    const inset = k.kind === 'pulldown_rail' ? 0 : Math.min(40, k.box.w / 10);
     return {
       kind: 'kit',
       id: k.id,

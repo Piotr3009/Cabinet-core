@@ -4931,7 +4931,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // per column per kind (a second of the same kind in the same opening is a
   // mechanism nobody can fit). The engine answers with a purchase line and a
   // labelled placeholder; ZERO holes travel with it.
-  addWardrobeKit: (unitId, kind, zone = null) => {
+  addWardrobeKit: (unitId, kind, zone = null, extra = null) => {
     if (!WARDROBE_KIT_KINDS.includes(kind)) return null;
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
@@ -4940,9 +4940,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
       ? null : Math.trunc(Number(i.zone)));
     if (items.some((i) => i.kind === kind && zoneOf(i) === wantZone)) return null;
+    const posMm = Number(extra?.pos_mm);
     return get().addItem(unitId, {
       kind,
       ...(wantZone == null ? {} : { zone: wantZone }),
+      // 30.08 (pull-down): the parked rod's own height from the top.
+      ...(Number.isFinite(posMm) && posMm >= 0 ? { pos_mm: posMm } : {}),
     });
   },
 

@@ -4263,9 +4263,10 @@ export function computeCabinet(params, profileOverride) {
       if (spec.zone != null && !bay) continue;         // a column that left
       const from = bay ? bay.from : G;
       const size = bay ? bay.size : internalWidth;
-      // The pull-down hangs from the top; the others stand at their height.
+      // The pull-down hangs from the top — `pos_mm` here is the parked ROD's
+      // distance from the top (the owner's "wys. drążka od góry").
       const y = spec.kind === 'pulldown_rail'
-        ? H - G - body.topDrop - body.bodyHeight
+        ? H - G - Math.max(0, Number(spec.pos_mm ?? body.topDrop) || 0) - body.bodyHeight
         : (spec.pos_mm ?? body.posMm);
       wardrobeKitBodies.push({
         id: spec.id || `${spec.kind}:${spec.zone ?? 'w'}`,
@@ -7647,9 +7648,11 @@ export function computeCabinet(params, profileOverride) {
   // One line per mechanism, at the width of the column it lives in — the
   // number a joiner reads off a data sheet when he buys one. ZERO holes.
   for (const kit of wardrobeKitBodies) {
+    const art = kit.kind === 'pulldown_rail'
+      ? P.wardrobeAccessories.kits.pulldown_rail?.conero?.article : null;
     hw(`wardrobe_kit_${kit.kind}`, kit.label, 1, 'pcs',
-      { opening_width_mm: roundTo(kit.box.w, 0), zone: kit.zone },
-      `${kit.label} · ${roundTo(kit.box.w, 0)} mm opening`);
+      { opening_width_mm: roundTo(kit.box.w, 0), zone: kit.zone, ...(art ? { article: art } : {}) },
+      `${kit.label} · ${roundTo(kit.box.w, 0)} mm opening${art ? ` · art. ${art}` : ''}`);
   }
 
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────

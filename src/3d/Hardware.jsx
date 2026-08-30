@@ -1,5 +1,5 @@
 import {
-  useEffect, useLayoutEffect, useMemo, useRef, useState,
+  useEffect, useLayoutEffect, useMemo, useRef, useState,, useReducer,
 } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
@@ -17,6 +17,9 @@ import {
   rigHidesBody,
 } from './hingeModels.js';
 import { shelfSupportMetal } from './hardwareFinish.js';
+import { coneroClone, coneroSrc } from './coneroModels.js';
+import { glbFailed, glbSource, onGlbLoad } from './glbSource.js';
+
 // Turn 31 (CLAUDE.md F7): the catchment around every handle and hinge.
 import HoverAura from './HoverAura.jsx';
 // Turn 32 (CLAUDE.md F9): the owner's drawing — CAD dimension lines on the
@@ -157,7 +160,7 @@ export default function Hardware({
           box standing well inside the opening it was measured from, in the
           bracket grey the rest of the bought ironmongery is drawn in. It cuts
           nothing and it is drilled for nothing. */}
-      <KitBodies items={instances.kits || []} colour={colours.bracket} />
+      <KitBodies items={instances.kits || []} colour={colours.bracket} profile={profile} storageBase={storageBase} />
       {/* ─── Turn 25 (CLAUDE.md F6): the adjustable shelf's sleeves and pins ───
           Always drawn, like the legs and the rail — a fitting a joiner looks
           for, not a workshop overlay. A FIX shelf has no pin holes and so
@@ -1127,10 +1130,23 @@ function Rods({ items, colour }) {
  * It is deliberately not a bin. It is the room for one, and a joiner reading
  * the picture sees a volume rather than a product he might try to order from.
  */
-function KitBodies({ items, colour }) {
+function KitBodies({ items, colour, profile, storageBase }) {
   if (!items.length) return null;
   const T = 6;                       // the placeholder's own wall, in mm
   return items.map((k) => {
+    // ─── 30.08: the pull-down rail is a MODEL now — CONERO from the bucket,
+    // walls only until it loads (or where the bucket is silent). ────────────
+    if (k.body === 'pulldown_rail') {
+      return (
+        <ConeroPulldown
+          key={k.id || k.role}
+          k={k}
+          colour={colour}
+          profile={profile}
+          storageBase={storageBase}
+        />
+      );
+    }
     const walls = [
       // floor, back, front, left, right — in the cabinet's own frame
       { x: k.w / 2, y: T / 2, z: k.d / 2, w: k.w, h: T, d: k.d },
@@ -1166,6 +1182,72 @@ function KitBodies({ items, colour }) {
       </group>
     );
   });
+}
+
+/** The placeholder walls, reusable for the pull-down's not-yet-loaded state. */
+function KitWalls({ k, colour }) {
+  const T = 6;
+  const walls = [
+    { x: k.w / 2, y: T / 2, z: k.d / 2, w: k.w, h: T, d: k.d },
+    { x: k.w / 2, y: k.h / 2, z: T / 2, w: k.w, h: k.h, d: T },
+    { x: k.w / 2, y: k.h / 2, z: k.d - T / 2, w: k.w, h: k.h, d: T },
+    { x: T / 2, y: k.h / 2, z: k.d / 2, w: T, h: k.h, d: k.d },
+    { x: k.w - T / 2, y: k.h / 2, z: k.d / 2, w: T, h: k.h, d: k.d },
+  ];
+  return walls.map((p, i) => (
+    <mesh
+      // eslint-disable-next-line react/no-array-index-key
+      key={i}
+      position={[mm(p.x), mm(p.y), mm(p.z)]}
+    >
+      <boxGeometry args={[mm(p.w), mm(p.h), mm(p.d)]} />
+      <meshStandardMaterial color={colour} roughness={0.7} metalness={0.1} transparent opacity={0.45} />
+    </mesh>
+  ));
+}
+
+/**
+ * ─── 30.08: THE CONERO PULL-DOWN, CLOSED ───────────────────────────────────
+ * Bases at the middle of the depth, 27 mm off each side; the rod parks at the
+ * TOP of the instance box (`k.y + k.h` is the owner's "wys. drążka od góry"
+ * measured down from the carcass top by the engine). File pose IS the closed
+ * pose, so nothing is animated — the group only places and stretches it.
+ */
+function ConeroPulldown({ k, colour, profile, storageBase }) {
+  const c = profile?.wardrobeAccessories?.kits?.pulldown_rail?.conero;
+  const url = coneroSrc(profile, storageBase);
+  const [, force] = useReducer((n) => n + 1, 0);
+  useEffect(() => (url ? onGlbLoad(url, force) : undefined), [url]);
+  const model = useMemo(
+    () => (url && !glbFailed(url) && glbSource(url)?.loaded ? coneroClone(url, k.w, c) : null),
+    [url, k.w, c, glbFailed(url), glbSource(url)?.loaded],
+  );
+  const fit = useMemo(() => {
+    if (!model) return null;
+    const u = model.userData.ccUnitToMm || 1;
+    const box = new THREE.Box3().setFromObject(model);
+    const hMm = (box.max.y - box.min.y) * u;
+    const dMm = (box.max.z - box.min.z) * u;
+    return { u, hMm, dMm };
+  }, [model]);
+  return (
+    <group
+      key={k.id || k.role}
+      position={[mm(k.x), mm(k.y), mm(k.z)]}
+      userData={{ ccKitBody: k.role, ccKitPlaceholder: !model, ccNoBounds: true }}
+    >
+      {!model && <KitWalls k={k} colour={colour} />}
+      {model && fit && (
+        <group
+          // rod (file top) at the instance top; bases land mid-depth by centring
+          position={[0, mm(k.h - fit.hMm), mm(k.d / 2 - fit.dMm / 2)]}
+          scale={[mm(fit.u), mm(fit.u), mm(fit.u)]}
+        >
+          <primitive object={model} />
+        </group>
+      )}
+    </group>
+  );
 }
 
 function Legs({ items, profile, colour }) {

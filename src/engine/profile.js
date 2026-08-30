@@ -973,7 +973,24 @@ export const DEFAULT_CABINET_PROFILE = {
     kits: {
       trouser: { label: 'Trouser pull-out', bodyHeight: 120, posMm: 900 },
       tie_rack: { label: 'Tie rack', bodyHeight: 300, posMm: 1100 },
-      pulldown_rail: { label: 'Pull-down rail', bodyHeight: 140, topDrop: 50 },
+      pulldown_rail: {
+        label: 'Pull-down rail',
+        // The REAL mechanism now (30.08): CONERO's own envelope — closed, arms
+        // up, rod on top. `topDrop` = the parked ROD's default from the top.
+        bodyHeight: 704,
+        topDrop: 50,
+        // The one GLB the owner supplied (Kesseböhmer/Rejs CONERO, set 730).
+        // Bucket is the shop; offline truth here is only what the sheet says:
+        // 27 mm side gap clears hinges, rail modelled at 730.
+        conero: {
+          bucket: 'hardware',
+          path: 'lifts/conero/',
+          file: 'conero-pantograf-730.glb',
+          article: '674367/674569',
+          railNativeMm: 730,
+          sideGapMm: 27,
+        },
+      },
     },
   },
 

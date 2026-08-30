@@ -98,6 +98,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const [shelfZone, setShelfZone] = useState(null);
   // Turn 33 (F3): which column a bought mechanism goes in.
   const [kitZone, setKitZone] = useState(null);
+  // 30.08: the parked ROD's distance from the top — the owner's number.
+  const [rodFromTop, setRodFromTop] = useState('');
   const [railMaterial, setRailMaterial] = useState(hardware.find((m) => /rail/i.test(m.name))?.id || '');
   // ─── Turn 11 (CLAUDE.md F4.4) ───
   // The list is FILTERED by what this kind of cabinet is for, and "Show all" is
@@ -221,8 +223,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
 
   // Turn 33 (CLAUDE.md F3): a bought mechanism into its column — the store
   // refuses a second of the same kind in the same opening, and says so.
-  const onAddKit = (kitKind, label) => {
-    const id = addWardrobeKit(unit.id, kitKind, zones.length > 1 ? kitZone : null);
+  const onAddKit = (kitKind, label, extra = null) => {
+    const id = addWardrobeKit(unit.id, kitKind, zones.length > 1 ? kitZone : null, extra);
     if (!id) {
       notify(`That ${zones.length > 1 ? 'column' : 'unit'} already has a ${label.toLowerCase()}.`, 'warn');
       return;
@@ -866,12 +868,29 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                         </div>
                       </div>
                     )}
+                    {kind.id === 'pulldown' && (
+                      <label className="space-y-1 block">
+                        <span className="cc-label">Rod from top (mm)</span>
+                        <input
+                          type="number"
+                          className="cc-input w-full"
+                          data-kit-rod-from-top="1"
+                          min={0}
+                          step={5}
+                          placeholder={String(profile.wardrobeAccessories?.kits?.pulldown_rail?.topDrop ?? 50)}
+                          value={rodFromTop}
+                          onChange={(e) => setRodFromTop(e.target.value)}
+                        />
+                      </label>
+                    )}
                     <button
                       type="button"
                       className="cc-btn-gold w-full"
                       data-add-kit={kitKind}
                       disabled={zones.length > 1 && kitZone == null}
-                      onClick={() => onAddKit(kitKind, kind.label)}
+                      onClick={() => onAddKit(kitKind, kind.label,
+                        kind.id === 'pulldown' && rodFromTop !== ''
+                          ? { pos_mm: Math.max(0, Number(rodFromTop) || 0) } : null)}
                     >
                       Add {kind.label.toLowerCase()}
                     </button>

@@ -333,16 +333,22 @@ test('F8e — the modal is a NEW window, draggable, beside the drawer', () => {
 });
 
 // ─── (f) THE FINISH ───────────────────────────────────────────────────────
+//
+// T55 AMENDED (30.08.2026, CLAUDE.md F5): the owner — *"usuń po prostu …
+// zrobimy sprayed (color frontów) albo carcass"*. OAK and WALNUT are deleted
+// (licensed T55 deletion); Sprayed and Project (null) survive, and the value
+// is wired through the parts' own records (turn55-f5 tests).
 
-test('F8f — Spray / Oak / Walnut, and the project’s own decor by default', () => {
-  assert.deepEqual(WATCH_FINISHES.map((f) => f.id), ['spray', 'oak', 'walnut']);
+test('F8f — Sprayed or the project’s own decor; oak and walnut are graves', () => {
+  assert.deepEqual(WATCH_FINISHES.map((f) => f.id), ['spray']);
   assert.equal(watchFinishOf({}), null, 'the project decor, T52’s standing rule');
-  assert.equal(watchFinishOf({ watch_finish: 'walnut' }), 'walnut');
+  assert.equal(watchFinishOf({ watch_finish: 'oak' }), null, 'oak is buried — falls back to Project');
+  assert.equal(watchFinishOf({ watch_finish: 'walnut' }), null, '…and walnut with it');
   assert.equal(watchFinishOf({ watch_finish: 'brass' }), null, 'and nonsense falls back');
-  const r = job({ finish: 'oak' });
+  const r = job({ finish: 'spray' });
   const line = (r.hardware || []).find((h) => h.role === 'watch_insert');
-  assert.equal(line.spec.finish, 'oak', 'the BOM carries it');
-  assert.match(line.spec_label, /oak/);
+  assert.equal(line.spec.finish, 'spray', 'the BOM carries it');
+  assert.match(line.spec_label, /spray/);
 });
 
 // ─── (g) MIGRATION ────────────────────────────────────────────────────────

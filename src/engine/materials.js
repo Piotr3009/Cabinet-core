@@ -210,6 +210,25 @@ export function resolvePanelMaterial(panel, unit, design, profile, materials = [
     });
   }
 
+  // ─── T55 (CLAUDE.md F5): THE WATCH INSERT'S FINISH, WIRED FOR REAL ───────
+  // Two choices, the owner's: *"zrobimy sprayed (color frontów) albo
+  // carcass."*  PROJECT (no record on the part) falls through untouched to
+  // the carcass resolution the insert has always taken. SPRAYED is the
+  // project's FRONT finish — the fronts' spray colour — asked for by the
+  // part's own record (`meta.watch_finish`, put there at birth). This is the
+  // ONE resolution the 3-D, the BOM and the sheet all read, so the choice
+  // reaches all three from here and nowhere else.
+  if (panel?.role === 'watch_insert' && panel?.meta?.watch_finish === 'spray') {
+    return record({
+      slot: 'watch:spray',
+      kind: 'front',
+      material_id: null,
+      finish: finishes.front,
+      label: finishes.front?.label || null,
+      materials,
+    });
+  }
+
   // ── 2. the slot ─────────────────────────────────────────────────────────
   const slot = materialSlotOf(panel, unit, d);
 

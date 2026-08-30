@@ -6127,7 +6127,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return hit.id;
   },
 
-  /** Spray / Oak / Walnut, or the project's own decor (T53 F8f). */
+  /** Sprayed (the fronts' spray colour) or Project — the carcass (T55 F5). */
   setWatchFinish: (unitId, itemId, finishId) => {
     const hit = WATCH_FINISHES.find((f) => f.id === finishId)?.id || null;
     get().updateItem(unitId, itemId, { watch_finish: hit });

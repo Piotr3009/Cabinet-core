@@ -137,18 +137,25 @@ export function watchLayoutOf(item) {
 }
 
 /**
- * ─── TURN 53 (CLAUDE.md F8f): THE FINISH ───────────────────────────────────
+ * ─── TURN 53 (CLAUDE.md F8f) → T55 (F5): THE FINISH — TWO CHOICES ──────────
  *
- * *"i wybierasz finish: spray (jak finish wszystkiego), czy oak, walnut."*
+ * T53 offered Spray / Oak / Walnut. The owner, 30.08.2026: *"usuń po prostu …
+ * zrobimy sprayed (color frontów) albo carcass"* and *"zostaw project jako
+ * carcass — teraźniejsze ustawienie."*  OAK and WALNUT are DELETED (licensed
+ * T55 deletion), physically. What survives:
  *
- * SPRAY follows the project's spray finish; OAK and WALNUT map onto the
- * project's wood decor set. The default is the project decor, which is T52's
- * standing rule for the frame and is what `null` means here.
+ *   PROJECT  (null — no record on the item) — the project's own decor,
+ *            exactly today's default, which reads as the carcass.
+ *   SPRAYED  ('spray') — the project's front spray colour.
+ *
+ * And T55 wires the value THROUGH: the insert parts carry it on their records
+ * at birth (`meta.watch_finish`, engine/cabinet.js), the one material
+ * resolution honours it (engine/materials.js `resolvePanelMaterial` — the
+ * same call the 3-D, the BOM and the sheet already read), so the picture and
+ * the bill finally say what the control chose.
  */
 export const WATCH_FINISHES = Object.freeze([
-  { id: 'spray', label: 'Spray', hint: 'The project’s own sprayed finish.' },
-  { id: 'oak', label: 'Oak', hint: 'The project’s oak decor.' },
-  { id: 'walnut', label: 'Walnut', hint: 'The project’s walnut decor.' },
+  { id: 'spray', label: 'Sprayed', hint: 'The project’s front spray colour.' },
 ]);
 
 /** The finish this insert wears, or null for the project's own decor. */

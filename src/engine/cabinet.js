@@ -7310,6 +7310,13 @@ export function computeCabinet(params, profileOverride) {
         ? (cfg.drawerItems?.[index - 1] || null)
         : (columnDrawerSets.find((c) => c.zone === zone)?.items?.[index - 1] || null);
       const wLayout = watchLayoutOf(wItem).id;
+      // T55 (CLAUDE.md F5): the finish rides EVERY insert part's own record
+      // from birth — it used to die in `born.finish` below and reach neither
+      // the 3-D nor the BOM. `resolvePanelMaterial` (engine/materials.js) is
+      // the one reader, so the picture, the bill and the sheet hear the same
+      // answer. `null` — Project — leaves the record clean and the part on
+      // the carcass resolution it has always taken.
+      const wFinish = watchFinishOf(wItem);
       const made = watchInsertParts(interior, P, { drawer: index, layout: wLayout });
       if (!made) continue;
       for (const q of made.parts) {
@@ -7324,7 +7331,11 @@ export function computeCabinet(params, profileOverride) {
           edgeLen: 0,
           box: q.box,
           cnc: q.cnc,
-          meta: zone == null ? q.meta : { ...q.meta, zone },
+          meta: {
+            ...q.meta,
+            ...(zone == null ? {} : { zone }),
+            ...(wFinish ? { watch_finish: wFinish } : {}),
+          },
         }));
       }
       // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP, UPSTAIRS ──
@@ -7424,7 +7435,7 @@ export function computeCabinet(params, profileOverride) {
         zone,
         drawer: index,
         layout: wLayout,
-        finish: watchFinishOf(wItem),
+        finish: wFinish,
         pockets: made.layout.pockets.count,
         pocket_w_mm: roundTo(made.layout.pockets.width, 1),
         pocket_d_mm: roundTo(made.layout.pockets.depth, 1),

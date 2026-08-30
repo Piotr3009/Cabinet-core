@@ -1,205 +1,223 @@
-# CLAUDE.md — TURN 55 · THE SLOPE SETTLES ITS DEBTS, THE WATCH DRAWER FINISHES
+# CLAUDE.md — TURN 57 · TWO DEBTS PAID, THEN J-PULL HANDLELESS
 
-Run autonomously. Zero questions, zero stops. If a feature cannot land, skip it,
-note it in the report, and move on — sacrifice from F8 upward, never F1/F2.
-PR before morning. Branch `t55`, base `origin/main` (a09b09d or later).
+Run autonomously. Zero questions, zero stops. Skip-and-note; sacrifice F5,
+then F4 — NEVER F0a/F0b/F1/F2. PR before morning. Branch `t57`.
+
+**BASE: `origin/main` WITH t56 MERGED. Do not run in parallel — this turn
+consumes the pattern registry and the handle chain. If t56 is not merged,
+stop and say so in the PR description.**
 
 ## STANDING LAW (unchanged, enforced)
 
-- **LISP IS LAW.** Geometry originates in `reference/lisp/` first. Paren-balance
-  stays 14/14 at 0/0 (`scripts/t50-paren-balance.mjs`).
-- **BYTE-IDENTITY.** The six golden fixtures stay byte-identical
-  (`t55-classify.mjs`, copy the t54 classifier forward). Goldens are FLAT rooms:
-  a slope fix that moves a flat room is a fault. Slope-case deltas are expected
-  here and must be NAMED in the classifier. `UNNAMED=0`.
-- **Sanctity.** Deletions licensed this turn, and no others:
-  1. the `infillMitre` interception path for the run-top-infill board (F1),
-  2. the infill shear/rotation split across `3d/panelSolid.js` / `3d/UnitView.jsx` (F1),
-  3. `WATCH_FINISHES` entries `oak` and `walnut` and every reference to them (F5).
-- **One path per job.** Report, per feature: how many paths do the same thing
-  (a number), and the line balance `+X/−Y`. Y<X or every added line explained.
-- **New feature = visible UI entry in the same package.** Proof by screenshot:
-  "where I click → what opens/changes", committed under `verify/t55/`.
-- **Full suite, never `--silent`.** Playwright rig screenshots committed.
-- No new npm dependencies. Owner quotes below are law; code and UI copy English.
+- **LISP IS LAW.** New geometry is written in `reference/lisp/` FIRST; the
+  engine follows. Paren census grows to **14/14 at 0/0** (13 kits today +
+  `KIT_FRONT_JPULL.lsp`) — extend `scripts/t50-paren-balance.mjs` and name
+  the change.
+- **BYTE-IDENTITY.** Goldens (flat, untrimmed) byte-identical.
+  `t57-classify.mjs`, `UNNAMED=0`. NAMED deltas allowed only on: (a) fronts
+  the tests dress in jpull; (b) slope-cut leaves carrying a
+  `front_edge_trim` (F0a's whole point is that their output changes).
+- **Sanctity — licensed this turn, and nothing else:** (1) the `jpull`
+  reservation comment line in `frontPatterns.js`; (2) on a jpull-system
+  front only: handle/knob hardware and its drilling suppressed at the
+  source — never born, never gated.
+- **One path per job.** Report the counts: slope-outline-after-trim law = 1;
+  jpull edge/run law = 1.
+- New feature = visible UI entry, same package, screenshot-proven.
+- Full suite, never `--silent`. No new npm dependencies. Owner quotes are
+  law; code and UI copy in English.
 
 ---
 
-## F1 [CRITICAL] · TOP INFILL UNDER THE RAKE — FOUR EXPLICIT CORNERS
+## F0a [CRITICAL] · BUGFIX — A TRIM MUST NOT FLATTEN A SLOPE-CUT LEAF
 
-The parked fix from 30.08, now due. Owner's simplification, verbatim:
-*"prosty kawałek, zawijanie likwidujemy."*
+Diagnosed 30.08, numeric proof on main 87f3d1d. The owner's live symptom:
+the shaker "phantom sheet" appears the exact moment the wall-clearance
+message fires.
 
-The law (already established T53/T54, unchanged): under a rake the top infill is
-**ONE straight board — FACE only — a parallelogram with plumb ends**. SHELF/wrap
-exists on level stretches only; TL/TR returns on level ends only.
+THE CAUSE (one): `src/engine/cabinet.js` ~6257, the `front_edge_trim`
+applier runs on every front:
 
-The work:
-1. In the engine, compute the infill's **four corner coordinates explicitly**
-   (room frame). Those four corners are the SINGLE source of truth for the 3-D
-   mesh, the 2-D drawing, and the DXF outline. Nothing downstream re-derives
-   the shape.
-2. **Delete** the `infillMitre` interception of the slope-cut infill board in
-   `src/3d/mitre.js` — the board no longer passes through it. Physical deletion,
-   not a gate.
-3. **Delete** the shear/rotation rendering split for this board across
-   `3d/panelSolid.js` and `3d/UnitView.jsx`. The mesh is built from the four
-   corners directly.
-4. Search-first rule: the slope sampling law already lives in `cabinet.js`
-   (`slopeHeightAt` / `cutOver`, the TOP PANEL / CORNICE precedent). Take that
-   law for the corner maths; name the source in the report. Do not write a
-   second slope sampler.
+    pnl.cnc = { ...pnl.cnc, ...rectGeometry(w, pnl.h) };
 
-Tests: node:test on the four corners (straight rake + T47 knee fixture),
-residual < 0.001 mm against the ceiling line minus gaps. Rig screenshot:
-closed wardrobe, slope left, the infill sits flush between door top and
-ceiling line — `verify/t55/f1-infill.png`.
+`rectGeometry` overwrites the outline with a FULL RECTANGLE — on a
+slope-cut leaf too, whose outline was the cut polygon. `cnc.slopeCut`
+survives, so `3d/shakerSolid.js` reads "cut" + a rectangular outline and
+builds a full-height tray with a diagonal pocket inside it — the phantom.
+The chain that pulls the trigger: front edge enters `neighbourReachMm`
+(200) of a wall → clearance engine wakes → yellow message AND the store's
+auto-heal applies a micro-trim in the same recompute ("gaps should fix
+themselves", T32). 1.5 mm is enough.
 
-## F2 [CRITICAL] · SHAKER UNDER THE SLOPE — THE PICTURE, NOT THE ENGINE
+REPRODUCTION (write the RED test from this first):
 
-Owner's screenshot 30.08: a closed 2-door shaker wardrobe under a left rake
-shows a broken front. **The engine is proven clean** — reproduced numerically
-this afternoon: leaf outlines parallel to the ceiling to <0.1 mm, the shaker
-recess holds a true 60 mm frame PERPENDICULAR to the diagonal (119.95 mm
-vertical at 60°, expected 119.98), knee handled, hinges forced to the tall
-edge. Do not touch engine geometry for this feature.
+    WARDROBE, W1000 H2200 D600, front_type 'S', door_count 2,
+    slope_cut { pts:[{x:0,y:1300},{x:520,y:2200},{x:1000,y:2200}], infill:40 },
+    front_edge_trim { '01-FL': { left:0, right:1.5 } }
 
-The work:
-1. Reproduce with the rig: wardrobe W1000 H2200 D600, `front_type:'S'`,
-   `door_count:2`, `slope_cut {pts:[{x:0,y:1300},{x:520,y:2200},{x:1000,y:2200}],
-   infill:40}` — closed doors, front view. Commit the BEFORE frame.
-2. Expectation: F1 removes the wrong triangle above the doors (the un-fixed
-   infill was the prime suspect). Re-shoot AFTER F1. If the shaker leaf itself
-   still renders wrong, the fault is in `3d/shakerSolid.js` (`buildTray` with a
-   no-flat-top outline) or `3d/UnitView.jsx` placement — fix in the 3-D layer
-   only, engine untouched.
-3. Commit `verify/t55/f2-shaker-before.png` / `f2-shaker-after.png`.
+On main: `01-FL` outline collapses to a rectangle (every top y = 2079.8328).
+Without the trim: a true cut polygon.
 
-## F3 [HIGH] · THE SLOPE FLIPS A DOOR → THE DOOR PARTITION IS FORCED
+THE LAW: after trimming, a leaf that carries `slopeCut` recomputes its
+outline FROM ITS OWN CEILING LINE at its NEW span — `frontSlopeAt(newX,
+newW)` already exists in the same `computeCabinet` scope (search-first: the
+working law is taken, the source named in the report; no second sampler).
+The refreshed outline, pts, leaf height and `meta.slopeCut` land on the
+piece; the shaker pocket pass runs AFTER the trim applier and follows the
+new outline with no extra work. A trimmed leaf whose new span leaves the
+cut inactive (`slopeCutActive` false) is cut plain and says so via the
+existing channels. FLAT leaves keep `rectGeometry` byte-for-byte as today.
 
-Owner, verbatim: *"wymuszamy tylko jak się orientacja drzwi zmienia na skosach
-… nie wymuszamy przez wielkość szafy absolutnie nie"* and *"usunięcie
-wszystkiego co mogłoby nam rozwalić układ czyli drążki szuflady etc … klient
-ustawi wszystko sobie od nowa."*
+Tests (node:test, red-first): the reproduction above → outline is NOT a
+rectangle, its diagonal is parallel to the ceiling line over the trimmed
+span to < 0.01 mm, the shaker pocket holds the true 60 mm frame
+PERPENDICULAR to the diagonal, hinge cups stay on the tall edge; the flat
+twin (same trim, no slope) byte-identical to main; both-edges trim; trim on
+the knee fixture. Rig frame: shaker wardrobe standing < 200 mm from a wall,
+message visible, door CLEAN — `verify/t57/f0a-trim-slope.png`.
 
-Why: under a left rake both leaves are forced hinge `R` (T46 law). The left
-leaf's hinges then land mid-cabinet where no carcass side exists. A door needs
-wood to hang on.
+## F0b [CRITICAL] · BUGFIX — THE WATCH PANE IS GLASS, NOT A BOARD
 
-The law:
-1. Trigger: a leaf whose FORCED hinge (`meta.hingeForced`) puts its hinge edge
-   on a line with **no carcass side** (it faces the neighbouring leaf). Cabinet
-   width is NEVER a trigger. No slope, no forcing.
-2. Action, once per transition (when the slope first forces it, in the store —
-   not on every recompute): insert the **door-mount partition** on that hinge
-   line — the same partition bay doors hinge on (T21/F9 machinery, hinge kind
-   `partition`; partition foot screws etc. all existing law). Reuse it; do not
-   write a second partition.
-3. Clear the unit's interior fitting: wardrobe kits and items — rods, drawers,
-   shelves, inserts. The owner's sentence above is the licence. The partition
-   and the doors stay.
-4. UI entry (rule: visible in the same package): a notify the moment it
-   happens — `"Slope flipped the doors — a door partition was added and the
-   interior was cleared."` — plus a Check line naming the partition while the
-   forcing stands. Screenshot `verify/t55/f3-partition.png`.
-5. Hinges of the flipped leaf drill into the partition (existing partition
-   drilling law); test asserts cup columns land on the partition line.
+Owner, live: the pane exists but *"nie przezroczysta i nie widać szuflady w
+środku przez szybę — szkoda."*
 
-## F4 [HIGH] · THE GLASS ACCEPTS THE FORCED SHELF (PARTITION)
+THE LAW: the pane renders as GLASS — transparent with a faint tint and a
+specular sheen; the drawer, the pockets and the watches beneath are VISIBLE
+through it; the LED ring reads through the pane. 3-D material only: no
+engine byte moves (the pane's cut, rebate and BOM line are T53/T55 law and
+stay). Respect render order/depth so the interior draws behind the pane
+correctly in 3D, contour and X-ray; the fixed lighting-rig rule stands.
+Scope: the mesh/material where the pane is built (name the one home in the
+report; ≤ the 3-D layer).
 
-Owner: *"z automatycznym dodaniem leda dookoła szyby … na półce która jest
-wymuszona nad szufladami."*
+Proof: `verify/t57/f0b-glass.png` — camera above the open drawer zone,
+insert visible THROUGH the pane, LED on.
 
-Everything about the pane already exists (T53 F8b/F8c: opening 50 mm in from
-every edge, rebate, pane flush with the top, LED ring 15 mm underneath). It
-refuses only because two checks ask `part === 'SHELF'` and the auto board over
-a drawer bank is `part: 'PARTITION'` (role `shelf`).
+---
 
-The work: ONE predicate in the engine (e.g. `isShelfBoard(p)` — part `SHELF`
-or `PARTITION`), consumed by BOTH askers: `watchShelfAbove`
-(`src/stores/projectStore.js` ~6160) and the engine's `shelfAbove` filter
-(`src/engine/cabinet.js` ~7318). One law, one definition, two callers. Report:
-paths doing this job = 1.
+## THE DOCTRINE, CORRECTED IN THE OPEN
 
-Tests: a wardrobe whose watch drawer sits under the PARTITION — checkbox
-enabled, pane cut in the partition, LED ring born, warning
-`watch_glass_needs_shelf` absent. Flat twin: behaviour on a plain SHELF is
-byte-identical. Screenshot `verify/t55/f4-glass.png`.
+Two axes, never merged: FACE PATTERN (slab, shaker, grooved…) × HANDLE
+SYSTEM (handle, knob, none — and now J-PULL). A grooved door with a J edge
+must be possible, so **J-pull lives on the HANDLE axis**, not in the pattern
+registry. T56 reserved a `jpull` id in `frontPatterns.js`'s comments — that
+reservation was wrong; this turn deletes that one line (licensed) and says
+why in its place: *"jpull is a handle system — see engine/handles.js."*
 
-## F5 [HIGH] · WATCH FINISH — TWO CHOICES, WIRED FOR REAL
+## THE PROFILE IS THE OWNER'S DRAWING, NOT A GUESS
 
-Owner: *"usuń po prostu … zrobimy sprayed (color frontów) albo carcass"* and
-*"zostaw project jako carcass — teraźniejsze ustawienie."*
+Measured from the owner's `J_hand.dxf` (18 mm board, section at the edge) —
+these numbers ARE the law and go into the LISP verbatim:
 
-1. **Delete** `oak` and `walnut` from `WATCH_FINISHES`
-   (`src/engine/watchDrawer.js`) and every reference — physical deletion.
-   Surviving control: **Project** (null — the project's own decor, exactly
-   today's default, reads as the carcass) and **Sprayed** (the project's front
-   spray colour).
-2. Wire the value through: today it dies in `born.finish` (cabinet.js ~7401)
-   and reaches neither the 3-D nor the BOM — that is the whole bug. The insert
-   parts (frame, dividers, base) carry the finish on their records; the 3-D
-   material pick honours it; the BOM lines for the insert say it.
-3. Balance for the deletion reported `+X/−Y`.
+- front lip (the visible hook of the J): **4.212 mm** thick, standing
+  **30 mm** proud of the relieved back;
+- finger slot: **10 mm** wide, **40 mm** deep from the edge, bottom rounded
+  **r5** (45 mm to the arc's tangent);
+- rear leg: **3.788 mm**; rear relief: back face cut down **30 mm** from
+  the edge — the finger clearance;
+- 4.212 + 10 + 3.788 = 18.000 — the drawing closes and the LISP must too.
 
-Test: toggle Sprayed → insert parts' resolved material = front spray; Project →
-today's decor, byte-identical to before this turn. Screenshot
-`verify/t55/f5-finish.png` (one frame per choice).
+## F1 [CRITICAL] · THE LAW, IN LISP
 
-## F6 [MEDIUM] · INSERT GRAIN — HORIZONTAL, BORN THAT WAY
+New file `reference/lisp/KIT_FRONT_JPULL.lsp` (paren census → 14), in the
+house style of the existing kits:
 
-Owner, verbatim (now a Petros iron rule): *"wszystkie przegródki muszą być w
-poziomie słoje nie w pionie"* and *"jak mamy oklejać to musi być wzdłuż słojów
-nigdy w poprzek — to jest święta zasada w sheet goods."*
+1. A J-pull is the profile above, machined along an edge of a leaf or
+   drawer front. It is a SHAPER/FORM-TOOL PASS — the DXF carries the edge
+   line (or the stopped run's span) and a `J-PULL <EDGE>` note exactly the
+   way a slope carries its `CUT β°` note; nobody draws fake profile curves
+   into the cut path.
+2. WHICH edge — the owner's corrected table, verbatim law:
+   - kitchen BASE unit doors and ALL drawer fronts: TOP edge, full width;
+   - kitchen WALL unit doors: **NO J AT ALL.** Owner: *"na szafkach
+     wiszących nie rób J"* — gripped from below and *"to już robi
+     program"*: existing front geometry stands, zero machining, zero new
+     extension logic invented;
+   - TALL doors (fridge housings, wardrobes): the VERTICAL edge on the
+     OPENING side — opposite the hinge, the edge `meta.hinge` already
+     names. Under a slope the forced hand (T46/T55 law) flips the J with it
+     for free: one source, no second decision;
+   - NEVER on a diagonal (slope) edge.
+3. TALL doors take a STOPPED RUN, not the full edge. Owner: *"500 mm,
+   zaczyna się od dołu frontu około 700 mm"* — run `jpull.runMm` (default
+   **500**), starting `jpull.fromBottomMm` (default **700**) up from the
+   leaf's own bottom edge. Both are profile parameters. **The ends ramp in
+   and out ON AN ARC** — the router's own lead-in, owner: *"wjazd po łuku,
+   nie ostre, łukowate"* — never a square stop; ramp radius is a named
+   profile parameter with a placeholder the owner will tune later
+   (*"routerowanie będziemy robić później"*).
 
-Watch-insert parts are currently born with NO `grain` field at all
-(`watchInsertParts`, `src/engine/watchDrawer.js`). Set the drawn orientation /
-`grain: 'h'` at birth for every insert board (dividers, frame rails, base) —
-grain runs horizontally on the piece as fitted. Single-source rule stands: the
-cut decides the grain, the 3-D renders what was cut. No per-role visual
-overrides. Test asserts every insert part carries `grain` and it is `'h'`.
+## F2 [CRITICAL] · THE ENGINE — A HANDLE SYSTEM CALLED JPULL
 
-## F7 [MEDIUM] · LED LEARNS THE RAKE — LEVEL RUNS ONLY
+1. The handle chain (`src/engine/handles.js` and its consumers) gains
+   system `jpull`. Selecting it:
+   - resolves edge + run per the F1 table — ONE function, one answer (wall
+     doors resolve to NONE);
+   - emits the edge machining record on the front's `cnc` (edge id, run
+     span for tall doors, profile params, the `J-PULL <EDGE>` sheet label —
+     mirrored correctly into the sheet frame; the inside-mirror law of
+     `engine/joinery.js` applies, T28-F2b is the scar to reread);
+   - suppresses handle/knob hardware AND its drilling at birth on EVERY
+     front of the system — wall doors included: no machining and no handle
+     either (licensed);
+   - profile block `jpull: { runMm: 500, fromBottomMm: 700, rampR }` plus
+     the five profile constants from the owner's drawing join
+     `companyDefaults` / the cabinet profile, read the way `doors.gap` is.
+2. Split doors, bay doors, slope-cut leaves: the SAME law per leaf. A tall
+   leaf shorter than `fromBottomMm + runMm` clamps the run and says so in a
+   Check line; an edge that cannot take the run refuses with a warning,
+   never guesses. A leaf that is BOTH trimmed and slope-cut takes F0a's
+   refreshed outline first — order in the file guarantees it.
+3. BOM: a jpull front carries no handle purchase line; the machining
+   appears the way other edge work appears today. No invented cost rows.
 
-Owner: *"skos bez LED … pionowych i poziomych łatwiej."*
+Tests: edge/run resolution table (base, drawer, wall→none, tall L/R hinge,
+forced-hinge-under-slope flip, short-leaf clamp); drilling absent on jpull
+fronts, present and byte-identical on non-jpull; sheet note text; profile
+params reach the record; the stopped run lands at 700–1200 on a standard
+tall leaf.
 
-`src/engine/ledStrips.js` knows only the flat W×H box: side strips run
-`H − 2G`, top strips sit at `y = H` full width — under a rake they stand proud
-of the carcass. The law:
-1. **No strip along the diagonal.** Horizontal strips exist only on LEVEL
-   stretches of the roof polyline, trimmed to that stretch's span.
-2. A vertical side strip under the rake ends at the roof height at its own x
-   (minus the existing insets).
-3. Search-first: sample the SAME roof law (`slopeHeightAt` / `cutOver`) the
-   carcass uses. Name the source. No second sampler.
-4. BOM lengths (`lightingBomLines`) follow the trimmed strips.
+## F3 [HIGH] · THE PICTURE — A RECESS WITH A SHADOW
 
-Flat twin: a flat room's strips are byte-identical. Screenshot
-`verify/t55/f7-led.png` (sloped wardrobe, strips inside the outline).
+Owner, verbatim: *"nie zapomnij o cieniowaniu po routerowaniu, żeby było
+widać cień."* The J renders as GEOMETRY, the shaker school: a real
+depression with explicit normals so it reads at a grazing angle — not a
+painted stripe. On tall doors the stopped run shows its CURVED ramp ends.
+Scope the mesh work to the leaf edge (extend `panelSolid`'s machined path
+or the tray builder — whichever the code says is the ONE home; name the
+choice). Handle meshes do not mount on jpull fronts — they were never born.
+Works on wardrobe verticals, kitchen horizontals, and beside a slope-cut
+leaf.
 
-## F8 [LOW] · THE UNIT PANEL STOPS LYING ABOUT THE HINGE
+Screenshots: `verify/t57/f3-jpull-wardrobe.png` (stopped run, curved ends,
+shadow visible), `f3-jpull-kitchen.png` (base + drawer top edges; wall door
+clean).
 
-Drilling, the door modal and ElementProperties already read the FORCED hand
-(`meta.hinge` / `meta.hingeForced`, T46 law). The unit-level select in
-`src/components/RightPanel.jsx` (~464) still shows raw `params.hinge`. Give it
-the same conduct as ElementProperties' `hinge-side`: when every hinged leaf is
-forced, show the forced hand, disable, one-line reason
-(*"Cut on the slope — the door opens from the slope."*). Mixed case (some
-forced, some free): the select governs the free leaves and says so in the
-title. Add the missing assertion: under a slope, cup drilling side ==
-`meta.hinge` for every leaf. Screenshot `verify/t55/f8-hinge.png`.
+## F4 [HIGH] · THE UI ENTRY
+
+1. Wherever the handle system is chosen today, `J-pull handleless` appears —
+   the EXISTING selector learns one option; no new modal.
+2. Settings surface `runMm`, `fromBottomMm` and the profile constants
+   beside the other millimetre fields, labelled in English, editable,
+   engine reads them live.
+3. Click-path proof: `verify/t57/f4-ui.png` — "where I click → the J
+   appears on the cabinet".
+
+## F5 [MEDIUM] · THE CHECKS SAY WHY
+
+Check lines for the refusals and clamps F2 defined, worded in the house
+voice, with the unit and leaf named. No silent skips.
 
 ---
 
 ## ORDER, PROOF, REPORT
 
-Order: F1 → F2 → F4 → F5 → F3 → F6 → F7 → F8 (F3 after F5 so the interior
-clearing does not fight the finish tests; sacrifice from F8 downward-first).
+**F0a → F0b → F1 → F2 → F3 → F4 → F5.** The bugfixes land FIRST and each
+is a separate commit, red test before green.
 
-Every feature: node:test first for engine law, rig frame committed under
-`verify/t55/`, full suite (expect 4753 green + this turn's new), classifier
-`t55-classify.mjs` verdict with named deltas only, paren balance 14/14.
+Proof: full suite green; classifier named-deltas only (jpull fixtures +
+trimmed slope-cut leaves); paren 14/14; screenshots listed above.
 
-Morning report, numbered: per feature — done/skipped, paths-count, `+X/−Y`,
-licensed deletions confirmed executed, test totals, classifier verdict,
-screenshots list.
+Morning report, numbered: per feature done/skipped; the two law path
+counts; licensed deletions confirmed; `+X/−Y`; test totals; classifier
+verdict; the ramp-radius placeholder called out for the owner to tune.

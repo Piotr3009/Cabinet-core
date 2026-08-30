@@ -1163,6 +1163,12 @@ function saveCache(state) {
 const cached = typeof localStorage !== 'undefined' ? loadCache() : null;
 
 
+// T55 (CLAUDE.md F3): how deep the slope-door sweep is allowed to re-enter
+// itself — an act writes params, the write refreshes, the refresh sweeps
+// again to sync the bay hands. Module state, not store state: it is a
+// re-entrancy counter, never a fact about the project.
+let slopeDoorSweepDepth = 0;
+
 export const useProjectStore = create(dirtyGate((set, get) => ({
   // A cached project may predate room v2 — migrate on the way in, so an old
   // tab that reloads gets four walls instead of a crash.
@@ -2077,56 +2083,90 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *      the forcing stands.
    */
   settleSlopeDoorPartitions: () => {
-    const profile = getCabinetProfile();
-    for (const unit of get().units) {
-      const result = get().unitResult(unit.id);
-      if (!result) continue;
-      const G = Number(unit.params.board_t) || profile.board.thickness;
-      const W = Number(unit.params.width) || 0;
-      const tol = (Number(profile.doors.gap) || 3) + 1;
-      const leaves = (result.panels || []).filter((p) => p.part === 'FRONT'
-        && p.role === 'front' && p.meta?.hingeForced === true && p.box);
-      const flipped = leaves.find((leaf) => {
-        const edge = leaf.meta.hinge === 'R' ? leaf.box.x + leaf.box.w : leaf.box.x;
-        // A hinge edge on the carcass side has its wood — never a trigger.
-        if (leaf.meta.hinge === 'R' ? edge >= W - G - tol : edge <= G + tol) return false;
-        // Wood already standing on the line AND the leaf hung on it — the
-        // transition is behind us; this is the settled state.
-        const wood = (result.panels || []).find((p) => p.part === 'VPART'
+    // The sweep is re-entered by design: an act writes params, the write
+    // refreshes, the refresh sweeps again and the SECOND pass syncs the bay
+    // hands to what the conversion forced (under a rake the two leaves can be
+    // forced OPPOSITE hands — both onto the partition, one per face). The
+    // depth cap is the safety net that turns any would-be oscillation into a
+    // settled state instead of a stack.
+    if (slopeDoorSweepDepth >= 4) return;
+    slopeDoorSweepDepth += 1;
+    try {
+      const profile = getCabinetProfile();
+      for (const unit of get().units) {
+        const result = get().unitResult(unit.id);
+        if (!result) continue;
+        const G = Number(unit.params.board_t) || profile.board.thickness;
+        const W = Number(unit.params.width) || 0;
+        const tol = (Number(profile.doors.gap) || 3) + 1;
+        const allLeaves = (result.panels || []).filter((p) => p.part === 'FRONT'
+          && p.role === 'front' && p.meta?.hinge && p.box);
+        const leaves = allLeaves.filter((p) => p.meta.hingeForced === true);
+        const woodAt = (edge) => (result.panels || []).find((p) => p.part === 'VPART'
           && Number.isFinite(Number(p.meta?.x_mm))
           && edge >= Number(p.meta.x_mm) - tol && edge <= Number(p.meta.x_mm) + G + tol);
-        return !(wood && leaf.meta.hingeOn === wood.id);
-      });
-      if (!flipped) continue;
-      const hand = flipped.meta.hinge;
-      const edge = hand === 'R' ? flipped.box.x + flipped.box.w : flipped.box.x;
-      runBatch(() => {
-        // 1. The interior goes — the owner's sentence is the licence. The
-        //    partitions (and the doors) stay.
-        const section = unit.params.sections?.[0] || { width_mm: unit.params.width, items: [] };
-        const keep = (section.items || []).filter((i) => i.kind === 'partition');
-        set((st) => ({
-          units: st.units.map((u2) => (u2.id === unit.id
-            ? { ...u2, params: { ...u2.params, sections: [{ ...section, items: keep }] } }
-            : u2)),
-        }));
-        // 2. The door-mount partition, centred under the hinge line — unless
-        //    one is already standing there (then it becomes the door-mount).
-        //    `front_mm: 0` is what lets it reach the door plane and carry a
-        //    door at all (T21 F8: "setback 0 is load-bearing").
-        const standing = keep.find((i) => Number.isFinite(Number(i.x_mm))
-          && edge >= Number(i.x_mm) - tol && edge <= Number(i.x_mm) + G + tol);
-        const pid = standing ? standing.id : get().addPartition(unit.id, edge - G / 2);
-        if (pid) get().updateItem(unit.id, pid, { front_mm: 0 });
-        // 3. The doors onto the bays, forced hands kept — T21/F9's own law
-        //    hangs the flipped leaf on the partition and drills its plates.
-        const bays = get().bayDoorsFor(unit.id);
-        if (bays.length > 1) get().setBayDoors(unit.id, bays.map(() => ({ door: 'one', hinge: hand })));
-      });
-      useUiStore.getState().notify(
-        'Slope flipped the doors — a door partition was added and the interior was cleared.',
-        'warn',
-      );
+        const flipped = leaves.find((leaf) => {
+          const edge = leaf.meta.hinge === 'R' ? leaf.box.x + leaf.box.w : leaf.box.x;
+          // A hinge edge on the carcass side has its wood — never a trigger.
+          if (leaf.meta.hinge === 'R' ? edge >= W - G - tol : edge <= G + tol) return false;
+          // Wood ANYWHERE on the line — a standing partition — and the door
+          // has something to hang on: the transition is behind us. The
+          // trigger is the ABSENCE of wood, deliberately, and never a mode
+          // mismatch: a leaf whose cut is a corner sliver can flip its forced
+          // hand with a half-millimetre of position, and chasing that would
+          // oscillate. A door needs wood; once the wood stands, it stands.
+          return !woodAt(edge);
+        });
+        if (!flipped) continue;
+        const hand = flipped.meta.hinge;
+        const edge = hand === 'R' ? flipped.box.x + flipped.box.w : flipped.box.x;
+        let material = false;
+        runBatch(() => {
+          // 1. The interior goes — the owner's sentence is the licence. The
+          //    partitions (and the doors) stay.
+          const section = unit.params.sections?.[0] || { width_mm: unit.params.width, items: [] };
+          const keep = (section.items || []).filter((i) => i.kind === 'partition');
+          if (keep.length !== (section.items || []).length) {
+            material = true;
+            set((st) => ({
+              units: st.units.map((u2) => (u2.id === unit.id
+                ? { ...u2, params: { ...u2.params, sections: [{ ...section, items: keep }] } }
+                : u2)),
+            }));
+          }
+          // 2. The door-mount partition, centred under the hinge line — unless
+          //    one is already standing there (then it becomes the door-mount).
+          //    `front_mm: 0` is what lets it reach the door plane and carry a
+          //    door at all (T21 F8: "setback 0 is load-bearing").
+          const standing = keep.find((i) => Number.isFinite(Number(i.x_mm))
+            && edge >= Number(i.x_mm) - tol && edge <= Number(i.x_mm) + G + tol);
+          const pid = standing ? standing.id : get().addPartition(unit.id, edge - G / 2);
+          if (!standing && pid) material = true;
+          if (pid) get().updateItem(unit.id, pid, { front_mm: 0 });
+          // 3. The doors onto the bays, each bay with ITS OWN leaf's forced
+          //    hand — T21/F9's own law then hangs every flipped leaf on the
+          //    partition and drills its plates (one per face where the two
+          //    leaves are forced onto each other).
+          const bays = get().bayDoorsFor(unit.id);
+          if (bays.length > 1) {
+            const byX = [...allLeaves].sort((a, b) => a.box.x - b.box.x);
+            get().setBayDoors(unit.id, bays.map((_, i) => ({
+              door: 'one',
+              hinge: byX[i]?.meta?.hinge || hand,
+            })));
+          }
+        });
+        // The notify belongs to the TRANSITION — the pass that inserted the
+        // partition or cleared the interior — never to the hand-sync pass.
+        if (material) {
+          useUiStore.getState().notify(
+            'Slope flipped the doors — a door partition was added and the interior was cleared.',
+            'warn',
+          );
+        }
+      }
+    } finally {
+      slopeDoorSweepDepth -= 1;
     }
   },
 

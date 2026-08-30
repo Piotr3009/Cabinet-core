@@ -460,14 +460,45 @@ export default function RightPanel() {
             </div>
             <div>
               <span className="cc-label">Hinge side</span>
-              <select
-                className="cc-input" value={unit.params.hinge}
-                disabled={result.derived.doors === 2}
-                onChange={(e) => updateUnitParams(unit.id, { hinge: e.target.value })}
-              >
-                <option value="L">Left</option>
-                <option value="R">Right</option>
-              </select>
+              {/* ─── T55 (CLAUDE.md F8): THE PANEL STOPS LYING ABOUT THE HINGE
+                  Drilling, the door modal and ElementProperties read the
+                  FORCED hand (meta.hinge / meta.hingeForced, T46 law); this
+                  select showed raw params.hinge. Same conduct as
+                  ElementProperties' hinge-side now: every hinged leaf forced →
+                  the forced hand, disabled, one-line reason. Mixed — some
+                  forced, some free — the select governs the free leaves and
+                  the title says so. */}
+              {(() => {
+                const leaves = (result.panels || []).filter((p) => p.part === 'FRONT'
+                  && p.role === 'front' && p.meta?.hinge);
+                const forcedLeaves = leaves.filter((p) => p.meta.hingeForced);
+                const allForced = leaves.length > 0 && forcedLeaves.length === leaves.length;
+                const someForced = forcedLeaves.length > 0 && !allForced;
+                return (
+                  <>
+                    <select
+                      className="cc-input"
+                      value={allForced ? forcedLeaves[0].meta.hinge : unit.params.hinge}
+                      disabled={result.derived.doors === 2 || allForced}
+                      data-unit-hinge-forced={allForced ? '1' : (someForced ? 'mixed' : undefined)}
+                      title={allForced
+                        ? 'Cut on the slope — the door opens from the slope.'
+                        : (someForced
+                          ? 'Some leaves are forced by the slope — this governs the free leaves only.'
+                          : undefined)}
+                      onChange={(e) => updateUnitParams(unit.id, { hinge: e.target.value })}
+                    >
+                      <option value="L">Left</option>
+                      <option value="R">Right</option>
+                    </select>
+                    {allForced ? (
+                      <p className="text-[11px] opacity-70 mt-1" data-unit-hinge-forced-reason="1">
+                        Cut on the slope — the door opens from the slope.
+                      </p>
+                    ) : null}
+                  </>
+                );
+              })()}
             </div>
           </div>
 

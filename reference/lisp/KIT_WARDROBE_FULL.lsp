@@ -1604,14 +1604,26 @@
 ;;;----------------------------------------
 ;;; G2. THE SHOE SHELF COMES HOME
 ;;;----------------------------------------
-;;; T54-F7 buried the shoe BOX and its kit with it ("usun stary kod na shoes
-;;; i zrob z logika drawers") - and the TILTED SHOE SHELF, which that licence
-;;; named as a DIFFERENT entity and did NOT touch, lost its LISP home in the
-;;; same grave. Since that night its 15 degrees and its stop rail have lived
-;;; in JavaScript alone, which is iron rule 1 broken by accident rather than
-;;; by decision. The shelf is cut in this kit, so the law comes home here -
-;;; added LINES in the kit that owns the wardrobe, not a kit of its own: the
-;;; shelf is not a product, it is a wardrobe shelf set at an angle.
+;;; THE VERDICT, from git and not from memory (turn 58 F5). The easy story is
+;;; that T54-F7 buried this law with the shoe BOX: it deleted
+;;; reference/lisp/KIT_SHOE_BOX.lsp, 461 lines, and took the census from 14
+;;; to 13. That story is FALSE. KIT_SHOE_BOX.lsp was the BOX's kit (T34,
+;;; 002e62a) - 80 mm walls, a sloped bottom in 6 mm grooves, the 10 degree
+;;; angle law, the divider - and it never carried the SHELF's tilt or its
+;;; rail. T54-F7's own sentence, "the tilted shoe SHELF (15 deg, T33) is a
+;;; DIFFERENT entity and is NOT touched", is exactly true of the LISP too,
+;;; because there was nothing there to touch.
+;;;
+;;; THE NAMED COMMIT IS 38c2a5f, "Turn 33 - F3 - the wardrobe's insides: what
+;;; we cut, what we buy", 15.08.2026. It cut the tilted shelf, its stop rail,
+;;; the profile block and the shelf type across twelve files and 766 added
+;;; lines, and NOT ONE of them was under reference/lisp/. This law was born
+;;; homeless. Iron rule 1 was broken on the day the feature arrived, and the
+;;; two turns that later handled the shoe both stepped over it.
+;;;
+;;; So it comes home here, and it comes home as added LINES rather than a kit
+;;; of its own: the shelf is not a product, it is a wardrobe shelf set at an
+;;; angle, and the shelf of kits stays at fourteen.
 ;;;
 ;;; NO NEW HOLE PATTERN. The shoe shelf rests on the STANDARD 7.5 pin rows
 ;;; this kit has drilled since turn 1 (drawWardrobeShelfHolesBUL/-BUR above);

@@ -12,12 +12,19 @@ import { lispConstant, T58_PROFILE } from '../scripts/t58-paren-balance.mjs';
 
 // ─── TURN 58 · F3 — THE SHOE RETURNS ────────────────────────────────────────
 //
-// T54-F7 buried the shoe BOX and everything in its world — the licence names
-// the graves, `reference/lisp/KIT_SHOE_BOX.lsp` among them — and said of what
-// it was NOT killing: *"The tilted shoe SHELF (15°, T33) is a DIFFERENT entity
-// and is NOT touched."* True of the geometry. Not true of the law: the shelf's
-// own kit went into the same grave, and since that night its 15° and its stop
-// rail have lived in JavaScript alone. Iron rule 1 broken by accident.
+// THE VERDICT IS F5'S, and it overturned this file's first draft. The easy
+// story — the one this turn started out believing — is that T54-F7 buried the
+// shelf's law with the shoe BOX: it deleted `reference/lisp/KIT_SHOE_BOX.lsp`,
+// 461 lines, and took the census from 14 to 13. FALSE. That kit was the BOX's
+// (T34, 002e62a) and never carried the shelf's tilt or its rail, so T54-F7's
+// own *"the tilted shoe SHELF (15°, T33) is a DIFFERENT entity and is NOT
+// touched"* is exactly true of the LISP as well.
+//
+// The named commit is 38c2a5f, *"Turn 33 · F3 — the wardrobe's insides: what
+// we cut, what we buy"*, 15.08.2026: twelve files, 766 added lines, and not
+// one of them under `reference/lisp/`. This law was born homeless, and iron
+// rule 1 was broken on the day the feature arrived rather than by any later
+// deletion.
 //
 // And the rail was worse off than homeless. `SHOE-RAIL` is CUT, it is in the
 // BOM, `partRegistry` gives it a material slot, the scene DRAWS it — and

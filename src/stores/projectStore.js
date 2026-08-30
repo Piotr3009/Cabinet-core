@@ -127,7 +127,7 @@ import {
 // finish and the shelf it puts its glass in.
 import {
   DEFAULT_WATCH_LAYOUT, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
-  watchDrawerFixedHeight,
+  isShelfBoard, watchDrawerFixedHeight,
 } from '../engine/watchDrawer.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
@@ -6164,8 +6164,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const interior = drawerBoxInterior(mine, index);
     if (!interior) return null;
     const top = interior.at.y + interior.height;
+    // T55 (CLAUDE.md F4): `isShelfBoard` — the forced PARTITION over a drawer
+    // bank IS a shelf here. Same predicate the engine's own filter asks.
     return mine
-      .filter((p) => p.part === 'SHELF' && p.box && p.box.y >= top - 1e-6)
+      .filter((p) => isShelfBoard(p) && p.box && p.box.y >= top - 1e-6)
       .sort((a, b) => a.box.y - b.box.y)[0] || null;
   },
 

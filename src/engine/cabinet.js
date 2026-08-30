@@ -95,7 +95,7 @@ import { insertFor } from './drawerInserts.js';
 // to the SHELF above (`shelfGlassPlan`), the rear field is one of four designed
 // layouts (`watchLayoutOf`), and the insert wears a finish of its own.
 import {
-  WATCH_LAYERS, drawerBoxInterior, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
+  WATCH_LAYERS, drawerBoxInterior, isShelfBoard, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
   watchFinishOf, watchInsertOn, watchInsertParts, watchLayoutOf,
 } from './watchDrawer.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
@@ -7339,8 +7339,10 @@ export function computeCabinet(params, profileOverride) {
       // a drawer too shallow for the tray, three lines up.
       const wantsGlass = wItem?.watch_shelf_glass === true;
       const drawerTop = interior.at.y + interior.height;
+      // T55 (CLAUDE.md F4): `isShelfBoard` — the forced PARTITION over a
+      // drawer bank IS a shelf here. One law, one definition, two callers.
       const shelfAbove = panels
-        .filter((q) => q.part === 'SHELF' && q.box && q.box.y >= drawerTop - 1e-6
+        .filter((q) => isShelfBoard(q) && q.box && q.box.y >= drawerTop - 1e-6
           && (q.meta?.zone ?? null) === zone)
         .sort((a, b) => a.box.y - b.box.y)[0] || null;
       let shelfGlass = null;

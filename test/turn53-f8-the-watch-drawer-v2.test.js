@@ -126,11 +126,21 @@ test('F8a — the menu offers it at POSITION 3, under the two drawer entries', (
 });
 
 // ─── (b) THE GLASS MOVES TO THE SHELF ABOVE ───────────────────────────────
+//
+// T55 AMENDED (30.08.2026, CLAUDE.md F4): the board DIRECTLY above the watch
+// drawer in a wardrobe stack is the FORCED PARTITION (part 'PARTITION', role
+// 'shelf') — and `isShelfBoard` now lets it serve, which is the owner's own
+// ask: *"na półce która jest wymuszona nad szufladami."*  The board that
+// takes the pane is read off the pane's own record, so these tests state the
+// law and not a part name.
 
-test('F8b — the opening is cut IN THE SHELF, 50 mm in from every edge', () => {
+const paneBoard = (r) => r.panels.find((p) => p.id === (r.assemblies.watchGlass || [])[0]?.shelfId);
+
+test('F8b — the opening is cut IN THE BOARD ABOVE, 50 mm in from every edge', () => {
   const r = job();
-  const shelf = r.panels.find((p) => p.part === 'SHELF');
-  assert.ok(shelf, 'there is a shelf above');
+  const shelf = paneBoard(r);
+  assert.ok(shelf, 'there is a board above');
+  assert.equal(shelf.part, 'PARTITION', 'the forced board over the bank serves (T55 F4)');
   const opening = (shelf.cnc.pockets || []).find((k) => k.layer === WATCH_LAYERS.opening);
   assert.ok(opening, 'and it carries the opening');
   const off = P.watchDrawer.openingOffsetMm;
@@ -145,7 +155,7 @@ test('F8b — the opening is cut IN THE SHELF, 50 mm in from every edge', () => 
 
 test('F8b — the pane sits FLUSH with the shelf top (the decision taken)', () => {
   const r = job();
-  const shelf = r.panels.find((p) => p.part === 'SHELF');
+  const shelf = paneBoard(r);
   const rebate = (shelf.cnc.pockets || []).find((k) => k.layer === WATCH_LAYERS.rebate);
   assert.ok(rebate);
   assert.equal(rebate.depth, S.glassT, 'the rebate IS the glass thickness — flush');
@@ -179,7 +189,7 @@ test('F8b — the tray carries no rebate and no groove any more (the ONE licence
 test('F8c — the strip rings the opening ~15 mm outside it, on the underside', () => {
   const r = job();
   const pane = (r.assemblies.watchGlass || [])[0];
-  const shelf = r.panels.find((p) => p.part === 'SHELF');
+  const shelf = paneBoard(r);
   const plan = shelfGlassPlan({ w: shelf.box.w, d: shelf.box.d }, P);
   const led = P.watchDrawer.ledOffsetMm;
   assert.equal(led, 15, 'his own number');
@@ -197,27 +207,38 @@ test('F8c — the pane and the strip are their own BOM lines, tied to the SHELF'
   const led = (r.hardware || []).filter((h) => h.role === 'led_strip');
   assert.equal(glass.length, 1);
   assert.equal(led.length, 1);
-  assert.match(glass[0].spec_label, /flush in SHELF-/);
-  assert.match(led[0].spec_label, /underside of SHELF-/);
+  // T55 (F4): the board above is the forced PARTITION, and the BOM says so.
+  assert.match(glass[0].spec_label, /flush in PARTITION/);
+  assert.match(led[0].spec_label, /underside of PARTITION/);
   assert.equal(glass[0].spec.shelf, led[0].spec.shelf, 'both name the same board');
   assert.equal(led[0].unit, 'm');
 });
 
-// ─── (d) NO SHELF ABOVE → DISABLED, WITH A REASON ─────────────────────────
+// ─── (d) NO MANUAL SHELF → THE FORCED PARTITION SERVES (T55, CLAUDE.md F4) ──
+//
+// T55 AMENDED (30.08.2026): the drawer bank always forces its own closing
+// board (`PARTITION`, role `shelf`) directly above the stack, and
+// `isShelfBoard` now lets it take the pane — so "no shelf above" is no
+// refusal in a wardrobe stack any more. The owner: *"z automatycznym
+// dodaniem leda dookoła szyby … na półce która jest wymuszona nad
+// szufladami."*  The refusal (`watch_glass_needs_shelf`, Check #23) stays in
+// the engine for the board-less case; here its ABSENCE is the claim.
 
-test('F8d — no shelf above: nothing is cut, and Check says why', () => {
+test('F8d — no manual shelf: the forced PARTITION takes the pane, no refusal', () => {
   const r = job({ shelf: false });
-  assert.equal((r.assemblies.watchGlass || []).length, 0, 'no pane');
-  assert.equal((r.hardware || []).filter((h) => h.role === 'drawer_glass').length, 0, 'and none ordered');
-  const said = (r.warnings || []).find((w) => w.code === 'watch_glass_needs_shelf');
-  assert.ok(said, 'the engine refuses in words');
+  assert.equal((r.assemblies.watchGlass || []).length, 1, 'the pane is cut');
+  assert.equal((r.hardware || []).filter((h) => h.role === 'drawer_glass').length, 1, 'and ordered');
+  assert.equal((r.hardware || []).filter((h) => h.role === 'led_strip').length, 1, 'the LED ring is born');
+  assert.equal(paneBoard(r).part, 'PARTITION', 'cut in the forced board');
+  assert.equal((r.warnings || []).find((w) => w.code === 'watch_glass_needs_shelf'), undefined,
+    'the refusal is gone — the partition IS the shelf here');
   const found = runChecks({
     entries: [{ unit: { id: 'u', params: { unit_num: 'W01' } }, result: r }],
     profile: P,
   });
-  const note = found.find((f) => f.check === 23 && /shelf directly above/i.test(f.message));
-  assert.ok(note, 'and Check #23’s neighbour names it');
-  // …and the INSERT itself is cut exactly as asked — only the pane is not.
+  assert.equal(found.find((f) => f.check === 23 && /shelf directly above/i.test(f.message)), undefined,
+    'and Check #23 has nothing to say');
+  // …and the INSERT itself is cut exactly as asked.
   assert.equal((r.assemblies.watchInserts || []).length, 1);
 });
 
@@ -381,9 +402,11 @@ test('F8g — …and where there is no shelf, the pane is dropped and named', ()
     id: null, name: 'a T52 job', number: '52', client: 'the owner', room: ROOM, design: {},
   }, JSON.parse(JSON.stringify(saved)));
   const result = store().unitResult('u1');
-  assert.equal((result.assemblies.watchGlass || []).length, 0, 'no pane');
-  assert.ok((result.warnings || []).some((w) => w.code === 'watch_glass_needs_shelf'),
-    'and it is named rather than dropped in silence');
+  // T55 AMENDED (CLAUDE.md F4): the forced PARTITION over the stack now takes
+  // the pane the migration asks for — no refusal, the glass is simply cut.
+  assert.equal((result.assemblies.watchGlass || []).length, 1, 'the pane is cut in the partition');
+  assert.equal((result.warnings || []).some((w) => w.code === 'watch_glass_needs_shelf'), false,
+    'no refusal — the partition IS the shelf here');
   assert.equal((result.assemblies.watchInserts || []).length, 1, 'the tray itself is untouched');
 });
 

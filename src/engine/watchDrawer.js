@@ -192,6 +192,23 @@ export function watchInsertOn(item) {
 }
 
 /**
+ * ─── T55 (CLAUDE.md F4): WHAT COUNTS AS A SHELF BOARD ──────────────────────
+ *
+ * The owner: *"z automatycznym dodaniem leda dookoła szyby … na półce która
+ * jest wymuszona nad szufladami."*  The pane over a watch drawer is cut in
+ * the board DIRECTLY ABOVE it — and the auto board a drawer bank forces is
+ * `part: 'PARTITION'` (role `shelf`), a fixed shelf in everything but name.
+ * Two askers used to ask `part === 'SHELF'` and both refused it.
+ *
+ * ONE law, ONE definition, TWO callers: the engine's `shelfAbove` filter
+ * (cabinet.js) and the store's `watchShelfAbove` (projectStore.js). A
+ * VERTICAL partition (`VPART`) is not a shelf and is not matched.
+ */
+export function isShelfBoard(p) {
+  return p?.part === 'SHELF' || (p?.part === 'PARTITION' && p?.role === 'shelf');
+}
+
+/**
  * The drawer ITEM one drawer index belongs to, on a unit.
  *
  * The properties panel is handed a PANEL and knows the drawer by its index;

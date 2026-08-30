@@ -1,5 +1,5 @@
 import {
-  useEffect, useLayoutEffect, useMemo, useRef, useState,, useReducer,
+  useEffect, useLayoutEffect, useMemo, useRef, useReducer, useState,
 } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';

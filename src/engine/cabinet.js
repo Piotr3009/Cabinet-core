@@ -37,7 +37,8 @@ import {
 import { jpullSpec, resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
 import {
-  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, topDemandMm,
+  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, hingedSidesOf,
+  plateBearerOf, slopeForcedHand, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
@@ -1750,6 +1751,16 @@ export function computeCabinet(params, profileOverride) {
   // above the top drawer front plus the gap, and runs to the top edge the
   // cabinet already demands (`doors.js topDemandMm`, untouched).
   const overlayBase = overlay ? overlay.doorBase : 0;
+  // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
+  // aperture, which is the same one line seen from the other end (F9).
+  // TURN 40 (F3b): …and it STANDS on the overlay stack when there is one.
+  //
+  // T58-F1: HOISTED from the door section, unchanged. The face leaves' hands
+  // have to be known before the drawer standoff is decided, and the rake is
+  // sampled at the door's own datum — so the datum has to exist up here. Every
+  // term of it (`cfg.doorExtend`, `hoodApertureMm`, `overlayBase`) is already
+  // settled at this line, which is why it can move without moving a byte.
+  const doorY = -cfg.doorExtend + hoodApertureMm + overlayBase;
   const frontH = H - topDemandMm(params, P) + cfg.doorExtend - hoodApertureMm - overlayBase;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
@@ -1759,8 +1770,56 @@ export function computeCabinet(params, profileOverride) {
   // matters now that such a kit answers the ordinary door control and can
   // report a `doorCount` of 1. (It has no BUL to bore either, which is how the
   // fault showed: six ⌀5 plate holes addressed to a panel that is not cut.)
-  const hingedSides = dropsForward ? []
-    : (doorCount === 2 ? ['BUL', 'BUR'] : (doorCount === 1 ? [cfg.hinge === 'R' ? 'BUR' : 'BUL'] : []));
+  // ─── TURN 58 (F1): THE STATIC TABLE IS GONE (licensed deletion 1) ────────
+  //
+  // What stood here was:
+  //
+  //     const hingedSides = dropsForward ? []
+  //       : (doorCount === 2 ? ['BUL', 'BUR']
+  //         : (doorCount === 1 ? [cfg.hinge === 'R' ? 'BUR' : 'BUL'] : []));
+  //
+  // Two doors ⇒ BOTH sides, always. One door ⇒ the side the RAW param names.
+  // Written when a leaf's hand could not change — and under a rake it can:
+  // T46/T55 force both leaves onto the tall edge. The table bored the board the
+  // leaf had just abandoned (6 phantom ⌀5 holes on a 1000 × 2200 two-door
+  // wardrobe) and, on one door, bored nothing at all where the door hangs.
+  //
+  // It is replaced by the ONE resolver — `doors.js plateBearerOf`, "which board
+  // carries THIS leaf's plates" — asked of the face leaves THIS cabinet will
+  // actually cut. The plan below is not a second copy of the door arithmetic:
+  // `frontW` and the gap are the numbers `faceLeaf()` itself lays the leaves
+  // out from, a few thousand lines down, and the assertion that the two agree
+  // is the drilling pass, which asks the same resolver of the real panels.
+  //
+  // WHY IT IS ANSWERED HERE, so far above the doors. T40-F3a made the drawer
+  // standoff and the plate holes read ONE list, in its own words so that
+  // *"the strip and the plate holes can no longer disagree about whether a side
+  // carries a door"*. The standoff is decided in the drawer block immediately
+  // below. So the list has to exist here — and it is now DERIVED FROM THE
+  // DOORS instead of from a door COUNT.
+  const faceLeafPlan = (() => {
+    if (dropsForward || !(doorCount > 0)) return [];
+    const half = P.doors.gap / 2;
+    // The two boards a plate can be screwed to before any partition exists.
+    const sides = [
+      { part: 'BUL', id: 'BUL', box: { x: 0, w: G } },
+      { part: 'BUR', id: 'BUR', box: { x: W - G, w: G } },
+    ];
+    const spans = doorCount === 2
+      ? [{ x: half, free: 'L' }, { x: W - half - frontW, free: 'R' }]
+      : [{ x: half, free: cfg.hinge === 'R' ? 'R' : 'L' }];
+    return spans.map(({ x, free }) => {
+      // The rake's verdict, from the ONE sampler and the ONE hand rule. With no
+      // ceiling over this leaf `cutOver` answers null and the typed hand
+      // stands — which is every cabinet in a level room, to the byte.
+      const sub = cutOver(x, x + frontW, { dy: doorY + P.doors.gap });
+      const pts = sub ? sub.pts.map((q) => ({ x: q.x, y: Math.max(0, q.y) })) : null;
+      const cuts = pts && slopeCutActive({ w: frontW, h: frontH, pts });
+      const hinge = cuts ? slopeForcedHand(pts, 'L') : free;
+      return { part: 'FRONT', box: { x, w: frontW }, meta: { hinge }, sides };
+    });
+  })();
+  const hingedSides = hingedSidesOf(faceLeafPlan, { panels: faceLeafPlan[0]?.sides || [] });
 
   // ── Hinges + cups ──────────────────────────────────────────────────────────
   const hingeRule = P.hinges.rules[type.hingeRule] || P.hinges.rules.base;
@@ -5603,10 +5662,6 @@ export function computeCabinet(params, profileOverride) {
 
   // Door fronts, always last (they close the unit — SPEC 4.10)
   const doorZ = D + P.doors.gap;
-  // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
-  // aperture, which is the same one line seen from the other end (F9).
-  // TURN 40 (F3b): …and it STANDS on the overlay stack when there is one.
-  const doorY = -cfg.doorExtend + hoodApertureMm + overlayBase;
   // ─── TURN 21 (CLAUDE.md F12): DOORS ON THE PARTITION ─────────────────────
   //
   // Owner's case: partitions at 600 and 800, three bays, two proper doors and
@@ -5746,7 +5801,13 @@ export function computeCabinet(params, profileOverride) {
       sheetR: roomL,
       // The full-height edge. A tie (a level ceiling under the carcass top)
       // keeps the LEFT, which is the app's own default hand.
-      hinge: roomL >= roomR ? 'L' : 'R',
+      //
+      // T58-F1: the comparison itself moved to `doors.js slopeForcedHand`, and
+      // it moved because this turn gave it a SECOND reader — the carcass
+      // hinged-side answer is wanted before the leaves are cut. Two copies of
+      // this one line is exactly how the hand and the board it hangs on came
+      // to disagree; `free = 'L'` is the tie this file has always taken.
+      hinge: slopeForcedHand(roomPts, 'L'),
       tall,
       low: Math.min(full, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
       // ─── TURN 54 (CLAUDE.md F3.4): THE ANGLE, STATED ON THE PIECE ────────
@@ -6616,16 +6677,29 @@ export function computeCabinet(params, profileOverride) {
   // with `meta.hingeOn`, exactly as before. A leaf that says NEITHER still
   // falls through, which is what keeps a kit nobody has taught this to reading
   // as it read yesterday.
-  const plateBearerOf = (p) => {
-    if (p.meta?.hingeOn) return p.meta.hingeOn;
-    if (p.meta?.hinge === 'R') return 'BUR';
-    if (p.meta?.hinge === 'L') return 'BUL';
-    return null;
-  };
+  //
+  // ─── TURN 58 (F1): …AND THAT PARAGRAPH IS NOW ONE FUNCTION, IMPORTED ────
+  //
+  // A local copy of it stood here:
+  //
+  //     const plateBearerOf = (p) => {
+  //       if (p.meta?.hingeOn) return p.meta.hingeOn;
+  //       if (p.meta?.hinge === 'R') return 'BUR';
+  //       if (p.meta?.hinge === 'L') return 'BUL';
+  //       return null;
+  //     };
+  //
+  // It was right about a leaf that hangs on a carcass side and blind to the one
+  // that does not: a forced leaf whose hinge edge lands mid-cabinet answered
+  // 'BUR' anyway, because the hand was read as if it named a board. The
+  // imported resolver asks WHICH BOARD ACTUALLY STANDS THERE, which is the same
+  // answer for every leaf that had one and the honest null for the leaf that
+  // never did. One law, three readers (here, the 3-D, the store).
+  const bearerOf = (p) => plateBearerOf(p, { panels });
   const platedRowsFor = (bearerId) => {
     const rows = panels
       .filter((p) => p.part === 'FRONT' && p.meta?.split && Array.isArray(p.meta.plateY)
-        && (plateBearerOf(p) ? plateBearerOf(p) === bearerId : true))
+        && (bearerOf(p) ? bearerOf(p) === bearerId : true))
       .flatMap((p) => p.meta.plateY);
     return rows.length ? [...new Set(rows)].sort((a, b) => a - b) : null;
   };
@@ -6634,9 +6708,14 @@ export function computeCabinet(params, profileOverride) {
   // exactly as a face door does, and a middle bay's hangs on nothing but its
   // partitions. Drilling `hingedSides` regardless would have bored a plate
   // pattern into a side no door is hung on.
+  //
+  // T58-F1: the FACE case is asked of the real leaves now, through the same
+  // resolver — so the answer the sheet is bored from and the answer the picture
+  // hangs its ironmongery on are one call, not two agreeing expressions.
+  const faceLeavesCut = panels.filter((p) => p.part === 'FRONT' && p.role === 'front');
   const platedSides = bayDoors.length
     ? [...new Set(bayDoors.filter((l) => !l.onPartition).map((l) => l.hingeOn))]
-    : hingedSides;
+    : hingedSidesOf(faceLeavesCut, { panels });
   for (const sideId of platedSides) {
     const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
     const own = platedRowsFor(sideId);
@@ -8327,7 +8406,9 @@ export function computeCabinet(params, profileOverride) {
     ),
     side_hinge_holes_y: hingedLeafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
-    hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
+    hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSidesOf(
+      panels.filter((p) => p.part === 'FRONT' && p.role === 'front'), { panels },
+    ),
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
     front_cup_x_from_hinge_edge: cups.xFromHingeEdge,
     // ─── TURN 25 (CLAUDE.md F4): where every handle on this cabinet sits ────

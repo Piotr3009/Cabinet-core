@@ -390,6 +390,163 @@ export function bayDoorsAvailable(bays = []) {
   return bays.some((b) => b.left.kind === 'partition' || b.right.kind === 'partition');
 }
 
+// ─── TURN 58 (F1): WHICH BOARD CARRIES THIS LEAF'S PLATES ───────────────────
+//
+// The owner: *"jak mamy skos i się przełącza z lewej na prawą stronę drzwi, ale
+// na BUL i BUR się już nie przełącza."*
+//
+// THE TABLE THIS REPLACES (licensed deletion 1), from `engine/cabinet.js`:
+//
+//     const hingedSides = dropsForward ? []
+//       : (doorCount === 2 ? ['BUL', 'BUR']
+//         : (doorCount === 1 ? [cfg.hinge === 'R' ? 'BUR' : 'BUL'] : []));
+//
+// Two doors ⇒ BOTH sides, always. One door ⇒ the side the RAW param names. It
+// was written when a leaf's hand could not change, and under a rake it can:
+// T46/T55 force both leaves to the tall edge (`meta.hingeForced`) and T55-F3
+// puts a DOOR PARTITION under the flipped leaf's new hinge line. The table
+// went on boring the board the leaf had just left — 6 phantom ⌀5 holes on a
+// 1000 × 2200 two-door wardrobe, and on a ONE-door cabinet the raw pick was
+// the whole answer, so the board the door really hangs on took none at all.
+//
+// THE LAW, and it is a question about ONE LEAF rather than about a cabinet:
+// a leaf's plates go in THE BOARD THAT STANDS ON ITS HINGE LINE. That single
+// sentence answers every case the old table needed a branch for — two doors,
+// one door, either hand, forced or free, a carcass side or a partition — and
+// it answers the ones it got wrong. Slope RIGHT is the same call as slope
+// LEFT: there is no branch here that could tell them apart, which is what the
+// mirror test in `turn58-f1-the-phantom-column.test.js` is guarding.
+
+/**
+ * THE HAND A LEAF OPENS ON, under a ceiling that cuts it (T46's law).
+ *
+ * *"brak wyboru otwierania"* — the door opens FROM the slope, so the hinges
+ * live on the FULL-HEIGHT edge and the diagonal never carries one. A tie keeps
+ * the hand that was already chosen, which on every level cabinet in this app
+ * is the hand it has always had.
+ *
+ * It is here, and exported, because turn 58 gave it a SECOND reader: the
+ * carcass hinged-side answer is needed before the leaves are cut, and a second
+ * copy of this comparison is precisely how the hand and the board it hangs on
+ * came to disagree in the first place.
+ *
+ * @param {Array<{y:number}>} roomPts  the leaf's own stretch of the ceiling,
+ *   in the leaf's frame, as the one sampler in `cabinet.js` hands it over
+ * @param {'L'|'R'} free  the hand the leaf would take with no rake over it
+ */
+export function slopeForcedHand(roomPts, free = 'L') {
+  if (!Array.isArray(roomPts) || roomPts.length < 2) return free;
+  const l = Number(roomPts[0].y);
+  const r = Number(roomPts[roomPts.length - 1].y);
+  if (!(Number.isFinite(l) && Number.isFinite(r))) return free;
+  if (l === r) return free;
+  return l > r ? 'L' : 'R';
+}
+
+/** Does `x` fall within this board's own thickness, end-inclusive? */
+function standsOn(panel, x, tol = 0.51) {
+  const box = panel?.box;
+  if (!box) return false;
+  const from = Number(box.x);
+  const to = from + Number(box.w);
+  if (!(Number.isFinite(from) && Number.isFinite(to))) return false;
+  return x >= from - tol && x <= to + tol;
+}
+
+/** The boards a hinge plate can be screwed to: the two sides and a partition. */
+const BEARER_PARTS = new Set(['BUL', 'BUR', 'VPART']);
+
+/**
+ * WHICH BOARD CARRIES THIS LEAF'S PLATES — the one resolver (turn 58, F1).
+ *
+ * Consumed by the drilling pass, by the hardware 3-D (so a hinge MESH cannot
+ * appear on a board the sheet does not bore) and by the store's bay logic.
+ * One answer, three readers.
+ *
+ * @param {object} leaf   an engine panel record; anything that is not a hinged
+ *   FRONT answers null, which is how the appliance face and every carcass
+ *   board fall out without a branch of their own.
+ * @param {object} opts
+ *   panels  the cabinet's own boards — where the partition is found
+ * @returns {string|null} the bearing panel's id, or null where a leaf hangs on
+ *   nothing this cabinet cuts (a flipped face leaf before the store has put a
+ *   door partition under it — and nothing is bored for it, which is the fix).
+ */
+export function plateBearerOf(leaf, { panels = [] } = {}) {
+  if (!leaf || leaf.part !== 'FRONT' || !leaf.box) return null;
+  // A BAY leaf was answered by `bayDoorPlan` when its bay was planned, and that
+  // answer knows things geometry does not — which of a partition's two FACES
+  // takes the plate. Deferring to it keeps turn 21's law the only law about
+  // bay leaves, and keeps this function from becoming a second one.
+  if (leaf.meta?.hingeOn) return leaf.meta.hingeOn;
+  const hand = leaf.meta?.hinge;
+  if (hand !== 'L' && hand !== 'R') return null;
+  // The HINGE LINE: the leaf's own left edge on a left hand, its right edge on
+  // a right one. Forced or free, the leaf has already said which (`meta.hinge`
+  // is where T46 writes the rake's verdict), so this reads one fact and does
+  // not re-derive it.
+  const line = hand === 'L' ? Number(leaf.box.x) : Number(leaf.box.x) + Number(leaf.box.w);
+  if (!Number.isFinite(line)) return null;
+  const bearer = panels.find((p) => BEARER_PARTS.has(p?.part) && standsOn(p, line));
+  return bearer ? bearer.id : null;
+}
+
+/**
+ * The carcass sides that carry a hinged door, read off the leaves themselves.
+ *
+ * The replacement for the static table, in the shape its consumers wanted: the
+ * drawer-panel standoff (T40-F3a) and the plate pattern read ONE list, so — in
+ * that turn's own words — *"the strip and the plate holes can no longer
+ * disagree about whether a side carries a door."* They still cannot; what
+ * changed is that the list is now derived from the doors instead of from a
+ * door COUNT.
+ */
+/**
+ * The bay boundaries as far as the CARCASS is concerned, for `n` bays.
+ *
+ * Only two boundaries in any cabinet can ever be a carcass side, and which two
+ * does not depend on where the partitions stand: the FIRST bay's left boundary
+ * is always BUL and the LAST bay's right is always BUR. Everything between is a
+ * partition, and a leaf hung on one reserves nothing on the carcass.
+ *
+ * Stated here, once, because the DESIGN layer has to answer this question
+ * before the engine has cut a partition to measure — and re-deriving the
+ * partition geometry up there to answer a question the geometry has no say in
+ * is exactly the kind of second reading turn 58 is about.
+ */
+export function carcassBaysFor(n) {
+  const count = Math.max(0, Number(n) || 0);
+  if (!count) return [];
+  const bounds = [
+    boundaryAt('side', 0, 0, 'BUL'),
+    ...Array.from({ length: count - 1 }, (_, i) => boundaryAt('partition', 0, 0, `VPART-${i + 1}`)),
+    boundaryAt('side', 0, 0, 'BUR'),
+  ];
+  return Array.from({ length: count }, (_, i) => ({
+    index: i, from: 0, to: 0, size: 0, left: bounds[i], right: bounds[i + 1],
+  }));
+}
+
+/**
+ * Which CARCASS sides carry a hinged BAY door — read OFF `bayDoorPlan`.
+ *
+ * The design layer's replacement for its own raw pick (turn 58, F1). It asks
+ * the plan the engine will ask, so the two cannot answer differently.
+ */
+export function hingedBaySidesOf(modes = []) {
+  if (!Array.isArray(modes) || !modes.length) return undefined;
+  const plan = bayDoorPlan({ bays: carcassBaysFor(modes.length), modes });
+  const sides = plan.filter((l) => !l.onPartition).map((l) => l.hingeOn);
+  return [...new Set(sides)].filter((id) => id === 'BUL' || id === 'BUR').sort();
+}
+
+export function hingedSidesOf(leaves = [], { panels = [] } = {}) {
+  const sides = leaves
+    .map((leaf) => plateBearerOf(leaf, { panels }))
+    .filter((id) => id === 'BUL' || id === 'BUR');
+  return [...new Set(sides)].sort();
+}
+
 // ─── THE MOUNTING DATUM (turn 26, CLAUDE.md F1.2) ───────────────────────────
 //
 // The owner's hinge pierced the front of his doors, and the reason it could is

@@ -29,7 +29,9 @@
  * @returns {{hinges:Array, runners:Array, legs:Array, rails:Array}}
  */
 import { panelPlacement } from './joinery.js';
-import { cupBodyPlanes, cupBoreOf, doorHingeDatum } from './doors.js';
+import {
+  cupBodyPlanes, cupBoreOf, doorHingeDatum, plateBearerOf,
+} from './doors.js';
 import { machiningFor } from './machining.js';
 import { getUnitType } from './types.js';
 // T42-F1: two kinds of rail, and the scene routes on which. One law, imported
@@ -298,10 +300,22 @@ export function doorHingeInstances(panel, {
   //
   // A door hung on a carcass side takes the inner face of that side; a door
   // hung on a PARTITION takes the face of that partition it closes against.
-  // Both are named on the leaf itself.
-  const on = panel.meta?.hingeOn
-    ? panels.find((p) => p.id === panel.meta.hingeOn && p.box)
-    : null;
+  //
+  // ─── TURN 58 (F1): AND IT IS THE ONE RESOLVER THAT SAYS WHICH ───────────
+  //
+  // This read `meta.hingeOn` and, finding none, fell back to the leaf's own
+  // hand — which is right for every leaf that hangs on a carcass side and
+  // WRONG for the one this turn is about. Under a rake a face leaf is forced
+  // onto a hand whose edge lands mid-cabinet; the fallback then drew a hinge
+  // ring floating on nothing, on the very board the sheet had stopped boring.
+  // The picture and the drilling are now the same answer: `plateBearerOf`.
+  //
+  // A leaf whose bearer is null takes NO hinges at all — it hangs on nothing
+  // this cabinet cuts, and drawing ironmongery for it would be drawing a
+  // purchase nobody makes.
+  const bearerId = plateBearerOf(panel, { panels });
+  if (!bearerId) return [];
+  const on = panels.find((p) => p.id === bearerId && p.box) || null;
   // `hingeFace` is the ENGINE's own answer and it is the one the plate pattern
   // is drilled from (engine/cabinet.js). 'L' means the plate is on the bearer's
   // LEFT face, 'R' its right one. Absent — a carcass side, which has only one

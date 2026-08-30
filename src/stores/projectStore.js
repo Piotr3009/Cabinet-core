@@ -15,7 +15,7 @@ import {
 import { layerNameFault, makeUserLayer, normaliseUserLayers } from '../engine/partLayers.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
-import { doorBays } from '../engine/doors.js';
+import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
   defaultParamsFor, getUnitType, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
@@ -540,23 +540,34 @@ function budrDrawerIndex(unit, ref) {
 
 /** Interior items -> the count/flag shape the engine consumes. */
 /**
- * Which CARCASS sides carry a hinged door — the design layer's own answer.
+ * Which CARCASS sides carry a hinged door — asked of the law that owns doors.
  *
- * Returns null when the unit has no per-bay doors, which leaves the engine's
- * `doorCount` rule exactly where it was for every cabinet in the app but this
- * one shape.
+ * ─── TURN 58 (F1): THE RAW SIDE-PICK IS GONE (licensed deletion 1) ─────────
+ *
+ * What stood here was the design layer's own copy of the same fault the engine
+ * carried, in the same shape:
+ *
+ *     if (on(first) && hinge(first) === 'L') sides.push('BUL');
+ *     if (on(last)  && hinge(last)  === 'R') sides.push('BUR');
+ *
+ * It read the RAW leaf hinge — the hand a joiner typed — so under a rake, where
+ * T46/T55 force a leaf onto the other hand and T55-F3 puts a partition under
+ * it, this went on reserving the board the leaf had left. Two copies of one
+ * mistake, one in each layer.
+ *
+ * It is asked of `engine/doors.js` now, which answers it by running the plan
+ * the ENGINE will run (`bayDoorPlan`) — so the two layers cannot come back with
+ * different boards. The invariant that lets the design layer answer at all,
+ * before any partition has been cut to measure, is stated once over there
+ * (`carcassBaysFor`): the first bay's left boundary is always BUL and the last
+ * bay's right is always BUR.
+ *
+ * Returns undefined when the unit has no per-bay doors, which leaves the
+ * engine's `doorCount` rule exactly where it was for every cabinet in the app
+ * but this one shape.
  */
 function hingedCarcassSides(p) {
-  const bays = Array.isArray(p?.bay_doors) ? p.bay_doors : null;
-  if (!bays || !bays.length) return undefined;
-  const on = (m) => String(m?.door ?? 'none').toLowerCase() !== 'none';
-  const hinge = (m) => (String(m?.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L');
-  const first = bays[0];
-  const last = bays[bays.length - 1];
-  const sides = [];
-  if (on(first) && hinge(first) === 'L') sides.push('BUL');
-  if (on(last) && hinge(last) === 'R') sides.push('BUR');
-  return sides;
+  return hingedBaySidesOf(Array.isArray(p?.bay_doors) ? p.bay_doors : null);
 }
 
 /**

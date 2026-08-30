@@ -1405,7 +1405,13 @@ export function computeCabinet(params, profileOverride) {
   // `ceilLine` is consumed by the strip's top and by the scribe pieces that run
   // to the plaster. With no `infill` on the cut the two lines are one.
   const ceilLine = cut ? { w: W, h: H, pts: cut.pts } : null;
-  const slopeReserve = cut ? Math.max(0, Number(cut.infill) || 0) : 0;
+  // The rake band and the carcass cut under it NEVER grow past the profile's
+  // strip nominal — "pas 40 bez zmian" (30.08); an extended infill grows the
+  // LEVEL board only.
+  const stripNom = Math.max(0, Number(P.autoParts?.topInfill?.defaultHeight) || 0);
+  const slopeReserve = cut
+    ? Math.max(0, Math.min(Number(cut.infill) || 0, stripNom || (Number(cut.infill) || 0)))
+    : 0;
   const cutLine = ceilLine
     ? {
       w: W,
@@ -4855,7 +4861,6 @@ export function computeCabinet(params, profileOverride) {
         };
       });
     });
-    const manySegs = runSegsSplit.length > 1;
     const segId = (base, i) => (manySegs ? `${base}-${i + 1}` : base);
 
     // ─── TURN 54 (CLAUDE.md F1): THE TRIO'S OWN NUMBERS ─────────────────────
@@ -4865,9 +4870,12 @@ export function computeCabinet(params, profileOverride) {
     // travels with the run element, so its reserve does too
     // (`runs.js runTopInfill`); a solo cabinet reads its own cut. Zero — every
     // caller that predates tonight — leaves the flat arithmetic alone.
-    const segReserve = runCeil
-      ? (Math.max(0, Number(runInfill.ceilingInfill) || 0) || slopeReserve)
-      : slopeReserve;
+    const segReserve = (() => {
+      const raw = runCeil
+        ? (Math.max(0, Number(runInfill.ceilingInfill) || 0) || slopeReserve)
+        : slopeReserve;
+      return stripNom ? Math.min(raw, stripNom) : raw;
+    })();
     // ─── T55 · THE RAKED STRIP, WRITTEN FRESH (29.08.2026, the owner's order:
     // "usuń stary kod i zrób od nowa") ─────────────────────────────────────
     // Under a rake the top infill is ONE BOARD and nothing else. This module
@@ -4886,7 +4894,7 @@ export function computeCabinet(params, profileOverride) {
       const lowR = infReachAt(sg.to) < infReachAt(sg.from);
       const xL = lowR ? roundTo(sg.to, 4) : roundTo(sg.from, 4);
       const yL = roundTo(lowR ? infReachAt(sg.to) : infReachAt(sg.from), 4);
-      const overEnd = allowanceEnd(i === 0, i === runSegsSplit.length - 1);
+      const overEnd = allowanceEnd(i === 0, i === segsFinal.length - 1);
       const overLen = overEnd ? overT : 0;
       const cutLen = roundTo(segLen + overLen, 4);
       const box = {
@@ -4932,7 +4940,7 @@ export function computeCabinet(params, profileOverride) {
             span: roundTo(sg.to - sg.from, 4),
             along: roundTo(segLen, 4),
             segment: i + 1,
-            of: runSegsSplit.length,
+            of: segsFinal.length,
             cutHeight: roundTo(bandH, 4),
           },
           tilt_deg: roundTo(lowR ? -sg.deg : sg.deg, 4),
@@ -4947,7 +4955,91 @@ export function computeCabinet(params, profileOverride) {
         },
       }));
     };
-    runSegsSplit.forEach((sg, i) => {
+    // ─── EXTEND TO CEILING (30.08, mockup v2): the rake keeps its 40 band
+    // over the CUT carcass only; everything over an INTACT carcass is ONE
+    // plain board, bottom on the cabinet, top cut on the ceiling line. ───────
+    const extended = infRoof && faceH > segReserve + 1e-6;
+    const segsFinal = (() => {
+      if (!extended) return runSegsSplit;
+      const res = segReserve;
+      const spans = [];
+      for (const sg of runSegsSplit) {
+        if (!(sg.deg > 1e-9)) { spans.push({ ...sg, intact: ceilReachAt((sg.from + sg.to) / 2) >= H - 1e-6 }); continue; }
+        const cos = Math.cos((sg.deg * Math.PI) / 180);
+        const target = H + res / (cos > 1e-9 ? cos : 1);
+        const ya = ceilReachAt(sg.from);
+        const yb = ceilReachAt(sg.to);
+        const rate = (yb - ya) / (sg.to - sg.from);
+        const xg = Math.abs(rate) > 1e-9 ? sg.from + (target - ya) / rate : null;
+        const cutSide = (x) => ceilReachAt(x) < target - 1e-6;
+        if (xg == null || xg <= sg.from + 1e-6 || xg >= sg.to - 1e-6) {
+          spans.push({ ...sg, intact: !cutSide((sg.from + sg.to) / 2) });
+        } else {
+          for (const [f, t2] of [[sg.from, xg], [xg, sg.to]]) {
+            spans.push({
+              from: roundTo(f, 4), to: roundTo(t2, 4), deg: sg.deg,
+              run: cos > 1e-9 ? (t2 - f) / cos : (t2 - f),
+              joinL: null, joinR: null, intact: !cutSide((f + t2) / 2),
+            });
+          }
+        }
+      }
+      const out = [];
+      for (const sp of spans) {
+        const prev = out[out.length - 1];
+        if (sp.intact && prev && prev.board) { prev.to = sp.to; continue; }
+        if (sp.intact) { out.push({ from: sp.from, to: sp.to, deg: 0, run: sp.to - sp.from, joinL: null, joinR: null, board: true }); continue; }
+        out.push({ ...sp, joinL: null, joinR: null });
+      }
+      return out;
+    })();
+    const manySegs = segsFinal.length > 1;
+    /** ONE plain board over the intact carcass: bottom on the cabinet, top on
+     * the ceiling line — the side infill's own law (subSlopeCut/trim), stood
+     * on top of the run. */
+    const emitCeilingBoard = (sg, i) => {
+      const from = sg.from;
+      const to = sg.to;
+      const spanW = roundTo(to - from, 4);
+      const topAt = (x) => Math.min(ceilReachAt(x), capY);
+      const knots = [...new Set([from, ...infBreaks.filter((q) => q > from + 1e-6 && q < to - 1e-6), to])]
+        .sort((a2, b2) => a2 - b2);
+      const pts = knots.map((x) => ({ x: roundTo(x - from, 4), y: roundTo(topAt(x) - H, 4) }));
+      const hMax = roundTo(pts.reduce((hi, q) => Math.max(hi, q.y), 0), 4);
+      if (!(hMax > 0.5)) return;
+      const flatTop = pts.every((q) => Math.abs(q.y - hMax) < 1e-3);
+      const overEnd = allowanceEnd(i === 0, i === segsFinal.length - 1);
+      const overLen = overEnd ? overT : 0;
+      const cutLen = roundTo(spanW + overLen, 4);
+      const blankH = roundTo(hMax + overT, 4);
+      const cutPts = pts.map((q) => ({ x: q.x, y: roundTo(q.y + overT, 4) }));
+      const geom = flatTop
+        ? rectGeometry(cutLen, blankH)
+        : trimGeometryOnSlope(rectGeometry(cutLen, blankH), { w: cutLen, h: blankH, pts: cutPts });
+      panels.push(panel({
+        id: segId('INFILL-T-FACE', i), part: 'INFILL', role: 'infill',
+        w: cutLen, h: blankH, thickness: t,
+        edgeCode: codes.topBottom, edgeLen: metres(spanW),
+        box: { x: from, y: H, z: faceZ - t, w: spanW, h: hMax, d: t },
+        cnc: { drawn_w: roundTo(cutLen, 4), drawn_h: blankH, ...geom },
+        meta: {
+          side: 'top', piece: 'face',
+          segment: manySegs ? `main-${i + 1}` : 'main',
+          ends,
+          corner: { left: i === 0 ? cornerL : 0, right: i === segsFinal.length - 1 ? cornerR : 0 },
+          units: runInfill.unitIds || null,
+          ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: hMax } } : {}),
+          ...(overEnd && overLen > 0
+            ? { lengthOversize: { mm: overLen, end: overEnd, nominal: spanW } }
+            : {}),
+          ...(flatTop ? {} : {
+            slopeCut: { h: hMax, full: hMax, board: true, top: pts },
+          }),
+        },
+      }));
+    };
+    segsFinal.forEach((sg, i) => {
+      if (sg.board) { emitCeilingBoard(sg, i); return; }
       if (sg.deg > 1e-9) { emitRakedStrip(sg, i); return; }
       // ─── THE LEVEL PATH — physically untouched behaviour ─────────────────
       // Rounded at the source: `span / cos β` is irrational for most angles and
@@ -4956,7 +5048,7 @@ export function computeCabinet(params, profileOverride) {
       const segX0 = sg.from;
       const yTop = infRoof ? infReachAt((sg.from + sg.to) / 2) : H;
       const bandH = faceH;
-      const overEnd = allowanceEnd(i === 0, i === runSegsSplit.length - 1);
+      const overEnd = allowanceEnd(i === 0, i === segsFinal.length - 1);
       const overLen = overEnd ? overT : 0;
       const cutLen = roundTo(segLen + overLen, 4);
       const lengthOversize = overEnd && overLen > 0
@@ -4969,7 +5061,7 @@ export function computeCabinet(params, profileOverride) {
         // join a bent ceiling makes.
         mitre_45: infRoof ? [] : [...new Set([
           ...mitre(i === 0 && ends.left === 'open'),
-          ...mitre(i === runSegsSplit.length - 1 && ends.right === 'open'),
+          ...mitre(i === segsFinal.length - 1 && ends.right === 'open'),
         ])],
         // The L's own 45 (`mitre.L`) died with the L. The joins the SLOPE makes
         // are exactly what T47 computed and are stated only when there is one.
@@ -4980,7 +5072,7 @@ export function computeCabinet(params, profileOverride) {
           },
         } : {}),
         // Which end turns against a ceiling-height side filler — a record.
-        corner: { left: i === 0 ? cornerL : 0, right: i === runSegsSplit.length - 1 ? cornerR : 0 },
+        corner: { left: i === 0 ? cornerL : 0, right: i === segsFinal.length - 1 ? cornerR : 0 },
         units: runInfill.unitIds || null,
         ...(overT > 0 ? { oversize: { mm: overT, edge: 'top', nominal: roundTo(bandH, 4) } } : {}),
         ...lengthOversize,

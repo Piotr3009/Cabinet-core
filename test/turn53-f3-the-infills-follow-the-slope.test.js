@@ -160,9 +160,19 @@ test('F3b — the top infill breaks at the knee and follows the rake past it', (
   assert.ok(faces.length >= 2, `${faces.length} segments — one per stretch of the line`);
   const sloped = faces.filter((p) => p.meta?.slopeCut);
   assert.ok(sloped.length >= 1, 'and at least one of them is cut on the slope');
-  assert.ok(sloped[0].meta.slopeCut.deg > 1, `${sloped[0].meta.slopeCut.deg}° — the rake’s own angle`);
-  assert.equal(sloped[0].meta.tilt_axis, 'z', 'the scene leans it');
-  assert.ok(Number.isFinite(sloped[0].meta.tilt_deg));
+  // 30.08 law: over the CUT carcass a leant 40 band; over the INTACT carcass
+  // one BOARD, top cut on the line. Both are "cut on the slope".
+  for (const p of sloped) {
+    if (p.meta.slopeCut.board) {
+      assert.ok(Array.isArray(p.meta.slopeCut.top), 'a board carries its line');
+      assert.equal(p.meta.tilt_deg, undefined, 'and never leans');
+    } else {
+      assert.ok(p.meta.slopeCut.deg > 1, `${p.meta.slopeCut.deg}° — the rake’s own angle`);
+      assert.equal(p.meta.tilt_axis, 'z', 'the scene leans it');
+      assert.ok(Number.isFinite(p.meta.tilt_deg));
+    }
+  }
+  assert.ok(sloped.some((p) => Number.isFinite(p.meta.tilt_deg)), 'the rake really grows a band');
 });
 
 test('F3b — no segment of the run stands above the ceiling line', () => {

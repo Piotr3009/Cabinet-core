@@ -317,9 +317,13 @@ export function infillMitre(panel) {
 
   // The only 45° left is where two RUNS meet: an OPEN end turning the corner
   // into its return, cut on the faces, reading as a picture frame.
-  if (segment === 'main') {
-    // A RAKED strip owns no plan mitre — the leant path in 3d/panelSolid.js
-    // owns its whole body.
+  if (segment === 'main' || /^main-\d+$/.test(segment)) {
+    // The ceiling BOARD (no lean) is cut on its line, the side infill's own
+    // law; a RAKED strip (leant) owns no cut here — panelSolid draws it.
+    if (meta.slopeCut?.board && Array.isArray(meta.slopeCut.top)) {
+      const planes = slopePlanes(box, meta.slopeCut.top.map((q) => ({ x: box.x + q.x, y: box.y + q.y })));
+      return planes.length ? { box: { ...box }, planes } : null;
+    }
     if (meta.slopeCut) return null;
     const t = box.d;
     const faceBox = { ...box };

@@ -859,7 +859,7 @@ function WatchShelfGlass({ pane, shelf, xray = false }) {
           key={`watchglass-${xray ? 'xray' : 'solid'}`}
           color={WATCH_GLASS_HEX}
           transparent
-          opacity={xray ? 0.06 : 0.24}
+          opacity={xray ? 0.05 : 0.16}
           depthWrite={false}
           side={THREE.DoubleSide}
           roughness={0.05}

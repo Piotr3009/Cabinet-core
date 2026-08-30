@@ -1,416 +1,205 @@
-# CLAUDE.md — TURN 54 · the slope, DESIGNED TO THE MILLIMETRE this time
+# CLAUDE.md — TURN 55 · THE SLOPE SETTLES ITS DEBTS, THE WATCH DRAWER FINISHES
 
-Nightly run. Full autonomy, zero questions, zero stops. Skip-and-note, never
-halt; PR open before morning regardless. Tonight executes **F1 → F7 ONLY** — F8 below is FROZEN and must not be
-started under any reading. Sacrifice from **F7 downward**; **F1 and F2 do
-not fall.** HARD GATE: F7 begins only after F1–F6 are committed, suite
-green, probes CLEAN. One commit per feature, plus the acceptance walk.
+Run autonomously. Zero questions, zero stops. If a feature cannot land, skip it,
+note it in the report, and move on — sacrifice from F8 upward, never F1/F2.
+PR before morning. Branch `t55`, base `origin/main` (a09b09d or later).
 
-**Why this spec reads like a drawing office put it out:** the slope family is
-on its SEVENTH pass (T46, T47×2, T48, T50×2, T53×2 + a chat-fix) and the
-owner's audit still measured the roof, the strip and the shelf STACKED ON THE
-CEILING. Green suites merged every one of those passes. So tonight the spec
-carries the geometry: every law below is stated in numbers with the assertion
-beside it, and where the owner approved a mockup its content is restated here
-in millimetres. **You execute; you do not interpret.** Where these numbers and
-any older comment in the code disagree, THESE NUMBERS WIN and the comment is
-corrected to match.
+## STANDING LAW (unchanged, enforced)
 
----
-
-## THE IRON RULES
-
-**1 · ZERO-STOP.** As above.
-
-**2 · BYTE-IDENTITY.** `scripts/t54-classify.mjs` (re-head T53's; derive the
-kit count — the shelf starts at 14 and F7 buries KIT_SHOE_BOX, so the walk
-ends at **13**; derive, never type).
-Six goldens **IDENTICAL, UNNAMED = 0**, three-line proof (base dump with
-`t53-classify.mjs`, head with t54, compare). Expected buckets: **none** — F1,
-F2, F3 cut only under `slope_cut` (no golden carries one); F4 changes a
-watch-insert derivation and the click wiring (no golden carries an insert);
-F5 and F6 are UI visibility/timers; F7 cuts only where a shoe item exists
-(no golden carries one) and F8 is room UI writing `project.room` (no golden
-meets a room). A `--probe` per feature, exit codes.
-A golden that moves = FINDING, never a bucket.
-
-**3 · LISP IS LAW, FIRST.** F1's trio law and F3's leaf-under-slope law are
-cut on machines, so they are written in `reference/lisp/` BEFORE the JS: F1
-in SKYLON_COMMON's slope section (amending the T47 words it corrects — leave
-the history, add the correction with tonight's date and the owner's ruling);
-F3 in the kit that owns the door leaf. F4's `WATCH_INSIDE 60 → 40` lands in
-KIT_WATCH_DRAWER.lsp with the trade note amended. Paren: **14 kits, every one
-0/0**, count derived.
-
-**4 · SANCTITY.** THREE licences tonight, each enumerated below and each
-grave named in the verdict: (1) **F2's peak patch piece**; (2) **F7's old
-shoe world** — `engine/shoeBox.js`, the shoe plan/box case in `cabinet.js`,
-the steps and battens, `reference/lisp/KIT_SHOE_BOX.lsp`; (3) reserved for T55's
-F8 and UNUSED tonight. Nothing outside lists (1) and (2) is deleted. `chatfix-2508-slope-tilt.test.js` is AMENDED (it currently holds
-the fault green) and names its amendment; amended ≠ deleted.
-
-**5 · THE WALK.** Full suite every commit, never `--silent`, grep not tail.
-Build clean. English UI copy. Zero new dependencies. Screenshots in
-`verify/t54/`, every one LOOKED AT. Modals draggable, beside the object. ✕ on
-every search/filter field. The house overlap law (Petros, 27.08): *"nie
-pozwalamy na nachodzenie się materiałów na siebie, chyba że ja sobie tego
-zażyczę"* — F1 exists because the engine itself breaks it today.
+- **LISP IS LAW.** Geometry originates in `reference/lisp/` first. Paren-balance
+  stays 14/14 at 0/0 (`scripts/t50-paren-balance.mjs`).
+- **BYTE-IDENTITY.** The six golden fixtures stay byte-identical
+  (`t55-classify.mjs`, copy the t54 classifier forward). Goldens are FLAT rooms:
+  a slope fix that moves a flat room is a fault. Slope-case deltas are expected
+  here and must be NAMED in the classifier. `UNNAMED=0`.
+- **Sanctity.** Deletions licensed this turn, and no others:
+  1. the `infillMitre` interception path for the run-top-infill board (F1),
+  2. the infill shear/rotation split across `3d/panelSolid.js` / `3d/UnitView.jsx` (F1),
+  3. `WATCH_FINISHES` entries `oak` and `walnut` and every reference to them (F5).
+- **One path per job.** Report, per feature: how many paths do the same thing
+  (a number), and the line balance `+X/−Y`. Y<X or every added line explained.
+- **New feature = visible UI entry in the same package.** Proof by screenshot:
+  "where I click → what opens/changes", committed under `verify/t55/`.
+- **Full suite, never `--silent`.** Playwright rig screenshots committed.
+- No new npm dependencies. Owner quotes below are law; code and UI copy English.
 
 ---
 
-## THE COORDINATE LANGUAGE USED BELOW (one frame, no exceptions)
+## F1 [CRITICAL] · TOP INFILL UNDER THE RAKE — FOUR EXPLICIT CORNERS
 
-Unit frame: x along the unit from its left edge, y up from the carcass floor,
-z out of the front face. `ceil(x)` = the ceiling polyline of `slope_cut.pts`
-at x (already what `infReachAt` samples). `β` = the segment's own rake angle,
-`infill` = `slope_cut.infill` (the owner's 40 unless a project says else).
-`G` = board thickness (18). "Vertical" means along y. "Along the slope" means
-along the rake direction. Every assertion tolerance is **0.01 mm** unless a
-tighter one is stated.
+The parked fix from 30.08, now due. Owner's simplification, verbatim:
+*"prosty kawałek, zawijanie likwidujemy."*
 
----
+The law (already established T53/T54, unchanged): under a rake the top infill is
+**ONE straight board — FACE only — a parallelogram with plumb ends**. SHELF/wrap
+exists on level stretches only; TL/TR returns on level ends only.
 
-## F1 [CRITICAL] · the TRIO — roof, strip, shelf — each on ITS OWN line
+The work:
+1. In the engine, compute the infill's **four corner coordinates explicitly**
+   (room frame). Those four corners are the SINGLE source of truth for the 3-D
+   mesh, the 2-D drawing, and the DXF outline. Nothing downstream re-derives
+   the shape.
+2. **Delete** the `infillMitre` interception of the slope-cut infill board in
+   `src/3d/mitre.js` — the board no longer passes through it. Physical deletion,
+   not a gate.
+3. **Delete** the shear/rotation rendering split for this board across
+   `3d/panelSolid.js` and `3d/UnitView.jsx`. The mesh is built from the four
+   corners directly.
+4. Search-first rule: the slope sampling law already lives in `cabinet.js`
+   (`slopeHeightAt` / `cutOver`, the TOP PANEL / CORNICE precedent). Take that
+   law for the corner maths; name the source in the report. Do not write a
+   second slope sampler.
 
-**The measured fault (owner's audit, 28.08, spadek w prawo, β = 26.5651°,
-infill 40, W = 600, ceiling 2000 → 1700):** TOP, INFILL-T-FACE and
-INFILL-T-SHELF all carry `tilt_pivot = (600, 1700)` — the CEILING at the low
-end — and after rotation ALL THREE lay their top edge ON the ceiling:
-TOP-top→ceiling = 0.00 (should be −40 band down), TOP∩FACE = 18 mm of overlap
-the full length, SHELF congruent with TOP, and FACE-bottom stops **4.72 mm
-short** of the cut line (40 along the slope ≠ 40 vertical). Three boards, one
-line, a stack. That is the owner's *"infill powyżej skosu odwrotnie
-ustawiony"*.
+Tests: node:test on the four corners (straight rake + T47 knee fixture),
+residual < 0.001 mm against the ceiling line minus gaps. Rig screenshot:
+closed wardrobe, slope left, the infill sits flush between door top and
+ceiling line — `verify/t55/f1-infill.png`.
 
-**The root:** one reach (`infReachAt` = ceiling) feeds every pivot. The chat-
-fix of 25.08 wrote "the pivot is the line the piece hangs from" and then hung
-all three pieces from the same line.
+## F2 [CRITICAL] · SHAKER UNDER THE SLOPE — THE PICTURE, NOT THE ENGINE
 
-### THE LAW (approved mockup, restated in numbers)
+Owner's screenshot 30.08: a closed 2-door shaker wardrobe under a left rake
+shows a broken front. **The engine is proven clean** — reproduced numerically
+this afternoon: leaf outlines parallel to the ceiling to <0.1 mm, the shaker
+recess holds a true 60 mm frame PERPENDICULAR to the diagonal (119.95 mm
+vertical at 60°, expected 119.98), knee handled, hinges forced to the tall
+edge. Do not touch engine geometry for this feature.
 
-Two reach functions, not one:
+The work:
+1. Reproduce with the rig: wardrobe W1000 H2200 D600, `front_type:'S'`,
+   `door_count:2`, `slope_cut {pts:[{x:0,y:1300},{x:520,y:2200},{x:1000,y:2200}],
+   infill:40}` — closed doors, front view. Commit the BEFORE frame.
+2. Expectation: F1 removes the wrong triangle above the doors (the un-fixed
+   infill was the prime suspect). Re-shoot AFTER F1. If the shaker leaf itself
+   still renders wrong, the fault is in `3d/shakerSolid.js` (`buildTray` with a
+   no-flat-top outline) or `3d/UnitView.jsx` placement — fix in the 3-D layer
+   only, engine untouched.
+3. Commit `verify/t55/f2-shaker-before.png` / `f2-shaker-after.png`.
 
-- `ceilReach(x)  = ceil(x)`                       — the ceiling.
-- `cutReach(x)   = ceil(x) − infill / cos β(x)`   — the carcass CUT line:
-  the owner's 40 is the FACE board's CUT HEIGHT, mounted along the slope, so
-  the vertical reserve it consumes is `infill / cos β` on a raked stretch and
-  exactly `infill` on a flat one (cos β = 1 — today's flat behaviour is the
-  degenerate case and MUST byte-match it).
+## F3 [HIGH] · THE SLOPE FLIPS A DOOR → THE DOOR PARTITION IS FORCED
 
-**DECISION TAKEN for the owner (veto: "40 w pionie"):** the 40 stays the CUT
-size of the strip; the vertical gap grows to 40/cos β under a rake. The
-alternative (40 vertical) would print a different cut height per segment
-(40·cos β) on every sheet, which is the offcut-and-mistake machine.
+Owner, verbatim: *"wymuszamy tylko jak się orientacja drzwi zmienia na skosach
+… nie wymuszamy przez wielkość szafy absolutnie nie"* and *"usunięcie
+wszystkiego co mogłoby nam rozwalić układ czyli drążki szuflady etc … klient
+ustawi wszystko sobie od nowa."*
 
-Per piece, per SEGMENT of a bent ceiling (each segment has its own β, its own
-ends `x_lo` = the end where `ceilReach` is LOWER, `x_hi` the other):
+Why: under a left rake both leaves are forced hinge `R` (T46 law). The left
+leaf's hinges then land mid-cabinet where no carcass side exists. A door needs
+wood to hang on.
 
-1. **INFILL-T-FACE** — rectangle, cut height `infill` (+20 scribe oversize on
-   the ceiling edge as today), length `span/cos β`. `tilt_axis 'z'`,
-   `tilt_deg` signed CCW: fall-to-the-right ⇒ negative (unchanged).
-   **`tilt_pivot = (x_lo, ceilReach(x_lo))`** — the CEILING at the low end
-   (this piece alone keeps today's pivot).
-   ASSERT after hand-rotation (the `spin()` of chatfix-2508):
-   `|FACEtop(x) − ceilReach(x)| ≤ 0.01` at x_lo, mid, x_hi; and
-   `|FACEbottom(x) − cutReach(x)| ≤ 0.01` at the same three stations.
-2. **TOP (the roof)** — rectangle h = G, same tilt sign law.
-   **`tilt_pivot = (x_lo, cutReach(x_lo))`** — the CUT line, not the ceiling.
-   ASSERT: `|TOPtop(x) − cutReach(x)| ≤ 0.01` at three stations ⇒ with F1.1
-   this gives `FACEbottom − TOPtop = 0` for free — assert it anyway, by name.
-3. **INFILL-T-SHELF** — lies ON the roof: rectangle h = G, pivot
-   **`(x_lo, cutReach(x_lo) − G/cos β)`** so its TOP face is the roof's
-   UNDERSIDE… no: the shelf lies on the roof's UPPER face per T47's own
-   words (*"wieniec jest na górze… shelf board"*), which tonight's trio makes
-   impossible without re-entering the FACE band. RESOLUTION, taken for the
-   owner (veto: "shelf pod wieńcem"): **the SHELF sits UNDER the roof**, its
-   top face on the roof's underside: pivot `(x_lo, cutReach(x_lo) − G/cos β)`,
-   ASSERT `|SHELFtop − TOPbottom| ≤ 0.01` three stations, and SHELF is
-   scribed/edged exactly as today.
-4. **Disjointness, the Petros law, measured:** for every pair of the trio the
-   rotated rectangles intersect with **area 0** (shared edges allowed). Write
-   the check as geometry (rotate all corners, polygon intersection), not as
-   eyeballing y-bands.
-5. **The sides:** `sideUnder`/`roofBoards` consume the roof's REAL line, so
-   feed them `cutReach` where they took the old reach; BUL/BUR blanks re-
-   assert: blank top = peak of (cutReach − footprint) over the side's own two
-   faces, angle stated, nothing pokes above `cutReach` anywhere.
-   ASSERT on the T47 fixtures re-run tonight.
-6. **Both rakes.** Every assertion above runs twice: left-high and
-   right-high. The measured table from the owner's audit (0.00 / −40.00 /
-   ∩18 / +4.72) is committed in the test header as the BEFORE, so the next
-   reader knows what this looked like when it was wrong.
-7. **The RUN path is the same trio.** `runTopInfill`'s segments
-   (cabinet.js ~5096 emit) get the identical per-segment law — pivots at each
-   segment's OWN x_lo on ITS OWN two lines; the knee joins (`joinL/R`,
-   half-angle) unchanged; the F6-T53 cabinet-edge splitting unchanged.
-   PROBE: a two-knee polyline over three cabinets — every segment passes the
-   three-station assertions; print the worst residual in `audit/f1.txt`.
-8. **Parity, three surfaces:** the WALL ELEVATION drawing and the DXF outline
-   of each trio piece read the same meta and land on the same lines — assert
-   elevation y's and DXF extents against the rotated corners (tolerance
-   0.05 as the DXF audit uses).
-9. **`chatfix-2508-slope-tilt.test.js`** is amended to the new law (TOP on
-   `cutReach`, not ceiling) with the amendment named in-file.
+The law:
+1. Trigger: a leaf whose FORCED hinge (`meta.hingeForced`) puts its hinge edge
+   on a line with **no carcass side** (it faces the neighbouring leaf). Cabinet
+   width is NEVER a trigger. No slope, no forcing.
+2. Action, once per transition (when the slope first forces it, in the store —
+   not on every recompute): insert the **door-mount partition** on that hinge
+   line — the same partition bay doors hinge on (T21/F9 machinery, hinge kind
+   `partition`; partition foot screws etc. all existing law). Reuse it; do not
+   write a second partition.
+3. Clear the unit's interior fitting: wardrobe kits and items — rods, drawers,
+   shelves, inserts. The owner's sentence above is the licence. The partition
+   and the doors stay.
+4. UI entry (rule: visible in the same package): a notify the moment it
+   happens — `"Slope flipped the doors — a door partition was added and the
+   interior was cleared."` — plus a Check line naming the partition while the
+   forcing stands. Screenshot `verify/t55/f3-partition.png`.
+5. Hinges of the flipped leaf drill into the partition (existing partition
+   drilling law); test asserts cup columns land on the partition line.
 
-Screens: the owner's exact scene rebuilt (wardrobe, right fall, 40) —
-before is impossible now, so shoot AFTER from the same camera as his SS plus
-a close-up of the trio edge-on with the three boards visibly parallel and
-disjoint; and the two-knee run.
+## F4 [HIGH] · THE GLASS ACCEPTS THE FORCED SHELF (PARTITION)
 
----
+Owner: *"z automatycznym dodaniem leda dookoła szyby … na półce która jest
+wymuszona nad szufladami."*
 
-## F2 [HIGH] · the PEAK — BUR cut ON THE SLOPE like BUL, and the patch piece dies
+Everything about the pane already exists (T53 F8b/F8c: opening 50 mm in from
+every edge, rebate, pane flush with the top, LED ring 15 mm underneath). It
+refuses only because two checks ask `part === 'SHELF'` and the auto board over
+a drawer bank is `part: 'PARTITION'` (role `shelf`).
 
-Owner, with his screenshot: *"lewy czyli dolny skos działa super, górny znowu
-jakieś małe kawałki — po prostu przedłuż wieniec i wywal jakiś mały kawałek z
-BUR. tylko na BUR, nie na BUL."* Corrected on the mockup: *"wieniec zielony
-ok i do wieńca dochodzi BUR i tyle, i ucięty pod skosem dokładnie tak samo
-jak BUL."* The approved mockup, in words: the roof runs on the rake to the
-**outer face** of the peak-side side; that side's top edge is **bevelled at β
-meeting the roof's underside** — the identical treatment the fall side
-already gets; **no third piece exists at the peak.**
+The work: ONE predicate in the engine (e.g. `isShelfBoard(p)` — part `SHELF`
+or `PARTITION`), consumed by BOTH askers: `watchShelfAbove`
+(`src/stores/projectStore.js` ~6160) and the engine's `shelfAbove` filter
+(`src/engine/cabinet.js` ~7318). One law, one definition, two callers. Report:
+paths doing this job = 1.
 
-1. **Census first, then the kill.** Reproduce the peak (both rakes, peak at
-   left and at right): list EVERY panel whose rotated geometry enters the
-   band `[cutReach − 120, ceilReach]` over the peak-side G of width. The
-   allowed census is exactly: the peak side (BUL or BUR), TOP, INFILL-T-FACE,
-   INFILL-T-SHELF, and a run's side filler where one exists. **Anything else
-   is the owner's "mały kawałek": find its emission, delete it under
-   tonight's one licence, name the grave.** If the census comes back clean in
-   the seed, the kawałek is scene-side or run-side — hunt the same band in
-   the RUN emit and in `panelSolid`'s outputs before declaring victory; the
-   verdict states where it lived.
-2. **Roof to the outer face:** on a raked stretch that ENDS at a side, the
-   roof board's length runs to that side's OUTER face (today's inner-face
-   stop is the wedge the owner keeps seeing). ASSERT: roof end x = side outer
-   x, both rakes, both ends; flat stretches unchanged.
-3. **The side's bevel meets the roof:** re-assert T53-F4 coplanarity —
-   side-top bevel face ⇄ roof underside along the shared stretch, ≤0.01,
-   both sides, both rakes — now against `cutReach` geometry.
-4. **CNC cuts the LONGER version, both sides** (*"na CNC zawsze tnij dłuższą
-   wersję, BUR i BUL"*): blank = the tall corner (pick = max), angle label on
-   the piece — already law; assert it survives F1/F2 by reading the sheet.
-5. Zero patch pieces: the census of (1) becomes a permanent test.
+Tests: a wardrobe whose watch drawer sits under the PARTITION — checkbox
+enabled, pane cut in the partition, LED ring born, warning
+`watch_glass_needs_shelf` absent. Flat twin: behaviour on a plain SHELF is
+byte-identical. Screenshot `verify/t55/f4-glass.png`.
 
-Screens: the T52-style corner close-up at the PEAK, left-rake and right-rake.
+## F5 [HIGH] · WATCH FINISH — TWO CHOICES, WIRED FOR REAL
 
----
+Owner: *"usuń po prostu … zrobimy sprayed (color frontów) albo carcass"* and
+*"zostaw project jako carcass — teraźniejsze ustawienie."*
 
-## F3 [HIGH] · the DOOR LEAF is cut on the slope its own shaker already knows
+1. **Delete** `oak` and `walnut` from `WATCH_FINISHES`
+   (`src/engine/watchDrawer.js`) and every reference — physical deletion.
+   Surviving control: **Project** (null — the project's own decor, exactly
+   today's default, reads as the carcass) and **Sprayed** (the project's front
+   spray colour).
+2. Wire the value through: today it dies in `born.finish` (cabinet.js ~7401)
+   and reaches neither the 3-D nor the BOM — that is the whole bug. The insert
+   parts (frame, dividers, base) carry the finish on their records; the 3-D
+   material pick honours it; the BOM lines for the insert say it.
+3. Balance for the deletion reported `+X/−Y`.
 
-Owner's screenshot: a shaker door under the rake — *"shaker się robi pod
-skosem ale całe drzwi już nie."* `doors.js` contains the word "slope" ZERO
-times; the leaf is a full rectangle standing into the triangle while its own
-shaker detail rakes. One consumer got the line, the other never heard of it.
+Test: toggle Sprayed → insert parts' resolved material = front spray; Project →
+today's decor, byte-identical to before this turn. Screenshot
+`verify/t55/f5-finish.png` (one frame per choice).
 
-1. **One source:** find where the shaker detail obtains its rake (it renders
-   raked today — locate that path first and REUSE its line; do not invent a
-   second). The leaf's law: `leafCeil(x) = ceilReach(x) − topGap`, where
-   `topGap` is the same clearance a front keeps to what is above it today
-   (read it from the fronts' law, do not restate a number). Leaf outline =
-   today's rectangle ∩ half-plane below `leafCeil` ⇒ the top edge is a single
-   β-cut; the shaker frame/panel inset follows the cut edge at the flat law's
-   inset, parallel.
-2. **Per leaf:** double doors — each leaf clipped by the line over ITS OWN
-   span; a leaf wholly under a flat stretch stays a rectangle, byte-identical
-   to today (probe).
-3. **Hinges from the REAL leaf:** the hinge-count/positions law reads the cut
-   leaf's hinge-edge height; every cup stays ≥ its edge distances on the CUT
-   outline. ASSERT: no cup centre outside the outline; count law unchanged
-   for uncut leaves.
-4. **CNC/elevation parity:** leaf DXF outline = the cut polygon, angle noted
-   like the sides (`CUT β DEG`); elevation draws the same polygon.
-5. ASSERT: no leaf vertex above `leafCeil` (≤0.01), both rakes, single and
-   double; the shaker inner line parallel to the cut edge at the flat inset.
+## F6 [MEDIUM] · INSERT GRAIN — HORIZONTAL, BORN THAT WAY
 
-Screens: the owner's door scene rebuilt — leaf cut, shaker parallel inside
-it; a double-door pair across a knee.
+Owner, verbatim (now a Petros iron rule): *"wszystkie przegródki muszą być w
+poziomie słoje nie w pionie"* and *"jak mamy oklejać to musi być wzdłuż słojów
+nigdy w poprzek — to jest święta zasada w sheet goods."*
+
+Watch-insert parts are currently born with NO `grain` field at all
+(`watchInsertParts`, `src/engine/watchDrawer.js`). Set the drawn orientation /
+`grain: 'h'` at birth for every insert board (dividers, frame rails, base) —
+grain runs horizontally on the piece as fitted. Single-source rule stands: the
+cut decides the grain, the 3-D renders what was cut. No per-role visual
+overrides. Test asserts every insert part carries `grain` and it is `'h'`.
+
+## F7 [MEDIUM] · LED LEARNS THE RAKE — LEVEL RUNS ONLY
+
+Owner: *"skos bez LED … pionowych i poziomych łatwiej."*
+
+`src/engine/ledStrips.js` knows only the flat W×H box: side strips run
+`H − 2G`, top strips sit at `y = H` full width — under a rake they stand proud
+of the carcass. The law:
+1. **No strip along the diagonal.** Horizontal strips exist only on LEVEL
+   stretches of the roof polyline, trimmed to that stretch's span.
+2. A vertical side strip under the rake ends at the roof height at its own x
+   (minus the existing insets).
+3. Search-first: sample the SAME roof law (`slopeHeightAt` / `cutOver`) the
+   carcass uses. Name the source. No second sampler.
+4. BOM lengths (`lightingBomLines`) follow the trimmed strips.
+
+Flat twin: a flat room's strips are byte-identical. Screenshot
+`verify/t55/f7-led.png` (sloped wardrobe, strips inside the outline).
+
+## F8 [LOW] · THE UNIT PANEL STOPS LYING ABOUT THE HINGE
+
+Drilling, the door modal and ElementProperties already read the FORCED hand
+(`meta.hinge` / `meta.hingeForced`, T46 law). The unit-level select in
+`src/components/RightPanel.jsx` (~464) still shows raw `params.hinge`. Give it
+the same conduct as ElementProperties' `hinge-side`: when every hinged leaf is
+forced, show the forced hand, disable, one-line reason
+(*"Cut on the slope — the door opens from the slope."*). Mixed case (some
+forced, some free): the select governs the free leaves and says so in the
+title. Add the missing assertion: under a slope, cup drilling side ==
+`meta.hinge` for every leaf. Screenshot `verify/t55/f8-hinge.png`.
 
 ---
 
-## F4 [HIGH] · the watch drawer: the DOOR to it exists, and 120 is the number
+## ORDER, PROOF, REPORT
 
-T53 shipped the modal and forgot the handle: **no click in the whole app
-opens `watch-layout`** (the audit missed it because the screenshots showed
-the modal, not the road). And the owner has re-sized: *"120 proszę."*
+Order: F1 → F2 → F4 → F5 → F3 → F6 → F7 → F8 (F3 after F5 so the interior
+clearing does not fight the finish tests; sacrifice from F8 downward-first).
 
-1. **Entry A — the scene:** clicking ANY piece of a watch drawer (its front,
-   any WATCH-RAIL-*, WATCH-DIV-*, the pane) opens
-   `openModal('watch-layout', { unitId, itemId, anchor })` **beside the
-   click** (house modal law). The pieces already carry the drawer index in
-   meta — use it, do not guess by y.
-2. **Entry B — the interior menu:** the "Watch drawer" row on a unit that HAS
-   one gains its chevron opening the same modal for that item.
-3. **120:** `insideDepthMm 60 → 40` (owner, 28.08 — LISP first, with the
-   note: a 44–48 chronograph will no longer lie flat; his veto line is
-   written beside it). Derivation prints itself:
-   `40 + 9 + 2 + 15 + 18 + 36 = 120`; `watchDrawerFixedHeight` needs NO code
-   change if it truly derives — the test proves 120 fits and **119 refuses**,
-   and the T53 tests' 140s are amended by name. Pocket floor 60 (clear width)
-   is untouched — that is across, not down.
-4. Saved projects: height is derived, so old inserts re-derive to 120 on
-   load; assert a T53-saved fixture loads and cuts at 120 with no stored
-   140 anywhere.
-5. Probe: goldens carry no insert; the click wiring is UI and cannot reach a
-   golden.
+Every feature: node:test first for engine law, rig frame committed under
+`verify/t55/`, full suite (expect 4753 green + this turn's new), classifier
+`t55-classify.mjs` verdict with named deltas only, paren balance 14/14.
 
-Screens: the modal OPEN BESIDE a clicked drawer in the scene; the menu
-chevron; the 120 drawer in the wardrobe.
-
----
-
-## F5 [MEDIUM] · the LED icons show when the LIGHTING panel is open — and the room light lives under them
-
-Owner: *"po otwarciu modalu Lighting ikony LED mają być widoczne — nie
-dodajesz nic do szaf. teraz jak nie naciśniesz szafy to nie widać ikon left
-LED / right LED i ludzie nie wiedzą, że takie funkcje istnieją. żadnego
-nowego modalu."* And: *"ustawienie światła pokoju, czyli sceny, poniżej LED."*
-
-1. The existing per-cabinet left/right LED icons drop their selected-only
-   gate: **visible on EVERY unit while the existing Lighting panel is open**;
-   panel closed ⇒ exactly today's behaviour. No new components on the units,
-   no new modal — a visibility condition and nothing else.
-2. Icon legibility at distance: clamp the icon's screen size to a minimum
-   (the existing sprite/scale mechanism if one exists; otherwise a
-   distance-clamped scale) — DECISION for the owner, veto "bez clampa".
-3. **Scene light, per project:** a section UNDER the LED controls in the SAME
-   panel — one slider (0.4×–1.5×, default = today's 1.0 over baseGain 0.75)
-   stored in the project design. **The IRON rule of 24.08 stands and is
-   asserted: exports and PDFs ignore the panel — the fixed rig only.** A test
-   holds the export lighting parameters byte-equal across slider positions.
-
-Screens: panel open with a six-unit run — twelve icons visible, none
-selected; the slider; two exports at slider extremes diffed equal.
-
----
-
-## F6 [MEDIUM] · dimensions go to sleep after 30 seconds
-
-Owner: *"wyłączenie dimension po 30 sekundach lub po minucie"* — first number
-wins: **30 000 ms**, a profile/UI constant, veto "60".
-
-1. While dimensions are shown, any interaction (pointer down/move over the
-   canvas, key, camera move) resets a timer; at 30 s idle the app flips the
-   existing Hide-dimensions toggle ON — the same code path the button uses,
-   so Undo/state stay coherent. Manual toggling is untouched; the timer never
-   turns dimensions ON.
-2. No timer while they are already hidden; no persistence across sessions.
-3. Test with fake timers: shows → idle 30 s → hidden; interaction at 29 s
-   defers; manual hide cancels.
-
----
-
-## F7 [HIGH] · the shoe becomes a DRAWER — the parallel world dies
-
-Owner, screenshot in hand: *"prosiłem żeby cała szuflada miała logikę
-szuflad, czyli wiercenie, runners etc etc, głębokość etc — tylko wysokość
-miała być mniejsza. usuń stary kod na shoes i zrób z logiką drawers."* That
-sentence is licence (2) and the whole design.
-
-1. **The kill list (licence 2, verbatim):** `engine/shoeBox.js` whole;
-   `shoeBoxPlan` and `shoeBoxBoxFor` and the shoe emission block in
-   `cabinet.js`; the step/batten pieces and their DXF names; the shoe entries
-   in checks that police the dead geometry; `reference/lisp/KIT_SHOE_BOX.lsp`
-   (paren walks 14 → 13, derived). The tilted shoe SHELF (15°, T33) is a
-   DIFFERENT entity and is NOT touched. Old shoe tests are replaced by F7's
-   and each replacement is named in-file.
-2. **The new thing is not new:** a standard drawer stack item with
-   `variant: 'shoe'`, cut by the SAME code path as every drawer — sides,
-   back, bottom, puzzle drilling, runner picked from the Blum manifest by the
-   same NL law, `setback` 50, `frontToSideDelta` 36, the depth law — with
-   exactly ONE dimensional override: **side height = `drawers.shoeSideMm` =
-   80** (his old number; veto "inna wysokość: N"). DECISION TAKEN (veto:
-   "spadek dna zostaje"): the bottom is FLAT and standard — *"cała logika
-   szuflad"* leaves no floor slope and no battens.
-3. **The front obeys the drawer-front law** — plane, stack split, gap,
-   oversize — DECISION TAKEN for the owner's open question (veto: "T37
-   zostaje" restores the 10 mm reveal as a width-only override). The fixed
-   120 face dies with the old world.
-4. **The menu:** the "Shoe box" interior row becomes the shoe drawer —
-   adding this variant into the unit's drawer stack at the clicked zone; no
-   height slider (the 80 is law), everything else exactly the drawer row.
-5. **Migration:** a saved project with old shoe items loads each as a
-   `variant:'shoe'` drawer in the same zone; steps and battens vanish; the
-   Check names the conversion once per unit ("shoe rebuilt as a drawer —
-   review fronts"). A T5x fixture with the old shoe is committed and the
-   loader test proves it.
-6. **Proof, board for board:** build a shoe drawer and a plain drawer of the
-   same width/depth in the same carcass — assert every emitted board, hole
-   pattern, runner id and DXF outline EQUAL except the side height (and the
-   parts that derive from it), field by field, listed in the test. Probe:
-   goldens carry no shoe.
-
-Screens: the owner's stack scene rebuilt — shoe face in the front rhythm,
-box open showing a plain flat drawer at 80; the migrated old project.
-
----
-
-## F8 · Draw-room v2 — **FROZEN TONIGHT. DO NOT EXECUTE.** (T55 spec, kept here so the morning veto round has the full text)
-
-Owner: *"to nie ma być opcja, tylko miało być rysowanie całego room… stara
-wersja miała być usunięta… miało nas przenieść do modalu rysowania
-profesjonalnego rooms… modal miał być 2 razy większy."* Then: *"box też
-wylatuje"* and *"po wszystkim proszę o możliwość edycji każdej ściany."* And
-the live fault: *"nie pokazuje kierunku rysowania, tylko rysuje na wprost."*
-His veto of T53's decision 7 stands: 2× means the WINDOW.
-
-1. **Mockup first** — commit `verify/t54/f8-mockup.png` before a line of
-   code: the approved chat mockup — big drawing canvas left; right column:
-   Wall length field (with ✕), the direction hint, the WALLS list where every
-   row is `n · direction — length` with an **Elevation…** and an editable
-   length; Room height (mm) moved INTO this modal; **Import DXF plan…**
-   moved in; footer Undo wall / Close / Save room. No Rectangle, no L-shape,
-   no + Box anywhere.
-2. **The removals (licence 3):** the old Room-setup content dies — Rectangle,
-   L-shape, **+ Box creation** and the old plan editor. Every entry point
-   that opened Room setup now opens THIS modal directly; opening with an
-   existing room PRELOADS its corners as a closed path with the walls list
-   live. DECISION TAKEN (veto: "wywal boxy i z projektów"): existing Box
-   ELEMENTS in saved projects keep rendering and colliding — only their
-   creation UI is gone.
-3. **2×, literally:** the one-wall window is 820 px wide → this window is
-   **1640 px**, height to suit (~940), clamped to `min(1640, viewport−32)`
-   with the canvas scaling inside; the drawing canvas itself is ≥ 2× the
-   one-wall canvas AREA at every clamp. Draggable by its bar, opens beside
-   the trigger.
-4. **The pointer fix (the owner's live fault):** the direction is read from
-   `pointermove` on **window** while the modal is open — the same
-   rect-relative arithmetic, so nothing else changes; cursor outside the
-   canvas rect ⇒ crosshair off. ASSERT in the browser walk: with NO click,
-   moving the pointer into all four quadrants around the pen flips the label
-   right / left / away / toward you — the exact symptom, tested.
-5. **Wall editing, the law:** committing a new length L' on wall k keeps
-   every direction: corner[k+1..last] translate by (L'−L)·dir(k); the ring
-   re-closes; a result that self-crosses or drops a wall under 100 mm
-   REFUSES with the message and reverts. On the drawn rectangle this
-   reproduces the old Rectangle behaviour exactly (change wall 1 to 3500 ⇒
-   wall 3 reads 3500, walls 2/4 untouched) — asserted number for number; on
-   a 6-wall L a worked example is asserted in the test.
-6. **Nothing downstream moves:** T53's eleven-stage walk (×2 rooms) re-runs
-   green, plus a twelfth stage — edit a wall, then place, collide, share
-   out, export. Elevation… opens the standard per-wall editor unchanged.
-7. Probe: no golden meets a room; the classify stays 6/0.
-
-Screens: the mockup; the modal open FROM the room entry with an existing
-4-wall room preloaded; the ghost following the cursor in four directions
-(composite); a wall length edited with the room re-closed; the self-cross
-refusal; the 6-wall room furnished and exported.
-
----
-
-## OUT OF SCOPE TONIGHT
-**F8 in its entirety — frozen for T55.** The lighting RIG (the export rig
-is asserted, not touched). `runGap`. The warehouse and its SQL. Kesseböhmer.
-L-shape cabinets. The watch layouts' four designs (they stand as shipped).
-
-## THE MORNING
-`verify/t54/`: screenshots per feature (named), `audit/` (classify, paren, f1–f7 probe outputs with the worst residuals
-printed), `EYE-TEST.md` (the
-owner's walk, numbered — start it with the trio close-up), `report.json`,
-`verdict.md` opening with **DECISIONS TAKEN FOR THE OWNER — veto in one
-line** (the 40-is-cut-size ruling · shelf-under-roof · icon clamp · 30 s ·
-shoe: flat bottom, side 80, drawer-front law · boxes stay in old projects ·
-window clamp · anything the night adds), then the iron rules answered, then per feature: his
-words, the law, the numbers measured, findings written not waved. Suite,
-build, classify 6/0, paren **13**×0/0 (post-F7, derived), probes — as
-numbers. PR open, whatever fell.
+Morning report, numbered: per feature — done/skipped, paths-count, `+X/−Y`,
+licensed deletions confirmed executed, test totals, classifier verdict,
+screenshots list.

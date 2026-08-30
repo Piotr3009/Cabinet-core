@@ -5116,6 +5116,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ? null : Math.trunc(Number(i.zone)));
     const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone);
     if (stack.some((i) => i.variant === 'shoe')) return null;
+    // ─── T58 (CLAUDE.md F2): WATCHES XOR SHOES, PER CABINET ────────────────
+    // *"jeśli będzie szuflada z zegarkami, to już nie możemy w tej szafie
+    // zrobić butów."*  Asked of the WHOLE unit, not of this zone — the owner's
+    // sentence is about the wardrobe. The engine says the same thing in a
+    // warning if broken params ever reach it; this is the door a person walks
+    // through, so it refuses here and NAMES what is already there.
+    const watchAt = items.find((i) => i.kind === 'drawer' && i.watch_insert === true);
+    if (watchAt) {
+      useUiStore.getState().notify(
+        `This wardrobe already has a watch drawer (drawer ${watchAt.index}) — `
+        + 'a wardrobe carries watches or shoes, never both.',
+        'warn',
+      );
+      return null;
+    }
     const profile = getCabinetProfile();
     const DR = profile.wardrobe.drawers;
     const height = (Number(DR.shoeSideMm) || 80) + (Number(DR.frontToSideDelta) || 36);
@@ -6204,6 +6219,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * app is obliged to answer in words.
    */
   setDrawerWatchInsert: (unitId, itemId, on) => {
+    // ─── T58 (CLAUDE.md F2): …AND THE SAME RULE AT THE OTHER DOOR ─────────
+    // The exclusion is symmetric, so it is enforced both ways: a watch cannot
+    // be switched on in a wardrobe that already holds shoes, and the refusal
+    // names the shoe drawer. A rule the app applies in one direction only is
+    // a rule nobody can learn.
+    if (on === true) {
+      const unit = get().units.find((u) => u.id === unitId);
+      const items = unit?.params.sections?.[0]?.items || [];
+      const shoeAt = items.find((i) => i.kind === 'drawer' && i.variant === 'shoe');
+      if (shoeAt) {
+        useUiStore.getState().notify(
+          `This wardrobe already has a shoe drawer (drawer ${shoeAt.index}) — `
+          + 'a wardrobe carries watches or shoes, never both.',
+          'warn',
+        );
+        return false;
+      }
+    }
     get().updateItem(unitId, itemId, { watch_insert: on === true });
     return on === true;
   },

@@ -100,6 +100,12 @@ import {
   WATCH_LAYERS, drawerBoxInterior, isShelfBoard, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
   watchFinishOf, watchInsertOn, watchInsertParts, watchLayoutOf,
 } from './watchDrawer.js';
+// T58 (CLAUDE.md F2): the shoe drawer's INSERT — the ramp and its two
+// dividers, on the shoe SHELF's own tilt. The box is a standard drawer and
+// this touches none of it.
+import {
+  shoeInsertFit, shoeInsertOn, shoeInsertParts, watchDrawerItem,
+} from './shoeInsert.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import { impliedLegHeight, maskDepthExtra, standsOnLegHeight } from './runs.js';
@@ -7541,8 +7547,35 @@ export function computeCabinet(params, profileOverride) {
       if (!boxes.has(key)) boxes.set(key, { index: Number(pnl.meta?.drawer), zone: pnl.meta?.zone ?? null });
     }
     const born = [];
+    // ─── T58 (CLAUDE.md F2): WATCHES XOR SHOES, AND THIS IS THE OTHER
+    // DIRECTION ─────────────────────────────────────────────────────────────
+    // *"jeśli będzie szuflada z zegarkami, to już nie możemy w tej szafie
+    // zrobić butów."*  The rule is symmetric, so it is enforced at both doors:
+    // the shoe block below refuses a shoe where a watch already is, and this
+    // refuses a watch where a shoe already is. Whichever the joiner adds
+    // second is the one refused, and the refusal NAMES the drawer that holds
+    // the first — a rule the app applies silently in one direction only is a
+    // rule nobody can learn.
+    const shoeItemFor = (index, zone) => (zone == null
+      ? (cfg.drawerItems?.[index - 1] || null)
+      : (columnDrawerSets.find((c) => c.zone === zone)?.items?.[index - 1] || null));
+    const shoeAt = [...boxes.values()]
+      .filter((b) => Number.isFinite(b.index))
+      .find(({ index, zone }) => shoeInsertOn(shoeItemFor(index, zone)));
     for (const { index, zone } of boxes.values()) {
       if (!Number.isFinite(index) || !wantsWatch(index, zone)) continue;
+      if (shoeAt) {
+        warnings.push({
+          code: 'watch_insert_refused',
+          drawer: index,
+          zone,
+          reason: 'shoe-in-cabinet',
+          shoe_drawer: shoeAt.index,
+          message: `Drawer ${index} cannot take a watch insert — drawer ${shoeAt.index} in this`
+            + ' cabinet is the shoe drawer, and a wardrobe carries watches or shoes, never both.',
+        });
+        continue;
+      }
       const mine = panels.filter((x) => (x.meta?.zone ?? null) === zone);
       const interior = drawerBoxInterior(mine, index);
       if (!interior) continue;
@@ -7712,6 +7745,158 @@ export function computeCabinet(params, profileOverride) {
       });
     }
     watchInsertsBuilt.push(...born);
+  }
+
+  // ─── TURN 58 (CLAUDE.md F2): THE SHOE DRAWER GETS ITS INSERT BACK ────────
+  //
+  // T54-F7 killed the old shoe world on the owner's own order and its kit went
+  // with it; the re-spec covered the BOX and never mentioned what goes INSIDE,
+  // so the ramp and the dividers died without anybody deciding they should.
+  // They come back here — the box is untouched, and this reads the drawer's
+  // FINISHED interior exactly as the watch tray does twenty lines up.
+  //
+  // FOUR CONDITIONS, all the owner's, all refused IN WORDS rather than
+  // silently skipped — a shoe drawer that quietly comes out empty is the fault
+  // this whole feature is repairing:
+  //
+  //   · *"tylko na wierzchu innych szuflad"*   — the TOP of the stack, only;
+  //   · *"nie może mieć półki nad sobą, bo buty będą chodzić"* — nothing over it;
+  //   · *"jeśli będzie szuflada z zegarkami, to już nie możemy w tej szafie
+  //     zrobić butów"* — watches XOR shoes, per cabinet, and the refusal NAMES
+  //     the one that is already there;
+  //   · and the drawer has to be big enough to take the ramp at all.
+  const shoeInsertsBuilt = [];
+  {
+    const shoeItemAt = (index, zone) => (zone == null
+      ? (cfg.drawerItems?.[index - 1] || null)
+      : (columnDrawerSets.find((c) => c.zone === zone)?.items?.[index - 1] || null));
+    const boxes = new Map();
+    for (const pnl of panels) {
+      if (pnl.role !== 'drawer_box' || !pnl.box) continue;
+      const key = `${pnl.meta?.zone ?? ''}|${pnl.meta?.drawer}`;
+      if (!boxes.has(key)) boxes.set(key, { index: Number(pnl.meta?.drawer), zone: pnl.meta?.zone ?? null });
+    }
+    const all = [...boxes.values()].filter((b) => Number.isFinite(b.index));
+    // WATCHES XOR SHOES, per cabinet. Asked of the whole unit before any part
+    // is cut, so the refusal can name the drawer that already holds the other.
+    const watchAt = all.find(({ index, zone }) => watchDrawerItem(shoeItemAt(index, zone))
+      || watchInsertOn(shoeItemAt(index, zone)));
+    for (const { index, zone } of all) {
+      const item = shoeItemAt(index, zone);
+      if (!shoeInsertOn(item)) continue;
+      const mine = all.filter((b) => b.zone === zone);
+      const topIndex = Math.max(...mine.map((b) => b.index));
+      const say = (code, message, extra = {}) => warnings.push({
+        code, drawer: index, zone, message, ...extra,
+      });
+      if (watchAt) {
+        say('shoe_insert_refused',
+          `Drawer ${index} cannot take a shoe insert — drawer ${watchAt.index} in this cabinet`
+          + ' holds the watch insert, and a wardrobe carries watches or shoes, never both.',
+          { reason: 'watch-in-cabinet', watch_drawer: watchAt.index });
+        continue;
+      }
+      if (index !== topIndex) {
+        say('shoe_insert_refused',
+          `Drawer ${index} is not the top of its stack — a shoe drawer goes on top`
+          + ` (drawer ${topIndex} is above it), so the insert is not cut.`,
+          { reason: 'not-top', top_drawer: topIndex });
+        continue;
+      }
+      const mineP = panels.filter((x) => (x.meta?.zone ?? null) === zone);
+      const interior = drawerBoxInterior(mineP, index);
+      if (!interior) continue;
+      // NOTHING ABOVE IT — *"nie może mieć półki nad sobą, bo buty będą
+      // chodzić."*
+      //
+      // DECISION TAKEN for the owner, veto in one line: *"the auto partition
+      // counts too"*. The board that CLOSES a drawer stack is `part:
+      // 'PARTITION'`, and SPEC 4.7 puts one over every stack in this app
+      // automatically — it is what MAKES this drawer the top of the stack. If
+      // it counted as "a shelf above", the insert could never be cut in any
+      // wardrobe at all, and the feature the owner asked to have back would
+      // arrive unreachable. So the refusal is about a SHELF somebody put
+      // there: the stack's own closer is the ceiling of the stack, not a
+      // shelf over the shoes.
+      //
+      // `isShelfBoard` is left exactly as the watch pane needs it (it WANTS
+      // the partition — the pane is cut in it), and this asks the narrower
+      // question of the two, in the one line where the narrower question is
+      // the right one.
+      const drawerTop = interior.at.y + interior.height;
+      const above = panels.find((x) => x.part === 'SHELF' && x.box
+        && (x.meta?.zone ?? null) === zone
+        && x.box.y >= drawerTop - 1
+        && x.box.x < interior.at.x + interior.width && x.box.x + x.box.w > interior.at.x);
+      if (above) {
+        say('shoe_insert_refused',
+          `Drawer ${index} has ${above.id} directly over it — the owner's law is that a`
+          + ' shoe drawer carries nothing above it, so the insert is not cut.',
+          { reason: 'shelf-above', above: above.id });
+        continue;
+      }
+      // THE HEADROOM the ramp actually rises into. A shoe drawer's sides are
+      // LOW by design (the 80 mm law), so the ramp and the shoes on it stand
+      // proud of the box — which is exactly why the owner forbids a shelf over
+      // it. So the ceiling is the board above the drawer, not the drawer's own
+      // side: the stack's closing partition, normally, and open space where
+      // there is none.
+      const ceiling = panels
+        .filter((x) => isShelfBoard(x) && x.box && (x.meta?.zone ?? null) === zone
+          && x.box.y >= drawerTop - 1
+          && x.box.x < interior.at.x + interior.width && x.box.x + x.box.w > interior.at.x)
+        .reduce((low, x) => Math.min(low, x.box.y), Infinity);
+      const headroom = ceiling === Infinity ? Infinity : ceiling - interior.at.y;
+      const fit = shoeInsertFit(interior, P, { headroom });
+      if (!fit.ok) {
+        say('shoe_insert_refused',
+          `Drawer ${index} has ${roundTo(headroom === Infinity ? interior.height : headroom, 0)} mm`
+          + ` over its floor and the shoe ramp needs ${roundTo(fit.needsHeight || 0, 0)} mm`
+          + ' — it is not cut.',
+          {
+            reason: fit.reason,
+            needs_height_mm: roundTo(fit.needsHeight || 0, 1),
+            has_height_mm: roundTo(headroom === Infinity ? interior.height : headroom, 1),
+          });
+        continue;
+      }
+      // …and where the drawer is deeper than the headroom allows, the ramp is
+      // SHORTER — never shallower. The tilt is the shoe shelf's and does not
+      // move; the run is what gives way, and the joiner is told so.
+      if (fit.clamped) {
+        say('shoe_ramp_clamped',
+          `Drawer ${index}'s shoe ramp runs ${roundTo(fit.run, 0)} mm of its`
+          + ` ${roundTo(fit.fullRun, 0)} mm depth — the board above it leaves`
+          + ` ${roundTo(headroom, 0)} mm, and the ramp keeps its ${roundTo(fit.tilt || P.wardrobeAccessories.shoeShelf.tiltDeg, 0)}°.`,
+          { reason: 'headroom', run_mm: roundTo(fit.run, 1), depth_mm: roundTo(fit.fullRun, 1) });
+      }
+      const made = shoeInsertParts(interior, P, { drawer: index, headroom });
+      if (!made) continue;
+      for (const q of made.parts) {
+        panels.push(panel({
+          id: zone == null ? q.id : `${q.id}-Z${zone}`,
+          part: q.part,
+          role: q.role,
+          w: q.w,
+          h: q.h,
+          thickness: q.thickness,
+          edgeCode: codes.none,
+          edgeLen: 0,
+          box: q.box,
+          cnc: q.cnc,
+          meta: { ...q.meta, ...(zone == null ? {} : { zone }) },
+        }));
+      }
+      shoeInsertsBuilt.push({
+        zone,
+        drawer: index,
+        tilt_deg: roundTo(made.spec.tiltDeg, 4),
+        dividers: made.spec.dividerCount,
+        lane_w_mm: roundTo(fit.lane, 1),
+        rise_mm: roundTo(made.ramp.rise, 1),
+        ramp_len_mm: roundTo(made.ramp.length, 1),
+      });
+    }
   }
 
   // ─── TURN 36 (CLAUDE.md F5): THE GRAIN, PER ROLE ─────────────────────────

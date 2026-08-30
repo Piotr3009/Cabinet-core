@@ -37,6 +37,11 @@ const HINGES_KEY = 'cc.showHinges.v2';
 // two helpers — a joiner who works with the front numbers on wants them on
 // tomorrow as well.
 const FRONT_DIMS_KEY = 'cc.showFrontDimensions';
+// ─── TURN 58 (F4): THE LED ICONS ARE A WAY OF LOOKING, NOT A SIDE EFFECT ───
+// Remembered in the same two helpers as X-ray, the hinges and the front
+// dimensions, and for the same reason: a joiner who is placing LED strips all
+// afternoon wants the icons on all afternoon.
+const LED_ICONS_KEY = 'cc.ledIcons';
 
 function loadSnap() {
   try {
@@ -589,6 +594,27 @@ export const useUiStore = create((set, get) => ({
   setContourView: (v) => set({ contourView: Boolean(v) }),
   toggleContourView: () => set((s) => ({ contourView: !s.contourView })),
 
+  // ─── TURN 58 (F4): WHO DECIDES WHETHER THE LED ICONS ARE ON SCREEN ───────
+  //
+  // T54-F5 put the answer inside the sprite component — `s.modal === 'lighting'`
+  // read in `3d/LedIcons.jsx`, and its own comment said "the gate IS the
+  // feature". It was right about the PURPOSE: the owner's complaint was that
+  // "ludzie nie wiedzą, że takie funkcje istnieją", and opening the Lighting
+  // panel is exactly when a person is ready to learn. It was wrong about the
+  // HOME. A modal being open is not a way of looking at a cabinet, so the
+  // icons could not be kept on while working — the moment the panel closed to
+  // get at anything else, they went — and the one thing that decided a piece
+  // of the scene lived in the piece rather than beside every other view flag.
+  //
+  // So the LAW moves here, next to X-ray, Hide fronts and Contour view, and it
+  // is ONE answer with two ways in: a joiner may turn the icons on and keep
+  // them on (View ▸ LED icons, remembered), and opening the Lighting panel
+  // still shows them whether he has or not — T54's discoverability, kept
+  // deliberately, and now stated as a rule rather than implied by a gate.
+  ledIcons: loadFlag(LED_ICONS_KEY, false),
+  setLedIcons: (v) => set({ ledIcons: saveFlag(LED_ICONS_KEY, Boolean(v)) }),
+  toggleLedIcons: () => set((s) => ({ ledIcons: saveFlag(LED_ICONS_KEY, !s.ledIcons) })),
+
   // Which sections of the right panel are open (turn 4, BACKLOG #10). There are
   // a lot of them now, so everything collapses — and the choice is remembered
   // across units, because a workshop tends to work on one thing at a time.
@@ -986,3 +1012,27 @@ export const useUiStore = create((set, get) => ({
     return warning;
   },
 }));
+
+/**
+ * ─── TURN 58 (F4): ARE THE LED ICONS ON SCREEN? ONE ANSWER ──────────────────
+ *
+ * The whole visibility law for `3d/LedIcons.jsx`, in one place that both the
+ * scene and a test can ask. It replaces the gate that lived inside the sprite
+ * component (`if (!lightingOpen) return null;`, T54-F5), which is this turn's
+ * second licensed deletion.
+ *
+ * TWO WAYS IN, ONE ANSWER:
+ *   · the joiner has turned them on and they STAY on (View ▸ LED icons,
+ *     remembered like X-ray) — which is what a modal-shaped gate could never
+ *     give him; or
+ *   · the Lighting panel is open, which is T54's discoverability and is kept
+ *     on purpose: the owner's *"ludzie nie wiedzą, że takie funkcje istnieją"*
+ *     is answered at exactly the moment somebody is ready to learn.
+ *
+ * A SELECTOR and not a flag, so there is nothing to keep in step: no second
+ * boolean is written when the panel opens, and closing it cannot strand the
+ * icons on. `useUiStore(ledIconsOn)` is the only reading there is.
+ */
+export function ledIconsOn(s) {
+  return Boolean(s?.ledIcons) || s?.modal === 'lighting';
+}

@@ -3,7 +3,7 @@ import * as THREE from 'three';
 
 import { mm } from './constants.js';
 import { useScreenScale } from './DimLabel.jsx';
-import { useUiStore } from '../stores/uiStore.js';
+import { ledIconsOn, useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 
 // ─── TURN 54 (CLAUDE.md F5): THE LED ICONS SHOW WHILE LIGHTING IS OPEN ──────
@@ -103,14 +103,27 @@ function LedIcon({
 
 /**
  * The pair, for one unit. Rendered inside the unit's own local frame.
- * Visible only while the Lighting panel is open — the gate IS the feature.
+ *
+ * ─── TURN 58 (F4): THE GATE IS GONE; THE LAW IS BESIDE THE OTHER VIEW FLAGS ──
+ *
+ * What stood here was `const lightingOpen = useUiStore((s) => s.modal ===
+ * 'lighting'); if (!lightingOpen) return null;` — this turn's second licensed
+ * deletion. T54-F5 wrote that the gate IS the feature, and it was right about
+ * the PURPOSE and wrong about the HOME: a modal being open is not a way of
+ * looking at a cabinet, so the icons could not be kept on while working, and
+ * one piece of the scene decided its own visibility while every other overlay
+ * in this app asks the view store.
+ *
+ * `ledIconsOn` is now the one answer (stores/uiStore.js), and it still shows
+ * them while the Lighting panel is open — T54's discoverability, kept on
+ * purpose and stated as a rule instead of implied by a gate.
  */
 export default function LedIcons({ unit, W, H, D }) {
-  const lightingOpen = useUiStore((s) => s.modal === 'lighting');
+  const visible = useUiStore(ledIconsOn);
   const design = useProjectStore((s) => s.project.design);
   const addLightingItem = useProjectStore((s) => s.addLightingItem);
   const removeLightingItem = useProjectStore((s) => s.removeLightingItem);
-  if (!lightingOpen) return null;
+  if (!visible) return null;
   const items = design?.lighting?.items || [];
   const itemOf = (side) => items.find((i) => i.unitId === unit.id && i.kind === 'side' && i.ref === side);
   const toggle = (side) => {

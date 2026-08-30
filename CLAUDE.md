@@ -1,285 +1,276 @@
-# CLAUDE.md — TURN 57 · TWO DEBTS PAID, THEN J-PULL HANDLELESS
+# CLAUDE.md — TURN 58 · THE SLOPE'S LAST LIES, THE SHOE'S RETURN, THE SHELVES LEARN THEIR BAY
 
-Run autonomously. Zero questions, zero stops. Skip-and-note; sacrifice F5,
-then F4 — NEVER F0a/F0b/F1/F2. PR before morning. Branch `t57`.
+Run autonomously. Zero questions, zero stops. Skip-and-note; sacrifice
+F8, then F7, then F6, then F5 — NEVER F1/F2/F3. PR before morning.
+Branch `t58`.
 
-**BASE: `origin/main` (87f3d1d or later). This turn runs BEFORE the
-pattern registry (t56): it consumes only the handle chain, which exists
-today. Do not run in parallel with any other turn.**
+**BASE: `origin/main` WITH t57 MERGED (paren census 14/14 arrives from
+t57's KIT_FRONT_JPULL). If t57 is not merged, stop and say so in the PR
+description. Do not run in parallel with any other turn.**
 
 ## STANDING LAW (unchanged, enforced)
 
-- **LISP IS LAW.** New geometry is written in `reference/lisp/` FIRST; the
-  engine follows. Paren census grows to **14/14 at 0/0** (13 kits today +
-  `KIT_FRONT_JPULL.lsp`) — extend `scripts/t50-paren-balance.mjs` and name
-  the change.
-- **BYTE-IDENTITY.** Goldens (flat, untrimmed) byte-identical.
-  `t57-classify.mjs`, `UNNAMED=0`. NAMED deltas allowed only on: (a) fronts
-  the tests dress in jpull; (b) slope-cut leaves carrying a
-  `front_edge_trim` (F0a's whole point is that their output changes).
-- **Sanctity — licensed this turn, and nothing else:** on a jpull-system
-  front only, handle/knob hardware and its drilling are suppressed at the
-  source — never born, never gated.
-- **One path per job.** Report the counts: slope-outline-after-trim law = 1;
-  jpull edge/run law = 1.
+- **LISP IS LAW.** Geometry changes are written in `reference/lisp/`
+  FIRST; the engine follows. Census stays **14/14 at 0/0** — this turn
+  adds LINES, not files.
+- **BYTE-IDENTITY.** Goldens (flat, no wall, no shoe, no props)
+  byte-identical. `t58-classify.mjs`, `UNNAMED=0`. NAMED deltas only on:
+  (a) slope-dressed fixtures (F1 removes phantom drills); (b) shoe-drawer
+  fixtures (F2 births the insert); (c) wall-proximity infill fixtures
+  (F5 moves the top infill). A bare `computeCabinet()` never centres a
+  shelf, so F3 moves no engine byte — assert it.
+- **Sanctity — licensed this turn, and nothing else:**
+  1. the static two-door `['BUL','BUR']` hinged-side table and every raw
+     `cfg.hinge` side-pick it feeds (F1) — replaced by the one resolver,
+     old tor physically deleted;
+  2. the `if (!lightingOpen) return null` gate in `src/3d/LedIcons.jsx`
+     (F7) — the owner's order overrides T54-F5's narrower conduct, and
+     the T54 comment is re-headed to say so;
+  3. nothing else is deleted or changed without licence.
+- **One path per job.** Report the counts: "which board carries this
+  leaf's plates" = 1; shoe-insert law = 1; shelf-opening finder = 1;
+  top-infill-to-wall law = 1.
 - New feature = visible UI entry, same package, screenshot-proven.
-- Full suite, never `--silent`. No new npm dependencies. Owner quotes are
-  law; code and UI copy in English.
+- Full suite, never `--silent`. No new npm dependencies (GLTF loading
+  exists — reuse it). Owner quotes are law; code and UI copy in English.
 
 ---
 
-## F0a [CRITICAL] · BUGFIX — A TRIM MUST NOT FLATTEN A SLOPE-CUT LEAF
+## F1 [CRITICAL] · BUGFIX — THE PHANTOM HINGE COLUMN ON BUL/BUR
 
-Diagnosed 30.08, numeric proof on main 87f3d1d. The owner's live symptom:
-the shaker "phantom sheet" appears the exact moment the wall-clearance
-message fires.
+Diagnosed 30.08, numeric proof. Owner's symptom: *"jak mamy skos i się
+przełącza z lewej na prawą stronę drzwi, ale na BUL i BUR się już nie
+przełącza."*
 
 ### The cause (one)
 
-`src/engine/cabinet.js`, the `front_edge_trim` applier (~6228–6266), runs
-on every front and does:
-
-    pnl.cnc = { ...pnl.cnc, ...rectGeometry(w, pnl.h) };
-
-`rectGeometry` overwrites the outline with a FULL RECTANGLE — on a
-slope-cut leaf too, whose outline was the cut polygon. `cnc.slopeCut`
-survives the spread, so `3d/shakerSolid.js` reads "cut" + a rectangular
-outline and builds a full-height tray with a diagonal pocket inside — the
-phantom. The trigger chain: front edge enters `neighbourReachMm` (200 mm,
-profile) of a wall → clearance engine wakes → yellow message AND the
-store's auto-heal applies a micro-trim in the same recompute ("gaps should
-fix themselves", T32). 1.5 mm is enough.
+The carcass hinged-side resolution is BLIND to the forced flip:
+`src/engine/cabinet.js` ~1760–1763 hard-codes two doors →
+`['BUL','BUR']` and one door → `cfg.hinge === 'R' ? 'BUR' : 'BUL'` (raw
+param), and the store's bay path (`src/stores/projectStore.js` ~557)
+reads the raw leaf hinge the same way. Under a slope the leaves are
+FORCED (T46/T55, `meta.hingeForced`) and the flipped leaf hangs on the
+DOOR PARTITION (T55-F3) — but the old table still bores the abandoned
+side.
 
 ### Reproduction — write the RED test from this first
 
-    WARDROBE, W1000 H2200 D600, front_type 'S', door_count 2,
-    slope_cut { pts:[{x:0,y:1300},{x:520,y:2200},{x:1000,y:2200}], infill:40 },
-    front_edge_trim { '01-FL': { left:0, right:1.5 } }
+    WARDROBE, W1000 H2200 D600, door_count 2,
+    slope_cut { pts:[{x:0,y:1300},{x:1000,y:2200}], infill:40 }
 
-On main today: `01-FL` outline collapses to a rectangle — every top y =
-2079.8328, across the full width. Without the trim: a true cut polygon.
-
-### The law
-
-In the trim applier, a leaf that carries `slopeCut` does NOT take
-`rectGeometry`. After `pnl.w`, `pnl.box.x`, `pnl.box.w` move, it re-runs
-**its own ceiling cut over its NEW span** — `frontSlopeAt(newRoomX, newW)`,
-already defined in the same `computeCabinet` scope (~5693; search-first:
-the working law is taken, the source named in the report; no second
-sampler). From its answer, refresh EVERY field the original cut set — no
-more, no less:
-
-1. `pnl.cnc.outline` (sheet frame — `frontSlopeAt` already answers in the
-   inside-mirror frame; do not re-mirror by hand, T28-F2b is the scar);
-2. `pnl.cnc.slopeCut` (fresh `pts` for the new span);
-3. `pnl.h`, `pnl.box.h` — the tall-edge height CAN change: trimming the
-   diagonal-side edge slides the window along the ceiling (in the repro,
-   right-trim 1.5 at slope 1.7308 lowers the tall edge by ~2.6 mm). The
-   rectangle bug hid this; the fix must not;
-4. `pnl.meta.slopeCut` (`h`, `full`, `angles`) and `pnl.meta.cupY` — the
-   cup ladder is derived from the leaf's own height (T36-F6 channel); a
-   shorter tall edge re-rungs it.
-5. `pnl.edgeLen` from the true perimeter of the polygon, not `2w + 2h`.
-
-ORDER IS PART OF THE LAW: verify, and state in the report, that the
-cup-DRILLING pass and the shaker-pocket pass both run AFTER the trim
-applier in the file, so they consume the refreshed leaf. If any consumer
-runs earlier, move the refresh, not the consumer, and say so. If the new
-span leaves the cut inactive (`slopeCutActive` false), the leaf is cut
-plain through the existing channels and the record says so. FLAT leaves
-keep `rectGeometry` byte-for-byte as today.
-
-### Definition of done
-
-- Red-first node:test file `test/turn57-f0a-trim-keeps-the-cut.test.js`:
-  (a) repro above → outline NOT a rectangle; diagonal parallel to the
-  ceiling over the trimmed span to < 0.01 mm; (b) shaker pocket holds the
-  true 60 mm frame PERPENDICULAR to the diagonal (vertical gap =
-  60/cos β); (c) `pnl.h` equals the ceiling at the new tall edge minus the
-  standing offsets; top cup sits inside the new height; (d) flat twin
-  (same trim, no slope) byte-identical to main; (e) both-edges trim; (f)
-  the T47 knee fixture trimmed.
-- Rig frame `verify/t57/f0a-trim-slope.png`: shaker wardrobe < 200 mm from
-  a wall, the yellow message VISIBLE, the door CLEAN.
-
-## F0b [CRITICAL] · BUGFIX — THE WATCH PANE IS GLASS, NOT A BOARD
-
-Owner, live: *"nie przezroczysta i nie widać szuflady w środku przez szybę
-— szkoda."*
+Measured on main: leaves `01-FL:R(F) 01-FR:R(F)`; hinge drills:
+**BUL = 6 (phantom), BUR = 12**. Correct: BUL = 0 — no door hangs there;
+FL's column lives on the partition (T55-F3 drills it — assert it is NOT
+doubled). Flat twin: BUL 12 / BUR 12, byte-identical.
 
 ### The law
 
-The pane renders as GLASS. Find its ONE home first — search the 3-D layer
-for where the pane mesh is born (cues: `shelf_glass`, the T53/T55 pane
-records) — and name it in the report. Then:
+ONE resolver — "which board carries THIS leaf's plates" — reading the
+leaf's `meta.hinge` (forced or free) and the partition's presence, in
+the engine, consumed by: the drilling pass, the hardware 3-D (hinge
+meshes on the carcass), and the store's bay logic. The static table and
+every raw side-pick die (licensed). Slope RIGHT is the same resolver
+with zero extra branches — the test proves L and R are mirrors.
 
-1. Material: transparent glass — `transparent: true`, opacity ≈ 0.22–0.32
-   with a faint cool tint and a specular sheen (or physical transmission
-   if the renderer path already supports it — whichever the existing
-   material system does cheaply; no new npm deps). `depthWrite: false` so
-   the interior draws through it; set `renderOrder` so the pane paints
-   AFTER the insert beneath; guard against z-fighting with the shelf
-   rebate (the pane sits flush by T53 law — keep the geometry, fix the
-   paint).
-2. The drawer, pockets and watches beneath are VISIBLE through it; the LED
-   ring reads through the pane.
-3. Contour and X-ray passes keep their own conduct: contour draws the
-   pane's outline, X-ray already sees through everything — neither paints
-   it solid.
-4. ENGINE BYTES DO NOT MOVE: the cut, rebate and BOM line are T53/T55 law
-   and stay. The fixed lighting-rig rule stands.
+DoD: `test/turn58-f1-the-phantom-column.test.js` red-first (L, R,
+one-door both hands, flat twins byte-identical); frame
+`verify/t58/f1-bul-bur.png` — X-ray, slope on, no rings on the
+abandoned side.
 
-### Definition of done
+## F2 [CRITICAL] · THE SHOE DRAWER GETS ITS INSERT BACK
 
-- `verify/t57/f0b-glass.png`: camera above the open drawer zone, insert
-  visible THROUGH the pane, LED on.
-- A test where the picture can be tested cheaply (material flags on the
-  pane mesh via the existing 3-D unit-test harness if one exists;
-  otherwise the frame is the proof and the report says so).
+History, honestly: T54-F7 killed the old shoe world on the owner's own
+order; the re-spec covered the box and never mentioned the insert, so
+the ramp and dividers went to the grave with it. The conditions now
+exist — verbatim law:
 
----
+1. **The ramp (skos) returns INSIDE the drawer.** Its angle is the
+   LIVING law — `P.wardrobeAccessories.shoeShelf.tiltDeg`, the shoe
+   SHELF variant that survived T54 (name this source in the report; no
+   second angle anywhere).
+2. **Dividers: ALWAYS 2** — *"po prostu daj 2 zawsze"* — three even
+   lanes; divider grain HORIZONTAL (Petros sheet-goods law, as the
+   watch insert).
+3. **Top of the drawer stack ONLY** — *"tylko na wierzchu innych
+   szuflad."*
+4. **NOTHING above it** — *"nie może mieć półki nad sobą, bo buty będą
+   chodzić."*
+5. **Watch XOR shoe per cabinet** — *"jeśli będzie szuflada z zegarkami,
+   to już nie możemy w tej szafie zrobić butów."* Adding the second kind
+   names the first and REFUSES IN WORDS — store guard AND engine
+   warning if params arrive broken.
 
-## THE DOCTRINE, CORRECTED IN THE OPEN
+LISP FIRST: the insert's law goes into the shoe-drawer section of
+`reference/lisp/KIT_WARDROBE_FULL.lsp` (lines, not a file). Engine
+births 1 ramp + 2 dividers on the measured drawer interior; BOM carries
+the boards; the ramp's tilt prints on the sheet the way a slope prints
+`CUT β°`; 3-D renders with the standing grain law.
 
-Two axes, never merged: FACE PATTERN (slab, shaker, grooved…) × HANDLE
-SYSTEM (handle, knob, none — and now J-PULL). A grooved door with a J edge
-must be possible, so **J-pull lives on the HANDLE axis**. The pattern
-registry (a later turn) must NOT list `jpull` among its reserved pattern
-ids — its comment points at `engine/handles.js` instead.
+DoD: `test/turn58-f2-the-shoe-insert.test.js` (parts born, tilt ==
+shoeShelf.tiltDeg, grain 'h', top-only enforced, shelf-above refused,
+watch⇄shoe both directions refused with the other named, flat goldens
+untouched); frames `verify/t58/f2-shoe-open.png`, `f2-shoe-refused.png`.
 
-## THE PROFILE IS THE OWNER'S DRAWING, NOT A GUESS
+## F3 [HIGH] · BUGFIX — THE SHELVES LEARN THEIR BAY, THE PINNED SHELF, AND THE CENTRED ADD
 
-Measured from the owner's `J_hand.dxf` (18 mm board, section at the edge) —
-these numbers ARE the law, named constants in profile and LISP:
+Owner, three sentences, three laws — with the culprits named from
+today's dig:
 
-- front lip (the visible hook of the J): **4.212 mm**, standing **30 mm**
-  proud of the relieved back;
-- finger slot: **10 mm** wide, **40 mm** deep from the edge, bottom
-  rounded **r5** (45 mm to the arc's tangent);
-- rear leg: **3.788 mm**; rear relief: back face cut down **30 mm** from
-  the edge — the finger clearance;
-- 4.212 + 10 + 3.788 = 18.000 — the drawing closes and the LISP must too.
+1. **A fixed shelf CARRYING A DIVIDER is PINNED** — *"ona już jest
+   ustawiona na stałe."* The link exists (`mount: 'shelf'` + the shelf's
+   id, `projectStore` ~5022). Centring never moves it — and it CUTS the
+   ladder exactly as a split crossbar does (T37-F4a's own words about
+   the divider: shelves below centre up to it, shelves above from it —
+   the same `bandSegments` law, one more boundary kind, not a second
+   segmenter).
+2. **Centring is PER BAY, never across.** *"Centrujemy tylko prawy lub
+   lewy bay… nie robimy na przemian ze wszystkich bayów."* Culprit:
+   `redistributeShelves` segments only vertically by crossbars — `zone`
+   does not appear in the function at all. The law: invoked from a
+   shelf's/bay's context → THAT bay; invoked on the whole unit → every
+   bay gets its OWN ladder, never one ladder through a partition.
+3. **A newly added shelf lands CENTRED** in the biggest opening of ITS
+   bay, respecting pinned shelves. Culprit: `centredShelfPos`
+   (`engine/items.js:151`) receives the WHOLE unit's positions and band
+   — bay-blind and pinned-blind, so "the biggest opening" reaches
+   through the partition.
 
-## F1 [CRITICAL] · THE LAW, IN LISP
+ONE opening-finder for both callers (the add and the centre button),
+zone-aware and pinned-aware — path count 1. Engine functions stay pure
+(new inputs, no store reads); a bare `computeCabinet()` is untouched —
+goldens prove it.
 
-New file `reference/lisp/KIT_FRONT_JPULL.lsp` (paren census → 14), house
-style of the existing kits:
+DoD: red-first tests — bay with a divider: added shelf lands in THAT
+bay's opening; centre on a two-bay unit yields two independent ladders;
+a pinned fixed-shelf-with-divider never moves and splits its bay's
+ladder; no-bay flat unit behaves byte-for-byte as today. Frame
+`verify/t58/f3-centre-per-bay.png`.
 
-1. A J-pull is the profile above, machined along an edge of a leaf or
-   drawer front. It is a SHAPER/FORM-TOOL PASS — the DXF carries the edge
-   line (or the stopped run's span) and a `J-PULL <EDGE>` note exactly the
-   way a slope carries its `CUT β°` note; nobody draws fake profile curves
-   into the cut path.
-2. WHICH edge — the owner's corrected table, verbatim law:
-   - kitchen BASE unit doors and ALL drawer fronts: TOP edge, full width;
-   - kitchen WALL unit doors: **NO J AT ALL.** Owner: *"na szafkach
-     wiszących nie rób J"* — gripped from below and *"to już robi
-     program"*: existing front geometry stands, zero machining, zero new
-     extension logic invented;
-   - TALL doors (fridge housings, wardrobes): the VERTICAL edge on the
-     OPENING side — opposite the hinge, the edge `meta.hinge` already
-     names. Under a slope the forced hand (T46/T55 law) flips the J with
-     it for free: one source, no second decision;
-   - NEVER on a diagonal (slope) edge.
-3. TALL doors take a STOPPED RUN, not the full edge. Owner: *"500 mm,
-   zaczyna się od dołu frontu około 700 mm"* — run `jpull.runMm` (default
-   **500**), starting `jpull.fromBottomMm` (default **700**) up from the
-   leaf's OWN bottom edge. Both are profile parameters. **The ends ramp in
-   and out ON AN ARC** — the router's own lead-in, owner: *"wjazd po łuku,
-   nie ostre, łukowate"* — never a square stop; ramp radius
-   `jpull.rampR` is a named profile parameter with a placeholder the owner
-   will tune later (*"routerowanie będziemy robić później"*).
+## F4 [HIGH] · PULL-DOWN CANNOT LIVE UNDER A SLOPE
 
-## F2 [CRITICAL] · THE ENGINE — A HANDLE SYSTEM CALLED JPULL
+Owner: *"jak się zaczyna skos, to ma zniknąć — nie tylko jak się pojawi
+diverter, ale też jak jest sam. Szafa ze skosem nie może mieć
+pull-down, bo to jest zawsze na wysokości."* The kit's own numbers
+agree: it parks HIGH (rod axis ~657 in file metres, arm ~607) and its
+swing sweeps the top front.
 
-1. The handle chain (`src/engine/handles.js` and its consumers) gains
-   system `jpull`. Selecting it:
-   - resolves edge + run per the F1 table — ONE function, one answer (wall
-     doors resolve to NONE);
-   - writes ONE machining record on the front, exact shape:
+1. Slope becomes ACTIVE → every `pulldown_rail` kit on the unit is
+   REMOVED in the same store transition T55-F3 clears the interior —
+   same family, same notify style, the message names the pull-down.
+   Always on active slope, knee or straight.
+2. On a sloped unit the Add-items entry is GREYED with a one-line
+   reason — through the EXISTING library `enabled/reason` channel
+   (`engine/library.js`; name it, no second gate).
+3. Slope removed → entry re-enables; the kit does NOT resurrect itself.
 
-         cnc.jpull = {
-           edge: 'top' | 'left' | 'right',      // ROOM frame
-           spanFromMm, spanToMm,                 // along the edge; full
-                                                 // width ⇒ 0..w
-           profile: { lipMm: 4.212, slotWMm: 10, slotDMm: 40,
-                      bottomR: 5, reliefMm: 30, legMm: 3.788 },
-           rampR,                                // stopped runs only
-         }
+DoD: test (kit gone + entry disabled with reason; re-enable without
+resurrection; flat twin untouched); frame
+`verify/t58/f4-pulldown-greyed.png`.
 
-     plus the part-sheet label — `J-PULL TOP` for a full edge,
-     `J-PULL LEFT 700–1200` for a stopped run — translated into the SHEET
-     frame at exactly ONE point (the inside-mirror law of
-     `engine/joinery.js`; T28-F2b is the scar to reread: left/right flip,
-     top does not);
-   - suppresses handle/knob hardware AND its drilling at birth on EVERY
-     front of the system — wall doors included: no machining and no handle
-     either (licensed);
-   - profile block `jpull: { runMm: 500, fromBottomMm: 700, rampR, …the
-     five constants }` joins `companyDefaults` / the cabinet profile, read
-     the way `doors.gap` is.
-2. Split doors, bay doors, slope-cut leaves: the SAME law per leaf. A tall
-   leaf shorter than `fromBottomMm + runMm` clamps the run and says so in
-   a Check line; an edge that cannot take the run refuses with a warning,
-   never guesses. A leaf that is BOTH trimmed and slope-cut takes F0a's
-   refreshed outline first — order in the file guarantees it, and the
-   report states where.
-3. BOM: a jpull front carries no handle purchase line; the machining
-   appears the way other edge work appears today. No invented cost rows.
+## F5 [HIGH] · THE TOP INFILL RUNS TO THE WALL, OVER THE SIDE INFILL
 
-### Definition of done
+Owner: *"jak dojeżdżamy szafą do ściany i się pojawia infill boczny, to
+niech górny się przedłuży do ściany — jak było wcześniej."*
 
-Tests `test/turn57-f2-jpull-law.test.js`: edge/run resolution table (base,
-drawer, wall→none, tall L/R hinge, forced-hinge-under-slope flip,
-short-leaf clamp lands 700→leafTop); drilling absent on jpull fronts,
-present and byte-identical on non-jpull; sheet label text both frames;
-profile params reach the record; the stopped run lands at 700–1200 on a
-standard tall leaf.
+Side infill appears (wall proximity) → the TOP infill EXTENDS to the
+wall face, capping the corner; the SIDE infill keeps its height and
+stops UNDER it — one plane at the joint, ZERO overlap (the Petros
+no-overlap iron rule; the junction conduct is `src/engine/mitre.js`'s
+turn-6/8 strip law — take it, name it). *"Jak było wcześniej"* is a
+regression claim: search the history (T53 "infills follow the slope"
+and the turn-6/8 infill turns are the suspects), NAME the commit that
+shortened the top infill at the wall, and state in the report whether
+this RESTORES an old law or writes it for the first time — either
+answer is fine, a guess is not. Under an ACTIVE slope nothing here
+applies — T55-F1's four corners govern, untouched.
 
-## F3 [HIGH] · THE PICTURE — A RECESS WITH A SHADOW
+DoD: red-first test (top infill's span reaches the wall face; side
+infill meets its underside in one plane; the standing collision check
+stays silent; away-from-wall twin byte-identical); frame
+`verify/t58/f5-infill-corner.png`.
 
-Owner, verbatim: *"nie zapomnij o cieniowaniu po routerowaniu, żeby było
-widać cień."* The J renders as GEOMETRY, the shaker school: a real
-depression with explicit normals so it reads at a grazing angle — not a
-painted stripe. On tall doors the stopped run shows its CURVED ramp ends.
-Scope the mesh work to the leaf edge (extend `panelSolid`'s machined path
-or the tray builder — whichever the code says is the ONE home; name the
-choice in the report). Handle meshes do not mount on jpull fronts — they
-were never born. Works on wardrobe verticals, kitchen horizontals, and
-beside a slope-cut leaf.
+## F6 [MEDIUM] · A CLOSING DOOR CLOSES WHAT IT COVERS
 
-Screenshots: `verify/t57/f3-jpull-wardrobe.png` (stopped run, curved ends,
-shadow visible), `f3-jpull-kitchen.png` (base + drawer top edges; wall
-door clean).
+Owner: *"jak zamykasz szafy drzwi, to szuflady muszą się zamykać
+automatycznie."* The picture respects physics — a real leaf would hit
+them.
 
-## F4 [HIGH] · THE UI ENTRY
+1. Closing a leaf (its own click, or Open-all switching off) → every
+   PULL-OUT behind that leaf glides shut: internal drawers, pull-out
+   shelves, watch/belt/shoe drawers — the `openFronts`/`openKits`
+   families, one law. The lowered PULL-DOWN parks too (lowered, it
+   collides with the leaf).
+2. Which pull-outs a leaf covers is answered by GEOMETRY (the leaf's
+   span over the kit's bay/zone), once, in one place.
+3. Opening a leaf opens NOTHING. The easing is the standing
+   `delta·8` — no teleports.
+4. Store/3-D only; zero engine bytes.
 
-1. Wherever the handle system is chosen today, `J-pull handleless`
-   appears — the EXISTING selector learns one option; no new modal.
-2. Settings surface `runMm`, `fromBottomMm`, `rampR` and the five profile
-   constants beside the other millimetre fields, labelled in English,
-   editable, engine reads them live.
-3. Click-path proof: `verify/t57/f4-ui.png` — "where I click → the J
-   appears on the cabinet".
+DoD: test on the ui law (close leaf → covered kits' open state drops;
+uncovered kits untouched; open leaf → nothing); rig frames before/after
+`verify/t58/f6-door-closes-drawers-*.png`.
 
-## F5 [MEDIUM] · THE CHECKS SAY WHY
+## F7 [MEDIUM] · LIGHTING — THE ICONS STOP HIDING, THE ROOM MOVES DOWN
 
-Check lines for the refusals and clamps F2 defined (short leaf, refused
-edge), worded in the house voice, with the unit and leaf named. No silent
-skips.
+History, named: the current conduct IS T54-F5 as specified —
+`LedIcons.jsx` ~113 `if (!lightingOpen) return null`. Not a fossil; a
+narrower spec than tonight's order.
+
+1. LED placement icons ALWAYS visible in the EDITOR viewport (licensed
+   gate deletion; re-head the T54 comment with the owner's order). NEVER
+   in renders, captures or PDFs — assert the capture path excludes
+   them.
+2. In the Lighting modal, the ROOM section (four lamps + room light)
+   moves to the BOTTOM; strip controls stand above. Order changes; not
+   one control added, removed or renamed.
+3. WHILE IN THE 3-D: the watch pane's proof is still owed. Re-shoot
+   `verify/t58/f7-pane-through.png` with the drawer OPEN and the insert
+   lit, the insert CLEARLY VISIBLE through the glass; if the current
+   opacity 0.42 hides it, lower toward t57's specified 0.22–0.32.
+
+DoD: icons present with the panel closed (`f7-icons-always.png`),
+absent in a capture (frame or assertion — report says which); modal
+frame `f7-room-at-bottom.png`; the pane frame above.
+
+## F8 [MEDIUM] · PROPS v1 — THE DRAWERS GET DRESSED
+
+Owner approved the pack (watches ×4, belt rolls ×5, folded ties ×6 —
+metres, real sizes, light meshes) and the switch: *"ok props on/off —
+zegarki wiedzą i reszta też wie."*
+
+1. ASSETS live in the Supabase bucket `props/` with a `manifest.json`
+   in the Movento school. The repo carries NO model binaries (CONERO
+   precedent). **If the bucket or manifest is missing at run time: build
+   the whole machinery anyway, ship the toggle GREYED with a one-line
+   reason, skip the dressing walk and note it — nothing throws.**
+2. PLACEMENT is automatic and MEASURED: load → `updateMatrixWorld` →
+   Box3 → LAY the piece into its slot — watches LYING into the watch
+   insert's pockets (the model stands ~80 mm, the interior is 60 —
+   orient by measurement, never by guess), belt rolls flat into lanes,
+   ties into sections. Fewer slots → fill what exists; more → repeat
+   variants. No prop intersects a board.
+3. THE SWITCH: a `Props` toggle in the VIEW-BAR family (beside
+   Outlines / X-ray) — a PICTURE switch, global. Renders HONOUR it;
+   BOM, CNC, DXF and the invoice are BLIND to props — state where that
+   blindness is structural.
+
+DoD: toggle frames `verify/t58/f8-props-on/off.png` (or greyed-with-
+reason frame when assets absent); a BOM/DXF assertion that props add
+zero rows/paths; the walk (assets permitting) lays one watch, one belt,
+one tie by measurement and prints the landed boxes.
 
 ---
 
 ## ORDER, PROOF, REPORT
 
-**F0a → F0b → F1 → F2 → F3 → F4 → F5.** The bugfixes land FIRST, each a
-separate commit, red test before green.
+**F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8.** Bugfixes red-test-first,
+each its own commit.
 
-Proof: full suite green; classifier named-deltas only (jpull fixtures +
-trimmed slope-cut leaves); paren 14/14; screenshots listed above.
+Proof: full suite green; `t58-classify.mjs` named-deltas only (slope,
+shoe, wall-infill fixtures) with per-feature probes; paren 14/14;
+screenshots listed above.
 
-Morning report, numbered: per feature done/skipped; the two law path
-counts (each must be 1); the consumer-order statement from F0a; the pane's
-one home from F0b; licensed deletions confirmed; `+X/−Y`; test totals;
-classifier verdict; the `rampR` placeholder called out for the owner to
-tune.
+Morning report, numbered: per feature done/skipped; the four law path
+counts (each must be 1); licensed deletions confirmed executed; the F5
+history verdict (restored vs new, commit named); `+X/−Y`; test totals;
+classifier verdict; anything skipped and why.

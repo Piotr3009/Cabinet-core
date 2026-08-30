@@ -298,7 +298,10 @@ test('F5 — the four things CLAUDE.md asks the machine for', () => {
   const slots = parts.flatMap((q) => (q.cnc?.pockets || []).filter((k) => k.layer === WATCH_LAYERS.slot));
   assert.ok(slots.length >= 4, `${slots.length} housings`);
   for (const k of slots) {
-    assert.equal(k.x2 - k.x1, S.dividerT, 'a slot is the divider’s own stock across');
+    // T55 AMENDED (CLAUDE.md F6): the insert boards are drawn STANDING now
+    // (length up the sheet, grain 'h' — the Petros grain rule), so the
+    // divider's stock runs across the drawn HEIGHT axis of the housing.
+    assert.equal(k.y2 - k.y1, S.dividerT, 'a slot is the divider’s own stock across');
     assert.equal(k.depth, S.slotDepthMm, '…and a housing, not a through slot');
     assert.ok(k.depth < S.frameT, 'it never goes through the rail');
   }

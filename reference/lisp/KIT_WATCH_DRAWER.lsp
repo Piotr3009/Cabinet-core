@@ -291,6 +291,23 @@
   )
 )
 
+;;;----------------------------------------
+;;; T55 - THE INSERT GRAIN, BORN HORIZONTAL  (30.08.2026, F6)
+;;;----------------------------------------
+;;; The owner, verbatim (a Petros iron rule): "wszystkie przegrodki musza byc
+;;; w poziomie sloje nie w pionie" and "jak mamy oklejac to musi byc wzdluz
+;;; slojow nigdy w poprzek - to jest swieta zasada w sheet goods."
+;;;
+;;; THE LAW: every insert board - dividers, frame rails, the base - is DRAWN
+;;; STANDING, its length up the sheet (the drawer-box convention), and states
+;;; grain 'h' on the record AT BIRTH. The cut decides the grain, the 3-D
+;;; renders what was cut; no per-role visual override exists. As fitted, the
+;;; figure then runs horizontally along every piece and the edge banding runs
+;;; along the grain, never across it.
+(defun SKY:watchGrain ()
+  "h"
+)
+
 (defun SKY:watchInsertHeight (baseT insideD)
   (+ baseT insideD)
 )

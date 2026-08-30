@@ -611,17 +611,58 @@ export function watchInsertParts(interior, profile, { drawer = 1, layout = DEFAU
   const sectionsBackZ = z0 + s.frameT;
 
   const P = [];
-  const push = (id, part, box, cnc, meta = {}) => P.push({
-    id: `D${drawer}-${id}`,
-    part,
-    role: 'watch_insert',
-    w: cnc.__w,
-    h: cnc.__h,
-    thickness: cnc.__t,
-    box,
-    cnc: { outline: cnc.outline, pockets: cnc.pockets, holes: cnc.holes, layer: cnc.layer, ...(cnc.paths ? { paths: cnc.paths } : {}) },
-    meta: { drawer, ...meta },
-  });
+  // ─── T55 (CLAUDE.md F6): THE GRAIN, BORN HORIZONTAL ────────────────────────
+  // The owner, verbatim (a Petros iron rule): *"wszystkie przegródki muszą
+  // być w poziomie słoje nie w pionie"* and *"jak mamy oklejać to musi być
+  // wzdłuż słojów nigdy w poprzek — to jest święta zasada w sheet goods."*
+  //
+  // Every insert board is therefore DRAWN STANDING — its length up the sheet,
+  // the same convention every drawer-box board is cut in — and states
+  // `grain: 'h'` on the record at birth. The single-source rule stands: the
+  // cut decides the grain (`cnc/layout.js sheetLay` reads the statement), the
+  // 3-D renders what was cut, and the figure runs along the piece — which, as
+  // fitted, is horizontal on every rail, divider and the base. No per-role
+  // visual overrides. The 90° turn below is rigid (never a mirror), so a
+  // face-A housing stays a face-A housing.
+  const standUp = (g) => {
+    const L = g.__w;
+    const S2 = g.__h;
+    return {
+      ...g,
+      rotated: true,
+      drawn_w: S2,
+      drawn_h: L,
+      grain: 'h',
+      outline: rect(S2, L).outline,
+      pockets: (g.pockets || []).map((k) => ({
+        ...k, x1: S2 - k.y2, y1: k.x1, x2: S2 - k.y1, y2: k.x2,
+      })),
+    };
+  };
+  const push = (id, part, box, cnc, meta = {}) => {
+    const drawn = standUp(cnc);
+    return P.push({
+      id: `D${drawer}-${id}`,
+      part,
+      role: 'watch_insert',
+      w: cnc.__w,
+      h: cnc.__h,
+      thickness: cnc.__t,
+      box,
+      cnc: {
+        rotated: drawn.rotated,
+        drawn_w: drawn.drawn_w,
+        drawn_h: drawn.drawn_h,
+        grain: drawn.grain,
+        outline: drawn.outline,
+        pockets: drawn.pockets,
+        holes: drawn.holes,
+        layer: drawn.layer,
+        ...(drawn.paths ? { paths: drawn.paths } : {}),
+      },
+      meta: { drawer, ...meta },
+    });
+  };
   const board = (w, h, t) => {
     const g = rect(w, h);
     g.__w = w; g.__h = h; g.__t = t;

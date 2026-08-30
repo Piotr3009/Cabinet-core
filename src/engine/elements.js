@@ -157,11 +157,26 @@ export function elementKind(panel) {
     case 'MASK': return 'masking-panel';
     case 'FRONT': return 'door';
     case 'DRAWER-FRONT': return 'drawer-front';
+    // ─── TURN 58 (F3): THE SHOE'S RAIL IS A PIECE, NOT A GHOST ─────────────
+    //
+    // T54-F7 buried the shoe BOX and said of the T33 shoe SHELF that its
+    // `SHOE-RAIL` "was never selectable and is untouched" — a true sentence
+    // about a board that is CUT, LISTED in the BOM, given a material slot
+    // (`partRegistry` maps it to `shelf`) and DRAWN in the scene, and which
+    // nobody could click, name or open. Every other cut board in this app is
+    // a piece a joiner can point at; this one fell through to `null` because
+    // no case had ever been written for it.
+    //
+    // It takes MATERIAL and nothing else, and that is the whole design: its
+    // length is the shelf's own width, its section is the profile's law
+    // (`wardrobeAccessories.shoeShelf.stopRail`, stated in
+    // KIT_WARDROBE_FULL.lsp G2), and it ships UNDRILLED — no line in the kit
+    // fixes a listwa, so there is no fixing to offer a field for.
+    case 'SHOE-RAIL': return 'shoe-rail';
     default:
       // T54-F7: the SHOEBOX-* kind died with its world — a shoe is a
       // `variant:'shoe'` DRAWER now, so its boards answer as a drawer's do
-      // above. (The T33 shoe SHELF's `SHOE-RAIL` was never selectable and is
-      // untouched.)
+      // above.
       return null;
   }
 }
@@ -184,6 +199,7 @@ const LABELS = {
   door: 'Door',
   'drawer-front': 'Drawer front',
   drawer: 'Drawer box',
+  'shoe-rail': 'Shoe shelf rail',
 };
 
 /** What each board of a drawer box is called, in a joiner's words. */
@@ -296,6 +312,10 @@ const FIELDS = {
   // T54-F7: the shoe box's three decisions died with its world — a shoe is
   // a `variant:'shoe'` drawer and takes the DRAWER's fields above (its side
   // height is the 80 law and offers no field at all).
+  // T58-F3: the shoe shelf's stop rail takes MATERIAL and nothing else — its
+  // length is the shelf's width, its section is the profile's law and it
+  // carries no fixing, so there is no other honest field to offer.
+  'shoe-rail': ['material'],
 };
 
 /**

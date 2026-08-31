@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as THREE from 'three';
+import { proChromeOn } from './chrome.js';
 
 // ─── "Another one here" (turn 9, CLAUDE.md F2) ───
 //
@@ -71,6 +72,9 @@ function plusTexture(colour, lit) {
 export default function AddPlus({
   position, size, colour, title, onClick,
 }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const [hover, setHover] = useState(false);
   const map = plusTexture(colour, hover);
 

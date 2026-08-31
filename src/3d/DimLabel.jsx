@@ -2,6 +2,7 @@ import { useMemo, useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { COLORS } from './constants.js';
+import { proChromeOn } from './chrome.js';
 
 // Billboarded dimension label — SPEC 7: labels must ALWAYS face the camera
 // (the lesson from the mirrored text in the PSW configurator).
@@ -192,6 +193,9 @@ export function useScreenScale(pxHeight, apply) {
 export default function DimLabel({
   position, text, scale = 1, tone = 'dim', colour = null, variant = 'bubble',
 }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const texture = useMemo(() => {
     const flat = variant === 'flat';
     // CHAT FIX 15.08.2026: 'bare' — the hover look. No ground at all; a white

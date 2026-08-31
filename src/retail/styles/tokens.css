@@ -1,0 +1,80 @@
+/* ─── PRIME BESPOKE INTERIORS · IVORY & ONYX ────────────────────────────────
+ *
+ * CLAUDE.md, F2, verbatim: *"Tokens — `src/retail/styles/tokens.css`, verbatim
+ * from Petros"*, and the standing law above it: *"PETROS DESIGN SYSTEM IS LAW.
+ * Every colour on the PBI side is one of the twelve named tokens, used where
+ * the system says; 72 / 23 / max 5 gold; zero border-radius; no gradients; no
+ * #FFFFFF as a large background; no brown/camel/pastel; gold only in 1-px
+ * lines, button borders, small marks, active menu. A colour not in the token
+ * file is a violation."*
+ *
+ * TWELVE COLOURS. Not thirteen. Every hex on the PBI side is below or it is a
+ * violation, and `test/turn59-f2-the-shell.test.js` reads this file, builds the
+ * set from it, and greps every retail source for a hex that is not in it.
+ *
+ * THE 72 / 23 / 5. Nine light values carry roughly seventy-two parts of the
+ * page (Porcelain and Warm White as grounds, Ivory and Soft Ivory as the
+ * panels that sit on them, Stone Line as the hairline between). Four dark
+ * values carry twenty-three (Onyx as the footer and the primary button,
+ * Carbon and Graphite for its hover and its depth, Soft Graphite for the
+ * quiet second line of type). The three golds carry five AT MOST, and only
+ * ever as a 1-px line, a button's border, a small mark, or the bar beside an
+ * active menu row. Gold is never a fill.
+ */
+
+:root {
+  /* ─── THE LIGHT NINE ──────────────────────────────────────────────────── */
+  --pbi-porcelain: #FAF8F3;   /* the ground of the site */
+  --pbi-warm-white: #F2EEE7;  /* header, the detail column, cards on Porcelain */
+  --pbi-ivory: #D9D1C6;       /* SIGNATURE IVORY — the hero panel, the categories */
+  --pbi-soft-ivory: #E7E1D8;  /* the options column, the configurator section */
+  --pbi-stone-line: #C7BCAF;  /* every hairline that is not gold */
+
+  /* ─── THE DARK FOUR ───────────────────────────────────────────────────── */
+  --pbi-onyx: #090A09;        /* the footer, the primary button, all display type */
+  --pbi-carbon: #171817;      /* the deep ground under Onyx */
+  --pbi-graphite: #292A28;    /* the primary button's hover */
+  --pbi-soft-graphite: #5C5B57; /* the quiet second line — subtitles, choices, reasons */
+
+  /* ─── THE GOLD THREE — five parts of the page at most ─────────────────── */
+  --pbi-gold: #B8A588;          /* the 48x1 line under a heading */
+  --pbi-deep-gold: #806A44;     /* a button's border, a link, an active label */
+  --pbi-gold-highlight: #D2C19F; /* lines on Onyx, and the pale wash below */
+
+  /* ─── CHAMPAGNE IS NOT A THIRTEENTH COLOUR ────────────────────────────────
+   * The brief names "Champagne" four times — the focus outline, the underline
+   * under an active nav item, the 2-px bar beside the active category, the
+   * secondary button's hover ground — and the token list Petros wrote has no
+   * such name. It is Gold Highlight: the palest of the three golds, the only
+   * one that can sit as a wash under Onyx text and still read. So it is an
+   * ALIAS, resolving to a token that exists, and not a new colour.
+   * OWNER TO CONFIRM (placeholder list, morning report).
+   */
+  --pbi-champagne: var(--pbi-gold-highlight);
+
+  /* ─── THE MEASUREMENTS ────────────────────────────────────────────────── */
+  --pbi-header-h: 82px;
+  --pbi-hero-min-h: 720px;
+  --pbi-side-margin: 72px;
+  --pbi-section-gap: 112px;
+  --pbi-button-h: 50px;
+  --pbi-gold-line: 48px;
+  --pbi-radius: 0;
+
+  /* ─── TYPOGRAPHY ──────────────────────────────────────────────────────────
+   * CLAUDE.md, F2: *"the owner's system has no type spec yet; this is the
+   * standing proposal, tokenised so a two-line change swaps it if he strikes
+   * it in the morning"*. These two lines are that change.
+   * OWNER TO SIGN OFF (placeholder list, morning report).
+   */
+  --pbi-font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --pbi-font-ui: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+  /* The design room's own header — F3: *"Inside the design room the header
+   * shrinks to 60px (same content)."* */
+  --pbi-header-h-room: 60px;
+  --pbi-col-categories: 220px;
+  --pbi-col-options: 320px;
+  --pbi-col-detail: 300px;
+  --pbi-view-bar-h: 40px;
+}

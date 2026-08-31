@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import { mm } from './constants.js';
 import { formatMm } from '../engine/format.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── THE SHARE-OUT, OFFERED AT THE GAP (turn 50, CLAUDE.md F2 · decision 1) ──
 //
@@ -65,6 +66,9 @@ import { formatMm } from '../engine/format.js';
 export default function ShareOutBar({
   walls, roomCentre, offer, view, onShare, onDismiss,
 }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const found = view && view.plan ? view : null;
 
   const placed = useMemo(() => {

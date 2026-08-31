@@ -166,6 +166,7 @@ import {
 import { runBatch } from './historyBatch.js';
 // ─── Turn 31 (CLAUDE.md F2): ONE dirty gate, and 77 repeats deleted.
 import { dirtyGate } from './dirtyGate.js';
+import { persistenceOn } from './persistence.js';
 
 // ─── Project state ───
 // The room, the units standing in it and their interior contents (SPEC 5).
@@ -1168,6 +1169,8 @@ function openAssignmentsFor(project) {
 let cacheTimer = null;
 let cachePending = null;
 function saveCache(state) {
+  // TURN 59: memory-only mode writes nothing, and leaves no key behind.
+  if (!persistenceOn()) return;
   cachePending = { project: state.project, units: state.units };
   if (cacheTimer) return;
   cacheTimer = setTimeout(() => {
@@ -1178,7 +1181,10 @@ function saveCache(state) {
   }, 250);
 }
 
-const cached = typeof localStorage !== 'undefined' ? loadCache() : null;
+// TURN 59: in `persistence: 'none'` (the PBI retail mount) the cache is not
+// even READ — a client must never open the workshop's last project.
+// PRO does not call `setPersistence`, so this is `true` and nothing moved.
+const cached = persistenceOn() && typeof localStorage !== 'undefined' ? loadCache() : null;
 
 
 // T55 (CLAUDE.md F3): how deep the slope-door sweep is allowed to re-enter

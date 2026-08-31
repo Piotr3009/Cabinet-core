@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { mm } from './constants.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── The top edge of a piece you can pull up (turn 6, CLAUDE.md F3/F4) ───
 //
@@ -43,6 +44,9 @@ export default function EdgeHandle({
   position, width, depth, thickness, colour, active = false, title,
   onPointerDown, onDoubleClick,
 }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const [hover, setHover] = useState(false);
   const lit = active || hover;
 

@@ -265,6 +265,13 @@ test('F4.4 · every interior row goes in through the STORE\'s own add', () => {
   const store = S();
   for (const row of A.INTERIOR_ROWS) {
     if (row.id === 'watch' || row.id === 'shoe') continue;   // the exclusion has its own test
+    // ─── AMENDED BY T61 F4 ────────────────────────────────────────────────
+    // The OVERLAY stack has an exclusion of its own and it is the store's:
+    // `addOverlayDrawers` DELETES the internal stack it replaces (*"T41-F3:
+    // choosing overlay clears the internal stack"*). Adding both in one loop
+    // and then asserting both exist would be asserting something the shared
+    // core has never done. It has its own test below.
+    if (row.id === 'overlay') continue;
     row.add(store, unitId);
   }
   const counts = A.interiorCounts(S().units[0]);
@@ -272,6 +279,32 @@ test('F4.4 · every interior row goes in through the STORE\'s own add', () => {
   assert.ok(counts.shelves >= 1, 'no shelves');
   assert.ok(counts.drawers >= 1, 'no drawers');
   assert.ok(counts.pulldown_rail >= 1, 'no pull-down rail');
+  // T61 F4: the four that joined the list.
+  assert.ok(counts.partition >= 1, 'no vertical divider');
+  assert.ok(counts.trouser >= 1, 'no trouser pull-out');
+  assert.ok(counts.tie_rack >= 1, 'no tie rack');
+});
+
+// ─── ADDED BY T61 F4 ────────────────────────────────────────────────────────
+test('F4.4 · the overlay stack REPLACES the drawers inside — the store\'s own law', () => {
+  const unitId = fresh();
+  A.setSpace({ wallMm: 3000, ceilingMm: 2600 });
+  A.setWardrobeSize(unitId, { width: 1200 });
+  const store = S();
+
+  const drawers = A.INTERIOR_ROWS.find((r) => r.id === 'drawers');
+  const overlay = A.INTERIOR_ROWS.find((r) => r.id === 'overlay');
+  drawers.add(store, unitId);
+  assert.ok(A.interiorCounts(S().units[0]).drawers >= 1, 'the internal stack was not made');
+
+  overlay.add(store, unitId);
+  const after = A.interiorCounts(S().units[0]);
+  assert.ok(after.overlay >= 1, 'the overlay stack was not made');
+  assert.equal(after.drawers, 0, 'the internal stack survived the overlay one');
+
+  // …and the room SAYS so before the press rather than after it, which is the
+  // difference between a law and a surprise.
+  assert.match(A.interiorNotes(S().units[0]).drawers, /replace the overlay stack/);
 });
 
 test('F4.4 · the pull-down\'s refusal is decided by the STORE, not by retail', () => {

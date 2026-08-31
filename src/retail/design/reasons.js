@@ -80,6 +80,52 @@ export const REASONS = {
   /** PREDICATE: `addHangerRail` returned null — one rail per column (T32 F4). */
   railAlreadyThere: 'There is already a rail in this column.',
 
+  /**
+   * T61 F4 · PREDICATE: `projectStore.addWardrobeKit` refuses a second of the
+   * same kind in the same opening — `if (items.some((i) => i.kind === kind &&
+   * zoneOf(i) === wantZone)) return null;` — and answers in a bare null. PRO's
+   * own after-the-press wording is `AddItems.onAddKit`'s *"That column already
+   * has a …"*; these are the same words said BEFORE the press, in the client's
+   * half of the vocabulary.
+   */
+  kitAlreadyThere: (what) => `There is already a ${what} in this column.`,
+
+  /**
+   * T61 F3 · PREDICATE: `adapter.topBoxesOn(hostId).length` — the store's own
+   * `params.rides_on` link, read back. NOT a refusal: T53 made one main carry
+   * several boxes side by side, and `addUnit`'s rider branch refuses in its own
+   * words when the span runs out. This is the note that says where the next one
+   * will go, so a client is not surprised by it.
+   */
+  topBoxGoesBeside: 'One is already on this wardrobe. Another goes beside it.',
+
+  /**
+   * T61 F3 · PREDICATE: `engine/roomFit.js riderBornHeight`, which cuts a box
+   * to the headroom left over its host rather than letting it stand through
+   * the ceiling (T50, *"dlaczego pozwala system dodawać top box powyżej
+   * rozmiaru pokoju?"*). NOT a refusal — nobody typed that height, so trimming
+   * it is not the app overruling anybody — but it is a thing the client should
+   * be told before they wonder why the number stopped.
+   */
+  topBoxStopsAtTheCeiling: 'The box stops at the ceiling — the room decides.',
+
+  /**
+   * T61 F4 · PREDICATE: `projectStore.addOverlayDrawers`, which cuts a FIXED
+   * shelf above the stack and shortens the doors onto it — *"fronty na szafie,
+   * drzwi powyżej szuflad"* (T40 F3b). NOT a refusal: it is what the row does,
+   * said before it is pressed.
+   */
+  overlayIsOutside: 'The fronts sit outside the carcass, with a fixed shelf above them '
+    + 'and the doors starting on it.',
+
+  /**
+   * T61 F4 · PREDICATE: `projectStore.setPartitionX` answering
+   * `{ blocked: true }` — its `max < min` case, which is *"a divider you could
+   * not get a hand between is not a bay"* with no room left on either side.
+   */
+  partitionPinned: 'There is no room to move it: the dividers either side of it are '
+    + 'already as close as they go.',
+
   /** PREDICATE: a hinge the engine has FORCED — `meta.hingeForced` under a slope (T46/T55). */
   hingeForcedBySlope: 'Opens from the slope — the rake decides this door’s hand.',
 

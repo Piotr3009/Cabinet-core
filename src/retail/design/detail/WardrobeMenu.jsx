@@ -1,7 +1,12 @@
+import { useState } from 'react';
 import Chip from '../../ui/Chip.jsx';
-import { ChipRow, Field, Said, Slider } from '../controls.jsx';
+import Button from '../../ui/Button.jsx';
+import {
+  ChipRow, Field, Said, Slider,
+} from '../controls.jsx';
 import Duty from './Duty.jsx';
 import * as A from '../adapter.js';
+import { REASONS } from '../reasons.js';
 
 // ─── T60 F3.1 · THE WARDROBE ───────────────────────────────────────────────
 //
@@ -25,9 +30,73 @@ import * as A from '../adapter.js';
 // no-dead-control law forbids exactly as much as a control that does nothing.
 // They are two acts here, and the engine keeps them apart.
 
-export default function WardrobeMenu({
-  unitId, unit, project, designName, onRename, onBack, onDone,
+// ─── T61 F3 · …AND THE TOP BOX, WHICH IS THE SAME FAMILY ──────────────────
+//
+// The owner asked where a top box gets added; his answer: *"4 add top"* — a
+// button on the selected wardrobe. It is here and in LAYOUT, and both press the
+// same `A.addTopBox`, which is `addUnit('WARDROBE_TOP', { near: host })` — the
+// call PRO's own library tile makes, with the host named.
+//
+// A PLACED BOX OPENS THIS MENU, not one of its own: `engine/types.js` gives it
+// `family: 'wardrobe'`, its boards answer `elementKind` as a wardrobe's do, and
+// `MENU_FOR_KIND` therefore already routed it here before this turn. What it
+// gets is the smaller set the spec names — width, height and REMOVE — because
+// everything else about a box is DERIVED and typing it would be a lie: the
+// depth is its host's (`settleRiders` re-writes it on every mutation), the
+// plinth is not a thing a box has, and the fronts and carcass are the project's.
+
+function TopBoxMenu({
+  unitId, unit, onBack, onDone, onRemoved,
 }) {
+  const b = A.unitBounds(unitId);
+  const size = unit?.params || {};
+  const said = A.unitWarnings(unitId);
+  if (!b) return null;
+
+  return (
+    <Duty title="TOP BOX" onBack={onBack} onDone={onDone}>
+      <Field label="WIDTH">
+        <Slider
+          testid="topbox-width"
+          min={b.width.min}
+          max={b.width.max}
+          step={10}
+          value={Math.round(size.width || 0)}
+          onChange={(v) => A.setUnitSize(unitId, { width: v })}
+        />
+      </Field>
+
+      <Field label="HEIGHT" note={REASONS.topBoxStopsAtTheCeiling}>
+        <Slider
+          testid="topbox-height"
+          min={b.height.min}
+          max={b.height.max}
+          step={10}
+          value={Math.round(size.height || 0)}
+          onChange={(v) => A.setUnitSize(unitId, { height: v })}
+        />
+      </Field>
+
+      <div className="pbi-duty-actions">
+        <Button
+          kind="secondary"
+          data-testid="topbox-remove"
+          onClick={() => { A.removeUnit(unitId); onRemoved?.(); }}
+        >
+          REMOVE
+        </Button>
+      </div>
+
+      {said.map((s) => <Said key={s} testid="topbox-said">{s}</Said>)}
+    </Duty>
+  );
+}
+
+export default function WardrobeMenu({
+  unitId, unit, project, designName, onRename, onBack, onDone, onRemoved,
+}) {
+  const [said2, setSaid2] = useState('');
+  const topBoxReason = A.topBoxRefusal(unitId);
   const b = A.unitBounds(unitId);
   const size = unit?.params || {};
   const bays = A.bayCount(unitId);
@@ -40,6 +109,13 @@ export default function WardrobeMenu({
   const said = A.unitWarnings(unitId);
 
   if (!b) return null;
+  // A BOX IS ITS OWN THING, and it is this component because it is the same
+  // family. Placed AFTER the hooks above, so the hook count never changes
+  // between a wardrobe and a box — the same law `chrome.js` states for its
+  // guards, and the same reason.
+  if (A.isTopBox(unit)) {
+    return <TopBoxMenu unitId={unitId} unit={unit} onBack={onBack} onDone={onDone} onRemoved={onRemoved} />;
+  }
 
   const swatch = (sw, chosen, onPick) => (
     <Chip key={sw.id} title={sw.label} selected={chosen === sw.finishId} onClick={() => onPick(sw.id)}>
@@ -139,6 +215,27 @@ export default function WardrobeMenu({
           </Field>
         </>
       ) : null}
+
+      {/* T61 F3 · *"4 add top"*. Greyed with the ROOM's own sentence, read from
+          the very predicate `addUnit` would have refused with — no silent
+          clamp, and no second reading of the ceiling. */}
+      <Field label="TOP BOX" note={A.topBoxesOn(unitId).length ? REASONS.topBoxGoesBeside : ''}>
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            data-testid="wardrobe-add-top-box"
+            disabled={Boolean(topBoxReason)}
+            title={topBoxReason || 'Add a top box on this wardrobe'}
+            onClick={() => setSaid2(A.addTopBox(unitId).said)}
+          >
+            ADD TOP BOX
+          </Button>
+        </div>
+        {topBoxReason ? (
+          <span className="pbi-chip-reason" data-testid="wardrobe-top-box-reason">{topBoxReason}</span>
+        ) : null}
+        {said2 ? <Said testid="wardrobe-top-box-said">{said2}</Said> : null}
+      </Field>
 
       <Field label="NAME">
         <input

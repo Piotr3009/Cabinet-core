@@ -565,6 +565,16 @@ export function addBesidePlus(point) {
 // passes no `params` at all, because `profile.wardrobe.topBox.defaults` is
 // already what `defaultParamsFor` applies.
 
+/**
+ * THE UNIT A SELECTION IS ABOUT.
+ *
+ * T61 F3: `Detail` handed every menu the OPTIONS column's wardrobe, which was
+ * the same unit as the selection's for as long as there was one wardrobe. A top
+ * box is a unit of its own, and a menu opened on it would have been editing the
+ * cabinet underneath — so the router asks for the selection's own unit now.
+ */
+export const unitById = (unitId) => unitOf(unitId);
+
 /** Is this unit a rider — a box standing on something? The engine's own test. */
 export const isTopBox = (unit) => Boolean(unit && getUnitType(unit.type)?.ridesOn);
 
@@ -909,14 +919,99 @@ export const lightingOn = (project) => Boolean(project?.design?.lighting?.on);
  * `addDrawers`', the watch drawer's fixed height is `addWatchDrawer`'s, and
  * the pull-down is `addWardrobeKit('pulldown_rail')`.
  */
+// ─── TURN 61 (CLAUDE.md F4): THE FULL ROW SET, 1:1 WITH PRO ────────────────
+//
+// The owner: *"dowozimy dla klientow musi bcy wszystko"*. So retail's six rows
+// become PRO's TEN — the same rows, in the same order, with the same
+// availability predicates and the same reasons.
+//
+// ─── WHERE "PRO's LIST" IS READ FROM, AND WHERE IT IS NOT ──────────────────
+//
+// NOT from `profile.itemsByContext`. That list looks like the answer and is
+// not: the filter that consumed it in `components/AddItems.jsx` has been
+// COMMENTED OUT since the 19.08 chat-fix (*"the list must be ALWAYS fully
+// expanded"*), so `offered` is computed and never read. It also disagrees with
+// what PRO draws — it names neither `shoe_box` (which left it at T54-F7) nor
+// `watch_drawer`, and PRO renders both.
+//
+// What actually decides is AddItems' own `kinds` array filtered by
+// `k.families`: an entry that names its families is drawn inside them and
+// nowhere else, which is why `cargo` and `bins` are ABSENT on a wardrobe rather
+// than greyed (T50 F9, the owner's *"w ogóle nie ma sensu"*). Ten rows survive
+// that filter, and `pro` below names each one of them.
+//
+// `test/turn61-f4-the-interior.test.js` READS BOTH LISTS and diffs them, so the
+// day somebody adds an eleventh row to PRO, this file fails rather than drifts.
+
 export const INTERIOR_ROWS = [
-  { id: 'hanger', menu: 'rail', name: 'Hanging rail', add: (s, u) => s.addHangerRail(u, {}) },
-  { id: 'shelves', menu: 'shelf', name: 'Shelves', add: (s, u) => s.addShelves(u, 1) },
-  { id: 'drawers', menu: 'drawers', name: 'Drawers', add: (s, u) => s.addDrawers(u, 3) },
-  { id: 'shoe', menu: 'shoe', name: 'Shoe drawer', add: (s, u) => s.addShoeDrawer(u) },
-  { id: 'watch', menu: 'watch', name: 'Watch drawer', add: (s, u) => s.addWatchDrawer(u) },
-  { id: 'pulldown_rail', menu: 'pulldown', name: 'Pull-down rail', add: (s, u) => s.addWardrobeKit(u, 'pulldown_rail') },
+  {
+    id: 'drawers', pro: 'drawers', menu: 'drawers', name: 'Drawers',
+    add: (s, u) => s.addDrawers(u, 3),
+  },
+  {
+    id: 'overlay', pro: 'overlay_drawers', menu: 'overlay', name: 'Overlay drawers',
+    add: (s, u) => s.addOverlayDrawers(u, 3, P().wardrobe.drawers.frontHeight),
+  },
+  {
+    id: 'watch', pro: 'watch_drawer', menu: 'watch', name: 'Watch drawer',
+    add: (s, u) => s.addWatchDrawer(u),
+  },
+  {
+    id: 'shelves', pro: 'shelves', menu: 'shelf', name: 'Shelves',
+    add: (s, u) => s.addShelves(u, 1),
+  },
+  {
+    id: 'shoe', pro: 'shoe_box', menu: 'shoe', name: 'Shoe drawer',
+    add: (s, u) => s.addShoeDrawer(u),
+  },
+  {
+    id: 'partition', pro: 'partition', menu: 'partition', name: 'Vertical divider',
+    // ONE TRACK, and this line is the whole of it — see `addFlushPartition`.
+    add: (s, u) => addFlushPartition(u),
+  },
+  {
+    id: 'hanger', pro: 'hanger', menu: 'rail', name: 'Hanging rail',
+    add: (s, u) => s.addHangerRail(u, {}),
+  },
+  {
+    id: 'pulldown_rail', pro: 'pulldown', menu: 'pulldown', name: 'Pull-down rail',
+    add: (s, u) => s.addWardrobeKit(u, 'pulldown_rail'),
+  },
+  {
+    id: 'trouser', pro: 'trouser', menu: 'trouser', name: 'Trouser pull-out',
+    add: (s, u) => s.addWardrobeKit(u, 'trouser'),
+  },
+  {
+    id: 'tie_rack', pro: 'tie_rack', menu: 'tie_rack', name: 'Tie rack',
+    add: (s, u) => s.addWardrobeKit(u, 'tie_rack'),
+  },
 ];
+
+/**
+ * ─── ONE PATH ADDS A DIVIDER, AND THIS IS IT ───────────────────────────────
+ *
+ * The BAYS chips and the INTERIOR row are two doors onto the same act, and
+ * before this function they would have been two ACTS: `addPartition` sets a
+ * divider back 20 mm — right for a shelf divider, invisible to the door law —
+ * and `setBayCount` has always flattened that to 0 so the division is a
+ * division of the FRONT as well. A bare `addPartition` from a new row would
+ * have made dividers the BAYS chip could not see, and the two controls would
+ * have disagreed about the same wardrobe.
+ *
+ * So both call this. The answer to *"how many code paths decide what may be
+ * added here"* has to be one, and for the divider this is where it is one.
+ */
+export function addFlushPartition(unitId) {
+  const before = itemsOf(unitId).filter((i) => i.kind === 'partition').length;
+  const id = S().addPartition(unitId);
+  const parts = itemsOf(unitId).filter((i) => i.kind === 'partition');
+  if (parts.length === before) return null;      // the engine ran out of room
+  for (const part of parts) {
+    if (Number(part.front_mm) !== 0) S().updateItem(unitId, part.id, { front_mm: 0 });
+  }
+  S().centrePartitions(unitId);
+  return id;
+}
 
 /** How many of each row the wardrobe currently holds — read off the unit. */
 export function interiorCounts(unit) {
@@ -929,6 +1024,13 @@ export function interiorCounts(unit) {
     shoe: drawers.filter((i) => i.variant === 'shoe').length,
     watch: drawers.filter((i) => i.watch_insert === true).length,
     pulldown_rail: items.filter((i) => i.kind === 'pulldown_rail').length,
+    // T61 F4 · the four that joined. An overlay drawer's kind is
+    // `overlay_drawer` and not `drawer` — the exact fault `engine/drawerRef.js`
+    // documents, and the reason the row above cannot count it.
+    overlay: items.filter((i) => i.kind === 'overlay_drawer').length,
+    partition: items.filter((i) => i.kind === 'partition').length,
+    trouser: items.filter((i) => i.kind === 'trouser').length,
+    tie_rack: items.filter((i) => i.kind === 'tie_rack').length,
   };
 }
 
@@ -945,11 +1047,62 @@ export function interiorCounts(unit) {
 export function interiorRefusals(unitId, unit) {
   const store = S();
   const counts = interiorCounts(unit);
+  const items = unit?.params?.sections?.[0]?.items || [];
   const underSlope = Boolean(store.unitUnderSlope?.(unitId));
+  const zones = (store.zonesOf?.(unitId) || []).length;
   return {
     pulldown_rail: underSlope ? REASONS.pulldownUnderSlope : '',
-    watch: counts.shoe > 0 ? REASONS.watchWithShoe : '',
+    watch: counts.shoe > 0 ? REASONS.watchWithShoe
+    // ─── T61 F4 · PRO's OWN PRECONDITION, WHICH RETAIL DID NOT HAVE ───────
+    // PRO greys this row while there is no stack (*"add the drawers first"*).
+    // Retail offered ADD and swallowed the store's refusal, which is the
+    // standing law broken in the quietest possible way: a control that acts
+    // and reports nothing. The SENTENCE is the store's own, verbatim from
+    // `projectStore.addWatchDrawer`, not a retail paraphrase of PRO's label.
+      : (counts.drawers + counts.shoe === 0 ? WATCH_NEEDS_A_STACK : ''),
     shoe: counts.watch > 0 ? REASONS.shoeWithWatch : '',
+    // A DIVIDER, by `addPartition`'s own gate — the same predicate the BAYS
+    // chips are refused by, asked one bay further along.
+    partition: bayRefusal(unitId, bayCount(unitId) + 1),
+    // ONE RAIL PER COLUMN is the store's own refusal (`addHangerRail` answers
+    // null). PRO greys it with `already fitted` when there is no column left to
+    // ask about; the words are `reasons.js`'s, named against that predicate.
+    hanger: counts.hanger > 0 && zones <= 1 ? REASONS.railAlreadyThere : '',
+    // ONE OF EACH BOUGHT MECHANISM PER OPENING (`addWardrobeKit` refuses a
+    // second of the same kind in the same zone and answers null).
+    trouser: counts.trouser > 0 && zones <= 1 ? REASONS.kitAlreadyThere('trouser pull-out') : '',
+    tie_rack: counts.tie_rack > 0 && zones <= 1 ? REASONS.kitAlreadyThere('tie rack') : '',
+  };
+}
+
+/**
+ * THE STORE'S OWN SENTENCE, verbatim.
+ *
+ * `projectStore.addWatchDrawer` refuses an empty stack with exactly this, and
+ * the row is greyed with it BEFORE the press rather than after — same words,
+ * one reading. It is a constant here so a test can hold the two together; the
+ * words are not retail's and must never be edited.
+ */
+const WATCH_NEEDS_A_STACK = 'Add the drawers first — the watch drawer goes on top of a stack.';
+
+/**
+ * THE NOTE beside a row — a true thing about it that is not a refusal.
+ *
+ * The overlay stack is the one that needs one: `addOverlayDrawers` DELETES the
+ * internal stack it replaces (*"T41-F3: choosing overlay clears the internal
+ * stack it replaces"*), so the two drawer rows are mutually exclusive by
+ * construction and nothing said so. PRO does not say it either; it is the
+ * store's own behaviour, stated rather than discovered.
+ */
+export function interiorNotes(unit) {
+  const counts = interiorCounts(unit);
+  return {
+    overlay: counts.drawers > 0
+      ? 'Overlay fronts replace the drawers inside — the stack is rebuilt outside the carcass.'
+      : '',
+    drawers: counts.overlay > 0
+      ? 'Drawers inside replace the overlay stack — the fronts come off.'
+      : '',
   };
 }
 
@@ -959,6 +1112,8 @@ export function interiorRefusals(unitId, unit) {
  * store's message queue, and this is how the design room reads it back rather
  * than writing its own version of the same sentence.
  */
+export const messageCount = () => (useUiStore.getState().messages || []).length;
+
 export function lastEngineWord() {
   const messages = useUiStore.getState().messages || [];
   const last = messages.length ? messages[messages.length - 1] : null;
@@ -1024,7 +1179,15 @@ export const MENU_FOR_KIND = Object.freeze({
   drawer: 'drawers',
   shelf: 'shelf',
   'fixed-shelf': 'shelf',
-  partition: 'wardrobe',
+  // ─── T61 F4 · RE-POINTED, AND SAID OUT LOUD ──────────────────────────────
+  // T60 sent a divider to the WARDROBE menu, with the carcass, on turn 13's
+  // verdict that *"clicking a cabinet must select the CABINET"*. That verdict
+  // is about the CARCASS — a side, a top, a plinth — and a divider is not
+  // carcass: it is an interior item a client ADDS, from a row that now exists,
+  // and F4's standing law is that every addable row has its own Duty menu. So
+  // clicking a divider opens the divider, and the carcass keys below are
+  // untouched.
+  partition: 'partition',
   side: 'wardrobe',
   top: 'wardrobe',
   bottom: 'wardrobe',
@@ -1037,9 +1200,29 @@ export const MENU_FOR_KIND = Object.freeze({
   spurs: 'wardrobe',
 });
 
-/** Every menu retail has. The nine of F3, in the brief's own order. */
+/**
+ * T61 F4 · WHICH MENU A BOUGHT MECHANISM OPENS.
+ *
+ * The engine files all three under one key — `engine/cabinet.js
+ * WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail']` — and they are
+ * not panels, so `MENU_FOR_KIND` (which is keyed on `elementKind`) cannot carry
+ * them. This is the same table for the same job, on the other route.
+ */
+export const KIT_MENUS = Object.freeze({
+  pulldown_rail: 'pulldown',
+  trouser: 'trouser',
+  tie_rack: 'tie_rack',
+});
+
+/**
+ * Every menu retail has: T60's nine in the brief's own order, and T61 F4's four
+ * after them — one for each row the INTERIOR list grew, because *"an element
+ * with no menu is not clickable"* and a row that adds something unclickable is
+ * a row that adds nothing a client can then change.
+ */
 export const MENUS = Object.freeze([
   'wardrobe', 'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'pulldown', 'lighting',
+  'overlay', 'partition', 'trouser', 'tie_rack',
 ]);
 
 /**
@@ -1079,11 +1262,20 @@ export function resolveSelection(selected) {
     };
   }
 
+  // T61 F4: all THREE bought mechanisms, not just the pull-down. The engine
+  // publishes them under one key (`WARDROBE_KIT_KINDS`) and this branch was
+  // narrowed to one of them, so a trouser pull-out and a tie rack resolved to
+  // nothing and had no menu — which is why they could not be added.
   const kit = (result?.assemblies?.wardrobeKits || []).find((k) => k.id === ref) || null;
-  if (kit && kit.kind === 'pulldown_rail') {
+  if (kit && KIT_MENUS[kit.kind]) {
     return {
-      menu: 'pulldown', kind: 'pulldown_rail', unitId, ref, panel: null,
-      item: items.find((i) => i.id === ref) || null, label: kit.label || 'Pull-down rail',
+      menu: KIT_MENUS[kit.kind],
+      kind: kit.kind,
+      unitId,
+      ref,
+      panel: null,
+      item: items.find((i) => i.id === ref) || null,
+      label: kit.label || kitWords(kit.kind).label,
     };
   }
 
@@ -1101,7 +1293,22 @@ export function resolveSelection(selected) {
   // A drawer — box or front — carries `meta.drawer`, the stack index the
   // engine cut it at. Which KIND of drawer it is, is the item's own word.
   if (menu === 'drawers') {
-    item = drawerAt(unitId, panel.meta?.drawer, panel.meta?.zone ?? null);
+    // ─── T61 F4 · THE PANEL'S OWN ITEM, FIRST ───────────────────────────────
+    // `engine/drawerRef.js drawerRefOf` is the shared core's answer to exactly
+    // this and its header is the fault report: an OVERLAY drawer's kind is
+    // `overlay_drawer`, so a lookup that filters `kind === 'drawer'` comes back
+    // empty and the menu opens on nothing. The engine STAMPS the item on the
+    // panel (`meta.itemId`); read that before counting anything.
+    const stamped = panel.meta?.itemId != null
+      ? items.find((i) => i.id === panel.meta.itemId) || null
+      : null;
+    if (stamped?.kind === 'overlay_drawer') {
+      return {
+        menu: 'overlay', kind: 'overlay_drawer', unitId, ref, panel, item: stamped,
+        label: 'Overlay drawer',
+      };
+    }
+    item = stamped || drawerAt(unitId, panel.meta?.drawer, panel.meta?.zone ?? null);
     if (item?.watch_insert === true || String(item?.variant || '') === 'watch') menu = 'watch';
     else if (String(item?.variant || '') === 'shoe') menu = 'shoe';
   }
@@ -1130,9 +1337,8 @@ export function drawerAt(unitId, index, zone = null) {
   return drawers.find((d) => Math.trunc(Number(d.index)) === n) || drawers[n - 1] || null;
 }
 
-/** Retail's own word for a selection, for the STAGE HINT (F4). */
-export function selectionName(sel) {
-  if (!sel) return '';
+/** The engine's own word for the PIECE — T60's law, unchanged. */
+function elementWord(sel) {
   if (sel.menu === 'watch') return 'Watch drawer';
   if (sel.menu === 'shoe') return 'Shoe drawer';
   // A leaf says which one: the engine hangs it left or right and the panel
@@ -1143,6 +1349,43 @@ export function selectionName(sel) {
     if (hand === 'R') return 'Right door';
   }
   return sel.label || '';
+}
+
+/**
+ * WHICH PIECE OF FURNITURE the selection is in, when there is more than one to
+ * confuse it with.
+ *
+ * ─── T61 · F2's NAMING LAW, AND F3's ─────────────────────────────────────
+ *
+ * *"STAGE HINT extends T60's naming law: 'WALL 2 WARDROBE — LEFT DOOR'."*
+ *
+ * It says NOTHING while there is one wardrobe, which is every project t59 and
+ * t60 shipped and every one T60's own test reads — a hint that says "Wall 1
+ * wardrobe" in a room with one wardrobe is noise, and the owner's *"6 bez
+ * zmian"* was about exactly that kind of addition. The prefix appears when the
+ * client has actually put furniture on two walls, and for a TOP BOX always,
+ * because a box and the cabinet under it are two things in the same place.
+ */
+function placeName(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return '';
+  if (isTopBox(unit)) return 'Top box';
+  const walls = new Set(S().units
+    .filter((u) => !u.params?.rides_on)
+    .map((u) => u.position?.wall ?? 0));
+  if (walls.size < 2) return '';
+  return `Wall ${(unit.position?.wall ?? 0) + 1} wardrobe`;
+}
+
+/** Retail's own word for a selection, for the STAGE HINT (F4, extended T61). */
+export function selectionName(sel) {
+  if (!sel) return '';
+  const word = elementWord(sel);
+  const place = placeName(sel.unitId);
+  if (!place) return word;
+  // The cabinet itself, opened from LAYOUT, is named once and not twice.
+  if (!word || word === 'Wardrobe') return place;
+  return `${place} — ${word}`;
 }
 
 // ─── 1 · THE WARDROBE ──────────────────────────────────────────────────────
@@ -1194,17 +1437,12 @@ export function setBayCount(unitId, want) {
   guard = 12;
   while (parts().length < n - 1 && guard > 0) {
     guard -= 1;
-    const before = parts().length;
-    S().addPartition(unitId);
-    if (parts().length === before) break;         // the engine ran out of room
+    // T61 F4: `addFlushPartition` — the SAME call the INTERIOR row makes. It
+    // carries the flush law (a divider set back 20 mm is invisible to the door
+    // law) and the re-centring, so the chips and the row cannot produce two
+    // different kinds of divider in the same wardrobe.
+    if (!addFlushPartition(unitId)) break;        // the engine ran out of room
   }
-  // FLUSH, so the division is a division of the FRONT and not only of the
-  // interior — `addPartition` sets a divider back 20 mm, which is right for a
-  // shelf divider and invisible to the door law.
-  for (const part of parts()) {
-    if (Number(part.front_mm) !== 0) S().updateItem(unitId, part.id, { front_mm: 0 });
-  }
-  S().centrePartitions(unitId);
   return bayCount(unitId);
 }
 
@@ -1539,6 +1777,124 @@ export function setTopInsert(unitId, id) {
   return said();
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F4 · THE FOUR NEW ELEMENTS' OWN ANSWERS
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// *"Every addable row needs its Duty menu (an element with no menu is not
+// clickable — T60 law). New menus are written in retail language reading the
+// same store fields PRO's editors read… Keep each menu as small as PRO's own
+// controls for that element — no invented fields."*
+//
+// So each block below names the PRO surface it was read from, and what that
+// surface has that a CLIENT is not shown, and why.
+
+/**
+ * THE DIVIDER'S ONE MOVE — where it stands across the width.
+ *
+ * PRO's editor is `ElementProperties` on kind `partition`, whose fields are
+ * `['position-x', 'partition-slot', 'partition-drill-face', 'setback',
+ * 'thickness', 'material']`. Five of those six are the WORKSHOP's: which
+ * carcass board it is cut from, which face the machine bores, its setback, its
+ * thickness and its material are the joiner's decisions and Petros' iron rule
+ * keeps them out of a client's room. What is left is where it stands, which is
+ * the only thing a client has an opinion about — and PRO's own list surface
+ * (`RightPanel`'s "Vertical partitions") offers exactly that plus EQUAL BAYS.
+ *
+ * The ends are `projectStore.setPartitionX`'s own clamp, read back off the
+ * answer it gives: one minimum gap clear of the sides and of the divider next
+ * to it, *"a divider you could not get a hand between is not a bay"*.
+ */
+export function partitionTravel(unitId, itemId) {
+  const unit = unitOf(unitId);
+  const item = itemsOf(unitId).find((i) => i.id === itemId) || null;
+  if (!unit || !item) return null;
+  const p = P();
+  const G = unit.params.board_t ?? p.board.thickness;
+  const W = Number(unit.params.width) || 0;
+  const gap = p.editor.minShelfGap;
+  const self = Number(item.x_mm) || G;
+  const others = itemsOf(unitId)
+    .filter((i) => i.kind === 'partition' && i.id !== itemId && Number.isFinite(i.x_mm))
+    .map((i) => Number(i.x_mm))
+    .sort((a, b) => a - b);
+  const below = [...others].filter((x) => x <= self).pop();
+  const above = others.find((x) => x > self);
+  const min = Math.round(Math.max(G + gap, below != null ? below + gap : G + gap));
+  const max = Math.round(Math.min(W - 2 * G - gap, above != null ? above - gap : W - 2 * G - gap));
+  return {
+    value: Math.round(self), min, max, blocked: max < min,
+  };
+}
+
+/** Move it. The store clamps and re-measures the bay doors; the answer is its. */
+export const setPartitionPos = (unitId, itemId, mm) => S().setPartitionX(unitId, itemId, mm);
+
+/** EQUAL BAYS — PRO's own button (`RightPanel`, `data-centre-partitions`). */
+export const centrePartitions = (unitId) => S().centrePartitions(unitId);
+
+/**
+ * THE OVERLAY STACK, read the way `engine/drawerRef.js` says it must be.
+ *
+ * Its own fault report, verbatim: *"The old lookup found the item by `kind ===
+ * 'drawer'`. An OVERLAY drawer's kind is `overlay_drawer`, so on an overlay
+ * stack the filter came back empty… A control that lies about having worked."*
+ * `drawerStack` filters `kind === 'drawer'` and would have answered zero here.
+ */
+export function overlayStack(unitId) {
+  const drawers = itemsOf(unitId).filter((i) => i.kind === 'overlay_drawer')
+    .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
+  return { drawers, count: drawers.length };
+}
+
+/** The stack's count and its front height — PRO's add form is these two, and
+ *  nothing else (*"everything the stack implies is the engine's law and not a
+ *  question a joiner should have to answer twice"*). */
+export const setOverlayStackCount = (unitId, n) => S().addOverlayDrawers(
+  unitId, Math.max(1, Math.trunc(Number(n) || 1)), overlayFrontHeight(unitId),
+);
+
+export function overlayFrontHeight(unitId) {
+  const { drawers } = overlayStack(unitId);
+  const said = Number(drawers[0]?.front_h ?? drawers[0]?.height);
+  return Number.isFinite(said) && said > 0 ? Math.round(said) : P().wardrobe.drawers.frontHeight;
+}
+
+export const setOverlayFronts = (unitId, mm) => S().addOverlayDrawers(
+  unitId, Math.max(1, overlayStack(unitId).count || 1), Math.round(Number(mm) || 0),
+);
+
+/**
+ * A BOUGHT MECHANISM — the trouser pull-out and the tie rack.
+ *
+ * PRO HAS NO EDITOR FOR EITHER. Its whole surface is one Add button (plus a
+ * column chip when the cabinet is divided): they are not panels, `elementKind`
+ * has no case for them, `KitBodies` draws them with no click handler, there is
+ * no `kit` modal, and `RightPanel` has no remove for them. Said plainly in the
+ * PR body: retail's menu is AHEAD of PRO here, exactly as `PulldownMenu`'s
+ * REMOVE already is.
+ *
+ * So the menu is the honest minimum — what was bought, said in the shared
+ * core's own terms, and REMOVE. No position field: the profile's `posMm` is a
+ * workshop default the pull-down alone exposes, and inventing a second one
+ * would be the invented field the rule forbids.
+ */
+export function kitWords(kind) {
+  const spec = P().wardrobeAccessories?.kits?.[kind] || null;
+  if (!spec) return { label: '', said: '' };
+  return {
+    label: String(spec.label || kind),
+    // The engine's own account of what a kit IS, kept in the words PRO uses to
+    // a joiner and trimmed of the machine half a client has no use for.
+    said: 'Bought, never cut — it is ordered to the opening it goes in, and '
+      + 'nothing is drilled for it.',
+  };
+}
+
+export function kitItem(unitId, kind) {
+  return itemsOf(unitId).find((i) => i.kind === kind) || null;
+}
+
 /** GLASS TOP: the engine refuses in words when there is no shelf over it. */
 export function glassRefusal(unitId) {
   const { drawers, top } = drawerStack(unitId);
@@ -1864,10 +2220,26 @@ export function selectionForMenu(menu, unitId) {
       menu, kind: 'hanger', unitId, ref: item.id, panel: null, item, label: 'Hanging rail',
     } : null;
   }
-  if (menu === 'pulldown') {
-    const item = pick((i) => i.kind === 'pulldown_rail');
+  // T61 F4: the three bought mechanisms, one branch — see `KIT_MENUS`.
+  const kitKind = Object.keys(KIT_MENUS).find((k) => KIT_MENUS[k] === menu);
+  if (kitKind) {
+    const item = pick((i) => i.kind === kitKind);
     return item ? {
-      menu, kind: 'pulldown_rail', unitId, ref: item.id, panel: null, item, label: 'Pull-down rail',
+      menu, kind: kitKind, unitId, ref: item.id, panel: null, item, label: kitWords(kitKind).label,
+    } : null;
+  }
+  if (menu === 'partition') {
+    const item = pick((i) => i.kind === 'partition');
+    if (!item) return null;
+    const panel = (result?.panels || []).find((p) => p.meta?.itemId === item.id) || null;
+    return {
+      menu, kind: 'partition', unitId, ref: panel?.id || item.id, panel, item, label: 'Vertical divider',
+    };
+  }
+  if (menu === 'overlay') {
+    const item = pick((i) => i.kind === 'overlay_drawer');
+    return item ? {
+      menu, kind: 'overlay_drawer', unitId, ref: item.id, panel: null, item, label: 'Overlay drawer',
     } : null;
   }
   if (menu === 'shelf') {

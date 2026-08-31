@@ -476,11 +476,41 @@ function FrontsPanel({ design }) {
 }
 
 /* ─── 4 · INTERIOR ────────────────────────────────────────────────────────── */
+//
+// ─── T61 F4 · THE FULL ROW SET ─────────────────────────────────────────────
+//
+// The owner: *"dowozimy dla klientow musi bcy wszystko"*. Six rows become
+// PRO's ten, in PRO's order, with PRO's predicates — the list itself is
+// `adapter.INTERIOR_ROWS` and a test reads it against `components/AddItems.jsx`
+// so the two cannot drift.
+//
+// THE STANDING LAW HOLDS: no dead control. A row either works or is greyed with
+// the sentence its own predicate earns — the STORE's where the store has one
+// (the watch drawer's *"Add the drawers first"*), `reasons.js`'s where the
+// shared core answers only in a boolean, and never a wording retail invented
+// for something the engine already says.
+//
+// AND THE CLICK LISTENS. t59 pressed ADD and threw the answer away: a store
+// that refused reported nothing, which is the same fault as a dead control with
+// better manners. The answer is read and shown, in the third voice.
 function InteriorPanel({ unit, onOpenDetail }) {
   const store = useProjectStore.getState();
+  const [said, setSaid] = useState('');
   const counts = A.interiorCounts(unit);
   const refusals = A.interiorRefusals(unit.id, unit);
-  const [, force] = [0, () => {}];
+  const notes = A.interiorNotes(unit);
+
+  // WHAT THE SHARED CORE SAID ABOUT **THIS** PRESS. Only a message the queue
+  // GREW belongs to this click; the tail of the queue holds every notice the
+  // session has raised. The same measurement `adapter.setTopInsert` makes.
+  const add = (row) => {
+    const before = A.messageCount();
+    const answer = row.add(store, unit.id);
+    // Three shapes of answer, all the shared core's: a verdict object, a bare
+    // null (the refusal is in the queue, or there was none), or an id.
+    const direct = answer && typeof answer === 'object' ? String(answer.error || '') : '';
+    setSaid(direct || (A.messageCount() > before ? A.lastEngineWord() : ''));
+  };
 
   return (
     <Panel title="INTERIOR">
@@ -488,6 +518,7 @@ function InteriorPanel({ unit, onOpenDetail }) {
         {A.INTERIOR_ROWS.map((row) => {
           const has = counts[row.id] || 0;
           const reason = refusals[row.id] || '';
+          const note = notes[row.id] || '';
           return (
             <div key={row.id} data-testid={`interior-${row.id}`}>
               <div className="pbi-interior-row">
@@ -514,17 +545,21 @@ function InteriorPanel({ unit, onOpenDetail }) {
                     type="button"
                     className="pbi-link"
                     data-testid={`interior-add-${row.id}`}
-                    onClick={() => { row.add(store, unit.id); force(); }}
+                    onClick={() => add(row)}
                   >
                     ADD
                   </button>
                 )}
               </div>
               {reason ? <span className="pbi-chip-reason">{reason}</span> : null}
+              {!reason && note ? (
+                <span className="pbi-chip-reason" data-testid={`interior-note-${row.id}`}>{note}</span>
+              ) : null}
             </div>
           );
         })}
       </div>
+      {said ? <Said testid="interior-said">{said}</Said> : null}
     </Panel>
   );
 }

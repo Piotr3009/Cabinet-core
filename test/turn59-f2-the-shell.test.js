@@ -242,17 +242,43 @@ test('F3.6 · what the client never sees, is not there', () => {
   // "Cut on our CNC" because the brief's F2.4 says exactly that.
   const bad = [];
 
+  // ─── AMENDED BY T60 F2, ON THE OWNER'S OWN ORDER ────────────────────────
+  //
+  // t59 banned X-ray and the Outlines toggle from the retail tree outright,
+  // and t59 was right to: F3.6 listed them among the things a client never
+  // sees. T60's brief overrules that in the owner's own words —
+  //
+  //   *"nr 4 musi być identyczne jak mamy w PRO, identyczne ma mieć funkcje."*
+  //
+  // — and names them in the bar: *"Show/Hide dimensions · Front dimensions ·
+  // Outlines · X-ray · Hide fronts · Measure …"*. So the two names are allowed
+  // in the TWO files that carry the bar, and nowhere else. Everything else the
+  // ban covered is untouched, and BOM is still banned from the room's own
+  // components — it survives only in `viewTools.js`, which is the list of what
+  // is DELIBERATELY ABSENT behind `RETAIL_SHOW_WORKSHOP_TOOLS`.
+  const BAR = new Set(['src/retail/design/ViewBar.jsx', 'src/retail/design/viewTools.js']);
   const NEVER = [/MOCK DATA MODE/, /__BUILD_STAMP__/, /\bxray\b/i, /showOutlines/, /CheckPanel/];
   for (const file of filesUnder(RETAIL)) {
+    const rel = relative(ROOT, file);
+    if (BAR.has(rel)) continue;
     const text = code(file);
-    for (const re of NEVER) if (re.test(text)) bad.push(`${relative(ROOT, file)}: ${re}`);
+    for (const re of NEVER) if (re.test(text)) bad.push(`${rel}: ${re}`);
   }
 
   const NOT_IN_THE_ROOM = [/\bBOM\b/, /\bDXF\b/, /drilling/i, /article number/i];
   for (const file of filesUnder(join(RETAIL, 'design'))) {
+    const rel = relative(ROOT, file);
+    if (rel === 'src/retail/design/viewTools.js') continue;
     const text = code(file);
-    for (const re of NOT_IN_THE_ROOM) if (re.test(text)) bad.push(`${relative(ROOT, file)}: ${re}`);
+    for (const re of NOT_IN_THE_ROOM) if (re.test(text)) bad.push(`${rel}: ${re}`);
   }
+
+  // …and the exception is kept HONEST: the two bar files may name the two
+  // lenses, and the client-facing string is still never the workshop's.
+  const bar = code(join(ROOT, 'src/retail/design/viewTools.js'));
+  assert.ok(/RETAIL_SHOW_WORKSHOP_TOOLS/.test(code(join(ROOT, 'src/retail/design/ViewBar.jsx'))),
+    'the workshop tools must be behind the flag, not deleted');
+  assert.ok(/WORKSHOP_TOOLS/.test(bar), 'BOM survives only as the list of what is absent');
 
   assert.deepEqual(bad, [], `a client never sees these:\n  ${bad.join('\n  ')}`);
 });

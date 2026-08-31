@@ -142,24 +142,61 @@ test('F3.6 · the chrome switch defaults to PRO, and PRO never touches it', () =
   }
 });
 
+// ─── AMENDED BY T60 F2 ──────────────────────────────────────────────────────
+//
+// Four of the eleven now ask a CHANNEL instead of the master switch, because
+// PBI's VIEW BAR carries PRO's own dimension, outline and measure entries and
+// a button that flips a flag nothing draws is the dead control the standing
+// law forbids. `chromeOn(part)` falls through to the master switch wherever no
+// channel is set — which is PRO, always — so PRO's behaviour is byte for byte
+// what it was and every one of these guards still reads `if (!true)`.
+//
+// What the test asserts is unchanged in substance: each overlay asks ONE
+// question in its own first line, BEFORE any hook, and returns null on a no.
+const CHANNELLED = {
+  DimLabel: 'dimensions', DimensionChain: 'dimensions', DistanceArrows: 'dimensions', Ruler: 'measure',
+};
+
 test('F3.6 · every PRO overlay asks the switch in its own first line', () => {
   for (const name of GUARDED) {
     const text = readFileSync(join(ROOT, 'src/3d', `${name}.jsx`), 'utf8');
-    assert.match(text, /import \{ proChromeOn \} from '\.\/chrome\.js';/,
-      `${name}.jsx does not import the switch`);
+    const part = CHANNELLED[name] || null;
+    const ask = part ? `chromeOn('${part}')` : 'proChromeOn()';
+    const imported = part
+      ? /import \{ chromeOn \} from '\.\/chrome\.js';/
+      : /import \{ proChromeOn \} from '\.\/chrome\.js';/;
+    assert.match(text, imported, `${name}.jsx does not import the switch`);
     const at = text.search(/^export default function \w+\(/m);
     assert.ok(at >= 0, `${name}.jsx has no default component`);
     // A generous window with the prose taken out: several of these components
     // carry a paragraph of argument inside their own parameter list.
     const head = stripComments(text.slice(at, at + 2600));
-    assert.match(head, /if \(!proChromeOn\(\)\) return null;/,
-      `${name}.jsx does not return null when the chrome is off`);
+    const guard = `if (!${ask}) return null;`;
+    assert.ok(head.includes(guard), `${name}.jsx does not return null when the chrome is off`);
     // BEFORE any hook, so the hook count cannot change between renders.
-    const guardAt = head.indexOf('if (!proChromeOn()) return null;');
+    const guardAt = head.indexOf(guard);
     const firstHook = head.search(/\buse[A-Z]\w*\(/);
     if (firstHook >= 0) {
       assert.ok(guardAt < firstHook, `${name}.jsx guards AFTER a hook — the hook order would change`);
     }
+  }
+});
+
+test('F3.6 · a channel is an override of the switch, and PRO sets none', () => {
+  const chrome = readFileSync(join(ROOT, 'src/3d/chrome.js'), 'utf8');
+  // The fall-through IS the guarantee: with no channel set the answer is the
+  // master switch, which is how PRO cannot tell this file grew.
+  assert.match(chrome, /if \(part !== undefined && parts\.has\(part\)\) return parts\.get\(part\);/);
+  assert.match(chrome, /return on;/);
+  for (const rel of ['src/App.jsx', 'src/main.jsx', 'src/pages/ConfiguratorPage.jsx']) {
+    assert.ok(!/setChromePart|chromeOn/.test(readFileSync(join(ROOT, rel), 'utf8')),
+      `${rel} must know nothing of the channels`);
+  }
+  // …and the retail entry claims exactly the three its bar needs.
+  const entry = readFileSync(join(ROOT, 'src/retail/main-retail.jsx'), 'utf8');
+  for (const part of ['dimensions', 'outlines', 'measure']) {
+    assert.match(entry, new RegExp(`setChromePart\\('${part}', true\\)`),
+      `the retail entry does not claim the ${part} channel`);
   }
 });
 
@@ -174,26 +211,52 @@ test('F3.3 · the stage is the SHARED viewer, not a copy of it', () => {
 
 // ─── 3 · THE FOUR COLUMNS, AND THE CAMERA ──────────────────────────────────
 
+// ─── AMENDED BY T60 F1, ON THE OWNER'S OWN ORDER ────────────────────────────
+//
+// t59 asserted five raw pixel tokens in `tokens.css` and four inline
+// backgrounds in the components. T60 supersedes BOTH halves and the brief says
+// why in the owner's words:
+//
+//   *"nr 2 może być spokojnie 15% węższe"* — the RAIL narrows to 187px, and
+//   *"ludzie mają małe komputery … będzie do dupy widać jak wszystko będzie 25%
+//   większe"* — every dimension in the room is now `calc(<base> × --pbi-scale)`
+//   in `styles/scale.css`, and the components hold a CLASS rather than a colour.
+//
+// The claim is the same claim: four columns, four named tones, the widths the
+// brief names. It is read where those facts now live.
 test('F3 · the columns are the widths and the tones the brief names', () => {
-  const tokens = readFileSync(join(RETAIL, 'styles/tokens.css'), 'utf8');
-  for (const [name, value] of Object.entries({
-    '--pbi-col-categories': '220px',
-    '--pbi-col-options': '320px',
+  const scale = readFileSync(join(RETAIL, 'styles/scale.css'), 'utf8');
+  for (const [name, base] of Object.entries({
+    '--pbi-col-categories': '187px',   // 220 × 0.85 — T60 F1.3
+    '--pbi-col-options': '320px',      // *"nr 3 zostaw jak jest"*
     '--pbi-col-detail': '300px',
-    '--pbi-view-bar-h': '40px',
     '--pbi-header-h-room': '60px',
   })) {
-    assert.match(tokens, new RegExp(`${name}\\s*:\\s*${value}\\s*;`), `${name} is not ${value}`);
+    assert.match(scale, new RegExp(`${name}\\s*:\\s*calc\\(${base} \\* var\\(--pbi-scale\\)\\)`),
+      `${name} is not ${base} × the scale`);
   }
 
-  const tone = (file, want) => {
-    const text = readFileSync(join(RETAIL, 'design', file), 'utf8');
-    assert.match(text, new RegExp(`background:\\s*'var\\(${want}\\)'`), `${file} is not on ${want}`);
+  const room = readFileSync(join(RETAIL, 'styles/room.css'), 'utf8');
+  const tone = (selector, want) => {
+    const at = room.indexOf(`${selector} {`);
+    assert.ok(at >= 0, `${selector} has no rule`);
+    const block = room.slice(at, room.indexOf('}', at));
+    assert.match(block, new RegExp(`background:\\s*var\\(${want}\\)`), `${selector} is not on ${want}`);
   };
-  tone('Categories.jsx', '--pbi-ivory');        // Signature Ivory
-  tone('Options.jsx', '--pbi-soft-ivory');
-  tone('Stage.jsx', '--pbi-porcelain');
-  tone('Detail.jsx', '--pbi-warm-white');
+  tone('.pbi-rail', '--pbi-ivory');        // Signature Ivory
+  tone('.pbi-options', '--pbi-soft-ivory');
+  tone('.pbi-stage', '--pbi-porcelain');
+  tone('.pbi-detail', '--pbi-warm-white');
+
+  // …and the components wear those classes, so the two halves cannot drift.
+  const wears = (file, cls) => assert.match(
+    readFileSync(join(RETAIL, 'design', file), 'utf8'), new RegExp(`className="${cls}"`),
+    `${file} does not wear ${cls}`,
+  );
+  wears('Categories.jsx', 'pbi-rail');
+  wears('Options.jsx', 'pbi-options');
+  wears('Stage.jsx', 'pbi-stage');
+  wears('Detail.jsx', 'pbi-detail');
 });
 
 test('F3.1 · nothing folds open in place — no accordion in the retail tree', () => {
@@ -240,7 +303,11 @@ test('F3.5 · full screen is a LOOKING mode that restores what it left', () => {
   // The columns are NOT unmounted-and-reset; they are simply not rendered, so
   // `active`, `target` and the selection are still there on the way back.
   assert.match(room, /\{!fullScreen \? \(\s*<Categories/);
-  assert.match(room, /if \(fullScreen \|\| !selectedElement\) return;/,
+  // T60: the same guard, one statement longer — a selection made before the
+  // trip into full screen is CLEARED on the way in as well as ignored, so the
+  // detail column cannot come back holding a menu for something the client can
+  // no longer see.
+  assert.match(room, /if \(fullScreen \|\| !selectedElement\) \{ setSelection\(null\); return; \}/,
     'a click in looking mode must select nothing');
   assert.ok(!/setActive\(['"]space['"]\)/.test(room.slice(room.indexOf('setFullScreen'))),
     'nothing may be reset on the way back');

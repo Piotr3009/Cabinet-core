@@ -2,8 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles/tokens.css';
 import './styles/base.css';
+import './styles/scale.css';
+import './styles/room.css';
 import { setPersistence } from '../stores/persistence.js';
-import { setProChrome } from '../3d/chrome.js';
+import { setChromePart, setProChrome } from '../3d/chrome.js';
 import { loadDecors } from './decorPack.js';
 
 // ─── PRIME BESPOKE INTERIORS · THE ENTRY, AND ITS ORDER ────────────────────
@@ -29,6 +31,28 @@ import { loadDecors } from './decorPack.js';
 
 setPersistence('none');
 setProChrome(false);
+
+// ─── T60 F2 · AND THEN THE THREE CHANNELS THE VIEW BAR OWNS ────────────────
+//
+// The owner: *"nr 4 musi być identyczne jak mamy w PRO, identyczne ma mieć
+// funkcje."* PRO's bar carries Show dimensions, Front dimensions, Outlines,
+// X-ray and Measure — and all five draw through components the line above
+// switched off wholesale. Left like that, five buttons would have flipped a
+// store flag and changed nothing on the glass: the DEAD CONTROL the standing
+// law forbids.
+//
+// A channel says only that this application OWNS the overlay. What decides
+// whether it is SHOWING is the store flag it was always gated by
+// (`showDimensions`, `showFrontDimensions`, `showOutlines`, `xray`,
+// `rulerOn`) — every one of which the design room sets to false at boot, so
+// the first frame is exactly the clean stage t59 shipped.
+//
+// Said HERE, beside the master switch, and for the same reason: these are
+// boot-time constants, read by guards that sit before their components' hooks.
+// A value that changed between renders would change a hook count.
+setChromePart('dimensions', true);   // DimLabel · DimensionChain · DistanceArrows
+setChromePart('outlines', true);     // the contour pass — Outlines, and what holds an X-ray together
+setChromePart('measure', true);      // the Ruler
 
 // The EGGER pack, fetched by retail's own loader into the engine's own
 // registry. PRO's `src/lib/decorCatalogue.js` does the same thing and is on

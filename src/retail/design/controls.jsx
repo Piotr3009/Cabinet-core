@@ -1,20 +1,23 @@
 import Chip from '../ui/Chip.jsx';
 
-// ─── THE THREE CONTROLS COLUMN 2 IS MADE OF ────────────────────────────────
+// ─── THE CONTROLS THE DESIGN ROOM IS MADE OF ───────────────────────────────
 //
-// A chip row, a bounded slider and a labelled block. Nothing else — F4b is
-// explicit that a detail is *"chips and one slider at most"*, and the same
-// discipline holds one column to the left. A configurator that grows a fourth
-// control grows a fifth the week after.
+// A chip row, a bounded slider, a stepper and a labelled block. Nothing else —
+// F4b is explicit that a detail is *"chips and one slider at most"*, and the
+// same discipline holds one column to the left. A configurator that grows a
+// fourth control grows a fifth the week after.
+//
+// T60 F1: not one of them writes a pixel any more. Every dimension is a class
+// in `styles/room.css` reading a token from `styles/scale.css`, so a control
+// on a 1280-wide laptop is the same control at 78% and not a control somebody
+// squeezed.
 
 export function Field({ label, children, note }) {
   return (
-    <div style={{ marginBottom: 26 }}>
-      <span className="pbi-label">{label}</span>
+    <div className="pbi-field-block">
+      {label ? <span className="pbi-label">{label}</span> : null}
       {children}
-      {note ? (
-        <p className="pbi-choice" style={{ margin: '8px 0 0' }}>{note}</p>
-      ) : null}
+      {note ? <p className="pbi-choice pbi-field-note">{note}</p> : null}
     </div>
   );
 }
@@ -31,8 +34,21 @@ export function ChipRow({ options, value, onPick, testid }) {
           disabled={Boolean(o.reason)}
           reason={o.reason || ''}
           note={o.note || ''}
+          // The engine's own hint, where there is one — on hover for a mouse
+          // and in the accessible name always. A chip with a DRAWING keeps it
+          // here rather than under the row, where four permanent sentences
+          // would bury the four pictures they describe.
+          title={o.title || o.hint || ''}
           onClick={() => onPick(o.id)}
-        />
+        >
+          {o.draw ? (
+            <span className="pbi-stack">
+              {o.draw}
+              <span>{o.label}</span>
+              {o.sub ? <span className="pbi-choice pbi-chip-sub">{o.sub}</span> : null}
+            </span>
+          ) : null}
+        </Chip>
       ))}
     </div>
   );
@@ -40,12 +56,13 @@ export function ChipRow({ options, value, onPick, testid }) {
 
 /**
  * A slider whose MIN and MAX are the caller's — and the caller got them from
- * `adapter.bounds()`, which got them from the profile. Petros' iron rule
- * (30.08): engine numbers do not enter a UI without the owner's order, so what
- * is shown is the CHOICE in millimetres and never a parameter's name.
+ * the adapter, which got them from the profile or from the store's own answer.
+ * Petros' iron rule (30.08): engine numbers do not enter a UI without the
+ * owner's order, so what is shown is the CHOICE in millimetres and never a
+ * parameter's name.
  */
 export function Slider({
-  min, max, step = 10, value, onChange, unit = 'mm', testid, standardAt = null,
+  min, max, step = 10, value, onChange, unit = 'mm', testid, standardAt = null, disabled = false,
 }) {
   const at = Number(value);
   return (
@@ -57,31 +74,34 @@ export function Slider({
         min={min}
         max={max}
         step={step}
-        value={at}
+        value={Math.max(min, Math.min(max, at))}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
       />
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span className="pbi-ui pbi-ui-light pbi-quiet" style={{ fontSize: 10 }}>{min}</span>
-        <span className="pbi-choice pbi-choice-15" style={{ color: 'var(--pbi-onyx)' }}>
+      <div className="pbi-slider-scale">
+        <span className="pbi-ui pbi-ui-light pbi-quiet pbi-slider-end">{min}</span>
+        <span className="pbi-choice pbi-choice-15 pbi-slider-now">
           {Math.round(at)}
           {' '}
           {unit}
           {standardAt != null && Math.round(at) === Math.round(standardAt) ? ' — standard' : ''}
         </span>
-        <span className="pbi-ui pbi-ui-light pbi-quiet" style={{ fontSize: 10 }}>{max}</span>
+        <span className="pbi-ui pbi-ui-light pbi-quiet pbi-slider-end">{max}</span>
       </div>
     </div>
   );
 }
 
-/** A stepper, for the counts small enough that a slider would be silly. */
-export function Stepper({ value, min, max, onChange, testid }) {
-  const step = (by) => onChange(Math.max(min, Math.min(max, Number(value) + by)));
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }} data-testid={testid}>
-      <button type="button" className="pbi-chip" style={{ minWidth: 42 }} onClick={() => step(-1)}>−</button>
-      <span className="pbi-display pbi-h4" style={{ minWidth: 26, textAlign: 'center' }}>{value}</span>
-      <button type="button" className="pbi-chip" style={{ minWidth: 42 }} onClick={() => step(1)}>+</button>
-    </div>
-  );
+/**
+ * SAID — the control that is not one.
+ *
+ * The standing law: *"a control that cannot act must not be shown as if it
+ * could."* Sometimes the honest answer is not a greyed control at all but a
+ * sentence: a shoe drawer's ramp is fixed law, a shelf pinned between two
+ * dividers has nowhere to go. This is how the room says so — the third voice,
+ * the same one every refusal is written in, and never beside a slider that
+ * would not move.
+ */
+export function Said({ children, testid }) {
+  return <p className="pbi-choice pbi-choice-15 pbi-duty-line" data-testid={testid}>{children}</p>;
 }

@@ -39,3 +39,22 @@ export const RETAIL_HREF = '/retail';
 /** Copy the owner is to write (F6). Marked, never faked. */
 export const OWNER_TO_WRITE = '— owner to write';
 export const OWNER_TO_SUPPLY = 'Hero photograph — owner to supply';
+
+/**
+ * T60 · THE ONE DOUBT, RAISED ONCE AND THEN EXECUTED.
+ *
+ * CLAUDE.md F2 asks the VIEW BAR to be *"identyczne jak mamy w PRO, identyczne
+ * ma mieć funkcje"*. Three of PRO's bar entries are not view tools: BOM is the
+ * workshop's cut list, Check is its eleven pre-production rules, and CNC is
+ * its machine output. A client reading any of them is reading the owner's
+ * costs and the workshop's method, which is not what "identical functions"
+ * was asked for.
+ *
+ * So they are ABSENT — and absent behind ONE word, here, rather than behind a
+ * decision buried in a component. `src/retail/design/viewTools.js` carries
+ * their labels and tooltips ready to render; this constant is the only thing
+ * standing between them and the bar.
+ *
+ * OWNER TO CONFIRM (placeholder list, morning report).
+ */
+export const RETAIL_SHOW_WORKSHOP_TOOLS = false;

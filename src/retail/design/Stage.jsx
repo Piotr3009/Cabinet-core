@@ -57,10 +57,7 @@ export default function Stage({ onHandle }) {
   }, [onHandle]);
 
   return (
-    <div
-      data-testid="stage-canvas"
-      style={{ flex: '1 1 auto', minHeight: 0, background: 'var(--pbi-porcelain)', position: 'relative' }}
-    >
+    <div className="pbi-stage" data-testid="stage-canvas">
       <Scene onRenderReady={onRenderReady} />
     </div>
   );

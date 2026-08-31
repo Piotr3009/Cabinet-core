@@ -2,7 +2,7 @@ import { useState } from 'react';
 import GoldLine from '../ui/GoldLine.jsx';
 import { PRICE_FOOTNOTE, PRICE_ON_REQUEST } from '../config.js';
 
-// ─── F3.1 · COLUMN 1, THE PSW LAW ──────────────────────────────────────────
+// ─── F3.1 · COLUMN 2, THE RAIL — THE PSW LAW ───────────────────────────────
 //
 // The owner, verbatim: *"jak w PSW, lewa i prawa strona menu — rozwijana
 // będzie za długa i się będzie mieszać."*
@@ -14,6 +14,13 @@ import { PRICE_FOOTNOTE, PRICE_ON_REQUEST } from '../config.js';
 //
 // The active row is PSW's `cat-btn.active` in Ivory: a Soft Ivory ground, a
 // 2-px Champagne bar on the left edge, the label in Deep Gold.
+//
+// ─── T60 F1.3 · AND IT IS 15% NARROWER ─────────────────────────────────────
+//
+// The owner, after the first live look: *"nr 2 może być spokojnie 15%
+// węższe."* Its base is 187px (220 × 0.85) in `styles/scale.css`, and like
+// every other dimension in the room it is that base times `--pbi-scale`. Not
+// one measurement is written in this file any more.
 
 export const CATEGORIES = [
   { id: 'space', label: 'YOUR SPACE' },
@@ -27,54 +34,27 @@ export const CATEGORIES = [
 export default function Categories({ active, onPick, hints, onReset }) {
   const [asked, setAsked] = useState(false);
   return (
-    <aside
-      data-testid="column-categories"
-      style={{
-        width: 'var(--pbi-col-categories)',
-        minWidth: 'var(--pbi-col-categories)',
-        background: 'var(--pbi-ivory)',
-        borderRight: '1px solid var(--pbi-stone-line)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflowY: 'auto',
-      }}
-    >
-      <div style={{ padding: '22px 20px 6px' }}>
+    <aside data-testid="column-categories" className="pbi-rail">
+      <div className="pbi-rail-head">
         <h2 className="pbi-display pbi-h4">CONFIGURE</h2>
-        <GoldLine margin="12px 0 4px" />
+        <GoldLine />
       </div>
 
-      <nav style={{ flex: '1 1 auto' }}>
+      <nav className="pbi-rail-nav">
         {CATEGORIES.map((c) => {
           const on = active === c.id;
           return (
             <button
               key={c.id}
               type="button"
+              className={`pbi-rail-row${on ? ' is-on' : ''}`}
               data-testid={`cat-${c.id}`}
               aria-current={on ? 'true' : undefined}
               onClick={() => onPick(c.id)}
-              style={{
-                display: 'block',
-                width: '100%',
-                textAlign: 'left',
-                padding: '14px 20px 14px 18px',
-                border: 0,
-                borderLeft: `2px solid ${on ? 'var(--pbi-champagne)' : 'transparent'}`,
-                background: on ? 'var(--pbi-soft-ivory)' : 'transparent',
-                cursor: 'pointer',
-              }}
             >
-              <span
-                className="pbi-ui"
-                style={{ color: on ? 'var(--pbi-deep-gold)' : 'var(--pbi-onyx)', display: 'block' }}
-              >
-                {c.label}
-              </span>
+              <span className="pbi-ui pbi-rail-label">{c.label}</span>
               {/* PSW's cat-hint: what is chosen, without opening anything. */}
-              <span className="pbi-choice" style={{ display: 'block', marginTop: 4 }}>
-                {hints?.[c.id] || '—'}
-              </span>
+              <span className="pbi-choice pbi-rail-hint">{hints?.[c.id] || '—'}</span>
             </button>
           );
         })}
@@ -84,18 +64,11 @@ export default function Categories({ active, onPick, hints, onReset }) {
           F5.1: *"Every price slot reads 'Price on request' in display serif —
           never '£0', never '£ —', never a number."* There is no retail price
           law yet; a zero would be a lie and a dash would be a shrug. */}
-      <div style={{ padding: '20px', borderTop: '1px solid var(--pbi-stone-line)' }}>
+      <div className="pbi-rail-foot">
         <div className="pbi-ui pbi-quiet">TOTAL</div>
-        <div
-          className="pbi-display pbi-h4"
-          data-testid="total-price"
-          style={{ marginTop: 8, textTransform: 'none', letterSpacing: '0.04em' }}
-        >
-          {PRICE_ON_REQUEST}
-        </div>
-        <div className="pbi-ui pbi-ui-light pbi-quiet" style={{ marginTop: 10, fontSize: 10 }}>
-          {PRICE_FOOTNOTE}
-        </div>
+        <div className="pbi-display pbi-total" data-testid="total-price">{PRICE_ON_REQUEST}</div>
+        <div className="pbi-ui pbi-ui-light pbi-quiet pbi-total-foot">{PRICE_FOOTNOTE}</div>
+
         {/* ─── THE CONFIRM, IN THE DESIGN SYSTEM ────────────────────────────
             This is the one button on the page that can lose an hour of
             somebody's evening — the estimate is memory-only until they save it
@@ -104,23 +77,19 @@ export default function Categories({ active, onPick, hints, onReset }) {
             clearing those out for turns. Two presses, the second one labelled
             with what it does, and a way back. */}
         {asked ? (
-          <div style={{ marginTop: 18 }}>
-            <span className="pbi-choice" style={{ display: 'block', marginBottom: 10 }}>
-              Everything you have chosen for this wardrobe will go.
-            </span>
+          <div className="pbi-rail-ask">
+            <span className="pbi-choice">Everything you have chosen for this wardrobe will go.</span>
             <button
               type="button"
-              className="pbi-link"
+              className="pbi-link pbi-rail-ask-yes"
               data-testid="reset-confirm"
-              style={{ color: 'var(--pbi-onyx)' }}
               onClick={() => { setAsked(false); onReset(); }}
             >
               YES, START AGAIN
             </button>
             <button
               type="button"
-              className="pbi-link"
-              style={{ marginLeft: 16 }}
+              className="pbi-link pbi-rail-ask-no"
               onClick={() => setAsked(false)}
             >
               KEEP IT
@@ -129,9 +98,8 @@ export default function Categories({ active, onPick, hints, onReset }) {
         ) : (
           <button
             type="button"
-            className="pbi-link"
+            className="pbi-link pbi-rail-reset"
             data-testid="reset-design"
-            style={{ marginTop: 18 }}
             onClick={() => setAsked(true)}
           >
             RESET DESIGN

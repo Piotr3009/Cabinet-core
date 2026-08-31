@@ -3,7 +3,7 @@ import { mm } from './constants.js';
 import DimensionChain from './DimensionChain.jsx';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { roomDistances, distanceLabel } from '../engine/dimensions.js';
-import { proChromeOn } from './chrome.js';
+import { chromeOn } from './chrome.js';
 
 // ─── Distance arrows, drawn the way a drawing office draws them ───
 //
@@ -75,7 +75,9 @@ export default function DistanceArrows({
 }) {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
-  if (!proChromeOn()) return null;
+  // T60 F2 · the CHANNEL, not the master switch: PBI's VIEW BAR owns this
+  // overlay, PRO sets no channel and reads `on` exactly as it always did.
+  if (!chromeOn('dimensions')) return null;
   const cfg = profile.dimensions;
   // Turn 11 (CLAUDE.md F1.5): the fallback is the profile's own DEFAULT INK,
   // which lives in appearance.dimensions and is red from this turn on. `cfg` is

@@ -59,4 +59,79 @@ export const REASONS = {
 
   /** PREDICATE: a hinge the engine has FORCED — `meta.hingeForced` under a slope (T46/T55). */
   hingeForcedBySlope: 'Opens from the slope — the rake decides this door’s hand.',
+
+  // ─── T60 F3 · THE NINE MENUS' OWN REFUSALS ──────────────────────────────
+  //
+  // Same law as the ten above and it is worth saying again, because this turn
+  // added nine surfaces that could each have invented one: every entry below
+  // is reached ONLY after a shared-core predicate has already said no, and the
+  // predicate is named on the line above it. Where the shared core writes a
+  // whole sentence of its own — the room's refusal, the store's clamp notice,
+  // the watch pane's missing shelf, a J that is too short to cut — that
+  // sentence is shown VERBATIM and nothing here is used.
+
+  /** PREDICATE: two face leaves and no `meta.bay` — `engine/cabinet.js` hangs
+   *  `-FL` left and `-FR` right by construction, so there is nothing to set. */
+  pairHangsBothWays: 'A pair opens from the middle — one leaf each way, always.',
+
+  /** PREDICATE: `addPartition`'s own gate — the widest clear bay must be at
+   *  least one board plus two minimum shelf gaps, or a divider has nowhere to
+   *  stand. The store answers `null`; these are the words for that null. */
+  noRoomForABay: ({ need }) => `There is no room for another divider — each bay needs at `
+    + `least ${need} mm of clear opening.`,
+
+  /** PREDICATE: `meta.jpull.reason === 'too-short'` on the leaf's own panel. */
+  jrunTooShort: 'This leaf is too short for a J to be cut in its edge.',
+
+  /** PREDICATE: `isPinnedShelf(shelf, items)` — T58-F3.1. A NOTE, not a refusal:
+   *  the board still moves (T37-F2 lifts the lock for a shelf carrying a rod);
+   *  what it does not do is take part in the ladder when a bay is centred. */
+  shelfPinned: 'Centring leaves this board where it is — the others space themselves around it.',
+
+  /** PREDICATE: `panel.meta.railItemId` — the rod hangs on this board, and
+   *  `removeItem` takes the rod with it (projectStore, T37-F2). Silent in the
+   *  shared core; said here because a client should not lose a rail by surprise. */
+  shelfCarriesTheRail: 'The rail hangs from this board — taking the board out takes the rail with it.',
+
+  /** PREDICATE: `isShelfLocked(item)` — a fixed shelf is screwed in (T8/T37). */
+  shelfLocked: 'This shelf is fixed — it is screwed in rather than sitting on pins.',
+
+  /** PREDICATE: `shelfBounds` came back with no travel — max at or below min. */
+  shelfNoRoom: 'There is no room to move it: what is above and below it is already as close as it goes.',
+
+  /** PREDICATE: `railMountOf(item) === RAIL_MOUNT.SHELF` — T41, one drag, one truth. */
+  railFollowsItsShelf: 'This rod hangs under its own shelf, so the shelf’s height is its height. '
+    + 'Put it on its own to move it by itself.',
+
+  /** PREDICATE: `store.watchShelfAbove(unitId, index)` returned nothing (T53 F8d). */
+  glassNeedsShelf: 'The glass needs a shelf directly above it — add one, and the opening is cut in it.',
+
+  /** PREDICATE: a `watch_insert` or `variant:'shoe'` drawer in the stack. Both
+   *  heights are the engine's own and the owner declared both slider-less
+   *  (`watchDrawerFixedHeight`; the shoe's 80 mm side), while the store's one
+   *  stack-wide write does not exclude them. */
+  stackHasAFixedDrawer: 'One of these drawers is a fitted one — its height is set by what goes in it, '
+    + 'so the stack is left as it is.',
+
+  /** PREDICATE: a `watch_insert` drawer in a stack whose COUNT is about to
+   *  change. `addDrawers` rebuilds the stack and carries only id/kind/index/
+   *  mount/zone/variant/height_mm across — `watch_insert`, `watch_layout`,
+   *  `watch_shelf_glass` and `watch_finish` are dropped from every survivor.
+   *  A NOTE rather than a refusal: the client may still change the count, and
+   *  is told what it costs first. Named in the morning report as a shared-core
+   *  gap. */
+  countRebuildsTheStack: 'Changing the count rebuilds the stack — the watch tray is set again '
+    + 'from scratch.',
+
+  /** PREDICATE: none — this is a DESCRIPTION, and every number in it is read
+   *  from `engine/shoeInsert.js shoeInsertSpec(profile)`. T58 F2 fixed the ramp
+   *  and the owner fixed the count himself (*"po prostu daj 2 zawsze"*), so
+   *  there is nothing to choose and the honest control is a sentence. */
+  shoeIsFixed: ({ dividers, lanes }) => `A leaning ramp with ${dividers} dividers across it — `
+    + `${lanes} lanes, so a pair stands in each and lifts straight out. The ramp, the dividers `
+    + 'and the drawer’s own height are the workshop’s, and there is nothing here to choose.',
+
+  /** NOT a refusal: the pane's LED is cut with its opening and has no switch
+   *  (T53 F8c, the owner's own "z automatycznym dodaniem leda dookoła szyby"). */
+  paneIsLit: 'The pane is lit from beneath — the ring is cut into the same shelf as the opening.',
 };

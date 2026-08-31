@@ -3971,6 +3971,342 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   /** Every unit that is ALREADY bigger than its room — Check's own list (F3). */
   roomFitFaults: () => roomFitFaults(get().units, get().project.room, getCabinetProfile()),
 
+  // ─── TURN 60 (CLAUDE.md F3) · THREE QUESTIONS, ASKED WITHOUT MOVING ───────
+  //
+  // The three selectors below are ADDITIVE and READ-ONLY. Nothing in PRO calls
+  // any of them; PRO's own setters are byte for byte what they were.
+  //
+  // They exist because of one law in T60's brief, and it is the owner's:
+  //
+  //   *"Nie może być możliwości nieprzesunięcia się półki czy coś innego — to
+  //   głupie."*  …and, standing above it: *"a control that cannot act must not
+  //   be shown as if it could. Either it acts, or it is disabled WITH the
+  //   engine's own one-line reason."*
+  //
+  // A slider obeys that law only if its ENDS are the engine's. Until now the
+  // only way to learn where a shelf may go was to MOVE it — `setShelfPos`
+  // returns its bounds, but it returns them by writing — and a component that
+  // has to perform an edit to find out whether an edit is allowed is a
+  // component that will guess instead. So: the same derivation, the same
+  // helpers, the same profile numbers, with the `set()` taken out.
+  //
+  // Retail reaches them through `src/retail/design/adapter.js` and nowhere else.
+
+  /**
+   * WHERE THIS SHELF MAY GO — the band it lives in, narrowed by its
+   * neighbours, and whether it may go anywhere at all.
+   *
+   * Every line is `setShelfPos`'s, in `setShelfPos`'s order, so the slider's
+   * ends and the setter's clamp cannot disagree: `shelfBandFor` for the
+   * segment (a split divider ends this board's column exactly as the top panel
+   * does — T37-F4a), `otherShelfPositions` for the neighbours, `shelfBounds`
+   * for the minimum gap between two boards.
+   *
+   *   locked   this board is screwed in or a joiner said it stays (T8/T37) —
+   *            `isShelfLocked`, LIFTED for a shelf that carries a rod, exactly
+   *            as `setShelfPos` lifts it. This is the setter's own refusal.
+   *   pinned   T58-F3.1: something is hung on it, so `redistributeShelvesInBay`
+   *            treats it as a BOUNDARY the others centre around. It is a
+   *            CENTRING law and NOT a movement one — a rail-carrying shelf is
+   *            dragged like any other (T37-F2), and `blocked` must not claim
+   *            otherwise or the slider and the setter would disagree about the
+   *            one board the owner's example is about.
+   *   blocked  the slider cannot act: the setter refuses (locked), or the band
+   *            leaves no travel at all.
+   *
+   * @returns {{pos:number,min:number,max:number,below:number,above:number,
+   *            step:number,bay:number|null,locked:boolean,pinned:boolean,
+   *            blocked:boolean}|null}
+   */
+  shelfTravelFor: (unitId, itemId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const items = unit.params.sections?.[0]?.items || [];
+    const item = items.find((i) => i.id === itemId && i.kind === 'shelf');
+    if (!item) return null;
+    const profile = getCabinetProfile();
+    const carriesRail = items.some((i) => i.kind === 'hanger' && railShelfIdOf(i) === itemId);
+    const locked = isShelfLocked(item) && !carriesRail;
+    const pinned = isPinnedShelf(item, items);
+    const at = Number.isFinite(item.pos_mm) ? item.pos_mm : null;
+    const band = shelfBandFor(unit, profile, null, null, at);
+    const bounds = shelfBounds(
+      { pos: at ?? band.min, others: otherShelfPositions(unit, itemId), band },
+      profile,
+    );
+    return {
+      pos: at ?? bounds.min,
+      ...bounds,
+      step: profile.editor.mmStep,
+      bay: zoneIndexOf(item.zone),
+      locked,
+      pinned,
+      blocked: locked || bounds.max <= bounds.min,
+    };
+  },
+
+  /**
+   * HOW HIGH THIS ROD MAY HANG, as an offset above its own support — which is
+   * the frame `pos_mm` has meant on a hanger item since T35 and the frame both
+   * `setRailHeight` and `moveRail` write in.
+   *
+   * The ends are `clampRailAxis`'s own, translated into that frame: the rod
+   * has a radius and nothing stands on it, so it may not touch the base and it
+   * must leave `wardrobe.rail.topClearance` under the top. The SUPPORT is read
+   * back off the engine's published answer (`assemblies.rail.y` minus the
+   * offset that produced it) rather than re-resolved here, so a rod hanging
+   * from a shelf and a rod hanging from the base are the same arithmetic.
+   *
+   *   mounted  'shelf' — its height is its SHELF's and the rod follows (T41);
+   *            'alone' — this rod owns its own height.
+   *
+   * @returns {{offset:number,min:number,max:number,step:number,support:number,
+   *            axis:number,mounted:string,blocked:boolean}|null}
+   */
+  railTravelFor: (unitId, itemId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const item = (unit.params.sections?.[0]?.items || [])
+      .find((i) => i.id === itemId && i.kind === 'hanger');
+    if (!item) return null;
+    const profile = getCabinetProfile();
+    const result = get().unitResult(unitId);
+    // BY ITEM ID, and the column rods FIRST. `assemblies.rail` is the unit-wide
+    // rod and it is always there when one exists — taking it before the lookup
+    // handed a column rod the unit-wide rod's support, axis and ceiling, which
+    // is three wrong numbers on one slider.
+    const rail = (result?.assemblies?.columnRails || []).find((r) => r.itemId === itemId)
+      || (result?.assemblies?.rail?.itemId === itemId ? result.assemblies.rail : null);
+    const offset = Math.max(0, Number(item.pos_mm) || 0);
+    // The board this rod hangs from, and the underside of the top it must stay
+    // under — BOTH read off the engine's own published answer rather than
+    // re-resolved here, because `resolveRailAxis` is what decided which board
+    // is the support and this must not be allowed a second opinion.
+    const G = unit.params.board_t ?? profile.board.thickness;
+    const support = rail && Number.isFinite(Number(rail.support))
+      ? Math.max(0, Number(rail.support)) : G;
+    const radius = profile.hardware.rail.diameter / 2;
+    const ceiling = rail && Number.isFinite(Number(rail.ceiling))
+      ? Number(rail.ceiling) : ((Number(unit.params.height) || 0) - G);
+    const axisMin = G + radius;
+    const axisMax = ceiling - profile.wardrobe.rail.topClearance - radius;
+    const min = Math.max(0, Math.round(axisMin - support));
+    const max = Math.max(min, Math.round(axisMax - support));
+    return {
+      offset,
+      min,
+      max,
+      step: profile.editor.mmStep,
+      support,
+      axis: rail ? Number(rail.y) : support + offset,
+      mounted: railMountOf(item),
+      blocked: max <= min || railMountOf(item) === RAIL_MOUNT.SHELF,
+    };
+  },
+
+  /**
+   * HOW BIG THIS WARDROBE MAY BE, where it stands, in the room it stands in.
+   *
+   * The three clamps `updateUnitParams` runs, run with the same inputs and no
+   * write: `clampUnitWidth` against the wall, its infill margin and every
+   * neighbour; `clampUnitDepth` against the room and anything on another wall;
+   * `clampUnitHeight` against the ceiling and this type's own minimum. Asked
+   * with an impossible number so what comes back is the LIMIT rather than a
+   * clamped answer.
+   *
+   * @returns {{width:{min:number,max:number,by:string|null},
+   *            depth:{min:number,max:number,by:string|null},
+   *            height:{min:number,max:number,by:string|null},step:number}|null}
+   */
+  /**
+   * ─── TURN 60 (CLAUDE.md F3.5) · WITH A SHELF, OR ON ITS OWN ──────────────
+   *
+   * ADDITIVE, and PRO calls it nowhere: PRO chooses a rod's mount when the rod
+   * is ADDED (`addHangerRail({ withShelf })`, T40 F6) and never again, so there
+   * has never been a way to change one's mind.
+   *
+   * Retail's menu needs exactly that, and it must not be `updateItem({ mount })`
+   * — which is what the word alone would suggest and which is wrong twice: on a
+   * rod born alone it writes a mount with no shelf behind it and nothing moves,
+   * and on an assembly it ORPHANS the fix shelf the rod was hanging from, which
+   * stays in the cut list carrying nothing.
+   *
+   * So this is the store's own add-time law, run again: take the rod out (which
+   * takes its shelf with it, T37-F2) and put one back with the other answer, at
+   * the height it was at. One action, two writes, and not a line of new
+   * arithmetic anywhere.
+   *
+   * @returns {string|null} the new rail item's id, or null if it could not be
+   *          re-placed (in which case nothing was removed)
+   */
+  setRailMount: (unitId, itemId, mount) => runBatch(() => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const item = (unit.params.sections?.[0]?.items || [])
+      .find((i) => i.id === itemId && i.kind === 'hanger');
+    if (!item) return null;
+    const want = String(mount) === RAIL_MOUNT.ALONE ? RAIL_MOUNT.ALONE : RAIL_MOUNT.SHELF;
+    if (railMountOf(item) === want) return itemId;
+    const zone = item.zone == null || !Number.isFinite(Number(item.zone))
+      ? null : Math.trunc(Number(item.zone));
+    const keep = {
+      materialId: item.material_id || null,
+      materialLabel: item.material_label || null,
+      zone,
+      withShelf: want === RAIL_MOUNT.SHELF,
+    };
+    // …and the SHELF goes with it. `removeItem` takes a rod out when its shelf
+    // is removed (T37-F2) but not the other way round, so taking the rod alone
+    // would leave a fix shelf standing in the cut list carrying nothing.
+    const shelfId = railShelfIdOf(item);
+    get().removeItem(unitId, itemId);
+    if (shelfId && railMountOf(item) === RAIL_MOUNT.SHELF) get().removeItem(unitId, shelfId);
+    return get().addHangerRail(unitId, keep);
+  }),
+
+  /**
+   * ─── TURN 60 (CLAUDE.md F3.4) · WHAT GOES IN AN EXISTING DRAWER ──────────
+   *
+   * ADDITIVE, and PRO calls it nowhere: PRO changes a stack's variant by
+   * rebuilding it (`addDrawers(unitId, n, mount, height, zone, variant)`), so
+   * it has never needed to convert ONE drawer that already exists.
+   *
+   * Named FITTING rather than variant deliberately: `AddItems.jsx` already has
+   * a local `setDrawerVariant` of its own — a `useState` for the kind a NEW
+   * stack is about to be built as — and two different things under one name in
+   * one repository is how the next reader loses an hour.
+   *
+   * Retail's TOP DRAWER INSERT chips do exactly that, and `updateItem({
+   * variant })` alone is not enough: a shoe drawer's height is DERIVED — the
+   * law's own 80 mm side plus `frontToSideDelta` — and `addShoeDrawer` stamps
+   * it at birth. Writing the variant and leaving a 200 mm front behind gives a
+   * drawer whose box side the engine forces to 80 while its front stays at 200,
+   * which is a leggy front over a short box and nobody's decision.
+   *
+   * The watch⇄shoe exclusion is the store's own, said in the store's own words
+   * — the same sentence `addShoeDrawer` and `setDrawerWatchInsert` both notify.
+   *
+   * @returns {{ok:boolean, error?:string}}
+   */
+  setDrawerFitting: (unitId, itemId, variant) => runBatch(() => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, error: 'No such cabinet.' };
+    const items = unit.params.sections?.[0]?.items || [];
+    const item = items.find((i) => i.id === itemId && i.kind === 'drawer');
+    if (!item) return { ok: false, error: 'That is not a drawer.' };
+    const want = variant == null ? null : String(variant);
+    const profile = getCabinetProfile();
+    const DR = profile.wardrobe.drawers;
+
+    if (want === 'shoe') {
+      // The same refusal `addShoeDrawer` makes, in the same words, at the same
+      // door — a rule the app applies in one direction only is a rule nobody
+      // can learn.
+      const watchAt = items.find((i) => i.kind === 'drawer'
+        && (i.watch_insert === true || String(i.variant || '') === 'watch') && i.id !== itemId);
+      if (watchAt) {
+        useUiStore.getState().notify(
+          `This wardrobe already has a watch drawer (drawer ${watchAt.index}) — `
+          + 'a wardrobe carries watches or shoes, never both.',
+          'warn',
+        );
+        return { ok: false, error: 'watch already fitted' };
+      }
+      get().updateItem(unitId, itemId, {
+        variant: 'shoe',
+        watch_insert: false,
+        // `addShoeDrawer`'s own derivation, not a second one.
+        height_mm: (Number(DR.shoeSideMm) || 80) + (Number(DR.frontToSideDelta) || 36),
+      });
+      return { ok: true };
+    }
+
+    get().updateItem(unitId, itemId, {
+      variant: want,
+      // Coming OUT of a shoe, the derived height means nothing any more: the
+      // stack's own standard front is what a plain drawer is cut at.
+      ...(String(item.variant || '') === 'shoe' ? { height_mm: DR.frontHeight } : {}),
+    });
+    return { ok: true };
+  }),
+
+  unitSizeBoundsFor: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    const wall = walls[unit.position.wall ?? 0] || walls[0];
+    const others = obstaclesFor(s, unit);
+    const REACH = 1e6;      // bigger than any room; the clamp answers with its own ceiling
+
+    const w = clampUnitWidth({
+      width: REACH,
+      x: unit.position.x_mm,
+      wallWidth: wall.width,
+      others: wallObstacles({
+        wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
+      }),
+      wallMargin: wallMarginOf(s, unit),
+      padRight: footprintPads(unit, unit.params.front_t, profile).right,
+    }, profile);
+
+    const d = clampUnitDepth({
+      depth: REACH,
+      x: unit.position.x_mm,
+      width: unit.params.width,
+      wall,
+      walls,
+      others,
+      backInset: backStandoff(unit, profile),
+    }, profile);
+
+    const h = clampUnitHeight({
+      height: REACH,
+      floorY: floorYOf(unit, unit.params, profile),
+      roomHeight: Number(s.project.room.height) || 0,
+      minHeight: minHeightOf(unit.type, profile),
+    });
+
+    // ─── THE THREE FLOORS, AND WHERE EACH ONE COMES FROM ──────────────────
+    //
+    // The clamps above answer the CEILING of each dimension — that is what
+    // they are for. None of them has a floor, so each floor is named here and
+    // every one of them is a number the PROFILE already holds. Not one is
+    // typed.
+    //
+    //   width   `wardrobe.topBox.minWidth` — the narrowest carcass this
+    //           family is cut at, and never less than the two sides it is
+    //           built from.
+    //   depth   the shallowest runner the workshop stocks plus the allowance
+    //           its box needs (`wardrobe.drawers.depthSteps[0]` +
+    //           `depthAllowance`) — shallower than that and nothing slides.
+    //   height  `clampUnitHeight`'s own, which is `minHeightOf(type)` —
+    //           `wardrobe.minHeight`.
+    const D = profile.wardrobe.drawers;
+    return {
+      width: {
+        min: Math.round(Math.max(profile.board.thickness * 2, profile.wardrobe.topBox.minWidth)),
+        max: Math.round(w.max),
+        by: w.by,
+        from: 'profile.wardrobe.topBox.minWidth / collision.clampUnitWidth',
+      },
+      depth: {
+        min: Math.round((D.depthSteps?.[0] || 0) + (D.depthAllowance || 0)),
+        max: Math.round(d.max),
+        by: d.by,
+        from: 'profile.wardrobe.drawers.depthSteps / collision.clampUnitDepth',
+      },
+      height: {
+        min: Math.round(h.min),
+        max: Math.round(Number.isFinite(h.max) ? h.max : (Number(s.project.room.height) || 0)),
+        by: h.by,
+        from: 'profile.wardrobe.minHeight / collision.clampUnitHeight',
+      },
+      step: profile.editor.mmStep,
+    };
+  },
+
   /**
    * ─── TURN 52 (CLAUDE.md F4): WHAT THE BAR READS ──────────────────────────
    *

@@ -21,8 +21,19 @@ export default function RetailApp() {
   const { path, query } = useHashRoute();
   const inRoom = path === '/design';
 
+  // ─── T60 F1 · THE ROOM'S SCALE IS SCOPED TO THE ROOM ────────────────────
+  //
+  // `.pbi-room` is what `styles/scale.css` hangs every design-room dimension
+  // off, so it goes on the whole page WHILE the room is the route and nowhere
+  // else. The compact header is inside it deliberately — it is the room's own
+  // top edge and shrinks with it — and the marketing pages never see any of
+  // it, which is F1.1's *"the marketing pages keep their own rhythm."*
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div
+      className={inRoom ? 'pbi-room' : undefined}
+      data-room={inRoom ? 'yes' : 'no'}
+      style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
+    >
       <Header path={path} compact={inRoom} />
 
       {inRoom ? <DesignRoom collection={query.collection} /> : null}

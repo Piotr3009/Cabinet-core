@@ -52,7 +52,10 @@ test('F4 — the pane is cut in the PARTITION, the LED ring is born, and no refu
   const rebate = (board.cnc.pockets || []).find((k) => k.layer === WATCH_LAYERS.rebate);
   assert.ok(opening && rebate, 'the opening and its rebate are cut in the partition');
   assert.equal((r.hardware || []).filter((h) => h.role === 'drawer_glass').length, 1, 'the pane is ordered');
-  assert.equal((r.hardware || []).filter((h) => h.role === 'led_strip').length, 1, 'the LED ring is born');
+  // T58b (F2, licensed): the RING's BOM line is replaced by the strip the
+  // glass births at the back of this very board — one length, one law.
+  assert.equal((r.hardware || []).filter((h) => h.role === 'led_strip').length, 0);
+  assert.ok(pane.strip && pane.strip.kind === 'shelf', 'the LED strip is born');
   assert.equal((r.warnings || []).find((w) => w.code === 'watch_glass_needs_shelf'), undefined,
     'warning ABSENT — the partition IS the shelf here');
 });

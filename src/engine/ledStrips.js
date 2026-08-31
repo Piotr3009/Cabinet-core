@@ -194,17 +194,36 @@ export function stripsForUnit({
 }) {
   const lighting = resolveLighting(design, profile);
   if (!lighting.on) return [];                    // T35 F10: the one state
-  const mine = lighting.items.filter((it) => it.unitId === unit?.id);
-  if (!mine.length) return [];
-
   const spec = lightingSpec(profile);
+  const hex = lighting.temperatureEntry?.hex || '#fff3e0';
+
+  // ─── TURN 58b (CLAUDE.md F2): THE STRIPS THE GLASS BROUGHT WITH IT ────────
+  //
+  // A watch pane births its own strip beside its aperture, at the BACK of the
+  // shelf (`engine/cabinet.js`, the T53 block). It is an ORDINARY record —
+  // `kind: 'shelf'`, a box, a length — so it needs no special case anywhere
+  // downstream: `LedStrips.jsx` draws it as it draws every strip and
+  // `lightingBomLines` counts its metres like any other. All this adds is the
+  // two fields that belong to the PROJECT rather than to the cabinet: the
+  // colour temperature and its hex, which every strip below is stamped with
+  // in exactly the same way.
+  //
+  // A unit with no pane answers an empty list, so a project without one is
+  // byte for byte what it always was — including the early return below.
+  const born = (result?.assemblies?.watchGlass || [])
+    .map((pane) => pane?.strip)
+    .filter((strip) => strip && strip.box)
+    .map((strip) => ({ ...strip, temperature: lighting.temperature, hex }));
+
+  const mine = lighting.items.filter((it) => it.unitId === unit?.id);
+  if (!mine.length && !born.length) return [];
+
   const {
     W, H, D, G,
   } = interior(unit);
   const t = spec.strip.thickness;
   const sw = spec.strip.width;
-  const hex = lighting.temperatureEntry?.hex || '#fff3e0';
-  const out = [];
+  const out = [...born];
 
   // ─── T55 (CLAUDE.md F7): THE LED LEARNS THE RAKE — LEVEL RUNS ONLY ───────
   // The owner: *"skos bez LED … pionowych i poziomych łatwiej."*

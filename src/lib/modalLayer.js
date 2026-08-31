@@ -174,6 +174,11 @@ export const MODAL_KINDS = Object.freeze({
   // and it still opens beside the button that asked for it, which is what the
   // shell does with an anchor whatever the column says.
   'draw-room': { about: 'project', label: 'Draw room' },
+  // ─── TURN 58b (CLAUDE.md F3.2) ─────────────────────────────────────────
+  // *"jak już to pasek albo pokrętło… jedynie wysokość — jeden pasek."*  One
+  // slider, about ONE LEAF's J run, opened by clicking the J strip itself —
+  // so it is an OBJECT window and the guard holds it to an anchor.
+  'jpull-run': { about: 'object', label: 'J-pull run' },
 });
 
 /** Every modal name the app knows, as a list. */

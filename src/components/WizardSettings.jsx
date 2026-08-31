@@ -34,7 +34,7 @@ import NumberField from './NumberField.jsx';
 // The two rows the old panel owns and the unified one now shows are IMPORTED
 // from it rather than copied — one implementation, two surfaces, so the sheet
 // buttons and the hinge block cannot drift between the doors.
-import { HingeHardware, JpullHardware, SheetSizeRow } from './SettingsPanel.jsx';
+import { HingeHardware, SheetSizeRow } from './SettingsPanel.jsx';
 // Turn 33 (CLAUDE.md F8): the shaker frame's one resolver — the same number
 // the engine cuts pockets to and the settings panel edits.
 import { shakerFrameMm } from '../engine/shaker.js';
@@ -2234,19 +2234,17 @@ export default function WizardSettings({
                         />
                       </div>
 
-                      {/* ─── T57 F4.2 — THE J-PULL'S OWN MILLIMETRES ─────────────
-                          Beside the hinge hardware, because it answers the same
-                          kind of question — how this WORKSHOP machines the thing
-                          it fits. The old panel's own block, imported rather than
-                          copied, exactly as the hinge block above is. It draws
-                          nothing at all unless the project is on J-pull. */}
-                      <div data-wizard-node="hardware.jpull">
-                        <JpullHardware
-                          design={design}
-                          profile={profile}
-                          setProfile={setProfile}
-                        />
-                      </div>
+                      {/* ─── TURN 58b (CLAUDE.md F3.1, licensed deletion 2) ──────
+                          The SECOND of the owner's two entry points — *"będzie w
+                          2 miejscach do włączenia — do zmiany"* — and it is gone
+                          with the first. `<div data-wizard-node="hardware.jpull">`
+                          held `<JpullHardware>`: nine numeric fields writing into
+                          `profile.handles.jpull`. *"po co mi to? ja nie chcę
+                          tego."*  The constants stay in the profile, unexposed;
+                          the ONE number he kept — the run — is a slider on the
+                          leaf itself (`components/JpullRunModal.jsx`).
+                          The HANDLE-SYSTEM CHOICE is not touched: it is the
+                          `fronts.opening` tiles above, where it has always been. */}
 
                       {/* T35 F8 — the hinge-plate pilot. A WORKSHOP number: the profile's. */}
                       <div className="cc-row" data-hinge-plate-pilot="1" data-wizard-node="hardware.hinge-plate-pilot">

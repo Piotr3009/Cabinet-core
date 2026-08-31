@@ -29,6 +29,7 @@ import FrontGapModal from '../components/FrontGapModal.jsx';
 import LightingPanel from '../components/LightingPanel.jsx';
 import UnitSizeModal from '../components/UnitSizeModal.jsx';
 import WatchLayoutModal from '../components/WatchLayoutModal.jsx';
+import JpullRunModal from '../components/JpullRunModal.jsx';
 import Scene from '../3d/Scene.jsx';
 import CncView from '../components/CncView.jsx';
 import CanvasToolbar from '../components/CanvasToolbar.jsx';
@@ -615,6 +616,9 @@ export default function ConfiguratorPage() {
             its finish — a NEW window, draggable, opening beside the drawer it
             was asked from. */}
         {modal === 'watch-layout' && <WatchLayoutModal />}
+        {/* T58b (CLAUDE.md F3): the J-pull's ONE slider, opened by clicking
+            the J strip of a tall leaf and standing beside it. */}
+        {modal === 'jpull-run' && <JpullRunModal />}
         {/* ─── Turn 23 (CLAUDE.md F9.3) ───
             "This part carries manual edits — recompute drops them, continue?"
             It is not a modal in the `modal` slot: it is raised by the STATE of

@@ -85,10 +85,13 @@ test('F1 — SettingsPanel.jsx STAYS in the tree, whole and exported', () => {
   assert.match(OLD, /<SheetSizeRow/);
   assert.match(OLD, /<HingeHardware/);
   // And the unified panel really does import them rather than duplicate them.
-  // T57 AMENDED (30.08.2026): the list grew a third name, `JpullHardware`.
-  // The claim is that the unified panel IMPORTS these rows rather than
-  // duplicating them, and it is stronger with three than with two.
-  assert.match(WIZ, /import \{ HingeHardware, JpullHardware, SheetSizeRow \} from '\.\/SettingsPanel\.jsx'/);
+  // T57 grew the list to three with `JpullHardware`; T58b took that one away
+  // again (CLAUDE.md F3.1, licensed deletion 2 — *"po co mi to? ja nie chcę
+  // tego"*). The CLAIM is unchanged and is not about the count: the unified
+  // panel IMPORTS these rows rather than duplicating them.
+  assert.match(WIZ, /import \{ HingeHardware, SheetSizeRow \} from '\.\/SettingsPanel\.jsx'/);
+  assert.ok(!/import \{[^}]*JpullHardware/.test(WIZ),
+    'and the deleted row is not imported by a ghost (its name survives only in the prose that records the deletion)');
 });
 
 // ── 3. every `data-settings-section` of the old panel has a counterpart ──

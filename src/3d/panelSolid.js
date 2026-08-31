@@ -601,6 +601,25 @@ function recessPath(f) {
 /** How many sides a drilled hole is drawn with. */
 const HOLE_SEGMENTS = 14;
 
+/** A feature's own bounding rectangle in board millimetres. */
+function boundsOf(f) {
+  const half = f.kind === 'round'
+    ? { w: f.r, h: f.r }
+    : { w: f.w / 2, h: f.h / 2 };
+  return {
+    x0: f.x - half.w, x1: f.x + half.w, y0: f.y - half.h, y1: f.y + half.h,
+  };
+}
+
+/** Does `inner` lie wholly inside `outer`? (Millimetres, a hair of slack.) */
+function enclosesFeature(outer, inner) {
+  const a = boundsOf(outer);
+  const b = boundsOf(inner);
+  const eps = 1e-6;
+  return b.x0 >= a.x0 - eps && b.x1 <= a.x1 + eps
+    && b.y0 >= a.y0 - eps && b.y1 <= a.y1 + eps;
+}
+
 /** A hundredth of a millimetre — whether a recess reaches into a slab at all. */
 const SLAB_EPS = 0.01;
 
@@ -648,6 +667,45 @@ function buildCuts({
     }
 
     if (f.through) continue;
+
+    // ─── TURN 58b (CLAUDE.md F1): A FLOOR IS NOT DRAWN OVER A HOLE ──────────
+    //
+    // This is the OTHER half of "szyba w ogóle nie jest przezroczysta… nic nie
+    // widać", and it is not in the material at all — it is here, and it has
+    // been since T53 cut the pane into the shelf.
+    //
+    // The shelf carries TWO features over the same rectangle: a through
+    // OPENING, and a REBATE one glass thickness deep that is stated as a
+    // rectangle four millimetres larger — the ledge the pane drops onto. The
+    // SOLID gets both right: the top slab loses the rebate, every slab under
+    // it loses the opening, and what is left is a frame with a ledge. But the
+    // rebate is BLIND, so the fan below drew its floor straight across its own
+    // outline — the opening included. A lid, in raw-board grey, laid over the
+    // hole the glass was cut for. Every frame of T57 and T58 was of that lid,
+    // and no opacity on the pane in front of it could ever have helped.
+    //
+    // So a blind recess's floor is drawn with the THROUGH features that live
+    // inside it taken out of it: there is no board there to have a floor.
+    const punched = recesses.filter((o) => o !== f && o.through && enclosesFeature(f, o));
+    if (punched.length) {
+      const shape = new THREE.Shape();
+      ring.forEach(([px, py], i) => (i === 0 ? shape.moveTo(px, py) : shape.lineTo(px, py)));
+      shape.closePath();
+      shape.holes = punched.map(recessPath);
+      const flat = new THREE.ShapeGeometry(shape).toNonIndexed();
+      const a = flat.attributes.position.array;
+      for (let i = 0; i < a.length; i += 9) {
+        const tri = [
+          [a[i], a[i + 1]], [a[i + 3], a[i + 4]], [a[i + 6], a[i + 7]],
+        ];
+        // Both faces, exactly as the fan below does: the recess is open from
+        // the machined side and the board is solid from the other.
+        positions.push(...tri[0], deep, ...tri[1], deep, ...tri[2], deep);
+        positions.push(...tri[0], deep, ...tri[2], deep, ...tri[1], deep);
+      }
+      flat.dispose();
+      continue;
+    }
 
     // The floor, as a fan about the feature's own centre — and again facing
     // the other way, so the board reads solid from behind.

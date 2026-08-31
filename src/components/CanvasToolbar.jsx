@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
+import { propsAvailable, propsReason, usePropsPack } from '../lib/usePropsPack.js';
 import { useHistoryStore } from '../stores/historyStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
@@ -34,6 +35,13 @@ export default function CanvasToolbar() {
   const setBomOpen = useUiStore((s) => s.setBomOpen);
   const showOutlines = useUiStore((s) => s.showOutlines);
   const toggleOutlines = useUiStore((s) => s.toggleOutlines);
+  // T58b F5: the props switch, and the pack it depends on. `usePropsPack`
+  // never throws and never suspends — an unreachable bucket is a state, not an
+  // error — so the toolbar can read it unconditionally.
+  const props = useUiStore((s) => s.props);
+  const toggleProps = useUiStore((s) => s.toggleProps);
+  const propsPack = usePropsPack();
+  const propsReady = propsAvailable(propsPack);
   const contourView = useUiStore((s) => s.contourView);
   const xray = useUiStore((s) => s.xray);
   const toggleXray = useUiStore((s) => s.toggleXray);
@@ -190,6 +198,35 @@ export default function CanvasToolbar() {
           : 'See through the carcasses — hinges, runners and legs where they are fitted'}
       >
         X-ray
+      </button>
+
+      {/* ─── TURN 58b (CLAUDE.md F5 · T58 F8): PROPS ON / OFF ─────────────
+          The owner: *"ok props on/off — zegarki wiedzą i reszta też wie."*
+          In the VIEW-BAR family, beside Outlines and X-ray, because it is the
+          same kind of switch: a PICTURE, global, and no part of the job.
+
+          T58 F8's own fallback, verbatim: *"If the bucket or manifest is
+          missing at run time … ship the toggle GREYED with a one-line reason
+          … nothing throws."*  So the control is DISABLED WITH ITS REASON and
+          never hidden — the house rule T53-F8d wrote down for the watch pane's
+          own option — and the reason is a sentence, in the title, that a
+          person can act on. */}
+      <button
+        type="button"
+        aria-pressed={props && propsReady}
+        disabled={viewMode !== '3d' || contourView || !propsReady}
+        data-props-toggle="1"
+        data-props-state={propsPack.state}
+        className={`px-2.5 py-1 text-xs rounded transition-colors disabled:opacity-35 disabled:cursor-not-allowed ${
+          props && propsReady && viewMode === '3d'
+            ? 'bg-gold text-shell-900 font-medium'
+            : 'text-ink-100 hover:bg-shell-700'}`}
+        onClick={toggleProps}
+        title={propsReady
+          ? (props ? 'Take the props out of the drawers' : 'Dress the drawers — watches, belt rolls, folded ties')
+          : propsReason(propsPack)}
+      >
+        Props
       </button>
 
       {/* ─── Turn 18 (CLAUDE.md F4 / BACKLOG W22): hide fronts ───

@@ -201,17 +201,23 @@ test('F8c — the strip rings the opening ~15 mm outside it, on the underside', 
   assert.equal(pane.led.width, 4, 'the app’s own flexi');
 });
 
-test('F8c — the pane and the strip are their own BOM lines, tied to the SHELF', () => {
+// ─── AMENDED IN TURN 58b (CLAUDE.md F2, licensed deletion 3) ───────────────
+//
+// The T53 `led_strip` HARDWARE line measured a RING that nothing ever drew,
+// and it was a second source for a number the strips already own. It is
+// REPLACED — not kept beside — by the strip the glass now births at the back
+// of its shelf, which reaches the BOM through `lightingBomLines` like every
+// other strip in the project. The PANE's own line is untouched.
+test('F8c — the pane is its own BOM line, tied to the SHELF', () => {
   const r = job();
   const glass = (r.hardware || []).filter((h) => h.role === 'drawer_glass');
-  const led = (r.hardware || []).filter((h) => h.role === 'led_strip');
   assert.equal(glass.length, 1);
-  assert.equal(led.length, 1);
   // T55 (F4): the board above is the forced PARTITION, and the BOM says so.
   assert.match(glass[0].spec_label, /flush in PARTITION/);
-  assert.match(led[0].spec_label, /underside of PARTITION/);
-  assert.equal(glass[0].spec.shelf, led[0].spec.shelf, 'both name the same board');
-  assert.equal(led[0].unit, 'm');
+  assert.equal(glass[0].spec.shelf, (r.assemblies.watchGlass || [])[0].shelfId,
+    'the line names the board the opening is cut in');
+  assert.equal((r.hardware || []).filter((h) => h.role === 'led_strip').length, 0,
+    'the T53 ring line is gone — one length, one law (T58b F2)');
 });
 
 // ─── (d) NO MANUAL SHELF → THE FORCED PARTITION SERVES (T55, CLAUDE.md F4) ──
@@ -228,7 +234,8 @@ test('F8d — no manual shelf: the forced PARTITION takes the pane, no refusal',
   const r = job({ shelf: false });
   assert.equal((r.assemblies.watchGlass || []).length, 1, 'the pane is cut');
   assert.equal((r.hardware || []).filter((h) => h.role === 'drawer_glass').length, 1, 'and ordered');
-  assert.equal((r.hardware || []).filter((h) => h.role === 'led_strip').length, 1, 'the LED ring is born');
+  // T58b (F2): the ring's BOM line is replaced by the strip the glass births.
+  assert.ok((r.assemblies.watchGlass || [])[0].strip, 'the LED strip is born');
   assert.equal(paneBoard(r).part, 'PARTITION', 'cut in the forced board');
   assert.equal((r.warnings || []).find((w) => w.code === 'watch_glass_needs_shelf'), undefined,
     'the refusal is gone — the partition IS the shelf here');

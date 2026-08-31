@@ -198,7 +198,20 @@ export function startDesign(name = 'Bedroom wardrobe') {
   // at the BASE UNIT's 558 mm instead of the wardrobe's own 568 — and t59's
   // depth chips (450 / 600 / 650) therefore matched nothing on the first frame
   // a client ever saw. One word, said through the store's own setter.
-  store.setDesign({ projectType: 'wardrobe' });
+  // ─── T61 F2 · …AND IT IS ONE WALL, WHICH IT HAS ALWAYS SAID IT WAS ──────
+  //
+  // MEASURED FAULT, found in the acceptance walk's own frames rather than by
+  // reading. `newProject` leaves the migrator's default scope, `'room'` — so a
+  // fresh design stood in a FOUR-WALLED box while column 1's hint said
+  // *"4000 mm wall"* and F2's WALLS chip said `1`. The chip was not lying about
+  // its own state: `wallChoice` reads anything that is not `'two'` as one wall.
+  // The STORE was the thing out of step, and LAYOUT's new WALL row proved it by
+  // offering four walls to stand a wardrobe against.
+  //
+  // So the scope is said, once, where the wardrobe is made. The chips write
+  // `'wall'` and `'two'`; this is the same word for the same reason, and it is
+  // what a client has been shown a wall's worth of since t59.
+  store.setDesign({ projectType: 'wardrobe', scope: 'wall' });
   const p = P();
   // `addUnit` answers `{ id, error, wall }` — the room may refuse a placement,
   // and a caller that treated the whole verdict as an id would then pass an
@@ -600,7 +613,13 @@ export function topBoxRefusal(hostId) {
   if (isTopBox(host)) return REASONS.topBoxOnTopBox;
   const p = P();
   const born = riderBornHeight({
-    unit: { params: defaultParamsFor('WARDROBE_TOP', p) },
+    // THE TYPE MATTERS AS MUCH AS THE PARAMS. `roomFit.floorOf` asks
+    // `getUnitType(unit.type).ridesOn` before it will read the host's top; a
+    // params-only object answers `undefined` there and the box is measured off
+    // the FLOOR instead of off the wardrobe — which is 2100 mm of headroom
+    // where there is none, and a button that never greys. Found by the test
+    // below rather than by reading.
+    unit: { type: 'WARDROBE_TOP', params: defaultParamsFor('WARDROBE_TOP', p) },
     host,
     room: S().project.room,
     profile: p,
@@ -751,17 +770,16 @@ export function setDoorCount(unitId, count) {
   guard = 8;
   while (parts().length < want - 1 && guard > 0) {
     guard -= 1;
-    const before = parts().length;
-    S().addPartition(unitId);
-    if (parts().length === before) break;    // the engine ran out of room
+    // ─── T61 F4 · THE THIRD COPY OF THIS LAW, DELETED ─────────────────────
+    //
+    // Point 2 above — add, then bring the divider forward to the face, then
+    // re-centre — was written out in full HERE, again in `setBayCount`, and
+    // would have been written a third time by F4's new INTERIOR row. Three
+    // copies of one act is three answers to *"what may be added here"*, and the
+    // standing question this turn has to answer with ONE. `addFlushPartition`
+    // is that one, and all three doors now open onto it.
+    if (!addFlushPartition(unitId)) break;   // the engine ran out of room
   }
-
-  // Flush, so each division is a division of the FRONT and not only of the
-  // interior. The engine's own slope partition is already at zero.
-  for (const part of parts()) {
-    if (Number(part.front_mm) !== 0) S().updateItem(unitId, part.id, { front_mm: 0 });
-  }
-  S().centrePartitions(unitId);
 
   const bays = S().bayDoorsFor(unitId).length;
   S().setBayDoors(unitId, bays > 1

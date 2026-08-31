@@ -436,12 +436,17 @@
 }
 .pbi-opening-field { margin-top: var(--pbi-gap-2); }
 .pbi-opening-field > span { display: block; margin-bottom: var(--pbi-gap-1); font-size: var(--pbi-fs-ui-sm); }
-/* T61 F3 / F2: THIS WARDROBE › and ADD TOP BOX stand on one line. */
+/* T61 F3 / F2: THIS WARDROBE › and ADD TOP BOX are two ways into the same
+   wardrobe, so they stand together — side by side where the column is wide
+   enough and stacked where it is not. The BOTTOM MARGIN is not decoration: the
+   walk's own frame showed ADD TOP BOX and the WARDROBE WIDTH label sitting a
+   pixel apart and reading as one line. */
 .pbi-layout-links {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--pbi-gap-4);
+  gap: var(--pbi-gap-2) var(--pbi-gap-4);
   align-items: baseline;
+  margin-bottom: var(--pbi-gap-5);
 }
 .pbi-room .pbi-gold-line { margin: var(--pbi-gap-3) 0; }
 

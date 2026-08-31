@@ -84,7 +84,14 @@ export default function AddPlus({
 
   return (
     <sprite
-      userData={{ ccHelper: true }}
+      // T61 F1: `ccAddPlus` beside `ccHelper` — one more key on an object's
+      // userData, which is neither rendered nor read by anything but a walk.
+      // The owner's rule is *"nowa funkcja = widoczne wejście w UI"*, and the
+      // acceptance walk has to be able to PRESS this marker to prove there is
+      // one. A disc in WebGL has no DOM node and therefore no attribute to find
+      // it by — R7 (`turn23-f2-f4-hardware.test.js`) says so in as many words:
+      // *"anything a walk needs to find goes in userData"*. This is that.
+      userData={{ ccHelper: true, ccAddPlus: true }}
       position={position}
       scale={[size, size, 1]}
       // Above the furniture in the draw order and depth-tested out of the way,

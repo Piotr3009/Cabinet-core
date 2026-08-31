@@ -100,6 +100,7 @@ import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
 import DrillRings from './DrillRings.jsx';
 import LedStrips from './LedStrips.jsx';
+import Props from './Props.jsx';
 import LedIcons from './LedIcons.jsx';
 
 // A stable empty list: a fresh [] would rebuild every panel solid on every
@@ -2642,6 +2643,14 @@ export default function UnitView({
           only and a glowing strip is exactly what it exists to remove. */}
       {!contour && (
         <LedStrips unit={unit} result={result} design={design} />
+      )}
+
+      {/* ─── TURN 58b (CLAUDE.md F5 · T58 F8): THE DRAWERS GET DRESSED ────
+          A PICTURE, behind the global Props switch, drawing nothing at all
+          while it is off or while the pack is unreachable. Not in contour:
+          that lens is outlines only. */}
+      {!contour && (
+        <Props result={result} />
       )}
 
       {/* ─── TURN 54 (CLAUDE.md F5): THE LED ICONS, WHILE LIGHTING IS OPEN ──

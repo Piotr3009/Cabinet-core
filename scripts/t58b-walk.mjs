@@ -489,6 +489,83 @@ try {
     await page.screenshot(`${SHOTS}f3-slider.png`);
   }
 
+  // ══ F5 · PROPS v1 — THE TOGGLE, GREYED, WITH ITS REASON ══════════════════
+  //
+  // T58 F8, point 1, verbatim: *"If the bucket or manifest is missing at run
+  // time: build the whole machinery anyway, ship the toggle GREYED with a
+  // one-line reason, skip the dressing walk and note it — nothing throws."*
+  //
+  // That is the branch this turn is on. The pack lives in the Supabase bucket
+  // `props/`; this container cannot reach ANY bucket — the agent proxy refuses
+  // CONNECT to the storage host, and the known-good `hardware` bucket 403s
+  // identically — so "the bucket is full" is unverifiable here, not disproved.
+  // The dressing walk is skipped and this frame is what is shipped instead.
+  if (runs('f5')) {
+    await fresh('F5 props');
+    await ask(`(() => {
+      const r = P().addUnit('WARDROBE');
+      P().updateUnitParams(r.id, { width: 900, height: 2200, depth: 600 });
+      P().addDrawers(r.id, 2);
+      const items = P().units.find((u) => u.id === r.id).params.sections[0].items
+        .filter((i) => i.kind === 'drawer');
+      P().setDrawerWatchInsert(r.id, items[items.length - 1].id, true);
+      P().settleLayout();
+      U().setShowDimensions(false);
+      U().selectUnit(null);
+      return true;
+    })()`);
+    await page.sleep(700);
+    const control = await page.evaluate(`
+      const el = document.querySelector('[data-props-toggle="1"]');
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return {
+        text: (el.textContent || '').trim(),
+        disabled: el.disabled === true,
+        state: el.getAttribute('data-props-state'),
+        reason: el.getAttribute('title'),
+        visible: r.width > 0 && r.height > 0,
+        x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2),
+      };
+    `);
+    check('the Props toggle is ON SCREEN, in the view-bar family',
+      Boolean(control) && control.visible && control.text === 'Props', JSON.stringify(control && {
+        text: control.text, visible: control.visible,
+      }));
+    check('…GREYED, because the pack is not reachable from here',
+      Boolean(control) && control.disabled && control.state === 'absent',
+      `disabled ${control?.disabled}, state ${control?.state}`);
+    check('…and it carries its REASON, in words',
+      Boolean(control?.reason) && /not reachable|not published|no storage bucket/.test(control.reason),
+      String(control?.reason));
+    // Pressing a greyed control must do nothing at all — and above all must
+    // not throw. This is the whole of point 1's last clause.
+    const before = await ask('U().props');
+    if (control) {
+      await page.mouse('mousePressed', control.x, control.y, { button: 'left', clickCount: 1, buttons: 1 });
+      await page.mouse('mouseReleased', control.x, control.y, { button: 'left', clickCount: 1, buttons: 0 });
+      await page.sleep(400);
+    }
+    const after = await ask('U().props');
+    check('pressing it changes nothing, and nothing throws',
+      before === false && after === false, `props ${before} → ${after}`);
+    // NOTHING THROWS. The browser logs the refused request itself — it does
+    // that for the hardware manifest in this container too, since the agent
+    // proxy refuses CONNECT to any bucket — but a request the network declined
+    // is not code throwing, and no exception may escape. So the claim is made
+    // on EXCEPTIONS, which is what point 1's last clause is about.
+    const thrown = page.errors.map(String)
+      .filter((e) => !/Failed to load resource/i.test(e))
+      .filter((e) => !/favicon/i.test(e));
+    check('nothing THROWS — the refused request is logged, never raised',
+      thrown.length === 0, thrown.slice(0, 2).join(' | ') || 'no exceptions at all');
+    // The frame: the toolbar with the greyed control, hovered so the reason
+    // is the thing being photographed.
+    await page.hover('[data-props-toggle="1"]');
+    await page.sleep(500);
+    await page.screenshot(`${SHOTS}f5-props-greyed.png`);
+  }
+
 } catch (e) {
   // A section that throws must SAY so: a walk that swallows its own error and
   // reports "all ok" is exactly how a frame nobody took gets believed.

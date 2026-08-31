@@ -461,6 +461,22 @@ export const useUiStore = create((set, get) => ({
   setShowOutlines: (v) => set({ showOutlines: Boolean(v) }),
   toggleOutlines: () => set((s) => ({ showOutlines: !s.showOutlines })),
 
+  // ─── PROPS (turn 58b F5 · T58 F8): A PICTURE SWITCH, GLOBAL ───────────────
+  //
+  // The owner: *"ok props on/off — zegarki wiedzą i reszta też wie."*
+  //
+  // It lives beside Outlines and X-ray because it answers the same kind of
+  // question — what am I looking at — and, like them, it changes NOTHING about
+  // the job: the BOM, the cut list, the DXF and the invoice are all built out
+  // of `src/engine`, and nothing in `src/engine` can even see the props
+  // modules. That blindness is structural, not filtered.
+  //
+  // OFF by default, and it STAYS off while the pack is unreachable: the
+  // toolbar greys the control and says why (`lib/propsSource.js`).
+  props: false,
+  setProps: (v) => set({ props: Boolean(v) }),
+  toggleProps: () => set((s) => ({ props: !s.props })),
+
   // ─── HIDE FRONTS (turn 18, CLAUDE.md F4 / BACKLOG W22) ────────────────────
   //
   // Doors AND drawer fronts out of the 3D view together, so you can see what is

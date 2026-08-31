@@ -12,6 +12,47 @@ import { mm, MM, COLORS } from './constants.js';
 // rather than a number in the profile a workshop might mistake for a spec.
 const GLASS_PANE_MM = 4;
 
+// ─── TURN 58b (CLAUDE.md F1): THE PANE IS ALPHA GLASS — NOT TRANSMISSION ────
+//
+// Owner, live, on the frames of t57 AND t58: *"szyba w ogóle nie jest
+// przezroczysta… nic nie widać."*  He is looking THROUGH a glazed door at a
+// watch drawer, and what stopped him was never the opacity number.
+//
+// THE CAUSE, ONE. `transmission` puts a material on three's own TRANSMISSION
+// pass: the renderer draws what is BEHIND the pane into an offscreen buffer
+// and refracts that buffer through the glass. Behind a closed watch drawer
+// there is an unlit drawer box, so the buffer comes back near black and the
+// pane resolves to a DARK SLAB — with `opacity` never consulted, because the
+// transmission path does not read it. Lowering the number, which is what the
+// last two turns did, cannot reach a property nobody reads.
+//
+// THE LAW. Plain alpha-blended glass: it is the one path in this file that
+// cannot silently fail, and it is what a 4 mm pane over a drawer needs.
+//   · SMOKY BROWN, never grey — the owner's own word, *"smoky brąz, a nie
+//     szara"*, and it is checkable: r > g > b.
+//   · `depthWrite: false` — a transparent surface that writes depth REJECTS
+//     everything drawn behind it afterwards, which is precisely how a pane
+//     turns back into a board.
+//   · `FrontSide` — the far faces of the pane's own box would darken it twice.
+//   · NO `transmission`, NO `thickness`. They are the fault, not a setting.
+//
+// ONE PATH PER JOB: every pane in this file wears this one law — the glazed
+// door's, and the display drawer's, which this file has always said is "drawn
+// with the glass door's material". The watch pane keeps T58-F7's own record
+// (`WATCH_GLASS_HEX`), which is already off the transmission path and is
+// pinned by that turn's tests.
+const PANE_ALPHA_GLASS = {
+  color: '#5a4636',
+  transparent: true,
+  opacity: 0.28,
+  roughness: 0.12,
+  metalness: 0,
+  depthWrite: false,
+  side: THREE.FrontSide,
+};
+// The pane draws AFTER the opaque interior it is meant to be seen through.
+const PANE_RENDER_ORDER = 20;
+
 // ─── TURN 52 (CLAUDE.md F5, decision 2): THE WATCH INSERT'S OWN LIGHT ───────
 // The strip is 4 mm — the app's own flexi, the same width the groove is cut to
 // (`reference/lisp/KIT_LED_GROOVE.lsp ledFlexiWidth`) — and it stands a hair
@@ -553,6 +594,7 @@ export function MovingPanel({
             -pivot[1],
             -pivot[2],
           ]}
+          renderOrder={PANE_RENDER_ORDER}
           userData={{ ccGlassPane: p.id, ccNoBounds: true }}
         >
           <boxGeometry args={[
@@ -561,15 +603,8 @@ export function MovingPanel({
             mm(GLASS_PANE_MM),
           ]}
           />
-          <meshPhysicalMaterial
-            color="#eef3f4"
-            transparent
-            opacity={0.42}
-            roughness={0.06}
-            metalness={0}
-            transmission={0.85}
-            thickness={0.004}
-          />
+          {/* T58b F1: alpha glass, one law for every pane in this file. */}
+          <meshStandardMaterial key="pane-alpha" {...PANE_ALPHA_GLASS} />
         </mesh>
       )}
       {p.meta?.handle && (
@@ -824,7 +859,9 @@ function WatchShelfGlass({ pane, shelf, xray = false }) {
           mm(pane.box.y + pane.box.h / 2),
           mm(pane.box.z + pane.box.d / 2),
         ]}
-        renderOrder={2}
+        // T58b (F1): the one render order every pane in this file keeps — the
+        // glass is laid over the opaque interior it exists to be seen through.
+        renderOrder={PANE_RENDER_ORDER}
         userData={{ ccWatchGlass: pane.drawer, ccNoBounds: true }}
       >
         <boxGeometry args={[mm(pane.box.w), mm(pane.box.h), mm(pane.box.d)]} />
@@ -2604,18 +2641,12 @@ export default function UnitView({
             mm(pane.box.y + pane.box.h / 2),
             mm(pane.box.z + pane.box.d / 2),
           ]}
+          renderOrder={PANE_RENDER_ORDER}
           userData={{ ccDrawerGlass: true, ccNoBounds: true }}
         >
           <boxGeometry args={[mm(pane.box.w), mm(pane.box.h), mm(pane.box.d)]} />
-          <meshPhysicalMaterial
-            color="#eef3f4"
-            transparent
-            opacity={0.42}
-            roughness={0.06}
-            metalness={0}
-            transmission={0.85}
-            thickness={0.004}
-          />
+          {/* T58b F1: alpha glass, one law for every pane in this file. */}
+          <meshStandardMaterial key="pane-alpha" {...PANE_ALPHA_GLASS} />
         </mesh>
       ))}
 

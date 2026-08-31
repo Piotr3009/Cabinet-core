@@ -1,246 +1,258 @@
-# CLAUDE.md — TURN 60 · PBI R2: THE ROOM GETS ITS HANDS — VIEW BAR, ELEMENT MENUS, PARITY
+# CLAUDE.md — TURN 61 · PBI: THE TOOL RETURNS TO THE CLIENT'S ROOM
 
-Run autonomously. Zero questions, zero stops. Skip-and-note; sacrifice F6,
-then F5 — NEVER F1/F2/F3/F4. PR before morning. Branch `t60`.
+Run autonomously. Zero questions, zero stops. Skip-and-note. PR before morning.
+Sacrifice from the BOTTOM of the F-list upward (F6 first, F1 never).
+Full suite, never `--silent`. Screenshots committed under `verify/t61/`.
 
-**SAFETY FIRST: this file's first heading says TURN 60. BASE: `origin/main`
-WITH t59 MERGED (`src/retail/` exists, the four-column design room runs). If
-it does not, stop and say so in the PR.**
+**Every new UI entry ships WITH its click path proven** — a screenshot pair
+"where I click → what opens" per entry. The owner's iron rule: *"Nowa funkcja =
+widoczne wejście w UI, w tym samym pakiecie."* A feature without a visible
+entry is a feature NOT DONE; the audit rejects it before the owner does.
 
-## THE OWNER'S BRIEF, VERBATIM
-
-After the first live look at the design room (31.08), numbering the screen
-by the agreed names — TOP BAR (1) · RAIL (2) · OPTIONS (3) · VIEW BAR (4) ·
-STAGE (5) · STAGE HINT (6) · DETAIL (7):
-
-- *"nr 2 może być spokojnie 15% węższe"* → the RAIL narrows.
-- *"nr 3 zostaw jak jest"* → OPTIONS untouched this turn.
-- *"nr 4 musi być identyczne jak mamy w PRO, identyczne ma mieć funkcje"* →
-  the VIEW BAR gets PRO's view tools, one for one.
-- *"6 bez zmian, ale dodaj nazwę itemu"* → the STAGE HINT also names the
-  selected item.
-- *"numer 7 to już musi być detalistyczne menu — jak naciśniemy na drzwi to
-  się pojawi drzwi, jak na szafę to na szafę, jak na półkę to półkę.
-  Wszystkie modale które mamy w PRO muszą się tutaj pojawiać. Nie możemy
-  zostawić nikogo żeby sobie wybrał coś co nie działa. Nie może być
-  możliwości nieprzesunięcia się półki czy coś innego — to głupie."*
-- *"wszystkie funkcje muszą się pojawić w retail te co w PRO, tylko inaczej
-  poustawiane i inaczej poukładane — bardziej wizualnie."*
-- And on size: *"ludzie mają małe komputery, laptopy, iPady — będzie do dupy
-  widać jak wszystko będzie 25% większe."*
-
-## ONE DOUBT, RAISED ONCE, BEFORE THE WORK (and then executed)
-
-"Identical to PRO" is taken as: every VIEW tool, one for one. Three PRO bar
-entries are NOT view tools but the workshop and the owner's costs — **BOM,
-Check, CNC/Export** — and a client must not read them. They are therefore
-absent from the retail bar, behind a single flag
-(`RETAIL_SHOW_WORKSHOP_TOOLS = false` in `src/retail/config.js`) so one word
-from the owner turns them on. Everything else in the bar is PRO's, exactly.
-
-## STANDING LAW (unchanged, enforced)
-
-- **PRO IS FROZEN.** The t59 assertion stands: `git diff` on `index.html`,
-  `src/App.jsx`, `src/main.jsx`, `src/components/**`, `src/pages/**` is
-  EMPTY, and PRO's module graph contains no `src/retail/` file.
-- **THE IRON BOUNDARY.** `src/retail/**` imports only from `src/retail/**`,
-  `src/engine/**`, `src/3d/**`, `src/stores/**`. **A PRO component is NEVER
-  imported into retail — it is RE-IMPLEMENTED in retail's own language**
-  (this is the price of two faces on one brain, and it is paid deliberately:
-  PRO's modals are 1000-line workshop instruments; the client needs the same
-  DECISIONS in a fraction of the surface).
-- **THE LAW IS THE ENGINE'S, NOT RETAIL'S.** Every option's bounds,
-  defaults and refusals come from the profile and the engine
-  (`src/engine/**`) through `src/retail/design/adapter.js`. Retail never
-  types a limit, never invents a reason, never hard-codes a millimetre.
-- **BYTE-IDENTITY.** Engine untouched → goldens byte-identical,
-  `t60-classify.mjs` = ZERO deltas, `UNNAMED=0`, `NAMED=0`. LISP untouched,
-  census 14/14.
-- **NO DEAD CONTROL.** Owner's rule, and it governs this whole turn: a
-  control that cannot act must not be shown as if it could. Either it acts,
-  or it is disabled WITH the engine's own one-line reason. The string "No
-  options for this element yet" is DELETED (licensed) — an element with no
-  menu is simply not selectable.
-- **PETROS DESIGN SYSTEM IS LAW.** Twelve tokens, 72/23/5, radius 0, gold in
-  hairlines only. **Engine numbers do not enter the UI without the owner's
-  order** — the element menus expose CHOICES, and where a millimetre must be
-  set, ONE slider, labelled in words.
-- **Sanctity — licensed deletions this turn:** (1) the "No options for this
-  element yet" placeholder and its branch; (2) nothing else.
-- No new npm dependencies. Full suite never `--silent`. Every claim about a
-  screen ends in a frame under `verify/t60/`.
+Pattern-first law on every feature: *"Najpierw szukaj działającego wzoru w
+repo, potem klawiatura."* Read the PRO wiring before writing the retail
+surface, and NAME the source pattern in the PR body. If nothing like it
+exists, say so in as many words.
 
 ---
 
-## F1 [CRITICAL] · THE SCALE LAW — ONE NUMBER, EVERY DIMENSION
+## WHAT IS FROZEN TONIGHT
 
-The owner is right that nothing adapts today: t59 wrote pixels
-(220 / 320 / 300 columns, 11–15px type). He is also right that a flat −25%
-is wrong — it would be cramped on his monitor and still too wide on a
-laptop. So: **one scale, derived from the viewport, and every dimension
-derived from it.**
+The owner, verbatim: *"pamietaj pro jest nie doruszenia"*.
 
-1. `src/retail/styles/scale.css` defines
-
-       --pbi-scale: clamp(0.78, calc(0.78 + (100vw - 1280px) * 0.00017), 1);
-
-   i.e. 1.0 at 2560px (the owner's monitor — the reference width, named in
-   a comment), ≈0.86 at 1728, 0.78 at 1280 and below. The design room reads
-   `--pbi-scale`, the marketing pages keep their own rhythm.
-2. EVERY dimension in the design room is `calc(<base> * var(--pbi-scale))`:
-   column widths, type sizes, chip and button heights, paddings, gaps, the
-   gold line. No bare pixel survives in the design-room CSS — a test greps
-   for `px` outside the token and scale files and fails on a raw dimension
-   (allowing 1px borders and 0).
-3. **The RAIL narrows 15%** at the same time: its base becomes 187px
-   (220 × 0.85), and it scales like everything else.
-4. Type floor: no rendered text below 11px at scale 0.78 — pick bases so
-   the smallest (STAGE HINT, chip labels) land at 11–12px there.
-
-Frames: `verify/t60/f1-scale-2560.png`, `f1-scale-1728.png`,
-`f1-scale-1280.png` — each shot in its OWN browser window at that width
-(the t59 walk's lesson 5: device-metrics emulation does not move
-`window.innerWidth`).
-
-## F2 [CRITICAL] · THE VIEW BAR (4) — PRO'S TOOLS, ONE FOR ONE
-
-Read PRO's bar in `src/components/` and reproduce its VIEW tools in
-retail's own component, with PRO's labels, PRO's order, PRO's toggle
-semantics and PRO's tooltips (the copy is already written — reuse the
-wording, not the component):
-
-    Show/Hide dimensions · Front dimensions · Outlines · X-ray ·
-    Hide fronts · Measure · Open all / Close all · Lights ·
-    Reset view · ⛶ full screen
-
-- Each entry acts on the SHARED store exactly as PRO's does — if the flag
-  lives in `uiStore`, retail flips the same flag; if PRO's version needs a
-  shared-core option that does not exist, add it additively with PRO's
-  behaviour as the default and LIST it in the report.
-- Absent behind the flag (the doubt above): BOM · Check · CNC/Export.
-- Styling is PBI, not PRO: UI font, uppercase, tracking, hairline
-  separators, active entry in Deep Gold with a Champagne underline.
-- `Measure` gets its full behaviour (two clicks, a distance) — if that is
-  larger than the night allows, it is the ONE entry that may ship disabled
-  with the reason "coming shortly", and it must be named in the report.
-
-Tests: every bar entry maps to the same store flag PRO uses (a table test);
-the three workshop tools are absent while the flag is false. Frames:
-`verify/t60/f2-viewbar.png`, `f2-viewbar-xray.png`,
-`f2-viewbar-fullscreen.png`.
-
-## F3 [CRITICAL] · THE DETAIL COLUMN (7) — A MENU FOR EVERY ELEMENT
-
-The heart of the turn. Clicking a thing in the STAGE opens ITS menu in
-column 7 — and every control in it WORKS.
-
-### The selection law
-
-Retail reads the shared selection the engine and stores already keep. For
-each selected kind, retail owns a small component in
-`src/retail/design/detail/`. The router is a table
-(`kind → component`), so an unmapped kind cannot render an empty panel —
-it is not selectable in the first place (the picker skips it, the cursor
-does not change, nothing highlights).
-
-### The menus this turn — each one re-implemented, not imported
-
-Read the PRO modal named beside each for its LAW (bounds, refusals,
-wording), then write the client's version: chips for choices, at most one
-slider where a millimetre is genuinely the owner's decision, the engine's
-own reason under any disabled control.
-
-1. **WARDROBE (the unit)** — from `UnitSizeModal`, `UnitFinishModal`,
-   `CabinetEditorModal`: width · height · depth (sliders bounded by the
-   profile) · doors (chips) · bays (chips) · plinth (chips) · carcass decor
-   and front decor (swatches, from `DecorPickerModal`'s catalogue) ·
-   RENAME (the design's name — feeds F4).
-2. **DOOR** — from `DoorModal`: hinge side (chips; when the slope forces
-   it, the serif line "opens from the slope" and the chips disabled with
-   that reason) · front style (slab / shaker / j-pull chips) · handle
-   (chips from the handle systems the engine offers; j-pull disables the
-   others by the T57 law) · J run length (the ONE slider, from
-   `JpullRunModal`) · open / close this door.
-3. **SHELF** — the owner's own example, and it must move: height (slider
-   within its bay's opening — the engine's own limits) · CENTRE THIS BAY
-   (button → the T58 per-bay law) · REMOVE. A shelf that cannot move
-   (pinned by a divider, T58) says so in one line and shows no slider.
-4. **DRAWERS (the stack)** — from `CabinetEditorModal`'s drawer work: how
-   many (chips) · top-drawer insert (chips none / watches / belts / shoes,
-   with the watch⇄shoe and top-of-stack refusals in the engine's words) ·
-   glass top (chips, disabled with "needs a watch insert") · front heights
-   (one slider for the stack's split, if the engine exposes it; otherwise
-   omit — never a fake control).
-5. **HANGING RAIL** — from `RailModal`: single / double (chips) · height
-   (slider within the engine's range) · REMOVE.
-6. **WATCH DRAWER** — from `WatchLayoutModal`: layout (the four chips
-   Classic / Cufflinks / Ties / Belts with their line drawings) · glass ·
-   finish (Project / Sprayed, the T58 pair) · REMOVE.
-7. **SHOE DRAWER** — ramp and two dividers are fixed law (T58): the menu
-   shows what it is in words, plus REMOVE. No invented options.
-8. **PULL-DOWN RAIL** — position (slider) · REMOVE; under a slope it is
-   not addable at all and the INTERIOR list already says why (T58).
-9. **LIGHTING** — from `LightingPanel`: strips on/off per shelf when one is
-   selected, pane light when a glass pane exists. No engine numbers.
-
-Every menu ends with DONE (back to the ESTIMATE duty). Every REMOVE goes
-through the store's own remove, and the STAGE updates live.
-
-### The rule that governs all nine
-
-**No dead control.** Before rendering any control, retail asks the adapter
-whether it can act; if not, the control renders disabled with the engine's
-reason beneath it. The deleted placeholder (licensed) must not come back in
-another wording.
-
-Tests (`test/turn60-f3-the-element-menus.test.js`): for each of the nine
-kinds — the router resolves it; every control's adapter call produces the
-expected engine params; every disabled control carries a reason string that
-came from the engine; a shelf pinned by a divider offers no height slider;
-an unmapped kind is not selectable. Frames: `verify/t60/f3-door.png`,
-`f3-shelf.png`, `f3-drawers.png`, `f3-wardrobe.png`, `f3-watch.png`.
-
-## F4 [HIGH] · THE STAGE HINT (6) — AND THE ITEM'S NAME
-
-Unchanged copy, plus the selected item's name, in the same line, after a
-hairline separator: `DRAG TO ORBIT · SCROLL TO ZOOM · CLICK AN ELEMENT FOR
-DETAIL │ BEDROOM WARDROBE — LEFT DOOR`. The name comes from the design's
-own name (the client may rename the wardrobe in F3.1) plus the element's
-plain-English kind. Nothing selected → the design's name alone. Frame
-`verify/t60/f4-hint.png`.
-
-## F5 [MEDIUM] · THE PARITY MAP — WHAT PRO STILL HAS THAT PBI DOES NOT
-
-The owner wants every PRO function present in retail, differently arranged.
-That is more than one night: PRO carries 26 modals and a 1141-line element
-panel. So this turn ALSO produces the map that makes the remaining turns
-cheap: `verify/t60/parity-map.md` — a table of every PRO modal and panel,
-with: its purpose in one line, whether a client needs it (yes / no —
-workshop / later), where it landed in PBI (or "not yet"), and the engine
-functions it drives. This file is the spec source for T61+. No guessing:
-every row read from the code.
-
-## F6 [MEDIUM] · THE ESTIMATE DUTY KEEPS UP
-
-Column 7's default duty (the estimate list) gains what F3 made possible:
-each design row shows its NAME (renamable), its headline choices, and
-selecting a row makes that design the one on the STAGE. Everything else
-(quote form, save, load, add another) stays as t59 built it.
+1. **PRO app files — zero bytes moved**: `index.html`, `src/App.jsx`,
+   `src/main.jsx`, `src/components/**`, `src/pages/**`. The freeze test in the
+   suite guards this. It stays green. Do not edit it, do not weaken it.
+2. **`src/engine/**` cut geometry**: six golden fixtures byte-identical,
+   `computeCabinet()` bare output matches LISP, `UNNAMED=0`, classifier
+   reports zero engine deltas. The ONE engine file this spec licenses is
+   `engine/room.js` (plus the scope-normalisation sites you find by READING —
+   name every one in the PR body). Nothing in the cut path.
+3. **`reference/lisp/**` untouched.** Parens stay 14/14 at 0/0.
+4. **The retail RAIL is NOT rebuilt tonight.** The 8-row RAIL (FURNITURE
+   tiles, CARCASS/FRONTS split, the Egger tile modal, the DECOR/PAINTED fork)
+   waits for the owner's mockup and green point. Do not start it, do not
+   scaffold it, do not rename `CATEGORIES`.
+5. **Iron boundary**: `src/retail/**` imports only from `src/retail/**`,
+   `src/engine/**`, `src/3d/**`, `src/stores/**`. PRO components are never
+   imported — retail surfaces are written in retail language.
+6. **Shaker stays as the engine has it** (25 mm board, 6 mm recess). The
+   owner: *"1 zostawj"*. No front-thickness work tonight.
 
 ---
 
-## ORDER, PROOF, REPORT
+## F1 · THE EIGHT OVERLAYS RETURN
 
-**F1 → F2 → F3 → F4 → F5 → F6.** F3 is the turn; if the night runs short,
-its nine menus are delivered in the order listed (wardrobe, door and shelf
-are the owner's named examples and must all land).
+The owner: *"takwlacz praktycznei wszystko"* · *"1 all 8, 2 - jal dzis"*.
 
-Proof: full suite green; `t60-classify.mjs` zero deltas; PRO frozen-files
-assertion empty; boundary walker green; the no-raw-px grep green; every
-frame listed above, each width in its own browser.
+T59 killed all tool chrome in retail with one boot-time switch
+(`setProChrome(false)`). T60 gave three overlays back through named channels
+(`dimensions`, `outlines`, `measure`). Tonight the remaining EIGHT come back
+**the same way** — a named channel each, set `true` in
+`src/retail/main-retail.jsx` immediately after the three that are already
+there. That is the working pattern; do not invent a second one.
 
-Morning report, numbered: per feature done/skipped; the nine menus with
-which PRO modal each was read from; shared-core options added (name,
-default, why); the licensed deletion confirmed; the parity map's headline
-counts (how many PRO surfaces the client needs, how many landed);
-`+X/−Y`; test totals; classifier verdict.
+| # | Component | Channel | What it is |
+|---|-----------|---------|------------|
+| 1 | `src/3d/DrillRings.jsx` | `drill` | shelf-pin holes and every CNC hole — the owner's own 7.5 / 5.5 / dark rings |
+| 2 | `src/3d/AddPlus.jsx` | `plus` | the `+` markers beside and on units |
+| 3 | `src/3d/PartMachining.jsx` | `machining` | machining drawn on a single opened part |
+| 4 | `src/3d/LedIcons.jsx` | `led-icons` | LED mounting icons |
+| 5 | `src/3d/HoverDimensions.jsx` | `hover-dims` | dimensions under the cursor |
+| 6 | `src/3d/EdgeHandle.jsx` | `edge` | drag handles on a unit's edges |
+| 7 | `src/3d/UnitView.jsx` — the hover-shelf ghost guard | `hover` | the shelf ghost under the cursor |
+| 8 | `src/3d/ShareOutBar.jsx` | `share` | the share-out bar |
+
+**Mechanics — additive, PRO's behaviour unchanged:**
+
+- In each component, swap its guard from `proChromeOn()` to
+  `chromeOn('<channel>')`. `chrome.js` already falls through to the master
+  switch for any channel nobody set — PRO sets none, so PRO keeps exactly what
+  it has, and that fall-through IS the no-change proof. These files are
+  `src/3d/**`, not PRO's frozen list, so the edit is legal; PRO's rendered
+  output must not move and the freeze test plus the suite must say so.
+- Channels are **boot-time constants**. Set them ONCE, before first render.
+  Never flip one at runtime: the guards sit before their components' hooks and
+  a mid-life flip changes a hook count. `chrome.js` says this in its own
+  words — respect it.
+- *"2 — jak dziś"*: visibility control is PRO's, unchanged. Where PRO gates an
+  overlay behind a store flag, retail is gated by the same flag through the
+  same VIEW BAR buttons (T60's law: retail VIEW BAR = PRO 1:1). Where PRO has
+  no toggle, retail is always on. **No new buttons are invented tonight.**
+- `AddPlus` routing: read what PRO's `onClick({ near, side })` opens and which
+  targets a plus offers. In retail the plus adds through the store's own
+  `addUnit` / rider path — mirror PRO's targets, invent none. No PRO component
+  import: the handler lives in `src/retail/**` and calls store and engine only.
+- `EdgeHandle` commits through the store's own resize path, so the same
+  refusals (room refuses first, T50) surface in retail as in PRO.
+- `ShareOutBar`: channel `true` per "all 8". Its only trigger
+  (`uiStore.shareOutOffer`) sits behind PRO surfaces retail does not render
+  and behind `RETAIL_SHOW_WORKSHOP_TOOLS=false`, so it will not appear until a
+  retail entry exists. **Say this plainly in the PR body** — do not invent an
+  entry, do not gate the channel off.
+
+**Proof**: `verify/t61/f1-*.png` — drill rings inside an open wardrobe; a `+`
+beside the wardrobe; hover dimensions; an edge handle mid-drag.
+
+## F2 · TWO WALLS
+
+The owner: *"zrob 2 sciany, Elki bedziemy dokaldac"* · confirmed *"2 tak
+wystarczy"*. **No corner carcass tonight** — L-shape stays parked. Cabinets
+stand independently, one run per wall.
+
+- `engine/room.js`: add scope `'two'` beside `'wall'` in `wallsInScope` /
+  `wallIndicesInScope`, following the existing `'wall'` law: walls 0 and 1
+  (adjacent, sharing corner 1) are real, and the two FREE ends get the same
+  `wallStub(room, profile)` returns that one-wall mode uses. Find every site
+  that normalises or branches on scope by READING — `design.js` migrate, the
+  room draw, placement offers — and extend each. List them all in the PR body.
+  Scope is not in the cut path; the classifier must prove the goldens did not
+  move.
+- Retail YOUR SPACE gains **WALLS** chips `1 | 2`, writing scope
+  `'wall'` / `'two'` through the adapter. With `2`, a second field appears:
+  **WALL 2 WIDTH**, driving the other side of the rectangle through the same
+  `setSpace` law — read how wall 0's width writes corners and mirror it.
+- LAYOUT gains a **WALL** chip row `1 | 2` on the selected wardrobe (the
+  store's own `setUnitWall`; a refused move shows the store's sentence). When
+  wall 2 is empty, LAYOUT offers **ADD WARDROBE ON WALL 2** — `addUnit` through
+  the adapter with the defaults `startDesign` already uses.
+- The adapter's single-wardrobe readers (`theWardrobe` and friends) learn
+  plurality the minimal way: selected unit first, wall-0 wardrobe as fallback.
+  Read every caller before touching it.
+- STAGE HINT extends T60's naming law: "WALL 2 WARDROBE — LEFT DOOR".
+- Corner behaviour = whatever PRO's `'room'` scope already does at a corner.
+  Mirror it. Do not write a second corner law.
+
+**Proof**: `verify/t61/f2-*.png` — chips at 1 and at 2; two wardrobes, one per
+wall; the second wall's width field.
+
+## F3 · ADD TOP BOX
+
+The owner asked where top boxes get added; his answer: *"4 add top"* — a
+button on the selected wardrobe.
+
+- The engine already holds the whole relationship: `engine/topBox.js`,
+  `WARDROBE_TOP`, `params.rides_on`, `settleRiders`, several riders per host
+  since T53, orphan check #14, room-height refusal since T50.
+  **Nothing new in the engine.**
+- Retail entry: **ADD TOP BOX** in the wardrobe's own Duty menu
+  (`WardrobeMenu`), and the same action offered from LAYOUT beside
+  "THIS WARDROBE ›". It calls the store's own add path for a rider on this
+  host — read how PRO inserts a `WARDROBE_TOP` from the library and call the
+  same store mutation from the adapter. Defaults come from
+  `profile.wardrobe.topBox.defaults`; depth is the host's own and the engine
+  already enforces that.
+- Where the room refuses (over the ceiling), the button greys with the store's
+  sentence verbatim. No silent clamp.
+- A placed box is selectable on the STAGE like any unit and opens the wardrobe
+  Duty menu (same family), with width, height and REMOVE. STAGE HINT names it
+  "TOP BOX".
+
+**Proof**: `verify/t61/f3-*.png` — the button; a box riding the wardrobe; the
+greyed button with its reason under a low ceiling.
+
+## F4 · INTERIOR — THE FULL ROW SET
+
+The owner: *"dowozimy dla klientow musi bcy wszystko"*.
+
+- Retail's `INTERIOR_ROWS` (six today) grows to mirror **PRO's AddItems row set
+  for this unit's family, 1:1** — read `src/components/AddItems.jsx` and
+  `profile.itemsByContext` and take THEIR law: same rows, same order, same
+  availability predicates, same grey reasons **verbatim from the store and
+  engine**. For a wardrobe that adds at least overlay drawers, vertical
+  partition, trouser pull-out and tie rack, and keeps every row already there.
+- The standing T60 law holds: **no dead control.** Every row either works or is
+  greyed with the engine's own reason. A row whose mechanism PRO itself holds
+  open is greyed in retail with PRO's own sentence — mirror the state, never
+  invent availability.
+- Every addable row needs its Duty menu (an element with no menu is not
+  clickable — T60 law). New menus are written in retail language reading the
+  same store fields PRO's editors read: overlay drawers, partition, trouser,
+  tie rack. Read the PRO editor first and carry over its refusals. Keep each
+  menu as small as PRO's own controls for that element — **no invented
+  fields** (*"Liczby silnika nie wchodzą do UI bez rozkazu Piotra"*).
+- The plus markers (F1) and these rows must answer "what may be added here"
+  through the SAME engine predicates. One law. Zero parallel tracks.
+
+**Proof**: `verify/t61/f4-*.png` — the full row list; one new menu open; one
+greyed row with its reason.
+
+## F5 · FIELDS, NOT SLIDERS
+
+The owner: *"nie widze sensu [suwaków] bo i tak nie trafisz, trzeba bedzie
+wpisac; kratki do wpisywania rogi pieknie zaokraglone a nie kanciaki, ze zlota
+obwodka a nie jakis dziwny pomarancz"*.
+
+- In retail YOUR SPACE and LAYOUT every numeric slider becomes a typed
+  **field**: wall width, wall 2 width, ceiling height, slope left and right,
+  wardrobe width, depth. Millimetres, integers.
+- Style: PBI tokens only — softly rounded corners, hairline border, **gold
+  focus and selection ring**. Never orange. One shared field component in
+  `src/retail/design/controls.jsx`.
+- Bounds law: the field carries the engine's own min/max — the same
+  `A.designBounds()` and `A.unitBounds()` the sliders read today. An
+  out-of-range commit is REFUSED with the engine's sentence under the field.
+  **No silent clamp** (room-refuses-first, T50).
+- Licensed removal, consent given by the order itself: the `Slider` usages
+  these fields replace in `SpacePanel` and `LayoutPanel` are deleted. If
+  `Slider` ends with zero callers, delete the component too and say so in the
+  balance. Tombstone comments max 2 lines.
+
+**Proof**: `verify/t61/f5-*.png` — a focused field with its gold ring; a
+refused out-of-range entry showing its sentence.
+
+## F6 · WINDOWS AND DOORS — DRAWN ONLY
+
+The owner: *"skosy, okna, drzwi trzeba bedzie dodac"* · decision: *"3 —
+narazie sie rysuja"*. They draw. Nothing fits around them tonight.
+
+- Retail YOUR SPACE gains a **WINDOWS & DOORS** block: ADD WINDOW / ADD DOOR,
+  then per opening — wall (1 or 2), position from left, width, height, sill
+  (window only), as typed fields under F5's law, and REMOVE. It writes
+  `room.openings` through the store's own room patch. Read `openingsOnWall`
+  and PRO's `WallElevationModal` for the record shape and its clamps: the
+  shape is the law, the PRO component is NOT imported.
+- The shared 3D room already draws what `room.openings` holds — verify by
+  reading `src/3d/Room.jsx`. If the retail mount hides them, un-hide by F1's
+  channel mechanics.
+- **No fit logic tonight.** A wardrobe may stand across a window and nothing
+  complains. That is the owner's explicit "na razie", and it is named as a
+  known gap in the PR body, not silently left.
+- Defaults for a fresh opening come from the engine's `OPENING_DEFAULTS`. No
+  new numbers in the profile.
+
+**Proof**: `verify/t61/f6-*.png` — the block; a window and a door standing in
+the wall behind a wardrobe.
+
+---
+
+## TESTS AND PROOF
+
+1. Full suite green, never `--silent`. The PRO freeze test green.
+2. Goldens ×6 byte-identical; `computeCabinet()` versus LISP exact;
+   `UNNAMED=0`; `verify/t61/t61-classify.mjs` (copy t60's pattern) shows zero
+   engine deltas beyond the named `room.js` scope sites.
+3. Parens 14/14 at 0/0.
+4. Playwright walk: every F's screenshots as listed above, committed.
+5. New unit tests where a law was added: scope `'two'` walls and stubs;
+   channel fall-through (an unset channel equals the master switch); a field
+   refusal rendering the store's sentence; INTERIOR row parity against PRO —
+   a test that READS both lists and diffs them, so drift becomes impossible.
+
+## LICENSED REMOVALS
+
+- The `Slider` usages in retail `SpacePanel` and `LayoutPanel`, replaced by
+  fields (F5). The `Slider` component itself only if its caller count reaches
+  zero.
+- Nothing else. Any other deletion the night thinks it needs: skip-and-note.
+
+## BALANCE
+
+Report per feature: files touched, lines added and removed, and for F1 the
+one-line diff shape per overlay component (guard swap only). State how many
+tracks answer "what may be added here" after F4. The answer must be one.
+
+## SKIP-AND-NOTE ORDER
+
+F6 → F5 → F4 → F3 → F2 → F1. F1 is not skipped: it is the owner's direct
+order for tonight.

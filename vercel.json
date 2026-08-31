@@ -1,6 +1,8 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/start", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/start.html" },
     { "source": "/start", "destination": "/start.html" },
     { "source": "/pro", "destination": "/index.html" },
     { "source": "/retail", "destination": "/retail.html" }

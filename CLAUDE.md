@@ -1,276 +1,156 @@
-# CLAUDE.md — TURN 58 · THE SLOPE'S LAST LIES, THE SHOE'S RETURN, THE SHELVES LEARN THEIR BAY
+# CLAUDE.md — TURN 58b · THE PANE BECOMES GLASS FOR REAL, THE LIGHT MOVES BACK, THE NUMBERS LEAVE THE SCREEN
 
-Run autonomously. Zero questions, zero stops. Skip-and-note; sacrifice
-F8, then F7, then F6, then F5 — NEVER F1/F2/F3. PR before morning.
-Branch `t58`.
+Run autonomously. Zero questions, zero stops. Skip-and-note; sacrifice F5,
+then F4 — NEVER F1/F2/F3. PR before morning. Branch `t58b`.
 
-**BASE: `origin/main` WITH t57 MERGED (paren census 14/14 arrives from
-t57's KIT_FRONT_JPULL). If t57 is not merged, stop and say so in the PR
-description. Do not run in parallel with any other turn.**
+**SAFETY FIRST: this file's first heading says TURN 58b. BASE: `origin/main`
+WITH t58 MERGED (the shoe insert, `hingedSidesOf`, `covers.js` exist). If
+they do not, stop and say so in the PR description.**
+
+## WHY THIS TURN IS WRITTEN THE WAY IT IS
+
+Two nights in a row the pane was declared glass and photographed opaque.
+The owner, live: *"szyba w ogóle nie jest przezroczysta… nic nie widać"*,
+and on the light: *"światło jest na krawędzi półki i oświetla fronty
+szuflad, a powinno być z tyłu na półce"*. So this spec does not ask you to
+SEE; it names the lines and the physics. Follow them literally.
 
 ## STANDING LAW (unchanged, enforced)
 
-- **LISP IS LAW.** Geometry changes are written in `reference/lisp/`
-  FIRST; the engine follows. Census stays **14/14 at 0/0** — this turn
-  adds LINES, not files.
-- **BYTE-IDENTITY.** Goldens (flat, no wall, no shoe, no props)
-  byte-identical. `t58-classify.mjs`, `UNNAMED=0`. NAMED deltas only on:
-  (a) slope-dressed fixtures (F1 removes phantom drills); (b) shoe-drawer
-  fixtures (F2 births the insert); (c) wall-proximity infill fixtures
-  (F5 moves the top infill). A bare `computeCabinet()` never centres a
-  shelf, so F3 moves no engine byte — assert it.
-- **Sanctity — licensed this turn, and nothing else:**
-  1. the static two-door `['BUL','BUR']` hinged-side table and every raw
-     `cfg.hinge` side-pick it feeds (F1) — replaced by the one resolver,
-     old tor physically deleted;
-  2. the `if (!lightingOpen) return null` gate in `src/3d/LedIcons.jsx`
-     (F7) — the owner's order overrides T54-F5's narrower conduct, and
-     the T54 comment is re-headed to say so;
-  3. nothing else is deleted or changed without licence.
-- **One path per job.** Report the counts: "which board carries this
-  leaf's plates" = 1; shoe-insert law = 1; shelf-opening finder = 1;
-  top-infill-to-wall law = 1.
-- New feature = visible UI entry, same package, screenshot-proven.
-- Full suite, never `--silent`. No new npm dependencies (GLTF loading
-  exists — reuse it). Owner quotes are law; code and UI copy in English.
+- **BYTE-IDENTITY.** Goldens byte-identical. `t58b-classify.mjs`,
+  `UNNAMED=0`. Engine deltas this turn: ONLY the pane shelf's light record
+  (F2) and the per-leaf J run override (F3) — named.
+- **LISP.** No geometry law changes → LISP untouched; census 14/14 at 0/0.
+- **Sanctity — licensed this turn, and nothing else:** (1) the
+  `transmission`/`thickness` physical-glass path of the pane mesh in
+  `src/3d/UnitView.jsx` (~548–575); (2) the jpull numeric fields in
+  `SettingsPanel.jsx` and `WizardSettings.jsx` (the whole block — physical
+  deletion); (3) the T53 "led ring" length record of the glass
+  (`born.shelf_glass.led_mm` and its BOM line) — REPLACED by F2's single
+  strip, not kept beside it.
+- **Petros iron rule (30.08): engine numbers do not enter the UI without
+  the owner's order.** F3 adds exactly ONE slider, nothing else.
+- One path per job; visible UI entry proven by screenshot; full suite
+  never `--silent`; no new npm dependencies.
 
 ---
 
-## F1 [CRITICAL] · BUGFIX — THE PHANTOM HINGE COLUMN ON BUL/BUR
-
-Diagnosed 30.08, numeric proof. Owner's symptom: *"jak mamy skos i się
-przełącza z lewej na prawą stronę drzwi, ale na BUL i BUR się już nie
-przełącza."*
+## F1 [CRITICAL] · THE PANE IS ALPHA GLASS — NOT PHYSICAL TRANSMISSION
 
 ### The cause (one)
 
-The carcass hinged-side resolution is BLIND to the forced flip:
-`src/engine/cabinet.js` ~1760–1763 hard-codes two doors →
-`['BUL','BUR']` and one door → `cfg.hinge === 'R' ? 'BUR' : 'BUL'` (raw
-param), and the store's bay path (`src/stores/projectStore.js` ~557)
-reads the raw leaf hinge the same way. Under a slope the leaves are
-FORCED (T46/T55, `meta.hingeForced`) and the flipped leaf hangs on the
-DOOR PARTITION (T55-F3) — but the old table still bores the abandoned
-side.
+`src/3d/UnitView.jsx` ~565: `<meshPhysicalMaterial color="#eef3f4"
+transparent opacity={0.42} roughness={0.06} transmission={0.85}
+thickness={0.004} />`. Transmission renders what is BEHIND the pane into
+an offscreen buffer; the unlit drawer box behind a closed watch drawer is
+dark, so the pane resolves to a dark slab — the exact frames of t57 and
+t58. The owner does not want physics; he wants to see the insert.
 
-### Reproduction — write the RED test from this first
+### The law — the exact material
 
-    WARDROBE, W1000 H2200 D600, door_count 2,
-    slope_cut { pts:[{x:0,y:1300},{x:1000,y:2200}], infill:40 }
+Replace the pane's material with plain alpha-blended glass:
 
-Measured on main: leaves `01-FL:R(F) 01-FR:R(F)`; hinge drills:
-**BUL = 6 (phantom), BUR = 12**. Correct: BUL = 0 — no door hangs there;
-FL's column lives on the partition (T55-F3 drills it — assert it is NOT
-doubled). Flat twin: BUL 12 / BUR 12, byte-identical.
+    <meshStandardMaterial
+      color="#5a4636"        // smoky brown — owner: "smoky brąz, a nie szara"
+      transparent
+      opacity={0.28}
+      roughness={0.12}
+      metalness={0}
+      depthWrite={false}
+      side={THREE.FrontSide}
+    />
+
+and on the mesh: `renderOrder={20}` (draws AFTER the opaque interior),
+`key="pane-alpha"` (three caches compiled programs; a new material
+identity is the way to ask for a new program — the file's own Turn-11
+note at ~623). NO `transmission`, NO `thickness`. Contour and X-ray keep
+their own conduct; the pane never paints solid in either.
+
+### Definition of done — the frame that cannot lie
+
+`verify/t58b/f1-pane-through.png`: watch drawer CLOSED under the pane,
+camera 45° from above, room lights on — the insert's pockets and dividers
+CLEARLY visible THROUGH the pane. Not a pulled-out drawer beside it.
+Second frame `f1-pane-contour.png` in contour mode. Test where the harness
+allows: material flags on the pane mesh (`transparent`, `opacity` in
+0.2–0.35, `depthWrite === false`, no `transmission` property > 0).
+
+## F2 [CRITICAL] · THE PANE'S LIGHT COMES FROM THE BACK OF THE SHELF
+
+### The cause (one)
+
+There is no drawn "ring": the T53 record `born.shelf_glass.led_mm` only
+feeds the BOM. What lights the scene are ordinary shelf strips, whose law
+(`src/engine/ledStrips.js` ~265–290) measures the strip's depth FROM THE
+FRONT EDGE (default 30 mm) — so any strip under the pane shelf sits at the
+front and washes the drawer fronts below. The owner wants the opposite.
 
 ### The law
 
-ONE resolver — "which board carries THIS leaf's plates" — reading the
-leaf's `meta.hinge` (forced or free) and the partition's presence, in
-the engine, consumed by: the drilling pass, the hardware 3-D (hinge
-meshes on the carcass), and the store's bay logic. The static table and
-every raw side-pick die (licensed). Slope RIGHT is the same resolver
-with zero extra branches — the test proves L and R are mirrors.
+1. The glass BIRTHS its own strip — ONE record, `kind: 'shelf'`, born in
+   the engine next to the aperture (the T53 block in `cabinet.js` ~7318):
+   under the shelf, along the aperture's BACK edge — `z = shelf.box.z +
+   inset`, x spanning the aperture width, the usual thickness law. This
+   strip REPLACES `led_mm` (licensed): its length is the BOM's single
+   source; `lightingBomLines` counts it like any strip.
+2. `LedStrips.jsx` draws it as it draws every strip — no special case,
+   the record is ordinary.
+3. Nothing is auto-added at the FRONT of the pane shelf. A user's own
+   front strip on that shelf stays the user's business — the slider law
+   is not touched.
 
-DoD: `test/turn58-f1-the-phantom-column.test.js` red-first (L, R,
-one-door both hands, flat twins byte-identical); frame
-`verify/t58/f1-bul-bur.png` — X-ray, slope on, no rings on the
-abandoned side.
+### Definition of done
 
-## F2 [CRITICAL] · THE SHOE DRAWER GETS ITS INSERT BACK
+`verify/t58b/f2-pane-closed-glow.png`: drawer CLOSED, room lights LOW,
+warm glow through the smoky pane from the BACK, drawer fronts below NOT
+washed. Test: pane shelf → exactly one born strip at the rear (z within
+inset of the shelf's back), aperture-wide; BOM shows one line, `led_mm`
+gone; a plain shelf without glass births no strip (byte-identical).
 
-History, honestly: T54-F7 killed the old shoe world on the owner's own
-order; the re-spec covered the box and never mentioned the insert, so
-the ramp and dividers went to the grave with it. The conditions now
-exist — verbatim law:
+## F3 [HIGH] · THE NUMBERS LEAVE THE SCREEN — ONE SLIDER REMAINS
 
-1. **The ramp (skos) returns INSIDE the drawer.** Its angle is the
-   LIVING law — `P.wardrobeAccessories.shoeShelf.tiltDeg`, the shoe
-   SHELF variant that survived T54 (name this source in the report; no
-   second angle anywhere).
-2. **Dividers: ALWAYS 2** — *"po prostu daj 2 zawsze"* — three even
-   lanes; divider grain HORIZONTAL (Petros sheet-goods law, as the
-   watch insert).
-3. **Top of the drawer stack ONLY** — *"tylko na wierzchu innych
-   szuflad."*
-4. **NOTHING above it** — *"nie może mieć półki nad sobą, bo buty będą
-   chodzić."*
-5. **Watch XOR shoe per cabinet** — *"jeśli będzie szuflada z zegarkami,
-   to już nie możemy w tej szafie zrobić butów."* Adding the second kind
-   names the first and REFUSES IN WORDS — store guard AND engine
-   warning if params arrive broken.
+Owner: *"jakieś dziwne ustawienia, po co mi to? ja nie chcę tego… jak
+już to pasek albo pokrętło… jedynie wysokość — jeden pasek, przedłuż
+wycięcie J na pionowych i tyle, nic więcej."* And on the two entry
+points: *"będzie w 2 miejscach do włączenia — do zmiany."*
 
-LISP FIRST: the insert's law goes into the shoe-drawer section of
-`reference/lisp/KIT_WARDROBE_FULL.lsp` (lines, not a file). Engine
-births 1 ramp + 2 dividers on the measured drawer interior; BOM carries
-the boards; the ramp's tilt prints on the sheet the way a slope prints
-`CUT β°`; 3-D renders with the standing grain law.
+1. **Delete** (licensed) the jpull numeric block — `runMm`,
+   `fromBottomMm`, `rampR`, the five profile constants — from
+   `SettingsPanel.jsx` and `WizardSettings.jsx`. The constants stay in
+   the profile/engine, unexposed. The handle-system CHOICE itself stays
+   exactly where handle systems are chosen today.
+2. **One slider.** Click on the J strip of a TALL front → a small
+   DRAGGABLE modal beside the object (the house modal law) holding ONE
+   control: `J run length`, a slider from 300 to the leaf's own maximum,
+   step 10, live preview on drag. Nothing else in that modal.
+3. The value is a per-LEAF override (`jpull_run_mm` on the front's
+   params); the engine reads it, else the profile default 500. Start
+   height and ramp radius are NOT exposed — engine constants.
+4. Click-path proof: `verify/t58b/f3-slider.png` (modal open beside the
+   door, strip visibly longer than default).
 
-DoD: `test/turn58-f2-the-shoe-insert.test.js` (parts born, tilt ==
-shoeShelf.tiltDeg, grain 'h', top-only enforced, shelf-above refused,
-watch⇄shoe both directions refused with the other named, flat goldens
-untouched); frames `verify/t58/f2-shoe-open.png`, `f2-shoe-refused.png`.
+## F4 [HIGH] · THE CLASSIFIER DEBT — t58 AND t58b, NAMED
 
-## F3 [HIGH] · BUGFIX — THE SHELVES LEARN THEIR BAY, THE PINNED SHELF, AND THE CENTRED ADD
+t58 shipped without `t58-classify.mjs`. Pay it now: `scripts/t58b-classify.mjs`
+carries the byte-identity contract for BOTH turns — goldens hashed and
+asserted; named deltas for t58 (slope fixtures: phantom drills gone; shoe
+fixtures: the insert; wall-infill fixtures: the top infill's span) and
+for t58b (pane shelf strip; per-leaf J override); per-feature `--probe`
+in the t55/t57 school; `UNNAMED=0`.
 
-Owner, three sentences, three laws — with the culprits named from
-today's dig:
+## F5 [MEDIUM] · PROPS v1 — ONLY IF THE BUCKET IS FULL
 
-1. **A fixed shelf CARRYING A DIVIDER is PINNED** — *"ona już jest
-   ustawiona na stałe."* The link exists (`mount: 'shelf'` + the shelf's
-   id, `projectStore` ~5022). Centring never moves it — and it CUTS the
-   ladder exactly as a split crossbar does (T37-F4a's own words about
-   the divider: shelves below centre up to it, shelves above from it —
-   the same `bandSegments` law, one more boundary kind, not a second
-   segmenter).
-2. **Centring is PER BAY, never across.** *"Centrujemy tylko prawy lub
-   lewy bay… nie robimy na przemian ze wszystkich bayów."* Culprit:
-   `redistributeShelves` segments only vertically by crossbars — `zone`
-   does not appear in the function at all. The law: invoked from a
-   shelf's/bay's context → THAT bay; invoked on the whole unit → every
-   bay gets its OWN ladder, never one ladder through a partition.
-3. **A newly added shelf lands CENTRED** in the biggest opening of ITS
-   bay, respecting pinned shelves. Culprit: `centredShelfPos`
-   (`engine/items.js:151`) receives the WHOLE unit's positions and band
-   — bay-blind and pinned-blind, so "the biggest opening" reaches
-   through the partition.
-
-ONE opening-finder for both callers (the add and the centre button),
-zone-aware and pinned-aware — path count 1. Engine functions stay pure
-(new inputs, no store reads); a bare `computeCabinet()` is untouched —
-goldens prove it.
-
-DoD: red-first tests — bay with a divider: added shelf lands in THAT
-bay's opening; centre on a two-bay unit yields two independent ladders;
-a pinned fixed-shelf-with-divider never moves and splits its bay's
-ladder; no-bay flat unit behaves byte-for-byte as today. Frame
-`verify/t58/f3-centre-per-bay.png`.
-
-## F4 [HIGH] · PULL-DOWN CANNOT LIVE UNDER A SLOPE
-
-Owner: *"jak się zaczyna skos, to ma zniknąć — nie tylko jak się pojawi
-diverter, ale też jak jest sam. Szafa ze skosem nie może mieć
-pull-down, bo to jest zawsze na wysokości."* The kit's own numbers
-agree: it parks HIGH (rod axis ~657 in file metres, arm ~607) and its
-swing sweeps the top front.
-
-1. Slope becomes ACTIVE → every `pulldown_rail` kit on the unit is
-   REMOVED in the same store transition T55-F3 clears the interior —
-   same family, same notify style, the message names the pull-down.
-   Always on active slope, knee or straight.
-2. On a sloped unit the Add-items entry is GREYED with a one-line
-   reason — through the EXISTING library `enabled/reason` channel
-   (`engine/library.js`; name it, no second gate).
-3. Slope removed → entry re-enables; the kit does NOT resurrect itself.
-
-DoD: test (kit gone + entry disabled with reason; re-enable without
-resurrection; flat twin untouched); frame
-`verify/t58/f4-pulldown-greyed.png`.
-
-## F5 [HIGH] · THE TOP INFILL RUNS TO THE WALL, OVER THE SIDE INFILL
-
-Owner: *"jak dojeżdżamy szafą do ściany i się pojawia infill boczny, to
-niech górny się przedłuży do ściany — jak było wcześniej."*
-
-Side infill appears (wall proximity) → the TOP infill EXTENDS to the
-wall face, capping the corner; the SIDE infill keeps its height and
-stops UNDER it — one plane at the joint, ZERO overlap (the Petros
-no-overlap iron rule; the junction conduct is `src/engine/mitre.js`'s
-turn-6/8 strip law — take it, name it). *"Jak było wcześniej"* is a
-regression claim: search the history (T53 "infills follow the slope"
-and the turn-6/8 infill turns are the suspects), NAME the commit that
-shortened the top infill at the wall, and state in the report whether
-this RESTORES an old law or writes it for the first time — either
-answer is fine, a guess is not. Under an ACTIVE slope nothing here
-applies — T55-F1's four corners govern, untouched.
-
-DoD: red-first test (top infill's span reaches the wall face; side
-infill meets its underside in one plane; the standing collision check
-stays silent; away-from-wall twin byte-identical); frame
-`verify/t58/f5-infill-corner.png`.
-
-## F6 [MEDIUM] · A CLOSING DOOR CLOSES WHAT IT COVERS
-
-Owner: *"jak zamykasz szafy drzwi, to szuflady muszą się zamykać
-automatycznie."* The picture respects physics — a real leaf would hit
-them.
-
-1. Closing a leaf (its own click, or Open-all switching off) → every
-   PULL-OUT behind that leaf glides shut: internal drawers, pull-out
-   shelves, watch/belt/shoe drawers — the `openFronts`/`openKits`
-   families, one law. The lowered PULL-DOWN parks too (lowered, it
-   collides with the leaf).
-2. Which pull-outs a leaf covers is answered by GEOMETRY (the leaf's
-   span over the kit's bay/zone), once, in one place.
-3. Opening a leaf opens NOTHING. The easing is the standing
-   `delta·8` — no teleports.
-4. Store/3-D only; zero engine bytes.
-
-DoD: test on the ui law (close leaf → covered kits' open state drops;
-uncovered kits untouched; open leaf → nothing); rig frames before/after
-`verify/t58/f6-door-closes-drawers-*.png`.
-
-## F7 [MEDIUM] · LIGHTING — THE ICONS STOP HIDING, THE ROOM MOVES DOWN
-
-History, named: the current conduct IS T54-F5 as specified —
-`LedIcons.jsx` ~113 `if (!lightingOpen) return null`. Not a fossil; a
-narrower spec than tonight's order.
-
-1. LED placement icons ALWAYS visible in the EDITOR viewport (licensed
-   gate deletion; re-head the T54 comment with the owner's order). NEVER
-   in renders, captures or PDFs — assert the capture path excludes
-   them.
-2. In the Lighting modal, the ROOM section (four lamps + room light)
-   moves to the BOTTOM; strip controls stand above. Order changes; not
-   one control added, removed or renamed.
-3. WHILE IN THE 3-D: the watch pane's proof is still owed. Re-shoot
-   `verify/t58/f7-pane-through.png` with the drawer OPEN and the insert
-   lit, the insert CLEARLY VISIBLE through the glass; if the current
-   opacity 0.42 hides it, lower toward t57's specified 0.22–0.32.
-
-DoD: icons present with the panel closed (`f7-icons-always.png`),
-absent in a capture (frame or assertion — report says which); modal
-frame `f7-room-at-bottom.png`; the pane frame above.
-
-## F8 [MEDIUM] · PROPS v1 — THE DRAWERS GET DRESSED
-
-Owner approved the pack (watches ×4, belt rolls ×5, folded ties ×6 —
-metres, real sizes, light meshes) and the switch: *"ok props on/off —
-zegarki wiedzą i reszta też wie."*
-
-1. ASSETS live in the Supabase bucket `props/` with a `manifest.json`
-   in the Movento school. The repo carries NO model binaries (CONERO
-   precedent). **If the bucket or manifest is missing at run time: build
-   the whole machinery anyway, ship the toggle GREYED with a one-line
-   reason, skip the dressing walk and note it — nothing throws.**
-2. PLACEMENT is automatic and MEASURED: load → `updateMatrixWorld` →
-   Box3 → LAY the piece into its slot — watches LYING into the watch
-   insert's pockets (the model stands ~80 mm, the interior is 60 —
-   orient by measurement, never by guess), belt rolls flat into lanes,
-   ties into sections. Fewer slots → fill what exists; more → repeat
-   variants. No prop intersects a board.
-3. THE SWITCH: a `Props` toggle in the VIEW-BAR family (beside
-   Outlines / X-ray) — a PICTURE switch, global. Renders HONOUR it;
-   BOM, CNC, DXF and the invoice are BLIND to props — state where that
-   blindness is structural.
-
-DoD: toggle frames `verify/t58/f8-props-on/off.png` (or greyed-with-
-reason frame when assets absent); a BOM/DXF assertion that props add
-zero rows/paths; the walk (assets permitting) lays one watch, one belt,
-one tie by measurement and prints the landed boxes.
+Unchanged from T58 F8, verbatim law. If `props/` or its manifest is
+missing: build the machinery, ship the toggle greyed with its reason,
+skip the walk, note it. Nothing throws.
 
 ---
 
 ## ORDER, PROOF, REPORT
 
-**F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8.** Bugfixes red-test-first,
-each its own commit.
+**F1 → F2 → F3 → F4 → F5.** F1 and F2 each their own commit, frame
+committed BEFORE moving on.
 
-Proof: full suite green; `t58-classify.mjs` named-deltas only (slope,
-shoe, wall-infill fixtures) with per-feature probes; paren 14/14;
-screenshots listed above.
-
-Morning report, numbered: per feature done/skipped; the four law path
-counts (each must be 1); licensed deletions confirmed executed; the F5
-history verdict (restored vs new, commit named); `+X/−Y`; test totals;
-classifier verdict; anything skipped and why.
+Morning report, numbered: per feature done/skipped; the pane's final
+material props verbatim; the born strip's z and length on the fixture;
+licensed deletions confirmed; `+X/−Y`; test totals; classifier verdict.

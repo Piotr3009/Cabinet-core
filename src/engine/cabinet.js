@@ -41,6 +41,12 @@ import {
   plateBearerOf, slopeForcedHand, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
+// T58b (CLAUDE.md F2): the LED strip's own dimensions — thickness and width —
+// are the lighting spec's, so the strip the glass births is cut to the same
+// law every other strip in the project is. `ledStrips.js` reaches nothing in
+// here (its own imports are design/types/projectTypes/format/puzzle), so this
+// is a one-way read and not a cycle.
+import { lightingSpec } from './ledStrips.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
 // `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
 // from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
@@ -7698,6 +7704,10 @@ export function computeCabinet(params, profileOverride) {
             ...(shelfAbove.meta || {}),
             watch_glass: { drawer: index, ...plan.offsets, flush: true },
           };
+          // T58b (F2): the strip's thickness and width are the project's own
+          // lighting numbers — never a literal here, exactly as `ledStrips.js`
+          // reads them for every other strip.
+          const ledStrip = lightingSpec(P).strip;
           // The pane, ordered and never cut — FLUSH with the shelf's top.
           shelfGlass = {
             zone,
@@ -7719,6 +7729,53 @@ export function computeCabinet(params, profileOverride) {
               // relocated, never repealed.
               y: shelfAbove.box.y,
             },
+            // ─── TURN 58b (CLAUDE.md F2): THE GLASS BIRTHS ITS OWN STRIP ────
+            //
+            // The owner, live: *"światło jest na krawędzi półki i oświetla
+            // fronty szuflad, a powinno być z tyłu na półce."*
+            //
+            // Until now the glass had no strip at all — only `led_mm`, a
+            // length that fed the BOM and lit nothing. What lit the scene were
+            // ORDINARY shelf strips, and their law (`ledStrips.js`) measures
+            // depth FROM THE FRONT EDGE, so any strip a user put under this
+            // shelf sat at the front and floodlit the drawer fronts below it.
+            // That is the exact opposite of what he asked for.
+            //
+            // So the pane brings its OWN: one ordinary `kind: 'shelf'` record,
+            // under the shelf, along the aperture's BACK edge. `z` runs from
+            // the wall forward, so this washes FORWARD over the watches and
+            // nothing of it reaches the fronts. It REPLACES `led_mm`: its
+            // length is the BOM's single source, counted by `lightingBomLines`
+            // like any other strip.
+            //
+            // NO `ref`. A strip's `ref` is what `lib/ledGroove.js` looks its
+            // panel up by, and a groove for this line would be a CNC delta
+            // nobody ordered — the T53 ring never cut one either. Rule 3 of
+            // this module's own lighting law: LIGHTING DRILLS NOTHING.
+            strip: {
+              id: `${shelfAbove.id}:watch-glass`,
+              kind: 'shelf',
+              box: {
+                x: shelfAbove.box.x + plan.opening.x1,
+                // Hung under the shelf, the usual thickness law.
+                y: shelfAbove.box.y - ledStrip.thickness,
+                // The band of solid board between the shelf's back edge and
+                // the aperture: the plan's own LED line, `openingOffsetMm`
+                // less `ledOffsetMm`. `shelfGlassPlan` already refuses a shelf
+                // that cannot hold it (`off - led > 0`), so the strip stands
+                // ON board and never off the edge.
+                z: shelfAbove.box.z + plan.led.y1,
+                w: plan.opening.w,
+                h: ledStrip.thickness,
+                d: ledStrip.width,
+              },
+              round: false,
+              length_mm: roundTo(plan.opening.w, 1),
+              // Measured from the shelf's BACK, which is the whole point of
+              // this record — the ordinary `inset_mm` is a front-edge number
+              // and naming it that here would be a lie a reader would act on.
+              rear_inset_mm: roundTo(plan.led.y1, 1),
+            },
           };
           watchGlassPanes.push(shelfGlass);
         }
@@ -7739,7 +7796,11 @@ export function computeCabinet(params, profileOverride) {
             shelf: shelfGlass.shelfId,
             glass_w_mm: roundTo(shelfGlass.box.w, 1),
             glass_d_mm: roundTo(shelfGlass.box.d, 1),
-            led_mm: roundTo(shelfGlass.led.lengthMm, 1),
+            // T58b (F2, licensed): `led_mm` — the T53 RING's length, which fed
+            // the BOM and drew nothing — is REPLACED by the born strip above,
+            // not kept beside it. Its length is the strip's own and reaches the
+            // BOM through `lightingBomLines`, like every other strip.
+            led_strip_mm: roundTo(shelfGlass.strip.length_mm, 1),
           }
           : null,
       });
@@ -8112,16 +8173,18 @@ export function computeCabinet(params, profileOverride) {
           flush: true,
         },
         `Glass ${w.shelf_glass.glass_w_mm} × ${w.shelf_glass.glass_d_mm} mm · flush in ${w.shelf_glass.shelf}, over ${where}`);
-      hw('led_strip', 'LED strip', roundTo(w.shelf_glass.led_mm / 1000, 3), 'm',
-        {
-          drawer: w.drawer,
-          ...(w.zone == null ? {} : { zone: w.zone }),
-          shelf: w.shelf_glass.shelf,
-          length_mm: w.shelf_glass.led_mm,
-          aimed_at: 'contents',
-        },
-        `LED strip ${w.shelf_glass.led_mm} mm · ringing the glass on the underside of ${w.shelf_glass.shelf}, `
-          + `firing down onto ${where}`);
+      // ─── TURN 58b (CLAUDE.md F2, licensed deletion 3) ───────────────────
+      // The T53 `led_strip` line went here:
+      //
+      //   hw('led_strip', 'LED strip', roundTo(w.shelf_glass.led_mm / 1000, 3),
+      //      'm', { … length_mm: w.shelf_glass.led_mm … },
+      //      `LED strip ${w.shelf_glass.led_mm} mm · ringing the glass …`);
+      //
+      // It measured a RING nothing drew, and it was a second source for a
+      // number the strips already own. The glass births a real strip now
+      // (the T53 block above) and `lightingBomLines` counts it like any
+      // other — one line, one length, one law. The quotation stays so the
+      // next reader knows this was decided rather than lost.
     }
   }
 

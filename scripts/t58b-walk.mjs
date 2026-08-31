@@ -262,6 +262,59 @@ try {
     await page.sleep(1600);
     await page.screenshot(`${SHOTS}f1-door-glass-through.png`);
   }
+
+  // ══ F2 · THE PANE'S LIGHT COMES FROM THE BACK OF THE SHELF ════════════════
+  //
+  // The owner: *"światło jest na krawędzi półki i oświetla fronty szuflad, a
+  // powinno być z tyłu na półce."*  The glass births its own strip now — one
+  // ordinary `kind: 'shelf'` record at the aperture's BACK edge — so the room
+  // can go dark and the pane still glows from behind, with nothing of it
+  // reaching the drawer fronts below.
+  if (runs('f2')) {
+    await fresh('F2 the light moves back');
+    const unit = await buildWatchUnit({ glazed: false, doors: false, ledDemo: true });
+    check('a watch drawer under a glass shelf, lights ON', unit.panes > 0, JSON.stringify(unit));
+
+    // THE RECORD, off the engine — the strip is the glass's own, at the rear.
+    const born = await ask(`(() => {
+      const res = P().unitResult(${JSON.stringify(unit.id)});
+      const pane = (res.assemblies.watchGlass || [])[0];
+      const shelf = (res.panels || []).find((p) => p.id === pane.shelfId);
+      return {
+        strip: pane.strip,
+        shelf: shelf.box,
+        fromBack: pane.strip.box.z - shelf.box.z,
+        shelfDepth: shelf.box.d,
+      };
+    })()`);
+    check('ONE strip, born by the glass, at the BACK of its shelf',
+      born.strip && born.strip.kind === 'shelf' && born.fromBack * 2 < born.shelfDepth,
+      `z ${born.fromBack} mm from the back of a ${born.shelfDepth} mm shelf, `
+        + `${born.strip.length_mm} mm long`);
+
+    const drawn = await countFlag('ccLedStrip');
+    check('and `LedStrips.jsx` draws it with no special case', drawn >= 1, `strips drawn ${drawn}`);
+
+    // The room goes LOW — the LED demo's own dim — so the only thing lighting
+    // the pane is the strip behind it.
+    await ask(`(() => {
+      U().setShowDimensions(false);
+      U().setShowFrontDimensions(false);
+      U().setBrightness(1);
+      return true;
+    })()`);
+    const open = await ask('Object.keys(U().openFronts || {}).length');
+    check('the drawer is SHUT', open === 0, `open fronts ${open}`);
+    await page.sleep(600);
+    // From in front and a little above: the pane at the top of the frame and
+    // the drawer fronts below it, so the claim "the fronts are NOT washed" is
+    // in the same picture as the glow.
+    const shot = await aim('ccWatchGlass', { dist: 1.5, deg: 22, sway: 0.05 });
+    check('the camera holds pane and drawer fronts in one frame', Boolean(shot), JSON.stringify(shot));
+    await page.sleep(1700);
+    await page.screenshot(`${SHOTS}f2-pane-closed-glow.png`);
+  }
+
 } catch (e) {
   // A section that throws must SAY so: a walk that swallows its own error and
   // reports "all ok" is exactly how a frame nobody took gets believed.

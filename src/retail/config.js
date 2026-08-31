@@ -33,8 +33,8 @@ export const PRICE_ON_REQUEST = 'Price on request';
 export const PRICE_FOOTNOTE = 'EXCL. VAT · MADE IN LONDON';
 
 /** Where the switch sends each door (F1.2). */
-export const PRO_HREF = '/';
-export const RETAIL_HREF = '/retail.html';
+export const PRO_HREF = '/pro';
+export const RETAIL_HREF = '/retail';
 
 /** Copy the owner is to write (F6). Marked, never faked. */
 export const OWNER_TO_WRITE = '— owner to write';

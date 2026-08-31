@@ -221,10 +221,31 @@ test('every lighting role maps to a real registry id', () => {
 // shoe drawer that replaced it.
 
 const ENGINE_SRC = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
+// ─── TURN 58 (F2): …AND THE MODULES THAT EMIT PART NAMES OF THEIR OWN ──────
+//
+// The scan read cabinet.js and nothing else, which was true of the whole
+// vocabulary until an insert started naming its own boards. `shoeInsert.js`
+// emits SHOE-RAMP and SHOE-DIVIDER, so it is read here too — otherwise the
+// reverse guard below calls a mapped name an orphan and the forward guard
+// cannot see it at all.
+//
+// A GAP RECORDED, NOT INHERITED: `watchDrawer.js` emits six names of its own
+// (WATCH-BASE, -RAIL-FRONT, -RAIL-BACK, -RAIL-SIDE, -RAIL-ROW, -DIVIDER) and
+// is STILL outside this scan — and none of the six is in ELEMENT_TO_PART_ID.
+// They reach the cut list, so on a job with a watch drawer they are the very
+// silent BOM drop this file exists to make impossible. It predates turn 58
+// and turn 58 has no licence to touch the watch tray, so it is written down
+// here rather than quietly fixed or quietly ignored. Adding the six rows and
+// this file to the scan is one small turn's work.
+const INSERT_SRC = readFileSync(new URL('../src/engine/shoeInsert.js', import.meta.url), 'utf8');
 
 function partNamesInSource() {
   const names = new Set();
-  for (const m of ENGINE_SRC.matchAll(/part:\s*'([^']+)'/g)) names.add(m[1]);
+  for (const src of [ENGINE_SRC, INSERT_SRC]) {
+    for (const m of src.matchAll(/part:\s*'([^']+)'/g)) names.add(m[1]);
+    for (const m of src.matchAll(/push\('[^']*',\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);
+    for (const m of src.matchAll(/push\(`[^`]*`,\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);
+  }
   for (const m of ENGINE_SRC.matchAll(/\bboard\(\s*`[^`]*`\s*,\s*'([^']+)'/g)) names.add(m[1]);
   // T54-F7 AMENDED (28.08.2026): the shoe box suffix-map scan
   // (`const suffix = {…}[piece.role]` → SHOEBOX-*) is deleted — the map it
@@ -253,6 +274,9 @@ test('the source scan finds the whole vocabulary — 28 names, after T54-F7 buri
   assert.ok(names.has('BUL'), 'the `part:` literal scan is broken');
   assert.ok(names.has('SIDE'), 'the board() helper scan is broken');
   assert.ok(names.has('SHOE-RAIL'), 'the stop rail is gone from the engine — or the scan is');
+  // T58-F2: the shoe drawer's insert, emitted from `shoeInsert.js`.
+  assert.ok(names.has('SHOE-RAMP'), 'the shoe ramp is gone — or the insert scan is');
+  assert.ok(names.has('SHOE-DIVIDER'), 'the shoe dividers are gone — or the insert scan is');
   // The graves stay closed: no SHOEBOX-* name may ever come back out of
   // cabinet.js under this turn's law.
   const risen = [...names].filter((n) => n.startsWith('SHOEBOX')).sort();

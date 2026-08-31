@@ -835,10 +835,42 @@ export const useUiStore = create((set, get) => ({
   // Which fronts are open, and how far (0 = shut, 1 = fully open). Purely
   // visual: nothing here reaches the engine, the BOM or the CNC sheet.
   openFronts: {},                    // { [unitId]: { [panelId]: 0..1 } }
-  toggleFront: (unitId, panelId) => set((s) => {
+  /**
+   * ─── TURN 58 (CLAUDE.md F6): A CLOSING DOOR CLOSES WHAT IT COVERS ────────
+   *
+   * The owner: *"jak zamykasz szafy drzwi, to szuflady muszą się zamykać
+   * automatycznie."*  A real leaf swinging shut would hit a drawer standing
+   * out of the carcass, so the picture must not draw one closed over it.
+   *
+   * CLOSING ONLY. Opening a leaf opens NOTHING — a joiner who swings a door
+   * to look inside has not asked for six drawers to come at him.
+   *
+   * `covers` is the list this leaf stands in front of, worked out by GEOMETRY
+   * in `engine/covers.js` and handed in by the view that knows what is on
+   * screen. Absent — every caller before tonight — the toggle is exactly the
+   * two lines it always was.
+   *
+   * The easing is untouched: these values are the same 0..1 the animation
+   * already rides at `delta · 8`, so nothing teleports.
+   */
+  toggleFront: (unitId, panelId, covers = null) => set((s) => {
     const unit = s.openFronts[unitId] || {};
     const next = (unit[panelId] ?? 0) > 0.5 ? 0 : 1;
-    return { openFronts: { ...s.openFronts, [unitId]: { ...unit, [panelId]: next } } };
+    const mine = { ...unit, [panelId]: next };
+    // `covers` is either a plain list of front ids or `{ fronts, kits }` — the
+    // view hands whichever it has, and both read the same here.
+    const fronts = Array.isArray(covers) ? covers : (covers?.fronts || []);
+    const kits = Array.isArray(covers) ? [] : (covers?.kits || []);
+    if (next > 0.5 || (!fronts.length && !kits.length)) {
+      return { openFronts: { ...s.openFronts, [unitId]: mine } };
+    }
+    // Shutting. Everything behind this leaf glides shut with it.
+    for (const id of fronts) mine[id] = 0;
+    if (!kits.length) return { openFronts: { ...s.openFronts, [unitId]: mine } };
+    const nextKits = { ...s.openKits };
+    // …and a LOWERED pull-down parks: lowered, it is in the leaf's way too.
+    for (const id of kits) nextKits[id] = 0;
+    return { openFronts: { ...s.openFronts, [unitId]: mine }, openKits: nextKits };
   }),
   /**
    * Open a set of fronts at once — used when internal drawers are added, so the
@@ -888,7 +920,10 @@ export const useUiStore = create((set, get) => ({
     const rows = (entries || []).filter((e) => e?.unitId && e.panelIds?.length);
     if (!rows.length) return {};
     const anyShut = rows.some((e) => e.panelIds.some((id) => !((s.openFronts[e.unitId]?.[id] ?? 0) > 0.5)));
-    if (!anyShut) return { openFronts: {} };
+    // T58-F6: Open-all switching OFF is the same act as closing every leaf by
+    // hand, so it takes everything with it — the drawers ride `openFronts` and
+    // go with the map, and a lowered pull-down parks with them.
+    if (!anyShut) return { openFronts: {}, openKits: {} };
     const next = { ...s.openFronts };
     for (const e of rows) {
       const unit = { ...(next[e.unitId] || {}) };

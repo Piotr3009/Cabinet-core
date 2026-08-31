@@ -37,7 +37,8 @@ import {
 import { jpullSpec, resolveHandle } from './handles.js';
 import { frontStackWarning, resolveBoxSide } from './drawerBox.js';
 import {
-  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, topDemandMm,
+  bayDoorPlan, bayDoorsAvailable, cupBoreOf, doorBays, hingedSidesOf,
+  plateBearerOf, slopeForcedHand, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
@@ -99,6 +100,12 @@ import {
   WATCH_LAYERS, drawerBoxInterior, isShelfBoard, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
   watchFinishOf, watchInsertOn, watchInsertParts, watchLayoutOf,
 } from './watchDrawer.js';
+// T58 (CLAUDE.md F2): the shoe drawer's INSERT — the ramp and its two
+// dividers, on the shoe SHELF's own tilt. The box is a standard drawer and
+// this touches none of it.
+import {
+  shoeInsertFit, shoeInsertOn, shoeInsertParts, watchDrawerItem,
+} from './shoeInsert.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import { impliedLegHeight, maskDepthExtra, standsOnLegHeight } from './runs.js';
@@ -1750,6 +1757,16 @@ export function computeCabinet(params, profileOverride) {
   // above the top drawer front plus the gap, and runs to the top edge the
   // cabinet already demands (`doors.js topDemandMm`, untouched).
   const overlayBase = overlay ? overlay.doorBase : 0;
+  // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
+  // aperture, which is the same one line seen from the other end (F9).
+  // TURN 40 (F3b): …and it STANDS on the overlay stack when there is one.
+  //
+  // T58-F1: HOISTED from the door section, unchanged. The face leaves' hands
+  // have to be known before the drawer standoff is decided, and the rake is
+  // sampled at the door's own datum — so the datum has to exist up here. Every
+  // term of it (`cfg.doorExtend`, `hoodApertureMm`, `overlayBase`) is already
+  // settled at this line, which is why it can move without moving a byte.
+  const doorY = -cfg.doorExtend + hoodApertureMm + overlayBase;
   const frontH = H - topDemandMm(params, P) + cfg.doorExtend - hoodApertureMm - overlayBase;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
@@ -1759,8 +1776,56 @@ export function computeCabinet(params, profileOverride) {
   // matters now that such a kit answers the ordinary door control and can
   // report a `doorCount` of 1. (It has no BUL to bore either, which is how the
   // fault showed: six ⌀5 plate holes addressed to a panel that is not cut.)
-  const hingedSides = dropsForward ? []
-    : (doorCount === 2 ? ['BUL', 'BUR'] : (doorCount === 1 ? [cfg.hinge === 'R' ? 'BUR' : 'BUL'] : []));
+  // ─── TURN 58 (F1): THE STATIC TABLE IS GONE (licensed deletion 1) ────────
+  //
+  // What stood here was:
+  //
+  //     const hingedSides = dropsForward ? []
+  //       : (doorCount === 2 ? ['BUL', 'BUR']
+  //         : (doorCount === 1 ? [cfg.hinge === 'R' ? 'BUR' : 'BUL'] : []));
+  //
+  // Two doors ⇒ BOTH sides, always. One door ⇒ the side the RAW param names.
+  // Written when a leaf's hand could not change — and under a rake it can:
+  // T46/T55 force both leaves onto the tall edge. The table bored the board the
+  // leaf had just abandoned (6 phantom ⌀5 holes on a 1000 × 2200 two-door
+  // wardrobe) and, on one door, bored nothing at all where the door hangs.
+  //
+  // It is replaced by the ONE resolver — `doors.js plateBearerOf`, "which board
+  // carries THIS leaf's plates" — asked of the face leaves THIS cabinet will
+  // actually cut. The plan below is not a second copy of the door arithmetic:
+  // `frontW` and the gap are the numbers `faceLeaf()` itself lays the leaves
+  // out from, a few thousand lines down, and the assertion that the two agree
+  // is the drilling pass, which asks the same resolver of the real panels.
+  //
+  // WHY IT IS ANSWERED HERE, so far above the doors. T40-F3a made the drawer
+  // standoff and the plate holes read ONE list, in its own words so that
+  // *"the strip and the plate holes can no longer disagree about whether a side
+  // carries a door"*. The standoff is decided in the drawer block immediately
+  // below. So the list has to exist here — and it is now DERIVED FROM THE
+  // DOORS instead of from a door COUNT.
+  const faceLeafPlan = (() => {
+    if (dropsForward || !(doorCount > 0)) return [];
+    const half = P.doors.gap / 2;
+    // The two boards a plate can be screwed to before any partition exists.
+    const sides = [
+      { part: 'BUL', id: 'BUL', box: { x: 0, w: G } },
+      { part: 'BUR', id: 'BUR', box: { x: W - G, w: G } },
+    ];
+    const spans = doorCount === 2
+      ? [{ x: half, free: 'L' }, { x: W - half - frontW, free: 'R' }]
+      : [{ x: half, free: cfg.hinge === 'R' ? 'R' : 'L' }];
+    return spans.map(({ x, free }) => {
+      // The rake's verdict, from the ONE sampler and the ONE hand rule. With no
+      // ceiling over this leaf `cutOver` answers null and the typed hand
+      // stands — which is every cabinet in a level room, to the byte.
+      const sub = cutOver(x, x + frontW, { dy: doorY + P.doors.gap });
+      const pts = sub ? sub.pts.map((q) => ({ x: q.x, y: Math.max(0, q.y) })) : null;
+      const cuts = pts && slopeCutActive({ w: frontW, h: frontH, pts });
+      const hinge = cuts ? slopeForcedHand(pts, 'L') : free;
+      return { part: 'FRONT', box: { x, w: frontW }, meta: { hinge }, sides };
+    });
+  })();
+  const hingedSides = hingedSidesOf(faceLeafPlan, { panels: faceLeafPlan[0]?.sides || [] });
 
   // ── Hinges + cups ──────────────────────────────────────────────────────────
   const hingeRule = P.hinges.rules[type.hingeRule] || P.hinges.rules.base;
@@ -5603,10 +5668,6 @@ export function computeCabinet(params, profileOverride) {
 
   // Door fronts, always last (they close the unit — SPEC 4.10)
   const doorZ = D + P.doors.gap;
-  // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
-  // aperture, which is the same one line seen from the other end (F9).
-  // TURN 40 (F3b): …and it STANDS on the overlay stack when there is one.
-  const doorY = -cfg.doorExtend + hoodApertureMm + overlayBase;
   // ─── TURN 21 (CLAUDE.md F12): DOORS ON THE PARTITION ─────────────────────
   //
   // Owner's case: partitions at 600 and 800, three bays, two proper doors and
@@ -5746,7 +5807,13 @@ export function computeCabinet(params, profileOverride) {
       sheetR: roomL,
       // The full-height edge. A tie (a level ceiling under the carcass top)
       // keeps the LEFT, which is the app's own default hand.
-      hinge: roomL >= roomR ? 'L' : 'R',
+      //
+      // T58-F1: the comparison itself moved to `doors.js slopeForcedHand`, and
+      // it moved because this turn gave it a SECOND reader — the carcass
+      // hinged-side answer is wanted before the leaves are cut. Two copies of
+      // this one line is exactly how the hand and the board it hangs on came
+      // to disagree; `free = 'L'` is the tie this file has always taken.
+      hinge: slopeForcedHand(roomPts, 'L'),
       tall,
       low: Math.min(full, roomPts.reduce((lo, q) => Math.min(lo, q.y), Infinity)),
       // ─── TURN 54 (CLAUDE.md F3.4): THE ANGLE, STATED ON THE PIECE ────────
@@ -6616,16 +6683,29 @@ export function computeCabinet(params, profileOverride) {
   // with `meta.hingeOn`, exactly as before. A leaf that says NEITHER still
   // falls through, which is what keeps a kit nobody has taught this to reading
   // as it read yesterday.
-  const plateBearerOf = (p) => {
-    if (p.meta?.hingeOn) return p.meta.hingeOn;
-    if (p.meta?.hinge === 'R') return 'BUR';
-    if (p.meta?.hinge === 'L') return 'BUL';
-    return null;
-  };
+  //
+  // ─── TURN 58 (F1): …AND THAT PARAGRAPH IS NOW ONE FUNCTION, IMPORTED ────
+  //
+  // A local copy of it stood here:
+  //
+  //     const plateBearerOf = (p) => {
+  //       if (p.meta?.hingeOn) return p.meta.hingeOn;
+  //       if (p.meta?.hinge === 'R') return 'BUR';
+  //       if (p.meta?.hinge === 'L') return 'BUL';
+  //       return null;
+  //     };
+  //
+  // It was right about a leaf that hangs on a carcass side and blind to the one
+  // that does not: a forced leaf whose hinge edge lands mid-cabinet answered
+  // 'BUR' anyway, because the hand was read as if it named a board. The
+  // imported resolver asks WHICH BOARD ACTUALLY STANDS THERE, which is the same
+  // answer for every leaf that had one and the honest null for the leaf that
+  // never did. One law, three readers (here, the 3-D, the store).
+  const bearerOf = (p) => plateBearerOf(p, { panels });
   const platedRowsFor = (bearerId) => {
     const rows = panels
       .filter((p) => p.part === 'FRONT' && p.meta?.split && Array.isArray(p.meta.plateY)
-        && (plateBearerOf(p) ? plateBearerOf(p) === bearerId : true))
+        && (bearerOf(p) ? bearerOf(p) === bearerId : true))
       .flatMap((p) => p.meta.plateY);
     return rows.length ? [...new Set(rows)].sort((a, b) => a - b) : null;
   };
@@ -6634,9 +6714,14 @@ export function computeCabinet(params, profileOverride) {
   // exactly as a face door does, and a middle bay's hangs on nothing but its
   // partitions. Drilling `hingedSides` regardless would have bored a plate
   // pattern into a side no door is hung on.
+  //
+  // T58-F1: the FACE case is asked of the real leaves now, through the same
+  // resolver — so the answer the sheet is bored from and the answer the picture
+  // hangs its ironmongery on are one call, not two agreeing expressions.
+  const faceLeavesCut = panels.filter((p) => p.part === 'FRONT' && p.role === 'front');
   const platedSides = bayDoors.length
     ? [...new Set(bayDoors.filter((l) => !l.onPartition).map((l) => l.hingeOn))]
-    : hingedSides;
+    : hingedSidesOf(faceLeavesCut, { panels });
   for (const sideId of platedSides) {
     const x = sideId === 'BUR' ? sideW - P.hinges.xFromFrontEdge : P.hinges.xFromFrontEdge;
     const own = platedRowsFor(sideId);
@@ -7462,8 +7547,35 @@ export function computeCabinet(params, profileOverride) {
       if (!boxes.has(key)) boxes.set(key, { index: Number(pnl.meta?.drawer), zone: pnl.meta?.zone ?? null });
     }
     const born = [];
+    // ─── T58 (CLAUDE.md F2): WATCHES XOR SHOES, AND THIS IS THE OTHER
+    // DIRECTION ─────────────────────────────────────────────────────────────
+    // *"jeśli będzie szuflada z zegarkami, to już nie możemy w tej szafie
+    // zrobić butów."*  The rule is symmetric, so it is enforced at both doors:
+    // the shoe block below refuses a shoe where a watch already is, and this
+    // refuses a watch where a shoe already is. Whichever the joiner adds
+    // second is the one refused, and the refusal NAMES the drawer that holds
+    // the first — a rule the app applies silently in one direction only is a
+    // rule nobody can learn.
+    const shoeItemFor = (index, zone) => (zone == null
+      ? (cfg.drawerItems?.[index - 1] || null)
+      : (columnDrawerSets.find((c) => c.zone === zone)?.items?.[index - 1] || null));
+    const shoeAt = [...boxes.values()]
+      .filter((b) => Number.isFinite(b.index))
+      .find(({ index, zone }) => shoeInsertOn(shoeItemFor(index, zone)));
     for (const { index, zone } of boxes.values()) {
       if (!Number.isFinite(index) || !wantsWatch(index, zone)) continue;
+      if (shoeAt) {
+        warnings.push({
+          code: 'watch_insert_refused',
+          drawer: index,
+          zone,
+          reason: 'shoe-in-cabinet',
+          shoe_drawer: shoeAt.index,
+          message: `Drawer ${index} cannot take a watch insert — drawer ${shoeAt.index} in this`
+            + ' cabinet is the shoe drawer, and a wardrobe carries watches or shoes, never both.',
+        });
+        continue;
+      }
       const mine = panels.filter((x) => (x.meta?.zone ?? null) === zone);
       const interior = drawerBoxInterior(mine, index);
       if (!interior) continue;
@@ -7633,6 +7745,158 @@ export function computeCabinet(params, profileOverride) {
       });
     }
     watchInsertsBuilt.push(...born);
+  }
+
+  // ─── TURN 58 (CLAUDE.md F2): THE SHOE DRAWER GETS ITS INSERT BACK ────────
+  //
+  // T54-F7 killed the old shoe world on the owner's own order and its kit went
+  // with it; the re-spec covered the BOX and never mentioned what goes INSIDE,
+  // so the ramp and the dividers died without anybody deciding they should.
+  // They come back here — the box is untouched, and this reads the drawer's
+  // FINISHED interior exactly as the watch tray does twenty lines up.
+  //
+  // FOUR CONDITIONS, all the owner's, all refused IN WORDS rather than
+  // silently skipped — a shoe drawer that quietly comes out empty is the fault
+  // this whole feature is repairing:
+  //
+  //   · *"tylko na wierzchu innych szuflad"*   — the TOP of the stack, only;
+  //   · *"nie może mieć półki nad sobą, bo buty będą chodzić"* — nothing over it;
+  //   · *"jeśli będzie szuflada z zegarkami, to już nie możemy w tej szafie
+  //     zrobić butów"* — watches XOR shoes, per cabinet, and the refusal NAMES
+  //     the one that is already there;
+  //   · and the drawer has to be big enough to take the ramp at all.
+  const shoeInsertsBuilt = [];
+  {
+    const shoeItemAt = (index, zone) => (zone == null
+      ? (cfg.drawerItems?.[index - 1] || null)
+      : (columnDrawerSets.find((c) => c.zone === zone)?.items?.[index - 1] || null));
+    const boxes = new Map();
+    for (const pnl of panels) {
+      if (pnl.role !== 'drawer_box' || !pnl.box) continue;
+      const key = `${pnl.meta?.zone ?? ''}|${pnl.meta?.drawer}`;
+      if (!boxes.has(key)) boxes.set(key, { index: Number(pnl.meta?.drawer), zone: pnl.meta?.zone ?? null });
+    }
+    const all = [...boxes.values()].filter((b) => Number.isFinite(b.index));
+    // WATCHES XOR SHOES, per cabinet. Asked of the whole unit before any part
+    // is cut, so the refusal can name the drawer that already holds the other.
+    const watchAt = all.find(({ index, zone }) => watchDrawerItem(shoeItemAt(index, zone))
+      || watchInsertOn(shoeItemAt(index, zone)));
+    for (const { index, zone } of all) {
+      const item = shoeItemAt(index, zone);
+      if (!shoeInsertOn(item)) continue;
+      const mine = all.filter((b) => b.zone === zone);
+      const topIndex = Math.max(...mine.map((b) => b.index));
+      const say = (code, message, extra = {}) => warnings.push({
+        code, drawer: index, zone, message, ...extra,
+      });
+      if (watchAt) {
+        say('shoe_insert_refused',
+          `Drawer ${index} cannot take a shoe insert — drawer ${watchAt.index} in this cabinet`
+          + ' holds the watch insert, and a wardrobe carries watches or shoes, never both.',
+          { reason: 'watch-in-cabinet', watch_drawer: watchAt.index });
+        continue;
+      }
+      if (index !== topIndex) {
+        say('shoe_insert_refused',
+          `Drawer ${index} is not the top of its stack — a shoe drawer goes on top`
+          + ` (drawer ${topIndex} is above it), so the insert is not cut.`,
+          { reason: 'not-top', top_drawer: topIndex });
+        continue;
+      }
+      const mineP = panels.filter((x) => (x.meta?.zone ?? null) === zone);
+      const interior = drawerBoxInterior(mineP, index);
+      if (!interior) continue;
+      // NOTHING ABOVE IT — *"nie może mieć półki nad sobą, bo buty będą
+      // chodzić."*
+      //
+      // DECISION TAKEN for the owner, veto in one line: *"the auto partition
+      // counts too"*. The board that CLOSES a drawer stack is `part:
+      // 'PARTITION'`, and SPEC 4.7 puts one over every stack in this app
+      // automatically — it is what MAKES this drawer the top of the stack. If
+      // it counted as "a shelf above", the insert could never be cut in any
+      // wardrobe at all, and the feature the owner asked to have back would
+      // arrive unreachable. So the refusal is about a SHELF somebody put
+      // there: the stack's own closer is the ceiling of the stack, not a
+      // shelf over the shoes.
+      //
+      // `isShelfBoard` is left exactly as the watch pane needs it (it WANTS
+      // the partition — the pane is cut in it), and this asks the narrower
+      // question of the two, in the one line where the narrower question is
+      // the right one.
+      const drawerTop = interior.at.y + interior.height;
+      const above = panels.find((x) => x.part === 'SHELF' && x.box
+        && (x.meta?.zone ?? null) === zone
+        && x.box.y >= drawerTop - 1
+        && x.box.x < interior.at.x + interior.width && x.box.x + x.box.w > interior.at.x);
+      if (above) {
+        say('shoe_insert_refused',
+          `Drawer ${index} has ${above.id} directly over it — the owner's law is that a`
+          + ' shoe drawer carries nothing above it, so the insert is not cut.',
+          { reason: 'shelf-above', above: above.id });
+        continue;
+      }
+      // THE HEADROOM the ramp actually rises into. A shoe drawer's sides are
+      // LOW by design (the 80 mm law), so the ramp and the shoes on it stand
+      // proud of the box — which is exactly why the owner forbids a shelf over
+      // it. So the ceiling is the board above the drawer, not the drawer's own
+      // side: the stack's closing partition, normally, and open space where
+      // there is none.
+      const ceiling = panels
+        .filter((x) => isShelfBoard(x) && x.box && (x.meta?.zone ?? null) === zone
+          && x.box.y >= drawerTop - 1
+          && x.box.x < interior.at.x + interior.width && x.box.x + x.box.w > interior.at.x)
+        .reduce((low, x) => Math.min(low, x.box.y), Infinity);
+      const headroom = ceiling === Infinity ? Infinity : ceiling - interior.at.y;
+      const fit = shoeInsertFit(interior, P, { headroom });
+      if (!fit.ok) {
+        say('shoe_insert_refused',
+          `Drawer ${index} has ${roundTo(headroom === Infinity ? interior.height : headroom, 0)} mm`
+          + ` over its floor and the shoe ramp needs ${roundTo(fit.needsHeight || 0, 0)} mm`
+          + ' — it is not cut.',
+          {
+            reason: fit.reason,
+            needs_height_mm: roundTo(fit.needsHeight || 0, 1),
+            has_height_mm: roundTo(headroom === Infinity ? interior.height : headroom, 1),
+          });
+        continue;
+      }
+      // …and where the drawer is deeper than the headroom allows, the ramp is
+      // SHORTER — never shallower. The tilt is the shoe shelf's and does not
+      // move; the run is what gives way, and the joiner is told so.
+      if (fit.clamped) {
+        say('shoe_ramp_clamped',
+          `Drawer ${index}'s shoe ramp runs ${roundTo(fit.run, 0)} mm of its`
+          + ` ${roundTo(fit.fullRun, 0)} mm depth — the board above it leaves`
+          + ` ${roundTo(headroom, 0)} mm, and the ramp keeps its ${roundTo(fit.tilt || P.wardrobeAccessories.shoeShelf.tiltDeg, 0)}°.`,
+          { reason: 'headroom', run_mm: roundTo(fit.run, 1), depth_mm: roundTo(fit.fullRun, 1) });
+      }
+      const made = shoeInsertParts(interior, P, { drawer: index, headroom });
+      if (!made) continue;
+      for (const q of made.parts) {
+        panels.push(panel({
+          id: zone == null ? q.id : `${q.id}-Z${zone}`,
+          part: q.part,
+          role: q.role,
+          w: q.w,
+          h: q.h,
+          thickness: q.thickness,
+          edgeCode: codes.none,
+          edgeLen: 0,
+          box: q.box,
+          cnc: q.cnc,
+          meta: { ...q.meta, ...(zone == null ? {} : { zone }) },
+        }));
+      }
+      shoeInsertsBuilt.push({
+        zone,
+        drawer: index,
+        tilt_deg: roundTo(made.spec.tiltDeg, 4),
+        dividers: made.spec.dividerCount,
+        lane_w_mm: roundTo(fit.lane, 1),
+        rise_mm: roundTo(made.ramp.rise, 1),
+        ramp_len_mm: roundTo(made.ramp.length, 1),
+      });
+    }
   }
 
   // ─── TURN 36 (CLAUDE.md F5): THE GRAIN, PER ROLE ─────────────────────────
@@ -8327,7 +8591,9 @@ export function computeCabinet(params, profileOverride) {
     ),
     side_hinge_holes_y: hingedLeafCount > 0 ? hingeHolePairs.map((pair) => pair.map((v) => roundTo(v, 4))) : [],
     side_hinge_holes_x: P.hinges.xFromFrontEdge,
-    hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSides,
+    hinged_sides: bayDoors.length ? bayDoors.map((l) => l.hingeOn) : hingedSidesOf(
+      panels.filter((p) => p.part === 'FRONT' && p.role === 'front'), { panels },
+    ),
     front_cup_y: cupY.map((v) => roundTo(v, 4)),
     front_cup_x_from_hinge_edge: cups.xFromHingeEdge,
     // ─── TURN 25 (CLAUDE.md F4): where every handle on this cabinet sits ────

@@ -288,6 +288,21 @@ export const PART_REGISTRY = {
     id: 'watch_insert', name: 'Watch / tie drawer insert', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Cut, not bought — the frame and dividers are on the sheet. One line per drawer that carries one',
   },
+  // ─── TURN 58 (CLAUDE.md F2): THE SHOE DRAWER'S INSERT ──────────────────
+  //
+  // The same shape as the watch line above and for the same reason: the ramp
+  // and its two dividers are CUT — they are in the cut list and on the sheet
+  // like every other board — so this line is the ASSEMBLY, one per drawer
+  // that carries one.
+  //
+  // NOTE on `drawer_insert` above, whose note still reads "Shoe insert …
+  // a bought tray": that was written when the shoe was a bought insert. It is
+  // left standing (nothing is deleted without licence) and is not what a shoe
+  // drawer resolves to any more — this row is.
+  shoe_insert: {
+    id: 'shoe_insert', name: 'Shoe drawer insert', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Cut, not bought — the ramp and its two dividers are on the sheet. One line per shoe drawer',
+  },
   kit_trouser: {
     id: 'kit_trouser', name: 'Trouser pull-out', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism',
@@ -415,6 +430,12 @@ export const ELEMENT_TO_PART_ID = {
   // the exact name a greedy walk of the engine can miss, because it needs a
   // shelf whose variant is `shoe` before it exists at all.
   'SHOE-RAIL': 'shelf',
+  // T58 (CLAUDE.md F2): the shoe drawer's ramp and its two dividers. CUT
+  // boards, so they are mapped like the boards they are — an unmapped part
+  // name is silently dropped from every BOM, which is what this table exists
+  // to make impossible.
+  'SHOE-RAMP': 'shoe_insert',
+  'SHOE-DIVIDER': 'shoe_insert',
 
   // Partitions — horizontal, vertical, and the one that carries a rail.
   PARTITION: 'partition',

@@ -150,9 +150,20 @@ test('F1 — exactly one file in reference/lisp/ is new, and nothing else moved'
   // Asked of git against this turn's own base. In a working tree the new kit
   // may still be untracked, which `lispDiffAgainst` counts as the addition it
   // is — the fault this guards is a SECOND kit having been edited.
+  // ─── AMENDED IN TURN 58, and the reason is the point ──────────────────
+  // This read `lispDiffAgainst('6d89238')`, which compares turn 57's base to
+  // WHATEVER IS ON DISK. That made turn 57's claim a claim about tonight, so
+  // the first later turn to amend any kit at all broke it — turn 58 writes the
+  // shoe insert's law into KIT_WARDROBE_FULL.lsp, which is its own licensed
+  // change and no business of turn 57's.
+  //
+  // A finished turn's claim is a fact about TWO COMMITS: between 6d89238 and
+  // cd399cf, exactly one kit was born and no other moved. That is what turn 57
+  // said, it is still true, and stated this way it stays true — while a turn
+  // that had quietly edited a second kit INSIDE that window still fails here.
   let changed;
   try {
-    changed = lispDiffAgainst('6d89238');
+    changed = lispDiffAgainst('6d89238', 'cd399cf');
   } catch {
     return; // a shallow checkout without the base commit: nothing to assert
   }

@@ -15,7 +15,11 @@ import {
 import { layerNameFault, makeUserLayer, normaliseUserLayers } from '../engine/partLayers.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
-import { doorBays } from '../engine/doors.js';
+import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
+// T58-F4: the engine's own two readings — the cut LINE over this carcass, and
+// whether that line actually bites it. Asked exactly as `computeCabinet` asks
+// them, so the menu and the sweep cannot disagree with the cabinet.
+import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
   defaultParamsFor, getUnitType, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
@@ -138,7 +142,8 @@ import { widthZones } from '../engine/zones.js';
 import { resolveHingeFinish, resolveHingePlate, resolveHingeSystem } from '../engine/hinges.js';
 import { mountHeightAlignedWith, topNeighbourDemand } from '../engine/doors.js';
 import {
-  centredShelfPos, drawersInEngineOrder, evenShelfPositions, floorLawedItem, nextHangerOffset,
+  centredShelfPos, drawersInEngineOrder, evenShelfPositions, floorLawedItem,
+  isPinnedShelf, nextHangerOffset,
   shelvesInEngineOrder,
 } from '../engine/items.js';
 // T48-F1: the floor a piece may not fall through — the engine's own answer to
@@ -540,23 +545,34 @@ function budrDrawerIndex(unit, ref) {
 
 /** Interior items -> the count/flag shape the engine consumes. */
 /**
- * Which CARCASS sides carry a hinged door — the design layer's own answer.
+ * Which CARCASS sides carry a hinged door — asked of the law that owns doors.
  *
- * Returns null when the unit has no per-bay doors, which leaves the engine's
- * `doorCount` rule exactly where it was for every cabinet in the app but this
- * one shape.
+ * ─── TURN 58 (F1): THE RAW SIDE-PICK IS GONE (licensed deletion 1) ─────────
+ *
+ * What stood here was the design layer's own copy of the same fault the engine
+ * carried, in the same shape:
+ *
+ *     if (on(first) && hinge(first) === 'L') sides.push('BUL');
+ *     if (on(last)  && hinge(last)  === 'R') sides.push('BUR');
+ *
+ * It read the RAW leaf hinge — the hand a joiner typed — so under a rake, where
+ * T46/T55 force a leaf onto the other hand and T55-F3 puts a partition under
+ * it, this went on reserving the board the leaf had left. Two copies of one
+ * mistake, one in each layer.
+ *
+ * It is asked of `engine/doors.js` now, which answers it by running the plan
+ * the ENGINE will run (`bayDoorPlan`) — so the two layers cannot come back with
+ * different boards. The invariant that lets the design layer answer at all,
+ * before any partition has been cut to measure, is stated once over there
+ * (`carcassBaysFor`): the first bay's left boundary is always BUL and the last
+ * bay's right is always BUR.
+ *
+ * Returns undefined when the unit has no per-bay doors, which leaves the
+ * engine's `doorCount` rule exactly where it was for every cabinet in the app
+ * but this one shape.
  */
 function hingedCarcassSides(p) {
-  const bays = Array.isArray(p?.bay_doors) ? p.bay_doors : null;
-  if (!bays || !bays.length) return undefined;
-  const on = (m) => String(m?.door ?? 'none').toLowerCase() !== 'none';
-  const hinge = (m) => (String(m?.hinge || 'L').toUpperCase() === 'R' ? 'R' : 'L');
-  const first = bays[0];
-  const last = bays[bays.length - 1];
-  const sides = [];
-  if (on(first) && hinge(first) === 'L') sides.push('BUL');
-  if (on(last) && hinge(last) === 'R') sides.push('BUR');
-  return sides;
+  return hingedBaySidesOf(Array.isArray(p?.bay_doors) ? p.bay_doors : null);
 }
 
 /**
@@ -1301,24 +1317,47 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     project: { ...s.project, wallSlopes: wallElements(list) },
   })),
 
-  addWallSlope: (slope) => set((s) => {
+  // ─── TURN 58 (CLAUDE.md F5): A RAKE CHANGES THE ROOM, SO THE ROOM'S OWN
+  // PIECES ARE RE-CUT ────────────────────────────────────────────────────────
+  //
+  // These three were pure `set`s. The run elements — the top infill above all
+  // — are built from the ROOM (`refreshAutoParts` → `runTopInfill`), and from
+  // tonight one of their answers depends on whether the run is raked: off a
+  // slope the top piece runs to the wall, under one it stops plumb on the
+  // carcass (T55). Without the refresh the element kept whatever it was built
+  // with, so adding a rake left yesterday's board on the cabinet until some
+  // unrelated act happened to rebuild it.
+  //
+  // It is the same call every other room-shaped mutator on this store already
+  // makes, and it is idempotent.
+  addWallSlope: (slope) => {
     const next = migrateWallElement({ id: uid(slope?.kind || 'slope'), ...slope });
-    if (!next) return {};
-    return { project: { ...s.project, wallSlopes: [...wallElements(s.project.wallSlopes), next] } };
-  }),
+    if (!next) return null;
+    set((s) => ({
+      project: { ...s.project, wallSlopes: [...wallElements(s.project.wallSlopes), next] },
+    }));
+    get().refreshAutoParts();
+    return next.id;
+  },
 
-  updateWallSlope: (id, patch) => set((s) => ({
-    project: {
-      ...s.project,
-      wallSlopes: wallElements(s.project.wallSlopes)
-        .map((v) => (v.id === id ? migrateWallElement({ ...v, ...patch, id: v.id }) : v))
-        .filter(Boolean),
-    },
-  })),
+  updateWallSlope: (id, patch) => {
+    set((s) => ({
+      project: {
+        ...s.project,
+        wallSlopes: wallElements(s.project.wallSlopes)
+          .map((v) => (v.id === id ? migrateWallElement({ ...v, ...patch, id: v.id }) : v))
+          .filter(Boolean),
+      },
+    }));
+    get().refreshAutoParts();
+  },
 
-  removeWallSlope: (id) => set((s) => ({
-    project: { ...s.project, wallSlopes: wallElements(s.project.wallSlopes).filter((v) => v.id !== id) },
-  })),
+  removeWallSlope: (id) => {
+    set((s) => ({
+      project: { ...s.project, wallSlopes: wallElements(s.project.wallSlopes).filter((v) => v.id !== id) },
+    }));
+    get().refreshAutoParts();
+  },
 
   // ─── TURN 45 (CLAUDE.md F9b/F9c): THE JOB'S LED SPEC ─────────────────────
   // A PATCH setter, like every other on this store: the tab writes one field at
@@ -1930,6 +1969,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // the OWNER's floor as the datum, because the owner's frame is the frame
       // `runInfill.offset` is already stated in. One function, one datum, one
       // ceiling.
+      // T58-F5: the top infill runs to the WALL again off a slope, and stops
+      // plumb on the carcass under one (T55). The store owns the room, so the
+      // store answers — with the SAME `unitUnderSlope` F4 asks, never a second
+      // reading of the same fact.
+      isRaked: (u) => get().unitUnderSlope(u.id),
       runCutOf: ({ run, from, to, owner }) => {
         const slopes = slopesOfWall(s, run.wall);
         if (!slopes.length) return null;
@@ -2050,7 +2094,88 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // through it untouched.
     get().settleSlopeDoorPartitions();
 
+    // ─── T58 (CLAUDE.md F4): A PULL-DOWN CANNOT LIVE UNDER A SLOPE ─────────
+    // The same choke point, the same family, the same notify style — and a
+    // BROADER trigger than the one above: not the flip, but the slope simply
+    // being ACTIVE, knee or straight.
+    get().settleSlopePulldowns();
+
     return notices;
+  },
+
+  /**
+   * ─── TURN 58 (CLAUDE.md F4): THE PULL-DOWN GOES WHEN THE SLOPE ARRIVES ───
+   *
+   * The owner: *"jak się zaczyna skos, to ma zniknąć — nie tylko jak się
+   * pojawi diverter, ale też jak jest sam. Szafa ze skosem nie może mieć
+   * pull-down, bo to jest zawsze na wysokości."*
+   *
+   * The kit's own numbers agree with him: it parks HIGH (the rod axis and its
+   * arm live in the top of the opening) and its swing sweeps the top front —
+   * which is precisely the air a rake takes away.
+   *
+   * THE TRIGGER is the slope being ACTIVE over the unit, and nothing narrower.
+   * T55-F3's sweep beside this one acts on a FLIP; this one does not wait for
+   * one, because a wardrobe under a straight rake has no flip and still has no
+   * room for a pull-down. `slopeCutFor` is the store's one reading of "is
+   * there a rake over this unit" and `slopeCutActive` the engine's one reading
+   * of "does it actually bite" — this asks both and invents neither.
+   *
+   * It acts on the TRANSITION: a unit with no pull-down passes through
+   * untouched, so a settled scene costs one filter and says nothing.
+   */
+  /**
+   * Is there a LIVE rake over this cabinet? (turn 58, F4)
+   *
+   * The one reading both halves of F4 ask: the sweep that removes a fitted
+   * pull-down, and the Add-items row that refuses a new one. A second reading
+   * of "is this unit under a slope" is how the two could come to disagree —
+   * the menu offering what the store would take straight back off.
+   */
+  unitUnderSlope: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return false;
+    const profile = getCabinetProfile();
+    const cut = slopeCutFor(unit, null);
+    if (!cut) return false;
+    // `slopeCutActive` asks about the CUT LINE over this carcass, not about
+    // the raw rake — the same two calls, in the same order, `computeCabinet`
+    // makes (`carcassCutLineOf` then `slopeCutActive`).
+    const line = carcassCutLineOf(
+      cut,
+      Number(unit.params.width) || 0,
+      Number(unit.params.height) || 0,
+      profile,
+    );
+    return Boolean(line && slopeCutActive(line));
+  },
+
+  settleSlopePulldowns: () => {
+    const profile = getCabinetProfile();
+    for (const unit of get().units) {
+      const items = unit.params.sections?.[0]?.items || [];
+      const kits = items.filter((i) => i?.kind === 'pulldown_rail');
+      if (!kits.length) continue;
+      if (!get().unitUnderSlope(unit.id)) continue;
+      const keep = items.filter((i) => i?.kind !== 'pulldown_rail');
+      set((st) => ({
+        units: st.units.map((u) => (u.id === unit.id
+          ? {
+            ...u,
+            params: {
+              ...u.params,
+              sections: [{ ...(u.params.sections?.[0] || { width_mm: u.params.width }), items: keep }],
+            },
+          }
+          : u)),
+      }));
+      useUiStore.getState().notify(
+        kits.length === 1
+          ? 'The slope removed the pull-down rail — it parks at the top, where the rake now is.'
+          : `The slope removed ${kits.length} pull-down rails — they park at the top, where the rake now is.`,
+        'warn',
+      );
+    }
   },
 
   /**
@@ -2478,6 +2603,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       for (const grown of get().growAutoEndPanels()) {
         if (grown.message) useUiStore.getState().notify(grown.message, 'info');
       }
+      // ─── T58 (CLAUDE.md F4): …AND HERE TOO ────────────────────────────
+      // The sweep is idempotent — it acts only on the TRANSITION, a unit that
+      // has a pull-down AND a live rake — so running it at both choke points
+      // costs a settled scene one filter and catches the slope however it
+      // arrived. `refreshAutoParts` alone was not enough: a slope added
+      // straight onto a unit reaches this action, not that one.
+      get().settleSlopePulldowns();
       const s = get();
       const unit = focusId ? s.units.find((u) => u.id === focusId) : null;
       if (!unit) {
@@ -5105,6 +5237,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ? null : Math.trunc(Number(i.zone)));
     const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone);
     if (stack.some((i) => i.variant === 'shoe')) return null;
+    // ─── T58 (CLAUDE.md F2): WATCHES XOR SHOES, PER CABINET ────────────────
+    // *"jeśli będzie szuflada z zegarkami, to już nie możemy w tej szafie
+    // zrobić butów."*  Asked of the WHOLE unit, not of this zone — the owner's
+    // sentence is about the wardrobe. The engine says the same thing in a
+    // warning if broken params ever reach it; this is the door a person walks
+    // through, so it refuses here and NAMES what is already there.
+    const watchAt = items.find((i) => i.kind === 'drawer' && i.watch_insert === true);
+    if (watchAt) {
+      useUiStore.getState().notify(
+        `This wardrobe already has a watch drawer (drawer ${watchAt.index}) — `
+        + 'a wardrobe carries watches or shoes, never both.',
+        'warn',
+      );
+      return null;
+    }
     const profile = getCabinetProfile();
     const DR = profile.wardrobe.drawers;
     const height = (Number(DR.shoeSideMm) || 80) + (Number(DR.frontToSideDelta) || 36);
@@ -5709,14 +5856,66 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * With NO divider there is exactly one segment and it is the band itself, so
    * this is the same single call turn 9 wrote, over the same two numbers.
    */
-  redistributeShelves: (unitId) => {
+  /**
+   * ─── TURN 58 (CLAUDE.md F3.2): CENTRING IS PER BAY, NEVER ACROSS ─────────
+   *
+   * The owner: *"Centrujemy tylko prawy lub lewy bay… nie robimy na przemian
+   * ze wszystkich bayów."*
+   *
+   * MEASURED ON 6c50653. An 1800 × 2200 wardrobe, partition at 900, two
+   * shelves in bay 0 and three in bay 1 — each already on its own even ladder.
+   * Press Even and all five come back as ONE ladder of five (363.5, 727.5,
+   * 1091, 1454.5, 1818.5) dealt out to whichever shelf was nearest: a ladder
+   * straight through the partition.
+   *
+   * THE CULPRIT, named: this segmented the band only VERTICALLY, by crossbars.
+   * The word `zone` did not appear in it — while `shelfBandSegmentsFor` has
+   * taken a `zone` argument all along.
+   *
+   * THE LAW. Invoked from a shelf's or a bay's context → THAT bay. Invoked on
+   * the whole unit → every bay gets its OWN ladder, one at a time, and never
+   * one ladder through a partition. A unit with no partition has exactly one
+   * bay and is answered by the identical arithmetic it was answered by
+   * yesterday, which is what keeps every flat cabinet still.
+   *
+   * @param {string} unitId
+   * @param {number|null} zone  a bay index, or null for "every bay, each on
+   *   its own"
+   */
+  redistributeShelves: (unitId, zone = null) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return;
     const profile = getCabinetProfile();
-    const segments = shelfBandSegmentsFor(unit, profile);
     const items = unit.params.sections[0].items;
-    const shelves = shelvesInEngineOrder(items);
+    // WHICH BAYS to work, and one at a time. `zoneIndexOf` is the store's own
+    // reading of an item's zone, so "which bay is this shelf in" is asked here
+    // exactly the way the add asks it.
+    const zones = [...new Set(shelvesInEngineOrder(items).map((sh) => zoneIndexOf(sh.zone)))];
+    const bays = zone == null ? (zones.length ? zones : [null]) : [zoneIndexOf(zone)];
+    for (const bay of bays) get().redistributeShelvesInBay(unitId, bay);
+    // Even spacing can still be too tight when the band is short; the clamp has
+    // the final word, as it does for every other path.
+    get().reclampShelves(unitId);
+  },
+
+  /** ONE bay's own ladder. The loop above is the only caller that matters. */
+  redistributeShelvesInBay: (unitId, bay = null) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return;
+    const profile = getCabinetProfile();
+    const items = unit.params.sections[0].items;
+    // ─── T58-F3.1: A PINNED SHELF IS A BOUNDARY, NOT A PASSENGER ──────────
+    // *"ona już jest ustawiona na stałe."*  A fixed shelf something is hung on
+    // never moves, and it CUTS the ladder the way a split crossbar does —
+    // shelves below centre up to it, shelves above from it. One more boundary
+    // kind for `bandSegments`, never a second segmenter.
+    const pinned = shelvesInEngineOrder(items)
+      .filter((sh) => zoneIndexOf(sh.zone) === bay && isPinnedShelf(sh, items));
+    const segments = shelfBandSegmentsFor(unit, profile, bay, null, pinned.map((sh) => sh.pos_mm));
+    const shelves = shelvesInEngineOrder(items)
+      .filter((sh) => zoneIndexOf(sh.zone) === bay && !isPinnedShelf(sh, items));
     // Which segment each shelf is in NOW. A shelf keeps its side of the
     // divider — Even is a spacing button, not a re-arrangement, and a board
     // that jumped the crossbar because the count came out neater would be the
@@ -5749,9 +5948,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, sections: [{ ...u.params.sections[0], items: next }] } } : u)),
     }));
-    // Even spacing can still be too tight when the band is short; the clamp has
-    // the final word, as it does for every other path.
-    get().reclampShelves(unitId);
   },
 
   /**
@@ -6193,6 +6389,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * app is obliged to answer in words.
    */
   setDrawerWatchInsert: (unitId, itemId, on) => {
+    // ─── T58 (CLAUDE.md F2): …AND THE SAME RULE AT THE OTHER DOOR ─────────
+    // The exclusion is symmetric, so it is enforced both ways: a watch cannot
+    // be switched on in a wardrobe that already holds shoes, and the refusal
+    // names the shoe drawer. A rule the app applies in one direction only is
+    // a rule nobody can learn.
+    if (on === true) {
+      const unit = get().units.find((u) => u.id === unitId);
+      const items = unit?.params.sections?.[0]?.items || [];
+      const shoeAt = items.find((i) => i.kind === 'drawer' && i.variant === 'shoe');
+      if (shoeAt) {
+        useUiStore.getState().notify(
+          `This wardrobe already has a shoe drawer (drawer ${shoeAt.index}) — `
+          + 'a wardrobe carries watches or shoes, never both.',
+          'warn',
+        );
+        return false;
+      }
+    }
     get().updateItem(unitId, itemId, { watch_insert: on === true });
     return on === true;
   },
@@ -7985,11 +8199,17 @@ function splitBoundaryPositions(unit, profile, zone = null, precomputed = null) 
  * at once (the Even button, the add-shelf placement) rather than on one piece.
  * One segment, the band itself, wherever nothing crosses it (T37-F4a).
  */
-function shelfBandSegmentsFor(unit, profile, zone = null, precomputed = null) {
+function shelfBandSegmentsFor(unit, profile, zone = null, precomputed = null, pinnedAt = []) {
   const result = precomputed || computeCabinet(paramsForEngine(unit), profile);
+  const G = unit.params.board_t ?? profile.board.thickness;
   return bandSegments({
     band: shelfBandFor(unit, profile, zone, result),
-    boundaries: splitBoundariesFor(unit, profile, zone, result),
+    // T58-F3.1: a PINNED shelf joins the split crossbars as a boundary — the
+    // same list, one more kind. `bandSegments` is not asked to learn anything.
+    boundaries: [
+      ...splitBoundariesFor(unit, profile, zone, result),
+      ...pinnedAt.filter((y) => Number.isFinite(y)).map((y) => ({ at: y, thickness: G })),
+    ],
   }, profile);
 }
 

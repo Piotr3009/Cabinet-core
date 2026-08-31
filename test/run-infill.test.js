@@ -177,12 +177,17 @@ test('END 1 — the run reaches the WALL, and finishes on it', () => {
   // Turn 8 parked the unit a clearance off the plaster and ran the piece OVER
   // the scribe gap to the wall. T55 AMENDED (29.08.2026, the owner):
   // *"powinieneś skrócić infill przysufitowy … dlaczego wystaje poza
-  // carcass?"* — the piece now stops PLUMB on the end carcass's outer face;
-  // the vertical side infill runs to the ceiling and owns the gap.
+  // carcass?"* — the piece stopped PLUMB on the end carcass's outer face.
+  //
+  // T58-F5 AMENDED AGAIN, and the owner took that back off a slope: *"jak
+  // dojeżdżamy szafą do ściany … niech górny się przedłuży do ściany — jak
+  // było wcześniej."*  This room is FLAT, so turn 8's answer is the live one
+  // again and T55's stands under a rake, where all of its sentences were
+  // spoken. The commit that had shortened it is 4ddff96.
   assert.equal(unitOf(ids[0]).position.x_mm, P.room.wallBackClearance, 'parked at the side stop');
   assert.equal(
-    panelOf(ids[0], 'INFILL-T-FACE').box.x, 0,
-    'it starts on the carcass face — never over the scribe gap (T55)',
+    panelOf(ids[0], 'INFILL-T-FACE').box.x, -P.room.wallBackClearance,
+    'off a rake it runs OVER the scribe gap to the plaster again (T58-F5)',
   );
   assert.equal(infillsOf(ids[0]).filter((p) => p.meta.segment === 'return-left').length, 0,
     'a wall needs no corner turned');
@@ -196,11 +201,16 @@ test('END 2 — the run reaches a vertical L-INFILL, and finishes on it', () => 
 
   assert.equal(unitOf(ids[0]).params.side_infill_left_mm, 40, 'the filler is there');
   assert.equal(endsOf(ids[0]).left, 'infill');
-  // T55 AMENDED (29.08.2026, the owner): the vertical filler runs to the
-  // ceiling and OWNS the gap — the top piece stops PLUMB on the carcass face
-  // beside it, never over the scribe to the plaster.
-  assert.equal(panelOf(ids[0], 'INFILL-T-FACE').box.x, 0,
-    'starts on the carcass face (T55)');
+  // T55 AMENDED (29.08.2026): the vertical filler ran to the ceiling and OWNED
+  // the gap — the top piece stopped PLUMB on the carcass face beside it.
+  //
+  // T58-F5 AMENDED AGAIN — and this test is the owner's own case, said back to
+  // him: *"jak dojeżdżamy szafą do ściany i się pojawia infill boczny, to
+  // niech górny się przedłuży do ściany."*  Off a rake the top piece runs OVER
+  // the side filler and caps the corner; the filler keeps its height and stops
+  // UNDER it, one plane and zero overlap. Under a rake T55 still governs.
+  assert.equal(panelOf(ids[0], 'INFILL-T-FACE').box.x, -40,
+    'it reaches the wall face, capping the side filler (T58-F5)');
   assert.equal(infillsOf(ids[0]).filter((p) => p.meta.segment === 'return-left').length, 0);
 });
 

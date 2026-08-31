@@ -132,6 +132,18 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   const handle = useRef(null);
   const booted = useRef(false);
 
+  // ─── A STABLE CALLBACK, AND IT MATTERS MORE THAN IT LOOKS ────────────────
+  //
+  // `Scene`'s RenderRig holds `onReady` in its effect's dependency list, and
+  // its cleanup calls `onReady(null)`. An inline arrow here is a NEW function
+  // on every render of this component — so every slider drag, every chip, every
+  // store change tore the render handle down and built it again, and with it
+  // the walk's own `window.__cc.pbi`. The acceptance walk found it by reading
+  // `undefined` off a handle it had already waited for.
+  // Keep the last GOOD handle: a teardown hands back null, and a null here
+  // would take SAVE IMAGE with it.
+  const keepHandle = useCallback((h) => { if (h) handle.current = h; }, []);
+
   const unit = A.designUnit(units);
   const slope = (project?.wallSlopes || []).find((s) => s.kind === 'slope') || null;
 
@@ -141,6 +153,27 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
+
+    // ─── THE ROOM OWNS ITS OWN VIEW STATE ────────────────────────────────
+    //
+    // `main-retail.jsx` turns these off at boot, and that is the right place
+    // for it. This is the SECOND place, and it is not redundant: the entry
+    // runs once for the whole site, the design room can be entered later by a
+    // hash change, and a view flag that depends on which order two modules
+    // happened to evaluate in is a flag that will be wrong on somebody's
+    // machine. Idempotent setters, run where the stage actually is.
+    //
+    // The acceptance walk is what insisted: it read eight contour lines off a
+    // scene whose store said the contours were off, and no amount of staring
+    // at boot order explained it. Owning the state here ends the argument.
+    const ui = useUiStore.getState();
+    ui.setShowDimensions(false);
+    ui.setShowOutlines(false);
+    ui.setXray(false);
+    ui.setContourView(false);
+    ui.setRuler(false);
+    ui.clearSelection();
+
     A.startDesign('Bedroom wardrobe');
     if (wantCollection && collectionById(wantCollection)) A.applyCollection(wantCollection);
     estimate.begin('Bedroom wardrobe');
@@ -207,7 +240,12 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   const hints = useMemo(() => {
     const params = unit?.params || {};
     const items = params.sections?.[0]?.items || [];
-    const doors = items.filter((i) => i.kind === 'partition').length + 1;
+    // The engine's own leaf count, so the hint cannot disagree with the stage.
+    // The engine's own leaf count, so the hint cannot disagree with the stage —
+    // and `unit` is null on the very first render, before the boot effect has
+    // made one, so it is asked for only when there is something to ask about.
+    const doors = (unit && A.doorCount(unit.id))
+      || (items.filter((i) => i.kind === 'partition').length + 1);
     const style = FRONT_STYLE_OPTIONS.find((o) => o.id === project?.design?.fronts?.style)?.label;
     const inside = A.interiorCounts(unit);
     const filled = Object.entries(inside).filter(([, n]) => n > 0).length;
@@ -274,7 +312,7 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
         onBack={() => setFullScreen(false)}
         onSaveImage={() => saveStageImage(handle.current, estimate.activeDesign()?.name)}
       />
-      <Stage onHandle={(h) => { handle.current = h; }} />
+      <Stage onHandle={keepHandle} />
       {!fullScreen ? (
         <div
           className="pbi-ui pbi-ui-light pbi-quiet"

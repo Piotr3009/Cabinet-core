@@ -155,6 +155,16 @@ export function startDesign(name = 'Bedroom wardrobe') {
   // and says so ("Width limited to 1260 mm by the infill at the wall"), which
   // is a true sentence about a placement the client never asked for.
   if (placed?.id) store.moveUnit(placed.id, 0, 1);
+
+  // ─── AND IT ARRIVES WITH ITS DOORS ON ────────────────────────────────────
+  //
+  // A wardrobe's `params.doors` starts false, so a fresh one is an open
+  // carcass — while column 1's hint already says "1 door", because a bay with
+  // no divider IS one bay. The client would be told one thing and shown
+  // another on the first frame they ever see. `setDoorCount` asks the engine
+  // for the count its own width law gives (one leaf up to 700 mm, a pair
+  // above), so the picture and the words agree from the start.
+  if (placed?.id) setDoorCount(placed.id, 1);
   return placed?.id || null;
 }
 

@@ -44,7 +44,28 @@ import('./RetailApp.jsx').then(async (module) => {
   // would hoist above `setPersistence` and the store's initial state would be
   // built from PRO's localStorage keys before the switch was ever thrown.
   const { useUiStore } = await import('../stores/uiStore.js');
-  useUiStore.getState().setAudience('retail');
+  const ui = useUiStore.getState();
+  ui.setAudience('retail');
+
+  // ─── THE OVERLAYS THAT ALREADY HAD A SWITCH ──────────────────────────────
+  //
+  // `setProChrome(false)` above is for the overlays that had NO flag. These
+  // five DID — they are PRO's own View menu — so the retail mount turns them
+  // off through the store's own setters and the shared core gains nothing.
+  //
+  //   showDimensions  the room's distance arrows and every wall label
+  //   showOutlines    the thin black contour on every board. `captureRender`
+  //                   has called that pass "chrome" since turn 6 and strips it
+  //                   from any picture a workshop shows a customer; a client
+  //                   looking at the live stage is in exactly that position.
+  //   xray            a look THROUGH the furniture — a tool, not a view
+  //   contourView     a silhouette, for a printout
+  //   ruler           a measuring tool
+  ui.setShowDimensions(false);
+  ui.setShowOutlines(false);
+  ui.setXray(false);
+  ui.setContourView(false);
+  ui.setRuler(false);
   createRoot(document.getElementById('root')).render(
     <StrictMode>
       <App />

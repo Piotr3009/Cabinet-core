@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── Turn 30 (CLAUDE.md F21): how thick the PANE is drawn ────────────────────
 // 4 mm is what a cabinet door is glazed with. It is a picture and not a cut —
@@ -697,7 +698,16 @@ export function MovingPanel({
             they are the whole picture, so they are never off there. */}
         {/* The contours are what hold an X-ray together: with the material at
             a fifth of its opacity, the edges ARE the cabinet. */}
-        {(outlines || contour || xray) && (
+        {/* ─── TURN 59: AND THE CONTOUR IS CHROME TOO ─────────────────────
+            `renderCapture.js` has said so since turn 6 — *"the contour pass,
+            the dimension arrows, the selection box"* — and strips it from every
+            picture a workshop shows a customer. A client looking at the live
+            PBI stage is in exactly that position, so the same switch that hides
+            the dimension chips hides the wire on the boards.
+
+            PRO never calls `setProChrome`, so `proChromeOn()` is `true` and this
+            condition is the condition it always was. */}
+        {proChromeOn() && (outlines || contour || xray) && (
           <Edges
             // The pretty view outlines the PLAIN board (see the block above);
             // contour and X-ray keep the machined solid — they are there to

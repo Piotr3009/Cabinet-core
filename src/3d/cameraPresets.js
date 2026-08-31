@@ -48,26 +48,37 @@ export function presetPlacement(preset, box) {
   const [cx, cy, cz] = centreOf(box);
   const [w, h, d] = sizeOf(box);
 
+  // How far back the app's own lens has to stand to hold this box. The camera
+  // is 38° (Scene.jsx), so a 2.15 m wardrobe needs about three metres — which
+  // is why every distance below is a fraction of THIS number rather than a
+  // guess at one. The first INSIDE preset guessed, stood 0.35 m from a
+  // full-height wardrobe, and photographed a single board.
+  const framing = Math.max(w, h) * 1.5 + d;
+
   if (preset === 'front') {
-    // Square on. Far enough back that the tallest edge is inside a 40°-ish
-    // field with room to breathe, and level with the middle of the piece.
-    const reach = Math.max(w, h) * 1.5 + d;
-    return { from: [cx, cy, box.max[2] + reach], at: [cx, cy, cz] };
+    // Square on, level with the middle of the piece.
+    return { from: [cx, cy, box.max[2] + framing], at: [cx, cy, cz] };
   }
 
   if (preset === 'inside') {
-    // Standing IN the opening, a little above the middle, looking at the back.
-    // Held just outside the front face so the fronts — open — stay in frame
-    // rather than clipping through the near plane.
+    // ─── IN THE DOORWAY, NOT IN THE BOX ────────────────────────────────────
+    //
+    // The first version of this stood the camera a depth's-worth in front of
+    // the carcass and looked at its back panel, which is geometrically "inside"
+    // and photographs as a blank wall: at 0.35 m from a 2.15 m wardrobe the
+    // frame holds one board and no wardrobe. What the client is being shown is
+    // the INTERIOR — the rail, the shelves, the drawers — so the camera stands
+    // where a person stands when they open a wardrobe: far enough back that the
+    // whole opening is in the picture, level with its middle, looking in.
     return {
-      from: [cx, cy + h * 0.12, box.max[2] + Math.max(d * 0.55, 0.35)],
-      at: [cx, cy, box.min[2]],
+      from: [cx, cy + h * 0.04, box.max[2] + framing * 0.72],
+      at: [cx, cy, cz],
     };
   }
 
   // 'room' — the corner a person walks in from: off to one side, above eye
   // height, far enough out that the wall and the floor are both in the picture.
-  const reach = Math.max(w, h, d) * 1.9 + 0.8;
+  const reach = framing * 1.25 + 0.4;
   return {
     from: [cx - reach * 0.62, cy + h * 0.42, box.max[2] + reach * 0.78],
     at: [cx, cy - h * 0.05, cz],

@@ -217,8 +217,13 @@ test('F3.3 · three camera presets, parked off the furniture\'s own box', () => 
   assert.deepEqual(front.at.map((n) => Math.round(n * 100)), [0, 108, 0]);
 
   const inside = presetPlacement('inside', box);
-  assert.ok(inside.at[2] <= box.min[2] + 1e-9, 'INSIDE looks at the back of the carcass');
   assert.ok(inside.from[2] < front.from[2], 'INSIDE is nearer than FRONT');
+  assert.ok(inside.from[2] > box.max[2], 'INSIDE stands in the doorway, not inside the box');
+  // Far enough back that the whole opening is in the picture: a camera 0.35 m
+  // from a 2.15 m wardrobe photographs one board and no wardrobe.
+  assert.ok(inside.from[2] - box.max[2] > (box.max[1] - box.min[1]) * 0.6,
+    'INSIDE is too close to frame the opening');
+  assert.ok(inside.at[2] < box.max[2], 'INSIDE looks INTO the carcass');
 
   const room = presetPlacement('room', box);
   assert.ok(room.from[0] < 0, 'ROOM comes from a corner, off to one side');

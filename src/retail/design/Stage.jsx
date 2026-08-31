@@ -23,12 +23,37 @@ import { imageFilename } from '../estimate/download.js';
 // are PRO's own DOM, in `src/components`, and the retail app simply never
 // renders them. The iron boundary makes that a fact rather than a promise.
 
-export default function Stage({ onHandle, designName }) {
+export default function Stage({ onHandle }) {
   const handle = useRef(null);
 
   const onRenderReady = useCallback((h) => {
-    handle.current = h;
-    onHandle?.(h);
+    const previous = handle.current;
+    handle.current = h || previous;
+    if (h) onHandle?.(h);
+
+    // ─── THE WALK'S OWN HANDLE (turn 11's practice, kept) ──────────────────
+    //
+    // `src/3d/viewHandle.js` says why, and the reason has not changed: *"a walk
+    // that can only click is a walk that can only photograph… it ships in the
+    // production bundle deliberately, and that is the whole point: the build
+    // that gets verified has to be the build that gets used."*
+    //
+    // So the PBI stage registers beside PRO's, under its own key. It exposes
+    // nothing the page does not already do — `saveImage` is the same call the
+    // SAVE IMAGE button makes — and no behaviour depends on it.
+    //
+    // THE GUARD IS THE SAME ONE `viewHandle.js` CARRIES, and for the same
+    // reason: React tears an effect down AFTER the replacement has registered,
+    // so a naive cleanup clears a handle a live stage has just published. The
+    // acceptance walk read `undefined` off a handle it had already waited for,
+    // which is how this was found rather than guessed at.
+    if (typeof window === 'undefined') return;
+    const cc = (window.__cc = window.__cc || {});
+    if (!h) {
+      if (cc.pbi && cc.pbi.render === previous) cc.pbi = null;
+      return;
+    }
+    cc.pbi = { render: h, saveImage: (name) => stageImage(h, name) };
   }, [onHandle]);
 
   return (
@@ -78,6 +103,16 @@ export function applyPreset(preset, handle) {
  * retail button is four lines of wiring on machinery that was already right.
  */
 export function saveStageImage(handle, designName) {
+  const shot = stageImage(handle, designName);
+  if (!shot) return null;
+  savePng(shot.dataUrl, shot.filename);
+  return shot.filename;
+}
+
+/** The picture itself, and the name it should be saved under. Internal:
+ *  `saveStageImage` hands it to the browser and `window.__cc.pbi.saveImage`
+ *  hands it to the acceptance walk, and those are the only two callers. */
+function stageImage(handle, designName) {
   if (!handle?.capture) return null;
   const job = renderJob({
     resolution: '4k',
@@ -89,7 +124,5 @@ export function saveStageImage(handle, designName) {
   }, getCabinetProfile());
   const shot = handle.capture(job);
   if (!shot?.dataUrl) return null;
-  const filename = imageFilename(designName);
-  savePng(shot.dataUrl, filename);
-  return filename;
+  return { dataUrl: shot.dataUrl, filename: imageFilename(designName), width: shot.width, height: shot.height };
 }

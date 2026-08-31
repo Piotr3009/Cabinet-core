@@ -1379,6 +1379,52 @@ export function paneLight(project, unitId) {
 export const removeElement = (unitId, itemId) => S().removeItem(unitId, itemId);
 
 /**
+ * A SELECTION, RE-ASKED — and this is what keeps a menu alive while it works.
+ *
+ * MEASURED FAULT, found by the browser and by nothing else. The design room
+ * held the RESOLVED selection in state and rebuilt it from `selectedElement`
+ * whenever the store changed. A menu opened from the INTERIOR list has no
+ * `selectedElement` behind it — so the first time one of its own controls wrote
+ * anything, the store changed, the effect re-ran, found nothing selected, and
+ * closed the menu the client was using. The shelf slider moved the shelf and
+ * then vanished, which is precisely the *"nieprzesunięcia się półki"* the owner
+ * refused, arriving by the back door.
+ *
+ * So the room now holds only a TARGET — `{ menu, unitId, ref }`, three strings
+ * — and this re-resolves it against the live store on every render. The panel
+ * and the item a menu reads are therefore never one edit out of date, and a
+ * menu closes when the client closes it and at no other time.
+ *
+ * @returns {object|null} null when the thing is gone — removed, or its bay
+ *          taken out from under it — which is the one time a menu SHOULD close.
+ */
+export function resolveTarget(target) {
+  if (!target?.menu || !target.unitId) return null;
+  const { menu, unitId, ref } = target;
+  if (!unitOf(unitId)) return null;
+
+  // The whole cabinet, and the light: neither is a panel or an item.
+  if (menu === 'wardrobe' || menu === 'lighting') {
+    const from = ref ? resolveSelection({ unitId, elementRef: ref }) : null;
+    return from && from.menu === menu ? from : selectionForMenu(menu, unitId);
+  }
+
+  // A PANEL, a ROD or a KIT — `resolveSelection` knows all three routes.
+  const found = ref ? resolveSelection({ unitId, elementRef: ref }) : null;
+  if (found) return found.menu === menu ? found : found;
+
+  // …or an ITEM the list named directly. Its panels renumber on every compute,
+  // so the ITEM's own id is the only thing that survives an edit.
+  const item = itemsOf(unitId).find((i) => i.id === ref) || null;
+  if (!item) return null;
+  const result = resultOf(unitId);
+  const panel = (result?.panels || []).find((p) => p.meta?.itemId === item.id) || null;
+  return {
+    menu, kind: item.kind, unitId, ref, panel, item, label: menu,
+  };
+}
+
+/**
  * THE OTHER WAY INTO A MENU — the INTERIOR list's `›`.
  *
  * A client reaches an element two ways: by clicking it on the stage, and by

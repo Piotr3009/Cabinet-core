@@ -107,15 +107,42 @@ test('F3.7 · the retail entry throws both switches BEFORE it imports the app', 
   // PRO's localStorage keys while `create()` builds its initial state, at
   // module scope. Import it at the top of this file for any reason at all —
   // one line to set the audience was enough — and that read has already
-  // happened by the time `setPersistence('none')` runs. The ONLY shared-core
-  // modules this entry may name statically are the two switches themselves,
-  // and neither of them imports anything.
+  // happened by the time `setPersistence('none')` runs.
+  //
+  // T60 ADDED A THIRD SWITCH, `3d/picking.js`, and the rule it has to obey is
+  // not "import nothing" but the reason for it: NOTHING THIS ENTRY NAMES MAY
+  // REACH A STORE before the two setters have run. `picking.js` imports
+  // `engine/elements.js`, which is pure data and pure functions and imports
+  // nothing itself — so its whole graph is two files, neither of which has a
+  // module-scope read of anybody's disk. That is checked below rather than
+  // asserted, by walking each switch's imports one level and requiring the
+  // whole reachable set to be import-free.
+  const SWITCHES = {
+    '../3d/chrome.js': 'src/3d/chrome.js',
+    '../3d/picking.js': 'src/3d/picking.js',
+    '../stores/persistence.js': 'src/stores/persistence.js',
+  };
   const statics = [...code.matchAll(/^import\s[^;]*?from\s*'(\.\.\/[^']+)'/gm)].map((m) => m[1]);
-  assert.deepEqual(statics.sort(), ['../3d/chrome.js', '../stores/persistence.js'],
+  assert.deepEqual(statics.sort(), Object.keys(SWITCHES).sort(),
     `main-retail.jsx statically imports shared-core modules it must not: ${statics.join(', ')}`);
-  for (const rel of ['src/3d/chrome.js', 'src/stores/persistence.js']) {
+
+  const reached = new Set();
+  const walk = (rel) => {
+    if (reached.has(rel)) return;
+    reached.add(rel);
     const text = readFileSync(join(ROOT, rel), 'utf8');
-    assert.ok(!/^import\s/m.test(text), `${rel} must import nothing — it is thrown before everything`);
+    for (const m of stripComments(text).matchAll(/^import\s[^;]*?from\s*'(\.[^']+)'/gm)) {
+      const next = join(rel, '..', m[1]).replace(/^\/+/, '');
+      assert.ok(!/stores\//.test(next),
+        `${rel} reaches ${next} — a switch may not touch a store before it has been thrown`);
+      walk(next);
+    }
+  };
+  for (const rel of Object.values(SWITCHES)) walk(rel);
+  for (const rel of reached) {
+    const text = stripComments(readFileSync(join(ROOT, rel), 'utf8'));
+    assert.ok(!/localStorage/.test(text),
+      `${rel} is reachable from the entry and reads localStorage at module scope`);
   }
 });
 
@@ -227,10 +254,10 @@ test('F3.3 · the stage is the SHARED viewer, not a copy of it', () => {
 test('F3 · the columns are the widths and the tones the brief names', () => {
   const scale = readFileSync(join(RETAIL, 'styles/scale.css'), 'utf8');
   for (const [name, base] of Object.entries({
-    '--pbi-col-categories': '187px',   // 220 × 0.85 — T60 F1.3
-    '--pbi-col-options': '320px',      // *"nr 3 zostaw jak jest"*
-    '--pbi-col-detail': '300px',
-    '--pbi-header-h-room': '60px',
+    '--pbi-col-categories': '187',   // 220 × 0.85 — T60 F1.3
+    '--pbi-col-options': '320',      // *"nr 3 zostaw jak jest"*
+    '--pbi-col-detail': '300',
+    '--pbi-header-h-room': '60',
   })) {
     assert.match(scale, new RegExp(`${name}\\s*:\\s*calc\\(${base} \\* var\\(--pbi-scale\\)\\)`),
       `${name} is not ${base} × the scale`);
@@ -307,7 +334,11 @@ test('F3.5 · full screen is a LOOKING mode that restores what it left', () => {
   // trip into full screen is CLEARED on the way in as well as ignored, so the
   // detail column cannot come back holding a menu for something the client can
   // no longer see.
-  assert.match(room, /if \(fullScreen \|\| !selectedElement\) \{ setSelection\(null\); return; \}/,
+  // T60: two statements now, and the second is what keeps a menu opened from
+  // the INTERIOR list alive through its own edits — see `adapter.resolveTarget`.
+  assert.match(room, /if \(fullScreen\) \{ setTarget\(null\); return; \}/,
+    'full screen must drop the selection');
+  assert.match(room, /if \(!selectedElement\) return;/,
     'a click in looking mode must select nothing');
   assert.ok(!/setActive\(['"]space['"]\)/.test(room.slice(room.indexOf('setFullScreen'))),
     'nothing may be reset on the way back');

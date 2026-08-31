@@ -103,7 +103,7 @@ function SpacePanel({ room, project }) {
 }
 
 /* ─── 2 · LAYOUT ──────────────────────────────────────────────────────────── */
-function LayoutPanel({ unit, room }) {
+function LayoutPanel({ unit, room, onOpenDetail }) {
   const b = A.designBounds();
   const size = A.unitBounds(unit.id);
   const wall = Math.round(Math.abs(room?.corners?.[1]?.x ?? 3000));
@@ -125,6 +125,22 @@ function LayoutPanel({ unit, room }) {
 
   return (
     <Panel title="LAYOUT">
+      {/* ─── THE WAY INTO THE WARDROBE'S OWN MENU ─────────────────────────
+          A single click on the STAGE reaches a door, a shelf, a drawer — every
+          piece a client points at. It does NOT reach the carcass, and that is
+          the shared core's own turn-13 verdict kept: *"clicking a cabinet must
+          select the CABINET"*, which is a selection and not an element. So the
+          wardrobe's own menu is opened from here, where the client is already
+          making that decision, rather than by inventing a gesture for it. */}
+      <button
+        type="button"
+        className="pbi-link"
+        data-testid="layout-open-wardrobe"
+        onClick={() => onOpenDetail('wardrobe')}
+      >
+        THIS WARDROBE ›
+      </button>
+
       <Field label="WARDROBE WIDTH" note={`Your wall is ${wall} mm.`}>
         <Slider
           testid="layout-width"
@@ -404,7 +420,9 @@ export default function Options(props) {
       aria-label={title}
     >
       {active === 'space' ? <SpacePanel room={props.room} project={props.project} /> : null}
-      {active === 'layout' ? <LayoutPanel unit={props.unit} room={props.room} /> : null}
+      {active === 'layout' ? (
+        <LayoutPanel unit={props.unit} room={props.room} onOpenDetail={props.onOpenDetail} />
+      ) : null}
       {active === 'fronts' ? <FrontsPanel design={props.design} /> : null}
       {active === 'interior' ? <InteriorPanel unit={props.unit} onOpenDetail={props.onOpenDetail} /> : null}
       {active === 'details' ? (

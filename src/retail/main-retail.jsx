@@ -6,6 +6,7 @@ import './styles/scale.css';
 import './styles/room.css';
 import { setPersistence } from '../stores/persistence.js';
 import { setChromePart, setProChrome } from '../3d/chrome.js';
+import { setPickMode } from '../3d/picking.js';
 import { loadDecors } from './decorPack.js';
 
 // ─── PRIME BESPOKE INTERIORS · THE ENTRY, AND ITS ORDER ────────────────────
@@ -53,6 +54,17 @@ setProChrome(false);
 setChromePart('dimensions', true);   // DimLabel · DimensionChain · DistanceArrows
 setChromePart('outlines', true);     // the contour pass — Outlines, and what holds an X-ray together
 setChromePart('measure', true);      // the Ruler
+
+// ─── T60 F3 · AND A SINGLE CLICK REACHES A DOOR ────────────────────────────
+//
+// *"jak naciśniemy na drzwi to się pojawi drzwi."* PRO's single click selects
+// the CABINET and a leaf is reached by double-clicking it — turn 13's verdict
+// and turn 14's gesture, both right for a bench. A client double-clicks
+// nothing. `setPickMode('client')` asks `engine/elements.js` the OTHER
+// question it already answers (`opensOwnModal` rather than
+// `isMainViewElement`), so the set of clickable pieces is the set PRO's double
+// click already opens and only the gesture differs. PRO sets no mode.
+setPickMode('client');
 
 // The EGGER pack, fetched by retail's own loader into the engine's own
 // registry. PRO's `src/lib/decorCatalogue.js` does the same thing and is on

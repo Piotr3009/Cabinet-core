@@ -32,7 +32,8 @@ import { useProjectStore } from '../src/stores/projectStore.js';
 import { useUiStore } from '../src/stores/uiStore.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { WATCH_LAYOUTS } from '../src/engine/watchDrawer.js';
-import { elementKind } from '../src/engine/elements.js';
+import { elementKind, isMainViewElement, opensOwnModal } from '../src/engine/elements.js';
+import { pickMode, picksOnClick, setPickMode } from '../src/3d/picking.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const S = () => useProjectStore.getState();
@@ -134,6 +135,43 @@ test('F3 · an unmapped kind is NOT selectable — nothing highlights, nothing o
   const design = read('src/retail/design/DesignRoom.jsx');
   assert.match(design, /if \(!found\) \{[\s\S]{0,200}clearElement/,
     'DesignRoom does not clear a selection it has no menu for');
+});
+
+test('F3 · a SINGLE click reaches a door — the owner\'s own gesture', () => {
+  // PRO's single click selects the CABINET and a leaf is reached by
+  // double-clicking it (turn 13's verdict, turn 14's gesture). Right for a
+  // bench; a client double-clicks nothing, and the owner's sentence is
+  // *"jak naciśniemy na drzwi to się pojawi drzwi."*
+  const unit = room({ width: 600 });
+  const door = A.doorPanels(unit.id)[0];
+  const shelfUnit = room({ shelves: 1 });
+  const shelf = panelsOf(shelfUnit.id).find((p) => p.part === 'SHELF');
+
+  assert.equal(pickMode(), 'workshop', 'PRO\'s answer is the default');
+  assert.equal(picksOnClick(shelf), isMainViewElement(shelf), 'workshop asks isMainViewElement');
+  assert.equal(picksOnClick(door), false, 'PRO does not pick a leaf on a single click');
+
+  setPickMode('client');
+  try {
+    assert.equal(picksOnClick(door), true, 'a client must reach a door with one click');
+    assert.equal(picksOnClick(shelf), true, '…and a shelf, exactly as before');
+    // The SET is the one PRO's DOUBLE click already opens — nothing new became
+    // reachable, only the gesture changed.
+    assert.equal(picksOnClick(door), opensOwnModal(door));
+    const mech = panelsOf(room({ drawers: 3 }).id).find((p) => p.part === 'DP');
+    assert.equal(picksOnClick(mech), false, 'a mechanism is still not a thing you point at');
+  } finally {
+    setPickMode('workshop');
+  }
+  assert.equal(pickMode(), 'workshop', 'anything but the word restores PRO\'s answer');
+  setPickMode('nonsense');
+  assert.equal(pickMode(), 'workshop');
+
+  // …and the retail entry is what asks the other question.
+  assert.match(read('src/retail/main-retail.jsx'), /setPickMode\('client'\)/);
+  for (const rel of ['src/App.jsx', 'src/main.jsx', 'src/pages/ConfiguratorPage.jsx']) {
+    assert.ok(!/setPickMode/.test(read(rel)), `${rel} must know nothing of the pick mode`);
+  }
 });
 
 test('F3 · a click in the stage reaches the ITEM, not a string that looks like it', () => {

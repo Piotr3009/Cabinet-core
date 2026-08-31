@@ -58,11 +58,26 @@ function filesUnder(dir, re = /\.(js|jsx|css)$/) {
 
 test('F1.1 · one scale, and it is the brief\'s own arithmetic', () => {
   const css = read(SCALE);
+  // ─── THE FORMULA, IN PX ─────────────────────────────────────────────────
+  //
+  // CLAUDE.md F1.1 writes the terms as plain numbers. That expression has no
+  // CSS type — `0.78 + <length>` is invalid — and the browser showed what it
+  // costs: the property is invalid at computed-value time, every dimension
+  // reading it falls back to its initial value, and the room lays itself out
+  // on content widths. The RAIL measured 303px at 2560 where 187 was wanted.
+  //
+  // Every term is in px now, so the whole expression is a length; the
+  // ARITHMETIC is character-for-character the brief's. A base is a plain
+  // number, because number × length is a length.
   assert.match(
     css,
-    /--pbi-scale:\s*clamp\(0\.78,\s*calc\(0\.78 \+ \(100vw - 1280px\) \* 0\.00017\),\s*1\)/,
+    /--pbi-scale:\s*clamp\(0\.78px,\s*calc\(0\.78px \+ \(100vw - 1280px\) \* 0\.00017\),\s*1px\)/,
     'the scale is not the formula CLAUDE.md F1.1 states',
   );
+  // …and not one dimension multiplies a LENGTH by it, which is the mistake
+  // that made the whole thing invisible.
+  assert.ok(!/px \* var\(--pbi-scale\)/.test(css),
+    'a base is still a length — number × length is a length, length × length is not');
 
   // …and the arithmetic lands where the brief says it lands. Read here rather
   // than trusted: a formula whose endpoints are wrong is a formula nobody
@@ -80,7 +95,7 @@ test('F1.1 · one scale, and it is the brief\'s own arithmetic', () => {
 test('F1.3 · the RAIL narrows 15%, and every column scales', () => {
   const css = read(SCALE);
   const base = (name) => {
-    const m = css.match(new RegExp(`${name}:\\s*calc\\((\\d+(?:\\.\\d+)?)px \\* var\\(--pbi-scale\\)\\)`));
+    const m = css.match(new RegExp(`${name}:\\s*calc\\((\\d+(?:\\.\\d+)?) \\* var\\(--pbi-scale\\)\\)`));
     assert.ok(m, `${name} is not a scaled calc()`);
     return Number(m[1]);
   };
@@ -95,7 +110,7 @@ test('F1.3 · the RAIL narrows 15%, and every column scales', () => {
 test('F1.4 · no rendered text below 11px at scale 0.78', () => {
   const css = read(SCALE);
   const sizes = [...css.matchAll(
-    /(--pbi-fs-[\w-]+):\s*max\((\d+(?:\.\d+)?)px,\s*calc\((\d+(?:\.\d+)?)px \* var\(--pbi-scale\)\)\)/g,
+    /(--pbi-fs-[\w-]+):\s*max\((\d+(?:\.\d+)?)px,\s*calc\((\d+(?:\.\d+)?) \* var\(--pbi-scale\)\)\)/g,
   )];
   assert.ok(sizes.length >= 8, `only ${sizes.length} type tokens — the scan is broken, not the CSS`);
 

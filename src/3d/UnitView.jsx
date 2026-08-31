@@ -142,7 +142,8 @@ import {
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { drawerFrontDimsVisible, frontDimensionRows } from '../engine/frontDimensions.js';
-import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
+import { opensOwnModal } from '../engine/elements.js';
+import { picksOnClick } from './picking.js';
 import { panelFinish } from '../engine/materials.js';
 // ─── TURN 49 (CLAUDE.md F9): AND WHETHER IT IS A VENEER ────────────────────
 // The finish alone cannot say for a FRONT — a front veneer borrows an EGGER
@@ -1930,7 +1931,14 @@ export default function UnitView({
         // `onEditElement`, the properties block, the override store — all of it
         // is the same code the editor drives. The room simply stops sending
         // carcass clicks down it.
-        const isElement = isMainViewElement(p);
+        // ─── TURN 60 (CLAUDE.md F3): …AND THE CLIENT ASKS A WIDER ONE ────
+        //
+        // `picksOnClick` is `isMainViewElement` for PRO — the default, so this
+        // is the line it has been since turn 13 — and `opensOwnModal` for the
+        // retail room, where a single click has to reach a door because
+        // nobody double-clicks a wardrobe. The SET is the one PRO's double
+        // click already opens; only the gesture differs. See src/3d/picking.js.
+        const isElement = picksOnClick(p);
         // ─── Turn 14 (CLAUDE.md F4.1) ───
         // What a DOUBLE click opens. Wider than what a single click selects,
         // and deliberately so: the owner's turn-13 verdict is that clicking a

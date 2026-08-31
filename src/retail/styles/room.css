@@ -127,25 +127,34 @@
 
 /* ─── COLUMN 4 · THE VIEW BAR ───────────────────────────────────────────── */
 
+/* ─── AND IT WRAPS RATHER THAN HIDING A TOOL ───────────────────────────────
+ *
+ * The owner asked for PRO's tools, all of them: *"identyczne ma mieć funkcje."*
+ * At 1280 the stage column is about 650px wide and PRO's own labels — SHOW
+ * DIMENSIONS, FRONT DIMENSIONS, HIDE FRONTS — do not fit on one line of it. A
+ * scrolling bar would have hidden five of them behind an edge, which is a tool
+ * a client will never find; shortening the labels would have broken the parity
+ * this turn is about. So the bar takes a second line on a narrow screen and
+ * every entry stays where it can be read. The frame at 1280 is what asked for
+ * this: the first one cut MEASURE, LIGHTS, RESET VIEW and ⛶ off the right. */
 .pbi-viewbar {
-  height: var(--pbi-view-bar-h);
+  height: auto;
   min-height: var(--pbi-view-bar-h);
   background: var(--pbi-warm-white);
   border-bottom: 1px solid var(--pbi-stone-line);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0;
   padding: 0 var(--pbi-pad-bar);
-  overflow-x: auto;
-  overflow-y: hidden;
 }
 
 .pbi-viewbar-btn {
   position: relative;
   background: none;
   border: 0;
-  padding: 0 var(--pbi-gap-3);
-  height: 100%;
+  padding: var(--pbi-gap-2) var(--pbi-gap-3);
+  min-height: var(--pbi-view-bar-h);
   cursor: pointer;
   color: var(--pbi-soft-graphite);
   font-family: var(--pbi-font-ui);
@@ -167,7 +176,7 @@
   position: absolute;
   left: var(--pbi-gap-3);
   right: var(--pbi-gap-3);
-  bottom: var(--pbi-gap-2);
+  bottom: var(--pbi-gap-1);
   height: 1px;
   background: var(--pbi-champagne);
 }

@@ -129,7 +129,7 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   const estimate = useEstimateStore();
 
   const [active, setActive] = useState('space');
-  const [selection, setSelection] = useState(null);
+  const [target, setTarget] = useState(null);      // { menu, unitId, ref } — three strings
   const [fullScreen, setFullScreen] = useState(false);
   const [preset, setPreset] = useState('room');
   const [quoteOpen, setQuoteOpen] = useState(false);
@@ -144,7 +144,27 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   // store change tore the render handle down and built it again, and with it
   // the walk's own `window.__cc.pbi`. Keep the last GOOD handle: a teardown
   // hands back null, and a null here would take SAVE IMAGE with it.
-  const keepHandle = useCallback((h) => { if (h) handle.current = h; }, []);
+  //
+  // ─── AND IT IS WHERE THE CAMERA IS FINALLY PLACED ────────────────────────
+  //
+  // MEASURED FAULT, and the frames are what found it. The boot effect parked
+  // the camera 350 ms after mount — a guess at when the renderer would have a
+  // handle — and on a cold load it does not: `applyPreset` was called with
+  // `handle.current === null`, returned nothing, and the client's first sight
+  // of the room was Scene's default camera pointing at a bare wall with the
+  // wardrobe edge-on at the far left.
+  //
+  // A timeout cannot know. The HANDLE can: this is called the moment the
+  // renderer has one, so the camera is placed then, once, and never again.
+  const parked = useRef(false);
+  const keepHandle = useCallback((h) => {
+    if (!h) return;
+    handle.current = h;
+    if (parked.current) return;
+    parked.current = true;
+    // One frame later, so the furniture it is aimed at has bounds to aim at.
+    requestAnimationFrame(() => { applyPreset('room', h); });
+  }, []);
 
   const unit = A.designUnit(units);
   const slope = (project?.wallSlopes || []).find((s) => s.kind === 'slope') || null;
@@ -178,9 +198,7 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
     A.startDesign('Bedroom wardrobe');
     if (wantCollection && collectionById(wantCollection)) A.applyCollection(wantCollection);
     estimate.begin('Bedroom wardrobe');
-    // The furniture needs one frame to exist before a camera can be aimed at it.
-    const id = setTimeout(() => { applyPreset('room', handle.current); }, 350);
-    return () => clearTimeout(id);
+    return undefined;
   }, [wantCollection, estimate]);
 
   // ─── F3.5 · FULL SCREEN IS A LOOKING MODE ────────────────────────────────
@@ -226,15 +244,29 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   // because a highlight with no menu behind it is the empty panel by another
   // road.
   useEffect(() => {
-    if (fullScreen || !selectedElement) { setSelection(null); return; }
+    if (fullScreen) { setTarget(null); return; }
+    if (!selectedElement) return;                 // a menu opened from the list stays open
     const found = A.resolveSelection(selectedElement);
     if (!found) {
-      setSelection(null);
+      setTarget(null);
       useUiStore.getState().clearElement?.();
       return;
     }
-    setSelection(found);
-  }, [selectedElement, fullScreen, units, project]);
+    setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
+  }, [selectedElement, fullScreen]);
+
+  // ─── AND THE TARGET IS RESOLVED FRESH, EVERY RENDER ──────────────────────
+  //
+  // MEASURED FAULT. Holding the RESOLVED selection in state and rebuilding it
+  // whenever the store changed closed any menu that had been opened from the
+  // INTERIOR list the instant one of its controls wrote anything — the shelf
+  // slider moved the shelf and then vanished. Three strings in state, resolved
+  // against the live store here, and a menu's panel and item are never one
+  // edit out of date.
+  const selection = useMemo(
+    () => (target ? A.resolveTarget(target) : null),
+    [target, units, project],
+  );
 
   // ─── THE CATEGORY HINTS (PSW's cat-hint) ─────────────────────────────────
   const choices = useMemo(() => describeDesign({ project, units }), [project, units]);
@@ -332,7 +364,7 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
           active={active}
           onPick={setActive}
           hints={hints}
-          onReset={() => { A.startDesign(designName || 'Bedroom wardrobe'); setSelection(null); }}
+          onReset={() => { A.startDesign(designName || 'Bedroom wardrobe'); setTarget(null); }}
         />
       ) : null}
 
@@ -347,7 +379,12 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
           choices={choices}
           designName={designName}
           onDesignName={(name) => estimate.rename(estimate.activeId, name)}
-          onOpenDetail={(menu) => setSelection(A.selectionForMenu(menu, unit.id))}
+          onOpenDetail={(menu) => {
+            const found = A.selectionForMenu(menu, unit.id);
+            // A row with nothing behind it opens nothing — which is what makes
+            // a row without a `›` honest rather than merely quiet.
+            if (found) setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
+          }}
           onQuote={() => setQuoteOpen(true)}
           onSave={onSave}
         />
@@ -358,7 +395,7 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
       {!fullScreen ? (
         <Detail
           selection={selection}
-          onSelect={setSelection}
+          onSelect={setTarget}
           unit={unit}
           project={project}
           designName={designName}

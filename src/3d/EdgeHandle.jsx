@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { mm } from './constants.js';
-import { proChromeOn } from './chrome.js';
+import { chromeOn } from './chrome.js';
 
 // ─── The top edge of a piece you can pull up (turn 6, CLAUDE.md F3/F4) ───
 //
@@ -46,7 +46,11 @@ export default function EdgeHandle({
 }) {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
-  if (!proChromeOn()) return null;
+  // T61 F1 · the CHANNEL, not the master switch: the client's room
+  // owns the drag handles on a unit's edges. PRO sets no
+  // channel, so `chromeOn` falls through to `on` and this guard still
+  // reads `if (!true)` — which IS the no-change proof.
+  if (!chromeOn('edge')) return null;
   const [hover, setHover] = useState(false);
   const lit = active || hover;
 

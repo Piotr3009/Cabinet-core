@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { mm } from './constants.js';
 import { machiningLines } from '../engine/joinery.js';
 import { layerScreenColor } from '../engine/cnc/layers.js';
-import { proChromeOn } from './chrome.js';
+import { chromeOn } from './chrome.js';
 
 // ─── WHAT THE MACHINE WILL DO TO THIS BOARD (turn 17, CLAUDE.md F4.1) ───────
 //
@@ -39,7 +39,11 @@ export default function PartMachining({
 }) {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
-  if (!proChromeOn()) return null;
+  // T61 F1 · the CHANNEL, not the master switch: the client's room
+  // owns the machining drawn on an opened part. PRO sets no
+  // channel, so `chromeOn` falls through to `on` and this guard still
+  // reads `if (!true)` — which IS the no-change proof.
+  if (!chromeOn('machining')) return null;
   const geometries = useMemo(() => {
     if (!visible || !panel) return [];
     const off = lift == null ? (profile?.appearance?.joinery?.lift ?? 0.4) : lift;

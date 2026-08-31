@@ -233,14 +233,49 @@ function truncateWall(wall, keep, length) {
  * carry the REAL wall index, so a unit standing on one is on the wall it always
  * was — nothing downstream has to learn about stubs.
  *
+ * ─── TURN 61 (CLAUDE.md F2): AND THE SAME LAW FOR **TWO** ───────────────────
+ *
+ * The owner: *"zrob 2 sciany, Elki bedziemy dokaldac"* · *"2 tak wystarczy"*.
+ * Two walls, and no corner carcass — the L-shape stays parked, so the two runs
+ * are independent and nothing new is cut at the corner they share.
+ *
+ * IT IS THE 'wall' LAW WITH ONE MORE REAL WALL, and not a second law. Walls 0
+ * and 1 are ADJACENT — they share corner 1 — so the pair has exactly two FREE
+ * ends, wall 0's start (corner 0) and wall 1's end (corner 2), and those two
+ * ends get the same `wallStub` returns one-wall mode gives its own two. The
+ * previous wall is unchanged from `'wall'` (it keeps the end that touches
+ * corner 0); the next one moves along by one, from `walls[1]` to `walls[2]`,
+ * because `walls[1]` is now a wall a client stands furniture against.
+ *
+ * The stubs keep their REAL index and carry `stub: true`, exactly as before, so
+ * "real" stays the one thing it has ever been — the absence of that flag — and
+ * nothing downstream learns a new word.
+ *
+ * THE 4-CORNER GUARD. `'wall'` refuses under three corners because a stub has
+ * to be cut from a wall that is not the main one. `'two'` needs FOUR: with
+ * three corners `walls[2]` and `walls[walls.length - 1]` are the same wall and
+ * both stubs would be cut out of it. Under four corners the whole room is
+ * returned, which is what every unknown scope has always got.
+ *
  * @param {object} room
- * @param {'room'|'wall'} scope   the project's own (engine/design.js)
+ * @param {'room'|'wall'|'two'} scope   the project's own (engine/design.js)
  * @param {object|null} profile   T51 (F8): whose `room.sideWallMm` decides how
  *   long the two returns are when the room has not said. Optional, so every
  *   caller that has no profile to hand still gets the house's own answer.
  */
 export function wallsInScope(room, scope = 'room', profile = null) {
   const walls = roomWalls(room);
+  if (scope === 'two') {
+    if (walls.length < 4) return walls;
+    const stub = wallStub(room, profile);
+    if (stub <= 0) return [walls[0], walls[1]];
+    return [
+      walls[0],
+      walls[1],
+      truncateWall(walls[walls.length - 1], 'end', stub),
+      truncateWall(walls[2], 'start', stub),
+    ];
+  }
   if (scope !== 'wall' || walls.length < 3) return walls;
   const stub = wallStub(room, profile);
   if (stub <= 0) return [walls[0]];
@@ -251,9 +286,16 @@ export function wallsInScope(room, scope = 'room', profile = null) {
   ];
 }
 
-/** Which wall indices a scope shows — the list without the geometry. */
-export function wallIndicesInScope(room, scope = 'room') {
-  return wallsInScope(room, scope).filter((w) => !w.stub).map((w) => w.index);
+/**
+ * Which wall indices a scope shows — the list without the geometry.
+ *
+ * T61: the `profile` is passed through. It changed no answer while `'wall'` was
+ * the only scope (the stubs it lengthens are filtered out on the next line),
+ * and it changes none now — but a reader who finds two calls to the same
+ * function with different arguments is a reader who will wonder which is right.
+ */
+export function wallIndicesInScope(room, scope = 'room', profile = null) {
+  return wallsInScope(room, scope, profile).filter((w) => !w.stub).map((w) => w.index);
 }
 
 /** Plan bounding box, used to centre the room in the 3D scene. */

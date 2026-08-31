@@ -26,12 +26,19 @@
 // for the predicates that answer in a boolean.
 
 import { getCabinetProfile } from '../../engine/profile.js';
-import { DEFAULT_ROOM, rectCorners } from '../../engine/room.js';
+import {
+  clampOpening, DEFAULT_ROOM, OPENING_DEFAULTS, openingsOnWall,
+  rectCorners, wallIndicesInScope, wallWidth,
+} from '../../engine/room.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
 import { doorCountFor } from '../../engine/cabinet.js';
-import { FRONT_STYLE_OPTIONS } from '../../engine/design.js';
+import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
+// T61 F3: the top box's own two engine answers — the type's defaults and the
+// room's refusal — both read rather than retyped.
+import { defaultParamsFor, getUnitType } from '../../engine/types.js';
+import { riderBornHeight } from '../../engine/roomFit.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useUiStore } from '../../stores/uiStore.js';
@@ -49,8 +56,42 @@ const P = () => getCabinetProfile();
 const S = () => useProjectStore.getState();
 const U = () => useUiStore.getState();
 
-/** The one wardrobe this design is about. */
-export const designUnit = (units) => units?.[0] || null;
+/**
+ * THE WARDROBE THE COLUMNS ARE ABOUT.
+ *
+ * ─── TURN 61 (CLAUDE.md F2): IT LEARNS PLURALITY, MINIMALLY ────────────────
+ *
+ * *"selected unit first, wall-0 wardrobe as fallback."* Two walls means two
+ * wardrobes, and every panel that took `units[0]` would have gone on editing
+ * the first one while the client was looking at the second.
+ *
+ * WHAT IT IS NOT: a second selection model. The selection is the shared ui
+ * store's own (`selectedElement.unitId`) — the same one `resolveSelection`
+ * reads and the same one a click on the stage writes — so there is one answer
+ * to "which wardrobe" and this reads it rather than keeping another.
+ *
+ * A TOP BOX IS NEVER THE ANSWER (F3). A rider is a unit like any other and can
+ * be selected and edited through its own menu, but the OPTIONS column asks
+ * about the wardrobe it stands on: LAYOUT's width, INTERIOR's rows and
+ * DETAILS' plinth are all the main's. So a selected rider resolves to its host.
+ */
+export const designUnit = (units) => {
+  const list = Array.isArray(units) ? units : [];
+  if (!list.length) return null;
+  const mains = list.filter((u) => !u.params?.rides_on);
+  const pool = mains.length ? mains : list;
+  const selected = U().selectedElement?.unitId || null;
+  const found = selected ? list.find((u) => u.id === selected) : null;
+  // A rider hands the question to its host — see the note above.
+  const host = found?.params?.rides_on
+    ? list.find((u) => u.id === found.params.rides_on) || null
+    : found;
+  if (host && !host.params?.rides_on) return host;
+  // The fallback is the wardrobe on the LOWEST wall, at the start of it — which
+  // on a one-wall project is `units[0]` and nothing has moved.
+  return [...pool].sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
+    || ((a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0)))[0] || null;
+};
 
 // ─── BOUNDS — every one read off the profile ───────────────────────────────
 
@@ -208,21 +249,380 @@ const carcassTypeId = (design) => design?.carcass?.types?.[0]?.id || 'c1';
  */
 const decorSourceId = (list) => list.find((src) => src.picker === 'decor')?.id || null;
 
-/** F4.1 · YOUR SPACE — the wall and the ceiling. */
-export function setSpace({ wallMm, ceilingMm }) {
+/**
+ * F4.1 · YOUR SPACE — the wall and the ceiling.
+ *
+ * ─── TURN 61 (CLAUDE.md F2): …AND THE SECOND WALL, BY THE SAME LAW ─────────
+ *
+ * `rectCorners(width, depth)` puts corner 1 at `(W, 0)` and corner 2 at
+ * `(W, D)`. So wall 0's length IS the first argument and wall 1's length IS the
+ * second — the number this function has been reading back as the room's DEPTH
+ * and handing straight back in since t59. WALL 2 WIDTH is therefore not a new
+ * write: it is the argument that was always there, given a name and a field.
+ */
+export function setSpace({ wallMm, ceilingMm, wall2Mm }) {
   const store = S();
   const room = store.project.room || DEFAULT_ROOM;
+  const wall = Math.round(Math.abs(room.corners?.[1]?.x ?? 3000));
   const depth = Math.max(600, Math.round(Math.abs(room.corners?.[2]?.y ?? 3000)));
   const patch = {};
-  if (Number.isFinite(wallMm)) patch.corners = rectCorners(Math.round(wallMm), depth);
+  const nextWall = Number.isFinite(wallMm) ? Math.round(wallMm) : wall;
+  const nextDepth = Number.isFinite(wall2Mm) ? Math.round(wall2Mm) : depth;
+  if (Number.isFinite(wallMm) || Number.isFinite(wall2Mm)) {
+    patch.corners = rectCorners(nextWall, nextDepth);
+  }
   if (Number.isFinite(ceilingMm)) patch.height = Math.round(ceilingMm);
   const verdict = store.setRoom(patch);
   // A wall that has just changed length is a wall the wardrobe should still be
-  // standing at the start of.
-  const unit = designUnit(store.units);
-  if (unit) store.moveUnit(unit.id, 0, 1);
+  // standing at the start of. T61: ONE per wall — the wardrobe nearest that
+  // wall's start — so a second wardrobe on a wall keeps the place it was put
+  // in rather than being shoved onto its neighbour by a resize.
+  if (verdict?.ok !== false) {
+    const first = new Map();
+    for (const u of store.units) {
+      if (u.params?.rides_on) continue;          // riders settle on their host
+      const w = u.position?.wall ?? 0;
+      const at = u.position?.x_mm ?? 0;
+      if (!first.has(w) || at < first.get(w).at) first.set(w, { id: u.id, at });
+    }
+    for (const { id } of first.values()) store.moveUnit(id, 0, 1);
+  }
   return verdict;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F2 · TWO WALLS — AND CABINETS THAT STAND ON EITHER
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner: *"zrob 2 sciany, Elki bedziemy dokaldac"* · *"2 tak wystarczy"*.
+// TWO, and no corner carcass — the L-shape stays parked, so each wall carries
+// its own run and nothing is cut where they meet.
+//
+// EVERY ANSWER BELOW IS THE ENGINE'S OR THE STORE'S. The scope vocabulary is
+// `engine/design.js ROOM_SCOPES`; which walls a scope shows is
+// `engine/room.js wallIndicesInScope`; moving a wardrobe round the corner is
+// `projectStore.setUnitWall`, refusal sentence and all; putting a new one on an
+// empty wall is `projectStore.addUnit` followed by that same move. Retail
+// writes no geometry and authors no sentence.
+
+/** The project's scope, through the vocabulary's own gate. */
+export const roomScope = (project) => normaliseScope(project?.design?.scope);
+
+/**
+ * WALLS — the chip row's two answers.
+ *
+ * `'wall'` and `'two'`, never `'room'`: a client is designing against the wall
+ * their wardrobe stands on, and t59's room has never offered the four-walled
+ * box. What `startDesign` leaves behind is the migrator's `'room'` default, so
+ * the row also SHOWS `1` for it — one wall is what the client is looking at.
+ */
+export const WALL_CHOICES = Object.freeze([
+  { id: 'wall', label: '1' },
+  { id: 'two', label: '2' },
+]);
+
+/** Which chip is lit. Anything that is not `'two'` reads as one wall. */
+export const wallChoice = (project) => (roomScope(project) === 'two' ? 'two' : 'wall');
+
+/**
+ * Hand the room a scope. `setDesign` migrates on the way in, so a word the
+ * vocabulary does not know cannot get stored — and the units do not move: a
+ * wardrobe on wall 1 stays on wall 1 whether or not the wall is drawn, exactly
+ * as it does in PRO when a joiner switches back to the whole room.
+ */
+export function setWallCount(id) {
+  S().setDesign({ scope: id === 'two' ? 'two' : 'wall' });
+  return wallChoice(S().project);
+}
+
+/** The wall indices this scope draws — `[0]` or `[0, 1]`. The engine's list. */
+export const wallsShown = (project, room) => wallIndicesInScope(
+  room || project?.room || DEFAULT_ROOM,
+  roomScope(project),
+  P(),
+);
+
+/** How long one wall is, in millimetres, off the room's own corners. */
+export const wallLengthMm = (room, index = 0) => Math.round(
+  wallWidth(room || DEFAULT_ROOM, index),
+);
+
+/** The MAIN cabinets standing on one wall. A rider stands on its host, not a wall. */
+export const unitsOnWall = (wallIndex) => S().units
+  .filter((u) => !u.params?.rides_on && (u.position?.wall ?? 0) === wallIndex);
+
+/** Which wall a unit stands on (1-based, for a person). */
+export const unitWall = (unitId) => (unitOf(unitId)?.position?.wall ?? 0);
+
+/**
+ * MOVE A WARDROBE ROUND THE CORNER.
+ *
+ * `projectStore.setUnitWall` is the whole law: it looks for a free slot on the
+ * wall asked for, and where there is none it REFUSES with its own sentence
+ * (*"Wall 2 has no free space for this unit — move or remove something there
+ * first."*) rather than dropping the cabinet into a neighbour. Passed through
+ * verbatim; retail does not paraphrase it and does not pre-empt it.
+ *
+ * @returns {{ok:boolean, said:string}}
+ */
+export function setUnitWall(unitId, wallIndex) {
+  const verdict = S().setUnitWall(unitId, wallIndex);
+  if (!verdict) return { ok: false, said: '' };
+  return { ok: !verdict.blocked, said: verdict.error || '' };
+}
+
+/**
+ * ADD WARDROBE ON WALL 2 — the store's own add, then the store's own move.
+ *
+ * `addUnit` has no `wall` option: it places a cabinet in the first wall with
+ * room, starting at wall 0. So the wall is asked for afterwards, through the
+ * same `setUnitWall` the chip row uses — one law for "which wall", not two —
+ * and a wall with no room refuses in its own words, with the unit taken back
+ * out so a refusal leaves nothing behind.
+ *
+ * The defaults are `startDesign`'s, because a second wardrobe is the same
+ * wardrobe: the profile's width and height, seated at the wall's start, with
+ * the engine's own door count on it.
+ *
+ * @returns {{ok:boolean, id:string|null, said:string}}
+ */
+export function addWardrobeOnWall(wallIndex) {
+  const store = S();
+  const p = P();
+  const placed = store.addUnit('WARDROBE', {
+    params: { width: p.wardrobe.defaults.width, height: p.wardrobe.defaults.height },
+  });
+  if (!placed?.id) return { ok: false, id: null, said: placed?.error || '' };
+  const moved = store.setUnitWall(placed.id, wallIndex);
+  if (moved?.blocked) {
+    // Nothing half-done: the wall refused, so the wardrobe that was made for it
+    // goes back out. A cabinet left standing on wall 1 is not what was asked
+    // for, and a client would have to find and delete it.
+    store.removeUnit(placed.id);
+    return { ok: false, id: null, said: moved.error || '' };
+  }
+  store.moveUnit(placed.id, 0, 1);
+  setDoorCount(placed.id, 1);
+  return { ok: true, id: placed.id, said: '' };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F6 · WINDOWS AND DOORS — DRAWN, AND NOTHING MORE
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner: *"skosy, okna, drzwi trzeba bedzie dodac"*, and the decision that
+// scopes it: *"3 — narazie sie rysuja"*. They DRAW. Nothing fits around them
+// tonight — a wardrobe may stand across a window and nothing complains, which
+// is the owner's explicit "na razie" and is named as a known gap in the PR body
+// rather than quietly left for somebody to find.
+//
+// ─── THE SHAPE IS THE LAW; THE PRO COMPONENT IS NOT IMPORTED ───────────────
+//
+// `components/WallElevationModal.jsx` is read, not used. What is taken from it
+// is the WRITE PATTERN, and it is taken exactly:
+//
+//   1. a new opening spreads `OPENING_DEFAULTS[kind]`, centred on its wall
+//      (`x_mm = wallWidth / 2 - width / 2`), and goes through `clampOpening`
+//      BEFORE it is stored;
+//   2. every write is a WHOLE-LIST replacement handed to `store.setRoom`, so
+//      it passes `migrateRoom` and `roomChangeGuard` — never the store's three
+//      bare `addOpening` / `updateOpening` / `removeOpening` setters, which
+//      skip both. PRO's two editors avoid them for the same reason.
+//   3. a refusal is the verdict's own `message`, shown verbatim.
+//
+// The id is made HERE and not imported: `lib/wallElements.js newElementId` is
+// PRO's zone (`turn59-f1-the-switch.test.js` sorts `src/lib` as `pro`, by name),
+// so retail may read its grammar and may not import it. Same grammar, one line.
+
+const openingId = () => `op_${Math.random().toString(36).slice(2, 9)}`;
+
+/** THE OPENINGS, clamped, on the walls this scope actually draws. */
+export function roomOpenings(project, room) {
+  const live = room || project?.room || DEFAULT_ROOM;
+  return wallsShown(project, live)
+    .flatMap((wall) => openingsOnWall(live, wall).map((o) => ({ ...o, wall })));
+}
+
+/** What a new opening of this kind starts as — the engine's own numbers. */
+export const openingDefaults = (kind) => OPENING_DEFAULTS[kind === 'door' ? 'door' : 'window'];
+
+/**
+ * ADD A WINDOW / ADD A DOOR. Centred on the wall, clamped, then the room.
+ *
+ * @returns {{ok:boolean, id:string|null, said:string}}
+ */
+export function addOpening(kind, wallIndex = 0) {
+  const store = S();
+  const room = store.project.room || DEFAULT_ROOM;
+  const d = openingDefaults(kind);
+  const width = wallWidth(room, wallIndex);
+  const opening = clampOpening({
+    id: openingId(),
+    kind: kind === 'door' ? 'door' : 'window',
+    wall: wallIndex,
+    x_mm: Math.max(0, width / 2 - d.width / 2),
+    ...d,
+  }, room);
+  const verdict = store.setRoom({ openings: [...(room.openings || []), opening] });
+  if (verdict?.ok === false) return { ok: false, id: null, said: verdict.message || '' };
+  return { ok: true, id: opening.id, said: '' };
+}
+
+/**
+ * EDIT ONE. The patch goes through `clampOpening` against the live room, which
+ * is where the engine's own limits live — never past either end of the wall,
+ * never taller than the room, a door always on the floor.
+ *
+ * @returns {{ok:boolean, said:string}}
+ */
+export function setOpening(id, patch) {
+  const store = S();
+  const room = store.project.room || DEFAULT_ROOM;
+  const next = (room.openings || []).map((o) => (o.id === id
+    ? clampOpening({ ...o, ...patch }, room) : o));
+  const verdict = store.setRoom({ openings: next });
+  if (verdict?.ok === false) return { ok: false, said: verdict.message || '' };
+  return { ok: true, said: '' };
+}
+
+/** REMOVE. A room with one less hole in it cannot refuse. */
+export function removeOpening(id) {
+  const store = S();
+  const room = store.project.room || DEFAULT_ROOM;
+  const verdict = store.setRoom({
+    openings: (room.openings || []).filter((o) => o.id !== id),
+  });
+  return { ok: verdict?.ok !== false, said: verdict?.message || '' };
+}
+
+/**
+ * THE FOUR FIELDS' ENDS, and every one is `clampOpening`'s own arithmetic read
+ * back rather than a second copy of it: from-the-left runs to `wallW - width`,
+ * width to the wall, height to what is left over the sill, and the sill to
+ * 100 mm short of the ceiling. F5's fields refuse outside these; the engine
+ * would have clamped silently, and a typed number must never be quietly moved.
+ */
+export function openingBounds(opening, room) {
+  const live = room || S().project.room || DEFAULT_ROOM;
+  const wallW = Math.round(wallWidth(live, opening?.wall ?? 0));
+  const roomH = Math.round(Number(live.height) || 2500);
+  const width = Math.round(Number(opening?.width) || 0);
+  const sill = Math.round(Number(opening?.sill) || 0);
+  return {
+    x_mm: { min: 0, max: Math.max(0, wallW - width) },
+    width: { min: 100, max: wallW },
+    height: { min: 100, max: Math.max(100, roomH - sill) },
+    sill: { min: 0, max: Math.max(0, roomH - 100) },
+    from: 'engine/room.js clampOpening',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F1 · WHERE A `+` GOES
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The marker is drawn again in the client's room (channel `plus`), and a marker
+// that is drawn must DO something. PRO's answer is `openLibraryToInsert` — the
+// LIBRARY panel, filtered to the neighbour's own category, in `src/components`
+// and on the far side of the iron boundary. Retail has no library surface
+// tonight (the RAIL rebuild is the owner's next green point, not this turn's),
+// so the plus adds the NEIGHBOUR'S OWN TYPE through the very call the library
+// makes — `addUnit(type, { near, side })`, the same `{ near, side }` PRO hands
+// it. Same category, its default member; no target invented.
+//
+// A top box's plus therefore adds another top box beside it, which is T53 F5's
+// own law reached without retail knowing it exists: `addUnit` reads the clicked
+// box's host and refuses in its own words when there is no room on that side.
+
+/**
+ * @param {{unitId:string, side:'left'|'right'}} point  `engine/runs.js addPlusPoints`
+ * @returns {{ok:boolean, id:string|null, said:string}}
+ */
+export function addBesidePlus(point) {
+  const near = unitOf(point?.unitId);
+  if (!near) return { ok: false, id: null, said: '' };
+  const placed = S().addUnit(near.type, { near: near.id, side: point.side });
+  if (!placed?.id) return { ok: false, id: null, said: placed?.error || '' };
+  U().selectUnit?.(placed.id);
+  return { ok: true, id: placed.id, said: '' };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F3 · THE TOP BOX
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, asked where a top box gets added: *"4 add top"* — a button on the
+// selected wardrobe. NOTHING NEW IN THE ENGINE: `engine/topBox.js` has held the
+// whole relationship since T36 — `WARDROBE_TOP`, `params.rides_on`,
+// `settleRiders`, several riders per host since T53, orphan check #14, and the
+// room's refusal since T50.
+//
+// THE ADD IS `addUnit('WARDROBE_TOP', { near: hostId })`, which is the call
+// PRO's `components/LibraryPanel.jsx:123` makes from the wardrobe tile — the
+// same one, with the host named. Everything a box needs is written INSIDE that
+// action: `rides_on`, `rides_offset_mm`, the host's width, the born-fitted
+// height, the depth, the host's own `ridden_by`, and the layout settle. Retail
+// passes no `params` at all, because `profile.wardrobe.topBox.defaults` is
+// already what `defaultParamsFor` applies.
+
+/** Is this unit a rider — a box standing on something? The engine's own test. */
+export const isTopBox = (unit) => Boolean(unit && getUnitType(unit.type)?.ridesOn);
+
+/**
+ * MAY A BOX GO ON THIS WARDROBE — asked BEFORE the press, in the engine's words.
+ *
+ * `riderBornHeight` is the predicate `addUnit` itself uses, and it is PURE: it
+ * takes the room, the host and the profile and answers with the sentence the
+ * add would have refused with. So the greyed button carries the refusal the
+ * press would have produced, word for word, and there is ONE reading of the
+ * ceiling rather than a retail copy of it.
+ *
+ * *"Where the room refuses (over the ceiling), the button greys with the
+ * store's sentence verbatim. No silent clamp."* — a box that merely does not
+ * fit is BORN FITTED and says nothing, which is T50's law and not a clamp
+ * retail invented: nobody typed that height.
+ *
+ * @returns {string} the engine's sentence, or '' when a box may go on
+ */
+export function topBoxRefusal(hostId) {
+  const host = unitOf(hostId);
+  if (!host) return '';
+  if (isTopBox(host)) return REASONS.topBoxOnTopBox;
+  const p = P();
+  const born = riderBornHeight({
+    unit: { params: defaultParamsFor('WARDROBE_TOP', p) },
+    host,
+    room: S().project.room,
+    profile: p,
+    minHeight: p.wardrobe.topBox.minHeight,
+  });
+  return born.refuse || '';
+}
+
+/**
+ * ADD TOP BOX. One store call, and its refusal read off the return value.
+ *
+ * `addUnit` answers `{ id, error }` and does NOT push the sentence through the
+ * message queue — PRO reads the return and notifies itself
+ * (`LibraryPanel.jsx:128`) — so `lastEngineWord()` would never see it. Read
+ * here, from where the shared core actually put it.
+ *
+ * @returns {{ok:boolean, id:string|null, said:string}}
+ */
+export function addTopBox(hostId) {
+  const host = unitOf(hostId);
+  if (!host) return { ok: false, id: null, said: '' };
+  const placed = S().addUnit('WARDROBE_TOP', { near: host.id });
+  if (!placed?.id) return { ok: false, id: null, said: placed?.error || '' };
+  U().selectUnit?.(placed.id);
+  return { ok: true, id: placed.id, said: '' };
+}
+
+/** Every box standing on this wardrobe — the store's own link, read back. */
+export const topBoxesOn = (hostId) => S().units.filter((u) => u.params?.rides_on === hostId);
+
+/** REMOVE, from the box's own menu. The store re-settles the rest for itself. */
+export const removeUnit = (unitId) => S().removeUnit(unitId);
 
 /**
  * F4.1 · THE SLOPED CEILING.

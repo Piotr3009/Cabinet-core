@@ -4,7 +4,7 @@ import DimensionChain from './DimensionChain.jsx';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { pieceHoverRows } from '../engine/hoverRows.js';
 import { bayGapsAround } from '../engine/partitionPositions.js';
-import { proChromeOn } from './chrome.js';
+import { chromeOn } from './chrome.js';
 
 // ─── THE BAYS, ON HOVER (turn 23, CLAUDE.md F8.2) ───────────────────────────
 //
@@ -53,7 +53,11 @@ export default function HoverDimensions({
 }) {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
-  if (!proChromeOn()) return null;
+  // T61 F1 · the CHANNEL, not the master switch: the client's room
+  // owns the dimensions under the cursor. PRO sets no
+  // channel, so `chromeOn` falls through to `on` and this guard still
+  // reads `if (!true)` — which IS the no-change proof.
+  if (!chromeOn('hover-dims')) return null;
   const style = useMemo(() => dimensionStyle(profile), [profile]);
 
   const drawing = useMemo(() => {

@@ -297,6 +297,50 @@ img, svg { max-width: 100%; display: block; }
 .pbi-field:focus-visible { outline: 2px solid var(--pbi-champagne); outline-offset: 0; border-color: var(--pbi-deep-gold); }
 textarea.pbi-field { height: 96px; padding: 12px; resize: vertical; }
 
+/* ─── TURN 61 (CLAUDE.md F5): THE TYPED FIELD ───────────────────────────────
+ * The owner: *"kratki do wpisywania rogi pieknie zaokraglone a nie kanciaki, ze
+ * zlota obwodka a nie jakis dziwny pomarancz."*
+ *
+ * Four things, and nothing else: the ROUNDED corner (its own token — the system
+ * stays square everywhere else), the GOLD hairline that is the "zlota obwodka",
+ * the gold focus and selection ring, and never orange. Every colour below is one
+ * of the twelve; `--pbi-deep-gold` is the border gold the system already uses
+ * for a button's edge and an active label, so this is not a new gold either. */
+.pbi-numfield-wrap { display: block; }
+.pbi-numfield-row { position: relative; display: flex; align-items: center; }
+.pbi-numfield {
+  border-radius: var(--pbi-field-radius);
+  border-color: var(--pbi-gold);
+  padding-right: 46px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+.pbi-numfield:hover:enabled { border-color: var(--pbi-deep-gold); }
+.pbi-numfield:focus-visible {
+  outline: 2px solid var(--pbi-champagne);
+  outline-offset: 0;
+  border-color: var(--pbi-deep-gold);
+}
+/* THE SELECTION RING is gold as well — *"ze zlota obwodka"* is about the box a
+ * client is typing in, and a browser's default blue highlight inside a gold box
+ * is exactly the *"dziwny pomarancz"* class of mistake, one hue over. */
+.pbi-numfield::selection { background: var(--pbi-champagne); color: var(--pbi-onyx); }
+.pbi-numfield[aria-invalid='true'] { border-color: var(--pbi-deep-gold); }
+.pbi-numfield:disabled { color: var(--pbi-soft-graphite); border-color: var(--pbi-stone-line); }
+.pbi-numfield-unit {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+}
+.pbi-numfield-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 6px;
+}
+.pbi-numfield-standard { color: var(--pbi-deep-gold); }
+
 .pbi-label {
   display: block;
   font-family: var(--pbi-font-ui);

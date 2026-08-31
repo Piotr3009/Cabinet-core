@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import * as THREE from 'three';
-import { proChromeOn } from './chrome.js';
+import { chromeOn } from './chrome.js';
 
 // ─── "Another one here" (turn 9, CLAUDE.md F2) ───
 //
@@ -74,7 +74,11 @@ export default function AddPlus({
 }) {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
-  if (!proChromeOn()) return null;
+  // T61 F1 · the CHANNEL, not the master switch: the client's room
+  // owns the `+` markers beside and on a unit. PRO sets no
+  // channel, so `chromeOn` falls through to `on` and this guard still
+  // reads `if (!true)` — which IS the no-change proof.
+  if (!chromeOn('plus')) return null;
   const [hover, setHover] = useState(false);
   const map = plusTexture(colour, hover);
 

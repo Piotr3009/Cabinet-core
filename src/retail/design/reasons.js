@@ -28,6 +28,29 @@
 // grows a client-facing reason of its own.
 
 export const REASONS = {
+  /**
+   * T61 F5 · PREDICATE: the typed number against the bounds the caller was
+   * given — `adapter.designBounds()` (the profile's, and for the room retail's
+   * own two, declared as such in their `from` field) and
+   * `adapter.unitBounds(id)` (`projectStore.unitSizeBoundsFor`, which reads the
+   * wall, the neighbours and the room).
+   *
+   * The shared core has no sentence for this and cannot: it is never asked. A
+   * slider could not be dragged past its end, so nothing downstream ever had to
+   * refuse the number — the refusal is new because the CONTROL is new, and the
+   * words are therefore retail's, said once, here.
+   */
+  outOfRange: (min, max) => `Between ${min} and ${max} mm — type a number in that range.`,
+
+  /**
+   * T61 F3 · PREDICATE: `getUnitType(unit.type).ridesOn` — the engine's own
+   * test for "this is already a rider". `engine/types.js` gives `WARDROBE_TOP`
+   * no `ridesOn` host of its own, so `addUnit` would elect the box's HOST and
+   * quietly put the second box beside the first instead of on top of it. The
+   * shared core answers this one in a boolean and nowhere in words.
+   */
+  topBoxOnTopBox: 'A top box stands on a wardrobe, not on another top box.',
+
   /** PREDICATE: `useProjectStore.getState().unitUnderSlope(unitId)` (T58 F4). */
   pulldownUnderSlope: 'Not under a sloped ceiling — the rod needs the full height to swing.',
 

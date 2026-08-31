@@ -413,6 +413,11 @@
 .pbi-room .pbi-label { font-size: var(--pbi-fs-ui); margin-bottom: var(--pbi-gap-2); }
 .pbi-room .pbi-btn { font-size: var(--pbi-fs-ui); padding: 0 var(--pbi-button-pad-x); }
 .pbi-room .pbi-field { height: var(--pbi-field-h); padding: 0 var(--pbi-gap-3); font-size: var(--pbi-fs-ui); }
+/* T61 F5: the typed field keeps room for its unit at whatever scale the
+   viewport put the room at — one number, `--pbi-field-h`, as T60 F1 laid down. */
+.pbi-room .pbi-numfield { padding-right: calc(var(--pbi-field-h) * 0.95); }
+.pbi-room .pbi-numfield-unit { right: var(--pbi-gap-3); font-size: var(--pbi-fs-ui-sm); }
+.pbi-room .pbi-numfield-scale { margin-top: var(--pbi-gap-1); font-size: var(--pbi-fs-ui-sm); }
 .pbi-room .pbi-gold-line { margin: var(--pbi-gap-3) 0; }
 
 /* Chips: the height, the padding, the corner mark and the refusal beneath. */

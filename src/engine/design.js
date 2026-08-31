@@ -89,6 +89,27 @@ function normaliseHandleOffsets(raw) {
   return out;
 }
 
+// ─── TURN 61 (CLAUDE.md F2): THE SCOPES, IN ONE PLACE ───────────────────────
+//
+// How much of the room a job covers. It has been a bare string with an inline
+// ternary at every reader since turn 7 — `d.scope === 'wall' ? 'wall' : 'room'`
+// in four files — and adding a third word to a vocabulary nobody owns is how a
+// scope gets admitted by the migrator and silently downgraded by the scene.
+//
+//   'room'  every wall the polygon has
+//   'wall'  ONE wall, with a stub at each of its two ends
+//   'two'   walls 0 and 1 — adjacent, sharing corner 1 — with a stub at each of
+//           the pair's two FREE ends. The owner: *"zrob 2 sciany"*.
+//
+// The GEOMETRY of each is `engine/room.js wallsInScope`; this is only the list
+// of words, and `normaliseScope` is the one gate every stored project passes.
+export const ROOM_SCOPES = Object.freeze(['room', 'wall', 'two']);
+
+/** Is this a scope the app knows? Anything else means "whole room". */
+export function normaliseScope(scope) {
+  return ROOM_SCOPES.includes(scope) ? scope : 'room';
+}
+
 export const DEFAULT_DESIGN = {
   schema: DESIGN_SCHEMA,
   // 1–3 carcass materials. One is the common case; three is a run with a
@@ -300,7 +321,9 @@ export const DEFAULT_DESIGN = {
   // A project that never went through the flow has neither, and everything
   // falls back exactly as it did before turn 7.
   projectType: null,
-  scope: 'room',                 // 'room' | 'wall'
+  // T61 (CLAUDE.md F2): 'two' joins them — walls 0 and 1, adjacent, sharing
+  // corner 1, with a stub at each free end. See `room.js wallsInScope`.
+  scope: 'room',                 // 'room' | 'wall' | 'two'
   // ─── TURN 32 (CLAUDE.md F1.3): THE CEILING ANSWER ────────────────────────
   // When a wardrobe stands within the question gap of the ceiling, the wizard
   // asks: "To the ceiling, with no infill?" — `'flush'` is yes (scribe the
@@ -446,7 +469,11 @@ export function migrateDesign(design) {
       k, Number(d.heights?.[k]) > 0 ? Number(d.heights[k]) : null,
     ])),
     projectType: d.projectType ? String(d.projectType) : null,
-    scope: d.scope === 'wall' ? 'wall' : 'room',
+    // T61 (CLAUDE.md F2): ONE list of the scopes this app knows, `ROOM_SCOPES`
+    // above, so a fourth word cannot be admitted here and refused in
+    // `projectTypes.normaliseScope`. Anything else still means "whole room",
+    // which is what every project saved before turn 7 means.
+    scope: normaliseScope(d.scope),
     // Turn 32 (CLAUDE.md F1.3): only the two answers survive; anything else
     // is "never asked".
     ceiling: d.ceiling === 'flush' || d.ceiling === 'infill' ? d.ceiling : null,

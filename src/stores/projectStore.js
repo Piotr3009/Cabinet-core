@@ -833,6 +833,8 @@ function paramsForEngine(unit, design = null) {
       ? { ...design.fronts.handle, offsets: design.fronts.handleOffsets || {} }
       : null,
     front_handles: p.front_handles || null,
+    // T58b (CLAUDE.md F3.3): one leaf's own J run length, where a hand set one.
+    front_jpull: p.front_jpull || null,
     // ─── TURN 24 (CLAUDE.md F3.2): THE SIX MEASURED SLOTS ───────────────────
     //
     // The owner's law: the engine computes from the CALIPER. The six numbers
@@ -7022,6 +7024,45 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }),
     }));
     return spec || null;
+  },
+
+  /**
+   * ─── TURN 58b (CLAUDE.md F3): ONE LEAF'S OWN J RUN LENGTH ────────────────
+   *
+   * The owner, on the nine numeric fields the settings panel used to carry:
+   * *"jakieś dziwne ustawienia, po co mi to? ja nie chcę tego… jak już to
+   * pasek albo pokrętło… jedynie wysokość — jeden pasek, przedłuż wycięcie J
+   * na pionowych i tyle, nic więcej."*
+   *
+   * So: ONE number, per LEAF, set by ONE slider. The grammar is the house's
+   * own — the same shape `setFrontHandle`, `setDoorMirror` and
+   * `setFrontEdgeTrim` keep: a map on the owning unit, keyed by the engine's
+   * panel id, and `null` when it empties. `null` hands the leaf back to the
+   * profile's own run.
+   */
+  setFrontJpullRun: (unitId, panelId, runMm) => {
+    if (!panelId) return null;
+    const n = Number(runMm);
+    const value = Number.isFinite(n) && n > 0 ? Math.round(n) : null;
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const map = { ...(u.params.front_jpull || {}) };
+        if (value) map[panelId] = { jpull_run_mm: value };
+        else delete map[panelId];
+        return {
+          ...u,
+          params: { ...u.params, front_jpull: Object.keys(map).length ? map : null },
+        };
+      }),
+    }));
+    return value;
+  },
+
+  /** This leaf's own J run, or null where it keeps the profile's. */
+  frontJpullRunOf: (unitId, panelId) => {
+    const u = get().units.find((x) => x.id === unitId);
+    return u?.params?.front_jpull?.[panelId]?.jpull_run_mm ?? null;
   },
 
   /**

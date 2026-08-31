@@ -315,6 +315,180 @@ try {
     await page.screenshot(`${SHOTS}f2-pane-closed-glow.png`);
   }
 
+  // ══ F3 · THE NUMBERS LEAVE THE SCREEN, ONE SLIDER REMAINS ════════════════
+  //
+  // *"jakieś dziwne ustawienia, po co mi to? ja nie chcę tego… jak już to
+  // pasek albo pokrętło… jedynie wysokość — jeden pasek, przedłuż wycięcie J
+  // na pionowych i tyle, nic więcej."*
+  //
+  // The proof is a CLICK PATH, not a screenshot of a component: a real mouse
+  // press on the J strip of a real leaf, in the running app.
+  if (runs('f3')) {
+    await fresh('F3 one slider');
+    const made = await ask(`(() => {
+      const r = P().addUnit('WARDROBE');
+      P().updateUnitParams(r.id, { width: 1000, height: 2200, depth: 600 });
+      P().addDoors(r.id);
+      const d = P().project.design;
+      P().setDesign({ fronts: { ...(d.fronts || {}), handle: { type: 'jpull' } } });
+      P().settleLayout();
+      U().setShowDimensions(false);
+      U().setShowFrontDimensions(false);
+      U().setBrightness(1.6);
+      U().selectUnit(null);
+      const res = P().unitResult(r.id);
+      const leaf = (res.panels || []).find((p) => p.role === 'front' && p.meta && p.meta.jpull && p.meta.jpull.run);
+      return leaf ? {
+        id: r.id, panelId: leaf.id, edge: leaf.meta.jpull.edge, run: leaf.meta.jpull.run,
+        box: leaf.box, slotDepth: leaf.cnc.jpull.profile.slotDepth,
+      } : { id: r.id, panelId: null };
+    })()`);
+    check('a tall J-pull leaf carries a stopped vertical run',
+      Boolean(made.panelId) && (made.edge === 'L' || made.edge === 'R'),
+      JSON.stringify({ panel: made.panelId, edge: made.edge, run: made.run }));
+
+    // Park the camera on the LEAF, close enough that a 500 mm run and a
+    // 1400 mm one cannot be confused. Placed, never nudged — and placed BEFORE
+    // the click point is projected, because the projection is of this camera.
+    const parked = await ask(`(() => {
+      const v = window.__cc.views.room || window.__cc.views.editor;
+      v.scene.updateMatrixWorld(true);
+      let mesh = null;
+      v.scene.traverse((o) => {
+        if (!mesh && o.isMesh && o.userData && o.userData.ccPanelId === ${JSON.stringify(made.panelId)}) mesh = o;
+      });
+      if (!mesh) return null;
+      const e = mesh.matrixWorld.elements;
+      const at = { x: e[12], y: e[13], z: e[14] };
+      const c = v.camera; const t = v.controls;
+      c.position.set(at.x - 0.95, at.y + 0.05, at.z + 4.0);
+      if (t && t.target) { t.target.set(at.x, at.y, at.z); t.update(); }
+      c.lookAt(at.x, at.y, at.z); c.updateProjectionMatrix();
+      return at;
+    })()`);
+    check('the camera is parked on the leaf', Boolean(parked), JSON.stringify(parked));
+    await page.sleep(1200);
+    // BEFORE: the same leaf, same camera, the workshop's own 500 mm run.
+    await page.screenshot(`${SHOTS}f3-slider-before.png`);
+
+    // The J strip's own point, projected to the screen. The strip is machined
+    // INTO the leaf, so this is where a finger would go: mid-run, a hair in
+    // from the machined edge.
+    const at = await ask(`(() => {
+      const v = window.__cc.views.room || window.__cc.views.editor;
+      v.scene.updateMatrixWorld(true);
+      let mesh = null;
+      v.scene.traverse((o) => {
+        if (!mesh && o.isMesh && o.userData && o.userData.ccPanelId === ${JSON.stringify(made.panelId)}) mesh = o;
+      });
+      if (!mesh) return null;
+      const b = ${JSON.stringify(made.box)};
+      const run = ${JSON.stringify(made.run)};
+      const inset = ${JSON.stringify(made.slotDepth)} / 2;
+      // The leaf's own centred frame, in metres — the frame the hit test reads.
+      const lx = (${JSON.stringify(made.edge)} === 'R' ? b.w / 2 - inset : inset - b.w / 2) / 1000;
+      const ly = ((run.from + run.to) / 2 - b.h / 2) / 1000;
+      // THREE is not on window, but every Vector3 in the scene knows its own
+      // constructor, and the mesh's position is one.
+      const V3 = Object.getPrototypeOf(mesh.position).constructor;
+      const vec = mesh.localToWorld(new V3(lx, ly, 0));
+      vec.project(v.camera);
+      const el = v.gl && v.gl.domElement ? v.gl.domElement : document.querySelector('canvas');
+      const rect = el.getBoundingClientRect();
+      return {
+        x: Math.round(rect.left + (vec.x * 0.5 + 0.5) * rect.width),
+        y: Math.round(rect.top + (-vec.y * 0.5 + 0.5) * rect.height),
+      };
+    })()`);
+    check('the J strip has a screen point to press', Boolean(at), JSON.stringify(at));
+
+    if (at) {
+      await page.mouse('mousePressed', at.x, at.y, { button: 'left', clickCount: 1, buttons: 1 });
+      await page.mouse('mouseReleased', at.x, at.y, { button: 'left', clickCount: 1, buttons: 0 });
+      await page.sleep(800);
+    }
+    const opened = await page.evaluate(`
+      const el = document.querySelector('[data-jpull-run-modal]');
+      const sliders = document.querySelectorAll('[data-jpull-run-modal] input');
+      return el ? { panel: el.getAttribute('data-jpull-run-modal'), inputs: sliders.length } : null;
+    `);
+    check('clicking the J strip opens the window, with ONE control in it',
+      Boolean(opened) && opened.inputs === 1, JSON.stringify(opened));
+
+    // Drive the slider with real key events — a range input answers them, and
+    // React sees a genuine change rather than a value poked into the DOM.
+    const before = await ask(`(P().units[0].params.front_jpull || {})[${JSON.stringify(made.panelId)}] || null`);
+    await page.evaluate("document.querySelector('[data-jpull-run-slider=\"1\"]').focus(); return true;");
+    // `End` takes a range input to its own maximum — here the leaf's own
+    // ceiling, so the frame shows the longest J this door can carry.
+    await page.key('End', { code: 'End', windowsVirtualKeyCode: 35 });
+    await page.sleep(400);
+    for (let i = 0; i < 6; i += 1) {
+      await page.key('ArrowLeft', { code: 'ArrowLeft', windowsVirtualKeyCode: 37 });
+    }
+    await page.sleep(900);
+    const after = await ask(`(() => {
+      const own = (P().units[0].params.front_jpull || {})[${JSON.stringify(made.panelId)}] || null;
+      const res = P().unitResult(P().units[0].id);
+      const leaf = (res.panels || []).find((p) => p.id === ${JSON.stringify(made.panelId)});
+      return { own, run: leaf && leaf.meta.jpull ? leaf.meta.jpull.run : null };
+    })()`);
+    check('the slider lengthens THIS leaf\'s run, live',
+      after.own && after.run && (after.run.to - after.run.from) > (made.run.to - made.run.from),
+      `was ${made.run.to - made.run.from} mm, now ${after.run ? after.run.to - after.run.from : '?'} mm `
+        + `(before ${JSON.stringify(before)})`);
+
+    const shown = await page.evaluate(`
+      const v = document.querySelector('[data-jpull-run-value="1"]');
+      return v ? v.textContent.trim() : null;
+    `);
+    check('and the window says the number back', Boolean(shown), String(shown));
+
+    // THE MESH ITSELF, measured — not read off a picture. The J is machined
+    // INTO the leaf, so the claim "the strip is longer" is a claim about where
+    // the notch's vertices are, and that is a number.
+    const notch = await ask(`(() => {
+      const v = window.__cc.views.room || window.__cc.views.editor;
+      v.scene.updateMatrixWorld(true);
+      let mesh = null;
+      v.scene.traverse((o) => {
+        if (!mesh && o.isMesh && o.userData && o.userData.ccPanelId === ${JSON.stringify(made.panelId)}) mesh = o;
+      });
+      if (!mesh) return null;
+      const a = mesh.geometry.attributes.position.array;
+      const halfW = ${made.box.w} / 2 / 1000;
+      const halfH = ${made.box.h} / 2 / 1000;
+      const slot = ${made.slotDepth} / 1000;
+      let top = -9; let bottom = 9;
+      for (let i = 0; i < a.length; i += 3) {
+        const x = a[i]; const y = a[i + 1];
+        const near = ${JSON.stringify(made.edge)} === 'R' ? (x > halfW - slot) : (x < slot - halfW);
+        if (!near) continue;
+        if (y > halfH - 1e-4 || y < -halfH + 1e-4) continue;   // the board's own ends
+        if (y > top) top = y;
+        if (y < bottom) bottom = y;
+      }
+      return { topMm: Math.round((top + halfH) * 1000), bottomMm: Math.round((bottom + halfH) * 1000) };
+    })()`);
+    check('the DRAWN notch really is longer — the mesh, measured',
+      notch && notch.topMm > made.run.to + 100 && notch.bottomMm === made.run.from,
+      `the notch now runs ${notch ? `${notch.bottomMm}–${notch.topMm}` : '?'} mm, `
+        + `against ${made.run.from}–${made.run.to} before`);
+    // …and its NEIGHBOUR, which nobody touched, still carries the profile's own
+    // run: the override is per LEAF, and the frame shows both at once.
+    const neighbour = await ask(`(() => {
+      const res = P().unitResult(P().units[0].id);
+      const other = (res.panels || []).find((p) => p.role === 'front' && p.meta
+        && p.meta.jpull && p.meta.jpull.run && p.id !== ${JSON.stringify(made.panelId)});
+      return other ? { id: other.id, run: other.meta.jpull.run } : null;
+    })()`);
+    check('and the leaf beside it keeps the workshop\'s own run',
+      neighbour && (neighbour.run.to - neighbour.run.from) === (made.run.to - made.run.from),
+      JSON.stringify(neighbour));
+    // The frame: the window standing BESIDE the door, the strip visibly longer.
+    await page.screenshot(`${SHOTS}f3-slider.png`);
+  }
+
 } catch (e) {
   // A section that throws must SAY so: a walk that swallows its own error and
   // reports "all ok" is exactly how a frame nobody took gets believed.

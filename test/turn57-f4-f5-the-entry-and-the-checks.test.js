@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
@@ -28,6 +28,13 @@ import { HANDLE_TYPES, jpullSpec } from '../src/engine/handles.js';
 const SETTINGS = readFileSync(new URL('../src/components/SettingsPanel.jsx', import.meta.url), 'utf8');
 const DOOR = readFileSync(new URL('../src/components/DoorModal.jsx', import.meta.url), 'utf8');
 const WIZ = readFileSync(new URL('../src/components/WizardSettings.jsx', import.meta.url), 'utf8');
+
+/** A file with its PROSE taken out — the house quotes what it deletes, so a
+ *  grep for a dead name finds the quotation unless the comments come out. */
+const code = (src) => src
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '')
+  .replace(/^\s*\*.*$/gm, '');
 
 const WARDROBE = { ...defaultParamsFor('WARDROBE', P), unit_num: '01' };
 const JPULL = { type: 'jpull' };
@@ -77,28 +84,61 @@ test('F4 — the per-front selector learns it too, from the same list', () => {
 
 // ─── F4.2 · THE MILLIMETRES ARE ON A SETTINGS SURFACE ──────────────────────
 
-test('F4 — Settings surfaces the run, the start and every profile constant', () => {
-  assert.match(SETTINGS, /data-jpull-settings="1"/, 'the block exists');
+// ─── OVERTURNED IN TURN 58b (CLAUDE.md F3.1, licensed deletion 2) ──────────
+//
+// T57's F4.2 put NINE jpull numbers on the screen, in TWO places. The owner,
+// 30.08.2026, on being shown them:
+//
+//   *"jakieś dziwne ustawienia, po co mi to? ja nie chcę tego… jak już to
+//   pasek albo pokrętło… jedynie wysokość — jeden pasek, przedłuż wycięcie J
+//   na pionowych i tyle, nic więcej."*
+//   *"będzie w 2 miejscach do włączenia — do zmiany."*
+//
+// So the block is DELETED — physically, from both entry points — and the test
+// that demanded it is inverted rather than removed: the claim a later turn
+// needs to be held to is that these numbers do not come back.
+test('F4 (T58b) — the jpull numeric block is GONE from both entry points', () => {
+  assert.ok(!/data-jpull-settings="1"/.test(code(SETTINGS)), 'the block is gone from Settings');
+  assert.ok(!/export function JpullHardware/.test(code(SETTINGS)), '…and so is its component');
+  assert.ok(!/JPULL_FIELDS = \[/.test(code(SETTINGS)), '…and its field table');
+  assert.ok(!/import \{ jpullSpec \}/.test(code(SETTINGS)), '…and the import that fed it');
+  assert.ok(!/JpullHardware/.test(code(WIZ)), 'the wizard imports and renders nothing of it');
+  assert.ok(!/<div data-wizard-node="hardware\.jpull">/.test(code(WIZ)), '…and its node is gone');
+  // Not one of the nine is a typeable field anywhere in the components tree.
+  const components = readdirSync(new URL('../src/components/', import.meta.url))
+    .filter((f) => f.endsWith('.jsx'))
+    .map((f) => readFileSync(new URL(`../src/components/${f}`, import.meta.url), 'utf8'))
+    .join('\n');
+  // …and the prose of every one of them, out: the house QUOTES what it deletes.
   for (const k of ['runMm', 'fromBottomMm', 'rampR', 'lipT', 'slotW', 'slotDepth', 'slotR', 'rearLeg', 'reliefMm']) {
-    assert.match(SETTINGS, new RegExp(`k: '${k}'`), `${k} has a field`);
+    assert.ok(!new RegExp(`k: '${k}'`).test(code(components)), `${k} has no field anywhere`);
   }
-  // Labelled in ENGLISH, editable, and committed through the app's one
-  // millimetre input.
-  for (const label of ['Run length', 'Run starts at', 'Lead-in radius', 'Front lip', 'Finger slot']) {
-    assert.ok(SETTINGS.includes(label), `"${label}" is the label a person reads`);
+});
+
+test('F4 (T58b) — the constants stay in the PROFILE, exactly where they were', () => {
+  // Deleted from the screen is not deleted from the workshop: `jpullSpec`
+  // still answers all nine, and the engine still reads them live.
+  const spec = jpullSpec(P);
+  for (const k of ['runMm', 'fromBottomMm', 'rampR', 'lipT', 'slotW', 'slotDepth', 'slotR', 'rearLeg', 'reliefMm']) {
+    assert.ok(Number.isFinite(spec[k]), `${k} is still a profile number`);
   }
-  assert.match(SETTINGS, /<NumberField[\s\S]{0,400}?value=\{spec\[f\.k\]\}/, 'a real editable field');
-  // It writes the PROFILE, which is where the block lives, and only where the
-  // project is actually on J-pull — a shop that never chooses it never sees it.
-  assert.match(SETTINGS, /handle\?\.type !== 'jpull'\) return null/);
-  assert.match(SETTINGS, /setProfile\(\{[\s\S]{0,200}?jpull:/);
-  // …and it is EXPORTED and RENDERED, because the body of SettingsPanel is not
-  // drawn anywhere any more. A row written into it would be a control nobody
-  // could reach — which is the fault F0b spent tonight fixing one storey up.
-  assert.match(SETTINGS, /export function JpullHardware/);
-  assert.match(WIZ, /import \{ HingeHardware, JpullHardware, SheetSizeRow \}/);
-  assert.match(WIZ, /<JpullHardware/);
-  assert.match(WIZ, /data-wizard-node="hardware\.jpull"/);
+});
+
+test('F4 (T58b) — ONE slider remains, and it is the RUN', () => {
+  const modal = readFileSync(new URL('../src/components/JpullRunModal.jsx', import.meta.url), 'utf8');
+  const ranges = modal.match(/type="range"/g) || [];
+  assert.equal(ranges.length, 1, 'one control, and nothing else — the owner counted');
+  assert.match(modal, /aria-label="J run length"/);
+  assert.match(modal, /min=\{MIN_RUN_MM\}/);
+  assert.match(modal, /step=\{STEP_MM\}/);
+  assert.match(modal, /const MIN_RUN_MM = 300;/, 'the owner\'s own floor');
+  assert.match(modal, /const STEP_MM = 10;/);
+  // The two he did NOT ask for are not controls here: the start height is READ
+  // (it is the slider's ceiling) and never written, and the ramp radius is not
+  // mentioned at all.
+  assert.ok(!/rampR/.test(modal), 'the ramp radius is an engine constant');
+  assert.ok(!/setProfile/.test(modal), 'and nothing here writes the workshop profile');
+  assert.ok(!/<NumberField/.test(modal), 'a slider, not a number field');
 });
 
 test('F4 — and the engine reads them live, the way doors.gap is read', () => {

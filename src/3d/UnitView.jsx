@@ -151,6 +151,10 @@ import { frontsAreVeneered, panelIsVeneered } from '../lib/veneerSheen.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { panelSolids } from './panelSolid.js';
+// T58b (CLAUDE.md F3.2): the J is not a mesh — it is slabs merged into the
+// leaf's own geometry — so a click on it is a hit test, and the hit test is a
+// pure function with a unit test behind it.
+import { onJpullStrip } from './jpullProfile.js';
 import { backStandoff } from '../engine/collision.js';
 import { doorOpenAngle } from '../engine/doors.js';
 import { drawerMotion } from '../engine/drawerMotion.js';
@@ -979,6 +983,10 @@ export default function UnitView({
   // second identity to keep in step with it.
   selectedElement = null, selectedElements = [],
   onSelectElement, onMoveElementDepth, onEditElement, onEditDrawer, onEditWatch, onAddItems,
+  // T58b (CLAUDE.md F3.2): a click on a tall front's J strip opens its own
+  // one-slider window. The view hands out a raw client point, never an anchor
+  // — the parent makes the anchor, exactly as `onEditWatch` is served.
+  onEditJpull = null,
   // ─── TURN 42 (CLAUDE.md F1): THE ALONE ROD'S OWN TWO VERBS ───────────────
   // `onEditRail(itemId, at)` opens the hanging-rail window; `onMoveRail(itemId,
   // offsetMm)` writes the item's `pos_mm`. Both are the rod's, and neither is
@@ -2044,6 +2052,24 @@ export default function UnitView({
                 e.stopPropagation();
                 onEditWatch(p.meta.drawer, p.meta.zone ?? null, { x: e.clientX, y: e.clientY });
                 return;
+              }
+              // ─── TURN 58b (CLAUDE.md F3.2): THE J STRIP OPENS ITS SLIDER ──
+              //
+              // *"jedynie wysokość — jeden pasek, przedłuż wycięcie J na
+              // pionowych i tyle, nic więcej."*
+              //
+              // The J is machined INTO the leaf, so the raycast lands on the
+              // door and the strip has to be recognised rather than hit. The
+              // point comes back in world space; the mesh's own inverse takes
+              // it to the leaf's centred frame, which is the frame `panel.box`
+              // and `meta.jpull` are both measured in.
+              if (onEditJpull && p.meta?.jpull?.run && e.point && e.object) {
+                const local = e.object.worldToLocal(e.point.clone());
+                if (onJpullStrip(p, local.x / MM, local.y / MM)) {
+                  e.stopPropagation();
+                  onEditJpull(p.id, { x: e.clientX, y: e.clientY });
+                  return;
+                }
               }
               // ─── Turn 9 (CLAUDE.md F4.1/F4.2): which axis this drag is on ───
               //

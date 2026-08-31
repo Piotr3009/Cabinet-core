@@ -1713,6 +1713,21 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
               },
             });
           }}
+          // ─── TURN 58b (CLAUDE.md F3.2): THE J STRIP'S OWN SLIDER ─────────
+          // *"jedynie wysokość — jeden pasek, przedłuż wycięcie J na
+          // pionowych i tyle, nic więcej."*  One window, one control, opened
+          // BESIDE the leaf that was clicked — the house law, kept the way
+          // the watch drawer's window keeps it.
+          onEditJpull={(panelId, at) => {
+            selectUnit(unit.id);
+            openModal('jpull-run', {
+              unitId: unit.id,
+              panelId,
+              anchor: {
+                x: at.x, y: at.y, width: 0, height: 0,
+              },
+            });
+          }}
           // ─── Turn 19 (CLAUDE.md F1.3) ───
           // "Po podwójnym kliknięciu na hinge otworzy się modal." The same
           // gesture on the ironmongery rather than on the board, opening the

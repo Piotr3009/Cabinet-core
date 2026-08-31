@@ -33,7 +33,6 @@ import VeneerPicker from './VeneerPicker.jsx';
 import ColourPicker from './ColourPicker.jsx';
 import FrontStyleGallery, { FrontStyleArt } from './FrontStyleGallery.jsx';
 import NumberField from './NumberField.jsx';
-import { jpullSpec } from '../engine/handles.js';
 import { shakerFrameMm } from '../engine/shaker.js';
 
 // ─── THE SETTINGS SURFACE (turn 12, CLAUDE.md F1) ───────────────────────────
@@ -1841,132 +1840,28 @@ function doorsInProject(units, profile) {
   return n;
 }
 
-/**
- * ─── TURN 57 (CLAUDE.md F4.2): THE J-PULL'S OWN MILLIMETRES ─────────────────
- *
- * EXPORTED, and that is not tidiness. The BODY of `SettingsPanel` is not
- * rendered anywhere any more — T36 unified the two settings screens onto
- * `WizardSettings`, and what survives of this file is the handful of blocks
- * that component IMPORTS (`HingeHardware`, `SheetSizeRow`). A row written into
- * the body would be a control nobody could ever reach, which is exactly the
- * fault F0b spent tonight fixing one storey up: a branch that had been dead
- * for two turns because the gate in front of it stopped being true and nobody
- * looked. So the J-pull's numbers are a component, exported, and the wizard
- * renders them beside the hinge hardware.
- *
- * They are PROFILE numbers rather than project ones — the same standing the
- * hinge-plate pilot has — so `setProfile` writes them and every front in every
- * project follows on the next recompute. The engine reads them live through
- * `engine/handles.js jpullSpec`, which is how `doors.gap` is read, and the law
- * they answer to is `reference/lisp/KIT_FRONT_JPULL.lsp`.
- *
- * Shown only where the project is actually ON J-pull, because that is the
- * question they answer: how THIS workshop's J is machined. A shop that never
- * chooses it never sees a row of numbers about it.
- *
- * THE RAMP RADIUS IS A PLACEHOLDER. The owner: *"routerowanie bedziemy robic
- * pozniej."* It is here, named and editable, so tuning it is one field and not
- * a code change.
- */
-// Module-private on purpose: `turn31-f12-sweep` holds this repo to "NOT ONE
-// export in src/ is imported by nothing, anywhere", and a table only this
-// component reads is not an export. It is a const rather than a literal inside
-// the map so the rows stay readable beside the component that draws them.
-const JPULL_FIELDS = [
-  {
-    k: 'runMm',
-    label: 'Run length',
-    min: 50,
-    max: 3000,
-    hint: 'How long the machined run is on a tall door. A base door and every drawer front take the whole top edge instead.',
-  },
-  {
-    k: 'fromBottomMm',
-    label: 'Run starts at',
-    min: 0,
-    max: 3000,
-    hint: "Measured up from the leaf's own bottom edge. A leaf shorter than this takes no J at all, and the Check says which one.",
-  },
-  {
-    k: 'rampR',
-    label: 'Lead-in radius',
-    min: 0,
-    max: 200,
-    hint: 'The arc the cutter is walked in on at each end of a stopped run — never a square stop. A placeholder until the routing is set.',
-  },
-  {
-    k: 'lipT',
-    label: 'Front lip',
-    min: 1,
-    max: 40,
-    hint: 'The visible hook of the J, standing proud of the relieved back.',
-  },
-  {
-    k: 'slotW',
-    label: 'Finger slot',
-    min: 4,
-    max: 40,
-    hint: "How wide the slot is through the board's thickness — what your hand goes into.",
-  },
-  {
-    k: 'slotDepth',
-    label: 'Slot depth',
-    min: 5,
-    max: 120,
-    hint: 'How far the slot runs back from the edge.',
-  },
-  {
-    k: 'slotR',
-    label: 'Slot bottom radius',
-    min: 0,
-    max: 40,
-    hint: 'The rounded bottom of the slot. Depth plus this is how far the tool reaches.',
-  },
-  {
-    k: 'rearLeg',
-    label: 'Rear leg',
-    min: 1,
-    max: 40,
-    hint: "Lip + slot + leg must add up to the board — the owner's section closes on 18 mm.",
-  },
-  {
-    k: 'reliefMm',
-    label: 'Rear relief',
-    min: 0,
-    max: 120,
-    hint: 'How far the back face is cut down from the edge — the finger clearance.',
-  },
-];
-
-export function JpullHardware({ design, profile, setProfile }) {
-  if (design?.fronts?.handle?.type !== 'jpull') return null;
-  const spec = jpullSpec(profile);
-  return (
-    <div className="space-y-1" data-jpull-settings="1">
-      <span className="text-[11px] uppercase tracking-wide text-ink-300">
-        J-pull handleless
-      </span>
-      {JPULL_FIELDS.map((f) => (
-        <div key={f.k} className="cc-row" data-jpull-field={f.k}>
-          <div className="flex flex-col flex-1">
-            <span className="text-sm text-ink-100">{f.label}</span>
-            <span className="text-[11px] text-ink-400">{f.hint}</span>
-          </div>
-          <NumberField
-            className="cc-input w-24"
-            value={spec[f.k]}
-            min={f.min}
-            max={f.max}
-            integer={false}
-            decimals={3}
-            onCommit={(v) => setProfile({
-              ...profile,
-              handles: { ...profile.handles, jpull: { ...spec, [f.k]: v } },
-            })}
-          />
-          <span className="text-[11px] text-ink-400">mm</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+// ─── TURN 58b (CLAUDE.md F3.1, licensed deletion 2): THE NUMBERS LEAVE ──────
+//
+// The owner, 30.08.2026, looking at this panel:
+//
+//   *"jakieś dziwne ustawienia, po co mi to? ja nie chcę tego… jak już to
+//   pasek albo pokrętło… jedynie wysokość — jeden pasek, przedłuż wycięcie J
+//   na pionowych i tyle, nic więcej."*
+//
+// `JPULL_FIELDS` and `JpullHardware` stood here: NINE numeric fields —
+// `runMm`, `fromBottomMm`, `rampR`, `lipT`, `slotW`, `slotDepth`, `slotR`,
+// `rearLeg`, `reliefMm` — writing straight into the workshop's profile from
+// two entry points (this file's export, and the wizard's `hardware.jpull`
+// node, which is the *"będzie w 2 miejscach do włączenia"* he counted). They
+// are DELETED, not hidden: the constants stay exactly where they always were,
+// in `profile.handles.jpull`, read by `jpullSpec` and by nothing a hand can
+// reach. The `jpullSpec` import went with them.
+//
+// ONE of the nine survives, and not here: the RUN, as a per-LEAF override on
+// one slider in `components/JpullRunModal.jsx`, opened by clicking the J strip
+// itself. Petros's iron rule (30.08) — engine numbers do not enter the UI
+// without the owner's order — is what the other eight are held to.
+//
+// The HANDLE-SYSTEM CHOICE is untouched and stands exactly where handle
+// systems have always been chosen: `WizardSettings.jsx`'s `fronts.opening`
+// tiles, and `DoorModal.jsx`'s per-front `HandleSection`.

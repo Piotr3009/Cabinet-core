@@ -822,6 +822,13 @@ function normalizeParams(raw, profile) {
     // all, which is what the AutoLISP drills.
     handle: p.project_handle && typeof p.project_handle === 'object' ? p.project_handle : null,
     frontHandles: p.front_handles && typeof p.front_handles === 'object' ? p.front_handles : null,
+    // ─── TURN 58b (CLAUDE.md F3.3): ONE LEAF'S OWN J RUN ──────────────────
+    // The same two-level hierarchy the handle and the hinge keep: the PROFILE
+    // says how long a J run is, ONE LEAF may say something else and be
+    // believed, and there is no third level. An INPUT in the design layer, so
+    // a bare kit call and every golden fixture pass nothing and get the
+    // profile's own 500 — byte for byte.
+    frontJpull: p.front_jpull && typeof p.front_jpull === 'object' ? p.front_jpull : null,
     hingeStandard: p.hinge_standard,
     hingeRows: Array.isArray(p.hinge_rows) && p.hinge_rows.length ? p.hinge_rows : null,
     // T41-F3: which CARCASS sides actually carry a hinged door, as answered by
@@ -7098,6 +7105,8 @@ export function computeCabinet(params, profileOverride) {
       unitType: type,
       project: cfg.handle,
       own: cfg.frontHandles?.[pnl.id] || null,
+      // T58b (F3.3): and this leaf's own J run, where a hand has set one.
+      jpullRunMm: cfg.frontJpull?.[pnl.id]?.jpull_run_mm ?? null,
       hinge: pnl.meta?.hinge || cfg.hinge,
       frame: pnl.meta?.shaker?.frame ?? null,
     }, P);

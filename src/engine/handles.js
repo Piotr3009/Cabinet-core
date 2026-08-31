@@ -318,6 +318,10 @@ export function handleFitProblem({
  */
 export function resolveHandle({
   panel, unitType, project = null, own = null, hinge = 'L', frame = null,
+  // T58b (CLAUDE.md F3.3): this ONE leaf's own J run, in millimetres, or null
+  // for the profile's. It is the only jpull number a hand can reach after
+  // this turn — the start height and the ramp radius stay engine constants.
+  jpullRunMm = null,
 }, profile) {
   const handleClass = handleClassOf(panel, unitType);
   if (!handleClass) return null;
@@ -335,7 +339,7 @@ export function resolveHandle({
   // handles.
   if (chosen.type === 'jpull') {
     return resolveJpull({
-      panel, handleClass, hinge, deviation: Boolean(own),
+      panel, handleClass, hinge, deviation: Boolean(own), runMm: jpullRunMm,
     }, profile);
   }
 
@@ -566,9 +570,23 @@ export function jpullNoteText(sheetEdge, run) {
  *   an edge that refused.
  */
 export function resolveJpull({
-  panel, handleClass, hinge = 'L', deviation = false,
+  panel, handleClass, hinge = 'L', deviation = false, runMm = null,
 }, profile) {
-  const spec = jpullSpec(profile);
+  const profileSpec = jpullSpec(profile);
+  // ─── TURN 58b (CLAUDE.md F3.3): ONE NUMBER A HAND CAN REACH ──────────────
+  //
+  // The owner, on the nine fields the settings panel used to show: *"jakieś
+  // dziwne ustawienia, po co mi to? ja nie chcę tego… jedynie wysokość —
+  // jeden pasek, przedłuż wycięcie J na pionowych i tyle, nic więcej."*
+  //
+  // So exactly ONE of them survives as a per-LEAF override — the RUN. Where
+  // the leaf says nothing the profile answers, which is what every resolution
+  // in this engine does; `fromBottomMm` and `rampR` are not exposed at all and
+  // stay what the workshop's profile says they are.
+  const own = Number(runMm);
+  const spec = Number.isFinite(own) && own > 0
+    ? { ...profileSpec, runMm: own }
+    : profileSpec;
   const edge = jpullEdgeOf(handleClass, hinge);
   const common = {
     system: 'jpull',

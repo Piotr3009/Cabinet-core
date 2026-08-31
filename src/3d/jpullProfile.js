@@ -197,3 +197,47 @@ export function jpullKey(jp) {
   return `jpull:${jp.edge}:${jp.from ?? ''}:${jp.to ?? ''}:`
     + `${p.lipT}:${p.slotW}:${p.slotDepth}:${p.rearLeg}:${p.reliefMm}:${p.rampR}`;
 }
+
+/**
+ * ─── TURN 58b (CLAUDE.md F3.2): IS THIS POINT ON THE J STRIP? ──────────────
+ *
+ * The owner asked for ONE slider, reached by clicking the J itself. The J is
+ * not a mesh — it is three extruded slabs merged into the leaf's own geometry
+ * (`panelSolid.js`) — so there is nothing to raycast but the door. This is the
+ * hit test that turns a click on the door into a click on its J: pure, so it
+ * is pinned by a unit test rather than by an eye.
+ *
+ * The point arrives in the LEAF'S OWN CENTRED FRAME, in millimetres — which is
+ * the frame `panelSolids` builds in ("centred on the panel's own box, exactly
+ * as a `boxGeometry(w, h, d)` is") and the same frame `panel.box` is measured
+ * in, so `meta.jpull.edge` (the ROOM edge) is the one to ask about.
+ *
+ * Only the VERTICAL strip answers. A TOP-edge J — a drawer front, a base door
+ * — has no run to lengthen (`resolveJpull` returns `run: null`), and the owner
+ * asked for the tall leaves: *"przedłuż wycięcie J na pionowych."*
+ *
+ * @param {object} panel  an engine front panel
+ * @param {number} xMm    across the leaf, 0 at its centre
+ * @param {number} yMm    up the leaf, 0 at its centre
+ */
+export function onJpullStrip(panel, xMm, yMm) {
+  const meta = panel?.meta?.jpull || null;
+  const cut = panel?.cnc?.jpull || null;
+  if (!meta || !cut || !meta.run) return false;
+  if (meta.edge !== 'L' && meta.edge !== 'R') return false;
+  const w = Number(panel?.box?.w) || 0;
+  const h = Number(panel?.box?.h) || 0;
+  // How far back from the edge the finger slot reaches — the machine's own
+  // number, never a literal: a workshop that cuts a deeper slot gets a wider
+  // strip to click, which is the honest answer.
+  const depth = Number(cut.profile?.slotDepth) || 0;
+  if (!(w > 0) || !(h > 0) || !(depth > 0)) return false;
+  const x = Number(xMm);
+  const y = Number(yMm);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+  const onEdge = meta.edge === 'R' ? x >= w / 2 - depth : x <= depth - w / 2;
+  if (!onEdge) return false;
+  // The run is measured up the leaf's OWN bottom edge.
+  const up = y + h / 2;
+  return up >= Number(meta.run.from) && up <= Number(meta.run.to);
+}

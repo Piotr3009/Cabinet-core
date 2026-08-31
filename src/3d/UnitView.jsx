@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
-import { proChromeOn } from './chrome.js';
+import { chromeOn, proChromeOn } from './chrome.js';
 
 // ─── Turn 30 (CLAUDE.md F21): how thick the PANE is drawn ────────────────────
 // 4 mm is what a cabinet door is glazed with. It is a picture and not a cut —
@@ -142,7 +142,8 @@ import {
 import { joineryLayers as resolveJoineryLayers } from '../engine/joinery.js';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { drawerFrontDimsVisible, frontDimensionRows } from '../engine/frontDimensions.js';
-import { isMainViewElement, opensOwnModal } from '../engine/elements.js';
+import { opensOwnModal } from '../engine/elements.js';
+import { picksOnClick } from './picking.js';
 import { panelFinish } from '../engine/materials.js';
 // ─── TURN 49 (CLAUDE.md F9): AND WHETHER IT IS A VENEER ────────────────────
 // The finish alone cannot say for a FRONT — a front veneer borrows an EGGER
@@ -707,7 +708,11 @@ export function MovingPanel({
 
             PRO never calls `setProChrome`, so `proChromeOn()` is `true` and this
             condition is the condition it always was. */}
-        {proChromeOn() && (outlines || contour || xray) && (
+        {/* T60 F2: the CHANNEL — PBI's VIEW BAR carries PRO's own Outlines and
+            X-ray entries, and a contour pass that cannot be switched on is the
+            dead control the standing law forbids. PRO sets no channel, so this
+            reads `proChromeOn()` exactly as it did. */}
+        {chromeOn('outlines') && (outlines || contour || xray) && (
           <Edges
             // The pretty view outlines the PLAIN board (see the block above);
             // contour and X-ray keep the machined solid — they are there to
@@ -1926,7 +1931,14 @@ export default function UnitView({
         // `onEditElement`, the properties block, the override store — all of it
         // is the same code the editor drives. The room simply stops sending
         // carcass clicks down it.
-        const isElement = isMainViewElement(p);
+        // ─── TURN 60 (CLAUDE.md F3): …AND THE CLIENT ASKS A WIDER ONE ────
+        //
+        // `picksOnClick` is `isMainViewElement` for PRO — the default, so this
+        // is the line it has been since turn 13 — and `opensOwnModal` for the
+        // retail room, where a single click has to reach a door because
+        // nobody double-clicks a wardrobe. The SET is the one PRO's double
+        // click already opens; only the gesture differs. See src/3d/picking.js.
+        const isElement = picksOnClick(p);
         // ─── Turn 14 (CLAUDE.md F4.1) ───
         // What a DOUBLE click opens. Wider than what a single click selects,
         // and deliberately so: the owner's turn-13 verdict is that clicking a
@@ -2306,7 +2318,13 @@ export default function UnitView({
           shelf, shelf to shelf, and the last one to the underside of the top —
           so a stack that is 3 mm out says so at a glance.
           It is a readout, not a drag: nothing here writes anything. */}
-      {hoverShelf && hoverColumn && !contour && !shelfDrag && (
+      {/* T60 F2: the hover readout is the JOINER's, not the client's — it answers
+          "are they even?" over a set of shelves and it is not on any bar. PBI's
+          dimensions CHANNEL is on so its VIEW BAR entry can work, so this one
+          asks the master switch and stays exactly as dead in retail as it was
+          in t59. PRO's `proChromeOn()` is true and this is the condition it
+          always was. */}
+      {proChromeOn() && hoverShelf && hoverColumn && !contour && !shelfDrag && (
         <DimensionChain
           rows={shelfGaps.map((g) => ({
             key: g.key,

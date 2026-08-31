@@ -26,11 +26,22 @@ import { FRONT_STYLE_OPTIONS } from '../../engine/design.js';
 // the 3-D stage is the middle of the page and the controls stand either side
 // of it — never over it, never in front of it.
 //
-//     CATEGORIES 220 │ OPTIONS 320 │ STAGE (flex) │ DETAIL 300
-//     Ivory          │ Soft Ivory  │ Porcelain    │ Warm White
+//     RAIL (2) │ OPTIONS (3) │ VIEW BAR (4) / STAGE (5) / HINT (6) │ DETAIL (7)
+//     Ivory    │ Soft Ivory  │ Porcelain                           │ Warm White
 //
 // NOTHING FOLDS OPEN IN PLACE. No accordions (the PSW law); the second column
 // IS the expansion of the first, and it is always there.
+//
+// ─── T60 · WHAT CHANGED, AND WHY ───────────────────────────────────────────
+//
+// F1  Not one measurement is written in this file any more. Every dimension is
+//     a class in `styles/room.css` reading a token from `styles/scale.css`, so
+//     the room is 100% on the owner's 2560 monitor and 78% on a 1280 laptop
+//     with one number deciding it.
+// F2  The VIEW BAR is PRO's own tools, one for one (`viewTools.js`).
+// F3  A click in the stage opens THAT element's menu, and the resolution is
+//     the ENGINE's own (`adapter.resolveSelection`) rather than a string match.
+// F4  The STAGE HINT names what is selected.
 
 const MOBILE = 768;
 const TABLET = 1280;
@@ -48,21 +59,14 @@ function useViewport() {
 /** F7 · under 768 there is no design room, and saying so beats pretending. */
 function TooSmall() {
   return (
-    <main
-      data-testid="design-too-small"
-      style={{
-        background: 'var(--pbi-porcelain)',
-        padding: '80px var(--pbi-side-margin)',
-        minHeight: '60vh',
-      }}
-    >
+    <main data-testid="design-too-small" className="pbi-room-toosmall">
       <h1 className="pbi-display pbi-h2">DESIGN ON A LARGER SCREEN</h1>
       <GoldLine />
-      <p className="pbi-choice pbi-choice-15" style={{ maxWidth: 460, marginTop: 20 }}>
+      <p className="pbi-choice pbi-choice-15 pbi-room-toosmall-line">
         The design room needs a wider screen than this one. Send yourself the link and open it on a
         laptop — everything you choose there comes back as an estimate you can keep.
       </p>
-      <div style={{ marginTop: 30 }}>
+      <div className="pbi-duty-actions">
         <Button kind="secondary" href="#/contact">EMAIL ME THE LINK</Button>
       </div>
     </main>
@@ -74,36 +78,17 @@ function QuoteOverlay({ onClose, onSubmit }) {
   return (
     <div
       data-testid="quote-overlay"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(9,10,9,0.55)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 40,
-        padding: 24,
-      }}
+      className="pbi-overlay"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div
-        style={{
-          background: 'var(--pbi-porcelain)',
-          border: '1px solid var(--pbi-stone-line)',
-          padding: '40px 44px',
-          maxWidth: 620,
-          width: '100%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-        }}
-      >
+      <div className="pbi-overlay-card">
         <h2 className="pbi-display pbi-h3">REQUEST A QUOTE</h2>
         <GoldLine />
-        <p className="pbi-choice pbi-choice-15" style={{ margin: '0 0 28px' }}>
+        <p className="pbi-choice pbi-choice-15 pbi-overlay-line">
           Your design comes with the message. Nothing is ordered and nothing is charged.
         </p>
         <QuoteForm testid="quote-form" onSubmit={onSubmit} />
-        <div style={{ marginTop: 26 }}>
+        <div className="pbi-overlay-back">
           <button type="button" className="pbi-link" data-testid="quote-close" onClick={onClose}>
             ‹ BACK TO THE DESIGN
           </button>
@@ -113,19 +98,38 @@ function QuoteOverlay({ onClose, onSubmit }) {
   );
 }
 
+/**
+ * ─── F4 · THE STAGE HINT (6), AND THE ITEM'S NAME ─────────────────────────
+ *
+ * The owner: *"6 bez zmian, ale dodaj nazwę itemu."* So the copy is unchanged
+ * and the name comes after a hairline: the DESIGN's own name (which the client
+ * may change in F3.1 or on the estimate row) and, when something is selected,
+ * the element's plain-English kind — which is `engine/elements.js
+ * elementLabel`'s word, not one retail invented.
+ */
+function StageHint({ designName, selected }) {
+  return (
+    <div className="pbi-ui pbi-ui-light pbi-quiet pbi-hint" data-testid="stage-caption">
+      <span>DRAG TO ORBIT · SCROLL TO ZOOM · CLICK AN ELEMENT FOR DETAIL</span>
+      <span className="pbi-hint-sep" aria-hidden="true" />
+      <span className="pbi-hint-name" data-testid="stage-caption-name">
+        {selected ? `${designName} — ${selected}`.toUpperCase() : String(designName || '').toUpperCase()}
+      </span>
+    </div>
+  );
+}
+
 export default function DesignRoom({ collection: wantCollection, today = '1970-01-01' }) {
   const width = useViewport();
   const units = useProjectStore((s) => s.units);
   const project = useProjectStore((s) => s.project);
   const unitResult = useProjectStore((s) => s.unitResult);
-  const openFronts = useUiStore((s) => s.openFronts);
   const selectedElement = useUiStore((s) => s.selectedElement);
-  const toggleAllFronts = useUiStore((s) => s.toggleAllFronts);
 
   const estimate = useEstimateStore();
 
   const [active, setActive] = useState('space');
-  const [target, setTarget] = useState(null);
+  const [target, setTarget] = useState(null);      // { menu, unitId, ref } — three strings
   const [fullScreen, setFullScreen] = useState(false);
   const [preset, setPreset] = useState('room');
   const [quoteOpen, setQuoteOpen] = useState(false);
@@ -138,11 +142,29 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   // its cleanup calls `onReady(null)`. An inline arrow here is a NEW function
   // on every render of this component — so every slider drag, every chip, every
   // store change tore the render handle down and built it again, and with it
-  // the walk's own `window.__cc.pbi`. The acceptance walk found it by reading
-  // `undefined` off a handle it had already waited for.
-  // Keep the last GOOD handle: a teardown hands back null, and a null here
-  // would take SAVE IMAGE with it.
-  const keepHandle = useCallback((h) => { if (h) handle.current = h; }, []);
+  // the walk's own `window.__cc.pbi`. Keep the last GOOD handle: a teardown
+  // hands back null, and a null here would take SAVE IMAGE with it.
+  //
+  // ─── AND IT IS WHERE THE CAMERA IS FINALLY PLACED ────────────────────────
+  //
+  // MEASURED FAULT, and the frames are what found it. The boot effect parked
+  // the camera 350 ms after mount — a guess at when the renderer would have a
+  // handle — and on a cold load it does not: `applyPreset` was called with
+  // `handle.current === null`, returned nothing, and the client's first sight
+  // of the room was Scene's default camera pointing at a bare wall with the
+  // wardrobe edge-on at the far left.
+  //
+  // A timeout cannot know. The HANDLE can: this is called the moment the
+  // renderer has one, so the camera is placed then, once, and never again.
+  const parked = useRef(false);
+  const keepHandle = useCallback((h) => {
+    if (!h) return;
+    handle.current = h;
+    if (parked.current) return;
+    parked.current = true;
+    // One frame later, so the furniture it is aimed at has bounds to aim at.
+    requestAnimationFrame(() => { applyPreset('room', h); });
+  }, []);
 
   const unit = A.designUnit(units);
   const slope = (project?.wallSlopes || []).find((s) => s.kind === 'slope') || null;
@@ -162,35 +184,26 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
     // hash change, and a view flag that depends on which order two modules
     // happened to evaluate in is a flag that will be wrong on somebody's
     // machine. Idempotent setters, run where the stage actually is.
-    //
-    // The acceptance walk is what insisted: it read eight contour lines off a
-    // scene whose store said the contours were off, and no amount of staring
-    // at boot order explained it. Owning the state here ends the argument.
     const ui = useUiStore.getState();
     ui.setShowDimensions(false);
+    ui.setShowFrontDimensions(false);
     ui.setShowOutlines(false);
     ui.setXray(false);
     ui.setContourView(false);
     ui.setRuler(false);
+    ui.setHideFronts(false);
+    ui.setProps(false);
     ui.clearSelection();
 
     A.startDesign('Bedroom wardrobe');
     if (wantCollection && collectionById(wantCollection)) A.applyCollection(wantCollection);
     estimate.begin('Bedroom wardrobe');
-    // The furniture needs one frame to exist before a camera can be aimed at it.
-    const id = setTimeout(() => { applyPreset('room', handle.current); }, 350);
-    return () => clearTimeout(id);
+    return undefined;
   }, [wantCollection, estimate]);
 
   // ─── F3.5 · FULL SCREEN IS A LOOKING MODE ────────────────────────────────
-  // *"Return by ⛶, by Esc, or by BACK TO DESIGN — and the return restores
-  // EXACTLY the prior state: same active category, same options, same
-  // selection, same camera. Nothing resets."*
-  //
-  // Which is why nothing below is cleared on the way in: `active`, `target`
-  // and the selection are simply not rendered while `fullScreen` is true, and
-  // are still there when it goes false. The camera is the one thing that is
-  // NOT React state, so it is held explicitly.
+  // *"the return restores EXACTLY the prior state: same active category, same
+  // options, same selection, same camera. Nothing resets."*
   useCameraMemory(fullScreen);
   useEffect(() => {
     if (!fullScreen) return undefined;
@@ -205,42 +218,62 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
     panelIds: (unitResult(u.id)?.panels || []).filter((p) => p.part === 'FRONT').map((p) => p.id),
   })).filter((e) => e.panelIds.length), [units, unitResult]);
 
-  const doorsOpen = doorEntries.length > 0 && doorEntries.every(
-    (e) => e.panelIds.every((id) => (openFronts[e.unitId]?.[id] ?? 0) > 0.5),
-  );
   const lightsOn = A.lightingOn(project);
 
   const pickPreset = useCallback((id) => {
     setPreset(id);
     // INSIDE means doors open AND the camera in (F3.3).
-    if (id === 'inside' && !doorsOpen) toggleAllFronts(doorEntries);
+    if (id === 'inside') useUiStore.getState().toggleAllFronts(doorEntries);
     applyPreset(id, handle.current);
-  }, [doorEntries, doorsOpen, toggleAllFronts]);
+  }, [doorEntries]);
 
-  // ─── F3.3 · A CLICK IN THE STAGE SELECTS ─────────────────────────────────
-  // The shared store's own selection, read by retail's own detail column.
+  // ─── T60 F3 · THE SELECTION LAW ──────────────────────────────────────────
+  //
+  // A click in the stage stores `{ unitId, elementRef }` on the SHARED ui store
+  // and the ref is the ENGINE's own panel id. t59 tried to match that ref
+  // against the interior items' ids — `ref.includes(String(i.id))` — and it
+  // could never succeed: a panel id is positional (`SHELF-1`, `W01-FL`) and an
+  // item id is `shelf_` plus seven characters of base 36. So every click in
+  // the stage fell through to the placeholder this turn deletes, and the
+  // owner's *"jak naciśniemy na drzwi to się pojawi drzwi"* was not true of one
+  // element in the room.
+  //
+  // `adapter.resolveSelection` is the fix and it asks the engine: the computed
+  // result's own panels, `elementKind`, and the item the panel names on its own
+  // meta. An unmapped kind answers null — and a null CLEARS the selection,
+  // because a highlight with no menu behind it is the empty panel by another
+  // road.
   useEffect(() => {
-    if (fullScreen || !selectedElement) return;       // looking mode selects nothing
-    const ref = String(selectedElement.elementRef || '');
-    const items = unit?.params?.sections?.[0]?.items || [];
-    const item = items.find((i) => ref.includes(String(i.id))) || null;
-    const kind = item?.kind === 'drawer' ? 'drawers'
-      : (item?.kind === 'shelf' ? 'shelves' : (item?.kind || 'element'));
-    setTarget({ kind, item, panelId: ref });
-  }, [selectedElement, fullScreen, unit]);
+    if (fullScreen) { setTarget(null); return; }
+    if (!selectedElement) return;                 // a menu opened from the list stays open
+    const found = A.resolveSelection(selectedElement);
+    if (!found) {
+      setTarget(null);
+      useUiStore.getState().clearElement?.();
+      return;
+    }
+    setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
+  }, [selectedElement, fullScreen]);
+
+  // ─── AND THE TARGET IS RESOLVED FRESH, EVERY RENDER ──────────────────────
+  //
+  // MEASURED FAULT. Holding the RESOLVED selection in state and rebuilding it
+  // whenever the store changed closed any menu that had been opened from the
+  // INTERIOR list the instant one of its controls wrote anything — the shelf
+  // slider moved the shelf and then vanished. Three strings in state, resolved
+  // against the live store here, and a menu's panel and item are never one
+  // edit out of date.
+  const selection = useMemo(
+    () => (target ? A.resolveTarget(target) : null),
+    [target, units, project],
+  );
 
   // ─── THE CATEGORY HINTS (PSW's cat-hint) ─────────────────────────────────
-  const choices = useMemo(
-    () => (estimate.activeDesign()
-      ? describeDesign({ project, units })
-      : describeDesign({ project, units })),
-    [project, units],
-  );
+  const choices = useMemo(() => describeDesign({ project, units }), [project, units]);
 
   const hints = useMemo(() => {
     const params = unit?.params || {};
     const items = params.sections?.[0]?.items || [];
-    // The engine's own leaf count, so the hint cannot disagree with the stage.
     // The engine's own leaf count, so the hint cannot disagree with the stage —
     // and `unit` is null on the very first render, before the boot effect has
     // made one, so it is asked for only when there is something to ask about.
@@ -289,43 +322,32 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   if (width < MOBILE) return <TooSmall />;
   if (!unit) {
     return (
-      <main style={{ background: 'var(--pbi-porcelain)', padding: 60 }}>
+      <main className="pbi-room-waiting">
         <p className="pbi-choice pbi-choice-15">Setting the room out…</p>
       </main>
     );
   }
 
   const narrow = width < TABLET;
+  const designName = estimate.activeDesign()?.name || '';
 
   const stage = (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 auto', minWidth: 0 }}>
+    <div className="pbi-stage-col">
       <ViewBar
         preset={preset}
         onPreset={pickPreset}
-        doorsOpen={doorsOpen}
-        onDoors={() => toggleAllFronts(doorEntries)}
+        doorEntries={doorEntries}
         lightsOn={lightsOn}
         onLights={() => A.setLighting(!lightsOn)}
         onReset={() => pickPreset('room')}
         fullScreen={fullScreen}
         onFullScreen={() => setFullScreen((v) => !v)}
         onBack={() => setFullScreen(false)}
-        onSaveImage={() => saveStageImage(handle.current, estimate.activeDesign()?.name)}
+        onSaveImage={() => saveStageImage(handle.current, designName)}
       />
       <Stage onHandle={keepHandle} />
       {!fullScreen ? (
-        <div
-          className="pbi-ui pbi-ui-light pbi-quiet"
-          data-testid="stage-caption"
-          style={{
-            padding: '9px 14px',
-            background: 'var(--pbi-warm-white)',
-            borderTop: '1px solid var(--pbi-stone-line)',
-            fontSize: 10,
-          }}
-        >
-          DRAG TO ORBIT · SCROLL TO ZOOM · CLICK AN ELEMENT FOR DETAIL
-        </div>
+        <StageHint designName={designName} selected={A.selectionName(selection)} />
       ) : null}
     </div>
   );
@@ -333,22 +355,16 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   return (
     <div
       data-testid="design-room"
+      className="pbi-room-shell"
       data-fullscreen={fullScreen ? 'yes' : 'no'}
       data-narrow={narrow ? 'yes' : 'no'}
-      style={{
-        display: 'flex',
-        flex: '1 1 auto',
-        minHeight: 0,
-        height: 'calc(100vh - var(--pbi-header-h-room))',
-        background: 'var(--pbi-porcelain)',
-      }}
     >
       {!fullScreen ? (
         <Categories
           active={active}
           onPick={setActive}
           hints={hints}
-          onReset={() => { A.startDesign(estimate.activeDesign()?.name || 'Bedroom wardrobe'); setTarget(null); }}
+          onReset={() => { A.startDesign(designName || 'Bedroom wardrobe'); setTarget(null); }}
         />
       ) : null}
 
@@ -361,9 +377,14 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
           design={project.design}
           project={project}
           choices={choices}
-          designName={estimate.activeDesign()?.name || ''}
+          designName={designName}
           onDesignName={(name) => estimate.rename(estimate.activeId, name)}
-          onOpenDetail={(kind) => setTarget({ kind })}
+          onOpenDetail={(menu) => {
+            const found = A.selectionForMenu(menu, unit.id);
+            // A row with nothing behind it opens nothing — which is what makes
+            // a row without a `›` honest rather than merely quiet.
+            if (found) setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
+          }}
           onQuote={() => setQuoteOpen(true)}
           onSave={onSave}
         />
@@ -373,13 +394,16 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
 
       {!fullScreen ? (
         <Detail
-          target={target}
-          onTarget={setTarget}
+          selection={selection}
+          onSelect={setTarget}
           unit={unit}
           project={project}
+          designName={designName}
+          onDesignName={(name) => estimate.rename(estimate.activeId, name)}
           designs={estimate.designs}
           activeId={estimate.activeId}
-          onSelect={(id) => estimate.select(id)}
+          onSelectDesign={(id) => estimate.select(id)}
+          onRenameDesign={(id, name) => estimate.rename(id, name)}
           onAdd={() => estimate.addDesign((name) => A.startDesign(name), 'Second wardrobe')}
           onQuote={() => setQuoteOpen(true)}
           onSave={onSave}

@@ -1,0 +1,452 @@
+/* ─── T60 F1 · THE DESIGN ROOM'S OWN STYLESHEET ─────────────────────────────
+ *
+ * Every dimension the design room draws is in this file, and every one of them
+ * is a token from `scale.css`. NOT ONE RAW PIXEL, except the 1px hairline —
+ * which is a hairline at every scale, because half a pixel of Stone Line is
+ * not a line — and 0.
+ *
+ * `test/turn60-f1-the-scale-law.test.js` greps this file and every component
+ * under `src/retail/design/` and fails on a raw dimension. That test is why
+ * the room's styling moved OUT of the components in this turn: t59 wrote
+ * `fontSize: 10` and `padding: '14px 14px'` inline in eight files, and a
+ * dimension written inline is a dimension that cannot scale.
+ *
+ * Colours stay `var(--pbi-…)` from `tokens.css` — twelve, and never a
+ * thirteenth.
+ */
+
+/* ─── THE SHELL ─────────────────────────────────────────────────────────── */
+
+.pbi-room-shell {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: calc(100vh - var(--pbi-header-h-room));
+  background: var(--pbi-porcelain);
+}
+
+.pbi-room-waiting {
+  background: var(--pbi-porcelain);
+  padding: var(--pbi-gap-6);
+}
+
+/* F7 · under 768 there is no design room, and saying so beats pretending. */
+.pbi-room-toosmall {
+  background: var(--pbi-porcelain);
+  padding: var(--pbi-gap-6) var(--pbi-side-margin);
+  min-height: 60vh;
+}
+
+.pbi-room-toosmall-line { max-width: 46em; margin-top: var(--pbi-gap-5); }
+
+/* ─── COLUMN 2 · THE RAIL (15% narrower this turn) ──────────────────────── */
+
+.pbi-rail {
+  width: var(--pbi-col-categories);
+  min-width: var(--pbi-col-categories);
+  background: var(--pbi-ivory);
+  border-right: 1px solid var(--pbi-stone-line);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.pbi-rail-head { padding: var(--pbi-gap-5) var(--pbi-pad-col) var(--pbi-gap-2); }
+.pbi-rail-nav { flex: 1 1 auto; }
+
+.pbi-rail-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--pbi-pad-row) var(--pbi-pad-col);
+  border: 0;
+  border-left: var(--pbi-mark-w) solid transparent;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pbi-rail-row.is-on {
+  border-left-color: var(--pbi-champagne);
+  background: var(--pbi-soft-ivory);
+}
+
+.pbi-rail-label { display: block; color: var(--pbi-onyx); }
+.pbi-rail-row.is-on .pbi-rail-label { color: var(--pbi-deep-gold); }
+.pbi-rail-hint { display: block; margin-top: var(--pbi-gap-1); }
+
+.pbi-rail-foot {
+  padding: var(--pbi-pad-col);
+  border-top: 1px solid var(--pbi-stone-line);
+}
+
+.pbi-total {
+  margin-top: var(--pbi-gap-2);
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: var(--pbi-fs-price);
+}
+
+.pbi-total-foot { margin-top: var(--pbi-gap-3); font-size: var(--pbi-fs-ui-sm); }
+.pbi-rail-reset { margin-top: var(--pbi-gap-4); }
+.pbi-rail-ask { margin-top: var(--pbi-gap-4); }
+.pbi-rail-ask > span { display: block; margin-bottom: var(--pbi-gap-3); }
+.pbi-rail-ask-yes { color: var(--pbi-onyx); }
+.pbi-rail-ask-no { margin-left: var(--pbi-gap-4); }
+
+/* ─── COLUMN 3 · OPTIONS ("zostaw jak jest" — only the scale changed) ────── */
+
+.pbi-options {
+  width: var(--pbi-col-options);
+  min-width: var(--pbi-col-options);
+  background: var(--pbi-soft-ivory);
+  border-right: 1px solid var(--pbi-stone-line);
+  overflow-y: auto;
+}
+
+.pbi-panel { padding: var(--pbi-gap-5) var(--pbi-gap-5) var(--pbi-gap-6); }
+.pbi-panel-note { margin-top: var(--pbi-gap-6); }
+
+.pbi-field-block { margin-bottom: var(--pbi-gap-5); }
+.pbi-field-note { margin: var(--pbi-gap-2) 0 0; }
+
+/* ─── COLUMN 5 · THE STAGE, AND ITS BAR AND HINT ────────────────────────── */
+
+.pbi-stage-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pbi-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--pbi-porcelain);
+  position: relative;
+}
+
+/* ─── COLUMN 4 · THE VIEW BAR ───────────────────────────────────────────── */
+
+/* ─── AND IT WRAPS RATHER THAN HIDING A TOOL ───────────────────────────────
+ *
+ * The owner asked for PRO's tools, all of them: *"identyczne ma mieć funkcje."*
+ * At 1280 the stage column is about 650px wide and PRO's own labels — SHOW
+ * DIMENSIONS, FRONT DIMENSIONS, HIDE FRONTS — do not fit on one line of it. A
+ * scrolling bar would have hidden five of them behind an edge, which is a tool
+ * a client will never find; shortening the labels would have broken the parity
+ * this turn is about. So the bar takes a second line on a narrow screen and
+ * every entry stays where it can be read. The frame at 1280 is what asked for
+ * this: the first one cut MEASURE, LIGHTS, RESET VIEW and ⛶ off the right. */
+.pbi-viewbar {
+  height: auto;
+  min-height: var(--pbi-view-bar-h);
+  background: var(--pbi-warm-white);
+  border-bottom: 1px solid var(--pbi-stone-line);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  padding: 0 var(--pbi-pad-bar);
+}
+
+.pbi-viewbar-btn {
+  position: relative;
+  background: none;
+  border: 0;
+  padding: var(--pbi-gap-2) var(--pbi-gap-3);
+  min-height: var(--pbi-view-bar-h);
+  cursor: pointer;
+  color: var(--pbi-soft-graphite);
+  font-family: var(--pbi-font-ui);
+  font-weight: 400;
+  font-size: var(--pbi-fs-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.pbi-viewbar-btn:hover:not(:disabled) { color: var(--pbi-onyx); }
+
+/* The active entry in Deep Gold with a Champagne underline (F2). Gold in a
+ * hairline and a small mark — never a fill. */
+.pbi-viewbar-btn.is-on { color: var(--pbi-deep-gold); }
+.pbi-viewbar-btn.is-on::after {
+  content: '';
+  position: absolute;
+  left: var(--pbi-gap-3);
+  right: var(--pbi-gap-3);
+  bottom: var(--pbi-gap-1);
+  height: 1px;
+  background: var(--pbi-champagne);
+}
+
+.pbi-viewbar-btn:disabled {
+  cursor: default;
+  color: var(--pbi-stone-line);
+}
+
+.pbi-viewbar-btn:focus-visible { outline: 1px solid var(--pbi-champagne); outline-offset: 0; }
+
+.pbi-viewbar-sep {
+  width: 1px;
+  height: var(--pbi-sep-h);
+  background: var(--pbi-stone-line);
+  flex: 0 0 auto;
+  margin: 0 var(--pbi-gap-2);
+}
+
+.pbi-viewbar-spacer { flex: 1 1 auto; }
+
+/* ─── THE STAGE HINT (6) — AND THE ITEM'S NAME (F4) ─────────────────────── */
+
+.pbi-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--pbi-gap-3);
+  min-height: var(--pbi-hint-h);
+  padding: var(--pbi-gap-2) var(--pbi-gap-4);
+  background: var(--pbi-warm-white);
+  border-top: 1px solid var(--pbi-stone-line);
+  font-size: var(--pbi-fs-ui-sm);
+}
+
+.pbi-hint-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--pbi-stone-line);
+  flex: 0 0 auto;
+}
+
+.pbi-hint-name { color: var(--pbi-onyx); white-space: nowrap; }
+
+/* ─── COLUMN 7 · THE DETAIL ─────────────────────────────────────────────── */
+
+.pbi-detail {
+  width: var(--pbi-col-detail);
+  min-width: var(--pbi-col-detail);
+  background: var(--pbi-warm-white);
+  border-left: 1px solid var(--pbi-stone-line);
+  overflow-y: auto;
+}
+
+.pbi-duty { padding: var(--pbi-gap-4) var(--pbi-pad-col) var(--pbi-gap-6); }
+.pbi-duty-title { margin-top: var(--pbi-gap-4); }
+.pbi-duty-title-flush { margin-top: 0; }
+
+.pbi-duty-what {
+  background: var(--pbi-porcelain);
+  border: 1px solid var(--pbi-stone-line);
+  padding: var(--pbi-pad-row) var(--pbi-gap-3);
+  margin-bottom: var(--pbi-gap-5);
+}
+
+.pbi-duty-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pbi-gap-3);
+  margin-top: var(--pbi-gap-5);
+}
+
+.pbi-duty-line { margin: 0 0 var(--pbi-gap-3); }
+
+/* A row of small buttons — CENTRE THIS BAY beside REMOVE. */
+.pbi-duty-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pbi-gap-2);
+}
+
+/* ─── THE ESTIMATE ROWS (F6) ────────────────────────────────────────────── */
+
+.pbi-est-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pbi-gap-1);
+  margin-bottom: var(--pbi-gap-5);
+}
+
+.pbi-est-row {
+  text-align: left;
+  width: 100%;
+  padding: var(--pbi-pad-row);
+  background: transparent;
+  border: 1px solid var(--pbi-stone-line);
+  border-left: var(--pbi-mark-w) solid var(--pbi-stone-line);
+  cursor: pointer;
+}
+
+.pbi-est-row.is-on {
+  background: var(--pbi-porcelain);
+  border-left-color: var(--pbi-champagne);
+}
+
+.pbi-est-row-index { display: block; font-size: var(--pbi-fs-ui-sm); }
+.pbi-est-row-name { display: block; margin-top: var(--pbi-gap-2); color: var(--pbi-onyx); }
+.pbi-est-row-choices { display: block; margin-top: var(--pbi-gap-1); }
+.pbi-est-row-price {
+  display: block;
+  margin-top: var(--pbi-gap-2);
+  font-size: var(--pbi-fs-price);
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+
+.pbi-est-rename { margin-top: var(--pbi-gap-2); }
+
+.pbi-summary-row {
+  display: flex;
+  gap: var(--pbi-gap-3);
+  margin-bottom: var(--pbi-gap-2);
+}
+
+.pbi-summary-key {
+  flex: 0 0 var(--pbi-summary-key-w);
+  font-size: var(--pbi-fs-ui-sm);
+}
+
+.pbi-summary-value { flex: 1 1 auto; color: var(--pbi-onyx); }
+
+/* ─── THE INTERIOR ROWS ─────────────────────────────────────────────────── */
+
+.pbi-interior-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pbi-gap-1);
+}
+
+.pbi-interior-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pbi-gap-3);
+  padding: var(--pbi-pad-row);
+  background: var(--pbi-porcelain);
+  border: 1px solid var(--pbi-stone-line);
+}
+
+.pbi-interior-name { flex: 1 1 auto; color: var(--pbi-onyx); }
+
+/* ─── SWATCHES, THUMBNAILS AND THE LITTLE DRAWINGS ──────────────────────── */
+
+.pbi-swatch-tile {
+  width: var(--pbi-swatch);
+  height: calc(var(--pbi-swatch) * 0.62);
+  display: block;
+  border: 1px solid var(--pbi-stone-line);
+}
+
+.pbi-swatch-label {
+  font-size: var(--pbi-fs-choice);
+  max-width: var(--pbi-swatch-label-w);
+}
+
+.pbi-tone-tile {
+  width: var(--pbi-thumb);
+  height: calc(var(--pbi-thumb) * 0.56);
+  display: block;
+}
+
+.pbi-mini { display: block; width: var(--pbi-thumb); height: auto; }
+.pbi-mini-sm { display: block; width: var(--pbi-icon); height: auto; }
+
+/* ─── THE SLIDER'S FIGURES ──────────────────────────────────────────────── */
+
+.pbi-slider-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.pbi-slider-end { font-size: var(--pbi-fs-ui-sm); }
+.pbi-slider-now { color: var(--pbi-onyx); }
+
+.pbi-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--pbi-gap-4);
+}
+
+.pbi-stepper-btn { min-width: var(--pbi-stepper-btn-w); }
+.pbi-stepper-now { min-width: var(--pbi-stepper-now-w); text-align: center; }
+
+/* ─── THE QUOTE OVERLAY ─────────────────────────────────────────────────── */
+
+.pbi-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 10, 9, 0.55);   /* Onyx at 55% — the token's own value */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  padding: var(--pbi-gap-5);
+}
+
+.pbi-overlay-card {
+  background: var(--pbi-porcelain);
+  border: 1px solid var(--pbi-stone-line);
+  padding: var(--pbi-gap-6);
+  max-width: var(--pbi-overlay-w);
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.pbi-overlay-line { margin: 0 0 var(--pbi-gap-6); }
+.pbi-overlay-back { margin-top: var(--pbi-gap-5); }
+
+/* ─── THE ROOM'S TYPE — the three voices, at the room's scale ───────────────
+ *
+ * base.css writes the site's sizes; these override them INSIDE the room only,
+ * so the landing page keeps its 56px headline and its own rhythm exactly as
+ * F1.1 requires.
+ */
+
+.pbi-room .pbi-ui { font-size: var(--pbi-fs-ui); }
+.pbi-room .pbi-ui-12 { font-size: var(--pbi-fs-ui-lg); }
+.pbi-room .pbi-choice { font-size: var(--pbi-fs-choice); }
+.pbi-room .pbi-choice-15 { font-size: var(--pbi-fs-choice-lg); }
+.pbi-room .pbi-h4 { font-size: var(--pbi-fs-h4); }
+.pbi-room .pbi-h3 { font-size: var(--pbi-fs-h3); }
+.pbi-room .pbi-h2 { font-size: var(--pbi-fs-h2); }
+.pbi-room .pbi-link { font-size: var(--pbi-fs-ui); }
+.pbi-room .pbi-label { font-size: var(--pbi-fs-ui); margin-bottom: var(--pbi-gap-2); }
+.pbi-room .pbi-btn { font-size: var(--pbi-fs-ui); padding: 0 var(--pbi-button-pad-x); }
+.pbi-room .pbi-field { height: var(--pbi-field-h); padding: 0 var(--pbi-gap-3); font-size: var(--pbi-fs-ui); }
+.pbi-room .pbi-gold-line { margin: var(--pbi-gap-3) 0; }
+
+/* Chips: the height, the padding, the corner mark and the refusal beneath. */
+.pbi-room .pbi-stack { gap: var(--pbi-gap-2); }
+.pbi-room .pbi-chip {
+  min-height: var(--pbi-chip-h);
+  padding: var(--pbi-chip-pad-y) var(--pbi-chip-pad-x);
+  font-size: var(--pbi-fs-ui);
+}
+.pbi-room .pbi-chip.is-selected::after {
+  top: var(--pbi-gap-1);
+  right: var(--pbi-gap-1);
+  width: var(--pbi-chip-mark);
+  height: var(--pbi-chip-mark);
+}
+.pbi-room .pbi-chip-row { gap: var(--pbi-gap-2); }
+.pbi-room .pbi-chip-reason { font-size: var(--pbi-fs-choice); margin-top: var(--pbi-gap-1); }
+.pbi-room .pbi-chip-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  max-width: var(--pbi-chip-max);
+}
+.pbi-room .pbi-chip-sub { font-size: var(--pbi-fs-choice); }
+
+/* The slider's rail and its thumb. */
+.pbi-room .pbi-slider { margin: var(--pbi-gap-4) 0 var(--pbi-gap-2); }
+.pbi-room .pbi-slider::-webkit-slider-thumb {
+  width: var(--pbi-slider-thumb);
+  height: var(--pbi-slider-thumb);
+}
+.pbi-room .pbi-slider::-moz-range-thumb {
+  width: var(--pbi-slider-thumb);
+  height: var(--pbi-slider-thumb);
+}
+
+/* The compact header is the room's own top edge, so it scales with it. */
+.pbi-room .pbi-room-header-pad { padding: 0 var(--pbi-gap-5); }

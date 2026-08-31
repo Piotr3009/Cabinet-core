@@ -1,0 +1,159 @@
+/* ─── T60 F1 · THE SCALE LAW — ONE NUMBER, EVERY DIMENSION ──────────────────
+ *
+ * The owner, after the first live look at the design room:
+ *
+ *   *"ludzie mają małe komputery, laptopy, iPady — będzie do dupy widać jak
+ *   wszystko będzie 25% większe."*
+ *
+ * He is right twice. Nothing in t59 adapted — the room wrote 220 / 320 / 300
+ * pixel columns and 11–15px type, the same on a 13-inch laptop as on his
+ * 2560-wide monitor. And a flat −25% would be wrong the other way: cramped on
+ * his screen and STILL too wide on the laptop, because the columns and the
+ * type would shrink together with nothing tying either to the glass they are
+ * drawn on.
+ *
+ * So: ONE SCALE, DERIVED FROM THE VIEWPORT, AND EVERY DIMENSION DERIVED FROM
+ * IT.
+ *
+ *   --pbi-scale = 1.00  at 2560px — THE REFERENCE WIDTH, the owner's monitor
+ *               ≈ 0.86  at 1728px — a 16-inch laptop
+ *                 0.78  at 1280px and below — the floor
+ *
+ * Between them it is linear; outside them `clamp()` holds it. The design room
+ * reads it; the marketing pages do not, and keep their own rhythm (a hero is
+ * not a control panel and a 56px headline does not want to be 44px because
+ * somebody opened a laptop).
+ *
+ * ─── WHY EVERY NUMBER IN THE ROOM LIVES IN THIS FILE ───────────────────────
+ *
+ * A dimension written anywhere else is a dimension that does not scale, and
+ * one such dimension is enough to break the room at 1280 — a 300px column
+ * beside a 234px one, a 38px chip holding 11px type. So this file and
+ * `tokens.css` are the ONLY two in the retail tree allowed to hold a raw
+ * pixel, and `test/turn60-f1-the-scale-law.test.js` greps the design room's
+ * own stylesheet and its components for one, allowing 1px hairlines and 0.
+ *
+ * ─── THE SCALE IS A LENGTH, AND THAT IS NOT A DETAIL ───────────────────────
+ *
+ * CLAUDE.md F1.1 writes the formula as a plain number:
+ *
+ *     clamp(0.78, calc(0.78 + (100vw - 1280px) * 0.00017), 1)
+ *
+ * That is not valid CSS, and it fails SILENTLY, which is the worst way for a
+ * thing to fail. `(100vw - 1280px)` is a LENGTH; a length times a number is a
+ * length; and `0.78 + <length>` has no type at all. The custom property is
+ * then invalid at computed-value time — so every `width`, `font-size` and
+ * `padding` that reads it falls back to its initial value and the whole room
+ * lays itself out on CONTENT WIDTHS instead. It looks nearly right, it moves
+ * when you resize the window, and it is not the design.
+ *
+ * That is exactly what the browser showed: at 2560 the RAIL measured 303px
+ * where 187 was wanted, at 1280 it measured 152, and the ratios between them
+ * were the ratios of a flex item shrinking, not of a scale. `npm test` was
+ * green — it had read the FORMULA and never the glass. This is what
+ * CLAUDE.md's *"every claim about a screen ends in a frame"* is for.
+ *
+ * THE ARITHMETIC IS UNCHANGED. Every term is expressed in px, so the whole
+ * expression is a length: 0.78px at 1280, 0.9976px at 2560 — the same numbers,
+ * carrying a unit. A dimension is then `calc(<base> * var(--pbi-scale))` with
+ * the BASE as a plain number, because number × length is a length. Read it as
+ * *"187 scale-units wide"*, and `--pbi-scale` as *"how big one unit is on this
+ * glass"*.
+ *
+ * ─── THE TYPE FLOOR ────────────────────────────────────────────────────────
+ *
+ * F1.4: *"no rendered text below 11px at scale 0.78."* Every type token is
+ * therefore `max(<floor>, calc(<base> * var(--pbi-scale)))`. The bases are
+ * chosen so the smallest voices — the STAGE HINT and a chip's label — land at
+ * 11.3px and 11.1px at 1280 rather than ON the floor: a token that only ever
+ * reaches its minimum has stopped scaling and nobody notices until the floor
+ * is the whole design. The `max()` is the guard behind that arithmetic, not
+ * the mechanism.
+ */
+
+:root {
+  /* 0.78 at 1280 · 0.78 + 1280 × 0.00017 = 0.9976 → 1 at 2560 (the owner's
+   * monitor, the reference width). 1/0.00017 ≈ 5882: one point of scale per
+   * 5882 pixels of glass. In px, so the expression has a type — see the note
+   * above, and the frame that found out. */
+  --pbi-scale: clamp(0.78px, calc(0.78px + (100vw - 1280px) * 0.00017), 1px);
+}
+
+/* ─── THE ROOM'S OWN MEASUREMENTS ───────────────────────────────────────────
+ *
+ * Scoped to `.pbi-room`, which `RetailApp` puts on the whole page ONLY while
+ * the design room is the route — so the compact header scales with the room
+ * beneath it (it is the room's own top edge, not the site's), and the landing
+ * page never sees any of this.
+ */
+
+.pbi-room {
+  /* ─── THE FOUR COLUMNS ─────────────────────────────────────────────────
+   * F1.3: *"The RAIL narrows 15% at the same time: its base becomes 187px
+   * (220 × 0.85)."* The owner: *"nr 2 może być spokojnie 15% węższe."*
+   * OPTIONS and DETAIL keep t59's bases — *"nr 3 zostaw jak jest"* — and now
+   * scale like everything else. */
+  --pbi-col-categories: calc(187 * var(--pbi-scale));
+  --pbi-col-options: calc(320 * var(--pbi-scale));
+  --pbi-col-detail: calc(300 * var(--pbi-scale));
+
+  /* ─── THE HORIZONTAL BANDS ─────────────────────────────────────────────
+   * The VIEW BAR grew from 40 to 46 because F2 hangs eleven of PRO's tools
+   * in it and they need a line of type they can be read at. */
+  --pbi-header-h-room: calc(60 * var(--pbi-scale));
+  --pbi-view-bar-h: calc(46 * var(--pbi-scale));
+  --pbi-hint-h: calc(30 * var(--pbi-scale));
+
+  /* ─── TYPE ─────────────────────────────────────────────────────────────
+   * Three voices (F2): display serif, UI sans, and the serif italic a CHOICE
+   * or a REFUSAL is said in. Each with its own floor. */
+  --pbi-fs-ui: max(11px, calc(14.5 * var(--pbi-scale)));
+  --pbi-fs-ui-sm: max(11px, calc(14.2 * var(--pbi-scale)));
+  --pbi-fs-ui-lg: max(12px, calc(16 * var(--pbi-scale)));
+  --pbi-fs-choice: max(12px, calc(16 * var(--pbi-scale)));
+  --pbi-fs-choice-lg: max(13px, calc(18 * var(--pbi-scale)));
+  --pbi-fs-h4: max(12px, calc(17 * var(--pbi-scale)));
+  --pbi-fs-h3: max(15px, calc(22 * var(--pbi-scale)));
+  --pbi-fs-h2: max(18px, calc(28 * var(--pbi-scale)));
+  --pbi-fs-price: max(13px, calc(17 * var(--pbi-scale)));
+
+  /* ─── CONTROLS ─────────────────────────────────────────────────────────── */
+  --pbi-chip-h: calc(38 * var(--pbi-scale));
+  --pbi-chip-pad-x: calc(15 * var(--pbi-scale));
+  --pbi-chip-pad-y: calc(9 * var(--pbi-scale));
+  --pbi-chip-mark: calc(6 * var(--pbi-scale));
+  --pbi-chip-max: calc(260 * var(--pbi-scale));
+  --pbi-button-h: calc(46 * var(--pbi-scale));
+  --pbi-button-pad-x: calc(22 * var(--pbi-scale));
+  --pbi-gold-line: calc(48 * var(--pbi-scale));
+  --pbi-slider-thumb: calc(12 * var(--pbi-scale));
+  --pbi-swatch: calc(46 * var(--pbi-scale));
+  --pbi-thumb: calc(54 * var(--pbi-scale));
+  --pbi-field-h: calc(42 * var(--pbi-scale));
+  --pbi-icon: calc(18 * var(--pbi-scale));
+
+  /* ─── RHYTHM — paddings, gaps, the rules between things ────────────────── */
+  --pbi-pad-col: calc(19 * var(--pbi-scale));
+  --pbi-pad-bar: calc(9 * var(--pbi-scale));
+  --pbi-pad-row: calc(13 * var(--pbi-scale));
+  --pbi-gap-1: calc(3 * var(--pbi-scale));
+  --pbi-gap-2: calc(7 * var(--pbi-scale));
+  --pbi-gap-3: calc(11 * var(--pbi-scale));
+  --pbi-gap-4: calc(17 * var(--pbi-scale));
+  --pbi-gap-5: calc(25 * var(--pbi-scale));
+  --pbi-gap-6: calc(33 * var(--pbi-scale));
+  --pbi-sep-h: calc(18 * var(--pbi-scale));
+  --pbi-mark-w: calc(2 * var(--pbi-scale));
+
+  /* ─── THE FEW MEASUREMENTS THAT BELONG TO ONE THING ────────────────────
+   * A column of keys in the estimate summary, the width an EGGER attribution
+   * may wrap at, the quote card, the two ends of a stepper. Each is a
+   * dimension of exactly one component and would be a raw pixel if it were
+   * written where it is used — so it is a token here, and scales like the
+   * rest. */
+  --pbi-summary-key-w: calc(96 * var(--pbi-scale));
+  --pbi-swatch-label-w: calc(112 * var(--pbi-scale));
+  --pbi-overlay-w: calc(620 * var(--pbi-scale));
+  --pbi-stepper-btn-w: calc(42 * var(--pbi-scale));
+  --pbi-stepper-now-w: calc(26 * var(--pbi-scale));
+}

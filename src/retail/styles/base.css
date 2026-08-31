@@ -238,6 +238,13 @@ img, svg { max-width: 100%; display: block; }
 
 .pbi-chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
+/* A chip and its always-visible reason, stacked; and the little column a chip
+ * uses when it carries a drawing or a swatch above its label. T60 moved these
+ * out of `Chip.jsx`'s inline styles so the design room can scale them. */
+.pbi-chip-wrap { display: inline-flex; flex-direction: column; max-width: 260px; }
+.pbi-chip-sub { font-size: 12px; }
+.pbi-stack { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+
 /* ─── HAIRLINES ─────────────────────────────────────────────────────────── */
 .pbi-rule { height: 1px; background: var(--pbi-stone-line); border: 0; margin: 0; }
 .pbi-rule-gold { height: 1px; background: var(--pbi-gold-highlight); border: 0; margin: 0; }
@@ -300,3 +307,5 @@ textarea.pbi-field { height: 96px; padding: 12px; resize: vertical; }
   color: var(--pbi-soft-graphite);
   margin-bottom: 7px;
 }
+
+.pbi-link-file { cursor: pointer; }

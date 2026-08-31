@@ -6,7 +6,7 @@ import { mm } from './constants.js';
 import { labelPixelHeight, useScreenScale } from './DimLabel.jsx';
 import { dimensionSet } from '../engine/dimensionArrows.js';
 import { formatDimension } from '../engine/format.js';
-import { proChromeOn } from './chrome.js';
+import { chromeOn } from './chrome.js';
 
 // ─── ONE DIMENSION COMPONENT (turn 26, CLAUDE.md R11 / F4) ───────────────────
 //
@@ -118,7 +118,9 @@ export default function DimensionChain({
 }) {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
-  if (!proChromeOn()) return null;
+  // T60 F2 · the CHANNEL, not the master switch: PBI's VIEW BAR owns this
+  // overlay, PRO sets no channel and reads `on` exactly as it always did.
+  if (!chromeOn('dimensions')) return null;
   const drawn = useMemo(() => dimensionSet(rows || [], style), [rows, style]);
   if (!drawn.length) return null;
 

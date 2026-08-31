@@ -1,0 +1,435 @@
+{
+ "steps": [
+  {
+   "label": "2560: the browser really is that wide",
+   "ok": true,
+   "detail": "innerWidth 2560"
+  },
+  {
+   "label": "2560: the RAIL is 187 × the scale",
+   "ok": true,
+   "detail": "187px, wanted 187"
+  },
+  {
+   "label": "2560: the DETAIL column agrees with it",
+   "ok": true,
+   "detail": "rail says 1.000, detail says 0.997"
+  },
+  {
+   "label": "2560: --pbi-scale is 1",
+   "ok": true,
+   "detail": "1.0000"
+  },
+  {
+   "label": "2560: nothing under 11px",
+   "ok": true,
+   "detail": "smallest 14.47px"
+  },
+  {
+   "label": "2560: the room does not scroll sideways",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "2560: every view tool is on the glass",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1728: the browser really is that wide",
+   "ok": true,
+   "detail": "innerWidth 1728"
+  },
+  {
+   "label": "1728: the RAIL is 187 × the scale",
+   "ok": true,
+   "detail": "160px, wanted 161"
+  },
+  {
+   "label": "1728: the DETAIL column agrees with it",
+   "ok": true,
+   "detail": "rail says 0.856, detail says 0.857"
+  },
+  {
+   "label": "1728: --pbi-scale is 0.86",
+   "ok": true,
+   "detail": "0.8556"
+  },
+  {
+   "label": "1728: nothing under 11px",
+   "ok": true,
+   "detail": "smallest 12.41px"
+  },
+  {
+   "label": "1728: the room does not scroll sideways",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1728: every view tool is on the glass",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1280: the browser really is that wide",
+   "ok": true,
+   "detail": "innerWidth 1280"
+  },
+  {
+   "label": "1280: the RAIL is 187 × the scale",
+   "ok": true,
+   "detail": "146px, wanted 146"
+  },
+  {
+   "label": "1280: the DETAIL column agrees with it",
+   "ok": true,
+   "detail": "rail says 0.781, detail says 0.780"
+  },
+  {
+   "label": "1280: --pbi-scale is 0.78",
+   "ok": true,
+   "detail": "0.7807"
+  },
+  {
+   "label": "1280: nothing under 11px",
+   "ok": true,
+   "detail": "smallest 11.31px"
+  },
+  {
+   "label": "1280: the room does not scroll sideways",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1280: every view tool is on the glass",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the scale actually moves with the glass",
+   "ok": true,
+   "detail": "2560→1 1728→0.8556149732620321 1280→0.7807486631016043"
+  },
+  {
+   "label": "…and the RAIL moves with it",
+   "ok": true,
+   "detail": "2560→187px 1728→160px 1280→146px"
+  },
+  {
+   "label": "the bar carries front",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries inside",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries room",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries dimensions",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries front-dimensions",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries outlines",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries xray",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries props",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries hide-fronts",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries measure",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries open-all",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries lights",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries reset",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar carries fullscreen",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and NOT bom",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and NOT check",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and NOT cnc",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "SHOW DIMENSIONS lights up",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and it says HIDE now",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and back off",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "X-RAY lights up",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "OUTLINES lights up",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "OPEN ALL becomes CLOSE ALL",
+   "ok": true,
+   "detail": "Open all → Close all"
+  },
+  {
+   "label": "MEASURE lights up",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "full screen hides the columns",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the bar stays, with a way back",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "and it carries SAVE IMAGE",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "and BACK TO DESIGN restores the columns",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the DOORS and BAYS rows are two different controls",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "THIS WARDROBE opens the wardrobe menu",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with the three sliders",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…DOORS and BAYS apart",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…the plinth",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…the decor swatches",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and RENAME",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "SHELF opens its own menu",
+   "ok": true,
+   "detail": "menu=shelf"
+  },
+  {
+   "label": "the shelf has a height slider",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with the engine's own ends",
+   "ok": true,
+   "detail": "40…2074, at 1050"
+  },
+  {
+   "label": "THE SHELF MOVES",
+   "ok": true,
+   "detail": "1050 → 610"
+  },
+  {
+   "label": "CENTRE THIS BAY is there",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and REMOVE",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "DRAWERS opens its own menu",
+   "ok": true,
+   "detail": "menu=drawers"
+  },
+  {
+   "label": "HOW MANY is a chip row",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "TOP DRAWER INSERT is a chip row",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "GLASS TOP is a chip row",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "HANGING RAIL opens its own menu",
+   "ok": true,
+   "detail": "menu=rail"
+  },
+  {
+   "label": "MOUNTED chips",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and the rod on a shelf says whose height it is",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "WATCH DRAWER opens its own menu",
+   "ok": true,
+   "detail": "menu=watch"
+  },
+  {
+   "label": "four layout chips with their drawings",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "FINISH is the T58 pair",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "PULL-DOWN RAIL opens its own menu",
+   "ok": true,
+   "detail": "menu=pulldown"
+  },
+  {
+   "label": "a click in the STAGE opens that element's menu",
+   "ok": true,
+   "detail": "menu=door"
+  },
+  {
+   "label": "…and a DOOR gets the door menu",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with the front style",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and the handle systems",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "with nothing selected, column 7 is the ESTIMATE",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the estimate row carries its NAME",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the copy is unchanged",
+   "ok": true,
+   "detail": "DRAG TO ORBIT · SCROLL TO ZOOM · CLICK AN ELEMENT FOR DETAIL"
+  },
+  {
+   "label": "…and with nothing selected it is the design's name alone",
+   "ok": true,
+   "detail": "BEDROOM WARDROBE"
+  },
+  {
+   "label": "a selected element is named after a hairline",
+   "ok": true,
+   "detail": "BEDROOM WARDROBE — LEFT DOOR"
+  },
+  {
+   "label": "…and the word is the ENGINE's own",
+   "ok": true,
+   "detail": "BEDROOM WARDROBE — LEFT DOOR"
+  },
+  {
+   "label": "renaming the design renames the hint",
+   "ok": true,
+   "detail": "LANDING WARDROBE"
+  }
+ ],
+ "failed": 0
+}

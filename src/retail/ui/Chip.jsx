@@ -7,6 +7,10 @@
  * from the engine — and this renders it in the third voice under the chip,
  * ALWAYS visible: *"mobile has no hover; the reason is always visible."* A
  * disabled chip with no reason is a bug, and it looks like one.
+ *
+ * T60 F1: its measurements are `.pbi-chip` and `.pbi-chip-wrap` in
+ * `styles/room.css`, so a chip is 38px on the owner's monitor and 30 on a
+ * laptop without one number moving in this file.
  */
 export default function Chip({
   label, sub, selected = false, disabled = false, reason = '', note = '',
@@ -23,9 +27,9 @@ export default function Chip({
       style={style}
     >
       {children || (
-        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+        <span className="pbi-stack">
           <span>{label}</span>
-          {sub ? <span className="pbi-choice" style={{ fontSize: 12 }}>{sub}</span> : null}
+          {sub ? <span className="pbi-choice pbi-chip-sub">{sub}</span> : null}
         </span>
       )}
     </button>
@@ -38,7 +42,7 @@ export default function Chip({
   const said = reason || note;
   if (!said) return chip;
   return (
-    <span style={{ display: 'inline-flex', flexDirection: 'column', maxWidth: 260 }}>
+    <span className="pbi-chip-wrap">
       {chip}
       <span className="pbi-chip-reason">{said}</span>
     </span>

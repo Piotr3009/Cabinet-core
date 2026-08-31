@@ -70,11 +70,13 @@
   --pbi-font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
   --pbi-font-ui: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 
-  /* The design room's own header — F3: *"Inside the design room the header
-   * shrinks to 60px (same content)."* */
-  --pbi-header-h-room: 60px;
-  --pbi-col-categories: 220px;
-  --pbi-col-options: 320px;
-  --pbi-col-detail: 300px;
-  --pbi-view-bar-h: 40px;
+  /* ─── THE DESIGN ROOM'S OWN MEASUREMENTS MOVED (T60 F1) ──────────────────
+   * The four columns, the compact header and the view bar were five raw pixel
+   * values here. They are now `calc(<base> * var(--pbi-scale))` in
+   * `styles/scale.css` — one number derived from the viewport, and every
+   * dimension in the room derived from it — because t59's room did not adapt
+   * and the owner's *"ludzie mają małe komputery, laptopy, iPady"* is a
+   * requirement rather than an observation. They are NOT duplicated here: two
+   * homes for one measurement is how they drift.
+   */
 }

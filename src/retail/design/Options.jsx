@@ -19,13 +19,11 @@ import { PRICE_ON_REQUEST } from '../config.js';
 // parameter, and not one bound below is a literal — `A.designBounds()` reads the
 // profile and this file reads `A.designBounds()`.
 
-const SIDE = '24px';
-
 function Panel({ title, children }) {
   return (
-    <div style={{ padding: `22px ${SIDE} 40px` }}>
+    <div className="pbi-panel">
       <h2 className="pbi-display pbi-h4">{title}</h2>
-      <GoldLine margin="12px 0 24px" />
+      <GoldLine />
       {children}
     </div>
   );
@@ -97,7 +95,7 @@ function SpacePanel({ room, project }) {
         </>
       ) : null}
 
-      <p className="pbi-choice pbi-choice-15" style={{ marginTop: 30 }}>
+      <p className="pbi-choice pbi-choice-15 pbi-panel-note">
         Measure wall to wall and floor to ceiling. We will survey before we build.
       </p>
     </Panel>
@@ -105,13 +103,16 @@ function SpacePanel({ room, project }) {
 }
 
 /* ─── 2 · LAYOUT ──────────────────────────────────────────────────────────── */
-function LayoutPanel({ unit, room }) {
+function LayoutPanel({ unit, room, onOpenDetail }) {
   const b = A.designBounds();
+  const size = A.unitBounds(unit.id);
   const wall = Math.round(Math.abs(room?.corners?.[1]?.x ?? 3000));
   const width = Math.round(unit?.params?.width ?? b.defaults.width);
   const depth = Math.round(unit?.params?.depth ?? b.defaults.depth);
   const items = unit?.params?.sections?.[0]?.items || [];
   const doors = items.filter((i) => i.kind === 'partition').length + 1;
+
+  if (!size) return null;
 
   const doorOptions = [1, 2, 3, 4].map((n) => ({
     id: String(n),
@@ -124,23 +125,45 @@ function LayoutPanel({ unit, room }) {
 
   return (
     <Panel title="LAYOUT">
+      {/* ─── THE WAY INTO THE WARDROBE'S OWN MENU ─────────────────────────
+          A single click on the STAGE reaches a door, a shelf, a drawer — every
+          piece a client points at. It does NOT reach the carcass, and that is
+          the shared core's own turn-13 verdict kept: *"clicking a cabinet must
+          select the CABINET"*, which is a selection and not an element. So the
+          wardrobe's own menu is opened from here, where the client is already
+          making that decision, rather than by inventing a gesture for it. */}
+      <button
+        type="button"
+        className="pbi-link"
+        data-testid="layout-open-wardrobe"
+        onClick={() => onOpenDetail('wardrobe')}
+      >
+        THIS WARDROBE ›
+      </button>
+
       <Field label="WARDROBE WIDTH" note={`Your wall is ${wall} mm.`}>
         <Slider
           testid="layout-width"
-          min={600}
-          max={wall}
+          min={size.width.min}
+          max={size.width.max}
           step={10}
-          value={Math.min(width, wall)}
-          onChange={(v) => A.setWardrobeSize(unit.id, { width: v })}
+          value={Math.min(width, size.width.max)}
+          onChange={(v) => A.setUnitSize(unit.id, { width: v })}
         />
       </Field>
 
+      {/* T60 F1: the DEPTH is a slider bounded by the engine, not three chips
+          whose numbers were retail's own — and which, before the projectType
+          fix, matched nothing on the first frame a client ever saw. */}
       <Field label="DEPTH">
-        <ChipRow
+        <Slider
           testid="layout-depth"
-          value={String(depth)}
-          options={b.depths.map((d) => ({ id: String(d), label: `${d}` }))}
-          onPick={(id) => A.setWardrobeSize(unit.id, { depth: Number(id) })}
+          min={size.depth.min}
+          max={size.depth.max}
+          step={10}
+          standardAt={b.defaults.depth}
+          value={depth}
+          onChange={(v) => A.setUnitSize(unit.id, { depth: v })}
         />
       </Field>
 
@@ -153,15 +176,16 @@ function LayoutPanel({ unit, room }) {
         />
       </Field>
 
+      {/* T60: a BAY is a compartment and a DOOR is a leaf. t59 wired this row
+          to the door count, so it was the row above it under another name. */}
       <Field label="BAYS">
         <ChipRow
           testid="layout-bays"
-          value={doors > 1 ? 'divided' : 'single'}
-          options={[
-            { id: 'single', label: 'SINGLE' },
-            { id: 'divided', label: 'DIVIDED' },
-          ]}
-          onPick={(id) => A.setDoorCount(unit.id, id === 'single' ? 1 : Math.max(2, doors))}
+          value={String(A.bayCount(unit.id))}
+          options={[1, 2, 3, 4].map((n) => ({
+            id: String(n), label: String(n), reason: A.bayRefusal(unit.id, n),
+          }))}
+          onPick={(id) => A.setBayCount(unit.id, Number(id))}
         />
       </Field>
     </Panel>
@@ -187,7 +211,7 @@ function FrontsPanel({ design }) {
               reason={s.reason}
               onClick={() => A.setFrontStyle(s.id)}
             >
-              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+              <span className="pbi-stack">
                 <FrontThumb style={s.id} />
                 <span>{s.label}</span>
               </span>
@@ -214,9 +238,9 @@ function FrontsPanel({ design }) {
         <div className="pbi-chip-row" data-testid="fronts-collection">
           {COLLECTIONS.map((c) => (
             <Chip key={c.id} onClick={() => A.applyCollection(c.id)}>
-              <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 44, height: 30, background: c.tone, display: 'block' }} />
-                <span style={{ fontSize: 10 }}>{c.name}</span>
+              <span className="pbi-stack">
+                <span className="pbi-tone-tile" style={{ background: c.tone }} />
+                <span>{c.name}</span>
               </span>
             </Chip>
           ))}
@@ -237,18 +261,10 @@ function FrontsPanel({ design }) {
                 selected={finishId === s.finishId}
                 onClick={() => A.setFrontDecor(id)}
               >
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <span
-                    style={{
-                      width: 40,
-                      height: 26,
-                      display: 'block',
-                      background: s.hex || 'var(--pbi-soft-ivory)',
-                      border: '1px solid var(--pbi-stone-line)',
-                    }}
-                  />
+                <span className="pbi-stack">
+                  <span className="pbi-swatch-tile" style={{ background: s.hex || 'var(--pbi-soft-ivory)' }} />
                   {/* The EGGER attribution, next to the swatch, unconditionally. */}
-                  <span className="pbi-choice" style={{ fontSize: 11, maxWidth: 108 }}>{s.label}</span>
+                  <span className="pbi-choice pbi-swatch-label">{s.label}</span>
                 </span>
               </Chip>
             );
@@ -268,31 +284,23 @@ function InteriorPanel({ unit, onOpenDetail }) {
 
   return (
     <Panel title="INTERIOR">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div className="pbi-interior-list">
         {A.INTERIOR_ROWS.map((row) => {
           const has = counts[row.id] || 0;
           const reason = refusals[row.id] || '';
           return (
             <div key={row.id} data-testid={`interior-${row.id}`}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '14px 14px',
-                  background: 'var(--pbi-porcelain)',
-                  border: '1px solid var(--pbi-stone-line)',
-                }}
-              >
-                <span className="pbi-choice pbi-choice-15" style={{ flex: '1 1 auto', color: 'var(--pbi-onyx)' }}>
-                  {row.name}
-                </span>
+              <div className="pbi-interior-row">
+                <span className="pbi-choice pbi-choice-15 pbi-interior-name">{row.name}</span>
 
-                {has && row.id !== 'pulldown_rail' ? (
+                {/* T60 F3: every row that HAS something opens that thing's own
+                    menu — the pull-down included, which t59 left without one. */}
+                {has ? (
                   <button
                     type="button"
                     className="pbi-link"
-                    onClick={() => onOpenDetail(row.id)}
+                    data-testid={`interior-open-${row.id}`}
+                    onClick={() => onOpenDetail(row.menu)}
                     title="Open this"
                   >
                     {`${has} ›`}
@@ -371,27 +379,16 @@ function EstimatePanel({ choices, name, onName, onQuote, onSave }) {
   return (
     <Panel title="ESTIMATE">
       <Field label="WHAT WE WILL QUOTE">
-        <div
-          style={{
-            background: 'var(--pbi-porcelain)',
-            border: '1px solid var(--pbi-stone-line)',
-            padding: '18px 16px',
-          }}
-          data-testid="estimate-summary"
-        >
+        <div className="pbi-duty-what" data-testid="estimate-summary">
           {choices.map((c) => (
-            <div key={c.label} style={{ display: 'flex', gap: 10, marginBottom: 9 }}>
-              <span className="pbi-ui pbi-ui-light pbi-quiet" style={{ flex: '0 0 96px', fontSize: 10 }}>
+            <div key={c.label} className="pbi-summary-row">
+              <span className="pbi-ui pbi-ui-light pbi-quiet pbi-summary-key">
                 {c.label.toUpperCase()}
               </span>
-              <span className="pbi-choice" style={{ flex: '1 1 auto', color: 'var(--pbi-onyx)' }}>
-                {c.value}
-              </span>
+              <span className="pbi-choice pbi-summary-value">{c.value}</span>
             </div>
           ))}
-          <div className="pbi-display pbi-h4" style={{ marginTop: 16, textTransform: 'none', letterSpacing: '0.04em' }}>
-            {PRICE_ON_REQUEST}
-          </div>
+          <div className="pbi-display pbi-total">{PRICE_ON_REQUEST}</div>
         </div>
       </Field>
 
@@ -404,7 +401,7 @@ function EstimatePanel({ choices, name, onName, onQuote, onSave }) {
         />
       </Field>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="pbi-duty-actions">
         <Button onClick={onQuote} data-testid="estimate-quote">REQUEST A QUOTE</Button>
         <Button kind="secondary" onClick={onSave} data-testid="estimate-save">SAVE ESTIMATE</Button>
       </div>
@@ -417,19 +414,15 @@ export default function Options(props) {
   const title = CATEGORIES.find((c) => c.id === active)?.label || '';
   return (
     <section
+      className="pbi-options"
       data-testid="column-options"
       data-category={active}
       aria-label={title}
-      style={{
-        width: 'var(--pbi-col-options)',
-        minWidth: 'var(--pbi-col-options)',
-        background: 'var(--pbi-soft-ivory)',
-        borderRight: '1px solid var(--pbi-stone-line)',
-        overflowY: 'auto',
-      }}
     >
       {active === 'space' ? <SpacePanel room={props.room} project={props.project} /> : null}
-      {active === 'layout' ? <LayoutPanel unit={props.unit} room={props.room} /> : null}
+      {active === 'layout' ? (
+        <LayoutPanel unit={props.unit} room={props.room} onOpenDetail={props.onOpenDetail} />
+      ) : null}
       {active === 'fronts' ? <FrontsPanel design={props.design} /> : null}
       {active === 'interior' ? <InteriorPanel unit={props.unit} onOpenDetail={props.onOpenDetail} /> : null}
       {active === 'details' ? (

@@ -8,7 +8,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { formatMm, snap } from '../engine/format.js';
 import { rulerDistance } from '../engine/ruler.js';
 import { nearestSnap, snapTargets } from '../lib/rulerSnaps.js';
-import { proChromeOn } from './chrome.js';
+import { chromeOn } from './chrome.js';
 
 // ─── THE RULER (turn 17, CLAUDE.md F11) ─────────────────────────────────────
 //
@@ -55,7 +55,9 @@ const MARKER_COLOURS = { END: '#E0B64A', MID: '#7FD1AE', INT: '#E08A4A' };
 export default function Ruler() {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
-  if (!proChromeOn()) return null;
+  // T60 F2 · the CHANNEL, not the master switch: PBI's VIEW BAR owns this
+  // overlay, PRO sets no channel and reads `on` exactly as it always did.
+  if (!chromeOn('measure')) return null;
   const on = useUiStore((s) => s.rulerOn);
   const points = useUiStore((s) => s.rulerPoints);
   const addPoint = useUiStore((s) => s.addRulerPoint);

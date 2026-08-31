@@ -8,12 +8,15 @@
 // adds its frame, a J-pull cuts its lip off the top edge, a grooved door is
 // scored, an arched one has its head curved.
 
-const BOX = { width: 44, height: 58, viewBox: '0 0 44 58' };
+// T60 F1: the viewBox is a SHAPE, not a size — the drawing's own coordinate
+// space, which scales with nothing. How big it is DRAWN is `.pbi-mini` in
+// `styles/room.css`, which is a token, which is the scale.
+const BOX = { viewBox: '0 0 44 58', className: 'pbi-mini' };
 const LINE = { fill: 'none', stroke: 'var(--pbi-onyx)', strokeWidth: 1 };
 
 export default function FrontThumb({ style }) {
   return (
-    <svg {...BOX} aria-hidden="true" style={{ display: 'block' }}>
+    <svg {...BOX} aria-hidden="true">
       {style === 'A' ? (
         <path d="M2.5 55.5 V14 A19.5 12 0 0 1 41.5 14 V55.5 Z" {...LINE} />
       ) : (

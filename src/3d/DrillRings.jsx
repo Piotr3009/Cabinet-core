@@ -4,6 +4,7 @@ import { mm } from './constants.js';
 import { machiningLines, panelPlacement } from '../engine/joinery.js';
 import { shelfSupportInstances } from '../engine/hardware3d.js';
 import { shelfSupportMetal } from './hardwareFinish.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── DRILL RINGS — a hole you can see, without cutting the board ───────────
 //
@@ -75,6 +76,9 @@ function loopCircle(points) {
 }
 
 export default function DrillRings({ result, profile, design = null }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const groups = useMemo(() => {
     const panels = result?.panels || [];
     const drills = result?.drills || [];

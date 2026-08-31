@@ -3,6 +3,7 @@ import { mm } from './constants.js';
 import DimensionChain from './DimensionChain.jsx';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { roomDistances, distanceLabel } from '../engine/dimensions.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── Distance arrows, drawn the way a drawing office draws them ───
 //
@@ -72,6 +73,9 @@ function rowOf(mark, cfg, i) {
 export default function DistanceArrows({
   walls, units, roomCentre, profile, colourKey,
 }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const cfg = profile.dimensions;
   // Turn 11 (CLAUDE.md F1.5): the fallback is the profile's own DEFAULT INK,
   // which lives in appearance.dimensions and is red from this turn on. `cfg` is

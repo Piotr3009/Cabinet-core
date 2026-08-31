@@ -1,12 +1,39 @@
 import { execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// ─── TURN 59 · F1 — THE SWITCH: TWO DOORS, ONE HOUSE ───────────────────────
+//
+// The owner, 30.08: *"chcę mieć przełącznik… PRO jest identyczne jak teraz, z
+// retail nowa instrukcja."*
+//
+// One repository, one engine, one 3-D viewer, TWO applications. Vite becomes
+// multi-page and this block is the whole of it — the ONLY change this turn
+// makes outside `src/retail/`. `/` still opens PRO and nothing about PRO's
+// entry moved; `retail.html` and `start.html` are new doors cut in the same
+// wall, not a rebuild of the house.
+
 // Cabinet Core — static frontend (Vercel), no backend of its own.
+const entry = (file) => fileURLToPath(new URL(file, import.meta.url));
+
 export default defineConfig({
   plugins: [react()],
-  server: { port: 5173, host: true },
-  build: { outDir: 'dist', sourcemap: true },
+  // `open` is a DEV convenience and nothing else: `npm run dev` shows the
+  // switch first, because a switch nobody can find is not a switch. The built
+  // site is unaffected and `/` is still PRO's front door (CLAUDE.md F1.3).
+  server: { port: 5173, host: true, open: '/start.html' },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    rollupOptions: {
+      input: {
+        main: entry('index.html'),    // CABINET CORE PRO — untouched
+        retail: entry('retail.html'), // PRIME BESPOKE INTERIORS
+        start: entry('start.html'),   // the switch
+      },
+    },
+  },
   // CHAT-FIX 16.08 (owner): the BUILD STAMP. One afternoon was spent arguing
   // with a browser about WHICH deploy it was showing — never again. Vite
   // burns the build moment into the bundle; App.jsx wears it in the corner

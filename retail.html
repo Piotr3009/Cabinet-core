@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- ─── PRIME BESPOKE INTERIORS ─────────────────────────────────────────
+         The client-facing site, born turn 59 as R1. It shares ONE engine and
+         ONE 3-D viewer with CABINET CORE PRO and imports nothing else from it
+         (CLAUDE.md, THE IRON BOUNDARY, Petros 30.08).
+
+         CLAUDE.md F2: "One <link> to Google Fonts in retail.html (Cormorant
+         Garamond 400/500/italic, Inter 300/400). No npm." This is it. Every
+         face has a real fallback stack in tokens.css, so a blocked font is a
+         different serif and never a broken page. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400&display=swap"
+    />
+    <title>Prime Bespoke Interiors · Bespoke fitted furniture, made in London</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/retail/main-retail.jsx"></script>
+  </body>
+</html>

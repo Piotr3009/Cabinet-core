@@ -6,6 +6,7 @@ import { mm } from './constants.js';
 import { labelPixelHeight, useScreenScale } from './DimLabel.jsx';
 import { dimensionSet } from '../engine/dimensionArrows.js';
 import { formatDimension } from '../engine/format.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── ONE DIMENSION COMPONENT (turn 26, CLAUDE.md R11 / F4) ───────────────────
 //
@@ -115,6 +116,9 @@ export default function DimensionChain({
   // the gesture. Given no `onPick` a chain is exactly what it was.
   onPick = null,
 }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const drawn = useMemo(() => dimensionSet(rows || [], style), [rows, style]);
   if (!drawn.length) return null;
 

@@ -4,6 +4,7 @@ import DimensionChain from './DimensionChain.jsx';
 import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { pieceHoverRows } from '../engine/hoverRows.js';
 import { bayGapsAround } from '../engine/partitionPositions.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── THE BAYS, ON HOVER (turn 23, CLAUDE.md F8.2) ───────────────────────────
 //
@@ -50,6 +51,9 @@ import { bayGapsAround } from '../engine/partitionPositions.js';
 export default function HoverDimensions({
   result, panelId, profile, onLeave = null,
 }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const style = useMemo(() => dimensionStyle(profile), [profile]);
 
   const drawing = useMemo(() => {

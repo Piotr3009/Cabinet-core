@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- ─── TURN 59 · F1.2 — THE SWITCH ─────────────────────────────────────
+         The owner, 30.08: "chcę mieć przełącznik… PRO jest identyczne jak
+         teraz, z retail nowa instrukcja."
+
+         Two doors, one house. `/` is still PRO and nothing about it moved;
+         this page is the third entry Vite now builds, and it imports not one
+         byte of PRO — see test/turn59-f1-the-switch.test.js.
+
+         The fonts come by <link>, never by npm (CLAUDE.md standing law). The
+         law names retail.html; this page is the other half of the same site
+         and carries the same link, so that the switch and the site it opens
+         are set in the same face. Flagged in the morning report. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400&display=swap"
+    />
+    <title>Cabinet Core · Prime Bespoke Interiors</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/retail/main-launch.jsx"></script>
+  </body>
+</html>

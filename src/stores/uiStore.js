@@ -16,6 +16,8 @@ import {
   dismissedByClickAway, expired, greyMs, leaveWarning, makeMessage, pushMessage, queueMax,
   trimQueue,
 } from '../engine/messages.js';
+// TURN 59: the shared brain, running memory-only for the PBI retail mount.
+import { persistenceOn } from './persistence.js';
 
 // ─── UI state ───
 // Panel geometry, selection and the editor's snap step. Nothing here is
@@ -39,6 +41,8 @@ const HINGES_KEY = 'cc.showHinges.v2';
 const FRONT_DIMS_KEY = 'cc.showFrontDimensions';
 
 function loadSnap() {
+  // TURN 59: memory-only mode reads nothing; the profile's default stands.
+  if (!persistenceOn()) return DEFAULT_CABINET_PROFILE.editor.defaultSnap;
   try {
     const v = Number(localStorage.getItem(SNAP_KEY));
     return DEFAULT_CABINET_PROFILE.editor.snapSteps.includes(v) ? v : DEFAULT_CABINET_PROFILE.editor.defaultSnap;
@@ -57,6 +61,7 @@ function loadSnap() {
  * full quota are survivable; the default stands.
  */
 function loadFlag(key, fallback) {
+  if (!persistenceOn()) return fallback;
   try {
     const raw = localStorage.getItem(key);
     return raw == null ? fallback : raw === '1';
@@ -67,6 +72,7 @@ function loadFlag(key, fallback) {
 
 /** Writes and returns the value, so a setter can be one expression. */
 function saveFlag(key, value) {
+  if (!persistenceOn()) return value;
   try { localStorage.setItem(key, value ? '1' : '0'); } catch { /* private mode */ }
   return value;
 }
@@ -93,6 +99,7 @@ function saveFlag(key, value) {
 const BRIGHTNESS_KEY = 'cc.brightness';
 
 function loadBrightness() {
+  if (!persistenceOn()) return DEFAULT_CABINET_PROFILE.appearance.studio.brightness.default;
   try {
     return brightnessScale(Number(localStorage.getItem(BRIGHTNESS_KEY)), DEFAULT_CABINET_PROFILE);
   } catch {
@@ -101,6 +108,7 @@ function loadBrightness() {
 }
 
 function saveBrightness(value) {
+  if (!persistenceOn()) return value;
   try { localStorage.setItem(BRIGHTNESS_KEY, String(value)); } catch { /* private mode */ }
   return value;
 }
@@ -960,7 +968,10 @@ export const useUiStore = create((set, get) => ({
   // Snap step: 1 mm default, 0.5 mm and the 32 mm system as options (SPEC 4.8)
   snapStep: loadSnap(),
   setSnapStep: (step) => {
-    try { localStorage.setItem(SNAP_KEY, String(step)); } catch { /* private mode */ }
+    // TURN 59: memory-only mode writes nothing.
+    if (persistenceOn()) {
+      try { localStorage.setItem(SNAP_KEY, String(step)); } catch { /* private mode */ }
+    }
     set({ snapStep: step });
   },
 

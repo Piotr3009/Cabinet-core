@@ -5,6 +5,7 @@ import { mm } from './constants.js';
 import { useScreenScale } from './DimLabel.jsx';
 
 import { useProjectStore } from '../stores/projectStore.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── TURN 54 (F5): THE LED ICONS SHOW WHILE LIGHTING IS OPEN ────────────────
 // ─── RE-HEADED IN TURN 58 (F7.1): …AND NOW THEY ALWAYS SHOW ─────────────────
@@ -134,6 +135,9 @@ function LedIcon({
  * asserts the flag rather than the picture.
  */
 export default function LedIcons({ unit, W, H, D }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const design = useProjectStore((s) => s.project.design);
   const addLightingItem = useProjectStore((s) => s.addLightingItem);
   const removeLightingItem = useProjectStore((s) => s.removeLightingItem);

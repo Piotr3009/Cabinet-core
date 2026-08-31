@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { mm } from './constants.js';
 import { machiningLines } from '../engine/joinery.js';
 import { layerScreenColor } from '../engine/cnc/layers.js';
+import { proChromeOn } from './chrome.js';
 
 // ─── WHAT THE MACHINE WILL DO TO THIS BOARD (turn 17, CLAUDE.md F4.1) ───────
 //
@@ -36,6 +37,9 @@ import { layerScreenColor } from '../engine/cnc/layers.js';
 export default function PartMachining({
   panel, drills = [], profile, lift = null, visible = true,
 }) {
+  // TURN 59: the PBI retail mount draws the furniture and none of the tool.
+  // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
+  if (!proChromeOn()) return null;
   const geometries = useMemo(() => {
     if (!visible || !panel) return [];
     const off = lift == null ? (profile?.appearance?.joinery?.lift ?? 0.4) : lift;

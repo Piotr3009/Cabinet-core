@@ -1598,7 +1598,7 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           shelfDrag={shelfDrag}
           orbitRef={orbitRef}
           openFronts={openFronts[unit.id]}
-          onToggleFront={(panelId) => toggleFront(unit.id, panelId)}
+          onToggleFront={(panelId, covers = null) => toggleFront(unit.id, panelId, covers)}
           onFocus={(point, sizeMm) => focusOn([point.x, point.y, point.z], sizeMm)}
           // TURN 40 (CLAUDE.md F4c): a fault says WHICH PIECE, and the scene —
           // which is the only place that knows where a piece actually is —

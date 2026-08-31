@@ -1536,3 +1536,136 @@
 
 (princ "\nKIT_WARDROBE_FULL: SLOPE CUT T46/T47 section loaded.")
 (princ)
+
+;;;========================================
+;;; F. THE SHOE DRAWER'S INSERT (turn 58, CLAUDE.md F2)
+;;;========================================
+;;; Written before the engine reads it (iron rule 1). Added LINES in the kit
+;;; that owns the wardrobe - the shoe drawer is a WARDROBE drawer and nothing
+;;; else, so it gets no kit of its own and the shelf stays at fourteen.
+;;;
+;;; HISTORY, HONESTLY. T54-F7 killed the old shoe world on the owner's own
+;;; order ("usun stary kod na shoes i zrob z logika drawers") and its kit,
+;;; KIT_SHOE_BOX.lsp, went with it. The re-spec covered the BOX and never
+;;; mentioned what goes INSIDE it, so the ramp and the dividers went into the
+;;; same grave without anybody deciding they should. This section is the
+;;; insert coming back, and only the insert: the box is a standard drawer and
+;;; is not touched by one line here.
+;;;
+;;; ─── THE ANGLE IS NOT A NEW NUMBER ─────────────────────────────────────
+;;; The ramp leans at the SHOE SHELF's own tilt - the T33 variant that
+;;; survived T54 - and that number lives in the profile as
+;;; wardrobeAccessories.shoeShelf.tiltDeg. It is restated here in the form
+;;; the engine's reader parses, and the test asserts the two are equal, so
+;;; there is ONE angle in this app and a second one cannot be introduced
+;;; without the suite going red.
+(defun shoeRampTiltDeg ( / ) 15)
+
+;;; ALWAYS TWO. Owner, verbatim: "po prostu daj 2 zawsze" - three even lanes,
+;;; and no field anywhere offers a third answer.
+(defun shoeDividerCount ( / ) 2)
+
+;;; The insert's stock. Same 9 mm board the watch tray is cut from ("przegrodki
+;;; z 9 mm zrob") - a tray made of two thicknesses is a tray with an offcut
+;;; problem, and these two trays are cut off one sheet.
+(defun shoeInsertT ( / ) 9)
+
+;;; How proud of the ramp a divider stands. Enough to keep a pair apart, low
+;;; enough that a shoe lifts out over it.
+(defun shoeDividerH ( / ) 60)
+
+;;; THE RAMP, as a board. It is a FLAT rectangle on the sheet - the lean is
+;;; set by the two battens it lands on, not by anything the saw does - and its
+;;; LENGTH is the run divided by the cosine of the tilt, which is the only
+;;; place that arithmetic is written down.
+;;;
+;;;   run    the drawer interior's own depth, front face to back face
+;;;   szer   the drawer interior's own width
+;;;
+;;; The rear edge rises (run x tan beta) above the floor; where the drawer is
+;;; not deep enough to lift the back edge clear of its own side, the engine
+;;; refuses the insert IN WORDS rather than cutting a squashed one - the same
+;;; refuse-and-report the watch tray already keeps.
+(defun shoeRampLen (run / beta)
+  (setq beta (/ (* (shoeRampTiltDeg) pi) 180.0))
+  (/ run (cos beta))
+)
+
+(defun shoeRampRise (run / beta)
+  (setq beta (/ (* (shoeRampTiltDeg) pi) 180.0))
+  (* run (tan beta))
+)
+
+;;; The ramp's CNC panel. A plain rectangle with the angle NOTED beside it,
+;;; exactly the way a slope-cut side carries its "CUT beta DEG" - the machine
+;;; cuts a rectangle and the joiner reads what it leans at.
+(defun drawWDR_SHOE_RAMP (x0 y0 szer run unitNum drawerNum / midX midY dl)
+  (setq dl (shoeRampLen run))
+  (drawRect "OUTLINE" x0 y0 szer dl)
+  (setq midX (+ x0 (/ szer 2.0)))
+  (setq midY (+ y0 (/ dl 2.0)))
+  (drawText "UNIT_NUMBER" midX midY 30.0
+    (strcat unitNum " SHOE-RAMP-" (itoa drawerNum)))
+  (drawText "UNIT_NUMBER" midX (+ y0 dl 20.0) 30.0
+    (strcat "CUT " (rtos (shoeRampTiltDeg) 2 1) " DEG"))
+  dl
+)
+
+;;; A DIVIDER. Two of them, standing on the ramp and running front to back, so
+;;; the drawer reads as three even lanes. Its length is the ramp's own length -
+;;; there is no second arithmetic for it - and its grain runs ALONG that
+;;; length, which is the sheet-goods law the watch dividers already follow.
+(defun drawWDR_SHOE_DIVIDER (x0 y0 run unitNum drawerNum dividerNum / midX midY dl)
+  (setq dl (shoeRampLen run))
+  (drawRect "OUTLINE" x0 y0 dl (shoeDividerH))
+  (setq midX (+ x0 (/ dl 2.0)))
+  (setq midY (+ y0 (/ (shoeDividerH) 2.0)))
+  (drawText "UNIT_NUMBER" midX midY 30.0
+    (strcat unitNum " SHOE-DIV-" (itoa drawerNum) "-" (itoa dividerNum)))
+  dl
+)
+
+;;; WHERE THE LANES FALL. Two dividers, three even lanes, measured off the
+;;; clear width so the lanes are equal and the arithmetic is stated once.
+(defun shoeLaneW (szer / n)
+  (setq n (shoeDividerCount))
+  (/ (- szer (* n (shoeInsertT))) (+ n 1.0))
+)
+
+(defun shoeDividerXs (szer / lane out i x)
+  (setq lane (shoeLaneW szer))
+  (setq out '())
+  (setq i 1)
+  (while (<= i (shoeDividerCount))
+    (setq x (+ (* i lane) (* (- i 1) (shoeInsertT))))
+    (setq out (append out (list x)))
+    (setq i (1+ i))
+  )
+  out
+)
+
+;;; THE WHOLE INSERT, as one call: a ramp and its two dividers.
+;;;
+;;; TWO THINGS THE OWNER FORBADE, and they are conditions on the DRAWER rather
+;;; than shapes on a sheet, so they are stated here and enforced in the engine:
+;;;   - "tylko na wierzchu innych szuflad" - the shoe drawer is the TOP of the
+;;;     stack and nowhere else;
+;;;   - "nie moze miec polki nad soba, bo buty beda chodzic" - nothing stands
+;;;     over it.
+;;; And one exclusion, per cabinet: "jesli bedzie szuflada z zegarkami, to juz
+;;; nie mozemy w tej szafie zrobic butow." A wardrobe carries watches or shoes,
+;;; never both, and the refusal NAMES the one that is already there.
+(defun SKY:shoeInsert (x0 y0 szer run unitNum drawerNum / xs i)
+  (drawWDR_SHOE_RAMP x0 y0 szer run unitNum drawerNum)
+  (setq xs (shoeDividerXs szer))
+  (setq i 0)
+  (while (< i (length xs))
+    (drawWDR_SHOE_DIVIDER (+ x0 (nth i xs)) (+ y0 (shoeRampLen run) 40.0)
+      run unitNum drawerNum (1+ i))
+    (setq i (1+ i))
+  )
+  xs
+)
+
+(princ "\nKIT_WARDROBE_FULL: T58 shoe-drawer insert section loaded.")
+(princ)

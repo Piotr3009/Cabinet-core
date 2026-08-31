@@ -511,7 +511,9 @@ export function infillCornerMitre(end, faceH, elementTop, tolerance = 0) {
  *
  * @returns {{kind:'wall'|'infill'|'end-panel'|'open', x:number, blockedBy?:string}}
  */
-export function runEnd(run, side, { wallWidth, roomHeight, verticals = null }, profile) {
+export function runEnd(run, side, {
+  wallWidth, roomHeight, verticals = null, raked = false,
+}, profile) {
   const unit = side === 'left' ? run.units[0] : run.units[run.units.length - 1];
   const span = paddedSpan(unit);
   const carcassEdge = side === 'left'
@@ -540,7 +542,27 @@ export function runEnd(run, side, { wallWidth, roomHeight, verticals = null }, p
   // of the end CARCASS, and the vertical side infill — which runs to the
   // ceiling — closes the gap above. `kind` stays 'wall' (the mitre and ends
   // semantics are unchanged); only the x the piece is cut to moves.
-  if (Math.abs(outerEdge - wallAt) <= atWall) return { kind: 'wall', x: carcassEdge };
+  //
+  // ─── TURN 58 (CLAUDE.md F5): …AND THE OWNER TOOK THAT BACK, OFF A SLOPE ──
+  //
+  // *"jak dojeżdżamy szafą do ściany i się pojawia infill boczny, to niech
+  // górny się przedłuży do ściany — jak było wcześniej."*
+  //
+  // "Jak było wcześniej" is literally true, and the commit is 4ddff96
+  // (29.08.2026). It changed this one line from `x: wallAt` to
+  // `x: carcassEdge` — so before it, the top piece DID run to the plaster.
+  // This RESTORES that, and it is a restoration and not a new law.
+  //
+  // T55's ruling is not repealed; it is put back inside its own case. Every
+  // sentence of it is about the rake — *"infill boczny ZAWSZE PRZY SKOSIE
+  // idzie do sufitu"* — so under a live ceiling the vertical still owns the
+  // gap and the top piece still stops plumb on the carcass (T55-F1's four
+  // corners govern there, untouched). `raked` is that question, asked by the
+  // caller that holds the room's ceiling and defaulting to false, which is
+  // what every bare call has always meant.
+  if (Math.abs(outerEdge - wallAt) <= atWall) {
+    return { kind: 'wall', x: raked ? carcassEdge : wallAt };
+  }
 
   // 2 — ANYTHING standing all the way up between this end and the wall
   //     (turn 14, CLAUDE.md F3; #55). The element butts into its near face:
@@ -577,8 +599,17 @@ export function runEnd(run, side, { wallWidth, roomHeight, verticals = null }, p
   //     … skróć infill przysufitowy do infilla bocznego."* The vertical owns
   //     the gap and runs to the ceiling; the top piece stops PLUMB on the
   //     carcass face beside it. `kind` stays 'infill'; only the x moves.
+  //     T58 (CLAUDE.md F5): …and off a slope it runs OVER it again, to the
+  //     wall face — the sentence 4ddff96 replaced, restored to the case the
+  //     owner means. The side infill keeps its height and stops UNDER the top
+  //     piece: one plane at the joint, ZERO overlap, which is the turn-6/8
+  //     strip law this file has always kept (`engine/mitre.js`: *"the engine
+  //     puts the shelf strip BEHIND the face, so that the two boxes butt
+  //     without overlapping"*).
   const infill = Number(unit.params?.[side === 'left' ? 'side_infill_left_mm' : 'side_infill_right_mm']) || 0;
-  if (infill >= profile.autoParts.sideInfill.minWidth) return { kind: 'infill', x: carcassEdge };
+  if (infill >= profile.autoParts.sideInfill.minWidth) {
+    return { kind: 'infill', x: raked ? carcassEdge : wallAt };
+  }
 
   // 4 — open. It finishes flush with the outside of the last thing in the run
   //     and turns the corner from there.
@@ -732,6 +763,7 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
  */
 function runTopInfill(run, {
   wallWidth, roomHeight, frontFaceDepth, verticals = null, runCutOf = null,
+  isRaked = null,
 }, profile) {
   const T = profile.autoParts.topInfill;
   // The face height a member asked for. A run is one height: the tallest
@@ -739,8 +771,25 @@ function runTopInfill(run, {
   const faceH = run.units.reduce((m, u) => Math.max(m, Number(u.params?.top_infill_mm) || 0), 0);
   if (faceH < T.minHeight) return null;
 
-  const left = runEnd(run, 'left', { wallWidth, roomHeight, verticals }, profile);
-  const right = runEnd(run, 'right', { wallWidth, roomHeight, verticals }, profile);
+  // T58-F5: is there a live ceiling over this run? `runCutOf` is the channel
+  // T53-F3b already built for exactly that — the run's own stretch of the line,
+  // from the caller that owns the room — so this asks the question that
+  // already has an answer instead of a second one of its own. Absent (every
+  // caller that predates T53) means no rake, which is what those callers meant.
+  // T58-F5: is there a live rake over this run? The CALLER owns the room, so
+  // the caller answers — `isRaked` is the store's own `unitUnderSlope`, the
+  // same single reading F4 asks. Absent (every caller that predates tonight,
+  // and every bare engine call) means no rake, which is what those callers
+  // have always meant and is what keeps them byte-identical.
+  const raked = typeof isRaked === 'function'
+    ? run.units.some((u) => isRaked(u) === true)
+    : false;
+  const left = runEnd(run, 'left', {
+    wallWidth, roomHeight, verticals, raked,
+  }, profile);
+  const right = runEnd(run, 'right', {
+    wallWidth, roomHeight, verticals, raked,
+  }, profile);
   const owner = run.units[0];
   const ownerX = Number(owner.position?.x_mm) || 0;
 
@@ -857,7 +906,7 @@ function runTopInfill(run, {
  * @returns {Map<string, object|null>} unit id → the parameter to store
  */
 export function runInfillParams(units, {
-  walls, roomHeight, frontFaceDepthOf, runCutOf = null,
+  walls, roomHeight, frontFaceDepthOf, runCutOf = null, isRaked = null,
 }, profile) {
   const depthOf = frontFaceDepthOf || (() => 0);
   const out = new Map(units.map((u) => [u.id, null]));
@@ -871,6 +920,9 @@ export function runInfillParams(units, {
       wallWidth,
       roomHeight,
       verticals,
+      // T58-F5: the room's own answer to "is this unit under a live rake",
+      // handed down rather than re-derived here.
+      isRaked,
       // T53 (F3b): the run's own stretch of the ceiling line, from the caller
       // that owns the room. Absent — every caller that predates tonight — the
       // element carries no ceiling and nothing downstream changes.

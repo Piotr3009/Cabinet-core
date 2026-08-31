@@ -3,10 +3,19 @@ import * as THREE from 'three';
 
 import { mm } from './constants.js';
 import { useScreenScale } from './DimLabel.jsx';
-import { useUiStore } from '../stores/uiStore.js';
+
 import { useProjectStore } from '../stores/projectStore.js';
 
-// ─── TURN 54 (CLAUDE.md F5): THE LED ICONS SHOW WHILE LIGHTING IS OPEN ──────
+// ─── TURN 54 (F5): THE LED ICONS SHOW WHILE LIGHTING IS OPEN ────────────────
+// ─── RE-HEADED IN TURN 58 (F7.1): …AND NOW THEY ALWAYS SHOW ─────────────────
+//
+// T54's order is below, verbatim and unchanged, because it is still the reason
+// these icons exist at all. What turn 58 overrules is only its NARROWNESS: the
+// owner's new order is that they are visible in the editor whether the
+// Lighting panel is open or not. The gate T54 called "the feature" is this
+// turn's licensed deletion; everything else T54 decided — the clickable pill,
+// the pixel clamp, the `ccHelper` flag that keeps them out of renders — stands
+// exactly as it was written.
 //
 // The owner: *"po otwarciu modalu Lighting ikony LED mają być widoczne — nie
 // dodajesz nic do szaf. teraz jak nie naciśniesz szafy to nie widać ikon left
@@ -103,14 +112,31 @@ function LedIcon({
 
 /**
  * The pair, for one unit. Rendered inside the unit's own local frame.
- * Visible only while the Lighting panel is open — the gate IS the feature.
+ *
+ * ─── TURN 58 (CLAUDE.md F7.1): THE GATE IS GONE — LICENSED ────────────────
+ *
+ * T54-F5 wrote its own gate down as the feature:
+ *
+ *     const lightingOpen = useUiStore((s) => s.modal === 'lighting');
+ *     if (!lightingOpen) return null;          // "the gate IS the feature"
+ *
+ * It is NOT a fossil — it is T54's spec, executed exactly as written, and the
+ * comment above this component still says so. Tonight's order is simply wider
+ * than that spec was: the icons are ALWAYS visible in the editor viewport, so
+ * a joiner can put a strip down a side without first opening a panel and
+ * keeping it open. The T54 header is re-headed below to say which order
+ * overruled which, because a reader who finds the old sentence and not the new
+ * one will put the gate back.
+ *
+ * NEVER IN A RENDER, A CAPTURE OR A PDF. That half is not new and is not
+ * loosened: every icon here is `ccHelper`, the flag the capture path strips
+ * before it draws — so they cannot reach a picture a client sees. The suite
+ * asserts the flag rather than the picture.
  */
 export default function LedIcons({ unit, W, H, D }) {
-  const lightingOpen = useUiStore((s) => s.modal === 'lighting');
   const design = useProjectStore((s) => s.project.design);
   const addLightingItem = useProjectStore((s) => s.addLightingItem);
   const removeLightingItem = useProjectStore((s) => s.removeLightingItem);
-  if (!lightingOpen) return null;
   const items = design?.lighting?.items || [];
   const itemOf = (side) => items.find((i) => i.unitId === unit.id && i.kind === 'side' && i.ref === side);
   const toggle = (side) => {

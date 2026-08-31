@@ -159,15 +159,33 @@ test('F2 — the shoe cuts as a DRAWER, and every part still has its own file', 
     'the shoe-box world is dead — no batten, no SHOEBOX part');
 
   // The shoe is the DRAWER law's own boards — sides, box front/back, bottom.
-  const box = result.panels.filter((p) => /^D1-/.test(p.id)).map((p) => p.id).sort();
+  //
+  // ─── AMENDED IN TURN 58 (F2), and the claim is not weakened ────────────
+  // This filtered on the id prefix `/^D1-/`, which was the whole of drawer 1
+  // when a shoe drawer was an empty box. T58-F2 gives it its INSERT back —
+  // the ramp and two dividers, ids `D1-SHOE-RAMP` and `D1-SHOE-DIV-n`, the
+  // same `D{n}-` convention the watch tray has always used — so the prefix is
+  // no longer a synonym for "the box".
+  //
+  // The box is asked for BY ROLE now, which is what this line always meant,
+  // and the insert is asserted BESIDE it rather than dropped: the sentence
+  // being protected is that a panel id IS a DXF file name and a ZIP keeps one
+  // entry per name, and that is now proved over MORE parts than before.
+  const box = result.panels
+    .filter((p) => p.role === 'drawer_box' && /^D1-/.test(p.id))
+    .map((p) => p.id).sort();
   assert.deepEqual(box, ['D1-BB', 'D1-BF', 'D1-DNO', 'D1-SL', 'D1-SR'],
     'a standard drawer box, cut by the same code path as every drawer');
+  const insert = result.panels
+    .filter((p) => p.role === 'shoe_insert').map((p) => p.id).sort();
+  assert.deepEqual(insert, ['D1-SHOE-DIV-1', 'D1-SHOE-DIV-2', 'D1-SHOE-RAMP'],
+    'and the insert T58-F2 gave it back, each board its own name');
 
   // The consequence the joiner felt: a ZIP keeps ONE entry per name.
   const files = buildUnitDxfFiles(result, P, {});
   const names = files.map((f) => f.name);
   assert.equal(new Set(names).size, names.length, 'every part of this cabinet has its own file');
-  for (const id of box) assert.ok(names.includes(`W01-${id}.dxf`), `W01-${id}.dxf reaches the machine`);
+  for (const id of [...box, ...insert]) assert.ok(names.includes(`W01-${id}.dxf`), `W01-${id}.dxf reaches the machine`);
 });
 
 test('F2 — and no cabinet in the seeded job repeats a panel id', () => {

@@ -60,6 +60,8 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   const zonesOf = useProjectStore((s) => s.zonesOf);
 
   const type = getUnitType(unit.type);
+  // T58-F4: is there a live rake over this cabinet? One reading, the store's.
+  const underSlope = useProjectStore((st) => st.unitUnderSlope?.(unit.id) === true);
   const items = unit.params.sections?.[0]?.items || [];
   const rail = hangerOf(items);
   const hardware = materials.filter((m) => m.category === 'hardware');
@@ -342,10 +344,21 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // Each is a BOM named spec + the room it takes in the scene (a labelled
     // placeholder until the owner supplies a GLB). ZERO holes ride them.
     {
+      // ─── TURN 58 (CLAUDE.md F4): NOT UNDER A SLOPE ────────────────────────
+      // The owner: *"Szafa ze skosem nie może mieć pull-down, bo to jest
+      // zawsze na wysokości."*  The kit parks HIGH and its swing sweeps the
+      // top front — exactly the air a rake takes away.
+      //
+      // NO SECOND GATE: this is the `disabled`/`why` channel every other row
+      // in this list answers to, given one more reason to say no. The store
+      // removes any kit already fitted when the slope arrives
+      // (`settleSlopePulldowns`); this stops a new one being asked for, and
+      // the two read the same fact — `unitUnderSlope` is the store's own
+      // answer, not a second reading of the room.
       id: 'pulldown',
       label: 'Pull-down rail',
-      disabled: !type.supports.pulldown,
-      why: 'not for this type',
+      disabled: !type.supports.pulldown || underSlope,
+      why: underSlope ? 'not under a slope — it parks at the top' : 'not for this type',
     },
     {
       id: 'trouser',

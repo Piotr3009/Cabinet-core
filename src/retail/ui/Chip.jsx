@@ -9,7 +9,8 @@
  * disabled chip with no reason is a bug, and it looks like one.
  */
 export default function Chip({
-  label, sub, selected = false, disabled = false, reason = '', onClick, title, style, children,
+  label, sub, selected = false, disabled = false, reason = '', note = '',
+  onClick, title, style, children,
 }) {
   const chip = (
     <button
@@ -30,11 +31,16 @@ export default function Chip({
     </button>
   );
 
-  if (!reason) return chip;
+  // A REASON is why the chip cannot be pressed; a NOTE is something true about
+  // pressing it. They read the same — third voice, under the chip, always
+  // visible — because to a client they are the same kind of information: what
+  // the workshop knows about this choice.
+  const said = reason || note;
+  if (!said) return chip;
   return (
     <span style={{ display: 'inline-flex', flexDirection: 'column', maxWidth: 260 }}>
       {chip}
-      <span className="pbi-chip-reason">{reason}</span>
+      <span className="pbi-chip-reason">{said}</span>
     </span>
   );
 }

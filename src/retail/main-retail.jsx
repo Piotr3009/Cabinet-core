@@ -35,10 +35,19 @@ setProChrome(false);
 // the far side of the iron boundary.
 loadDecors();
 
-import('./RetailApp.jsx').then(({ default: RetailApp }) => {
+import('./RetailApp.jsx').then(async (module) => {
+  const App = module.default;
+  // WHICH DOOR THIS PAGE WAS OPENED THROUGH. `entryAudience()` reads it off the
+  // location and answers 'factory' for anything it does not recognise — right
+  // for PRO, wrong for here. Said through the store's own setter, and said
+  // HERE rather than at the top of this file: a static `import { useUiStore }`
+  // would hoist above `setPersistence` and the store's initial state would be
+  // built from PRO's localStorage keys before the switch was ever thrown.
+  const { useUiStore } = await import('../stores/uiStore.js');
+  useUiStore.getState().setAudience('retail');
   createRoot(document.getElementById('root')).render(
     <StrictMode>
-      <RetailApp />
+      <App />
     </StrictMode>,
   );
 });

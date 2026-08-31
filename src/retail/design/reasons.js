@@ -50,6 +50,10 @@ export const REASONS = {
   doorTooWide: ({ leaf, wide, check }) => `${check}: ${leaf} mm each — over ${wide} mm a door will not `
     + 'open far enough to get a drawer past it.',
 
+  /** PREDICATE: `doorCountFor(width, profile)` — engine/cabinet.js, the face-door law. */
+  oneDoorTooWide: ({ width, max }) => `A single door is cut up to ${max} mm; this wardrobe is `
+    + `${width} mm, so it opens as a pair.`,
+
   /** PREDICATE: `addHangerRail` returned null — one rail per column (T32 F4). */
   railAlreadyThere: 'There is already a rail in this column.',
 

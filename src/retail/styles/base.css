@@ -11,6 +11,12 @@
 
 *, *::before, *::after { box-sizing: border-box; border-radius: var(--pbi-radius); }
 
+/* The design room is a full-height stage under a 60-px header, so the page it
+ * stands in has to have a height to be a fraction of. PRO gets this from
+ * `src/index.css`, which is Tailwind's and on the far side of the iron
+ * boundary; this is the PBI side's own two lines. */
+html, body, #root { height: 100%; }
+
 html, body {
   margin: 0;
   padding: 0;

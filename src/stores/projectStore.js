@@ -1131,6 +1131,10 @@ const migrateUnits = (units) => (Array.isArray(units)
   : []);
 
 function loadCache() {
+  // TURN 59: belt AND braces. The call site below is already gated; so is
+  // this, so that the gate travels with the localStorage call rather than
+  // living thirty lines away from it.
+  if (!persistenceOn()) return null;
   try {
     const raw = localStorage.getItem(CACHE_KEY);
     if (!raw) return null;

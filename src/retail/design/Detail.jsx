@@ -5,7 +5,7 @@ import GoldLine from '../ui/GoldLine.jsx';
 import Button from '../ui/Button.jsx';
 import { ChipRow, Field, Slider, Stepper } from './controls.jsx';
 import { REASONS } from './reasons.js';
-import { bounds } from './adapter.js';
+import { designBounds } from './adapter.js';
 import { PRICE_ON_REQUEST } from '../config.js';
 import { designSummaryLine } from '../estimate/document.js';
 
@@ -108,7 +108,7 @@ function EstimateDuty({
 
 /* ─── F4b · DRAWERS ───────────────────────────────────────────────────────── */
 function DrawersDetail({ unit, item, onDone, onBack }) {
-  const b = bounds();
+  const b = designBounds();
   const items = unit.params.sections?.[0]?.items || [];
   const drawers = items.filter((i) => i.kind === 'drawer');
   const top = drawers[drawers.length - 1] || item;
@@ -222,7 +222,9 @@ function RailDetail({ unit, onDone, onBack }) {
   const rail = items.find((i) => i.kind === 'hanger');
   const heights = S().railHeightsAboveFloor?.(unit.id) || [];
   const here = Math.round(heights[0]?.mm ?? rail?.pos_mm ?? 0);
-  const H = Math.round(unit.params.height || 2150);
+  // The profile's own default, never a literal — a workshop that changes its
+  // standard wardrobe height changes this with it.
+  const H = Math.round(unit.params.height || getCabinetProfile().wardrobe.defaults.height);
   // The engine's OWN two mounts (engine/railAssembly.js RAIL_MOUNT): with the
   // shelf T37 built for it, or alone by T40's choice. There is no "single /
   // double" rail law in this engine, and inventing one here would be a law
@@ -296,8 +298,8 @@ function DoorDetail({ unit, panelId, onDone, onBack }) {
 function LightingDetail({ unit, project, onDone, onBack }) {
   const items = unit.params.sections?.[0]?.items || [];
   const hasPane = items.some((i) => i.watch_shelf_glass === true || i.variant === 'belt_tie_glass');
-  const strips = Boolean(project?.lighting?.enabled);
-  const pane = Boolean(project?.lighting?.pane);
+  const strips = Boolean(project?.design?.lighting?.on);
+  const pane = Boolean(project?.design?.lighting?.pane);
   return (
     <Duty title="LIGHTING" onBack={onBack}>
       <Field label="SHELF STRIPS">
@@ -305,7 +307,7 @@ function LightingDetail({ unit, project, onDone, onBack }) {
           testid="lighting-strips"
           value={strips ? 'on' : 'off'}
           options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON' }]}
-          onPick={(id) => S().setLighting({ enabled: id === 'on' })}
+          onPick={(id) => S().setLighting({ on: id === 'on' })}
         />
       </Field>
       <Field label="PANE LIGHT">

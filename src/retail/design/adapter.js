@@ -28,7 +28,9 @@
 import { getCabinetProfile } from '../../engine/profile.js';
 import { DEFAULT_ROOM, rectCorners } from '../../engine/room.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
+import { doorCountFor } from '../../engine/cabinet.js';
 import { FRONT_STYLE_OPTIONS } from '../../engine/design.js';
+import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
@@ -50,7 +52,7 @@ export const designUnit = (units) => units?.[0] || null;
  * which the engine has no opinion about — a room is not a cabinet, and
  * `engine/room.js` bounds neither. Those two are flagged in the report.
  */
-export function bounds() {
+export function designBounds() {
   const p = P();
   return {
     wall: { min: 600, max: 4000, step: 10, from: 'retail (the engine bounds no room)' },
@@ -64,8 +66,20 @@ export function bounds() {
       from: 'profile.wardrobe.drawers',
     },
     drawerCount: { max: p.wardrobe.drawers.maxCount, from: 'profile.wardrobe.drawers.maxCount' },
-    shakerFrame: { narrow: 40, standard: p.front?.shakerFrame ?? 70 },
+    // THE SHAKER FRAME IS THE PROFILE'S OWN BLOCK — `front.types.S`. NARROW is
+    // its floor rounded to something a person would say out loud; STANDARD is
+    // the width the workshop actually cuts (`frameWidth`, 60 — `legacyFrameWidth`
+    // is 70 and is read only when an OLD job is opened, T34).
+    shakerFrame: {
+      narrow: Math.max(p.front.types.S.frameMin, 40),
+      standard: p.front.types.S.frameWidth,
+      min: p.front.types.S.frameMin,
+      max: p.front.types.S.frameMax,
+      from: 'profile.front.types.S',
+    },
     wideFront: wideFrontMm(p),
+    // The engine's own face-door law: one leaf up to here, two above it.
+    singleDoorMax: p.doors.singleDoorMaxWidth,
     defaults: p.wardrobe.defaults,
   };
 }
@@ -107,7 +121,7 @@ export const handleSystems = () => [
 // ─── THE DECORS A COLLECTION NAMES ─────────────────────────────────────────
 
 /** A swatch the client can see: the decor's own colour and EGGER's own label. */
-export function swatch(decorId) {
+export function swatchFor(decorId) {
   const decor = decorById(decorId) || null;
   return {
     id: decorId,
@@ -128,11 +142,44 @@ export function startDesign(name = 'Bedroom wardrobe') {
   const store = S();
   store.newProject(name, { number: '', client: '' });
   const p = P();
-  const id = store.addUnit('WARDROBE', {
+  // `addUnit` answers `{ id, error, wall }` — the room may refuse a placement,
+  // and a caller that treated the whole verdict as an id would then pass an
+  // object everywhere a unit id was wanted.
+  const placed = store.addUnit('WARDROBE', {
     params: { width: p.wardrobe.defaults.width, height: p.wardrobe.defaults.height },
   });
-  return id;
+  // AGAINST THE WALL, at its start. `addUnit` drops a cabinet where a joiner
+  // would want it — in the middle of the room, beside whatever is already
+  // there — and for PRO that is right. Here there is one wardrobe and the wall
+  // IS its space: left in the middle, the store clamps its width to the gap
+  // and says so ("Width limited to 1260 mm by the infill at the wall"), which
+  // is a true sentence about a placement the client never asked for.
+  if (placed?.id) store.moveUnit(placed.id, 0, 1);
+  return placed?.id || null;
 }
+
+/**
+ * The project's first front and carcass type.
+ *
+ * A brand-new project has an EMPTY `design.fronts.types` — the list is grown by
+ * `setFrontTypeCount` the first time somebody answers a question about a front,
+ * and the id it gives the first one is `f1`. So this names the slot that is
+ * about to exist rather than reading one that does not.
+ */
+const frontTypeId = (design) => design?.fronts?.types?.[0]?.id || 'f1';
+const carcassTypeId = (design) => design?.carcass?.types?.[0]?.id || 'c1';
+
+/**
+ * WHICH SOURCE A DECOR IS, ASKED RATHER THAN ASSUMED.
+ *
+ * `setFrontType` DROPS a `finish_id` when the source it is given does not take
+ * a facing — which is right, and which silently threw away every collection's
+ * front decor until a test caught it, because the source is not called 'decor'.
+ * The front list calls it `laminate` and the carcass list calls it `egger`. So
+ * this asks the engine's own source lists for the one whose picker IS a decor,
+ * and a workshop that renames its sources tomorrow renames nothing here.
+ */
+const decorSourceId = (list) => list.find((src) => src.picker === 'decor')?.id || null;
 
 /** F4.1 · YOUR SPACE — the wall and the ceiling. */
 export function setSpace({ wallMm, ceilingMm }) {
@@ -142,7 +189,12 @@ export function setSpace({ wallMm, ceilingMm }) {
   const patch = {};
   if (Number.isFinite(wallMm)) patch.corners = rectCorners(Math.round(wallMm), depth);
   if (Number.isFinite(ceilingMm)) patch.height = Math.round(ceilingMm);
-  return store.setRoom(patch);
+  const verdict = store.setRoom(patch);
+  // A wall that has just changed length is a wall the wardrobe should still be
+  // standing at the start of.
+  const unit = designUnit(store.units);
+  if (unit) store.moveUnit(unit.id, 0, 1);
+  return verdict;
 }
 
 /**
@@ -166,18 +218,59 @@ export function setSlope({ on, leftMm, rightMm }) {
   }
   const room = store.project.room || DEFAULT_ROOM;
   const wall = Math.round(Math.abs(room.corners?.[1]?.x ?? 3000));
+  const ceiling = Math.round(room.height || 2500);
+
+  // ─── TWO HEIGHTS, INTO THE ENGINE'S OWN THREE NUMBERS ────────────────────
+  //
+  // The client is asked the question a person can answer with a tape measure:
+  // how high is the ceiling at the left wall, and how high at the right. The
+  // shared model is an ELEVATION — `{ side, startHeight, run }`: which side the
+  // ceiling comes down on, how high it is where it meets that side wall, and
+  // how far along the wall the rake runs before it reaches full height. So:
+  //
+  //   SIDE        whichever of the two heights is the lower one.
+  //   startHeight that lower height.
+  //   RUN         where the rake, climbing from `startHeight` towards the other
+  //               height, crosses the ceiling. If the high side is already at
+  //               the ceiling, that is the far wall and the run is the whole
+  //               width; if it is short of the ceiling, the rake gets there
+  //               sooner and the run is shorter in the same proportion.
+  //
+  // Every consequence after that is the ENGINE's: the forced hinges, the door
+  // partition, the pull-down refusal, the trimmed LED. Retail asks for none of
+  // them by name.
+  const low = Math.min(Math.round(leftMm), Math.round(rightMm));
+  const high = Math.min(ceiling, Math.max(Math.round(leftMm), Math.round(rightMm)));
+  const side = Math.round(leftMm) <= Math.round(rightMm) ? 'L' : 'R';
+  const rise = high - low;
+  const run = rise <= 0 ? wall : Math.round(Math.min(wall, (wall * (ceiling - low)) / rise));
+
   const shape = {
-    kind: 'slope',
-    wall: 0,
-    // The rake, left wall to right wall, in the room's own millimetres.
-    pts: [{ x: 0, y: Math.round(leftMm) }, { x: wall, y: Math.round(rightMm) }],
+    kind: 'slope', wall: 0, side, startHeight: low, run: Math.max(1, run),
   };
   if (existing) { store.updateWallSlope(existing.id, shape); return existing.id; }
   return store.addWallSlope(shape);
 }
 
+/** The two heights the sliders show, read back out of the engine's elevation. */
+export function slopeHeights(project) {
+  const slope = (project?.wallSlopes || []).find((s) => s.kind === 'slope') || null;
+  const ceiling = Math.round(project?.room?.height || 2500);
+  if (!slope) return { on: false, left: ceiling, right: ceiling };
+  const wall = Math.round(Math.abs(project?.room?.corners?.[1]?.x ?? 3000));
+  const low = Math.round(slope.startHeight);
+  // Where the rake has climbed to by the far wall — capped at the ceiling,
+  // because past `run` the ceiling is flat.
+  const far = slope.run > 0
+    ? Math.round(Math.min(ceiling, low + ((ceiling - low) * wall) / slope.run))
+    : ceiling;
+  return slope.side === 'L'
+    ? { on: true, left: low, right: far }
+    : { on: true, left: far, right: low };
+}
+
 /** F4.2 · LAYOUT. Width and depth go straight to the unit's own params. */
-export function setSize(unitId, patch) {
+export function setWardrobeSize(unitId, patch) {
   return S().updateUnitParams(unitId, patch);
 }
 
@@ -187,23 +280,68 @@ export function setSize(unitId, patch) {
  * store's own `centrePartitions`. Retail never places a partition by hand.
  */
 export function setDoorCount(unitId, count) {
-  const store = S();
   const want = Math.max(1, Math.min(4, Math.trunc(count)));
-  const unit = store.units.find((u) => u.id === unitId);
-  if (!unit) return 0;
-  const items = () => (store.units.find((u) => u.id === unitId)?.params.sections?.[0]?.items || []);
-  const partitions = () => items().filter((i) => i.kind === 'partition');
+  if (!S().units.find((u) => u.id === unitId)) return 0;
 
-  while (partitions().length > want - 1) {
-    const last = partitions().slice(-1)[0];
-    store.removeItem(unitId, last.id);
+  // ─── WHAT MAKES A DOOR, IN THIS ENGINE ───────────────────────────────────
+  //
+  // Three separate facts, and a wardrobe wears the wrong number of leaves if
+  // any one of them is missed. All three were, in turn, until a test asked.
+  //
+  //   1. `params.doors` says the carcass wears leaves AT ALL. A cabinet full
+  //      of dividers and no doors cuts no fronts, however many bays it has.
+  //   2. A partition only DIVIDES the doors when it is FLUSH. `addPartition`
+  //      sets one back 20 mm — right for a shelf divider, invisible to
+  //      `doorBays`, which counts only boundaries at `setback === 0`. So each
+  //      one retail adds is brought forward to the face with `front_mm: 0`.
+  //   3. `bay_doors` is what hangs a leaf IN each bay. Without it the unit
+  //      falls back to its face doors and the engine's own width law decides
+  //      the count — which for one leaf over 600 mm is two.
+  //
+  // EVERY read is a FRESH read: `getState()` hands back a SNAPSHOT, and a loop
+  // that holds one while adding partitions never sees its own work. (It did
+  // not: thirty-one dividers went in before a test counted them.)
+  S().setDoors(unitId, true);
+
+  const parts = () => (S().units.find((u) => u.id === unitId)
+    ?.params.sections?.[0]?.items || []).filter((i) => i.kind === 'partition');
+
+  let guard = 8;
+  while (parts().length > want - 1 && guard > 0) {
+    guard -= 1;
+    S().removeItem(unitId, parts().slice(-1)[0].id);
   }
-  while (partitions().length < want - 1) {
-    if (!store.addPartition(unitId)) break;   // the engine ran out of room
+  guard = 8;
+  while (parts().length < want - 1 && guard > 0) {
+    guard -= 1;
+    const before = parts().length;
+    S().addPartition(unitId);
+    if (parts().length === before) break;    // the engine ran out of room
   }
-  store.centrePartitions(unitId);
-  store.setDoors(unitId, true);
-  return partitions().length + 1;
+
+  // Flush, so each division is a division of the FRONT and not only of the
+  // interior. The engine's own slope partition is already at zero.
+  for (const part of parts()) {
+    if (Number(part.front_mm) !== 0) S().updateItem(unitId, part.id, { front_mm: 0 });
+  }
+  S().centrePartitions(unitId);
+
+  const bays = S().bayDoorsFor(unitId).length;
+  S().setBayDoors(unitId, bays > 1
+    ? Array.from({ length: bays }, () => ({ door: 'one', hinge: 'L' }))
+    : null);
+  return doorCount(unitId);
+}
+
+/**
+ * HOW MANY DOORS THIS WARDROBE HAS, according to the engine.
+ *
+ * Counted off the computed result's own FRONT panels — the leaves that will
+ * actually be cut — rather than off anything retail arranged to make them.
+ */
+export function doorCount(unitId) {
+  const result = S().unitResult?.(unitId);
+  return (result?.panels || []).filter((p) => p.part === 'FRONT').length;
 }
 
 /**
@@ -216,6 +354,32 @@ export function setDoorCount(unitId, count) {
  */
 export function doorCountRefusal(widthMm, count) {
   const p = P();
+  const width = Number(widthMm) || 0;
+
+  // ─── A REFUSAL IS A REFUSAL; A WARNING IS NOT ────────────────────────────
+  //
+  // The engine has TWO laws about door width and they are not the same weight,
+  // so retail must not treat them as one.
+  //
+  //   `doorCountFor(width, profile)` — engine/cabinet.js — IS the face-door
+  //   law: one leaf while `width - widthDeduction <= singleDoorMaxWidth`, two
+  //   above it. It is structural. Ask for one door on a 900 mm carcass and the
+  //   engine cuts two whatever the chip said, so the chip is DISABLED.
+  //
+  //   CHECK #8 — `profile.checks.wideFrontMm`, the owner's 600 — is a YELLOW
+  //   finding: *"consider 155°"*. It is advice about a hinge, not a refusal,
+  //   and a chip greyed out over a yellow would be retail inventing a law the
+  //   workshop does not have. It is a NOTE (`doorCountNote`), under an enabled
+  //   chip, in the engine's own words.
+  if (count === 1 && doorCountFor(width, p) !== 1) {
+    return REASONS.oneDoorTooWide({ width, max: p.doors.singleDoorMaxWidth });
+  }
+  return '';
+}
+
+/** CHECK #8's advice, said under a chip the client may still press. */
+export function doorCountNote(widthMm, count) {
+  const p = P();
   const wide = wideFrontMm(p);
   const leaf = Math.round((Number(widthMm) || 0) / Math.max(1, count));
   if (leaf <= wide) return '';
@@ -227,9 +391,8 @@ export function doorCountRefusal(widthMm, count) {
 export function setFrontStyle(styleId) {
   const store = S();
   const design = store.project.design;
-  const typeId = design?.fronts?.types?.[0]?.id;
   store.setDesign({ fronts: { ...design.fronts, style: styleId } });
-  if (typeId) store.setFrontType(typeId, { style: styleId });
+  store.setFrontType(frontTypeId(design), { style: styleId });
   return styleId;
 }
 
@@ -255,21 +418,22 @@ export function applyCollection(collectionId) {
 
 export function setFrontDecor(decorId) {
   const store = S();
-  const s = swatch(decorId);
+  const s = swatchFor(decorId);
   if (!s.finishId) return null;
-  const typeId = store.project.design?.fronts?.types?.[0]?.id;
-  if (!typeId) return null;
-  store.setFrontType(typeId, { source: 'decor', finish_id: s.finishId });
+  const source = decorSourceId(frontSources(P()));
+  if (!source) return null;
+  store.setFrontType(frontTypeId(store.project.design), { source, finish_id: s.finishId });
   return s.finishId;
 }
 
 export function setCarcassDecor(decorId) {
   const store = S();
-  const s = swatch(decorId);
+  const s = swatchFor(decorId);
   if (!s.finishId) return null;
-  const typeId = store.project.design?.carcass?.types?.[0]?.id;
-  if (!typeId) return null;
-  store.setCarcassSource(typeId, 'decor');
+  const typeId = carcassTypeId(store.project.design);
+  const source = decorSourceId(carcassSources(P()));
+  if (!source) return null;
+  store.setCarcassSource(typeId, source);
   store.setCarcassFinish(typeId, s.finishId);
   return s.finishId;
 }
@@ -296,9 +460,19 @@ export function setPlinth(unitId, mm) {
 
 /** F4.5 · LIGHTING — the shelf-strip law at its default depth. */
 export function setLighting(on) {
-  const store = S();
-  return store.setLighting({ enabled: Boolean(on) });
+  S().setLighting({ on: Boolean(on) });
+  return lightingOn(S().project);
 }
+
+/**
+ * Where the LED answer actually lives, and what it is called there.
+ *
+ * `project.design.lighting`, and the key is `on` — `migrateDesign` normalises
+ * the block to `{ on, temperature, switch, items }` and quietly drops anything
+ * else, so a patch of `{ enabled: true }` is a patch that vanishes. Asked once,
+ * here, rather than guessed in four components.
+ */
+export const lightingOn = (project) => Boolean(project?.design?.lighting?.on);
 
 // ─── F4.4 · THE INTERIOR ROWS ──────────────────────────────────────────────
 

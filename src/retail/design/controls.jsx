@@ -30,6 +30,7 @@ export function ChipRow({ options, value, onPick, testid }) {
           selected={String(value) === String(o.id)}
           disabled={Boolean(o.reason)}
           reason={o.reason || ''}
+          note={o.note || ''}
           onClick={() => onPick(o.id)}
         />
       ))}

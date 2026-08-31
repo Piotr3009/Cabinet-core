@@ -27,9 +27,9 @@ const snapshot = () => {
   return JSON.parse(JSON.stringify({ project: s.project, units: s.units }));
 };
 
-const restore = (snap) => {
-  if (!snap) return false;
-  useProjectStore.getState().loadProject(snap.project, snap.units);
+const restore = (record) => {
+  if (!record) return false;
+  useProjectStore.getState().loadProject(record.project, record.units);
   return true;
 };
 

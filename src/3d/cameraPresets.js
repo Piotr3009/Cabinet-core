@@ -40,19 +40,19 @@ const sizeOf = (b) => [b.max[0] - b.min[0], b.max[1] - b.min[1], b.max[2] - b.mi
  * Where each preset stands and what it looks at, in world units (metres).
  *
  * @param {string} preset  'front' | 'inside' | 'room'
- * @param {{min:number[],max:number[]}} bounds  the furniture's box
+ * @param {{min:number[],max:number[]}} box  the furniture's bounding box
  * @returns {{from:number[], at:number[]}|null}
  */
-export function presetPlacement(preset, bounds) {
-  if (!bounds?.min || !bounds?.max) return null;
-  const [cx, cy, cz] = centreOf(bounds);
-  const [w, h, d] = sizeOf(bounds);
+export function presetPlacement(preset, box) {
+  if (!box?.min || !box?.max) return null;
+  const [cx, cy, cz] = centreOf(box);
+  const [w, h, d] = sizeOf(box);
 
   if (preset === 'front') {
     // Square on. Far enough back that the tallest edge is inside a 40°-ish
     // field with room to breathe, and level with the middle of the piece.
     const reach = Math.max(w, h) * 1.5 + d;
-    return { from: [cx, cy, bounds.max[2] + reach], at: [cx, cy, cz] };
+    return { from: [cx, cy, box.max[2] + reach], at: [cx, cy, cz] };
   }
 
   if (preset === 'inside') {
@@ -60,8 +60,8 @@ export function presetPlacement(preset, bounds) {
     // Held just outside the front face so the fronts — open — stay in frame
     // rather than clipping through the near plane.
     return {
-      from: [cx, cy + h * 0.12, bounds.max[2] + Math.max(d * 0.55, 0.35)],
-      at: [cx, cy, bounds.min[2]],
+      from: [cx, cy + h * 0.12, box.max[2] + Math.max(d * 0.55, 0.35)],
+      at: [cx, cy, box.min[2]],
     };
   }
 
@@ -69,7 +69,7 @@ export function presetPlacement(preset, bounds) {
   // height, far enough out that the wall and the floor are both in the picture.
   const reach = Math.max(w, h, d) * 1.9 + 0.8;
   return {
-    from: [cx - reach * 0.62, cy + h * 0.42, bounds.max[2] + reach * 0.78],
+    from: [cx - reach * 0.62, cy + h * 0.42, box.max[2] + reach * 0.78],
     at: [cx, cy - h * 0.05, cz],
   };
 }
@@ -81,8 +81,8 @@ export function presetPlacement(preset, bounds) {
  * how a view ends up spinning around a point off the side of the screen the
  * first time the client drags.
  */
-export function parkCamera(preset, { bounds, view = viewHandle() } = {}) {
-  const place = presetPlacement(preset, bounds);
+export function parkCamera(preset, { box, view = viewHandle() } = {}) {
+  const place = presetPlacement(preset, box);
   if (!place || !view?.camera) return false;
   const { camera, controls } = view;
   camera.position.set(place.from[0], place.from[1], place.from[2]);

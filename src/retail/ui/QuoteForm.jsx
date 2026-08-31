@@ -18,7 +18,7 @@ const FIELDS = [
   ['postcode', 'POSTCODE', 'text', false],
 ];
 
-export const EMPTY_DETAILS = { name: '', email: '', phone: '', postcode: '', message: '' };
+const EMPTY_DETAILS = { name: '', email: '', phone: '', postcode: '', message: '' };
 
 export default function QuoteForm({
   onSubmit, submitLabel = 'REQUEST A QUOTE', busy = false, note = null, testid = 'quote-form',

@@ -16,8 +16,8 @@ import { PRICE_ON_REQUEST } from '../config.js';
 //
 // One panel per category, one at a time, and the column never changes width.
 // Every write goes through `adapter.js`; not one line below names an engine
-// parameter, and not one bound below is a literal — `A.bounds()` reads the
-// profile and this file reads `A.bounds()`.
+// parameter, and not one bound below is a literal — `A.designBounds()` reads the
+// profile and this file reads `A.designBounds()`.
 
 const SIDE = '24px';
 
@@ -32,13 +32,12 @@ function Panel({ title, children }) {
 }
 
 /* ─── 1 · YOUR SPACE ──────────────────────────────────────────────────────── */
-function SpacePanel({ room, slope }) {
-  const b = A.bounds();
+function SpacePanel({ room, project }) {
+  const b = A.designBounds();
   const wall = Math.round(Math.abs(room?.corners?.[1]?.x ?? 3000));
   const ceiling = Math.round(room?.height ?? 2500);
-  const on = Boolean(slope);
-  const left = Math.round(slope?.pts?.[0]?.y ?? Math.min(ceiling, 1400));
-  const right = Math.round(slope?.pts?.[1]?.y ?? ceiling);
+  // The two sliders, read back out of the engine's own elevation.
+  const { on, left, right } = A.slopeHeights(project);
 
   return (
     <Panel title="YOUR SPACE">
@@ -107,7 +106,7 @@ function SpacePanel({ room, slope }) {
 
 /* ─── 2 · LAYOUT ──────────────────────────────────────────────────────────── */
 function LayoutPanel({ unit, room }) {
-  const b = A.bounds();
+  const b = A.designBounds();
   const wall = Math.round(Math.abs(room?.corners?.[1]?.x ?? 3000));
   const width = Math.round(unit?.params?.width ?? b.defaults.width);
   const depth = Math.round(unit?.params?.depth ?? b.defaults.depth);
@@ -117,8 +116,10 @@ function LayoutPanel({ unit, room }) {
   const doorOptions = [1, 2, 3, 4].map((n) => ({
     id: String(n),
     label: String(n),
-    // THE ENGINE'S OWN DOOR-WIDTH LAW, asked before the click.
+    // THE ENGINE'S OWN LAWS, asked before the click — the structural one that
+    // refuses, and the yellow one that only has something to say.
     reason: A.doorCountRefusal(width, n),
+    note: A.doorCountNote(width, n),
   }));
 
   return (
@@ -130,7 +131,7 @@ function LayoutPanel({ unit, room }) {
           max={wall}
           step={10}
           value={Math.min(width, wall)}
-          onChange={(v) => A.setSize(unit.id, { width: v })}
+          onChange={(v) => A.setWardrobeSize(unit.id, { width: v })}
         />
       </Field>
 
@@ -139,7 +140,7 @@ function LayoutPanel({ unit, room }) {
           testid="layout-depth"
           value={String(depth)}
           options={b.depths.map((d) => ({ id: String(d), label: `${d}` }))}
-          onPick={(id) => A.setSize(unit.id, { depth: Number(id) })}
+          onPick={(id) => A.setWardrobeSize(unit.id, { depth: Number(id) })}
         />
       </Field>
 
@@ -169,7 +170,7 @@ function LayoutPanel({ unit, room }) {
 
 /* ─── 3 · FRONTS ──────────────────────────────────────────────────────────── */
 function FrontsPanel({ design }) {
-  const b = A.bounds();
+  const b = A.designBounds();
   const style = design?.fronts?.style || 'F';
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
   const finishId = design?.fronts?.types?.[0]?.finish_id || null;
@@ -228,7 +229,7 @@ function FrontsPanel({ design }) {
       >
         <div className="pbi-chip-row" data-testid="fronts-colour">
           {[...new Set(COLLECTIONS.flatMap((c) => c.swatches))].map((id) => {
-            const s = A.swatch(id);
+            const s = A.swatchFor(id);
             return (
               <Chip
                 key={id}
@@ -325,7 +326,7 @@ function DetailsPanel({ unit, design, project }) {
   const handle = design?.fronts?.handle?.type || 'none';
   const jpull = handle === 'jpull';
   const plinth = Math.round(unit?.params?.leg_height ?? 100);
-  const lights = Boolean(project?.lighting?.enabled);
+  const lights = A.lightingOn(project);
 
   return (
     <Panel title="DETAILS">
@@ -427,7 +428,7 @@ export default function Options(props) {
         overflowY: 'auto',
       }}
     >
-      {active === 'space' ? <SpacePanel room={props.room} slope={props.slope} /> : null}
+      {active === 'space' ? <SpacePanel room={props.room} project={props.project} /> : null}
       {active === 'layout' ? <LayoutPanel unit={props.unit} room={props.room} /> : null}
       {active === 'fronts' ? <FrontsPanel design={props.design} /> : null}
       {active === 'interior' ? <InteriorPanel unit={props.unit} onOpenDetail={props.onOpenDetail} /> : null}

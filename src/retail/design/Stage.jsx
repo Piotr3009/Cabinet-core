@@ -63,8 +63,7 @@ export function useCameraMemory(fullScreen) {
 
 /** Park the camera at a named place, once the furniture has bounds to aim at. */
 export function applyPreset(preset, handle) {
-  const bounds = handle?.bounds?.() || null;
-  return parkCamera(preset, { bounds });
+  return parkCamera(preset, { box: handle?.bounds?.() || null });
 }
 
 /**

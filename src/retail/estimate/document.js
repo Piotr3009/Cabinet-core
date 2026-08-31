@@ -1,5 +1,6 @@
 import { FRONT_STYLE_OPTIONS } from '../../engine/design.js';
 import { decorById, decorLabel } from '../../engine/decors.js';
+import { slopeHeights } from '../design/adapter.js';
 import { BRAND, BRAND_LINE, PRICE_ON_REQUEST } from '../config.js';
 
 // ─── F5 · THE ESTIMATE DOCUMENT ────────────────────────────────────────────
@@ -46,15 +47,18 @@ export function describeDesign(snapshot) {
 
   const room = project.room || {};
   const wall = Math.round(Math.abs(room.corners?.[1]?.x ?? 0));
-  const slope = (project.wallSlopes || []).find((s) => s.kind === 'slope') || null;
+  // The rake, read back out of the engine's own elevation by the one function
+  // that knows how — never off a `pts` array, which is a shape this app has
+  // never stored.
+  const rake = slopeHeights(project);
 
   const partitions = count((i) => i.kind === 'partition');
   const drawers = count((i) => i.kind === 'drawer' && !i.variant && !i.watch_insert);
 
   const lines = [
-    ['The space', slope
+    ['The space', rake.on
       ? `${mmText(wall)} wall, ceiling ${mmText(room.height)}, sloped from `
-        + `${mmText(slope.pts?.[0]?.y)} to ${mmText(slope.pts?.[1]?.y)}`
+        + `${mmText(rake.left)} to ${mmText(rake.right)}`
       : `${mmText(wall)} wall, ceiling ${mmText(room.height)}, level`],
     ['Wardrobe', `${mmText(params.width)} wide · ${mmText(params.height)} high · ${mmText(params.depth)} deep`],
     ['Doors', `${partitions + 1}`],
@@ -74,7 +78,7 @@ export function describeDesign(snapshot) {
     count((i) => i.kind === 'pulldown_rail') && 'a pull-down rail',
   ].filter(Boolean);
   lines.push(['Interior', interior.length ? interior.join(' · ') : 'empty']);
-  lines.push(['Lighting', project.lighting?.enabled ? 'LED shelf strips' : 'none']);
+  lines.push(['Lighting', design.lighting?.on ? 'LED shelf strips' : 'none']);
 
   return lines.map(([label, value]) => ({ label, value }));
 }

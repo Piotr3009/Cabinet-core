@@ -175,7 +175,7 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   const doorsOpen = doorEntries.length > 0 && doorEntries.every(
     (e) => e.panelIds.every((id) => (openFronts[e.unitId]?.[id] ?? 0) > 0.5),
   );
-  const lightsOn = Boolean(project?.lighting?.enabled);
+  const lightsOn = A.lightingOn(project);
 
   const pickPreset = useCallback((id) => {
     setPreset(id);

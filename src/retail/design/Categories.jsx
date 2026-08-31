@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import GoldLine from '../ui/GoldLine.jsx';
 import { PRICE_FOOTNOTE, PRICE_ON_REQUEST } from '../config.js';
 
@@ -24,6 +25,7 @@ export const CATEGORIES = [
 ];
 
 export default function Categories({ active, onPick, hints, onReset }) {
+  const [asked, setAsked] = useState(false);
   return (
     <aside
       data-testid="column-categories"
@@ -94,23 +96,47 @@ export default function Categories({ active, onPick, hints, onReset }) {
         <div className="pbi-ui pbi-ui-light pbi-quiet" style={{ marginTop: 10, fontSize: 10 }}>
           {PRICE_FOOTNOTE}
         </div>
-        <button
-          type="button"
-          className="pbi-link"
-          data-testid="reset-design"
-          style={{ marginTop: 18 }}
-          onClick={() => {
-            // A confirm, because this is the one button on the page that can
-            // lose an hour of somebody's evening — and the estimate is
-            // memory-only until they save it (F5.3).
-            // eslint-disable-next-line no-alert
-            if (window.confirm('Start this wardrobe again? Everything you have chosen for it will go.')) {
-              onReset();
-            }
-          }}
-        >
-          RESET DESIGN
-        </button>
+        {/* ─── THE CONFIRM, IN THE DESIGN SYSTEM ────────────────────────────
+            This is the one button on the page that can lose an hour of
+            somebody's evening — the estimate is memory-only until they save it
+            (F5.3) — so it asks. It asks IN PLACE: a browser's own modal dialogue is
+            chrome nobody designed, it cannot be styled, and this app has been
+            clearing those out for turns. Two presses, the second one labelled
+            with what it does, and a way back. */}
+        {asked ? (
+          <div style={{ marginTop: 18 }}>
+            <span className="pbi-choice" style={{ display: 'block', marginBottom: 10 }}>
+              Everything you have chosen for this wardrobe will go.
+            </span>
+            <button
+              type="button"
+              className="pbi-link"
+              data-testid="reset-confirm"
+              style={{ color: 'var(--pbi-onyx)' }}
+              onClick={() => { setAsked(false); onReset(); }}
+            >
+              YES, START AGAIN
+            </button>
+            <button
+              type="button"
+              className="pbi-link"
+              style={{ marginLeft: 16 }}
+              onClick={() => setAsked(false)}
+            >
+              KEEP IT
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="pbi-link"
+            data-testid="reset-design"
+            style={{ marginTop: 18 }}
+            onClick={() => setAsked(true)}
+          >
+            RESET DESIGN
+          </button>
+        )}
       </div>
     </aside>
   );

@@ -412,18 +412,28 @@ export default function Room({
   // at that corner is one number — so the return's whole outline is capped by
   // it. Read from the MAIN wall's own slopes through the same `ceilingAt`
   // every other consumer reads, at the x where the two walls meet.
+  // ─── TURN 61 (CLAUDE.md F2): …AND OVER A RETURN ON **EITHER** MAIN ────────
+  //
+  // T46 wrote `const main = walls[0]` because in one-wall scope there was
+  // exactly one main and both stubs touched it. Two-wall scope has two, and the
+  // stub cut from wall 2 touches WALL 1's end — so `walls[0]` answered null and
+  // that return lost its cap under a rake. The law is unchanged: a stub's
+  // ceiling is the ceiling of the main it MEETS, at the corner where they meet.
+  // What is fixed is which main gets asked — the one it actually touches.
   const stubCap = useCallback((w) => {
     if (!w?.stub || !walls.length) return null;
-    const main = walls[0];
-    if (!main || main.stub) return null;
     const near = (a, b) => Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6;
-    let cornerX = null;
-    if (near(w.end, main.start) || near(w.start, main.start)) cornerX = 0;
-    else if (near(w.start, main.end) || near(w.end, main.end)) cornerX = main.width;
-    if (cornerX == null) return null;
-    return ceilingAt(cornerX, slopesOnWall(main.index), {
-      wallWidth: main.width, wallHeight: height,
-    });
+    for (const main of walls) {
+      if (main.stub) continue;
+      let cornerX = null;
+      if (near(w.end, main.start) || near(w.start, main.start)) cornerX = 0;
+      else if (near(w.start, main.end) || near(w.end, main.end)) cornerX = main.width;
+      if (cornerX == null) continue;
+      return ceilingAt(cornerX, slopesOnWall(main.index), {
+        wallWidth: main.width, wallHeight: height,
+      });
+    }
+    return null;
   }, [walls, slopesOnWall, height]);
 
   const floor = useMemo(() => {

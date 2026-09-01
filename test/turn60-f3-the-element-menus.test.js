@@ -65,10 +65,18 @@ const panelsOf = (unitId) => S().unitResult(unitId)?.panels || [];
 
 // ═══ 1 · THE ROUTER IS A TABLE, AND IT HAS NO DEFAULT BRANCH ═══════════════
 
-test('F3 · nine menus, and the router resolves every one of them', () => {
+// ─── AMENDED BY T61 F4 ──────────────────────────────────────────────────────
+//
+// The owner: *"dowozimy dla klientow musi bcy wszystko"*. The INTERIOR list
+// grew from six rows to PRO's ten, and T60's own law — *"an element with no
+// menu is not clickable"* — means four more menus. NINE becomes THIRTEEN, and
+// the substance of every assertion below is unchanged: one file per menu, one
+// table with no default branch, one way back to the estimate, one remove.
+test('F3 · thirteen menus, and the router resolves every one of them', () => {
   assert.deepEqual(A.MENUS, [
     'wardrobe', 'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'pulldown', 'lighting',
-  ], 'the nine of CLAUDE.md F3, in the brief\'s own order');
+    'overlay', 'partition', 'trouser', 'tie_rack',
+  ], 'T60\'s nine in the brief\'s own order, then T61 F4\'s four');
 
   // The table is read as TEXT rather than imported: node cannot load a `.jsx`,
   // and a router that had to be executable in node would be a router shaped by
@@ -80,7 +88,16 @@ test('F3 · nine menus, and the router resolves every one of them', () => {
 
   // One file per menu, and each one is reached only through the table.
   const files = readdirSync(join(ROOT, 'src/retail/design/detail'));
-  assert.equal(files.filter((f) => /Menu\.jsx$/.test(f)).length, 9);
+  // Thirteen menus, fourteen files: `KitMenu.jsx` is the shape the trouser
+  // pull-out and the tie rack share and is NOT in the table — a table with two
+  // keys pointing at one component has stopped being readable, so each kit has
+  // its own one-line file naming its own kind.
+  assert.deepEqual(
+    files.filter((f) => /Menu\.jsx$/.test(f)).sort(),
+    [...keys].map((k) => `${k[0].toUpperCase()}${k.slice(1).replace(/_(.)/g, (_, c) => c.toUpperCase())}Menu.jsx`)
+      .concat('KitMenu.jsx').sort(),
+    'a menu file with no key, or a key with no file',
+  );
   for (const name of keys) {
     assert.ok(new RegExp(`import \\w+ from '\\./\\w+Menu\\.jsx'`).test(router),
       `${name} has no component imported`);
@@ -618,7 +635,7 @@ test('F3 · every refusal a menu can show is tied to a predicate that is not ret
   }
 });
 
-test('F3 · DONE returns the column to the estimate, from every one of the nine', () => {
+test('F3 · DONE returns the column to the estimate, from every one of the thirteen', () => {
   for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/Menu\.jsx$/.test(file)) continue;
     assert.match(read(`src/retail/design/detail/${file}`), /onDone=\{onDone\}/,
@@ -632,11 +649,19 @@ test('F3 · DONE returns the column to the estimate, from every one of the nine'
 test('F3 · every REMOVE goes through the store\'s own remove', () => {
   const adapter = read('src/retail/design/adapter.js');
   assert.match(adapter, /export const removeElement = \(unitId, itemId\) => S\(\)\.removeItem/);
+  // T61 F3: and the unit-level one, the same shape, for the same reason.
+  assert.match(adapter, /export const removeUnit = \(unitId\) => S\(\)\.removeUnit/);
   for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/Menu\.jsx$/.test(file)) continue;
     const text = read(`src/retail/design/detail/${file}`);
     if (!/-remove"/.test(text)) continue;
-    assert.match(text, /A\.removeElement\(/, `${file} removes by another road`);
+    // ─── AMENDED BY T61 F3 ────────────────────────────────────────────────
+    // A TOP BOX is a UNIT, not an item in a section — `params.rides_on` is a
+    // link between two units — so its REMOVE is `removeUnit` and not
+    // `removeItem`. Both are the STORE's own remove, which is the whole of what
+    // this test is for; both are asserted to be bare pass-throughs above and
+    // below, so neither can grow a retail law of its own.
+    assert.match(text, /A\.remove(Element|Unit)\(/, `${file} removes by another road`);
   }
 
   // …and the STAGE follows, because the removal is the store's own recompute.

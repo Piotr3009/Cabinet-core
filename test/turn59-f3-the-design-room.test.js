@@ -180,8 +180,26 @@ test('F3.6 · the chrome switch defaults to PRO, and PRO never touches it', () =
 //
 // What the test asserts is unchanged in substance: each overlay asks ONE
 // question in its own first line, BEFORE any hook, and returns null on a no.
+//
+// ─── AMENDED AGAIN BY T61 F1 ────────────────────────────────────────────────
+//
+// The owner, asked how many of the tool's overlays a client should get back:
+// *"1 all 8"*. So ELEVEN of the eleven ask a channel now, and `proChromeOn()`
+// is left holding only the master switch every one of them falls through to.
+// The assertion is the one it always was — one question, first line, before any
+// hook — and the fall-through is still what proves PRO cannot tell.
 const CHANNELLED = {
   DimLabel: 'dimensions', DimensionChain: 'dimensions', DistanceArrows: 'dimensions', Ruler: 'measure',
+  // T61 F1 · the eight
+  DrillRings: 'drill',
+  AddPlus: 'plus',
+  PartMachining: 'machining',
+  LedIcons: 'led-icons',
+  HoverDimensions: 'hover-dims',
+  EdgeHandle: 'edge',
+  ShareOutBar: 'share',
+  // #7 is UnitView's hover-shelf ghost — a JSX condition rather than a
+  // component guard, so it is asserted by its own test below and not here.
 };
 
 test('F3.6 · every PRO overlay asks the switch in its own first line', () => {

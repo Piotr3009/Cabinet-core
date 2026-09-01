@@ -26,12 +26,19 @@
 // for the predicates that answer in a boolean.
 
 import { getCabinetProfile } from '../../engine/profile.js';
-import { DEFAULT_ROOM, rectCorners } from '../../engine/room.js';
+import {
+  clampOpening, DEFAULT_ROOM, OPENING_DEFAULTS, openingsOnWall,
+  rectCorners, wallIndicesInScope, wallWidth,
+} from '../../engine/room.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
 import { doorCountFor } from '../../engine/cabinet.js';
-import { FRONT_STYLE_OPTIONS } from '../../engine/design.js';
+import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
+// T61 F3: the top box's own two engine answers — the type's defaults and the
+// room's refusal — both read rather than retyped.
+import { defaultParamsFor, getUnitType } from '../../engine/types.js';
+import { riderBornHeight } from '../../engine/roomFit.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useUiStore } from '../../stores/uiStore.js';
@@ -49,8 +56,42 @@ const P = () => getCabinetProfile();
 const S = () => useProjectStore.getState();
 const U = () => useUiStore.getState();
 
-/** The one wardrobe this design is about. */
-export const designUnit = (units) => units?.[0] || null;
+/**
+ * THE WARDROBE THE COLUMNS ARE ABOUT.
+ *
+ * ─── TURN 61 (CLAUDE.md F2): IT LEARNS PLURALITY, MINIMALLY ────────────────
+ *
+ * *"selected unit first, wall-0 wardrobe as fallback."* Two walls means two
+ * wardrobes, and every panel that took `units[0]` would have gone on editing
+ * the first one while the client was looking at the second.
+ *
+ * WHAT IT IS NOT: a second selection model. The selection is the shared ui
+ * store's own (`selectedElement.unitId`) — the same one `resolveSelection`
+ * reads and the same one a click on the stage writes — so there is one answer
+ * to "which wardrobe" and this reads it rather than keeping another.
+ *
+ * A TOP BOX IS NEVER THE ANSWER (F3). A rider is a unit like any other and can
+ * be selected and edited through its own menu, but the OPTIONS column asks
+ * about the wardrobe it stands on: LAYOUT's width, INTERIOR's rows and
+ * DETAILS' plinth are all the main's. So a selected rider resolves to its host.
+ */
+export const designUnit = (units) => {
+  const list = Array.isArray(units) ? units : [];
+  if (!list.length) return null;
+  const mains = list.filter((u) => !u.params?.rides_on);
+  const pool = mains.length ? mains : list;
+  const selected = U().selectedElement?.unitId || null;
+  const found = selected ? list.find((u) => u.id === selected) : null;
+  // A rider hands the question to its host — see the note above.
+  const host = found?.params?.rides_on
+    ? list.find((u) => u.id === found.params.rides_on) || null
+    : found;
+  if (host && !host.params?.rides_on) return host;
+  // The fallback is the wardrobe on the LOWEST wall, at the start of it — which
+  // on a one-wall project is `units[0]` and nothing has moved.
+  return [...pool].sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
+    || ((a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0)))[0] || null;
+};
 
 // ─── BOUNDS — every one read off the profile ───────────────────────────────
 
@@ -157,7 +198,20 @@ export function startDesign(name = 'Bedroom wardrobe') {
   // at the BASE UNIT's 558 mm instead of the wardrobe's own 568 — and t59's
   // depth chips (450 / 600 / 650) therefore matched nothing on the first frame
   // a client ever saw. One word, said through the store's own setter.
-  store.setDesign({ projectType: 'wardrobe' });
+  // ─── T61 F2 · …AND IT IS ONE WALL, WHICH IT HAS ALWAYS SAID IT WAS ──────
+  //
+  // MEASURED FAULT, found in the acceptance walk's own frames rather than by
+  // reading. `newProject` leaves the migrator's default scope, `'room'` — so a
+  // fresh design stood in a FOUR-WALLED box while column 1's hint said
+  // *"4000 mm wall"* and F2's WALLS chip said `1`. The chip was not lying about
+  // its own state: `wallChoice` reads anything that is not `'two'` as one wall.
+  // The STORE was the thing out of step, and LAYOUT's new WALL row proved it by
+  // offering four walls to stand a wardrobe against.
+  //
+  // So the scope is said, once, where the wardrobe is made. The chips write
+  // `'wall'` and `'two'`; this is the same word for the same reason, and it is
+  // what a client has been shown a wall's worth of since t59.
+  store.setDesign({ projectType: 'wardrobe', scope: 'wall' });
   const p = P();
   // `addUnit` answers `{ id, error, wall }` — the room may refuse a placement,
   // and a caller that treated the whole verdict as an id would then pass an
@@ -208,21 +262,396 @@ const carcassTypeId = (design) => design?.carcass?.types?.[0]?.id || 'c1';
  */
 const decorSourceId = (list) => list.find((src) => src.picker === 'decor')?.id || null;
 
-/** F4.1 · YOUR SPACE — the wall and the ceiling. */
-export function setSpace({ wallMm, ceilingMm }) {
+/**
+ * F4.1 · YOUR SPACE — the wall and the ceiling.
+ *
+ * ─── TURN 61 (CLAUDE.md F2): …AND THE SECOND WALL, BY THE SAME LAW ─────────
+ *
+ * `rectCorners(width, depth)` puts corner 1 at `(W, 0)` and corner 2 at
+ * `(W, D)`. So wall 0's length IS the first argument and wall 1's length IS the
+ * second — the number this function has been reading back as the room's DEPTH
+ * and handing straight back in since t59. WALL 2 WIDTH is therefore not a new
+ * write: it is the argument that was always there, given a name and a field.
+ */
+export function setSpace({ wallMm, ceilingMm, wall2Mm }) {
   const store = S();
   const room = store.project.room || DEFAULT_ROOM;
+  const wall = Math.round(Math.abs(room.corners?.[1]?.x ?? 3000));
   const depth = Math.max(600, Math.round(Math.abs(room.corners?.[2]?.y ?? 3000)));
   const patch = {};
-  if (Number.isFinite(wallMm)) patch.corners = rectCorners(Math.round(wallMm), depth);
+  const nextWall = Number.isFinite(wallMm) ? Math.round(wallMm) : wall;
+  const nextDepth = Number.isFinite(wall2Mm) ? Math.round(wall2Mm) : depth;
+  if (Number.isFinite(wallMm) || Number.isFinite(wall2Mm)) {
+    patch.corners = rectCorners(nextWall, nextDepth);
+  }
   if (Number.isFinite(ceilingMm)) patch.height = Math.round(ceilingMm);
   const verdict = store.setRoom(patch);
   // A wall that has just changed length is a wall the wardrobe should still be
-  // standing at the start of.
-  const unit = designUnit(store.units);
-  if (unit) store.moveUnit(unit.id, 0, 1);
+  // standing at the start of. T61: ONE per wall — the wardrobe nearest that
+  // wall's start — so a second wardrobe on a wall keeps the place it was put
+  // in rather than being shoved onto its neighbour by a resize.
+  if (verdict?.ok !== false) {
+    const first = new Map();
+    for (const u of store.units) {
+      if (u.params?.rides_on) continue;          // riders settle on their host
+      const w = u.position?.wall ?? 0;
+      const at = u.position?.x_mm ?? 0;
+      if (!first.has(w) || at < first.get(w).at) first.set(w, { id: u.id, at });
+    }
+    for (const { id } of first.values()) store.moveUnit(id, 0, 1);
+  }
   return verdict;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F2 · TWO WALLS — AND CABINETS THAT STAND ON EITHER
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner: *"zrob 2 sciany, Elki bedziemy dokaldac"* · *"2 tak wystarczy"*.
+// TWO, and no corner carcass — the L-shape stays parked, so each wall carries
+// its own run and nothing is cut where they meet.
+//
+// EVERY ANSWER BELOW IS THE ENGINE'S OR THE STORE'S. The scope vocabulary is
+// `engine/design.js ROOM_SCOPES`; which walls a scope shows is
+// `engine/room.js wallIndicesInScope`; moving a wardrobe round the corner is
+// `projectStore.setUnitWall`, refusal sentence and all; putting a new one on an
+// empty wall is `projectStore.addUnit` followed by that same move. Retail
+// writes no geometry and authors no sentence.
+
+/** The project's scope, through the vocabulary's own gate. */
+export const roomScope = (project) => normaliseScope(project?.design?.scope);
+
+/**
+ * WALLS — the chip row's two answers.
+ *
+ * `'wall'` and `'two'`, never `'room'`: a client is designing against the wall
+ * their wardrobe stands on, and t59's room has never offered the four-walled
+ * box. What `startDesign` leaves behind is the migrator's `'room'` default, so
+ * the row also SHOWS `1` for it — one wall is what the client is looking at.
+ */
+export const WALL_CHOICES = Object.freeze([
+  { id: 'wall', label: '1' },
+  { id: 'two', label: '2' },
+]);
+
+/** Which chip is lit. Anything that is not `'two'` reads as one wall. */
+export const wallChoice = (project) => (roomScope(project) === 'two' ? 'two' : 'wall');
+
+/**
+ * Hand the room a scope. `setDesign` migrates on the way in, so a word the
+ * vocabulary does not know cannot get stored — and the units do not move: a
+ * wardrobe on wall 1 stays on wall 1 whether or not the wall is drawn, exactly
+ * as it does in PRO when a joiner switches back to the whole room.
+ */
+export function setWallCount(id) {
+  S().setDesign({ scope: id === 'two' ? 'two' : 'wall' });
+  return wallChoice(S().project);
+}
+
+/** The wall indices this scope draws — `[0]` or `[0, 1]`. The engine's list. */
+export const wallsShown = (project, room) => wallIndicesInScope(
+  room || project?.room || DEFAULT_ROOM,
+  roomScope(project),
+  P(),
+);
+
+/** How long one wall is, in millimetres, off the room's own corners. */
+export const wallLengthMm = (room, index = 0) => Math.round(
+  wallWidth(room || DEFAULT_ROOM, index),
+);
+
+/** The MAIN cabinets standing on one wall. A rider stands on its host, not a wall. */
+export const unitsOnWall = (wallIndex) => S().units
+  .filter((u) => !u.params?.rides_on && (u.position?.wall ?? 0) === wallIndex);
+
+/** Which wall a unit stands on (1-based, for a person). */
+export const unitWall = (unitId) => (unitOf(unitId)?.position?.wall ?? 0);
+
+/**
+ * MOVE A WARDROBE ROUND THE CORNER.
+ *
+ * `projectStore.setUnitWall` is the whole law: it looks for a free slot on the
+ * wall asked for, and where there is none it REFUSES with its own sentence
+ * (*"Wall 2 has no free space for this unit — move or remove something there
+ * first."*) rather than dropping the cabinet into a neighbour. Passed through
+ * verbatim; retail does not paraphrase it and does not pre-empt it.
+ *
+ * @returns {{ok:boolean, said:string}}
+ */
+export function setUnitWall(unitId, wallIndex) {
+  const verdict = S().setUnitWall(unitId, wallIndex);
+  if (!verdict) return { ok: false, said: '' };
+  return { ok: !verdict.blocked, said: verdict.error || '' };
+}
+
+/**
+ * ADD WARDROBE ON WALL 2 — the store's own add, then the store's own move.
+ *
+ * `addUnit` has no `wall` option: it places a cabinet in the first wall with
+ * room, starting at wall 0. So the wall is asked for afterwards, through the
+ * same `setUnitWall` the chip row uses — one law for "which wall", not two —
+ * and a wall with no room refuses in its own words, with the unit taken back
+ * out so a refusal leaves nothing behind.
+ *
+ * The defaults are `startDesign`'s, because a second wardrobe is the same
+ * wardrobe: the profile's width and height, seated at the wall's start, with
+ * the engine's own door count on it.
+ *
+ * @returns {{ok:boolean, id:string|null, said:string}}
+ */
+export function addWardrobeOnWall(wallIndex) {
+  const store = S();
+  const p = P();
+  const placed = store.addUnit('WARDROBE', {
+    params: { width: p.wardrobe.defaults.width, height: p.wardrobe.defaults.height },
+  });
+  if (!placed?.id) return { ok: false, id: null, said: placed?.error || '' };
+  const moved = store.setUnitWall(placed.id, wallIndex);
+  if (moved?.blocked) {
+    // Nothing half-done: the wall refused, so the wardrobe that was made for it
+    // goes back out. A cabinet left standing on wall 1 is not what was asked
+    // for, and a client would have to find and delete it.
+    store.removeUnit(placed.id);
+    return { ok: false, id: null, said: moved.error || '' };
+  }
+  store.moveUnit(placed.id, 0, 1);
+  setDoorCount(placed.id, 1);
+  return { ok: true, id: placed.id, said: '' };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F6 · WINDOWS AND DOORS — DRAWN, AND NOTHING MORE
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner: *"skosy, okna, drzwi trzeba bedzie dodac"*, and the decision that
+// scopes it: *"3 — narazie sie rysuja"*. They DRAW. Nothing fits around them
+// tonight — a wardrobe may stand across a window and nothing complains, which
+// is the owner's explicit "na razie" and is named as a known gap in the PR body
+// rather than quietly left for somebody to find.
+//
+// ─── THE SHAPE IS THE LAW; THE PRO COMPONENT IS NOT IMPORTED ───────────────
+//
+// `components/WallElevationModal.jsx` is read, not used. What is taken from it
+// is the WRITE PATTERN, and it is taken exactly:
+//
+//   1. a new opening spreads `OPENING_DEFAULTS[kind]`, centred on its wall
+//      (`x_mm = wallWidth / 2 - width / 2`), and goes through `clampOpening`
+//      BEFORE it is stored;
+//   2. every write is a WHOLE-LIST replacement handed to `store.setRoom`, so
+//      it passes `migrateRoom` and `roomChangeGuard` — never the store's three
+//      bare `addOpening` / `updateOpening` / `removeOpening` setters, which
+//      skip both. PRO's two editors avoid them for the same reason.
+//   3. a refusal is the verdict's own `message`, shown verbatim.
+//
+// The id is made HERE and not imported: `lib/wallElements.js newElementId` is
+// PRO's zone (`turn59-f1-the-switch.test.js` sorts `src/lib` as `pro`, by name),
+// so retail may read its grammar and may not import it. Same grammar, one line.
+
+const openingId = () => `op_${Math.random().toString(36).slice(2, 9)}`;
+
+/** THE OPENINGS, clamped, on the walls this scope actually draws. */
+export function roomOpenings(project, room) {
+  const live = room || project?.room || DEFAULT_ROOM;
+  return wallsShown(project, live)
+    .flatMap((wall) => openingsOnWall(live, wall).map((o) => ({ ...o, wall })));
+}
+
+/** What a new opening of this kind starts as — the engine's own numbers. */
+export const openingDefaults = (kind) => OPENING_DEFAULTS[kind === 'door' ? 'door' : 'window'];
+
+/**
+ * ADD A WINDOW / ADD A DOOR. Centred on the wall, clamped, then the room.
+ *
+ * @returns {{ok:boolean, id:string|null, said:string}}
+ */
+export function addOpening(kind, wallIndex = 0) {
+  const store = S();
+  const room = store.project.room || DEFAULT_ROOM;
+  const d = openingDefaults(kind);
+  const width = wallWidth(room, wallIndex);
+  const opening = clampOpening({
+    id: openingId(),
+    kind: kind === 'door' ? 'door' : 'window',
+    wall: wallIndex,
+    x_mm: Math.max(0, width / 2 - d.width / 2),
+    ...d,
+  }, room);
+  const verdict = store.setRoom({ openings: [...(room.openings || []), opening] });
+  if (verdict?.ok === false) return { ok: false, id: null, said: verdict.message || '' };
+  return { ok: true, id: opening.id, said: '' };
+}
+
+/**
+ * EDIT ONE. The patch goes through `clampOpening` against the live room, which
+ * is where the engine's own limits live — never past either end of the wall,
+ * never taller than the room, a door always on the floor.
+ *
+ * @returns {{ok:boolean, said:string}}
+ */
+export function setOpening(id, patch) {
+  const store = S();
+  const room = store.project.room || DEFAULT_ROOM;
+  const next = (room.openings || []).map((o) => (o.id === id
+    ? clampOpening({ ...o, ...patch }, room) : o));
+  const verdict = store.setRoom({ openings: next });
+  if (verdict?.ok === false) return { ok: false, said: verdict.message || '' };
+  return { ok: true, said: '' };
+}
+
+/** REMOVE. A room with one less hole in it cannot refuse. */
+export function removeOpening(id) {
+  const store = S();
+  const room = store.project.room || DEFAULT_ROOM;
+  const verdict = store.setRoom({
+    openings: (room.openings || []).filter((o) => o.id !== id),
+  });
+  return { ok: verdict?.ok !== false, said: verdict?.message || '' };
+}
+
+/**
+ * THE FOUR FIELDS' ENDS, and every one is `clampOpening`'s own arithmetic read
+ * back rather than a second copy of it: from-the-left runs to `wallW - width`,
+ * width to the wall, height to what is left over the sill, and the sill to
+ * 100 mm short of the ceiling. F5's fields refuse outside these; the engine
+ * would have clamped silently, and a typed number must never be quietly moved.
+ */
+export function openingBounds(opening, room) {
+  const live = room || S().project.room || DEFAULT_ROOM;
+  const wallW = Math.round(wallWidth(live, opening?.wall ?? 0));
+  const roomH = Math.round(Number(live.height) || 2500);
+  const width = Math.round(Number(opening?.width) || 0);
+  const sill = Math.round(Number(opening?.sill) || 0);
+  return {
+    x_mm: { min: 0, max: Math.max(0, wallW - width) },
+    width: { min: 100, max: wallW },
+    height: { min: 100, max: Math.max(100, roomH - sill) },
+    sill: { min: 0, max: Math.max(0, roomH - 100) },
+    from: 'engine/room.js clampOpening',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F1 · WHERE A `+` GOES
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The marker is drawn again in the client's room (channel `plus`), and a marker
+// that is drawn must DO something. PRO's answer is `openLibraryToInsert` — the
+// LIBRARY panel, filtered to the neighbour's own category, in `src/components`
+// and on the far side of the iron boundary. Retail has no library surface
+// tonight (the RAIL rebuild is the owner's next green point, not this turn's),
+// so the plus adds the NEIGHBOUR'S OWN TYPE through the very call the library
+// makes — `addUnit(type, { near, side })`, the same `{ near, side }` PRO hands
+// it. Same category, its default member; no target invented.
+//
+// A top box's plus therefore adds another top box beside it, which is T53 F5's
+// own law reached without retail knowing it exists: `addUnit` reads the clicked
+// box's host and refuses in its own words when there is no room on that side.
+
+/**
+ * @param {{unitId:string, side:'left'|'right'}} point  `engine/runs.js addPlusPoints`
+ * @returns {{ok:boolean, id:string|null, said:string}}
+ */
+export function addBesidePlus(point) {
+  const near = unitOf(point?.unitId);
+  if (!near) return { ok: false, id: null, said: '' };
+  const placed = S().addUnit(near.type, { near: near.id, side: point.side });
+  if (!placed?.id) return { ok: false, id: null, said: placed?.error || '' };
+  U().selectUnit?.(placed.id);
+  return { ok: true, id: placed.id, said: '' };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F3 · THE TOP BOX
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, asked where a top box gets added: *"4 add top"* — a button on the
+// selected wardrobe. NOTHING NEW IN THE ENGINE: `engine/topBox.js` has held the
+// whole relationship since T36 — `WARDROBE_TOP`, `params.rides_on`,
+// `settleRiders`, several riders per host since T53, orphan check #14, and the
+// room's refusal since T50.
+//
+// THE ADD IS `addUnit('WARDROBE_TOP', { near: hostId })`, which is the call
+// PRO's `components/LibraryPanel.jsx:123` makes from the wardrobe tile — the
+// same one, with the host named. Everything a box needs is written INSIDE that
+// action: `rides_on`, `rides_offset_mm`, the host's width, the born-fitted
+// height, the depth, the host's own `ridden_by`, and the layout settle. Retail
+// passes no `params` at all, because `profile.wardrobe.topBox.defaults` is
+// already what `defaultParamsFor` applies.
+
+/**
+ * THE UNIT A SELECTION IS ABOUT.
+ *
+ * T61 F3: `Detail` handed every menu the OPTIONS column's wardrobe, which was
+ * the same unit as the selection's for as long as there was one wardrobe. A top
+ * box is a unit of its own, and a menu opened on it would have been editing the
+ * cabinet underneath — so the router asks for the selection's own unit now.
+ */
+export const unitById = (unitId) => unitOf(unitId);
+
+/** Is this unit a rider — a box standing on something? The engine's own test. */
+export const isTopBox = (unit) => Boolean(unit && getUnitType(unit.type)?.ridesOn);
+
+/**
+ * MAY A BOX GO ON THIS WARDROBE — asked BEFORE the press, in the engine's words.
+ *
+ * `riderBornHeight` is the predicate `addUnit` itself uses, and it is PURE: it
+ * takes the room, the host and the profile and answers with the sentence the
+ * add would have refused with. So the greyed button carries the refusal the
+ * press would have produced, word for word, and there is ONE reading of the
+ * ceiling rather than a retail copy of it.
+ *
+ * *"Where the room refuses (over the ceiling), the button greys with the
+ * store's sentence verbatim. No silent clamp."* — a box that merely does not
+ * fit is BORN FITTED and says nothing, which is T50's law and not a clamp
+ * retail invented: nobody typed that height.
+ *
+ * @returns {string} the engine's sentence, or '' when a box may go on
+ */
+export function topBoxRefusal(hostId) {
+  const host = unitOf(hostId);
+  if (!host) return '';
+  if (isTopBox(host)) return REASONS.topBoxOnTopBox;
+  const p = P();
+  const born = riderBornHeight({
+    // THE TYPE MATTERS AS MUCH AS THE PARAMS. `roomFit.floorOf` asks
+    // `getUnitType(unit.type).ridesOn` before it will read the host's top; a
+    // params-only object answers `undefined` there and the box is measured off
+    // the FLOOR instead of off the wardrobe — which is 2100 mm of headroom
+    // where there is none, and a button that never greys. Found by the test
+    // below rather than by reading.
+    unit: { type: 'WARDROBE_TOP', params: defaultParamsFor('WARDROBE_TOP', p) },
+    host,
+    room: S().project.room,
+    profile: p,
+    minHeight: p.wardrobe.topBox.minHeight,
+  });
+  return born.refuse || '';
+}
+
+/**
+ * ADD TOP BOX. One store call, and its refusal read off the return value.
+ *
+ * `addUnit` answers `{ id, error }` and does NOT push the sentence through the
+ * message queue — PRO reads the return and notifies itself
+ * (`LibraryPanel.jsx:128`) — so `lastEngineWord()` would never see it. Read
+ * here, from where the shared core actually put it.
+ *
+ * @returns {{ok:boolean, id:string|null, said:string}}
+ */
+export function addTopBox(hostId) {
+  const host = unitOf(hostId);
+  if (!host) return { ok: false, id: null, said: '' };
+  const placed = S().addUnit('WARDROBE_TOP', { near: host.id });
+  if (!placed?.id) return { ok: false, id: null, said: placed?.error || '' };
+  U().selectUnit?.(placed.id);
+  return { ok: true, id: placed.id, said: '' };
+}
+
+/** Every box standing on this wardrobe — the store's own link, read back. */
+export const topBoxesOn = (hostId) => S().units.filter((u) => u.params?.rides_on === hostId);
+
+/** REMOVE, from the box's own menu. The store re-settles the rest for itself. */
+export const removeUnit = (unitId) => S().removeUnit(unitId);
 
 /**
  * F4.1 · THE SLOPED CEILING.
@@ -341,17 +770,16 @@ export function setDoorCount(unitId, count) {
   guard = 8;
   while (parts().length < want - 1 && guard > 0) {
     guard -= 1;
-    const before = parts().length;
-    S().addPartition(unitId);
-    if (parts().length === before) break;    // the engine ran out of room
+    // ─── T61 F4 · THE THIRD COPY OF THIS LAW, DELETED ─────────────────────
+    //
+    // Point 2 above — add, then bring the divider forward to the face, then
+    // re-centre — was written out in full HERE, again in `setBayCount`, and
+    // would have been written a third time by F4's new INTERIOR row. Three
+    // copies of one act is three answers to *"what may be added here"*, and the
+    // standing question this turn has to answer with ONE. `addFlushPartition`
+    // is that one, and all three doors now open onto it.
+    if (!addFlushPartition(unitId)) break;   // the engine ran out of room
   }
-
-  // Flush, so each division is a division of the FRONT and not only of the
-  // interior. The engine's own slope partition is already at zero.
-  for (const part of parts()) {
-    if (Number(part.front_mm) !== 0) S().updateItem(unitId, part.id, { front_mm: 0 });
-  }
-  S().centrePartitions(unitId);
 
   const bays = S().bayDoorsFor(unitId).length;
   S().setBayDoors(unitId, bays > 1
@@ -509,14 +937,99 @@ export const lightingOn = (project) => Boolean(project?.design?.lighting?.on);
  * `addDrawers`', the watch drawer's fixed height is `addWatchDrawer`'s, and
  * the pull-down is `addWardrobeKit('pulldown_rail')`.
  */
+// ─── TURN 61 (CLAUDE.md F4): THE FULL ROW SET, 1:1 WITH PRO ────────────────
+//
+// The owner: *"dowozimy dla klientow musi bcy wszystko"*. So retail's six rows
+// become PRO's TEN — the same rows, in the same order, with the same
+// availability predicates and the same reasons.
+//
+// ─── WHERE "PRO's LIST" IS READ FROM, AND WHERE IT IS NOT ──────────────────
+//
+// NOT from `profile.itemsByContext`. That list looks like the answer and is
+// not: the filter that consumed it in `components/AddItems.jsx` has been
+// COMMENTED OUT since the 19.08 chat-fix (*"the list must be ALWAYS fully
+// expanded"*), so `offered` is computed and never read. It also disagrees with
+// what PRO draws — it names neither `shoe_box` (which left it at T54-F7) nor
+// `watch_drawer`, and PRO renders both.
+//
+// What actually decides is AddItems' own `kinds` array filtered by
+// `k.families`: an entry that names its families is drawn inside them and
+// nowhere else, which is why `cargo` and `bins` are ABSENT on a wardrobe rather
+// than greyed (T50 F9, the owner's *"w ogóle nie ma sensu"*). Ten rows survive
+// that filter, and `pro` below names each one of them.
+//
+// `test/turn61-f4-the-interior.test.js` READS BOTH LISTS and diffs them, so the
+// day somebody adds an eleventh row to PRO, this file fails rather than drifts.
+
 export const INTERIOR_ROWS = [
-  { id: 'hanger', menu: 'rail', name: 'Hanging rail', add: (s, u) => s.addHangerRail(u, {}) },
-  { id: 'shelves', menu: 'shelf', name: 'Shelves', add: (s, u) => s.addShelves(u, 1) },
-  { id: 'drawers', menu: 'drawers', name: 'Drawers', add: (s, u) => s.addDrawers(u, 3) },
-  { id: 'shoe', menu: 'shoe', name: 'Shoe drawer', add: (s, u) => s.addShoeDrawer(u) },
-  { id: 'watch', menu: 'watch', name: 'Watch drawer', add: (s, u) => s.addWatchDrawer(u) },
-  { id: 'pulldown_rail', menu: 'pulldown', name: 'Pull-down rail', add: (s, u) => s.addWardrobeKit(u, 'pulldown_rail') },
+  {
+    id: 'drawers', pro: 'drawers', menu: 'drawers', name: 'Drawers',
+    add: (s, u) => s.addDrawers(u, 3),
+  },
+  {
+    id: 'overlay', pro: 'overlay_drawers', menu: 'overlay', name: 'Overlay drawers',
+    add: (s, u) => s.addOverlayDrawers(u, 3, P().wardrobe.drawers.frontHeight),
+  },
+  {
+    id: 'watch', pro: 'watch_drawer', menu: 'watch', name: 'Watch drawer',
+    add: (s, u) => s.addWatchDrawer(u),
+  },
+  {
+    id: 'shelves', pro: 'shelves', menu: 'shelf', name: 'Shelves',
+    add: (s, u) => s.addShelves(u, 1),
+  },
+  {
+    id: 'shoe', pro: 'shoe_box', menu: 'shoe', name: 'Shoe drawer',
+    add: (s, u) => s.addShoeDrawer(u),
+  },
+  {
+    id: 'partition', pro: 'partition', menu: 'partition', name: 'Vertical divider',
+    // ONE TRACK, and this line is the whole of it — see `addFlushPartition`.
+    add: (s, u) => addFlushPartition(u),
+  },
+  {
+    id: 'hanger', pro: 'hanger', menu: 'rail', name: 'Hanging rail',
+    add: (s, u) => s.addHangerRail(u, {}),
+  },
+  {
+    id: 'pulldown_rail', pro: 'pulldown', menu: 'pulldown', name: 'Pull-down rail',
+    add: (s, u) => s.addWardrobeKit(u, 'pulldown_rail'),
+  },
+  {
+    id: 'trouser', pro: 'trouser', menu: 'trouser', name: 'Trouser pull-out',
+    add: (s, u) => s.addWardrobeKit(u, 'trouser'),
+  },
+  {
+    id: 'tie_rack', pro: 'tie_rack', menu: 'tie_rack', name: 'Tie rack',
+    add: (s, u) => s.addWardrobeKit(u, 'tie_rack'),
+  },
 ];
+
+/**
+ * ─── ONE PATH ADDS A DIVIDER, AND THIS IS IT ───────────────────────────────
+ *
+ * The BAYS chips and the INTERIOR row are two doors onto the same act, and
+ * before this function they would have been two ACTS: `addPartition` sets a
+ * divider back 20 mm — right for a shelf divider, invisible to the door law —
+ * and `setBayCount` has always flattened that to 0 so the division is a
+ * division of the FRONT as well. A bare `addPartition` from a new row would
+ * have made dividers the BAYS chip could not see, and the two controls would
+ * have disagreed about the same wardrobe.
+ *
+ * So both call this. The answer to *"how many code paths decide what may be
+ * added here"* has to be one, and for the divider this is where it is one.
+ */
+export function addFlushPartition(unitId) {
+  const before = itemsOf(unitId).filter((i) => i.kind === 'partition').length;
+  const id = S().addPartition(unitId);
+  const parts = itemsOf(unitId).filter((i) => i.kind === 'partition');
+  if (parts.length === before) return null;      // the engine ran out of room
+  for (const part of parts) {
+    if (Number(part.front_mm) !== 0) S().updateItem(unitId, part.id, { front_mm: 0 });
+  }
+  S().centrePartitions(unitId);
+  return id;
+}
 
 /** How many of each row the wardrobe currently holds — read off the unit. */
 export function interiorCounts(unit) {
@@ -529,6 +1042,13 @@ export function interiorCounts(unit) {
     shoe: drawers.filter((i) => i.variant === 'shoe').length,
     watch: drawers.filter((i) => i.watch_insert === true).length,
     pulldown_rail: items.filter((i) => i.kind === 'pulldown_rail').length,
+    // T61 F4 · the four that joined. An overlay drawer's kind is
+    // `overlay_drawer` and not `drawer` — the exact fault `engine/drawerRef.js`
+    // documents, and the reason the row above cannot count it.
+    overlay: items.filter((i) => i.kind === 'overlay_drawer').length,
+    partition: items.filter((i) => i.kind === 'partition').length,
+    trouser: items.filter((i) => i.kind === 'trouser').length,
+    tie_rack: items.filter((i) => i.kind === 'tie_rack').length,
   };
 }
 
@@ -545,11 +1065,62 @@ export function interiorCounts(unit) {
 export function interiorRefusals(unitId, unit) {
   const store = S();
   const counts = interiorCounts(unit);
+  const items = unit?.params?.sections?.[0]?.items || [];
   const underSlope = Boolean(store.unitUnderSlope?.(unitId));
+  const zones = (store.zonesOf?.(unitId) || []).length;
   return {
     pulldown_rail: underSlope ? REASONS.pulldownUnderSlope : '',
-    watch: counts.shoe > 0 ? REASONS.watchWithShoe : '',
+    watch: counts.shoe > 0 ? REASONS.watchWithShoe
+    // ─── T61 F4 · PRO's OWN PRECONDITION, WHICH RETAIL DID NOT HAVE ───────
+    // PRO greys this row while there is no stack (*"add the drawers first"*).
+    // Retail offered ADD and swallowed the store's refusal, which is the
+    // standing law broken in the quietest possible way: a control that acts
+    // and reports nothing. The SENTENCE is the store's own, verbatim from
+    // `projectStore.addWatchDrawer`, not a retail paraphrase of PRO's label.
+      : (counts.drawers + counts.shoe === 0 ? WATCH_NEEDS_A_STACK : ''),
     shoe: counts.watch > 0 ? REASONS.shoeWithWatch : '',
+    // A DIVIDER, by `addPartition`'s own gate — the same predicate the BAYS
+    // chips are refused by, asked one bay further along.
+    partition: bayRefusal(unitId, bayCount(unitId) + 1),
+    // ONE RAIL PER COLUMN is the store's own refusal (`addHangerRail` answers
+    // null). PRO greys it with `already fitted` when there is no column left to
+    // ask about; the words are `reasons.js`'s, named against that predicate.
+    hanger: counts.hanger > 0 && zones <= 1 ? REASONS.railAlreadyThere : '',
+    // ONE OF EACH BOUGHT MECHANISM PER OPENING (`addWardrobeKit` refuses a
+    // second of the same kind in the same zone and answers null).
+    trouser: counts.trouser > 0 && zones <= 1 ? REASONS.kitAlreadyThere('trouser pull-out') : '',
+    tie_rack: counts.tie_rack > 0 && zones <= 1 ? REASONS.kitAlreadyThere('tie rack') : '',
+  };
+}
+
+/**
+ * THE STORE'S OWN SENTENCE, verbatim.
+ *
+ * `projectStore.addWatchDrawer` refuses an empty stack with exactly this, and
+ * the row is greyed with it BEFORE the press rather than after — same words,
+ * one reading. It is a constant here so a test can hold the two together; the
+ * words are not retail's and must never be edited.
+ */
+const WATCH_NEEDS_A_STACK = 'Add the drawers first — the watch drawer goes on top of a stack.';
+
+/**
+ * THE NOTE beside a row — a true thing about it that is not a refusal.
+ *
+ * The overlay stack is the one that needs one: `addOverlayDrawers` DELETES the
+ * internal stack it replaces (*"T41-F3: choosing overlay clears the internal
+ * stack it replaces"*), so the two drawer rows are mutually exclusive by
+ * construction and nothing said so. PRO does not say it either; it is the
+ * store's own behaviour, stated rather than discovered.
+ */
+export function interiorNotes(unit) {
+  const counts = interiorCounts(unit);
+  return {
+    overlay: counts.drawers > 0
+      ? 'Overlay fronts replace the drawers inside — the stack is rebuilt outside the carcass.'
+      : '',
+    drawers: counts.overlay > 0
+      ? 'Drawers inside replace the overlay stack — the fronts come off.'
+      : '',
   };
 }
 
@@ -559,6 +1130,8 @@ export function interiorRefusals(unitId, unit) {
  * store's message queue, and this is how the design room reads it back rather
  * than writing its own version of the same sentence.
  */
+export const messageCount = () => (useUiStore.getState().messages || []).length;
+
 export function lastEngineWord() {
   const messages = useUiStore.getState().messages || [];
   const last = messages.length ? messages[messages.length - 1] : null;
@@ -624,7 +1197,15 @@ export const MENU_FOR_KIND = Object.freeze({
   drawer: 'drawers',
   shelf: 'shelf',
   'fixed-shelf': 'shelf',
-  partition: 'wardrobe',
+  // ─── T61 F4 · RE-POINTED, AND SAID OUT LOUD ──────────────────────────────
+  // T60 sent a divider to the WARDROBE menu, with the carcass, on turn 13's
+  // verdict that *"clicking a cabinet must select the CABINET"*. That verdict
+  // is about the CARCASS — a side, a top, a plinth — and a divider is not
+  // carcass: it is an interior item a client ADDS, from a row that now exists,
+  // and F4's standing law is that every addable row has its own Duty menu. So
+  // clicking a divider opens the divider, and the carcass keys below are
+  // untouched.
+  partition: 'partition',
   side: 'wardrobe',
   top: 'wardrobe',
   bottom: 'wardrobe',
@@ -637,9 +1218,29 @@ export const MENU_FOR_KIND = Object.freeze({
   spurs: 'wardrobe',
 });
 
-/** Every menu retail has. The nine of F3, in the brief's own order. */
+/**
+ * T61 F4 · WHICH MENU A BOUGHT MECHANISM OPENS.
+ *
+ * The engine files all three under one key — `engine/cabinet.js
+ * WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail']` — and they are
+ * not panels, so `MENU_FOR_KIND` (which is keyed on `elementKind`) cannot carry
+ * them. This is the same table for the same job, on the other route.
+ */
+export const KIT_MENUS = Object.freeze({
+  pulldown_rail: 'pulldown',
+  trouser: 'trouser',
+  tie_rack: 'tie_rack',
+});
+
+/**
+ * Every menu retail has: T60's nine in the brief's own order, and T61 F4's four
+ * after them — one for each row the INTERIOR list grew, because *"an element
+ * with no menu is not clickable"* and a row that adds something unclickable is
+ * a row that adds nothing a client can then change.
+ */
 export const MENUS = Object.freeze([
   'wardrobe', 'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'pulldown', 'lighting',
+  'overlay', 'partition', 'trouser', 'tie_rack',
 ]);
 
 /**
@@ -679,11 +1280,20 @@ export function resolveSelection(selected) {
     };
   }
 
+  // T61 F4: all THREE bought mechanisms, not just the pull-down. The engine
+  // publishes them under one key (`WARDROBE_KIT_KINDS`) and this branch was
+  // narrowed to one of them, so a trouser pull-out and a tie rack resolved to
+  // nothing and had no menu — which is why they could not be added.
   const kit = (result?.assemblies?.wardrobeKits || []).find((k) => k.id === ref) || null;
-  if (kit && kit.kind === 'pulldown_rail') {
+  if (kit && KIT_MENUS[kit.kind]) {
     return {
-      menu: 'pulldown', kind: 'pulldown_rail', unitId, ref, panel: null,
-      item: items.find((i) => i.id === ref) || null, label: kit.label || 'Pull-down rail',
+      menu: KIT_MENUS[kit.kind],
+      kind: kit.kind,
+      unitId,
+      ref,
+      panel: null,
+      item: items.find((i) => i.id === ref) || null,
+      label: kit.label || kitWords(kit.kind).label,
     };
   }
 
@@ -701,7 +1311,22 @@ export function resolveSelection(selected) {
   // A drawer — box or front — carries `meta.drawer`, the stack index the
   // engine cut it at. Which KIND of drawer it is, is the item's own word.
   if (menu === 'drawers') {
-    item = drawerAt(unitId, panel.meta?.drawer, panel.meta?.zone ?? null);
+    // ─── T61 F4 · THE PANEL'S OWN ITEM, FIRST ───────────────────────────────
+    // `engine/drawerRef.js drawerRefOf` is the shared core's answer to exactly
+    // this and its header is the fault report: an OVERLAY drawer's kind is
+    // `overlay_drawer`, so a lookup that filters `kind === 'drawer'` comes back
+    // empty and the menu opens on nothing. The engine STAMPS the item on the
+    // panel (`meta.itemId`); read that before counting anything.
+    const stamped = panel.meta?.itemId != null
+      ? items.find((i) => i.id === panel.meta.itemId) || null
+      : null;
+    if (stamped?.kind === 'overlay_drawer') {
+      return {
+        menu: 'overlay', kind: 'overlay_drawer', unitId, ref, panel, item: stamped,
+        label: 'Overlay drawer',
+      };
+    }
+    item = stamped || drawerAt(unitId, panel.meta?.drawer, panel.meta?.zone ?? null);
     if (item?.watch_insert === true || String(item?.variant || '') === 'watch') menu = 'watch';
     else if (String(item?.variant || '') === 'shoe') menu = 'shoe';
   }
@@ -730,9 +1355,8 @@ export function drawerAt(unitId, index, zone = null) {
   return drawers.find((d) => Math.trunc(Number(d.index)) === n) || drawers[n - 1] || null;
 }
 
-/** Retail's own word for a selection, for the STAGE HINT (F4). */
-export function selectionName(sel) {
-  if (!sel) return '';
+/** The engine's own word for the PIECE — T60's law, unchanged. */
+function elementWord(sel) {
   if (sel.menu === 'watch') return 'Watch drawer';
   if (sel.menu === 'shoe') return 'Shoe drawer';
   // A leaf says which one: the engine hangs it left or right and the panel
@@ -743,6 +1367,43 @@ export function selectionName(sel) {
     if (hand === 'R') return 'Right door';
   }
   return sel.label || '';
+}
+
+/**
+ * WHICH PIECE OF FURNITURE the selection is in, when there is more than one to
+ * confuse it with.
+ *
+ * ─── T61 · F2's NAMING LAW, AND F3's ─────────────────────────────────────
+ *
+ * *"STAGE HINT extends T60's naming law: 'WALL 2 WARDROBE — LEFT DOOR'."*
+ *
+ * It says NOTHING while there is one wardrobe, which is every project t59 and
+ * t60 shipped and every one T60's own test reads — a hint that says "Wall 1
+ * wardrobe" in a room with one wardrobe is noise, and the owner's *"6 bez
+ * zmian"* was about exactly that kind of addition. The prefix appears when the
+ * client has actually put furniture on two walls, and for a TOP BOX always,
+ * because a box and the cabinet under it are two things in the same place.
+ */
+function placeName(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return '';
+  if (isTopBox(unit)) return 'Top box';
+  const walls = new Set(S().units
+    .filter((u) => !u.params?.rides_on)
+    .map((u) => u.position?.wall ?? 0));
+  if (walls.size < 2) return '';
+  return `Wall ${(unit.position?.wall ?? 0) + 1} wardrobe`;
+}
+
+/** Retail's own word for a selection, for the STAGE HINT (F4, extended T61). */
+export function selectionName(sel) {
+  if (!sel) return '';
+  const word = elementWord(sel);
+  const place = placeName(sel.unitId);
+  if (!place) return word;
+  // The cabinet itself, opened from LAYOUT, is named once and not twice.
+  if (!word || word === 'Wardrobe') return place;
+  return `${place} — ${word}`;
 }
 
 // ─── 1 · THE WARDROBE ──────────────────────────────────────────────────────
@@ -794,17 +1455,12 @@ export function setBayCount(unitId, want) {
   guard = 12;
   while (parts().length < n - 1 && guard > 0) {
     guard -= 1;
-    const before = parts().length;
-    S().addPartition(unitId);
-    if (parts().length === before) break;         // the engine ran out of room
+    // T61 F4: `addFlushPartition` — the SAME call the INTERIOR row makes. It
+    // carries the flush law (a divider set back 20 mm is invisible to the door
+    // law) and the re-centring, so the chips and the row cannot produce two
+    // different kinds of divider in the same wardrobe.
+    if (!addFlushPartition(unitId)) break;        // the engine ran out of room
   }
-  // FLUSH, so the division is a division of the FRONT and not only of the
-  // interior — `addPartition` sets a divider back 20 mm, which is right for a
-  // shelf divider and invisible to the door law.
-  for (const part of parts()) {
-    if (Number(part.front_mm) !== 0) S().updateItem(unitId, part.id, { front_mm: 0 });
-  }
-  S().centrePartitions(unitId);
   return bayCount(unitId);
 }
 
@@ -1139,6 +1795,124 @@ export function setTopInsert(unitId, id) {
   return said();
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// T61 F4 · THE FOUR NEW ELEMENTS' OWN ANSWERS
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// *"Every addable row needs its Duty menu (an element with no menu is not
+// clickable — T60 law). New menus are written in retail language reading the
+// same store fields PRO's editors read… Keep each menu as small as PRO's own
+// controls for that element — no invented fields."*
+//
+// So each block below names the PRO surface it was read from, and what that
+// surface has that a CLIENT is not shown, and why.
+
+/**
+ * THE DIVIDER'S ONE MOVE — where it stands across the width.
+ *
+ * PRO's editor is `ElementProperties` on kind `partition`, whose fields are
+ * `['position-x', 'partition-slot', 'partition-drill-face', 'setback',
+ * 'thickness', 'material']`. Five of those six are the WORKSHOP's: which
+ * carcass board it is cut from, which face the machine bores, its setback, its
+ * thickness and its material are the joiner's decisions and Petros' iron rule
+ * keeps them out of a client's room. What is left is where it stands, which is
+ * the only thing a client has an opinion about — and PRO's own list surface
+ * (`RightPanel`'s "Vertical partitions") offers exactly that plus EQUAL BAYS.
+ *
+ * The ends are `projectStore.setPartitionX`'s own clamp, read back off the
+ * answer it gives: one minimum gap clear of the sides and of the divider next
+ * to it, *"a divider you could not get a hand between is not a bay"*.
+ */
+export function partitionTravel(unitId, itemId) {
+  const unit = unitOf(unitId);
+  const item = itemsOf(unitId).find((i) => i.id === itemId) || null;
+  if (!unit || !item) return null;
+  const p = P();
+  const G = unit.params.board_t ?? p.board.thickness;
+  const W = Number(unit.params.width) || 0;
+  const gap = p.editor.minShelfGap;
+  const self = Number(item.x_mm) || G;
+  const others = itemsOf(unitId)
+    .filter((i) => i.kind === 'partition' && i.id !== itemId && Number.isFinite(i.x_mm))
+    .map((i) => Number(i.x_mm))
+    .sort((a, b) => a - b);
+  const below = [...others].filter((x) => x <= self).pop();
+  const above = others.find((x) => x > self);
+  const min = Math.round(Math.max(G + gap, below != null ? below + gap : G + gap));
+  const max = Math.round(Math.min(W - 2 * G - gap, above != null ? above - gap : W - 2 * G - gap));
+  return {
+    value: Math.round(self), min, max, blocked: max < min,
+  };
+}
+
+/** Move it. The store clamps and re-measures the bay doors; the answer is its. */
+export const setPartitionPos = (unitId, itemId, mm) => S().setPartitionX(unitId, itemId, mm);
+
+/** EQUAL BAYS — PRO's own button (`RightPanel`, `data-centre-partitions`). */
+export const centrePartitions = (unitId) => S().centrePartitions(unitId);
+
+/**
+ * THE OVERLAY STACK, read the way `engine/drawerRef.js` says it must be.
+ *
+ * Its own fault report, verbatim: *"The old lookup found the item by `kind ===
+ * 'drawer'`. An OVERLAY drawer's kind is `overlay_drawer`, so on an overlay
+ * stack the filter came back empty… A control that lies about having worked."*
+ * `drawerStack` filters `kind === 'drawer'` and would have answered zero here.
+ */
+export function overlayStack(unitId) {
+  const drawers = itemsOf(unitId).filter((i) => i.kind === 'overlay_drawer')
+    .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0));
+  return { drawers, count: drawers.length };
+}
+
+/** The stack's count and its front height — PRO's add form is these two, and
+ *  nothing else (*"everything the stack implies is the engine's law and not a
+ *  question a joiner should have to answer twice"*). */
+export const setOverlayStackCount = (unitId, n) => S().addOverlayDrawers(
+  unitId, Math.max(1, Math.trunc(Number(n) || 1)), overlayFrontHeight(unitId),
+);
+
+export function overlayFrontHeight(unitId) {
+  const { drawers } = overlayStack(unitId);
+  const said = Number(drawers[0]?.front_h ?? drawers[0]?.height);
+  return Number.isFinite(said) && said > 0 ? Math.round(said) : P().wardrobe.drawers.frontHeight;
+}
+
+export const setOverlayFronts = (unitId, mm) => S().addOverlayDrawers(
+  unitId, Math.max(1, overlayStack(unitId).count || 1), Math.round(Number(mm) || 0),
+);
+
+/**
+ * A BOUGHT MECHANISM — the trouser pull-out and the tie rack.
+ *
+ * PRO HAS NO EDITOR FOR EITHER. Its whole surface is one Add button (plus a
+ * column chip when the cabinet is divided): they are not panels, `elementKind`
+ * has no case for them, `KitBodies` draws them with no click handler, there is
+ * no `kit` modal, and `RightPanel` has no remove for them. Said plainly in the
+ * PR body: retail's menu is AHEAD of PRO here, exactly as `PulldownMenu`'s
+ * REMOVE already is.
+ *
+ * So the menu is the honest minimum — what was bought, said in the shared
+ * core's own terms, and REMOVE. No position field: the profile's `posMm` is a
+ * workshop default the pull-down alone exposes, and inventing a second one
+ * would be the invented field the rule forbids.
+ */
+export function kitWords(kind) {
+  const spec = P().wardrobeAccessories?.kits?.[kind] || null;
+  if (!spec) return { label: '', said: '' };
+  return {
+    label: String(spec.label || kind),
+    // The engine's own account of what a kit IS, kept in the words PRO uses to
+    // a joiner and trimmed of the machine half a client has no use for.
+    said: 'Bought, never cut — it is ordered to the opening it goes in, and '
+      + 'nothing is drilled for it.',
+  };
+}
+
+export function kitItem(unitId, kind) {
+  return itemsOf(unitId).find((i) => i.kind === kind) || null;
+}
+
 /** GLASS TOP: the engine refuses in words when there is no shelf over it. */
 export function glassRefusal(unitId) {
   const { drawers, top } = drawerStack(unitId);
@@ -1464,10 +2238,26 @@ export function selectionForMenu(menu, unitId) {
       menu, kind: 'hanger', unitId, ref: item.id, panel: null, item, label: 'Hanging rail',
     } : null;
   }
-  if (menu === 'pulldown') {
-    const item = pick((i) => i.kind === 'pulldown_rail');
+  // T61 F4: the three bought mechanisms, one branch — see `KIT_MENUS`.
+  const kitKind = Object.keys(KIT_MENUS).find((k) => KIT_MENUS[k] === menu);
+  if (kitKind) {
+    const item = pick((i) => i.kind === kitKind);
     return item ? {
-      menu, kind: 'pulldown_rail', unitId, ref: item.id, panel: null, item, label: 'Pull-down rail',
+      menu, kind: kitKind, unitId, ref: item.id, panel: null, item, label: kitWords(kitKind).label,
+    } : null;
+  }
+  if (menu === 'partition') {
+    const item = pick((i) => i.kind === 'partition');
+    if (!item) return null;
+    const panel = (result?.panels || []).find((p) => p.meta?.itemId === item.id) || null;
+    return {
+      menu, kind: 'partition', unitId, ref: panel?.id || item.id, panel, item, label: 'Vertical divider',
+    };
+  }
+  if (menu === 'overlay') {
+    const item = pick((i) => i.kind === 'overlay_drawer');
+    return item ? {
+      menu, kind: 'overlay_drawer', unitId, ref: item.id, panel: null, item, label: 'Overlay drawer',
     } : null;
   }
   if (menu === 'shelf') {

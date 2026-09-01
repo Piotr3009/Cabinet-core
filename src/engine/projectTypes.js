@@ -14,7 +14,7 @@
 //
 // Pure data plus resolution — no React, no store imports.
 
-import { HEIGHT_KEYS, projectHeights } from './design.js';
+import { HEIGHT_KEYS, normaliseScope as normaliseScopeFrom, projectHeights } from './design.js';
 
 /**
  * `category` — which Library category the canvas opens on.
@@ -85,10 +85,15 @@ export function getProjectType(id) {
   return PROJECT_TYPES.find((t) => t.id === id) || PROJECT_TYPES.find((t) => t.id === DEFAULT_PROJECT_TYPE);
 }
 
-/** Is this a scope the flow knows? Anything else means "whole room". */
-export function normaliseScope(scope) {
-  return scope === 'wall' ? 'wall' : 'room';
-}
+/**
+ * Is this a scope the flow knows? Anything else means "whole room".
+ *
+ * T61 (CLAUDE.md F2): the LIST moved to `design.js`, which owns the field, and
+ * this is the same function under the name every caller already knows. Two
+ * copies of a vocabulary is exactly how `'two'` would have been admitted by the
+ * migrator and refused by the flow — the fault the scope map found.
+ */
+export const normaliseScope = normaliseScopeFrom;
 
 /**
  * The project heights a job of this type STARTS at.

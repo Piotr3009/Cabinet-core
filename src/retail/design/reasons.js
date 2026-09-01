@@ -28,6 +28,29 @@
 // grows a client-facing reason of its own.
 
 export const REASONS = {
+  /**
+   * T61 F5 · PREDICATE: the typed number against the bounds the caller was
+   * given — `adapter.designBounds()` (the profile's, and for the room retail's
+   * own two, declared as such in their `from` field) and
+   * `adapter.unitBounds(id)` (`projectStore.unitSizeBoundsFor`, which reads the
+   * wall, the neighbours and the room).
+   *
+   * The shared core has no sentence for this and cannot: it is never asked. A
+   * slider could not be dragged past its end, so nothing downstream ever had to
+   * refuse the number — the refusal is new because the CONTROL is new, and the
+   * words are therefore retail's, said once, here.
+   */
+  outOfRange: (min, max) => `Between ${min} and ${max} mm — type a number in that range.`,
+
+  /**
+   * T61 F3 · PREDICATE: `getUnitType(unit.type).ridesOn` — the engine's own
+   * test for "this is already a rider". `engine/types.js` gives `WARDROBE_TOP`
+   * no `ridesOn` host of its own, so `addUnit` would elect the box's HOST and
+   * quietly put the second box beside the first instead of on top of it. The
+   * shared core answers this one in a boolean and nowhere in words.
+   */
+  topBoxOnTopBox: 'A top box stands on a wardrobe, not on another top box.',
+
   /** PREDICATE: `useProjectStore.getState().unitUnderSlope(unitId)` (T58 F4). */
   pulldownUnderSlope: 'Not under a sloped ceiling — the rod needs the full height to swing.',
 
@@ -56,6 +79,52 @@ export const REASONS = {
 
   /** PREDICATE: `addHangerRail` returned null — one rail per column (T32 F4). */
   railAlreadyThere: 'There is already a rail in this column.',
+
+  /**
+   * T61 F4 · PREDICATE: `projectStore.addWardrobeKit` refuses a second of the
+   * same kind in the same opening — `if (items.some((i) => i.kind === kind &&
+   * zoneOf(i) === wantZone)) return null;` — and answers in a bare null. PRO's
+   * own after-the-press wording is `AddItems.onAddKit`'s *"That column already
+   * has a …"*; these are the same words said BEFORE the press, in the client's
+   * half of the vocabulary.
+   */
+  kitAlreadyThere: (what) => `There is already a ${what} in this column.`,
+
+  /**
+   * T61 F3 · PREDICATE: `adapter.topBoxesOn(hostId).length` — the store's own
+   * `params.rides_on` link, read back. NOT a refusal: T53 made one main carry
+   * several boxes side by side, and `addUnit`'s rider branch refuses in its own
+   * words when the span runs out. This is the note that says where the next one
+   * will go, so a client is not surprised by it.
+   */
+  topBoxGoesBeside: 'One is already on this wardrobe. Another goes beside it.',
+
+  /**
+   * T61 F3 · PREDICATE: `engine/roomFit.js riderBornHeight`, which cuts a box
+   * to the headroom left over its host rather than letting it stand through
+   * the ceiling (T50, *"dlaczego pozwala system dodawać top box powyżej
+   * rozmiaru pokoju?"*). NOT a refusal — nobody typed that height, so trimming
+   * it is not the app overruling anybody — but it is a thing the client should
+   * be told before they wonder why the number stopped.
+   */
+  topBoxStopsAtTheCeiling: 'The box stops at the ceiling — the room decides.',
+
+  /**
+   * T61 F4 · PREDICATE: `projectStore.addOverlayDrawers`, which cuts a FIXED
+   * shelf above the stack and shortens the doors onto it — *"fronty na szafie,
+   * drzwi powyżej szuflad"* (T40 F3b). NOT a refusal: it is what the row does,
+   * said before it is pressed.
+   */
+  overlayIsOutside: 'The fronts sit outside the carcass, with a fixed shelf above them '
+    + 'and the doors starting on it.',
+
+  /**
+   * T61 F4 · PREDICATE: `projectStore.setPartitionX` answering
+   * `{ blocked: true }` — its `max < min` case, which is *"a divider you could
+   * not get a hand between is not a bay"* with no room left on either side.
+   */
+  partitionPinned: 'There is no room to move it: the dividers either side of it are '
+    + 'already as close as they go.',
 
   /** PREDICATE: a hinge the engine has FORCED — `meta.hingeForced` under a slope (T46/T55). */
   hingeForcedBySlope: 'Opens from the slope — the rake decides this door’s hand.',

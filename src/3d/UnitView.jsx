@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
-import { chromeOn, proChromeOn } from './chrome.js';
+import { chromeOn } from './chrome.js';
 
 // ─── Turn 30 (CLAUDE.md F21): how thick the PANE is drawn ────────────────────
 // 4 mm is what a cabinet door is glazed with. It is a picture and not a cut —
@@ -2321,10 +2321,13 @@ export default function UnitView({
       {/* T60 F2: the hover readout is the JOINER's, not the client's — it answers
           "are they even?" over a set of shelves and it is not on any bar. PBI's
           dimensions CHANNEL is on so its VIEW BAR entry can work, so this one
-          asks the master switch and stays exactly as dead in retail as it was
-          in t59. PRO's `proChromeOn()` is true and this is the condition it
-          always was. */}
-      {proChromeOn() && hoverShelf && hoverColumn && !contour && !shelfDrag && (
+          asked the master switch and stayed exactly as dead in retail as it was
+          in t59.
+          T61 F1 (#7, `hover`): the owner asked for all eight back — *"1 all
+          8"* — so the readout has a channel of its own and the client's room
+          sets it. PRO sets no channel and `chromeOn` falls through to `on`,
+          so PRO reads the condition it always read. */}
+      {chromeOn('hover') && hoverShelf && hoverColumn && !contour && !shelfDrag && (
         <DimensionChain
           rows={shelfGaps.map((g) => ({
             key: g.key,

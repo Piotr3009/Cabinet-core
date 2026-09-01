@@ -7,6 +7,15 @@ import WatchMenu from './WatchMenu.jsx';
 import ShoeMenu from './ShoeMenu.jsx';
 import PulldownMenu from './PulldownMenu.jsx';
 import LightingMenu from './LightingMenu.jsx';
+// T61 F4 · the four the INTERIOR list grew, because an element with no menu is
+// not clickable and a row that adds one of those adds nothing a client can then
+// change. `KitMenu` is the shape the two bought mechanisms share and is NOT in
+// the table: a table with two keys pointing at one component has stopped being
+// readable, so each kit has its own one-line file naming its own kind.
+import OverlayMenu from './OverlayMenu.jsx';
+import PartitionMenu from './PartitionMenu.jsx';
+import TrouserMenu from './TrouserMenu.jsx';
+import TieRackMenu from './TieRackMenu.jsx';
 
 // ─── T60 F3 · THE ROUTER IS A TABLE ────────────────────────────────────────
 //
@@ -36,6 +45,10 @@ const MENU_COMPONENTS = Object.freeze({
   shoe: ShoeMenu,
   pulldown: PulldownMenu,
   lighting: LightingMenu,
+  overlay: OverlayMenu,
+  partition: PartitionMenu,
+  trouser: TrouserMenu,
+  tie_rack: TieRackMenu,
 });
 
 /** The component for a resolved selection, or null — which is never rendered. */

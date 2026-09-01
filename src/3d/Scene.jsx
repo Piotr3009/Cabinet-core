@@ -39,7 +39,9 @@ import { dimensionCarriers } from '../engine/dimensions.js';
 // Turn 30 (CLAUDE.md F12): neighbouring fronts that come too close.
 import { frontGapClashes } from '../engine/frontGapClash.js';
 import { backStandoff, wallClearance } from '../engine/collision.js';
-import { projectSheen, resolveFinishes, resolveUnitDesign } from '../engine/design.js';
+import {
+  normaliseScope, projectSheen, resolveFinishes, resolveUnitDesign,
+} from '../engine/design.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
@@ -1196,7 +1198,34 @@ function RenderRig({ onReady, unitsRef }) {
   return null;
 }
 
-export default function Scene({ onCaptureReady, onRenderReady }) {
+/**
+ * ─── T61 F1 (#2) · `onAddPlus` — ADDITIVE, DEFAULT = TODAY'S PRO BEHAVIOUR ──
+ *
+ * The `+` markers come back in the client's room (channel `plus`), and a marker
+ * that is drawn must DO something or it is the dead control the standing law
+ * forbids. PRO's plus opens the LIBRARY filtered to the neighbour's own
+ * category (`openLibraryToInsert`) — a modal that lives in `src/components`,
+ * on the far side of the iron boundary, and which the retail page never mounts.
+ *
+ * So the ROUTE is a prop, exactly as CLAUDE.md F3.6 licensed the chrome switch:
+ * *"additive, default = today's PRO behaviour."* PRO passes nothing and reads
+ * `openLibraryToInsert` as it always did; the retail Stage passes a handler
+ * that lives in `src/retail/**` and calls the store and the engine only.
+ *
+ * ONE site, so it is a prop and not a module switch: `chrome.js` is a module
+ * because twenty-five render sites would have been twenty-five chances to move
+ * a PRO byte. This is one.
+ *
+ * The INNER plus takes the same treatment through `onAddInside`: PRO answers
+ * it with `openModal('add-items')`, rendered by `src/pages/ConfiguratorPage
+ * .jsx`, which retail does not mount either.
+ *
+ * @param {(point:{unitId:string, side:'left'|'right', wall:number, x_mm:number}) => void|null} onAddPlus
+ * @param {(unitId:string, anchor:object|null) => void|null} onAddInside
+ */
+export default function Scene({
+  onCaptureReady, onRenderReady, onAddPlus = null, onAddInside = null,
+}) {
   const orbitRef = useRef(null);
   // One entry per unit group, so the render can frame the furniture and only
   // the furniture (and one selected unit, when one is selected).
@@ -1561,7 +1590,13 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
         // new-project flow showed Room setup — and the scene was never told.
         // A vanity drawn against one wall was shown standing in a four-walled
         // room, which is not the job the joiner is quoting.
-        scope={design?.scope === 'wall' ? 'wall' : 'room'}
+        // ─── TURN 61 (CLAUDE.md F2) ───
+        // …and the same for TWO. This ternary was the last place a `'two'`
+        // project could be silently collapsed back to a four-walled box, so it
+        // asks the vocabulary's own gate instead of naming one word. PRO writes
+        // no `'two'` — no PRO surface can produce it — so PRO reads `'room'`
+        // and `'wall'` exactly as it always did.
+        scope={normaliseScope(design?.scope)}
       />
 
       {results.map(({ unit, result }) => (
@@ -1767,6 +1802,12 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           }}
           onAddItems={(at) => {
             selectUnit(unit.id);
+            // T61 F1 (#2): the INNER plus has a route of its own, for the same
+            // reason the run-end plus does — `openModal('add-items')` is
+            // answered by `src/pages/ConfiguratorPage.jsx`, which the retail
+            // page never mounts. PRO passes nothing and takes the four lines
+            // below exactly as it always has.
+            if (onAddInside) { onAddInside(unit.id, at || null); return; }
             openModal('add-items', { unitId: unit.id, anchor: at || null });
             openRightPanel();
             setPanelSection('add', true);
@@ -1859,8 +1900,10 @@ export default function Scene({ onCaptureReady, onRenderReady }) {
           roomCentre={bounds.centre}
           profile={profile}
           onPick={(point) => {
-            const near = units.find((u) => u.id === point.unitId);
             closeContextMenu();
+            // T61 F1 (#2): the page's own route, when it has one. PRO has none.
+            if (onAddPlus) { onAddPlus(point); return; }
+            const near = units.find((u) => u.id === point.unitId);
             openLibraryToInsert(categoryOf(near?.type)?.id || null, { near: point.unitId, side: point.side });
           }}
         />

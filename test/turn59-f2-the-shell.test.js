@@ -18,7 +18,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import { COLLECTIONS, DEFAULT_COLLECTION, collectionDecorIds } from '../src/retail/design/collections.js';
@@ -279,13 +279,57 @@ test('F3.6 · what the client never sees, is not there', () => {
     for (const re of NEVER) if (re.test(text)) bad.push(`${rel}: ${re}`);
   }
 
+  // ─── AMENDED AGAIN BY T62 F2, ON THE OWNER'S OWN ORDER ──────────────────
+  //
+  // The owner, 01.09.2026: *"jak piszę 1 do 1 to KOPIUJ. ale kopiuj — nie
+  // kasuj, nie zmieniaj PRO, tylko zrób identycznie w retail."* T62's brief
+  // then names the control by name: *"**Import DXF plan** if PRO's file offers
+  // it — copied"*, under the line that decides the argument in advance —
+  // *"Do not delete a control because 'a client would not need it'. That
+  // judgement already cost this project a turn."*
+  //
+  // `src/retail/design/room/` is that copy: four files taken from
+  // `src/components/`, byte for byte bar their imports and their class names.
+  // A word-ban over a VERBATIM COPY is a ban on copying, and this turn's law
+  // is that the copy wins. So the copied editor is exempt from the
+  // room-vocabulary list — and from nothing else: the hex law, the radius law,
+  // the price law and the NEVER list above all still walk these four files,
+  // and `test/turn62-f2-f3-the-copy.test.js` proves the copy is a copy.
+  //
+  // It is a CARVE-OUT, not a deletion: every other file under
+  // `src/retail/design/` still answers to the whole list, and the day someone
+  // writes "DXF" into `Options.jsx` this test still fails.
+  //
+  // The button is not merely tolerated, either — it WORKS. `proposeRoomFromDxf`
+  // lives in `src/engine/dxfImport.js`, which is shared core on both sides of
+  // the boundary, so nothing about the handler is workshop-only and the
+  // brief's "greys with the reason" clause never had to fire.
+  // …and the carve-out is kept HONEST, the same way T60's was. It is not the
+  // DIRECTORY that is exempt — it is a file that HAS A PRO ORIGINAL of the same
+  // name. `RoomEditor.jsx` sits in the same folder and is retail's own work, so
+  // it answers to the whole list like every other retail file, and the day
+  // somebody writes a new "DxfPanel.jsx" in there the ban still catches it.
+  const copiedFromPro = (rel) => rel.startsWith('src/retail/design/room/')
+    && existsSync(join(ROOT, 'src/components', rel.split('/').pop()));
+
   const NOT_IN_THE_ROOM = [/\bBOM\b/, /\bDXF\b/, /drilling/i, /article number/i];
   for (const file of filesUnder(join(RETAIL, 'design'))) {
     const rel = relative(ROOT, file);
     if (rel === 'src/retail/design/viewTools.js') continue;
+    if (copiedFromPro(rel)) continue;
     const text = code(file);
     for (const re of NOT_IN_THE_ROOM) if (re.test(text)) bad.push(`${rel}: ${re}`);
   }
+
+  // The carve-out must also be USED, or it is dead law nobody notices rotting:
+  // the four copies are there, and one of them really does carry the word the
+  // ban would otherwise have deleted.
+  assert.ok(copiedFromPro('src/retail/design/room/RoomModal.jsx'),
+    'the copied room editor is missing — F2 of turn 62 did not land');
+  assert.ok(/Import DXF plan/.test(code(join(ROOT, 'src/retail/design/room/RoomModal.jsx'))),
+    "the copy dropped PRO's Import DXF plan — the whole point of the carve-out");
+  assert.ok(!copiedFromPro('src/retail/design/room/RoomEditor.jsx'),
+    'RoomEditor.jsx is retail\'s own and must NOT be exempt');
 
   // …and the exception is kept HONEST: the two bar files may name the two
   // lenses, and the client-facing string is still never the workshop's.

@@ -81,7 +81,18 @@ test('F5 · the ONE sentence retail owns names its predicate, and the bounds', (
 test('F5 · every bound in the two panels is the engine\'s, not a literal', () => {
   const options = read('src/retail/design/Options.jsx');
   const fields = [...options.matchAll(/<NumberField[\s\S]*?\/>/g)].map((m) => m[0]);
-  assert.ok(fields.length >= 6, `only ${fields.length} typed fields in the two panels`);
+  // ─── AMENDED BY T62 F3 ───────────────────────────────────────────────────
+  //
+  // Six became five, and the two that went were LICENSED: T62 deletes the
+  // `SLOPED CEILING NO | YES` chip and the two wall-height fields under it,
+  // because a chip cannot say what the owner asked for — *"gdzie jest slope ale
+  // nie cały sufit tylko część"* — and the copied `WallElevationModal.jsx` can,
+  // with Side, Start height, Run and Flat. One door to a slope, not two.
+  //
+  // The COUNT was never the law here; the law is the line under it, that every
+  // bound a typed field carries is the engine's own and not a literal. That is
+  // unchanged and is asserted over every field that remains.
+  assert.ok(fields.length >= 5, `only ${fields.length} typed fields in the two panels`);
   for (const f of fields) {
     const min = (f.match(/min=\{([^}]+)\}/) || [])[1] || '';
     const max = (f.match(/max=\{([^}]+)\}/) || [])[1] || '';

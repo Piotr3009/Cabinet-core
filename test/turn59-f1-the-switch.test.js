@@ -184,16 +184,45 @@ function resolveSpec(fromFile, spec) {
 }
 
 /**
- * THE THREE ZONES, AND NOTHING ELSE.
+ * THE FOUR ZONES — AND THE ONE THAT STAYED BEHIND.
  *
- * CLAUDE.md, THE IRON BOUNDARY (Petros, 30.08): *"The SHARED CORE both apps
- * may import is exactly: `src/engine/**`, `src/3d/**`, `src/stores/**`."*
+ * T59 wrote three: *"The SHARED CORE both apps may import is exactly:
+ * `src/engine/**`, `src/3d/**`, `src/stores/**`"* — and `src/lib` was ruled
+ * PRO's, so a retail file reaching for it was a violation.
  *
- * EXACTLY. So `src/lib` and `src/index.css` are not core — they are PRO's,
- * and a retail file reaching for either is the same violation as reaching for
- * a component. The zone is decided by the path and by nothing else.
+ * ─── WHY THAT LINE IS GONE (turn 62, F1) ───────────────────────────────────
+ *
+ * The owner, 01.09.2026, verbatim — and this is the law the whole of T62 is
+ * audited against:
+ *
+ *   *"ale cała idea była że niektóre zmiany są wspólne, po to mamy cały
+ *   silnik w jednym miejscu. jak piszę 1 do 1 to KOPIUJ. ale kopiuj — nie
+ *   kasuj, nie zmieniaj PRO, tylko zrób identycznie w retail."*
+ *
+ * One engine in one place. `src/lib/wallElements.js`, `slopeLine.js` and
+ * `slopeFlat.js` ARE that engine for a wall: they hold the slope, the recess,
+ * the chimney, the clamps and the defaults, in pure functions with no React
+ * and no styling. T59's line locked retail out of them, retail was told to
+ * write its own, and what it wrote was a `SLOPED CEILING NO | YES` chip where
+ * PRO has an editor. The owner's verdict on that chip: *"miało być prawie
+ * 1 do 1 a jest 1 do 20"*. The line is the cause; the line moves.
+ *
+ * ─── WHAT DID *NOT* MOVE, AND WHY IT MUST NOT ──────────────────────────────
+ *
+ * `src/components/**` and `src/pages/**` stay PRO. Retail importing a PRO
+ * component is still a violation and the test below still says so. The
+ * owner's law is COPY, not import: PRO keeps its file, retail gets its own,
+ * and the freeze test above proves PRO's bytes never moved to make that
+ * happen. A shared component would move them.
+ *
+ * So: FOUR core directories a retail file may import, PLUS retail's own —
+ * `src/engine/**`, `src/3d/**`, `src/stores/**`, `src/lib/**`, `src/retail/**`.
+ * The zone is decided by the path and by nothing else.
  */
-const CORE_DIRS = ['engine/', '3d/', 'stores/'];
+const CORE_DIRS = ['engine/', '3d/', 'stores/', 'lib/'];
+
+/** Named in one place so the violation message and the docs cannot drift. */
+const ALLOWED_ZONES = 'src/retail, src/engine, src/3d, src/stores, src/lib';
 
 function zoneOf(absPath) {
   const rel = relative(SRC, absPath);
@@ -275,7 +304,16 @@ test('F1 · the walker can see — a self-test before it is trusted', () => {
   assert.equal(zoneOf(join(SRC, '3d/Scene.jsx')), 'core');
   assert.equal(zoneOf(join(SRC, 'engine/doors.js')), 'core');
   assert.equal(zoneOf(join(SRC, 'stores/uiStore.js')), 'core');
-  assert.equal(zoneOf(join(SRC, 'lib/anything.js')), 'pro', 'src/lib is NOT the shared core');
+  // T62 F1: `src/lib` is core now — the shared engine for a wall lives there.
+  assert.equal(zoneOf(join(SRC, 'lib/wallElements.js')), 'core',
+    'src/lib/wallElements.js IS the shared core — one engine in one place');
+  assert.equal(zoneOf(join(SRC, 'lib/slopeFlat.js')), 'core', 'src/lib is the shared core');
+  assert.equal(zoneOf(join(SRC, 'lib/slopeLine.js')), 'core', 'src/lib is the shared core');
+  // The COMPONENT half of the boundary did not move, and this is the assertion
+  // that stops a later turn from "tidying" it away. Copy, not import.
+  assert.equal(zoneOf(join(SRC, 'components/RoomModal.jsx')), 'pro',
+    'src/components is NOT the shared core — retail COPIES a PRO screen, it never imports one');
+  assert.equal(zoneOf(join(SRC, 'pages/ConfiguratorPage.jsx')), 'pro', 'src/pages is NOT the shared core');
 });
 
 test('F1 · the iron boundary — src/retail imports ONLY retail and the shared core', () => {
@@ -291,7 +329,7 @@ test('F1 · the iron boundary — src/retail imports ONLY retail and the shared 
       const zone = zoneOf(hit.path);
       if (zone !== 'retail' && zone !== 'core') {
         violations.push(`${show(file)} imports ${show(hit.path)} (${zone}) — the boundary allows only `
-          + 'src/retail, src/engine, src/3d, src/stores');
+          + ALLOWED_ZONES);
       }
     }
   }

@@ -5,13 +5,14 @@ import Button from '../ui/Button.jsx';
 import Chip from '../ui/Chip.jsx';
 import FrontThumb from './FrontThumb.jsx';
 import {
-  ChipRow, Field, NumberField, Said, Slider,
+  ChipRow, Field, NumberField, Said,
 } from './controls.jsx';
 import { REASONS } from './reasons.js';
 import { COLLECTIONS } from './collections.js';
 import * as A from './adapter.js';
 import { CATEGORIES } from './Categories.jsx';
 import { PRICE_ON_REQUEST } from '../config.js';
+import { anchorOfEvent } from '../../lib/modalAnchor.js';
 
 // ─── F4 · COLUMN 2 — THE OPTIONS OF THE ACTIVE CATEGORY ────────────────────
 //
@@ -44,15 +45,12 @@ function Panel({ title, children }) {
 // F2  WALLS `1 | 2`, and with 2 a second field for the other side of the
 //     rectangle. *"zrob 2 sciany"* · *"2 tak wystarczy"*.
 // F6  WINDOWS & DOORS, drawn only. *"3 — narazie sie rysuja"*.
-function SpacePanel({ room, project }) {
+function SpacePanel({ room, project, onEditRoom }) {
   const b = A.designBounds();
   const wall = A.wallLengthMm(room, 0);
   const wall2 = A.wallLengthMm(room, 1);
   const ceiling = Math.round(room?.height ?? 2500);
   const twoWalls = A.wallChoice(project) === 'two';
-  // The two heights, read back out of the engine's own elevation.
-  const { on, left, right } = A.slopeHeights(project);
-  const openings = A.roomOpenings(project, room);
 
   return (
     <Panel title="YOUR SPACE">
@@ -109,136 +107,44 @@ function SpacePanel({ room, project }) {
         />
       </Field>
 
-      <Field label="SLOPED CEILING">
-        <ChipRow
-          testid="space-slope"
-          value={on ? 'on' : 'off'}
-          options={[{ id: 'off', label: 'NO' }, { id: 'on', label: 'YES' }]}
-          onPick={(id) => A.setSlope({ on: id === 'on', leftMm: left, rightMm: right })}
-        />
-      </Field>
+      {/* ─── T62 · TOMBSTONE: THE SLOPED CEILING CHIP, AND THE TWO OPENING
+              BUTTONS, STOOD HERE ────────────────────────────────────────────
+          A `NO | YES` chip and two wall-height fields cannot say *"slope but
+          not the whole ceiling — part of it"*; F3's copied elevation editor
+          can, and does, with Side, Start height, Run and Flat. One door. */}
+      <div className="pbi-duty-actions">
+        {/* THE HOUSE RULE (rule 15): the window opens BESIDE its trigger,
+            never on it — so the trigger hands its own rectangle over.
+            `anchorOfEvent` is `src/lib`, which F1 made shared core. */}
+        <Button
+          kind="secondary"
+          data-testid="space-edit-room"
+          onClick={(e) => onEditRoom(anchorOfEvent(e))}
+        >
+          EDIT THE ROOM
+        </Button>
+      </div>
 
-      {on ? (
-        <>
-          <Field label="HEIGHT AT THE LEFT WALL">
-            <NumberField
-              testid="space-slope-left"
-              min={b.ceiling.min - 900}
-              max={ceiling}
-              value={left}
-              outOfRange={REASONS.outOfRange}
-              onCommit={(v) => { A.setSlope({ on: true, leftMm: v, rightMm: right }); return ''; }}
-            />
-          </Field>
-          <Field label="HEIGHT AT THE RIGHT WALL">
-            <NumberField
-              testid="space-slope-right"
-              min={b.ceiling.min - 900}
-              max={ceiling}
-              value={right}
-              outOfRange={REASONS.outOfRange}
-              onCommit={(v) => { A.setSlope({ on: true, leftMm: left, rightMm: v }); return ''; }}
-            />
-          </Field>
-        </>
-      ) : null}
-
-      <OpeningsBlock openings={openings} room={room} project={project} twoWalls={twoWalls} />
-
+      {/* T61 F6's KNOWN GAP is still true and is still said out loud — it has
+          only moved to the panel that survived the licensed removal. The day
+          fit logic arrives, `turn61-f5-f6`'s own test stops being green
+          quietly and this sentence has to come out. */}
       <p className="pbi-choice pbi-choice-15 pbi-panel-note">
         Measure wall to wall and floor to ceiling. We will survey before we build.
+        EDIT THE ROOM draws the plan — walls, boxes, sloping ceilings, windows and doors.
+        Nothing is fitted
+        around them yet: a wardrobe may stand across a window and we will sort it on the survey.
       </p>
     </Panel>
   );
 }
 
-/* ─── T61 F6 · WINDOWS AND DOORS ──────────────────────────────────────────── */
+/* ─── T62 · TOMBSTONE: `OpeningsBlock` STOOD HERE ────────────────────────── */
 //
-// *"3 — narazie sie rysuja."* They draw and nothing fits around them: a wardrobe
-// may stand across a window and the app says nothing. Named as a known gap.
-//
-// Every field's ends are `A.openingBounds`, which is `clampOpening`'s own
-// arithmetic read back — so the engine's limits are what a client is refused
-// by, and the engine's silent clamp never has to fire.
-function OpeningsBlock({
-  openings, room, project, twoWalls,
-}) {
-  const wallOptions = A.wallsShown(project, room)
-    .map((i) => ({ id: String(i), label: String(i + 1) }));
-
-  return (
-    <Field label="WINDOWS &amp; DOORS">
-      <div className="pbi-openings" data-testid="space-openings">
-        {openings.map((o) => {
-          const bounds = A.openingBounds(o, room);
-          const num = (key, label) => (
-            <div className="pbi-opening-field" key={key}>
-              <span className="pbi-ui pbi-ui-light pbi-quiet">{label}</span>
-              <NumberField
-                testid={`opening-${key}-${o.id}`}
-                min={bounds[key].min}
-                max={bounds[key].max}
-                value={Math.round(Number(o[key]) || 0)}
-                outOfRange={REASONS.outOfRange}
-                onCommit={(v) => A.setOpening(o.id, { [key]: v }).said}
-              />
-            </div>
-          );
-          return (
-            <div className="pbi-opening" key={o.id} data-testid={`opening-${o.id}`}>
-              <div className="pbi-opening-head">
-                <span className="pbi-choice pbi-choice-15">
-                  {o.kind === 'door' ? 'DOOR' : 'WINDOW'}
-                </span>
-                <button
-                  type="button"
-                  className="pbi-link"
-                  data-testid={`opening-remove-${o.id}`}
-                  onClick={() => A.removeOpening(o.id)}
-                >
-                  REMOVE
-                </button>
-              </div>
-              {twoWalls ? (
-                <ChipRow
-                  testid={`opening-wall-${o.id}`}
-                  value={String(o.wall)}
-                  options={wallOptions}
-                  onPick={(id) => A.setOpening(o.id, { wall: Number(id) })}
-                />
-              ) : null}
-              {num('x_mm', 'FROM THE LEFT')}
-              {num('width', 'WIDTH')}
-              {num('height', 'HEIGHT')}
-              {o.kind === 'window' ? num('sill', 'SILL — OFF THE FLOOR') : null}
-            </div>
-          );
-        })}
-        <div className="pbi-duty-actions">
-          <Button
-            kind="secondary"
-            data-testid="opening-add-window"
-            onClick={() => A.addOpening('window', 0)}
-          >
-            ADD WINDOW
-          </Button>
-          <Button
-            kind="secondary"
-            data-testid="opening-add-door"
-            onClick={() => A.addOpening('door', 0)}
-          >
-            ADD DOOR
-          </Button>
-        </div>
-        {/* THE GAP, SAID OUT LOUD rather than left to be discovered. */}
-        <p className="pbi-choice pbi-choice-15 pbi-panel-note">
-          Windows and doors are drawn so you can see the room. Nothing is fitted
-          around them yet — tell us about them and we will on the survey.
-        </p>
-      </div>
-    </Field>
-  );
-}
+// T61's WINDOWS & DOORS panel — ADD WINDOW, ADD DOOR and four fields per
+// opening — is deleted on CLAUDE.md's licence: *"one door to a window, not
+// two."* Every one of those controls is in `design/room/WallElevationModal.jsx`
+// already, because PRO has them there and this turn copied PRO.
 
 /* ─── 2 · LAYOUT ──────────────────────────────────────────────────────────── */
 //
@@ -654,7 +560,9 @@ export default function Options(props) {
       data-category={active}
       aria-label={title}
     >
-      {active === 'space' ? <SpacePanel room={props.room} project={props.project} /> : null}
+      {active === 'space' ? (
+        <SpacePanel room={props.room} project={props.project} onEditRoom={props.onEditRoom} />
+      ) : null}
       {active === 'layout' ? (
         <LayoutPanel
           unit={props.unit}

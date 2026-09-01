@@ -168,9 +168,26 @@ test('F1.2 · nor in any component of the design room', () => {
     + '\\s*:\\s*[-\\d]',
     'g',
   );
+  // ─── AMENDED BY T62 F2/F3 ────────────────────────────────────────────────
+  //
+  // The scale law is about what RETAIL writes: *"Not one measurement is written
+  // in this file any more."* `design/room/` holds four files retail did not
+  // write — they are `src/components/`'s own, copied on the owner's order
+  // (*"jak piszę 1 do 1 to KOPIUJ"*), and their measurements are PRO's, sitting
+  // in a `position: fixed` modal that is placed by `lib/menuPlacement.js` in
+  // client pixels rather than laid out in the four-column grid this law
+  // governs. Re-deriving them from `--pbi-scale` would be re-writing the
+  // screens, which is the one thing this turn forbids.
+  //
+  // Per FILE and per ORIGINAL, not per directory: `RoomEditor.jsx` is retail's
+  // own and still answers to the law in full.
+  const copiedFromPro = (rel) => rel.startsWith('src/retail/design/room/')
+    && existsSync(join(ROOT, 'src/components', rel.split('/').pop()));
+
   for (const file of filesUnder(join(RETAIL, 'design'), /\.jsx?$/)) {
     const text = stripComments(read(file));
     const rel = relative(ROOT, file);
+    if (copiedFromPro(rel)) continue;
     for (const m of text.matchAll(NUMERIC)) bad.push(`${rel}: ${m[0].trim()}`);
     for (const m of text.matchAll(/(-?\d+(?:\.\d+)?)px/g)) {
       if (m[1] === '1' || m[1] === '0') continue;

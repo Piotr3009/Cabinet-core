@@ -1,4 +1,5 @@
 import { useUiStore } from '../../stores/uiStore.js';
+import * as A from './adapter.js';
 import Button from '../ui/Button.jsx';
 import Duty from './detail/Duty.jsx';
 import { menuFor } from './detail/index.jsx';
@@ -116,7 +117,11 @@ export default function Detail(props) {
       {Menu ? (
         <Menu
           unitId={selection.unitId}
-          unit={props.unit}
+          // ─── T61 F3 · THE SELECTION'S OWN UNIT ───────────────────────────
+          // Not the OPTIONS column's. They were the same unit while there was
+          // one wardrobe; a TOP BOX is a unit of its own, and a menu opened on
+          // it was reading and writing the cabinet underneath it.
+          unit={A.unitById(selection.unitId) || props.unit}
           project={props.project}
           panel={selection.panel}
           item={selection.item}

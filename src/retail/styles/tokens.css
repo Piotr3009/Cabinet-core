@@ -61,6 +61,20 @@
   --pbi-gold-line: 48px;
   --pbi-radius: 0;
 
+  /* ─── TURN 61 (CLAUDE.md F5): THE ONE ROUNDED CORNER, AND ITS ORDER ───────
+   * The owner, on the typed fields that replace the sliders: *"kratki do
+   * wpisywania rogi pieknie zaokraglone a nie kanciaki, ze zlota obwodka a nie
+   * jakis dziwny pomarancz."*
+   *
+   * The system's law is zero radius and it STAYS zero — `--pbi-radius` above is
+   * untouched and every panel, chip, button and card still reads it. This is a
+   * SECOND token, for the one element the owner named, so that "softly rounded"
+   * is a number he can change in one line rather than a value typed into a
+   * rule; `test/turn59-f2-the-shell.test.js` admits this token by name and
+   * nothing else, so a stray `border-radius: 4px` is still a violation.
+   */
+  --pbi-field-radius: 6px;
+
   /* ─── TYPOGRAPHY ──────────────────────────────────────────────────────────
    * CLAUDE.md, F2: *"the owner's system has no type spec yet; this is the
    * standing proposal, tokenised so a two-line change swaps it if he strikes

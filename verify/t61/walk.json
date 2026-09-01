@@ -1,0 +1,250 @@
+{
+ "steps": [
+  {
+   "label": "the walk can read the live scene",
+   "ok": true,
+   "detail": "{\"total\":14,\"rings\":3,\"hover\":0}"
+  },
+  {
+   "label": "drill rings are drawn in the client's room",
+   "ok": true,
+   "detail": "5 rings"
+  },
+  {
+   "label": "a `+` marker stands beside the wardrobe",
+   "ok": true,
+   "detail": "{\"n\":1,\"x\":1123,\"y\":602}"
+  },
+  {
+   "label": "pressing it adds a unit — the route is live",
+   "ok": true,
+   "detail": "16 → 17"
+  },
+  {
+   "label": "hover dimensions are drawn under the cursor",
+   "ok": true,
+   "detail": "1 figures"
+  },
+  {
+   "label": "the client's room draws the tool's overlays",
+   "ok": true,
+   "detail": "31 helper objects"
+  },
+  {
+   "label": "YOUR SPACE carries a WALLS row",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and it is at 1",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "there is no WALL 2 WIDTH yet",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "WALL 2 WIDTH appears",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "WALL 2 WIDTH commits",
+   "ok": true,
+   "detail": "3000 → 2400"
+  },
+  {
+   "label": "LAYOUT offers ADD WARDROBE ON WALL 2",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "a WALL chip row appears once there are two",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the hint names which wall the wardrobe is on",
+   "ok": true,
+   "detail": "BEDROOM WARDROBE — WALL 1 WARDROBE"
+  },
+  {
+   "label": "LAYOUT carries ADD TOP BOX",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and in a 2500 room it is live",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "a low ceiling greys ADD TOP BOX",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with the engine's own sentence",
+   "ok": true,
+   "detail": "The room is 2200 mm and this stands 2250 mm off the floor — there is only 0 mm left, and a top box needs 200."
+  },
+  {
+   "label": "the list carries drawers",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries overlay",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries watch",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries shelves",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries shoe",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries partition",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries hanger",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries pulldown_rail",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries trouser",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the list carries tie_rack",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "ten rows, and no more",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the watch drawer is greyed before there are drawers",
+   "ok": true,
+   "detail": "Add the drawers first — the watch drawer goes on top of a stack."
+  },
+  {
+   "label": "the trouser row now has one",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and its menu opens",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the divider opens its own menu",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "YOUR SPACE has no slider left",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and WALL WIDTH is a typed field",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the field is bordered in gold",
+   "ok": true,
+   "detail": "rgb(184, 165, 136)"
+  },
+  {
+   "label": "…and its corners are rounded",
+   "ok": true,
+   "detail": "6px"
+  },
+  {
+   "label": "an out-of-range number is refused in words",
+   "ok": true,
+   "detail": "Between 600 and 4000 mm — type a number in that range."
+  },
+  {
+   "label": "…and it names the range",
+   "ok": true,
+   "detail": "Between 600 and 4000 mm — type a number in that range."
+  },
+  {
+   "label": "a number in range commits",
+   "ok": true,
+   "detail": "3200"
+  },
+  {
+   "label": "…and the room really is 3200 now",
+   "ok": true,
+   "detail": "Wall 1 is 3200 mm."
+  },
+  {
+   "label": "YOUR SPACE carries a WINDOWS & DOORS block",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with ADD WINDOW",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and ADD DOOR",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "a window record appears",
+   "ok": true,
+   "detail": "opening-op_z2space"
+  },
+  {
+   "label": "…and it is a WINDOW",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with FROM THE LEFT, WIDTH, HEIGHT and SILL",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "a door has no sill field",
+   "ok": true,
+   "detail": "still one — the window's"
+  },
+  {
+   "label": "REMOVE takes one opening",
+   "ok": true,
+   "detail": "2 → 1"
+  }
+ ],
+ "failed": 0
+}

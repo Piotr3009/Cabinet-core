@@ -23,7 +23,21 @@ import { imageFilename } from '../estimate/download.js';
 // are PRO's own DOM, in `src/components`, and the retail app simply never
 // renders them. The iron boundary makes that a fact rather than a promise.
 
-export default function Stage({ onHandle }) {
+/**
+ * ─── T61 F1 · THE TWO PLUS ROUTES ──────────────────────────────────────────
+ *
+ * The `+` markers are drawn again in the client's room (channel `plus`), and a
+ * marker that is drawn must do something. PRO answers both of them with a PRO
+ * surface — `openLibraryToInsert` for the run-end plus, `openModal('add-items')`
+ * for the inner one — and both of those are rendered by
+ * `src/pages/ConfiguratorPage.jsx`, which this page never mounts. Left alone
+ * they would be two visible, clickable, DEAD markers.
+ *
+ * So `Scene` grew two optional props, defaulting to exactly what PRO does, and
+ * the handlers arrive from here: they live in `src/retail/**`, they call the
+ * adapter and nothing else, and the iron boundary is untouched.
+ */
+export default function Stage({ onHandle, onAddPlus = null, onAddInside = null }) {
   const handle = useRef(null);
 
   const onRenderReady = useCallback((h) => {
@@ -58,7 +72,7 @@ export default function Stage({ onHandle }) {
 
   return (
     <div className="pbi-stage" data-testid="stage-canvas">
-      <Scene onRenderReady={onRenderReady} />
+      <Scene onRenderReady={onRenderReady} onAddPlus={onAddPlus} onAddInside={onAddInside} />
     </div>
   );
 }

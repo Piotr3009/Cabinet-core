@@ -55,6 +55,48 @@ setChromePart('dimensions', true);   // DimLabel · DimensionChain · DistanceAr
 setChromePart('outlines', true);     // the contour pass — Outlines, and what holds an X-ray together
 setChromePart('measure', true);      // the Ruler
 
+// ─── T61 F1 · AND THEN THE REMAINING EIGHT ─────────────────────────────────
+//
+// The owner, asked which of the tool's overlays a client should get back:
+// *"takwlacz praktycznei wszystko"* · *"1 all 8, 2 - jal dzis"*. So all eight,
+// through the channel T60 built, set immediately after the three that are
+// already there — one working pattern, not two.
+//
+// *"2 — jak dziś"* is the second half and it is the load-bearing half: the
+// CHANNEL says only that this application owns the overlay. What decides
+// whether it is SHOWING is the store flag PRO already gates it by, reached
+// through the same VIEW BAR buttons (T60's law: retail's bar IS PRO's, 1:1).
+// Where PRO has no toggle, the overlay is simply on, exactly as it is for a
+// joiner. NOT ONE NEW BUTTON is invented here.
+//
+// Boot-time constants, for the reason the header above gives: these guards sit
+// BEFORE their components' hooks, and a value that changed between renders
+// would change a hook count. Set once, here, before the first render.
+setChromePart('drill', true);        // DrillRings — shelf pins and every CNC hole
+setChromePart('plus', true);         // AddPlus — the `+` markers beside and on a unit
+setChromePart('machining', true);    // PartMachining — machining on a single opened part
+setChromePart('led-icons', true);    // LedIcons — the LED mounting icons
+setChromePart('hover-dims', true);   // HoverDimensions — the figures under the cursor
+setChromePart('edge', true);         // EdgeHandle — the drag handles on a unit's edges
+setChromePart('hover', true);        // UnitView — the shelf-gap readout under the cursor
+// ShareOutBar, and it is the one that needs saying out loud.
+//
+// Channel `true` per *"all 8"* — wired exactly like the seven above. But it has
+// no entry of its own and cannot be given one: its ONE trigger is
+// `uiStore.shareOutOffer`, and the ONLY thing that raises it is
+// `projectStore.settleLayout` finding a shareable GAP inside a RUN — two or
+// more cabinets standing side by side on ONE wall with air between them
+// (`engine/shareOut.js shareOutOffered`). Tonight's retail room cannot make
+// one: it starts with a single wardrobe, and F2's ADD WARDROBE ON WALL 2 puts
+// the second one round the corner, so there is never a run to share out.
+//
+// So the bar is not dead — the moment the shared core raises an offer it draws,
+// and its buttons call the store's own `shareOutRun` and `dismissShareOut`.
+// It is simply UNREACHABLE from the entries this turn ships, and that is stated
+// here and in the PR body rather than hidden by gating the channel off or by
+// inventing a retail button for a workshop's layout operation.
+setChromePart('share', true);        // ShareOutBar — the share-out bar
+
 // ─── T60 F3 · AND A SINGLE CLICK REACHES A DOOR ────────────────────────────
 //
 // *"jak naciśniemy na drzwi to się pojawi drzwi."* PRO's single click selects

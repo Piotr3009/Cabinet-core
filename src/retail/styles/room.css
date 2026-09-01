@@ -413,6 +413,41 @@
 .pbi-room .pbi-label { font-size: var(--pbi-fs-ui); margin-bottom: var(--pbi-gap-2); }
 .pbi-room .pbi-btn { font-size: var(--pbi-fs-ui); padding: 0 var(--pbi-button-pad-x); }
 .pbi-room .pbi-field { height: var(--pbi-field-h); padding: 0 var(--pbi-gap-3); font-size: var(--pbi-fs-ui); }
+/* T61 F5: the typed field keeps room for its unit at whatever scale the
+   viewport put the room at — one number, `--pbi-field-h`, as T60 F1 laid down. */
+.pbi-room .pbi-numfield { padding-right: calc(var(--pbi-field-h) * 0.95); }
+.pbi-room .pbi-numfield-unit { right: var(--pbi-gap-3); font-size: var(--pbi-fs-ui-sm); }
+.pbi-room .pbi-numfield-scale { margin-top: var(--pbi-gap-1); font-size: var(--pbi-fs-ui-sm); }
+
+/* ─── T61 F6 · WINDOWS AND DOORS ─────────────────────────────────────────────
+ * One card per opening, on the panel's own ground, separated by the system's
+ * hairline. No colour of its own: the ground is Soft Ivory's neighbour and the
+ * rule is Stone Line, both already in the twelve. */
+.pbi-openings { display: block; }
+.pbi-opening {
+  border-top: 1px solid var(--pbi-stone-line);
+  padding: var(--pbi-gap-3) 0;
+}
+.pbi-opening-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--pbi-gap-2);
+}
+.pbi-opening-field { margin-top: var(--pbi-gap-2); }
+.pbi-opening-field > span { display: block; margin-bottom: var(--pbi-gap-1); font-size: var(--pbi-fs-ui-sm); }
+/* T61 F3 / F2: THIS WARDROBE › and ADD TOP BOX are two ways into the same
+   wardrobe, so they stand together — side by side where the column is wide
+   enough and stacked where it is not. The BOTTOM MARGIN is not decoration: the
+   walk's own frame showed ADD TOP BOX and the WARDROBE WIDTH label sitting a
+   pixel apart and reading as one line. */
+.pbi-layout-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pbi-gap-2) var(--pbi-gap-4);
+  align-items: baseline;
+  margin-bottom: var(--pbi-gap-5);
+}
 .pbi-room .pbi-gold-line { margin: var(--pbi-gap-3) 0; }
 
 /* Chips: the height, the padding, the corner mark and the refusal beneath. */

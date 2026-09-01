@@ -1,0 +1,131 @@
+THE ENGINE, AGAINST ITS BASE — AND THE THREE FILES T61 WAS GIVEN
+────────────────────────────────────────────────────────────────────────
+path                 diff vs origin/main                               wanted     
+room.js              1 file changed, 46 insertions(+), 4 deletions(-)  licensed   
+design.js            1 file changed, 29 insertions(+), 2 deletions(-)  licensed   
+projectTypes.js      1 file changed, 10 insertions(+), 5 deletions(-)  licensed   
+anything else        nothing                                           nothing    
+KIT_SINK.lsp         unchanged                                         unchanged  
+reference            unchanged                                         unchanged  
+cut path asks scope  false                                             false      
+
+T59 and T60 could say "no engine file moved". T61 cannot, and says the
+true thing instead: THREE moved, all three named in CLAUDE.md, and none of
+them in the cut path. A scope decides which walls are DRAWN and OFFERED;
+`computeCabinet` is never handed a room and never asks. The six hashes
+above are what settles it — the whitelist only makes the question honest.
+
+CLEAN — only the three licensed files moved, and none is in the cut path.
+
+THE FROZEN PRO SURFACE
+────────────────────────────────────────────────────────────────────────
+path              diff vs origin/main  
+index.html        unchanged            
+src/App.jsx       unchanged            
+src/main.jsx      unchanged            
+src/components    unchanged            
+src/pages         unchanged            
+
+The owner, verbatim: "ten istniejący tryb to jest tryb PRO i musi być
+zachowany jak teraz." NOT ONE VISIBLE BYTE OF PRO CHANGES THIS TURN —
+including the turn that put PRO's whole VIEW BAR into the client's room.
+
+CLEAN — PRO IS FROZEN.
+
+src/3d/chrome.js — THE VIEWER'S CHROME, AND ITS CHANNELS
+────────────────────────────────────────────────────────────────────────
+what                        answer   wanted   
+default                     true     true     
+falls through               true     true     
+a channel                   true     true     
+switch clears it            true     true     
+PRO calls it                nowhere  nowhere  
+guards intact               11       11       
+contour guarded             true     true     
+hover ghost                 true     true     
+entry claims                11       11       
+plus routes default to PRO  true     true     
+
+A CHANNEL is an override, and PRO sets none — so `chromeOn(part)` returns
+the master switch and every one of the eleven guards is the line it was.
+T61 claims ELEVEN of them from the retail entry (*"1 all 8"*, on top of
+T60's three), which is what stops eleven overlays being invisible in the
+client's room — and what makes two `+` markers need a route, since both
+of PRO's terminate in a surface retail does not mount.
+
+CLEAN — the chrome is on by default and PRO cannot tell this file grew.
+
+src/stores/projectStore.js — FIVE ADDITIONS, NONE OF THEM PRO'S
+────────────────────────────────────────────────────────────────────────
+name               is             PRO calls it   
+shelfTravelFor     function       nowhere        
+railTravelFor      function       nowhere        
+unitSizeBoundsFor  function       nowhere        
+setRailMount       function       nowhere        
+setDrawerFitting   function       nowhere        
+read-only          wrote nothing  wrote nothing  
+
+Three ANSWER a question the surface had no way to ask without performing
+an edit — where a shelf may go, how high a rod may hang, how big a
+wardrobe may be. Two ACT where PRO has only ever acted at add time. No
+existing line changed except the rail selector's own lookup.
+
+CLEAN — additive, read-only where it says so, and invisible to PRO.
+
+THE IRON BOUNDARY (Petros, 30.08)
+────────────────────────────────────────────────────────────────────────
+what              answer   wanted   
+PRO names retail  nowhere  nowhere  
+retail names PRO  nowhere  nowhere  
+retail names lib  nowhere  nowhere  
+
+The walker in test/turn59-f1-the-switch.test.js is the real assertion —
+it resolves every specifier under src/ and sorts it into three zones.
+T60 added `src/3d/propsPack.js` so the VIEW BAR could ask whether the
+props pack arrived WITHOUT reaching into src/lib, which the boundary
+calls PRO's. The door is in the core; retail knocks on the core.
+
+CLEAN — two applications, one house, one wall between them.
+
+engine/room.js — SCOPE 'two', AND WHY PRO CANNOT SEE IT
+────────────────────────────────────────────────────────────────────────
+what                   answer   wanted   
+two real walls         true     true     
+two free ends capped   true     true     
+indices                [0,1]    [0,1]    
+'wall' and 'room'      true     true     
+one vocabulary         true     true     
+survives the migrator  true     true     
+PRO writes it          nowhere  nowhere  
+
+The owner: *"zrob 2 sciany, Elki bedziemy dokaldac"*. It is the ONE-WALL
+law with one more real wall — the previous wall keeps the end that touches
+corner 0 exactly as it did, and the next one moves along by one because
+walls[1] is now a wall a client stands furniture against. No PRO surface
+can produce a 'two' project, so PRO's rendered output cannot move: that
+is the same fall-through argument the chrome channels make, on another axis.
+
+CLEAN — 'two' is 'wall' with one more real wall, and PRO cannot write it.
+
+COLUMN 7 — A MENU FOR EVERY ELEMENT
+────────────────────────────────────────────────────────────────────────
+what                  answer                                                           wanted   
+menus                 13                                                               13       
+router table          13                                                               13       
+interior rows         10                                                               10       
+every row has a menu  true                                                             true     
+no default branch     true                                                             true     
+placeholder           src/retail/design/Detail.jsx src/retail/design/detail/index.jsx  deleted  
+
+The router is a TABLE, so a kind that is not a key in it has no menu, is
+not selectable, and cannot render an empty panel. That is where the
+licensed deletion actually lands: the DEFAULT BRANCH went with the string.
+T61 F4 grew the list to PRO's ten rows and the table to thirteen menus,
+which is the same law asked of four more elements: an element with no menu
+is not clickable, so a row that adds one would be adding nothing.
+
+CLEAN — thirteen menus, ten rows, no default branch, no placeholder.
+
+────────────────────────────────────────────────────────────────────────
+7 probe(s), every one CLEAN — only the three licensed engine files moved, none of them in
+the cut path, and PRO cannot tell this turn happened.

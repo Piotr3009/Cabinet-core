@@ -138,14 +138,28 @@ test('F2 · the carve-out holds: every content tone is a decor\'s OWN colour', (
   assert.equal(COLLECTIONS.length, 4);
 });
 
-test('F2 · zero border-radius, and no gradient anywhere', () => {
+// ─── AMENDED BY T61 F5 ──────────────────────────────────────────────────────
+//
+// The owner, ordering the typed fields that replace the sliders: *"kratki do
+// wpisywania rogi pieknie zaokraglone a nie kanciaki, ze zlota obwodka a nie
+// jakis dziwny pomarancz."*
+//
+// So ONE element in the system is rounded, and it is rounded by a token of its
+// own — `--pbi-field-radius`, declared beside `--pbi-radius` in tokens.css,
+// which stays 0 and is still asserted to be 0 by the token test above. The law
+// this test exists to keep is unchanged in substance: a radius may not be a
+// number typed into a rule. It must be one of the two tokens, and a third
+// value is still a violation.
+test('F2 · zero border-radius — bar the owner\'s own field — and no gradient anywhere', () => {
   const bad = [];
   for (const file of filesUnder(RETAIL)) {
     const rel = relative(ROOT, file);
     const text = code(file);
     for (const m of text.matchAll(/border-?[Rr]adius\s*[:=]\s*['"]?([^,;'"}\n]+)/g)) {
       const value = m[1].trim();
-      if (!/^(0|var\(--pbi-radius\))$/.test(value)) bad.push(`${rel}: border-radius ${value}`);
+      if (!/^(0|var\(--pbi-radius\)|var\(--pbi-field-radius\))$/.test(value)) {
+        bad.push(`${rel}: border-radius ${value}`);
+      }
     }
     for (const m of text.matchAll(/linear-gradient|radial-gradient|conic-gradient/g)) {
       bad.push(`${rel}: ${m[0]}`);

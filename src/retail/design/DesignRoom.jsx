@@ -107,10 +107,15 @@ function QuoteOverlay({ onClose, onSubmit }) {
  * the element's plain-English kind — which is `engine/elements.js
  * elementLabel`'s word, not one retail invented.
  */
-function StageHint({ designName, selected }) {
+function StageHint({ designName, selected, said = '' }) {
   return (
     <div className="pbi-ui pbi-ui-light pbi-quiet pbi-hint" data-testid="stage-caption">
-      <span>DRAG TO ORBIT · SCROLL TO ZOOM · CLICK AN ELEMENT FOR DETAIL</span>
+      {/* T61 F1: what the shared core said about the last `+`, where the `+`
+          was pressed. *"6 bez zmian"* still holds — the copy below is untouched
+          and comes back the moment there is nothing to report. */}
+      <span data-testid="stage-said">
+        {said || 'DRAG TO ORBIT · SCROLL TO ZOOM · CLICK AN ELEMENT FOR DETAIL'}
+      </span>
       <span className="pbi-hint-sep" aria-hidden="true" />
       <span className="pbi-hint-name" data-testid="stage-caption-name">
         {selected ? `${designName} — ${selected}`.toUpperCase() : String(designName || '').toUpperCase()}
@@ -133,6 +138,14 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   const [fullScreen, setFullScreen] = useState(false);
   const [preset, setPreset] = useState('room');
   const [quoteOpen, setQuoteOpen] = useState(false);
+  // ─── T61 F1 · WHAT THE SHARED CORE SAID ABOUT THE LAST `+` ───────────────
+  //
+  // `addUnit` refuses on its RETURN VALUE — it does not push the sentence
+  // through the message queue, so `lastEngineWord()` would never see it (PRO
+  // reads the return and notifies itself, `LibraryPanel.jsx:128`). This is
+  // where the room reads it instead: one string, under the stage, in the third
+  // voice every refusal in this app is written in.
+  const [said, setSaid] = useState('');
   const handle = useRef(null);
   const booted = useRef(false);
 
@@ -345,9 +358,24 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
         onBack={() => setFullScreen(false)}
         onSaveImage={() => saveStageImage(handle.current, designName)}
       />
-      <Stage onHandle={keepHandle} />
+      <Stage
+        onHandle={keepHandle}
+        // THE RUN-END PLUS adds the neighbour's own type beside it, which is
+        // the same call PRO's library makes with the same `{ near, side }`.
+        onAddPlus={(point) => setSaid(A.addBesidePlus(point).said)}
+        // THE INNER PLUS asks "what goes inside this one" — and retail's answer
+        // to that question is the INTERIOR list, which is where PRO's own
+        // `setPanelSection('add', true)` sends a joiner. One destination for
+        // the question, not two.
+        onAddInside={(unitId) => {
+          setSaid('');
+          setActive('interior');
+          const found = A.selectionForMenu('wardrobe', unitId);
+          if (found) setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
+        }}
+      />
       {!fullScreen ? (
-        <StageHint designName={designName} selected={A.selectionName(selection)} />
+        <StageHint designName={designName} selected={A.selectionName(selection)} said={said} />
       ) : null}
     </div>
   );

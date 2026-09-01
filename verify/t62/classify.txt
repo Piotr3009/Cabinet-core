@@ -1,0 +1,202 @@
+TURN 62 · THE CLASSIFIER, AS IT RAN
+===================================
+
+$ node verify/t62/t62-classify.mjs
+WARDROBE    drawers=no   f49a8c107dd6e66908412262c8c0c91613fe9d1523cce844b7ce68648a1f37c3
+BUD         drawers=no   44d091b837b08075fd155719253b85b9cc8c65437395a1d8b2f31b80d3b2db4c
+WUD         drawers=no   3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7
+BUDR        drawers=yes  1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2
+BUDR4       drawers=yes  583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17
+PANTRY      drawers=yes  4df94682e4f80424aa770ffad3e5e143eb8e14902372ec2193fd4acb9e452289
+
+NAMED deltas this turn: 0 — not one file under src/engine or src/lib
+changed, so there is nothing for a bucket to be named after.
+
+$ node verify/t62/t62-classify.mjs verify/t62/goldens-base.json verify/t62/goldens-head.json
+WARDROBE    IDENTICAL  f49a8c107dd6e66908412262c8c0c91613fe9d1523cce844b7ce68648a1f37c3
+BUD         IDENTICAL  44d091b837b08075fd155719253b85b9cc8c65437395a1d8b2f31b80d3b2db4c
+WUD         IDENTICAL  3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7
+BUDR        IDENTICAL  1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2
+BUDR4       IDENTICAL  583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17
+PANTRY      IDENTICAL  4df94682e4f80424aa770ffad3e5e143eb8e14902372ec2193fd4acb9e452289
+
+EXPECTED BUCKETS: none, and this turn does not get to name one.
+CLAUDE.md: *"No engine file is licensed this turn. If F-work seems to need
+one, that is a skip-and-note, not an edit."* Turn 62 changed ZERO files under
+`src/engine` and zero under `src/lib` — it COPIED two screens into
+`src/retail/` and re-zoned `src/lib` in a TEST. There is no mechanism by
+which a golden could move, and `--probe` argues every other change as an
+exit code.
+IF A GOLDEN MOVED:  iron rule — write it up as a FINDING. Do not name a bucket for it.
+NAMED:            0
+UNNAMED:          0
+
+$ node verify/t62/t62-classify.mjs --probe
+THE ENGINE, AGAINST ITS BASE — AND T62 WAS LICENSED NOTHING
+────────────────────────────────────────────────────────────────────────
+path                            diff vs origin/main  wanted     
+src/engine                      nothing              nothing    
+KIT_SINK.lsp                    unchanged            unchanged  
+reference                       unchanged            unchanged  
+src/lib (re-zoned, not edited)  nothing              nothing    
+cut path asks a room            false                false      
+
+T61 was given three engine files by name and had to argue that none of
+them was reachable from a golden. T62 was given NONE — *"No engine file is
+licensed this turn. If F-work seems to need one, that is a skip-and-note,
+not an edit."* — so the question is the blunt one: did anything move. The
+six hashes above answer it a second time, in another language.
+
+CLEAN — not one engine byte moved, and the six goldens agree.
+
+THE FROZEN PRO SURFACE
+────────────────────────────────────────────────────────────────────────
+path              diff vs origin/main  
+index.html        unchanged            
+src/App.jsx       unchanged            
+src/main.jsx      unchanged            
+src/components    unchanged            
+src/pages         unchanged            
+
+The owner, verbatim: "ten istniejący tryb to jest tryb PRO i musi być
+zachowany jak teraz." NOT ONE VISIBLE BYTE OF PRO CHANGES THIS TURN —
+including the turn that put PRO's whole VIEW BAR into the client's room.
+
+CLEAN — PRO IS FROZEN.
+
+src/3d/chrome.js — THE VIEWER'S CHROME, AND ITS CHANNELS
+────────────────────────────────────────────────────────────────────────
+what                        answer   wanted   
+default                     true     true     
+falls through               true     true     
+a channel                   true     true     
+switch clears it            true     true     
+PRO calls it                nowhere  nowhere  
+guards intact               11       11       
+contour guarded             true     true     
+hover ghost                 true     true     
+entry claims                11       11       
+plus routes default to PRO  true     true     
+
+A CHANNEL is an override, and PRO sets none — so `chromeOn(part)` returns
+the master switch and every one of the eleven guards is the line it was.
+T61 claims ELEVEN of them from the retail entry (*"1 all 8"*, on top of
+T60's three), which is what stops eleven overlays being invisible in the
+client's room — and what makes two `+` markers need a route, since both
+of PRO's terminate in a surface retail does not mount.
+
+CLEAN — the chrome is on by default and PRO cannot tell this file grew.
+
+src/stores/projectStore.js — FIVE ADDITIONS, NONE OF THEM PRO'S
+────────────────────────────────────────────────────────────────────────
+name               is             PRO calls it   
+shelfTravelFor     function       nowhere        
+railTravelFor      function       nowhere        
+unitSizeBoundsFor  function       nowhere        
+setRailMount       function       nowhere        
+setDrawerFitting   function       nowhere        
+read-only          wrote nothing  wrote nothing  
+
+Three ANSWER a question the surface had no way to ask without performing
+an edit — where a shelf may go, how high a rod may hang, how big a
+wardrobe may be. Two ACT where PRO has only ever acted at add time. No
+existing line changed except the rail selector's own lookup.
+
+CLEAN — additive, read-only where it says so, and invisible to PRO.
+
+THE IRON BOUNDARY (Petros, 30.08)
+────────────────────────────────────────────────────────────────────────
+what                           answer   wanted       
+PRO names retail               nowhere  nowhere      
+retail names PRO               nowhere  nowhere      
+retail reaches lib (core now)  7        more than 0  
+
+The walker in test/turn59-f1-the-switch.test.js is the real assertion —
+it resolves every specifier under src/ and sorts it into FOUR core zones
+plus retail's own. T62 F1 moved `src/lib` into the core, on the owner's
+own reason — *"po to mamy cały silnik w jednym miejscu"* — and left the
+COMPONENT half exactly where it was: retail importing a PRO component is
+still a violation, because the law is COPY, not import.
+
+CLEAN — two applications, one house, one wall between them.
+
+F2/F3 — FOUR FILES, COPIED, AND STILL THE SAME SCREENS
+────────────────────────────────────────────────────────────────────────
+file                            what PRO shows                      what the copy lost  
+RoomModal.jsx                   16 labels · 12 hooks · 9 gestures   nothing lost        
+WallElevationModal.jsx          20 labels · 42 hooks · 10 gestures  nothing lost        
+Modal.jsx                       1 labels · 15 hooks · 2 gestures    nothing lost        
+NumberField.jsx                 0 labels · 0 hooks · 4 gestures     nothing lost        
+the one addition                onOpenWall, opt-in                  true                
+retail imports a PRO component  nowhere                             nowhere             
+
+The owner: *"jak piszę 1 do 1 to KOPIUJ. ale kopiuj — nie kasuj, nie
+zmieniaj PRO, tylko zrób identycznie w retail."* Two mechanical passes ran
+over each copy and nothing else: imports repointed three directories deeper,
+and every class token renamed to a `pbi-re-*` name defined in
+`styles/roomeditor.css` at PRO's own geometry in PBI's colours.
+`test/turn62-f2-f3-the-copy.test.js` is the real assertion; this is the
+argument beside it.
+
+CLEAN — the copy shows every word, hook and gesture PRO shows.
+
+F3 — A SLOPE CUTS PART OF THE CEILING, NOT ALL OF IT
+────────────────────────────────────────────────────────────────────────
+what                        answer      wanted           
+height at x=0               2500        2500             
+height at x=4000            1800        1800             
+the rake starts at 3100     2500        2500             
+it is a straight line       2150        2150             
+samples cut, of 41          9           fewer than half  
+one lerp, in slopeLine      true        true             
+Flat offered with 2 slopes  false       false            
+flat ↔ run                  3100 / 900  3100 / 900       
+T61's chip                  gone        gone             
+
+THREE QUARTERS OF THIS WALL IS UNTOUCHED, and that is the whole sentence a
+`NO | YES` chip could not say. The arithmetic is `lib/slopeLine.js ceilingAt`
+and it is the ONLY place that decides a wall's height at a point — retail
+imports it now (F1) instead of being told to write its own and writing none.
+
+CLEAN — the slope is the engine's, and it cuts part of the ceiling.
+
+F4/F5 — THE COLUMN IS A LIST OF SETTINGS, AND THE SLIDERS ARE GONE
+────────────────────────────────────────────────────────────────────────
+what              answer        wanted        
+Field is a row    true          true          
+the range line    in the title  in the title  
+<Slider callers   none          none          
+Slider exported   false         false         
+tombstone         true          true          
+
+The owner: *"te twoje pola na liczby są okropne, duże, rozwalone po całości,
+w ogóle to nie ma składu ani takiego ładnego porządku."* A field is one row
+now — label left at one width, control right — and the range under every
+number lives in the input's title, coming back as a sentence only when a
+value is refused. Twelve sliders in the detail menus became the same row,
+so the caller count reached zero and the component went with its licence.
+
+CLEAN — one height, one row per setting, and not one slider left.
+
+COLUMN 7 — A MENU FOR EVERY ELEMENT
+────────────────────────────────────────────────────────────────────────
+what                  answer                                                           wanted   
+menus                 13                                                               13       
+router table          13                                                               13       
+interior rows         10                                                               10       
+every row has a menu  true                                                             true     
+no default branch     true                                                             true     
+placeholder           src/retail/design/Detail.jsx src/retail/design/detail/index.jsx  deleted  
+
+The router is a TABLE, so a kind that is not a key in it has no menu, is
+not selectable, and cannot render an empty panel. That is where the
+licensed deletion actually lands: the DEFAULT BRANCH went with the string.
+T61 F4 grew the list to PRO's ten rows and the table to thirteen menus,
+which is the same law asked of four more elements: an element with no menu
+is not clickable, so a row that adds one would be adding nothing.
+
+CLEAN — thirteen menus, ten rows, no default branch, no placeholder.
+
+────────────────────────────────────────────────────────────────────────
+9 probe(s), every one CLEAN — NOT ONE ENGINE BYTE MOVED (this turn was licensed none),
+PRO is frozen at 66 files, and the copy shows every word PRO shows.

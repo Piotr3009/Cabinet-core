@@ -1,0 +1,339 @@
+/* ─── TURN 62 · THE ROOM EDITOR'S SKIN, AND ONLY ITS SKIN ───────────────────
+ *
+ * The owner, 01.09.2026, verbatim — the law the whole turn is audited against:
+ *
+ *   *"ale cała idea była że niektóre zmiany są wspólne, po to mamy cały silnik
+ *   w jednym miejscu. jak piszę 1 do 1 to KOPIUJ. ale kopiuj — nie kasuj, nie
+ *   zmieniaj PRO, tylko zrób identycznie w retail."*
+ *
+ * `src/retail/design/room/` holds four files COPIED from `src/components/`.
+ * Their markup, their control order, their labels, their gestures and their
+ * refusals are PRO's, byte for byte bar two mechanical passes: the imports were
+ * repointed, and every class name was renamed to a `pbi-re-*` name defined
+ * HERE. This file is the second half of that rename. Nothing else about those
+ * four files moved, and `test/turn62-f2-f3-the-copy.test.js` reads both sides
+ * off disk and proves it.
+ *
+ * ─── WHY THE COPY NEEDED A STYLESHEET AT ALL ───────────────────────────────
+ *
+ * PRO's screens are Tailwind over `src/index.css` — `bg-shell-900`, `cc-btn`,
+ * `text-ink-400`, the JoineryCore dark shell. Retail loads none of it: the
+ * iron boundary puts `src/index.css` on PRO's side and `retail.html` never
+ * pulls Tailwind in. Copied unchanged, the room editor would have rendered as
+ * unstyled markup on Porcelain. So every PRO class has a PBI twin below, at
+ * the SAME geometry — same paddings, same widths, same type sizes, same
+ * borders — and a different colour: Ivory & Onyx, from `tokens.css` and from
+ * nowhere else.
+ *
+ * GEOMETRY IS PRO'S. COLOUR IS PBI'S. That division is the whole file.
+ *
+ * ─── THE TWELVE COLOURS, AND WHAT THE STATUS PALETTE BECAME ────────────────
+ *
+ * Petros' law stands: *"A colour not in the token file is a violation."* PRO's
+ * shell carries an amber `status-warn`, a red `status-danger` and an emerald
+ * `ok`; the PBI token file has no red, no amber and no green, and this turn is
+ * not licensed to add a thirteenth colour. So the three statuses are spoken in
+ * the tokens that exist —
+ *
+ *   warn    → Deep Gold      a gold mark, which is what the system reserves
+ *                            gold FOR: a small mark on something that wants
+ *                            the eye.
+ *   danger  → Onyx, bold     the strongest thing the palette can say on
+ *                            Porcelain, and the weight carries what the hue
+ *                            used to.
+ *   ok      → Soft Graphite   the quiet second voice.
+ *
+ * Named here rather than argued in the morning: the SENTENCE is unchanged
+ * (every refusal is PRO's own word, copied), only its colour is PBI's, and a
+ * red would be a violation of a law with a test behind it.
+ */
+
+/* ─── THE LAYERS ────────────────────────────────────────────────────────────
+ * `lib/modalLayer.js` is shared core now (F1) and edit-hostile: it hands the
+ * shell `LAYER_CLASS.modal === 'z-40'`. PRO gets those seven classes from
+ * Tailwind. Retail declares them itself, at the same seven numbers, because
+ * changing the lib to suit retail is exactly the edit F1 forbids.
+ */
+.z-10 { z-index: 10; }
+.z-20 { z-index: 20; }
+.z-30 { z-index: 30; }
+.z-\[35\] { z-index: 35; }
+.z-40 { z-index: 40; }
+.z-50 { z-index: 50; }
+.z-\[60\] { z-index: 60; }
+
+/* ─── POSITION · DISPLAY · FLOW ─────────────────────────────────────────── */
+.pbi-re-fixed { position: fixed; }
+.pbi-re-inset { top: 0; right: 0; bottom: 0; left: 0; }
+.pbi-re-block { display: block; }
+.pbi-re-none { display: none; }
+.pbi-re-row { display: flex; }
+.pbi-re-col { flex-direction: column; }
+.pbi-re-grow { flex: 1 1 0%; }
+.pbi-re-grid { display: grid; }
+.pbi-re-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pbi-re-grid-plan { grid-template-columns: 1fr 170px; }
+.pbi-re-mid { align-items: center; }
+.pbi-re-bottom { align-items: flex-end; }
+.pbi-re-end { justify-content: flex-end; }
+.pbi-re-nogrow { flex-shrink: 0; }
+.pbi-re-minh { min-height: 0; }
+.pbi-re-minw { min-width: 0; }
+.pbi-re-maxh { max-height: 90vh; }
+.pbi-re-clip { overflow: hidden; }
+.pbi-re-scroll { overflow-y: auto; }
+
+/* ─── GAPS AND STACKS ───────────────────────────────────────────────────── */
+.pbi-re-gap-1 { gap: 0.25rem; }
+.pbi-re-gap-2 { gap: 0.5rem; }
+.pbi-re-gap-3 { gap: 0.75rem; }
+.pbi-re-gap-4 { gap: 1rem; }
+.pbi-re-stack-1 > * + * { margin-top: 0.25rem; }
+.pbi-re-stack-2 > * + * { margin-top: 0.5rem; }
+.pbi-re-stack-3 > * + * { margin-top: 0.75rem; }
+
+/* ─── PADDING AND MARGIN ────────────────────────────────────────────────── */
+.pbi-re-p0 { padding: 0; }
+.pbi-re-p2 { padding: 0.5rem; }
+.pbi-re-p4 { padding: 1rem; }
+.pbi-re-px15 { padding-left: 0.375rem; padding-right: 0.375rem; }
+.pbi-re-px2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.pbi-re-px25 { padding-left: 0.625rem; padding-right: 0.625rem; }
+.pbi-re-px3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.pbi-re-px4 { padding-left: 1rem; padding-right: 1rem; }
+.pbi-re-py05 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+.pbi-re-py1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.pbi-re-py15 { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+.pbi-re-py2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.pbi-re-py25 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+.pbi-re-py3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.pbi-re-mb2 { margin-bottom: 0.5rem; }
+.pbi-re-mr2 { margin-right: 0.5rem; }
+.pbi-re-mt1 { margin-top: 0.25rem; }
+.pbi-re-mt2 { margin-top: 0.5rem; }
+
+/* ─── TYPE — Inter for every control, Cormorant for the one title ───────── */
+.pbi-re-t10 { font-size: 10px; }
+.pbi-re-t11 { font-size: 11px; }
+.pbi-re-t12 { font-size: 12px; }
+.pbi-re-txs { font-size: 0.75rem; line-height: 1rem; }
+.pbi-re-tsm { font-size: 0.875rem; line-height: 1.25rem; }
+.pbi-re-left { text-align: left; }
+.pbi-re-right { text-align: right; }
+.pbi-re-caps { text-transform: uppercase; }
+.pbi-re-cap { text-transform: capitalize; }
+.pbi-re-track { letter-spacing: 0.025em; }
+.pbi-re-lead-snug { line-height: 1.375; }
+.pbi-re-lead-loose { line-height: 1.625; }
+.pbi-re-bullets { list-style-type: disc; }
+.pbi-re-bullets-in { list-style-position: inside; }
+
+/* ─── BEHAVIOUR ─────────────────────────────────────────────────────────── */
+.pbi-re-noptr { pointer-events: none; }
+.pbi-re-ptr { pointer-events: auto; }
+.pbi-re-noselect { user-select: none; }
+.pbi-re-notouch { touch-action: none; }
+.pbi-re-grab { cursor: move; }
+.pbi-re-ew { cursor: ew-resize; }
+.pbi-re-ns { cursor: ns-resize; }
+.pbi-re-nope { cursor: not-allowed; }
+.pbi-re-fade { transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease; }
+.pbi-re-dim { opacity: 0.45; }
+
+/* ─── EDGES ─────────────────────────────────────────────────────────────── */
+.pbi-re-line { border: 1px solid var(--pbi-stone-line); }
+.pbi-re-line-b { border-bottom: 1px solid var(--pbi-stone-line); }
+.pbi-re-line-t { border-top: 1px solid var(--pbi-stone-line); }
+.pbi-re-round { border-radius: var(--pbi-field-radius); }
+/* Panels keep the system's zero. The one softened corner is the owner's own
+ * field (T61 F5), and `--pbi-field-radius` is the only token that carries it. */
+.pbi-re-lift { box-shadow: 0 8px 24px rgb(9 10 9 / 12%), 0 2px 6px rgb(9 10 9 / 8%); }
+
+/* ─── THE COMPONENTS PRO CALLS cc-* ─────────────────────────────────────── */
+
+/* `.cc-panel` — the modal shell. Warm White on Porcelain, a stone hairline,
+ * and RADIUS ZERO: PRO's `rounded-lg` is the one geometry this file refuses to
+ * carry over, because zero radius on a panel is the design system itself and
+ * not a preference. */
+.pbi-re-panel {
+  background: var(--pbi-warm-white);
+  border: 1px solid var(--pbi-stone-line);
+  border-radius: var(--pbi-radius);
+  box-shadow: 0 8px 24px rgb(9 10 9 / 12%), 0 2px 6px rgb(9 10 9 / 8%);
+  font-family: var(--pbi-font-ui);
+  color: var(--pbi-onyx);
+}
+
+/* The modal's title, and the only Cormorant in the editor. Reached by the
+ * shell's own `data-modal-handle`, so no markup had to change to say it. */
+.pbi-re-panel [data-modal-handle="1"] h2 {
+  font-family: var(--pbi-font-display);
+  font-weight: 400;
+  font-size: 1.15rem;
+  letter-spacing: 0.01em;
+  color: var(--pbi-onyx);
+}
+
+.pbi-re-fieldrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+
+.pbi-re-fieldlabel {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--pbi-soft-graphite);
+  margin-bottom: 0.25rem;
+}
+
+.pbi-re-input {
+  width: 100%;
+  background: var(--pbi-porcelain);
+  border: 1px solid var(--pbi-stone-line);
+  border-radius: var(--pbi-field-radius);
+  padding: 0.25rem 0.5rem;
+  font-family: var(--pbi-font-ui);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--pbi-onyx);
+}
+.pbi-re-input:focus {
+  outline: none;
+  border-color: var(--pbi-deep-gold);
+  box-shadow: 0 0 0 1px var(--pbi-deep-gold);
+}
+
+.pbi-re-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--pbi-field-radius);
+  font-family: var(--pbi-font-ui);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border: 1px solid var(--pbi-stone-line);
+  background: var(--pbi-porcelain);
+  color: var(--pbi-onyx);
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+.pbi-re-btn:hover:not(:disabled) { background: var(--pbi-ivory); border-color: var(--pbi-deep-gold); }
+.pbi-re-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--pbi-porcelain); }
+
+/* PRO's affirmative button is a gold FILL. Gold is never a fill here — it is a
+ * line, a border, a small mark. So the affirmative button is the system's own
+ * primary: Onyx ground, Porcelain word, a Deep Gold hairline. */
+.pbi-re-btn-gold {
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--pbi-field-radius);
+  font-family: var(--pbi-font-ui);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  background: var(--pbi-onyx);
+  color: var(--pbi-porcelain);
+  border: 1px solid var(--pbi-deep-gold);
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+.pbi-re-btn-gold:hover:not(:disabled) { background: var(--pbi-graphite); }
+.pbi-re-btn-gold:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.pbi-re-btn-ghost {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--pbi-field-radius);
+  font-family: var(--pbi-font-ui);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--pbi-soft-graphite);
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+.pbi-re-btn-ghost:hover { color: var(--pbi-deep-gold); background: var(--pbi-ivory); }
+
+.pbi-re-back {
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--pbi-field-radius);
+  font-family: var(--pbi-font-ui);
+  font-size: 1rem;
+  font-weight: 500;
+  border: 1px solid var(--pbi-deep-gold);
+  color: var(--pbi-deep-gold);
+  background: var(--pbi-porcelain);
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+.pbi-re-back:hover { background: var(--pbi-onyx); color: var(--pbi-porcelain); }
+
+.pbi-re-divider {
+  border-top: 1px solid var(--pbi-stone-line);
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ─── WIDTHS — PRO's own, to the pixel, AND DECLARED AFTER THE COMPONENTS ──
+ *
+ * MEASURED FAULT, caught by the walk's own frame rather than by a test: these
+ * sat ABOVE the component block on the first pass, so `.pbi-re-input`'s
+ * `width: 100%` beat `.pbi-re-w24` on source order and every per-wall length
+ * field in the room editor collapsed to a sliver with its number invisible.
+ * Both are single-class selectors, so ORDER is the whole of the cascade here —
+ * a utility that is meant to override a component has to come after it. */
+/* ─── WIDTHS — PRO's own, to the pixel ──────────────────────────────────── */
+.pbi-re-w10 { width: 2.5rem; }
+.pbi-re-w12 { width: 3rem; }
+.pbi-re-w14 { width: 3.5rem; }
+.pbi-re-w16 { width: 4rem; }
+.pbi-re-w24 { width: 6rem; }
+.pbi-re-wfull { width: 100%; }
+.pbi-re-w420 { width: 420px; }
+.pbi-re-w640 { width: 640px; }
+.pbi-re-w820 { width: 820px; }
+.pbi-re-w860 { width: 860px; }
+
+
+/* ─── THE ONE ADDED CONTROL NEVER PUSHES ONE OF PRO'S OFF THE EDGE ────────
+ *
+ * MEASURED FAULT, caught by the walk's own frame. `RoomModal.jsx`'s wall row
+ * carries PRO's four controls — the length field, `+ Window`, `+ Door`, `⊕` —
+ * and T62 adds a fifth, `Elevation ›`, which is F3's entry. At PRO's own 860 px
+ * the fifth one ran past the right edge of the walls column and took `Elevation`
+ * with it, so the entry the owner's iron rule requires to be VISIBLE was half a
+ * letter wide.
+ *
+ * The fix is CSS and only CSS: the row wraps. Nothing in the copy moves, no
+ * control is made smaller, no modal is made wider than the one PRO ships — the
+ * fifth button simply falls to a second line where there is no room for it on
+ * the first. Scoped to rows that are a list item's own, which is exactly the
+ * wall rows and the box rows and nothing else in the window. */
+.pbi-re-panel li > .pbi-re-row { flex-wrap: wrap; }
+
+/* ─── COLOUR MODIFIERS — declared last, so a modifier beats a component ──── */
+.pbi-re-ink { color: var(--pbi-onyx); }
+.pbi-re-ink-1 { color: var(--pbi-carbon); }
+.pbi-re-ink-2 { color: var(--pbi-graphite); }
+.pbi-re-ink-3 { color: var(--pbi-soft-graphite); }
+.pbi-re-quiet { color: var(--pbi-soft-graphite); }
+.pbi-re-gold { color: var(--pbi-deep-gold); }
+.pbi-re-ok { color: var(--pbi-soft-graphite); }
+.pbi-re-warn { color: var(--pbi-deep-gold); }
+.pbi-re-bad { color: var(--pbi-onyx); font-weight: 500; }
+
+.pbi-re-fill-ground { background: var(--pbi-porcelain); }
+.pbi-re-fill-panel { background: var(--pbi-warm-white); }
+.pbi-re-fill-panel-soft { background: var(--pbi-porcelain); }
+.pbi-re-scrim { background: rgb(9 10 9 / 32%); }
+.pbi-re-fill-warn { background: rgb(128 106 68 / 10%); }
+.pbi-re-fill-bad { background: rgb(9 10 9 / 6%); }
+.pbi-re-fill-hover:hover { background: var(--pbi-ivory); }
+.pbi-re-fill-ok-hover:hover { background: rgb(92 91 87 / 8%); }
+
+.pbi-re-hair { border-color: var(--pbi-stone-line); }
+.pbi-re-hair-soft { border-color: var(--pbi-stone-line); }
+.pbi-re-hair-gold { border-color: var(--pbi-deep-gold); }
+.pbi-re-hair-gold-hover:hover { border-color: var(--pbi-deep-gold); }
+.pbi-re-hair-ok { border-color: var(--pbi-soft-graphite); }
+.pbi-re-hair-warn { border-color: var(--pbi-gold); }
+.pbi-re-hair-bad { border-color: var(--pbi-soft-graphite); }

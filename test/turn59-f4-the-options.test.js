@@ -10,7 +10,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { setPersistence } from '../src/stores/persistence.js';
@@ -395,10 +395,27 @@ test('F4 · the adapter is the ONLY place retail speaks engine', () => {
     'estimate/store.js', 'estimate/document.js',
   ]);
 
+  // ─── AMENDED BY T62 F2/F3 ────────────────────────────────────────────────
+  //
+  // The adapter law binds the components RETAIL WRITES. `design/room/` holds
+  // four it did not: `RoomModal.jsx`, `WallElevationModal.jsx`, `Modal.jsx` and
+  // `NumberField.jsx` are `src/components/`'s own files, copied on the owner's
+  // order — *"jak piszę 1 do 1 to KOPIUJ. ale kopiuj — nie kasuj, nie zmieniaj
+  // PRO, tylko zrób identycznie w retail."* They speak the engine because PRO's
+  // files speak the engine, and routing them through an adapter would be
+  // re-writing them, which is the one thing this turn forbids.
+  //
+  // The exemption is per FILE and per ORIGINAL, not per directory:
+  // `RoomEditor.jsx` sits in the same folder, is retail's own work, and still
+  // answers to the law in full — which is why it imports nothing but the two
+  // copies and React.
+  const copiedFromPro = (rel) => rel.startsWith('design/room/')
+    && existsSync(join(ROOT, 'src/components', rel.slice('design/room/'.length)));
+
   const strays = [];
   for (const file of walk(RETAIL)) {
     const rel = file.slice(RETAIL.length + 1);
-    if (ALLOWED.has(rel)) continue;
+    if (ALLOWED.has(rel) || copiedFromPro(rel)) continue;
     const text = readFileSync(file, 'utf8');
     for (const m of text.matchAll(/from '\.\.[^']*\/(engine|3d|stores)\/[^']*'/g)) {
       strays.push(`${rel} reaches ${m[0]}`);

@@ -4,6 +4,7 @@ import './styles/tokens.css';
 import './styles/base.css';
 import './styles/scale.css';
 import './styles/room.css';
+import './styles/roomeditor.css';
 import { setPersistence } from '../stores/persistence.js';
 import { setChromePart, setProChrome } from '../3d/chrome.js';
 import { setPickMode } from '../3d/picking.js';

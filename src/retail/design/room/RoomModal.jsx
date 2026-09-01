@@ -1,0 +1,756 @@
+import {
+  useCallback, useEffect, useMemo, useRef, useState,
+} from 'react';
+import Modal from './Modal.jsx';
+import NumberField from './NumberField.jsx';
+import { useProjectStore } from '../../../stores/projectStore.js';
+import { useUiStore } from '../../../stores/uiStore.js';
+import {
+  migrateRoom, roomWalls, roomBounds, rectCorners, lCorners, validateRoomShape,
+  roomChangeGuard, openingsOnWall, clampOpening, OPENING_DEFAULTS,
+  setWallLength as setWallLengthCorners, wallsInScope, wallStub,
+  moveWall, moveBoxSide, roomBoxes, migrateBox, BOX_SIDES, MIN_BOX_SIZE,
+  MIN_WALL_LENGTH,
+} from '../../../engine/room.js';
+import { proposeRoomFromDxf } from '../../../engine/dxfImport.js';
+import { formatMm, snap } from '../../../engine/format.js';
+import { anchorOfEvent } from '../../../lib/modalAnchor.js';
+import { getCabinetProfile } from '../../../engine/profile.js';
+
+// Room v2 (CLAUDE.md turn 3, phase 3): the room is a list of walls, edited as a
+// PLAN. A rectangle is the four-wall case, an L is the six-wall case, and a DXF
+// import is somebody else's corner list — all the same editor.
+//
+// Nothing is applied until Apply: the guard runs on every change and says what
+// would break, so shrinking a room under a unit is refused before it happens,
+// not repaired afterwards.
+
+const PLAN_W = 380;
+const PLAN_H = 260;
+
+/**
+ * `onClose` / `onApplied` are for the NEW-PROJECT FLOW (turn 7, CLAUDE.md F2),
+ * which shows this same editor as a step rather than as a modal off the
+ * Settings menu — CLAUDE.md asks for "the existing modal", and this is how it
+ * stays the existing one instead of becoming a second room editor to keep in
+ * step. Left out, both fall back to what turn 3 did.
+ */
+// ─── TURN 49 (CLAUDE.md F2): THE CANNED SHAPES LEAVE THE WIZARD'S DOOR ──────
+//
+// The owner, 25.08.2026: *"a room ustawienie z gory to usun boxy, to bez
+// sensu."*
+//
+// A new project's room step opened with a row of PRE-MADE shapes — Rectangle,
+// L-shape, + Box — three canned outlines offered before anybody had said a word
+// about the job. That is the "z góry" he objects to: a plan arrives already
+// pretending to be somebody's kitchen, and every one of the three has to be
+// undone before the real room can be typed in.
+//
+// So the row did not render in the WIZARD, and did from Settings ▸ Room setup.
+//
+// ─── TURN 51 (CLAUDE.md F1): …AND THE TWO DOORS BECOME ONE SCREEN AGAIN ────
+//
+// T50 answered F12 by taking the canned shapes out of BOTH doors and calling
+// the wall editor their replacement. The owner has struck the wall editor out —
+// *"ten sposób rysowania nie ma sensu"* — so the replacement is gone and the
+// two buttons come back, in both doors, which is what T51's F1 asks for in as
+// many words: *"Rectangle, L-shape, + Box, Import DXF plan stays and must
+// WORK"*, and *"Settings ▸ Room setup and the wizard's room step must show the
+// SAME screen."*
+//
+// That is a REVERSAL of T49's reading of *"a room ustawienie z gory to usun
+// boxy"*, and it is worth naming rather than sliding past: T49 read the
+// sentence as "no canned shapes on the way in", and F1 now names Rectangle and
+// L-shape among the four tools that must stand. One screen, four tools, both
+// doors — and a joiner who does not want a rectangle does not press Rectangle.
+//
+// `+ Box` was never a canned shape — it is a chimney, a pillar, a boxed pipe.
+export default function RoomModal({
+  onClose = null, onApplied = null, anchor: anchorProp = null, wizard = false,
+  // ─── TURN 62 · THE ONE THING THIS COPY HAS THAT PRO'S FILE HAS NOT ───────
+  //
+  // Declared here, at the top, because the law of this turn is COPY and an
+  // addition is the only kind of divergence that has to be argued out loud.
+  //
+  // CLAUDE.md F3 orders the retail entry to the elevation editor: *"from the
+  // room modal's wall list, one wall → its elevation — the same route PRO
+  // takes."* PRO's route is real and it is the owner's own
+  // (*"później klikamy na ścianę i się pokazuje ściana w pionie"*, T53 F10) —
+  // but it lives in `DrawRoomModal.jsx`, not in this file. This file has no
+  // row-level route to a wall's elevation to copy.
+  //
+  // So the route is a HOOK rather than a behaviour: with `onOpenWall` absent —
+  // which is how PRO would call this file — nothing renders and this copy is
+  // behaviourally identical to `src/components/RoomModal.jsx`, control for
+  // control. With it given, each wall row grows the one button, and pressing
+  // it hands the index up to `RoomEditor.jsx`, which swaps this window for the
+  // elevation exactly as `DrawRoomModal` does: ONE WINDOW AT A TIME, Back
+  // returning here with nothing to re-type.
+  //
+  // NOTHING IS REMOVED and no existing control moves to make room for it.
+  onOpenWall = null,
+}) {
+  const room = useProjectStore((s) => s.project.room);
+  const units = useProjectStore((s) => s.units);
+  const setRoom = useProjectStore((s) => s.setRoom);
+  // The hook is called unconditionally and the prop chosen afterwards — a hook
+  // behind an `||` is a hook that sometimes does not run.
+  const closeFromStore = useUiStore((s) => s.closeModal);
+  // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+  // Nothing to work out here — the opener said, and the shell places it.
+  // Turn 31 (CLAUDE.md F1): a prop wins, exactly as `onClose` does. This window
+  // is opened two ways — from the store as a top-level modal, and IN PLACE as a
+  // step of the new-project flow — and the second one has no `modalArgs` to
+  // read. One window, one shell, one anchor, whichever door it came in by.
+  const anchorFromStore = useUiStore((s) => s.modalArgs?.anchor) || null;
+  const anchor = anchorProp || anchorFromStore;
+  const closeModal = onClose || closeFromStore;
+  const notify = useUiStore((s) => s.notify);
+  // T53 F10: the drawing window opens FROM here, beside its own button.
+  const openModal = useUiStore((s) => s.openModal);
+
+  const [draft, setDraft] = useState(() => migrateRoom(room));
+  // ─── Turn 14 (CLAUDE.md F10): WHAT IS SELECTED, AND WHAT IS BEING DRAGGED ──
+  //
+  // The owner's verdict on corner-dragging: unusable, and he is describing the
+  // arithmetic rather than the mouse. A corner is a point shared by two walls,
+  // so dragging it turns BOTH of them: every angle moves at once and a right
+  // angle can only be hit by luck. What a joiner moves is a WALL.
+  //
+  // So the plan has one selection — `{ kind: 'wall'|'box', index, side }` — and
+  // one drag, and both of them go through the same engine primitive (`moveWall`
+  // / `moveBoxSide`). The drag remembers the room AS IT WAS when the hand went
+  // down and applies an ABSOLUTE offset from it, so a drag is one move rather
+  // than a hundred small ones accumulating rounding.
+  const [picked, setPicked] = useState(null);
+  const drag = useRef(null);
+  const [typed, setTyped] = useState('');
+  const [importInfo, setImportInfo] = useState(null);
+  const fileRef = useRef(null);
+
+  const scope = useProjectStore((st) => (st.project.design?.scope === 'wall' ? 'wall' : 'room'));
+  const walls = useMemo(() => roomWalls(draft), [draft]);
+  // ─── Turn 14 (CLAUDE.md F1.5b): "One wall" means ONE WALL, here too ───────
+  // The editor offered four walls for a job whose scope says there is one. The
+  // list is the engine's (`wallsInScope`), so the plan, the wall rows and the
+  // 3D scene cannot disagree about what this project has.
+  // T51 (CLAUDE.md F8): …and the two returns are as long as the WORKSHOP says
+  // when this room has not said — `profile.room.sideWallMm`, 2000 from tonight.
+  const shown = useMemo(() => wallsInScope(draft, scope, getCabinetProfile()), [draft, scope]);
+  const editable = useMemo(() => shown.filter((w) => !w.stub), [shown]);
+  const bounds = useMemo(() => roomBounds(draft), [draft]);
+  const shapeIssues = useMemo(() => validateRoomShape(draft.corners), [draft.corners]);
+  const guard = useMemo(() => roomChangeGuard(draft, units), [draft, units]);
+
+  // Plan → SVG. One scale for both axes so a square room looks square.
+  const pad = 18;
+  const scale = Math.min(
+    (PLAN_W - pad * 2) / Math.max(bounds.width, 1),
+    (PLAN_H - pad * 2) / Math.max(bounds.depth, 1),
+  );
+  const toSvg = (c) => ({ x: pad + (c.x - bounds.minX) * scale, y: pad + (c.y - bounds.minY) * scale });
+  // Dragged corners land on the workshop grid (0.5 mm), not on whole mm: this
+  // is a room measurement like any other, and turn 5 stopped rounding those.
+  const grid = (v) => snap(v, getCabinetProfile().editor.mmStep);
+  const fromSvg = (p) => ({
+    x: grid((p.x - pad) / scale + bounds.minX),
+    y: grid((p.y - pad) / scale + bounds.minY),
+  });
+
+  const patch = (next) => setDraft((d) => migrateRoom({ ...d, ...next }));
+
+  // ─── TURN 51 (CLAUDE.md F1): THE WALL EDITOR IS REVERTED ─────────────────
+  //
+  // The owner, 26.08.2026: *"drawing room w ogóle nie ma sensu — cofnij
+  // całkowicie to i zostaw dodawanie wnęki i boxa jak wcześniej, ale żeby
+  // działało. ten sposób rysowania nie ma sensu."*
+  //
+  // T50's `Draw walls` editor and `engine/wallDraw.js` go with that sentence,
+  // and the two canned shapes come back beside `+ Box` and `Import DXF plan` —
+  // the four tools CLAUDE.md F1 names, all four in BOTH doors, because F1 also
+  // asks for ONE screen (T50's F12, which fell).
+  //
+  // What is left is F1's REAL job: making them work. Two things did not, and
+  // neither was visible from the code — they were found by using it:
+  //
+  //   `+ Box` was drawn behind `scope === 'room'`, so a ONE-WALL job — which
+  //   is most of the jobs this app quotes — had no door to a box at all;
+  //   a RECESS and a CHIMNEY were stored, listed and drawn in the wall
+  //   editor's own top view and then read by NOTHING: `3d/Room.jsx` and the
+  //   placement both filter that list to `kind === 'slope'`. The joiner drew
+  //   an alcove and the room did not have one.
+  const setPreset = (kind) => {
+    const w = Math.max(bounds.width, 1000);
+    const d = Math.max(bounds.depth, 1000);
+    patch({ corners: kind === 'L' ? lCorners(w, d, grid(w / 3), grid(d / 3)) : rectCorners(w, d) });
+  };
+
+  /**
+   * ─── Turn 14 (CLAUDE.md F1.5a): TYPING A LENGTH KEEPS THE RIGHT ANGLES ────
+   *
+   * Turn 3 moved the wall's END CORNER along the wall's direction, which is the
+   * obvious reading of "make this side 4500" and is wrong for the only shape
+   * anybody types into: a rectangle shears into a rhombus, and the two walls
+   * that were 3000 come out at 3041.4 — the number on the owner's screenshot.
+   *
+   * The rule is in the engine (`setWallLength`), and it is the SAME primitive
+   * the wall drag uses: this wall keeps its start and its direction, and the
+   * NEXT wall is moved along its own normal until the two cross at the distance
+   * asked for. Every angle in the room is preserved because no wall's direction
+   * is ever written.
+   */
+  const setWallLength = (index, lengthMm) => {
+    const len = Math.max(MIN_WALL_LENGTH, Number(lengthMm) || 0);
+    patch({ corners: setWallLengthCorners(draft, index, len).map((c) => ({ x: grid(c.x), y: grid(c.y) })) });
+  };
+
+  // ─── Dragging a WHOLE WALL (F10.1) ───────────────────────────────────────
+  //
+  // The gesture is: grab anywhere on the wall, and it travels along its own
+  // NORMAL. The neighbours stretch to meet it and keep their own directions
+  // exactly, which is `moveWall` in the engine and is the same primitive the
+  // typed LENGTH field (F1.5a) uses — CLAUDE.md F10.5 asks for exactly that,
+  // and it is why there is no second constraint solver in this file.
+  const boxes = useMemo(() => roomBoxes(draft), [draft]);
+
+  /** How far the pointer has travelled along a wall's outward normal, in mm. */
+  const alongNormal = (wall, dxMm, dyMm) => -(dxMm * wall.inward.x + dyMm * wall.inward.y);
+
+  const startWallDrag = (e, index) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    // The room AS IT WAS when this wall was picked travels with the selection,
+    // not with the drag: "drag it a bit, then type 202" has to mean 202 from
+    // where it started (CLAUDE.md F10.2 and the walk step that pins it), and
+    // the hand has usually let go by the time the number is finished.
+    setPicked({ kind: 'wall', index, room: draft });
+    setTyped('');
+    drag.current = {
+      kind: 'wall',
+      index,
+      from: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      room: draft,
+      wall: roomWalls(draft)[index],
+    };
+    e.currentTarget.ownerSVGElement.setPointerCapture?.(e.pointerId);
+  };
+
+  const startBoxDrag = (e, boxId, side) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    setPicked({
+      kind: 'box', id: boxId, side, boxes,
+    });
+    setTyped('');
+    drag.current = {
+      kind: 'box',
+      id: boxId,
+      side,
+      from: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      box: boxes.find((b) => b.id === boxId) || null,
+    };
+    e.currentTarget.ownerSVGElement.setPointerCapture?.(e.pointerId);
+  };
+
+  const setBoxes = (next) => patch({ boxes: next });
+
+  const onPlanPointerMove = (e) => {
+    const d = drag.current;
+    if (!d) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const dx = ((e.clientX - rect.left) - d.from.x) / scale;
+    const dy = ((e.clientY - rect.top) - d.from.y) / scale;
+    if (d.kind === 'wall') {
+      const delta = grid(alongNormal(d.wall, dx, dy));
+      if (!delta) return;
+      patch({ corners: moveWall(d.room, d.index, delta) });
+      return;
+    }
+    if (!d.box) return;
+    const axis = d.side === 'left' || d.side === 'right' ? dx : dy;
+    const delta = grid((d.side === 'left' || d.side === 'front' ? -1 : 1) * axis);
+    setBoxes(boxes.map((b) => (b.id === d.id ? moveBoxSide(d.box, d.side, delta) : b)));
+  };
+
+  const endDrag = () => { drag.current = null; };
+
+  // ─── Typed distance, AutoCAD-style (F10.2) ───────────────────────────────
+  //
+  // "Start dragging (or select a wall), TYPE a number, Enter → the wall moves
+  // EXACTLY that many mm in the drag direction." It is the gesture every CAD
+  // package has and the reason is the owner's own: a hand cannot land on 4500,
+  // and a room is a set of numbers somebody measured on site.
+  //
+  // The DIRECTION is the drag's, and with nothing dragged it is OUTWARD, which
+  // is what "the wall moves 202" means when nobody has said which way: the room
+  // gets bigger. A minus sign is how you say the other thing, and it is typed
+  // like any other character.
+  const applyTyped = useCallback((raw) => {
+    const value = Number(raw);
+    if (!picked || !Number.isFinite(value) || value === 0) return false;
+    if (picked.kind === 'wall') {
+      setDraft((d) => migrateRoom({ ...d, corners: moveWall(picked.room || d, picked.index, value) }));
+      return true;
+    }
+    setDraft((d) => {
+      const from = picked.boxes || roomBoxes(d);
+      const was = from.find((b) => b.id === picked.id);
+      if (!was) return d;
+      return migrateRoom({
+        ...d,
+        boxes: roomBoxes(d).map((b) => (b.id === picked.id ? moveBoxSide(was, picked.side, value) : b)),
+      });
+    });
+    return true;
+  }, [picked]);
+
+  useEffect(() => {
+    if (!picked) return undefined;
+    const onKey = (ev) => {
+      // Anything typed into a real field belongs to that field.
+      const tag = ev.target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (/^[0-9]$/.test(ev.key) || (ev.key === '-' && !typed) || (ev.key === '.' && !typed.includes('.'))) {
+        setTyped((t) => t + ev.key);
+        ev.preventDefault();
+        return;
+      }
+      if (ev.key === 'Backspace') { setTyped((t) => t.slice(0, -1)); ev.preventDefault(); return; }
+      if (ev.key === 'Enter' && typed) {
+        if (applyTyped(typed)) { setTyped(''); drag.current = null; }
+        ev.preventDefault();
+        return;
+      }
+      if (ev.key === 'Escape') { setTyped(''); setPicked(null); ev.preventDefault(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [picked, typed, applyTyped]);
+
+  // ─── Insert box: a chimney, a pillar, a boxed pipe (F10.3) ───────────────
+  const insertBox = () => {
+    const w = Math.max(MIN_BOX_SIZE, Math.round(bounds.width * 0.12));
+    const d = Math.max(MIN_BOX_SIZE, Math.round(bounds.depth * 0.12));
+    const box = migrateBox({
+      id: `box_${Math.random().toString(36).slice(2, 9)}`,
+      x: grid(bounds.centre.x - w / 2),
+      y: grid(bounds.centre.y - d / 2),
+      w,
+      d,
+    });
+    setBoxes([...boxes, box]);
+    setPicked({ kind: 'box', id: box.id, side: 'right' });
+  };
+
+  const removeBox = (id) => {
+    setBoxes(boxes.filter((b) => b.id !== id));
+    setPicked((p) => (p?.kind === 'box' && p.id === id ? null : p));
+  };
+
+  const addCorner = (wallIndex) => {
+    const w = walls[wallIndex];
+    const mid = { x: grid((w.start.x + w.end.x) / 2), y: grid((w.start.y + w.end.y) / 2) };
+    const corners = [...draft.corners];
+    corners.splice(wallIndex + 1, 0, mid);
+    patch({ corners });
+  };
+
+  const addOpening = (kind, wallIndex) => {
+    const d = OPENING_DEFAULTS[kind];
+    const opening = clampOpening({
+      id: `op_${Math.random().toString(36).slice(2, 9)}`,
+      kind, wall: wallIndex, x_mm: Math.max(0, walls[wallIndex].width / 2 - d.width / 2), ...d,
+    }, draft);
+    patch({ openings: [...(draft.openings || []), opening] });
+  };
+
+  const updateOpening = (id, next) => patch({
+    openings: (draft.openings || []).map((o) => (o.id === id ? clampOpening({ ...o, ...next }, draft) : o)),
+  });
+
+  const removeOpening = (id) => patch({ openings: (draft.openings || []).filter((o) => o.id !== id) });
+
+  const onImport = async (file) => {
+    if (!file) return;
+    const text = await file.text();
+    // The plan may be drawn in mm, cm or m — the file does not reliably say,
+    // so the proposal is shown at 1:1 and the scale is one click away.
+    const proposal = proposeRoomFromDxf(text, { scale: 1 });
+    setImportInfo({ ...proposal, fileName: file.name, text });
+    if (proposal.ok) patch({ corners: proposal.corners });
+    else notify(proposal.warnings[0] || 'Nothing usable in that DXF.', 'warn');
+  };
+
+  const rescaleImport = (factor) => {
+    if (!importInfo?.text) return;
+    const proposal = proposeRoomFromDxf(importInfo.text, { scale: factor });
+    setImportInfo({ ...proposal, fileName: importInfo.fileName, text: importInfo.text });
+    if (proposal.ok) patch({ corners: proposal.corners });
+  };
+
+  const apply = () => {
+    if (shapeIssues.length) { notify(shapeIssues[0], 'warn'); return; }
+    const verdict = setRoom(draft);
+    if (!verdict.ok) { notify(verdict.message, 'error'); return; }
+    if (onApplied) { onApplied(); return; }
+    closeModal();
+  };
+
+  return (
+    <Modal
+      name="room"
+      anchor={anchor}
+      title="Room setup"
+      onClose={closeModal}
+      width="pbi-re-w860"
+      footer={<>
+        <button type="button" className="pbi-re-btn" onClick={closeModal}>Cancel</button>
+        <button type="button" className="pbi-re-btn-gold" onClick={apply} disabled={!guard.ok || shapeIssues.length > 0}>
+          Apply
+        </button>
+      </>}
+    >
+      <div className="pbi-re-grid pbi-re-grid-2 pbi-re-gap-4" data-room-door={wizard ? 'wizard' : 'menu'}>
+        {/* ── plan ── */}
+        <div>
+          <div className="pbi-re-fieldrow pbi-re-mb2">
+            <span className="pbi-re-txs pbi-re-caps pbi-re-track pbi-re-ink-2">Plan (top view)</span>
+            {/* ─── TURN 51 (CLAUDE.md F1): THE FOUR TOOLS, IN BOTH DOORS ───
+                F1 names them — Rectangle, L-shape, + Box, Import DXF plan —
+                and says they stay and must WORK. F1 also asks for ONE screen
+                in both doors, which is T50's F12. Both sentences are kept by
+                drawing the row unconditionally: no `wizard`, and no `scope`.
+
+                The SCOPE guard is the bug, not a policy. `+ Box` stood behind
+                `scope === 'room'`, and a ONE-WALL job has no other door to a
+                box — so the owner's *"nie pokazuje się"* was literally true:
+                there was no button. A chimney is a chimney whether the job is
+                one wall or four, and the plan draws the whole room either way. */}
+            <div className="pbi-re-row pbi-re-gap-1" data-room-tools="1">
+              <button type="button" className="pbi-re-btn" data-room-preset="rect" onClick={() => setPreset('rect')}>Rectangle</button>
+              <button type="button" className="pbi-re-btn" data-room-preset="L" onClick={() => setPreset('L')}>L-shape</button>
+              {/* F10.3: a chimney, a pillar, a boxed pipe. */}
+              <button type="button" className="pbi-re-btn" data-insert-box="1" onClick={insertBox}>+ Box</button>
+              {/* ─── TURN 53 (CLAUDE.md F10): DRAW ROOM ────────────────────
+                  *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w
+                  CAD."*  A FIFTH tool beside the four F1 named, and not a
+                  replacement for any of them: the simple width/height path
+                  stays exactly as it is, which is F10's own fence — *"the
+                  simple width/height 'one wall' path STAYS untouched."*
+                  T50's wall editor was struck out for replacing them; this
+                  one is a door that opens next to them. */}
+              <button
+                type="button"
+                className="pbi-re-btn"
+                data-room-draw="1"
+                title="Draw the room wall by wall, as in CAD — a direction, a number, Enter"
+                onClick={(e) => openModal('draw-room', { anchor: anchorOfEvent(e) })}
+              >
+                Draw room…
+              </button>
+            </div>
+          </div>
+
+          <svg
+            width={PLAN_W} height={PLAN_H}
+            className="pbi-re-fill-ground pbi-re-line pbi-re-hair pbi-re-round pbi-re-notouch"
+            data-room-plan="1"
+            onPointerMove={onPlanPointerMove}
+            onPointerUp={endDrag}
+            onPointerLeave={endDrag}
+            onPointerDown={() => { setPicked(null); setTyped(''); }}
+          >
+            <polygon
+              points={draft.corners.map((c) => { const p = toSvg(c); return `${p.x},${p.y}`; }).join(' ')}
+              fill="#E7E1D8"
+              stroke={scope === 'wall' ? 'none' : '#090A09'}
+              strokeWidth="1.5"
+            />
+            {shown.map((w) => {
+              const a = toSvg(w.start); const b = toSvg(w.end);
+              return (
+                <g key={w.stub ? `stub-${w.index}` : w.index}>
+                  {/* A stub carries no number: it is a fixed return, not a
+                      wall whose length is part of the job. */}
+                  <line
+                    x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                    stroke={w.stub ? '#C7BCAF' : '#090A09'} strokeWidth={w.stub ? 2 : 3}
+                  />
+                  {!w.stub && (
+                    <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 4} fill="#090A09" fontSize="9" textAnchor="middle">
+                      {w.index + 1}: {formatMm(w.width)}
+                    </text>
+                  )}
+                  {openingsOnWall(draft, w.index).map((o) => {
+                    const t1 = o.x_mm / (w.width || 1);
+                    const t2 = (o.x_mm + o.width) / (w.width || 1);
+                    return (
+                      <line
+                        key={o.id}
+                        x1={a.x + (b.x - a.x) * t1} y1={a.y + (b.y - a.y) * t1}
+                        x2={a.x + (b.x - a.x) * t2} y2={a.y + (b.y - a.y) * t2}
+                        stroke={o.kind === 'door' ? '#090A09' : '#5C5B57'} strokeWidth="4"
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })}
+            {/* ─── The BOXES (F10.3) ───
+                A chimney breast, a pillar, a boxed soil pipe. Each SIDE is
+                grabbed and moved exactly as a wall is, and typing a number
+                while one is picked moves it exactly that far. */}
+            {boxes.map((b) => {
+              const a = toSvg({ x: b.x, y: b.y });
+              const c = toSvg({ x: b.x + b.w, y: b.y + b.d });
+              const on = picked?.kind === 'box' && picked.id === b.id;
+              return (
+                <g key={b.id}>
+                  <rect
+                    x={Math.min(a.x, c.x)} y={Math.min(a.y, c.y)}
+                    width={Math.abs(c.x - a.x)} height={Math.abs(c.y - a.y)}
+                    fill="#D9D1C6" stroke={on ? '#806A44' : '#C7BCAF'} strokeWidth={on ? 2 : 1.2}
+                    data-plan-box={b.id}
+                    onPointerDown={(e) => { e.stopPropagation(); setPicked({ kind: 'box', id: b.id, side: 'right', boxes }); setTyped(''); }}
+                    onDoubleClick={() => removeBox(b.id)}
+                  />
+                  {BOX_SIDES.map((side) => {
+                    const horizontal = side === 'front' || side === 'back';
+                    const x1 = side === 'right' ? c.x : a.x;
+                    const y1 = side === 'back' ? c.y : a.y;
+                    return (
+                      <line
+                        key={side}
+                        x1={horizontal ? a.x : x1}
+                        y1={horizontal ? y1 : a.y}
+                        x2={horizontal ? c.x : x1}
+                        y2={horizontal ? y1 : c.y}
+                        stroke={picked?.kind === 'box' && picked.id === b.id && picked.side === side ? '#806A44' : 'transparent'}
+                        strokeWidth={7}
+                        className={horizontal ? 'pbi-re-ns' : 'pbi-re-ew'}
+                        data-box-side={`${b.id}:${side}`}
+                        onPointerDown={(e) => startBoxDrag(e, b.id, side)}
+                      />
+                    );
+                  })}
+                </g>
+              );
+            })}
+
+            {/* ─── The WALLS, as grab bars (F10.1) ───
+                A transparent fat line on top of each wall: what you grab is the
+                wall itself, and it travels along its own normal. There are no
+                corner handles any more — a corner is shared by two walls, so
+                dragging one turns both, and that is the interaction the owner
+                has ruled unusable. */}
+            {shown.filter((w) => !w.stub).map((w) => {
+              const a = toSvg(w.start); const b = toSvg(w.end);
+              const on = picked?.kind === 'wall' && picked.index === w.index;
+              const vertical = Math.abs(b.x - a.x) < Math.abs(b.y - a.y);
+              return (
+                <line
+                  key={`grab-${w.index}`}
+                  x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                  stroke={on ? '#806A44' : 'transparent'}
+                  strokeWidth={on ? 4 : 9}
+                  strokeLinecap="round"
+                  className={vertical ? 'pbi-re-ew' : 'pbi-re-ns'}
+                  data-plan-wall={w.index}
+                  onPointerDown={(e) => startWallDrag(e, w.index)}
+                />
+              );
+            })}
+
+            {/* The typed distance, where the eye is (F10.2). */}
+            {picked && typed && (
+              <g>
+                <rect x={PLAN_W / 2 - 46} y={6} width={92} height={20} rx={3} fill="#FAF8F3" stroke="#090A09" />
+                <text x={PLAN_W / 2} y={20} textAnchor="middle" fontSize="11" fill="#806A44" data-typed-distance="1">
+                  {typed} mm ⏎
+                </text>
+              </g>
+            )}
+          </svg>
+          <p className="pbi-re-t11 pbi-re-quiet pbi-re-mt1" data-plan-hint="1">
+            {picked
+              ? 'Drag it, or TYPE a distance in millimetres and press Enter. Escape lets go.'
+              : 'Grab a WALL and it moves along its own normal — the neighbours stretch and every angle is kept. Corners are not dragged.'}
+          </p>
+
+          <div className="pbi-re-divider" />
+
+          <div className="pbi-re-grid pbi-re-grid-2 pbi-re-gap-2">
+            <div>
+              <span className="pbi-re-fieldlabel">{scope === 'wall' ? 'Wall height (mm)' : 'Room height (mm)'}</span>
+              <NumberField
+                value={draft.height}
+                onCommit={(v) => patch({ height: v || draft.height })}
+              />
+            </div>
+            {/* ─── Turn 14 (CLAUDE.md F1.5b): the two returns ───
+                "that wall plus, OPTIONALLY, two 1000 mm side stubs forward".
+                Optional is 0, and it is one field rather than a checkbox and a
+                length, because a return of no length is no return. */}
+            {scope === 'wall' && (
+              <div>
+                <span className="pbi-re-fieldlabel">Side returns (mm, 0 = none)</span>
+                <NumberField
+                  value={wallStub(draft, getCabinetProfile())}
+                  min={0}
+                  onCommit={(v) => patch({ wall_stub_mm: Math.max(0, Number(v) || 0) })}
+                />
+              </div>
+            )}
+            <div className="pbi-re-row pbi-re-bottom">
+              <button type="button" className="pbi-re-btn pbi-re-wfull" onClick={() => fileRef.current?.click()}>
+                Import DXF plan…
+              </button>
+              <input
+                ref={fileRef} type="file" accept=".dxf,text/plain" className="pbi-re-none"
+                onChange={(e) => onImport(e.target.files?.[0])}
+              />
+            </div>
+          </div>
+
+          {importInfo && (
+            <div className="pbi-re-mt2 pbi-re-t11 pbi-re-ink-3 pbi-re-line pbi-re-hair pbi-re-round pbi-re-p2 pbi-re-stack-1">
+              <div className="pbi-re-ink-1">{importInfo.fileName}</div>
+              {importInfo.ok ? (
+                <>
+                  <div>
+                    {importInfo.corners.length} corners from the {importInfo.source} · {importInfo.stats.area_m2} m²
+                  </div>
+                  <div className="pbi-re-row pbi-re-gap-1 pbi-re-mid">
+                    <span>Drawn in</span>
+                    {[['mm', 1], ['cm', 10], ['m', 1000]].map(([label, f]) => (
+                      <button key={label} type="button" className="pbi-re-btn pbi-re-px2 pbi-re-py05" onClick={() => rescaleImport(f)}>{label}</button>
+                    ))}
+                  </div>
+                </>
+              ) : <div className="pbi-re-warn">{importInfo.warnings[0]}</div>}
+              {importInfo.warnings?.slice(importInfo.ok ? 0 : 1).map((w, i) => (
+                <div key={i} className="pbi-re-warn">{w}</div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── walls, openings, guard ── */}
+        <div className="pbi-re-stack-3">
+          <span className="pbi-re-txs pbi-re-caps pbi-re-track pbi-re-ink-2">Walls</span>
+          <ul className="pbi-re-stack-1">
+            {editable.map((w) => (
+              <li key={w.index} className="pbi-re-line pbi-re-hair pbi-re-round pbi-re-p2 pbi-re-stack-1">
+                <div className="pbi-re-row pbi-re-mid pbi-re-gap-2">
+                  <span className="pbi-re-tsm pbi-re-ink-1 pbi-re-w12">Wall {w.index + 1}</span>
+                  <NumberField
+                    className="pbi-re-input pbi-re-w24 pbi-re-right" value={w.width}
+                    onCommit={(v) => setWallLength(w.index, v)}
+                  />
+                  <span className="pbi-re-t11 pbi-re-quiet pbi-re-grow">mm</span>
+                  <button type="button" className="pbi-re-btn pbi-re-px2" title="Insert window" onClick={() => addOpening('window', w.index)}>+ Window</button>
+                  <button type="button" className="pbi-re-btn pbi-re-px2" title="Insert door" onClick={() => addOpening('door', w.index)}>+ Door</button>
+                  {scope === 'room' && (
+                    <button type="button" className="pbi-re-btn-ghost" title="Split this wall in two" onClick={() => addCorner(w.index)}>⊕</button>
+                  )}
+                  {/* T62 · the hook declared at the top of this file. Absent in
+                      PRO's own calls, so PRO's row is PRO's row. */}
+                  {onOpenWall && (
+                    <button
+                      type="button"
+                      className="pbi-re-btn pbi-re-px2"
+                      data-open-wall={w.index}
+                      title="Open this wall's elevation — slopes, recesses, chimneys, windows and doors"
+                      onClick={() => onOpenWall(w.index)}
+                    >
+                      Elevation ›
+                    </button>
+                  )}
+                </div>
+                {openingsOnWall(draft, w.index).map((o) => (
+                  <div key={o.id} className="pbi-re-row pbi-re-mid pbi-re-gap-1 pbi-re-t11 pbi-re-ink-3">
+                    <span className="pbi-re-w12 pbi-re-cap">{o.kind}</span>
+                    <label className="pbi-re-row pbi-re-mid pbi-re-gap-1">from
+                      <NumberField className="pbi-re-input pbi-re-w16 pbi-re-right" value={o.x_mm}
+                        onCommit={(v) => updateOpening(o.id, { x_mm: v })} />
+                    </label>
+                    <label className="pbi-re-row pbi-re-mid pbi-re-gap-1">w
+                      <NumberField className="pbi-re-input pbi-re-w16 pbi-re-right" value={o.width}
+                        onCommit={(v) => updateOpening(o.id, { width: v })} />
+                    </label>
+                    <label className="pbi-re-row pbi-re-mid pbi-re-gap-1">h
+                      <NumberField className="pbi-re-input pbi-re-w16 pbi-re-right" value={o.height}
+                        onCommit={(v) => updateOpening(o.id, { height: v })} />
+                    </label>
+                    {o.kind === 'window' && (
+                      <label className="pbi-re-row pbi-re-mid pbi-re-gap-1">sill
+                        <NumberField className="pbi-re-input pbi-re-w14 pbi-re-right" value={o.sill}
+                          onCommit={(v) => updateOpening(o.id, { sill: v })} />
+                      </label>
+                    )}
+                    <button type="button" className="pbi-re-btn-ghost" onClick={() => removeOpening(o.id)}>×</button>
+                  </div>
+                ))}
+              </li>
+            ))}
+          </ul>
+
+          {/* ─── The boxes (F10.3), as numbers ───
+              The plan is where they are DRAGGED; this is where they are typed,
+              which is the same pair of gestures every other measurement in this
+              window has. */}
+          {boxes.length > 0 && (
+            <>
+              <span className="pbi-re-txs pbi-re-caps pbi-re-track pbi-re-ink-2">Boxes in the plan</span>
+              <ul className="pbi-re-stack-1" data-box-list="1">
+                {boxes.map((b) => (
+                  <li key={b.id} className="pbi-re-line pbi-re-hair pbi-re-round pbi-re-p2 pbi-re-row pbi-re-mid pbi-re-gap-2">
+                    <span className="pbi-re-tsm pbi-re-ink-1 pbi-re-w10">Box</span>
+                    {[['x', 'X'], ['y', 'Y'], ['w', 'W'], ['d', 'D']].map(([key, label]) => (
+                      <label key={key} className="pbi-re-row pbi-re-mid pbi-re-gap-1 pbi-re-t11 pbi-re-ink-3">
+                        {label}
+                        <NumberField
+                          className="pbi-re-input pbi-re-w16 pbi-re-right"
+                          value={b[key]}
+                          onCommit={(v) => setBoxes(boxes.map((o) => (o.id === b.id
+                            ? migrateBox({ ...o, [key]: v })
+                            : o)))}
+                        />
+                      </label>
+                    ))}
+                    <button type="button" className="pbi-re-btn-ghost" title="Remove this box" onClick={() => removeBox(b.id)}>×</button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {shapeIssues.map((iss, i) => (
+            <p key={i} className="pbi-re-t11 pbi-re-px2 pbi-re-py1 pbi-re-round pbi-re-line pbi-re-hair-warn pbi-re-fill-warn pbi-re-warn">{iss}</p>
+          ))}
+
+          {!guard.ok && (
+            <div className="pbi-re-t11 pbi-re-px2 pbi-re-py1 pbi-re-round pbi-re-line pbi-re-hair-bad pbi-re-fill-bad pbi-re-bad pbi-re-stack-1">
+              <div>{guard.message}</div>
+              <ul className="pbi-re-bullets pbi-re-bullets-in">
+                {guard.blocking.map((b, i) => <li key={i}>{b.label}: {b.reason}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {/* T49 F2: the third sentence explains the + Box, which the WIZARD
+              door does not draw. A paragraph about a button that is not on the
+              screen is the same offence as the button itself. */}
+          {/* T50 F12: the same paragraph in both doors, because it is the same
+              screen in both doors. The + Box sentence no longer hangs off
+              `wizard`: the button is drawn either way. */}
+          <p className="pbi-re-t11 pbi-re-quiet pbi-re-lead-loose">
+            Walls that face away from the camera hide themselves in the 3D view, so looking down at the room
+            gives a plan view. Windows and doors are drawn as openings — they do not yet block units.
+            {' A BOX does: it stands floor to ceiling and a cabinet stops at it, exactly as it stops at a wall.'}
+          </p>
+        </div>
+      </div>
+    </Modal>
+  );
+}

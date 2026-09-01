@@ -11,6 +11,7 @@ import ViewBar from './ViewBar.jsx';
 import QuoteForm from '../ui/QuoteForm.jsx';
 import Button from '../ui/Button.jsx';
 import GoldLine from '../ui/GoldLine.jsx';
+import RoomEditor from './room/RoomEditor.jsx';
 import * as A from './adapter.js';
 import { useEstimateStore } from '../estimate/store.js';
 import { buildEstimateDocument, describeDesign, estimateMailBody } from '../estimate/document.js';
@@ -138,6 +139,19 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   const [fullScreen, setFullScreen] = useState(false);
   const [preset, setPreset] = useState('room');
   const [quoteOpen, setQuoteOpen] = useState(false);
+  // ─── T62 F2/F3 · THE ROOM IS SET UP IN A MODAL, AS IT IS IN PRO ──────────
+  //
+  // CLAUDE.md's second standing decision, taken so the owner can overturn it
+  // with one word: *"The room is set up in a MODAL in retail, as it is in PRO.
+  // It needs a drawing and it is done once."* `null` is closed; an anchor
+  // rectangle is open, and the rectangle is the trigger's own, so the window
+  // stands BESIDE the button and never on it (rule 15).
+  // `null` is closed; `{ anchor }` is open. A wrapper object rather than the
+  // anchor alone, so that a trigger which somehow hands back no rectangle
+  // still OPENS the window (the shell centres what it cannot place) instead of
+  // being reported as closed — and so that no fallback rectangle has to be
+  // written here, which T60's scale law rightly forbids.
+  const [roomEditor, setRoomEditor] = useState(null);
   // ─── T61 F1 · WHAT THE SHARED CORE SAID ABOUT THE LAST `+` ───────────────
   //
   // `addUnit` refuses on its RETURN VALUE — it does not push the sentence
@@ -415,6 +429,7 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
           }}
           onQuote={() => setQuoteOpen(true)}
           onSave={onSave}
+          onEditRoom={(anchor) => setRoomEditor({ anchor })}
         />
       ) : null}
 
@@ -441,6 +456,15 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
 
       {quoteOpen ? (
         <QuoteOverlay onClose={() => setQuoteOpen(false)} onSubmit={onQuoteSubmit} />
+      ) : null}
+
+      {/* PRO's own two screens, copied into `design/room/` and routed by
+          `RoomEditor`. It is mounted at the ROOM's level rather than inside the
+          options column, because the shell it uses is `position: fixed` and a
+          window that belongs to the whole page should not be a child of one of
+          its four columns. */}
+      {roomEditor && !fullScreen ? (
+        <RoomEditor anchor={roomEditor.anchor} onClose={() => setRoomEditor(null)} />
       ) : null}
     </div>
   );

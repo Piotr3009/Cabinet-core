@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Chip from '../../ui/Chip.jsx';
 import Button from '../../ui/Button.jsx';
 import {
-  ChipRow, Field, Said, Slider,
+  ChipRow, Field, NumberField, Said,
 } from '../controls.jsx';
 import Duty from './Duty.jsx';
 import * as A from '../adapter.js';
@@ -56,24 +56,24 @@ function TopBoxMenu({
   return (
     <Duty title="TOP BOX" onBack={onBack} onDone={onDone}>
       <Field label="WIDTH">
-        <Slider
+        <NumberField
+          outOfRange={REASONS.outOfRange}
           testid="topbox-width"
           min={b.width.min}
           max={b.width.max}
-          step={10}
           value={Math.round(size.width || 0)}
-          onChange={(v) => A.setUnitSize(unitId, { width: v })}
+          onCommit={(v) => A.setUnitSize(unitId, { width: v })}
         />
       </Field>
 
       <Field label="HEIGHT" note={REASONS.topBoxStopsAtTheCeiling}>
-        <Slider
+        <NumberField
+          outOfRange={REASONS.outOfRange}
           testid="topbox-height"
           min={b.height.min}
           max={b.height.max}
-          step={10}
           value={Math.round(size.height || 0)}
-          onChange={(v) => A.setUnitSize(unitId, { height: v })}
+          onCommit={(v) => A.setUnitSize(unitId, { height: v })}
         />
       </Field>
 
@@ -130,36 +130,36 @@ export default function WardrobeMenu({
   return (
     <Duty title={String(designName || 'WARDROBE').toUpperCase()} onBack={onBack} onDone={onDone}>
       <Field label="WIDTH">
-        <Slider
+        <NumberField
+          outOfRange={REASONS.outOfRange}
           testid="wardrobe-width"
           min={b.width.min}
           max={b.width.max}
-          step={10}
           value={width}
-          onChange={(v) => A.setUnitSize(unitId, { width: v })}
+          onCommit={(v) => A.setUnitSize(unitId, { width: v })}
         />
       </Field>
 
       <Field label="HEIGHT">
-        <Slider
+        <NumberField
+          outOfRange={REASONS.outOfRange}
           testid="wardrobe-height"
           min={b.height.min}
           max={b.height.max}
-          step={10}
           value={Math.round(size.height || 0)}
-          onChange={(v) => A.setUnitSize(unitId, { height: v })}
+          onCommit={(v) => A.setUnitSize(unitId, { height: v })}
         />
       </Field>
 
       <Field label="DEPTH">
-        <Slider
+        <NumberField
+          outOfRange={REASONS.outOfRange}
           testid="wardrobe-depth"
           min={b.depth.min}
           max={b.depth.max}
-          step={10}
           standardAt={A.designBounds().defaults.depth}
           value={Math.round(size.depth || 0)}
-          onChange={(v) => A.setUnitSize(unitId, { depth: v })}
+          onCommit={(v) => A.setUnitSize(unitId, { depth: v })}
         />
       </Field>
 
@@ -179,13 +179,23 @@ export default function WardrobeMenu({
         />
       </Field>
 
-      <Field label="BAYS" note={bays > 1 ? 'A door in each bay.' : ''}>
+      {/* ─── T62 F4 · ONE NOTE PER PANEL ──────────────────────────────────
+          Two sentences stood under two fields in this one menu. CLAUDE.md
+          allows one: *"The note under a field is gone unless a caller passes
+          one deliberately, and no more than one per panel."* The one that
+          stays is the ENGINE's (`REASONS.topBoxGoesBeside`, under TOP BOX);
+          this one is PRO's own line from `RightPanel.jsx:1223` and is NOT
+          deleted — it moves onto the chips it describes, which is where PRO's
+          own hints already live (`ChipRow` reads `title || hint`) and where a
+          hand asking about a bay finds it. */}
+      <Field label="BAYS">
         <ChipRow
           testid="wardrobe-bays"
           value={String(bays)}
           options={[1, 2, 3, 4].map((n) => ({
             id: String(n),
             label: String(n),
+            title: n > 1 ? 'A door in each bay.' : '',
             reason: A.bayRefusal(unitId, n),
           }))}
           onPick={(id) => A.setBayCount(unitId, Number(id))}

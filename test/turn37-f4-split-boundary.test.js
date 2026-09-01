@@ -436,7 +436,16 @@ test('F4c — rule 15 stands: no OTHER window docks or turns the key off', () =>
     ? walk(`${dir}${e.name}/`)
     : (/\.(js|jsx)$/.test(e.name) ? [`${dir}${e.name}`] : [])));
   for (const path of walk(SRC_DIR)) {
-    if (path.endsWith('components/DoorModal.jsx') || path.endsWith('components/Modal.jsx')) continue;
+    // ─── AMENDED BY T62 F2 ─────────────────────────────────────────────
+    // `retail/design/room/Modal.jsx` is `components/Modal.jsx`, COPIED — the
+    // owner's *"jak piszę 1 do 1 to KOPIUJ"*. It is the SHELL, so it declares
+    // `dock` and `escapeCloses` as parameters; it does not USE them, which is
+    // what this test is about. Exempting the shell twice is exempting one
+    // shell. `test/turn62-f2-f3-the-copy.test.js` proves the second file is
+    // the first one.
+    if (path.endsWith('components/DoorModal.jsx')
+      || path.endsWith('components/Modal.jsx')
+      || path.endsWith('retail/design/room/Modal.jsx')) continue;
     const text = readFileSync(path, 'utf8');
     assert.doesNotMatch(text, /\bdock=/, `${path} docks a window`);
     assert.doesNotMatch(text, /escapeCloses=/, `${path} turns Escape off`);

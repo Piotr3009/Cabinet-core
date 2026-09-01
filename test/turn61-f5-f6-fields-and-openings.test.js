@@ -81,7 +81,18 @@ test('F5 · the ONE sentence retail owns names its predicate, and the bounds', (
 test('F5 · every bound in the two panels is the engine\'s, not a literal', () => {
   const options = read('src/retail/design/Options.jsx');
   const fields = [...options.matchAll(/<NumberField[\s\S]*?\/>/g)].map((m) => m[0]);
-  assert.ok(fields.length >= 6, `only ${fields.length} typed fields in the two panels`);
+  // ─── AMENDED BY T62 F3 ───────────────────────────────────────────────────
+  //
+  // Six became five, and the two that went were LICENSED: T62 deletes the
+  // `SLOPED CEILING NO | YES` chip and the two wall-height fields under it,
+  // because a chip cannot say what the owner asked for — *"gdzie jest slope ale
+  // nie cały sufit tylko część"* — and the copied `WallElevationModal.jsx` can,
+  // with Side, Start height, Run and Flat. One door to a slope, not two.
+  //
+  // The COUNT was never the law here; the law is the line under it, that every
+  // bound a typed field carries is the engine's own and not a literal. That is
+  // unchanged and is asserted over every field that remains.
+  assert.ok(fields.length >= 5, `only ${fields.length} typed fields in the two panels`);
   for (const f of fields) {
     const min = (f.match(/min=\{([^}]+)\}/) || [])[1] || '';
     const max = (f.match(/max=\{([^}]+)\}/) || [])[1] || '';
@@ -93,22 +104,45 @@ test('F5 · every bound in the two panels is the engine\'s, not a literal', () =
   }
 });
 
-test('F5 · the sliders THIS turn licensed are gone, and Slider still has callers', () => {
-  const options = read('src/retail/design/Options.jsx');
-  assert.ok(!/<Slider/.test(options), 'a slider survived in YOUR SPACE or LAYOUT');
-  // LICENSED REMOVAL, and its balance: the component itself only goes when its
-  // caller count reaches zero, and it has not — the Duty menus still use it.
+// ─── FINISHED BY T62 F5 ─────────────────────────────────────────────────────
+//
+// T61 counted TWELVE callers left in the detail menus and refused to delete the
+// component while they stood — *"the component itself only goes when its caller
+// count reaches zero, and it has not."* T62 was ordered to finish the job:
+// *"Every numeric slider in `src/retail/design/detail/**` becomes the F4 row…
+// The `Slider` export in `controls.jsx` is deleted when its caller count
+// reaches zero."*
+//
+// Twelve became zero, so the component went. The assertion is the same
+// assertion — the count, and the component's existence agreeing with it — with
+// both numbers now at the other end. The DIRECTION is the law: a slider may
+// never come back into this tree without deleting a line of this test.
+test('F5 · not one slider survives, and Slider itself is gone with them', () => {
   let callers = 0;
-  for (const dir of ['src/retail/design', 'src/retail/design/detail']) {
+  for (const dir of ['src/retail/design', 'src/retail/design/detail', 'src/retail/design/room']) {
     for (const f of readdirSync(join(ROOT, dir))) {
       const p = join(ROOT, dir, f);
       if (!statSync(p).isFile() || !/\.jsx$/.test(f)) continue;
       callers += (readFileSync(p, 'utf8').match(/<Slider/g) || []).length;
     }
   }
-  assert.equal(callers, 12, 'the Slider caller count is not what the balance reports');
-  assert.match(read('src/retail/design/controls.jsx'), /export function Slider\(/,
-    'Slider was deleted while it still had callers');
+  assert.equal(callers, 0, 'a slider survived in the design room');
+
+  const controls = read('src/retail/design/controls.jsx');
+  assert.doesNotMatch(controls, /export function Slider\(/,
+    'Slider has no callers left and must not still be exported');
+  // The tombstone the licence asks for — two lines, naming what stood here.
+  assert.match(controls, /LICENSED REMOVAL: `Slider` stood here/);
+
+  // …and every one of the twelve came back as the typed row, not as nothing.
+  // Six of the menus hold one, the wardrobe holds five.
+  let fields = 0;
+  for (const f of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
+    if (!/\.jsx$/.test(f)) continue;
+    fields += (readFileSync(join(ROOT, 'src/retail/design/detail', f), 'utf8')
+      .match(/<NumberField/g) || []).length;
+  }
+  assert.equal(fields, 12, `the twelve sliders became ${fields} typed fields`);
 });
 
 test('F5 · gold, rounded, and never orange — by token, and by token only', () => {

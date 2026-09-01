@@ -13,11 +13,34 @@ import Chip from '../ui/Chip.jsx';
 // on a 1280-wide laptop is the same control at 78% and not a control somebody
 // squeezed.
 
+/**
+ * ─── TURN 62 (CLAUDE.md F4): A FIELD IS A ROW ──────────────────────────────
+ *
+ * The owner, of the column as T61 left it: *"te twoje pola na liczby są
+ * okropne, duże, rozwalone po całości, w ogóle to nie ma składu ani takiego
+ * ładnego porządku."*
+ *
+ * He is right, and the cause was here. `Field` stacked LABEL over CONTROL over
+ * NOTE, and every numeric control carried a permanent range line as well — so
+ * six numbers became eighteen lines and the column read as a page of
+ * paragraphs rather than a list of settings.
+ *
+ * ONE ROW, TWO COLUMNS: the label on the left at a fixed width so every label
+ * in the panel starts at the same x, the control on the right, and nothing
+ * else on that line. A NOTE is a second line inside the same row and only when
+ * a caller passed one deliberately — CLAUDE.md's *"no more than one per
+ * panel"* is a rule about callers, and it is asserted over the callers rather
+ * than defended by silently dropping what one of them asked for.
+ *
+ * Both the label width and the row height are tokens in `styles/scale.css`, so
+ * a row is the same row at 78% on a laptop as at 100% on the owner's monitor
+ * (T60 F1's law: not one measurement written in a component).
+ */
 export function Field({ label, children, note }) {
   return (
-    <div className="pbi-field-block">
-      {label ? <span className="pbi-label">{label}</span> : null}
-      {children}
+    <div className="pbi-field-row">
+      {label ? <span className="pbi-label pbi-field-row-label">{label}</span> : null}
+      <div className="pbi-field-row-ctl">{children}</div>
       {note ? <p className="pbi-choice pbi-field-note">{note}</p> : null}
     </div>
   );
@@ -55,43 +78,8 @@ export function ChipRow({ options, value, onPick, testid }) {
   );
 }
 
-/**
- * A slider whose MIN and MAX are the caller's — and the caller got them from
- * the adapter, which got them from the profile or from the store's own answer.
- * Petros' iron rule (30.08): engine numbers do not enter a UI without the
- * owner's order, so what is shown is the CHOICE in millimetres and never a
- * parameter's name.
- */
-export function Slider({
-  min, max, step = 10, value, onChange, unit = 'mm', testid, standardAt = null, disabled = false,
-}) {
-  const at = Number(value);
-  return (
-    <div>
-      <input
-        className="pbi-slider"
-        type="range"
-        data-testid={testid}
-        min={min}
-        max={max}
-        step={step}
-        value={Math.max(min, Math.min(max, at))}
-        disabled={disabled}
-        onChange={(e) => onChange(Number(e.target.value))}
-      />
-      <div className="pbi-slider-scale">
-        <span className="pbi-ui pbi-ui-light pbi-quiet pbi-slider-end">{min}</span>
-        <span className="pbi-choice pbi-choice-15 pbi-slider-now">
-          {Math.round(at)}
-          {' '}
-          {unit}
-          {standardAt != null && Math.round(at) === Math.round(standardAt) ? ' — standard' : ''}
-        </span>
-        <span className="pbi-ui pbi-ui-light pbi-quiet pbi-slider-end">{max}</span>
-      </div>
-    </div>
-  );
-}
+// T62 F5 · LICENSED REMOVAL: `Slider` stood here. Its caller count reached
+// zero — twelve in the detail menus became typed rows, and YOUR SPACE had none.
 
 /**
  * ─── TURN 61 (CLAUDE.md F5): A FIELD, NOT A SLIDER ─────────────────────────
@@ -107,9 +95,10 @@ export function Slider({
  *
  * ─── THE THREE THINGS THIS IS NOT ──────────────────────────────────────────
  *
- * 1. IT DOES NOT CLAMP. `Slider` carries `value={Math.max(min, Math.min(max,
- *    at))}` — a silent clamp, right for a track with two ends and wrong for a
- *    typed number, because a client who types 4500 into a 4000 wall would be
+ * 1. IT DOES NOT CLAMP. The slider T62 deleted carried `value={Math.max(min,
+ *    Math.min(max, at))}` — a silent clamp, right for a track with two ends
+ *    and wrong for a typed number, because a client typing 4500 into a 4000
+ *    wall would be
  *    shown 4000 and told nothing. Out of range is REFUSED, the typing is left
  *    where it is so it can be corrected, and the sentence appears underneath.
  *    That is T50's room-refuses-first law, said by a text box.
@@ -172,6 +161,8 @@ export function NumberField({
           data-testid={testid}
           data-min={min}
           data-max={max}
+          title={`${min}–${max} ${unit}${
+            standardAt != null && now === Math.round(standardAt) ? ' · standard' : ''}`}
           value={draft}
           disabled={disabled}
           aria-invalid={said ? 'true' : undefined}
@@ -184,12 +175,13 @@ export function NumberField({
         />
         <span className="pbi-ui pbi-ui-light pbi-quiet pbi-numfield-unit">{unit}</span>
       </div>
-      <div className="pbi-numfield-scale">
-        <span className="pbi-ui pbi-ui-light pbi-quiet">{`${min}–${max}`}</span>
-        {standardAt != null && now === Math.round(standardAt)
-          ? <span className="pbi-choice pbi-numfield-standard">standard</span>
-          : null}
-      </div>
+      {/* ─── T62 F4 · THE RANGE IS NOT A PERMANENT LINE ───────────────────
+          It lives in the input's `title` (above), where a hand that wants it
+          finds it and an eye reading the column never has to step over it —
+          and it comes back as a SENTENCE, under the field, at the one moment
+          it is the answer to something: a value the field refused. The
+          `standard` mark went the same way, into the same title, because a
+          badge that is absent on five rows out of six is a ragged column. */}
       {said ? <span className="pbi-chip-reason" data-testid={testid ? `${testid}-said` : undefined}>{said}</span> : null}
     </div>
   );

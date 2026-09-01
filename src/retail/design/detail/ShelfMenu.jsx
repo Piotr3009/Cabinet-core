@@ -1,5 +1,6 @@
 import Button from '../../ui/Button.jsx';
-import { Field, Said, Slider } from '../controls.jsx';
+import { Field, NumberField, Said } from '../controls.jsx';
+import { REASONS } from '../reasons.js';
 import Duty, { DutyRow } from './Duty.jsx';
 import * as A from '../adapter.js';
 
@@ -43,13 +44,13 @@ export default function ShelfMenu({
         {reason ? (
           <Said testid="shelf-still">{reason}</Said>
         ) : (
-          <Slider
+          <NumberField
+            outOfRange={REASONS.outOfRange}
             testid="shelf-height"
             min={travel.fieldMin}
             max={travel.fieldMax}
-            step={5}
             value={travel.field}
-            onChange={(v) => A.setShelfHeight(unitId, item.id, v)}
+            onCommit={(v) => A.setShelfHeight(unitId, item.id, v)}
           />
         )}
       </Field>

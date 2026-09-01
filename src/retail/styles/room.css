@@ -106,8 +106,53 @@
 .pbi-panel { padding: var(--pbi-gap-5) var(--pbi-gap-5) var(--pbi-gap-6); }
 .pbi-panel-note { margin-top: var(--pbi-gap-6); }
 
+/* ─── TURN 62 (CLAUDE.md F4): THE COLUMN STOPS SHOUTING ──────────────────────
+ * The owner: *"te twoje pola na liczby są okropne, duże, rozwalone po całości,
+ * w ogóle to nie ma składu ani takiego ładnego porządku."*
+ *
+ * A field is now ONE ROW: label left at a single width, control right, a
+ * hairline between rows, and nothing else on the line. The range line that used
+ * to sit under every number is gone into the input's `title`; a NOTE is a
+ * second line inside the row and only where a caller asked for one. Six numbers
+ * are six rows.
+ *
+ * `.pbi-field-block` is kept, unchanged, for the blocks that are NOT fields —
+ * nothing outside `Field` used it, and it costs one line to leave the door open
+ * rather than break a caller nobody has looked for. */
 .pbi-field-block { margin-bottom: var(--pbi-gap-5); }
-.pbi-field-note { margin: var(--pbi-gap-2) 0 0; }
+
+.pbi-field-row {
+  display: grid;
+  grid-template-columns: var(--pbi-fieldrow-label-w) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--pbi-gap-3);
+  min-height: var(--pbi-fieldrow-h);
+  padding: var(--pbi-gap-2) 0;
+}
+/* The hairline is BETWEEN rows, so a panel does not open or close on a rule. */
+.pbi-field-row + .pbi-field-row { border-top: 1px solid var(--pbi-stone-line); }
+
+/* The label loses the gap it used to keep for the control underneath it. */
+.pbi-field-row-label { margin-bottom: 0; }
+
+/* The control side. Right-aligned, because the figures are, and because a
+   ragged right edge down a column of settings is the disorder the owner named.
+   `min-width: 0` so a long chip row shrinks instead of pushing the label out. */
+.pbi-field-row-ctl {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
+}
+.pbi-field-row-ctl > * { min-width: 0; }
+.pbi-field-row-ctl .pbi-chip-row { justify-content: flex-end; flex-wrap: wrap; }
+
+/* A NOTE is the row's second line, under both columns — never a third column
+   and never a paragraph between two settings. */
+.pbi-field-note {
+  grid-column: 1 / -1;
+  margin: var(--pbi-gap-2) 0 0;
+}
 
 /* ─── COLUMN 5 · THE STAGE, AND ITS BAR AND HINT ────────────────────────── */
 
@@ -415,9 +460,20 @@
 .pbi-room .pbi-field { height: var(--pbi-field-h); padding: 0 var(--pbi-gap-3); font-size: var(--pbi-fs-ui); }
 /* T61 F5: the typed field keeps room for its unit at whatever scale the
    viewport put the room at — one number, `--pbi-field-h`, as T60 F1 laid down. */
-.pbi-room .pbi-numfield { padding-right: calc(var(--pbi-field-h) * 0.95); }
+/* T62 F4: *"the unit as a quiet suffix INSIDE the field"* — so the figures
+   have to stop short of it rather than run into it. The suffix sits at
+   `--pbi-gap-3` from the right edge, so the number's own gutter is that plus
+   the width of "mm" plus a space to breathe. */
+.pbi-room .pbi-numfield { padding-right: calc(var(--pbi-field-h) * 1.25); }
 .pbi-room .pbi-numfield-unit { right: var(--pbi-gap-3); font-size: var(--pbi-fs-ui-sm); }
-.pbi-room .pbi-numfield-scale { margin-top: var(--pbi-gap-1); font-size: var(--pbi-fs-ui-sm); }
+
+/* ─── T62 F4 · ONE HEIGHT FOR EVERY CONTROL IN THE COLUMN ──────────────────
+ * *"nothing taller than a chip row."* The typed field, the chip and the row
+ * that holds them are all `--pbi-fieldrow-h` now, so a panel of six settings
+ * is six bands of one height rather than six sizes of box. */
+.pbi-room .pbi-field-row-ctl .pbi-field { height: var(--pbi-fieldrow-h); }
+.pbi-room .pbi-field-row-ctl .pbi-chip { min-height: var(--pbi-fieldrow-h); }
+.pbi-room .pbi-field-row-ctl .pbi-numfield-wrap { width: 100%; }
 
 /* ─── T61 F6 · WINDOWS AND DOORS ─────────────────────────────────────────────
  * One card per opening, on the panel's own ground, separated by the system's

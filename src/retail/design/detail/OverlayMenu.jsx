@@ -1,5 +1,5 @@
 import Button from '../../ui/Button.jsx';
-import { ChipRow, Field, Slider } from '../controls.jsx';
+import { ChipRow, Field, NumberField } from '../controls.jsx';
 import Duty, { DutyRow } from './Duty.jsx';
 import * as A from '../adapter.js';
 import { REASONS } from '../reasons.js';
@@ -49,14 +49,14 @@ export default function OverlayMenu({
       </Field>
 
       <Field label="FRONT HEIGHT">
-        <Slider
+        <NumberField
+          outOfRange={REASONS.outOfRange}
           testid="overlay-front"
           min={b.front.min}
           max={b.front.max}
-          step={10}
           standardAt={b.front.standard}
           value={A.overlayFrontHeight(unitId)}
-          onChange={(v) => A.setOverlayFronts(unitId, v)}
+          onCommit={(v) => A.setOverlayFronts(unitId, v)}
         />
       </Field>
 

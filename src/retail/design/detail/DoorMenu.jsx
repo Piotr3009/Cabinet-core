@@ -1,4 +1,5 @@
-import { ChipRow, Field, Said, Slider } from '../controls.jsx';
+import { ChipRow, Field, NumberField, Said } from '../controls.jsx';
+import { REASONS } from '../reasons.js';
 import Button from '../../ui/Button.jsx';
 import Duty from './Duty.jsx';
 import * as A from '../adapter.js';
@@ -85,14 +86,14 @@ export default function DoorMenu({
           {jpull.reason ? (
             <Said testid="door-jrun-said">{jpull.reason}</Said>
           ) : (
-            <Slider
+            <NumberField
+              outOfRange={REASONS.outOfRange}
               testid="door-jrun"
               min={jpull.min}
               max={jpull.max}
-              step={10}
               standardAt={jpull.standard}
               value={jpull.run}
-              onChange={(v) => A.setJpullRun(unitId, panel.id, v)}
+              onCommit={(v) => A.setJpullRun(unitId, panel.id, v)}
             />
           )}
         </Field>

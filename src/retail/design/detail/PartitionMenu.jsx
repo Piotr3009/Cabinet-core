@@ -1,5 +1,5 @@
 import Button from '../../ui/Button.jsx';
-import { Field, Said, Slider } from '../controls.jsx';
+import { Field, NumberField, Said } from '../controls.jsx';
 import Duty, { DutyRow } from './Duty.jsx';
 import * as A from '../adapter.js';
 import { REASONS } from '../reasons.js';
@@ -35,13 +35,13 @@ export default function PartitionMenu({
         <Said testid="partition-still">{REASONS.partitionPinned}</Said>
       ) : (
         <Field label="HOW FAR FROM THE LEFT">
-          <Slider
+          <NumberField
+            outOfRange={REASONS.outOfRange}
             testid="partition-x"
             min={travel.min}
             max={travel.max}
-            step={10}
             value={travel.value}
-            onChange={(v) => A.setPartitionPos(unitId, item.id, v)}
+            onCommit={(v) => A.setPartitionPos(unitId, item.id, v)}
           />
         </Field>
       )}

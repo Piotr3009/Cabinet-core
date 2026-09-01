@@ -1,5 +1,6 @@
 import Button from '../../ui/Button.jsx';
-import { ChipRow, Field, Said, Slider } from '../controls.jsx';
+import { ChipRow, Field, NumberField, Said } from '../controls.jsx';
+import { REASONS } from '../reasons.js';
 import Duty, { DutyRow } from './Duty.jsx';
 import * as A from '../adapter.js';
 
@@ -44,13 +45,13 @@ export default function RailMenu({ unitId, item, onBack, onDone, onRemoved }) {
         {why ? (
           <Said testid="rail-follows">{why}</Said>
         ) : (
-          <Slider
+          <NumberField
+            outOfRange={REASONS.outOfRange}
             testid="rail-height"
             min={travel.min}
             max={travel.max}
-            step={10}
             value={travel.offset}
-            onChange={(v) => A.setRailOffset(unitId, item.id, v)}
+            onCommit={(v) => A.setRailOffset(unitId, item.id, v)}
           />
         )}
       </Field>

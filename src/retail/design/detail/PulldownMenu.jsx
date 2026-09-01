@@ -1,5 +1,6 @@
 import Button from '../../ui/Button.jsx';
-import { Field, Slider } from '../controls.jsx';
+import { Field, NumberField } from '../controls.jsx';
+import { REASONS } from '../reasons.js';
 import Duty, { DutyRow } from './Duty.jsx';
 import * as A from '../adapter.js';
 
@@ -24,14 +25,14 @@ export default function PulldownMenu({ unitId, item, onBack, onDone, onRemoved }
   return (
     <Duty title="PULL-DOWN RAIL" onBack={onBack} onDone={onDone}>
       <Field label="HOW FAR DOWN FROM THE TOP">
-        <Slider
+        <NumberField
+          outOfRange={REASONS.outOfRange}
           testid="pulldown-drop"
           min={travel.min}
           max={travel.max}
-          step={travel.step}
           standardAt={travel.standard}
           value={travel.drop}
-          onChange={(v) => A.setPulldownDrop(unitId, item.id, v)}
+          onCommit={(v) => A.setPulldownDrop(unitId, item.id, v)}
         />
       </Field>
 

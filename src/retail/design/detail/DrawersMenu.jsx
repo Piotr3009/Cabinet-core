@@ -1,4 +1,5 @@
-import { ChipRow, Field, Said, Slider } from '../controls.jsx';
+import { ChipRow, Field, NumberField, Said } from '../controls.jsx';
+import { REASONS } from '../reasons.js';
 import Button from '../../ui/Button.jsx';
 import Duty, { DutyRow } from './Duty.jsx';
 import * as A from '../adapter.js';
@@ -89,14 +90,14 @@ export default function DrawersMenu({ unitId, item, onBack, onDone, onRemoved })
         {fixed ? (
           <Said testid="drawers-fronts-fixed">{fixed}</Said>
         ) : (
-          <Slider
+          <NumberField
+            outOfRange={REASONS.outOfRange}
             testid="drawers-front-height"
             min={b.front.min}
             max={b.front.max}
-            step={10}
             standardAt={b.front.standard}
             value={Math.round(item?.height_mm ?? b.front.standard)}
-            onChange={(v) => A.setStackFronts(unitId, v)}
+            onCommit={(v) => A.setStackFronts(unitId, v)}
           />
         )}
       </Field>

@@ -1,0 +1,46 @@
+
+F2 — THE ROOM EDITOR, COPIED
+  ok  YOUR SPACE offers EDIT THE ROOM — EDIT THE ROOM
+  ok  EDIT THE ROOM opens PRO's own room window
+  ok  the window stands BESIDE its trigger, not on it — trigger x188 w239 · modal x667 w860
+  ok  at ONE WALL the copy shows one wall and asks its height — 1 wall
+  ok  the copy shows every control PRO shows — 7 of 7
+  ok  a walls list with one row per wall — 4 walls
+  ok  the L preset is a six-wall room — 4 → 6 walls
+  ok  a typed wall length holds every right angle — corners [90,90,90,90]
+  ok  + Box is offered
+  ok  a box stands in the plan and in the list — 1 in the plan
+
+F3 — THE WALL ELEVATION, AND THE REAL SLOPE
+  ok  a wall opens its own elevation editor
+  ok  the ELEVATION offers door, window and a slope at each end — 4 rows
+  ok  …named as PRO names them — Put on the wallAdd doorA doorway — it stands on the floorAdd windowA window — it has a sil
+  ok  the TOP view offers a recess and a chimney — 2 rows — Put on the wallAdd recessAn alcove — 900 × 300 to startAdd chimneyA br
+  ok  one wall, two views, one set of data — 2 views
+  ok  the slope lands ON THIS WALL — 1 on the wall
+  ok  a slope has Side, Start height and Run — 3 of 3
+  ok  …and Flat, while there is only one slope on this wall
+  ok  the slope the editor wrote is the one that was typed — slope R · 900 · start 1800 · run 900
+  ok  the 3-D room has wall geometry to read — {"verts":5,"width":4000,"left":2500,"right":1800,"top":2500}
+  ok  the ceiling is cut on PART of the wall, not all of it — left 2500 mm · right 1800 mm · full 2500 mm
+  ok  …and the right end is the 1800 that was typed — 1800 mm
+  ok  a recess asks Width, Depth and From the left — From the leftmmWidthmmDepthmmAn alcove goes INTO the wall — a unit can sit back 
+  ok  a window asks Width, Height, From the left and Sill — From the leftmmWidthmmHeightmmSillmm off the floorA door stands on the floor — it has no s
+  ok  two slopes on one wall, and Flat steps aside for the note — 2 slopes · note=true · flat hidden=true
+  ok  ON THIS WALL lists them, each with TAKE IT OFF THE WALL — 3 rows, 3 remove buttons
+
+F4 — THE COLUMN STOPS SHOUTING
+  ·   AFTER — YOUR SPACE: {"height":537,"lines":8,"fields":2,"sliders":0}
+  ok  every setting in YOUR SPACE is a row — 3 rows
+  ok  every control in the column is ONE height — 4 controls at 34px
+  ok  …and no setting is more than one row tall — rows [46,47,50] · control 34px
+  ok  the range lives in the title, not under the field — 0 scale lines · title "600–4000 mm"
+  ok  a refused value shows its sentence — and only then — 0 → 1
+
+F5 — NOT ONE SLIDER LEFT
+  ok  the wardrobe menu has no slider in it — 0 sliders
+  ok  …and its numbers are typed fields instead — 3 fields
+  ok  not one range input anywhere in the design room — 0 on the page
+
+────────────────────────────────────────────────────────────────────────
+35 checks, 0 failed

@@ -133,7 +133,7 @@
   /* T62 F4: a field is a ROW — label left at ONE width so every label in the
      panel starts at the same x, control right in what is left. Two numbers,
      here, so the row is the same row at 78% as at 100%. */
-  --pbi-fieldrow-label-w: calc(112 * var(--pbi-scale));
+  --pbi-fieldrow-label-w: calc(134 * var(--pbi-scale));
   /* THE ONE HEIGHT, and it is the chip's — *"nothing taller than a chip
      row"*. Written as the token rather than as its number, so the two can
      never drift apart. */

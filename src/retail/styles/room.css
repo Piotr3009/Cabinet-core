@@ -460,7 +460,11 @@
 .pbi-room .pbi-field { height: var(--pbi-field-h); padding: 0 var(--pbi-gap-3); font-size: var(--pbi-fs-ui); }
 /* T61 F5: the typed field keeps room for its unit at whatever scale the
    viewport put the room at — one number, `--pbi-field-h`, as T60 F1 laid down. */
-.pbi-room .pbi-numfield { padding-right: calc(var(--pbi-field-h) * 0.95); }
+/* T62 F4: *"the unit as a quiet suffix INSIDE the field"* — so the figures
+   have to stop short of it rather than run into it. The suffix sits at
+   `--pbi-gap-3` from the right edge, so the number's own gutter is that plus
+   the width of "mm" plus a space to breathe. */
+.pbi-room .pbi-numfield { padding-right: calc(var(--pbi-field-h) * 1.25); }
 .pbi-room .pbi-numfield-unit { right: var(--pbi-gap-3); font-size: var(--pbi-fs-ui-sm); }
 
 /* ─── T62 F4 · ONE HEIGHT FOR EVERY CONTROL IN THE COLUMN ──────────────────

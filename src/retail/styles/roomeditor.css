@@ -92,18 +92,6 @@
 .pbi-re-stack-2 > * + * { margin-top: 0.5rem; }
 .pbi-re-stack-3 > * + * { margin-top: 0.75rem; }
 
-/* ─── WIDTHS — PRO's own, to the pixel ──────────────────────────────────── */
-.pbi-re-w10 { width: 2.5rem; }
-.pbi-re-w12 { width: 3rem; }
-.pbi-re-w14 { width: 3.5rem; }
-.pbi-re-w16 { width: 4rem; }
-.pbi-re-w24 { width: 6rem; }
-.pbi-re-wfull { width: 100%; }
-.pbi-re-w420 { width: 420px; }
-.pbi-re-w640 { width: 640px; }
-.pbi-re-w820 { width: 820px; }
-.pbi-re-w860 { width: 860px; }
-
 /* ─── PADDING AND MARGIN ────────────────────────────────────────────────── */
 .pbi-re-p0 { padding: 0; }
 .pbi-re-p2 { padding: 0.5rem; }
@@ -284,6 +272,43 @@
   margin-top: 0.75rem;
   margin-bottom: 0.75rem;
 }
+
+/* ─── WIDTHS — PRO's own, to the pixel, AND DECLARED AFTER THE COMPONENTS ──
+ *
+ * MEASURED FAULT, caught by the walk's own frame rather than by a test: these
+ * sat ABOVE the component block on the first pass, so `.pbi-re-input`'s
+ * `width: 100%` beat `.pbi-re-w24` on source order and every per-wall length
+ * field in the room editor collapsed to a sliver with its number invisible.
+ * Both are single-class selectors, so ORDER is the whole of the cascade here —
+ * a utility that is meant to override a component has to come after it. */
+/* ─── WIDTHS — PRO's own, to the pixel ──────────────────────────────────── */
+.pbi-re-w10 { width: 2.5rem; }
+.pbi-re-w12 { width: 3rem; }
+.pbi-re-w14 { width: 3.5rem; }
+.pbi-re-w16 { width: 4rem; }
+.pbi-re-w24 { width: 6rem; }
+.pbi-re-wfull { width: 100%; }
+.pbi-re-w420 { width: 420px; }
+.pbi-re-w640 { width: 640px; }
+.pbi-re-w820 { width: 820px; }
+.pbi-re-w860 { width: 860px; }
+
+
+/* ─── THE ONE ADDED CONTROL NEVER PUSHES ONE OF PRO'S OFF THE EDGE ────────
+ *
+ * MEASURED FAULT, caught by the walk's own frame. `RoomModal.jsx`'s wall row
+ * carries PRO's four controls — the length field, `+ Window`, `+ Door`, `⊕` —
+ * and T62 adds a fifth, `Elevation ›`, which is F3's entry. At PRO's own 860 px
+ * the fifth one ran past the right edge of the walls column and took `Elevation`
+ * with it, so the entry the owner's iron rule requires to be VISIBLE was half a
+ * letter wide.
+ *
+ * The fix is CSS and only CSS: the row wraps. Nothing in the copy moves, no
+ * control is made smaller, no modal is made wider than the one PRO ships — the
+ * fifth button simply falls to a second line where there is no room for it on
+ * the first. Scoped to rows that are a list item's own, which is exactly the
+ * wall rows and the box rows and nothing else in the window. */
+.pbi-re-panel li > .pbi-re-row { flex-wrap: wrap; }
 
 /* ─── COLOUR MODIFIERS — declared last, so a modifier beats a component ──── */
 .pbi-re-ink { color: var(--pbi-onyx); }

@@ -1,0 +1,180 @@
+{
+ "steps": [
+  {
+   "label": "YOUR SPACE offers EDIT THE ROOM",
+   "ok": true,
+   "detail": "EDIT THE ROOM"
+  },
+  {
+   "label": "EDIT THE ROOM opens PRO's own room window",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the window stands BESIDE its trigger, not on it",
+   "ok": true,
+   "detail": "trigger x188 w239 · modal x667 w860"
+  },
+  {
+   "label": "at ONE WALL the copy shows one wall and asks its height",
+   "ok": true,
+   "detail": "1 wall"
+  },
+  {
+   "label": "the copy shows every control PRO shows",
+   "ok": true,
+   "detail": "7 of 7"
+  },
+  {
+   "label": "a walls list with one row per wall",
+   "ok": true,
+   "detail": "4 walls"
+  },
+  {
+   "label": "the L preset is a six-wall room",
+   "ok": true,
+   "detail": "4 → 6 walls"
+  },
+  {
+   "label": "a typed wall length holds every right angle",
+   "ok": true,
+   "detail": "corners [90,90,90,90]"
+  },
+  {
+   "label": "+ Box is offered",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "a box stands in the plan and in the list",
+   "ok": true,
+   "detail": "1 in the plan"
+  },
+  {
+   "label": "a wall opens its own elevation editor",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the ELEVATION offers door, window and a slope at each end",
+   "ok": true,
+   "detail": "4 rows"
+  },
+  {
+   "label": "…named as PRO names them",
+   "ok": true,
+   "detail": "Put on the wallAdd doorA doorway — it stands on the floorAdd windowA window — it has a sil"
+  },
+  {
+   "label": "the TOP view offers a recess and a chimney",
+   "ok": true,
+   "detail": "2 rows — Put on the wallAdd recessAn alcove — 900 × 300 to startAdd chimneyA br"
+  },
+  {
+   "label": "one wall, two views, one set of data",
+   "ok": true,
+   "detail": "2 views"
+  },
+  {
+   "label": "the slope lands ON THIS WALL",
+   "ok": true,
+   "detail": "1 on the wall"
+  },
+  {
+   "label": "a slope has Side, Start height and Run",
+   "ok": true,
+   "detail": "3 of 3"
+  },
+  {
+   "label": "…and Flat, while there is only one slope on this wall",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the slope the editor wrote is the one that was typed",
+   "ok": true,
+   "detail": "slope R · 900 · start 1800 · run 900"
+  },
+  {
+   "label": "the 3-D room has wall geometry to read",
+   "ok": true,
+   "detail": "{\"verts\":5,\"width\":4000,\"left\":2500,\"right\":1800,\"top\":2500}"
+  },
+  {
+   "label": "the ceiling is cut on PART of the wall, not all of it",
+   "ok": true,
+   "detail": "left 2500 mm · right 1800 mm · full 2500 mm"
+  },
+  {
+   "label": "…and the right end is the 1800 that was typed",
+   "ok": true,
+   "detail": "1800 mm"
+  },
+  {
+   "label": "a recess asks Width, Depth and From the left",
+   "ok": true,
+   "detail": "From the leftmmWidthmmDepthmmAn alcove goes INTO the wall — a unit can sit back "
+  },
+  {
+   "label": "a window asks Width, Height, From the left and Sill",
+   "ok": true,
+   "detail": "From the leftmmWidthmmHeightmmSillmm off the floorA door stands on the floor — it has no s"
+  },
+  {
+   "label": "two slopes on one wall, and Flat steps aside for the note",
+   "ok": true,
+   "detail": "2 slopes · note=true · flat hidden=true"
+  },
+  {
+   "label": "ON THIS WALL lists them, each with TAKE IT OFF THE WALL",
+   "ok": true,
+   "detail": "3 rows, 3 remove buttons"
+  },
+  {
+   "label": "YOUR SPACE, measured",
+   "ok": true,
+   "detail": "{\"height\":537,\"lines\":8,\"fields\":2,\"sliders\":0}"
+  },
+  {
+   "label": "every setting in YOUR SPACE is a row",
+   "ok": true,
+   "detail": "3 rows"
+  },
+  {
+   "label": "every control in the column is ONE height",
+   "ok": true,
+   "detail": "4 controls at 34px"
+  },
+  {
+   "label": "…and no setting is more than one row tall",
+   "ok": true,
+   "detail": "rows [46,47,50] · control 34px"
+  },
+  {
+   "label": "the range lives in the title, not under the field",
+   "ok": true,
+   "detail": "0 scale lines · title \"600–4000 mm\""
+  },
+  {
+   "label": "a refused value shows its sentence — and only then",
+   "ok": true,
+   "detail": "0 → 1"
+  },
+  {
+   "label": "the wardrobe menu has no slider in it",
+   "ok": true,
+   "detail": "0 sliders"
+  },
+  {
+   "label": "…and its numbers are typed fields instead",
+   "ok": true,
+   "detail": "3 fields"
+  },
+  {
+   "label": "not one range input anywhere in the design room",
+   "ok": true,
+   "detail": "0 on the page"
+  }
+ ],
+ "failed": 0
+}

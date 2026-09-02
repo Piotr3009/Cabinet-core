@@ -1,0 +1,67 @@
+
+F1 — HINGES, ALWAYS (retail) · X-RAY-ONLY (PRO)
+  ok  retail — SOLID view, X-ray off — xray=false
+  ok  retail — hinge plates DRAWN in Solid, doors shut — 6 plates modelled
+  ok  retail — runners are asked for with the fronts on — 0 runner rows reported
+  ok  PRO — SOLID view, X-ray off, Show hinges off
+  ok  PRO — not one hinge plate drawn: X-ray-only, as it always was — -1 plates
+  ok  PRO — in X-ray the plates appear, as they always have — 6 plates
+
+F2 — THE LIGHTING PANEL, COPIED
+  ok  LED entries are in the scene with the panel CLOSED — 3 LED icons
+  ok  a door on the stage is the scene's selection — {"unitId":"u_4q4n8x7","elementRef":"W01-F"}
+  ok  LIGHTS opens the lighting panel (modal "lighting") — modal=lighting
+  ok  …and does not toggle the light — on: false → false
+  ok  PRO's own panel is on screen
+  ok  the panel stands BESIDE its button, not on it — button x1331 y56 · panel x748 y145 w326
+  ok  ON / OFF, in PRO's place for it
+  ok  the BRIGHTNESS slider (*"nie ma suwaka do bright"*)
+  ok  colour temperature
+  ok  the room rig — four lamps and the presets
+  ok  the placement tools, each with its drawing — 5 tools
+  ok  the light is ON and a strip is placed — on=true · 1 strip(s)
+
+F3 — THE ELEMENT EDITORS, COPIED
+  ok  a click on a door opens the DOOR duty — menu=door
+  ok  DOOR › EDIT THIS DOOR opens PRO's DoorModal
+  ok  …with PRO's own fields in it — 8 inputs
+  ok  DOOR › HINGES opens the same window at section B
+  ok  LAYOUT › the wardrobe opens its menu — menu=wardrobe
+  ok  WARDROBE › WIDTH AND HEIGHT › opens PRO's unit-size window — modal=unit-size
+  ok  WARDROBE › ADD ITEMS › opens PRO's add-items window — modal=add-items
+  ok  WARDROBE › THIS WARDROBE'S COLOUR › opens PRO's unit-finish window — modal=unit-finish
+  ok  INTERIOR shows PRO's AddItems, whole — 10 rows
+  ok  a watch drawer stands in the wardrobe and INTERIOR offers its ›
+  ok  WATCH DRAWER › LAYOUT, GLASS AND FINISH opens PRO's WatchLayoutModal
+  ok  …with PRO's four layouts drawn — 4 cards
+  ok  a rail stands in the wardrobe and INTERIOR offers its ›
+  ok  HANGING RAIL › EDIT THIS RAIL opens PRO's window for it — modal=rail
+  ok  the J strip's own call opens PRO's JpullRunModal (one slider)
+  ·   front gap — the boot scene has no gap under 3 mm; the rows render when frontGapRows answers — 0 rows · clearance rows present
+
+F4 — THE EGGER TILES, COPIED
+  ok  FRONTS carries PRO's material slot (Choose decor… / Change)
+  ok  …and PRO's door-style gallery, with its drawings — 8 tiles
+  ok  LAMINATE names the decor picker — the source→picker law, read off the profile — picker=decor
+  ok  the slot opens PRO's tiled EGGER modal
+  ok  …with tiles from the real pack, a search and the family bar — 85 tiles · 16 families
+  ok  a tile click CHOOSES and the window CLOSES — null → egger:H1145_10 · closed=true
+  ok  …and the slot shows the chosen tile with EGGER's attribution
+  ok  a second wardrobe stands beside the first — 2 units
+  ok  THIS WARDROBE'S COLOUR › opens PRO's UnitFinishModal
+  ok  …offering the project's own palette — 2 entries
+  ok  the colour lands on ONE wardrobe — the other keeps the project's — unit 1 front_type_id=null · unit 2 front_type_id=f1
+  ok  WARDROBE › MATERIALS AND HARDWARE opens the materials window
+  ok  …with PRO's carcass slot, front slot and WizardHardware
+  ok  BROWSE HERE shows PRO's in-step picker for the source
+
+F5 — THE VIEW BAR
+  ·   BEFORE (origin/main) — the bar — Front · Inside · Room · Show dimensions · Front dimensions · Outlines · X-ray · Props · Hide fronts · Measure · Open all · Lights · Reset view · ⛶
+  ok  FRONT DIMENSIONS and MEASURE are gone from the retail bar — Front · Inside · Room · Show dimensions · Outlines · X-ray · Props · Hide fronts · Open all · Lights · Reset view · ⛶
+  ok  …and were there before — 14 → 12 buttons
+  ok  each tool is a TILE — a hairline, Inter, smaller type — 1px border · Inter 12.621px · 36px tall
+  ok  one row height — heights [36]
+  ok  RESET VIEW stands on the design's centre line, looking at its centre — off-centre by 0.000 m · target off by 0.000 m · 3.97 m in front
+
+────────────────────────────────────────────────────────────────────────
+54 checks, 0 failed

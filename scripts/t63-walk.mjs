@@ -101,10 +101,16 @@ async function open({ width = 1920, height = 1200 } = {}) {
     await page.sleep(700);
     return true;
   };
-  /** Point the page at the showroom BEFORE the app boots (the T23 knob). */
+  /**
+   * Point the page at the showroom BEFORE the app boots (the T23 knob). The
+   * catalogues are asked for at module scope, so the knob has to be set and
+   * the page RELOADED — a hash change is not a boot.
+   */
   page.showroom = async (url) => {
     await page.goto(url);
     await page.evaluate(`try { localStorage.setItem('cc.hardwareBase', ${JSON.stringify(showroom.url)}); } catch (e) {} return true;`);
+    await page.evaluate('location.reload(); return true;');
+    await page.sleep(1500);
   };
   return page;
 }
@@ -120,8 +126,7 @@ const shot = (page, file) => page.screenshot(`${SHOTS}${file}`);
 
 /** Open the design room on a category. */
 async function room(page, category = 'space', { base = BASE } = {}) {
-  await page.showroom(`${base}retail.html`);
-  await page.goto(`${base}retail.html#/design`);
+  await page.showroom(`${base}retail.html#/design`);
   await stageReady(page);
   if (category !== 'space') {
     await page.click(`[data-testid="cat-${category}"]`);
@@ -238,6 +243,15 @@ if (runs('f2')) {
     check('LED entries are in the scene with the panel CLOSED', icons >= 2, `${icons} LED icons`);
     await shot(page, 'f2-led-entries-panel-closed.png');
 
+    // THE SCENE'S OWN SELECTION FIRST — click a door — and then LIGHTS. The
+    // panel reads `selectedElement` exactly as PRO's does, and in this
+    // viewport it stands over the stage's centre once open.
+    const c = await stageCentre(page);
+    await page.clickAt(c.x, c.y);
+    await page.sleep(1000);
+    const selected = await page.ask('window.__cc.ui.getState().selectedElement');
+    check('a door on the stage is the scene\'s selection', Boolean(selected && selected.unitId), JSON.stringify(selected));
+
     // THE LIGHTS BUTTON OPENS THE PANEL — and does not switch the light.
     await page.click('[data-testid="view-lights"]');
     await page.sleep(1400);
@@ -268,12 +282,9 @@ if (runs('f2')) {
     await shot(page, 'f2-brightness.png');
 
     // A LIT WARDROBE: ON, then a side line on the selected cabinet — through
-    // the panel's own buttons, on the scene's own selection (click a door).
+    // the panel's own buttons, on the scene's own selection.
     await page.click('[data-lighting-on]');
     await page.sleep(600);
-    const c = await stageCentre(page);
-    await page.clickAt(c.x, c.y);
-    await page.sleep(1000);
     const side = await page.has('[data-lighting-add-side]');
     if (side) {
       await page.click('[data-lighting-add-side]');
@@ -458,6 +469,13 @@ if (runs('f4')) {
     check('…and PRO\'s door-style gallery, with its drawings', gallery >= 5, `${gallery} tiles`);
     await shot(page, 'f4-fronts-slot-and-gallery.png');
 
+    // PRO's own normaliser starts a front slot on the profile's FIRST source,
+    // which is Spray — so the client presses LAMINATE first, as in the wizard,
+    // and the slot's picker becomes the decor grid. The source law, read.
+    await page.click('[data-testid="material-slot-front"] [data-front-source="laminate"]');
+    await page.sleep(800);
+    const picker = await page.ask('document.querySelector(\'[data-testid="material-slot-front"] [data-material-panel]\')?.dataset.materialPickerKind');
+    check('LAMINATE names the decor picker — the source→picker law, read off the profile', picker === 'decor', `picker=${picker}`);
     const opener = (await page.has('[data-testid="material-slot-front"] [data-change-decor]'))
       ? '[data-testid="material-slot-front"] [data-change-decor]'
       : '[data-testid="material-slot-front"] [data-choose-decor]';
@@ -474,10 +492,10 @@ if (runs('f4')) {
 
     // ONE CLICK, ONE ANSWER: a tile chooses and the window closes.
     const chosenId = await page.ask('document.querySelectorAll("[data-egger-tile]")[3]?.dataset.decorFinish || null');
-    const before = await page.ask('window.__cc.project.getState().project.design.fronts.types[0].finish_id');
+    const before = await page.ask('window.__cc.project.getState().project.design.fronts.types?.[0]?.finish_id || null');
     await page.ask('(() => { const t = document.querySelectorAll("[data-egger-tile]")[3]; if (t) t.click(); return true; })()');
     await page.sleep(1600);
-    const after = await page.ask('window.__cc.project.getState().project.design.fronts.types[0].finish_id');
+    const after = await page.ask('window.__cc.project.getState().project.design.fronts.types?.[0]?.finish_id || null');
     const closed = !(await page.has('[data-decor-picker-modal]'));
     check('a tile click CHOOSES and the window CLOSES', closed && after === chosenId && after !== before,
       `${before} → ${after} · closed=${closed}`);

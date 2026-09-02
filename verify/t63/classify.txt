@@ -1,0 +1,93 @@
+
+── THE ENGINE AND THE LIB, AGAINST THEIR BASE — READ-ONLY TONIGHT
+path                                 diff vs origin/main  wanted             
+───────────────────────────────────  ───────────────────  ───────────────────
+src/engine                           nothing              nothing              ok
+src/lib                              nothing              nothing              ok
+KIT_SINK.lsp                         unchanged            unchanged            ok
+reference                            unchanged            unchanged            ok
+src/3d (one licensed: Hardware.jsx)  src/3d/Hardware.jsx  src/3d/Hardware.jsx  ok
+src/stores                           nothing              nothing              ok
+
+CLAUDE.md: *"src/engine/** and src/lib/** — read-only tonight. No engine
+file is licensed."* No whitelist to argue about, because there is no
+whitelist. The six hashes answer the same question a second time.
+
+VERDICT: CLEAN — not one engine or lib byte moved; one 3d file, the licensed one.
+
+── THE FROZEN PRO SURFACE
+path            diff vs origin/main
+──────────────  ───────────────────
+index.html      unchanged            ok
+src/App.jsx     unchanged            ok
+src/main.jsx    unchanged            ok
+src/components  unchanged            ok
+src/pages       unchanged            ok
+
+NOT ONE VISIBLE BYTE OF PRO CHANGES THIS TURN — the turn that copied
+twenty-one of its components into the client's room.
+
+VERDICT: CLEAN — PRO IS FROZEN.
+
+── src/3d/chrome.js — THE TWELFTH CHANNEL, AND THE TRAP
+what                               answer   wanted 
+─────────────────────────────────  ───────  ───────
+bare channel falls through in PRO  true     true     ok
+wired gate closed in PRO           true     true     ok
+wired gate open in retail          true     true     ok
+master switch clears it            true     true     ok
+entry claims                       12       12       ok
+gates in Hardware.jsx              2        2        ok
+PRO names it                       nowhere  nowhere  ok
+
+A channel nobody set FALLS THROUGH to the master switch, and PRO's is ON —
+so the gate is the channel AND the switch off, which only the retail entry
+throws. PRO's two conditions read what they read last night.
+
+VERDICT: CLEAN — hinges always for the client, X-ray-only for the joiner.
+
+── THE IRON BOUNDARY (Petros, 30.08)
+what                answer   wanted 
+──────────────────  ───────  ───────
+PRO names retail    nowhere  nowhere  ok
+retail imports PRO  nowhere  nowhere  ok
+
+Twenty-one PRO components exist twice tonight. Not one retail file IMPORTS
+one — the law is COPY, not import, and the walker in
+test/turn59-f1-the-switch.test.js is the real assertion.
+
+VERDICT: CLEAN — two applications, one house, one wall between them.
+
+── T63 · THE COPY IS A COPY — TWENTY-ONE TIMES
+file                     PRO lines  copy lines  labels/hooks/gestures  lost   
+───────────────────────  ─────────  ──────────  ─────────────────────  ───────
+LightingPanel.jsx        862        862         16/32/3                nothing  ok
+DoorModal.jsx            997        997         20/34/5                nothing  ok
+ElementProperties.jsx    1142       1142        14/38/5                nothing  ok
+UnitWarnings.jsx         62         62          0/2/0                  nothing  ok
+WatchLayoutModal.jsx     247        247         5/6/3                  nothing  ok
+RailModal.jsx            149        149         6/7/3                  nothing  ok
+UnitSizeModal.jsx        142        142         3/3/3                  nothing  ok
+AddItemsModal.jsx        120        120         4/2/4                  nothing  ok
+AddItems.jsx             939        939         21/21/5                nothing  ok
+FrontGapModal.jsx        154        154         5/4/2                  nothing  ok
+FrontGapWarnings.jsx     101        101         0/6/1                  nothing  ok
+JpullRunModal.jsx        125        125         1/4/3                  nothing  ok
+DecorPickerModal.jsx     394        394         3/17/4                 nothing  ok
+DecorPicker.jsx          144        144         4/0/2                  nothing  ok
+ColourPicker.jsx         98         98          1/0/2                  nothing  ok
+VeneerPicker.jsx         110        110         4/2/2                  nothing  ok
+MaterialChoicePanel.jsx  161        161         3/5/5                  nothing  ok
+ChosenDecorTile.jsx      119        119         2/7/1                  nothing  ok
+FrontStyleGallery.jsx    110        110         1/4/2                  nothing  ok
+WizardHardware.jsx       226        226         7/13/1                 nothing  ok
+UnitFinishModal.jsx      164        164         5/5/3                  nothing  ok
+
+Each row reads PRO's file and the copy off disk and asks four things: the
+labels a person reads, the data-* hooks a test grabs, the gestures a hand
+makes, and the line count. `scripts/t63-copy.mjs` made every one of these
+by machine; `test/turn63-the-copies.test.js` is the assertion with teeth.
+
+VERDICT: CLEAN — twenty-one copies, nothing lost, every one PRO's own length.
+
+ALL CLEAN

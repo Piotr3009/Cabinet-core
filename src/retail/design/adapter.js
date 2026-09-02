@@ -2293,7 +2293,7 @@ export function selectionForMenu(menu, unitId) {
 
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
 import { migrateDesign } from '../../engine/design.js';
-import { pickerForSource, sourceById } from '../../engine/projectSettings.js';
+import { normaliseFrontTypes, pickerForSource, sourceById } from '../../engine/projectSettings.js';
 import { railChosenAlone } from '../../engine/railAssembly.js';
 
 /** Open one of PRO's windows in the SHARED ui store's own slot. */
@@ -2344,9 +2344,13 @@ export function railWindow(unitId, itemId) {
 // it lives in a component and not the engine: a FRONT's veneer picks from the
 // 85-decor catalogue (T20 F12.3), so its body is the decor grid.
 
+// A fresh project's `fronts.types` is `[]` until the first write — PRO's
+// wizard reads its slots through `normaliseFrontTypes`, which answers `f1`
+// with the profile's first source, and the store's own `setFrontType` writes
+// through the same normaliser. So does this.
 const typeOf = (kind) => {
   const design = migrateDesign(S().project.design);
-  return kind === 'carcass' ? design.carcass.types[0] : design.fronts.types[0];
+  return kind === 'carcass' ? design.carcass.types[0] : normaliseFrontTypes(design.fronts.types, P())[0];
 };
 
 export function materialSlot(kind) {

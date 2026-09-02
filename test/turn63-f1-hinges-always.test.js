@@ -83,8 +83,20 @@ test('F1 · Hardware.jsx reads that expression at BOTH gates, and PRO never name
   assert.match(hw, /\{\(xray \|\| runners \|\| hardwareAlways\(\)\) && \(/, 'the runner gate does not read the channel — same law, same channel');
   assert.match(hw, /import \{ chromeOn, proChromeOn \} from '\.\/chrome\.js';/);
 
-  // The retail entry claims it, at boot, beside the eleven.
+  // The retail entry claims it, at boot, beside the eleven — and loads the
+  // catalogues a hinge is DRAWN from, as PRO's App.jsx does: a plate is the
+  // downloaded GLB or nothing, and the GLB is named by the CLIP top catalogue.
   const entry = read('src/retail/main-retail.jsx');
+  assert.match(entry, /^\s+loadHardwareCatalogues\(\);$/m, 'retail never loads the hinge catalogue — every gate opens on nothing');
+  assert.match(entry, /^\s+loadRunnerCatalogue\(\);$/m, 'retail never loads the runner manifest');
+  assert.match(entry, /^\s+refreshHardwareCatalogues\(\);$/m, 'retail never adopts the bucket\'s own hinge manifest — the overrule PRO\'s App runs');
+  assert.match(entry, /onStorageBase\(\(\) => \{ loadRunnerCatalogue\(\); refreshHardwareCatalogues\(\); \}\)/, 'the catalogues are not asked for again when the bucket is known');
+  // …after the two switches and before the first render, by DYNAMIC import —
+  // a static one would hoist above `setPersistence('none')`.
+  assert.ok(entry.indexOf('loadHardwareCatalogues();') > entry.indexOf('setProChrome(false)'), 'the catalogues load before the switches');
+  assert.ok(entry.indexOf('loadHardwareCatalogues();') < entry.indexOf('createRoot('), 'the catalogues load after the first render');
+  assert.doesNotMatch(entry, /^import .* from '\.\.\/lib\/hardware/m, 'a static lib import in the entry hoists above the switches');
+  assert.match(read('src/retail/decorPack.js'), /^\s+noteStorageBase\(\);$/m, 'retail never tells the views where the bucket is');
   assert.match(entry, /setChromePart\('hardware-always', true\)/, 'the retail entry does not claim the channel');
   assert.ok(entry.indexOf("setChromePart('hardware-always', true)") < entry.indexOf("import('./RetailApp.jsx')"),
     'the channel is claimed after the app has been asked for');

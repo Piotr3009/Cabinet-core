@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef } from 'react';
 import Scene from '../../3d/Scene.jsx';
 import { parkCamera, readCamera, writeCamera } from '../../3d/cameraPresets.js';
+import { resetPlacement } from './viewTools.js';
+// T63 F3 · PRO's only door into the front-gap repair: the rows over the canvas
+// (`src/components/FrontGapWarnings.jsx`, COPIED). Solid view only in PRO, and
+// the retail stage has no other view.
+import FrontGapWarnings from './detail/FrontGapWarnings.jsx';
 import { renderJob } from '../../engine/render.js';
 import { getCabinetProfile } from '../../engine/profile.js';
 import { savePng } from '../../3d/renderCapture.js';
@@ -73,8 +78,20 @@ export default function Stage({ onHandle, onAddPlus = null, onAddInside = null }
   return (
     <div className="pbi-stage" data-testid="stage-canvas">
       <Scene onRenderReady={onRenderReady} onAddPlus={onAddPlus} onAddInside={onAddInside} />
+      <FrontGapWarnings />
     </div>
   );
+}
+
+/**
+ * T63 F5 · RESET VIEW — the camera on the design's own centre line, looking
+ * at its centre, far enough back to hold it. `resetPlacement` is the maths
+ * (retail's own, `viewTools.js`); this is the four lines that write it.
+ */
+export function resetStageView(handle) {
+  const place = resetPlacement(handle?.bounds?.() || null);
+  if (!place) return false;
+  return writeCamera(place);
 }
 
 /**

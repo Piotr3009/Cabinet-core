@@ -18,6 +18,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { isCopy } from '../scripts/t63-copies.mjs';
 import { join } from 'node:path';
 
 import * as A from '../src/retail/design/adapter.js';
@@ -136,13 +137,22 @@ test('F5 · not one slider survives, and Slider itself is gone with them', () =>
 
   // …and every one of the twelve came back as the typed row, not as nothing.
   // Six of the menus hold one, the wardrobe holds five.
+  // ─── AMENDED BY T63 F3 ─────────────────────────────────────────────────
+  // The twelve are RETAIL's twelve — the rows T62 wrote where the sliders
+  // stood. A COPY of a PRO window in the same folder carries PRO's own
+  // `<NumberField>`s (`scripts/t63-copies.mjs`, per file) and is not counted:
+  // counting them would make PRO's field count a retail law. Two of T60's
+  // rows went with their sketches (the door's J run, the rail's height —
+  // both are PRO's own fields in the copies now), so the twelve became TEN
+  // retail fields.
   let fields = 0;
   for (const f of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/\.jsx$/.test(f)) continue;
+    if (isCopy(`src/retail/design/detail/${f}`)) continue;
     fields += (readFileSync(join(ROOT, 'src/retail/design/detail', f), 'utf8')
       .match(/<NumberField/g) || []).length;
   }
-  assert.equal(fields, 12, `the twelve sliders became ${fields} typed fields`);
+  assert.equal(fields, 10, `the twelve sliders became ${fields} typed fields`);
 });
 
 test('F5 · gold, rounded, and never orange — by token, and by token only', () => {

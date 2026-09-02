@@ -20,6 +20,25 @@ import { shelfSupportMetal } from './hardwareFinish.js';
 import { coneroClone, coneroPose, coneroSrc } from './coneroModels.js';
 import { glbFailed, glbSource, onGlbLoad } from './glbSource.js';
 import { useUiStore } from '../stores/uiStore.js';
+// ─── TURN 63 (CLAUDE.md F1): HINGES, ALWAYS — FOR THE CLIENT ONLY ───────────
+//
+// The owner: *"nadal nie widać zawiasów"* → *"1 — zawiasy zawsze"*. The rule
+// this component states below — hinges and runners are X-RAY ONLY — is right
+// for a bench and stays PRO's. The client is BUYING the hardware and wants to
+// see it, so the retail mount claims a channel, `hardware-always`, and the two
+// X-ray conditions below read it.
+//
+// READ `chrome.js` BEFORE TRUSTING THE CHANNEL. A channel nobody has set FALLS
+// THROUGH to the master switch, and PRO's master switch is ON — so a bare
+// `chromeOn('hardware-always')` would answer TRUE in PRO and draw every hinge
+// in every joiner's Solid view. The guard is therefore the channel AND the
+// master switch OFF: only an application that has switched PRO's chrome off
+// (`setProChrome(false)` — the retail entry, and nothing else) can claim it.
+// PRO never calls `setProChrome`, so in PRO this reads `true && !true` and the
+// two conditions are byte-for-byte what they were.
+import { chromeOn, proChromeOn } from './chrome.js';
+
+const hardwareAlways = () => chromeOn('hardware-always') && !proChromeOn();
 
 // Turn 31 (CLAUDE.md F7): the catchment around every handle and hinge.
 import HoverAura from './HoverAura.jsx';
@@ -206,7 +225,7 @@ export default function Hardware({
           hardware tone, quieter than the bright bracket grey X-ray uses,
           because in Solid it is a small object on a white door rather than the
           thing being explained. */}
-      {(xray || hinges) && (
+      {(xray || hinges || hardwareAlways()) && (
         <CarcassHinges
           items={instances.hinges}
           profile={profile}
@@ -224,7 +243,7 @@ export default function Hardware({
           on and the doors shut they stay hidden, because a closed drawer hides
           them in the workshop too and a wall of ironmongery is what this
           component was written to avoid. */}
-      {(xray || runners) && (
+      {(xray || runners || hardwareAlways()) && (
         <>
           {/* T43-F7: no `colour` — the grey stand-in it dressed is gone, and a
               runner is now either the manufacturer's own model or nothing at

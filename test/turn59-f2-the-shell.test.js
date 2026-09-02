@@ -19,6 +19,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { isCopy } from '../scripts/t63-copies.mjs';
 import { join, relative } from 'node:path';
 
 import { COLLECTIONS, DEFAULT_COLLECTION, collectionDecorIds } from '../src/retail/design/collections.js';
@@ -275,6 +276,14 @@ test('F3.6 · what the client never sees, is not there', () => {
   for (const file of filesUnder(RETAIL)) {
     const rel = relative(ROOT, file);
     if (BAR.has(rel)) continue;
+    // ─── AMENDED BY T63 ────────────────────────────────────────────────────
+    // A COPY of a PRO window (`scripts/t63-copies.mjs`, per file and per PRO
+    // original) reads `xray` off the store because PRO's file does — the
+    // lighting panel greys its demo behind it, the door modal says what an
+    // X-ray shows. A word-ban over a verbatim copy is a ban on copying, and
+    // this turn's law is that the copy wins. Every other retail file still
+    // answers to the whole list.
+    if (isCopy(rel)) continue;
     const text = code(file);
     for (const re of NEVER) if (re.test(text)) bad.push(`${rel}: ${re}`);
   }
@@ -309,8 +318,14 @@ test('F3.6 · what the client never sees, is not there', () => {
   // name. `RoomEditor.jsx` sits in the same folder and is retail's own work, so
   // it answers to the whole list like every other retail file, and the day
   // somebody writes a new "DxfPanel.jsx" in there the ban still catches it.
-  const copiedFromPro = (rel) => rel.startsWith('src/retail/design/room/')
-    && existsSync(join(ROOT, 'src/components', rel.split('/').pop()));
+  // ─── AND WIDENED BY T63, THE SAME WAY ──────────────────────────────────
+  // Twenty-one more files, under `design/{lighting,detail,material}/`, each
+  // one a PRO original of the same name; `scripts/t63-copies.mjs` is the list
+  // and the same per-file, per-original honesty holds: `Entries.jsx`,
+  // `MaterialSlot.jsx` and `MaterialsModal.jsx` sit in the same folders, are
+  // retail's own work, and answer to the whole list.
+  const copiedFromPro = (rel) => (rel.startsWith('src/retail/design/room/')
+    && existsSync(join(ROOT, 'src/components', rel.split('/').pop()))) || isCopy(rel);
 
   const NOT_IN_THE_ROOM = [/\bBOM\b/, /\bDXF\b/, /drilling/i, /article number/i];
   for (const file of filesUnder(join(RETAIL, 'design'))) {

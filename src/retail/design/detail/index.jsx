@@ -1,12 +1,19 @@
 import WardrobeMenu from './WardrobeMenu.jsx';
-import DoorMenu from './DoorMenu.jsx';
 import ShelfMenu from './ShelfMenu.jsx';
 import DrawersMenu from './DrawersMenu.jsx';
-import RailMenu from './RailMenu.jsx';
-import WatchMenu from './WatchMenu.jsx';
 import ShoeMenu from './ShoeMenu.jsx';
 import PulldownMenu from './PulldownMenu.jsx';
-import LightingMenu from './LightingMenu.jsx';
+// ─── T63 · FOUR SKETCHES DELETED, FOUR ENTRIES IN THEIR PLACE ──────────────
+// `DoorMenu`, `RailMenu`, `WatchMenu` and `LightingMenu` were T60's re-writes
+// of PRO's `DoorModal`, `RailModal`, `WatchLayoutModal` and `LightingPanel` —
+// 113, 70, 85 and 61 lines where PRO has 996, 148, 246 and 861. The owner:
+// *"jak piszę 1 do 1 to KOPIUJ."* The four PRO files are COPIED into this
+// directory and `../lighting/` tonight; the four sketches are gone under
+// CLAUDE.md's licence; and these four keys point at ENTRIES — the Duty shell
+// with the one button that opens the copy beside it (`Entries.jsx`).
+import {
+  DoorEntry, LightingEntry, RailEntry, WatchEntry,
+} from './Entries.jsx';
 // T61 F4 · the four the INTERIOR list grew, because an element with no menu is
 // not clickable and a row that adds one of those adds nothing a client can then
 // change. `KitMenu` is the shape the two bought mechanisms share and is NOT in
@@ -37,14 +44,14 @@ import TieRackMenu from './TieRackMenu.jsx';
 
 const MENU_COMPONENTS = Object.freeze({
   wardrobe: WardrobeMenu,
-  door: DoorMenu,
+  door: DoorEntry,
   shelf: ShelfMenu,
   drawers: DrawersMenu,
-  rail: RailMenu,
-  watch: WatchMenu,
+  rail: RailEntry,
+  watch: WatchEntry,
   shoe: ShoeMenu,
   pulldown: PulldownMenu,
-  lighting: LightingMenu,
+  lighting: LightingEntry,
   overlay: OverlayMenu,
   partition: PartitionMenu,
   trouser: TrouserMenu,

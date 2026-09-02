@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useProjectStore } from '../../stores/projectStore.js';
 import GoldLine from '../ui/GoldLine.jsx';
 import Button from '../ui/Button.jsx';
 import Chip from '../ui/Chip.jsx';
@@ -10,6 +9,9 @@ import {
 import { REASONS } from './reasons.js';
 import { COLLECTIONS } from './collections.js';
 import * as A from './adapter.js';
+import MaterialSlot from './material/MaterialSlot.jsx';
+import FrontStyleGallery from './material/FrontStyleGallery.jsx';
+import AddItems from './detail/AddItems.jsx';
 import { CATEGORIES } from './Categories.jsx';
 import { PRICE_ON_REQUEST } from '../config.js';
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
@@ -303,7 +305,6 @@ function FrontsPanel({ design }) {
   const b = A.designBounds();
   const style = design?.fronts?.style || 'F';
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
-  const finishId = design?.fronts?.types?.[0]?.finish_id || null;
 
   return (
     <Panel title="FRONTS">
@@ -353,28 +354,22 @@ function FrontsPanel({ design }) {
         </div>
       </Field>
 
-      <Field
-        label="COLOUR"
-        note="Every board is EGGER. Colour matching is only valid against the original sample."
-      >
-        <div className="pbi-chip-row" data-testid="fronts-colour">
-          {[...new Set(COLLECTIONS.flatMap((c) => c.swatches))].map((id) => {
-            const s = A.swatchFor(id);
-            return (
-              <Chip
-                key={id}
-                title={s.label}
-                selected={finishId === s.finishId}
-                onClick={() => A.setFrontDecor(id)}
-              >
-                <span className="pbi-stack">
-                  <span className="pbi-swatch-tile" style={{ background: s.hex || 'var(--pbi-soft-ivory)' }} />
-                  {/* The EGGER attribution, next to the swatch, unconditionally. */}
-                  <span className="pbi-choice pbi-swatch-label">{s.label}</span>
-                </span>
-              </Chip>
-            );
-          })}
+      {/* ─── T63 F4 · LICENSED REMOVAL: the five curated EGGER swatches stood
+          here. The owner: *"nadal kafelki Egger nie widzę w uzgodnionej
+          wersji."* The agreed version is PRO's own — `MaterialChoicePanel`
+          with the tiled `DecorPickerModal` behind it, COPIED tonight — and
+          `MaterialSlot` is the hand that wires the copy the way PRO's wizard
+          does. Every source the profile names, the picker each one opens, and
+          the thickness that rides with it. */}
+      <Field label="MATERIAL">
+        <MaterialSlot kind="front" title="Fronts — what are they made of?" />
+      </Field>
+
+      {/* T63 F4 · PRO's door-style GALLERY (T15 F4), COPIED: the same list the
+          chips above read, as tiles with their own drawings and a filter. */}
+      <Field label="STYLE GALLERY">
+        <div data-testid="fronts-style-gallery">
+          <FrontStyleGallery value={style} onPick={(id) => A.setFrontStyle(id)} />
         </div>
       </Field>
     </Panel>
@@ -399,73 +394,55 @@ function FrontsPanel({ design }) {
 // AND THE CLICK LISTENS. t59 pressed ADD and threw the answer away: a store
 // that refused reported nothing, which is the same fault as a dead control with
 // better manners. The answer is read and shown, in the third voice.
+// ─── T63 F3 · …AND THE LIST IS PRO'S OWN, COPIED ───────────────────────────
+//
+// The owner: *"jakieś dziwne dodawanie wielu przegródek"* — and CLAUDE.md's
+// verdict: *"retail grew its own way of adding a partition and it does not
+// behave like PRO's. Copy PRO's, and the strangeness goes with the sketch."*
+//
+// T61 read PRO's `AddItems.jsx` and re-wrote it as ten rows in `adapter.js`
+// (`INTERIOR_ROWS`), each with its own predicate and its own `add`. That is a
+// SECOND LAW for what may be added where, and T61's own test says retail must
+// not hold one. So the row list below is gone, and what stands in its place is
+// `AddItems` — `src/components/AddItems.jsx`, COPIED, the very component PRO's
+// right panel and PRO's golden-plus window both render. One list, one store,
+// PRO's own kinds, PRO's own greys, PRO's own settings under each row.
+//
+// `INTERIOR_ROWS` stays EXPORTED from the adapter for the tests that hold it
+// against PRO's file; no retail SCREEN renders it any more. What survives here
+// from T60 is the other half of the row — *"every row that HAS something opens
+// that thing's own menu"* — because that is navigation, not a law of adding.
 function InteriorPanel({ unit, onOpenDetail }) {
-  const store = useProjectStore.getState();
-  const [said, setSaid] = useState('');
   const counts = A.interiorCounts(unit);
-  const refusals = A.interiorRefusals(unit.id, unit);
-  const notes = A.interiorNotes(unit);
-
-  // WHAT THE SHARED CORE SAID ABOUT **THIS** PRESS. Only a message the queue
-  // GREW belongs to this click; the tail of the queue holds every notice the
-  // session has raised. The same measurement `adapter.setTopInsert` makes.
-  const add = (row) => {
-    const before = A.messageCount();
-    const answer = row.add(store, unit.id);
-    // Three shapes of answer, all the shared core's: a verdict object, a bare
-    // null (the refusal is in the queue, or there was none), or an id.
-    const direct = answer && typeof answer === 'object' ? String(answer.error || '') : '';
-    setSaid(direct || (A.messageCount() > before ? A.lastEngineWord() : ''));
-  };
+  const inside = A.INTERIOR_ROWS.filter((row) => (counts[row.id] || 0) > 0);
 
   return (
     <Panel title="INTERIOR">
-      <div className="pbi-interior-list">
-        {A.INTERIOR_ROWS.map((row) => {
-          const has = counts[row.id] || 0;
-          const reason = refusals[row.id] || '';
-          const note = notes[row.id] || '';
-          return (
+      {/* PRO's "What goes inside", whole. */}
+      <div data-testid="interior-pro-list">
+        <AddItems unit={unit} />
+      </div>
+
+      {inside.length ? (
+        <div className="pbi-interior-list" data-testid="interior-inside">
+          {inside.map((row) => (
             <div key={row.id} data-testid={`interior-${row.id}`}>
               <div className="pbi-interior-row">
                 <span className="pbi-choice pbi-choice-15 pbi-interior-name">{row.name}</span>
-
-                {/* T60 F3: every row that HAS something opens that thing's own
-                    menu — the pull-down included, which t59 left without one. */}
-                {has ? (
-                  <button
-                    type="button"
-                    className="pbi-link"
-                    data-testid={`interior-open-${row.id}`}
-                    onClick={() => onOpenDetail(row.menu)}
-                    title="Open this"
-                  >
-                    {`${has} ›`}
-                  </button>
-                ) : null}
-
-                {reason ? (
-                  <span className="pbi-ui pbi-ui-light pbi-quiet">UNAVAILABLE</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="pbi-link"
-                    data-testid={`interior-add-${row.id}`}
-                    onClick={() => add(row)}
-                  >
-                    ADD
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="pbi-link"
+                  data-testid={`interior-open-${row.id}`}
+                  onClick={() => onOpenDetail(row.menu)}
+                  title="Open this"
+                >
+                  {`${counts[row.id]} ›`}
+                </button>
               </div>
-              {reason ? <span className="pbi-chip-reason">{reason}</span> : null}
-              {!reason && note ? (
-                <span className="pbi-chip-reason" data-testid={`interior-note-${row.id}`}>{note}</span>
-              ) : null}
             </div>
-          );
-        })}
-      </div>
-      {said ? <Said testid="interior-said">{said}</Said> : null}
+          ))}
+        </div>
+      ) : null}
     </Panel>
   );
 }

@@ -443,9 +443,16 @@ test('F4c — rule 15 stands: no OTHER window docks or turns the key off', () =>
     // what this test is about. Exempting the shell twice is exempting one
     // shell. `test/turn62-f2-f3-the-copy.test.js` proves the second file is
     // the first one.
+    // ─── AMENDED BY T63 F3 ─────────────────────────────────────────────
+    // `retail/design/detail/DoorModal.jsx` is `components/DoorModal.jsx`,
+    // COPIED — the same owner's order, the same one exception: it is the doors
+    // modal, and F4c's docking law is ITS law. Exempting the doors modal twice
+    // is exempting one doors modal; `test/turn63-the-copies.test.js` proves the
+    // second file is the first one.
     if (path.endsWith('components/DoorModal.jsx')
       || path.endsWith('components/Modal.jsx')
-      || path.endsWith('retail/design/room/Modal.jsx')) continue;
+      || path.endsWith('retail/design/room/Modal.jsx')
+      || path.endsWith('retail/design/detail/DoorModal.jsx')) continue;
     const text = readFileSync(path, 'utf8');
     assert.doesNotMatch(text, /\bdock=/, `${path} docks a window`);
     assert.doesNotMatch(text, /escapeCloses=/, `${path} turns Escape off`);

@@ -59,7 +59,16 @@ test('F2 · every entry flips the SAME store flag PRO flips', () => {
     }
   }
   assert.deepEqual(missing, [], `the bar is not PRO's:\n  ${missing.join('\n  ')}`);
-  assert.equal(FROM_PRO.length, 8, 'eight of PRO\'s view tools, and CLAUDE.md F2 names eight');
+  // ─── AMENDED BY T63 F5, ON THE OWNER'S OWN ORDER ───────────────────────
+  // T60 carried eight of PRO's tools. The owner, 01.09.2026: *"front
+  // dimensions wywal, po co mi to"* · *"measure wyrzuć też."* Two removed from
+  // the RETAIL bar only — PRO's `CanvasToolbar.jsx` keeps both, untouched, and
+  // the six that remain are still PRO's, flag for flag.
+  assert.equal(FROM_PRO.length, 6, 'six of PRO\'s view tools — eight, less the two the owner struck');
+  assert.ok(!VIEW_TOOLS.some((t) => t.id === 'front-dimensions' || t.id === 'measure'),
+    'FRONT DIMENSIONS or MEASURE is back in the retail bar');
+  assert.match(PRO_BAR, /toggleFrontDimensions/, 'PRO lost its front dimensions — that was retail\'s removal, not PRO\'s');
+  assert.match(PRO_BAR, /toggleRuler/, 'PRO lost its ruler — that was retail\'s removal, not PRO\'s');
 });
 
 test('F2 · PRO\'s labels and PRO\'s tooltips, character for character', () => {
@@ -119,7 +128,10 @@ test('F2 · BOM, Check and CNC are absent — behind one word', () => {
 test('F2 · every entry that draws through a guarded overlay claims its channel', () => {
   const entry = read('src/retail/main-retail.jsx');
   const need = [...new Set(FROM_PRO.map((t) => t.channel).filter(Boolean))];
-  assert.deepEqual(need.sort(), ['dimensions', 'measure', 'outlines'],
+  // T63 F5: MEASURE left the bar, so the bar no longer needs the `measure`
+  // channel. The entry still claims it (T61's *"1 all 8"* — the Ruler is the
+  // client's overlay to own), which is asserted in turn61-f1, not here.
+  assert.deepEqual(need.sort(), ['dimensions', 'outlines'],
     'the set of channels the bar needs has changed');
   for (const part of need) {
     assert.match(entry, new RegExp(`setChromePart\\('${part}', true\\)`),

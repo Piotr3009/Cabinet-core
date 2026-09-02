@@ -5,6 +5,7 @@ import './styles/base.css';
 import './styles/scale.css';
 import './styles/room.css';
 import './styles/roomeditor.css';
+import './styles/copies.css';
 import { setPersistence } from '../stores/persistence.js';
 import { setChromePart, setProChrome } from '../3d/chrome.js';
 import { setPickMode } from '../3d/picking.js';
@@ -98,6 +99,18 @@ setChromePart('hover', true);        // UnitView — the shelf-gap readout under
 // inventing a retail button for a workshop's layout operation.
 setChromePart('share', true);        // ShareOutBar — the share-out bar
 
+// ─── T63 F1 · AND THE TWELFTH: HINGES AND RUNNERS, IN EVERY VIEW ───────────
+//
+// The owner: *"nadal nie widać zawiasów"* → *"1 — zawiasy zawsze"*.
+// `src/3d/Hardware.jsx` keeps its law — hinges and runners are X-RAY ONLY,
+// because a working view of a cabinet is not a hardware drawing — and reads
+// this channel beside it. The client is buying the hardware and wants to see
+// it. PRO sets no channel and never calls `setProChrome`, so PRO's two
+// conditions still read exactly what they read last night; the channel only
+// counts once the master switch above is OFF, which is this page and no other.
+// Runners come with hinges — same law, same channel, one decision.
+setChromePart('hardware-always', true); // Hardware — hinge plates and runners, Solid included
+
 // ─── T60 F3 · AND A SINGLE CLICK REACHES A DOOR ────────────────────────────
 //
 // *"jak naciśniemy na drzwi to się pojawi drzwi."* PRO's single click selects
@@ -123,8 +136,22 @@ import('./RetailApp.jsx').then(async (module) => {
   // would hoist above `setPersistence` and the store's initial state would be
   // built from PRO's localStorage keys before the switch was ever thrown.
   const { useUiStore } = await import('../stores/uiStore.js');
+  const { useProjectStore } = await import('../stores/projectStore.js');
   const ui = useUiStore.getState();
   ui.setAudience('retail');
+
+  // ─── T63 · THE WALK'S OWN HANDLES, AS PRO'S `main.jsx` REGISTERS THEM ────
+  // The same two stores every retail component already subscribes to, on the
+  // same key PRO uses (`window.__cc.project`, `window.__cc.ui`), beside the
+  // stage handle `Stage.jsx` registers under `window.__cc.pbi`. PRO's own
+  // words for why: *"the build that gets verified has to be the build that
+  // gets used. There is nothing behind it that devtools could not already
+  // reach."* Nothing reads them but `scripts/t63-walk.mjs`.
+  if (typeof window !== 'undefined') {
+    const cc = (window.__cc = window.__cc || {});
+    cc.project = useProjectStore;
+    cc.ui = useUiStore;
+  }
 
   // ─── THE OVERLAYS THAT ALREADY HAD A SWITCH ──────────────────────────────
   //

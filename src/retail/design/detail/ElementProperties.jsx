@@ -1,0 +1,1141 @@
+import { useMemo } from 'react';
+import { useProjectStore, elementDepthBoundsFor } from '../../../stores/projectStore.js';
+import { useCabinetProfileStore } from '../../../stores/cabinetProfileStore.js';
+import { useMaterialAssignmentStore } from '../../../stores/materialAssignmentStore.js';
+import { useUiStore } from '../../../stores/uiStore.js';
+import {
+  elementActions, elementFields, elementLabel, boardParamFor,
+} from '../../../engine/elements.js';
+import { getUnitType } from '../../../engine/types.js';
+// T52 (CLAUDE.md F5): which drawer ITEM the clicked drawer is.
+import { drawerItemOf } from '../../../engine/watchDrawer.js';
+import { doorExtendMm, doorHeightOf } from '../../../engine/doors.js';
+import { minDrawerFrontHeight } from '../../../engine/cabinet.js';
+import { drawerHeightValue, drawerRefOf } from '../../../engine/drawerRef.js';
+import { elementMaterialChoices, migrateDesign } from '../../../engine/design.js';
+import { resolveRunnerVariant } from '../../../engine/runners.js';
+import { formatMm, formatMmPair } from '../../../engine/format.js';
+import { SHELF_TYPES, shelfTypeOf } from '../../../engine/shelfTypes.js';
+import { fieldFromPos, posFromField } from '../../../engine/shelfHeights.js';
+// T37-F2: a rail is a fix shelf with a rod under it. The modal edits the SHELF.
+import {
+  hangerDropMm, isLegacyRail, railChosenAlone, LEGACY_RAIL_NOTE, RAIL_ALONE_NOTE,
+} from '../../../engine/railAssembly.js';
+import { chainFromX, xFromChain } from '../../../engine/partitionPositions.js';
+// Turn 24 (CLAUDE.md F3.3): which carcass board a partition is cut from.
+import { CARCASS_SLOTS, partitionSlot, slotById } from '../../../engine/thickness.js';
+import NumberField from '../room/NumberField.jsx';
+import UnitWarnings, { DRAWER_WARNING_CODES } from './UnitWarnings.jsx';
+import { sayHingeResult } from '../../../lib/hingeEdit.js';
+// T37-F1: the piece selection spans cabinets — every member carries its own.
+import { membersOf } from '../../../lib/selection.js';
+
+// ─── The properties of ONE piece (turn 11, CLAUDE.md F3) ────────────────────
+//
+// Turn 9 gave a SHELF a properties block in the right panel. This is the same
+// block for the whole cabinet — sides, bottom, top, back, vertical partitions,
+// end panels, infills, the fronts — and it is ONE component because CLAUDE.md
+// asks for the "same right-panel properties" and because two of them would
+// drift the first time a field changed.
+//
+// It is used in two places and knows about neither: the right panel renders it
+// under its own header, and the double-click modal renders it beside the piece
+// (F3.3). What appears is decided by `engine/elements.js elementFields`, so a
+// new field is an entry in that list and a case here, never a branch in a
+// component that also lays out a panel.
+
+export default function ElementProperties({
+  unit, panel, item = null, compact = false, actions = false, omit = [],
+}) {
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const materials = useMaterialAssignmentStore((s) => s.materials);
+  const storedDesign = useProjectStore((s) => s.project.design);
+  const design = useMemo(() => migrateDesign(storedDesign), [storedDesign]);
+  const notify = useUiStore((s) => s.notify);
+
+  const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
+  const setShelfPos = useProjectStore((s) => s.setShelfPos);
+  const setShelfType = useProjectStore((s) => s.setShelfType);
+  const setRailHeight = useProjectStore((s) => s.setRailHeight);
+  const setPartitionX = useProjectStore((s) => s.setPartitionX);
+  // Turn 24 (CLAUDE.md F3.3): which carcass board this partition is cut from.
+  const setPartitionSlot = useProjectStore((s) => s.setPartitionSlot);
+  // Turn 30 (CLAUDE.md F3): which face of this divider the machine bores.
+  const setPartitionDrillFace = useProjectStore((s) => s.setPartitionDrillFace);
+  const setElementDepth = useProjectStore((s) => s.setElementDepth);
+  const setElementThickness = useProjectStore((s) => s.setElementThickness);
+  const setElementMaterial = useProjectStore((s) => s.setElementMaterial);
+  const setElementOverride = useProjectStore((s) => s.setElementOverride);
+  const setPartitionFront = useProjectStore((s) => s.setPartitionFront);
+  const updateEndPanel = useProjectStore((s) => s.updateEndPanel);
+  const setEndPanelTop = useProjectStore((s) => s.setEndPanelTop);
+  const endPanelToCeiling = useProjectStore((s) => s.endPanelToCeiling);
+  const setSideInfillTop = useProjectStore((s) => s.setSideInfillTop);
+  const setSideInfillPinned = useProjectStore((s) => s.setSideInfillPinned);
+  const setSideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
+  const setTopInfill = useProjectStore((s) => s.setTopInfill);
+  const fillToCeiling = useProjectStore((s) => s.fillToCeiling);
+  const setEndPanelBelow = useProjectStore((s) => s.setEndPanelBelow);
+  const removeElement = useProjectStore((s) => s.removeElement);
+  // Turn 17 (CLAUDE.md F7.2): the hinges of the door in hand.
+  const hingeRowsOf = useProjectStore((s) => s.hingeRowsOf);
+  const setHingePos = useProjectStore((s) => s.setHingePos);
+  const addHinge = useProjectStore((s) => s.addHinge);
+  const removeHinge = useProjectStore((s) => s.removeHinge);
+  const resetHinges = useProjectStore((s) => s.resetHinges);
+  // Turn 17 (CLAUDE.md F8.2): one drawer's height, clamped by the owner's rule.
+  const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
+  const resetDrawerHeights = useProjectStore((s) => s.resetDrawerHeights);
+  // Turn 18 (CLAUDE.md F6.4): …and which runner it is fitted with.
+  const setDrawerRunnerVariant = useProjectStore((s) => s.setDrawerRunnerVariant);
+  // T52 (CLAUDE.md F5, decision 3): …and whether it carries the watch insert.
+  const setDrawerWatchInsert = useProjectStore((s) => s.setDrawerWatchInsert);
+  const moveElement = useProjectStore((s) => s.moveElement);
+  // Turn 24 (CLAUDE.md F11): a partition's field measures from its LEFT
+  // NEIGHBOUR, so this row needs to know what else is in the cabinet — read off
+  // the ENGINE's own panels, so a partition is measured to the face the engine
+  // actually cut and not to the one the item asked for.
+  const unitResult = useProjectStore((s) => s.unitResult);
+
+  const type = useMemo(() => getUnitType(unit.type), [unit.type]);
+  // ─── TURN 33 (CLAUDE.md F7): A CALLER MAY OMIT A FIELD IT CARRIES ITSELF ──
+  // The door modal shows THE hinge block (its own HingeSection, at the top —
+  // the owner's "ten górny usuń" deleted the duplicate this list used to add
+  // under it). The right-hand panel passes nothing and keeps every field it
+  // has always had.
+  const fields = useMemo(
+    () => elementFields(panel, type).filter((f) => !omit.includes(f)),
+    [panel, type, omit],
+  );
+  const bounds = useMemo(() => elementDepthBoundsFor(unit, profile), [unit, profile]);
+  const choices = useMemo(
+    () => elementMaterialChoices(design, profile, materials),
+    [design, profile, materials],
+  );
+
+  const G = unit.params.board_t ?? profile.board.thickness;
+  const locked = Boolean(panel.meta?.locked);
+
+  // ─── TURN 36 (CLAUDE.md F2): THE EDIT REACHES THE WHOLE SET ───────────────
+  //
+  // "group edits — shelves: position and depth to all selected". The panel is
+  // still about the PRIMARY piece and shows the primary's numbers; what
+  // changes is who a COMMIT reaches. Three shelves ticked with Ctrl and one
+  // height typed puts all three there, in ONE batch and therefore one undo
+  // step, which is what "the group moves as one" means.
+  //
+  // A set of one is the single piece it always was, down to the store call.
+  //
+  // ─── TURN 37 (CLAUDE.md F1): …AND ACROSS CABINETS ─────────────────────────
+  //
+  // The owner: *"chodziło mi o półki z 2–3 szaf obok siebie."* Every row now
+  // carries its OWN `unitId`, and every commit writes THROUGH IT. That is the
+  // whole of the cross-unit edit: `setShelfPos(unitId, itemId, mm)` has taken a
+  // cabinet as its first argument since turn 8, so what was missing was never a
+  // store action — it was a row that remembered which cabinet it came from.
+  // T36 hard-coded `unit.id` in both callbacks and gated the set on
+  // `selectedIsMine`; both are gone.
+  const selectedElements = useUiStore((s) => s.selectedElements);
+  const batch = useProjectStore((s) => s.batch);
+  const groupItems = useMemo(() => {
+    if (!Array.isArray(selectedElements) || selectedElements.length < 2) return [];
+    const byUnit = new Map();
+    const out = [];
+    for (const member of membersOf(selectedElements)) {
+      if (!byUnit.has(member.unitId)) {
+        byUnit.set(member.unitId, useProjectStore.getState().unitResult(member.unitId)?.panels || []);
+      }
+      const p = byUnit.get(member.unitId).find((x) => x.id === member.elementRef);
+      if (!p || !p.meta?.itemId) continue;
+      out.push({
+        unitId: member.unitId, id: p.meta.itemId, panelId: p.id, front_mm: p.meta?.front_mm,
+      });
+    }
+    return out;
+  }, [selectedElements]);
+  const groupSize = groupItems.length;
+  /**
+   * Run one edit over the set — or over the single item, when there is no set.
+   * `fn` is handed `{ unitId, id, panelId, front_mm }` and is the SAME call the
+   * single path makes, so there is no second way of writing a height.
+   */
+  const applyToSelection = (fn) => {
+    if (groupSize < 2) {
+      return fn({
+        unitId: unit.id, id: item?.id, panelId: panel.id, front_mm: panel.meta?.front_mm,
+      });
+    }
+    return batch(() => { for (const row of groupItems) fn(row); });
+  };
+  const endPanel = (unit.params.end_panels || []).find((ep) => ep.id === panel.meta?.panelId) || null;
+  const infillSide = panel.meta?.side === 'right' ? 'R' : 'L';
+  // ─── Turn 16 (CLAUDE.md F1.3): THE PICKER MATCHES BY KEY ────────────────
+  //
+  // It matched by LABEL, which was fine while "the fronts" were one row and
+  // wrong the moment they became two: two front types faced in the same board
+  // have the same label, and a picker keyed on the label would tick both rows
+  // and store whichever the search hit first. The key is the palette's own
+  // (`carcass:c1`, `front:f2`), it is what the override stores, and it is what
+  // the BOM, the sheet and the 3D view resolve back through
+  // (engine/materials.js).
+  //
+  // A project saved before this turn has a label and no key, so the value falls
+  // back to the row whose label matches — its material is not lost, and it is
+  // written as a key the first time it is touched.
+  const storedKey = panel.meta?.material_key || '';
+  const storedLabel = panel.meta?.material_label || '';
+  const chosen = choices.find((c) => c.key === storedKey)
+    || (storedKey ? null : choices.find((c) => c.material_label === storedLabel))
+    || null;
+  const materialValue = chosen?.key || '';
+
+  const setMaterial = (key) => {
+    const pick = choices.find((c) => c.key === key) || null;
+    // A shelf keeps its material on its ITEM (turn 9): that id survives the
+    // shelf being dragged past its neighbours, and a panel id does not. Every
+    // other piece is built BY the engine and has no item, so it is keyed by the
+    // panel id the engine gave it (turn 11, F3.1).
+    const patch = {
+      material_key: pick?.key ?? null,
+      material_id: pick?.material_id ?? null,
+      material_label: pick?.material_label ?? null,
+    };
+    if (item) setElementMaterial(unit.id, item.id, patch);
+    else setElementOverride(unit.id, panel.id, patch);
+  };
+
+
+  // ─── TURN 35 (CLAUDE.md F1): the rail's own item ──────────────────────────
+  // A wardrobe carries at most one unit-wide rod plus one per bay. The board
+  // this modal is open on knows its bay (`meta.zone`), so the right rod is
+  // found without a second number to keep in step.
+  const railItem = (unit.params.sections?.[0]?.items || []).find((i) => {
+    if (i.kind !== 'hanger') return false;
+    const mine = panel?.meta?.zone;
+    const its = i.zone;
+    if (mine == null || !Number.isFinite(Number(mine))) return its == null || !Number.isFinite(Number(its));
+    return Math.trunc(Number(its)) === Math.trunc(Number(mine));
+  }) || null;
+
+  // ─── TURN 37 (CLAUDE.md F2): …and whether that rod is an ASSEMBLY ─────────
+  // `railAssemblyOf` answers with the pair — the rod and the fix shelf it
+  // rides — or null for a LEGACY rail, which has no shelf and must not be
+  // given one. The modal branches on that and on nothing else.
+  const railAssembly = railItem
+    ? useProjectStore.getState().railAssemblyOf(unit.id, railItem.id)
+    : null;
+
+  const row = (key) => {
+    switch (key) {
+      // ─── TURN 37 (CLAUDE.md F2): THIS SHELF CARRIES A ROD ─────────────────
+      // Double-clicking the rail opens THIS modal, so it owes the joiner the
+      // sentence that says why. Not a field — there is nothing here to type;
+      // the height below is the rail's height, because the rod rides the shelf.
+      case 'rail-rider':
+        return (
+          <p key={key} className="pbi-re-t11 pbi-re-gold-soft" data-rail-rider="1">
+            {`Carries a hanging rail — the rod hangs ${Math.round(hangerDropMm(profile))} mm under this shelf and rides with it. Drag the shelf and the rail follows.`}
+          </p>
+        );
+      // ─── TURN 35 (CLAUDE.md F1): HEIGHT ABOVE SUPPORT ─────────────────────
+      // The owner's law, verbatim: *"drążek ustawiamy zawsze od najbliższej
+      // czegoś od dołu — albo od szuflad, albo od półek. Jeśli napiszę 900, to
+      // niech będzie od półki, chyba że nic nie ma — to wtedy od dna."* So the
+      // label names the DATUM and not a floor, and the hint says which board
+      // answered this time — the base is live, and a rail whose shelf moves
+      // rides with it keeping this same number.
+      // ─── TURN 37 (CLAUDE.md F2): …AND THE FIELD IS RETIRED ────────────────
+      // The owner, 17.08.2026: *"masakra, jakieś dziwne wpisywanie."* A T37
+      // rail hangs under its OWN FIX SHELF, so there is no height to type: the
+      // shelf's position is the rail's position, and the shelf is dragged by
+      // hand like any other. This row reads it back instead of asking for it.
+      //
+      // A LEGACY rail — every rod saved before tonight — keeps the field it
+      // was built with, byte for byte, and gets the grey note beside it that
+      // says why it looks different from the one the joiner just added. No
+      // silent migration: what the workshop already built is what it reads.
+      case 'rail-height': {
+        if (railAssembly && !isLegacyRail(railItem)) {
+          const shelfPos = Number(railAssembly.shelf.pos_mm);
+          const drop = hangerDropMm(profile);
+          return (
+            <Field key={key} label="Shelf height">
+              <NumberField
+                className="pbi-re-input pbi-re-right"
+                data-rail-height="1"
+                data-rail-shelf-height="1"
+                // The SHELF's own field, in the shelf's own datum — the
+                // underside above the interior floor, exactly what
+                // `position-y` shows for every other shelf. One number, one
+                // meaning, wherever a joiner reads it.
+                value={fieldFromPos(Number.isFinite(shelfPos) ? shelfPos : G, G)}
+                min={0}
+                step={1}
+                title={`The rail's own fix shelf — its underside above the interior floor. The rod hangs ${Math.round(drop)} mm under it and rides with it.`}
+                onCommit={(v) => setShelfPos(unit.id, railAssembly.shelf.id, posFromField(v, G))}
+              />
+            </Field>
+          );
+        }
+        const support = Number(unitResult(unit.id)?.derived?.rail_support_y);
+        const named = Number.isFinite(support) ? `${Math.round(support)} mm` : 'the bay floor';
+        return (
+          <div key={key} className="pbi-re-stack-1">
+            <Field label="Height above support">
+              <NumberField
+                className="pbi-re-input pbi-re-right"
+                data-rail-height="1"
+                value={Number(railItem?.pos_mm ?? 0)}
+                min={0}
+                step={1}
+                title={`Measured to the rod's axis from the nearest thing below it — right now ${named}`}
+                onCommit={(v) => railItem && setRailHeight(unit.id, railItem.id, v)}
+              />
+            </Field>
+            {/* ─── TURN 40 (CLAUDE.md F6) ─────────────────────────────────
+                Two rods have no shelf and they are not the same thing: one is
+                OLD and should be told it can be re-added to get the shelf, the
+                other was ASKED to be alone this afternoon and should not be
+                nagged about a decision somebody just made. Same geometry, two
+                sentences. */}
+            {railChosenAlone(railItem)
+              ? <p className="pbi-re-t11 pbi-re-quiet" data-rail-alone-note="1">{RAIL_ALONE_NOTE}</p>
+              : <p className="pbi-re-t11 pbi-re-quiet" data-legacy-rail-note="1">{LEGACY_RAIL_NOTE}</p>}
+          </div>
+        );
+      }
+      // ─── TURN 34 (CLAUDE.md F4): FIX OR DRAWER ────────────────────────────
+      // T54-F7: the shoe box's four field cases (variant, front, dividers,
+      // height) died with their world — a shoe is a `variant:'shoe'` DRAWER
+      // and its boards take the drawer's own fields; the side is the 80 law
+      // and offers no field at all (licence 2).
+      case 'shelf-type':
+        return (
+          <Field key={key} label="Type">
+            <select
+              className="pbi-re-input pbi-re-wfull"
+              data-shelf-type="1"
+              value={shelfTypeOf(item)}
+              title="How this shelf is held"
+              onChange={(e) => setShelfType(unit.id, item.id, e.target.value)}
+            >
+              {SHELF_TYPES.map((t) => (
+                <option key={t.id} value={t.id} disabled={!t.enabled} title={t.hint}>
+                  {t.label}
+                  {t.enabled ? '' : ' — workshop number outstanding'}
+                </option>
+              ))}
+            </select>
+            {/* ─── TURN 34 (CLAUDE.md F4) / T54-F7: ONE GREY NOTE, ON THE OLD
+                SHELF. The pinned 15° shoe shelf keeps rendering exactly as
+                saved; what replaced it is tonight the SHOE DRAWER — a
+                standard drawer with an 80 side (Add items → Shoe box). */}
+            {shelfTypeOf(item) === 'shoe' && (
+              <p className="pbi-re-mt1 pbi-re-t10 pbi-re-quiet" data-shoe-shelf-note="1">
+                This is the older pinned shoe shelf. It stays exactly as saved — new shoe
+                accessories are built as the shoe drawer (Add items → Shoe box): a standard
+                drawer with an 80 mm side, never on pins.
+              </p>
+            )}
+          </Field>
+        );
+      // ─── TURN 21 (CLAUDE.md F10): ONE TRUTH, THE INTERIOR DATUM ───────────
+      // The field showed the stored number, whose zero is the OUTSIDE of the
+      // carcass bottom, while the chip beside it showed the clear light above
+      // the INTERIOR floor — 860 against 842 on the owner's screenshot. The
+      // field speaks the joiner's datum now and `posFromField` puts it back;
+      // storage does not move, and the clamp is still the setter's.
+      case 'position-y':
+        return (
+          <Field key={key} label="Height">
+            <NumberField
+              className="pbi-re-input pbi-re-right"
+              value={fieldFromPos(item?.pos_mm ?? G, G)}
+              disabled={locked}
+              title={locked
+                ? 'Screwed or locked — unlock it to move it'
+                : 'The underside, above the interior floor — the clear light under the shelf. The same clamp the drag obeys.'}
+              onCommit={(v) => applyToSelection((row) => setShelfPos(row.unitId, row.id, posFromField(v, G)))}
+            />
+          </Field>
+        );
+      case 'position-x': {
+        // ─── TURN 23 (CLAUDE.md F10.1) / TURN 24 (F11) ───
+        // The same cure turn 21 gave the shelf's height, on the other axis: the
+        // field is measured from the INSIDE — and from turn 24 from the LEFT
+        // NEIGHBOUR's face, which for the first partition IS that inside face.
+        // One mapping, two cases of it. STORAGE DOES NOT MOVE: `xFromChain`
+        // puts back exactly what `x_mm` has always meant, so moving one
+        // partition changes the NUMBER the next one shows and nothing else.
+        const siblings = ((unitResult(unit.id)?.panels) || [])
+          .filter((pp) => pp.part === 'VPART' && pp.id !== panel?.id && pp.box)
+          .map((pp) => ({ x: pp.box.x, w: pp.box.w }));
+        const mine = panel?.box?.x ?? item?.x_mm ?? G;
+        const first = siblings.every((o) => o.x + o.w > mine);
+        return (
+          <Field key={key} label={first ? 'From the left' : 'From the last'}>
+            <NumberField
+              className="pbi-re-input pbi-re-right"
+              data-partition-chain={item?.id || '1'}
+              value={chainFromX({ x: mine, boardT: G, others: siblings })}
+              title={first
+                ? "From the INSIDE face of the left side panel to this partition's near face"
+                : "From the previous partition's face to this one's near face — the clear bay between them"}
+              onCommit={(v) => setPartitionX(
+                unit.id, item.id, xFromChain({ value: v, x: mine, boardT: G, others: siblings }),
+              )}
+            />
+          </Field>
+        );
+      }
+      // ─── TURN 24 (CLAUDE.md F3.3): THE PARTITION'S OWN SLOT ───────────────
+      // Carcass 1–3 and nothing else: a partition is a carcass board standing
+      // on its end, and offering it a front board would be offering to build a
+      // cabinet out of doors. Its 3-D, its CNC and the bay lights all flow from
+      // the slot, because they all read the board the engine cut it at.
+      case 'partition-slot':
+        return (
+          <Field key={key} label="Board">
+            <select
+              className="pbi-re-input pbi-re-wfull"
+              data-partition-slot="1"
+              value={partitionSlot(item)}
+              title="Which of the project's carcass boards this partition is cut from — measured, in Project setup"
+              onChange={(e) => setPartitionSlot(unit.id, item.id, e.target.value)}
+            >
+              {CARCASS_SLOTS.map((id) => (
+                <option key={id} value={id}>{slotById(id)?.label || id}</option>
+              ))}
+            </select>
+          </Field>
+        );
+      // ─── TURN 30 (CLAUDE.md F3): WHICH FACE THE MACHINE BORES ────────────
+      //
+      // The owner: a partition shows shelf-pin drilling on BOTH faces, and a
+      // machine drills one. It was worse than a picture — the same ladder was
+      // emitted twice at identical x and y, once for each bay's shelves — so
+      // this is not a display option: choosing a face is choosing which bay's
+      // shelves put pins in this board, and the 3-D and the DXF both follow
+      // because both read the drilling.
+      //
+      // LEFT is the profile's answer tonight and the sentence under the
+      // control says whose placeholder it is, so nobody reads it as settled.
+      case 'partition-drill-face':
+        return (
+          <Field key={key} label="Drill face">
+            <div className="pbi-re-row pbi-re-mid pbi-re-gap-1">
+              {[['L', 'Left'], ['R', 'Right']].map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={`pbi-re-btn pbi-re-px2 pbi-re-t11 ${panel.meta?.drillFace === id ? 'pbi-re-hair-gold pbi-re-ink' : ''}`}
+                  data-partition-drill-face={id}
+                  title={`Bore the shelf-pin ladder in this divider's ${label.toLowerCase()} face — the ${label.toLowerCase()} bay's shelves. A machine drills one face; the other bay's shelves put no pins in this board.`}
+                  onClick={() => setPartitionDrillFace(unit.id, item.id, id)}
+                >
+                  {label}
+                </button>
+              ))}
+              {item?.drill_face ? (
+                <button
+                  type="button"
+                  className="pbi-re-btn-ghost pbi-re-px2 pbi-re-t11"
+                  data-partition-drill-face-reset="1"
+                  title="Back to the project's own answer"
+                  onClick={() => setPartitionDrillFace(unit.id, item.id, null)}
+                >
+                  Reset
+                </button>
+              ) : null}
+            </div>
+          </Field>
+        );
+      case 'setback':
+        return (
+          <Field key={key} label="Set back">
+            <NumberField
+              className="pbi-re-input pbi-re-right"
+              min={bounds.min}
+              max={bounds.max}
+              value={Number(panel.meta?.front_mm ?? profile.carcass.shelfDepthClearance)}
+              title={`From the face of the cabinet. 0 is flush; ${formatMm(bounds.max)} leaves the shallowest piece worth cutting.`}
+              onCommit={(v) => applyToSelection((row) => setElementDepth(row.unitId, row.id, v))}
+            />
+          </Field>
+        );
+      case 'setback-unit':
+        return (
+          <Field key={key} label="Set back">
+            <NumberField
+              className="pbi-re-input pbi-re-right"
+              min={0}
+              value={Number(panel.meta?.front_mm) || 0}
+              title="From the face of the cabinet. 0 pulls the piece out flush."
+              onCommit={(v) => setPartitionFront(unit.id, v)}
+            />
+          </Field>
+        );
+      case 'thickness':
+        return (
+          <Field key={key} label="Thickness">
+            <NumberField
+              className="pbi-re-input pbi-re-right"
+              min={profile.editor.mmStep}
+              value={item?.thickness_mm ?? G}
+              title="This piece only. A shelf carrying a microwave is thicker than the box round it."
+              onCommit={(v) => setElementThickness(unit.id, item.id, v)}
+            />
+          </Field>
+        );
+      case 'thickness-ep':
+        return (
+          <Field key={key} label="Thickness">
+            <NumberField
+              className="pbi-re-input pbi-re-right"
+              min={1}
+              value={endPanel?.thickness || unit.params.front_t || profile.front.thickness}
+              title="This panel only — it carries no joint, so it may be any board"
+              onCommit={(v) => endPanel && updateEndPanel(unit.id, endPanel.id, { thickness: v })}
+            />
+          </Field>
+        );
+      case 'end-panel-height':
+        return (
+          <Field key={key} label="Height">
+            <select
+              className="pbi-re-input"
+              value={endPanel?.height || 'floor'}
+              onChange={(e) => endPanel && updateEndPanel(unit.id, endPanel.id, { height: e.target.value })}
+            >
+              <option value="floor">To floor</option>
+              <option value="unit">Unit height</option>
+            </select>
+          </Field>
+        );
+      case 'above-unit-ep':
+        return (
+          <Field key={key} label="Above unit">
+            <div className="pbi-re-row pbi-re-gap-1">
+              <NumberField
+                className="pbi-re-input pbi-re-right pbi-re-grow"
+                min={0}
+                value={Number(endPanel?.top_mm) || 0}
+                title="How far this panel runs above the carcass (mm)"
+                onCommit={(v) => endPanel && setEndPanelTop(unit.id, endPanel.id, v)}
+              />
+              <button
+                type="button"
+                className="pbi-re-btn pbi-re-px2"
+                title="All the way to the ceiling"
+                onClick={() => endPanel && endPanelToCeiling(unit.id, endPanel.id)}
+              >
+                ▲
+              </button>
+            </div>
+          </Field>
+        );
+      // ─── Turn 16 (CLAUDE.md F4.3, owner decision B) ─────────────────────
+      // The masking panel's OWN height below the carcass. On a wall unit this
+      // is the second of the two independent numbers: the door has its extend
+      // and the panel has this, and setting either leaves the other exactly
+      // where it was — no auto-follow, which is what the owner asked for in as
+      // many words. Clamped by the store to what is actually under the carcass
+      // (a wall unit's mounting height, a standing unit's legs).
+      case 'below-unit-ep':
+        return (
+          <Field key={key} label="Below unit">
+            <NumberField
+              className="pbi-re-input pbi-re-right"
+              data-below-unit="1"
+              min={0}
+              value={Number(endPanel?.below_mm) || 0}
+              title="How far this masking panel runs below the carcass (mm). The door beside it keeps its own extend."
+              onCommit={(v) => endPanel && setEndPanelBelow(unit.id, endPanel.id, v)}
+            />
+          </Field>
+        );
+      case 'infill-width':
+        return (
+          <Field key={key} label="Width">
+            <span className="pbi-re-input pbi-re-block pbi-re-right pbi-re-dim70">{formatMm(panel.w)}</span>
+          </Field>
+        );
+      // ─── Turn 16 (CLAUDE.md F9): A FILLER GOES TO THE CEILING TOO ───────
+      // The end panel has had the pair since turn 15 — a number and a ▲ that
+      // runs it to the ceiling — and the filler beside it had only the number,
+      // which is the same gesture learnt once and available in one of the two
+      // places it belongs. Same mechanics, not a forked copy: the store's
+      // `sideInfillToCeiling` is `setSideInfillTop` with the room's own
+      // headroom in it, exactly as `endPanelToCeiling` is.
+      case 'above-unit-infill':
+        // ─── Turn 17 (CLAUDE.md F6.1): …AND THE TOP FILLER GOES UP TOO ─────
+        // The side fillers have had the pair since turn 16 — a number and a ▲
+        // that runs the piece to the ceiling — and the piece that most obviously
+        // wants it, the one ABOVE a wall unit, was the one branch that returned
+        // null. Same mechanics, different number: the store's `setTopInfill`
+        // and `fillToCeiling`, which are what the drag on its top edge and the
+        // double-click have called since turn 6. Nothing is forked.
+        if (panel.meta?.side === 'top') {
+          return (
+            <Field key={key} label="Above unit">
+              <div className="pbi-re-row pbi-re-gap-1">
+                <NumberField
+                  className="pbi-re-input pbi-re-right pbi-re-grow"
+                  data-top-infill-mm="1"
+                  min={0}
+                  value={Number(unit.params.top_infill_mm) || 0}
+                  title="How far this filler runs above the carcass (mm). Clamped to the ceiling."
+                  onCommit={(v) => setTopInfill(unit.id, v)}
+                />
+                <button
+                  type="button"
+                  className="pbi-re-btn pbi-re-px2"
+                  data-top-infill-to-ceiling="1"
+                  title="All the way to the ceiling"
+                  onClick={() => fillToCeiling(unit.id)}
+                >
+                  ▲
+                </button>
+              </div>
+            </Field>
+          );
+        }
+        return (
+          <Field key={key} label="Above unit">
+            <div className="pbi-re-row pbi-re-gap-1">
+              <NumberField
+                className="pbi-re-input pbi-re-right pbi-re-grow"
+                min={0}
+                value={Number(unit.params[infillSide === 'R' ? 'side_infill_right_top_mm' : 'side_infill_left_top_mm']) || 0}
+                title="How far this filler runs above the carcass (mm)"
+                onCommit={(v) => setSideInfillTop(unit.id, infillSide, v)}
+              />
+              <button
+                type="button"
+                className="pbi-re-btn pbi-re-px2"
+                data-infill-to-ceiling="1"
+                title="All the way to the ceiling"
+                onClick={() => setSideInfillToCeiling(unit.id, infillSide)}
+              >
+                ▲
+              </button>
+            </div>
+          </Field>
+        );
+      case 'pin-infill': {
+        if (panel.meta?.side === 'top') return null;
+        const pinned = unit.params[infillSide === 'R' ? 'side_infill_right_pinned' : 'side_infill_left_pinned'] === true;
+        return (
+          <div key={key} className="pbi-re-span-2">
+            <button
+              type="button"
+              className={`pbi-re-btn pbi-re-wfull ${pinned ? 'pbi-re-hair-gold pbi-re-gold' : ''}`}
+              title={pinned
+                ? 'Pinned — it stays whatever the gap becomes. Click to hand it back to the automatics.'
+                : 'Keep this filler whatever the gap becomes — it stretches as the unit moves'}
+              onClick={() => setSideInfillPinned(unit.id, infillSide, !pinned)}
+            >
+              {pinned ? '✓ Pinned' : 'Pin this filler'}
+            </button>
+          </div>
+        );
+      }
+      case 'carcass-board':
+      case 'front-board': {
+        const param = boardParamFor(panel);
+        const options = param === 'front_t'
+          ? profile.front.thicknessOptions
+          : profile.board.thicknessOptions;
+        return (
+          <Field key={key} label={param === 'front_t' ? 'Front board' : 'Carcass board'}>
+            <select
+              className="pbi-re-input"
+              value={unit.params[param]}
+              title={param === 'front_t'
+                ? 'The board every front of this cabinet is cut from'
+                : 'The board the carcass is cut from. The joint is cut FOR it, so it is one board for all four.'}
+              onChange={(e) => {
+                const { notices } = updateUnitParams(unit.id, { [param]: Number(e.target.value) });
+                for (const n of notices) notify(n, 'warn');
+              }}
+            >
+              {options.map((t) => <option key={t} value={t}>{t} mm</option>)}
+            </select>
+          </Field>
+        );
+      }
+      // ─── Turn 14 (CLAUDE.md F4.2): the door's own property, on the door ───
+      // It was in the cabinet's carcass block, three sections away from the
+      // thing it is about — which is how the owner came to report it missing.
+      // The engine is untouched: `door_extend` is the param it has always been.
+      // ─── Turn 16 (CLAUDE.md F4.1): …AND THE NUMBER ─────────────────────
+      // The switch has been here since turn 14 and it could only say 38. The
+      // ENGINE has taken a number since turn 3 (`door_extend` may be `true` for
+      // the profile's default or a millimetre value), so this is the control
+      // catching up with it: tick it and it is the profile's 38, type over the
+      // number and it is yours. Same clamp rules as every other field in this
+      // panel — the workshop's 0.5 mm grid, and never below zero.
+      case 'door-extend': {
+        const on = Boolean(unit.params.door_extend);
+        const extend = doorExtendMm(unit.params, profile) || profile.wallUnit.doorExtend;
+        return (
+          <div key={key} className="pbi-re-span-2 pbi-re-stack-1">
+            <div className="pbi-re-row pbi-re-mid pbi-re-gap-2">
+              <label className="pbi-re-row pbi-re-mid pbi-re-gap-2 pbi-re-tsm pbi-re-ink-1 pbi-re-grow">
+                <input
+                  type="checkbox"
+                  data-door-extend="1"
+                  checked={on}
+                  onChange={(e) => updateUnitParams(unit.id, {
+                    door_extend: e.target.checked ? extend : false,
+                  })}
+                />
+                <span>Door extend</span>
+              </label>
+              <NumberField
+                className="pbi-re-input pbi-re-w20 pbi-re-right"
+                data-door-extend-mm="1"
+                min={0}
+                disabled={!on}
+                value={extend}
+                title="How far the front runs below the carcass, in millimetres"
+                onCommit={(v) => updateUnitParams(unit.id, { door_extend: v > 0 ? v : false })}
+              />
+            </div>
+            <p className="pbi-re-t11 pbi-re-quiet" data-door-height={doorHeightOf(unit.params, profile)}>
+              The front runs this far below the carcass — the handleless grab edge. Every door of this
+              cabinet, because they are cut as a set. This door is{' '}
+              <span className="pbi-re-ink-1">{formatMm(doorHeightOf(unit.params, profile))} mm</span> tall;
+              a masking panel beside it keeps its own height.
+            </p>
+          </div>
+        );
+      }
+      // ─── Turn 17 (CLAUDE.md F7.2): THE HINGES, BY HAND ──────────────────
+      // Add one, take one off, move one — the shelf's own idiom, in the shelf's
+      // own control: a numbered row with a millimetre box, and one button each
+      // for the two things a joiner does to a set of hinges. The list is the
+      // CABINET's, because its doors are drilled as a set and the carcass
+      // carries one hinge column per hinged side; the note says so rather than
+      // leaving a joiner to discover it by editing the other leaf.
+      // TURN 40 (CLAUDE.md F1): …and a SPLIT leaf's segment is its OWN door, so
+      // this asks about the panel. Every other front asks about the cabinet,
+      // which is what it always asked and what the note below still says.
+      case 'hinges': {
+        const splitLeaf = Boolean(panel?.meta?.split);
+        const rows = hingeRowsOf(unit.id, panel?.id || null);
+        const own = splitLeaf
+          ? Boolean(unit.params.split_hinge_rows && unit.params.split_hinge_rows[panel.id])
+          : Array.isArray(unit.params.hinge_rows) && unit.params.hinge_rows.length;
+        if (!rows.length) return null;
+        return (
+          <div key={key} className="pbi-re-span-2 pbi-re-stack-1" data-hinge-rows="1">
+            <div className="pbi-re-fieldrow">
+              <span className="pbi-re-fieldlabel pbi-re-grow">Hinges · {rows.length}</span>
+              {own && (
+                <button
+                  type="button"
+                  className="pbi-re-btn pbi-re-px2"
+                  data-hinges-reset="1"
+                  title="Back to the kit's own spacing and the project standard"
+                  onClick={() => resetHinges(unit.id, splitLeaf ? panel.id : null)}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            {rows.map((mm, i) => (
+              // eslint-disable-next-line react/no-array-index-key
+              <div key={`h${i}`} className="pbi-re-row pbi-re-mid pbi-re-gap-1">
+                <span className="pbi-re-t10 pbi-re-quiet pbi-re-w4 pbi-re-tnum">{i + 1}</span>
+                <NumberField
+                  className="pbi-re-input pbi-re-right pbi-re-grow"
+                  data-hinge-row={i}
+                  value={mm}
+                  title="Above the carcass floor. It cannot pass the hinge above or below it."
+                  onCommit={(v) => sayHingeResult(setHingePos(unit.id, i, v, splitLeaf ? panel.id : null), notify)}
+                />
+                <button
+                  type="button"
+                  className="pbi-re-btn-ghost pbi-re-px2"
+                  data-hinge-remove={i}
+                  title="Take this hinge off"
+                  onClick={() => removeHinge(unit.id, i, splitLeaf ? panel.id : null)}
+                >
+                  −
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="pbi-re-btn pbi-re-wfull"
+              data-hinge-add="1"
+              title="One more hinge, in the biggest gap in the run"
+              onClick={() => sayHingeResult(addHinge(unit.id, splitLeaf ? panel.id : null), notify)}
+            >
+              + Add a hinge
+            </button>
+            <p className="pbi-re-t11 pbi-re-quiet">
+              This cabinet’s hinges — both leaves, because they are drilled as a set. Editing them here
+              turns the project standard off for this cabinet; Reset hands it back.
+            </p>
+          </div>
+        );
+      }
+      case 'masking-depth':
+        return (
+          <Field key={key} label="Depth">
+            <span className="pbi-re-input pbi-re-block pbi-re-right pbi-re-dim70">{formatMm(panel.box?.d ?? panel.h)}</span>
+          </Field>
+        );
+      // ─── TURN 46 (CLAUDE.md F4): THE HINGE SIDE IS NOT A CHOICE ─────────
+      //
+      // The owner, verbatim: *"tniemy po skosie, brak wyboru otwierania, musi
+      // być od skosu."* A door cut on the slope opens FROM the slope, so its
+      // hinges live on the full-height edge and there is nothing to pick.
+      //
+      // GREY WITH THE ONE-LINE REASON, and not hidden: a control that
+      // disappears leaves a joiner wondering whether the app has lost it. The
+      // hand shown is the one the ENGINE forced onto the piece
+      // (`panel.meta.hinge`), so the select and the drilling cannot disagree.
+      case 'hinge-side': {
+        const forced = panel?.meta?.hingeForced ? panel.meta.hinge : null;
+        return (
+          <Field key={key} label="Hinge side">
+            <select
+              className="pbi-re-input"
+              value={forced || unit.params.hinge}
+              disabled={Boolean(forced)}
+              data-hinge-forced={forced ? '1' : undefined}
+              title={forced
+                ? 'Cut on the slope — the door opens from the slope, so the hinges are on the full-height edge.'
+                : undefined}
+              onChange={(e) => updateUnitParams(unit.id, { hinge: e.target.value })}
+            >
+              <option value="L">Left</option>
+              <option value="R">Right</option>
+            </select>
+            {forced ? (
+              <p className="pbi-re-t11 pbi-re-dim70 pbi-re-mt1" data-hinge-forced-reason="1">
+                Cut on the slope — the door opens from the slope, so the hinges are on the
+                full-height edge.
+              </p>
+            ) : null}
+          </Field>
+        );
+      }
+      // ─── Turn 17 (CLAUDE.md F8.2): THE DRAWER'S HEIGHT, EDITED ──────────
+      // It was a read-only number. It is the shelf's own control now — type a
+      // millimetre, the store clamps it to the owner's rule and the drawers
+      // nobody has touched take up what is left in the kit's ratio. The piece
+      // is found by its drawer INDEX, so the field is the same on the front and
+      // on the box behind it: with the fronts off, the box is what you click.
+      case 'drawer-height': {
+        const n = Number(panel.meta?.drawer);
+        if (!Number.isFinite(n) || n < 1) {
+          return (
+            <Field key={key} label="Front height">
+              <span className="pbi-re-input pbi-re-block pbi-re-right pbi-re-dim70">{formatMm(panel.h)}</span>
+            </Field>
+          );
+        }
+        const own = Array.isArray(unit.params.drawer_heights) && unit.params.drawer_heights.length;
+        // T41-F3: asked of the piece under the pointer, so an overlay drawer's
+        // field shows the height its own item carries rather than a slot in an
+        // array it never reads.
+        const value = drawerHeightValue(unit, panel, n);
+        return (
+          <div key={key} className="pbi-re-span-2 pbi-re-stack-1" data-drawer-height={n}>
+            <Field label={`Drawer ${n} height`}>
+              <div className="pbi-re-row pbi-re-gap-1">
+                <NumberField
+                  className="pbi-re-input pbi-re-right pbi-re-grow"
+                  data-drawer-height-mm={n}
+                  min={minDrawerFrontHeight(profile)}
+                  value={Number.isFinite(value) && value > 0 ? value : panel.h}
+                  title={`No shorter than ${formatMm(minDrawerFrontHeight(profile))} mm — the runner screws plus the air under them.`}
+                  onCommit={(v) => setDrawerHeight(unit.id, drawerRefOf(unit, panel, n), v)}
+                />
+                {own && (
+                  <button
+                    type="button"
+                    className="pbi-re-btn pbi-re-px2"
+                    data-drawer-heights-reset="1"
+                    title="Back to the kit's own split"
+                    onClick={() => resetDrawerHeights(unit.id)}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </Field>
+            <p className="pbi-re-t11 pbi-re-quiet">
+              The drawers nobody has set take up what is left, in the kit&apos;s own ratio, so the stack
+              still fills the face. No shorter than {formatMm(minDrawerFrontHeight(profile))} mm.
+            </p>
+            {/* ─── Turn 25 (CLAUDE.md F10): SHORT / OVER, in the drawer modal ───
+                Naming the number, and not blocking anything. */}
+            <UnitWarnings unitId={unit.id} only={DRAWER_WARNING_CODES} compact />
+          </div>
+        );
+      }
+      // ─── Turn 18 (CLAUDE.md F6.4): THIS DRAWER'S OWN RUNNER ─────────────
+      // Project → unit → drawer, the colour hierarchy exactly. "Project" is
+      // not a fourth option: it is what the field says when nobody has
+      // overridden it, and clicking the chosen variant again gives the drawer
+      // back to the project rather than freezing today's answer onto it.
+      //
+      // It is HARDWARE and not geometry: the gaps, the pockets and the
+      // drilling are identical for both variants, so nothing about this
+      // cabinet's cut list moves. What moves is the model on the screen and
+      // the article on the order.
+      case 'runner-variant': {
+        const n = Number(panel.meta?.drawer);
+        if (!Number.isFinite(n) || n < 1) return null;
+        const own = unit.params.runner_variants?.[String(n)] || null;
+        const chosen = resolveRunnerVariant({
+          drawer: n, unit, design, profile,
+        });
+        return (
+          <div key={key} className="pbi-re-span-2 pbi-re-stack-1" data-runner-variant-drawer={n}>
+            <Field label="Runner">
+              <div className="pbi-re-row pbi-re-gap-1">
+                {profile.hardware.runner.movento.variants.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    data-runner-variant-option={v.id}
+                    aria-pressed={chosen === v.id}
+                    title={`${v.label} — ${v.hint}`}
+                    className={`pbi-re-btn pbi-re-px2 pbi-re-grow ${chosen === v.id ? 'pbi-re-hair-gold pbi-re-gold' : ''}`}
+                    onClick={() => setDrawerRunnerVariant(unit.id, n, own === v.id ? null : v.id)}
+                  >
+                    {v.id}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <p className="pbi-re-t11 pbi-re-quiet">
+              MOVENTO {profile.hardware.runner.movento.system}
+              {' · '}
+              {own ? 'this drawer’s own — click it again for the project’s' : 'the project’s'}
+              {'. '}
+              Same gaps, same pockets, same drilling either way.
+            </p>
+          </div>
+        );
+      }
+      // ─── TURN 52 (CLAUDE.md F5, decision 3): THE WATCH INSERT ──────────
+      //
+      // *"The insert is its own BOM line, addable to any drawer — not a drawer
+      // type. That way a customer can have it in one drawer of six."*
+      //
+      // So it is a SWITCH on the drawer a joiner has clicked, beside its runner
+      // and its height, and not a fourth entry in the wardrobe's variant row.
+      // Turning it on cuts the tray (frame, dividers, glass rebate and the LED
+      // groove), orders the lift-out pane and buys the strip; turning it off
+      // takes all three away again.
+      //
+      // A drawer too shallow to take one is REPORTED rather than squashed —
+      // the engine refuses it and Check #23 says which drawer and by how much
+      // — so the switch is never disabled here: the joiner is allowed to ask,
+      // and the app is obliged to answer in words.
+      case 'watch-insert': {
+        const n = Number(panel.meta?.drawer);
+        if (!Number.isFinite(n) || n < 1) return null;
+        const item = drawerItemOf(unit, n, panel.meta?.zone ?? null);
+        if (!item) return null;
+        const on = item.watch_insert === true;
+        const made = unitResult(unit.id);
+        const built = (made?.assemblies?.watchInserts || []).find((w) => Number(w.drawer) === n);
+        const refused = (made?.warnings || [])
+          .find((w) => w?.code === 'watch_insert_refused' && Number(w.drawer) === n);
+        return (
+          <div key={key} className="pbi-re-span-2 pbi-re-stack-1" data-watch-insert-drawer={n}>
+            <Field label="Watch insert">
+              <button
+                type="button"
+                data-watch-insert-toggle={on ? 'on' : 'off'}
+                aria-pressed={on}
+                className={`pbi-re-btn pbi-re-wfull ${on ? 'pbi-re-hair-gold pbi-re-gold' : ''}`}
+                title="Pockets for watches at the front, long sections for ties behind, glass over them and a strip lighting the contents"
+                onClick={() => setDrawerWatchInsert(unit.id, item.id, !on)}
+              >
+                {on ? 'Fitted' : 'Not fitted'}
+              </button>
+            </Field>
+            <p className="pbi-re-t11 pbi-re-quiet">
+              {!on && 'One row of pockets at the front, long sections behind, a lift-out glass over them and an LED aimed at the watches.'}
+              {on && built && `${built.pockets} pockets at ${formatMm(built.pocket_w_mm)} × ${formatMm(built.pocket_d_mm)} mm, `
+                + `${formatMm(built.inside_mm)} mm deep · ${built.sections} long section${built.sections === 1 ? '' : 's'} behind · `
+                + `glass ${formatMm(built.glass_w_mm)} × ${formatMm(built.glass_d_mm)} mm, lifts out.`}
+              {on && !built && (refused
+                ? refused.message
+                : 'This drawer cannot take one — see Check.')}
+            </p>
+          </div>
+        );
+      }
+      case 'plinth-height':
+        return (
+          <Field key={key} label="Height">
+            <span className="pbi-re-input pbi-re-block pbi-re-right pbi-re-dim70">{formatMm(panel.h)}</span>
+          </Field>
+        );
+      // ─── Turn 14 (CLAUDE.md F4.1) ───
+      // "material/colour from the unit palette per turn 13 F3". The LIST was
+      // already the palette — the project's carcass slots and its fronts, and
+      // deliberately not a decor catalogue — and what it was missing is the
+      // half a joiner actually recognises: the colour. Each option now carries
+      // its own hex (engine/design.js), so the row shows what it means.
+      case 'material':
+        return (
+          <Field key={key} label="Material">
+            <div className="pbi-re-row pbi-re-mid pbi-re-gap-1">
+              <span
+                className="pbi-re-w4 pbi-re-h4 pbi-re-round pbi-re-line pbi-re-hair pbi-re-nogrow"
+                data-element-swatch="1"
+                style={{ background: chosen?.hex || 'transparent' }}
+                title={chosen?.label || 'Project default'}
+              />
+              <select
+                className="pbi-re-input pbi-re-grow"
+                data-element-material="1"
+                value={materialValue}
+                title="This piece only — the project's own palette: its boards, and each of its fronts"
+                onChange={(e) => setMaterial(e.target.value)}
+              >
+                <option value="">Project default</option>
+                {/* One row PER TYPE, keyed by the palette's own key — two
+                    fronts faced in the same board are two rows with one name,
+                    and they stay two choices (F1.3). */}
+                {choices.map((c) => (
+                  <option key={c.key} value={c.key}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+          </Field>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="pbi-re-stack-2">
+      <div className="pbi-re-fieldrow">
+        <span className="pbi-re-txs pbi-re-caps pbi-re-track pbi-re-gold">{elementLabel(panel)}</span>
+        <span className="pbi-re-t11 pbi-re-quiet pbi-re-grow pbi-re-pl2 pbi-re-right pbi-re-mono">{panel.id}</span>
+      </div>
+      <div className="pbi-re-t11 pbi-re-quiet">
+        {formatMmPair(panel.w, panel.h)} · {formatMm(panel.thickness)} mm
+        {chosen ? ` · ${chosen.label}` : ''}
+      </div>
+      {/* T36 F2: the panel is about the PRIMARY piece and says so when a
+          commit is going to reach more than it. A set nobody is told about is
+          a set that surprises somebody. */}
+      {groupSize > 1 && (
+        <p className="pbi-re-t11 pbi-re-gold" data-group-selection={groupSize}>
+          {groupSize} pieces selected — height and set-back apply to all of them.
+        </p>
+      )}
+
+      <div className={compact ? 'pbi-re-grid pbi-re-grid-2 pbi-re-gap-2' : 'pbi-re-grid pbi-re-grid-2 pbi-re-gap-2'}>
+        {fields.map(row)}
+      </div>
+
+      {/* ─── Turn 14 (CLAUDE.md F8.2): WHAT MAY BE DONE TO IT ───
+          Shown in the editor window, which is where a joiner has the piece in
+          his hand. Where the physics refuses, it SAYS SO — the #58 pattern: a
+          control that is simply absent teaches nothing, and a greyed one with
+          no reason teaches less. */}
+      {actions && <ElementActions unit={unit} panel={panel} onRemove={removeElement} onMove={moveElement} />}
+
+      {/* Why some pieces have no thickness of their own. Written where the
+          question is asked rather than in a document nobody opens: a joiner
+          looking for the field is owed the reason it is not there. */}
+      {fields.includes('carcass-board') && (
+        <p className="pbi-re-t11 pbi-re-quiet">
+          The carcass is held together by tabs cut for this board — the tab is one thickness wide and the
+          socket is on its centre line. One board for all four, or the joint does not go together.
+        </p>
+      )}
+      {!fields.includes('material') && (
+        <p className="pbi-re-t11 pbi-re-quiet">
+          This piece is built from the drawers under it. Change the stack to change the piece.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Edit / move / remove, and the reason where the answer is no.
+ *
+ * The rule is `engine/elements.js elementActions` — pure, and tested there —
+ * so this component decides nothing about physics: it draws the answer.
+ */
+function ElementActions({ unit, panel, onRemove, onMove }) {
+  const rules = elementActions(panel);
+  const moved = panel.meta?.moved || { x: 0, y: 0, z: 0 };
+  return (
+    <div className="pbi-re-line-t pbi-re-hair pbi-re-pt2 pbi-re-stack-1" data-element-actions="1">
+      <span className="pbi-re-fieldlabel">Actions</span>
+      {rules.move.allowed ? (
+        <div className="pbi-re-grid pbi-re-grid-3 pbi-re-gap-1" data-element-move="1">
+          {[['x', 'Across'], ['y', 'Up'], ['z', 'In']].map(([axis, label]) => (
+            <label key={axis} className="pbi-re-block">
+              <span className="pbi-re-t10 pbi-re-quiet">{label}</span>
+              <NumberField
+                className="pbi-re-input pbi-re-right"
+                value={Number(moved[axis]) || 0}
+                title={`Offset from where the kit puts this piece, in the cabinet's own ${label.toLowerCase()} direction. 0 puts it back.`}
+                onCommit={(v) => onMove(unit.id, panel.id, { ...moved, [axis]: v })}
+              />
+            </label>
+          ))}
+        </div>
+      ) : (
+        <p className="pbi-re-t11 pbi-re-quiet">{rules.move.reason}</p>
+      )}
+      {rules.remove.allowed ? (
+        <button
+          type="button"
+          className="pbi-re-btn pbi-re-wfull pbi-re-bad"
+          data-element-remove="1"
+          title="Take this piece off. It leaves the cut list with it."
+          onClick={() => onRemove(unit.id, panel.id)}
+        >
+          Remove this piece
+        </button>
+      ) : (
+        <p className="pbi-re-t11 pbi-re-quiet">
+          <span className="pbi-re-ink-2">Cannot be removed.</span> {rules.remove.reason}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * How this cabinet's drawer `n` (from the floor) is addressed.
+ *
+ * A WARDROBE's drawers are ITEMS with ids of their own; a BUDR's are a RATIO
+ * and have none, so the only handle is the index. The store takes either
+ * (turn 17, CLAUDE.md F8.2) — this is the one place that has to know which kit
+ * it is looking at, and it decides it from the data rather than from the type.
+ */
+// ─── TURN 41 (F3): THE LOOKUP MOVED SO IT COULD BE TESTED ───────────────────
+// `drawerRefOf` / `drawerHeightValue` / `internalDrawerRef` now live in
+// `engine/drawerRef.js`. Nothing about them changed in the move; what changed
+// is that a test can import them, which is why the fault they fix survived a
+// green suite. See that file for the measurement.
+
+function Field({ label, children }) {
+  return (
+    <label className="pbi-re-block">
+      <span className="pbi-re-fieldlabel">{label}</span>
+      {children}
+    </label>
+  );
+}

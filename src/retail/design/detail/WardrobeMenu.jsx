@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import Chip from '../../ui/Chip.jsx';
 import Button from '../../ui/Button.jsx';
 import {
   ChipRow, Field, NumberField, Said,
@@ -103,9 +102,6 @@ export default function WardrobeMenu({
   const doors = A.doorCount(unitId);
   const width = Math.round(size.width || 0);
   const plinth = Math.round(size.leg_height ?? 0);
-  const decors = A.decorChoices();
-  const carcass = A.carcassDecorOf(project);
-  const front = A.frontDecorOf(project);
   const said = A.unitWarnings(unitId);
 
   if (!b) return null;
@@ -117,15 +113,9 @@ export default function WardrobeMenu({
     return <TopBoxMenu unitId={unitId} unit={unit} onBack={onBack} onDone={onDone} onRemoved={onRemoved} />;
   }
 
-  const swatch = (sw, chosen, onPick) => (
-    <Chip key={sw.id} title={sw.label} selected={chosen === sw.finishId} onClick={() => onPick(sw.id)}>
-      <span className="pbi-stack">
-        <span className="pbi-swatch-tile" style={{ background: sw.hex || 'var(--pbi-soft-ivory)' }} />
-        {/* The EGGER attribution, beside the image, unconditionally. */}
-        <span className="pbi-choice pbi-swatch-label">{sw.label}</span>
-      </span>
-    </Chip>
-  );
+  // T63 F4 · LICENSED REMOVAL: the CARCASS / FRONTS swatch rows stood here —
+  // retail's five curated EGGER tiles, superseded by PRO's own picker (MATERIALS
+  // › below opens the copied `MaterialChoicePanel` and its tiled modal).
 
   return (
     <Duty title={String(designName || 'WARDROBE').toUpperCase()} onBack={onBack} onDone={onDone}>
@@ -211,20 +201,61 @@ export default function WardrobeMenu({
         />
       </Field>
 
-      {decors.length ? (
-        <>
-          <Field label="CARCASS">
-            <div className="pbi-chip-row" data-testid="wardrobe-carcass">
-              {decors.map((sw) => swatch(sw, carcass, A.setCarcassDecor))}
-            </div>
-          </Field>
-          <Field label="FRONTS">
-            <div className="pbi-chip-row" data-testid="wardrobe-front">
-              {decors.map((sw) => swatch(sw, front, A.setFrontDecor))}
-            </div>
-          </Field>
-        </>
-      ) : null}
+      {/* ─── T63 · PRO'S OWN WINDOWS, FROM THE ROW PRO OPENS THEM FROM ──────
+          The owner: *"Sprawdź jakie jeszcze funkcje pominąłeś i je dodaj, a
+          później będziemy ustawiać jak je rozmieścić."* Four of PRO's windows
+          for ONE cabinet, each COPIED tonight and each opened here beside its
+          button, as PRO's right panel opens them: the size window (T31 F8),
+          the golden-plus window (T12 F5.1), the cabinet's own colour (T13 F3 —
+          it writes the UNIT, so two wardrobes may differ) and the project's
+          materials (F4's slot, with the tiled EGGER modal behind it). */}
+      <Field label="SIZE">
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            data-testid="wardrobe-open-size"
+            onClick={(e) => A.openEditor('unit-size', { unitId, field: 'width', anchor: A.anchorOf(e) })}
+          >
+            WIDTH AND HEIGHT ›
+          </Button>
+        </div>
+      </Field>
+
+      <Field label="INSIDE">
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            data-testid="wardrobe-open-add-items"
+            onClick={(e) => A.openEditor('add-items', { unitId, anchor: A.anchorOf(e) })}
+          >
+            ADD ITEMS ›
+          </Button>
+        </div>
+      </Field>
+
+      <Field label="COLOUR">
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            data-testid="wardrobe-open-finish"
+            onClick={(e) => A.openEditor('unit-finish', { unitIds: [unitId], anchor: A.anchorOf(e) })}
+          >
+            THIS WARDROBE'S COLOUR ›
+          </Button>
+        </div>
+      </Field>
+
+      <Field label="MATERIALS">
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            data-testid="wardrobe-open-materials"
+            onClick={(e) => A.openEditor('design', { anchor: A.anchorOf(e) })}
+          >
+            MATERIALS AND HARDWARE ›
+          </Button>
+        </div>
+      </Field>
 
       {/* T61 F3 · *"4 add top"*. Greyed with the ROOM's own sentence, read from
           the very predicate `addUnit` would have refused with — no silent

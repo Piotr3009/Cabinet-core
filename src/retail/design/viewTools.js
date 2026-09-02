@@ -64,17 +64,8 @@ export const VIEW_TOOLS = [
     titleOn: 'Hide dimensions and distance arrows',
     channel: 'dimensions',
   },
-  {
-    id: 'front-dimensions',
-    group: 'figures',
-    flag: 'showFrontDimensions',
-    action: 'toggleFrontDimensions',
-    label: 'Front dimensions',
-    labelOn: 'Hide front dimensions',
-    title: 'Show front dimensions — sizes, gaps and the merged run figure',
-    titleOn: 'Hide front dimensions — sizes, gaps and the merged run figure',
-    channel: 'dimensions',
-  },
+  // T63 F5 · LICENSED REMOVAL: `Front dimensions` stood here. The owner:
+  // *"front dimensions wywal, po co mi to."* Removed from the retail bar only.
 
   // ─── THE LENSES — ways of LOOKING, never edits ──────────────────────────
   {
@@ -114,16 +105,8 @@ export const VIEW_TOOLS = [
     title: 'Take the doors and drawer fronts off the picture — a way of LOOKING, not an edit',
     titleOn: 'Show the doors and drawer fronts again — nothing about the project changed',
   },
-  {
-    id: 'measure',
-    group: 'lens',
-    flag: 'rulerOn',
-    action: 'toggleRuler',
-    label: 'Measure',
-    title: 'Measure between two points on the drawing',
-    titleOn: 'Measuring — click two points to read the distance. Escape clears, then closes.',
-    channel: 'measure',
-  },
+  // T63 F5 · LICENSED REMOVAL: `Measure` stood here. The owner: *"measure
+  // wyrzuć też."* Removed from the retail bar only; PRO keeps its ruler.
 
   // ─── THE DOORS, AND THE LIGHT ───────────────────────────────────────────
   {
@@ -137,17 +120,23 @@ export const VIEW_TOOLS = [
     titleOn: 'Shut every door in the project',
   },
   {
-    // PBI's own. PRO switches the LED from `LightingPanel`, not from the bar;
-    // the brief's enumeration puts it here, beside the doors, because to a
-    // client "open it" and "turn the light on" are the same gesture.
+    // ─── T63 F2 · LIGHTS OPENS THE LIGHTING PANEL — IT DOES NOT TOGGLE ────
+    // The owner: *"jak naciskam lights to nie powinno się wyłączać światło
+    // tylko powinno się pojawić menu oświetlenia (jak w PRO)."* PRO's own
+    // Lighting button (`TopBar.jsx`) is exactly that — `openModal('lighting',
+    // { anchor })` — and the copied `LightingPanel` carries PRO's ON / OFF
+    // in PRO's place for it, at the top of the panel.
     id: 'lights', group: 'doors', own: true, kind: 'lights',
-    label: 'Lights', title: 'The LED strips, as they will be fitted',
+    label: 'Lights', title: 'LED strips, spots and the demo — placed in the scene, counted in the BOM',
   },
 
   // ─── AND THE TWO THAT ARE ABOUT THE PAGE ────────────────────────────────
   {
+    // T63 F5 · the owner: *"reset view widok wyśrodkowany, powinien być od
+    // środka."* Reset now parks the camera on the design's own centre line —
+    // `resetPlacement` below — rather than back at the room-corner preset.
     id: 'reset', group: 'page', own: true, kind: 'reset',
-    label: 'Reset view', title: 'Back to where you started looking',
+    label: 'Reset view', title: 'Centre the wardrobe in the picture',
   },
   {
     id: 'fullscreen', group: 'page', own: true, kind: 'fullscreen',
@@ -169,3 +158,31 @@ export const WORKSHOP_TOOLS = [
 // A hairline goes between one `group` and the next; `ViewBar` reads the change
 // as it walks the table, so the boundaries are the table's own and there is no
 // second list of them to fall out of step.
+
+// ─── T63 F5 · RESET VIEW CENTRES THE MODEL ──────────────────────────────────
+//
+// The owner: *"reset view widok wyśrodkowany, powinien być od środka."*
+//
+// PRO has no reset: `CanvasToolbar.jsx` carries no such control and
+// `src/3d/cameraPresets.js` (T59, retail's own) knows only its three places to
+// stand. So this is written in the retail view-tool and nowhere else, as
+// CLAUDE.md allows — the same maths `presetPlacement` frames a box with (the
+// app's 38° lens needs `max(w, h) × 1.5 + d` to hold a piece), aimed at the
+// bounding box's own centre, standing on its centre line, a little above the
+// middle so the top and the plinth are both in the picture.
+//
+// Pure, so a test can hold it: a box in, a place to stand out.
+export function resetPlacement(box) {
+  if (!box?.min || !box?.max) return null;
+  const cx = (box.min[0] + box.max[0]) / 2;
+  const cy = (box.min[1] + box.max[1]) / 2;
+  const cz = (box.min[2] + box.max[2]) / 2;
+  const w = box.max[0] - box.min[0];
+  const h = box.max[1] - box.min[1];
+  const d = box.max[2] - box.min[2];
+  const framing = Math.max(w, h) * 1.5 + d;
+  return {
+    from: [cx, cy + h * 0.12, box.max[2] + framing],
+    at: [cx, cy, cz],
+  };
+}

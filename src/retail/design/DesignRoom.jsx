@@ -6,7 +6,10 @@ import { useUiStore } from '../../stores/uiStore.js';
 import Categories from './Categories.jsx';
 import Options from './Options.jsx';
 import Detail from './Detail.jsx';
-import Stage, { applyPreset, saveStageImage, useCameraMemory } from './Stage.jsx';
+import Stage, {
+  applyPreset, resetStageView, saveStageImage, useCameraMemory,
+} from './Stage.jsx';
+import Editors from './Editors.jsx';
 import ViewBar from './ViewBar.jsx';
 import QuoteForm from '../ui/QuoteForm.jsx';
 import Button from '../ui/Button.jsx';
@@ -365,8 +368,13 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
         onPreset={pickPreset}
         doorEntries={doorEntries}
         lightsOn={lightsOn}
-        onLights={() => A.setLighting(!lightsOn)}
-        onReset={() => pickPreset('room')}
+        // T63 F2 · LIGHTS opens PRO's Lighting panel beside the button — the
+        // very call PRO's own Lighting button makes (`TopBar.jsx`). It does not
+        // toggle the light; the panel's ON / OFF does, in PRO's place for it.
+        onLights={(e) => A.openEditor('lighting', { anchor: A.anchorOf(e) })}
+        // T63 F5 · *"reset view widok wyśrodkowany"* — the centre line, not the
+        // room corner. No preset is lit afterwards, because none is standing.
+        onReset={() => { setPreset(null); resetStageView(handle.current); }}
         fullScreen={fullScreen}
         onFullScreen={() => setFullScreen((v) => !v)}
         onBack={() => setFullScreen(false)}
@@ -466,6 +474,16 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
       {roomEditor && !fullScreen ? (
         <RoomEditor anchor={roomEditor.anchor} onClose={() => setRoomEditor(null)} />
       ) : null}
+
+      {/* ─── T63 · PRO'S OWN WINDOWS, ANSWERING THE SHARED `modal` SLOT ─────
+          `src/pages/ConfiguratorPage.jsx`'s block, for this room: every name
+          the shared scene already opens (double-click a leaf, click a J
+          strip, double-click a figure) and every name the Duty menus open
+          from their buttons, rendered by the COPY of the window PRO renders.
+          Mounted at the room's level, like the room editor, and in full
+          screen too — a window a gesture opens must open wherever the
+          gesture is possible. */}
+      <Editors />
     </div>
   );
 }

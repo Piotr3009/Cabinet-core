@@ -288,7 +288,13 @@ test('F2 — X-RAY: the overlay runners obey the one gate every other runner obe
   const hw = read('src/3d/Hardware.jsx');
   // One gate for the whole family — there is no second one for the overlay
   // stack to be missing from.
-  assert.match(hw, /\{\(xray \|\| runners\) && \(/);
+  // ─── AMENDED BY T63 F1 ─────────────────────────────────────────────────
+  // The gate is the same gate. What stands beside it is the CLIENT's channel
+  // (`hardwareAlways()` — `chromeOn('hardware-always') && !proChromeOn()`),
+  // which reads `false` in PRO because PRO never switches its chrome off, so
+  // for a joiner the expression is still `(xray || runners)` and nothing else.
+  // `test/turn63-f1-hinges-always.test.js` proves that half.
+  assert.match(hw, /\{\(xray \|\| runners \|\| hardwareAlways\(\)\) && \(/);
   assert.match(read('src/3d/UnitView.jsx'), /runners=\{!contour && \(hideFronts \|\| anyFrontOpen\)\}/);
   // And both the GLB and the stand-in live inside the same <SlideOut>, so an
   // opened overlay drawer takes its runners with it exactly as a BUDR does.

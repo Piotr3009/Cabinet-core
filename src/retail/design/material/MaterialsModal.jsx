@@ -2,6 +2,7 @@ import Modal from '../room/Modal.jsx';
 import MaterialSlot from './MaterialSlot.jsx';
 import WizardHardware from './WizardHardware.jsx';
 import * as A from '../adapter.js';
+import { RETAIL_SHOW_WORKSHOP_TOOLS } from '../../config.js';
 
 // ─── TURN 63 F4 · THE MATERIALS WINDOW — PRO's `design` slot, for retail ───
 //
@@ -36,9 +37,12 @@ export default function MaterialsModal() {
         <div className="pbi-re-divider" />
         <span className="pbi-re-block pbi-re-t11 pbi-re-caps pbi-re-track pbi-re-quiet">Hardware</span>
         {/* PRO's own audience rule (T44: *"retail sees ONLY colour"*), read off
-            the same store field PRO's wizard reads. The workshop's rows are
-            PRO's `!retail` branches, not a retail deletion. */}
-        <WizardHardware audience={A.pageAudience()} />
+            the same store field PRO's wizard reads. The workshop's four rows —
+            soft-close, push-to-open, the plinth line, the automat's verdict —
+            are PRO's `!retail` branches, present in the copy and switched off;
+            CLAUDE.md's one switch for such things, `RETAIL_SHOW_WORKSHOP_TOOLS`,
+            shows them by handing the copy the factory audience. */}
+        <WizardHardware audience={RETAIL_SHOW_WORKSHOP_TOOLS ? 'factory' : A.pageAudience()} />
       </div>
     </Modal>
   );

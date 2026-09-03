@@ -1,0 +1,22 @@
+kit                           open  close  balance  depth
+KIT_BUDR_FULL.lsp             3280   3280        0     11
+KIT_BUDTALL_FULL.lsp           765    765        0     13
+KIT_BUD_FULL.lsp               700    700        0     13
+KIT_DOOR_DOUBLE.lsp           1245   1245        0      9
+KIT_FRIDGE.lsp                1087   1087        0     13
+KIT_FRONT_JPULL.lsp            141    141        0      7
+KIT_LED_GROOVE.lsp              53     53        0      6
+KIT_LOW_CABINET_FULL.lsp       952    952        0     12
+KIT_SASH_STANDARD.lsp          144    144        0      7
+KIT_SINK.lsp                  1184   1184        0     13
+KIT_WARDROBE_FULL.lsp         2355   2355        0     14
+KIT_WATCH_DRAWER.lsp           150    150        0      8
+KIT_WUD_FULL.lsp               736    736        0     13
+SKYLON_COMMON.lsp             3739   3739        0     14
+
+14 kit(s), every one 0/0.
+
+SKY:jpullEdge — defined in [KIT_FRONT_JPULL.lsp], called from [KIT_FRONT_JPULL.lsp]
+  One edge law, one owner — and the run, the ramp and the note beside it. ✓
+  The drawing closes: 4.212 + 10 + 3.788 = 18 on a 18 mm board. ✓
+  14/14 at 0/0 — the shelf as it stands, derived not typed.

@@ -1,0 +1,8 @@
+not ok 3 - F3/F4 · the labels CLAUDE.md names are in the copies
+  error: 'THE COPY DROPPED A CONTROL CLAUDE.md NAMED: Remove the rail'
+not ok 14 - T63 · RailModal.jsx — every label PRO shows, retail shows
+    src/retail/design/detail/RailModal.jsx DROPPED 1 of PRO's labels:
+      Remove the rail
+    +   'Remove the rail'
+    0: 'Remove the rail'
+not ok 46 - T63 · the copies differ by nothing but imports, class names and colour

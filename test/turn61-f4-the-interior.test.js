@@ -25,6 +25,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { isCopy } from '../scripts/t63-copies.mjs';
 import { join } from 'node:path';
 
 import * as A from '../src/retail/design/adapter.js';
@@ -214,6 +215,10 @@ test('F4 · every new row has a menu FILE, and none of them reaches past the ada
   // The iron boundary holds for the new files too: a menu asks the adapter.
   for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/\.jsx$/.test(file)) continue;
+    // T63: a COPY of a PRO window speaks the engine because PRO's file does —
+    // per file, per original, `scripts/t63-copies.mjs`. `Entries.jsx` is
+    // retail's own and still answers here.
+    if (isCopy(`src/retail/design/detail/${file}`)) continue;
     const text = read(`src/retail/design/detail/${file}`);
     for (const m of text.matchAll(/from '\.\.[^']*\/(engine|3d|stores|components|lib)\/[^']*'/g)) {
       assert.fail(`${file} reaches ${m[0]}`);

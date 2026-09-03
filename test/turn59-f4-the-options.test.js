@@ -11,6 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { isCopy } from '../scripts/t63-copies.mjs';
 import { join } from 'node:path';
 
 import { setPersistence } from '../src/stores/persistence.js';
@@ -393,6 +394,10 @@ test('F4 · the adapter is the ONLY place retail speaks engine', () => {
     'design/adapter.js', 'design/Stage.jsx', 'design/DesignRoom.jsx', 'design/Detail.jsx',
     'design/Options.jsx', 'design/ViewBar.jsx', 'main-retail.jsx', 'decorPack.js',
     'estimate/store.js', 'estimate/document.js',
+    // T63: the router that answers the shared `modal` slot with PRO's own
+    // windows (copied) — `ConfiguratorPage.jsx`'s block, for retail. It reads
+    // ONE live store field, the slot, exactly as DesignRoom reads its own.
+    'design/Editors.jsx',
   ]);
 
   // ─── AMENDED BY T62 F2/F3 ────────────────────────────────────────────────
@@ -409,8 +414,15 @@ test('F4 · the adapter is the ONLY place retail speaks engine', () => {
   // `RoomEditor.jsx` sits in the same folder, is retail's own work, and still
   // answers to the law in full — which is why it imports nothing but the two
   // copies and React.
-  const copiedFromPro = (rel) => rel.startsWith('design/room/')
-    && existsSync(join(ROOT, 'src/components', rel.slice('design/room/'.length)));
+  // ─── AND WIDENED BY T63, THE SAME WAY ──────────────────────────────────
+  // Twenty-one more of `src/components/`'s files, copied on the same order
+  // into `design/{lighting,detail,material}/` and listed one by one in
+  // `scripts/t63-copies.mjs`. Per FILE and per ORIGINAL, still: `Entries.jsx`,
+  // `MaterialSlot.jsx` and `MaterialsModal.jsx` share those folders, are
+  // retail's own, and import nothing but the copies, the adapter and React.
+  const copiedFromPro = (rel) => (rel.startsWith('design/room/')
+    && existsSync(join(ROOT, 'src/components', rel.slice('design/room/'.length))))
+    || isCopy(`src/retail/${rel}`);
 
   const strays = [];
   for (const file of walk(RETAIL)) {

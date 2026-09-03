@@ -24,6 +24,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { isCopy } from '../scripts/t63-copies.mjs';
 import { join } from 'node:path';
 
 import * as A from '../src/retail/design/adapter.js';
@@ -83,7 +84,8 @@ test('F3 · thirteen menus, and the router resolves every one of them', () => {
   // its test. What is asserted is the table's own keys against the list the
   // room works from.
   const router = read('src/retail/design/detail/index.jsx');
-  const keys = [...router.matchAll(/^ {2}(\w+): \w+Menu,$/gm)].map((m) => m[1]);
+  // T63: four keys point at ENTRIES (see below), the rest at menus.
+  const keys = [...router.matchAll(/^ {2}(\w+): \w+(?:Menu|Entry),$/gm)].map((m) => m[1]);
   assert.deepEqual(keys.sort(), [...A.MENUS].sort(), 'the table and the list have drifted');
 
   // One file per menu, and each one is reached only through the table.
@@ -92,15 +94,36 @@ test('F3 · thirteen menus, and the router resolves every one of them', () => {
   // pull-out and the tie rack share and is NOT in the table — a table with two
   // keys pointing at one component has stopped being readable, so each kit has
   // its own one-line file naming its own kind.
+  //
+  // ─── AMENDED BY T63 F2/F3 ──────────────────────────────────────────────
+  // FOUR keys — door, rail, watch, lighting — no longer point at a `*Menu.jsx`
+  // of retail's own. Those four sketches (113, 70, 85 and 61 lines where PRO
+  // has 996, 148, 246 and 861) are DELETED under CLAUDE.md's licence, PRO's
+  // four files are COPIED beside this router, and the four keys point at
+  // ENTRIES in `Entries.jsx`: the Duty shell with the one button that opens
+  // the copy. The table is still a table, every key still resolves, and no
+  // key resolves to a sketch.
+  const ENTRIES = ['door', 'rail', 'watch', 'lighting'];
   assert.deepEqual(
     files.filter((f) => /Menu\.jsx$/.test(f)).sort(),
-    [...keys].map((k) => `${k[0].toUpperCase()}${k.slice(1).replace(/_(.)/g, (_, c) => c.toUpperCase())}Menu.jsx`)
+    [...keys].filter((k) => !ENTRIES.includes(k))
+      .map((k) => `${k[0].toUpperCase()}${k.slice(1).replace(/_(.)/g, (_, c) => c.toUpperCase())}Menu.jsx`)
       .concat('KitMenu.jsx').sort(),
     'a menu file with no key, or a key with no file',
   );
   for (const name of keys) {
+    if (ENTRIES.includes(name)) {
+      const entry = `${name[0].toUpperCase()}${name.slice(1)}Entry`;
+      assert.match(router, new RegExp(`\\b${entry}\\b`), `${name} has no entry imported`);
+      assert.match(read('src/retail/design/detail/Entries.jsx'), new RegExp(`export function ${entry}\\(`),
+        `${name}'s entry is not in Entries.jsx`);
+      continue;
+    }
     assert.ok(new RegExp(`import \\w+ from '\\./\\w+Menu\\.jsx'`).test(router),
       `${name} has no component imported`);
+  }
+  for (const gone of ['DoorMenu.jsx', 'RailMenu.jsx', 'WatchMenu.jsx', 'LightingMenu.jsx']) {
+    assert.ok(!files.includes(gone), `${gone} is back beside its copy — that is the second track`);
   }
 });
 
@@ -325,10 +348,15 @@ test('F3.2 · DOOR — J-pull refuses the screwed-on systems, and NONE is the wa
   A.setDoorHandle(unit.id, panel.id, 'jpull');
   assert.equal(A.doorHandle(unit.id, panel, S().project), 'jpull');
 
-  // The chip row the menu renders, read out of the component's own source.
-  const menu = read('src/retail/design/detail/DoorMenu.jsx');
-  assert.match(menu, /handle === 'jpull' && h\.id !== 'jpull' && h\.id !== 'none'/,
-    'the T57 exclusion is not the one the menu applies');
+  // ─── AMENDED BY T63 F3 ─────────────────────────────────────────────────
+  // `DoorMenu.jsx` — T60's 113-line sketch of PRO's 996-line `DoorModal` — is
+  // deleted, and the door's window in retail is now PRO's own, COPIED. The
+  // T57 law it applied is PRO's `DoorModal`'s to apply now, in PRO's own
+  // words: the handle rows read `handleClassOf` and refuse the screwed-on
+  // systems while a J is chosen. Asserted on the copy.
+  const menu = read('src/retail/design/detail/DoorModal.jsx');
+  assert.match(menu, /handleClassOf/, 'the copied door window lost the T57 law');
+  assert.match(menu, /HANDLE_TYPES/, 'the copied door window lost the handle rows');
   assert.equal(A.REASON_JPULL, REASONS.jpullTakesNoHandle);
 
   // …and NONE takes the client back out, which is what stops the row being a
@@ -506,10 +534,16 @@ test('F3.6 · WATCH — the four layouts are the engine\'s four, drawn from its 
     assert.equal(l.rows, engine.rows);
     assert.equal(l.backStrip, engine.backStrip);
   }
-  // The drawing takes its arrangement from those fields and invents nothing.
-  const drawing = read('src/retail/design/detail/drawings.jsx');
-  for (const field of ['rows', 'across', 'backStrip']) {
-    assert.ok(drawing.includes(field), `the drawing ignores the engine's ${field}`);
+  // ─── AMENDED BY T63 F3 ─────────────────────────────────────────────────
+  // The drawing was retail's own (`drawings.jsx WatchLayoutDrawing`) because
+  // *"retail cannot import PRO's"*. It CAN copy it, and did: the watch window
+  // in retail is PRO's `WatchLayoutModal`, whose `Schematic` is drawn from the
+  // engine's own computed tray (`watchDrawerLayout` — pockets, sections,
+  // lanes, the back strip) and invents nothing. The sketch's drawing went with
+  // the sketch. Asserted on the copy.
+  const drawing = read('src/retail/design/detail/WatchLayoutModal.jsx');
+  for (const field of ['watchDrawerLayout', 'pockets', 'lanes', 'backStrip']) {
+    assert.ok(drawing.includes(field), `the copied schematic ignores the engine's ${field}`);
   }
 
   // PROJECT / SPRAYED — the T58 pair, and it is a null and one engine id.
@@ -587,10 +621,14 @@ test('F3.9 · LIGHTING — a strip belongs to a board, and the pane light is not
   // so it wrote to nothing. It is gone, and one true line stands where it was.
   S().setLighting({ pane: true });
   assert.equal(S().project.design.lighting.pane, undefined, 'the key survives — this test is stale');
-  const menu = code('src/retail/design/detail/LightingMenu.jsx');
+  // ─── AMENDED BY T63 F2 ─────────────────────────────────────────────────
+  // `LightingMenu.jsx` — T60's 61-line sketch of PRO's 861-line panel — is
+  // deleted; retail's lighting is PRO's `LightingPanel`, COPIED. It never
+  // wrote a `pane` key either (PRO's file has no such control), which is
+  // asserted on the copy; the pane light is the engine's own automatic ring.
+  const menu = code('src/retail/design/lighting/LightingPanel.jsx');
   assert.ok(!/setLighting\(\{ pane/.test(menu), 'the dead pane control is back');
-  assert.match(read('src/retail/design/detail/LightingMenu.jsx'), /A\.paneLight/,
-    'the menu does not say what is true instead');
+  assert.match(menu, /setLighting\(\{ on: /, 'the copied panel lost PRO\'s ON / OFF');
   assert.equal(A.paneLight(S().project, unit.id).present, false);
 });
 
@@ -600,6 +638,11 @@ test('F3 · not one menu speaks to the store or the engine — the adapter is th
   const strays = [];
   for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/\.jsx?$/.test(file)) continue;
+    // T63: a COPY of a PRO window speaks the engine because PRO's file does —
+    // routing it through the adapter would be re-writing it, which is the one
+    // thing this turn forbids. Per file, per original (`scripts/t63-copies.mjs`);
+    // `Entries.jsx` is retail's own and still answers here.
+    if (isCopy(`src/retail/design/detail/${file}`)) continue;
     const text = read(`src/retail/design/detail/${file}`);
     for (const m of text.matchAll(/from '\.\.[^']*\/(engine|3d|stores)\/[^']*'/g)) {
       strays.push(`${file} reaches ${m[0]}`);

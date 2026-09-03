@@ -92,7 +92,10 @@ test('F1 · the retail entry claims eleven, once, before the first render', () =
     'dimensions', 'outlines', 'measure',
     // …and T61's eight, in CLAUDE.md F1's own order.
     'drill', 'plus', 'machining', 'led-icons', 'hover-dims', 'edge', 'hover', 'share',
-  ], 'the entry does not claim exactly the eleven, in order');
+    // …and T63 F1's one: hinge plates and runners in every view, for the
+    // client who is buying them. *"1 — zawiasy zawsze."*
+    'hardware-always',
+  ], 'the entry does not claim exactly the twelve, in order');
 
   // BOOT-TIME, and that is load-bearing: these guards sit before their
   // components' hooks, so a value that changed between renders would change a

@@ -182,6 +182,15 @@
  * this turn is about. So the bar takes a second line on a narrow screen and
  * every entry stays where it can be read. The frame at 1280 is what asked for
  * this: the first one cut MEASURE, LIGHTS, RESET VIEW and ⛶ off the right. */
+/* ─── T63 F5 · THE VIEW BAR AS TILES ───────────────────────────────────────
+ *
+ * The owner: *"górne menu nr 4 powinno być mniejsze litery, ładniejsza
+ * czcionka, bardziej wyraźne i może w jakichś kafelkach."* So: Inter, smaller
+ * type at a lighter tracking, each tool a TILE with a Stone Line hairline and
+ * an Ivory hover, one row height, the active tile in Deep Gold under a
+ * Champagne hairline. Gold in a line and a small mark — never a fill. This is
+ * the one place tonight where the skin leads, because the owner asked for it
+ * by name; the labels are still PRO's own strings. */
 .pbi-viewbar {
   height: auto;
   min-height: var(--pbi-view-bar-h);
@@ -190,32 +199,36 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0;
-  padding: 0 var(--pbi-pad-bar);
+  gap: var(--pbi-gap-1);
+  padding: var(--pbi-gap-1) var(--pbi-pad-bar);
 }
 
 .pbi-viewbar-btn {
   position: relative;
-  background: none;
-  border: 0;
-  padding: var(--pbi-gap-2) var(--pbi-gap-3);
-  min-height: var(--pbi-view-bar-h);
+  background: var(--pbi-porcelain);
+  border: 1px solid var(--pbi-stone-line);
+  border-radius: var(--pbi-radius);
+  padding: 0 var(--pbi-gap-3);
+  height: calc(var(--pbi-view-bar-h) - 2 * var(--pbi-gap-1));
+  min-height: 0;
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
-  color: var(--pbi-soft-graphite);
+  color: var(--pbi-onyx);
   font-family: var(--pbi-font-ui);
-  font-weight: 400;
-  font-size: var(--pbi-fs-ui);
+  font-weight: 500;
+  font-size: var(--pbi-fs-ui-sm);
   text-transform: uppercase;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
-  flex: 0 0 auto;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
 }
 
-.pbi-viewbar-btn:hover:not(:disabled) { color: var(--pbi-onyx); }
+.pbi-viewbar-btn:hover:not(:disabled) { background: var(--pbi-ivory); border-color: var(--pbi-deep-gold); }
 
-/* The active entry in Deep Gold with a Champagne underline (F2). Gold in a
- * hairline and a small mark — never a fill. */
-.pbi-viewbar-btn.is-on { color: var(--pbi-deep-gold); }
+/* The active tile in Deep Gold, with a Champagne hairline under the word (F2's
+ * grammar, kept). Gold in a hairline and a small mark — never a fill. */
+.pbi-viewbar-btn.is-on { color: var(--pbi-deep-gold); border-color: var(--pbi-deep-gold); }
 .pbi-viewbar-btn.is-on::after {
   content: '';
   position: absolute;
@@ -229,6 +242,8 @@
 .pbi-viewbar-btn:disabled {
   cursor: default;
   color: var(--pbi-stone-line);
+  border-color: var(--pbi-stone-line);
+  background: var(--pbi-warm-white);
 }
 
 .pbi-viewbar-btn:focus-visible { outline: 1px solid var(--pbi-champagne); outline-offset: 0; }

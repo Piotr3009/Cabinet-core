@@ -2279,3 +2279,136 @@ export function selectionForMenu(menu, unitId) {
     menu, kind: 'drawer', unitId, ref: item.id, panel: null, item, label: 'Drawer',
   } : null;
 }
+
+// ═══ TURN 63 · THE DOORS INTO PRO'S OWN WINDOWS ═════════════════════════════
+//
+// The owner, 01.09.2026: *"jak piszę 1 do 1 to KOPIUJ. ale kopiuj — nie
+// kasuj, nie zmieniaj PRO, tylko zrób identycznie w retail."*
+//
+// Twenty-two of PRO's components are COPIED into `design/{lighting,detail,
+// material}/` tonight, and a copy speaks the engine and the stores directly,
+// as PRO's file does — that is what makes it a copy. What retail WRITES is
+// only the wiring that opens them, and that wiring goes through here, so the
+// adapter is still the one place a retail-authored file speaks the store.
+
+import { anchorOfEvent } from '../../lib/modalAnchor.js';
+import { migrateDesign } from '../../engine/design.js';
+import { normaliseFrontTypes, pickerForSource, sourceById } from '../../engine/projectSettings.js';
+import { railChosenAlone } from '../../engine/railAssembly.js';
+
+/** Open one of PRO's windows in the SHARED ui store's own slot. */
+export const openEditor = (name, args = null) => U().openModal(name, args);
+export const closeEditor = () => U().closeModal();
+/** The rectangle of the control that asked (rule 15: beside, never on). */
+export const anchorOf = (e) => anchorOfEvent(e);
+/** The scene's own selection — the one `LightingPanel` offers a strip under. */
+export const selectOnStage = (unitId, ref) => U().selectElement(unitId, ref);
+/** The whole project, for a reader that wants one field of it. */
+export const liveProject = () => S().project;
+/** Which door this page was opened through — `WizardHardware` reads it as PRO does. */
+export const pageAudience = () => U().audience;
+
+/**
+ * WHICH WINDOW A ROD OPENS — PRO's own T42 verdict, asked of the engine.
+ *
+ * An ALONE rod is its own subject: `RailModal`, by ITEM id. An ASSEMBLY's rod
+ * rides a fix shelf and opens THAT board's window (`DoorModal` is every
+ * piece's window), by the shelf's PANEL id — the same route `src/3d/Hardware.jsx`
+ * takes on a double-click. Nothing here decides which; `railChosenAlone` does.
+ */
+export function railWindow(unitId, itemId) {
+  const item = itemsOf(unitId).find((i) => i.id === itemId && i.kind === 'hanger') || null;
+  if (!item) return null;
+  const result = resultOf(unitId);
+  // The ENGINE's published rod — `mount` and the ADDRESS (`panelId`: the fix
+  // shelf's panel for an assembly, the rod's own item for an alone rod) are the
+  // two fields `src/3d/Hardware.jsx Rods` reads for the same decision.
+  const rail = result?.assemblies?.rail?.itemId === item.id
+    ? result.assemblies.rail
+    : (result?.assemblies?.columnRails || []).find((r) => r.itemId === item.id) || null;
+  const alone = rail ? rail.mount === RAIL_MOUNT.ALONE : railChosenAlone(item);
+  if (alone) return { modal: 'rail', args: { unitId, railItemId: item.id }, said: '' };
+  const shelfId = rail?.panelId || null;
+  if (shelfId) return { modal: 'element', args: { unitId, panelId: shelfId }, said: '' };
+  return null;
+}
+
+// ─── F4 · THE SOURCE→PICKER LAW, READ FROM THE PROFILE ─────────────────────
+//
+// CLAUDE.md F4: *"every carcass and front source names the picker it opens
+// (decor / colour / veneer / none), and the thickness rides with the source
+// (Egger 18, veneer 19, spray 18). `MaterialChoicePanel` is the surface that
+// reads that law."* These functions hand that surface what PRO's wizard hands
+// it (`WizardSettings.jsx slotPicker`), and write through the same four store
+// setters PRO writes through. The ONE rule restated from PRO's wizard, because
+// it lives in a component and not the engine: a FRONT's veneer picks from the
+// 85-decor catalogue (T20 F12.3), so its body is the decor grid.
+
+// A fresh project's `fronts.types` is `[]` until the first write — PRO's
+// wizard reads its slots through `normaliseFrontTypes`, which answers `f1`
+// with the profile's first source, and the store's own `setFrontType` writes
+// through the same normaliser. So does this.
+const typeOf = (kind) => {
+  const design = migrateDesign(S().project.design);
+  return kind === 'carcass' ? design.carcass.types[0] : normaliseFrontTypes(design.fronts.types, P())[0];
+};
+
+export function materialSlot(kind) {
+  const design = migrateDesign(S().project.design);
+  const slot = typeOf(kind);
+  const sources = kind === 'carcass' ? carcassSources(P()) : frontSources(P());
+  const activeSource = slot?.source || (kind === 'carcass' ? 'egger' : 'laminate');
+  const src = sourceById(sources, activeSource) || sourceById(sources, kind === 'carcass' ? 'egger' : 'laminate');
+  const picker = pickerForSource(src);
+  return {
+    kind,
+    slot,
+    sources: sources.map((s) => ({
+      id: s.id, label: s.label, picker: pickerForSource(s), thickness: s.thickness, active: s.id === activeSource,
+    })),
+    activeSource,
+    thickness: src?.thickness ?? null,
+    picker: picker === 'veneer' && kind === 'front' ? 'decor' : picker,
+    value: slot?.finish_id || null,
+    colour: kind === 'carcass' ? design.colour?.carcass || null : slot?.colour || null,
+  };
+}
+
+export function setMaterialSource(kind, sourceId) {
+  const slot = typeOf(kind);
+  if (kind === 'carcass') return S().setCarcassSource(slot.id, sourceId);
+  return S().setFrontType(slot.id, { source: sourceId });
+}
+
+export function pickMaterialDecor(kind, finishId) {
+  const slot = typeOf(kind);
+  if (kind === 'carcass') {
+    S().setCarcassSource(slot.id, 'egger');
+    return S().setCarcassFinish(slot.id, finishId);
+  }
+  return S().setFrontType(slot.id, { source: slot.source || 'laminate', finish_id: finishId });
+}
+
+export function pickMaterialVeneer(kind, finishId) {
+  const slot = typeOf(kind);
+  if (kind === 'carcass') {
+    S().setCarcassSource(slot.id, 'veneer');
+    return S().setCarcassFinish(slot.id, finishId);
+  }
+  return S().setFrontType(slot.id, { source: 'veneer', finish_id: finishId });
+}
+
+export function pickMaterialColour(kind, colour) {
+  const slot = typeOf(kind);
+  if (kind === 'carcass') {
+    const design = migrateDesign(S().project.design);
+    return S().setDesign({ colour: { ...design.colour, carcass: colour } });
+  }
+  return S().setFrontType(slot.id, { source: 'spray', colour });
+}
+
+export function clearMaterialFinish(kind) {
+  const slot = typeOf(kind);
+  if (kind === 'carcass') return S().setCarcassFinish(slot.id, null);
+  return S().setFrontType(slot.id, { finish_id: null });
+}

@@ -1,5 +1,6 @@
 import { parseDecorCatalogue, setDecorCatalogue, setDecorScale } from '../engine/decors.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { noteStorageBase } from '../lib/storageBase.js';
 
 // ─── THE EGGER PACK, FETCHED BY RETAIL'S OWN HAND ──────────────────────────
 //
@@ -9,10 +10,18 @@ import { getCabinetProfile } from '../engine/profile.js';
 // of retail's reach, so this is the same three engine calls made from this
 // side of the wall. Twenty lines rather than a boundary violation.
 //
-// What is NOT here, deliberately: PRO's `noteStorageBase()`. That exists to
-// teach the app where the workshop's Supabase bucket is, and the PBI site has
-// no business knowing. A decor with no scan falls back to the procedural
-// grain, which is what a build with no network gets in PRO too.
+// ─── T63 F1 · …AND THE BUCKET IS TOLD, AFTER ALL ───────────────────────────
+//
+// T59 left PRO's `noteStorageBase()` out on purpose: *"the PBI site has no
+// business knowing"* where the workshop's bucket is. That decision is what
+// stood between the client and the hinges. A hinge plate is *"the downloaded
+// GLB or nothing"* (T36) and a runner the same (T43) — the models live in the
+// bucket, `useStorageBase` learns the bucket only when this call fires, and
+// retail never fired it. So every gate in `Hardware.jsx` could open and draw
+// NOTHING, which is what *"nadal nie widać zawiasów"* looked like from the
+// owner's chair. The bucket is the same public host the pack's own scan URLs
+// already name; nothing new is learnt and nothing is written. `src/lib` is
+// shared core and unchanged — this is one retail file calling it.
 
 export const DECOR_DIR = 'decors/egger/';
 const DECOR_FILE = 'egger-decors.json';
@@ -47,6 +56,10 @@ export function loadDecors({ fetchImpl = null } = {}) {
       const parsed = parseDecorCatalogue(json, { basePath: dir });
       setDecorScale(getCabinetProfile().appearance?.decor?.scanHeightMm);
       setDecorCatalogue(parsed);
+      // T63 F1: the views are told the host is known — the hinge and runner
+      // models are fetched from it, and a view that asked before the pack
+      // landed would otherwise draw nothing for ever.
+      noteStorageBase();
       return { ...parsed, error: null };
     })
     .catch((e) => {

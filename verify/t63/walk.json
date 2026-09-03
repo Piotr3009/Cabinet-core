@@ -1,0 +1,277 @@
+{
+ "steps": [
+  {
+   "label": "retail — SOLID view, X-ray off",
+   "ok": true,
+   "detail": "xray=false"
+  },
+  {
+   "label": "retail — hinge plates DRAWN in Solid, doors shut",
+   "ok": true,
+   "detail": "6 plates modelled"
+  },
+  {
+   "label": "retail — runners are asked for with the fronts on",
+   "ok": true,
+   "detail": "0 runner rows reported"
+  },
+  {
+   "label": "PRO — SOLID view, X-ray off, Show hinges off",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "PRO — not one hinge plate drawn: X-ray-only, as it always was",
+   "ok": true,
+   "detail": "-1 plates"
+  },
+  {
+   "label": "PRO — in X-ray the plates appear, as they always have",
+   "ok": true,
+   "detail": "6 plates"
+  },
+  {
+   "label": "LED entries are in the scene with the panel CLOSED",
+   "ok": true,
+   "detail": "3 LED icons"
+  },
+  {
+   "label": "a door on the stage is the scene's selection",
+   "ok": true,
+   "detail": "{\"unitId\":\"u_4q4n8x7\",\"elementRef\":\"W01-F\"}"
+  },
+  {
+   "label": "LIGHTS opens the lighting panel (modal \"lighting\")",
+   "ok": true,
+   "detail": "modal=lighting"
+  },
+  {
+   "label": "…and does not toggle the light",
+   "ok": true,
+   "detail": "on: false → false"
+  },
+  {
+   "label": "PRO's own panel is on screen",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the panel stands BESIDE its button, not on it",
+   "ok": true,
+   "detail": "button x1331 y56 · panel x748 y145 w326"
+  },
+  {
+   "label": "ON / OFF, in PRO's place for it",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the BRIGHTNESS slider (*\"nie ma suwaka do bright\"*)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "colour temperature",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the room rig — four lamps and the presets",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the placement tools, each with its drawing",
+   "ok": true,
+   "detail": "5 tools"
+  },
+  {
+   "label": "the light is ON and a strip is placed",
+   "ok": true,
+   "detail": "on=true · 1 strip(s)"
+  },
+  {
+   "label": "a click on a door opens the DOOR duty",
+   "ok": true,
+   "detail": "menu=door"
+  },
+  {
+   "label": "DOOR › EDIT THIS DOOR opens PRO's DoorModal",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with PRO's own fields in it",
+   "ok": true,
+   "detail": "8 inputs"
+  },
+  {
+   "label": "DOOR › HINGES opens the same window at section B",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "LAYOUT › the wardrobe opens its menu",
+   "ok": true,
+   "detail": "menu=wardrobe"
+  },
+  {
+   "label": "WARDROBE › WIDTH AND HEIGHT › opens PRO's unit-size window",
+   "ok": true,
+   "detail": "modal=unit-size"
+  },
+  {
+   "label": "WARDROBE › ADD ITEMS › opens PRO's add-items window",
+   "ok": true,
+   "detail": "modal=add-items"
+  },
+  {
+   "label": "WARDROBE › THIS WARDROBE'S COLOUR › opens PRO's unit-finish window",
+   "ok": true,
+   "detail": "modal=unit-finish"
+  },
+  {
+   "label": "INTERIOR shows PRO's AddItems, whole",
+   "ok": true,
+   "detail": "10 rows"
+  },
+  {
+   "label": "a watch drawer stands in the wardrobe and INTERIOR offers its ›",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "WATCH DRAWER › LAYOUT, GLASS AND FINISH opens PRO's WatchLayoutModal",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with PRO's four layouts drawn",
+   "ok": true,
+   "detail": "4 cards"
+  },
+  {
+   "label": "a rail stands in the wardrobe and INTERIOR offers its ›",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "HANGING RAIL › EDIT THIS RAIL opens PRO's window for it",
+   "ok": true,
+   "detail": "modal=rail"
+  },
+  {
+   "label": "the J strip's own call opens PRO's JpullRunModal (one slider)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "front gap — the boot scene has no gap under 3 mm; the rows render when frontGapRows answers",
+   "ok": true,
+   "detail": "0 rows · clearance rows present",
+   "note": true
+  },
+  {
+   "label": "FRONTS carries PRO's material slot (Choose decor… / Change)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and PRO's door-style gallery, with its drawings",
+   "ok": true,
+   "detail": "8 tiles"
+  },
+  {
+   "label": "LAMINATE names the decor picker — the source→picker law, read off the profile",
+   "ok": true,
+   "detail": "picker=decor"
+  },
+  {
+   "label": "the slot opens PRO's tiled EGGER modal",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with tiles from the real pack, a search and the family bar",
+   "ok": true,
+   "detail": "85 tiles · 16 families"
+  },
+  {
+   "label": "a tile click CHOOSES and the window CLOSES",
+   "ok": true,
+   "detail": "null → egger:H1145_10 · closed=true"
+  },
+  {
+   "label": "…and the slot shows the chosen tile with EGGER's attribution",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "a second wardrobe stands beside the first",
+   "ok": true,
+   "detail": "2 units"
+  },
+  {
+   "label": "THIS WARDROBE'S COLOUR › opens PRO's UnitFinishModal",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…offering the project's own palette",
+   "ok": true,
+   "detail": "2 entries"
+  },
+  {
+   "label": "the colour lands on ONE wardrobe — the other keeps the project's",
+   "ok": true,
+   "detail": "unit 1 front_type_id=null · unit 2 front_type_id=f1"
+  },
+  {
+   "label": "WARDROBE › MATERIALS AND HARDWARE opens the materials window",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…with PRO's carcass slot, front slot and WizardHardware",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "BROWSE HERE shows PRO's in-step picker for the source",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "BEFORE (origin/main) — the bar",
+   "ok": true,
+   "detail": "Front · Inside · Room · Show dimensions · Front dimensions · Outlines · X-ray · Props · Hide fronts · Measure · Open all · Lights · Reset view · ⛶",
+   "note": true
+  },
+  {
+   "label": "FRONT DIMENSIONS and MEASURE are gone from the retail bar",
+   "ok": true,
+   "detail": "Front · Inside · Room · Show dimensions · Outlines · X-ray · Props · Hide fronts · Open all · Lights · Reset view · ⛶"
+  },
+  {
+   "label": "…and were there before",
+   "ok": true,
+   "detail": "14 → 12 buttons"
+  },
+  {
+   "label": "each tool is a TILE — a hairline, Inter, smaller type",
+   "ok": true,
+   "detail": "1px border · Inter 12.621px · 36px tall"
+  },
+  {
+   "label": "one row height",
+   "ok": true,
+   "detail": "heights [36]"
+  },
+  {
+   "label": "RESET VIEW stands on the design's centre line, looking at its centre",
+   "ok": true,
+   "detail": "off-centre by 0.000 m · target off by 0.000 m · 3.97 m in front"
+  }
+ ],
+ "failed": 0
+}

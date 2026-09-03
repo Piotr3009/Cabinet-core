@@ -5,6 +5,7 @@ import './styles/base.css';
 import './styles/scale.css';
 import './styles/room.css';
 import './styles/roomeditor.css';
+import './styles/copies.css';
 import { setPersistence } from '../stores/persistence.js';
 import { setChromePart, setProChrome } from '../3d/chrome.js';
 import { setPickMode } from '../3d/picking.js';
@@ -98,6 +99,18 @@ setChromePart('hover', true);        // UnitView — the shelf-gap readout under
 // inventing a retail button for a workshop's layout operation.
 setChromePart('share', true);        // ShareOutBar — the share-out bar
 
+// ─── T63 F1 · AND THE TWELFTH: HINGES AND RUNNERS, IN EVERY VIEW ───────────
+//
+// The owner: *"nadal nie widać zawiasów"* → *"1 — zawiasy zawsze"*.
+// `src/3d/Hardware.jsx` keeps its law — hinges and runners are X-RAY ONLY,
+// because a working view of a cabinet is not a hardware drawing — and reads
+// this channel beside it. The client is buying the hardware and wants to see
+// it. PRO sets no channel and never calls `setProChrome`, so PRO's two
+// conditions still read exactly what they read last night; the channel only
+// counts once the master switch above is OFF, which is this page and no other.
+// Runners come with hinges — same law, same channel, one decision.
+setChromePart('hardware-always', true); // Hardware — hinge plates and runners, Solid included
+
 // ─── T60 F3 · AND A SINGLE CLICK REACHES A DOOR ────────────────────────────
 //
 // *"jak naciśniemy na drzwi to się pojawi drzwi."* PRO's single click selects
@@ -108,6 +121,26 @@ setChromePart('share', true);        // ShareOutBar — the share-out bar
 // `isMainViewElement`), so the set of clickable pieces is the set PRO's double
 // click already opens and only the gesture differs. PRO sets no mode.
 setPickMode('client');
+
+// ─── T63 F1 · THE HARDWARE CATALOGUES, AS PRO'S App.jsx LOADS THEM ─────────
+//
+// The owner: *"nadal nie widać zawiasów."* And the reason, found by the walk
+// rather than by reading: a hinge on screen is *"the downloaded GLB or
+// nothing"* (T36), and the GLB is named by the CLIP top CATALOGUE — which PRO's
+// `App.jsx` hands the engine at module scope (`loadHardwareCatalogues()`) and
+// this entry never did. With no catalogue `hingeFamilies` answers nothing,
+// `resolveDoorHinge` finds no article, no article names no file, and every
+// gate `Hardware.jsx` opens draws NOTHING. The same calls, in the same order,
+// from the same shared lib: the shipped catalogues, the bucket's own manifests
+// as the OVERRULE (`refreshHardwareCatalogues`, App.jsx turn 22 — where the
+// bucket names an article, it replaces what shipped), and both asked for again
+// the moment the bucket is known, because on this page the bucket is learnt
+// from the decor pack, which lands after boot.
+//
+// They are called INSIDE the dynamic block below, after the two switches and
+// before the first render — never as static imports up here, because a static
+// import hoists above `setPersistence('none')` and the lib these loaders
+// reach is not the import-free two-file graph the switches are held to.
 
 // The EGGER pack, fetched by retail's own loader into the engine's own
 // registry. PRO's `src/lib/decorCatalogue.js` does the same thing and is on
@@ -123,8 +156,34 @@ import('./RetailApp.jsx').then(async (module) => {
   // would hoist above `setPersistence` and the store's initial state would be
   // built from PRO's localStorage keys before the switch was ever thrown.
   const { useUiStore } = await import('../stores/uiStore.js');
+  const { useProjectStore } = await import('../stores/projectStore.js');
   const ui = useUiStore.getState();
   ui.setAudience('retail');
+
+  // T63 F1 · the hardware catalogues, as PRO's App.jsx loads them (see the
+  // note above `loadDecors()`): a hinge on screen is the downloaded GLB or
+  // nothing, and the GLB is named by these.
+  const { loadHardwareCatalogues } = await import('../lib/hardwareCatalogue.js');
+  const { refreshHardwareCatalogues } = await import('../lib/hardwareHealth.js');
+  const { loadRunnerCatalogue } = await import('../lib/runnerCatalogue.js');
+  const { onStorageBase } = await import('../lib/storageBase.js');
+  loadHardwareCatalogues();
+  loadRunnerCatalogue();
+  refreshHardwareCatalogues();
+  onStorageBase(() => { loadRunnerCatalogue(); refreshHardwareCatalogues(); });
+
+  // ─── T63 · THE WALK'S OWN HANDLES, AS PRO'S `main.jsx` REGISTERS THEM ────
+  // The same two stores every retail component already subscribes to, on the
+  // same key PRO uses (`window.__cc.project`, `window.__cc.ui`), beside the
+  // stage handle `Stage.jsx` registers under `window.__cc.pbi`. PRO's own
+  // words for why: *"the build that gets verified has to be the build that
+  // gets used. There is nothing behind it that devtools could not already
+  // reach."* Nothing reads them but `scripts/t63-walk.mjs`.
+  if (typeof window !== 'undefined') {
+    const cc = (window.__cc = window.__cc || {});
+    cc.project = useProjectStore;
+    cc.ui = useUiStore;
+  }
 
   // ─── THE OVERLAYS THAT ALREADY HAD A SWITCH ──────────────────────────────
   //

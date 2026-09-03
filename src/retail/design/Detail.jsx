@@ -39,7 +39,11 @@ import { menuFor } from './detail/index.jsx';
 
 export default function Detail(props) {
   const { selection } = props;
-  const clear = () => { props.onSelect(null); useUiStore.getState().clearElement?.(); };
+  // DONE / BACK / a removal: the panel slides OUT — so the WHOLE selection
+  // goes (the scene's own `clearSelection`, as a click on the empty stage),
+  // not the element alone: a cabinet left selected would slide the
+  // wardrobe's own menu straight back in.
+  const clear = () => { props.onSelect(null); useUiStore.getState().clearSelection?.(); };
   const Menu = selection ? menuFor(selection.menu) : null;
 
   return (

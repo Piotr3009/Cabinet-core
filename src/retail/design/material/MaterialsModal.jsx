@@ -2,6 +2,7 @@ import Modal from '../room/Modal.jsx';
 import MaterialSlot from './MaterialSlot.jsx';
 import WizardHardware from './WizardHardware.jsx';
 import * as A from '../adapter.js';
+import { Button } from '../controls.jsx';
 import { RETAIL_SHOW_WORKSHOP_TOOLS } from '../../config.js';
 
 // ─── TURN 63 F4 · THE MATERIALS WINDOW — PRO's `design` slot, for retail ───
@@ -26,9 +27,9 @@ export default function MaterialsModal() {
       onClose={() => A.closeEditor()}
       width="pbi-re-w640"
       footer={(
-        <button type="button" className="pbi-re-btn-gold" data-testid="materials-done" onClick={() => A.closeEditor()}>
+        <Button size="small" data-testid="materials-done" onClick={() => A.closeEditor()}>
           Done
-        </button>
+        </Button>
       )}
     >
       <div className="pbi-re-stack-3" data-testid="materials-modal">

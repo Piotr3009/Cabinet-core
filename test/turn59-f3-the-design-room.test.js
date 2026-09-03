@@ -343,7 +343,14 @@ test('F3.3 · three camera presets, parked off the furniture\'s own box', () => 
 test('F3.5 · full screen is a LOOKING mode that restores what it left', () => {
   const room = readFileSync(join(RETAIL, 'design/DesignRoom.jsx'), 'utf8');
   // Esc, the ⛶ and BACK TO DESIGN are all the same one state change.
-  assert.match(room, /e\.key === 'Escape'/, 'Esc must leave full screen');
+  // ─── AMENDED BY T64 F1.1 ─────────────────────────────────────────────────
+  // Esc is on the stage's ONE keyboard handler now (`design/keys.js`, PRO's
+  // handler copied), and the room hands it `onExitFullScreen`. One listener,
+  // by the balance's own count.
+  const keys = readFileSync(join(RETAIL, 'design/keys.js'), 'utf8');
+  assert.match(keys, /e\.key === 'Escape'/, 'Esc must leave full screen');
+  assert.match(keys, /onExitFullScreen\(\)/, 'Esc must leave full screen');
+  assert.match(room, /onExitFullScreen=\{exitFullScreen\}/, 'the room hands the handler its exit');
   assert.match(room, /useCameraMemory\(fullScreen\)/, 'the camera must be held across the trip');
   // The columns are NOT unmounted-and-reset; they are simply not rendered, so
   // `active`, `target` and the selection are still there on the way back.
@@ -356,8 +363,10 @@ test('F3.5 · full screen is a LOOKING mode that restores what it left', () => {
   // the INTERIOR list alive through its own edits — see `adapter.resolveTarget`.
   assert.match(room, /if \(fullScreen\) \{ setTarget\(null\); return; \}/,
     'full screen must drop the selection');
-  assert.match(room, /if \(!selectedElement\) return;/,
-    'a click in looking mode must select nothing');
+  // T64 F4: a piece selected → the panel slides in; the empty stage → out;
+  // a menu opened from a row's `›` is the list's to close, not the stage's.
+  assert.match(room, /setTarget\(\(t\) => \(t && t\.from === 'stage' \? null : t\)\);/,
+    'a cleared selection must close only what the stage opened');
   assert.ok(!/setActive\(['"]space['"]\)/.test(room.slice(room.indexOf('setFullScreen'))),
     'nothing may be reset on the way back');
 });

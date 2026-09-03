@@ -1,5 +1,5 @@
 import GoldLine from '../../ui/GoldLine.jsx';
-import Button from '../../ui/Button.jsx';
+import { Button } from '../controls.jsx';
 
 // ─── T60 F3 · THE SHELL EVERY MENU WEARS ───────────────────────────────────
 //
@@ -9,14 +9,16 @@ import Button from '../../ui/Button.jsx';
 // right.
 //
 // DONE returns column 7 to its default duty, the ESTIMATE (F6).
+// T64 F4: the panel slides OUT on DONE — there is no estimate duty behind it
+// any more (F5, the page) — so the way back is simply back.
 
-export default function Duty({ title, onBack, onDone, children, backLabel = '‹ BACK TO ESTIMATE' }) {
+export default function Duty({ title, onBack, onDone, children, backLabel = '‹ BACK' }) {
   return (
     <div className="pbi-duty">
       {onBack ? (
-        <button type="button" className="pbi-link" data-testid="detail-back" onClick={onBack}>
+        <Button kind="link" data-testid="detail-back" onClick={onBack}>
           {backLabel}
-        </button>
+        </Button>
       ) : null}
       <h2 className={`pbi-display pbi-h4 ${onBack ? 'pbi-duty-title' : 'pbi-duty-title-flush'}`}>
         {title}

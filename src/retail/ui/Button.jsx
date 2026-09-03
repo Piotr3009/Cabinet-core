@@ -1,32 +1,15 @@
+import { Button } from '../design/controls.jsx';
+
 /**
- * THE TWO BUTTONS, AND THERE ARE ONLY TWO (F2).
+ * ─── T64 F3 · ONE BUTTON ───────────────────────────────────────────────────
  *
- * Primary: bg Onyx, text Porcelain, border Onyx, hover Graphite, focus 2px
- * Champagne, 50px, radius 0. Secondary: transparent, text Onyx, 1px Deep Gold
- * border, hover Champagne ground. The rules live in base.css; this file only
- * decides which of the two a caller gets, and renders an <a> when the thing is
- * really a link so the browser keeps its own behaviours.
+ * The owner: *"przyciski i napisy w przyciskach bardziej posh … przyciski
+ * kwadratowe."* CLAUDE.md F3: *"One `Button` in `src/retail/design/
+ * controls.jsx`, used everywhere in `src/retail/**`."* This file is the
+ * site's old door to it, kept so that the header, the landing page and the
+ * quote form change no import line — and it is a re-export, not a second
+ * component. The rules for the site's own rhythm (50px, the marketing
+ * pages) stay in `styles/base.css`; the room's (44/36, 12px tracked) are in
+ * `styles/room.css` under `.pbi-room`.
  */
-export default function Button({
-  kind = 'primary', href, onClick, disabled = false, children, style, title, type = 'button', ...rest
-}) {
-  const className = `pbi-btn pbi-btn-${kind === 'secondary' ? 'secondary' : 'primary'}`;
-  if (href && !disabled) {
-    return (
-      <a className={className} href={href} style={style} title={title} {...rest}>{children}</a>
-    );
-  }
-  return (
-    <button
-      className={className}
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      style={style}
-      title={title}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-}
+export default Button;

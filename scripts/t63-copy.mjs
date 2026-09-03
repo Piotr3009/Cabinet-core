@@ -61,9 +61,16 @@ const T62_DEFINED = new Set(
 
 const MAP = {
   // ─── PRO's own component classes (src/index.css) ────────────────────────
-  'cc-btn': ['pbi-re-btn', null],
-  'cc-btn-gold': ['pbi-re-btn-gold', null],
-  'cc-btn-ghost': ['pbi-re-btn-ghost', null],
+  // ─── T64 F3 · POSH — the copies' buttons take the ONE button's skin ───────
+  // The owner: *"przyciski kwadratowe … napisy bardziej posh."* Square (zero
+  // radius), Inter 12px tracked +0.08em uppercase, a hairline in Onyx at 40%
+  // with a gold hairline on hover, an Ivory fill; PRO's `cc-btn-gold` — the
+  // window's ONE primary — is the filled Onyx button; the ghost is the link
+  // voice. Geometry is still PRO's padding. Defined HERE, in the map, so the
+  // sheet is generated and the copies' markup is untouched.
+  'cc-btn': ['pbi-re-btn', '.pbi-re-btn { padding: 0.5rem 0.75rem; border-radius: 0; font-family: var(--pbi-font-ui); font-size: 12px; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid rgba(9, 10, 9, 0.4); background: var(--pbi-ivory); color: var(--pbi-onyx); transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease; }\n.pbi-re-btn:hover:not(:disabled), .pbi-re-btn[aria-pressed="true"] { border-color: var(--pbi-deep-gold); }\n.pbi-re-btn:disabled { opacity: 0.4; cursor: not-allowed; }'],
+  'cc-btn-gold': ['pbi-re-btn-gold', '.pbi-re-btn-gold { padding: 0.5rem 0.75rem; border-radius: 0; font-family: var(--pbi-font-ui); font-size: 12px; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; background: var(--pbi-onyx); color: var(--pbi-porcelain); border: 1px solid var(--pbi-onyx); transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease; }\n.pbi-re-btn-gold:hover:not(:disabled) { background: var(--pbi-graphite); border-color: var(--pbi-graphite); }\n.pbi-re-btn-gold:disabled { opacity: 0.4; cursor: not-allowed; }'],
+  'cc-btn-ghost': ['pbi-re-btn-ghost', '.pbi-re-btn-ghost { padding: 0.25rem 0.5rem; border-radius: 0; font-family: var(--pbi-font-ui); font-size: 12px; line-height: 1; letter-spacing: 0.08em; text-transform: uppercase; border: 1px solid transparent; background: transparent; color: var(--pbi-deep-gold); transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease; }\n.pbi-re-btn-ghost:hover { color: var(--pbi-onyx); }'],
   'cc-input': ['pbi-re-input', null],
   'cc-label': ['pbi-re-fieldlabel', null],
   'cc-row': ['pbi-re-fieldrow', null],

@@ -153,45 +153,6 @@ export default function WardrobeMenu({
         />
       </Field>
 
-      <Field label="DOORS">
-        <ChipRow
-          testid="wardrobe-doors"
-          value={String(doors)}
-          options={[1, 2, 3, 4].map((n) => ({
-            id: String(n),
-            label: String(n),
-            // The engine's two laws, asked before the click: the structural one
-            // that refuses, and the yellow one that only has something to say.
-            reason: A.doorCountRefusal(width, n),
-            note: A.doorCountNote(width, n),
-          }))}
-          onPick={(id) => A.setDoorCount(unitId, Number(id))}
-        />
-      </Field>
-
-      {/* ─── T62 F4 · ONE NOTE PER PANEL ──────────────────────────────────
-          Two sentences stood under two fields in this one menu. CLAUDE.md
-          allows one: *"The note under a field is gone unless a caller passes
-          one deliberately, and no more than one per panel."* The one that
-          stays is the ENGINE's (`REASONS.topBoxGoesBeside`, under TOP BOX);
-          this one is PRO's own line from `RightPanel.jsx:1223` and is NOT
-          deleted — it moves onto the chips it describes, which is where PRO's
-          own hints already live (`ChipRow` reads `title || hint`) and where a
-          hand asking about a bay finds it. */}
-      <Field label="BAYS">
-        <ChipRow
-          testid="wardrobe-bays"
-          value={String(bays)}
-          options={[1, 2, 3, 4].map((n) => ({
-            id: String(n),
-            label: String(n),
-            title: n > 1 ? 'A door in each bay.' : '',
-            reason: A.bayRefusal(unitId, n),
-          }))}
-          onPick={(id) => A.setBayCount(unitId, Number(id))}
-        />
-      </Field>
-
       <Field label="PLINTH">
         <ChipRow
           testid="wardrobe-plinth"
@@ -277,6 +238,58 @@ export default function WardrobeMenu({
         ) : null}
         {said2 ? <Said testid="wardrobe-top-box-said">{said2}</Said> : null}
       </Field>
+
+      {/* ─── T64 F1.7 · ADVANCED — DOORS AND BAYS LEAVE THE MAIN MENU ─────────
+          The owner: *"po co klient — nie wie ile drzwi potrzebuje; w Cabinet
+          Core mamy dokładnie napisane w kodzie jak drzwi się ustawiają. Taki
+          wybór tylko zdezorientuje klienta. 3 drzwi czy 4 — dopiero jako coś
+          co trzeba edytować, a nie na głównym menu."* So the two rows that
+          stood in LAYOUT are HERE, under one heading and one line, and the
+          engine's door rule (`doorCountFor`) decides until somebody knows
+          why. The rows themselves are T60's, unchanged. */}
+      <div className="pbi-advanced" data-testid="wardrobe-advanced">
+        <h3 className="pbi-ui pbi-ui-light pbi-quiet pbi-advanced-head">Advanced</h3>
+        <p className="pbi-choice pbi-advanced-line" data-testid="wardrobe-advanced-line">{REASONS.doorsAreSet}</p>
+
+        <Field label="DOORS">
+          <ChipRow
+            testid="wardrobe-doors"
+            value={String(doors)}
+            options={[1, 2, 3, 4].map((n) => ({
+              id: String(n),
+              label: String(n),
+              // The engine's two laws, asked before the click: the structural one
+              // that refuses, and the yellow one that only has something to say.
+              reason: A.doorCountRefusal(width, n),
+              note: A.doorCountNote(width, n),
+            }))}
+            onPick={(id) => A.setDoorCount(unitId, Number(id))}
+          />
+        </Field>
+
+        {/* ─── T62 F4 · ONE NOTE PER PANEL ──────────────────────────────────
+            Two sentences stood under two fields in this one menu. CLAUDE.md
+            allows one: *"The note under a field is gone unless a caller passes
+            one deliberately, and no more than one per panel."* The one that
+            stays is the ENGINE's (`REASONS.topBoxGoesBeside`, under TOP BOX);
+            this one is PRO's own line from `RightPanel.jsx:1223` and is NOT
+            deleted — it moves onto the chips it describes, which is where PRO's
+            own hints already live (`ChipRow` reads `title || hint`) and where a
+            hand asking about a bay finds it. */}
+        <Field label="BAYS">
+          <ChipRow
+            testid="wardrobe-bays"
+            value={String(bays)}
+            options={[1, 2, 3, 4].map((n) => ({
+              id: String(n),
+              label: String(n),
+              title: n > 1 ? 'A door in each bay.' : '',
+              reason: A.bayRefusal(unitId, n),
+            }))}
+            onPick={(id) => A.setBayCount(unitId, Number(id))}
+          />
+        </Field>
+      </div>
 
       <Field label="NAME">
         <input

@@ -1,111 +1,64 @@
-import { useState } from 'react';
-import GoldLine from '../ui/GoldLine.jsx';
-import { PRICE_FOOTNOTE, PRICE_ON_REQUEST } from '../config.js';
+import { StepIcon } from './detail/drawings.jsx';
 
-// ─── F3.1 · COLUMN 2, THE RAIL — THE PSW LAW ───────────────────────────────
+// ─── T64 F2/F4 · COLUMN 2, THE RAIL — SIX STEPS, SIX TILES ─────────────────
 //
-// The owner, verbatim: *"jak w PSW, lewa i prawa strona menu — rozwijana
-// będzie za długa i się będzie mieszać."*
+// The owner, 03.09.2026: *"Ludzie nie lubią myśleć — musi być step by step,
+// UI friendly and intuitive."* And, on the layout: *"zróbmy wariant B."*
 //
-// So: SIX ROWS AND NOTHING FOLDS. Each row is a label in the UI font with the
-// CURRENT CHOICE under it in serif italic — PSW's `cat-hint`, which is the
-// whole reason two columns beat one accordion: the client can read what they
-// have chosen for all six categories without opening any of them.
+// So the rail is no longer six text rows with a hint under each (T59's PSW
+// law, kept for the six CATEGORIES a joiner's tool had). It is a narrow
+// vertical strip of six SQUARE tiles, in the owner's own order, icon over one
+// word — the rail of a wizard, which is what the room is for a client now.
+// The active tile carries a gold hairline underline, not a filled block
+// (gold stays at 5%: hairlines and the active mark only); a done tile a small
+// tick. It no longer holds text rows, and the TOTAL / RESET block that stood
+// at its foot moved to the top bar (F4) and the REVIEW step.
 //
-// The active row is PSW's `cat-btn.active` in Ivory: a Soft Ivory ground, a
-// 2-px Champagne bar on the left edge, the label in Deep Gold.
-//
-// ─── T60 F1.3 · AND IT IS 15% NARROWER ─────────────────────────────────────
-//
-// The owner, after the first live look: *"nr 2 może być spokojnie 15%
-// węższe."* Its base is 187px (220 × 0.85) in `styles/scale.css`, and like
-// every other dimension in the room it is that base times `--pbi-scale`. Not
-// one measurement is written in this file any more.
+// This is the ONE place CLAUDE.md lets the rail change tonight — *"only its
+// content, not its mechanics"*: `CATEGORIES` is the list, `onPick` is the
+// click, and both are what T59 wrote. Every dimension is still a token
+// (`--pbi-tile`, `--pbi-tile-icon`, `--pbi-tile-fs` in `styles/scale.css`).
 
+/**
+ * THE SIX STEPS, IN THE OWNER'S ORDER (CLAUDE.md F2). `word` is what the tile
+ * says; `label` is the step's title in column 3 and in the tests.
+ */
 export const CATEGORIES = [
-  { id: 'space', label: 'YOUR SPACE' },
-  { id: 'layout', label: 'LAYOUT' },
-  { id: 'fronts', label: 'FRONTS' },
-  { id: 'interior', label: 'INTERIOR' },
-  { id: 'details', label: 'DETAILS' },
-  { id: 'estimate', label: 'ESTIMATE' },
+  { id: 'what', label: 'WHAT', word: 'What' },
+  { id: 'where', label: 'WHERE', word: 'Where' },
+  { id: 'inside', label: 'INSIDE', word: 'Inside' },
+  { id: 'fronts', label: 'FRONTS', word: 'Fronts' },
+  { id: 'extras', label: 'EXTRAS', word: 'Extras' },
+  { id: 'review', label: 'REVIEW', word: 'Review' },
 ];
 
-export default function Categories({ active, onPick, hints, onReset }) {
-  const [asked, setAsked] = useState(false);
+export const stepIndex = (id) => Math.max(0, CATEGORIES.findIndex((c) => c.id === id));
+
+export default function Categories({ active, onPick, done = [] }) {
   return (
     <aside data-testid="column-categories" className="pbi-rail">
-      <div className="pbi-rail-head">
-        <h2 className="pbi-display pbi-h4">CONFIGURE</h2>
-        <GoldLine />
-      </div>
-
-      <nav className="pbi-rail-nav">
-        {CATEGORIES.map((c) => {
+      <nav className="pbi-rail-nav" aria-label="Steps">
+        {CATEGORIES.map((c, i) => {
           const on = active === c.id;
+          const isDone = !on && done.includes(c.id);
           return (
             <button
               key={c.id}
               type="button"
-              className={`pbi-rail-row${on ? ' is-on' : ''}`}
+              className={`pbi-tile${on ? ' is-on' : ''}${isDone ? ' is-done' : ''}`}
               data-testid={`cat-${c.id}`}
-              aria-current={on ? 'true' : undefined}
+              data-done={isDone ? 'yes' : 'no'}
+              aria-current={on ? 'step' : undefined}
+              title={`${i + 1}. ${c.label}`}
               onClick={() => onPick(c.id)}
             >
-              <span className="pbi-ui pbi-rail-label">{c.label}</span>
-              {/* PSW's cat-hint: what is chosen, without opening anything. */}
-              <span className="pbi-choice pbi-rail-hint">{hints?.[c.id] || '—'}</span>
+              <StepIcon step={c.id} />
+              <span className="pbi-tile-word">{c.word}</span>
+              {isDone ? <span className="pbi-tile-tick" aria-label="done">✓</span> : null}
             </button>
           );
         })}
       </nav>
-
-      {/* ─── THE TOTAL, WHICH IS NOT A NUMBER ────────────────────────────────
-          F5.1: *"Every price slot reads 'Price on request' in display serif —
-          never '£0', never '£ —', never a number."* There is no retail price
-          law yet; a zero would be a lie and a dash would be a shrug. */}
-      <div className="pbi-rail-foot">
-        <div className="pbi-ui pbi-quiet">TOTAL</div>
-        <div className="pbi-display pbi-total" data-testid="total-price">{PRICE_ON_REQUEST}</div>
-        <div className="pbi-ui pbi-ui-light pbi-quiet pbi-total-foot">{PRICE_FOOTNOTE}</div>
-
-        {/* ─── THE CONFIRM, IN THE DESIGN SYSTEM ────────────────────────────
-            This is the one button on the page that can lose an hour of
-            somebody's evening — the estimate is memory-only until they save it
-            (F5.3) — so it asks. It asks IN PLACE: a browser's own modal dialogue is
-            chrome nobody designed, it cannot be styled, and this app has been
-            clearing those out for turns. Two presses, the second one labelled
-            with what it does, and a way back. */}
-        {asked ? (
-          <div className="pbi-rail-ask">
-            <span className="pbi-choice">Everything you have chosen for this wardrobe will go.</span>
-            <button
-              type="button"
-              className="pbi-link pbi-rail-ask-yes"
-              data-testid="reset-confirm"
-              onClick={() => { setAsked(false); onReset(); }}
-            >
-              YES, START AGAIN
-            </button>
-            <button
-              type="button"
-              className="pbi-link pbi-rail-ask-no"
-              onClick={() => setAsked(false)}
-            >
-              KEEP IT
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="pbi-link pbi-rail-reset"
-            data-testid="reset-design"
-            onClick={() => setAsked(true)}
-          >
-            RESET DESIGN
-          </button>
-        )}
-      </div>
     </aside>
   );
 }

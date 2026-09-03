@@ -4,6 +4,7 @@ import DecorPicker from './DecorPicker.jsx';
 import VeneerPicker from './VeneerPicker.jsx';
 import ColourPicker from './ColourPicker.jsx';
 import * as A from '../adapter.js';
+import { Button } from '../controls.jsx';
 
 // ─── TURN 63 F4 · ONE SLOT, WIRED THE WAY PRO'S WIZARD WIRES IT ────────────
 //
@@ -69,14 +70,13 @@ export default function MaterialSlot({ kind, title = null }) {
         onColour={(c) => A.pickMaterialColour(kind, c)}
         onClear={() => A.clearMaterialFinish(kind)}
         footer={(
-          <button
-            type="button"
-            className="pbi-link"
+          <Button
+            kind="link"
             data-testid={`material-browse-${kind}`}
             onClick={() => setInline((v) => !v)}
           >
             {inline ? 'HIDE THE LIST' : 'BROWSE HERE ›'}
-          </button>
+          </Button>
         )}
       />
       {inline && m.picker === 'decor' ? (

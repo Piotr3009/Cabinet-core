@@ -191,9 +191,11 @@ if (runs('f1')) {
     try {
       await room(page, null, { base });
       const [a] = await unitIds(page);
-      // A second wardrobe beside the first, then the INNER PLUS on B — which
-      // is `selectUnit(B)` + the INSIDE/INTERIOR step (Scene.jsx onAddItems).
-      const b = await page.evaluate(`const s = window.__cc.project.getState(); const r = s.addUnit('WARDROBE', { near: ${JSON.stringify(a)}, side: 'R' }); return r && r.id;`);
+      // Room for a second wardrobe (the lazy default fills the wall), then B
+      // beside A, then the INNER PLUS on B — which is `selectUnit(B)` + the
+      // INSIDE/INTERIOR step (Scene.jsx onAddItems).
+      const b = await page.evaluate(`const s = window.__cc.project.getState(); s.updateUnitParams(${JSON.stringify(a)}, { width: 1200 });
+        const r = s.addUnit('WARDROBE', { near: ${JSON.stringify(a)}, side: 'R' }); return r && r.id;`);
       await page.sleep(1500);
       await page.evaluate(`window.__cc.ui.getState().selectUnit(${JSON.stringify(b)}); return true;`);
       await page.click(tag === 'before' ? '[data-testid="cat-interior"]' : '[data-testid="cat-inside"]');

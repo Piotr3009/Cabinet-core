@@ -1,0 +1,95 @@
+
+── THE ENGINE AND THE LIB, AGAINST THEIR BASE — READ-ONLY TONIGHT
+path                                 diff vs origin/main  wanted             
+───────────────────────────────────  ───────────────────  ───────────────────
+src/engine                           nothing              nothing              ok
+src/lib                              nothing              nothing              ok
+KIT_SINK.lsp                         unchanged            unchanged            ok
+reference                            unchanged            unchanged            ok
+src/3d (one licensed: LedIcons.jsx)  src/3d/LedIcons.jsx  src/3d/LedIcons.jsx  ok
+src/stores                           nothing              nothing              ok
+
+CLAUDE.md: *"src/engine/** and src/lib/** — read-only."* No whitelist to
+argue about, because there is no whitelist. PRO's Delete handler lives in
+src/pages (frozen; copied to retail/design/keys.js), so one 3d file moves.
+
+VERDICT: CLEAN — not one engine or lib byte moved; one 3d file, the licensed one.
+
+── THE FROZEN PRO SURFACE
+path            diff vs origin/main
+──────────────  ───────────────────
+index.html      unchanged            ok
+src/App.jsx     unchanged            ok
+src/main.jsx    unchanged            ok
+src/components  unchanged            ok
+src/pages       unchanged            ok
+
+NOT ONE VISIBLE BYTE OF PRO CHANGES THIS TURN.
+
+VERDICT: CLEAN — PRO IS FROZEN.
+
+── src/3d/LedIcons.jsx — THREE STATES FOR THE CLIENT, ONE FOR PRO
+what                                       answer   wanted 
+─────────────────────────────────────────  ───────  ───────
+PRO: shown whatever the flags say          true     true     ok
+retail: panel closed → none                false    false    ok
+retail: panel open, light OFF → shown      true     true     ok
+retail: light ON → hidden                  false    false    ok
+the channel guard is still the first line  true     true     ok
+PRO's two side icons, at PRO's positions   true     true     ok
+PRO names the law                          nowhere  nowhere  ok
+
+The owner: *"dopiero po włączeniu menu lights — i też powinny zniknąć jak
+włączę światło ON."* Two flags that already exist, no new one; PRO's
+branch is the T58 behaviour, byte for byte.
+
+VERDICT: CLEAN — three states for the client, PRO unchanged.
+
+── THE IRON BOUNDARY (Petros, 30.08)
+what                answer   wanted 
+──────────────────  ───────  ───────
+PRO names retail    nowhere  nowhere  ok
+retail imports PRO  nowhere  nowhere  ok
+
+Twenty-five PRO components exist twice. Not one retail file IMPORTS one —
+the law is COPY, not import; keys.js COPIES PRO's Delete handler and
+imports the shared lib, as PRO's page does.
+
+VERDICT: CLEAN — two applications, one house, one wall between them.
+
+── T64 · THE COPIES DID NOT DRIFT UNDER THE RESKIN — TWENTY-FIVE TIMES
+file                     PRO lines  copy lines  markup tonight  lost   
+───────────────────────  ─────────  ──────────  ──────────────  ───────
+Modal.jsx                469        469         still           nothing  ok
+NumberField.jsx          78         78          still           nothing  ok
+RoomModal.jsx            722        757         still           nothing  ok
+WallElevationModal.jsx   1097       1097        still           nothing  ok
+LightingPanel.jsx        862        862         still           nothing  ok
+DoorModal.jsx            997        997         still           nothing  ok
+ElementProperties.jsx    1142       1142        still           nothing  ok
+UnitWarnings.jsx         62         62          still           nothing  ok
+WatchLayoutModal.jsx     247        247         still           nothing  ok
+RailModal.jsx            149        149         still           nothing  ok
+UnitSizeModal.jsx        142        142         still           nothing  ok
+AddItemsModal.jsx        120        120         still           nothing  ok
+AddItems.jsx             939        939         still           nothing  ok
+FrontGapModal.jsx        154        154         still           nothing  ok
+FrontGapWarnings.jsx     101        101         still           nothing  ok
+JpullRunModal.jsx        125        125         still           nothing  ok
+DecorPickerModal.jsx     394        394         still           nothing  ok
+DecorPicker.jsx          144        144         still           nothing  ok
+ColourPicker.jsx         98         98          still           nothing  ok
+VeneerPicker.jsx         110        110         still           nothing  ok
+MaterialChoicePanel.jsx  161        161         still           nothing  ok
+ChosenDecorTile.jsx      119        119         still           nothing  ok
+FrontStyleGallery.jsx    110        110         still           nothing  ok
+WizardHardware.jsx       226        226         still           nothing  ok
+UnitFinishModal.jsx      164        164         still           nothing  ok
+
+F3 reskins the copies through their GENERATED `pbi-re-*` sheet (THE MAP in
+scripts/t63-copy.mjs → styles/copies.css) and never through their markup:
+not one copy file moved against the base.
+
+VERDICT: CLEAN — twenty-five copies, nothing lost, no markup moved.
+
+ALL CLEAN

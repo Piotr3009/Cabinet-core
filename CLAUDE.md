@@ -1,281 +1,337 @@
-# CLAUDE.md — TURN 63 · PBI: EVERYTHING PRO HAS, COPIED
+# CLAUDE.md — TURN 64 · PBI: STEP BY STEP, POSH, AND THE SMALL THINGS THAT BROKE
 
 Run autonomously. Zero questions, zero stops. Skip-and-note. PR before morning.
-Full suite, never `--silent`. Frames committed under `verify/t63/`.
+Full suite, never `--silent`. Frames committed under `verify/t64/`.
 
-## THE LAW OF THIS TURN
+## THE OWNER'S BRIEF (03.09.2026, verbatim where it matters)
 
-The owner, 01.09.2026, verbatim:
+> *"chcę mieć jak najbardziej przyjazny 3D konfigurator mebli. Default od
+> frontu. Przyciski duże i kwadratowe, a cała strona wygląda posh. Ludzie nie
+> lubią myśleć — musi być step by step, UI friendly and intuitive. Postaw się w
+> sytuacji leniwego klienta — ale tak, żeby było wszystko do wyboru."*
 
-> *"miało być identycznie jak w PRO, tylko inna kolorystyka i trochę mniej,
-> a pozmieniałeś sporo. Sprawdź jakie jeszcze funkcje pominąłeś i je dodaj,
-> a później będziemy ustawiać jak je rozmieścić."*
+And the standing law: **1:1 = COPY**. Nothing PRO has is re-invented in
+retail. Where this turn needs a PRO behaviour, it copies the file (T62/T63
+method) and reskins.
 
-And the law it rests on, from 01.09:
-
-> *"jak piszę 1 do 1 to KOPIUJ. ale kopiuj — nie kasuj, nie zmieniaj PRO,
-> tylko zrób identycznie w retail."*
-
-T62 proved the method works: `WallElevationModal` went across at 1096 lines to
-1096 lines and the owner's verdict was *"super, widzę"*. T60 did the opposite —
-it re-wrote PRO's surfaces "in retail language" — and this is what it produced:
-
-| Surface | PRO | retail | factor |
-|---|---|---|---|
-| `LightingPanel` → `LightingMenu` | 861 | 61 | **14×** |
-| `DoorModal` → `DoorMenu` | 996 | 113 | **9×** |
-| `WatchLayoutModal` → `WatchMenu` | 246 | 85 | 3× |
-| `RailModal` → `RailMenu` | 148 | 70 | 2× |
-
-That is the *"1 do 20"* the owner is angry about, measured. **Tonight it is
-paid back by copying, exactly as T62 copied the room.**
-
-**PLACEMENT IS NOT THIS TURN'S PROBLEM.** The owner said arrangement comes
-later. Get every surface INTO retail and reachable; do not spend the night
-deciding where things sit. A copied surface that opens from a plain button is a
-success tonight. A beautiful layout with a missing surface is a failure.
-
----
-
-## THE COPY METHOD (unchanged from T62, which passed audit)
-
-For each surface named below:
-
-1. **Copy the PRO file verbatim** into its retail path.
-2. **Repoint imports only**: `engine`, `lib`, `stores`, `3d` resolve as they
-   are (all four are shared core since T62). Any import that lands in
-   `src/components/**` is **copied too, recursively**, into
-   `src/retail/design/`, until nothing outside the boundary is reached. Some
-   are already across (`Modal.jsx`, `NumberField.jsx`) — reuse those copies,
-   do not make a second one.
-3. **Change the SKIN only**: class names and CSS to PBI tokens (Ivory & Onyx,
-   Cormorant for titles, Inter for controls, gold in hairlines only).
-   Structure, control order, labels, gestures, defaults, refusals: **unchanged,
-   to the word**.
-4. **Do not drop a control** because a client "would not need it". That
-   judgement is what produced 61 lines where PRO has 861. If something truly
-   must not ship to a client, it is HIDDEN behind
-   `RETAIL_SHOW_WORKSHOP_TOOLS` in `src/retail/config.js` — present in the
-   copy, switched off — and named in the PR body. Never deleted from the copy.
-5. **Every copy gets an entry.** A copied surface nobody can open is not done.
-
-The copy-fidelity test (T62, `test/turn62-f2-f3-the-copy.test.js`) is the
-pattern: extend it, do not replace it.
+**The rule of the lazy client**, which every F below obeys: every step has a
+sensible answer already chosen. NEXT always works. Six clicks give a finished
+wardrobe. A picky client finds "more options" in every step; a lazy one never
+sees them.
 
 ---
 
 ## WHAT IS FROZEN
 
 1. **PRO — zero bytes**: `index.html`, `src/App.jsx`, `src/main.jsx`,
-   `src/components/**`, `src/pages/**`. The freeze test stays green, unedited.
-   Never refactor a PRO file into a shared part — that moves PRO's bytes.
-2. **`src/engine/**` and `src/lib/**` — read-only tonight.** No engine file is
-   licensed. If a copy seems to need one changed, that is a skip-and-note.
-   Goldens ×6 byte-identical; `UNNAMED=0`.
+   `src/components/**`, `src/pages/**`. Freeze test green, unedited.
+2. **`src/engine/**`, `src/lib/**` — read-only.** Goldens ×6 byte-identical,
+   `UNNAMED=0`. If a fix seems to need an engine change, skip-and-note it with
+   the exact line — do not make it.
 3. **`reference/lisp/**` untouched.** Parens 14/14 at 0/0.
-4. **The RAIL is not rebuilt.** Still waiting on the owner's mockup. Not
-   started, not scaffolded, `CATEGORIES` not renamed. New surfaces hang off the
-   DETAIL panel and off buttons in the panels that already exist.
-5. **`src/3d/**` — one file licensed, F1 only**, and by the channel pattern
-   that T61 proved leaves PRO untouched.
+4. **`src/3d/**` — two files licensed, by the channel/flag pattern only**
+   (`LedIcons.jsx` for F1.3, and whichever file owns PRO's Delete-key handler
+   if it lives in `src/3d` — read to find it). PRO's rendering and keys stay
+   bit-for-bit what they are; a test proves each.
+5. **The 21 copies from T63 and the 5 from T62 stay copies.** The
+   copy-fidelity tests stay green. Reskinning under F3 is allowed on their
+   `pbi-re-*` sheet, never on their markup.
+6. **No price law tonight.** "Price on request" stays. Say so in the PR body
+   as a known gap, not a skip.
 
 ---
 
-## F1 · HINGES, ALWAYS
+## F0 · THE SOURCES, READ BEFORE ANYTHING ELSE
 
-The owner: *"nadal nie widać zawiasów"* → *"1 — zawiasy zawsze"*.
+Two codebases are the law tonight, and the second is NOT in this repo:
 
-There is no bug. `src/3d/Hardware.jsx` states its own law: **hinges and runners
-are X-RAY ONLY**, because a working view of a cabinet is not a hardware
-drawing. PRO has always behaved this way. The client, however, is buying the
-hardware and wants to see it.
+1. **PRO**, in this repo — every F below names the PRO file it copies from.
+2. **Prime Sash Windows** — the owner's other product, whose estimate flow
+   this turn mirrors. Clone it READ-ONLY before starting F4/F5:
+   `git clone --depth 1 https://github.com/Piotr3009/Sash-Planner-Web /tmp/psw`
+   and read, in this order:
+   - `/tmp/psw/src/pages/EstimatesPage.jsx` — the list: Number · Title ·
+     Client · Windows · Created · Status · Actions (Configure / Edit / Archive).
+   - `/tmp/psw/src/pages/EstimateConfiguratorPage.jsx` (556 lines) — one
+     item at a time: title "{estimate number} — Add window" or "Edit {name}";
+     the form on the left, the SAME 3D viewer production uses on the right;
+     "Windows in estimate" list underneath with Location · Type · Price · Edit
+     · ×; `removeItem(estimateId, itemId)` on the ×.
+   - `/tmp/psw/src/components/layout/MainLayout.jsx` and `AppSidebar.jsx` —
+     how a page and its navigation are composed.
+   Take the STRUCTURE from these (what is on the page, in what order, what
+   each button does). Take the SKIN from PBI. Nothing from PSW is imported —
+   it is a different app; it is read, not linked. Name in the PR body which
+   PSW file each part of F5 was modelled on.
 
-- Do **not** change the rule for PRO. Use the T61 channel pattern: the X-ray
-  condition in `Hardware.jsx` becomes `xray || chromeOn('hardware-always')`.
-  PRO sets no channel, so `chromeOn` falls through to the master switch, which
-  is on for PRO but reads `false` for that named channel in retail's boot — no,
-  read the actual fall-through in `src/3d/chrome.js` before writing this and
-  make the wiring such that **PRO's rendered output is bit-for-bit what it is
-  today**, and retail shows hinges and runners in every view. Prove PRO's
-  half with a test that renders PRO's flags and asserts the hardware stays
-  X-ray-only.
-- `src/retail/main-retail.jsx` sets the channel `true`, beside the eleven
-  already there.
-- Runners come with hinges — same law, same channel, one decision.
+---
 
-**Proof**: `verify/t63/f1-*.png` — a wardrobe in SOLID with hinges visible in
-retail; the same scene in PRO with hinges absent.
+## F1 · THE SMALL THINGS THAT BROKE
 
-## F2 · LIGHTING, COPIED — AND THE LIGHTS BUTTON STOPS SWITCHING THE LIGHT OFF
+Each item: reproduce first in the Playwright rig, fix in retail, prove with a
+frame pair. Where PRO already does it right, COPY PRO's handler; do not write
+a new one.
 
-The owner: *"oświetlenie jest inne jak w PRO a powinno być identyczne"* ·
-*"nie ma suwaka do bright"* · *"przyciski LED powinny być wszędzie gdzie mogą
-być, ale pojawiają się tylko jak nacisnę lights"* · *"jak naciskam lights to
-nie powinno się wyłączać światło tylko powinno się pojawić menu oświetlenia
-(jak w PRO)"*.
+**F1.1 Delete key.** Owner: *"usuwanie elementów Delete przyciskiem w ogóle
+teraz nie działa"*. Diagnosis from code: in retail only the room modals listen
+for keys; the Stage has no keydown handler at all. PRO has one — find it
+(`grep -rn "'Delete'" src/components src/3d src/App.jsx`), copy its logic into
+`src/retail/design/Stage.jsx` (or a `keys.js` beside it), calling the same
+store removal PRO calls. Same rule: Delete removes the SELECTED element, never
+the wardrobe itself unless the wardrobe is what is selected, and the engine's
+refusals (a rider host, the last unit) surface as the store's sentence.
 
-Source: `src/components/LightingPanel.jsx` (861 lines).
-Target: `src/retail/design/lighting/LightingPanel.jsx` — a COPY.
+**F1.2 The plus adds to the wrong wardrobe.** Owner: *"jak naciskam plusika
+żeby dodać, to dodaje wszystko do pierwszej szafy, nie do szafy którą właśnie
+nacisnąłem"*. Diagnosis: `adapter.addBeside` targets `unitOf(point.unitId)`
+correctly, but the INTERIOR rows read `theWardrobe()` — wall-0 fallback when
+nothing is selected — and the plus does not select before adding. Fix: every
+plus and every interior add first SELECTS the unit it was clicked on, then adds
+to the selected unit. `theWardrobe()` returns the selection first; the wall-0
+fallback stays only for a bare, unselected scene. One law, tested: click plus
+on wardrobe B → item lands in B.
 
-- Copy by the method above, recursively. It carries what PRO has and the retail
-  menu lost: **brightness**, colour temperature, the five mounting kinds, the
-  depth control, the room rig, per-strip on/off — read the file and carry
-  **all** of it, not the four things this spec happened to name.
-- **The LIGHTS button in the VIEW BAR opens this panel.** It does not toggle
-  the light. Read what PRO's equivalent control does and do that. If a separate
-  on/off exists in PRO, it exists in the copy too, in PRO's place for it.
-- **LED entry points are shown wherever a strip may go, always** — not only
-  after LIGHTS is pressed. `src/3d/LedIcons.jsx` is already on its own channel
-  since T61; find why the icons are conditioned on the lighting mode and make
-  the condition PRO's condition. If PRO shows them always, retail shows them
-  always.
+**F1.3 The LED icons' law.** Owner, exactly: *"ikony LED powinny się pojawiać
+dookoła wszystkich elementów gdzie mogą być dodane — ale dopiero po włączeniu
+menu lights — i też powinny zniknąć jak włączę światło ON — ON jest tylko do
+wizualizacji."* So, three states, one flag in `uiStore`:
+- lighting panel CLOSED → no icons;
+- lighting panel OPEN, light OFF → an icon on EVERY element that can take a
+  strip (the engine's own predicate — read `LedIcons.jsx`/`LedStrips.jsx` for
+  where "can take a strip" is decided and use that, not a retail list);
+- light ON → icons hidden; ON is visualisation only.
+`src/3d/LedIcons.jsx` reads that flag through the existing channel gate; PRO
+sets no such flag and keeps its behaviour — prove with a PRO-flags test.
 
-**Proof**: `verify/t63/f2-*.png` — the panel open beside its button; the
-brightness control; LED entries visible with the panel CLOSED; a lit wardrobe.
+**F1.4 Shelves go in centred.** Owner: *"shelves powinny się wstawiać
+wycentrowane"*. Read where PRO places a new shelf (`AddItems.jsx` copy →
+store's add-shelf path). If PRO places at the pointer or at a fixed offset,
+retail passes the bay's vertical midpoint (from the engine's own bay bounds)
+as the placement. No new geometry: the shelf law is the engine's; only the
+requested position changes.
 
-## F3 · THE ELEMENT EDITORS, COPIED
+**F1.5 J-pull does not render.** Owner: *"wiem że jest, ale nie widać"*.
+Diagnosis (hypothesis, verify first): `UnitView.jsx` draws the J profile only
+when the part carries `meta.jpull.run`, which the engine stamps only when the
+project's OPENING is `j-pull`. Retail's FRONTS step writes the STYLE but may
+not write the OPENING. Probe it: set style in retail, dump `design.fronts`,
+compare with PRO after the same choice in `WizardSettings`. Fix at the write
+site so retail writes exactly what PRO writes. If the cause is elsewhere,
+write down what it was.
 
-Every one of these is a PRO surface the client needs and retail has a sketch
-of. Copy each; the retail sketch it replaces is deleted (licensed below).
+**F1.6 Default view from the front.** Owner: *"chcę żeby się default ustawiał
+od frontu"*. On entering DESIGN and after RESET VIEW, the camera is
+`cameraPresets` FRONT, framed to the design's bounds. Read `cameraPresets.js`;
+use its preset, not a new one.
 
-| PRO source | lines | retail target |
-|---|---|---|
-| `DoorModal.jsx` | 996 | `design/detail/DoorModal.jsx` |
-| `WatchLayoutModal.jsx` | 246 | `design/detail/WatchLayoutModal.jsx` |
-| `RailModal.jsx` | 148 | `design/detail/RailModal.jsx` |
-| `UnitSizeModal.jsx` | 141 | `design/detail/UnitSizeModal.jsx` |
-| `AddItemsModal.jsx` | 119 | `design/detail/AddItemsModal.jsx` |
-| `FrontGapModal.jsx` | 153 | `design/detail/FrontGapModal.jsx` |
-| `JpullRunModal.jsx` | 124 | `design/detail/JpullRunModal.jsx` |
+**F1.7 Doors and bays leave the main menu.** Owner: *"po co klient — nie wie
+ile drzwi potrzebuje; w Cabinet Core mamy dokładnie napisane w kodzie jak
+drzwi się ustawiają. Taki wybór tylko zdezorientuje klienta. 3 drzwi czy 4 —
+dopiero jako coś co trzeba edytować, a nie na głównym menu."* Remove the
+DOORS and BAYS chip rows from LAYOUT. The engine's door rule decides. Both
+rows move into the wardrobe's EDIT (the copied `UnitSizeModal` / the
+wardrobe's detail), under a heading "Advanced", with one line: "We set the
+doors for this width. Change only if you know why."
 
-- `AddItemsModal` is the answer to the owner's *"jakieś dziwne dodawanie wielu
-  przegródek"*: retail grew its own way of adding a partition and it does not
-  behave like PRO's. Copy PRO's, and the strangeness goes with the sketch.
-- If a copied modal reaches `AddItems.jsx` (the row engine itself), copy that
-  too — it is the single law for what may be added where, and T61 proved
-  retail must not hold a second one.
-- Entries: each opens from the element's Duty menu in `7 DETAIL`, from the row
-  PRO opens it from. Placement is provisional; the owner will arrange later.
+**F1.8 One wall.** Owner: *"zostawmy jedną ścianę"*. The `WALLS 1|2` chips
+and `WALL 2 WIDTH` from T61 are deleted from YOUR SPACE. Scope `'two'` stays
+in the engine (read-only tonight) but retail never writes it; `+ ADD ANOTHER
+WARDROBE` becomes the estimate's business (F5). The L-shaped wardrobe, when it
+exists, will be a furniture TYPE, not a room setting — note it in the PR as
+the intended path, do not build it.
 
-**Proof**: `verify/t63/f3-*.png` — one frame per copied modal, open, with its
-click path.
+**Proof**: `verify/t64/f1-*.png` — one before/after pair per item.
 
-## F4 · THE MATERIAL PICKERS, COPIED — INCLUDING THE EGGER TILES
+## F2 · THE STEPS, IN THE OWNER'S ORDER
 
-The owner: *"nadal kafelki Egger nie widzę w uzgodnionej wersji"*.
+Owner: *"najważniejsze: wybieranie Egger boardów nie ma w ogóle ustawienia
+środek / carcases — a powinno być najpierw INTERIORS (najpierw materiał, a
+później reszta) — i następnie FRONTY."*
 
-| PRO source | lines | retail target |
-|---|---|---|
-| `DecorPickerModal.jsx` | 393 | `design/material/DecorPickerModal.jsx` |
-| `DecorPicker.jsx` | — | `design/material/DecorPicker.jsx` |
-| `ColourPicker.jsx` | 97 | `design/material/ColourPicker.jsx` |
-| `VeneerPicker.jsx` | — | `design/material/VeneerPicker.jsx` |
-| `MaterialChoicePanel.jsx` | 160 | `design/material/MaterialChoicePanel.jsx` |
-| `FrontStyleGallery.jsx` | 109 | `design/material/FrontStyleGallery.jsx` |
-| `WizardHardware.jsx` | 225 | `design/material/WizardHardware.jsx` |
-| `UnitFinishModal.jsx` | 163 | `design/material/UnitFinishModal.jsx` |
+The rail has six steps, in this order, each with its default already chosen:
 
-- `DecorPickerModal` is the tiled Egger modal with search and family bar; a tile
-  click chooses and closes. It replaces retail's five curated swatches.
-- The **source→picker law already exists in the profile**: every carcass and
-  front source names the picker it opens (`decor` / `colour` / `veneer` /
-  none), and the thickness rides with the source (Egger 18, veneer 19, spray
-  18). `MaterialChoicePanel` is the surface that reads that law. Copy it and
-  retail stops inventing material rules.
-- `UnitFinishModal` closes a real bug the parity map has carried since T60:
-  retail writes the PROJECT palette, so with two wardrobes a colour set on one
-  sets both. `setUnitFinish` / `resetUnitFinish` exist in the store, unused.
-  The copy uses them.
-- **Egger gate**: the decors are read from the real bucket. Never fabricate a
-  row. The mail to Egger UK is still owed before public launch — state in the
-  PR body that this ships behind the existing gate.
+| # | Step | Default chosen | "More options" |
+|---|---|---|---|
+| 1 | WHAT | Wardrobe | the other `PROJECT_TYPES` tiles; unbuildable ones greyed with the engine's reason |
+| 2 | WHERE | wall width + ceiling height (two fields), the wardrobe fills the wall | EDIT THE ROOM (the T62 modals: slope, windows, boxes) |
+| 3 | INSIDE | **carcass material first**: Egger board via the copied `MaterialChoicePanel` + `DecorPickerModal` (source → picker law from the profile), then the interior rows | the full copied `AddItems`; per-element editors |
+| 4 | FRONTS | style (shaker) + Egger colour; opening as PRO writes it | `FrontStyleGallery`, spray/veneer sources, `FrontGapModal`, `JpullRunModal` |
+| 5 | EXTRAS | lighting off, no handles, no top box | `LightingPanel`, `WizardHardware`, ADD TOP BOX |
+| 6 | REVIEW | front view, the design's summary, "Price on request" | DONE → ADD TO MY ESTIMATE (F5) |
 
-**Proof**: `verify/t63/f4-*.png` — the Egger modal with tiles and search; a
-tile chosen and the modal closed; two wardrobes in different colours.
+Rules:
+- Step 3 opens on the material, and the material row is the copied
+  `MaterialChoicePanel` for CARCASS sources exactly as PRO shows it; the
+  interior rows sit below it. "Inside colour" offers: same as fronts / white /
+  choose — the third opens the same Egger modal.
+- NEXT and BACK on every step; a step can also be clicked directly on the
+  rail (the rail shows which steps are done).
+- Nothing in any step is a slider. Fields per T62's row law; chips for choices.
+- `CATEGORIES` in `Categories.jsx` becomes these six. This is the one place the
+  RAIL is allowed to change tonight, and only its content, not its mechanics.
 
-## F5 · THE VIEW BAR
+**Proof**: `verify/t64/f2-*.png` — each step at its default; step 3 with the
+carcass material row above the interior rows.
 
-The owner: *"górne menu nr 4 powinno być mniejsze litery, ładniejsza czcionka,
-bardziej wyraźne i może w jakichś kafelkach"* · *"front dimensions wywal, po co
-mi to"* · *"measure wyrzuć też"* · *"reset view widok wyśrodkowany, powinien
-być od środka"*.
+## F3 · POSH
 
-- **Remove from retail's VIEW BAR**: `FRONT DIMENSIONS` and `MEASURE`. Removed
-  from the retail bar only — PRO keeps both, untouched.
-- **Restyle**: smaller type, Inter, higher contrast, each tool a tile with a
-  hairline and a hover state. One row height. PBI tokens. This is the one place
-  tonight where the skin is allowed to lead, because the owner asked for it by
-  name.
-- **RESET VIEW centres the model.** Read `src/3d/cameraPresets.js` and make
-  reset frame the design's bounding box centre at a distance that fits it —
-  the same maths PRO's reset uses if PRO already centres; if PRO does not,
-  write it in the retail view-tool only and say so.
+Owner: *"przyciski i napisy w przyciskach bardziej posh — są jakieś duże te
+napisy; przyciski kwadratowe."*
 
-**Proof**: `verify/t63/f5-*.png` — the bar before and after in the same
-viewport; a reset from an off-centre orbit landing centred.
+- One `Button` in `src/retail/design/controls.jsx`, used everywhere in
+  `src/retail/**` (replace ad-hoc `<button>` styling; a count in the balance).
+  Square — zero radius, per the PBI system. Hairline border in onyx at 40%,
+  gold hairline on hover/active, ivory fill. Type: Inter, **12px, tracked
+  +0.08em, small caps or uppercase — half the size it is now**. Height 44px
+  for primary actions (tap-safe), 36px for secondary. The primary action of a
+  screen is the ONLY filled (onyx) button; every other is outlined.
+- Rail tiles (F4): 64px square, icon 20px + one word 11px under it. Active
+  tile: gold hairline underline, not a filled block.
+- The copied PRO surfaces (T62/T63) inherit this through their generated
+  `pbi-re-*` sheet — regenerate the sheet from the map, do not touch the
+  copies' markup.
+- Gold stays at 5%: hairlines and the active mark only. Never fills.
 
-## F6 · THE PARITY LEDGER
+**Proof**: `verify/t64/f3-*.png` — a panel before/after; the rail; a primary
+and a secondary button side by side.
 
-The owner: *"sprawdź jakie jeszcze funkcje pominąłeś"*. Tonight's copies are
-this spec's best reading, not a proof of completeness. Produce the proof.
+## F4 · LAYOUT B — THE RAIL, THE OPTIONS, THE PANEL THAT SLIDES
 
-- Write `verify/t63/parity-ledger.md` **from the code**, not from memory: walk
-  `src/components/**`, and for every file state — its line count, whether a
-  retail copy exists (and at what line count), and one of three verdicts:
-  **COPIED**, **WORKSHOP** (never for a client — with the reason), or
-  **OWED** (a client surface still missing — with what it does).
-- Sort the OWED list so the owner reads the biggest gap first.
-- This ledger replaces `verify/t60/parity-map.md` as the map, because that map
-  counted "surfaces" and this one counts code.
+Owner chose variant B from the two mockups: *"zróbmy wariant B"*.
 
-**Proof**: the ledger committed, and its OWED section quoted in the PR body.
+The layout, with the owner's container numbers, at 1440px:
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│ 1 TOP BAR   COLLECTIONS  MATERIALS      PRIME BESPOKE INTERIORS           │
+│                              Price on request · MY ESTIMATE (2)  DESIGN │
+├────┬──────────────────┬──────────────────────────────────────────────────┤
+│ 2  │ 3 OPTIONS        │ 4 VIEW BAR  FRONT INSIDE ROOM · OUTLINES X-RAY … │
+│ ▣  │ (of the active   ├──────────────────────────────────────────────────┤
+│WHAT│  step, one       │                                                  │
+│ ▢  │  column, wide    │              5 STAGE                             │
+│WHER│  enough for PRO  │              (front view by default)             │
+│ ▢  │  panels on one   │                                     ┌──────────┐ │
+│INSI│  line)           │                                     │ 7 DETAIL │ │
+│ ▢  │                  │                                     │ slides   │ │
+│FRON│  [ BACK ] [NEXT] │                                     │ in/out   │ │
+│ ▢  │                  │                                     │ 360px    │ │
+│EXTR│                  │                                     └──────────┘ │
+│ ▢  │                  ├──────────────────────────────────────────────────┤
+│REVI│                  │ 6 STAGE HINT   BEDROOM WARDROBE — LEFT DOOR      │
+└────┴──────────────────┴──────────────────────────────────────────────────┘
+ 72px      ~340px                       the rest
+```
+
+- The rail's six tiles are the six steps of F2, in order, icon over one word.
+  The active tile carries a gold hairline underline; done tiles a small tick.
+- Icons: inline SVG in `src/retail/design/detail/drawings.jsx`'s existing
+  style — **no new npm dependency** (the house rule).
+- Column 3's width is measured, not guessed: the longest single label in the
+  copied `MaterialChoicePanel` and `FrontStyleGallery` must fit on one line.
+
+- **2 RAIL** becomes a narrow vertical strip of six square tiles (F3), icon +
+  one word. Width ≈ 72px. It no longer holds text rows.
+- **3 OPTIONS** keeps its own column, wider than today (the space the rail
+  gives back plus the space DETAIL gives back). Wide enough that the copied
+  PRO panels do not wrap word-by-word — measure `MaterialChoicePanel` and
+  `FrontStyleGallery` and set the column so their longest label fits on one
+  line.
+- **5 STAGE** takes the rest.
+- **7 DETAIL** is no longer a column. It is a panel that slides in from the
+  right over the stage when an element is clicked, and slides out on DONE or
+  on clicking empty stage. It carries the same content it carries today (the
+  element menus, the copied editors). Width ≈ 360px. Draggable is not
+  required for the slide panel; modals opened from it keep the house rule
+  (draggable, beside the click).
+- **7e ESTIMATE leaves this screen entirely** (F5). The TOTAL/RESET block at
+  the bottom of the old rail moves to the top bar's right end as one line:
+  "Price on request · MY ESTIMATE (2)".
+- Scale law from T60 (one number from window width) still applies to all of
+  it.
+
+**Proof**: `verify/t64/f4-*.png` — the layout at rest; the panel slid in; the
+same at 1280px width.
+
+## F5 · MY ESTIMATE — ITS OWN PAGE, AS IN PRIME SASH WINDOWS
+
+Owner: *"wycena inna strona, na której masz 2–3 szafy i wtedy otwierasz szafę
+i edytujesz — zobacz na PRIME SASH WINDOWS."* Then: *"cena się konfiguruje
+sama … i później jak już zakończymy, przycisk DONE i ADD TO ESTIMATE."*
+
+The PSW model: one estimate = a list of items; one item at a time in the
+configurator (add / edit mode); the list is where you go between items.
+
+- Route `/retail/estimate` (retail router only — PRO untouched). The page
+  lists the estimate's items: thumbnail (captured off the fixed rig, front
+  view), name, room, W×H×D, fronts style + colour, "Price on request". Per
+  item: EDIT (loads it into DESIGN in edit mode, title "Edit — Bedroom
+  wardrobe"), DUPLICATE, ×. Below the list: ADD ANOTHER WARDROBE (opens DESIGN
+  in add mode at step 1), REQUEST A QUOTE (the existing JSON + mailto, now for
+  the whole list), SAVE / LOAD (the existing project list, renamed to what it
+  is: "Saved estimates").
+- An item IS a saved design — use the existing SAVE/LOAD store as the item
+  store; do not write a second persistence. The estimate is the list of
+  designs; "current" is the one open in DESIGN.
+- DESIGN shows ONE design on the stage. Step 6 REVIEW ends with DONE → ADD TO
+  MY ESTIMATE, which saves the design as an item and navigates to the page.
+  In edit mode the button reads SAVE CHANGES.
+- Top bar: "MY ESTIMATE (n)" is the link to the page from anywhere.
+- The Egger gate note stays in the PR body: quote requests carry decor names;
+  public launch still waits on the Egger UK mail.
+
+**Proof**: `verify/t64/f5-*.png` — the page with two items; EDIT landing in
+DESIGN with the right title; ADD TO MY ESTIMATE returning to the page with
+three.
 
 ---
 
 ## TESTS AND PROOF
 
+0. F0 done: `/tmp/psw` cloned and the three files read before F5 — the PR body
+   names them.
+
 1. Full suite green, never `--silent`. PRO freeze test green and unedited.
 2. Goldens ×6 byte-identical; `computeCabinet()` vs LISP exact; `UNNAMED=0`;
-   `verify/t63/t63-classify.mjs` proving **zero** files changed under
+   `verify/t64/t64-classify.mjs` proving zero files changed under
    `src/engine` and `src/lib`.
 3. Parens 14/14 at 0/0.
-4. The boundary test green: `src/components/**` still forbidden to retail.
-5. **Copy-fidelity, extended**: for every file copied tonight, read the PRO
-   source and the retail copy off disk and assert the copy carries every
-   control label, every hook and every gesture the original has. A label the
-   original has and the copy does not is a FAILING test that names the label.
-   Extend `test/turn62-f2-f3-the-copy.test.js`'s pattern; verify the test
-   itself by planting a rename and watching it fire.
-6. A test that PRO's hardware stays X-ray-only after F1.
-7. A test that retail holds exactly ONE law for what may be added where.
-8. Playwright walk: every F's frames, committed.
+4. Boundary test green; copy-fidelity tests (T62, T63) green — the copies did
+   not drift under the reskin.
+5. New tests: Delete removes the selected element (and refuses per the store);
+   plus-on-B lands in B; the three LED states; a new shelf lands at the bay's
+   midpoint; `design.fronts.opening` after retail's choice equals PRO's after
+   the same choice; first camera is FRONT; DOORS/BAYS absent from LAYOUT and
+   present under Advanced; `CATEGORIES` is the six steps in order; an item
+   round-trips DESIGN → estimate → EDIT → DESIGN unchanged.
+6. Playwright walk: every F's frames, committed, plus one full lazy-client run
+   — six NEXT clicks from a fresh start to ADD TO MY ESTIMATE, as a numbered
+   frame sequence `verify/t64/lazy-01.png … lazy-07.png`.
 
 ## LICENSED REMOVALS
 
-- The retail sketches superseded by copies: `LightingMenu.jsx`,
-  `DoorMenu.jsx`, `RailMenu.jsx`, `WatchMenu.jsx`, and any other
-  `design/detail/*Menu.jsx` whose PRO original is copied tonight. Delete them —
-  a sketch left beside its copy is the second track this project keeps
-  killing. Where a sketch holds retail-only wiring, move that wiring into the
-  copy's entry, do not keep the sketch alive for it.
-- `FRONT DIMENSIONS` and `MEASURE` from the retail VIEW BAR (F5).
-- Retail's five curated Egger swatches, superseded by the copied modal (F4).
-- Nothing else. Tombstones two lines maximum. **Deletions must exceed
-  additions in the retail sketch directories**, or explain every line.
+- DOORS and BAYS chip rows from LAYOUT (they move, not die — F1.7).
+- `WALLS 1|2` chips and `WALL 2 WIDTH` from YOUR SPACE (F1.8).
+- The 7e ESTIMATE panel and the rail's TOTAL/RESET block (they move to the
+  page and the top bar — F4/F5).
+- Ad-hoc button styling replaced by the one `Button` (F3).
+- Nothing else. Tombstones two lines maximum. Deletions in the touched retail
+  files must be explained line by line in the balance if additions exceed
+  them.
 
 ## BALANCE
 
-Per copied file: PRO path, retail path, PRO line count, retail line count, and
-the changes made (which must read "imports repointed, classes reskinned"). Then
-answer in one line each:
-
-- How many laws decide what may be added where? (Must be one.)
-- How many surfaces write a unit's finish? (Must be one.)
-- Which PRO controls were hidden behind `RETAIL_SHOW_WORKSHOP_TOOLS`, and why?
-- What is still OWED, from the ledger?
+Per F: files touched, lines added and removed. Then one line each:
+- How many keyboard handlers does the retail stage have? (One.)
+- How many places decide which wardrobe an add goes to? (One: the selection.)
+- How many persistence paths hold estimate items? (One: the existing store.)
+- Which PRO behaviour was copied for each fix, by file and line.
+- What is still owed: the price law; L-shape as a type; ContextMenu and
+  CabinetEditorModal copies; mirrors; GROOVED/ARCHED.
 
 ## SKIP-AND-NOTE ORDER
 
-F6 → F5 → F3 → F4 → F2 → F1.
-F2 is the owner's loudest complaint and F1 his direct order; neither is skipped.
-If the night can finish only one big thing, it finishes F2.
+F5 → F4 → F3 → F2 → F1. F1 is eight small certainties and is finished first;
+F2 is the owner's "najważniejsze" and is not skipped. If the night runs short,
+the estimate page (F5) is the first to wait — the old 7e panel stays until it
+lands, and the PR body says so.

@@ -3,15 +3,67 @@ import Chip from '../ui/Chip.jsx';
 
 // ─── THE CONTROLS THE DESIGN ROOM IS MADE OF ───────────────────────────────
 //
-// A chip row, a bounded slider, a stepper and a labelled block. Nothing else —
-// F4b is explicit that a detail is *"chips and one slider at most"*, and the
-// same discipline holds one column to the left. A configurator that grows a
-// fourth control grows a fifth the week after.
+// A chip row, a typed field, a labelled row, a sentence — and, from T64, THE
+// button. Nothing else — F4b is explicit that a detail is *"chips and one
+// slider at most"*, and the same discipline holds one column to the left. A
+// configurator that grows a fourth control grows a fifth the week after.
 //
 // T60 F1: not one of them writes a pixel any more. Every dimension is a class
 // in `styles/room.css` reading a token from `styles/scale.css`, so a control
 // on a 1280-wide laptop is the same control at 78% and not a control somebody
 // squeezed.
+
+/**
+ * ─── T64 F3 · ONE BUTTON, EVERYWHERE UNDER src/retail ──────────────────────
+ *
+ * The owner: *"przyciski i napisy w przyciskach bardziej posh — są jakieś
+ * duże te napisy; przyciski kwadratowe."*
+ *
+ * So there is one button and this is it. Three kinds, and the third is the
+ * one that used to be an ad-hoc `<button className="pbi-link">` in nine
+ * files:
+ *
+ *   primary    the ONE filled (Onyx) button a screen has — its main action
+ *   secondary  outlined: hairline Onyx at 40%, gold hairline on hover/active,
+ *              Ivory fill; 36px where `size="small"`
+ *   link       a small mark in Deep Gold, no box — the `‹ BACK`, the `›`
+ *
+ * Square — zero radius, per the PBI system. Type: Inter, 12px, tracked
+ * +0.08em, uppercase — half the size it was. 44px for a primary or a
+ * secondary action (tap-safe), 36px for a small one. The rules are
+ * `.pbi-btn*` in `styles/base.css` (the site) and `.pbi-room .pbi-btn*` in
+ * `styles/room.css` (the room, at the room's scale); this file only decides
+ * which of the three a caller gets, and renders an `<a>` when the thing is
+ * really a link so the browser keeps its own behaviours.
+ *
+ * `src/retail/ui/Button.jsx` re-exports this, so every import site in the
+ * retail tree — the site's pages included — lands on the one component.
+ */
+export function Button({
+  kind = 'primary', size = null, href, onClick, disabled = false, children, style, title,
+  type = 'button', className = '', ...rest
+}) {
+  const which = kind === 'secondary' ? 'secondary' : (kind === 'link' ? 'link' : 'primary');
+  const cls = `pbi-btn pbi-btn-${which}${size === 'small' ? ' pbi-btn-small' : ''}${className ? ` ${className}` : ''}`;
+  if (href && !disabled) {
+    return (
+      <a className={cls} href={href} style={style} title={title} {...rest}>{children}</a>
+    );
+  }
+  return (
+    <button
+      className={cls}
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      style={style}
+      title={title}
+      {...rest}
+    >
+      {children}
+    </button>
+  );
+}
 
 /**
  * ─── TURN 62 (CLAUDE.md F4): A FIELD IS A ROW ──────────────────────────────
@@ -36,9 +88,15 @@ import Chip from '../ui/Chip.jsx';
  * a row is the same row at 78% on a laptop as at 100% on the owner's monitor
  * (T60 F1's law: not one measurement written in a component).
  */
-export function Field({ label, children, note }) {
+export function Field({
+  label, children, note, block = false,
+}) {
+  // T64 F2: a BLOCK row is the row's exception — a copied PRO panel (the
+  // material slot, the hardware step) is a surface with its own columns and
+  // takes the full width under its label, because squeezing PRO's strip into
+  // the control half of a row wraps its sources word by word.
   return (
-    <div className="pbi-field-row">
+    <div className={`pbi-field-row${block ? ' is-block' : ''}`}>
       {label ? <span className="pbi-label pbi-field-row-label">{label}</span> : null}
       <div className="pbi-field-row-ctl">{children}</div>
       {note ? <p className="pbi-choice pbi-field-note">{note}</p> : null}
@@ -199,4 +257,28 @@ export function NumberField({
  */
 export function Said({ children, testid }) {
   return <p className="pbi-choice pbi-choice-15 pbi-duty-line" data-testid={testid}>{children}</p>;
+}
+
+/**
+ * ─── T64 F2 · MORE OPTIONS — THE PICKY CLIENT'S DOOR ───────────────────────
+ *
+ * *"A picky client finds 'more options' in every step; a lazy one never sees
+ * them."* One link that opens a block under the step's defaults, closed on
+ * arrival. NOT an accordion in the PSW sense — T59's law was about the
+ * CATEGORIES folding inside one column, and the six steps still stand in the
+ * rail with their options always in column 3. This folds the picky half of
+ * ONE step under its lazy half, which is the owner's own order.
+ */
+export function MoreOptions({ children, testid = 'more-options', open = false, onToggle = null }) {
+  const [own, setOwn] = useState(open);
+  const is = onToggle ? open : own;
+  const flip = onToggle || (() => setOwn((v) => !v));
+  return (
+    <div className="pbi-more" data-open={is ? 'yes' : 'no'}>
+      <Button kind="link" data-testid={testid} onClick={flip} aria-expanded={is}>
+        {is ? '‹ FEWER OPTIONS' : 'MORE OPTIONS ›'}
+      </Button>
+      {is ? <div className="pbi-more-body" data-testid={`${testid}-body`}>{children}</div> : null}
+    </div>
+  );
 }

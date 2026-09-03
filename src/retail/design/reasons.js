@@ -28,6 +28,37 @@
 // grows a client-facing reason of its own.
 
 export const REASONS = {
+  // ─── T64 · THE FOUR THE OWNER'S STEPS ADDED ─────────────────────────────
+
+  /**
+   * T64 F1.1 · PREDICATE: `adapter.topBoxesOn(hostId).length` — the store's
+   * own `params.rides_on` link. PRO's `removeUnit` ORPHANS a rider and shows
+   * the joiner a red fault (T36 F7); a client has no fault panel, so the
+   * Delete key is refused before the store is asked.
+   */
+  hostCarriesABox: 'Take the top box off first — it stands on this wardrobe.',
+
+  /**
+   * T64 F1.1 · PREDICATE: one main unit left on the stage (`units` without a
+   * `rides_on`). PRO lets a joiner empty the room; the retail room has no
+   * empty-room page, and START AGAIN is the way to a fresh wardrobe.
+   */
+  lastWardrobe: 'This is the only wardrobe on the stage. Start again to replace it.',
+
+  /**
+   * T64 F2 · PREDICATE: `PROJECT_TYPES[i].category !== 'wardrobe'` — the
+   * engine's own answer to which library a type opens on, and the retail
+   * room mounts the wardrobe library alone (`adapter.startDesign`).
+   */
+  projectTypeNotOnline: () => 'Made to order — ask us for a quote.',
+
+  /**
+   * T64 F1.7 · NOT a refusal — the line under Advanced, in the owner's own
+   * words: *"w Cabinet Core mamy dokładnie napisane w kodzie jak drzwi się
+   * ustawiają."* PREDICATE: `doorCountFor(width, profile)`, the face-door law.
+   */
+  doorsAreSet: 'We set the doors for this width. Change only if you know why.',
+
   /**
    * T61 F5 · PREDICATE: the typed number against the bounds the caller was
    * given — `adapter.designBounds()` (the profile's, and for the room retail's

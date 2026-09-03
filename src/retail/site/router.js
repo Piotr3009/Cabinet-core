@@ -9,9 +9,12 @@ import { useEffect, useState } from 'react';
 // and it survives a reload — which matters more than it sounds, because F5's
 // estimate is memory-only and a client who reloads has lost their design; at
 // least they land where they were.
+//
+// T64 F5: `/estimate` — MY ESTIMATE, its own page, as in Prime Sash Windows.
+// The retail router only; PRO's `/` is untouched.
 
 export const ROUTES = [
-  '/', '/design', '/collections', '/contact', '/materials', '/design-process', '/about', '/journal',
+  '/', '/design', '/estimate', '/collections', '/contact', '/materials', '/design-process', '/about', '/journal',
 ];
 
 /** '#/design?collection=black-label' → { path: '/design', query: { collection: 'black-label' } } */

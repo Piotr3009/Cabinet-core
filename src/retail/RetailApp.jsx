@@ -5,17 +5,22 @@ import CollectionsPage from './site/CollectionsPage.jsx';
 import ContactPage from './site/ContactPage.jsx';
 import CopyPage from './site/CopyPage.jsx';
 import DesignRoom from './design/DesignRoom.jsx';
+import EstimatePage from './estimate/EstimatePage.jsx';
 import { useHashRoute } from './site/router.js';
 
 // ─── PRIME BESPOKE INTERIORS ───────────────────────────────────────────────
 //
-// Eight routes, one header, one footer, and a design room that takes the whole
+// Nine routes, one header, one footer, and a design room that takes the whole
 // window under a 60-px header (F2: *"Inside the design room the header shrinks
 // to 60px (same content)"*).
 //
 // The footer is on every page EXCEPT the design room: a page whose whole point
 // is a full-height 3-D stage cannot also scroll to a footer, and a client who
 // is designing is not looking for the legal line.
+//
+// T64 F5: `/estimate` — MY ESTIMATE, the page a client goes to between
+// wardrobes, as in Prime Sash Windows. The room shows ONE design; the page
+// lists them all.
 
 export default function RetailApp() {
   const { path, query } = useHashRoute();
@@ -36,7 +41,8 @@ export default function RetailApp() {
     >
       <Header path={path} compact={inRoom} />
 
-      {inRoom ? <DesignRoom collection={query.collection} /> : null}
+      {inRoom ? <DesignRoom collection={query.collection} query={query} /> : null}
+      {path === '/estimate' ? <EstimatePage /> : null}
       {path === '/' ? <LandingPage /> : null}
       {path === '/collections' ? <CollectionsPage /> : null}
       {path === '/contact' ? <ContactPage /> : null}

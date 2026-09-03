@@ -207,7 +207,8 @@ test('F2 · the three entries exist and point at their own module', () => {
 
 test('F6 · eight routes, and not one of them 404s', () => {
   assert.deepEqual(ROOTS_SORTED(), [
-    '/', '/about', '/collections', '/contact', '/design', '/design-process', '/journal', '/materials',
+    // T64 F5: `/estimate` — MY ESTIMATE, its own page (PSW's EstimatesPage).
+    '/', '/about', '/collections', '/contact', '/design', '/design-process', '/estimate', '/journal', '/materials',
   ]);
   // An unknown path is the landing page, not an error.
   assert.equal(parseHash('#/nowhere').path, '/');

@@ -1,0 +1,351 @@
+{
+ "steps": [
+  {
+   "label": "F1.1 BEFORE — a door selected, Delete pressed, the door STAYS (the fault)",
+   "ok": true,
+   "detail": "1 → 1 fronts"
+  },
+  {
+   "label": "F1.1 AFTER — Delete takes the selected door, through PRO's removeFront",
+   "ok": true,
+   "detail": "2 → 0 fronts"
+  },
+  {
+   "label": "F1.1 AFTER — Delete on the only wardrobe is REFUSED with a sentence",
+   "ok": true,
+   "detail": "This is the only wardrobe on the stage. Start again to replace it."
+  },
+  {
+   "label": "F1.2 BEFORE — plus on B, the shelf lands in A (the fault)",
+   "ok": true,
+   "detail": "A 1 · B 0"
+  },
+  {
+   "label": "F1.2 AFTER — plus on B, the shelf lands in B",
+   "ok": true,
+   "detail": "A 0 · B 1"
+  },
+  {
+   "label": "F1.3 BEFORE — LED icons with the lighting panel CLOSED (the fault)",
+   "ok": true,
+   "detail": "3 icons"
+  },
+  {
+   "label": "F1.3 AFTER — panel closed → no icons",
+   "ok": true,
+   "detail": "0 icons"
+  },
+  {
+   "label": "F1.3 AFTER — panel open, light OFF → an icon on every slot (shelf, L, R, plinth, top, under top)",
+   "ok": true,
+   "detail": "6 icons"
+  },
+  {
+   "label": "F1.3 AFTER — light ON → icons hidden; ON is visualisation only",
+   "ok": true,
+   "detail": "0 icons"
+  },
+  {
+   "label": "F1.3 AFTER — OFF again → the icons return",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1.4 BEFORE — the second shelf halves the biggest opening: a quarter up (the fault)",
+   "ok": true,
+   "detail": "533, 1066"
+  },
+  {
+   "label": "F1.4 AFTER — two shelves, three equal openings — the KIT's ladder",
+   "ok": true,
+   "detail": "710.5, 1421.5"
+  },
+  {
+   "label": "F1.5 BEFORE — J-PULL chosen as a STYLE: no handle written, nothing stamped, nothing drawn (the fault)",
+   "ok": true,
+   "detail": "handle null · 0 leaves stamped"
+  },
+  {
+   "label": "F1.5 AFTER — J-pull chosen as the OPENING: handle jpull written as PRO writes it, every leaf stamped",
+   "ok": true,
+   "detail": "handle {\"type\":\"jpull\"} · 2 leaves stamped"
+  },
+  {
+   "label": "F1.6 BEFORE — the first camera is the ROOM corner, off to one side (the fault)",
+   "ok": true,
+   "detail": "off-centre by 3.33 m"
+  },
+  {
+   "label": "F1.6 AFTER — the first camera is FRONT: square on the centre line",
+   "ok": true,
+   "detail": "off-centre by 0.000 m · 6.59 m in front"
+  },
+  {
+   "label": "F1.6 AFTER — the bar lights FRONT",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1.7 BEFORE — DOORS and BAYS on LAYOUT, the main menu (the fault)",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1.7 AFTER — no DOORS, no BAYS, no LAYOUT on the rail",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1.7 AFTER — both rows under Advanced in the wardrobe's EDIT, with the line",
+   "ok": true,
+   "detail": "We set the doors for this width. Change only if you know why."
+  },
+  {
+   "label": "F1.8 BEFORE — WALLS 1 | 2 chips on YOUR SPACE",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1.8 AFTER — no WALLS chips, no WALL 2 WIDTH; the wall and the ceiling only",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "F1.8 AFTER — the scope is one wall",
+   "ok": true,
+   "detail": "wall"
+  },
+  {
+   "label": "the rail is the six steps, in order",
+   "ok": true,
+   "detail": "what,where,inside,fronts,extras,review"
+  },
+  {
+   "label": "WHAT — the tile lights, the panel stands, at its default",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "WHERE — the tile lights, the panel stands, at its default",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "INSIDE — the tile lights, the panel stands, at its default",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "FRONTS — the tile lights, the panel stands, at its default",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "EXTRAS — the tile lights, the panel stands, at its default",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "REVIEW — the tile lights, the panel stands, at its default",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "INSIDE opens on the carcass material — PRO's slot — ABOVE the interior rows",
+   "ok": true,
+   "detail": "slot y138 · rows y549"
+  },
+  {
+   "label": "…with every carcass source the profile names, on one line",
+   "ok": true,
+   "detail": "3 sources"
+  },
+  {
+   "label": "…and the source strip does not wrap",
+   "ok": true,
+   "detail": "1 row(s)"
+  },
+  {
+   "label": "the lazy client's answers stand before any click: shaker · push · house decor · white inside · fills the wall · lights off",
+   "ok": true,
+   "detail": "{\"style\":\"S\",\"handle\":null,\"front\":\"egger:H3195_19\",\"carcass\":\"egger:W1000_9\",\"width\":3920,\"lights\":false}"
+  },
+  {
+   "label": "BEFORE — a button",
+   "ok": true,
+   "detail": "11.7044px · tracked 2.10679px · 36px tall",
+   "note": true
+  },
+  {
+   "label": "rail tiles are square, 64px at 1440",
+   "ok": true,
+   "detail": "64×64"
+  },
+  {
+   "label": "…icon 20px",
+   "ok": true,
+   "detail": "20px"
+  },
+  {
+   "label": "…one word at 11px",
+   "ok": true,
+   "detail": "11px"
+  },
+  {
+   "label": "the active tile is a gold hairline underline, not a filled block",
+   "ok": true,
+   "detail": "{\"under\":\"rgb(128, 106, 68)\",\"bg\":\"rgb(231, 225, 216)\"}"
+  },
+  {
+   "label": "PRIMARY: filled Onyx, square, 12px→11 on the floor, tracked +0.08em, 44 × scale = 36px at 1440",
+   "ok": true,
+   "detail": "{\"size\":\"11px\",\"track\":\"0.88px\",\"radius\":\"0px\",\"h\":36,\"bg\":\"rgb(9, 10, 9)\",\"family\":\"Inter\"}"
+  },
+  {
+   "label": "SECONDARY: outlined, Onyx-40% hairline, square, small = 36 × scale = 29px at 1440",
+   "ok": true,
+   "detail": "{\"size\":\"11px\",\"track\":\"0.88px\",\"radius\":\"0px\",\"h\":29,\"border\":\"rgba(9, 10, 9, 0.4)\",\"bg\":\"rgb(217, 209, 198)\"}"
+  },
+  {
+   "label": "a copied PRO window's buttons are square and 12px tracked — through pbi-re-btn, never its markup",
+   "ok": true,
+   "detail": "{\"radius\":\"0px\",\"size\":\"12px\",\"track\":\"0.96px\"}"
+  },
+  {
+   "label": "1440 — rail 72 · options 340 · stage 1028; the detail is off the stage's right edge",
+   "ok": true,
+   "detail": "detail x1440 w360"
+  },
+  {
+   "label": "1440 — the owner's numbers: rail 72, options ~340, detail ~360",
+   "ok": true,
+   "detail": "72 · 340 · 360"
+  },
+  {
+   "label": "1440 — the top bar's right end: \"Price on request· · MY ESTIMATE (0)\"",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1440 — a click on a door slides the DETAIL in, over the stage",
+   "ok": true,
+   "detail": "x1080 w360"
+  },
+  {
+   "label": "1440 — DONE slides it out",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1440 — a click on the empty stage slides it out",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1280 — rail 69 · options 328 · stage 882; the detail is off the stage's right edge",
+   "ok": true,
+   "detail": "detail x1280 w348"
+  },
+  {
+   "label": "1280 — the top bar's right end: \"Price on request· · MY ESTIMATE (0)\"",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1280 — a click on a door slides the DETAIL in, over the stage",
+   "ok": true,
+   "detail": "x932 w348"
+  },
+  {
+   "label": "1280 — DONE slides it out",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "1280 — a click on the empty stage slides it out",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "DONE → ADD TO MY ESTIMATE lands on the estimate page with one item",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "ADD ANOTHER WARDROBE opens DESIGN in ADD mode, at step 1",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "the page lists two items, each with its thumbnail, room, size, fronts and Price on request",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "…and the top bar counts them",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "EDIT lands in DESIGN in edit mode, titled \"EDIT — Hall wardrobe\"",
+   "ok": true,
+   "detail": "EDIT — Hall wardrobe"
+  },
+  {
+   "label": "…and REVIEW's button reads SAVE CHANGES",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "SAVE CHANGES returns to the page, still two items",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "ADD TO MY ESTIMATE returns to the page with three",
+   "ok": true,
+   "detail": "3 rows"
+  },
+  {
+   "label": "× and DUPLICATE are the list's own",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "REQUEST A QUOTE is the whole list's, over the page",
+   "ok": true,
+   "detail": ""
+  },
+  {
+   "label": "click 1 · NEXT → WHERE",
+   "ok": true,
+   "detail": "where"
+  },
+  {
+   "label": "click 2 · NEXT → INSIDE",
+   "ok": true,
+   "detail": "inside"
+  },
+  {
+   "label": "click 3 · NEXT → FRONTS",
+   "ok": true,
+   "detail": "fronts"
+  },
+  {
+   "label": "click 4 · NEXT → EXTRAS",
+   "ok": true,
+   "detail": "extras"
+  },
+  {
+   "label": "click 5 · NEXT → REVIEW",
+   "ok": true,
+   "detail": "review"
+  },
+  {
+   "label": "click 6 · DONE → ADD TO MY ESTIMATE — a finished wardrobe in the estimate",
+   "ok": true,
+   "detail": "1 item(s)"
+  }
+ ],
+ "failed": 0
+}

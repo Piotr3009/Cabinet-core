@@ -159,30 +159,6 @@ export const WORKSHOP_TOOLS = [
 // as it walks the table, so the boundaries are the table's own and there is no
 // second list of them to fall out of step.
 
-// ─── T63 F5 · RESET VIEW CENTRES THE MODEL ──────────────────────────────────
-//
-// The owner: *"reset view widok wyśrodkowany, powinien być od środka."*
-//
-// PRO has no reset: `CanvasToolbar.jsx` carries no such control and
-// `src/3d/cameraPresets.js` (T59, retail's own) knows only its three places to
-// stand. So this is written in the retail view-tool and nowhere else, as
-// CLAUDE.md allows — the same maths `presetPlacement` frames a box with (the
-// app's 38° lens needs `max(w, h) × 1.5 + d` to hold a piece), aimed at the
-// bounding box's own centre, standing on its centre line, a little above the
-// middle so the top and the plinth are both in the picture.
-//
-// Pure, so a test can hold it: a box in, a place to stand out.
-export function resetPlacement(box) {
-  if (!box?.min || !box?.max) return null;
-  const cx = (box.min[0] + box.max[0]) / 2;
-  const cy = (box.min[1] + box.max[1]) / 2;
-  const cz = (box.min[2] + box.max[2]) / 2;
-  const w = box.max[0] - box.min[0];
-  const h = box.max[1] - box.min[1];
-  const d = box.max[2] - box.min[2];
-  const framing = Math.max(w, h) * 1.5 + d;
-  return {
-    from: [cx, cy + h * 0.12, box.max[2] + framing],
-    at: [cx, cy, cz],
-  };
-}
+// ─── T64 F1.6 · TOMBSTONE: `resetPlacement` STOOD HERE ─────────────────────
+// RESET VIEW parks at `cameraPresets.js` FRONT now (`Stage.jsx resetStageView`),
+// which is the centred reset T63 asked for, by the preset's own name.

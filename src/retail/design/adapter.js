@@ -80,7 +80,18 @@ export const designUnit = (units) => {
   if (!list.length) return null;
   const mains = list.filter((u) => !u.params?.rides_on);
   const pool = mains.length ? mains : list;
-  const selected = U().selectedElement?.unitId || null;
+  // ─── T64 F1.2 · THE SELECTION, WHOLE ─────────────────────────────────────
+  //
+  // The owner: *"jak naciskam plusika żeby dodać, to dodaje wszystko do
+  // pierwszej szafy, nie do szafy którą właśnie nacisnąłem."* The plus
+  // SELECTS the cabinet it was pressed on — `Scene.jsx onAddItems` calls
+  // `selectUnit(unit.id)` before anything else — and that is a UNIT
+  // selection (`selectedUnitId`), not an ELEMENT selection. This read only
+  // the element's unit, so a plus on wardrobe B selected B and then every
+  // interior row went on adding to A. One selection, both halves of it: the
+  // piece's cabinet where a piece is selected, the selected cabinet
+  // otherwise, wall-0 only for a bare, unselected scene.
+  const selected = U().selectedElement?.unitId || U().selectedUnitId || null;
   const found = selected ? list.find((u) => u.id === selected) : null;
   // A rider hands the question to its host — see the note above.
   const host = found?.params?.rides_on
@@ -2411,4 +2422,207 @@ export function clearMaterialFinish(kind) {
   const slot = typeOf(kind);
   if (kind === 'carcass') return S().setCarcassFinish(slot.id, null);
   return S().setFrontType(slot.id, { finish_id: null });
+}
+
+// ═══ TURN 64 · STEP BY STEP, AND THE SMALL THINGS THAT BROKE ═══════════════
+//
+// The owner, 03.09.2026: *"Ludzie nie lubią myśleć — musi być step by step,
+// UI friendly and intuitive. Postaw się w sytuacji leniwego klienta — ale
+// tak, żeby było wszystko do wyboru."* Every answer below is the engine's or
+// the store's or PRO's own lib, reached through this file as every other.
+
+import { FRONT_OPENINGS, frontOpening, frontOpeningPatch } from '../../lib/frontOpening.js';
+import { PROJECT_TYPES } from '../../engine/projectTypes.js';
+
+/** T64 F1.1 · the top boxes on a host, asked before Delete — see `removeUnitRefusal`. */
+const mainsOnStage = () => S().units.filter((u) => !u.params?.rides_on);
+
+/**
+ * ─── F1.1 · MAY THIS CABINET LEAVE THE STAGE ───────────────────────────────
+ *
+ * PRO's `removeUnit` refuses nothing: a joiner may empty the room, and a host
+ * that goes leaves its riders ORPHANED with a red fault for the joiner to
+ * decide (T36 F7). A client has no red-fault panel and no empty-room page, so
+ * the two cases the engine leaves to a joiner's judgement are refused here,
+ * BEFORE the store's own remove, on the store's own two facts: `rides_on`
+ * links (`topBoxesOn`) and the count of mains. The words are `reasons.js`'s,
+ * beside their predicates, as every other retail sentence.
+ */
+export function removeUnitRefusal(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return '';
+  if (topBoxesOn(unitId).length) return REASONS.hostCarriesABox;
+  if (!unit.params?.rides_on && mainsOnStage().length <= 1) return REASONS.lastWardrobe;
+  return '';
+}
+
+/**
+ * ─── F1.5 · THE OPENING, WRITTEN AS PRO WRITES IT ──────────────────────────
+ *
+ * The owner: *"wiem że jest, ale nie widać."* Diagnosis, verified by the
+ * probe in `test/turn64-f1-the-small-things.test.js`: retail's FRONTS step
+ * wrote `fronts.style = 'HJ'` and nothing else. The engine machines a J into
+ * a leaf off `fronts.handle.type === 'jpull'` (`engine/handles.js
+ * resolveHandle`, T57: *"the J is a HANDLE SYSTEM, not a shape"*), and a
+ * project with the legacy style and no handle resolves to NO handle at all —
+ * so `meta.jpull.run` was never stamped and `UnitView.jsx` had nothing to
+ * draw. PRO's wizard never writes the style for a J: it writes
+ * `frontOpeningPatch(design, 'jhandle')` (`WizardSettings.jsx:1920`), which
+ * is `{ fronts: { …, handle: { type: 'jpull' } } }` plus the runner lock.
+ *
+ * So retail writes EXACTLY that, through the same `setDesign`, for all four
+ * of PRO's openings. `FRONT_OPENINGS` is the list PRO's tiles read, in PRO's
+ * order and PRO's words; `previousStyle` is what PRO remembers so that
+ * leaving the J puts the door back to the shape somebody chose.
+ */
+export const frontOpenings = () => FRONT_OPENINGS.map((o) => ({ id: o.id, label: o.label, hint: o.hint }));
+
+export const frontOpeningOf = (project) => frontOpening(migrateDesign(project?.design));
+
+let lastNonJStyle = null;
+export function setFrontOpening(id) {
+  const store = S();
+  const design = migrateDesign(store.project.design);
+  if (design.fronts.style && design.fronts.style !== 'HJ') lastNonJStyle = design.fronts.style;
+  store.setDesign(frontOpeningPatch(design, id, { previousStyle: lastNonJStyle }));
+  // Re-read: `store` is the snapshot from before the write.
+  return frontOpeningOf(S().project);
+}
+
+/**
+ * ─── F1.4 · SHELVES GO IN CENTRED ──────────────────────────────────────────
+ *
+ * The owner: *"shelves powinny się wstawiać wycentrowane."* PRO places a new
+ * shelf at the centre of the biggest clear opening (`engine/items.js
+ * centredShelfPos`, T58) — the FIRST shelf therefore lands on the bay's
+ * midpoint already, and the second lands a quarter of the way up, which is
+ * what the owner saw. The law that spreads N shelves into N+1 equal openings
+ * is the KIT's own (`KIT_WARDROBE_FULL.lsp` 133-142) and the store carries it
+ * as `redistributeShelvesInBay` + `reclampShelves` — the pair `centreBay`
+ * already calls for the SHELF menu's CENTRE THIS BAY. Retail calls the same
+ * pair after a shelf arrives, for the bay it arrived in and no other
+ * (T58: *"Centrujemy tylko prawy lub lewy bay"*). No new geometry.
+ */
+export function spreadNewShelf(unitId) {
+  const shelves = itemsOf(unitId).filter((i) => i.kind === 'shelf');
+  if (!shelves.length) return null;
+  const newest = shelves[shelves.length - 1];
+  const bay = newest.zone == null ? null : Number(newest.zone);
+  centreBay(unitId, bay);
+  return newest.id;
+}
+
+/**
+ * ─── F2 · WHERE — THE WARDROBE FILLS THE WALL ──────────────────────────────
+ *
+ * CLAUDE.md F2, step 2: *"wall width + ceiling height (two fields), the
+ * wardrobe fills the wall."* The width is written through `setUnitSize`,
+ * which asks the room first and then the store's own clamp
+ * (`clampUnitWidth` — the infill at the wall, the neighbours), so a 4000 mm
+ * wall gives the widest wardrobe the store allows on it and says so.
+ */
+export function fitWardrobeToWall(unitId) {
+  const unit = unitOf(unitId);
+  const b = unitBounds(unitId);
+  if (!unit || !b) return { ok: false, said: '' };
+  const wall = wallLengthMm(S().project.room, unitWall(unitId));
+  const width = Math.min(Math.round(wall), Math.round(b.width.max));
+  if (Math.round(unit.params?.width || 0) === width) return { ok: true, said: '' };
+  return setUnitSize(unitId, { width });
+}
+
+/**
+ * ─── F2 · WHAT — THE TILES, AND WHICH ONE THE ENGINE BUILDS TONIGHT ───────
+ *
+ * `PROJECT_TYPES` is PRO's own list (`engine/projectTypes.js`, the eight
+ * tiles of the new-project flow). The one predicate that greys a tile is the
+ * engine's: `category` — the Library category the type opens on — and the
+ * retail room mounts the WARDROBE library only (`startDesign` adds a
+ * `WARDROBE`; no kitchen carcass is reachable from any retail screen). The
+ * sentence beside the grey is `reasons.js`'s, with that predicate named.
+ */
+export const projectTypeTiles = () => PROJECT_TYPES.map((t) => ({
+  id: t.id,
+  label: t.label,
+  hint: t.hint,
+  reason: t.category === 'wardrobe' ? '' : REASONS.projectTypeNotOnline(t.label),
+}));
+
+export const projectTypeOf = (project) => project?.design?.projectType || 'wardrobe';
+export const setProjectType = (id) => {
+  const tile = projectTypeTiles().find((t) => t.id === id);
+  if (!tile || tile.reason) return null;
+  S().setDesign({ projectType: id });
+  return id;
+};
+
+/**
+ * ─── F2 · INSIDE — THE INSIDE COLOUR, THREE ANSWERS ────────────────────────
+ *
+ * *"Inside colour offers: same as fronts / white / choose — the third opens
+ * the same Egger modal."* Both writes are the store's own carcass setters
+ * (`setCarcassSource`, `setCarcassFinish`), the same two `pickMaterialDecor`
+ * uses for the copied panel's tiles. WHITE is EGGER's W1000 — the catalogue's
+ * own white, the one every collection's swatch strip already carries.
+ */
+export const WHITE_DECOR = 'W1000_9';
+
+export function insideColourOf(project) {
+  const design = migrateDesign(project?.design);
+  const carcass = design.carcass?.types?.[0]?.finish_id || null;
+  const front = normaliseFrontTypes(design.fronts?.types, P())[0]?.finish_id || null;
+  if (!carcass) return 'white';
+  if (front && carcass === front) return 'fronts';
+  if (carcass === swatchFor(WHITE_DECOR).finishId) return 'white';
+  return 'chosen';
+}
+
+export function setInsideColour(choice) {
+  if (choice === 'white') return setCarcassDecor(WHITE_DECOR);
+  if (choice === 'fronts') {
+    const front = normaliseFrontTypes(migrateDesign(S().project.design).fronts?.types, P())[0];
+    if (!front?.finish_id) return null;
+    const slot = typeOf('carcass');
+    S().setCarcassSource(slot.id, 'egger');
+    return S().setCarcassFinish(slot.id, front.finish_id);
+  }
+  return null;
+}
+
+/** The estimate page's summary line: what fronts, in one breath. */
+export function frontsWords(project) {
+  const design = migrateDesign(project?.design);
+  const style = FRONT_STYLE_OPTIONS.find((o) => o.id === design.fronts?.style)?.label || 'Flat';
+  const front = normaliseFrontTypes(design.fronts?.types, P())[0];
+  const found = front?.finish_id ? decorById(String(front.finish_id).split(':').pop()) : null;
+  const decor = found ? decorLabel(found) : (front?.finish_id ? String(front.finish_id) : null);
+  return decor ? `${style} · ${decor}` : style;
+}
+
+/**
+ * ─── F2 · THE LAZY CLIENT'S ANSWERS, ALREADY CHOSEN ────────────────────────
+ *
+ * *"Every step has a sensible answer already chosen. NEXT always works. Six
+ * clicks give a finished wardrobe."* What a fresh design carries before the
+ * first click: the wardrobe fills the wall (WHERE), the inside is white
+ * (INSIDE), the fronts are shaker in the house collection's own decor with
+ * no handle — push-to-open, as PRO writes it (FRONTS), and lighting is off
+ * with the standard plinth, which is how `startDesign` already leaves them
+ * (EXTRAS). Every write is one of the setters above; nothing is new. Called
+ * by the room once the decor pack has landed, because a decor is a thing
+ * the pack names — and with a collection in the link, the collection's own
+ * three answers win over the house ones, as they did in T59.
+ */
+export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
+  const done = { fit: fitWardrobeToWall(unitId) };
+  const collection = collectionId ? applyCollection(collectionId) : null;
+  if (!collection) {
+    if (!frontDecorOf(S().project)) done.front = setFrontDecor(COLLECTIONS[0].frontDecor);
+    if (!carcassDecorOf(S().project)) done.carcass = setCarcassDecor(WHITE_DECOR);
+    // No handle — the engine's own `null`, written as PRO's push-to-open tile
+    // writes it, runner lock included (`frontOpeningPatch`).
+    if (!S().project.design?.fronts?.handle) done.opening = setFrontOpening('push');
+  }
+  if (!S().project.design?.fronts?.style) done.style = setFrontStyle('S');
+  return done;
 }

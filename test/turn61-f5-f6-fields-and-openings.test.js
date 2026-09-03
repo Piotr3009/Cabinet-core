@@ -63,8 +63,12 @@ test('F5 · the refusal under the field is the SHARED CORE\'s, not retail\'s', (
   assert.equal(verdict.ok, false, 'shrinking the wall under the wardrobe was allowed');
   assert.ok(verdict.message, 'the room refused without saying why');
   // Options hands that message straight to the field.
+  // T64 F2: the WALL commit reads the verdict first — and returns the room's
+  // own sentence, verbatim — before the wardrobe is fitted to the wall.
   assert.match(read('src/retail/design/Options.jsx'),
-    /onCommit=\{\(v\) => A\.setSpace\(\{ wallMm: v \}\)\?\.message \|\| ''\}/);
+    /const verdict = A\.setSpace\(\{ wallMm: v \}\);\s*if \(verdict\?\.message\) return verdict\.message;/);
+  assert.match(read('src/retail/design/Options.jsx'),
+    /onCommit=\{\(v\) => A\.setSpace\(\{ ceilingMm: v \}\)\?\.message \|\| ''\}/);
 
   // …and the unit's own refusal comes back the same way.
   const said = A.setUnitSize(id, { height: 99999 });
@@ -80,7 +84,11 @@ test('F5 · the ONE sentence retail owns names its predicate, and the bounds', (
 });
 
 test('F5 · every bound in the two panels is the engine\'s, not a literal', () => {
-  const options = read('src/retail/design/Options.jsx');
+  // ─── AMENDED BY T64 F1.7/F2 ──────────────────────────────────────────────
+  // LAYOUT is gone: the wardrobe's width, height and depth are its own menu
+  // (`WardrobeMenu.jsx`), and WHERE keeps the wall and the ceiling. The two
+  // panels are those two files now; the law over every field is unchanged.
+  const options = read('src/retail/design/Options.jsx') + read('src/retail/design/detail/WardrobeMenu.jsx');
   const fields = [...options.matchAll(/<NumberField[\s\S]*?\/>/g)].map((m) => m[0]);
   // ─── AMENDED BY T62 F3 ───────────────────────────────────────────────────
   //

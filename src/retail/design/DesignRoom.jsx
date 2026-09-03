@@ -3,25 +3,23 @@ import {
 } from 'react';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useUiStore } from '../../stores/uiStore.js';
-import Categories from './Categories.jsx';
+import Categories, { CATEGORIES, stepIndex } from './Categories.jsx';
 import Options from './Options.jsx';
 import Detail from './Detail.jsx';
 import Stage, {
-  applyPreset, resetStageView, saveStageImage, useCameraMemory,
+  applyPreset, resetStageView, saveStageImage, stageThumbnail, useCameraMemory,
 } from './Stage.jsx';
 import Editors from './Editors.jsx';
 import ViewBar from './ViewBar.jsx';
-import QuoteForm from '../ui/QuoteForm.jsx';
-import Button from '../ui/Button.jsx';
+import { Button } from './controls.jsx';
 import GoldLine from '../ui/GoldLine.jsx';
 import RoomEditor from './room/RoomEditor.jsx';
 import * as A from './adapter.js';
 import { useEstimateStore } from '../estimate/store.js';
-import { buildEstimateDocument, describeDesign, estimateMailBody } from '../estimate/document.js';
-import { downloadJson, estimateFilename, readJsonFile } from '../estimate/download.js';
-import { openMail } from '../estimate/mail.js';
+import { describeDesign } from '../estimate/document.js';
 import { collectionById } from './collections.js';
-import { FRONT_STYLE_OPTIONS } from '../../engine/design.js';
+import { loadDecors } from '../decorPack.js';
+import { go } from '../site/router.js';
 
 // ─── F3 · THE DESIGN ROOM ──────────────────────────────────────────────────
 //
@@ -30,18 +28,27 @@ import { FRONT_STYLE_OPTIONS } from '../../engine/design.js';
 // the 3-D stage is the middle of the page and the controls stand either side
 // of it — never over it, never in front of it.
 //
-//     RAIL (2) │ OPTIONS (3) │ VIEW BAR (4) / STAGE (5) / HINT (6) │ DETAIL (7)
-//     Ivory    │ Soft Ivory  │ Porcelain                           │ Warm White
+// ─── T64 · LAYOUT B, THE OWNER'S CHOICE ────────────────────────────────────
 //
-// NOTHING FOLDS OPEN IN PLACE. No accordions (the PSW law); the second column
-// IS the expansion of the first, and it is always there.
+//     RAIL (2)  │ OPTIONS (3)      │ VIEW BAR (4) / STAGE (5) / HINT (6)
+//     six tiles │ the active step  │ the stage, with DETAIL (7) sliding in
+//     72px      │ ~340px           │ from the right, over it, when a piece
+//               │ BACK · NEXT      │ is clicked; out on DONE or an empty click
+//
+// The estimate (T59's 7e) is its own page now (F5). What the room shows is
+// ONE design; the six steps of column 3 are the owner's own order (F2), each
+// with its answer already chosen — the lazy client's law — and NEXT always
+// works.
+//
+// NOTHING FOLDS OPEN IN PLACE except a step's own MORE OPTIONS, which is the
+// owner's picky half of the same step and not a category folding inside a
+// column (the PSW law T59 wrote is about categories, and the six still stand
+// in the rail).
 //
 // ─── T60 · WHAT CHANGED, AND WHY ───────────────────────────────────────────
 //
 // F1  Not one measurement is written in this file any more. Every dimension is
-//     a class in `styles/room.css` reading a token from `styles/scale.css`, so
-//     the room is 100% on the owner's 2560 monitor and 78% on a 1280 laptop
-//     with one number deciding it.
+//     a class in `styles/room.css` reading a token from `styles/scale.css`.
 // F2  The VIEW BAR is PRO's own tools, one for one (`viewTools.js`).
 // F3  A click in the stage opens THAT element's menu, and the resolution is
 //     the ENGINE's own (`adapter.resolveSelection`) rather than a string match.
@@ -77,31 +84,6 @@ function TooSmall() {
   );
 }
 
-/** F5.2 · the quote form, over the room, in the design system. */
-function QuoteOverlay({ onClose, onSubmit }) {
-  return (
-    <div
-      data-testid="quote-overlay"
-      className="pbi-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="pbi-overlay-card">
-        <h2 className="pbi-display pbi-h3">REQUEST A QUOTE</h2>
-        <GoldLine />
-        <p className="pbi-choice pbi-choice-15 pbi-overlay-line">
-          Your design comes with the message. Nothing is ordered and nothing is charged.
-        </p>
-        <QuoteForm testid="quote-form" onSubmit={onSubmit} />
-        <div className="pbi-overlay-back">
-          <button type="button" className="pbi-link" data-testid="quote-close" onClick={onClose}>
-            ‹ BACK TO THE DESIGN
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /**
  * ─── F4 · THE STAGE HINT (6), AND THE ITEM'S NAME ─────────────────────────
  *
@@ -128,40 +110,71 @@ function StageHint({ designName, selected, said = '' }) {
   );
 }
 
-export default function DesignRoom({ collection: wantCollection, today = '1970-01-01' }) {
+/**
+ * ─── T64 F5 · HOW THE ROOM IS ENTERED, AND WHAT IT SHOWS ───────────────────
+ *
+ * PSW's model (`EstimateConfiguratorPage.jsx`): one item at a time, in ADD
+ * or EDIT mode, the mode read off the URL (`?edit=<id>` there,
+ * `#/design?edit=<id>` here). Three doors into the room:
+ *
+ *   #/design?edit=<id>   EDIT — the estimate page's row: that item goes on the
+ *                        stage (`estimate.select`, which is `loadProject`)
+ *   #/design?new=1       ADD ANOTHER WARDROBE — a fresh design in the same
+ *                        estimate (`estimate.addDesign`), at step 1
+ *   #/design             the header's DESIGN, a reload, a link with a
+ *                        collection: whatever is on the stage stays; a bare
+ *                        store starts the first wardrobe (T59's boot)
+ *
+ * Returns the mode, so the title and the REVIEW button can say which.
+ */
+function enterRoom(query, wantCollection) {
+  const estimate = useEstimateStore.getState();
+  const editId = query?.edit || null;
+  if (editId && estimate.designs.some((d) => d.id === editId)) {
+    if (estimate.activeId !== editId) estimate.select(editId);
+    return { mode: 'edit', fresh: false };
+  }
+  const wantsNew = query?.new === '1';
+  const active = estimate.activeDesign();
+  if (!wantsNew && active && A.designUnit(useProjectStore.getState().units)) {
+    return { mode: active.committed ? 'edit' : 'add', fresh: false };
+  }
+  const n = estimate.designs.length + 1;
+  const name = n === 1 ? 'Bedroom wardrobe' : `Wardrobe ${n}`;
+  if (!estimate.designs.length) {
+    A.startDesign(name);
+    estimate.begin(name);
+  } else {
+    estimate.addDesign((nm) => A.startDesign(nm), name);
+  }
+  return { mode: 'add', fresh: true, collection: wantCollection };
+}
+
+export default function DesignRoom({ collection: wantCollection, query = {} }) {
   const width = useViewport();
   const units = useProjectStore((s) => s.units);
   const project = useProjectStore((s) => s.project);
   const unitResult = useProjectStore((s) => s.unitResult);
   const selectedElement = useUiStore((s) => s.selectedElement);
+  // T64 F1.2 · the UNIT selection too — a plus selects the cabinet it was
+  // pressed on, and the columns must follow that selection, not wall 0.
+  const selectedUnitId = useUiStore((s) => s.selectedUnitId);
 
   const estimate = useEstimateStore();
 
-  const [active, setActive] = useState('space');
-  const [target, setTarget] = useState(null);      // { menu, unitId, ref } — three strings
+  const [active, setActive] = useState('what');
+  const [done, setDone] = useState([]);
+  const [target, setTarget] = useState(null);      // { menu, unitId, ref, from } — four strings
   const [fullScreen, setFullScreen] = useState(false);
-  const [preset, setPreset] = useState('room');
-  const [quoteOpen, setQuoteOpen] = useState(false);
+  const [preset, setPreset] = useState('front');
+  const [mode, setMode] = useState('add');
   // ─── T62 F2/F3 · THE ROOM IS SET UP IN A MODAL, AS IT IS IN PRO ──────────
-  //
-  // CLAUDE.md's second standing decision, taken so the owner can overturn it
-  // with one word: *"The room is set up in a MODAL in retail, as it is in PRO.
-  // It needs a drawing and it is done once."* `null` is closed; an anchor
-  // rectangle is open, and the rectangle is the trigger's own, so the window
-  // stands BESIDE the button and never on it (rule 15).
-  // `null` is closed; `{ anchor }` is open. A wrapper object rather than the
-  // anchor alone, so that a trigger which somehow hands back no rectangle
-  // still OPENS the window (the shell centres what it cannot place) instead of
-  // being reported as closed — and so that no fallback rectangle has to be
-  // written here, which T60's scale law rightly forbids.
+  // `null` is closed; `{ anchor }` is open, and the rectangle is the
+  // trigger's own, so the window stands BESIDE the button (rule 15).
   const [roomEditor, setRoomEditor] = useState(null);
   // ─── T61 F1 · WHAT THE SHARED CORE SAID ABOUT THE LAST `+` ───────────────
-  //
-  // `addUnit` refuses on its RETURN VALUE — it does not push the sentence
-  // through the message queue, so `lastEngineWord()` would never see it (PRO
-  // reads the return and notifies itself, `LibraryPanel.jsx:128`). This is
-  // where the room reads it instead: one string, under the stage, in the third
-  // voice every refusal in this app is written in.
+  // One string, under the stage, in the third voice every refusal in this
+  // app is written in. T64 F1.1: the Delete key's refusals land here too.
   const [said, setSaid] = useState('');
   const handle = useRef(null);
   const booted = useRef(false);
@@ -170,22 +183,14 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   //
   // `Scene`'s RenderRig holds `onReady` in its effect's dependency list, and
   // its cleanup calls `onReady(null)`. An inline arrow here is a NEW function
-  // on every render of this component — so every slider drag, every chip, every
-  // store change tore the render handle down and built it again, and with it
-  // the walk's own `window.__cc.pbi`. Keep the last GOOD handle: a teardown
-  // hands back null, and a null here would take SAVE IMAGE with it.
+  // on every render — so every chip, every store change tore the render
+  // handle down and built it again. Keep the last GOOD handle.
   //
   // ─── AND IT IS WHERE THE CAMERA IS FINALLY PLACED ────────────────────────
   //
-  // MEASURED FAULT, and the frames are what found it. The boot effect parked
-  // the camera 350 ms after mount — a guess at when the renderer would have a
-  // handle — and on a cold load it does not: `applyPreset` was called with
-  // `handle.current === null`, returned nothing, and the client's first sight
-  // of the room was Scene's default camera pointing at a bare wall with the
-  // wardrobe edge-on at the far left.
-  //
-  // A timeout cannot know. The HANDLE can: this is called the moment the
-  // renderer has one, so the camera is placed then, once, and never again.
+  // T64 F1.6 · the owner: *"chcę żeby się default ustawiał od frontu."* The
+  // first frame is `cameraPresets.js` FRONT, framed to the design's bounds —
+  // placed the moment the renderer has a handle, once, and never again.
   const parked = useRef(false);
   const keepHandle = useCallback((h) => {
     if (!h) return;
@@ -193,27 +198,21 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
     if (parked.current) return;
     parked.current = true;
     // One frame later, so the furniture it is aimed at has bounds to aim at.
-    requestAnimationFrame(() => { applyPreset('room', h); });
+    requestAnimationFrame(() => { applyPreset('front', h); });
   }, []);
 
   const unit = A.designUnit(units);
   const slope = (project?.wallSlopes || []).find((s) => s.kind === 'slope') || null;
 
   // ─── BOOT ────────────────────────────────────────────────────────────────
-  // One wardrobe, in the collection the link named (F2.2 / F6). The store is
-  // already memory-only; nothing here reads or writes anybody's disk.
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
 
     // ─── THE ROOM OWNS ITS OWN VIEW STATE ────────────────────────────────
-    //
     // `main-retail.jsx` turns these off at boot, and that is the right place
-    // for it. This is the SECOND place, and it is not redundant: the entry
-    // runs once for the whole site, the design room can be entered later by a
-    // hash change, and a view flag that depends on which order two modules
-    // happened to evaluate in is a flag that will be wrong on somebody's
-    // machine. Idempotent setters, run where the stage actually is.
+    // for it. This is the SECOND place, and it is not redundant: the design
+    // room can be entered later by a hash change. Idempotent setters.
     const ui = useUiStore.getState();
     ui.setShowDimensions(false);
     ui.setShowFrontDimensions(false);
@@ -225,22 +224,30 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
     ui.setProps(false);
     ui.clearSelection();
 
-    A.startDesign('Bedroom wardrobe');
-    if (wantCollection && collectionById(wantCollection)) A.applyCollection(wantCollection);
-    estimate.begin('Bedroom wardrobe');
+    const entered = enterRoom(query, wantCollection);
+    setMode(entered.mode);
+    if (entered.fresh) {
+      // THE LAZY CLIENT'S ANSWERS, once the decor pack has landed — a decor is
+      // a thing the pack names. `loadDecors` is memoised, so this is the same
+      // promise the entry started.
+      const u = A.designUnit(useProjectStore.getState().units);
+      if (u) A.fitWardrobeToWall(u.id);
+      const collectionId = wantCollection && collectionById(wantCollection) ? wantCollection : null;
+      loadDecors().then(() => {
+        const live = A.designUnit(useProjectStore.getState().units);
+        if (live) A.applyLazyDefaults(live.id, { collectionId });
+        useEstimateStore.getState().capture();
+      });
+    }
     return undefined;
-  }, [wantCollection, estimate]);
+  }, [wantCollection, query]);
 
   // ─── F3.5 · FULL SCREEN IS A LOOKING MODE ────────────────────────────────
   // *"the return restores EXACTLY the prior state: same active category, same
-  // options, same selection, same camera. Nothing resets."*
+  // options, same selection, same camera. Nothing resets."* Its Escape is on
+  // the stage's ONE key handler (`keys.js`), not a listener of its own.
   useCameraMemory(fullScreen);
-  useEffect(() => {
-    if (!fullScreen) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setFullScreen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [fullScreen]);
+  const exitFullScreen = useCallback(() => setFullScreen(false), []);
 
   // ─── THE STAGE'S OWN CONTROLS ────────────────────────────────────────────
   const doorEntries = useMemo(() => units.map((u) => ({
@@ -260,93 +267,82 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
   // ─── T60 F3 · THE SELECTION LAW ──────────────────────────────────────────
   //
   // A click in the stage stores `{ unitId, elementRef }` on the SHARED ui store
-  // and the ref is the ENGINE's own panel id. t59 tried to match that ref
-  // against the interior items' ids — `ref.includes(String(i.id))` — and it
-  // could never succeed: a panel id is positional (`SHELF-1`, `W01-FL`) and an
-  // item id is `shelf_` plus seven characters of base 36. So every click in
-  // the stage fell through to the placeholder this turn deletes, and the
-  // owner's *"jak naciśniemy na drzwi to się pojawi drzwi"* was not true of one
-  // element in the room.
+  // and the ref is the ENGINE's own panel id. `adapter.resolveSelection` asks
+  // the engine which menu that is; an unmapped kind answers null, and a null
+  // CLEARS the selection, because a highlight with no menu behind it is the
+  // empty panel by another road.
   //
-  // `adapter.resolveSelection` is the fix and it asks the engine: the computed
-  // result's own panels, `elementKind`, and the item the panel names on its own
-  // meta. An unmapped kind answers null — and a null CLEARS the selection,
-  // because a highlight with no menu behind it is the empty panel by another
-  // road.
+  // ─── T64 F4 · …AND THE PANEL SLIDES ──────────────────────────────────────
+  // A piece clicked on the stage slides the DETAIL in; a click on the empty
+  // stage — the scene's own `onPointerMissed`, which clears the selection —
+  // slides it out. A menu opened from a row's `›` (`from: 'list'`) is not the
+  // stage's to close, so a cleared selection leaves it standing until DONE.
+  // A click on the CARCASS is a UNIT selection (turn 13's verdict: *"clicking
+  // a cabinet must select the CABINET"*) and opens the wardrobe's own menu.
   useEffect(() => {
     if (fullScreen) { setTarget(null); return; }
-    if (!selectedElement) return;                 // a menu opened from the list stays open
-    const found = A.resolveSelection(selectedElement);
-    if (!found) {
-      setTarget(null);
-      useUiStore.getState().clearElement?.();
+    if (selectedElement) {
+      const found = A.resolveSelection(selectedElement);
+      if (!found) {
+        setTarget(null);
+        useUiStore.getState().clearElement?.();
+        return;
+      }
+      setTarget({
+        menu: found.menu, unitId: found.unitId, ref: found.ref, from: 'stage',
+      });
       return;
     }
-    setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
-  }, [selectedElement, fullScreen]);
+    if (selectedUnitId && A.unitById(selectedUnitId)) {
+      const found = A.selectionForMenu('wardrobe', selectedUnitId);
+      if (found) {
+        setTarget({
+          menu: found.menu, unitId: found.unitId, ref: found.ref, from: 'stage',
+        });
+      }
+      return;
+    }
+    setTarget((t) => (t && t.from === 'stage' ? null : t));
+  }, [selectedElement, selectedUnitId, fullScreen]);
 
   // ─── AND THE TARGET IS RESOLVED FRESH, EVERY RENDER ──────────────────────
   //
-  // MEASURED FAULT. Holding the RESOLVED selection in state and rebuilding it
-  // whenever the store changed closed any menu that had been opened from the
-  // INTERIOR list the instant one of its controls wrote anything — the shelf
-  // slider moved the shelf and then vanished. Three strings in state, resolved
-  // against the live store here, and a menu's panel and item are never one
-  // edit out of date.
+  // Three strings in state, resolved against the live store here, and a
+  // menu's panel and item are never one edit out of date (T60's measured
+  // fault: a menu that closed the instant its own control wrote anything).
   const selection = useMemo(
     () => (target ? A.resolveTarget(target) : null),
     [target, units, project],
   );
 
-  // ─── THE CATEGORY HINTS (PSW's cat-hint) ─────────────────────────────────
+  // ─── THE SUMMARY THE REVIEW STEP READS ───────────────────────────────────
   const choices = useMemo(() => describeDesign({ project, units }), [project, units]);
 
-  const hints = useMemo(() => {
-    const params = unit?.params || {};
-    const items = params.sections?.[0]?.items || [];
-    // The engine's own leaf count, so the hint cannot disagree with the stage —
-    // and `unit` is null on the very first render, before the boot effect has
-    // made one, so it is asked for only when there is something to ask about.
-    const doors = (unit && A.doorCount(unit.id))
-      || (items.filter((i) => i.kind === 'partition').length + 1);
-    const style = FRONT_STYLE_OPTIONS.find((o) => o.id === project?.design?.fronts?.style)?.label;
-    const inside = A.interiorCounts(unit);
-    const filled = Object.entries(inside).filter(([, n]) => n > 0).length;
-    return {
-      space: `${Math.round(Math.abs(project?.room?.corners?.[1]?.x ?? 0))} mm wall${slope ? ', sloped' : ''}`,
-      layout: `${Math.round(params.width || 0)} mm · ${doors} door${doors === 1 ? '' : 's'}`,
-      fronts: style || 'not chosen',
-      interior: filled ? `${filled} thing${filled === 1 ? '' : 's'} inside` : 'empty',
-      details: project?.design?.fronts?.handle?.type
-        ? `${project.design.fronts.handle.type} handles` : 'no handles',
-      estimate: `${estimate.designs.length} design${estimate.designs.length === 1 ? '' : 's'}`,
-    };
-  }, [unit, project, slope, estimate.designs.length]);
-
-  // ─── F5 · THE ESTIMATE'S OWN BUTTONS ─────────────────────────────────────
-  const document_ = useCallback(() => {
-    estimate.capture();
-    return buildEstimateDocument({
-      designs: useEstimateStore.getState().designs,
-      details: estimate.details,
-      isoDate: today,
+  // ─── T64 F2 · THE STEPS — NEXT ALWAYS WORKS, AND THE RAIL SHOWS WHAT IS DONE
+  const pickStep = useCallback((id) => {
+    setActive((from) => {
+      if (from !== id && stepIndex(id) > stepIndex(from)) {
+        setDone((d) => (d.includes(from) ? d : [...d, from]));
+      }
+      return id;
     });
-  }, [estimate, today]);
+    // REVIEW opens on the front view (F2, step 6: *"front view, the design's
+    // summary, Price on request"*).
+    if (id === 'review') { setPreset('front'); applyPreset('front', handle.current); }
+  }, []);
 
-  const onSave = useCallback(() => {
-    downloadJson(estimateFilename(today), document_());
-  }, [document_, today]);
-
-  const onQuoteSubmit = useCallback((details) => {
-    estimate.setDetails(details);
-    const doc = { ...document_(), details };
-    downloadJson(estimateFilename(today), doc);
-    openMail({ subject: `Estimate request — ${details.name || 'Prime Bespoke Interiors'}`, body: estimateMailBody(doc) });
-    setQuoteOpen(false);
-  }, [document_, estimate, today]);
-
-  const onLoad = useCallback((file) => {
-    readJsonFile(file).then((doc) => useEstimateStore.getState().loadEstimate(doc)).catch(() => {});
+  // ─── T64 F5 · DONE → ADD TO MY ESTIMATE / SAVE CHANGES ───────────────────
+  //
+  // The same act in both modes (PSW: `addItem` / `updateItem`): what is on the
+  // stage becomes the item, with a front-view thumbnail off the fixed rig,
+  // and the client lands on the estimate page — the list is where you go
+  // between items.
+  const onDone = useCallback(() => {
+    const name = useEstimateStore.getState().activeDesign()?.name || '';
+    const thumb = stageThumbnail(handle.current, name);
+    useEstimateStore.getState().commit({ thumb });
+    useUiStore.getState().clearSelection();
+    go('/estimate');
   }, []);
 
   if (width < MOBILE) return <TooSmall />;
@@ -360,6 +356,9 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
 
   const narrow = width < TABLET;
   const designName = estimate.activeDesign()?.name || '';
+  const editing = mode === 'edit';
+  // PSW's title line: "{estimate number} — Add window" / "Edit {name}".
+  const title = editing ? `EDIT — ${designName}` : 'MY ESTIMATE — ADD A WARDROBE';
 
   const stage = (
     <div className="pbi-stage-col">
@@ -369,33 +368,43 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
         doorEntries={doorEntries}
         lightsOn={lightsOn}
         // T63 F2 · LIGHTS opens PRO's Lighting panel beside the button — the
-        // very call PRO's own Lighting button makes (`TopBar.jsx`). It does not
-        // toggle the light; the panel's ON / OFF does, in PRO's place for it.
+        // very call PRO's own Lighting button makes (`TopBar.jsx`).
         onLights={(e) => A.openEditor('lighting', { anchor: A.anchorOf(e) })}
-        // T63 F5 · *"reset view widok wyśrodkowany"* — the centre line, not the
-        // room corner. No preset is lit afterwards, because none is standing.
-        onReset={() => { setPreset(null); resetStageView(handle.current); }}
+        // T64 F1.6 · RESET VIEW is the FRONT preset, framed to the design.
+        onReset={() => { setPreset('front'); resetStageView(handle.current); }}
         fullScreen={fullScreen}
         onFullScreen={() => setFullScreen((v) => !v)}
-        onBack={() => setFullScreen(false)}
+        onBack={exitFullScreen}
         onSaveImage={() => saveStageImage(handle.current, designName)}
       />
       <Stage
         onHandle={keepHandle}
+        onSaid={setSaid}
+        fullScreen={fullScreen}
+        onExitFullScreen={exitFullScreen}
         // THE RUN-END PLUS adds the neighbour's own type beside it, which is
         // the same call PRO's library makes with the same `{ near, side }`.
         onAddPlus={(point) => setSaid(A.addBesidePlus(point).said)}
         // THE INNER PLUS asks "what goes inside this one" — and retail's answer
-        // to that question is the INTERIOR list, which is where PRO's own
-        // `setPanelSection('add', true)` sends a joiner. One destination for
-        // the question, not two.
+        // is the INSIDE step, which is where PRO's own `setPanelSection('add',
+        // true)` sends a joiner. The scene has SELECTED that cabinet first
+        // (`Scene.jsx onAddItems`), so the step's rows add to it (F1.2).
         onAddInside={(unitId) => {
           setSaid('');
-          setActive('interior');
-          const found = A.selectionForMenu('wardrobe', unitId);
-          if (found) setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
+          useUiStore.getState().selectUnit(unitId);
+          setActive('inside');
         }}
       />
+      {!fullScreen ? (
+        <Detail
+          selection={selection}
+          onSelect={setTarget}
+          unit={unit}
+          project={project}
+          designName={designName}
+          onDesignName={(name) => estimate.rename(estimate.activeId, name)}
+        />
+      ) : null}
       {!fullScreen ? (
         <StageHint designName={designName} selected={A.selectionName(selection)} said={said} />
       ) : null}
@@ -408,19 +417,18 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
       className="pbi-room-shell"
       data-fullscreen={fullScreen ? 'yes' : 'no'}
       data-narrow={narrow ? 'yes' : 'no'}
+      data-mode={mode}
     >
       {!fullScreen ? (
-        <Categories
-          active={active}
-          onPick={setActive}
-          hints={hints}
-          onReset={() => { A.startDesign(designName || 'Bedroom wardrobe'); setTarget(null); }}
-        />
+        <Categories active={active} onPick={pickStep} done={done} />
       ) : null}
 
       {!fullScreen ? (
         <Options
           active={active}
+          onPick={pickStep}
+          title={title}
+          editing={editing}
           unit={unit}
           room={project.room}
           slope={slope}
@@ -433,56 +441,39 @@ export default function DesignRoom({ collection: wantCollection, today = '1970-0
             const found = A.selectionForMenu(menu, unit.id);
             // A row with nothing behind it opens nothing — which is what makes
             // a row without a `›` honest rather than merely quiet.
-            if (found) setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
+            if (found) {
+              setTarget({
+                menu: found.menu, unitId: found.unitId, ref: found.ref, from: 'list',
+              });
+            }
           }}
-          onQuote={() => setQuoteOpen(true)}
-          onSave={onSave}
+          onDone={onDone}
           onEditRoom={(anchor) => setRoomEditor({ anchor })}
+          onReset={() => {
+            A.startDesign(designName || 'Bedroom wardrobe');
+            const u = A.designUnit(useProjectStore.getState().units);
+            if (u) A.applyLazyDefaults(u.id);
+            setTarget(null);
+            setDone([]);
+            setActive('what');
+          }}
         />
       ) : null}
 
       {stage}
 
-      {!fullScreen ? (
-        <Detail
-          selection={selection}
-          onSelect={setTarget}
-          unit={unit}
-          project={project}
-          designName={designName}
-          onDesignName={(name) => estimate.rename(estimate.activeId, name)}
-          designs={estimate.designs}
-          activeId={estimate.activeId}
-          onSelectDesign={(id) => estimate.select(id)}
-          onRenameDesign={(id, name) => estimate.rename(id, name)}
-          onAdd={() => estimate.addDesign((name) => A.startDesign(name), 'Second wardrobe')}
-          onQuote={() => setQuoteOpen(true)}
-          onSave={onSave}
-          onLoad={onLoad}
-        />
-      ) : null}
-
-      {quoteOpen ? (
-        <QuoteOverlay onClose={() => setQuoteOpen(false)} onSubmit={onQuoteSubmit} />
-      ) : null}
-
       {/* PRO's own two screens, copied into `design/room/` and routed by
-          `RoomEditor`. It is mounted at the ROOM's level rather than inside the
-          options column, because the shell it uses is `position: fixed` and a
-          window that belongs to the whole page should not be a child of one of
-          its four columns. */}
+          `RoomEditor`. Mounted at the ROOM's level rather than inside the
+          options column, because the shell it uses is `position: fixed`. */}
       {roomEditor && !fullScreen ? (
         <RoomEditor anchor={roomEditor.anchor} onClose={() => setRoomEditor(null)} />
       ) : null}
 
       {/* ─── T63 · PRO'S OWN WINDOWS, ANSWERING THE SHARED `modal` SLOT ─────
           `src/pages/ConfiguratorPage.jsx`'s block, for this room: every name
-          the shared scene already opens (double-click a leaf, click a J
-          strip, double-click a figure) and every name the Duty menus open
+          the shared scene already opens and every name the Duty menus open
           from their buttons, rendered by the COPY of the window PRO renders.
-          Mounted at the room's level, like the room editor, and in full
-          screen too — a window a gesture opens must open wherever the
-          gesture is possible. */}
+          Mounted at the room's level, and in full screen too. */}
       <Editors />
     </div>
   );

@@ -96,6 +96,20 @@
   --pbi-col-categories: calc(187 * var(--pbi-scale));
   --pbi-col-options: calc(320 * var(--pbi-scale));
   --pbi-col-detail: calc(300 * var(--pbi-scale));
+  /* ─── T64 F4 · LAYOUT B — THE OWNER'S CONTAINER NUMBERS, AT 1440 ───────────
+   * *"zróbmy wariant B."* The rail is a strip of six square tiles (72px at
+   * 1440), the OPTIONS column takes the space the rail and the DETAIL give
+   * back (~340px at 1440 — MEASURED against the longest label in the copied
+   * MaterialChoicePanel and FrontStyleGallery, see the walk), and the DETAIL
+   * is a panel that slides over the stage (≈360px at 1440). The scale at
+   * 1440 is 0.8072, so each base is the owner's number over that. The three
+   * T60 lines above are kept as the record of what layout A measured and are
+   * overridden here, in the same block, by the numbers layout B measures. */
+  --pbi-col-categories: calc(89 * var(--pbi-scale));
+  --pbi-col-options: calc(421 * var(--pbi-scale));
+  --pbi-col-detail: calc(446 * var(--pbi-scale));
+  --pbi-tile: calc(79 * var(--pbi-scale));
+  --pbi-tile-icon: calc(25 * var(--pbi-scale));
 
   /* ─── THE HORIZONTAL BANDS ─────────────────────────────────────────────
    * The VIEW BAR grew from 40 to 46 because F2 hangs eleven of PRO's tools
@@ -116,6 +130,10 @@
   --pbi-fs-h3: max(15px, calc(22 * var(--pbi-scale)));
   --pbi-fs-h2: max(18px, calc(28 * var(--pbi-scale)));
   --pbi-fs-price: max(13px, calc(17 * var(--pbi-scale)));
+  /* T64 F3 · the button's own voice — 12px, half what it was, tracked
+   * +0.08em — and the rail tile's one word at 11. Both on the 11px floor. */
+  --pbi-fs-btn: max(11px, calc(12 * var(--pbi-scale)));
+  --pbi-fs-tile: max(11px, calc(11 * var(--pbi-scale)));
 
   /* ─── CONTROLS ─────────────────────────────────────────────────────────── */
   --pbi-chip-h: calc(38 * var(--pbi-scale));
@@ -123,7 +141,10 @@
   --pbi-chip-pad-y: calc(9 * var(--pbi-scale));
   --pbi-chip-mark: calc(6 * var(--pbi-scale));
   --pbi-chip-max: calc(260 * var(--pbi-scale));
-  --pbi-button-h: calc(46 * var(--pbi-scale));
+  /* T64 F3 · 44 for a primary or secondary action (tap-safe), 36 for a small
+   * one. Square, hairline, 12px type — `.pbi-room .pbi-btn` in room.css. */
+  --pbi-button-h: calc(44 * var(--pbi-scale));
+  --pbi-button-h-sm: calc(36 * var(--pbi-scale));
   --pbi-button-pad-x: calc(22 * var(--pbi-scale));
   --pbi-gold-line: calc(48 * var(--pbi-scale));
   --pbi-slider-thumb: calc(12 * var(--pbi-scale));
@@ -164,4 +185,7 @@
   --pbi-overlay-w: calc(620 * var(--pbi-scale));
   --pbi-stepper-btn-w: calc(42 * var(--pbi-scale));
   --pbi-stepper-now-w: calc(26 * var(--pbi-scale));
+  /* T64 F5 · the thumbnail on an estimate row, and the WHAT tiles' width. */
+  --pbi-est-thumb-w: calc(120 * var(--pbi-scale));
+  --pbi-what-tile-w: calc(150 * var(--pbi-scale));
 }

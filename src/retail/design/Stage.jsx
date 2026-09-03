@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import Scene from '../../3d/Scene.jsx';
 import { parkCamera, readCamera, writeCamera } from '../../3d/cameraPresets.js';
-import { resetPlacement } from './viewTools.js';
+import { stageKeyAction } from './keys.js';
 // T63 F3 · PRO's only door into the front-gap repair: the rows over the canvas
 // (`src/components/FrontGapWarnings.jsx`, COPIED). Solid view only in PRO, and
 // the retail stage has no other view.
@@ -42,8 +42,28 @@ import { imageFilename } from '../estimate/download.js';
  * the handlers arrive from here: they live in `src/retail/**`, they call the
  * adapter and nothing else, and the iron boundary is untouched.
  */
-export default function Stage({ onHandle, onAddPlus = null, onAddInside = null }) {
+export default function Stage({
+  onHandle, onAddPlus = null, onAddInside = null, onSaid = null,
+  fullScreen = false, onExitFullScreen = null,
+}) {
   const handle = useRef(null);
+
+  // ─── T64 F1.1 · THE ONE KEYBOARD HANDLER ─────────────────────────────────
+  //
+  // The owner: *"usuwanie elementów Delete przyciskiem w ogóle teraz nie
+  // działa."* The stage had no keydown listener; PRO's page has one. Its
+  // logic is COPIED into `keys.js` (from `src/pages/ConfiguratorPage.jsx:
+  // 160-245`) and these are the lines that hang it on the window — the ONLY
+  // `keydown` listener in the retail room, Escape for full screen included,
+  // so the balance's answer is one.
+  useEffect(() => {
+    const onKey = (e) => {
+      const out = stageKeyAction(e, { fullScreen, onExitFullScreen });
+      if (out.handled && onSaid) onSaid(out.said);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [fullScreen, onExitFullScreen, onSaid]);
 
   const onRenderReady = useCallback((h) => {
     const previous = handle.current;
@@ -85,13 +105,17 @@ export default function Stage({ onHandle, onAddPlus = null, onAddInside = null }
 
 /**
  * T63 F5 · RESET VIEW — the camera on the design's own centre line, looking
- * at its centre, far enough back to hold it. `resetPlacement` is the maths
- * (retail's own, `viewTools.js`); this is the four lines that write it.
+ * at its centre, far enough back to hold it.
+ *
+ * ─── T64 F1.6 · …AND IT IS THE FRONT PRESET, NOT A FOURTH PLACE ───────────
+ * The owner: *"chcę żeby się default ustawiał od frontu."* `cameraPresets.js`
+ * FRONT already stands square on the design's centre line, level with its
+ * middle, framed to its bounds — which is T63's centred reset by another
+ * name — so RESET VIEW and the first frame both park there, and the
+ * `resetPlacement` maths of `viewTools.js` retires (tombstone there).
  */
 export function resetStageView(handle) {
-  const place = resetPlacement(handle?.bounds?.() || null);
-  if (!place) return false;
-  return writeCamera(place);
+  return applyPreset('front', handle);
 }
 
 /**
@@ -135,6 +159,28 @@ export function saveStageImage(handle, designName) {
   if (!shot) return null;
   savePng(shot.dataUrl, shot.filename);
   return shot.filename;
+}
+
+/**
+ * T64 F5 · THE ESTIMATE'S THUMBNAIL — *"captured off the fixed rig, front
+ * view"*. The camera is parked at FRONT first (the same preset the room
+ * opens on), then the very capture SAVE IMAGE makes, at the profile's own
+ * preview resolution rather than 4K: it is a tile on a list, not a print.
+ * Returns the data URL, or null before the renderer has a handle.
+ */
+export function stageThumbnail(handle, designName) {
+  if (!handle?.capture) return null;
+  applyPreset('front', handle);
+  const job = renderJob({
+    resolution: 'preview',
+    preset: 'current',
+    aspect: 4 / 3,
+    bounds: handle.bounds?.() || null,
+    project: 'pbi',
+    subject: designName || 'wardrobe',
+  }, getCabinetProfile());
+  const shot = handle.capture(job);
+  return shot?.dataUrl || null;
 }
 
 /** The picture itself, and the name it should be saved under. Internal:

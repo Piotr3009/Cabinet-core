@@ -92,10 +92,15 @@ test('F4 · the name is the DESIGN\'s, and it is the one the client may change',
   // Three places write it and all three are the estimate store's `rename`:
   // the ESTIMATE row (F6), the WARDROBE menu (F3.1) and column 3's own field.
   assert.match(ROOM, /designName=\{designName\}/, 'the hint and the menus do not share one name');
-  const detail = read('src/retail/design/Detail.jsx');
-  assert.match(detail, /estimate-rename-/, 'the estimate row cannot be renamed');
+  // ─── AMENDED BY T64 F5 ───────────────────────────────────────────────────
+  // The estimate rows left the room for their own page; the name is written
+  // in the REVIEW step's field and the wardrobe menu, both through the one
+  // `rename` — and the page shows the name it was given.
+  const options = read('src/retail/design/Options.jsx');
+  assert.match(options, /data-testid="estimate-name"/, 'the REVIEW step cannot name the design');
   const wardrobe = read('src/retail/design/detail/WardrobeMenu.jsx');
   assert.match(wardrobe, /data-testid="wardrobe-name"/, 'the wardrobe menu cannot be renamed');
-  assert.match(ROOM, /onRenameDesign=\{\(id, name\) => estimate\.rename\(id, name\)\}/);
   assert.match(ROOM, /onDesignName=\{\(name\) => estimate\.rename\(estimate\.activeId, name\)\}/);
+  const page = read('src/retail/estimate/EstimatePage.jsx');
+  assert.match(page, /\{item\.name\}/, 'the estimate row does not show the design\'s name');
 });

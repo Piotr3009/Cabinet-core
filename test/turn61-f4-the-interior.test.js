@@ -231,7 +231,8 @@ test('F4 · ONE law answers "what may be added here"', () => {
   // plus does not answer the question at all — it OPENS the list that does,
   // which is how there is one answer rather than two that agree.
   const room = read('src/retail/design/DesignRoom.jsx');
-  assert.match(room, /onAddInside=\{\(unitId\) => \{[\s\S]{0,400}setActive\('interior'\)/,
+  // T64 F2: the INTERIOR category is the INSIDE step (the owner's order).
+  assert.match(room, /onAddInside=\{\(unitId\) => \{[\s\S]{0,400}setActive\('inside'\)/,
     'the inner plus does not send the client to the INTERIOR list');
   assert.ok(!/INTERIOR_ROWS/.test(room),
     'DesignRoom holds a second copy of what may be added');

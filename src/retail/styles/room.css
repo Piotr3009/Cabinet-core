@@ -39,7 +39,13 @@
 
 .pbi-room-toosmall-line { max-width: 46em; margin-top: var(--pbi-gap-5); }
 
-/* ─── COLUMN 2 · THE RAIL (15% narrower this turn) ──────────────────────── */
+/* ─── COLUMN 2 · THE RAIL — SIX SQUARE TILES (T64 F2/F3/F4) ──────────────────
+ *
+ * The owner: *"zróbmy wariant B."* A narrow vertical strip, six tiles, icon
+ * over one word. The active tile carries a GOLD HAIRLINE UNDERLINE, not a
+ * filled block — gold at 5%, in lines and the active mark only. A done tile a
+ * small tick. Every measurement is a token (`--pbi-tile`, `--pbi-tile-icon`,
+ * `--pbi-fs-tile`, `--pbi-col-categories`). */
 
 .pbi-rail {
   width: var(--pbi-col-categories);
@@ -48,37 +54,63 @@
   border-right: 1px solid var(--pbi-stone-line);
   display: flex;
   flex-direction: column;
+  align-items: center;
+  padding-top: var(--pbi-gap-3);
   overflow-y: auto;
 }
 
-.pbi-rail-head { padding: var(--pbi-gap-5) var(--pbi-pad-col) var(--pbi-gap-2); }
-.pbi-rail-nav { flex: 1 1 auto; }
+.pbi-rail-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pbi-gap-2);
+}
 
-.pbi-rail-row {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: var(--pbi-pad-row) var(--pbi-pad-col);
-  border: 0;
-  border-left: var(--pbi-mark-w) solid transparent;
+.pbi-tile {
+  position: relative;
+  width: var(--pbi-tile);
+  height: var(--pbi-tile);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pbi-gap-1);
   background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: var(--pbi-radius);
+  color: var(--pbi-soft-graphite);
   cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
 
-.pbi-rail-row.is-on {
-  border-left-color: var(--pbi-champagne);
-  background: var(--pbi-soft-ivory);
+.pbi-tile:hover { color: var(--pbi-onyx); background: var(--pbi-soft-ivory); }
+.pbi-tile.is-on { color: var(--pbi-onyx); border-bottom-color: var(--pbi-deep-gold); }
+.pbi-tile.is-done { color: var(--pbi-onyx); }
+.pbi-tile:focus-visible { outline: 1px solid var(--pbi-champagne); outline-offset: 0; }
+
+.pbi-tile-icon { width: var(--pbi-tile-icon); height: var(--pbi-tile-icon); display: block; }
+
+.pbi-tile-word {
+  font-family: var(--pbi-font-ui);
+  font-size: var(--pbi-fs-tile);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
 }
 
-.pbi-rail-label { display: block; color: var(--pbi-onyx); }
-.pbi-rail-row.is-on .pbi-rail-label { color: var(--pbi-deep-gold); }
-.pbi-rail-hint { display: block; margin-top: var(--pbi-gap-1); }
-
-.pbi-rail-foot {
-  padding: var(--pbi-pad-col);
-  border-top: 1px solid var(--pbi-stone-line);
+.pbi-tile-tick {
+  position: absolute;
+  top: var(--pbi-gap-1);
+  right: var(--pbi-gap-1);
+  font-family: var(--pbi-font-ui);
+  font-size: var(--pbi-fs-tile);
+  line-height: 1;
+  color: var(--pbi-deep-gold);
 }
 
+/* The START AGAIN ask, in the REVIEW step's more options (moved from the rail's foot). */
 .pbi-total {
   margin-top: var(--pbi-gap-2);
   text-transform: none;
@@ -86,11 +118,8 @@
   font-size: var(--pbi-fs-price);
 }
 
-.pbi-total-foot { margin-top: var(--pbi-gap-3); font-size: var(--pbi-fs-ui-sm); }
-.pbi-rail-reset { margin-top: var(--pbi-gap-4); }
-.pbi-rail-ask { margin-top: var(--pbi-gap-4); }
+.pbi-rail-ask { margin-top: var(--pbi-gap-2); }
 .pbi-rail-ask > span { display: block; margin-bottom: var(--pbi-gap-3); }
-.pbi-rail-ask-yes { color: var(--pbi-onyx); }
 .pbi-rail-ask-no { margin-left: var(--pbi-gap-4); }
 
 /* ─── COLUMN 3 · OPTIONS ("zostaw jak jest" — only the scale changed) ────── */
@@ -147,12 +176,80 @@
 .pbi-field-row-ctl > * { min-width: 0; }
 .pbi-field-row-ctl .pbi-chip-row { justify-content: flex-end; flex-wrap: wrap; }
 
+/* T64 F2 · a BLOCK row: the label on its own line, the control full width —
+   for a copied PRO surface that has columns of its own. */
+.pbi-field-row.is-block { grid-template-columns: minmax(0, 1fr); }
+.pbi-field-row.is-block .pbi-field-row-label { margin-bottom: var(--pbi-gap-2); }
+.pbi-field-row.is-block .pbi-field-row-ctl { justify-content: flex-start; }
+.pbi-field-row.is-block .pbi-field-row-ctl > * { width: 100%; }
+.pbi-field-row.is-block .pbi-chip-row { justify-content: flex-start; }
+
 /* A NOTE is the row's second line, under both columns — never a third column
    and never a paragraph between two settings. */
 .pbi-field-note {
   grid-column: 1 / -1;
   margin: var(--pbi-gap-2) 0 0;
 }
+
+/* ─── T64 F2 · THE STEP'S TITLE, ITS NAV, ITS TILES AND ITS MORE OPTIONS ─── */
+
+.pbi-options {
+  display: flex;
+  flex-direction: column;
+}
+
+.pbi-options-title {
+  padding: var(--pbi-gap-3) var(--pbi-gap-5) 0;
+  font-size: var(--pbi-fs-ui-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pbi-panel { flex: 1 1 auto; }
+
+/* BACK · n / 6 · NEXT — at the foot of the column, on every step. */
+.pbi-stepnav {
+  display: flex;
+  align-items: center;
+  gap: var(--pbi-gap-3);
+  padding: var(--pbi-gap-4) var(--pbi-gap-5) var(--pbi-gap-5);
+  border-top: 1px solid var(--pbi-stone-line);
+  position: sticky;
+  bottom: 0;
+  background: var(--pbi-soft-ivory);
+}
+.pbi-stepnav-count { flex: 1 1 auto; text-align: center; font-size: var(--pbi-fs-ui-sm); }
+
+/* WHAT — the eight tiles, PRO's own list, one lit. */
+.pbi-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pbi-gap-2);
+  margin-top: var(--pbi-gap-4);
+}
+.pbi-tiles .pbi-chip, .pbi-tiles .pbi-chip-wrap { width: var(--pbi-what-tile-w); }
+.pbi-tiles .pbi-chip { justify-content: center; }
+
+/* MORE OPTIONS — the picky client's door, under the step's defaults. */
+.pbi-more { margin-top: var(--pbi-gap-5); }
+.pbi-more-body { margin-top: var(--pbi-gap-3); border-top: 1px solid var(--pbi-stone-line); padding-top: var(--pbi-gap-2); }
+
+/* T64 F4 · COLUMN 3 IS MEASURED: PRO's style gallery lays its tiles four to a
+   row for a 640px wizard. In a ~340px column its longest label ("Grooved
+   with frame") has 38px to sit in; three to a row gives it the line it
+   needs. A retail rule on retail's own sheet — the copy's markup is
+   untouched, and the generated `pbi-re-grid-4` is still what the copy wears. */
+.pbi-room .pbi-options [data-testid="fronts-style-gallery"] .pbi-re-grid-4 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* ADVANCED — DOORS and BAYS under the wardrobe's own menu (F1.7). */
+.pbi-advanced { margin-top: var(--pbi-gap-5); border-top: 1px solid var(--pbi-stone-line); padding-top: var(--pbi-gap-3); }
+.pbi-advanced-head { font-size: var(--pbi-fs-ui-sm); letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
+.pbi-advanced-line { margin: var(--pbi-gap-1) 0 var(--pbi-gap-2); }
 
 /* ─── COLUMN 5 · THE STAGE, AND ITS BAR AND HINT ────────────────────────── */
 
@@ -161,6 +258,8 @@
   flex-direction: column;
   flex: 1 1 auto;
   min-width: 0;
+  /* T64 F4: the DETAIL panel is positioned against this column. */
+  position: relative;
 }
 
 .pbi-stage {
@@ -280,14 +379,33 @@
 
 .pbi-hint-name { color: var(--pbi-onyx); white-space: nowrap; }
 
-/* ─── COLUMN 7 · THE DETAIL ─────────────────────────────────────────────── */
+/* ─── 7 · THE DETAIL — A PANEL THAT SLIDES IN OVER THE STAGE (T64 F4) ──────
+ *
+ * No longer a column. It stands at the stage's right edge, between the view
+ * bar and the hint, ≈360px at 1440 (`--pbi-col-detail`), and slides in when
+ * a piece is clicked, out on DONE or on a click on the empty stage. A
+ * transform, so the stage beneath it never re-lays itself out and the camera
+ * never moves for it. */
 
 .pbi-detail {
+  position: absolute;
+  top: var(--pbi-view-bar-h);
+  right: 0;
+  bottom: var(--pbi-hint-h);
   width: var(--pbi-col-detail);
-  min-width: var(--pbi-col-detail);
+  max-width: 100%;
   background: var(--pbi-warm-white);
   border-left: 1px solid var(--pbi-stone-line);
   overflow-y: auto;
+  z-index: 6;
+  transform: translateX(100%);
+  visibility: hidden;
+  transition: transform 220ms ease, visibility 0s linear 220ms;
+}
+.pbi-detail[data-open="yes"] {
+  transform: none;
+  visibility: visible;
+  transition: transform 220ms ease, visibility 0s;
 }
 
 .pbi-duty { padding: var(--pbi-gap-4) var(--pbi-pad-col) var(--pbi-gap-6); }
@@ -317,42 +435,9 @@
   gap: var(--pbi-gap-2);
 }
 
-/* ─── THE ESTIMATE ROWS (F6) ────────────────────────────────────────────── */
-
-.pbi-est-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pbi-gap-1);
-  margin-bottom: var(--pbi-gap-5);
-}
-
-.pbi-est-row {
-  text-align: left;
-  width: 100%;
-  padding: var(--pbi-pad-row);
-  background: transparent;
-  border: 1px solid var(--pbi-stone-line);
-  border-left: var(--pbi-mark-w) solid var(--pbi-stone-line);
-  cursor: pointer;
-}
-
-.pbi-est-row.is-on {
-  background: var(--pbi-porcelain);
-  border-left-color: var(--pbi-champagne);
-}
-
-.pbi-est-row-index { display: block; font-size: var(--pbi-fs-ui-sm); }
-.pbi-est-row-name { display: block; margin-top: var(--pbi-gap-2); color: var(--pbi-onyx); }
-.pbi-est-row-choices { display: block; margin-top: var(--pbi-gap-1); }
-.pbi-est-row-price {
-  display: block;
-  margin-top: var(--pbi-gap-2);
-  font-size: var(--pbi-fs-price);
-  text-transform: none;
-  letter-spacing: 0.04em;
-}
-
-.pbi-est-rename { margin-top: var(--pbi-gap-2); }
+/* ─── T64 F5 · TOMBSTONE: THE ESTIMATE ROWS (T59 F6) STOOD HERE ──────────────
+ * `.pbi-est-list`, `.pbi-est-row`, `.pbi-est-rename` — the 7e panel's rows.
+ * The estimate is its own page now (`estimate/EstimatePage.jsx`, base.css). */
 
 .pbi-summary-row {
   display: flex;
@@ -471,7 +556,23 @@
 .pbi-room .pbi-h2 { font-size: var(--pbi-fs-h2); }
 .pbi-room .pbi-link { font-size: var(--pbi-fs-ui); }
 .pbi-room .pbi-label { font-size: var(--pbi-fs-ui); margin-bottom: var(--pbi-gap-2); }
-.pbi-room .pbi-btn { font-size: var(--pbi-fs-ui); padding: 0 var(--pbi-button-pad-x); }
+/* ─── T64 F3 · POSH — the ONE button, at the room's scale ───────────────────
+ * The owner: *"przyciski i napisy w przyciskach bardziej posh — są jakieś
+ * duże te napisy; przyciski kwadratowe."* Square, Inter 12px tracked +0.08em
+ * uppercase, 44px for an action and 36px for a small one; the rules of the
+ * three kinds are base.css's, these are only the room's sizes. */
+.pbi-room .pbi-btn {
+  font-size: var(--pbi-fs-btn);
+  padding: 0 var(--pbi-button-pad-x);
+  height: var(--pbi-button-h);
+  min-height: var(--pbi-button-h);
+}
+.pbi-room .pbi-btn-small {
+  height: var(--pbi-button-h-sm);
+  min-height: var(--pbi-button-h-sm);
+  padding: 0 var(--pbi-gap-4);
+}
+.pbi-room .pbi-btn-link { height: auto; min-height: 0; padding: 0; font-size: var(--pbi-fs-btn); }
 .pbi-room .pbi-field { height: var(--pbi-field-h); padding: 0 var(--pbi-gap-3); font-size: var(--pbi-fs-ui); }
 /* T61 F5: the typed field keeps room for its unit at whatever scale the
    viewport put the room at — one number, `--pbi-field-h`, as T60 F1 laid down. */

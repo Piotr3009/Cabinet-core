@@ -30,7 +30,15 @@ test('F7.1 · the lightingOpen gate is GONE from the component', () => {
   const live = code(ICONS);
   assert.ok(!/const lightingOpen\s*=/.test(live), 'no modal read of its own');
   assert.ok(!/if \(!lightingOpen\) return null;/.test(live), 'and no gate');
-  assert.ok(!/s\.modal/.test(live), 'the component asks nothing about modals at all');
+  // ─── AMENDED BY T64 F1.3 ─────────────────────────────────────────────────
+  // The owner, 03.09.2026: *"ikony LED … dopiero po włączeniu menu lights —
+  // i też powinny zniknąć jak włączę światło ON."* The CLIENT'S room reads the
+  // panel's flag again (`s.modal === 'lighting'`) — through the existing
+  // channel gate and the `audience` flag, never through a gate of its own —
+  // and PRO's branch is T58's, unchanged: `scripts/t64-led-law.mjs` runs the
+  // file's own `ledIconState` and PRO answers "show" whatever the flags say.
+  assert.ok(!/const lightingOpen\s*=/.test(live) && !/if \(!panelOpen\) return null;/.test(live),
+    'the component grew a gate of its own again');
   // …and the dead line IS quoted in the prose, by the house rule: a deletion
   // nobody can read about is a deletion the next turn re-introduces.
   assert.match(ICONS, /if \(!lightingOpen\) return null;/,

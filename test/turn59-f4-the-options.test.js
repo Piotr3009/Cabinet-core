@@ -398,6 +398,11 @@ test('F4 · the adapter is the ONLY place retail speaks engine', () => {
     // windows (copied) — `ConfiguratorPage.jsx`'s block, for retail. It reads
     // ONE live store field, the slot, exactly as DesignRoom reads its own.
     'design/Editors.jsx',
+    // T64 F1.1: PRO's Delete-key handler (`src/pages/ConfiguratorPage.jsx:
+    // 160-245`), COPIED — a handler is not a screen, and PRO's page speaks
+    // the stores directly, as this does. The one `keydown` listener the
+    // retail stage has.
+    'design/keys.js',
   ]);
 
   // ─── AMENDED BY T62 F2/F3 ────────────────────────────────────────────────

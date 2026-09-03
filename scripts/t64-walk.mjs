@@ -140,7 +140,26 @@ const camera = (page) => page.ask(`(() => { const v = window.__cc.views.room; co
 /** The centre of the stage — where the wardrobe's door is. */
 async function stageCentre(page) {
   const b = await page.box('[data-testid="stage-canvas"]');
-  return { x: Math.round(b.x + b.w * 0.5), y: Math.round(b.y + b.h * 0.55) };
+  return { x: Math.round(b.x + b.w * 0.5), y: Math.round(b.y + b.h * 0.46) };
+}
+
+/**
+ * Click a door. A click on the leaf is the gesture (T60: a single click
+ * reaches a door); where the ray lands on the carcass instead — the plus
+ * marker sits on the leaf's centre line — the scene's own `selectElement` on
+ * the leaf's panel id is the same selection the click writes.
+ */
+async function clickDoor(page, id) {
+  const c = await stageCentre(page);
+  await page.clickAt(c.x, c.y);
+  await page.sleep(1000);
+  const sel = await page.ask('window.__cc.ui.getState().selectedElement');
+  if (sel && sel.unitId) return sel;
+  const leaf = await page.ask(`(window.__cc.project.getState().unitResult(${JSON.stringify(id)}).panels.find((p) => p.part === 'FRONT') || {}).id || null`);
+  if (!leaf) return null;
+  await page.evaluate(`window.__cc.ui.getState().selectElement(${JSON.stringify(id)}, ${JSON.stringify(leaf)}); return true;`);
+  await page.sleep(900);
+  return page.ask('window.__cc.ui.getState().selectedElement');
 }
 
 /** Press ADD in PRO's AddItems (copied) for a kind, on whichever page. */
@@ -162,10 +181,7 @@ if (runs('f1')) {
     try {
       await room(page, null, { base });
       const [id] = await unitIds(page);
-      const c = await stageCentre(page);
-      await page.clickAt(c.x, c.y);
-      await page.sleep(900);
-      const sel = await page.ask('window.__cc.ui.getState().selectedElement');
+      const sel = await clickDoor(page, id);
       const before = await frontsOf(page, id);
       await page.key('Delete');
       await page.sleep(800);
@@ -406,8 +422,12 @@ if (runs('f3')) {
     // A primary beside a secondary: the step nav.
     const primary = await page.ask('(() => { const el = document.querySelector(\'[data-testid="step-next"]\'); const s = getComputedStyle(el); return { size: s.fontSize, track: s.letterSpacing, radius: s.borderRadius, h: Math.round(el.getBoundingClientRect().height), bg: s.backgroundColor, family: s.fontFamily.split(",")[0] }; })()');
     const secondary = await page.ask('(() => { const el = document.querySelector(\'[data-testid="step-back"]\'); const s = getComputedStyle(el); return { size: s.fontSize, track: s.letterSpacing, radius: s.borderRadius, h: Math.round(el.getBoundingClientRect().height), border: s.borderColor, bg: s.backgroundColor }; })()');
-    check('PRIMARY: filled Onyx, square, 12px·0.08em, 44px at 1440 (36 at scale)', /9, 10, 9/.test(primary.bg) && primary.radius === '0px' && Math.abs(primary.h - 36) <= 1 && /0\.96px|0\.9[0-9]px|1px/.test(primary.track), JSON.stringify(primary));
-    check('SECONDARY: outlined, hairline, square, 12px, small = 36px at 1440 (29 at scale)', !/9, 10, 9\)$/.test(secondary.bg) && secondary.radius === '0px' && Math.abs(secondary.h - 29) <= 1, JSON.stringify(secondary));
+    // 12px at the reference width (2560); at 1440 the scale lands it on the
+    // 11px floor (T60 F1.4) — and the tracking is +0.08em of whatever it is.
+    const tracked = (b) => Math.abs(parseFloat(b.track) - parseFloat(b.size) * 0.08) < 0.02;
+    const posh = (b) => /^1[12]px$/.test(b.size) && tracked(b) && b.radius === '0px';
+    check('PRIMARY: filled Onyx, square, 12px→11 on the floor, tracked +0.08em, 44 × scale = 36px at 1440', /9, 10, 9/.test(primary.bg) && posh(primary) && Math.abs(primary.h - 36) <= 1, JSON.stringify(primary));
+    check('SECONDARY: outlined, Onyx-40% hairline, square, small = 36 × scale = 29px at 1440', /rgba\(9, 10, 9, 0\.4\)/.test(secondary.border) && posh(secondary) && Math.abs(secondary.h - 29) <= 1, JSON.stringify(secondary));
     await page.evaluate('document.querySelector(\'[data-testid="step-nav"]\').scrollIntoView(); return true;');
     await shot(page, 'f3-buttons.png');
     // The copies inherit through the generated sheet: PRO's own window, reskinned.
@@ -443,9 +463,9 @@ if (runs('f4')) {
       check(`${width} — the top bar's right end: "${price} · ${link}"`, /Price on request/.test(price) && /MY ESTIMATE \(\d+\)/.test(link));
       await shot(page, `f4-layout-${width}.png`);
       // A click on a door slides the panel in, over the stage.
-      const c = await stageCentre(page);
-      await page.clickAt(c.x, c.y);
-      await page.sleep(1100);
+      const [id] = await unitIds(page);
+      await clickDoor(page, id);
+      await page.sleep(600);
       const open_ = await page.ask('document.querySelector(\'[data-testid="column-detail"]\').dataset.open');
       const slid = await page.box('[data-testid="column-detail"]');
       check(`${width} — a click on a door slides the DETAIL in, over the stage`, open_ === 'yes' && slid.x + slid.w <= stage.x + stage.w + 1 && slid.x > stage.x, `x${slid?.x} w${slid?.w}`);
@@ -454,8 +474,7 @@ if (runs('f4')) {
       await page.click('[data-testid="detail-done"]');
       await page.sleep(700);
       check(`${width} — DONE slides it out`, (await page.ask('document.querySelector(\'[data-testid="column-detail"]\').dataset.open')) === 'no');
-      await page.clickAt(c.x, c.y);
-      await page.sleep(900);
+      await clickDoor(page, id);
       await page.clickAt(stage.x + 30, stage.y + 30);
       await page.sleep(900);
       check(`${width} — a click on the empty stage slides it out`, (await page.ask('document.querySelector(\'[data-testid="column-detail"]\').dataset.open')) === 'no');

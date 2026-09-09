@@ -223,7 +223,11 @@ function InsidePanel({ unit, project, onOpenDetail }) {
   // T65 F1: the room can be empty. Hooks below are unconditional, so the
   // empty state is chosen at the RENDER, not by an early return.
   const counts = A.interiorCounts(unit);
-  const inside = A.INTERIOR_ROWS.filter((row) => (counts[row.id] || 0) > 0);
+  // T65 F7: BAYS is a standing FIELD below, not a `›` row that only appears
+  // once a divider exists — so it is taken out of the summary list here.
+  const inside = A.INTERIOR_ROWS.filter((row) => !row.bays && (counts[row.id] || 0) > 0);
+  const bays = unit ? A.bayCount(unit.id) : 1;
+  const b = A.designBounds();
   const colour = A.insideColourOf(project);
 
   // ─── T64 F1.4 · SHELVES GO IN CENTRED ────────────────────────────────────
@@ -291,6 +295,36 @@ function InsidePanel({ unit, project, onOpenDetail }) {
             </div>
           ))}
         </div>
+      ) : null}
+
+      {/* ─── T65 F7 · BAYS ────────────────────────────────────────────────
+          The owner: *"zamiast vertical partition dać BAYS i wpisz ilość, max
+          3"*. A TYPED count — T62's row law, never a slider — over the
+          engine's own partitions: writing 3 puts two dividers in, writing 1
+          takes them out, and both go through `addFlushPartition`, the same
+          call PRO's copied list makes. DOORS do not follow (F9). */}
+      <Field label="BAYS">
+        <NumberField
+          testid="inside-bays"
+          min={b.bays.min}
+          max={b.bays.max}
+          value={bays}
+          outOfRange={REASONS.outOfRange}
+          onCommit={(v) => {
+            const why = A.bayRefusal(unit.id, v);
+            if (why) return why;
+            A.setBayCount(unit.id, v);
+            return '';
+          }}
+        />
+      </Field>
+
+      {/* *"i wtedy dopiero informacja o tym że bays można zrobić niższe ale
+          półka musi być fix"* — after a count above one, and not before. */}
+      {bays > 1 ? (
+        <p className="pbi-choice pbi-choice-15 pbi-panel-note" data-testid="bays-note">
+          {REASONS.baysMayDiffer}
+        </p>
       ) : null}
     </Panel>
   );

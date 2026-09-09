@@ -115,12 +115,28 @@ export const designUnit = (units) => {
  * which the engine has no opinion about — a room is not a cabinet, and
  * `engine/room.js` bounds neither. Those two are flagged in the report.
  */
+/**
+ * ─── T65 F7 · MAX 3 ────────────────────────────────────────────────────────
+ *
+ * The owner: *"zamiast vertical partition dać BAYS i wpisz ilość, max 3"*.
+ * A retail bound, not an engine one — PRO divides a carcass as many times as
+ * the boards allow, and nothing here changes that. Three is what a client is
+ * offered, and `bayRefusal` stays the ENGINE's room question and
+ * nothing else.
+ */
+export const MAX_BAYS = 3;
+
 export function designBounds() {
   const p = P();
   return {
     wall: { min: 600, max: 4000, step: 10, from: 'retail (the engine bounds no room)' },
     ceiling: { min: 2000, max: 3000, step: 10, from: 'retail (the engine bounds no room)' },
     wardrobeHeight: { min: p.wardrobe.minHeight, from: 'profile.wardrobe.minHeight' },
+    // T65 F7: the owner's own ceiling — *"BAYS i wpisz ilość, max 3"*. A
+    // RETAIL bound: PRO divides a carcass as many times as the boards allow
+    // and nothing here changes that. It lives with the other bounds so the
+    // field reads it the way every typed field in this app reads its own.
+    bays: { min: 1, max: MAX_BAYS, from: 'retail (the client is offered three)' },
     depths: [450, 600, 650],
     drawerFront: {
       min: p.wardrobe.drawers.minFrontHeight,
@@ -1103,7 +1119,14 @@ export const INTERIOR_ROWS = [
     add: (s, u) => s.addShoeDrawer(u),
   },
   {
-    id: 'partition', pro: 'partition', menu: 'partition', name: 'Vertical divider',
+    // ─── T65 F7 · IN THE CLIENT'S WORDS ────────────────────────────────────
+    // The owner: *"zamiast vertical partition dać BAYS i wpisz ilość, max 3"*.
+    // A NAME and a COUNTER over the existing law, not a second law: the
+    // partitions are still the engine's own, added by the same
+    // `addFlushPartition` the copied PRO list adds them by. `bays: true` is
+    // what tells the INSIDE panel to draw a typed count instead of a `›`.
+    id: 'partition', pro: 'partition', menu: 'partition', name: 'Bays',
+    bays: true,
     // ONE TRACK, and this line is the whole of it — see `addFlushPartition`.
     add: (s, u) => addFlushPartition(u),
   },
@@ -1564,7 +1587,7 @@ export function unitWarnings(unitId) {
 export const bayCount = (unitId) => Math.max(1, (S().bayDoorsFor?.(unitId) || []).length);
 
 export function setBayCount(unitId, want) {
-  const n = Math.max(1, Math.trunc(Number(want) || 1));
+  const n = Math.min(MAX_BAYS, Math.max(1, Math.trunc(Number(want) || 1)));
   if (!unitOf(unitId)) return 0;
   const parts = () => itemsOf(unitId).filter((i) => i.kind === 'partition');
   let guard = 12;

@@ -186,6 +186,17 @@ export const REASONS = {
   noRoomForABay: ({ need }) => `There is no room for another divider — each bay needs at `
     + `least ${need} mm of clear opening.`,
 
+  /**
+   * T65 F7 · NOT a refusal but a NOTE, and it still has a predicate, which is
+   * why it is named here like every other sentence in this file.
+   *
+   * PREDICATE: `adapter.bayCount(unitId) > 1` — the engine's own count of
+   * full-height flush dividers (`bayDoorsFor`). The owner asked for the line
+   * to appear only after a wardrobe HAS more than one bay: *"i wtedy dopiero
+   * informacja o tym że bays można zrobić niższe ale półka musi być fix"*.
+   */
+  baysMayDiffer: 'Bays can be different heights — the shelf between them is fixed.',
+
   /** PREDICATE: `meta.jpull.reason === 'too-short'` on the leaf's own panel. */
   jrunTooShort: 'This leaf is too short for a J to be cut in its edge.',
 

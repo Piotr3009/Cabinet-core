@@ -361,10 +361,19 @@ test('F1.6 · on entering DESIGN and after RESET VIEW the camera is the FRONT pr
 
 // ═══ F1.7 · DOORS AND BAYS LEAVE THE MAIN MENU ═══════════════════════════════
 
-test('F1.7 · DOORS and BAYS are absent from the steps and present under Advanced', () => {
+test('F1.7 · DOORS stays off the steps; T65 F7 puts BAYS ON one, and Advanced keeps both', () => {
   const options = code('src/retail/design/Options.jsx');
   assert.ok(!/label="DOORS"/.test(options), 'DOORS is still on a step');
-  assert.ok(!/label="BAYS"/.test(options), 'BAYS is still on a step');
+  // ─── AMENDED BY T65 F7 ─────────────────────────────────────────────────
+  // T64 asserted BAYS was absent from every step. The owner overturned that
+  // tonight in as many words: *"zamiast vertical partition dać BAYS i wpisz
+  // ilość, max 3"* — and the row he is renaming is the INTERIOR row in the
+  // INSIDE step. So BAYS is on that step now, as a typed count bounded by
+  // `designBounds().bays`, and DOORS is NOT: doors are a separate decision
+  // and F9 gives them their own action in EXTRAS.
+  assert.ok(/label="BAYS"/.test(options), 'T65 F7 put BAYS on the INSIDE step');
+  assert.ok(/min=\{b\.bays\.min\}[\s\S]{0,80}max=\{b\.bays\.max\}/.test(options),
+    'the BAYS field does not read the engine-side bounds');
   assert.ok(!/layout-doors|layout-bays|LayoutPanel/.test(options), 'LAYOUT survives');
   const menu = read('src/retail/design/detail/WardrobeMenu.jsx');
   const at = menu.indexOf('data-testid="wardrobe-advanced"');

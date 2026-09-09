@@ -3686,8 +3686,24 @@ export function computeCabinet(params, profileOverride) {
       const crossing = shelfRuns
         .filter((r) => r.item && shelfCrossesPartition(r.run, { x, thickness: slotG }))
         .map((r) => r.item);
+      // ─── T65 F7 · A PARTITION STANDS ON THE STACK'S SHELF ────────────────
+      //
+      // The owner: *"przegroda ma się zaczynać nad szufladami … na półce …
+      // pamiętaj starą zasadę: materiał nigdy nie wchodzi w materiał."*
+      //
+      // With an overlay stack at the bottom of the carcass, the floor a
+      // divider stands on is NOT the carcass floor — that would run a board
+      // straight down through the drawer boxes. It is the top face of the
+      // shelf that caps the stack (`OVERLAY-FIX`, cut at `overlay.shelfY`),
+      // whether the stack is 2 drawers or 5: the height is READ from the plan,
+      // never a fixed number.
+      //
+      // `overlay` is null for every cabinet that has not asked for a stack —
+      // which is all six standard configs — so this reads `G` exactly as it
+      // did before tonight for every one of them.
+      const partitionFloor = overlay ? overlay.shelfY + G : G;
       const span = partitionSpan({
-        floor: G,
+        floor: partitionFloor,
         ceiling: H - G,
         shelves: crossing,
         // The board a partition is INTERRUPTED by is the SHELF's, not its own:

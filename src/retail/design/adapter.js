@@ -32,6 +32,9 @@ import {
 } from '../../engine/room.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
 import { doorCountFor } from '../../engine/cabinet.js';
+// T65 F6: the engine's ONE visibility question, and the client's own
+// "permanent" record beside it.
+import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
 import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
@@ -687,6 +690,74 @@ export function topBoxRefusal(hostId) {
  *
  * @returns {{ok:boolean, id:string|null, said:string}}
  */
+// ─── T65 F6 · THE END PANELS, AS THE CLIENT REACHES THEM ───────────────────
+//
+// The automat puts them where a side would otherwise show
+// (`engine/endPanelAuto.js`, switched on for this application only). These are
+// the two hand controls beside it, for the last row of the owner's table:
+// *"the client added one by hand in EXTRAS — yes, PERMANENTLY — his decision
+// outranks the automat."*
+//
+// `asked: true` is what makes it permanent: the store remembers the side in
+// `params.end_panel_asked` and `autoEndPanelStrays` skips it for ever after,
+// so a flush neighbour arriving later does not quietly take it away again.
+
+/**
+ * Which sides of this wardrobe carry an end panel, whose decision it was, and
+ * whether taking it off would leave board showing.
+ *
+ * `permanent` is the client's own demand (`askedSides`) — the menu greys
+ * nothing, but the estimate and the menu can say that this one is his and the
+ * automat will not touch it. `showsIfRemoved` asks the engine's ONE visibility
+ * question directly, so a REMOVE that would bare a carcass side can say so in
+ * the engine's own words rather than in a sentence retail invented.
+ */
+export function endPanelSides(unitId) {
+  const unit = unitOf(unitId);
+  const permanent = askedSides(unit);
+  return (unit?.params?.end_panels || []).map((ep) => {
+    const side = ep.side === 'R' ? 'R' : 'L';
+    return {
+      id: ep.id,
+      side,
+      auto: Boolean(ep.auto_added),
+      permanent: permanent.includes(side),
+      showsIfRemoved: sideIsVisible(unit, side, neighbourOf(unitId, side), { atWall: false }, P()).visible,
+    };
+  });
+}
+
+/** The wardrobe standing immediately on that side of this one, if any. */
+function neighbourOf(unitId, side) {
+  const unit = unitOf(unitId);
+  if (!unit) return null;
+  const wall = unit.position?.wall ?? 0;
+  const mine = Number(unit.position?.x_mm) || 0;
+  const others = S().units.filter((u) => u.id !== unitId && (u.position?.wall ?? 0) === wall);
+  const before = side === 'L';
+  const pool = others.filter((u) => (before
+    ? (Number(u.position?.x_mm) || 0) < mine
+    : (Number(u.position?.x_mm) || 0) > mine));
+  if (!pool.length) return null;
+  return pool.reduce((best, u) => {
+    const d = Math.abs((Number(u.position?.x_mm) || 0) - mine);
+    const bd = Math.abs((Number(best.position?.x_mm) || 0) - mine);
+    return d < bd ? u : best;
+  });
+}
+
+/** ADD END PANEL, by hand. Permanent — the automat never takes it back off. */
+export function addEndPanelByHand(unitId, side) {
+  const res = S().addEndPanel(unitId, { side, applyToAll: false, asked: true });
+  return { ok: Boolean(res?.id), id: res?.id || null, said: res?.error || '' };
+}
+
+/** …and the way back out, which is the same one PRO's menu uses. */
+export function removeEndPanelByHand(unitId, panelId) {
+  const res = S().removeEndPanel(unitId, panelId, { decline: true });
+  return { ok: res !== false, said: '' };
+}
+
 export function addTopBox(hostId) {
   const host = unitOf(hostId);
   if (!host) return { ok: false, id: null, said: '' };

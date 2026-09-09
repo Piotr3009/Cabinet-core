@@ -7,17 +7,19 @@ import Categories, { CATEGORIES, stepIndex } from './Categories.jsx';
 import Options from './Options.jsx';
 import Detail from './Detail.jsx';
 import Stage, {
-  applyPreset, resetStageView, saveStageImage, stageThumbnail, useCameraMemory,
+  applyPreset, rememberHome, resetStageView, saveStageImage, stageThumbnail, useCameraMemory,
 } from './Stage.jsx';
 import Editors from './Editors.jsx';
 import ViewBar from './ViewBar.jsx';
 import { Button } from './controls.jsx';
 import GoldLine from '../ui/GoldLine.jsx';
 import RoomEditor from './room/RoomEditor.jsx';
+import ContextMenu from './detail/ContextMenu.jsx';
 import * as A from './adapter.js';
 import { useEstimateStore } from '../estimate/store.js';
 import { describeDesign } from '../estimate/document.js';
 import { collectionById } from './collections.js';
+import { REASONS } from './reasons.js';
 import { loadDecors } from '../decorPack.js';
 import { go } from '../site/router.js';
 
@@ -166,7 +168,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   const [done, setDone] = useState([]);
   const [target, setTarget] = useState(null);      // { menu, unitId, ref, from } — four strings
   const [fullScreen, setFullScreen] = useState(false);
-  const [preset, setPreset] = useState('front');
+  // T65 F4: the room opens on PRO's own camera, which is not one of the three
+  // named places — so NO preset is lit until the client presses one.
+  const [preset, setPreset] = useState(null);
   const [mode, setMode] = useState('add');
   // ─── T62 F2/F3 · THE ROOM IS SET UP IN A MODAL, AS IT IS IN PRO ──────────
   // `null` is closed; `{ anchor }` is open, and the rectangle is the
@@ -197,8 +201,16 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
     handle.current = h;
     if (parked.current) return;
     parked.current = true;
-    // One frame later, so the furniture it is aimed at has bounds to aim at.
-    requestAnimationFrame(() => { applyPreset('front', h); });
+    // ─── T65 F4 · NOTHING IS PARKED HERE ANY MORE ──────────────────────────
+    //
+    // The owner: *"default ustawienie sceny pokoju prosto i bliżej — dokładnie
+    // jak w PRO."* T64 parked the FRONT preset one frame after mount, and that
+    // is precisely what made the client's first view a different one from the
+    // joiner's. PRO's default camera is the Canvas's own in `src/3d/Scene.jsx`,
+    // which THIS canvas already mounted — so the way to be exactly PRO is to
+    // leave it alone. What is taken instead is a note of where it is, so RESET
+    // VIEW can bring the client back to the view he started in.
+    requestAnimationFrame(() => { rememberHome(h); });
   }, []);
 
   const unit = A.designUnit(units);
@@ -230,12 +242,14 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
       // THE LAZY CLIENT'S ANSWERS, once the decor pack has landed — a decor is
       // a thing the pack names. `loadDecors` is memoised, so this is the same
       // promise the entry started.
-      const u = A.designUnit(useProjectStore.getState().units);
-      if (u) A.fitWardrobeToWall(u.id);
+      // T65 F1: no wardrobe is placed here any more — the room mounts EMPTY
+      // and `fitWardrobeToWall` is gone. The decor answers are the PROJECT's,
+      // so they are still written on an empty floor and the first wardrobe the
+      // client adds is born wearing them.
       const collectionId = wantCollection && collectionById(wantCollection) ? wantCollection : null;
       loadDecors().then(() => {
         const live = A.designUnit(useProjectStore.getState().units);
-        if (live) A.applyLazyDefaults(live.id, { collectionId });
+        A.applyLazyDefaults(live?.id || null, { collectionId });
         useEstimateStore.getState().capture();
       });
     }
@@ -277,8 +291,24 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   // stage — the scene's own `onPointerMissed`, which clears the selection —
   // slides it out. A menu opened from a row's `›` (`from: 'list'`) is not the
   // stage's to close, so a cleared selection leaves it standing until DONE.
-  // A click on the CARCASS is a UNIT selection (turn 13's verdict: *"clicking
-  // a cabinet must select the CABINET"*) and opens the wardrobe's own menu.
+  // ─── T65 F10 · …AND A CLICK ON THE WARDROBE SLIDES IT OUT ────────────────
+  //
+  // The owner, and it is the whole of this feature: *"po naciśnięciu na inny
+  // element menu się zmienia, a jak naciśniesz w szafę lub poza menu —
+  // znika."*
+  //
+  // T64 opened the WARDROBE's own menu on a carcass click. Tonight the carcass
+  // is the way OUT: click a piece and its menu slides in, click a different
+  // piece and it SWAPS IN PLACE (the panel never closes — `data-open` stays
+  // `yes` because the target goes A→B without passing through null), click the
+  // wardrobe body or the empty stage and it slides out.
+  //
+  // The wardrobe's own menu is not lost with the gesture: it is the OPTIONS
+  // column's own row, *"THIS WARDROBE — SIZE AND DOORS ›"*, which opens it
+  // with `from: 'list'` — and a list-opened menu is not the stage's to close.
+  // Turn 13's verdict still holds where it was made: a click on a carcass
+  // still SELECTS the cabinet (`selectedUnitId`), which is what the plus needs
+  // to add into the right one (T64 F1.2). Only the panel's answer changed.
   useEffect(() => {
     if (fullScreen) { setTarget(null); return; }
     if (selectedElement) {
@@ -293,15 +323,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
       });
       return;
     }
-    if (selectedUnitId && A.unitById(selectedUnitId)) {
-      const found = A.selectionForMenu('wardrobe', selectedUnitId);
-      if (found) {
-        setTarget({
-          menu: found.menu, unitId: found.unitId, ref: found.ref, from: 'stage',
-        });
-      }
-      return;
-    }
+    // A UNIT selection with no element is a click on the wardrobe body. It
+    // slides the panel out — and it takes only what the STAGE opened, so a
+    // menu reached from a row's `›` stands until DONE, as it always has.
     setTarget((t) => (t && t.from === 'stage' ? null : t));
   }, [selectedElement, selectedUnitId, fullScreen]);
 
@@ -346,7 +370,18 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   }, []);
 
   if (width < MOBILE) return <TooSmall />;
-  if (!unit) {
+  // ─── T65 F1 · THE ROOM RENDERS WITHOUT A WARDROBE ────────────────────────
+  //
+  // MEASURED FAULT, and the acceptance walk is what found it: `npm test` and
+  // `npm run build` were both green while this page never finished *"Setting
+  // the room out…"*, because the whole room was gated on a wardrobe EXISTING —
+  // and F1 makes the room start empty.
+  //
+  // What the gate was really waiting for was the PROJECT, which `enterRoom`
+  // builds in an effect one frame after mount. So it waits for that instead,
+  // and the empty floor is a room like any other: its walls, its ceiling, the
+  // steps, and the plus that puts the first wardrobe in it.
+  if (!project?.room) {
     return (
       <main className="pbi-room-waiting">
         <p className="pbi-choice pbi-choice-15">Setting the room out…</p>
@@ -370,8 +405,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         // T63 F2 · LIGHTS opens PRO's Lighting panel beside the button — the
         // very call PRO's own Lighting button makes (`TopBar.jsx`).
         onLights={(e) => A.openEditor('lighting', { anchor: A.anchorOf(e) })}
-        // T64 F1.6 · RESET VIEW is the FRONT preset, framed to the design.
-        onReset={() => { setPreset('front'); resetStageView(handle.current); }}
+        // T65 F4 · RESET VIEW is PRO's own default view — the one the room
+        // opened in — not a preset of retail's. Superseded T64 F1.6.
+        onReset={() => { setPreset(null); resetStageView(handle.current); }}
         fullScreen={fullScreen}
         onFullScreen={() => setFullScreen((v) => !v)}
         onBack={exitFullScreen}
@@ -385,6 +421,13 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         // THE RUN-END PLUS adds the neighbour's own type beside it, which is
         // the same call PRO's library makes with the same `{ near, side }`.
         onAddPlus={(point) => setSaid(A.addBesidePlus(point).said)}
+        /* T65 F10 · the owner's point 5: the plus in the middle of a wardrobe
+           hides while the INSIDE step is open — that step IS the same act,
+           and two doors to one act confuse. */
+        hideInnerPlus={active === 'inside'}
+        /* T65 F1 · the empty floor's plus — the SAME store path as ADD A
+           WARDROBE in the WHERE step. Two doors, one law. */
+        onAddFirst={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
         // THE INNER PLUS asks "what goes inside this one" — and retail's answer
         // is the INSIDE step, which is where PRO's own `setPanelSection('add',
         // true)` sends a joiner. The scene has SELECTED that cabinet first
@@ -438,6 +481,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
           designName={designName}
           onDesignName={(name) => estimate.rename(estimate.activeId, name)}
           onOpenDetail={(menu) => {
+            // T65 F1: the room can be empty, and a step that needs a wardrobe
+            // says so rather than opening a menu about one that is not there.
+            if (!unit) return;
             const found = A.selectionForMenu(menu, unit.id);
             // A row with nothing behind it opens nothing — which is what makes
             // a row without a `›` honest rather than merely quiet.
@@ -450,9 +496,12 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
           onDone={onDone}
           onEditRoom={(anchor) => setRoomEditor({ anchor })}
           onReset={() => {
+            // T65 F1: START AGAIN returns the client to the EMPTY room the
+            // design opens in — the decor answers are the project's and are
+            // still written, so the next wardrobe is born wearing them.
             A.startDesign(designName || 'Bedroom wardrobe');
             const u = A.designUnit(useProjectStore.getState().units);
-            if (u) A.applyLazyDefaults(u.id);
+            A.applyLazyDefaults(u?.id || null);
             setTarget(null);
             setDone([]);
             setActive('what');
@@ -465,6 +514,16 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
       {/* PRO's own two screens, copied into `design/room/` and routed by
           `RoomEditor`. Mounted at the ROOM's level rather than inside the
           options column, because the shell it uses is `position: fixed`. */}
+      {/* ─── T65 F8 · THE WARDROBE'S OWN MENU, ON THE RIGHT ────────────────
+          The owner: *"nie widzę przycisków: top infill, cornice, panels."*
+          They are all in PRO's `ContextMenu.jsx`, and the reason none of them
+          was reachable is that retail never MOUNTED it — `Scene.jsx` has
+          called `openContextMenu` on a right-click since T13, so the gesture
+          was already firing into a menu nobody rendered. The copy is mounted
+          here, at the room's level, exactly where PRO mounts its own
+          (`ConfiguratorPage.jsx`). Nothing else was needed. */}
+      <ContextMenu />
+
       {roomEditor && !fullScreen ? (
         <RoomEditor anchor={roomEditor.anchor} onClose={() => setRoomEditor(null)} />
       ) : null}

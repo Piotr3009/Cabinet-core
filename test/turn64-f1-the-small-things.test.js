@@ -43,7 +43,8 @@ setDecorCatalogue(parseDecorCatalogue(
 
 const fresh = () => {
   U().clearSelection();
-  const id = A.startDesign('T64');
+  A.startDesign('T64');
+  const id = A.addFirstWardrobe();
   return id;
 };
 
@@ -91,28 +92,39 @@ test('F1.1 · …and REFUSES per the store, in the store\'s own sentence', () =>
   assert.ok(panelsOf(id).some((p) => p.id === side.id), 'the side panel went anyway');
 });
 
-test('F1.1 · Delete never takes the wardrobe unless the wardrobe is what is selected — and never the last one', () => {
+test('F1.1 · Delete never takes the wardrobe unless the wardrobe is what is selected — and T65 F1 lets the last one go', () => {
   const id = fresh();
   U().clearSelection();
   assert.equal(stageKeyAction(press('Delete'), { doc: null }).handled, false, 'nothing selected, nothing deleted');
+  // ─── T65 F1 · THE LAST WARDROBE MAY NOW GO ──────────────────────────────
+  // T64 asserted `REASONS.lastWardrobe` here, for one stated reason: *"the
+  // retail room has no empty-room page"*. F1 built that page — the design now
+  // OPENS on an empty room — so the refusal went with its reason, and Delete
+  // returns the client to the state they started in.
   U().selectUnit(id);
-  const out = stageKeyAction(press('Delete'), { doc: null });
-  assert.equal(out.did, 'refused');
-  assert.equal(out.said, REASONS.lastWardrobe);
-  assert.equal(S().units.length, 1, 'the only wardrobe left the stage');
+  const lastOne = stageKeyAction(press('Delete'), { doc: null });
+  assert.equal(lastOne.did, 'remove-unit');
+  assert.equal(S().units.length, 0, 'the empty room is a first-class state');
 
-  // Two wardrobes: the SELECTED one goes, the other stays.
-  const second = S().addUnit('WARDROBE', { near: id, side: 'R' });
+  // …and from there the client puts one back, through the one store path.
+  const again = A.addFirstWardrobe();
+  assert.ok(again, 'ADD A WARDROBE / the plus put a wardrobe back');
+  assert.equal(S().units.length, 1);
+
+  // Two wardrobes: the SELECTED one goes, the other stays. `id` was deleted
+  // above, so the survivor to name here is `again` — the one the client put
+  // back through the same store path.
+  const second = S().addUnit('WARDROBE', { near: again, side: 'R' });
   assert.ok(second?.id, second?.error);
   U().selectUnit(second.id);
   const gone = stageKeyAction(press('Delete'), { doc: null });
   assert.equal(gone.did, 'remove-unit');
-  assert.deepEqual(S().units.map((u) => u.id), [id]);
+  assert.deepEqual(S().units.map((u) => u.id), [again]);
 
   // A host with a box on it is refused too — PRO would orphan the box.
-  const box = A.addTopBox(id);
+  const box = A.addTopBox(again);
   if (box.ok) {
-    U().selectUnit(id);
+    U().selectUnit(again);
     assert.equal(stageKeyAction(press('Delete'), { doc: null }).said, REASONS.hostCarriesABox);
   }
 });
@@ -337,22 +349,52 @@ test('F1.5 · the FRONTS step offers PRO\'s four openings and no J-pull style ch
 
 // ═══ F1.6 · THE FIRST CAMERA IS FRONT ════════════════════════════════════════
 
-test('F1.6 · on entering DESIGN and after RESET VIEW the camera is the FRONT preset', () => {
+test('F1.6 · SUPERSEDED BY T65 F4 — the first view and RESET VIEW are PRO\'s own', () => {
+  // ─── SUPERSEDED BY T65 F4 ──────────────────────────────────────────────
+  // The owner: *"default ustawienie sceny pokoju prosto i bliżej — dokładnie
+  // jak w PRO."* T64 parked retail's FRONT preset one frame after mount, and
+  // that is exactly what made the client's first view a different one from the
+  // joiner's. PRO's default camera is the Canvas's own in `src/3d/Scene.jsx`,
+  // which this canvas already mounts — so nothing parks it now, and RESET VIEW
+  // returns to the view the room opened in rather than to a preset.
   const room = code('src/retail/design/DesignRoom.jsx');
-  assert.match(room, /requestAnimationFrame\(\(\) => \{ applyPreset\('front', h\); \}\);/, 'the first frame is not FRONT');
-  assert.match(room, /useState\('front'\)/, 'the bar does not light FRONT on arrival');
+  assert.ok(!/applyPreset\('front', h\)/.test(room), 'the first frame still parks the FRONT preset');
+  assert.match(room, /rememberHome\(h\)/, 'the first view is not remembered, so RESET has nowhere to go');
+  assert.match(room, /useState\(null\)/, 'the bar lights a preset the room did not park at');
   const stage = code('src/retail/design/Stage.jsx');
-  assert.match(stage, /export function resetStageView\(handle\) \{\s*return applyPreset\('front', handle\);/);
+  assert.match(stage, /export function resetStageView\(handle\) \{[\s\S]*?writeCamera\(home\)/,
+    'RESET VIEW no longer returns to the view the room opened in');
+  // The FRONT preset itself is untouched — it is still one of the three places
+  // the VIEW BAR offers, and it is still `resetStageView`'s fallback before
+  // the first frame has been drawn.
+  assert.match(stage, /applyPreset\('front', handle\)/, 'the FRONT fallback went too');
   assert.ok(!/resetPlacement/.test(stage), 'a fourth camera place survives');
   assert.ok(!/export function resetPlacement/.test(code('src/retail/design/viewTools.js')));
 });
 
 // ═══ F1.7 · DOORS AND BAYS LEAVE THE MAIN MENU ═══════════════════════════════
 
-test('F1.7 · DOORS and BAYS are absent from the steps and present under Advanced', () => {
+test('F1.7 · DOORS stays off the steps; T65 F7 puts BAYS ON one, and Advanced keeps both', () => {
   const options = code('src/retail/design/Options.jsx');
-  assert.ok(!/label="DOORS"/.test(options), 'DOORS is still on a step');
-  assert.ok(!/label="BAYS"/.test(options), 'BAYS is still on a step');
+  // ─── AMENDED AGAIN BY T65 F9 ───────────────────────────────────────────
+  // T64 kept DOORS off every step because it was a COUNT, and a count belongs
+  // under Advanced. The owner made doors an ACTION as well — *"drzwi to osobna
+  // decyzja, w extrasach lub w setup"* · *"ADD DOORS — i tu i tu chyba"* — and
+  // an action in EXTRAS is a choice, not an edit. The COUNT is still only
+  // under Advanced, which is what this law was protecting.
+  assert.ok(/label="DOORS"/.test(options), 'T65 F9 put ADD DOORS in EXTRAS');
+  assert.ok(!/doorCountRefusal|setDoorCount\(/.test(options),
+    'the door COUNT leaked onto a step — only the ADD/REMOVE action belongs there');
+  // ─── AMENDED BY T65 F7 ─────────────────────────────────────────────────
+  // T64 asserted BAYS was absent from every step. The owner overturned that
+  // tonight in as many words: *"zamiast vertical partition dać BAYS i wpisz
+  // ilość, max 3"* — and the row he is renaming is the INTERIOR row in the
+  // INSIDE step. So BAYS is on that step now, as a typed count bounded by
+  // `designBounds().bays`, and DOORS is NOT: doors are a separate decision
+  // and F9 gives them their own action in EXTRAS.
+  assert.ok(/label="BAYS"/.test(options), 'T65 F7 put BAYS on the INSIDE step');
+  assert.ok(/min=\{b\.bays\.min\}[\s\S]{0,80}max=\{b\.bays\.max\}/.test(options),
+    'the BAYS field does not read the engine-side bounds');
   assert.ok(!/layout-doors|layout-bays|LayoutPanel/.test(options), 'LAYOUT survives');
   const menu = read('src/retail/design/detail/WardrobeMenu.jsx');
   const at = menu.indexOf('data-testid="wardrobe-advanced"');

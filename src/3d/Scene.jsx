@@ -970,6 +970,46 @@ function AddPluses({
 }
 
 /**
+ * ─── T65 F1 · THE PLUS ON THE EMPTY FLOOR ──────────────────────────────────
+ *
+ * The owner: *"usuń szafę default"* … *"ściana 4000 mm, ale bez szaf"*. A room
+ * with nothing in it has no run to stand a plus beside — `addPlusPoints` reads
+ * UNITS and an empty room has none — so the empty floor gets one plus of its
+ * own, in the middle of wall 0, at the mid-height of the wardrobe it is about
+ * to make. It is the same disc, the same colour and the same act as every
+ * other plus in this scene; only its anchor is arithmetic about the ROOM
+ * rather than about a neighbour.
+ *
+ * ADDITIVE, DEFAULT = TODAY'S PRO BEHAVIOUR, exactly as `onAddPlus` above:
+ * PRO passes no `onAddFirst`, so this renders nothing and a joiner's empty
+ * room looks precisely as it always has.
+ */
+function FirstPlus({
+  walls, roomCentre, profile, onPick,
+}) {
+  const wall = walls[0];
+  if (!wall) return null;
+  const size = mm(profile.ui.addPlusMinGapMm) * 0.9;
+  const depth = profile.wardrobe.defaults.depth;
+  const world = new THREE.Vector3(
+    mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+  )
+    .addScaledVector(new THREE.Vector3(wall.along.x, 0, wall.along.y), mm(wall.width / 2))
+    .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(depth / 2))
+    .setY(mm(profile.wardrobe.defaults.height / 2));
+
+  return (
+    <AddPlus
+      position={world.toArray()}
+      size={size}
+      colour={profile.appearance.addPlus.run}
+      title="Add a wardrobe"
+      onClick={onPick}
+    />
+  );
+}
+
+/**
  * ─── The dark under the run (turn 9, CLAUDE.md F1.3; REBUILT turn 10, F2) ───
  *
  * The key light comes in from off to one side, so its shadow lands BESIDE the
@@ -1224,7 +1264,13 @@ function RenderRig({ onReady, unitsRef }) {
  * @param {(unitId:string, anchor:object|null) => void|null} onAddInside
  */
 export default function Scene({
-  onCaptureReady, onRenderReady, onAddPlus = null, onAddInside = null,
+  onCaptureReady, onRenderReady, onAddPlus = null, onAddInside = null, onAddFirst = null,
+  // ─── T65 F10 · THE INNER PLUS, HIDDEN WHILE THE STEP IS ALREADY ASKING ───
+  // The owner's point 5: the plus in the middle of a wardrobe hides while the
+  // INSIDE menu is open — *"two doors to the same act confuse."* ADDITIVE and
+  // default OFF, like the three above: PRO passes nothing and its plus is
+  // exactly where it has always been.
+  hideInnerPlus = false,
 }) {
   const orbitRef = useRef(null);
   // One entry per unit group, so the render can frame the furniture and only
@@ -1800,7 +1846,10 @@ export default function Scene({
             selectUnit(unit.id);
             openModal('unit-size', { unitId: unit.id, field, at });
           }}
-          onAddItems={(at) => {
+          // T65 F10: no handler, no plus — `UnitView` draws it only when it
+          // has somewhere to send the click, so hiding it needs no second flag
+          // and no change to that file at all.
+          onAddItems={hideInnerPlus ? undefined : (at) => {
             selectUnit(unit.id);
             // T61 F1 (#2): the INNER plus has a route of its own, for the same
             // reason the run-end plus does — `openModal('add-items')` is
@@ -1890,6 +1939,17 @@ export default function Scene({
               notify(`Run shared out — ${res.widths.length} cabinet(s) at ${Math.round(res.each)} mm. Ctrl+Z takes it back.`, 'ok');
             }
           }}
+        />
+      )}
+
+      {/* T65 F1 · the empty room's own plus. `onAddFirst` is retail's; PRO
+          passes none and nothing is drawn, as before tonight. */}
+      {!contourView && !shelfDrag && onAddFirst && units.length === 0 && (
+        <FirstPlus
+          walls={walls}
+          roomCentre={bounds.centre}
+          profile={profile}
+          onPick={() => { closeContextMenu(); onAddFirst(); }}
         />
       )}
 

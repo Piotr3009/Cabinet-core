@@ -35,6 +35,7 @@ import { loadDecors } from './decorPack.js';
 setPersistence('none');
 setProChrome(false);
 
+
 // ─── T60 F2 · AND THEN THE THREE CHANNELS THE VIEW BAR OWNS ────────────────
 //
 // The owner: *"nr 4 musi być identyczne jak mamy w PRO, identyczne ma mieć
@@ -163,6 +164,24 @@ import('./RetailApp.jsx').then(async (module) => {
   // T63 F1 · the hardware catalogues, as PRO's App.jsx loads them (see the
   // note above `loadDecors()`): a hinge on screen is the downloaded GLB or
   // nothing, and the GLB is named by these.
+  // ─── T65 F6 · THE WARDROBE NEVER SHOWS THE CLIENT A BARE CARCASS SIDE ──
+  //
+  // The owner: *"po prostu nie dopuszczamy do pozostawienia boku szafy /
+  // carcasa widocznego."* CLAUDE.md F6 puts the automatic panels on the RETAIL
+  // side and says PRO's own law — *"Plinth, top infill and end panels — added,
+  // never assumed"* — is deliberately NOT changed. So it is a fourth switch of
+  // exactly the shape of the three at the top of this file: additive, PRO's
+  // behaviour the default, and PRO never calls it.
+  //
+  // It is thrown HERE and not up there for the reason the note above
+  // `loadDecors()` gives: the three static switches are held to an import-free
+  // graph, and `engine/endPanelAuto.js` reaches `types`, `runs` and `room`. A
+  // dynamic import cannot hoist, so nothing it names can run before
+  // `setPersistence('none')` — and this still lands before the first render,
+  // which is before any layout can settle.
+  const { setWardrobeEndPanelAuto } = await import('../engine/endPanelAuto.js');
+  setWardrobeEndPanelAuto(true);
+
   const { loadHardwareCatalogues } = await import('../lib/hardwareCatalogue.js');
   const { refreshHardwareCatalogues } = await import('../lib/hardwareHealth.js');
   const { loadRunnerCatalogue } = await import('../lib/runnerCatalogue.js');

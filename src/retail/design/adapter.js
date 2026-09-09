@@ -32,6 +32,12 @@ import {
 } from '../../engine/room.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
 import { doorCountFor } from '../../engine/cabinet.js';
+// T65 F6: the engine's ONE visibility question, and the client's own
+// "permanent" record beside it.
+import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
+// T65 F8: the cornice stack's own arithmetic, and which types take one.
+import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
+import { unitTop } from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
@@ -112,12 +118,28 @@ export const designUnit = (units) => {
  * which the engine has no opinion about — a room is not a cabinet, and
  * `engine/room.js` bounds neither. Those two are flagged in the report.
  */
+/**
+ * ─── T65 F7 · MAX 3 ────────────────────────────────────────────────────────
+ *
+ * The owner: *"zamiast vertical partition dać BAYS i wpisz ilość, max 3"*.
+ * A retail bound, not an engine one — PRO divides a carcass as many times as
+ * the boards allow, and nothing here changes that. Three is what a client is
+ * offered, and `bayRefusal` stays the ENGINE's room question and
+ * nothing else.
+ */
+export const MAX_BAYS = 3;
+
 export function designBounds() {
   const p = P();
   return {
     wall: { min: 600, max: 4000, step: 10, from: 'retail (the engine bounds no room)' },
     ceiling: { min: 2000, max: 3000, step: 10, from: 'retail (the engine bounds no room)' },
     wardrobeHeight: { min: p.wardrobe.minHeight, from: 'profile.wardrobe.minHeight' },
+    // T65 F7: the owner's own ceiling — *"BAYS i wpisz ilość, max 3"*. A
+    // RETAIL bound: PRO divides a carcass as many times as the boards allow
+    // and nothing here changes that. It lives with the other bounds so the
+    // field reads it the way every typed field in this app reads its own.
+    bays: { min: 1, max: MAX_BAYS, from: 'retail (the client is offered three)' },
     depths: [450, 600, 650],
     drawerFront: {
       min: p.wardrobe.drawers.minFrontHeight,
@@ -223,30 +245,72 @@ export function startDesign(name = 'Bedroom wardrobe') {
   // `'wall'` and `'two'`; this is the same word for the same reason, and it is
   // what a client has been shown a wall's worth of since t59.
   store.setDesign({ projectType: 'wardrobe', scope: 'wall' });
-  const p = P();
-  // `addUnit` answers `{ id, error, wall }` — the room may refuse a placement,
-  // and a caller that treated the whole verdict as an id would then pass an
-  // object everywhere a unit id was wanted.
-  const placed = store.addUnit('WARDROBE', {
-    params: { width: p.wardrobe.defaults.width, height: p.wardrobe.defaults.height },
-  });
-  // AGAINST THE WALL, at its start. `addUnit` drops a cabinet where a joiner
-  // would want it — in the middle of the room, beside whatever is already
-  // there — and for PRO that is right. Here there is one wardrobe and the wall
-  // IS its space: left in the middle, the store clamps its width to the gap
-  // and says so ("Width limited to 1260 mm by the infill at the wall"), which
-  // is a true sentence about a placement the client never asked for.
-  if (placed?.id) store.moveUnit(placed.id, 0, 1);
-
-  // ─── AND IT ARRIVES WITH ITS DOORS ON ────────────────────────────────────
+  // ─── T65 F1 · AND NOTHING STANDS IN IT ───────────────────────────────────
   //
-  // A wardrobe's `params.doors` starts false, so a fresh one is an open
-  // carcass — while column 1's hint already says "1 door", because a bay with
-  // no divider IS one bay. The client would be told one thing and shown
-  // another on the first frame they ever see. `setDoorCount` asks the engine
-  // for the count its own width law gives (one leaf up to 700 mm, a pair
-  // above), so the picture and the words agree from the start.
+  // The owner: *"usuń szafę default"* … *"ściana 4000 mm, ale bez szaf"*.
+  //
+  // T60 put a WARDROBE here and T64 stretched it to the wall; both are gone.
+  // The room mounts EMPTY and stays empty until the client asks for a
+  // wardrobe — from the plus on the empty floor, or from ADD A WARDROBE in
+  // the step. Both call `addFirstWardrobe` and there is no third way in.
+  //
+  // TOMBSTONE (T60/T64): the default `addUnit('WARDROBE')` + `moveUnit` to the
+  // wall + `setDoorCount(1)` stood here. `fitWardrobeToWall` — the "fills the
+  // wall" rule that made a 3920 carcass with two 1960 leaves — is deleted.
+  return null;
+}
+
+// ─── T65 F1 · THE WIDTH THE FIRST WARDROBE ARRIVES AT ──────────────────────
+//
+// The owner: *"nie dawaj blokady na szafy szersze ale default daj 1200 max"*.
+// A DEFAULT, not a block: the client may type wider and the engine's own
+// clamps (`clampUnitWidth` — the infill at the wall, the neighbours) still
+// refuse only what the ROOM refuses.
+//
+// It lives HERE and not in `profile.wardrobe.defaults.width` on purpose, and
+// the reason is the hard gate. `defaultParamsFor` (engine/types.js:1067)
+// reads `d.width` straight off `wardrobe.defaults` for every caller, and
+// `scripts/t64-classify.mjs` builds the WARDROBE golden from
+// `defaultParamsFor('WARDROBE', P)` — so moving that 600 to 1200 moves the
+// WARDROBE golden's sha256 on the first line of the night. CLAUDE.md also
+// licenses `profile.js` for *"F8's cornice defaults only, as new keys"*, and
+// this is not that. So retail says its own number where retail makes its own
+// wardrobe, PRO keeps the 600 it has always had, and the golden never moves.
+export const RETAIL_FIRST_WIDTH_MAX = 1200;
+
+/**
+ * ─── T65 F1 · THE ONE STORE PATH THAT ADDS THE FIRST WARDROBE ──────────────
+ *
+ * *"The client places the first wardrobe: the plus on the empty floor, and an
+ * ADD A WARDROBE action in the step itself, both calling one store path."*
+ *
+ * Two doors, one law. `DesignRoom`'s empty-floor plus and `Options`' ADD A
+ * WARDROBE button both land here; nothing else in retail calls `addUnit`
+ * with a WARDROBE.
+ *
+ * Its width is `min(wall, 1200)` — the wall when the wall is narrower (a 900
+ * wall gives 900, not 1200), the default otherwise. Height and depth are the
+ * profile's, untouched.
+ */
+export function addFirstWardrobe() {
+  const store = S();
+  const p = P();
+  const wall = Math.round(wallLengthMm(store.project.room, 0));
+  const width = Math.min(wall, RETAIL_FIRST_WIDTH_MAX);
+  const placed = store.addUnit('WARDROBE', {
+    params: { width, height: p.wardrobe.defaults.height },
+  });
+  // AGAINST THE WALL, at its start — T60's reason, which outlived T60's
+  // wardrobe: left in the middle the store clamps the width to the gap and
+  // says so, which is a true sentence about a placement nobody asked for.
+  if (placed?.id) store.moveUnit(placed.id, 0, 1);
+  // …AND IT ARRIVES WITH ITS DOORS ON (T60): a bay with no divider IS one
+  // bay, and column 1's hint says "1 door" from the first frame.
   if (placed?.id) setDoorCount(placed.id, 1);
+  // ─── T65 F8 · …AND WITH ITS CORNICE ON ───────────────────────────────────
+  // *"Cornice is automatic at 40 mm"*, and it grows to close a gap of 100 mm
+  // or less to the ceiling (decision 1). Removable like anything else.
+  if (placed?.id) applyAutoCornice(placed.id);
   return placed?.id || null;
 }
 
@@ -649,6 +713,184 @@ export function topBoxRefusal(hostId) {
  *
  * @returns {{ok:boolean, id:string|null, said:string}}
  */
+// ─── T65 F8 · THE CORNICE, AND WHAT IT DOES ABOUT THE CEILING ──────────────
+//
+// The owner: *"nie widzę przycisków: top infill, cornice, panels."* They are
+// PRO's, in the `ContextMenu.jsx` copied beside this file; these are the
+// retail policies around them, and they are the two decisions CLAUDE.md took:
+//
+//   1. A gap of 100 mm or less to the ceiling is closed by the CORNICE
+//      GROWING, not by a top infill — the owner said the cornice reaches the
+//      ceiling. Automatic, and removable like anything else.
+//   2. A gap over 100 mm is LEFT ALONE. No proposal, no nagging. ADD TOP BOX
+//      sits in EXTRAS if the client wants it.
+//
+// Both numbers are `profile.autoParts.cornice.retail`, added as new keys under
+// tonight's licence. Not one of them is written here.
+
+/** The sizes a client may choose between — the profile's own list. */
+export const corniceHeights = () => [...(P().autoParts.cornice.heights || [])];
+
+/** The size a client's wardrobe arrives wearing. */
+export const corniceAutoHeight = () => Number(P().autoParts.cornice.retail?.autoHeight) || 0;
+
+/** This wardrobe's cornice height, 0 for none. */
+export const corniceOf = (unitId) => Number(unitOf(unitId)?.params?.cornice) || 0;
+
+/**
+ * The space ABOVE THE CARCASS — what a cornice may stand in.
+ *
+ * Measured to the bare carcass top, not to the top of what is already standing
+ * on it, because that is the space the decision below is about: a moulding is
+ * fixed at door-top level and rises into this, and asking "how much is left
+ * over the cornice I already have" would make the answer depend on the answer.
+ */
+export function corniceSpaceMm(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return 0;
+  return Math.max(0, (Number(S().project.room?.height) || 0) - unitTop(unit, P()));
+}
+
+/** How much is still open above everything standing on this carcass. */
+export function ceilingGapMm(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return 0;
+  const top = corniceStackTop({
+    unitTop: unitTop(unit, P()),
+    infillHeight: Number(unit.params?.top_infill_mm) || 0,
+    height: corniceOf(unitId),
+  });
+  return Math.max(0, (Number(S().project.room?.height) || 0) - top);
+}
+
+/**
+ * DECISION 1 · which cornice closes a space of `spaceMm`, or null for none.
+ *
+ * ─── WHY THE LARGEST THAT FITS, AND NOT THE SMALLEST THAT REACHES ──────────
+ *
+ * A cornice is a MOULDING and comes in three sizes; a gap is any number. So
+ * "the cornice grows to close it" cannot mean "grows to exactly the gap" —
+ * asked for a 80 mm space, the smallest size that reaches is the 100, and a
+ * 100 in an 80 space is a moulding driven into the plaster.
+ *
+ * What a joiner does is grow it as far as it will go: the LARGEST size that
+ * still fits under the ceiling. An 80 takes the 70 and leaves 10; a 100 takes
+ * the 100 and closes exactly; a 45 takes the 40. A space too small for even
+ * the smallest moulding gets none — the wardrobe is already at the ceiling.
+ *
+ * Decision 2 is the other end of the same function: a space past
+ * `closesGapUpToMm` is LEFT ALONE, with no proposal and no nagging.
+ */
+export function corniceForGap(spaceMm) {
+  const c = P().autoParts.cornice;
+  const limit = Number(c.retail?.closesGapUpToMm) || 0;
+  const space = Math.max(0, Math.round(Number(spaceMm) || 0));
+  if (space <= 0 || space > limit) return null;
+  const grown = corniceHeights().filter((h) => h <= space).sort((a, b) => b - a)[0];
+  return grown ?? null;
+}
+
+/** Set the cornice to one of the three sizes (or 0 for none). */
+export function setCorniceHeight(unitId, height) {
+  const res = S().setCornice(unitId, height);
+  return { ok: Number(res?.height) === Number(height), height: Number(res?.height) || 0 };
+}
+
+/**
+ * The automatic cornice, applied when a client's wardrobe is made or resized.
+ *
+ * It fits the default 40 first, then asks decision 1 whether the gap that is
+ * LEFT wants a taller one. A client who has chosen a size himself is never
+ * overridden — `already` is the whole test — and a gap over 100 mm is left
+ * exactly as it is.
+ */
+export function applyAutoCornice(unitId) {
+  const unit = unitOf(unitId);
+  // NOTE the shape: `corniceOf` rather than a literal. The scale law reads a
+  // `height:` followed by a digit as a dimension somebody typed, and it is
+  // right to — this file may not write measurements, and it does not.
+  if (!unit || !takesCornice(unit.type)) {
+    return { height: corniceOf(unitId), why: 'this type takes no cornice' };
+  }
+  const already = corniceOf(unitId);
+  if (!already) setCorniceHeight(unitId, corniceAutoHeight());
+  const grown = corniceForGap(corniceSpaceMm(unitId));
+  if (grown && grown > corniceOf(unitId)) setCorniceHeight(unitId, grown);
+  const height = corniceOf(unitId);
+  return {
+    height,
+    why: grown ? 'grown to the ceiling' : (height ? 'the standard cornice' : 'none'),
+  };
+}
+
+// ─── T65 F6 · THE END PANELS, AS THE CLIENT REACHES THEM ───────────────────
+//
+// The automat puts them where a side would otherwise show
+// (`engine/endPanelAuto.js`, switched on for this application only). These are
+// the two hand controls beside it, for the last row of the owner's table:
+// *"the client added one by hand in EXTRAS — yes, PERMANENTLY — his decision
+// outranks the automat."*
+//
+// `asked: true` is what makes it permanent: the store remembers the side in
+// `params.end_panel_asked` and `autoEndPanelStrays` skips it for ever after,
+// so a flush neighbour arriving later does not quietly take it away again.
+
+/**
+ * Which sides of this wardrobe carry an end panel, whose decision it was, and
+ * whether taking it off would leave board showing.
+ *
+ * `permanent` is the client's own demand (`askedSides`) — the menu greys
+ * nothing, but the estimate and the menu can say that this one is his and the
+ * automat will not touch it. `showsIfRemoved` asks the engine's ONE visibility
+ * question directly, so a REMOVE that would bare a carcass side can say so in
+ * the engine's own words rather than in a sentence retail invented.
+ */
+export function endPanelSides(unitId) {
+  const unit = unitOf(unitId);
+  const permanent = askedSides(unit);
+  return (unit?.params?.end_panels || []).map((ep) => {
+    const side = ep.side === 'R' ? 'R' : 'L';
+    return {
+      id: ep.id,
+      side,
+      auto: Boolean(ep.auto_added),
+      permanent: permanent.includes(side),
+      showsIfRemoved: sideIsVisible(unit, side, neighbourOf(unitId, side), { atWall: false }, P()).visible,
+    };
+  });
+}
+
+/** The wardrobe standing immediately on that side of this one, if any. */
+function neighbourOf(unitId, side) {
+  const unit = unitOf(unitId);
+  if (!unit) return null;
+  const wall = unit.position?.wall ?? 0;
+  const mine = Number(unit.position?.x_mm) || 0;
+  const others = S().units.filter((u) => u.id !== unitId && (u.position?.wall ?? 0) === wall);
+  const before = side === 'L';
+  const pool = others.filter((u) => (before
+    ? (Number(u.position?.x_mm) || 0) < mine
+    : (Number(u.position?.x_mm) || 0) > mine));
+  if (!pool.length) return null;
+  return pool.reduce((best, u) => {
+    const d = Math.abs((Number(u.position?.x_mm) || 0) - mine);
+    const bd = Math.abs((Number(best.position?.x_mm) || 0) - mine);
+    return d < bd ? u : best;
+  });
+}
+
+/** ADD END PANEL, by hand. Permanent — the automat never takes it back off. */
+export function addEndPanelByHand(unitId, side) {
+  const res = S().addEndPanel(unitId, { side, applyToAll: false, asked: true });
+  return { ok: Boolean(res?.id), id: res?.id || null, said: res?.error || '' };
+}
+
+/** …and the way back out, which is the same one PRO's menu uses. */
+export function removeEndPanelByHand(unitId, panelId) {
+  const res = S().removeEndPanel(unitId, panelId, { decline: true });
+  return { ok: res !== false, said: '' };
+}
+
 export function addTopBox(hostId) {
   const host = unitOf(hostId);
   if (!host) return { ok: false, id: null, said: '' };
@@ -805,6 +1047,38 @@ export function setDoorCount(unitId, count) {
  * Counted off the computed result's own FRONT panels — the leaves that will
  * actually be cut — rather than off anything retail arranged to make them.
  */
+// ─── T65 F9 · ADD DOORS — ONE STORE PATH, TWO DOORS TO IT ──────────────────
+//
+// The owner: *"drzwi to osobna decyzja, w extrasach lub w setup"* · *"ADD
+// DOORS — i tu i tu chyba"*.
+//
+// DOORS DO NOT FOLLOW FROM BAYS (F7). This is its own act, offered in EXTRAS
+// on the left and on the selected wardrobe on the right, and BOTH call this
+// one function — one law, two doors to it. Nothing else in retail turns a
+// wardrobe's doors on.
+//
+// The COUNT is not asked for: `setDoorCount(unitId, 1)` hands the engine's own
+// width law the decision (one leaf up to `doors.singleDoorMaxWidth`, a pair
+// above), which is the same call a wardrobe is born with. A client who wants
+// to argue with it finds the count under Advanced, where T64 put it.
+
+/** Has this wardrobe got its doors on? */
+export const doorsOn = (unitId) => Boolean(unitOf(unitId)?.params?.doors);
+
+/** ADD DOORS. The engine's width law picks the leaves. */
+export function addDoors(unitId) {
+  if (!unitOf(unitId)) return { ok: false, count: 0, said: '' };
+  setDoorCount(unitId, 1);
+  return { ok: doorsOn(unitId), count: doorCount(unitId), said: '' };
+}
+
+/** …and the way back out, which is the same flag said the other way. */
+export function removeDoors(unitId) {
+  if (!unitOf(unitId)) return { ok: false, count: 0, said: '' };
+  S().setDoors(unitId, false);
+  return { ok: !doorsOn(unitId), count: doorCount(unitId), said: '' };
+}
+
 export function doorCount(unitId) {
   const result = S().unitResult?.(unitId);
   return (result?.panels || []).filter((p) => p.part === 'FRONT').length;
@@ -994,7 +1268,14 @@ export const INTERIOR_ROWS = [
     add: (s, u) => s.addShoeDrawer(u),
   },
   {
-    id: 'partition', pro: 'partition', menu: 'partition', name: 'Vertical divider',
+    // ─── T65 F7 · IN THE CLIENT'S WORDS ────────────────────────────────────
+    // The owner: *"zamiast vertical partition dać BAYS i wpisz ilość, max 3"*.
+    // A NAME and a COUNTER over the existing law, not a second law: the
+    // partitions are still the engine's own, added by the same
+    // `addFlushPartition` the copied PRO list adds them by. `bays: true` is
+    // what tells the INSIDE panel to draw a typed count instead of a `›`.
+    id: 'partition', pro: 'partition', menu: 'partition', name: 'Bays',
+    bays: true,
     // ONE TRACK, and this line is the whole of it — see `addFlushPartition`.
     add: (s, u) => addFlushPartition(u),
   },
@@ -1455,7 +1736,7 @@ export function unitWarnings(unitId) {
 export const bayCount = (unitId) => Math.max(1, (S().bayDoorsFor?.(unitId) || []).length);
 
 export function setBayCount(unitId, want) {
-  const n = Math.max(1, Math.trunc(Number(want) || 1));
+  const n = Math.min(MAX_BAYS, Math.max(1, Math.trunc(Number(want) || 1)));
   if (!unitOf(unitId)) return 0;
   const parts = () => itemsOf(unitId).filter((i) => i.kind === 'partition');
   let guard = 12;
@@ -2452,7 +2733,13 @@ export function removeUnitRefusal(unitId) {
   const unit = unitOf(unitId);
   if (!unit) return '';
   if (topBoxesOn(unitId).length) return REASONS.hostCarriesABox;
-  if (!unit.params?.rides_on && mainsOnStage().length <= 1) return REASONS.lastWardrobe;
+  // ─── T65 F1 · THE LAST WARDROBE MAY NOW GO ───────────────────────────────
+  // T64 refused it for one stated reason — *"a client has … no empty-room
+  // page"*. F1 built that page: the room mounts empty, the hint says what to
+  // do and ADD A WARDROBE stands in WHERE. The reason is void, so the refusal
+  // is too; deleting the last wardrobe returns the client to the very state
+  // the design now opens in. `hostCarriesABox` above is untouched — an
+  // orphaned top box is still a fault nobody asked for.
   return '';
 }
 
@@ -2512,24 +2799,10 @@ export function spreadNewShelf(unitId) {
   return newest.id;
 }
 
-/**
- * ─── F2 · WHERE — THE WARDROBE FILLS THE WALL ──────────────────────────────
- *
- * CLAUDE.md F2, step 2: *"wall width + ceiling height (two fields), the
- * wardrobe fills the wall."* The width is written through `setUnitSize`,
- * which asks the room first and then the store's own clamp
- * (`clampUnitWidth` — the infill at the wall, the neighbours), so a 4000 mm
- * wall gives the widest wardrobe the store allows on it and says so.
- */
-export function fitWardrobeToWall(unitId) {
-  const unit = unitOf(unitId);
-  const b = unitBounds(unitId);
-  if (!unit || !b) return { ok: false, said: '' };
-  const wall = wallLengthMm(S().project.room, unitWall(unitId));
-  const width = Math.min(Math.round(wall), Math.round(b.width.max));
-  if (Math.round(unit.params?.width || 0) === width) return { ok: true, said: '' };
-  return setUnitSize(unitId, { width });
-}
+// ─── T65 F1 · TOMBSTONE: `fitWardrobeToWall` STOOD HERE ────────────────────
+// T64's "the wardrobe fills the wall" is deleted under CLAUDE.md's licence: on
+// a 4000 wall it built a 3920 carcass with two 1960 leaves. The wall is now
+// just the room; the client's own wardrobe arrives at `min(wall, 1200)`.
 
 /**
  * ─── F2 · WHAT — THE TILES, AND WHICH ONE THE ENGINE BUILDS TONIGHT ───────
@@ -2614,7 +2887,10 @@ export function frontsWords(project) {
  * three answers win over the house ones, as they did in T59.
  */
 export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
-  const done = { fit: fitWardrobeToWall(unitId) };
+  // T65 F1: the `fit` step is gone with `fitWardrobeToWall`, and `unitId` may
+  // now be null — the room can be empty, and the decor answers are the
+  // PROJECT's, not the wardrobe's, so they are still worth writing.
+  const done = {};
   const collection = collectionId ? applyCollection(collectionId) : null;
   if (!collection) {
     if (!frontDecorOf(S().project)) done.front = setFrontDecor(COLLECTIONS[0].frontDecor);

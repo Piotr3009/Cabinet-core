@@ -38,12 +38,18 @@ export const REASONS = {
    */
   hostCarriesABox: 'Take the top box off first — it stands on this wardrobe.',
 
+  // ─── T65 F1 · TOMBSTONE: `lastWardrobe` STOOD HERE ──────────────────────
+  // T64 refused the last wardrobe's deletion because *"the retail room has no
+  // empty-room page"*. F1 built one, so the refusal went with its reason.
+
   /**
-   * T64 F1.1 · PREDICATE: one main unit left on the stage (`units` without a
-   * `rides_on`). PRO lets a joiner empty the room; the retail room has no
-   * empty-room page, and START AGAIN is the way to a fresh wardrobe.
+   * T65 F1 · PREDICATE: `store.addUnit('WARDROBE')` answered with an `error`
+   * instead of an id — the room itself refused the placement. The two doors to
+   * `addFirstWardrobe` (the plus on the empty floor, ADD A WARDROBE in WHERE)
+   * both say this, because a button that does nothing silently is the dead
+   * control the standing law forbids.
    */
-  lastWardrobe: 'This is the only wardrobe on the stage. Start again to replace it.',
+  roomRefusedWardrobe: () => 'There is no room on this wall — make the wall wider first.',
 
   /**
    * T64 F2 · PREDICATE: `PROJECT_TYPES[i].category !== 'wardrobe'` — the
@@ -179,6 +185,35 @@ export const REASONS = {
    *  stand. The store answers `null`; these are the words for that null. */
   noRoomForABay: ({ need }) => `There is no room for another divider — each bay needs at `
     + `least ${need} mm of clear opening.`,
+
+  /**
+   * T65 F8 · NOT a refusal — a NOTE, with its predicate.
+   *
+   * PREDICATE: `adapter.ceilingGapMm(unitId) > 0` with a cornice standing. A
+   * moulding comes in three sizes and a gap is any number, so the largest one
+   * that FITS can still leave a little open (decision 1 grows it as far as it
+   * goes; it never drives it into the plaster). The client is told, once.
+   */
+  corniceLeavesAGap: ({ gap }) => `The cornice reaches to within ${gap} mm of your `
+    + `ceiling — the last of it is closed on site when we fit.`,
+
+  /**
+   * T65 F8 · PREDICATE: `projectStore.setCornice` answered with a height that
+   * is not the one asked for — `engine/cornice.js takesCornice` says this type
+   * carries no moulding at all.
+   */
+  corniceRefused: 'This piece takes no cornice.',
+
+  /**
+   * T65 F7 · NOT a refusal but a NOTE, and it still has a predicate, which is
+   * why it is named here like every other sentence in this file.
+   *
+   * PREDICATE: `adapter.bayCount(unitId) > 1` — the engine's own count of
+   * full-height flush dividers (`bayDoorsFor`). The owner asked for the line
+   * to appear only after a wardrobe HAS more than one bay: *"i wtedy dopiero
+   * informacja o tym że bays można zrobić niższe ale półka musi być fix"*.
+   */
+  baysMayDiffer: 'Bays can be different heights — the shelf between them is fixed.',
 
   /** PREDICATE: `meta.jpull.reason === 'too-short'` on the leaf's own panel. */
   jrunTooShort: 'This leaf is too short for a J to be cut in its edge.',

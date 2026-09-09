@@ -105,8 +105,21 @@
    * 1440 is 0.8072, so each base is the owner's number over that. The three
    * T60 lines above are kept as the record of what layout A measured and are
    * overridden here, in the same block, by the numbers layout B measures. */
+  /* ─── T65 F3 · COLUMN 2, TEN PER CENT NARROWER ────────────────────────────
+   * The owner: *"może na początek 10 procent zrób"*. OPTIONS gives the space
+   * back to the STAGE, which is the thing the client came to look at.
+   *
+   * 421 × 0.9 = 378.9 → 379. At 1440 (scale 0.8072) that is 306 px where T64
+   * measured 340; at 1280 (scale 0.78) it is 296 where it was 328. THE SCALE
+   * LAW IS UNTOUCHED — this is a new BASE, not a new mechanism, and the width
+   * is still one number times `--pbi-scale` like every other dimension here.
+   *
+   * MEASURED BEFORE, NOT AFTER (F3's own instruction): the walk photographs
+   * the copied MaterialChoicePanel and FrontStyleGallery at both widths and
+   * `scripts/t65-f3-measure.mjs` reads back every label's box, so a clip or a
+   * word-by-word break is a number rather than an opinion. */
   --pbi-col-categories: calc(89 * var(--pbi-scale));
-  --pbi-col-options: calc(421 * var(--pbi-scale));
+  --pbi-col-options: calc(379 * var(--pbi-scale));
   --pbi-col-detail: calc(446 * var(--pbi-scale));
   --pbi-tile: calc(79 * var(--pbi-scale));
   --pbi-tile-icon: calc(25 * var(--pbi-scale));

@@ -1924,6 +1924,19 @@ export const DEFAULT_CABINET_PROFILE = {
     // fingerprint delta zero.
     cornice: {
       // What the per-unit option may be. 0 is "none" and is the default.
+      //
+      // ─── T65 F8 · THE 40 IS NOT HERE, AND THIS IS WHY ──────────────────
+      // CLAUDE.md F8 asks for *"a visual choice of 40 / 70 / 100"*. The 40 is
+      // SKIPPED, and the two walls it ran into are both in tonight's own laws:
+      //   • `corniceOption` (engine/cornice.js) admits only what is in this
+      //     list, and `cornice.js` is not one of the three engine files
+      //     licensed tonight — "Anything else: skip-and-note."
+      //   • Adding a third size HERE is not "new keys" either, and it is not
+      //     retail-only: `test/turn22-f1-cornice.test.js` pins this list as
+      //     *"none | 70 | 100, and nothing else"* for PRO, and three more
+      //     tests read it. A shared list is a PRO behaviour change.
+      // So the workshop still buys two mouldings, the chips offer those two,
+      // and the automatic cornice takes the smaller of them.
       heights: [70, 100],
       // How far the moulding stands proud of the door plane, per height.
       projection: { 70: 48, 100: 65 },
@@ -1970,6 +1983,24 @@ export const DEFAULT_CABINET_PROFILE = {
       },
       // What a mitred corner costs in ORDERED length. A joiner cuts the 45°
       // out of a longer piece; this is the allowance per corner.
+      // ─── T65 F8 · WHAT RETAIL DOES WITH IT, WITHOUT ASKING ─────────────
+      //
+      // NEW KEYS, defaults only — the licence CLAUDE.md gives `profile.js`
+      // tonight. PRO reads neither: its cornice is a decision a joiner makes,
+      // and *"Plinth, top infill and end panels — added, never assumed"* is
+      // unchanged for him.
+      //
+      //   autoHeight        the size a client's wardrobe arrives wearing — the
+      //                     SMALLEST moulding this workshop buys. CLAUDE.md
+      //                     asked for 40; see the note on `heights` above for
+      //                     why that size is skipped rather than forced.
+      //   closesGapUpToMm   CLAUDE.md's decision 1 and 2, as one number: a gap
+      //                     of this much or less to the ceiling is closed by
+      //                     the CORNICE GROWING to the next size that reaches
+      //                     it (never by a top infill — the owner said the
+      //                     cornice reaches the ceiling); a bigger gap is left
+      //                     alone, with ADD TOP BOX in EXTRAS if he wants it.
+      retail: { autoHeight: 70, closesGapUpToMm: 100 },
       mitreAllowance: 100,
       // The shortest return worth making at an open end — the top infill's own
       // rule, for the same reason: below this the mitre is longer than the

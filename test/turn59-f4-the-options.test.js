@@ -39,7 +39,8 @@ const PACK = JSON.parse(readFileSync(join(ROOT, 'public/decors/egger/egger-decor
 setDecorCatalogue(parseDecorCatalogue(PACK, { basePath: '/decors/egger/' }));
 
 const fresh = () => {
-  const id = A.startDesign('Test wardrobe');
+  A.startDesign('Test wardrobe');
+  const id = A.addFirstWardrobe();
   assert.ok(id, 'no wardrobe was made');
   return id;
 };

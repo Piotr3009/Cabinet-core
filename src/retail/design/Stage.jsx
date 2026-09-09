@@ -43,7 +43,7 @@ import { imageFilename } from '../estimate/download.js';
  * adapter and nothing else, and the iron boundary is untouched.
  */
 export default function Stage({
-  onHandle, onAddPlus = null, onAddInside = null, onSaid = null,
+  onHandle, onAddPlus = null, onAddInside = null, onAddFirst = null, hideInnerPlus = false, onSaid = null,
   fullScreen = false, onExitFullScreen = null,
 }) {
   const handle = useRef(null);
@@ -97,7 +97,13 @@ export default function Stage({
 
   return (
     <div className="pbi-stage" data-testid="stage-canvas">
-      <Scene onRenderReady={onRenderReady} onAddPlus={onAddPlus} onAddInside={onAddInside} />
+      <Scene
+        onRenderReady={onRenderReady}
+        onAddPlus={onAddPlus}
+        onAddInside={onAddInside}
+        onAddFirst={onAddFirst}
+        hideInnerPlus={hideInnerPlus}
+      />
       <FrontGapWarnings />
     </div>
   );
@@ -114,7 +120,49 @@ export default function Stage({
  * name — so RESET VIEW and the first frame both park there, and the
  * `resetPlacement` maths of `viewTools.js` retires (tombstone there).
  */
+// ─── T65 F4 · THE HOME VIEW IS PRO'S OWN, AND IT IS NOT COPIED ─────────────
+//
+// The owner: *"default ustawienie sceny pokoju prosto i bliżej — dokładnie jak
+// w PRO."*
+//
+// PRO's default camera is not in `cameraPresets.js` at all — that file says so
+// itself: *"PRO does not call any of this. Nothing in `src/components`,
+// `src/pages`, `src/App.jsx` or `src/main.jsx` imports this file."* It is
+// three lines in `src/3d/Scene.jsx`, on the Canvas both applications mount:
+//
+//   camera={{ position: [0, roomH * 0.95, mm(bounds.depth) * 1.25 + roomW * 0.35],
+//             fov: 38, near: 0.05, far: 100 }}
+//
+// So the way to be EXACTLY PRO is not to reproduce that arithmetic on this
+// side — a second copy of a number is a second number — but to LEAVE THE
+// CAMERA WHERE THE CANVAS PUT IT. T64 parked the FRONT preset one frame after
+// mount and that is what made the client's first view a different one from the
+// joiner's; nothing parks it now.
+//
+// RESET VIEW then means "back to the view you started in", which is the same
+// number by the same construction. `rememberHome` is called with the handle
+// the moment the renderer registers one, before anything can orbit it.
+let home = null;
+
+/**
+ * T65 F4 · remember PRO's own first view, once, before anything moves it.
+ *
+ * Read through `viewHandle()` — the live scene the canvas is drawing, which is
+ * the same door `useCameraMemory` reads through. The `handle` argument is not
+ * used for the read; it is there so the caller passes what it has and the
+ * signature matches every other helper in this file.
+ */
+export function rememberHome() {
+  if (home) return home;
+  home = readCamera() || null;
+  return home;
+}
+
+/** T65 F4 · RESET VIEW — back to PRO's own default, not to a preset. */
 export function resetStageView(handle) {
+  if (home && writeCamera(home)) return true;
+  // Nothing remembered (a reset before the first frame): the FRONT preset is
+  // the honest fallback, and it is what T64 shipped.
   return applyPreset('front', handle);
 }
 

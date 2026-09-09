@@ -75,6 +75,20 @@ import {
 // below does all of that, which is CLAUDE.md's own "read the BUDR law, do not
 // re-derive it".
 import { overlayDrawerItems, overlayPlan } from './overlayDrawers.js';
+
+// ─── T65 F5 · THE SETBACK THE CAPPING SHELF DOES NOT TAKE ──────────────────
+//
+// The owner: *"półka nad overlay drawers nie powinna mieć setback, powinna być
+// na 0"* · *"jak dodasz szuflady to jest dziura i to wygląda okropnie."*
+//
+// Named, and NOT a profile key on purpose. `profile.carcass.shelfDepthClearance`
+// is 20 and every other shelf in this file must keep reading it — this is one
+// board's exception, so it is stated where that board is cut. It is also the
+// number `reference/lisp/KIT_WARDROBE_FULL.lsp` has always cut the PARTITION
+// PANEL by: `(setq wysPART (- glSzafki gruboscPlyty))`, with no 20.0 in it,
+// beside the plain shelf's `(- glSzafki gruboscPlyty 20.0)`.
+const OVERLAY_CAP_CLEARANCE = 0;
+
 // ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS ────────────────────────────────────
 // The arithmetic is the ALREADY-MERGED `SPLIT DOORS (T35)` section of
 // KIT_WARDROBE_FULL.lsp, mirrored in engine/splitDoors.js. This file cuts what
@@ -3672,8 +3686,24 @@ export function computeCabinet(params, profileOverride) {
       const crossing = shelfRuns
         .filter((r) => r.item && shelfCrossesPartition(r.run, { x, thickness: slotG }))
         .map((r) => r.item);
+      // ─── T65 F7 · A PARTITION STANDS ON THE STACK'S SHELF ────────────────
+      //
+      // The owner: *"przegroda ma się zaczynać nad szufladami … na półce …
+      // pamiętaj starą zasadę: materiał nigdy nie wchodzi w materiał."*
+      //
+      // With an overlay stack at the bottom of the carcass, the floor a
+      // divider stands on is NOT the carcass floor — that would run a board
+      // straight down through the drawer boxes. It is the top face of the
+      // shelf that caps the stack (`OVERLAY-FIX`, cut at `overlay.shelfY`),
+      // whether the stack is 2 drawers or 5: the height is READ from the plan,
+      // never a fixed number.
+      //
+      // `overlay` is null for every cabinet that has not asked for a stack —
+      // which is all six standard configs — so this reads `G` exactly as it
+      // did before tonight for every one of them.
+      const partitionFloor = overlay ? overlay.shelfY + G : G;
       const span = partitionSpan({
-        floor: G,
+        floor: partitionFloor,
         ceiling: H - G,
         shelves: crossing,
         // The board a partition is INTERRUPTED by is the SHELF's, not its own:
@@ -4501,16 +4531,31 @@ export function computeCabinet(params, profileOverride) {
     // is cut here, with the stack, rather than offered as an item a joiner
     // could forget.
     //
-    // Full width between the sides and set back like any interior board, so a
-    // door closing on it meets a face rather than a front edge. `locked` says
-    // it is not a shelf somebody drags: it belongs to the stack, and deleting
-    // the stack is what removes it.
+    // Full width between the sides. `locked` says it is not a shelf somebody
+    // drags: it belongs to the stack, and deleting the stack is what removes it.
     if (budr.overlay) {
       const shelfW = internalWidth;
-      // Cut and PLACED exactly as every other shelf in this file is: the same
-      // `shelfDepthBoards` and the same setback, and anchored by its FRONT
-      // edge, which is where a joiner measures a shelf from (T11-F5.5).
-      const shelfBack = setbackOf(null, C.shelfDepthClearance);
+      // ─── T65 F5 · THIS ONE SHELF HAS NO SETBACK ────────────────────────────
+      //
+      // The owner: *"półka nad overlay drawers nie powinna mieć setback,
+      // powinna być na 0"* — and the reason, which is why this is not
+      // cosmetic: *"jak dodasz szuflady to jest dziura i to wygląda
+      // okropnie."* A 20 mm slot above a drawer stack, seen from the front.
+      //
+      // LISP IS LAW and the law already said it. `reference/lisp/
+      // KIT_WARDROBE_FULL.lsp` cuts this board as the PARTITION PANEL:
+      //   (setq wysPART  (- glSzafki gruboscPlyty))        <- no clearance
+      // beside the plain shelf's own line, twenty lines of kit apart:
+      //   (setq wysSHELF (- glSzafki gruboscPlyty 20.0))   <- the clearance
+      // T40 cut this panel "set back like any interior board" and that is the
+      // line the owner is looking at. The engine now matches the kit.
+      //
+      // NARROW, and deliberately so: `C.shelfDepthClearance` is 20 and EVERY
+      // other shelf still reads it — the two sites above at 3427/3546 and the
+      // section shelves at 8969 are untouched. Only the board that CAPS an
+      // overlay stack takes 0, and it is the only board in this file carrying
+      // `overlayStack: true`.
+      const shelfBack = setbackOf(null, OVERLAY_CAP_CLEARANCE);
       const shelfD = D - C.shelfDepthBoards * G - shelfBack;
       panels.push(panel({
         id: 'OVERLAY-FIX', part: 'SHELF', role: 'shelf', w: shelfW, h: shelfD, thickness: G,

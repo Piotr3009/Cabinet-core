@@ -27,6 +27,7 @@
 // `window.innerWidth`, which is the t59 walk's fifth lesson and cost it a night.
 
 import test from 'node:test';
+import { isCopy } from '../scripts/t63-copies.mjs';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -181,8 +182,13 @@ test('F1.2 · nor in any component of the design room', () => {
   //
   // Per FILE and per ORIGINAL, not per directory: `RoomEditor.jsx` is retail's
   // own and still answers to the law in full.
-  const copiedFromPro = (rel) => rel.startsWith('src/retail/design/room/')
-    && existsSync(join(ROOT, 'src/components', rel.split('/').pop()));
+  // ─── AMENDED BY T65 F8 ─────────────────────────────────────────────────
+  // The exemption is per FILE and per ORIGINAL — which is what the MANIFEST
+  // says, so the manifest is what is asked. The T62 path test above was true
+  // while `design/room/` held the only copies; T63 put copies in `detail/` and
+  // `material/` too, and T65 F8 adds `detail/ContextMenu.jsx`, whose `margin:
+  // 0` is PRO's own. `isCopy` is the same law said once, in one place.
+  const copiedFromPro = (rel) => isCopy(rel);
 
   for (const file of filesUnder(join(RETAIL, 'design'), /\.jsx?$/)) {
     const text = stripComments(read(file));

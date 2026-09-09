@@ -39,6 +39,7 @@ const S = () => useProjectStore.getState();
 
 const fresh = (width = 1200) => {
   A.startDesign('Bedroom wardrobe');
+  A.addFirstWardrobe();
   A.setSpace({ wallMm: 3000, ceilingMm: 2600 });
   const id = A.designUnit(S().units).id;
   A.setUnitSize(id, { width });

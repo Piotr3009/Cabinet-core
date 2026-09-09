@@ -218,25 +218,27 @@ export default function WardrobeMenu({
         </div>
       </Field>
 
-      {/* T61 F3 · *"4 add top"*. Greyed with the ROOM's own sentence, read from
-          the very predicate `addUnit` would have refused with — no silent
-          clamp, and no second reading of the ceiling. */}
-      <Field label="TOP BOX" note={A.topBoxesOn(unitId).length ? REASONS.topBoxGoesBeside : ''}>
+      {/* ─── T65 F9 · TOMBSTONE: ADD TOP BOX STOOD HERE ────────────────────
+          The owner: *"add top box powinno być przeniesione do EXTRAS po
+          lewej"*. Adding furniture is a STEP; editing an element is the right
+          panel. The button is unchanged and it is in EXTRAS. */}
+
+      {/* ─── T65 F9 · ADD DOORS — THE OTHER OF ITS TWO DOORS ───────────────
+          *"drzwi to osobna decyzja … ADD DOORS — i tu i tu chyba."* Here and
+          in EXTRAS, and both press `adapter.addDoors`. Doors do not follow
+          from bays (F7); this is the act that puts them on. */}
+      <Field label="DOORS ON THIS WARDROBE">
         <div className="pbi-duty-actions">
           <Button
             kind="secondary"
-            data-testid="wardrobe-add-top-box"
-            disabled={Boolean(topBoxReason)}
-            title={topBoxReason || 'Add a top box on this wardrobe'}
-            onClick={() => setSaid2(A.addTopBox(unitId).said)}
+            data-testid="wardrobe-add-doors"
+            title={A.doorsOn(unitId) ? 'Take the doors off this wardrobe' : 'Hang doors on this wardrobe'}
+            onClick={() => setSaid2((A.doorsOn(unitId) ? A.removeDoors(unitId) : A.addDoors(unitId)).said)}
           >
-            ADD TOP BOX
+            {A.doorsOn(unitId) ? 'REMOVE DOORS' : 'ADD DOORS'}
           </Button>
         </div>
-        {topBoxReason ? (
-          <span className="pbi-chip-reason" data-testid="wardrobe-top-box-reason">{topBoxReason}</span>
-        ) : null}
-        {said2 ? <Said testid="wardrobe-top-box-said">{said2}</Said> : null}
+        {said2 ? <Said testid="wardrobe-doors-said">{said2}</Said> : null}
       </Field>
 
       {/* ─── T64 F1.7 · ADVANCED — DOORS AND BAYS LEAVE THE MAIN MENU ─────────

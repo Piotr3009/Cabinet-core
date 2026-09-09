@@ -118,7 +118,7 @@ import {
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
 // Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
 import {
-  autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays, withDeclined,
+  autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays, withAsked, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
@@ -2684,11 +2684,32 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   pruneAutoEndPanels: () => runBatch(() => {
     const profile = getCabinetProfile();
-    const { panels, declines } = autoEndPanelStrays(get().units, profile);
+    // T65 F6: the ROOM, so "a wall covers this side" can be answered — without
+    // it a wardrobe's run end reads as a free end and grows a panel it does
+    // not need.
+    const { panels, declines } = autoEndPanelStrays(get().units, profile, { room: get().project.room });
     for (const stray of panels) {
-      // `removeEndPanel` takes the panel off and re-derives the auto parts —
-      // which is what closes the gap the board was standing in.
+      // ─── T65 F6 · …AND THE CABINET GOES BACK WHERE IT STOOD ──────────────
+      //
+      // MEASURED FAULT, found by F6's own wall frame. `addEndPanel` finishes
+      // with *"the unit is wider than it was; settle it legally where it
+      // stands"* — so a panel appearing on the LEFT pushes the carcass right
+      // by its thickness. Taking that panel off again does not undo the push:
+      // a wardrobe added mid-room (two free ends, two panels) and then moved
+      // to the wall ended up standing 65 mm off it instead of 40, and at 65
+      // the side infill is not raised at all — an open gap at the wall, which
+      // is the very thing F6 exists to prevent.
+      //
+      // So the prune reverses the push it is undoing: the same thickness, the
+      // other way, through the ordinary `moveUnit` with its magnet on, which
+      // is what lands it back against the wall (or its neighbour). A panel on
+      // the RIGHT never moved anything, so nothing is moved back.
+      const before = get().units.find((u) => u.id === stray.unitId);
+      const board = (before?.params?.end_panels || []).find((ep) => ep.id === stray.panelId);
+      const thick = Number(board?.thickness) || 0;
+      const home = Number(before?.position?.x_mm) || 0;
       get().removeEndPanel(stray.unitId, stray.panelId, { decline: false });
+      if (stray.side === 'L' && thick > 0) get().moveUnit(stray.unitId, home - thick, 0);
     }
     // …and a junction the joiner cleared by hand is FORGOTTEN once it stops
     // existing, which is the second half of F3: move the cabinet away and back
@@ -2719,7 +2740,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // pass per junction found, and never more passes than there are junctions.
     let guard = 0;
     for (;;) {
-      const wanted = autoEndPanelJunctions(get().units, profile);
+      const wanted = autoEndPanelJunctions(get().units, profile, { room: get().project.room });
       const next = wanted.find((j) => !made.some((m) => m.unitId === j.unitId && m.side === j.side));
       if (!next || guard > 64) break;
       guard += 1;
@@ -2787,9 +2808,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return made;
   }),
 
-  addEndPanel: (unitId, { side = 'L', height = null, thickness = null, applyToAll = null } = {}) => {
+  addEndPanel: (unitId, {
+    side = 'L', height = null, thickness = null, applyToAll = null, asked = false,
+  } = {}) => {
     if (side === 'B') {
-      const results = ['L', 'R'].map((one) => get().addEndPanel(unitId, { side: one, height, thickness, applyToAll }));
+      const results = ['L', 'R'].map((one) => get().addEndPanel(unitId, {
+        side: one, height, thickness, applyToAll, asked,
+      }));
       const ids = results.map((r) => r.id).filter(Boolean);
       const errors = results.map((r) => r.error).filter(Boolean);
       return {
@@ -2850,7 +2875,20 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
 
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId
-        ? { ...u, params: { ...u.params, end_panels: [...(u.params.end_panels || []), { id, side: wanted, ...settings }] } }
+        ? {
+          ...u,
+          params: {
+            ...u.params,
+            end_panels: [...(u.params.end_panels || []), { id, side: wanted, ...settings }],
+            // ─── T65 F6 · A PANEL ASKED FOR BY HAND IS PERMANENT ──────────
+            // *"the client added one by hand in EXTRAS — yes, permanently —
+            // his decision outranks the automat."* The side is remembered the
+            // way a DECLINE already is (`end_panel_declined`), so
+            // `autoEndPanelStrays` never takes it off when a flush neighbour
+            // arrives and covers the side it was standing on.
+            ...(asked ? { end_panel_asked: withAsked(u, wanted) } : {}),
+          },
+        }
         : u)),
       project: applyToAll === false
         ? st.project

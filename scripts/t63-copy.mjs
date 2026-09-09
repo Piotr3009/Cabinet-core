@@ -40,7 +40,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 
-import { ALL_COPIES, T63_COPIES } from './t63-copies.mjs';
+import { ALL_COPIES, T63_COPIES, T65_COPIES } from './t63-copies.mjs';
+
+// T65 F8 adds `ContextMenu.jsx` to the manifest, and the machine that MAKES
+// the copies has to make that one too or the manifest and the disk disagree.
+// The T62 four are deliberately not re-made here — they were made by T62's own
+// hand and every copy since imports THOSE.
+const TO_MAKE = [...T63_COPIES, ...T65_COPIES];
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const check = process.argv.includes('--check');
@@ -76,6 +82,11 @@ const MAP = {
   'cc-row': ['pbi-re-fieldrow', null],
   'cc-divider': ['pbi-re-divider', null],
   'cc-tag': ['pbi-re-tag', '.pbi-re-tag { font-size: 10px; text-transform: uppercase; letter-spacing: 0.025em; padding: 0.125rem 0.375rem; border-radius: var(--pbi-field-radius); background: var(--pbi-porcelain); color: var(--pbi-soft-graphite); border: 1px solid var(--pbi-stone-line); }'],
+  // T65 F8 · PRO's `cc-panel` (bg-shell-800, a shell-600 hairline, rounded-lg,
+  // shadow-panel) is the floating menu's own body. PBI: Warm White on a Stone
+  // Line hairline, SQUARE per the house law, and the shadow kept as a soft
+  // one so a menu still lifts off the stage.
+  'cc-panel': ['pbi-re-panel', '.pbi-re-panel { background: var(--pbi-warm-white); border: 1px solid var(--pbi-stone-line); border-radius: var(--pbi-radius); box-shadow: 0 6px 24px rgba(9, 10, 9, 0.14); }'],
   'cc-scroll': ['pbi-re-scrollbox', '.pbi-re-scrollbox { overflow-y: auto; overscroll-behavior: contain; }'],
 
   // ─── flow ───────────────────────────────────────────────────────────────
@@ -226,6 +237,18 @@ const MAP = {
   'w-28': ['pbi-re-w28', '.pbi-re-w28 { width: 7rem; }'],
   'w-44': ['pbi-re-w44', '.pbi-re-w44 { width: 11rem; }'],
   'w-full': ['pbi-re-wfull', null],
+  'w-[180px]': ['pbi-re-w180', '.pbi-re-w180 { width: 180px; }'],
+  'cursor-move': ['pbi-re-cursor-move', '.pbi-re-cursor-move { cursor: move; }'],
+  'select-none': ['pbi-re-noselect', '.pbi-re-noselect { user-select: none; }'],
+  'mx-3': ['pbi-re-mx3', '.pbi-re-mx3 { margin-left: 0.75rem; margin-right: 0.75rem; }'],
+  'my-1': ['pbi-re-my1', '.pbi-re-my1 { margin-top: 0.25rem; margin-bottom: 0.25rem; }'],
+  'mx-2': ['pbi-re-mx2', '.pbi-re-mx2 { margin-left: 0.5rem; margin-right: 0.5rem; }'],
+  'w-[calc(100%-1rem)]': ['pbi-re-wcalc16', '.pbi-re-wcalc16 { width: calc(100% - 1rem); }'],
+  // T65 F8 · PRO draws the menu's own separators at gold/30. PBI has ONE gold
+  // hairline (the palette law allows no fourth tint), and `border-gold/40`
+  // already maps to it — so this token takes the same class rather than
+  // inventing a colour the twelve tokens do not carry.
+  'border-gold/30': ['pbi-re-hair-gold-soft', null],
   'w-[110px]': ['pbi-re-w110', '.pbi-re-w110 { width: 110px; }'],
   'w-[260px]': ['pbi-re-w260', '.pbi-re-w260 { width: 260px; }'],
   'w-[300px]': ['pbi-re-w300', '.pbi-re-w300 { width: 300px; }'],
@@ -480,7 +503,7 @@ const census = (source, file) => {
   used.set(file, [...seen].sort());
 };
 
-for (const copy of T63_COPIES) {
+for (const copy of TO_MAKE) {
   const pro = readFileSync(join(ROOT, copy.pro), 'utf8');
   if (check) { census(pro, copy.pro); continue; }
   const out = swapHexes(reskin(repoint(pro, copy), copy.pro));

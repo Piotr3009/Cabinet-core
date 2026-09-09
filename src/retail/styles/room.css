@@ -347,6 +347,76 @@
 
 .pbi-viewbar-btn:focus-visible { outline: 1px solid var(--pbi-champagne); outline-offset: 0; }
 
+/* ─── T65 F2 · THE BRIGHT SLIDER ──────────────────────────────────────────
+   PRO's control, PBI's skin. It obeys the THREE house laws the rest of this
+   file does: SQUARE (`--pbi-radius`, never a round thumb); NOT ONE RAW PIXEL
+   — every measurement is a token, an `em` off the bar's own UI font, or the
+   1px hairline that is a hairline at every scale; and GOLD IS NEVER A FILL,
+   which is why the track is Stone Line and the thumb is Onyx where PRO's own
+   slider is `accent-gold`. PRO is Tailwind and not bound by PBI's palette
+   law; the skin is the one thing a copy is allowed to change, and this is it.
+   The numbers the slider is BOUNDED by are the profile's, in the JSX. */
+.pbi-viewbar-bright {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pbi-gap-2);
+  height: calc(var(--pbi-view-bar-h) - 2 * var(--pbi-gap-1));
+  padding: 0 var(--pbi-gap-2);
+  user-select: none;
+}
+
+.pbi-viewbar-bright-label,
+.pbi-viewbar-bright-value {
+  font-family: var(--pbi-font-ui);
+  font-size: var(--pbi-fs-ui-sm);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pbi-onyx);
+  white-space: nowrap;
+}
+
+.pbi-viewbar-bright-value {
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  min-width: 3.4em;
+  text-align: right;
+}
+
+.pbi-viewbar-bright input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 6em;
+  height: 1px;
+  background: var(--pbi-stone-line);
+  border-radius: var(--pbi-radius);
+  outline: none;
+}
+
+.pbi-viewbar-bright input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: var(--pbi-radius);
+  background: var(--pbi-onyx);
+  cursor: pointer;
+}
+
+.pbi-viewbar-bright input[type="range"]::-moz-range-thumb {
+  width: 0.7em;
+  height: 0.7em;
+  border: 0;
+  border-radius: var(--pbi-radius);
+  background: var(--pbi-onyx);
+  cursor: pointer;
+}
+
+.pbi-viewbar-bright input[type="range"]:focus-visible {
+  outline: 1px solid var(--pbi-champagne);
+  outline-offset: 1px;
+}
+
 .pbi-viewbar-sep {
   width: 1px;
   height: var(--pbi-sep-h);

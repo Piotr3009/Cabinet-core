@@ -58,6 +58,7 @@ test('F4 · nothing selected → the design\'s name alone', () => {
 
 test('F4 · the element\'s word is the ENGINE\'s word', () => {
   A.startDesign('Bedroom wardrobe');
+  A.addFirstWardrobe();
   const unit = A.designUnit(S().units);
   S().addShelves(unit.id, 2);
   S().addDrawers(unit.id, 3);

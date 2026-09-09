@@ -56,7 +56,18 @@ export const T63_COPIES = [
   { pro: 'src/components/UnitFinishModal.jsx', retail: 'src/retail/design/material/UnitFinishModal.jsx', why: 'F4 · ONE cabinet\'s colour — writes the UNIT, never the project' },
 ];
 
-export const ALL_COPIES = [...T62_COPIES, ...T63_COPIES];
+// ─── TURN 65 · THE ONE SURFACE THE T63 LEDGER LISTED AS OWED ───────────────
+//
+// The owner: *"nie widzę przycisków: top infill, cornice, panels."* They live
+// in `src/components/ContextMenu.jsx` — the right-click menu — and it is the
+// reason none of them was reachable from the client's room. Copied by the same
+// machine as everything above; it imports nothing from `src/components/`, so
+// the recursive walk stops at one file.
+export const T65_COPIES = [
+  { pro: 'src/components/ContextMenu.jsx', retail: 'src/retail/design/detail/ContextMenu.jsx', why: 'F8 · cornice, top infill, end panels and the bottom mask, with their refusals' },
+];
+
+export const ALL_COPIES = [...T62_COPIES, ...T63_COPIES, ...T65_COPIES];
 
 /** The retail path a PRO component copies to, or null where it is not copied. */
 export function retailCopyOf(proPath) {

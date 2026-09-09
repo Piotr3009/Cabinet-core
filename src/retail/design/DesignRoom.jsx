@@ -14,6 +14,7 @@ import ViewBar from './ViewBar.jsx';
 import { Button } from './controls.jsx';
 import GoldLine from '../ui/GoldLine.jsx';
 import RoomEditor from './room/RoomEditor.jsx';
+import ContextMenu from './detail/ContextMenu.jsx';
 import * as A from './adapter.js';
 import { useEstimateStore } from '../estimate/store.js';
 import { describeDesign } from '../estimate/document.js';
@@ -477,6 +478,16 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
       {/* PRO's own two screens, copied into `design/room/` and routed by
           `RoomEditor`. Mounted at the ROOM's level rather than inside the
           options column, because the shell it uses is `position: fixed`. */}
+      {/* ─── T65 F8 · THE WARDROBE'S OWN MENU, ON THE RIGHT ────────────────
+          The owner: *"nie widzę przycisków: top infill, cornice, panels."*
+          They are all in PRO's `ContextMenu.jsx`, and the reason none of them
+          was reachable is that retail never MOUNTED it — `Scene.jsx` has
+          called `openContextMenu` on a right-click since T13, so the gesture
+          was already firing into a menu nobody rendered. The copy is mounted
+          here, at the room's level, exactly where PRO mounts its own
+          (`ConfiguratorPage.jsx`). Nothing else was needed. */}
+      <ContextMenu />
+
       {roomEditor && !fullScreen ? (
         <RoomEditor anchor={roomEditor.anchor} onClose={() => setRoomEditor(null)} />
       ) : null}

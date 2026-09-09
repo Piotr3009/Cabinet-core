@@ -187,6 +187,24 @@ export const REASONS = {
     + `least ${need} mm of clear opening.`,
 
   /**
+   * T65 F8 · NOT a refusal — a NOTE, with its predicate.
+   *
+   * PREDICATE: `adapter.ceilingGapMm(unitId) > 0` with a cornice standing. A
+   * moulding comes in three sizes and a gap is any number, so the largest one
+   * that FITS can still leave a little open (decision 1 grows it as far as it
+   * goes; it never drives it into the plaster). The client is told, once.
+   */
+  corniceLeavesAGap: ({ gap }) => `The cornice reaches to within ${gap} mm of your `
+    + `ceiling — the last of it is closed on site when we fit.`,
+
+  /**
+   * T65 F8 · PREDICATE: `projectStore.setCornice` answered with a height that
+   * is not the one asked for — `engine/cornice.js takesCornice` says this type
+   * carries no moulding at all.
+   */
+  corniceRefused: 'This piece takes no cornice.',
+
+  /**
    * T65 F7 · NOT a refusal but a NOTE, and it still has a predicate, which is
    * why it is named here like every other sentence in this file.
    *

@@ -35,6 +35,9 @@ import { doorCountFor } from '../../engine/cabinet.js';
 // T65 F6: the engine's ONE visibility question, and the client's own
 // "permanent" record beside it.
 import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
+// T65 F8: the cornice stack's own arithmetic, and which types take one.
+import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
+import { unitTop } from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
@@ -304,6 +307,10 @@ export function addFirstWardrobe() {
   // …AND IT ARRIVES WITH ITS DOORS ON (T60): a bay with no divider IS one
   // bay, and column 1's hint says "1 door" from the first frame.
   if (placed?.id) setDoorCount(placed.id, 1);
+  // ─── T65 F8 · …AND WITH ITS CORNICE ON ───────────────────────────────────
+  // *"Cornice is automatic at 40 mm"*, and it grows to close a gap of 100 mm
+  // or less to the ceiling (decision 1). Removable like anything else.
+  if (placed?.id) applyAutoCornice(placed.id);
   return placed?.id || null;
 }
 
@@ -706,6 +713,116 @@ export function topBoxRefusal(hostId) {
  *
  * @returns {{ok:boolean, id:string|null, said:string}}
  */
+// ─── T65 F8 · THE CORNICE, AND WHAT IT DOES ABOUT THE CEILING ──────────────
+//
+// The owner: *"nie widzę przycisków: top infill, cornice, panels."* They are
+// PRO's, in the `ContextMenu.jsx` copied beside this file; these are the
+// retail policies around them, and they are the two decisions CLAUDE.md took:
+//
+//   1. A gap of 100 mm or less to the ceiling is closed by the CORNICE
+//      GROWING, not by a top infill — the owner said the cornice reaches the
+//      ceiling. Automatic, and removable like anything else.
+//   2. A gap over 100 mm is LEFT ALONE. No proposal, no nagging. ADD TOP BOX
+//      sits in EXTRAS if the client wants it.
+//
+// Both numbers are `profile.autoParts.cornice.retail`, added as new keys under
+// tonight's licence. Not one of them is written here.
+
+/** The sizes a client may choose between — the profile's own list. */
+export const corniceHeights = () => [...(P().autoParts.cornice.heights || [])];
+
+/** The size a client's wardrobe arrives wearing. */
+export const corniceAutoHeight = () => Number(P().autoParts.cornice.retail?.autoHeight) || 0;
+
+/** This wardrobe's cornice height, 0 for none. */
+export const corniceOf = (unitId) => Number(unitOf(unitId)?.params?.cornice) || 0;
+
+/**
+ * The space ABOVE THE CARCASS — what a cornice may stand in.
+ *
+ * Measured to the bare carcass top, not to the top of what is already standing
+ * on it, because that is the space the decision below is about: a moulding is
+ * fixed at door-top level and rises into this, and asking "how much is left
+ * over the cornice I already have" would make the answer depend on the answer.
+ */
+export function corniceSpaceMm(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return 0;
+  return Math.max(0, (Number(S().project.room?.height) || 0) - unitTop(unit, P()));
+}
+
+/** How much is still open above everything standing on this carcass. */
+export function ceilingGapMm(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return 0;
+  const top = corniceStackTop({
+    unitTop: unitTop(unit, P()),
+    infillHeight: Number(unit.params?.top_infill_mm) || 0,
+    height: corniceOf(unitId),
+  });
+  return Math.max(0, (Number(S().project.room?.height) || 0) - top);
+}
+
+/**
+ * DECISION 1 · which cornice closes a space of `spaceMm`, or null for none.
+ *
+ * ─── WHY THE LARGEST THAT FITS, AND NOT THE SMALLEST THAT REACHES ──────────
+ *
+ * A cornice is a MOULDING and comes in three sizes; a gap is any number. So
+ * "the cornice grows to close it" cannot mean "grows to exactly the gap" —
+ * asked for a 80 mm space, the smallest size that reaches is the 100, and a
+ * 100 in an 80 space is a moulding driven into the plaster.
+ *
+ * What a joiner does is grow it as far as it will go: the LARGEST size that
+ * still fits under the ceiling. An 80 takes the 70 and leaves 10; a 100 takes
+ * the 100 and closes exactly; a 45 takes the 40. A space too small for even
+ * the smallest moulding gets none — the wardrobe is already at the ceiling.
+ *
+ * Decision 2 is the other end of the same function: a space past
+ * `closesGapUpToMm` is LEFT ALONE, with no proposal and no nagging.
+ */
+export function corniceForGap(spaceMm) {
+  const c = P().autoParts.cornice;
+  const limit = Number(c.retail?.closesGapUpToMm) || 0;
+  const space = Math.max(0, Math.round(Number(spaceMm) || 0));
+  if (space <= 0 || space > limit) return null;
+  const grown = corniceHeights().filter((h) => h <= space).sort((a, b) => b - a)[0];
+  return grown ?? null;
+}
+
+/** Set the cornice to one of the three sizes (or 0 for none). */
+export function setCorniceHeight(unitId, height) {
+  const res = S().setCornice(unitId, height);
+  return { ok: Number(res?.height) === Number(height), height: Number(res?.height) || 0 };
+}
+
+/**
+ * The automatic cornice, applied when a client's wardrobe is made or resized.
+ *
+ * It fits the default 40 first, then asks decision 1 whether the gap that is
+ * LEFT wants a taller one. A client who has chosen a size himself is never
+ * overridden — `already` is the whole test — and a gap over 100 mm is left
+ * exactly as it is.
+ */
+export function applyAutoCornice(unitId) {
+  const unit = unitOf(unitId);
+  // NOTE the shape: `corniceOf` rather than a literal. The scale law reads a
+  // `height:` followed by a digit as a dimension somebody typed, and it is
+  // right to — this file may not write measurements, and it does not.
+  if (!unit || !takesCornice(unit.type)) {
+    return { height: corniceOf(unitId), why: 'this type takes no cornice' };
+  }
+  const already = corniceOf(unitId);
+  if (!already) setCorniceHeight(unitId, corniceAutoHeight());
+  const grown = corniceForGap(corniceSpaceMm(unitId));
+  if (grown && grown > corniceOf(unitId)) setCorniceHeight(unitId, grown);
+  const height = corniceOf(unitId);
+  return {
+    height,
+    why: grown ? 'grown to the ceiling' : (height ? 'the standard cornice' : 'none'),
+  };
+}
+
 // ─── T65 F6 · THE END PANELS, AS THE CLIENT REACHES THEM ───────────────────
 //
 // The automat puts them where a side would otherwise show

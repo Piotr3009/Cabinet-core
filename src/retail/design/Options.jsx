@@ -432,6 +432,10 @@ function ExtrasPanel({ unit, project }) {
   const lights = A.lightingOn(project);
   const topBoxReason = unit ? A.topBoxRefusal(unit.id) : '';
   const [said, setSaid] = useState('');
+  // T65 F8: the cornice, what it leaves open, and the panels already standing.
+  const cornice = unit ? A.corniceOf(unit.id) : 0;
+  const gap = unit ? A.ceilingGapMm(unit.id) : 0;
+  const panelSides = unit ? A.endPanelSides(unit.id) : [];
 
   // T65 F1: the plinth, the top box and the lighting all belong to a wardrobe.
   if (!unit) {
@@ -455,6 +459,48 @@ function ExtrasPanel({ unit, project }) {
           value={String(plinth)}
           options={A.plinthOptions()}
           onPick={(id) => A.setPlinth(unit.id, Number(id))}
+        />
+      </Field>
+
+      {/* ─── T65 F8 · CORNICE ──────────────────────────────────────────────
+          The owner: *"nie widzę przycisków: top infill, cornice, panels."*
+          Here they are, as CHOICES on the left — the same acts PRO's copied
+          ContextMenu offers as edits on the right.
+
+          It is already on: a client's wardrobe arrives wearing the profile's
+          40, grown to the largest moulding that fits when the ceiling is 100
+          mm away or less (decision 1). These chips are the visual choice
+          beside it, and NONE is the way back out. */}
+      <Field label="CORNICE" note={cornice && gap > 0 ? REASONS.corniceLeavesAGap({ gap }) : ''}>
+        <ChipRow
+          testid="details-cornice"
+          value={String(cornice)}
+          options={[
+            { id: '0', label: 'NONE' },
+            ...A.corniceHeights().map((h) => ({ id: String(h), label: `${h}` })),
+          ]}
+          onPick={(id) => setSaid(A.setCorniceHeight(unit.id, Number(id)).ok ? '' : REASONS.corniceRefused)}
+        />
+      </Field>
+
+      {/* END PANELS — the automat puts them where a side would otherwise show
+          (F6); this is the client's own hand on the same act, and a panel he
+          asks for here is PERMANENT. */}
+      <Field label="END PANELS">
+        <ChipRow
+          testid="details-end-panels"
+          value=""
+          options={['L', 'R'].map((side) => ({
+            id: side,
+            label: panelSides.some((p) => p.side === side) ? `${side} ✓` : side,
+          }))}
+          onPick={(side) => {
+            const has = panelSides.find((p) => p.side === side);
+            const res = has
+              ? A.removeEndPanelByHand(unit.id, has.id)
+              : A.addEndPanelByHand(unit.id, side);
+            setSaid(res.said || '');
+          }}
         />
       </Field>
 

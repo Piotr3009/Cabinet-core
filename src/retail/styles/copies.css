@@ -183,6 +183,16 @@
 .pbi-re-line-l { border-left: 1px solid var(--pbi-stone-line); }
 /* border-dashed */
 .pbi-re-dashed { border-style: dashed; }
+/* cursor-move */
+.pbi-re-cursor-move { cursor: move; }
+/* mx-3 */
+.pbi-re-mx3 { margin-left: 0.75rem; margin-right: 0.75rem; }
+/* my-1 */
+.pbi-re-my1 { margin-top: 0.25rem; margin-bottom: 0.25rem; }
+/* mx-2 */
+.pbi-re-mx2 { margin-left: 0.5rem; margin-right: 0.5rem; }
+/* w-[calc(100%-1rem)] */
+.pbi-re-wcalc16 { width: calc(100% - 1rem); }
 /* w-3 */
 .pbi-re-w3 { width: 0.75rem; }
 /* w-4 */
@@ -199,6 +209,8 @@
 .pbi-re-w28 { width: 7rem; }
 /* w-44 */
 .pbi-re-w44 { width: 11rem; }
+/* w-[180px] */
+.pbi-re-w180 { width: 180px; }
 /* w-[110px] */
 .pbi-re-w110 { width: 110px; }
 /* w-[260px] */

@@ -109,8 +109,15 @@ test('F3 · thirteen menus, and the router resolves every one of them', () => {
   // the copy. The table is still a table, every key still resolves, and no
   // key resolves to a sketch.
   const ENTRIES = ['door', 'rail', 'watch', 'lighting'];
+  // ─── AMENDED BY T65 F8 ─────────────────────────────────────────────────
+  // `ContextMenu.jsx` ends in `Menu.jsx` and is NOT one of retail's menus: it
+  // is PRO's right-click menu, COPIED (`scripts/t63-copies.mjs`). Every law in
+  // this file is about menus retail WROTE — their router key, their DONE, the
+  // sentences they may not author — and a copy answers to the copy-fidelity
+  // test instead. So the enumeration asks `isCopy`, exactly as the
+  // sentence-authoring law below already did.
   assert.deepEqual(
-    files.filter((f) => /Menu\.jsx$/.test(f)).sort(),
+    files.filter((f) => /Menu\.jsx$/.test(f) && !isCopy(`src/retail/design/detail/${f}`)).sort(),
     [...keys].filter((k) => !ENTRIES.includes(k))
       .map((k) => `${k[0].toUpperCase()}${k.slice(1).replace(/_(.)/g, (_, c) => c.toUpperCase())}Menu.jsx`)
       .concat('KitMenu.jsx').sort(),
@@ -675,6 +682,9 @@ test('F3 · every refusal a menu can show is tied to a predicate that is not ret
   // what distinguishes one from a class list or a path.
   for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/Menu\.jsx$/.test(file)) continue;
+    // T65 F8: PRO's copied ContextMenu carries PRO's own refusals, word for
+    // word — that is what 1:1 MEANS. The law is about sentences retail INVENTS.
+    if (isCopy(`src/retail/design/detail/${file}`)) continue;
     const text = code(`src/retail/design/detail/${file}`);
     const long = [...text.matchAll(/['`]([^'`\n]{45,})['`]/g)].map((m) => m[1])
       .filter((lit) => (lit.match(/ /g) || []).length >= 6)
@@ -686,6 +696,8 @@ test('F3 · every refusal a menu can show is tied to a predicate that is not ret
 test('F3 · DONE returns the column to the estimate, from every one of the thirteen', () => {
   for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/Menu\.jsx$/.test(file)) continue;
+    // T65 F8: a COPY is PRO's file, not one of retail's thirteen.
+    if (isCopy(`src/retail/design/detail/${file}`)) continue;
     assert.match(read(`src/retail/design/detail/${file}`), /onDone=\{onDone\}/,
       `${file} has no way back to the estimate`);
   }

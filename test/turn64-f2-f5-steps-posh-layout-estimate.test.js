@@ -220,7 +220,10 @@ test('F3 · the copies are reskinned through the GENERATED sheet, and their mark
   assert.match(sheet, /^\.pbi-re-btn-gold \{[^\n]*background: var\(--pbi-onyx\);/m);
   assert.ok(!/^\.pbi-re-btn \{/m.test(read('src/retail/styles/roomeditor.css')), 'the hand-written rule is still there beside the generated one');
   // T63's own fidelity test holds the copies' markup; here only the count.
-  assert.equal(ALL_COPIES.length, 25);
+  // T65 F8 adds the twenty-sixth: PRO's `ContextMenu.jsx`, the one surface the
+  // T63 ledger listed as OWED and the reason cornice, top infill and end
+  // panels were unreachable from the client's room.
+  assert.equal(ALL_COPIES.length, 26);
 });
 
 // ═══ F4 · LAYOUT B ═══════════════════════════════════════════════════════════

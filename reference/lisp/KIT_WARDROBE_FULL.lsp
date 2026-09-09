@@ -618,6 +618,22 @@
       (setq wieniecY (+ gruboscPlyty drawerTotalH 5.0))
       (setq wieniecCenterY (+ wieniecY (/ gruboscPlyty 2.0)))
       ;; Partition CNC dimensions (full internal)
+      ;;
+      ;; TURN 65 (CLAUDE.md F5): THE PARTITION PANEL HAS NO SETBACK, AND THAT
+      ;; IS DELIBERATE. The owner: "polka nad overlay drawers nie powinna miec
+      ;; setback, powinna byc na 0" - and the reason, which is why this is not
+      ;; cosmetic: "jak dodasz szuflady to jest dziura i to wyglada okropnie".
+      ;; A 20 mm slot above a drawer stack, seen from the front.
+      ;;
+      ;; Compare the SHELF's own law further down this file:
+      ;;   (setq wysSHELF (- glSzafki gruboscPlyty 20.0))   <- a plain shelf
+      ;;   (setq wysPART  (- glSzafki gruboscPlyty))        <- this panel
+      ;; The 20.0 is the shelf clearance and the partition does NOT take it.
+      ;; Two boards, two laws, one board apart - and this file has said so
+      ;; since the kit was written. The ENGINE was the thing out of step:
+      ;; `cabinet.js` cut its OVERLAY-FIX panel with the shelf clearance in it.
+      ;; LISP IS LAW; the engine now matches these two lines and a unit test
+      ;; holds it to them.
       (setq szerPART (- szerSzafki (* 2.0 gruboscPlyty)))
       (setq wysPART (- glSzafki gruboscPlyty))
       ;; Drawer Panel dimensions

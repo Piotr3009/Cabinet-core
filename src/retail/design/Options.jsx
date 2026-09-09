@@ -483,6 +483,25 @@ function ExtrasPanel({ unit, project }) {
         />
       </Field>
 
+      {/* ─── T65 F9 · ADD DOORS ────────────────────────────────────────────
+          The owner: *"drzwi to osobna decyzja, w extrasach lub w setup"* ·
+          *"ADD DOORS — i tu i tu chyba"*. Here on the left and on the selected
+          wardrobe on the right, and BOTH press `adapter.addDoors` — one law,
+          two doors to it. Doors do not follow from bays (F7). */}
+      <Field label="DOORS">
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="extras-add-doors"
+            title={A.doorsOn(unit.id) ? 'Take the doors off this wardrobe' : 'Hang doors on this wardrobe'}
+            onClick={() => setSaid((A.doorsOn(unit.id) ? A.removeDoors(unit.id) : A.addDoors(unit.id)).said)}
+          >
+            {A.doorsOn(unit.id) ? 'REMOVE DOORS' : 'ADD DOORS'}
+          </Button>
+        </div>
+      </Field>
+
       {/* END PANELS — the automat puts them where a side would otherwise show
           (F6); this is the client's own hand on the same act, and a panel he
           asks for here is PERMANENT. */}

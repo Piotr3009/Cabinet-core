@@ -1047,6 +1047,38 @@ export function setDoorCount(unitId, count) {
  * Counted off the computed result's own FRONT panels — the leaves that will
  * actually be cut — rather than off anything retail arranged to make them.
  */
+// ─── T65 F9 · ADD DOORS — ONE STORE PATH, TWO DOORS TO IT ──────────────────
+//
+// The owner: *"drzwi to osobna decyzja, w extrasach lub w setup"* · *"ADD
+// DOORS — i tu i tu chyba"*.
+//
+// DOORS DO NOT FOLLOW FROM BAYS (F7). This is its own act, offered in EXTRAS
+// on the left and on the selected wardrobe on the right, and BOTH call this
+// one function — one law, two doors to it. Nothing else in retail turns a
+// wardrobe's doors on.
+//
+// The COUNT is not asked for: `setDoorCount(unitId, 1)` hands the engine's own
+// width law the decision (one leaf up to `doors.singleDoorMaxWidth`, a pair
+// above), which is the same call a wardrobe is born with. A client who wants
+// to argue with it finds the count under Advanced, where T64 put it.
+
+/** Has this wardrobe got its doors on? */
+export const doorsOn = (unitId) => Boolean(unitOf(unitId)?.params?.doors);
+
+/** ADD DOORS. The engine's width law picks the leaves. */
+export function addDoors(unitId) {
+  if (!unitOf(unitId)) return { ok: false, count: 0, said: '' };
+  setDoorCount(unitId, 1);
+  return { ok: doorsOn(unitId), count: doorCount(unitId), said: '' };
+}
+
+/** …and the way back out, which is the same flag said the other way. */
+export function removeDoors(unitId) {
+  if (!unitOf(unitId)) return { ok: false, count: 0, said: '' };
+  S().setDoors(unitId, false);
+  return { ok: !doorsOn(unitId), count: doorCount(unitId), said: '' };
+}
+
 export function doorCount(unitId) {
   const result = S().unitResult?.(unitId);
   return (result?.panels || []).filter((p) => p.part === 'FRONT').length;

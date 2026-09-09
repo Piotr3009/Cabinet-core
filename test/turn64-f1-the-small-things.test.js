@@ -363,7 +363,15 @@ test('F1.6 · on entering DESIGN and after RESET VIEW the camera is the FRONT pr
 
 test('F1.7 · DOORS stays off the steps; T65 F7 puts BAYS ON one, and Advanced keeps both', () => {
   const options = code('src/retail/design/Options.jsx');
-  assert.ok(!/label="DOORS"/.test(options), 'DOORS is still on a step');
+  // ─── AMENDED AGAIN BY T65 F9 ───────────────────────────────────────────
+  // T64 kept DOORS off every step because it was a COUNT, and a count belongs
+  // under Advanced. The owner made doors an ACTION as well — *"drzwi to osobna
+  // decyzja, w extrasach lub w setup"* · *"ADD DOORS — i tu i tu chyba"* — and
+  // an action in EXTRAS is a choice, not an edit. The COUNT is still only
+  // under Advanced, which is what this law was protecting.
+  assert.ok(/label="DOORS"/.test(options), 'T65 F9 put ADD DOORS in EXTRAS');
+  assert.ok(!/doorCountRefusal|setDoorCount\(/.test(options),
+    'the door COUNT leaked onto a step — only the ADD/REMOVE action belongs there');
   // ─── AMENDED BY T65 F7 ─────────────────────────────────────────────────
   // T64 asserted BAYS was absent from every step. The owner overturned that
   // tonight in as many words: *"zamiast vertical partition dać BAYS i wpisz

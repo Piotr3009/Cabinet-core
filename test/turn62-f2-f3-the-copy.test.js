@@ -493,9 +493,17 @@ test('F3 · exactly ONE editor writes room.openings', () => {
   // buttons it deleted, and a ban that could not tell a headstone from a body
   // would forbid saying what was removed.
   const column = uncomment(read('src/retail/design/Options.jsx'));
-  for (const gone of ['ADD WINDOW', 'ADD DOOR', 'A.addOpening', 'A.setOpening', 'A.removeOpening']) {
+  for (const gone of ['ADD WINDOW', 'A.addOpening', 'A.setOpening', 'A.removeOpening']) {
     assert.ok(!column.includes(gone), `${gone} survived in the retail column — that is the second door`);
   }
+  // ─── AMENDED BY T65 F9 ─────────────────────────────────────────────────
+  // `ADD DOOR` is a DOORWAY IN A WALL, and this law is about the records that
+  // describe one (`room.openings`). T65 F9 put `ADD DOORS` — the LEAVES on a
+  // wardrobe, a different thing entirely — in EXTRAS on the owner's order, and
+  // a substring ban cannot tell the two apart. So the ban is said exactly: the
+  // opening editor's own label, and not the wardrobe's.
+  assert.ok(!/ADD DOOR(?!S)/.test(column),
+    'ADD DOOR (the wall opening) survived in the retail column — that is the second door');
 
   // The adapter still EXPORTS those writers and T61's tests still hold them to
   // `clampOpening`. That is a deliberate skip: deleting them is not licensed

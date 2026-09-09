@@ -116,16 +116,28 @@ test('F3 · REMOVE takes the box and leaves the wardrobe', () => {
   assert.ok(S().units.find((u) => u.id === host), 'removing the box took the wardrobe');
 });
 
-test('F3 · both entries press the same action, and neither invents a number', () => {
+test('F3 · the top box has ONE entry now, and it does not invent a number', () => {
   const layout = read('src/retail/design/Options.jsx');
   const menu = read('src/retail/design/detail/WardrobeMenu.jsx');
+  // ─── AMENDED BY T65 F9 ─────────────────────────────────────────────────
+  // T61 gave the top box two entries and asserted both pressed one action.
+  // The owner moved it: *"add top box powinno być przeniesione do EXTRAS po
+  // lewej"* — adding furniture is a STEP, editing an element is the right
+  // panel. So EXTRAS keeps the button and the wardrobe's menu has none.
   assert.match(layout, /data-testid="layout-add-top-box"/);
   assert.match(layout, /A\.addTopBox\(unit\.id\)/);
-  assert.match(menu, /data-testid="wardrobe-add-top-box"/);
-  assert.match(menu, /A\.addTopBox\(unitId\)/);
-  // Both grey on the same predicate.
+  assert.ok(!/data-testid="wardrobe-add-top-box"/.test(menu),
+    'ADD TOP BOX is still in the wardrobe\'s right-hand menu');
+  assert.ok(!/A\.addTopBox\(/.test(menu), 'the right menu still adds a top box');
+  // The refusal is still read from the store's own predicate where the button is.
   assert.match(layout, /A\.topBoxRefusal\(unit\.id\)/);
-  assert.match(menu, /A\.topBoxRefusal\(unitId\)/);
+
+  // …and the TWO-ENTRIES law moved with the owner's other sentence: ADD DOORS
+  // is offered in both places and both press the one store path (T65 F9).
+  assert.match(layout, /data-testid="extras-add-doors"/);
+  assert.match(menu, /data-testid="wardrobe-add-doors"/);
+  assert.match(layout, /A\.addDoors\(unit\.id\)/);
+  assert.match(menu, /A\.addDoors\(unitId\)/);
 
   // NO `params` ARGUMENT: `defaultParamsFor` already applies
   // `profile.wardrobe.topBox.defaults`, and `addUnit` then overwrites the width

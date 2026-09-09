@@ -43,7 +43,8 @@ setDecorCatalogue(parseDecorCatalogue(
 
 const fresh = () => {
   U().clearSelection();
-  const id = A.startDesign('T64');
+  A.startDesign('T64');
+  const id = A.addFirstWardrobe();
   return id;
 };
 
@@ -91,28 +92,39 @@ test('F1.1 · …and REFUSES per the store, in the store\'s own sentence', () =>
   assert.ok(panelsOf(id).some((p) => p.id === side.id), 'the side panel went anyway');
 });
 
-test('F1.1 · Delete never takes the wardrobe unless the wardrobe is what is selected — and never the last one', () => {
+test('F1.1 · Delete never takes the wardrobe unless the wardrobe is what is selected — and T65 F1 lets the last one go', () => {
   const id = fresh();
   U().clearSelection();
   assert.equal(stageKeyAction(press('Delete'), { doc: null }).handled, false, 'nothing selected, nothing deleted');
+  // ─── T65 F1 · THE LAST WARDROBE MAY NOW GO ──────────────────────────────
+  // T64 asserted `REASONS.lastWardrobe` here, for one stated reason: *"the
+  // retail room has no empty-room page"*. F1 built that page — the design now
+  // OPENS on an empty room — so the refusal went with its reason, and Delete
+  // returns the client to the state they started in.
   U().selectUnit(id);
-  const out = stageKeyAction(press('Delete'), { doc: null });
-  assert.equal(out.did, 'refused');
-  assert.equal(out.said, REASONS.lastWardrobe);
-  assert.equal(S().units.length, 1, 'the only wardrobe left the stage');
+  const lastOne = stageKeyAction(press('Delete'), { doc: null });
+  assert.equal(lastOne.did, 'remove-unit');
+  assert.equal(S().units.length, 0, 'the empty room is a first-class state');
 
-  // Two wardrobes: the SELECTED one goes, the other stays.
-  const second = S().addUnit('WARDROBE', { near: id, side: 'R' });
+  // …and from there the client puts one back, through the one store path.
+  const again = A.addFirstWardrobe();
+  assert.ok(again, 'ADD A WARDROBE / the plus put a wardrobe back');
+  assert.equal(S().units.length, 1);
+
+  // Two wardrobes: the SELECTED one goes, the other stays. `id` was deleted
+  // above, so the survivor to name here is `again` — the one the client put
+  // back through the same store path.
+  const second = S().addUnit('WARDROBE', { near: again, side: 'R' });
   assert.ok(second?.id, second?.error);
   U().selectUnit(second.id);
   const gone = stageKeyAction(press('Delete'), { doc: null });
   assert.equal(gone.did, 'remove-unit');
-  assert.deepEqual(S().units.map((u) => u.id), [id]);
+  assert.deepEqual(S().units.map((u) => u.id), [again]);
 
   // A host with a box on it is refused too — PRO would orphan the box.
-  const box = A.addTopBox(id);
+  const box = A.addTopBox(again);
   if (box.ok) {
-    U().selectUnit(id);
+    U().selectUnit(again);
     assert.equal(stageKeyAction(press('Delete'), { doc: null }).said, REASONS.hostCarriesABox);
   }
 });

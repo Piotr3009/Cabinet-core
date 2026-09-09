@@ -38,12 +38,18 @@ export const REASONS = {
    */
   hostCarriesABox: 'Take the top box off first — it stands on this wardrobe.',
 
+  // ─── T65 F1 · TOMBSTONE: `lastWardrobe` STOOD HERE ──────────────────────
+  // T64 refused the last wardrobe's deletion because *"the retail room has no
+  // empty-room page"*. F1 built one, so the refusal went with its reason.
+
   /**
-   * T64 F1.1 · PREDICATE: one main unit left on the stage (`units` without a
-   * `rides_on`). PRO lets a joiner empty the room; the retail room has no
-   * empty-room page, and START AGAIN is the way to a fresh wardrobe.
+   * T65 F1 · PREDICATE: `store.addUnit('WARDROBE')` answered with an `error`
+   * instead of an id — the room itself refused the placement. The two doors to
+   * `addFirstWardrobe` (the plus on the empty floor, ADD A WARDROBE in WHERE)
+   * both say this, because a button that does nothing silently is the dead
+   * control the standing law forbids.
    */
-  lastWardrobe: 'This is the only wardrobe on the stage. Start again to replace it.',
+  roomRefusedWardrobe: () => 'There is no room on this wall — make the wall wider first.',
 
   /**
    * T64 F2 · PREDICATE: `PROJECT_TYPES[i].category !== 'wardrobe'` — the

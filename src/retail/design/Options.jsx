@@ -45,6 +45,31 @@ function Panel({ title, children, testid }) {
   );
 }
 
+/* ─── T65 F1 · THE STEP THAT NEEDS A WARDROBE, AND HASN'T GOT ONE ─────────── */
+//
+// *"the steps after WHERE stay reachable but say plainly that they need a
+// wardrobe."* Reachable, not disabled: the rail still walks, NEXT still works,
+// and the step says the one true thing about itself instead of crashing on a
+// unit that is not there. One sentence, one button, the same store path as
+// everywhere else.
+function NeedsAWardrobe({ title, testid, what }) {
+  const [said, setSaid] = useState('');
+  return (
+    <Panel title={title} testid={testid}>
+      <p className="pbi-choice pbi-choice-15 pbi-panel-note" data-testid={`${testid}-empty`}>
+        {what} Add a wardrobe first — press the plus on the floor, or go back to WHERE.
+      </p>
+      <Button
+        data-testid={`${testid}-add-wardrobe`}
+        onClick={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
+      >
+        ADD A WARDROBE
+      </Button>
+      {said ? <Said testid={`${testid}-said`}>{said}</Said> : null}
+    </Panel>
+  );
+}
+
 /* ─── 1 · WHAT ────────────────────────────────────────────────────────────── */
 //
 // Default: Wardrobe. The other tiles are PRO's own `PROJECT_TYPES`, greyed
@@ -81,11 +106,18 @@ function WhatPanel({ project }) {
 
 /* ─── 2 · WHERE ───────────────────────────────────────────────────────────── */
 //
-// Two fields — the wall and the ceiling — and the wardrobe fills the wall
-// (`adapter.fitWardrobeToWall`: the store's own clamp decides how much of it).
+// Two fields — the wall and the ceiling — and NOTHING STANDS IN THE ROOM.
 // T64 F1.8: ONE WALL. The `WALLS 1 | 2` chips and `WALL 2 WIDTH` of T61 are
 // gone under CLAUDE.md's licence; a second wardrobe is the estimate's
 // business (F5). The L-shape, when it exists, will be a furniture TYPE.
+//
+// ─── T65 F1 · THE EMPTY ROOM IS A FIRST-CLASS STATE ────────────────────────
+//
+// The owner: *"ściana 4000 mm, ale bez szaf"*. The step ends with a wall and
+// an empty floor; ADD A WARDROBE below is one of the two doors to
+// `adapter.addFirstWardrobe` (the other is the plus on the empty floor), and
+// NEXT still works with the floor empty — the lazy client's law does not
+// require furniture, only that every step has its answer.
 function WherePanel({ unit, room, onEditRoom, onOpenDetail }) {
   const b = A.designBounds();
   const wall = A.wallLengthMm(room, 0);
@@ -104,9 +136,9 @@ function WherePanel({ unit, room, onEditRoom, onOpenDetail }) {
           onCommit={(v) => {
             const verdict = A.setSpace({ wallMm: v });
             if (verdict?.message) return verdict.message;
-            // The wardrobe fills the wall, and the store says how much of it.
-            const fit = unit ? A.fitWardrobeToWall(unit.id) : { said: '' };
-            setSaid(fit.said || '');
+            // T65 F1: the wall is just the room now. Nothing is resized to it,
+            // because nothing is standing in it unless the client put it there.
+            setSaid('');
             return '';
           }}
         />
@@ -125,9 +157,21 @@ function WherePanel({ unit, room, onEditRoom, onOpenDetail }) {
 
       {said ? <Said testid="where-said">{said}</Said> : null}
 
+      {/* T65 F1 · one of the two doors to `addFirstWardrobe`; the other is the
+          plus on the empty floor. The room is empty until one of them is used. */}
+      {unit ? null : (
+        <Button
+          data-testid="where-add-wardrobe"
+          onClick={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
+        >
+          ADD A WARDROBE
+        </Button>
+      )}
+
       <p className="pbi-choice pbi-choice-15 pbi-panel-note">
-        Measure wall to wall and floor to ceiling. The wardrobe fills the wall; we will survey
-        before we build.
+        {unit
+          ? 'Measure wall to wall and floor to ceiling. We will survey before we build.'
+          : 'Measure wall to wall and floor to ceiling. The room is empty — add a wardrobe here or press the plus on the floor.'}
       </p>
 
       <MoreOptions testid="where-more">
@@ -176,6 +220,8 @@ function WherePanel({ unit, room, onEditRoom, onOpenDetail }) {
 // COPIED (T63) — then the inside colour in three answers, then PRO's own
 // `AddItems`, whole. Default: white inside, an empty carcass; NEXT works.
 function InsidePanel({ unit, project, onOpenDetail }) {
+  // T65 F1: the room can be empty. Hooks below are unconditional, so the
+  // empty state is chosen at the RENDER, not by an early return.
   const counts = A.interiorCounts(unit);
   const inside = A.INTERIOR_ROWS.filter((row) => (counts[row.id] || 0) > 0);
   const colour = A.insideColourOf(project);
@@ -188,9 +234,13 @@ function InsidePanel({ unit, project, onOpenDetail }) {
   const shelves = counts.shelves || 0;
   const last = useRef(shelves);
   useEffect(() => {
-    if (shelves > last.current) A.spreadNewShelf(unit.id);
+    if (unit?.id && shelves > last.current) A.spreadNewShelf(unit.id);
     last.current = shelves;
-  }, [shelves, unit.id]);
+  }, [shelves, unit?.id]);
+
+  if (!unit) {
+    return <NeedsAWardrobe title="INSIDE" testid="panel-inside" what="Shelves, rails and drawers go inside a wardrobe." />;
+  }
 
   return (
     <Panel title="INSIDE" testid="panel-inside">
@@ -346,8 +396,13 @@ function FrontsPanel({ design, project }) {
 function ExtrasPanel({ unit, project }) {
   const plinth = Math.round(unit?.params?.leg_height ?? 100);
   const lights = A.lightingOn(project);
-  const topBoxReason = A.topBoxRefusal(unit.id);
+  const topBoxReason = unit ? A.topBoxRefusal(unit.id) : '';
   const [said, setSaid] = useState('');
+
+  // T65 F1: the plinth, the top box and the lighting all belong to a wardrobe.
+  if (!unit) {
+    return <NeedsAWardrobe title="EXTRAS" testid="panel-extras" what="The plinth, the lighting and the top box all belong to a wardrobe." />;
+  }
 
   return (
     <Panel title="EXTRAS" testid="panel-extras">

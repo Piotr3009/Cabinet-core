@@ -71,17 +71,21 @@ test('F2 · CATEGORIES is the six steps, in the owner\'s order', () => {
 
 test('F2 · the lazy client: every step has its answer chosen, and the defaults are the engine\'s', () => {
   useUiStore.getState().clearSelection();
-  const id = A.startDesign('Lazy');
+  A.startDesign('Lazy');
+  const id = A.addFirstWardrobe();
   const done = A.applyLazyDefaults(id);
   const p = S().project;
   // WHAT — a wardrobe, PRO's own project type.
   assert.equal(A.projectTypeOf(p), 'wardrobe');
-  // WHERE — the wardrobe fills the wall, as far as the store lets it.
-  assert.equal(done.fit.ok, true, done.fit.said);
+  // ─── T65 F1 · WHERE — THE WARDROBE NO LONGER FILLS THE WALL ─────────────
+  // T64 asserted `done.fit.ok` and a carcass as wide as the store allowed. On
+  // a 4000 wall that built a 3920 carcass with two 1960 leaves, which is why
+  // `fitWardrobeToWall` was deleted. The client's own wardrobe arrives at
+  // `min(wall, 1200)` instead, and `applyLazyDefaults` has no `fit` step.
+  assert.equal(done.fit, undefined, 'the fit step outlived its deletion');
   const unit = S().units.find((u) => u.id === id);
   const wall = A.wallLengthMm(p.room, 0);
-  const max = A.unitBounds(id).width.max;
-  assert.equal(Math.round(unit.params.width), Math.min(wall, max));
+  assert.equal(Math.round(unit.params.width), Math.min(Math.round(wall), A.RETAIL_FIRST_WIDTH_MAX));
   // INSIDE — white, EGGER's own W1000.
   assert.equal(A.insideColourOf(p), 'white');
   // FRONTS — shaker, the house collection's decor, push-to-open (no handle).
@@ -100,6 +104,7 @@ test('F2 · WHAT offers PRO\'s own eight types; only the wardrobe is buildable, 
   assert.deepEqual(tiles.filter((t) => !t.reason).map((t) => t.id), ['wardrobe']);
   for (const t of tiles.filter((t) => t.reason)) assert.equal(t.reason, REASONS.projectTypeNotOnline(t.label));
   A.startDesign('x');
+  A.addFirstWardrobe();
   assert.equal(A.setProjectType('kitchen'), null, 'a greyed tile wrote the project type');
   assert.equal(A.setProjectType('wardrobe'), 'wardrobe');
 });
@@ -116,6 +121,7 @@ test('F2 · INSIDE opens on the carcass material, above the interior rows, and o
   assert.match(inside, /CHOOSE…/);
   // The three answers, through the store's own carcass setters.
   A.startDesign('x');
+  A.addFirstWardrobe();
   A.setFrontDecor('H3195_19');
   assert.equal(A.setInsideColour('white'), A.swatchFor(A.WHITE_DECOR).finishId);
   assert.equal(A.insideColourOf(S().project), 'white');
@@ -290,7 +296,8 @@ test('F5 · ONE persistence path holds the items — the existing SAVE/LOAD stor
 
 test('F5 · an item round-trips DESIGN → estimate → EDIT → DESIGN unchanged', () => {
   useUiStore.getState().clearSelection();
-  const id = A.startDesign('Bedroom wardrobe');
+  A.startDesign('Bedroom wardrobe');
+  const id = A.addFirstWardrobe();
   E().begin('Bedroom wardrobe');
   A.applyLazyDefaults(id);
   A.setUnitSize(id, { width: 2400 });
@@ -306,7 +313,9 @@ test('F5 · an item round-trips DESIGN → estimate → EDIT → DESIGN unchange
 
   // ADD ANOTHER WARDROBE — a fresh design on the stage, the item untouched.
   E().addDesign((name) => A.startDesign(name), 'Wardrobe 2');
-  assert.notEqual(S().units[0].id, id);
+  // T65 F1: a fresh design is an EMPTY room — `startDesign` places nothing, so
+  // "a fresh design on the stage" is now asserted as no units at all.
+  assert.equal(S().units.length, 0, 'the second design did not start empty');
   assert.equal(E().items().length, 1, 'an uncommitted design is not an item');
 
   // EDIT → the item back on the stage. `loadProject` is the store's own door

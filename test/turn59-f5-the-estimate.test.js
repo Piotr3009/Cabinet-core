@@ -40,7 +40,8 @@ setDecorCatalogue(parseDecorCatalogue(PACK, { basePath: '/decors/egger/' }));
 
 /** A wardrobe with an answer to every question, so the document has to carry them all. */
 function designed(name = 'Bedroom wardrobe') {
-  const unitId = A.startDesign(name);
+  A.startDesign(name);
+  const unitId = A.addFirstWardrobe();
   A.setSpace({ wallMm: 3000, ceilingMm: 2500 });
   A.setSlope({ on: true, leftMm: 1400, rightMm: 2500 });
   A.setWardrobeSize(unitId, { width: 2000, depth: 650 });
@@ -89,7 +90,8 @@ test('F5 · the document carries every choice, in words', () => {
 });
 
 test('F5 · a flat wall says so, and an empty wardrobe says so', () => {
-  const unitId = A.startDesign('Plain');
+  A.startDesign('Plain');
+  const unitId = A.addFirstWardrobe();
   A.setSpace({ wallMm: 1800, ceilingMm: 2400 });
   A.setWardrobeSize(unitId, { width: 900 });
   const by = Object.fromEntries(
@@ -137,6 +139,7 @@ test('F5.3 · LOAD restores every answer, and a second round trip does not drift
 
   // Somebody else's wardrobe, on the stage in the meantime.
   A.startDesign('Something else entirely');
+  A.addFirstWardrobe();
   assert.notEqual(S().units[0].params.width, 2000);
 
   // …and the saved one, back through the shared store's own loader.
@@ -172,6 +175,7 @@ test('F5.3 · LOAD restores every answer, and a second round trip does not drift
   // saved again is byte-identical to the first reload. An estimate that drifted
   // one key per round trip would be a different wardrobe by the fourth.
   A.startDesign('And again something else');
+  A.addFirstWardrobe();
   S().loadProject(back.project, back.units);
   const twice = JSON.parse(JSON.stringify({ project: S().project, units: S().units }));
   assert.equal(JSON.stringify(twice), JSON.stringify(back), 'the estimate drifts on every round trip');

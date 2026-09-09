@@ -43,7 +43,7 @@ import { imageFilename } from '../estimate/download.js';
  * adapter and nothing else, and the iron boundary is untouched.
  */
 export default function Stage({
-  onHandle, onAddPlus = null, onAddInside = null, onSaid = null,
+  onHandle, onAddPlus = null, onAddInside = null, onAddFirst = null, onSaid = null,
   fullScreen = false, onExitFullScreen = null,
 }) {
   const handle = useRef(null);
@@ -97,7 +97,7 @@ export default function Stage({
 
   return (
     <div className="pbi-stage" data-testid="stage-canvas">
-      <Scene onRenderReady={onRenderReady} onAddPlus={onAddPlus} onAddInside={onAddInside} />
+      <Scene onRenderReady={onRenderReady} onAddPlus={onAddPlus} onAddInside={onAddInside} onAddFirst={onAddFirst} />
       <FrontGapWarnings />
     </div>
   );

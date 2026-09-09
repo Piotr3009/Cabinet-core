@@ -53,8 +53,13 @@ const code = (p) => read(p)
 /** One wardrobe, made the way the design room makes it. */
 function room({ width = 900, drawers = 0, shelves = 0, rail = false } = {}) {
   A.startDesign('Bedroom wardrobe');
+  A.addFirstWardrobe();
   const unit = A.designUnit(S().units);
-  if (width !== P.wardrobe.defaults.width) A.setUnitSize(unit.id, { width });
+  // T65 F1: the guard used to read `P.wardrobe.defaults.width` (600) — the
+  // width the T60 wardrobe arrived at. The client's first wardrobe now arrives
+  // at `min(wall, 1200)`, so the helper asks the UNIT what it is instead of
+  // assuming a profile number, and `room({ width: 600 })` really is 600.
+  if (Math.round(Number(unit.params?.width) || 0) !== width) A.setUnitSize(unit.id, { width });
   if (shelves) S().addShelves(unit.id, shelves);
   if (drawers) S().addDrawers(unit.id, drawers);
   if (rail) S().addHangerRail(unit.id, {});

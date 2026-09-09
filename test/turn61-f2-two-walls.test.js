@@ -124,6 +124,7 @@ test('F2 · a return under a rake is capped by the main it MEETS, not by walls[0
 
 test('F2 · the room, the chips and the second wardrobe — through the store alone', () => {
   A.startDesign('Bedroom wardrobe');
+  A.addFirstWardrobe();
   assert.equal(A.wallChoice(S().project), 'wall', 'a fresh design shows one wall');
 
   assert.equal(A.setWallCount('two'), 'two');
@@ -156,6 +157,7 @@ test('F2 · the room, the chips and the second wardrobe — through the store al
 
 test('F2 · the STAGE HINT names the wall only once there is one to confuse it with', () => {
   A.startDesign('Bedroom wardrobe');
+  A.addFirstWardrobe();
   const one = A.designUnit(S().units);
   S().addShelves(one.id, 2);
   const shelf = S().unitResult(one.id).panels.find((p) => p.part === 'SHELF');

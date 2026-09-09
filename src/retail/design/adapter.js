@@ -223,29 +223,67 @@ export function startDesign(name = 'Bedroom wardrobe') {
   // `'wall'` and `'two'`; this is the same word for the same reason, and it is
   // what a client has been shown a wall's worth of since t59.
   store.setDesign({ projectType: 'wardrobe', scope: 'wall' });
-  const p = P();
-  // `addUnit` answers `{ id, error, wall }` — the room may refuse a placement,
-  // and a caller that treated the whole verdict as an id would then pass an
-  // object everywhere a unit id was wanted.
-  const placed = store.addUnit('WARDROBE', {
-    params: { width: p.wardrobe.defaults.width, height: p.wardrobe.defaults.height },
-  });
-  // AGAINST THE WALL, at its start. `addUnit` drops a cabinet where a joiner
-  // would want it — in the middle of the room, beside whatever is already
-  // there — and for PRO that is right. Here there is one wardrobe and the wall
-  // IS its space: left in the middle, the store clamps its width to the gap
-  // and says so ("Width limited to 1260 mm by the infill at the wall"), which
-  // is a true sentence about a placement the client never asked for.
-  if (placed?.id) store.moveUnit(placed.id, 0, 1);
-
-  // ─── AND IT ARRIVES WITH ITS DOORS ON ────────────────────────────────────
+  // ─── T65 F1 · AND NOTHING STANDS IN IT ───────────────────────────────────
   //
-  // A wardrobe's `params.doors` starts false, so a fresh one is an open
-  // carcass — while column 1's hint already says "1 door", because a bay with
-  // no divider IS one bay. The client would be told one thing and shown
-  // another on the first frame they ever see. `setDoorCount` asks the engine
-  // for the count its own width law gives (one leaf up to 700 mm, a pair
-  // above), so the picture and the words agree from the start.
+  // The owner: *"usuń szafę default"* … *"ściana 4000 mm, ale bez szaf"*.
+  //
+  // T60 put a WARDROBE here and T64 stretched it to the wall; both are gone.
+  // The room mounts EMPTY and stays empty until the client asks for a
+  // wardrobe — from the plus on the empty floor, or from ADD A WARDROBE in
+  // the step. Both call `addFirstWardrobe` and there is no third way in.
+  //
+  // TOMBSTONE (T60/T64): the default `addUnit('WARDROBE')` + `moveUnit` to the
+  // wall + `setDoorCount(1)` stood here. `fitWardrobeToWall` — the "fills the
+  // wall" rule that made a 3920 carcass with two 1960 leaves — is deleted.
+  return null;
+}
+
+// ─── T65 F1 · THE WIDTH THE FIRST WARDROBE ARRIVES AT ──────────────────────
+//
+// The owner: *"nie dawaj blokady na szafy szersze ale default daj 1200 max"*.
+// A DEFAULT, not a block: the client may type wider and the engine's own
+// clamps (`clampUnitWidth` — the infill at the wall, the neighbours) still
+// refuse only what the ROOM refuses.
+//
+// It lives HERE and not in `profile.wardrobe.defaults.width` on purpose, and
+// the reason is the hard gate. `defaultParamsFor` (engine/types.js:1067)
+// reads `d.width` straight off `wardrobe.defaults` for every caller, and
+// `scripts/t64-classify.mjs` builds the WARDROBE golden from
+// `defaultParamsFor('WARDROBE', P)` — so moving that 600 to 1200 moves the
+// WARDROBE golden's sha256 on the first line of the night. CLAUDE.md also
+// licenses `profile.js` for *"F8's cornice defaults only, as new keys"*, and
+// this is not that. So retail says its own number where retail makes its own
+// wardrobe, PRO keeps the 600 it has always had, and the golden never moves.
+export const RETAIL_FIRST_WIDTH_MAX = 1200;
+
+/**
+ * ─── T65 F1 · THE ONE STORE PATH THAT ADDS THE FIRST WARDROBE ──────────────
+ *
+ * *"The client places the first wardrobe: the plus on the empty floor, and an
+ * ADD A WARDROBE action in the step itself, both calling one store path."*
+ *
+ * Two doors, one law. `DesignRoom`'s empty-floor plus and `Options`' ADD A
+ * WARDROBE button both land here; nothing else in retail calls `addUnit`
+ * with a WARDROBE.
+ *
+ * Its width is `min(wall, 1200)` — the wall when the wall is narrower (a 900
+ * wall gives 900, not 1200), the default otherwise. Height and depth are the
+ * profile's, untouched.
+ */
+export function addFirstWardrobe() {
+  const store = S();
+  const p = P();
+  const wall = Math.round(wallLengthMm(store.project.room, 0));
+  const width = Math.min(wall, RETAIL_FIRST_WIDTH_MAX);
+  const placed = store.addUnit('WARDROBE', {
+    params: { width, height: p.wardrobe.defaults.height },
+  });
+  // AGAINST THE WALL, at its start — T60's reason, which outlived T60's
+  // wardrobe: left in the middle the store clamps the width to the gap and
+  // says so, which is a true sentence about a placement nobody asked for.
+  if (placed?.id) store.moveUnit(placed.id, 0, 1);
+  // …AND IT ARRIVES WITH ITS DOORS ON (T60): a bay with no divider IS one
+  // bay, and column 1's hint says "1 door" from the first frame.
   if (placed?.id) setDoorCount(placed.id, 1);
   return placed?.id || null;
 }
@@ -2452,7 +2490,13 @@ export function removeUnitRefusal(unitId) {
   const unit = unitOf(unitId);
   if (!unit) return '';
   if (topBoxesOn(unitId).length) return REASONS.hostCarriesABox;
-  if (!unit.params?.rides_on && mainsOnStage().length <= 1) return REASONS.lastWardrobe;
+  // ─── T65 F1 · THE LAST WARDROBE MAY NOW GO ───────────────────────────────
+  // T64 refused it for one stated reason — *"a client has … no empty-room
+  // page"*. F1 built that page: the room mounts empty, the hint says what to
+  // do and ADD A WARDROBE stands in WHERE. The reason is void, so the refusal
+  // is too; deleting the last wardrobe returns the client to the very state
+  // the design now opens in. `hostCarriesABox` above is untouched — an
+  // orphaned top box is still a fault nobody asked for.
   return '';
 }
 
@@ -2512,24 +2556,10 @@ export function spreadNewShelf(unitId) {
   return newest.id;
 }
 
-/**
- * ─── F2 · WHERE — THE WARDROBE FILLS THE WALL ──────────────────────────────
- *
- * CLAUDE.md F2, step 2: *"wall width + ceiling height (two fields), the
- * wardrobe fills the wall."* The width is written through `setUnitSize`,
- * which asks the room first and then the store's own clamp
- * (`clampUnitWidth` — the infill at the wall, the neighbours), so a 4000 mm
- * wall gives the widest wardrobe the store allows on it and says so.
- */
-export function fitWardrobeToWall(unitId) {
-  const unit = unitOf(unitId);
-  const b = unitBounds(unitId);
-  if (!unit || !b) return { ok: false, said: '' };
-  const wall = wallLengthMm(S().project.room, unitWall(unitId));
-  const width = Math.min(Math.round(wall), Math.round(b.width.max));
-  if (Math.round(unit.params?.width || 0) === width) return { ok: true, said: '' };
-  return setUnitSize(unitId, { width });
-}
+// ─── T65 F1 · TOMBSTONE: `fitWardrobeToWall` STOOD HERE ────────────────────
+// T64's "the wardrobe fills the wall" is deleted under CLAUDE.md's licence: on
+// a 4000 wall it built a 3920 carcass with two 1960 leaves. The wall is now
+// just the room; the client's own wardrobe arrives at `min(wall, 1200)`.
 
 /**
  * ─── F2 · WHAT — THE TILES, AND WHICH ONE THE ENGINE BUILDS TONIGHT ───────
@@ -2614,7 +2644,10 @@ export function frontsWords(project) {
  * three answers win over the house ones, as they did in T59.
  */
 export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
-  const done = { fit: fitWardrobeToWall(unitId) };
+  // T65 F1: the `fit` step is gone with `fitWardrobeToWall`, and `unitId` may
+  // now be null — the room can be empty, and the decor answers are the
+  // PROJECT's, not the wardrobe's, so they are still worth writing.
+  const done = {};
   const collection = collectionId ? applyCollection(collectionId) : null;
   if (!collection) {
     if (!frontDecorOf(S().project)) done.front = setFrontDecor(COLLECTIONS[0].frontDecor);

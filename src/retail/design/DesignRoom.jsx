@@ -18,6 +18,7 @@ import * as A from './adapter.js';
 import { useEstimateStore } from '../estimate/store.js';
 import { describeDesign } from '../estimate/document.js';
 import { collectionById } from './collections.js';
+import { REASONS } from './reasons.js';
 import { loadDecors } from '../decorPack.js';
 import { go } from '../site/router.js';
 
@@ -230,12 +231,14 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
       // THE LAZY CLIENT'S ANSWERS, once the decor pack has landed — a decor is
       // a thing the pack names. `loadDecors` is memoised, so this is the same
       // promise the entry started.
-      const u = A.designUnit(useProjectStore.getState().units);
-      if (u) A.fitWardrobeToWall(u.id);
+      // T65 F1: no wardrobe is placed here any more — the room mounts EMPTY
+      // and `fitWardrobeToWall` is gone. The decor answers are the PROJECT's,
+      // so they are still written on an empty floor and the first wardrobe the
+      // client adds is born wearing them.
       const collectionId = wantCollection && collectionById(wantCollection) ? wantCollection : null;
       loadDecors().then(() => {
         const live = A.designUnit(useProjectStore.getState().units);
-        if (live) A.applyLazyDefaults(live.id, { collectionId });
+        A.applyLazyDefaults(live?.id || null, { collectionId });
         useEstimateStore.getState().capture();
       });
     }
@@ -385,6 +388,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         // THE RUN-END PLUS adds the neighbour's own type beside it, which is
         // the same call PRO's library makes with the same `{ near, side }`.
         onAddPlus={(point) => setSaid(A.addBesidePlus(point).said)}
+        /* T65 F1 · the empty floor's plus — the SAME store path as ADD A
+           WARDROBE in the WHERE step. Two doors, one law. */
+        onAddFirst={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
         // THE INNER PLUS asks "what goes inside this one" — and retail's answer
         // is the INSIDE step, which is where PRO's own `setPanelSection('add',
         // true)` sends a joiner. The scene has SELECTED that cabinet first
@@ -438,6 +444,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
           designName={designName}
           onDesignName={(name) => estimate.rename(estimate.activeId, name)}
           onOpenDetail={(menu) => {
+            // T65 F1: the room can be empty, and a step that needs a wardrobe
+            // says so rather than opening a menu about one that is not there.
+            if (!unit) return;
             const found = A.selectionForMenu(menu, unit.id);
             // A row with nothing behind it opens nothing — which is what makes
             // a row without a `›` honest rather than merely quiet.
@@ -450,9 +459,12 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
           onDone={onDone}
           onEditRoom={(anchor) => setRoomEditor({ anchor })}
           onReset={() => {
+            // T65 F1: START AGAIN returns the client to the EMPTY room the
+            // design opens in — the decor answers are the project's and are
+            // still written, so the next wardrobe is born wearing them.
             A.startDesign(designName || 'Bedroom wardrobe');
             const u = A.designUnit(useProjectStore.getState().units);
-            if (u) A.applyLazyDefaults(u.id);
+            A.applyLazyDefaults(u?.id || null);
             setTarget(null);
             setDone([]);
             setActive('what');

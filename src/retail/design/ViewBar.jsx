@@ -1,5 +1,6 @@
 import { Fragment } from 'react';
 import { useUiStore } from '../../stores/uiStore.js';
+import { getCabinetProfile } from '../../engine/profile.js';
 import { propsAvailable, propsReason, usePropsPack } from '../../3d/propsPack.js';
 import { VIEW_TOOLS, WORKSHOP_TOOLS } from './viewTools.js';
 import { RETAIL_SHOW_WORKSHOP_TOOLS } from '../config.js';
@@ -49,6 +50,58 @@ function BarButton({
     >
       {label}
     </button>
+  );
+}
+
+/**
+ * ─── T65 F2 · THE BRIGHT SLIDER, COPIED FROM PRO'S TOP BAR ─────────────────
+ *
+ * The owner: *"retail jest za jasna … zapomniałeś o natężeniu naświetlenia —
+ * kopia identycznie jak w PRO, włącznie z ustawieniem jasności etc."*
+ *
+ * PRO's control is `src/components/TopBar.jsx` (T26, the `data-brightness-
+ * control` label): a range input over `uiStore.brightness`, bounded by
+ * `profile.appearance.studio.brightness` and read back as a percentage. This
+ * is that control, 1:1 — the SAME store field, the SAME setter, the SAME three
+ * numbers out of the SAME profile block. Only the skin is PBI's.
+ *
+ * A SLIDER, deliberately. The no-slider law of T62 is about DIMENSIONS — a
+ * millimetre is typed, never dragged. Light is not a dimension: it is a look,
+ * and a look is exactly what a slider is for. PRO has had it as a slider since
+ * T26 and 1:1 means it stays one.
+ *
+ * WHY THE CLIENT NEEDED IT AT ALL. Nothing in `src/retail/**` sets a lighting
+ * number — the rig is `profile.appearance.studio`, read by the one `Scene.jsx`
+ * both applications mount, so every lamp already matched. What did NOT match
+ * was the one input a JOINER can move and a client could not:
+ * `uiStore.brightness`. PRO persists it (`cc.brightness`); the retail mount
+ * runs `setPersistence('none')`, so it resolved to the profile default 1.00 on
+ * every load with no way down. That is the whole of *"za jasna"*, and this is
+ * the whole of the fix.
+ */
+function BrightSlider() {
+  const brightness = useUiStore((s) => s.brightness);
+  const setBrightness = useUiStore((s) => s.setBrightness);
+  const B = getCabinetProfile().appearance.studio.brightness;
+  return (
+    <label
+      className="pbi-viewbar-bright"
+      data-testid="view-bright"
+      data-brightness-control="1"
+      title="Scales every light in the room together. The balance between them does not move."
+    >
+      <span className="pbi-viewbar-bright-label">Bright</span>
+      <input
+        type="range"
+        min={B.min}
+        max={B.max}
+        step={B.step}
+        value={brightness}
+        data-brightness-value={brightness}
+        onChange={(e) => setBrightness(Number(e.target.value))}
+      />
+      <span className="pbi-viewbar-bright-value">{`${Math.round(brightness * 100)} %`}</span>
+    </label>
   );
 }
 
@@ -152,6 +205,12 @@ export default function ViewBar({
           </Fragment>
         );
       })}
+
+      {/* T65 F2 · PRO's BRIGHT slider, on the bar for PRO's own reason: *"it is
+          the one lighting control a joiner reaches for while he is looking at
+          the picture"* — and the client is doing nothing else. */}
+      <Sep />
+      <BrightSlider />
 
       {/* F3.5: *"In this mode the bar also carries SAVE IMAGE."* */}
       {fullScreen ? (

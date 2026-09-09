@@ -370,7 +370,18 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   }, []);
 
   if (width < MOBILE) return <TooSmall />;
-  if (!unit) {
+  // ─── T65 F1 · THE ROOM RENDERS WITHOUT A WARDROBE ────────────────────────
+  //
+  // MEASURED FAULT, and the acceptance walk is what found it: `npm test` and
+  // `npm run build` were both green while this page never finished *"Setting
+  // the room out…"*, because the whole room was gated on a wardrobe EXISTING —
+  // and F1 makes the room start empty.
+  //
+  // What the gate was really waiting for was the PROJECT, which `enterRoom`
+  // builds in an effect one frame after mount. So it waits for that instead,
+  // and the empty floor is a room like any other: its walls, its ceiling, the
+  // steps, and the plus that puts the first wardrobe in it.
+  if (!project?.room) {
     return (
       <main className="pbi-room-waiting">
         <p className="pbi-choice pbi-choice-15">Setting the room out…</p>

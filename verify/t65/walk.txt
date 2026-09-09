@@ -1,0 +1,29 @@
+─── T65 · THE ACCEPTANCE WALK ───
+ ok  the room mounts EMPTY — no wardrobe was placed by the app — 0 unit(s)
+ ok  …and WHERE offers ADD A WARDROBE instead
+ ok  NEXT still works with the floor empty (the lazy client)
+ ok  INSIDE says plainly that it needs a wardrobe
+ ok  the client's first wardrobe is 1200 on a 4000 wall — [{"id":"u_j58ngng","w":1200,"h":2150}]
+ ok  PRO's BRIGHT slider is on the retail bar
+ ok  …at the profile's own default — value 1
+ ok  …and moving it writes the SHARED store PRO writes — 0.6
+ ·   PRO's own page photographed for the side-by-side
+ ok  OPTIONS at 1280 is the new base, not the old one — 296px (want ~296, was ~328)
+ ok  OPTIONS at 1440 is the new base, not the old one — 306px (want ~306, was ~340)
+ ·   retail's first camera — [0,2.375,5.15]
+ ok  the room does not stand square-on at a preset — x is PRO's own 0 — [0,2.375,5.15]
+ ·   PRO's first camera — null
+ ·   the first wardrobe's panels — ["R"]
+ ok  a wardrobe against the wall takes a panel on its open side only
+ ok  INSIDE carries a typed BAYS field
+ ok  …and the line is NOT there at one bay
+ ok  writing 3 puts two dividers in — 2 divider(s)
+ ok  …and the line appears only then
+ ok  EXTRAS carries the CORNICE chips
+ ok  EXTRAS carries END PANELS
+ ok  the wardrobe arrived wearing a cornice — 70 mm
+ ok  ADD DOORS is in EXTRAS
+ ok  ADD TOP BOX is in EXTRAS
+ ok  DONE → ADD TO MY ESTIMATE lands one item on the estimate — #/estimate · 1 row(s)
+
+22 checks · 0 failed

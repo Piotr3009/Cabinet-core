@@ -228,12 +228,17 @@ test('F3 · the copies are reskinned through the GENERATED sheet, and their mark
 
 // ═══ F4 · LAYOUT B ═══════════════════════════════════════════════════════════
 
-test('F4 · the owner\'s container numbers at 1440: rail 72, options ~340, detail ~360', () => {
+test('F4 · the owner\'s container numbers at 1440: rail 72, options ~306 (T65 F3), detail ~360', () => {
   const scale = read('src/retail/styles/scale.css');
   const at1440 = 0.78 + (1440 - 1280) * 0.00017;
   const base = (name) => Number((scale.match(new RegExp(`${name}: calc\\((\\d+) \\* var\\(--pbi-scale\\)\\);(?![\\s\\S]*${name}: calc)`)) || [])[1]);
   assert.equal(Math.round(base('--pbi-col-categories') * at1440), 72);
-  assert.ok(Math.abs(base('--pbi-col-options') * at1440 - 340) <= 2, `options ${base('--pbi-col-options') * at1440}`);
+  // ─── AMENDED BY T65 F3 ─────────────────────────────────────────────────
+  // The owner: *"może na początek 10 procent zrób"*. T64 measured 340 at 1440;
+  // ten per cent off that base (421 → 379) is 306, and the space goes to the
+  // STAGE. The rail and the detail panel are untouched, which is what the two
+  // assertions either side of this one still hold.
+  assert.ok(Math.abs(base('--pbi-col-options') * at1440 - 306) <= 2, `options ${base('--pbi-col-options') * at1440}`);
   assert.ok(Math.abs(base('--pbi-col-detail') * at1440 - 360) <= 2, `detail ${base('--pbi-col-detail') * at1440}`);
   assert.equal(Math.round(base('--pbi-tile') * at1440), 64);
   assert.equal(Math.round(base('--pbi-tile-icon') * at1440), 20);

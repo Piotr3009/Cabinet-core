@@ -281,8 +281,24 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   // stage — the scene's own `onPointerMissed`, which clears the selection —
   // slides it out. A menu opened from a row's `›` (`from: 'list'`) is not the
   // stage's to close, so a cleared selection leaves it standing until DONE.
-  // A click on the CARCASS is a UNIT selection (turn 13's verdict: *"clicking
-  // a cabinet must select the CABINET"*) and opens the wardrobe's own menu.
+  // ─── T65 F10 · …AND A CLICK ON THE WARDROBE SLIDES IT OUT ────────────────
+  //
+  // The owner, and it is the whole of this feature: *"po naciśnięciu na inny
+  // element menu się zmienia, a jak naciśniesz w szafę lub poza menu —
+  // znika."*
+  //
+  // T64 opened the WARDROBE's own menu on a carcass click. Tonight the carcass
+  // is the way OUT: click a piece and its menu slides in, click a different
+  // piece and it SWAPS IN PLACE (the panel never closes — `data-open` stays
+  // `yes` because the target goes A→B without passing through null), click the
+  // wardrobe body or the empty stage and it slides out.
+  //
+  // The wardrobe's own menu is not lost with the gesture: it is the OPTIONS
+  // column's own row, *"THIS WARDROBE — SIZE AND DOORS ›"*, which opens it
+  // with `from: 'list'` — and a list-opened menu is not the stage's to close.
+  // Turn 13's verdict still holds where it was made: a click on a carcass
+  // still SELECTS the cabinet (`selectedUnitId`), which is what the plus needs
+  // to add into the right one (T64 F1.2). Only the panel's answer changed.
   useEffect(() => {
     if (fullScreen) { setTarget(null); return; }
     if (selectedElement) {
@@ -297,15 +313,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
       });
       return;
     }
-    if (selectedUnitId && A.unitById(selectedUnitId)) {
-      const found = A.selectionForMenu('wardrobe', selectedUnitId);
-      if (found) {
-        setTarget({
-          menu: found.menu, unitId: found.unitId, ref: found.ref, from: 'stage',
-        });
-      }
-      return;
-    }
+    // A UNIT selection with no element is a click on the wardrobe body. It
+    // slides the panel out — and it takes only what the STAGE opened, so a
+    // menu reached from a row's `›` stands until DONE, as it always has.
     setTarget((t) => (t && t.from === 'stage' ? null : t));
   }, [selectedElement, selectedUnitId, fullScreen]);
 
@@ -389,6 +399,10 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         // THE RUN-END PLUS adds the neighbour's own type beside it, which is
         // the same call PRO's library makes with the same `{ near, side }`.
         onAddPlus={(point) => setSaid(A.addBesidePlus(point).said)}
+        /* T65 F10 · the owner's point 5: the plus in the middle of a wardrobe
+           hides while the INSIDE step is open — that step IS the same act,
+           and two doors to one act confuse. */
+        hideInnerPlus={active === 'inside'}
         /* T65 F1 · the empty floor's plus — the SAME store path as ADD A
            WARDROBE in the WHERE step. Two doors, one law. */
         onAddFirst={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}

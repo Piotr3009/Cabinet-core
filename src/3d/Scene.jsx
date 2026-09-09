@@ -1265,6 +1265,12 @@ function RenderRig({ onReady, unitsRef }) {
  */
 export default function Scene({
   onCaptureReady, onRenderReady, onAddPlus = null, onAddInside = null, onAddFirst = null,
+  // ─── T65 F10 · THE INNER PLUS, HIDDEN WHILE THE STEP IS ALREADY ASKING ───
+  // The owner's point 5: the plus in the middle of a wardrobe hides while the
+  // INSIDE menu is open — *"two doors to the same act confuse."* ADDITIVE and
+  // default OFF, like the three above: PRO passes nothing and its plus is
+  // exactly where it has always been.
+  hideInnerPlus = false,
 }) {
   const orbitRef = useRef(null);
   // One entry per unit group, so the render can frame the furniture and only
@@ -1840,7 +1846,10 @@ export default function Scene({
             selectUnit(unit.id);
             openModal('unit-size', { unitId: unit.id, field, at });
           }}
-          onAddItems={(at) => {
+          // T65 F10: no handler, no plus — `UnitView` draws it only when it
+          // has somewhere to send the click, so hiding it needs no second flag
+          // and no change to that file at all.
+          onAddItems={hideInnerPlus ? undefined : (at) => {
             selectUnit(unit.id);
             // T61 F1 (#2): the INNER plus has a route of its own, for the same
             // reason the run-end plus does — `openModal('add-items')` is

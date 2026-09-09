@@ -349,12 +349,25 @@ test('F1.5 · the FRONTS step offers PRO\'s four openings and no J-pull style ch
 
 // ═══ F1.6 · THE FIRST CAMERA IS FRONT ════════════════════════════════════════
 
-test('F1.6 · on entering DESIGN and after RESET VIEW the camera is the FRONT preset', () => {
+test('F1.6 · SUPERSEDED BY T65 F4 — the first view and RESET VIEW are PRO\'s own', () => {
+  // ─── SUPERSEDED BY T65 F4 ──────────────────────────────────────────────
+  // The owner: *"default ustawienie sceny pokoju prosto i bliżej — dokładnie
+  // jak w PRO."* T64 parked retail's FRONT preset one frame after mount, and
+  // that is exactly what made the client's first view a different one from the
+  // joiner's. PRO's default camera is the Canvas's own in `src/3d/Scene.jsx`,
+  // which this canvas already mounts — so nothing parks it now, and RESET VIEW
+  // returns to the view the room opened in rather than to a preset.
   const room = code('src/retail/design/DesignRoom.jsx');
-  assert.match(room, /requestAnimationFrame\(\(\) => \{ applyPreset\('front', h\); \}\);/, 'the first frame is not FRONT');
-  assert.match(room, /useState\('front'\)/, 'the bar does not light FRONT on arrival');
+  assert.ok(!/applyPreset\('front', h\)/.test(room), 'the first frame still parks the FRONT preset');
+  assert.match(room, /rememberHome\(h\)/, 'the first view is not remembered, so RESET has nowhere to go');
+  assert.match(room, /useState\(null\)/, 'the bar lights a preset the room did not park at');
   const stage = code('src/retail/design/Stage.jsx');
-  assert.match(stage, /export function resetStageView\(handle\) \{\s*return applyPreset\('front', handle\);/);
+  assert.match(stage, /export function resetStageView\(handle\) \{[\s\S]*?writeCamera\(home\)/,
+    'RESET VIEW no longer returns to the view the room opened in');
+  // The FRONT preset itself is untouched — it is still one of the three places
+  // the VIEW BAR offers, and it is still `resetStageView`'s fallback before
+  // the first frame has been drawn.
+  assert.match(stage, /applyPreset\('front', handle\)/, 'the FRONT fallback went too');
   assert.ok(!/resetPlacement/.test(stage), 'a fourth camera place survives');
   assert.ok(!/export function resetPlacement/.test(code('src/retail/design/viewTools.js')));
 });

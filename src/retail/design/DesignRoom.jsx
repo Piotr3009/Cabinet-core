@@ -7,7 +7,7 @@ import Categories, { CATEGORIES, stepIndex } from './Categories.jsx';
 import Options from './Options.jsx';
 import Detail from './Detail.jsx';
 import Stage, {
-  applyPreset, resetStageView, saveStageImage, stageThumbnail, useCameraMemory,
+  applyPreset, rememberHome, resetStageView, saveStageImage, stageThumbnail, useCameraMemory,
 } from './Stage.jsx';
 import Editors from './Editors.jsx';
 import ViewBar from './ViewBar.jsx';
@@ -168,7 +168,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   const [done, setDone] = useState([]);
   const [target, setTarget] = useState(null);      // { menu, unitId, ref, from } — four strings
   const [fullScreen, setFullScreen] = useState(false);
-  const [preset, setPreset] = useState('front');
+  // T65 F4: the room opens on PRO's own camera, which is not one of the three
+  // named places — so NO preset is lit until the client presses one.
+  const [preset, setPreset] = useState(null);
   const [mode, setMode] = useState('add');
   // ─── T62 F2/F3 · THE ROOM IS SET UP IN A MODAL, AS IT IS IN PRO ──────────
   // `null` is closed; `{ anchor }` is open, and the rectangle is the
@@ -199,8 +201,16 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
     handle.current = h;
     if (parked.current) return;
     parked.current = true;
-    // One frame later, so the furniture it is aimed at has bounds to aim at.
-    requestAnimationFrame(() => { applyPreset('front', h); });
+    // ─── T65 F4 · NOTHING IS PARKED HERE ANY MORE ──────────────────────────
+    //
+    // The owner: *"default ustawienie sceny pokoju prosto i bliżej — dokładnie
+    // jak w PRO."* T64 parked the FRONT preset one frame after mount, and that
+    // is precisely what made the client's first view a different one from the
+    // joiner's. PRO's default camera is the Canvas's own in `src/3d/Scene.jsx`,
+    // which THIS canvas already mounted — so the way to be exactly PRO is to
+    // leave it alone. What is taken instead is a note of where it is, so RESET
+    // VIEW can bring the client back to the view he started in.
+    requestAnimationFrame(() => { rememberHome(h); });
   }, []);
 
   const unit = A.designUnit(units);
@@ -384,8 +394,9 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         // T63 F2 · LIGHTS opens PRO's Lighting panel beside the button — the
         // very call PRO's own Lighting button makes (`TopBar.jsx`).
         onLights={(e) => A.openEditor('lighting', { anchor: A.anchorOf(e) })}
-        // T64 F1.6 · RESET VIEW is the FRONT preset, framed to the design.
-        onReset={() => { setPreset('front'); resetStageView(handle.current); }}
+        // T65 F4 · RESET VIEW is PRO's own default view — the one the room
+        // opened in — not a preset of retail's. Superseded T64 F1.6.
+        onReset={() => { setPreset(null); resetStageView(handle.current); }}
         fullScreen={fullScreen}
         onFullScreen={() => setFullScreen((v) => !v)}
         onBack={exitFullScreen}

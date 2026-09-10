@@ -43,10 +43,14 @@ test('F2 · the eleven the owner named are all in the table, and baseGain is his
   ]) {
     assert.ok(by.has(name), `the walk missed ${name}`);
   }
-  // The owner's own decision of 25.08.2026, quoted in the profile: *"teraz 100
-  // to niech będzie jakby teraz było 75"*.
-  assert.equal(P.appearance.studio.baseGain, 0.75, 'the owner\'s baseGain moved');
-  assert.equal(by.get('baseGain').retail, '0.75');
+  // The owner's own decision of 25.08.2026 put it at 0.75 (*"teraz 100 to
+  // niech będzie jakby teraz było 75"*); T66 F1 — *"ściemnij trochę o 20
+  // procent światło"* — took the same dial down a fifth, 0.75 × 0.8 = 0.60.
+  // What F2 guards is not the VALUE but the PARITY: whatever the owner sets,
+  // PRO and retail read the one profile, so the row below reads the same
+  // number on both sides. That is the assertion that stops the drift.
+  assert.equal(P.appearance.studio.baseGain, 0.6, 'the owner\'s baseGain moved');
+  assert.equal(by.get('baseGain').retail, String(P.appearance.studio.baseGain));
 });
 
 // ═══ 2 · THERE IS ONLY ONE SOURCE ══════════════════════════════════════════

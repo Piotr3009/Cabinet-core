@@ -2296,7 +2296,21 @@ export const DEFAULT_CABINET_PROFILE = {
       //
       // Nothing else about the slider changes: its min, max, step and default
       // stay exactly as the profile has them.
-      baseGain: 0.75,
+      //
+      // ─── TURN 66 (CLAUDE.md F1): THE SAME DIAL, TWENTY PER CENT DOWN ─────
+      //
+      // The owner, 09.09.2026, of the retail room and PRO alike: *"ściemnij
+      // trochę o 20 procent światło."* The decision taken with him is that
+      // the BASE comes down and the SLIDER does not move — it keeps its scale
+      // and its 100 % default, and 100 % simply means this new, darker base.
+      //
+      //     0.75 × 0.8 = 0.60
+      //
+      // NAMED CONSEQUENCE, and it is intended: PRO reads the same profile, so
+      // PRO's studio dims with retail's. The owner judged the light against
+      // BOTH apps, and since T65 F2 the rig is one law with one source — a
+      // retail-only dimmer would be the drift that test exists to stop.
+      baseGain: 0.6,
       ambient: 0.2,
       key: 1.0,
       fill: 0.55,

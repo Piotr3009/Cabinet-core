@@ -141,10 +141,15 @@ test('the pillars run at the scale area lights actually need — HALVED (T50-F14
   // on its own — which is exactly why `appearance.studio.baseGain` (F14) is
   // kept out of the individual lamps.
   assert.equal(P.appearance.studio.pillars.intensity, 11);
-  // The two reductions COMPOUND, and that is intended: a pillar ends the night
-  // at 11 × 0.75 = 8.25 of the gain it had at 22 — 37.5 % of what it was.
-  assert.equal(P.appearance.studio.baseGain, 0.75);
-  assert.equal(P.appearance.studio.pillars.intensity * P.appearance.studio.baseGain, 8.25);
+  // The two reductions COMPOUND, and that is intended: a pillar ended that
+  // night at 11 × 0.75 = 8.25 of the gain it had at 22 — 37.5 % of what it was.
+  //
+  // T66 F1 · the owner turned the base dial itself down twenty per cent
+  // (*"ściemnij trochę o 20 procent światło"* — 0.75 × 0.8 = 0.60), so the
+  // product moves with it. The PILLAR's own 11 is untouched, which is the
+  // whole point of keeping `baseGain` out of the lamps.
+  assert.equal(P.appearance.studio.baseGain, 0.6);
+  assert.equal(P.appearance.studio.pillars.intensity * P.appearance.studio.baseGain, 6.6);
 });
 
 test('the bands and the key light are untouched by this fix', () => {

@@ -105,8 +105,12 @@ test('F13 · a WARDROBE arrives at 2150 whichever door it came in by', () => {
 
 // ─── F14 · THE STUDIO SHIPS A QUARTER DARKER ───────────────────────────────
 
-test('F14 · one named number, and it is 0.75', () => {
-  assert.equal(P.appearance.studio.baseGain, 0.75, '*"teraz 100 to niech będzie jakby teraz było 75"*');
+test('F14 · one named number — 0.75 that night, 0.60 since T66 F1', () => {
+  // *"teraz 100 to niech będzie jakby teraz było 75"* put it at 0.75. T66 F1 —
+  // *"ściemnij trochę o 20 procent światło"* — took the SAME dial down twenty
+  // per cent: 0.75 × 0.8 = 0.60. F14's law is that there is ONE named number
+  // and that the slider is not the thing that moves; both still hold.
+  assert.equal(P.appearance.studio.baseGain, 0.6);
 });
 
 test('F14 · it is multiplied into the SLIDER’s gain, not into the lamps', () => {
@@ -145,9 +149,11 @@ test('F14 · the PILLARS are halved separately, and the reductions compound', ()
   // A pillar ends the night at 11 × 0.75 = 8.25 of the gain it had at 22 —
   // 37.5 % of what it was. Stated so the owner can see what he is looking at,
   // which is what CLAUDE.md asks the PR to say.
+  // T66 F1 took the base dial from 0.75 to 0.60; the pillar's own 11 did not
+  // move, which is exactly what keeping `baseGain` out of the lamps buys.
   const now = P.appearance.studio.pillars.intensity * P.appearance.studio.baseGain;
-  assert.equal(now, 8.25);
-  assert.equal(Math.round((now / 22) * 1000) / 10, 37.5, 'per cent of what a pillar was');
+  assert.equal(now, 6.6);
+  assert.equal(Math.round((now / 22) * 1000) / 10, 30, 'per cent of what a pillar was');
 
   // ─── …AND A THIRD REDUCTION ARRIVED FROM THE OTHER SIDE ─────────────────
   // While this turn was being written the owner pushed his own chat-fix to
@@ -161,9 +167,9 @@ test('F14 · the PILLARS are halved separately, and the reductions compound', ()
   const before = 22 * 2;                       // two pillars, 25.08 morning
   const after = P.appearance.studio.pillars.intensity
     * P.appearance.studio.pillars.count * P.appearance.studio.baseGain;
-  assert.equal(after, 8.25);
-  assert.equal(Math.round((after / before) * 1000) / 10, 18.8,
-    'per cent of the light the pillars threw before either change');
+  assert.equal(after, 6.6);
+  assert.equal(Math.round((after / before) * 1000) / 10, 15,
+    'per cent of the light the pillars threw before any of the three changes');
 });
 
 test('F14 · nothing else about the slider changes', () => {
@@ -171,7 +177,7 @@ test('F14 · nothing else about the slider changes', () => {
   // The slider's own numbers live where they always did; F14 touches none of
   // them. Whatever block holds them, it is not `studio.baseGain`.
   const profileSrc = readFileSync(new URL('engine/profile.js', SRC), 'utf8');
-  assert.ok(profileSrc.includes('baseGain: 0.75'), 'the one number');
+  assert.ok(profileSrc.includes('baseGain: 0.6'), 'the one number');
   // Stated ONCE as a value. Every other mention is prose explaining it — the
   // paragraph above it, and the pillars' own note about the two compounding.
   const stated = (profileSrc.match(/^\s*baseGain: /gm) || []).length;

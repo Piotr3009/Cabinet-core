@@ -97,6 +97,8 @@ test('F2 · tokens.css carries the twelve Petros colours, verbatim', () => {
     '--pbi-button-h': '50px',
     '--pbi-gold-line': '48px',
     '--pbi-radius': '0',
+    // T66 F10 · the control's own corner, the third and last radius token.
+    '--pbi-control-radius': '8px',
   })) {
     assert.match(css, new RegExp(`${name}\\s*:\\s*${value}\\s*;`), `${name} is not ${value}`);
   }
@@ -139,26 +141,34 @@ test('F2 · the carve-out holds: every content tone is a decor\'s OWN colour', (
   assert.equal(COLLECTIONS.length, 4);
 });
 
-// ─── AMENDED BY T61 F5 ──────────────────────────────────────────────────────
+// ─── AMENDED BY T61 F5, AND AGAIN BY T66 F10 ────────────────────────────────
 //
 // The owner, ordering the typed fields that replace the sliders: *"kratki do
 // wpisywania rogi pieknie zaokraglone a nie kanciaki, ze zlota obwodka a nie
 // jakis dziwny pomarancz."*
 //
-// So ONE element in the system is rounded, and it is rounded by a token of its
-// own — `--pbi-field-radius`, declared beside `--pbi-radius` in tokens.css,
-// which stays 0 and is still asserted to be 0 by the token test above. The law
-// this test exists to keep is unchanged in substance: a radius may not be a
-// number typed into a rule. It must be one of the two tokens, and a third
-// value is still a violation.
-test('F2 · zero border-radius — bar the owner\'s own field — and no gradient anywhere', () => {
+// So ONE element in the system was rounded, by a token of its own —
+// `--pbi-field-radius`, declared beside `--pbi-radius` in tokens.css, which
+// stays 0 and is still asserted to be 0 by the token test above.
+//
+// T66 F10 adds the SECOND rounded family and the THIRD token. The owner chose
+// variant 2 off the screenshot and asked *"wszystkie przyciski będą zmienione,
+// prawda?"* — so every CONTROL (button, chip, rail tile, view-bar tile, the
+// copies' buttons) reads `--pbi-control-radius`, 8px. PANELS, cards and every
+// other surface still read `--pbi-radius`, which is still zero: the square
+// shell is the design system and it did not move.
+//
+// The law this test exists to keep is unchanged in substance: a radius may not
+// be a number typed into a rule. It must be one of the THREE tokens, and a
+// fourth value is still a violation.
+test('F2 · every border-radius is one of the three tokens — and no gradient anywhere', () => {
   const bad = [];
   for (const file of filesUnder(RETAIL)) {
     const rel = relative(ROOT, file);
     const text = code(file);
     for (const m of text.matchAll(/border-?[Rr]adius\s*[:=]\s*['"]?([^,;'"}\n]+)/g)) {
       const value = m[1].trim();
-      if (!/^(0|var\(--pbi-radius\)|var\(--pbi-field-radius\))$/.test(value)) {
+      if (!/^(0|var\(--pbi-radius\)|var\(--pbi-field-radius\)|var\(--pbi-control-radius\))$/.test(value)) {
         bad.push(`${rel}: border-radius ${value}`);
       }
     }

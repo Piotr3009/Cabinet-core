@@ -33,13 +33,13 @@ const wardrobe = (height = 2150) => {
 
 test('F8 · ContextMenu is COPIED, not re-written — same line count, same labels', () => {
   const pro = read('src/components/ContextMenu.jsx');
-  const retail = read('src/retail/design/detail/ContextMenu.jsx');
+  const retail = read('src/retail/design/detail/ContextEdits.jsx');
   const lines = (t) => t.replace(/\n$/, '').split('\n').length;
   // CLAUDE.md names the file's size, and the copy is the same file.
   assert.equal(lines(pro), 334, "PRO's ContextMenu is not 334 lines any more");
   assert.equal(lines(retail), lines(pro), 'the copy is not the same shape');
   // It is in the manifest, so the fidelity test and the classifier both see it.
-  assert.ok(isCopy('src/retail/design/detail/ContextMenu.jsx'), 'the copy is not in the manifest');
+  assert.ok(isCopy('src/retail/design/detail/ContextEdits.jsx'), 'the copy is not in the manifest');
   assert.equal(ALL_COPIES.length, 26);
   // The four the owner could not find are not strings in this file at all —
   // they are rows in the SHARED action table, and the copy reaches the same
@@ -56,7 +56,7 @@ test('F8 · ContextMenu is COPIED, not re-written — same line count, same labe
 test('F8 · …and PRO is untouched by it', () => {
   // The copy imports the SHARED stores, three directories up — it is a copy,
   // not a fork with a state of its own.
-  const retail = read('src/retail/design/detail/ContextMenu.jsx');
+  const retail = read('src/retail/design/detail/ContextEdits.jsx');
   assert.match(retail, /from '\.\.\/\.\.\/\.\.\/stores\/uiStore\.js'/);
   assert.match(retail, /from '\.\.\/\.\.\/\.\.\/stores\/projectStore\.js'/);
   // …and it wears PBI's skin, never PRO's classes.
@@ -66,8 +66,14 @@ test('F8 · …and PRO is untouched by it', () => {
 
 test('F8 · the room MOUNTS it — that omission is the whole of "nie widzę przycisków"', () => {
   const room = read('src/retail/design/DesignRoom.jsx');
-  assert.match(room, /import ContextMenu from '\.\/detail\/ContextMenu\.jsx'/);
-  assert.match(room, /<ContextMenu \/>/);
+  // ─── RENAMED BY T66 F3 ────────────────────────────────────────────────
+  // F3's own test LISTS `design/detail/` and asserts that no `*Menu.jsx`
+  // survives — the thin Duty menus die tonight and the name must not be able
+  // to come back. This COPY is not one of them, so its destination file is
+  // `ContextEdits.jsx`: a FILENAME in the manifest and nothing else, which is
+  // why the byte-for-byte assertions above still hold.
+  assert.match(room, /import ContextEdits from '\.\/detail\/ContextEdits\.jsx'/);
+  assert.match(room, /<ContextEdits \/>/);
   // The gesture was already firing: Scene has opened the menu since T13.
   assert.match(read('src/3d/Scene.jsx'), /onContextMenu=\{\(menu\) => openContextMenu\(/);
 });

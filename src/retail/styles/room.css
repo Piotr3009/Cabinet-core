@@ -78,7 +78,8 @@
   background: transparent;
   border: 0;
   border-bottom: 1px solid transparent;
-  border-radius: var(--pbi-radius);
+  /* T66 F10 · the rail tile is a control and takes the one shape. */
+  border-radius: var(--pbi-control-radius);
   color: var(--pbi-soft-graphite);
   cursor: pointer;
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
@@ -175,6 +176,24 @@
 }
 .pbi-field-row-ctl > * { min-width: 0; }
 .pbi-field-row-ctl .pbi-chip-row { justify-content: flex-end; flex-wrap: wrap; }
+
+/* ─── T66 F11 · A CHIP ROW OF THREE CANNOT SHARE A 263-PX ROW ──────────────
+ *
+ * T62's row law puts the label on the left at a fixed width and the control on
+ * the right. At 379 a row of three or four chips still fitted beside its label;
+ * at 337 it staggers into a staircase — which is exactly the *"nie ma składu
+ * ani takiego ładnego porządku"* the row law was written to end.
+ *
+ * So a row whose control is THREE OR MORE chips takes the whole width UNDER
+ * its label, left-aligned, like the STYLE and OPENING lists a step away. Rows
+ * of one or two — a field, an on/off pair — are untouched and still read as
+ * one line, which is the half of T62's law that is doing the work. */
+.pbi-field-row:has(.pbi-chip-row > :nth-child(3)) {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--pbi-gap-1);
+}
+.pbi-field-row:has(.pbi-chip-row > :nth-child(3)) .pbi-field-row-ctl { justify-content: flex-start; }
+.pbi-field-row:has(.pbi-chip-row > :nth-child(3)) .pbi-chip-row { justify-content: flex-start; }
 
 /* T64 F2 · a BLOCK row: the label on its own line, the control full width —
    for a copied PRO surface that has columns of its own. */
@@ -306,7 +325,8 @@
   position: relative;
   background: var(--pbi-porcelain);
   border: 1px solid var(--pbi-stone-line);
-  border-radius: var(--pbi-radius);
+  /* T66 F10 · so does the view-bar tile. */
+  border-radius: var(--pbi-control-radius);
   padding: 0 var(--pbi-gap-3);
   height: calc(var(--pbi-view-bar-h) - 2 * var(--pbi-gap-1));
   min-height: 0;
@@ -327,7 +347,12 @@
 
 /* The active tile in Deep Gold, with a Champagne hairline under the word (F2's
  * grammar, kept). Gold in a hairline and a small mark — never a fill. */
-.pbi-viewbar-btn.is-on { color: var(--pbi-deep-gold); border-color: var(--pbi-deep-gold); }
+.pbi-viewbar-btn.is-on {
+  color: var(--pbi-deep-gold);
+  border-color: var(--pbi-deep-gold);
+  /* T66 F10 · the ACTIVE gold border, slightly heavier. */
+  box-shadow: inset 0 0 0 1px var(--pbi-deep-gold);
+}
 .pbi-viewbar-btn.is-on::after {
   content: '';
   position: absolute;
@@ -389,7 +414,7 @@
   width: 6em;
   height: 1px;
   background: var(--pbi-stone-line);
-  border-radius: var(--pbi-radius);
+  border-radius: var(--pbi-control-radius);
   outline: none;
 }
 
@@ -398,7 +423,7 @@
   appearance: none;
   width: 0.7em;
   height: 0.7em;
-  border-radius: var(--pbi-radius);
+  border-radius: var(--pbi-control-radius);
   background: var(--pbi-onyx);
   cursor: pointer;
 }
@@ -407,7 +432,7 @@
   width: 0.7em;
   height: 0.7em;
   border: 0;
-  border-radius: var(--pbi-radius);
+  border-radius: var(--pbi-control-radius);
   background: var(--pbi-onyx);
   cursor: pointer;
 }
@@ -478,6 +503,89 @@
   transition: transform 220ms ease, visibility 0s;
 }
 
+/* ─── T66 F3 · THE DOCK — WHERE THE ONE EDITOR STANDS ──────────────────────
+ *
+ * The owner, on the screenshot with a floating window and this panel showing
+ * the same drawer: *"w zasadzie po prawej powinien być tylko menu edycji."*
+ *
+ * What is docked is the COPIED PRO EDITOR, unedited — that is the copy law, and
+ * it is why this is a STYLESHEET and not a fork. `Modal.jsx` (T62's copy)
+ * places its window with `position: fixed` and an inline `left`/`top`, so the
+ * only honest way to dock it without touching a copy is to out-rank those
+ * inline values here. `!important` is the mechanism CSS provides for exactly
+ * this, and it is used nowhere else in the retail tree.
+ *
+ * Everything below is scoped to `.pbi-dock`. A modal opened anywhere else in
+ * the app — the Egger picker, the room editors, the golden `+` — is untouched
+ * and still floats beside its click, per the house rule.
+ */
+.pbi-dock { padding: var(--pbi-gap-4) var(--pbi-pad-col) var(--pbi-gap-6); }
+
+.pbi-dock-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pbi-gap-2);
+  padding-bottom: var(--pbi-gap-2);
+  margin-bottom: var(--pbi-gap-3);
+  border-bottom: 1px solid var(--pbi-deep-gold);
+}
+.pbi-dock-name { letter-spacing: 0.14em; }
+
+/* The scrim layer: it is a full-screen sheet in a floating window and nothing
+ * at all in a docked one. */
+.pbi-dock .pbi-re-fixed.pbi-re-inset {
+  position: static !important;
+  inset: auto !important;
+  background: transparent !important;
+  pointer-events: auto !important;
+}
+
+/* The window itself, docked: no place, no lift, no frame — the panel is all
+ * three. Its own header goes with them; the dock draws one, above. */
+.pbi-dock [data-modal-shell] {
+  position: static !important;
+  left: auto !important;
+  top: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  visibility: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.pbi-dock [data-modal-shell] > *:first-child { display: none !important; }
+.pbi-dock [data-modal-shell] > * { padding-left: 0 !important; padding-right: 0 !important; }
+.pbi-dock [data-modal-shell] .pbi-re-scroll { overflow: visible !important; }
+
+/* ─── AND THE WORKSHOP FIELDS ARE HIDDEN, NOT CUT ──────────────────────────
+ *
+ * CLAUDE.md F3: *"behind `RETAIL_SHOW_WORKSHOP_TOOLS=false`."* Where retail is
+ * the caller it passes PRO's own `omit` (see `detail/docked.jsx`); inside a
+ * copied WINDOW it is not the caller, so the four the brief names are hidden
+ * here — the markup is untouched, which is why the copy-fidelity tests read
+ * exactly what they read yesterday.
+ *
+ *   [data-piece-weight]              the front's weight off the MFC table
+ *   [data-element-move]              the Move Across / Up / In nudges
+ *   label:has(> select.pbi-re-input)  the board-thickness pickers
+ *   label:has([data-element-material])  the per-piece material override
+ *   label:has(> [data-handle-apply-all])  "apply to all … in the project"
+ *
+ * One switch decides: the room stamps `data-workshop-tools` from the ONE
+ * constant, so turning the flag on gives a joiner PRO's panel entire.
+ */
+.pbi-room[data-workshop-tools="no"] .pbi-dock [data-piece-weight],
+.pbi-room[data-workshop-tools="no"] .pbi-dock [data-element-move],
+.pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> select.pbi-re-input),
+.pbi-room[data-workshop-tools="no"] .pbi-dock label:has([data-element-material]),
+.pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> input[data-handle-apply-all]) {
+  display: none !important;
+}
+
 .pbi-duty { padding: var(--pbi-gap-4) var(--pbi-pad-col) var(--pbi-gap-6); }
 .pbi-duty-title { margin-top: var(--pbi-gap-4); }
 .pbi-duty-title-flush { margin-top: 0; }
@@ -522,6 +630,33 @@
 
 .pbi-summary-value { flex: 1 1 auto; color: var(--pbi-onyx); }
 
+/* ─── T66 F11 · WHAT A NARROWER COLUMN COSTS, AND WHERE IT IS PAID ─────────
+ *
+ * CLAUDE.md F11: *"If a label breaks, fix the copy's `pbi-re-*` widths."* The
+ * measure script (`scripts/t66-f11-measure.mjs`) found exactly two faults at
+ * 1280 and 1440, both in the copied `MaterialChoicePanel`, and both are a
+ * WIDTH rather than a word:
+ *
+ *   the CHOSEN TILE laid a 96-px scan, a text column and a `Change` button in
+ *   ONE row. At 337 the text column was crushed to 17 px and all three of its
+ *   lines — the code, the decor's name and EGGER's mandatory attribution —
+ *   came out as an ellipsis. The row WRAPS now: the scan alone on the first
+ *   line, the three words' lines at full width under it, `Change` under those.
+ *   Nothing is dropped, and the licence's attribution is legible, which is the
+ *   half of it that is not negotiable.
+ *
+ *   the SOURCE STRIP split the column three ways and broke "EGGER decor" over
+ *   three lines. It wraps too, and a button keeps its own words on one line.
+ *
+ * Scoped to the OPTIONS column: the same copies inside a floating modal have
+ * the room PRO gives them and are untouched.
+ */
+.pbi-room .pbi-options [data-chosen-tile] { flex-wrap: wrap; }
+.pbi-room .pbi-options [data-chosen-tile] > .pbi-re-minw { flex: 1 1 100%; }
+.pbi-room .pbi-options [data-chosen-tile] > .pbi-re-btn { flex: 1 1 100%; justify-content: center; }
+.pbi-source-seg { flex-wrap: wrap; }
+.pbi-source-seg > button { white-space: nowrap; }
+
 /* ─── THE INTERIOR ROWS ─────────────────────────────────────────────────── */
 
 .pbi-interior-list {
@@ -540,6 +675,19 @@
 }
 
 .pbi-interior-name { flex: 1 1 auto; color: var(--pbi-onyx); }
+.pbi-interior-count { color: var(--pbi-onyx); font-variant-numeric: tabular-nums; }
+
+/* ─── T66 F3 · THE CONTROLS THE DEAD THIN MENUS CARRIED ─────────────────────
+ * They stand UNDER the row that counts the thing, inside the same block, so a
+ * client reads "Drawers · 3" and then the three questions about those three
+ * drawers. Editing ONE of them is the docked copied editor, on the right. */
+.pbi-interior-more {
+  padding: var(--pbi-gap-2) var(--pbi-pad-row) var(--pbi-gap-3);
+  border: 1px solid var(--pbi-stone-line);
+  border-top: 0;
+  background: var(--pbi-warm-white);
+}
+.pbi-interior-more .pbi-duty-actions { margin-top: var(--pbi-gap-3); }
 
 /* ─── SWATCHES, THUMBNAILS AND THE LITTLE DRAWINGS ──────────────────────── */
 
@@ -562,6 +710,88 @@
 }
 
 .pbi-mini { display: block; width: var(--pbi-thumb); height: auto; }
+/* T66 F4 · one size for every row of the STYLE list. */
+.pbi-mini-row { display: block; width: var(--pbi-thumb-row); height: auto; flex: 0 0 auto; }
+
+/* ─── T66 F4 · THE FRONT STYLES ARE A LIST ─────────────────────────────────
+ * The owner: *"style front to mega burdel … to powinno być lista, a nie obok
+ * siebie … lista jak internals."* So the rows are INSIDE's rows, to the
+ * pixel: the same porcelain ground, the same hairline, the same gap — a
+ * client who has just read one list reads this one without learning it. */
+.pbi-style-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pbi-gap-1);
+  width: 100%;
+}
+.pbi-style-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pbi-gap-3);
+  padding: var(--pbi-pad-row);
+  background: var(--pbi-porcelain);
+  border: 1px solid var(--pbi-stone-line);
+  border-radius: var(--pbi-control-radius);
+  color: var(--pbi-soft-graphite);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 120ms linear, color 120ms linear;
+}
+.pbi-style-row:hover:not(:disabled) { border-color: var(--pbi-deep-gold); }
+/* THE SELECTED ROW CARRIES THE GOLD HAIRLINE — and the heavier ring T66 F10
+ * gives every active control. Gold is a line here, never a fill. */
+.pbi-style-row.is-on {
+  border-color: var(--pbi-deep-gold);
+  box-shadow: inset 0 0 0 1px var(--pbi-deep-gold);
+  color: var(--pbi-onyx);
+}
+/* A COMING-SOON ROW IS A GREYED ROW — its reason is in the block below the
+ * list, with the selected style's line, and not under the row itself. */
+.pbi-style-row.is-soon { cursor: default; opacity: 0.45; border-style: dashed; }
+.pbi-style-row:focus-visible { outline: 1px solid var(--pbi-champagne); outline-offset: 0; }
+.pbi-style-name { flex: 1 1 auto; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.pbi-style-notes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pbi-gap-1);
+  margin: var(--pbi-gap-2) 0 var(--pbi-gap-4);
+}
+
+/* ─── …AND THE OPENING IS AN ALIGNED COLUMN ────────────────────────────────
+ * *"one column, equal widths, no stagger."* A chip row wraps four labels of
+ * four different lengths into a staircase; this is four rows of one width. */
+.pbi-opening-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pbi-gap-1);
+  width: 100%;
+}
+.pbi-opening-row {
+  width: 100%;
+  min-height: var(--pbi-button-h-sm);
+  padding: 0 var(--pbi-gap-3);
+  display: flex;
+  align-items: center;
+  background: var(--pbi-porcelain);
+  border: 1px solid var(--pbi-stone-line);
+  border-radius: var(--pbi-control-radius);
+  color: var(--pbi-soft-graphite);
+  font-family: var(--pbi-font-ui);
+  font-size: var(--pbi-fs-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 120ms linear, color 120ms linear;
+}
+.pbi-opening-row:hover { border-color: var(--pbi-deep-gold); }
+.pbi-opening-row.is-on {
+  border-color: var(--pbi-deep-gold);
+  box-shadow: inset 0 0 0 1px var(--pbi-deep-gold);
+  color: var(--pbi-onyx);
+}
+.pbi-opening-row:focus-visible { outline: 1px solid var(--pbi-champagne); outline-offset: 0; }
 .pbi-mini-sm { display: block; width: var(--pbi-icon); height: auto; }
 
 /* ─── THE SLIDER'S FIGURES ──────────────────────────────────────────────── */

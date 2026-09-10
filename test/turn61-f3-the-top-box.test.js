@@ -87,24 +87,40 @@ test('F3 · a box does not stand on a box', () => {
   assert.equal(A.topBoxRefusal(box.id), REASONS.topBoxOnTopBox);
 });
 
-test('F3 · the box is a unit of its own, and its menu is the wardrobe family\'s', () => {
+// ─── AMENDED BY T66 F3 ──────────────────────────────────────────────────────
+//
+// T61's law: *"a box and the cabinet under it are two things in the same
+// place"*, so a box is a UNIT of its own and its numbers are never the host's.
+// That is unchanged. What changed is where they are asked: a box's boards are
+// CARCASS, and *"jak naciśniesz w szafę … znika"* — a carcass click closes the
+// panel now, so the box's own width, height and REMOVE stand on the LEFT, in
+// EXTRAS, beside the button that added it.
+test('F3 · the box is a unit of its own, and it is edited on the left', () => {
   const host = fresh();
   const box = A.addTopBox(host);
   const side = S().unitResult(box.id).panels.find((p) => p.part === 'BUL');
   assert.ok(side, 'the box cuts no boards');
 
-  const sel = A.resolveSelection({ unitId: box.id, elementRef: side.id });
-  assert.equal(sel.menu, 'wardrobe', 'a box\'s carcass does not open the wardrobe family');
-  assert.equal(sel.unitId, box.id, 'the selection points at the host, not the box');
-  // STAGE HINT names it — a box and the cabinet under it are two things in the
-  // same place, so this prefix is not conditional on there being two walls.
-  assert.match(A.selectionName(sel), /^Top box — /);
+  // A carcass board opens NOTHING — the panel slides out, on a box exactly as
+  // on the wardrobe under it.
+  assert.equal(A.resolveSelection({ unitId: box.id, elementRef: side.id }), null,
+    'a carcass click still opens a menu');
+  assert.equal(A.MENU_FOR_KIND.side, undefined);
 
-  // …and column 7 hands the menu the SELECTION's unit, which is what stops a
-  // box's menu editing the wardrobe underneath it.
-  assert.match(read('src/retail/design/Detail.jsx'),
-    /unit=\{A\.unitById\(selection\.unitId\) \|\| props\.unit\}/);
+  // …and the box's own three controls are in EXTRAS, on the BOX's id and not
+  // the host's, which is the whole of T61 F3's law.
+  const options = read('src/retail/design/Options.jsx');
+  assert.match(options, /testid="topbox-width"/);
+  assert.match(options, /testid="topbox-height"/);
+  assert.match(options, /data-testid="topbox-remove"/);
+  assert.match(options, /A\.setUnitSize\(box\.id, \{ width: v \}\)/, 'the box writes the host\'s width');
+  assert.match(options, /A\.removeUnit\(box\.id\)/);
+  assert.match(options, /const boxes = unit \? A\.topBoxesOn\(unit\.id\) : \[\];/);
   assert.equal(A.unitById(box.id).id, box.id);
+
+  // …and the panel still hands its editor the SELECTION's unit.
+  assert.match(read('src/retail/design/Detail.jsx'),
+    /A\.unitById\(selection\?\.unitId\) \|\| props\.unit/);
 });
 
 test('F3 · REMOVE takes the box and leaves the wardrobe', () => {
@@ -118,7 +134,10 @@ test('F3 · REMOVE takes the box and leaves the wardrobe', () => {
 
 test('F3 · the top box has ONE entry now, and it does not invent a number', () => {
   const layout = read('src/retail/design/Options.jsx');
-  const menu = read('src/retail/design/detail/WardrobeMenu.jsx');
+  // T66 F3 · the thin wardrobe menu is deleted, so "not in the right-hand
+  // menu" is now "not in the DOCK's table" — which is the same law, stated
+  // where the table is.
+  const menu = read('src/retail/design/detail/docked.jsx');
   // ─── AMENDED BY T65 F9 ─────────────────────────────────────────────────
   // T61 gave the top box two entries and asserted both pressed one action.
   // The owner moved it: *"add top box powinno być przeniesione do EXTRAS po
@@ -135,9 +154,11 @@ test('F3 · the top box has ONE entry now, and it does not invent a number', () 
   // …and the TWO-ENTRIES law moved with the owner's other sentence: ADD DOORS
   // is offered in both places and both press the one store path (T65 F9).
   assert.match(layout, /data-testid="extras-add-doors"/);
-  assert.match(menu, /data-testid="wardrobe-add-doors"/);
   assert.match(layout, /A\.addDoors\(unit\.id\)/);
-  assert.match(menu, /A\.addDoors\(unitId\)/);
+  // T66 F3 · the second door to ADD DOORS was in the thin wardrobe menu. That
+  // menu is gone, so *"i tu i tu"* is now EXTRAS and the STAGE's own gesture:
+  // a leaf clicked docks PRO's `DoorModal`, which is where a door is edited.
+  assert.match(menu, /menu === 'door'/);
 
   // NO `params` ARGUMENT: `defaultParamsFor` already applies
   // `profile.wardrobe.topBox.defaults`, and `addUnit` then overwrites the width

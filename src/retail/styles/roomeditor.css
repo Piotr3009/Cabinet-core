@@ -221,7 +221,8 @@
  * made, as CLAUDE.md F3 asks. */
 .pbi-re-back {
   padding: 0.5rem 1.25rem;
-  border-radius: var(--pbi-field-radius);
+  /* T66 F10 · a copy's button is a retail control and wears the one shape. */
+  border-radius: var(--pbi-control-radius);
   font-family: var(--pbi-font-ui);
   font-size: 1rem;
   font-weight: 500;

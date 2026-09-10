@@ -129,7 +129,8 @@ img, svg { max-width: 100%; display: block; }
   justify-content: center;
   gap: 0.4em;
   text-decoration: none;
-  border-radius: var(--pbi-radius);
+  /* T66 F10 · the control's own corner (variant 2), replacing T64's zero. */
+  border-radius: var(--pbi-control-radius);
   background-image: none; /* NO GRADIENTS. */
   transition: background-color 120ms linear, color 120ms linear, border-color 120ms linear;
 }
@@ -149,9 +150,20 @@ img, svg { max-width: 100%; display: block; }
   color: var(--pbi-onyx);
   border: 1px solid rgba(9, 10, 9, 0.4);
 }
-.pbi-btn-secondary:hover,
+.pbi-btn-secondary:hover { border-color: var(--pbi-deep-gold); background: var(--pbi-ivory); color: var(--pbi-onyx); }
+
+/* T66 F10 · THE ACTIVE STATE IS A GOLD BORDER, SLIGHTLY HEAVIER — the
+ * screenshot's own look. The extra weight is an INSET RING and not a wider
+ * border, because a border that grows on press moves every neighbour by a
+ * pixel; the ring paints inside the box and nothing reflows. */
 .pbi-btn-secondary:active,
-.pbi-btn-secondary[aria-pressed='true'] { border-color: var(--pbi-deep-gold); background: var(--pbi-ivory); color: var(--pbi-onyx); }
+.pbi-btn-secondary[aria-pressed='true'],
+.pbi-btn-secondary.is-on {
+  border-color: var(--pbi-deep-gold);
+  box-shadow: inset 0 0 0 1px var(--pbi-deep-gold);
+  background: var(--pbi-ivory);
+  color: var(--pbi-onyx);
+}
 
 /* A link that behaves as a link: Deep Gold, and gold is allowed here because
  * a link is a small mark. The same voice as the other two, without the box. */
@@ -213,6 +225,8 @@ img, svg { max-width: 100%; display: block; }
   cursor: pointer;
   text-align: center;
   background-image: none;
+  /* T66 F10 · every control in the retail tree wears the one shape. */
+  border-radius: var(--pbi-control-radius);
   transition: border-color 120ms linear, color 120ms linear;
 }
 
@@ -221,6 +235,8 @@ img, svg { max-width: 100%; display: block; }
 
 .pbi-chip.is-selected {
   border: 1px solid var(--pbi-deep-gold);
+  /* T66 F10 · the ACTIVE gold, slightly heavier — as on the button. */
+  box-shadow: inset 0 0 0 1px var(--pbi-deep-gold);
   color: var(--pbi-onyx);
 }
 .pbi-chip.is-selected::after {

@@ -158,6 +158,7 @@ import('./RetailApp.jsx').then(async (module) => {
   // built from PRO's localStorage keys before the switch was ever thrown.
   const { useUiStore } = await import('../stores/uiStore.js');
   const { useProjectStore } = await import('../stores/projectStore.js');
+  const { useCabinetProfileStore: profileStore } = await import('../stores/cabinetProfileStore.js');
   const ui = useUiStore.getState();
   ui.setAudience('retail');
 
@@ -202,6 +203,18 @@ import('./RetailApp.jsx').then(async (module) => {
     const cc = (window.__cc = window.__cc || {});
     cc.project = useProjectStore;
     cc.ui = useUiStore;
+    // ─── T66 F1 · …AND THE RESOLVED PROFILE, WHICH IS THE RIG ───────────
+    // `Scene.jsx` reads `profile.appearance.studio`, so the walk has to be
+    // able to say what number the PAGE was running at rather than what the
+    // file on disk says.
+    //
+    // DYNAMICALLY IMPORTED, like the two above it and for T59 F3.7's own
+    // reason: a static `import` of any store hoists ABOVE
+    // `setPersistence('none')`, and a store that reads PRO's localStorage
+    // keys while `create()` builds its initial state has already read them by
+    // then. The test walks the entry's static imports and would have caught
+    // it; it did.
+    cc.profile = profileStore;
   }
 
   // ─── THE OVERLAYS THAT ALREADY HAD A SWITCH ──────────────────────────────
@@ -218,8 +231,16 @@ import('./RetailApp.jsx').then(async (module) => {
   //   xray            a look THROUGH the furniture — a tool, not a view
   //   contourView     a silhouette, for a printout
   //   ruler           a measuring tool
-  ui.setShowDimensions(false);
-  ui.setShowOutlines(false);
+  //
+  // ─── T66 F9 · TWO OF THE FIVE COME BACK ON ───────────────────────────────
+  //
+  // The owner: *"dimensions on i outlines on default."* A client looking at a
+  // wardrobe wants to SEE how wide it is, and the outline is what makes a
+  // white door on a white wall read as a door at all. So the two he named
+  // mount ON; the three that are TOOLS — the x-ray, the contour and the ruler
+  // — stay off, which is the half of this paragraph that has not changed.
+  ui.setShowDimensions(true);
+  ui.setShowOutlines(true);
   ui.setXray(false);
   ui.setContourView(false);
   ui.setRuler(false);

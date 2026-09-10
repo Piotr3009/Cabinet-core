@@ -215,6 +215,24 @@ export const REASONS = {
    */
   baysMayDiffer: 'Bays can be different heights — the shelf between them is fixed.',
 
+  // ─── T66 F7 · THE SPLIT DOOR, IN EXTRAS ─────────────────────────────────
+  //
+  // The owner: *"split door top segment też powinien być w extras."* The
+  // capability is T36's and it is the ENGINE's — `engine/splitDoors.js`, whose
+  // `SPLIT_SEG_MIN` refuses any segment under 100 mm on its own. These two are
+  // the engine's booleans put to a client BEFORE the press, which is what "no
+  // dead control" means.
+
+  /** PREDICATE: `adapter.doorsOn(unitId)` — the unit has no leaf to split. */
+  splitNeedsADoor: 'Hang the doors first — a split is two halves of one leaf.',
+
+  /**
+   * PREDICATE: `engine/splitDoors.js SPLIT_SEG_MIN` against the leaf's own cut
+   * height — both halves must clear it, so a leaf under twice the minimum plus
+   * the gap cannot be split at all.
+   */
+  splitLeafTooShort: (min) => `This leaf is too short to split — each half has to be at least ${min} mm.`,
+
   /** PREDICATE: `meta.jpull.reason === 'too-short'` on the leaf's own panel. */
   jrunTooShort: 'This leaf is too short for a J to be cut in its edge.',
 

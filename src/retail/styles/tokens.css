@@ -75,6 +75,25 @@
    */
   --pbi-field-radius: 6px;
 
+  /* ─── TURN 66 (CLAUDE.md F10): THE CONTROL'S OWN CORNER ───────────────────
+   * The owner chose variant 2 off the screenshot and then asked the question
+   * that decides the scope: *"wszystkie przyciski będą zmienione, prawda?"* —
+   * yes, all of them.
+   *
+   * T64 gave every control zero radius (*"przyciski kwadratowe"*). Tonight the
+   * owner replaced that with the softly-cornered control of variant 2, so this
+   * is the THIRD token and the one every CONTROL reads: buttons, chips, rail
+   * tiles, view-bar tiles, and the copied editors' buttons through the
+   * generated `pbi-re-*` sheet.
+   *
+   * `--pbi-radius` above STAYS 0 and every PANEL, card and surface still reads
+   * it — the system's square shell is untouched; only the things a hand
+   * presses are rounded. `test/turn59-f2-the-shell.test.js` admits these three
+   * tokens by name and nothing else, so a stray `border-radius: 4px` is still
+   * a violation.
+   */
+  --pbi-control-radius: 8px;
+
   /* ─── TYPOGRAPHY ──────────────────────────────────────────────────────────
    * CLAUDE.md, F2: *"the owner's system has no type spec yet; this is the
    * standing proposal, tokenised so a two-line change swaps it if he strikes

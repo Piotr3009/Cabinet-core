@@ -99,8 +99,13 @@ test('F4 · the name is the DESIGN\'s, and it is the one the client may change',
   // `rename` — and the page shows the name it was given.
   const options = read('src/retail/design/Options.jsx');
   assert.match(options, /data-testid="estimate-name"/, 'the REVIEW step cannot name the design');
-  const wardrobe = read('src/retail/design/detail/WardrobeMenu.jsx');
-  assert.match(wardrobe, /data-testid="wardrobe-name"/, 'the wardrobe menu cannot be renamed');
+  // ─── AMENDED BY T66 F3 ────────────────────────────────────────────────
+  // The thin wardrobe menu carried the second NAME field. It is deleted, and
+  // the name is not an element edit — so there is ONE field for it now, in
+  // REVIEW, and the estimate row. Which is what this test was really about:
+  // every writer is the estimate store's own `rename`.
+  assert.equal([...options.matchAll(/data-testid="estimate-name"/g)].length, 1,
+    'a second name field is back');
   assert.match(ROOM, /onDesignName=\{\(name\) => estimate\.rename\(estimate\.activeId, name\)\}/);
   const page = read('src/retail/estimate/EstimatePage.jsx');
   assert.match(page, /\{item\.name\}/, 'the estimate row does not show the design\'s name');

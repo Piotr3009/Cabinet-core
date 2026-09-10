@@ -1,0 +1,50 @@
+─── T66 · THE ACCEPTANCE WALK ───
+
+Run section by section against `npx vite preview --port 4173`, the hardware
+served from the silent showroom (T23 R8). Every line below is a real browser
+reading the real build; the frames beside this file are what it saw.
+
+ ·   the base gain the page is running at — 0.6
+ ok  the BRIGHT slider is still at its 100 % — value 1
+ ok  …and the base is the new 0.60 — 0.6
+ ·   1.25 × 0.60 = 0.75 — the same light T65 shipped, for the side-by-side
+ ok  the rail is SEVEN tiles, SIZE third — ["what","where","size","inside","fronts","extras","review"]
+ ok  SIZE says plainly that it needs a wardrobe
+ ok  SIZE holds the three typed fields — 3 field(s)
+ ok  a refused width shows the ROOM's own sentence — Between 200 and 3902 mm — type a number in that range.
+ ok  a drawer clicked docks its editor — open=yes editor=element-properties
+ ok  …and NO floating element window stands beside it — 0 floating window(s)
+ ok  the docked editor is PRO's own piece panel
+ ok  the workshop fields are not on screen — weight 0 · move 0 · board pickers 0
+ ok  a door swaps in place — open=yes editor=element
+ ok  …and the door's own window is PRO's, docked
+ ok  a click on the carcass closes the panel — open=no
+ ok  STYLE is four rows in one column — 4 row(s)
+ ok  …and they all start at the same x — a list, not a mosaic — 1 column(s)
+ ok  SHAKER is selected, so its FRAME WIDTH field is under the list
+ ok  the sentences are BELOW the list, in one block
+ ok  GROOVED is a greyed ROW — soon=yes
+ ok  SLAB selected → the frame field goes
+ ok  OPENING is four rows of one width — {"n":4,"widths":1}
+ ok  the fronts are SPRAYED RAL 3005 Wine Red — {"hex":"#5e2129","name":"3005 Wine Red","system":"RAL"}
+ ok  the carcass is the named walnut — egger:H3710_12
+ ok  the REVIEW summary names both — THE SPACE4000 mm wall, ceiling 2500 mm, levelWARDROBE1200 mm wide · 2150 mm high · 568 mm deepDOORS1FRONT STYLEShakerFRONT FINISHRAL 3005 Wine Red, sprayedCARCA
+ ok  the row is named VERTICAL PARTITIONS (BAYS) — VERTICAL PARTITIONS (BAYS)
+ ok  …and there is exactly ONE entry — 1 control(s)
+ ·   the foot of the panel — helves▸Shoe box▸Vertical partition (divider)▸Hanger rail▸Pull-down rail▸Trouser pull-out▸Tie rack▸VERTICAL PARTITIONS (BAYS)mmMORE OPTIONS ›
+ ok  SPLIT DOOR (TOP SEGMENT) is in EXTRAS
+ ok  typing a top segment splits the leaf — 4 segment(s)
+ ok  with no doors it greys with the engine's own reason — Hang the doors first — a split is two halves of one leaf.
+ ok  EDIT THE ROOM is on screen without opening anything
+ ok  …and WHERE has no MORE OPTIONS fold left
+ ok  DIMENSIONS and OUTLINES are on at mount — {"dims":true,"outlines":true,"xray":false,"contour":false}
+ ok  …and the three TOOLS are still off — {"dims":true,"outlines":true,"xray":false,"contour":false}
+ ok  …and the two buttons SHOW the on state — Hide dimensions · Outlines
+ ok  every control is 8px — {"button":"8px","chip":"8px","rail tile":"8px","view-bar tile":"8px"}
+ ok  …and so does a COPIED editor's button — 8px
+ ok  OPTIONS at 1280 is the new base, not T65's — 263px (want ~263, T65 shipped ~296)
+ ok  OPTIONS at 1440 is the new base, not T65's — 272px (want ~272, T65 shipped ~306)
+ ok  seven clicks end on a wine-on-walnut wardrobe — THE SPACE4000 mm wall, ceiling 2500 mm, levelWARDROBE1200 mm wide · 2150 mm high · 568 mm deepDOORS1FRONT STYLEShakerFRONT FINISHRAL 3005 Wine Red, sprayedCARCA
+ ok  DONE → ADD TO MY ESTIMATE lands one item on the estimate — #/estimate · 1 row(s)
+
+39 checks · 0 failed

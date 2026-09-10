@@ -101,8 +101,21 @@ test('F4 · retail\'s rows are PRO\'s rows — same set, same order', () => {
   // which is what made four new menus part of this feature rather than an extra.
   const ids = A.INTERIOR_ROWS.map((r) => r.id);
   assert.equal(new Set(ids).size, ids.length);
+  // ─── AMENDED BY T66 F3 ────────────────────────────────────────────────
+  // T61's law was *"every row opens a menu that exists"*, because a row that
+  // adds something unclickable adds nothing a client can then change. T66 F3
+  // keeps the law and moves half of it to the LEFT: a row whose thing has a
+  // COPIED editor is clicked on the stage and edited on the right; a row whose
+  // thing has none (a bought mechanism the engine cuts no board for) carries
+  // its own controls in the row itself. Neither case is a dead row, and this
+  // asks for exactly that — one of the two, never a third.
+  const rehomed = read('src/retail/design/Options.jsx');
   for (const row of A.INTERIOR_ROWS) {
-    assert.ok(A.MENUS.includes(row.menu), `${row.id} opens a menu that does not exist`);
+    const docked = A.MENUS.includes(row.menu);
+    const onTheLeft = rehomed.includes(`row.id === '${row.id}'`)
+      || Boolean(row.bays);
+    assert.ok(docked || onTheLeft,
+      `${row.id} opens no editor and carries no control of its own`);
   }
 });
 
@@ -192,27 +205,50 @@ test('F4 · an overlay stack opens its OWN menu — the drawerRef fault, closed'
   assert.ok(sel.item, 'the menu would open on nothing');
 });
 
-test('F4 · the three bought mechanisms resolve, not just the pull-down', () => {
+// ─── REPLACED BY T66 F3 ─────────────────────────────────────────────────────
+//
+// T61 F4 made all three bought mechanisms RESOLVE, because each had a thin
+// `KitMenu` to open. Tonight the thin menus die and PRO has no editor for a
+// fitted kit at all — it adds one from `AddItems` and offers nothing on it
+// afterwards. So the three leave the selection vocabulary (`KIT_MENUS` is
+// empty and says why) and their controls stand in INSIDE's own rows, which is
+// F3's re-homing clause said in code.
+//
+// The half of T61 that must not regress is that all THREE are equal: the
+// pull-down is not special, and a trouser rail is not forgotten again.
+test('F4 · the three bought mechanisms are added, counted and removable — all three', () => {
   const id = fresh();
+  assert.deepEqual(A.KIT_MENUS, {}, 'a kit is selectable again with no editor behind it');
+  const options = read('src/retail/design/Options.jsx');
   for (const kind of ['pulldown_rail', 'trouser', 'tie_rack']) {
     S().addWardrobeKit(id, kind);
     const item = A.kitItem(id, kind);
     assert.ok(item, `${kind} was not added`);
-    const sel = A.resolveSelection({ unitId: id, elementRef: item.id });
-    assert.ok(sel, `${kind} resolves to nothing — it would have no menu`);
-    assert.equal(sel.menu, A.KIT_MENUS[kind]);
-    // …and the INTERIOR list's `›` reaches the SAME selection a click does.
-    const fromList = A.selectionForMenu(A.KIT_MENUS[kind], id);
-    assert.equal(fromList.menu, sel.menu);
-    assert.equal(fromList.ref, item.id);
+    // …and it is NOT selectable, which is what stops an empty panel opening.
+    assert.equal(A.resolveSelection({ unitId: id, elementRef: item.id }), null,
+      `${kind} still resolves — it would dock an editor that does not exist`);
+    // …and its row on the left carries what the dead menu carried.
+    const row = A.INTERIOR_ROWS.find((r) => r.id === kind);
+    assert.ok(row, `${kind} has no INTERIOR row`);
+    assert.ok(options.includes(`row.id === '${row.id}'`)
+      || options.includes(`row.id === 'trouser' || row.id === 'tie_rack'`),
+    `${kind}'s controls were lost with its menu`);
+    assert.equal(A.interiorCounts(unit(id))[row.id] > 0, true, `${kind} is not counted`);
   }
+  // The pull-down's DROP — the one number its dead menu owned — is in the row.
+  assert.match(options, /testid="pulldown-drop"/);
+  assert.match(options, /A\.setPulldownDrop\(unitId, item\.id, v\)/);
 });
 
-test('F4 · every new row has a menu FILE, and none of them reaches past the adapter', () => {
-  const router = read('src/retail/design/detail/index.jsx');
-  for (const name of ['OverlayMenu', 'PartitionMenu', 'TrouserMenu', 'TieRackMenu']) {
-    assert.match(router, new RegExp(`import ${name} from './${name}.jsx'`));
-  }
+test('F4 · the iron boundary holds — nothing retail wrote reaches past the adapter', () => {
+  // ─── AMENDED BY T66 F3 ────────────────────────────────────────────────
+  // T61 asked for a `*Menu.jsx` FILE per new row. There are no menu files: the
+  // four rows are edited in the DOCK (`detail/docked.jsx`) or on their own row
+  // in INSIDE, and the table that says which is asserted in
+  // `turn60-f3-the-element-menus.test.js`. What this test is really for — the
+  // IRON BOUNDARY — is unchanged and is asked of every file below.
+  const dock = read('src/retail/design/detail/docked.jsx');
+  assert.match(dock, /export function dockFor\(selection\)/);
   // The iron boundary holds for the new files too: a menu asks the adapter.
   for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/\.jsx$/.test(file)) continue;

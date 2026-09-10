@@ -21,7 +21,7 @@ export function ShoeDrawing({ lanes = 3 }) {
   );
 }
 
-// ─── T64 F4 · THE RAIL'S SIX ICONS ─────────────────────────────────────────
+// ─── T64 F4 · THE RAIL'S ICONS (SEVEN SINCE T66 F2) ────────────────────────
 //
 // One drawing per step, in this file's own manner: a viewBox that is a
 // SHAPE, one-pixel Onyx on nothing, no size attribute (T60 F1 — how big it is
@@ -40,6 +40,13 @@ const STEP_ICONS = {
   // WHERE — the room: a wall in plan, a corner, a dimension.
   where: (
     <svg {...ICON}><path d="M4 20 V6 H20" {...INK} /><path d="M4 20 H20" {...INK} /><path d="M7 9 V17" {...INK} /><path d="M7 17 H17" {...INK} /><path d="M6 11 L8 9 L6 7" {...INK} /></svg>
+  ),
+  // ─── T66 F2 · SIZE — the three numbers, before anything is chosen ───────
+  // The owner: *"chcę wstawić wszystkie 3 size na początku, a dopiero później
+  // carcass board etc."* A box with a width chain under it and a height chain
+  // beside it — the two dimension arrows a joiner draws, and nothing else.
+  size: (
+    <svg {...ICON}><rect x="4" y="5" width="13" height="12" {...INK} /><path d="M4 20 H17" {...INK} /><path d="M5.6 18.8 L4 20 L5.6 21.2" {...INK} /><path d="M15.4 18.8 L17 20 L15.4 21.2" {...INK} /><path d="M20 5 V17" {...INK} /><path d="M18.8 6.6 L20 5 L21.2 6.6" {...INK} /><path d="M18.8 15.4 L20 17 L21.2 15.4" {...INK} /></svg>
   ),
   // INSIDE — the open carcass: shelves and a rail.
   inside: (

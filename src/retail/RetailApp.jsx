@@ -7,6 +7,7 @@ import CopyPage from './site/CopyPage.jsx';
 import DesignRoom from './design/DesignRoom.jsx';
 import EstimatePage from './estimate/EstimatePage.jsx';
 import { useHashRoute } from './site/router.js';
+import { RETAIL_SHOW_WORKSHOP_TOOLS } from './config.js';
 
 // ─── PRIME BESPOKE INTERIORS ───────────────────────────────────────────────
 //
@@ -37,6 +38,13 @@ export default function RetailApp() {
     <div
       className={inRoom ? 'pbi-room' : undefined}
       data-room={inRoom ? 'yes' : 'no'}
+      /* ─── T66 F3 · ONE SWITCH, STAMPED ONCE ────────────────────────────
+         The workshop's own fields inside a COPIED editor are hidden by the
+         room's stylesheet rather than cut out of a copy, and this attribute
+         is what the sheet reads. It comes off the ONE constant, so turning
+         `RETAIL_SHOW_WORKSHOP_TOOLS` on gives a joiner PRO's panels entire —
+         which is what "hidden, not cut" has to mean to be true. */
+      data-workshop-tools={RETAIL_SHOW_WORKSHOP_TOOLS ? 'yes' : 'no'}
       style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
     >
       <Header path={path} compact={inRoom} />

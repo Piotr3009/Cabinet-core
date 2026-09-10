@@ -30,17 +30,20 @@ const wardrobe = () => {
 
 test('F9 · ONE store path adds a door, and both screens press it', () => {
   const extras = code('src/retail/design/Options.jsx');
-  const menu = code('src/retail/design/detail/WardrobeMenu.jsx');
-  // Two doors to it, by the owner's own words: "i tu i tu".
+  // ─── AMENDED BY T66 F3 ────────────────────────────────────────────────
+  // T65's *"i tu i tu"* was EXTRAS and the thin wardrobe menu. That menu is
+  // deleted tonight, so the second door is the one it always should have been:
+  // the ENGINE's own count, under Advanced, in the same panel — and the split
+  // (T66 F7) is a third act on the same leaves, through the same adapter.
   assert.match(extras, /data-testid="extras-add-doors"/, 'EXTRAS has no ADD DOORS');
-  assert.match(menu, /data-testid="wardrobe-add-doors"/, 'the wardrobe menu has no ADD DOORS');
   assert.match(extras, /A\.addDoors\(unit\.id\)/);
-  assert.match(menu, /A\.addDoors\(unitId\)/);
+  assert.match(extras, /A\.setDoorCount\(unit\.id, Number\(id\)\)/, 'the count lost its home');
+  assert.match(extras, /testid="extras-split-top"/, 'T66 F7 put the split in EXTRAS');
 
   // …and ONE law behind them. Nothing else in retail turns a wardrobe's doors
   // on: `setDoors(_, true)` is reached only through `addDoors`/`setDoorCount`
   // in the adapter, and no SCREEN calls it at all.
-  for (const rel of ['src/retail/design/Options.jsx', 'src/retail/design/detail/WardrobeMenu.jsx']) {
+  for (const rel of ['src/retail/design/Options.jsx', 'src/retail/design/Detail.jsx']) {
     assert.ok(!/setDoors\(/.test(code(rel)), `${rel} reaches past the adapter to the store`);
   }
   const adapter = code('src/retail/design/adapter.js');
@@ -78,14 +81,21 @@ test('F9 · doors do NOT follow from bays — setting the bays leaves the doors 
 
 test('F9 · ADD TOP BOX is in EXTRAS and GONE from the wardrobe\'s right-hand menu', () => {
   const extras = code('src/retail/design/Options.jsx');
-  const menu = code('src/retail/design/detail/WardrobeMenu.jsx');
   assert.match(extras, /data-testid="layout-add-top-box"/, 'EXTRAS lost ADD TOP BOX');
   assert.match(extras, /A\.addTopBox\(unit\.id\)/);
-  assert.ok(!/wardrobe-add-top-box/.test(menu), 'ADD TOP BOX is still on the right');
-  assert.ok(!/A\.addTopBox\(/.test(menu), 'the right menu still adds a top box');
-  // The tombstone says where it went — two lines, as the law asks.
-  assert.match(read('src/retail/design/detail/WardrobeMenu.jsx'),
-    /TOMBSTONE: ADD TOP BOX STOOD HERE/);
+  // ─── FINISHED BY T66 F3 ───────────────────────────────────────────────
+  // T65 took ADD TOP BOX out of the thin wardrobe menu and asserted the
+  // tombstone in it. The menu itself is gone tonight, so there is no right-hand
+  // surface left to add furniture from at all — which is the strongest form of
+  // this law and the reason it can be asserted over the whole DOCK.
+  const dock = code('src/retail/design/detail/docked.jsx');
+  assert.ok(!/addTopBox|addDoors|addFirstWardrobe/.test(dock),
+    'the right-hand panel adds furniture again');
+  assert.ok(!/A\.addTopBox\(/.test(code('src/retail/design/Detail.jsx')),
+    'the panel adds a top box again');
+  // …and the BOX's own three controls came left with it (T66 F3's re-homing).
+  assert.match(extras, /testid="topbox-width"/);
+  assert.match(extras, /data-testid="topbox-remove"/);
 });
 
 test('F9 · …and it still works from where it now lives', () => {

@@ -29,6 +29,26 @@ const decorText = (finishId) => {
   return decor ? decorLabel(decor) : String(finishId);
 };
 
+/**
+ * ─── T66 F5 · A SPRAYED FRONT IS NOT A DECOR, AND HAS TO SAY SO ────────────
+ *
+ * The owner: *"default powinno być RAL color wine fronty."* A sprayed front
+ * carries no `finish_id` at all — it carries a COLOUR — so `decorText` above
+ * answered *"workshop default"* for the very thing the owner had just chosen,
+ * and the REVIEW summary, the estimate line and the saved item all said it.
+ *
+ * The colour's own words are the PALETTE's (`lib/pswColors.js`, PRO's own
+ * extraction): the system and the name, exactly as the picker shows them, so a
+ * client reads on the summary what he read on the swatch.
+ */
+const frontFinishText = (type) => {
+  if (type?.finish_id) return decorText(type.finish_id);
+  const c = type?.colour;
+  if (!c?.hex) return 'workshop default';
+  const system = c.system && c.system !== 'custom' ? `${c.system} ` : '';
+  return `${system}${c.name || c.hex}, sprayed`;
+};
+
 const HANDLE_WORDS = {
   bar: 'Bar handles', knob: 'Knobs', jpull: 'J-pull, handleless',
 };
@@ -63,7 +83,7 @@ export function describeDesign(snapshot) {
     ['Wardrobe', `${mmText(params.width)} wide · ${mmText(params.height)} high · ${mmText(params.depth)} deep`],
     ['Doors', `${partitions + 1}`],
     ['Front style', styleLabel(design.fronts?.style)],
-    ['Front finish', decorText(design.fronts?.types?.[0]?.finish_id)],
+    ['Front finish', frontFinishText(design.fronts?.types?.[0])],
     ['Carcass finish', decorText(design.carcass?.types?.[0]?.finish_id)],
     ['Handles', HANDLE_WORDS[design.fronts?.handle?.type] || 'None'],
     ['Plinth', mmText(params.leg_height)],

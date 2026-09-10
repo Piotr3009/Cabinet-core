@@ -63,8 +63,17 @@ export const T63_COPIES = [
 // reason none of them was reachable from the client's room. Copied by the same
 // machine as everything above; it imports nothing from `src/components/`, so
 // the recursive walk stops at one file.
+// ─── T66 F3 · THE DESTINATION FILE IS RENAMED, THE COPY IS NOT ─────────────
+//
+// F3's test LISTS `design/detail/` and asserts that no `*Menu.jsx` survives —
+// the thin Duty menus retail wrote are deleted tonight and the name must not
+// be able to come back. PRO's `ContextMenu.jsx` is not one of them: it is a
+// COPY, and it stays. So its destination is `ContextEdits.jsx`, which is a
+// FILENAME and nothing else — the three mechanical passes, the fidelity test
+// and the ledger all read this manifest, so the copy is byte-for-byte the copy
+// it was, standing under a name the directory's own law allows.
 export const T65_COPIES = [
-  { pro: 'src/components/ContextMenu.jsx', retail: 'src/retail/design/detail/ContextMenu.jsx', why: 'F8 · cornice, top infill, end panels and the bottom mask, with their refusals' },
+  { pro: 'src/components/ContextMenu.jsx', retail: 'src/retail/design/detail/ContextEdits.jsx', why: 'F8 · cornice, top infill, end panels and the bottom mask, with their refusals' },
 ];
 
 export const ALL_COPIES = [...T62_COPIES, ...T63_COPIES, ...T65_COPIES];

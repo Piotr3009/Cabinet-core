@@ -43,7 +43,12 @@ const partsOf = (id) => (S().units.find((u) => u.id === id)?.params?.sections?.[
 
 test('F7 · the INTERIOR row is BAYS now, and it is the same partition track', () => {
   const row = A.INTERIOR_ROWS.find((r) => r.id === 'partition');
-  assert.equal(row.name, 'Bays', 'the row still says "Vertical divider"');
+  // ─── RENAMED BY T66 F6 ─────────────────────────────────────────────────
+  // *"zamień nazwę przycisku z vertical partition (divider) na Vertical
+  // partitions (bays), a ten na dole usuń."* The name is in this ONE place —
+  // the row table — because the row and the control that counts it are one
+  // entry now, and the second control at the foot of the panel is deleted.
+  assert.equal(row.name, 'Vertical partitions (bays)', 'the row still says "Vertical divider"');
   assert.equal(row.bays, true, 'the INSIDE panel cannot tell it is a counted row');
   // The copied PRO list is untouched — a copy stays a copy.
   assert.match(read('src/retail/design/detail/AddItems.jsx'), /label: 'Vertical partition \(divider\)'/,
@@ -79,12 +84,23 @@ test('F7 · MAX 3 — the ceiling is the client\'s, and it is a BOUND, not a ref
 
 test('F7 · the field is TYPED and bounded by the engine side — never a slider', () => {
   const options = read('src/retail/design/Options.jsx');
-  assert.match(options, /<Field label="BAYS">/, 'BAYS is not a field in INSIDE');
+  // T66 F6 · the label comes off the row table, so there is one name and the
+  // field is found by its testid rather than by a word typed in two places.
+  assert.match(options, /label=\{String\(baysRow\?\.name \|\| 'Vertical partitions \(bays\)'\)\.toUpperCase\(\)\}/,
+    'BAYS is not a field in INSIDE');
   assert.match(options, /testid="inside-bays"/);
   assert.match(options, /min=\{b\.bays\.min\}/);
   assert.match(options, /max=\{b\.bays\.max\}/);
-  const at = options.indexOf('<Field label="BAYS">');
+  const at = options.indexOf('testid="inside-bays"');
   assert.ok(!/Slider/.test(options.slice(at, at + 500)), 'BAYS is a slider');
+  // ─── T66 F6 · ONE ENTRY, AND ONLY ONE ─────────────────────────────────
+  // *"a ten na dole usuń."* The count is written in exactly one place in the
+  // whole options column; a second would be a second opinion about the same
+  // wardrobe, which is what the duplicate at the foot of the panel was.
+  assert.equal([...options.matchAll(/testid="inside-bays"/g)].length, 1,
+    'the second BAYS control is back at the foot of the panel');
+  assert.equal([...options.matchAll(/A\.setBayCount\(/g)].length, 1,
+    'two controls write the bay count');
 });
 
 test('F7 · the line appears only AFTER a count above one', () => {

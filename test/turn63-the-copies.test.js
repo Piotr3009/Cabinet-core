@@ -43,7 +43,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { T63_COPIES } from '../scripts/t63-copies.mjs';
+import { T63_COPIES, isCopy } from '../scripts/t63-copies.mjs';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
@@ -336,24 +336,49 @@ test('T63 · every window answers the shared modal slot, from retail\'s own rout
     'front-gap': 'FrontGapModal', lighting: 'LightingPanel', 'unit-size': 'UnitSizeModal',
     'watch-layout': 'WatchLayoutModal', 'jpull-run': 'JpullRunModal', design: 'MaterialsModal',
   };
+  // ─── AMENDED BY T66 F3 ────────────────────────────────────────────────
+  // Every name still answers, and every name still answers from THIS router.
+  // What changed is WHERE the router draws it: the three that edit a selected
+  // element are DOCKED into the right-hand panel and the rest stay modals, so
+  // the test that mattered — *"a copy nobody can open is not done"* — is asked
+  // of `is('<name>')` rather than of the raw comparison it used to be.
   for (const [name, component] of Object.entries(WINDOWS)) {
-    assert.match(editors, new RegExp(`modal === '${name}' && <${component} />`), `${name} has no window`);
+    assert.match(editors, new RegExp(`is\\('${name}'\\) && <${component} />`), `${name} has no window`);
   }
-  assert.match(uncomment(read('src/retail/design/DesignRoom.jsx')), /<Editors \/>/, 'the router is not mounted');
+  assert.match(editors, /const here = \(name\) => \(DOCK_MODALS\.includes\(name\) \? dock : !dock\)/,
+    'a window could be drawn in both places, or in neither');
+  const room = uncomment(read('src/retail/design/DesignRoom.jsx'));
+  assert.match(room, /<Editors where="room" \/>/, 'the router is not mounted at the room\'s level');
+  assert.match(uncomment(read('src/retail/design/Detail.jsx')), /<Editors where="dock" \/>/,
+    'the docked half of the router is not mounted');
 });
 
-test('T63 · every entry opens its copy beside the button, and LIGHTS opens the panel', () => {
-  const entries = uncomment(read('src/retail/design/detail/Entries.jsx'));
-  assert.match(entries, /openEditor\('element', \{ unitId, panelId: panel\.id, anchor: A\.anchorOf\(e\) \}\)/);
-  assert.match(entries, /section: 'hinges'/);
-  assert.match(entries, /openEditor\('watch-layout', \{ unitId, itemId: item\.id, anchor: A\.anchorOf\(e\) \}\)/);
-  assert.match(entries, /A\.railWindow\(unitId, item\.id\)/);
-  assert.match(entries, /openEditor\('lighting', \{ anchor: A\.anchorOf\(e\) \}\)/);
+// ─── AMENDED BY T66 F3 ──────────────────────────────────────────────────────
+//
+// T63 opened each copy from a BUTTON in a thin Duty menu — *"a copied surface
+// that opens from a plain button is a success tonight. Placement is the
+// owner's to arrange later."* Tonight he arranged it: *"w zasadzie po prawej
+// powinien być tylko menu edycji."* So the three element editors open from the
+// CLICK on the element itself and dock; the rest still open from a button, and
+// still beside it, per the house rule.
+test('T63 · every copy is opened — the three by the dock, the rest beside their button', () => {
+  const dock = uncomment(read('src/retail/design/detail/docked.jsx'));
+  assert.match(dock, /\{ modal: 'element', args: \{ unitId, panelId: panel\.id \} \}/);
+  assert.match(dock, /\{ modal: 'watch-layout', args: \{ unitId, itemId: item\.id \} \}/);
+  assert.match(dock, /A\.railWindow\(unitId, item\.id\)/);
+  // The dock passes NO anchor: rule 15 places a window beside its object, and
+  // a docked panel is not placed at all.
+  assert.doesNotMatch(dock, /anchor/, 'the dock still places a window it does not place');
+  assert.match(uncomment(read('src/retail/design/Detail.jsx')), /ui\.openModal\(name, args\)/);
 
-  const wardrobe = uncomment(read('src/retail/design/detail/WardrobeMenu.jsx'));
-  for (const name of ['unit-size', 'add-items', 'unit-finish', 'design']) {
-    assert.match(wardrobe, new RegExp(`openEditor\\('${name}'`), `the wardrobe menu has no door to ${name}`);
+  // …and the ones that are genuinely modal keep their button and their anchor.
+  const options = uncomment(read('src/retail/design/Options.jsx'));
+  for (const name of ['unit-finish', 'design', 'lighting']) {
+    assert.match(options, new RegExp(`openEditor\\('${name}'[^)]*anchor: A\\.anchorOf\\(e\\)`),
+      `${name} lost its door, or opens away from the button that asked`);
   }
+  // The hinges are still reachable — PRO's own section, inside the copy.
+  assert.match(uncomment(read('src/retail/design/detail/DoorModal.jsx')), /section === 'hinges'/);
 
   // THE LIGHTS BUTTON OPENS THE PANEL AND DOES NOT TOGGLE THE LIGHT.
   const room = uncomment(read('src/retail/design/DesignRoom.jsx'));
@@ -374,10 +399,21 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
   for (const gone of ['DoorMenu.jsx', 'RailMenu.jsx', 'WatchMenu.jsx', 'LightingMenu.jsx']) {
     assert.ok(!files.includes(gone), `${gone} survives beside its copy — the second track`);
   }
-  // A sketch is a retail file that re-writes a copied window's controls. The
-  // entries carry only buttons: not one chip row, not one field of their own.
-  const entries = uncomment(read('src/retail/design/detail/Entries.jsx'));
-  assert.doesNotMatch(entries, /<ChipRow|<NumberField/, 'an entry grew controls — that is a sketch');
+  // ─── AMENDED BY T66 F3 ────────────────────────────────────────────────
+  // A sketch is a retail file that re-writes a copied window's controls. T63
+  // held the four ENTRIES to that; tonight there are no entries and no thin
+  // menus at all, so the question is asked of the whole directory: every
+  // remaining `.jsx` under `design/detail/` is either a COPY or the dock's own
+  // table, and the table draws nothing.
+  for (const f of files) {
+    if (!/\.jsx$/.test(f)) continue;
+    if (isCopy(`src/retail/design/detail/${f}`)) continue;
+    const text = uncomment(read(`src/retail/design/detail/${f}`));
+    assert.doesNotMatch(text, /<ChipRow|<NumberField/,
+      `${f} grew controls beside a copy — that is a sketch`);
+  }
+  assert.deepEqual(files.filter((f) => /Menu\.jsx$/.test(f)), [],
+    'a thin Duty menu is back beside the copies');
 });
 
 // ─── 6 · THE TWO BALANCE QUESTIONS, ASKED AS ASSERTIONS ────────────────────

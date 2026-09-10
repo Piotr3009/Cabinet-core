@@ -71,72 +71,92 @@ const panelsOf = (unitId) => S().unitResult(unitId)?.panels || [];
 
 // ═══ 1 · THE ROUTER IS A TABLE, AND IT HAS NO DEFAULT BRANCH ═══════════════
 
-// ─── AMENDED BY T61 F4 ──────────────────────────────────────────────────────
+// ─── AMENDED BY T61 F4, AND REPLACED BY T66 F3 ──────────────────────────────
 //
-// The owner: *"dowozimy dla klientow musi bcy wszystko"*. The INTERIOR list
-// grew from six rows to PRO's ten, and T60's own law — *"an element with no
-// menu is not clickable"* — means four more menus. NINE becomes THIRTEEN, and
-// the substance of every assertion below is unchanged: one file per menu, one
-// table with no default branch, one way back to the estimate, one remove.
-test('F3 · thirteen menus, and the router resolves every one of them', () => {
+// T61: *"dowozimy dla klientow musi bcy wszystko"* — the INTERIOR list grew to
+// PRO's ten and T60's own law (*"an element with no menu is not clickable"*)
+// made NINE menus THIRTEEN.
+//
+// T66 F3 is the owner looking at the result: a floating `ElementProperties`
+// window and a thin Duty menu open on the SAME drawer, and his verdict —
+//
+//   *"w zasadzie po prawej powinien być tylko menu edycji."*
+//
+// So the thirteen thin menus are DELETED and what stands in the docked panel is
+// the COPIED PRO EDITOR for whatever was clicked. Every law T60 wrote survives
+// the change, and this is the same test asking them of the new shape: the
+// router is still a TABLE with no default branch, a kind that is not a key is
+// still unselectable, and there is still exactly ONE way back.
+test('F3 · the editors, and the DOCK resolves every one of them', () => {
   assert.deepEqual(A.MENUS, [
-    'wardrobe', 'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'pulldown', 'lighting',
-    'overlay', 'partition', 'trouser', 'tie_rack',
-  ], 'T60\'s nine in the brief\'s own order, then T61 F4\'s four');
+    'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'overlay', 'partition',
+  ], 'the vocabulary of things a client edits on the right');
 
-  // The table is read as TEXT rather than imported: node cannot load a `.jsx`,
-  // and a router that had to be executable in node would be a router shaped by
-  // its test. What is asserted is the table's own keys against the list the
-  // room works from.
-  const router = read('src/retail/design/detail/index.jsx');
-  // T63: four keys point at ENTRIES (see below), the rest at menus.
-  const keys = [...router.matchAll(/^ {2}(\w+): \w+(?:Menu|Entry),$/gm)].map((m) => m[1]);
-  assert.deepEqual(keys.sort(), [...A.MENUS].sort(), 'the table and the list have drifted');
-
-  // One file per menu, and each one is reached only through the table.
+  // ─── NOT ONE `*Menu.jsx` REMAINS ──────────────────────────────────────────
+  // CLAUDE.md asks for a test that LISTS the directory, and this is it. The
+  // COPY of PRO's right-click menu stands under `ContextEdits.jsx` — the
+  // manifest names the destination, so the copy is byte-for-byte the copy it
+  // was and the name a thin Duty menu wore cannot come back by accident.
   const files = readdirSync(join(ROOT, 'src/retail/design/detail'));
-  // Thirteen menus, fourteen files: `KitMenu.jsx` is the shape the trouser
-  // pull-out and the tie rack share and is NOT in the table — a table with two
-  // keys pointing at one component has stopped being readable, so each kit has
-  // its own one-line file naming its own kind.
-  //
-  // ─── AMENDED BY T63 F2/F3 ──────────────────────────────────────────────
-  // FOUR keys — door, rail, watch, lighting — no longer point at a `*Menu.jsx`
-  // of retail's own. Those four sketches (113, 70, 85 and 61 lines where PRO
-  // has 996, 148, 246 and 861) are DELETED under CLAUDE.md's licence, PRO's
-  // four files are COPIED beside this router, and the four keys point at
-  // ENTRIES in `Entries.jsx`: the Duty shell with the one button that opens
-  // the copy. The table is still a table, every key still resolves, and no
-  // key resolves to a sketch.
-  const ENTRIES = ['door', 'rail', 'watch', 'lighting'];
-  // ─── AMENDED BY T65 F8 ─────────────────────────────────────────────────
-  // `ContextMenu.jsx` ends in `Menu.jsx` and is NOT one of retail's menus: it
-  // is PRO's right-click menu, COPIED (`scripts/t63-copies.mjs`). Every law in
-  // this file is about menus retail WROTE — their router key, their DONE, the
-  // sentences they may not author — and a copy answers to the copy-fidelity
-  // test instead. So the enumeration asks `isCopy`, exactly as the
-  // sentence-authoring law below already did.
-  assert.deepEqual(
-    files.filter((f) => /Menu\.jsx$/.test(f) && !isCopy(`src/retail/design/detail/${f}`)).sort(),
-    [...keys].filter((k) => !ENTRIES.includes(k))
-      .map((k) => `${k[0].toUpperCase()}${k.slice(1).replace(/_(.)/g, (_, c) => c.toUpperCase())}Menu.jsx`)
-      .concat('KitMenu.jsx').sort(),
-    'a menu file with no key, or a key with no file',
-  );
-  for (const name of keys) {
-    if (ENTRIES.includes(name)) {
-      const entry = `${name[0].toUpperCase()}${name.slice(1)}Entry`;
-      assert.match(router, new RegExp(`\\b${entry}\\b`), `${name} has no entry imported`);
-      assert.match(read('src/retail/design/detail/Entries.jsx'), new RegExp(`export function ${entry}\\(`),
-        `${name}'s entry is not in Entries.jsx`);
-      continue;
-    }
-    assert.ok(new RegExp(`import \\w+ from '\\./\\w+Menu\\.jsx'`).test(router),
-      `${name} has no component imported`);
-  }
-  for (const gone of ['DoorMenu.jsx', 'RailMenu.jsx', 'WatchMenu.jsx', 'LightingMenu.jsx']) {
+  assert.deepEqual(files.filter((f) => /Menu\.jsx$/.test(f)), [],
+    'a *Menu.jsx is back under design/detail — the thin menus died in T66 F3');
+  for (const gone of [
+    'DrawersMenu.jsx', 'OverlayMenu.jsx', 'ShelfMenu.jsx', 'PartitionMenu.jsx',
+    'PulldownMenu.jsx', 'ShoeMenu.jsx', 'TieRackMenu.jsx', 'TrouserMenu.jsx',
+    'KitMenu.jsx', 'WardrobeMenu.jsx', 'Entries.jsx', 'Duty.jsx', 'index.jsx',
+    'DoorMenu.jsx', 'RailMenu.jsx', 'WatchMenu.jsx', 'LightingMenu.jsx',
+  ]) {
     assert.ok(!files.includes(gone), `${gone} is back beside its copy — that is the second track`);
   }
+
+  // ─── AND WHAT STANDS IN THEIR PLACE IS A TABLE ────────────────────────────
+  // Read as TEXT rather than imported: node cannot load a `.jsx`, and a router
+  // that had to be executable in node would be a router shaped by its test.
+  const dock = read('src/retail/design/detail/docked.jsx');
+  for (const menu of ['door', 'watch', 'rail']) {
+    assert.match(dock, new RegExp(`menu === '${menu}'`), `${menu} has no branch in the dock`);
+  }
+  // The three that are a copied WINDOW are the three the dock owns on the
+  // shared modal slot, and `Editors.jsx` splits on that ONE list.
+  assert.match(dock, /export const DOCK_MODALS = Object\.freeze\(\['element', 'rail', 'watch-layout'\]\)/);
+  const editors = read('src/retail/design/Editors.jsx');
+  assert.match(editors, /import \{ DOCK_MODALS \} from '\.\/detail\/docked\.jsx'/);
+  assert.match(editors, /DOCK_MODALS\.includes\(name\) \? dock : !dock/,
+    'a window could be drawn in both places');
+
+  // …and everything else the engine cuts a board for is PRO's own piece panel.
+  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(\) \} \}/);
+  const detail = read('src/retail/design/Detail.jsx');
+  assert.match(detail, /import ElementProperties from '\.\/detail\/ElementProperties\.jsx'/);
+  assert.ok(isCopy('src/retail/design/detail/ElementProperties.jsx'),
+    'the docked panel is not PRO\'s own file');
+});
+
+test('F3 · the workshop\'s own fields are HIDDEN, not cut — and behind ONE flag', () => {
+  // CLAUDE.md F3: *"Workshop fields inside the copied editors are hidden, not
+  // cut … behind `RETAIL_SHOW_WORKSHOP_TOOLS=false`."*
+  const dock = read('src/retail/design/detail/docked.jsx');
+  assert.match(dock, /import \{ RETAIL_SHOW_WORKSHOP_TOOLS \} from '\.\.\/\.\.\/config\.js'/);
+  assert.match(dock, /RETAIL_SHOW_WORKSHOP_TOOLS \? \[\] : \[\.\.\.WORKSHOP_FIELDS\]/,
+    'the flag does not turn the fields back on');
+  // They are left out through PRO's OWN `omit` prop — not by editing a copy.
+  assert.match(read('src/retail/design/detail/ElementProperties.jsx'),
+    /elementFields\(panel, type\)\.filter\(\(f\) => !omit\.includes\(f\)\)/,
+    'the copy\'s own omit API is gone, so retail must have edited it');
+  for (const field of ['setback', 'thickness', 'carcass-board', 'front-board', 'material', 'runner-variant']) {
+    assert.match(dock, new RegExp(`'${field}'`), `${field} is not named as a workshop field`);
+  }
+  // Inside a copied WINDOW retail is not the caller, so the four the brief
+  // names are hidden by the ROOM's own sheet — the markup is untouched.
+  const css = read('src/retail/styles/room.css');
+  for (const marker of ['data-piece-weight', 'data-element-move', 'data-element-material', 'data-handle-apply-all']) {
+    assert.match(css, new RegExp(`\\[${marker}`), `${marker} is not hidden in the dock`);
+  }
+  assert.match(css, /\.pbi-room\[data-workshop-tools="no"\] \.pbi-dock/,
+    'the hiding is not behind the one flag');
+  assert.match(read('src/retail/RetailApp.jsx'),
+    /data-workshop-tools=\{RETAIL_SHOW_WORKSHOP_TOOLS \? 'yes' : 'no'\}/,
+    'the flag is not stamped on the room');
 });
 
 test('F3 · the licensed deletion — and the branch that made it possible', () => {
@@ -161,9 +181,15 @@ test('F3 · the licensed deletion — and the branch that made it possible', () 
 
   // …and so is the DEFAULT BRANCH it lived in, which is the half that matters:
   // a `switch` invites one, a table does not.
-  const router = code('src/retail/design/detail/index.jsx');
+  //
+  // T66 F3 · the router MOVED — `detail/index.jsx` and the thirteen thin menus
+  // it pointed at are deleted, and `detail/docked.jsx` is the table in its
+  // place. The law is the same law and it is asked of the new file: no default
+  // branch, and the last word is `return null` rather than a placeholder.
+  const router = code('src/retail/design/detail/docked.jsx');
   assert.ok(!/default:/.test(router), 'the router has a default branch again');
-  assert.match(router, /MENU_COMPONENTS = Object\.freeze\(/, 'the router is not a table');
+  assert.match(router, /export function dockFor\(selection\)/, 'the router is not a function of the selection');
+  assert.match(router, /if \(!panel\) return null;/, 'a selection with no panel opens something');
   const detail = code('src/retail/design/Detail.jsx');
   assert.ok(!/UnknownDetail/.test(detail), 'the unknown panel is back');
 });
@@ -241,18 +267,36 @@ test('F3 · a click in the stage reaches the ITEM, not a string that looks like 
   assert.equal(found.item.id, panel.meta.itemId, 'the selection did not reach the item');
 });
 
+// ─── AMENDED BY T66 F3 ──────────────────────────────────────────────────────
+//
+// T60 asked that every kind the engine cuts be MAPPED. T66 F3 adds the second
+// honest answer — the owner's own: *"jak naciśniesz w szafę lub poza menu —
+// znika"* — so a CARCASS kind is deliberately not a key, and the panel slides
+// out on it. The law this test exists for is the THIRD case, and it is the
+// same law: a kind may not resolve to a highlight with nothing behind it.
 test('F3 · every engine kind is either mapped or unselectable — no third case', () => {
   const unit = room({ drawers: 3, shelves: 2, rail: true });
   A.setBayCount(unit.id, 2);
-  const unmapped = [];
+  const third = [];
   for (const panel of panelsOf(unit.id)) {
     const kind = elementKind(panel);
     if (!kind) continue;                       // a mechanism: not selectable at all
-    if (A.MENU_FOR_KIND[kind]) continue;       // mapped
-    unmapped.push(`${panel.part}/${panel.role} → ${kind}`);
+    const found = A.resolveSelection({ unitId: unit.id, elementRef: panel.id });
+    if (A.MENU_FOR_KIND[kind]) {
+      // MAPPED — and then it must actually resolve, to a menu the list knows.
+      if (!found || !A.MENUS.includes(found.menu)) third.push(`${kind} maps to ${found?.menu || 'nothing'}`);
+      continue;
+    }
+    // UNMAPPED — and then it must resolve to NOTHING, so the room clears it.
+    if (found) third.push(`${panel.part}/${panel.role} → ${kind} is unmapped but resolved to ${found.menu}`);
   }
-  assert.deepEqual([...new Set(unmapped)], [],
-    `a selectable kind with no menu:\n  ${unmapped.join('\n  ')}`);
+  assert.deepEqual([...new Set(third)], [],
+    `a kind that is neither mapped nor unselectable:\n  ${third.join('\n  ')}`);
+
+  // …and the carcass is the way OUT, by name — the whole of T66 F3's F10 clause.
+  for (const kind of ['side', 'top', 'bottom', 'back', 'plinth', 'end-panel', 'infill', 'masking-panel']) {
+    assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} still opens a menu`);
+  }
 });
 
 // ═══ 2 · THE NINE, ONE AT A TIME ═══════════════════════════════════════════
@@ -430,8 +474,19 @@ test('F3.3 · SHELF — pinned is a NOTE, locked is a refusal, and they differ',
   assert.equal(held.blocked, true);
   assert.equal(A.shelfReason(held), REASONS.shelfLocked, 'a locked board must say why');
 
-  const menu = read('src/retail/design/detail/ShelfMenu.jsx');
-  assert.match(menu, /\{reason \? \([\s\S]{0,120}<Said/, 'the menu shows a slider beside a refusal');
+  // T66 F3 · the thin ShelfMenu is deleted; a shelf clicked on the stage docks
+  // PRO's OWN piece panel, whose `position-y` field is the height this test has
+  // just walked. The height that reaches the store is the same height, because
+  // `setShelfPos` is the same setter — which is the point of docking a copy
+  // rather than writing a fourteenth surface.
+  const dock = read('src/retail/design/detail/docked.jsx');
+  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(\) \} \}/);
+  assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /case 'position-y':/,
+    'PRO\'s own height field is gone from the copy');
+  // …and the EVEN LADDER, which the copy has no button for, is re-homed on the
+  // left, in INSIDE's own row (F3's *"never lost"* clause).
+  assert.match(read('src/retail/design/Options.jsx'), /data-testid="shelf-centre"/,
+    'CENTRE THIS BAY was lost with the menu that carried it');
 });
 
 test('F3.3 · SHELF — CENTRE THIS BAY is the T58 law, per bay, and it reclamps', () => {
@@ -498,8 +553,15 @@ test('F3.4 · DRAWERS — the ONE slider stands down where it would overwrite a 
   // the height the owner declared slider-less.
   A.setTopInsert(plain.id, 'watches');
   assert.equal(A.stackHasFixedHeights(plain.id), REASONS.stackHasAFixedDrawer);
-  const menu = read('src/retail/design/detail/DrawersMenu.jsx');
-  assert.match(menu, /\{fixed \? \([\s\S]{0,160}<Said/, 'the menu shows a slider beside the reason');
+  // T66 F3 · the thin DrawersMenu is deleted and the STACK-WIDE questions it
+  // carried — how many, the top insert, the glass, and this front height — are
+  // re-homed into INSIDE's own row. ONE drawer's own height is the docked
+  // copy's `drawer-height`, which is PRO's own field.
+  const options = read('src/retail/design/Options.jsx');
+  assert.match(options, /\{fixed \? \([\s\S]{0,200}<Said/, 'the row shows a field beside the reason');
+  assert.match(options, /testid="drawers-front-height"/);
+  assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /case 'drawer-height':/,
+    'PRO\'s own per-drawer height is gone from the copy');
 });
 
 test('F3.5 · RAIL — the engine\'s own two mounts, and the height that is its shelf\'s', () => {
@@ -581,11 +643,15 @@ test('F3.7 · SHOE — fixed law, said in words, with no invented option', () =>
     'the ramp leans at the shoe shelf\'s own tilt, read where it lives');
   assert.equal(law.lanes, 3);
 
-  const menu = read('src/retail/design/detail/ShoeMenu.jsx');
-  assert.ok(!/ChipRow/.test(menu), 'the shoe menu offers a choice the workshop has already made');
-  assert.ok(!/Slider/.test(menu), 'the shoe menu offers a millimetre nobody sets');
-  assert.match(menu, /A\.shoeLaw\(\)/, 'the sentence is not read from the profile');
-  assert.match(menu, /shoe-remove/, 'the one thing it must offer is REMOVE');
+  // T66 F3 · the thin ShoeMenu is deleted. What it carried was a DRAWING and a
+  // SENTENCE — never a control, because the ramp is fixed law — and both are
+  // re-homed onto the shoe drawer's own row in INSIDE.
+  const options = read('src/retail/design/Options.jsx');
+  const row = options.slice(options.indexOf("row.id === 'shoe'"), options.indexOf("row.id === 'shoe'") + 700);
+  assert.ok(!/ChipRow/.test(row), 'the shoe row offers a choice the workshop has already made');
+  assert.match(row, /A\.shoeLaw\(\)/, 'the sentence is not read from the profile');
+  assert.match(row, /<ShoeDrawing lanes=\{law\.lanes\}/, 'the drawing went with the menu');
+  assert.match(row, /testid="shoe-law"/);
 });
 
 test('F3.8 · PULL-DOWN — the drop is the owner\'s own frame, bounded by the body', () => {
@@ -693,17 +759,26 @@ test('F3 · every refusal a menu can show is tied to a predicate that is not ret
   }
 });
 
-test('F3 · DONE returns the column to the estimate, from every one of the thirteen', () => {
-  for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
-    if (!/Menu\.jsx$/.test(file)) continue;
-    // T65 F8: a COPY is PRO's file, not one of retail's thirteen.
-    if (isCopy(`src/retail/design/detail/${file}`)) continue;
-    assert.match(read(`src/retail/design/detail/${file}`), /onDone=\{onDone\}/,
-      `${file} has no way back to the estimate`);
-  }
-  const shell = read('src/retail/design/detail/Duty.jsx');
-  assert.match(shell, /data-testid="detail-done"/);
-  assert.match(shell, /data-testid="detail-back"/);
+// ─── REPLACED BY T66 F3 ─────────────────────────────────────────────────────
+//
+// T60 asked that each of the thirteen thin menus carry `onDone` so a client
+// could always get back. There are no thin menus: there is ONE panel, and the
+// way out of it is one link in one file — which is a stronger version of the
+// same promise, and the reason it can be asserted in three lines.
+test('F3 · ONE way out of the panel, and it is in ONE file', () => {
+  const files = readdirSync(join(ROOT, 'src/retail/design/detail'));
+  assert.deepEqual(files.filter((f) => /Menu\.jsx$/.test(f)), [],
+    'a thin Duty menu is back, and with it a second DONE');
+  const detail = read('src/retail/design/Detail.jsx');
+  assert.match(detail, /data-testid="detail-close"/, 'the panel cannot be closed');
+  assert.match(detail, /onClick=\{clear\}/);
+  // CLOSE takes the WHOLE selection — the scene's own `clearSelection`, exactly
+  // as a click on the empty stage does — so the panel cannot slide straight
+  // back in on the selection it just let go of.
+  assert.match(detail, /const clear = \(\) => \{[\s\S]{0,320}clearSelection/);
+  // …and it closes the shared modal slot too, but only when the DOCK is what
+  // filled it: a modal opened from the left is not the panel's to shut.
+  assert.match(detail, /if \(DOCK_MODALS\.includes\(ui\.modal\)\) ui\.closeModal\(\);/);
 });
 
 test('F3 · every REMOVE goes through the store\'s own remove', () => {
@@ -711,17 +786,27 @@ test('F3 · every REMOVE goes through the store\'s own remove', () => {
   assert.match(adapter, /export const removeElement = \(unitId, itemId\) => S\(\)\.removeItem/);
   // T61 F3: and the unit-level one, the same shape, for the same reason.
   assert.match(adapter, /export const removeUnit = \(unitId\) => S\(\)\.removeUnit/);
-  for (const file of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
-    if (!/Menu\.jsx$/.test(file)) continue;
-    const text = read(`src/retail/design/detail/${file}`);
-    if (!/-remove"/.test(text)) continue;
-    // ─── AMENDED BY T61 F3 ────────────────────────────────────────────────
-    // A TOP BOX is a UNIT, not an item in a section — `params.rides_on` is a
-    // link between two units — so its REMOVE is `removeUnit` and not
-    // `removeItem`. Both are the STORE's own remove, which is the whole of what
-    // this test is for; both are asserted to be bare pass-throughs above and
-    // below, so neither can grow a retail law of its own.
-    assert.match(text, /A\.remove(Element|Unit)\(/, `${file} removes by another road`);
+  // ─── AMENDED BY T61 F3, AND AGAIN BY T66 F3 ───────────────────────────
+  // A TOP BOX is a UNIT, not an item in a section — `params.rides_on` is a
+  // link between two units — so its REMOVE is `removeUnit` and not
+  // `removeItem`. Both are the STORE's own remove, which is the whole of what
+  // this test is for.
+  //
+  // The thin menus that carried a REMOVE are deleted; the removes that had no
+  // copied editor to go to are re-homed into INSIDE's rows, and this asks the
+  // same question of the file they landed in.
+  const options = read('src/retail/design/Options.jsx');
+  for (const [what, testid] of [
+    ['the overlay stack', 'overlay-remove'],
+    ['the pull-down rod', 'pulldown-remove'],
+    ['the trouser pull-out and the tie rack', 'kit-${row.id}-remove'],
+  ]) {
+    assert.ok(options.includes(testid), `${what} lost its REMOVE with the menu`);
+  }
+  const removes = [...options.matchAll(/data-testid=\{?[`"]([a-z$-{}.]*-remove)[`"]\}?[\s\S]{0,320}?onClick=\{\(\) => ([\s\S]{0,90}?)\}/g)];
+  assert.ok(removes.length >= 3, `only ${removes.length} re-homed removes found`);
+  for (const [, id, body] of removes) {
+    assert.match(body, /A\.remove(Element|Unit)\(/, `${id} removes by another road`);
   }
 
   // …and the STAGE follows, because the removal is the store's own recompute.

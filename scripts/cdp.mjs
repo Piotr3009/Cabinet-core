@@ -11,8 +11,9 @@
 // a picture. Nothing here ships to the browser; it is a development tool.
 
 import { spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 const CHROME_CANDIDATES = [
   process.env.CHROME_PATH,
@@ -45,9 +46,29 @@ async function waitFor(fn, { timeout = 20000, every = 150, what = 'condition' } 
   throw new Error(`Timed out waiting for ${what} (last: ${JSON.stringify(last)})`);
 }
 
+// ─── ONE PROFILE PER LAUNCH (turn 66) ──────────────────────────────────────
+//
+// MEASURED FAULT, and it cost this turn's walk two hours. `page.close()` ends a
+// browser with SIGKILL, which leaves the profile's `SingletonLock` behind; with
+// no `--user-data-dir` every launch shares Chromium's DEFAULT profile, so the
+// NEXT browser blocks forever waiting for a lock nobody will release. A walk
+// run one section at a time is fine and a walk run in two hangs on the second
+// — which is exactly what it did, silently, with a live Chromium sitting at
+// 0:02 of CPU and answering nothing.
+//
+// A directory per launch, removed with the browser. Nothing else changes.
+let profiles = 0;
+const profileDir = () => join(
+  tmpdir(),
+  `cc-cdp-${process.pid}-${(profiles += 1)}-${Date.now().toString(36)}`,
+);
+
 export async function launch({ port = 9333, headless = true, width = 1600, height = 1000 } = {}) {
+  const userData = profileDir();
+  mkdirSync(userData, { recursive: true });
   const proc = spawn(chromePath(), [
     `--remote-debugging-port=${port}`,
+    `--user-data-dir=${userData}`,
     headless ? '--headless=new' : '',
     '--no-sandbox',
     '--disable-gpu-sandbox',
@@ -76,6 +97,7 @@ export async function launch({ port = 9333, headless = true, width = 1600, heigh
   page.close = async () => {
     try { page.socket.close(); } catch { /* already gone */ }
     proc.kill('SIGKILL');
+    try { rmSync(userData, { recursive: true, force: true }); } catch { /* never fatal */ }
   };
   await page.send('Page.enable');
   await page.send('Runtime.enable');

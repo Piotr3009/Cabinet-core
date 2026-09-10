@@ -14,7 +14,7 @@ import ViewBar from './ViewBar.jsx';
 import { Button } from './controls.jsx';
 import GoldLine from '../ui/GoldLine.jsx';
 import RoomEditor from './room/RoomEditor.jsx';
-import ContextMenu from './detail/ContextMenu.jsx';
+import ContextEdits from './detail/ContextEdits.jsx';
 import * as A from './adapter.js';
 import { useEstimateStore } from '../estimate/store.js';
 import { describeDesign } from '../estimate/document.js';
@@ -166,7 +166,7 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
 
   const [active, setActive] = useState('what');
   const [done, setDone] = useState([]);
-  const [target, setTarget] = useState(null);      // { menu, unitId, ref, from } — four strings
+  const [target, setTarget] = useState(null);      // { menu, unitId, ref } — three strings
   const [fullScreen, setFullScreen] = useState(false);
   // T65 F4: the room opens on PRO's own camera, which is not one of the three
   // named places — so NO preset is lit until the client presses one.
@@ -226,9 +226,13 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
     // for it. This is the SECOND place, and it is not redundant: the design
     // room can be entered later by a hash change. Idempotent setters.
     const ui = useUiStore.getState();
-    ui.setShowDimensions(false);
+    // T66 F9 · *"dimensions on i outlines on default."* The room mounts
+    // DRESSED — the two the owner named are ON and the buttons show it; the
+    // three that are TOOLS stay off. RESET VIEW does not touch any of them:
+    // it is a CAMERA, and T65 F4 made that its whole job.
+    ui.setShowDimensions(true);
     ui.setShowFrontDimensions(false);
-    ui.setShowOutlines(false);
+    ui.setShowOutlines(true);
     ui.setXray(false);
     ui.setContourView(false);
     ui.setRuler(false);
@@ -289,8 +293,7 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   // ─── T64 F4 · …AND THE PANEL SLIDES ──────────────────────────────────────
   // A piece clicked on the stage slides the DETAIL in; a click on the empty
   // stage — the scene's own `onPointerMissed`, which clears the selection —
-  // slides it out. A menu opened from a row's `›` (`from: 'list'`) is not the
-  // stage's to close, so a cleared selection leaves it standing until DONE.
+  // slides it out.
   // ─── T65 F10 · …AND A CLICK ON THE WARDROBE SLIDES IT OUT ────────────────
   //
   // The owner, and it is the whole of this feature: *"po naciśnięciu na inny
@@ -298,17 +301,24 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   // znika."*
   //
   // T64 opened the WARDROBE's own menu on a carcass click. Tonight the carcass
-  // is the way OUT: click a piece and its menu slides in, click a different
+  // is the way OUT: click a piece and its editor slides in, click a different
   // piece and it SWAPS IN PLACE (the panel never closes — `data-open` stays
   // `yes` because the target goes A→B without passing through null), click the
   // wardrobe body or the empty stage and it slides out.
   //
-  // The wardrobe's own menu is not lost with the gesture: it is the OPTIONS
-  // column's own row, *"THIS WARDROBE — SIZE AND DOORS ›"*, which opens it
-  // with `from: 'list'` — and a list-opened menu is not the stage's to close.
-  // Turn 13's verdict still holds where it was made: a click on a carcass
-  // still SELECTS the cabinet (`selectedUnitId`), which is what the plus needs
-  // to add into the right one (T64 F1.2). Only the panel's answer changed.
+  // ─── T66 F3 · …AND THERE IS ONLY THE ONE GESTURE NOW ─────────────────────
+  //
+  // T65's `from` field distinguished a panel the STAGE opened from one a row's
+  // `›` opened, so a cleared selection would not close the second. The rows'
+  // `›` is gone — *"po prawej powinien być tylko menu edycji"*, and counting
+  // and adding live on the left — so every target comes from the stage and the
+  // distinction has nothing left to distinguish. `MENU_FOR_KIND` no longer maps
+  // a carcass kind at all, so a click on a side, a top or a plinth resolves to
+  // null here and the panel slides out on the same line the empty stage does.
+  //
+  // Turn 13's verdict still holds where it was made: a click on a carcass still
+  // SELECTS the cabinet (`selectedUnitId`), which is what the plus needs to add
+  // into the right one (T64 F1.2). Only the panel's answer changed.
   useEffect(() => {
     if (fullScreen) { setTarget(null); return; }
     if (selectedElement) {
@@ -318,15 +328,12 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         useUiStore.getState().clearElement?.();
         return;
       }
-      setTarget({
-        menu: found.menu, unitId: found.unitId, ref: found.ref, from: 'stage',
-      });
+      setTarget({ menu: found.menu, unitId: found.unitId, ref: found.ref });
       return;
     }
-    // A UNIT selection with no element is a click on the wardrobe body. It
-    // slides the panel out — and it takes only what the STAGE opened, so a
-    // menu reached from a row's `›` stands until DONE, as it always has.
-    setTarget((t) => (t && t.from === 'stage' ? null : t));
+    // A UNIT selection with no element is a click on the wardrobe body, and it
+    // slides the panel out — the owner's own sentence, one line.
+    setTarget(null);
   }, [selectedElement, selectedUnitId, fullScreen]);
 
   // ─── AND THE TARGET IS RESOLVED FRESH, EVERY RENDER ──────────────────────
@@ -480,19 +487,11 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
           choices={choices}
           designName={designName}
           onDesignName={(name) => estimate.rename(estimate.activeId, name)}
-          onOpenDetail={(menu) => {
-            // T65 F1: the room can be empty, and a step that needs a wardrobe
-            // says so rather than opening a menu about one that is not there.
-            if (!unit) return;
-            const found = A.selectionForMenu(menu, unit.id);
-            // A row with nothing behind it opens nothing — which is what makes
-            // a row without a `›` honest rather than merely quiet.
-            if (found) {
-              setTarget({
-                menu: found.menu, unitId: found.unitId, ref: found.ref, from: 'list',
-              });
-            }
-          }}
+          /* ─── T66 F3 · TOMBSTONE: `onOpenDetail` STOOD HERE ─────────────
+              The INTERIOR list's `›` opened a thin Duty menu on the right, and
+              the thin menus are gone: EDITING one element is the docked copied
+              editor and it opens from ONE gesture, a click on the piece
+              itself. Counting and adding stay on the left, in the row. */
           onDone={onDone}
           onEditRoom={(anchor) => setRoomEditor({ anchor })}
           onReset={() => {
@@ -522,7 +521,7 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
           was already firing into a menu nobody rendered. The copy is mounted
           here, at the room's level, exactly where PRO mounts its own
           (`ConfiguratorPage.jsx`). Nothing else was needed. */}
-      <ContextMenu />
+      <ContextEdits />
 
       {roomEditor && !fullScreen ? (
         <RoomEditor anchor={roomEditor.anchor} onClose={() => setRoomEditor(null)} />
@@ -533,7 +532,7 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
           the shared scene already opens and every name the Duty menus open
           from their buttons, rendered by the COPY of the window PRO renders.
           Mounted at the room's level, and in full screen too. */}
-      <Editors />
+      <Editors where="room" />
     </div>
   );
 }

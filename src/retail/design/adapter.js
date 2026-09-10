@@ -55,6 +55,12 @@ import { WATCH_FINISHES, WATCH_LAYOUTS } from '../../engine/watchDrawer.js';
 import { shoeInsertSpec } from '../../engine/shoeInsert.js';
 import { fieldFromPos, posFromField } from '../../engine/shelfHeights.js';
 import { RAIL_MOUNT } from '../../engine/railAssembly.js';
+// T66 F5 · the RAL list the copied ColourPicker itself reads, so retail cannot
+// hold a second opinion about what 3005 Wine Red looks like.
+import { ALL_COLOURS } from '../../lib/pswColors.js';
+// T66 F7 · the split's own two published constants and the unit/bay lookup —
+// `engine/splitDoors.js` is the kit's own half and every bound below is its.
+import { SPLIT_SEG_GAP, SPLIT_SEG_MIN, splitTopFor } from '../../engine/splitDoors.js';
 import { COLLECTIONS, collectionById } from './collections.js';
 import { REASONS } from './reasons.js';
 
@@ -1166,6 +1172,22 @@ export function setFrontDecor(decorId) {
   return s.finishId;
 }
 
+/**
+ * T66 F5 · A SPRAYED FRONT, in the project's own words.
+ *
+ * The same call `pickMaterialColour('front', …)` makes — `setFrontType` with
+ * the profile's spray source and the colour — so a default and a client's own
+ * pick land in one place and are one thing afterwards.
+ */
+export function setFrontColour(colour) {
+  if (!colour) return null;
+  const store = S();
+  const source = sourceById(frontSources(P()), 'spray')?.id || null;
+  if (!source) return null;
+  store.setFrontType(frontTypeId(store.project.design), { source, colour });
+  return colour.hex;
+}
+
 export function setCarcassDecor(decorId) {
   const store = S();
   const s = swatchFor(decorId);
@@ -1274,7 +1296,12 @@ export const INTERIOR_ROWS = [
     // partitions are still the engine's own, added by the same
     // `addFlushPartition` the copied PRO list adds them by. `bays: true` is
     // what tells the INSIDE panel to draw a typed count instead of a `›`.
-    id: 'partition', pro: 'partition', menu: 'partition', name: 'Bays',
+    // ─── T66 F6 · ONE ROW, ONE NAME ────────────────────────────────────────
+    // The owner: *"zamień nazwę przycisku z vertical partition (divider) na
+    // Vertical partitions (bays), a ten na dole usuń."* The name is HERE, in
+    // the row table, because the row and the control that counts it are one
+    // entry now — the second BAYS control at the foot of the panel is deleted.
+    id: 'partition', pro: 'partition', menu: 'partition', name: 'Vertical partitions (bays)',
     bays: true,
     // ONE TRACK, and this line is the whole of it — see `addFlushPartition`.
     add: (s, u) => addFlushPartition(u),
@@ -1488,26 +1515,34 @@ export const MENU_FOR_KIND = Object.freeze({
   'drawer-front': 'drawers',
   drawer: 'drawers',
   shelf: 'shelf',
-  'fixed-shelf': 'shelf',
   // ─── T61 F4 · RE-POINTED, AND SAID OUT LOUD ──────────────────────────────
   // T60 sent a divider to the WARDROBE menu, with the carcass, on turn 13's
   // verdict that *"clicking a cabinet must select the CABINET"*. That verdict
   // is about the CARCASS — a side, a top, a plinth — and a divider is not
-  // carcass: it is an interior item a client ADDS, from a row that now exists,
-  // and F4's standing law is that every addable row has its own Duty menu. So
-  // clicking a divider opens the divider, and the carcass keys below are
-  // untouched.
+  // carcass: it is an interior item a client ADDS, from a row that now exists.
+  // So clicking a divider opens the divider.
   partition: 'partition',
-  side: 'wardrobe',
-  top: 'wardrobe',
-  bottom: 'wardrobe',
-  back: 'wardrobe',
-  plinth: 'wardrobe',
-  'end-panel': 'wardrobe',
-  infill: 'wardrobe',
-  'masking-panel': 'wardrobe',
-  holder: 'wardrobe',
-  spurs: 'wardrobe',
+  // ─── T66 F3 · THE CARCASS IS THE WAY OUT, AND SO IS A DERIVED BOARD ──────
+  //
+  // The owner: *"w zasadzie po prawej powinien być tylko menu edycji"*, and
+  // T65 F10's own sentence beside it: *"jak naciśniesz w szafę lub poza menu —
+  // znika."*
+  //
+  // T65 already made a carcass click SLIDE THE PANEL OUT; what it still did was
+  // resolve those kinds to a `wardrobe` menu and then close the panel around
+  // it. Tonight the resolution itself says no: `side`, `top`, `bottom`, `back`,
+  // `plinth`, `end-panel`, `infill`, `masking-panel`, `holder` and `spurs` are
+  // NOT KEYS HERE, so `resolveSelection` answers null and `DesignRoom` clears
+  // the selection. One law, stated once, in the table the law is made of.
+  //
+  // `fixed-shelf` goes the same way and for the engine's own reason: PRO's
+  // `elementActions` says it *"follows what is under it — change the stack"*,
+  // and its two fields are both the workshop's. There is nothing on it for a
+  // client to edit, so it is not selectable.
+  //
+  // THE WARDROBE'S OWN SETTINGS ARE ON THE LEFT: its three numbers are the SIZE
+  // step (F2), what goes in it is INSIDE, and the plinth, the cornice, the
+  // doors, the end panels and the top box are EXTRAS.
 });
 
 /**
@@ -1518,21 +1553,30 @@ export const MENU_FOR_KIND = Object.freeze({
  * not panels, so `MENU_FOR_KIND` (which is keyed on `elementKind`) cannot carry
  * them. This is the same table for the same job, on the other route.
  */
-export const KIT_MENUS = Object.freeze({
-  pulldown_rail: 'pulldown',
-  trouser: 'trouser',
-  tie_rack: 'tie_rack',
-});
+// ─── T66 F3 · AND IT IS EMPTY NOW ─────────────────────────────────────────
+//
+// A bought mechanism is not cut, has no panel, and — this is the point — has
+// no COPIED PRO EDITOR: PRO adds a kit from `AddItems` and offers nothing on a
+// fitted one. T61 F4's own law is that *"an element with no menu is not
+// clickable"*, so with the thin `KitMenu` deleted tonight the three kits leave
+// the selection vocabulary rather than opening an empty dock.
+//
+// NOTHING IS LOST, and this is F3's re-homing clause: the drop of a pull-down
+// rod and the REMOVE of all three now stand on their own rows in INSIDE, on
+// the left, where the row that ADDED them already is. Named in the PR body.
+export const KIT_MENUS = Object.freeze({});
 
 /**
- * Every menu retail has: T60's nine in the brief's own order, and T61 F4's four
- * after them — one for each row the INTERIOR list grew, because *"an element
- * with no menu is not clickable"* and a row that adds something unclickable is
- * a row that adds nothing a client can then change.
+ * ─── T66 F3 · EVERY EDITOR RETAIL HAS, AND THERE IS ONE PLACE FOR ALL OF THEM
+ *
+ * Eight, and each one is a COPIED PRO EDITOR docked into the right-hand panel
+ * — `detail/docked.jsx` is the table that says which. `wardrobe` is gone (the
+ * cabinet is edited on the LEFT: SIZE, INSIDE, EXTRAS), `lighting` is gone (it
+ * is the whole room's and opens as a modal from EXTRAS), and the three kits
+ * are gone with `KIT_MENUS` above.
  */
 export const MENUS = Object.freeze([
-  'wardrobe', 'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'pulldown', 'lighting',
-  'overlay', 'partition', 'trouser', 'tie_rack',
+  'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'overlay', 'partition',
 ]);
 
 /**
@@ -1807,6 +1851,8 @@ export function decorChoices() {
 
 export const carcassDecorOf = (project) => project?.design?.carcass?.types?.[0]?.finish_id || null;
 export const frontDecorOf = (project) => project?.design?.fronts?.types?.[0]?.finish_id || null;
+/** T66 F5 · …and what a SPRAYED front is wearing, which is not a decor. */
+export const frontColourOf = (project) => project?.design?.fronts?.types?.[0]?.colour || null;
 
 // ─── 2 · THE DOOR ──────────────────────────────────────────────────────────
 
@@ -1814,6 +1860,87 @@ export const frontDecorOf = (project) => project?.design?.fronts?.types?.[0]?.fi
 export const doorPanels = (unitId) => (resultOf(unitId)?.panels || []).filter(
   (p) => p.part === 'FRONT' && !p.meta?.appliance,
 );
+
+// ═══ T66 F7 · THE SPLIT DOOR, FROM THE OTHER SIDE ═══════════════════════════
+//
+// The owner: *"split door top segment też powinien być w extras."*
+//
+// The capability is T36's and it has been in the copied `DoorModal` since T63
+// (`SplitDoorField` — the leaf's own bay, `setSplitTop` for the whole face and
+// `setBaySplitTop` for one bay). This is the SECOND DOOR to the SAME store
+// path, exactly as ADD DOORS is in T65 F9 — one law, two doors to it.
+//
+// EVERY BOUND IS THE ENGINE'S. `SPLIT_SEG_MIN` and `SPLIT_SEG_GAP` are
+// `engine/splitDoors.js`'s own published constants, and the opening is the
+// LEAF's own cut height, which is what the kit takes as the datum (see that
+// module's law, step 1). Nothing here is a literal.
+
+/**
+ * THE LEAF THE SPLIT ACTS ON — the SELECTED door if the client has one in
+ * hand, else the first leaf on this face. Null when the wardrobe has no doors.
+ */
+export function splitDoorLeaf(unitId) {
+  const leaves = doorPanels(unitId).filter((p) => p.role === 'front');
+  if (!leaves.length) return null;
+  const ref = U().selectedElement?.unitId === unitId
+    ? String(U().selectedElement?.elementRef ?? '') : '';
+  const picked = ref ? leaves.find((p) => p.id === ref || p.meta?.splitOf === ref) : null;
+  return picked || leaves[0];
+}
+
+/**
+ * WHAT EXTRAS MAY OFFER FOR THE SPLIT, asked before the press.
+ *
+ * @returns {{panel:object, bay:number|null, value:number, min:number,
+ *            max:number, said:string}|null}
+ */
+export function splitDoor(unitId) {
+  if (!unitOf(unitId)) return null;
+  if (!doorsOn(unitId) && !bayDoorsOn(unitId)) {
+    return { panel: null, bay: null, value: 0, min: 0, max: 0, said: REASONS.splitNeedsADoor };
+  }
+  const panel = splitDoorLeaf(unitId);
+  if (!panel) return { panel: null, bay: null, value: 0, min: 0, max: 0, said: REASONS.splitNeedsADoor };
+  const unit = unitOf(unitId);
+  const bay = panel.meta?.bay ?? null;
+  // A SEGMENT's own opening is the pair's, not its own height: the two halves
+  // and the 3 mm between them add up to the leaf they replaced.
+  const opening = panel.meta?.split
+    ? Math.round(Number(panel.meta.splitOpening) || 0)
+      || Math.round(Number(panel.h) + SPLIT_SEG_GAP + Number(panel.meta.splitOtherH || 0))
+    : Math.round(Number(panel.h) || 0);
+  const max = opening - SPLIT_SEG_GAP - SPLIT_SEG_MIN;
+  if (max < SPLIT_SEG_MIN) {
+    return {
+      panel, bay, value: 0, min: 0, max: 0, said: REASONS.splitLeafTooShort(SPLIT_SEG_MIN),
+    };
+  }
+  const value = Math.round(Number(panel.meta?.splitTopMm) || 0)
+    || Math.round(splitTopFor({ unit: unit.params.split_top_mm, bays: unit.params.bay_doors }, bay) || 0);
+  return { panel, bay, value, min: SPLIT_SEG_MIN, max, said: '' };
+}
+
+/**
+ * SPLIT IT — the same two setters `DoorModal`'s own field calls, chosen the
+ * same way: a BAY leaf writes its bay, a face leaf writes the face. `0` puts
+ * the leaf back to one door, which is the engine's own way out.
+ */
+export function setSplitTopMm(unitId, bay, mm) {
+  const n = Math.max(0, Math.round(Number(mm) || 0));
+  if (bay == null) S().setSplitTop(unitId, n);
+  else S().setBaySplitTop(unitId, bay, n);
+  const fresh = splitDoor(unitId);
+  // The kit refuses a number that leaves a segment under its minimum, and it
+  // refuses it by simply not cutting the pair — so the honest report is what
+  // the engine actually did, read back off the panels.
+  const split = Boolean(fresh?.panel?.meta?.split);
+  if (n > 0 && !split) return { ok: false, said: REASONS.splitLeafTooShort(SPLIT_SEG_MIN) };
+  return { ok: true, said: '' };
+}
+
+/** Does this cabinet carry a leaf in any of its bays? */
+export const bayDoorsOn = (unitId) => (unitOf(unitId)?.params?.bay_doors || [])
+  .some((d) => d && d.enabled !== false);
 
 /**
  * WHICH WAY THIS LEAF OPENS, and whether the client may say.
@@ -2469,11 +2596,10 @@ export function resolveTarget(target) {
   const { menu, unitId, ref } = target;
   if (!unitOf(unitId)) return null;
 
-  // The whole cabinet, and the light: neither is a panel or an item.
-  if (menu === 'wardrobe' || menu === 'lighting') {
-    const from = ref ? resolveSelection({ unitId, elementRef: ref }) : null;
-    return from && from.menu === menu ? from : selectionForMenu(menu, unitId);
-  }
+  // ─── T66 F3 · TOMBSTONE: THE `wardrobe` AND `lighting` BRANCH STOOD HERE ──
+  // Neither is a panel or an item and neither is a docked element editor any
+  // more: the cabinet is edited on the LEFT (SIZE, INSIDE, EXTRAS) and the
+  // light opens as a modal from EXTRAS. `MENUS` above is the whole vocabulary.
 
   // A PANEL, a ROD or a KIT — `resolveSelection` knows all three routes.
   const found = ref ? resolveSelection({ unitId, elementRef: ref }) : null;
@@ -2508,16 +2634,6 @@ export function selectionForMenu(menu, unitId) {
   const result = resultOf(unitId);
   const pick = (fn) => items.find(fn) || null;
 
-  if (menu === 'wardrobe') {
-    return {
-      menu, kind: 'unit', unitId, ref: unitId, panel: null, item: null, label: 'Wardrobe',
-    };
-  }
-  if (menu === 'lighting') {
-    return {
-      menu, kind: 'lighting', unitId, ref: 'lighting', panel: null, item: null, label: 'Lighting',
-    };
-  }
   if (menu === 'door') {
     const panel = doorPanels(unitId)[0] || null;
     return panel ? {
@@ -2530,14 +2646,9 @@ export function selectionForMenu(menu, unitId) {
       menu, kind: 'hanger', unitId, ref: item.id, panel: null, item, label: 'Hanging rail',
     } : null;
   }
-  // T61 F4: the three bought mechanisms, one branch — see `KIT_MENUS`.
-  const kitKind = Object.keys(KIT_MENUS).find((k) => KIT_MENUS[k] === menu);
-  if (kitKind) {
-    const item = pick((i) => i.kind === kitKind);
-    return item ? {
-      menu, kind: kitKind, unitId, ref: item.id, panel: null, item, label: kitWords(kitKind).label,
-    } : null;
-  }
+  // T66 F3 · TOMBSTONE: the three bought mechanisms' branch stood here. They
+  // have no copied editor, so they are not selectable and their controls are
+  // rows in INSIDE — `KIT_MENUS` above says why.
   if (menu === 'partition') {
     const item = pick((i) => i.kind === 'partition');
     if (!item) return null;
@@ -2840,6 +2951,38 @@ export const setProjectType = (id) => {
  */
 export const WHITE_DECOR = 'W1000_9';
 
+// ═══ T66 F5 · THE SHOWROOM DEFAULT — WINE ON WALNUT ═════════════════════════
+//
+// The owner, 09.09.2026: *"default powinno być RAL color wine fronty i walnut
+// Egger carcases … RAL red wine 3005."*
+//
+// TWO NAMED CONSTANTS, and both name something that ALREADY EXISTS:
+//
+//   the WALNUT is `H3710 ST12 Natural Carini Walnut`, one of the seven walnuts
+//   in the REAL bucket's 85 EGGER decors (`public/decors/egger/
+//   egger-decors.json`). Chosen from the family, never invented — a mid,
+//   natural walnut that carries a wine-red front without either fighting the
+//   other. It is the CARCASS and, through `setInsideColour('chosen')`, the
+//   inside colour: the owner asked for one board, so one board it is.
+//
+//   RAL 3005 WINE RED lives where every RAL colour in this app lives —
+//   `reference/colors/psw-colors.json`, the Prime Sash Windows extraction the
+//   copied `ColourPicker` reads through `lib/pswColors.js`. It is in the Reds
+//   group at `#5E2129` and it has been there since T59: nothing was added to
+//   the palette, which is what CLAUDE.md F5 asks to be checked rather than
+//   assumed.
+//
+// The hex is NOT typed here. `RAL_WINE` is resolved off that same list by its
+// own name, so retail cannot hold a second opinion about what 3005 looks like.
+export const WALNUT_DECOR = 'H3710_12';
+export const RAL_WINE_NAME = '3005 Wine Red';
+
+/** RAL 3005, read off the palette the picker itself reads. */
+export function ralWine() {
+  const found = ALL_COLOURS.find((c) => c.system === 'RAL' && c.name === RAL_WINE_NAME) || null;
+  return found ? { hex: found.hex, name: found.name, system: 'RAL' } : null;
+}
+
 export function insideColourOf(project) {
   const design = migrateDesign(project?.design);
   const carcass = design.carcass?.types?.[0]?.finish_id || null;
@@ -2893,8 +3036,17 @@ export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
   const done = {};
   const collection = collectionId ? applyCollection(collectionId) : null;
   if (!collection) {
-    if (!frontDecorOf(S().project)) done.front = setFrontDecor(COLLECTIONS[0].frontDecor);
-    if (!carcassDecorOf(S().project)) done.carcass = setCarcassDecor(WHITE_DECOR);
+    // ─── T66 F5 · WINE ON WALNUT ─────────────────────────────────────────
+    // *"default powinno być RAL color wine fronty i walnut Egger carcases."*
+    // The fronts are SPRAYED — the profile's own spray source, which is what
+    // a colour means for a front — and the carcass is a walnut EGGER decor.
+    // Both go through the setters the copied `MaterialChoicePanel` uses, so
+    // the slot, the estimate line and the REVIEW summary read a default
+    // exactly as they read a client's own choice.
+    if (!frontDecorOf(S().project) && !frontColourOf(S().project)) {
+      done.front = setFrontColour(ralWine());
+    }
+    if (!carcassDecorOf(S().project)) done.carcass = setCarcassDecor(WALNUT_DECOR);
     // No handle — the engine's own `null`, written as PRO's push-to-open tile
     // writes it, runner lock included (`frontOpeningPatch`).
     if (!S().project.design?.fronts?.handle) done.opening = setFrontOpening('push');

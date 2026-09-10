@@ -53,14 +53,19 @@ const categories = () => {
   return [...block.matchAll(/id: '([a-z]+)', label: '([A-Z]+)'/g)].map((m) => ({ id: m[1], label: m[2] }));
 };
 
-// ═══ F2 · THE SIX STEPS ══════════════════════════════════════════════════════
+// ═══ F2 · THE STEPS — SIX, AND SEVEN SINCE T66 F2 ════════════════════════════
+//
+// T66 F2, the owner: *"chcę wstawić wszystkie 3 size na początku, a dopiero
+// później carcass board etc."* SIZE is the third tile and a step of its own;
+// the ORDER law this test exists for is unchanged, and so is the rail's
+// mechanics — only its content moved.
 
-test('F2 · CATEGORIES is the six steps, in the owner\'s order', () => {
-  assert.deepEqual(categories().map((c) => c.id), ['what', 'where', 'inside', 'fronts', 'extras', 'review']);
-  assert.deepEqual(categories().map((c) => c.label), ['WHAT', 'WHERE', 'INSIDE', 'FRONTS', 'EXTRAS', 'REVIEW']);
+test('F2 · CATEGORIES is the steps, in the owner\'s order — SIZE third since T66', () => {
+  assert.deepEqual(categories().map((c) => c.id), ['what', 'where', 'size', 'inside', 'fronts', 'extras', 'review']);
+  assert.deepEqual(categories().map((c) => c.label), ['WHAT', 'WHERE', 'SIZE', 'INSIDE', 'FRONTS', 'EXTRAS', 'REVIEW']);
   // …and the options column has a panel per step, in the same order, with NEXT and BACK.
   const options = code('src/retail/design/Options.jsx');
-  const order = ['panel-what', 'panel-where', 'panel-inside', 'panel-fronts', 'panel-extras', 'panel-review']
+  const order = ['panel-what', 'panel-where', 'panel-size', 'panel-inside', 'panel-fronts', 'panel-extras', 'panel-review']
     .map((id) => options.indexOf(`testid="${id}"`));
   assert.ok(order.every((at, i) => at > 0 && (i === 0 || at > order[i - 1])), 'the panels are not in the rail\'s order');
   assert.match(options, /data-testid="step-next"/);
@@ -86,11 +91,20 @@ test('F2 · the lazy client: every step has its answer chosen, and the defaults 
   const unit = S().units.find((u) => u.id === id);
   const wall = A.wallLengthMm(p.room, 0);
   assert.equal(Math.round(unit.params.width), Math.min(Math.round(wall), A.RETAIL_FIRST_WIDTH_MAX));
-  // INSIDE — white, EGGER's own W1000.
-  assert.equal(A.insideColourOf(p), 'white');
-  // FRONTS — shaker, the house collection's decor, push-to-open (no handle).
+  // ─── AMENDED BY T66 F5 · WINE ON WALNUT ────────────────────────────────
+  // The owner: *"default powinno być RAL color wine fronty i walnut Egger
+  // carcases … RAL red wine 3005."* So INSIDE is no longer white and the
+  // fronts are no longer faced in a decor — they are SPRAYED. The lazy
+  // client's clicks still end on a finished wardrobe, which is the law here;
+  // what he ends on is the showroom's.
+  assert.equal(A.carcassDecorOf(p), A.swatchFor(A.WALNUT_DECOR).finishId,
+    'the carcass is not the named walnut');
+  assert.equal(A.insideColourOf(p), 'chosen', 'the inside is not the carcass\'s own board');
+  // FRONTS — shaker, RAL 3005 sprayed, push-to-open (no handle).
   assert.equal(p.design.fronts.style, 'S');
-  assert.ok(A.frontDecorOf(p), 'no front decor chosen for the lazy client');
+  assert.equal(A.frontDecorOf(p), null, 'a sprayed front must carry no facing');
+  assert.deepEqual(A.frontColourOf(p), A.ralWine(), 'the fronts are not RAL 3005 Wine Red');
+  assert.equal(p.design.fronts.types[0].source, 'spray');
   assert.equal(A.frontOpeningOf(p), 'push');
   assert.equal(p.design.fronts.handle, null);
   // EXTRAS — lighting off, the standard plinth.
@@ -111,7 +125,7 @@ test('F2 · WHAT offers PRO\'s own eight types; only the wardrobe is buildable, 
 
 test('F2 · INSIDE opens on the carcass material, above the interior rows, and offers three inside colours', () => {
   const options = read('src/retail/design/Options.jsx');
-  const inside = options.slice(options.indexOf('function InsidePanel'), options.indexOf('/* ─── 4 · FRONTS'));
+  const inside = options.slice(options.indexOf('function InsidePanel'), options.indexOf('/* ─── 5 · FRONTS'));
   const material = inside.indexOf('<MaterialSlot kind="carcass"');
   const colour = inside.indexOf('data-testid="inside-colour"');
   const rows = inside.indexOf('<AddItems unit={unit} />');
@@ -159,8 +173,14 @@ test('F3 · square, hairline, 12px tracked +0.08em, 44 / 36 — in the two style
   assert.match(btn, /font-size: 12px;/);
   assert.match(btn, /letter-spacing: 0\.08em;/);
   assert.match(btn, /text-transform: uppercase;/);
-  assert.match(btn, /border-radius: var\(--pbi-radius\);/);
+  // ─── AMENDED BY T66 F10 ────────────────────────────────────────────────
+  // The owner chose variant 2 and confirmed the scope: *"wszystkie przyciski
+  // będą zmienione, prawda?"* So the one Button is no longer square — it reads
+  // `--pbi-control-radius`, 8px, and so does every other control. The PANEL's
+  // own `--pbi-radius` is still 0, which is the half of T64 F3 that stands.
+  assert.match(btn, /border-radius: var\(--pbi-control-radius\);/);
   assert.match(read('src/retail/styles/tokens.css'), /--pbi-radius: 0;/);
+  assert.match(read('src/retail/styles/tokens.css'), /--pbi-control-radius: 8px;/);
   // The secondary: Onyx at 40% hairline, Ivory fill, gold hairline on hover.
   const secondary = base.slice(base.indexOf('.pbi-btn-secondary {'), base.indexOf('}', base.indexOf('.pbi-btn-secondary {')));
   assert.match(secondary, /border: 1px solid rgba\(9, 10, 9, 0\.4\);/);
@@ -191,7 +211,7 @@ test('F3 · square, hairline, 12px tracked +0.08em, 44 / 36 — in the two style
   }
 });
 
-test('F3 · the rail is six square tiles, icon over one word, gold hairline for the active one', () => {
+test('F3 · the rail is tiles, icon over one word, gold hairline for the active one', () => {
   const cats = read('src/retail/design/Categories.jsx');
   assert.match(cats, /className=\{`pbi-tile/);
   assert.match(cats, /<StepIcon step=\{c\.id\} \/>/);
@@ -207,16 +227,21 @@ test('F3 · the rail is six square tiles, icon over one word, gold hairline for 
   assert.match(scale, /--pbi-fs-tile: max\(11px, calc\(11 \* var\(--pbi-scale\)\)\);/);
   // The icons are inline SVG in drawings.jsx — no npm icon set.
   const drawings = read('src/retail/design/detail/drawings.jsx');
-  for (const step of ['what', 'where', 'inside', 'fronts', 'extras', 'review']) assert.match(drawings, new RegExp(`^  ${step}: \\(`, 'm'));
+  // T66 F2 · seven icons now — SIZE is the third, drawn in this file's own manner.
+  for (const step of ['what', 'where', 'size', 'inside', 'fronts', 'extras', 'review']) assert.match(drawings, new RegExp(`^  ${step}: \\(`, 'm'));
   const deps = JSON.parse(read('package.json'));
   assert.ok(!Object.keys({ ...deps.dependencies, ...deps.devDependencies }).some((d) => /icon/i.test(d)), 'an icon dependency arrived');
 });
 
 test('F3 · the copies are reskinned through the GENERATED sheet, and their markup did not move', () => {
   const map = read('scripts/t63-copy.mjs');
-  assert.match(map, /'cc-btn': \['pbi-re-btn', '\.pbi-re-btn \{[^']*border-radius: 0;[^']*font-size: 12px;[^']*letter-spacing: 0\.08em;/);
+  // T66 F10 · the map's own radius moved with the system's: the copies' buttons
+  // come out of the ONE table wearing `--pbi-control-radius`, exactly as
+  // `controls.jsx`'s Button does. The markup is untouched, which is the half of
+  // this test that never moves.
+  assert.match(map, /'cc-btn': \['pbi-re-btn', '\.pbi-re-btn \{[^']*border-radius: var\(--pbi-control-radius\);[^']*font-size: 12px;[^']*letter-spacing: 0\.08em;/);
   const sheet = read('src/retail/styles/copies.css');
-  assert.match(sheet, /^\.pbi-re-btn \{ padding: 0\.5rem 0\.75rem; border-radius: 0;/m);
+  assert.match(sheet, /^\.pbi-re-btn \{ padding: 0\.5rem 0\.75rem; border-radius: var\(--pbi-control-radius\);/m);
   assert.match(sheet, /^\.pbi-re-btn-gold \{[^\n]*background: var\(--pbi-onyx\);/m);
   assert.ok(!/^\.pbi-re-btn \{/m.test(read('src/retail/styles/roomeditor.css')), 'the hand-written rule is still there beside the generated one');
   // T63's own fidelity test holds the copies' markup; here only the count.
@@ -238,7 +263,13 @@ test('F4 · the owner\'s container numbers at 1440: rail 72, options ~306 (T65 F
   // ten per cent off that base (421 → 379) is 306, and the space goes to the
   // STAGE. The rail and the detail panel are untouched, which is what the two
   // assertions either side of this one still hold.
-  assert.ok(Math.abs(base('--pbi-col-options') * at1440 - 306) <= 2, `options ${base('--pbi-col-options') * at1440}`);
+  // ─── AMENDED BY T66 F11 · THE SECOND TEN PER CENT ─────────────────────
+  // The owner asked for twenty; T65 took ten on his *"na początek"* and
+  // tonight takes the other ten off the same base — 421 × 0.8 = 337, which is
+  // 272 at 1440 and 263 at 1280. The space goes to the STAGE; the rail and the
+  // detail panel are untouched, which is what the assertions either side of
+  // this one still hold.
+  assert.ok(Math.abs(base('--pbi-col-options') * at1440 - 272) <= 2, `options ${base('--pbi-col-options') * at1440}`);
   assert.ok(Math.abs(base('--pbi-col-detail') * at1440 - 360) <= 2, `detail ${base('--pbi-col-detail') * at1440}`);
   assert.equal(Math.round(base('--pbi-tile') * at1440), 64);
   assert.equal(Math.round(base('--pbi-tile-icon') * at1440), 20);
@@ -252,14 +283,22 @@ test('F4 · the detail is a panel over the stage, slid in by a selection and out
   assert.match(room, /\.pbi-detail\[data-open="yes"\] \{\s*transform: none;/);
   assert.match(room, /\.pbi-stage-col \{[^}]*position: relative;/);
   const component = read('src/retail/design/Detail.jsx');
-  assert.match(component, /data-open=\{Menu \? 'yes' : 'no'\}/);
+  // T66 F3 · the flag is the same single flag; what it reads is the DOCK's own
+  // route rather than a thin menu's component.
+  assert.match(component, /data-open=\{open \? 'yes' : 'no'\}/);
+  assert.match(component, /const open = Boolean\(route\);/, 'OPEN stopped being one flag');
   assert.ok(!/EstimateDuty|add-another|detail-quote|detail-save/.test(component), 'the estimate duty is still in the panel');
   // The room mounts it INSIDE the stage column, and closes what the stage opened.
   const design = read('src/retail/design/DesignRoom.jsx');
   const stageAt = design.indexOf('<div className="pbi-stage-col">');
   assert.ok(design.indexOf('<Detail', stageAt) > stageAt && design.indexOf('<Detail', stageAt) < design.indexOf('</div>', design.indexOf('<StageHint', stageAt)));
-  assert.match(design, /from: 'stage'/);
-  assert.match(design, /from: 'list'/);
+  // ─── AMENDED BY T66 F3 ────────────────────────────────────────────────
+  // T65 kept a `from` on the target so a panel opened by a row's `›` was not
+  // the stage's to close. The rows' `›` is gone — editing is the click on the
+  // element and nothing else — so there is ONE gesture in and one out, and the
+  // field that told them apart has nothing left to tell apart.
+  assert.ok(!/from: 'stage'|from: 'list'/.test(design), 'the two roads into the panel are back');
+  assert.match(design, /setTarget\(\{ menu: found\.menu, unitId: found\.unitId, ref: found\.ref \}\);/);
 });
 
 test('F4 · the top bar\'s right end is "Price on request · MY ESTIMATE (n)", from anywhere', () => {

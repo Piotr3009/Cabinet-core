@@ -85,11 +85,14 @@ test('F5 · the ONE sentence retail owns names its predicate, and the bounds', (
 });
 
 test('F5 · every bound in the two panels is the engine\'s, not a literal', () => {
-  // ─── AMENDED BY T64 F1.7/F2 ──────────────────────────────────────────────
-  // LAYOUT is gone: the wardrobe's width, height and depth are its own menu
-  // (`WardrobeMenu.jsx`), and WHERE keeps the wall and the ceiling. The two
-  // panels are those two files now; the law over every field is unchanged.
-  const options = read('src/retail/design/Options.jsx') + read('src/retail/design/detail/WardrobeMenu.jsx');
+  // ─── AMENDED BY T64 F1.7/F2, AND AGAIN BY T66 F2/F3 ─────────────────────
+  // T64: LAYOUT went; the wardrobe's width, height and depth were its own thin
+  // menu and WHERE kept the wall and the ceiling. T66 F2 puts the three
+  // numbers in the SIZE step (*"chcę wstawić wszystkie 3 size na początku"*)
+  // and F3 deletes the thin menu, so both panels are ONE file now. The law
+  // over every field is unchanged and is asked of every one that remains,
+  // which is more of them than there were.
+  const options = read('src/retail/design/Options.jsx');
   const fields = [...options.matchAll(/<NumberField[\s\S]*?\/>/g)].map((m) => m[0]);
   // ─── AMENDED BY T62 F3 ───────────────────────────────────────────────────
   //
@@ -102,13 +105,17 @@ test('F5 · every bound in the two panels is the engine\'s, not a literal', () =
   // The COUNT was never the law here; the law is the line under it, that every
   // bound a typed field carries is the engine's own and not a literal. That is
   // unchanged and is asserted over every field that remains.
-  assert.ok(fields.length >= 5, `only ${fields.length} typed fields in the two panels`);
+  assert.ok(fields.length >= 5, `only ${fields.length} typed fields in the panels`);
   for (const f of fields) {
     const min = (f.match(/min=\{([^}]+)\}/) || [])[1] || '';
     const max = (f.match(/max=\{([^}]+)\}/) || [])[1] || '';
     for (const [name, v] of [['min', min], ['max', max]]) {
       assert.ok(v, `a field with no ${name}`);
-      assert.ok(/^(b\.|size\.|bounds\[|ceiling)/.test(v.trim()),
+      // T66: `travel.` and `split.` join the list — both are an ADAPTER answer
+      // computed from the engine's own published constants, exactly as `b.` is.
+      // `bb.` is the TOP BOX's own bounds — `A.unitBounds(box.id)`, the same
+      // reader `b.` is, asked of the box rather than the wardrobe under it.
+      assert.ok(/^(b\.|bb\.|size\.|bounds\[|ceiling|travel\.|split\.)/.test(v.trim()),
         `a ${name} that is not the engine's: ${v}`);
     }
   }
@@ -146,14 +153,18 @@ test('F5 · not one slider survives, and Slider itself is gone with them', () =>
 
   // …and every one of the twelve came back as the typed row, not as nothing.
   // Six of the menus hold one, the wardrobe holds five.
-  // ─── AMENDED BY T63 F3 ─────────────────────────────────────────────────
+  // ─── AMENDED BY T63 F3, AND AGAIN BY T66 F3 ────────────────────────────
   // The twelve are RETAIL's twelve — the rows T62 wrote where the sliders
-  // stood. A COPY of a PRO window in the same folder carries PRO's own
-  // `<NumberField>`s (`scripts/t63-copies.mjs`, per file) and is not counted:
-  // counting them would make PRO's field count a retail law. Two of T60's
-  // rows went with their sketches (the door's J run, the rail's height —
-  // both are PRO's own fields in the copies now), so the twelve became TEN
-  // retail fields.
+  // stood. A COPY of a PRO window carries PRO's own `<NumberField>`s
+  // (`scripts/t63-copies.mjs`, per file) and is not counted: counting them
+  // would make PRO's field count a retail law.
+  //
+  // T66 F3 deletes every thin menu, so the retail files under `design/detail/`
+  // that could hold one are gone — the rows MOVED, they did not die. Six of
+  // them (the drawers' front height, the overlay's, the pull-down's drop, the
+  // three sizes) stand in `Options.jsx` now, and the count is asked THERE.
+  // The DIRECTION is still the law: a slider may never come back into this
+  // tree without deleting a line of this test.
   let fields = 0;
   for (const f of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/\.jsx$/.test(f)) continue;
@@ -161,7 +172,9 @@ test('F5 · not one slider survives, and Slider itself is gone with them', () =>
     fields += (readFileSync(join(ROOT, 'src/retail/design/detail', f), 'utf8')
       .match(/<NumberField/g) || []).length;
   }
-  assert.equal(fields, 10, `the twelve sliders became ${fields} typed fields`);
+  assert.equal(fields, 0, `${fields} typed fields survive in a retail detail file`);
+  const moved = (read('src/retail/design/Options.jsx').match(/<NumberField/g) || []).length;
+  assert.ok(moved >= 10, `only ${moved} typed rows in the steps — the twelve were lost, not moved`);
 });
 
 test('F5 · gold, rounded, and never orange — by token, and by token only', () => {

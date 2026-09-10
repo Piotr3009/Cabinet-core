@@ -14,9 +14,21 @@
 const BOX = { viewBox: '0 0 44 58', className: 'pbi-mini' };
 const LINE = { fill: 'none', stroke: 'var(--pbi-onyx)', strokeWidth: 1 };
 
-export default function FrontThumb({ style }) {
+/**
+ * ─── T66 F4 · …AND A SMALLER ONE, FOR A ROW ────────────────────────────────
+ *
+ * The owner, of the mosaic of tiles this drawing sat in: *"style front to mega
+ * burdel … to powinno być lista, a nie obok siebie … lista jak internals."*
+ *
+ * A LIST needs a smaller drawing than a tile did, and ONE size for every row —
+ * `.pbi-mini-row` in `styles/room.css`, which is a token like `.pbi-mini` is.
+ * The drawing itself is untouched: the viewBox is a SHAPE and scales with
+ * nothing, which is exactly why it can be drawn at two sizes without a second
+ * copy of it existing.
+ */
+export default function FrontThumb({ style, size = null }) {
   return (
-    <svg {...BOX} aria-hidden="true">
+    <svg {...BOX} className={size === 'row' ? 'pbi-mini-row' : BOX.className} aria-hidden="true">
       {style === 'A' ? (
         <path d="M2.5 55.5 V14 A19.5 12 0 0 1 41.5 14 V55.5 Z" {...LINE} />
       ) : (

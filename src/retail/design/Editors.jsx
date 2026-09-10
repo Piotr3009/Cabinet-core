@@ -9,6 +9,7 @@ import JpullRunModal from './detail/JpullRunModal.jsx';
 import LightingPanel from './lighting/LightingPanel.jsx';
 import UnitFinishModal from './material/UnitFinishModal.jsx';
 import MaterialsModal from './material/MaterialsModal.jsx';
+import { DOCK_MODALS } from './detail/docked.jsx';
 
 // ─── TURN 63 · PRO'S WINDOWS, MOUNTED IN THE CLIENT'S ROOM ─────────────────
 //
@@ -42,20 +43,40 @@ import MaterialsModal from './material/MaterialsModal.jsx';
 // button, which opens `design`, lands on the surface that grows the palette
 // rather than on nothing.
 
-export default function Editors() {
+// ─── T66 F3 · TWO PLACES, AND A NAME IS DRAWN IN EXACTLY ONE ───────────────
+//
+// The owner: *"w zasadzie po prawej powinien być tylko menu edycji."*
+//
+// Three of the names below EDIT A SELECTED ELEMENT — `element` (every piece's
+// window), `rail` (the alone rod) and `watch-layout` — and those are DOCKED:
+// `Detail.jsx` renders them inside the right-hand panel, which is the one
+// surface an element is edited on. The rest are genuinely modal — the Egger
+// picker, the room's own screens, the golden `+`, the materials — and stay
+// modals, draggable and beside the click, per the house rule.
+//
+// `where` is what keeps that honest. `Detail` asks for `dock`, the room asks
+// for `room`, and the split is `docked.DOCK_MODALS` read in one place — so a
+// window cannot be drawn twice, which is the failure the owner's screenshot
+// caught.
+//
+// @param {'room'|'dock'} where
+export default function Editors({ where = 'room' }) {
   const modal = useUiStore((s) => s.modal);
+  const dock = where === 'dock';
+  const here = (name) => (DOCK_MODALS.includes(name) ? dock : !dock);
+  const is = (name) => modal === name && here(name);
   return (
     <>
-      {modal === 'element' && <DoorModal />}
-      {modal === 'rail' && <RailModal />}
-      {modal === 'add-items' && <AddItemsModal />}
-      {modal === 'unit-finish' && <UnitFinishModal />}
-      {modal === 'front-gap' && <FrontGapModal />}
-      {modal === 'lighting' && <LightingPanel />}
-      {modal === 'unit-size' && <UnitSizeModal />}
-      {modal === 'watch-layout' && <WatchLayoutModal />}
-      {modal === 'jpull-run' && <JpullRunModal />}
-      {modal === 'design' && <MaterialsModal />}
+      {is('element') && <DoorModal />}
+      {is('rail') && <RailModal />}
+      {is('add-items') && <AddItemsModal />}
+      {is('unit-finish') && <UnitFinishModal />}
+      {is('front-gap') && <FrontGapModal />}
+      {is('lighting') && <LightingPanel />}
+      {is('unit-size') && <UnitSizeModal />}
+      {is('watch-layout') && <WatchLayoutModal />}
+      {is('jpull-run') && <JpullRunModal />}
+      {is('design') && <MaterialsModal />}
     </>
   );
 }

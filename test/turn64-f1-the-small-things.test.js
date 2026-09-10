@@ -342,7 +342,11 @@ test('F1.5 · …and the J now RENDERS: the engine stamps meta.jpull on the leaf
 test('F1.5 · the FRONTS step offers PRO\'s four openings and no J-pull style chip', () => {
   const options = read('src/retail/design/Options.jsx');
   assert.match(options, /A\.frontOpenings\(\)/);
-  assert.match(options, /A\.setFrontOpening\(id\)/);
+  // T66 F4 · the four are an ALIGNED LIST now, one column, equal widths — the
+  // owner's *"lista, a nie obok siebie"*. The FOUR and the SETTER are the law
+  // this test carries; the arrangement is F4's.
+  assert.match(options, /A\.setFrontOpening\(o\.id\)/);
+  assert.match(options, /className="pbi-opening-list"/, 'the openings staggered again');
   assert.match(options, /filter\(\(s\) => s\.id !== 'HJ'\)/, 'the legacy HJ shape is still offered as a style');
   assert.deepEqual(A.frontOpenings().map((o) => o.id), ['push', 'handles', 'knobs', 'jhandle']);
 });
@@ -382,9 +386,15 @@ test('F1.7 · DOORS stays off the steps; T65 F7 puts BAYS ON one, and Advanced k
   // decyzja, w extrasach lub w setup"* · *"ADD DOORS — i tu i tu chyba"* — and
   // an action in EXTRAS is a choice, not an edit. The COUNT is still only
   // under Advanced, which is what this law was protecting.
+  // ─── AMENDED AGAIN BY T66 F3 ───────────────────────────────────────────
+  // T64 F1.7's real law is the owner's: *"3 drzwi czy 4 — dopiero jako coś co
+  // trzeba edytować, a nie na głównym menu."* The COUNT belongs under an
+  // ADVANCED heading with his own line above it, and it did — inside the thin
+  // wardrobe menu. That menu is deleted tonight, so the heading, the line and
+  // the chips move with it into EXTRAS, still folded under Advanced and still
+  // never on the main run of a step. The law is WHERE IT SITS, not which file
+  // it sits in, and it is asked of the Advanced block below.
   assert.ok(/label="DOORS"/.test(options), 'T65 F9 put ADD DOORS in EXTRAS');
-  assert.ok(!/doorCountRefusal|setDoorCount\(/.test(options),
-    'the door COUNT leaked onto a step — only the ADD/REMOVE action belongs there');
   // ─── AMENDED BY T65 F7 ─────────────────────────────────────────────────
   // T64 asserted BAYS was absent from every step. The owner overturned that
   // tonight in as many words: *"zamiast vertical partition dać BAYS i wpisz
@@ -392,16 +402,20 @@ test('F1.7 · DOORS stays off the steps; T65 F7 puts BAYS ON one, and Advanced k
   // INSIDE step. So BAYS is on that step now, as a typed count bounded by
   // `designBounds().bays`, and DOORS is NOT: doors are a separate decision
   // and F9 gives them their own action in EXTRAS.
-  assert.ok(/label="BAYS"/.test(options), 'T65 F7 put BAYS on the INSIDE step');
+  // ─── AMENDED AGAIN BY T66 F6 ───────────────────────────────────────────
+  // *"zamień nazwę przycisku z vertical partition (divider) na Vertical
+  // partitions (bays), a ten na dole usuń."* The label comes off the INTERIOR
+  // row table now — one name, one entry — so the field is found by its testid
+  // rather than by a hard-coded word this test would have to keep in step.
+  assert.ok(/testid="inside-bays"/.test(options), 'T65 F7 put BAYS on the INSIDE step');
   assert.ok(/min=\{b\.bays\.min\}[\s\S]{0,80}max=\{b\.bays\.max\}/.test(options),
     'the BAYS field does not read the engine-side bounds');
   assert.ok(!/layout-doors|layout-bays|LayoutPanel/.test(options), 'LAYOUT survives');
-  const menu = read('src/retail/design/detail/WardrobeMenu.jsx');
-  const at = menu.indexOf('data-testid="wardrobe-advanced"');
+  const at = options.indexOf('data-testid="wardrobe-advanced"');
   assert.ok(at > 0, 'no Advanced block');
-  const advanced = menu.slice(at);
+  const advanced = options.slice(at);
   assert.match(advanced, /label="DOORS"/);
-  assert.match(advanced, /label="BAYS"/);
+  assert.match(advanced, /A\.doorCountRefusal\(/, 'the count lost the engine\'s own refusal');
   assert.match(advanced, /REASONS\.doorsAreSet/);
   assert.equal(REASONS.doorsAreSet, 'We set the doors for this width. Change only if you know why.');
   // The engine's door rule decides — a fresh wardrobe wears the count its width earns.

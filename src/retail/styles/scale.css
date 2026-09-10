@@ -117,9 +117,24 @@
    * MEASURED BEFORE, NOT AFTER (F3's own instruction): the walk photographs
    * the copied MaterialChoicePanel and FrontStyleGallery at both widths and
    * `scripts/t65-f3-measure.mjs` reads back every label's box, so a clip or a
-   * word-by-word break is a number rather than an opinion. */
+   * word-by-word break is a number rather than an opinion.
+   *
+   * ─── T66 F11 · AND THE SECOND TEN PER CENT ──────────────────────────────
+   *
+   * The owner asked for twenty originally; T65 took ten on his *"na
+   * początek"*. Tonight the other ten, off the SAME base: 421 × 0.8 = 336.8 →
+   * 337. At 1440 that is 272 px and at 1280 it is 263.
+   *
+   * MEASURED FIRST, as before, and this time the measure had something to
+   * say: `scripts/t66-f11-measure.mjs` found the copied CHOSEN TILE crushing
+   * its three lines — the code, the decor's name and EGGER's mandatory
+   * attribution — to a 17-px ellipsis, and the source strip breaking "EGGER
+   * decor" over three lines. Both were fixed IN THE COPY'S WIDTHS (the two
+   * rules in `room.css`, scoped to this column) rather than by stopping short
+   * of 337, so the full second ten per cent is here and every label is
+   * legible at both widths. */
   --pbi-col-categories: calc(89 * var(--pbi-scale));
-  --pbi-col-options: calc(379 * var(--pbi-scale));
+  --pbi-col-options: calc(337 * var(--pbi-scale));
   --pbi-col-detail: calc(446 * var(--pbi-scale));
   --pbi-tile: calc(79 * var(--pbi-scale));
   --pbi-tile-icon: calc(25 * var(--pbi-scale));
@@ -163,6 +178,9 @@
   --pbi-slider-thumb: calc(12 * var(--pbi-scale));
   --pbi-swatch: calc(46 * var(--pbi-scale));
   --pbi-thumb: calc(54 * var(--pbi-scale));
+  /* T66 F4 · the STYLE LIST's own drawing — *"smaller than today's tiles, one
+   * size"*. 54 → 34, which at 1440 is 27px beside a 15px name. */
+  --pbi-thumb-row: calc(34 * var(--pbi-scale));
   --pbi-field-h: calc(42 * var(--pbi-scale));
   /* T62 F4: a field is a ROW — label left at ONE width so every label in the
      panel starts at the same x, control right in what is left. Two numbers,

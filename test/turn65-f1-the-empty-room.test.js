@@ -54,7 +54,11 @@ test('F1 · the empty room is a STATE, not an error — the readers answer, they
   // …and the lazy answers are the PROJECT's, so they are written on an empty
   // floor and the first wardrobe is born wearing them.
   A.applyLazyDefaults(null);
-  assert.ok(A.frontDecorOf(S().project), 'the lazy client lost his decor with the wardrobe');
+  // T66 F5 · the fronts are SPRAYED now (RAL 3005) rather than faced in a
+  // decor, so what is asserted is that the ANSWER was written on an empty
+  // floor — which is the law here — not which answer it was.
+  assert.ok(A.frontColourOf(S().project), 'the lazy client lost his colour with the wardrobe');
+  assert.ok(A.carcassDecorOf(S().project), 'the lazy client lost his carcass board');
   assert.equal(S().project.design.fronts.style, 'S');
 });
 

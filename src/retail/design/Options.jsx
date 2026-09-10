@@ -12,6 +12,7 @@ import MaterialSlot from './material/MaterialSlot.jsx';
 import FrontStyleGallery from './material/FrontStyleGallery.jsx';
 import WizardHardware from './material/WizardHardware.jsx';
 import AddItems from './detail/AddItems.jsx';
+import { ShoeDrawing } from './detail/drawings.jsx';
 import { CATEGORIES, stepIndex } from './Categories.jsx';
 import { PRICE_ON_REQUEST, RETAIL_SHOW_WORKSHOP_TOOLS } from '../config.js';
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
@@ -22,15 +23,15 @@ import { anchorOfEvent } from '../../lib/modalAnchor.js';
 // ogóle ustawienia środek / carcases — a powinno być najpierw INTERIORS
 // (najpierw materiał, a później reszta) — i następnie FRONTY."* And the law
 // every panel below obeys, THE RULE OF THE LAZY CLIENT: every step has a
-// sensible answer already chosen. NEXT always works. Six clicks give a
-// finished wardrobe. A picky client finds MORE OPTIONS in every step; a lazy
-// one never sees them.
+// sensible answer already chosen. NEXT always works. Seven clicks give a
+// finished wardrobe (T66 F2 made it seven by putting SIZE third). A picky
+// client finds MORE OPTIONS in every step; a lazy one never sees them.
 //
-// Six panels, one at a time, in the owner's order — WHAT, WHERE, INSIDE,
-// FRONTS, EXTRAS, REVIEW — each with its default already standing and its
-// picky half folded under one link. NEXT and BACK on every step; a step can
-// also be clicked on the rail. Nothing in any step is a slider; fields per
-// T62's row law; chips for choices.
+// Seven panels, one at a time, in the owner's order — WHAT, WHERE, SIZE,
+// INSIDE, FRONTS, EXTRAS, REVIEW (T66 F2 put SIZE third) — each with its
+// default already standing and its picky half folded under one link. NEXT and
+// BACK on every step; a step can also be clicked on the rail. Nothing in any
+// step is a slider; fields per T62's row law; chips for choices.
 //
 // Every write goes through `adapter.js`; not one line below names an engine
 // parameter, and not one bound below is a literal.
@@ -118,7 +119,7 @@ function WhatPanel({ project }) {
 // `adapter.addFirstWardrobe` (the other is the plus on the empty floor), and
 // NEXT still works with the floor empty — the lazy client's law does not
 // require furniture, only that every step has its answer.
-function WherePanel({ unit, room, onEditRoom, onOpenDetail }) {
+function WherePanel({ unit, room, onEditRoom }) {
   const b = A.designBounds();
   const wall = A.wallLengthMm(room, 0);
   const ceiling = Math.round(room?.height ?? 2500);
@@ -174,34 +175,105 @@ function WherePanel({ unit, room, onEditRoom, onOpenDetail }) {
           : 'Measure wall to wall and floor to ceiling. The room is empty — add a wardrobe here or press the plus on the floor.'}
       </p>
 
-      <MoreOptions testid="where-more">
-        {/* ─── T62 · TOMBSTONE: THE SLOPED CEILING CHIP, AND THE TWO OPENING
-                BUTTONS, STOOD HERE. F3's copied elevation editor has them. */}
-        <div className="pbi-duty-actions">
-          {/* THE HOUSE RULE (rule 15): the window opens BESIDE its trigger. */}
-          <Button
-            kind="secondary"
-            size="small"
-            data-testid="space-edit-room"
-            onClick={(e) => onEditRoom(anchorOfEvent(e))}
-          >
-            EDIT THE ROOM ›
-          </Button>
-          <Button
-            kind="secondary"
-            size="small"
-            data-testid="layout-open-wardrobe"
-            onClick={() => onOpenDetail('wardrobe')}
-          >
-            THIS WARDROBE — SIZE AND DOORS ›
-          </Button>
-        </div>
-        <p className="pbi-choice pbi-panel-note">
-          EDIT THE ROOM draws the plan — walls, boxes, sloping ceilings, windows and doors.
-          Nothing is fitted around them yet: a wardrobe may stand across a window and we will
-          sort it on the survey.
-        </p>
-      </MoreOptions>
+      {/* ─── T66 F8 · THE ROOM IS NOT HIDDEN ──────────────────────────────
+          The owner: *"edit the room powinien być zawsze na wierzchu, a nie
+          ukryte pod more options."* So the button stands in WHERE, under the
+          two fields, always visible.
+
+          AND MORE OPTIONS IS GONE FROM THIS STEP, because the room was the
+          only thing left in it: T62 took the sloped-ceiling chip and the two
+          opening buttons into the copied elevation editor, and T66 F3 took
+          *"THIS WARDROBE — SIZE AND DOORS ›"* with the thin wardrobe menu it
+          opened — the three numbers are the SIZE step now and the doors are
+          EXTRAS. A fold with nothing behind it is a control that does nothing.
+
+          THE HOUSE RULE (rule 15) is untouched: the window opens BESIDE its
+          trigger, and the trigger has simply stopped hiding. */}
+      <div className="pbi-duty-actions">
+        <Button
+          kind="secondary"
+          size="small"
+          data-testid="space-edit-room"
+          onClick={(e) => onEditRoom(anchorOfEvent(e))}
+        >
+          EDIT THE ROOM ›
+        </Button>
+      </div>
+      <p className="pbi-choice pbi-panel-note">
+        EDIT THE ROOM draws the plan — walls, boxes, sloping ceilings, windows and doors.
+        Nothing is fitted around them yet: a wardrobe may stand across a window and we will
+        sort it on the survey.
+      </p>
+    </Panel>
+  );
+}
+
+/* ─── 3 · SIZE ────────────────────────────────────────────────────────────── */
+//
+// The owner: *"chcę wstawić wszystkie 3 size na początku, a dopiero później
+// carcass board etc."*
+//
+// THREE TYPED FIELDS, and not one of them is new machinery: WIDTH, HEIGHT and
+// DEPTH call `adapter.setUnitSize` — the very setter T66 F3's docked editor
+// calls, which asks the ROOM first (`roomFitRefusalFor`) and hands back its
+// refusal as a whole sentence. So *"room refuses first"* surfaces under the
+// field a client typed into, in the room's own words, exactly as it does on
+// the right.
+//
+// The DEFAULTS stand: a wardrobe is born at the lazy client's width, the
+// profile's height and the standard depth, so NEXT works on this step without
+// a keystroke — which is the whole of the lazy client's law.
+function SizePanel({ unit }) {
+  // T65 F1's law, given to a third step: the room can be empty, and a step
+  // that needs a wardrobe says so rather than typing into one that is not
+  // there. Hooks stay unconditional — the empty state is chosen at the render.
+  const b = unit ? A.unitBounds(unit.id) : null;
+  const size = unit?.params || {};
+
+  if (!unit || !b) {
+    return <NeedsAWardrobe title="SIZE" testid="panel-size" what="How wide, how tall and how deep are a wardrobe's three numbers." />;
+  }
+
+  return (
+    <Panel title="SIZE" testid="panel-size">
+      <Field label="WIDTH">
+        <NumberField
+          outOfRange={REASONS.outOfRange}
+          testid="size-width"
+          min={b.width.min}
+          max={b.width.max}
+          value={Math.round(size.width || 0)}
+          onCommit={(v) => A.setUnitSize(unit.id, { width: v }).said}
+        />
+      </Field>
+
+      <Field label="HEIGHT">
+        <NumberField
+          outOfRange={REASONS.outOfRange}
+          testid="size-height"
+          min={b.height.min}
+          max={b.height.max}
+          value={Math.round(size.height || 0)}
+          onCommit={(v) => A.setUnitSize(unit.id, { height: v }).said}
+        />
+      </Field>
+
+      <Field label="DEPTH">
+        <NumberField
+          outOfRange={REASONS.outOfRange}
+          testid="size-depth"
+          min={b.depth.min}
+          max={b.depth.max}
+          standardAt={A.designBounds().defaults.depth}
+          value={Math.round(size.depth || 0)}
+          onCommit={(v) => A.setUnitSize(unit.id, { depth: v }).said}
+        />
+      </Field>
+
+      <p className="pbi-choice pbi-choice-15 pbi-panel-note">
+        Millimetres, floor to top and wall to wall. We survey before we build, so these are the
+        numbers we start from rather than the ones we cut to.
+      </p>
     </Panel>
   );
 }
@@ -213,19 +285,237 @@ function WherePanel({ unit, room, onEditRoom, onOpenDetail }) {
 // ADD WARDROBE ON WALL 2 went with the second wall (F1.8); ADD TOP BOX is
 // EXTRAS. The engine's door rule decides the doors.
 
-/* ─── 3 · INSIDE ──────────────────────────────────────────────────────────── */
+/* ─── T66 F3 · THE CONTROLS THE DEAD THIN MENUS CARRIED ────────────────────
+ *
+ * The owner: *"w zasadzie po prawej powinien być tylko menu edycji."* Eleven
+ * thin `design/detail/*Menu.jsx` files are DELETED tonight; the docked copied
+ * editor does their editing. What it does NOT do is the stack-wide and
+ * whole-fitting questions those menus also carried — how many drawers, what
+ * goes in the top one, the glass, where the pull-down's rod hangs, and REMOVE
+ * for a bought mechanism the engine cuts no board for.
+ *
+ * CLAUDE.md's own clause for that: *"that control moves into INSIDE's row —
+ * never lost, named in the PR body."* This is the row, one component, keyed on
+ * the same `INTERIOR_ROWS` id the counter above it reads — so a row that adds
+ * a thing and the controls for that thing are one line apart, and the right-
+ * hand panel keeps its single duty.
+ *
+ * Every call below is the one the deleted menu made, unchanged.
+ */
+function ReHomed({ row, unitId }) {
+  const [said, setSaid] = useState('');
+  const b = A.drawerBounds();
+
+  // DRAWERS — from `DrawersMenu`: HOW MANY, TOP DRAWER INSERT, GLASS TOP and
+  // the stack-wide FRONT HEIGHTS. One drawer's own height is the docked
+  // editor's `drawer-height` field, which is PRO's own.
+  if (row.id === 'drawers') {
+    const stack = A.drawerStack(unitId);
+    const refusals = A.insertRefusals(unitId);
+    const top = stack.top;
+    const glassWhy = A.glassRefusal(unitId);
+    const fixed = A.stackHasFixedHeights(unitId);
+    const word = A.stackWord(unitId);
+    return (
+      <div className="pbi-interior-more">
+        <Field label="HOW MANY" note={A.countNote(unitId)}>
+          <ChipRow
+            testid="drawers-count"
+            value={String(stack.drawers.length)}
+            options={Array.from({ length: b.maxCount }, (_, i) => i + 1)
+              .map((n) => ({ id: String(n), label: String(n) }))}
+            onPick={(id) => A.setStackCount(unitId, Number(id))}
+          />
+        </Field>
+        <Field label="TOP DRAWER INSERT">
+          <ChipRow
+            testid="drawers-insert"
+            value={A.topInsertOf(top)}
+            options={[
+              { id: 'none', label: 'NONE' },
+              { id: 'watches', label: 'WATCHES', reason: refusals.watches },
+              { id: 'belts', label: 'BELTS', reason: refusals.belts },
+              { id: 'shoes', label: 'SHOES', reason: refusals.shoes },
+            ]}
+            onPick={(id) => A.setTopInsert(unitId, id)}
+          />
+        </Field>
+        <Field label="GLASS TOP">
+          <ChipRow
+            testid="drawers-glass"
+            value={top?.watch_shelf_glass === true ? 'on' : 'off'}
+            options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON', reason: glassWhy }]}
+            onPick={(id) => top && A.setGlassTop(unitId, top.id, id === 'on')}
+          />
+        </Field>
+        <Field label="FRONT HEIGHTS">
+          {fixed ? (
+            <Said testid="drawers-fronts-fixed">{fixed}</Said>
+          ) : (
+            <NumberField
+              outOfRange={REASONS.outOfRange}
+              testid="drawers-front-height"
+              min={b.front.min}
+              max={b.front.max}
+              standardAt={b.front.standard}
+              value={Math.round(stack.drawers[0]?.height_mm ?? b.front.standard)}
+              onCommit={(v) => A.setStackFronts(unitId, v)}
+            />
+          )}
+        </Field>
+        {word ? <Said testid="drawers-said">{word}</Said> : null}
+      </div>
+    );
+  }
+
+  // OVERLAY DRAWERS — from `OverlayMenu`. CLAUDE.md names this one: *"e.g.
+  // OverlayMenu's HOW MANY chips"*. The stack is REBUILT rather than edited,
+  // which is `addOverlayDrawers`' own shape and not a second law.
+  if (row.id === 'overlay') {
+    const { drawers, count } = A.overlayStack(unitId);
+    return (
+      <div className="pbi-interior-more">
+        <Field label="HOW MANY" note={REASONS.overlayIsOutside}>
+          <ChipRow
+            testid="overlay-count"
+            value={String(count)}
+            options={Array.from({ length: b.maxCount }, (_, i) => ({ id: String(i + 1), label: String(i + 1) }))}
+            onPick={(id) => A.setOverlayStackCount(unitId, Number(id))}
+          />
+        </Field>
+        <Field label="FRONT HEIGHT">
+          <NumberField
+            outOfRange={REASONS.outOfRange}
+            testid="overlay-front"
+            min={b.front.min}
+            max={b.front.max}
+            standardAt={b.front.standard}
+            value={A.overlayFrontHeight(unitId)}
+            onCommit={(v) => A.setOverlayFronts(unitId, v)}
+          />
+        </Field>
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="overlay-remove"
+            onClick={() => { drawers.forEach((d) => A.removeElement(unitId, d.id)); }}
+          >
+            REMOVE
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // SHELVES — from `ShelfMenu`: the even ladder. One shelf's own height is the
+  // docked editor's `position-y`, which is PRO's own field.
+  if (row.id === 'shelves') {
+    return (
+      <div className="pbi-interior-more">
+        <Field label="SPACING" note="Evenly, between whatever stands above and below them.">
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="shelf-centre"
+              onClick={() => A.centreBay(unitId, null)}
+            >
+              SPACE THEM EVENLY
+            </Button>
+          </div>
+        </Field>
+      </div>
+    );
+  }
+
+  // THE PULL-DOWN RAIL — from `PulldownMenu`. A bought mechanism: the engine
+  // cuts no board for it, so it has no panel, no copied editor and no click.
+  if (row.id === 'pulldown_rail') {
+    const item = A.kitItem(unitId, 'pulldown_rail');
+    const travel = item ? A.pulldownTravel(unitId, item.id) : null;
+    if (!travel) return null;
+    return (
+      <div className="pbi-interior-more">
+        <Field label="HOW FAR DOWN FROM THE TOP">
+          <NumberField
+            outOfRange={REASONS.outOfRange}
+            testid="pulldown-drop"
+            min={travel.min}
+            max={travel.max}
+            standardAt={travel.standard}
+            value={travel.drop}
+            onCommit={(v) => A.setPulldownDrop(unitId, item.id, v)}
+          />
+        </Field>
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="pulldown-remove"
+            onClick={() => A.removeElement(unitId, item.id)}
+          >
+            REMOVE
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // THE TROUSER PULL-OUT AND THE TIE RACK — from `KitMenu`: the engine's own
+  // sentence about a bought fitting, and the one act it allows.
+  if (row.id === 'trouser' || row.id === 'tie_rack') {
+    const item = A.kitItem(unitId, row.id);
+    if (!item) return null;
+    return (
+      <div className="pbi-interior-more">
+        <Said testid={`kit-${row.id}-said`}>{A.kitWords(row.id).said}</Said>
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid={`kit-${row.id}-remove`}
+            onClick={() => A.removeElement(unitId, item.id)}
+          >
+            REMOVE
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // THE SHOE DRAWER — from `ShoeMenu`: the ramp is fixed law and the honest
+  // answer is a sentence, never a control that cannot act.
+  if (row.id === 'shoe') {
+    const law = A.shoeLaw();
+    const words = A.shoeFitWords(unitId, A.selectionForMenu('shoe', unitId)?.item || null);
+    return (
+      <div className="pbi-interior-more">
+        <div className="pbi-stack" data-testid="shoe-drawing"><ShoeDrawing lanes={law.lanes} /></div>
+        <Said testid="shoe-law">{law.said}</Said>
+        {words.map((w) => <Said key={w} testid="shoe-said">{w}</Said>)}
+      </div>
+    );
+  }
+
+  return said ? <Said testid="interior-said">{said}</Said> : null;
+}
+
+/* ─── 4 · INSIDE ──────────────────────────────────────────────────────────── */
 //
 // *"najpierw materiał, a później reszta"*: the CARCASS material first — PRO's
 // own `MaterialChoicePanel` with the tiled `DecorPickerModal` behind it,
 // COPIED (T63) — then the inside colour in three answers, then PRO's own
 // `AddItems`, whole. Default: white inside, an empty carcass; NEXT works.
-function InsidePanel({ unit, project, onOpenDetail }) {
+function InsidePanel({ unit, project }) {
   // T65 F1: the room can be empty. Hooks below are unconditional, so the
   // empty state is chosen at the RENDER, not by an early return.
   const counts = A.interiorCounts(unit);
   // T65 F7: BAYS is a standing FIELD below, not a `›` row that only appears
   // once a divider exists — so it is taken out of the summary list here.
   const inside = A.INTERIOR_ROWS.filter((row) => !row.bays && (counts[row.id] || 0) > 0);
+  // T66 F6 · the ONE bays entry reads its name off the same table the rows do.
+  const baysRow = A.INTERIOR_ROWS.find((row) => row.bays) || null;
   const bays = unit ? A.bayCount(unit.id) : 1;
   const b = A.designBounds();
   const colour = A.insideColourOf(project);
@@ -277,33 +567,22 @@ function InsidePanel({ unit, project, onOpenDetail }) {
         <AddItems unit={unit} />
       </div>
 
-      {inside.length ? (
-        <div className="pbi-interior-list" data-testid="interior-inside">
-          {inside.map((row) => (
-            <div key={row.id} data-testid={`interior-${row.id}`}>
-              <div className="pbi-interior-row">
-                <span className="pbi-choice pbi-choice-15 pbi-interior-name">{row.name}</span>
-                <Button
-                  kind="link"
-                  data-testid={`interior-open-${row.id}`}
-                  onClick={() => onOpenDetail(row.menu)}
-                  title="Open this"
-                >
-                  {`${counts[row.id]} ›`}
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
+      {/* ─── T65 F7 / T66 F6 · VERTICAL PARTITIONS (BAYS) — ONE ENTRY ──────
+          The owner, T65: *"zamiast vertical partition dać BAYS i wpisz ilość,
+          max 3"*. And tonight, F6: *"zamień nazwę przycisku z vertical
+          partition (divider) na Vertical partitions (bays), a ten na dole
+          usuń."*
 
-      {/* ─── T65 F7 · BAYS ────────────────────────────────────────────────
-          The owner: *"zamiast vertical partition dać BAYS i wpisz ilość, max
-          3"*. A TYPED count — T62's row law, never a slider — over the
-          engine's own partitions: writing 3 puts two dividers in, writing 1
-          takes them out, and both go through `addFlushPartition`, the same
-          call PRO's copied list makes. DOORS do not follow (F9). */}
-      <Field label="BAYS">
+          So there is ONE place a client adds a bay and ONE place he counts
+          them, and this is it. The name comes off `INTERIOR_ROWS` — the same
+          table the row above reads — and the second control that stood at the
+          foot of this panel is DELETED.
+
+          A TYPED count, T62's row law, never a slider: writing 3 puts two
+          dividers in and writing 1 takes them out, both through
+          `addFlushPartition`, the same call PRO's copied list makes. DOORS do
+          not follow (T65 F9). */}
+      <Field label={String(baysRow?.name || 'Vertical partitions (bays)').toUpperCase()}>
         <NumberField
           testid="inside-bays"
           min={b.bays.min}
@@ -319,61 +598,210 @@ function InsidePanel({ unit, project, onOpenDetail }) {
         />
       </Field>
 
-      {/* *"i wtedy dopiero informacja o tym że bays można zrobić niższe ale
-          półka musi być fix"* — after a count above one, and not before. */}
+      {/* PRO's own line, and T65's law about when it appears: *"i wtedy
+          dopiero informacja o tym że bays można zrobić niższe ale półka musi
+          być fix"* — above one, and not before. */}
       {bays > 1 ? (
         <p className="pbi-choice pbi-choice-15 pbi-panel-note" data-testid="bays-note">
           {REASONS.baysMayDiffer}
         </p>
       ) : null}
+
+      {/* EQUAL BAYS — PRO's own button, re-homed from the deleted
+          `PartitionMenu`. Where ONE divider stands is the docked editor's
+          `position-x`, which is PRO's own field on the divider itself. */}
+      {bays > 1 ? (
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="partition-equal"
+            onClick={() => A.centrePartitions(unit.id)}
+          >
+            EQUAL BAYS
+          </Button>
+        </div>
+      ) : null}
+
+      {inside.length ? (
+        <div className="pbi-interior-list" data-testid="interior-inside">
+          {inside.map((row) => (
+            <div key={row.id} data-testid={`interior-${row.id}`}>
+              <div className="pbi-interior-row">
+                <span className="pbi-choice pbi-choice-15 pbi-interior-name">{row.name}</span>
+                <span className="pbi-choice pbi-interior-count" data-testid={`interior-count-${row.id}`}>
+                  {counts[row.id]}
+                </span>
+              </div>
+              {/* ─── T66 F3 · WHAT THE DEAD THIN MENU CARRIED ─────────────
+                  *"Where a thin menu carried a control the copied editor
+                  lacks, that control moves into INSIDE's row — never lost."*
+                  Adding and counting live here, on the left; EDITING one
+                  piece is the docked copied editor, on the right. */}
+              <ReHomed row={row} unitId={unit.id} />
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {/* ─── T66 F3 · RE-HOMED FROM THE DELETED `WardrobeMenu` ────────────
+          Two of its rows opened a COPIED PRO window and had nowhere else to
+          go: THIS WARDROBE'S COLOUR (`UnitFinishModal` — it writes the UNIT,
+          so two wardrobes may differ) and MATERIALS AND HARDWARE (the project
+          palette). Both are about what the wardrobe is MADE OF, which is this
+          step; both open beside their button, per the house rule; and neither
+          is an element editor, so neither belongs on the right. */}
+      <MoreOptions testid="inside-more">
+        <Field label="THIS WARDROBE">
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="wardrobe-open-finish"
+              onClick={(e) => A.openEditor('unit-finish', { unitIds: [unit.id], anchor: A.anchorOf(e) })}
+            >
+              THIS WARDROBE&apos;S COLOUR ›
+            </Button>
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="wardrobe-open-materials"
+              onClick={(e) => A.openEditor('design', { anchor: A.anchorOf(e) })}
+            >
+              MATERIALS AND HARDWARE ›
+            </Button>
+          </div>
+        </Field>
+      </MoreOptions>
+
     </Panel>
   );
 }
 
-/* ─── 4 · FRONTS ──────────────────────────────────────────────────────────── */
+/* ─── 5 · FRONTS ──────────────────────────────────────────────────────────── */
 //
 // Default: shaker, push-to-open, the collection's EGGER decor. The OPENING is
 // PRO's own four (`lib/frontOpening.js FRONT_OPENINGS`), written as PRO's
 // wizard writes them (T64 F1.5 — a J-pull is a HANDLE, and this is where the
 // J did not render). Under MORE OPTIONS: the shaker frame, the collections,
 // PRO's style gallery and every source the slot's own strip offers.
+/**
+ * ─── T66 F4 · ONE LINE PER STYLE, AND THEY LIVE BELOW THE LIST ─────────────
+ *
+ * *"dopiero pod spodem wszystkie informacje, a nie pod każdym przyciskiem."*
+ *
+ * These are DESCRIPTIONS, not refusals — `reasons.js` is the home of a
+ * sentence retail puts to an engine's boolean, and none of these answers a
+ * predicate. The engine has no words for a door's LOOK (`FRONT_STYLE_OPTIONS`
+ * is ids and labels), so the copy is retail's, keyed on the engine's own ids
+ * so a style the engine adds cannot silently acquire another style's line.
+ */
+const STYLE_LINES = Object.freeze({
+  F: 'A flat slab, edge to edge. The quietest of the four and the one that shows a decor best.',
+  S: 'A frame around a recessed panel — the English wardrobe door. The frame width is yours to set.',
+  G: 'Vertical grooves machined into the face, evenly across the leaf.',
+  A: 'A curved head on a full-height leaf, for a room with the height to carry it.',
+});
+
 function FrontsPanel({ design, project }) {
   const b = A.designBounds();
   const style = design?.fronts?.style || 'S';
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
   const opening = A.frontOpeningOf(project);
+  // SLAB · SHAKER · GROOVED · ARCHED, in CLAUDE.md F4's own order.
+  const order = ['F', 'S', 'G', 'A'];
+  const styles = A.frontStyles()
+    .filter((s) => s.id !== 'HJ')
+    .sort((x, y) => order.indexOf(x.id) - order.indexOf(y.id));
 
   return (
     <Panel title="FRONTS" testid="panel-fronts">
+      {/* ─── T66 F4 · A LIST, NOT A MOSAIC ────────────────────────────────
+          The owner, on the screenshot: *"style front to mega burdel"* — and
+          then exactly how to fix it: *"to powinno być lista, a nie obok siebie
+          … lista jak internals … dopiero pod spodem wszystkie informacje, a
+          nie pod każdym przyciskiem."*
+
+          So: ONE ROW PER STYLE, in a column, each a small drawing and a name,
+          the selected row carrying the gold hairline and a coming-soon row
+          simply greyed. The sentences do NOT stand under each row — they
+          collect in one quiet block below the list, which is the half of his
+          instruction that made the mosaic unreadable. */}
       <Field label="STYLE" block>
-        <div className="pbi-chip-row" data-testid="fronts-style">
+        <div className="pbi-style-list" data-testid="fronts-style">
           {/* T57's doctrine: the J is a handle system, not a shape — so the
               legacy `HJ` shape is not offered as a style; it is the OPENING
               below, and it is the only J the client can choose. */}
-          {A.frontStyles().filter((s) => s.id !== 'HJ').map((s) => (
-            <Chip
+          {styles.map((s) => (
+            <button
               key={s.id}
-              selected={style === s.id}
+              type="button"
+              className={`pbi-style-row${style === s.id ? ' is-on' : ''}${s.soon ? ' is-soon' : ''}`}
+              data-testid={`fronts-style-${s.id}`}
+              data-on={style === s.id ? 'yes' : 'no'}
+              data-soon={s.soon ? 'yes' : 'no'}
               disabled={s.soon}
-              reason={s.reason}
+              aria-pressed={style === s.id}
               onClick={() => A.setFrontStyle(s.id)}
             >
-              <span className="pbi-stack">
-                <FrontThumb style={s.id} />
-                <span>{s.label}</span>
-              </span>
-            </Chip>
+              <FrontThumb style={s.id} size="row" />
+              <span className="pbi-choice pbi-style-name">{s.label}</span>
+            </button>
           ))}
         </div>
       </Field>
 
-      <Field label="OPENING">
-        <ChipRow
-          testid="fronts-opening"
-          value={opening}
-          options={A.frontOpenings().map((o) => ({ id: o.id, label: o.label.toUpperCase(), hint: o.hint }))}
-          onPick={(id) => A.setFrontOpening(id)}
-        />
+      {/* ─── SHAKER'S OWN FIELD, DIRECTLY UNDER THE LIST ───────────────────
+          *"SHAKER selected → a FRAME WIDTH field appears directly under the
+          list"* — typed, per the field law, reading the ENGINE's own bounds
+          around `profile.front.types.S.frameWidth`. Only when shaker is the
+          style: a field about a frame no door has is a field that lies. */}
+      {style === 'S' ? (
+        <Field label="FRAME WIDTH">
+          <NumberField
+            outOfRange={REASONS.outOfRange}
+            testid="fronts-frame-width"
+            min={b.shakerFrame.min}
+            max={b.shakerFrame.max}
+            standardAt={b.shakerFrame.standard}
+            value={Math.round(frame)}
+            onCommit={(v) => { A.setShakerFrame(v); return ''; }}
+          />
+        </Field>
+      ) : null}
+
+      {/* ─── AND THE SENTENCES COLLECT HERE, ONCE ──────────────────────────
+          The selected style's line, and the coming-soon note if any greyed
+          row is standing in the list above. Two sentences at most, in one
+          quiet block, under the list they are about. */}
+      <div className="pbi-style-notes" data-testid="fronts-style-notes">
+        <p className="pbi-choice pbi-choice-15" data-testid="fronts-style-line">{STYLE_LINES[style] || ''}</p>
+        {styles.some((s) => s.soon) ? (
+          <p className="pbi-choice pbi-quiet" data-testid="fronts-style-soon">{REASONS.styleComingSoon}</p>
+        ) : null}
+      </div>
+
+      {/* ─── T66 F4 · THE OPENING IS AN ALIGNED LIST ───────────────────────
+          *"OPENING becomes an aligned list of the four choices — one column,
+          equal widths, no stagger."* The four are PRO's own
+          (`lib/frontOpening.js FRONT_OPENINGS`); only their arrangement moved. */}
+      <Field label="OPENING" block>
+        <div className="pbi-opening-list" data-testid="fronts-opening">
+          {A.frontOpenings().map((o) => (
+            <button
+              key={o.id}
+              type="button"
+              className={`pbi-opening-row${opening === o.id ? ' is-on' : ''}`}
+              data-testid={`fronts-opening-${o.id}`}
+              data-on={opening === o.id ? 'yes' : 'no'}
+              aria-pressed={opening === o.id}
+              title={o.hint || ''}
+              onClick={() => A.setFrontOpening(o.id)}
+            >
+              {o.label.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </Field>
 
       {/* T63 F4 · PRO's slot for the fronts, with the tiled EGGER modal behind it. */}
@@ -384,20 +812,12 @@ function FrontsPanel({ design, project }) {
       </Field>
 
       <MoreOptions testid="fronts-more">
-        {style === 'S' ? (
-          <Field label="SHAKER FRAME">
-            <ChipRow
-              testid="fronts-frame"
-              value={frame <= b.shakerFrame.narrow ? 'narrow' : 'standard'}
-              options={[
-                { id: 'narrow', label: 'NARROW', sub: `${b.shakerFrame.narrow} mm` },
-                { id: 'standard', label: 'STANDARD', sub: `${b.shakerFrame.standard} mm` },
-              ]}
-              onPick={(id) => A.setShakerFrame(id === 'narrow' ? b.shakerFrame.narrow : b.shakerFrame.standard)}
-            />
-          </Field>
-        ) : null}
-
+        {/* ─── T66 F4 · TOMBSTONE: THE NARROW / STANDARD CHIPS STOOD HERE ──
+            Two chips offering two of the profile's numbers, folded under MORE
+            OPTIONS. F4 asks for the frame width TYPED and directly under the
+            list, which is both a wider choice and a shorter road to it — so
+            the chips are superseded rather than moved. The engine's bounds are
+            the same bounds; the field simply offers all of them. */}
         <Field label="COLLECTION" block>
           <div className="pbi-chip-row" data-testid="fronts-collection">
             {COLLECTIONS.map((c) => (
@@ -422,7 +842,7 @@ function FrontsPanel({ design, project }) {
   );
 }
 
-/* ─── 5 · EXTRAS ──────────────────────────────────────────────────────────── */
+/* ─── 6 · EXTRAS ──────────────────────────────────────────────────────────── */
 //
 // Default: lighting off, the standard plinth, no top box. MORE OPTIONS:
 // PRO's Lighting panel (copied), PRO's WizardHardware (copied — hinge
@@ -436,6 +856,10 @@ function ExtrasPanel({ unit, project }) {
   const cornice = unit ? A.corniceOf(unit.id) : 0;
   const gap = unit ? A.ceilingGapMm(unit.id) : 0;
   const panelSides = unit ? A.endPanelSides(unit.id) : [];
+  // T66 F7 · what the split may do here, asked of the engine before the press.
+  const split = unit ? A.splitDoor(unit.id) : null;
+  // T66 F3 · the boxes standing on this wardrobe — each a unit of its own.
+  const boxes = unit ? A.topBoxesOn(unit.id) : [];
 
   // T65 F1: the plinth, the top box and the lighting all belong to a wardrobe.
   if (!unit) {
@@ -502,6 +926,70 @@ function ExtrasPanel({ unit, project }) {
         </div>
       </Field>
 
+      {/* ─── T66 F7 · SPLIT DOOR (TOP SEGMENT) ────────────────────────────
+          The owner: *"split door top segment też powinien być w extras."*
+
+          The capability is T36's and it has been in the copied `DoorModal`
+          since T63. This is the SECOND DOOR to the SAME store path — one law,
+          two doors to it, exactly like ADD DOORS above (T65 F9). It acts on
+          the SELECTED leaf where the client has one in hand and on the first
+          leaf otherwise, and where it cannot act it says so instead: no doors
+          yet, or a leaf too short for two halves of the kit's own minimum. */}
+      <Field label="SPLIT DOOR (TOP SEGMENT)">
+        {split?.said ? (
+          <Said testid="extras-split-said">{split.said}</Said>
+        ) : (
+          <NumberField
+            outOfRange={REASONS.outOfRange}
+            testid="extras-split-top"
+            min={split.min}
+            max={split.max}
+            value={split.value}
+            onCommit={(v) => A.setSplitTopMm(unit.id, split.bay, v).said}
+          />
+        )}
+      </Field>
+      {split && !split.said && split.value > 0 ? (
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="extras-split-clear"
+            onClick={() => setSaid(A.setSplitTopMm(unit.id, split.bay, 0).said)}
+          >
+            ONE DOOR AGAIN
+          </Button>
+        </div>
+      ) : null}
+
+      {/* ─── T66 F3 · RE-HOMED FROM THE DELETED `WardrobeMenu` ─────────────
+          T64 F1.7 put the DOOR COUNT under an Advanced heading in the thin
+          wardrobe menu, with PRO's own line above it: *"3 drzwi czy 4 —
+          dopiero jako coś co trzeba edytować, a nie na głównym menu."* The
+          menu is gone; the heading, the line and the chips are here, beside
+          the button that hangs the doors, and the engine's door rule still
+          decides until somebody presses one. */}
+      <div className="pbi-advanced" data-testid="wardrobe-advanced">
+        <h3 className="pbi-ui pbi-ui-light pbi-quiet pbi-advanced-head">Advanced</h3>
+        <p className="pbi-choice pbi-advanced-line" data-testid="wardrobe-advanced-line">{REASONS.doorsAreSet}</p>
+        <Field label="DOORS">
+          <ChipRow
+            testid="wardrobe-doors"
+            value={String(A.doorCount(unit.id))}
+            options={[1, 2, 3, 4].map((n) => ({
+              id: String(n),
+              label: String(n),
+              // The engine's two laws, asked before the click: the structural
+              // one that refuses, and the yellow one that only has something
+              // to say.
+              reason: A.doorCountRefusal(Math.round(unit.params?.width || 0), n),
+              note: A.doorCountNote(Math.round(unit.params?.width || 0), n),
+            }))}
+            onPick={(id) => A.setDoorCount(unit.id, Number(id))}
+          />
+        </Field>
+      </div>
+
       {/* END PANELS — the automat puts them where a side would otherwise show
           (F6); this is the client's own hand on the same act, and a panel he
           asks for here is PERMANENT. */}
@@ -540,7 +1028,7 @@ function ExtrasPanel({ unit, project }) {
         </Field>
 
         {/* T61 F3 · *"4 add top"* — greyed with the ROOM's own sentence. */}
-        <Field label="TOP BOX" note={A.topBoxesOn(unit.id).length ? REASONS.topBoxGoesBeside : ''}>
+        <Field label="TOP BOX" note={boxes.length ? REASONS.topBoxGoesBeside : ''}>
           <div className="pbi-duty-actions">
             <Button
               kind="secondary"
@@ -559,6 +1047,57 @@ function ExtrasPanel({ unit, project }) {
           {said ? <Said testid="layout-said">{said}</Said> : null}
         </Field>
 
+        {/* ─── T66 F3 · A BOX IS A UNIT OF ITS OWN, AND IT IS EDITED HERE ───
+            T61 F3's law stands: *"a box and the cabinet under it are two
+            things in the same place"*, so its width and its height are its
+            own and never the host's. What changed is WHERE they are asked.
+            A box's boards are CARCASS, and a carcass click closes the panel
+            tonight — so the box's three controls come out of the deleted
+            `WardrobeMenu`'s `TopBoxMenu` and stand beside the button that
+            added it, on the left, exactly where SIZE and EXTRAS put every
+            other cabinet number.
+
+            The DEPTH is not offered, and that is T61's own reasoning
+            unchanged: it is the host's (`settleRiders` re-writes it on every
+            mutation), so typing it would be a lie. */}
+        {boxes.map((box) => {
+          const bb = A.unitBounds(box.id);
+          return bb ? (
+            <div key={box.id} className="pbi-interior-more" data-testid={`topbox-${box.id}`}>
+              <Field label="TOP BOX WIDTH">
+                <NumberField
+                  outOfRange={REASONS.outOfRange}
+                  testid="topbox-width"
+                  min={bb.width.min}
+                  max={bb.width.max}
+                  value={Math.round(box.params?.width || 0)}
+                  onCommit={(v) => A.setUnitSize(box.id, { width: v }).said}
+                />
+              </Field>
+              <Field label="TOP BOX HEIGHT" note={REASONS.topBoxStopsAtTheCeiling}>
+                <NumberField
+                  outOfRange={REASONS.outOfRange}
+                  testid="topbox-height"
+                  min={bb.height.min}
+                  max={bb.height.max}
+                  value={Math.round(box.params?.height || 0)}
+                  onCommit={(v) => A.setUnitSize(box.id, { height: v }).said}
+                />
+              </Field>
+              <div className="pbi-duty-actions">
+                <Button
+                  kind="secondary"
+                  size="small"
+                  data-testid="topbox-remove"
+                  onClick={() => A.removeUnit(box.id)}
+                >
+                  REMOVE THE TOP BOX
+                </Button>
+              </div>
+            </div>
+          ) : null;
+        })}
+
         {/* T63 F4 · PRO's hardware step, COPIED: hinge finish, internal metal,
             soft-close, push-to-open — the client's audience, as PRO reads it. */}
         <div data-testid="extras-hardware">
@@ -569,7 +1108,7 @@ function ExtrasPanel({ unit, project }) {
   );
 }
 
-/* ─── 6 · REVIEW ──────────────────────────────────────────────────────────── */
+/* ─── 7 · REVIEW ──────────────────────────────────────────────────────────── */
 //
 // Front view (the room parks the camera on entering), the design's summary in
 // words, "Price on request", the name — and the ONE primary button of the
@@ -683,11 +1222,11 @@ export default function Options(props) {
           unit={props.unit}
           room={props.room}
           onEditRoom={props.onEditRoom}
-          onOpenDetail={props.onOpenDetail}
         />
       ) : null}
+      {step.id === 'size' ? <SizePanel unit={props.unit} /> : null}
       {step.id === 'inside' ? (
-        <InsidePanel unit={props.unit} project={props.project} onOpenDetail={props.onOpenDetail} />
+        <InsidePanel unit={props.unit} project={props.project} />
       ) : null}
       {step.id === 'fronts' ? <FrontsPanel design={props.design} project={props.project} /> : null}
       {step.id === 'extras' ? <ExtrasPanel unit={props.unit} project={props.project} /> : null}

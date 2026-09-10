@@ -33,7 +33,11 @@ export default function MaterialSlot({ kind, title = null }) {
   const [inline, setInline] = useState(false);
 
   const categoryStrip = (
-    <div className="pbi-re-row pbi-re-gap-2" data-source-seg={`${kind}:${m.slot?.id || ''}`}>
+    // T66 F11 · `pbi-source-seg` lets the three source buttons WRAP rather than
+    // splitting a 337-px column three ways and breaking "EGGER decor" over
+    // three lines. Retail's own class on retail's own file — the COPY below
+    // (`MaterialChoicePanel`) is untouched.
+    <div className="pbi-re-row pbi-re-gap-2 pbi-source-seg" data-source-seg={`${kind}:${m.slot?.id || ''}`}>
       {m.sources.map((s) => (
         <button
           key={s.id}

@@ -363,10 +363,14 @@ test('F3.5 · full screen is a LOOKING mode that restores what it left', () => {
   // the INTERIOR list alive through its own edits — see `adapter.resolveTarget`.
   assert.match(room, /if \(fullScreen\) \{ setTarget\(null\); return; \}/,
     'full screen must drop the selection');
-  // T64 F4: a piece selected → the panel slides in; the empty stage → out;
-  // a menu opened from a row's `›` is the list's to close, not the stage's.
-  assert.match(room, /setTarget\(\(t\) => \(t && t\.from === 'stage' \? null : t\)\);/,
-    'a cleared selection must close only what the stage opened');
+  // T64 F4: a piece selected → the panel slides in; the empty stage → out.
+  // ─── AMENDED BY T66 F3 ────────────────────────────────────────────────
+  // T64 kept a `from` on the target so a panel opened by a row's `›` was not
+  // the stage's to close. The rows' `›` is gone — *"po prawej powinien być
+  // tylko menu edycji"* — so there is ONE road in and one out, and a cleared
+  // selection simply closes the panel.
+  assert.match(room, /setTarget\(null\);\n  \}, \[selectedElement, selectedUnitId, fullScreen\]\);/,
+    'a cleared selection must close the panel');
   assert.ok(!/setActive\(['"]space['"]\)/.test(room.slice(room.indexOf('setFullScreen'))),
     'nothing may be reset on the way back');
 });

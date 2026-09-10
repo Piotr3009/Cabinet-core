@@ -10,6 +10,7 @@ import { setPersistence } from '../stores/persistence.js';
 import { setChromePart, setProChrome } from '../3d/chrome.js';
 import { setPickMode } from '../3d/picking.js';
 import { loadDecors } from './decorPack.js';
+import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 
 // ─── PRIME BESPOKE INTERIORS · THE ENTRY, AND ITS ORDER ────────────────────
 //
@@ -202,6 +203,10 @@ import('./RetailApp.jsx').then(async (module) => {
     const cc = (window.__cc = window.__cc || {});
     cc.project = useProjectStore;
     cc.ui = useUiStore;
+    // T66 F1 · the resolved PROFILE, which is the rig `Scene.jsx` reads. The
+    // walk photographs the light and has to be able to say what number the
+    // page was running at rather than what the file on disk says.
+    cc.profile = useCabinetProfileStore;
   }
 
   // ─── THE OVERLAYS THAT ALREADY HAD A SWITCH ──────────────────────────────
@@ -218,8 +223,16 @@ import('./RetailApp.jsx').then(async (module) => {
   //   xray            a look THROUGH the furniture — a tool, not a view
   //   contourView     a silhouette, for a printout
   //   ruler           a measuring tool
-  ui.setShowDimensions(false);
-  ui.setShowOutlines(false);
+  //
+  // ─── T66 F9 · TWO OF THE FIVE COME BACK ON ───────────────────────────────
+  //
+  // The owner: *"dimensions on i outlines on default."* A client looking at a
+  // wardrobe wants to SEE how wide it is, and the outline is what makes a
+  // white door on a white wall read as a door at all. So the two he named
+  // mount ON; the three that are TOOLS — the x-ray, the contour and the ruler
+  // — stay off, which is the half of this paragraph that has not changed.
+  ui.setShowDimensions(true);
+  ui.setShowOutlines(true);
   ui.setXray(false);
   ui.setContourView(false);
   ui.setRuler(false);

@@ -1,0 +1,6 @@
+1280px · INSIDE  options column  263px  ·  11 labels · clipped 0 · word-by-word 0
+1280px · FRONTS  options column  263px  ·  12 labels · clipped 0 · word-by-word 0
+1440px · INSIDE  options column  272px  ·  11 labels · clipped 0 · word-by-word 0
+1440px · FRONTS  options column  272px  ·  12 labels · clipped 0 · word-by-word 0
+
+CLEAN — no label clips and none breaks word by word.

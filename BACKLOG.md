@@ -989,3 +989,36 @@ Bramki: `npm test` **4278 pass / 0 fail** · `npm run build` przechodzi ·
     wprost — ale jeśli pokój ma wyglądać za ciemno, podnosi się WŁAŚNIE
     `pillars.intensity`, samodzielnie, i po to `baseGain` jest trzymany poza
     lampami. Do rozstrzygnięcia przez właściciela, na oko.
+
+131. [HIGH] **Walnut wybrany z rodziny, nie podyktowany.** T66-F5 wykonuje
+    *„default powinno być RAL color wine fronty i walnut Egger carcases"* i
+    wybiera `H3710_12` — EGGER H3710 ST12 Natural Carini Walnut. W kubełku jest
+    SIEDEM orzechów: `H1307_19` (Brown Warmia), `H1714_19` (Lincoln),
+    `H3710_12` (Natural Carini), `H3734_9` (Natural Dijon), `H3700_10` (Natural
+    Pacific), `H1715_12` (Parona), `H3702_10` (Tobacco Pacific). Wybrano średni,
+    naturalny orzech, bo niesie winne fronty bez walki z nimi — ale to jest
+    wybór, nie decyzja właściciela. Zmiana to JEDNA stała: `WALNUT_DECOR` w
+    `src/retail/design/adapter.js`. Do rozstrzygnięcia przez właściciela.
+132. [MEDIUM] **PRO ściemniało razem z retailem (T66-F1, nazwana konsekwencja).**
+    *„ściemnij trochę o 20 procent światło"* — `appearance.studio.baseGain`
+    0.75 → 0.60. Profil jest WSPÓLNY i od T65-F2 rig jest jednym prawem z
+    jednym źródłem, więc studio PRO ściemniało razem z pokojem klienta. To jest
+    poprawne — właściciel oceniał światło na obu aplikacjach — ale jeśli
+    warsztat chce z powrotem swoje jaśniejsze studio, to jest DRUGA pokrętka
+    (np. `appearance.studio.proGain`), a nie ta sama. Do rozstrzygnięcia.
+133. [MEDIUM] **Cztery zdania pod listą STYLE to copy zastępcze.** T66-F4 zbiera
+    objaśnienia pod listą, jak prosił właściciel (*„dopiero pod spodem wszystkie
+    informacje"*) — ale silnik nie ma słów o WYGLĄDZIE drzwi
+    (`FRONT_STYLE_OPTIONS` to id i etykiety), więc te cztery linie napisał
+    retail: `STYLE_LINES` w `src/retail/design/Options.jsx`, kluczowane po id
+    silnika. Do napisania przez właściciela.
+134. [LOW] **Kliknięcie w gzyms nie otwiera edytora, bo gzyms nie ma panelu.**
+    CLAUDE.md T66-F3 prosi, żeby klik w cornice dokował sekcję cornice z
+    skopiowanego ContextMenu. `engine/cabinet.js` nazywa gzyms *„the one piece
+    in this engine that produces NO PANEL"* — to kupowana listwa, trafia do BOM
+    jako hardware, a `src/3d/Cornice.jsx` rysuje ją BEZ żadnego handlera. Żeby
+    była klikalna, trzeba dodać handler w `src/3d/`, który jest wspólny z PRO i
+    nie był licencjonowany tej nocy. Wybory gzymsu stoją (40/70/100/NONE w
+    EXTRAS, T65-F8), prawym klawiszem ContextMenu też działa. Do decyzji, czy
+    warto licencji na `src/3d/`.
+

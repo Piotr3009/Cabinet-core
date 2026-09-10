@@ -16,7 +16,7 @@
 // that the design room never finishes "Setting the room out…", which is what
 // the first run of this file found.
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { launch } from './cdp.mjs';
 import { startFixtureServer } from './fixture-server.mjs';
 
@@ -476,12 +476,36 @@ if (runs('lazy')) {
 
 // ═══ THE LEDGER ════════════════════════════════════════════════════════════
 
+// ─── THE LEDGER IS APPENDED, NOT OVERWRITTEN ──────────────────────────────
+//
+// This container runs one Chromium at a time comfortably and no more: a walk
+// that launches seventeen of them in one process starves and stops answering.
+// So the walk is run in SECTIONS — which is what its own usage line has always
+// offered — and each run APPENDS its own block to the ledger, so the committed
+// `walk.txt` is one honest record of the runs that took the committed frames
+// rather than the last run overwriting the rest.
+//
+//   node scripts/t66-walk.mjs --fresh f1 f2    start a new ledger
+//   node scripts/t66-walk.mjs f3               add to it
+const fresh = process.argv.includes('--fresh');
 const failed = steps.filter((s) => !s.ok);
+const previous = !fresh && existsSync(`${SHOTS}walk.txt`)
+  ? readFileSync(`${SHOTS}walk.txt`, 'utf8').replace(/\n?\d+ checks · \d+ failed\n*$/, '')
+  : '';
+const before = (previous.match(/^ (ok|FAIL) /gm) || []).length;
+const beforeFailed = (previous.match(/^FAIL /gm) || []).length;
 writeFileSync(`${SHOTS}walk.txt`, [
-  '─── T66 · THE ACCEPTANCE WALK ───',
+  previous || [
+    '─── T66 · THE ACCEPTANCE WALK ───',
+    '',
+    'Run section by section against `npx vite preview --port 4173`, the hardware',
+    'served from the silent showroom (T23 R8). Every line below is a real browser',
+    'reading the real build; the frames beside this file are what it saw.',
+    '',
+  ].join('\n'),
   ...steps.map((s) => `${s.note ? ' ·  ' : (s.ok ? ' ok ' : 'FAIL')} ${s.label}${s.detail ? ` — ${s.detail}` : ''}`),
   '',
-  `${steps.filter((s) => !s.note).length} checks · ${failed.length} failed`,
+  `${before + steps.filter((s) => !s.note).length} checks · ${beforeFailed + failed.length} failed`,
   '',
 ].join('\n'));
 process.stdout.write(`\n${steps.filter((s) => !s.note).length} checks · ${failed.length} failed\n`);

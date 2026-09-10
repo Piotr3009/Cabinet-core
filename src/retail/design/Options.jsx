@@ -303,7 +303,6 @@ function SizePanel({ unit }) {
  * Every call below is the one the deleted menu made, unchanged.
  */
 function ReHomed({ row, unitId }) {
-  const [said, setSaid] = useState('');
   const b = A.drawerBounds();
 
   // DRAWERS — from `DrawersMenu`: HOW MANY, TOP DRAWER INSERT, GLASS TOP and
@@ -498,7 +497,9 @@ function ReHomed({ row, unitId }) {
     );
   }
 
-  return said ? <Said testid="interior-said">{said}</Said> : null;
+  // A row with nothing re-homed onto it draws nothing — the counter above it
+  // is the whole of what that row has to say.
+  return null;
 }
 
 /* ─── 4 · INSIDE ──────────────────────────────────────────────────────────── */

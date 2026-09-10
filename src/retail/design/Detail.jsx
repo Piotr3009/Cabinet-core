@@ -87,13 +87,21 @@ export default function Detail(props) {
   const name = route?.modal || '';
   const args = route?.args || null;
   const key = args ? JSON.stringify(args) : '';
+  // …and the slot is WATCHED, not written once. A copy may close itself — the
+  // Escape key on `WatchLayoutModal`, the × on a window whose header the dock
+  // hides — and a panel standing open around an editor that has shut itself is
+  // the empty panel by yet another road. So the dock re-asserts its own name
+  // whenever the slot stops holding it, and leaves the ARGS alone: `DoorModal`
+  // re-points itself at a sibling split segment through this very slot, and
+  // that is its business, not the dock's.
+  const modal = useUiStore((s) => s.modal);
   useEffect(() => {
     const ui = useUiStore.getState();
-    if (name) { ui.openModal(name, args); return; }
+    if (name) { if (ui.modal !== name) ui.openModal(name, args); return; }
     if (DOCK_MODALS.includes(ui.modal)) ui.closeModal();
     // `args` is `key`'s own content; `key` is in the list so a re-point runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, key]);
+  }, [name, key, modal]);
 
   const open = Boolean(route);
 

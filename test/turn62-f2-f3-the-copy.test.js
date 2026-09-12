@@ -159,9 +159,28 @@ function importedNames(source) {
 const OWNERS_LIST = [
   'Side', 'Run', 'Start height', 'Flat', 'Width', 'Depth', 'Height', 'Sill',
   'From the left', 'On this wall', 'Put on the wall', 'Take it off the wall',
-  'Rectangle', 'Walls', 'Box', 'Boxes in the plan',
-  'Room height (mm)', 'Wall height (mm)', 'Drawn in', 'Back', 'Done',
+  'Walls', 'Box', 'Boxes in the plan',
+  'Room height (mm)', 'Wall height (mm)', 'Back', 'Done',
 ];
+
+/**
+ * ─── AMENDED BY TURN 69 · F1 (LICENSED REMOVALS) ──────────────────────────
+ *
+ * Two of T62's twenty-two left the window tonight, by CLAUDE.md's own
+ * LICENSED REMOVALS line and the owner's own words:
+ *
+ *   `Drawn in`   — IMPORT DXF PLAN…'s scale row, gone with the button:
+ *                  *"to nie przejdzie."*
+ *   `Rectangle`  — the preset, convicted by F1's own probe: built from the
+ *                  room's OWN bounds, it proposed the rectangle already on
+ *                  screen, so APPLY had nothing to apply.
+ *
+ * They are not deleted from this file. They move to the list BELOW and are
+ * asserted ABSENT, exactly as T67 did with `L-shape` — a removal asserted from
+ * both sides is a removal a later turn cannot undo by accident, and the count
+ * of things this test knows about does not fall.
+ */
+const T69_STRUCK_OUT = ['Rectangle', 'Drawn in', 'Import DXF plan'];
 
 test('F2/F3 · every label CLAUDE.md names by hand is in the retail copies', () => {
   const room = read('src/retail/design/room/RoomModal.jsx');
@@ -187,7 +206,21 @@ test('F2/F3 · every label CLAUDE.md names by hand is in the retail copies', () 
   assert.doesNotMatch(room, />L-shape</, "the L preset came back into the room's copy");
   assert.doesNotMatch(room, /data-room-preset="L"/, 'the L preset came back with its hook');
   assert.doesNotMatch(room, /data-insert-box/, 'the + Box button came back');
-  assert.match(room, /data-room-preset="rect"/, 'the Rectangle preset lost its hook');
+
+  // ─── T69 F1 · THE TWO STRUCK OUT TONIGHT, AND THE ROW THAT REPLACES THEM ──
+  for (const label of T69_STRUCK_OUT) {
+    assert.ok(!room.includes(`>${label}`), `${label} came back into the room's copy`);
+  }
+  assert.doesNotMatch(room, /data-room-preset="rect"/, 'the Rectangle preset came back with its hook');
+  assert.doesNotMatch(room, /data-import-dxf/, 'the DXF import came back with its hook');
+  // …and what stands there now: one row, three answers, the vocabulary's words.
+  for (const id of ['wall', 'two', 'three']) {
+    assert.ok(room.includes(`data-room-walls={id}`) || room.includes(`data-room-walls="${id}"`),
+      'the 1/2/3-wall row lost its hook');
+  }
+  for (const label of ['1 wall', '2 walls', '3 walls']) {
+    assert.ok(room.includes(label), `the wall-count row lost ${label}`);
+  }
 
   // The four that decide whether this is an EDITOR or a chip live on ONE wall,
   // so they are asked for in the file that must have them.
@@ -213,8 +246,15 @@ for (const [proPath, retailPath] of COPIES) {
     // are its own three buttons, and a bare input that shows none at all —
     // which is why `NumberField.jsx` is proved by its imports and its props
     // instead, in the test below.
+    //
+    // ─── T69 F1 · `RoomModal.jsx` FALLS FROM 20 TO 18 ────────────────────
+    // Two labels left the window by CLAUDE.md's LICENSED REMOVALS line —
+    // `Import DXF plan…` with its `Drawn in` scale row, and `Rectangle`. The
+    // floor is the file's REAL count, not a round number: it is here to catch
+    // an extractor that has gone blind, and a floor two above the truth would
+    // let the next two labels vanish unnoticed.
     const FLOOR = {
-      'RoomModal.jsx': 20, 'WallElevationModal.jsx': 20, 'Modal.jsx': 1, 'NumberField.jsx': 0,
+      'RoomModal.jsx': 18, 'WallElevationModal.jsx': 20, 'Modal.jsx': 1, 'NumberField.jsx': 0,
     };
     assert.ok(labelsOf(pro).length >= FLOOR[name],
       `only ${labelsOf(pro).length} labels found in ${proPath} — the extractor is blind`);

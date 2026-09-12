@@ -100,10 +100,21 @@ function normaliseHandleOffsets(raw) {
 //   'wall'  ONE wall, with a stub at each of its two ends
 //   'two'   walls 0 and 1 — adjacent, sharing corner 1 — with a stub at each of
 //           the pair's two FREE ends. The owner: *"zrob 2 sciany"*.
+//   'three' walls 0, 1 and 2 — a U, left + back + right — with a stub at each
+//           of the run's two free ends, both cut from the open side. T69 F1.
 //
 // The GEOMETRY of each is `engine/room.js wallsInScope`; this is only the list
 // of words, and `normaliseScope` is the one gate every stored project passes.
-export const ROOM_SCOPES = Object.freeze(['room', 'wall', 'two']);
+//
+// ─── TURN 69 (CLAUDE.md F1): WHY ONE WORD OF THIS FILE MOVES ───────────────
+//
+// Tonight's engine licence names `room.js` for scope `'three'`. A scope that
+// `room.js` can draw and `normaliseScope` downgrades on the way in is a scope
+// that does not exist: this gate is passed by EVERY stored project, so a
+// project saved on three walls would reopen on four. One word joins the list
+// and NOTHING else in this file changes — the geometry is `room.js`'s, as the
+// paragraph above has always said.
+export const ROOM_SCOPES = Object.freeze(['room', 'wall', 'two', 'three']);
 
 /** Is this a scope the app knows? Anything else means "whole room". */
 export function normaliseScope(scope) {
@@ -323,7 +334,7 @@ export const DEFAULT_DESIGN = {
   projectType: null,
   // T61 (CLAUDE.md F2): 'two' joins them — walls 0 and 1, adjacent, sharing
   // corner 1, with a stub at each free end. See `room.js wallsInScope`.
-  scope: 'room',                 // 'room' | 'wall' | 'two'
+  scope: 'room',                 // 'room' | 'wall' | 'two' | 'three'
   // ─── TURN 32 (CLAUDE.md F1.3): THE CEILING ANSWER ────────────────────────
   // When a wardrobe stands within the question gap of the ceiling, the wizard
   // asks: "To the ceiling, with no infill?" — `'flush'` is yes (scribe the

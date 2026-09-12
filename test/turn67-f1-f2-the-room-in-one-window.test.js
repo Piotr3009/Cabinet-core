@@ -98,22 +98,47 @@ test('F1 · a click on a wall in the plan swaps the elevation, in place', () => 
   }
 });
 
+/**
+ * ─── AMENDED BY TURN 69 · F1 · THE ROW ANSWERS A QUESTION NOW ──────────────
+ *
+ * T67's row was RECTANGLE · DRAW ROOM… · IMPORT DXF PLAN…. CLAUDE.md F1
+ * replaces the first and the third:
+ *
+ *   *"The plan header's preset row becomes: 1 WALL · 2 WALLS · 3 WALLS · DRAW
+ *   ROOM… — IMPORT DXF is DELETED (owner: "to nie przejdzie")."*
+ *
+ * and RECTANGLE went with F1's own probe, which convicted it of proposing the
+ * rectangle already on screen. DRAW ROOM… is the one tool that survives both
+ * turns, and it is still asserted here by the same hook it always had.
+ *
+ * Nothing is deleted from this test: the two struck out move from the
+ * "must be present" half to the "must be gone" half, which is the shape T67
+ * itself gave `L-shape` and `+ Box`.
+ */
 test('F1 · the three tools stand beside the plan, and the two struck out are gone', () => {
   for (const rel of BOTH) {
     const src = read(rel);
-    for (const hook of ['data-room-preset="rect"', 'data-room-draw="1"', 'data-import-dxf="1"']) {
-      assert.ok(src.includes(hook), `${rel} lost ${hook}`);
+    assert.ok(src.includes('data-room-draw="1"'), `${rel} lost data-room-draw="1"`);
+    // T69 F1 · the row that answers *"how many walls carry furniture"*.
+    assert.ok(/data-room-walls=/.test(src), `${rel} lost the 1/2/3-wall row`);
+    for (const label of ['1 wall', '2 walls', '3 walls']) {
+      assert.ok(src.includes(label), `${rel} lost the ${label} answer`);
     }
+    assert.ok(!src.includes('data-room-preset="rect"'), `${rel} still has Rectangle`);
+    assert.ok(!src.includes('data-import-dxf'), `${rel} still has Import DXF plan`);
     assert.ok(!src.includes('data-room-preset="L"'), `${rel} still has L-shape`);
     assert.ok(!/data-insert-box/.test(src), `${rel} still has + Box`);
     // The WALL HEIGHT field is beside the plan, as the mockup asks.
     assert.ok(src.includes('Wall height (mm)') && src.includes('Room height (mm)'),
       `${rel} lost the height field`);
   }
-  // …and the ENGINE kept both laws. Only the buttons went.
+  // …and the ENGINE kept every law. Only the buttons went — T69 included:
+  // `rectCorners` and `proposeRoomFromDxf` are untouched and still exported.
   const engine = read('src/engine/room.js');
   assert.match(engine, /export function lCorners/);
   assert.match(engine, /export const MIN_BOX_SIZE|MIN_BOX_SIZE =/);
+  assert.match(engine, /export function rectCorners/);
+  assert.match(read('src/engine/dxfImport.js'), /export function proposeRoomFromDxf/);
   // A saved plan still draws, drags and types its boxes.
   for (const rel of BOTH) {
     assert.ok(read(rel).includes('data-box-list="1"'), `${rel} stopped listing a saved plan's boxes`);

@@ -291,14 +291,55 @@ function truncateWall(wall, keep, length) {
  * both stubs would be cut out of it. Under four corners the whole room is
  * returned, which is what every unknown scope has always got.
  *
+ * ─── TURN 69 (CLAUDE.md F1): AND THE SAME LAW FOR **THREE** ─────────────────
+ *
+ * The owner's row is *"1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…"*, and of the
+ * third: *"3 WALLS = U (left + back + right) … stubs on the two free ends."*
+ *
+ * IT IS THE `'two'` LAW WITH ONE MORE REAL WALL, and not a third law. Walls 0,
+ * 1 and 2 are consecutive — they share corners 1 and 2 — so the run has exactly
+ * two FREE ends, wall 0's start (corner 0) and wall 2's end (corner 3). That is
+ * a U: three walls standing in a row with the fourth side open, which is what a
+ * fitted room looks like to a client sitting in it.
+ *
+ * WHERE THE TWO STUBS COME FROM IS THE ONE THING `'three'` CANNOT COPY. In a
+ * four-cornered room the ONLY wall left is `walls[3]` — it runs corner 3 → 0,
+ * which is to say from one free end to the other — so BOTH stubs are cut from
+ * it, one keeping each of its ends. `'two'` calls that the failure it refuses
+ * under three corners, and it is right there and right here for opposite
+ * reasons: for `'two'` the shared wall is a wall a client stands furniture
+ * against, and for `'three'` it is the open side of the U and nothing else.
+ *
+ * So the guard `'three'` needs is not a corner count but an ARITHMETIC one: two
+ * returns cut from the SAME wall must not CROSS each other, which is geometry
+ * with no reading at all. Each is therefore taken as
+ * `min(stub, thatWall.width / 2)`. On a 4 m open side the two 2 m returns stand
+ * exactly as they do in one-wall scope; on a 3 m one they are 1.5 m and meet,
+ * and the side closes — which is not a defect but the truth of the numbers, and
+ * the same truth `truncateWall`'s own `Math.min(…, wall.width)` has told
+ * `'wall'` and `'two'` since they were written.
+ *
  * @param {object} room
- * @param {'room'|'wall'|'two'} scope   the project's own (engine/design.js)
+ * @param {'room'|'wall'|'two'|'three'} scope   the project's own (engine/design.js)
  * @param {object|null} profile   T51 (F8): whose `room.sideWallMm` decides how
  *   long the two returns are when the room has not said. Optional, so every
  *   caller that has no profile to hand still gets the house's own answer.
  */
 export function wallsInScope(room, scope = 'room', profile = null) {
   const walls = roomWalls(room);
+  if (scope === 'three') {
+    if (walls.length < 4) return walls;
+    const open = walls[walls.length - 1];
+    const stub = Math.min(wallStub(room, profile), open.width / 2);
+    if (stub <= 0) return [walls[0], walls[1], walls[2]];
+    return [
+      walls[0],
+      walls[1],
+      walls[2],
+      truncateWall(open, 'end', stub),
+      truncateWall(open, 'start', stub),
+    ];
+  }
   if (scope === 'two') {
     if (walls.length < 4) return walls;
     const stub = wallStub(room, profile);

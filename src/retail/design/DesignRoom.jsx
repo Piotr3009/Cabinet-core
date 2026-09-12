@@ -6,6 +6,7 @@ import { useProjectStore } from '../../stores/projectStore.js';
 // the toolbar: clearing the stack once a project has finished being built.
 import { useHistoryStore } from '../../stores/historyStore.js';
 import { useUiStore } from '../../stores/uiStore.js';
+import { applyInsideDoorLaw, forgetInsideDoors } from './insideDoors.js';
 import Categories, { CATEGORIES, stepIndex } from './Categories.jsx';
 import Options from './Options.jsx';
 import Detail from './Detail.jsx';
@@ -291,14 +292,36 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
     panelIds: (unitResult(u.id)?.panels || []).filter((p) => p.part === 'FRONT').map((p) => p.id),
   })).filter((e) => e.panelIds.length), [units, unitResult]);
 
+  // ─── T69 F5 · WHAT IS A DOOR, AND WHAT IS A DRAWER ──────────────────────
+  // `doorEntries` above is every moving FACE, which is what the open-all
+  // button has always meant and must go on meaning. INSIDE means something
+  // narrower — *"opens ALL doors — drawers stay shut"* — so it is given the
+  // ENGINE's own panel records and `insideDoors.js` tells the two apart by
+  // what the piece IS (`meta.drawer`, `meta.appliance`), never by a name.
+  const facePanels = useMemo(() => units.map((u) => ({
+    unitId: u.id,
+    panels: (unitResult(u.id)?.panels || []).filter((p) => p.part === 'FRONT'),
+  })), [units, unitResult]);
+
   const lightsOn = A.lightingOn(project);
 
   const pickPreset = useCallback((id) => {
     setPreset(id);
-    // INSIDE means doors open AND the camera in (F3.3).
-    if (id === 'inside') useUiStore.getState().toggleAllFronts(doorEntries);
+    // ─── T69 F5 · INSIDE OPENS THE DOORS, AND LEAVING PUTS THEM BACK ──────
+    //
+    // *"Entering the INSIDE step (and the INSIDE view button) opens ALL doors
+    // — drawers stay shut. Leaving restores the exact door states from before
+    // (remember, don't reset — the T68 F7 pattern)."*
+    //
+    // `toggleAllFronts` was the wrong act for this in two ways, and both were
+    // visible from the stage: it opened DRAWERS too, which stand proud of the
+    // carcass and hide the very shelves the step is there to arrange; and it
+    // TOGGLED, so the second press on INSIDE shut the wardrobe the client was
+    // looking into. The law is `insideDoors.js` now, the same shape T68 F7
+    // gave the light and the dimensions.
+    applyInsideDoorLaw(id === 'inside', facePanels);
     applyPreset(id, handle.current);
-  }, [doorEntries]);
+  }, [facePanels]);
 
   // ─── T60 F3 · THE SELECTION LAW ──────────────────────────────────────────
   //
@@ -363,6 +386,22 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
     () => (target ? A.resolveTarget(target) : null),
     [target, units, project],
   );
+
+  // ─── T69 F5 · THE STEP IS THE OTHER DOOR TO THE SAME LAW ─────────────────
+  //
+  // *"Entering the INSIDE step (and the INSIDE view button) opens ALL doors."*
+  // Two doors, ONE act: the step watches `active` and hands the same call the
+  // view button makes. It is an EFFECT rather than a line in `pickStep`
+  // because the step is reached three ways — the rail, NEXT, and the inner
+  // plus on the stage (`onAddInside` sets it directly) — and a law written
+  // into one of them would be a law with two holes in it.
+  useEffect(() => {
+    applyInsideDoorLaw(active === 'inside', facePanels);
+  }, [active, facePanels]);
+
+  // …and when the page goes, so does what the law is holding: a client who
+  // closes the tab inside a wardrobe has nothing owed back to them.
+  useEffect(() => () => { forgetInsideDoors(); }, []);
 
   // ─── THE SUMMARY THE REVIEW STEP READS ───────────────────────────────────
   const choices = useMemo(() => describeDesign({ project, units }), [project, units]);

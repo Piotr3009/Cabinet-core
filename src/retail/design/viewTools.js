@@ -29,12 +29,43 @@
 // the owner turns them on. This is the doubt CLAUDE.md raised once, before the
 // work, and then executed.
 //
-// Undo and redo are also PRO's and also absent: they act on the PROJECT, not
-// on the view, and the brief's enumeration does not name them. The parity map
-// carries them as `later`.
+// ─── T68 F2 · …AND THE TWO THAT WERE `later` ARE HERE ──────────────────────
+//
+// T60 wrote, of undo and redo: *"they act on the PROJECT, not on the view, and
+// the brief's enumeration does not name them. The parity map carries them as
+// `later`."* The owner has now named them, and named them loudly — **MEGA
+// WAŻNE** — so `later` is tonight.
+//
+// They keep PRO's place on the bar and PRO's reason for it, which
+// `CanvasToolbar.jsx` states in as many words: *"First on the bar, where a
+// hand reaching for 'no, not that' goes."* PRO's glyphs, PRO's store, PRO's
+// two functions. There is no retail history and there is no retail stack: the
+// tiles below call `useHistoryStore`'s own `undo` and `redo`, which are the
+// ones a joiner's Ctrl+Z has called since T12.
 
 /** Which store field says a tool is ON, and which action flips it. */
 export const VIEW_TOOLS = [
+  // ─── T68 F2 · UNDO / REDO, FIRST, AS THEY ARE IN PRO ────────────────────
+  // `store: 'history'` is what tells the parity test WHICH shared store to
+  // hold this entry up against. Every other entry on this bar flips a flag on
+  // `uiStore`; these two call a function on `historyStore`, and both stores
+  // are PRO's own.
+  {
+    id: 'undo', group: 'history', own: false, kind: 'history', store: 'history',
+    action: 'undo',
+    label: '↶', title: 'Undo (Ctrl+Z)', titleOff: 'Nothing to undo',
+  },
+  {
+    id: 'redo', group: 'history', own: false, kind: 'history', store: 'history',
+    action: 'redo',
+    // CLAUDE.md F2 names the shortcut — *"Ctrl+Z / Ctrl+Shift+Z (and Cmd on
+    // mac)"* — and PRO's own tooltip says `Redo (Ctrl+Y)`. Retail answers BOTH
+    // keys and shows the one the owner asked for. It is the ONE string on this
+    // bar that is not PRO's character for character, and the parity test names
+    // it as such rather than quietly widening its rule.
+    label: '↷', title: 'Redo (Ctrl+Shift+Z)', titleOff: 'Nothing to redo',
+  },
+
   // ─── THE CAMERA (PBI's own — t59 F3.3, kept) ────────────────────────────
   //
   // Three places to stand, from `src/3d/cameraPresets.js`. PRO has no such

@@ -162,6 +162,32 @@ import('./RetailApp.jsx').then(async (module) => {
   const ui = useUiStore.getState();
   ui.setAudience('retail');
 
+  // ─── T68 F2 · UNDO AND REDO — THE SAME HISTORY PRO KEEPS ─────────────────
+  //
+  // *"MEGA WAŻNE"*, and the whole of why it was missing is this one line.
+  // `stores/historyStore.js` is a SUBSCRIBER, not a commit call: it watches
+  // the project store and snapshots every mutation by construction. PRO's
+  // `main.jsx` starts it at module scope; this entry never did, so retail had
+  // no stack at all and T60's parity map carried the two tiles as `later`.
+  //
+  // Started HERE, inside the dynamic block, for the same reason every other
+  // store call in this file is: a static import would hoist above
+  // `setPersistence('none')`. NO SECOND HISTORY is created — this is PRO's
+  // store, PRO's depth and coalescing out of PRO's profile, PRO's `undo`
+  // and `redo`. The bar and the keyboard both call those two functions.
+  const { useHistoryStore, watchProjectHistory } = await import('../stores/historyStore.js');
+  watchProjectHistory();
+
+  // ─── T68 F7 · LIGHTS ON, NUMBERS OFF ─────────────────────────────────────
+  //
+  // *"jak włączasz światła, to niech znikają wymiary; wyłączysz lights, to
+  // wracają."* A subscriber for the same reason history is one: there is more
+  // than one door to the light — the copied `LightingPanel`'s own ON/OFF is
+  // PRO's call in a file that may not be edited — so the law watches the FLAG
+  // and catches every door by construction. PRO never starts it.
+  const { watchLightsAndDimensions } = await import('./design/dimmer.js');
+  watchLightsAndDimensions();
+
   // T63 F1 · the hardware catalogues, as PRO's App.jsx loads them (see the
   // note above `loadDecors()`): a hinge on screen is the downloaded GLB or
   // nothing, and the GLB is named by these.
@@ -203,6 +229,10 @@ import('./RetailApp.jsx').then(async (module) => {
     const cc = (window.__cc = window.__cc || {});
     cc.project = useProjectStore;
     cc.ui = useUiStore;
+    // T68 F2 · and the HISTORY, on the same terms: the walk has to be able to
+    // say how deep the stack is when it presses ↺, and the first run of this
+    // walk found the room mounting with a step already on it.
+    cc.history = useHistoryStore;
     // ─── T66 F1 · …AND THE RESOLVED PROFILE, WHICH IS THE RIG ───────────
     // `Scene.jsx` reads `profile.appearance.studio`, so the walk has to be
     // able to say what number the PAGE was running at rather than what the

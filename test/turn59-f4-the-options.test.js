@@ -227,7 +227,21 @@ test('F4.3 · the three live styles are the engine\'s, and the other two say why
   assert.equal(S().project.design.fronts.shakerFrame, 40);
 });
 
-test('F4.3 · a collection is a PRESET: front decor, carcass decor, handle', () => {
+/**
+ * ─── AMENDED BY T68 F1 · THE CARCASS IS NOT THE COLLECTION'S TO NAME ───────
+ *
+ * This test asserted that a collection writes ITS OWN carcass decor. T68's
+ * probe (`verify/t68/f1-probe.md` §2) measured what that meant for the owner:
+ * with any of the four in the URL — and his own link carried
+ * `?collection=royal-burgundy` — the carcass was never the oak he had asked
+ * for *"na zawsze"*. So the law moved, and the assertion moves with it rather
+ * than being deleted: a collection writes the carcass it names ONLY where it
+ * declares `namesCarcass`, and the workshop's own default otherwise.
+ *
+ * The FRONT decor and the HANDLE are unchanged and still asserted, and the
+ * handle is now asserted THROUGH the opening as well — one write path, F1.
+ */
+test('F4.3 · a collection is a PRESET: front decor, the carcass law, handle', () => {
   for (const collection of COLLECTIONS) {
     fresh();
     const applied = A.applyCollection(collection.id);
@@ -236,12 +250,30 @@ test('F4.3 · a collection is a PRESET: front decor, carcass decor, handle', () 
     const design = S().project.design;
     assert.equal(design.fronts.types[0].finish_id, finishIdForDecor({ id: collection.frontDecor }),
       `${collection.id}: the front decor did not land`);
-    assert.equal(design.carcass.types[0].finish_id, finishIdForDecor({ id: collection.carcassDecor }),
-      `${collection.id}: the carcass decor did not land`);
+    assert.equal(
+      design.carcass.types[0].finish_id,
+      finishIdForDecor({ id: collection.namesCarcass ? collection.carcassDecor : A.carcassDefaultDecor() }),
+      `${collection.id}: the carcass did not land on ${collection.namesCarcass ? 'its own decor' : 'the workshop default'}`,
+    );
     assert.equal(design.fronts.handle?.type, collection.handle,
       `${collection.id}: the handle default did not land`);
+    // T68 F1 · and the OPENING agrees with it, because they are one write.
+    assert.equal(A.frontOpeningOf(S().project), A.openingForHandle(collection.handle),
+      `${collection.id}: the handle landed without its opening`);
   }
   assert.equal(collectionById('nothing-like-it'), null);
+});
+
+// T68 F1 · and the house four name no carcass at all, which is what makes
+// H3325 reachable from a collection link. A fifth that DOES is still lawful —
+// that is what the flag is for — so this asserts the four, not the field.
+test('F4.3 · none of the four house collections speaks for the carcass', () => {
+  for (const collection of COLLECTIONS) {
+    assert.ok(!collection.namesCarcass,
+      `${collection.id} claims the carcass — H3325 is the default "na zawsze"`);
+    assert.ok(collection.carcassDecor,
+      `${collection.id} lost its carcass suggestion — T68 removed nothing`);
+  }
 });
 
 test('F4.3 · every swatch is a decor the app ALREADY has, with EGGER beside it', () => {
@@ -404,6 +436,20 @@ test('F4 · the adapter is the ONLY place retail speaks engine', () => {
     // the stores directly, as this does. The one `keydown` listener the
     // retail stage has.
     'design/keys.js',
+    // ─── T68 F7 · THE LIGHTS / DIMENSIONS LAW ──────────────────────────────
+    //
+    // *"jak włączasz światła, to niech znikają wymiary."* There is more than
+    // one door to the light — the COPIED `LightingPanel`'s own ON / OFF is
+    // PRO's `setLighting` call, in a file that may not be edited — so a line
+    // in a button would have been a law with a hole in it. This WATCHES the
+    // flag, exactly as `stores/historyStore.js` watches the project, and
+    // catches every door by construction.
+    //
+    // It is on this list for `design/keys.js`'s own reason, stated there: a
+    // SUBSCRIBER is not a screen. It renders nothing, it reads the two shared
+    // stores and nothing else (asserted in
+    // `test/turn68-f7-lights-on-numbers-off.test.js`), and PRO never starts it.
+    'design/dimmer.js',
   ]);
 
   // ─── AMENDED BY T62 F2/F3 ────────────────────────────────────────────────

@@ -834,6 +834,26 @@ export const DEFAULT_CABINET_PROFILE = {
     legHeight: 100,
     legsPerUnit: 4,
     minHeight: 1800,
+    // ─── TURN 68 (CLAUDE.md F5): THE PLINTH LAW ──────────────────────────
+    //
+    // The owner, on the NONE chip retail used to offer: *"none nie działa"* —
+    // and he is right twice over. A wardrobe's plinth is ALWAYS there; only
+    // its height is ever the question, and a chip offering to delete it was
+    // offering something the furniture does not do. So NONE is gone from the
+    // retail control and the height becomes a typed field, bounded here.
+    //
+    // `legHeight: 100` above is unchanged and stays the DEFAULT a wardrobe is
+    // born at. These two are the FLOOR and the CEILING that field refuses
+    // outside of — a workshop that builds on 60 mm legs changes them here and
+    // the field follows, which is the whole reason they are in the profile and
+    // not in a retail constant.
+    //
+    // A KEY AND A DEFAULT, in the profile's own words: nothing on the cut path
+    // reads either number. `defaultParamsFor('WARDROBE')` carries `leg_height`
+    // off `legHeight`, not off these, so no golden can move — and
+    // `scripts/t68-classify.mjs` asks the tree rather than trusting this
+    // sentence.
+    plinth: { minMm: 50, maxMm: 150 },
     // CHAT FIX 15.08.2026, owner's standard: 568 deep — an 18 back leaves a
     // 550 CLEAR interior, which is the number he actually wants ("chcę mieć
     // minimum 550 w środku"). The golden fixture's own CASES keep their
@@ -1035,6 +1055,20 @@ export const DEFAULT_CABINET_PROFILE = {
     legHeight: 100,
     legsPerUnit: 4,
     defaults: { width: 600, height: 770, depth: 558 },
+    // ─── TURN 68 (CLAUDE.md F5): THE KITCHEN'S OWN PLINTH KEY ────────────
+    //
+    // CLAUDE.md F5, verbatim: *"Bounds live in `profile.js` as the plinth law,
+    // with the kitchen's own key beside it (**80–150**) for the day the
+    // kitchen ships — written now, read by nobody yet, one comment saying
+    // so."*
+    //
+    // THIS IS THAT COMMENT. Nothing reads `baseUnit.plinth` today — not the
+    // engine, not retail, not a test except the one that asserts it is unread.
+    // It is here so that the day the kitchen ships, its floor is a number the
+    // workshop has already agreed rather than a guess made in a hurry: a
+    // kitchen plinth is 80 at the least, because the toe kick has to clear a
+    // foot and the legs have to clear the clip.
+    plinth: { minMm: 80, maxMm: 150 },
   },
 
   // ─── Project heights (turn 5, BACKLOG #29) ───
@@ -4884,6 +4918,10 @@ export function migrateCabinetProfile(profile) {
     wardrobe: {
       ...D.wardrobe, ...profile.wardrobe,
       defaults: { ...D.wardrobe.defaults, ...profile.wardrobe?.defaults },
+      // T68 F5 · the plinth law, key by key — a workshop that has moved the
+      // floor keeps its own and gets the ceiling from the code, exactly as
+      // every other nested block on this profile is merged.
+      plinth: { ...D.wardrobe.plinth, ...profile.wardrobe?.plinth },
       drawers: { ...D.wardrobe.drawers, ...profile.wardrobe?.drawers },
       drawerPanel: { ...D.wardrobe.drawerPanel, ...profile.wardrobe?.drawerPanel },
       runners: { ...D.wardrobe.runners, ...profile.wardrobe?.runners },
@@ -4897,7 +4935,14 @@ export function migrateCabinetProfile(profile) {
       ...profile.wardrobeAccessories,
       kits: JSON.parse(JSON.stringify(D.wardrobeAccessories.kits)),
     },
-    baseUnit: { ...D.baseUnit, ...profile.baseUnit, defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults } },
+    baseUnit: {
+      ...D.baseUnit,
+      ...profile.baseUnit,
+      defaults: { ...D.baseUnit.defaults, ...profile.baseUnit?.defaults },
+      // T68 F5 · the kitchen's own plinth key, merged the same way — and read
+      // by nobody yet. See the block where it is declared.
+      plinth: { ...D.baseUnit.plinth, ...profile.baseUnit?.plinth },
+    },
     projectHeights: { ...D.projectHeights, ...profile.projectHeights },
     projectTypes: { ...D.projectTypes, ...profile.projectTypes },
     projectSettings: {

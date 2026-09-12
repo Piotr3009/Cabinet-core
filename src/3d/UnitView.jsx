@@ -967,6 +967,9 @@ function WatchShelfGlass({ pane, shelf, xray = false }) {
 export default function UnitView({
   unit, result, wall, walls = null, roomCentre, selected, snapStep, onSelect, onMove, onMoveToWall,
   onMoveShelf, onShelfDragState,
+  // T68 F4 · a divider is dragged along the wall, through the store's own
+  // `setPartitionX` — the very setter the docked field commits to.
+  onMovePartition,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   // TURN 40 (CLAUDE.md F4c): { panelId, atMm } — fly to THAT piece.
   focusPanel = null, onFocusPanelDone = null,
@@ -1789,6 +1792,54 @@ export default function UnitView({
     window.addEventListener('pointercancel', up);
   }, [onMoveElementDepth, camera, gl, raycaster, origin, originY, inward, D, orbitRef]);
 
+  /**
+   * ─── T68 F4 · AND THE DIVIDER TRAVELS SIDEWAYS ────────────────────────────
+   *
+   * The owner: *"divider nie mogę przesunąć."*
+   *
+   * The probe (`verify/t68/f4-probe.md`) found the docked field's road broken
+   * at the selection and named the fix; this is F4's OTHER door — *"dragging
+   * the divider on the stage moves it through the same setter … One law, two
+   * doors."*
+   *
+   * It is `startDepthDrag` on the other horizontal axis, and deliberately so:
+   * the plane, the grab-point arithmetic, the window listeners and the orbit
+   * lock are that gesture's, already learnt by every hand that has pulled a
+   * shelf forward. What differs is the axis — `along` the wall instead of
+   * `inward` — and the number written, which is the partition's own `x_mm`
+   * from the carcass's left. THE CLAMP AND THE GRID ARE THE STORE'S, exactly
+   * as they are for a shelf: `setPartitionX` refuses what the neighbours
+   * refuse and this view never second-guesses it.
+   */
+  const startPartitionDrag = useCallback((e, itemId, currentXMm) => {
+    if (!itemId || !onMovePartition) return;
+    e.stopPropagation();
+    onSelect();
+    const hit = pointerToPlane(e.clientX, e.clientY);
+    if (!hit) return;
+    // How far along the wall a world point is, measured from THIS unit's
+    // origin — the unit's own millimetres, which is what `x_mm` is in.
+    const alongUnitMm = (point) => point.clone().sub(origin).dot(along) / MM;
+    // Keep the grab point: the board must not jump to the cursor on press.
+    const grabDelta = currentXMm - alongUnitMm(hit);
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+
+    const move = (ev) => {
+      const pt = pointerToPlane(ev.clientX, ev.clientY);
+      if (!pt) return;
+      onMovePartition(itemId, alongUnitMm(pt) + grabDelta);
+    };
+    const up = () => {
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onMovePartition, onSelect, pointerToPlane, origin, along, orbitRef]);
+
   // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
   // clamping and snapping live in the store so the rules stay in one place.
   const startShelfDrag = useCallback((e, itemId, currentPosMm) => {
@@ -2158,6 +2209,14 @@ export default function UnitView({
                   return;
                 }
                 if (canDrag) { startShelfDrag(e, shelfId, p.box.y); return; }
+                // T68 F4 · a VERTICAL partition travels on the other axis, and
+                // the gesture is the same one: grab the board and pull. It
+                // goes last so nothing above it changes meaning — a shelf is
+                // still dragged exactly as it was.
+                if (p.part === 'VPART' && p.meta?.itemId && onMovePartition && !p.meta?.locked) {
+                  startPartitionDrag(e, p.meta.itemId, p.box?.x ?? 0);
+                  return;
+                }
               }
               // Everything else still DRAGS THE UNIT. Selecting a side panel is
               // how you look at that piece's properties; grabbing a side panel
@@ -2300,7 +2359,22 @@ export default function UnitView({
           line. `contour` is a presentation mode and a measurement is not part
           of the picture it presents, which is the rule every helper in this
           file already follows. */}
-      {hoverPartition && !contour && (
+      {/* ─── T68 F7 · AND THE HOVER SET IS A DIMENSION TOO ────────────────
+          The owner, of the lit scene: *"jak włączasz światła, to niech znikają
+          wymiary"* — and the arrows that appear over a hovered divider are
+          figures like any other. They were gated by the CHANNEL alone
+          (`3d/chrome.js chromeOn('hover-dims')`), which that file states in as
+          many words is a BOOT-TIME CONSTANT: *"What VARIES at run time is the
+          store flag the overlay was always gated by."* This set had no such
+          flag, so nothing could put it out.
+
+          `showLabels` is that flag, already on this component and already
+          `showDimensions && !contourView`. It makes BOTH applications agree
+          with the button's own words — PRO's tooltip has promised *"Show
+          dimensions and distance arrows"* since T60, and this set is a
+          distance-arrow set (`3d/DimensionChain.jsx` names it as one of its
+          three callers). Named in the PR body as a shared-core change. */}
+      {hoverPartition && !contour && showLabels && (
         <HoverDimensions
           result={result}
           panelId={hoverPartition}

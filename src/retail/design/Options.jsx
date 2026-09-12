@@ -7,10 +7,8 @@ import {
   Button, ChipRow, Field, MoreOptions, NumberField, Said,
 } from './controls.jsx';
 import { REASONS } from './reasons.js';
-import { COLLECTIONS } from './collections.js';
 import * as A from './adapter.js';
 import MaterialSlot from './material/MaterialSlot.jsx';
-import FrontStyleGallery from './material/FrontStyleGallery.jsx';
 import WizardHardware from './material/WizardHardware.jsx';
 import AddItems from './detail/AddItems.jsx';
 import { CATEGORIES, stepIndex } from './Categories.jsx';
@@ -43,6 +41,24 @@ function Panel({ title, children, testid }) {
       <GoldLine />
       {children}
     </div>
+  );
+}
+
+/**
+ * ─── T68 F5 · A HEADED GROUP INSIDE A STEP ─────────────────────────────────
+ *
+ * The owner approved EXTRAS as THREE headed groups, so a step gains one level
+ * of structure — and exactly one. It is the `pbi-advanced` heading T66 F3
+ * already put in this column, given a name and made repeatable, so the step
+ * grows no new visual vocabulary: a hairline above, a small uppercase head,
+ * and the rows under it.
+ */
+function Group({ title, children, testid }) {
+  return (
+    <section className="pbi-group" data-testid={testid}>
+      <h3 className="pbi-ui pbi-ui-light pbi-quiet pbi-group-head">{title}</h3>
+      {children}
+    </section>
   );
 }
 
@@ -629,46 +645,77 @@ function FrontsPanel({ design, project }) {
         </div>
       </Field>
 
-      <MoreOptions testid="fronts-more">
-        {/* ─── T66 F4 · TOMBSTONE: THE NARROW / STANDARD CHIPS STOOD HERE ──
-            Two chips offering two of the profile's numbers, folded under MORE
-            OPTIONS. F4 asks for the frame width TYPED and directly under the
-            list, which is both a wider choice and a shorter road to it — so
-            the chips are superseded rather than moved. The engine's bounds are
-            the same bounds; the field simply offers all of them. */}
-        <Field label="COLLECTION" block>
-          <div className="pbi-chip-row" data-testid="fronts-collection">
-            {COLLECTIONS.map((c) => (
-              <Chip key={c.id} onClick={() => A.applyCollection(c.id)}>
-                <span className="pbi-stack">
-                  <span className="pbi-tone-tile" style={{ background: c.tone }} />
-                  <span>{c.name}</span>
-                </span>
-              </Chip>
-            ))}
-          </div>
-        </Field>
+      {/* ─── T68 F8 · TOMBSTONES: `MORE OPTIONS` AND THE TWO BLOCKS IN IT ──
+          The owner: *"z menu front usuń COLLECTION proszę, i MORE OPTIONS —
+          po co mi dwa razy ta sama opcja."*
 
-        {/* T63 F4 · PRO's door-style GALLERY (T15 F4), COPIED. */}
-        <Field label="STYLE GALLERY" block>
-          <div data-testid="fronts-style-gallery">
-            <FrontStyleGallery value={style} onPick={(id) => A.setFrontStyle(id)} />
-          </div>
-        </Field>
-      </MoreOptions>
+          THE COLLECTION CHIPS stood here and are a LICENSED REMOVAL. A
+          collection is a PRESET a client arrives on — the landing page's four
+          cards and the `?collection=` link, which is where they entered and
+          where they stay. Offering them again HALFWAY THROUGH the step was the
+          second road F1's probe convicted: whichever of this block and the
+          STYLE list was pressed last won the opening, and the J came and went
+          with the press order. `adapter.applyCollection` is untouched and is
+          still what the landing page presses.
+
+          THE STYLE GALLERY stood here and is a LICENSED REMOVAL. The STYLE
+          LIST at the top of this step (T66 F4) is the one road. Nothing
+          RE-HOMES: the gallery's four extra ids — `HJ`, `GF`, `AH`, `GL` —
+          are not capabilities the list dropped, they are `FRONT_STYLE_OPTIONS`
+          whole, and T66 F4 narrowed the client's choice to four on purpose
+          (*"SLAB · SHAKER · GROOVED · ARCHED"*). `HJ` in particular is the
+          very lie F1's probe measured: it reads as J-pull and machines
+          NOTHING — no `meta.jpull`, no shaker recess — because T57 moved the J
+          onto the HANDLE axis, where the OPENING list above now offers it
+          honestly. The copied component `material/FrontStyleGallery.jsx` is
+          NOT deleted: 1:1 = COPY, and a copy is not cut because its caller
+          count fell.
+
+          AND THE FOLD ITSELF GOES WITH THEM, on this step's own standing law:
+          *"A fold with nothing behind it is a control that does nothing."*
+          MORE OPTIONS stays on every other step, where there is something
+          behind it. */}
     </Panel>
   );
 }
 
 /* ─── 6 · EXTRAS ──────────────────────────────────────────────────────────── */
-//
-// Default: lighting off, the standard plinth, no top box. MORE OPTIONS:
-// PRO's Lighting panel (copied), PRO's WizardHardware (copied — hinge
-// finish, internal metal, soft-close, push-to-open) and ADD TOP BOX.
+/**
+ * ─── T68 F5 · THREE HEADED GROUPS, AND THE PLINTH LAW ──────────────────────
+ *
+ * The owner approved the layout, group by group:
+ *
+ *   DOORS & FRONTS      ADD DOORS · the door count · SPLIT DOOR (top segment)
+ *   THE CARCASS WEARS   PLINTH · CORNICE · TOP INFILL · END PANELS L/R/BOTH ·
+ *                       SCRIBE FILLERS AT THE WALL · SERVICE CUT-OUT (greyed)
+ *   ADDITIONS           ADD TOP BOX · ADD ANOTHER WARDROBE
+ *
+ * WHAT CHANGED, and what did not. Every control below writes through the SAME
+ * adapter call it wrote through last night; not one store path is new and not
+ * one bound is a literal. What moved is where a client finds them, and the
+ * three things CLAUDE.md names:
+ *
+ *   THE PLINTH IS A TYPED FIELD. The owner, of the NONE chip: *"none nie
+ *   działa"* — and he is right: a wardrobe's plinth is always there, and only
+ *   its height was ever the question. NONE is a LICENSED REMOVAL and the two
+ *   remaining chips go with it, because a chip row of two numbers is a worse
+ *   answer than a field between them. 50–150 mm, read off
+ *   `profile.wardrobe.plinth` (T68's one engine licence), refused out of range
+ *   under the field in the engine's own sentence.
+ *
+ *   LIGHTS LEAVES. *"LIGHTS leaves EXTRAS — its home is the view-bar button
+ *   and the docked panel. One entry."* Both were already there (T63 F2); what
+ *   goes is this step's third door to the same panel.
+ *
+ *   END PANELS AND SCRIBE FILLERS ARRIVE, from the right-click menu, calling
+ *   the menu's own store paths — and the menu's copies of those rows die (F9)
+ *   rather than standing beside them.
+ *
+ * SERVICE CUT-OUT is the owner's new function — a cut-out for a pipe or a box
+ * — and it is GREYED WITH A REASON, which is the lawful form of *"martwa
+ * narazie"*. No geometry tonight.
+ */
 function ExtrasPanel({ unit, project }) {
-  const plinth = Math.round(unit?.params?.leg_height ?? 100);
-  const lights = A.lightingOn(project);
-  const topBoxReason = unit ? A.topBoxRefusal(unit.id) : '';
   const [said, setSaid] = useState('');
   // T65 F8: the cornice, what it leaves open, and the panels already standing.
   const cornice = unit ? A.corniceOf(unit.id) : 0;
@@ -678,119 +725,53 @@ function ExtrasPanel({ unit, project }) {
   const split = unit ? A.splitDoor(unit.id) : null;
   // T66 F3 · the boxes standing on this wardrobe — each a unit of its own.
   const boxes = unit ? A.topBoxesOn(unit.id) : [];
+  const topBoxReason = unit ? A.topBoxRefusal(unit.id) : '';
 
-  // T65 F1: the plinth, the top box and the lighting all belong to a wardrobe.
+  // T65 F1: the plinth, the top box and the panels all belong to a wardrobe.
   if (!unit) {
-    return <NeedsAWardrobe title="EXTRAS" testid="panel-extras" what="The plinth, the lighting and the top box all belong to a wardrobe." />;
+    return <NeedsAWardrobe title="EXTRAS" testid="panel-extras" what="The plinth, the panels and the top box all belong to a wardrobe." />;
   }
+
+  const plinth = Math.round(unit?.params?.leg_height ?? 100);
+  // `b.` is this column's name for "the engine's own bounds" — `designBounds`
+  // in FRONTS, `unitBounds` in SIZE, and the plinth law here. The prefix is
+  // what `test/turn61-f5-f6-fields-and-openings.test.js` reads to prove no
+  // typed field in this file carries a literal bound.
+  const b = A.plinthBounds();
+  const bothPanels = ['L', 'R'].every((s) => panelSides.some((p) => p.side === s));
 
   return (
     <Panel title="EXTRAS" testid="panel-extras">
-      <Field label="LIGHTING">
-        <ChipRow
-          testid="details-lighting"
-          value={lights ? 'on' : 'off'}
-          options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON' }]}
-          onPick={(id) => A.setLighting(id === 'on')}
-        />
-      </Field>
-
-      <Field label="PLINTH">
-        <ChipRow
-          testid="details-plinth"
-          value={String(plinth)}
-          options={A.plinthOptions()}
-          onPick={(id) => A.setPlinth(unit.id, Number(id))}
-        />
-      </Field>
-
-      {/* ─── T65 F8 · CORNICE ──────────────────────────────────────────────
-          The owner: *"nie widzę przycisków: top infill, cornice, panels."*
-          Here they are, as CHOICES on the left — the same acts PRO's copied
-          ContextMenu offers as edits on the right.
-
-          It is already on: a client's wardrobe arrives wearing the profile's
-          40, grown to the largest moulding that fits when the ceiling is 100
-          mm away or less (decision 1). These chips are the visual choice
-          beside it, and NONE is the way back out. */}
-      <Field label="CORNICE" note={cornice && gap > 0 ? REASONS.corniceLeavesAGap({ gap }) : ''}>
-        <ChipRow
-          testid="details-cornice"
-          value={String(cornice)}
-          options={[
-            { id: '0', label: 'NONE' },
-            ...A.corniceHeights().map((h) => ({ id: String(h), label: `${h}` })),
-          ]}
-          onPick={(id) => setSaid(A.setCorniceHeight(unit.id, Number(id)).ok ? '' : REASONS.corniceRefused)}
-        />
-      </Field>
-
-      {/* ─── T65 F9 · ADD DOORS ────────────────────────────────────────────
-          The owner: *"drzwi to osobna decyzja, w extrasach lub w setup"* ·
-          *"ADD DOORS — i tu i tu chyba"*. Here on the left and on the selected
-          wardrobe on the right, and BOTH press `adapter.addDoors` — one law,
-          two doors to it. Doors do not follow from bays (F7). */}
-      <Field label="DOORS">
-        <div className="pbi-duty-actions">
-          <Button
-            kind="secondary"
-            size="small"
-            data-testid="extras-add-doors"
-            title={A.doorsOn(unit.id) ? 'Take the doors off this wardrobe' : 'Hang doors on this wardrobe'}
-            onClick={() => setSaid((A.doorsOn(unit.id) ? A.removeDoors(unit.id) : A.addDoors(unit.id)).said)}
-          >
-            {A.doorsOn(unit.id) ? 'REMOVE DOORS' : 'ADD DOORS'}
-          </Button>
-        </div>
-      </Field>
-
-      {/* ─── T66 F7 · SPLIT DOOR (TOP SEGMENT) ────────────────────────────
-          The owner: *"split door top segment też powinien być w extras."*
-
-          The capability is T36's and it has been in the copied `DoorModal`
-          since T63. This is the SECOND DOOR to the SAME store path — one law,
-          two doors to it, exactly like ADD DOORS above (T65 F9). It acts on
-          the SELECTED leaf where the client has one in hand and on the first
-          leaf otherwise, and where it cannot act it says so instead: no doors
-          yet, or a leaf too short for two halves of the kit's own minimum. */}
-      <Field label="SPLIT DOOR (TOP SEGMENT)">
-        {split?.said ? (
-          <Said testid="extras-split-said">{split.said}</Said>
-        ) : (
-          <NumberField
-            outOfRange={REASONS.outOfRange}
-            testid="extras-split-top"
-            min={split.min}
-            max={split.max}
-            value={split.value}
-            onCommit={(v) => A.setSplitTopMm(unit.id, split.bay, v).said}
-          />
-        )}
-      </Field>
-      {split && !split.said && split.value > 0 ? (
-        <div className="pbi-duty-actions">
-          <Button
-            kind="secondary"
-            size="small"
-            data-testid="extras-split-clear"
-            onClick={() => setSaid(A.setSplitTopMm(unit.id, split.bay, 0).said)}
-          >
-            ONE DOOR AGAIN
-          </Button>
-        </div>
-      ) : null}
-
-      {/* ─── T66 F3 · RE-HOMED FROM THE DELETED `WardrobeMenu` ─────────────
-          T64 F1.7 put the DOOR COUNT under an Advanced heading in the thin
-          wardrobe menu, with PRO's own line above it: *"3 drzwi czy 4 —
-          dopiero jako coś co trzeba edytować, a nie na głównym menu."* The
-          menu is gone; the heading, the line and the chips are here, beside
-          the button that hangs the doors, and the engine's door rule still
-          decides until somebody presses one. */}
-      <div className="pbi-advanced" data-testid="wardrobe-advanced">
-        <h3 className="pbi-ui pbi-ui-light pbi-quiet pbi-advanced-head">Advanced</h3>
-        <p className="pbi-choice pbi-advanced-line" data-testid="wardrobe-advanced-line">{REASONS.doorsAreSet}</p>
+      {/* ═══ 1 · DOORS & FRONTS ═══════════════════════════════════════════ */}
+      <Group title="DOORS & FRONTS" testid="extras-group-doors">
+        {/* ─── T65 F9 · ADD DOORS ──────────────────────────────────────────
+            The owner: *"drzwi to osobna decyzja, w extrasach lub w setup"* ·
+            *"ADD DOORS — i tu i tu chyba"*. Here on the left and on the
+            selected wardrobe on the right, and BOTH press
+            `adapter.addDoors` — one law, two doors to it. */}
         <Field label="DOORS">
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-doors"
+              title={A.doorsOn(unit.id) ? 'Take the doors off this wardrobe' : 'Hang doors on this wardrobe'}
+              onClick={() => setSaid((A.doorsOn(unit.id) ? A.removeDoors(unit.id) : A.addDoors(unit.id)).said)}
+            >
+              {A.doorsOn(unit.id) ? 'REMOVE DOORS' : 'ADD DOORS'}
+            </Button>
+          </div>
+        </Field>
+
+        {/* ─── THE COUNT — T64's own line above it, kept ────────────────────
+            *"3 drzwi czy 4 — dopiero jako coś co trzeba edytować, a nie na
+            głównym menu."* T66 F3 put it under an Advanced heading in this
+            step; F5's approved layout names it a plain row of this group, so
+            the heading goes and PRO's own sentence stays as the row's note.
+
+            T68 F3 · pressing 2 now returns the standard equal pair, whatever
+            the face has been through. */}
+        <Field label="HOW MANY" note={REASONS.doorsAreSet}>
           <ChipRow
             testid="wardrobe-doors"
             value={String(A.doorCount(unit.id))}
@@ -806,45 +787,163 @@ function ExtrasPanel({ unit, project }) {
             onPick={(id) => A.setDoorCount(unit.id, Number(id))}
           />
         </Field>
-      </div>
 
-      {/* END PANELS — the automat puts them where a side would otherwise show
-          (F6); this is the client's own hand on the same act, and a panel he
-          asks for here is PERMANENT. */}
-      <Field label="END PANELS">
-        <ChipRow
-          testid="details-end-panels"
-          value=""
-          options={['L', 'R'].map((side) => ({
-            id: side,
-            label: panelSides.some((p) => p.side === side) ? `${side} ✓` : side,
-          }))}
-          onPick={(side) => {
-            const has = panelSides.find((p) => p.side === side);
-            const res = has
-              ? A.removeEndPanelByHand(unit.id, has.id)
-              : A.addEndPanelByHand(unit.id, side);
-            setSaid(res.said || '');
-          }}
-        />
-      </Field>
-
-      <MoreOptions testid="extras-more">
-        <Field label="LIGHT STRIPS">
+        {/* ─── T66 F7 · SPLIT DOOR (TOP SEGMENT) ───────────────────────────
+            *"split door top segment też powinien być w extras."* The SECOND
+            DOOR to the SAME store path the copied `DoorModal` presses.
+            T68 F3 · and `0` is the same reset a door count performs. */}
+        <Field label="SPLIT DOOR (TOP SEGMENT)">
+          {split?.said ? (
+            <Said testid="extras-split-said">{split.said}</Said>
+          ) : (
+            <NumberField
+              outOfRange={REASONS.outOfRange}
+              testid="extras-split-top"
+              min={split.min}
+              max={split.max}
+              value={split.value}
+              onCommit={(v) => A.setSplitTopMm(unit.id, split.bay, v).said}
+            />
+          )}
+        </Field>
+        {split && !split.said && split.value > 0 ? (
           <div className="pbi-duty-actions">
-            {/* T63 F2 · LIGHTS opens PRO's Lighting panel beside the button —
-                the very call PRO's own Lighting button makes. */}
             <Button
               kind="secondary"
               size="small"
-              data-testid="extras-open-lighting"
-              onClick={(e) => A.openEditor('lighting', { anchor: A.anchorOf(e) })}
+              data-testid="extras-split-clear"
+              onClick={() => setSaid(A.setSplitTopMm(unit.id, split.bay, 0).said)}
             >
-              WHERE THE LIGHT GOES ›
+              ONE DOOR AGAIN
             </Button>
           </div>
+        ) : null}
+      </Group>
+
+      {/* ═══ 2 · THE CARCASS WEARS ════════════════════════════════════════ */}
+      <Group title="THE CARCASS WEARS" testid="extras-group-carcass">
+        {/* ─── T68 F5 · THE PLINTH, TYPED ──────────────────────────────────
+            *"none nie działa"*, and the plinth is always there. The bounds are
+            the ENGINE's (`profile.wardrobe.plinth`, 50–150 for a wardrobe) and
+            the standard is `profile.wardrobe.legHeight`; a number outside them
+            is refused UNDER the field, in `REASONS.outOfRange`'s own sentence,
+            by the same `NumberField` every other millimetre in this column
+            uses. */}
+        <Field label="PLINTH" note={REASONS.plinthIsAlwaysThere}>
+          <NumberField
+            outOfRange={REASONS.outOfRange}
+            testid="extras-plinth"
+            min={b.min}
+            max={b.max}
+            standardAt={b.standard}
+            value={plinth}
+            onCommit={(v) => { A.setPlinth(unit.id, v); return ''; }}
+          />
         </Field>
 
+        {/* ─── T65 F8 · CORNICE ────────────────────────────────────────────
+            The owner: *"nie widzę przycisków: top infill, cornice, panels."*
+            It is already on: a client's wardrobe arrives wearing the profile's
+            40, grown to the largest moulding that fits when the ceiling is
+            100 mm away or less. NONE is the way back out — and unlike the
+            plinth's, this NONE is real: a wardrobe without a cornice is a
+            wardrobe the workshop builds. */}
+        <Field label="CORNICE" note={cornice && gap > 0 ? REASONS.corniceLeavesAGap({ gap }) : ''}>
+          <ChipRow
+            testid="details-cornice"
+            value={String(cornice)}
+            options={[
+              { id: '0', label: 'NONE' },
+              ...A.corniceHeights().map((h) => ({ id: String(h), label: `${h}` })),
+            ]}
+            onPick={(id) => setSaid(A.setCorniceHeight(unit.id, Number(id)).ok ? '' : REASONS.corniceRefused)}
+          />
+        </Field>
+
+        {/* ─── T68 F5 · TOP INFILL, RE-HOMED FROM THE RIGHT-CLICK MENU ─────
+            The menu's own row, calling the menu's own store actions
+            (`addTopInfill` / `removeTopInfill`). Its state is read with the
+            ENGINE's `hasTopInfill`, which knows that a run MEMBER carries no
+            height of its own — the reason the menu's own switch needed it. */}
+        <Field label="TOP INFILL" note={REASONS.topInfillClosesTheGap}>
+          <ChipRow
+            testid="details-top-infill"
+            value={A.topInfillOn(unit.id) ? 'on' : 'off'}
+            options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON' }]}
+            onPick={(id) => setSaid(A.setTopInfill(unit.id, id === 'on').said)}
+          />
+        </Field>
+
+        {/* ─── END PANELS L / R / BOTH ─────────────────────────────────────
+            The automat puts them where a side would otherwise show (T65 F6);
+            this is the client's own hand on the same act, and a panel he asks
+            for here is PERMANENT. BOTH is one press over the same per-side
+            call — there is no third store path for it (F5). */}
+        <Field label="END PANELS" note={REASONS.endPanelsAreFinished}>
+          <ChipRow
+            testid="details-end-panels"
+            value={bothPanels ? 'BOTH' : ''}
+            options={[
+              ...['L', 'R'].map((side) => ({
+                id: side,
+                label: panelSides.some((p) => p.side === side) ? `${side} ✓` : side,
+              })),
+              { id: 'BOTH', label: bothPanels ? 'BOTH ✓' : 'BOTH' },
+            ]}
+            onPick={(id) => {
+              if (id === 'BOTH') { setSaid(A.setEndPanelsBoth(unit.id, !bothPanels).said); return; }
+              const has = panelSides.find((p) => p.side === id);
+              const res = has
+                ? A.removeEndPanelByHand(unit.id, has.id)
+                : A.addEndPanelByHand(unit.id, id);
+              setSaid(res.said || '');
+            }}
+          />
+        </Field>
+
+        {/* ─── SCRIBE FILLERS AT THE WALL, RE-HOMED (F5 / F9) ──────────────
+            The menu's own label and the menu's own store action
+            (`setSideInfillEnabled`). The piece is DERIVED — it is a fact about
+            where the wardrobe is standing — so the switch is not "add one", it
+            is "does this wardrobe take one at all". */}
+        <Field
+          label="SCRIBE FILLERS AT THE WALL"
+          note={A.scribeFillersOn(unit.id) ? REASONS.scribeFillersAtTheWall : REASONS.scribeFillersOff}
+        >
+          <ChipRow
+            testid="details-scribe-fillers"
+            value={A.scribeFillersOn(unit.id) ? 'on' : 'off'}
+            options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON' }]}
+            onPick={(id) => setSaid(A.setScribeFillers(unit.id, id === 'on').said)}
+          />
+        </Field>
+
+        {/* ─── T68 F5 · SERVICE CUT-OUT — GREYED, WITH ITS REASON ──────────
+            The owner's new function: a cut-out for pipes or a box. There is no
+            geometry tonight, and the no-dead-controls law says a control that
+            cannot act must SAY SO — *"greyed WITH reason is the lawful form of
+            martwa narazie"*. `ComingSoon` is the one implementation of that
+            card (T67 F3): hover OR focus opens it, so it is keyboard-reachable
+            even though the button itself is not. */}
+        <Field label="SERVICE CUT-OUT" note={REASONS.serviceCutOutSoon}>
+          <div className="pbi-duty-actions">
+            <ComingSoon what="Service cut-out">
+              <Button
+                kind="secondary"
+                size="small"
+                data-testid="extras-service-cutout"
+                disabled
+                title={REASONS.serviceCutOutSoon}
+              >
+                SERVICE CUT-OUT
+              </Button>
+            </ComingSoon>
+          </div>
+        </Field>
+      </Group>
+
+      {/* ═══ 3 · ADDITIONS ════════════════════════════════════════════════ */}
+      <Group title="ADDITIONS" testid="extras-group-additions">
         {/* T61 F3 · *"4 add top"* — greyed with the ROOM's own sentence. */}
         <Field label="TOP BOX" note={boxes.length ? REASONS.topBoxGoesBeside : ''}>
           <div className="pbi-duty-actions">
@@ -862,22 +961,14 @@ function ExtrasPanel({ unit, project }) {
           {topBoxReason ? (
             <span className="pbi-chip-reason" data-testid="layout-top-box-reason">{topBoxReason}</span>
           ) : null}
-          {said ? <Said testid="layout-said">{said}</Said> : null}
         </Field>
 
         {/* ─── T66 F3 · A BOX IS A UNIT OF ITS OWN, AND IT IS EDITED HERE ───
             T61 F3's law stands: *"a box and the cabinet under it are two
-            things in the same place"*, so its width and its height are its
-            own and never the host's. What changed is WHERE they are asked.
-            A box's boards are CARCASS, and a carcass click closes the panel
-            tonight — so the box's three controls come out of the deleted
-            `WardrobeMenu`'s `TopBoxMenu` and stand beside the button that
-            added it, on the left, exactly where SIZE and EXTRAS put every
-            other cabinet number.
-
-            The DEPTH is not offered, and that is T61's own reasoning
-            unchanged: it is the host's (`settleRiders` re-writes it on every
-            mutation), so typing it would be a lie. */}
+            things in the same place"*, so its width and its height are its own
+            and never the host's. The DEPTH is not offered, and that is T61's
+            own reasoning unchanged: it is the host's (`settleRiders` re-writes
+            it on every mutation), so typing it would be a lie. */}
         {boxes.map((box) => {
           const bb = A.unitBounds(box.id);
           return bb ? (
@@ -915,6 +1006,36 @@ function ExtrasPanel({ unit, project }) {
             </div>
           ) : null;
         })}
+
+        {/* ─── T68 F5 · ADD ANOTHER WARDROBE ───────────────────────────────
+            T65 F1's law: *"The client places the first wardrobe: the plus on
+            the empty floor, and an ADD A WARDROBE action in the step itself,
+            both calling one store path."* This is a THIRD door to that same
+            `addFirstWardrobe` and not a fourth path — the room refuses when
+            the wall has no room left, in the room's own sentence. */}
+        <Field label="ANOTHER WARDROBE" note={REASONS.anotherWardrobeGoesBeside}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-wardrobe"
+              onClick={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
+            >
+              ADD ANOTHER WARDROBE
+            </Button>
+          </div>
+        </Field>
+
+        {said ? <Said testid="layout-said">{said}</Said> : null}
+      </Group>
+
+      <MoreOptions testid="extras-more">
+        {/* ─── T68 F5 · TOMBSTONE: `LIGHT STRIPS` STOOD HERE ───────────────
+            *"LIGHTS leaves EXTRAS — its home is the view-bar button and the
+            docked panel. One entry."* Both already existed (T63 F2); what is
+            deleted is this step's third door to the same panel, and the
+            LIGHTING on/off chips above it, which were a second writer of
+            `design.lighting.on` beside the copied panel's own PRO control. */}
 
         {/* T63 F4 · PRO's hardware step, COPIED: hinge finish, internal metal,
             soft-close, push-to-open — the client's audience, as PRO reads it. */}

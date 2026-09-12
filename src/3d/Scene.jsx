@@ -1298,6 +1298,8 @@ export default function Scene({
   const moveShelf = useProjectStore((s) => s.moveShelf);
   // T37-F1: …and the whole ticked set, across cabinets, in one drag.
   const moveShelfSet = useProjectStore((s) => s.moveShelfSet);
+  // T68 F4 · the ONE setter a divider moves through, whichever door pressed it.
+  const setPartitionX = useProjectStore((s) => s.setPartitionX);
   // T42-F1: the ALONE rod's own writer — the same shape as a shelf's, and
   // the same one setter behind it.
   const moveRail = useProjectStore((s) => s.moveRail);
@@ -1675,6 +1677,11 @@ export default function Scene({
           // through to `moveShelf` when the piece in hand is not in a set, so
           // there is one entry point and no branch in the view.
           onMoveShelf={(itemId, pos, step) => moveShelfSet(unit.id, itemId, pos, step)}
+          // ─── T68 F4 · ONE LAW, TWO DOORS ────────────────────────────────
+          // The owner: *"divider nie mogę przesunąć."* The docked field's
+          // HOW FAR FROM THE LEFT commits to `setPartitionX`; so does this.
+          // The clamp, the grid and the refusal are the store's, once.
+          onMovePartition={(itemId, xMm) => setPartitionX(unit.id, itemId, xMm)}
           onShelfDragState={setShelfDrag}
           shelfDrag={shelfDrag}
           orbitRef={orbitRef}

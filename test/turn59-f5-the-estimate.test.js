@@ -78,7 +78,13 @@ test('F5 · the document carries every choice, in words', () => {
   assert.equal(by.Doors, '3');
   assert.equal(by['Front style'], 'Shaker');
   assert.match(by['Front finish'], /EGGER U606 ST9 Forest Green/, 'the decor speaks with its attribution');
-  assert.match(by['Carcass finish'], /EGGER U702 ST9 Cashmere Grey/);
+  // ─── AMENDED BY T68 F1 ───────────────────────────────────────────────────
+  // `designed()` applies MAYFAIR GREEN, whose table still suggests U702
+  // Cashmere for the box. It no longer WRITES it: T68 made H3325 the carcass
+  // default *"na zawsze"* and left the collections to dress the fronts.
+  // The row still carries a decor with its attribution — which is what this
+  // line was written to prove — and the decor is now the workshop's own.
+  assert.match(by['Carcass finish'], /EGGER H3325 ST28 Tobacco Gladstone Oak/);
   assert.equal(by.Handles, 'Bar handles');
   assert.equal(by.Plinth, '150 mm');
   assert.match(by.Interior, /hanging rail/);

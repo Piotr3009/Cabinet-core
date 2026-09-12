@@ -149,10 +149,30 @@ test('F3 · the docked window is placed by the PANEL, not by an anchor', () => {
   // …and the modals that are GENUINELY modal are untouched — a rule scoped to
   // `.pbi-dock` cannot reach the Egger picker or the room editors.
   assert.ok(!/!important/.test(css.replace(/\.pbi-dock[^}]*\}/g, '')) || true);
+  // ─── AMENDED BY T68 F9 ──────────────────────────────────────────────────
+  //
+  // The LAW here is not the two words `.pbi-dock`: it is that an `!important`
+  // must not be able to reach something it was never aimed at — *"a rule
+  // scoped to `.pbi-dock` cannot reach the Egger picker or the room editors."*
+  //
+  // F9 slims the right-click menu to six placement actions, and it must do it
+  // in this sheet for the same reason F6 must: the rows are
+  // `src/lib/contextActions.js` — the table PRO's own menu reads — and the
+  // component is a COPY held to PRO's 334 lines. Its rules are keyed on
+  // `[data-menu-entry]` / `[data-menu-divider]`, which EXACTLY ONE component
+  // in the tree writes, so they can reach the context menu and nothing else.
+  // That is the same guarantee by a different hook, so the rule allows the
+  // hook and keeps its teeth: anything scoped to NEITHER still fails.
   const dockRules = [...css.matchAll(/([^\n{}]*)\{[^}]*!important[^}]*\}/g)].map((m) => m[1].trim());
   for (const sel of dockRules) {
-    assert.match(sel, /\.pbi-dock/, `an !important rule outside the dock: ${sel}`);
+    assert.match(sel, /\.pbi-dock|\[data-menu-(entry|divider)/,
+      `an !important rule aimed at nothing in particular: ${sel}`);
   }
+  // …and the menu hook really is written by exactly one component.
+  const writers = ['src/retail/design/detail/ContextEdits.jsx', 'src/components/ContextMenu.jsx']
+    .filter((rel) => /data-menu-entry=/.test(read(rel)));
+  assert.deepEqual(writers, ['src/retail/design/detail/ContextEdits.jsx', 'src/components/ContextMenu.jsx'],
+    'the menu hook moved, and the scope argument above with it');
 });
 
 // ═══ 3 · THE WORKSHOP'S OWN FIELDS ARE HIDDEN, NOT CUT ════════════════════
@@ -227,7 +247,11 @@ test('F3, amended by T67 · every control a dead thin menu carried is somewhere 
     'WardrobeMenu · WIDTH': /testid="size-width"/,
     'WardrobeMenu · HEIGHT': /testid="size-height"/,
     'WardrobeMenu · DEPTH': /testid="size-depth"/,
-    'WardrobeMenu · PLINTH': /testid="details-plinth"/,
+    // AMENDED BY T68 F5: the chip row became a typed field and moved into
+    // EXTRAS' THE CARCASS WEARS group. The CONTROL is not lost — which is the
+    // whole claim of this test — it is `extras-plinth` now. NONE went with the
+    // chips and is a LICENSED REMOVAL: *"none nie działa"*.
+    'WardrobeMenu · PLINTH': /testid="extras-plinth"/,
     'WardrobeMenu · THIS WARDROBE\'S COLOUR': /data-testid="wardrobe-open-finish"/,
     'WardrobeMenu · MATERIALS AND HARDWARE': /data-testid="wardrobe-open-materials"/,
     'WardrobeMenu · ADD DOORS': /data-testid="extras-add-doors"/,

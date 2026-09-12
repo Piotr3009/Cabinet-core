@@ -37,7 +37,7 @@ import { doorCountFor } from '../../engine/cabinet.js';
 import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
-import { unitTop } from '../../engine/runs.js';
+import { hasTopInfill, unitTop } from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
@@ -299,6 +299,24 @@ export const RETAIL_FIRST_WIDTH_MAX = 1200;
  * profile's, untouched.
  */
 export function addFirstWardrobe() {
+  // ─── T68 F2 · ONE CLICK IS ONE UNDO STEP ─────────────────────────────────
+  //
+  // FOUND BY THE WALK. Adding a wardrobe is FOUR store writes — the carcass,
+  // the move to the wall, the doors and the automatic cornice — and the walk
+  // read `past: 4` after one press of ADD A WARDROBE, so ↺ took the cornice
+  // off and left the wardrobe standing. `historyStore`'s trailing timer
+  // coalesces a burst IN TIME and these four are not that: they are one act
+  // that happens to be four calls.
+  //
+  // `historyBatch.js` is the shared core's own answer and its header is this
+  // fault in general terms — *"a bulk action is six `set` calls in one
+  // synchronous tick … and the joiner presses Ctrl+Z six times to undo one
+  // click."* So the act DECLARES itself, through the store's own `batch`,
+  // exactly as PRO's context menu declares its bulk edits.
+  return S().batch(() => addFirstWardrobeNow());
+}
+
+function addFirstWardrobeNow() {
   const store = S();
   const p = P();
   const wall = Math.round(wallLengthMm(store.project.room, 0));
@@ -897,6 +915,60 @@ export function removeEndPanelByHand(unitId, panelId) {
   return { ok: res !== false, said: '' };
 }
 
+/**
+ * ─── T68 F5 · WHAT THE CARCASS WEARS, RE-HOMED FROM THE RIGHT-CLICK MENU ───
+ *
+ * CLAUDE.md F5: *"END PANELS L/R/BOTH and SCRIBE FILLERS come from the
+ * right-click menu into this group, calling the same store paths (one law, the
+ * menu's copies of these rows die — see F9)."* TOP INFILL travels with them,
+ * because F5's own list names it in the same breath.
+ *
+ * Each of the three below is a READER and a WRITER over the very store actions
+ * `lib/contextActions.js` calls — `addTopInfill` / `removeTopInfill` and
+ * `setSideInfillEnabled`. No new geometry, no second rule, and the menu's rows
+ * are deleted rather than left standing beside them (F9).
+ */
+// The ENGINE's own reader (`engine/runs.js hasTopInfill`), and not a copy of
+// it: a run MEMBER carries no height of its own, so anything that reads
+// `top_infill_mm` alone says "not fitted" under a board that is plainly there.
+export const topInfillOn = (unitId) => hasTopInfill(unitOf(unitId));
+
+export function setTopInfill(unitId, on) {
+  if (!unitOf(unitId)) return { ok: false, said: '' };
+  if (on) S().addTopInfill(unitId);
+  else S().removeTopInfill(unitId);
+  return { ok: true, said: '' };
+}
+
+/**
+ * *"Scribe fillers at the wall"* — the menu's own label, kept. The STORE's
+ * field is a negative (`side_infill_off`), because the piece is DERIVED and
+ * the switch is *"does this cabinet take one at all"*; this reads it the way
+ * round a client thinks about it and writes the store's own way round.
+ */
+export const scribeFillersOn = (unitId) => unitOf(unitId)?.params?.side_infill_off !== true;
+
+export function setScribeFillers(unitId, on) {
+  if (!unitOf(unitId)) return { ok: false, said: '' };
+  S().setSideInfillEnabled(unitId, Boolean(on));
+  return { ok: true, said: '' };
+}
+
+/**
+ * T68 F5 · END PANELS **L / R / BOTH**, which is what the owner's layout asks
+ * for. One press, both sides, through the same per-side call the L and the R
+ * make — `addEndPanelByHand` — so there is no third store path for "both".
+ */
+export function setEndPanelsBoth(unitId, on) {
+  const said = [];
+  for (const side of ['L', 'R']) {
+    const has = endPanelSides(unitId).find((p) => p.side === side);
+    if (on && !has) { const r = addEndPanelByHand(unitId, side); if (r?.said) said.push(r.said); }
+    if (!on && has) { const r = removeEndPanelByHand(unitId, has.id); if (r?.said) said.push(r.said); }
+  }
+  return { ok: !said.length, said: said[0] || '' };
+}
+
 export function addTopBox(hostId) {
   const host = unitOf(hostId);
   if (!host) return { ok: false, id: null, said: '' };
@@ -1021,6 +1093,65 @@ export function setDoorCount(unitId, count) {
   const parts = () => (S().units.find((u) => u.id === unitId)
     ?.params.sections?.[0]?.items || []).filter((i) => i.kind === 'partition');
 
+  // ═══ T68 F3 · A DOOR COUNT CLEARS WHAT THE STORE WROTE ═══════════════════
+  //
+  // The owner, twice: *"jak wracamy do dwóch, to żeby wróciło do 2 równych
+  // standardowych otwieranych na boki"* and *"po naciśnięciu 2 muszą wrócić do
+  // standardowych pół na pół, a nie jak teraz 1/4 i 3/4"*.
+  //
+  // THE PROBE FIRST (`verify/t68/f3-probe.md`, committed before this line was
+  // written). An 1800 mm wardrobe, measured:
+  //
+  //   addDoors alone, no divider   896 · 897   ← the equal pair he asks for
+  //   setDoorCount(2)              888 · 905
+  //   4 doors, then press 2       1334 ·  459  ← his 3/4 and his 1/4, exactly
+  //   3 doors, then press 2       1185 ·  608
+  //
+  // and the partition left behind by the 4-door layout was still standing at
+  // x=1337. So the 1/4–3/4 is NOT the engine's — F3's fence does not apply —
+  // it is a divider the STORE added for a count that is no longer wanted and
+  // never moved when the count changed. The store clears what the store wrote.
+  //
+  // TWO ACTS, in order:
+  //
+  //   1 · THE SPLIT RESIDUE GOES. A leaf split into two segments is a fact
+  //       about a face that no longer exists once the count changes; the probe
+  //       caught `unit.split_top_mm=700` surviving a press of 2 and cutting
+  //       four leaves where two were asked for. Both places it can live — the
+  //       carcass's own and each bay's — through the store's own setters.
+  //
+  //   2 · THE FACE IS DIVIDED FOR THE COUNT AND FOR NOTHING ELSE. Where the
+  //       ENGINE's own width law already gives exactly this many leaves on the
+  //       clear face, the store writes NO divider at all and lets it cut its
+  //       standard pair — that is the 896 · 897 above, and it is the only
+  //       reading of *"2 równe standardowe"* the measurements support. Where
+  //       the law would give fewer (a 600 mm carcass asked for two), the
+  //       divider is the only road to the count and it stays — re-centred.
+  //
+  // The 17 mm the bay-door law adds to the right-hand leaf (888 vs 905, at
+  // every width the probe tried) is the ENGINE's own and `doors.js` is
+  // read-only tonight: SKIPPED AND NOTED in the PR body rather than reached
+  // for. This fix removes the need to reach for it in the common case.
+  clearSplitResidue(unitId);
+
+  const width = Math.round(Number(S().units.find((u) => u.id === unitId)?.params?.width) || 0);
+  if (want === doorCountFor(width, P())) {
+    let drop = 8;
+    while (parts().length && drop > 0) {
+      drop -= 1;
+      S().removeItem(unitId, parts().slice(-1)[0].id);
+    }
+    S().setBayDoors(unitId, null);
+    // …and the FACE carries the leaves now. `params.doors` is the first of the
+    // three facts this function's own header lists, and the bay writes above
+    // put it down on the way past: a probe run found this branch leaving a
+    // wardrobe with no leaves at all — no bays to hang one, and a face that
+    // had been told it wears none. It is said LAST, after the bays are gone,
+    // because that is the order in which the two disagree.
+    S().setDoors(unitId, true);
+    return doorCount(unitId);
+  }
+
   let guard = 8;
   while (parts().length > want - 1 && guard > 0) {
     guard -= 1;
@@ -1040,11 +1171,40 @@ export function setDoorCount(unitId, count) {
     if (!addFlushPartition(unitId)) break;   // the engine ran out of room
   }
 
+  // T68 F3 · AND THE SURVIVORS ARE RE-SPREAD. Removing the surplus is half the
+  // job; the probe's 1334 · 459 is what the other half looks like when it is
+  // missed. `centrePartitions` is the store's own — the very call
+  // `addFlushPartition` already makes on the way in — so a count DOWN and a
+  // count UP leave the face in the same state.
+  S().centrePartitions(unitId);
+
   const bays = S().bayDoorsFor(unitId).length;
   S().setBayDoors(unitId, bays > 1
     ? Array.from({ length: bays }, () => ({ door: 'one', hinge: 'L' }))
     : null);
   return doorCount(unitId);
+}
+
+/**
+ * T68 F3 · EVERY SPLIT THE STORE WROTE ON THIS FACE, CLEARED.
+ *
+ * A split lives in two places — the carcass's own `split_top_mm` and each
+ * `bay_doors[i].split_top_mm` — and `0` is the engine's own way out of both
+ * (`setSplitTopMm`'s own doctrine, T66 F7). Both are cleared through the very
+ * setters that wrote them; nothing reaches into params by hand.
+ *
+ * It is exported because EXTRAS' own ONE DOOR AGAIN (F5) is the same act by
+ * another name, and two acts that mean one thing is how they drift apart.
+ */
+export function clearSplitResidue(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return false;
+  let cleared = false;
+  if (Number(unit.params?.split_top_mm) > 0) { S().setSplitTop(unitId, 0); cleared = true; }
+  (unitOf(unitId)?.params?.bay_doors || []).forEach((bay, i) => {
+    if (Number(bay?.split_top_mm) > 0) { S().setBaySplitTop(unitId, i, 0); cleared = true; }
+  });
+  return cleared;
 }
 
 /**
@@ -1134,12 +1294,88 @@ export function doorCountNote(widthMm, count) {
 }
 
 /** F4.3 · FRONT STYLE and the shaker frame. */
-export function setFrontStyle(styleId) {
+// T68 F1 · the shape PRO restores when a J-pull is left. It lives beside the
+// ONE writer, because the one writer is the only thing that sets a style.
+let lastNonJStyle = null;
+
+/**
+ * ═══ T68 F1 · THE ONE WRITE PATH FOR WHAT THE WARDROBE WEARS ═══════════════
+ *
+ * THE PROBE FIRST (`verify/t68/f1-probe.md`, committed before this line was
+ * written). Three entry points, every order, and the same three presses gave
+ * TWO DIFFERENT WARDROBES:
+ *
+ *   fronts → collection → unit   opening `handles` · 0 J-pull fronts cut
+ *   collection → fronts → unit   opening `jhandle` · 2 J-pull fronts cut
+ *
+ * Whichever of the FRONTS step and the collection was pressed LAST won, and
+ * the owner watched the J come and go: *"czasami się pojawia … co jest?"*
+ *
+ * THE DISEASE, named: there were TWO writers of how a front is held.
+ * `setFrontOpening` wrote PRO's whole patch — the handle, the shape it
+ * restores, and the runner lock. `applyCollection` wrote `setHandle` alone,
+ * which is the same field by a shorter road that skips the other two. Two
+ * roads to one field is two answers to one question, and which one you get is
+ * the order you happened to press them in.
+ *
+ * THE LAW, one function, and every door opens onto it: A FRONT'S STYLE AND ITS
+ * OPENING ARE WRITTEN TOGETHER OR NOT AT ALL. `frontOpeningPatch` is PRO's own
+ * and is the only thing that touches `fronts.handle`; the style is stamped on
+ * the design AND on the slot it wears, exactly as `setFrontStyle` always did.
+ *
+ *   the FRONTS step   `setFrontStyle` / `setFrontOpening` → here
+ *   a collection      `applyCollection` → here, through the same opening id
+ *   a per-unit change the STORE's own per-unit override (`setUnitFinish`),
+ *                     which writes the UNIT and can reach `design` at all —
+ *                     T13's law, and the probe shows it never did.
+ *
+ * @param {{style?: string|null, opening?: string|null}} want
+ * @returns {{style: string, opening: string}} what the store says afterwards
+ */
+export function writeFrontLaw({ style = null, opening = null } = {}) {
   const store = S();
-  const design = store.project.design;
-  store.setDesign({ fronts: { ...design.fronts, style: styleId } });
-  store.setFrontType(frontTypeId(design), { style: styleId });
-  return styleId;
+  const design = migrateDesign(store.project.design);
+  const nextStyle = style || design.fronts?.style || 'S';
+  // PRO remembers the last shape that was not the legacy J, so that leaving a
+  // J-pull puts the door back to the shape somebody chose rather than to Flat.
+  // It is remembered HERE now, because this is the only place a style is set.
+  if (nextStyle && nextStyle !== J_HANDLE_STYLE) lastNonJStyle = nextStyle;
+
+  // 1 · THE SHAPE — on the design, and on the front slot that wears it. Both,
+  //     because `resolveUnitDesign`'s cascade reads the SLOT before the
+  //     project (engine/design.js) and a unit pointed at a slot would
+  //     otherwise keep yesterday's shape.
+  store.setDesign({ fronts: { ...design.fronts, style: nextStyle } });
+  store.setFrontType(frontTypeId(design), { style: nextStyle });
+
+  // 2 · AND THE OPENING, ALWAYS. Not "when asked": a style written without an
+  //     opening is T64's J-pull lesson repeating itself. Re-read first —
+  //     `store` is the snapshot from before step 1.
+  const written = migrateDesign(S().project.design);
+  const nextOpening = opening || frontOpening(written);
+  S().setDesign(frontOpeningPatch(written, nextOpening, { previousStyle: lastNonJStyle }));
+
+  return { style: S().project.design?.fronts?.style || nextStyle, opening: frontOpeningOf(S().project) };
+}
+
+/**
+ * T68 F1 · A COLLECTION NAMES A HANDLE; THE PROJECT KEEPS AN OPENING.
+ *
+ * `engine/handles.js HANDLE_TYPES` and `lib/frontOpening.js FRONT_OPENINGS`
+ * are two vocabularies for one fact, and the collections were written in the
+ * first. This is the translation, in one place, so a collection presses the
+ * very control the FRONTS step presses.
+ */
+export function openingForHandle(handle) {
+  if (handle === 'jpull') return 'jhandle';
+  if (handle === 'bar') return 'handles';
+  if (handle === 'knob') return 'knobs';
+  return 'push';
+}
+
+/** F4.2 · THE SHAPE — one of the four the STYLE list offers. Through the law. */
+export function setFrontStyle(styleId) {
+  return writeFrontLaw({ style: styleId }).style;
 }
 
 export function setShakerFrame(mm) {
@@ -1150,17 +1386,53 @@ export function setShakerFrame(mm) {
 }
 
 /**
- * F4.3 · A COLLECTION IS A PRESET, applied through the store's own setters:
- * a front decor, a carcass decor and a handle default, and nothing else.
+ * F4.3 · A COLLECTION IS A PRESET, applied through the store's own setters.
+ *
+ * ─── T68 F1 · AND THROUGH THE SAME SETTERS THE FRONTS STEP PRESSES ─────────
+ *
+ * TWO LINES CHANGED, both convicted by the probe:
+ *
+ *   `setHandle(collection.handle)` → `writeFrontLaw({ opening })`. The old
+ *   call wrote `fronts.handle` and nothing else, so a collection applied AFTER
+ *   the FRONTS step overwrote the client's opening without the runner lock and
+ *   without the shape-restore law. One field, one writer, now.
+ *
+ *   the carcass is written ONLY where the collection says it names one.
+ *   CLAUDE.md F1: *"a collection … does NOT touch the carcass decor unless the
+ *   collection names one"*, and the owner, unconditionally: *"powinien być oak
+ *   H3325 … dodaj do kodu jako default, na zawsze"*. The probe measured the
+ *   cost of the old behaviour: with ANY of the four in the URL the carcass was
+ *   never H3325, and his own link carried `?collection=royal-burgundy`.
+ *   `namesCarcass` is that permission, declared per collection in
+ *   `collections.js`; the ids themselves are untouched and still catalogued.
  */
 export function applyCollection(collectionId) {
   const collection = collectionById(collectionId);
   if (!collection) return null;
   setFrontDecor(collection.frontDecor);
-  setCarcassDecor(collection.carcassDecor);
-  setHandle(collection.handle);
+  // The carcass is written either way — a preset that left it unwritten would
+  // put a client on "workshop default" and make the law depend on whether
+  // `applyLazyDefaults` happened to run. What CHANGES is the value: the
+  // collection's own only where it declares it speaks for the box.
+  setCarcassDecor(collection.namesCarcass ? collection.carcassDecor : carcassDefaultDecor());
+  writeFrontLaw({ opening: openingForHandle(collection.handle) });
   return collection;
 }
+
+/**
+ * T68 F1 · H3325 ST28 TOBACCO GLADSTONE OAK, AND WHERE THE NUMBER LIVES.
+ *
+ * *"powinien być oak H3325 … dodaj do kodu jako default, na zawsze"*.
+ *
+ * Read off the PROFILE — the workshop's own key, `projectSettings
+ * .defaultCarcassDecorId`, which T67 F5 put there — so the workshop decides
+ * and retail obeys. The constant beside it is the same string and a test holds
+ * the two EQUAL, because two literals that must agree is exactly how a default
+ * drifts apart. Never a hard-coded swatch: CLAUDE.md F1 says so in as many
+ * words.
+ */
+export const carcassDefaultDecor = () => P().projectSettings?.defaultCarcassDecorId
+  || DEFAULT_CARCASS_DECOR;
 
 export function setFrontDecor(decorId) {
   const store = S();
@@ -1645,7 +1917,27 @@ export function resolveSelection(selected) {
   // A shelf names its own item on its panel (`meta.itemId`), which is how a
   // click on a board reaches the thing a joiner added.
   let item = null;
-  if (menu === 'shelf') item = items.find((i) => i.id === panel.meta?.itemId) || null;
+  //
+  // ─── T68 F4 · AND SO DOES A DIVIDER ─────────────────────────────────────
+  //
+  // The owner: *"divider nie mogę przesunąć."*
+  //
+  // THE PROBE FIRST (`verify/t68/f4-probe.md`, committed before this line was
+  // written). It found the control was never missing: a divider DOES dock
+  // `ElementProperties`, and `position-x` — HOW FAR FROM THE LEFT — DOES
+  // survive the dock's `omit`. What it found instead was this line. It named
+  // `shelf` and it named `drawers` and it named nothing else, so a partition
+  // arrived at the dock with `item: null`, and the field's own commit —
+  // `setPartitionX(unit.id, item.id, …)` — threw:
+  //
+  //   TypeError: Cannot read properties of null (reading 'id')
+  //
+  // The same store setter moved the divider the moment the probe handed it the
+  // id the ENGINE already stamps on the panel. The setter was sound; the
+  // SELECTION was broken, and one word is the whole of it.
+  if (menu === 'shelf' || menu === 'partition') {
+    item = items.find((i) => i.id === panel.meta?.itemId) || null;
+  }
 
   // A drawer — box or front — carries `meta.drawer`, the stack index the
   // engine cut it at. Which KIND of drawer it is, is the item's own word.
@@ -1829,17 +2121,37 @@ export function bayRefusal(unitId, want) {
 }
 
 /** The plinth heights the profile itself names — its default and its own leg. */
-export function plinthOptions() {
-  const p = P();
-  const legs = Math.round(p.wardrobe.legHeight);
-  const kick = Math.round(p.baseUnit?.defaults?.leg_height ?? legs);
-  const set = [...new Set([0, kick, legs])].filter((n) => n >= 0).sort((a, b) => a - b);
-  return set.map((mm) => ({
-    id: String(mm),
-    label: mm === 0 ? 'NONE' : `${mm}`,
-    from: mm === legs ? 'profile.wardrobe.legHeight' : 'profile.baseUnit.defaults.leg_height',
-  }));
+/**
+ * ─── T68 F5 · THE PLINTH LAW, AS THE FIELD READS IT ────────────────────────
+ *
+ * The owner, on the NONE chip: *"none nie działa"* — and the plinth is always
+ * there; only its height is ever the question. So the chips are gone
+ * (LICENSED REMOVAL, named in the PR) and what stands in their place is a
+ * TYPED FIELD between the ENGINE's own two numbers.
+ *
+ * `profile.wardrobe.plinth` is the law and `profile.wardrobe.legHeight` is the
+ * standard a fresh wardrobe is born at — both read here, neither typed. A
+ * workshop that builds on 60 mm legs moves the profile and the field follows.
+ *
+ * The KITCHEN's own key sits beside it in the same file (`baseUnit.plinth`,
+ * 80–150) and is READ BY NOBODY: see the comment where it is declared, and
+ * `test/turn68-f5-extras-and-the-plinth.test.js`, which asserts it stays
+ * unread.
+ */
+export function plinthBounds() {
+  const w = P().wardrobe || {};
+  const law = w.plinth || {};
+  return {
+    min: Math.round(Number(law.minMm) || 50),
+    max: Math.round(Number(law.maxMm) || 150),
+    standard: Math.round(Number(w.legHeight) || 100),
+    from: 'profile.wardrobe.plinth',
+  };
 }
+
+/* ─── T68 F5 · TOMBSTONE ── `plinthOptions()` stood here: three chips, one of
+   them NONE. The owner struck NONE and F5 replaced the other two with a typed
+   field, so the whole function goes rather than shrinking to a list of one. */
 
 /** Every decor a client may choose, with EGGER's own attribution on each. */
 export function decorChoices() {
@@ -2863,7 +3175,9 @@ export function clearMaterialFinish(kind) {
 // tak, żeby było wszystko do wyboru."* Every answer below is the engine's or
 // the store's or PRO's own lib, reached through this file as every other.
 
-import { FRONT_OPENINGS, frontOpening, frontOpeningPatch } from '../../lib/frontOpening.js';
+import {
+  FRONT_OPENINGS, frontOpening, frontOpeningPatch, J_HANDLE_STYLE,
+} from '../../lib/frontOpening.js';
 import { PROJECT_TYPES } from '../../engine/projectTypes.js';
 
 /** T64 F1.1 · the top boxes on a host, asked before Delete — see `removeUnitRefusal`. */
@@ -2917,14 +3231,9 @@ export const frontOpenings = () => FRONT_OPENINGS.map((o) => ({ id: o.id, label:
 
 export const frontOpeningOf = (project) => frontOpening(migrateDesign(project?.design));
 
-let lastNonJStyle = null;
+/** F5 · HOW IT OPENS — one of PRO's four. Through the law. */
 export function setFrontOpening(id) {
-  const store = S();
-  const design = migrateDesign(store.project.design);
-  if (design.fronts.style && design.fronts.style !== 'HJ') lastNonJStyle = design.fronts.style;
-  store.setDesign(frontOpeningPatch(design, id, { previousStyle: lastNonJStyle }));
-  // Re-read: `store` is the snapshot from before the write.
-  return frontOpeningOf(S().project);
+  return writeFrontLaw({ opening: id }).opening;
 }
 
 /**
@@ -3114,6 +3423,23 @@ export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
   // PROJECT's, not the wardrobe's, so they are still worth writing.
   const done = {};
   const collection = collectionId ? applyCollection(collectionId) : null;
+  // ─── T68 F1 · THE CARCASS DEFAULT, FOREVER ────────────────────────────────
+  //
+  // *"powinien być oak H3325 … dodaj do kodu jako default, na zawsze"*, and
+  // the probe's §2 showed the "na zawsze" had a hole in it the width of a
+  // collection. It is written HERE, ABOVE the collection branch and outside
+  // it, so a link with a collection in it reaches the same default a bare link
+  // does. `applyCollection` has already written a carcass by now ONLY where
+  // that collection declares `namesCarcass`, and `carcassDecorOf` is how this
+  // line finds out — asked of the store, never assumed.
+  //
+  // It is READ OFF THE PROFILE and never hard-coded to a swatch: CLAUDE.md
+  // F1, *"If H3325 is missing from the decor list the slot reads, that is the
+  // bug: fix the list's source, never hard-code a swatch."* The constant
+  // beside it is the same string and the test holds the two EQUAL.
+  if (!carcassDecorOf(S().project)) {
+    done.carcass = setCarcassDecor(carcassDefaultDecor());
+  }
   if (!collection) {
     // ─── T66 F5 · WINE ON WALNUT ─────────────────────────────────────────
     // *"default powinno być RAL color wine fronty i walnut Egger carcases."*
@@ -3125,16 +3451,20 @@ export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
     if (!frontDecorOf(S().project) && !frontColourOf(S().project)) {
       done.front = setFrontColour(ralWine());
     }
-    // T67 F5 · *"default Egger to H3325 Gladstone Oak"* — read off the
-    // profile, so the workshop's own key decides and retail only obeys.
-    if (!carcassDecorOf(S().project)) {
-      done.carcass = setCarcassDecor(P().projectSettings?.defaultCarcassDecorId
-        || DEFAULT_CARCASS_DECOR);
-    }
+    // T67 F5's carcass line stood HERE; T68 F1 lifted it out of this branch
+    // so a collection cannot skip it. Nothing else moved.
+    //
     // No handle — the engine's own `null`, written as PRO's push-to-open tile
     // writes it, runner lock included (`frontOpeningPatch`).
     if (!S().project.design?.fronts?.handle) done.opening = setFrontOpening('push');
   }
-  if (!S().project.design?.fronts?.style) done.style = setFrontStyle('S');
+  // ─── T68 F1 · AND THE SHAPE, THROUGH THE SAME ONE WRITER ─────────────────
+  //
+  // *"No path writes style without opening"*. A fresh design that has never
+  // been asked gets shaker — the house default since T59 — and whatever it
+  // gets, it gets its opening stamped in the same breath, which is what makes
+  // the three entry points land on identical geometry whatever order they are
+  // pressed in.
+  done.style = writeFrontLaw({ style: S().project.design?.fronts?.style || 'S' });
   return done;
 }

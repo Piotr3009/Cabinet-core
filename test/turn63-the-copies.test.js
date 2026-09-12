@@ -394,10 +394,18 @@ test('T63 · every copy is opened — the three by the dock, the rest beside the
 
   // …and the ones that are genuinely modal keep their button and their anchor.
   const options = uncomment(read('src/retail/design/Options.jsx'));
-  for (const name of ['unit-finish', 'design', 'lighting']) {
+  // ─── AMENDED BY T68 F5 ─────────────────────────────────────────────────
+  // *"LIGHTS leaves EXTRAS — its home is the view-bar button and the docked
+  // panel. One entry."* So `lighting` no longer opens from this column at all:
+  // EXTRAS' third door to it is a LICENSED REMOVAL, and the ONE door that
+  // remains is the VIEW BAR's own LIGHTS button — which is asserted, with its
+  // anchor, four lines below this block and was already there (T63 F2).
+  for (const name of ['unit-finish', 'design']) {
     assert.match(options, new RegExp(`openEditor\\('${name}'[^)]*anchor: A\\.anchorOf\\(e\\)`),
       `${name} lost its door, or opens away from the button that asked`);
   }
+  assert.doesNotMatch(options, /extras-open-lighting/,
+    'EXTRAS grew a second door to the lighting panel back');
   // The hinges are still reachable — PRO's own section, inside the copy.
   assert.match(uncomment(read('src/retail/design/detail/DoorModal.jsx')), /section === 'hinges'/);
 

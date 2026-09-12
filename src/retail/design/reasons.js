@@ -71,6 +71,62 @@ export const REASONS = {
    * ustawiają."* PREDICATE: `doorCountFor(width, profile)`, the face-door law.
    */
   doorsAreSet: 'We set the doors for this width. Change only if you know why.',
+  /**
+   * ─── T68 F5 · THE THREE GROUPS' OWN SENTENCES ──────────────────────────
+   *
+   * The owner approved the layout; these are the words under each control
+   * that the layout does not say for itself. Not one of them is a refusal —
+   * they are the DESCRIPTIONS a headed group needs so that a row's title is
+   * not the only thing explaining it — and each still names what decides it,
+   * because a line that cannot be traced to a predicate is a line that can
+   * quietly stop being true.
+   *
+   * NOT a refusal — the note under the typed PLINTH field. PREDICATE:
+   * `profile.wardrobe.plinth` (50–150), read by `adapter.plinthBounds`. The
+   * owner: *"none nie działa"* — a wardrobe's plinth is always there.
+   */
+  plinthIsAlwaysThere: 'Every wardrobe stands on a plinth — the height is the choice.',
+
+  /**
+   * T68 F5 · NOT a refusal — the note under TOP INFILL. PREDICATE:
+   * `engine/runs.js hasTopInfill(unit)`, which is the ENGINE's own reader and
+   * knows that a run member carries no height of its own.
+   */
+  topInfillClosesTheGap: 'Closes the gap between the top of the wardrobe and your ceiling.',
+
+  /**
+   * T68 F5 · NOT a refusal — the two notes under SCRIBE FILLERS AT THE WALL,
+   * re-homed from the right-click menu with the menu's own label. PREDICATE:
+   * `unit.params.side_infill_off`, written by `projectStore.setSideInfillEnabled`
+   * — the piece is DERIVED, so the switch is "does this wardrobe take one at
+   * all" and never "add one".
+   */
+  scribeFillersAtTheWall: 'A filler scribed to the wall, so the gap beside the wardrobe closes.',
+
+  /** T68 F5 · NOT a refusal — the other half of the row above. PREDICATE: the same. */
+  scribeFillersOff: 'Off — the gap beside the wardrobe stays open and the door is scribed instead.',
+
+  /**
+   * T68 F5 · NOT a refusal — the note under END PANELS L / R / BOTH.
+   * PREDICATE: `adapter.endPanelSides(unitId)`, which reads the panels the
+   * ENGINE actually cut (`engine/endPanelAuto.js`).
+   */
+  endPanelsAreFinished: 'A finished panel over the carcass side, so no raw board shows.',
+
+  /**
+   * T68 F5 · THE OWNER'S NEW FUNCTION, greyed with its reason — which is the
+   * lawful form of *"martwa narazie"* under the no-dead-controls law.
+   * PREDICATE: none, and that is the point — nothing in the engine cuts a
+   * service opening tonight, so the control cannot act and says so.
+   */
+  serviceCutOutSoon: 'Coming soon — a cut-out for a pipe, a meter or a boiler box.',
+
+  /**
+   * T68 F5 · NOT a refusal — the note under ADD ANOTHER WARDROBE. PREDICATE:
+   * `adapter.addFirstWardrobe()`, T65 F1's one store path, which answers null
+   * when the room has no room; `roomRefusedWardrobe` is then what is said.
+   */
+  anotherWardrobeGoesBeside: 'A second wardrobe, placed beside this one on the same wall.',
 
   /**
    * T61 F5 · PREDICATE: the typed number against the bounds the caller was

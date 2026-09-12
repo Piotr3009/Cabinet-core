@@ -411,12 +411,23 @@ test('F1.7 · DOORS stays off the steps; T65 F7 puts BAYS ON one, and Advanced k
   assert.ok(/min=\{b\.bays\.min\}[\s\S]{0,80}max=\{b\.bays\.max\}/.test(options),
     'the BAYS field does not read the engine-side bounds');
   assert.ok(!/layout-doors|layout-bays|LayoutPanel/.test(options), 'LAYOUT survives');
-  const at = options.indexOf('data-testid="wardrobe-advanced"');
-  assert.ok(at > 0, 'no Advanced block');
-  const advanced = options.slice(at);
-  assert.match(advanced, /label="DOORS"/);
+  // ─── AMENDED BY T68 F5 ─────────────────────────────────────────────────
+  // The owner approved EXTRAS as three headed groups, and the door count is a
+  // plain row of the first of them — *"DOORS & FRONTS: ADD DOORS · door count
+  // (fixed by F3) · SPLIT DOOR"*. So the `Advanced` heading T66 F3 wrapped it
+  // in is gone and the GROUP is what holds it.
+  //
+  // T64's law is untouched and is what is still asserted here: the count is
+  // NOT on the main menu, it carries the ENGINE's own refusal, and PRO's own
+  // line stands above it. Only the container changed.
+  const at = options.indexOf('testid="extras-group-doors"');
+  assert.ok(at > 0, 'no DOORS & FRONTS group');
+  const advanced = options.slice(at, options.indexOf('testid="extras-group-carcass"'));
+  assert.match(advanced, /testid="wardrobe-doors"/);
   assert.match(advanced, /A\.doorCountRefusal\(/, 'the count lost the engine\'s own refusal');
   assert.match(advanced, /REASONS\.doorsAreSet/);
+  assert.ok(!/data-testid="wardrobe-advanced"/.test(options),
+    'the Advanced heading is back beside the group that replaced it');
   assert.equal(REASONS.doorsAreSet, 'We set the doors for this width. Change only if you know why.');
   // The engine's door rule decides — a fresh wardrobe wears the count its width earns.
   const id = fresh();

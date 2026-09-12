@@ -694,6 +694,63 @@
 .pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> select.pbi-re-input),
 .pbi-room[data-workshop-tools="no"] .pbi-dock label:has([data-element-material]),
 .pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> input[data-handle-apply-all]),
+/* ─── T68 F9 · THE RIGHT-CLICK MENU SLIMS TO PLACEMENT ────────────────────
+ *
+ * Approved: SIX actions stay — Rotate 90° · Back to wall · Side to wall ·
+ * Rename · Save as template · Delete. Everything else is already homed
+ * somewhere a client can reach:
+ *
+ *   top infill · cornice · end panels · scribe fillers   → EXTRAS (F5)
+ *   plinth · bottom mask                                 → EXTRAS (F5)
+ *   this cabinet's colour                                → FRONTS / INSIDE
+ *   edit cabinet · edit drawer                           → the docked editor
+ *   drawer fronts · centre shelves                       → the docked editor
+ *   show dimensions                                      → the VIEW BAR
+ *
+ * WHY IT IS A STYLESHEET AND NOT A FILTER. The rows are not in the retail
+ * tree at all: they are `src/lib/contextActions.js`, the table PRO's own menu
+ * reads, and removing one there would remove it from a JOINER's menu — PRO is
+ * frozen to zero bytes tonight. The component that draws them,
+ * `detail/ContextEdits.jsx`, is a COPY held by
+ * `test/turn65-f8-the-menu-and-the-cornice.test.js` to PRO's own 334 lines, so
+ * a guard cannot be written into that either. What is left is the mechanism
+ * this sheet already uses for exactly this purpose, under exactly this flag:
+ * hide in retail, cut nowhere. Turn `RETAIL_SHOW_WORKSHOP_TOOLS` on and the
+ * client's menu is PRO's menu entire.
+ *
+ * EVERY ROW HIDES AND SIX ARE NAMED BACK, rather than twenty `:not()`s: a row
+ * added to the shared table tomorrow is then hidden by default, which is the
+ * safe direction for a menu a client sees.
+ *
+ * THE ORDER IS THE OWNER'S. The groups the copy draws are `edit`, `rest`,
+ * `dimensions` — so Rename would stand above Rotate. The group wrappers are
+ * made transparent (`display: contents`) and the menu itself a column, so the
+ * six can carry his own order. The header keeps the default `order: 0` and
+ * therefore stays on top. */
+.pbi-room[data-workshop-tools="no"] [data-menu-entry],
+.pbi-room[data-workshop-tools="no"] [data-menu-divider] {
+  display: none !important;
+}
+.pbi-room[data-workshop-tools="no"] .pbi-re-panel:has(> div > [data-menu-entry]) {
+  display: flex;
+  flex-direction: column;
+}
+.pbi-room[data-workshop-tools="no"] div:has(> [data-menu-entry]) { display: contents; }
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="rotate-90"],
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="back-to-wall"],
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="side-to-wall"],
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="rename"],
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="save-template"],
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="delete"] {
+  display: block !important;
+}
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="rotate-90"] { order: 1; }
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="back-to-wall"] { order: 2; }
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="side-to-wall"] { order: 3; }
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="rename"] { order: 4; }
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="save-template"] { order: 5; }
+.pbi-room[data-workshop-tools="no"] [data-menu-entry="delete"] { order: 6; }
+
 /* ─── T68 F6 · HINGE ASSIGNMENT LEAVES THE RETAIL DOCK ────────────────────
  *
  * The owner: *"wybór hinges to nie jest dobry pomysł, nie tutaj — zostaw w

@@ -2111,6 +2111,45 @@ export function unitWarnings(unitId) {
  */
 export const bayCount = (unitId) => Math.max(1, (S().bayDoorsFor?.(unitId) || []).length);
 
+/**
+ * ─── T69 F6 · THE BAYS, AND THE ONE HIGHLIGHTER ────────────────────────────
+ *
+ * *"PRO highlights a bay when its chip is hovered; retail lost it. READ PRO's
+ * mechanism first (the chip→scene hover path), carry the same mechanism — one
+ * law, no second highlighter."*
+ *
+ * PRO'S MECHANISM, read end to end before anything was written:
+ *
+ *   `components/AddItems.jsx`  a bay chip's `onPointerEnter` calls
+ *                              `onZoneHover(z.index)`
+ *   `components/AddItemsModal` hands that hook `uiStore.setZoneHint`
+ *   `stores/uiStore.js`        `zoneHint` — one integer, or null
+ *   `3d/Scene.jsx`             passes it to the SELECTED unit's `UnitView`
+ *   `3d/UnitView.jsx`          draws the box over `bays[zoneHint]`
+ *
+ * Four of those five are SHARED — retail runs the same ui store, the same
+ * Scene and the same UnitView — so there is nothing to carry but the first
+ * link, and nothing to write but a chip that calls the same setter. A second
+ * highlighter would be a second law about the same box.
+ *
+ * These two are that link, and they are the whole of it: the LIST is the
+ * store's own `zonesOf` (PRO's list, in PRO's order), and the HOVER is
+ * `uiStore.setZoneHint`, PRO's own integer.
+ */
+export const bayZones = (unitId) => (S().zonesOf?.(unitId) || []);
+
+export function hoverBay(index) {
+  U().setZoneHint(index == null ? null : index);
+  return U().zoneHint;
+}
+
+/**
+ * T69 F6 · …and the cabinet the hint is ABOUT. `Scene.jsx` draws it for the
+ * SELECTED unit only, so a chip on an unselected wardrobe would light nothing.
+ * The store's own `selectUnit` — the same call the stage's plus makes.
+ */
+export const selectUnitOnStage = (unitId) => { U().selectUnit?.(unitId); return unitId; };
+
 export function setBayCount(unitId, want) {
   const n = Math.min(MAX_BAYS, Math.max(1, Math.trunc(Number(want) || 1)));
   if (!unitOf(unitId)) return 0;

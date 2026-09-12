@@ -8,6 +8,7 @@ import {
 } from './controls.jsx';
 import { REASONS } from './reasons.js';
 import * as A from './adapter.js';
+import { useUiStore } from '../../stores/uiStore.js';
 import MaterialSlot from './material/MaterialSlot.jsx';
 import WizardHardware from './material/WizardHardware.jsx';
 import AddItems from './detail/AddItems.jsx';
@@ -189,23 +190,16 @@ function WherePanel({ unit, room, onEditRoom }) {
 
       {said ? <Said testid="where-said">{said}</Said> : null}
 
-      {/* T65 F1 · one of the two doors to `addFirstWardrobe`; the other is the
-          plus on the empty floor. The room is empty until one of them is used. */}
-      {unit ? null : (
-        <Button
-          data-testid="where-add-wardrobe"
-          onClick={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
-        >
-          ADD A WARDROBE
-        </Button>
-      )}
+      {/* ─── T69 F10 · THE ROOM COMES FIRST ───────────────────────────────
+          *"EDIT THE ROOM sits ABOVE ADD A WARDROBE in the WHERE step. First
+          the room, then the furniture; the lazy client may still press ADD at
+          once."*
 
-      <p className="pbi-choice pbi-choice-15 pbi-panel-note">
-        {unit
-          ? 'Measure wall to wall and floor to ceiling. We will survey before we build.'
-          : 'Measure wall to wall and floor to ceiling. The room is empty — add a wardrobe here or press the plus on the floor.'}
-      </p>
-
+          It is the order a joiner surveys in and the order the two controls
+          answer in: a wardrobe is placed IN something, and the something is
+          the room. Nothing is gated by it — ADD A WARDROBE is a live button
+          whether or not the room has been touched, which is the lazy client's
+          standing law — only the reading order moved. */}
       {/* ─── T66 F8 · THE ROOM IS NOT HIDDEN ──────────────────────────────
           The owner: *"edit the room powinien być zawsze na wierzchu, a nie
           ukryte pod more options."* So the button stands in WHERE, under the
@@ -235,6 +229,24 @@ function WherePanel({ unit, room, onEditRoom }) {
         Nothing is fitted around them yet: a wardrobe may stand across a window and we will
         sort it on the survey.
       </p>
+
+      {/* T65 F1 · one of the two doors to `addFirstWardrobe`; the other is the
+          plus on the empty floor. The room is empty until one of them is used. */}
+      {unit ? null : (
+        <Button
+          data-testid="where-add-wardrobe"
+          onClick={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
+        >
+          ADD A WARDROBE
+        </Button>
+      )}
+
+      <p className="pbi-choice pbi-choice-15 pbi-panel-note">
+        {unit
+          ? 'Measure wall to wall and floor to ceiling. We will survey before we build.'
+          : 'Measure wall to wall and floor to ceiling. The room is empty — add a wardrobe here or press the plus on the floor.'}
+      </p>
+
     </Panel>
   );
 }
@@ -340,6 +352,13 @@ function InsidePanel({ unit, project }) {
   // T66 F6 · the ONE bays entry reads its name off the same table the rows do.
   const baysRow = A.INTERIOR_ROWS.find((row) => row.bays) || null;
   const bays = unit ? A.bayCount(unit.id) : 1;
+  // T69 F6 · the bays THEMSELVES, from the store's own `zonesOf` — PRO's list,
+  // in PRO's order. The count above is what a client types; this is what the
+  // pointer walks along.
+  const zones = unit ? A.bayZones(unit.id) : [];
+  // T69 F6 · which bay the pointer is on — the SHARED store's own integer, the
+  // very one `3d/UnitView.jsx` draws the box from. One law, two readers.
+  const hinted = useUiStore((st) => st.zoneHint);
   const b = A.designBounds();
 
   // ─── T64 F1.4 · SHELVES GO IN CENTRED ────────────────────────────────────
@@ -410,6 +429,55 @@ function InsidePanel({ unit, project }) {
           }}
         />
       </Field>
+
+      {/* ─── T69 F6 · THE BAY LIGHTS UP UNDER THE POINTER ─────────────────
+          *"PRO highlights a bay when its chip is hovered; retail lost it. READ
+          PRO's mechanism first (the chip→scene hover path), carry the same
+          mechanism — one law, no second highlighter."*
+
+          PRO's mechanism, read end to end: a chip's `onPointerEnter` calls
+          `uiStore.setZoneHint(index)`, `Scene.jsx` passes that integer to the
+          SELECTED unit's `UnitView`, and `UnitView` draws the box over
+          `bays[zoneHint]`. Four of those five links are SHARED — retail runs
+          the same ui store, the same Scene and the same UnitView — so the only
+          thing missing was a chip, and the only thing written is a chip. The
+          highlight itself is PRO's, unchanged, and there is no second one.
+
+          The row appears only where it MEANS something: one bay is not a
+          choice, which is `AddItems.jsx`'s own `zones.length > 1` and the same
+          sentence T65 wrote about the note below it. Pressing a chip SELECTS
+          the cabinet on the stage, because `Scene.jsx` draws the hint for the
+          selected unit and a highlight nobody can see is not one. */}
+      {zones.length > 1 ? (
+        <div
+          className="pbi-opening-list"
+          data-testid="inside-bay-chips"
+          onPointerLeave={() => A.hoverBay(null)}
+        >
+          {zones.map((z) => (
+            <button
+              key={z.id ?? z.index}
+              type="button"
+              // The chip shows what the SCENE shows: `zoneHint` is one
+              // integer and both read it, so the lit chip and the lit bay
+              // cannot disagree. It is also what makes this a row of the
+              // opening list rather than a bare button — the same `is-on` law
+              // its siblings in FRONTS and HANDLES wear.
+              className={`pbi-opening-row${hinted === z.index ? ' is-on' : ''}`}
+              data-testid={`inside-bay-${z.index}`}
+              data-on={hinted === z.index ? 'yes' : 'no'}
+              data-bay={z.index}
+              title={`${Math.round(z.size)} mm clear`}
+              onPointerEnter={() => A.hoverBay(z.index)}
+              onFocus={() => A.hoverBay(z.index)}
+              onBlur={() => A.hoverBay(null)}
+              onClick={() => { A.selectUnitOnStage(unit.id); A.hoverBay(z.index); }}
+            >
+              {`BAY ${z.index + 1} · ${Math.round(z.size)}`}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {/* PRO's own line, and T65's law about when it appears: *"i wtedy
           dopiero informacja o tym że bays można zrobić niższe ale półka musi

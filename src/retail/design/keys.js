@@ -1,4 +1,5 @@
-import { isDeleteKey } from '../../lib/deleteKey.js';
+import { isDeleteKey, isTypingTarget } from '../../lib/deleteKey.js';
+import { useHistoryStore } from '../../stores/historyStore.js';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useUiStore } from '../../stores/uiStore.js';
 import { removeUnitRefusal } from './adapter.js';
@@ -36,6 +37,10 @@ import { removeUnitRefusal } from './adapter.js';
 // the selection's Escape are the same key on the same listener, so the
 // answer to the balance's *"how many keyboard handlers does the retail stage
 // have?"* is ONE, by construction and by `test/turn64-f1-the-small-things`.
+//
+// T68 F2 added Ctrl+Z / Ctrl+Shift+Z to THIS handler for that reason and no
+// other: a second listener would have been a second answer to the same
+// question, and the count is the thing the balance asks for.
 
 /**
  * What one key press does to the room. Pure over the two stores and the
@@ -49,6 +54,42 @@ export function stageKeyAction(e, { fullScreen = false, onExitFullScreen = null,
   const ui = useUiStore.getState();
   const store = useProjectStore.getState();
   const { selectedElement, selectedUnitId } = ui;
+
+  // ─── T68 F2 · UNDO AND REDO, ON THE KEYS THEY HAVE ALWAYS BEEN ON ────────
+  //
+  // *"keyboard Ctrl+Z / Ctrl+Shift+Z (and Cmd on mac)"*, and **MEGA WAŻNE**.
+  //
+  // It is FIRST, above the Delete guard, because `isDeleteKey` is deliberately
+  // inert under a modifier and would never see this. The typing guard is the
+  // SAME one the delete key wears (`lib/deleteKey.js isTypingTarget`): Ctrl+Z
+  // with the caret in a width field is the BROWSER's undo of the characters
+  // typed there, and taking that away from a client mid-number is exactly the
+  // fault T34 wrote that guard to prevent.
+  //
+  // `metaKey` is ⌘ — the owner's own machines — and it rides with Ctrl here
+  // for the same reason Backspace rides with Delete there.
+  //
+  // Ctrl+Y is PRO's second redo and is carried too: the two applications share
+  // the stack, so they may as well share both spellings of the gesture.
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && /^[zyZY]$/.test(e.key)) {
+    // The same `doc` the delete guard takes, defaulted the same way and safe
+    // where there is no DOM at all (a node test, and the CI that runs it).
+    const where = doc === undefined ? (typeof document === 'undefined' ? null : document) : doc;
+    if (isTypingTarget(e.target) || isTypingTarget(where?.activeElement)) {
+      return { handled: false, said: '', did: null };
+    }
+    const history = useHistoryStore.getState();
+    const wantsRedo = e.key === 'y' || e.key === 'Y' || e.shiftKey;
+    e.preventDefault?.();
+    if (wantsRedo) {
+      if (!history.future.length) return { handled: true, said: '', did: 'redo-empty' };
+      history.redo();
+      return { handled: true, said: '', did: 'redo' };
+    }
+    if (!history.past.length && !history.canUndo()) return { handled: true, said: '', did: 'undo-empty' };
+    history.undo();
+    return { handled: true, said: '', did: 'undo' };
+  }
 
   if (e.key === 'Escape') {
     // PRO: Escape clears one level at a time — the piece first, the cabinet

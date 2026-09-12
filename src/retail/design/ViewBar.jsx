@@ -1,5 +1,9 @@
 import { Fragment } from 'react';
 import { useUiStore } from '../../stores/uiStore.js';
+// T68 F2 · PRO's own history store. Not a copy, not a mirror: the very store
+// `src/components/CanvasToolbar.jsx` reads, so a client's ↺ and a joiner's
+// Ctrl+Z are one stack with one depth and one set of rules.
+import { useHistoryStore } from '../../stores/historyStore.js';
 import { getCabinetProfile } from '../../engine/profile.js';
 import { propsAvailable, propsReason, usePropsPack } from '../../3d/propsPack.js';
 import { VIEW_TOOLS, WORKSHOP_TOOLS } from './viewTools.js';
@@ -123,6 +127,14 @@ export default function ViewBar({
   const rulerOn = useUiStore((s) => s.rulerOn);
   const openFronts = useUiStore((s) => s.openFronts);
 
+  // ─── T68 F2 · READ AS LENGTHS, FOR PRO'S OWN REASON ──────────────────────
+  // `CanvasToolbar.jsx`, verbatim: *"Read as LENGTHS rather than through the
+  // store's own `canUndo()`, because a selector that calls a function returns
+  // a fresh answer every render and zustand would re-render this bar on every
+  // frame of every drag."* The same trap, the same way round it.
+  const undoDepth = useHistoryStore((s) => s.past.length);
+  const redoDepth = useHistoryStore((s) => s.future.length);
+
   // T58 F8's own fallback, which PRO's toolbar obeys and so does this one:
   // *"ship the toggle GREYED with a one-line reason … nothing throws."*
   const pack = usePropsPack();
@@ -155,6 +167,12 @@ export default function ViewBar({
         return { on: fullScreen, off: false, why: '' };
       case 'reset':
         return { on: false, off: false, why: '' };
+      // T68 F2 · GREYED WITH A REASON, never greyed in silence — the standing
+      // no-dead-controls law, and PRO's own two sentences for it.
+      case 'undo':
+        return { on: false, off: undoDepth === 0, why: tool.titleOff };
+      case 'redo':
+        return { on: false, off: redoDepth === 0, why: tool.titleOff };
       default:
         if (tool.kind === 'preset') return { on: preset === tool.id, off: false, why: '' };
         return { on: Boolean(flags[tool.flag]), off: false, why: '' };
@@ -168,6 +186,8 @@ export default function ViewBar({
       case 'lights': return onLights;
       case 'reset': return onReset;
       case 'fullscreen': return onFullScreen;
+      // T68 F2 · PRO's two functions, called by name. No second history.
+      case 'history': return () => useHistoryStore.getState()[tool.id]();
       default: return () => useUiStore.getState()[tool.action]();
     }
   };
@@ -200,7 +220,12 @@ export default function ViewBar({
               disabled={off}
               onClick={press(tool)}
               testid={`view-${tool.id}`}
-              title={off ? why : ((on && tool.titleOn) ? tool.titleOn : tool.title)}
+              title={off ? why : (
+                // T68 F2 · PRO puts the depth in the tooltip; so does this.
+                tool.id === 'undo' && undoDepth
+                  ? `Undo (Ctrl+Z) — ${undoDepth} step${undoDepth === 1 ? '' : 's'} back`
+                  : ((on && tool.titleOn) ? tool.titleOn : tool.title)
+              )}
             />
           </Fragment>
         );

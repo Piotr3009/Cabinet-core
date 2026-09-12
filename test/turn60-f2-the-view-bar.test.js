@@ -28,6 +28,9 @@ import { VIEW_TOOLS, WORKSHOP_TOOLS } from '../src/retail/design/viewTools.js';
 import { RETAIL_SHOW_WORKSHOP_TOOLS } from '../src/retail/config.js';
 import { chromeOn, proChromeOn, setChromePart, setProChrome } from '../src/3d/chrome.js';
 import { useUiStore } from '../src/stores/uiStore.js';
+// T68 F2 · the bar grew two of PRO's tools that live on PRO's OTHER shared
+// store. Parity is against whichever store the entry names.
+import { useHistoryStore } from '../src/stores/historyStore.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -52,10 +55,13 @@ test('F2 · every entry flips the SAME store flag PRO flips', () => {
       missing.push(`${tool.id}: PRO's toolbar never reads ${tool.flag}`);
     }
     // …and it is a real member of the store, not a name that only exists here.
-    const state = useUiStore.getState();
-    if (tool.flag && !(tool.flag in state)) missing.push(`${tool.id}: uiStore has no ${tool.flag}`);
+    // T68 F2: WHICH store is the entry's own word (`store: 'history'`), so a
+    // tool that moved house cannot pass by being checked against the wrong one.
+    const which = tool.store === 'history' ? 'historyStore' : 'uiStore';
+    const state = tool.store === 'history' ? useHistoryStore.getState() : useUiStore.getState();
+    if (tool.flag && !(tool.flag in state)) missing.push(`${tool.id}: ${which} has no ${tool.flag}`);
     if (typeof state[tool.action] !== 'function' && tool.action !== 'toggleAllFronts') {
-      missing.push(`${tool.id}: uiStore has no ${tool.action}()`);
+      missing.push(`${tool.id}: ${which} has no ${tool.action}()`);
     }
   }
   assert.deepEqual(missing, [], `the bar is not PRO's:\n  ${missing.join('\n  ')}`);
@@ -64,7 +70,15 @@ test('F2 · every entry flips the SAME store flag PRO flips', () => {
   // dimensions wywal, po co mi to"* · *"measure wyrzuć też."* Two removed from
   // the RETAIL bar only — PRO's `CanvasToolbar.jsx` keeps both, untouched, and
   // the six that remain are still PRO's, flag for flag.
-  assert.equal(FROM_PRO.length, 6, 'six of PRO\'s view tools — eight, less the two the owner struck');
+  // ─── AMENDED AGAIN BY T68 F2 ────────────────────────────────────────────
+  // Six became EIGHT: T60 carried undo and redo as `later` — *"the brief's
+  // enumeration does not name them"* — and the owner has now named them,
+  // **MEGA WAŻNE**. They are PRO's, from PRO's history store, and they take
+  // PRO's place at the head of the bar.
+  assert.equal(FROM_PRO.length, 8,
+    'eight of PRO\'s tools — the original eight, less the two the owner struck, plus undo and redo');
+  assert.ok(VIEW_TOOLS.some((t) => t.id === 'undo') && VIEW_TOOLS.some((t) => t.id === 'redo'),
+    'undo or redo has left the retail bar — the owner called them MEGA WAŻNE');
   assert.ok(!VIEW_TOOLS.some((t) => t.id === 'front-dimensions' || t.id === 'measure'),
     'FRONT DIMENSIONS or MEASURE is back in the retail bar');
   assert.match(PRO_BAR, /toggleFrontDimensions/, 'PRO lost its front dimensions — that was retail\'s removal, not PRO\'s');
@@ -74,9 +88,21 @@ test('F2 · every entry flips the SAME store flag PRO flips', () => {
 test('F2 · PRO\'s labels and PRO\'s tooltips, character for character', () => {
   const wrong = [];
   for (const tool of FROM_PRO) {
-    for (const key of ['label', 'labelOn', 'title', 'titleOn']) {
+    for (const key of ['label', 'labelOn', 'title', 'titleOn', 'titleOff']) {
       const said = tool[key];
       if (!said) continue;
+      // T68 F2 · THE ONE NAMED EXCEPTION, argued rather than waved through.
+      // PRO's redo tooltip says `Redo (Ctrl+Y)`; CLAUDE.md F2 asks for
+      // *"Ctrl+Z / Ctrl+Shift+Z (and Cmd on mac)"*, and retail answers both
+      // keys. The STRING shows the shortcut the owner asked for, so this one
+      // pair cannot be PRO's character for character — and PRO's own glyph and
+      // PRO's own empty-stack sentence still are, which is what the two lines
+      // below assert.
+      if (tool.id === 'redo' && key === 'title') {
+        if (!/Ctrl\+Shift\+Z/.test(said)) wrong.push('redo.title lost the shortcut CLAUDE.md names');
+        if (!PRO_BAR.includes('Redo (Ctrl+Y)')) wrong.push('PRO lost its own redo tooltip');
+        continue;
+      }
       if (!PRO_BAR.includes(said)) wrong.push(`${tool.id}.${key}: PRO does not say "${said}"`);
     }
   }

@@ -162,6 +162,22 @@ import('./RetailApp.jsx').then(async (module) => {
   const ui = useUiStore.getState();
   ui.setAudience('retail');
 
+  // ─── T68 F2 · UNDO AND REDO — THE SAME HISTORY PRO KEEPS ─────────────────
+  //
+  // *"MEGA WAŻNE"*, and the whole of why it was missing is this one line.
+  // `stores/historyStore.js` is a SUBSCRIBER, not a commit call: it watches
+  // the project store and snapshots every mutation by construction. PRO's
+  // `main.jsx` starts it at module scope; this entry never did, so retail had
+  // no stack at all and T60's parity map carried the two tiles as `later`.
+  //
+  // Started HERE, inside the dynamic block, for the same reason every other
+  // store call in this file is: a static import would hoist above
+  // `setPersistence('none')`. NO SECOND HISTORY is created — this is PRO's
+  // store, PRO's depth and coalescing out of PRO's profile, PRO's `undo`
+  // and `redo`. The bar and the keyboard both call those two functions.
+  const { watchProjectHistory } = await import('../stores/historyStore.js');
+  watchProjectHistory();
+
   // T63 F1 · the hardware catalogues, as PRO's App.jsx loads them (see the
   // note above `loadDecors()`): a hinge on screen is the downloaded GLB or
   // nothing, and the GLB is named by these.

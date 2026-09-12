@@ -31,6 +31,11 @@ const ROOT = new URL('../', import.meta.url).pathname;
 const OUT = new URL('../verify/t68/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
+// The probe is run TWICE tonight: once before the fix (committed as the
+// diagnosis) and once after it (committed as the proof). `T68_PROBE_SUFFIX`
+// is how the second run is told not to overwrite the first.
+const SUFFIX = process.env.T68_PROBE_SUFFIX || '';
+
 const S = () => useProjectStore.getState();
 const U = () => useUiStore.getState();
 
@@ -219,5 +224,5 @@ md.push('```');
 for (const l of stage.slice(0, 40)) md.push(l);
 if (!stage.length) md.push('(nothing — `Stage.jsx` carries no pointer drag at all)');
 md.push('```');
-writeFileSync(`${OUT}f4-probe.md`, `${md.join('\n')}\n`);
+writeFileSync(`${OUT}f4-probe${SUFFIX}.md`, `${md.join('\n')}\n`);
 process.stdout.write(`${md.join('\n')}\n\nwritten: verify/t68/f4-probe.md\n`);

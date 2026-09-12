@@ -30,6 +30,11 @@ setDecorCatalogue(parseDecorCatalogue(decorPack, { basePath: '/decors/egger/' })
 const OUT = new URL('../verify/t68/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
+// The probe is run TWICE tonight: once before the fix (committed as the
+// diagnosis) and once after it (committed as the proof). `T68_PROBE_SUFFIX`
+// is how the second run is told not to overwrite the first.
+const SUFFIX = process.env.T68_PROBE_SUFFIX || '';
+
 const S = () => useProjectStore.getState();
 const unitOf = (id) => S().units.find((u) => u.id === id) || null;
 
@@ -223,5 +228,5 @@ if (!broken.length) {
     ? '**The residue is the ENGINE\'s own — F3\'s fence applies: STOP and skip-and-note.**'
     : '**The residue lives in PARAMS THE STORE WROTE — the store clears what it wrote.**');
 }
-writeFileSync(`${OUT}f3-probe.md`, `${md.join('\n')}\n`);
+writeFileSync(`${OUT}f3-probe${SUFFIX}.md`, `${md.join('\n')}\n`);
 process.stdout.write(`${md.join('\n')}\n\nwritten: verify/t68/f3-probe.md\n`);

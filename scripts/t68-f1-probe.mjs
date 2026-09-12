@@ -36,6 +36,11 @@ setDecorCatalogue(parseDecorCatalogue(decorPack, { basePath: '/decors/egger/' })
 const OUT = new URL('../verify/t68/', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
 
+// The probe is run TWICE tonight: once before the fix (committed as the
+// diagnosis) and once after it (committed as the proof). `T68_PROBE_SUFFIX`
+// is how the second run is told not to overwrite the first.
+const SUFFIX = process.env.T68_PROBE_SUFFIX || '';
+
 const S = () => useProjectStore.getState();
 
 /** What the T66 F4 STYLE LIST offers — `Options.jsx` filters `HJ` out. */
@@ -232,6 +237,6 @@ for (const [what, lines] of writers) {
   md.push('```');
   md.push('');
 }
-writeFileSync(`${OUT}f1-probe.md`, `${md.join('\n')}\n`);
+writeFileSync(`${OUT}f1-probe${SUFFIX}.md`, `${md.join('\n')}\n`);
 process.stdout.write(md.join('\n'));
 process.stdout.write(`\n\nwritten: verify/t68/f1-probe.md\n`);

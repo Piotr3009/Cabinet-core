@@ -39,9 +39,37 @@
  * @property {string} frontDecor    an EGGER id in the app's catalogue
  * @property {string} carcassDecor  an EGGER id in the app's catalogue
  * @property {string} handle        a handle system id from engine/handles.js HANDLE_TYPES
+ * @property {boolean} [namesCarcass] T68 F1 — does this collection SPEAK for the
+ *                                  carcass? See the block below. None of the four
+ *                                  house collections does.
  * @property {string[]} swatches    the collection's own handful of decors (front colours)
  */
 
+/**
+ * ─── T68 F1 · A COLLECTION DRESSES THE FRONTS; THE CARCASS IS H3325 ────────
+ *
+ * The owner, unconditionally: *"powinien być oak H3325 … dodaj do kodu jako
+ * default, na zawsze"* — and the link he was looking at when he said it
+ * carried `?collection=royal-burgundy`.
+ *
+ * The probe (`verify/t68/f1-probe.md` §2) measured what that cost him: a fresh
+ * design with ANY of the four in the URL came up on that collection's carcass
+ * decor and never on the oak. Without a collection it was H3325; with one it
+ * was Cashmere, Black, Graphite. His default was real and unreachable.
+ *
+ * CLAUDE.md F1 leaves exactly one door open — *"unless the collection
+ * explicitly names a carcass decor"* — so the permission is made EXPLICIT
+ * rather than implied by a field's existence. `namesCarcass` is that word.
+ * NOTHING IS DELETED: every `carcassDecor` id below stays, stays catalogued by
+ * `collectionDecorIds`, and stays the collection's own suggestion for the day
+ * one of them is meant to speak for the box. Today none of them is, so the
+ * carcass is the workshop's own default — `profile.projectSettings
+ * .defaultCarcassDecorId`, H3325 ST28 Tobacco Gladstone Oak — on every fresh
+ * design, with a collection and without one.
+ *
+ * Flip one `namesCarcass` to `true` and that collection's carcass wins again:
+ * the law is a value in this table and not an `if` somewhere else.
+ */
 /** @type {Collection[]} */
 export const COLLECTIONS = [
   {

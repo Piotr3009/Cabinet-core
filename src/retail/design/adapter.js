@@ -1134,12 +1134,88 @@ export function doorCountNote(widthMm, count) {
 }
 
 /** F4.3 · FRONT STYLE and the shaker frame. */
-export function setFrontStyle(styleId) {
+// T68 F1 · the shape PRO restores when a J-pull is left. It lives beside the
+// ONE writer, because the one writer is the only thing that sets a style.
+let lastNonJStyle = null;
+
+/**
+ * ═══ T68 F1 · THE ONE WRITE PATH FOR WHAT THE WARDROBE WEARS ═══════════════
+ *
+ * THE PROBE FIRST (`verify/t68/f1-probe.md`, committed before this line was
+ * written). Three entry points, every order, and the same three presses gave
+ * TWO DIFFERENT WARDROBES:
+ *
+ *   fronts → collection → unit   opening `handles` · 0 J-pull fronts cut
+ *   collection → fronts → unit   opening `jhandle` · 2 J-pull fronts cut
+ *
+ * Whichever of the FRONTS step and the collection was pressed LAST won, and
+ * the owner watched the J come and go: *"czasami się pojawia … co jest?"*
+ *
+ * THE DISEASE, named: there were TWO writers of how a front is held.
+ * `setFrontOpening` wrote PRO's whole patch — the handle, the shape it
+ * restores, and the runner lock. `applyCollection` wrote `setHandle` alone,
+ * which is the same field by a shorter road that skips the other two. Two
+ * roads to one field is two answers to one question, and which one you get is
+ * the order you happened to press them in.
+ *
+ * THE LAW, one function, and every door opens onto it: A FRONT'S STYLE AND ITS
+ * OPENING ARE WRITTEN TOGETHER OR NOT AT ALL. `frontOpeningPatch` is PRO's own
+ * and is the only thing that touches `fronts.handle`; the style is stamped on
+ * the design AND on the slot it wears, exactly as `setFrontStyle` always did.
+ *
+ *   the FRONTS step   `setFrontStyle` / `setFrontOpening` → here
+ *   a collection      `applyCollection` → here, through the same opening id
+ *   a per-unit change the STORE's own per-unit override (`setUnitFinish`),
+ *                     which writes the UNIT and can reach `design` at all —
+ *                     T13's law, and the probe shows it never did.
+ *
+ * @param {{style?: string|null, opening?: string|null}} want
+ * @returns {{style: string, opening: string}} what the store says afterwards
+ */
+export function writeFrontLaw({ style = null, opening = null } = {}) {
   const store = S();
-  const design = store.project.design;
-  store.setDesign({ fronts: { ...design.fronts, style: styleId } });
-  store.setFrontType(frontTypeId(design), { style: styleId });
-  return styleId;
+  const design = migrateDesign(store.project.design);
+  const nextStyle = style || design.fronts?.style || 'S';
+  // PRO remembers the last shape that was not the legacy J, so that leaving a
+  // J-pull puts the door back to the shape somebody chose rather than to Flat.
+  // It is remembered HERE now, because this is the only place a style is set.
+  if (nextStyle && nextStyle !== J_HANDLE_STYLE) lastNonJStyle = nextStyle;
+
+  // 1 · THE SHAPE — on the design, and on the front slot that wears it. Both,
+  //     because `resolveUnitDesign`'s cascade reads the SLOT before the
+  //     project (engine/design.js) and a unit pointed at a slot would
+  //     otherwise keep yesterday's shape.
+  store.setDesign({ fronts: { ...design.fronts, style: nextStyle } });
+  store.setFrontType(frontTypeId(design), { style: nextStyle });
+
+  // 2 · AND THE OPENING, ALWAYS. Not "when asked": a style written without an
+  //     opening is T64's J-pull lesson repeating itself. Re-read first —
+  //     `store` is the snapshot from before step 1.
+  const written = migrateDesign(S().project.design);
+  const nextOpening = opening || frontOpening(written);
+  S().setDesign(frontOpeningPatch(written, nextOpening, { previousStyle: lastNonJStyle }));
+
+  return { style: S().project.design?.fronts?.style || nextStyle, opening: frontOpeningOf(S().project) };
+}
+
+/**
+ * T68 F1 · A COLLECTION NAMES A HANDLE; THE PROJECT KEEPS AN OPENING.
+ *
+ * `engine/handles.js HANDLE_TYPES` and `lib/frontOpening.js FRONT_OPENINGS`
+ * are two vocabularies for one fact, and the collections were written in the
+ * first. This is the translation, in one place, so a collection presses the
+ * very control the FRONTS step presses.
+ */
+export function openingForHandle(handle) {
+  if (handle === 'jpull') return 'jhandle';
+  if (handle === 'bar') return 'handles';
+  if (handle === 'knob') return 'knobs';
+  return 'push';
+}
+
+/** F4.2 · THE SHAPE — one of the four the STYLE list offers. Through the law. */
+export function setFrontStyle(styleId) {
+  return writeFrontLaw({ style: styleId }).style;
 }
 
 export function setShakerFrame(mm) {
@@ -1150,17 +1226,53 @@ export function setShakerFrame(mm) {
 }
 
 /**
- * F4.3 · A COLLECTION IS A PRESET, applied through the store's own setters:
- * a front decor, a carcass decor and a handle default, and nothing else.
+ * F4.3 · A COLLECTION IS A PRESET, applied through the store's own setters.
+ *
+ * ─── T68 F1 · AND THROUGH THE SAME SETTERS THE FRONTS STEP PRESSES ─────────
+ *
+ * TWO LINES CHANGED, both convicted by the probe:
+ *
+ *   `setHandle(collection.handle)` → `writeFrontLaw({ opening })`. The old
+ *   call wrote `fronts.handle` and nothing else, so a collection applied AFTER
+ *   the FRONTS step overwrote the client's opening without the runner lock and
+ *   without the shape-restore law. One field, one writer, now.
+ *
+ *   the carcass is written ONLY where the collection says it names one.
+ *   CLAUDE.md F1: *"a collection … does NOT touch the carcass decor unless the
+ *   collection names one"*, and the owner, unconditionally: *"powinien być oak
+ *   H3325 … dodaj do kodu jako default, na zawsze"*. The probe measured the
+ *   cost of the old behaviour: with ANY of the four in the URL the carcass was
+ *   never H3325, and his own link carried `?collection=royal-burgundy`.
+ *   `namesCarcass` is that permission, declared per collection in
+ *   `collections.js`; the ids themselves are untouched and still catalogued.
  */
 export function applyCollection(collectionId) {
   const collection = collectionById(collectionId);
   if (!collection) return null;
   setFrontDecor(collection.frontDecor);
-  setCarcassDecor(collection.carcassDecor);
-  setHandle(collection.handle);
+  // The carcass is written either way — a preset that left it unwritten would
+  // put a client on "workshop default" and make the law depend on whether
+  // `applyLazyDefaults` happened to run. What CHANGES is the value: the
+  // collection's own only where it declares it speaks for the box.
+  setCarcassDecor(collection.namesCarcass ? collection.carcassDecor : carcassDefaultDecor());
+  writeFrontLaw({ opening: openingForHandle(collection.handle) });
   return collection;
 }
+
+/**
+ * T68 F1 · H3325 ST28 TOBACCO GLADSTONE OAK, AND WHERE THE NUMBER LIVES.
+ *
+ * *"powinien być oak H3325 … dodaj do kodu jako default, na zawsze"*.
+ *
+ * Read off the PROFILE — the workshop's own key, `projectSettings
+ * .defaultCarcassDecorId`, which T67 F5 put there — so the workshop decides
+ * and retail obeys. The constant beside it is the same string and a test holds
+ * the two EQUAL, because two literals that must agree is exactly how a default
+ * drifts apart. Never a hard-coded swatch: CLAUDE.md F1 says so in as many
+ * words.
+ */
+export const carcassDefaultDecor = () => P().projectSettings?.defaultCarcassDecorId
+  || DEFAULT_CARCASS_DECOR;
 
 export function setFrontDecor(decorId) {
   const store = S();
@@ -2863,7 +2975,9 @@ export function clearMaterialFinish(kind) {
 // tak, żeby było wszystko do wyboru."* Every answer below is the engine's or
 // the store's or PRO's own lib, reached through this file as every other.
 
-import { FRONT_OPENINGS, frontOpening, frontOpeningPatch } from '../../lib/frontOpening.js';
+import {
+  FRONT_OPENINGS, frontOpening, frontOpeningPatch, J_HANDLE_STYLE,
+} from '../../lib/frontOpening.js';
 import { PROJECT_TYPES } from '../../engine/projectTypes.js';
 
 /** T64 F1.1 · the top boxes on a host, asked before Delete — see `removeUnitRefusal`. */
@@ -2917,14 +3031,9 @@ export const frontOpenings = () => FRONT_OPENINGS.map((o) => ({ id: o.id, label:
 
 export const frontOpeningOf = (project) => frontOpening(migrateDesign(project?.design));
 
-let lastNonJStyle = null;
+/** F5 · HOW IT OPENS — one of PRO's four. Through the law. */
 export function setFrontOpening(id) {
-  const store = S();
-  const design = migrateDesign(store.project.design);
-  if (design.fronts.style && design.fronts.style !== 'HJ') lastNonJStyle = design.fronts.style;
-  store.setDesign(frontOpeningPatch(design, id, { previousStyle: lastNonJStyle }));
-  // Re-read: `store` is the snapshot from before the write.
-  return frontOpeningOf(S().project);
+  return writeFrontLaw({ opening: id }).opening;
 }
 
 /**
@@ -3114,6 +3223,23 @@ export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
   // PROJECT's, not the wardrobe's, so they are still worth writing.
   const done = {};
   const collection = collectionId ? applyCollection(collectionId) : null;
+  // ─── T68 F1 · THE CARCASS DEFAULT, FOREVER ────────────────────────────────
+  //
+  // *"powinien być oak H3325 … dodaj do kodu jako default, na zawsze"*, and
+  // the probe's §2 showed the "na zawsze" had a hole in it the width of a
+  // collection. It is written HERE, ABOVE the collection branch and outside
+  // it, so a link with a collection in it reaches the same default a bare link
+  // does. `applyCollection` has already written a carcass by now ONLY where
+  // that collection declares `namesCarcass`, and `carcassDecorOf` is how this
+  // line finds out — asked of the store, never assumed.
+  //
+  // It is READ OFF THE PROFILE and never hard-coded to a swatch: CLAUDE.md
+  // F1, *"If H3325 is missing from the decor list the slot reads, that is the
+  // bug: fix the list's source, never hard-code a swatch."* The constant
+  // beside it is the same string and the test holds the two EQUAL.
+  if (!carcassDecorOf(S().project)) {
+    done.carcass = setCarcassDecor(carcassDefaultDecor());
+  }
   if (!collection) {
     // ─── T66 F5 · WINE ON WALNUT ─────────────────────────────────────────
     // *"default powinno być RAL color wine fronty i walnut Egger carcases."*
@@ -3125,16 +3251,20 @@ export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
     if (!frontDecorOf(S().project) && !frontColourOf(S().project)) {
       done.front = setFrontColour(ralWine());
     }
-    // T67 F5 · *"default Egger to H3325 Gladstone Oak"* — read off the
-    // profile, so the workshop's own key decides and retail only obeys.
-    if (!carcassDecorOf(S().project)) {
-      done.carcass = setCarcassDecor(P().projectSettings?.defaultCarcassDecorId
-        || DEFAULT_CARCASS_DECOR);
-    }
+    // T67 F5's carcass line stood HERE; T68 F1 lifted it out of this branch
+    // so a collection cannot skip it. Nothing else moved.
+    //
     // No handle — the engine's own `null`, written as PRO's push-to-open tile
     // writes it, runner lock included (`frontOpeningPatch`).
     if (!S().project.design?.fronts?.handle) done.opening = setFrontOpening('push');
   }
-  if (!S().project.design?.fronts?.style) done.style = setFrontStyle('S');
+  // ─── T68 F1 · AND THE SHAPE, THROUGH THE SAME ONE WRITER ─────────────────
+  //
+  // *"No path writes style without opening"*. A fresh design that has never
+  // been asked gets shaker — the house default since T59 — and whatever it
+  // gets, it gets its opening stamped in the same breath, which is what makes
+  // the three entry points land on identical geometry whatever order they are
+  // pressed in.
+  done.style = writeFrontLaw({ style: S().project.design?.fronts?.style || 'S' });
   return done;
 }

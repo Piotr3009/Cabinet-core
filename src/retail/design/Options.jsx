@@ -818,6 +818,36 @@ function ExtrasPanel({ unit, project }) {
             </Button>
           </div>
         ) : null}
+
+        {/* ─── T69 F8 · HANDLES, IN EXTRAS — BEZAPELACYJNIE ────────────────
+            *"HANDLES row lands in EXTRAS — bezapelacyjnie — same store path as
+            FRONTS' opening controls. One law, two doors."*
+
+            THE SAME CALL, and that is the whole of it: `adapter.setHandle`
+            writes `setProjectHandle`, which is what the FRONTS step's own
+            handle axis writes (T57 put the J-pull on it, T64 F1.5 wrote it as
+            PRO's wizard does). There is no second handle law here and no
+            per-unit shadow of one — the list is the ENGINE's own
+            `HANDLE_TYPES` through `adapter.handleSystems`, NONE included,
+            exactly as FRONTS offers it. */}
+        <Field label="HANDLES" block note={REASONS.handlesArePerProject}>
+          <div className="pbi-opening-list" data-testid="extras-handles">
+            {A.handleSystems().map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                className={`pbi-opening-row${A.handleChoice(project) === h.id ? ' is-on' : ''}`}
+                data-testid={`extras-handle-${h.id}`}
+                data-on={A.handleChoice(project) === h.id ? 'yes' : 'no'}
+                aria-pressed={A.handleChoice(project) === h.id}
+                title={h.hint || ''}
+                onClick={() => A.setHandle(h.id)}
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
+        </Field>
       </Group>
 
       {/* ═══ 2 · THE CARCASS WEARS ════════════════════════════════════════ */}
@@ -872,6 +902,37 @@ function ExtrasPanel({ unit, project }) {
             options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON' }]}
             onPick={(id) => setSaid(A.setTopInfill(unit.id, id === 'on').said)}
           />
+        </Field>
+
+        {/* ─── T69 F8 · TO THE CEILING, IN THE JOINER'S ORDER ──────────────
+            *"TOP INFILL asks 'to the ceiling?': yes → first the VERTICAL
+            members reach the ceiling (end panel if present, vertical
+            infills), THEN the horizontal top infill closes — automatically,
+            in that order. A side must never show (the visibility law)."*
+
+            THE ORDER IS THE STORE'S (`closeToCeiling`) and not this panel's:
+            it is a fact about how the thing is made. What stands here is the
+            QUESTION — one press, no millimetres, no piece named — and the
+            answer is the same three setters a joiner would reach for, in the
+            order he would reach for them. */}
+        <Field label="TO THE CEILING?" note={REASONS.toTheCeiling}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-to-the-ceiling"
+              disabled={A.closedToCeiling(unit.id)}
+              title={A.closedToCeiling(unit.id)
+                ? 'This wardrobe already reaches the ceiling'
+                : 'Run the uprights to the ceiling, then close the top'}
+              onClick={() => {
+                const done = A.closeToCeiling(unit.id);
+                setSaid(done.order.length ? REASONS.closedInOrder(done.order) : '');
+              }}
+            >
+              CLOSE TO THE CEILING
+            </Button>
+          </div>
         </Field>
 
         {/* ─── END PANELS L / R / BOTH ─────────────────────────────────────
@@ -944,24 +1005,13 @@ function ExtrasPanel({ unit, project }) {
 
       {/* ═══ 3 · ADDITIONS ════════════════════════════════════════════════ */}
       <Group title="ADDITIONS" testid="extras-group-additions">
-        {/* T61 F3 · *"4 add top"* — greyed with the ROOM's own sentence. */}
-        <Field label="TOP BOX" note={boxes.length ? REASONS.topBoxGoesBeside : ''}>
-          <div className="pbi-duty-actions">
-            <Button
-              kind="secondary"
-              size="small"
-              data-testid="layout-add-top-box"
-              disabled={Boolean(topBoxReason)}
-              title={topBoxReason || 'Add a top box on this wardrobe'}
-              onClick={() => setSaid(A.addTopBox(unit.id).said)}
-            >
-              ADD TOP BOX
-            </Button>
-          </div>
-          {topBoxReason ? (
-            <span className="pbi-chip-reason" data-testid="layout-top-box-reason">{topBoxReason}</span>
-          ) : null}
-        </Field>
+        {/* ─── T69 F8 · TOMBSTONE: `ADD TOP BOX` STOOD HERE ────────────────
+            The owner: *"po cholerę ten box"* — a split door covers what a top
+            box was for, and this step already offers one. A LICENSED REMOVAL
+            of the CLIENT ENTRY and nothing else: the engine's `WARDROBE_TOP`
+            type, `adapter.addTopBox`, `store.addUnit('WARDROBE_TOP')` and
+            PRO's own door to it are all untouched, and the editors below
+            still edit a box a saved project already carries. */}
 
         {/* ─── T66 F3 · A BOX IS A UNIT OF ITS OWN, AND IT IS EDITED HERE ───
             T61 F3's law stands: *"a box and the cabinet under it are two

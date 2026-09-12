@@ -64,6 +64,14 @@ export default function Detail(props) {
   const units = useProjectStore((s) => s.units);
   const route = selection ? dockFor(selection) : null;
   const unit = A.unitById(selection?.unitId) || props.unit || null;
+  // ─── T69 F8 · THE DOOR THIS DOCK IS STANDING ON, IF IT IS A DOOR ────────
+  // The panel is the subject: `dockFor` has already resolved it, and the swing
+  // row asks the ADAPTER — never the panel object — which way it hangs and
+  // whether the engine has taken the choice away.
+  const swingPanel = route?.props?.panel || route?.args?.panel || null;
+  const swing = swingPanel && A.isDoorPanel(swingPanel) && selection?.unitId
+    ? { ...A.doorHinge(selection.unitId, swingPanel), panel: swingPanel }
+    : null;
 
   // CLOSE, a removal, a carcass click: the panel slides OUT — so the WHOLE
   // selection goes (the scene's own `clearSelection`, as a click on the empty
@@ -140,6 +148,59 @@ export default function Detail(props) {
           {rowForSelection(selection) && selection?.unitId ? (
             <div data-testid="dock-rehomed">
               <ReHomed row={rowForSelection(selection)} unitId={selection.unitId} />
+            </div>
+          ) : null}
+
+          {/* ─── T69 F8 · THE SWING COMES BACK TO THE DOOR'S DOCK ───────────
+              *"Door swing L/R returns to the door's dock — it left with the
+              hinge block in T68 F6; the swing is the CLIENT's choice, the
+              hinge model stays hidden."*
+
+              T68 F6 hid TWO blocks of the copied `DoorModal` from the client —
+              the hinge PICKER and the hinge HEIGHT ROWS — and the owner was
+              right about both: *"wybór hinges to nie jest dobry pomysł, nie
+              tutaj."*  Which way the door OPENS went with them, and it is not
+              the same question at all: it is the first thing anyone asks about
+              a door in a corner, and it has nothing to do with which hinge the
+              workshop screws on.
+
+              SO IT STANDS HERE, in retail's own dock file, and NOT inside the
+              copy: `DoorModal.jsx` is held to PRO's own line count, element
+              count and every one of PRO's lines (`turn63-the-copies`), and a
+              row written into it would fail all three. The call is
+              `adapter.setDoorHinge` — the SAME store path PRO's own control
+              presses — so the hinge model stays hidden and one law decides the
+              hand.
+
+              And when the ENGINE has decided the hand (a rake forces it —
+              T46/T55), the row says so and does not pretend to offer a choice:
+              `doorHinge().forced` is the engine's own flag, read and never
+              re-derived. */}
+          {swing ? (
+            <div className="pbi-dock-swing" data-testid="dock-door-swing">
+              <span className="pbi-ui pbi-ui-light pbi-quiet">DOOR SWING</span>
+              <div className="pbi-duty-actions">
+                <div className="pbi-opening-list" data-testid="dock-swing-row">
+                  {[['L', 'HINGES LEFT'], ['R', 'HINGES RIGHT']].map(([hand, label]) => (
+                    <button
+                      key={hand}
+                      type="button"
+                      className={`pbi-opening-row${swing.hand === hand ? ' is-on' : ''}`}
+                      data-testid={`dock-swing-${hand}`}
+                      data-on={swing.hand === hand ? 'yes' : 'no'}
+                      aria-pressed={swing.hand === hand}
+                      disabled={swing.forced}
+                      title={swing.reason || label}
+                      onClick={() => A.setDoorHinge(selection.unitId, route.props?.panel || swing.panel, hand)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {swing.reason ? (
+                  <span className="pbi-chip-reason" data-testid="dock-swing-reason">{swing.reason}</span>
+                ) : null}
+              </div>
             </div>
           ) : null}
 

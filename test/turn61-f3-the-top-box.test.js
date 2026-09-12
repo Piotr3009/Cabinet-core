@@ -143,8 +143,26 @@ test('F3 · the top box has ONE entry now, and it does not invent a number', () 
   // The owner moved it: *"add top box powinno być przeniesione do EXTRAS po
   // lewej"* — adding furniture is a STEP, editing an element is the right
   // panel. So EXTRAS keeps the button and the wardrobe's menu has none.
-  assert.match(layout, /data-testid="layout-add-top-box"/);
-  assert.match(layout, /A\.addTopBox\(unit\.id\)/);
+  // ─── AMENDED BY TURN 69 · F8 (LICENSED REMOVAL) ────────────────────────
+  //
+  // *"ADD TOP BOX leaves EXTRAS — split door covers it (owner: "po cholerę ten
+  // box"). Engine `WARDROBE_TOP` and PRO stay; only the client entry dies."*
+  //
+  // T65 F9 moved the button INTO EXTRAS; tonight the button itself goes. What
+  // this test has always guarded is *"ONE entry"* — and zero is one law, not
+  // two: there is no second road for the client to press, and the assertion
+  // below is inverted so a later turn cannot put one back unnoticed.
+  //
+  // The CAPABILITY is untouched and asserted in
+  // `test/turn69-f8-the-joiners-order.test.js` — `adapter.addTopBox`, the
+  // `WARDROBE_TOP` type, the library category a joiner adds one from, and the
+  // part registry that machines it. A saved project's box is still edited in
+  // EXTRAS, which the next line proves.
+  assert.ok(!/data-testid="layout-add-top-box"/.test(layout), 'the ADD button came back');
+  assert.ok(!/A\.addTopBox\(unit\.id\)/.test(layout), 'the client can add a top box again');
+  assert.match(layout, /testid="topbox-width"/, 'a saved project can no longer edit its box');
+  assert.match(read('src/retail/design/adapter.js'), /export function addTopBox\(hostId\)/,
+    'the capability died with the button');
   assert.ok(!/data-testid="wardrobe-add-top-box"/.test(menu),
     'ADD TOP BOX is still in the wardrobe\'s right-hand menu');
   assert.ok(!/A\.addTopBox\(/.test(menu), 'the right menu still adds a top box');

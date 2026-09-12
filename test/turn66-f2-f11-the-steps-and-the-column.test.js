@@ -317,14 +317,18 @@ test('F7 · it greys with the engine\'s reason — no doors, or a leaf too short
   }
 });
 
-test('F7 · the action is in EXTRAS, beside ADD DOORS and ADD TOP BOX', () => {
+// T69 F8: ADD TOP BOX left EXTRAS (*"po cholerę ten box"*), so the neighbour
+// this test names is now ADD DOORS alone. What it asserts — SPLIT DOOR is in
+// EXTRAS, with the engine's own bounds and the reason in its place when it
+// cannot act — has not moved.
+test('F7, amended by T69 · the action is in EXTRAS, beside ADD DOORS', () => {
   const options = read('src/retail/design/Options.jsx');
   const extras = options.slice(options.indexOf('function ExtrasPanel'), options.indexOf('/* ─── 7 · REVIEW'));
   assert.match(extras, /<Field label="SPLIT DOOR \(TOP SEGMENT\)">/);
   assert.match(extras, /testid="extras-split-top"/);
   assert.match(extras, /A\.setSplitTopMm\(unit\.id, split\.bay, v\)/);
   assert.match(extras, /data-testid="extras-add-doors"/);
-  assert.match(extras, /data-testid="layout-add-top-box"/);
+  assert.ok(!/data-testid="layout-add-top-box"/.test(extras), 'ADD TOP BOX came back to EXTRAS');
   // The reason stands in the field's place when it cannot act — never a
   // control that would do nothing.
   assert.match(extras, /\{split\?\.said \? \(\s*<Said testid="extras-split-said">/);

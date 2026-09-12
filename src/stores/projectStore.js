@@ -2467,6 +2467,67 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * ─── TURN 69 (CLAUDE.md F8): TO THE CEILING, IN THE JOINER'S ORDER ───────
+   *
+   * *"TOP INFILL asks 'to the ceiling?': yes → first the VERTICAL members
+   * reach the ceiling (end panel if present, vertical infills), THEN the
+   * horizontal top infill closes — automatically, in that order. A side must
+   * never show (the visibility law)."*
+   *
+   * IT IS AN ORDER OF WORK AND NOT A RENDERING TRICK. A joiner closing a
+   * wardrobe to the ceiling runs the uprights first and lands the top piece ON
+   * them, because the other way round leaves the end grain of a side panel
+   * showing above the horizontal — which is the visibility law, and it is the
+   * one thing a client would see from the doorway. Doing it in this order also
+   * means the horizontal is the piece that is scribed, which is the piece you
+   * want to be scribing.
+   *
+   * So this action writes, IN THIS ORDER and in one batch:
+   *
+   *   1. EVERY END PANEL this unit carries, up to the ceiling.
+   *   2. BOTH SIDE INFILLS (the vertical scribe fillers), up to the ceiling —
+   *      and PINNED, so the automat does not re-derive them shorter on the
+   *      next settle.
+   *   3. THE TOP INFILL, closing the gap the uprights now frame.
+   *
+   * Every one of the three is an EXISTING setter, with its own clamp: the end
+   * panel is held to the room's headroom, the side fillers to the ceiling OVER
+   * THAT SIDE (a rake takes the answer, not the room's flat height), and the
+   * top infill to `topInfillHeight`. Nothing here re-derives a millimetre, and
+   * nothing here is a new piece — the order is the whole of what is new.
+   *
+   * @returns {{order: string[], top: number}} what was done, in the order it
+   *   was done, so a test can assert the ORDER and not merely the result.
+   */
+  closeToCeiling: (unitId) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { order: [], top: 0 };
+    const profile = getCabinetProfile();
+    const gap = Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile));
+    const order = [];
+
+    // 1 · THE VERTICAL MEMBERS — end panels first, because an end panel is the
+    //     piece that shows, and it is the one a client is looking at.
+    for (const ep of unit.params.end_panels || []) {
+      get().setEndPanelTop(unitId, ep.id, gap);
+      order.push(`end-panel:${ep.side || ep.id}`);
+    }
+    // 2 · …and the vertical scribe fillers beside them.
+    for (const side of ['L', 'R']) {
+      const reached = get().setSideInfillTop(unitId, side, gap);
+      if (reached > 0) {
+        get().setSideInfillPinned(unitId, side, true);
+        order.push(`side-infill:${side}`);
+      }
+    }
+    // 3 · THE HORIZONTAL, last, landing on what now holds it up.
+    const top = get().setTopInfill(unitId, gap);
+    order.push('top-infill');
+    return { order, top };
+  }),
+
+  /**
    * Does this cabinet take the automatic scribe filler at all (turn 8, F7)?
    *
    * The side infill is DERIVED — it is a fact about where the unit is standing

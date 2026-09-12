@@ -941,6 +941,33 @@ export function setTopInfill(unitId, on) {
 }
 
 /**
+ * ─── T69 F8 · TO THE CEILING? ──────────────────────────────────────────────
+ *
+ * *"TOP INFILL asks 'to the ceiling?': yes → first the VERTICAL members reach
+ * the ceiling (end panel if present, vertical infills), THEN the horizontal top
+ * infill closes — automatically, in that order."*
+ *
+ * The ORDER is the store's (`closeToCeiling`), because it is a fact about how
+ * the thing is made and not about a panel. Retail asks the question and reports
+ * what the store did; it writes no millimetre and names no piece.
+ */
+export function closeToCeiling(unitId) {
+  if (!unitOf(unitId)) return { ok: false, said: '', order: [] };
+  const done = S().closeToCeiling(unitId);
+  return { ok: true, said: '', order: done?.order || [] };
+}
+
+/** Is this wardrobe already closed to the ceiling? The gap is the answer. */
+export function closedToCeiling(unitId) {
+  const b = unitBounds(unitId);
+  const u = unitOf(unitId);
+  if (!u || !b) return false;
+  const gap = Math.round(Number(S().project.room?.height) || 0)
+    - Math.round(Number(u.params?.height) || 0) - Math.round(Number(u.params?.leg_height) || 0);
+  return gap <= 0 || Math.round(Number(u.params?.top_infill_mm) || 0) >= gap - 1;
+}
+
+/**
  * *"Scribe fillers at the wall"* — the menu's own label, kept. The STORE's
  * field is a negative (`side_infill_off`), because the piece is DERIVED and
  * the switch is *"does this cabinet take one at all"*; this reads it the way
@@ -1486,6 +1513,16 @@ export const REASON_JPULL = REASONS.jpullTakesNoHandle;
 export function setHandle(type) {
   return S().setProjectHandle(type === 'none' ? null : { type });
 }
+
+/**
+ * WHICH HANDLE THE JOB IS ON — the project's own, through the engine's own
+ * spelling of "none" (`null`). T69 F8 put the row in EXTRAS as well as FRONTS,
+ * so the two lists must light the same chip; a reader in one place is what
+ * makes that true.
+ */
+export const handleChoice = (project) => String(
+  project?.design?.fronts?.handle?.type || 'none',
+) || 'none';
 
 /** F4.5 · PLINTH — the wardrobe's own leg height. */
 export function setPlinth(unitId, mm) {
@@ -2174,6 +2211,16 @@ export const frontColourOf = (project) => project?.design?.fronts?.types?.[0]?.c
 /** Every leaf the engine will actually cut on this cabinet. */
 export const doorPanels = (unitId) => (resultOf(unitId)?.panels || []).filter(
   (p) => p.part === 'FRONT' && !p.meta?.appliance,
+);
+
+/**
+ * IS THIS PANEL A DOOR? — the same two questions `doorPanels` asks, of one
+ * panel instead of a list. T69 F8's swing row in the dock needs it: the dock
+ * has a panel in hand, not a unit's worth of them, and a drawer front is not a
+ * door however much it looks like one from the front.
+ */
+export const isDoorPanel = (panel) => Boolean(
+  panel && panel.part === 'FRONT' && !panel.meta?.appliance && !panel.meta?.drawer,
 );
 
 // ═══ T66 F7 · THE SPLIT DOOR, FROM THE OTHER SIDE ═══════════════════════════

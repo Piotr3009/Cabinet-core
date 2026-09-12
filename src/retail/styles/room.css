@@ -1179,3 +1179,20 @@
 
 /* The compact header is the room's own top edge, so it scales with it. */
 .pbi-room .pbi-room-header-pad { padding: 0 var(--pbi-gap-5); }
+
+/* ─── T69 F8 · THE DOOR SWING, IN THE DOCK ──────────────────────────────────
+ *
+ * *"Door swing L/R returns to the door's dock — it left with the hinge block
+ * in T68 F6; the swing is the CLIENT's choice, the hinge model stays hidden."*
+ *
+ * The row stands ABOVE the copied window, in the same slot `ReHomed` uses, and
+ * wears the dock's own rhythm rather than a skin of its own: the two buttons
+ * are `.pbi-opening-list` rows, which is what every other "pick one of these"
+ * in this app already is. */
+.pbi-dock-swing {
+  padding: var(--pbi-gap-3) var(--pbi-pad-col) 0;
+}
+
+.pbi-dock-swing .pbi-duty-actions {
+  margin-top: var(--pbi-gap-2);
+}

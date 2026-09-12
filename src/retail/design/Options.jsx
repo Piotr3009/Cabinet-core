@@ -7,10 +7,8 @@ import {
   Button, ChipRow, Field, MoreOptions, NumberField, Said,
 } from './controls.jsx';
 import { REASONS } from './reasons.js';
-import { COLLECTIONS } from './collections.js';
 import * as A from './adapter.js';
 import MaterialSlot from './material/MaterialSlot.jsx';
-import FrontStyleGallery from './material/FrontStyleGallery.jsx';
 import WizardHardware from './material/WizardHardware.jsx';
 import AddItems from './detail/AddItems.jsx';
 import { CATEGORIES, stepIndex } from './Categories.jsx';
@@ -647,33 +645,36 @@ function FrontsPanel({ design, project }) {
         </div>
       </Field>
 
-      <MoreOptions testid="fronts-more">
-        {/* ─── T66 F4 · TOMBSTONE: THE NARROW / STANDARD CHIPS STOOD HERE ──
-            Two chips offering two of the profile's numbers, folded under MORE
-            OPTIONS. F4 asks for the frame width TYPED and directly under the
-            list, which is both a wider choice and a shorter road to it — so
-            the chips are superseded rather than moved. The engine's bounds are
-            the same bounds; the field simply offers all of them. */}
-        <Field label="COLLECTION" block>
-          <div className="pbi-chip-row" data-testid="fronts-collection">
-            {COLLECTIONS.map((c) => (
-              <Chip key={c.id} onClick={() => A.applyCollection(c.id)}>
-                <span className="pbi-stack">
-                  <span className="pbi-tone-tile" style={{ background: c.tone }} />
-                  <span>{c.name}</span>
-                </span>
-              </Chip>
-            ))}
-          </div>
-        </Field>
+      {/* ─── T68 F8 · TOMBSTONES: `MORE OPTIONS` AND THE TWO BLOCKS IN IT ──
+          The owner: *"z menu front usuń COLLECTION proszę, i MORE OPTIONS —
+          po co mi dwa razy ta sama opcja."*
 
-        {/* T63 F4 · PRO's door-style GALLERY (T15 F4), COPIED. */}
-        <Field label="STYLE GALLERY" block>
-          <div data-testid="fronts-style-gallery">
-            <FrontStyleGallery value={style} onPick={(id) => A.setFrontStyle(id)} />
-          </div>
-        </Field>
-      </MoreOptions>
+          THE COLLECTION CHIPS stood here and are a LICENSED REMOVAL. A
+          collection is a PRESET a client arrives on — the landing page's four
+          cards and the `?collection=` link, which is where they entered and
+          where they stay. Offering them again HALFWAY THROUGH the step was the
+          second road F1's probe convicted: whichever of this block and the
+          STYLE list was pressed last won the opening, and the J came and went
+          with the press order. `adapter.applyCollection` is untouched and is
+          still what the landing page presses.
+
+          THE STYLE GALLERY stood here and is a LICENSED REMOVAL. The STYLE
+          LIST at the top of this step (T66 F4) is the one road. Nothing
+          RE-HOMES: the gallery's four extra ids — `HJ`, `GF`, `AH`, `GL` —
+          are not capabilities the list dropped, they are `FRONT_STYLE_OPTIONS`
+          whole, and T66 F4 narrowed the client's choice to four on purpose
+          (*"SLAB · SHAKER · GROOVED · ARCHED"*). `HJ` in particular is the
+          very lie F1's probe measured: it reads as J-pull and machines
+          NOTHING — no `meta.jpull`, no shaker recess — because T57 moved the J
+          onto the HANDLE axis, where the OPENING list above now offers it
+          honestly. The copied component `material/FrontStyleGallery.jsx` is
+          NOT deleted: 1:1 = COPY, and a copy is not cut because its caller
+          count fell.
+
+          AND THE FOLD ITSELF GOES WITH THEM, on this step's own standing law:
+          *"A fold with nothing behind it is a control that does nothing."*
+          MORE OPTIONS stays on every other step, where there is something
+          behind it. */}
     </Panel>
   );
 }

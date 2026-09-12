@@ -693,7 +693,33 @@
 .pbi-room[data-workshop-tools="no"] .pbi-dock [data-element-move],
 .pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> select.pbi-re-input),
 .pbi-room[data-workshop-tools="no"] .pbi-dock label:has([data-element-material]),
-.pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> input[data-handle-apply-all]) {
+.pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> input[data-handle-apply-all]),
+/* ─── T68 F6 · HINGE ASSIGNMENT LEAVES THE RETAIL DOCK ────────────────────
+ *
+ * The owner: *"wybór hinges to nie jest dobry pomysł, nie tutaj — zostaw w
+ * PRO."*
+ *
+ * Two blocks of PRO's door window go, and only these two: the ASSIGN OTHER
+ * HINGE select with its paragraph, and the hinge-height ROW LIST. What stays
+ * is what a client has an opinion about — the handle, the mirror, the split,
+ * and the door's plain facts, INCLUDING the line that says which hinge is
+ * fitted, because that is a fact about what he is buying and not a control.
+ *
+ * HIDDEN, NOT CUT, and this is the only lawful way to do it: `DoorModal.jsx`
+ * is a COPY (`scripts/t63-copies.mjs`), and `test/turn63-the-copies.test.js`
+ * holds it to PRO's own line count, element count and every one of PRO's
+ * lines. A guard written into the copy would fail all three. So the rule is
+ * here, under the ONE flag `RETAIL_SHOW_WORKSHOP_TOOLS` writes
+ * (`data-workshop-tools` on the room), beside the five workshop fields T66
+ * already hides by exactly this mechanism. Turn the flag on and a joiner gets
+ * PRO's window entire; PRO's own page never carries the attribute at all.
+ *
+ * `display: none` is not merely invisible: a hidden subtree takes no focus, so
+ * neither block is in the TAB RING either. That is the half a `visibility` or
+ * an `opacity` would have got wrong, and it is why this is the same declaration
+ * the five rows above already use. */
+.pbi-room[data-workshop-tools="no"] .pbi-dock [data-hinge-modal] > div:has(> [data-hinge-assign]),
+.pbi-room[data-workshop-tools="no"] .pbi-dock [data-hinge-modal-rows] {
   display: none !important;
 }
 

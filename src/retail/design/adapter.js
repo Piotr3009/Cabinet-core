@@ -1278,7 +1278,10 @@ export const INTERIOR_ROWS = [
     add: (s, u) => s.addOverlayDrawers(u, 3, P().wardrobe.drawers.frontHeight),
   },
   {
-    id: 'watch', pro: 'watch_drawer', menu: 'watch', name: 'Watch drawer',
+    // T67 F9 · the owner: *"watches szuflad jest bez sensu … tam będzie
+    // watches, belts, ties, cufflinks, biżuteria"*.  NAME only — `pro` is
+    // still the engine's own `watch_drawer` and nothing downstream moves.
+    id: 'watch', pro: 'watch_drawer', menu: 'watch', name: 'Accessories drawer',
     add: (s, u) => s.addWatchDrawer(u),
   },
   {
@@ -1693,7 +1696,7 @@ export function drawerAt(unitId, index, zone = null) {
 
 /** The engine's own word for the PIECE — T60's law, unchanged. */
 function elementWord(sel) {
-  if (sel.menu === 'watch') return 'Watch drawer';
+  if (sel.menu === 'watch') return 'Accessories drawer';
   if (sel.menu === 'shoe') return 'Shoe drawer';
   // A leaf says which one: the engine hangs it left or right and the panel
   // knows which side it is on.
@@ -2706,6 +2709,43 @@ export const closeEditor = () => U().closeModal();
 export const anchorOf = (e) => anchorOfEvent(e);
 /** The scene's own selection — the one `LightingPanel` offers a strip under. */
 export const selectOnStage = (unitId, ref) => U().selectElement(unitId, ref);
+
+/**
+ * ─── T67 F7 · WHAT A ROW SELECTS, AND WHY IT IS NOT THE ITEM ───────────────
+ *
+ * The owner: *"jak dodajesz szuflady … powinno się pokazywać po prawej."*  So
+ * pressing a row in INSIDE selects that thing and the dock opens its editor —
+ * and the DOCK reads the stage's own selection, which is a PANEL id, because
+ * that is what a click on the stage hands it.
+ *
+ * `selectionForMenu` answers with the ITEM (it was written for the thin menus,
+ * which took items), and an item id resolves to nothing for anything the
+ * engine cuts a board for. So the ref is found the way the only reliable
+ * answer can be found: by asking `resolveSelection` — the very function the
+ * dock uses — of each of the unit's panels, and taking the first it answers
+ * THIS ROW for. The engine decides; nothing here holds a second table.
+ *
+ * A row whose thing is not a board (a rod, a bought fitting) keeps its ITEM
+ * id, which is what resolves for those.
+ *
+ * @param {string} unitId
+ * @param {string} menu    the row's own `INTERIOR_ROWS[i].menu`
+ * @param {string|null} itemId  one piece of that row, when a particular one is meant
+ */
+export function stageRefFor(unitId, menu, itemId = null) {
+  const result = resultOf(unitId);
+  const panels = result?.panels || [];
+  const item = itemId ? itemsOf(unitId).find((i) => i.id === itemId) || null : null;
+  const index = item?.index == null ? null : Math.trunc(Number(item.index));
+  for (const panel of panels) {
+    if (index != null && Math.trunc(Number(panel.meta?.drawer)) !== index) continue;
+    const found = resolveSelection({ unitId, elementRef: panel.id });
+    if (found?.menu === menu) return panel.id;
+  }
+  // Not a board: the rod and the bought fittings resolve by their own item id.
+  const fallback = itemId || selectionForMenu(menu, unitId)?.ref || null;
+  return fallback && resolveSelection({ unitId, elementRef: fallback }) ? fallback : null;
+}
 /** The whole project, for a reader that wants one field of it. */
 export const liveProject = () => S().project;
 /** Which door this page was opened through — `WizardHardware` reads it as PRO does. */
@@ -2974,7 +3014,35 @@ export const WHITE_DECOR = 'W1000_9';
 //
 // The hex is NOT typed here. `RAL_WINE` is resolved off that same list by its
 // own name, so retail cannot hold a second opinion about what 3005 looks like.
-export const WALNUT_DECOR = 'H3710_12';
+/**
+ * ─── AMENDED BY T67 F5 · THE DEFAULT DECOR IS H3325 GLADSTONE OAK ──────────
+ *
+ * The owner, 11.09.2026: *"default Egger to H3325 Gladstone Oak."*
+ *
+ * T66's walnut was a choice retail made FROM the family; this is a decor the
+ * owner named, so it is not chosen here at all — it is read from the PROFILE
+ * (`projectSettings.defaultCarcassDecorId`), which is where a workshop's own
+ * default belongs and where a workshop can change it without editing retail.
+ * `H3325_28` = `H3325 ST28 Tobacco Gladstone Oak`, a real row of the real
+ * bucket.
+ *
+ * The FRONTS are untouched: RAL 3005 Wine Red, sprayed, exactly as T66 left
+ * them. And the INSIDE follows the carcass, because F6 deleted the row that
+ * used to answer that question a second time — one board, one write path.
+ *
+ * The name stays exported: the collections and the proofs read it, and a
+ * constant that is read off the profile is still the one name for the thing.
+ */
+// Written as a LITERAL rather than read at import time: a module-level
+// `P()` freezes whatever profile happened to be loaded when this file was
+// first imported, and a workshop profile that lands afterwards would leave
+// retail holding yesterday's answer. The RUNTIME read is in
+// `applyLazyDefaults`, where it belongs; this is the name, and
+// `test/turn66-f2-f11-the-steps-and-the-column.test.js` holds the two EQUAL —
+// two literals that must agree is exactly how a default drifts apart.
+export const DEFAULT_CARCASS_DECOR = 'H3325_28';
+/* ─── T66 TOMBSTONE ── `WALNUT_DECOR` (`H3710_12`) stood here; the owner named
+   H3325 instead, and the profile is where he names it. */
 export const RAL_WINE_NAME = '3005 Wine Red';
 
 /** RAL 3005, read off the palette the picker itself reads. */
@@ -2983,6 +3051,29 @@ export function ralWine() {
   return found ? { hex: found.hex, name: found.name, system: 'RAL' } : null;
 }
 
+/**
+ * ─── T67 F6 · WHAT THE INSIDE WEARS — A READER, AND ONLY A READER ──────────
+ *
+ * The owner, circling the INSIDE COLOUR row on the screenshot: *"to już
+ * niepotrzebne … to jest zdublowanie funkcji."*
+ *
+ * It was. `SAME AS FRONTS · WHITE · CHOOSE…` wrote the CARCASS SLOT — the very
+ * slot the `CARCASS BOARD` picker above it writes — so the panel asked one
+ * question twice and its third chip answered by reaching into the DOM and
+ * pressing the other control's button.
+ *
+ * THE ONE WRITE PATH, named here so it cannot be forgotten and re-invented:
+ *
+ *   `MaterialSlot kind="carcass"` → the copied `MaterialChoicePanel` →
+ *   `adapter.pickMaterialDecor('carcass', id)` → `setCarcassSource('egger')`
+ *   + `setCarcassFinish(slot.id, id)`.
+ *
+ * Nothing else writes the interior finish. `setInsideColour` — the row's own
+ * writer, and the only writer that was ever a second road to that field — is
+ * DELETED with the row; no store field is orphaned by it, because it never
+ * had one of its own. What remains is this reader, which SAYS what the one
+ * path wrote and is what the estimate and the proofs ask.
+ */
 export function insideColourOf(project) {
   const design = migrateDesign(project?.design);
   const carcass = design.carcass?.types?.[0]?.finish_id || null;
@@ -2991,18 +3082,6 @@ export function insideColourOf(project) {
   if (front && carcass === front) return 'fronts';
   if (carcass === swatchFor(WHITE_DECOR).finishId) return 'white';
   return 'chosen';
-}
-
-export function setInsideColour(choice) {
-  if (choice === 'white') return setCarcassDecor(WHITE_DECOR);
-  if (choice === 'fronts') {
-    const front = normaliseFrontTypes(migrateDesign(S().project.design).fronts?.types, P())[0];
-    if (!front?.finish_id) return null;
-    const slot = typeOf('carcass');
-    S().setCarcassSource(slot.id, 'egger');
-    return S().setCarcassFinish(slot.id, front.finish_id);
-  }
-  return null;
 }
 
 /** The estimate page's summary line: what fronts, in one breath. */
@@ -3046,7 +3125,12 @@ export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
     if (!frontDecorOf(S().project) && !frontColourOf(S().project)) {
       done.front = setFrontColour(ralWine());
     }
-    if (!carcassDecorOf(S().project)) done.carcass = setCarcassDecor(WALNUT_DECOR);
+    // T67 F5 · *"default Egger to H3325 Gladstone Oak"* — read off the
+    // profile, so the workshop's own key decides and retail only obeys.
+    if (!carcassDecorOf(S().project)) {
+      done.carcass = setCarcassDecor(P().projectSettings?.defaultCarcassDecorId
+        || DEFAULT_CARCASS_DECOR);
+    }
     // No handle — the engine's own `null`, written as PRO's push-to-open tile
     // writes it, runner lock included (`frontOpeningPatch`).
     if (!S().project.design?.fronts?.handle) done.opening = setFrontOpening('push');

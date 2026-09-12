@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import GoldLine from '../ui/GoldLine.jsx';
 import Chip from '../ui/Chip.jsx';
+import ComingSoon from '../ui/ComingSoon.jsx';
 import FrontThumb from './FrontThumb.jsx';
 import {
   Button, ChipRow, Field, MoreOptions, NumberField, Said,
@@ -12,7 +13,6 @@ import MaterialSlot from './material/MaterialSlot.jsx';
 import FrontStyleGallery from './material/FrontStyleGallery.jsx';
 import WizardHardware from './material/WizardHardware.jsx';
 import AddItems from './detail/AddItems.jsx';
-import { ShoeDrawing } from './detail/drawings.jsx';
 import { CATEGORIES, stepIndex } from './Categories.jsx';
 import { PRICE_ON_REQUEST, RETAIL_SHOW_WORKSHOP_TOOLS } from '../config.js';
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
@@ -81,25 +81,40 @@ function WhatPanel({ project }) {
   const chosen = A.projectTypeOf(project);
   return (
     <Panel title="WHAT ARE WE MAKING?" testid="panel-what">
+      {/* ─── T67 F3 · A CLEAN LIST, AND ONE QUIET NOTE ────────────────────
+          The owner: *"te napisy pod przyciskami daj jedne pod spodem, chcę
+          mieć ładną czystą listę."*  So NO tile carries a `reason` line any
+          more — the list is names — and the one note under it is the
+          paragraph that already closed this step, which now says what the
+          five lines said.
+
+          An inactive tile keeps its refusal where a refusal belongs: on the
+          tile, on hover or focus, in a card that also hands over the address
+          — *"jak najedziesz, napis coming soon i send email to make order,
+          email do skopiowania."*  `ComingSoon` is that card, once, for all
+          of them. */}
       <div className="pbi-tiles" data-testid="what-tiles">
-        {A.projectTypeTiles().map((t) => (
-          <Chip
-            key={t.id}
-            selected={chosen === t.id}
-            disabled={Boolean(t.reason)}
-            reason={t.reason}
-            title={t.hint}
-            onClick={() => A.setProjectType(t.id)}
-          >
-            <span className="pbi-stack">
-              <span data-testid={`what-${t.id}`}>{t.label.toUpperCase()}</span>
-            </span>
-          </Chip>
-        ))}
+        {A.projectTypeTiles().map((t) => {
+          const chip = (
+            <Chip
+              selected={chosen === t.id}
+              disabled={Boolean(t.reason)}
+              title={t.reason ? undefined : t.hint}
+              onClick={() => A.setProjectType(t.id)}
+            >
+              <span className="pbi-stack">
+                <span data-testid={`what-${t.id}`}>{t.label.toUpperCase()}</span>
+              </span>
+            </Chip>
+          );
+          return t.reason
+            ? <ComingSoon key={t.id} what={t.label}>{chip}</ComingSoon>
+            : <span key={t.id}>{chip}</span>;
+        })}
       </div>
-      <p className="pbi-choice pbi-choice-15 pbi-panel-note">
-        The online designer builds wardrobes today; the rest we make to order. Press NEXT —
-        every step already has an answer, and you can change any of them.
+      <p className="pbi-choice pbi-choice-15 pbi-panel-note" data-testid="what-note">
+        {REASONS.projectTypeNotOnline()}
+        {' Press NEXT — every step already has an answer, and you can change any of them.'}
       </p>
     </Panel>
   );
@@ -285,222 +300,13 @@ function SizePanel({ unit }) {
 // ADD WARDROBE ON WALL 2 went with the second wall (F1.8); ADD TOP BOX is
 // EXTRAS. The engine's door rule decides the doors.
 
-/* ─── T66 F3 · THE CONTROLS THE DEAD THIN MENUS CARRIED ────────────────────
+/* ─── T67 F7 · TOMBSTONE: `ReHomed` STOOD HERE ─────────────────────────────
  *
- * The owner: *"w zasadzie po prawej powinien być tylko menu edycji."* Eleven
- * thin `design/detail/*Menu.jsx` files are DELETED tonight; the docked copied
- * editor does their editing. What it does NOT do is the stack-wide and
- * whole-fitting questions those menus also carried — how many drawers, what
- * goes in the top one, the glass, where the pull-down's rod hangs, and REMOVE
- * for a bought mechanism the engine cuts no board for.
- *
- * CLAUDE.md's own clause for that: *"that control moves into INSIDE's row —
- * never lost, named in the PR body."* This is the row, one component, keyed on
- * the same `INTERIOR_ROWS` id the counter above it reads — so a row that adds
- * a thing and the controls for that thing are one line apart, and the right-
- * hand panel keeps its single duty.
- *
- * Every call below is the one the deleted menu made, unchanged.
+ * The owner, on the screenshot of INSIDE grown long: *"jak dodajesz szuflady,
+ * to się nie powinny pokazywać pod spodem, tu menu po lewej ma być puste —
+ * powinno się pokazywać po prawej."*  It moved WHOLE to
+ * `detail/ReHomed.jsx`, which the dock renders — not one call changed.
  */
-function ReHomed({ row, unitId }) {
-  const b = A.drawerBounds();
-
-  // DRAWERS — from `DrawersMenu`: HOW MANY, TOP DRAWER INSERT, GLASS TOP and
-  // the stack-wide FRONT HEIGHTS. One drawer's own height is the docked
-  // editor's `drawer-height` field, which is PRO's own.
-  if (row.id === 'drawers') {
-    const stack = A.drawerStack(unitId);
-    const refusals = A.insertRefusals(unitId);
-    const top = stack.top;
-    const glassWhy = A.glassRefusal(unitId);
-    const fixed = A.stackHasFixedHeights(unitId);
-    const word = A.stackWord(unitId);
-    return (
-      <div className="pbi-interior-more">
-        <Field label="HOW MANY" note={A.countNote(unitId)}>
-          <ChipRow
-            testid="drawers-count"
-            value={String(stack.drawers.length)}
-            options={Array.from({ length: b.maxCount }, (_, i) => i + 1)
-              .map((n) => ({ id: String(n), label: String(n) }))}
-            onPick={(id) => A.setStackCount(unitId, Number(id))}
-          />
-        </Field>
-        <Field label="TOP DRAWER INSERT">
-          <ChipRow
-            testid="drawers-insert"
-            value={A.topInsertOf(top)}
-            options={[
-              { id: 'none', label: 'NONE' },
-              { id: 'watches', label: 'WATCHES', reason: refusals.watches },
-              { id: 'belts', label: 'BELTS', reason: refusals.belts },
-              { id: 'shoes', label: 'SHOES', reason: refusals.shoes },
-            ]}
-            onPick={(id) => A.setTopInsert(unitId, id)}
-          />
-        </Field>
-        <Field label="GLASS TOP">
-          <ChipRow
-            testid="drawers-glass"
-            value={top?.watch_shelf_glass === true ? 'on' : 'off'}
-            options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON', reason: glassWhy }]}
-            onPick={(id) => top && A.setGlassTop(unitId, top.id, id === 'on')}
-          />
-        </Field>
-        <Field label="FRONT HEIGHTS">
-          {fixed ? (
-            <Said testid="drawers-fronts-fixed">{fixed}</Said>
-          ) : (
-            <NumberField
-              outOfRange={REASONS.outOfRange}
-              testid="drawers-front-height"
-              min={b.front.min}
-              max={b.front.max}
-              standardAt={b.front.standard}
-              value={Math.round(stack.drawers[0]?.height_mm ?? b.front.standard)}
-              onCommit={(v) => A.setStackFronts(unitId, v)}
-            />
-          )}
-        </Field>
-        {word ? <Said testid="drawers-said">{word}</Said> : null}
-      </div>
-    );
-  }
-
-  // OVERLAY DRAWERS — from `OverlayMenu`. CLAUDE.md names this one: *"e.g.
-  // OverlayMenu's HOW MANY chips"*. The stack is REBUILT rather than edited,
-  // which is `addOverlayDrawers`' own shape and not a second law.
-  if (row.id === 'overlay') {
-    const { drawers, count } = A.overlayStack(unitId);
-    return (
-      <div className="pbi-interior-more">
-        <Field label="HOW MANY" note={REASONS.overlayIsOutside}>
-          <ChipRow
-            testid="overlay-count"
-            value={String(count)}
-            options={Array.from({ length: b.maxCount }, (_, i) => ({ id: String(i + 1), label: String(i + 1) }))}
-            onPick={(id) => A.setOverlayStackCount(unitId, Number(id))}
-          />
-        </Field>
-        <Field label="FRONT HEIGHT">
-          <NumberField
-            outOfRange={REASONS.outOfRange}
-            testid="overlay-front"
-            min={b.front.min}
-            max={b.front.max}
-            standardAt={b.front.standard}
-            value={A.overlayFrontHeight(unitId)}
-            onCommit={(v) => A.setOverlayFronts(unitId, v)}
-          />
-        </Field>
-        <div className="pbi-duty-actions">
-          <Button
-            kind="secondary"
-            size="small"
-            data-testid="overlay-remove"
-            onClick={() => { drawers.forEach((d) => A.removeElement(unitId, d.id)); }}
-          >
-            REMOVE
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // SHELVES — from `ShelfMenu`: the even ladder. One shelf's own height is the
-  // docked editor's `position-y`, which is PRO's own field.
-  if (row.id === 'shelves') {
-    return (
-      <div className="pbi-interior-more">
-        <Field label="SPACING" note="Evenly, between whatever stands above and below them.">
-          <div className="pbi-duty-actions">
-            <Button
-              kind="secondary"
-              size="small"
-              data-testid="shelf-centre"
-              onClick={() => A.centreBay(unitId, null)}
-            >
-              SPACE THEM EVENLY
-            </Button>
-          </div>
-        </Field>
-      </div>
-    );
-  }
-
-  // THE PULL-DOWN RAIL — from `PulldownMenu`. A bought mechanism: the engine
-  // cuts no board for it, so it has no panel, no copied editor and no click.
-  if (row.id === 'pulldown_rail') {
-    const item = A.kitItem(unitId, 'pulldown_rail');
-    const travel = item ? A.pulldownTravel(unitId, item.id) : null;
-    if (!travel) return null;
-    return (
-      <div className="pbi-interior-more">
-        <Field label="HOW FAR DOWN FROM THE TOP">
-          <NumberField
-            outOfRange={REASONS.outOfRange}
-            testid="pulldown-drop"
-            min={travel.min}
-            max={travel.max}
-            standardAt={travel.standard}
-            value={travel.drop}
-            onCommit={(v) => A.setPulldownDrop(unitId, item.id, v)}
-          />
-        </Field>
-        <div className="pbi-duty-actions">
-          <Button
-            kind="secondary"
-            size="small"
-            data-testid="pulldown-remove"
-            onClick={() => A.removeElement(unitId, item.id)}
-          >
-            REMOVE
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // THE TROUSER PULL-OUT AND THE TIE RACK — from `KitMenu`: the engine's own
-  // sentence about a bought fitting, and the one act it allows.
-  if (row.id === 'trouser' || row.id === 'tie_rack') {
-    const item = A.kitItem(unitId, row.id);
-    if (!item) return null;
-    return (
-      <div className="pbi-interior-more">
-        <Said testid={`kit-${row.id}-said`}>{A.kitWords(row.id).said}</Said>
-        <div className="pbi-duty-actions">
-          <Button
-            kind="secondary"
-            size="small"
-            data-testid={`kit-${row.id}-remove`}
-            onClick={() => A.removeElement(unitId, item.id)}
-          >
-            REMOVE
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // THE SHOE DRAWER — from `ShoeMenu`: the ramp is fixed law and the honest
-  // answer is a sentence, never a control that cannot act.
-  if (row.id === 'shoe') {
-    const law = A.shoeLaw();
-    const words = A.shoeFitWords(unitId, A.selectionForMenu('shoe', unitId)?.item || null);
-    return (
-      <div className="pbi-interior-more">
-        <div className="pbi-stack" data-testid="shoe-drawing"><ShoeDrawing lanes={law.lanes} /></div>
-        <Said testid="shoe-law">{law.said}</Said>
-        {words.map((w) => <Said key={w} testid="shoe-said">{w}</Said>)}
-      </div>
-    );
-  }
-
-  // A row with nothing re-homed onto it draws nothing — the counter above it
-  // is the whole of what that row has to say.
-  return null;
-}
 
 /* ─── 4 · INSIDE ──────────────────────────────────────────────────────────── */
 //
@@ -519,7 +325,6 @@ function InsidePanel({ unit, project }) {
   const baysRow = A.INTERIOR_ROWS.find((row) => row.bays) || null;
   const bays = unit ? A.bayCount(unit.id) : 1;
   const b = A.designBounds();
-  const colour = A.insideColourOf(project);
 
   // ─── T64 F1.4 · SHELVES GO IN CENTRED ────────────────────────────────────
   // A shelf that arrives through PRO's list lands at the centre of the
@@ -546,22 +351,13 @@ function InsidePanel({ unit, project }) {
         </div>
       </Field>
 
-      <Field label="INSIDE COLOUR">
-        <div className="pbi-chip-row" data-testid="inside-colour">
-          <Chip selected={colour === 'fronts'} onClick={() => A.setInsideColour('fronts')} label="SAME AS FRONTS" />
-          <Chip selected={colour === 'white'} onClick={() => A.setInsideColour('white')} label="WHITE" />
-          <Chip
-            selected={colour === 'chosen'}
-            onClick={() => {
-              // The third answer opens the same EGGER window the slot above
-              // opens — PRO's tile, PRO's modal, one click.
-              const slot = document.querySelector('[data-testid="inside-material"] [data-change-decor], [data-testid="inside-material"] [data-choose-decor]');
-              slot?.click();
-            }}
-            label="CHOOSE…"
-          />
-        </div>
-      </Field>
+      {/* ─── T67 F6 · TOMBSTONE: THE `INSIDE COLOUR` ROW STOOD HERE ────────
+          The owner, circling it on the screenshot: *"to już niepotrzebne … to
+          jest zdublowanie funkcji."*  SAME AS FRONTS · WHITE · CHOOSE… asked
+          the client the question the CARCASS BOARD slot above it had already
+          asked — and its third chip did not even answer it itself: it reached
+          into the DOM and pressed that slot's own button. ONE LAW for what
+          the inside wears, and it is the slot. */}
 
       {/* PRO's "What goes inside", whole (T63 F3). */}
       <div data-testid="interior-pro-list">
@@ -624,22 +420,43 @@ function InsidePanel({ unit, project }) {
         </div>
       ) : null}
 
+      {/* ─── T67 F7 · THE LIST IS A LIST: A NAME, A COUNT, AND A DOOR ──────
+          *"jak dodajesz szuflady, to się nie powinny pokazywać pod spodem, tu
+          menu po lewej ma być puste — powinno się pokazywać po prawej … te
+          funkcje niech przejdą na prawą stronę."*
+
+          So the row shows the row and its count — "Drawers · 3" — and nothing
+          expands beneath it. Pressing the row SELECTS that stack through the
+          same store the stage writes (`adapter.selectOnStage`), which docks
+          its editor on the right with `ReHomed`'s controls above it. One
+          sentence: LEFT ADDS, RIGHT EDITS. */}
       {inside.length ? (
         <div className="pbi-interior-list" data-testid="interior-inside">
           {inside.map((row) => (
             <div key={row.id} data-testid={`interior-${row.id}`}>
-              <div className="pbi-interior-row">
+              {/* T64 F3's law: ONE Button, and it is `controls.jsx`'s. The row
+                  keeps its own rectangle by wearing its own two classes over
+                  the button's — geometry is the row's, the element is the
+                  house's. */}
+              <Button
+                kind="secondary"
+                className="pbi-interior-row pbi-interior-open"
+                data-testid={`interior-open-${row.id}`}
+                data-interior-open={row.id}
+                title={`Edit the ${String(row.name).toLowerCase()} — the controls are on the right`}
+                onClick={() => {
+                  // The DOCK reads the stage's own selection, and the stage
+                  // speaks in PANEL ids — `stageRefFor` asks the engine which
+                  // of this unit's panels IS this row.
+                  const ref = A.stageRefFor(unit.id, row.menu);
+                  if (ref) A.selectOnStage(unit.id, ref);
+                }}
+              >
                 <span className="pbi-choice pbi-choice-15 pbi-interior-name">{row.name}</span>
                 <span className="pbi-choice pbi-interior-count" data-testid={`interior-count-${row.id}`}>
                   {counts[row.id]}
                 </span>
-              </div>
-              {/* ─── T66 F3 · WHAT THE DEAD THIN MENU CARRIED ─────────────
-                  *"Where a thin menu carried a control the copied editor
-                  lacks, that control moves into INSIDE's row — never lost."*
-                  Adding and counting live here, on the left; EDITING one
-                  piece is the docked copied editor, on the right. */}
-              <ReHomed row={row} unitId={unit.id} />
+              </Button>
             </div>
           ))}
         </div>

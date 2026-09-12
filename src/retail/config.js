@@ -18,6 +18,21 @@ export const COLLECTION_LINE = 'IVORY & ONYX';
  */
 export const QUOTE_EMAIL = 'quotes@primebespokeinteriors.co.uk';
 
+/**
+ * ─── T67 F3 · THE ADDRESS AN INACTIVE TILE HANDS OUT ──────────────────────
+ *
+ * The owner, 11.09.2026, of every tile the online designer does not build
+ * yet: *"reszta nieczynna: przycisk, jak najedziesz, napis coming soon i send
+ * email to make order, email do skopiowania."*  His own address, typed here
+ * once, so the tooltip, the copy button and any later surface say the same
+ * thing — and so a change of address is one line and not a grep.
+ *
+ * It is deliberately NOT `QUOTE_EMAIL`: that one takes a finished estimate
+ * from the designer; this one takes an order for a thing the designer cannot
+ * draw yet, and the owner named it himself.
+ */
+export const ORDER_EMAIL = 'Cabinetcore@gmail.com';
+
 /** The reply promise the form makes. Owner may want different words. */
 export const REPLY_PROMISE = 'We will reply within one working day.';
 

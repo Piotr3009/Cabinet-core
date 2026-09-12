@@ -1,0 +1,86 @@
+─── T67 · THE ACCEPTANCE WALK ───
+
+Run section by section against `npx vite preview --port 4173`, the hardware
+served from the silent showroom (T23 R8). Every line below is a real browser
+reading the real build; the frames beside this file are what it saw.
+
+ ok  PRO · the plan is drawn — {"w":826,"h":443,"x":307,"y":111}
+ ok  PRO · the elevation is docked BELOW it, in the same window — plan y=111 · dock y=566
+ ok  PRO · ONE window — the elevation brought no second shell to the screen — 2 shell(s) (the room, and the docked elevation inside it)
+ ok  PRO · the docked elevation draws no second row of navigation — no visible modal footer
+ ok  PRO · the window's own Cancel/Apply stand at its foot
+ ok  PRO · no L-shape and no + Box
+ ok  PRO · the three tools stand beside the plan
+ ·   PRO's plan offers these walls — [0,1,2,3]
+ ok  PRO · clicking wall 2 in the plan swaps the elevation below it — 0 → 1
+ ok  PRO · …and wall 2 is the one highlighted
+ ok  PRO · DRAW ROOM opens its window
+ ok  retail · the same window, the same shape — plan y=171 · dock y=600
+ ok  retail · no L-shape and no + Box
+ ·   retail's plan offers these walls — ONE WALL is the client's job (T64 F1.8) — [0]
+ ok  retail · the plan click chooses the wall the elevation is drawn from — wall 0
+ ok  retail · DRAW ROOM opens the window it never had
+ ok  the plan marks the corner the ceiling comes down to — [["1","1800"]]
+ ok  wall 2 shows the implied profile it did not ask for — 1800 mm — The ceiling at the left corner of this wall is 1800 mm — Wall 1's slope runs into it, and one ceiling cannot be two heig
+ ok  …and it names the wall that put it there
+ ·   the 3D room draws each wall from its own slopes — the corner law reaches it in one line of `src/3d/Room.jsx`, which tonight's licence does not name (SKIPPED, see the PR)
+ ok  not one tile carries a line of its own — 0 line(s)
+ ok  one note stands under the list
+ ok  an inactive tile takes the keyboard's focus
+ ok  …and the mouse opens its card
+ ok  an inactive tile says COMING SOON and gives the address — Coming soonEmail us to order: Cabinetcore@gmail.comCOPY THE ADDRESS
+ ok  pressing COPY says COPIED — COPIED
+
+ ok  INSIDE · the carcass source chip reads DECOR — DECOR
+ ok  FRONTS · the colour row's source chip reads DECOR too — DECOR
+ ok  the DECOR chip opens PRO's own tiled picker
+ ok  the EGGER name is still on the boards, inside the picker — 86 mention(s)
+ ok  the fresh design's carcass is H3325 — egger:H3325_28
+ ok  REVIEW names H3325 — THE SPACE4000 mm wall, ceiling 2500 mm, levelWARDROBE1200 mm wide · 2150 mm high · 568 mm deepDOORS1FRONT STYLEShakerFRONT FINISHRAL 3005 Wine Red, sprayedCARCA
+ ok  INSIDE has no INSIDE COLOUR row
+ ok  …and the carcass slot is still the first thing in it
+ ok  the carcass slot opens PRO's own tiled picker
+ ok  the carcass picker is the one write path for the interior finish — egger:H3325_28 → egger:W1000_9 (picked W1000_9)
+ ok  the row says Drawers · 3 — 3
+ ok  …and drawers-count does not expand beneath it
+ ok  …and drawers-insert does not expand beneath it
+ ok  …and drawers-glass does not expand beneath it
+ ok  …and drawers-front-height does not expand beneath it
+ ok  pressing the row docks the stack's controls on the RIGHT
+ ok  …drawers-count is on the right
+ ok  …drawers-insert is on the right
+ ok  …drawers-glass is on the right
+
+ ok  every drawer is a NAME — ["Drawer 1","Drawer 2","Drawer 3","Accessories drawer"]
+ ok  …and the accessories one is named — ["Drawer 1","Drawer 2","Drawer 3","Accessories drawer"]
+ ok  not one sentence stands in the list — 0 paragraph(s)
+ ok  clicking one opens ITS own detail
+ ok  PRO's own list row says Accessories drawer — Accessories drawer▸ (unit u_6i9tgg9)
+ ok  …and nothing on PRO's page says "Watch drawer" — 0 mention(s)
+ ok  retail's INSIDE row says Accessories drawer — Accessories drawer1
+ ok  …and nothing on the page says Watch drawer
+ ok  seven clicks end on a wine-on-H3325 wardrobe — THE SPACE4000 mm wall, ceiling 2500 mm, levelWARDROBE1200 mm wide · 2150 mm high · 568 mm deepDOORS1FRONT STYLEShakerFRONT FINISHRAL 3005 Wine Red, sprayedCARCASS FINISHEGGER H3325
+ ok  …and INSIDE asked its question ONCE — no INSIDE COLOUR row on the way past
+ ok  DONE → ADD TO MY ESTIMATE lands one item on the estimate — #/estimate · 1 row(s)
+
+ ok  the same fitting, the same lamp — ["PARTITION:watch-glass"]
+ ok  …and THIS build is the one at 1 — the frame is not mislabelled — 1
+
+ ok  the accessories drawer has its own aimed LED in the room — ["PARTITION:watch-glass"]
+ ok  the page is running at the owner's quarter — 0.25
+
+ ok  the row says Drawers · 3 — 3
+ ok  …and drawers-count does not expand beneath it
+ ok  …and drawers-insert does not expand beneath it
+ ok  …and drawers-glass does not expand beneath it
+ ok  …and drawers-front-height does not expand beneath it
+ ok  pressing the row docks the stack's controls on the RIGHT
+ ok  …drawers-count is on the right
+ ok  …drawers-insert is on the right
+ ok  …drawers-glass is on the right
+ ok  every drawer is a NAME — ["Drawer 1","Drawer 2","Drawer 3","Accessories drawer"]
+ ok  …and the accessories one is named — ["Drawer 1","Drawer 2","Drawer 3","Accessories drawer"]
+ ok  not one sentence stands in the list — 0 paragraph(s)
+ ok  clicking one opens ITS own detail
+
+70 checks · 0 failed

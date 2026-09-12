@@ -6,6 +6,7 @@ import { Button } from './controls.jsx';
 import Editors from './Editors.jsx';
 import ElementProperties from './detail/ElementProperties.jsx';
 import { DOCK_MODALS, dockFor } from './detail/docked.jsx';
+import ReHomed, { rowForSelection } from './detail/ReHomed.jsx';
 
 // ─── 7 · THE DETAIL — A PANEL THAT SLIDES IN OVER THE STAGE ────────────────
 //
@@ -127,6 +128,20 @@ export default function Detail(props) {
             </span>
             <Button kind="link" data-testid="detail-close" onClick={clear}>CLOSE ×</Button>
           </div>
+
+          {/* ─── T67 F7 · THE STACK-WIDE CONTROLS, ON THE RIGHT ──────────
+              The owner: *"te funkcje niech przejdą na prawą stronę."*  HOW
+              MANY, TOP DRAWER INSERT, GLASS TOP and FRONT HEIGHTS are about
+              the STACK the clicked piece belongs to, not about that one
+              piece, so they stand ABOVE the piece's own editor and below the
+              one header — which is the order a person reads them in: what is
+              this row, then which of them am I changing. `ReHomed` is T66's
+              component, moved whole; the selection names its row. */}
+          {rowForSelection(selection) && selection?.unitId ? (
+            <div data-testid="dock-rehomed">
+              <ReHomed row={rowForSelection(selection)} unitId={selection.unitId} />
+            </div>
+          ) : null}
 
           {/* THE COPIED PANEL — PRO's own piece window, on the piece. */}
           {route.props && unit ? (

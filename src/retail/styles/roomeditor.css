@@ -303,3 +303,20 @@
 .pbi-re-hair-ok { border-color: var(--pbi-soft-graphite); }
 .pbi-re-hair-warn { border-color: var(--pbi-gold); }
 .pbi-re-hair-bad { border-color: var(--pbi-soft-graphite); }
+
+/* ─── TURN 67 F1 · THE SIX NAMES `DrawRoomModal.jsx` BROUGHT WITH IT ───────
+ *
+ * The CAD window is the copy retail never made (`scripts/t67-copy.mjs` says
+ * why): its button has stood in the copied room editor since T62 with no
+ * window behind it. Copying it needs six class names the room's skin did not
+ * have yet — PRO's own geometry, to the pixel, in PBI's colours. Nothing else
+ * in this sheet moves, and no existing name changes meaning.
+ */
+.pbi-re-w280 { width: 280px; }
+.pbi-re-w120 { width: 120px; }
+.pbi-re-w1160 { width: 1160px; }
+.pbi-re-pr6 { padding-right: 1.5rem; }
+.pbi-re-right1 { right: 0.25rem; }
+.pbi-re-midy { top: 50%; }
+.pbi-re-midy-shift { transform: translateY(-50%); }
+.pbi-re-ink-1-hover:hover { color: var(--pbi-onyx); }

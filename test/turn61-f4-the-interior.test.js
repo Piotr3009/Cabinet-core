@@ -33,6 +33,20 @@ import { REASONS } from '../src/retail/design/reasons.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
 import { getUnitType } from '../src/engine/types.js';
 
+// ─── AMENDED BY TURN 67 · F7 ──────────────────────────────────────────────
+//
+// The owner, 11.09.2026, of INSIDE grown long: *"jak dodajesz szuflady, to się
+// nie powinny pokazywać pod spodem, tu menu po lewej ma być puste — powinno
+// się pokazywać po prawej … te funkcje niech przejdą na prawą stronę."*
+//
+// T66's `ReHomed` moved WHOLE out of `Options.jsx` and into
+// `detail/ReHomed.jsx`, which the DOCK renders. The claim every assertion
+// below makes is unchanged — not one control a deleted thin menu carried was
+// lost — so the reader is the two files that now hold them between them.
+const REHOMED = () => read('src/retail/design/Options.jsx')
+  + read('src/retail/design/detail/ReHomed.jsx');
+
+
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const S = () => useProjectStore.getState();
@@ -109,7 +123,7 @@ test('F4 · retail\'s rows are PRO\'s rows — same set, same order', () => {
   // thing has none (a bought mechanism the engine cuts no board for) carries
   // its own controls in the row itself. Neither case is a dead row, and this
   // asks for exactly that — one of the two, never a third.
-  const rehomed = read('src/retail/design/Options.jsx');
+  const rehomed = REHOMED();
   for (const row of A.INTERIOR_ROWS) {
     const docked = A.MENUS.includes(row.menu);
     const onTheLeft = rehomed.includes(`row.id === '${row.id}'`)
@@ -219,7 +233,7 @@ test('F4 · an overlay stack opens its OWN menu — the drawerRef fault, closed'
 test('F4 · the three bought mechanisms are added, counted and removable — all three', () => {
   const id = fresh();
   assert.deepEqual(A.KIT_MENUS, {}, 'a kit is selectable again with no editor behind it');
-  const options = read('src/retail/design/Options.jsx');
+  const options = REHOMED();
   for (const kind of ['pulldown_rail', 'trouser', 'tie_rack']) {
     S().addWardrobeKit(id, kind);
     const item = A.kitItem(id, kind);

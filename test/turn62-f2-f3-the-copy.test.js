@@ -173,11 +173,20 @@ test('F2/F3 · every label CLAUDE.md names by hand is in the retail copies', () 
   assert.deepEqual(missing, [],
     `THE COPY DROPPED A CONTROL CLAUDE.md NAMED: ${missing.join(', ')}`);
 
-  // …and `L` — which is `L-shape` on the button and `L` on the hook. Asked for
-  // as both, because every file in this repository contains the letter L and an
-  // assertion that cannot fail is not one.
-  assert.match(room, />L-shape</, "the L preset is gone from the room's copy");
-  assert.match(room, /data-room-preset="L"/, 'the L preset lost its hook');
+  // ─── AMENDED BY TURN 67 · F1 (LICENSED REMOVALS) ───────────────────────
+  //
+  // T62 asked for `L` twice — on the button and on the hook — because every
+  // file in this repository contains the letter L and an assertion that cannot
+  // fail is not one. Tonight the owner struck the button out (*"furniture
+  // lives on 1–3 walls"*), having first said PRO itself may change to carry
+  // the new room window: *"tak, zdecydowanie potwierdzam."*
+  //
+  // So the assertion is INVERTED rather than deleted: the hook and the label
+  // must be GONE, and Rectangle must still be here. A removal asserted from
+  // both sides is a removal a later turn cannot undo by accident.
+  assert.doesNotMatch(room, />L-shape</, "the L preset came back into the room's copy");
+  assert.doesNotMatch(room, /data-room-preset="L"/, 'the L preset came back with its hook');
+  assert.doesNotMatch(room, /data-insert-box/, 'the + Box button came back');
   assert.match(room, /data-room-preset="rect"/, 'the Rectangle preset lost its hook');
 
   // The four that decide whether this is an EDITOR or a chip live on ONE wall,
@@ -353,38 +362,69 @@ test('F2/F3 · the copies differ by nothing but imports, class names and colour'
   }
 });
 
-test('F2/F3 · the ONE addition is declared, opt-in, and in one file only', () => {
+// ─── AMENDED BY TURN 67 · F1 — THE ONE ADDITION IS GONE, AND THAT IS BETTER ─
+//
+// T62's copy carried exactly one thing PRO's file did not: `onOpenWall`, an
+// opt-in hook that grew an `Elevation ›` button on each wall row, because PRO
+// reached a wall's elevation only from `DrawRoomModal.jsx` and this file had
+// no row-level route to copy.
+//
+// Tonight PRO's own `RoomModal.jsx` DOCKS the elevation under the plan
+// (CLAUDE.md F1; the owner, asked whether PRO may change: *"tak, zdecydowanie
+// potwierdzam"*), so the route is IN the file being copied. The addition has
+// nothing left to do, and the copy now differs from PRO by imports, class
+// names and colour and by NOTHING ELSE — which is what *"1 do 1 to KOPIUJ"*
+// asked for in the first place.
+//
+// The assertion therefore inverts: FOUR copies with zero additions, counted by
+// element, and the route is the copied file's own.
+test('F2/F3, amended by T67 · the copies now carry NO addition at all', () => {
   const room = read('src/retail/design/room/RoomModal.jsx');
-  // Declared, by name, at the top of the file it is in.
-  assert.match(room, /THE ONE THING THIS COPY HAS THAT PRO'S FILE HAS NOT/);
-  assert.match(room, /onOpenWall = null,/, 'the hook is not opt-in');
-  assert.match(room, /\{onOpenWall && \(/, 'the hook renders when it is absent');
+  assert.doesNotMatch(room, /onOpenWall/, 'the T62 hook survives with nothing to do');
+  assert.doesNotMatch(room, /THE ONE THING THIS COPY HAS THAT PRO'S FILE HAS NOT/);
 
-  // …and nowhere else. The other three copies gained nothing at all.
-  for (const rel of [
-    'src/retail/design/room/WallElevationModal.jsx',
-    'src/retail/design/room/Modal.jsx',
-    'src/retail/design/room/NumberField.jsx',
-  ]) {
-    const pro = read(rel.replace('src/retail/design/room/', 'src/components/'));
-    const copy = read(rel);
-    // Same number of JSX elements, so nothing was added or taken away.
+  // All FOUR copies: same number of JSX elements as PRO, nothing added, none
+  // dropped. `RoomModal.jsx` joins the three that always answered this.
+  for (const [proPath, retailPath] of COPIES) {
     const count = (t) => (t.match(/<[A-Za-z]/g) || []).length;
-    assert.equal(count(copy), count(pro), `${rel} gained or lost an element`);
+    assert.equal(count(read(retailPath)), count(read(proPath)), `${retailPath} gained or lost an element`);
+    assert.equal(read(retailPath).split('\n').length, read(proPath).split('\n').length,
+      `${retailPath} is not PRO's length`);
   }
 
-  // The route it serves is retail's own file, and that file is not a copy.
-  const editor = read('src/retail/design/room/RoomEditor.jsx');
-  assert.match(editor, /onOpenWall=\{\(index\) => setWall\(index\)\}/);
-  assert.match(editor, /<WallElevationModal/, 'the room has no route to the elevation');
-  assert.match(editor, /onBack=\{\(\) => setWall\(null\)\}/, 'Back does not come home');
+  // The elevation is reached from the copied file itself, on whichever wall
+  // the plan click chose — in BOTH apps, from one piece of markup.
+  for (const rel of ['src/components/RoomModal.jsx', 'src/retail/design/room/RoomModal.jsx']) {
+    const src = read(rel);
+    assert.match(src, /<WallElevationModal key=\{wallOnShow\} wallIndex=\{wallOnShow\} \/>/,
+      `${rel} does not dock the elevation`);
+    assert.match(src, /data-elevation-dock="1"/, `${rel} has no dock`);
+    assert.match(src, /setWallShown\(index\)/, `${rel}: a plan click does not swap the elevation`);
+  }
+
+  // …and retail's own route is one line: the copy, and nothing around it.
+  // Comments out first: this file's own TOMBSTONE names the hook it buried,
+  // and a tombstone is prose. What must be gone is the WIRING.
+  const editor = uncomment(read('src/retail/design/room/RoomEditor.jsx'));
+  assert.match(editor, /<RoomModal/, 'the room has no route at all');
+  assert.doesNotMatch(editor, /onOpenWall/, 'the dead hook is still wired');
+  assert.doesNotMatch(editor, /useState/, 'the second window\'s state survives it');
 });
 
 // ─── 4 · PRO IS FROZEN, AND THE COPY IS WHY THAT WAS POSSIBLE ─────────────
 
-test('F2/F3 · not one byte of the four originals moved', () => {
-  // The 66-file manifest in `turn59-f1-the-switch.test.js` is the real freeze
-  // test. This is the half that belongs HERE: the four files this turn read.
+// ─── AMENDED BY TURN 67 · F1 ──────────────────────────────────────────────
+// `RoomModal.jsx` is the ONE exemption tonight and it moved by name, with the
+// owner's *"tak, zdecydowanie potwierdzam"* as its reason and a re-freeze at
+// its new hash in `turn59-f1-the-switch.test.js`. The other THREE — the
+// elevation editor the owner said not to touch (*"który jest super, nie
+// zmieniaj"*), the shell and the number field — are still asked for byte for
+// byte, here, where it matters most: they are what the docked window is made
+// of, and a copy that needed them changed would be a re-write.
+const UNMOVED = COPIES.map((c) => c[0]).filter((p) => p !== 'src/components/RoomModal.jsx');
+
+test('F2/F3, amended by T67 · not one byte of the other three originals moved', () => {
+  assert.equal(UNMOVED.length, 3, 'the exemption grew beyond the one file tonight names');
   let base = null;
   for (const ref of ['origin/main', 'main']) {
     try {
@@ -393,7 +433,7 @@ test('F2/F3 · not one byte of the four originals moved', () => {
     } catch { /* next */ }
   }
   if (!base) return;                       // a tarball; the manifest answered
-  const diff = execFileSync('git', ['diff', '--stat', base, '--', ...COPIES.map((c) => c[0])],
+  const diff = execFileSync('git', ['diff', '--stat', base, '--', ...UNMOVED],
     { cwd: ROOT, encoding: 'utf8' }).trim();
   assert.equal(diff, '', `a PRO original moved to make the copy work:\n${diff}`);
 });

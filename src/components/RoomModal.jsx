@@ -3,15 +3,17 @@ import {
 } from 'react';
 import Modal from './Modal.jsx';
 import NumberField from './NumberField.jsx';
+import WallElevationModal from './WallElevationModal.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import {
-  migrateRoom, roomWalls, roomBounds, rectCorners, lCorners, validateRoomShape,
+  migrateRoom, roomWalls, roomBounds, rectCorners, validateRoomShape,
   roomChangeGuard, openingsOnWall, clampOpening, OPENING_DEFAULTS,
   setWallLength as setWallLengthCorners, wallsInScope, wallStub,
-  moveWall, moveBoxSide, roomBoxes, migrateBox, BOX_SIDES, MIN_BOX_SIZE,
-  MIN_WALL_LENGTH,
+  moveWall, moveBoxSide, roomBoxes, migrateBox, BOX_SIDES,
+  MIN_WALL_LENGTH, wallNeighbours,
 } from '../engine/room.js';
+import { wallCornerHeights, impliedProfilesOnWall } from '../lib/wallElements.js';
 import { proposeRoomFromDxf } from '../engine/dxfImport.js';
 import { formatMm, snap } from '../engine/format.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
@@ -27,6 +29,38 @@ import { getCabinetProfile } from '../engine/profile.js';
 
 const PLAN_W = 380;
 const PLAN_H = 260;
+
+/**
+ * ─── TURN 67 (CLAUDE.md F1): HOW A WINDOW IS DOCKED WITHOUT TOUCHING IT ────
+ *
+ * `WallElevationModal` is UNCHANGED — the owner's word on it is *"który jest
+ * super, nie zmieniaj"* — so it arrives with its own `Modal` shell, which
+ * places itself `position: fixed` at an inline left/top and hangs a full-screen
+ * scrim behind it. Docking it is therefore a DISPLAY question, and the answer
+ * is the one retail already uses for the same job (`styles/room.css`,
+ * `.pbi-dock`): out-rank those inline values in CSS, scoped to one attribute,
+ * and change not one byte of the window being docked.
+ *
+ * It lives HERE, as a string in this file, rather than in `src/index.css`,
+ * because this file is the ONE PRO file tonight's licence names for F1 and
+ * `index.css` is not on that list. The selectors are structural
+ * (`> div`, `[data-modal-shell]`) and attribute-based, never class-based, so
+ * the retail COPY of this file — which wears `pbi-re-*` names where PRO wears
+ * Tailwind — is served by exactly the same rules, unedited.
+ *
+ * `!important` is what CSS provides for out-ranking an inline style; it is
+ * scoped to `[data-elevation-dock]` and reaches nothing else in the app.
+ */
+const DOCK_CSS = `
+[data-elevation-dock] > div { position: static !important; inset: auto !important;
+  background: transparent !important; pointer-events: auto !important; }
+[data-elevation-dock] [data-modal-shell] { position: static !important; left: auto !important;
+  top: auto !important; width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+  height: auto !important; max-height: none !important; visibility: visible !important;
+  box-shadow: none !important; }
+[data-elevation-dock] [data-modal-handle] { display: none !important; }
+[data-elevation-dock] [data-modal-footer] { display: none !important; }
+`;
 
 /**
  * `onClose` / `onApplied` are for the NEW-PROJECT FLOW (turn 7, CLAUDE.md F2),
@@ -65,6 +99,44 @@ const PLAN_H = 260;
 // doors — and a joiner who does not want a rectangle does not press Rectangle.
 //
 // `+ Box` was never a canned shape — it is a chimney, a pillar, a boxed pipe.
+//
+// ─── TURN 67 (CLAUDE.md F1): THE ROOM IN ONE WINDOW ────────────────────────
+//
+// THE FIRST EDIT TO PRO's component tree SINCE THE T59 FREEZE. The owner, asked
+// whether PRO may change for this: *"tak, zdecydowanie potwierdzam."* The
+// exemption is named by PATH in `test/turn59-f1-the-switch.test.js`, carries
+// that sentence as its reason, and re-freezes this file at its NEW hash. Every
+// other file of PRO is still guarded at byte level.
+//
+// What the owner's mockup asks for, and what this file now is:
+//
+//   PLAN ON TOP — the room from above, every wall a CLICKABLE segment, the
+//   active one highlighted and labelled *"Wall 1 · 4000"*; beside it
+//   RECTANGLE · DRAW ROOM… · IMPORT DXF PLAN… and the wall-height field, then
+//   the wall rows, the boxes and the guard exactly as they were.
+//
+//   ELEVATION BELOW — `WallElevationModal`, **UNCHANGED** (*"który jest super,
+//   nie zmieniaj"*), docked into this same window and showing whichever wall
+//   the plan click chose. Clicking another wall swaps it IN PLACE.
+//
+// ─── THE TWO BUTTONS THAT LEFT (LICENSED REMOVALS) ─────────────────────────
+//
+// L-SHAPE and + BOX are gone from this window: *"furniture lives on 1–3
+// walls."* The engine's `L_SHAPE` unit type and every BOX RECORD are
+// untouched — a room that already has boxes still draws them, drags them and
+// types them, and only the two BUTTONS went.
+//
+// ─── WHY THE ROOM'S OWN BUTTONS ARE IN THE BODY AND NOT IN THE SHELL ───────
+//
+// T49 F3's law — *"jak mamy otwarty modal to inne przyciski z glownego modalu
+// nie powinny byc widoczne"* — is enforced by the shell: a window with another
+// window OVER it does not draw its footer (`lib/modalStack.js`). A DOCKED
+// child is such a window: it renders after its parent and so takes the higher
+// ticket, which means `Modal`'s `footer` prop would never be drawn again here.
+// So Cancel and Apply stand at the foot of the BODY, under the elevation,
+// where they read as the window's one row of navigation — and the docked
+// elevation's own Back/Save row is taken out of the flow by the rules below,
+// so there is still EXACTLY ONE row of navigation on this screen.
 export default function RoomModal({
   onClose = null, onApplied = null, anchor: anchorProp = null, wizard = false,
 }) {
@@ -101,6 +173,14 @@ export default function RoomModal({
   // down and applies an ABSOLUTE offset from it, so a drag is one move rather
   // than a hundred small ones accumulating rounding.
   const [picked, setPicked] = useState(null);
+  // ─── T67 F1: WHICH WALL THE ELEVATION BELOW IS SHOWING ───────────────────
+  //
+  // It is NOT `picked`. `picked` is cleared by Escape and by a click on the
+  // empty plan — that is the drag selection's own business — and an elevation
+  // that jumped back to wall 1 every time somebody let go would be unusable.
+  // So the plan click WRITES this, and nothing clears it: *"Click a wall in
+  // the plan → the elevation below swaps to it, in place."*
+  const [wallShown, setWallShown] = useState(0);
   const drag = useRef(null);
   const [typed, setTyped] = useState('');
   const [importInfo, setImportInfo] = useState(null);
@@ -116,6 +196,33 @@ export default function RoomModal({
   // when this room has not said — `profile.room.sideWallMm`, 2000 from tonight.
   const shown = useMemo(() => wallsInScope(draft, scope, getCabinetProfile()), [draft, scope]);
   const editable = useMemo(() => shown.filter((w) => !w.stub), [shown]);
+  // T67 F1: …and the elevation is held to a wall this room actually HAS. A
+  // room that loses a corner while wall 5 was on show falls back to the first,
+  // rather than docking an editor on a wall that is not there.
+  const wallOnShow = editable.some((w) => w.index === wallShown)
+    ? wallShown
+    : (editable[0]?.index ?? 0);
+
+  // ─── T67 F2 · THE CORNER LAW, READ ────────────────────────────────────────
+  //
+  // The owner: a slope on the front wall makes the side wall LOW where the two
+  // meet, because one ceiling cannot be two heights. The law is the shared
+  // core's (`lib/wallElements.js`, `engine/room.js wallNeighbours`); this
+  // window only READS it — the heights are a consequence, never an element,
+  // and nothing below writes one back.
+  const storedElements = useProjectStore((s) => s.project.wallSlopes);
+  const cornersOfWall = useCallback((index) => wallCornerHeights({
+    elements: storedElements,
+    neighbours: wallNeighbours(draft, index),
+    wallIndex: index,
+    wallHeight: Number(draft.height) || 0,
+  }), [storedElements, draft]);
+  const impliedHere = useMemo(() => impliedProfilesOnWall({
+    elements: storedElements,
+    neighbours: wallNeighbours(draft, wallOnShow),
+    wallIndex: wallOnShow,
+    wallHeight: Number(draft.height) || 0,
+  }), [storedElements, draft, wallOnShow]);
   const bounds = useMemo(() => roomBounds(draft), [draft]);
   const shapeIssues = useMemo(() => validateRoomShape(draft.corners), [draft.corners]);
   const guard = useMemo(() => roomChangeGuard(draft, units), [draft, units]);
@@ -157,10 +264,13 @@ export default function RoomModal({
   //   editor's own top view and then read by NOTHING: `3d/Room.jsx` and the
   //   placement both filter that list to `kind === 'slope'`. The joiner drew
   //   an alcove and the room did not have one.
+  // ─── T67 F1 · TOMBSTONE: `L-shape` STOOD BESIDE `Rectangle` ──────────────
+  // *"furniture lives on 1–3 walls"* — the button is gone; `engine/room.js`'s
+  // `lCorners` and the `L_SHAPE` unit type are untouched and still exported.
   const setPreset = (kind) => {
     const w = Math.max(bounds.width, 1000);
     const d = Math.max(bounds.depth, 1000);
-    patch({ corners: kind === 'L' ? lCorners(w, d, grid(w / 3), grid(d / 3)) : rectCorners(w, d) });
+    patch({ corners: kind === 'rect' ? rectCorners(w, d) : draft.corners });
   };
 
   /**
@@ -202,6 +312,9 @@ export default function RoomModal({
     // where it started (CLAUDE.md F10.2 and the walk step that pins it), and
     // the hand has usually let go by the time the number is finished.
     setPicked({ kind: 'wall', index, room: draft });
+    // T67 F1: a wall in the plan IS the elevation's switch — the same gesture
+    // that picks a wall to drag is the one that swaps the editor below it.
+    setWallShown(index);
     setTyped('');
     drag.current = {
       kind: 'wall',
@@ -305,20 +418,10 @@ export default function RoomModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [picked, typed, applyTyped]);
 
-  // ─── Insert box: a chimney, a pillar, a boxed pipe (F10.3) ───────────────
-  const insertBox = () => {
-    const w = Math.max(MIN_BOX_SIZE, Math.round(bounds.width * 0.12));
-    const d = Math.max(MIN_BOX_SIZE, Math.round(bounds.depth * 0.12));
-    const box = migrateBox({
-      id: `box_${Math.random().toString(36).slice(2, 9)}`,
-      x: grid(bounds.centre.x - w / 2),
-      y: grid(bounds.centre.y - d / 2),
-      w,
-      d,
-    });
-    setBoxes([...boxes, box]);
-    setPicked({ kind: 'box', id: box.id, side: 'right' });
-  };
+  // ─── T67 F1 · TOMBSTONE: `insertBox` STOOD HERE, behind the `+ Box` button ──
+  // The BUTTON is a licensed removal; every box RECORD, and the whole of
+  // `engine/room.js`'s box law, is untouched — an imported or saved plan still
+  // draws its boxes, drags their sides and types their numbers, below.
 
   const removeBox = (id) => {
     setBoxes(boxes.filter((b) => b.id !== id));
@@ -381,34 +484,27 @@ export default function RoomModal({
       title="Room setup"
       onClose={closeModal}
       width="w-[860px]"
-      footer={<>
-        <button type="button" className="cc-btn" onClick={closeModal}>Cancel</button>
-        <button type="button" className="cc-btn-gold" onClick={apply} disabled={!guard.ok || shapeIssues.length > 0}>
-          Apply
-        </button>
-      </>}
     >
-      <div className="grid grid-cols-2 gap-4" data-room-door={wizard ? 'wizard' : 'menu'}>
+      <style>{DOCK_CSS}</style>
+      <div className="space-y-3" data-room-door={wizard ? 'wizard' : 'menu'} data-room-one-window="1">
+      <div className="grid grid-cols-2 gap-4" data-room-plan-half="1">
         {/* ── plan ── */}
         <div>
           <div className="cc-row mb-2">
             <span className="text-xs uppercase tracking-wide text-ink-200">Plan (top view)</span>
-            {/* ─── TURN 51 (CLAUDE.md F1): THE FOUR TOOLS, IN BOTH DOORS ───
-                F1 names them — Rectangle, L-shape, + Box, Import DXF plan —
-                and says they stay and must WORK. F1 also asks for ONE screen
+            {/* ─── TURN 51 (CLAUDE.md F1): THE TOOLS, IN BOTH DOORS ────────
+                T51 named four — Rectangle, L-shape, + Box, Import DXF plan —
+                and said they stay and must WORK. F1 also asks for ONE screen
                 in both doors, which is T50's F12. Both sentences are kept by
                 drawing the row unconditionally: no `wizard`, and no `scope`.
 
-                The SCOPE guard is the bug, not a policy. `+ Box` stood behind
-                `scope === 'room'`, and a ONE-WALL job has no other door to a
-                box — so the owner's *"nie pokazuje się"* was literally true:
-                there was no button. A chimney is a chimney whether the job is
-                one wall or four, and the plan draws the whole room either way. */}
+                ─── TURN 67 (CLAUDE.md F1): THREE OF THEM, AND THE MOCKUP'S OWN
+                *"L-SHAPE and + BOX preset buttons are REMOVED … furniture
+                lives on 1–3 walls."*  What stands beside the plan is what the
+                owner's mockup draws: RECTANGLE · DRAW ROOM… · IMPORT DXF
+                PLAN…, and the wall-height field under them. */}
             <div className="flex gap-1" data-room-tools="1">
               <button type="button" className="cc-btn" data-room-preset="rect" onClick={() => setPreset('rect')}>Rectangle</button>
-              <button type="button" className="cc-btn" data-room-preset="L" onClick={() => setPreset('L')}>L-shape</button>
-              {/* F10.3: a chimney, a pillar, a boxed pipe. */}
-              <button type="button" className="cc-btn" data-insert-box="1" onClick={insertBox}>+ Box</button>
               {/* ─── TURN 53 (CLAUDE.md F10): DRAW ROOM ────────────────────
                   *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w
                   CAD."*  A FIFTH tool beside the four F1 named, and not a
@@ -426,6 +522,16 @@ export default function RoomModal({
               >
                 Draw room…
               </button>
+              {/* T67 F1: the third tool of the mockup's row. It was under the
+                  plan, in the height grid; nothing about it changed but where
+                  it stands. */}
+              <button type="button" className="cc-btn" data-import-dxf="1" onClick={() => fileRef.current?.click()}>
+                Import DXF plan…
+              </button>
+              <input
+                ref={fileRef} type="file" accept=".dxf,text/plain" className="hidden"
+                onChange={(e) => onImport(e.target.files?.[0])}
+              />
             </div>
           </div>
 
@@ -454,9 +560,18 @@ export default function RoomModal({
                     x1={a.x} y1={a.y} x2={b.x} y2={b.y}
                     stroke={w.stub ? '#6b6b70' : '#AA8E68'} strokeWidth={w.stub ? 2 : 3}
                   />
+                  {/* T67 F1: *"the active wall highlighted and labelled
+                      ('Wall 1 · 4000')"* — the name in full, and the wall the
+                      elevation below is on says so in gold. */}
                   {!w.stub && (
-                    <text x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 4} fill="#c9c9cd" fontSize="9" textAnchor="middle">
-                      {w.index + 1}: {formatMm(w.width)}
+                    <text
+                      x={(a.x + b.x) / 2} y={(a.y + b.y) / 2 - 4}
+                      fill={w.index === wallOnShow ? '#C8A678' : '#c9c9cd'}
+                      fontSize="9" textAnchor="middle"
+                      data-wall-label={w.index}
+                      data-wall-active={w.index === wallOnShow ? '1' : '0'}
+                    >
+                      Wall {w.index + 1} · {formatMm(w.width)}
                     </text>
                   )}
                   {openingsOnWall(draft, w.index).map((o) => {
@@ -520,22 +635,46 @@ export default function RoomModal({
                 wall itself, and it travels along its own normal. There are no
                 corner handles any more — a corner is shared by two walls, so
                 dragging one turns both, and that is the interaction the owner
-                has ruled unusable. */}
+                has ruled unusable.
+
+                T67 F1: and it is the CLICKABLE SEGMENT of the mockup. One
+                gesture, two consequences — this wall is the one being dragged
+                AND the one the elevation below is drawn from — because a
+                joiner who points at a wall means that wall, both times. */}
             {shown.filter((w) => !w.stub).map((w) => {
               const a = toSvg(w.start); const b = toSvg(w.end);
               const on = picked?.kind === 'wall' && picked.index === w.index;
+              const here = w.index === wallOnShow;
               const vertical = Math.abs(b.x - a.x) < Math.abs(b.y - a.y);
               return (
                 <line
                   key={`grab-${w.index}`}
                   x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                  stroke={on ? '#C8A678' : 'transparent'}
-                  strokeWidth={on ? 4 : 9}
+                  stroke={on || here ? '#C8A678' : 'transparent'}
+                  strokeWidth={on || here ? 4 : 9}
                   strokeLinecap="round"
                   className={vertical ? 'cursor-ew-resize' : 'cursor-ns-resize'}
                   data-plan-wall={w.index}
+                  data-plan-wall-active={here ? '1' : '0'}
                   onPointerDown={(e) => startWallDrag(e, w.index)}
                 />
+              );
+            })}
+
+            {/* ─── T67 F2 · WHERE THE CEILING IS LOW, ON THE PLAN ─────────
+                A corner the ceiling comes down to is a fact about the ROOM,
+                not about one wall, so it is drawn on the room: a ring at the
+                corner and the height beside it. Read-only, always — it is
+                what the slopes already say, gathered in one place. */}
+            {shown.filter((w) => !w.stub).map((w) => {
+              const h = cornersOfWall(w.index);
+              if (!(h.start < (Number(draft.height) || 0) - 1e-6)) return null;
+              const a = toSvg(w.start);
+              return (
+                <g key={`corner-${w.index}`} data-low-corner={w.index} data-low-corner-mm={h.start}>
+                  <circle cx={a.x} cy={a.y} r={4} fill="none" stroke="#C8A678" strokeWidth="1.5" />
+                  <text x={a.x + 6} y={a.y - 6} fill="#C8A678" fontSize="9">{formatMm(h.start)}</text>
+                </g>
               );
             })}
 
@@ -579,15 +718,6 @@ export default function RoomModal({
                 />
               </div>
             )}
-            <div className="flex items-end">
-              <button type="button" className="cc-btn w-full" onClick={() => fileRef.current?.click()}>
-                Import DXF plan…
-              </button>
-              <input
-                ref={fileRef} type="file" accept=".dxf,text/plain" className="hidden"
-                onChange={(e) => onImport(e.target.files?.[0])}
-              />
-            </div>
           </div>
 
           {importInfo && (
@@ -715,6 +845,58 @@ export default function RoomModal({
             {' A BOX does: it stands floor to ceiling and a cabinet stops at it, exactly as it stops at a wall.'}
           </p>
         </div>
+      </div>
+
+      {/* ─── TURN 67 (CLAUDE.md F1): THE ELEVATION, BELOW, IN THIS WINDOW ───
+          *"Below: the ELEVATION editor — the existing `WallElevationModal`,
+          UNCHANGED … docked into the same window, showing whichever wall the
+          plan click chose."*
+
+          It is given NO `onBack` and NO `onSave`: there is nowhere to go back
+          TO and nothing to save — this editor writes the project's own room
+          and slope lists as it always has, live, and the row it would draw for
+          those two is taken out of the flow by `DOCK_CSS` above rather than
+          left on the glass as two controls that cannot act. */}
+      <div className="border-t border-shell-600 pt-3" data-elevation-dock="1" data-elevation-wall={wallOnShow}>
+        <div className="cc-row mb-2">
+          <span className="text-xs uppercase tracking-wide text-ink-200">
+            Wall {wallOnShow + 1} — the elevation
+          </span>
+          <span className="text-[11px] text-ink-400">Click a wall in the plan above to change it.</span>
+        </div>
+        {/* ─── T67 F2 · THE IMPLIED PROFILE, READ-ONLY ─────────────────────
+            *"The elevation editor shows the implied profile on the neighbour
+            read-only (it is a consequence, not an element on that wall)."*
+            It is said HERE, in the window the editor is docked in, and not
+            inside the editor — the owner's word on that file is *"który jest
+            super, nie zmieniaj"*, and a consequence drawn among a wall's own
+            elements would read as one of them. Nothing below is editable and
+            nothing below is stored. */}
+        {impliedHere.map((p) => (
+          <p
+            key={`${p.side}-${p.because}`}
+            className="text-[11px] text-ink-300 border border-shell-600 rounded px-2 py-1 mb-2"
+            data-implied-profile={p.side}
+            data-implied-mm={p.startHeight}
+            data-implied-because={p.because}
+          >
+            {`The ceiling at the ${p.side === 'L' ? 'left' : 'right'} corner of this wall is `}
+            {formatMm(p.startHeight)}
+            {` mm — Wall ${(p.because ?? 0) + 1}'s slope runs into it, and one ceiling cannot be two `}
+            {'heights. It is drawn here because it is true, not because it is yours to change.'}
+          </p>
+        ))}
+        <WallElevationModal key={wallOnShow} wallIndex={wallOnShow} />
+      </div>
+
+      {/* The window's ONE row of navigation — see the note at the head of this
+          file for why it is here and not in the shell's footer. */}
+      <div className="flex justify-end gap-2 border-t border-shell-600 pt-3" data-room-actions="1">
+        <button type="button" className="cc-btn" onClick={closeModal}>Cancel</button>
+        <button type="button" className="cc-btn-gold" onClick={apply} disabled={!guard.ok || shapeIssues.length > 0}>
+          Apply
+        </button>
+      </div>
       </div>
     </Modal>
   );

@@ -39,6 +39,53 @@ const ROOT = new URL('../', import.meta.url).pathname;
 const SRC = join(ROOT, 'src');
 
 /**
+ * ─── AMENDED BY TURN 67 · THE FIRST NAMED CUTS INTO PRO ────────────────────
+ *
+ * THE REASON, in the owner's own words. Asked, 11.09.2026, whether PRO may
+ * change so the room can be one window and the watch drawer can take the name
+ * a client understands, he answered:
+ *
+ *   *"tak, zdecydowanie potwierdzam."*
+ *
+ * and, of the drawer:
+ *
+ *   *"watches szuflad jest bez sensu … tam będzie watches, belts, ties,
+ *   cufflinks, biżuteria"* … *"zmień w PRO też tę nazwę."*
+ *
+ * This manifest is where such a change is ARGUED — T59 said so in as many
+ * words: *"If a line of PRO ever legitimately changes, this manifest is the
+ * place the change is ARGUED — one commit that moves a hash and says why."*
+ * Tonight three hashes move and this is the argument.
+ *
+ * THE FREEZE IS NOT WEAKENED. It is NARROWED BY PATH:
+ *
+ *   · `EXEMPT` below names the three files, each with the feature that
+ *     licensed it. Every one of them is RE-FROZEN at its new hash in the very
+ *     same table — so tomorrow's turn is guarded at byte level exactly as
+ *     yesterday's was, and the exemption bought ONE night's edit and not a
+ *     standing permission.
+ *   · The other sixty-three are untouched, and the git assertion below is
+ *     narrowed to the same three paths rather than switched off.
+ *   · Nothing was ADDED to the surface and nothing left it: the count is 66,
+ *     asserted as before.
+ *
+ * A fourth file appearing in `EXEMPT` without a quote and a feature beside it
+ * is the failure this table is shaped to make obvious.
+ */
+const EXEMPT = {
+  'src/components/RoomModal.jsx':
+    'T67 F1 — the room in one window: plan on top, the UNCHANGED WallElevationModal '
+    + 'docked below it, and the two preset buttons the owner struck out. '
+    + '*"tak, zdecydowanie potwierdzam."*',
+  'src/components/AddItems.jsx':
+    'T67 F9 — the label "Watch drawer" becomes "Accessories drawer" on the row, the '
+    + 'button and the two notices. *"zmień w PRO też tę nazwę."*',
+  'src/components/WatchLayoutModal.jsx':
+    'T67 F9 — the same label, on the window\'s own title. '
+    + '*"watches szuflad jest bez sensu."*',
+};
+
+/**
  * THE FROZEN SURFACE — CLAUDE.md, STANDING LAW:
  *
  *   *"`git diff origin/main..HEAD --stat` on `index.html`, `src/App.jsx`,
@@ -50,7 +97,8 @@ const SRC = join(ROOT, 'src');
 const FROZEN = {
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
-  'src/components/AddItems.jsx': '6d0be57abb2b51a5789cbfee88ea87d2fc82e895a17099e00d8cadcd0c71c729',
+  // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/AddItems.jsx': '7a11844fe6ad83d0226d74fbda37bf114c73c0f8d63a660cf0bec4d59ff0cae7',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   'src/components/AssignMaterialsModal.jsx': '32d48ece258aa562d6614606a65fd8df5a15adb3717d40f5736df8db45fac550',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
@@ -92,7 +140,8 @@ const FROZEN = {
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
   'src/components/RightPanel.jsx': 'ad0777675b240f39d649f9bf1dd79215161d79e3cca9c80ed5ffc9a21d68c788',
-  'src/components/RoomModal.jsx': 'a96643d775c200276c159169007292d1f395534f6bcf07e27859b636343244bb',
+  // T67 F1 — re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RoomModal.jsx': '7d2d37298deef241c129341b41543a1fa1d2ddde1f676024c43b24661b3896bc',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
   'src/components/SaveTemplateModal.jsx': '83a756327cd24f0a13f1c28e618a692b1b88b00df6c2735416d5711422cbc4c1',
@@ -108,7 +157,8 @@ const FROZEN = {
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
   'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
   'src/components/WarehouseModal.jsx': '891e9065b7a6ae95612b4de88dc9cdd3d015a99c709c3ce47cdf458b1bf9da62',
-  'src/components/WatchLayoutModal.jsx': '64a7d2a10be84eef92ceba2dc3541c4820a04b3d6549213968893b78b067f01d',
+  // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/WatchLayoutModal.jsx': '5df8a72415db012947f9735e0262bb2381fbda8aab7dc32763be0249c2e834e2',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   'src/components/WizardSettings.jsx': 'e78f35fff5107b21a5a775629ab899d2474d883df03b5873ad538bcfbd68fc74',
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
@@ -259,6 +309,28 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
     'the PRO surface gained or lost a file — PRO IS FROZEN');
 });
 
+// ─── T67 · THE EXEMPTION IS ITSELF GUARDED ─────────────────────────────────
+//
+// An exemption list with no test is a hole. This one is held to three things:
+// every path on it is in the manifest (so it is RE-FROZEN and not merely
+// excused), every path carries the owner's own sentence as its reason, and the
+// list is exactly the three CLAUDE.md names — a fourth file cannot be slipped
+// in without this failing and saying which.
+test('T67 · the exemption names three files, each re-frozen, each with its reason', () => {
+  assert.deepEqual(Object.keys(EXEMPT).sort(), [
+    'src/components/AddItems.jsx',
+    'src/components/RoomModal.jsx',
+    'src/components/WatchLayoutModal.jsx',
+  ], 'the exemption list is not the three files CLAUDE.md names');
+  for (const [rel, why] of Object.entries(EXEMPT)) {
+    assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
+    assert.match(why, /T67 F\d/, `${rel} does not say which feature licensed it`);
+    assert.match(why, /\*"/, `${rel} does not carry the owner's own words`);
+    const got = createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex');
+    assert.equal(got, FROZEN[rel], `${rel}'s new hash is not the one written down`);
+  }
+});
+
 test('F1 · the frozen surface — and git agrees, where git can answer', () => {
   const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
   let base = null;
@@ -272,9 +344,14 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     assert.ok(Object.keys(FROZEN).length === 66, 'no base ref — the manifest is the whole proof here');
     return;
   }
+  // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's
+  // own pathspec magic, so the question asked is still "did any other PRO file
+  // move", and the three that did are answered by the hash manifest above,
+  // which is where they are re-frozen.
   const diff = git([
     'diff', '--stat', base, '--',
     'index.html', 'src/App.jsx', 'src/main.jsx', 'src/components', 'src/pages',
+    ...Object.keys(EXEMPT).map((rel) => `:(exclude)${rel}`),
   ]).trim();
   assert.equal(diff, '', `git diff ${base} -- <the frozen paths> must be EMPTY:\n${diff}`);
 });

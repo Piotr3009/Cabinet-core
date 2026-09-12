@@ -134,7 +134,7 @@ test('F4.1 · Entry A — the scene: a watch piece opens watch-layout beside the
   assert.match(scene, /openModal\('watch-layout', \{\n\s*unitId: unit\.id,\n\s*itemId: item\.id,\n\s*anchor: \{/);
 });
 
-test('F4.2 · Entry B — the menu: the Watch drawer row on a unit that HAS one opens the modal', () => {
+test('F4.2 · Entry B — the menu: the Accessories drawer row on a unit that HAS one opens the modal', () => {
   assert.match(addItems, /if \('watch_drawer' === kind\.id\) \{/);
   assert.match(addItems, /openModal\('watch-layout', \{\n\s*unitId: unit\.id, itemId: watchItem\.id, anchor: anchorOfEvent\(e\),\n\s*\}\);/);
 });

@@ -97,8 +97,10 @@ test('F2 · the lazy client: every step has its answer chosen, and the defaults 
   // fronts are no longer faced in a decor — they are SPRAYED. The lazy
   // client's clicks still end on a finished wardrobe, which is the law here;
   // what he ends on is the showroom's.
-  assert.equal(A.carcassDecorOf(p), A.swatchFor(A.WALNUT_DECOR).finishId,
-    'the carcass is not the named walnut');
+  // T67 F5 · *"default Egger to H3325 Gladstone Oak."*  The claim is the same;
+  // the decor is the owner's own and the profile is where he names it.
+  assert.equal(A.carcassDecorOf(p), A.swatchFor(A.DEFAULT_CARCASS_DECOR).finishId,
+    'the carcass is not the named default decor');
   assert.equal(A.insideColourOf(p), 'chosen', 'the inside is not the carcass\'s own board');
   // FRONTS — shaker, RAL 3005 sprayed, push-to-open (no handle).
   assert.equal(p.design.fronts.style, 'S');
@@ -123,23 +125,38 @@ test('F2 · WHAT offers PRO\'s own eight types; only the wardrobe is buildable, 
   assert.equal(A.setProjectType('wardrobe'), 'wardrobe');
 });
 
-test('F2 · INSIDE opens on the carcass material, above the interior rows, and offers three inside colours', () => {
+// ─── AMENDED BY TURN 67 · F6 ──────────────────────────────────────────────
+//
+// The owner, circling the INSIDE COLOUR row: *"to już niepotrzebne … to jest
+// zdublowanie funkcji."*  T64's *"najpierw materiał, a później reszta"* is
+// UNCHANGED and is still what this test asks: the carcass slot first, the
+// interior rows last. What is gone is the second control between them, and
+// with it the second WRITE PATH — so the test now proves the one that stands.
+test('F2, amended by T67 · INSIDE opens on the carcass material, above the interior rows', () => {
   const options = read('src/retail/design/Options.jsx');
   const inside = options.slice(options.indexOf('function InsidePanel'), options.indexOf('/* ─── 5 · FRONTS'));
   const material = inside.indexOf('<MaterialSlot kind="carcass"');
-  const colour = inside.indexOf('data-testid="inside-colour"');
   const rows = inside.indexOf('<AddItems unit={unit} />');
-  assert.ok(material > 0 && colour > material && rows > colour, 'the material is not first, the rows not last');
-  assert.match(inside, /SAME AS FRONTS/);
-  assert.match(inside, /label="WHITE"/);
-  assert.match(inside, /CHOOSE…/);
-  // The three answers, through the store's own carcass setters.
+  assert.ok(material > 0 && rows > material, 'the material is not first, the rows not last');
+  // T67 F6: the duplicate is gone, from the markup and from the adapter.
+  // Comments out first: this panel's TOMBSTONE quotes the row it buried, and a
+  // tombstone is prose. What must be gone is the MARKUP.
+  const live = inside.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
+  assert.doesNotMatch(live, /data-testid="inside-colour"/, 'the duplicated row came back');
+  assert.doesNotMatch(live, /SAME AS FRONTS/);
+  assert.doesNotMatch(read('src/retail/design/adapter.js').replace(/\/\*[\s\S]*?\*\//g, ' '),
+    /export function setInsideColour/, 'the row\'s own writer survives it');
+
+  // ONE WRITE PATH for what the inside wears — the carcass picker, and it is
+  // the same store call the deleted row used to make a second road to.
   A.startDesign('x');
   A.addFirstWardrobe();
   A.setFrontDecor('H3195_19');
-  assert.equal(A.setInsideColour('white'), A.swatchFor(A.WHITE_DECOR).finishId);
+  // The picker emits the FINISH ID (`engine/decors.js finishIdForDecor`), which
+  // is what `DecorPicker` hands `MaterialChoicePanel` and what the slot shows.
+  A.pickMaterialDecor('carcass', A.swatchFor(A.WHITE_DECOR).finishId);
   assert.equal(A.insideColourOf(S().project), 'white');
-  A.setInsideColour('fronts');
+  A.pickMaterialDecor('carcass', A.swatchFor('H3195_19').finishId);
   assert.equal(A.insideColourOf(S().project), 'fronts');
   assert.equal(A.carcassDecorOf(S().project), A.frontDecorOf(S().project));
 });

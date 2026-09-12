@@ -168,6 +168,40 @@ export function wallWidth(room, index) {
   return roomWalls(room)[index]?.width ?? 0;
 }
 
+/**
+ * ─── TURN 67 (CLAUDE.md F2): WHICH WALLS MEET THIS ONE, AND AT WHICH END ───
+ *
+ * The owner asked whether a slope on the front wall makes the side wall low at
+ * the shared corner. It did not — every wall's slope was private — and he
+ * ordered that it should: **at a shared corner, both walls have the same
+ * height.** One ceiling cannot be two heights.
+ *
+ * That law needs one fact this file is the owner of and no other file should
+ * re-derive: WHO MEETS WHOM. A room is a CLOSED ring of corners, so wall `i`
+ * runs from corner `i` to corner `i+1` — which means its END corner is wall
+ * `i+1`'s START corner, and its START corner is wall `i−1`'s END corner, with
+ * the last wall wrapping round to the first. It is pure topology: no distance,
+ * no angle, nothing to get wrong twice.
+ *
+ * Returned as the two ENDS rather than the two indices, because that is the
+ * question the corner law actually asks — *"whose end touches my start?"* —
+ * and an answer shaped like the question cannot be read backwards.
+ *
+ * @returns {{prev:{wall:number, end:'end'}, next:{wall:number, end:'start'}}|null}
+ */
+export function wallNeighbours(room, index) {
+  const walls = roomWalls(room);
+  const n = walls.length;
+  const i = Math.trunc(Number(index) || 0);
+  if (!n || i < 0 || i >= n) return null;
+  // A room of ONE wall meets nothing: a ring of one has no other end to share.
+  if (n < 2) return { prev: null, next: null };
+  return {
+    prev: { wall: (i - 1 + n) % n, end: 'end' },
+    next: { wall: (i + 1) % n, end: 'start' },
+  };
+}
+
 // ─── "One wall" (turn 14, CLAUDE.md F1.5b) ──────────────────────────────────
 //
 // The project SCOPE has said "one wall" since turn 7 and only ever decided one

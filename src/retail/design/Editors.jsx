@@ -9,6 +9,7 @@ import JpullRunModal from './detail/JpullRunModal.jsx';
 import LightingPanel from './lighting/LightingPanel.jsx';
 import UnitFinishModal from './material/UnitFinishModal.jsx';
 import MaterialsModal from './material/MaterialsModal.jsx';
+import DrawRoomModal from './room/DrawRoomModal.jsx';
 import { DOCK_MODALS } from './detail/docked.jsx';
 
 // ─── TURN 63 · PRO'S WINDOWS, MOUNTED IN THE CLIENT'S ROOM ─────────────────
@@ -77,6 +78,14 @@ export default function Editors({ where = 'room' }) {
       {is('watch-layout') && <WatchLayoutModal />}
       {is('jpull-run') && <JpullRunModal />}
       {is('design') && <MaterialsModal />}
+      {/* ─── T67 F1 · THE BUTTON THAT HAD NO WINDOW ────────────────────────
+          CLAUDE.md: *"Hypothesis to verify first: retail's copy carries the
+          button but `DrawRoomModal` never entered the recursive copy."*
+          Verified — `RoomModal.jsx`'s copy has called `openModal('draw-room')`
+          since T62 and nothing in retail answered the name, so DRAW ROOM was a
+          dead control on the client's screen. The window is copied tonight
+          (`scripts/t67-copy.mjs`) and this is the route it was missing. */}
+      {is('draw-room') && <DrawRoomModal />}
     </>
   );
 }

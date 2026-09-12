@@ -342,15 +342,28 @@ test('F10 — clicking a wall opens the STANDARD elevation, unchanged', () => {
   assert.ok(jsx.includes('const res = saved ? { ok: true } : save();'));
 });
 
-test('F10 — the simple width/height path is untouched, and Draw room stands beside it', () => {
+// ─── AMENDED BY TURN 67 · F1 (LICENSED REMOVALS) ──────────────────────────
+// *"L-SHAPE and + BOX preset buttons are REMOVED from the modal"* — the owner:
+// *"furniture lives on 1–3 walls"*, and, on PRO changing to carry it:
+// *"tak, zdecydowanie potwierdzam."*  What T53 F10 was actually defending is
+// its OWN fence — *"the simple width/height 'one wall' path STAYS untouched"*
+// — and that is what is asked for here: the height field, the rectangle, the
+// import, and DRAW ROOM beside them, opening where rule 15 says.
+test('F10, amended by T67 — the simple width/height path is untouched, and Draw room stands beside it', () => {
   const room = src('src/components/RoomModal.jsx');
-  // F1's four tools, all still there.
-  for (const t of ['data-room-preset="rect"', 'data-room-preset="L"', 'data-insert-box="1"', 'Import DXF plan']) {
+  for (const t of ['data-room-preset="rect"', 'data-import-dxf="1"', 'Import DXF plan',
+    'Room height (mm)', 'Wall height (mm)']) {
     assert.ok(room.includes(t), t);
   }
   assert.ok(room.includes('data-room-draw="1"'), 'and the fifth door');
   assert.ok(room.includes("openModal('draw-room', { anchor: anchorOfEvent(e) })"),
     'which opens beside its own button');
+  // T67 F1: …and in RETAIL the fifth door now leads somewhere. It has carried
+  // the button since T62 with no `draw-room` route behind it.
+  const editors = src('src/retail/design/Editors.jsx');
+  assert.ok(editors.includes("is('draw-room') && <DrawRoomModal />"), 'retail DRAW ROOM is still dead');
+  assert.ok(src('src/retail/design/room/DrawRoomModal.jsx').includes('name="draw-room"'),
+    'retail has no copy of the CAD window');
 });
 
 test('F10 — the copy is English, end to end (T44’s failure is not repeated)', () => {

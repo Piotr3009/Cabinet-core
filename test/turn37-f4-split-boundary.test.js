@@ -454,7 +454,15 @@ test('F4c — rule 15 stands: no OTHER window docks or turns the key off', () =>
       || path.endsWith('retail/design/room/Modal.jsx')
       || path.endsWith('retail/design/detail/DoorModal.jsx')) continue;
     const text = readFileSync(path, 'utf8');
-    assert.doesNotMatch(text, /\bdock=/, `${path} docks a window`);
+    // ─── AMENDED BY T67 F1 ─────────────────────────────────────────────
+    // The rule being guarded is the SHELL PROP `dock=` — "no other window
+    // asks the shell to stand at an edge". `\b` also matched inside a data
+    // attribute, so `data-elevation-dock="1"` — the hook T67's room window
+    // hangs its DOCKED ELEVATION on, and which no shell ever reads — read as
+    // a violation of a rule it does not touch. The lookbehind asks for the
+    // prop and only the prop; a `-` or a word character before it means the
+    // match is part of a longer name.
+    assert.doesNotMatch(text, /(?<![-\w])dock=/, `${path} docks a window`);
     assert.doesNotMatch(text, /escapeCloses=/, `${path} turns Escape off`);
   }
   // And the shell still drags every window by its header.

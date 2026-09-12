@@ -84,8 +84,13 @@ test('F4 · the element\'s word is the ENGINE\'s word', () => {
   const trayPanel = S().unitResult(unit.id).panels
     .find((p) => p.part === 'DRAWER-FRONT' && Number(p.meta.drawer) === Number(tray.index));
   if (trayPanel) {
+    // ─── AMENDED BY TURN 67 · F9 ───────────────────────────────────────
+    // The owner: *"watches szuflad jest bez sensu … tam będzie watches,
+    // belts, ties, cufflinks, biżuteria"*, and *"zmień w PRO też tę nazwę."*
+    // The NAME changed on both sides the same night; the engine's
+    // `watch_drawer` id, on which this selection is resolved, did not.
     assert.equal(A.selectionName(A.resolveSelection({ unitId: unit.id, elementRef: trayPanel.id })),
-      'Watch drawer');
+      'Accessories drawer');
   }
 });
 

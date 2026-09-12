@@ -167,7 +167,8 @@ export const MODAL_KINDS = Object.freeze({
   // *"otwiera się nowy modal z 4 propozycjami rozmieszczenia."*  It is about
   // an OBJECT — the drawer that was asked from — so it opens BESIDE it and the
   // guard holds it to that, exactly as the rail's window is held.
-  'watch-layout': { about: 'object', label: 'Watch drawer layout' },
+  // T67 F9 · the registry's label follows the window's. Label only.
+  'watch-layout': { about: 'object', label: 'Accessories drawer layout' },
   // ─── TURN 53 (CLAUDE.md F10) ───────────────────────────────────────────
   // *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w CAD."*  A
   // PROJECT window: it draws the whole room and not a thing on the canvas —

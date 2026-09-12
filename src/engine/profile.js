@@ -1142,6 +1142,29 @@ export const DEFAULT_CABINET_PROFILE = {
   // only ever picks a VARIANT" means, and it is why the automatic parts are
   // listed here rather than being decided in a component.
   projectSettings: {
+    /**
+     * ─── TURN 67 (CLAUDE.md F5): THE DEFAULT DECOR ────────────────────────
+     *
+     * The owner, 11.09.2026: *"default Egger to H3325 Gladstone Oak."*
+     *
+     * `H3325_28` is `H3325 ST28 Tobacco Gladstone Oak`, a REAL row of the real
+     * bucket — one of the 85 in `public/decors/egger/egger-decors.json` —
+     * chosen off that list and never invented, which is the condition every
+     * decor default in this app is held to.
+     *
+     * A DEFAULT KEY AND NOTHING ELSE. Nothing on the cut path reads it: a
+     * carcass type with no `finish_id` still means *"nobody has said"*, the
+     * engine still cuts the same board, and every golden fixture is untouched
+     * — `scripts/t67-classify.mjs` proves that rather than asserting it. What
+     * reads it is the surface that fills a FRESH design in before the first
+     * click (`src/retail/design/adapter.js applyLazyDefaults`), and a design
+     * that has already said something is never overwritten by it.
+     *
+     * The FRONTS are not here: they are sprayed RAL 3005, which is a colour
+     * and lives where the colours live (`reference/colors/psw-colors.json`).
+     */
+    defaultCarcassDecorId: 'H3325_28',
+
     // A carcass board, and where it comes from. `thickness` is what that source
     // IS: an EGGER decor board is 18, and a sprayed carcass is 18 of MDF.
     // ─── Turn 15 (CLAUDE.md F3) ───
@@ -2053,6 +2076,27 @@ export const DEFAULT_CABINET_PROFILE = {
       // The spot discs read smaller than a strip, so they carry their own
       // multiplier rather than borrowing the strip's and looking dim.
       spotEmissiveMultiplier: 1.35,
+      /**
+       * ─── TURN 67 (CLAUDE.md F10): THE ACCESSORIES DRAWER'S OWN LED ───────
+       *
+       * The owner, 11.09.2026, verbatim, and this comment is here so that no
+       * later turn "improves" it back:
+       *
+       *   *"kolor podświetlenia szuflady accessories: zmniejsz jasność do 25
+       *   procent … nie więcej niż 25 procent od teraz."*
+       *
+       * NOT MORE THAN 25 PER CENT FROM NOW ON. So this is a GAIN and a CAP in
+       * one number: the accessories (watch) drawer's own strip — the ring that
+       * fires down from the shelf above it and lights the watches, born beside
+       * the glass aperture in `engine/cabinet.js` as `…:watch-glass` — is
+       * drawn at this fraction of what every other strip is drawn at, and
+       * `src/3d/LedStrips.jsx` clamps whatever it reads here to
+       * `ACCESSORY_LED_MAX_GAIN`, which is this same 0.25.
+       *
+       * THE ROOM RIG IS NOT TOUCHED. T66's `baseGain` 0.60 is the studio's
+       * light and a different question; this is one drawer's own lamp.
+       */
+      accessoryDrawerGain: 0.25,
       // How far the whole studio rig is scaled down in the demo — the T33
       // number, unmoved, because the owner's complaint was the LEDs and not
       // the room (0.15, `profile.lighting.demo.dimFactor`, still the source).

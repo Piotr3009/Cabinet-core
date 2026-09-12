@@ -445,6 +445,19 @@ test('F3.3 · SHELF — it MOVES, and its ends are the engine\'s band', () => {
   assert.equal(now.field, Math.round(now.pos - G));
 });
 
+// ─── AMENDED BY TURN 67 · F7 ──────────────────────────────────────────────
+//
+// The owner, 11.09.2026, of INSIDE grown long: *"jak dodajesz szuflady, to się
+// nie powinny pokazywać pod spodem, tu menu po lewej ma być puste — powinno
+// się pokazywać po prawej … te funkcje niech przejdą na prawą stronę."*
+//
+// T66's `ReHomed` moved WHOLE out of `Options.jsx` and into
+// `detail/ReHomed.jsx`, which the DOCK renders. The claim every assertion
+// below makes is unchanged — not one control a deleted thin menu carried was
+// lost — so the reader is the two files that now hold them between them.
+const REHOMED = () => read('src/retail/design/Options.jsx')
+  + read('src/retail/design/detail/ReHomed.jsx');
+
 test('F3.3 · SHELF — pinned is a NOTE, locked is a refusal, and they differ', () => {
   const unit = room({ rail: true });
   const items = itemsOf(unit.id);
@@ -485,7 +498,7 @@ test('F3.3 · SHELF — pinned is a NOTE, locked is a refusal, and they differ',
     'PRO\'s own height field is gone from the copy');
   // …and the EVEN LADDER, which the copy has no button for, is re-homed on the
   // left, in INSIDE's own row (F3's *"never lost"* clause).
-  assert.match(read('src/retail/design/Options.jsx'), /data-testid="shelf-centre"/,
+  assert.match(REHOMED(), /data-testid="shelf-centre"/,
     'CENTRE THIS BAY was lost with the menu that carried it');
 });
 
@@ -557,7 +570,7 @@ test('F3.4 · DRAWERS — the ONE slider stands down where it would overwrite a 
   // carried — how many, the top insert, the glass, and this front height — are
   // re-homed into INSIDE's own row. ONE drawer's own height is the docked
   // copy's `drawer-height`, which is PRO's own field.
-  const options = read('src/retail/design/Options.jsx');
+  const options = REHOMED();
   assert.match(options, /\{fixed \? \([\s\S]{0,200}<Said/, 'the row shows a field beside the reason');
   assert.match(options, /testid="drawers-front-height"/);
   assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /case 'drawer-height':/,
@@ -646,8 +659,10 @@ test('F3.7 · SHOE — fixed law, said in words, with no invented option', () =>
   // T66 F3 · the thin ShoeMenu is deleted. What it carried was a DRAWING and a
   // SENTENCE — never a control, because the ramp is fixed law — and both are
   // re-homed onto the shoe drawer's own row in INSIDE.
-  const options = read('src/retail/design/Options.jsx');
-  const row = options.slice(options.indexOf("row.id === 'shoe'"), options.indexOf("row.id === 'shoe'") + 700);
+  const options = REHOMED();
+  // T67 F7 · the ROW's own branch, not the drawer-name table beside it.
+  const at = options.indexOf("if (row.id === 'shoe')");
+  const row = options.slice(at, at + 700);
   assert.ok(!/ChipRow/.test(row), 'the shoe row offers a choice the workshop has already made');
   assert.match(row, /A\.shoeLaw\(\)/, 'the sentence is not read from the profile');
   assert.match(row, /<ShoeDrawing lanes=\{law\.lanes\}/, 'the drawing went with the menu');
@@ -795,7 +810,7 @@ test('F3 · every REMOVE goes through the store\'s own remove', () => {
   // The thin menus that carried a REMOVE are deleted; the removes that had no
   // copied editor to go to are re-homed into INSIDE's rows, and this asks the
   // same question of the file they landed in.
-  const options = read('src/retail/design/Options.jsx');
+  const options = REHOMED();
   for (const [what, testid] of [
     ['the overlay stack', 'overlay-remove'],
     ['the pull-down rod', 'pulldown-remove'],

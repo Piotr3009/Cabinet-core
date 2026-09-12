@@ -263,7 +263,11 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     // the watch drawer goes ON TOP of one.
     {
       id: 'watch_drawer',
-      label: 'Watch drawer',
+      // T67 F9 · the owner: *"watches szuflad jest bez sensu … tam będzie
+      // watches, belts, ties, cufflinks, biżuteria"* — and *"zmień w PRO też
+      // tę nazwę."*  LABEL ONLY: the engine's `watch_drawer` id above is
+      // untouched, so the cut path knows nothing of this line.
+      label: 'Accessories drawer',
       disabled: !type.supports.drawers || ratioDrawers || !existingDrawers,
       why: ratioDrawers
         ? 'this kit IS its drawers'
@@ -406,7 +410,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
               addItemKind === kind.id ? 'bg-shell-700 text-gold' : 'text-ink-100'}`}
             onClick={(e) => {
               // ─── TURN 54 (CLAUDE.md F4.2): THE ROW IS A ROAD, NOT A DEAD END
-              // On a unit that already HAS a watch drawer, the "Watch drawer"
+              // On a unit that already HAS one, the "Accessories drawer"
               // row's chevron opens the layout modal for that item — beside
               // the row (house modal law) — instead of expanding an add-form
               // for a drawer the store would refuse to add twice. (The
@@ -635,13 +639,13 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                     data-add-watch-drawer="1"
                     onClick={() => {
                       const res = addWatchDrawer(unit.id, zones.length > 1 ? drawerZone : null);
-                      if (!res?.ok) { notify(res?.error || 'The watch drawer was not added.', 'warn'); return; }
-                      notify(`Watch drawer added on top of the stack — ${formatMm(res.height)} mm, fixed. `
+                      if (!res?.ok) { notify(res?.error || 'The accessories drawer was not added.', 'warn'); return; }
+                      notify(`Accessories drawer added on top of the stack — ${formatMm(res.height)} mm, fixed. `
                         + 'Open it to choose one of the four layouts.', 'ok');
                       done();
                     }}
                   >
-                    Add a watch drawer on top
+                    Add an accessories drawer on top
                   </button>
                   <p className="text-[11px] text-ink-400">
                     One fixed height — {formatMm(watchDrawerFixedHeight(profile))} mm — because the tray

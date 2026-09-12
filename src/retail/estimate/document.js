@@ -41,7 +41,23 @@ const decorText = (finishId) => {
  * extraction): the system and the name, exactly as the picker shows them, so a
  * client reads on the summary what he read on the swatch.
  */
+/**
+ * ─── T69 F4 · AND RAW NAMES ITSELF ─────────────────────────────────────────
+ *
+ * *"Estimate and REVIEW name it."*
+ *
+ * A RAW front carries neither a `finish_id` nor a colour — `setFrontType` drops
+ * a facing under a source that takes no picker, and choosing RAW clears the
+ * colour — so without this line the summary said *"workshop default"* for the
+ * one choice a client had just made deliberately, which is the exact bug the
+ * sprayed front had above and for the exact same reason.
+ *
+ * It is read off the SOURCE, which is where RAW lives, and it is checked FIRST
+ * for the same reason `resolveFinishes` checks it first: nothing else in the
+ * chain can be true once RAW is chosen.
+ */
 const frontFinishText = (type) => {
+  if (type?.source === 'raw') return 'Raw MDF, unpainted — sanded, ready to paint';
   if (type?.finish_id) return decorText(type.finish_id);
   const c = type?.colour;
   if (!c?.hex) return 'workshop default';

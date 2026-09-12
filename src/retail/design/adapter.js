@@ -3176,11 +3176,41 @@ export function materialSlot(kind) {
   };
 }
 
+/**
+ * ─── T69 F4 · RAW ENDS THE CHOICE ──────────────────────────────────────────
+ *
+ * *"Fourth front source: RAW (unpainted MDF) … No colour picker — choosing RAW
+ * ends the choice."*
+ *
+ * A source that names no picker already draws none (`pickerForSource` returns
+ * `null` for RAW), but the DESIGN can still be carrying a colour and a facing
+ * from whatever was chosen before it — and `resolveFinishes` reads the sprayed
+ * colour FIRST. So choosing RAW clears both, and the board is then the only
+ * answer left in the chain.
+ *
+ * Nothing else moves: the thickness is the source's own 18 mm, and END PANELS
+ * and the PLINTH follow the fronts by the store's own `runMaterials` default —
+ * which is why F4's three pieces need no third rule here. THE CARCASS NEVER:
+ * `raw` is not in `carcassSources`, so this function cannot be asked for it.
+ */
+export const RAW_FRONT_SOURCE = 'raw';
+export const RAW_FINISH_ID = 'raw_mdf';
+
 export function setMaterialSource(kind, sourceId) {
   const slot = typeOf(kind);
   if (kind === 'carcass') return S().setCarcassSource(slot.id, sourceId);
+  if (sourceId === RAW_FRONT_SOURCE) {
+    return S().setFrontType(slot.id, {
+      source: RAW_FRONT_SOURCE, finish_id: RAW_FINISH_ID, colour: null,
+    });
+  }
   return S().setFrontType(slot.id, { source: sourceId });
 }
+
+/** Is this job's front RAW? The store's own answer, read once. */
+export const rawFronts = (project) => normaliseFrontTypes(
+  migrateDesign(project?.design).fronts.types, P(),
+)[0]?.source === RAW_FRONT_SOURCE;
 
 export function pickMaterialDecor(kind, finishId) {
   const slot = typeOf(kind);

@@ -95,6 +95,20 @@ export const REASONS = {
   topInfillClosesTheGap: 'Closes the gap between the top of the wardrobe and your ceiling.',
 
   /**
+   * ─── T69 F4 · RAW MDF ────────────────────────────────────────────────────
+   *
+   * NOT a refusal — CLAUDE.md F4's own sentence, verbatim, and the ONE thing
+   * the step says at the choice: *"One sentence at the choice: 'Unpainted —
+   * ready for your own finish. We sand it, you paint it.'"*
+   *
+   * PREDICATE: `engine/projectSettings.js pickerForSource`, which answers
+   * `null` for the profile's `raw` front source — so there is no picker under
+   * it and this sentence is what stands in a picker's place. A panel that went
+   * blank there would read as a control that failed.
+   */
+  rawIsUnpainted: 'Unpainted — ready for your own finish. We sand it, you paint it.',
+
+  /**
    * ─── T69 F8 · THE JOINER'S ORDER ─────────────────────────────────────────
    *
    * NOT a refusal — the note under TO THE CEILING?, which is the question

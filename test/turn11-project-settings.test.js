@@ -75,13 +75,21 @@ test('a carcass comes from EGGER decor, the spray booth — or, since turn 15, v
   assert.equal(sourceById(carcassSources(P), 'egger').thickness, 18);
 });
 
-test('a front comes from one of the FOUR sources — spray is one, not two (owner 09.08)', () => {
-  // RAL vs Farrow & Ball is the colour PICKER's question; the source is just
-  // "sprayed". Two buttons made one finish look like two.
+// ─── AMENDED BY TURN 69 · F4 ──────────────────────────────────────────────
+// A FIFTH source: `raw` — CLAUDE.md F4's *"fourth front source: RAW (unpainted
+// MDF)"*, fourth among the ones a client can actually finish a door in, since
+// `wood` is present with its colours *"coming soon"*. What this test has always
+// been about is unchanged and asked below exactly as before: spray is ONE
+// source and not two, because RAL vs Farrow & Ball is the picker's question.
+test('a front comes from one of the FIVE sources — spray is still one, not two (owner 09.08)', () => {
   const ids = frontSources(P).map((s) => s.id);
-  assert.deepEqual(ids, ['spray', 'veneer', 'laminate', 'wood']);
+  assert.deepEqual(ids, ['spray', 'veneer', 'laminate', 'wood', 'raw']);
+  assert.equal(ids.filter((id) => /spray/.test(id)).length, 1, 'spray became two sources again');
   // The option is present and its COLOURS are not — which is what F9.2 asks for.
   assert.equal(sourceById(frontSources(P), 'wood').coloursSoon, true);
+  // T69 F4 · RAW offers no picker at all, and it is not on the carcass.
+  assert.equal(sourceById(frontSources(P), 'raw').picker, null);
+  assert.equal(sourceById(carcassSources(P), 'raw'), null, 'RAW reached the carcass');
 });
 
 test('front types are capped at the profile maximum, and they start answered', () => {

@@ -2099,7 +2099,10 @@ export default function UnitView({
             // a picture of furniture and the lines are a workshop tool.
             drills={result.drills}
             surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
-            outline={outlineFor(profile, { contour })}
+            // T69 F4: an unpainted board's silhouette and shaker frame are
+            // drawn in its OWN edge cream — lighter than the field, which is
+            // the photo's truth. Every other board is untouched.
+            outline={outlineFor(profile, { contour, rawEdgeHex: surface.rawEdgeHex })}
             outlines={outlines}
             contour={contour}
             xray={xray}

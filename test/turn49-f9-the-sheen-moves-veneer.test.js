@@ -108,11 +108,24 @@ test('F9 — a piece that goes to the booth still answers, whatever it is faced 
   assert.equal(s(60).sprayed, true);
 });
 
-test('F9 — the gate is one named line, and the formula did not move', () => {
+// ─── AMENDED BY TURN 69 · F4 ──────────────────────────────────────────────
+//
+// The gate gained ONE more word — `&& !raw` — and the reason is the same one
+// T49 gave for widening it to veneer: `sheenDriven` is *"does a gloss slider
+// mean anything on this surface"*, and on unpainted MDF it does not. There is
+// no coat on it for a number to move. CLAUDE.md F4: *"High roughness, no
+// sheen."*
+//
+// What this test is ABOUT is unchanged and asserted below exactly as before:
+// the FORMULA is still the engine's one function, and the three things
+// `sprayed` decides still ask `sprayed`. A raw board is simply never sprayed.
+test('F9, amended by T69 — the gate is one named line, and the formula did not move', () => {
   assert.match(MATS, /const veneer = veneered \|\| \(!isDecor && finish\?\.kind === 'veneer'\);/);
-  assert.match(MATS, /const sheenDriven = sprayed \|\| veneer;/);
+  assert.match(MATS, /const sheenDriven = \(sprayed \|\| veneer\) && !raw;/);
   assert.match(MATS, /veneered = false,/, 'and the caller may say so for a front');
-  assert.match(MATS, /roughness: sheenDriven && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
+  // The FORMULA, untouched — it is now the second arm of a ternary whose first
+  // arm is the raw board's own roughness, and not one term of it has moved.
+  assert.match(MATS, /sheenDriven && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
   // Only the ROUGHNESS widened. The three things `sprayed` decides — the probe,
   // the metalness and the gun's orange peel — still ask `sprayed`.
   assert.match(MATS, /metalness: sprayed \?/);

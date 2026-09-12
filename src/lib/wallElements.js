@@ -245,6 +245,164 @@ export function wallHeightAt(xMm, slopes, { wallWidth, wallHeight }) {
   return ceilingAt(xMm, wallSlopes(slopes), { wallWidth, wallHeight });
 }
 
+// ═══ TURN 67 (CLAUDE.md F2) · THE CORNER LAW ═══════════════════════════════
+//
+// The owner asked, of a room with a slope on the front wall: does the side
+// wall show low where the two meet? It did not. Every wall's slope was
+// PRIVATE — `wallHeightAt` above is asked one wall's own elements and answers
+// from those alone — so the front wall came down to 1800 at the corner and the
+// side wall stood at 2500 a millimetre away. He ordered the other thing:
+//
+//   **AT A SHARED CORNER, BOTH WALLS HAVE THE SAME HEIGHT.**
+//   A slope running INTO a corner pulls the neighbour's height at that corner
+//   down. Two slopes meeting in one corner: THE LOWER WINS — one ceiling
+//   cannot be two heights.
+//
+// ─── WHY THIS NEEDS NO GEOMETRY, WHICH IS WHY IT IS SAFE ───────────────────
+//
+// A corner is a POINT, and a wall's height at its own two ends is not a lerp
+// at all — it is a value the slope record already carries. Read `ceilingAt`:
+// an `L` slope of run r gives `startHeight + (h − startHeight)·x/r` for x ≤ r,
+// which at x = 0 is exactly `startHeight`; an `R` slope gives the mirror, which
+// at x = w is exactly `startHeight`. So:
+//
+//   the height at a wall's START  = the lowest `startHeight` among its `L`
+//                                   slopes, or the room height if it has none
+//   the height at a wall's END    = the same, among its `R` slopes
+//
+// No width, no angle, no corner coordinates — only the wall's own records and
+// the ring topology `engine/room.js wallNeighbours` publishes. That is what
+// keeps this law OUTSIDE THE CUT PATH: it reads slope records and a room
+// index, writes nothing, and is not called by `engine/cabinet.js` or by
+// anything the fixtures walk. `scripts/t67-classify.mjs` proves that claim
+// rather than asserting it.
+//
+// ─── A CONSEQUENCE, NOT AN ELEMENT ─────────────────────────────────────────
+//
+// What comes back is READ-ONLY and is never stored. CLAUDE.md is exact about
+// it: *"it is a consequence, not an element on that wall"* — the neighbour has
+// not grown a slope, the ceiling over it simply is where the other wall's
+// slope put it. Nothing here mutates a list and no caller is expected to write
+// one back.
+
+/** Which end of a wall a slope comes down at → the corner it pulls. */
+const AT_END = { start: 'L', end: 'R' };
+
+/**
+ * How high THIS wall's own ceiling is at one of its two ends, from its own
+ * records alone. The half of the law that is not yet a corner.
+ *
+ * @param {Array} list      every stored wall element (any wall)
+ * @param {number} wallIndex
+ * @param {'start'|'end'} end
+ * @param {number} wallHeight  the room height, mm
+ */
+export function ownHeightAtEnd(list, wallIndex, end, wallHeight) {
+  const h = Math.max(0, num(wallHeight, 0));
+  const side = AT_END[end] || 'L';
+  let top = h;
+  for (const s of slopesOnWall(list, wallIndex)) {
+    if (s.side !== side) continue;
+    // A slope with no run is no slope: it states nothing about this corner.
+    if (!(s.run > 0)) continue;
+    top = Math.min(top, clamp(num(s.startHeight, h), 0, h || num(s.startHeight, h)));
+  }
+  return round4(top);
+}
+
+/**
+ * THE LAW. How high the ceiling is at the corner at one end of a wall — the
+ * LOWER of what this wall says and what the wall it meets there says.
+ *
+ * @param {object} args
+ *   elements    every stored wall element (any wall)
+ *   neighbours  `engine/room.js wallNeighbours(room, wallIndex)` — the ring
+ *   wallIndex   which wall is being asked
+ *   end         'start' | 'end'
+ *   wallHeight  the room height, mm
+ * @returns {number} mm
+ */
+export function cornerHeightAt({
+  elements = [], neighbours = null, wallIndex = 0, end = 'start', wallHeight = 0,
+} = {}) {
+  const mine = ownHeightAtEnd(elements, wallIndex, end, wallHeight);
+  const meets = end === 'start' ? neighbours?.prev : neighbours?.next;
+  if (!meets) return mine;
+  // The neighbour's height at the SAME point, which is ITS other end.
+  const theirs = ownHeightAtEnd(elements, meets.wall, meets.end, wallHeight);
+  // THE LOWER WINS. This is the whole of *"one ceiling cannot be two
+  // heights"*, and it is why two slopes meeting in one corner do not fight.
+  return round4(Math.min(mine, theirs));
+}
+
+/** Both ends of one wall at once — what a drawer of that wall needs. */
+export function wallCornerHeights({
+  elements = [], neighbours = null, wallIndex = 0, wallHeight = 0,
+} = {}) {
+  const at = (end) => cornerHeightAt({
+    elements, neighbours, wallIndex, end, wallHeight,
+  });
+  return { start: at('start'), end: at('end') };
+}
+
+/**
+ * THE IMPLIED PROFILE — what the NEIGHBOUR has to draw because of somebody
+ * else's slope, and nothing more than that.
+ *
+ * *"the neighbour renders a level drop or its own implied slope from its full
+ * height to the corner height, whichever the geometry states — derive it,
+ * don't invent."*  So it is derived, in one sentence each:
+ *
+ *   THIS WALL ALREADY SAYS IT.  If the wall's own slope brings it to the
+ *   corner height, the geometry is already on the glass and nothing is
+ *   implied: `null`. That is the case where the two agree, and it is why a
+ *   slope never draws itself twice.
+ *
+ *   A LEVEL DROP.  Otherwise. The ceiling that comes down along the OTHER
+ *   wall's length descends in the other wall's direction, so ALONG THIS ONE it
+ *   is a plane of constant height: level, at the corner height, for as far as
+ *   this wall is under it. `run: 0` is how a level drop is said in the slope
+ *   vocabulary — a step, not a ramp — and it is marked `implied: true` so no
+ *   surface can mistake it for something a person put there.
+ *
+ * @returns {{kind:'implied', side:'L'|'R', startHeight:number, run:0,
+ *            wall:number, implied:true, because:number}|null}
+ */
+export function impliedProfileAtEnd({
+  elements = [], neighbours = null, wallIndex = 0, end = 'start', wallHeight = 0,
+} = {}) {
+  const h = Math.max(0, num(wallHeight, 0));
+  const mine = ownHeightAtEnd(elements, wallIndex, end, h);
+  const corner = cornerHeightAt({
+    elements, neighbours, wallIndex, end, wallHeight: h,
+  });
+  // The two agree: this wall's own slope (or its full height, with nothing
+  // pulling it) already draws the corner. Nothing is implied.
+  if (Math.abs(mine - corner) < 1e-6) return null;
+  const meets = end === 'start' ? neighbours?.prev : neighbours?.next;
+  return {
+    kind: 'implied',
+    side: AT_END[end] || 'L',
+    startHeight: round4(corner),
+    run: 0,
+    wall: Math.trunc(num(wallIndex, 0)),
+    implied: true,
+    // WHICH WALL PUT IT THERE, so a panel can say so rather than assert it.
+    because: meets ? meets.wall : null,
+  };
+}
+
+/** Both ends' implied profiles, in wall order. Empty where nothing is implied. */
+export function impliedProfilesOnWall({
+  elements = [], neighbours = null, wallIndex = 0, wallHeight = 0,
+} = {}) {
+  return ['start', 'end']
+    .map((end) => impliedProfileAtEnd({
+      elements, neighbours, wallIndex, end, wallHeight,
+    }))
+    .filter(Boolean);
+}
+
 /**
  * Every element of one wall as an elevation RECTANGLE (a slope comes back with
  * its polygon instead), ready for an SVG that knows nothing about rooms.

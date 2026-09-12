@@ -144,10 +144,15 @@ export default function WatchLayoutModal() {
     };
   }, [result, zone, item.index]);
 
+  // ─── T67 F9 · THE NAME ON THE WINDOW ──────────────────────────────────
+  // The owner: *"watches szuflad jest bez sensu … tam będzie watches, belts,
+  // ties, cufflinks, biżuteria"*, and *"zmień w PRO też tę nazwę."*  The
+  // LABEL below, and nothing else on the line: `WATCH_LAYOUTS`, `watch_drawer`
+  // and every insert name are the engine's and stand exactly as they are.
   return (
     <Modal
       name="watch-layout"
-      title={`${unit.params.unit_num} · Watch drawer ${item.index} · Layout`}
+      title={`${unit.params.unit_num} · Accessories drawer ${item.index} · Layout`}
       onClose={closeModal}
       anchor={anchor}
       width="pbi-re-w520"

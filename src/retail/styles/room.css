@@ -252,6 +252,53 @@
 .pbi-tiles .pbi-chip, .pbi-tiles .pbi-chip-wrap { width: var(--pbi-what-tile-w); }
 .pbi-tiles .pbi-chip { justify-content: center; }
 
+/* ─── T67 F3 · COMING SOON ──────────────────────────────────────────────────
+ *
+ * The owner: *"reszta nieczynna: przycisk, jak najedziesz, napis coming soon i
+ * send email to make order, email do skopiowania."*
+ *
+ * The wrapper is the size of the tile it wraps and takes the focus the
+ * disabled chip inside it cannot; the card stands OVER the list rather than
+ * inside it, so opening one does not move the other tiles a pixel.
+ */
+.pbi-tiles .pbi-soon-wrap { width: var(--pbi-what-tile-w); }
+
+.pbi-soon-wrap {
+  position: relative;
+  display: inline-flex;
+  outline-offset: 0;
+}
+.pbi-soon-wrap:focus-visible { outline: 1px solid var(--pbi-champagne); }
+.pbi-soon-wrap > .pbi-chip { width: 100%; }
+
+.pbi-soon-card {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + var(--pbi-gap-1));
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: var(--pbi-chip-max);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pbi-gap-1);
+  padding: var(--pbi-gap-2) var(--pbi-gap-3);
+  background: var(--pbi-warm-white);
+  border: 1px solid var(--pbi-stone-line);
+  border-top: 1px solid var(--pbi-deep-gold);
+  text-align: left;
+}
+.pbi-soon-head {
+  font-family: var(--pbi-font-ui);
+  font-size: var(--pbi-fs-tile);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pbi-deep-gold);
+}
+.pbi-soon-line { font-size: var(--pbi-fs-choice); color: var(--pbi-onyx); }
+.pbi-soon-mail { font-weight: 500; overflow-wrap: anywhere; }
+.pbi-btn.pbi-soon-copy { align-self: flex-start; padding: 0; height: auto; min-height: 0; }
+
 /* MORE OPTIONS — the picky client's door, under the step's defaults. */
 .pbi-more { margin-top: var(--pbi-gap-5); }
 .pbi-more-body { margin-top: var(--pbi-gap-3); border-top: 1px solid var(--pbi-stone-line); padding-top: var(--pbi-gap-2); }
@@ -561,6 +608,65 @@
 .pbi-dock [data-modal-shell] > * { padding-left: 0 !important; padding-right: 0 !important; }
 .pbi-dock [data-modal-shell] .pbi-re-scroll { overflow: visible !important; }
 
+/* ─── T67 F8 · THE DRAWER LIST — NAMES, AND NOTHING ELSE ───────────────────
+ *
+ * The owner: *"po prawej się pokazuje każda szuflada jako fitted — nie
+ * powinna, tylko nazwa."*
+ *
+ * The list is retail's own markup and carries no sentence, so this is the
+ * GUARD rather than the fix: inside the list, and only inside it, an
+ * explanatory paragraph is not drawn. A later turn that adds one back finds it
+ * invisible here and visible in the drawer's OWN detail below, which is where
+ * the explanation belongs and where the copied editor already prints it —
+ * once, for the drawer that was clicked.
+ *
+ * Same layer, same scope, same mechanism as the workshop fields below.
+ */
+.pbi-drawer-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pbi-gap-1);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pbi-btn.pbi-drawer-row {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: var(--pbi-pad-row);
+  justify-content: flex-start;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: inherit;
+  font-size: var(--pbi-fs-choice);
+  border-radius: var(--pbi-control-radius);
+}
+.pbi-dock .pbi-drawer-list p,
+.pbi-dock .pbi-drawer-list [data-testid$="-said"] { display: none !important; }
+
+/* ─── T67 F7 · A PAIR WITH A REASON IS A LIST TOO, IN THE DOCK ─────────────
+ *
+ * T66 F11 gave a row of THREE OR MORE chips the whole width under its label,
+ * because three could not share a 337-px row. The dock is narrower still, and
+ * a row of TWO where one chip carries a REASON is the same problem wearing a
+ * different number: the reason turns that chip into a column
+ * (`.pbi-chip-wrap`), the pair no longer fits on one line, and GLASS TOP
+ * staircased — OFF stranded at the right, ON below it.
+ *
+ * Same answer as T66's, scoped to the dock and keyed on the thing that
+ * actually causes it: full width under the label, left-aligned. Rows of two
+ * plain chips are untouched and still read as one line. */
+.pbi-dock .pbi-field-row:has(.pbi-chip-row .pbi-chip-wrap) {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: var(--pbi-gap-1);
+}
+.pbi-dock .pbi-field-row:has(.pbi-chip-row .pbi-chip-wrap) .pbi-field-row-ctl,
+.pbi-dock .pbi-field-row:has(.pbi-chip-row .pbi-chip-wrap) .pbi-chip-row {
+  justify-content: flex-start;
+}
+
 /* ─── AND THE WORKSHOP FIELDS ARE HIDDEN, NOT CUT ──────────────────────────
  *
  * CLAUDE.md F3: *"behind `RETAIL_SHOW_WORKSHOP_TOOLS=false`."* Where retail is
@@ -677,15 +783,43 @@
 .pbi-interior-name { flex: 1 1 auto; color: var(--pbi-onyx); }
 .pbi-interior-count { color: var(--pbi-onyx); font-variant-numeric: tabular-nums; }
 
+/* ─── T67 F7 · THE ROW IS A DOOR ────────────────────────────────────────────
+ * The owner: *"tu menu po lewej ma być puste — powinno się pokazywać po
+ * prawej."*  So the row is a BUTTON now: the same rectangle it has always
+ * been, at the same measurements, wearing the same skin, and pressing it
+ * selects that stack and docks its editor. It says so on hover, quietly. */
+/* The row is the house's ONE `Button` (T64 F3's law) wearing the row's own
+ * rectangle: the compound selector out-ranks `.pbi-btn`'s single class, so the
+ * geometry below is the row's and the ELEMENT is still the house's. */
+.pbi-btn.pbi-interior-open {
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: var(--pbi-pad-row);
+  justify-content: flex-start;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: normal;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  border-radius: var(--pbi-control-radius);
+  background: var(--pbi-porcelain);
+}
+.pbi-btn.pbi-interior-open:hover {
+  border-color: var(--pbi-deep-gold);
+  background: var(--pbi-porcelain);
+}
+
 /* ─── T66 F3 · THE CONTROLS THE DEAD THIN MENUS CARRIED ─────────────────────
- * They stand UNDER the row that counts the thing, inside the same block, so a
- * client reads "Drawers · 3" and then the three questions about those three
- * drawers. Editing ONE of them is the docked copied editor, on the right. */
+ * They stood UNDER the row that counts the thing. T67 F7 moved them to the
+ * DOCK — *"te funkcje niech przejdą na prawą stronę"* — and this is what they
+ * wear there: the same block, above the clicked piece's own editor. */
 .pbi-interior-more {
   padding: var(--pbi-gap-2) var(--pbi-pad-row) var(--pbi-gap-3);
   border: 1px solid var(--pbi-stone-line);
-  border-top: 0;
   background: var(--pbi-warm-white);
+  margin-bottom: var(--pbi-gap-3);
 }
 .pbi-interior-more .pbi-duty-actions { margin-top: var(--pbi-gap-3); }
 

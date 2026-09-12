@@ -165,15 +165,28 @@ test('F5 · not one slider survives, and Slider itself is gone with them', () =>
   // three sizes) stand in `Options.jsx` now, and the count is asked THERE.
   // The DIRECTION is still the law: a slider may never come back into this
   // tree without deleting a line of this test.
+  //
+  // ─── AMENDED BY T67 F7 ─────────────────────────────────────────────────
+  // The owner: *"te funkcje niech przejdą na prawą stronę."*  Three of those
+  // rows moved ON, out of `Options.jsx` and into `detail/ReHomed.jsx` — the
+  // stack's own questions, which belong beside the stack's own editor. So
+  // `ReHomed.jsx` is a retail detail file that legitimately holds typed rows,
+  // and it is named here rather than counted as a relapse. THE DIRECTION IS
+  // UNCHANGED: still no slider, still no field inside a COPY, and the total
+  // across the two files is still the twelve that moved.
+  const REHOMED_FILE = 'ReHomed.jsx';
   let fields = 0;
   for (const f of readdirSync(join(ROOT, 'src/retail/design/detail'))) {
     if (!/\.jsx$/.test(f)) continue;
+    if (f === REHOMED_FILE) continue;
     if (isCopy(`src/retail/design/detail/${f}`)) continue;
     fields += (readFileSync(join(ROOT, 'src/retail/design/detail', f), 'utf8')
       .match(/<NumberField/g) || []).length;
   }
   assert.equal(fields, 0, `${fields} typed fields survive in a retail detail file`);
-  const moved = (read('src/retail/design/Options.jsx').match(/<NumberField/g) || []).length;
+  const both = read('src/retail/design/Options.jsx')
+    + read(`src/retail/design/detail/${REHOMED_FILE}`);
+  const moved = (both.match(/<NumberField/g) || []).length;
   assert.ok(moved >= 10, `only ${moved} typed rows in the steps — the twelve were lost, not moved`);
 });
 

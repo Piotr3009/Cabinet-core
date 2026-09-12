@@ -14,6 +14,20 @@ import { join } from 'node:path';
 
 import * as A from '../src/retail/design/adapter.js';
 
+// ─── AMENDED BY TURN 67 · F7 ──────────────────────────────────────────────
+//
+// The owner, 11.09.2026, of INSIDE grown long: *"jak dodajesz szuflady, to się
+// nie powinny pokazywać pod spodem, tu menu po lewej ma być puste — powinno
+// się pokazywać po prawej … te funkcje niech przejdą na prawą stronę."*
+//
+// T66's `ReHomed` moved WHOLE out of `Options.jsx` and into
+// `detail/ReHomed.jsx`, which the DOCK renders. The claim every assertion
+// below makes is unchanged — not one control a deleted thin menu carried was
+// lost — so the reader is the two files that now hold them between them.
+const REHOMED = () => read('src/retail/design/Options.jsx')
+  + read('src/retail/design/detail/ReHomed.jsx');
+
+
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (rel) => readFileSync(join(ROOT, rel), 'utf8');
 const code = (rel) => read(rel).replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
@@ -113,8 +127,8 @@ test('F10 · the inner plus hides while the INSIDE step is open', () => {
 // is what tonight takes, because F3 leaves nothing on the right for a fitting
 // PRO has no editor for. The words and the REMOVE are NOT lost: they stand on
 // the fitting's own row in INSIDE, where the row that added it already was.
-test('F10 · the three kits keep the fitting\'s words and REMOVE — on the LEFT', () => {
-  const options = read('src/retail/design/Options.jsx');
+test('F10, amended by T67 · the three kits keep the fitting\'s words and REMOVE', () => {
+  const options = REHOMED();
   assert.match(options, /A\.kitWords\(row\.id\)\.said/, 'the sentence is not the profile\'s');
   assert.match(options, /data-testid=\{`kit-\$\{row\.id\}-remove`\}/, 'there is no REMOVE');
   assert.match(options, /A\.removeElement\(unitId, item\.id\)/, 'REMOVE does not reach the store');

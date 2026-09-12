@@ -313,7 +313,19 @@ test('T63 · every class a copy wears is a class the generated sheet defines', (
 
 // ─── 4 · PRO IS FROZEN, AND THE ORIGINALS DID NOT MOVE ─────────────────────
 
-test('T63 · not one byte of the twenty-one originals moved', () => {
+// ─── AMENDED BY TURN 67 · F9 ──────────────────────────────────────────────
+//
+// Two of the twenty-one moved tonight, by name and for one reason. The owner,
+// 11.09.2026: *"watches szuflad jest bez sensu … tam będzie watches, belts,
+// ties, cufflinks, biżuteria"* — and, asked whether PRO may change to say so:
+// *"zmień w PRO też tę nazwę."*  The edit is LABEL ONLY at each site
+// (`turn59-f1-the-switch.test.js` holds both files to their new hashes and
+// carries his sentence), and the copies above were re-made from the edited
+// originals the SAME night, which is why every fidelity assertion in this file
+// is still green — both sides match, and no map was widened to make them.
+const T67_RENAMED = ['src/components/AddItems.jsx', 'src/components/WatchLayoutModal.jsx'];
+
+test('T63, amended by T67 · not one byte of the other NINETEEN originals moved', () => {
   let base = null;
   for (const ref of ['origin/main', 'main']) {
     try {
@@ -322,9 +334,18 @@ test('T63 · not one byte of the twenty-one originals moved', () => {
     } catch { /* next */ }
   }
   if (!base) return;
-  const diff = execFileSync('git', ['diff', '--stat', base, '--', ...T63_COPIES.map((c) => c.pro)],
+  const unmoved = T63_COPIES.map((c) => c.pro).filter((p) => !T67_RENAMED.includes(p));
+  assert.equal(unmoved.length, 19, 'the T67 exemption grew beyond the two files it names');
+  const diff = execFileSync('git', ['diff', '--stat', base, '--', ...unmoved],
     { cwd: ROOT, encoding: 'utf8' }).trim();
   assert.equal(diff, '', `a PRO original moved to make the copy work:\n${diff}`);
+  // …and the two that DID move moved only where a person reads.
+  const renamed = execFileSync('git', ['diff', '-U0', base, '--', ...T67_RENAMED],
+    { cwd: ROOT, encoding: 'utf8' });
+  const touched = renamed.split('\n').filter((l) => /^[+-][^+-]/.test(l));
+  const NAME = /[Ww]atch drawer|[Aa]ccessories drawer|an accessories drawer|T67 F9|^[+-]\s*\/\//;
+  const bad = touched.filter((l) => !NAME.test(l));
+  assert.deepEqual(bad, [], `a line that is not the label moved:\n${bad.join('\n')}`);
 });
 
 // ─── 5 · EVERY COPY HAS AN ENTRY — A COPY NOBODY CAN OPEN IS NOT DONE ─────
@@ -405,10 +426,37 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
   // menus at all, so the question is asked of the whole directory: every
   // remaining `.jsx` under `design/detail/` is either a COPY or the dock's own
   // table, and the table draws nothing.
+  // ─── AMENDED BY T67 F7 ──────────────────────────────────────────────
+  //
+  // `ReHomed.jsx` holds controls and is NOT a sketch, and the difference is
+  // the whole point of the rule rather than an exception to it. A SKETCH was a
+  // thin retail-written menu standing BESIDE a copied editor and doing the
+  // same job worse — the second track this test exists to forbid. `ReHomed` is
+  // the opposite: it is the stack-wide controls that NO copied editor has,
+  // moved here from `Options.jsx` on the owner's own order (*"te funkcje niech
+  // przejdą na prawą stronę"*) and rendered ABOVE the copy, never beside it.
+  //
+  // So the rule is asked precisely: no file here may duplicate a COPY. The
+  // controls `ReHomed` carries are named, and they are exactly the ones T66
+  // rescued from the deleted menus — anything else appearing in this file
+  // fails, which is the guard the blanket ban was standing in for.
+  const REHOMED_CONTROLS = [
+    'drawers-count', 'drawers-insert', 'drawers-glass', 'drawers-front-height',
+    'overlay-count', 'overlay-front', 'overlay-remove', 'shelf-centre',
+    'pulldown-drop', 'pulldown-remove', 'shoe-law', 'shoe-drawing', 'shoe-said', 'drawers-said',
+    'drawers-fronts-fixed', 'dock-drawer-list',
+  ];
   for (const f of files) {
     if (!/\.jsx$/.test(f)) continue;
     if (isCopy(`src/retail/design/detail/${f}`)) continue;
     const text = uncomment(read(`src/retail/design/detail/${f}`));
+    if (f === 'ReHomed.jsx') {
+      const hooks = [...text.matchAll(/data-testid=\{?[`"]([a-z][a-z0-9$-{}.]*)[`"]\}?/g)].map((m) => m[1]);
+      const stray = hooks.filter((h) => !REHOMED_CONTROLS.includes(h) && !/^dock-drawer-/.test(h)
+        && !/\$\{/.test(h));
+      assert.deepEqual(stray, [], `ReHomed.jsx grew a control nobody re-homed: ${stray.join(', ')}`);
+      continue;
+    }
     assert.doesNotMatch(text, /<ChipRow|<NumberField/,
       `${f} grew controls beside a copy — that is a sketch`);
   }

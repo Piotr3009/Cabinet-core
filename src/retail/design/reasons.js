@@ -55,8 +55,15 @@ export const REASONS = {
    * T64 F2 · PREDICATE: `PROJECT_TYPES[i].category !== 'wardrobe'` — the
    * engine's own answer to which library a type opens on, and the retail
    * room mounts the wardrobe library alone (`adapter.startDesign`).
+   *
+   * ─── AMENDED BY T67 F3 ───────────────────────────────────────────────────
+   * The owner: *"te napisy pod przyciskami daj jedne pod spodem, chcę mieć
+   * ładną czystą listę."*  It stopped being a line under EVERY TILE and became
+   * the ONE note under the list, so it is written as a sentence about the list
+   * rather than about one chip. The predicate above is unchanged.
    */
-  projectTypeNotOnline: () => 'Made to order — ask us for a quote.',
+  projectTypeNotOnline: () => 'The online designer builds wardrobes today; '
+    + 'everything else we make to order — hover a greyed tile for the address.',
 
   /**
    * T64 F1.7 · NOT a refusal — the line under Advanced, in the owner's own

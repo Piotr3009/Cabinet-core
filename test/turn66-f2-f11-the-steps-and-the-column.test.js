@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { getCabinetProfile } from '../src/engine/profile.js';
 import * as A from '../src/retail/design/adapter.js';
 import { REASONS } from '../src/retail/design/reasons.js';
 import { useProjectStore } from '../src/stores/projectStore.js';
@@ -185,17 +186,25 @@ test('F5 · RAL 3005 Wine Red is already in the palette the picker reads', () =>
   assert.match(read('src/retail/design/material/ColourPicker.jsx'), /COLOUR_SYSTEMS/);
 });
 
-test('F5 · the walnut is a REAL Egger decor, from the walnut family', () => {
-  const decor = decors.find((d) => d.id === A.WALNUT_DECOR);
-  assert.ok(decor, `${A.WALNUT_DECOR} is not in the catalogue`);
-  assert.match(decor.name, /Walnut/i, 'the named decor is not a walnut');
+// ─── AMENDED BY TURN 67 · F5 ──────────────────────────────────────────────
+// The owner, 11.09.2026: *"default Egger to H3325 Gladstone Oak."*  The CLAIM
+// this test was written to make is unchanged and is the one that matters: the
+// default decor is a REAL row of the REAL bucket, never invented. What changed
+// is which row, and WHERE THE NAME LIVES — the profile now, not retail, so a
+// workshop can change its default without editing the client's app.
+test('F5, amended by T67 · the default is a REAL Egger decor, named in the profile', () => {
+  const named = getCabinetProfile().projectSettings.defaultCarcassDecorId;
+  assert.equal(named, 'H3325_28', 'the profile no longer names the owner\'s decor');
+  assert.equal(A.DEFAULT_CARCASS_DECOR, named, 'retail holds a second opinion about the default');
+  const decor = decors.find((d) => d.id === named);
+  assert.ok(decor, `${named} is not in the catalogue`);
+  assert.match(decor.name, /Gladstone Oak/i, 'the named decor is not the Gladstone Oak');
+  assert.equal(decor.code, 'H3325');
   assert.equal(decor.category, 'woodgrain');
   assert.equal(decors.length, 85, 'the REAL bucket is no longer the 85');
-  // Nothing was invented: the id is one of the catalogue's own.
-  assert.ok(decors.some((d) => d.id === A.WALNUT_DECOR));
 });
 
-test('F5 · a fresh design is wine on walnut — fronts sprayed, carcass and inside the board', () => {
+test('F5, amended by T67 · a fresh design is wine on H3325 — fronts sprayed, carcass and inside the board', () => {
   useUiStore.getState().clearSelection();
   A.startDesign('Showroom');
   const id = A.addFirstWardrobe();
@@ -205,8 +214,8 @@ test('F5 · a fresh design is wine on walnut — fronts sprayed, carcass and ins
   assert.equal(p.design.fronts.types[0].source, 'spray');
   assert.deepEqual(A.frontColourOf(p), A.ralWine());
   assert.equal(A.frontDecorOf(p), null, 'a sprayed front carries a facing');
-  // THE CARCASS — the walnut, and the inside is the same board.
-  assert.equal(A.carcassDecorOf(p), A.swatchFor(A.WALNUT_DECOR).finishId);
+  // THE CARCASS — the owner's own decor, and the inside is the same board.
+  assert.equal(A.carcassDecorOf(p), A.swatchFor(A.DEFAULT_CARCASS_DECOR).finishId);
   assert.equal(A.insideColourOf(p), 'chosen');
   // …and the style is still shaker, the opening still push-to-open.
   assert.equal(p.design.fronts.style, 'S');
@@ -225,7 +234,9 @@ test('F5 · every step still changes it — a default is not a lock', () => {
   assert.equal(A.frontDecorOf(S().project), 'egger:H3195_19', 'the decor did not take');
   assert.equal(S().project.design.colour.front, null, 'the project is still painted wine');
   // INSIDE: white puts the carcass back to EGGER's own W1000.
-  A.setInsideColour('white');
+  // T67 F6 · through the ONE write path — the carcass picker — because the
+  // second road (`setInsideColour`) died with the duplicated row.
+  A.pickMaterialDecor('carcass', A.swatchFor(A.WHITE_DECOR).finishId);
   assert.equal(A.insideColourOf(S().project), 'white');
   // …and the spray comes straight back, which is the other half of "not a lock".
   A.setFrontColour(A.ralWine());
@@ -244,7 +255,11 @@ test('F5 · the REVIEW summary names them, in the same words a client\'s own pic
   const rows = describeDesign({ project: S().project, units: S().units });
   const text = rows.map((r) => `${r.label}: ${r.value}`).join(' · ');
   assert.match(text, /Wine Red/i, `the summary does not name the colour — ${text}`);
-  assert.match(text, /Walnut/i, `the summary does not name the board — ${text}`);
+  // T67 F5 · *"REVIEW naming H3325."*  The summary names the DEFAULT decor by
+  // the catalogue's own words — the code and the name, exactly as it names a
+  // board the client picked himself, which is the claim this test makes.
+  assert.match(text, /H3325/, `the summary does not name the board's code — ${text}`);
+  assert.match(text, /Gladstone Oak/i, `the summary does not name the board — ${text}`);
 });
 
 // ═══ F6 · BAYS — ONE ROW, ONE NAME ═════════════════════════════════════════

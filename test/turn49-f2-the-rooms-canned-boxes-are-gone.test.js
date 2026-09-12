@@ -42,20 +42,51 @@ test('F2 — the editor knows which door it came through, and the flow says so',
 // names them: *"Rectangle, L-shape, + Box, Import DXF plan stays and must
 // WORK"*, and *"Settings ▸ Room setup and the wizard's room step must show the
 // SAME screen."*  So: ONE screen, FOUR tools, BOTH doors.
-test('F1/T51 — the four tools are drawn, in one screen, in both doors', () => {
+// ─── AMENDED BY TURN 67 · F1 (LICENSED REMOVALS) ──────────────────────────
+//
+// The owner's mockup for the one-window room, 11.09.2026, and his answer when
+// asked whether PRO itself may change to carry it:
+//
+//   *"tak, zdecydowanie potwierdzam."*
+//
+// CLAUDE.md F1, verbatim: *"L-SHAPE and + BOX preset buttons are REMOVED from
+// the modal (owner: furniture lives on 1–3 walls). The engine's `L_SHAPE` unit
+// type and box records are untouched — only the two buttons go."*
+//
+// So the row is THREE tools now, and this test asks for the three that stand
+// rather than the four that did. What it does NOT stop asking is the half that
+// was ever about a BUG: one row, no door gate, no scope gate. The removal is
+// asserted from the other side too — the two hooks must be GONE, so a later
+// turn cannot quietly put them back and still pass.
+test('F1/T51, amended by T67 — the tools are drawn, in one screen, in both doors', () => {
   assert.match(ROOM, /data-room-preset="rect"/, 'Rectangle is back');
-  assert.match(ROOM, /data-room-preset="L"/, 'L-shape is back');
-  assert.match(ROOM, /data-insert-box="1"/, '+ Box stands beside them');
-  assert.match(ROOM, /Import DXF plan/, 'and so does the DXF import');
-  assert.match(ROOM, /const setPreset = \(kind\) => \{/, 'with the handler the two shapes need');
+  assert.match(ROOM, /data-room-draw="1"/, 'Draw room stands beside it');
+  assert.match(ROOM, /data-import-dxf="1"/, 'and so does the DXF import');
+  assert.match(ROOM, /Import DXF plan/, 'by that name');
+  assert.match(ROOM, /const setPreset = \(kind\) => \{/, 'with the handler the shape needs');
   // ONE screen: the row is drawn on no condition at all — not the door it was
   // opened by, and (T51-F1's own bug) not the scope either.
   assert.match(
     ROOM,
-    /data-room-tools="1"[\s\S]{0,400}data-insert-box="1"/,
-    'the four live in one row',
+    /data-room-tools="1"[\s\S]{0,1500}data-import-dxf="1"/,
+    'the three live in one row',
   );
   assert.doesNotMatch(ROOM, /\{wizard && [\s\S]{0,80}data-room-preset/, 'no door gate');
+});
+
+test('T67 F1 — and the two the owner struck out are GONE, both apps', () => {
+  const RETAIL = readFileSync(new URL('../src/retail/design/room/RoomModal.jsx', import.meta.url), 'utf8');
+  for (const [name, source] of [['PRO', ROOM], ['retail', RETAIL]]) {
+    assert.doesNotMatch(source, /data-room-preset="L"/, `${name} still has the L-shape button`);
+    assert.doesNotMatch(source, /data-insert-box/, `${name} still has the + Box button`);
+    assert.doesNotMatch(source, />L-shape</, `${name} still says L-shape`);
+  }
+  // …and the ENGINE keeps both laws. Only the buttons went.
+  const ENGINE = readFileSync(new URL('../src/engine/room.js', import.meta.url), 'utf8');
+  assert.match(ENGINE, /export function lCorners/, 'the L-shape corner maths was deleted');
+  assert.match(ENGINE, /MIN_BOX_SIZE/, 'the box law was deleted');
+  assert.match(ROOM, /const removeBox = \(id\) => \{/, 'a saved plan can no longer drop a box');
+  assert.match(ROOM, /data-box-list="1"/, 'a saved plan no longer lists its boxes');
 });
 
 test('F1/T51 — the wall editor is gone, surface and module', () => {
@@ -70,10 +101,15 @@ test('F1/T51 — the wall editor is gone, surface and module', () => {
 // the plan draws the whole room in either scope, a chimney is a chimney, and
 // the owner's *"nie pokazuje się"* was literally true because in a ONE-WALL
 // job there was no button on the screen at all.
-test('F1/T51 — + Box is reachable in a ONE-WALL job, which is where it was not', () => {
-  const row = ROOM.slice(ROOM.indexOf('data-room-tools="1"'), ROOM.indexOf('data-insert-box="1"'));
+// ─── AMENDED BY TURN 67 · F1 ──────────────────────────────────────────────
+// The + Box BUTTON is a licensed removal, so "reachable in a one-wall job" is
+// no longer asked of it. What this test was really guarding — that the tools
+// row is not gated by `scope` — is asked of the row that stands, and the box
+// PARAGRAPH and the box LIST are still asserted, because a room that already
+// has boxes still draws them, types them and explains them.
+test('F1/T51, amended by T67 — the tools row is not gated by the scope', () => {
+  const row = ROOM.slice(ROOM.indexOf('data-room-tools="1"'), ROOM.indexOf('data-import-dxf="1"'));
   assert.doesNotMatch(row, /scope === 'room'/, 'the scope no longer gates the row');
-  assert.match(ROOM, /const insertBox = \(\) => \{/, 'and both functions behind it stand');
   assert.match(ROOM, /const removeBox = \(id\) => \{/);
   assert.match(ROOM, /' A BOX does: it stands floor to ceiling/, 'the paragraph is unconditional');
   assert.doesNotMatch(ROOM, /\{!wizard && ' A BOX does/, 'no longer hung off the door');

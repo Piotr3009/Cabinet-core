@@ -28,6 +28,27 @@ import { Button } from '../controls.jsx';
 // picker the source names. All three are copied tonight and reachable here
 // under BROWSE HERE, which is PRO's own condition for which one appears.
 
+/**
+ * ─── T67 F4 · THE SOURCE CHIP SAYS "DECOR" ─────────────────────────────────
+ *
+ * The owner, 11.09.2026: *"nie wpisuj Egger w przycisku głównego menu … nie
+ * laminat, bo będzie że cheap."*  His decision, in one word: **DECOR**.
+ *
+ * The two sources it covers are the profile's `egger` ("EGGER decor") and
+ * `laminate` ("Laminate") — the board a carcass and a front are faced with.
+ * Every other source keeps the profile's own word, because "veneer" and
+ * "sprayed" are what those things ARE and a client knows the difference.
+ *
+ * WHERE THIS HAPPENS MATTERS. It is RETAIL'S OWN CHROME — this file builds the
+ * strip; the copied `MaterialChoicePanel` below only renders what it is given
+ * — so not one byte of a copy is touched, and PRO's own panels keep saying
+ * EGGER, which is right for a workshop. The EGGER name also stays INSIDE the
+ * picker, on the boards themselves, where it is information and where the
+ * licence requires it (`adapter.decorLabel`).
+ */
+const RETAIL_SOURCE_LABEL = { egger: 'DECOR', laminate: 'DECOR' };
+const sourceLabel = (s) => RETAIL_SOURCE_LABEL[s.id] || s.label;
+
 export default function MaterialSlot({ kind, title = null }) {
   const m = A.materialSlot(kind);
   const [inline, setInline] = useState(false);
@@ -53,7 +74,7 @@ export default function MaterialSlot({ kind, title = null }) {
           title={s.thickness ? `${s.thickness} mm — the thickness rides with the source` : undefined}
           onClick={() => A.setMaterialSource(kind, s.id)}
         >
-          {s.label}
+          {sourceLabel(s)}
         </button>
       ))}
     </div>

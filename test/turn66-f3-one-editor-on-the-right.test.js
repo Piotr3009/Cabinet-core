@@ -190,8 +190,24 @@ test('F3 · nothing is DELETED from a copy — the fields are left out through P
 
 // ═══ 4 · NOTHING WAS LOST — EVERY RE-HOMED CONTROL, BY NAME ════════════════
 
-test('F3 · every control a dead thin menu carried is somewhere a client can reach', () => {
-  const options = read('src/retail/design/Options.jsx');
+// ─── AMENDED BY TURN 67 · F7 ──────────────────────────────────────────────
+//
+// The claim is unchanged and it is the one that matters: NOT ONE CONTROL a
+// deleted thin menu carried was lost. What changed is WHICH FILE holds them.
+// The owner, seeing T66's answer live, 11.09.2026:
+//
+//   *"jak dodajesz szuflady, to się nie powinny pokazywać pod spodem, tu menu
+//   po lewej ma być puste — powinno się pokazywać po prawej … te funkcje niech
+//   przejdą na prawą stronę."*
+//
+// So the stack-wide half moved WHOLE into `detail/ReHomed.jsx`, which the dock
+// renders, and the step-level half (the wardrobe's own numbers, the name, the
+// top box) stays in `Options.jsx` where it was — those are not about a
+// selected element. The test therefore reads BOTH files, and still fails
+// naming the exact control if any of the twenty-seven goes missing.
+test('F3, amended by T67 · every control a dead thin menu carried is somewhere a client can reach', () => {
+  const options = read('src/retail/design/Options.jsx')
+    + read('src/retail/design/detail/ReHomed.jsx');
   const REHOMED = {
     'DrawersMenu · HOW MANY': /testid="drawers-count"/,
     'DrawersMenu · TOP DRAWER INSERT': /testid="drawers-insert"/,

@@ -110,6 +110,29 @@ function orientation(s) {
   return { q, long: s.kind === 'side' ? 'y' : 'x' };
 }
 
+// ─── TURN 67 (CLAUDE.md F10): THE ACCESSORIES DRAWER COMES DOWN TO 25% ─────
+//
+// The owner, 11.09.2026, verbatim:
+//
+//   *"kolor podświetlenia szuflady accessories: zmniejsz jasność do 25 procent
+//   … nie więcej niż 25 procent od teraz."*
+//
+// NOT MORE THAN 25 PER CENT FROM NOW ON — so it is a CAP and not only a
+// setting, and the cap is written HERE as well as in the profile, because a
+// number that lives in exactly one place is a number a later turn edits
+// without reading the sentence beside it.
+//
+// WHICH LIGHT. The accessories (watch) drawer's own lamp is the ring that
+// fires DOWN from the shelf above it and lights the watches — born in
+// `engine/cabinet.js` beside the glass aperture, and the only strip in the app
+// whose id ends `:watch-glass`. Every OTHER strip in the cabinet, and the
+// room rig entire (T66's `baseGain` 0.60, a different question and a
+// different file), are untouched: the fraction below multiplies this one
+// record's emissive and its area lamp, and nothing else.
+const ACCESSORY_LED_MAX_GAIN = 0.25;
+/** The one strip this cap is about — `engine/cabinet.js` names it. */
+const isAccessoryDrawerLed = (s) => /:watch-glass$/.test(String(s?.id || ''));
+
 export default function LedStrips({
   unit, result, design,
 }) {
@@ -165,8 +188,20 @@ export default function LedStrips({
     const spread = Math.max(thinM * spec.halo.glowScale, 0.05);
     const takeLight = isStrip && areaLightsLeft > 0;
     if (takeLight) areaLightsLeft -= 1;
+    // T67 F10 · the accessories drawer's own ring, at a quarter — and never
+    // more, whatever a profile says. The owner's sentence is on the profile
+    // key (`appearance.lighting.accessoryDrawerGain`) and on the constant.
+    const accessoryGain = isAccessoryDrawerLed(s)
+      ? Math.min(
+        ACCESSORY_LED_MAX_GAIN,
+        Number(profile?.appearance?.lighting?.accessoryDrawerGain) > 0
+          ? Number(profile.appearance.lighting.accessoryDrawerGain)
+          : ACCESSORY_LED_MAX_GAIN,
+      )
+      : 1;
     const emissiveIntensity = (lightOn ? emissiveOn : spec.view.offEmissive)
-      * (s.kind === 'spot' ? spec.view.spotMultiplier : 1);
+      * (s.kind === 'spot' ? spec.view.spotMultiplier : 1)
+      * accessoryGain;
     return (
       <group key={s.id} position={[cx, cy, cz]}>
         <mesh userData={{ ccLedStrip: s.kind }}>
@@ -185,7 +220,7 @@ export default function LedStrips({
             quaternion={q}
             args={[
               s.hex,
-              spec.halo.area * boost,
+              spec.halo.area * boost * accessoryGain,
               long === 'x' ? longM : Math.max(thinM * 2, 0.03),
               long === 'y' ? longM : Math.max(thinM * 2, 0.03),
             ]}

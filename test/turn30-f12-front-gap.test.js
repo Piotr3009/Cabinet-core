@@ -272,11 +272,41 @@ test('F12 sliding a cabinet cannot make one — the clamp gets there first', () 
   assert.deepEqual(store().frontGapWarnings(), [], 'so there is nothing to warn about');
 });
 
-test('F12 …nor can widening one: the width is refused before the doors touch', () => {
+/**
+ * ─── AMENDED BY TURN 69 · F9 ───────────────────────────────────────────────
+ *
+ * What this test is ABOUT has not moved an inch: widening a cabinet cannot
+ * make two doors touch. What has moved is HOW the widening is answered.
+ *
+ * Until tonight a cabinet with a neighbour on its right was simply clamped —
+ * *"Width limited to …"* — because a widening moved the far edge and nothing
+ * else. The owner: *"beside an existing neighbour it grows only right — wrong,
+ * i tu i w PRO."*  F9's law is that the increase takes free space on EITHER
+ * side, and this scene has four spare metres on the left, so the cabinet now
+ * MOVES BACK and takes the width it asked for.
+ *
+ * The fault this test guards is therefore asserted the way it was always
+ * meant: whichever way the cabinet grew, the two door faces are not touching.
+ * And the refusal is proved where it still lives — with both sides blocked.
+ */
+test('F12 …nor can widening one: the doors never touch, whichever way it grows', () => {
   const a = store().units[0];
+  const was = store().units.find((u) => u.id === a.id).params.width;
   const res = store().updateUnitParams(a.id, { width: 610 });
-  assert.match(res.notices.join(' '), /limited/i);
-  assert.deepEqual(store().frontGapWarnings(), []);
+  const now = store().units.find((u) => u.id === a.id);
+  assert.equal(Math.round(now.params.width), 610, 'the wall had the room on the left and it was not taken');
+  assert.ok(now.params.width > was);
+  assert.deepEqual(store().frontGapWarnings(), [], 'widening made two doors touch');
+
+  // …and with BOTH sides blocked the width is still refused, in one sentence
+  // that names what is on each side.
+  const c = store().addUnit('BUD', { near: a.id, side: 'left' });
+  store().updateUnitParams(c.id, { width: 600 });
+  const blocked = store().updateUnitParams(a.id, { width: 5000 });
+  assert.match(blocked.notices.join(' '), /on the right/);
+  assert.match(blocked.notices.join(' '), /on the left/);
+  assert.ok(store().units.find((u) => u.id === a.id).params.width < 5000, 'the clamp let it through');
+  assert.deepEqual(store().frontGapWarnings(), [], 'the refused widening made two doors touch');
 });
 
 // ─── 7. ONE LIST, TWO SURFACES ─────────────────────────────────────────────

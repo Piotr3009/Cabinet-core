@@ -352,8 +352,27 @@ test('F3.6 · what the client never sees, is not there', () => {
   // ban would otherwise have deleted.
   assert.ok(copiedFromPro('src/retail/design/room/RoomModal.jsx'),
     'the copied room editor is missing — F2 of turn 62 did not land');
-  assert.ok(/Import DXF plan/.test(code(join(ROOT, 'src/retail/design/room/RoomModal.jsx'))),
-    "the copy dropped PRO's Import DXF plan — the whole point of the carve-out");
+  // ─── AMENDED BY TURN 69 · F1 (LICENSED REMOVAL) ────────────────────────
+  //
+  // The live example WAS `RoomModal.jsx`'s *"Import DXF plan…"*, and tonight
+  // that button is a licensed removal in both apps — the owner: *"to nie
+  // przejdzie."*  The carve-out is not weakened by one word leaving: it is
+  // proved by a DIFFERENT copy that still carries a banned one, because the
+  // point was never the DXF, it was that a copy may say what PRO's file says.
+  //
+  // `detail/AddItems.jsx` is that copy, and it carries TWO of the banned words
+  // in real code rather than in a comment (`code()` takes the comments out
+  // first) — PRO's own sentence, copied verbatim: *"a purchase line in the BOM
+  // and the room it takes in the scene."*  If a later turn takes it out too,
+  // this fails and says so rather than passing on a carve-out nobody uses.
+  const live = code(join(ROOT, 'src/retail/design/detail/AddItems.jsx'));
+  assert.ok(/\bBOM\b/.test(live) && /drilling/i.test(live),
+    'no copied file carries a banned word any more — the carve-out is dead law');
+  assert.ok(copiedFromPro('src/retail/design/detail/AddItems.jsx'),
+    'the file proving the carve-out is not itself carved out');
+  // …and the removal is asserted from the other side: the button is GONE.
+  assert.ok(!/data-import-dxf/.test(readFileSync(join(ROOT, 'src/retail/design/room/RoomModal.jsx'), 'utf8')),
+    'the DXF import came back into the retail copy');
   assert.ok(!copiedFromPro('src/retail/design/room/RoomEditor.jsx'),
     'RoomEditor.jsx is retail\'s own and must NOT be exempt');
 

@@ -58,20 +58,36 @@ test('F2 — the editor knows which door it came through, and the flow says so',
 // was ever about a BUG: one row, no door gate, no scope gate. The removal is
 // asserted from the other side too — the two hooks must be GONE, so a later
 // turn cannot quietly put them back and still pass.
-test('F1/T51, amended by T67 — the tools are drawn, in one screen, in both doors', () => {
-  assert.match(ROOM, /data-room-preset="rect"/, 'Rectangle is back');
+// ─── AMENDED BY TURN 69 · F1 (THE ROW ANSWERS A QUESTION) ─────────────────
+//
+// CLAUDE.md F1: *"The plan header's preset row becomes: 1 WALL · 2 WALLS ·
+// 3 WALLS · DRAW ROOM… — IMPORT DXF is DELETED (owner: "to nie przejdzie")."*
+// RECTANGLE went with it, convicted by F1's own probe of proposing the
+// rectangle already on screen.
+//
+// What this test has guarded since T51 is the half that was ever about a BUG —
+// ONE row, no door gate, no scope gate — and every word of that is still asked
+// below, of the row that now stands. The two struck out are asserted GONE, so
+// a later turn cannot quietly put them back and still pass.
+test('F1/T51, amended by T67 and T69 — the tools are drawn, in one screen, in both doors', () => {
+  assert.match(ROOM, /data-room-walls=/, 'the 1/2/3-wall row is gone');
+  for (const label of ['1 wall', '2 walls', '3 walls']) {
+    assert.ok(ROOM.includes(label), `the row lost "${label}"`);
+  }
   assert.match(ROOM, /data-room-draw="1"/, 'Draw room stands beside it');
-  assert.match(ROOM, /data-import-dxf="1"/, 'and so does the DXF import');
-  assert.match(ROOM, /Import DXF plan/, 'by that name');
-  assert.match(ROOM, /const setPreset = \(kind\) => \{/, 'with the handler the shape needs');
+  assert.match(ROOM, /const WALL_COUNTS = Object\.freeze\(\[/, 'with the list the row needs');
+  // T69's two licensed removals, asserted from the other side.
+  assert.doesNotMatch(ROOM, /data-room-preset="rect"/, 'Rectangle came back');
+  assert.doesNotMatch(ROOM, /data-import-dxf/, 'the DXF import came back');
+  assert.doesNotMatch(ROOM, /Import DXF plan…/, 'the DXF import came back by name');
   // ONE screen: the row is drawn on no condition at all — not the door it was
   // opened by, and (T51-F1's own bug) not the scope either.
   assert.match(
     ROOM,
-    /data-room-tools="1"[\s\S]{0,1500}data-import-dxf="1"/,
-    'the three live in one row',
+    /data-room-tools="1"[\s\S]{0,2500}data-room-draw="1"/,
+    'the four live in one row',
   );
-  assert.doesNotMatch(ROOM, /\{wizard && [\s\S]{0,80}data-room-preset/, 'no door gate');
+  assert.doesNotMatch(ROOM, /\{wizard && [\s\S]{0,80}data-room-walls/, 'no door gate');
 });
 
 test('T67 F1 — and the two the owner struck out are GONE, both apps', () => {
@@ -107,9 +123,16 @@ test('F1/T51 — the wall editor is gone, surface and module', () => {
 // row is not gated by `scope` — is asked of the row that stands, and the box
 // PARAGRAPH and the box LIST are still asserted, because a room that already
 // has boxes still draws them, types them and explains them.
-test('F1/T51, amended by T67 — the tools row is not gated by the scope', () => {
-  const row = ROOM.slice(ROOM.indexOf('data-room-tools="1"'), ROOM.indexOf('data-import-dxf="1"'));
-  assert.doesNotMatch(row, /scope === 'room'/, 'the scope no longer gates the row');
+test('F1/T51, amended by T67 and T69 — the tools row is not gated by the scope', () => {
+  // T69 F1: the row READS the scope — that is what lights the answer a project
+  // is on — and it is still not GATED by one. Those are different things and
+  // the distinction is the whole of T51-F1's bug: a row drawn only for
+  // `scope === 'room'` left a one-wall job with no buttons at all.
+  const row = ROOM.slice(ROOM.indexOf('data-room-tools="1"'), ROOM.indexOf('</svg>'));
+  assert.doesNotMatch(row, /\{scope === 'room' &&/, 'the scope gates the row again');
+  assert.doesNotMatch(row, /scope !== 'room' \? null/, 'the scope gates the row again');
+  assert.match(row, /className=\{scope === id \? 'cc-btn-gold' : 'cc-btn'\}/,
+    'the row no longer shows which answer the project is on');
   assert.match(ROOM, /const removeBox = \(id\) => \{/);
   assert.match(ROOM, /' A BOX does: it stands floor to ceiling/, 'the paragraph is unconditional');
   assert.doesNotMatch(ROOM, /\{!wizard && ' A BOX does/, 'no longer hung off the door');

@@ -349,11 +349,21 @@ test('F10 — clicking a wall opens the STANDARD elevation, unchanged', () => {
 // its OWN fence — *"the simple width/height 'one wall' path STAYS untouched"*
 // — and that is what is asked for here: the height field, the rectangle, the
 // import, and DRAW ROOM beside them, opening where rule 15 says.
-test('F10, amended by T67 — the simple width/height path is untouched, and Draw room stands beside it', () => {
+// ─── AMENDED BY TURN 69 · F1 (LICENSED REMOVALS) ──────────────────────────
+// RECTANGLE and IMPORT DXF PLAN… left the row tonight — the owner, of the DXF:
+// *"to nie przejdzie"*; the preset was convicted by F1's own probe of proposing
+// the rectangle already on screen. What T53 F10 has ever defended is its OWN
+// fence — *"the simple width/height 'one wall' path STAYS untouched"* — and
+// that is the HEIGHT FIELD, which is asked for below exactly as before, beside
+// DRAW ROOM opening where rule 15 says.
+test('F10, amended by T67 and T69 — the simple width/height path is untouched, and Draw room stands beside it', () => {
   const room = src('src/components/RoomModal.jsx');
-  for (const t of ['data-room-preset="rect"', 'data-import-dxf="1"', 'Import DXF plan',
-    'Room height (mm)', 'Wall height (mm)']) {
+  for (const t of ['Room height (mm)', 'Wall height (mm)']) {
     assert.ok(room.includes(t), t);
+  }
+  // The two struck out, asserted from the other side so they cannot drift back.
+  for (const gone of ['data-room-preset="rect"', 'data-import-dxf', 'Import DXF plan…']) {
+    assert.ok(!room.includes(gone), `${gone} came back`);
   }
   assert.ok(room.includes('data-room-draw="1"'), 'and the fifth door');
   assert.ok(room.includes("openModal('draw-room', { anchor: anchorOfEvent(e) })"),

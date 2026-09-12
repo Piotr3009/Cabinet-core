@@ -4586,23 +4586,88 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const others = obstaclesFor(s, unit);
     const notices = [];
     const applied = { ...patch };
+    // T69 F9: where the NEAR edge ends up when a widening takes space on the
+    // left. `null` means it did not move, which is every other edit there is.
+    let nearEdgeTo = null;
 
+    // ─── TURN 69 (CLAUDE.md F9): A WARDROBE WIDENS BOTH WAYS ────────────────
+    //
+    // The owner, of a wardrobe standing beside a neighbour: it grows only to
+    // the right — *"i tu i w PRO."*
+    //
+    // He is describing the one line of this clamp's own docstring: *"Growing a
+    // unit is a move of its far edge."*  That was never a law, it was an
+    // IMPLEMENTATION — the near edge stayed put because nothing asked it to
+    // move — and it makes a cabinet with a neighbour on its right refuse a
+    // width the wall plainly has room for, three metres of empty floor on its
+    // left.
+    //
+    // THE LAW, and it lives HERE, in the store both apps write through — no new
+    // PRO exemption, and no second answer for a client and a joiner:
+    //
+    //   A width increase takes the free space on EITHER side. The FAR edge goes
+    //   first, because that is where a hand expects a cabinet to grow and it is
+    //   what every project saved before tonight did; whatever the far side
+    //   cannot give, the NEAR edge takes by moving back. Refusal only when BOTH
+    //   sides are blocked, and then it says which thing is on each side.
+    //
+    // Shrinking is untouched: a narrower cabinet keeps its near edge, exactly as
+    // it always has, so nothing drifts when a number is typed down.
     if (patch.width != null) {
       const spans = wallObstacles({
         wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
       });
+      const pads = footprintPads(unit, unit.params.front_t, profile);
+      const margin = wallMarginOf(s, unit);
+      const at = Number(unit.position.x_mm) || 0;
+      const want = Number(patch.width) || 0;
       const clamp = clampUnitWidth({
-        width: Number(patch.width) || 0,
-        x: unit.position.x_mm,
+        width: want,
+        x: at,
         wallWidth: wall.width,
         others: spans,
-        // Growing a unit is a move of its far edge: it stops at the infill gap
-        // and carries its own end panel with it.
-        wallMargin: wallMarginOf(s, unit),
-        padRight: footprintPads(unit, unit.params.front_t, profile).right,
+        // The far edge stops at the infill gap and carries its own end panel.
+        wallMargin: margin,
+        padRight: pads.right,
       }, profile);
       applied.width = clamp.width;
-      if (clamp.blocked) notices.push(`Width limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
+
+      // HOW FAR THE NEAR EDGE MAY GO BACK. The same arithmetic `clampUnitWidth`
+      // does at the far end, read the other way: the wall's own start with its
+      // margin and this unit's left pad, and then every obstacle that is
+      // entirely to the LEFT of where this unit stands, each holding the near
+      // edge off by the profile's own minimum gap.
+      let floor = margin + pads.left;
+      let heldBy = margin > 0 ? 'the infill at the wall' : 'the wall';
+      for (const o of spans) {
+        if (o.right > at) continue;                       // not to the left
+        const edge = o.right + profile.editor.minUnitGap + pads.left;
+        if (edge > floor) { floor = edge; heldBy = o.label || 'a neighbour'; }
+      }
+      const room = Math.max(0, at - floor);
+      const short = want - clamp.width;
+
+      const have = Number(unit.params.width) || 0;
+      if (short > 1e-6 && want > have) {
+        const takeLeft = Math.min(short, room);
+        if (takeLeft > 1e-6) {
+          applied.width = clamp.width + takeLeft;
+          nearEdgeTo = at - takeLeft;
+        }
+        if (applied.width < want - 1e-6) {
+          // Both ends have now given what they had. THE REFUSAL — the one case
+          // F9 leaves — is when they gave NOTHING; otherwise this is a limit,
+          // and either way the sentence names what is on EACH side rather than
+          // pointing at one of them and leaving the other to be discovered.
+          notices.push(applied.width <= have + 1e-6
+            ? `This wardrobe cannot grow either way: ${clamp.by} is on the right and `
+              + `${heldBy} is on the left. ${formatMm(applied.width)} mm is what it can be.`
+            : `Width limited to ${formatMm(applied.width)} mm — ${clamp.by} on the right, `
+              + `${heldBy} on the left.`);
+        }
+      } else if (clamp.blocked) {
+        notices.push(`Width limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
+      }
     }
     if (patch.depth != null) {
       const clamp = clampUnitDepth({
@@ -4635,6 +4700,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: st.units.map((u) => {
         if (u.id !== unitId) return u;
         const params = { ...u.params, ...applied };
+        // T69 F9: the near edge moved back to take the space the far edge
+        // could not. It is the same `x_mm` every move writes — nothing
+        // downstream learns a new word.
+        const position = nearEdgeTo === null ? u.position : { ...u.position, x_mm: nearEdgeTo };
         if (applied.width != null && params.sections?.[0]) {
           params.sections = [{ ...params.sections[0], width_mm: applied.width }];
         }
@@ -4676,7 +4745,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         if (applied.hinge != null && params.doors && typeof params.doors === 'object') {
           params.doors = { ...params.doors, hinge: applied.hinge };
         }
-        return { ...u, params };
+        return { ...u, params, position };
       }),
     }));
     // ─── TURN 36 (CLAUDE.md F7): AND ITS TOP BOX FOLLOWS ────────────────────

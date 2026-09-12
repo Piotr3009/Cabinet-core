@@ -94,12 +94,17 @@ for (const how of ['INSIDE row (addFlushPartition)', 'a door count of 3']) {
   // item.id, …)`. Run exactly that, with exactly the `item` the dock hands it.
   let commit = 'not reached';
   let movedTo = null;
-  const beforeX = (S().units.find((u) => u.id === unitId)?.params.sections?.[0]?.items || [])
-    .find((i) => i.kind === 'partition')?.x_mm ?? null;
+  // Move the divider THE CLIENT CLICKED — the one the panel is showing — and
+  // ask for a position 100 mm to its left, which is a move every layout here
+  // has room for. A fixed millimetre reads as a refusal on the second divider
+  // of three and says nothing about the road being open.
+  const mineOf = () => (S().units.find((u) => u.id === unitId)?.params.sections?.[0]?.items || [])
+    .find((i) => i.id === vpart.meta?.itemId) || null;
+  const beforeX = Math.round(Number(mineOf()?.x_mm) || 0);
+  const wantX = beforeX - 100;
   try {
-    S().setPartitionX(unitId, sel?.item.id, 400);
-    const after = (S().units.find((u) => u.id === unitId)?.params.sections?.[0]?.items || [])
-      .find((i) => i.kind === 'partition')?.x_mm ?? null;
+    S().setPartitionX(unitId, sel?.item.id, wantX);
+    const after = Math.round(Number(mineOf()?.x_mm) || 0);
     movedTo = after;
     commit = after !== beforeX ? `moved ${beforeX} → ${after}` : `WROTE NOTHING (still ${after})`;
   } catch (e) {
@@ -113,7 +118,7 @@ for (const how of ['INSIDE row (addFlushPartition)', 'a door count of 3']) {
   const xsBefore = xsOf();
   let stamped = 'not reached';
   try {
-    S().setPartitionX(unitId, vpart.meta?.itemId, 400);
+    S().setPartitionX(unitId, vpart.meta?.itemId, Math.round(Number(mineOf()?.x_mm) || 0) - 100);
     const xsAfter = xsOf();
     stamped = JSON.stringify(xsBefore) !== JSON.stringify(xsAfter)
       ? `moved [${xsBefore.join(', ')}] → [${xsAfter.join(', ')}]`
@@ -175,7 +180,7 @@ for (const r of rows) {
   md.push(`- \`elementFields\` offers: \`${r.fields.join('`, `') || '(none)'}\``);
   md.push(`- the dock omits: \`${r.omitted.join('`, `') || '(none)'}\``);
   md.push(`- **rows a client actually sees: \`${r.visible.join('`, `') || 'NONE — the panel is empty'}\`**`);
-  md.push(`- the field's own commit, \`setPartitionX(unitId, selection.item.id, 400)\`: **${r.commit}**`);
+  md.push(`- the field's own commit, \`setPartitionX(unitId, selection.item.id, x − 100)\`: **${r.commit}**`);
   md.push(`- the same call with the PANEL's stamped id, \`meta.itemId\`: **${r.stamped}**`);
   md.push('');
 }
@@ -196,11 +201,17 @@ md.push(rows.some((r) => /^moved /.test(r.stamped))
     + ' stamped on the panel (`meta.itemId`) — so the setter is sound and the id is the fault.'
   : '- and the panel\'s stamped id does not help either.');
 md.push('');
-md.push('So the control is not missing — `adapter.resolveSelection` never looks a');
-md.push('PARTITION\'s item up (it does it for `shelf` and for `drawers`, and for nothing');
-md.push('else), so the dock is handed `item: null` and the field commits against');
-md.push('`null.id`. The divider cannot be moved because the one road to the setter is');
-md.push('broken at the selection, not at the control.');
+if (broken.length) {
+  md.push('So the control is not missing — `adapter.resolveSelection` never looks a');
+  md.push('PARTITION\'s item up (it does it for `shelf` and for `drawers`, and for nothing');
+  md.push('else), so the dock is handed `item: null` and the field commits against');
+  md.push('`null.id`. The divider cannot be moved because the one road to the setter is');
+  md.push('broken at the selection, not at the control.');
+} else {
+  md.push('So the road is open end to end: the click resolves to the divider\'s own item,');
+  md.push('the dock shows `position-x`, and the field\'s own commit reaches the store\'s');
+  md.push('own setter and moves the board.');
+}
 md.push('');
 if (rows.some((r) => r.found && r.metaItemId == null)) {
   md.push('The cause is named by `engine/elements.js:326` — a partition whose panel carries no');

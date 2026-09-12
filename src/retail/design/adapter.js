@@ -1845,7 +1845,27 @@ export function resolveSelection(selected) {
   // A shelf names its own item on its panel (`meta.itemId`), which is how a
   // click on a board reaches the thing a joiner added.
   let item = null;
-  if (menu === 'shelf') item = items.find((i) => i.id === panel.meta?.itemId) || null;
+  //
+  // ─── T68 F4 · AND SO DOES A DIVIDER ─────────────────────────────────────
+  //
+  // The owner: *"divider nie mogę przesunąć."*
+  //
+  // THE PROBE FIRST (`verify/t68/f4-probe.md`, committed before this line was
+  // written). It found the control was never missing: a divider DOES dock
+  // `ElementProperties`, and `position-x` — HOW FAR FROM THE LEFT — DOES
+  // survive the dock's `omit`. What it found instead was this line. It named
+  // `shelf` and it named `drawers` and it named nothing else, so a partition
+  // arrived at the dock with `item: null`, and the field's own commit —
+  // `setPartitionX(unit.id, item.id, …)` — threw:
+  //
+  //   TypeError: Cannot read properties of null (reading 'id')
+  //
+  // The same store setter moved the divider the moment the probe handed it the
+  // id the ENGINE already stamps on the panel. The setter was sound; the
+  // SELECTION was broken, and one word is the whole of it.
+  if (menu === 'shelf' || menu === 'partition') {
+    item = items.find((i) => i.id === panel.meta?.itemId) || null;
+  }
 
   // A drawer — box or front — carries `meta.drawer`, the stack index the
   // engine cut it at. Which KIND of drawer it is, is the item's own word.

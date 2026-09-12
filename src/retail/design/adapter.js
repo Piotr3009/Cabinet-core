@@ -299,6 +299,24 @@ export const RETAIL_FIRST_WIDTH_MAX = 1200;
  * profile's, untouched.
  */
 export function addFirstWardrobe() {
+  // ─── T68 F2 · ONE CLICK IS ONE UNDO STEP ─────────────────────────────────
+  //
+  // FOUND BY THE WALK. Adding a wardrobe is FOUR store writes — the carcass,
+  // the move to the wall, the doors and the automatic cornice — and the walk
+  // read `past: 4` after one press of ADD A WARDROBE, so ↺ took the cornice
+  // off and left the wardrobe standing. `historyStore`'s trailing timer
+  // coalesces a burst IN TIME and these four are not that: they are one act
+  // that happens to be four calls.
+  //
+  // `historyBatch.js` is the shared core's own answer and its header is this
+  // fault in general terms — *"a bulk action is six `set` calls in one
+  // synchronous tick … and the joiner presses Ctrl+Z six times to undo one
+  // click."* So the act DECLARES itself, through the store's own `batch`,
+  // exactly as PRO's context menu declares its bulk edits.
+  return S().batch(() => addFirstWardrobeNow());
+}
+
+function addFirstWardrobeNow() {
   const store = S();
   const p = P();
   const wall = Math.round(wallLengthMm(store.project.room, 0));

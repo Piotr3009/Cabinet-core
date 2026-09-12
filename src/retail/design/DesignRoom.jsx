@@ -2,6 +2,9 @@ import {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import { useProjectStore } from '../../stores/projectStore.js';
+// T68 F2 · PRO's own history store, for the one thing PRO uses it for outside
+// the toolbar: clearing the stack once a project has finished being built.
+import { useHistoryStore } from '../../stores/historyStore.js';
 import { useUiStore } from '../../stores/uiStore.js';
 import Categories, { CATEGORIES, stepIndex } from './Categories.jsx';
 import Options from './Options.jsx';
@@ -255,6 +258,21 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         const live = A.designUnit(useProjectStore.getState().units);
         A.applyLazyDefaults(live?.id || null, { collectionId });
         useEstimateStore.getState().capture();
+        // ─── T68 F2 · THE STACK STARTS EMPTY ───────────────────────────────
+        //
+        // FOUND BY THE WALK, which is what it is for: the first frame of the
+        // client's room came up with ↺ LIT and *"1 step back"* in its tooltip,
+        // and pressing it undid the line above rather than anything he had
+        // done. The lazy defaults ARE a write to the project — the wine, the
+        // oak, the opening — and `historyStore` is a subscriber, so it records
+        // them by construction and correctly.
+        //
+        // What is wrong is calling them undoable. PRO settles this exactly the
+        // same way and has since T12: `StartScreen`, `NewProjectFlow` and the
+        // auth modal all call `useHistoryStore.getState().clear()` once the
+        // project they just built is standing. This is that call, at the one
+        // moment the client's room finishes setting itself out.
+        useHistoryStore.getState().clear();
       });
     }
     return undefined;
@@ -501,6 +519,10 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
             A.startDesign(designName || 'Bedroom wardrobe');
             const u = A.designUnit(useProjectStore.getState().units);
             A.applyLazyDefaults(u?.id || null);
+            // T68 F2 · START AGAIN is not an edit to undo back over: the
+            // evening it cleared is gone, and the stack goes with it. PRO's
+            // own `NewProjectFlow` does this on the same gesture.
+            useHistoryStore.getState().clear();
             setTarget(null);
             setDone([]);
             setActive('what');

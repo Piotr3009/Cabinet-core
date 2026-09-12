@@ -1,0 +1,71 @@
+─── T68 · THE ACCEPTANCE WALK ───
+
+Run section by section against `npx vite preview --port 4173`, the hardware
+served from the silent showroom (T23 R8). Every line below is a real browser
+reading the real build; the frames beside this file are what it saw.
+
+ ok  a fresh design carries H3325 on the carcass — {"style":"S","handle":null,"front":"3005 Wine Red","carcass":"egger:H3325_28","lights":false}
+ ok  …and it is shaker — S
+ ok  the shaker recess is cut on the leaves — 2 leaf(s)
+ ok  the J-pull is machined on the leaves, from the step — 2 leaf(s) · handle jpull
+ ok  …and the shaker did NOT go with it — one write, both facts
+ ok  a ?collection= link ALSO carries H3325 — the owner's own bug — {"style":"S","handle":"bar","front":"egger:U399_9","carcass":"egger:H3325_28","lights":false}
+ ok  …and the collection still dresses the FRONTS — egger:U399_9
+
+ ok  the 4 chip is pressed
+ ok  four doors cut four leaves — [443,443,443,458]
+ ok  the 2 chip is pressed
+ ok  pressing 2 gives an EQUAL pair — not 1/4 and 3/4 — [896,896]
+ ok  the split cut its two segments — [896,896,896,896]
+ ok  the 2 chip is pressed again, over a split
+ ok  pressing 2 after a split comes back to the equal pair — [896,896]
+
+ ok  clicking a divider opens the docked editor — VPART-1
+ ok  …and the docked editor carries HOW FAR FROM THE LEFT
+ ok  typing a new position MOVES the board — 891 → 464
+ ok  the stage's own setter moves it too — one law, two doors — 464 → 684
+ ok  an impossible position is refused by the STORE, and the board stays inside — 58
+
+ ok  undo is on the VIEW BAR and greyed on an empty stack — "Nothing to undo"
+ ok  …and it says WHY, rather than being greyed in silence
+ ok  a wardrobe is added — 1 unit(s)
+ ·   the stack after the add — {"past":1,"future":0}
+ ok  ↺ takes the add back — 1 → 0
+ ok  ↻ puts it back — 0 → 1
+
+ ok  EXTRAS is three headed groups, in the approved order — ["DOORS & FRONTS","THE CARCASS WEARS","ADDITIONS"]
+ ok  LIGHTS has left EXTRAS
+ ok  the SERVICE CUT-OUT row is there and greyed
+ ok  the plinth takes 50 — the law's own floor — 50
+ ok  …and 150, its ceiling — 150
+ ok  40 is REFUSED, under the field, in the engine's own sentence — 150 · Between 50 and 150 mm — type a number in that range.
+
+ ok  the figures are on before the light
+ ok  the light goes on and the figures go
+ ok  …and the bar says so — it offers SHOW, not HIDE — Show dimensions
+ ok  the light goes off and the figures come back, exactly as they were
+
+ ok  the STYLE list is there
+ ok  the OPENING list is there
+ ok  the COLLECTION block is GONE
+ ok  the STYLE GALLERY is GONE
+ ok  and MORE OPTIONS went with them — no fold with nothing behind it
+ ok  the list is the four the client chooses from — 4 row(s)
+
+ ok  the door editor docks
+ ok  ASSIGN OTHER HINGE is not shown to the client
+ ok  the hinge-height rows are not shown either
+ ok  …but the HANDLE is still the client's to choose
+ ok  …and the line saying which hinge is fitted stays — it is a fact, not a control
+ ok  PRO · the same window still carries ASSIGN OTHER HINGE
+ ok  PRO · …and the hinge rows
+
+ ok  the menu shows SIX rows — ["rotate-90","back-to-wall","side-to-wall","rename","save-template","delete"]
+ ok  …and they are the six the owner approved, in his own order — ["rotate-90","back-to-wall","side-to-wall","rename","save-template","delete"]
+ ok  no stray rule between rows that are no longer there — 0 divider(s)
+
+ ok  seven clicks end on a wine-on-H3325 wardrobe — THE SPACE4000 mm wall, ceiling 2500 mm, levelWARDROBE1200 mm wide · 2150 mm high · 568 mm deepDOORS1FRONT STYLEShakerFRONT FINISHRAL 3005 Wine Red, sprayedCARCASS FINISHEGGER H3325
+ ok  …and the equal pair is what it ends on — [596,596]
+ ok  DONE → ADD TO MY ESTIMATE lands one item on the estimate — #/estimate · 1 row(s)
+
+53 checks · 0 failed

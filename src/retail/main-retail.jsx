@@ -175,7 +175,7 @@ import('./RetailApp.jsx').then(async (module) => {
   // `setPersistence('none')`. NO SECOND HISTORY is created — this is PRO's
   // store, PRO's depth and coalescing out of PRO's profile, PRO's `undo`
   // and `redo`. The bar and the keyboard both call those two functions.
-  const { watchProjectHistory } = await import('../stores/historyStore.js');
+  const { useHistoryStore, watchProjectHistory } = await import('../stores/historyStore.js');
   watchProjectHistory();
 
   // ─── T68 F7 · LIGHTS ON, NUMBERS OFF ─────────────────────────────────────
@@ -229,6 +229,10 @@ import('./RetailApp.jsx').then(async (module) => {
     const cc = (window.__cc = window.__cc || {});
     cc.project = useProjectStore;
     cc.ui = useUiStore;
+    // T68 F2 · and the HISTORY, on the same terms: the walk has to be able to
+    // say how deep the stack is when it presses ↺, and the first run of this
+    // walk found the room mounting with a step already on it.
+    cc.history = useHistoryStore;
     // ─── T66 F1 · …AND THE RESOLVED PROFILE, WHICH IS THE RIG ───────────
     // `Scene.jsx` reads `profile.appearance.studio`, so the walk has to be
     // able to say what number the PAGE was running at rather than what the

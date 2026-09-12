@@ -1021,6 +1021,65 @@ export function setDoorCount(unitId, count) {
   const parts = () => (S().units.find((u) => u.id === unitId)
     ?.params.sections?.[0]?.items || []).filter((i) => i.kind === 'partition');
 
+  // ═══ T68 F3 · A DOOR COUNT CLEARS WHAT THE STORE WROTE ═══════════════════
+  //
+  // The owner, twice: *"jak wracamy do dwóch, to żeby wróciło do 2 równych
+  // standardowych otwieranych na boki"* and *"po naciśnięciu 2 muszą wrócić do
+  // standardowych pół na pół, a nie jak teraz 1/4 i 3/4"*.
+  //
+  // THE PROBE FIRST (`verify/t68/f3-probe.md`, committed before this line was
+  // written). An 1800 mm wardrobe, measured:
+  //
+  //   addDoors alone, no divider   896 · 897   ← the equal pair he asks for
+  //   setDoorCount(2)              888 · 905
+  //   4 doors, then press 2       1334 ·  459  ← his 3/4 and his 1/4, exactly
+  //   3 doors, then press 2       1185 ·  608
+  //
+  // and the partition left behind by the 4-door layout was still standing at
+  // x=1337. So the 1/4–3/4 is NOT the engine's — F3's fence does not apply —
+  // it is a divider the STORE added for a count that is no longer wanted and
+  // never moved when the count changed. The store clears what the store wrote.
+  //
+  // TWO ACTS, in order:
+  //
+  //   1 · THE SPLIT RESIDUE GOES. A leaf split into two segments is a fact
+  //       about a face that no longer exists once the count changes; the probe
+  //       caught `unit.split_top_mm=700` surviving a press of 2 and cutting
+  //       four leaves where two were asked for. Both places it can live — the
+  //       carcass's own and each bay's — through the store's own setters.
+  //
+  //   2 · THE FACE IS DIVIDED FOR THE COUNT AND FOR NOTHING ELSE. Where the
+  //       ENGINE's own width law already gives exactly this many leaves on the
+  //       clear face, the store writes NO divider at all and lets it cut its
+  //       standard pair — that is the 896 · 897 above, and it is the only
+  //       reading of *"2 równe standardowe"* the measurements support. Where
+  //       the law would give fewer (a 600 mm carcass asked for two), the
+  //       divider is the only road to the count and it stays — re-centred.
+  //
+  // The 17 mm the bay-door law adds to the right-hand leaf (888 vs 905, at
+  // every width the probe tried) is the ENGINE's own and `doors.js` is
+  // read-only tonight: SKIPPED AND NOTED in the PR body rather than reached
+  // for. This fix removes the need to reach for it in the common case.
+  clearSplitResidue(unitId);
+
+  const width = Math.round(Number(S().units.find((u) => u.id === unitId)?.params?.width) || 0);
+  if (want === doorCountFor(width, P())) {
+    let drop = 8;
+    while (parts().length && drop > 0) {
+      drop -= 1;
+      S().removeItem(unitId, parts().slice(-1)[0].id);
+    }
+    S().setBayDoors(unitId, null);
+    // …and the FACE carries the leaves now. `params.doors` is the first of the
+    // three facts this function's own header lists, and the bay writes above
+    // put it down on the way past: a probe run found this branch leaving a
+    // wardrobe with no leaves at all — no bays to hang one, and a face that
+    // had been told it wears none. It is said LAST, after the bays are gone,
+    // because that is the order in which the two disagree.
+    S().setDoors(unitId, true);
+    return doorCount(unitId);
+  }
+
   let guard = 8;
   while (parts().length > want - 1 && guard > 0) {
     guard -= 1;
@@ -1040,11 +1099,40 @@ export function setDoorCount(unitId, count) {
     if (!addFlushPartition(unitId)) break;   // the engine ran out of room
   }
 
+  // T68 F3 · AND THE SURVIVORS ARE RE-SPREAD. Removing the surplus is half the
+  // job; the probe's 1334 · 459 is what the other half looks like when it is
+  // missed. `centrePartitions` is the store's own — the very call
+  // `addFlushPartition` already makes on the way in — so a count DOWN and a
+  // count UP leave the face in the same state.
+  S().centrePartitions(unitId);
+
   const bays = S().bayDoorsFor(unitId).length;
   S().setBayDoors(unitId, bays > 1
     ? Array.from({ length: bays }, () => ({ door: 'one', hinge: 'L' }))
     : null);
   return doorCount(unitId);
+}
+
+/**
+ * T68 F3 · EVERY SPLIT THE STORE WROTE ON THIS FACE, CLEARED.
+ *
+ * A split lives in two places — the carcass's own `split_top_mm` and each
+ * `bay_doors[i].split_top_mm` — and `0` is the engine's own way out of both
+ * (`setSplitTopMm`'s own doctrine, T66 F7). Both are cleared through the very
+ * setters that wrote them; nothing reaches into params by hand.
+ *
+ * It is exported because EXTRAS' own ONE DOOR AGAIN (F5) is the same act by
+ * another name, and two acts that mean one thing is how they drift apart.
+ */
+export function clearSplitResidue(unitId) {
+  const unit = unitOf(unitId);
+  if (!unit) return false;
+  let cleared = false;
+  if (Number(unit.params?.split_top_mm) > 0) { S().setSplitTop(unitId, 0); cleared = true; }
+  (unitOf(unitId)?.params?.bay_doors || []).forEach((bay, i) => {
+    if (Number(bay?.split_top_mm) > 0) { S().setBaySplitTop(unitId, i, 0); cleared = true; }
+  });
+  return cleared;
 }
 
 /**

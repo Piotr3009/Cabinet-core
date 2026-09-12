@@ -316,7 +316,22 @@ export function surfaceFor({
   //
   // Nothing here touches `finish_exposed` itself — the engine's flag, the cut
   // list and the CNC output are exactly what they were.
-  const sprayed = (finishExposed || finish?.kind === 'spray') && !isDecor;
+  // ─── TURN 69 (CLAUDE.md F4): RAW IS NOT SPRAYED ─────────────────────────
+  //
+  // *"3D material calibrated to the owner's photo: warm beige-brown with the
+  // olive undertone, matte, zero grain, uniform … High roughness, no sheen."*
+  //
+  // A raw MDF door is `finish_exposed` — it is a front, and the engine's flag
+  // is about WHERE A PIECE SITS, which has not changed and must not. But it has
+  // NOT BEEN TO THE SPRAY BOOTH, and every consequence of `sprayed` below is a
+  // consequence of paint: the environment probe, the metalness, the orange peel
+  // a gun leaves, and the gloss coat the sheen slider drives.
+  //
+  // So `raw` disqualifies a piece from `sprayed` exactly as `isDecor` does, and
+  // for the same reason: the engine's flag says where it sits, the FINISH says
+  // what it is, and what it is wins.
+  const raw = finish?.kind === 'raw';
+  const sprayed = (finishExposed || finish?.kind === 'spray') && !isDecor && !raw;
 
   // ─── TURN 49 (CLAUDE.md F9): THE SHEEN MOVES VENEER TOO ────────────────────
   //
@@ -343,7 +358,10 @@ export function surfaceFor({
   // (a carcass veneer, `veneer:oak-natural`) or the slot's own source (a front
   // veneer, which is stored as the decor it borrows its picture from).
   const veneer = veneered || (!isDecor && finish?.kind === 'veneer');
-  const sheenDriven = sprayed || veneer;
+  // T69 F4: *"no sheen"* — and it is not a number this material takes badly,
+  // it is a question it cannot be asked. There is no coat on unpainted MDF for
+  // a gloss slider to move.
+  const sheenDriven = (sprayed || veneer) && !raw;
   // How glossy this finish is asked to be, 0…1 — the inverse of the roughness
   // the slider already yields, so the coat and the probe below cannot drift
   // from the surface they sit on. One number, one source.
@@ -361,11 +379,20 @@ export function surfaceFor({
     fallback: isDecor && finish.scanAlongGrainMm > 0 && finish.fallback ? finish.fallback : null,
     fallbackHex: finish?.hex || null,
     sprayed,
+    // T69 F4: …and whether this is the unpainted board, which the shaker frame
+    // reads to lift its own edge — *"the shaker frame/edge LIGHTER cream
+    // against the field (the photo's truth — not darker)."*
+    raw,
+    rawEdgeHex: raw ? (finish.edgeHex || null) : null,
     // T49 F9: what the SLIDER drives — spray and veneer. A laminate keeps its
     // family number, which is the owner's ruling and the truth about a foil.
     sheenDriven,
     // Piotr's scale drives the lacquered surface; board keeps its family number.
-    roughness: sheenDriven && sheen != null ? roughnessFromSheen(sheen, profile) : pbr.roughness,
+    // T69 F4: RAW takes the FINISH's own roughness — 0.95, which is what an
+    // unsanded MDF face measures and why it never catches a highlight.
+    roughness: raw
+      ? (finish.roughness ?? 0.95)
+      : (sheenDriven && sheen != null ? roughnessFromSheen(sheen, profile) : pbr.roughness),
     // ─── CHAT-FIX 25.08.2026: DEAD MATT MUST NOT SHINE ───────────────────────
     //
     // The owner, at 5 %: *"nadal sie swieci … jak dam 5 procent polysku to
@@ -387,12 +414,15 @@ export function surfaceFor({
     // and the shine the owner saw is the coat. One cause, one change.
     // Untouched too: laminate (`sheenDriven` false keeps its family numbers),
     // metalness, and the orange peel.
-    clearcoat: sheenDriven && sheen != null ? pbr.clearcoat * gloss : pbr.clearcoat,
-    clearcoatRoughness: pbr.clearcoatRoughness,
+    // T69 F4: no coat at all on raw MDF — there is nothing on it yet.
+    clearcoat: raw ? 0 : (sheenDriven && sheen != null ? pbr.clearcoat * gloss : pbr.clearcoat),
+    clearcoatRoughness: raw ? 1 : pbr.clearcoatRoughness,
     metalness: sprayed ? (A.spray?.metalness ?? 0) : pbr.metalness,
     // 0 switches the probe off for this material only — the scene keeps it for
     // everything else.
-    envMapIntensity: sprayed ? (A.spray?.envMapIntensity ?? 0) : 1,
+    // T69 F4: *"matte, zero grain, uniform"* — a weak probe still puts a
+    // gradient across a flat face, and raw MDF has none.
+    envMapIntensity: sprayed ? (A.spray?.envMapIntensity ?? 0) : (raw ? 0 : 1),
     // The fine orange peel a gun leaves. A tenth of the strength the board
     // edges are broken at, which is roughly the difference in real life.
     normalScale: sprayed ? (A.spray?.normalScale ?? 0.1) : 1,
@@ -431,10 +461,28 @@ export function contourSurface(profile) {
  * selected or not; the mark that says "this one" is a separate dashed box
  * (3d/SelectionOutline.jsx).
  */
-export function outlineFor(profile, { contour = false } = {}) {
+/**
+ * ─── TURN 69 (CLAUDE.md F4): AND THE RAW BOARD'S OWN EDGE ──────────────────
+ *
+ * *"the shaker frame/edge LIGHTER cream against the field (the photo's truth —
+ * not darker)."*
+ *
+ * On a shaker leaf the Edges pass draws exactly two things — the silhouette and
+ * the shaker frame — and `UnitView` says so in as many words where it chooses
+ * the plain solid for it: *"the pretty view's contour is the BOARD — silhouette
+ * and shaker frame — never the machining."*  So the frame IS this line, and
+ * drawing it in the finish's own `edgeHex` is the whole of the sentence: a
+ * routed MDF edge shows the fine core and reads paler than the pressed face
+ * beside it, which is why the photo's frame is lighter and not darker.
+ *
+ * Nothing else moves. The contour view keeps its own colour — it is the TOOL's
+ * picture, not the furniture's — and every board that is not raw takes the
+ * outline it always took.
+ */
+export function outlineFor(profile, { contour = false, rawEdgeHex = null } = {}) {
   const A = profile.appearance;
   return {
-    colour: contour ? A.contour.outline : A.outline.colour,
+    colour: contour ? A.contour.outline : (rawEdgeHex || A.outline.colour),
     width: A.outline.width,
     threshold: A.outline.threshold,
   };

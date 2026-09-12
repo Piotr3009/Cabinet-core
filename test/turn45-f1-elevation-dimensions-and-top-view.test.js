@@ -238,7 +238,7 @@ test('F1b — editing a slope cannot drop a chimney, and the store keeps one lis
   assert.match(MODAL, /setWallSlopes\(\[\.\.\.all, el\]\)/);
   assert.doesNotMatch(MODAL, /setWallSlopes\(slopes\./, 'a write that knows only the slopes');
   // …and the store normalises all three kinds on every path in.
-  assert.match(STORE, /import \{ migrateWallElement, wallElements \} from '\.\.\/lib\/wallElements\.js'/);
+  assert.match(STORE, /import \{ migrateWallElement, oneSlopePerSide, wallElements \} from '\.\.\/lib\/wallElements\.js'/);
   // Every path in — the cached tab, `loadProject`, and the four setters —
   // normalises through the one reader, so no route can leave a raw record in.
   assert.ok((STORE.match(/wallElements\(/g) || []).length >= 6);

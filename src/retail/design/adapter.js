@@ -941,6 +941,33 @@ export function setTopInfill(unitId, on) {
 }
 
 /**
+ * ─── T69 F8 · TO THE CEILING? ──────────────────────────────────────────────
+ *
+ * *"TOP INFILL asks 'to the ceiling?': yes → first the VERTICAL members reach
+ * the ceiling (end panel if present, vertical infills), THEN the horizontal top
+ * infill closes — automatically, in that order."*
+ *
+ * The ORDER is the store's (`closeToCeiling`), because it is a fact about how
+ * the thing is made and not about a panel. Retail asks the question and reports
+ * what the store did; it writes no millimetre and names no piece.
+ */
+export function closeToCeiling(unitId) {
+  if (!unitOf(unitId)) return { ok: false, said: '', order: [] };
+  const done = S().closeToCeiling(unitId);
+  return { ok: true, said: '', order: done?.order || [] };
+}
+
+/** Is this wardrobe already closed to the ceiling? The gap is the answer. */
+export function closedToCeiling(unitId) {
+  const b = unitBounds(unitId);
+  const u = unitOf(unitId);
+  if (!u || !b) return false;
+  const gap = Math.round(Number(S().project.room?.height) || 0)
+    - Math.round(Number(u.params?.height) || 0) - Math.round(Number(u.params?.leg_height) || 0);
+  return gap <= 0 || Math.round(Number(u.params?.top_infill_mm) || 0) >= gap - 1;
+}
+
+/**
  * *"Scribe fillers at the wall"* — the menu's own label, kept. The STORE's
  * field is a negative (`side_infill_off`), because the piece is DERIVED and
  * the switch is *"does this cabinet take one at all"*; this reads it the way
@@ -1486,6 +1513,16 @@ export const REASON_JPULL = REASONS.jpullTakesNoHandle;
 export function setHandle(type) {
   return S().setProjectHandle(type === 'none' ? null : { type });
 }
+
+/**
+ * WHICH HANDLE THE JOB IS ON — the project's own, through the engine's own
+ * spelling of "none" (`null`). T69 F8 put the row in EXTRAS as well as FRONTS,
+ * so the two lists must light the same chip; a reader in one place is what
+ * makes that true.
+ */
+export const handleChoice = (project) => String(
+  project?.design?.fronts?.handle?.type || 'none',
+) || 'none';
 
 /** F4.5 · PLINTH — the wardrobe's own leg height. */
 export function setPlinth(unitId, mm) {
@@ -2074,6 +2111,45 @@ export function unitWarnings(unitId) {
  */
 export const bayCount = (unitId) => Math.max(1, (S().bayDoorsFor?.(unitId) || []).length);
 
+/**
+ * ─── T69 F6 · THE BAYS, AND THE ONE HIGHLIGHTER ────────────────────────────
+ *
+ * *"PRO highlights a bay when its chip is hovered; retail lost it. READ PRO's
+ * mechanism first (the chip→scene hover path), carry the same mechanism — one
+ * law, no second highlighter."*
+ *
+ * PRO'S MECHANISM, read end to end before anything was written:
+ *
+ *   `components/AddItems.jsx`  a bay chip's `onPointerEnter` calls
+ *                              `onZoneHover(z.index)`
+ *   `components/AddItemsModal` hands that hook `uiStore.setZoneHint`
+ *   `stores/uiStore.js`        `zoneHint` — one integer, or null
+ *   `3d/Scene.jsx`             passes it to the SELECTED unit's `UnitView`
+ *   `3d/UnitView.jsx`          draws the box over `bays[zoneHint]`
+ *
+ * Four of those five are SHARED — retail runs the same ui store, the same
+ * Scene and the same UnitView — so there is nothing to carry but the first
+ * link, and nothing to write but a chip that calls the same setter. A second
+ * highlighter would be a second law about the same box.
+ *
+ * These two are that link, and they are the whole of it: the LIST is the
+ * store's own `zonesOf` (PRO's list, in PRO's order), and the HOVER is
+ * `uiStore.setZoneHint`, PRO's own integer.
+ */
+export const bayZones = (unitId) => (S().zonesOf?.(unitId) || []);
+
+export function hoverBay(index) {
+  U().setZoneHint(index == null ? null : index);
+  return U().zoneHint;
+}
+
+/**
+ * T69 F6 · …and the cabinet the hint is ABOUT. `Scene.jsx` draws it for the
+ * SELECTED unit only, so a chip on an unselected wardrobe would light nothing.
+ * The store's own `selectUnit` — the same call the stage's plus makes.
+ */
+export const selectUnitOnStage = (unitId) => { U().selectUnit?.(unitId); return unitId; };
+
 export function setBayCount(unitId, want) {
   const n = Math.min(MAX_BAYS, Math.max(1, Math.trunc(Number(want) || 1)));
   if (!unitOf(unitId)) return 0;
@@ -2174,6 +2250,16 @@ export const frontColourOf = (project) => project?.design?.fronts?.types?.[0]?.c
 /** Every leaf the engine will actually cut on this cabinet. */
 export const doorPanels = (unitId) => (resultOf(unitId)?.panels || []).filter(
   (p) => p.part === 'FRONT' && !p.meta?.appliance,
+);
+
+/**
+ * IS THIS PANEL A DOOR? — the same two questions `doorPanels` asks, of one
+ * panel instead of a list. T69 F8's swing row in the dock needs it: the dock
+ * has a panel in hand, not a unit's worth of them, and a drawer front is not a
+ * door however much it looks like one from the front.
+ */
+export const isDoorPanel = (panel) => Boolean(
+  panel && panel.part === 'FRONT' && !panel.meta?.appliance && !panel.meta?.drawer,
 );
 
 // ═══ T66 F7 · THE SPLIT DOOR, FROM THE OTHER SIDE ═══════════════════════════
@@ -3129,11 +3215,41 @@ export function materialSlot(kind) {
   };
 }
 
+/**
+ * ─── T69 F4 · RAW ENDS THE CHOICE ──────────────────────────────────────────
+ *
+ * *"Fourth front source: RAW (unpainted MDF) … No colour picker — choosing RAW
+ * ends the choice."*
+ *
+ * A source that names no picker already draws none (`pickerForSource` returns
+ * `null` for RAW), but the DESIGN can still be carrying a colour and a facing
+ * from whatever was chosen before it — and `resolveFinishes` reads the sprayed
+ * colour FIRST. So choosing RAW clears both, and the board is then the only
+ * answer left in the chain.
+ *
+ * Nothing else moves: the thickness is the source's own 18 mm, and END PANELS
+ * and the PLINTH follow the fronts by the store's own `runMaterials` default —
+ * which is why F4's three pieces need no third rule here. THE CARCASS NEVER:
+ * `raw` is not in `carcassSources`, so this function cannot be asked for it.
+ */
+export const RAW_FRONT_SOURCE = 'raw';
+export const RAW_FINISH_ID = 'raw_mdf';
+
 export function setMaterialSource(kind, sourceId) {
   const slot = typeOf(kind);
   if (kind === 'carcass') return S().setCarcassSource(slot.id, sourceId);
+  if (sourceId === RAW_FRONT_SOURCE) {
+    return S().setFrontType(slot.id, {
+      source: RAW_FRONT_SOURCE, finish_id: RAW_FINISH_ID, colour: null,
+    });
+  }
   return S().setFrontType(slot.id, { source: sourceId });
 }
+
+/** Is this job's front RAW? The store's own answer, read once. */
+export const rawFronts = (project) => normaliseFrontTypes(
+  migrateDesign(project?.design).fronts.types, P(),
+)[0]?.source === RAW_FRONT_SOURCE;
 
 export function pickMaterialDecor(kind, finishId) {
   const slot = typeOf(kind);

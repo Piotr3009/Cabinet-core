@@ -39,6 +39,43 @@ import {
 // and which of the engine's answers gets drawn. That division is the only
 // reason a CAD flow can be asserted at all.
 //
+// ─── TURN 69 · F2 · THIS COPY IS NO LONGER A COPY, AND SAYS SO ─────────────
+//
+// CLAUDE.md F2, verbatim and in full:
+//
+//   *"Owner's model: drag → a straight line follows (ortho: up/down/sides
+//   only); **click → a small input opens AT THE CLICK POINT**, inside the
+//   canvas — never leave the drawing, orientation never lost; type the length,
+//   Enter → wall done, the next line starts, direction from the mouse. Escape
+//   lets go. Close the loop → the room stands. This REPLACES the current
+//   DrawRoomModal interaction in the retail copy; PRO's DrawRoomModal is NOT
+//   touched (not in EXEMPT) — retail's copy carries the new controls and says
+//   so in the PR."*
+//
+// So this file and `src/components/DrawRoomModal.jsx` are DELIBERATELY no
+// longer byte-twins, and `scripts/t69-copy.mjs` does NOT list it: a copy that a
+// machine re-makes the same night is a copy of nothing. The divergence is
+// exactly F2's, it is fenced by `test/turn69-f2-the-line-follows-the-mouse.js`,
+// and every other rule of the copy stands — imports repointed, classes
+// reskinned, colours swapped, PRO's geometry untouched.
+//
+// WHAT CHANGED, and only this:
+//
+//   · THE LINE FOLLOWS THE MOUSE. The ghost was drawn only once a number had
+//     been typed into a field on the other side of the window. Now it runs from
+//     the pen to the cursor, ortho-snapped, the whole time the hand is moving —
+//     which is the half of "like in CAD" T53 never had.
+//   · THE NUMBER IS TYPED WHERE THE HAND IS. The `Wall length` field left the
+//     right-hand column and became a small input that opens AT THE CLICK POINT
+//     inside the drawing, pre-filled with the length the hand just drew. The
+//     eye never leaves the line, so the orientation is never lost.
+//   · ESCAPE LETS GO — the input closes and the pen stays where it is.
+//
+// ─── TOMBSTONE ─────────────────────────────────────────────────────────────
+// The right-hand `Wall length` row (`data-draw-length`, its ✕ and its
+// `onKeyDown`) stood in the column beside the drawing. It is the control F2
+// replaces; the column keeps the wall list, the state line and the faults.
+//
 // ─── DECISIONS TAKEN FOR THE OWNER (veto in one line each) ─────────────────
 //
 //   · **2× the one-wall modal** is measured on the DRAWING, which is the thing
@@ -77,6 +114,12 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   const [dir, setDir] = useState('E');
   const [typed, setTyped] = useState('');
   const [cursor, setCursor] = useState(null);      // { x, y } in mm
+  // ─── T69 F2 · THE INPUT THAT OPENS AT THE CLICK POINT ────────────────────
+  // `null` while the hand is drawing; `{ px, py, dir }` once it has clicked —
+  // the SVG-local pixel the click landed on, so the field opens THERE, and the
+  // direction that click chose, which is frozen so a twitch of the mouse while
+  // typing cannot turn the wall that is being measured.
+  const [field, setField] = useState(null);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
   const [wall, setWall] = useState(null);          // the elevation being edited
@@ -123,11 +166,49 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
     if (!r) return;
     const at = { x: view.mx(e.clientX - r.left), y: view.my(e.clientY - r.top) };
     setCursor(at);
+    // T69 F2: while the FIELD is open the wall being measured is already
+    // chosen. *"orientation never lost"* — a direction that kept turning under
+    // a hand that has moved to the keyboard is exactly how it gets lost.
+    if (field) return;
     if (!closed && pen) {
       const d = dirFromCursor(at.x - pen.x, at.y - pen.y);
       if (d && d.id !== dir) setDir(d.id);
     }
   };
+
+  /**
+   * ─── T69 F2 · WHAT THE CLICK DOES ────────────────────────────────────────
+   *
+   * *"click → a small input opens AT THE CLICK POINT, inside the canvas."*
+   *
+   * The catch still answers first, because a click on the origin is the close
+   * and has been since T53. Otherwise the click FREEZES the direction the hand
+   * was pointing and opens the field at the pixel it landed on, pre-filled with
+   * the length the hand just drew — so Enter alone commits what is on screen
+   * and a number typed over it commits that instead.
+   */
+  const onCanvasDown = (e) => {
+    if (closed) return;
+    if (catching && !typed.trim()) { close(); return; }
+    const r = svgRef.current?.getBoundingClientRect();
+    if (!r || !pen) return;
+    const px = e.clientX - r.left;
+    const py = e.clientY - r.top;
+    const at = { x: view.mx(px), y: view.my(py) };
+    const d = dirFromCursor(at.x - pen.x, at.y - pen.y);
+    if (!d) return;
+    setDir(d.id);
+    setTyped(String(Math.max(0, Math.round(Math.abs(d.dx ? at.x - pen.x : at.y - pen.y)))));
+    setError(null);
+    setField({ px, py, dir: d.id });
+  };
+
+  /** *"Escape lets go."* The field closes; the pen has not moved. */
+  const letGo = useCallback(() => {
+    setField(null);
+    setTyped('');
+    setError(null);
+  }, []);
 
   /** Enter on a typed number: one wall, committed. */
   const commit = useCallback(() => {
@@ -137,6 +218,10 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
     setTyped('');
     setError(null);
     setSaved(false);
+    // T69 F2: *"Enter → wall done, the next line starts, direction from the
+    // mouse."*  Letting the field go is what starts the next line: `onMove` is
+    // reading the cursor again the moment it is gone.
+    setField(null);
     return true;
   }, [path, dir, typed]);
 
@@ -194,15 +279,26 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
       commit();
       return;
     }
+    // T69 F2 · *"Escape lets go."*
+    if (e.key === 'Escape') { e.preventDefault(); letGo(); return; }
     if (e.key === 'Backspace' && !typed) {
       e.preventDefault();
       undo();
     }
   };
 
-  // The field is where the hand is the whole time: it takes the number and it
-  // takes the Enter, so it gets the focus the moment the window opens.
-  useEffect(() => { fieldRef.current?.focus(); }, []);
+  // T69 F2: the field is not always there any more — it opens where the hand
+  // clicked — so the focus follows it there, every time it opens. The eye never
+  // has to find it: it is under the cursor.
+  useEffect(() => { if (field) fieldRef.current?.focus(); }, [field]);
+
+  // …and Escape reaches the drawing even when the hand has left the field.
+  useEffect(() => {
+    if (!field) return undefined;
+    const onKey = (ev) => { if (ev.key === 'Escape') letGo(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [field, letGo]);
 
   // ─── ONE WINDOW AT A TIME (T45's rule: no window-over-window, ever) ───────
   if (wall !== null) {
@@ -224,9 +320,21 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
     grid.push(<line key={`gy${g}`} x1={0} y1={view.sy(g)} x2={VIEW_W} y2={view.sy(g)} stroke="#E7E1D8" strokeWidth={1} />);
   }
 
-  const ghostLen = Number(typed) > 0 ? Number(typed) : null;
+  // ─── T69 F2 · THE LINE FOLLOWS THE MOUSE ─────────────────────────────────
+  //
+  // *"drag → a straight line follows (ortho: up/down/sides only)."*
+  //
+  // The typed number wins when there is one — that is the measurement the hand
+  // is committing — and the CURSOR draws it the rest of the time, projected on
+  // the chosen axis so the line is always square. Before tonight there was no
+  // line at all until a number existed, which is a CAD window that shows you
+  // nothing while you aim.
   const d = dirOf(dir);
-  const ghostTo = !closed && pen && d && ghostLen
+  const reach = !closed && pen && d && cursor
+    ? Math.max(0, Math.round(d.dx ? (cursor.x - pen.x) * d.dx : (cursor.y - pen.y) * d.dy))
+    : 0;
+  const ghostLen = Number(typed) > 0 ? Number(typed) : (field ? 0 : reach);
+  const ghostTo = !closed && pen && d && ghostLen > 0
     ? { x: pen.x + d.dx * ghostLen, y: pen.y + d.dy * ghostLen }
     : null;
 
@@ -273,7 +381,12 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
       )}
     >
       <div className="pbi-re-row pbi-re-gap-4" data-draw-room="1" data-draw-closed={closed ? '1' : '0'}>
-        {/* ── the drawing ── */}
+        {/* ── the drawing ──
+            T69 F2: the SVG is wrapped so the length field can stand ON it, at
+            the pixel the hand clicked. The wrapper carries no size of its own —
+            it is the canvas's own box and nothing else — so the drawing is the
+            width it always was and the field's coordinates are the SVG's. */}
+        <div className="pbi-re-rel" data-draw-canvas-wrap="1">
         <svg
           ref={svgRef}
           width={VIEW_W}
@@ -282,7 +395,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
           data-draw-canvas="1"
           onPointerMove={onMove}
           onPointerLeave={() => setCursor(null)}
-          onPointerDown={() => { if (catching && !typed.trim()) close(); }}
+          onPointerDown={onCanvasDown}
         >
           {grid}
 
@@ -329,7 +442,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
                 x={view.sx((pen.x + ghostTo.x) / 2) + 6} y={view.sy((pen.y + ghostTo.y) / 2) + 16}
                 fill="#806A44" fontSize={11}
               >
-                {formatMm(ghostLen)} …typing
+                {formatMm(ghostLen)}{Number(typed) > 0 ? ' …typing' : ' …drag'}
               </text>
             </g>
           ) : null}
@@ -367,43 +480,52 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
           ) : null}
         </svg>
 
-        {/* ── the hand's side ── */}
-        <div className="pbi-re-w280 pbi-re-stack-3">
-          <div className="pbi-re-fieldrow">
-            <span className="pbi-re-grow pbi-re-tsm pbi-re-ink-1">Wall length</span>
-            {/* The house ✕ (23.08): a field with something in it has a way to
-                empty it that is not eight backspaces. */}
-            <div className="pbi-re-rel">
+          {/* ─── T69 F2 · THE INPUT, AT THE CLICK POINT ────────────────────
+              *"click → a small input opens AT THE CLICK POINT, inside the
+              canvas — never leave the drawing, orientation never lost."*
+
+              It is an HTML input over the SVG rather than a `foreignObject`
+              inside it: a foreignObject inherits the drawing's own scaling, so
+              the field would grow and shrink with the room. This one is 92 px
+              whatever the room measures, which is what a field is.
+
+              It is nudged 10 px up and left of the click so the cursor is not
+              standing on its own text, and clamped to the canvas so a click at
+              the far edge does not open a field half outside the drawing. */}
+          {field ? (
+            <div
+              className="pbi-re-abs"
+              data-draw-field="1"
+              data-draw-field-at={`${Math.round(field.px)},${Math.round(field.py)}`}
+              data-draw-field-dir={field.dir}
+              style={{
+                left: Math.min(Math.max(field.px - 10, 4), VIEW_W - 100),
+                top: Math.min(Math.max(field.py - 10, 4), VIEW_H - 34),
+              }}
+            >
               <input
                 ref={fieldRef}
                 type="number"
                 inputMode="numeric"
-                className="pbi-re-input pbi-re-w120 pbi-re-pr6 pbi-re-right"
+                className="pbi-re-input pbi-re-w120 pbi-re-right"
                 data-draw-length="1"
                 value={typed}
                 placeholder="mm"
-                disabled={closed}
+                aria-label={`Wall length, ${DIRS.find((v) => v.id === field.dir)?.label}`}
                 onChange={(e) => { setTyped(e.target.value); setError(null); }}
                 onKeyDown={onKeyDown}
               />
-              {typed ? (
-                <button
-                  type="button"
-                  className="pbi-re-abs pbi-re-right1 pbi-re-midy pbi-re-midy-shift pbi-re-round pbi-re-px1 pbi-re-quiet pbi-re-ink-1-hover"
-                  data-draw-length-clear="1"
-                  aria-label="Clear"
-                  title="Clear"
-                  onClick={() => { setTyped(''); fieldRef.current?.focus(); }}
-                >
-                  ✕
-                </button>
-              ) : null}
             </div>
-          </div>
+          ) : null}
+        </div>
 
+        {/* ── the hand's side ── */}
+        <div className="pbi-re-w280 pbi-re-stack-3">
           <p className="pbi-re-t11 pbi-re-lead-snug pbi-re-quiet">
-            Point the cursor at a direction — the drawing snaps to the four axes — type the
-            millimetres and press <b className="pbi-re-ink-1">Enter</b>. Backspace takes the last
+            Move the cursor and the wall follows it — up, down or sideways, never at an angle.
+            <b className="pbi-re-ink-1"> Click</b> where it should end and type the millimetres
+            right there; <b className="pbi-re-ink-1">Enter</b> draws it and the next wall starts
+            from the cursor. <b className="pbi-re-ink-1">Esc</b> lets go, Backspace takes the last
             wall off. The shortest wall this app will draw is {formatMm(MIN_SEGMENT_MM)} mm.
           </p>
 

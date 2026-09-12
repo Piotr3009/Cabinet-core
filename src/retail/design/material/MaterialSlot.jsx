@@ -4,6 +4,7 @@ import DecorPicker from './DecorPicker.jsx';
 import VeneerPicker from './VeneerPicker.jsx';
 import ColourPicker from './ColourPicker.jsx';
 import * as A from '../adapter.js';
+import { REASONS } from '../reasons.js';
 import { Button } from '../controls.jsx';
 
 // ─── TURN 63 F4 · ONE SLOT, WIRED THE WAY PRO'S WIZARD WIRES IT ────────────
@@ -82,6 +83,19 @@ export default function MaterialSlot({ kind, title = null }) {
 
   return (
     <div data-material-picker-for={`${kind}:${m.slot?.id || ''}`} data-testid={`material-slot-${kind}`}>
+      {/* ─── T69 F4 · ONE SENTENCE AT THE CHOICE ───────────────────────────
+          *"One sentence at the choice: 'Unpainted — ready for your own finish.
+          We sand it, you paint it.'"*
+
+          It stands ONLY when RAW is the live source, and it is the whole of
+          what the step says about it: there is no picker under it — choosing
+          RAW ends the choice — so without this sentence the panel would go
+          blank and read as a control that failed. */}
+      {m.activeSource === A.RAW_FRONT_SOURCE ? (
+        <p className="pbi-re-t11 pbi-re-lead-snug pbi-re-quiet" data-testid="material-raw-note">
+          {REASONS.rawIsUnpainted}
+        </p>
+      ) : null}
       <MaterialChoicePanel
         kind={kind}
         slot={m.slot}

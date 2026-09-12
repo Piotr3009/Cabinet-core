@@ -298,8 +298,13 @@ test('F5 — the SHINE reaches the 3D material: the formula is the engine’s', 
   // *"suwak powinien dzialac tylko na spray i veneer, nie na laminat."* The
   // gate widened by one word; the FORMULA — which is what this test is about —
   // did not move, and it is still the engine's one function.
-  assert.match(mats, /roughness: sheenDriven && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
-  assert.match(mats, /const sheenDriven = sprayed \|\| veneer;/);
+  // T69 F4: the formula is now the second arm of a ternary whose first arm is a
+  // raw board's own roughness (*"High roughness, no sheen"*). Not one term of
+  // the formula moved, which is what this test has ever been about.
+  assert.match(mats, /sheenDriven && sheen != null \? roughnessFromSheen\(sheen, profile\) : pbr\.roughness/);
+  // T69 F4: `&& !raw` joined the gate — there is no coat on unpainted MDF for a
+  // gloss slider to move. The FORMULA the line feeds is untouched.
+  assert.match(mats, /const sheenDriven = \(sprayed \|\| veneer\) && !raw;/);
   assert.equal(roughnessFromSheen(5, P).toFixed(2), '0.95', 'dead matt');
   assert.equal(roughnessFromSheen(100, P).toFixed(2), '0.00', 'full gloss');
   assert.notEqual(roughnessFromSheen(5, P), roughnessFromSheen(100, P), 'matte and shine are different surfaces');

@@ -73,10 +73,15 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
+  // The exemption bought ONE night and not a standing permission — T67 said so
+  // — so tonight's edit is argued here again, with tonight's quote and
+  // tonight's hash. The map does NOT grow: the count below is still three.
   'src/components/RoomModal.jsx':
-    'T67 F1 — the room in one window: plan on top, the UNCHANGED WallElevationModal '
-    + 'docked below it, and the two preset buttons the owner struck out. '
-    + '*"tak, zdecydowanie potwierdzam."*',
+    'T69 F1 — the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
+    + 'IMPORT DXF is struck out (*"to nie przejdzie"*), and APPLY is fixed at the '
+    + 'two sites its probe convicted: it sends only the keys this window changed, '
+    + 'and it is never drawn dead and silent. *"APPLY does nothing — probe first."*',
   'src/components/AddItems.jsx':
     'T67 F9 — the label "Watch drawer" becomes "Accessories drawer" on the row, the '
     + 'button and the two notices. *"zmień w PRO też tę nazwę."*',
@@ -140,8 +145,8 @@ const FROZEN = {
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
   'src/components/RightPanel.jsx': 'ad0777675b240f39d649f9bf1dd79215161d79e3cca9c80ed5ffc9a21d68c788',
-  // T67 F1 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RoomModal.jsx': '7d2d37298deef241c129341b41543a1fa1d2ddde1f676024c43b24661b3896bc',
+  // T69 F1 — re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RoomModal.jsx': '1bd7aebbe8899d428fcbe66ab972c72af43ae98c18b73f15eb7346f8b7f2d210',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
   'src/components/SaveTemplateModal.jsx': '83a756327cd24f0a13f1c28e618a692b1b88b00df6c2735416d5711422cbc4c1',
@@ -316,6 +321,21 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
 // excused), every path carries the owner's own sentence as its reason, and the
 // list is exactly the three CLAUDE.md names — a fourth file cannot be slipped
 // in without this failing and saying which.
+//
+// ─── AMENDED BY TURN 69 · A REASON NAMES ITS OWN TURN ──────────────────────
+//
+// The reason was matched against `/T67 F\d/`, which is the right assertion
+// written one turn too narrowly: T67's own paragraph above says the exemption
+// *"bought ONE night's edit and not a standing permission"*, so a file edited
+// again is a file whose reason must be RE-ARGUED — with the NEW turn's feature
+// and the NEW quote, not last turn's. CLAUDE.md F1 asks for exactly that
+// tonight: *"its `EXEMPT` entry is RENEWED with tonight's quote and its NEW
+// hash; the map does not grow."*
+//
+// So the pattern asks for A TURN AND A FEATURE (`T69 F1`), which is what the
+// assertion always meant, and NOTHING ELSE here is loosened: the list is still
+// held to exactly the three names, every one is still re-frozen at a hash read
+// off disk, and every one still carries the owner's own words.
 test('T67 · the exemption names three files, each re-frozen, each with its reason', () => {
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
@@ -324,7 +344,7 @@ test('T67 · the exemption names three files, each re-frozen, each with its reas
   ], 'the exemption list is not the three files CLAUDE.md names');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
-    assert.match(why, /T67 F\d/, `${rel} does not say which feature licensed it`);
+    assert.match(why, /\bT\d{2} F\d/, `${rel} does not say which turn and feature licensed it`);
     assert.match(why, /\*"/, `${rel} does not carry the owner's own words`);
     const got = createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex');
     assert.equal(got, FROZEN[rel], `${rel}'s new hash is not the one written down`);

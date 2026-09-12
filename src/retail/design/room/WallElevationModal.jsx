@@ -7,6 +7,7 @@ import {
   migrateRoom, roomWalls, setWallLength as setWallLengthCorners, clampOpening, OPENING_DEFAULTS,
 } from '../../../engine/room.js';
 import { formatMm, snap } from '../../../engine/format.js';
+import { openingArt } from '../../../lib/openingArt.js';
 import { migrateDesign } from '../../../engine/design.js';
 import { projectDepth } from '../../../engine/projectSettings.js';
 import { getCabinetProfile } from '../../../engine/profile.js';
@@ -62,6 +63,21 @@ const PAD = 46;
 const PLAN_DEPTH_MM = 1200;
 /** The line of type that names a recess, in pixels — it is drawn above it. */
 const PLAN_LABEL_PX = 13;
+
+/**
+ * ─── T69 F3 · THE INK ──────────────────────────────────────────────────────
+ *
+ * `lib/openingArt.js` says WHAT to draw and names each piece by its role; this
+ * table says what each role is drawn IN, in Ivory & Onyx. Geometry is shared,
+ * colour is the app's — the same division the room copies have kept since T62.
+ */
+const ART_INK = {
+  frame: { fill: 'none', stroke: '#5C5B57', width: 1.5 },
+  leaf: { fill: '#D9D1C6', stroke: '#090A09', width: 1.4 },
+  glass: { fill: '#F2EEE7', stroke: '#5C5B57', width: 1.2 },
+  sill: { fill: '#C7BCAF', stroke: '#5C5B57', width: 1.2 },
+  knob: { fill: '#806A44', stroke: '#806A44', width: 1 },
+};
 
 /**
  * @param {object} props
@@ -552,15 +568,67 @@ export default function WallElevationModal({
                   const isDoor = el.kind === 'door';
                   return (
                     <g key={el.id}>
+                      {/* ─── T69 F3 · THE DRAWING ─────────────────────────
+                          *"Door and window get drawings — ToolArt-style vector
+                          art in the elevation (a door with a leaf line, a
+                          window with sill and panes), not the present
+                          rectangles. No photos."*
+
+                          The GEOMETRY is `lib/openingArt.js`, in the opening's
+                          own millimetres with y UP — the frame this drawing
+                          already thinks in, so `sx`/`sy` place it and nothing
+                          about scale or pan is repeated there. This file
+                          supplies only INK: which of the five roles is drawn in
+                          which of retail's own colours.
+
+                          PRO's `WallElevationModal.jsx` is FROZEN (it is not in
+                          T67's EXEMPT and tonight licenses `RoomModal.jsx`
+                          only) and still draws the rectangle. That is a
+                          DECLARED divergence, exactly as F2's is, and it costs
+                          nothing the night PRO is licensed: the art is SHARED,
+                          so PRO takes the same call and there is never a second
+                          drawing of a door. */}
+                      {openingArt({ kind: el.kind, w: el.w, h: el.h, hand: el.hand })
+                        .map((part, i) => {
+                          const ink = ART_INK[part.role];
+                          const common = {
+                            fill: ink.fill,
+                            stroke: on ? '#806A44' : ink.stroke,
+                            strokeWidth: on ? 2.5 : ink.width,
+                            className: 'pbi-re-noptr',
+                          };
+                          const key = `${el.id}-${part.role}-${i}`;
+                          return part.kind === 'rect' ? (
+                            <rect
+                              key={key}
+                              x={sx(el.x + part.x)} y={sy(el.y + part.y + part.h)}
+                              width={Math.max(0.5, part.w * scale)}
+                              height={Math.max(0.5, part.h * scale)}
+                              {...common}
+                            />
+                          ) : (
+                            <line
+                              key={key}
+                              x1={sx(el.x + part.x1)} y1={sy(el.y + part.y1)}
+                              x2={sx(el.x + part.x2)} y2={sy(el.y + part.y2)}
+                              {...common}
+                              fill="none"
+                            />
+                          );
+                        })}
+                      {/* The DRAWING is the drawing's; the GRIP is still the
+                          whole opening, because a leaf line is 1.4 px of ink
+                          and a hand is not. Every gesture and every hook is
+                          where it was — this is the same element, drawn. */}
                       <rect
                         x={sx(el.x)} y={sy(el.y + el.h)}
                         width={Math.max(1, el.w * scale)} height={Math.max(1, el.h * scale)}
-                        fill={isDoor ? '#D9D1C6' : '#F2EEE7'}
-                        stroke={on ? '#806A44' : (isDoor ? '#090A09' : '#5C5B57')}
-                        strokeWidth={on ? 2.5 : 1.5}
+                        fill="transparent"
+                        stroke="none"
                         className={isDoor ? 'pbi-re-ew' : 'pbi-re-grab'}
                         data-elevation-element={el.id}
                         data-elevation-kind={el.kind}
+                        data-elevation-art="1"
                         onPointerDown={(e) => startDrag(e, el)}
                         onDoubleClick={() => openElement(el)}
                       />

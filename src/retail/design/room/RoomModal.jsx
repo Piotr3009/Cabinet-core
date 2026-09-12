@@ -7,17 +7,17 @@ import WallElevationModal from './WallElevationModal.jsx';
 import { useProjectStore } from '../../../stores/projectStore.js';
 import { useUiStore } from '../../../stores/uiStore.js';
 import {
-  migrateRoom, roomWalls, roomBounds, rectCorners, validateRoomShape,
+  migrateRoom, roomWalls, roomBounds, validateRoomShape,
   roomChangeGuard, openingsOnWall, clampOpening, OPENING_DEFAULTS,
   setWallLength as setWallLengthCorners, wallsInScope, wallStub,
   moveWall, moveBoxSide, roomBoxes, migrateBox, BOX_SIDES,
   MIN_WALL_LENGTH, wallNeighbours,
 } from '../../../engine/room.js';
 import { wallCornerHeights, impliedProfilesOnWall } from '../../../lib/wallElements.js';
-import { proposeRoomFromDxf } from '../../../engine/dxfImport.js';
 import { formatMm, snap } from '../../../engine/format.js';
 import { anchorOfEvent } from '../../../lib/modalAnchor.js';
 import { getCabinetProfile } from '../../../engine/profile.js';
+import { normaliseScope } from '../../../engine/design.js';
 
 // Room v2 (CLAUDE.md turn 3, phase 3): the room is a list of walls, edited as a
 // PLAN. A rectangle is the four-wall case, an L is the six-wall case, and a DXF
@@ -137,6 +137,23 @@ const DOCK_CSS = `
 // where they read as the window's one row of navigation — and the docked
 // elevation's own Back/Save row is taken out of the flow by the rules below,
 // so there is still EXACTLY ONE row of navigation on this screen.
+/**
+ * ─── TURN 69 (CLAUDE.md F1): HOW MANY WALLS CARRY FURNITURE ────────────────
+ *
+ * The owner's row, verbatim: *"1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…"*, and
+ * *"One of the FIRST questions when looking from above: how many walls carry
+ * furniture — the row above answers it."*
+ *
+ * The three ids are `engine/design.js ROOM_SCOPES`' own words, in the order a
+ * person counts. Nothing here is geometry: pressing one writes the scope, and
+ * `engine/room.js wallsInScope` decides what that means — one law, one place.
+ */
+const WALL_COUNTS = Object.freeze([
+  { id: 'wall', label: '1 wall' },
+  { id: 'two', label: '2 walls' },
+  { id: 'three', label: '3 walls' },
+]);
+
 export default function RoomModal({
   onClose = null, onApplied = null, anchor: anchorProp = null, wizard = false,
 }) {
@@ -160,6 +177,13 @@ export default function RoomModal({
   const openModal = useUiStore((s) => s.openModal);
 
   const [draft, setDraft] = useState(() => migrateRoom(room));
+  // T69 F1 (VERDICT 1): the room AS IT WAS when this window opened. `apply`
+  // diffs the draft against it and sends the difference, so the keys this
+  // window never edited are left to whoever else is writing them — which since
+  // T67 F1 is the elevation editor docked under the plan, live, in the same
+  // window. A ref and not state: it never changes, and nothing re-renders on it.
+  const base = useRef(null);
+  if (base.current === null) base.current = migrateRoom(room);
   // ─── Turn 14 (CLAUDE.md F10): WHAT IS SELECTED, AND WHAT IS BEING DRAGGED ──
   //
   // The owner's verdict on corner-dragging: unusable, and he is describing the
@@ -183,10 +207,12 @@ export default function RoomModal({
   const [wallShown, setWallShown] = useState(0);
   const drag = useRef(null);
   const [typed, setTyped] = useState('');
-  const [importInfo, setImportInfo] = useState(null);
-  const fileRef = useRef(null);
 
-  const scope = useProjectStore((st) => (st.project.design?.scope === 'wall' ? 'wall' : 'room'));
+  // T69 F1: through the vocabulary's own gate rather than a ternary that knows
+  // one word — the row below offers three, and a scope this file could not
+  // NAME is a scope the row could not light.
+  const scope = useProjectStore((st) => normaliseScope(st.project.design?.scope));
+  const setDesign = useProjectStore((st) => st.setDesign);
   const walls = useMemo(() => roomWalls(draft), [draft]);
   // ─── Turn 14 (CLAUDE.md F1.5b): "One wall" means ONE WALL, here too ───────
   // The editor offered four walls for a job whose scope says there is one. The
@@ -267,11 +293,9 @@ export default function RoomModal({
   // ─── T67 F1 · TOMBSTONE: `L-shape` STOOD BESIDE `Rectangle` ──────────────
   // *"furniture lives on 1–3 walls"* — the button is gone; `engine/room.js`'s
   // `lCorners` and the `L_SHAPE` unit type are untouched and still exported.
-  const setPreset = (kind) => {
-    const w = Math.max(bounds.width, 1000);
-    const d = Math.max(bounds.depth, 1000);
-    patch({ corners: kind === 'rect' ? rectCorners(w, d) : draft.corners });
-  };
+  // ─── T69 F1 · TOMBSTONE: `Rectangle` AND `setPreset` STOOD HERE ──────────
+  // The probe convicted it: built from the room's own bounds, it proposed the
+  // rectangle already on screen. `rectCorners` is untouched and still exported.
 
   /**
    * ─── Turn 14 (CLAUDE.md F1.5a): TYPING A LENGTH KEEPS THE RIGHT ANGLES ────
@@ -451,27 +475,42 @@ export default function RoomModal({
 
   const removeOpening = (id) => patch({ openings: (draft.openings || []).filter((o) => o.id !== id) });
 
-  const onImport = async (file) => {
-    if (!file) return;
-    const text = await file.text();
-    // The plan may be drawn in mm, cm or m — the file does not reliably say,
-    // so the proposal is shown at 1:1 and the scale is one click away.
-    const proposal = proposeRoomFromDxf(text, { scale: 1 });
-    setImportInfo({ ...proposal, fileName: file.name, text });
-    if (proposal.ok) patch({ corners: proposal.corners });
-    else notify(proposal.warnings[0] || 'Nothing usable in that DXF.', 'warn');
-  };
-
-  const rescaleImport = (factor) => {
-    if (!importInfo?.text) return;
-    const proposal = proposeRoomFromDxf(importInfo.text, { scale: factor });
-    setImportInfo({ ...proposal, fileName: importInfo.fileName, text: importInfo.text });
-    if (proposal.ok) patch({ corners: proposal.corners });
-  };
-
+  /**
+   * ─── T69 F1 · THE APPLY PROBE, AND THE TWO SITES IT CONVICTED ────────────
+   *
+   * CLAUDE.md: *"APPLY does nothing — probe first (what fires, what the store
+   * receives), commit the verdict, fix at the convicted site."*
+   * `verify/t69/f1-probe.md` is that probe, driven and not guessed.
+   *
+   * VERDICT 1 — the draft is a SNAPSHOT. `useState(() => migrateRoom(room))`
+   * runs once, and since T67 F1 the elevation editor DOCKED under the plan
+   * writes `project.room` LIVE while it is open. `setRoom(draft)` then sent
+   * the whole snapshotted room back, so every door and window added downstairs
+   * since the window opened was overwritten: the probe lost 2 of 2.
+   *
+   * THE FIX IS THE LAW, not a patch: APPLY sends ONLY THE KEYS THIS WINDOW
+   * CHANGED, merged by the store onto the room as it stands NOW. A key the
+   * plan never touched is never sent, so the docked editor keeps what it wrote
+   * and the plan keeps what it drew. `setRoom` is already a MERGE
+   * (`{ ...s.project.room, ...patch }`) — it was being handed a whole room and
+   * therefore merging one room onto itself.
+   *
+   * VERDICT 2 — the button was drawn `disabled={!guard.ok || …}`. A disabled
+   * button IS a button that does nothing, and it is silent: the sentence
+   * `roomChangeGuard` authors — *"Cannot shrink the room below placed units…"* —
+   * was written and never read, in 2 of the 3 states the probe pressed. So the
+   * button is LIVE now and `apply()` speaks. The guard is not weakened: the
+   * refusal is the STORE's, exactly as it always was, and it is simply said
+   * out loud instead of being mimed by a grey rectangle.
+   */
   const apply = () => {
     if (shapeIssues.length) { notify(shapeIssues[0], 'warn'); return; }
-    const verdict = setRoom(draft);
+    const changed = Object.fromEntries(
+      Object.entries(draft).filter(([key, value]) => !Object.is(
+        JSON.stringify(value), JSON.stringify(base.current[key]),
+      )),
+    );
+    const verdict = setRoom(changed);
     if (!verdict.ok) { notify(verdict.message, 'error'); return; }
     if (onApplied) { onApplied(); return; }
     closeModal();
@@ -498,13 +537,36 @@ export default function RoomModal({
                 in both doors, which is T50's F12. Both sentences are kept by
                 drawing the row unconditionally: no `wizard`, and no `scope`.
 
-                ─── TURN 67 (CLAUDE.md F1): THREE OF THEM, AND THE MOCKUP'S OWN
-                *"L-SHAPE and + BOX preset buttons are REMOVED … furniture
-                lives on 1–3 walls."*  What stands beside the plan is what the
-                owner's mockup draws: RECTANGLE · DRAW ROOM… · IMPORT DXF
-                PLAN…, and the wall-height field under them. */}
+                ─── TURN 69 (CLAUDE.md F1): THE ROW ANSWERS THE FIRST QUESTION
+                *"One of the FIRST questions when looking from above: how many
+                walls carry furniture — the row above answers it."*  So the row
+                is **1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…**, and each of the
+                three writes the project's own SCOPE through the vocabulary's
+                gate (`engine/design.js ROOM_SCOPES`) — the geometry is
+                `engine/room.js wallsInScope`'s and nothing here draws a wall.
+
+                RECTANGLE went with them, and T69's F1 probe is why: it built
+                its rectangle from the room's OWN bounds, so on a room that is
+                already a rectangle — which is every room retail makes — it
+                proposed what was already there and APPLY had nothing to apply.
+                A button that cannot change anything is a dead control.
+
+                ─── TOMBSTONE · IMPORT DXF PLAN… ────────────────────────────
+                Licensed out tonight, both apps, owner: *"to nie przejdzie"*.
+                `engine/dxfImport.js` is untouched and still exported. */}
             <div className="pbi-re-row pbi-re-gap-1" data-room-tools="1">
-              <button type="button" className="pbi-re-btn" data-room-preset="rect" onClick={() => setPreset('rect')}>Rectangle</button>
+              {WALL_COUNTS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={scope === id ? 'pbi-re-btn-gold' : 'pbi-re-btn'}
+                  data-room-walls={id}
+                  aria-pressed={scope === id}
+                  onClick={() => setDesign({ scope: id })}
+                >
+                  {label}
+                </button>
+              ))}
               {/* ─── TURN 53 (CLAUDE.md F10): DRAW ROOM ────────────────────
                   *"teraz rysowanie — prawdziwe room, od nowa, robimy jak w
                   CAD."*  A FIFTH tool beside the four F1 named, and not a
@@ -522,16 +584,6 @@ export default function RoomModal({
               >
                 Draw room…
               </button>
-              {/* T67 F1: the third tool of the mockup's row. It was under the
-                  plan, in the height grid; nothing about it changed but where
-                  it stands. */}
-              <button type="button" className="pbi-re-btn" data-import-dxf="1" onClick={() => fileRef.current?.click()}>
-                Import DXF plan…
-              </button>
-              <input
-                ref={fileRef} type="file" accept=".dxf,text/plain" className="pbi-re-none"
-                onChange={(e) => onImport(e.target.files?.[0])}
-              />
             </div>
           </div>
 
@@ -720,27 +772,6 @@ export default function RoomModal({
             )}
           </div>
 
-          {importInfo && (
-            <div className="pbi-re-mt2 pbi-re-t11 pbi-re-ink-3 pbi-re-line pbi-re-hair pbi-re-round pbi-re-p2 pbi-re-stack-1">
-              <div className="pbi-re-ink-1">{importInfo.fileName}</div>
-              {importInfo.ok ? (
-                <>
-                  <div>
-                    {importInfo.corners.length} corners from the {importInfo.source} · {importInfo.stats.area_m2} m²
-                  </div>
-                  <div className="pbi-re-row pbi-re-gap-1 pbi-re-mid">
-                    <span>Drawn in</span>
-                    {[['mm', 1], ['cm', 10], ['m', 1000]].map(([label, f]) => (
-                      <button key={label} type="button" className="pbi-re-btn pbi-re-px2 pbi-re-py05" onClick={() => rescaleImport(f)}>{label}</button>
-                    ))}
-                  </div>
-                </>
-              ) : <div className="pbi-re-warn">{importInfo.warnings[0]}</div>}
-              {importInfo.warnings?.slice(importInfo.ok ? 0 : 1).map((w, i) => (
-                <div key={i} className="pbi-re-warn">{w}</div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* ── walls, openings, guard ── */}
@@ -893,7 +924,10 @@ export default function RoomModal({
           file for why it is here and not in the shell's footer. */}
       <div className="pbi-re-row pbi-re-end pbi-re-gap-2 pbi-re-line-t pbi-re-hair pbi-re-pt3" data-room-actions="1">
         <button type="button" className="pbi-re-btn" onClick={closeModal}>Cancel</button>
-        <button type="button" className="pbi-re-btn-gold" onClick={apply} disabled={!guard.ok || shapeIssues.length > 0}>
+        {/* T69 F1 · VERDICT 2: LIVE. The store still refuses; `apply` now says
+            so. See the note on `apply` above for the probe that convicted the
+            grey rectangle this used to be. */}
+        <button type="button" className="pbi-re-btn-gold" onClick={apply} data-room-apply="1">
           Apply
         </button>
       </div>

@@ -8,6 +8,7 @@ import {
 } from './controls.jsx';
 import { REASONS } from './reasons.js';
 import * as A from './adapter.js';
+import { useUiStore } from '../../stores/uiStore.js';
 import MaterialSlot from './material/MaterialSlot.jsx';
 import WizardHardware from './material/WizardHardware.jsx';
 import AddItems from './detail/AddItems.jsx';
@@ -189,23 +190,16 @@ function WherePanel({ unit, room, onEditRoom }) {
 
       {said ? <Said testid="where-said">{said}</Said> : null}
 
-      {/* T65 F1 · one of the two doors to `addFirstWardrobe`; the other is the
-          plus on the empty floor. The room is empty until one of them is used. */}
-      {unit ? null : (
-        <Button
-          data-testid="where-add-wardrobe"
-          onClick={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
-        >
-          ADD A WARDROBE
-        </Button>
-      )}
+      {/* ─── T69 F10 · THE ROOM COMES FIRST ───────────────────────────────
+          *"EDIT THE ROOM sits ABOVE ADD A WARDROBE in the WHERE step. First
+          the room, then the furniture; the lazy client may still press ADD at
+          once."*
 
-      <p className="pbi-choice pbi-choice-15 pbi-panel-note">
-        {unit
-          ? 'Measure wall to wall and floor to ceiling. We will survey before we build.'
-          : 'Measure wall to wall and floor to ceiling. The room is empty — add a wardrobe here or press the plus on the floor.'}
-      </p>
-
+          It is the order a joiner surveys in and the order the two controls
+          answer in: a wardrobe is placed IN something, and the something is
+          the room. Nothing is gated by it — ADD A WARDROBE is a live button
+          whether or not the room has been touched, which is the lazy client's
+          standing law — only the reading order moved. */}
       {/* ─── T66 F8 · THE ROOM IS NOT HIDDEN ──────────────────────────────
           The owner: *"edit the room powinien być zawsze na wierzchu, a nie
           ukryte pod more options."* So the button stands in WHERE, under the
@@ -235,6 +229,24 @@ function WherePanel({ unit, room, onEditRoom }) {
         Nothing is fitted around them yet: a wardrobe may stand across a window and we will
         sort it on the survey.
       </p>
+
+      {/* T65 F1 · one of the two doors to `addFirstWardrobe`; the other is the
+          plus on the empty floor. The room is empty until one of them is used. */}
+      {unit ? null : (
+        <Button
+          data-testid="where-add-wardrobe"
+          onClick={() => setSaid(A.addFirstWardrobe() ? '' : REASONS.roomRefusedWardrobe())}
+        >
+          ADD A WARDROBE
+        </Button>
+      )}
+
+      <p className="pbi-choice pbi-choice-15 pbi-panel-note">
+        {unit
+          ? 'Measure wall to wall and floor to ceiling. We will survey before we build.'
+          : 'Measure wall to wall and floor to ceiling. The room is empty — add a wardrobe here or press the plus on the floor.'}
+      </p>
+
     </Panel>
   );
 }
@@ -340,6 +352,13 @@ function InsidePanel({ unit, project }) {
   // T66 F6 · the ONE bays entry reads its name off the same table the rows do.
   const baysRow = A.INTERIOR_ROWS.find((row) => row.bays) || null;
   const bays = unit ? A.bayCount(unit.id) : 1;
+  // T69 F6 · the bays THEMSELVES, from the store's own `zonesOf` — PRO's list,
+  // in PRO's order. The count above is what a client types; this is what the
+  // pointer walks along.
+  const zones = unit ? A.bayZones(unit.id) : [];
+  // T69 F6 · which bay the pointer is on — the SHARED store's own integer, the
+  // very one `3d/UnitView.jsx` draws the box from. One law, two readers.
+  const hinted = useUiStore((st) => st.zoneHint);
   const b = A.designBounds();
 
   // ─── T64 F1.4 · SHELVES GO IN CENTRED ────────────────────────────────────
@@ -410,6 +429,55 @@ function InsidePanel({ unit, project }) {
           }}
         />
       </Field>
+
+      {/* ─── T69 F6 · THE BAY LIGHTS UP UNDER THE POINTER ─────────────────
+          *"PRO highlights a bay when its chip is hovered; retail lost it. READ
+          PRO's mechanism first (the chip→scene hover path), carry the same
+          mechanism — one law, no second highlighter."*
+
+          PRO's mechanism, read end to end: a chip's `onPointerEnter` calls
+          `uiStore.setZoneHint(index)`, `Scene.jsx` passes that integer to the
+          SELECTED unit's `UnitView`, and `UnitView` draws the box over
+          `bays[zoneHint]`. Four of those five links are SHARED — retail runs
+          the same ui store, the same Scene and the same UnitView — so the only
+          thing missing was a chip, and the only thing written is a chip. The
+          highlight itself is PRO's, unchanged, and there is no second one.
+
+          The row appears only where it MEANS something: one bay is not a
+          choice, which is `AddItems.jsx`'s own `zones.length > 1` and the same
+          sentence T65 wrote about the note below it. Pressing a chip SELECTS
+          the cabinet on the stage, because `Scene.jsx` draws the hint for the
+          selected unit and a highlight nobody can see is not one. */}
+      {zones.length > 1 ? (
+        <div
+          className="pbi-opening-list"
+          data-testid="inside-bay-chips"
+          onPointerLeave={() => A.hoverBay(null)}
+        >
+          {zones.map((z) => (
+            <button
+              key={z.id ?? z.index}
+              type="button"
+              // The chip shows what the SCENE shows: `zoneHint` is one
+              // integer and both read it, so the lit chip and the lit bay
+              // cannot disagree. It is also what makes this a row of the
+              // opening list rather than a bare button — the same `is-on` law
+              // its siblings in FRONTS and HANDLES wear.
+              className={`pbi-opening-row${hinted === z.index ? ' is-on' : ''}`}
+              data-testid={`inside-bay-${z.index}`}
+              data-on={hinted === z.index ? 'yes' : 'no'}
+              data-bay={z.index}
+              title={`${Math.round(z.size)} mm clear`}
+              onPointerEnter={() => A.hoverBay(z.index)}
+              onFocus={() => A.hoverBay(z.index)}
+              onBlur={() => A.hoverBay(null)}
+              onClick={() => { A.selectUnitOnStage(unit.id); A.hoverBay(z.index); }}
+            >
+              {`BAY ${z.index + 1} · ${Math.round(z.size)}`}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {/* PRO's own line, and T65's law about when it appears: *"i wtedy
           dopiero informacja o tym że bays można zrobić niższe ale półka musi
@@ -818,6 +886,36 @@ function ExtrasPanel({ unit, project }) {
             </Button>
           </div>
         ) : null}
+
+        {/* ─── T69 F8 · HANDLES, IN EXTRAS — BEZAPELACYJNIE ────────────────
+            *"HANDLES row lands in EXTRAS — bezapelacyjnie — same store path as
+            FRONTS' opening controls. One law, two doors."*
+
+            THE SAME CALL, and that is the whole of it: `adapter.setHandle`
+            writes `setProjectHandle`, which is what the FRONTS step's own
+            handle axis writes (T57 put the J-pull on it, T64 F1.5 wrote it as
+            PRO's wizard does). There is no second handle law here and no
+            per-unit shadow of one — the list is the ENGINE's own
+            `HANDLE_TYPES` through `adapter.handleSystems`, NONE included,
+            exactly as FRONTS offers it. */}
+        <Field label="HANDLES" block note={REASONS.handlesArePerProject}>
+          <div className="pbi-opening-list" data-testid="extras-handles">
+            {A.handleSystems().map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                className={`pbi-opening-row${A.handleChoice(project) === h.id ? ' is-on' : ''}`}
+                data-testid={`extras-handle-${h.id}`}
+                data-on={A.handleChoice(project) === h.id ? 'yes' : 'no'}
+                aria-pressed={A.handleChoice(project) === h.id}
+                title={h.hint || ''}
+                onClick={() => A.setHandle(h.id)}
+              >
+                {h.label}
+              </button>
+            ))}
+          </div>
+        </Field>
       </Group>
 
       {/* ═══ 2 · THE CARCASS WEARS ════════════════════════════════════════ */}
@@ -872,6 +970,37 @@ function ExtrasPanel({ unit, project }) {
             options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON' }]}
             onPick={(id) => setSaid(A.setTopInfill(unit.id, id === 'on').said)}
           />
+        </Field>
+
+        {/* ─── T69 F8 · TO THE CEILING, IN THE JOINER'S ORDER ──────────────
+            *"TOP INFILL asks 'to the ceiling?': yes → first the VERTICAL
+            members reach the ceiling (end panel if present, vertical
+            infills), THEN the horizontal top infill closes — automatically,
+            in that order. A side must never show (the visibility law)."*
+
+            THE ORDER IS THE STORE'S (`closeToCeiling`) and not this panel's:
+            it is a fact about how the thing is made. What stands here is the
+            QUESTION — one press, no millimetres, no piece named — and the
+            answer is the same three setters a joiner would reach for, in the
+            order he would reach for them. */}
+        <Field label="TO THE CEILING?" note={REASONS.toTheCeiling}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-to-the-ceiling"
+              disabled={A.closedToCeiling(unit.id)}
+              title={A.closedToCeiling(unit.id)
+                ? 'This wardrobe already reaches the ceiling'
+                : 'Run the uprights to the ceiling, then close the top'}
+              onClick={() => {
+                const done = A.closeToCeiling(unit.id);
+                setSaid(done.order.length ? REASONS.closedInOrder(done.order) : '');
+              }}
+            >
+              CLOSE TO THE CEILING
+            </Button>
+          </div>
         </Field>
 
         {/* ─── END PANELS L / R / BOTH ─────────────────────────────────────
@@ -944,24 +1073,13 @@ function ExtrasPanel({ unit, project }) {
 
       {/* ═══ 3 · ADDITIONS ════════════════════════════════════════════════ */}
       <Group title="ADDITIONS" testid="extras-group-additions">
-        {/* T61 F3 · *"4 add top"* — greyed with the ROOM's own sentence. */}
-        <Field label="TOP BOX" note={boxes.length ? REASONS.topBoxGoesBeside : ''}>
-          <div className="pbi-duty-actions">
-            <Button
-              kind="secondary"
-              size="small"
-              data-testid="layout-add-top-box"
-              disabled={Boolean(topBoxReason)}
-              title={topBoxReason || 'Add a top box on this wardrobe'}
-              onClick={() => setSaid(A.addTopBox(unit.id).said)}
-            >
-              ADD TOP BOX
-            </Button>
-          </div>
-          {topBoxReason ? (
-            <span className="pbi-chip-reason" data-testid="layout-top-box-reason">{topBoxReason}</span>
-          ) : null}
-        </Field>
+        {/* ─── T69 F8 · TOMBSTONE: `ADD TOP BOX` STOOD HERE ────────────────
+            The owner: *"po cholerę ten box"* — a split door covers what a top
+            box was for, and this step already offers one. A LICENSED REMOVAL
+            of the CLIENT ENTRY and nothing else: the engine's `WARDROBE_TOP`
+            type, `adapter.addTopBox`, `store.addUnit('WARDROBE_TOP')` and
+            PRO's own door to it are all untouched, and the editors below
+            still edit a box a saved project already carries. */}
 
         {/* ─── T66 F3 · A BOX IS A UNIT OF ITS OWN, AND IT IS EDITED HERE ───
             T61 F3's law stands: *"a box and the cabinet under it are two

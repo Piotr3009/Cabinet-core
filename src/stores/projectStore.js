@@ -45,7 +45,7 @@ import {
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
 // byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
-import { migrateWallElement, wallElements } from '../lib/wallElements.js';
+import { migrateWallElement, oneSlopePerSide, wallElements } from '../lib/wallElements.js';
 // ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
 // The store is where a cabinet meets a room, so it is where the ceiling line
 // becomes a number the engine and the clamp can use. Both come out of the same
@@ -1325,8 +1325,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // strand every project saved between the two turns for the sake of a word,
   // and the note above already says where the list is going when the engine
   // reopens. The four setters below are named for what they take.
+  // T69 F3: …and through the one-per-side law on the way in. See the note on
+  // `oneSlopePerSide` in `lib/wallElements.js` — one ceiling cannot come down
+  // twice at the same corner, and a second slope on a side replaces the first
+  // rather than standing invisibly on top of it.
   setWallSlopes: (list) => set((s) => ({
-    project: { ...s.project, wallSlopes: wallElements(list) },
+    project: { ...s.project, wallSlopes: oneSlopePerSide(list) },
   })),
 
   // ─── TURN 58 (CLAUDE.md F5): A RAKE CHANGES THE ROOM, SO THE ROOM'S OWN
@@ -1346,7 +1350,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const next = migrateWallElement({ id: uid(slope?.kind || 'slope'), ...slope });
     if (!next) return null;
     set((s) => ({
-      project: { ...s.project, wallSlopes: [...wallElements(s.project.wallSlopes), next] },
+      project: {
+        ...s.project,
+        // T69 F3: the LAST record wins, which is what a person pressing a
+        // button expects — the thing they just did is the thing they see.
+        wallSlopes: oneSlopePerSide([...wallElements(s.project.wallSlopes), next]),
+      },
     }));
     get().refreshAutoParts();
     return next.id;
@@ -1356,9 +1365,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     set((s) => ({
       project: {
         ...s.project,
-        wallSlopes: wallElements(s.project.wallSlopes)
+        // T69 F3: a slope DRAGGED across to the other side meets whatever is
+        // already there by the same law the button does.
+        wallSlopes: oneSlopePerSide(wallElements(s.project.wallSlopes)
           .map((v) => (v.id === id ? migrateWallElement({ ...v, ...patch, id: v.id }) : v))
-          .filter(Boolean),
+          .filter(Boolean)),
       },
     }));
     get().refreshAutoParts();
@@ -2454,6 +2465,67 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const profile = getCabinetProfile();
     return get().setTopInfill(unitId, profile.autoParts.topInfill.defaultHeight);
   },
+
+  /**
+   * ─── TURN 69 (CLAUDE.md F8): TO THE CEILING, IN THE JOINER'S ORDER ───────
+   *
+   * *"TOP INFILL asks 'to the ceiling?': yes → first the VERTICAL members
+   * reach the ceiling (end panel if present, vertical infills), THEN the
+   * horizontal top infill closes — automatically, in that order. A side must
+   * never show (the visibility law)."*
+   *
+   * IT IS AN ORDER OF WORK AND NOT A RENDERING TRICK. A joiner closing a
+   * wardrobe to the ceiling runs the uprights first and lands the top piece ON
+   * them, because the other way round leaves the end grain of a side panel
+   * showing above the horizontal — which is the visibility law, and it is the
+   * one thing a client would see from the doorway. Doing it in this order also
+   * means the horizontal is the piece that is scribed, which is the piece you
+   * want to be scribing.
+   *
+   * So this action writes, IN THIS ORDER and in one batch:
+   *
+   *   1. EVERY END PANEL this unit carries, up to the ceiling.
+   *   2. BOTH SIDE INFILLS (the vertical scribe fillers), up to the ceiling —
+   *      and PINNED, so the automat does not re-derive them shorter on the
+   *      next settle.
+   *   3. THE TOP INFILL, closing the gap the uprights now frame.
+   *
+   * Every one of the three is an EXISTING setter, with its own clamp: the end
+   * panel is held to the room's headroom, the side fillers to the ceiling OVER
+   * THAT SIDE (a rake takes the answer, not the room's flat height), and the
+   * top infill to `topInfillHeight`. Nothing here re-derives a millimetre, and
+   * nothing here is a new piece — the order is the whole of what is new.
+   *
+   * @returns {{order: string[], top: number}} what was done, in the order it
+   *   was done, so a test can assert the ORDER and not merely the result.
+   */
+  closeToCeiling: (unitId) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { order: [], top: 0 };
+    const profile = getCabinetProfile();
+    const gap = Math.max(0, (Number(s.project.room.height) || 0) - unitTopOf(unit, profile));
+    const order = [];
+
+    // 1 · THE VERTICAL MEMBERS — end panels first, because an end panel is the
+    //     piece that shows, and it is the one a client is looking at.
+    for (const ep of unit.params.end_panels || []) {
+      get().setEndPanelTop(unitId, ep.id, gap);
+      order.push(`end-panel:${ep.side || ep.id}`);
+    }
+    // 2 · …and the vertical scribe fillers beside them.
+    for (const side of ['L', 'R']) {
+      const reached = get().setSideInfillTop(unitId, side, gap);
+      if (reached > 0) {
+        get().setSideInfillPinned(unitId, side, true);
+        order.push(`side-infill:${side}`);
+      }
+    }
+    // 3 · THE HORIZONTAL, last, landing on what now holds it up.
+    const top = get().setTopInfill(unitId, gap);
+    order.push('top-infill');
+    return { order, top };
+  }),
 
   /**
    * Does this cabinet take the automatic scribe filler at all (turn 8, F7)?
@@ -4575,23 +4647,88 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const others = obstaclesFor(s, unit);
     const notices = [];
     const applied = { ...patch };
+    // T69 F9: where the NEAR edge ends up when a widening takes space on the
+    // left. `null` means it did not move, which is every other edit there is.
+    let nearEdgeTo = null;
 
+    // ─── TURN 69 (CLAUDE.md F9): A WARDROBE WIDENS BOTH WAYS ────────────────
+    //
+    // The owner, of a wardrobe standing beside a neighbour: it grows only to
+    // the right — *"i tu i w PRO."*
+    //
+    // He is describing the one line of this clamp's own docstring: *"Growing a
+    // unit is a move of its far edge."*  That was never a law, it was an
+    // IMPLEMENTATION — the near edge stayed put because nothing asked it to
+    // move — and it makes a cabinet with a neighbour on its right refuse a
+    // width the wall plainly has room for, three metres of empty floor on its
+    // left.
+    //
+    // THE LAW, and it lives HERE, in the store both apps write through — no new
+    // PRO exemption, and no second answer for a client and a joiner:
+    //
+    //   A width increase takes the free space on EITHER side. The FAR edge goes
+    //   first, because that is where a hand expects a cabinet to grow and it is
+    //   what every project saved before tonight did; whatever the far side
+    //   cannot give, the NEAR edge takes by moving back. Refusal only when BOTH
+    //   sides are blocked, and then it says which thing is on each side.
+    //
+    // Shrinking is untouched: a narrower cabinet keeps its near edge, exactly as
+    // it always has, so nothing drifts when a number is typed down.
     if (patch.width != null) {
       const spans = wallObstacles({
         wall, walls, depth: unit.params.depth, others, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
       });
+      const pads = footprintPads(unit, unit.params.front_t, profile);
+      const margin = wallMarginOf(s, unit);
+      const at = Number(unit.position.x_mm) || 0;
+      const want = Number(patch.width) || 0;
       const clamp = clampUnitWidth({
-        width: Number(patch.width) || 0,
-        x: unit.position.x_mm,
+        width: want,
+        x: at,
         wallWidth: wall.width,
         others: spans,
-        // Growing a unit is a move of its far edge: it stops at the infill gap
-        // and carries its own end panel with it.
-        wallMargin: wallMarginOf(s, unit),
-        padRight: footprintPads(unit, unit.params.front_t, profile).right,
+        // The far edge stops at the infill gap and carries its own end panel.
+        wallMargin: margin,
+        padRight: pads.right,
       }, profile);
       applied.width = clamp.width;
-      if (clamp.blocked) notices.push(`Width limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
+
+      // HOW FAR THE NEAR EDGE MAY GO BACK. The same arithmetic `clampUnitWidth`
+      // does at the far end, read the other way: the wall's own start with its
+      // margin and this unit's left pad, and then every obstacle that is
+      // entirely to the LEFT of where this unit stands, each holding the near
+      // edge off by the profile's own minimum gap.
+      let floor = margin + pads.left;
+      let heldBy = margin > 0 ? 'the infill at the wall' : 'the wall';
+      for (const o of spans) {
+        if (o.right > at) continue;                       // not to the left
+        const edge = o.right + profile.editor.minUnitGap + pads.left;
+        if (edge > floor) { floor = edge; heldBy = o.label || 'a neighbour'; }
+      }
+      const room = Math.max(0, at - floor);
+      const short = want - clamp.width;
+
+      const have = Number(unit.params.width) || 0;
+      if (short > 1e-6 && want > have) {
+        const takeLeft = Math.min(short, room);
+        if (takeLeft > 1e-6) {
+          applied.width = clamp.width + takeLeft;
+          nearEdgeTo = at - takeLeft;
+        }
+        if (applied.width < want - 1e-6) {
+          // Both ends have now given what they had. THE REFUSAL — the one case
+          // F9 leaves — is when they gave NOTHING; otherwise this is a limit,
+          // and either way the sentence names what is on EACH side rather than
+          // pointing at one of them and leaving the other to be discovered.
+          notices.push(applied.width <= have + 1e-6
+            ? `This wardrobe cannot grow either way: ${clamp.by} is on the right and `
+              + `${heldBy} is on the left. ${formatMm(applied.width)} mm is what it can be.`
+            : `Width limited to ${formatMm(applied.width)} mm — ${clamp.by} on the right, `
+              + `${heldBy} on the left.`);
+        }
+      } else if (clamp.blocked) {
+        notices.push(`Width limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
+      }
     }
     if (patch.depth != null) {
       const clamp = clampUnitDepth({
@@ -4624,6 +4761,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: st.units.map((u) => {
         if (u.id !== unitId) return u;
         const params = { ...u.params, ...applied };
+        // T69 F9: the near edge moved back to take the space the far edge
+        // could not. It is the same `x_mm` every move writes — nothing
+        // downstream learns a new word.
+        const position = nearEdgeTo === null ? u.position : { ...u.position, x_mm: nearEdgeTo };
         if (applied.width != null && params.sections?.[0]) {
           params.sections = [{ ...params.sections[0], width_mm: applied.width }];
         }
@@ -4665,7 +4806,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         if (applied.hinge != null && params.doors && typeof params.doors === 'object') {
           params.doors = { ...params.doors, hinge: applied.hinge };
         }
-        return { ...u, params };
+        return { ...u, params, position };
       }),
     }));
     // ─── TURN 36 (CLAUDE.md F7): AND ITS TOP BOX FOLLOWS ────────────────────

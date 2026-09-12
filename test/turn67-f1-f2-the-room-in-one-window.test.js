@@ -98,22 +98,47 @@ test('F1 · a click on a wall in the plan swaps the elevation, in place', () => 
   }
 });
 
+/**
+ * ─── AMENDED BY TURN 69 · F1 · THE ROW ANSWERS A QUESTION NOW ──────────────
+ *
+ * T67's row was RECTANGLE · DRAW ROOM… · IMPORT DXF PLAN…. CLAUDE.md F1
+ * replaces the first and the third:
+ *
+ *   *"The plan header's preset row becomes: 1 WALL · 2 WALLS · 3 WALLS · DRAW
+ *   ROOM… — IMPORT DXF is DELETED (owner: "to nie przejdzie")."*
+ *
+ * and RECTANGLE went with F1's own probe, which convicted it of proposing the
+ * rectangle already on screen. DRAW ROOM… is the one tool that survives both
+ * turns, and it is still asserted here by the same hook it always had.
+ *
+ * Nothing is deleted from this test: the two struck out move from the
+ * "must be present" half to the "must be gone" half, which is the shape T67
+ * itself gave `L-shape` and `+ Box`.
+ */
 test('F1 · the three tools stand beside the plan, and the two struck out are gone', () => {
   for (const rel of BOTH) {
     const src = read(rel);
-    for (const hook of ['data-room-preset="rect"', 'data-room-draw="1"', 'data-import-dxf="1"']) {
-      assert.ok(src.includes(hook), `${rel} lost ${hook}`);
+    assert.ok(src.includes('data-room-draw="1"'), `${rel} lost data-room-draw="1"`);
+    // T69 F1 · the row that answers *"how many walls carry furniture"*.
+    assert.ok(/data-room-walls=/.test(src), `${rel} lost the 1/2/3-wall row`);
+    for (const label of ['1 wall', '2 walls', '3 walls']) {
+      assert.ok(src.includes(label), `${rel} lost the ${label} answer`);
     }
+    assert.ok(!src.includes('data-room-preset="rect"'), `${rel} still has Rectangle`);
+    assert.ok(!src.includes('data-import-dxf'), `${rel} still has Import DXF plan`);
     assert.ok(!src.includes('data-room-preset="L"'), `${rel} still has L-shape`);
     assert.ok(!/data-insert-box/.test(src), `${rel} still has + Box`);
     // The WALL HEIGHT field is beside the plan, as the mockup asks.
     assert.ok(src.includes('Wall height (mm)') && src.includes('Room height (mm)'),
       `${rel} lost the height field`);
   }
-  // …and the ENGINE kept both laws. Only the buttons went.
+  // …and the ENGINE kept every law. Only the buttons went — T69 included:
+  // `rectCorners` and `proposeRoomFromDxf` are untouched and still exported.
   const engine = read('src/engine/room.js');
   assert.match(engine, /export function lCorners/);
   assert.match(engine, /export const MIN_BOX_SIZE|MIN_BOX_SIZE =/);
+  assert.match(engine, /export function rectCorners/);
+  assert.match(read('src/engine/dxfImport.js'), /export function proposeRoomFromDxf/);
   // A saved plan still draws, drags and types its boxes.
   for (const rel of BOTH) {
     assert.ok(read(rel).includes('data-box-list="1"'), `${rel} stopped listing a saved plan's boxes`);
@@ -136,11 +161,29 @@ test('F1 · DRAW ROOM works — and the hypothesis was right about why it did no
   assert.match(uncomment(read('src/retail/design/Editors.jsx')), /is\('draw-room'\) && <DrawRoomModal \/>/);
   const copy = read('src/retail/design/room/DrawRoomModal.jsx');
   assert.match(copy, /name="draw-room"/, 'the copied window answers another name');
-  // It IS a copy: PRO's own length, PRO's own elements, repointed and reskinned.
+  // ─── AMENDED BY TURN 69 · F2 (A LICENSED DIVERGENCE) ────────────────────
+  //
+  // T67 held this copy to PRO's own line count and element count, which is the
+  // right assertion for a file that is a copy. CLAUDE.md F2 licenses it to stop
+  // being one, in as many words:
+  //
+  //   *"This REPLACES the current DrawRoomModal interaction in the retail
+  //   copy; PRO's DrawRoomModal is NOT touched (not in EXEMPT) — retail's copy
+  //   carries the new controls and says so in the PR."*
+  //
+  // So the two count assertions are replaced by the fence that now applies:
+  // PRO's file is BYTE-FOR-BYTE what it was (it is not in EXEMPT, so it may not
+  // move at all), and the copy is held to everything a copy is still held to —
+  // its name, its skin, its repointed imports, and PRO's geometry, which is
+  // `engine/drawRoom.js` and is untouched by either side.
   const pro = read('src/components/DrawRoomModal.jsx');
-  assert.equal(copy.split('\n').length, pro.split('\n').length, 'the copy is not PRO\'s length');
-  const count = (t) => (uncomment(t).match(/<[A-Za-z]/g) || []).length;
-  assert.equal(count(copy), count(pro), 'the copy gained or lost an element');
+  assert.ok(!/data-draw-field/.test(pro),
+    'PRO\'s DrawRoomModal is NOT in EXEMPT — F2 may not touch it');
+  assert.match(pro, /data-draw-length="1"/, 'PRO kept its own field, where it always was');
+  // The copy carries F2's controls, and the engine is the same engine.
+  assert.match(copy, /data-draw-field="1"/, 'the copy lost F2\'s field at the click point');
+  const engineNames = (t) => [...t.matchAll(/from '[^']*engine\/drawRoom\.js'/g)].length;
+  assert.equal(engineNames(copy), engineNames(pro), 'the copy reads a different geometry');
   // …and it wears retail's skin, not PRO's.
   for (const m of copy.matchAll(/className="([^"]*)"/g)) {
     for (const cls of m[1].split(/\s+/).filter(Boolean)) {

@@ -20,9 +20,21 @@ const unit = (params = {}) => ({
 
 // ─── the finish list ───
 
-test('the profile ships broken white, light grey and two wood decors', () => {
+// ─── AMENDED BY TURN 69 · F4 ──────────────────────────────────────────────
+// A fifth finish ships: `raw_mdf`, CLAUDE.md F4's *"fourth front source: RAW
+// (unpainted MDF)"*. It is a KIND of its own — neither a colour nor a decor —
+// because the three things that follow from it are true of neither: it takes no
+// sheen, it takes no picker, and its cut edge is LIGHTER than its face. The two
+// decor assertions below are unchanged and still ask for an image and a size;
+// `raw_mdf` carries neither, which is the *"zero grain, uniform"* half of F4.
+test('the profile ships broken white, light grey, two wood decors and raw MDF', () => {
   const ids = P.appearance.finishes.map((f) => f.id);
-  assert.deepEqual(ids, ['broken_white', 'light_grey', 'dark_walnut', 'light_oak']);
+  assert.deepEqual(ids, ['broken_white', 'light_grey', 'dark_walnut', 'light_oak', 'raw_mdf']);
+  const raw = finishById(P, 'raw_mdf');
+  assert.equal(raw.kind, 'raw');
+  assert.equal(raw.texture, undefined, 'raw MDF was given a grain');
+  assert.equal(raw.hex, '#A9926E');
+  assert.equal(raw.edgeHex, '#C6B394');
   assert.equal(finishById(P, 'broken_white').hex, '#F2F0EC');
   assert.equal(finishById(P, 'light_grey').hex, '#E8E8E6');
   assert.equal(finishById(P, 'nope'), null);
@@ -173,7 +185,7 @@ test('a profile stored before the decors existed still gets them', () => {
   const old = JSON.parse(JSON.stringify(P));
   delete old.appearance;
   const migrated = migrateCabinetProfile(old);
-  assert.equal(migrated.appearance.finishes.length, 4);
+  assert.equal(migrated.appearance.finishes.length, 5);   // T69 F4 · + raw_mdf
   assert.equal(migrated.appearance.outline.colour, '#1A1A1A');
 
   // A workshop that renamed a finish keeps its own label; new finishes arrive

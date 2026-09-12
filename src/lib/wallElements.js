@@ -80,6 +80,39 @@ export function newElementId(prefix) {
 }
 
 /**
+ * ─── TURN 69 (CLAUDE.md F3): WHICH END IS THE SIDE ─────────────────────────
+ *
+ * The owner: *"only R ever shows, L+R lands one on top of the other."*
+ * `verify/t69/f3-probe.md` is why, driven and not guessed:
+ *
+ *   `migrateSlope` read the side as `raw.side === 'L' ? 'L' : 'R'`, and the two
+ *   buttons in `WallElevationModal.jsx` pass `'left'` and `'right'`. Neither is
+ *   `'L'`, so BOTH normalised to `'R'` and both triangles were cut out of the
+ *   same end of the wall — one exactly on top of the other.
+ *
+ * The ternary was not wrong about the vocabulary — `'L'` and `'R'` are what the
+ * core stores, what `slopePolygon` reads and what `ceilingAt` does its
+ * arithmetic in, and none of that moves. It was wrong to treat EVERY word that
+ * is not `'L'` as a right-hand slope: a default belongs where a caller said
+ * NOTHING, not where a caller said something this function did not recognise.
+ *
+ * So the two ends are spelled out, both ways round, and the default stands
+ * where it always did — `SLOPE_DEFAULTS.side`, for a record that names no side
+ * at all. The fix is HERE, in the shared core, and not in the window that
+ * mis-spoke: `WallElevationModal.jsx` is frozen in PRO and a copy in retail,
+ * and one law read by two apps beats the same word corrected twice.
+ */
+const SIDE_L = new Set(['L', 'l', 'left', 'LEFT', 'Left']);
+const SIDE_R = new Set(['R', 'r', 'right', 'RIGHT', 'Right']);
+
+/** Which end of the wall the ceiling comes down at, from any way of saying it. */
+export function slopeSide(raw) {
+  if (SIDE_L.has(raw)) return 'L';
+  if (SIDE_R.has(raw)) return 'R';
+  return SLOPE_DEFAULTS.side;
+}
+
+/**
  * A slope, from anything: the side is L or R, the numbers are real and never
  * negative, and the wall index is an integer.
  *
@@ -94,10 +127,39 @@ export function migrateSlope(raw) {
     id: String(raw.id || newElementId('slope')),
     kind: 'slope',
     wall,
-    side: raw.side === 'L' ? 'L' : 'R',
+    side: slopeSide(raw.side),
     startHeight: round4(Math.max(0, num(raw.startHeight, SLOPE_DEFAULTS.startHeight))),
     run: round4(Math.max(0, num(raw.run, SLOPE_DEFAULTS.run))),
   };
+}
+
+/**
+ * ─── TURN 69 (CLAUDE.md F3): ONE SLOPE PER SIDE PER WALL ───────────────────
+ *
+ * *"one slope per side per wall"* — and it is a law about the ROOM, not about
+ * a button: one ceiling cannot come down twice at the same corner, so a second
+ * slope on a side REPLACES the one that is there rather than standing on top
+ * of it invisibly (the probe's VERDICT 2).
+ *
+ * It lives here because both apps read this module and neither writes geometry
+ * of its own. The LAST record wins, which is what a person pressing a button
+ * expects: the thing they just did is the thing they see.
+ *
+ * Everything that is not a slope passes through untouched and in order — a
+ * recess and a chimney are not a ceiling and there may be as many as the wall
+ * has.
+ */
+export function oneSlopePerSide(list) {
+  const kept = [];
+  const takenBy = new Map();
+  for (const el of wallElements(list)) {
+    if (el.kind !== 'slope') { kept.push(el); continue; }
+    const key = `${el.wall}:${el.side}`;
+    const at = takenBy.get(key);
+    if (at === undefined) { takenBy.set(key, kept.push(el) - 1); continue; }
+    kept[at] = el;
+  }
+  return kept;
 }
 
 /**

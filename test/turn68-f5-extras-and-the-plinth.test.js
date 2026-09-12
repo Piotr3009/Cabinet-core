@@ -81,8 +81,19 @@ test('F5 · every row the owner named is in the group he named it in', () => {
     'details-end-panels', 'details-scribe-fillers', 'extras-service-cutout']) {
     inGroup(id, carcass, additions);
   }
+  // ─── AMENDED BY TURN 69 · F8 ──────────────────────────────────────────
+  // Two rows moved tonight, both by CLAUDE.md F8:
+  //   `layout-add-top-box`   LEAVES — *"po cholerę ten box"*, a licensed
+  //                          removal of the client entry only.
+  //   `extras-to-the-ceiling` JOINS THE CARCASS WEARS, beside TOP INFILL,
+  //                          because it is the same piece asked a bigger
+  //                          question: *"to the ceiling?"*
+  //   `extras-handles`        JOINS DOORS & FRONTS — *"bezapelacyjnie"*.
+  for (const id of ['extras-to-the-ceiling']) inGroup(id, carcass, additions);
+  for (const id of ['extras-handles']) inGroup(id, doors, carcass);
   // ADDITIONS
-  for (const id of ['layout-add-top-box', 'extras-add-wardrobe']) inGroup(id, additions, -1);
+  for (const id of ['extras-add-wardrobe']) inGroup(id, additions, -1);
+  assert.ok(!panel.includes('testid="layout-add-top-box"'), 'ADD TOP BOX came back');
 });
 
 // ═══ 2 · THE PLINTH LAW ════════════════════════════════════════════════════

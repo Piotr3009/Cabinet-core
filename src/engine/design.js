@@ -100,10 +100,21 @@ function normaliseHandleOffsets(raw) {
 //   'wall'  ONE wall, with a stub at each of its two ends
 //   'two'   walls 0 and 1 — adjacent, sharing corner 1 — with a stub at each of
 //           the pair's two FREE ends. The owner: *"zrob 2 sciany"*.
+//   'three' walls 0, 1 and 2 — a U, left + back + right — with a stub at each
+//           of the run's two free ends, both cut from the open side. T69 F1.
 //
 // The GEOMETRY of each is `engine/room.js wallsInScope`; this is only the list
 // of words, and `normaliseScope` is the one gate every stored project passes.
-export const ROOM_SCOPES = Object.freeze(['room', 'wall', 'two']);
+//
+// ─── TURN 69 (CLAUDE.md F1): WHY ONE WORD OF THIS FILE MOVES ───────────────
+//
+// Tonight's engine licence names `room.js` for scope `'three'`. A scope that
+// `room.js` can draw and `normaliseScope` downgrades on the way in is a scope
+// that does not exist: this gate is passed by EVERY stored project, so a
+// project saved on three walls would reopen on four. One word joins the list
+// and NOTHING else in this file changes — the geometry is `room.js`'s, as the
+// paragraph above has always said.
+export const ROOM_SCOPES = Object.freeze(['room', 'wall', 'two', 'three']);
 
 /** Is this a scope the app knows? Anything else means "whole room". */
 export function normaliseScope(scope) {
@@ -323,7 +334,7 @@ export const DEFAULT_DESIGN = {
   projectType: null,
   // T61 (CLAUDE.md F2): 'two' joins them — walls 0 and 1, adjacent, sharing
   // corner 1, with a stub at each free end. See `room.js wallsInScope`.
-  scope: 'room',                 // 'room' | 'wall' | 'two'
+  scope: 'room',                 // 'room' | 'wall' | 'two' | 'three'
   // ─── TURN 32 (CLAUDE.md F1.3): THE CEILING ANSWER ────────────────────────
   // When a wardrobe stands within the question gap of the ceiling, the wizard
   // asks: "To the ceiling, with no infill?" — `'flush'` is yes (scribe the
@@ -1153,6 +1164,28 @@ export function finishById(profile, id) {
  * unit's own, then its door style's, then the project's — so a spray chosen for
  * ONE cabinet reaches its cut list and nobody else's.
  */
+/**
+ * T69 F4 · The board a SOURCE names for itself, or `null`.
+ *
+ * Only RAW names one today. It is read off the profile rather than matched on
+ * an id here, so a second unpainted source tomorrow needs no line in this file.
+ */
+function frontSourceFinishId(profile, sourceId) {
+  if (!sourceId) return null;
+  const sources = profile?.projectSettings?.frontSources || [];
+  return sources.find((s) => s.id === sourceId)?.finish_id || null;
+}
+
+/**
+ * T69 F4 · Which SOURCE this cabinet's front is on — its own front type's where
+ * it wears one, the project's first otherwise. The same two-step every other
+ * front answer in this function takes (`frontTypeEntry`, then the design's own
+ * first type), written once so the two cannot drift.
+ */
+function frontSourceOf(resolved, design) {
+  return resolved?.frontTypeEntry?.source || migrateDesign(design).fronts.types[0]?.source || null;
+}
+
 export function resolveFinishes(unit, design, profile) {
   const d = migrateDesign(design);
   const A = profile?.appearance || {};
@@ -1181,7 +1214,26 @@ export function resolveFinishes(unit, design, profile) {
     || A.finishes?.[0]
     || null;
 
-  const front = sprayFinish(resolved.colour)
+  // ─── TURN 69 (CLAUDE.md F4): A SOURCE MAY NAME ITS OWN BOARD ────────────
+  //
+  // *"Fourth front source: RAW (unpainted MDF) … No colour picker — choosing
+  // RAW ends the choice."*
+  //
+  // Every source until tonight either offered a PICKER (a decor, a veneer, a
+  // tin of paint) or offered nothing at all. RAW offers neither and is still a
+  // board: unpainted MDF is exactly one thing, so there is nothing to pick and
+  // the answer cannot come from a `finish_id` the front type stores —
+  // `setFrontType` drops a facing under a source that takes none, and it is
+  // right to.
+  //
+  // So the SOURCE names it (`profile.projectSettings.frontSources`, the
+  // licensed RAW finish keys), and this is the one line that reads it. It
+  // stands FIRST because *"choosing RAW ends the choice"*: a colour left over
+  // from the source chosen before it must not paint a board nobody is
+  // painting. `frontSourceFinishId` answers `null` for every other source, so
+  // the three chains below it are byte-for-byte the chains they were.
+  const front = finishById(profile, frontSourceFinishId(profile, frontSourceOf(resolved, d)))
+    || sprayFinish(resolved.colour)
     || finishById(profile, resolved.doorStyle?.finish_id)
     // ─── Turn 15 (CLAUDE.md F3.1/F3.2) ───
     // Front type 1's own FACING: the decor a laminate front is faced with, or

@@ -159,9 +159,28 @@ function importedNames(source) {
 const OWNERS_LIST = [
   'Side', 'Run', 'Start height', 'Flat', 'Width', 'Depth', 'Height', 'Sill',
   'From the left', 'On this wall', 'Put on the wall', 'Take it off the wall',
-  'Rectangle', 'Walls', 'Box', 'Boxes in the plan',
-  'Room height (mm)', 'Wall height (mm)', 'Drawn in', 'Back', 'Done',
+  'Walls', 'Box', 'Boxes in the plan',
+  'Room height (mm)', 'Wall height (mm)', 'Back', 'Done',
 ];
+
+/**
+ * ─── AMENDED BY TURN 69 · F1 (LICENSED REMOVALS) ──────────────────────────
+ *
+ * Two of T62's twenty-two left the window tonight, by CLAUDE.md's own
+ * LICENSED REMOVALS line and the owner's own words:
+ *
+ *   `Drawn in`   — IMPORT DXF PLAN…'s scale row, gone with the button:
+ *                  *"to nie przejdzie."*
+ *   `Rectangle`  — the preset, convicted by F1's own probe: built from the
+ *                  room's OWN bounds, it proposed the rectangle already on
+ *                  screen, so APPLY had nothing to apply.
+ *
+ * They are not deleted from this file. They move to the list BELOW and are
+ * asserted ABSENT, exactly as T67 did with `L-shape` — a removal asserted from
+ * both sides is a removal a later turn cannot undo by accident, and the count
+ * of things this test knows about does not fall.
+ */
+const T69_STRUCK_OUT = ['Rectangle', 'Drawn in', 'Import DXF plan'];
 
 test('F2/F3 · every label CLAUDE.md names by hand is in the retail copies', () => {
   const room = read('src/retail/design/room/RoomModal.jsx');
@@ -187,7 +206,21 @@ test('F2/F3 · every label CLAUDE.md names by hand is in the retail copies', () 
   assert.doesNotMatch(room, />L-shape</, "the L preset came back into the room's copy");
   assert.doesNotMatch(room, /data-room-preset="L"/, 'the L preset came back with its hook');
   assert.doesNotMatch(room, /data-insert-box/, 'the + Box button came back');
-  assert.match(room, /data-room-preset="rect"/, 'the Rectangle preset lost its hook');
+
+  // ─── T69 F1 · THE TWO STRUCK OUT TONIGHT, AND THE ROW THAT REPLACES THEM ──
+  for (const label of T69_STRUCK_OUT) {
+    assert.ok(!room.includes(`>${label}`), `${label} came back into the room's copy`);
+  }
+  assert.doesNotMatch(room, /data-room-preset="rect"/, 'the Rectangle preset came back with its hook');
+  assert.doesNotMatch(room, /data-import-dxf/, 'the DXF import came back with its hook');
+  // …and what stands there now: one row, three answers, the vocabulary's words.
+  for (const id of ['wall', 'two', 'three']) {
+    assert.ok(room.includes(`data-room-walls={id}`) || room.includes(`data-room-walls="${id}"`),
+      'the 1/2/3-wall row lost its hook');
+  }
+  for (const label of ['1 wall', '2 walls', '3 walls']) {
+    assert.ok(room.includes(label), `the wall-count row lost ${label}`);
+  }
 
   // The four that decide whether this is an EDITOR or a chip live on ONE wall,
   // so they are asked for in the file that must have them.
@@ -213,8 +246,15 @@ for (const [proPath, retailPath] of COPIES) {
     // are its own three buttons, and a bare input that shows none at all —
     // which is why `NumberField.jsx` is proved by its imports and its props
     // instead, in the test below.
+    //
+    // ─── T69 F1 · `RoomModal.jsx` FALLS FROM 20 TO 18 ────────────────────
+    // Two labels left the window by CLAUDE.md's LICENSED REMOVALS line —
+    // `Import DXF plan…` with its `Drawn in` scale row, and `Rectangle`. The
+    // floor is the file's REAL count, not a round number: it is here to catch
+    // an extractor that has gone blind, and a floor two above the truth would
+    // let the next two labels vanish unnoticed.
     const FLOOR = {
-      'RoomModal.jsx': 20, 'WallElevationModal.jsx': 20, 'Modal.jsx': 1, 'NumberField.jsx': 0,
+      'RoomModal.jsx': 18, 'WallElevationModal.jsx': 20, 'Modal.jsx': 1, 'NumberField.jsx': 0,
     };
     assert.ok(labelsOf(pro).length >= FLOOR[name],
       `only ${labelsOf(pro).length} labels found in ${proPath} — the extractor is blind`);
@@ -336,6 +376,33 @@ function collapseClasses(source) {
   return out.join('');
 }
 
+/**
+ * ─── AMENDED BY TURN 69 · F3 (A LICENSED DIVERGENCE, NAMED LINE BY LINE) ───
+ *
+ * CLAUDE.md F3: *"Door and window get drawings — ToolArt-style vector art in
+ * the elevation (a door with a leaf line, a window with sill and panes), not
+ * the present rectangles."*
+ *
+ * PRO's `WallElevationModal.jsx` is FROZEN — it is not in T67's `EXEMPT`, and
+ * tonight licenses `src/components/RoomModal.jsx` and nothing else — so the
+ * art lands in the retail copy alone, and the copy stops being byte-identical
+ * in exactly two lines: the `fill` and the `stroke` of the one rectangle the
+ * drawing replaced. That rectangle is still there, transparent, carrying every
+ * gesture and every hook it ever had.
+ *
+ * The allowance is written out IN FULL rather than as a rule, so a third
+ * divergence cannot hide behind the two that are licensed. And the art itself
+ * is SHARED (`lib/openingArt.js`), so the night PRO's window is licensed it
+ * takes the same call and this allowance goes away — there is never a second
+ * drawing of a door.
+ */
+const T69_DIVERGENCE = {
+  'src/retail/design/room/WallElevationModal.jsx': [
+    "fill={isDoor ? '#C' : '#C'}",
+    "stroke={on ? '#C' : (isDoor ? '#C' : '#C')}",
+  ],
+};
+
 test('F2/F3 · the copies differ by nothing but imports, class names and colour', () => {
   const normalise = (text) => collapseClasses(text)
     // (a) THE REPOINT — three directories deeper, same modules.
@@ -353,9 +420,15 @@ test('F2/F3 · the copies differ by nothing but imports, class names and colour'
   for (const [proPath, retailPath] of COPIES) {
     const pro = normalise(read(proPath));
     const copy = new Set(normalise(read(retailPath)));
-    const dropped = pro.filter((line) => !copy.has(line));
+    const allowed = T69_DIVERGENCE[retailPath] || [];
+    const dropped = pro.filter((line) => !copy.has(line) && !allowed.includes(line));
     assert.deepEqual(dropped, [],
       `${retailPath} is missing ${dropped.length} of PRO's own lines:\n  ${dropped.slice(0, 15).join('\n  ')}`);
+    // The allowance is EXHAUSTIVE: a licensed line that has quietly come back
+    // is a licence nobody is using, and it must leave the list rather than sit
+    // in it excusing nothing.
+    const stale = allowed.filter((line) => copy.has(line));
+    assert.deepEqual(stale, [], `${retailPath} no longer diverges by: ${stale.join(', ')}`);
     // Counted, so a normaliser that flattened everything to nothing would be
     // caught rather than believed.
     assert.ok(pro.length > 40, `only ${pro.length} lines compared for ${proPath}`);
@@ -385,8 +458,18 @@ test('F2/F3, amended by T67 · the copies now carry NO addition at all', () => {
 
   // All FOUR copies: same number of JSX elements as PRO, nothing added, none
   // dropped. `RoomModal.jsx` joins the three that always answered this.
+  // T69 F3: the elevation is measured by what it still SHARES, not by its
+  // length — the drawing is ~50 lines of art the frozen PRO file cannot carry.
+  // Every other copy is held to PRO's own count and length exactly as before.
   for (const [proPath, retailPath] of COPIES) {
     const count = (t) => (t.match(/<[A-Za-z]/g) || []).length;
+    if (T69_DIVERGENCE[retailPath]) {
+      assert.ok(count(read(retailPath)) > count(read(proPath)),
+        `${retailPath} is licensed to add a drawing and has not`);
+      assert.match(read(retailPath), /import \{ openingArt \}/,
+        `${retailPath} diverges by something that is not F3's shared art`);
+      continue;
+    }
     assert.equal(count(read(retailPath)), count(read(proPath)), `${retailPath} gained or lost an element`);
     assert.equal(read(retailPath).split('\n').length, read(proPath).split('\n').length,
       `${retailPath} is not PRO's length`);

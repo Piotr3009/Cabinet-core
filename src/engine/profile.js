@@ -1250,6 +1250,32 @@ export const DEFAULT_CABINET_PROFILE = {
       // words: "wood colour range comes later — leave the option present,
       // colours coming soon"). The option is real; the colours are not yet.
       { id: 'wood', label: 'Wood', thickness: 20, kind: 'board', coloursSoon: true, picker: null },
+      // ─── TURN 69 (CLAUDE.md F4): RAW — THE UNPAINTED FINISH ─────────────
+      //
+      // *"Fourth front source: RAW (unpainted MDF) — applies to FRONTS, END
+      // PANELS and PLINTH; the carcass never (it keeps its decor). No colour
+      // picker — choosing RAW ends the choice. Thicknesses unchanged; only the
+      // finish differs."*
+      //
+      // `picker: null` is how "the choice ends" is SAID rather than enforced
+      // twice: `pickerForSource` returns it, `MaterialChoicePanel` draws no
+      // picker for a source that names none, and there is no second rule
+      // anywhere that has to remember RAW is different.
+      //
+      // 18 mm, which is the laminate's and the spray's — *"thicknesses
+      // unchanged; only the finish differs"* — and it is a BOARD, because a
+      // raw MDF door is a board that has simply not been to the spray booth.
+      //
+      // IT IS NOT IN `carcassSources` ABOVE, and that is the carcass law: a
+      // carcass keeps its decor. A source a list does not offer cannot be
+      // chosen, which is a better guard than a check that has to be run.
+      // `finish_id` on a SOURCE is how a source that offers no picker still
+      // names a board: RAW's finish is not chosen, it IS the source. Every
+      // other source leaves it undefined and nothing about them changes.
+      {
+        id: 'raw', label: 'Raw MDF', thickness: 18, kind: 'board',
+        picker: null, unpainted: true, finish_id: 'raw_mdf',
+      },
     ],
     // The selector beside the automatic thickness. "Other" is not in the list —
     // it is the absence of a choice from it, and the number is then typed.
@@ -2149,6 +2175,31 @@ export const DEFAULT_CABINET_PROFILE = {
       {
         id: 'light_oak', label: 'Light oak', kind: 'decor',
         hex: '#C9A87C', texture: 'textures/light-oak.png', repeatMm: 900,
+      },
+      // ─── TURN 69 (CLAUDE.md F4): RAW MDF, THE BOARD ITSELF ──────────────
+      //
+      // *"3D material calibrated to the owner's photo: warm beige-brown with
+      // the olive undertone, matte, zero grain, uniform; the shaker
+      // frame/edge LIGHTER cream against the field (the photo's truth — not
+      // darker). High roughness, no sheen."*
+      //
+      // `kind: 'raw'` is a kind of its own and not a `colour`, because the
+      // three things that follow from it are not true of a tin of paint: it
+      // takes no sheen, it takes no colour, and its cut EDGE is lighter than
+      // its face. A `decor` it is not either — there is no foil and no
+      // texture, which is the *"zero grain, uniform"* half of the sentence.
+      //
+      // NO PHOTO WAS IN THE TREE when this was written (`verify/t69/` carries
+      // the two probes and the frames, and no MDF photograph), so the two
+      // hexes below are calibrated to the SENTENCE and not to pixels: #A9926E
+      // is a warm beige-brown pulled towards olive rather than pink, and
+      // #C6B394 is the same hue lifted — LIGHTER, as the sentence insists,
+      // because a routed MDF edge shows the fine core and reads paler than the
+      // pressed face beside it. If the photo is committed later, these two
+      // numbers are the only things that move.
+      {
+        id: 'raw_mdf', label: 'Raw MDF', kind: 'raw',
+        hex: '#A9926E', edgeHex: '#C6B394', roughness: 0.95, sheen: 0,
       },
     ],
     defaultCarcassFinish: 'broken_white',

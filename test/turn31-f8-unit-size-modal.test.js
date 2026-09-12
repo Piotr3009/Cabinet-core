@@ -112,14 +112,32 @@ test('…and the setter’s own refusal is SAID rather than swallowed', () => {
   // The refusal is real: `updateUnitParams` clamps a width that would eat the
   // next cabinet and says so, and this window is only the surface it speaks
   // through.
+  //
+  // ─── AMENDED BY TURN 69 · F9 ────────────────────────────────────────────
+  //
+  // The scene grew a THIRD cabinet. Until tonight a neighbour on the right was
+  // the whole refusal, because a widening moved the far edge and nothing else;
+  // the owner's word on that is *"i tu i w PRO"*, and F9's law is that a width
+  // increase takes free space on EITHER side. So a cabinet with a neighbour on
+  // one side and four metres of empty wall on the other is no longer refused —
+  // it moves back and takes the room, which is what a joiner would do.
+  //
+  // What is asserted here has not changed: a width the WALL cannot give is
+  // clamped, and the window says so. It is simply asked of a cabinet that is
+  // boxed in on both sides, which is the only shape that refusal ever meant.
   project();
   const a = store().addUnit('BUD');
   store().updateUnitParams(a.id, { width: 600 });
   const b = store().addUnit('BUD', { near: a.id, side: 'right' });
   store().updateUnitParams(b.id, { width: 600 });
+  const c = store().addUnit('BUD', { near: a.id, side: 'left' });
+  store().updateUnitParams(c.id, { width: 600 });
   const res = store().updateUnitParams(a.id, { width: 2000 });
   assert.ok(Array.isArray(res.notices));
   assert.ok(store().units.find((u) => u.id === a.id).params.width < 2000, 'the clamp let it through');
+  // …and the sentence names BOTH sides now, not just whichever was reached first.
+  assert.match(res.notices.join(' '), /on the right/);
+  assert.match(res.notices.join(' '), /on the left/);
 });
 
 test('Enter commits AND closes — one gesture, not two', () => {

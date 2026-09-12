@@ -100,8 +100,16 @@ test('F2 · the two scopes PRO can write answer exactly what they answered', () 
   assert.equal(wallsInScope(room(), 'nonsense').length, 4);
 });
 
-test('F2 · ONE vocabulary — the migrator and the flow cannot disagree about a word', () => {
-  assert.deepEqual([...ROOM_SCOPES], ['room', 'wall', 'two']);
+// ─── AMENDED BY TURN 69 · F1 ──────────────────────────────────────────────
+// A fourth word joined the vocabulary: `'three'` — a U, left + back + right,
+// with a stub at each of the run's two free ends. CLAUDE.md F1 licenses
+// `engine/room.js` for the geometry, and ONE word of `engine/design.js` for the
+// gate, because a scope `room.js` can draw and `normaliseScope` downgrades is a
+// scope that does not exist. Every other assertion below is unchanged, and the
+// new word is held to exactly what `'two'` is held to.
+test('F2, amended by T69 · ONE vocabulary — the migrator and the flow cannot disagree about a word', () => {
+  assert.deepEqual([...ROOM_SCOPES], ['room', 'wall', 'two', 'three']);
+  assert.equal(migrateDesign({ scope: 'three' }).scope, 'three', "'three' does not survive a save");
   // Literally the same function, not two copies that agree today.
   assert.equal(normaliseScope, flowScope,
     'engine/design.js and engine/projectTypes.js hold two normalisers');
@@ -169,15 +177,40 @@ test('F2 · the STAGE HINT names the wall only once there is one to confuse it w
   assert.equal(A.selectionName(sel()), 'Wall 1 wardrobe — Shelf');
 });
 
-test('F2 · no PRO surface can write it — which is why PRO cannot move', () => {
-  for (const rel of ['src/components/NewProjectFlow.jsx', 'src/components/RoomModal.jsx',
+// ─── AMENDED BY TURN 69 · F1 — THE KNOWN GAP IS HALF CLOSED, ON PURPOSE ───
+//
+// T61 stated a gap rather than hiding it: four frozen PRO surfaces read a
+// `'two'` project as `'room'` or as "One wall", and since no PRO surface could
+// MAKE one, PRO never saw one.
+//
+// Tonight `RoomModal.jsx` is licensed (CLAUDE.md F1, and T67's exemption
+// RENEWED at a new hash) and its preset row is *"1 WALL · 2 WALLS · 3 WALLS ·
+// DRAW ROOM…"*. So PRO can now write all three, and that window reads the scope
+// through the vocabulary's own gate rather than through a ternary that knew one
+// word. The gap is closed WHERE IT WAS LICENSED TO BE and nowhere else.
+//
+// WHAT IS STILL A GAP, stated the same way T61 stated it: the other three
+// surfaces are frozen and untouched, so the new-project flow and the wizard
+// still read `'two'` and `'three'` as "One wall" / the whole room. They no
+// longer decide what PRO can HAVE — the room window does — they decide what
+// those three screens SAY about it, and that is the night PRO's flow is
+// licensed, not this one.
+test('F2, amended by T69 · PRO writes the scope from ONE window, and reads it through the gate', () => {
+  for (const rel of ['src/components/NewProjectFlow.jsx',
     'src/components/WizardSummary.jsx', 'src/components/WizardSettings.jsx']) {
     assert.ok(!/'two'/.test(read(rel)), `${rel} can produce a two-wall project`);
+    assert.ok(!/'three'/.test(read(rel)), `${rel} can produce a three-wall project`);
   }
-  // KNOWN GAP, stated rather than hidden: those four frozen surfaces read a
-  // `'two'` project as `'room'` or as "One wall". They cannot make one, so PRO
-  // never sees one — and they are frozen, so this turn may not fix them.
-  assert.match(read('src/components/RoomModal.jsx'),
-    /st\.project\.design\?\.scope === 'wall' \? 'wall' : 'room'/,
-    'RoomModal changed — the known gap in the PR body is out of date');
+  const room = read('src/components/RoomModal.jsx');
+  // The window that CAN, and the one place it does it.
+  assert.match(room, /const WALL_COUNTS = Object\.freeze\(\[/);
+  assert.match(room, /setDesign\(\{ scope: id \}\)/, 'the row stopped writing the scope');
+  assert.equal((room.match(/setDesign\(\{ scope:/g) || []).length, 1,
+    'the scope is written from more than one place in this window');
+  // …and it READS through the vocabulary's gate, not through a ternary that
+  // knows one word — which is what made `'two'` invisible to PRO for eight turns.
+  assert.match(room, /normaliseScope\(st\.project\.design\?\.scope\)/,
+    'the room window reads the scope with a ternary again');
+  assert.doesNotMatch(room, /scope === 'wall' \? 'wall' : 'room'/,
+    'the one-word ternary came back');
 });

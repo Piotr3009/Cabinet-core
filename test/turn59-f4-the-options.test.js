@@ -450,6 +450,22 @@ test('F4 · the adapter is the ONLY place retail speaks engine', () => {
     // stores and nothing else (asserted in
     // `test/turn68-f7-lights-on-numbers-off.test.js`), and PRO never starts it.
     'design/dimmer.js',
+    // ─── T69 F5 · THE INSIDE / DOORS LAW ───────────────────────────────────
+    //
+    // *"Entering the INSIDE step (and the INSIDE view button) opens ALL doors
+    // — drawers stay shut. Leaving restores the exact door states from before
+    // (remember, don't reset — the T68 F7 pattern)."*
+    //
+    // The same shape as `design/dimmer.js` above and on this list for the same
+    // stated reason: it is a LAW, not a screen. It renders nothing, it reads
+    // ONE shared store (`uiStore`'s `openFronts` / `openKits` — the doors ARE
+    // a ui-store fact and there is no engine question to ask an adapter), and
+    // PRO never starts it.
+    //
+    // It is also the only honest place for it: INSIDE is reached FOUR ways —
+    // the view button, the step rail, NEXT, and the inner plus on the stage —
+    // and a line in any one of them would be a law with three holes in it.
+    'design/insideDoors.js',
   ]);
 
   // ─── AMENDED BY T62 F2/F3 ────────────────────────────────────────────────

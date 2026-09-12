@@ -95,6 +95,46 @@ export const REASONS = {
   topInfillClosesTheGap: 'Closes the gap between the top of the wardrobe and your ceiling.',
 
   /**
+   * ─── T69 F4 · RAW MDF ────────────────────────────────────────────────────
+   *
+   * NOT a refusal — CLAUDE.md F4's own sentence, verbatim, and the ONE thing
+   * the step says at the choice: *"One sentence at the choice: 'Unpainted —
+   * ready for your own finish. We sand it, you paint it.'"*
+   *
+   * PREDICATE: `engine/projectSettings.js pickerForSource`, which answers
+   * `null` for the profile's `raw` front source — so there is no picker under
+   * it and this sentence is what stands in a picker's place. A panel that went
+   * blank there would read as a control that failed.
+   */
+  rawIsUnpainted: 'Unpainted — ready for your own finish. We sand it, you paint it.',
+
+  /**
+   * ─── T69 F8 · THE JOINER'S ORDER ─────────────────────────────────────────
+   *
+   * NOT a refusal — the note under TO THE CEILING?, which is the question
+   * CLAUDE.md F8 asks the client and the sentence that says what saying yes
+   * actually does. PREDICATE: `projectStore.closeToCeiling`, which runs the
+   * uprights first (`setEndPanelTop`, `setSideInfillTop`) and lands the
+   * horizontal on them (`setTopInfill`). Retail names no piece and computes no
+   * millimetre.
+   *
+   * The reason it is worth a sentence at all is the visibility law: done the
+   * other way round a side panel shows above the horizontal, and that is the
+   * one edge a client sees from the doorway.
+   */
+  toTheCeiling: 'We run the uprights to the ceiling first and close the top onto them, '
+    + 'so no side edge shows above it.',
+
+  /**
+   * T69 F8 · NOT a refusal — what was actually done, in the order it was done.
+   * PREDICATE: `projectStore.closeToCeiling`'s own returned `order`, which is
+   * the list of setters it ran and in which sequence. Retail reports it and
+   * does not compose it, so a sentence that named a piece the store did not
+   * touch is impossible.
+   */
+  closedInOrder: (order = []) => `Closed to the ceiling — ${order.join(', then ')}.`,
+
+  /**
    * T68 F5 · NOT a refusal — the two notes under SCRIBE FILLERS AT THE WALL,
    * re-homed from the right-click menu with the menu's own label. PREDICATE:
    * `unit.params.side_infill_off`, written by `projectStore.setSideInfillEnabled`
@@ -198,6 +238,16 @@ export const REASONS = {
    * will go, so a client is not surprised by it.
    */
   topBoxGoesBeside: 'One is already on this wardrobe. Another goes beside it.',
+
+  /**
+   * T69 F8 · NOT a refusal — the note under the HANDLES row, which stands in
+   * EXTRAS as well as in FRONTS (*"bezapelacyjnie"*). PREDICATE:
+   * `projectStore.setProjectHandle`, which is the ONE writer both rows press
+   * and which writes `design.fronts.handle` for the whole job — so the sentence
+   * is simply what that store call does, said before it is pressed.
+   */
+  handlesArePerProject: 'One handle for the whole wardrobe — change it here or in FRONTS, '
+    + 'it is the same choice.',
 
   /**
    * T61 F3 · PREDICATE: `engine/roomFit.js riderBornHeight`, which cuts a box

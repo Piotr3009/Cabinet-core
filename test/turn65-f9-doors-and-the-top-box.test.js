@@ -79,10 +79,16 @@ test('F9 · doors do NOT follow from bays — setting the bays leaves the doors 
 
 // ═══ 2 · THE TOP BOX MOVED LEFT ════════════════════════════════════════════
 
-test('F9 · ADD TOP BOX is in EXTRAS and GONE from the wardrobe\'s right-hand menu', () => {
+// ─── AMENDED BY TURN 69 · F8 (LICENSED REMOVAL) ───────────────────────────
+// T65 moved ADD TOP BOX left into EXTRAS; tonight the button itself goes —
+// *"po cholerę ten box"*, and a split door covers what it was for. The half of
+// this test that was ever a LAW is *"GONE from the wardrobe's right-hand
+// menu"*, and that is stronger now, not weaker: there is no surface in the app
+// that adds a top box for a client at all.
+test('F9, amended by T69 · ADD TOP BOX is gone from EXTRAS and from the right-hand menu alike', () => {
   const extras = code('src/retail/design/Options.jsx');
-  assert.match(extras, /data-testid="layout-add-top-box"/, 'EXTRAS lost ADD TOP BOX');
-  assert.match(extras, /A\.addTopBox\(unit\.id\)/);
+  assert.ok(!/data-testid="layout-add-top-box"/.test(extras), 'the ADD button came back to EXTRAS');
+  assert.ok(!/A\.addTopBox\(unit\.id\)/.test(extras), 'EXTRAS adds a top box again');
   // ─── FINISHED BY T66 F3 ───────────────────────────────────────────────
   // T65 took ADD TOP BOX out of the thin wardrobe menu and asserted the
   // tombstone in it. The menu itself is gone tonight, so there is no right-hand

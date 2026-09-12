@@ -314,6 +314,11 @@
 
 /* ADVANCED — DOORS and BAYS under the wardrobe's own menu (F1.7). */
 .pbi-advanced { margin-top: var(--pbi-gap-5); border-top: 1px solid var(--pbi-stone-line); padding-top: var(--pbi-gap-3); }
+/* T68 F5 · a headed group inside a step — the `pbi-advanced` rule above, given
+   a name. First group carries no rule: the panel's own GoldLine is above it. */
+.pbi-group { margin-top: var(--pbi-gap-5); border-top: 1px solid var(--pbi-stone-line); padding-top: var(--pbi-gap-3); }
+.pbi-group:first-of-type { margin-top: var(--pbi-gap-3); border-top: 0; padding-top: 0; }
+.pbi-group-head { font-size: var(--pbi-fs-ui-sm); letter-spacing: 0.08em; text-transform: uppercase; margin: 0 0 var(--pbi-gap-2); }
 .pbi-advanced-head { font-size: var(--pbi-fs-ui-sm); letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
 .pbi-advanced-line { margin: var(--pbi-gap-1) 0 var(--pbi-gap-2); }
 

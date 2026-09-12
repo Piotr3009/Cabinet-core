@@ -37,7 +37,7 @@ import { doorCountFor } from '../../engine/cabinet.js';
 import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
-import { unitTop } from '../../engine/runs.js';
+import { hasTopInfill, unitTop } from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
@@ -895,6 +895,60 @@ export function addEndPanelByHand(unitId, side) {
 export function removeEndPanelByHand(unitId, panelId) {
   const res = S().removeEndPanel(unitId, panelId, { decline: true });
   return { ok: res !== false, said: '' };
+}
+
+/**
+ * ─── T68 F5 · WHAT THE CARCASS WEARS, RE-HOMED FROM THE RIGHT-CLICK MENU ───
+ *
+ * CLAUDE.md F5: *"END PANELS L/R/BOTH and SCRIBE FILLERS come from the
+ * right-click menu into this group, calling the same store paths (one law, the
+ * menu's copies of these rows die — see F9)."* TOP INFILL travels with them,
+ * because F5's own list names it in the same breath.
+ *
+ * Each of the three below is a READER and a WRITER over the very store actions
+ * `lib/contextActions.js` calls — `addTopInfill` / `removeTopInfill` and
+ * `setSideInfillEnabled`. No new geometry, no second rule, and the menu's rows
+ * are deleted rather than left standing beside them (F9).
+ */
+// The ENGINE's own reader (`engine/runs.js hasTopInfill`), and not a copy of
+// it: a run MEMBER carries no height of its own, so anything that reads
+// `top_infill_mm` alone says "not fitted" under a board that is plainly there.
+export const topInfillOn = (unitId) => hasTopInfill(unitOf(unitId));
+
+export function setTopInfill(unitId, on) {
+  if (!unitOf(unitId)) return { ok: false, said: '' };
+  if (on) S().addTopInfill(unitId);
+  else S().removeTopInfill(unitId);
+  return { ok: true, said: '' };
+}
+
+/**
+ * *"Scribe fillers at the wall"* — the menu's own label, kept. The STORE's
+ * field is a negative (`side_infill_off`), because the piece is DERIVED and
+ * the switch is *"does this cabinet take one at all"*; this reads it the way
+ * round a client thinks about it and writes the store's own way round.
+ */
+export const scribeFillersOn = (unitId) => unitOf(unitId)?.params?.side_infill_off !== true;
+
+export function setScribeFillers(unitId, on) {
+  if (!unitOf(unitId)) return { ok: false, said: '' };
+  S().setSideInfillEnabled(unitId, Boolean(on));
+  return { ok: true, said: '' };
+}
+
+/**
+ * T68 F5 · END PANELS **L / R / BOTH**, which is what the owner's layout asks
+ * for. One press, both sides, through the same per-side call the L and the R
+ * make — `addEndPanelByHand` — so there is no third store path for "both".
+ */
+export function setEndPanelsBoth(unitId, on) {
+  const said = [];
+  for (const side of ['L', 'R']) {
+    const has = endPanelSides(unitId).find((p) => p.side === side);
+    if (on && !has) { const r = addEndPanelByHand(unitId, side); if (r?.said) said.push(r.said); }
+    if (!on && has) { const r = removeEndPanelByHand(unitId, has.id); if (r?.said) said.push(r.said); }
+  }
+  return { ok: !said.length, said: said[0] || '' };
 }
 
 export function addTopBox(hostId) {
@@ -2049,17 +2103,37 @@ export function bayRefusal(unitId, want) {
 }
 
 /** The plinth heights the profile itself names — its default and its own leg. */
-export function plinthOptions() {
-  const p = P();
-  const legs = Math.round(p.wardrobe.legHeight);
-  const kick = Math.round(p.baseUnit?.defaults?.leg_height ?? legs);
-  const set = [...new Set([0, kick, legs])].filter((n) => n >= 0).sort((a, b) => a - b);
-  return set.map((mm) => ({
-    id: String(mm),
-    label: mm === 0 ? 'NONE' : `${mm}`,
-    from: mm === legs ? 'profile.wardrobe.legHeight' : 'profile.baseUnit.defaults.leg_height',
-  }));
+/**
+ * ─── T68 F5 · THE PLINTH LAW, AS THE FIELD READS IT ────────────────────────
+ *
+ * The owner, on the NONE chip: *"none nie działa"* — and the plinth is always
+ * there; only its height is ever the question. So the chips are gone
+ * (LICENSED REMOVAL, named in the PR) and what stands in their place is a
+ * TYPED FIELD between the ENGINE's own two numbers.
+ *
+ * `profile.wardrobe.plinth` is the law and `profile.wardrobe.legHeight` is the
+ * standard a fresh wardrobe is born at — both read here, neither typed. A
+ * workshop that builds on 60 mm legs moves the profile and the field follows.
+ *
+ * The KITCHEN's own key sits beside it in the same file (`baseUnit.plinth`,
+ * 80–150) and is READ BY NOBODY: see the comment where it is declared, and
+ * `test/turn68-f5-extras-and-the-plinth.test.js`, which asserts it stays
+ * unread.
+ */
+export function plinthBounds() {
+  const w = P().wardrobe || {};
+  const law = w.plinth || {};
+  return {
+    min: Math.round(Number(law.minMm) || 50),
+    max: Math.round(Number(law.maxMm) || 150),
+    standard: Math.round(Number(w.legHeight) || 100),
+    from: 'profile.wardrobe.plinth',
+  };
 }
+
+/* ─── T68 F5 · TOMBSTONE ── `plinthOptions()` stood here: three chips, one of
+   them NONE. The owner struck NONE and F5 replaced the other two with a typed
+   field, so the whole function goes rather than shrinking to a list of one. */
 
 /** Every decor a client may choose, with EGGER's own attribution on each. */
 export function decorChoices() {

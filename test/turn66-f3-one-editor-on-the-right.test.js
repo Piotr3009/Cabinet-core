@@ -227,7 +227,11 @@ test('F3, amended by T67 · every control a dead thin menu carried is somewhere 
     'WardrobeMenu · WIDTH': /testid="size-width"/,
     'WardrobeMenu · HEIGHT': /testid="size-height"/,
     'WardrobeMenu · DEPTH': /testid="size-depth"/,
-    'WardrobeMenu · PLINTH': /testid="details-plinth"/,
+    // AMENDED BY T68 F5: the chip row became a typed field and moved into
+    // EXTRAS' THE CARCASS WEARS group. The CONTROL is not lost — which is the
+    // whole claim of this test — it is `extras-plinth` now. NONE went with the
+    // chips and is a LICENSED REMOVAL: *"none nie działa"*.
+    'WardrobeMenu · PLINTH': /testid="extras-plinth"/,
     'WardrobeMenu · THIS WARDROBE\'S COLOUR': /data-testid="wardrobe-open-finish"/,
     'WardrobeMenu · MATERIALS AND HARDWARE': /data-testid="wardrobe-open-materials"/,
     'WardrobeMenu · ADD DOORS': /data-testid="extras-add-doors"/,

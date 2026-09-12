@@ -178,6 +178,16 @@ import('./RetailApp.jsx').then(async (module) => {
   const { watchProjectHistory } = await import('../stores/historyStore.js');
   watchProjectHistory();
 
+  // ─── T68 F7 · LIGHTS ON, NUMBERS OFF ─────────────────────────────────────
+  //
+  // *"jak włączasz światła, to niech znikają wymiary; wyłączysz lights, to
+  // wracają."* A subscriber for the same reason history is one: there is more
+  // than one door to the light — the copied `LightingPanel`'s own ON/OFF is
+  // PRO's call in a file that may not be edited — so the law watches the FLAG
+  // and catches every door by construction. PRO never starts it.
+  const { watchLightsAndDimensions } = await import('./design/dimmer.js');
+  watchLightsAndDimensions();
+
   // T63 F1 · the hardware catalogues, as PRO's App.jsx loads them (see the
   // note above `loadDecors()`): a hinge on screen is the downloaded GLB or
   // nothing, and the GLB is named by these.

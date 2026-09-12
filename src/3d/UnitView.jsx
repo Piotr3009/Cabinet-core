@@ -2359,7 +2359,22 @@ export default function UnitView({
           line. `contour` is a presentation mode and a measurement is not part
           of the picture it presents, which is the rule every helper in this
           file already follows. */}
-      {hoverPartition && !contour && (
+      {/* ─── T68 F7 · AND THE HOVER SET IS A DIMENSION TOO ────────────────
+          The owner, of the lit scene: *"jak włączasz światła, to niech znikają
+          wymiary"* — and the arrows that appear over a hovered divider are
+          figures like any other. They were gated by the CHANNEL alone
+          (`3d/chrome.js chromeOn('hover-dims')`), which that file states in as
+          many words is a BOOT-TIME CONSTANT: *"What VARIES at run time is the
+          store flag the overlay was always gated by."* This set had no such
+          flag, so nothing could put it out.
+
+          `showLabels` is that flag, already on this component and already
+          `showDimensions && !contourView`. It makes BOTH applications agree
+          with the button's own words — PRO's tooltip has promised *"Show
+          dimensions and distance arrows"* since T60, and this set is a
+          distance-arrow set (`3d/DimensionChain.jsx` names it as one of its
+          three callers). Named in the PR body as a shared-core change. */}
+      {hoverPartition && !contour && showLabels && (
         <HoverDimensions
           result={result}
           panelId={hoverPartition}

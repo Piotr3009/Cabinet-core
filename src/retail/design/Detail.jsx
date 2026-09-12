@@ -68,7 +68,17 @@ export default function Detail(props) {
   // The panel is the subject: `dockFor` has already resolved it, and the swing
   // row asks the ADAPTER — never the panel object — which way it hangs and
   // whether the engine has taken the choice away.
-  const swingPanel = route?.props?.panel || route?.args?.panel || null;
+  //
+  // `dockFor` answers in TWO shapes (see `detail/docked.jsx`): a copied PANEL
+  // carries its subject as `props.panel`, and a copied WINDOW carries only the
+  // `args.panelId` it will read off the shared store. A door takes the second
+  // road, so the panel is resolved from that id against the ENGINE's own list —
+  // which is also what makes this re-read on every recompute rather than
+  // holding a panel object the engine has since replaced.
+  const swingPanel = route?.props?.panel
+    || (route?.args?.panelId && selection?.unitId
+      ? A.doorPanels(selection.unitId).find((p) => p.id === route.args.panelId) || null
+      : null);
   const swing = swingPanel && A.isDoorPanel(swingPanel) && selection?.unitId
     ? { ...A.doorHinge(selection.unitId, swingPanel), panel: swingPanel }
     : null;

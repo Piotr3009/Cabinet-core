@@ -1,0 +1,45 @@
+─── T69 · THE ACCEPTANCE WALK ───
+
+Run section by section against `npx vite preview --port 4173`, the hardware
+served from the silent showroom (T23 R8). Every line below is a real browser
+reading the real build; the frames beside this file are what it saw.
+
+ ok  PRO's preset row offers three answers — 3 button(s)
+ ok  …and they are 1 WALL · 2 WALLS · 3 WALLS — 1 wall · 2 walls · 3 walls
+ ok  DRAW ROOM… still stands last in the row
+ ok  IMPORT DXF is gone from the row
+ ok  pressing 3 WALLS writes the scope — three
+ ok  APPLY is LIVE, never a dead grey rectangle — true
+ ok  the CAD window opens from the room
+ ok  the wall follows the pointer before a key is pressed
+ ok  the input opens at the click point, INSIDE the canvas — {"w":120,"h":30,"x":919,"y":524}
+ ok  slope LEFT then RIGHT stores two sides, not two Rs — L+R
+ ok  a third press on the same side replaces rather than stacks — 2
+ ok  the openings are DRAWN — the grip is there and the art beside it — 2 opening(s)
+ ok  the door stands on the floor and the window stands off it (the 850 sill) — {"door":1057,"window":986}
+
+ ok  RAW stands among the front sources
+ ok  choosing RAW says its one sentence — Unpainted — ready for your own finish. We sand it, you paint it.
+ ok  …and the project is on the raw source — raw
+ ok  REVIEW names it — THE SPACE4000 mm wall, ceiling 2500 mm, levelWARDROBE1200 mm wide · 2150 mm high · 568 mm deepDOORS1FRONT STYLEShakerFRONT FINISHRaw MDF, un
+ ok  entering INSIDE opens every door — true
+ ok  leaving puts back exactly what was there — {} → {}
+ ok  the chip row is the store's own bay list, one chip per bay — 3 chip(s) · 3 bay(s)
+ ok  hovering bay 2 writes the shared hint the scene draws from — 1
+ ok  …and the chip lights with it — yes
+
+ ok  the wardrobe is lit before the shoe — {"on":true,"strips":2}
+ ok  adding the shoe drawer leaves the light ON and every strip stored — {"on":true,"strips":2}
+ ok  HANDLES stands in EXTRAS
+ ok  ADD TOP BOX is gone from EXTRAS
+ ok  TO THE CEILING? asks the question
+ ok  vertical members first, the horizontal after — ["end-panel:R","end-panel:L","side-infill:L","side-infill:R","top-infill"]
+ ok  the door swing is back in the dock
+ ok  with a neighbour hard on its right it takes the room on its LEFT — {"was":1800,"x":1364,"w":1336,"room":36,"rx":2700,"ax":840}
+ ok  …and it walks over neither neighbour — {"was":1800,"x":1364,"w":1336,"room":36,"rx":2700,"ax":840}
+ ok  EDIT THE ROOM sits ABOVE ADD A WARDROBE on the glass — {"room":232,"add":388}
+
+ ok  seven clicks end on a wardrobe with a summary — THE SPACE4000 mm wall, ceiling 2500 mm, levelWARDROBE1200 mm wide · 2150 mm high · 568 mm deepDOORS1FRONT STYLEShakerFRONT FINISHRAL 3005 Wine Red, sprayedCARCASS FINISHEGGER H3325
+ ok  DONE → ADD TO MY ESTIMATE lands one item on the estimate — #/estimate · 1 row(s)
+
+34 checks · 0 failed

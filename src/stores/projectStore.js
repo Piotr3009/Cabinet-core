@@ -45,7 +45,7 @@ import {
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
 // byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
-import { migrateWallElement, wallElements } from '../lib/wallElements.js';
+import { migrateWallElement, oneSlopePerSide, wallElements } from '../lib/wallElements.js';
 // ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
 // The store is where a cabinet meets a room, so it is where the ceiling line
 // becomes a number the engine and the clamp can use. Both come out of the same
@@ -1325,8 +1325,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // strand every project saved between the two turns for the sake of a word,
   // and the note above already says where the list is going when the engine
   // reopens. The four setters below are named for what they take.
+  // T69 F3: …and through the one-per-side law on the way in. See the note on
+  // `oneSlopePerSide` in `lib/wallElements.js` — one ceiling cannot come down
+  // twice at the same corner, and a second slope on a side replaces the first
+  // rather than standing invisibly on top of it.
   setWallSlopes: (list) => set((s) => ({
-    project: { ...s.project, wallSlopes: wallElements(list) },
+    project: { ...s.project, wallSlopes: oneSlopePerSide(list) },
   })),
 
   // ─── TURN 58 (CLAUDE.md F5): A RAKE CHANGES THE ROOM, SO THE ROOM'S OWN
@@ -1346,7 +1350,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const next = migrateWallElement({ id: uid(slope?.kind || 'slope'), ...slope });
     if (!next) return null;
     set((s) => ({
-      project: { ...s.project, wallSlopes: [...wallElements(s.project.wallSlopes), next] },
+      project: {
+        ...s.project,
+        // T69 F3: the LAST record wins, which is what a person pressing a
+        // button expects — the thing they just did is the thing they see.
+        wallSlopes: oneSlopePerSide([...wallElements(s.project.wallSlopes), next]),
+      },
     }));
     get().refreshAutoParts();
     return next.id;
@@ -1356,9 +1365,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     set((s) => ({
       project: {
         ...s.project,
-        wallSlopes: wallElements(s.project.wallSlopes)
+        // T69 F3: a slope DRAGGED across to the other side meets whatever is
+        // already there by the same law the button does.
+        wallSlopes: oneSlopePerSide(wallElements(s.project.wallSlopes)
           .map((v) => (v.id === id ? migrateWallElement({ ...v, ...patch, id: v.id }) : v))
-          .filter(Boolean),
+          .filter(Boolean)),
       },
     }));
     get().refreshAutoParts();

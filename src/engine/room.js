@@ -698,8 +698,13 @@ export function moveBox(box, dxMm, dyMm) {
 
 // ─── Openings ───────────────────────────────────────────────────────────────
 
+// ─── TURN 69 (CLAUDE.md F3): THE SILL IS 850 ───────────────────────────────
+// *"Window sill default: 850 mm from the floor (`OPENING_DEFAULTS`)."*
+// It is a DEFAULT and nothing else moves: a window whose sill was typed keeps
+// the number it was given, `clampOpening` still holds it under the ceiling, and
+// every saved project reopens exactly as it was saved.
 export const OPENING_DEFAULTS = {
-  window: { width: 1200, height: 1400, sill: 900 },
+  window: { width: 1200, height: 1400, sill: 850 },
   door: { width: 900, height: 2040, sill: 0 },
 };
 
@@ -712,8 +717,19 @@ export function clampOpening(opening, room) {
   const w = roomWalls(room)[opening.wall ?? 0];
   const wallW = w?.width ?? 0;
   const roomH = Number(room.height) || DEFAULT_ROOM_HEIGHT;
+  // ─── T69 F3 · THE FALLBACK IS A NUMBER, NOT A `??` ─────────────────────
+  //
+  // `Number(opening.sill) ?? OPENING_DEFAULTS.window.sill` never reached the
+  // default: `Number(undefined)` is NaN, and `??` catches only `null` and
+  // `undefined`, so an opening that named no sill came back with `sill: NaN`
+  // and, through `roomH - sill`, `height: NaN` with it. Every caller in the app
+  // spreads `OPENING_DEFAULTS[kind]` before it gets here, which is why nothing
+  // has ever shown it — but a clamp is exactly the function that is handed a
+  // half-filled record, and 850 is a default only if it can be reached.
+  const given = Number(opening.sill);
+  const wanted = Number.isFinite(given) ? given : OPENING_DEFAULTS.window.sill;
   const width = Math.max(100, Math.min(Number(opening.width) || OPENING_DEFAULTS[kind].width, wallW));
-  const sill = kind === 'door' ? 0 : Math.max(0, Math.min(Number(opening.sill) ?? OPENING_DEFAULTS.window.sill, roomH - 100));
+  const sill = kind === 'door' ? 0 : Math.max(0, Math.min(wanted, roomH - 100));
   const height = Math.max(100, Math.min(Number(opening.height) || OPENING_DEFAULTS[kind].height, roomH - sill));
   const x = Math.max(0, Math.min(Number(opening.x_mm) || 0, Math.max(0, wallW - width)));
   return { ...opening, kind, width, height, sill, x_mm: x };

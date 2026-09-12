@@ -1,252 +1,208 @@
-# CLAUDE.md — TURN 67 · THE ROOM IN ONE WINDOW, AND THE FIRST NAMED CUTS INTO PRO
+# CLAUDE.md — TURN 68 · PBI: ONE WRITE PATH, EQUAL DOORS, AND EXTRAS REBUILT
 
 Run autonomously. Zero questions, zero stops. Skip-and-note. PR before morning.
-Full suite, never `--silent`. Frames under `verify/t67/`.
-**The session never halts**: "stop" means "stop that one feature", never "stop
-the night".
+Full suite, never `--silent`. Frames under `verify/t68/`.
+**The session never halts**: "stop" means "stop that one feature", never the
+night.
 
-## THE EVENT OF THIS TURN — PRO IS CUT OPEN, NARROWLY, BY NAME
+## LAWS
 
-The owner, asked whether PRO may change: *"tak, zdecydowanie potwierdzam."*
-This is the FIRST edit to `src/components/**` since the T59 freeze. The law:
+**1:1 = COPY** (copies stay copies; hiding via `RETAIL_SHOW_WORKSHOP_TOOLS`,
+never deletion from a copy). **The lazy client.** **Left adds, right edits.**
+**Diagnose before you cut**: F1, F3 and F4 begin with a probe whose output is
+committed; the fix follows what the probe SAYS, not what this spec guesses.
 
-- ONLY the files named in F1 and F9 may change in PRO, ONLY as described.
-- The freeze test is AMENDED, not weakened: it exempts the named files by
-  path, carries the owner's quote as the reason, and after the night's edit
-  it re-freezes them at their NEW hashes. Every other PRO file stays guarded
-  at byte level. The PR body lists old hash → new hash per exempted file.
-- Anything beyond the named files: skip-and-note, never touch.
+## WHAT IS FROZEN
 
-Other standing laws: **1:1 = COPY** (a PRO change is mirrored into its retail
-copy the same night, so fidelity tests stay green by both sides matching);
-**the lazy client**; **one editor on the right**; goldens ×6 byte-identical.
-
-## LICENSED FILES
-
-- PRO: `src/components/RoomModal.jsx` (F1) · the "Watch drawer" label sites —
-  find them by grep, name each in the PR (F9).
-- Engine/lib: `src/engine/room.js`, `src/lib/wallElements.js`,
-  `src/lib/slopeLine.js` (F2 corner law only) · `src/engine/profile.js`
-  (F5 default decor, F11 LED cap — keys and defaults only).
-- `src/3d/` only if F11's brightness lives there — one file, named.
-- Retail: as needed. Nothing else anywhere.
+1. **PRO — zero bytes beyond T67's three exemptions, and NO new exemptions
+   tonight.** The freeze test with its `EXEMPT` map stays exactly as T67 left
+   it; a fourth entry is a failing test by design.
+2. **Goldens ×6 byte-identical**; `UNNAMED=0`; parens 14/14 at 0/0;
+   `t68-classify.mjs` naming every delta.
+3. **Engine licence: `src/engine/profile.js` ONLY** (F5's plinth bounds and
+   the kitchen key). `doors.js`, `cabinet.js`, `room.js`: read-only — if a fix
+   seems to need them, skip-and-note with the line.
+4. Copy-fidelity, rig-parity, boundary tests stay green.
 
 ---
 
-## F1 · ROOM SETUP — PLAN ON TOP, ELEVATION BELOW, ONE WINDOW
+## F1 · ONE WRITE PATH FOR WHAT THE WARDROBE WEARS
 
-Owner's mockup got the green light. One modal, both apps:
+Owner's three symptoms, one suspected disease: the fresh carcass is not H3325
+(*"powinien być oak H3325 … dodaj do kodu jako default, na zawsze"*), shaker
+renders "sometimes", J-pull renders "sometimes" (*"czasami się pojawia … co
+jest?"*). His URL carried `?collection=royal-burgundy`.
 
-- **Top: PLAN (top view).** The room drawn from above, every wall a CLICKABLE
-  segment; the active wall highlighted and labelled ("Wall 1 · 4000"). Beside
-  it: RECTANGLE · DRAW ROOM… · IMPORT DXF PLAN… and the WALL HEIGHT field.
-  Windows and doors show as marks on their walls.
-- **Below: the ELEVATION editor — the existing `WallElevationModal`,
-  UNCHANGED** (owner: *"który jest super, nie zmieniaj"*), docked into the
-  same window, showing whichever wall the plan click chose. Front/Top toggle,
-  PUT ON THE WALL, ON THIS WALL — all as they are.
-- Click a wall in the plan → the elevation below swaps to it, in place.
-- **L-SHAPE and + BOX preset buttons are REMOVED** from the modal (owner:
-  furniture lives on 1–3 walls). The engine's `L_SHAPE` unit type and box
-  records are untouched — only the two buttons go.
-- **DRAW ROOM must work.** Hypothesis to verify first: retail's copy carries
-  the button but `DrawRoomModal` never entered the recursive copy (lazy
-  import). If so, copy it by the method; if not, write down the real cause,
-  then fix. In PRO, verify it still opens from the new layout.
-- PRO gets this shape in `RoomModal.jsx` (the named exemption); retail's copy
-  is re-copied from the edited PRO file the same night — method as T62:
-  verbatim, repoint, reskin. It should look LIKE TODAY in skin — the owner:
-  *"podobnie do dzisiaj, ale z layoutem uzgodnionym w mockupie"*.
-- Entries unchanged: WHERE → EDIT THE ROOM (retail), PRO's existing routes.
+- **PROBE FIRST, commit its output**: after each of the three entry points —
+  the FRONTS step, a `?collection=` URL, a per-unit change — dump
+  `design.fronts` (style, source, colour, opening), the unit's `door_style`,
+  and whether the cut parts carry `meta.jpull` / the shaker recess. Three
+  entries × the order permutations. The table goes in
+  `verify/t68/f1-probe.md`.
+- **Fix at the write sites the probe convicts**, to ONE law: the FRONTS step
+  is the single writer of the project's front style+opening+colour; a
+  collection PRESETS the same fields through the same setter (and does NOT
+  touch the carcass decor unless the collection names one); a per-unit change
+  uses the store's own per-unit override. No path writes style without
+  opening — T64's J-pull lesson, now enforced by a test that walks all three
+  doors and asserts identical stamped geometry.
+- **H3325 ST28 Gladstone Oak is the carcass default, forever**: asserted by a
+  test that a fresh design — with AND without a collection URL — carries it
+  unless the collection explicitly names a carcass decor. If H3325 is missing
+  from the decor list the slot reads, that is the bug: fix the list's source,
+  never hard-code a swatch.
 
-**Proof**: `verify/t67/f1-*.png` — the window in PRO and in retail; wall 2
-clicked and the elevation swapped; DRAW ROOM open; no L-SHAPE, no BOX.
+**Proof**: the probe table; `f1-*.png` — fresh design showing H3325; shaker
+and J-pull each rendering after every entry order.
 
-## F2 · THE CORNER LAW — ONE CEILING, SO HEIGHTS AGREE
+## F2 · UNDO / REDO — MEGA WAŻNE
 
-Owner asked: a slope on the front wall — does the side wall show low at the
-shared corner? Today: no; each wall's slope is private. He ordered yes.
+- PRO's view bar carries ↺ ↻ already; retail's `viewTools.js` marked them
+  `later` in T60. Tonight they land: the same store history PRO uses, the two
+  tiles in the retail VIEW BAR, keyboard Ctrl+Z / Ctrl+Shift+Z (and Cmd on
+  mac), greyed with reason when the stack is empty.
+- Read PRO's wiring first; retail calls the same store, no second history.
 
-- New law in the engine/lib (named files above): **at a shared corner, both
-  walls have the same height** — `wallHeightAt(wall, at-the-corner)` of one
-  equals the other's at that same corner. A slope running INTO a corner pulls
-  the neighbour's height at that corner down; the neighbour renders a level
-  drop or its own implied slope from its full height to the corner height,
-  whichever the geometry states — derive it, don't invent: the ceiling is one
-  plane where the slope says it is.
-- The elevation editor shows the implied profile on the neighbour read-only
-  (it is a consequence, not an element on that wall); the 3D room draws it.
-- Scope guard: the corner law lives OUTSIDE the cut path. Goldens must not
-  move; the classifier proves the deltas cannot reach a fixture.
-- Tests: slope R run 900 on wall 1 of a 4000×2500 room → wall 2's height at
-  the shared corner equals wall 1's end height (1800 in T65's fixture);
-  no slope → both corners full height; two slopes meeting in one corner →
-  the lower wins (one ceiling cannot be two heights).
+**Proof**: `f2-*.png` — an add undone and redone; the greyed state.
 
-**Proof**: `verify/t67/f2-*.png` — the 3D room with the neighbour visibly low
-at the corner; the neighbour's elevation showing the implied profile.
+## F3 · TWO DOORS MEANS TWO EQUAL DOORS
 
-## F3 · WHAT — A CLEAN LIST AND ONE QUIET NOTE
+Owner: split may stay, but *"jak wracamy do dwóch, to żeby wróciło do 2
+równych standardowych otwieranych na boki"* — and the doors-count chip has
+the same disease: *"po naciśnięciu 2 muszą wrócić do standardowych pół na
+pół, a nie jak teraz 1/4 i 3/4"*.
 
-Owner: *"te napisy pod przyciskami daj jedne pod spodem, chcę mieć ładną
-czystą listę … reszta nieczynna: przycisk, jak najedziesz, napis coming soon
-i send email to make order, email do skopiowania."*
+- **Probe**: set split/top-segment, then choose 2 doors (and: 4 then 2);
+  dump the leaf widths and the unit's split params. Commit it.
+- **Fix at the store write site**: choosing a door count RESETS every split /
+  segment / custom-width residue for that face — the engine then cuts its
+  standard equal pair by its own law. No engine edit: the residue lives in
+  params the store wrote; the store clears what it wrote. If the probe shows
+  the 1/4–3/4 comes from the engine itself, STOP that fix and skip-and-note
+  with the line.
+- Split door in EXTRAS still works; setting top segment 0 = the same reset.
 
-- The per-tile "Made to order — ask us for a quote" lines are DELETED. One
-  note stands under the list (the existing closing paragraph absorbs it).
-- Inactive tiles: hover/focus shows a small tooltip-card — "Coming soon —
-  email us to order: **Cabinetcore@gmail.com**" with a copy affordance
-  (click copies the address, shows "Copied"). Keyboard-reachable, one
-  implementation for all inactive tiles.
+**Proof**: `f3-*.png` — 1/4–3/4 before; equal pair after pressing 2; the
+probe file.
 
-**Proof**: `verify/t67/f3-*.png` — the clean list; the tooltip open; the
-copied state.
+## F4 · THE DIVIDER MOVES AGAIN
 
-## F4 · THE SOURCE BUTTON SAYS "DECOR"
+Owner: *"divider nie mogę przesunąć."* Suspect: `PartitionMenu` died in T66
+and its HOW FAR FROM THE LEFT control never re-homed.
 
-Owner: *"nie wpisuj Egger w przycisku głównego menu … nie laminat, bo będzie
-że cheap."* Decision: **DECOR**.
+- **Probe**: click a divider — what docks? Grep where the old control wrote.
+- **Fix**: the docked editor for a divider carries the position field (the
+  store's own setter, refusals shown), and dragging the divider on the stage
+  moves it through the same setter (EdgeHandle's pattern — read it first).
+  One law, two doors.
 
-- Retail panels (INSIDE carcass row, FRONTS colour row): the source chip that
-  read EGGER/Laminate reads **DECOR**. The Egger name stays INSIDE the picker
-  window, on the boards themselves, where it is information. PRO's own panels
-  are untouched (the workshop may say Egger).
-- The label change happens in retail's own chrome (chips/slot), never inside
-  a copied file's markup.
+**Proof**: `f4-*.png` — the docked field; a drag mid-motion; a refused
+position showing its sentence.
 
-**Proof**: `verify/t67/f4-*.png` — both rows showing DECOR; the picker open
-with Egger visible on tiles.
+## F5 · EXTRAS REBUILT — THREE GROUPS, AND THE PLINTH LAW
 
-## F5 · THE DEFAULT DECOR IS H3325 GLADSTONE OAK
+Owner approved the layout. EXTRAS becomes three headed groups:
 
-Owner: *"default Egger to H3325 Gladstone Oak."*
+**DOORS & FRONTS** — ADD DOORS · door count (fixed by F3) · SPLIT DOOR (top
+segment).
+**THE CARCASS WEARS** — PLINTH · CORNICE 40/70/100 · TOP INFILL · END PANELS
+**L / R / BOTH** · SCRIBE FILLERS AT THE WALL · **SERVICE CUT-OUT (greyed)**.
+**ADDITIONS** — ADD TOP BOX · ADD ANOTHER WARDROBE.
 
-- Fresh-design default carcass (and inside) decor: **H3325 ST28 Tobacco
-  Gladstone Oak** — the real bucket row (it exists; T63's frames showed it).
-  Fronts stay RAL 3005 sprayed. Profile default keys only; REVIEW, estimate
-  and saved items carry it as they carry today's.
+- **PLINTH is a typed field, 50–150 mm for wardrobes.** NONE is deleted —
+  the owner: *"none nie działa"* and the plinth is always there; only its
+  height is the question. Bounds live in `profile.js` as the plinth law,
+  with the kitchen's own key beside it (**80–150**) for the day the kitchen
+  ships — written now, read by nobody yet, one comment saying so. Out-of-range
+  refusal under the field, engine's sentence.
+- **LIGHTS leaves EXTRAS** — its home is the view-bar button and the docked
+  panel. One entry.
+- END PANELS L/R/BOTH and SCRIBE FILLERS come from the right-click menu into
+  this group, calling the same store paths (one law, the menu's copies of
+  these rows die — see F9).
+- **SERVICE CUT-OUT** — the owner's new function (a cut-out for pipes or a
+  box): a greyed row, "Coming soon", per the no-dead-controls law (greyed
+  WITH reason is the lawful form of "martwa narazie"). No geometry tonight.
 
-**Proof**: `verify/t67/f5-*.png` — a fresh design, front view; REVIEW naming
-H3325.
+**Proof**: `f5-*.png` — the three groups; plinth at 50 and 150 and a refused
+40; the greyed cut-out; EXTRAS without LIGHTS.
 
-## F6 · INSIDE COLOUR — THE DUPLICATE DIES
+## F6 · HINGE ASSIGNMENT LEAVES THE RETAIL DOCK
 
-Owner, circling it on the screenshot: *"to już niepotrzebne … to jest
-zdublowanie funkcji."*
+Owner: *"wybór hinges to nie jest dobry pomysł, nie tutaj — zostaw w PRO."*
 
-- The INSIDE COLOUR row (SAME AS FRONTS · WHITE · CHOOSE…) is DELETED from
-  INSIDE. The carcass DECOR slot above it is the one law for what the inside
-  wears. Any store state only that row wrote is retired with it — read the
-  writers first; if the engine consumes an inside-colour field, the carcass
-  picker now writes it, one path, named in the PR.
+- In the retail dock, the door editor's ASSIGN OTHER HINGE select and the
+  hinge-height row list go behind `RETAIL_SHOW_WORKSHOP_TOOLS=false` —
+  hidden, not cut; PRO untouched; fidelity green. The client keeps handle
+  choice and the door's plain facts.
 
-**Proof**: `verify/t67/f6-*.png` — INSIDE without the row; the carcass picker
-changing the visible interior in 3D.
+**Proof**: `f6-*.png` — the retail door editor without the hinge block; PRO
+with it.
 
-## F7 · THE LEFT COLUMN STAYS FOLDED — EDITING LIVES ON THE RIGHT
+## F7 · LIGHTS ON, NUMBERS OFF
 
-Owner, on the screenshot of INSIDE grown long: *"jak dodajesz szuflady, to
-się nie powinny pokazywać pod spodem, tu menu po lewej ma być puste — powinno
-się pokazywać po prawej … te funkcje niech przejdą na prawą stronę."*
+Owner: *"jak włączasz światła, to niech znikają wymiary; wyłączysz lights, to
+wracają."*
 
-- After adding drawers (or anything), the INSIDE row shows ONLY the row and
-  its count ("Drawers · 3"). No HOW MANY chips, no TOP DRAWER INSERT, no
-  GLASS TOP, no FRONT HEIGHTS expanding beneath it in the column.
-- Those controls live in the docked right editor for the clicked element —
-  where PRO's copied editors already put them. Where T66 re-homed a thin
-  menu's control INTO the column (OverlayMenu's HOW MANY), it moves onward to
-  the right: clicking the row header selects the stack and docks its editor.
-  Count chips may stay in the column ONLY if the owner's screenshot shows
-  them today at the top level — it does not; they go right.
-- The column's job is add/remove and counts at a glance. One sentence law:
-  **left adds, right edits.**
+- Turning the light ON hides the dimension overlays (chains, hover, labels);
+  OFF restores the flags exactly as they were (remember, don't reset). The
+  view-bar dimension buttons reflect it and stay honest.
 
-**Proof**: `verify/t67/f7-*.png` — INSIDE with drawers added and the column
-short; the same stack's controls docked right.
+**Proof**: `f7-*.png` — lit scene with no numbers; unlit with them back.
 
-## F8 · THE RIGHT LIST IS NAMES, NOT SENTENCES
+## F8 · FRONTS — ONE ROAD
 
-Owner: *"po prawej się pokazuje każda szuflada jako fitted — nie powinna,
-tylko nazwa."*
+Owner: *"z menu front usuń COLLECTION proszę, i MORE OPTIONS — po co mi dwa
+razy ta sama opcja."*
 
-- The docked editor's drawer list shows each drawer by NAME (Drawer 1,
-  Drawer 2, Accessories drawer). The per-drawer "fitted — its height is set
-  by what goes in it" sentences leave the list; the explanation appears only
-  when THAT drawer is clicked, in its own detail, once.
-- Mechanism: the dock's display layer (the same layer that hides workshop
-  fields), never the copied markup.
+- The COLLECTION block and the MORE OPTIONS style-gallery duplicate leave the
+  FRONTS step. The STYLE list at the top (T66 F4) is the one road; the
+  collections live where they entered (landing/URL presets, F1's law). Any
+  control that existed ONLY there re-homes and is named; duplicates die.
 
-**Proof**: `verify/t67/f8-*.png` — the list as names; one drawer open with
-its sentence.
+**Proof**: `f8-*.png` — FRONTS short and single-voiced, before/after.
 
-## F9 · "ACCESSORIES DRAWER" — IN PRO TOO
+## F9 · THE RIGHT-CLICK MENU SLIMS TO PLACEMENT
 
-Owner: *"watches szuflad jest bez sensu … tam będzie watches, belts, ties,
-cufflinks, biżuteria."* Decision: **Accessories drawer**, and *"zmień w PRO
-też tę nazwę."*
+Approved: six actions stay — **Rotate 90° · Back to wall · Side to wall ·
+Rename · Save as template · Delete**. Everything else in that menu dies or
+is already homed: infill/cornice/panels/scribe → EXTRAS (F5), colour →
+FRONTS/INSIDE, edit → the dock, drawer fronts/center shelves → the dock.
+Each removed row named in the PR with its new home.
 
-- Grep PRO for the user-facing "Watch drawer" label (AddItems row,
-  WatchLayoutModal title, ElementProperties, hints) — CHANGE THE LABEL at
-  each site, nothing else on the line. Each file joins the freeze exemption
-  list with old→new hash. Engine identifiers (`watch_drawer`, WATCH_LAYOUTS)
-  are NOT renamed — labels only, the cut path knows nothing.
-- Retail copies are re-copied/re-synced so both sides say "Accessories
-  drawer" and the fidelity tests stay green by agreement, not by a map.
-- The insert names (WATCHES · BELTS · SHOES…) stay — they name contents.
-
-**Proof**: `verify/t67/f9-*.png` — PRO and retail both showing the new name;
-the grep in the PR body proving no user-facing "Watch drawer" remains.
-
-## F10 · THE ACCESSORIES LED COMES DOWN TO 25%
-
-Owner: *"kolor podświetlenia szuflady accessories: zmniejsz jasność do 25
-procent … nie więcej niż 25 procent od teraz."*
-
-- Find where the accessories (watch) drawer's aimed LED sets its intensity
-  (the drawer's own light, not the room rig). Set it to **25% of its current
-  value**, and cap it there — a named profile key with a comment carrying the
-  owner's sentence, so no later turn "improves" it back.
-- The room rig (T66's 0.60 baseGain) is untouched.
-
-**Proof**: `verify/t67/f10-*.png` — the open accessories drawer before/after.
+**Proof**: `f9-*.png` — the menu at six rows.
 
 ---
 
 ## TESTS AND PROOF
 
-1. Full suite green, never `--silent`. The AMENDED freeze test green: named
-   exemptions re-frozen at new hashes, everything else byte-guarded.
-2. Goldens ×6 byte-identical; `UNNAMED=0`; parens 14/14 at 0/0;
-   `t67-classify.mjs` naming every engine/lib delta and proving none reaches
-   a fixture.
-3. Copy-fidelity green — by both sides matching after the PRO edits.
-4. New tests: the corner heights (three cases in F2); the plan click swapping
-   the elevation; DRAW ROOM opening; the inactive-tile tooltip and copy; the
-   default decor; INSIDE COLOUR absent and one write path for interior
-   finish; the folded column; the names-only list; no user-facing "Watch
-   drawer"; the LED at 25% with its cap.
-5. Playwright walk: every F's frames plus the lazy run, `verify/t67/lazy-*`.
+1. Full suite, never `--silent`; freeze test unchanged and green; goldens ×6
+   IDENTICAL; parens 14/14; classifier clean.
+2. New: the three-door style law (all orders, identical geometry); H3325 on a
+   fresh design with and without a collection; undo/redo round-trip; door
+   count 2 → equal leaves after any split; divider position via field and
+   drag = one setter; plinth bounds and the kitchen key unread; LIGHTS
+   hiding/restoring dimension flags; FRONTS single road (no COLLECTION
+   block); the right-click menu's six rows; hinge block absent in retail
+   dock, present in PRO.
+3. Walk + frames per F, plus the lazy run, `verify/t68/lazy-*`.
 
 ## LICENSED REMOVALS
 
-- L-SHAPE and + BOX buttons from the room modal (both apps).
-- The per-tile "Made to order" lines in WHAT.
-- The INSIDE COLOUR row and its orphaned writers.
-- The inline drawer controls in INSIDE's column (they move right, F7).
-- The per-drawer "fitted" sentences from the list view (they move into the
-  drawer's own detail, F8).
-- Nothing else. Tombstones two lines maximum.
+- PLINTH "NONE" and its writer.
+- LIGHTS from EXTRAS (moves, not dies).
+- The COLLECTION block and MORE OPTIONS gallery from FRONTS.
+- The right-click rows beyond the six, each named with its home.
+- Nothing else. Tombstones two lines max.
 
 ## BALANCE
 
-Per F: files touched, lines added/removed. Then: the exempted PRO files with
-old→new hashes; every "Watch drawer" site changed; where the corner law
-lives and why it cannot reach a fixture; the one write path for interior
-finish; where the LED cap sits.
+Per F files/lines; the probe verdicts (F1, F3, F4) quoted; how many write
+paths set the front style (one), move a divider (one), set a plinth (one);
+where the kitchen plinth key sits unread.
 
 ## SKIP-AND-NOTE ORDER
 
-F10 → F8 → F4 → F5 → F3 → F6 → F7 → F9 → F2 → F1.
-F1 and F2 are the turn's reason for existing and are not skipped. F9 touches
-PRO: if its grep turns up a site that cannot change label-only, skip THAT
-site, name it, and change the rest.
+F9 → F6 → F8 → F7 → F5 → F4 → F2 → F3 → F1.
+F1 is the turn's reason and is not skipped; F2 is "mega ważne" and is not
+skipped.

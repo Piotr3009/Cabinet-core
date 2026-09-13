@@ -608,7 +608,7 @@ const STYLE_LINES = Object.freeze({
   A: 'A curved head on a full-height leaf, for a room with the height to carry it.',
 });
 
-function FrontsPanel({ design, project }) {
+function FrontsPanel({ design, project, unit }) {
   const b = A.designBounds();
   // ─── T70 F5 · THE COLOUR ROWS, AND THE ONE THAT IS TAKING CLICKS ─────────
   // `painting` is the row a stage click lands on. It is RETAIL's own state and
@@ -675,6 +675,52 @@ function FrontsPanel({ design, project }) {
               <span className="pbi-choice pbi-style-name">{s.label}</span>
             </button>
           ))}
+        </div>
+      </Field>
+
+      {/* ─── T70 F4 · DOORS ON THE FIRST LINE ─────────────────────────────
+          The owner: *"dodawanie drzwi jest tak schowane, że dopiero w
+          accessories można znaleźć — a powinno być na pierwszej linii, zaraz
+          pod style: ADD DOORS / REMOVE DOORS."*
+
+          Immediately under the STYLE list, which is where he put it.
+
+          ONE LAW, TWO DOORS — the HANDLES pattern T69 F8 wrote twenty lines
+          into EXTRAS: EXTRAS KEEPS ITS ENTRY and both press the SAME adapter
+          calls, `A.addDoors` / `A.removeDoors`, which are
+          `projectStore.addDoors` / `removeDoors` and nothing else. There is no
+          second door law here and no per-step shadow of one; the answer to
+          "how many paths add a door" is still one.
+
+          TWO BUTTONS, not one toggle, because the owner named two — and the
+          one that cannot act is REFUSED IN WORDS rather than hidden, which is
+          this room's grammar for a control that would do nothing. */}
+      <Field label="DOORS" note={REASONS.doorsAreASeparateChoice}>
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="fronts-add-doors"
+            disabled={!unit || A.doorsOn(unit.id)}
+            title={!unit
+              ? REASONS.doorsNeedAWardrobe
+              : (A.doorsOn(unit.id) ? REASONS.doorsAreAlreadyOn : 'Hang doors on this wardrobe')}
+            onClick={() => unit && setSaid(A.addDoors(unit.id).said)}
+          >
+            ADD DOORS
+          </Button>
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="fronts-remove-doors"
+            disabled={!unit || !A.doorsOn(unit.id)}
+            title={!unit
+              ? REASONS.doorsNeedAWardrobe
+              : (A.doorsOn(unit.id) ? 'Take the doors off this wardrobe' : REASONS.doorsAreAlreadyOff)}
+            onClick={() => unit && setSaid(A.removeDoors(unit.id).said)}
+          >
+            REMOVE DOORS
+          </Button>
         </div>
       </Field>
 
@@ -1417,7 +1463,11 @@ export default function Options(props) {
       {step.id === 'inside' ? (
         <InsidePanel unit={props.unit} project={props.project} />
       ) : null}
-      {step.id === 'fronts' ? <FrontsPanel design={props.design} project={props.project} /> : null}
+      {step.id === 'fronts' ? (
+        // T70 F4 · the FRONTS step gains ADD DOORS / REMOVE DOORS, which are
+        // acts on THIS wardrobe — so the step needs the unit EXTRAS already had.
+        <FrontsPanel design={props.design} project={props.project} unit={props.unit} />
+      ) : null}
       {step.id === 'extras' ? <ExtrasPanel unit={props.unit} project={props.project} /> : null}
       {step.id === 'review' ? (
         <ReviewPanel

@@ -416,6 +416,27 @@ export const REASONS = {
   secondColourIsPerWardrobe: 'Pick a colour, then click a front on the stage — that wardrobe\'s fronts '
     + 'take it. A top box counts as its own.',
 
+  // ─── T70 F4 · DOORS ON THE FIRST LINE, AND THE THREE STATES OF THAT ROW ──
+
+  /**
+   * T70 F4 · PREDICATE: `adapter.doorsOn` — `unit.params.doors`, the store's
+   * own flag, which `projectStore.addDoors` / `removeDoors` write. NOT a
+   * refusal: it is the owner's own T65 F9 sentence about what this row IS
+   * (*"drzwi to osobna decyzja"*), said where he has now asked for the row —
+   * under the STYLE list rather than buried in EXTRAS.
+   */
+  doorsAreASeparateChoice: 'Doors are their own decision — a wardrobe can be left open. '
+    + 'The same pair stands in EXTRAS.',
+
+  /** PREDICATE: `adapter.doorsOn(unitId)` true — ADD has nothing to add. */
+  doorsAreAlreadyOn: 'This wardrobe already has doors.',
+
+  /** PREDICATE: `adapter.doorsOn(unitId)` false — REMOVE has nothing to take. */
+  doorsAreAlreadyOff: 'This wardrobe has no doors to take off.',
+
+  /** PREDICATE: no wardrobe selected at all — the step has nothing to act on. */
+  doorsNeedAWardrobe: 'Pick a wardrobe first — doors are hung on one cabinet.',
+
   /** PREDICATE: a `watch_insert` drawer in a stack whose COUNT is about to
    *  change. `addDrawers` rebuilds the stack and carries only id/kind/index/
    *  mount/zone/variant/height_mm across — `watch_insert`, `watch_layout`,

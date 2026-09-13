@@ -51,7 +51,7 @@ import { useUiStore } from '../../stores/uiStore.js';
 import {
   elementKind, elementLabel, isSelectableElement,
 } from '../../engine/elements.js';
-import { WATCH_FINISHES, WATCH_LAYOUTS } from '../../engine/watchDrawer.js';
+import { WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior } from '../../engine/watchDrawer.js';
 import { shoeInsertSpec } from '../../engine/shoeInsert.js';
 import { fieldFromPos, posFromField } from '../../engine/shelfHeights.js';
 import { RAIL_MOUNT } from '../../engine/railAssembly.js';
@@ -2743,7 +2743,168 @@ export function glassRefusal(unitId) {
 }
 
 export const setGlassTop = (unitId, itemId, on) => S().setWatchShelfGlass(unitId, itemId, on);
-export const setStackCount = (unitId, n) => S().addDrawers(unitId, Math.trunc(Number(n) || 0));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T70 F3 · THE SPECIFICATION MOVED OFF THE LEFT COLUMN
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, of INSIDE's drawer row: *"jak dodajemy internal drawers, to te
+// informacje — tie, belt, with fronts, bare boxes — wywal proszę."*  They are
+// not deleted: LEFT ADDS, RIGHT EDITS, and this is the right.
+//
+// BOTH ARE STACK-WIDE, and that is a fact about the store rather than a choice
+// made here: `addDrawers(unitId, count, MOUNT, height, zone, VARIANT)` writes
+// the same mount and the same variant onto every drawer of the stack it
+// builds. So they re-home as stack-wide rows, which is what they always were.
+
+/** WITH FRONTS or BARE BOXES — the stack's own answer, read off its drawers. */
+export function stackMount(unitId) {
+  const { plain, drawers } = drawerStack(unitId);
+  const list = plain.length ? plain : drawers;
+  return list.some((d) => d.mount === 'internal') ? 'internal' : 'overlay';
+}
+
+/** …and what it is carrying, in the chip's own word. */
+export function stackVariant(unitId) {
+  const { plain } = drawerStack(unitId);
+  const v = plain.map((d) => String(d.variant || '')).find((x) => x === 'belt_tie' || x === 'belt_tie_glass');
+  return v || 'std';
+}
+
+/**
+ * THE ONE CALL THAT REBUILDS A STACK, given everything it must not forget.
+ *
+ * ─── AND IT IS A FAULT REPAIRED, NOT A NEW PATH ────────────────────────────
+ *
+ * `setStackCount` was `addDrawers(unitId, n)` — four arguments short. The
+ * store's `mount` parameter DEFAULTS to `'overlay'` and is written onto every
+ * drawer unconditionally, so changing the count of a BARE-BOX stack quietly
+ * gave every drawer a front. Nobody could see it from the left column, where
+ * the mount chips were add-time only; the moment they become EDIT controls in
+ * the dock the two would have fought. So all three rows go through here, and
+ * here carries the stack's own current answers forward.
+ */
+function rebuildStack(unitId, { count = null, mount = null, heightMm = undefined } = {}) {
+  const { drawers } = drawerStack(unitId);
+  const n = count == null ? drawers.length : Math.trunc(Number(count) || 0);
+  const keepMount = mount == null ? stackMount(unitId) : mount;
+  // `variant` is left null on purpose: the store reads that as *"keep each
+  // drawer's own previous answer"*, which is what a count or a mount change
+  // must do to the watch drawer and the shoe drawer standing in the stack.
+  return S().addDrawers(unitId, n, keepMount, heightMm, null, null);
+}
+
+export const setStackCount = (unitId, n) => rebuildStack(unitId, { count: n });
+
+/** WITH FRONTS · BARE BOXES — the whole stack, through the store's own add. */
+export function setStackMount(unitId, id) {
+  const want = id === 'internal' ? 'internal' : 'overlay';
+  if (stackMount(unitId) === want) return '';
+  const res = rebuildStack(unitId, { mount: want });
+  return res && res.ok === false ? (res.error || '') : '';
+}
+
+/**
+ * STANDARD · BELT/TIE · BELT/TIE + GLASS — per drawer, through the store's own
+ * `setDrawerFitting`, which is the call `setTopInsert` already makes.
+ *
+ * WHY NOT `addDrawers`' sixth argument: it reads `null` as *"keep what each
+ * drawer had"*, so it can SET a variant and can never CLEAR one — pressing
+ * STANDARD through it would do nothing at all. `setDrawerFitting` writes the
+ * field, and it carries the shoe and watch laws with it.
+ *
+ * THE FITTED DRAWERS ARE NOT TOUCHED. A watch drawer and a shoe drawer are
+ * what they are; a belt chip must not quietly un-fit them, which is the same
+ * reason `drawerStack.plain` exists.
+ */
+export function setStackVariant(unitId, id) {
+  const want = id === 'belt_tie' || id === 'belt_tie_glass' ? id : null;
+  const { plain } = drawerStack(unitId);
+  if (!plain.length) return '';
+  return S().batch(() => {
+    let said = '';
+    for (const d of plain) {
+      const out = S().setDrawerFitting(unitId, d.id, want);
+      if (out && out.ok === false && !said) said = out.error || '';
+    }
+    return said;
+  });
+}
+
+/**
+ * ─── T70 F3 · AND HOW TALL THE BOX ACTUALLY IS INSIDE ──────────────────────
+ *
+ * The owner: *"jak już dajesz wysokość frontu, to daj gdzieś informację, ile
+ * będzie miała szuflada w środku boxa."*
+ *
+ * DERIVED, NEVER TYPED, and derived from the engine's OWN answer:
+ * `engine/watchDrawer.js drawerBoxInterior` measures between the boards the
+ * engine has already cut — the top face of the box bottom to the top edge of
+ * the box side — which is the usable clear height a shirt or a shoe stands in.
+ * It is the same function the watch tray and the shoe ramp are FITTED by, so
+ * the number under the field and the number the insert is cut to cannot
+ * disagree.
+ *
+ * NO NEW ENGINE KEY: CLAUDE.md F3 — *"do not add an engine key the cut path
+ * would read"* — so nothing is published; this reads the panels the engine
+ * already publishes, at the read site, exactly as the brief allows.
+ *
+ * A drawer with no box (a READY-MADE, or a front the engine drew over a stack
+ * it refused) answers null, and the caller says nothing rather than a zero.
+ *
+ * @returns {number|null} the clear height inside the box, in whole mm
+ */
+export function innerBoxHeight(unitId, index) {
+  const panels = resultOf(unitId)?.panels || [];
+  const inside = drawerBoxInterior(panels, index);
+  return inside && Number(inside.height) > 0 ? Math.round(inside.height) : null;
+}
+
+/**
+ * ─── T70 F2 · THE PARAGRAPH THAT STOOD UNDER THE CHIPS, RE-HOMED WHOLE ─────
+ *
+ * It left the left column with them and it is not lost. The numbers are the
+ * PROFILE's own — `wardrobe.drawers.minFrontHeight`/`maxFrontHeight`, the same
+ * two `drawerBounds()` already reads — so this sentence cannot drift from the
+ * field two rows above it, and no bound is a literal here.
+ *
+ * ONE SENTENCE CHANGES, and it changes because T70 F1 changed the fact behind
+ * it: *"A partition closes the stack automatically (SPEC 4.7)"* is no longer
+ * true of every stack. Where the shoe box is on top, nothing closes it — the
+ * owner's own law — so the line says which of the two this stack is, read off
+ * the stack rather than asserted.
+ */
+export function stackLawWords(unitId) {
+  const b = drawerBounds();
+  const { top } = drawerStack(unitId);
+  const capped = String(top?.variant || '').toLowerCase() !== 'shoe';
+  return `Stacked from the bottom, ${b.front.min}–${b.front.max} mm each. `
+    + (capped
+      ? 'A partition closes the stack automatically (SPEC 4.7), '
+      : 'The shoe drawer is on top, so nothing is cut over this stack, ')
+    + 'and the doors open so you can see them.';
+}
+
+/**
+ * …and the line that says it: *"front 150 · inside 94"*.
+ *
+ * ONE QUIET LINE, the brief's own words, built here rather than in the panel
+ * so that both numbers come from one place — the front height is the item's
+ * and the inner height is the engine's, and no component re-derives either.
+ */
+export function frontAndInsideWords(unitId) {
+  const { drawers } = drawerStack(unitId);
+  const out = [];
+  for (let i = 0; i < drawers.length; i += 1) {
+    const front = Math.round(Number(drawers[i]?.height_mm) || 0);
+    const inside = innerBoxHeight(unitId, i + 1);
+    if (!(front > 0) || inside == null) continue;
+    out.push({
+      index: i + 1, front, inside, said: `front ${front} · inside ${inside}`,
+    });
+  }
+  return out;
+}
 
 /**
  * THE STACK'S SPLIT. `setAllDrawerHeights` is the one call that redistributes

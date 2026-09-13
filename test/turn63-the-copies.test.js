@@ -453,6 +453,24 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
     'overlay-count', 'overlay-front', 'overlay-remove', 'shelf-centre',
     'pulldown-drop', 'pulldown-remove', 'shoe-law', 'shoe-drawing', 'shoe-said', 'drawers-said',
     'drawers-fronts-fixed', 'dock-drawer-list',
+    // ─── AMENDED BY T70 F2/F3 ─────────────────────────────────────────────
+    //
+    // Four more, and every one of them arrives here for the same reason the
+    // sixteen above did: a control the owner ordered OFF the left column, with
+    // no copied editor to hold it. *"jak dodajemy internal drawers, to te
+    // informacje — tie, belt, with fronts, bare boxes — wywal proszę."*
+    //
+    //   drawers-mount        WITH FRONTS · BARE BOXES · INSET  (F2's chips)
+    //   drawers-variant      STANDARD · BELT/TIE · BELT/TIE + GLASS  (F2's chips)
+    //   drawers-stack-law    the paragraph that stood under them
+    //   dock-inner-heights   "front 150 · inside 94", F3's own line — a
+    //                        READ-OUT, not a control, and derived from the
+    //                        engine's own `drawerBoxInterior`
+    //
+    // None duplicates a copy: PRO's `ElementProperties` has no stack-wide
+    // mount, no stack-wide variant and no inner-height line, which is exactly
+    // the test the rule above is making.
+    'drawers-mount', 'drawers-variant', 'drawers-stack-law', 'dock-inner-heights',
   ];
   for (const f of files) {
     if (!/\.jsx$/.test(f)) continue;

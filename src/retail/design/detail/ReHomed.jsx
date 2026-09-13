@@ -128,6 +128,8 @@ export default function ReHomed({ row, unitId }) {
     const glassWhy = A.glassRefusal(unitId);
     const fixed = A.stackHasFixedHeights(unitId);
     const word = A.stackWord(unitId);
+    // T70 F3 · "front 150 · inside 94", per drawer, off the engine's own boards.
+    const inside = A.frontAndInsideWords(unitId);
     return (
       <div className="pbi-interior-more">
         <Field label="HOW MANY" note={A.countNote(unitId)}>
@@ -175,6 +177,74 @@ export default function ReHomed({ row, unitId }) {
             />
           )}
         </Field>
+        {/* ─── T70 F3 · BESIDE EVERY FRONT HEIGHT, THE INNER BOX HEIGHT ───
+            The owner: *"jak już dajesz wysokość frontu, to daj gdzieś
+            informację, ile będzie miała szuflada w środku boxa."*
+
+            ONE QUIET LINE PER DRAWER — "front 150 · inside 94". DERIVED, never
+            typed: `adapter.innerBoxHeight` measures the ENGINE's own clear
+            interior (`engine/watchDrawer.js drawerBoxInterior`, the same
+            function the watch tray and the shoe ramp are fitted by), so this
+            line and the insert that drops into the box cannot disagree. No
+            engine key was added for it — the panels already say it.
+
+            A drawer with no box says nothing rather than a zero, which is why
+            this row can be empty and is then absent. */}
+        {inside.length ? (
+          <Field label="INSIDE THE BOX" block>
+            <ul className="pbi-drawer-list" data-testid="dock-inner-heights">
+              {inside.map((row) => (
+                <li key={row.index}>
+                  <span
+                    className="pbi-choice pbi-choice-15"
+                    data-testid={`dock-inner-${row.index}`}
+                    data-front-mm={row.front}
+                    data-inside-mm={row.inside}
+                  >
+                    {row.said}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Field>
+        ) : null}
+        {/* ─── T70 F2/F3 · THE SPECIFICATION, RE-HOMED FROM THE LEFT COLUMN ──
+            *"jak dodajemy internal drawers, to te informacje — tie, belt, with
+            fronts, bare boxes — wywal proszę."*  LEFT ADDS, RIGHT EDITS: the
+            six chips left INSIDE's drawer row and stand here, each keeping the
+            store path it always pressed.
+
+            WHY THEY ARE STACK-WIDE ROWS. They always were: the store's own
+            `addDrawers(unitId, count, MOUNT, height, zone, VARIANT)` writes
+            the same mount and the same variant onto every drawer of the stack
+            it builds. On the left they were add-time defaults; here they are
+            the same two answers, editable after the fact. */}
+        <Field label="FRONTS OR BARE BOXES" note={REASONS.bareBoxesLiveBehindDoors}>
+          <ChipRow
+            testid="drawers-mount"
+            value={A.stackMount(unitId)}
+            options={[
+              { id: 'overlay', label: 'WITH FRONTS', title: 'Each drawer gets a front of its own, behind the doors' },
+              { id: 'internal', label: 'BARE BOXES', title: 'No front of its own — the bare box lives behind the doors' },
+              { id: 'inset', label: 'INSET', reason: REASONS.insetStillToCome },
+            ]}
+            onPick={(id) => A.setStackMount(unitId, id)}
+          />
+        </Field>
+        <Field label="WHAT THE BOXES CARRY">
+          <ChipRow
+            testid="drawers-variant"
+            value={A.stackVariant(unitId)}
+            options={[
+              { id: 'std', label: 'STANDARD', title: 'The plain box' },
+              { id: 'belt_tie', label: 'BELT/TIE', title: 'Low box; the divider insert is a purchase line' },
+              { id: 'belt_tie_glass', label: 'BELT/TIE + GLASS', title: 'Display drawer: the glass is ordered to the box' },
+            ]}
+            onPick={(id) => A.setStackVariant(unitId, id)}
+          />
+        </Field>
+        {/* …and the paragraph that stood under those chips, re-homed whole. */}
+        <Said testid="drawers-stack-law">{A.stackLawWords(unitId)}</Said>
         {word ? <Said testid="drawers-said">{word}</Said> : null}
         {/* T67 F8 · the list, by name. The explanation of a FITTED drawer is
             the drawer's own, and it is in its own detail, below. */}

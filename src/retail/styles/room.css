@@ -780,6 +780,49 @@
   display: none !important;
 }
 
+/* ─── T70 F2 · THE LEFT COLUMN STOPS SPECIFYING ────────────────────────────
+ *
+ * The owner, circling them on INSIDE's drawer row:
+ *
+ *   *"jak dodajemy internal drawers, to te informacje — tie, belt, with
+ *   fronts, bare boxes — wywal proszę."*
+ *
+ * WHAT STAYS on the left is what ADDS: COUNT · HEIGHT · ADD. What goes is
+ * the SPECIFICATION — six chips and the paragraph under them:
+ *
+ *   WITH FRONTS · BARE BOXES · INSET      [data-drawer-mount], and the
+ *                                          disabled "Inset soon" beside them
+ *   STANDARD · BELT/TIE · BELT/TIE+GLASS  [data-drawer-variant]
+ *   "Stacked from the bottom, … A partition closes the stack automatically"
+ *
+ * LEFT ADDS, RIGHT EDITS. Every one of them re-homes in the DOCKED editor for
+ * that stack (F3) — `detail/ReHomed.jsx`, row `drawers` — so no control is
+ * lost, and the PR names each chip's new home one by one.
+ *
+ * HIDDEN, NOT CUT, and this is the only lawful way to do it: the chips are in
+ * `detail/AddItems.jsx`, a COPY (`scripts/t63-copies.mjs`), and
+ * `test/turn63-the-copies.test.js` holds it to PRO's own line count, element
+ * count and every label PRO shows. A guard written into the copy would fail
+ * all three, and deleting from a copy is the one thing the standing law
+ * forbids — *"kopiuj — nie kasuj."*  So the rule is here, under the ONE flag
+ * (`RETAIL_SHOW_WORKSHOP_TOOLS` → `data-workshop-tools` on the room), beside
+ * the workshop fields, the context menu and the hinge rows that are hidden by
+ * exactly this mechanism. Turn the flag on and a joiner gets PRO's row entire.
+ *
+ * SCOPED TO THE COLUMN, and deliberately: `[data-testid="interior-pro-list"]`
+ * is retail's OWN wrapper in `Options.jsx`, used in the left column and
+ * nowhere else. The same `<AddItems>` rendered inside the copied
+ * `AddItemsModal` keeps every chip — the owner asked for them to leave THE
+ * COLUMN, not to leave the app.
+ *
+ * `display: none` is not merely invisible: a hidden subtree takes no focus, so
+ * none of the six is in the TAB RING either. */
+.pbi-room[data-workshop-tools="no"] [data-testid="interior-pro-list"] div:has(> [data-drawer-mount]),
+.pbi-room[data-workshop-tools="no"] [data-testid="interior-pro-list"] div:has(> [data-drawer-variant]),
+.pbi-room[data-workshop-tools="no"] [data-testid="interior-pro-list"] div:has(> [data-add-kind="drawers"]) > div > p {
+  display: none !important;
+}
+
 .pbi-duty { padding: var(--pbi-gap-4) var(--pbi-pad-col) var(--pbi-gap-6); }
 .pbi-duty-title { margin-top: var(--pbi-gap-4); }
 .pbi-duty-title-flush { margin-top: 0; }

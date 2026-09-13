@@ -379,6 +379,31 @@ export const REASONS = {
   stackHasAFixedDrawer: 'One of these drawers is a fitted one — its height is set by what goes in it, '
     + 'so the stack is left as it is.',
 
+  // ─── T70 F2/F3 · THE TWO LINES THAT CAME WITH THE RE-HOMED CHIPS ─────────
+
+  /**
+   * T70 F3 · PREDICATE: `projectStore.addDrawers`' own `mount` parameter,
+   * which decides one thing in the engine — whether a drawer gets a FACE
+   * (`engine/cabinet.js`, *"`mount: 'internal'` … the field T30 wrote"*). NOT
+   * a refusal: it is what the pair of chips DOES, said before either is
+   * pressed — the note under the row, the same grammar `overlayIsOutside`
+   * keeps above. The words are the copy's own titles
+   * (`detail/AddItems.jsx`, *"No front of its own — the bare box lives behind
+   * the doors"*) said once for the row rather than twice for two buttons, so
+   * nothing is invented here and nothing is lost from the chips that moved.
+   */
+  bareBoxesLiveBehindDoors: 'With fronts, each drawer gets a face of its own behind the doors; '
+    + 'bare boxes have none and are seen only when a door opens.',
+
+  /**
+   * T70 F3 · PREDICATE: none — the INSET chip is `disabled` in the copy it was
+   * re-homed from and carries the same sentence it carried there, which is
+   * PRO's own: *"Inset deductions still to come from Piotr — BLOCKERS #6"*.
+   * A greyed chip with the reason a client can read, rather than PRO's note to
+   * the workshop.
+   */
+  insetStillToCome: 'Inset drawers are not offered yet — the deductions are still to come.',
+
   /** PREDICATE: a `watch_insert` drawer in a stack whose COUNT is about to
    *  change. `addDrawers` rebuilds the stack and carries only id/kind/index/
    *  mount/zone/variant/height_mm across — `watch_insert`, `watch_layout`,

@@ -65,6 +65,31 @@ const frontFinishText = (type) => {
   return `${system}${c.name || c.hex}, sprayed`;
 };
 
+/**
+ * ─── T70 F5 · THE COLOURS BEYOND THE FIRST, NAMED ──────────────────────────
+ *
+ * One line per front type that a cabinet is ACTUALLY wearing, in the project's
+ * own type order, each saying which cabinets wear it. `frontFinishText` above
+ * is reused whole — a second colour is named exactly the way the first one is,
+ * sprayed / decor / RAW alike, so the two lines cannot describe the same tin
+ * differently.
+ *
+ * @returns {Array<[string,string]>} zero rows for a one-colour design
+ */
+function extraFrontColours(design, units) {
+  const types = design?.fronts?.types || [];
+  if (types.length < 2) return [];
+  const rows = [];
+  for (let i = 1; i < types.length; i += 1) {
+    const type = types[i];
+    const wearing = (units || []).filter((u) => u?.params?.front_type_id === type.id);
+    if (!wearing.length) continue;
+    const who = wearing.map((u) => u.params.unit_num || u.id).join(', ');
+    rows.push([`Front finish ${i + 1}`, `${frontFinishText(type)} — on ${who}`]);
+  }
+  return rows;
+}
+
 const HANDLE_WORDS = {
   bar: 'Bar handles', knob: 'Knobs', jpull: 'J-pull, handleless',
 };
@@ -100,6 +125,21 @@ export function describeDesign(snapshot) {
     ['Doors', `${partitions + 1}`],
     ['Front style', styleLabel(design.fronts?.style)],
     ['Front finish', frontFinishText(design.fronts?.types?.[0])],
+    // ─── T70 F5 · AND EVERY OTHER COLOUR THIS DESIGN CARRIES ──────────────
+    //
+    // *"The estimate line and REVIEW name every colour used."*
+    //
+    // A second or third front colour is `params.front_type_id` on a UNIT
+    // (`projectStore.setUnitFinish`, the brief's own mechanism), so the
+    // question "which colours does this design use" is answered by asking the
+    // UNITS what they are wearing — never by listing the types, because a type
+    // the client added and then gave to nothing is not a colour this wardrobe
+    // is made of and must not appear on a quotation.
+    //
+    // ABSENT where there is only one, rather than a row reading "none": a
+    // one-colour design is every design before tonight and its summary is
+    // unchanged to the byte.
+    ...extraFrontColours(design, snapshot?.units || []),
     ['Carcass finish', decorText(design.carcass?.types?.[0]?.finish_id)],
     ['Handles', HANDLE_WORDS[design.fronts?.handle?.type] || 'None'],
     ['Plinth', mmText(params.leg_height)],

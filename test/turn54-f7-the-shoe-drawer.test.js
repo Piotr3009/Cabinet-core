@@ -85,8 +85,31 @@ test('F7.6 · board for board: a shoe drawer IS a plain drawer of the same numbe
   assert.equal(boards(plain).length, 6, 'two sides, box front, box back, bottom — plus the front');
   assert.equal(canonical(boards(plain)), canonical(boards(shoe)),
     'sides, back, bottom, front, pockets, grooves — field by field, the same cut');
-  // …the hole pattern in the carcass is the same drilling…
-  assert.equal(canonical(plain.drills), canonical(shoe.drills), 'every hole, the same');
+  // …the hole pattern in the carcass is the same drilling, EXCEPT the holes
+  // that hold a board T70 no longer cuts.
+  //
+  // ─── AMENDED BY T70 F1, AND THIS IS THE WHOLE OF THE AMENDMENT ───────────
+  //
+  // The owner, 13.09.2026: *"nie może mieć półki nad sobą."* Where the shoe
+  // box tops a stack the stack is NOT capped — no `PARTITION`, and therefore
+  // no `partition_screw` confirmats to hold one. So F7.6's claim gains its
+  // second exception and keeps every other byte of its force: a shoe drawer is
+  // a plain drawer of the same numbers except for its 80 mm side (T54) and
+  // except for the board that is not standing over it (T70).
+  //
+  // Stated as two assertions rather than a weakened one, so neither half can
+  // rot quietly: the drilling matches once the confirmats are set aside, and
+  // the confirmats are present for the plain drawer and absent for the shoe.
+  const notPartition = (drills) => (drills || []).filter((d) => d.kind !== 'partition_screw');
+  assert.equal(canonical(notPartition(plain.drills)), canonical(notPartition(shoe.drills)),
+    'every hole but the capping board\'s, the same');
+  assert.ok((plain.drills || []).some((d) => d.kind === 'partition_screw'),
+    'a plain stack is still capped, and still screwed');
+  assert.equal((shoe.drills || []).filter((d) => d.kind === 'partition_screw').length, 0,
+    'T70 F1: a shoe-topped stack has no capping board, so nothing is drilled to hold one');
+  assert.equal(plain.panels.filter((p) => p.part === 'PARTITION').length, 1, 'the plain stack is capped');
+  assert.equal(shoe.panels.filter((p) => p.part === 'PARTITION').length, 0,
+    'T70 F1: nothing sits over a shoe box');
   // …and the runner is the same Blum pair by the same NL law.
   const runner = (r) => (r.hardware || []).filter((h) => /runner/i.test(String(h.role)) || /runner/i.test(String(h.label)));
   const rp = runner(plain);

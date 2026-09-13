@@ -35,7 +35,32 @@ export function drawerOf(panel) {
   // sitting in the box — pull the drawer and it comes out with it — and a tray
   // that stayed behind in the carcass would be the same fault T23 found in a
   // hinge that stayed shut while its door opened.
-  return panel.role === 'drawer_box' || panel.role === 'watch_insert' ? n : null;
+  //
+  // ─── T70 F1 · AND SO DOES THE SHOE RAMP ──────────────────────────────────
+  //
+  // The owner, 13.09.2026, of the shoe drawer on his screen:
+  //
+  //   *"skos ma się otwierać razem z boxem, a nie box się otwiera a reszta
+  //   zostaje."*
+  //
+  // He is describing THIS LINE. T58 gave the shoe insert its own role,
+  // `shoe_insert`, and this function has only ever named two — so the box came
+  // out and the ramp and its two dividers stayed in the carcass, hanging in
+  // mid-air over a hole. It was never a decision; it was a role nobody added.
+  //
+  // DECIDED, overturnable in one word (*"skos osobno"*): THE SLOPING SHELF IS
+  // PART OF THE BOX. One moving assembly, ONE set of runners — the ramp and
+  // its dividers are fixed INTO the box, between its sides and onto its
+  // bottom, so they travel the box's own nominal length and nothing is left
+  // standing in the carcass. `reference/lisp/KIT_WARDROBE_FULL.lsp` section G
+  // names the assembly part by part (`SKY:shoeAssembly`) and states the one
+  // runner pair (`SKY:shoeRunnerPairs`) before this line reads it.
+  //
+  // No second travel law: `drawerTravel` measures the DRAWER-SIDE and always
+  // did — a shoe drawer is *"traktujesz jak normalną szufladę"* and gets no
+  // number of its own.
+  return panel.role === 'drawer_box' || panel.role === 'watch_insert'
+    || panel.role === 'shoe_insert' ? n : null;
 }
 
 /**

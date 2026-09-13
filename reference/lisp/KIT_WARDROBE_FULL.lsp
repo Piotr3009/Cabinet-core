@@ -1685,3 +1685,101 @@
 
 (princ "\nKIT_WARDROBE_FULL: T58 shoe-drawer insert section loaded.")
 (princ)
+
+;;;========================================
+;;; G. THE SHOE BOX IS ONE MOVING THING (turn 70, CLAUDE.md F1)
+;;;========================================
+;;; LISP IS LAW, and F1 touches CUT GEOMETRY - which board is emitted over a
+;;; stack - so the kit states it before the engine does. Added LINES in the
+;;; kit that owns the wardrobe; the shelf stays at fourteen files.
+;;;
+;;; THE OWNER, verbatim, 13.09.2026:
+;;;
+;;;   "szuflada na buty super, ze traktujesz jak normalna szuflade, ale nie
+;;;    moze miec polki nad soba, i skos ma sie otwierac razem z boxem, a nie
+;;;    box sie otwiera a reszta zostaje."
+;;;
+;;; TWO FACTS, and section F above already half-stated the first one. T58 wrote
+;;; "nie moze miec polki nad soba" as a REFUSAL - a shoe drawer standing under
+;;; a shelf was refused its insert IN WORDS. That is the wrong half of the law:
+;;; the client did not ask for the insert to be refused, he asked for the SHELF
+;;; not to be cut. So the law changes direction here, and the engine follows.
+;;;
+;;; ─── G1. NO BOARD IS CUT OVER A SHOE BOX ───────────────────────────────
+;;;
+;;; SPEC 4.7 caps EVERY drawer stack with a board - the PARTITION PANEL for an
+;;; internal stack, and for an OVERLAY stack the fixed shelf T40 named
+;;; OVERLAY-FIX and T65-F5 cut at setback 0. The shoe box is the ONE exception
+;;; in this kit: where the stack law would cap it, nothing is cut.
+;;;
+;;; THE REASON IS THE RAMP, not tidiness. A shoe drawer's sides are LOW by
+;;; design (drawers.shoeSideMm, the 80) and a shoe stands toe-down at the front
+;;; with its heel up the slope - so the contents stand PROUD of the box and a
+;;; board over them is the board they knock against. Section F's own sentence
+;;; for it: "bo buty beda chodzic."
+;;;
+;;; Answers T when the top of this stack is a shoe drawer, in which case the
+;;; capping board is NOT cut. The engine asks the same question of the same
+;;; drawer, at the one site where that board is emitted.
+(defun SKY:shoeCapsTheStack (topVariant / )
+  (= (strcase topVariant) "SHOE")
+)
+
+;;; …and the board the stack would otherwise have had. Stated so the reader of
+;;; this kit can see WHAT is not cut: a full-width board between the sides,
+;;; at the stack's own shelf line, in carcass stock.
+(defun SKY:stackCapBoard (szerWewn glSzafki topVariant / )
+  (if (SKY:shoeCapsTheStack topVariant)
+    nil
+    (list szerWewn (- glSzafki (gruboscPlyty)))
+  )
+)
+
+;;; ─── G2. THE SLOPE TRAVELS WITH THE BOX ────────────────────────────────
+;;;
+;;;   "skos ma sie otwierac razem z boxem, a nie box sie otwiera a reszta
+;;;    zostaje."
+;;;
+;;; DECISION TAKEN, overturnable in one word ("skos osobno"): THE SLOPING
+;;; SHELF IS PART OF THE BOX. It is not a fixed element the box slides out
+;;; from under - it is one moving assembly on ONE set of runners, and it comes
+;;; forward with the front.
+;;;
+;;; WHAT THAT MEANS ON THE SHOP FLOOR, and it is why this is a kit law and not
+;;; a picture: the ramp and its two dividers are FIXED INTO the box (they land
+;;; on the box bottom, between the box sides, inside the clear interior section
+;;; F already measures) and NOT onto the carcass. One runner pair carries the
+;;; box, the ramp, the dividers and the shoes - there is no second set, no
+;;; carcass-mounted bearer under the slope, and nothing left standing in the
+;;; carcass when the drawer is open.
+;;;
+;;; The travel is the BOX's own nominal length, exactly as it is for any other
+;;; drawer in this kit - a shoe drawer is a normal drawer ("traktujesz jak
+;;; normalna szuflade") and gets no travel law of its own.
+;;;
+;;; THE ASSEMBLY, named part by part. Everything in this list moves together.
+(defun SKY:shoeAssembly ( / )
+  (list
+    "DRAWER-FRONT"        ;; the face the hand pulls
+    "DRAWER-SIDE"         ;; the box, both sides
+    "DRAWER-BOX-FRONT"
+    "DRAWER-BOX-BACK"
+    "DRAWER-BOTTOM"
+    "SHOE-RAMP"           ;; the SKOS - part of the box, not of the carcass
+    "SHOE-DIVIDER"        ;; the two lanes, standing on the ramp
+  )
+)
+
+;;; ONE SET OF RUNNERS. Written down because a two-runner answer - one pair for
+;;; the box, one bearer for the slope - is the fault the owner is describing.
+(defun SKY:shoeRunnerPairs ( / ) 1)
+
+;;; Does this part travel with the drawer? The engine asks the same question of
+;;; its own panel roles; here it is asked of the part name, so a joiner reading
+;;; the kit gets the same answer the picture gives.
+(defun SKY:shoeRides (partName / )
+  (if (member (strcase partName) (SKY:shoeAssembly)) T nil)
+)
+
+(princ "\nKIT_WARDROBE_FULL: T70 shoe-box-as-one-assembly section loaded.")
+(princ)

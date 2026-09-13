@@ -820,9 +820,33 @@ test('F3 · every REMOVE goes through the store\'s own remove', () => {
   }
   const removes = [...options.matchAll(/data-testid=\{?[`"]([a-z$-{}.]*-remove)[`"]\}?[\s\S]{0,320}?onClick=\{\(\) => ([\s\S]{0,90}?)\}/g)];
   assert.ok(removes.length >= 3, `only ${removes.length} re-homed removes found`);
+  // ─── AMENDED BY T70 F5, WITH THE EXEMPTION NAMED RATHER THAN IMPLIED ─────
+  //
+  // The law is about removing a THING FROM A WARDROBE — a stack, a rod, a
+  // bought fitting — and it is that every one of them goes through the store's
+  // own remove rather than by unpicking an item list in retail.
+  //
+  // `fronts-colour-remove` removes no such thing. It takes a COLOUR off the
+  // PROJECT's palette (`setFrontTypes(n − 1)`) and, first, takes it off every
+  // cabinet wearing it (`resetUnitFinish` through the adapter's one road) so
+  // that no unit is left pointing at a type that no longer exists. Both are
+  // the store's own calls; neither is an element remove, and asserting
+  // `A.removeElement` of it would be asserting the wrong act.
+  //
+  // It is exempted BY NAME, so the law keeps its teeth for everything else and
+  // a fourth exemption has to be argued the way this one is.
+  const NOT_AN_ELEMENT = ['fronts-colour-remove'];
   for (const [, id, body] of removes) {
+    if (NOT_AN_ELEMENT.includes(id)) {
+      assert.match(body, /A\.removeFrontColour\(/, `${id} is exempt and still takes another road`);
+      continue;
+    }
     assert.match(body, /A\.remove(Element|Unit)\(/, `${id} removes by another road`);
   }
+  // …and the exemption really is the store's own pair, in one place.
+  assert.match(read('src/retail/design/adapter.js'),
+    /export function removeFrontColour[\s\S]{0,900}?S\(\)\.setFrontTypes\(/,
+    'removing a colour no longer shrinks the project\'s own type list');
 
   // …and the STAGE follows, because the removal is the store's own recompute.
   const unit = room({ shelves: 2 });

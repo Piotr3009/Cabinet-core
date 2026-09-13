@@ -51,7 +51,7 @@ import { useUiStore } from '../../stores/uiStore.js';
 import {
   elementKind, elementLabel, isSelectableElement,
 } from '../../engine/elements.js';
-import { WATCH_FINISHES, WATCH_LAYOUTS } from '../../engine/watchDrawer.js';
+import { WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior } from '../../engine/watchDrawer.js';
 import { shoeInsertSpec } from '../../engine/shoeInsert.js';
 import { fieldFromPos, posFromField } from '../../engine/shelfHeights.js';
 import { RAIL_MOUNT } from '../../engine/railAssembly.js';
@@ -2743,7 +2743,168 @@ export function glassRefusal(unitId) {
 }
 
 export const setGlassTop = (unitId, itemId, on) => S().setWatchShelfGlass(unitId, itemId, on);
-export const setStackCount = (unitId, n) => S().addDrawers(unitId, Math.trunc(Number(n) || 0));
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T70 F3 · THE SPECIFICATION MOVED OFF THE LEFT COLUMN
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// The owner, of INSIDE's drawer row: *"jak dodajemy internal drawers, to te
+// informacje — tie, belt, with fronts, bare boxes — wywal proszę."*  They are
+// not deleted: LEFT ADDS, RIGHT EDITS, and this is the right.
+//
+// BOTH ARE STACK-WIDE, and that is a fact about the store rather than a choice
+// made here: `addDrawers(unitId, count, MOUNT, height, zone, VARIANT)` writes
+// the same mount and the same variant onto every drawer of the stack it
+// builds. So they re-home as stack-wide rows, which is what they always were.
+
+/** WITH FRONTS or BARE BOXES — the stack's own answer, read off its drawers. */
+export function stackMount(unitId) {
+  const { plain, drawers } = drawerStack(unitId);
+  const list = plain.length ? plain : drawers;
+  return list.some((d) => d.mount === 'internal') ? 'internal' : 'overlay';
+}
+
+/** …and what it is carrying, in the chip's own word. */
+export function stackVariant(unitId) {
+  const { plain } = drawerStack(unitId);
+  const v = plain.map((d) => String(d.variant || '')).find((x) => x === 'belt_tie' || x === 'belt_tie_glass');
+  return v || 'std';
+}
+
+/**
+ * THE ONE CALL THAT REBUILDS A STACK, given everything it must not forget.
+ *
+ * ─── AND IT IS A FAULT REPAIRED, NOT A NEW PATH ────────────────────────────
+ *
+ * `setStackCount` was `addDrawers(unitId, n)` — four arguments short. The
+ * store's `mount` parameter DEFAULTS to `'overlay'` and is written onto every
+ * drawer unconditionally, so changing the count of a BARE-BOX stack quietly
+ * gave every drawer a front. Nobody could see it from the left column, where
+ * the mount chips were add-time only; the moment they become EDIT controls in
+ * the dock the two would have fought. So all three rows go through here, and
+ * here carries the stack's own current answers forward.
+ */
+function rebuildStack(unitId, { count = null, mount = null, heightMm = undefined } = {}) {
+  const { drawers } = drawerStack(unitId);
+  const n = count == null ? drawers.length : Math.trunc(Number(count) || 0);
+  const keepMount = mount == null ? stackMount(unitId) : mount;
+  // `variant` is left null on purpose: the store reads that as *"keep each
+  // drawer's own previous answer"*, which is what a count or a mount change
+  // must do to the watch drawer and the shoe drawer standing in the stack.
+  return S().addDrawers(unitId, n, keepMount, heightMm, null, null);
+}
+
+export const setStackCount = (unitId, n) => rebuildStack(unitId, { count: n });
+
+/** WITH FRONTS · BARE BOXES — the whole stack, through the store's own add. */
+export function setStackMount(unitId, id) {
+  const want = id === 'internal' ? 'internal' : 'overlay';
+  if (stackMount(unitId) === want) return '';
+  const res = rebuildStack(unitId, { mount: want });
+  return res && res.ok === false ? (res.error || '') : '';
+}
+
+/**
+ * STANDARD · BELT/TIE · BELT/TIE + GLASS — per drawer, through the store's own
+ * `setDrawerFitting`, which is the call `setTopInsert` already makes.
+ *
+ * WHY NOT `addDrawers`' sixth argument: it reads `null` as *"keep what each
+ * drawer had"*, so it can SET a variant and can never CLEAR one — pressing
+ * STANDARD through it would do nothing at all. `setDrawerFitting` writes the
+ * field, and it carries the shoe and watch laws with it.
+ *
+ * THE FITTED DRAWERS ARE NOT TOUCHED. A watch drawer and a shoe drawer are
+ * what they are; a belt chip must not quietly un-fit them, which is the same
+ * reason `drawerStack.plain` exists.
+ */
+export function setStackVariant(unitId, id) {
+  const want = id === 'belt_tie' || id === 'belt_tie_glass' ? id : null;
+  const { plain } = drawerStack(unitId);
+  if (!plain.length) return '';
+  return S().batch(() => {
+    let said = '';
+    for (const d of plain) {
+      const out = S().setDrawerFitting(unitId, d.id, want);
+      if (out && out.ok === false && !said) said = out.error || '';
+    }
+    return said;
+  });
+}
+
+/**
+ * ─── T70 F3 · AND HOW TALL THE BOX ACTUALLY IS INSIDE ──────────────────────
+ *
+ * The owner: *"jak już dajesz wysokość frontu, to daj gdzieś informację, ile
+ * będzie miała szuflada w środku boxa."*
+ *
+ * DERIVED, NEVER TYPED, and derived from the engine's OWN answer:
+ * `engine/watchDrawer.js drawerBoxInterior` measures between the boards the
+ * engine has already cut — the top face of the box bottom to the top edge of
+ * the box side — which is the usable clear height a shirt or a shoe stands in.
+ * It is the same function the watch tray and the shoe ramp are FITTED by, so
+ * the number under the field and the number the insert is cut to cannot
+ * disagree.
+ *
+ * NO NEW ENGINE KEY: CLAUDE.md F3 — *"do not add an engine key the cut path
+ * would read"* — so nothing is published; this reads the panels the engine
+ * already publishes, at the read site, exactly as the brief allows.
+ *
+ * A drawer with no box (a READY-MADE, or a front the engine drew over a stack
+ * it refused) answers null, and the caller says nothing rather than a zero.
+ *
+ * @returns {number|null} the clear height inside the box, in whole mm
+ */
+export function innerBoxHeight(unitId, index) {
+  const panels = resultOf(unitId)?.panels || [];
+  const inside = drawerBoxInterior(panels, index);
+  return inside && Number(inside.height) > 0 ? Math.round(inside.height) : null;
+}
+
+/**
+ * ─── T70 F2 · THE PARAGRAPH THAT STOOD UNDER THE CHIPS, RE-HOMED WHOLE ─────
+ *
+ * It left the left column with them and it is not lost. The numbers are the
+ * PROFILE's own — `wardrobe.drawers.minFrontHeight`/`maxFrontHeight`, the same
+ * two `drawerBounds()` already reads — so this sentence cannot drift from the
+ * field two rows above it, and no bound is a literal here.
+ *
+ * ONE SENTENCE CHANGES, and it changes because T70 F1 changed the fact behind
+ * it: *"A partition closes the stack automatically (SPEC 4.7)"* is no longer
+ * true of every stack. Where the shoe box is on top, nothing closes it — the
+ * owner's own law — so the line says which of the two this stack is, read off
+ * the stack rather than asserted.
+ */
+export function stackLawWords(unitId) {
+  const b = drawerBounds();
+  const { top } = drawerStack(unitId);
+  const capped = String(top?.variant || '').toLowerCase() !== 'shoe';
+  return `Stacked from the bottom, ${b.front.min}–${b.front.max} mm each. `
+    + (capped
+      ? 'A partition closes the stack automatically (SPEC 4.7), '
+      : 'The shoe drawer is on top, so nothing is cut over this stack, ')
+    + 'and the doors open so you can see them.';
+}
+
+/**
+ * …and the line that says it: *"front 150 · inside 94"*.
+ *
+ * ONE QUIET LINE, the brief's own words, built here rather than in the panel
+ * so that both numbers come from one place — the front height is the item's
+ * and the inner height is the engine's, and no component re-derives either.
+ */
+export function frontAndInsideWords(unitId) {
+  const { drawers } = drawerStack(unitId);
+  const out = [];
+  for (let i = 0; i < drawers.length; i += 1) {
+    const front = Math.round(Number(drawers[i]?.height_mm) || 0);
+    const inside = innerBoxHeight(unitId, i + 1);
+    if (!(front > 0) || inside == null) continue;
+    out.push({
+      index: i + 1, front, inside, said: `front ${front} · inside ${inside}`,
+    });
+  }
+  return out;
+}
 
 /**
  * THE STACK'S SPLIT. `setAllDrawerHeights` is the one call that redistributes
@@ -3096,7 +3257,9 @@ export function selectionForMenu(menu, unitId) {
 // adapter is still the one place a retail-authored file speaks the store.
 
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
-import { migrateDesign } from '../../engine/design.js';
+import {
+  migrateDesign, projectSheen, sheenLabel, sheenSteps, clampSheen,
+} from '../../engine/design.js';
 import { normaliseFrontTypes, pickerForSource, sourceById } from '../../engine/projectSettings.js';
 import { railChosenAlone } from '../../engine/railAssembly.js';
 
@@ -3507,6 +3670,209 @@ export function insideColourOf(project) {
   if (front && carcass === front) return 'fronts';
   if (carcass === swatchFor(WHITE_DECOR).finishId) return 'white';
   return 'chosen';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T70 F5 · FRONTS: SHEEN, AND MORE THAN ONE COLOUR
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * ─── THE SHEEN, IN THE ENGINE'S OWN WORDS ──────────────────────────────────
+ *
+ * CLAUDE.md F5: *"A SHEEN control sits under the front colour (matt → satin →
+ * gloss), the engine's own sheen vocabulary from the profile — read it before
+ * writing the control; if PRO has a sheen surface, copy it."*
+ *
+ * READ FIRST, and this is what was there. The vocabulary is
+ * `engine/design.js sheenLabel` — Dead matt · Matt · Eggshell · Satin ·
+ * Semi-gloss · Gloss — six BANDS expressed as shares of
+ * `profile.appearance.sheenScale.max`, so a workshop that reshapes the scale
+ * keeps the words in proportion to it. The VALUES are `sheenSteps(profile)`,
+ * 5 % to 100 % in fives. Not one number or word below is retail's.
+ *
+ * ─── AND PRO'S SURFACE IS NOT COPIED, WHICH IS A DECISION, NOT AN OMISSION ──
+ *
+ * PRO has one: `src/components/SheenSlider.jsx`, an `<input type="range">`
+ * over those twenty stops. It is NOT copied here and it may not be, because
+ * the owner has already ruled on sliders in this app — T61 F5, verbatim: *"nie
+ * widze sensu [suwaków] bo i tak nie trafisz, trzeba bedzie wpisac."*  Retail
+ * has had no slider since, and a copied one would be this room breaking the
+ * client's own law to obey the copy law.
+ *
+ * So the SURFACE is retail's chip row and the VOCABULARY, the VALUES and the
+ * ONE WRITE PATH are PRO's: `setDesign({ sheen })`, the same call
+ * `SheenSlider` makes, into the same field `3d/materials.js` reads. One law,
+ * two doors — the HANDLES pattern, and the answer to "how many surfaces write
+ * a sheen" is still one.
+ */
+export function sheenChoices() {
+  const profile = P();
+  const seen = new Map();
+  // The band's TOP step represents it — a lacquer is ordered at a round
+  // percentage, and the top of a band is the roundest number in it.
+  for (const value of sheenSteps(profile)) seen.set(sheenLabel(value, profile), value);
+  return [...seen.entries()].map(([label, value]) => ({
+    id: label, label: label.toUpperCase(), value, hint: `${value} % gloss`,
+  }));
+}
+
+/** Which BAND this project's sheen falls in — the chip that is lit. */
+export const sheenOf = (project) => sheenLabel(projectSheen(migrateDesign(project?.design), P()), P());
+
+/** …and the exact number behind it, for the line under the row. */
+export const sheenPercent = (project) => projectSheen(migrateDesign(project?.design), P());
+
+/** "Satin · 60 % gloss" — the band and the number it actually is. */
+export function sheenWords(project) {
+  const value = sheenPercent(project);
+  return `${sheenLabel(value, P())} · ${value} % gloss`;
+}
+
+/**
+ * Press a band. A project ALREADY in that band is left alone — pressing SATIN
+ * on a 60 must not quietly make it a 65, which is the whole difference between
+ * a band control and a stepped one.
+ */
+export function setSheen(id) {
+  const profile = P();
+  const project = S().project;
+  if (sheenOf(project) === id) return sheenWords(project);
+  const wanted = sheenChoices().find((c) => c.id === id);
+  if (!wanted) return '';
+  S().setDesign({ sheen: clampSheen(wanted.value, profile) });
+  return sheenWords(S().project);
+}
+
+/**
+ * ─── A DESIGN MAY CARRY TWO OR THREE FRONT COLOURS ─────────────────────────
+ *
+ * CLAUDE.md's OWN decision, taken for the owner and overturnable in one word:
+ * *"2–3 typy kolorów frontów"* means *"the client may give a second and a
+ * third colour to chosen fronts."*
+ *
+ * AND ITS OWN MECHANISM, named in the brief: *"Uses the store's existing
+ * `setUnitFinish` / `resetUnitFinish` — the per-unit override that has sat
+ * unused since T60 — never a second palette law."*
+ *
+ * SO THE GRAIN OF IT IS PER CABINET, and this is stated plainly rather than
+ * implied: `setUnitFinish` writes `params.front_type_id` on a UNIT, and
+ * `engine/materials.js resolvePanelMaterial` resolves every front of that unit
+ * through it. Clicking a front on the stage therefore colours THAT WARDROBE's
+ * fronts — including a top box, which is a unit of its own and can take a
+ * third colour by itself. Two colours on two leaves of ONE cabinet is a
+ * per-PANEL override this engine does not have, and inventing one would be the
+ * "second palette law" the brief forbids. The row says so in words.
+ *
+ * The TYPES are the project's own, capped by `profile.projectSettings
+ * .maxFrontTypes` (3 since T32) and grown by the store's own `setFrontTypes`.
+ */
+export const frontTypeCap = () => P().projectSettings.maxFrontTypes;
+
+export function frontColourRows(project) {
+  const design = migrateDesign(project?.design);
+  const types = normaliseFrontTypes(design.fronts?.types, P());
+  const units = S().units || [];
+  return types.map((t, i) => ({
+    id: t.id,
+    // The FIRST row is the project's own answer and wears the brief's name for
+    // it; the others are named by their turn.
+    label: i === 0 ? 'ALL FRONTS' : `COLOUR ${i + 1}`,
+    colour: t.colour || null,
+    finishId: t.finish_id || null,
+    source: t.source || null,
+    // How many cabinets are actually wearing it. Row 1 is the FALL-BACK: every
+    // unit with no override of its own follows it, which is what "ALL FRONTS"
+    // means and why it is never zero.
+    wearing: i === 0
+      ? units.filter((u) => !u.params?.front_type_id || u.params.front_type_id === t.id).length
+      : units.filter((u) => u.params?.front_type_id === t.id).length,
+  }));
+}
+
+/** + ADD A SECOND COLOUR / + A THIRD — the store's own grow, capped by the profile. */
+export function addFrontColour() {
+  const rows = frontColourRows(S().project);
+  if (rows.length >= frontTypeCap()) return '';
+  S().setFrontTypes(rows.length + 1);
+  return `f${rows.length + 1}`;
+}
+
+/**
+ * …and taking one away takes it off every cabinet wearing it FIRST, through
+ * `resetUnitFinish` — the other half of the named pair. A unit left pointing
+ * at a type that no longer exists falls back to type 1 silently
+ * (`resolvePanelMaterial`), which is a cabinet whose colour changed and never
+ * said so.
+ */
+/**
+ * ─── THE ONE ROAD, AND IT IS ONE FUNCTION ──────────────────────────────────
+ *
+ * `test/turn63-the-copies.test.js` holds this app to ONE surface that writes a
+ * cabinet's finish. Before tonight that was PRO's copied `UnitFinishModal`,
+ * which speaks the store directly because that is what makes it a copy. F5
+ * gives retail's own FRONTS step a second door to the same law, and a second
+ * DOOR is not a second law only if there is exactly one function behind it.
+ *
+ * This is that function. Everything in this file that colours a cabinet calls
+ * it and nothing calls the store's pair directly, so the balance answer stays
+ * one — and `setUnitFinish(` and `resetUnitFinish(` each appear exactly once
+ * in the retail tree outside the copy, which is what the test now asserts.
+ *
+ * @param {string[]} unitIds
+ * @param {string|null} typeId  null means "follow the project" — the reset
+ */
+const writeUnitFront = (unitIds, typeId) => (typeId
+  ? S().setUnitFinish(unitIds, { front_type_id: typeId })
+  : S().resetUnitFinish(unitIds));
+
+export function removeFrontColour(typeId) {
+  const rows = frontColourRows(S().project);
+  if (rows.length <= 1 || !rows.some((r) => r.id === typeId)) return '';
+  const wearing = (S().units || []).filter((u) => u.params?.front_type_id === typeId).map((u) => u.id);
+  return S().batch(() => {
+    if (wearing.length) writeUnitFront(wearing, null);
+    S().setFrontTypes(rows.length - 1);
+    return wearing.length
+      ? `${wearing.length} wardrobe${wearing.length === 1 ? '' : 's'} went back to the first colour.`
+      : '';
+  });
+}
+
+/** One row's colour, through the store's one front-colour setter. */
+export const setFrontColourFor = (typeId, colour) => S().setFrontType(typeId, { source: 'spray', colour });
+
+/**
+ * CLICK A FRONT WHILE A COLOUR ROW IS ACTIVE.
+ *
+ * The selection is the SHARED store's (`uiStore.selectElement`, what a click on
+ * the stage writes), so this reads the same fact PRO reads and adds no second
+ * selection law. It acts only on a FRONT — clicking a shelf while a colour is
+ * up must do nothing, or the control paints by accident.
+ *
+ * Row 1 is `resetUnitFinish`: ALL FRONTS is "follow the project", which is the
+ * absence of an override and not an override of its own.
+ *
+ * @returns {string} what happened, in words, or '' where nothing did
+ */
+export function paintFrontOnStage(selection, typeId) {
+  const unitId = selection?.unitId || null;
+  const ref = selection?.elementRef || null;
+  if (!unitId || !ref || !typeId) return '';
+  const panel = (resultOf(unitId)?.panels || []).find((p) => p.id === ref) || null;
+  if (!panel || panel.role !== 'front') return '';
+  const unit = unitOf(unitId);
+  const name = unit?.params?.unit_num ? `Wardrobe ${unit.params.unit_num}` : 'That wardrobe';
+  const rows = frontColourRows(S().project);
+  const row = rows.find((r) => r.id === typeId);
+  if (!row) return '';
+  if (rows[0]?.id === typeId) {
+    if (!unit?.params?.front_type_id) return '';
+    writeUnitFront([unitId], null);
+    return `${name} follows the project's own front colour again.`;
+  }
+  if (unit?.params?.front_type_id === typeId) return '';
+  writeUnitFront([unitId], typeId);
+  return `${name}'s fronts take ${row.label.toLowerCase()}.`;
 }
 
 /** The estimate page's summary line: what fronts, in one breath. */

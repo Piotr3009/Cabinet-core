@@ -163,9 +163,25 @@ test('F3 · the docked window is placed by the PANEL, not by an anchor', () => {
   // in the tree writes, so they can reach the context menu and nothing else.
   // That is the same guarantee by a different hook, so the rule allows the
   // hook and keeps its teeth: anything scoped to NEITHER still fails.
+  // ─── AMENDED AGAIN BY T70 F2 ────────────────────────────────────────────
+  //
+  // A third hook, admitted on the SAME argument and no weaker one. F2 takes
+  // the specification chips off INSIDE's drawer row — *"jak dodajemy internal
+  // drawers, to te informacje — tie, belt, with fronts, bare boxes — wywal
+  // proszę."*  They live in `detail/AddItems.jsx`, a COPY held by
+  // `turn63-the-copies.test.js` to PRO's line count, element count and every
+  // label, so a guard cannot be written into it and a line cannot be deleted
+  // from it. The rule belongs here, as T66's and T68's do.
+  //
+  // ITS SCOPE IS TIGHTER THAN EITHER OF THE OTHER TWO, not looser:
+  // `[data-testid="interior-pro-list"]` is written by EXACTLY ONE component in
+  // the whole tree — retail's own `Options.jsx` — and the rule also stands
+  // inside `.pbi-room[data-workshop-tools="no"]`, which PRO's page never
+  // carries at all. So it can reach the left column's copy of that list and
+  // nothing else: not the same component inside `AddItemsModal`, not PRO.
   const dockRules = [...css.matchAll(/([^\n{}]*)\{[^}]*!important[^}]*\}/g)].map((m) => m[1].trim());
   for (const sel of dockRules) {
-    assert.match(sel, /\.pbi-dock|\[data-menu-(entry|divider)/,
+    assert.match(sel, /\.pbi-dock|\[data-menu-(entry|divider)|\[data-testid="interior-pro-list"\]/,
       `an !important rule aimed at nothing in particular: ${sel}`);
   }
   // …and the menu hook really is written by exactly one component.
@@ -173,6 +189,17 @@ test('F3 · the docked window is placed by the PANEL, not by an anchor', () => {
     .filter((rel) => /data-menu-entry=/.test(read(rel)));
   assert.deepEqual(writers, ['src/retail/design/detail/ContextEdits.jsx', 'src/components/ContextMenu.jsx'],
     'the menu hook moved, and the scope argument above with it');
+  // …and so is F2's, which is the whole of its licence to carry an !important.
+  const listWriters = readdirSync(join(ROOT, 'src'), { recursive: true })
+    .filter((f) => typeof f === 'string' && /\.jsx$/.test(f))
+    .filter((f) => /data-testid="interior-pro-list"/.test(read(join('src', f))));
+  assert.deepEqual(listWriters, ['retail/design/Options.jsx'],
+    'the INSIDE list hook is written by more than one component — the F2 scope argument is void');
+  // …and every F2 rule really does stand inside the retail room's own flag.
+  for (const sel of dockRules.filter((q) => /interior-pro-list/.test(q))) {
+    assert.match(sel, /\.pbi-room\[data-workshop-tools="no"\]/,
+      `an F2 rule that would reach a joiner's page too: ${sel}`);
+  }
 });
 
 // ═══ 3 · THE WORKSHOP'S OWN FIELDS ARE HIDDEN, NOT CUT ════════════════════

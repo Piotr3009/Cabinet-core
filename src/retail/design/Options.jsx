@@ -10,6 +10,9 @@ import { REASONS } from './reasons.js';
 import * as A from './adapter.js';
 import { useUiStore } from '../../stores/uiStore.js';
 import MaterialSlot from './material/MaterialSlot.jsx';
+// T70 F5 · the SECOND and THIRD front colour's own picker — PRO's copied
+// swatch board (`scripts/t63-copies.mjs`), rendered as it stands.
+import ColourPicker from './material/ColourPicker.jsx';
 import WizardHardware from './material/WizardHardware.jsx';
 import AddItems from './detail/AddItems.jsx';
 import { CATEGORIES, stepIndex } from './Categories.jsx';
@@ -468,8 +471,36 @@ function InsidePanel({ unit, project }) {
               data-on={hinted === z.index ? 'yes' : 'no'}
               data-bay={z.index}
               title={`${Math.round(z.size)} mm clear`}
-              onPointerEnter={() => A.hoverBay(z.index)}
-              onFocus={() => A.hoverBay(z.index)}
+              // ─── T70 F6 · THE HOVER REACHES THE CABINET THE CHIP IS ABOUT
+              //
+              // The owner: T69 said this was fixed; it does not happen.
+              // `scripts/t70-f6-probe.mjs` walked the chain and convicted
+              // LINK 6 — `Scene.jsx:1739`:
+              //
+              //     zoneHint={selectedUnitId === unit.id ? zoneHint : null}
+              //
+              // Every link was present and the chip DID write the integer.
+              // But the scene draws the hint for the SELECTED unit, and
+              // `DesignRoom` calls `ui.clearSelection()` at boot — so a client
+              // who walks WHAT → WHERE → SIZE → INSIDE has selected nothing,
+              // while this column is still showing a wardrobe's chips because
+              // `adapter.designUnit` falls back to the first one. The chips
+              // were about a cabinet the scene did not think was selected.
+              //
+              // T69's own test pressed a chip first, and the CLICK below
+              // already selects — which is why its walk agreed and the owner's
+              // pointer did not.
+              //
+              // THE FIX IS THE CLICK'S OWN LINE, ON THE HOVER. Not a second
+              // highlighter, not a change to `Scene` or `UnitView` (both
+              // shared with PRO and both correct): the same
+              // `selectUnitOnStage` the click has always called, so pointing
+              // at a bay of THIS wardrobe makes it the wardrobe the scene is
+              // drawing hints for. Leaving with `onPointerLeave` puts the hint
+              // out and leaves the SELECTION standing, which is what a client
+              // who has just pointed at a cabinet expects.
+              onPointerEnter={() => { A.selectUnitOnStage(unit.id); A.hoverBay(z.index); }}
+              onFocus={() => { A.selectUnitOnStage(unit.id); A.hoverBay(z.index); }}
               onBlur={() => A.hoverBay(null)}
               onClick={() => { A.selectUnitOnStage(unit.id); A.hoverBay(z.index); }}
             >
@@ -605,8 +636,30 @@ const STYLE_LINES = Object.freeze({
   A: 'A curved head on a full-height leaf, for a room with the height to carry it.',
 });
 
-function FrontsPanel({ design, project }) {
+function FrontsPanel({ design, project, unit }) {
   const b = A.designBounds();
+  // ─── T70 F5 · THE COLOUR ROWS, AND THE ONE THAT IS TAKING CLICKS ─────────
+  // `painting` is the row a stage click lands on. It is RETAIL's own state and
+  // deliberately not a store field: it is a mode this panel is in, it dies
+  // with the panel, and nothing outside this step has any business reading it.
+  const [painting, setPainting] = useState(null);
+  const [said, setSaid] = useState('');
+  const colourRows = A.frontColourRows(project);
+  // A click on the stage is the SHARED store's own selection — the same fact
+  // PRO reads — so no second selection law is written for this.
+  const picked = useUiStore((st) => st.selectedElement);
+  useEffect(() => {
+    if (!painting) return;
+    const word = A.paintFrontOnStage(picked, painting);
+    if (word) setSaid(word);
+    // `picked` is the whole trigger: each new front the client clicks paints
+    // once. `painting` stays on so a colour can be given to several.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picked, painting]);
+  // A colour that is removed takes its row with it.
+  useEffect(() => {
+    if (painting && !colourRows.some((r) => r.id === painting)) setPainting(null);
+  }, [colourRows, painting]);
   const style = design?.fronts?.style || 'S';
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
   const opening = A.frontOpeningOf(project);
@@ -650,6 +703,52 @@ function FrontsPanel({ design, project }) {
               <span className="pbi-choice pbi-style-name">{s.label}</span>
             </button>
           ))}
+        </div>
+      </Field>
+
+      {/* ─── T70 F4 · DOORS ON THE FIRST LINE ─────────────────────────────
+          The owner: *"dodawanie drzwi jest tak schowane, że dopiero w
+          accessories można znaleźć — a powinno być na pierwszej linii, zaraz
+          pod style: ADD DOORS / REMOVE DOORS."*
+
+          Immediately under the STYLE list, which is where he put it.
+
+          ONE LAW, TWO DOORS — the HANDLES pattern T69 F8 wrote twenty lines
+          into EXTRAS: EXTRAS KEEPS ITS ENTRY and both press the SAME adapter
+          calls, `A.addDoors` / `A.removeDoors`, which are
+          `projectStore.addDoors` / `removeDoors` and nothing else. There is no
+          second door law here and no per-step shadow of one; the answer to
+          "how many paths add a door" is still one.
+
+          TWO BUTTONS, not one toggle, because the owner named two — and the
+          one that cannot act is REFUSED IN WORDS rather than hidden, which is
+          this room's grammar for a control that would do nothing. */}
+      <Field label="DOORS" note={REASONS.doorsAreASeparateChoice}>
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="fronts-add-doors"
+            disabled={!unit || A.doorsOn(unit.id)}
+            title={!unit
+              ? REASONS.doorsNeedAWardrobe
+              : (A.doorsOn(unit.id) ? REASONS.doorsAreAlreadyOn : 'Hang doors on this wardrobe')}
+            onClick={() => unit && setSaid(A.addDoors(unit.id).said)}
+          >
+            ADD DOORS
+          </Button>
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="fronts-remove-doors"
+            disabled={!unit || !A.doorsOn(unit.id)}
+            title={!unit
+              ? REASONS.doorsNeedAWardrobe
+              : (A.doorsOn(unit.id) ? 'Take the doors off this wardrobe' : REASONS.doorsAreAlreadyOff)}
+            onClick={() => unit && setSaid(A.removeDoors(unit.id).said)}
+          >
+            REMOVE DOORS
+          </Button>
         </div>
       </Field>
 
@@ -711,6 +810,113 @@ function FrontsPanel({ design, project }) {
         <div data-testid="fronts-material">
           <MaterialSlot kind="front" title="Fronts — what are they made of?" />
         </div>
+      </Field>
+
+      {/* ─── T70 F5 · A DESIGN MAY CARRY TWO OR THREE FRONT COLOURS ────────
+          CLAUDE.md's own reading of *"2–3 typy kolorów frontów"*, decided for
+          the owner and overturnable in one word: the client may give a SECOND
+          and a THIRD colour to chosen fronts.
+
+          ITS MECHANISM IS THE BRIEF'S: the store's `setUnitFinish` /
+          `resetUnitFinish`, the per-unit override that has sat unused since
+          T60 — *"never a second palette law."*  So the grain of it is PER
+          CABINET, and the row says so rather than implying otherwise: clicking
+          a front colours THAT wardrobe's fronts. A top box is a unit of its
+          own and can take a colour by itself.
+
+          ALL FRONTS is row one: the project's own type, which is the ABSENCE
+          of an override — so pressing it and clicking a wardrobe is
+          `resetUnitFinish`, the other half of the named pair. */}
+      <Field label="MORE THAN ONE COLOUR" note={REASONS.secondColourIsPerWardrobe} block>
+        <div className="pbi-opening-list" data-testid="fronts-colour-rows">
+          {colourRows.map((row) => (
+            <button
+              key={row.id}
+              type="button"
+              className={`pbi-opening-row${painting === row.id ? ' is-on' : ''}`}
+              data-testid={`fronts-colour-${row.id}`}
+              data-on={painting === row.id ? 'yes' : 'no'}
+              data-wearing={row.wearing}
+              aria-pressed={painting === row.id}
+              title={painting === row.id
+                ? 'Click a wardrobe front on the stage to give it this colour'
+                : 'Pick this colour, then click the fronts it goes on'}
+              onClick={() => setPainting(painting === row.id ? null : row.id)}
+            >
+              <span
+                className="pbi-colour-dot"
+                style={row.colour?.hex ? { background: row.colour.hex } : undefined}
+                aria-hidden
+              />
+              <span className="pbi-choice">{row.label}</span>
+              <span className="pbi-choice pbi-quiet">
+                {`${row.colour?.name || row.colour?.hex || 'not chosen'} · ${row.wearing}`}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      {/* The ACTIVE row's own picker, and the two acts that belong to it. The
+          first row's colour is the MATERIAL SLOT's above — one road to the
+          project's own front finish, exactly as it was. */}
+      {painting && painting !== colourRows[0]?.id ? (
+        <Field label="THIS COLOUR" block>
+          <div data-testid="fronts-colour-picker">
+            <ColourPicker
+              label="Sprayed"
+              value={colourRows.find((r) => r.id === painting)?.colour || null}
+              onChange={(c) => A.setFrontColourFor(painting, c)}
+            />
+          </div>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="fronts-colour-remove"
+              onClick={() => { setSaid(A.removeFrontColour(painting)); setPainting(null); }}
+            >
+              REMOVE THIS COLOUR
+            </Button>
+          </div>
+        </Field>
+      ) : null}
+
+      {colourRows.length < A.frontTypeCap() ? (
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="fronts-colour-add"
+            onClick={() => { const id = A.addFrontColour(); if (id) setPainting(id); }}
+          >
+            {colourRows.length === 1 ? '+ ADD A SECOND COLOUR' : '+ A THIRD'}
+          </Button>
+        </div>
+      ) : null}
+      {said ? <Said testid="fronts-said">{said}</Said> : null}
+
+      {/* ─── T70 F5 · AND HOW GLOSSY IT IS, UNDER THE COLOUR ───────────────
+          *"A SHEEN control sits under the front colour (matt → satin →
+          gloss), the engine's own sheen vocabulary from the profile."*
+
+          THE SIX WORDS ARE THE ENGINE'S — `engine/design.js sheenLabel`, read
+          before this was written, expressed as shares of
+          `profile.appearance.sheenScale.max` so a workshop that reshapes the
+          scale keeps them in proportion. The VALUES are `sheenSteps`. The
+          WRITE is `setDesign({ sheen })`, which is the one call PRO's own
+          `SheenSlider` makes — one law, two doors.
+
+          NOT A SLIDER, and that is the owner's own ruling rather than an
+          omission: *"nie widze sensu [suwaków] bo i tak nie trafisz"* (T61
+          F5). PRO's surface stays PRO's; the vocabulary is shared. */}
+      <Field label="SHEEN" note={A.sheenWords(project)}>
+        <ChipRow
+          testid="fronts-sheen"
+          value={A.sheenOf(project)}
+          options={A.sheenChoices().map((c) => ({ id: c.id, label: c.label, title: c.hint }))}
+          onPick={(id) => setSaid(A.setSheen(id))}
+        />
       </Field>
 
       {/* ─── T68 F8 · TOMBSTONES: `MORE OPTIONS` AND THE TWO BLOCKS IN IT ──
@@ -1285,7 +1491,11 @@ export default function Options(props) {
       {step.id === 'inside' ? (
         <InsidePanel unit={props.unit} project={props.project} />
       ) : null}
-      {step.id === 'fronts' ? <FrontsPanel design={props.design} project={props.project} /> : null}
+      {step.id === 'fronts' ? (
+        // T70 F4 · the FRONTS step gains ADD DOORS / REMOVE DOORS, which are
+        // acts on THIS wardrobe — so the step needs the unit EXTRAS already had.
+        <FrontsPanel design={props.design} project={props.project} unit={props.unit} />
+      ) : null}
       {step.id === 'extras' ? <ExtrasPanel unit={props.unit} project={props.project} /> : null}
       {step.id === 'review' ? (
         <ReviewPanel

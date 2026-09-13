@@ -379,6 +379,64 @@ export const REASONS = {
   stackHasAFixedDrawer: 'One of these drawers is a fitted one — its height is set by what goes in it, '
     + 'so the stack is left as it is.',
 
+  // ─── T70 F2/F3 · THE TWO LINES THAT CAME WITH THE RE-HOMED CHIPS ─────────
+
+  /**
+   * T70 F3 · PREDICATE: `projectStore.addDrawers`' own `mount` parameter,
+   * which decides one thing in the engine — whether a drawer gets a FACE
+   * (`engine/cabinet.js`, *"`mount: 'internal'` … the field T30 wrote"*). NOT
+   * a refusal: it is what the pair of chips DOES, said before either is
+   * pressed — the note under the row, the same grammar `overlayIsOutside`
+   * keeps above. The words are the copy's own titles
+   * (`detail/AddItems.jsx`, *"No front of its own — the bare box lives behind
+   * the doors"*) said once for the row rather than twice for two buttons, so
+   * nothing is invented here and nothing is lost from the chips that moved.
+   */
+  bareBoxesLiveBehindDoors: 'With fronts, each drawer gets a face of its own behind the doors; '
+    + 'bare boxes have none and are seen only when a door opens.',
+
+  /**
+   * T70 F3 · PREDICATE: none — the INSET chip is `disabled` in the copy it was
+   * re-homed from and carries the same sentence it carried there, which is
+   * PRO's own: *"Inset deductions still to come from Piotr — BLOCKERS #6"*.
+   * A greyed chip with the reason a client can read, rather than PRO's note to
+   * the workshop.
+   */
+  insetStillToCome: 'Inset drawers are not offered yet — the deductions are still to come.',
+
+  /**
+   * T70 F5 · PREDICATE: `projectStore.setUnitFinish`, which writes
+   * `params.front_type_id` on a UNIT — the per-cabinet override
+   * `engine/materials.js resolvePanelMaterial` resolves every front through.
+   * NOT a refusal: it is the GRAIN of the control, said before it is pressed,
+   * because a client who expects to paint one door of six would otherwise
+   * find out by painting all six. Two colours on one carcass would need a
+   * per-PANEL override this engine does not have.
+   */
+  secondColourIsPerWardrobe: 'Pick a colour, then click a front on the stage — that wardrobe\'s fronts '
+    + 'take it. A top box counts as its own.',
+
+  // ─── T70 F4 · DOORS ON THE FIRST LINE, AND THE THREE STATES OF THAT ROW ──
+
+  /**
+   * T70 F4 · PREDICATE: `adapter.doorsOn` — `unit.params.doors`, the store's
+   * own flag, which `projectStore.addDoors` / `removeDoors` write. NOT a
+   * refusal: it is the owner's own T65 F9 sentence about what this row IS
+   * (*"drzwi to osobna decyzja"*), said where he has now asked for the row —
+   * under the STYLE list rather than buried in EXTRAS.
+   */
+  doorsAreASeparateChoice: 'Doors are their own decision — a wardrobe can be left open. '
+    + 'The same pair stands in EXTRAS.',
+
+  /** PREDICATE: `adapter.doorsOn(unitId)` true — ADD has nothing to add. */
+  doorsAreAlreadyOn: 'This wardrobe already has doors.',
+
+  /** PREDICATE: `adapter.doorsOn(unitId)` false — REMOVE has nothing to take. */
+  doorsAreAlreadyOff: 'This wardrobe has no doors to take off.',
+
+  /** PREDICATE: no wardrobe selected at all — the step has nothing to act on. */
+  doorsNeedAWardrobe: 'Pick a wardrobe first — doors are hung on one cabinet.',
+
   /** PREDICATE: a `watch_insert` drawer in a stack whose COUNT is about to
    *  change. `addDrawers` rebuilds the stack and carries only id/kind/index/
    *  mount/zone/variant/height_mm across — `watch_insert`, `watch_layout`,

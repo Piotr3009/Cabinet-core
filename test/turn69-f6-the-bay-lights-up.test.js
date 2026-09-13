@@ -101,14 +101,29 @@ test('F6 · the chips stand in INSIDE, and only where one bay is not a choice', 
   const panel = read('src/retail/design/Options.jsx');
   assert.match(panel, /data-testid="inside-bay-chips"/, 'the chip row is gone');
   assert.match(panel, /\{zones\.length > 1 \? \(/, 'the row shows for a single bay');
-  assert.match(panel, /onPointerEnter=\{\(\) => A\.hoverBay\(z\.index\)\}/, 'the chip does not hover');
+  // ─── AMENDED BY T70 F6 ──────────────────────────────────────────────────
+  //
+  // The owner: this never happened. `scripts/t70-f6-probe.mjs` walked the chain
+  // and convicted LINK 6 — `Scene.jsx:1739` hands the hint to the SELECTED unit
+  // only, and `DesignRoom` clears the selection at boot, so a client who has
+  // clicked no wardrobe hovers a chip that writes an integer nobody draws. THIS
+  // test passed anyway because it only asked that the chip WRITES.
+  //
+  // The claim it makes is unchanged and is still the one that matters — the
+  // chip hovers, and it hovers through the shared setter. What it now also
+  // asks is that the hover reaches the cabinet the chip is ABOUT, which is the
+  // click's own line (three lines down, unchanged since T69) moved onto the
+  // pointer. `turn70-f6-the-bay-lights-up-on-hover.test.js` runs the scene's
+  // own arithmetic over it rather than matching source.
+  assert.match(panel, /onPointerEnter=\{\(\) => \{ A\.selectUnitOnStage\(unit\.id\); A\.hoverBay\(z\.index\); \}\}/,
+    'the chip does not hover, or hovers a cabinet the scene is not drawing hints for');
   // The chip SHOWS what the scene shows — both read the one shared integer.
   assert.match(panel, /const hinted = useUiStore\(\(st\) => st\.zoneHint\);/,
     'the chip does not read the hint it writes');
   assert.match(panel, /hinted === z\.index \? ' is-on' : ''/, 'the hovered chip does not light');
   assert.match(panel, /onPointerLeave=\{\(\) => A\.hoverBay\(null\)\}/, 'the hint never goes out');
   // Keyboard reaches it too — a highlight only a mouse can fire is half a control.
-  assert.match(panel, /onFocus=\{\(\) => A\.hoverBay\(z\.index\)\}/);
+  assert.match(panel, /onFocus=\{\(\) => \{ A\.selectUnitOnStage\(unit\.id\); A\.hoverBay\(z\.index\); \}\}/);
   assert.match(panel, /onBlur=\{\(\) => A\.hoverBay\(null\)\}/);
 });
 

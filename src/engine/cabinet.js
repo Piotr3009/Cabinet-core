@@ -1228,6 +1228,40 @@ export function drawerVariantOf(item) {
   return DRAWER_VARIANTS.includes(item?.variant) ? item.variant : null;
 }
 
+// ─── T70 F1 · NO BOARD IS CUT OVER A SHOE BOX ──────────────────────────────
+//
+// The owner, 13.09.2026, verbatim:
+//
+//   *"szuflada na buty super, że traktujesz jak normalną szufladę, ale nie
+//   może mieć półki nad sobą, i skos ma się otwierać razem z boxem, a nie box
+//   się otwiera a reszta zostaje."*
+//
+// T58 wrote the first half of that sentence as a REFUSAL — a shoe drawer
+// standing under a board was refused its INSERT, in words. That is the wrong
+// half of the law and this turn corrects the direction: the client did not ask
+// for the ramp to be refused, he asked for the BOARD NOT TO BE CUT.
+//
+// WHY IT IS GEOMETRY AND NOT TIDINESS. A shoe drawer's sides are LOW by design
+// (`drawers.shoeSideMm`, the 80) and a shoe stands toe-down at the front with
+// its heel up the slope — so the contents stand PROUD of the box, and a board
+// over them is the board they knock against. Section F of the kit says it in
+// the owner's own words: *"bo buty będą chodzić."*
+//
+// `reference/lisp/KIT_WARDROBE_FULL.lsp` states it first, section G, as
+// `SKY:shoeCapsTheStack` — LISP IS LAW and F1 is cut geometry, so the kit
+// speaks before this file does. THREE sites in this file cap a stack with a
+// board and every one of them asks this question: the full-width `PARTITION`
+// and its confirmats, the column's `Z*-PART`, and the overlay stack's own
+// `OVERLAY-FIX` shelf (the site T65 F5 touched).
+//
+// Asked of the TOP item of a stack, because a shoe drawer is the top of its
+// stack or it is refused its insert (T58's *"tylko na wierzchu innych
+// szuflad"*) — and that is the only drawer a cap could ever stand over.
+export function shoeCapsTheStack(items = []) {
+  const list = (items || []).filter(Boolean);
+  return String(list[list.length - 1]?.variant || '').toLowerCase() === 'shoe';
+}
+
 export function shelfVariant(item) {
   const v = String(item?.variant ?? '');
   return SHELF_VARIANTS.includes(v) ? v : 'adjustable';
@@ -3613,7 +3647,15 @@ export function computeCabinet(params, profileOverride) {
   // so turn 8 (F4) sets them back on the same line as the shelves beside them.
   // `partitionDepth` is `internalDepth` when nobody has said otherwise, which
   // is what the AutoLISP cuts and what every golden fixture expects.
-  if (hasDrawers) {
+  //
+  // ─── T70 F1 · …UNLESS THE SHOE BOX IS ON TOP ─────────────────────────────
+  // *"nie może mieć półki nad sobą"* — `shoeCapsTheStack`, stated in the kit
+  // as `SKY:shoeCapsTheStack` before it was stated here. The LINE is untouched
+  // (`partitionY` is still the top of the stack, and the box's own ceiling is
+  // still measured to it); only the BOARD on it is not cut, and neither are
+  // the confirmats that would have held it (the `partition_screw` set below).
+  const shoeTopsTheStack = hasDrawers && shoeCapsTheStack(cfg.drawerItems);
+  if (hasDrawers && !shoeTopsTheStack) {
     panels.push(panel({
       id: 'PARTITION', part: 'PARTITION', role: 'shelf', w: internalWidth, h: partitionDepth, thickness: G,
       edgeCode: codes.none, edgeLen: 0,
@@ -3621,6 +3663,14 @@ export function computeCabinet(params, profileOverride) {
       cnc: rectGeometry(internalWidth, partitionDepth),
       meta: { variant: 'fixed', locked: true, front_mm: internalDepth - partitionDepth },
     }));
+  }
+  if (shoeTopsTheStack) {
+    warnings.push({
+      code: 'SHOE_STACK_UNCAPPED',
+      drawer: cfg.drawerItems.length,
+      message: `Drawer ${cfg.drawerItems.length} is the shoe drawer, so this stack is NOT closed by a`
+        + ' board — the owner\'s law is that a shoe drawer carries nothing above it.',
+    });
   }
   // ─── The VERTICAL partition (turn 11, CLAUDE.md F3.4) ─────────────────────
   //
@@ -4201,17 +4251,44 @@ export function computeCabinet(params, profileOverride) {
       // The column's own CLOSING BOARD — the same horizontal partition the
       // full-width zone has always stood its shelves on, spanning this column
       // only, at the same clearance above its top drawer.
-      panels.push(panel({
-        id: `Z${set.zone + 1}-PART`, part: 'PARTITION', role: 'shelf', w: set.bay.size, h: partitionDepth, thickness: G,
-        edgeCode: codes.none, edgeLen: 0,
-        box: {
-          x: set.bay.from, y: set.partY, z: G, w: set.bay.size, h: G, d: partitionDepth,
-        },
-        cnc: rectGeometry(set.bay.size, partitionDepth),
-        meta: {
-          variant: 'fixed', locked: true, zone: set.zone, front_mm: internalDepth - partitionDepth,
-        },
-      }));
+      //
+      // ─── T70 F1 · …AND THE SAME EXCEPTION ────────────────────────────────
+      // *"nie może mieć półki nad sobą."* A shoe drawer in a COLUMN is the
+      // same shoe drawer, so this asks the same question of the same predicate
+      // (`shoeCapsTheStack`, the kit's `SKY:shoeCapsTheStack`) — one law, three
+      // sites, never three laws.
+      // The board only; the DP panel and its fillers below are the drawer
+      // MECHANISM's own and are cut for a shoe column exactly as for any other.
+      // The set carries `variants`, not items — so the predicate is handed the
+      // one field it asks about. FOUND AND NOT FIXED TONIGHT, stated so it is
+      // not lost: `columnDrawerSets` carries no `items` at all, which is why
+      // the shoe-insert reader at the foot of this file (`shoeItemAt`, T58)
+      // finds nothing for a ZONED drawer and a shoe drawer in a bay comes out
+      // an empty box with no refusal either. That is new cut geometry in a
+      // bay, which is not one of F1's two facts, so it is named in the PR
+      // body rather than cut on the way past.
+      const colShoeTops = shoeCapsTheStack((set.variants || []).map((v) => ({ variant: v })));
+      if (colShoeTops) {
+        warnings.push({
+          code: 'SHOE_STACK_UNCAPPED',
+          drawer: (set.variants || []).length,
+          zone: set.zone,
+          message: `Column ${set.zone + 1}'s top drawer is the shoe drawer, so that column is NOT`
+            + ' closed by a board — the owner\'s law is that a shoe drawer carries nothing above it.',
+        });
+      } else {
+        panels.push(panel({
+          id: `Z${set.zone + 1}-PART`, part: 'PARTITION', role: 'shelf', w: set.bay.size, h: partitionDepth, thickness: G,
+          edgeCode: codes.none, edgeLen: 0,
+          box: {
+            x: set.bay.from, y: set.partY, z: G, w: set.bay.size, h: G, d: partitionDepth,
+          },
+          cnc: rectGeometry(set.bay.size, partitionDepth),
+          meta: {
+            variant: 'fixed', locked: true, zone: set.zone, front_mm: internalDepth - partitionDepth,
+          },
+        }));
+      }
 
       // ─── TURN 33 (CLAUDE.md F6): THE DP AND ITS FILLERS, AT THE COLUMN ────
       //
@@ -4533,7 +4610,31 @@ export function computeCabinet(params, profileOverride) {
     //
     // Full width between the sides. `locked` says it is not a shelf somebody
     // drags: it belongs to the stack, and deleting the stack is what removes it.
-    if (budr.overlay) {
+    // ─── T70 F1 · …AND THE THIRD CAP SITE, WHICH IS THIS ONE ───────────────
+    //
+    // *"nie może mieć półki nad sobą."* CLAUDE.md F1 names THIS site by its
+    // history — *"read where the capping shelf is emitted (T65 F5 touched the
+    // same site)"* — and it is the only one of the three that cuts a board
+    // whose `part` is literally `SHELF`. An overlay stack topped by a shoe
+    // drawer is not capped, by the same predicate the other two ask
+    // (`shoeCapsTheStack`, stated first in the kit as `SKY:shoeCapsTheStack`).
+    //
+    // HONEST NOTE, because it is a fact about today and not about the law: the
+    // store's `addShoeDrawer` writes `kind: 'drawer'`, so a shoe reaches the
+    // INTERNAL stack and this branch is the one no shoe can enter TODAY. It
+    // carries the law anyway — the day an overlay shoe drawer is offered, the
+    // board is already not cut, and a law that holds at two of three sites is
+    // the kind of half-law this file spends its comments undoing.
+    const overlayShoeTops = budr.overlay && shoeCapsTheStack(overlayDrawerItems(cfg.overlayDrawers));
+    if (budr.overlay && overlayShoeTops) {
+      warnings.push({
+        code: 'SHOE_STACK_UNCAPPED',
+        drawer: overlay.count,
+        message: `Overlay drawer ${overlay.count} is the shoe drawer, so this stack has NO capping`
+          + ' shelf — the owner\'s law is that a shoe drawer carries nothing above it.',
+      });
+    }
+    if (budr.overlay && !overlayShoeTops) {
       const shelfW = internalWidth;
       // ─── T65 F5 · THIS ONE SHELF HAS NO SETBACK ────────────────────────────
       //
@@ -7259,13 +7360,20 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     // Partition confirmats + drawer-panel fixings
-    for (const sideId of ['BUL', 'BUR']) {
-      for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
-        addDrill(sideId, 'partition_screw', pz.layers.screw, x, partitionCentreY, DP.screwDiameter);
+    //
+    // T70 F1: a confirmat is a hole for a BOARD. Where the shoe box tops the
+    // stack there is no board (`shoeTopsTheStack` above), so there is nothing
+    // to screw to and the machine does not drill for it. The DP fixings below
+    // are the drawer MECHANISM's own and are untouched.
+    if (!shoeTopsTheStack) {
+      for (const sideId of ['BUL', 'BUR']) {
+        for (const x of [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd]) {
+          addDrill(sideId, 'partition_screw', pz.layers.screw, x, partitionCentreY, DP.screwDiameter);
+        }
       }
-    }
-    for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
-      addDrill('BACK', 'partition_screw', pz.layers.screw, x, partitionCentreY, DP.screwDiameter);
+      for (const x of [G + pz.screwFromEnd, W / 2, W - G - pz.screwFromEnd]) {
+        addDrill('BACK', 'partition_screw', pz.layers.screw, x, partitionCentreY, DP.screwDiameter);
+      }
     }
     if (dpLeft) {
       addDrill('BUL', 'dp_screw', pz.layers.screw, DP.screwDepth, G + pz.screwFromEnd, DP.screwDiameter);

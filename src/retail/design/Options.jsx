@@ -471,8 +471,36 @@ function InsidePanel({ unit, project }) {
               data-on={hinted === z.index ? 'yes' : 'no'}
               data-bay={z.index}
               title={`${Math.round(z.size)} mm clear`}
-              onPointerEnter={() => A.hoverBay(z.index)}
-              onFocus={() => A.hoverBay(z.index)}
+              // ─── T70 F6 · THE HOVER REACHES THE CABINET THE CHIP IS ABOUT
+              //
+              // The owner: T69 said this was fixed; it does not happen.
+              // `scripts/t70-f6-probe.mjs` walked the chain and convicted
+              // LINK 6 — `Scene.jsx:1739`:
+              //
+              //     zoneHint={selectedUnitId === unit.id ? zoneHint : null}
+              //
+              // Every link was present and the chip DID write the integer.
+              // But the scene draws the hint for the SELECTED unit, and
+              // `DesignRoom` calls `ui.clearSelection()` at boot — so a client
+              // who walks WHAT → WHERE → SIZE → INSIDE has selected nothing,
+              // while this column is still showing a wardrobe's chips because
+              // `adapter.designUnit` falls back to the first one. The chips
+              // were about a cabinet the scene did not think was selected.
+              //
+              // T69's own test pressed a chip first, and the CLICK below
+              // already selects — which is why its walk agreed and the owner's
+              // pointer did not.
+              //
+              // THE FIX IS THE CLICK'S OWN LINE, ON THE HOVER. Not a second
+              // highlighter, not a change to `Scene` or `UnitView` (both
+              // shared with PRO and both correct): the same
+              // `selectUnitOnStage` the click has always called, so pointing
+              // at a bay of THIS wardrobe makes it the wardrobe the scene is
+              // drawing hints for. Leaving with `onPointerLeave` puts the hint
+              // out and leaves the SELECTION standing, which is what a client
+              // who has just pointed at a cabinet expects.
+              onPointerEnter={() => { A.selectUnitOnStage(unit.id); A.hoverBay(z.index); }}
+              onFocus={() => { A.selectUnitOnStage(unit.id); A.hoverBay(z.index); }}
               onBlur={() => A.hoverBay(null)}
               onClick={() => { A.selectUnitOnStage(unit.id); A.hoverBay(z.index); }}
             >

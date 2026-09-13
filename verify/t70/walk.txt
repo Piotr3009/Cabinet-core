@@ -1,0 +1,57 @@
+─── T70 · THE ACCEPTANCE WALK ───
+
+Run section by section against `npx vite preview --port 4173`, the hardware
+served from the silent showroom (T23 R8). Every line below is a real browser
+reading the real build; the frames beside this file are what it saw.
+
+ ok  a shoe drawer on top of the stack leaves NO capping board — 0 PARTITION panel(s)
+ ok  …and no confirmats for a board nobody cut — 0 partition_screw hole(s)
+ ok  the insert is cut — one ramp, two lanes — 1 ramp · 2 dividers
+ ok  the cut list SAYS the stack is open — Drawer 3 is the shoe drawer, so this stack is NOT closed by a board — the owner's law is that a shoe drawer ca
+ ·   the shoe drawer is the top of its stack — drawer 3
+ ok  its ramp and dividers answer to the SAME drawer index — drawer_box · front · shoe_insert
+ ·   its front was opened on the stage — W01-DF3
+ ok  the FRONT is open, and the ramp is in the set that rides with it — open 1 · DRAWER-SIDE, DRAWER-BOX-FRONT, DRAWER-BOX-BACK, DRAWER-BOTTOM, SHOE-RAMP, SHOE-DIVIDER
+
+ ok  WITH FRONTS / BARE BOXES are gone from the column — {"display":"inline-block","visible":true,"box":0}
+ ok  STANDARD / BELT-TIE / +GLASS are gone from the column — {"display":"inline-block","visible":true,"box":0}
+ ok  …hidden, NOT cut — every hooked chip is still in the DOM — {"inDom":5,"onScreen":0}
+ ok  …and the disabled INSET chip goes with its row — {"inDom":true,"h":0}
+ ok  …and the paragraph under them left the column too — {"inDom":true,"h":0}
+ ok  COUNT · HEIGHT · ADD are all still there — {"add":true,"fields":["Count","Height"]}
+
+ ok  the dock carries FRONTS OR BARE BOXES
+ ok  …and WHAT THE BOXES CARRY
+ ok  …and the paragraph that stood under them — Stacked from the bottom, 100–600 mm each. A partition closes the stack automatically (SPEC 4.7), and the doors
+ ok  …and the INNER BOX HEIGHT beside the front height
+ ok  the quiet line reads "front N · inside N" — front 200 · inside 131
+ ok  …and it is the ENGINE's own clear height, not a number retail typed — front 200 · inside 131 vs engine 131
+ ok  BARE BOXES writes the WHOLE stack — internal,internal,internal
+
+ ok  the pair stands UNDER the style list — {"style":138,"add":414,"opening":782,"colour":936}
+ ok  …and ABOVE everything else in the step — {"style":138,"add":414,"opening":782,"colour":936}
+ ok  a client's wardrobe ARRIVES with doors (WHERE hangs them as it places it) — doors:true · 2 leaf/leaves
+ ok  so REMOVE is live and ADD is refused, with a reason — {"add":false,"remove":true}
+ ok  REMOVE DOORS takes them off — and the engine cuts no leaf — doors:false
+ ok  …and the pair swaps over: ADD live, REMOVE refused — {"add":true,"remove":false}
+ ok  ADD DOORS hangs them again — the same store path EXTRAS presses — doors:true · 2 leaf/leaves
+
+ ok  the sheen row offers the ENGINE's own six words — DEAD MATT · MATT · EGGSHELL · SATIN · SEMI-GLOSS · GLOSS
+ ok  …and it is not a slider
+ ok  pressing GLOSS writes the design's own sheen — sheen 100
+ ok  a fresh design carries ONE colour row — ALL FRONTS — 1 row(s)
+ ok  + ADD A SECOND COLOUR grows the project's own type list — 2 row(s) · 2 type(s)
+ ok  …and the row it opened has its own picker
+ ok  clicking a front while the row is up gives THAT wardrobe the colour — f2
+ ok  REVIEW names every colour used — FRONT FINISH 2
+
+ ·   the client has clicked no wardrobe — selectedUnitId=null
+ ok  a real pointer over the chip writes the hint — zoneHint=1
+ ok  …and it reaches the cabinet the chip is about — u_uat8wx4
+ ok  SO THE SCENE DRAWS IT — the fault the owner reported is gone — Scene would pass 1
+ ok  the chip lights with the bay — one integer, both read it
+
+ ok  seven clicks end on a wardrobe with a summary — THE SPACE4000 mm wall, ceiling 2500 mm, levelWARDROBE1200 mm wide · 2150 mm high · 568 mm deepDOORS1FRONT STYLEShakerFRONT FINISHRAL 3005 Wine Red, sprayedCARCASS FINISHEGGER H3325
+ ok  DONE → ADD TO MY ESTIMATE lands one item on the estimate — #/estimate · 1 row(s)
+
+40 checks · 0 failed

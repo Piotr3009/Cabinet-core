@@ -10,6 +10,9 @@ import { REASONS } from './reasons.js';
 import * as A from './adapter.js';
 import { useUiStore } from '../../stores/uiStore.js';
 import MaterialSlot from './material/MaterialSlot.jsx';
+// T70 F5 · the SECOND and THIRD front colour's own picker — PRO's copied
+// swatch board (`scripts/t63-copies.mjs`), rendered as it stands.
+import ColourPicker from './material/ColourPicker.jsx';
 import WizardHardware from './material/WizardHardware.jsx';
 import AddItems from './detail/AddItems.jsx';
 import { CATEGORIES, stepIndex } from './Categories.jsx';
@@ -607,6 +610,28 @@ const STYLE_LINES = Object.freeze({
 
 function FrontsPanel({ design, project }) {
   const b = A.designBounds();
+  // ─── T70 F5 · THE COLOUR ROWS, AND THE ONE THAT IS TAKING CLICKS ─────────
+  // `painting` is the row a stage click lands on. It is RETAIL's own state and
+  // deliberately not a store field: it is a mode this panel is in, it dies
+  // with the panel, and nothing outside this step has any business reading it.
+  const [painting, setPainting] = useState(null);
+  const [said, setSaid] = useState('');
+  const colourRows = A.frontColourRows(project);
+  // A click on the stage is the SHARED store's own selection — the same fact
+  // PRO reads — so no second selection law is written for this.
+  const picked = useUiStore((st) => st.selectedElement);
+  useEffect(() => {
+    if (!painting) return;
+    const word = A.paintFrontOnStage(picked, painting);
+    if (word) setSaid(word);
+    // `picked` is the whole trigger: each new front the client clicks paints
+    // once. `painting` stays on so a colour can be given to several.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [picked, painting]);
+  // A colour that is removed takes its row with it.
+  useEffect(() => {
+    if (painting && !colourRows.some((r) => r.id === painting)) setPainting(null);
+  }, [colourRows, painting]);
   const style = design?.fronts?.style || 'S';
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
   const opening = A.frontOpeningOf(project);
@@ -711,6 +736,113 @@ function FrontsPanel({ design, project }) {
         <div data-testid="fronts-material">
           <MaterialSlot kind="front" title="Fronts — what are they made of?" />
         </div>
+      </Field>
+
+      {/* ─── T70 F5 · A DESIGN MAY CARRY TWO OR THREE FRONT COLOURS ────────
+          CLAUDE.md's own reading of *"2–3 typy kolorów frontów"*, decided for
+          the owner and overturnable in one word: the client may give a SECOND
+          and a THIRD colour to chosen fronts.
+
+          ITS MECHANISM IS THE BRIEF'S: the store's `setUnitFinish` /
+          `resetUnitFinish`, the per-unit override that has sat unused since
+          T60 — *"never a second palette law."*  So the grain of it is PER
+          CABINET, and the row says so rather than implying otherwise: clicking
+          a front colours THAT wardrobe's fronts. A top box is a unit of its
+          own and can take a colour by itself.
+
+          ALL FRONTS is row one: the project's own type, which is the ABSENCE
+          of an override — so pressing it and clicking a wardrobe is
+          `resetUnitFinish`, the other half of the named pair. */}
+      <Field label="MORE THAN ONE COLOUR" note={REASONS.secondColourIsPerWardrobe} block>
+        <div className="pbi-opening-list" data-testid="fronts-colour-rows">
+          {colourRows.map((row) => (
+            <button
+              key={row.id}
+              type="button"
+              className={`pbi-opening-row${painting === row.id ? ' is-on' : ''}`}
+              data-testid={`fronts-colour-${row.id}`}
+              data-on={painting === row.id ? 'yes' : 'no'}
+              data-wearing={row.wearing}
+              aria-pressed={painting === row.id}
+              title={painting === row.id
+                ? 'Click a wardrobe front on the stage to give it this colour'
+                : 'Pick this colour, then click the fronts it goes on'}
+              onClick={() => setPainting(painting === row.id ? null : row.id)}
+            >
+              <span
+                className="pbi-colour-dot"
+                style={row.colour?.hex ? { background: row.colour.hex } : undefined}
+                aria-hidden
+              />
+              <span className="pbi-choice">{row.label}</span>
+              <span className="pbi-choice pbi-quiet">
+                {`${row.colour?.name || row.colour?.hex || 'not chosen'} · ${row.wearing}`}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      {/* The ACTIVE row's own picker, and the two acts that belong to it. The
+          first row's colour is the MATERIAL SLOT's above — one road to the
+          project's own front finish, exactly as it was. */}
+      {painting && painting !== colourRows[0]?.id ? (
+        <Field label="THIS COLOUR" block>
+          <div data-testid="fronts-colour-picker">
+            <ColourPicker
+              label="Sprayed"
+              value={colourRows.find((r) => r.id === painting)?.colour || null}
+              onChange={(c) => A.setFrontColourFor(painting, c)}
+            />
+          </div>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="fronts-colour-remove"
+              onClick={() => { setSaid(A.removeFrontColour(painting)); setPainting(null); }}
+            >
+              REMOVE THIS COLOUR
+            </Button>
+          </div>
+        </Field>
+      ) : null}
+
+      {colourRows.length < A.frontTypeCap() ? (
+        <div className="pbi-duty-actions">
+          <Button
+            kind="secondary"
+            size="small"
+            data-testid="fronts-colour-add"
+            onClick={() => { const id = A.addFrontColour(); if (id) setPainting(id); }}
+          >
+            {colourRows.length === 1 ? '+ ADD A SECOND COLOUR' : '+ A THIRD'}
+          </Button>
+        </div>
+      ) : null}
+      {said ? <Said testid="fronts-said">{said}</Said> : null}
+
+      {/* ─── T70 F5 · AND HOW GLOSSY IT IS, UNDER THE COLOUR ───────────────
+          *"A SHEEN control sits under the front colour (matt → satin →
+          gloss), the engine's own sheen vocabulary from the profile."*
+
+          THE SIX WORDS ARE THE ENGINE'S — `engine/design.js sheenLabel`, read
+          before this was written, expressed as shares of
+          `profile.appearance.sheenScale.max` so a workshop that reshapes the
+          scale keeps them in proportion. The VALUES are `sheenSteps`. The
+          WRITE is `setDesign({ sheen })`, which is the one call PRO's own
+          `SheenSlider` makes — one law, two doors.
+
+          NOT A SLIDER, and that is the owner's own ruling rather than an
+          omission: *"nie widze sensu [suwaków] bo i tak nie trafisz"* (T61
+          F5). PRO's surface stays PRO's; the vocabulary is shared. */}
+      <Field label="SHEEN" note={A.sheenWords(project)}>
+        <ChipRow
+          testid="fronts-sheen"
+          value={A.sheenOf(project)}
+          options={A.sheenChoices().map((c) => ({ id: c.id, label: c.label, title: c.hint }))}
+          onPick={(id) => setSaid(A.setSheen(id))}
+        />
       </Field>
 
       {/* ─── T68 F8 · TOMBSTONES: `MORE OPTIONS` AND THE TWO BLOCKS IN IT ──

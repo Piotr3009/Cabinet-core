@@ -404,6 +404,18 @@ export const REASONS = {
    */
   insetStillToCome: 'Inset drawers are not offered yet — the deductions are still to come.',
 
+  /**
+   * T70 F5 · PREDICATE: `projectStore.setUnitFinish`, which writes
+   * `params.front_type_id` on a UNIT — the per-cabinet override
+   * `engine/materials.js resolvePanelMaterial` resolves every front through.
+   * NOT a refusal: it is the GRAIN of the control, said before it is pressed,
+   * because a client who expects to paint one door of six would otherwise
+   * find out by painting all six. Two colours on one carcass would need a
+   * per-PANEL override this engine does not have.
+   */
+  secondColourIsPerWardrobe: 'Pick a colour, then click a front on the stage — that wardrobe\'s fronts '
+    + 'take it. A top box counts as its own.',
+
   /** PREDICATE: a `watch_insert` drawer in a stack whose COUNT is about to
    *  change. `addDrawers` rebuilds the stack and carries only id/kind/index/
    *  mount/zone/variant/height_mm across — `watch_insert`, `watch_layout`,

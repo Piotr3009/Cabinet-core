@@ -3257,7 +3257,9 @@ export function selectionForMenu(menu, unitId) {
 // adapter is still the one place a retail-authored file speaks the store.
 
 import { anchorOfEvent } from '../../lib/modalAnchor.js';
-import { migrateDesign } from '../../engine/design.js';
+import {
+  migrateDesign, projectSheen, sheenLabel, sheenSteps, clampSheen,
+} from '../../engine/design.js';
 import { normaliseFrontTypes, pickerForSource, sourceById } from '../../engine/projectSettings.js';
 import { railChosenAlone } from '../../engine/railAssembly.js';
 
@@ -3668,6 +3670,209 @@ export function insideColourOf(project) {
   if (front && carcass === front) return 'fronts';
   if (carcass === swatchFor(WHITE_DECOR).finishId) return 'white';
   return 'chosen';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// T70 F5 · FRONTS: SHEEN, AND MORE THAN ONE COLOUR
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * ─── THE SHEEN, IN THE ENGINE'S OWN WORDS ──────────────────────────────────
+ *
+ * CLAUDE.md F5: *"A SHEEN control sits under the front colour (matt → satin →
+ * gloss), the engine's own sheen vocabulary from the profile — read it before
+ * writing the control; if PRO has a sheen surface, copy it."*
+ *
+ * READ FIRST, and this is what was there. The vocabulary is
+ * `engine/design.js sheenLabel` — Dead matt · Matt · Eggshell · Satin ·
+ * Semi-gloss · Gloss — six BANDS expressed as shares of
+ * `profile.appearance.sheenScale.max`, so a workshop that reshapes the scale
+ * keeps the words in proportion to it. The VALUES are `sheenSteps(profile)`,
+ * 5 % to 100 % in fives. Not one number or word below is retail's.
+ *
+ * ─── AND PRO'S SURFACE IS NOT COPIED, WHICH IS A DECISION, NOT AN OMISSION ──
+ *
+ * PRO has one: `src/components/SheenSlider.jsx`, an `<input type="range">`
+ * over those twenty stops. It is NOT copied here and it may not be, because
+ * the owner has already ruled on sliders in this app — T61 F5, verbatim: *"nie
+ * widze sensu [suwaków] bo i tak nie trafisz, trzeba bedzie wpisac."*  Retail
+ * has had no slider since, and a copied one would be this room breaking the
+ * client's own law to obey the copy law.
+ *
+ * So the SURFACE is retail's chip row and the VOCABULARY, the VALUES and the
+ * ONE WRITE PATH are PRO's: `setDesign({ sheen })`, the same call
+ * `SheenSlider` makes, into the same field `3d/materials.js` reads. One law,
+ * two doors — the HANDLES pattern, and the answer to "how many surfaces write
+ * a sheen" is still one.
+ */
+export function sheenChoices() {
+  const profile = P();
+  const seen = new Map();
+  // The band's TOP step represents it — a lacquer is ordered at a round
+  // percentage, and the top of a band is the roundest number in it.
+  for (const value of sheenSteps(profile)) seen.set(sheenLabel(value, profile), value);
+  return [...seen.entries()].map(([label, value]) => ({
+    id: label, label: label.toUpperCase(), value, hint: `${value} % gloss`,
+  }));
+}
+
+/** Which BAND this project's sheen falls in — the chip that is lit. */
+export const sheenOf = (project) => sheenLabel(projectSheen(migrateDesign(project?.design), P()), P());
+
+/** …and the exact number behind it, for the line under the row. */
+export const sheenPercent = (project) => projectSheen(migrateDesign(project?.design), P());
+
+/** "Satin · 60 % gloss" — the band and the number it actually is. */
+export function sheenWords(project) {
+  const value = sheenPercent(project);
+  return `${sheenLabel(value, P())} · ${value} % gloss`;
+}
+
+/**
+ * Press a band. A project ALREADY in that band is left alone — pressing SATIN
+ * on a 60 must not quietly make it a 65, which is the whole difference between
+ * a band control and a stepped one.
+ */
+export function setSheen(id) {
+  const profile = P();
+  const project = S().project;
+  if (sheenOf(project) === id) return sheenWords(project);
+  const wanted = sheenChoices().find((c) => c.id === id);
+  if (!wanted) return '';
+  S().setDesign({ sheen: clampSheen(wanted.value, profile) });
+  return sheenWords(S().project);
+}
+
+/**
+ * ─── A DESIGN MAY CARRY TWO OR THREE FRONT COLOURS ─────────────────────────
+ *
+ * CLAUDE.md's OWN decision, taken for the owner and overturnable in one word:
+ * *"2–3 typy kolorów frontów"* means *"the client may give a second and a
+ * third colour to chosen fronts."*
+ *
+ * AND ITS OWN MECHANISM, named in the brief: *"Uses the store's existing
+ * `setUnitFinish` / `resetUnitFinish` — the per-unit override that has sat
+ * unused since T60 — never a second palette law."*
+ *
+ * SO THE GRAIN OF IT IS PER CABINET, and this is stated plainly rather than
+ * implied: `setUnitFinish` writes `params.front_type_id` on a UNIT, and
+ * `engine/materials.js resolvePanelMaterial` resolves every front of that unit
+ * through it. Clicking a front on the stage therefore colours THAT WARDROBE's
+ * fronts — including a top box, which is a unit of its own and can take a
+ * third colour by itself. Two colours on two leaves of ONE cabinet is a
+ * per-PANEL override this engine does not have, and inventing one would be the
+ * "second palette law" the brief forbids. The row says so in words.
+ *
+ * The TYPES are the project's own, capped by `profile.projectSettings
+ * .maxFrontTypes` (3 since T32) and grown by the store's own `setFrontTypes`.
+ */
+export const frontTypeCap = () => P().projectSettings.maxFrontTypes;
+
+export function frontColourRows(project) {
+  const design = migrateDesign(project?.design);
+  const types = normaliseFrontTypes(design.fronts?.types, P());
+  const units = S().units || [];
+  return types.map((t, i) => ({
+    id: t.id,
+    // The FIRST row is the project's own answer and wears the brief's name for
+    // it; the others are named by their turn.
+    label: i === 0 ? 'ALL FRONTS' : `COLOUR ${i + 1}`,
+    colour: t.colour || null,
+    finishId: t.finish_id || null,
+    source: t.source || null,
+    // How many cabinets are actually wearing it. Row 1 is the FALL-BACK: every
+    // unit with no override of its own follows it, which is what "ALL FRONTS"
+    // means and why it is never zero.
+    wearing: i === 0
+      ? units.filter((u) => !u.params?.front_type_id || u.params.front_type_id === t.id).length
+      : units.filter((u) => u.params?.front_type_id === t.id).length,
+  }));
+}
+
+/** + ADD A SECOND COLOUR / + A THIRD — the store's own grow, capped by the profile. */
+export function addFrontColour() {
+  const rows = frontColourRows(S().project);
+  if (rows.length >= frontTypeCap()) return '';
+  S().setFrontTypes(rows.length + 1);
+  return `f${rows.length + 1}`;
+}
+
+/**
+ * …and taking one away takes it off every cabinet wearing it FIRST, through
+ * `resetUnitFinish` — the other half of the named pair. A unit left pointing
+ * at a type that no longer exists falls back to type 1 silently
+ * (`resolvePanelMaterial`), which is a cabinet whose colour changed and never
+ * said so.
+ */
+/**
+ * ─── THE ONE ROAD, AND IT IS ONE FUNCTION ──────────────────────────────────
+ *
+ * `test/turn63-the-copies.test.js` holds this app to ONE surface that writes a
+ * cabinet's finish. Before tonight that was PRO's copied `UnitFinishModal`,
+ * which speaks the store directly because that is what makes it a copy. F5
+ * gives retail's own FRONTS step a second door to the same law, and a second
+ * DOOR is not a second law only if there is exactly one function behind it.
+ *
+ * This is that function. Everything in this file that colours a cabinet calls
+ * it and nothing calls the store's pair directly, so the balance answer stays
+ * one — and `setUnitFinish(` and `resetUnitFinish(` each appear exactly once
+ * in the retail tree outside the copy, which is what the test now asserts.
+ *
+ * @param {string[]} unitIds
+ * @param {string|null} typeId  null means "follow the project" — the reset
+ */
+const writeUnitFront = (unitIds, typeId) => (typeId
+  ? S().setUnitFinish(unitIds, { front_type_id: typeId })
+  : S().resetUnitFinish(unitIds));
+
+export function removeFrontColour(typeId) {
+  const rows = frontColourRows(S().project);
+  if (rows.length <= 1 || !rows.some((r) => r.id === typeId)) return '';
+  const wearing = (S().units || []).filter((u) => u.params?.front_type_id === typeId).map((u) => u.id);
+  return S().batch(() => {
+    if (wearing.length) writeUnitFront(wearing, null);
+    S().setFrontTypes(rows.length - 1);
+    return wearing.length
+      ? `${wearing.length} wardrobe${wearing.length === 1 ? '' : 's'} went back to the first colour.`
+      : '';
+  });
+}
+
+/** One row's colour, through the store's one front-colour setter. */
+export const setFrontColourFor = (typeId, colour) => S().setFrontType(typeId, { source: 'spray', colour });
+
+/**
+ * CLICK A FRONT WHILE A COLOUR ROW IS ACTIVE.
+ *
+ * The selection is the SHARED store's (`uiStore.selectElement`, what a click on
+ * the stage writes), so this reads the same fact PRO reads and adds no second
+ * selection law. It acts only on a FRONT — clicking a shelf while a colour is
+ * up must do nothing, or the control paints by accident.
+ *
+ * Row 1 is `resetUnitFinish`: ALL FRONTS is "follow the project", which is the
+ * absence of an override and not an override of its own.
+ *
+ * @returns {string} what happened, in words, or '' where nothing did
+ */
+export function paintFrontOnStage(selection, typeId) {
+  const unitId = selection?.unitId || null;
+  const ref = selection?.elementRef || null;
+  if (!unitId || !ref || !typeId) return '';
+  const panel = (resultOf(unitId)?.panels || []).find((p) => p.id === ref) || null;
+  if (!panel || panel.role !== 'front') return '';
+  const unit = unitOf(unitId);
+  const name = unit?.params?.unit_num ? `Wardrobe ${unit.params.unit_num}` : 'That wardrobe';
+  const rows = frontColourRows(S().project);
+  const row = rows.find((r) => r.id === typeId);
+  if (!row) return '';
+  if (rows[0]?.id === typeId) {
+    if (!unit?.params?.front_type_id) return '';
+    writeUnitFront([unitId], null);
+    return `${name} follows the project's own front colour again.`;
+  }
+  if (unit?.params?.front_type_id === typeId) return '';
+  writeUnitFront([unitId], typeId);
+  return `${name}'s fronts take ${row.label.toLowerCase()}.`;
 }
 
 /** The estimate page's summary line: what fronts, in one breath. */

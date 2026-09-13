@@ -523,8 +523,32 @@ test('T63 · exactly ONE surface writes a unit\'s finish — UnitFinishModal, co
     }
   };
   walk('src/retail');
-  assert.deepEqual(writers, ['src/retail/design/material/UnitFinishModal.jsx'],
+  // ─── AMENDED BY T70 F5 ──────────────────────────────────────────────────
+  //
+  // CLAUDE.md F5 gives retail's own FRONTS step a second and third front
+  // colour and NAMES the mechanism: *"Uses the store's existing
+  // `setUnitFinish` / `resetUnitFinish` — the per-unit override that has sat
+  // unused since T60 — never a second palette law."*
+  //
+  // So there is a second DOOR, and the law this test carries is that there is
+  // not a second LAW. Two things make that true and both are asserted below:
+  // the only retail-authored file that speaks the pair is the ADAPTER — which
+  // is the one place any retail-authored file is allowed to speak the store at
+  // all — and inside it the pair is spoken by exactly ONE function,
+  // `writeUnitFront`, which every colouring call in the file goes through.
+  //
+  // The copy is untouched and still speaks the store directly, because that is
+  // what makes it a copy.
+  assert.deepEqual(writers,
+    ['src/retail/design/adapter.js', 'src/retail/design/material/UnitFinishModal.jsx'],
     `a unit's finish is written from ${writers.length} places: ${writers.join(', ')}`);
+  const one = uncomment(read('src/retail/design/adapter.js'));
+  assert.equal((one.match(/S\(\)\.setUnitFinish\(/g) || []).length, 1,
+    'the adapter has more than one road to a cabinet\'s front');
+  assert.equal((one.match(/S\(\)\.resetUnitFinish\(/g) || []).length, 1,
+    'the adapter has more than one road back to the project\'s front');
+  assert.match(one, /const writeUnitFront = \(unitIds, typeId\) => \(typeId/,
+    'the one road lost its name');
   // …and the project palette is still written by the project surfaces only —
   // the copied slot, through the adapter's four setters.
   const adapter = uncomment(read('src/retail/design/adapter.js'));

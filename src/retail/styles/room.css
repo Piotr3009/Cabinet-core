@@ -1050,6 +1050,30 @@
   text-align: left;
   transition: border-color 120ms linear, color 120ms linear;
 }
+/* ─── T70 F5 · THE COLOUR ROW'S OWN SWATCH ─────────────────────────────────
+ *
+ * A colour row says what colour it is. The swatch takes the row's own hex as
+ * an inline background — the only place in this room a colour is inline,
+ * because here the colour IS the datum — and falls back to the paper where the
+ * client has not chosen one yet, which reads as "not chosen" rather than as a
+ * black square somebody picked.
+ *
+ * The row's three parts are the dot, the name and the count; the name takes
+ * the slack so the count sits at the right edge like every other row's. */
+.pbi-colour-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+  margin-right: var(--pbi-gap-2);
+  border-radius: var(--pbi-control-radius);
+  border: 1px solid var(--pbi-stone-line);
+  /* A row with no colour chosen yet shows the PAPER, outlined — not a black
+     square, which would read as a colour somebody picked. */
+  background: var(--pbi-porcelain);
+}
+.pbi-opening-row > .pbi-choice:not(.pbi-quiet) { flex: 1 1 auto; }
+.pbi-opening-row > .pbi-choice.pbi-quiet { flex: 0 0 auto; text-transform: none; }
+
 .pbi-opening-row:hover { border-color: var(--pbi-deep-gold); }
 .pbi-opening-row.is-on {
   border-color: var(--pbi-deep-gold);

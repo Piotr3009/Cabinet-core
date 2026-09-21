@@ -73,6 +73,16 @@ export const DRAWING_LAYERS = {
   // AutoLISP never had to draw them because AutoCAD's template already did.
   FRAME: { aci: 7, colour: '#111111', width: 0.5, pen: 'OUTLINE' },
   FRAME_LIGHT: { aci: 7, colour: '#444444', width: 0.2, pen: 'FINE' },
+  // ─── T71: THE SHEET SET'S OWN TWO INKS ───────────────────────────────────
+  // A muted grey for the small words of a title block and a column (the
+  // labels over the values, the legend headings): present, never competing
+  // with a figure. And the set's cut fill, a paper grey a section bar is
+  // filled with so the eye finds the cut before it finds anything else.
+  SHEET_MUTED: { aci: 8, colour: '#6F6F6F', width: 0.18, pen: 'FINE' },
+  SHEET_CUT: { aci: 7, colour: '#151515', width: 0.7, pen: 'CUT' },
+  // What the client supplies and the workshop builds around: the dishwasher,
+  // the fridge, the sink. Blue, as the owner's set draws them (ACI 5).
+  APPLIANCE: { aci: 5, colour: '#1A3CE6', width: 0.18, pen: 'THIN', dash: [4, 3] },
 };
 
 export function drawingLayer(name) {

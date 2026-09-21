@@ -49,26 +49,39 @@ const groups = () => wallGroups(t43Entries(P), P);
 
 // ═══ THE SHEET LIST ════════════════════════════════════════════════════════
 
+const SET_NAMES = [
+  'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
+  'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
+  'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
+  'Wall A · Perspective view', 'Wall B · Perspective view',
+  'Visualisation', 'Cut list and materials',
+];
+
 test('F5 — the set is exactly the seven sheets CLAUDE.md names', () => {
-  assert.deepEqual(setOf().map((s) => s.name), [
-    'Wall A /1', 'Wall A /2', 'Wall A /3',
-    'Wall B /1', 'Wall B /2', 'Wall B /3',
-    'Horizontal section',
-  ]);
+  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
+  // Seven became the thirteen of the set: `/3` is `Wall A · Sections A-A`,
+  // the horizontal section is the two plans, and the cover, perspectives,
+  // visualisation and cut list join.
+  assert.deepEqual(setOf().map((s) => s.name), SET_NAMES);
 });
 
 test('F5 — …and the horizontal section really does render on HIS kind of project', () => {
   // T42's own census note: the sheet exists, but nobody had looked at it on a
   // project with shelves, drawers and a turned cabinet on it.
-  const plan = setOf().find((s) => s.variant === 'section');
-  assert.ok(plan, 'the sheet is in the set');
-  const svg = sheetToSvg(plan.sheet, { kind: 'plan' });
-  assert.match(svg, /data-cc-drawing="plan"/);
-  // Every cabinet in the job, TURNED ONES INCLUDED, is on the plan — which is
+  // T71: the horizontal section is now TWO plans, cut through the base run
+  // and through the wall run; a cabinet is on the one its height is cut by.
+  const plans = setOf().filter((s) => s.variant === 'plan-base' || s.variant === 'plan-wall');
+  assert.equal(plans.length, 2, 'both plans are in the set');
+  const svgs = plans.map((p) => sheetToSvg(p.sheet, { kind: 'plan' }));
+  for (const svg of svgs) assert.match(svg, /data-cc-drawing="plan"/);
+  // Every cabinet in the job, TURNED ONES INCLUDED, is on a plan, which is
   // the whole reason the elevations are allowed to leave one off.
   for (const e of t43Entries(P)) {
-    assert.ok(svg.includes(`>${e.unit.params.unit_num}<`), `unit ${e.unit.params.unit_num} is on the plan`);
+    assert.ok(svgs.some((svg) => svg.includes(`>${e.unit.params.unit_num}<`)), `unit ${e.unit.params.unit_num} is on a plan`);
   }
+  // …the turned cabinet on the BASE plan, where its footprint is honest.
+  assert.ok(svgs[0].includes('>05<'), 'the turned cabinet is on the base plan');
+  assert.ok(svgs[1].includes('>03<'), 'and the wall unit on the wall plan');
 });
 
 // ═══ F5a — THE WALL'S OWN SECTION ══════════════════════════════════════════
@@ -110,7 +123,7 @@ test('F5a — every CUT entity resolves to PEN.CUT, and the section is the only 
   for (const s of setOf()) {
     const cuts = s.sheet.entities.filter((e) => e.pen === 'CUT');
     for (const e of cuts) assert.equal(penWidth(e), PEN.CUT, `${s.name}: a cut is 0.70`);
-    if (s.variant === 'section-v') assert.ok(cuts.length >= 4, `${s.name}: real cut geometry, not one line`);
+    if (s.variant === 'sections') assert.ok(cuts.length >= 4, `${s.name}: real cut geometry, not one line`);
     if (s.variant === 'fronts' || s.variant === 'carcass') {
       assert.equal(cuts.length, 0, `${s.name}: an elevation cuts nothing`);
     }
@@ -118,10 +131,12 @@ test('F5a — every CUT entity resolves to PEN.CUT, and the section is the only 
 });
 
 test('F5a — the sheet says WHERE the knife went', () => {
-  const three = setOf().find((s) => s.name === 'Wall A /3');
+  // T71: A-A goes through the wall's first DRAWER unit (02, the BUDR): a
+  // section is read for the drawers. The caption says so under the station.
+  const three = setOf().find((s) => s.variant === 'sections' && s.wall === 0);
   const svg = sheetToSvg(three.sheet, { kind: 'section' });
-  assert.match(svg, /section at unit 01/, 'the station, under the title');
-  assert.match(svg, /Wall A \/3/, 'and the title block names the sheet');
+  assert.match(svg, /SECTION A-A · through unit 02/, 'the station, under the title');
+  assert.match(svg, /05 · Wall A · Sections A-A/, 'and the title block names the sheet');
 });
 
 test('F5a — the section is drawn from PUBLISHED panel boxes, in the ZY frame', () => {
@@ -206,18 +221,24 @@ test('F5b — the dropdown offers every drawable cabinet, and only those', () =>
 });
 
 test('F5b — choosing one APPENDS a sheet to the set, named for the cabinet', () => {
-  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '02');
-  const names = setOf({ sectionUnitId: chosen.id }).map((s) => s.name);
-  assert.deepEqual(names, [
-    'Wall A /1', 'Wall A /2', 'Wall A /3',
-    'Wall B /1', 'Wall B /2', 'Wall B /3',
-    'Horizontal section',
-    'Section A-A — unit 02',
-  ]);
+  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
+  // A chosen cabinet is one more STATION on its wall's sections sheet (B-B
+  // beside A-A), not a sheet of its own: the sections of a wall sit side by
+  // side at one scale, the way Skylon's do. Unit 02 is already A-A (the
+  // drawer unit), so the pick that adds a station is unit 01.
+  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '01');
+  const picked = setOf({ sectionUnitId: chosen.id });
+  const names = picked.map((s) => s.name);
+  assert.deepEqual(names, SET_NAMES.map((n) => (n === 'Wall A · Sections A-A' ? 'Wall A · Sections A-A and B-B' : n)));
+  const svg = sheetToSvg(picked.find((s) => s.variant === 'sections' && s.wall === 0).sheet, { kind: 'section' });
+  assert.match(svg, /SECTION B-B · through units 01 and 03/, 'named for the cabinet, and the wall unit over it');
   // …and it is NOT there when nothing is picked.
-  assert.ok(!setOf().some((s) => s.name.startsWith('Section A-A')));
-  // A cabinet that is not in the census produces no sheet and no crash.
-  assert.deepEqual(setOf({ sectionUnitId: 'no-such-unit' }).map((s) => s.name), names.slice(0, 7));
+  assert.ok(!setOf().some((s) => /B-B/.test(s.name)));
+  // A cabinet that is not in the census produces no station and no crash.
+  assert.deepEqual(setOf({ sectionUnitId: 'no-such-unit' }).map((s) => s.name), SET_NAMES);
+  // …and one that is already A-A adds nothing twice.
+  const already = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '02');
+  assert.deepEqual(setOf({ sectionUnitId: already.id }).map((s) => s.name), SET_NAMES);
 });
 
 test('F5b — the A-A sheet carries the cabinet\'s OWN height and depth pair', () => {
@@ -236,7 +257,7 @@ test('F5b — the A-A sheet carries the cabinet\'s OWN height and depth pair', (
 
 test('F5 — the A-A sheet is in the PDF page count when picked, and nowhere when not', () => {
   const without = setOf();
-  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '02');
+  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '01');
   const with$ = setOf({ sectionUnitId: chosen.id });
 
   for (const [label, sheets] of [['without', without], ['with', with$]]) {
@@ -246,18 +267,21 @@ test('F5 — the A-A sheet is in the PDF page count when picked, and nowhere whe
     });
     assert.equal(measured.pages, sheets.length, `${label}: a page per sheet`);
   }
+  // T71: picking a cabinet adds a STATION to the wall's sections sheet, not a
+  // page; the count is the set's, either way.
   assert.equal(bookletDoc(with$.map((s) => s.sheet)).getNumberOfPages(),
-    bookletDoc(without.map((s) => s.sheet)).getNumberOfPages() + 1,
-    'picking a cabinet adds exactly one page');
+    bookletDoc(without.map((s) => s.sheet)).getNumberOfPages(),
+    'picking a cabinet adds no page');
+  assert.equal(with$.length, SET_NAMES.length);
 });
 
 test('F5 — …and one DXF per sheet, the A-A among them', () => {
-  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '02');
+  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '01');
   const sheets = setOf({ sectionUnitId: chosen.id });
   // The names the zip writer composes, and the bytes each file would carry.
   const names = sheets.map((s) => `${slug(s.name, 'sheet')}-autocad-only.dxf`);
   assert.equal(new Set(names).size, sheets.length, 'one file per sheet, no two the same');
-  assert.ok(names.some((n) => /section-a-a/.test(n)), 'the A-A is one of them');
+  assert.ok(names.some((n) => /sections-a-a-and-b-b/.test(n)), 'the sections sheet, B-B among them, is one of them');
   for (const s of sheets) {
     const dxf = sheetToDxf(s.sheet);
     assert.match(dxf, /^\s*0\r?\nSECTION/, `${s.name}: a real DXF`);

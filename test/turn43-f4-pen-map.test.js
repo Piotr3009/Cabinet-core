@@ -34,7 +34,8 @@ const SHEET_LAYERS = new Set(['FRAME', 'FRAME_LIGHT']);
  * chosen `Section A-A`. The elevation census below excludes all three by
  * NAME rather than by hoping none of them turns up.
  */
-const SECTIONS = new Set(['section', 'section-v', 'section-aa']);
+// T71: the set's cut sheets are the two PLANS and each wall's SECTIONS.
+const SECTIONS = new Set(['section', 'section-v', 'section-aa', 'plan-base', 'plan-wall', 'sections']);
 
 const setOf = () => wallDrawingSheets({
   entries: t43Entries(P),
@@ -72,9 +73,12 @@ test('F4 — every weight on every sheet is a rung of the ISO ladder', () => {
   }
 });
 
+/** T71: the sheets that are ELEVATIONS of a wall, where a cabinet is a rect. */
+const ELEVATIONS = new Set(['fronts', 'carcass']);
+
 test('F4 — the 0.50 GEOMETRY rects on an elevation are the unit silhouettes, and nothing else', () => {
   for (const s of setOf()) {
-    if (SECTIONS.has(s.variant)) continue;
+    if (!ELEVATIONS.has(s.variant)) continue;
     const heavy = strokeCensus(sheetToSvg(s.sheet, { kind: 'wall' }))
       .filter((e) => e.kind === 'rect' && !SHEET_LAYERS.has(e.layer) && e.width === PEN.OUTLINE);
     assert.equal(heavy.length, drawnUnitsOf(s),
@@ -92,11 +96,16 @@ test('F4 — no geometry on an elevation is heavier than an outline', () => {
 });
 
 test('F4 — …and the SECTION is the one sheet that carries the cut weight', () => {
-  const section = setOf().find((s) => s.variant === 'section');
-  assert.ok(section, 'the proof kitchen produces a horizontal section');
-  const cuts = strokeCensus(sheetToSvg(section.sheet, { kind: 'plan' }))
-    .filter((e) => e.width === PEN.CUT);
-  assert.ok(cuts.length >= 4, `a real set of cut lines, not one: ${cuts.length}`);
+  // T71: the horizontal section is the base-unit plan; the walls' own
+  // sections sheets carry the cut weight too, and nothing else does.
+  const cutSheets = setOf().filter((s) => SECTIONS.has(s.variant));
+  assert.ok(cutSheets.length >= 3, 'the proof kitchen produces the plans and the sections');
+  for (const section of cutSheets) {
+    const svg = sheetToSvg(section.sheet, { kind: 'plan' });
+    const cuts = [...strokeCensus(svg), ...svg.matchAll(/<path\b[^>]*stroke-width="0.7"[^>]*>/g)]
+      .filter((e) => e.width === PEN.CUT || typeof e[0] === 'string');
+    assert.ok(cuts.length >= 4, `${section.name}: a real set of cut lines, not one: ${cuts.length}`);
+  }
 });
 
 test('F4 — the panel edge stopped being an outline, and the hierarchy is real', () => {

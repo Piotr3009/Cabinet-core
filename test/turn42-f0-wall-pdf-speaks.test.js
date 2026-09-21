@@ -84,18 +84,23 @@ test('F0 — THE PAGE COUNT EQUALS THE SHEET COUNT, on a seven-sheet set', () =>
   // untouched and is the only thing this test was ever about — a page per
   // sheet, measured off the bytes — so the number moves with the set and the
   // assertion is still `sheets.length`.
+  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
+  // Seven became thirteen: the set (cover, two plans, four sheets per wall,
+  // the visualisation, the cut list). The law is still a page per sheet.
   const sheets = sheetsOf(kitchen());
   assert.deepEqual(sheets.map((s) => s.name), [
-    'Wall A /1', 'Wall A /2', 'Wall A /3',
-    'Wall B /1', 'Wall B /2', 'Wall B /3',
-    'Horizontal section',
+    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
+    'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
+    'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
+    'Wall A · Perspective view', 'Wall B · Perspective view',
+    'Visualisation', 'Cut list and materials',
   ]);
   const doc = bookletDoc(sheets.map((s) => s.sheet));
   assert.equal(doc.getNumberOfPages(), sheets.length, 'a page per sheet, in the order they were built');
   // …and the export itself asks the same question, which is what turns the word
   // "Saved" from a claim into a measurement.
   const measured = assertPdfBytes(pdfBytes(doc), { pages: doc.getNumberOfPages(), sheets: sheets.length });
-  assert.equal(measured.pages, 7);
+  assert.equal(measured.pages, 13);
   assert.ok(measured.bytes > 1000);
 });
 
@@ -262,10 +267,14 @@ test('F0 — `wallSetReport` is a READER: the sheet list is what it always was',
   // changed the set, the whole claim "F0 moves no geometry" would be void.
   const sheets = sheetsOf(kitchen());
   // T43-F5a: and the `/3` sections, which the census still does not touch.
+  // T71: the set, which the census still does not touch.
   assert.deepEqual(sheets.map((s) => [s.name, s.variant, s.wall]), [
-    ['Wall A /1', 'fronts', 0], ['Wall A /2', 'carcass', 0], ['Wall A /3', 'section-v', 0],
-    ['Wall B /1', 'fronts', 1], ['Wall B /2', 'carcass', 1], ['Wall B /3', 'section-v', 1],
-    ['Horizontal section', 'section', null],
+    ['Cover, index and revisions', 'cover', null],
+    ['Plan · base units', 'plan-base', null], ['Plan · wall units', 'plan-wall', null],
+    ['Wall A · Front view', 'fronts', 0], ['Wall A · Internal layout', 'carcass', 0], ['Wall A · Sections A-A', 'sections', 0],
+    ['Wall B · Front view', 'fronts', 1], ['Wall B · Internal layout', 'carcass', 1], ['Wall B · Sections A-A', 'sections', 1],
+    ['Wall A · Perspective view', 'perspective', 0], ['Wall B · Perspective view', 'perspective', 1],
+    ['Visualisation', 'visual', null], ['Cut list and materials', 'cutlist', null],
   ]);
 });
 

@@ -13,17 +13,14 @@
 //
 // Pure functions — no React, no store imports, no jsPDF.
 
-import {
-  buildHorizontalSection, buildWallElevation, turnedAway, wallGroups, wallLabel,
-} from './wallElevation.js';
-import { layoutSheet } from './sheet.js';
+import { turnedAway, wallGroups, wallLabel } from './wallElevation.js';
 // ─── TURN 43 (CLAUDE.md F5): THE VERTICAL SECTIONS. BOTH. ───────────────────
 // The owner: *"Nie widzę przekroju w pionie ani w poziomie."* The horizontal
 // one exists (the set's last sheet). The vertical one did not exist anywhere
 // under `src/engine/drawings/` — never written, not regressed — and he has
 // asked for BOTH twice: a section per wall, AND an A-A through a cabinet he
 // points at.
-import { buildUnitSection, buildWallSection, sectionableUnits } from './section.js';
+import { sectionableUnits } from './section.js';
 // ─── TURN 43 (CLAUDE.md F2): THE PROJECT'S OWN MILLIMETRES ──────────────────
 // The owner: *"shaker prawdziwy — ile mam mm, tyle powinno być pokazane."*
 // MEASURED on the real engine before a line was written: project frame 80 mm →
@@ -33,146 +30,248 @@ import { buildUnitSection, buildWallSection, sectionableUnits } from './section.
 // read the project's number; nobody handed it the project.
 import { shakerFrameMm } from '../shaker.js';
 
-/**
- * The title block his set carries: Client Name, Client Address, Project,
- * Drawing name, Date, Job No, Scale, Rev.
- *
- * SCALE READS "No Scale". CLAUDE.md is explicit — *"he does not print to a
- * scale, he trusts the dimensions. Do not invent a scale label."* The sheet is
- * still LAID OUT at a ratio, because a drawing has to fit the paper; what the
- * title block says is what he says. `layoutSheet` spreads `title.extra` over
- * its own values last, which is what lets this override the computed one
- * without the sheet module knowing anything about wall drawings.
- */
-function titleFor({ project = {}, drawing, profile }) {
+// ─── T71 · THE SET, IN THE ORDER IT IS BOUND ────────────────────────────────
+//
+// The owner, 21.09.2026, Skylon Joinery's own set on the table: one view per
+// A3, the same title strip on every sheet, and *"wszystko osobno"*. The list:
+//
+//   00  Cover, index and revisions
+//   01  Plan · base units          02  Plan · wall units
+//   NN  Wall A · Front view        NN  Wall A · Internal layout
+//   NN  Wall A · Sections          (and the same three for every wall)
+//   NN  Wall A · Perspective       NN  Visualisation
+//   NN  Cut list and materials
+//
+// The sheet law (`setSheet.js`) lays every one of them; the builders draw the
+// engine's own boxes; this file only binds them in order and numbers them.
+// The unit card and the booklet are untouched (iron rule 4).
+
+import { SET_NOTES, drawingContext, fitEntities, layoutSetSheet, setZones } from './setSheet.js';
+import { buildRunElevation, measureRun, worktopsOnWall } from './setElevation.js';
+import { buildPlan, measurePlan } from './setPlan.js';
+import { sectionStations, stationSet } from './setSection.js';
+import { buildPerspective } from './setPerspective.js';
+import { buildCover, buildCutList, buildVisual, cutListPages, visualPictureBox } from './setPaper.js';
+import { decorById, decorIdFromFinishId, decorLabel } from '../decors.js';
+import { worktopsFor } from '../worktop.js';
+
+/** The title strip's words, from the project and its title block. */
+export function titleFor({ project = {}, profile, no, name, date = '' }) {
+  const tb = project.titleBlock || {};
+  const S = profile.drawings.set;
+  const job = String(project.number ?? project.project_number ?? '');
   return {
+    company: { ...S.company, ...(tb.company || {}) },
+    client: project.client || '',
+    address: tb.address || project.address || '',
     project: project.name || 'Untitled project',
-    view: drawing,
-    date: project.date || '',
-    extra: {
-      Client: project.client || '',
-      Address: project.address || '',
-      Drawing: drawing,
-      'Job No': project.number ?? project.project_number ?? '',
-      Rev: project.rev || '-',
-      Scale: profile.drawings.wallDrawing.scaleLabel,
-    },
+    drawing: `${no} · ${name}`,
+    drawingNo: job ? `${job.replace(/\//g, '-')}-${no}` : no,
+    drawn: tb.drawnBy || '',
+    checked: tb.checkedBy || '',
+    date: tb.date || date || '',
+    job,
+    rev: tb.rev || project.rev || 'A',
+    status: tb.status || 'B',
+    statusName: (S.statuses.find(([k]) => k === (tb.status || 'B')) || [])[1] || '',
+    sheet: '', of: '',
   };
 }
 
+/** What the visualisation sheet says beside the render, read off the design. */
+export function finishesOf(design) {
+  const rows = [];
+  const decorRow = (finishId) => {
+    const d = decorById(decorIdFromFinishId(finishId));
+    return d ? { desc: decorLabel(d), colour: d.hex || d.colour || '#e6e6e6' } : null;
+  };
+  const front = design?.fronts?.types?.[0];
+  const frontDecor = front?.finish_id ? decorRow(front.finish_id) : null;
+  const frontColour = design?.colour?.front;
+  rows.push({
+    name: 'FRONTS',
+    desc: frontDecor ? frontDecor.desc : (frontColour ? `Sprayed, ${frontColour.name || frontColour.hex}${design?.finish?.front ? `, ${design.finish.front}` : ''}` : 'not chosen yet'),
+    colour: frontDecor ? frontDecor.colour : (frontColour?.hex || '#e6e6e6'),
+  });
+  const carc = design?.carcass?.types?.[0];
+  const carcDecor = carc?.finish_id ? decorRow(carc.finish_id) : null;
+  rows.push({ name: 'CARCASS', desc: carcDecor ? carcDecor.desc : 'not chosen yet', colour: carcDecor ? carcDecor.colour : '#e6e6e6' });
+  const wt = (design?.worktops || []).find((w) => w?.decor);
+  const wtDecor = wt ? decorRow(wt.decor) || decorRow(`egger:${wt.decor}`) : null;
+  rows.push({ name: 'WORKTOP', desc: wtDecor ? wtDecor.desc : 'by others', colour: wtDecor ? wtDecor.colour : '#f1efe9' });
+  return rows;
+}
+
 /**
- * Every sheet of the wall set, in the order they are bound.
+ * Every sheet of the set, in the order they are bound.
  *
  * @param {object} args
- *   entries  [{ unit, result }] — the store's `allResults()` shape
- *   project  { name, client, address, number, rev, room }
- *   room     the project's room (the ceiling line and the plan's own walls)
- *   frontTypeOf  (unit) => front style; the design layer's answer, passed in
- *   design   the project design — T43-F2, the one thing that carries the
- *            shaker frame width the job was quoted and cut at. Falls back to
- *            `project.design`, so a caller that already hands the whole
- *            project over needs no second argument.
+ *   entries       [{ unit, result }], the store's `allResults()` shape
+ *   project       { name, number, client, room, design, titleBlock }
+ *   room          the project's room
+ *   worktops      the design layer's resolved slabs (`worktopsOf()`)
+ *   frontTypeOf   (unit) => front style
+ *   design        the project design (the shaker frame, the finishes)
  *   profile
- *   format   'auto' | 'A4' | 'A3'
- *   date     already formatted by the caller — the engine owns no clock
- *   sectionUnitId  T43-F5b: the cabinet `Section A-A` is taken through, or
- *            null for none. An ARGUMENT and not a stored setting — a drawing
- *            option, not a design decision.
- * @returns {Array<{sheet:object, name:string, wall:(number|null), variant:string}>}
- *          A WALL WITH NO CABINETS PRODUCES NO SHEET: `wallGroups` never
- *          returns it, so there is nothing here to guard against.
+ *   date          already formatted; the engine owns no clock
+ *   sectionUnitId a cabinet the owner pointed at for one more section, or null
+ *   renderImage   a data URL of the scene's render for the visualisation, or null
+ * @returns {Array<{no:string, name:string, wall:number|null, variant:string, sheet:object}>}
  */
 export function wallDrawingSheets({
-  entries = [], project = {}, room = null, frontTypeOf = null, profile,
-  format = 'auto', date = '', design = null, sectionUnitId = null,
+  entries = [], project = {}, room = null, worktops = [], frontTypeOf = null, profile,
+  date = '', design = null, sectionUnitId = null, renderImage = null,
 }) {
   const groups = wallGroups(entries, profile);
-  // ONE resolution for the whole set, threaded down: sheet → elevation →
-  // `frontDetail`. `shakerFits` still decides PER FRONT whether the frame goes
-  // on — a 100 mm drawer front that cannot carry an 85 mm frame stays plain,
-  // exactly as the saw would leave it — but the NUMBER is asked once.
+  // No cabinet against a wall: no set. The window and the menu read an empty
+  // list as "nothing to draw yet" (T42 F0), and a cover of nothing is not a set.
+  if (!groups.length) return [];
   const shakerFrame = shakerFrameMm(design ?? project?.design ?? null, profile);
-  const rows = profile.drawings.wallDrawing.titleRows;
-  const blockWidth = profile.drawings.wallDrawing.titleWidth;
-  // T41-F5d: these sheets print "No Scale" in their own title block, so they
-  // fill the paper instead of snapping to the ladder. Measured on T40's own
-  // proof wall: 30.1 % of the usable area used, at a snapped 1:20, when the
-  // exact fit was 1:14.46.
-  const lay = (drawing, name) => layoutSheet({
-    drawing: { ...drawing, fit: true },
-    format: format === 'auto' ? 'A3' : format,
-    profile,
-    titleRows: rows,
-    blockWidth,
-    title: titleFor({ project: { ...project, date }, drawing: name, profile }),
-  });
+  const theRoom = room || project?.room || null;
+  // The worktops: the store's own resolution when the caller passes it, else
+  // resolved here from the design's records and the entries' units, so a
+  // caller that never knew about worktops still gets them on the sheets.
+  const records = (design ?? project?.design)?.worktops;
+  const resolved = (worktops && worktops.length) ? worktops
+    : (Array.isArray(records) && records.length ? worktopsFor({ records, units: entries.map((e) => e?.unit).filter(Boolean), profile }) : []);
+  const slabs = resolved.map((w) => w.geometry || w);
+  const plan = [];
+  const push = (name, variant, wall, make) => plan.push({ name, variant, wall, make });
 
-  const out = [];
+  // ── the order ──
+  push('Cover, index and revisions', 'cover', null, null);
+  if (entries.length && theRoom) {
+    push('Plan · base units', 'plan-base', null, (no) => layoutSetSheet({
+      profile,
+      drawing: { measure: () => measurePlan({ room: theRoom, profile }), build: (ctx) => buildPlan(entries, { which: 'base', room: theRoom, worktops: slabs, profile, ctx, frontTypeOf, shakerFrame }) },
+      caption: { title: `${no} · PLAN · BASE UNITS`, sub: `Horizontal section at ${profile.drawings.set.planCut.base} above FFL, looking down. Wall units not shown.` },
+      column: { room: theRoom, highlight: null, arrow: false, notes: SET_NOTES },
+      title: titleFor({ project, profile, no, name: 'Plan · base units', date }),
+    }));
+    push('Plan · wall units', 'plan-wall', null, (no) => layoutSetSheet({
+      profile,
+      drawing: { measure: () => measurePlan({ room: theRoom, profile }), build: (ctx) => buildPlan(entries, { which: 'wall', room: theRoom, worktops: slabs, profile, ctx, frontTypeOf, shakerFrame }) },
+      caption: { title: `${no} · PLAN · WALL UNITS`, sub: `Horizontal section at ${profile.drawings.set.planCut.wall} above FFL, looking down. The worktop is seen below the cut.` },
+      column: { room: theRoom, highlight: null, arrow: false, notes: SET_NOTES },
+      title: titleFor({ project, profile, no, name: 'Plan · wall units', date }),
+    }));
+  }
   for (const group of groups) {
-    // /1 — WITH FRONTS. /2 — the carcass, without them. His own split, and the
-    // same one the Unit Card already makes per cabinet.
-    const one = `Wall ${group.label} /1`;
-    const two = `Wall ${group.label} /2`;
-    out.push({
-      name: one,
-      wall: group.wall,
-      variant: 'fronts',
-      sheet: lay(buildWallElevation(group, {
-        withFronts: true, room, frontTypeOf, profile, shakerFrame,
-      }), one),
-    });
-    out.push({
-      name: two,
-      wall: group.wall,
-      variant: 'carcass',
-      sheet: lay(buildWallElevation(group, {
-        withFronts: false, room, frontTypeOf, profile, shakerFrame,
-      }), two),
-    });
-    // /3 — THE WALL'S OWN SECTION (T43-F5a), bound after /2. It is drawn only
-    // where there is a floor-band member to cut through, for exactly the
-    // reason an empty wall gets no elevation.
-    const cut = buildWallSection(group, { room, profile });
-    if (cut) {
-      const three = `Wall ${group.label} /3`;
-      out.push({
-        name: three, wall: group.wall, variant: 'section-v', sheet: lay(cut, three),
-      });
+    const onWall = worktopsOnWall(slabs, group.wall);
+    const label = `Wall ${group.label}`;
+    push(`${label} · Front view`, 'fronts', group.wall, (no) => layoutSetSheet({
+      profile,
+      drawing: {
+        measure: () => measureRun(group, { room: theRoom, worktops: onWall, profile }),
+        build: (ctx) => buildRunElevation(group, { withFronts: true, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx }),
+      },
+      caption: { title: `${no} · ${label.toUpperCase()} · FRONT VIEW`, sub: 'Fronts on, looking at the wall from the room. Panel sizes: see the cut list.' },
+      column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },
+      title: titleFor({ project, profile, no, name: `${label} · Front view`, date }),
+    }));
+    push(`${label} · Internal layout`, 'carcass', group.wall, (no) => layoutSetSheet({
+      profile,
+      drawing: {
+        measure: () => measureRun(group, { room: theRoom, worktops: onWall, profile }),
+        build: (ctx) => buildRunElevation(group, { withFronts: false, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx }),
+      },
+      caption: { title: `${no} · ${label.toUpperCase()} · INTERNAL LAYOUT`, sub: 'Fronts removed: carcasses, shelves, drawer boxes, hinge plates, legs and appliance spaces.' },
+      column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },
+      title: titleFor({ project, profile, no, name: `${label} · Internal layout`, date }),
+    }));
+    const stations = sectionStations(group, { chosenId: sectionUnitId });
+    if (stations.length) {
+      const letters = stations.map((s) => `${s.letter}-${s.letter}`).join(' and ');
+      push(`${label} · Sections ${letters}`, 'sections', group.wall, (no) => layoutSetSheet({
+        profile,
+        drawing: stationSet(group, stations, { room: theRoom, worktops: onWall, profile }),
+        caption: { title: `${no} · ${label.toUpperCase()} · SECTIONS ${letters.toUpperCase()}`, sub: 'Vertical sections marked on the plans. One cut shows plinth, base unit, worktop, wall unit, wall and ceiling together.' },
+        column: { room: theRoom, highlight: group.wall, arrow: false, notes: SET_NOTES },
+        title: titleFor({ project, profile, no, name: `${label} · Sections ${letters}`, date }),
+      }));
     }
   }
-
-  // ONE horizontal section for the whole project — the sheet that says how the
-  // walls stand to each other, with the cabinet numbers on it. It is drawn only
-  // when there is something to draw, for the same reason an empty wall gets no
-  // elevation.
-  if (groups.length || entries.length) {
-    const name = 'Horizontal section';
-    out.push({
-      name,
-      wall: null,
-      variant: 'section',
-      sheet: lay(buildHorizontalSection(entries, { room, profile }), name),
+  for (const group of groups) {
+    const onWall = worktopsOnWall(slabs, group.wall);
+    const label = `Wall ${group.label}`;
+    push(`${label} · Perspective view`, 'perspective', group.wall, (no) => layoutSetSheet({
+      profile,
+      drawing: { nts: true, build: (ctx) => buildPerspective(group, { room: theRoom, worktops: onWall, profile, ctx }) },
+      caption: { title: `${no} · ${label.toUpperCase()} · PERSPECTIVE VIEW`, sub: `Line perspective from the room, eye height ${profile.drawings.set.perspective.eyeHeight}. Not to scale; for orientation only.` },
+      column: { room: theRoom, highlight: group.wall, arrow: true, legend: false, notes: ['Unit numbers as on the elevations.', 'Drawn from the same model as every other sheet; it cannot disagree with them.'] },
+      title: { ...titleFor({ project, profile, no, name: `${label} · Perspective view`, date }), scale: 'NTS' },
+    }));
+  }
+  if (entries.length) {
+    push('Visualisation', 'visual', null, (no) => layoutSetSheet({
+      profile,
+      drawing: { paper: true, build: (zones) => buildVisual(zones, { image: renderImage, finishes: finishesOf(design ?? project?.design), note: 'Colours are screen approximations; confirm against physical samples.' }) },
+      caption: { title: `${no} · VISUALISATION`, sub: 'Rendered from the 3D scene with the fixed export lighting rig, the same rig on every sheet, so two decors compare.' },
+      column: { room: theRoom, highlight: null, arrow: false, legend: false, notes: ['Worktop, sink, taps and appliances are indicative, supplied by others.'] },
+      title: { ...titleFor({ project, profile, no, name: 'Visualisation', date }), scale: 'NTS' },
+    }));
+    // As many cut-list sheets as the job's units need; the totals on the last.
+    const pages = cutListPages(setZones(profile, { column: false, caption: true }), entries);
+    pages.forEach((page, i) => {
+      const name = pages.length > 1 ? `Cut list and materials ${i + 1} of ${pages.length}` : 'Cut list and materials';
+      push(name, 'cutlist', null, (no) => layoutSetSheet({
+        profile,
+        drawing: { paper: true, build: (zones) => buildCutList(zones, { entries, page, showTotals: i === pages.length - 1 }) },
+        caption: { title: `${no} · ${name.toUpperCase()}`, sub: 'Every panel per unit from the engine, the same numbers the CNC sheets and the BOM carry. Fronts in magenta.' },
+        column: false,
+        title: { ...titleFor({ project, profile, no, name, date }), scale: 'n/a' },
+      }));
     });
   }
 
-  // ─── SECTION A-A (T43-F5b), when the owner has pointed at a cabinet ──────
-  //
-  // It is an ARGUMENT and it is NOT stored in the project this turn: it is a
-  // drawing option, not a design decision. If he wants it remembered, that is a
-  // sentence in a future turn. Appended to the SET rather than rendered in the
-  // window, so the PDF, the DXF and the preview all carry it — one source, as
-  // ever.
-  if (sectionUnitId != null) {
-    const chosen = sectionableUnits(groups).find((u) => u.id === sectionUnitId);
-    const aa = chosen ? buildUnitSection(chosen.member, { room, profile }) : null;
-    if (aa) {
-      const name = `Section A-A — unit ${aa.unitNum}`;
-      out.push({
-        name, wall: chosen.wall, variant: 'section-aa', unitId: chosen.id, sheet: lay(aa, name),
-      });
-    }
+  // ── number and build, the cover last because it lists the others ──
+  const of = String(plan.length).padStart(2, '0');
+  const out = plan.map((p, i) => ({ no: String(i).padStart(2, '0'), name: p.name, variant: p.variant, wall: p.wall, make: p.make }));
+  for (const s of out) {
+    if (!s.make) continue;
+    s.sheet = s.make(s.no);
+    delete s.make;
+    stamp(s.sheet, s.no, of);
+  }
+  const cover = out[0];
+  if (cover && cover.make === null) {
+    const index = out.map((s) => ({ no: s.no, name: s.name, scale: s.sheet ? s.sheet.scaleLabel : 'n/a' }));
+    const t = titleFor({ project, profile, no: '00', name: 'Cover, index and revisions', date });
+    // The cover's picture is the first wall's perspective, built once more
+    // and fitted into the cover's frame; a job with no run has no picture.
+    const first = groups[0];
+    const picture = first
+      ? (box) => fitEntities(buildPerspective(first, { room: theRoom, worktops: worktopsOnWall(slabs, first.wall), profile, ctx: drawingContext(1, profile) }).entities, box)
+      : null;
+    cover.sheet = layoutSetSheet({
+      profile,
+      drawing: { paper: true, build: (zones) => buildCover(zones, { project, title: { ...t, kicker: project.titleBlock?.kicker || 'Fitted furniture' }, sheets: index, revisions: project.titleBlock?.revisions || [], picture }) },
+      caption: { title: '00 · COVER, INDEX AND REVISIONS', sub: '' },
+      column: false,
+      title: { ...t, scale: 'n/a' },
+    });
+    delete cover.make;
+    stamp(cover.sheet, '00', of);
   }
   return out;
+}
+
+/**
+ * The shape (width / height) of the visualisation sheet's picture, so the
+ * scene captures a render that fills the frame without cropping.
+ */
+export function visualAspect(profile) {
+  const pic = visualPictureBox(setZones(profile, { column: true, caption: true }));
+  return pic.w / pic.h;
+}
+
+/** Write the sheet's own number into its title strip. */
+function stamp(sheet, no, of) {
+  for (const e of sheet.entities) {
+    if (e.kind === 'text' && e.text === ' / ' && e.layer === 'FRAME') e.text = `${no} / ${of}`;
+  }
+  sheet.sheetNo = no;
+  sheet.sheetOf = of;
 }
 
 /**

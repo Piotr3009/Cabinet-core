@@ -86,7 +86,9 @@ export function buildCarcassElevation(result, {
   // ── legs, from the engine's own layout ──
   const legs = result.assemblies.legs;
   const legHeight = result.assemblies.carcass.legHeight || 0;
-  if (legs && legHeight > 0) {
+  // T71: the set draws its own legs (plate, stem, foot, as the scene does) and
+  // asks this view for none; `true` and `false` keep exactly what they drew.
+  if (legs && legHeight > 0 && legSymbol !== 'none') {
     // ─── TURN 43 (CLAUDE.md F3): A LEG IS A LEG, NOT A BRICK ───────────────
     // The owner: *"nóżki to jakieś klocki zamiast ładnej nóżki."* An
     // adjustable leg is a top plate, a stem and a foot; the bare rectangle

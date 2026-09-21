@@ -4021,6 +4021,57 @@ export const DEFAULT_CABINET_PROFILE = {
       scaleLabel: 'No Scale',
     },
 
+    // ─── T71: THE SHEET SET, ONE LAW FOR EVERY ARKUSZ ─────────────────────
+    //
+    // The owner, 21.09.2026, with the Skylon set for 3-7 Herbal Hill in hand:
+    // *"nasze w CC teraz się nakładają, a tutaj jest wszystko osobno"*, and
+    // *"żeby tylko odzwierciedlało rzeczywistość, nóżki żeby były takie jak
+    // wszędzie"*. Every number below is PAPER millimetres on an A3 landscape
+    // sheet. The zones are fixed, so nothing can enter another zone, which is
+    // the whole reason nothing on these sheets overlaps: a drawing is placed in
+    // the middle, the chains hang in their own bands, the column and the title
+    // strip are where they always are.
+    set: {
+      format: 'A3',
+      margin: 10,             // the frame, in from the paper edge
+      titleHeight: 32,        // the title strip across the whole width of the frame
+      columnWidth: 62,        // key plan, legend, notes, down the right
+      captionHeight: 18,      // the view's own caption, top left of the drawing box
+      band: 26,               // the dimension band on every side of the object
+      chainFirst: 8,          // the inner chain, off the object
+      chainSecond: 17,        // the outer chain (totals)
+      chainThird: 26,
+      textHeight: 2.5,        // every dimension figure, on paper, whatever the scale
+      labelHeight: 2.2,       // captions on the drawing (D/W, FRIDGE, ceiling)
+      unitNumberHeight: 3.4,  // the green number, on paper
+      minTextHeight: 2.0,
+      // The ladder the set prints when the drawing lands on a rung; otherwise
+      // the title block says NTS and the drawing fills the object area.
+      scales: [10, 15, 20, 25, 50],
+      fillMax: 0.96,
+      // Where the two plan cuts go, above FFL: through the base run's doors
+      // and through the wall run's doors. Both are read off the site as a
+      // joiner reads them, so a 720 wall unit hung at 1380 is cut at 1700.
+      planCut: { base: 400, wall: 1700 },
+      // The title block's seven cells, left to right, and what each carries.
+      titleCells: [44, 86, 78, 96, 40, 28, 28],
+      statuses: [['A', 'Preliminary'], ['B', 'For approval'], ['C', 'For production']],
+      // The workshop's own name on every sheet. The address and contact lines
+      // are read from Settings (`project.titleBlock.company`) when they are
+      // there, and these are what a sheet says until they are.
+      company: {
+        name: 'CABINET CORE',
+        tagline: '',
+        lines: [],
+      },
+      // The colour a masked number stands on, and the hatch pitch of a cut
+      // wall, in paper mm.
+      hatchPitch: 2.2,
+      // The perspective: eye height and how far into the room the camera
+      // stands, both in mm of the room.
+      perspective: { eyeHeight: 1650, standOff: 5200, leftOffset: 2000 },
+    },
+
     // ─── The project booklet (turn 7, CLAUDE.md F1) ───
     booklet: {
       // The cover: a list of the units in the project, so the first page
@@ -5352,6 +5403,13 @@ export function migrateCabinetProfile(profile) {
           && profile.drawings.wallDrawing.titleRows.length
           ? profile.drawings.wallDrawing.titleRows
           : D.drawings.wallDrawing.titleRows,
+      },
+      // T71: the sheet set's law, key by key. The zones and the ladder are
+      // the APP'S (a stored profile cannot outvote the layout that was drawn
+      // and approved); what a workshop tunes is its own name block.
+      set: {
+        ...D.drawings.set,
+        company: { ...D.drawings.set.company, ...profile.drawings?.set?.company },
       },
     },
     room: { ...D.room, ...profile.room },

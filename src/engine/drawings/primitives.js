@@ -45,9 +45,16 @@ export function moveEntities(entities, dx, dy) {
     if (e.kind === 'line') return { ...e, x1: e.x1 + dx, y1: e.y1 + dy, x2: e.x2 + dx, y2: e.y2 + dy };
     if (e.kind === 'rect') return { ...e, x: e.x + dx, y: e.y + dy };
     if (e.kind === 'circle') return { ...e, cx: e.cx + dx, cy: e.cy + dy };
+    // T71: a polygon moves point by point.
+    if (e.kind === 'poly') return { ...e, pts: (e.pts || []).map((p) => [p[0] + dx, p[1] + dy]) };
     return { ...e, x: e.x + dx, y: e.y + dy };
   });
 }
+
+/** T71: a closed (or open) run of points. `fill` is a colour, 'white', or absent. */
+export const entPoly = (layer, pts, { fill = null, open = false } = {}) => ({
+  kind: 'poly', layer, pts: pts.map((p) => [p[0], p[1]]), ...(fill ? { fill } : {}), ...(open ? { open: true } : {}),
+});
 
 /** The box a set of entities occupies, in drawing mm. */
 export function boundsOf(entities) {
@@ -61,6 +68,8 @@ export function boundsOf(entities) {
     else if (e.kind === 'rect') { see(e.x, e.y); see(e.x + e.w, e.y + e.h); }
     else if (e.kind === 'circle') { see(e.cx - e.r, e.cy - e.r); see(e.cx + e.r, e.cy + e.r); }
     else if (e.kind === 'text') { see(e.x - e.height, e.y - e.height); see(e.x + e.height, e.y + e.height); }
+    else if (e.kind === 'poly') { for (const p of e.pts || []) see(p[0], p[1]); }
+    else if (e.kind === 'image') { see(e.x, e.y); see(e.x + e.w, e.y + e.h); }
   }
   if (!Number.isFinite(minX)) return { x: 0, y: 0, w: 1, h: 1 };
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };

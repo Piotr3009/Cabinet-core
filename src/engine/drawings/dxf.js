@@ -78,6 +78,18 @@ export function sheetToDxf(sheet, { note = DXF_AUTOCAD_ONLY } = {}) {
       entities.push({
         type: 'circle', layer: use(e), cx: e.cx, cy: e.cy, r: e.r,
       });
+    } else if (e.kind === 'poly') {
+      // T71: a run of points is a polyline; a fill has no R12 word and is
+      // dropped, which leaves the outline the plotter draws anyway.
+      if ((e.pts || []).length >= 2) {
+        entities.push({ type: 'poly', layer: use(e), closed: !e.open, pts: e.pts.map((p) => [p[0], p[1]]) });
+      }
+    } else if (e.kind === 'image') {
+      // T71: no picture in a DXF; the frame it would fill is drawn instead.
+      entities.push({
+        type: 'poly', layer: use({ layer: 'FRAME_LIGHT' }), closed: true,
+        pts: [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]],
+      });
     } else if (e.kind === 'text') {
       entities.push({
         type: 'text',
@@ -92,7 +104,7 @@ export function sheetToDxf(sheet, { note = DXF_AUTOCAD_ONLY } = {}) {
         // The DXF rotation is anticlockwise in degrees; the sheet's own
         // `rotate` is the SVG convention, which is clockwise.
         rot: e.rotate ? -e.rotate : 0,
-        halign: e.align === 'left' ? 0 : 1,
+        halign: e.align === 'left' ? 0 : (e.align === 'right' ? 2 : 1),
         valign: 2,
       });
     }

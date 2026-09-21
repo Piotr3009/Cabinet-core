@@ -138,10 +138,14 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   assert.match(read('src/retail/design/adapter.js'), /S\(\)\.updateUnitParams\(unitId, patch\)/,
     'retail stopped writing widths through the store');
 
-  // The exemption map did NOT grow for F9.
+  // The exemption map did NOT grow for F9: no widening file is on it.
+  // (T71 licensed `DrawingModal.jsx` for the drawing set, argued in the
+  // manifest with the owner's words; F9's own door, `UnitSizeModal.jsx`, is
+  // still not on the list, which is what this assertion was ever about.)
   const freeze = read('test/turn59-f1-the-switch.test.js');
-  const names = [...freeze.matchAll(/^  'src\/[^']+':\n?/gm)];
-  void names;
-  assert.equal((freeze.match(/'src\/components\/[A-Za-z]+\.jsx':\n\s+'T\d\d F/g) || []).length, 3,
-    'a fourth file entered EXEMPT');
+  const exempt = [...freeze.matchAll(/'src\/components\/([A-Za-z]+)\.jsx':\n\s+'T(\d\d) F/g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(exempt.map(([n]) => n).sort(), ['AddItems', 'DrawingModal', 'RoomModal', 'WatchLayoutModal'],
+    'a file entered EXEMPT that no turn argued');
+  assert.ok(!exempt.some(([n]) => /UnitSize/.test(n)), 'F9 bought no exemption');
+  assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), ['RoomModal'], 'T69 licensed RoomModal alone');
 });

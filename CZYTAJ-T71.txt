@@ -1,0 +1,12 @@
+T71: ZESTAW RYSUNKOW (Drawing set). Kompletne pliki, do skopiowania do repo.
+
+1. Rozpakuj ten ZIP do folderu z repo Cabinet-core (tam gdzie jest package.json),
+   nadpisujac istniejace pliki. Wszystkie pliki maja juz swoje sciezki (src/, test/, scripts/, verify/, CLAUDE.md).
+2. Usun z folderu repo katalog "patches" i plik "t71.bundle" (wgrane na main dzisiaj o 16:55, to bylo opakowanie, nie kod).
+3. Usun ten plik CZYTAJ-T71.txt.
+4. git add -A
+   git commit -m "T71: drawing set"
+   git push
+
+Po pushu Vercel zbuduje sam; w aplikacji: Output > Drawing set (PDF).
+Suita: 5637 testow zielonych, goldeny x6 identyczne, parens 14/14.

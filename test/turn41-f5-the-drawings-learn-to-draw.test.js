@@ -116,11 +116,15 @@ test('F5a — the SECTION\'s cut lines are the heaviest thing on it', () => {
   // T40's section drew the cut room wall LIGHTER than an uncut cabinet
   // footprint. A section whose cut line is the thinnest line on it is not a
   // section.
-  const section = sheets().find((s) => s.variant === 'section');
-  assert.ok(section, 'the project produces a horizontal section');
-  const widths = strokesOf(sheetToSvg(sheetOf(section), { kind: 'plan' }));
-  assert.equal(Math.max(...widths), PEN.CUT, 'the heaviest stroke on the section IS the cut weight');
-  assert.ok(widths.filter((w) => w === PEN.CUT).length >= 4, 'and there are real cut lines, not one');
+  // T71: the horizontal section is now the two PLANS, and every wall carries
+  // its vertical SECTIONS sheet; the cut weight is the heaviest on all three.
+  const cuts = sheets().filter((s) => ['plan-base', 'plan-wall', 'sections'].includes(s.variant));
+  assert.ok(cuts.length >= 3, 'the project produces the plans and a sections sheet');
+  for (const section of cuts) {
+    const widths = strokesOf(sheetToSvg(sheetOf(section), { kind: 'plan' }));
+    assert.equal(Math.max(...widths), PEN.CUT, `${section.name}: the heaviest stroke on the section IS the cut weight`);
+    assert.ok(widths.filter((w) => w === PEN.CUT).length >= 4, `${section.name}: real cut lines, not one`);
+  }
 });
 
 // ═══ F5b — THE DXF LEARNS THE PEN ═══════════════════════════════════════════
@@ -172,7 +176,16 @@ test('F5b — …and a hidden line is DASHED in CAD, as it already is on screen'
   });
   const el = shelved.find((s) => s.variant === 'fronts');
   assert.ok(el, 'there is an elevation sheet');
-  assert.equal(sheetOf(el).entities.filter((e) => e.hidden).length, 0, 'T43-F1: /1 is fronts');
+  // T71: counted inside the drawing box; the side column's legend shows the
+  // hidden-line convention with one dashed swatch on every sheet, and the
+  // title strip's logo placeholder is a dashed box.
+  const box = sheetOf(el).zones.box;
+  const inBox = (e) => {
+    const x = e.x ?? e.x1 ?? e.cx ?? e.pts?.[0]?.[0];
+    const y = e.y ?? e.y1 ?? e.cy ?? e.pts?.[0]?.[1];
+    return x != null && x < box.x + box.w && y >= box.y;
+  };
+  assert.equal(sheetOf(el).entities.filter((e) => e.hidden && inBox(e)).length, 0, 'T43-F1: /1 is fronts');
 });
 
 test('F5b — THE CNC PATH IS UNTOUCHED: no lineweight, no linetype table', () => {
@@ -238,10 +251,22 @@ test('F5d — a sheet that prints "No Scale" fills the paper', () => {
   // T40 snapped to [5,10,20,25,50] and used 30.1 % of the usable area.
   assert.equal(exactScale({ w: 3265, h: 2957 }, { w: 392, h: 204.5 }).toFixed(2), '14.46',
     'the best fit for T40\'s own proof wall');
+  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
+  // The set prints its scale, so it SNAPS to the set's ladder and says which
+  // rung ("1:20 @ A3"); only a picture (the perspective) fills the paper at
+  // whatever ratio fits, and prints NTS. A paper sheet (cover, cut list) has
+  // no scale at all.
   for (const s of sheets()) {
     const sheet = sheetOf(s);
-    assert.ok(!P.drawings.scales.includes(sheet.scale),
-      `a wall sheet is not snapped to the ladder: 1:${sheet.scale}`);
+    if (['cover', 'visual', 'cutlist'].includes(s.variant)) continue;
+    if (s.variant === 'perspective') {
+      assert.equal(sheet.scaleLabel, 'NTS');
+      assert.ok(sheet.scale > 0, 'a picture still has a fitting ratio');
+      continue;
+    }
+    assert.ok(P.drawings.set.scales.includes(sheet.scale),
+      `a set sheet is snapped to the ladder: 1:${sheet.scale}`);
+    assert.equal(sheet.scaleLabel, `1:${sheet.scale} @ A3`, 'and the strip says which rung');
     assert.ok(sheet.scale > 1, 'and it is a real reduction');
   }
 });

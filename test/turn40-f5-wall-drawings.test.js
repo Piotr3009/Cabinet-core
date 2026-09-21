@@ -75,24 +75,38 @@ test('F5 — the sheet list is HIS: /1, /2 per wall, and one horizontal section'
   // leftmost floor-band cabinet — and it is bound after `/2`, which is where a
   // drawing office bins a section. Everything T40 pinned about /1 and /2 and
   // about the horizontal section is untouched, which is what the list is for.
+  // ─── RE-PINNED 21.09.2026 (T71): THE SET, ONE VIEW PER SHEET ────────────
+  // Skylon's own AutoCAD set on the table: *"tutaj jest wszystko osobno"*.
+  // /1 is now the wall's FRONT VIEW, /2 its INTERNAL LAYOUT, /3 its SECTIONS;
+  // the horizontal section became the two plans; a cover, the perspectives,
+  // the visualisation and the cut list join, and every sheet is numbered.
   const sheets = sheetsOf(kitchen());
   assert.deepEqual(sheets.map((s) => s.name), [
-    'Wall A /1', 'Wall A /2', 'Wall A /3',
-    'Wall B /1', 'Wall B /2', 'Wall B /3',
-    'Horizontal section',
+    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
+    'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
+    'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
+    'Wall A · Perspective view', 'Wall B · Perspective view',
+    'Visualisation', 'Cut list and materials',
   ]);
   assert.deepEqual(sheets.map((s) => s.variant), [
-    'fronts', 'carcass', 'section-v', 'fronts', 'carcass', 'section-v', 'section',
+    'cover', 'plan-base', 'plan-wall',
+    'fronts', 'carcass', 'sections', 'fronts', 'carcass', 'sections',
+    'perspective', 'perspective', 'visual', 'cutlist',
   ]);
+  assert.deepEqual(sheets.map((s) => s.no), ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']);
   assert.equal(wallLabel(0), 'A');
   assert.equal(wallLabel(1), 'B');
   assert.equal(wallLabel(25), 'Z');
 });
 
 test('F5 — /1 HAS the fronts and /2 does NOT, which is the whole split', () => {
-  const one = sheetsOf(kitchen()).find((s) => s.name === 'Wall A /1');
-  const two = sheetsOf(kitchen()).find((s) => s.name === 'Wall A /2');
-  const doors = (s) => s.sheet.entities.filter((e) => e.layer === 'DOORS').length;
+  // T71: /1 is the front view, /2 the internal layout; the split is the same.
+  const one = sheetsOf(kitchen()).find((s) => s.variant === 'fronts' && s.wall === 0);
+  const two = sheetsOf(kitchen()).find((s) => s.variant === 'carcass' && s.wall === 0);
+  // Counted inside the drawing box: the side column's legend and key plan
+  // wear the DOORS colour on every sheet, and they are not fronts.
+  const inBox = (e, b) => { const x = e.x ?? e.x1 ?? e.cx ?? e.pts?.[0]?.[0]; return x != null && x < b.x + b.w; };
+  const doors = (s) => s.sheet.entities.filter((e) => e.layer === 'DOORS' && inBox(e, s.sheet.zones.box)).length;
   assert.ok(doors(one) > 0, 'the fronts sheet has fronts on it');
   assert.equal(doors(two), 0, 'the carcass sheet has none');
   // …and the carcass is on BOTH, because it is the same cabinets either way.
@@ -133,14 +147,20 @@ test('F5 — a WALL WITH NO CABINETS produces NO SHEET rather than an empty one'
   // cabinet, so only those two get sheets.
   const sheets = sheetsOf(kitchen());
   // T43-F5a: THREE sheets per wall now — /1, /2 and the section /3.
-  assert.equal(sheets.filter((s) => s.variant !== 'section').length, 6, 'two walls, three sheets each');
+  // T71: FOUR per wall: front view, internal layout, sections, perspective.
+  assert.equal(sheets.filter((s) => s.wall != null).length, 8, 'two walls, four sheets each');
   assert.equal(new Set(sheets.filter((s) => s.wall != null).map((s) => s.wall)).size, 2);
-  // Nothing at all: no elevation, and the section is the only thing left.
+  // Nothing at all: no elevation, and no set (a cover of nothing is not a set).
   assert.deepEqual(wallGroups([], P), []);
   assert.deepEqual(sheetsOf([]).map((s) => s.name), []);
   // …and one cabinet on wall 3 alone gets wall D and nothing else.
   const lonely = sheetsOf([entry('BUD', { unit_num: '09', width: 600 }, { wall: 3, x_mm: 100, rotation_deg: 0 })]);
-  assert.deepEqual(lonely.map((s) => s.name), ['Wall D /1', 'Wall D /2', 'Wall D /3', 'Horizontal section']);
+  assert.deepEqual(lonely.map((s) => s.name), [
+    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
+    'Wall D · Front view', 'Wall D · Internal layout', 'Wall D · Sections A-A', 'Wall D · Perspective view',
+    'Visualisation', 'Cut list and materials',
+  ]);
+  assert.ok(lonely.every((s) => s.wall == null || s.wall === 3));
 });
 
 // ═══ 2. TWO DIMENSION CHAINS PER AXIS ══════════════════════════════════════
@@ -252,21 +272,32 @@ test('F5 — the grouping law is `engine/runs.js`’s, not a second one', () => 
 // ═══ 3. THE OWNER'S CONVENTIONS ════════════════════════════════════════════
 
 test('F5 — "No Scale", and no scale label invented', () => {
-  const [one] = sheetsOf(kitchen());
+  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
+  // The set is laid out on the scale ladder and SAYS which rung, the way
+  // Skylon's strip does ("1:20 @ A3"); a picture with no scale says NTS. The
+  // one thing that stays: nothing is invented, the label is the layout's own.
+  const sheets = sheetsOf(kitchen());
+  const one = sheets.find((s) => s.variant === 'fronts');
   const texts = textsOf(one.sheet);
-  assert.ok(texts.includes('No Scale'), 'the title block says what he says');
-  assert.ok(!texts.some((t) => /^1:\d+$/.test(t)), 'and no ratio is printed anywhere on the sheet');
-  // The sheet is still LAID OUT at a ratio — a drawing has to fit the paper.
-  assert.ok(one.sheet.scale > 0);
+  assert.ok(!texts.includes('No Scale'), 'the old sentence is gone');
+  assert.match(one.sheet.scaleLabel, /^1:\d+ @ A3$/, 'the title block names the rung');
+  assert.ok(texts.includes(one.sheet.scaleLabel), 'and it is printed in the strip');
+  assert.equal(one.sheet.scaleLabel, `1:${one.sheet.scale} @ A3`, 'the label is the layout scale, not a second number');
+  const picture = sheets.find((s) => s.variant === 'perspective');
+  assert.equal(picture.sheet.scaleLabel, 'NTS', 'a perspective has no scale to print');
+  assert.ok(textsOf(picture.sheet).includes('NTS'));
 });
 
 test('F5 — his title block: Client, Address, Project, Drawing, Job No, Scale, Rev, Date', () => {
-  const [one] = sheetsOf(kitchen(), { address: '14 Anderson Way', rev: 'B' });
+  // T71: the strip has Skylon's cells. The address is the site address from
+  // the title block, else the project's; the drawing name carries its number.
+  const sheets = sheetsOf(kitchen(), { address: '14 Anderson Way', titleBlock: { rev: 'B', drawnBy: 'PT' } });
+  const one = sheets.find((s) => s.variant === 'fronts');
   const texts = textsOf(one.sheet);
-  for (const label of ['Client', 'Address', 'Project', 'Drawing', 'Job No', 'Scale', 'Rev', 'Date']) {
-    assert.ok(texts.includes(label), `the block carries a ${label} row`);
+  for (const label of ['CLIENT', 'SITE ADDRESS', 'PROJECT', 'DRAWING', 'DRAWING No', 'JOB No', 'SCALE', 'REV', 'DATE', 'DRAWN', 'CHECKED', 'PAPER', 'SHEET', 'STATUS']) {
+    assert.ok(texts.includes(label), `the block carries a ${label} cell`);
   }
-  for (const value of ['Mr Anderson', '14 Anderson Way', 'Anderson Kitchen', 'Wall A /1', 'J-1042', 'B', '18/08/2026']) {
+  for (const value of ['Mr Anderson', '14 Anderson Way', 'Anderson Kitchen', '03 · Wall A · Front view', 'J-1042', 'B', '18/08/2026', 'PT', '03 / 13']) {
     assert.ok(texts.some((t) => t.includes(value)), `…and its value: ${value}`);
   }
 });
@@ -355,13 +386,15 @@ test('F5 — a TURNED cabinet is off the elevation and NAMED, and still on the p
 // ═══ 5. THE DXF: TEXT ON THIS PATH AND NOWHERE ELSE ════════════════════════
 
 test('F5 — the wall DXF carries TEXT: dimensions, labels and the title block', () => {
-  const [one] = sheetsOf(kitchen());
+  // T71: the front view sheet, with its scale rung and its numbered name.
+  const one = sheetsOf(kitchen()).find((s) => s.variant === 'fronts');
   const dxf = sheetToDxf(one.sheet);
   assert.match(dxf, /AC1009/, 'R12, the dialect BLOCKERS #8 settled');
   const texts = [...dxf.matchAll(/\r\n0\r\nTEXT\r\n[\s\S]*?\r\n1\r\n(.*?)\r\n/g)].map((m) => m[1]);
   assert.ok(texts.length > 10, `a drawing is nothing without its numbers: ${texts.length}`);
-  assert.ok(texts.includes('No Scale'), 'the title block is in the file');
-  assert.ok(texts.includes('Wall A /1'), 'and the drawing name');
+  assert.ok(texts.includes(one.sheet.scaleLabel), 'the title block is in the file');
+  // (the R12 writer keeps ASCII: the middle dot becomes a hyphen)
+  assert.ok(texts.includes('03 - Wall A - Front view'), 'and the drawing name');
   assert.ok(texts.some((t) => /^\d/.test(t)), 'and the dimensions');
 });
 
@@ -419,7 +452,9 @@ test('F5 — every sheet renders as SVG and as a page, and the preview IS the ex
     const svg = sheetToSvg(page.sheet, { kind: 'wall-elevation' });
     assert.match(svg, /^<svg /);
     assert.match(svg, /data-cc-drawing="wall-elevation"/);
-    assert.ok(svg.includes('No Scale'), `${page.name}: the title block is on the glass too`);
+    // T71: the strip prints the sheet's own scale label, and its number.
+    assert.ok(svg.includes(page.sheet.scaleLabel), `${page.name}: the title block is on the glass too`);
+    assert.ok(svg.includes(`${page.no} / ${String(sheets.length).padStart(2, '0')}`), `${page.name}: numbered`);
     assert.ok(page.sheet.width > 0 && page.sheet.height > 0);
   }
   assert.deepEqual(wallDrawingPages({

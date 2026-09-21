@@ -47,12 +47,18 @@ const frontsSheets = () => setOf().filter((s) => s.variant === 'fronts');
 // "geometry layers" and the dash census below says so by name rather than by
 // hoping none of them is dashed.
 const SHEET_LAYERS = new Set(['FRAME', 'FRAME_LIGHT']);
+// T71: the set sheet carries a LEGEND in its side column (a dashed swatch on
+// SHELVES shows the hidden-line convention) and a dashed LOGO placeholder in
+// its title strip. Both are named on the entity (`meta`), and the census
+// leaves them out by that name, exactly as it leaves the frame out by layer.
+const FURNITURE = new Set(['legend', 'logo']);
+const drawn = (e) => !FURNITURE.has(e.meta);
 
 test('F1 — the /1 sheets of a real kitchen carry ZERO hidden geometry', () => {
   const sheets = frontsSheets();
   assert.equal(sheets.length, 2, 'the proof kitchen has two walls with cabinets on them');
   for (const s of sheets) {
-    const ents = sheetOf(s).entities;
+    const ents = sheetOf(s).entities.filter(drawn);
     assert.equal(ents.filter((e) => e.hidden).length, 0, `${s.name}: not one hidden entity`);
     assert.equal(ents.filter((e) => e.layer === 'SHELVES').length, 0, `${s.name}: nothing on SHELVES`);
     assert.equal(ents.filter((e) => e.layer === 'LEG_BLOCK').length, 0, `${s.name}: not one leg block`);
@@ -66,6 +72,7 @@ test('F1 — …and the SVG has no stroke-dasharray on any geometry layer', () =
     // TITLE BLOCK rule (there is none today) could be excluded by NAME rather
     // than by the assertion quietly not looking.
     const dashed = [...svg.matchAll(/<[a-z]+[^>]*stroke-dasharray[^>]*>/g)]
+      .filter((m) => !FURNITURE.has((m[0].match(/data-cc="([^"]+)"/) || [])[1]))
       .map((m) => (m[0].match(/data-layer="([^"]+)"/) || [])[1] || '(none)')
       .filter((layer) => !SHEET_LAYERS.has(layer));
     assert.deepEqual(dashed, [], `${s.name}: the fronts sheet draws no dashes`);

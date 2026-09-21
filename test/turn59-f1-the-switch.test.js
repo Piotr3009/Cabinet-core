@@ -73,6 +73,26 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  // ─── ADDED BY TURN 71 · THE DRAWING SET REACHES THE WINDOW ───────────────
+  // The owner, 21.09.2026, Skylon Joinery's own AutoCAD set on the table:
+  // *"nasze w CC teraz się nakładają, a tutaj jest wszystko osobno … mega
+  // profesjonalnie … nie zapomnij zostawić w stopce miejsca na firmę, daty,
+  // nazwy"*, then *"weź zakoduj i zobaczymy co się dało z tym zrobić"*. The
+  // set is the engine's (`engine/drawings/set*.js`); the two files below are
+  // where PRO reaches it: the window hands the set the design layer's worktops
+  // and the scene's render, carries the title block's words, and walks the
+  // numbered sheets; the page hands the window the render rig. Both are
+  // re-frozen at their new hashes below. Overturnable with one word: without
+  // these two edits the set still binds from the engine, with no render on the
+  // visualisation sheet and no way to type the company's name.
+  'src/components/DrawingModal.jsx':
+    'T71 F5: the window binds the SET: `worktops: worktopsOf()`, the render '
+    + 'captured through the Output ▸ Render rig, the title block\'s fields, the '
+    + 'numbered sheet buttons. *"nie zapomnij zostawić w stopce miejsca na '
+    + 'firmę, daty, nazwy"*.',
+  'src/pages/ConfiguratorPage.jsx':
+    'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
+    + 'same set with the same worktops and render. *"weź zakoduj"*.',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -122,7 +142,8 @@ const FROZEN = {
   'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
   'src/components/DrawRoomModal.jsx': 'bbf2021f049146f6af31f1094b61a284a8d351a36361c3d549fbb0cb1372366b',
-  'src/components/DrawingModal.jsx': 'd10d1f38b920d5782f760be94c3efbf0946074a6717e77c4e813985eec9b48b8',
+  // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   'src/components/ElementProperties.jsx': '3c223158225645e691c6a840be20fe7ce2fa3114eef21602a3d1c7ac48a0f140',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
@@ -168,7 +189,8 @@ const FROZEN = {
   'src/components/WizardSettings.jsx': 'e78f35fff5107b21a5a775629ab899d2474d883df03b5873ad538bcfbd68fc74',
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
-  'src/pages/ConfiguratorPage.jsx': 'a232a7cf5c61898b16c2a6f61be6ec4bbe4fda3873a2a4f478e8b99b2f3bab98',
+  // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '8d321b5f9f8c9a9405c016871a978314ce66ae3648fa3d915a506afaaa899c8f',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -336,12 +358,20 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
 // assertion always meant, and NOTHING ELSE here is loosened: the list is still
 // held to exactly the three names, every one is still re-frozen at a hash read
 // off disk, and every one still carries the owner's own words.
+// ─── AMENDED BY TURN 71 · TWO MORE NAMES, ARGUED THE SAME WAY ──────────────
+//
+// The set had to reach the window (the render, the worktops, the title block's
+// words), so two PRO files are licensed tonight, each with the owner's words
+// and its feature beside it, each re-frozen at its new hash. The list is held
+// to exactly these five; a sixth cannot be slipped in without this failing.
 test('T67 · the exemption names three files, each re-frozen, each with its reason', () => {
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
+    'src/components/DrawingModal.jsx',
     'src/components/RoomModal.jsx',
     'src/components/WatchLayoutModal.jsx',
-  ], 'the exemption list is not the three files CLAUDE.md names');
+    'src/pages/ConfiguratorPage.jsx',
+  ], 'the exemption list is not the five files CLAUDE.md names');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
     assert.match(why, /\bT\d{2} F\d/, `${rel} does not say which turn and feature licensed it`);

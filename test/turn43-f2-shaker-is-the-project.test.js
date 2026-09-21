@@ -52,7 +52,9 @@ function insetsOn(entities) {
       const up = (outer.y + outer.h) - (inner.y + inner.h);
       if (left <= 0 || right <= 0 || down <= 0 || up <= 0) continue;
       // Equal on all four sides — the owner's *"shaker zawsze równy"*.
-      if (Math.abs(left - right) > 1e-6 || Math.abs(left - down) > 1e-6 || Math.abs(left - up) > 1e-6) continue;
+      // (T71: the SVG writes three decimals, and 85/15 has more; the eye's
+      // tolerance is two thousandths of a paper millimetre.)
+      if (Math.abs(left - right) > 0.002 || Math.abs(left - down) > 0.002 || Math.abs(left - up) > 0.002) continue;
       out.push(Math.round(left * 1000) / 1000);
     }
   }
@@ -101,7 +103,8 @@ test('F2 — the SVG of the real sheet carries the 85, in its own numbers', () =
     format: 'A3',
     date: '20/08/2026',
   });
-  const one = set.find((s) => s.name === 'Wall A /1');
+  // T71: `Wall A /1` is the set's `Wall A · Front view`.
+  const one = set.find((s) => s.variant === 'fronts' && s.wall === 0);
   const svg = sheetToSvg(one.sheet, { kind: 'wall-elevation' });
   // Off the SVG: every rect, and the same containment measure — at PAPER
   // millimetres, so the number is 85 ÷ the sheet's own scale. The ratio is
@@ -115,7 +118,8 @@ test('F2 — the SVG of the real sheet carries the 85, in its own numbers', () =
   const insets = insetsOn(rects.map((r) => ({ ...r, kind: 'rect', layer: 'DOORS' })));
   assert.ok(insets.length >= 4, 'the SVG carries shaker rectangles');
   for (const v of insets) {
-    assert.ok(Math.abs(v * scale - FRAME) < 0.01, `${v} paper mm at 1:${scale} is ${v * scale} — must be 85`);
+    // T71: three decimals on paper at 1:15 is 0.015 mm in the room.
+    assert.ok(Math.abs(v * scale - FRAME) < 0.05, `${v} paper mm at 1:${scale} is ${v * scale} — must be 85`);
   }
 });
 

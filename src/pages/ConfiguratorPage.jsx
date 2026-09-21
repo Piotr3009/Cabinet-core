@@ -52,7 +52,10 @@ import { cncAssignmentWarning } from '../engine/bom.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
 // TURN 40 (CLAUDE.md F5): a sheet is a WALL — the whole run, not one cabinet.
-import { wallDrawingSheets } from '../engine/drawings/wallSheets.js';
+// T71: the set (cover, plans, views per wall, perspective, visualisation, cut
+// list); the menu path binds it with the worktops and the scene's render too.
+import { visualAspect, wallDrawingSheets } from '../engine/drawings/wallSheets.js';
+import { renderJob } from '../engine/render.js';
 // TURN 42 (CLAUDE.md F0): `drawingErrorText` is the one sentence that is never
 // allowed to become the emptiness sentence — see drawingExport.js for why.
 import {
@@ -114,6 +117,7 @@ export default function ConfiguratorPage() {
   const units = useProjectStore((s) => s.units);
   const project = useProjectStore((s) => s.project);
   const allResults = useProjectStore((s) => s.allResults);
+  const worktopsOf = useProjectStore((s) => s.worktopsOf);
   const unitResult = useProjectStore((s) => s.unitResult);
   const markSaved = useProjectStore((s) => s.markSaved);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
@@ -447,10 +451,28 @@ export default function ConfiguratorPage() {
     if (kind === 'walls' || kind === 'walls-dxf') {
       if (!guard('draw')) return;
       try {
+        // T71: the visualisation sheet's render, from the same rig as Output
+        // ▸ Render, when the scene is there to ask; without it the sheet binds
+        // with its frame empty and says so.
+        let renderImage = null;
+        if (renderRig && kind === 'walls') {
+          try {
+            const job = renderJob({
+              resolution: 'preview', preset: 'iso-left', shadows: profile.render.defaultShadows,
+              aspect: visualAspect(profile), bounds: renderRig.bounds(null), project: project.name, subject: 'set',
+            }, profile);
+            renderImage = renderRig.capture(job)?.dataUrl || null;
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error('[wall drawings] the visualisation render failed', err);
+          }
+        }
         const sheets = wallDrawingSheets({
           entries: allResults(),
           project,
           room: project.room,
+          worktops: worktopsOf(),
+          renderImage,
           frontTypeOf: (u) => resolveUnitDesign(u, project.design).frontType,
           // T43-F2: the project's own shaker frame, on the menu path too — two
           // callers, one number, or the PDF and the preview disagree about a
@@ -492,7 +514,7 @@ export default function ConfiguratorPage() {
       : exportDrawingPdf(sheet, args);
     notify(`Saved ${filename}.`, 'ok');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [units, selectedUnitId, unitResult, allResults, project, profile, openModal, notify]);
+  }, [units, selectedUnitId, unitResult, allResults, worktopsOf, renderRig, project, profile, openModal, notify]);
 
   /** File ▸ Save as… — a copy under a new name. */
   const onSaveAs = useCallback(async (name) => {
@@ -563,7 +585,7 @@ export default function ConfiguratorPage() {
         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
         {modal === 'save-template' && <SaveTemplateModal />}
         {modal === 'render' && <RenderModal rig={renderRig} />}
-        {modal === 'drawing' && <DrawingModal />}
+        {modal === 'drawing' && <DrawingModal rig={renderRig} />}
         {/* Turn 11 (CLAUDE.md F3.3): the piece you double-clicked, edited where
             you clicked it. Not a centred dialog — see DoorModal.
             ─── Turn 30 (CLAUDE.md F2) ───

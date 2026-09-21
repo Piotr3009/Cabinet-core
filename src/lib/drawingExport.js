@@ -152,15 +152,57 @@ function drawSheet(doc, sheet) {
     if (e.kind === 'line') {
       doc.line(e.x1, flip(e.y1), e.x2, flip(e.y2));
     } else if (e.kind === 'rect') {
-      doc.rect(e.x, flip(e.y + e.h), e.w, e.h, 'S');
+      // T71: a filled rect fills; everything older strokes exactly as before.
+      if (e.fill) {
+        const [fr, fg, fb] = e.fill === 'white' ? [255, 255, 255] : hexToRgb(e.fill);
+        doc.setFillColor(fr, fg, fb);
+        doc.rect(e.x, flip(e.y + e.h), e.w, e.h, e.noStroke ? 'F' : 'FD');
+      } else {
+        doc.rect(e.x, flip(e.y + e.h), e.w, e.h, 'S');
+      }
     } else if (e.kind === 'circle') {
       doc.circle(e.cx, flip(e.cy), e.r, 'S');
+    } else if (e.kind === 'poly') {
+      // T71: a closed run of points; filled where the sheet says so (the
+      // perspective's faces, the arrowheads). `lines` takes deltas.
+      const pts = e.pts || [];
+      if (pts.length >= 2) {
+        const [x0, y0] = pts[0];
+        const deltas = [];
+        for (let i = 1; i < pts.length; i += 1) deltas.push([pts[i][0] - pts[i - 1][0], -(pts[i][1] - pts[i - 1][1])]);
+        let style = 'S';
+        if (e.fill) {
+          const [fr, fg, fb] = e.fill === 'white' ? [255, 255, 255] : hexToRgb(e.fill);
+          doc.setFillColor(fr, fg, fb);
+          style = e.noStroke ? 'F' : 'FD';
+        }
+        doc.lines(deltas, x0, flip(y0), [1, 1], style, !e.open);
+      }
+    } else if (e.kind === 'image' && e.href) {
+      // T71: the render on the visualisation sheet. A data URL from the scene;
+      // anything jsPDF cannot read is skipped rather than failing the booklet.
+      try {
+        doc.addImage(e.href, e.x, flip(e.y + e.h), e.w, e.h);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[drawings] image skipped', err);
+      }
     } else if (e.kind === 'text') {
       if (typeof doc.setLineDashPattern === 'function') doc.setLineDashPattern([], 0);
       // jsPDF sizes text in POINTS whatever the document unit is.
       doc.setFontSize(e.height * 2.8346);
-      const opts = { align: e.align === 'left' ? 'left' : 'center', baseline: 'middle' };
+      const opts = { align: e.align === 'left' ? 'left' : (e.align === 'right' ? 'right' : 'center'), baseline: 'middle' };
       if (e.rotate) opts.angle = -e.rotate;
+      // T71: a masked text stands on white, so a number can sit on a line.
+      if (e.mask && !e.rotate) {
+        const mw = String(e.text).length * e.height * 0.62 + e.height * 0.6;
+        const mh = e.height * 1.3;
+        const mx = e.align === 'left' ? e.x - e.height * 0.3 : (e.align === 'right' ? e.x - mw + e.height * 0.3 : e.x - mw / 2);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(mx, flip(e.y) - mh / 2, mw, mh, 'F');
+      }
+      if (e.colour) { const [cr, cg, cb] = hexToRgb(e.colour); doc.setTextColor(cr, cg, cb); }
+      doc.setFont(undefined, e.weight === 'bold' ? 'bold' : 'normal');
       doc.text(String(e.text), e.x, flip(e.y), opts);
     }
   }

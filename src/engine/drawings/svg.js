@@ -56,16 +56,45 @@ export function sheetToSvg(sheet, { background = '#ffffff', kind = 'front-elevat
     } else if (e.kind === 'circle') {
       parts.push(`<circle cx="${n(e.cx)}" cy="${n(flip(e.cy))}" r="${n(e.r)}" fill="none" ${stroke}${dash} data-layer="${e.layer}"${tag}/>`);
     } else if (e.kind === 'rect') {
-      parts.push(`<rect x="${n(e.x)}" y="${n(flip(e.y + e.h))}" width="${n(e.w)}" height="${n(e.h)}" fill="none" ${stroke}${dash} data-layer="${e.layer}"${tag}/>`);
+      // T71: a rect may ask for a fill (a cut bar, a title-block cell). Absent,
+      // it is the outline it has always been.
+      const rfill = e.fill === 'white' ? background : (e.fill || 'none');
+      const rstroke = e.noStroke ? 'stroke="none"' : stroke;
+      parts.push(`<rect x="${n(e.x)}" y="${n(flip(e.y + e.h))}" width="${n(e.w)}" height="${n(e.h)}" fill="${rfill}" ${rstroke}${dash} data-layer="${e.layer}"${tag}/>`);
     } else if (e.kind === 'text') {
-      const anchor = e.align === 'left' ? 'start' : 'middle';
+      const anchor = e.align === 'left' ? 'start' : (e.align === 'right' ? 'end' : 'middle');
       const rotate = e.rotate ? ` transform="rotate(${n(e.rotate)} ${n(e.x)} ${n(flip(e.y))})"` : '';
       const tracking = e.tracking ? ` letter-spacing="${n(e.tracking * e.height)}"` : '';
+      // ─── T71 (the sheet set): a MASKED text stands on white ────────────────
+      // A unit number on a double door would sit on the meeting line; the mask
+      // is what keeps it readable without moving it off the front it names.
+      // Only a text that asks for it gets one, so every older sheet is byte
+      // for byte what it was.
+      if (e.mask) {
+        const mw = String(e.text).length * e.height * 0.62 + e.height * 0.6;
+        const mh = e.height * 1.3;
+        const mr = e.rotate ? ` transform="rotate(${n(e.rotate)} ${n(e.x)} ${n(flip(e.y))})"` : '';
+        const mx = e.align === 'left' ? e.x - e.height * 0.3 : (e.align === 'right' ? e.x - mw + e.height * 0.3 : e.x - mw / 2);
+        parts.push(`<rect x="${n(mx)}" y="${n(flip(e.y) - mh / 2)}" width="${n(mw)}" height="${n(mh)}" fill="${background}" stroke="none"${mr} data-layer="${e.layer}" data-cc="mask"/>`);
+      }
+      const weight = e.weight === 'bold' ? ' font-weight="bold"' : '';
       parts.push(
         `<text x="${n(e.x)}" y="${n(flip(e.y))}" font-size="${n(e.height)}" font-family="${FONT}"`
-        + ` fill="${L.colour}" text-anchor="${anchor}" dominant-baseline="central"${tracking}${rotate}`
+        + ` fill="${e.colour || L.colour}" text-anchor="${anchor}" dominant-baseline="central"${tracking}${rotate}${weight}`
         + ` data-layer="${e.layer}"${tag}>${esc(e.text)}</text>`,
       );
+    } else if (e.kind === 'poly') {
+      // ─── T71: a closed run of points, optionally filled ───────────────────
+      // The perspective's faces (white, so a nearer box hides a farther one),
+      // arrowheads, hatch cells. `fill` is a colour, 'white' (the paper), or
+      // absent for an outline.
+      const d = (e.pts || []).map((p, i) => `${i ? 'L' : 'M'}${n(p[0])} ${n(flip(p[1]))}`).join(' ') + (e.open ? '' : ' Z');
+      const fill = e.fill === 'white' ? background : (e.fill || 'none');
+      const sw = e.noStroke ? 'none' : L.colour;
+      parts.push(`<path d="${d}" fill="${fill}" stroke="${sw}" stroke-width="${n(penWidth(e))}"${dash} stroke-linejoin="round" data-layer="${e.layer}"${tag}/>`);
+    } else if (e.kind === 'image' && e.href) {
+      // ─── T71: a picture on the sheet (the render on the visualisation) ────
+      parts.push(`<image x="${n(e.x)}" y="${n(flip(e.y + e.h))}" width="${n(e.w)}" height="${n(e.h)}" href="${esc(e.href)}" preserveAspectRatio="xMidYMid meet" data-layer="${e.layer || 'FRAME'}"${tag}/>`);
     }
   }
 

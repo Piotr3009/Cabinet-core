@@ -53,14 +53,18 @@ export const DRAWING_KINDS = [
   // z AutoCada."* A sheet is a WALL: /1 with the fronts on, /2 the carcass
   // without them, and one horizontal section for the whole job. They sit HERE,
   // beside the Unit Card, which is where CLAUDE.md puts them.
+  // ─── T71: THE SET ────────────────────────────────────────────────────────
+  // Skylon's own set on the table: one view per A3 sheet, the same title strip
+  // on all of them. Cover, plans, per wall the front view, the internal layout
+  // and the sections, then the perspective, the visualisation and the cut list.
   {
     id: 'walls',
-    label: 'Wall drawings (PDF)',
-    hint: 'Every wall: /1 with fronts, /2 carcass, plus the horizontal section',
+    label: 'Drawing set (PDF)',
+    hint: 'Cover, plans, per wall the front view, internal layout and sections, perspective, visualisation, cut list',
   },
   {
     id: 'walls-dxf',
-    label: 'Wall drawings (DXF)',
+    label: 'Drawing set (DXF)',
     // The warning is in the MENU as well as on every sheet and in the ZIP: a
     // DXF with text in it crashes VCarve's parser (02.08.2026), and the CNC
     // export — which is a different path entirely — still ships none.

@@ -1,0 +1,440 @@
+From 1daa5acad968ad88dc11096ef7287eb94770f535 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 21 Sep 2026 16:44:45 +0100
+Subject: [PATCH 4/8] T71 F4: the two plans and the sections
+
+setPlan: horizontal sections cut at drawings.set.planCut (400 through the base run,
+1700 through the wall run), measured on the room's walls so 4420 x 3200 lands on 1:20,
+the room fabric with the door leaf and arc, section marks A and B drawn under the
+units, every cut unit's number, chains of every cut member per wall with the wall
+ends, the depth chain.
+setSection: A-A through the first drawer unit, B-B through the sink, a chosen cabinet
+as one more station, side by side at one scale; each with cutCabinet's bars, the
+scene's legs, the worktop slab, the hatched wall band, floor and ceiling, and its own
+chains; the caption in the bottom band.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UMSCbqdi85whfyRQS2gqQ2
+---
+ src/engine/drawings/setPlan.js    | 237 ++++++++++++++++++++++++++++++
+ src/engine/drawings/setSection.js | 164 +++++++++++++++++++++
+ 2 files changed, 401 insertions(+)
+ create mode 100644 src/engine/drawings/setPlan.js
+ create mode 100644 src/engine/drawings/setSection.js
+
+diff --git a/src/engine/drawings/setPlan.js b/src/engine/drawings/setPlan.js
+new file mode 100644
+index 0000000..d6885a5
+--- /dev/null
++++ b/src/engine/drawings/setPlan.js
+@@ -0,0 +1,237 @@
++// ─── T71 · THE TWO PLANS: BASE UNITS, WALL UNITS ────────────────────────────
++//
++// The owner's set has two horizontal sections and ours had one, with the wall
++// run drawn on top of the base run (*"nakładają się"*). So: two sheets, two
++// cuts. `Plan · base units` is cut at `set.planCut.base` (400 above FFL) and
++// shows every unit the knife passes through at that height, `Plan · wall
++// units` is cut at `planCut.wall` (1700) and shows the wall run and the tall
++// units, with what lies BELOW the cut, the worktop, drawn lightly under them.
++//
++// The room is `roomWalls(room)`: every wall, every opening, in the room's own
++// frame, so an L-shaped room draws as an L and a door on wall B swings on wall
++// B. Every cabinet is placed through its wall's frame, the way
++// `buildHorizontalSection` has placed them since T40, and every rectangle of a
++// cabinet is `buildTopView`'s, which is the engine's plan of that cabinet.
++//
++// Pure functions: no React, no store imports.
++
++import { buildTopView } from './views.js';
++import { entLine as line, entPoly as poly, entText as text } from './primitives.js';
++import { roomWalls, openingsOnWall } from '../room.js';
++import { wallGroups, wallLabel } from './wallElevation.js';
++import { chainH, chainV } from './setChains.js';
++import { sectionStations } from './setSection.js';
++import { unitBase, unitTop } from '../runs.js';
++
++const AXIS = 1e-6;
++
++/** A point in one wall's frame (`u` along, `v` into the room) in the room's. */
++const at = (wall, u, v) => [
++  wall.start.x + wall.along.x * u + wall.inward.x * v,
++  wall.start.y + wall.along.y * u + wall.inward.y * v,
++];
++
++/** Which cut this sheet is: 'base' or 'wall'. */
++export function cutHeight(which, profile) {
++  const c = profile.drawings.set.planCut;
++  return which === 'wall' ? c.wall : c.base;
++}
++
++/** Every entry the knife passes through at this height. */
++export function cutEntries(entries, cut, profile) {
++  return (entries || []).filter((e) => e?.unit && e?.result
++    && unitBase(e.unit, profile) < cut && unitTop(e.unit, profile) > cut);
++}
++
++/** The room's extent, for the scale: walls, plus a margin for the chains. */
++export function measurePlan({ room, profile }) {
++  const walls = roomWalls(room);
++  const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
++  const ys = walls.flatMap((w) => [w.start.y, w.end.y]);
++  // The walls themselves; the labels and the chains live in the bands the
++  // sheet reserves around the object, so a 4420 x 3200 room lands on 1:20.
++  void profile;
++  const x0 = Math.min(...xs); const x1 = Math.max(...xs);
++  const y0 = Math.min(...ys); const y1 = Math.max(...ys);
++  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
++}
++
++/** A unit's plan (buildTopView, in its own frame) turned into the room's. */
++function throughWall(entities, wall, u0, depth) {
++  const out = [];
++  const T = (x, y) => at(wall, u0 + x, depth - y);
++  for (const e of entities) {
++    if (e.kind === 'rect') {
++      const q = [T(e.x, e.y), T(e.x + e.w, e.y), T(e.x + e.w, e.y + e.h), T(e.x, e.y + e.h)];
++      out.push({ ...poly(e.layer, q), pen: e.pen, hidden: e.hidden, solid: e.solid, meta: e.meta });
++    } else if (e.kind === 'line') {
++      const [x1, y1] = T(e.x1, e.y1); const [x2, y2] = T(e.x2, e.y2);
++      out.push({ ...e, x1, y1, x2, y2 });
++    } else if (e.kind === 'circle') {
++      const [cx, cy] = T(e.cx, e.cy);
++      out.push({ ...e, cx, cy });
++    } else if (e.kind === 'text') {
++      const [x, y] = T(e.x, e.y);
++      out.push({ ...e, x, y });
++    } else if (e.kind === 'poly') {
++      out.push({ ...e, pts: (e.pts || []).map((p) => T(p[0], p[1])) });
++    }
++  }
++  return out;
++}
++
++/** The room: walls as the cut line, openings, and a label outside each wall. */
++function roomFabric(room, { ctx, profile }) {
++  const out = [];
++  const walls = roomWalls(room);
++  for (const wall of walls) {
++    const ops = openingsOnWall(room, wall.index);
++    // The wall line, broken at each opening.
++    let u = 0;
++    for (const o of ops) {
++      const [x1, y1] = at(wall, u, 0); const [x2, y2] = at(wall, o.x_mm, 0);
++      if (o.x_mm > u) out.push({ ...line('BUILDING', x1, y1, x2, y2), pen: 'CUT' });
++      if (o.kind === 'door') {
++        // The leaf standing open into the room, hinged at the far jamb, and
++        // its swing.
++        const hinge = o.x_mm + o.width;
++        const [hx, hy] = at(wall, hinge, 0); const [lx, ly] = at(wall, hinge, o.width);
++        out.push({ ...line('BUILDING', hx, hy, lx, ly), pen: 'THIN' });
++        const pts = [];
++        for (let i = 0; i <= 12; i += 1) {
++          const a = (Math.PI / 2) * (i / 12);
++          pts.push(at(wall, hinge - Math.sin(a) * o.width, Math.cos(a) * o.width));
++        }
++        out.push({ ...poly('BUILDING', pts, { open: true }), pen: 'FINE' });
++        const [tx, ty] = at(wall, o.x_mm + o.width / 2, o.width * 0.55);
++        out.push({ ...text('BUILDING', tx, ty, `DOOR ${Math.round(o.width)}`, ctx.labelHeight * 0.85), paperHeight: (ctx.labelHeight * 0.85) / ctx.scale });
++      } else {
++        // A window: the wall line stays, thin, with the sill line beside it.
++        const [x3, y3] = at(wall, o.x_mm, 0); const [x4, y4] = at(wall, o.x_mm + o.width, 0);
++        out.push({ ...line('BUILDING', x3, y3, x4, y4), pen: 'THIN' });
++        const [x5, y5] = at(wall, o.x_mm, 60); const [x6, y6] = at(wall, o.x_mm + o.width, 60);
++        out.push({ ...line('BUILDING', x5, y5, x6, y6), pen: 'THIN' });
++      }
++      u = o.x_mm + o.width;
++    }
++    const [x1, y1] = at(wall, u, 0); const [x2, y2] = at(wall, wall.width, 0);
++    if (wall.width > u) out.push({ ...line('BUILDING', x1, y1, x2, y2), pen: 'CUT' });
++    // Outside the wall, past the chains that hang there: in the band, below
++    // the second chain's figures.
++    const [lx, ly] = at(wall, wall.width / 2, -ctx.mm(profile.drawings.set.chainSecond + 6));
++    out.push({ ...text('BUILDING', lx, ly, `WALL ${wallLabel(wall.index)}`, ctx.labelHeight), paperHeight: ctx.labelHeight / ctx.scale, tracking: 0.3 });
++  }
++  return out;
++}
++
++/**
++ * BUILD ONE PLAN. `which` is 'base' or 'wall'.
++ */
++export function buildPlan(entries, {
++  which = 'base', room, worktops = [], profile, ctx, frontTypeOf = null, shakerFrame = null,
++}) {
++  const cut = cutHeight(which, profile);
++  const walls = roomWalls(room);
++  const entities = [];
++  const gap = Number(profile.doors?.gap) || 0;
++  const clearance = Math.max(0, Number(profile.room?.wallBackClearance) || 0);
++
++  // ── the room ──
++  entities.push(...roomFabric(room, { ctx, profile }));
++
++  // ── the worktop: under the wall cut it is seen; above the base cut it is hidden ──
++  for (const w of worktops) {
++    const wall = walls[Number(w.wall ?? 0)] || walls[0];
++    if (!wall) continue;
++    const q = [at(wall, w.x, 0), at(wall, w.x + w.w, 0), at(wall, w.x + w.w, w.d), at(wall, w.x, w.d)];
++    entities.push(which === 'wall'
++      ? { ...poly('CARCASE', q, { fill: '#f6f6f6' }), pen: 'THIN', solid: true }
++      : { ...poly('SHELVES', q), pen: 'HIDDEN', hidden: true });
++  }
++
++  // ── the section stations, marked on both plans so the sections can be found ──
++  // Drawn before the units, so a number's white mask covers the line.
++  const groups = wallGroups(entries, profile);
++  const gapMm = Number(profile.doors?.gap) || 0;
++  for (const g of groups) {
++    const wall = walls[g.wall]; if (!wall) continue;
++    const deep = Math.max(0, ...g.members.map((m) => Number(m.result.params.depth) || 0)) + clearance + gapMm + 100;
++    for (const st of sectionStations(g)) {
++      const a = at(wall, st.x, -ctx.mm(3.2)); const b = at(wall, st.x, deep + 300);
++      entities.push({ ...line('FRAME', a[0], a[1], b[0], b[1]), pen: 'VISIBLE', hidden: true });
++      for (const [p, dir] of [[a, -1], [b, 1]]) {
++        const s = ctx.mm(2.2);
++        const nx = wall.along.x; const ny = wall.along.y;
++        const ix = wall.inward.x * dir; const iy = wall.inward.y * dir;
++        const tip = [p[0] - nx * s * 1.4, p[1] - ny * s * 1.4];
++        entities.push({ ...poly('FRAME', [tip, [p[0] + nx * s * 0.2 + ix * s * 0.9, p[1] + ny * s * 0.2 + iy * s * 0.9], [p[0] + nx * s * 0.2 - ix * s * 0.9, p[1] + ny * s * 0.2 - iy * s * 0.9]], { fill: '#151515' }), pen: 'FINE' });
++        entities.push({ ...text('FRAME', p[0] + nx * s * 1.6, p[1] + ny * s * 1.6, st.letter, ctx.mm(3.2)), paperHeight: 3.2, weight: 'bold', mask: true });
++      }
++    }
++  }
++
++  // ── the units the knife passes through ──
++  const cutList = cutEntries(entries, cut, profile);
++  for (const e of cutList) {
++    const wall = walls[Math.max(0, Math.trunc(Number(e.unit.position?.wall ?? 0)))] || walls[0];
++    if (!wall) continue;
++    const u0 = (Number(e.unit.position?.x_mm) || 0);
++    const depth = Number(e.result.params.depth) || 0;
++    const view = buildTopView(e.result, {
++      unitNum: e.unit.params?.unit_num, frontType: frontTypeOf ? frontTypeOf(e.unit) : null, profile,
++      unitNumberHeight: ctx.unitNumberHeight, shakerFrame,
++    });
++    // The footprint is CUT on a plan; the number stands on white at paper size.
++    const ents = view.entities.map((x) => {
++      if (x.kind === 'text' && x.layer === 'UNIT_NUMBER') return { ...x, mask: true, weight: 'bold', paperHeight: ctx.unitNumberHeight / ctx.scale };
++      if (x.kind === 'rect' && x.layer === 'CARCASE' && x.pen === 'OUTLINE') return { ...x, pen: 'CUT' };
++      return x;
++    });
++    // Off the wall by the clearance the engine stands every unit at.
++    entities.push(...throughWall(ents, wall, u0, depth + clearance));
++    // The plinth lies below either cut: dashed, where the engine puts it.
++    const plinth = (e.result.panels || []).find((p) => p.role === 'plinth' && p.box);
++    if (plinth && which === 'base') {
++      const v0 = clearance + plinth.box.z; const v1 = v0 + plinth.box.d;
++      const q = [at(wall, u0 + plinth.box.x, v0), at(wall, u0 + plinth.box.x + plinth.box.w, v0), at(wall, u0 + plinth.box.x + plinth.box.w, v1), at(wall, u0 + plinth.box.x, v1)];
++      entities.push({ ...poly('SHELVES', q), pen: 'HIDDEN', hidden: true });
++    }
++  }
++
++  // ── chains: along each run, outside its wall; the depth beside wall A's start ──
++  const chains = [];
++  for (const g of groups) {
++    const wall = walls[g.wall]; if (!wall) continue;
++    // Every member of this wall the knife passes through: on the wall cut
++    // that is the wall run AND the tall units standing among them.
++    const members = g.members.filter((m) => cutList.some((e) => e.unit.id === m.unit.id));
++    if (!members.length) continue;
++    const edges = [...new Set([0, wall.width, ...members.flatMap((m) => [m.x, m.x + m.width])])].sort((p, q) => p - q);
++    const axisX = Math.abs(wall.along.y) < AXIS;
++    const axisY = Math.abs(wall.along.x) < AXIS;
++    if (axisX) {
++      const y = wall.start.y - wall.inward.y * ctx.chainFirst;
++      const pts = edges.map((u) => at(wall, u, 0)[0]).sort((p, q) => p - q);
++      chains.push(chainH({ edges: pts, y, yObj: wall.start.y, ctx, above: wall.inward.y < 0 }));
++      chains.push(chainH({ edges: [pts[0], pts[pts.length - 1]], y: wall.start.y - wall.inward.y * ctx.chainSecond, ctx, above: wall.inward.y < 0 }));
++    } else if (axisY) {
++      const x = wall.start.x - wall.inward.x * ctx.chainFirst;
++      const pts = edges.map((u) => at(wall, u, 0)[1]).sort((p, q) => p - q);
++      chains.push(chainV({ edges: pts, x, xObj: wall.start.x, ctx, left: wall.inward.x > 0 }));
++    }
++    // The depth, once, beside the start of the first run: clearance, carcass,
++    // front, and the worktop's reach.
++    if (axisX && g === groups[0]) {
++      const deepest = Math.max(...members.map((m) => Number(m.result.params.depth) || 0));
++      const frontT = Math.max(...members.map((m) => Number(m.result.params.front_t) || 0));
++      const vs = new Set([0, clearance, clearance + deepest, clearance + deepest + gap + frontT]);
++      const wt = worktops.find((w) => Number(w.wall ?? 0) === g.wall);
++      if (wt) vs.add(wt.d);
++      const ys = [...vs].map((v) => at(wall, 0, v)[1]).sort((p, q) => p - q);
++      const x = at(wall, 0, 0)[0] - wall.along.x * ctx.chainFirst * 1.6;
++      chains.push(chainV({ edges: ys, x, xObj: at(wall, 0, 0)[0], ctx, left: wall.along.x > 0 }));
++    }
++  }
++  entities.push(...chains.flat());
++  return { entities, chains, cut, units: cutList.length };
++}
+diff --git a/src/engine/drawings/setSection.js b/src/engine/drawings/setSection.js
+new file mode 100644
+index 0000000..5d4c243
+--- /dev/null
++++ b/src/engine/drawings/setSection.js
+@@ -0,0 +1,164 @@
++// ─── T71 · THE SECTIONS: THE WHOLE HEIGHT, TWO TO A SHEET ───────────────────
++//
++// T43 wrote the grammar (`section.js cutCabinet`): every board the knife
++// passes through as a CUT bar, the drawer boxes as side profiles on their
++// runners, the legs. What the owner's set showed us is WHERE the knife goes
++// and WHAT ELSE is in the picture: one cut, at the drawer unit, shows the
++// plinth, the base carcass, the worktop, the wall unit above it, the wall
++// behind and the ceiling over it, all on one drawing, because that is the
++// section a fitter reads the heights off. And a second cut, through the sink.
++//
++// So a sheet carries the stations `sectionStations()` names, A-A and B-B, side
++// by side at one scale, each with its own chains. Everything drawn is
++// `cutCabinet`'s, the design layer's worktop, the room's ceiling, and the same
++// leg the scene draws.
++//
++// Pure functions: no React, no store imports.
++
++import { cutCabinet, cutMembers } from './section.js';
++import { mountingBands } from './wallElevation.js';
++import { boundsOf, entLine as line, entRect as rect, entText as text, moveEntities } from './primitives.js';
++import { chainH, chainV } from './setChains.js';
++import { legHardware } from './setElevation.js';
++
++/**
++ * WHERE THE KNIFE GOES on this wall: A-A through the first drawer unit of the
++ * floor run (a section is read for the drawers), else the first floor unit;
++ * B-B through the sink unit when there is one and it is not A-A's. A chosen
++ * unit (the dropdown) is added as C-C, or replaces A-A when it is the same.
++ *
++ * @returns {Array<{letter:string, x:number, member:object}>}
++ */
++export function sectionStations(group, { chosenId = null } = {}) {
++  const bands = mountingBands(group?.members || []);
++  const floor = bands[0];
++  if (!floor || !floor.members.length) return [];
++  const isDrawer = (m) => (m.result.assemblies?.drawerFronts || []).length > 0
++    || (m.result.panels || []).some((p) => p.part === 'DRAWER-SIDE');
++  const isSink = (m) => m.unit.type === 'SINK';
++  const centre = (m) => m.x + (Number(m.width) || 0) / 2;
++  const out = [];
++  const a = floor.members.find(isDrawer) || floor.members[0];
++  out.push({ letter: 'A', x: centre(a), member: a });
++  const b = floor.members.find((m) => isSink(m) && m !== a);
++  if (b) out.push({ letter: 'B', x: centre(b), member: b });
++  if (chosenId) {
++    const c = (group.members || []).find((m) => m.unit.id === chosenId);
++    if (c && !out.some((s) => s.member === c)) out.push({ letter: String.fromCharCode(65 + out.length), x: centre(c), member: c });
++  }
++  return out;
++}
++
++/** The wall's own thickness on a section, drawn as a hatched band behind the run. */
++function wallBand(ctx, { top, profile }) {
++  const S = profile.drawings.set;
++  const t = ctx.mm(6);                 // the band on paper, whatever the scale
++  const out = [{ ...rect('BUILDING', -t, 0, t, top), pen: 'CUT' }];
++  const pitch = ctx.mm(S.hatchPitch);
++  for (let y = 0; y < top; y += pitch) {
++    const y1 = Math.min(top, y + t);
++    out.push({ ...line('BUILDING', -t, y, -t + (y1 - y), y1), pen: 'FINE' });
++  }
++  return out;
++}
++
++/**
++ * ONE STATION, cut: every member the knife passes through, the worktop over
++ * the run, the wall band, the floor and the ceiling, and its chains.
++ */
++export function buildStation(group, station, { room = null, worktops = [], profile, ctx }) {
++  const members = cutMembers(group, station.x);
++  const entities = [];
++  const ceiling = Number(room?.height) || 0;
++  const top = Math.max(ceiling, ...members.map((m) => m.top));
++  const clearance = Math.max(0, Number(profile.room?.wallBackClearance) || 0);
++
++  for (const m of members) {
++    // `cutCabinet` draws the carcass at z = 0 at the wall; every unit stands
++    // the clearance off it, and its legs are added here as the scene draws
++    // them (the grammar's three lines are replaced by plate, stem and foot).
++    const cut = cutCabinet(m, profile).filter((e) => e.layer !== 'LEG_BLOCK');
++    entities.push(...moveEntities(cut, clearance, 0));
++    const legs = m.result.assemblies?.legs;
++    const legH = Number(m.result.assemblies?.carcass?.legHeight) || 0;
++    if (legs && legH > 0) {
++      const zs = [...new Set(legs.positions.map((p) => Math.round(Number(p.z) || 0)))];
++      for (const z of zs) entities.push(...legHardware({ x: z }, { width: legs.width, height: legH, profile, dx: clearance, dy: m.base }));
++    }
++  }
++  for (const w of worktops) {
++    if (w.x <= station.x && station.x <= w.x + w.w) {
++      entities.push({ ...rect('CARCASE', 0, w.y, w.d, w.h), pen: 'CUT', fill: '#d9d9d9', solid: true });
++    }
++  }
++  const deepest = Math.max(0, ...members.map((m) => clearance + (Number(m.result.params.depth) || 0) + (Number(profile.doors?.gap) || 0) + (Number(m.result.params.front_t) || 0)), ...worktops.map((w) => w.d));
++  entities.push(...wallBand(ctx, { top, profile }));
++  entities.push({ ...line('BUILDING', -ctx.mm(6), 0, deepest + ctx.mm(12), 0), pen: 'VISIBLE' });
++  if (ceiling > 0) entities.push({ ...line('BUILDING', -ctx.mm(6), ceiling, deepest + ctx.mm(12), ceiling), pen: 'VISIBLE' });
++
++  // Unit numbers, on white, in the carcass.
++  for (const m of members) {
++    const D = Number(m.result.params.depth) || 0;
++    const H = Number(m.result.params.height) || 0;
++    entities.push({ ...text('UNIT_NUMBER', clearance + D * 0.55, m.base + H * 0.12, String(m.unit.params?.unit_num ?? ''), ctx.unitNumberHeight), paperHeight: ctx.unitNumberHeight / ctx.scale, mask: true, weight: 'bold' });
++  }
++
++  // ── chains: heights up the right, depths along the bottom, the wall run's depth on top ──
++  const chains = [];
++  const hs = new Set([0, top]);
++  for (const m of members) { hs.add(m.base); hs.add(m.top); }
++  for (const w of worktops) if (w.x <= station.x && station.x <= w.x + w.w) { hs.add(w.y); hs.add(w.y + w.h); }
++  const xr = deepest + ctx.chainFirst;
++  chains.push(chainV({ edges: [...hs].sort((a, b) => a - b), x: xr, xObj: deepest, ctx, left: false }));
++  chains.push(chainV({ edges: [0, top], x: deepest + ctx.chainSecond, ctx, left: false }));
++  const floorMember = members.find((m) => m.base < 200) || members[0];
++  if (floorMember) {
++    const D = Number(floorMember.result.params.depth) || 0;
++    const frontT = Number(floorMember.result.params.front_t) || 0;
++    const gap = Number(profile.doors?.gap) || 0;
++    const ds = new Set([0, clearance, clearance + D, clearance + D + gap + frontT]);
++    const wt = worktops.find((w) => w.x <= station.x && station.x <= w.x + w.w);
++    if (wt) ds.add(wt.d);
++    chains.push(chainH({ edges: [...ds].sort((a, b) => a - b), y: -ctx.chainFirst, yObj: 0, ctx, above: false }));
++  }
++  const hung = members.find((m) => m.base >= 200);
++  if (hung) {
++    const D = Number(hung.result.params.depth) || 0;
++    const frontT = Number(hung.result.params.front_t) || 0;
++    const gap = Number(profile.doors?.gap) || 0;
++    chains.push(chainH({ edges: [0, clearance, clearance + D, clearance + D + gap + frontT].filter((v, i, arr) => arr.indexOf(v) === i), y: hung.top + ctx.chainFirst, yObj: hung.top, ctx, above: true }));
++  }
++  entities.push(...chains.flat());
++
++  const names = members.map((m) => String(m.unit.params?.unit_num ?? '')).filter(Boolean);
++  const caption = `SECTION ${station.letter}-${station.letter} · through unit${names.length > 1 ? 's' : ''} ${names.join(' and ')}`;
++  // The caption sits in the bottom band, under the depth chain and its lifted
++  // figures, and never lower: the band is what the sheet reserved for it.
++  entities.push({ ...text('VIEW_TITLE', deepest / 2, -ctx.mm(19.5), caption, ctx.mm(2.8)), paperHeight: 2.8, weight: 'bold' });
++  entities.push({ ...text('SHEET_MUTED', deepest / 2, -ctx.mm(23), 'looking along the wall, towards its start', ctx.mm(1.9)), paperHeight: 1.9 });
++
++  return { entities, chains, members, bounds: boundsOf(entities.filter((e) => e.layer !== 'DIMENSIONS')) };
++}
++
++/**
++ * THE SHEET: the stations side by side at ONE scale. Measured as the tallest
++ * station's height and the sum of the widths with a gap between them.
++ */
++export function stationSet(group, stations, args) {
++  return {
++    // No `measure`: the sheet builds this once at 1:1 to read its extent, then
++    // again at the scale it chose (`layoutSetSheet`).
++    build: (ctx) => {
++      const entities = [];
++      let dx = 0;
++      const gapMm = ctx.mm(args.profile.drawings.set.band * 2.2);
++      for (const st of stations) {
++        const one = buildStation(group, st, { ...args, ctx });
++        entities.push(...moveEntities(one.entities, dx, 0));
++        const width = (one.bounds.x + one.bounds.w) - Math.min(0, one.bounds.x);
++        dx += width + gapMm;
++      }
++      return { entities };
++    },
++  };
++}
+-- 
+2.43.0
+

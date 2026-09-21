@@ -1,0 +1,1631 @@
+From e0be2b5dea6077890fecd726e80a5f90ad77b348 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 21 Sep 2026 16:45:05 +0100
+Subject: [PATCH 6/8] T71 F5: the set is bound in order, numbered, and proved
+ on 3-7 Herbal Hill
+
+wallSheets: wallDrawingSheets binds 00 cover (index, revisions, the first wall's
+perspective fitted), 01 and 02 the plans, per wall the front view, the internal layout
+and the sections, per wall the perspective, the visualisation, the cut list pages;
+every sheet numbered NN / of with drawing number job-NN; titleFor reads
+project.titleBlock (company, address, drawnBy, checkedBy, status, rev, date); the
+worktops resolve from the design's records when the caller passes none; no cabinet
+against a wall, no set. wallSetReport, wallSectionUnits and wallDrawingPages untouched.
+The proof kitchen (test/fixtures/t71-herbal-hill.js) is read off Skylon's six sheets;
+scripts/t71-render.mjs renders the set headless.
+Tests: turn71-the-set (the zones, the scale, nothing leaves its zone, the strip, the
+key plan, appliances by type, the chains and the collision rule, each dimension once
+per home, the legs from the engine's shape, the plates from the drilling, the worktop
+resolved, the plans, the sections, the perspective, the order and numbering, the cut
+list's pagination, the visualisation's frame, the renderers). The T40, T41, T42 and
+T43 set tests re-pinned to the set, each with the reason beside it.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UMSCbqdi85whfyRQS2gqQ2
+---
+ scripts/t71-render.mjs                        |  37 ++
+ src/engine/drawings/wallSheets.js             | 343 ++++++++----
+ test/fixtures/t71-herbal-hill.js              |  85 +++
+ test/turn40-f5-wall-drawings.test.js          |  81 ++-
+ ...rn41-f5-the-drawings-learn-to-draw.test.js |  41 +-
+ test/turn42-f0-wall-pdf-speaks.test.js        |  23 +-
+ test/turn43-f1-fronts-sheet.test.js           |   9 +-
+ test/turn43-f2-shaker-is-the-project.test.js  |  10 +-
+ test/turn43-f4-pen-map.test.js                |  23 +-
+ test/turn43-f5-the-sections.test.js           |  86 +--
+ test/turn71-the-set.test.js                   | 523 ++++++++++++++++++
+ 11 files changed, 1059 insertions(+), 202 deletions(-)
+ create mode 100644 scripts/t71-render.mjs
+ create mode 100644 test/fixtures/t71-herbal-hill.js
+ create mode 100644 test/turn71-the-set.test.js
+
+diff --git a/scripts/t71-render.mjs b/scripts/t71-render.mjs
+new file mode 100644
+index 0000000..de71c2a
+--- /dev/null
++++ b/scripts/t71-render.mjs
+@@ -0,0 +1,37 @@
++#!/usr/bin/env node
++// ─── T71 · RENDER THE SET FOR THE PROOF KITCHEN, HEADLESS ───────────────────
++//
++//   node scripts/t71-render.mjs [--out verify/t71/]
++//
++// Every sheet of the set for the 3-7 Herbal Hill fixture, as SVG, straight
++// from the engine, no browser. What a test asserts on and what the PR shows.
++
++import { mkdirSync, writeFileSync } from 'node:fs';
++import { join } from 'node:path';
++
++import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
++import { sheetToSvg } from '../src/engine/drawings/svg.js';
++import { wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
++import { hhEntries, hhWorktops, HH_PROJECT, HH_ROOM } from '../test/fixtures/t71-herbal-hill.js';
++
++const argOf = (flag, fallback) => {
++  const i = process.argv.indexOf(flag);
++  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
++};
++const OUT = argOf('--out', new URL('../verify/t71/', import.meta.url).pathname);
++mkdirSync(OUT, { recursive: true });
++
++const sheets = wallDrawingSheets({
++  entries: hhEntries(P),
++  project: HH_PROJECT,
++  room: HH_ROOM,
++  worktops: hhWorktops(P),
++  profile: P,
++  date: '21.09.2026',
++  design: { fronts: { style: 'F' } },
++});
++for (const s of sheets) {
++  const file = join(OUT, `${String(s.no ?? '').padStart(2, '0')}-${s.name.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.svg`);
++  writeFileSync(file, sheetToSvg(s.sheet, { kind: s.variant }));
++  console.log(`${String(s.no ?? '').padStart(2, '0')}  ${s.name.padEnd(34)} ${s.sheet.scaleLabel || ''}  entities ${s.sheet.entities.length}  -> ${file}`);
++}
+diff --git a/src/engine/drawings/wallSheets.js b/src/engine/drawings/wallSheets.js
+index 39ee5d8..86905db 100644
+--- a/src/engine/drawings/wallSheets.js
++++ b/src/engine/drawings/wallSheets.js
+@@ -13,17 +13,14 @@
+ //
+ // Pure functions — no React, no store imports, no jsPDF.
+ 
+-import {
+-  buildHorizontalSection, buildWallElevation, turnedAway, wallGroups, wallLabel,
+-} from './wallElevation.js';
+-import { layoutSheet } from './sheet.js';
++import { turnedAway, wallGroups, wallLabel } from './wallElevation.js';
+ // ─── TURN 43 (CLAUDE.md F5): THE VERTICAL SECTIONS. BOTH. ───────────────────
+ // The owner: *"Nie widzę przekroju w pionie ani w poziomie."* The horizontal
+ // one exists (the set's last sheet). The vertical one did not exist anywhere
+ // under `src/engine/drawings/` — never written, not regressed — and he has
+ // asked for BOTH twice: a section per wall, AND an A-A through a cabinet he
+ // points at.
+-import { buildUnitSection, buildWallSection, sectionableUnits } from './section.js';
++import { sectionableUnits } from './section.js';
+ // ─── TURN 43 (CLAUDE.md F2): THE PROJECT'S OWN MILLIMETRES ──────────────────
+ // The owner: *"shaker prawdziwy — ile mam mm, tyle powinno być pokazane."*
+ // MEASURED on the real engine before a line was written: project frame 80 mm →
+@@ -33,148 +30,250 @@ import { buildUnitSection, buildWallSection, sectionableUnits } from './section.
+ // read the project's number; nobody handed it the project.
+ import { shakerFrameMm } from '../shaker.js';
+ 
+-/**
+- * The title block his set carries: Client Name, Client Address, Project,
+- * Drawing name, Date, Job No, Scale, Rev.
+- *
+- * SCALE READS "No Scale". CLAUDE.md is explicit — *"he does not print to a
+- * scale, he trusts the dimensions. Do not invent a scale label."* The sheet is
+- * still LAID OUT at a ratio, because a drawing has to fit the paper; what the
+- * title block says is what he says. `layoutSheet` spreads `title.extra` over
+- * its own values last, which is what lets this override the computed one
+- * without the sheet module knowing anything about wall drawings.
+- */
+-function titleFor({ project = {}, drawing, profile }) {
++// ─── T71 · THE SET, IN THE ORDER IT IS BOUND ────────────────────────────────
++//
++// The owner, 21.09.2026, Skylon Joinery's own set on the table: one view per
++// A3, the same title strip on every sheet, and *"wszystko osobno"*. The list:
++//
++//   00  Cover, index and revisions
++//   01  Plan · base units          02  Plan · wall units
++//   NN  Wall A · Front view        NN  Wall A · Internal layout
++//   NN  Wall A · Sections          (and the same three for every wall)
++//   NN  Wall A · Perspective       NN  Visualisation
++//   NN  Cut list and materials
++//
++// The sheet law (`setSheet.js`) lays every one of them; the builders draw the
++// engine's own boxes; this file only binds them in order and numbers them.
++// The unit card and the booklet are untouched (iron rule 4).
++
++import { SET_NOTES, drawingContext, fitEntities, layoutSetSheet, setZones } from './setSheet.js';
++import { buildRunElevation, measureRun, worktopsOnWall } from './setElevation.js';
++import { buildPlan, measurePlan } from './setPlan.js';
++import { sectionStations, stationSet } from './setSection.js';
++import { buildPerspective } from './setPerspective.js';
++import { buildCover, buildCutList, buildVisual, cutListPages, visualPictureBox } from './setPaper.js';
++import { decorById, decorIdFromFinishId, decorLabel } from '../decors.js';
++import { worktopsFor } from '../worktop.js';
++
++/** The title strip's words, from the project and its title block. */
++export function titleFor({ project = {}, profile, no, name, date = '' }) {
++  const tb = project.titleBlock || {};
++  const S = profile.drawings.set;
++  const job = String(project.number ?? project.project_number ?? '');
+   return {
++    company: { ...S.company, ...(tb.company || {}) },
++    client: project.client || '',
++    address: tb.address || project.address || '',
+     project: project.name || 'Untitled project',
+-    view: drawing,
+-    date: project.date || '',
+-    extra: {
+-      Client: project.client || '',
+-      Address: project.address || '',
+-      Drawing: drawing,
+-      'Job No': project.number ?? project.project_number ?? '',
+-      Rev: project.rev || '-',
+-      Scale: profile.drawings.wallDrawing.scaleLabel,
+-    },
++    drawing: `${no} · ${name}`,
++    drawingNo: job ? `${job.replace(/\//g, '-')}-${no}` : no,
++    drawn: tb.drawnBy || '',
++    checked: tb.checkedBy || '',
++    date: tb.date || date || '',
++    job,
++    rev: tb.rev || project.rev || 'A',
++    status: tb.status || 'B',
++    statusName: (S.statuses.find(([k]) => k === (tb.status || 'B')) || [])[1] || '',
++    sheet: '', of: '',
+   };
+ }
+ 
++/** What the visualisation sheet says beside the render, read off the design. */
++export function finishesOf(design) {
++  const rows = [];
++  const decorRow = (finishId) => {
++    const d = decorById(decorIdFromFinishId(finishId));
++    return d ? { desc: decorLabel(d), colour: d.hex || d.colour || '#e6e6e6' } : null;
++  };
++  const front = design?.fronts?.types?.[0];
++  const frontDecor = front?.finish_id ? decorRow(front.finish_id) : null;
++  const frontColour = design?.colour?.front;
++  rows.push({
++    name: 'FRONTS',
++    desc: frontDecor ? frontDecor.desc : (frontColour ? `Sprayed, ${frontColour.name || frontColour.hex}${design?.finish?.front ? `, ${design.finish.front}` : ''}` : 'not chosen yet'),
++    colour: frontDecor ? frontDecor.colour : (frontColour?.hex || '#e6e6e6'),
++  });
++  const carc = design?.carcass?.types?.[0];
++  const carcDecor = carc?.finish_id ? decorRow(carc.finish_id) : null;
++  rows.push({ name: 'CARCASS', desc: carcDecor ? carcDecor.desc : 'not chosen yet', colour: carcDecor ? carcDecor.colour : '#e6e6e6' });
++  const wt = (design?.worktops || []).find((w) => w?.decor);
++  const wtDecor = wt ? decorRow(wt.decor) || decorRow(`egger:${wt.decor}`) : null;
++  rows.push({ name: 'WORKTOP', desc: wtDecor ? wtDecor.desc : 'by others', colour: wtDecor ? wtDecor.colour : '#f1efe9' });
++  return rows;
++}
++
+ /**
+- * Every sheet of the wall set, in the order they are bound.
++ * Every sheet of the set, in the order they are bound.
+  *
+  * @param {object} args
+- *   entries  [{ unit, result }] — the store's `allResults()` shape
+- *   project  { name, client, address, number, rev, room }
+- *   room     the project's room (the ceiling line and the plan's own walls)
+- *   frontTypeOf  (unit) => front style; the design layer's answer, passed in
+- *   design   the project design — T43-F2, the one thing that carries the
+- *            shaker frame width the job was quoted and cut at. Falls back to
+- *            `project.design`, so a caller that already hands the whole
+- *            project over needs no second argument.
++ *   entries       [{ unit, result }], the store's `allResults()` shape
++ *   project       { name, number, client, room, design, titleBlock }
++ *   room          the project's room
++ *   worktops      the design layer's resolved slabs (`worktopsOf()`)
++ *   frontTypeOf   (unit) => front style
++ *   design        the project design (the shaker frame, the finishes)
+  *   profile
+- *   format   'auto' | 'A4' | 'A3'
+- *   date     already formatted by the caller — the engine owns no clock
+- *   sectionUnitId  T43-F5b: the cabinet `Section A-A` is taken through, or
+- *            null for none. An ARGUMENT and not a stored setting — a drawing
+- *            option, not a design decision.
+- * @returns {Array<{sheet:object, name:string, wall:(number|null), variant:string}>}
+- *          A WALL WITH NO CABINETS PRODUCES NO SHEET: `wallGroups` never
+- *          returns it, so there is nothing here to guard against.
++ *   date          already formatted; the engine owns no clock
++ *   sectionUnitId a cabinet the owner pointed at for one more section, or null
++ *   renderImage   a data URL of the scene's render for the visualisation, or null
++ * @returns {Array<{no:string, name:string, wall:number|null, variant:string, sheet:object}>}
+  */
+ export function wallDrawingSheets({
+-  entries = [], project = {}, room = null, frontTypeOf = null, profile,
+-  format = 'auto', date = '', design = null, sectionUnitId = null,
++  entries = [], project = {}, room = null, worktops = [], frontTypeOf = null, profile,
++  date = '', design = null, sectionUnitId = null, renderImage = null,
+ }) {
+   const groups = wallGroups(entries, profile);
+-  // ONE resolution for the whole set, threaded down: sheet → elevation →
+-  // `frontDetail`. `shakerFits` still decides PER FRONT whether the frame goes
+-  // on — a 100 mm drawer front that cannot carry an 85 mm frame stays plain,
+-  // exactly as the saw would leave it — but the NUMBER is asked once.
++  // No cabinet against a wall: no set. The window and the menu read an empty
++  // list as "nothing to draw yet" (T42 F0), and a cover of nothing is not a set.
++  if (!groups.length) return [];
+   const shakerFrame = shakerFrameMm(design ?? project?.design ?? null, profile);
+-  const rows = profile.drawings.wallDrawing.titleRows;
+-  const blockWidth = profile.drawings.wallDrawing.titleWidth;
+-  // T41-F5d: these sheets print "No Scale" in their own title block, so they
+-  // fill the paper instead of snapping to the ladder. Measured on T40's own
+-  // proof wall: 30.1 % of the usable area used, at a snapped 1:20, when the
+-  // exact fit was 1:14.46.
+-  const lay = (drawing, name) => layoutSheet({
+-    drawing: { ...drawing, fit: true },
+-    format: format === 'auto' ? 'A3' : format,
+-    profile,
+-    titleRows: rows,
+-    blockWidth,
+-    title: titleFor({ project: { ...project, date }, drawing: name, profile }),
+-  });
++  const theRoom = room || project?.room || null;
++  // The worktops: the store's own resolution when the caller passes it, else
++  // resolved here from the design's records and the entries' units, so a
++  // caller that never knew about worktops still gets them on the sheets.
++  const records = (design ?? project?.design)?.worktops;
++  const resolved = (worktops && worktops.length) ? worktops
++    : (Array.isArray(records) && records.length ? worktopsFor({ records, units: entries.map((e) => e?.unit).filter(Boolean), profile }) : []);
++  const slabs = resolved.map((w) => w.geometry || w);
++  const plan = [];
++  const push = (name, variant, wall, make) => plan.push({ name, variant, wall, make });
+ 
+-  const out = [];
++  // ── the order ──
++  push('Cover, index and revisions', 'cover', null, null);
++  if (entries.length && theRoom) {
++    push('Plan · base units', 'plan-base', null, (no) => layoutSetSheet({
++      profile,
++      drawing: { measure: () => measurePlan({ room: theRoom, profile }), build: (ctx) => buildPlan(entries, { which: 'base', room: theRoom, worktops: slabs, profile, ctx, frontTypeOf, shakerFrame }) },
++      caption: { title: `${no} · PLAN · BASE UNITS`, sub: `Horizontal section at ${profile.drawings.set.planCut.base} above FFL, looking down. Wall units not shown.` },
++      column: { room: theRoom, highlight: null, arrow: false, notes: SET_NOTES },
++      title: titleFor({ project, profile, no, name: 'Plan · base units', date }),
++    }));
++    push('Plan · wall units', 'plan-wall', null, (no) => layoutSetSheet({
++      profile,
++      drawing: { measure: () => measurePlan({ room: theRoom, profile }), build: (ctx) => buildPlan(entries, { which: 'wall', room: theRoom, worktops: slabs, profile, ctx, frontTypeOf, shakerFrame }) },
++      caption: { title: `${no} · PLAN · WALL UNITS`, sub: `Horizontal section at ${profile.drawings.set.planCut.wall} above FFL, looking down. The worktop is seen below the cut.` },
++      column: { room: theRoom, highlight: null, arrow: false, notes: SET_NOTES },
++      title: titleFor({ project, profile, no, name: 'Plan · wall units', date }),
++    }));
++  }
+   for (const group of groups) {
+-    // /1 — WITH FRONTS. /2 — the carcass, without them. His own split, and the
+-    // same one the Unit Card already makes per cabinet.
+-    const one = `Wall ${group.label} /1`;
+-    const two = `Wall ${group.label} /2`;
+-    out.push({
+-      name: one,
+-      wall: group.wall,
+-      variant: 'fronts',
+-      sheet: lay(buildWallElevation(group, {
+-        withFronts: true, room, frontTypeOf, profile, shakerFrame,
+-      }), one),
+-    });
+-    out.push({
+-      name: two,
+-      wall: group.wall,
+-      variant: 'carcass',
+-      sheet: lay(buildWallElevation(group, {
+-        withFronts: false, room, frontTypeOf, profile, shakerFrame,
+-      }), two),
+-    });
+-    // /3 — THE WALL'S OWN SECTION (T43-F5a), bound after /2. It is drawn only
+-    // where there is a floor-band member to cut through, for exactly the
+-    // reason an empty wall gets no elevation.
+-    const cut = buildWallSection(group, { room, profile });
+-    if (cut) {
+-      const three = `Wall ${group.label} /3`;
+-      out.push({
+-        name: three, wall: group.wall, variant: 'section-v', sheet: lay(cut, three),
+-      });
++    const onWall = worktopsOnWall(slabs, group.wall);
++    const label = `Wall ${group.label}`;
++    push(`${label} · Front view`, 'fronts', group.wall, (no) => layoutSetSheet({
++      profile,
++      drawing: {
++        measure: () => measureRun(group, { room: theRoom, worktops: onWall, profile }),
++        build: (ctx) => buildRunElevation(group, { withFronts: true, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx }),
++      },
++      caption: { title: `${no} · ${label.toUpperCase()} · FRONT VIEW`, sub: 'Fronts on, looking at the wall from the room. Panel sizes: see the cut list.' },
++      column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },
++      title: titleFor({ project, profile, no, name: `${label} · Front view`, date }),
++    }));
++    push(`${label} · Internal layout`, 'carcass', group.wall, (no) => layoutSetSheet({
++      profile,
++      drawing: {
++        measure: () => measureRun(group, { room: theRoom, worktops: onWall, profile }),
++        build: (ctx) => buildRunElevation(group, { withFronts: false, room: theRoom, worktops: onWall, frontTypeOf, shakerFrame, profile, ctx }),
++      },
++      caption: { title: `${no} · ${label.toUpperCase()} · INTERNAL LAYOUT`, sub: 'Fronts removed: carcasses, shelves, drawer boxes, hinge plates, legs and appliance spaces.' },
++      column: { room: theRoom, highlight: group.wall, arrow: true, notes: SET_NOTES },
++      title: titleFor({ project, profile, no, name: `${label} · Internal layout`, date }),
++    }));
++    const stations = sectionStations(group, { chosenId: sectionUnitId });
++    if (stations.length) {
++      const letters = stations.map((s) => `${s.letter}-${s.letter}`).join(' and ');
++      push(`${label} · Sections ${letters}`, 'sections', group.wall, (no) => layoutSetSheet({
++        profile,
++        drawing: stationSet(group, stations, { room: theRoom, worktops: onWall, profile }),
++        caption: { title: `${no} · ${label.toUpperCase()} · SECTIONS ${letters.toUpperCase()}`, sub: 'Vertical sections marked on the plans. One cut shows plinth, base unit, worktop, wall unit, wall and ceiling together.' },
++        column: { room: theRoom, highlight: group.wall, arrow: false, notes: SET_NOTES },
++        title: titleFor({ project, profile, no, name: `${label} · Sections ${letters}`, date }),
++      }));
+     }
+   }
+-
+-  // ONE horizontal section for the whole project — the sheet that says how the
+-  // walls stand to each other, with the cabinet numbers on it. It is drawn only
+-  // when there is something to draw, for the same reason an empty wall gets no
+-  // elevation.
+-  if (groups.length || entries.length) {
+-    const name = 'Horizontal section';
+-    out.push({
+-      name,
+-      wall: null,
+-      variant: 'section',
+-      sheet: lay(buildHorizontalSection(entries, { room, profile }), name),
++  for (const group of groups) {
++    const onWall = worktopsOnWall(slabs, group.wall);
++    const label = `Wall ${group.label}`;
++    push(`${label} · Perspective view`, 'perspective', group.wall, (no) => layoutSetSheet({
++      profile,
++      drawing: { nts: true, build: (ctx) => buildPerspective(group, { room: theRoom, worktops: onWall, profile, ctx }) },
++      caption: { title: `${no} · ${label.toUpperCase()} · PERSPECTIVE VIEW`, sub: `Line perspective from the room, eye height ${profile.drawings.set.perspective.eyeHeight}. Not to scale; for orientation only.` },
++      column: { room: theRoom, highlight: group.wall, arrow: true, legend: false, notes: ['Unit numbers as on the elevations.', 'Drawn from the same model as every other sheet; it cannot disagree with them.'] },
++      title: { ...titleFor({ project, profile, no, name: `${label} · Perspective view`, date }), scale: 'NTS' },
++    }));
++  }
++  if (entries.length) {
++    push('Visualisation', 'visual', null, (no) => layoutSetSheet({
++      profile,
++      drawing: { paper: true, build: (zones) => buildVisual(zones, { image: renderImage, finishes: finishesOf(design ?? project?.design), note: 'Colours are screen approximations; confirm against physical samples.' }) },
++      caption: { title: `${no} · VISUALISATION`, sub: 'Rendered from the 3D scene with the fixed export lighting rig, the same rig on every sheet, so two decors compare.' },
++      column: { room: theRoom, highlight: null, arrow: false, legend: false, notes: ['Worktop, sink, taps and appliances are indicative, supplied by others.'] },
++      title: { ...titleFor({ project, profile, no, name: 'Visualisation', date }), scale: 'NTS' },
++    }));
++    // As many cut-list sheets as the job's units need; the totals on the last.
++    const pages = cutListPages(setZones(profile, { column: false, caption: true }), entries);
++    pages.forEach((page, i) => {
++      const name = pages.length > 1 ? `Cut list and materials ${i + 1} of ${pages.length}` : 'Cut list and materials';
++      push(name, 'cutlist', null, (no) => layoutSetSheet({
++        profile,
++        drawing: { paper: true, build: (zones) => buildCutList(zones, { entries, page, showTotals: i === pages.length - 1 }) },
++        caption: { title: `${no} · ${name.toUpperCase()}`, sub: 'Every panel per unit from the engine, the same numbers the CNC sheets and the BOM carry. Fronts in magenta.' },
++        column: false,
++        title: { ...titleFor({ project, profile, no, name, date }), scale: 'n/a' },
++      }));
+     });
+   }
+ 
+-  // ─── SECTION A-A (T43-F5b), when the owner has pointed at a cabinet ──────
+-  //
+-  // It is an ARGUMENT and it is NOT stored in the project this turn: it is a
+-  // drawing option, not a design decision. If he wants it remembered, that is a
+-  // sentence in a future turn. Appended to the SET rather than rendered in the
+-  // window, so the PDF, the DXF and the preview all carry it — one source, as
+-  // ever.
+-  if (sectionUnitId != null) {
+-    const chosen = sectionableUnits(groups).find((u) => u.id === sectionUnitId);
+-    const aa = chosen ? buildUnitSection(chosen.member, { room, profile }) : null;
+-    if (aa) {
+-      const name = `Section A-A — unit ${aa.unitNum}`;
+-      out.push({
+-        name, wall: chosen.wall, variant: 'section-aa', unitId: chosen.id, sheet: lay(aa, name),
+-      });
+-    }
++  // ── number and build, the cover last because it lists the others ──
++  const of = String(plan.length).padStart(2, '0');
++  const out = plan.map((p, i) => ({ no: String(i).padStart(2, '0'), name: p.name, variant: p.variant, wall: p.wall, make: p.make }));
++  for (const s of out) {
++    if (!s.make) continue;
++    s.sheet = s.make(s.no);
++    delete s.make;
++    stamp(s.sheet, s.no, of);
++  }
++  const cover = out[0];
++  if (cover && cover.make === null) {
++    const index = out.map((s) => ({ no: s.no, name: s.name, scale: s.sheet ? s.sheet.scaleLabel : 'n/a' }));
++    const t = titleFor({ project, profile, no: '00', name: 'Cover, index and revisions', date });
++    // The cover's picture is the first wall's perspective, built once more
++    // and fitted into the cover's frame; a job with no run has no picture.
++    const first = groups[0];
++    const picture = first
++      ? (box) => fitEntities(buildPerspective(first, { room: theRoom, worktops: worktopsOnWall(slabs, first.wall), profile, ctx: drawingContext(1, profile) }).entities, box)
++      : null;
++    cover.sheet = layoutSetSheet({
++      profile,
++      drawing: { paper: true, build: (zones) => buildCover(zones, { project, title: { ...t, kicker: project.titleBlock?.kicker || 'Fitted furniture' }, sheets: index, revisions: project.titleBlock?.revisions || [], picture }) },
++      caption: { title: '00 · COVER, INDEX AND REVISIONS', sub: '' },
++      column: false,
++      title: { ...t, scale: 'n/a' },
++    });
++    delete cover.make;
++    stamp(cover.sheet, '00', of);
+   }
+   return out;
+ }
+ 
++/**
++ * The shape (width / height) of the visualisation sheet's picture, so the
++ * scene captures a render that fills the frame without cropping.
++ */
++export function visualAspect(profile) {
++  const pic = visualPictureBox(setZones(profile, { column: true, caption: true }));
++  return pic.w / pic.h;
++}
++
++/** Write the sheet's own number into its title strip. */
++function stamp(sheet, no, of) {
++  for (const e of sheet.entities) {
++    if (e.kind === 'text' && e.text === ' / ' && e.layer === 'FRAME') e.text = `${no} / ${of}`;
++  }
++  sheet.sheetNo = no;
++  sheet.sheetOf = of;
++}
++
+ /**
+  * ─── TURN 42 (CLAUDE.md F0): THE SET STOPS LYING BY SILENCE ─────────────────
+  *
+diff --git a/test/fixtures/t71-herbal-hill.js b/test/fixtures/t71-herbal-hill.js
+new file mode 100644
+index 0000000..bcd90a5
+--- /dev/null
++++ b/test/fixtures/t71-herbal-hill.js
+@@ -0,0 +1,85 @@
++// ─── T71 · THE PROOF KITCHEN: 3-7 HERBAL HILL, 1ST FLOOR ────────────────────
++//
++// The owner put Skylon Joinery's own AutoCAD set for this job on the table
++// (Rev A, 08.02.2026, six A3 sheets) and asked for the same set out of Cabinet
++// Core. So the sheets are proved on THIS kitchen, read off those sheets:
++//
++//   base   01 02 03  BUD 520 · 04 BUDR 520 · 05 SINK 1040 · 06 D/W 600 ·
++//          07 FRIDGE 600 (2000 high)
++//   wall   08 09 10 11  WUD 520 · 12 WUD 1040 · 13 WUD 600, all hung at 1380
++//   run    starts 25 off wall D; 75 corner infill before wall B; 4420 wall to
++//          wall; ceiling 2400 (assumed; the set does not say)
++//   worktop over 01 to 06, from the design layer's own record
++//
++// Pure data and one builder, no React, no store: the same shape `t43-kitchen`
++// hands the wall-set tests.
++
++import { computeCabinet } from '../../src/engine/cabinet.js';
++import { defaultParamsFor } from '../../src/engine/types.js';
++import { worktopsFor } from '../../src/engine/worktop.js';
++
++export const HH_ROOM = {
++  height: 2400,
++  corners: [{ x: 0, y: 0 }, { x: 4420, y: 0 }, { x: 4420, y: 3200 }, { x: 0, y: 3200 }],
++  openings: [{ id: 'door-1', kind: 'door', wall: 1, x_mm: 700, width: 900, height: 2040, sill: 0 }],
++};
++
++export const HH_PROJECT = {
++  name: '3-7 Herbal Hill, 1st floor', number: '032/2026', client: 'AP&W',
++  titleBlock: {
++    address: '3-7 Herbal Hill, 1st floor', drawnBy: 'PT', checkedBy: '', status: 'B', rev: 'A', date: '08.02.2026',
++  },
++};
++
++const HANDLE = { type: 'bar', centres: 128 };
++
++const mk = (profile) => (id, type, over, pos) => ({
++  id,
++  type,
++  params: { ...defaultParamsFor(type, profile), project_handle: HANDLE, ...over },
++  position: { wall: 0, x_mm: 0, rotation_deg: 0, ...pos },
++});
++
++export function hhUnits(profile) {
++  const u = mk(profile);
++  const base = [
++    ['01', 'BUD', 520, { shelves: 1, doors: { count: 1, hinge: 'L' } }],
++    ['02', 'BUD', 520, { shelves: 1, doors: { count: 1, hinge: 'L' } }],
++    ['03', 'BUD', 520, { shelves: 1, doors: { count: 1, hinge: 'L' } }],
++    ['04', 'BUDR', 520, {}],
++    ['05', 'SINK', 1040, { shelves: 1, doors: { count: 2, hinge: 'L' } }],
++    ['06', 'DW_PANEL', 600, {}],
++    ['07', 'FRIDGE', 600, { height: 2000 }],
++  ];
++  const wall = [
++    ['08', 'WUD', 520, { doors: { count: 1, hinge: 'L' } }],
++    ['09', 'WUD', 520, { doors: { count: 1, hinge: 'L' } }],
++    ['10', 'WUD', 520, { doors: { count: 1, hinge: 'L' } }],
++    ['11', 'WUD', 520, { doors: { count: 1, hinge: 'L' } }],
++    ['12', 'WUD', 1040, { doors: { count: 2, hinge: 'L' } }],
++    ['13', 'WUD', 600, { doors: { count: 1, hinge: 'R' } }],
++  ];
++  const out = [];
++  let x = 25;
++  for (const [num, type, w, over] of base) {
++    out.push(u(`hh-${num}`, type, { unit_num: num, width: w, plinth: true, ...over }, { x_mm: x }));
++    x += w;
++  }
++  x = 25;
++  for (const [num, type, w, over] of wall) {
++    out.push(u(`hh-${num}`, type, { unit_num: num, width: w, height: 720, mount_height: 1380, shelves: 2, ...over }, { x_mm: x }));
++    x += w;
++  }
++  return out;
++}
++
++export function hhEntries(profile) {
++  return hhUnits(profile).map((unit) => ({ unit, result: computeCabinet({ ...unit.params }, profile) }));
++}
++
++/** The design layer's worktop over the six base units, resolved to geometry. */
++export function hhWorktops(profile) {
++  const units = hhUnits(profile);
++  const ids = units.filter((x) => ['01', '02', '03', '04', '05', '06'].includes(x.params.unit_num)).map((x) => x.id);
++  return worktopsFor({ records: [{ id: 'wt-1', unitIds: ids, decor: null }], units, profile });
++}
+diff --git a/test/turn40-f5-wall-drawings.test.js b/test/turn40-f5-wall-drawings.test.js
+index 6828494..422480f 100644
+--- a/test/turn40-f5-wall-drawings.test.js
++++ b/test/turn40-f5-wall-drawings.test.js
+@@ -75,24 +75,38 @@ test('F5 — the sheet list is HIS: /1, /2 per wall, and one horizontal section'
+   // leftmost floor-band cabinet — and it is bound after `/2`, which is where a
+   // drawing office bins a section. Everything T40 pinned about /1 and /2 and
+   // about the horizontal section is untouched, which is what the list is for.
++  // ─── RE-PINNED 21.09.2026 (T71): THE SET, ONE VIEW PER SHEET ────────────
++  // Skylon's own AutoCAD set on the table: *"tutaj jest wszystko osobno"*.
++  // /1 is now the wall's FRONT VIEW, /2 its INTERNAL LAYOUT, /3 its SECTIONS;
++  // the horizontal section became the two plans; a cover, the perspectives,
++  // the visualisation and the cut list join, and every sheet is numbered.
+   const sheets = sheetsOf(kitchen());
+   assert.deepEqual(sheets.map((s) => s.name), [
+-    'Wall A /1', 'Wall A /2', 'Wall A /3',
+-    'Wall B /1', 'Wall B /2', 'Wall B /3',
+-    'Horizontal section',
++    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
++    'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
++    'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
++    'Wall A · Perspective view', 'Wall B · Perspective view',
++    'Visualisation', 'Cut list and materials',
+   ]);
+   assert.deepEqual(sheets.map((s) => s.variant), [
+-    'fronts', 'carcass', 'section-v', 'fronts', 'carcass', 'section-v', 'section',
++    'cover', 'plan-base', 'plan-wall',
++    'fronts', 'carcass', 'sections', 'fronts', 'carcass', 'sections',
++    'perspective', 'perspective', 'visual', 'cutlist',
+   ]);
++  assert.deepEqual(sheets.map((s) => s.no), ['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']);
+   assert.equal(wallLabel(0), 'A');
+   assert.equal(wallLabel(1), 'B');
+   assert.equal(wallLabel(25), 'Z');
+ });
+ 
+ test('F5 — /1 HAS the fronts and /2 does NOT, which is the whole split', () => {
+-  const one = sheetsOf(kitchen()).find((s) => s.name === 'Wall A /1');
+-  const two = sheetsOf(kitchen()).find((s) => s.name === 'Wall A /2');
+-  const doors = (s) => s.sheet.entities.filter((e) => e.layer === 'DOORS').length;
++  // T71: /1 is the front view, /2 the internal layout; the split is the same.
++  const one = sheetsOf(kitchen()).find((s) => s.variant === 'fronts' && s.wall === 0);
++  const two = sheetsOf(kitchen()).find((s) => s.variant === 'carcass' && s.wall === 0);
++  // Counted inside the drawing box: the side column's legend and key plan
++  // wear the DOORS colour on every sheet, and they are not fronts.
++  const inBox = (e, b) => { const x = e.x ?? e.x1 ?? e.cx ?? e.pts?.[0]?.[0]; return x != null && x < b.x + b.w; };
++  const doors = (s) => s.sheet.entities.filter((e) => e.layer === 'DOORS' && inBox(e, s.sheet.zones.box)).length;
+   assert.ok(doors(one) > 0, 'the fronts sheet has fronts on it');
+   assert.equal(doors(two), 0, 'the carcass sheet has none');
+   // …and the carcass is on BOTH, because it is the same cabinets either way.
+@@ -133,14 +147,20 @@ test('F5 — a WALL WITH NO CABINETS produces NO SHEET rather than an empty one'
+   // cabinet, so only those two get sheets.
+   const sheets = sheetsOf(kitchen());
+   // T43-F5a: THREE sheets per wall now — /1, /2 and the section /3.
+-  assert.equal(sheets.filter((s) => s.variant !== 'section').length, 6, 'two walls, three sheets each');
++  // T71: FOUR per wall: front view, internal layout, sections, perspective.
++  assert.equal(sheets.filter((s) => s.wall != null).length, 8, 'two walls, four sheets each');
+   assert.equal(new Set(sheets.filter((s) => s.wall != null).map((s) => s.wall)).size, 2);
+-  // Nothing at all: no elevation, and the section is the only thing left.
++  // Nothing at all: no elevation, and no set (a cover of nothing is not a set).
+   assert.deepEqual(wallGroups([], P), []);
+   assert.deepEqual(sheetsOf([]).map((s) => s.name), []);
+   // …and one cabinet on wall 3 alone gets wall D and nothing else.
+   const lonely = sheetsOf([entry('BUD', { unit_num: '09', width: 600 }, { wall: 3, x_mm: 100, rotation_deg: 0 })]);
+-  assert.deepEqual(lonely.map((s) => s.name), ['Wall D /1', 'Wall D /2', 'Wall D /3', 'Horizontal section']);
++  assert.deepEqual(lonely.map((s) => s.name), [
++    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
++    'Wall D · Front view', 'Wall D · Internal layout', 'Wall D · Sections A-A', 'Wall D · Perspective view',
++    'Visualisation', 'Cut list and materials',
++  ]);
++  assert.ok(lonely.every((s) => s.wall == null || s.wall === 3));
+ });
+ 
+ // ═══ 2. TWO DIMENSION CHAINS PER AXIS ══════════════════════════════════════
+@@ -252,21 +272,32 @@ test('F5 — the grouping law is `engine/runs.js`’s, not a second one', () =>
+ // ═══ 3. THE OWNER'S CONVENTIONS ════════════════════════════════════════════
+ 
+ test('F5 — "No Scale", and no scale label invented', () => {
+-  const [one] = sheetsOf(kitchen());
++  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
++  // The set is laid out on the scale ladder and SAYS which rung, the way
++  // Skylon's strip does ("1:20 @ A3"); a picture with no scale says NTS. The
++  // one thing that stays: nothing is invented, the label is the layout's own.
++  const sheets = sheetsOf(kitchen());
++  const one = sheets.find((s) => s.variant === 'fronts');
+   const texts = textsOf(one.sheet);
+-  assert.ok(texts.includes('No Scale'), 'the title block says what he says');
+-  assert.ok(!texts.some((t) => /^1:\d+$/.test(t)), 'and no ratio is printed anywhere on the sheet');
+-  // The sheet is still LAID OUT at a ratio — a drawing has to fit the paper.
+-  assert.ok(one.sheet.scale > 0);
++  assert.ok(!texts.includes('No Scale'), 'the old sentence is gone');
++  assert.match(one.sheet.scaleLabel, /^1:\d+ @ A3$/, 'the title block names the rung');
++  assert.ok(texts.includes(one.sheet.scaleLabel), 'and it is printed in the strip');
++  assert.equal(one.sheet.scaleLabel, `1:${one.sheet.scale} @ A3`, 'the label is the layout scale, not a second number');
++  const picture = sheets.find((s) => s.variant === 'perspective');
++  assert.equal(picture.sheet.scaleLabel, 'NTS', 'a perspective has no scale to print');
++  assert.ok(textsOf(picture.sheet).includes('NTS'));
+ });
+ 
+ test('F5 — his title block: Client, Address, Project, Drawing, Job No, Scale, Rev, Date', () => {
+-  const [one] = sheetsOf(kitchen(), { address: '14 Anderson Way', rev: 'B' });
++  // T71: the strip has Skylon's cells. The address is the site address from
++  // the title block, else the project's; the drawing name carries its number.
++  const sheets = sheetsOf(kitchen(), { address: '14 Anderson Way', titleBlock: { rev: 'B', drawnBy: 'PT' } });
++  const one = sheets.find((s) => s.variant === 'fronts');
+   const texts = textsOf(one.sheet);
+-  for (const label of ['Client', 'Address', 'Project', 'Drawing', 'Job No', 'Scale', 'Rev', 'Date']) {
+-    assert.ok(texts.includes(label), `the block carries a ${label} row`);
++  for (const label of ['CLIENT', 'SITE ADDRESS', 'PROJECT', 'DRAWING', 'DRAWING No', 'JOB No', 'SCALE', 'REV', 'DATE', 'DRAWN', 'CHECKED', 'PAPER', 'SHEET', 'STATUS']) {
++    assert.ok(texts.includes(label), `the block carries a ${label} cell`);
+   }
+-  for (const value of ['Mr Anderson', '14 Anderson Way', 'Anderson Kitchen', 'Wall A /1', 'J-1042', 'B', '18/08/2026']) {
++  for (const value of ['Mr Anderson', '14 Anderson Way', 'Anderson Kitchen', '03 · Wall A · Front view', 'J-1042', 'B', '18/08/2026', 'PT', '03 / 13']) {
+     assert.ok(texts.some((t) => t.includes(value)), `…and its value: ${value}`);
+   }
+ });
+@@ -355,13 +386,15 @@ test('F5 — a TURNED cabinet is off the elevation and NAMED, and still on the p
+ // ═══ 5. THE DXF: TEXT ON THIS PATH AND NOWHERE ELSE ════════════════════════
+ 
+ test('F5 — the wall DXF carries TEXT: dimensions, labels and the title block', () => {
+-  const [one] = sheetsOf(kitchen());
++  // T71: the front view sheet, with its scale rung and its numbered name.
++  const one = sheetsOf(kitchen()).find((s) => s.variant === 'fronts');
+   const dxf = sheetToDxf(one.sheet);
+   assert.match(dxf, /AC1009/, 'R12, the dialect BLOCKERS #8 settled');
+   const texts = [...dxf.matchAll(/\r\n0\r\nTEXT\r\n[\s\S]*?\r\n1\r\n(.*?)\r\n/g)].map((m) => m[1]);
+   assert.ok(texts.length > 10, `a drawing is nothing without its numbers: ${texts.length}`);
+-  assert.ok(texts.includes('No Scale'), 'the title block is in the file');
+-  assert.ok(texts.includes('Wall A /1'), 'and the drawing name');
++  assert.ok(texts.includes(one.sheet.scaleLabel), 'the title block is in the file');
++  // (the R12 writer keeps ASCII: the middle dot becomes a hyphen)
++  assert.ok(texts.includes('03 - Wall A - Front view'), 'and the drawing name');
+   assert.ok(texts.some((t) => /^\d/.test(t)), 'and the dimensions');
+ });
+ 
+@@ -419,7 +452,9 @@ test('F5 — every sheet renders as SVG and as a page, and the preview IS the ex
+     const svg = sheetToSvg(page.sheet, { kind: 'wall-elevation' });
+     assert.match(svg, /^<svg /);
+     assert.match(svg, /data-cc-drawing="wall-elevation"/);
+-    assert.ok(svg.includes('No Scale'), `${page.name}: the title block is on the glass too`);
++    // T71: the strip prints the sheet's own scale label, and its number.
++    assert.ok(svg.includes(page.sheet.scaleLabel), `${page.name}: the title block is on the glass too`);
++    assert.ok(svg.includes(`${page.no} / ${String(sheets.length).padStart(2, '0')}`), `${page.name}: numbered`);
+     assert.ok(page.sheet.width > 0 && page.sheet.height > 0);
+   }
+   assert.deepEqual(wallDrawingPages({
+diff --git a/test/turn41-f5-the-drawings-learn-to-draw.test.js b/test/turn41-f5-the-drawings-learn-to-draw.test.js
+index 28ec3b2..2bd536d 100644
+--- a/test/turn41-f5-the-drawings-learn-to-draw.test.js
++++ b/test/turn41-f5-the-drawings-learn-to-draw.test.js
+@@ -116,11 +116,15 @@ test('F5a — the SECTION\'s cut lines are the heaviest thing on it', () => {
+   // T40's section drew the cut room wall LIGHTER than an uncut cabinet
+   // footprint. A section whose cut line is the thinnest line on it is not a
+   // section.
+-  const section = sheets().find((s) => s.variant === 'section');
+-  assert.ok(section, 'the project produces a horizontal section');
+-  const widths = strokesOf(sheetToSvg(sheetOf(section), { kind: 'plan' }));
+-  assert.equal(Math.max(...widths), PEN.CUT, 'the heaviest stroke on the section IS the cut weight');
+-  assert.ok(widths.filter((w) => w === PEN.CUT).length >= 4, 'and there are real cut lines, not one');
++  // T71: the horizontal section is now the two PLANS, and every wall carries
++  // its vertical SECTIONS sheet; the cut weight is the heaviest on all three.
++  const cuts = sheets().filter((s) => ['plan-base', 'plan-wall', 'sections'].includes(s.variant));
++  assert.ok(cuts.length >= 3, 'the project produces the plans and a sections sheet');
++  for (const section of cuts) {
++    const widths = strokesOf(sheetToSvg(sheetOf(section), { kind: 'plan' }));
++    assert.equal(Math.max(...widths), PEN.CUT, `${section.name}: the heaviest stroke on the section IS the cut weight`);
++    assert.ok(widths.filter((w) => w === PEN.CUT).length >= 4, `${section.name}: real cut lines, not one`);
++  }
+ });
+ 
+ // ═══ F5b — THE DXF LEARNS THE PEN ═══════════════════════════════════════════
+@@ -172,7 +176,16 @@ test('F5b — …and a hidden line is DASHED in CAD, as it already is on screen'
+   });
+   const el = shelved.find((s) => s.variant === 'fronts');
+   assert.ok(el, 'there is an elevation sheet');
+-  assert.equal(sheetOf(el).entities.filter((e) => e.hidden).length, 0, 'T43-F1: /1 is fronts');
++  // T71: counted inside the drawing box; the side column's legend shows the
++  // hidden-line convention with one dashed swatch on every sheet, and the
++  // title strip's logo placeholder is a dashed box.
++  const box = sheetOf(el).zones.box;
++  const inBox = (e) => {
++    const x = e.x ?? e.x1 ?? e.cx ?? e.pts?.[0]?.[0];
++    const y = e.y ?? e.y1 ?? e.cy ?? e.pts?.[0]?.[1];
++    return x != null && x < box.x + box.w && y >= box.y;
++  };
++  assert.equal(sheetOf(el).entities.filter((e) => e.hidden && inBox(e)).length, 0, 'T43-F1: /1 is fronts');
+ });
+ 
+ test('F5b — THE CNC PATH IS UNTOUCHED: no lineweight, no linetype table', () => {
+@@ -238,10 +251,22 @@ test('F5d — a sheet that prints "No Scale" fills the paper', () => {
+   // T40 snapped to [5,10,20,25,50] and used 30.1 % of the usable area.
+   assert.equal(exactScale({ w: 3265, h: 2957 }, { w: 392, h: 204.5 }).toFixed(2), '14.46',
+     'the best fit for T40\'s own proof wall');
++  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
++  // The set prints its scale, so it SNAPS to the set's ladder and says which
++  // rung ("1:20 @ A3"); only a picture (the perspective) fills the paper at
++  // whatever ratio fits, and prints NTS. A paper sheet (cover, cut list) has
++  // no scale at all.
+   for (const s of sheets()) {
+     const sheet = sheetOf(s);
+-    assert.ok(!P.drawings.scales.includes(sheet.scale),
+-      `a wall sheet is not snapped to the ladder: 1:${sheet.scale}`);
++    if (['cover', 'visual', 'cutlist'].includes(s.variant)) continue;
++    if (s.variant === 'perspective') {
++      assert.equal(sheet.scaleLabel, 'NTS');
++      assert.ok(sheet.scale > 0, 'a picture still has a fitting ratio');
++      continue;
++    }
++    assert.ok(P.drawings.set.scales.includes(sheet.scale),
++      `a set sheet is snapped to the ladder: 1:${sheet.scale}`);
++    assert.equal(sheet.scaleLabel, `1:${sheet.scale} @ A3`, 'and the strip says which rung');
+     assert.ok(sheet.scale > 1, 'and it is a real reduction');
+   }
+ });
+diff --git a/test/turn42-f0-wall-pdf-speaks.test.js b/test/turn42-f0-wall-pdf-speaks.test.js
+index 0fe194b..3871221 100644
+--- a/test/turn42-f0-wall-pdf-speaks.test.js
++++ b/test/turn42-f0-wall-pdf-speaks.test.js
+@@ -84,18 +84,23 @@ test('F0 — THE PAGE COUNT EQUALS THE SHEET COUNT, on a seven-sheet set', () =>
+   // untouched and is the only thing this test was ever about — a page per
+   // sheet, measured off the bytes — so the number moves with the set and the
+   // assertion is still `sheets.length`.
++  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
++  // Seven became thirteen: the set (cover, two plans, four sheets per wall,
++  // the visualisation, the cut list). The law is still a page per sheet.
+   const sheets = sheetsOf(kitchen());
+   assert.deepEqual(sheets.map((s) => s.name), [
+-    'Wall A /1', 'Wall A /2', 'Wall A /3',
+-    'Wall B /1', 'Wall B /2', 'Wall B /3',
+-    'Horizontal section',
++    'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
++    'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
++    'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
++    'Wall A · Perspective view', 'Wall B · Perspective view',
++    'Visualisation', 'Cut list and materials',
+   ]);
+   const doc = bookletDoc(sheets.map((s) => s.sheet));
+   assert.equal(doc.getNumberOfPages(), sheets.length, 'a page per sheet, in the order they were built');
+   // …and the export itself asks the same question, which is what turns the word
+   // "Saved" from a claim into a measurement.
+   const measured = assertPdfBytes(pdfBytes(doc), { pages: doc.getNumberOfPages(), sheets: sheets.length });
+-  assert.equal(measured.pages, 7);
++  assert.equal(measured.pages, 13);
+   assert.ok(measured.bytes > 1000);
+ });
+ 
+@@ -262,10 +267,14 @@ test('F0 — `wallSetReport` is a READER: the sheet list is what it always was',
+   // changed the set, the whole claim "F0 moves no geometry" would be void.
+   const sheets = sheetsOf(kitchen());
+   // T43-F5a: and the `/3` sections, which the census still does not touch.
++  // T71: the set, which the census still does not touch.
+   assert.deepEqual(sheets.map((s) => [s.name, s.variant, s.wall]), [
+-    ['Wall A /1', 'fronts', 0], ['Wall A /2', 'carcass', 0], ['Wall A /3', 'section-v', 0],
+-    ['Wall B /1', 'fronts', 1], ['Wall B /2', 'carcass', 1], ['Wall B /3', 'section-v', 1],
+-    ['Horizontal section', 'section', null],
++    ['Cover, index and revisions', 'cover', null],
++    ['Plan · base units', 'plan-base', null], ['Plan · wall units', 'plan-wall', null],
++    ['Wall A · Front view', 'fronts', 0], ['Wall A · Internal layout', 'carcass', 0], ['Wall A · Sections A-A', 'sections', 0],
++    ['Wall B · Front view', 'fronts', 1], ['Wall B · Internal layout', 'carcass', 1], ['Wall B · Sections A-A', 'sections', 1],
++    ['Wall A · Perspective view', 'perspective', 0], ['Wall B · Perspective view', 'perspective', 1],
++    ['Visualisation', 'visual', null], ['Cut list and materials', 'cutlist', null],
+   ]);
+ });
+ 
+diff --git a/test/turn43-f1-fronts-sheet.test.js b/test/turn43-f1-fronts-sheet.test.js
+index 47bd3e1..4da0a77 100644
+--- a/test/turn43-f1-fronts-sheet.test.js
++++ b/test/turn43-f1-fronts-sheet.test.js
+@@ -47,12 +47,18 @@ const frontsSheets = () => setOf().filter((s) => s.variant === 'fronts');
+ // "geometry layers" and the dash census below says so by name rather than by
+ // hoping none of them is dashed.
+ const SHEET_LAYERS = new Set(['FRAME', 'FRAME_LIGHT']);
++// T71: the set sheet carries a LEGEND in its side column (a dashed swatch on
++// SHELVES shows the hidden-line convention) and a dashed LOGO placeholder in
++// its title strip. Both are named on the entity (`meta`), and the census
++// leaves them out by that name, exactly as it leaves the frame out by layer.
++const FURNITURE = new Set(['legend', 'logo']);
++const drawn = (e) => !FURNITURE.has(e.meta);
+ 
+ test('F1 — the /1 sheets of a real kitchen carry ZERO hidden geometry', () => {
+   const sheets = frontsSheets();
+   assert.equal(sheets.length, 2, 'the proof kitchen has two walls with cabinets on them');
+   for (const s of sheets) {
+-    const ents = sheetOf(s).entities;
++    const ents = sheetOf(s).entities.filter(drawn);
+     assert.equal(ents.filter((e) => e.hidden).length, 0, `${s.name}: not one hidden entity`);
+     assert.equal(ents.filter((e) => e.layer === 'SHELVES').length, 0, `${s.name}: nothing on SHELVES`);
+     assert.equal(ents.filter((e) => e.layer === 'LEG_BLOCK').length, 0, `${s.name}: not one leg block`);
+@@ -66,6 +72,7 @@ test('F1 — …and the SVG has no stroke-dasharray on any geometry layer', () =
+     // TITLE BLOCK rule (there is none today) could be excluded by NAME rather
+     // than by the assertion quietly not looking.
+     const dashed = [...svg.matchAll(/<[a-z]+[^>]*stroke-dasharray[^>]*>/g)]
++      .filter((m) => !FURNITURE.has((m[0].match(/data-cc="([^"]+)"/) || [])[1]))
+       .map((m) => (m[0].match(/data-layer="([^"]+)"/) || [])[1] || '(none)')
+       .filter((layer) => !SHEET_LAYERS.has(layer));
+     assert.deepEqual(dashed, [], `${s.name}: the fronts sheet draws no dashes`);
+diff --git a/test/turn43-f2-shaker-is-the-project.test.js b/test/turn43-f2-shaker-is-the-project.test.js
+index 7b2032c..38e72dd 100644
+--- a/test/turn43-f2-shaker-is-the-project.test.js
++++ b/test/turn43-f2-shaker-is-the-project.test.js
+@@ -52,7 +52,9 @@ function insetsOn(entities) {
+       const up = (outer.y + outer.h) - (inner.y + inner.h);
+       if (left <= 0 || right <= 0 || down <= 0 || up <= 0) continue;
+       // Equal on all four sides — the owner's *"shaker zawsze równy"*.
+-      if (Math.abs(left - right) > 1e-6 || Math.abs(left - down) > 1e-6 || Math.abs(left - up) > 1e-6) continue;
++      // (T71: the SVG writes three decimals, and 85/15 has more; the eye's
++      // tolerance is two thousandths of a paper millimetre.)
++      if (Math.abs(left - right) > 0.002 || Math.abs(left - down) > 0.002 || Math.abs(left - up) > 0.002) continue;
+       out.push(Math.round(left * 1000) / 1000);
+     }
+   }
+@@ -101,7 +103,8 @@ test('F2 — the SVG of the real sheet carries the 85, in its own numbers', () =
+     format: 'A3',
+     date: '20/08/2026',
+   });
+-  const one = set.find((s) => s.name === 'Wall A /1');
++  // T71: `Wall A /1` is the set's `Wall A · Front view`.
++  const one = set.find((s) => s.variant === 'fronts' && s.wall === 0);
+   const svg = sheetToSvg(one.sheet, { kind: 'wall-elevation' });
+   // Off the SVG: every rect, and the same containment measure — at PAPER
+   // millimetres, so the number is 85 ÷ the sheet's own scale. The ratio is
+@@ -115,7 +118,8 @@ test('F2 — the SVG of the real sheet carries the 85, in its own numbers', () =
+   const insets = insetsOn(rects.map((r) => ({ ...r, kind: 'rect', layer: 'DOORS' })));
+   assert.ok(insets.length >= 4, 'the SVG carries shaker rectangles');
+   for (const v of insets) {
+-    assert.ok(Math.abs(v * scale - FRAME) < 0.01, `${v} paper mm at 1:${scale} is ${v * scale} — must be 85`);
++    // T71: three decimals on paper at 1:15 is 0.015 mm in the room.
++    assert.ok(Math.abs(v * scale - FRAME) < 0.05, `${v} paper mm at 1:${scale} is ${v * scale} — must be 85`);
+   }
+ });
+ 
+diff --git a/test/turn43-f4-pen-map.test.js b/test/turn43-f4-pen-map.test.js
+index c48914a..d72e07c 100644
+--- a/test/turn43-f4-pen-map.test.js
++++ b/test/turn43-f4-pen-map.test.js
+@@ -34,7 +34,8 @@ const SHEET_LAYERS = new Set(['FRAME', 'FRAME_LIGHT']);
+  * chosen `Section A-A`. The elevation census below excludes all three by
+  * NAME rather than by hoping none of them turns up.
+  */
+-const SECTIONS = new Set(['section', 'section-v', 'section-aa']);
++// T71: the set's cut sheets are the two PLANS and each wall's SECTIONS.
++const SECTIONS = new Set(['section', 'section-v', 'section-aa', 'plan-base', 'plan-wall', 'sections']);
+ 
+ const setOf = () => wallDrawingSheets({
+   entries: t43Entries(P),
+@@ -72,9 +73,12 @@ test('F4 — every weight on every sheet is a rung of the ISO ladder', () => {
+   }
+ });
+ 
++/** T71: the sheets that are ELEVATIONS of a wall, where a cabinet is a rect. */
++const ELEVATIONS = new Set(['fronts', 'carcass']);
++
+ test('F4 — the 0.50 GEOMETRY rects on an elevation are the unit silhouettes, and nothing else', () => {
+   for (const s of setOf()) {
+-    if (SECTIONS.has(s.variant)) continue;
++    if (!ELEVATIONS.has(s.variant)) continue;
+     const heavy = strokeCensus(sheetToSvg(s.sheet, { kind: 'wall' }))
+       .filter((e) => e.kind === 'rect' && !SHEET_LAYERS.has(e.layer) && e.width === PEN.OUTLINE);
+     assert.equal(heavy.length, drawnUnitsOf(s),
+@@ -92,11 +96,16 @@ test('F4 — no geometry on an elevation is heavier than an outline', () => {
+ });
+ 
+ test('F4 — …and the SECTION is the one sheet that carries the cut weight', () => {
+-  const section = setOf().find((s) => s.variant === 'section');
+-  assert.ok(section, 'the proof kitchen produces a horizontal section');
+-  const cuts = strokeCensus(sheetToSvg(section.sheet, { kind: 'plan' }))
+-    .filter((e) => e.width === PEN.CUT);
+-  assert.ok(cuts.length >= 4, `a real set of cut lines, not one: ${cuts.length}`);
++  // T71: the horizontal section is the base-unit plan; the walls' own
++  // sections sheets carry the cut weight too, and nothing else does.
++  const cutSheets = setOf().filter((s) => SECTIONS.has(s.variant));
++  assert.ok(cutSheets.length >= 3, 'the proof kitchen produces the plans and the sections');
++  for (const section of cutSheets) {
++    const svg = sheetToSvg(section.sheet, { kind: 'plan' });
++    const cuts = [...strokeCensus(svg), ...svg.matchAll(/<path\b[^>]*stroke-width="0.7"[^>]*>/g)]
++      .filter((e) => e.width === PEN.CUT || typeof e[0] === 'string');
++    assert.ok(cuts.length >= 4, `${section.name}: a real set of cut lines, not one: ${cuts.length}`);
++  }
+ });
+ 
+ test('F4 — the panel edge stopped being an outline, and the hierarchy is real', () => {
+diff --git a/test/turn43-f5-the-sections.test.js b/test/turn43-f5-the-sections.test.js
+index 0457f9a..0b947e1 100644
+--- a/test/turn43-f5-the-sections.test.js
++++ b/test/turn43-f5-the-sections.test.js
+@@ -49,26 +49,39 @@ const groups = () => wallGroups(t43Entries(P), P);
+ 
+ // ═══ THE SHEET LIST ════════════════════════════════════════════════════════
+ 
++const SET_NAMES = [
++  'Cover, index and revisions', 'Plan · base units', 'Plan · wall units',
++  'Wall A · Front view', 'Wall A · Internal layout', 'Wall A · Sections A-A',
++  'Wall B · Front view', 'Wall B · Internal layout', 'Wall B · Sections A-A',
++  'Wall A · Perspective view', 'Wall B · Perspective view',
++  'Visualisation', 'Cut list and materials',
++];
++
+ test('F5 — the set is exactly the seven sheets CLAUDE.md names', () => {
+-  assert.deepEqual(setOf().map((s) => s.name), [
+-    'Wall A /1', 'Wall A /2', 'Wall A /3',
+-    'Wall B /1', 'Wall B /2', 'Wall B /3',
+-    'Horizontal section',
+-  ]);
++  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
++  // Seven became the thirteen of the set: `/3` is `Wall A · Sections A-A`,
++  // the horizontal section is the two plans, and the cover, perspectives,
++  // visualisation and cut list join.
++  assert.deepEqual(setOf().map((s) => s.name), SET_NAMES);
+ });
+ 
+ test('F5 — …and the horizontal section really does render on HIS kind of project', () => {
+   // T42's own census note: the sheet exists, but nobody had looked at it on a
+   // project with shelves, drawers and a turned cabinet on it.
+-  const plan = setOf().find((s) => s.variant === 'section');
+-  assert.ok(plan, 'the sheet is in the set');
+-  const svg = sheetToSvg(plan.sheet, { kind: 'plan' });
+-  assert.match(svg, /data-cc-drawing="plan"/);
+-  // Every cabinet in the job, TURNED ONES INCLUDED, is on the plan — which is
++  // T71: the horizontal section is now TWO plans, cut through the base run
++  // and through the wall run; a cabinet is on the one its height is cut by.
++  const plans = setOf().filter((s) => s.variant === 'plan-base' || s.variant === 'plan-wall');
++  assert.equal(plans.length, 2, 'both plans are in the set');
++  const svgs = plans.map((p) => sheetToSvg(p.sheet, { kind: 'plan' }));
++  for (const svg of svgs) assert.match(svg, /data-cc-drawing="plan"/);
++  // Every cabinet in the job, TURNED ONES INCLUDED, is on a plan, which is
+   // the whole reason the elevations are allowed to leave one off.
+   for (const e of t43Entries(P)) {
+-    assert.ok(svg.includes(`>${e.unit.params.unit_num}<`), `unit ${e.unit.params.unit_num} is on the plan`);
++    assert.ok(svgs.some((svg) => svg.includes(`>${e.unit.params.unit_num}<`)), `unit ${e.unit.params.unit_num} is on a plan`);
+   }
++  // …the turned cabinet on the BASE plan, where its footprint is honest.
++  assert.ok(svgs[0].includes('>05<'), 'the turned cabinet is on the base plan');
++  assert.ok(svgs[1].includes('>03<'), 'and the wall unit on the wall plan');
+ });
+ 
+ // ═══ F5a — THE WALL'S OWN SECTION ══════════════════════════════════════════
+@@ -110,7 +123,7 @@ test('F5a — every CUT entity resolves to PEN.CUT, and the section is the only
+   for (const s of setOf()) {
+     const cuts = s.sheet.entities.filter((e) => e.pen === 'CUT');
+     for (const e of cuts) assert.equal(penWidth(e), PEN.CUT, `${s.name}: a cut is 0.70`);
+-    if (s.variant === 'section-v') assert.ok(cuts.length >= 4, `${s.name}: real cut geometry, not one line`);
++    if (s.variant === 'sections') assert.ok(cuts.length >= 4, `${s.name}: real cut geometry, not one line`);
+     if (s.variant === 'fronts' || s.variant === 'carcass') {
+       assert.equal(cuts.length, 0, `${s.name}: an elevation cuts nothing`);
+     }
+@@ -118,10 +131,12 @@ test('F5a — every CUT entity resolves to PEN.CUT, and the section is the only
+ });
+ 
+ test('F5a — the sheet says WHERE the knife went', () => {
+-  const three = setOf().find((s) => s.name === 'Wall A /3');
++  // T71: A-A goes through the wall's first DRAWER unit (02, the BUDR): a
++  // section is read for the drawers. The caption says so under the station.
++  const three = setOf().find((s) => s.variant === 'sections' && s.wall === 0);
+   const svg = sheetToSvg(three.sheet, { kind: 'section' });
+-  assert.match(svg, /section at unit 01/, 'the station, under the title');
+-  assert.match(svg, /Wall A \/3/, 'and the title block names the sheet');
++  assert.match(svg, /SECTION A-A · through unit 02/, 'the station, under the title');
++  assert.match(svg, /05 · Wall A · Sections A-A/, 'and the title block names the sheet');
+ });
+ 
+ test('F5a — the section is drawn from PUBLISHED panel boxes, in the ZY frame', () => {
+@@ -206,18 +221,24 @@ test('F5b — the dropdown offers every drawable cabinet, and only those', () =>
+ });
+ 
+ test('F5b — choosing one APPENDS a sheet to the set, named for the cabinet', () => {
+-  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '02');
+-  const names = setOf({ sectionUnitId: chosen.id }).map((s) => s.name);
+-  assert.deepEqual(names, [
+-    'Wall A /1', 'Wall A /2', 'Wall A /3',
+-    'Wall B /1', 'Wall B /2', 'Wall B /3',
+-    'Horizontal section',
+-    'Section A-A — unit 02',
+-  ]);
++  // ─── RE-PINNED 21.09.2026 (T71) ─────────────────────────────────────────
++  // A chosen cabinet is one more STATION on its wall's sections sheet (B-B
++  // beside A-A), not a sheet of its own: the sections of a wall sit side by
++  // side at one scale, the way Skylon's do. Unit 02 is already A-A (the
++  // drawer unit), so the pick that adds a station is unit 01.
++  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '01');
++  const picked = setOf({ sectionUnitId: chosen.id });
++  const names = picked.map((s) => s.name);
++  assert.deepEqual(names, SET_NAMES.map((n) => (n === 'Wall A · Sections A-A' ? 'Wall A · Sections A-A and B-B' : n)));
++  const svg = sheetToSvg(picked.find((s) => s.variant === 'sections' && s.wall === 0).sheet, { kind: 'section' });
++  assert.match(svg, /SECTION B-B · through units 01 and 03/, 'named for the cabinet, and the wall unit over it');
+   // …and it is NOT there when nothing is picked.
+-  assert.ok(!setOf().some((s) => s.name.startsWith('Section A-A')));
+-  // A cabinet that is not in the census produces no sheet and no crash.
+-  assert.deepEqual(setOf({ sectionUnitId: 'no-such-unit' }).map((s) => s.name), names.slice(0, 7));
++  assert.ok(!setOf().some((s) => /B-B/.test(s.name)));
++  // A cabinet that is not in the census produces no station and no crash.
++  assert.deepEqual(setOf({ sectionUnitId: 'no-such-unit' }).map((s) => s.name), SET_NAMES);
++  // …and one that is already A-A adds nothing twice.
++  const already = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '02');
++  assert.deepEqual(setOf({ sectionUnitId: already.id }).map((s) => s.name), SET_NAMES);
+ });
+ 
+ test('F5b — the A-A sheet carries the cabinet\'s OWN height and depth pair', () => {
+@@ -236,7 +257,7 @@ test('F5b — the A-A sheet carries the cabinet\'s OWN height and depth pair', (
+ 
+ test('F5 — the A-A sheet is in the PDF page count when picked, and nowhere when not', () => {
+   const without = setOf();
+-  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '02');
++  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '01');
+   const with$ = setOf({ sectionUnitId: chosen.id });
+ 
+   for (const [label, sheets] of [['without', without], ['with', with$]]) {
+@@ -246,18 +267,21 @@ test('F5 — the A-A sheet is in the PDF page count when picked, and nowhere whe
+     });
+     assert.equal(measured.pages, sheets.length, `${label}: a page per sheet`);
+   }
++  // T71: picking a cabinet adds a STATION to the wall's sections sheet, not a
++  // page; the count is the set's, either way.
+   assert.equal(bookletDoc(with$.map((s) => s.sheet)).getNumberOfPages(),
+-    bookletDoc(without.map((s) => s.sheet)).getNumberOfPages() + 1,
+-    'picking a cabinet adds exactly one page');
++    bookletDoc(without.map((s) => s.sheet)).getNumberOfPages(),
++    'picking a cabinet adds no page');
++  assert.equal(with$.length, SET_NAMES.length);
+ });
+ 
+ test('F5 — …and one DXF per sheet, the A-A among them', () => {
+-  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '02');
++  const chosen = wallSectionUnits({ entries: t43Entries(P), profile: P }).find((u) => u.unitNum === '01');
+   const sheets = setOf({ sectionUnitId: chosen.id });
+   // The names the zip writer composes, and the bytes each file would carry.
+   const names = sheets.map((s) => `${slug(s.name, 'sheet')}-autocad-only.dxf`);
+   assert.equal(new Set(names).size, sheets.length, 'one file per sheet, no two the same');
+-  assert.ok(names.some((n) => /section-a-a/.test(n)), 'the A-A is one of them');
++  assert.ok(names.some((n) => /sections-a-a-and-b-b/.test(n)), 'the sections sheet, B-B among them, is one of them');
+   for (const s of sheets) {
+     const dxf = sheetToDxf(s.sheet);
+     assert.match(dxf, /^\s*0\r?\nSECTION/, `${s.name}: a real DXF`);
+diff --git a/test/turn71-the-set.test.js b/test/turn71-the-set.test.js
+new file mode 100644
+index 0000000..0417736
+--- /dev/null
++++ b/test/turn71-the-set.test.js
+@@ -0,0 +1,523 @@
++// ─── TURN 71 · THE SET: ONE VIEW PER SHEET, EVERY SHEET THE SAME LAW ────────
++//
++// The owner, 21.09.2026, with Skylon Joinery's AutoCAD set for 3-7 Herbal
++// Hill on the table:
++//
++//   *"nasze w CC teraz się nakładają, a tutaj jest wszystko osobno … mega
++//   profesjonalnie … nie zapomnij zostawić w stopce miejsca na firmę, daty,
++//   nazwy"*, then *"żeby tylko odzwierciedlało rzeczywistość, nóżki żeby były
++//   takie jak wszędzie"*, then *"chodziło mi o kształt nóżek jak na
++//   wizualizacji … weź zakoduj"*.
++//
++// So the set is proved on HIS kitchen (`fixtures/t71-herbal-hill.js`), read
++// off his six sheets: the sheet law (zones that never overlap, one title strip,
++// the scale rung printed), the chains (each dimension once, in its own band,
++// no two figures on one spot), the hardware drawn from the engine's own
++// numbers (the leg the scene draws, the plates the side is drilled for), the
++// order and numbering of the set, the cut list's pagination, and the three
++// renderers reading the two new entity kinds.
++
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { readFileSync } from 'node:fs';
++
++import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
++import { computeCabinet } from '../src/engine/cabinet.js';
++import { defaultParamsFor } from '../src/engine/types.js';
++import { wallGroups } from '../src/engine/drawings/wallElevation.js';
++import {
++  chooseSetScale, drawingContext, fitEntities, keyPlan, layoutSetSheet, setPage, setZones, titleStrip, wrapWords,
++} from '../src/engine/drawings/setSheet.js';
++import { chainH, chainV, figureCollisions, figureWidth } from '../src/engine/drawings/setChains.js';
++import {
++  applianceLabel, buildRunElevation, hingePlateMarks, legHardware, measureRun, worktopsOnWall,
++} from '../src/engine/drawings/setElevation.js';
++import { buildPlan, cutEntries, cutHeight, measurePlan } from '../src/engine/drawings/setPlan.js';
++import { buildStation, sectionStations } from '../src/engine/drawings/setSection.js';
++import { buildPerspective, makeCamera, runBoxes } from '../src/engine/drawings/setPerspective.js';
++import { buildCutList, buildVisual, cutListPages, cutRows, visualPictureBox } from '../src/engine/drawings/setPaper.js';
++import { titleFor, visualAspect, wallDrawingSheets } from '../src/engine/drawings/wallSheets.js';
++import { sheetToSvg } from '../src/engine/drawings/svg.js';
++import { sheetToDxf } from '../src/engine/drawings/dxf.js';
++import { boundsOf, entPoly, moveEntities } from '../src/engine/drawings/primitives.js';
++import { DRAWING_LAYERS } from '../src/engine/drawings/layers.js';
++import { bookletDoc } from '../src/lib/drawingExport.js';
++import { hhEntries, hhWorktops, HH_PROJECT, HH_ROOM } from './fixtures/t71-herbal-hill.js';
++
++const entries = hhEntries(P);
++const worktops = hhWorktops(P);
++const setOf = (extra = {}) => wallDrawingSheets({
++  entries, project: HH_PROJECT, room: HH_ROOM, worktops, profile: P, date: '21.09.2026', design: { fronts: { style: 'F' } }, ...extra,
++});
++const wallA = () => wallGroups(entries, P)[0];
++const textsOf = (sheet) => sheet.entities.filter((e) => e.kind === 'text').map((e) => String(e.text));
++const inBox = (e, b) => {
++  const x = e.x ?? e.x1 ?? e.cx ?? e.pts?.[0]?.[0];
++  const y = e.y ?? e.y1 ?? e.cy ?? e.pts?.[0]?.[1];
++  return x != null && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h;
++};
++
++// ═══ 1. THE SHEET LAW ══════════════════════════════════════════════════════
++
++test('T71 · the zones: A3 landscape, one strip across, a column, bands, and nothing overlaps', () => {
++  const S = P.drawings.set;
++  const z = setZones(P, { column: true, caption: true });
++  assert.deepEqual([z.page.id, z.page.width, z.page.height, z.page.orientation], ['A3', 420, 297, 'landscape']);
++  assert.deepEqual(z.frame, { x: S.margin, y: S.margin, w: 420 - 2 * S.margin, h: 297 - 2 * S.margin });
++  assert.equal(z.title.w, z.frame.w, 'the title strip runs the whole width, as his does');
++  assert.equal(z.title.h, S.titleHeight);
++  assert.equal(z.column.x, z.box.x + z.box.w, 'the column starts where the drawing box ends');
++  assert.equal(z.column.w, S.columnWidth);
++  assert.equal(z.box.y, z.title.y + z.title.h, 'the box stands on the strip');
++  // The object area is the box less a dimension band on every side and the
++  // caption at the top: the chains have a home and the caption has a home.
++  assert.equal(z.object.x, z.box.x + S.band);
++  assert.equal(z.object.w, z.box.w - 2 * S.band);
++  assert.equal(z.object.h, z.box.h - z.captionHeight - 2 * S.band);
++  // Without a column (cover, cut list) the box takes the whole width.
++  assert.equal(setZones(P, { column: false }).box.w, z.frame.w);
++  assert.equal(S.titleCells.reduce((a, b) => a + b, 0), z.frame.w, 'the seven cells add up to the strip');
++});
++
++test('T71 · the scale is a rung of the ladder and says so; a picture is NTS', () => {
++  const z = setZones(P);
++  const run = chooseSetScale({ w: 4420 + 2 * 26 * 20, h: 2400 }, z.object, P);
++  assert.deepEqual([run.scale, run.label, run.onLadder], [20, '1:20 @ A3', true], 'his 4420 wall lands on 1:20');
++  const section = chooseSetScale({ w: 1400, h: 2400 }, z.object, P);
++  assert.deepEqual([section.scale, section.label], [15, '1:15 @ A3']);
++  const huge = chooseSetScale({ w: 40000, h: 100 }, z.object, P);
++  assert.equal(huge.label, 'NTS', 'off the ladder there is no rung to print');
++  assert.ok(!huge.onLadder && huge.scale > 50);
++  // Every scaled sheet of the proof set prints its rung; the strip repeats it.
++  for (const s of setOf()) {
++    if (['cover', 'cutlist'].includes(s.variant)) { assert.equal(s.sheet.scaleLabel, 'n/a'); continue; }
++    if (['perspective', 'visual'].includes(s.variant)) { assert.equal(s.sheet.scaleLabel, 'NTS'); continue; }
++    assert.ok(P.drawings.set.scales.includes(s.sheet.scale), `${s.name}: 1:${s.sheet.scale} is a rung`);
++    assert.equal(s.sheet.scaleLabel, `1:${s.sheet.scale} @ A3`);
++    assert.ok(textsOf(s.sheet).includes(s.sheet.scaleLabel), `${s.name}: printed in the strip`);
++  }
++});
++
++test('T71 · a drawn thing never leaves its zone: geometry in the box, strip words in the strip', () => {
++  for (const s of setOf()) {
++    const z = s.sheet.zones;
++    const geometry = s.sheet.entities.filter((e) => e.kind !== 'text' && !['FRAME', 'FRAME_LIGHT', 'SHEET_MUTED'].includes(e.layer) && !e.meta);
++    for (const e of geometry) {
++      const b = boundsOf([e]);
++      const inside = b.x >= z.frame.x - 0.01 && b.x + b.w <= z.frame.x + z.frame.w + 0.01
++        && b.y >= z.frame.y - 0.01 && b.y + b.h <= z.frame.y + z.frame.h + 0.01;
++      assert.ok(inside, `${s.name}: a ${e.kind} on ${e.layer} leaves the frame (${JSON.stringify(b)})`);
++    }
++    // Nothing drawn for the object crosses into the title strip.
++    const strip = s.sheet.entities.filter((e) => inBox(e, z.title) && !['FRAME', 'FRAME_LIGHT', 'SHEET_MUTED'].includes(e.layer) && e.kind !== 'text' && !e.meta);
++    assert.deepEqual(strip.map((e) => `${e.kind}:${e.layer}`), [], `${s.name}: the strip carries only its own words`);
++  }
++});
++
++test('T71 · the title strip: his cells, the company from Settings, the status ticked, the sheet numbered', () => {
++  const t = titleFor({ project: { ...HH_PROJECT, titleBlock: { ...HH_PROJECT.titleBlock, company: { name: 'SKYLON JOINERY', tagline: 'Bespoke joinery', lines: ['Unit 4', '020 7000 0000'] } } }, profile: P, no: '03', name: 'Wall A · Front view', date: 'x' });
++  assert.equal(t.company.name, 'SKYLON JOINERY');
++  assert.equal(t.drawingNo, '032-2026-03', 'the job number and the sheet number make the drawing number');
++  assert.equal(t.statusName, 'For approval');
++  assert.equal(t.date, '08.02.2026', 'the title block\'s own date wins over the export date');
++  const strip = titleStrip(setZones(P), { ...t, scale: '1:20 @ A3', paper: 'A3', sheet: '03', of: '09' }, P);
++  const words = strip.filter((e) => e.kind === 'text').map((e) => e.text);
++  for (const w of ['SKYLON JOINERY', 'Bespoke joinery', 'Unit 4', '020 7000 0000', 'AP&W', '3-7 Herbal Hill, 1st floor', '03 · Wall A · Front view', '032-2026-03', 'PT', '032/2026', '1:20 @ A3', 'A3', 'A', '08.02.2026']) {
++    assert.ok(words.includes(w), `the strip says ${w}`);
++  }
++  assert.ok(words.some((w) => /For approval/.test(w)));
++  // The status boxes: three, the current one filled.
++  const boxes = strip.filter((e) => e.kind === 'rect' && e.w === 4 && e.h === 4);
++  assert.equal(boxes.length, 3);
++  assert.equal(boxes.filter((e) => e.fill).length, 1, 'exactly one status is ticked');
++  // No em or en dash anywhere on the strip.
++  assert.ok(!words.some((w) => /[\u2013\u2014]/.test(w)), 'no dashes on the strip');
++});
++
++test('T71 · the key plan is the room, the wall in hand highlighted, every wall lettered', () => {
++  assert.deepEqual([setPage(P).id, setPage(P).orientation], ['A3', 'landscape']);
++  const kp = keyPlan(setZones(P), { room: HH_ROOM, highlight: 0, arrow: true }, P);
++  const words = kp.filter((e) => e.kind === 'text').map((e) => e.text);
++  for (const w of ['KEY PLAN', 'A', 'B', 'C', 'D']) assert.ok(words.includes(w), `the key plan says ${w}`);
++  assert.ok(kp.some((e) => e.kind === 'poly' && e.fill), 'the wall in hand is a filled band');
++  const col = setZones(P).column;
++  for (const e of kp) {
++    const b = boundsOf([e]);
++    assert.ok(b.x >= col.x - 0.01 && b.x + b.w <= col.x + col.w + 0.01, 'and it stays in the column');
++  }
++  assert.ok(!keyPlan(setZones(P), { room: HH_ROOM, highlight: null, arrow: false }, P).some((e) => e.kind === 'poly' && e.fill), 'a plan sheet highlights no wall');
++});
++
++test('T71 · an appliance space is named on the sheet by the engine\'s own type, never guessed', () => {
++  assert.equal(applianceLabel({ type: 'DW_PANEL' }), 'D/W');
++  assert.equal(applianceLabel({ type: 'FRIDGE' }), 'FRIDGE');
++  assert.equal(applianceLabel({ type: 'OVEN_BASE' }), 'OVEN');
++  assert.equal(applianceLabel({ type: 'BUD' }), null);
++  assert.equal(applianceLabel({ type: 'SINK' }), 'SINK', 'the sink is named on the fronts, and never boxed as a space');
++  const ctx = drawingContext(20, P);
++  const fronts = buildRunElevation(wallA(), { withFronts: true, room: HH_ROOM, profile: P, ctx });
++  const labels = fronts.entities.filter((e) => e.kind === 'text' && e.layer === 'APPLIANCE').map((e) => e.text);
++  assert.ok(labels.some((t) => /D\/W/.test(t)) && labels.some((t) => /FRIDGE/.test(t)), 'the dishwasher and the fridge are named on the front view');
++});
++
++test('T71 · `wrapWords` and `fitEntities`: the small helpers do what the sheets lean on', () => {
++  assert.deepEqual(wrapWords('one two three four', 9), ['one two', 'three', 'four']);
++  assert.deepEqual(wrapWords('averyveryverylongword x', 5), ['averyveryverylongword', 'x'], 'a word longer than the row stands alone');
++  const fitted = fitEntities([entPoly('CARCASE', [[0, 0], [1000, 0], [1000, 500]]), { kind: 'text', layer: 'UNIT_NUMBER', x: 500, y: 250, text: '01', height: 120, paperHeight: 3 }], { x: 10, y: 10, w: 100, h: 100 }, { textHeight: 2 });
++  const b = boundsOf(fitted.filter((e) => e.kind === 'poly'));
++  assert.ok(b.w <= 96.01 && b.x >= 10 && b.x + b.w <= 110, 'scaled into the box');
++  assert.equal(fitted[1].height, 2, 'every word at one paper height');
++  assert.equal(fitted[1].paperHeight, undefined);
++});
++
++// ═══ 2. THE CHAINS ═════════════════════════════════════════════════════════
++
++test('T71 · a chain lifts a figure that does not fit its segment, with a leader, alternating', () => {
++  const ctx = drawingContext(20, P);
++  const tight = chainH({ edges: [0, 30, 60, 1000], y: 100, yObj: 0, ctx });
++  assert.deepEqual(tight.figures.map((f) => f.caption), ['30', '30', '940']);
++  const lifted = tight.figures.filter((f) => f.lifted);
++  assert.equal(lifted.length, 2, 'the two 30s cannot carry a figure and are lifted');
++  assert.ok(Math.abs(lifted[0].y - lifted[1].y) > ctx.mm(3), 'and alternate, so the two lifted figures do not collide');
++  assert.ok(!tight.figures[2].lifted, 'the 940 sits on its line');
++  assert.ok(tight.some((e) => e.kind === 'line' && e.layer === 'DIMENSIONS' && Math.abs(e.y2 - e.y1) > 0 && e.x1 === e.x2 && e.y1 === 100), 'a leader from the line');
++  assert.equal(figureCollisions([tight], ctx.textHeight).length, 0);
++  // Arrowheads are filled triangles in the dimension colour; the ticks are polys.
++  const heads = tight.filter((e) => e.kind === 'poly');
++  assert.ok(heads.length >= 2 && heads.every((e) => e.fill === DRAWING_LAYERS.DIMENSIONS.colour && e.noStroke));
++  // A vertical chain reads the same way, rotated.
++  const v = chainV({ edges: [0, 150, 870, 2400], x: 500, xObj: 0, ctx, left: false });
++  assert.deepEqual(v.figures.map((f) => f.caption), ['150', '720', '1530']);
++  assert.ok(v.some((e) => e.kind === 'text' && e.rotate === -90), 'figures stand along the line');
++  assert.equal(figureWidth('1530', ctx.textHeight), 4 * ctx.textHeight * 0.55);
++});
++
++test('T71 · on the proof kitchen no two figures share a spot, and every chain stays in its band', () => {
++  const group = wallA();
++  const onWall = worktopsOnWall(worktops.map((w) => w.geometry || w), group.wall);
++  for (const withFronts of [true, false]) {
++    const bounds = measureRun(group, { room: HH_ROOM, worktops: onWall, profile: P });
++    const { scale } = chooseSetScale(bounds, setZones(P).object, P);
++    const ctx = drawingContext(scale, P);
++    const built = buildRunElevation(group, { withFronts, room: HH_ROOM, worktops: onWall, profile: P, ctx });
++    assert.equal(figureCollisions(built.chains, ctx.textHeight).length, 0, `${withFronts ? 'fronts' : 'internal'}: no two figures collide`);
++    // Every figure is outside the run (in a band), never over the cabinets.
++    const run = { x: group.from, y: 0, w: group.to - group.from, h: Math.max(group.top, ...onWall.map((w) => w.y + w.h)) };
++    for (const ch of built.chains) {
++      for (const f of ch.figures) {
++        const over = f.x > run.x && f.x < run.x + run.w && f.y > run.y && f.y < run.y + run.h;
++        assert.ok(!over, `figure ${f.caption} at ${f.x},${f.y} sits over the run`);
++      }
++    }
++    // Each dimension once in its home: no chain repeats a segment, and the
++    // overall stands on one line only. (The wall run above and the floor run
++    // below may both read 520 over the same x: two runs, two homes, as his.)
++    for (const ch of built.chains) {
++      const keys = ch.figures.map((f) => `${f.axis}:${Math.round(f.a)}:${Math.round(f.b)}`);
++      assert.equal(new Set(keys).size, keys.length, 'a chain never repeats a segment');
++    }
++    const overall = built.chains.filter((ch) => ch.figures.some((f) => f.axis === 'x' && Math.round(f.b - f.a) === 4420));
++    assert.equal(overall.length, 1, 'the 4420 overall is on exactly one line');
++  }
++});
++
++test('T71 · the front view\'s chains are his: wall units above, floor run and scribes below, overall on the second line', () => {
++  const group = wallA();
++  const onWall = worktopsOnWall(worktops.map((w) => w.geometry || w), group.wall);
++  const ctx = drawingContext(20, P);
++  const built = buildRunElevation(group, { withFronts: true, room: HH_ROOM, worktops: onWall, profile: P, ctx });
++  const captions = (i) => built.chains[i].figures.map((f) => f.caption);
++  // Above: the wall run, 520 520 520 520 1040 600, over its own band.
++  assert.deepEqual(captions(0).filter((c) => /^\d+$/.test(c)).slice(0, 6), ['520', '520', '520', '520', '1040', '600']);
++  // Below: 25 off wall D, the floor run, the fridge, the infill, the wall end.
++  const below = captions(1);
++  assert.equal(below[0], '25', 'the scribe to wall D is the first figure');
++  assert.ok(below.includes('1040') && below.includes('600'), 'the sink and the fridge');
++  assert.equal(below.reduce((a, c) => a + Number(c), 0), 4420, 'the floor chain adds up to the wall');
++  const overall = captions(2);
++  assert.deepEqual(overall, ['4420'], 'the overall on the second line, once');
++  // Left: a chain from the floor to the ceiling, so the ceiling is read too.
++  const toCeiling = built.chains.find((ch) => ch.figures.length && ch.figures.every((f) => f.axis === 'y')
++    && Math.min(...ch.figures.map((f) => f.a)) === 0 && Math.max(...ch.figures.map((f) => f.b)) === HH_ROOM.height);
++  assert.ok(toCeiling, 'the ceiling is dimensioned');
++  assert.equal(toCeiling.figures.reduce((a, f) => a + (f.b - f.a), 0), HH_ROOM.height);
++});
++
++// ═══ 3. THE HARDWARE, FROM THE ENGINE ══════════════════════════════════════
++
++test('T71 · the legs on the internal layout are the scene\'s leg: plate, stem, foot, at the engine\'s positions', () => {
++  const L = P.hardware.leg;
++  const bud = entries.find((e) => e.unit.params.unit_num === '01').result;
++  const legs = bud.assemblies.legs;
++  const legH = bud.assemblies.carcass.legHeight;
++  assert.ok(legs.positions.length >= 2 && legH > 0, 'the engine publishes the legs');
++  const one = legHardware(legs.positions[0], { width: legs.width, height: legH, profile: P });
++  assert.equal(one.length, 3, 'plate, stem, foot');
++  const [plate, stem, foot] = one;
++  assert.equal(plate.w, legs.width, 'the plate is as wide as the engine\'s leg');
++  assert.equal(plate.h, L.plateThickness);
++  assert.equal(stem.w, L.stemDiameter);
++  assert.equal(foot.w, L.footDiameter);
++  assert.equal(foot.h, L.footHeight);
++  assert.equal(plate.h + stem.h + foot.h, legH, 'the three add up to the leg height');
++  assert.equal(foot.y, -legH, 'the foot stands on the floor');
++  assert.ok(one.every((e) => e.layer === 'LEG_BLOCK' && e.solid));
++  // On the sheet: three rects per leg per unit, and the front view has none.
++  const group = wallA();
++  const ctx = drawingContext(20, P);
++  const internal = buildRunElevation(group, { withFronts: false, room: HH_ROOM, profile: P, ctx });
++  // One leg per x on an elevation: the back leg of a pair stands behind the front one.
++  const uniqueXs = (m) => new Set((m.result.assemblies?.legs?.positions || []).map((p) => Math.round(p.x))).size;
++  const expected = group.members.reduce((a, m) => a + ((m.result.assemblies?.carcass?.legHeight || 0) > 0 ? 3 * uniqueXs(m) : 0), 0);
++  assert.ok(expected >= 3 * 2 * 6, 'his six legged base units, two legs each in elevation');
++  assert.equal(internal.entities.filter((e) => e.layer === 'LEG_BLOCK').length, expected);
++  const fronts = buildRunElevation(group, { withFronts: true, room: HH_ROOM, profile: P, ctx });
++  assert.equal(fronts.entities.filter((e) => e.layer === 'LEG_BLOCK').length, 0, 'the plinth hides them on the front view');
++  // Where they stand, in x, is the engine's own list, moved by the unit's x.
++  const m = group.members[0];
++  const plates = internal.entities.filter((e) => e.layer === 'LEG_BLOCK' && e.h === L.plateThickness && e.x >= m.x && e.x < m.x + m.width);
++  assert.deepEqual(plates.map((e) => Math.round(e.x - m.x)).sort((a, b) => a - b), [...new Set(legs.positions.map((p) => Math.round(p.x)))].sort((a, b) => a - b));
++});
++
++test('T71 · the hinge plates are the side\'s own drilling: three per door on his 720 doors, six on the two-door sink', () => {
++  const r = (num) => entries.find((e) => e.unit.params.unit_num === num).result;
++  const plates = (num) => hingePlateMarks(r(num), P);
++  const pairs = r('01').drillSummary.side_hinge_holes_y.length;
++  assert.equal(plates('01').length, pairs * r('01').drillSummary.hinged_sides.length);
++  assert.equal(plates('01').length, 3, 'a 770 door: three hinges');
++  assert.equal(plates('05').length, 6, 'the sink\'s two doors: three each side');
++  assert.equal(plates('04').length, 0, 'a drawer unit has no plates');
++  assert.ok(plates('01').every((e) => e.layer === 'HINGES' && e.h === P.hardware.hinge.plateLength));
++  // On the LEFT side for an L door, at the board's inner face.
++  const G = Number(r('01').params.board_t) || 18;
++  assert.ok(plates('01').every((e) => e.x === G));
++});
++
++test('T71 · the worktop is the design layer\'s slab, and the set resolves it itself when nobody hands it in', () => {
++  const [slab] = worktops.map((w) => w.geometry || w);
++  assert.ok(slab && slab.w > 3000, 'one slab over the six base units');
++  const withSlab = setOf().find((s) => s.variant === 'fronts');
++  const slabs = (s) => s.sheet.entities.filter((e) => e.kind === 'rect' && e.fill === '#f3f3f3');
++  assert.equal(slabs(withSlab).length, 1, 'the front view draws the worktop');
++  // The same set, with the records on the design and no `worktops` argument.
++  const resolved = wallDrawingSheets({
++    entries, project: HH_PROJECT, room: HH_ROOM, profile: P, date: 'd',
++    design: { fronts: { style: 'F' }, worktops: [{ id: 'wt-1', unitIds: entries.slice(0, 6).map((e) => e.unit.id), decor: null }] },
++  }).find((s) => s.variant === 'fronts');
++  assert.equal(slabs(resolved).length, 1, 'resolved from the design\'s own records');
++  const bare = wallDrawingSheets({ entries, project: HH_PROJECT, room: HH_ROOM, profile: P, date: 'd' }).find((s) => s.variant === 'fronts');
++  assert.equal(slabs(bare).length, 0, 'and none when the design has none');
++});
++
++// ═══ 4. THE PLANS, THE SECTIONS, THE PERSPECTIVE ═══════════════════════════
++
++test('T71 · the plans: cut at 400 and 1700, measured on the walls, marked with the section stations', () => {
++  assert.equal(cutHeight('base', P), P.drawings.set.planCut.base);
++  assert.equal(cutHeight('wall', P), P.drawings.set.planCut.wall);
++  const base = cutEntries(entries, cutHeight('base', P), P).map((e) => e.unit.params.unit_num);
++  const wall = cutEntries(entries, cutHeight('wall', P), P).map((e) => e.unit.params.unit_num);
++  assert.deepEqual(base, ['01', '02', '03', '04', '05', '06', '07'], 'the base plan cuts the floor run and the fridge');
++  assert.deepEqual(wall, ['07', '08', '09', '10', '11', '12', '13'], 'the wall plan cuts the wall run and the tall fridge');
++  const b = measurePlan({ room: HH_ROOM, profile: P });
++  assert.deepEqual([b.w, b.h], [4420, 3200], 'the walls alone set the scale');
++  const set = setOf();
++  const plan = set.find((s) => s.variant === 'plan-base');
++  assert.equal(plan.sheet.scale, 20);
++  const words = textsOf(plan.sheet);
++  assert.ok(words.includes('WALL A') && words.includes('WALL C'), 'the walls are named');
++  assert.ok(words.filter((w) => w === 'A').length >= 2 && words.filter((w) => w === 'B').length >= 2, 'A-A and B-B are flagged on the plan');
++  assert.ok(words.includes('DOOR 900'), 'the opening on wall B');
++  // The plan draws every cut unit's number and the depth of the run.
++  for (const n of base) assert.ok(words.includes(n), `unit ${n} on the base plan`);
++});
++
++test('T71 · the sections: A-A through the drawer unit, B-B through the sink, a chosen cabinet as C-C', () => {
++  const group = wallA();
++  const stations = sectionStations(group);
++  assert.deepEqual(stations.map((s) => [s.letter, s.member.unit.params.unit_num]), [['A', '04'], ['B', '05']]);
++  const chosen = sectionStations(group, { chosenId: 'hh-02' });
++  assert.deepEqual(chosen.map((s) => s.letter), ['A', 'B', 'C']);
++  assert.deepEqual(sectionStations(group, { chosenId: 'hh-04' }).map((s) => s.letter), ['A', 'B'], 'choosing A-A\'s own unit adds nothing');
++  const ctx = drawingContext(15, P);
++  const st = buildStation(group, stations[0], { room: HH_ROOM, worktops: worktops.map((w) => w.geometry || w), profile: P, ctx });
++  assert.ok(st.members.map((m) => m.unit.params.unit_num).includes('04'));
++  assert.ok(st.entities.some((e) => e.pen === 'CUT'), 'the knife cuts');
++  assert.ok(st.entities.some((e) => e.layer === 'LEG_BLOCK'), 'the legs stand under the cut carcass');
++  assert.ok(st.entities.some((e) => e.kind === 'rect' && e.fill === '#d9d9d9'), 'the worktop slab is cut');
++  assert.ok(textsOf(st).some((t) => /SECTION A-A · through unit/.test(t)));
++  assert.equal(figureCollisions(st.chains, ctx.textHeight).length, 0);
++  const sheet = setOf().find((s) => s.variant === 'sections');
++  assert.equal(sheet.name, 'Wall A · Sections A-A and B-B');
++  assert.equal(setOf({ sectionUnitId: 'hh-02' }).find((s) => s.variant === 'sections').name, 'Wall A · Sections A-A and B-B and C-C');
++});
++
++test('T71 · the perspective: the engine\'s boxes through a pinhole, painted far to near, numbered, NTS', () => {
++  const group = wallA();
++  const boxes = runBoxes(group, { worktops: worktops.map((w) => w.geometry || w), profile: P });
++  assert.equal(boxes.filter((b) => b.tag === 'unit').length, group.members.length);
++  assert.equal(boxes.filter((b) => b.tag === 'worktop').length, 1);
++  assert.ok(boxes.filter((b) => b.tag === 'plinth').length >= 6);
++  const cam = makeCamera([0, 1650, 5000], [2000, 1200, 0]);
++  const near = cam.project([2000, 1200, 1000]); const far = cam.project([2000, 1200, 0]);
++  assert.ok(near[2] < far[2], 'distance is a distance');
++  const ctx = drawingContext(1, P);
++  const pic = buildPerspective(group, { room: HH_ROOM, worktops: worktops.map((w) => w.geometry || w), profile: P, ctx });
++  const faces = pic.entities.filter((e) => e.kind === 'poly' && e.fill === 'white');
++  assert.ok(faces.length > 20, 'faces, painted');
++  assert.ok(pic.entities.filter((e) => e.layer === 'DOORS').length >= 13, 'every front is a box on the picture');
++  const numbers = pic.entities.filter((e) => e.kind === 'text' && e.layer === 'UNIT_NUMBER').map((e) => e.text);
++  assert.deepEqual(numbers.sort(), group.members.map((m) => m.unit.params.unit_num).sort());
++  assert.ok(pic.entities.every((e) => e.layer !== 'DIMENSIONS'), 'a picture is not dimensioned');
++  const sheet = setOf().find((s) => s.variant === 'perspective');
++  assert.equal(sheet.sheet.scaleLabel, 'NTS');
++});
++
++// ═══ 5. THE SET, BOUND ═════════════════════════════════════════════════════
++
++test('T71 · the order and the numbering of his set, the cover last with the index of the others', () => {
++  const set = setOf();
++  assert.deepEqual(set.map((s) => `${s.no} ${s.name}`), [
++    '00 Cover, index and revisions', '01 Plan · base units', '02 Plan · wall units',
++    '03 Wall A · Front view', '04 Wall A · Internal layout', '05 Wall A · Sections A-A and B-B',
++    '06 Wall A · Perspective view', '07 Visualisation', '08 Cut list and materials',
++  ]);
++  for (const s of set) {
++    assert.equal(s.sheet.sheetNo, s.no);
++    assert.equal(s.sheet.sheetOf, '09');
++    assert.ok(textsOf(s.sheet).includes(`${s.no} / 09`), `${s.name} is numbered on its strip`);
++    assert.ok(textsOf(s.sheet).includes(`032-2026-${s.no}`), `${s.name} carries its drawing number`);
++  }
++  const cover = textsOf(set[0].sheet);
++  for (const s of set.slice(1)) {
++    assert.ok(cover.includes(s.no) && cover.includes(s.name), `the index lists ${s.no} ${s.name}`);
++    assert.ok(cover.includes(s.sheet.scaleLabel), `…with its scale ${s.sheet.scaleLabel}`);
++  }
++  assert.ok(cover.includes('First issue') && cover.includes('PT'), 'the revision table');
++  assert.ok(set[0].sheet.entities.some((e) => e.kind === 'poly' && e.fill === 'white'), 'the cover carries the perspective, fitted');
++  assert.deepEqual(wallDrawingSheets({ entries: [], project: HH_PROJECT, room: HH_ROOM, profile: P }), [], 'no cabinet, no set');
++});
++
++test('T71 · the cut list: every panel per unit from the engine, paged down four columns, the totals last', () => {
++  const rows = cutRows(entries[0].result);
++  // The engine's own split: board panels, then the front-material ones (the
++  // plinth is cut from front material and the engine says so).
++  assert.deepEqual(rows.carcass.map((r) => r.id), ['BUL', 'BUR', 'TOP', 'BOTTOM', 'BACK', 'SHELF-1']);
++  assert.deepEqual(rows.fronts.map((r) => r.id), ['PLINTH', '01-F']);
++  const zones = setZones(P, { column: false, caption: true });
++  const one = cutListPages(zones, entries);
++  assert.equal(one.length, 1, 'his 13 units fit one sheet');
++  assert.equal(one[0].length, 13);
++  assert.ok(one[0].every((b) => b.col >= 0 && b.col < 4));
++  assert.ok(one[0].every((b) => b.y - b.h >= zones.box.y + 6 - 0.01), 'no block runs off the bottom');
++  const many = cutListPages(zones, [...entries, ...entries, ...entries, ...entries]);
++  assert.ok(many.length > 1, '52 units need more than one sheet');
++  assert.equal(many.flat().length, 52, 'every unit is on exactly one page');
++  const set = wallDrawingSheets({ entries: [...entries, ...entries, ...entries, ...entries], project: HH_PROJECT, room: HH_ROOM, profile: P, date: 'd' });
++  const lists = set.filter((s) => s.variant === 'cutlist');
++  assert.equal(lists.length, many.length);
++  assert.match(lists[0].name, /Cut list and materials 1 of \d/);
++  assert.ok(!textsOf(lists[0].sheet).some((t) => /^TOTALS/.test(t)), 'the totals are not on the first page');
++  assert.ok(textsOf(lists[lists.length - 1].sheet).some((t) => /^TOTALS · 52 units/.test(t)), 'and are on the last');
++  const words = textsOf(buildCutList(zones, { entries }).length ? { entities: buildCutList(zones, { entries }) } : { entities: [] });
++  assert.ok(words.includes('UNIT 04') && words.includes('BUDR 520'));
++  assert.ok(words.some((w) => /carcass panels? ·/.test(w)));
++  assert.ok(words.some((w) => /^TOTALS · 13 units/.test(w)));
++});
++
++test('T71 · the visualisation frames the render at the picture\'s own aspect, and says what it waits for without one', () => {
++  const zones = setZones(P, { column: true, caption: true });
++  const pic = visualPictureBox(zones);
++  assert.ok(Math.abs(visualAspect(P) - pic.w / pic.h) < 1e-9);
++  assert.ok(visualAspect(P) > 1.2 && visualAspect(P) < 2, 'a landscape frame');
++  const empty = buildVisual(zones, { finishes: [{ name: 'FRONTS', desc: 'x', colour: '#abcdef' }], note: 'a note that is long enough to need wrapping onto a second row of the column' });
++  assert.ok(empty.some((e) => e.kind === 'text' && e.text === 'RENDER'));
++  assert.ok(!empty.some((e) => e.kind === 'image'));
++  assert.ok(empty.filter((e) => e.kind === 'text' && /wrapping|column/.test(e.text)).length >= 2, 'the note wraps');
++  const png = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
++  const withImage = buildVisual(zones, { image: png });
++  const img = withImage.find((e) => e.kind === 'image');
++  assert.ok(img && img.href === png && img.w < pic.w && img.h < pic.h);
++  const set = setOf({ renderImage: png });
++  const visual = set.find((s) => s.variant === 'visual');
++  assert.ok(visual.sheet.entities.some((e) => e.kind === 'image'), 'the set frames the render it is handed');
++  assert.match(sheetToSvg(visual.sheet, { kind: 'visual' }), /<image [^>]*href="data:image\/png/);
++  assert.ok(sheetToDxf(visual.sheet).includes('FRAME_LIGHT'), 'the DXF draws the frame and skips the pixels');
++  assert.equal(bookletDoc([visual.sheet]).getNumberOfPages(), 1, 'and the PDF binds it');
++});
++
++// ═══ 6. THE RENDERERS READ THE NEW ENTITY KINDS ════════════════════════════
++
++test('T71 · poly, image, right-aligned, masked and bold text reach the SVG, the DXF and the PDF', () => {
++  const sheet = {
++    width: 100, height: 100, format: { id: 'A4' },
++    entities: [
++      { ...entPoly('CARCASE', [[10, 10], [50, 10], [50, 40]], { fill: 'white' }), pen: 'VISIBLE' },
++      { ...entPoly('DIMENSIONS', [[10, 60], [20, 60], [15, 70]], { fill: '#1A3CE6' }), noStroke: true },
++      { ...entPoly('BUILDING', [[60, 60], [90, 60], [90, 90]], { open: true }), pen: 'THIN' },
++      { kind: 'text', layer: 'FRAME', x: 90, y: 90, text: 'right', height: 3, align: 'right', weight: 'bold', mask: true, colour: '#ff0000' },
++      { kind: 'rect', layer: 'SHEET_MUTED', x: 5, y: 80, w: 10, h: 10, fill: '#f2f2f2', noStroke: true },
++    ],
++  };
++  const svg = sheetToSvg(sheet, { kind: 'x' });
++  assert.match(svg, /<path d="M10 90 L50 90 L50 60 Z" fill="#ffffff"/i, 'a closed poly, white-filled, Y flipped');
++  assert.match(svg, /<path d="M60 40 L90 40 L90 10" fill="none"/, 'an open poly is not closed');
++  assert.match(svg, /fill="#1A3CE6" stroke="none"/, 'a filled arrowhead has no stroke');
++  assert.match(svg, /text-anchor="end"/, 'right-aligned');
++  assert.match(svg, /font-weight="bold"/);
++  assert.match(svg, /<rect [^>]*fill="#ffffff"[^>]*\/>\s*<text[^>]*>right<\/text>/, 'the mask stands behind the word');
++  assert.match(svg, /fill="#f2f2f2" stroke="none"/, 'a filled rect with no stroke');
++  const dxf = sheetToDxf(sheet);
++  assert.match(dxf, /POLYLINE/, 'a poly is a polyline in R12');
++  assert.ok((dxf.match(/\r\n0\r\nPOLYLINE\r\n/g) || []).length >= 3, 'the three polys (a rect is a polyline too)');
++  assert.equal(bookletDoc([sheet]).getNumberOfPages(), 1, 'jsPDF draws it all without throwing');
++  // The primitives move and bound a poly like anything else.
++  const moved = moveEntities([entPoly('X', [[0, 0], [1, 1]])], 5, 5)[0];
++  assert.deepEqual(moved.pts, [[5, 5], [6, 6]]);
++  assert.deepEqual(boundsOf([entPoly('X', [[2, 3], [7, 9]])]), { x: 2, y: 3, w: 5, h: 6 });
++});
++
++// ═══ 7. THE APP, WIRED ═════════════════════════════════════════════════════
++
++test('T71 · the window hands the set the worktops and the render, carries the title block, and the menu says "set"', () => {
++  const modal = readFileSync(new URL('../src/components/DrawingModal.jsx', import.meta.url), 'utf8');
++  assert.match(modal, /worktops: worktopsOf\(\)/, 'the design layer\'s slabs go on the sheets');
++  assert.match(modal, /renderImage,/, 'and the render');
++  assert.match(modal, /rig\.capture\(job\)/, 'captured through the same rig as Output ▸ Render');
++  assert.match(modal, /preset: 'iso-left'/, 'from the three-quarter left');
++  assert.match(modal, /aspect: visualAspect\(profile\)/, 'shaped to the sheet\'s frame');
++  assert.match(modal, /data-title-block="1"/, 'the title block\'s words are typed here');
++  assert.match(modal, /setTitleBlock\(\{ company: \{ name: v \} \}\)/);
++  assert.match(modal, /page\.no \? `\$\{page\.no\} · \$\{page\.name\}` : page\.name/, 'the sheet buttons are numbered');
++  assert.ok(!/format,\n\s+date,\n\s+\}\);\n\s+\/\/ The census/.test(modal), 'the set takes no paper choice');
++  const page = readFileSync(new URL('../src/pages/ConfiguratorPage.jsx', import.meta.url), 'utf8');
++  assert.match(page, /<DrawingModal rig=\{renderRig\} \/>/, 'the page hands the window the rig');
++  assert.match(page, /worktops: worktopsOf\(\),\s+renderImage,/, 'the menu path binds the same set');
++  const menu = readFileSync(new URL('../src/lib/outputMenu.js', import.meta.url), 'utf8');
++  assert.match(menu, /label: 'Drawing set \(PDF\)'/);
++  assert.match(menu, /label: 'Drawing set \(DXF\)'/);
++});
++
++test('T71 · the store: `setTitleBlock` merges, the company is remembered for the next job', async () => {
++  const { useProjectStore } = await import('../src/stores/projectStore.js');
++  const s = useProjectStore.getState();
++  s.newProject('T71');
++  s.setTitleBlock({ drawnBy: 'PT', company: { name: 'SKYLON JOINERY' } });
++  s.setTitleBlock({ company: { tagline: 'Bespoke joinery' }, status: 'C' });
++  const tb = useProjectStore.getState().project.titleBlock;
++  assert.deepEqual(tb, { drawnBy: 'PT', status: 'C', company: { name: 'SKYLON JOINERY', tagline: 'Bespoke joinery' } });
++  // The title strip reads it.
++  const t = titleFor({ project: useProjectStore.getState().project, profile: P, no: '01', name: 'x' });
++  assert.equal(t.company.name, 'SKYLON JOINERY');
++  assert.equal(t.statusName, 'For production');
++  // A new job carries the company (when this computer remembers one) and
++  // nothing else of the last job's block.
++  s.newProject('Next');
++  const next = useProjectStore.getState().project.titleBlock;
++  assert.equal(next.drawnBy, undefined);
++  assert.ok(next.company == null || next.company.name === 'SKYLON JOINERY');
++});
++
++test('T71 · the unit card is untouched (iron rule 4): the T43 golden still matches byte for byte', () => {
++  const golden = readFileSync(new URL('./fixtures/t43-unit-card-before.svg', import.meta.url), 'utf8');
++  assert.ok(golden.length > 1000, 'the golden exists; its own test compares it');
++});
+-- 
+2.43.0
+

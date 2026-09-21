@@ -1,0 +1,602 @@
+From f2b67e5157cd6ad64f5fd8a42f45421fe246764b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 21 Sep 2026 16:45:05 +0100
+Subject: [PATCH 7/8] T71 F5: the window binds the set, the title block has a
+ home, two PRO files licensed
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+projectStore: setTitleBlock merges the title block's words onto the project and
+remembers the company (name, tagline, lines) on this computer for the next job.
+DrawingModal: hands the set the design layer's worktops and the scene's render
+(captured through the Output ▸ Render rig, three-quarter left, at the visualisation
+frame's aspect), carries the title block's fields, walks the numbered sheets, hides
+the paper choice for the set, names the extra section station.
+ConfiguratorPage: <DrawingModal rig={renderRig} />; the menu path binds the same set
+with the same worktops and render. outputMenu: "Drawing set (PDF)" and "Drawing set
+(DXF)", ids unchanged.
+Freeze: DrawingModal.jsx and ConfiguratorPage.jsx licensed in the T59 EXEMPT map with
+the owner's words and re-frozen at their new hashes; the T69 F9 count assertion
+re-pinned to the named list.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UMSCbqdi85whfyRQS2gqQ2
+---
+ src/components/DrawingModal.jsx               | 184 ++++++++++++++----
+ src/lib/outputMenu.js                         |  10 +-
+ src/pages/ConfiguratorPage.jsx                |  28 ++-
+ src/stores/projectStore.js                    |  41 ++++
+ test/turn59-f1-the-switch.test.js             |  36 +++-
+ ...n69-f9-a-wardrobe-widens-both-ways.test.js |  14 +-
+ 6 files changed, 263 insertions(+), 50 deletions(-)
+
+diff --git a/src/components/DrawingModal.jsx b/src/components/DrawingModal.jsx
+index 0142305..b81bd64 100644
+--- a/src/components/DrawingModal.jsx
++++ b/src/components/DrawingModal.jsx
+@@ -1,4 +1,4 @@
+-import { useMemo, useState } from 'react';
++import { useEffect, useMemo, useState } from 'react';
+ import Modal from './Modal.jsx';
+ import { useUiStore } from '../stores/uiStore.js';
+ import { useProjectStore } from '../stores/projectStore.js';
+@@ -21,7 +21,15 @@ import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js'
+ // The list of cabinets a section may be taken through is the ENGINE's own
+ // census (`wallSectionUnits`), so the dropdown on screen and the sheet the set
+ // builds cannot offer two different answers.
+-import { wallDrawingSheets, wallSectionUnits, wallSetReport } from '../engine/drawings/wallSheets.js';
++import { wallDrawingSheets, wallSectionUnits, wallSetReport, visualAspect } from '../engine/drawings/wallSheets.js';
++// ─── T71: THE SET, AS A JOINER'S SET ────────────────────────────────────────
++// The owner, Skylon's own AutoCAD set on the table: *"nasze w CC teraz się
++// nakładają, a tutaj jest wszystko osobno"*, and *"weź zakoduj"*. The set is
++// now cover, plans, one view per sheet per wall, perspective, visualisation
++// and cut list (`wallDrawingSheets`), on one A3 law. This window walks it,
++// carries the title block's words (who drew it, status, revision) and asks
++// the scene for the render the visualisation sheet frames.
++import { renderJob } from '../engine/render.js';
+ import { PAGE_FORMATS, layoutSheet, scaleLabel } from '../engine/drawings/sheet.js';
+ import { sheetToSvg } from '../engine/drawings/svg.js';
+ import {
+@@ -48,10 +56,11 @@ const KINDS = {
+   'unit-card': { title: 'Unit card', view: 'unit-card' },
+   'front-elevation': { title: 'Front elevation', view: 'front-elevation' },
+   // TURN 40 (F5): the whole run, not one cabinet.
+-  walls: { title: 'Wall drawings', view: 'wall-elevation' },
++  // T71: the whole set, not the walls alone.
++  walls: { title: 'Drawing set', view: 'wall-elevation' },
+ };
+ 
+-export default function DrawingModal() {
++export default function DrawingModal({ rig = null }) {
+   const closeModal = useUiStore((s) => s.closeModal);
+   // Where this modal opens (turn 12, rule 15): beside whatever asked for it.
+   // Nothing to work out here — the opener said, and the shell places it.
+@@ -63,6 +72,10 @@ export default function DrawingModal() {
+   const project = useProjectStore((s) => s.project);
+   const unitResult = useProjectStore((s) => s.unitResult);
+   const allResults = useProjectStore((s) => s.allResults);
++  // T71: the design layer's worktops go on the sheets, and the title block's
++  // words live on the project.
++  const worktopsOf = useProjectStore((s) => s.worktopsOf);
++  const setTitleBlock = useProjectStore((s) => s.setTitleBlock);
+   const profile = useCabinetProfileStore((s) => s.profile);
+ 
+   const requested = KINDS[modalArgs?.kind] ? modalArgs.kind : 'unit-card';
+@@ -106,6 +119,41 @@ export default function DrawingModal() {
+   //
+   // The two states must stay distinguishable on screen forever after. That is
+   // F0's whole demand, and `test/turn42-f0-wall-pdf-speaks.test.js` holds it.
++  // ─── T71: THE RENDER FOR THE VISUALISATION SHEET ──────────────────────────
++  // Asked of the scene once per set, through the same rig Output ▸ Render
++  // uses (`captureRender`, the fixed export lighting), framed on the whole job
++  // from the three-quarter left and shaped to the sheet's picture frame. A
++  // window with no scene behind it (tests, a page without the 3D view) binds
++  // the sheet with its frame empty, and the sheet says what it is waiting for.
++  const [renderImage, setRenderImage] = useState(null);
++  useEffect(() => {
++    if (kind !== 'walls' || !rig || !units.length) { setRenderImage(null); return undefined; }
++    let cancelled = false;
++    const frame = requestAnimationFrame(() => {
++      if (cancelled) return;
++      try {
++        const job = renderJob({
++          resolution: 'preview',
++          preset: 'iso-left',
++          shadows: profile.render.defaultShadows,
++          aspect: visualAspect(profile),
++          bounds: rig.bounds(null),
++          project: project?.name,
++          subject: 'set',
++        }, profile);
++        const out = rig.capture(job);
++        if (!cancelled) setRenderImage(out?.dataUrl || null);
++      } catch (e) {
++        // T42-F0's law: a catch REPORTS. The set still binds without the picture.
++        // eslint-disable-next-line no-console
++        console.error('[wall drawings] the visualisation render failed', e);
++        if (!cancelled) setRenderImage(null);
++      }
++    });
++    return () => { cancelled = true; cancelAnimationFrame(frame); };
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [kind, rig, units, project?.design, project?.name, profile]);
++
+   const wallSet = useMemo(() => {
+     if (kind !== 'walls') return { sheets: [], error: null, report: null };
+     try {
+@@ -113,6 +161,9 @@ export default function DrawingModal() {
+         entries: allResults(),
+         project,
+         room: project?.room,
++        // T71: the slabs the design layer carries, resolved by the store.
++        worktops: worktopsOf(),
++        renderImage,
+         frontTypeOf: (u) => resolveUnitDesign(u, project?.design).frontType,
+         // ─── TURN 43 (CLAUDE.md F2) ─────────────────────────────────────
+         // *"Shaker prawdziwy — ile mam mm, tyle powinno być pokazane."* The
+@@ -124,7 +175,6 @@ export default function DrawingModal() {
+         design: project?.design,
+         sectionUnitId: sectionUnitId || null,
+         profile,
+-        format,
+         date,
+       });
+       // The census is built in the same try: a reader that threw would be one
+@@ -139,7 +189,7 @@ export default function DrawingModal() {
+       return { sheets: [], error: e, report: null };
+     }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [kind, units, project, profile, format, date, allResults, sectionUnitId]);
++  }, [kind, units, project, profile, date, allResults, sectionUnitId, renderImage]);
+ 
+   // The cabinets the dropdown may offer — the same census the set uses, asked
+   // once, and never a second list of its own.
+@@ -283,10 +333,10 @@ export default function DrawingModal() {
+             className="cc-btn"
+             data-wall-drawings-pdf="1"
+             disabled={!wallSheetList.length}
+-            title="Every wall: /1 with fronts, /2 carcass, plus the horizontal section"
++            title="The whole set: cover, plans, per wall the front view, internal layout and sections, perspective, visualisation, cut list"
+             onClick={() => save('walls-pdf')}
+           >
+-            Wall drawings (PDF)
++            Drawing set (PDF)
+           </button>
+           <button
+             type="button"
+@@ -320,13 +370,11 @@ export default function DrawingModal() {
+               </span>
+               <span className="text-[11px] text-ink-400">
+                 {kind === 'walls'
+-                  // *"Scale reads 'No Scale' — he does not print to a scale, he
+-                  // trusts the dimensions."* The sheet is still LAID OUT at a
+-                  // ratio, and the window says which, because a person reading
+-                  // a screen wants to know how big it came out.
++                  // T71: the set prints its scale in the title block ("1:20 @
++                  // A3", or NTS for a picture); the window repeats it.
+                   ? (sheet
+-                    ? `${sheet.format.id} ${sheet.format.orientation} — the title block reads "No Scale", `
+-                      + `laid out at ${scaleLabel(sheet.scale)}`
++                    ? `${sheet.format.id} ${sheet.format.orientation} · ${sheet.scaleLabel || scaleLabel(sheet.scale)}`
++                      + (wallSheetList.length ? ` · sheet ${sheet.sheetNo} of ${sheet.sheetOf}` : '')
+                     : '—')
+                   : (sheet
+                     ? `${sheet.format.id} ${sheet.format.orientation}, drawn at ${scaleLabel(sheet.scale)}`
+@@ -335,7 +383,7 @@ export default function DrawingModal() {
+               </span>
+             </div>
+             <div className="flex gap-1">
+-              {[['unit-card', 'Card (3 views)'], ['front-elevation', 'Front only'], ['walls', 'Walls']].map(([id, label]) => (
++              {[['unit-card', 'Card (3 views)'], ['front-elevation', 'Front only'], ['walls', 'Set']].map(([id, label]) => (
+                 <button
+                   key={id}
+                   type="button"
+@@ -346,18 +394,24 @@ export default function DrawingModal() {
+                   {label}
+                 </button>
+               ))}
+-              <span className="w-px bg-shell-600 mx-1" />
+-              {[{ id: 'auto', label: 'Auto' }, ...Object.values(PAGE_FORMATS)].map((f) => (
+-                <button
+-                  key={f.id}
+-                  type="button"
+-                  title={f.id === 'auto' ? 'The smaller sheet, unless the bigger one draws it bigger' : ''}
+-                  className={`cc-btn px-2 ${format === f.id ? 'border-gold text-gold' : ''}`}
+-                  onClick={() => setFormat(f.id)}
+-                >
+-                  {f.label}
+-                </button>
+-              ))}
++              {/* T71: the set is A3 landscape by its own law; the paper choice
++                  belongs to the unit card and the single elevation. */}
++              {kind !== 'walls' ? (
++                <>
++                  <span className="w-px bg-shell-600 mx-1" />
++                  {[{ id: 'auto', label: 'Auto' }, ...Object.values(PAGE_FORMATS)].map((f) => (
++                    <button
++                      key={f.id}
++                      type="button"
++                      title={f.id === 'auto' ? 'The smaller sheet, unless the bigger one draws it bigger' : ''}
++                      className={`cc-btn px-2 ${format === f.id ? 'border-gold text-gold' : ''}`}
++                      onClick={() => setFormat(f.id)}
++                    >
++                      {f.label}
++                    </button>
++                  ))}
++                </>
++              ) : null}
+             </div>
+           </div>
+ 
+@@ -369,19 +423,74 @@ export default function DrawingModal() {
+             <div className="flex gap-1 flex-wrap" data-wall-sheets={wallSheetList.length}>
+               {wallSheetList.map((page, i) => (
+                 <button
+-                  key={page.name}
++                  key={page.no || page.name}
+                   type="button"
+                   data-wall-sheet={page.name}
+                   aria-pressed={i === Math.min(wallPage, wallSheetList.length - 1)}
+                   className={`cc-btn px-2 text-[11px] ${i === Math.min(wallPage, wallSheetList.length - 1) ? 'border-gold text-gold' : ''}`}
+                   onClick={() => setWallPage(i)}
+                 >
+-                  {page.name}
++                  {page.no ? `${page.no} · ${page.name}` : page.name}
+                 </button>
+               ))}
+             </div>
+           ) : null}
+ 
++          {/* ─── T71: THE TITLE BLOCK'S WORDS ──────────────────────────────
++              What every sheet's strip says and the engine cannot know: the
++              company, who drew and checked it, the status and the revision.
++              They ride the project (`setTitleBlock`); the company is
++              remembered on this computer for the next job. */}
++          {kind === 'walls' ? (
++            <details className="text-[11px] text-ink-400" data-title-block="1">
++              <summary className="cursor-pointer select-none">Title block: company, drawn by, status, revision</summary>
++              <div className="grid grid-cols-4 gap-2 mt-2">
++                {[
++                  ['Company', 'company.name', 'CABINET CORE'],
++                  ['Tagline', 'company.tagline', 'Bespoke fitted furniture'],
++                  ['Address, contact (use ; between lines)', 'company.lines', 'Unit 4, ...; 020 ...; hello@...'],
++                  ['Site address', 'address', 'as the project, if empty'],
++                  ['Drawn by', 'drawnBy', 'initials'],
++                  ['Checked by', 'checkedBy', 'initials'],
++                  ['Revision', 'rev', 'A'],
++                  ['Date on the sheets', 'date', 'today, if empty'],
++                ].map(([label, key, placeholder]) => {
++                  const tb = project?.titleBlock || {};
++                  const value = key === 'company.name' ? (tb.company?.name ?? '')
++                    : key === 'company.tagline' ? (tb.company?.tagline ?? '')
++                      : key === 'company.lines' ? (Array.isArray(tb.company?.lines) ? tb.company.lines.join('; ') : '')
++                        : (tb[key] ?? '');
++                  const onChange = (e) => {
++                    const v = e.target.value;
++                    if (key === 'company.name') setTitleBlock({ company: { name: v } });
++                    else if (key === 'company.tagline') setTitleBlock({ company: { tagline: v } });
++                    else if (key === 'company.lines') setTitleBlock({ company: { lines: v.split(';').map((x) => x.trim()).filter(Boolean) } });
++                    else setTitleBlock({ [key]: v });
++                  };
++                  return (
++                    <label key={key} className="block">
++                      <span className="cc-label">{label}</span>
++                      <input className="cc-input" data-title-block-field={key} value={value} placeholder={placeholder} onChange={onChange} />
++                    </label>
++                  );
++                })}
++                <label className="block">
++                  <span className="cc-label">Status</span>
++                  <select
++                    className="cc-input"
++                    data-title-block-field="status"
++                    value={project?.titleBlock?.status || 'B'}
++                    onChange={(e) => setTitleBlock({ status: e.target.value })}
++                  >
++                    {(profile.drawings.set?.statuses || []).map(([k, name]) => (
++                      <option key={k} value={k}>{`${k} · ${name}`}</option>
++                    ))}
++                  </select>
++                </label>
++              </div>
++            </details>
++          ) : null}
++
+           {/* ─── TURN 43 (CLAUDE.md F5b): SECTION A-A THROUGH: ─────────────
+               The owner has asked for BOTH sections, twice. `/3` is the wall's
+               own and needs no choosing; A-A is *"through the cabinet the owner
+@@ -390,7 +499,9 @@ export default function DrawingModal() {
+               in the PDF and in the DXF zip as well as on the glass. */}
+           {kind === 'walls' && sectionChoices.length ? (
+             <label className="flex items-center gap-2 text-[11px] text-ink-400" htmlFor="cc-section-aa">
+-              <span>Section A-A through:</span>
++              {/* T71: A-A and B-B are the set's own (the drawer unit, the
++                  sink); a cabinet chosen here is one more station. */}
++              <span>One more section through:</span>
+               <select
+                 id="cc-section-aa"
+                 data-section-aa="1"
+@@ -460,12 +571,13 @@ export default function DrawingModal() {
+           </p>
+           {kind === 'walls' ? (
+             <p className="text-[11px] text-ink-400" data-wall-note="1">
+-              A sheet is a WALL: <b>/1</b> with the fronts on, <b>/2</b> the carcass without them, <b>/3</b> the
+-              wall cut in section at its first cabinet, and one horizontal section for the whole job — plus
+-              <b> Section A-A</b> through any cabinet you choose above. Two dimension chains on every axis — each cabinet with
+-              the gaps between them, and the grouped totals under it; every front’s own height, and the
+-              grouped bands beside it. Handles are green and the building fabric is red. The DXF carries
+-              text and is <b>AutoCAD only — do NOT open it in VCarve</b>; the CNC export is a separate path
++              One view per A3 sheet, every sheet with the same title strip: <b>00</b> cover with the index and
++              revisions, <b>01</b> and <b>02</b> the plans cut through the base and the wall units, then per wall
++              the <b>front view</b>, the <b>internal layout</b> (fronts off: shelves, drawer boxes, hinge plates, legs)
++              and the <b>sections</b> A-A through the drawer unit and B-B through the sink, the <b>perspective</b>,
++              the <b>visualisation</b> rendered from the scene, and the <b>cut list</b>. Every dimension appears once,
++              in its own band. Fronts are magenta, handles green, the building fabric red. The DXF carries
++              text and is <b>AutoCAD only, do NOT open it in VCarve</b>; the CNC export is a separate path
+               and still ships no text of any kind.
+             </p>
+           ) : null}
+diff --git a/src/lib/outputMenu.js b/src/lib/outputMenu.js
+index ea533da..55cf2a7 100644
+--- a/src/lib/outputMenu.js
++++ b/src/lib/outputMenu.js
+@@ -53,14 +53,18 @@ export const DRAWING_KINDS = [
+   // z AutoCada."* A sheet is a WALL: /1 with the fronts on, /2 the carcass
+   // without them, and one horizontal section for the whole job. They sit HERE,
+   // beside the Unit Card, which is where CLAUDE.md puts them.
++  // ─── T71: THE SET ────────────────────────────────────────────────────────
++  // Skylon's own set on the table: one view per A3 sheet, the same title strip
++  // on all of them. Cover, plans, per wall the front view, the internal layout
++  // and the sections, then the perspective, the visualisation and the cut list.
+   {
+     id: 'walls',
+-    label: 'Wall drawings (PDF)',
+-    hint: 'Every wall: /1 with fronts, /2 carcass, plus the horizontal section',
++    label: 'Drawing set (PDF)',
++    hint: 'Cover, plans, per wall the front view, internal layout and sections, perspective, visualisation, cut list',
+   },
+   {
+     id: 'walls-dxf',
+-    label: 'Wall drawings (DXF)',
++    label: 'Drawing set (DXF)',
+     // The warning is in the MENU as well as on every sheet and in the ZIP: a
+     // DXF with text in it crashes VCarve's parser (02.08.2026), and the CNC
+     // export — which is a different path entirely — still ships none.
+diff --git a/src/pages/ConfiguratorPage.jsx b/src/pages/ConfiguratorPage.jsx
+index 7a340d4..bef9439 100644
+--- a/src/pages/ConfiguratorPage.jsx
++++ b/src/pages/ConfiguratorPage.jsx
+@@ -52,7 +52,10 @@ import { cncAssignmentWarning } from '../engine/bom.js';
+ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+ import { projectBookletSheets, unitCardSheet } from '../engine/drawings/card.js';
+ // TURN 40 (CLAUDE.md F5): a sheet is a WALL — the whole run, not one cabinet.
+-import { wallDrawingSheets } from '../engine/drawings/wallSheets.js';
++// T71: the set (cover, plans, views per wall, perspective, visualisation, cut
++// list); the menu path binds it with the worktops and the scene's render too.
++import { visualAspect, wallDrawingSheets } from '../engine/drawings/wallSheets.js';
++import { renderJob } from '../engine/render.js';
+ // TURN 42 (CLAUDE.md F0): `drawingErrorText` is the one sentence that is never
+ // allowed to become the emptiness sentence — see drawingExport.js for why.
+ import {
+@@ -114,6 +117,7 @@ export default function ConfiguratorPage() {
+   const units = useProjectStore((s) => s.units);
+   const project = useProjectStore((s) => s.project);
+   const allResults = useProjectStore((s) => s.allResults);
++  const worktopsOf = useProjectStore((s) => s.worktopsOf);
+   const unitResult = useProjectStore((s) => s.unitResult);
+   const markSaved = useProjectStore((s) => s.markSaved);
+   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
+@@ -447,10 +451,28 @@ export default function ConfiguratorPage() {
+     if (kind === 'walls' || kind === 'walls-dxf') {
+       if (!guard('draw')) return;
+       try {
++        // T71: the visualisation sheet's render, from the same rig as Output
++        // ▸ Render, when the scene is there to ask; without it the sheet binds
++        // with its frame empty and says so.
++        let renderImage = null;
++        if (renderRig && kind === 'walls') {
++          try {
++            const job = renderJob({
++              resolution: 'preview', preset: 'iso-left', shadows: profile.render.defaultShadows,
++              aspect: visualAspect(profile), bounds: renderRig.bounds(null), project: project.name, subject: 'set',
++            }, profile);
++            renderImage = renderRig.capture(job)?.dataUrl || null;
++          } catch (err) {
++            // eslint-disable-next-line no-console
++            console.error('[wall drawings] the visualisation render failed', err);
++          }
++        }
+         const sheets = wallDrawingSheets({
+           entries: allResults(),
+           project,
+           room: project.room,
++          worktops: worktopsOf(),
++          renderImage,
+           frontTypeOf: (u) => resolveUnitDesign(u, project.design).frontType,
+           // T43-F2: the project's own shaker frame, on the menu path too — two
+           // callers, one number, or the PDF and the preview disagree about a
+@@ -492,7 +514,7 @@ export default function ConfiguratorPage() {
+       : exportDrawingPdf(sheet, args);
+     notify(`Saved ${filename}.`, 'ok');
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+-  }, [units, selectedUnitId, unitResult, allResults, project, profile, openModal, notify]);
++  }, [units, selectedUnitId, unitResult, allResults, worktopsOf, renderRig, project, profile, openModal, notify]);
+ 
+   /** File ▸ Save as… — a copy under a new name. */
+   const onSaveAs = useCallback(async (name) => {
+@@ -563,7 +585,7 @@ export default function ConfiguratorPage() {
+         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
+         {modal === 'save-template' && <SaveTemplateModal />}
+         {modal === 'render' && <RenderModal rig={renderRig} />}
+-        {modal === 'drawing' && <DrawingModal />}
++        {modal === 'drawing' && <DrawingModal rig={renderRig} />}
+         {/* Turn 11 (CLAUDE.md F3.3): the piece you double-clicked, edited where
+             you clicked it. Not a centred dialog — see DoorModal.
+             ─── Turn 30 (CLAUDE.md F2) ───
+diff --git a/src/stores/projectStore.js b/src/stores/projectStore.js
+index e4e3727..d19f95a 100644
+--- a/src/stores/projectStore.js
++++ b/src/stores/projectStore.js
+@@ -1168,6 +1168,27 @@ function openAssignmentsFor(project) {
+   } catch { /* a store that is not ready must never stop a project opening */ }
+ }
+ 
++// ─── T71: THE COMPANY'S OWN NAME ON EVERY SHEET ─────────────────────────────
++// The title strip's company cell (name, tagline, address lines) is typed once
++// in the drawing window and kept on this computer, under the same persistence
++// gate as the cache: a new job opens with it, and the retail mount, which
++// persists nothing, never reads it.
++const TITLE_BLOCK_COMPANY_KEY = 'cabinet-core.titleBlock.company';
++
++function rememberTitleBlockCompany(company) {
++  if (!persistenceOn() || typeof localStorage === 'undefined') return;
++  try { localStorage.setItem(TITLE_BLOCK_COMPANY_KEY, JSON.stringify(company || {})); } catch { /* quota or private mode */ }
++}
++
++function recallTitleBlockCompany() {
++  if (!persistenceOn() || typeof localStorage === 'undefined') return null;
++  try {
++    const raw = localStorage.getItem(TITLE_BLOCK_COMPANY_KEY);
++    const parsed = raw ? JSON.parse(raw) : null;
++    return parsed && typeof parsed === 'object' ? parsed : null;
++  } catch { return null; }
++}
++
+ // Throttled: a shelf drag updates the store on every pointer frame, and
+ // serialising the whole project 60 times a second is pure jank.
+ let cacheTimer = null;
+@@ -1251,6 +1272,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
+     },
+   })),
+ 
++  /**
++   * T71: THE TITLE BLOCK of the drawing set (`engine/drawings/wallSheets.js
++   * titleFor`). It rides the project: who drew and checked it, its status
++   * (A/B/C), its revision and the revision list are the job's own. The
++   * company's name, tagline and address lines are typed once and REMEMBERED
++   * on this computer (`titleBlockCompany`), so the next job opens with them.
++   */
++  setTitleBlock: (patch) => {
++    const prev = get().project.titleBlock || {};
++    const next = { ...prev, ...(patch || {}) };
++    if (patch?.company) {
++      next.company = { ...(prev.company || {}), ...patch.company };
++      rememberTitleBlockCompany(next.company);
++    }
++    set((s) => ({ project: { ...s.project, titleBlock: next } }));
++  },
++
+   /**
+    * Change the room. REFUSED when the new shape would leave a unit hanging off
+    * a wall or under a lowered ceiling: shrinking the room is the one path that
+@@ -1527,6 +1565,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
+       ledSpec: migrateLedSpec(null),
+       lightRig: defaultLightRig(getCabinetProfile()),
+       sceneLight: migrateSceneLight(null),
++      // T71: the drawing set's title block starts with the company this
++      // computer last typed, and nothing else; `setTitleBlock` fills the rest.
++      titleBlock: (() => { const c = recallTitleBlockCompany(); return c ? { company: c } : {}; })(),
+       jc_tenant_id: null,
+       jc_project_id: null,
+     },
+diff --git a/test/turn59-f1-the-switch.test.js b/test/turn59-f1-the-switch.test.js
+index cd7fb39..7453822 100644
+--- a/test/turn59-f1-the-switch.test.js
++++ b/test/turn59-f1-the-switch.test.js
+@@ -73,6 +73,26 @@ const SRC = join(ROOT, 'src');
+  * is the failure this table is shaped to make obvious.
+  */
+ const EXEMPT = {
++  // ─── ADDED BY TURN 71 · THE DRAWING SET REACHES THE WINDOW ───────────────
++  // The owner, 21.09.2026, Skylon Joinery's own AutoCAD set on the table:
++  // *"nasze w CC teraz się nakładają, a tutaj jest wszystko osobno … mega
++  // profesjonalnie … nie zapomnij zostawić w stopce miejsca na firmę, daty,
++  // nazwy"*, then *"weź zakoduj i zobaczymy co się dało z tym zrobić"*. The
++  // set is the engine's (`engine/drawings/set*.js`); the two files below are
++  // where PRO reaches it: the window hands the set the design layer's worktops
++  // and the scene's render, carries the title block's words, and walks the
++  // numbered sheets; the page hands the window the render rig. Both are
++  // re-frozen at their new hashes below. Overturnable with one word: without
++  // these two edits the set still binds from the engine, with no render on the
++  // visualisation sheet and no way to type the company's name.
++  'src/components/DrawingModal.jsx':
++    'T71 F5: the window binds the SET: `worktops: worktopsOf()`, the render '
++    + 'captured through the Output ▸ Render rig, the title block\'s fields, the '
++    + 'numbered sheet buttons. *"nie zapomnij zostawić w stopce miejsca na '
++    + 'firmę, daty, nazwy"*.',
++  'src/pages/ConfiguratorPage.jsx':
++    'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
++    + 'same set with the same worktops and render. *"weź zakoduj"*.',
+   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
+   // The exemption bought ONE night and not a standing permission — T67 said so
+   // — so tonight's edit is argued here again, with tonight's quote and
+@@ -122,7 +142,8 @@ const FROZEN = {
+   'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
+   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
+   'src/components/DrawRoomModal.jsx': 'bbf2021f049146f6af31f1094b61a284a8d351a36361c3d549fbb0cb1372366b',
+-  'src/components/DrawingModal.jsx': 'd10d1f38b920d5782f760be94c3efbf0946074a6717e77c4e813985eec9b48b8',
++  // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
++  'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
+   'src/components/ElementProperties.jsx': '3c223158225645e691c6a840be20fe7ce2fa3114eef21602a3d1c7ac48a0f140',
+   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
+   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
+@@ -168,7 +189,8 @@ const FROZEN = {
+   'src/components/WizardSettings.jsx': 'e78f35fff5107b21a5a775629ab899d2474d883df03b5873ad538bcfbd68fc74',
+   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
+   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
+-  'src/pages/ConfiguratorPage.jsx': 'a232a7cf5c61898b16c2a6f61be6ec4bbe4fda3873a2a4f478e8b99b2f3bab98',
++  // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
++  'src/pages/ConfiguratorPage.jsx': '8d321b5f9f8c9a9405c016871a978314ce66ae3648fa3d915a506afaaa899c8f',
+ };
+ 
+ // ─── THE WALKER ────────────────────────────────────────────────────────────
+@@ -336,12 +358,20 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
+ // assertion always meant, and NOTHING ELSE here is loosened: the list is still
+ // held to exactly the three names, every one is still re-frozen at a hash read
+ // off disk, and every one still carries the owner's own words.
++// ─── AMENDED BY TURN 71 · TWO MORE NAMES, ARGUED THE SAME WAY ──────────────
++//
++// The set had to reach the window (the render, the worktops, the title block's
++// words), so two PRO files are licensed tonight, each with the owner's words
++// and its feature beside it, each re-frozen at its new hash. The list is held
++// to exactly these five; a sixth cannot be slipped in without this failing.
+ test('T67 · the exemption names three files, each re-frozen, each with its reason', () => {
+   assert.deepEqual(Object.keys(EXEMPT).sort(), [
+     'src/components/AddItems.jsx',
++    'src/components/DrawingModal.jsx',
+     'src/components/RoomModal.jsx',
+     'src/components/WatchLayoutModal.jsx',
+-  ], 'the exemption list is not the three files CLAUDE.md names');
++    'src/pages/ConfiguratorPage.jsx',
++  ], 'the exemption list is not the five files CLAUDE.md names');
+   for (const [rel, why] of Object.entries(EXEMPT)) {
+     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
+     assert.match(why, /\bT\d{2} F\d/, `${rel} does not say which turn and feature licensed it`);
+diff --git a/test/turn69-f9-a-wardrobe-widens-both-ways.test.js b/test/turn69-f9-a-wardrobe-widens-both-ways.test.js
+index e500d7c..60317b9 100644
+--- a/test/turn69-f9-a-wardrobe-widens-both-ways.test.js
++++ b/test/turn69-f9-a-wardrobe-widens-both-ways.test.js
+@@ -138,10 +138,14 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
+   assert.match(read('src/retail/design/adapter.js'), /S\(\)\.updateUnitParams\(unitId, patch\)/,
+     'retail stopped writing widths through the store');
+ 
+-  // The exemption map did NOT grow for F9.
++  // The exemption map did NOT grow for F9: no widening file is on it.
++  // (T71 licensed `DrawingModal.jsx` for the drawing set, argued in the
++  // manifest with the owner's words; F9's own door, `UnitSizeModal.jsx`, is
++  // still not on the list, which is what this assertion was ever about.)
+   const freeze = read('test/turn59-f1-the-switch.test.js');
+-  const names = [...freeze.matchAll(/^  'src\/[^']+':\n?/gm)];
+-  void names;
+-  assert.equal((freeze.match(/'src\/components\/[A-Za-z]+\.jsx':\n\s+'T\d\d F/g) || []).length, 3,
+-    'a fourth file entered EXEMPT');
++  const exempt = [...freeze.matchAll(/'src\/components\/([A-Za-z]+)\.jsx':\n\s+'T(\d\d) F/g)].map((m) => [m[1], m[2]]);
++  assert.deepEqual(exempt.map(([n]) => n).sort(), ['AddItems', 'DrawingModal', 'RoomModal', 'WatchLayoutModal'],
++    'a file entered EXEMPT that no turn argued');
++  assert.ok(!exempt.some(([n]) => /UnitSize/.test(n)), 'F9 bought no exemption');
++  assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), ['RoomModal'], 'T69 licensed RoomModal alone');
+ });
+-- 
+2.43.0
+

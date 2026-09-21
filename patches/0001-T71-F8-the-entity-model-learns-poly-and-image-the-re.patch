@@ -1,0 +1,322 @@
+From 14f94f992503217cdbefc8c6c8d0fffd0a82e618 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 21 Sep 2026 16:44:24 +0100
+Subject: [PATCH 1/8] T71 F8: the entity model learns poly and image, the
+ renderers read them
+
+primitives: entPoly (a closed or open run of points, filled or not); moveEntities and
+boundsOf handle poly and image. svg: poly as a path, image, text with right alignment,
+a white mask, bold and a colour. dxf: poly as a POLYLINE, an image as its frame,
+right-aligned text. drawingExport: drawSheet fills rects and polys, adds an image,
+masks and aligns text. layers: SHEET_MUTED, SHEET_CUT, APPLIANCE added, nothing edited.
+views: one guard, legSymbol 'none' skips the grammar's three-line leg so the set can
+draw the scene's. profile: drawings.set, the sheet law's numbers, with its migration.
+No cut number moves; the six goldens are byte-identical.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UMSCbqdi85whfyRQS2gqQ2
+---
+ src/engine/drawings/dxf.js        | 14 +++++++-
+ src/engine/drawings/layers.js     | 10 ++++++
+ src/engine/drawings/primitives.js |  9 +++++
+ src/engine/drawings/svg.js        | 35 +++++++++++++++++--
+ src/engine/drawings/views.js      |  4 ++-
+ src/engine/profile.js             | 58 +++++++++++++++++++++++++++++++
+ src/lib/drawingExport.js          | 46 ++++++++++++++++++++++--
+ 7 files changed, 169 insertions(+), 7 deletions(-)
+
+diff --git a/src/engine/drawings/dxf.js b/src/engine/drawings/dxf.js
+index 55e7648..0bb86c6 100644
+--- a/src/engine/drawings/dxf.js
++++ b/src/engine/drawings/dxf.js
+@@ -78,6 +78,18 @@ export function sheetToDxf(sheet, { note = DXF_AUTOCAD_ONLY } = {}) {
+       entities.push({
+         type: 'circle', layer: use(e), cx: e.cx, cy: e.cy, r: e.r,
+       });
++    } else if (e.kind === 'poly') {
++      // T71: a run of points is a polyline; a fill has no R12 word and is
++      // dropped, which leaves the outline the plotter draws anyway.
++      if ((e.pts || []).length >= 2) {
++        entities.push({ type: 'poly', layer: use(e), closed: !e.open, pts: e.pts.map((p) => [p[0], p[1]]) });
++      }
++    } else if (e.kind === 'image') {
++      // T71: no picture in a DXF; the frame it would fill is drawn instead.
++      entities.push({
++        type: 'poly', layer: use({ layer: 'FRAME_LIGHT' }), closed: true,
++        pts: [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]],
++      });
+     } else if (e.kind === 'text') {
+       entities.push({
+         type: 'text',
+@@ -92,7 +104,7 @@ export function sheetToDxf(sheet, { note = DXF_AUTOCAD_ONLY } = {}) {
+         // The DXF rotation is anticlockwise in degrees; the sheet's own
+         // `rotate` is the SVG convention, which is clockwise.
+         rot: e.rotate ? -e.rotate : 0,
+-        halign: e.align === 'left' ? 0 : 1,
++        halign: e.align === 'left' ? 0 : (e.align === 'right' ? 2 : 1),
+         valign: 2,
+       });
+     }
+diff --git a/src/engine/drawings/layers.js b/src/engine/drawings/layers.js
+index f919ed3..a405641 100644
+--- a/src/engine/drawings/layers.js
++++ b/src/engine/drawings/layers.js
+@@ -73,6 +73,16 @@ export const DRAWING_LAYERS = {
+   // AutoLISP never had to draw them because AutoCAD's template already did.
+   FRAME: { aci: 7, colour: '#111111', width: 0.5, pen: 'OUTLINE' },
+   FRAME_LIGHT: { aci: 7, colour: '#444444', width: 0.2, pen: 'FINE' },
++  // ─── T71: THE SHEET SET'S OWN TWO INKS ───────────────────────────────────
++  // A muted grey for the small words of a title block and a column (the
++  // labels over the values, the legend headings): present, never competing
++  // with a figure. And the set's cut fill, a paper grey a section bar is
++  // filled with so the eye finds the cut before it finds anything else.
++  SHEET_MUTED: { aci: 8, colour: '#6F6F6F', width: 0.18, pen: 'FINE' },
++  SHEET_CUT: { aci: 7, colour: '#151515', width: 0.7, pen: 'CUT' },
++  // What the client supplies and the workshop builds around: the dishwasher,
++  // the fridge, the sink. Blue, as the owner's set draws them (ACI 5).
++  APPLIANCE: { aci: 5, colour: '#1A3CE6', width: 0.18, pen: 'THIN', dash: [4, 3] },
+ };
+ 
+ export function drawingLayer(name) {
+diff --git a/src/engine/drawings/primitives.js b/src/engine/drawings/primitives.js
+index 6470a2e..ca2e9a1 100644
+--- a/src/engine/drawings/primitives.js
++++ b/src/engine/drawings/primitives.js
+@@ -45,10 +45,17 @@ export function moveEntities(entities, dx, dy) {
+     if (e.kind === 'line') return { ...e, x1: e.x1 + dx, y1: e.y1 + dy, x2: e.x2 + dx, y2: e.y2 + dy };
+     if (e.kind === 'rect') return { ...e, x: e.x + dx, y: e.y + dy };
+     if (e.kind === 'circle') return { ...e, cx: e.cx + dx, cy: e.cy + dy };
++    // T71: a polygon moves point by point.
++    if (e.kind === 'poly') return { ...e, pts: (e.pts || []).map((p) => [p[0] + dx, p[1] + dy]) };
+     return { ...e, x: e.x + dx, y: e.y + dy };
+   });
+ }
+ 
++/** T71: a closed (or open) run of points. `fill` is a colour, 'white', or absent. */
++export const entPoly = (layer, pts, { fill = null, open = false } = {}) => ({
++  kind: 'poly', layer, pts: pts.map((p) => [p[0], p[1]]), ...(fill ? { fill } : {}), ...(open ? { open: true } : {}),
++});
++
+ /** The box a set of entities occupies, in drawing mm. */
+ export function boundsOf(entities) {
+   let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
+@@ -61,6 +68,8 @@ export function boundsOf(entities) {
+     else if (e.kind === 'rect') { see(e.x, e.y); see(e.x + e.w, e.y + e.h); }
+     else if (e.kind === 'circle') { see(e.cx - e.r, e.cy - e.r); see(e.cx + e.r, e.cy + e.r); }
+     else if (e.kind === 'text') { see(e.x - e.height, e.y - e.height); see(e.x + e.height, e.y + e.height); }
++    else if (e.kind === 'poly') { for (const p of e.pts || []) see(p[0], p[1]); }
++    else if (e.kind === 'image') { see(e.x, e.y); see(e.x + e.w, e.y + e.h); }
+   }
+   if (!Number.isFinite(minX)) return { x: 0, y: 0, w: 1, h: 1 };
+   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+diff --git a/src/engine/drawings/svg.js b/src/engine/drawings/svg.js
+index b1a6217..1c07a4e 100644
+--- a/src/engine/drawings/svg.js
++++ b/src/engine/drawings/svg.js
+@@ -56,16 +56,45 @@ export function sheetToSvg(sheet, { background = '#ffffff', kind = 'front-elevat
+     } else if (e.kind === 'circle') {
+       parts.push(`<circle cx="${n(e.cx)}" cy="${n(flip(e.cy))}" r="${n(e.r)}" fill="none" ${stroke}${dash} data-layer="${e.layer}"${tag}/>`);
+     } else if (e.kind === 'rect') {
+-      parts.push(`<rect x="${n(e.x)}" y="${n(flip(e.y + e.h))}" width="${n(e.w)}" height="${n(e.h)}" fill="none" ${stroke}${dash} data-layer="${e.layer}"${tag}/>`);
++      // T71: a rect may ask for a fill (a cut bar, a title-block cell). Absent,
++      // it is the outline it has always been.
++      const rfill = e.fill === 'white' ? background : (e.fill || 'none');
++      const rstroke = e.noStroke ? 'stroke="none"' : stroke;
++      parts.push(`<rect x="${n(e.x)}" y="${n(flip(e.y + e.h))}" width="${n(e.w)}" height="${n(e.h)}" fill="${rfill}" ${rstroke}${dash} data-layer="${e.layer}"${tag}/>`);
+     } else if (e.kind === 'text') {
+-      const anchor = e.align === 'left' ? 'start' : 'middle';
++      const anchor = e.align === 'left' ? 'start' : (e.align === 'right' ? 'end' : 'middle');
+       const rotate = e.rotate ? ` transform="rotate(${n(e.rotate)} ${n(e.x)} ${n(flip(e.y))})"` : '';
+       const tracking = e.tracking ? ` letter-spacing="${n(e.tracking * e.height)}"` : '';
++      // ─── T71 (the sheet set): a MASKED text stands on white ────────────────
++      // A unit number on a double door would sit on the meeting line; the mask
++      // is what keeps it readable without moving it off the front it names.
++      // Only a text that asks for it gets one, so every older sheet is byte
++      // for byte what it was.
++      if (e.mask) {
++        const mw = String(e.text).length * e.height * 0.62 + e.height * 0.6;
++        const mh = e.height * 1.3;
++        const mr = e.rotate ? ` transform="rotate(${n(e.rotate)} ${n(e.x)} ${n(flip(e.y))})"` : '';
++        const mx = e.align === 'left' ? e.x - e.height * 0.3 : (e.align === 'right' ? e.x - mw + e.height * 0.3 : e.x - mw / 2);
++        parts.push(`<rect x="${n(mx)}" y="${n(flip(e.y) - mh / 2)}" width="${n(mw)}" height="${n(mh)}" fill="${background}" stroke="none"${mr} data-layer="${e.layer}" data-cc="mask"/>`);
++      }
++      const weight = e.weight === 'bold' ? ' font-weight="bold"' : '';
+       parts.push(
+         `<text x="${n(e.x)}" y="${n(flip(e.y))}" font-size="${n(e.height)}" font-family="${FONT}"`
+-        + ` fill="${L.colour}" text-anchor="${anchor}" dominant-baseline="central"${tracking}${rotate}`
++        + ` fill="${e.colour || L.colour}" text-anchor="${anchor}" dominant-baseline="central"${tracking}${rotate}${weight}`
+         + ` data-layer="${e.layer}"${tag}>${esc(e.text)}</text>`,
+       );
++    } else if (e.kind === 'poly') {
++      // ─── T71: a closed run of points, optionally filled ───────────────────
++      // The perspective's faces (white, so a nearer box hides a farther one),
++      // arrowheads, hatch cells. `fill` is a colour, 'white' (the paper), or
++      // absent for an outline.
++      const d = (e.pts || []).map((p, i) => `${i ? 'L' : 'M'}${n(p[0])} ${n(flip(p[1]))}`).join(' ') + (e.open ? '' : ' Z');
++      const fill = e.fill === 'white' ? background : (e.fill || 'none');
++      const sw = e.noStroke ? 'none' : L.colour;
++      parts.push(`<path d="${d}" fill="${fill}" stroke="${sw}" stroke-width="${n(penWidth(e))}"${dash} stroke-linejoin="round" data-layer="${e.layer}"${tag}/>`);
++    } else if (e.kind === 'image' && e.href) {
++      // ─── T71: a picture on the sheet (the render on the visualisation) ────
++      parts.push(`<image x="${n(e.x)}" y="${n(flip(e.y + e.h))}" width="${n(e.w)}" height="${n(e.h)}" href="${esc(e.href)}" preserveAspectRatio="xMidYMid meet" data-layer="${e.layer || 'FRAME'}"${tag}/>`);
+     }
+   }
+ 
+diff --git a/src/engine/drawings/views.js b/src/engine/drawings/views.js
+index 691581a..a9bd019 100644
+--- a/src/engine/drawings/views.js
++++ b/src/engine/drawings/views.js
+@@ -86,7 +86,9 @@ export function buildCarcassElevation(result, {
+   // ── legs, from the engine's own layout ──
+   const legs = result.assemblies.legs;
+   const legHeight = result.assemblies.carcass.legHeight || 0;
+-  if (legs && legHeight > 0) {
++  // T71: the set draws its own legs (plate, stem, foot, as the scene does) and
++  // asks this view for none; `true` and `false` keep exactly what they drew.
++  if (legs && legHeight > 0 && legSymbol !== 'none') {
+     // ─── TURN 43 (CLAUDE.md F3): A LEG IS A LEG, NOT A BRICK ───────────────
+     // The owner: *"nóżki to jakieś klocki zamiast ładnej nóżki."* An
+     // adjustable leg is a top plate, a stem and a foot; the bare rectangle
+diff --git a/src/engine/profile.js b/src/engine/profile.js
+index e2eb0b8..8d5656d 100644
+--- a/src/engine/profile.js
++++ b/src/engine/profile.js
+@@ -4021,6 +4021,57 @@ export const DEFAULT_CABINET_PROFILE = {
+       scaleLabel: 'No Scale',
+     },
+ 
++    // ─── T71: THE SHEET SET, ONE LAW FOR EVERY ARKUSZ ─────────────────────
++    //
++    // The owner, 21.09.2026, with the Skylon set for 3-7 Herbal Hill in hand:
++    // *"nasze w CC teraz się nakładają, a tutaj jest wszystko osobno"*, and
++    // *"żeby tylko odzwierciedlało rzeczywistość, nóżki żeby były takie jak
++    // wszędzie"*. Every number below is PAPER millimetres on an A3 landscape
++    // sheet. The zones are fixed, so nothing can enter another zone, which is
++    // the whole reason nothing on these sheets overlaps: a drawing is placed in
++    // the middle, the chains hang in their own bands, the column and the title
++    // strip are where they always are.
++    set: {
++      format: 'A3',
++      margin: 10,             // the frame, in from the paper edge
++      titleHeight: 32,        // the title strip across the whole width of the frame
++      columnWidth: 62,        // key plan, legend, notes, down the right
++      captionHeight: 18,      // the view's own caption, top left of the drawing box
++      band: 26,               // the dimension band on every side of the object
++      chainFirst: 8,          // the inner chain, off the object
++      chainSecond: 17,        // the outer chain (totals)
++      chainThird: 26,
++      textHeight: 2.5,        // every dimension figure, on paper, whatever the scale
++      labelHeight: 2.2,       // captions on the drawing (D/W, FRIDGE, ceiling)
++      unitNumberHeight: 3.4,  // the green number, on paper
++      minTextHeight: 2.0,
++      // The ladder the set prints when the drawing lands on a rung; otherwise
++      // the title block says NTS and the drawing fills the object area.
++      scales: [10, 15, 20, 25, 50],
++      fillMax: 0.96,
++      // Where the two plan cuts go, above FFL: through the base run's doors
++      // and through the wall run's doors. Both are read off the site as a
++      // joiner reads them, so a 720 wall unit hung at 1380 is cut at 1700.
++      planCut: { base: 400, wall: 1700 },
++      // The title block's seven cells, left to right, and what each carries.
++      titleCells: [44, 86, 78, 96, 40, 28, 28],
++      statuses: [['A', 'Preliminary'], ['B', 'For approval'], ['C', 'For production']],
++      // The workshop's own name on every sheet. The address and contact lines
++      // are read from Settings (`project.titleBlock.company`) when they are
++      // there, and these are what a sheet says until they are.
++      company: {
++        name: 'CABINET CORE',
++        tagline: '',
++        lines: [],
++      },
++      // The colour a masked number stands on, and the hatch pitch of a cut
++      // wall, in paper mm.
++      hatchPitch: 2.2,
++      // The perspective: eye height and how far into the room the camera
++      // stands, both in mm of the room.
++      perspective: { eyeHeight: 1650, standOff: 5200, leftOffset: 2000 },
++    },
++
+     // ─── The project booklet (turn 7, CLAUDE.md F1) ───
+     booklet: {
+       // The cover: a list of the units in the project, so the first page
+@@ -5353,6 +5404,13 @@ export function migrateCabinetProfile(profile) {
+           ? profile.drawings.wallDrawing.titleRows
+           : D.drawings.wallDrawing.titleRows,
+       },
++      // T71: the sheet set's law, key by key. The zones and the ladder are
++      // the APP'S (a stored profile cannot outvote the layout that was drawn
++      // and approved); what a workshop tunes is its own name block.
++      set: {
++        ...D.drawings.set,
++        company: { ...D.drawings.set.company, ...profile.drawings?.set?.company },
++      },
+     },
+     room: { ...D.room, ...profile.room },
+     // Turn 31 (CLAUDE.md F6): key by key, so a profile saved before Check v1
+diff --git a/src/lib/drawingExport.js b/src/lib/drawingExport.js
+index 83963bb..71497d2 100644
+--- a/src/lib/drawingExport.js
++++ b/src/lib/drawingExport.js
+@@ -152,15 +152,57 @@ function drawSheet(doc, sheet) {
+     if (e.kind === 'line') {
+       doc.line(e.x1, flip(e.y1), e.x2, flip(e.y2));
+     } else if (e.kind === 'rect') {
+-      doc.rect(e.x, flip(e.y + e.h), e.w, e.h, 'S');
++      // T71: a filled rect fills; everything older strokes exactly as before.
++      if (e.fill) {
++        const [fr, fg, fb] = e.fill === 'white' ? [255, 255, 255] : hexToRgb(e.fill);
++        doc.setFillColor(fr, fg, fb);
++        doc.rect(e.x, flip(e.y + e.h), e.w, e.h, e.noStroke ? 'F' : 'FD');
++      } else {
++        doc.rect(e.x, flip(e.y + e.h), e.w, e.h, 'S');
++      }
+     } else if (e.kind === 'circle') {
+       doc.circle(e.cx, flip(e.cy), e.r, 'S');
++    } else if (e.kind === 'poly') {
++      // T71: a closed run of points; filled where the sheet says so (the
++      // perspective's faces, the arrowheads). `lines` takes deltas.
++      const pts = e.pts || [];
++      if (pts.length >= 2) {
++        const [x0, y0] = pts[0];
++        const deltas = [];
++        for (let i = 1; i < pts.length; i += 1) deltas.push([pts[i][0] - pts[i - 1][0], -(pts[i][1] - pts[i - 1][1])]);
++        let style = 'S';
++        if (e.fill) {
++          const [fr, fg, fb] = e.fill === 'white' ? [255, 255, 255] : hexToRgb(e.fill);
++          doc.setFillColor(fr, fg, fb);
++          style = e.noStroke ? 'F' : 'FD';
++        }
++        doc.lines(deltas, x0, flip(y0), [1, 1], style, !e.open);
++      }
++    } else if (e.kind === 'image' && e.href) {
++      // T71: the render on the visualisation sheet. A data URL from the scene;
++      // anything jsPDF cannot read is skipped rather than failing the booklet.
++      try {
++        doc.addImage(e.href, e.x, flip(e.y + e.h), e.w, e.h);
++      } catch (err) {
++        // eslint-disable-next-line no-console
++        console.warn('[drawings] image skipped', err);
++      }
+     } else if (e.kind === 'text') {
+       if (typeof doc.setLineDashPattern === 'function') doc.setLineDashPattern([], 0);
+       // jsPDF sizes text in POINTS whatever the document unit is.
+       doc.setFontSize(e.height * 2.8346);
+-      const opts = { align: e.align === 'left' ? 'left' : 'center', baseline: 'middle' };
++      const opts = { align: e.align === 'left' ? 'left' : (e.align === 'right' ? 'right' : 'center'), baseline: 'middle' };
+       if (e.rotate) opts.angle = -e.rotate;
++      // T71: a masked text stands on white, so a number can sit on a line.
++      if (e.mask && !e.rotate) {
++        const mw = String(e.text).length * e.height * 0.62 + e.height * 0.6;
++        const mh = e.height * 1.3;
++        const mx = e.align === 'left' ? e.x - e.height * 0.3 : (e.align === 'right' ? e.x - mw + e.height * 0.3 : e.x - mw / 2);
++        doc.setFillColor(255, 255, 255);
++        doc.rect(mx, flip(e.y) - mh / 2, mw, mh, 'F');
++      }
++      if (e.colour) { const [cr, cg, cb] = hexToRgb(e.colour); doc.setTextColor(cr, cg, cb); }
++      doc.setFont(undefined, e.weight === 'bold' ? 'bold' : 'normal');
+       doc.text(String(e.text), e.x, flip(e.y), opts);
+     }
+   }
+-- 
+2.43.0
+

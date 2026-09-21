@@ -1,0 +1,442 @@
+From e4afb969d49b01397b9e47d47c4df48fa986c67e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 21 Sep 2026 16:44:45 +0100
+Subject: [PATCH 5/8] T71 F6 F7: the perspective, the cover, the cut list, the
+ visualisation
+
+setPerspective: a pinhole camera at eye height in the room; the engine's boxes (units
+with fronts, plinths, end panels, worktops) painted farthest first and white-filled so a
+nearer box covers what stands behind it; handles and unit numbers; NTS. Painter's
+order, not a hidden-line pass, which is exact for boxes in a row along one wall.
+setPaper: the cover (title, the job in one line, the sheet index, the revisions, the
+conventions, the general notes, the picture fitted into its frame), the cut list
+(every panel per unit from result.panels, fronts in magenta, paged down four columns
+with cutListPages, the totals on the last sheet), the visualisation (the render in a
+frame at its own aspect, the finishes beside it, or the sentence saying what it waits
+for).
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01UMSCbqdi85whfyRQS2gqQ2
+---
+ src/engine/drawings/setPaper.js       | 261 ++++++++++++++++++++++++++
+ src/engine/drawings/setPerspective.js | 140 ++++++++++++++
+ 2 files changed, 401 insertions(+)
+ create mode 100644 src/engine/drawings/setPaper.js
+ create mode 100644 src/engine/drawings/setPerspective.js
+
+diff --git a/src/engine/drawings/setPaper.js b/src/engine/drawings/setPaper.js
+new file mode 100644
+index 0000000..031151f
+--- /dev/null
++++ b/src/engine/drawings/setPaper.js
+@@ -0,0 +1,261 @@
++// ─── T71 · THE PAPER SHEETS: COVER, CUT LIST, VISUALISATION ─────────────────
++//
++// Three sheets of the set carry no scaled drawing: the cover (what this job
++// is, which sheets it has, which revision), the cut list (every panel the
++// engine published, per unit, with the totals the estimate is priced on) and
++// the visualisation (the render, with the finishes beside it). They are laid
++// in PAPER millimetres straight into the drawing box `setSheet.js` hands
++// them, Y up.
++//
++// Pure functions: no React, no store imports.
++
++import { entLine as line, entRect as rect, entText as text } from './primitives.js';
++import { formatMm } from '../format.js';
++import { SET_LEGEND, SET_NOTES, wrapWords } from './setSheet.js';
++
++const muted = (x, y, s, h = 2, align = 'left', extra = {}) => ({ ...text('SHEET_MUTED', x, y, s, h, align), ...extra });
++const ink = (x, y, s, h = 2.4, align = 'left', extra = {}) => ({ ...text('FRAME', x, y, s, h, align), ...extra });
++
++/**
++ * THE COVER: title, the job in one line, the sheet index, the revisions, the
++ * conventions and the general notes. The picture is handed in by the set as
++ * a builder `(box) => entities` in paper mm (the first wall's perspective,
++ * fitted), as ready entities, or left empty.
++ */
++export function buildCover(zones, {
++  project = {}, title = {}, sheets = [], revisions = [], picture = null, notes = SET_NOTES,
++}) {
++  const b = zones.box;
++  const top = b.y + b.h;
++  const left = b.x + 6;
++  const right = b.x + b.w - 6;
++  const out = [];
++  const name = String(project.name || 'Untitled project');
++  out.push(muted(left, top - 30, String(title.kicker || '').toUpperCase(), 4, 'left', { tracking: 0.6 }));
++  out.push(ink(left, top - 42, name, 12, 'left', { weight: 'bold' }));
++  const meta = [
++    title.client ? `Client ${title.client}` : null,
++    title.job ? `Job ${title.job}` : null,
++    title.rev ? `Rev ${title.rev}` : null,
++    title.date ? `Issued ${title.date}` : null,
++    title.statusName ? `Status ${title.status}, ${title.statusName}` : null,
++  ].filter(Boolean).join(' · ');
++  out.push(muted(left, top - 52, meta, 3));
++  out.push({ ...line('FRAME', left, top - 58, right, top - 58), pen: 'VISIBLE' });
++
++  // The picture, in the left two thirds: the set hands in a builder that
++  // lays the perspective into this box (`fitEntities`), or nothing.
++  const pic = { x: left, y: b.y + 60, w: Math.min(200, b.w * 0.5), h: 118 };
++  const drawn = typeof picture === 'function' ? (picture(pic) || []) : (Array.isArray(picture) ? picture : []);
++  if (drawn.length) {
++    out.push(...drawn);
++  } else {
++    out.push({ ...rect('SHEET_MUTED', pic.x, pic.y, pic.w, pic.h), pen: 'FINE', hidden: true });
++    out.push(muted(pic.x + pic.w / 2, pic.y + pic.h / 2, 'perspective, sheet 06', 2.4, 'centre'));
++  }
++  out.push(muted(left, pic.y - 4, 'Perspective as on its own sheet. The visualisation sheet carries the render.', 2));
++
++  // The index, on the right.
++  const ix = left + 212;
++  const iw = right - ix;
++  let y = top - 66;
++  out.push(muted(ix, y, 'SHEET INDEX', 2.4, 'left', { tracking: 0.4 }));
++  y -= 3;
++  out.push({ ...line('FRAME', ix, y, ix + iw, y), pen: 'THIN' });
++  const cols = [ix, ix + 12, ix + iw - 56, ix + iw - 22];
++  y -= 4;
++  ['No', 'Drawing', 'Scale', 'Rev'].forEach((h, i) => out.push(muted(cols[i], y, h, 2)));
++  for (const s of sheets) {
++    y -= 5.2;
++    out.push(ink(cols[0], y, s.no, 2.4, 'left', { weight: 'bold' }));
++    out.push(ink(cols[1], y, s.name, 2.4));
++    out.push(muted(cols[2], y, s.scale || '', 2.2));
++    out.push(muted(cols[3], y, s.rev || title.rev || '', 2.2));
++    out.push({ ...line('SHEET_MUTED', ix, y - 2.6, ix + iw, y - 2.6), pen: 'FINE' });
++  }
++  y -= 10;
++  out.push(muted(ix, y, 'REVISIONS', 2.4, 'left', { tracking: 0.4 }));
++  y -= 3;
++  out.push({ ...line('FRAME', ix, y, ix + iw, y), pen: 'THIN' });
++  const rc = [ix, ix + 12, ix + 36, ix + iw - 22];
++  y -= 4;
++  ['Rev', 'Date', 'Description', 'By'].forEach((h, i) => out.push(muted(rc[i], y, h, 2)));
++  const revs = revisions.length ? revisions : [{ rev: title.rev || 'A', date: title.date || '', description: 'First issue', by: title.drawn || '' }];
++  for (const r of revs) {
++    y -= 5.2;
++    out.push(ink(rc[0], y, String(r.rev || ''), 2.3, 'left', { weight: 'bold' }));
++    out.push(ink(rc[1], y, String(r.date || ''), 2.3));
++    out.push(ink(rc[2], y, String(r.description || ''), 2.3));
++    out.push(ink(rc[3], y, String(r.by || ''), 2.3));
++    out.push({ ...line('SHEET_MUTED', ix, y - 2.6, ix + iw, y - 2.6), pen: 'FINE' });
++  }
++
++  // Conventions and notes along the bottom.
++  const cy = b.y + 46;
++  out.push(muted(left, cy, 'DRAWING CONVENTIONS', 2.4, 'left', { tracking: 0.4 }));
++  SET_LEGEND.forEach(([kind, layer, label], i) => {
++    const yy = cy - 6 - i * 4.2;
++    if (kind === 'line') out.push({ ...line(layer, left, yy, left + 8, yy), pen: 'VISIBLE' });
++    if (kind === 'dash') out.push({ ...line(layer, left, yy, left + 8, yy), pen: 'HIDDEN', hidden: true });
++    if (kind === 'text') out.push({ ...text(layer, left + 4, yy, '01', 2.4), weight: 'bold' });
++    if (kind === 'box') out.push({ ...rect(layer, left, yy - 1.5, 8, 3), pen: 'THIN' });
++    out.push(ink(left + 10.5, yy, label, 2));
++  });
++  const nx = left + 96;
++  out.push(muted(nx, cy, 'GENERAL NOTES', 2.4, 'left', { tracking: 0.4 }));
++  let ny = cy - 6;
++  notes.forEach((n, i) => { out.push(ink(nx, ny, `${i + 1}. ${n}`, 2)); ny -= 3.6; });
++  return out;
++}
++
++/** One unit's rows for the cut list: the carcass panels, then the fronts. */
++export function cutRows(result) {
++  const carcass = []; const fronts = [];
++  for (const p of result.panels || []) {
++    const row = { id: p.id, part: p.part, qty: Number(p.qty) || 1, w: p.w, h: p.h, t: p.thickness, edging: p.edging?.len_m || 0, area: p.area_m2 || 0 };
++    if (p.material_role === 'front') fronts.push(row); else carcass.push(row);
++  }
++  return { carcass, fronts };
++}
++
++/** The block a unit takes on the cut list: its rows and its paper height. */
++function cutBlock(e, rowH) {
++  const rows = cutRows(e.result);
++  return {
++    num: String(e.unit.params?.unit_num ?? e.result.unitNum ?? ''),
++    type: `${e.unit.type} ${formatMm(e.unit.params?.width)}`,
++    rows,
++    totals: e.result.totals || {},
++    h: 12 + (rows.carcass.length + rows.fronts.length) * rowH + 9,
++  };
++}
++
++const CUT_ROW = 3.0;
++const CUT_COLS = 4;
++
++/**
++ * HOW THE CUT LIST PAGINATES: blocks flow down four columns, a block that does
++ * not fit the column starts the next, and a block that does not fit the last
++ * column starts the next sheet. The totals take the bottom of the last sheet.
++ * Exposed so the set can bind as many cut-list sheets as the job needs.
++ */
++export function cutListPages(zones, entries) {
++  const b = zones.box;
++  const top = b.y + b.h - 22;
++  const floor = b.y + 6;
++  const totalsH = 22;
++  const pages = [];
++  let page = []; let col = 0; let y = top;
++  const list = entries.filter((e) => e?.unit && e?.result);
++  list.forEach((e, i) => {
++    const block = cutBlock(e, CUT_ROW);
++    const last = i === list.length - 1;
++    const limit = floor + (last ? totalsH : 0);
++    if (y - block.h < limit) {
++      col += 1; y = top;
++      if (col >= CUT_COLS) { pages.push(page); page = []; col = 0; }
++    }
++    page.push({ ...block, col, y });
++    y -= block.h + 2;
++  });
++  if (page.length || !pages.length) pages.push(page);
++  return pages;
++}
++
++/**
++ * THE CUT LIST, one sheet: a block per unit, every panel with its size, the
++ * fronts in magenta, and on the last sheet the totals the whole job adds up
++ * to. Nothing here is typed: `result.panels` and `result.totals` are the
++ * engine's, the same numbers the CNC sheet and the BOM carry.
++ */
++export function buildCutList(zones, { entries = [], page = null, showTotals = true }) {
++  const b = zones.box;
++  const left = b.x + 6;
++  const out = [];
++  const colW = (b.w - 12) / CUT_COLS;
++  const blocks = page || cutListPages(zones, entries)[0] || [];
++  for (const bl of blocks) {
++    const x = left + bl.col * colW;
++    const w = colW - 4;
++    const y = bl.y;
++    const h = bl.h;
++    out.push({ ...rect('SHEET_MUTED', x, y - h + 3, w, h - 3), pen: 'FINE' });
++    out.push({ ...rect('SHEET_MUTED', x, y - 3, w, 6), fill: '#f2f2f2', noStroke: true });
++    out.push({ ...text('UNIT_NUMBER', x + 2, y, `UNIT ${bl.num}`, 2.6, 'left'), weight: 'bold' });
++    out.push(ink(x + 20, y, bl.type, 2.1));
++    let yy = y - 8;
++    const put = (r, layer) => {
++      out.push({ ...text(layer, x + 2, yy, r.id, 2.0, 'left') });
++      out.push({ ...text('SHEET_MUTED', x + 34, yy, `${r.qty} x`, 2.0, 'right') });
++      out.push({ ...text(layer, x + 37, yy, `${formatMm(r.w)} x ${formatMm(r.h)}`, 2.0, 'left') });
++      out.push({ ...text('SHEET_MUTED', x + w - 2, yy, `t${formatMm(r.t)}`, 1.7, 'right') });
++      yy -= CUT_ROW;
++    };
++    bl.rows.carcass.forEach((r) => put(r, 'FRAME'));
++    bl.rows.fronts.forEach((r) => put(r, 'DOORS'));
++    const t = bl.totals;
++    out.push({ ...line('SHEET_MUTED', x, y - h + 9, x + w, y - h + 9), pen: 'FINE' });
++    const n = t.panels_true_incl_railpart ?? bl.rows.carcass.length;
++    out.push(muted(x + 2, y - h + 6, `${n} carcass panel${n === 1 ? '' : 's'} · ${(t.board_area_m2 || 0).toFixed(2)} m² · edging ${(t.edging_m || 0).toFixed(2)} m · fronts ${(t.front_area_m2 || 0).toFixed(2)} m²`, 1.9));
++  }
++  if (showTotals) {
++    const sum = (k) => entries.reduce((a, e) => a + (Number(e?.result?.totals?.[k]) || 0), 0);
++    const ty = b.y + 6;
++    out.push({ ...rect('FRAME', left, ty, b.w - 12, 16), pen: 'VISIBLE' });
++    out.push({ ...rect('SHEET_MUTED', left, ty + 10, b.w - 12, 6), fill: '#f2f2f2', noStroke: true });
++    out.push(ink(left + 2, ty + 13, `TOTALS · ${entries.length} units`, 2.6, 'left', { weight: 'bold' }));
++    const items = [
++      ['Carcass board', `${sum('board_area_m2').toFixed(2)} m²`],
++      ['Fronts', `${sum('front_area_m2').toFixed(2)} m²`],
++      ['Edging', `${sum('edging_total_m').toFixed(1)} m`],
++      ['Hinges', `${sum('hinges')}`],
++      ['Legs', `${sum('legs')}`],
++      ['Runner pairs', `${sum('runner_pairs')}`],
++    ];
++    items.forEach(([k, v], i) => {
++      const x = left + 4 + i * ((b.w - 20) / items.length);
++      out.push(muted(x, ty + 5.5, k, 2));
++      out.push(ink(x + 26, ty + 5.5, v, 2.6, 'left', { weight: 'bold' }));
++    });
++  }
++  return out;
++}
++
++/**
++ * THE VISUALISATION: the render in a frame, the finishes beside it. `image`
++ * is a data URL from the scene (the fixed export rig); without one the frame
++ * says what it is waiting for, and the sheet still binds.
++ */
++/** The frame the render fills on the visualisation sheet, in paper mm. */
++export function visualPictureBox(zones) {
++  const b = zones.box;
++  return { x: b.x + 6, y: b.y + 8, w: b.w - 6 - 70, h: b.h - zones.captionHeight - 12 };
++}
++
++export function buildVisual(zones, { image = null, finishes = [], note = '' }) {
++  const b = zones.box;
++  const out = [];
++  const pic = visualPictureBox(zones);
++  out.push({ ...rect('FRAME', pic.x, pic.y, pic.w, pic.h), pen: 'VISIBLE' });
++  if (image) {
++    out.push({ kind: 'image', layer: 'FRAME', x: pic.x + 0.5, y: pic.y + 0.5, w: pic.w - 1, h: pic.h - 1, href: image });
++  } else {
++    out.push(muted(pic.x + pic.w / 2, pic.y + pic.h / 2 + 3, 'RENDER', 4, 'centre', { tracking: 0.5 }));
++    out.push(muted(pic.x + pic.w / 2, pic.y + pic.h / 2 - 3, 'Captured from the 3D scene with the fixed export rig when the set is exported from the app.', 2.2, 'centre'));
++  }
++  const fx = pic.x + pic.w + 6;
++  let fy = pic.y + pic.h - 4;
++  out.push(muted(fx, fy, 'FINISHES', 2.2, 'left', { tracking: 0.35 }));
++  fy -= 6;
++  for (const f of finishes) {
++    out.push({ ...rect('SHEET_MUTED', fx, fy - 6, 10, 8), fill: f.colour || '#e6e6e6', pen: 'FINE' });
++    out.push(ink(fx + 13, fy - 1, String(f.name || ''), 2.2, 'left', { weight: 'bold' }));
++    out.push(muted(fx + 13, fy - 4.4, String(f.desc || ''), 1.9));
++    fy -= 12;
++  }
++  if (note) {
++    const maxChars = Math.floor((b.x + b.w - fx - 2) / (1.9 * 0.55));
++    wrapWords(note, maxChars).forEach((row, i) => out.push(muted(fx, fy - 2 - i * 2.9, row, 1.9)));
++  }
++  return out;
++}
+diff --git a/src/engine/drawings/setPerspective.js b/src/engine/drawings/setPerspective.js
+new file mode 100644
+index 0000000..68a8e79
+--- /dev/null
++++ b/src/engine/drawings/setPerspective.js
+@@ -0,0 +1,140 @@
++// ─── T71 · THE PERSPECTIVE: THE SAME BOXES, SEEN FROM THE ROOM ──────────────
++//
++// The owner's set closes with a "perspective view", an elevation with its
++// ends drawn back at an angle. This is the real thing: a pinhole camera at
++// eye height (`set.perspective`), standing in the room, looking at the run,
++// and every box on the picture is a box the engine already published: a
++// unit's carcass with its fronts, the plinth, the worktop, the infills. No
++// hidden-line pass: the faces are painted farthest first, each filled with
++// the paper colour, so a nearer box covers what stands behind it. For boxes
++// standing in a row along a wall that is exactly right, and it is the whole
++// of the geometry this sheet needs.
++//
++// It is a picture, so nothing on it is dimensioned: NTS in the title block.
++//
++// Pure functions: no React, no store imports.
++
++import { entLine as line, entPoly as poly, entText as text } from './primitives.js';
++import { handleMarks } from './wallElevation.js';
++import { roomWalls } from '../room.js';
++
++const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
++const norm = (v) => { const l = Math.hypot(...v) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
++const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
++const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
++
++/** A camera at P looking at T. `project` returns picture x, y (Y up) and distance. */
++export function makeCamera(P, T) {
++  const fw = norm(sub(T, P));
++  const rt = norm(cross(fw, [0, 1, 0]));
++  const up = cross(rt, fw);
++  return {
++    P,
++    project: (Q) => {
++      const v = sub(Q, P);
++      const z = Math.max(1, dot(v, fw));
++      return [1000 * dot(v, rt) / z, 1000 * dot(v, up) / z, Math.hypot(...v)];
++    },
++    sees: (n, c) => dot(n, sub(P, c)) > 0,
++  };
++}
++
++function boxFaces(b) {
++  const { x0, x1, y0, y1, z0, z1 } = b;
++  return [
++    { kind: 'front', n: [0, 0, 1], pts: [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]] },
++    { kind: 'top', n: [0, 1, 0], pts: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]] },
++    { kind: 'bottom', n: [0, -1, 0], pts: [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]] },
++    { kind: 'left', n: [-1, 0, 0], pts: [[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]] },
++    { kind: 'right', n: [1, 0, 0], pts: [[x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0]] },
++  ];
++}
++
++/**
++ * THE BOXES OF ONE WALL, in the wall's frame (x along, y up, z into the room).
++ * Read off the members' published panels: the carcass box, the fronts, the
++ * plinth; and the design layer's worktops.
++ */
++export function runBoxes(group, { worktops = [], profile }) {
++  const clearance = Math.max(0, Number(profile.room?.wallBackClearance) || 0);
++  const boxes = [];
++  for (const m of group.members) {
++    const r = m.result;
++    const W = Number(r.params.width) || 0;
++    const H = Number(r.params.height) || 0;
++    const D = Number(r.params.depth) || 0;
++    const fronts = (r.panels || []).filter((p) => p.box && (p.part === 'FRONT' || p.part === 'DRAWER-FRONT'));
++    const frontOut = Math.max(D, ...fronts.map((p) => p.box.z + p.box.d));
++    boxes.push({ tag: 'unit', member: m, x0: m.x, x1: m.x + W, y0: m.base, y1: m.base + H, z0: clearance, z1: clearance + frontOut, fronts, W, H });
++    const plinth = (r.panels || []).find((p) => p.role === 'plinth' && p.box);
++    if (plinth) boxes.push({ tag: 'plinth', x0: m.x + plinth.box.x, x1: m.x + plinth.box.x + plinth.box.w, y0: 0, y1: m.base, z0: clearance, z1: clearance + plinth.box.z + plinth.box.d });
++    for (const p of (r.panels || []).filter((q) => q.box && (q.role === 'end_panel' || q.role === 'infill'))) {
++      boxes.push({ tag: 'panel', x0: m.x + p.box.x, x1: m.x + p.box.x + p.box.w, y0: m.base + p.box.y, y1: m.base + p.box.y + p.box.h, z0: clearance + p.box.z, z1: clearance + p.box.z + p.box.d });
++    }
++  }
++  for (const w of worktops) boxes.push({ tag: 'worktop', x0: w.x, x1: w.x + w.w, y0: w.y, y1: w.y + w.h, z0: 0, z1: w.d });
++  return boxes;
++}
++
++/**
++ * BUILD THE PICTURE of one wall. Returns entities in PICTURE millimetres
++ * (a projection, so `layoutSetSheet` fits it as NTS), Y up.
++ */
++export function buildPerspective(group, { room = null, worktops = [], profile, ctx }) {
++  const S = profile.drawings.set.perspective;
++  const boxes = runBoxes(group, { worktops, profile });
++  const span = group.to - group.from;
++  const top = Math.max(group.top, ...worktops.map((w) => w.y + w.h));
++  const P = [group.from - S.leftOffset, S.eyeHeight, S.standOff];
++  const T = [group.from + span * 0.55, top * 0.5, 0];
++  const cam = makeCamera(P, T);
++  const faces = [];
++  for (const b of boxes) {
++    for (const f of boxFaces(b)) {
++      const c = f.pts.reduce((a, p) => [a[0] + p[0] / 4, a[1] + p[1] / 4, a[2] + p[2] / 4], [0, 0, 0]);
++      if (cam.sees(f.n, c)) faces.push({ ...f, box: b, dist: Math.hypot(c[0] - P[0], c[1] - P[1], c[2] - P[2]) });
++    }
++  }
++  faces.sort((a, b) => b.dist - a.dist);
++  const Sx = (Q) => { const p = cam.project(Q); return [p[0], p[1]]; };
++  const entities = [];
++
++  // The building behind: the floor line, the wall's two ends, the ceiling.
++  const walls = room ? roomWalls(room) : [];
++  const wall = walls[group.wall];
++  const ceiling = Number(room?.height) || 0;
++  const x0 = wall ? 0 : group.from - 300;
++  const x1 = wall ? wall.width : group.to + 300;
++  const L = (a, b) => { const [ax, ay] = Sx(a); const [bx, by] = Sx(b); return { ...line('BUILDING', ax, ay, bx, by), pen: 'THIN' }; };
++  entities.push(L([x0 - 200, 0, 0], [x1 + 200, 0, 0]));
++  if (ceiling > 0) entities.push(L([x0 - 200, ceiling, 0], [x1 + 200, ceiling, 0]));
++  if (wall) {
++    entities.push(L([x0, 0, 0], [x0, ceiling || top, 0]), L([x1, 0, 0], [x1, ceiling || top, 0]));
++    entities.push(L([x0, 0, 0], [x0, 0, 900]), L([x1, 0, 0], [x1, 0, 900]));
++  }
++
++  for (const f of faces) {
++    const q = f.pts.map(Sx);
++    const layer = f.box.tag === 'worktop' ? 'CARCASE' : 'CARCASE';
++    entities.push({ ...poly(layer, q, { fill: 'white' }), pen: f.box.tag === 'plinth' ? 'THIN' : 'VISIBLE' });
++    if (f.kind === 'front' && f.box.tag === 'unit') {
++      const b = f.box;
++      const z = b.z1 + 0.5;
++      for (const p of b.fronts) {
++        const fx0 = b.x0 + p.box.x; const fx1 = fx0 + p.box.w;
++        const fy0 = b.y0 + p.box.y; const fy1 = fy0 + p.box.h;
++        const fq = [Sx([fx0, fy0, z]), Sx([fx1, fy0, z]), Sx([fx1, fy1, z]), Sx([fx0, fy1, z])];
++        entities.push({ ...poly('DOORS', fq), pen: 'VISIBLE' });
++      }
++      // Handles, where the engine drills them, standing 15 off the face.
++      for (const h of handleMarks(b.member.result, profile)) {
++        if (h.kind !== 'line') continue;
++        const a = Sx([b.x0 + h.x1, b.y0 + h.y1, z + 15]); const c = Sx([b.x0 + h.x2, b.y0 + h.y2, z + 15]);
++        entities.push({ ...line('HANDLES', a[0], a[1], c[0], c[1]), pen: 'VISIBLE' });
++      }
++      const [nx, ny] = Sx([(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, z]);
++      entities.push({ ...text('UNIT_NUMBER', nx, ny, String(b.member.unit.params?.unit_num ?? ''), ctx.unitNumberHeight), paperHeight: ctx.unitNumberHeight / ctx.scale, mask: true, weight: 'bold' });
++    }
++  }
++  return { entities };
++}
+-- 
+2.43.0
+

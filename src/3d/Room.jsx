@@ -98,7 +98,7 @@ function bounce(hex, profile, surface) {
  * A full wall passes 0 and its own width and nothing changes for it.
  */
 function Wall({
-  wall, height, openings, centre, showLabel, profile, onBackground, slopes = [],
+  wall, height, openings, centre, showLabel, profile, onBackground, onBackgroundDouble = null, slopes = [],
   xOffset = 0, spanWidth = null, capY = null, planElements = [],
 }) {
   const ref = useRef(null);
@@ -251,6 +251,17 @@ function Wall({
           receiveShadow
           raycast={raycast}
           onPointerDown={(e) => { if (backgroundHit(e)) onBackground?.(e); }}
+          // ─── TURN 72 (CLAUDE.md F7): …AND A 2KLIK ON THE WALL IS AN EXIT ──
+          //
+          // The owner, of the lights mode: *"nie powinno wyłączyć aż do
+          // momentu, że albo wyłączę sam w menu, albo zrobię 2klik na innym
+          // elemencie lub na ścianie."*
+          //
+          // A SINGLE click on the wall still does exactly what it has done
+          // since turn 11 — it drops the selection and nothing else. This is
+          // the SECOND gesture, and it is ADDITIVE: a caller that passes
+          // nothing gets the wall it always had, which is why PRO is untouched.
+          onDoubleClick={(e) => { if (backgroundHit(e)) onBackgroundDouble?.(e); }}
         >
           <meshLambertMaterial
             color={tone(profile, 'wall', COLORS.wall)}
@@ -353,7 +364,10 @@ function Wall({
 }
 
 export default function Room({
-  room, showLabels = true, profile = null, onBackground = null, scope = 'room',
+  room, showLabels = true, profile = null, onBackground = null,
+  // T72 F7 · the SECOND gesture on the room's own surfaces. Null by default,
+  // so a caller that does not ask for it gets the room it always had.
+  onBackgroundDouble = null, scope = 'room',
 }) {
   // A left click on the room is a click on NOTHING: it clears the selection and
   // shuts any open menu (turn 11, CLAUDE.md F1.1). Middle and right buttons are
@@ -361,6 +375,11 @@ export default function Room({
   const background = useMemo(() => (onBackground
     ? (e) => { if (e.button === 0) onBackground(); }
     : undefined), [onBackground]);
+  // The same left-button-only rule for the second gesture: orbiting and the
+  // context menu must not count as a double click on the wall.
+  const backgroundDouble = useMemo(() => (onBackgroundDouble
+    ? (e) => { if ((e.button ?? 0) === 0) onBackgroundDouble(); }
+    : undefined), [onBackgroundDouble]);
   // ─── Turn 14 (CLAUDE.md F1.5b): "One wall" means ONE WALL ─────────────────
   // The scope has decided which walls exist since turn 7 and the scene has
   // never been told. A vanity job drawn against one wall was shown standing in
@@ -552,6 +571,7 @@ export default function Room({
           showLabel={showLabels && !wall.stub}
           profile={profile}
           onBackground={background}
+          onBackgroundDouble={backgroundDouble}
         />
       ))}
 

@@ -303,7 +303,10 @@ test('F4 · the detail is a panel over the stage, slid in by a selection and out
   // T66 F3 · the flag is the same single flag; what it reads is the DOCK's own
   // route rather than a thin menu's component.
   assert.match(component, /data-open=\{open \? 'yes' : 'no'\}/);
-  assert.match(component, /const open = Boolean\(route\);/, 'OPEN stopped being one flag');
+  // T72 F7 · ONE FLAG still: the route, and the one surface that may stand in
+  // front of it. *"nie powinno wyłączyć aż do momentu, że albo wyłączę sam w
+  // menu, albo zrobię 2klik na innym elemencie lub na ścianie."*
+  assert.match(component, /const open = Boolean\(route\) && !lightsMode;/, 'OPEN stopped being one flag');
   assert.ok(!/EstimateDuty|add-another|detail-quote|detail-save/.test(component), 'the estimate duty is still in the panel');
   // The room mounts it INSIDE the stage column, and closes what the stage opened.
   const design = read('src/retail/design/DesignRoom.jsx');

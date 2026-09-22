@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef } from 'react';
 import Scene from '../../3d/Scene.jsx';
 import { parkCamera, readCamera, writeCamera } from '../../3d/cameraPresets.js';
 import { stageKeyAction } from './keys.js';
+// T72 F7 · lights mode is the lighting window being open, and the adapter is
+// the only place retail asks the store anything.
+import * as A from './adapter.js';
 // T63 F3 · PRO's only door into the front-gap repair: the rows over the canvas
 // (`src/components/FrontGapWarnings.jsx`, COPIED). Solid view only in PRO, and
 // the retail stage has no other view.
@@ -103,6 +106,17 @@ export default function Stage({
         onAddInside={onAddInside}
         onAddFirst={onAddFirst}
         hideInnerPlus={hideInnerPlus}
+        // ─── T72 F7 · 2KLIK ON THE WALL ENDS LIGHTS MODE ───────────────────
+        //
+        // The owner: *"nie powinno wyłączyć aż do momentu, że albo wyłączę sam
+        // w menu, albo zrobię 2klik na innym elemencie lub na ścianie."*
+        //
+        // The scene REPORTS the gesture (T37 F4c: nothing in the 3-D closes a
+        // modal) and this is the caller deciding what it means. It ends LIGHTS
+        // MODE and nothing else — a 2klik on the wall with an ordinary editor
+        // open is not one of the three exits he named, and the dock's own CLOSE
+        // × and the carcass click already answer that.
+        onBackgroundDouble={() => { if (A.lightsModeOn()) A.closeEditor(); }}
       />
       <FrontGapWarnings />
     </div>

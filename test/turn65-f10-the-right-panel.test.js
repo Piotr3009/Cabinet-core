@@ -42,7 +42,11 @@ test('F10 · the panel is one element at a time, and OPEN is a single flag', () 
   // route rather than a thin menu's component. A→B still never passes through
   // "closed", which is the whole of this law.
   assert.match(detail, /data-open=\{open \? 'yes' : 'no'\}/);
-  assert.match(detail, /const open = Boolean\(route\);/);
+  // T72 F7 · ONE FLAG still, and it is still the presence of a route — with
+  // the one thing that may stand in front of it: the lighting panel. *"nie
+  // powinno wyłączyć aż do momentu…"*  A→B still never passes through
+  // "closed", which is the whole of this law.
+  assert.match(detail, /const open = Boolean\(route\) && !lightsMode;/);
   assert.match(detail, /data-menu=\{open \? selection\.menu : ''\}/,
     'the panel does not say which menu it is showing');
   // T72 F1 · the dock answers in a THIRD shape now — retail's own chip block

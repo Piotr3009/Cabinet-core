@@ -120,15 +120,53 @@ export default function Detail(props) {
   // re-points itself at a sibling split segment through this very slot, and
   // that is its business, not the dock's.
   const modal = useUiStore((s) => s.modal);
+  // ─── T72 F7 · LIGHTS MODE STAYS ON ───────────────────────────────────────
+  //
+  // The owner, 22.09.2026:
+  //
+  //   *"po naciśnięciu LED wyłącza mi się funkcja lights i zaznacza mi drzwi,
+  //   a nie powinno; nie powinno wyłączyć aż do momentu, że albo wyłączę sam w
+  //   menu, albo zrobię 2klik na innym elemencie lub na ścianie."*
+  //
+  // `verify/t72/f7-probe.md` is the fact, and it convicts THIS EFFECT. Neither
+  // of the other two candidates touches the mode: the LED button only OPENS
+  // the panel, and `LightingPanel` is `sticky` — its ON and OFF write
+  // `design.lighting.on` and leave the window where it is. What ends lights
+  // mode is a SINGLE CLICK on a leaf: the stage writes `selectedElement`, the
+  // room resolves it to the `door` menu, and the line below then calls
+  // `ui.openModal('element')`, which REPLACES `lighting` (the nav has
+  // `pushModal` for a nested surface and this is not it).
+  //
+  // So the dock does not touch the slot while the lighting panel is standing.
+  // One gate, in the one handler the probe named, and every exit the owner
+  // listed still works:
+  //
+  //   the menu's own button   `ViewBar`'s LED toggles it (`DesignRoom`)
+  //   2klik on an element     the SCENE opens that element's window itself
+  //                           (`Scene.jsx onEditElement`), which replaces
+  //                           `lighting` — and on the next render this effect
+  //                           sees an ordinary modal and behaves as it always
+  //                           did
+  //   2klik on the wall       `Room`'s own second gesture (`Scene.jsx`)
+  //
+  // A single click inside the mode therefore never opens a door's editor. It
+  // still SELECTS, which is what `LightingPanel` is waiting for: its whole
+  // flow is *"click the shelf you want the LED under"*, and it reads the same
+  // `selectedElement` the stage writes.
+  const lightsMode = modal === 'lighting';
   useEffect(() => {
+    if (lightsMode) return;
     const ui = useUiStore.getState();
     if (name) { if (ui.modal !== name) ui.openModal(name, args); return; }
     if (DOCK_MODALS.includes(ui.modal)) ui.closeModal();
     // `args` is `key`'s own content; `key` is in the list so a re-point runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, key, modal]);
+  }, [name, key, modal, lightsMode]);
 
-  const open = Boolean(route);
+  // …and the panel does not slide in OVER the lighting window either: a client
+  // in lights mode who clicks a shelf is pointing at where the LED goes, not
+  // asking to edit the board.
+  const open = Boolean(route) && !lightsMode;
 
   return (
     <aside

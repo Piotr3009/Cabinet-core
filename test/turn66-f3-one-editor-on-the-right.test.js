@@ -86,7 +86,8 @@ test('F3 · a click on an ELEMENT docks its copied editor — and a swap never c
   // through "closed" — the swap is a re-render, not a mount.
   const detail = read('src/retail/design/Detail.jsx');
   assert.match(detail, /const route = selection \? dockFor\(selection\) : null;/);
-  assert.match(detail, /const open = Boolean\(route\);/);
+  // T72 F7 · one flag, one route, plus the lighting panel's own standing.
+  assert.match(detail, /const open = Boolean\(route\) && !lightsMode;/);
   assert.match(detail, /data-open=\{open \? 'yes' : 'no'\}/);
 });
 

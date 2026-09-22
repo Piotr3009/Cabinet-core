@@ -469,7 +469,11 @@ test('T63 · every copy is opened — the three by the dock, the rest beside the
 
   // THE LIGHTS BUTTON OPENS THE PANEL AND DOES NOT TOGGLE THE LIGHT.
   const room = uncomment(read('src/retail/design/DesignRoom.jsx'));
-  assert.match(room, /onLights=\{\(e\) => A\.openEditor\('lighting', \{ anchor: A\.anchorOf\(e\) \}\)\}/);
+  // T72 F7 · the same call, now the ON half of a toggle: *"nie powinno
+  // wyłączyć aż do momentu, że albo WYŁĄCZĘ SAM W MENU…"*  The claim below is
+  // untouched — the button opens PRO's panel and does NOT switch the light.
+  assert.match(room, /A\.openEditor\('lighting', \{ anchor: A\.anchorOf\(e\) \}\)/);
+  assert.match(room, /A\.lightsModeOn\(\)\s*\n?\s*\? A\.closeEditor\(\)/, 'the LED no longer closes it');
   assert.doesNotMatch(room, /onLights=\{\(\) => A\.setLighting/, 'LIGHTS still switches the light off');
 
   // The tiled EGGER modal is reachable from the FRONTS panel and the MATERIALS window.

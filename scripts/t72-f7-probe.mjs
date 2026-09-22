@@ -58,7 +58,16 @@ const door = (S().unitResult(unitId)?.panels || [])
  */
 const detailEffect = lineWith('src/retail/design/Detail.jsx', /if \(name\) \{ if \(ui\.modal !== name\) ui\.openModal\(name, args\); return; \}/);
 
+/**
+ * The effect's own GUARD, read out of the file rather than restated — so this
+ * probe reports what `Detail.jsx` does today and not what it did when the
+ * probe was written. Absent, the effect runs unguarded, which is what the
+ * first table found.
+ */
+const detailGuard = lineWith('src/retail/design/Detail.jsx', /^\s*if \(lightsMode\) return;$/);
+
 function runDetailEffect() {
+  if (detailGuard && U().modal === 'lighting') return '(the dock stands off)';
   const selected = U().selectedElement;
   const resolved = selected ? A.resolveSelection(selected) : null;
   const selection = resolved
@@ -121,6 +130,11 @@ const ROWS = steps.map((s) => [
   `lights mode ${s.lights ? 'ON' : 'OFF'}${s.selected ? ` · selected ${s.selected}` : ''}`,
 ]);
 
+// …and the two EXITS the owner named, which are asked of the code that owns
+// them: the button he pressed to get in, and the room's own second gesture.
+const ledToggle = lineWith('src/retail/design/DesignRoom.jsx', /A\.lightsModeOn\(\)/);
+const wallDouble = lineWith('src/retail/design/Stage.jsx', /onBackgroundDouble=\{\(\) => \{ if \(A\.lightsModeOn\(\)\)/);
+
 const culprit = steps[steps.length - 1].lights === false && steps[1].lights === true;
 const VERDICT = culprit
   ? [
@@ -140,7 +154,24 @@ const VERDICT = culprit
     'ONE HANDLER, and it is not the LED button: the dock opens an editor on a SINGLE',
     'click, where the owner\'s law for opening an editor is a 2klik.',
   ].join('\n')
-  : 'NOT CONVICTED — lights mode survived every one of the three.';
+  : [
+    'NOT CONVICTED — lights mode survived every one of the three.',
+    '',
+    'The dock STANDS OFF while the lighting panel is open, which is the one gate the',
+    'first table convicted:',
+    `  · ${detailGuard ? `${detailGuard.at} — ${detailGuard.text}` : '(no guard)'}`,
+    '',
+    'And every exit the owner named is in place:',
+    `  · the menu's own button — ${ledToggle ? `${ledToggle.at} — ${ledToggle.text}` : 'MISSING'}`,
+    '  · 2klik on another element — the SCENE opens that element\'s window itself',
+    '    (`Scene.jsx onEditElement` → `openModal`), which replaces `lighting`',
+    `  · 2klik on the wall — ${wallDouble ? `${wallDouble.at} — ${wallDouble.text}` : 'MISSING'}`,
+    '',
+    'A single click inside the mode still SELECTS, and it must: `LightingPanel`\'s whole',
+    'flow is "click the shelf you want the LED under", and it reads the same',
+    '`selectedElement` the stage writes. What it no longer does is open that piece\'s',
+    'editor over the panel.',
+  ].join('\n');
 
 if (md) {
   const out = [];
@@ -151,6 +182,7 @@ if (md) {
   out.push('');
   out.push('A retail room, one wardrobe with its doors on. The three handlers CLAUDE.md names,');
   out.push('run in order against the real ui store:');
+  out.push('');
   out.push('');
   out.push('| step | the store after it | lights mode |');
   out.push('| --- | --- | --- |');

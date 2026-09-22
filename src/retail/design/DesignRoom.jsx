@@ -468,7 +468,20 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         lightsOn={lightsOn}
         // T63 F2 · LIGHTS opens PRO's Lighting panel beside the button — the
         // very call PRO's own Lighting button makes (`TopBar.jsx`).
-        onLights={(e) => A.openEditor('lighting', { anchor: A.anchorOf(e) })}
+        //
+        // ─── T72 F7 · …AND THE SAME BUTTON CLOSES IT ───────────────────────
+        //
+        // The owner: *"nie powinno wyłączyć aż do momentu, że albo WYŁĄCZĘ SAM
+        // W MENU, albo zrobię 2klik na innym elemencie lub na ścianie."*
+        //
+        // Lights mode is `sticky` now in the sense that matters — the dock no
+        // longer replaces it on a click (`Detail.jsx`) — so it needs the way
+        // out he names FIRST, and it is the button he pressed to get in.
+        // `openEditor` and `closeEditor` are both the shared store's own, so
+        // this is one law with two directions and no state of retail's own.
+        onLights={(e) => (A.lightsModeOn()
+          ? A.closeEditor()
+          : A.openEditor('lighting', { anchor: A.anchorOf(e) }))}
         // T65 F4 · RESET VIEW is PRO's own default view — the one the room
         // opened in — not a preset of retail's. Superseded T64 F1.6.
         onReset={() => { setPreset(null); resetStageView(handle.current); }}

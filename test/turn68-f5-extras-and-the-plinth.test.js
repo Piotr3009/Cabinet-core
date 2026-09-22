@@ -231,7 +231,7 @@ test('F5 · LIGHTS has left EXTRAS, and its one entry is the view bar', () => {
   // The ONE entry, where T63 F2 put it.
   assert.match(code('src/retail/design/viewTools.js'), /id: 'lights'/);
   assert.match(code('src/retail/design/DesignRoom.jsx'),
-    /onLights=\{\(e\) => A\.openEditor\('lighting', \{ anchor: A\.anchorOf\(e\) \}\)\}/);
+    /A\.openEditor\('lighting', \{ anchor: A\.anchorOf\(e\) \}\)/);
 });
 
 test('F5 · ADD ANOTHER WARDROBE is the same one store path, not a fourth', () => {

@@ -3383,6 +3383,19 @@ import { railChosenAlone } from '../../engine/railAssembly.js';
 
 /** Open one of PRO's windows in the SHARED ui store's own slot. */
 export const openEditor = (name, args = null) => U().openModal(name, args);
+
+/**
+ * ─── T72 F7 · IS THE LIGHTING PANEL STANDING, AND THE WAY BACK OUT ────────
+ *
+ * The owner: *"nie powinno wyłączyć aż do momentu, że albo wyłączę sam w menu,
+ * albo zrobię 2klik na innym elemencie lub na ścianie."*
+ *
+ * LIGHTS MODE IS THE LIGHTING WINDOW BEING OPEN, and nothing else: there is no
+ * second flag and there is no state of retail's own. `verify/t72/f7-probe.md`
+ * walks all three of CLAUDE.md's candidates against this very reading.
+ */
+export const lightsModeOn = () => U().modal === 'lighting';
+
 export const closeEditor = () => U().closeModal();
 /** The rectangle of the control that asked (rule 15: beside, never on). */
 export const anchorOf = (e) => anchorOfEvent(e);

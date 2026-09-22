@@ -102,6 +102,25 @@ const WORKSHOP_FIELDS = Object.freeze([
 const SETBACK_IS_THE_CLIENT_S = Object.freeze(['shelf', 'partition']);
 
 /**
+ * ─── T72 F10 · MATERIAL, IN RETAIL, ONLY WHEN THERE IS A CHOICE ───────────
+ *
+ * Asked whether a piece's own material should reach a client's screen at all,
+ * the owner answered *"tak"* — and CLAUDE.md writes the condition out: *"The
+ * `material` row of the docked editor shows in retail only when the project
+ * carries more than one material of that piece's role (carcass or front, from
+ * the design's type lists). One material: no row. PRO unchanged."*
+ *
+ * A CONTROL THAT CANNOT ACT IS NOT DRAWN — #58. A wardrobe built from one
+ * board and faced in one front has nothing to choose between, and a picker
+ * with one row in it is a question with one answer.
+ *
+ * The COUNT is the ADAPTER's (`pieceHasMaterialChoice`), which reads the very
+ * list PRO's own `material` row renders, so what is counted and what would be
+ * offered cannot disagree.
+ */
+const MATERIAL_NEEDS_A_CHOICE = 'material';
+
+/**
  * What a docked `ElementProperties` leaves out — nothing, for a joiner.
  *
  * The KIND is the SELECTION's own (`adapter.resolveSelection` stamps it, off
@@ -109,9 +128,13 @@ const SETBACK_IS_THE_CLIENT_S = Object.freeze(['shelf', 'partition']);
  * asks the adapter and the adapter asks the engine, which is the boundary
  * `turn59-f4` holds every retail file to.
  */
-const omitted = (kind = null) => (RETAIL_SHOW_WORKSHOP_TOOLS
+const omitted = (kind = null, panel = null) => (RETAIL_SHOW_WORKSHOP_TOOLS
   ? []
-  : WORKSHOP_FIELDS.filter((f) => !(f === 'setback' && SETBACK_IS_THE_CLIENT_S.includes(kind))));
+  : WORKSHOP_FIELDS.filter((f) => {
+    if (f === 'setback') return !SETBACK_IS_THE_CLIENT_S.includes(kind);
+    if (f === MATERIAL_NEEDS_A_CHOICE) return !A.pieceHasMaterialChoice(panel);
+    return true;
+  }));
 
 /**
  * The modal names the DOCK owns. `Editors.jsx` renders exactly these inside
@@ -160,5 +183,5 @@ export function dockFor(selection) {
   // drawer front, a drawer box, an overlay front, a shoe drawer's face. PRO's
   // own piece panel, on the piece.
   if (!panel) return null;
-  return { props: { panel, item, omit: omitted(kind) } };
+  return { props: { panel, item, omit: omitted(kind, panel) } };
 }

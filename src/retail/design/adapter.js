@@ -37,11 +37,13 @@ import { doorCountFor } from '../../engine/cabinet.js';
 import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
 // T72 F1: which board an end panel is cut from — the project's own run-piece
 // switch, read here so the COLOUR chips state what the engine already resolves.
-import { runMaterialSetting } from '../../engine/materials.js';
+// T72 F10: …and which SLOT any piece is cut from, which is how the material
+// row knows whether the project offers that piece a choice at all.
+import { materialSlotOf, runMaterialSetting } from '../../engine/materials.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
 import { hasTopInfill, unitTop } from '../../engine/runs.js';
-import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
+import { FRONT_STYLE_OPTIONS, elementMaterialChoices, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 // T61 F3: the top box's own two engine answers — the type's defaults and the
@@ -51,6 +53,8 @@ import { riderBornHeight } from '../../engine/roomFit.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useUiStore } from '../../stores/uiStore.js';
+// T72 F10: the workshop's stock list, for the material row's own count.
+import { useMaterialAssignmentStore } from '../../stores/materialAssignmentStore.js';
 import {
   elementKind, elementLabel, isSelectableElement,
 } from '../../engine/elements.js';
@@ -2709,6 +2713,43 @@ export function stackHasFixedHeights(unitId) {
  * all: a button with a sentence under it explaining what pressing it will do
  * is a button that does not read as one.
  */
+// ─── T72 F10 · THE MATERIAL ROW, ONLY WHERE THERE IS A CHOICE ─────────────
+//
+// Asked of the owner, 22.09.2026, whether a piece's own material should show
+// on a client's screen at all, his answer was: *"tak"* — and CLAUDE.md writes
+// the condition out: *"The `material` row of the docked editor shows in retail
+// only when the project carries more than one material of that piece's role
+// (carcass or front, from the design's type lists). One material: no row."*
+//
+// A CONTROL THAT CANNOT ACT IS NOT DRAWN — #58, the law this whole application
+// is written under. A wardrobe built from one board and faced in one front has
+// nothing to choose between, and a picker offering one row is a question with
+// one answer.
+//
+// THE COUNT IS THE DESIGN'S OWN TYPE LISTS, through `projectPalette` —
+// `elementMaterialChoices` is the very list PRO's own `material` row renders,
+// so what this counts and what that would offer cannot disagree. A FRONT piece
+// counts the front types; everything else counts the carcass types, which is
+// `engine/materials.js materialSlotOf`'s own reading of a panel and not a
+// second one.
+//
+// @returns {number} how many materials this piece could be cut from
+export function materialChoiceCount(panel) {
+  if (!panel) return 0;
+  const design = migrateDesign(S().project.design);
+  const slot = materialSlotOf(panel, null, design);
+  const kind = slot.kind === 'front' ? 'front' : 'carcass';
+  // The workshop's stock list, read the way the store reads it — it only names
+  // the boards; the COUNT is the design's own type lists either way.
+  const stock = (() => {
+    try { return useMaterialAssignmentStore.getState().materials || []; } catch { return []; }
+  })();
+  return elementMaterialChoices(design, P(), stock).filter((c) => c.kind === kind).length;
+}
+
+/** …and the question the dock actually asks: is there anything to choose? */
+export const pieceHasMaterialChoice = (panel) => materialChoiceCount(panel) > 1;
+
 export function accessoriesNote(unitId) {
   const has = itemsOf(unitId).some((i) => i?.watch_insert === true || String(i?.variant || '') === 'watch');
   return has ? 'This wardrobe already has one — the button takes you to it.' : '';

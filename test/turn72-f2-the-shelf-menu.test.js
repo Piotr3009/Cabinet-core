@@ -168,7 +168,7 @@ test('F2 · `setback` leaves WORKSHOP_FIELDS for the shelf and the partition ONL
   assert.match(dock, /'setback', 'setback-unit',/);
   // …and let out for exactly two kinds, by name.
   assert.match(dock, /const SETBACK_IS_THE_CLIENT_S = Object\.freeze\(\['shelf', 'partition'\]\)/);
-  assert.match(dock, /WORKSHOP_FIELDS\.filter\(\(f\) => !\(f === 'setback' && SETBACK_IS_THE_CLIENT_S\.includes\(kind\)\)\)/);
+  assert.match(dock, /if \(f === 'setback'\) return !SETBACK_IS_THE_CLIENT_S\.includes\(kind\);/);
   // The rest of the list stays hidden — F2 says so in as many words.
   const list = dock.slice(dock.indexOf('const WORKSHOP_FIELDS'), dock.indexOf(']);'));
   for (const still of [

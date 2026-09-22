@@ -223,7 +223,13 @@ test('F3 · the flag is ONE constant, and it is off for a client', () => {
   assert.match(read('src/retail/design/detail/docked.jsx'),
     /RETAIL_SHOW_WORKSHOP_TOOLS\s*\n?\s*\? \[\]/);
   assert.match(read('src/retail/design/detail/docked.jsx'),
-    /: WORKSHOP_FIELDS\.filter\(\(f\) => !\(f === 'setback' && SETBACK_IS_THE_CLIENT_S\.includes\(kind\)\)\)/);
+    /: WORKSHOP_FIELDS\.filter\(\(f\) => \{/);
+  // T72 F2 · the setback, for a shelf and a divider…
+  assert.match(read('src/retail/design/detail/docked.jsx'),
+    /if \(f === 'setback'\) return !SETBACK_IS_THE_CLIENT_S\.includes\(kind\);/);
+  // T72 F10 · …and the material, where the project offers a choice.
+  assert.match(read('src/retail/design/detail/docked.jsx'),
+    /if \(f === MATERIAL_NEEDS_A_CHOICE\) return !A\.pieceHasMaterialChoice\(panel\);/);
   assert.match(read('src/retail/RetailApp.jsx'),
     /data-workshop-tools=\{RETAIL_SHOW_WORKSHOP_TOOLS \? 'yes' : 'no'\}/);
 });

@@ -85,7 +85,7 @@ test('F9 · every row that went is homed, and the home is named', () => {
     // T72 F2 · `omitted` takes the selection's own kind, so `setback` can come
     // back for a shelf and a divider. The HOME is the same home: the docked
     // copy of PRO's piece panel.
-    'edit-cabinet': /props: \{ panel, item, omit: omitted\(kind\) \}/.test(dock),
+    'edit-cabinet': /props: \{ panel, item, omit: omitted\(kind, panel\) \}/.test(dock),
     'edit-drawer': /modal: 'element'/.test(dock),
     'drawer-fronts': /modal: 'element'/.test(dock),
     'center-shelves': /modal: 'element'/.test(dock),

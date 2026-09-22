@@ -136,7 +136,7 @@ test('F3 · the editors, and the DOCK resolves every one of them', () => {
   // is a client's question on a shelf and a divider and the workshop's on
   // everything else. The law is untouched: ONE table, ONE default branch, and
   // the fields are left out through PRO's own `omit` prop.
-  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind\) \} \}/);
+  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind, panel\) \} \}/);
   const detail = read('src/retail/design/Detail.jsx');
   assert.match(detail, /import ElementProperties from '\.\/detail\/ElementProperties\.jsx'/);
   assert.ok(isCopy('src/retail/design/detail/ElementProperties.jsx'),
@@ -154,8 +154,11 @@ test('F3 · the workshop\'s own fields are HIDDEN, not cut — and behind ONE fl
   // before.
   assert.match(dock, /RETAIL_SHOW_WORKSHOP_TOOLS\s*\n?\s*\? \[\]/,
     'the flag does not turn the fields back on');
-  assert.match(dock, /WORKSHOP_FIELDS\.filter\(\(f\) => !\(f === 'setback' && SETBACK_IS_THE_CLIENT_S\.includes\(kind\)\)\)/,
+  assert.match(dock, /if \(f === 'setback'\) return !SETBACK_IS_THE_CLIENT_S\.includes\(kind\);/,
     'the per-kind exception is not the one F2 licensed');
+  // T72 F10 · …and the material row, where the project offers a choice at all.
+  assert.match(dock, /if \(f === MATERIAL_NEEDS_A_CHOICE\) return !A\.pieceHasMaterialChoice\(panel\);/,
+    'the material row is not the one F10 licensed');
   // They are left out through PRO's OWN `omit` prop — not by editing a copy.
   assert.match(read('src/retail/design/detail/ElementProperties.jsx'),
     /elementFields\(panel, type\)\.filter\(\(f\) => !omit\.includes\(f\)\)/,
@@ -524,8 +527,10 @@ test('F3.3 · SHELF — pinned is a NOTE, locked is a refusal, and they differ',
   // `setShelfPos` is the same setter — which is the point of docking a copy
   // rather than writing a fourteenth surface.
   const dock = read('src/retail/design/detail/docked.jsx');
-  // T72 F2 · `omitted` takes the selection's own kind; the route is the route.
-  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind\) \} \}/);
+  // T72 F2/F10 · `omitted` takes the selection's own kind and its panel — the
+  // setback for a shelf and a divider, the material where the project offers a
+  // choice. The route is the route.
+  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind, panel\) \} \}/);
   assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /case 'position-y':/,
     'PRO\'s own height field is gone from the copy');
   // ─── AMENDED BY T72 F3 · THE EVEN LADDER IS THE COPY'S BUTTON NOW ───────

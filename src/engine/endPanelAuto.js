@@ -34,7 +34,7 @@
 // Pure functions — no React, no store, no three.js.
 
 import { getUnitType } from './types.js';
-import { paddedSpan, unitBase, unitTop } from './runs.js';
+import { paddedSpan, unitBase, unitTop, wallGapOf } from './runs.js';
 import { wallWidth } from './room.js';
 
 const round1 = (v) => Math.round(Number(v) || 0);
@@ -192,10 +192,29 @@ export function sideIsVisible(unit, side, neighbour, where, profile) {
 
   const myTop = unitTop(unit, profile);
   const myBase = unitBase(unit, profile);
-  const myDepth = Number(unit?.params?.depth) || 0;
   const itsTop = unitTop(neighbour, profile);
   const itsBase = unitBase(neighbour, profile);
-  const itsDepth = Number(neighbour?.params?.depth) || 0;
+  // ─── TURN 72 (CLAUDE.md F14): HOW FAR EACH ONE REACHES INTO THE ROOM ─────
+  //
+  // Until tonight this was the carcass DEPTH, and it was the same question
+  // because every cabinet in the job stood the same ten millimetres off the
+  // wall: two backs on one line, so the deeper one reaches further and the
+  // comparison is honest.
+  //
+  // With the gap per unit that is no longer true. The owner's own case, in
+  // his words: *"Two units of different depth with the same gap have their
+  // backs on one line and their fronts not; the client who wants flush fronts
+  // types a bigger gap on the shallower one."* Flush fronts is exactly the
+  // case where a 550 wardrobe stood 60 mm out COVERS the side of the 600 one
+  // beside it, and the old comparison would have called it shallower and hung
+  // a panel in a place there is no gap to see.
+  //
+  // So it is the FRONT REACH — where each one's face ends up, measured from
+  // the wall — and with nothing typed both gaps are the profile's own number,
+  // which adds the same constant to both sides and leaves every answer this
+  // function has ever given exactly where it was.
+  const myDepth = wallGapOf(unit, profile) + (Number(unit?.params?.depth) || 0);
+  const itsDepth = wallGapOf(neighbour, profile) + (Number(neighbour?.params?.depth) || 0);
   const e = 1e-6;
 
   if (itsTop + e < myTop) return { visible: true, why: 'the neighbour is shorter' };

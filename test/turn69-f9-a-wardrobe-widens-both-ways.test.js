@@ -144,8 +144,21 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // still not on the list, which is what this assertion was ever about.)
   const freeze = read('test/turn59-f1-the-switch.test.js');
   const exempt = [...freeze.matchAll(/'src\/components\/([A-Za-z]+)\.jsx':\n\s+'T(\d\d) F/g)].map((m) => [m[1], m[2]]);
-  assert.deepEqual(exempt.map(([n]) => n).sort(), ['AddItems', 'DrawingModal', 'RoomModal', 'WatchLayoutModal'],
-    'a file entered EXEMPT that no turn argued');
+  // T72 licenses `ElementProperties` (F2's two chips and its setback row, F3's
+  // CENTER ALL, F12's divider setback), `DoorModal` (F6's hinge block) and
+  // `JpullRunModal` (F4's typed run) — each with the owner's own words and its
+  // new hash, each re-copied the same night. The assertion is the one it always
+  // was, asked of a list that a turn may add to and never of a number: EVERY
+  // name on it is one a turn argued, and F9's own door is not among them.
+  const ARGUED = [
+    'AddItems', 'DoorModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
+    'RoomModal', 'WatchLayoutModal',
+  ];
+  const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
+  assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
+  for (const [name, turn] of exempt) {
+    assert.ok(['67', '69', '71', '72'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
+  }
   assert.ok(!exempt.some(([n]) => /UnitSize/.test(n)), 'F9 bought no exemption');
   assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), ['RoomModal'], 'T69 licensed RoomModal alone');
 });

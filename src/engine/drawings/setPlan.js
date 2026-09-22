@@ -21,7 +21,7 @@ import { roomWalls, openingsOnWall } from '../room.js';
 import { wallGroups, wallLabel } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
 import { sectionStations } from './setSection.js';
-import { unitBase, unitTop } from '../runs.js';
+import { unitBase, unitTop, wallGapOf } from '../runs.js';
 
 const AXIS = 1e-6;
 
@@ -134,7 +134,14 @@ export function buildPlan(entries, {
   const walls = roomWalls(room);
   const entities = [];
   const gap = Number(profile.doors?.gap) || 0;
-  const clearance = Math.max(0, Number(profile.room?.wallBackClearance) || 0);
+  // ─── TURN 72 (CLAUDE.md F14): THE GAP IS THE UNIT'S OWN ──────────────────
+  // The owner: *"tutaj jeszcze brakuje odsuniecia od sciany"*, answered per
+  // unit with the project's number as the default. A plan draws each cabinet
+  // where it STANDS, so the clearance stops being one number for the sheet
+  // and becomes a question asked of each unit. `wallGapOf` returns the
+  // project's own number for every unit that has never been asked, so a plan
+  // of a job saved before tonight comes out line for line as it did.
+  const gapOf = (unit) => wallGapOf(unit, profile);
 
   // ── the room ──
   entities.push(...roomFabric(room, { ctx, profile }));
@@ -155,7 +162,7 @@ export function buildPlan(entries, {
   const gapMm = Number(profile.doors?.gap) || 0;
   for (const g of groups) {
     const wall = walls[g.wall]; if (!wall) continue;
-    const deep = Math.max(0, ...g.members.map((m) => Number(m.result.params.depth) || 0)) + clearance + gapMm + 100;
+    const deep = Math.max(0, ...g.members.map((m) => gapOf(m.unit) + (Number(m.result.params.depth) || 0))) + gapMm + 100;
     for (const st of sectionStations(g)) {
       const a = at(wall, st.x, -ctx.mm(3.2)); const b = at(wall, st.x, deep + 300);
       entities.push({ ...line('FRAME', a[0], a[1], b[0], b[1]), pen: 'VISIBLE', hidden: true });
@@ -187,7 +194,8 @@ export function buildPlan(entries, {
       if (x.kind === 'rect' && x.layer === 'CARCASE' && x.pen === 'OUTLINE') return { ...x, pen: 'CUT' };
       return x;
     });
-    // Off the wall by the clearance the engine stands every unit at.
+    // Off the wall by the clearance the engine stands THIS unit at.
+    const clearance = gapOf(e.unit);
     entities.push(...throughWall(ents, wall, u0, depth + clearance));
     // The plinth lies below either cut: dashed, where the engine puts it.
     const plinth = (e.result.panels || []).find((p) => p.role === 'plinth' && p.box);
@@ -222,9 +230,13 @@ export function buildPlan(entries, {
     // The depth, once, beside the start of the first run: clearance, carcass,
     // front, and the worktop's reach.
     if (axisX && g === groups[0]) {
-      const deepest = Math.max(...members.map((m) => Number(m.result.params.depth) || 0));
+      // The nearest back and the furthest front on this run: with one gap for
+      // every unit these are `clearance` and `clearance + deepest`, exactly as
+      // before; with two, they are the two faces a tape would actually find.
+      const back = Math.min(...members.map((m) => gapOf(m.unit)));
+      const deepest = Math.max(...members.map((m) => gapOf(m.unit) + (Number(m.result.params.depth) || 0)));
       const frontT = Math.max(...members.map((m) => Number(m.result.params.front_t) || 0));
-      const vs = new Set([0, clearance, clearance + deepest, clearance + deepest + gap + frontT]);
+      const vs = new Set([0, back, deepest, deepest + gap + frontT]);
       const wt = worktops.find((w) => Number(w.wall ?? 0) === g.wall);
       if (wt) vs.add(wt.d);
       const ys = [...vs].map((v) => at(wall, 0, v)[1]).sort((p, q) => p - q);

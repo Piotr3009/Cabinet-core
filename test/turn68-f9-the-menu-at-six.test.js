@@ -82,7 +82,10 @@ test('F9 · every row that went is homed, and the home is named', () => {
     'cornice-70': /testid="details-cornice"/.test(options),
     'cornice-100': /testid="details-cornice"/.test(options),
     'unit-colour': /MaterialSlot kind="front"/.test(options),
-    'edit-cabinet': /props: \{ panel, item, omit: omitted\(\) \}/.test(dock),
+    // T72 F2 · `omitted` takes the selection's own kind, so `setback` can come
+    // back for a shelf and a divider. The HOME is the same home: the docked
+    // copy of PRO's piece panel.
+    'edit-cabinet': /props: \{ panel, item, omit: omitted\(kind, panel\) \}/.test(dock),
     'edit-drawer': /modal: 'element'/.test(dock),
     'drawer-fronts': /modal: 'element'/.test(dock),
     'center-shelves': /modal: 'element'/.test(dock),

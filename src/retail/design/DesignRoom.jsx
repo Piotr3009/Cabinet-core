@@ -468,7 +468,20 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         lightsOn={lightsOn}
         // T63 F2 · LIGHTS opens PRO's Lighting panel beside the button — the
         // very call PRO's own Lighting button makes (`TopBar.jsx`).
-        onLights={(e) => A.openEditor('lighting', { anchor: A.anchorOf(e) })}
+        //
+        // ─── T72 F7 · …AND THE SAME BUTTON CLOSES IT ───────────────────────
+        //
+        // The owner: *"nie powinno wyłączyć aż do momentu, że albo WYŁĄCZĘ SAM
+        // W MENU, albo zrobię 2klik na innym elemencie lub na ścianie."*
+        //
+        // Lights mode is `sticky` now in the sense that matters — the dock no
+        // longer replaces it on a click (`Detail.jsx`) — so it needs the way
+        // out he names FIRST, and it is the button he pressed to get in.
+        // `openEditor` and `closeEditor` are both the shared store's own, so
+        // this is one law with two directions and no state of retail's own.
+        onLights={(e) => (A.lightsModeOn()
+          ? A.closeEditor()
+          : A.openEditor('lighting', { anchor: A.anchorOf(e) }))}
         // T65 F4 · RESET VIEW is PRO's own default view — the one the room
         // opened in — not a preset of retail's. Superseded T64 F1.6.
         onReset={() => { setPreset(null); resetStageView(handle.current); }}
@@ -506,6 +519,24 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         <Detail
           selection={selection}
           onSelect={setTarget}
+          // ─── T72 F9 · ADD ACCESSORIES DRAWER ─────────────────────────────
+          //
+          // The owner: *"powinien być ADD ACCESSORIES DRAWER i powinno wziąć
+          // nas do menu i podświetlić Add accessories drawer."*
+          //
+          // Three acts, and the STEP is the only one that is this file's: the
+          // adapter adds through the INSIDE row's own call and lights that row
+          // through the shared store's `addItemKind`, and the walk to INSIDE
+          // is the same `setActive('inside')` the inner plus makes. What may
+          // be added lives in ONE table and this file does not hold a copy of
+          // it — `adapter.addAccessoriesDrawer` is the whole of this door.
+          onAddAccessories={(id) => {
+            setSaid('');
+            const res = A.addAccessoriesDrawer(id);
+            if (!res.ok && !res.already && res.said) setSaid(res.said);
+            useUiStore.getState().selectUnit(id);
+            setActive('inside');
+          }}
           unit={unit}
           project={project}
           designName={designName}

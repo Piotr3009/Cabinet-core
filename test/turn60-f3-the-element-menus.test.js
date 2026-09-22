@@ -87,9 +87,16 @@ const panelsOf = (unitId) => S().unitResult(unitId)?.panels || [];
 // the change, and this is the same test asking them of the new shape: the
 // router is still a TABLE with no default branch, a kind that is not a key is
 // still unselectable, and there is still exactly ONE way back.
+// ─── AMENDED BY T72 F1 ──────────────────────────────────────────────────────
+//
+// A NINTH name, and the owner's own: *"jak kliknę 2 razy na panel boczny po
+// prawej nie pokazuje mi się menu panelu."*  The end panel is a thing a client
+// edits on the right, so it is in the vocabulary. Nothing else moved: the
+// eight above it are the eight, in their order.
 test('F3 · the editors, and the DOCK resolves every one of them', () => {
   assert.deepEqual(A.MENUS, [
     'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'overlay', 'partition',
+    'panel',
   ], 'the vocabulary of things a client edits on the right');
 
   // ─── NOT ONE `*Menu.jsx` REMAINS ──────────────────────────────────────────
@@ -125,7 +132,11 @@ test('F3 · the editors, and the DOCK resolves every one of them', () => {
     'a window could be drawn in both places');
 
   // …and everything else the engine cuts a board for is PRO's own piece panel.
-  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(\) \} \}/);
+  // T72 F2 · `omitted` takes the SELECTION's own kind now, because `setback`
+  // is a client's question on a shelf and a divider and the workshop's on
+  // everything else. The law is untouched: ONE table, ONE default branch, and
+  // the fields are left out through PRO's own `omit` prop.
+  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind, panel\) \} \}/);
   const detail = read('src/retail/design/Detail.jsx');
   assert.match(detail, /import ElementProperties from '\.\/detail\/ElementProperties\.jsx'/);
   assert.ok(isCopy('src/retail/design/detail/ElementProperties.jsx'),
@@ -137,8 +148,17 @@ test('F3 · the workshop\'s own fields are HIDDEN, not cut — and behind ONE fl
   // cut … behind `RETAIL_SHOW_WORKSHOP_TOOLS=false`."*
   const dock = read('src/retail/design/detail/docked.jsx');
   assert.match(dock, /import \{ RETAIL_SHOW_WORKSHOP_TOOLS \} from '\.\.\/\.\.\/config\.js'/);
-  assert.match(dock, /RETAIL_SHOW_WORKSHOP_TOOLS \? \[\] : \[\.\.\.WORKSHOP_FIELDS\]/,
+  // T72 F2 · the flag still answers `[]` first and nothing else reads it; what
+  // follows it is the per-kind filter that lets `setback` out for a shelf and a
+  // divider. Turn the flag on and a joiner gets PRO's panel entire, exactly as
+  // before.
+  assert.match(dock, /RETAIL_SHOW_WORKSHOP_TOOLS\s*\n?\s*\? \[\]/,
     'the flag does not turn the fields back on');
+  assert.match(dock, /if \(f === 'setback'\) return !SETBACK_IS_THE_CLIENT_S\.includes\(kind\);/,
+    'the per-kind exception is not the one F2 licensed');
+  // T72 F10 · …and the material row, where the project offers a choice at all.
+  assert.match(dock, /if \(f === MATERIAL_NEEDS_A_CHOICE\) return !A\.pieceHasMaterialChoice\(panel\);/,
+    'the material row is not the one F10 licensed');
   // They are left out through PRO's OWN `omit` prop — not by editing a copy.
   assert.match(read('src/retail/design/detail/ElementProperties.jsx'),
     /elementFields\(panel, type\)\.filter\(\(f\) => !omit\.includes\(f\)\)/,
@@ -294,9 +314,23 @@ test('F3 · every engine kind is either mapped or unselectable — no third case
     `a kind that is neither mapped nor unselectable:\n  ${third.join('\n  ')}`);
 
   // …and the carcass is the way OUT, by name — the whole of T66 F3's F10 clause.
-  for (const kind of ['side', 'top', 'bottom', 'back', 'plinth', 'end-panel', 'infill', 'masking-panel']) {
+  //
+  // ─── AMENDED BY T72 F1 · THE END PANEL LEAVES THIS LIST ──────────────────
+  //
+  // It was never carcass. `engine/elements.js` files it under ATTACHED_KINDS
+  // beside the DOOR — *"things you HANG ON the carcass afterwards, one at a
+  // time, and each of them is a decision with its own properties"* — and turn
+  // 14's `opensOwnModal` has said `true` for it ever since. T66 F3 swept it up
+  // with the sides on turn 13's *"clicking a cabinet must select the CABINET"*,
+  // which is a verdict about a side, a top and a plinth. The owner, 22.09.2026,
+  // on the consequence: *"jak kliknę 2 razy na panel boczny po prawej nie
+  // pokazuje mi się menu panelu."*  The other seven are untouched and the
+  // assertion on them is the one it was.
+  for (const kind of ['side', 'top', 'bottom', 'back', 'plinth', 'infill', 'masking-panel']) {
     assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} still opens a menu`);
   }
+  assert.equal(A.MENU_FOR_KIND['end-panel'], 'panel',
+    'the end panel is ATTACHED, not carcass — T72 F1 gave it its menu back');
 });
 
 // ═══ 2 · THE NINE, ONE AT A TIME ═══════════════════════════════════════════
@@ -493,13 +527,24 @@ test('F3.3 · SHELF — pinned is a NOTE, locked is a refusal, and they differ',
   // `setShelfPos` is the same setter — which is the point of docking a copy
   // rather than writing a fourteenth surface.
   const dock = read('src/retail/design/detail/docked.jsx');
-  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(\) \} \}/);
+  // T72 F2/F10 · `omitted` takes the selection's own kind and its panel — the
+  // setback for a shelf and a divider, the material where the project offers a
+  // choice. The route is the route.
+  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind, panel\) \} \}/);
   assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /case 'position-y':/,
     'PRO\'s own height field is gone from the copy');
-  // …and the EVEN LADDER, which the copy has no button for, is re-homed on the
-  // left, in INSIDE's own row (F3's *"never lost"* clause).
-  assert.match(REHOMED(), /data-testid="shelf-centre"/,
-    'CENTRE THIS BAY was lost with the menu that carried it');
+  // ─── AMENDED BY T72 F3 · THE EVEN LADDER IS THE COPY'S BUTTON NOW ───────
+  //
+  // T66 F3 re-homed `ShelfMenu`'s CENTRE THIS BAY into INSIDE's row because no
+  // copied editor had it. PRO's own `ElementProperties` has it tonight, at the
+  // bottom of the shelf menu, on the owner's order: *"dodaj na dole tego
+  // modalu CENTER ALL."*  So it is in the copy, which is where the claim of
+  // this test — NOT LOST — is now answered, and the re-homed duplicate is gone
+  // (CLAUDE.md F3: *"the docked editor's button is the only entry"*).
+  assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /data-centre-shelves="1"/,
+    'CENTRE THIS BAY was lost with the row that carried it');
+  assert.match(read('src/components/ElementProperties.jsx'), /centreShelves\(unit\.id, item\.zone \?\? null\)/,
+    'PRO has no CENTER ALL, so retail\'s copy cannot have one either');
 });
 
 test('F3.3 · SHELF — CENTRE THIS BAY is the T58 law, per bay, and it reclamps', () => {
@@ -511,11 +556,22 @@ test('F3.3 · SHELF — CENTRE THIS BAY is the T58 law, per bay, and it reclamps
   const after = A.shelfTravel(unit.id, shelf.id);
   assert.ok(after.field > travel.fieldMin, 'centring moved nothing');
 
-  // The pair of calls, not one: `redistributeShelvesInBay` does not reclamp,
-  // and every other centring path in the store ends with one.
+  // ─── AMENDED BY T72 F3 · THE PAIR HAS ONE NAME NOW ──────────────────────
+  //
+  // The claim is unchanged and it is the one that matters: centring is the
+  // even ladder AND the clamp, never the ladder alone. T72 gives that pair its
+  // own store action — *"One store action, `centreShelves(unitId, bayRef)`,
+  // used by PRO and retail"* — so the assertion asks the STORE, which is where
+  // the pair now lives, and asks the adapter only that it presses that one
+  // name rather than re-assembling the pair itself.
   const adapter = read('src/retail/design/adapter.js');
-  assert.match(adapter, /redistributeShelvesInBay\(unitId, bay \?\? null\);\s*\n\s*S\(\)\.reclampShelves/,
-    'centreBay does not reclamp');
+  assert.match(adapter, /return S\(\)\.centreShelves\(unitId, bay \?\? null\);/,
+    'centreBay no longer presses the one store action');
+  const store = read('src/stores/projectStore.js');
+  assert.match(store, /centreShelves: \(unitId, bayRef = null\) => \{\s*\n\s*get\(\)\.redistributeShelves\(unitId, bayRef\);/,
+    'centreShelves is not the even ladder');
+  assert.match(store, /for \(const bay of bays\) get\(\)\.redistributeShelvesInBay\(unitId, bay\);\s*\n(\s*\/\/.*\n)*\s*get\(\)\.reclampShelves\(unitId\);/,
+    'centreShelves does not reclamp');
 });
 
 test('F3.4 · DRAWERS — the counts, the insert and the two engine refusals', () => {
@@ -634,8 +690,12 @@ test('F3.6 · WATCH — the four layouts are the engine\'s four, drawn from its 
   }
 
   // PROJECT / SPRAYED — the T58 pair, and it is a null and one engine id.
+  // ─── AMENDED BY T72 F9 · AND FELT BASE, WHICH IS AN ADDITION ────────────
+  // *"usuń Veneer, dodaj materiałowe dno zamiast Veneer … tylko te 4 kolory
+  // filcu."*  The pair stands; the third is the owner's own, and it is the
+  // ENGINE's list this reads — which is the claim of this whole test.
   const finishes = A.watchFinishes();
-  assert.deepEqual(finishes.map((f) => f.id), ['project', 'spray']);
+  assert.deepEqual(finishes.map((f) => f.id), ['project', 'spray', 'felt']);
 
   const unit = room({ drawers: 3 });
   S().addWatchDrawer(unit.id);

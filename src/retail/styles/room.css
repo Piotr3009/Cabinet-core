@@ -682,16 +682,35 @@
  *
  *   [data-piece-weight]              the front's weight off the MFC table
  *   [data-element-move]              the Move Across / Up / In nudges
- *   label:has(> select.pbi-re-input)  the board-thickness pickers
+ *   label:has(> select[data-board-thickness])  the board-thickness pickers
+ *   label:has(> select[data-partition-slot])   which carcass board a divider is
  *   label:has([data-element-material])  the per-piece material override
  *   label:has(> [data-handle-apply-all])  "apply to all … in the project"
  *
  * One switch decides: the room stamps `data-workshop-tools` from the ONE
  * constant, so turning the flag on gives a joiner PRO's panel entire.
+ *
+ * ─── T72 F6 · THE BOARD RULE IS NARROWED TO THE BOARD ─────────────────────
+ *
+ * The owner: *"gdzie jest left/right wybór oraz podzielenie drzwi, top
+ * section?"*  `verify/t72/f6-probe.md` is the answer and it is one selector.
+ * This rule was written for *"the board-thickness pickers"* and spelt
+ * `label:has(> select.pbi-re-input)` — which is EVERY `<select>` in the dock,
+ * because `ElementProperties`' `Field` is
+ * `<label><span/>{children}</label>` and every control it wraps is a direct
+ * child. So it took `Hinge side` off the door's window, and `shelf-type`,
+ * `partition-slot` and `end-panel-height` with it.
+ *
+ * The two it was ever about now say what they are (`data-board-thickness`,
+ * `data-partition-slot`), and nothing else in the dock is hidden by shape.
+ * `shelf-type` is TWO CHIPS tonight (F2) and the end panel has its own three
+ * rows (F1), so of the four only `Hinge side` needed letting through — which
+ * is exactly what the owner asked for.
  */
 .pbi-room[data-workshop-tools="no"] .pbi-dock [data-piece-weight],
 .pbi-room[data-workshop-tools="no"] .pbi-dock [data-element-move],
-.pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> select.pbi-re-input),
+.pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> select[data-board-thickness]),
+.pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> select[data-partition-slot]),
 .pbi-room[data-workshop-tools="no"] .pbi-dock label:has([data-element-material]),
 .pbi-room[data-workshop-tools="no"] .pbi-dock label:has(> input[data-handle-apply-all]),
 /* ─── T68 F9 · THE RIGHT-CLICK MENU SLIMS TO PLACEMENT ────────────────────
@@ -774,9 +793,26 @@
  * `display: none` is not merely invisible: a hidden subtree takes no focus, so
  * neither block is in the TAB RING either. That is the half a `visibility` or
  * an `opacity` would have got wrong, and it is why this is the same declaration
- * the five rows above already use. */
-.pbi-room[data-workshop-tools="no"] .pbi-dock [data-hinge-modal] > div:has(> [data-hinge-assign]),
-.pbi-room[data-workshop-tools="no"] .pbi-dock [data-hinge-modal-rows] {
+ * the five rows above already use.
+ *
+ * ─── T72 F6 · AND THE OWNER HAS OVERTURNED HALF OF IT ─────────────────────
+ *
+ * 22.09.2026, of the same window:
+ *
+ *   *"2klik na drzwiach nie pokazuje w ogóle hinges"* … *"mamy fajny w PRO to
+ *   menu z zawiasami i ze strzałkami up and down, skopiuj z PRO."*
+ *
+ * 22.09 outranks 11.09, and it is HIS rule to overturn. So the HINGE HEIGHT
+ * ROWS — PRO's numbered list with the ▲▼ at the hinge's own 5 mm stride, and
+ * the Reset beside it — come back. That is the block he names: *"ze strzałkami
+ * up and down"*.
+ *
+ * WHAT STAYS HIDDEN is the other block T68 took, and it is the one his words
+ * of 11.09 were actually about: ASSIGN OTHER HINGE, the catalogue dropdown that
+ * picks which hinge the workshop buys. *"wybór hinges to nie jest dobry pomysł,
+ * nie tutaj — zostaw w PRO"* is about CHOOSING A HINGE, and nothing in tonight's
+ * sentence asks for that. One block back, one block still PRO's. */
+.pbi-room[data-workshop-tools="no"] .pbi-dock [data-hinge-modal] > div:has(> [data-hinge-assign]) {
   display: none !important;
 }
 

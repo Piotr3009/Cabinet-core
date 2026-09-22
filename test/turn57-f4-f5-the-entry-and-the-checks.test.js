@@ -124,21 +124,36 @@ test('F4 (T58b) — the constants stay in the PROFILE, exactly where they were',
   }
 });
 
-test('F4 (T58b) — ONE slider remains, and it is the RUN', () => {
+// ─── AMENDED BY TURN 72 · F4 ────────────────────────────────────────────────
+//
+// The COUNT is the claim and the count has not changed: ONE control in this
+// window and nothing else. What changed is which control, and it is the owner's
+// own order, 22.09.2026:
+//
+//   *"przesuwanie powiększenia J-hand nie może być przesuwakiem, musimy
+//   wpisywać liczby, nie będziemy próbowali trafić na ten sam numer co
+//   sąsiednie drzwi."*
+//
+// T58b's *"pasek albo pokrętło"* is set aside FOR THIS ONE FIELD on his word,
+// and for his reason: two leaves that must carry the same run cannot be aimed
+// at the same number. Everything else this test asserted still holds — the
+// floor, the step, the two engine constants that stay out of the window.
+test('F4 (T58b, amended T72) — ONE control remains, and it is the RUN, TYPED', () => {
   const modal = readFileSync(new URL('../src/components/JpullRunModal.jsx', import.meta.url), 'utf8');
-  const ranges = modal.match(/type="range"/g) || [];
-  assert.equal(ranges.length, 1, 'one control, and nothing else — the owner counted');
-  assert.match(modal, /aria-label="J run length"/);
+  assert.ok(!/type="range"/.test(modal), 'the slider is back — *"nie może być przesuwakiem"*');
+  const fields = modal.match(/<NumberField/g) || [];
+  assert.equal(fields.length, 1, 'one control, and nothing else — the owner counted');
+  assert.match(modal, /data-jpull-run-mm="1"/);
   assert.match(modal, /min=\{MIN_RUN_MM\}/);
+  assert.match(modal, /max=\{max\}/, 'the engine\'s own ceiling is not beside the field');
   assert.match(modal, /step=\{STEP_MM\}/);
   assert.match(modal, /const MIN_RUN_MM = 300;/, 'the owner\'s own floor');
   assert.match(modal, /const STEP_MM = 10;/);
   // The two he did NOT ask for are not controls here: the start height is READ
-  // (it is the slider's ceiling) and never written, and the ramp radius is not
+  // (it is the field's ceiling) and never written, and the ramp radius is not
   // mentioned at all.
   assert.ok(!/rampR/.test(modal), 'the ramp radius is an engine constant');
   assert.ok(!/setProfile/.test(modal), 'and nothing here writes the workshop profile');
-  assert.ok(!/<NumberField/.test(modal), 'a slider, not a number field');
 });
 
 test('F4 — and the engine reads them live, the way doors.gap is read', () => {

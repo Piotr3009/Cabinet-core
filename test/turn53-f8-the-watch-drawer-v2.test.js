@@ -249,9 +249,15 @@ test('F8d — no manual shelf: the forced PARTITION takes the pane, no refusal',
   assert.equal((r.assemblies.watchInserts || []).length, 1);
 });
 
-test('F8d — the control is DISABLED with the reason, never hidden', () => {
+// ─── AMENDED BY TURN 72 · F9 ────────────────────────────────────────────────
+// The claim is untouched — GREYED, NOT GONE, with the reason on it — and the
+// control is two chips now rather than a checkbox: *"w nim powinien być
+// przycisk GLASS ON TOP."*  What is disabled is the ON chip, because OFF is
+// always available and a drawer with no shelf above it is a drawer with no
+// glass, not a drawer with no answer.
+test('F8d, amended T72 — the control is DISABLED with the reason, never hidden', () => {
   const src = readFileSync(new URL('../src/components/WatchLayoutModal.jsx', import.meta.url), 'utf8');
-  assert.match(src, /disabled=\{!shelf\}/, 'greyed, not gone');
+  assert.match(src, /disabled=\{!shelf && on\}/, 'greyed, not gone');
   assert.match(src, /Needs a shelf directly above/);
   assert.match(src, /data-watch-glass-why="1"/);
 });
@@ -346,8 +352,14 @@ test('F8e — the modal is a NEW window, draggable, beside the drawer', () => {
 // (licensed T55 deletion); Sprayed and Project (null) survive, and the value
 // is wired through the parts' own records (turn55-f5 tests).
 
-test('F8f — Sprayed or the project’s own decor; oak and walnut are graves', () => {
-  assert.deepEqual(WATCH_FINISHES.map((f) => f.id), ['spray']);
+// ─── AMENDED BY TURN 72 · F9 ────────────────────────────────────────────────
+// A THIRD answer, and it is an ADDITION: *"usuń Veneer, dodaj materiałowe dno
+// zamiast Veneer: ciemnozielone, czerwone, brązowe, czarne, tylko te 4 kolory
+// filcu."*  `Sprayed` stands, `Project` (null) stands, and the GRAVES stay
+// graves — oak and walnut still fall back to Project, which is what this test
+// is really about.
+test('F8f, amended T72 — Sprayed, Felt base or the project’s own decor; oak and walnut are graves', () => {
+  assert.deepEqual(WATCH_FINISHES.map((f) => f.id), ['spray', 'felt']);
   assert.equal(watchFinishOf({}), null, 'the project decor, T52’s standing rule');
   assert.equal(watchFinishOf({ watch_finish: 'oak' }), null, 'oak is buried — falls back to Project');
   assert.equal(watchFinishOf({ watch_finish: 'walnut' }), null, '…and walnut with it');

@@ -86,7 +86,8 @@ test('F3 · a click on an ELEMENT docks its copied editor — and a swap never c
   // through "closed" — the swap is a re-render, not a mount.
   const detail = read('src/retail/design/Detail.jsx');
   assert.match(detail, /const route = selection \? dockFor\(selection\) : null;/);
-  assert.match(detail, /const open = Boolean\(route\);/);
+  // T72 F7 · one flag, one route, plus the lighting panel's own standing.
+  assert.match(detail, /const open = Boolean\(route\) && !lightsMode;/);
   assert.match(detail, /data-open=\{open \? 'yes' : 'no'\}/);
 });
 
@@ -106,16 +107,25 @@ test('F3 · a click on the CARCASS clears the selection — the panel slides out
   assert.match(design, /if \(!found\) \{[\s\S]{0,200}clearElement/);
 });
 
+// ─── AMENDED BY T72 F1 ──────────────────────────────────────────────────────
+//
+// TEN carcass kinds, not eleven: `end-panel` leaves this list tonight and it is
+// the only one that does. T66 swept it up with the sides on turn 13's *"clicking
+// a cabinet must select the CABINET"*, and that verdict is about a side, a top
+// and a plinth — `engine/elements.js` has filed an end panel under
+// ATTACHED_KINDS beside the DOOR since turn 14, and `opensOwnModal` has said
+// `true` for it just as long. The owner, 22.09.2026, on the consequence: *"jak
+// kliknę 2 razy na panel boczny po prawej nie pokazuje mi się menu panelu."*
 test('F3 · MENU_FOR_KIND sends the carcass kinds to NOTHING, by name', () => {
   for (const kind of [
-    'side', 'top', 'bottom', 'back', 'plinth', 'end-panel', 'infill',
+    'side', 'top', 'bottom', 'back', 'plinth', 'infill',
     'masking-panel', 'holder', 'spurs', 'fixed-shelf',
   ]) {
     assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} still opens a wardrobe menu`);
   }
-  // …and the five that DO edit an element are still there.
+  // …and the five that DO edit an element are still there, with T72 F1's sixth.
   assert.deepEqual(Object.keys(A.MENU_FOR_KIND).sort(),
-    ['door', 'drawer', 'drawer-front', 'partition', 'shelf']);
+    ['door', 'drawer', 'drawer-front', 'end-panel', 'partition', 'shelf']);
 });
 
 // ═══ 2 · WHAT IS DOCKED IS THE COPY, NOT A RE-WRITE ════════════════════════
@@ -206,8 +216,20 @@ test('F3 · the docked window is placed by the PANEL, not by an anchor', () => {
 
 test('F3 · the flag is ONE constant, and it is off for a client', () => {
   assert.equal(RETAIL_SHOW_WORKSHOP_TOOLS, false);
+  // T72 F2 · the flag still answers `[]` first and it is still the only thing
+  // that can turn the list off entirely; what follows it is the per-kind
+  // exception F2 licensed — `setback` is a client's question on a shelf and a
+  // divider. Turn the flag on and a joiner gets PRO's panel entire.
   assert.match(read('src/retail/design/detail/docked.jsx'),
-    /RETAIL_SHOW_WORKSHOP_TOOLS \? \[\] : \[\.\.\.WORKSHOP_FIELDS\]/);
+    /RETAIL_SHOW_WORKSHOP_TOOLS\s*\n?\s*\? \[\]/);
+  assert.match(read('src/retail/design/detail/docked.jsx'),
+    /: WORKSHOP_FIELDS\.filter\(\(f\) => \{/);
+  // T72 F2 · the setback, for a shelf and a divider…
+  assert.match(read('src/retail/design/detail/docked.jsx'),
+    /if \(f === 'setback'\) return !SETBACK_IS_THE_CLIENT_S\.includes\(kind\);/);
+  // T72 F10 · …and the material, where the project offers a choice.
+  assert.match(read('src/retail/design/detail/docked.jsx'),
+    /if \(f === MATERIAL_NEEDS_A_CHOICE\) return !A\.pieceHasMaterialChoice\(panel\);/);
   assert.match(read('src/retail/RetailApp.jsx'),
     /data-workshop-tools=\{RETAIL_SHOW_WORKSHOP_TOOLS \? 'yes' : 'no'\}/);
 });
@@ -253,17 +275,44 @@ test('F3 · nothing is DELETED from a copy — the fields are left out through P
 // selected element. The test therefore reads BOTH files, and still fails
 // naming the exact control if any of the twenty-seven goes missing.
 test('F3, amended by T67 · every control a dead thin menu carried is somewhere a client can reach', () => {
+  // ─── AMENDED BY T72 F3 ──────────────────────────────────────────────────
+  // The COPIED EDITOR is read too, because one of the twenty-seven lives there
+  // now: PRO's own `Center all` button at the bottom of the shelf menu, on the
+  // owner's order *"dodaj na dole tego modalu CENTER ALL"*. The claim of this
+  // test is unchanged — NOT ONE control a dead thin menu carried was lost —
+  // and widening where it may be found is the only way to keep asking it once
+  // a control reaches the surface the whole turn was about.
   const options = read('src/retail/design/Options.jsx')
-    + read('src/retail/design/detail/ReHomed.jsx');
+    + read('src/retail/design/detail/ReHomed.jsx')
+    + read('src/retail/design/detail/ElementProperties.jsx')
+    // T72 F9 · …and the accessories drawer's own window, which is where GLASS
+    // TOP now stands, beside the layout it belongs to.
+    + read('src/retail/design/detail/WatchLayoutModal.jsx');
   const REHOMED = {
     'DrawersMenu · HOW MANY': /testid="drawers-count"/,
-    'DrawersMenu · TOP DRAWER INSERT': /testid="drawers-insert"/,
-    'DrawersMenu · GLASS TOP': /testid="drawers-glass"/,
+    // ─── AMENDED BY T72 F9 · TWO LICENSED REMOVALS ─────────────────────────
+    //
+    // The owner, 22.09.2026, on his screenshot of this very menu:
+    //
+    //   *"top drawers insert nie powinien tak wyglądać: powinien być ADD
+    //   ACCESSORIES DRAWER i powinno wziąć nas do menu i podświetlić Add
+    //   accessories drawer, i po 2kliku powinno się otworzyć menu, które już
+    //   jest, ale w nim powinien być przycisk GLASS ON TOP."*
+    //
+    // TOP DRAWER INSERT's one live answer WAS the accessories drawer, and it
+    // is the button now. GLASS TOP is the accessories drawer's own question
+    // and it is in that drawer's own window, where he asked for it. So neither
+    // is LOST — which is the claim this test makes — and each is asserted
+    // where it now stands rather than where it used to.
+    'DrawersMenu · TOP DRAWER INSERT': /testid="drawers-add-accessories"/,
+    'DrawersMenu · GLASS TOP': /data-watch-glass-chip=\{id\}/,
     'DrawersMenu · FRONT HEIGHTS': /testid="drawers-front-height"/,
     'OverlayMenu · HOW MANY': /testid="overlay-count"/,
     'OverlayMenu · FRONT HEIGHT': /testid="overlay-front"/,
     'OverlayMenu · REMOVE': /data-testid="overlay-remove"/,
-    'ShelfMenu · CENTRE THIS BAY': /data-testid="shelf-centre"/,
+    // T72 F3 · it is the copied editor's CENTER ALL now — one button, in the
+    // dock, for PRO and retail alike.
+    'ShelfMenu · CENTRE THIS BAY': /data-centre-shelves="1"/,
     'PartitionMenu · EQUAL BAYS': /data-testid="partition-equal"/,
     'PulldownMenu · DROP': /testid="pulldown-drop"/,
     'PulldownMenu · REMOVE': /data-testid="pulldown-remove"/,

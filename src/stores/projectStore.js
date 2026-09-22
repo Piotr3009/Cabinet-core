@@ -104,10 +104,12 @@ import {
 import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
+// T72 F14 · `wallGapOf` — how far ONE unit stands off its wall: its own
+// `params.wall_gap`, or the project's number when nobody has said.
 import {
   buildRuns, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
   runMemberIds, runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
-  verticalsInBand,
+  verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
@@ -118,10 +120,12 @@ import {
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
 // Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
 import {
-  autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays, withAsked, withDeclined,
+  askedSides, autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays,
+  isAutoEndPanel, withAsked, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
-  corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
+  corniceCeilingNotice, corniceOption, corniceRefusals, corniceRunNotice,
+  runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
 // Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
 import {
@@ -130,7 +134,7 @@ import {
 // T53 (CLAUDE.md F8): the watch drawer's own entry, its four layouts, its
 // finish and the shelf it puts its glass in.
 import {
-  DEFAULT_WATCH_LAYOUT, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
+  DEFAULT_WATCH_LAYOUT, WATCH_FELT_COLOURS, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
   isShelfBoard, watchDrawerFixedHeight,
 } from '../engine/watchDrawer.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
@@ -2014,7 +2018,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // the 10 mm every unit stands off it. A return that stops at the carcass
       // back stops 10 mm short of the wall, which is a gap you can see along
       // the whole side of a run.
-      frontFaceDepthOf: (u) => wallClearance(profile)
+      // T72 F14: from the plane of THIS unit's doors to the wall — its own
+      // gap, which is the project's number until a client types one.
+      frontFaceDepthOf: (u) => wallGapOf(u, profile)
         + (Number(u.params?.depth) || 0)
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
@@ -2076,7 +2082,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: next,
       walls,
       roomHeight,
-      frontFaceDepthOf: (u) => wallClearance(profile)
+      // T72 F14: from the plane of THIS unit's doors to the wall — its own
+      // gap, which is the project's number until a client types one.
+      frontFaceDepthOf: (u) => wallGapOf(u, profile)
         + (Number(u.params?.depth) || 0)
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
@@ -2442,24 +2450,57 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{height:number, notices:string[]}}
    */
-  setCornice: (unitId, value) => {
+  //
+  // ─── TURN 72 (CLAUDE.md F8): ALL OR NONE ALONG A RUN ─────────────────────
+  //
+  // The owner, 22.09.2026:
+  //
+  //   *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
+  //   dodajesz szafę to człowiek jest confused."*
+  //
+  // The third bullet above already says the run decides the LENGTH. What it
+  // did not say is that the run decides the ANSWER — so a run could be half
+  // moulded, which is a moulding that stops in mid-air over a wardrobe.
+  //
+  // `engine/runs.js runMemberIds` is the list and its own header is the
+  // argument: *"The piece belongs to the run, so the DECISION belongs to the
+  // run."*  That is the sentence turn 14 wrote for the TOP INFILL, for the
+  // identical reason, and this is the cornice catching up with it.
+  //
+  // A cabinet of the run whose kit takes no cornice is SKIPPED rather than
+  // refused — `setCorniceBulk`'s own rule, and for its own reason: nobody
+  // asked for a moulding on the base unit in the middle of the run.
+  //
+  // ONE BATCH, so a run of four is one Ctrl+Z.
+  setCornice: (unitId, value) => runBatch(() => {
     const unit = get().units.find((u) => u.id === unitId);
-    if (!unit || !takesCornice(unit.type)) return { height: 0, notices: [] };
+    if (!unit || !takesCornice(unit.type)) return { height: 0, notices: [], unitIds: [] };
     const profile = getCabinetProfile();
     const height = corniceOption(value, profile);
+    const mates = runMemberIds(get().units, unitId, profile)
+      .filter((id) => takesCornice(get().units.find((u) => u.id === id)?.type));
+    const ids = new Set(mates.length ? mates : [unitId]);
     set((s) => ({
-      units: s.units.map((u) => (u.id === unitId
+      units: s.units.map((u) => (ids.has(u.id)
         ? { ...u, params: { ...u.params, cornice: height } }
         : u)),
     }));
     if (height > 0) {
       const wanted = profile.autoParts.cornice.infillHeight;
-      const own = Number(get().units.find((u) => u.id === unitId)?.params.top_infill_mm) || 0;
-      if (own < wanted) get().setTopInfill(unitId, wanted);
+      for (const id of ids) {
+        const own = Number(get().units.find((u) => u.id === id)?.params.top_infill_mm) || 0;
+        if (own < wanted) get().setTopInfill(id, wanted);
+      }
     }
     const notices = get().refreshAutoParts();
-    return { height, notices };
-  },
+    // …and it SAYS SO, which is F8's own clause: *"Removing a cornice from one
+    // wardrobe removes it from the run, with the notice saying so."*  A run of
+    // one says nothing — a cabinet on its own is not a run anybody is confused
+    // by — and the words are the engine's.
+    const said = corniceRunNotice({ height, count: ids.size, label: unit.params?.unit_num || null });
+    if (said) notices.push(said);
+    return { height, notices, unitIds: [...ids] };
+  }),
 
   // ── the manual pieces (turn 4, BACKLOG #16/#17) ──────────────────────────
   // A plinth, a top infill and an end panel are DECISIONS, not consequences of
@@ -3019,6 +3060,61 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *   exist: nobody declined anything, and recording a decline would silently
    *   forbid the panel on the day the junction came back.
    */
+  /**
+   * ─── TURN 72 (CLAUDE.md F5): THE PANEL LEAVES THE MOMENT A NEIGHBOUR
+   * ARRIVES ──────────────────────────────────────────────────────────────
+   *
+   * The owner, 22.09.2026:
+   *
+   *   *"jak dodajesz szafę obok powinien zniknąć panel i znika, ale dopiero
+   *   jak przesuniesz szafę od boku i przysuniesz do; funkcja jest napisana
+   *   'jak dosuniesz' a nie 'jak się pojawia'. Mała zmiana, ale musi być."*
+   *
+   * MEASURED, before a line was written. `addUnit` has called `settleLayout`
+   * since T51, and that settle PRUNES then GROWS — so the sweep did run on the
+   * add. What defeated it is the PLACEMENT: `freeSlotOnWall` measures the
+   * neighbour's whole span, panel included, so the new cabinet lands one board
+   * out (25 mm on a 25 mm panel). The prune then takes the panel off, the two
+   * cabinets are suddenly 25 mm APART, and the grow — correctly, for what it
+   * is looking at — puts a panel back on what is now a free end. Drag the new
+   * cabinet away and back and the magnet lands it flush, and only then does
+   * the panel stay off. That is his sentence exactly: the law is written *"jak
+   * dosuniesz"*.
+   *
+   * SO THE PANEL GOES FIRST, and the cabinet lands where it would have landed
+   * if it had been dragged. This is not a second law: `isAutoEndPanel` and
+   * `askedSides` are `engine/endPanelAuto.js`'s own two tests — the very pair
+   * `autoEndPanelStrays` applies — and the removal is the ordinary
+   * `removeEndPanel`, so the board leaves the cut list, the BOM and the CNC
+   * sheet by the routes that already exist.
+   *
+   * A panel the CLIENT asked for is permanent and is never touched (T65 F6),
+   * and a panel a hand added is not `auto_added` at all.
+   *
+   * `decline: false` is the whole of why this is not the right-click Remove: a
+   * junction that is being COVERED is not a junction the joiner said no to,
+   * and writing a decline here would stop the automat offering it again when
+   * the neighbour is dragged away.
+   *
+   * @returns {number} how much room the departing board freed, in mm
+   */
+  closeAutoEndPanelFacing: (unitId, side) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    // `side` arrives in BOTH dialects — PRO's library hands `'L'`/`'R'` and the
+    // stage's plus hands `'left'`/`'right'` (`engine/runs.js addPlusPoints`) —
+    // and `isLeftSide` is the app's own one reading of that, which every other
+    // caller in this store already goes through. Reading it by hand is how a
+    // plus on the right would have closed the panel on the left.
+    const want = isLeftSide(side) ? 'L' : 'R';
+    const ep = (unit.params?.end_panels || [])
+      .find((p) => (p.side === 'R' ? 'R' : 'L') === want && isAutoEndPanel(p)) || null;
+    if (!ep || askedSides(unit).includes(want)) return 0;
+    const thick = Number(ep.thickness) || 0;
+    get().removeEndPanel(unitId, ep.id, { decline: false });
+    return thick;
+  },
+
   removeEndPanel: (unitId, panelId, { decline = true } = {}) => {
     // ─── TURN 50 (CLAUDE.md F4): REMOVING IT BY HAND IS FINAL ──────────────
     //
@@ -3846,7 +3942,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   addUnit: (typeId, { params = null, near = null, side = null } = {}) => runBatch(() => {
     const profile = getCabinetProfile();
-    const state = get();
+    // T72 F5 · `let`, because closing a neighbour's auto end panel below moves
+    // the very spans this placement is measured against.
+    let state = get();
     // ─── TURN 24 (CLAUDE.md F3.1): NO THICKNESS, NO DRAWERS ─────────────────
     //
     // The owner's words, and it is a HARD gate rather than a warning: a drawer
@@ -3874,7 +3972,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // knew one direction, so the left-hand end of a run could not be reached by
     // adding OR by dragging (a unit butted against its neighbour has nowhere to
     // go, and a clamp that let it through would be a worse bug).
-    const beside = near ? state.units.find((u) => u.id === near) : null;
+    let beside = near ? state.units.find((u) => u.id === near) : null;
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -3998,6 +4096,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // out from under.
       unit.params.rides_offset_mm = Math.max(0, placed.x - (riderHost.position?.x_mm ?? 0));
     }
+    // ─── TURN 72 (CLAUDE.md F5): THE NEIGHBOUR'S PANEL GOES FIRST ───────────
+    //
+    // *"jak dodajesz szafę obok powinien zniknąć panel i znika, ale dopiero jak
+    // przesuniesz szafę od boku i przysuniesz do; funkcja jest napisana 'jak
+    // dosuniesz' a nie 'jak się pojawia'."*
+    //
+    // A cabinet is being put on that side, so the automat's own board there is
+    // about to be covered — and it has to leave BEFORE the placement is
+    // measured, or the new cabinet lands one board out, the settle prunes the
+    // panel, the two are suddenly apart and the grow puts it straight back.
+    // That is the whole of what he is describing, and the reasoning is written
+    // out at `closeAutoEndPanelFacing`.
+    //
+    // ONE LAW: the two tests are `engine/endPanelAuto.js`'s own — auto, and not
+    // asked for by hand — and the removal is the ordinary `removeEndPanel`. A
+    // panel the CLIENT asked for is permanent and nothing here touches it.
+    //
+    // The whole add is one `runBatch`, so this and the placement are one undo
+    // step; and it runs only where a SIDE was named, which is exactly the
+    // gesture the owner's sentence is about (the + on a cabinet's left or
+    // right). A wall-cursor add beside nothing has no junction to close.
+    if (beside && side) {
+      // …and the SPANS are re-read, because a panel that leaves changes both
+      // the neighbour the new cabinet is placed beside and the obstacle it is
+      // clamped against. `state` was read at the top of this action and is one
+      // board out of date the moment the board goes.
+      if (get().closeAutoEndPanelFacing(beside.id, side) > 0) {
+        state = get();
+        beside = state.units.find((u) => u.id === beside.id) || beside;
+      }
+    }
+
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
     // …and when a SIDE was asked for as well, that wall is the only one tried:
@@ -4060,6 +4190,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // and a drag asked nothing. Both are `settleLayout` now, and every action
     // that can move a cabinet's edge ends by calling it.
     get().settleLayout(unit.id);
+    // ─── TURN 72 (CLAUDE.md F8): …AND IT TAKES THE RUN'S CORNICE ───────────
+    //
+    // *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
+    // dodajesz szafę to człowiek jest confused."*
+    //
+    // AFTER the settle, deliberately: the settle is what decides which run
+    // this cabinet is IN (a panel closing between it and its neighbour moves
+    // it a board, and a board is the run gap twelve times over). Asking
+    // before it would be asking about a layout that is one move out of date.
+    //
+    // The ANSWER is the run's, read off the neighbours rather than guessed:
+    // whatever the members already carry is what this one takes, and
+    // `setCornice` then writes it across all of them — which is the same one
+    // law, pressed once. A run whose members carry NOTHING writes nothing at
+    // all, so a plain add is exactly the add it has always been.
+    if (takesCornice(unit.type)) {
+      const mates = runMemberIds(get().units, unit.id, profile)
+        .filter((id) => id !== unit.id && takesCornice(get().units.find((u) => u.id === id)?.type));
+      const answer = mates
+        .map((id) => Number(get().units.find((u) => u.id === id)?.params?.cornice) || 0)
+        .find((h) => h > 0) || 0;
+      if (answer > 0) get().setCornice(unit.id, answer);
+    }
     return { id: unit.id, error: null, wall: placed.wall };
   }),
 
@@ -4454,6 +4607,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         by: h.by,
         from: 'profile.wardrobe.minHeight / collision.clampUnitHeight',
       },
+      // ─── TURN 72 (CLAUDE.md F14): THE FOURTH NUMBER ───────────────────────
+      //
+      // *"tutaj jeszcze brakuje odsuniecia od sciany."*  Its floor is nought —
+      // a cabinet may stand on the plaster if somebody says so — and its
+      // ceiling is what the room has left once this carcass is in it, read
+      // from the very clamp the depth's ceiling is read from, so the field's
+      // end and `updateUnitParams`'s clamp cannot drift apart.
+      //
+      // `standard` is the PROJECT's own number, which is what the unit stands
+      // at until a hand types over it: the field shows it as the standard the
+      // way DEPTH shows the profile's.
+      wallGap: {
+        min: 0,
+        max: Math.max(0, Math.round(wallGapOf(unit, profile) + d.max - (Number(unit.params.depth) || 0))),
+        by: d.by,
+        standard: Math.round(wallClearance(profile)),
+        from: 'profile.room.wallBackClearance / collision.clampUnitDepth',
+      },
       step: profile.editor.mmStep,
     };
   },
@@ -4780,6 +4951,36 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }, profile);
       applied.depth = clamp.depth;
       if (clamp.blocked) notices.push(`Depth limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
+    }
+    // ─── TURN 72 (CLAUDE.md F14): FROM THE WALL ─────────────────────────────
+    //
+    // The owner, on the SIZE step: *"tutaj jeszcze brakuje odsuniecia od
+    // sciany."*  Per unit, with the project's number as the default.
+    //
+    // A gap is room taken out of the same reach the depth comes out of, so it
+    // is clamped by the SAME call the depth is clamped by and the SAME call
+    // the field's own maximum is read from (`unitSizeBoundsFor` below) —
+    // asked with a reach of 1e6 so the clamp answers with its own ceiling.
+    // A field whose end and whose setter disagreed would be T60's own fault
+    // said again: *"a control that cannot act must not be shown as if it
+    // could."*
+    if (patch.wall_gap != null) {
+      const depth = Number(applied.depth ?? unit.params.depth) || 0;
+      const room = clampUnitDepth({
+        depth: 1e6,
+        x: unit.position.x_mm, width: applied.width ?? unit.params.width,
+        wall, walls, others,
+        backInset: backStandoff(unit, profile),
+      }, profile);
+      // What the room leaves for the gap: the reach this unit stands in
+      // today (its own gap plus the depth still available to it) less the
+      // carcass that has to fit inside it.
+      const ceiling = Math.max(0, Math.round(wallGapOf(unit, profile) + room.max - depth));
+      const want = Math.max(0, Math.round(Number(patch.wall_gap) || 0));
+      applied.wall_gap = Math.min(want, ceiling);
+      if (applied.wall_gap < want) {
+        notices.push(`From the wall limited to ${formatMm(applied.wall_gap)} mm by ${room.by || 'the room'}.`);
+      }
     }
     if (patch.height != null) {
       const clamp = clampUnitHeight({
@@ -6467,6 +6668,35 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     get().reclampShelves(unitId);
   },
 
+  /**
+   * ─── TURN 72 (CLAUDE.md F3): CENTER ALL, AND IT IS ONE NAME ──────────────
+   *
+   * The owner, 22.09.2026, on the shelf's own menu: *"dodaj na dole tego
+   * modalu CENTER ALL."*
+   *
+   * *"One store action, `centreShelves(unitId, bayRef)`, used by PRO and
+   * retail; the docked editor's button is the only entry."*
+   *
+   * IT IS NOT A NEW LAW. The pair below is exactly what `adapter.centreBay`
+   * has pressed since T58 and what INSIDE's SPACE THEM EVENLY pressed after
+   * it: the bay's own even ladder (`evenShelfPositions`, one copy of
+   * KIT_WARDROBE_FULL's arithmetic), then the clamp, which has the final word
+   * for every path in this store. What is new is that both applications now
+   * say it with ONE WORD — a second name for one act is how two acts happen.
+   *
+   * `bayRef` is a bay index, or null for "every bay, each on its own ladder"
+   * — `redistributeShelves`' own reading, unchanged and never one ladder
+   * through a partition.
+   *
+   * @param {string} unitId
+   * @param {number|null} bayRef
+   */
+  centreShelves: (unitId, bayRef = null) => {
+    get().redistributeShelves(unitId, bayRef);
+    return get().units.find((u) => u.id === unitId)?.params?.sections?.[0]?.items
+      ?.filter((i) => i.kind === 'shelf').length || 0;
+  },
+
   /** ONE bay's own ladder. The loop above is the only caller that matters. */
   redistributeShelvesInBay: (unitId, bay = null) => {
     const s = get();
@@ -7043,6 +7273,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   setWatchFinish: (unitId, itemId, finishId) => {
     const hit = WATCH_FINISHES.find((f) => f.id === finishId)?.id || null;
     get().updateItem(unitId, itemId, { watch_finish: hit });
+    return hit;
+  },
+
+  /**
+   * ─── TURN 72 (CLAUDE.md F9): WHICH FELT ──────────────────────────────────
+   *
+   * The owner, 22.09.2026: *"dodaj materiałowe dno zamiast Veneer:
+   * ciemnozielone, czerwone, brązowe, czarne, tylko te 4 kolory filcu."*
+   *
+   * A CLOSED LIST, and the engine owns it (`WATCH_FELT_COLOURS`): a colour
+   * this workshop does not buy is refused here rather than stored and quietly
+   * ignored downstream, exactly as `setWatchFinish` above refuses a finish.
+   *
+   * It writes the COLOUR and nothing else. The FINISH is the row above it and
+   * stays the window's own act, so a joiner who picks a colour has said which
+   * felt and not that there is felt — `watchFeltOf` answers null for every
+   * other finish, so a stored colour on a sprayed tray buys no roll.
+   *
+   * @returns {string|null} the colour that was written
+   */
+  setWatchFelt: (unitId, itemId, colourId) => {
+    const hit = WATCH_FELT_COLOURS.find((c) => c.id === colourId)?.id || null;
+    get().updateItem(unitId, itemId, { watch_felt: hit });
     return hit;
   },
 

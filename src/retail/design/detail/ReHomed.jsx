@@ -115,17 +115,14 @@ function DrawerList({ unitId, drawers }) {
   );
 }
 
-export default function ReHomed({ row, unitId }) {
+export default function ReHomed({ row, unitId, onAddAccessories = null }) {
   const b = A.drawerBounds();
 
-  // DRAWERS — from `DrawersMenu`: HOW MANY, TOP DRAWER INSERT, GLASS TOP and
-  // the stack-wide FRONT HEIGHTS. One drawer's own height is the docked
-  // editor's `drawer-height` field, which is PRO's own.
+  // DRAWERS — HOW MANY, the stack-wide FRONT HEIGHTS, and (T72 F9) the one
+  // button that takes a client to the accessories drawer. One drawer's own
+  // height is the docked editor's `drawer-height` field, which is PRO's own.
   if (row.id === 'drawers') {
     const stack = A.drawerStack(unitId);
-    const refusals = A.insertRefusals(unitId);
-    const top = stack.top;
-    const glassWhy = A.glassRefusal(unitId);
     const fixed = A.stackHasFixedHeights(unitId);
     const word = A.stackWord(unitId);
     // T70 F3 · "front 150 · inside 94", per drawer, off the engine's own boards.
@@ -141,26 +138,46 @@ export default function ReHomed({ row, unitId }) {
             onPick={(id) => A.setStackCount(unitId, Number(id))}
           />
         </Field>
-        <Field label="TOP DRAWER INSERT">
-          <ChipRow
-            testid="drawers-insert"
-            value={A.topInsertOf(top)}
-            options={[
-              { id: 'none', label: 'NONE' },
-              { id: 'watches', label: 'WATCHES', reason: refusals.watches },
-              { id: 'belts', label: 'BELTS', reason: refusals.belts },
-              { id: 'shoes', label: 'SHOES', reason: refusals.shoes },
-            ]}
-            onPick={(id) => A.setTopInsert(unitId, id)}
-          />
-        </Field>
-        <Field label="GLASS TOP">
-          <ChipRow
-            testid="drawers-glass"
-            value={top?.watch_shelf_glass === true ? 'on' : 'off'}
-            options={[{ id: 'off', label: 'OFF' }, { id: 'on', label: 'ON', reason: glassWhy }]}
-            onPick={(id) => top && A.setGlassTop(unitId, top.id, id === 'on')}
-          />
+        {/* ─── T72 F9 · ONE BUTTON WHERE FOUR SECTIONS STOOD ─────────────
+            The owner, 22.09.2026, on his screenshot of this menu:
+
+              *"top drawers insert nie powinien tak wyglądać: powinien być ADD
+              ACCESSORIES DRAWER i powinno wziąć nas do menu i podświetlić Add
+              accessories drawer, i po 2kliku powinno się otworzyć menu, które
+              już jest."*
+
+            LICENSED REMOVALS, retail only — PRO's docked editor keeps every
+            one of its rows and the copy is untouched:
+
+              TOP DRAWER INSERT     `drawers-insert` · NONE · WATCHES · BELTS ·
+                                    SHOES. Its one live answer is the
+                                    accessories drawer, and that is this button.
+              GLASS TOP             `drawers-glass` · OFF · ON. It is the
+                                    ACCESSORIES DRAWER's own question and it is
+                                    in that drawer's own window tonight, beside
+                                    the layout it belongs to (F9's second half).
+              FRONTS OR BARE BOXES  `drawers-mount` — *"FRONTS OR BARE BOXES
+                                    usuń"*.
+              WHAT THE BOXES CARRY  `drawers-variant` — *"WHAT THE BOXES CARRY
+                                    też usuń"*, and the paragraph under them.
+
+            WHAT THE BUTTON DOES is three acts and NOT ONE NEW PATH: the ADD is
+            `INTERIOR_ROWS`' own `watch` call (`adapter.addAccessoriesDrawer`),
+            the STEP is the room's (`onAddAccessories`, exactly as the inner
+            plus walks to INSIDE), and the LIGHT is the shared store's
+            `addItemKind` — the flag PRO's own copied list already highlights a
+            row by, so it stays lit until the next click elsewhere. */}
+        <Field label="ACCESSORIES" note={A.accessoriesNote(unitId)}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="drawers-add-accessories"
+              onClick={() => onAddAccessories?.(unitId)}
+            >
+              ADD ACCESSORIES DRAWER
+            </Button>
+          </div>
         </Field>
         <Field label="FRONT HEIGHTS">
           {fixed ? (
@@ -208,43 +225,22 @@ export default function ReHomed({ row, unitId }) {
             </ul>
           </Field>
         ) : null}
-        {/* ─── T70 F2/F3 · THE SPECIFICATION, RE-HOMED FROM THE LEFT COLUMN ──
-            *"jak dodajemy internal drawers, to te informacje — tie, belt, with
-            fronts, bare boxes — wywal proszę."*  LEFT ADDS, RIGHT EDITS: the
-            six chips left INSIDE's drawer row and stand here, each keeping the
-            store path it always pressed.
+        {/* ─── T72 F9 · LICENSED REMOVALS: THE SPECIFICATION ─────────────
+            *"FRONTS OR BARE BOXES usuń; WHAT THE BOXES CARRY też usuń."*
 
-            WHY THEY ARE STACK-WIDE ROWS. They always were: the store's own
-            `addDrawers(unitId, count, MOUNT, height, zone, VARIANT)` writes
-            the same mount and the same variant onto every drawer of the stack
-            it builds. On the left they were add-time defaults; here they are
-            the same two answers, editable after the fact. */}
-        <Field label="FRONTS OR BARE BOXES" note={REASONS.bareBoxesLiveBehindDoors}>
-          <ChipRow
-            testid="drawers-mount"
-            value={A.stackMount(unitId)}
-            options={[
-              { id: 'overlay', label: 'WITH FRONTS', title: 'Each drawer gets a front of its own, behind the doors' },
-              { id: 'internal', label: 'BARE BOXES', title: 'No front of its own — the bare box lives behind the doors' },
-              { id: 'inset', label: 'INSET', reason: REASONS.insetStillToCome },
-            ]}
-            onPick={(id) => A.setStackMount(unitId, id)}
-          />
-        </Field>
-        <Field label="WHAT THE BOXES CARRY">
-          <ChipRow
-            testid="drawers-variant"
-            value={A.stackVariant(unitId)}
-            options={[
-              { id: 'std', label: 'STANDARD', title: 'The plain box' },
-              { id: 'belt_tie', label: 'BELT/TIE', title: 'Low box; the divider insert is a purchase line' },
-              { id: 'belt_tie_glass', label: 'BELT/TIE + GLASS', title: 'Display drawer: the glass is ordered to the box' },
-            ]}
-            onPick={(id) => A.setStackVariant(unitId, id)}
-          />
-        </Field>
-        {/* …and the paragraph that stood under those chips, re-homed whole. */}
-        <Said testid="drawers-stack-law">{A.stackLawWords(unitId)}</Said>
+            T70 F2/F3 re-homed those six chips here off the LEFT column, on the
+            owner's *"te informacje — tie, belt, with fronts, bare boxes —
+            wywal proszę"*. He has now seen them on the right and wants them
+            gone from the client's screen altogether, which is the same
+            sentence finished: a client buys a wardrobe, not a mount and a
+            variant. The paragraph that stood under them goes with them — it
+            explained the two answers nobody is choosing between any more.
+
+            NOT LOST AND NOT CUT: the store's `addDrawers(unitId, count, MOUNT,
+            height, zone, VARIANT)` is untouched, PRO's own docked editor keeps
+            every row, and turning `RETAIL_SHOW_WORKSHOP_TOOLS` on is not what
+            this is behind — these are RETAIL's own rows in retail's own file,
+            so they are DELETED here and nowhere else. Named in the PR body. */}
         {word ? <Said testid="drawers-said">{word}</Said> : null}
         {/* T67 F8 · the list, by name. The explanation of a FITTED drawer is
             the drawer's own, and it is in its own detail, below. */}
@@ -295,26 +291,25 @@ export default function ReHomed({ row, unitId }) {
     );
   }
 
-  // SHELVES — from `ShelfMenu`: the even ladder. One shelf's own height is the
-  // docked editor's `position-y`, which is PRO's own field.
-  if (row.id === 'shelves') {
-    return (
-      <div className="pbi-interior-more">
-        <Field label="SPACING" note="Evenly, between whatever stands above and below them.">
-          <div className="pbi-duty-actions">
-            <Button
-              kind="secondary"
-              size="small"
-              data-testid="shelf-centre"
-              onClick={() => A.centreBay(unitId, null)}
-            >
-              SPACE THEM EVENLY
-            </Button>
-          </div>
-        </Field>
-      </div>
-    );
-  }
+  // SHELVES — one shelf's own height is the docked editor's `position-y`, and
+  // the EVEN LADDER is the docked editor's CENTER ALL, which is PRO's own
+  // button now.
+  //
+  // ─── T72 F3 · LICENSED REMOVAL: `SPACE THEM EVENLY` ────────────────────
+  //
+  // The owner, 22.09.2026: *"dodaj na dole tego modalu CENTER ALL"* — and
+  // CLAUDE.md's clause beside it: *"One store action, `centreShelves(unitId,
+  // bayRef)`, used by PRO and retail; THE DOCKED EDITOR'S BUTTON IS THE ONLY
+  // ENTRY."*
+  //
+  // T66 F3 re-homed `ShelfMenu`'s CENTRE THIS BAY here because no copied
+  // editor had it. PRO's own `ElementProperties` has it tonight — `Center all`
+  // at the bottom of the shelf menu, pressing `centreShelves(unit.id,
+  // item.zone)` — so this row would be a SECOND button for one act, standing
+  // in the same panel, which is precisely what T66 F3 exists to prevent. It is
+  // not lost: it is the very button the owner asked for, one block lower, and
+  // it now centres the bay the selected shelf is in rather than every bay at
+  // once, which is what he drew.
 
   // THE PULL-DOWN RAIL — from `PulldownMenu`. A bought mechanism: the engine
   // cuts no board for it, so it has no panel, no copied editor and no click.

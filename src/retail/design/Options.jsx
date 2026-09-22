@@ -316,6 +316,32 @@ function SizePanel({ unit }) {
         />
       </Field>
 
+      {/* ─── T72 F14 · THE FOURTH FIELD ────────────────────────────────────
+          The owner, 22.09.2026, on this very step: *"tutaj jeszcze brakuje
+          odsuniecia od sciany."*  Answered the same day: PER WARDROBE, with
+          the project's own number as the default.
+
+          It is the unit's `params.wall_gap`, written through `setUnitSize` —
+          the SAME setter the other three use, which asks the room first and
+          hands back its refusal as a whole sentence. So the room refuses this
+          field first too, in the room's own words, and there is no second
+          path that moves a cabinet off its wall.
+
+          `standardAt` is the project's own `room.wallBackClearance`, so the
+          field says "standard" at the ten every wardrobe has stood at since
+          turn 8 and a client can see when he has left it. */}
+      <Field label="FROM THE WALL">
+        <NumberField
+          outOfRange={REASONS.outOfRange}
+          testid="size-wall-gap"
+          min={b.wallGap.min}
+          max={b.wallGap.max}
+          standardAt={b.wallGap.standard}
+          value={Math.round(A.wallGapOfUnit(unit.id))}
+          onCommit={(v) => A.setUnitSize(unit.id, { wall_gap: v }).said}
+        />
+      </Field>
+
       <p className="pbi-choice pbi-choice-15 pbi-panel-note">
         Millimetres, floor to top and wall to wall. We survey before we build, so these are the
         numbers we start from rather than the ones we cut to.

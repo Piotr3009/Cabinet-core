@@ -104,18 +104,36 @@ test('F2 · the same list inside the copied MODAL keeps every chip — it left t
 
 // ═══ 2 · F3 — AND EVERY ONE OF THEM HAS A NEW HOME ════════════════════════
 
-test('F3 · WITH FRONTS · BARE BOXES · INSET stand in the dock, on the stack', () => {
+// ─── OVERTURNED BY TURN 72 · F9 ────────────────────────────────────────────
+//
+// T70 F2 took these six chips OFF the left column on the owner's *"jak
+// dodajemy internal drawers, to te informacje — tie, belt, with fronts, bare
+// boxes — wywal proszę"*, and re-homed them in the dock, which is where this
+// test found them. He has now lived with them on the right, and on 22.09.2026
+// he finished the sentence:
+//
+//   *"FRONTS OR BARE BOXES usuń; WHAT THE BOXES CARRY też usuń."*
+//
+// So they are GONE FROM THE CLIENT'S SCREEN, not moved again — a LICENSED
+// REMOVAL, argued in `ReHomed.jsx` beside where they stood and named in the
+// PR body. This test therefore asserts the removal rather than the home, and
+// it asserts the two things that make it a removal and not a loss: the STORE
+// path they pressed is untouched, and the reasons they carried are still
+// written down for whoever offers them next.
+test('F3, overturned by T72 F9 · the six chips leave the client\'s screen, and the law does not', () => {
   const dock = read('src/retail/design/detail/ReHomed.jsx');
-  assert.match(dock, /testid="drawers-mount"/, 'the mount chips have no home');
-  assert.match(dock, /id: 'overlay', label: 'WITH FRONTS'/);
-  assert.match(dock, /id: 'internal', label: 'BARE BOXES'/);
-  assert.match(dock, /id: 'inset', label: 'INSET', reason: REASONS\.insetStillToCome/,
-    'INSET lost the reason it was greyed with');
-  assert.match(dock, /testid="drawers-variant"/, 'the variant chips have no home');
-  for (const label of ['STANDARD', 'BELT/TIE', 'BELT/TIE \\+ GLASS']) {
-    assert.match(dock, new RegExp(`label: '${label}'`), `${label} has no home`);
+  const uncommented = uncomment(dock);
+  for (const gone of ['testid="drawers-mount"', 'testid="drawers-variant"', 'testid="drawers-stack-law"']) {
+    assert.ok(!uncommented.includes(gone), `${gone} is back on the client's screen`);
   }
-  assert.match(dock, /testid="drawers-stack-law"/, 'the paragraph has no home');
+  // …and the removal is ARGUED where it happened.
+  assert.match(dock, /T72 F9 · LICENSED REMOVALS: THE SPECIFICATION/);
+  // THE STORE IS UNTOUCHED: the mount and the variant are still what
+  // `addDrawers` writes, so nothing about a drawer changed.
+  const store = read('src/stores/projectStore.js');
+  assert.match(store, /addDrawers: \(/);
+  assert.ok(REASONS.insetStillToCome.length > 10, 'INSET\'s reason was thrown away with the chip');
+  assert.ok(REASONS.bareBoxesLiveBehindDoors.length > 10, 'the mount row\'s note was thrown away');
 });
 
 test('F3 · the mount chip writes the WHOLE stack, through the store\'s own add', () => {
@@ -251,23 +269,26 @@ test('F2/F3 · …and where T70 F1 removed that partition, the paragraph says so
   assert.equal(S().unitResult(id).panels.filter((p) => p.part === 'PARTITION').length, 0);
 });
 
-test('F2/F3 · every chip that left the column is named, and reachable, in the dock', () => {
-  const dock = uncomment(read('src/retail/design/detail/ReHomed.jsx'));
+// ─── OVERTURNED BY TURN 72 · F9, for the reason above ─────────────────────
+//
+// The six are off the client's screen altogether now. What this test still
+// holds — and it is the half that was always the point — is that NOTHING WAS
+// CUT: the COPY carries every one of them, byte for byte, and turning the one
+// flag on gives a joiner PRO's row entire.
+test('F2/F3, overturned by T72 F9 · the copy still carries all six, HIDDEN and never cut', () => {
   const copy = read('src/retail/design/detail/AddItems.jsx');
-  // The six, paired: the copy's own hook on the left, the dock's chip id on
-  // the right. A chip with no pair is a control this turn lost.
-  const MOVED = [
-    ['data-drawer-mount="overlay"', "id: 'overlay'"],
-    ['data-drawer-mount="internal"', "id: 'internal'"],
-    ['Inset <span', "id: 'inset'"],
-    ["[null, 'Standard'", "id: 'std'"],
-    ["['belt_tie', 'Belt/tie'", "id: 'belt_tie'"],
-    ["['belt_tie_glass', 'Belt/tie + glass'", "id: 'belt_tie_glass'"],
+  const WERE = [
+    'data-drawer-mount="overlay"',
+    'data-drawer-mount="internal"',
+    'Inset <span',
+    "[null, 'Standard'",
+    "['belt_tie', 'Belt/tie'",
+    "['belt_tie_glass', 'Belt/tie + glass'",
   ];
-  for (const [was, now] of MOVED) {
-    assert.ok(copy.includes(was), `the copy no longer carries ${was}`);
-    assert.ok(dock.includes(now), `${was} left the column and has no home: ${now}`);
-  }
+  for (const was of WERE) assert.ok(copy.includes(was), `the copy no longer carries ${was}`);
+  // …and PRO's own row is the copy's own row, to the line.
+  assert.equal(copy.split('\n').length, read('src/components/AddItems.jsx').split('\n').length,
+    'the copy is not PRO\'s length — something was cut rather than hidden');
   assert.ok(REASONS.insetStillToCome.length > 10, 'INSET is greyed without a reason');
   assert.ok(REASONS.bareBoxesLiveBehindDoors.length > 10, 'the mount row lost its note');
 });

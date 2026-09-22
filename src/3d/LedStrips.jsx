@@ -191,14 +191,29 @@ export default function LedStrips({
     // T67 F10 · the accessories drawer's own ring, at a quarter — and never
     // more, whatever a profile says. The owner's sentence is on the profile
     // key (`appearance.lighting.accessoryDrawerGain`) and on the constant.
-    const accessoryGain = isAccessoryDrawerLed(s)
+    const accessoryGain = (isAccessoryDrawerLed(s)
       ? Math.min(
         ACCESSORY_LED_MAX_GAIN,
         Number(profile?.appearance?.lighting?.accessoryDrawerGain) > 0
           ? Number(profile.appearance.lighting.accessoryDrawerGain)
           : ACCESSORY_LED_MAX_GAIN,
       )
-      : 1;
+      : 1)
+      // ─── TURN 72 (CLAUDE.md F9): AND THE STRIP'S OWN POWER ────────────────
+      //
+      // The owner, 22.09.2026, of the glass on the accessories drawer:
+      // *"zmniejsz moc światła o połowę, powinno tylko tam świecić."*
+      //
+      // ONE NUMBER, and the ENGINE owns it: `engine/cabinet.js` stamps
+      // `power: 0.5` on the strip the glass births and on nothing else, so
+      // every other strip in the app reads `1` here and is exactly what it
+      // was. NO NEW LAMP — this is the lamp that was already there.
+      //
+      // It multiplies AFTER T67 F10's cap, which is how the two orders
+      // compose: *"nie więcej niż 25 procent od teraz"* is a ceiling and
+      // *"o połowę"* is a halving under it, so the accessories drawer's ring
+      // is a quarter, halved.
+      * (Number(s.power) > 0 ? Number(s.power) : 1);
     const emissiveIntensity = (lightOn ? emissiveOn : spec.view.offEmissive)
       * (s.kind === 'spot' ? spec.view.spotMultiplier : 1)
       * accessoryGain;

@@ -35,10 +35,15 @@ import { doorCountFor } from '../../engine/cabinet.js';
 // T65 F6: the engine's ONE visibility question, and the client's own
 // "permanent" record beside it.
 import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
+// T72 F1: which board an end panel is cut from — the project's own run-piece
+// switch, read here so the COLOUR chips state what the engine already resolves.
+// T72 F10: …and which SLOT any piece is cut from, which is how the material
+// row knows whether the project offers that piece a choice at all.
+import { materialSlotOf, runMaterialSetting } from '../../engine/materials.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
-import { hasTopInfill, unitTop } from '../../engine/runs.js';
-import { FRONT_STYLE_OPTIONS, normaliseScope } from '../../engine/design.js';
+import { hasTopInfill, unitTop, wallGapOf } from '../../engine/runs.js';
+import { FRONT_STYLE_OPTIONS, elementMaterialChoices, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 // T61 F3: the top box's own two engine answers — the type's defaults and the
@@ -48,6 +53,8 @@ import { riderBornHeight } from '../../engine/roomFit.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
 import { useUiStore } from '../../stores/uiStore.js';
+// T72 F10: the workshop's stock list, for the material row's own count.
+import { useMaterialAssignmentStore } from '../../stores/materialAssignmentStore.js';
 import {
   elementKind, elementLabel, isSelectableElement,
 } from '../../engine/elements.js';
@@ -913,6 +920,96 @@ export function addEndPanelByHand(unitId, side) {
 export function removeEndPanelByHand(unitId, panelId) {
   const res = S().removeEndPanel(unitId, panelId, { decline: true });
   return { ok: res !== false, said: '' };
+}
+
+// ─── T72 F1 · THE PANEL'S OWN MENU — TWO CHIPS WHERE PRO TYPES A NUMBER ───
+//
+// The owner, on the mock-up of 22.09.2026:
+//
+//   *"panel: up to ceiling; drugi równo z carcasem od dołu; a default do
+//   ziemi; reszta ok."*
+//
+// THREE ROWS AND A REMOVE, and not one number field: TOP `Carcass` | `Ceiling`,
+// BOTTOM `Carcass` | `Floor` (default `Floor`), COLOUR `As the fronts` |
+// `Other`. PRO keeps its four numeric fields and this file writes NOT ONE new
+// law: every chip below presses a store path that already existed and that
+// PRO's own field presses today, and they were read before they were used.
+//
+//   TOP    Carcass  `setEndPanelTop(unitId, epId, 0)`   — `above-unit-ep`'s field
+//          Ceiling  `endPanelToCeiling(unitId, epId)`   — the ▲ beside it
+//   BOTTOM Carcass  `updateEndPanel(…, { height: 'unit' })` — `end-panel-height`'s
+//          Floor    `updateEndPanel(…, { height: 'floor' })`   two options
+//                   …and both first clear `below_mm` through `setEndPanelBelow`,
+//                   which is `below-unit-ep`'s field, because the panel's OWN
+//                   drop OVERRIDES the mode (`engine/autoparts.js endPanelDrop`:
+//                   *"given one, it IS the drop, and the MODE is only what
+//                   answers when nobody has said"*). A chip that set a mode and
+//                   left a stale number under it would be a chip that lies.
+//   COLOUR          `setRunMaterial('end_panel', { sameAsFronts })` — the
+//                   project's own run-piece switch, ON by default since T16.
+//
+// THE STATE IS READ OFF THE ENGINE'S OWN PANEL, never off the stored record:
+// `meta.height`, `meta.top_mm` and `meta.below_mm` are what was CUT, and a wall
+// unit's panel reads `carcass` whatever its stored value claims (cabinet.js).
+
+/** The `end_panels` record behind an END-PANEL panel — PRO's own lookup. */
+const endPanelRecord = (unitId, panel) => (unitOf(unitId)?.params?.end_panels || [])
+  .find((ep) => ep.id === panel?.meta?.panelId) || null;
+
+/**
+ * WHAT THE PANEL'S MENU SHOWS, and what each chip presses.
+ *
+ * @returns {{id:string, side:string, top:'carcass'|'ceiling',
+ *            bottom:'carcass'|'floor', colour:'fronts'|'other',
+ *            headroom:number}|null}
+ */
+export function endPanelMenu(unitId, panel) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return null;
+  const design = migrateDesign(S().project.design);
+  const mode = String(panel?.meta?.height || ep.height || 'floor');
+  return {
+    id: ep.id,
+    side: ep.side === 'R' ? 'R' : 'L',
+    // The TOP is the number that was cut, not the mode: anything above the
+    // carcass is "to the ceiling" as far as a client is concerned, and 0 is
+    // flush with it.
+    top: Number(panel?.meta?.top_mm) > 0 ? 'ceiling' : 'carcass',
+    bottom: mode === 'floor' ? 'floor' : 'carcass',
+    colour: runMaterialSetting(design, 'end_panel').sameAsFronts ? 'fronts' : 'other',
+  };
+}
+
+/** TOP — flush with the carcass, or all the way up. */
+export function setEndPanelTopChip(unitId, panel, id) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return { ok: false, said: '' };
+  if (id === 'ceiling') S().endPanelToCeiling(unitId, ep.id);
+  else S().setEndPanelTop(unitId, ep.id, 0);
+  return { ok: true, said: '' };
+}
+
+/** BOTTOM — flush with the carcass, or down to the floor. */
+export function setEndPanelBottomChip(unitId, panel, id) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return { ok: false, said: '' };
+  // The own drop first: it outranks the mode, so a stale number would win.
+  S().setEndPanelBelow(unitId, ep.id, 0);
+  S().updateEndPanel(unitId, ep.id, { height: id === 'carcass' ? 'unit' : 'floor' });
+  return { ok: true, said: '' };
+}
+
+/** COLOUR — the fronts' board, or one of its own. */
+export function setEndPanelColourChip(unitId, panel, id) {
+  S().setRunMaterial('end_panel', { sameAsFronts: id !== 'other' });
+  return { ok: true, said: '' };
+}
+
+/** REMOVE PANEL — the same road EXTRAS takes out. */
+export function removeEndPanelChip(unitId, panel) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return { ok: false, said: '' };
+  return removeEndPanelByHand(unitId, ep.id);
 }
 
 /**
@@ -1827,6 +1924,24 @@ export const MENU_FOR_KIND = Object.freeze({
   'drawer-front': 'drawers',
   drawer: 'drawers',
   shelf: 'shelf',
+  // ─── T72 F1 · AND THE END PANEL COMES BACK INTO THE TABLE ────────────────
+  //
+  // The owner: *"jak kliknę 2 razy na panel boczny po prawej nie pokazuje mi
+  // się menu panelu."*
+  //
+  // `verify/t72/f1-probe.md` is the fact, committed before this key was added:
+  // the engine cuts the board, `isSelectableElement` and `opensOwnModal` both
+  // said true, the stage wrote the selection — and THIS TABLE answered null, so
+  // `DesignRoom` cleared the element and `dockFor` was never called at all.
+  //
+  // T66 F3 struck it out with the CARCASS, on turn 13's verdict that *"clicking
+  // a cabinet must select the CABINET"*. That verdict is about a side, a top, a
+  // plinth. An end panel is not carcass: `engine/elements.js` files it under
+  // ATTACHED_KINDS beside the DOOR — *"things you HANG ON the carcass
+  // afterwards, one at a time, and each of them is a decision with its own
+  // properties"* — and it is the one the client points at from across the room.
+  // One key, and the road it opens is F1's own three-chip menu.
+  'end-panel': 'panel',
   // ─── T61 F4 · RE-POINTED, AND SAID OUT LOUD ──────────────────────────────
   // T60 sent a divider to the WARDROBE menu, with the carcass, on turn 13's
   // verdict that *"clicking a cabinet must select the CABINET"*. That verdict
@@ -1889,6 +2004,11 @@ export const KIT_MENUS = Object.freeze({});
  */
 export const MENUS = Object.freeze([
   'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'overlay', 'partition',
+  // T72 F1 · the end panel's own, and the ninth: three chip rows and a REMOVE,
+  // in retail's own dock file beside the copied editor — the DOOR SWING
+  // pattern T69 F8 established, for the same reason (PRO keeps its numeric
+  // fields and a copy may not be edited).
+  'panel',
 ]);
 
 /**
@@ -2076,8 +2196,22 @@ export function selectionName(sel) {
 
 // ─── 1 · THE WARDROBE ──────────────────────────────────────────────────────
 
-/** The three sliders' ends, from the store's own reading of the engine. */
+/** The four fields' ends, from the store's own reading of the engine. */
 export const unitBounds = (unitId) => S().unitSizeBoundsFor?.(unitId) || null;
+
+/**
+ * ─── T72 F14 · HOW FAR THIS WARDROBE STANDS OFF ITS WALL ───────────────────
+ *
+ * The owner, on the SIZE step: *"tutaj jeszcze brakuje odsuniecia od
+ * sciany."*  The field shows what the ENGINE would use, which is the unit's
+ * own `params.wall_gap` when it has one and the project's number when it does
+ * not — `wallGapOf` is that one sentence, and this is retail asking it through
+ * the one door retail speaks engine by.
+ */
+export function wallGapOfUnit(unitId) {
+  const unit = S().units.find((u) => u.id === unitId) || null;
+  return unit ? wallGapOf(unit, getCabinetProfile()) : 0;
+}
 
 /**
  * A size, written the way PRO writes it (`UnitSizeModal`, `RightPanel`): the
@@ -2475,9 +2609,11 @@ export const setShelfHeight = (unitId, itemId, fieldMm) => {
  * is what every shelf retail's INTERIOR row adds is today.
  */
 export function centreBay(unitId, bay) {
-  const out = S().redistributeShelvesInBay(unitId, bay ?? null);
-  S().reclampShelves(unitId);
-  return out;
+  // T72 F3 · ONE store action, and this is the name it has: `centreShelves`
+  // is the pair this function used to press, said once, so PRO's CENTER ALL
+  // button and every retail caller travel the same road. *"One store action,
+  // `centreShelves(unitId, bayRef)`, used by PRO and retail."*
+  return S().centreShelves(unitId, bay ?? null);
 }
 
 /**
@@ -2578,6 +2714,61 @@ export function stackHasFixedHeights(unitId) {
 }
 
 /** Whatever the engine last said about this stack — its own warnings, verbatim. */
+/**
+ * ─── T72 F9 · WHAT THE ACCESSORIES BUTTON HAS TO SAY, IF ANYTHING ─────────
+ *
+ * ONE NOTE and only where there is something true to say — CLAUDE.md's own
+ * *"no more than one per panel"* is a rule about callers, and this is the
+ * caller obeying it.
+ *
+ * A wardrobe that already HAS the drawer says so, because the button then
+ * takes the client to it rather than making a second one (the store refuses a
+ * second and that refusal stands). A wardrobe that has none says nothing at
+ * all: a button with a sentence under it explaining what pressing it will do
+ * is a button that does not read as one.
+ */
+// ─── T72 F10 · THE MATERIAL ROW, ONLY WHERE THERE IS A CHOICE ─────────────
+//
+// Asked of the owner, 22.09.2026, whether a piece's own material should show
+// on a client's screen at all, his answer was: *"tak"* — and CLAUDE.md writes
+// the condition out: *"The `material` row of the docked editor shows in retail
+// only when the project carries more than one material of that piece's role
+// (carcass or front, from the design's type lists). One material: no row."*
+//
+// A CONTROL THAT CANNOT ACT IS NOT DRAWN — #58, the law this whole application
+// is written under. A wardrobe built from one board and faced in one front has
+// nothing to choose between, and a picker offering one row is a question with
+// one answer.
+//
+// THE COUNT IS THE DESIGN'S OWN TYPE LISTS, through `projectPalette` —
+// `elementMaterialChoices` is the very list PRO's own `material` row renders,
+// so what this counts and what that would offer cannot disagree. A FRONT piece
+// counts the front types; everything else counts the carcass types, which is
+// `engine/materials.js materialSlotOf`'s own reading of a panel and not a
+// second one.
+//
+// @returns {number} how many materials this piece could be cut from
+export function materialChoiceCount(panel) {
+  if (!panel) return 0;
+  const design = migrateDesign(S().project.design);
+  const slot = materialSlotOf(panel, null, design);
+  const kind = slot.kind === 'front' ? 'front' : 'carcass';
+  // The workshop's stock list, read the way the store reads it — it only names
+  // the boards; the COUNT is the design's own type lists either way.
+  const stock = (() => {
+    try { return useMaterialAssignmentStore.getState().materials || []; } catch { return []; }
+  })();
+  return elementMaterialChoices(design, P(), stock).filter((c) => c.kind === kind).length;
+}
+
+/** …and the question the dock actually asks: is there anything to choose? */
+export const pieceHasMaterialChoice = (panel) => materialChoiceCount(panel) > 1;
+
+export function accessoriesNote(unitId) {
+  const has = itemsOf(unitId).some((i) => i?.watch_insert === true || String(i?.variant || '') === 'watch');
+  return has ? 'This wardrobe already has one — the button takes you to it.' : '';
+}
+
 export function stackWord(unitId) {
   return (resultOf(unitId)?.warnings || [])
     .filter((w) => String(w.code || '').toUpperCase().startsWith('DRAWER'))
@@ -3265,7 +3456,56 @@ import { railChosenAlone } from '../../engine/railAssembly.js';
 
 /** Open one of PRO's windows in the SHARED ui store's own slot. */
 export const openEditor = (name, args = null) => U().openModal(name, args);
+
+/**
+ * ─── T72 F7 · IS THE LIGHTING PANEL STANDING, AND THE WAY BACK OUT ────────
+ *
+ * The owner: *"nie powinno wyłączyć aż do momentu, że albo wyłączę sam w menu,
+ * albo zrobię 2klik na innym elemencie lub na ścianie."*
+ *
+ * LIGHTS MODE IS THE LIGHTING WINDOW BEING OPEN, and nothing else: there is no
+ * second flag and there is no state of retail's own. `verify/t72/f7-probe.md`
+ * walks all three of CLAUDE.md's candidates against this very reading.
+ */
+export const lightsModeOn = () => U().modal === 'lighting';
+
 export const closeEditor = () => U().closeModal();
+
+// ─── T72 F9 · ADD ACCESSORIES DRAWER — ONE BUTTON, THREE ACTS ─────────────
+//
+// The owner, 22.09.2026, on his screenshot of the DRAWERS menu:
+//
+//   *"top drawers insert nie powinien tak wyglądać: powinien być ADD
+//   ACCESSORIES DRAWER i powinno wziąć nas do menu i podświetlić Add
+//   accessories drawer, i po 2kliku powinno się otworzyć menu, które już
+//   jest."*
+//
+// THREE ACTS AND NOT ONE NEW PATH:
+//
+//   THE ADD      `INTERIOR_ROWS`' own `watch` entry — the very call the INSIDE
+//                row makes, found by id rather than restated, so there is one
+//                place that knows how an accessories drawer is added. The
+//                store refuses a second one on a unit that has one, and that
+//                refusal stands: pressing this on a wardrobe that already has
+//                the drawer takes the client to it rather than arguing.
+//   THE STEP     the caller's, because the step is `DesignRoom`'s own state —
+//                this returns `ok` and the room does the walking, exactly as
+//                the inner plus does (`onAddInside`).
+//   THE LIGHT    `ui.setAddItemKind('watch_drawer')` — the SHARED store's own
+//                flag, which is what `AddItems` (PRO's copied list) already
+//                highlights a row by. *"the row is highlighted until the next
+//                click elsewhere"* is that flag's own life, unchanged.
+export function addAccessoriesDrawer(unitId) {
+  const row = INTERIOR_ROWS.find((r) => r.id === 'watch');
+  if (!row || !unitOf(unitId)) return { ok: false, said: '' };
+  const before = itemsOf(unitId).filter((i) => i?.watch_insert === true).length;
+  row.add(S(), unitId);
+  const after = itemsOf(unitId).filter((i) => i?.watch_insert === true).length;
+  // THE LIGHT is set either way: a client sent to the row is shown the row,
+  // whether the drawer was made just now or was already there.
+  U().setAddItemKind?.('watch_drawer');
+  return { ok: after > before, already: after > 0 && after === before, said: lastEngineWord() };
+}
 /** The rectangle of the control that asked (rule 15: beside, never on). */
 export const anchorOf = (e) => anchorOfEvent(e);
 /** The scene's own selection — the one `LightingPanel` offers a strip under. */

@@ -36,6 +36,19 @@ import * as A from '../adapter.js';
 //                     owner's screenshot called *"the right-hand panel, which
 //                     is already showing this piece"*.
 //
+// ─── T72 F1 · AND A THIRD, FOR THE ONE PIECE PRO ANSWERS IN NUMBERS ───────
+//
+//   { chips }         RETAIL'S OWN BLOCK, named here and rendered by
+//                     `Detail.jsx`. Exactly one piece takes this road and the
+//                     reason is F1's own sentence: *"No number fields in
+//                     retail. … PRO keeps its numeric fields."*  PRO's end
+//                     panel is FOUR numbers; the client's is three chip rows
+//                     and a REMOVE, pressing the same store paths. A copy may
+//                     not be edited and PRO may not lose a field, so the only
+//                     lawful home for a DIFFERENT answer is retail's own file
+//                     — which is exactly where T69 F8 put DOOR SWING, for
+//                     exactly this reason.
+//
 // ─── THE WORKSHOP FIELDS ARE HIDDEN, NOT CUT ───────────────────────────────
 //
 // `ElementProperties` takes PRO's OWN `omit` prop (T33 wrote it so the door
@@ -65,8 +78,63 @@ const WORKSHOP_FIELDS = Object.freeze([
   'material',
 ]);
 
-/** What a docked `ElementProperties` leaves out — nothing, for a joiner. */
-const omitted = () => (RETAIL_SHOW_WORKSHOP_TOOLS ? [] : [...WORKSHOP_FIELDS]);
+/**
+ * ─── T72 F2 / F12 · SET BACK COMES OUT OF THAT LIST, FOR TWO PIECES ───────
+ *
+ * The owner, 22.09.2026, of the shelf:
+ *
+ *   *"nie ma opcji back 20 mm, czyli regulacji głębokości"*
+ *
+ * …and of the divider:
+ *
+ *   *"w 2klik menu przegrody nie ma możliwości regulacji cofnięcia lub
+ *   wyrównania głębokości (jak w półkach)"*
+ *
+ * So `setback` is a CLIENT's question on a SHELF and on a PARTITION, and the
+ * workshop's on everything else. CLAUDE.md F2 says exactly that and draws the
+ * line exactly there: *"`setback` leaves `WORKSHOP_FIELDS` in `docked.jsx` for
+ * the shelf and the partition only; the rest of that list stays hidden."*
+ *
+ * `setback-unit` — the FIXED shelf's and the rail's, which is the UNIT's own
+ * number and moves every such board in the cabinet — stays hidden, and so does
+ * every other name above.
+ */
+const SETBACK_IS_THE_CLIENT_S = Object.freeze(['shelf', 'partition']);
+
+/**
+ * ─── T72 F10 · MATERIAL, IN RETAIL, ONLY WHEN THERE IS A CHOICE ───────────
+ *
+ * Asked whether a piece's own material should reach a client's screen at all,
+ * the owner answered *"tak"* — and CLAUDE.md writes the condition out: *"The
+ * `material` row of the docked editor shows in retail only when the project
+ * carries more than one material of that piece's role (carcass or front, from
+ * the design's type lists). One material: no row. PRO unchanged."*
+ *
+ * A CONTROL THAT CANNOT ACT IS NOT DRAWN — #58. A wardrobe built from one
+ * board and faced in one front has nothing to choose between, and a picker
+ * with one row in it is a question with one answer.
+ *
+ * The COUNT is the ADAPTER's (`pieceHasMaterialChoice`), which reads the very
+ * list PRO's own `material` row renders, so what is counted and what would be
+ * offered cannot disagree.
+ */
+const MATERIAL_NEEDS_A_CHOICE = 'material';
+
+/**
+ * What a docked `ElementProperties` leaves out — nothing, for a joiner.
+ *
+ * The KIND is the SELECTION's own (`adapter.resolveSelection` stamps it, off
+ * `engine/elements.js elementKind`), never read from the panel here: this file
+ * asks the adapter and the adapter asks the engine, which is the boundary
+ * `turn59-f4` holds every retail file to.
+ */
+const omitted = (kind = null, panel = null) => (RETAIL_SHOW_WORKSHOP_TOOLS
+  ? []
+  : WORKSHOP_FIELDS.filter((f) => {
+    if (f === 'setback') return !SETBACK_IS_THE_CLIENT_S.includes(kind);
+    if (f === MATERIAL_NEEDS_A_CHOICE) return !A.pieceHasMaterialChoice(panel);
+    return true;
+  }));
 
 /**
  * The modal names the DOCK owns. `Editors.jsx` renders exactly these inside
@@ -79,11 +147,11 @@ export const DOCK_MODALS = Object.freeze(['element', 'rail', 'watch-layout']);
  * WHICH EDITOR EDITS THIS SELECTION.
  *
  * @param {object} selection — `adapter.resolveSelection`'s own shape
- * @returns {{modal?:string, args?:object, props?:object}|null}
+ * @returns {{modal?:string, chips?:string, args?:object, props?:object}|null}
  */
 export function dockFor(selection) {
   if (!selection?.unitId) return null;
-  const { menu, unitId, panel, item } = selection;
+  const { menu, unitId, panel, item, kind } = selection;
 
   // THE DOOR — `DoorModal`, PRO's window for every piece: the split, the
   // hinges, the handle, the mirror, and section A's own fields.
@@ -104,9 +172,16 @@ export function dockFor(selection) {
     return route ? { modal: route.modal, args: route.args } : null;
   }
 
+  // THE END PANEL — retail's own three chips (T72 F1). It is the ONE piece
+  // whose client answer is not PRO's answer, and the divergence is licensed by
+  // name: *"No number fields in retail."*
+  if (menu === 'panel') {
+    return panel ? { chips: 'end-panel', args: { unitId, panelId: panel.id } } : null;
+  }
+
   // EVERYTHING ELSE THE ENGINE CUTS A BOARD FOR — the shelf, the divider, a
   // drawer front, a drawer box, an overlay front, a shoe drawer's face. PRO's
   // own piece panel, on the piece.
   if (!panel) return null;
-  return { props: { panel, item, omit: omitted() } };
+  return { props: { panel, item, omit: omitted(kind, panel) } };
 }

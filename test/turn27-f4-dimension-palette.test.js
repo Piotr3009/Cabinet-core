@@ -85,7 +85,16 @@ test('F4.1 the PLATE is the default and carries no halo; the halo lives ONLY beh
   assert.match(body, /if \(!bare\) \{[\s\S]{0,600}?fillRect/, 'the plate is painted on the default path');
   const firstStroke = body.indexOf('strokeText');
   assert.ok(firstStroke > bareAt, 'no stroke before the switch — the plate path cannot halo');
-  assert.match(body, /if \(bare\) \{\n\s*c\.lineJoin/, 'halo settings live behind the bare switch');
+  // ─── AMENDED BY TURN 72 · F13 ────────────────────────────────────────
+  // The owner, of the widths between two vertical partitions: *"są teraz
+  // białe i gruba czcionka; to tylko zmień."* The white he means IS this
+  // halo, so its opacity became a profile number and the branch now reads
+  // `if (haloed)` where `haloed = bare && halo > 0`. The property this line
+  // has always guarded is unchanged and in fact narrower: a halo is still
+  // reachable ONLY from inside the bare switch, and now only when it is
+  // asked for.
+  assert.match(body, /const haloed = bare && halo > 0;/, 'the halo is bare-only, and opt-in');
+  assert.match(body, /if \(haloed\) \{\n\s*c\.lineJoin/, 'halo settings live behind the bare switch');
 });
 
 test('F4.1 the INK is the plate’s, not the line’s — as it was before turn 26', () => {
@@ -112,7 +121,16 @@ test('F4.2 one component: nothing else in the scene draws a dimension value', ()
   const plates = ['../src/3d/DistanceArrows.jsx', '../src/3d/HoverDimensions.jsx', '../src/3d/UnitView.jsx'];
   for (const file of plates) {
     const src = readFileSync(new URL(file, import.meta.url), 'utf8');
-    assert.doesNotMatch(src, /labelPlate|labelInk/, `${file} does not paint a dimension label`);
+    // ─── AMENDED BY TURN 72 · F13 ──────────────────────────────────────
+    // *"chodziło mi o napisy pomiędzy vertical przegrodami, są teraz białe
+    // i gruba czcionka; to tylko zmień."* `HoverDimensions` now CHOOSES an
+    // ink for that one chain (the profile's `bayInk`) and hands it to the
+    // same component as a style. Choosing is not painting: the guard this
+    // test exists for is that the glyphs are rasterised in one place, so it
+    // is restated as that — no canvas, no fill, no stroke, anywhere but
+    // `DimensionChain`.
+    assert.doesNotMatch(src, /labelPlate\b/, `${file} does not paint a dimension label`);
+    assert.doesNotMatch(src, /CanvasTexture|fillText|strokeText|createElement\('canvas'\)/, `${file} rasterises nothing`);
   }
   assert.equal((chain.match(/CanvasTexture/g) || []).length, 1, 'one label texture, in one component');
 });

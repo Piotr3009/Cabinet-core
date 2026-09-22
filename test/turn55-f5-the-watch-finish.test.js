@@ -54,9 +54,16 @@ function sprayedFrontDesign(hex) {
 
 const UNIT = { params: {} };
 
-test('F5 — the graves: oak and walnut are gone from the control and fall back to Project', () => {
-  assert.deepEqual(WATCH_FINISHES.map((f) => f.id), ['spray'], 'one surviving choice beside Project');
+// ─── AMENDED BY TURN 72 · F9 ────────────────────────────────────────────────
+// The GRAVES are the claim and they are untouched: a stored oak still reads as
+// Project and no reference to either survives in the module. What is new is a
+// THIRD answer the owner added on 22.09 — FELT BASE, in four colours — and an
+// addition is not a resurrection.
+test('F5, amended T72 — the graves: oak and walnut fall back to Project; felt is the new third', () => {
+  assert.deepEqual(WATCH_FINISHES.map((f) => f.id), ['spray', 'felt'],
+    'two surviving choices beside Project');
   assert.equal(WATCH_FINISHES[0].label, 'Sprayed');
+  assert.equal(WATCH_FINISHES[1].label, 'Felt base');
   assert.equal(watchFinishOf({ watch_finish: 'oak' }), null, 'a stored oak reads as Project now');
   assert.equal(watchFinishOf({ watch_finish: 'walnut' }), null, '…and a stored walnut');
   // Physical deletion: no reference survives in the module.

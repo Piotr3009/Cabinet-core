@@ -6,6 +6,7 @@ import { Button } from './controls.jsx';
 import Editors from './Editors.jsx';
 import ElementProperties from './detail/ElementProperties.jsx';
 import { DOCK_MODALS, dockFor } from './detail/docked.jsx';
+import EndPanel from './detail/EndPanel.jsx';
 import ReHomed, { rowForSelection } from './detail/ReHomed.jsx';
 
 // ─── 7 · THE DETAIL — A PANEL THAT SLIDES IN OVER THE STAGE ────────────────
@@ -34,7 +35,8 @@ import ReHomed, { rowForSelection } from './detail/ReHomed.jsx';
 // floating element window is gone, and there is ONE surface on which a
 // selected element is edited.
 //
-// TWO SHAPES, because PRO's own editors have two — see `detail/docked.jsx`:
+// THREE SHAPES, because PRO's own editors have two and one piece has a client
+// answer of its own — see `detail/docked.jsx`:
 //
 //   a copied WINDOW reads its subject off the shared ui store's `modalArgs`,
 //   so the dock WRITES that slot (with no anchor — the panel is the place) and
@@ -45,6 +47,10 @@ import ReHomed, { rowForSelection } from './detail/ReHomed.jsx';
 //   a copied PANEL takes its subject as props, and `ElementProperties` — PRO's
 //   own piece panel, the very surface the floating window was showing — is
 //   rendered straight into the slot.
+//
+//   a CHIP BLOCK is retail's own, and there is exactly one: T72 F1's end-panel
+//   menu, because PRO answers that piece in four numbers and F1 says *"No
+//   number fields in retail."*  It presses PRO's own store paths.
 //
 // THE WORKSHOP FIELDS ARE HIDDEN, NOT CUT: through PRO's own `omit` prop where
 // retail is the caller (`docked.omitted`), and through the room's own
@@ -114,15 +120,53 @@ export default function Detail(props) {
   // re-points itself at a sibling split segment through this very slot, and
   // that is its business, not the dock's.
   const modal = useUiStore((s) => s.modal);
+  // ─── T72 F7 · LIGHTS MODE STAYS ON ───────────────────────────────────────
+  //
+  // The owner, 22.09.2026:
+  //
+  //   *"po naciśnięciu LED wyłącza mi się funkcja lights i zaznacza mi drzwi,
+  //   a nie powinno; nie powinno wyłączyć aż do momentu, że albo wyłączę sam w
+  //   menu, albo zrobię 2klik na innym elemencie lub na ścianie."*
+  //
+  // `verify/t72/f7-probe.md` is the fact, and it convicts THIS EFFECT. Neither
+  // of the other two candidates touches the mode: the LED button only OPENS
+  // the panel, and `LightingPanel` is `sticky` — its ON and OFF write
+  // `design.lighting.on` and leave the window where it is. What ends lights
+  // mode is a SINGLE CLICK on a leaf: the stage writes `selectedElement`, the
+  // room resolves it to the `door` menu, and the line below then calls
+  // `ui.openModal('element')`, which REPLACES `lighting` (the nav has
+  // `pushModal` for a nested surface and this is not it).
+  //
+  // So the dock does not touch the slot while the lighting panel is standing.
+  // One gate, in the one handler the probe named, and every exit the owner
+  // listed still works:
+  //
+  //   the menu's own button   `ViewBar`'s LED toggles it (`DesignRoom`)
+  //   2klik on an element     the SCENE opens that element's window itself
+  //                           (`Scene.jsx onEditElement`), which replaces
+  //                           `lighting` — and on the next render this effect
+  //                           sees an ordinary modal and behaves as it always
+  //                           did
+  //   2klik on the wall       `Room`'s own second gesture (`Scene.jsx`)
+  //
+  // A single click inside the mode therefore never opens a door's editor. It
+  // still SELECTS, which is what `LightingPanel` is waiting for: its whole
+  // flow is *"click the shelf you want the LED under"*, and it reads the same
+  // `selectedElement` the stage writes.
+  const lightsMode = modal === 'lighting';
   useEffect(() => {
+    if (lightsMode) return;
     const ui = useUiStore.getState();
     if (name) { if (ui.modal !== name) ui.openModal(name, args); return; }
     if (DOCK_MODALS.includes(ui.modal)) ui.closeModal();
     // `args` is `key`'s own content; `key` is in the list so a re-point runs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name, key, modal]);
+  }, [name, key, modal, lightsMode]);
 
-  const open = Boolean(route);
+  // …and the panel does not slide in OVER the lighting window either: a client
+  // in lights mode who clicks a shelf is pointing at where the LED goes, not
+  // asking to edit the board.
+  const open = Boolean(route) && !lightsMode;
 
   return (
     <aside
@@ -131,7 +175,7 @@ export default function Detail(props) {
       data-open={open ? 'yes' : 'no'}
       data-duty={open ? 'detail' : 'closed'}
       data-menu={open ? selection.menu : ''}
-      data-editor={open ? (route.modal || 'element-properties') : ''}
+      data-editor={open ? (route.modal || route.chips || 'element-properties') : ''}
       aria-hidden={open ? undefined : 'true'}
     >
       {open ? (
@@ -157,7 +201,16 @@ export default function Detail(props) {
               component, moved whole; the selection names its row. */}
           {rowForSelection(selection) && selection?.unitId ? (
             <div data-testid="dock-rehomed">
-              <ReHomed row={rowForSelection(selection)} unitId={selection.unitId} />
+              {/* T72 F9 · ADD ACCESSORIES DRAWER walks to the INSIDE step, and
+                  the STEP is the room's own state — so the room hands down the
+                  walk, exactly as it hands it to the inner plus
+                  (`onAddInside`). The ADD and the row's LIGHT are the
+                  adapter's; this is only the door between them. */}
+              <ReHomed
+                row={rowForSelection(selection)}
+                unitId={selection.unitId}
+                onAddAccessories={props.onAddAccessories}
+              />
             </div>
           ) : null}
 
@@ -212,6 +265,16 @@ export default function Detail(props) {
                 ) : null}
               </div>
             </div>
+          ) : null}
+
+          {/* ─── T72 F1 · THE END PANEL'S OWN MENU ─────────────────────────
+              The one piece whose client answer is not PRO's — three chip rows
+              and a REMOVE where PRO types four numbers. Retail's own block,
+              in retail's own file, pressing PRO's own store paths: the DOOR
+              SWING pattern above, for the reason `detail/docked.jsx` states
+              beside the `{ chips }` shape. */}
+          {route.chips === 'end-panel' && selection?.unitId ? (
+            <EndPanel unitId={selection.unitId} panel={selection.panel} />
           ) : null}
 
           {/* THE COPIED PANEL — PRO's own piece window, on the piece. */}

@@ -1265,6 +1265,17 @@ function RenderRig({ onReady, unitsRef }) {
  */
 export default function Scene({
   onCaptureReady, onRenderReady, onAddPlus = null, onAddInside = null, onAddFirst = null,
+  // ─── T72 F7 · A 2KLIK ON THE ROOM'S OWN SURFACES ─────────────────────────
+  //
+  // The owner, of lights mode: *"nie powinno wyłączyć aż do momentu, że albo
+  // wyłączę sam w menu, albo zrobię 2klik na innym elemencie lub na ścianie."*
+  //
+  // The SINGLE click is unchanged and still only drops the selection (turn 11).
+  // This is the second gesture, REPORTED and never acted on here: T37 F4c's own
+  // law is that nothing in the 3-D closes a modal, and it still holds — the
+  // scene says what happened and the caller decides what it means. ADDITIVE and
+  // default null, like the four above, so PRO's wall is the wall it always had.
+  onBackgroundDouble = null,
   // ─── T65 F10 · THE INNER PLUS, HIDDEN WHILE THE STEP IS ALREADY ASKING ───
   // The owner's point 5: the plus in the middle of a wardrobe hides while the
   // INSIDE menu is open — *"two doors to the same act confuse."* ADDITIVE and
@@ -1633,6 +1644,23 @@ export default function Scene({
         showLabels={showDimensions}
         profile={profile}
         onBackground={dropSelection}
+        // ─── TURN 72 (CLAUDE.md F7): A 2KLIK ON THE WALL ENDS A STICKY MODE ─
+        //
+        // The owner, of lights mode: *"nie powinno wyłączyć aż do momentu, że
+        // albo wyłączę sam w menu, albo zrobię 2klik na innym elemencie lub na
+        // ścianie."*
+        //
+        // The SINGLE click is unchanged and still only drops the selection.
+        // This is the second gesture, and it closes whatever STICKY editor is
+        // standing — the lighting panel is one (`sticky`, so a click in the
+        // scene reaches the scene and the window does not close on it), and a
+        // sticky window with no way out but its own × is the thing the owner
+        // is describing from the other side.
+        //
+        // NOTHING IN THE 3-D CLOSES A MODAL (T37 F4c, and it still holds): the
+        // scene REPORTS the gesture and the caller decides. PRO passes
+        // nothing, so PRO's wall is the wall it always had.
+        onBackgroundDouble={onBackgroundDouble}
         // ─── Turn 14 (CLAUDE.md F1.5b) ───
         // "One wall" has decided one thing since turn 7 — whether the
         // new-project flow showed Room setup — and the scene was never told.

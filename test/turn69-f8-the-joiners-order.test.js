@@ -165,11 +165,23 @@ test('F8 · the swing row is in the dock, and it presses the store\'s own call',
   assert.match(dock, /disabled=\{swing\.forced\}/, 'the row offers a choice the engine has taken');
 });
 
-test('F8 · the hinge MODEL stays hidden — T68 F6 is not undone', () => {
+// ─── AMENDED BY TURN 72 · F6 ───────────────────────────────────────────────
+//
+// The claim F8 cares about is the HINGE MODEL — *"the swing is the CLIENT's
+// choice, the hinge model stays hidden"* — and it is untouched: ASSIGN OTHER
+// HINGE, the catalogue dropdown that picks which hinge the workshop buys, is
+// still out of the client's dock.
+//
+// The HEIGHT ROWS are a different block and the owner asked for them back on
+// 22.09.2026: *"mamy fajny w PRO to menu z zawiasami i ze strzałkami up and
+// down, skopiuj z PRO."*  They are not a hinge model; they are where the
+// hinges SIT on the door, which is a fact about the wardrobe he is buying.
+test('F8, amended T72 · the hinge MODEL stays hidden — the swing row is still not in the copy', () => {
   const css = read('src/retail/styles/room.css');
   assert.match(css, /\[data-hinge-modal\] > div:has\(> \[data-hinge-assign\]\)/,
     'the hinge picker came back into the client\'s dock');
-  assert.match(css, /\[data-hinge-modal-rows\]/, 'the hinge-height rows came back');
+  assert.ok(!/\.pbi-dock \[data-hinge-modal-rows\]/.test(css),
+    'the height rows are still hidden — T72 F6 brought them back');
   // …and the swing row is NOT inside the copy — the copy is still a copy.
   const copy = read('src/retail/design/detail/DoorModal.jsx');
   assert.ok(!/dock-door-swing|dock-swing-/.test(copy), 'F8 wrote a row into a copied window');

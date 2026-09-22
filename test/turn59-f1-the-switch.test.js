@@ -73,6 +73,30 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
+  // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
+  // client cannot reach. Three of his fourteen points are answered in PRO's own
+  // files, because 1:1 = COPY and a retail copy may not be edited: the shelf's
+  // TYPE and its SETBACK (*"nie ma opcji back 20 mm, czyli regulacji
+  // głębokości, ani nie ma wyboru fix / adjustable, nie choose, tylko te 2
+  // opcje"*), the SPACING chain's CENTER ALL (*"dodaj na dole tego modalu
+  // CENTER ALL"*), the door's HINGES (*"mamy fajny w PRO to menu z zawiasami i
+  // ze strzałkami up and down, skopiuj z PRO"*) and the J run as a NUMBER
+  // (*"przesuwanie powiększenia J-hand nie może być przesuwakiem, musimy
+  // wpisywać liczby"*). Each is re-frozen at its new hash below and re-copied
+  // the same night by `scripts/t72-copy.mjs`. Overturnable with one word: the
+  // engine, the goldens and the cut path are untouched by every one of them.
+  'src/components/ElementProperties.jsx':
+    'T72 F2 · `shelf-type` becomes two chips and SET BACK FROM THE FRONT gains `20 mm` '
+    + '| `Flush` beside its field; F3 · CENTER ALL at the bottom of the shelf menu; '
+    + 'F6 · the board picker carries `data-board-thickness` so the room\'s sheet can name '
+    + 'what it hides instead of taking every `<select>` in the dock; '
+    + 'F12 · the divider reaches the same setback row. *"nie choose, tylko te 2 opcje."*',
+  'src/components/JpullRunModal.jsx':
+    'T72 F4 · the run length is a NUMBER FIELD with the engine\'s own min and max beside '
+    + 'it; the slider is gone and T57\'s *"pasek albo pokrętło"* is set aside for this one '
+    + 'field on his word. *"nie może być przesuwakiem, musimy wpisywać liczby, nie będziemy '
+    + 'próbowali trafić na ten sam numer co sąsiednie drzwi."*',
   // ─── ADDED BY TURN 71 · THE DRAWING SET REACHES THE WINDOW ───────────────
   // The owner, 21.09.2026, Skylon Joinery's own AutoCAD set on the table:
   // *"nasze w CC teraz się nakładają, a tutaj jest wszystko osobno … mega
@@ -105,9 +129,16 @@ const EXEMPT = {
   'src/components/AddItems.jsx':
     'T67 F9 — the label "Watch drawer" becomes "Accessories drawer" on the row, the '
     + 'button and the two notices. *"zmień w PRO też tę nazwę."*',
+  // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
+  // The exemption bought ONE night and not a standing permission, so tonight's
+  // edit is argued again with tonight's quote and tonight's hash. The map does
+  // not grow by this entry: the file was already on it.
   'src/components/WatchLayoutModal.jsx':
-    'T67 F9 — the same label, on the window\'s own title. '
-    + '*"watches szuflad jest bez sensu."*',
+    'T72 F9 · GLASS ON TOP becomes `Off` | `On`, DRAWER HEIGHT arrives with its '
+    + '"Proposed NNN" chip, and FELT BASE brings its four colours. Nothing is taken: '
+    + '`Sprayed` stands and `Veneer` never existed here. *"powinien mieć wysokość '
+    + 'szuflady zaproponowaną, ten co jest default; usuń Veneer, dodaj materiałowe dno '
+    + '… tylko te 4 kolory filcu."*',
 };
 
 /**
@@ -144,13 +175,15 @@ const FROZEN = {
   'src/components/DrawRoomModal.jsx': 'bbf2021f049146f6af31f1094b61a284a8d351a36361c3d549fbb0cb1372366b',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
-  'src/components/ElementProperties.jsx': '3c223158225645e691c6a840be20fe7ce2fa3114eef21602a3d1c7ac48a0f140',
+  // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/ElementProperties.jsx': '8df224e7c5c8501f7440fdd34fab1a48e404a1022d13375753f40aa3464598ad',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
   'src/components/HandEditsModal.jsx': '8b2f61eead0bcc9f47aab78cadb7a6627a73885fd8e1b2e7ac8ac6ebf30025b0',
   'src/components/JoineryPreview.jsx': '4313bbe216ce87f80ab6ee1b4d1e8e288465e5b2ef2bedbba1167346508add0a',
-  'src/components/JpullRunModal.jsx': 'ba78041e79962423326e060630dee5b81c26e34eb2a877795f6c8872cf4622fb',
+  // T72 F4 — re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/JpullRunModal.jsx': '652b4f701a455134eb2571565f03dc6fca89c273f4041ad9eb66d8b0c7bd6aa7',
   'src/components/LibraryPanel.jsx': 'c0f86722ab66d0a00b28994639f257f7ebe596140f265331a556ba615f4226ef',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
@@ -184,7 +217,7 @@ const FROZEN = {
   'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
   'src/components/WarehouseModal.jsx': '891e9065b7a6ae95612b4de88dc9cdd3d015a99c709c3ce47cdf458b1bf9da62',
   // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/WatchLayoutModal.jsx': '5df8a72415db012947f9735e0262bb2381fbda8aab7dc32763be0249c2e834e2',
+  'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   'src/components/WizardSettings.jsx': 'e78f35fff5107b21a5a775629ab899d2474d883df03b5873ad538bcfbd68fc74',
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
@@ -364,14 +397,16 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
 // words), so two PRO files are licensed tonight, each with the owner's words
 // and its feature beside it, each re-frozen at its new hash. The list is held
 // to exactly these five; a sixth cannot be slipped in without this failing.
-test('T67 · the exemption names three files, each re-frozen, each with its reason', () => {
+test('T67 · the exemption names its files, each re-frozen, each with its reason', () => {
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
     'src/components/DrawingModal.jsx',
+    'src/components/ElementProperties.jsx',
+    'src/components/JpullRunModal.jsx',
     'src/components/RoomModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/pages/ConfiguratorPage.jsx',
-  ], 'the exemption list is not the five files CLAUDE.md names');
+  ], 'the exemption list is not the files CLAUDE.md names');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
     assert.match(why, /\bT\d{2} F\d/, `${rel} does not say which turn and feature licensed it`);

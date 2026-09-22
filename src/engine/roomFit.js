@@ -160,6 +160,41 @@ export function roomFitRefusal({
     }
   }
 
+  // ── FROM THE WALL (turn 72, CLAUDE.md F14) ──
+  //
+  // The owner, on the SIZE step: *"tutaj jeszcze brakuje odsuniecia od
+  // sciany."*  A gap is depth by another name — it is room taken out of the
+  // same reach — so the room gets asked the same question in the same words,
+  // and *"Room refuses first: nothing is clipped silently"* holds for the
+  // fourth field as it does for the other three.
+  //
+  // The DEPTH branch above is untouched on purpose: it has always compared
+  // the carcass against the room's whole reach, every answer it has ever
+  // given is in a test, and the field that moved tonight is this one.
+  if (patch.wall_gap != null) {
+    const walls = roomWalls(room);
+    const wall = walls[unit.position?.wall ?? 0] || walls[0];
+    const wanted = Number(patch.wall_gap) || 0;
+    const depth = Number(patch.depth ?? unit.params?.depth) || 0;
+    const reach = wall
+      ? maxDepthOnWall({
+        wall,
+        walls,
+        x: Number(unit.position?.x_mm) || 0,
+        width: Number(patch.width ?? unit.params?.width) || 0,
+      })
+      : Infinity;
+    if (Number.isFinite(reach) && reach > 0 && wanted + depth > reach + 1e-6) {
+      const left = Math.max(0, reach - depth);
+      return {
+        key: 'wall_gap',
+        limit: round1(left),
+        wanted: round1(wanted),
+        message: `${label}the room reaches ${round1(reach)} mm back from wall ${(unit.position?.wall ?? 0) + 1} and this is ${round1(depth)} mm deep — ${round1(wanted)} mm off the wall will not fit. ${round1(left)} mm is what is left.`,
+      };
+    }
+  }
+
   return null;
 }
 

@@ -88,15 +88,29 @@ test('F3.1 · the handle-system CHOICE is untouched, in both of its homes', () =
 
 // ═══ 2. ONE SLIDER, AND NOTHING ELSE IN THAT WINDOW ═══════════════════════
 
-test('F3.2 · the window holds exactly ONE control', () => {
-  const ranges = MODAL.match(/type="range"/g) || [];
-  assert.equal(ranges.length, 1, 'one slider — the owner counted');
-  assert.equal((MODAL.match(/<input/g) || []).length, 1, 'and it is the only input');
-  assert.ok(!/<NumberField/.test(MODAL), 'a slider, not a number field');
+// ─── AMENDED BY TURN 72 · F4 ────────────────────────────────────────────────
+//
+// THE COUNT IS THE CLAIM, and it has not moved: exactly one control in this
+// window. The KIND moved, on the owner's own order of 22.09.2026 — *"nie może
+// być przesuwakiem, musimy wpisywać liczby, nie będziemy próbowali trafić na
+// ten sam numer co sąsiednie drzwi"* — and the reason is the one this file
+// cares about: a slider is aimed at, and two doors that must share a run
+// cannot be aimed at the same number.
+//
+// This turn's own sentence is preserved as what it was: `pasek albo pokrętło`
+// was the answer to NINE numeric fields in a settings panel, and it is still
+// the answer to that question. One field, typed, with the engine's own bounds
+// beside it, is not nine.
+test('F3.2 · the window holds exactly ONE control — and T72 typed it', () => {
+  assert.ok(!/type="range"/.test(MODAL), 'the slider is back');
+  assert.equal((MODAL.match(/<NumberField/g) || []).length, 1, 'one control — the owner counted');
+  assert.equal((MODAL.match(/<input/g) || []).length, 0, 'the window writes its own input now');
   assert.ok(!/<select/.test(MODAL), 'and no second control of any kind');
-  assert.match(MODAL, /aria-label="J run length"/);
+  assert.match(MODAL, /data-jpull-run-mm="1"/);
   assert.match(MODAL, /const MIN_RUN_MM = 300;/, '300 is the floor the spec names');
   assert.match(MODAL, /const STEP_MM = 10;/, 'step 10');
+  // …and the two bounds stand BESIDE it, which is F4's own clause.
+  assert.match(MODAL, /data-jpull-run-bounds=\{`\$\{MIN_RUN_MM\}-\$\{max\}`\}/);
   // Start height and ramp radius are NOT exposed — engine constants.
   assert.ok(!/rampR/.test(MODAL));
   assert.ok(!/setProfile/.test(MODAL), 'nothing here writes the workshop profile');

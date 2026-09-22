@@ -694,6 +694,30 @@ export const DEFAULT_CABINET_PROFILE = {
       // so the plate grows WITH the type instead of tightening round it.
       padFraction: 0.42,
       trackingFraction: 0.09,
+
+      // ─── TURN 72 (CLAUDE.md F13): THE BAY WIDTHS, THIN AND BLACK ─────────
+      //
+      // The owner, 22.09.2026, on the hover chain between two vertical
+      // partitions: *"te napisy zostaw jak są; chodziło mi o napisy pomiędzy
+      // vertical przegrodami, są teraz białe i gruba czcionka; to tylko
+      // zmień."*
+      //
+      // TWO numbers, and they answer BOTH halves of what he is looking at.
+      // The bay chain has carried no plate since the chat fix of 15.08 — what
+      // it carries instead is a white HALO round every glyph (the `bare`
+      // ground), and a halo as wide as 16 percent of the type IS the white
+      // and the thickness in his sentence. So for THIS chain and no other:
+      //
+      //   bayInk        the ink those figures print in. Black, as F13 asks,
+      //                 and the app's own near-black rather than a pure one.
+      //   bayHaloAlpha  the halo behind them. Zero: no ground of any kind.
+      //
+      // `weight` above is NOT touched — *"the light weight kept"* — and no
+      // other dimension label on the scene reads either of these two keys:
+      // the aura's bare captions (`3d/Hardware.jsx`) and the hover rows of a
+      // shelf or a side keep the halo they have always had.
+      bayInk: '#101010',
+      bayHaloAlpha: 0,
     },
     // The magnet that holds a shown set on screen is `editor.hoverMagnetMm` —
     // it is a property of the TOOL rather than of the drawing's ink, and

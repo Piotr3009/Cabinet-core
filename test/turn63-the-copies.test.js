@@ -472,10 +472,38 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
     // the test the rule above is making.
     'drawers-mount', 'drawers-variant', 'drawers-stack-law', 'dock-inner-heights',
   ];
+  // ─── AMENDED BY T72 F1 · `EndPanel.jsx`, AND WHY IT IS NOT A SKETCH ──────
+  //
+  // The rule forbids a retail file that RE-WRITES a copied editor's controls.
+  // `EndPanel.jsx` re-writes nothing: PRO answers an end panel in FOUR NUMBER
+  // FIELDS and the owner's order for the client's screen is *"No number fields
+  // in retail"* — so the copy may not be edited (*"kopiuj — nie kasuj"*), PRO
+  // may not lose a field, and the only lawful home for a DIFFERENT answer is
+  // retail's own file. It is the shape T69 F8 gave DOOR SWING, which stands in
+  // retail's own `Detail.jsx` for exactly this reason.
+  //
+  // It is held to its six chips by name (`turn72-f1-the-panel-menu.test.js`),
+  // it carries no `NumberField` at all, and every chip presses a store path
+  // PRO's own field presses — which is the test this rule is really making.
+  const CHIP_BLOCKS = {
+    'EndPanel.jsx': [
+      // the block itself, so a walk can find it…
+      'dock-end-panel',
+      // …and the three rows and the way out.
+      'end-panel-top', 'end-panel-bottom', 'end-panel-colour', 'end-panel-remove',
+    ],
+  };
   for (const f of files) {
     if (!/\.jsx$/.test(f)) continue;
     if (isCopy(`src/retail/design/detail/${f}`)) continue;
     const text = uncomment(read(`src/retail/design/detail/${f}`));
+    if (CHIP_BLOCKS[f]) {
+      const hooks = [...text.matchAll(/testid="([a-z][a-z0-9-]*)"/g)].map((m) => m[1]);
+      assert.deepEqual(hooks.sort(), [...CHIP_BLOCKS[f]].sort(),
+        `${f} grew a control nobody licensed`);
+      assert.doesNotMatch(text, /<NumberField/, `${f} typed a number where the owner asked for chips`);
+      continue;
+    }
     if (f === 'ReHomed.jsx') {
       const hooks = [...text.matchAll(/data-testid=\{?[`"]([a-z][a-z0-9$-{}.]*)[`"]\}?/g)].map((m) => m[1]);
       const stray = hooks.filter((h) => !REHOMED_CONTROLS.includes(h) && !/^dock-drawer-/.test(h)

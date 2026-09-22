@@ -45,7 +45,10 @@ test('F10 · the panel is one element at a time, and OPEN is a single flag', () 
   assert.match(detail, /const open = Boolean\(route\);/);
   assert.match(detail, /data-menu=\{open \? selection\.menu : ''\}/,
     'the panel does not say which menu it is showing');
-  assert.match(detail, /data-editor=\{open \? \(route\.modal \|\| 'element-properties'\) : ''\}/,
+  // T72 F1 · the dock answers in a THIRD shape now — retail's own chip block
+  // for the end panel — so the attribute names that too. The law is the one it
+  // always was: the panel says which editor is in it, in one expression.
+  assert.match(detail, /data-editor=\{open \? \(route\.modal \|\| route\.chips \|\| 'element-properties'\) : ''\}/,
     'the panel does not say which EDITOR it is showing');
   // The slide itself is CSS on that flag — not a mount/unmount, which is what
   // "swaps in place" means in a stylesheet.
@@ -87,9 +90,14 @@ test('F10 · a click on the WARDROBE BODY slides it out — T64 opened its menu 
   assert.ok(!/from: 'list'|from: 'stage'/.test(room), 'the two roads into the panel are back');
   // …and the resolution itself refuses a carcass kind now, so there is nothing
   // for the panel to hold in the first place.
-  for (const kind of ['side', 'top', 'bottom', 'back', 'plinth', 'end-panel', 'infill', 'masking-panel']) {
+  // T72 F1 · `end-panel` leaves this list and nothing else does. It was never
+  // carcass — `engine/elements.js` files it under ATTACHED_KINDS beside the
+  // door — and the owner asked for its menu back in as many words: *"jak kliknę
+  // 2 razy na panel boczny po prawej nie pokazuje mi się menu panelu."*
+  for (const kind of ['side', 'top', 'bottom', 'back', 'plinth', 'infill', 'masking-panel']) {
     assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} still opens a menu`);
   }
+  assert.equal(A.MENU_FOR_KIND['end-panel'], 'panel');
   // The wardrobe's own settings are not lost — they are the LEFT: its three
   // numbers are the SIZE step, what goes in it is INSIDE, the rest is EXTRAS.
   const options = read('src/retail/design/Options.jsx');

@@ -36,6 +36,19 @@ import * as A from '../adapter.js';
 //                     owner's screenshot called *"the right-hand panel, which
 //                     is already showing this piece"*.
 //
+// ─── T72 F1 · AND A THIRD, FOR THE ONE PIECE PRO ANSWERS IN NUMBERS ───────
+//
+//   { chips }         RETAIL'S OWN BLOCK, named here and rendered by
+//                     `Detail.jsx`. Exactly one piece takes this road and the
+//                     reason is F1's own sentence: *"No number fields in
+//                     retail. … PRO keeps its numeric fields."*  PRO's end
+//                     panel is FOUR numbers; the client's is three chip rows
+//                     and a REMOVE, pressing the same store paths. A copy may
+//                     not be edited and PRO may not lose a field, so the only
+//                     lawful home for a DIFFERENT answer is retail's own file
+//                     — which is exactly where T69 F8 put DOOR SWING, for
+//                     exactly this reason.
+//
 // ─── THE WORKSHOP FIELDS ARE HIDDEN, NOT CUT ───────────────────────────────
 //
 // `ElementProperties` takes PRO's OWN `omit` prop (T33 wrote it so the door
@@ -79,7 +92,7 @@ export const DOCK_MODALS = Object.freeze(['element', 'rail', 'watch-layout']);
  * WHICH EDITOR EDITS THIS SELECTION.
  *
  * @param {object} selection — `adapter.resolveSelection`'s own shape
- * @returns {{modal?:string, args?:object, props?:object}|null}
+ * @returns {{modal?:string, chips?:string, args?:object, props?:object}|null}
  */
 export function dockFor(selection) {
   if (!selection?.unitId) return null;
@@ -102,6 +115,13 @@ export function dockFor(selection) {
   if (menu === 'rail') {
     const route = item ? A.railWindow(unitId, item.id) : null;
     return route ? { modal: route.modal, args: route.args } : null;
+  }
+
+  // THE END PANEL — retail's own three chips (T72 F1). It is the ONE piece
+  // whose client answer is not PRO's answer, and the divergence is licensed by
+  // name: *"No number fields in retail."*
+  if (menu === 'panel') {
+    return panel ? { chips: 'end-panel', args: { unitId, panelId: panel.id } } : null;
   }
 
   // EVERYTHING ELSE THE ENGINE CUTS A BOARD FOR — the shelf, the divider, a

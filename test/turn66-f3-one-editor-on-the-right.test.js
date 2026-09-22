@@ -106,16 +106,25 @@ test('F3 · a click on the CARCASS clears the selection — the panel slides out
   assert.match(design, /if \(!found\) \{[\s\S]{0,200}clearElement/);
 });
 
+// ─── AMENDED BY T72 F1 ──────────────────────────────────────────────────────
+//
+// TEN carcass kinds, not eleven: `end-panel` leaves this list tonight and it is
+// the only one that does. T66 swept it up with the sides on turn 13's *"clicking
+// a cabinet must select the CABINET"*, and that verdict is about a side, a top
+// and a plinth — `engine/elements.js` has filed an end panel under
+// ATTACHED_KINDS beside the DOOR since turn 14, and `opensOwnModal` has said
+// `true` for it just as long. The owner, 22.09.2026, on the consequence: *"jak
+// kliknę 2 razy na panel boczny po prawej nie pokazuje mi się menu panelu."*
 test('F3 · MENU_FOR_KIND sends the carcass kinds to NOTHING, by name', () => {
   for (const kind of [
-    'side', 'top', 'bottom', 'back', 'plinth', 'end-panel', 'infill',
+    'side', 'top', 'bottom', 'back', 'plinth', 'infill',
     'masking-panel', 'holder', 'spurs', 'fixed-shelf',
   ]) {
     assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} still opens a wardrobe menu`);
   }
-  // …and the five that DO edit an element are still there.
+  // …and the five that DO edit an element are still there, with T72 F1's sixth.
   assert.deepEqual(Object.keys(A.MENU_FOR_KIND).sort(),
-    ['door', 'drawer', 'drawer-front', 'partition', 'shelf']);
+    ['door', 'drawer', 'drawer-front', 'end-panel', 'partition', 'shelf']);
 });
 
 // ═══ 2 · WHAT IS DOCKED IS THE COPY, NOT A RE-WRITE ════════════════════════

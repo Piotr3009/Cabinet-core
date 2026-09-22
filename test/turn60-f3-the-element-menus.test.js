@@ -87,9 +87,16 @@ const panelsOf = (unitId) => S().unitResult(unitId)?.panels || [];
 // the change, and this is the same test asking them of the new shape: the
 // router is still a TABLE with no default branch, a kind that is not a key is
 // still unselectable, and there is still exactly ONE way back.
+// ─── AMENDED BY T72 F1 ──────────────────────────────────────────────────────
+//
+// A NINTH name, and the owner's own: *"jak kliknę 2 razy na panel boczny po
+// prawej nie pokazuje mi się menu panelu."*  The end panel is a thing a client
+// edits on the right, so it is in the vocabulary. Nothing else moved: the
+// eight above it are the eight, in their order.
 test('F3 · the editors, and the DOCK resolves every one of them', () => {
   assert.deepEqual(A.MENUS, [
     'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'overlay', 'partition',
+    'panel',
   ], 'the vocabulary of things a client edits on the right');
 
   // ─── NOT ONE `*Menu.jsx` REMAINS ──────────────────────────────────────────
@@ -294,9 +301,23 @@ test('F3 · every engine kind is either mapped or unselectable — no third case
     `a kind that is neither mapped nor unselectable:\n  ${third.join('\n  ')}`);
 
   // …and the carcass is the way OUT, by name — the whole of T66 F3's F10 clause.
-  for (const kind of ['side', 'top', 'bottom', 'back', 'plinth', 'end-panel', 'infill', 'masking-panel']) {
+  //
+  // ─── AMENDED BY T72 F1 · THE END PANEL LEAVES THIS LIST ──────────────────
+  //
+  // It was never carcass. `engine/elements.js` files it under ATTACHED_KINDS
+  // beside the DOOR — *"things you HANG ON the carcass afterwards, one at a
+  // time, and each of them is a decision with its own properties"* — and turn
+  // 14's `opensOwnModal` has said `true` for it ever since. T66 F3 swept it up
+  // with the sides on turn 13's *"clicking a cabinet must select the CABINET"*,
+  // which is a verdict about a side, a top and a plinth. The owner, 22.09.2026,
+  // on the consequence: *"jak kliknę 2 razy na panel boczny po prawej nie
+  // pokazuje mi się menu panelu."*  The other seven are untouched and the
+  // assertion on them is the one it was.
+  for (const kind of ['side', 'top', 'bottom', 'back', 'plinth', 'infill', 'masking-panel']) {
     assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} still opens a menu`);
   }
+  assert.equal(A.MENU_FOR_KIND['end-panel'], 'panel',
+    'the end panel is ATTACHED, not carcass — T72 F1 gave it its menu back');
 });
 
 // ═══ 2 · THE NINE, ONE AT A TIME ═══════════════════════════════════════════

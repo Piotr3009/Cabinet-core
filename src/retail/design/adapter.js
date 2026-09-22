@@ -35,6 +35,9 @@ import { doorCountFor } from '../../engine/cabinet.js';
 // T65 F6: the engine's ONE visibility question, and the client's own
 // "permanent" record beside it.
 import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
+// T72 F1: which board an end panel is cut from — the project's own run-piece
+// switch, read here so the COLOUR chips state what the engine already resolves.
+import { runMaterialSetting } from '../../engine/materials.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
 import { hasTopInfill, unitTop } from '../../engine/runs.js';
@@ -913,6 +916,96 @@ export function addEndPanelByHand(unitId, side) {
 export function removeEndPanelByHand(unitId, panelId) {
   const res = S().removeEndPanel(unitId, panelId, { decline: true });
   return { ok: res !== false, said: '' };
+}
+
+// ─── T72 F1 · THE PANEL'S OWN MENU — TWO CHIPS WHERE PRO TYPES A NUMBER ───
+//
+// The owner, on the mock-up of 22.09.2026:
+//
+//   *"panel: up to ceiling; drugi równo z carcasem od dołu; a default do
+//   ziemi; reszta ok."*
+//
+// THREE ROWS AND A REMOVE, and not one number field: TOP `Carcass` | `Ceiling`,
+// BOTTOM `Carcass` | `Floor` (default `Floor`), COLOUR `As the fronts` |
+// `Other`. PRO keeps its four numeric fields and this file writes NOT ONE new
+// law: every chip below presses a store path that already existed and that
+// PRO's own field presses today, and they were read before they were used.
+//
+//   TOP    Carcass  `setEndPanelTop(unitId, epId, 0)`   — `above-unit-ep`'s field
+//          Ceiling  `endPanelToCeiling(unitId, epId)`   — the ▲ beside it
+//   BOTTOM Carcass  `updateEndPanel(…, { height: 'unit' })` — `end-panel-height`'s
+//          Floor    `updateEndPanel(…, { height: 'floor' })`   two options
+//                   …and both first clear `below_mm` through `setEndPanelBelow`,
+//                   which is `below-unit-ep`'s field, because the panel's OWN
+//                   drop OVERRIDES the mode (`engine/autoparts.js endPanelDrop`:
+//                   *"given one, it IS the drop, and the MODE is only what
+//                   answers when nobody has said"*). A chip that set a mode and
+//                   left a stale number under it would be a chip that lies.
+//   COLOUR          `setRunMaterial('end_panel', { sameAsFronts })` — the
+//                   project's own run-piece switch, ON by default since T16.
+//
+// THE STATE IS READ OFF THE ENGINE'S OWN PANEL, never off the stored record:
+// `meta.height`, `meta.top_mm` and `meta.below_mm` are what was CUT, and a wall
+// unit's panel reads `carcass` whatever its stored value claims (cabinet.js).
+
+/** The `end_panels` record behind an END-PANEL panel — PRO's own lookup. */
+const endPanelRecord = (unitId, panel) => (unitOf(unitId)?.params?.end_panels || [])
+  .find((ep) => ep.id === panel?.meta?.panelId) || null;
+
+/**
+ * WHAT THE PANEL'S MENU SHOWS, and what each chip presses.
+ *
+ * @returns {{id:string, side:string, top:'carcass'|'ceiling',
+ *            bottom:'carcass'|'floor', colour:'fronts'|'other',
+ *            headroom:number}|null}
+ */
+export function endPanelMenu(unitId, panel) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return null;
+  const design = migrateDesign(S().project.design);
+  const mode = String(panel?.meta?.height || ep.height || 'floor');
+  return {
+    id: ep.id,
+    side: ep.side === 'R' ? 'R' : 'L',
+    // The TOP is the number that was cut, not the mode: anything above the
+    // carcass is "to the ceiling" as far as a client is concerned, and 0 is
+    // flush with it.
+    top: Number(panel?.meta?.top_mm) > 0 ? 'ceiling' : 'carcass',
+    bottom: mode === 'floor' ? 'floor' : 'carcass',
+    colour: runMaterialSetting(design, 'end_panel').sameAsFronts ? 'fronts' : 'other',
+  };
+}
+
+/** TOP — flush with the carcass, or all the way up. */
+export function setEndPanelTopChip(unitId, panel, id) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return { ok: false, said: '' };
+  if (id === 'ceiling') S().endPanelToCeiling(unitId, ep.id);
+  else S().setEndPanelTop(unitId, ep.id, 0);
+  return { ok: true, said: '' };
+}
+
+/** BOTTOM — flush with the carcass, or down to the floor. */
+export function setEndPanelBottomChip(unitId, panel, id) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return { ok: false, said: '' };
+  // The own drop first: it outranks the mode, so a stale number would win.
+  S().setEndPanelBelow(unitId, ep.id, 0);
+  S().updateEndPanel(unitId, ep.id, { height: id === 'carcass' ? 'unit' : 'floor' });
+  return { ok: true, said: '' };
+}
+
+/** COLOUR — the fronts' board, or one of its own. */
+export function setEndPanelColourChip(unitId, panel, id) {
+  S().setRunMaterial('end_panel', { sameAsFronts: id !== 'other' });
+  return { ok: true, said: '' };
+}
+
+/** REMOVE PANEL — the same road EXTRAS takes out. */
+export function removeEndPanelChip(unitId, panel) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return { ok: false, said: '' };
+  return removeEndPanelByHand(unitId, ep.id);
 }
 
 /**
@@ -1827,6 +1920,24 @@ export const MENU_FOR_KIND = Object.freeze({
   'drawer-front': 'drawers',
   drawer: 'drawers',
   shelf: 'shelf',
+  // ─── T72 F1 · AND THE END PANEL COMES BACK INTO THE TABLE ────────────────
+  //
+  // The owner: *"jak kliknę 2 razy na panel boczny po prawej nie pokazuje mi
+  // się menu panelu."*
+  //
+  // `verify/t72/f1-probe.md` is the fact, committed before this key was added:
+  // the engine cuts the board, `isSelectableElement` and `opensOwnModal` both
+  // said true, the stage wrote the selection — and THIS TABLE answered null, so
+  // `DesignRoom` cleared the element and `dockFor` was never called at all.
+  //
+  // T66 F3 struck it out with the CARCASS, on turn 13's verdict that *"clicking
+  // a cabinet must select the CABINET"*. That verdict is about a side, a top, a
+  // plinth. An end panel is not carcass: `engine/elements.js` files it under
+  // ATTACHED_KINDS beside the DOOR — *"things you HANG ON the carcass
+  // afterwards, one at a time, and each of them is a decision with its own
+  // properties"* — and it is the one the client points at from across the room.
+  // One key, and the road it opens is F1's own three-chip menu.
+  'end-panel': 'panel',
   // ─── T61 F4 · RE-POINTED, AND SAID OUT LOUD ──────────────────────────────
   // T60 sent a divider to the WARDROBE menu, with the carcass, on turn 13's
   // verdict that *"clicking a cabinet must select the CABINET"*. That verdict
@@ -1889,6 +2000,11 @@ export const KIT_MENUS = Object.freeze({});
  */
 export const MENUS = Object.freeze([
   'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'overlay', 'partition',
+  // T72 F1 · the end panel's own, and the ninth: three chip rows and a REMOVE,
+  // in retail's own dock file beside the copied editor — the DOOR SWING
+  // pattern T69 F8 established, for the same reason (PRO keeps its numeric
+  // fields and a copy may not be edited).
+  'panel',
 ]);
 
 /**

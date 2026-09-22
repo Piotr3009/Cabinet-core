@@ -6,6 +6,7 @@ import { Button } from './controls.jsx';
 import Editors from './Editors.jsx';
 import ElementProperties from './detail/ElementProperties.jsx';
 import { DOCK_MODALS, dockFor } from './detail/docked.jsx';
+import EndPanel from './detail/EndPanel.jsx';
 import ReHomed, { rowForSelection } from './detail/ReHomed.jsx';
 
 // ─── 7 · THE DETAIL — A PANEL THAT SLIDES IN OVER THE STAGE ────────────────
@@ -34,7 +35,8 @@ import ReHomed, { rowForSelection } from './detail/ReHomed.jsx';
 // floating element window is gone, and there is ONE surface on which a
 // selected element is edited.
 //
-// TWO SHAPES, because PRO's own editors have two — see `detail/docked.jsx`:
+// THREE SHAPES, because PRO's own editors have two and one piece has a client
+// answer of its own — see `detail/docked.jsx`:
 //
 //   a copied WINDOW reads its subject off the shared ui store's `modalArgs`,
 //   so the dock WRITES that slot (with no anchor — the panel is the place) and
@@ -45,6 +47,10 @@ import ReHomed, { rowForSelection } from './detail/ReHomed.jsx';
 //   a copied PANEL takes its subject as props, and `ElementProperties` — PRO's
 //   own piece panel, the very surface the floating window was showing — is
 //   rendered straight into the slot.
+//
+//   a CHIP BLOCK is retail's own, and there is exactly one: T72 F1's end-panel
+//   menu, because PRO answers that piece in four numbers and F1 says *"No
+//   number fields in retail."*  It presses PRO's own store paths.
 //
 // THE WORKSHOP FIELDS ARE HIDDEN, NOT CUT: through PRO's own `omit` prop where
 // retail is the caller (`docked.omitted`), and through the room's own
@@ -131,7 +137,7 @@ export default function Detail(props) {
       data-open={open ? 'yes' : 'no'}
       data-duty={open ? 'detail' : 'closed'}
       data-menu={open ? selection.menu : ''}
-      data-editor={open ? (route.modal || 'element-properties') : ''}
+      data-editor={open ? (route.modal || route.chips || 'element-properties') : ''}
       aria-hidden={open ? undefined : 'true'}
     >
       {open ? (
@@ -212,6 +218,16 @@ export default function Detail(props) {
                 ) : null}
               </div>
             </div>
+          ) : null}
+
+          {/* ─── T72 F1 · THE END PANEL'S OWN MENU ─────────────────────────
+              The one piece whose client answer is not PRO's — three chip rows
+              and a REMOVE where PRO types four numbers. Retail's own block,
+              in retail's own file, pressing PRO's own store paths: the DOOR
+              SWING pattern above, for the reason `detail/docked.jsx` states
+              beside the `{ chips }` shape. */}
+          {route.chips === 'end-panel' && selection?.unitId ? (
+            <EndPanel unitId={selection.unitId} panel={selection.panel} />
           ) : null}
 
           {/* THE COPIED PANEL — PRO's own piece window, on the piece. */}

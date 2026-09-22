@@ -1,0 +1,66 @@
+─── T72 · THE ACCEPTANCE WALK ───
+
+Fourteen points from one afternoon in the configurator, run section by
+section against `npx vite preview --port 4173`, the hardware served from the
+silent showroom (T23 R8). Every line below is a real browser reading the real
+build; the frames beside this file are what it saw.
+
+ ok  the wardrobe carries an end panel — 2 panel(s)
+ ·   2klik on the end panel — {"id":"END-R","part":"END-PANEL","role":"end_panel"}
+ ok  the panel's own menu OPENS (it did not before tonight)
+ ok  …and carries TOP
+ ok  …and carries BOTTOM
+ ok  …and carries COLOUR
+ ok  …and REMOVE PANEL
+ ok  NO NUMBER FIELD in the client's copy
+ ok  CEILING writes the very path the number field wrote — top_mm {"top_mm":0,"height":"floor"} → {"top_mm":250,"height":"floor"}
+ ok  two shelves in the wardrobe — 2 shelf/shelves
+ ok  FIX and ADJUSTABLE are two chips — 2 chip(s)
+ ok  …and the pull-out / shoe `select` has left this menu
+ ok  SET BACK FROM THE FRONT: two chips beside the field
+ ok  the two chips move the shelf's setback, through the store's own path — front_mm 20 → flush 0 → 20 mm 20
+ ·   2klik on the middle shelf — {"id":"SHELF-2","part":"SHELF","role":"shelf"}
+ ok  the chain between the shelves stays on the scene while the shelf is selected — 1 chain group(s) in the live scene
+ ok  CENTER ALL stands at the bottom of the shelf menu
+ ok  one shelf pushed off its spacing — [533,1366,1599]
+ ok  CENTER ALL spreads that bay evenly again — [533,1366,1599] → [533,1066,1599]
+ ok  the scene emits the J channel on both leaves — 2 leaf/leaves · edges R, L
+ ok  the run length is a typed field
+ ok  …and there is no slider in the window
+ ok  the engine's own min and max stand beside it — 300-1440
+ ·   one wardrobe alone: its free side carries a panel — {"panels":[{"id":"ep_d2nxpxr","side":"R","height":"floor","thickness":18,"auto_added":true}],"right":true}
+ ok  a second wardrobe lands beside the first — [{"id":"u_s9xvgjt","x":40,"panels":[]},{"id":"u_h347b7o","x":1240,"panels":["END-R"]}]
+ ok  …and the panel between them is gone BEFORE any drag — {"gap":0,"a":[],"b":["END-R"]}
+ ·   2klik on a wardrobe door — {"id":"W01-FL","part":"FRONT","role":"front"}
+ ·   the dock opens PRO's own window — element
+ ok  HINGES show — {"display":"block","visible":true,"box":403}
+ ok  HINGE SIDE shows, left and right — {"visible":true,"box":28,"value":"L","options":["L","R"]}
+ ok  THE SPLIT shows (F11: *"chodziło mi o podzielenie drzwi"*) — {"display":"block","visible":true,"box":122}
+ ok  LED opens lights mode — lighting
+ ok  …and it is still on after a click elsewhere in the room — lighting
+ ok  its own button ends it — null
+ ok  the first wardrobe takes a cornice — {"on":100,"said":""}
+ ok  a wardrobe added beside it takes the run's own answer — [100,100]
+ ok  the drawers menu is open on the right
+ ok  TOP DRAWER INSERT has left the drawers menu
+ ok  GLASS TOP, FRONTS OR BARE BOXES and WHAT THE BOXES CARRY have left it
+ ok  HOW MANY stays
+ ok  one button: ADD ACCESSORIES DRAWER
+ ok  it adds the accessories drawer through the one path — {"drawers":1,"kind":"watch_drawer","step":"pbi-tile is-on"}
+ ·   2klik on the accessories drawer — {"id":"W01-DF4","part":"DRAWER-FRONT","role":"front"}
+ ok  the window opens on the drawer itself — watch-layout
+ ok  GLASS ON TOP is two chips
+ ok  DRAWER HEIGHT carries the proposed number as a chip — Proposed 120
+ ok  Veneer is gone from the finishes
+ ok  FELT BASE offers the owner's four colours — 4 colour(s)
+ ok  with one carcass material the row is not there — 0 row(s)
+ ·   2klik on the divider — {"id":"VPART-1","part":"VPART","role":"shelf"}
+ ok  SET BACK FROM THE FRONT is there, the shelf's own two chips and a field
+ ok  WHICH FACE IS BORED is not in the client's copy
+ ok  the bay label prints black, with no ground, at the light weight — {"bayInk":"#101010","halo":0,"weight":300}
+ ·   the numbers as they were — the line's own near-white ink, haloed — #e8e4dc · 0.9
+ ok  SIZE carries a fourth field
+ ·   the four fields, in the owner's order — ["WIDTH","HEIGHT","DEPTH","FROM THE WALL"]
+ ok  typing 60 stands THIS wardrobe 60 mm off its wall — null → 60
+
+48 checks · 0 failed

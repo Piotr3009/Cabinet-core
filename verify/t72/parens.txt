@@ -1,0 +1,23 @@
+─── T72 · THE PAREN CENSUS ───
+
+  ok   KIT_BUDR_FULL.lsp               3280 open   3280 close  balance 0  deepest 11
+  ok   KIT_BUDTALL_FULL.lsp             765 open    765 close  balance 0  deepest 13
+  ok   KIT_BUD_FULL.lsp                 700 open    700 close  balance 0  deepest 13
+  ok   KIT_DOOR_DOUBLE.lsp             1245 open   1245 close  balance 0  deepest 9
+  ok   KIT_FRIDGE.lsp                  1087 open   1087 close  balance 0  deepest 13
+  ok   KIT_FRONT_JPULL.lsp              141 open    141 close  balance 0  deepest 7
+  ok   KIT_LED_GROOVE.lsp                53 open     53 close  balance 0  deepest 6
+  ok   KIT_LOW_CABINET_FULL.lsp         952 open    952 close  balance 0  deepest 12
+  ok   KIT_SASH_STANDARD.lsp            144 open    144 close  balance 0  deepest 7
+  ok   KIT_SINK.lsp                    1184 open   1184 close  balance 0  deepest 13
+  ok   KIT_WARDROBE_FULL.lsp           2379 open   2379 close  balance 0  deepest 14
+  ok   KIT_WATCH_DRAWER.lsp             150 open    150 close  balance 0  deepest 8
+  ok   KIT_WUD_FULL.lsp                 736 open    736 close  balance 0  deepest 13
+  ok   SKYLON_COMMON.lsp               3739 open   3739 close  balance 0  deepest 14
+
+  14/14 at 0/0 — derived from the folder, not typed.
+
+reference/lisp/ vs main:
+  nothing at all.
+
+LISP untouched, as FROZEN 2 says. ✓

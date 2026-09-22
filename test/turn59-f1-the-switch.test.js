@@ -89,6 +89,8 @@ const EXEMPT = {
   'src/components/ElementProperties.jsx':
     'T72 F2 · `shelf-type` becomes two chips and SET BACK FROM THE FRONT gains `20 mm` '
     + '| `Flush` beside its field; F3 · CENTER ALL at the bottom of the shelf menu; '
+    + 'F6 · the board picker carries `data-board-thickness` so the room\'s sheet can name '
+    + 'what it hides instead of taking every `<select>` in the dock; '
     + 'F12 · the divider reaches the same setback row. *"nie choose, tylko te 2 opcje."*',
   'src/components/JpullRunModal.jsx':
     'T72 F4 · the run length is a NUMBER FIELD with the engine\'s own min and max beside '
@@ -167,7 +169,7 @@ const FROZEN = {
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/ElementProperties.jsx': '0da571aa18c6de8f3acebb96f0fd2c78f53beafb3e6bec6daac5e22c498a12bb',
+  'src/components/ElementProperties.jsx': '8df224e7c5c8501f7440fdd34fab1a48e404a1022d13375753f40aa3464598ad',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',

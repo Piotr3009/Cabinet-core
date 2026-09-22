@@ -32,12 +32,30 @@ const fronts = () => frontsRaw().replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \
 
 // ═══ F6 · HINGE ASSIGNMENT LEAVES THE RETAIL DOCK ══════════════════════════
 
-test('F6 · the two hinge blocks are hidden in the retail dock, behind the ONE flag', () => {
+// ─── AMENDED BY TURN 72 · F6 ───────────────────────────────────────────────
+//
+// TWO blocks became ONE, and it is the owner who halved it. 22.09.2026, of this
+// very window:
+//
+//   *"2klik na drzwiach nie pokazuje w ogóle hinges"* … *"mamy fajny w PRO to
+//   menu z zawiasami i ze strzałkami up and down, skopiuj z PRO."*
+//
+// 22.09 outranks 11.09, and it is his rule to overturn. The HINGE HEIGHT ROWS —
+// PRO's numbered list with the ▲▼ at the hinge's own 5 mm stride — are the
+// block he names, and they come back.
+//
+// WHAT STAYS HIDDEN is the block his words of 11.09 were actually about:
+// ASSIGN OTHER HINGE, the catalogue dropdown that picks WHICH hinge the
+// workshop buys. *"wybór hinges to nie jest dobry pomysł, nie tutaj — zostaw w
+// PRO"* is about CHOOSING A HINGE, and nothing in tonight's sentence asks for
+// that. Everything else this file asserts is untouched: hidden not cut, behind
+// the ONE flag, with the copy still PRO's to the line.
+test('F6, amended T72 · the hinge MODEL is hidden in the retail dock, behind the ONE flag', () => {
   const css = read('src/retail/styles/room.css');
   assert.match(css, /\.pbi-room\[data-workshop-tools="no"\] \.pbi-dock \[data-hinge-modal\] > div:has\(> \[data-hinge-assign\]\)/,
     'ASSIGN OTHER HINGE is still in the client\'s dock');
-  assert.match(css, /\.pbi-room\[data-workshop-tools="no"\] \.pbi-dock \[data-hinge-modal-rows\]/,
-    'the hinge-height rows are still in the client\'s dock');
+  assert.ok(!/\.pbi-dock \[data-hinge-modal-rows\]/.test(css),
+    'the hinge-height rows are still hidden — *"skopiuj z PRO"*');
   // The flag, and the ONE place it is stamped.
   assert.match(read('src/retail/config.js'), /export const RETAIL_SHOW_WORKSHOP_TOOLS = false;/);
   assert.match(code('src/retail/RetailApp.jsx'),

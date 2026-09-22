@@ -112,7 +112,13 @@ const hiddenBy = (marker) => HIDES.filter((l) => l.text.includes(marker));
 
 const splitHidden = hiddenBy('data-split-door-modal');
 const dedupe = (rows) => [...new Map(rows.map((r) => [r.at, r])).values()];
-const hingeHidden = dedupe([...hiddenBy('data-hinge-modal'), ...hiddenBy('data-hinge-assign')]);
+// THE HINGE BLOCK IS TWO BLOCKS, and they are hidden by two different rules:
+// the HEIGHT ROWS (`data-hinge-modal-rows`, PRO's numbered list with the ▲▼)
+// and ASSIGN OTHER HINGE (`data-hinge-assign`, the catalogue dropdown). The
+// owner's words of 22.09 are about the first; his words of 11.09 were about
+// the second. So they are asked separately or the answer is a blur.
+const hingeHidden = dedupe(hiddenBy('data-hinge-modal-rows'));
+const assignHidden = dedupe(hiddenBy('data-hinge-assign'));
 // The `hinge-side` row is a label whose direct child is a select.
 const sideHidden = hiddenBy('select.pbi-re-input');
 
@@ -140,8 +146,10 @@ const ROWS = [
   ['1 · SPLIT DOOR', 'hidden by the room sheet', say(splitHidden.map((l) => l.at))],
   ['1 · SPLIT DOOR', 'ON SCREEN', say(isDoor && !splitHidden.length)],
   ['2 · THE HINGES', 'mounted by the copy', say(hingeMount)],
-  ['2 · THE HINGES', 'hidden by the room sheet', say(hingeHidden.map((l) => `${l.at} — ${l.text}`))],
-  ['2 · THE HINGES', 'ON SCREEN', say(isDoor && !hingeHidden.length)],
+  ['2 · THE HINGES', 'the HEIGHT ROWS hidden by the room sheet', say(hingeHidden.map((l) => `${l.at} — ${l.text}`))],
+  ['2 · THE HINGES', 'the HEIGHT ROWS on screen', say(isDoor && !hingeHidden.length)],
+  ['2 · THE HINGES', 'ASSIGN OTHER HINGE hidden by the room sheet', say(assignHidden.map((l) => l.at))],
+  ['2 · THE HINGES', 'ASSIGN OTHER HINGE on screen (PRO only)', say(isDoor && !assignHidden.length)],
   ['3 · HINGE SIDE', 'mounted by the copy', say(propsMount)],
   ['3 · HINGE SIDE', 'the window omits', say(omitted)],
   ['3 · HINGE SIDE', 'elementFields after the omit', say(fields)],
@@ -153,14 +161,26 @@ const ROWS = [
 
 const VERDICT = [];
 if (!isDoor) VERDICT.push('CONVICTED AT THE GATE · `isDoor` is false for a wardrobe leaf.');
-else {
+else if (!hingeHidden.length && !sideHidden.length && !splitHidden.length) {
+  VERDICT.push('ALL THREE ARE ON THE SCREEN · `isDoor` is TRUE for this leaf, the copy mounts');
+  VERDICT.push('all three blocks behind it, and no `data-workshop-tools="no"` rule takes any of');
+  VERDICT.push('them. SPLIT DOOR (TOP SEGMENT) was never hidden; the HINGE HEIGHT ROWS came');
+  VERDICT.push('back on the owner\'s own word of 22.09; and HINGE SIDE is let through by a rule');
+  VERDICT.push('that now names the board pickers it was written for.');
+  VERDICT.push('');
+  VERDICT.push('ASSIGN OTHER HINGE — the catalogue dropdown that picks WHICH hinge the workshop');
+  VERDICT.push('buys — stays PRO\'s, which is what *"wybór hinges to nie jest dobry pomysł, nie');
+  VERDICT.push('tutaj — zostaw w PRO"* was ever about. Nothing in tonight\'s sentence asks for it.');
+} else {
   VERDICT.push('THE GATE IS SOUND · `isDoor` is TRUE for this leaf, and the copy mounts all');
   VERDICT.push('three blocks behind it. The fault is not a gate and not a route — every one of');
-  VERDICT.push('the three is MOUNTED. Two of them are then taken off the screen by the ROOM\'S');
-  VERDICT.push('OWN STYLESHEET:');
+  VERDICT.push('the three is MOUNTED. It is the ROOM\'S OWN STYLESHEET that takes them off:');
   VERDICT.push('');
-  for (const l of hingeHidden) VERDICT.push(`  · THE HINGES — ${l.at}\n      ${l.text}`);
+  for (const l of hingeHidden) VERDICT.push(`  · THE HINGE HEIGHT ROWS — ${l.at}\n      ${l.text}`);
   for (const l of sideHidden) VERDICT.push(`  · HINGE SIDE — ${l.at}\n      ${l.text}`);
+  if (!hingeHidden.length && !sideHidden.length) {
+    VERDICT.push('  · nothing. All three are on the screen.');
+  }
   VERDICT.push('');
   VERDICT.push('THE HINGES were hidden on purpose (T68 F6, *"wybór hinges to nie jest dobry');
   VERDICT.push('pomysł, nie tutaj — zostaw w PRO"*), and the owner has OVERTURNED that tonight in');

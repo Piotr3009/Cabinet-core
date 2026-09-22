@@ -714,6 +714,21 @@ export default function ElementProperties({
           <Field key={key} label={param === 'front_t' ? 'Front board' : 'Carcass board'}>
             <select
               className="cc-input"
+              // ─── TURN 72 (CLAUDE.md F6): THE BOARD PICKER SAYS WHAT IT IS ──
+              //
+              // Retail hides the WORKSHOP fields of a copied window with the
+              // room's own stylesheet (a copy may not be edited), and the rule
+              // that hides THIS one was written as *"the board-thickness
+              // pickers"* and spelt `label:has(> select.pbi-re-input)` — which
+              // is every `<select>` in the dock, because `Field` wraps every
+              // control in a `<label>`. `verify/t72/f6-probe.md` is the
+              // measurement: it took `Hinge side` with it, and `shelf-type`,
+              // `partition-slot` and `end-panel-height` too.
+              //
+              // A hook is the fix, on the one control the rule is about. PRO
+              // draws exactly what it drew — a `data-` attribute is not a
+              // control — and the sheet can now name what it means.
+              data-board-thickness={param}
               value={unit.params[param]}
               title={param === 'front_t'
                 ? 'The board every front of this cabinet is cut from'

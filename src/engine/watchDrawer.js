@@ -154,14 +154,60 @@ export function watchLayoutOf(item) {
  * same call the 3-D, the BOM and the sheet already read), so the picture and
  * the bill finally say what the control chose.
  */
+// ─── TURN 72 (CLAUDE.md F9): A MATERIAL BASE, IN FOUR COLOURS ──────────────
+//
+// The owner, 22.09.2026, on the accessories drawer's own window:
+//
+//   *"usuń Veneer, dodaj materiałowe dno zamiast Veneer: ciemnozielone,
+//   czerwone, brązowe, czarne, tylko te 4 kolory filcu."*
+//
+// VENEER NEVER EXISTED HERE — the list above it has carried exactly one entry
+// since T53 — so there is nothing to remove and nothing is removed: `Sprayed`
+// stands, `Project` is the window's own null, and FELT is the third answer.
+//
+// FOUR COLOURS AND NO FIFTH. *"tylko te 4 kolory filcu"* is a closed list and
+// this is it; the hexes are the felt a workshop actually buys, and the BOM
+// names the colour because a roll of dark green is not a roll of black.
+export const WATCH_FELT_COLOURS = Object.freeze([
+  { id: 'dark-green', label: 'Dark green', hex: '#1f3b2c' },
+  { id: 'red', label: 'Red', hex: '#7d1f22' },
+  { id: 'brown', label: 'Brown', hex: '#4b3524' },
+  { id: 'black', label: 'Black', hex: '#141414' },
+]);
+
 export const WATCH_FINISHES = Object.freeze([
   { id: 'spray', label: 'Sprayed', hint: 'The project’s front spray colour.' },
+  {
+    id: 'felt',
+    label: 'Felt base',
+    hint: 'A felt base in the tray, in one of four colours — the BOM names which.',
+  },
 ]);
 
 /** The finish this insert wears, or null for the project's own decor. */
 export function watchFinishOf(item) {
   const said = String(item?.watch_finish || '').toLowerCase();
   return WATCH_FINISHES.find((f) => f.id === said)?.id || null;
+}
+
+/**
+ * WHICH FELT, as a colour id — and only where the finish is felt at all.
+ *
+ * The first of the four when nothing is said, which is how every resolution in
+ * this application answers: the workshop's own until a hand moves it. A colour
+ * stored on a drawer whose finish is NOT felt answers null, so a joiner who
+ * sprays a tray he once felted does not carry a roll of dark green in his BOM.
+ */
+export function watchFeltOf(item) {
+  if (watchFinishOf(item) !== 'felt') return null;
+  const said = String(item?.watch_felt || '').toLowerCase();
+  return WATCH_FELT_COLOURS.find((c) => c.id === said)?.id || WATCH_FELT_COLOURS[0].id;
+}
+
+/** …and the entry itself, for the label and the swatch. */
+export function watchFeltEntry(item) {
+  const id = watchFeltOf(item);
+  return id ? WATCH_FELT_COLOURS.find((c) => c.id === id) || null : null;
 }
 
 /** The watch-drawer block of a profile, with every field present. */

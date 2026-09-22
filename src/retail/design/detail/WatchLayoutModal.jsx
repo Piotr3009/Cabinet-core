@@ -5,8 +5,10 @@ import { useProjectStore } from '../../../stores/projectStore.js';
 import { useCabinetProfileStore } from '../../../stores/cabinetProfileStore.js';
 import { formatMm } from '../../../engine/format.js';
 import {
-  WATCH_FINISHES, WATCH_LAYOUTS, watchDrawerLayout, watchFinishOf, watchLayoutOf,
+  WATCH_FELT_COLOURS, WATCH_FINISHES, WATCH_LAYOUTS,
+  watchDrawerLayout, watchFeltOf, watchFinishOf, watchLayoutOf,
 } from '../../../engine/watchDrawer.js';
+import NumberField from '../room/NumberField.jsx';
 
 // ─── THE WATCH DRAWER'S OWN WINDOW (turn 53, CLAUDE.md F8e) ─────────────────
 //
@@ -103,6 +105,9 @@ export default function WatchLayoutModal() {
   const setWatchLayout = useProjectStore((s) => s.setWatchLayout);
   const setWatchFinish = useProjectStore((s) => s.setWatchFinish);
   const setWatchShelfGlass = useProjectStore((s) => s.setWatchShelfGlass);
+  // T72 F9 · which felt, and this drawer's own height.
+  const setWatchFelt = useProjectStore((s) => s.setWatchFelt);
+  const setDrawerHeight = useProjectStore((s) => s.setDrawerHeight);
   const watchShelfAbove = useProjectStore((s) => s.watchShelfAbove);
 
   const anchor = useMemo(() => args?.anchor || null, [args]);
@@ -121,9 +126,18 @@ export default function WatchLayoutModal() {
     .find((w) => Number(w.drawer) === Number(item.index) && (w.zone ?? null) === zone) || null;
   const chosen = watchLayoutOf(item);
   const finish = watchFinishOf(item);
+  const felt = watchFeltOf(item);
   // F8d: the option is DISABLED WITH A REASON, never silently hidden.
   const shelf = watchShelfAbove(unit.id, Number(item.index), zone);
   const glassOn = item.watch_shelf_glass === true;
+  // T72 F9 · THE PROPOSAL IS THE DRAWER'S OWN CURRENT HEIGHT, read off the
+  // item the same way `setDrawerHeight` writes it — so the chip, the field and
+  // the piece panel's `drawer-height` row are three readings of one number and
+  // cannot disagree. A drawer the kit has not given its own height yet reads
+  // the workshop's standard, which is what it will be cut at.
+  const proposed = Math.round(Number(item.height_mm) > 0
+    ? Number(item.height_mm)
+    : P.wardrobe.drawers.frontHeight);
 
   // The tray the cards are drawn from — the engine's own interior, so a card
   // shows this drawer and not a picture of some drawer.
@@ -185,31 +199,92 @@ export default function WatchLayoutModal() {
           ))}
         </div>
 
-        {/* ─── THE GLASS, IN THE SHELF ABOVE (F8b/F8d) ─────────────────── */}
+        {/* ─── THE GLASS, IN THE SHELF ABOVE (F8b/F8d) ───────────────────
+            ─── TURN 72 (CLAUDE.md F9): GLASS ON TOP · `Off` | `On` ─────────
+
+            The owner, 22.09.2026, of the accessories drawer's own menu:
+            *"w nim powinien być przycisk GLASS ON TOP (zmniejsz moc światła o
+            połowę, powinno tylko tam świecić)."*
+
+            TWO CHIPS where a checkbox stood — the same two states, the same
+            store path (`setWatchShelfGlass`), the same F8d refusal with its
+            reason on it. What changes is that the answer reads as an ANSWER
+            rather than as a box somebody may or may not have ticked, which is
+            the shape every other two-state question in this app now wears.
+
+            THE HALF-POWER is the engine's and not this window's: the strip the
+            glass births carries `power: 0.5` (`engine/cabinet.js`), and
+            `3d/LedStrips.jsx` multiplies its lamp by it — under T67 F10's
+            standing cap, so the two orders compose. */}
         <div className="pbi-re-fieldrow pbi-re-tsm">
-          <label className="pbi-re-grow pbi-re-ink-1" htmlFor="watch-glass-toggle">
-            Glass over the drawer
+          <span className="pbi-re-grow pbi-re-ink-1">
+            Glass on top
             <span className="pbi-re-block pbi-re-t10 pbi-re-quiet">
               Cut in the shelf above, {formatMm(50)} mm in from every edge, flush with its top.
+              With it on, the light over this drawer runs at half power and lights this drawer alone.
             </span>
-          </label>
-          <input
-            id="watch-glass-toggle"
-            type="checkbox"
-            data-watch-glass="1"
-            checked={glassOn}
-            disabled={!shelf}
-            title={shelf
-              ? 'The opening is cut in the shelf above, with the LED ringing it underneath.'
-              : 'Needs a shelf directly above'}
-            onChange={(e) => setWatchShelfGlass(unit.id, item.id, e.target.checked)}
-          />
+          </span>
+          <div className="pbi-re-row pbi-re-gap-1" data-watch-glass="1">
+            {[['off', 'Off', false], ['on', 'On', true]].map(([id, label, on]) => (
+              <button
+                key={id}
+                type="button"
+                data-watch-glass-chip={id}
+                aria-pressed={glassOn === on}
+                disabled={!shelf && on}
+                className={`pbi-re-btn pbi-re-px2 pbi-re-py05 pbi-re-t11 ${glassOn === on ? 'pbi-re-btn-gold' : ''}`}
+                title={shelf || !on
+                  ? 'The opening is cut in the shelf above, with the LED ringing it underneath.'
+                  : 'Needs a shelf directly above'}
+                onClick={() => setWatchShelfGlass(unit.id, item.id, on)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
         {!shelf ? (
           <p className="pbi-re-t11 pbi-re-warn" data-watch-glass-why="1">
             Needs a shelf directly above — add one and the opening is cut in it.
           </p>
         ) : null}
+
+        {/* ─── TURN 72 (CLAUDE.md F9): DRAWER HEIGHT ─────────────────────
+            The owner: *"powinien mieć wysokość szuflady zaproponowaną, ten co
+            jest default."*
+
+            A NUMBER FIELD plus ONE CHIP carrying the drawer's CURRENT height —
+            which IS the proposal, because it is what the kit gave this drawer
+            and it is the default until a hand types over it. The chip is
+            therefore never a second number: it reads the same
+            `drawerHeightValue` the field does, and pressing it writes what it
+            says.
+
+            ONE STORE PATH, and it is PRO's own: `setDrawerHeight(unit.id,
+            item.id, mm)` carries the owner's clamp (the profile's min and max
+            front height) and re-deals what is left to the drawers nobody has
+            touched. Nothing about the stack is re-derived here. */}
+        <div className="pbi-re-fieldrow pbi-re-tsm">
+          <span className="pbi-re-grow pbi-re-ink-1">Drawer height</span>
+          <button
+            type="button"
+            className="pbi-re-btn pbi-re-px2 pbi-re-py05 pbi-re-t11"
+            data-watch-height-proposed={proposed}
+            title="The height this drawer already has — the proposal, until it is typed over."
+            onClick={() => setDrawerHeight(unit.id, item.id, proposed)}
+          >
+            Proposed {proposed}
+          </button>
+          <NumberField
+            className="pbi-re-input pbi-re-w20 pbi-re-right"
+            data-watch-height="1"
+            min={P.wardrobe.drawers.minFrontHeight}
+            max={P.wardrobe.drawers.maxFrontHeight}
+            value={proposed}
+            title="This drawer's own front height, in mm. The stack re-deals what is left."
+            onCommit={(v) => setDrawerHeight(unit.id, item.id, v)}
+          />
+        </div>
 
         {/* ─── THE FINISH (F8f) ────────────────────────────────────────── */}
         <div className="pbi-re-fieldrow pbi-re-tsm">
@@ -230,6 +305,45 @@ export default function WatchLayoutModal() {
             ))}
           </div>
         </div>
+
+        {/* ─── TURN 72 (CLAUDE.md F9): AND WITH FELT, WHICH FELT ─────────
+            *"dodaj materiałowe dno zamiast Veneer: ciemnozielone, czerwone,
+            brązowe, czarne, tylko te 4 kolory filcu."*
+
+            FOUR AND NO FIFTH: `WATCH_FELT_COLOURS` is the engine's closed list
+            and the store refuses anything else, so this row cannot offer a
+            colour the BOM could not name. It appears only with FELT BASE
+            chosen — a colour row over a sprayed tray is a control that cannot
+            act — and `Veneer` is not here because it never was: the finish
+            list has carried exactly one entry since T53. */}
+        {finish === 'felt' ? (
+          <div className="pbi-re-fieldrow pbi-re-tsm" data-watch-felt-row="1">
+            <span className="pbi-re-grow pbi-re-ink-1">Felt colour</span>
+            <div className="pbi-re-row pbi-re-gap-1">
+              {WATCH_FELT_COLOURS.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  data-watch-felt={c.id}
+                  aria-pressed={felt === c.id}
+                  className={`pbi-re-btn pbi-re-px2 pbi-re-py05 pbi-re-t11 ${felt === c.id ? 'pbi-re-btn-gold' : ''}`}
+                  title={`${c.label} felt in the tray — the BOM names it.`}
+                  onClick={() => setWatchFelt(unit.id, item.id, c.id)}
+                >
+                  {/* The swatch wears the SAME class list the piece panel's
+                      material swatch wears — one look for "this is a colour",
+                      and no token the copy machine has to be taught. */}
+                  <span
+                    className="pbi-re-w4 pbi-re-h4 pbi-re-round pbi-re-line pbi-re-hair pbi-re-nogrow"
+                    data-watch-felt-swatch={c.id}
+                    style={{ background: c.hex }}
+                  />
+                  {c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {/* What the engine actually built, so the window and the machine agree. */}
         {built ? (

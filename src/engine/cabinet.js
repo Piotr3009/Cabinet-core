@@ -118,7 +118,7 @@ import { insertFor } from './drawerInserts.js';
 // layouts (`watchLayoutOf`), and the insert wears a finish of its own.
 import {
   WATCH_LAYERS, drawerBoxInterior, isShelfBoard, shelfGlassPlan, watchDrawerFit, watchDrawerSpec,
-  watchFinishOf, watchInsertOn, watchInsertParts, watchLayoutOf,
+  watchFeltEntry, watchFinishOf, watchInsertOn, watchInsertParts, watchLayoutOf,
 } from './watchDrawer.js';
 // T58 (CLAUDE.md F2): the shoe drawer's INSERT — the ramp and its two
 // dividers, on the shoe SHELF's own tilt. The box is a standard drawer and
@@ -7777,6 +7777,10 @@ export function computeCabinet(params, profileOverride) {
       // answer. `null` — Project — leaves the record clean and the part on
       // the carcass resolution it has always taken.
       const wFinish = watchFinishOf(wItem);
+      // T72 F9 · …and WHICH felt, where the finish is felt at all. `watchFeltOf`
+      // answers null for every other finish, so a drawer that was felted and is
+      // now sprayed carries no roll of dark green in its BOM.
+      const wFelt = watchFeltEntry(wItem);
       const made = watchInsertParts(interior, P, { drawer: index, layout: wLayout });
       if (!made) continue;
       for (const q of made.parts) {
@@ -7932,6 +7936,25 @@ export function computeCabinet(params, profileOverride) {
                 d: ledStrip.width,
               },
               round: false,
+              // ─── TURN 72 (CLAUDE.md F9): HALF THE SPEC'S POWER ───────────
+              //
+              // The owner, 22.09.2026, of the glass on the accessories drawer:
+              // *"zmniejsz moc światła o połowę, powinno tylko tam świecić."*
+              //
+              // ONE NUMBER, on the record the engine already owns, and NO NEW
+              // LAMP: `3d/LedStrips.jsx` multiplies a strip's own lamp and
+              // emissive by this, and every other strip in the app carries no
+              // `power` at all and is therefore exactly what it was.
+              //
+              // *"powinno tylko tam świecić"* is already true and is not
+              // re-implemented here: this strip's box IS the aperture over that
+              // one drawer and it fires DOWN through it (T58b), so what it
+              // lights is that drawer and the watches in it.
+              //
+              // T67 F10's CAP still stands above it — *"nie więcej niż 25
+              // procent od teraz"* — so the two orders compose rather than
+              // argue: a quarter, halved.
+              power: 0.5,
               length_mm: roundTo(plan.opening.w, 1),
               // Measured from the shelf's BACK, which is the whole point of
               // this record — the ordinary `inset_mm` is a front-edge number
@@ -7947,6 +7970,8 @@ export function computeCabinet(params, profileOverride) {
         drawer: index,
         layout: wLayout,
         finish: wFinish,
+        felt: wFelt ? wFelt.id : null,
+        felt_label: wFelt ? wFelt.label : null,
         pockets: made.layout.pockets.count,
         pocket_w_mm: roundTo(made.layout.pockets.width, 1),
         pocket_d_mm: roundTo(made.layout.pockets.depth, 1),
@@ -8311,10 +8336,13 @@ export function computeCabinet(params, profileOverride) {
       // T53 (F8e/F8f): which of the four designs, and what it is finished in.
       layout: w.layout,
       ...(w.finish ? { finish: w.finish } : {}),
+      // T72 F9 · *"dodaj materiałowe dno … tylko te 4 kolory filcu."*  THE BOM
+      // NAMES THE FELT, because a roll of dark green is not a roll of black.
+      ...(w.felt ? { felt: w.felt } : {}),
     },
     `Watch / tie insert · ${where} · ${w.layout} · ${w.pockets} pockets at ${w.pocket_w_mm} × ${w.pocket_d_mm} mm, `
       + `${w.inside_mm} mm deep · ${w.sections} across in ${w.lanes} lane${w.lanes === 1 ? '' : 's'} behind`
-      + `${w.finish ? ` · ${w.finish}` : ''}`);
+      + `${w.finish ? ` · ${w.finish}` : ''}${w.felt_label ? ` · ${w.felt_label} felt base` : ''}`);
     // ─── TURN 53 (CLAUDE.md F8b/F8c): THE PANE AND THE STRIP ARE THE SHELF'S ─
     //
     // *"wtedy wycinamy w półce otwór … i dookoła tej szyby masz LED od spodu."*

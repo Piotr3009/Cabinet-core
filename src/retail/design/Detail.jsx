@@ -201,7 +201,16 @@ export default function Detail(props) {
               component, moved whole; the selection names its row. */}
           {rowForSelection(selection) && selection?.unitId ? (
             <div data-testid="dock-rehomed">
-              <ReHomed row={rowForSelection(selection)} unitId={selection.unitId} />
+              {/* T72 F9 · ADD ACCESSORIES DRAWER walks to the INSIDE step, and
+                  the STEP is the room's own state — so the room hands down the
+                  walk, exactly as it hands it to the inner plus
+                  (`onAddInside`). The ADD and the row's LIGHT are the
+                  adapter's; this is only the door between them. */}
+              <ReHomed
+                row={rowForSelection(selection)}
+                unitId={selection.unitId}
+                onAddAccessories={props.onAddAccessories}
+              />
             </div>
           ) : null}
 

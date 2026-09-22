@@ -519,6 +519,24 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
         <Detail
           selection={selection}
           onSelect={setTarget}
+          // ─── T72 F9 · ADD ACCESSORIES DRAWER ─────────────────────────────
+          //
+          // The owner: *"powinien być ADD ACCESSORIES DRAWER i powinno wziąć
+          // nas do menu i podświetlić Add accessories drawer."*
+          //
+          // Three acts, and the STEP is the only one that is this file's: the
+          // adapter adds through the INSIDE row's own call and lights that row
+          // through the shared store's `addItemKind`, and the walk to INSIDE
+          // is the same `setActive('inside')` the inner plus makes. What may
+          // be added lives in ONE table and this file does not hold a copy of
+          // it — `adapter.addAccessoriesDrawer` is the whole of this door.
+          onAddAccessories={(id) => {
+            setSaid('');
+            const res = A.addAccessoriesDrawer(id);
+            if (!res.ok && !res.already && res.said) setSaid(res.said);
+            useUiStore.getState().selectUnit(id);
+            setActive('inside');
+          }}
           unit={unit}
           project={project}
           designName={designName}

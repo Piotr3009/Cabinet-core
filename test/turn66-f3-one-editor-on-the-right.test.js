@@ -278,11 +278,28 @@ test('F3, amended by T67 · every control a dead thin menu carried is somewhere 
   // a control reaches the surface the whole turn was about.
   const options = read('src/retail/design/Options.jsx')
     + read('src/retail/design/detail/ReHomed.jsx')
-    + read('src/retail/design/detail/ElementProperties.jsx');
+    + read('src/retail/design/detail/ElementProperties.jsx')
+    // T72 F9 · …and the accessories drawer's own window, which is where GLASS
+    // TOP now stands, beside the layout it belongs to.
+    + read('src/retail/design/detail/WatchLayoutModal.jsx');
   const REHOMED = {
     'DrawersMenu · HOW MANY': /testid="drawers-count"/,
-    'DrawersMenu · TOP DRAWER INSERT': /testid="drawers-insert"/,
-    'DrawersMenu · GLASS TOP': /testid="drawers-glass"/,
+    // ─── AMENDED BY T72 F9 · TWO LICENSED REMOVALS ─────────────────────────
+    //
+    // The owner, 22.09.2026, on his screenshot of this very menu:
+    //
+    //   *"top drawers insert nie powinien tak wyglądać: powinien być ADD
+    //   ACCESSORIES DRAWER i powinno wziąć nas do menu i podświetlić Add
+    //   accessories drawer, i po 2kliku powinno się otworzyć menu, które już
+    //   jest, ale w nim powinien być przycisk GLASS ON TOP."*
+    //
+    // TOP DRAWER INSERT's one live answer WAS the accessories drawer, and it
+    // is the button now. GLASS TOP is the accessories drawer's own question
+    // and it is in that drawer's own window, where he asked for it. So neither
+    // is LOST — which is the claim this test makes — and each is asserted
+    // where it now stands rather than where it used to.
+    'DrawersMenu · TOP DRAWER INSERT': /testid="drawers-add-accessories"/,
+    'DrawersMenu · GLASS TOP': /data-watch-glass-chip=\{id\}/,
     'DrawersMenu · FRONT HEIGHTS': /testid="drawers-front-height"/,
     'OverlayMenu · HOW MANY': /testid="overlay-count"/,
     'OverlayMenu · FRONT HEIGHT': /testid="overlay-front"/,

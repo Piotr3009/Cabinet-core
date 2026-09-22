@@ -145,7 +145,11 @@ test('F2 · the lighting copy carries what the retail sketch lost', () => {
 test('F3/F4 · the labels CLAUDE.md names are in the copies', () => {
   const all = T63_COPIES.map((c) => read(c.retail)).join('\n');
   for (const label of ['Add doors', 'What goes inside', 'This cabinet', 'Narrow the front', 'Insert an infill',
-    'Glass over the drawer', 'Height above support', 'Remove the rail', 'Back to the standard run',
+    // T72 F9 · *"powinien być przycisk GLASS ON TOP"* — the same control, the
+    // same store path, named the way the owner names it and drawn as two chips
+    // rather than a checkbox. The CLAIM is that the copy carries what PRO
+    // shows, and it does.
+    'Glass on top', 'Height above support', 'Remove the rail', 'Back to the standard run',
     'Reset to project', 'More colours…', 'Choose decor…', 'Change', 'Hinges (finish)', 'Internal metal',
     'Existing styles', 'Search by code or name', 'Type to filter']) {
     assert.ok(all.includes(label), `THE COPY DROPPED A CONTROL CLAUDE.md NAMED: ${label}`);
@@ -349,6 +353,11 @@ const T72_LICENSED = [
   'src/components/ElementProperties.jsx',
   'src/components/DoorModal.jsx',
   'src/components/JpullRunModal.jsx',
+  // T72 F9 · the accessories drawer's own window: GLASS ON TOP as two chips,
+  // DRAWER HEIGHT with its "Proposed NNN", and the FELT BASE colours. Its
+  // `EXEMPT` entry is RENEWED with tonight's quote — the map does not grow,
+  // because T67 F9 put this file on it.
+  'src/components/WatchLayoutModal.jsx',
 ];
 
 test('T72 · every PRO original that MOVED is licensed, and every licence is spent', () => {
@@ -382,7 +391,7 @@ test('T72 · every PRO original that MOVED is licensed, and every licence is spe
     'scripts/t72-copy.mjs and this test disagree about what PRO edited');
 });
 
-test('T63, amended by T67 and T72 · not one byte of the other SIXTEEN originals moved', () => {
+test('T63, amended by T67 and T72 · not one byte of the other FIFTEEN originals moved', () => {
   let base = null;
   for (const ref of ['origin/main', 'main']) {
     try {
@@ -391,14 +400,23 @@ test('T63, amended by T67 and T72 · not one byte of the other SIXTEEN originals
     } catch { /* next */ }
   }
   if (!base) return;
-  const licensed = [...T67_RENAMED, ...T72_LICENSED];
+  // `WatchLayoutModal` is on BOTH lists — T67 renamed it, T72 gave it three
+  // controls — so the set is de-duplicated rather than counted twice.
+  const licensed = [...new Set([...T67_RENAMED, ...T72_LICENSED])];
   const unmoved = T63_COPIES.map((c) => c.pro).filter((p) => !licensed.includes(p));
-  assert.equal(unmoved.length, 16, 'the exemption grew beyond the five files it names');
+  assert.equal(unmoved.length, 21 - licensed.length, 'the exemption grew beyond the files it names');
   const diff = execFileSync('git', ['diff', '--stat', base, '--', ...unmoved],
     { cwd: ROOT, encoding: 'utf8' }).trim();
   assert.equal(diff, '', `a PRO original moved to make the copy work:\n${diff}`);
-  // …and the two that DID move moved only where a person reads.
-  const renamed = execFileSync('git', ['diff', '-U0', base, '--', ...T67_RENAMED],
+  // …and the ones that moved for a RENAME and nothing else moved only where a
+  // person reads. T72 licensed `WatchLayoutModal` for three CONTROLS, so it is
+  // no longer one of those: it is held by its own `EXEMPT` entry and its hash,
+  // and by the licence test above. `AddItems.jsx` is still a rename and is
+  // still held to one.
+  const renameOnly = T67_RENAMED.filter((p) => !T72_LICENSED.includes(p));
+  assert.deepEqual(renameOnly, ['src/components/AddItems.jsx'],
+    'a file left the rename-only list without being licensed for a control');
+  const renamed = execFileSync('git', ['diff', '-U0', base, '--', ...renameOnly],
     { cwd: ROOT, encoding: 'utf8' });
   const touched = renamed.split('\n').filter((l) => /^[+-][^+-]/.test(l));
   const NAME = /[Ww]atch drawer|[Aa]ccessories drawer|an accessories drawer|T67 F9|^[+-]\s*\/\//;
@@ -533,6 +551,18 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
     // mount, no stack-wide variant and no inner-height line, which is exactly
     // the test the rule above is making.
     'drawers-mount', 'drawers-variant', 'drawers-stack-law', 'dock-inner-heights',
+    // ─── AMENDED BY T72 F9 ────────────────────────────────────────────────
+    //
+    // ONE MORE, and four go: *"top drawers insert nie powinien tak wyglądać:
+    // powinien być ADD ACCESSORIES DRAWER i powinno wziąć nas do menu i
+    // podświetlić Add accessories drawer."*
+    //
+    // It is not a duplicate of anything a copy shows — PRO's piece panel has
+    // no button that walks a client to a step and lights a row — which is
+    // exactly the test this rule is making. The four it replaces
+    // (`drawers-insert`, `drawers-glass`, `drawers-mount`, `drawers-variant`)
+    // are LICENSED REMOVALS named in `ReHomed.jsx` and in the PR body.
+    'drawers-add-accessories',
   ];
   // ─── AMENDED BY T72 F1 · `EndPanel.jsx`, AND WHY IT IS NOT A SKETCH ──────
   //

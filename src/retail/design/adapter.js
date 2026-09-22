@@ -2696,6 +2696,24 @@ export function stackHasFixedHeights(unitId) {
 }
 
 /** Whatever the engine last said about this stack — its own warnings, verbatim. */
+/**
+ * ─── T72 F9 · WHAT THE ACCESSORIES BUTTON HAS TO SAY, IF ANYTHING ─────────
+ *
+ * ONE NOTE and only where there is something true to say — CLAUDE.md's own
+ * *"no more than one per panel"* is a rule about callers, and this is the
+ * caller obeying it.
+ *
+ * A wardrobe that already HAS the drawer says so, because the button then
+ * takes the client to it rather than making a second one (the store refuses a
+ * second and that refusal stands). A wardrobe that has none says nothing at
+ * all: a button with a sentence under it explaining what pressing it will do
+ * is a button that does not read as one.
+ */
+export function accessoriesNote(unitId) {
+  const has = itemsOf(unitId).some((i) => i?.watch_insert === true || String(i?.variant || '') === 'watch');
+  return has ? 'This wardrobe already has one — the button takes you to it.' : '';
+}
+
 export function stackWord(unitId) {
   return (resultOf(unitId)?.warnings || [])
     .filter((w) => String(w.code || '').toUpperCase().startsWith('DRAWER'))
@@ -3397,6 +3415,42 @@ export const openEditor = (name, args = null) => U().openModal(name, args);
 export const lightsModeOn = () => U().modal === 'lighting';
 
 export const closeEditor = () => U().closeModal();
+
+// ─── T72 F9 · ADD ACCESSORIES DRAWER — ONE BUTTON, THREE ACTS ─────────────
+//
+// The owner, 22.09.2026, on his screenshot of the DRAWERS menu:
+//
+//   *"top drawers insert nie powinien tak wyglądać: powinien być ADD
+//   ACCESSORIES DRAWER i powinno wziąć nas do menu i podświetlić Add
+//   accessories drawer, i po 2kliku powinno się otworzyć menu, które już
+//   jest."*
+//
+// THREE ACTS AND NOT ONE NEW PATH:
+//
+//   THE ADD      `INTERIOR_ROWS`' own `watch` entry — the very call the INSIDE
+//                row makes, found by id rather than restated, so there is one
+//                place that knows how an accessories drawer is added. The
+//                store refuses a second one on a unit that has one, and that
+//                refusal stands: pressing this on a wardrobe that already has
+//                the drawer takes the client to it rather than arguing.
+//   THE STEP     the caller's, because the step is `DesignRoom`'s own state —
+//                this returns `ok` and the room does the walking, exactly as
+//                the inner plus does (`onAddInside`).
+//   THE LIGHT    `ui.setAddItemKind('watch_drawer')` — the SHARED store's own
+//                flag, which is what `AddItems` (PRO's copied list) already
+//                highlights a row by. *"the row is highlighted until the next
+//                click elsewhere"* is that flag's own life, unchanged.
+export function addAccessoriesDrawer(unitId) {
+  const row = INTERIOR_ROWS.find((r) => r.id === 'watch');
+  if (!row || !unitOf(unitId)) return { ok: false, said: '' };
+  const before = itemsOf(unitId).filter((i) => i?.watch_insert === true).length;
+  row.add(S(), unitId);
+  const after = itemsOf(unitId).filter((i) => i?.watch_insert === true).length;
+  // THE LIGHT is set either way: a client sent to the row is shown the row,
+  // whether the drawer was made just now or was already there.
+  U().setAddItemKind?.('watch_drawer');
+  return { ok: after > before, already: after > 0 && after === before, said: lastEngineWord() };
+}
 /** The rectangle of the control that asked (rule 15: beside, never on). */
 export const anchorOf = (e) => anchorOfEvent(e);
 /** The scene's own selection — the one `LightingPanel` offers a strip under. */

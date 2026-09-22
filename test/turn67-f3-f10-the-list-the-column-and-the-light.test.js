@@ -193,7 +193,11 @@ test('F7 · …and every one of those controls is on the RIGHT, in the dock', ()
   // The dock renders it, for the row the selection belongs to.
   const detail = code('src/retail/design/Detail.jsx');
   assert.match(detail, /rowForSelection\(selection\) && selection\?\.unitId/);
-  assert.match(detail, /<ReHomed row=\{rowForSelection\(selection\)\} unitId=\{selection\.unitId\} \/>/);
+  // T72 F9 · the dock hands `ReHomed` one more prop — the walk to the INSIDE
+  // step, which is the room's own state and can only come from there. The
+  // claim is unchanged: the dock renders it, for the row the selection is on.
+  assert.match(detail, /<ReHomed\s*\n\s*row=\{rowForSelection\(selection\)\}\s*\n\s*unitId=\{selection\.unitId\}/);
+  assert.match(detail, /onAddAccessories=\{props\.onAddAccessories\}/);
   // A selection on no row draws nothing extra — the panel is what it was.
   assert.match(rehomed, /return A\.INTERIOR_ROWS\.find\(\(row\) => row\.menu === selection\.menu\) \|\| null;/);
 });

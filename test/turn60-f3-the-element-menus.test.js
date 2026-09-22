@@ -685,8 +685,12 @@ test('F3.6 · WATCH — the four layouts are the engine\'s four, drawn from its 
   }
 
   // PROJECT / SPRAYED — the T58 pair, and it is a null and one engine id.
+  // ─── AMENDED BY T72 F9 · AND FELT BASE, WHICH IS AN ADDITION ────────────
+  // *"usuń Veneer, dodaj materiałowe dno zamiast Veneer … tylko te 4 kolory
+  // filcu."*  The pair stands; the third is the owner's own, and it is the
+  // ENGINE's list this reads — which is the claim of this whole test.
   const finishes = A.watchFinishes();
-  assert.deepEqual(finishes.map((f) => f.id), ['project', 'spray']);
+  assert.deepEqual(finishes.map((f) => f.id), ['project', 'spray', 'felt']);
 
   const unit = room({ drawers: 3 });
   S().addWatchDrawer(unit.id);

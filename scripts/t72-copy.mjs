@@ -55,6 +55,13 @@ export const T72_PRO_EDITS = [
       + 'z zawiasami i ze strzałkami up and down, skopiuj z PRO"*',
   },
   {
+    pro: 'src/components/WatchLayoutModal.jsx',
+    why: 'F9 · the accessories drawer\'s own window: GLASS ON TOP as two chips, DRAWER '
+      + 'HEIGHT with its "Proposed NNN" chip, and the FELT BASE colours. *"powinien mieć '
+      + 'wysokość szuflady zaproponowaną, ten co jest default; usuń Veneer, dodaj '
+      + 'materiałowe dno … tylko te 4 kolory filcu."*',
+  },
+  {
     pro: 'src/components/JpullRunModal.jsx',
     why: 'F4 · the run length is a typed number with the engine\'s min and max beside it — '
       + '*"nie może być przesuwakiem, musimy wpisywać liczby"*',

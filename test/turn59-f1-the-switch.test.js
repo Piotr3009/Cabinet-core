@@ -129,9 +129,16 @@ const EXEMPT = {
   'src/components/AddItems.jsx':
     'T67 F9 — the label "Watch drawer" becomes "Accessories drawer" on the row, the '
     + 'button and the two notices. *"zmień w PRO też tę nazwę."*',
+  // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
+  // The exemption bought ONE night and not a standing permission, so tonight's
+  // edit is argued again with tonight's quote and tonight's hash. The map does
+  // not grow by this entry: the file was already on it.
   'src/components/WatchLayoutModal.jsx':
-    'T67 F9 — the same label, on the window\'s own title. '
-    + '*"watches szuflad jest bez sensu."*',
+    'T72 F9 · GLASS ON TOP becomes `Off` | `On`, DRAWER HEIGHT arrives with its '
+    + '"Proposed NNN" chip, and FELT BASE brings its four colours. Nothing is taken: '
+    + '`Sprayed` stands and `Veneer` never existed here. *"powinien mieć wysokość '
+    + 'szuflady zaproponowaną, ten co jest default; usuń Veneer, dodaj materiałowe dno '
+    + '… tylko te 4 kolory filcu."*',
 };
 
 /**
@@ -210,7 +217,7 @@ const FROZEN = {
   'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
   'src/components/WarehouseModal.jsx': '891e9065b7a6ae95612b4de88dc9cdd3d015a99c709c3ce47cdf458b1bf9da62',
   // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/WatchLayoutModal.jsx': '5df8a72415db012947f9735e0262bb2381fbda8aab7dc32763be0249c2e834e2',
+  'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   'src/components/WizardSettings.jsx': 'e78f35fff5107b21a5a775629ab899d2474d883df03b5873ad538bcfbd68fc74',
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',

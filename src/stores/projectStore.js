@@ -132,7 +132,7 @@ import {
 // T53 (CLAUDE.md F8): the watch drawer's own entry, its four layouts, its
 // finish and the shelf it puts its glass in.
 import {
-  DEFAULT_WATCH_LAYOUT, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
+  DEFAULT_WATCH_LAYOUT, WATCH_FELT_COLOURS, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
   isShelfBoard, watchDrawerFixedHeight,
 } from '../engine/watchDrawer.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
@@ -7219,6 +7219,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   setWatchFinish: (unitId, itemId, finishId) => {
     const hit = WATCH_FINISHES.find((f) => f.id === finishId)?.id || null;
     get().updateItem(unitId, itemId, { watch_finish: hit });
+    return hit;
+  },
+
+  /**
+   * ─── TURN 72 (CLAUDE.md F9): WHICH FELT ──────────────────────────────────
+   *
+   * The owner, 22.09.2026: *"dodaj materiałowe dno zamiast Veneer:
+   * ciemnozielone, czerwone, brązowe, czarne, tylko te 4 kolory filcu."*
+   *
+   * A CLOSED LIST, and the engine owns it (`WATCH_FELT_COLOURS`): a colour
+   * this workshop does not buy is refused here rather than stored and quietly
+   * ignored downstream, exactly as `setWatchFinish` above refuses a finish.
+   *
+   * It writes the COLOUR and nothing else. The FINISH is the row above it and
+   * stays the window's own act, so a joiner who picks a colour has said which
+   * felt and not that there is felt — `watchFeltOf` answers null for every
+   * other finish, so a stored colour on a sprayed tray buys no roll.
+   *
+   * @returns {string|null} the colour that was written
+   */
+  setWatchFelt: (unitId, itemId, colourId) => {
+    const hit = WATCH_FELT_COLOURS.find((c) => c.id === colourId)?.id || null;
+    get().updateItem(unitId, itemId, { watch_felt: hit });
     return hit;
   },
 

@@ -118,7 +118,8 @@ import {
 import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFit.js';
 // Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
 import {
-  autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays, withAsked, withDeclined,
+  askedSides, autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays,
+  isAutoEndPanel, withAsked, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
@@ -3019,6 +3020,61 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *   exist: nobody declined anything, and recording a decline would silently
    *   forbid the panel on the day the junction came back.
    */
+  /**
+   * ─── TURN 72 (CLAUDE.md F5): THE PANEL LEAVES THE MOMENT A NEIGHBOUR
+   * ARRIVES ──────────────────────────────────────────────────────────────
+   *
+   * The owner, 22.09.2026:
+   *
+   *   *"jak dodajesz szafę obok powinien zniknąć panel i znika, ale dopiero
+   *   jak przesuniesz szafę od boku i przysuniesz do; funkcja jest napisana
+   *   'jak dosuniesz' a nie 'jak się pojawia'. Mała zmiana, ale musi być."*
+   *
+   * MEASURED, before a line was written. `addUnit` has called `settleLayout`
+   * since T51, and that settle PRUNES then GROWS — so the sweep did run on the
+   * add. What defeated it is the PLACEMENT: `freeSlotOnWall` measures the
+   * neighbour's whole span, panel included, so the new cabinet lands one board
+   * out (25 mm on a 25 mm panel). The prune then takes the panel off, the two
+   * cabinets are suddenly 25 mm APART, and the grow — correctly, for what it
+   * is looking at — puts a panel back on what is now a free end. Drag the new
+   * cabinet away and back and the magnet lands it flush, and only then does
+   * the panel stay off. That is his sentence exactly: the law is written *"jak
+   * dosuniesz"*.
+   *
+   * SO THE PANEL GOES FIRST, and the cabinet lands where it would have landed
+   * if it had been dragged. This is not a second law: `isAutoEndPanel` and
+   * `askedSides` are `engine/endPanelAuto.js`'s own two tests — the very pair
+   * `autoEndPanelStrays` applies — and the removal is the ordinary
+   * `removeEndPanel`, so the board leaves the cut list, the BOM and the CNC
+   * sheet by the routes that already exist.
+   *
+   * A panel the CLIENT asked for is permanent and is never touched (T65 F6),
+   * and a panel a hand added is not `auto_added` at all.
+   *
+   * `decline: false` is the whole of why this is not the right-click Remove: a
+   * junction that is being COVERED is not a junction the joiner said no to,
+   * and writing a decline here would stop the automat offering it again when
+   * the neighbour is dragged away.
+   *
+   * @returns {number} how much room the departing board freed, in mm
+   */
+  closeAutoEndPanelFacing: (unitId, side) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return 0;
+    // `side` arrives in BOTH dialects — PRO's library hands `'L'`/`'R'` and the
+    // stage's plus hands `'left'`/`'right'` (`engine/runs.js addPlusPoints`) —
+    // and `isLeftSide` is the app's own one reading of that, which every other
+    // caller in this store already goes through. Reading it by hand is how a
+    // plus on the right would have closed the panel on the left.
+    const want = isLeftSide(side) ? 'L' : 'R';
+    const ep = (unit.params?.end_panels || [])
+      .find((p) => (p.side === 'R' ? 'R' : 'L') === want && isAutoEndPanel(p)) || null;
+    if (!ep || askedSides(unit).includes(want)) return 0;
+    const thick = Number(ep.thickness) || 0;
+    get().removeEndPanel(unitId, ep.id, { decline: false });
+    return thick;
+  },
+
   removeEndPanel: (unitId, panelId, { decline = true } = {}) => {
     // ─── TURN 50 (CLAUDE.md F4): REMOVING IT BY HAND IS FINAL ──────────────
     //
@@ -3846,7 +3902,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   addUnit: (typeId, { params = null, near = null, side = null } = {}) => runBatch(() => {
     const profile = getCabinetProfile();
-    const state = get();
+    // T72 F5 · `let`, because closing a neighbour's auto end panel below moves
+    // the very spans this placement is measured against.
+    let state = get();
     // ─── TURN 24 (CLAUDE.md F3.1): NO THICKNESS, NO DRAWERS ─────────────────
     //
     // The owner's words, and it is a HARD gate rather than a warning: a drawer
@@ -3874,7 +3932,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // knew one direction, so the left-hand end of a run could not be reached by
     // adding OR by dragging (a unit butted against its neighbour has nowhere to
     // go, and a clamp that let it through would be a worse bug).
-    const beside = near ? state.units.find((u) => u.id === near) : null;
+    let beside = near ? state.units.find((u) => u.id === near) : null;
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -3998,6 +4056,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // out from under.
       unit.params.rides_offset_mm = Math.max(0, placed.x - (riderHost.position?.x_mm ?? 0));
     }
+    // ─── TURN 72 (CLAUDE.md F5): THE NEIGHBOUR'S PANEL GOES FIRST ───────────
+    //
+    // *"jak dodajesz szafę obok powinien zniknąć panel i znika, ale dopiero jak
+    // przesuniesz szafę od boku i przysuniesz do; funkcja jest napisana 'jak
+    // dosuniesz' a nie 'jak się pojawia'."*
+    //
+    // A cabinet is being put on that side, so the automat's own board there is
+    // about to be covered — and it has to leave BEFORE the placement is
+    // measured, or the new cabinet lands one board out, the settle prunes the
+    // panel, the two are suddenly apart and the grow puts it straight back.
+    // That is the whole of what he is describing, and the reasoning is written
+    // out at `closeAutoEndPanelFacing`.
+    //
+    // ONE LAW: the two tests are `engine/endPanelAuto.js`'s own — auto, and not
+    // asked for by hand — and the removal is the ordinary `removeEndPanel`. A
+    // panel the CLIENT asked for is permanent and nothing here touches it.
+    //
+    // The whole add is one `runBatch`, so this and the placement are one undo
+    // step; and it runs only where a SIDE was named, which is exactly the
+    // gesture the owner's sentence is about (the + on a cabinet's left or
+    // right). A wall-cursor add beside nothing has no junction to close.
+    if (beside && side) {
+      // …and the SPANS are re-read, because a panel that leaves changes both
+      // the neighbour the new cabinet is placed beside and the obstacle it is
+      // clamped against. `state` was read at the top of this action and is one
+      // board out of date the moment the board goes.
+      if (get().closeAutoEndPanelFacing(beside.id, side) > 0) {
+        state = get();
+        beside = state.units.find((u) => u.id === beside.id) || beside;
+      }
+    }
+
     // A named neighbour decides which WALL is tried first as well as where on
     // it: "another one beside this" cannot mean "on the wall behind you".
     // …and when a SIDE was asked for as well, that wall is the only one tried:

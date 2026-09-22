@@ -162,7 +162,7 @@ const FROZEN = {
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/ElementProperties.jsx': 'd9e395792b041d77240bbd8b40f5b3bf32828245d9612ea5db3ce732f58ef092',
+  'src/components/ElementProperties.jsx': '0da571aa18c6de8f3acebb96f0fd2c78f53beafb3e6bec6daac5e22c498a12bb',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',

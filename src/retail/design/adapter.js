@@ -2591,9 +2591,11 @@ export const setShelfHeight = (unitId, itemId, fieldMm) => {
  * is what every shelf retail's INTERIOR row adds is today.
  */
 export function centreBay(unitId, bay) {
-  const out = S().redistributeShelvesInBay(unitId, bay ?? null);
-  S().reclampShelves(unitId);
-  return out;
+  // T72 F3 · ONE store action, and this is the name it has: `centreShelves`
+  // is the pair this function used to press, said once, so PRO's CENTER ALL
+  // button and every retail caller travel the same road. *"One store action,
+  // `centreShelves(unitId, bayRef)`, used by PRO and retail."*
+  return S().centreShelves(unitId, bay ?? null);
 }
 
 /**

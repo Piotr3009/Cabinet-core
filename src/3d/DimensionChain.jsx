@@ -115,6 +115,10 @@ export default function DimensionChain({
   // figure's own position, sized off the sprite's own drawn height, carrying
   // the gesture. Given no `onPick` a chain is exactly what it was.
   onPick = null,
+  // T72 F3 · which gesture opens a figure. `doubleClick` is T31's and stays
+  // the default; the spacing chain asks for `click` because its piece is
+  // already in hand.
+  pickOn = 'doubleClick',
 }) {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
@@ -163,6 +167,7 @@ export default function DimensionChain({
             plane={plane}
             at={third}
             style={style}
+            pickOn={pickOn}
             onPick={onPick ? (e) => onPick(row, e) : null}
           />
         </group>
@@ -191,19 +196,31 @@ export default function DimensionChain({
  * one file, applied to the box's own three proportions.
  */
 function PickBox({
-  position, style, rowKey, onPick,
+  position, style, rowKey, onPick, pickOn = 'doubleClick',
 }) {
   const ref = useScreenScale(
     labelPixelHeight(style.labelHeight),
     (box, h) => box.scale.set(h * 3, h * 1.6, h),
   );
+  // ─── TURN 72 (CLAUDE.md F3): ONE CLICK, WHERE THE CALLER ASKS FOR ONE ────
+  //
+  // The owner, of the spacing chain: *"niech zostaną i będą klikalne i wtedy
+  // będzie można ustawić wysokość pomiędzy półkami."*  The piece is ALREADY
+  // selected when that chain is on the scene, so a second double-click to
+  // reach its own figures is a gesture nobody would find.
+  //
+  // T31's own double-click is untouched and is still the default: the W/H
+  // figures are drawn on every cabinet whether or not it is selected, and a
+  // single click there would open a window every time a hand crossed one.
+  const hit = (e) => { e.stopPropagation(); onPick(e); };
+  const gesture = pickOn === 'click' ? { onClick: hit } : { onDoubleClick: hit };
   return (
     <mesh
       ref={ref}
       position={position}
       visible={false}
       userData={{ ccHelper: true, ccNoBounds: true, ccDimensionPick: rowKey }}
-      onDoubleClick={(e) => { e.stopPropagation(); onPick(e); }}
+      {...gesture}
     >
       {/* A UNIT box: the SIZE is the ref's, so the two cannot disagree. */}
       <boxGeometry args={[1, 1, 1]} />
@@ -213,7 +230,7 @@ function PickBox({
 }
 
 function Value({
-  row, plane, at, style, onPick = null,
+  row, plane, at, style, onPick = null, pickOn = 'doubleClick',
 }) {
   const text = row.text?.value ?? formatDimension(row.value);
   const u = mm(row.text?.at?.[0] ?? 0);
@@ -231,7 +248,7 @@ function Value({
         // label's own drawn height so it grows and shrinks with the drawing,
         // and invisible — a dimension that grew a visible button would be a
         // drawing with a button on it.
-        <PickBox position={position} style={style} rowKey={row.key} onPick={onPick} />
+        <PickBox position={position} style={style} rowKey={row.key} onPick={onPick} pickOn={pickOn} />
       )}
     </>
   );

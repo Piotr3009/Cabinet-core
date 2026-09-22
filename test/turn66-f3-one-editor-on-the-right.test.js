@@ -268,8 +268,16 @@ test('F3 · nothing is DELETED from a copy — the fields are left out through P
 // selected element. The test therefore reads BOTH files, and still fails
 // naming the exact control if any of the twenty-seven goes missing.
 test('F3, amended by T67 · every control a dead thin menu carried is somewhere a client can reach', () => {
+  // ─── AMENDED BY T72 F3 ──────────────────────────────────────────────────
+  // The COPIED EDITOR is read too, because one of the twenty-seven lives there
+  // now: PRO's own `Center all` button at the bottom of the shelf menu, on the
+  // owner's order *"dodaj na dole tego modalu CENTER ALL"*. The claim of this
+  // test is unchanged — NOT ONE control a dead thin menu carried was lost —
+  // and widening where it may be found is the only way to keep asking it once
+  // a control reaches the surface the whole turn was about.
   const options = read('src/retail/design/Options.jsx')
-    + read('src/retail/design/detail/ReHomed.jsx');
+    + read('src/retail/design/detail/ReHomed.jsx')
+    + read('src/retail/design/detail/ElementProperties.jsx');
   const REHOMED = {
     'DrawersMenu · HOW MANY': /testid="drawers-count"/,
     'DrawersMenu · TOP DRAWER INSERT': /testid="drawers-insert"/,
@@ -278,7 +286,9 @@ test('F3, amended by T67 · every control a dead thin menu carried is somewhere 
     'OverlayMenu · HOW MANY': /testid="overlay-count"/,
     'OverlayMenu · FRONT HEIGHT': /testid="overlay-front"/,
     'OverlayMenu · REMOVE': /data-testid="overlay-remove"/,
-    'ShelfMenu · CENTRE THIS BAY': /data-testid="shelf-centre"/,
+    // T72 F3 · it is the copied editor's CENTER ALL now — one button, in the
+    // dock, for PRO and retail alike.
+    'ShelfMenu · CENTRE THIS BAY': /data-centre-shelves="1"/,
     'PartitionMenu · EQUAL BAYS': /data-testid="partition-equal"/,
     'PulldownMenu · DROP': /testid="pulldown-drop"/,
     'PulldownMenu · REMOVE': /data-testid="pulldown-remove"/,

@@ -56,6 +56,8 @@ export default function ElementProperties({
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const setShelfType = useProjectStore((s) => s.setShelfType);
+  // T72 F3 · CENTER ALL — the ONE store action both applications press.
+  const centreShelves = useProjectStore((s) => s.centreShelves);
   const setRailHeight = useProjectStore((s) => s.setRailHeight);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
   // Turn 24 (CLAUDE.md F3.3): which carcass board this partition is cut from.
@@ -1111,6 +1113,29 @@ export default function ElementProperties({
           his hand. Where the physics refuses, it SAYS SO — the #58 pattern: a
           control that is simply absent teaches nothing, and a greyed one with
           no reason teaches less. */}
+      {/* ─── TURN 72 (CLAUDE.md F3): CENTER ALL, AT THE BOTTOM OF THE SHELF
+          MENU. The owner: *"dodaj na dole tego modalu CENTER ALL."*
+
+          THE SHELVES OF THAT BAY, spread evenly between floor and top — the
+          engine's own even ladder and then the engine's own clamp, through the
+          ONE store action `centreShelves(unitId, bayRef)`. `bayRef` is the
+          SELECTED shelf's own zone, so a divided wardrobe centres the
+          compartment the hand is in and never one ladder through a partition.
+
+          It is the LAST thing in the menu because it is the act that undoes
+          every height above it, and because that is where he drew it. */}
+      {fields.includes('position-y') && item ? (
+        <button
+          type="button"
+          className="pbi-re-btn pbi-re-wfull"
+          data-centre-shelves="1"
+          title="Spread the shelves of this bay evenly between the floor and the top — equal clear gaps, and the same clamp every other move obeys."
+          onClick={() => centreShelves(unit.id, item.zone ?? null)}
+        >
+          Center all
+        </button>
+      ) : null}
+
       {actions && <ElementActions unit={unit} panel={panel} onRemove={removeElement} onMove={moveElement} />}
 
       {/* Why some pieces have no thickness of their own. Written where the

@@ -6467,6 +6467,35 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     get().reclampShelves(unitId);
   },
 
+  /**
+   * ─── TURN 72 (CLAUDE.md F3): CENTER ALL, AND IT IS ONE NAME ──────────────
+   *
+   * The owner, 22.09.2026, on the shelf's own menu: *"dodaj na dole tego
+   * modalu CENTER ALL."*
+   *
+   * *"One store action, `centreShelves(unitId, bayRef)`, used by PRO and
+   * retail; the docked editor's button is the only entry."*
+   *
+   * IT IS NOT A NEW LAW. The pair below is exactly what `adapter.centreBay`
+   * has pressed since T58 and what INSIDE's SPACE THEM EVENLY pressed after
+   * it: the bay's own even ladder (`evenShelfPositions`, one copy of
+   * KIT_WARDROBE_FULL's arithmetic), then the clamp, which has the final word
+   * for every path in this store. What is new is that both applications now
+   * say it with ONE WORD — a second name for one act is how two acts happen.
+   *
+   * `bayRef` is a bay index, or null for "every bay, each on its own ladder"
+   * — `redistributeShelves`' own reading, unchanged and never one ladder
+   * through a partition.
+   *
+   * @param {string} unitId
+   * @param {number|null} bayRef
+   */
+  centreShelves: (unitId, bayRef = null) => {
+    get().redistributeShelves(unitId, bayRef);
+    return get().units.find((u) => u.id === unitId)?.params?.sections?.[0]?.items
+      ?.filter((i) => i.kind === 'shelf').length || 0;
+  },
+
   /** ONE bay's own ladder. The loop above is the only caller that matters. */
   redistributeShelvesInBay: (unitId, bay = null) => {
     const s = get();

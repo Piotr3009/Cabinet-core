@@ -528,10 +528,18 @@ test('F3.3 · SHELF — pinned is a NOTE, locked is a refusal, and they differ',
   assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind\) \} \}/);
   assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /case 'position-y':/,
     'PRO\'s own height field is gone from the copy');
-  // …and the EVEN LADDER, which the copy has no button for, is re-homed on the
-  // left, in INSIDE's own row (F3's *"never lost"* clause).
-  assert.match(REHOMED(), /data-testid="shelf-centre"/,
-    'CENTRE THIS BAY was lost with the menu that carried it');
+  // ─── AMENDED BY T72 F3 · THE EVEN LADDER IS THE COPY'S BUTTON NOW ───────
+  //
+  // T66 F3 re-homed `ShelfMenu`'s CENTRE THIS BAY into INSIDE's row because no
+  // copied editor had it. PRO's own `ElementProperties` has it tonight, at the
+  // bottom of the shelf menu, on the owner's order: *"dodaj na dole tego
+  // modalu CENTER ALL."*  So it is in the copy, which is where the claim of
+  // this test — NOT LOST — is now answered, and the re-homed duplicate is gone
+  // (CLAUDE.md F3: *"the docked editor's button is the only entry"*).
+  assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /data-centre-shelves="1"/,
+    'CENTRE THIS BAY was lost with the row that carried it');
+  assert.match(read('src/components/ElementProperties.jsx'), /centreShelves\(unit\.id, item\.zone \?\? null\)/,
+    'PRO has no CENTER ALL, so retail\'s copy cannot have one either');
 });
 
 test('F3.3 · SHELF — CENTRE THIS BAY is the T58 law, per bay, and it reclamps', () => {
@@ -543,11 +551,22 @@ test('F3.3 · SHELF — CENTRE THIS BAY is the T58 law, per bay, and it reclamps
   const after = A.shelfTravel(unit.id, shelf.id);
   assert.ok(after.field > travel.fieldMin, 'centring moved nothing');
 
-  // The pair of calls, not one: `redistributeShelvesInBay` does not reclamp,
-  // and every other centring path in the store ends with one.
+  // ─── AMENDED BY T72 F3 · THE PAIR HAS ONE NAME NOW ──────────────────────
+  //
+  // The claim is unchanged and it is the one that matters: centring is the
+  // even ladder AND the clamp, never the ladder alone. T72 gives that pair its
+  // own store action — *"One store action, `centreShelves(unitId, bayRef)`,
+  // used by PRO and retail"* — so the assertion asks the STORE, which is where
+  // the pair now lives, and asks the adapter only that it presses that one
+  // name rather than re-assembling the pair itself.
   const adapter = read('src/retail/design/adapter.js');
-  assert.match(adapter, /redistributeShelvesInBay\(unitId, bay \?\? null\);\s*\n\s*S\(\)\.reclampShelves/,
-    'centreBay does not reclamp');
+  assert.match(adapter, /return S\(\)\.centreShelves\(unitId, bay \?\? null\);/,
+    'centreBay no longer presses the one store action');
+  const store = read('src/stores/projectStore.js');
+  assert.match(store, /centreShelves: \(unitId, bayRef = null\) => \{\s*\n\s*get\(\)\.redistributeShelves\(unitId, bayRef\);/,
+    'centreShelves is not the even ladder');
+  assert.match(store, /for \(const bay of bays\) get\(\)\.redistributeShelvesInBay\(unitId, bay\);\s*\n(\s*\/\/.*\n)*\s*get\(\)\.reclampShelves\(unitId\);/,
+    'centreShelves does not reclamp');
 });
 
 test('F3.4 · DRAWERS — the counts, the insert and the two engine refusals', () => {

@@ -37,7 +37,20 @@ test('the FIGURE is pickable — an invisible catchment, not a visible button', 
   assert.match(chain, /rowKey=\{row\.key\}/);
   assert.match(chain, /ccDimensionPick: rowKey/);
   assert.match(chain, /visible=\{false\}/);
-  assert.match(chain, /onDoubleClick=\{\(e\) => \{ e\.stopPropagation\(\); onPick\(e\); \}\}/);
+  // ─── AMENDED BY T72 F3 ──────────────────────────────────────────────────
+  //
+  // The gesture is now the CALLER's, and T31's is still the default: `pickOn`
+  // is `'doubleClick'` unless a caller asks otherwise, which is what keeps the
+  // W and H figures — drawn on every cabinet whether or not it is selected —
+  // behaving exactly as they have since turn 31. The spacing chain asks for
+  // `'click'`, because its piece is already in the hand when the chain is on
+  // the scene (*"niech zostaną i będą klikalne"*).
+  //
+  // The catchment itself did not move: same box, same `visible={false}`, same
+  // `ccDimensionPick`, same `stopPropagation` before the caller is told.
+  assert.match(chain, /const hit = \(e\) => \{ e\.stopPropagation\(\); onPick\(e\); \};/);
+  assert.match(chain, /pickOn === 'click' \? \{ onClick: hit \} : \{ onDoubleClick: hit \}/);
+  assert.match(chain, /pickOn = 'doubleClick',/, 'T31\'s own gesture is no longer the default');
   // A dimension that grew a visible button would be a drawing with a button on
   // it. And with no `onPick`, a chain is exactly what it was.
   assert.match(chain, /onPick = null,/);

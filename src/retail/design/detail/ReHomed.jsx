@@ -295,26 +295,25 @@ export default function ReHomed({ row, unitId }) {
     );
   }
 
-  // SHELVES — from `ShelfMenu`: the even ladder. One shelf's own height is the
-  // docked editor's `position-y`, which is PRO's own field.
-  if (row.id === 'shelves') {
-    return (
-      <div className="pbi-interior-more">
-        <Field label="SPACING" note="Evenly, between whatever stands above and below them.">
-          <div className="pbi-duty-actions">
-            <Button
-              kind="secondary"
-              size="small"
-              data-testid="shelf-centre"
-              onClick={() => A.centreBay(unitId, null)}
-            >
-              SPACE THEM EVENLY
-            </Button>
-          </div>
-        </Field>
-      </div>
-    );
-  }
+  // SHELVES — one shelf's own height is the docked editor's `position-y`, and
+  // the EVEN LADDER is the docked editor's CENTER ALL, which is PRO's own
+  // button now.
+  //
+  // ─── T72 F3 · LICENSED REMOVAL: `SPACE THEM EVENLY` ────────────────────
+  //
+  // The owner, 22.09.2026: *"dodaj na dole tego modalu CENTER ALL"* — and
+  // CLAUDE.md's clause beside it: *"One store action, `centreShelves(unitId,
+  // bayRef)`, used by PRO and retail; THE DOCKED EDITOR'S BUTTON IS THE ONLY
+  // ENTRY."*
+  //
+  // T66 F3 re-homed `ShelfMenu`'s CENTRE THIS BAY here because no copied
+  // editor had it. PRO's own `ElementProperties` has it tonight — `Center all`
+  // at the bottom of the shelf menu, pressing `centreShelves(unit.id,
+  // item.zone)` — so this row would be a SECOND button for one act, standing
+  // in the same panel, which is precisely what T66 F3 exists to prevent. It is
+  // not lost: it is the very button the owner asked for, one block lower, and
+  // it now centres the bay the selected shelf is in rather than every bay at
+  // once, which is what he drew.
 
   // THE PULL-DOWN RAIL — from `PulldownMenu`. A bought mechanism: the engine
   // cuts no board for it, so it has no panel, no copied editor and no click.

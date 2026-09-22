@@ -96,6 +96,8 @@ import Hardware, {
   DoorHinges, Extractor, FrontHandle, hingeSpecsFor,
 } from './Hardware.jsx';
 import HoverDimensions from './HoverDimensions.jsx';
+// T72 F3 · the chain that STAYS while a piece is selected, every figure a chip.
+import SpacingChain from './SpacingChain.jsx';
 import EdgeHandle from './EdgeHandle.jsx';
 import AddPlus from './AddPlus.jsx';
 import Cornice from './Cornice.jsx';
@@ -2420,6 +2422,32 @@ export default function UnitView({
           plane="xy"
           at={D}
           name={`shelf-gaps-${unit.id}`}
+        />
+      )}
+
+      {/* ─── TURN 72 (CLAUDE.md F3): …AND IT STAYS WHILE THE PIECE IS HELD ─
+          The owner: *"jak kliknę 2 razy na półkę to wymiary pomiędzy półkami
+          niech zostaną i będą klikalne i wtedy będzie można ustawić wysokość
+          pomiędzy półkami"*, and *"to samo przenieś, dodaj do PRO; plus
+          szerokości."*
+
+          The hover readout above is a MOMENT and stays one. This is the same
+          chain tied to the SELECTION instead — drawn by the same component,
+          off the same `shelfColumns` and `bayGapsAround`, with every figure a
+          chip that writes through the setter the drag obeys. A DIVIDER gets
+          the bay widths either side of it by the same door.
+
+          It is not gated on `chromeOn('hover')`: that channel is the momentary
+          readout's. A selected piece's own dimensions are the `dimensions`
+          channel, which `SpacingChain` asks for itself. */}
+      {selectedElement && !contour && !shelfDrag && (
+        <SpacingChain
+          unit={unit}
+          result={result}
+          columns={shelfColumnList}
+          panelId={selectedElement}
+          profile={profile}
+          colour={COLORS.gold}
         />
       )}
 

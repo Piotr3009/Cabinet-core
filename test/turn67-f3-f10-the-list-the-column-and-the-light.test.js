@@ -175,10 +175,21 @@ test('F7 · the INSIDE row is a name, a count and a door — nothing expands ben
 test('F7 · …and every one of those controls is on the RIGHT, in the dock', () => {
   const rehomed = read('src/retail/design/detail/ReHomed.jsx');
   for (const hook of ['drawers-count', 'drawers-insert', 'drawers-glass', 'drawers-front-height',
-    'overlay-count', 'overlay-front', 'overlay-remove', 'shelf-centre', 'pulldown-drop',
+    'overlay-count', 'overlay-front', 'overlay-remove', 'pulldown-drop',
     'pulldown-remove', 'shoe-law']) {
     assert.ok(rehomed.includes(hook), `${hook} was lost on the way right`);
   }
+  // ─── AMENDED BY T72 F3 · `shelf-centre` IS THE COPY'S BUTTON NOW ─────────
+  //
+  // The claim — every re-homed control is ON THE RIGHT, in the dock — is
+  // unchanged, and the even ladder is still on the right: it is PRO's own
+  // `Center all`, at the bottom of the copied shelf menu, which the dock
+  // renders under this very component. *"dodaj na dole tego modalu CENTER
+  // ALL."*  One button, one store action, one entry.
+  assert.ok(read('src/retail/design/detail/ElementProperties.jsx').includes('data-centre-shelves="1"'),
+    'the even ladder was lost on the way right');
+  assert.ok(!rehomed.includes('shelf-centre'),
+    'the re-homed duplicate is back — the docked editor\'s button is the only entry');
   // The dock renders it, for the row the selection belongs to.
   const detail = code('src/retail/design/Detail.jsx');
   assert.match(detail, /rowForSelection\(selection\) && selection\?\.unitId/);

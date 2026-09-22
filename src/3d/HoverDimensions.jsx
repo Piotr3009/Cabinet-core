@@ -117,11 +117,33 @@ export default function HoverDimensions({
     const rows = gaps.map((gap, i) => ({
       key: `bay${i}`, from: [gap.from, y], to: [gap.to, y], offset: 0,
     }));
-    return { rows, z, mid: y, own };
+    // `bay` is the ONE thing F13 repaints: the widths between two vertical
+    // partitions, and nothing else this component draws. The rows above it
+    // (a shelf's clear gaps, a side's interior) return without it and keep
+    // the caption they have always had.
+    return { rows, z, mid: y, own, bay: true };
   }, [panelId, result, style]);
 
   if (!drawing) return null;
   const magnet = mm(style.hoverMagnetMm);
+
+  // ─── TURN 72 (CLAUDE.md F13): THIN AND BLACK, BETWEEN THE PARTITIONS ───
+  //
+  // The owner, 22.09.2026: *"te napisy zostaw jak są; chodziło mi o napisy
+  // pomiędzy vertical przegrodami, są teraz białe i gruba czcionka; to tylko
+  // zmień."*
+  //
+  // BOTH halves of that sentence are the same thing. The bay chain has had no
+  // dark plate since 15.08 (`labelGround: 'bare'` below); what it wears is a
+  // white halo round every glyph, and a halo 16 percent of the type wide is
+  // read as white type in a heavy face. So the bay labels lose the halo
+  // (`labelBayHalo`, zero in the profile) and print in the profile's own black
+  // (`labelBayInk`). The WEIGHT is untouched — F13: *"the light weight kept"*
+  // — and so is every other caption on the scene: this override is reached
+  // only when `drawing.bay` is true, which only the VPART branch returns.
+  const ground = drawing.bay
+    ? { labelGround: 'bare', labelInk: style.labelBayInk, labelHalo: style.labelBayHalo }
+    : { labelGround: 'bare' };
 
   return (
     <group userData={{ ccHelper: true, ccNoBounds: true, ccHoverDimension: panelId }}>
@@ -140,7 +162,7 @@ export default function HoverDimensions({
           moved out of this file is the DRAWING. */}
       <DimensionChain
         rows={drawing.rows}
-        style={{ ...style, labelGround: 'bare' }}
+        style={{ ...style, ...ground }}
         plane="xy"
         at={drawing.z + style.strokeMm * 2}
         name={panelId}

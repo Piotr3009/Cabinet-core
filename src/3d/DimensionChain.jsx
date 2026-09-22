@@ -339,10 +339,21 @@ function DimensionValue({ position, text, style }) {
       c.fillRect(0, 0, width, height);
       c.globalAlpha = 1;
     }
-    if (bare) {
+    // ─── TURN 72 (CLAUDE.md F13): THE HALO IS A PROFILE NUMBER ─────────
+    // The owner, of the bay widths between two partitions: *"są teraz białe i
+    // gruba czcionka; to tylko zmień."* The white he is looking at is THIS
+    // stroke — 16 percent of the type, laid round every glyph — and the only
+    // way to take it off one chain without repainting the others is for its
+    // opacity to be a number the caller can pass. `labelHalo` defaults to the
+    // 0.9 that was the literal here, so every other `bare` caption in the app
+    // (the aura's, the hover rows of a shelf or a side) is drawn exactly as
+    // before and the profile carries the change.
+    const halo = Number.isFinite(Number(style.labelHalo)) ? Number(style.labelHalo) : 0.9;
+    const haloed = bare && halo > 0;
+    if (haloed) {
       c.lineJoin = 'round';
       c.lineWidth = Math.max(4, Math.round(size * 0.16));
-      c.strokeStyle = 'rgba(255,255,255,0.9)';
+      c.strokeStyle = `rgba(255,255,255,${halo})`;
     }
     c.fillStyle = style.labelInk;
     // Drawn letter by letter, which is the only way a canvas tracks type.
@@ -350,7 +361,7 @@ function DimensionValue({ position, text, style }) {
     let x = (width - total) / 2;
     c.textAlign = 'left';
     const put = (ch, px) => {
-      if (bare) c.strokeText(ch, px, height / 2 + 1);
+      if (haloed) c.strokeText(ch, px, height / 2 + 1);
       c.fillText(ch, px, height / 2 + 1);
     };
     for (const ch of text) {
@@ -362,7 +373,8 @@ function DimensionValue({ position, text, style }) {
     tex.needsUpdate = true;
     tex.userData.aspect = width / height;
     return tex;
-  }, [text, style.labelPlate, style.labelInk, style.labelAlpha,
+  }, [text, style.labelPlate, style.labelInk, style.labelAlpha, style.labelGround,
+    style.labelHalo,
     style.labelPixels, style.labelWeight, style.labelPad, style.labelTracking]);
 
   useEffect(() => () => texture.dispose(), [texture]);

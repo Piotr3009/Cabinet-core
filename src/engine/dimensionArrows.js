@@ -69,6 +69,16 @@ export function dimensionStyle(profile) {
     labelWeight: num(S.label?.weight, 300),
     labelPad: num(S.label?.padFraction, 0.42),
     labelTracking: num(S.label?.trackingFraction, 0.09),
+    // ─── TURN 72 (CLAUDE.md F13): THE BAY CHAIN'S OWN TWO ──────────────
+    // *"chodziło mi o napisy pomiędzy vertical przegrodami, są teraz białe i
+    // gruba czcionka; to tylko zmień."* They are read THROUGH here like every
+    // other number this call answers, and they are read by exactly one caller
+    // — the VPART branch of `3d/HoverDimensions.jsx`. `labelHalo` is the halo
+    // every `bare` caption has worn since 15.08, now a number instead of a
+    // literal, so that one caller can turn it off without touching the rest.
+    labelHalo: num(S.label?.haloAlpha, 0.9),
+    labelBayInk: S.label?.bayInk || '#101010',
+    labelBayHalo: num(S.label?.bayHaloAlpha, 0),
     // Turn 24 (CLAUDE.md F10): how far the cursor may stray before a shown set
     // fades. It lives in `profile.editor` — it is a property of the TOOL and
     // not of the drawing's ink — and is read THROUGH here so both surfaces get

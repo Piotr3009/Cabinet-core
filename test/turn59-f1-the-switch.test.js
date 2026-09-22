@@ -90,6 +90,11 @@ const EXEMPT = {
     'T72 F2 · `shelf-type` becomes two chips and SET BACK FROM THE FRONT gains `20 mm` '
     + '| `Flush` beside its field; F3 · CENTER ALL at the bottom of the shelf menu; '
     + 'F12 · the divider reaches the same setback row. *"nie choose, tylko te 2 opcje."*',
+  'src/components/JpullRunModal.jsx':
+    'T72 F4 · the run length is a NUMBER FIELD with the engine\'s own min and max beside '
+    + 'it; the slider is gone and T57\'s *"pasek albo pokrętło"* is set aside for this one '
+    + 'field on his word. *"nie może być przesuwakiem, musimy wpisywać liczby, nie będziemy '
+    + 'próbowali trafić na ten sam numer co sąsiednie drzwi."*',
   // ─── ADDED BY TURN 71 · THE DRAWING SET REACHES THE WINDOW ───────────────
   // The owner, 21.09.2026, Skylon Joinery's own AutoCAD set on the table:
   // *"nasze w CC teraz się nakładają, a tutaj jest wszystko osobno … mega
@@ -168,7 +173,8 @@ const FROZEN = {
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
   'src/components/HandEditsModal.jsx': '8b2f61eead0bcc9f47aab78cadb7a6627a73885fd8e1b2e7ac8ac6ebf30025b0',
   'src/components/JoineryPreview.jsx': '4313bbe216ce87f80ab6ee1b4d1e8e288465e5b2ef2bedbba1167346508add0a',
-  'src/components/JpullRunModal.jsx': 'ba78041e79962423326e060630dee5b81c26e34eb2a877795f6c8872cf4622fb',
+  // T72 F4 — re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/JpullRunModal.jsx': '652b4f701a455134eb2571565f03dc6fca89c273f4041ad9eb66d8b0c7bd6aa7',
   'src/components/LibraryPanel.jsx': 'c0f86722ab66d0a00b28994639f257f7ebe596140f265331a556ba615f4226ef',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
@@ -387,6 +393,7 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/AddItems.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
+    'src/components/JpullRunModal.jsx',
     'src/components/RoomModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/pages/ConfiguratorPage.jsx',

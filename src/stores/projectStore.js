@@ -1168,6 +1168,27 @@ function openAssignmentsFor(project) {
   } catch { /* a store that is not ready must never stop a project opening */ }
 }
 
+// ─── T71: THE COMPANY'S OWN NAME ON EVERY SHEET ─────────────────────────────
+// The title strip's company cell (name, tagline, address lines) is typed once
+// in the drawing window and kept on this computer, under the same persistence
+// gate as the cache: a new job opens with it, and the retail mount, which
+// persists nothing, never reads it.
+const TITLE_BLOCK_COMPANY_KEY = 'cabinet-core.titleBlock.company';
+
+function rememberTitleBlockCompany(company) {
+  if (!persistenceOn() || typeof localStorage === 'undefined') return;
+  try { localStorage.setItem(TITLE_BLOCK_COMPANY_KEY, JSON.stringify(company || {})); } catch { /* quota or private mode */ }
+}
+
+function recallTitleBlockCompany() {
+  if (!persistenceOn() || typeof localStorage === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(TITLE_BLOCK_COMPANY_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch { return null; }
+}
+
 // Throttled: a shelf drag updates the store on every pointer frame, and
 // serialising the whole project 60 times a second is pure jank.
 let cacheTimer = null;
@@ -1250,6 +1271,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ...(patch.client !== undefined ? { client: String(patch.client ?? '') } : {}),
     },
   })),
+
+  /**
+   * T71: THE TITLE BLOCK of the drawing set (`engine/drawings/wallSheets.js
+   * titleFor`). It rides the project: who drew and checked it, its status
+   * (A/B/C), its revision and the revision list are the job's own. The
+   * company's name, tagline and address lines are typed once and REMEMBERED
+   * on this computer (`titleBlockCompany`), so the next job opens with them.
+   */
+  setTitleBlock: (patch) => {
+    const prev = get().project.titleBlock || {};
+    const next = { ...prev, ...(patch || {}) };
+    if (patch?.company) {
+      next.company = { ...(prev.company || {}), ...patch.company };
+      rememberTitleBlockCompany(next.company);
+    }
+    set((s) => ({ project: { ...s.project, titleBlock: next } }));
+  },
 
   /**
    * Change the room. REFUSED when the new shape would leave a unit hanging off
@@ -1527,6 +1565,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ledSpec: migrateLedSpec(null),
       lightRig: defaultLightRig(getCabinetProfile()),
       sceneLight: migrateSceneLight(null),
+      // T71: the drawing set's title block starts with the company this
+      // computer last typed, and nothing else; `setTitleBlock` fills the rest.
+      titleBlock: (() => { const c = recallTitleBlockCompany(); return c ? { company: c } : {}; })(),
       jc_tenant_id: null,
       jc_project_id: null,
     },

@@ -1,137 +1,239 @@
-# CLAUDE.md, TURN 71 · THE SET: ONE VIEW PER SHEET, THE SAME LAW ON EVERY SHEET
+# CLAUDE.md, TURN 72 · FOURTEEN THINGS THE OWNER CLICKED ON AND DID NOT GET
 
-Run autonomously. Skip-and-note. Full suite, never `--silent`. Frames under
-`verify/t71/`. Nothing lands in Petros and nothing is pushed without the
-owner's own "tak".
+Run autonomously. Zero questions, zero stops: every decision below is the
+owner's own (22.09.2026), so nothing here is asked again. Skip-and-note.
+Full suite, never `--silent`. Frames under `verify/t72/`. Branch
+`claude/t72-fourteen`, one commit per F, PR at the end; the owner merges.
+Nothing lands in Petros from this session.
 
-## THE ORDER
-The owner, 21.09.2026, with Skylon Joinery's AutoCAD set for 3-7 Herbal Hill
-(Rev A, six A3 sheets) on the table:
-
-*"zobacz jak wyglądają plany pdf, przeanalizuj dokładnie i pokaż mockupy jak
-proponujesz zrobić w CC, bo nasze w CC teraz się nakładają, a tutaj jest
-wszystko osobno; chciałbym mega profesjonalnie; pokaż też PDF z perspektywy
-oraz wizualizację; nie zapomnij zostawić w stopce miejsca na firmę, daty,
-nazwy."* Then, on the mock-up: *"zajebiste, ale żeby tylko odzwierciedlało
-rzeczywistość, nóżki żeby były takie jak wszędzie."* Then: *"chodziło mi o
-kształt nóżek jak na wizualizacji, i całą resztę dokładnie przeanalizowaną,
-weź zakoduj i zobaczymy co się dało z tym zrobić."*
+## THE ORDER, IN THE OWNER'S WORDS
+*"kilka zmian, do których nie muszę mieć mnóstwa dyskusji"*: fourteen points
+from one afternoon in the RETAIL configurator (Prime Bespoke Interiors, the
+wardrobe), with the mock-ups approved on 22.09.2026 and the answers that
+settled every open question. Where a point says PRO too, it is PRO too.
 
 ## LAWS
-**The engine draws only what it published.** Every box on every sheet is a
-`computeCabinet` panel, a `drillSummary` hole, an `assemblies` leg, a design
-layer worktop, a room wall. Nothing is typed onto a sheet. **The sheet is a
-law:** A3 landscape, frame at 10, one title strip of seven cells across the
-whole width, a column of key plan, legend and notes down the right, and an
-object area with a 26 mm dimension band on every side. Nothing enters another
-zone, which is why nothing overlaps. **Every dimension once, in its home:**
-wall run above, floor run and scribes below, the overall on the second line,
-heights on the right, bases and the ceiling on the left; a figure that does
-not fit its segment is lifted on a leader, alternating. **The scale is a rung
-of the ladder and is printed** ("1:20 @ A3"); a picture is NTS. **1:1 = COPY**
-and **LISP IS LAW** stand; neither is touched tonight, because no cut geometry
-is.
+**Diagnose before you cut.** Four points (F1, F4, F6, F7) begin with a
+committed PROBE: the fact found, in one table, before any fix. **Nothing
+typed onto a screen that the engine does not publish.** **Left adds, right
+edits** (Petros: the right panel is the selected element's functions, adding
+belongs to the left column). **1:1 = COPY**: a PRO surface edited tonight is
+re-copied to its retail copy the same night by the copy machine
+(`scripts/t69-copy.mjs` pattern, extended to the files named here), never by
+hand. **Numbers do not enter the UI without the owner's order**: every field
+below is his order, and no other field appears. **No em or en dash** in
+anything written. **Room refuses first**: nothing is clipped silently.
 
 ## FROZEN
-1. Goldens x6 byte-identical. The set is DRAWING code: it reads the published
-   result and writes nothing back. `scripts/t71-classify.mjs` names every
-   engine file touched and proves no delta is on `computeCabinet`'s graph.
-2. The unit card and the booklet are untouched (iron rule 4): `sheet.js`,
-   `unitCard.js`, `card.js`, `frontElevation.js`, `wallElevation.js`,
-   `section.js` read-only; the T43 golden of the card compared byte for byte.
-3. `cabinet.js`, `doors.js`, `room.js`, `worktop.js` read-only.
-4. PRO freeze: two files licensed in `test/turn59-f1-the-switch.test.js`
-   `EXEMPT`, each with the owner's words and re-frozen at its new hash:
-   `DrawingModal.jsx` (the window binds the set: worktops, render, title
-   block, numbered sheets) and `ConfiguratorPage.jsx` (`rig={renderRig}`, the
-   menu path). Overturnable with one word; without them the set still binds
-   from the engine, with no render and no company name.
-5. No em or en dash in anything written tonight.
+1. Goldens x6 byte-identical; `computeCabinet` is not touched. The one
+   engine change (F14, the wall gap per unit) is PLACEMENT, read by
+   `engine/runs.js` and the room, never by the cut path; `scripts/t72-classify.mjs`
+   proves it the way T71's does.
+2. LISP untouched. The unit card, the booklet and the T71 drawing set
+   untouched (`engine/drawings/**` read-only).
+3. PRO freeze (`test/turn59-f1-the-switch.test.js`): every PRO file edited
+   tonight is licensed in `EXEMPT` with the owner's words from this file and
+   re-frozen at its new hash, in the same commit as the edit. Expected:
+   `ElementProperties.jsx` (F2, F3, F12), `DoorModal.jsx` (F6, if the probe
+   convicts it), `JpullRunModal.jsx` (F4), the 3D layer is not frozen.
+4. Retail copies diverge from PRO ONLY where a point says "retail only", and
+   every such divergence is written out in the PR by file and line.
 
-## F1 · THE SHEET LAW (`engine/drawings/setSheet.js`, `profile.js drawings.set`)
-`setZones`, `chooseSetScale` (ladder 10/15/20/25/50, fill 0.96, else NTS),
-`drawingContext` (paper sizes in drawing mm, so every figure prints at one
-height whatever the scale), `layoutSetSheet` (a drawing is `measure + build`,
-or built once at 1:1 to measure and again at the chosen scale, or laid in
-paper mm), `titleStrip` (STATUS A/B/C ticked, COMPANY with logo box, name,
-tagline and lines, CLIENT / SITE ADDRESS / PROPERTY OF, PROJECT / DRAWING /
-DRAWING No, DRAWN / CHECKED / DATE, JOB No / SCALE / PAPER, REV / SHEET n of
-N), `keyPlan`, legend, notes, `fitEntities` (the cover's picture).
+## F1 · THE END PANEL'S MENU OPENS, AND SAYS TWO THINGS (points 1 and the panel half of 12)
+Owner: *"jak kliknę 2 razy na panel boczny po prawej nie pokazuje mi się menu
+panelu"*, then on the mock-up: *"panel: up to ceiling; drugi równo z carcasem
+od dołu; a default do ziemi; reszta ok."*
+- PROBE first: in the retail room, 2klik on an END-PANEL. Which element the
+  scene hands to `dockFor` (`src/retail/design/detail/docked.jsx`), what
+  `menu` and `panel` it carries, and why nothing opens. Commit the table.
+- Then the panel's docked menu shows, in retail, exactly:
+  TOP: `Carcass` | `Ceiling`; BOTTOM: `Carcass` | `Floor` (default `Floor`);
+  COLOUR: `As the fronts` | `Other`; `Remove panel`. No number fields in
+  retail. The two chips write the same store paths the numeric
+  `above-unit-ep` / `below-unit-ep` fields and `endPanelToCeiling` write
+  today (read them first; do not add a second law). PRO keeps its numeric
+  fields.
 
-## F2 · THE CHAINS (`setChains.js`)
-`chainH`, `chainV` with extension lines, filled arrowheads, figures at paper
-height; the collision rule (lifted with a leader, alternating);
-`figureCollisions` is the invariant every sheet is tested against.
+## F2 · THE SHELF'S MENU: HOW IT IS HELD, AND THE SETBACK (point 2)
+Owner: *"jest menu po 2kliku, ale nie ma opcji back 20 mm, czyli regulacji
+głębokości, ani nie ma wyboru fix / adjustable, nie choose, tylko te 2 opcje."*
+Answer 22.09: setback as two chips plus a field.
+- `shelf-type` becomes two chips `Fix` | `Adjustable` (the `<select>` with
+  pull-out and shoe leaves this menu; pull-out is disabled anyway and the
+  shoe shelf has its own drawer). Store path unchanged: `setShelfType`.
+- PROBE inside F2: a wardrobe shelf added as a COUNT has no `itemId`, and
+  `elementFields` then drops every field but material (`engine/elements.js`,
+  turn 21). If that is why the type is missing on the owner's screen, the
+  fix is that a count shelf becomes an item at the moment it is edited
+  (the store already turns a count into items for dragging: read
+  `setShelfPos`), never a second field list.
+- SET BACK FROM THE FRONT: chips `20 mm` | `Flush` plus a number field, in
+  retail and PRO. `setback` leaves `WORKSHOP_FIELDS` in `docked.jsx` for the
+  shelf and the partition only; the rest of that list stays hidden.
 
-## F3 · THE WALL, TWICE (`setElevation.js`, `views.js` one guard)
-Front view: the engine's fronts with the shaker frame the project quoted,
-handles where drilled, the design layer's worktop, wall ends and ceiling,
-appliance spaces named by TYPE ("D/W behind", "FRIDGE behind"). Internal
-layout: fronts off; shelves, drawer boxes on their runners, the hinge plates
-the side is drilled for (`side_hinge_holes_y`, three per 770 door), the
-scene's leg (plate, stem, foot from `profile.hardware.leg`, at
-`assemblies.legs.positions`, one per x in elevation), unit numbers on white in
-the clear band.
+## F3 · THE SPACING IS ON THE WARDROBE, AND IT IS CLICKABLE (point 3), RETAIL AND PRO
+Owner: *"jak kliknę 2 razy na półkę to wymiary pomiędzy półkami niech
+zostaną i będą klikalne i wtedy będzie można ustawić wysokość pomiędzy
+półkami"*, then *"to samo przenieś, dodaj do PRO; plus szerokości; dodaj na
+dole tego modalu CENTER ALL."*
+- After 2klik on a shelf the vertical chain between the shelves of its bay
+  (floor, each shelf, the top) stays on the scene while the shelf is
+  selected; every figure is a chip; click opens an inline number field on
+  the chip; Enter writes the spacing by moving THE SELECTED SHELF (its
+  neighbours stand still), through `setShelfPos` with the same clamp the
+  drag obeys; the room and the neighbours refuse first. Escape cancels.
+- The same for WIDTHS: 2klik on a partition keeps the bay widths either side
+  (`HoverDimensions.jsx` already derives them from `bayGapsAround`) as chips;
+  a click types the width and moves the selected partition.
+- CENTER ALL at the bottom of the shelf menu: the shelves of that bay are
+  spread evenly between floor and top (equal clear gaps, the engine's own
+  clamp). One store action, `centreShelves(unitId, bayRef)`, used by PRO and
+  retail; the docked editor's button is the only entry.
+- Mock-up: board 1 of the canvas "Makiety menu i wymiarów" (22.09).
 
-## F4 · THE PLANS AND THE SECTIONS (`setPlan.js`, `setSection.js`)
-Two plans, cut at `set.planCut` (400 through the base run, 1700 through the
-wall run), measured on the room's walls (4420 x 3200 lands on 1:20), the door
-leaf and arc, section marks A and B, unit numbers, chains of every cut member
-per wall with the wall ends, the depth chain. Sections: A-A through the first
-drawer unit, B-B through the sink, a chosen cabinet as one more station, side
-by side at one scale, each with the wall band, floor, ceiling, worktop slab,
-legs and its own chains.
+## F4 · THE J-PULL IS SEEN, AND ITS LENGTH IS TYPED (point 4)
+Owner: *"jak nacisnę J nie pokazuje mi w ogóle tego na wizualizacji, wiem że
+jest ale nie widać, zrób test; przesuwanie powiększenia J-hand nie może być
+przesuwakiem, musimy wpisywać liczby, nie będziemy próbowali trafić na ten
+sam numer co sąsiednie drzwi."* Answer 22.09: numbers, and the T57 rule
+("pasek albo pokrętło") is set aside for this ONE field on his word.
+- PROBE first, as a TEST: a retail wardrobe with the J-pull chosen; does the
+  scene emit the J channel geometry (`3d/jpullProfile.js` through
+  `UnitView.jsx`), and is it visible from the room camera? Commit the test
+  and the verdict, then fix what it convicts.
+- `JpullRunModal` (retail copy and PRO): the run length is a number field
+  with the engine's min and max shown beside it; no slider. Two doors typed
+  the same number get the same run.
 
-## F5 · THE SET, BOUND (`wallSheets.js`, the window, the menu)
-00 cover (index with every sheet's number, name and scale; revisions;
-conventions; general notes; the first wall's perspective fitted), 01 and 02
-the plans, then per wall the front view, the internal layout and the
-sections, then per wall the perspective, the visualisation, the cut list
-(paged down four columns, the totals on the last). Numbered `NN / of`, drawing
-number `job-NN`. `titleFor` reads `project.titleBlock` (company, address,
-drawnBy, checkedBy, status, rev, date, revisions); the store's
-`setTitleBlock` writes it and remembers the company on this computer. The
-worktops resolve from the design's records when the caller passes none. No
-cabinet against a wall: no set. The window walks the numbered sheets, carries
-the title block's fields, captures the render through the Output ▸ Render rig
-(three-quarter left, at the picture's aspect), hides the paper choice; the
-menu says "Drawing set (PDF)" and "Drawing set (DXF)".
+## F5 · THE END PANEL LEAVES THE MOMENT A NEIGHBOUR ARRIVES (point 5)
+Owner: *"jak dodajesz szafę obok powinien zniknąć panel i znika, ale dopiero
+jak przesuniesz szafę od boku i przysuniesz do; funkcja jest napisana 'jak
+dosuniesz' a nie 'jak się pojawia'. Mała zmiana, ale musi być."*
+- `autoEndPanelStrays` / `autoEndPanelJunctions` run today after a move
+  (`projectStore.js`, the settle after drag). They run after ADD as well:
+  `addUnit` and every path that places a unit beside another calls the same
+  sweep once. One law, one more caller. Test: add beside, the panel is gone
+  before any drag.
 
-## F6 · THE PERSPECTIVE (`setPerspective.js`)
-A pinhole camera at eye height in the room; the engine's boxes (units with
-fronts, plinths, end panels, worktops) painted farthest first, white-filled,
-so a nearer box covers what stands behind it; handles and numbers; NTS.
-Stated simplification: painter's order, not a hidden-line pass, which is exact
-for boxes in a row along one wall.
+## F6 · THE DOOR WINDOW SHOWS WHAT IT HOLDS: HINGES, HINGE SIDE, THE SPLIT (points 6 and the owner's three questions)
+Owner: *"2klik na drzwiach nie pokazuje w ogóle hinges"*, *"mamy fajny w PRO
+to menu z zawiasami i ze strzałkami up and down, skopiuj z PRO"*, *"gdzie jest
+left/right wybór oraz podzielenie drzwi, top section?"*
+- FACT: retail's `DoorModal.jsx` copy already mounts PRO's `HingeSection`
+  (up and down at the hinge's 5 mm stride), the `Hinge side` field and
+  `SplitDoorField`, all behind `isDoor` (`panel.part === 'FRONT' &&
+  panel.role === 'front' && !panel.meta?.appliance`).
+- PROBE first: 2klik on a wardrobe door in retail; what `panel.part`,
+  `panel.role` and `meta` the door carries, and which of the three blocks
+  render. Commit the table. Then fix the one gate (or the one route) so all
+  three show, in retail as in PRO. No second hinge menu is written.
+- Mock-up: board 5 shows where the hinges sit (at the end); the real block
+  is PRO's, copied, not the drawing.
 
-## F7 · THE PAPER SHEETS (`setPaper.js`)
-The cover, the cut list (every panel per unit, fronts in magenta, the engine's
-own counts and areas), the visualisation (the render in a frame at its own
-aspect, the finishes beside it, or the sentence saying what it waits for).
+## F7 · LIGHTS MODE STAYS ON (point 7)
+Owner: *"po naciśnięciu LED wyłącza mi się funkcja lights i zaznacza mi
+drzwi, a nie powinno; nie powinno wyłączyć aż do momentu, że albo wyłączę
+sam w menu, albo zrobię 2klik na innym elemencie lub na ścianie."*
+- PROBE first: which handler ends lights mode on the LED press (`ViewBar`
+  `onLights`, `LightingPanel`, the stage's click). Commit it.
+- Then: lights mode ends only by its own button, or by 2klik on another
+  element or on the wall. A single click inside the mode never selects a
+  door.
 
-## F8 · THE ENTITY MODEL (`primitives.js`, `svg.js`, `dxf.js`, `lib/drawingExport.js`, `layers.js`)
-`poly` (closed or open, filled or not) and `image`; text learns right
-alignment, a white mask, bold, a colour, a fixed paper height. Three layers
-added. The four older kinds and every older layer untouched.
+## F8 · CORNICE: ALL OR NONE ALONG A RUN (point 8)
+Owner: *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
+dodajesz szafę to człowiek jest confused."*
+- A wardrobe added beside a run takes the run's cornice answer (on or off)
+  at the moment it is added; the run never mixes. `engine/cornice.js` already
+  says a cornice run continues across adjacent bearers (`types.js` turn 22);
+  the add path reads the neighbour and writes the same `elements.cornice`.
+  Removing a cornice from one wardrobe removes it from the run, with the
+  notice saying so.
+
+## F9 · THE DRAWER MENU, AND THE ACCESSORIES DRAWER (points 9, 10, 11)
+Owner, on his screenshot: *"top drawers insert nie powinien tak wyglądać:
+powinien być ADD ACCESSORIES DRAWER i powinno wziąć nas do menu i podświetlić
+Add accessories drawer, i po 2kliku powinno się otworzyć menu, które już
+jest, ale w nim powinien być przycisk GLASS ON TOP (zmniejsz moc światła o
+połowę, powinno tylko tam świecić), powinien mieć wysokość szuflady
+zaproponowaną, ten co jest default; FRONTS OR BARE BOXES usuń; WHAT THE
+BOXES CARRY też usuń; usuń Veneer, dodaj materiałowe dno zamiast Veneer:
+ciemnozielone, czerwone, brązowe, czarne, tylko te 4 kolory filcu."*
+- `ReHomed.jsx` DRAWERS menu: HOW MANY stays; TOP DRAWER INSERT, GLASS TOP,
+  FRONTS OR BARE BOXES and WHAT THE BOXES CARRY leave this menu (retail
+  only; PRO's docked editor keeps its rows); one button ADD ACCESSORIES
+  DRAWER takes the client to the INSIDE step and lights the "Accessories
+  drawer" row (the row is highlighted until the next click elsewhere); the
+  press adds through the adapter's existing call, never a new path.
+- The accessories drawer's own menu (`WatchLayoutModal` copy): LAYOUT as
+  today; GLASS ON TOP `Off` | `On` (writes `setWatchShelfGlass`); with the
+  glass on, that drawer's light runs at half the LED spec's power and lights
+  that drawer alone (read how `ledSpec` / the lighting layer light the glass
+  shelf today; one number halved, no new lamp); DRAWER HEIGHT: a number
+  field plus one chip "Proposed NNN" carrying the drawer's current height,
+  which is the default until typed over; FINISH: `Project` | `Sprayed` |
+  `Felt base`, and with Felt base four colour chips: dark green, red, brown,
+  black. `WATCH_FINISHES` gains `felt` with those four colours in the engine
+  (the BOM names the felt); `Veneer` never existed there and does not appear.
+- Mock-ups: boards 3 and 4.
+
+## F10 · MATERIAL ON A PIECE, IN RETAIL, ONLY WHEN THERE IS A CHOICE (owner's question, answer 22.09: tak)
+- The `material` row of the docked editor shows in retail only when the
+  project carries more than one material of that piece's role (carcass or
+  front, from the design's type lists). One material: no row. PRO unchanged.
+
+## F11 · THE TOP BOX QUESTION, ANSWERED (owner 22.09: *"chodziło mi o podzielenie drzwi"*)
+- No top box work. The split door lives in EXTRAS as SPLIT DOOR (TOP
+  SEGMENT) and in the door window (`SplitDoorField`); F6's probe covers why
+  the window did not show it.
+
+## F12 · THE DIVIDER: SETBACK LIKE THE SHELF, THE BORED FACE STAYS IN PRO (point 12)
+Owner: *"w 2klik menu przegrody nie ma możliwości regulacji cofnięcia lub
+wyrównania głębokości (jak w półkach)"*, *"która strona ma być drillowana nie
+ma znaczenia dla klientów, zachowaj dla PRO."*
+- Partition menu in retail: POSITION (as today), SET BACK FROM THE FRONT
+  (F2's chips plus field), no `partition-drill-face`. PRO keeps the face.
+
+## F13 · THE BAY WIDTH LABELS: THIN AND BLACK (point 13)
+Owner: *"te napisy zostaw jak są; chodziło mi o napisy pomiędzy vertical
+przegrodami, są teraz białe i gruba czcionka; to tylko zmień."*
+- Only the hover bay-width labels (`HoverDimensions.jsx`, the
+  `hoverDimensions.label` block: plate `#1c1c1a`, ink `#e8e4dc`) change: no
+  plate, black ink, the light weight kept. Every other dimension label on the
+  scene stays exactly as it is. Profile numbers only; the migration keeps a
+  saved profile's other keys.
+
+## F14 · FROM THE WALL, PER WARDROBE (point 14, answer 22.09: per unit, project default)
+Owner, on the SIZE step: *"tutaj jeszcze brakuje odsunięcia od ściany."*
+- SIZE gets a fourth field FROM THE WALL, in mm, default the project's
+  `room.wallBackClearance` (10). It is the unit's own `params.wall_gap`; when
+  absent, the profile number, so every saved job opens unchanged.
+- The engine reads it where it reads the profile number today:
+  `engine/runs.js` (`atWall`, the stop at the wall), `endPanelAuto.js`, the
+  scene's placement, the T71 plans and sections (`setPlan`, `setSection`,
+  `setElevation` read `profile.room.wallBackClearance`; they read the unit's
+  gap instead, through one helper `wallGapOf(unit, profile)` in `runs.js`).
+  Two units of different depth with the same gap have their backs on one
+  line and their fronts not; the client who wants flush fronts types a bigger
+  gap on the shallower one.
 
 ## TESTS AND PROOF
-`test/turn71-the-set.test.js` (the zones, the scale, nothing leaves its zone,
-the strip, the key plan, appliances by type, the chains and the collision
-rule, each dimension once per home, the legs from the engine's shape, the
-plates from the drilling, the worktop resolved, the plans, the sections, the
-perspective, the order and numbering, the cut list's pagination, the
-visualisation's frame, the renderers, the window, the store, the card golden).
-The T40, T41, T42, T43 set tests re-pinned to the set with the reason beside
-each. Full suite; goldens x6; the classifier; the T59 freeze with the two
-licensed files. Frames `verify/t71/NN-*.png` per sheet, from
-`scripts/t71-render.mjs` on the Herbal Hill fixture.
+Full suite; goldens x6; parens 14/14; the T59 freeze with tonight's licences;
+the T71 set still green on the Herbal Hill fixture. New `test/turn72-*.test.js`
+per F: the probe tables as assertions (F1, F4, F6, F7), the two chips write
+the old paths (F1, F2), the count shelf becomes an item on edit (F2), the
+spacing chip moves only the selected shelf and CENTER ALL spreads evenly
+(F3), the J run is a number within the engine's bounds (F4), the panel leaves
+on add (F5), all three door blocks render for a wardrobe door (F6), the run
+takes the neighbour's cornice (F8), the drawer menu's four sections are gone
+and the button lands on the INSIDE row (F9), felt has four colours and the
+glass halves the light (F9), the material row obeys the count (F10), the
+divider has no bored-face row in retail (F12), the bay label has no plate
+(F13), `wall_gap` reaches runs, panels, plans and sections (F14). Frames
+`verify/t72/fNN-*.png` per F, before and after where a probe convicted.
 
-## KNOWN GAPS, STATED SO THEY ARE NOT LOST
-The company logo (a data URL on `titleBlock.company.logo`, drawn by the strip
-when there is one; no upload yet) · the visualisation without a scene behind
-the window (headless, tests) carries its frame and sentence · the section
-stations are the set's law (drawer unit, sink) plus one chosen cabinet, not a
-free list · hidden lines in the perspective are painted, not computed · the
-retail app does not bind the set (workshop tool) · the eight questions from
-the mock-up (scale label, statuses, chains, plans, sections, rig, unit cards,
-turns) still open for the owner.
+## PR BODY
+The probe tables verbatim; per F files and lines; the EXEMPT entries added;
+the retail divergences by file and line; "how many paths add a drawer (one),
+how many write a shelf position (one)"; the six goldens; the count of
+tests.

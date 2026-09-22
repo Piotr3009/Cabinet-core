@@ -122,7 +122,8 @@ import {
   isAutoEndPanel, withAsked, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
-  corniceCeilingNotice, corniceOption, corniceRefusals, runCorniceParams, takesCornice,
+  corniceCeilingNotice, corniceOption, corniceRefusals, corniceRunNotice,
+  runCorniceParams, takesCornice,
 } from '../engine/cornice.js';
 // Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
 import {
@@ -2443,24 +2444,57 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{height:number, notices:string[]}}
    */
-  setCornice: (unitId, value) => {
+  //
+  // ─── TURN 72 (CLAUDE.md F8): ALL OR NONE ALONG A RUN ─────────────────────
+  //
+  // The owner, 22.09.2026:
+  //
+  //   *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
+  //   dodajesz szafę to człowiek jest confused."*
+  //
+  // The third bullet above already says the run decides the LENGTH. What it
+  // did not say is that the run decides the ANSWER — so a run could be half
+  // moulded, which is a moulding that stops in mid-air over a wardrobe.
+  //
+  // `engine/runs.js runMemberIds` is the list and its own header is the
+  // argument: *"The piece belongs to the run, so the DECISION belongs to the
+  // run."*  That is the sentence turn 14 wrote for the TOP INFILL, for the
+  // identical reason, and this is the cornice catching up with it.
+  //
+  // A cabinet of the run whose kit takes no cornice is SKIPPED rather than
+  // refused — `setCorniceBulk`'s own rule, and for its own reason: nobody
+  // asked for a moulding on the base unit in the middle of the run.
+  //
+  // ONE BATCH, so a run of four is one Ctrl+Z.
+  setCornice: (unitId, value) => runBatch(() => {
     const unit = get().units.find((u) => u.id === unitId);
-    if (!unit || !takesCornice(unit.type)) return { height: 0, notices: [] };
+    if (!unit || !takesCornice(unit.type)) return { height: 0, notices: [], unitIds: [] };
     const profile = getCabinetProfile();
     const height = corniceOption(value, profile);
+    const mates = runMemberIds(get().units, unitId, profile)
+      .filter((id) => takesCornice(get().units.find((u) => u.id === id)?.type));
+    const ids = new Set(mates.length ? mates : [unitId]);
     set((s) => ({
-      units: s.units.map((u) => (u.id === unitId
+      units: s.units.map((u) => (ids.has(u.id)
         ? { ...u, params: { ...u.params, cornice: height } }
         : u)),
     }));
     if (height > 0) {
       const wanted = profile.autoParts.cornice.infillHeight;
-      const own = Number(get().units.find((u) => u.id === unitId)?.params.top_infill_mm) || 0;
-      if (own < wanted) get().setTopInfill(unitId, wanted);
+      for (const id of ids) {
+        const own = Number(get().units.find((u) => u.id === id)?.params.top_infill_mm) || 0;
+        if (own < wanted) get().setTopInfill(id, wanted);
+      }
     }
     const notices = get().refreshAutoParts();
-    return { height, notices };
-  },
+    // …and it SAYS SO, which is F8's own clause: *"Removing a cornice from one
+    // wardrobe removes it from the run, with the notice saying so."*  A run of
+    // one says nothing — a cabinet on its own is not a run anybody is confused
+    // by — and the words are the engine's.
+    const said = corniceRunNotice({ height, count: ids.size, label: unit.params?.unit_num || null });
+    if (said) notices.push(said);
+    return { height, notices, unitIds: [...ids] };
+  }),
 
   // ── the manual pieces (turn 4, BACKLOG #16/#17) ──────────────────────────
   // A plinth, a top infill and an end panel are DECISIONS, not consequences of
@@ -4150,6 +4184,29 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // and a drag asked nothing. Both are `settleLayout` now, and every action
     // that can move a cabinet's edge ends by calling it.
     get().settleLayout(unit.id);
+    // ─── TURN 72 (CLAUDE.md F8): …AND IT TAKES THE RUN'S CORNICE ───────────
+    //
+    // *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
+    // dodajesz szafę to człowiek jest confused."*
+    //
+    // AFTER the settle, deliberately: the settle is what decides which run
+    // this cabinet is IN (a panel closing between it and its neighbour moves
+    // it a board, and a board is the run gap twelve times over). Asking
+    // before it would be asking about a layout that is one move out of date.
+    //
+    // The ANSWER is the run's, read off the neighbours rather than guessed:
+    // whatever the members already carry is what this one takes, and
+    // `setCornice` then writes it across all of them — which is the same one
+    // law, pressed once. A run whose members carry NOTHING writes nothing at
+    // all, so a plain add is exactly the add it has always been.
+    if (takesCornice(unit.type)) {
+      const mates = runMemberIds(get().units, unit.id, profile)
+        .filter((id) => id !== unit.id && takesCornice(get().units.find((u) => u.id === id)?.type));
+      const answer = mates
+        .map((id) => Number(get().units.find((u) => u.id === id)?.params?.cornice) || 0)
+        .find((h) => h > 0) || 0;
+      if (answer > 0) get().setCornice(unit.id, answer);
+    }
     return { id: unit.id, error: null, wall: placed.wall };
   }),
 

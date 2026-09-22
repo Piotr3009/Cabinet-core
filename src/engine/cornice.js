@@ -120,6 +120,43 @@ export function corniceCeilingNotice({
 }
 
 /**
+ * ─── TURN 72 (CLAUDE.md F8): ALL OR NONE ALONG A RUN ───────────────────────
+ *
+ * The owner, 22.09.2026:
+ *
+ *   *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
+ *   dodajesz szafę to człowiek jest confused."*
+ *
+ * The RUN has been the unit of this piece since turn 22 — one moulding across
+ * adjacent cornice-bearing cabinets — and `engine/runs.js runMemberIds` says
+ * why in as many words: *"The piece belongs to the run, so the DECISION belongs
+ * to the run."*  What was missing is that the decision could still be taken one
+ * cabinet at a time, so a run could be half moulded and a wardrobe could arrive
+ * beside one and wear nothing.
+ *
+ * This is the SENTENCE, and nothing else: the act is the store's and the
+ * geometry is `runCorniceParams`'. A run of one says nothing at all — a cabinet
+ * standing on its own is not a run anybody is confused by.
+ *
+ * @param {object} args
+ *   height   the answer that was just given, 0 for none
+ *   count    how many cabinets of the run carry it
+ *   label    the cabinet the hand was on, e.g. `W02`
+ * @returns {string|null}
+ */
+export function corniceRunNotice({ height = 0, count = 0, label = null } = {}) {
+  const n = Math.trunc(Number(count) || 0);
+  if (n < 2) return null;
+  const who = label ? `${label}: ` : '';
+  const h = Math.round(Number(height) || 0);
+  return h > 0
+    ? `${who}the ${h} mm cornice runs across all ${n} cabinets of this run — one moulding, `
+      + 'so they take it together.'
+    : `${who}the cornice came off all ${n} cabinets of this run — it is one moulding, `
+      + 'and half of it is not a moulding.';
+}
+
+/**
  * The moulding's SECTION, as a closed polygon of `[d, y]` points.
  *
  * `d` is how far forward of the door plane the point stands; `y` is how far

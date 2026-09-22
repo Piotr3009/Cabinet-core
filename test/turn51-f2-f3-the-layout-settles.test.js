@@ -104,7 +104,11 @@ test('F3 — so moving away and back is a NEW junction, and may be offered again
 test('F2 — settleLayout is called from all four actions, and nowhere else matters', () => {
   assert.match(STORE, /settleLayout: \(focusId = null\) => \{/, 'the action exists');
   for (const [action, call] of [
-    ['addUnit', /get\(\)\.settleLayout\(unit\.id\);\s*\n\s*return \{ id: unit\.id/],
+    // T72 F8 · the add still ENDS by settling, and what follows it is the
+    // run's own cornice answer — asked AFTER the settle, deliberately, because
+    // the settle is what decides which run this cabinet is in. The claim here
+    // is unchanged: the add settles, once, on its way out.
+    ['addUnit', /get\(\)\.settleLayout\(unit\.id\);\s*\n(?:.*\n)*?\s*return \{ id: unit\.id/],
     ['moveUnit', /get\(\)\.settleLayout\(unitId\);\s*\n\s*return \{ \.\.\.result, x \}/],
     ['removeUnit', /get\(\)\.settleLayout\(null\);/],
   ]) {

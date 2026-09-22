@@ -21,6 +21,45 @@
 
 import { getUnitType } from './types.js';
 
+/**
+ * ─── TURN 72 (CLAUDE.md F14): HOW FAR THIS ONE STANDS OFF THE WALL ─────────
+ *
+ * The owner, 22.09.2026, on the SIZE step: *"tutaj jeszcze brakuje odsuniecia
+ * od sciany."*  Answered the same day: PER UNIT, with the project's number as
+ * the default.
+ *
+ * Until tonight there was one answer for every cabinet in the job —
+ * `profile.room.wallBackClearance`, ten millimetres, a fact about how this
+ * workshop builds rather than a decision anybody took. It still is that, and
+ * it is still the default: a unit that says nothing stands where it has always
+ * stood, which is why every saved job opens unchanged.
+ *
+ * What is new is that ONE wardrobe may be stood further out, and the reason is
+ * the owner's own: *"Two units of different depth with the same gap have their
+ * backs on one line and their fronts not; the client who wants flush fronts
+ * types a bigger gap on the shallower one."*
+ *
+ * THIS IS A PLACEMENT NUMBER. It moves where a cabinet stands, what its run
+ * runs into and where the plan draws it. It does not reach `computeCabinet`,
+ * so not one board is cut differently for it — `scripts/t72-classify.mjs`
+ * proves that the way T71's classifier proves its own, and the six goldens are
+ * byte-identical.
+ *
+ * ONE HELPER, and every reader calls it: `runEnd`'s stop at the wall,
+ * `collision.backStandoff` (which is the scene's placement and the drag's
+ * clamp), `endPanelAuto`'s "does the neighbour cover this side", and the T71
+ * plan and section.
+ *
+ * `null`, `undefined` and a blank string all mean "nobody has said" and fall
+ * to the profile. `Number(null)` is 0, not NaN, so the question has to be
+ * asked before the number is read or a saved job silently loses its ten.
+ */
+export function wallGapOf(unit, profile) {
+  const own = unit?.params?.wall_gap;
+  if (own != null && own !== '' && Number.isFinite(Number(own)) && Number(own) >= 0) return Number(own);
+  return Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
+}
+
 /** Height of a unit's top above the floor — where anything on top of it starts. */
 export function unitTop(unit, profile) {
   return unitBase(unit, profile) + (Number(unit.params?.height) || 0);
@@ -529,7 +568,10 @@ export function runEnd(run, side, {
   // parked there HAS reached the wall: the gap is a scribe, the piece on top
   // runs over it, and calling the end "open" would turn the corner and run a
   // return down a 10 mm slot.
-  const atWall = tolerance + Math.max(0, Number(profile.room?.wallBackClearance) || 0);
+  // T72 F14: the end unit's OWN gap. `wallGapOf` falls to the profile number
+  // the moment nothing has been typed, so a run of cabinets that have never
+  // heard of the field stops exactly where it stopped yesterday.
+  const atWall = tolerance + wallGapOf(unit, profile);
 
   // 1 — the wall itself.
   //

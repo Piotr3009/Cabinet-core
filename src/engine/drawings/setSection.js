@@ -20,6 +20,8 @@ import { mountingBands } from './wallElevation.js';
 import { boundsOf, entLine as line, entRect as rect, entText as text, moveEntities } from './primitives.js';
 import { chainH, chainV } from './setChains.js';
 import { legHardware } from './setElevation.js';
+// T72 F14 · how far THIS unit stands off its wall — the one helper.
+import { wallGapOf } from '../runs.js';
 
 /**
  * WHERE THE KNIFE GOES on this wall: A-A through the first drawer unit of the
@@ -71,12 +73,18 @@ export function buildStation(group, station, { room = null, worktops = [], profi
   const entities = [];
   const ceiling = Number(room?.height) || 0;
   const top = Math.max(ceiling, ...members.map((m) => m.top));
-  const clearance = Math.max(0, Number(profile.room?.wallBackClearance) || 0);
+  // ─── TURN 72 (CLAUDE.md F14): EACH MEMBER'S OWN GAP ─────────────────────
+  // A section is a knife through the room, so what it draws is where each
+  // cabinet STANDS. `wallGapOf` answers the project's own number for every
+  // unit that has never been asked, which is every unit in every job saved
+  // before tonight: the sheet is unchanged unless a client typed a gap.
+  const gapOf = (m) => wallGapOf(m.unit, profile);
 
   for (const m of members) {
     // `cutCabinet` draws the carcass at z = 0 at the wall; every unit stands
-    // the clearance off it, and its legs are added here as the scene draws
+    // its own clearance off it, and its legs are added here as the scene draws
     // them (the grammar's three lines are replaced by plate, stem and foot).
+    const clearance = gapOf(m);
     const cut = cutCabinet(m, profile).filter((e) => e.layer !== 'LEG_BLOCK');
     entities.push(...moveEntities(cut, clearance, 0));
     const legs = m.result.assemblies?.legs;
@@ -91,7 +99,7 @@ export function buildStation(group, station, { room = null, worktops = [], profi
       entities.push({ ...rect('CARCASE', 0, w.y, w.d, w.h), pen: 'CUT', fill: '#d9d9d9', solid: true });
     }
   }
-  const deepest = Math.max(0, ...members.map((m) => clearance + (Number(m.result.params.depth) || 0) + (Number(profile.doors?.gap) || 0) + (Number(m.result.params.front_t) || 0)), ...worktops.map((w) => w.d));
+  const deepest = Math.max(0, ...members.map((m) => gapOf(m) + (Number(m.result.params.depth) || 0) + (Number(profile.doors?.gap) || 0) + (Number(m.result.params.front_t) || 0)), ...worktops.map((w) => w.d));
   entities.push(...wallBand(ctx, { top, profile }));
   entities.push({ ...line('BUILDING', -ctx.mm(6), 0, deepest + ctx.mm(12), 0), pen: 'VISIBLE' });
   if (ceiling > 0) entities.push({ ...line('BUILDING', -ctx.mm(6), ceiling, deepest + ctx.mm(12), ceiling), pen: 'VISIBLE' });
@@ -100,7 +108,7 @@ export function buildStation(group, station, { room = null, worktops = [], profi
   for (const m of members) {
     const D = Number(m.result.params.depth) || 0;
     const H = Number(m.result.params.height) || 0;
-    entities.push({ ...text('UNIT_NUMBER', clearance + D * 0.55, m.base + H * 0.12, String(m.unit.params?.unit_num ?? ''), ctx.unitNumberHeight), paperHeight: ctx.unitNumberHeight / ctx.scale, mask: true, weight: 'bold' });
+    entities.push({ ...text('UNIT_NUMBER', gapOf(m) + D * 0.55, m.base + H * 0.12, String(m.unit.params?.unit_num ?? ''), ctx.unitNumberHeight), paperHeight: ctx.unitNumberHeight / ctx.scale, mask: true, weight: 'bold' });
   }
 
   // ── chains: heights up the right, depths along the bottom, the wall run's depth on top ──
@@ -116,6 +124,7 @@ export function buildStation(group, station, { room = null, worktops = [], profi
     const D = Number(floorMember.result.params.depth) || 0;
     const frontT = Number(floorMember.result.params.front_t) || 0;
     const gap = Number(profile.doors?.gap) || 0;
+    const clearance = gapOf(floorMember);
     const ds = new Set([0, clearance, clearance + D, clearance + D + gap + frontT]);
     const wt = worktops.find((w) => w.x <= station.x && station.x <= w.x + w.w);
     if (wt) ds.add(wt.d);
@@ -126,6 +135,7 @@ export function buildStation(group, station, { room = null, worktops = [], profi
     const D = Number(hung.result.params.depth) || 0;
     const frontT = Number(hung.result.params.front_t) || 0;
     const gap = Number(profile.doors?.gap) || 0;
+    const clearance = gapOf(hung);
     chains.push(chainH({ edges: [0, clearance, clearance + D, clearance + D + gap + frontT].filter((v, i, arr) => arr.indexOf(v) === i), y: hung.top + ctx.chainFirst, yObj: hung.top, ctx, above: true }));
   }
   entities.push(...chains.flat());

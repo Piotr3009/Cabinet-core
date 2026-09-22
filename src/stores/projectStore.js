@@ -104,10 +104,12 @@ import {
 import {
   autoPartsFor, takesPlinth, takesTopInfill, topInfillHeight, topInfillToCeiling,
 } from '../engine/autoparts.js';
+// T72 F14 · `wallGapOf` — how far ONE unit stands off its wall: its own
+// `params.wall_gap`, or the project's number when nobody has said.
 import {
   buildRuns, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
   runMemberIds, runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
-  verticalsInBand,
+  verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
 import {
@@ -2016,7 +2018,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // the 10 mm every unit stands off it. A return that stops at the carcass
       // back stops 10 mm short of the wall, which is a gap you can see along
       // the whole side of a run.
-      frontFaceDepthOf: (u) => wallClearance(profile)
+      // T72 F14: from the plane of THIS unit's doors to the wall — its own
+      // gap, which is the project's number until a client types one.
+      frontFaceDepthOf: (u) => wallGapOf(u, profile)
         + (Number(u.params?.depth) || 0)
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
@@ -2078,7 +2082,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       units: next,
       walls,
       roomHeight,
-      frontFaceDepthOf: (u) => wallClearance(profile)
+      // T72 F14: from the plane of THIS unit's doors to the wall — its own
+      // gap, which is the project's number until a client types one.
+      frontFaceDepthOf: (u) => wallGapOf(u, profile)
         + (Number(u.params?.depth) || 0)
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
@@ -4601,6 +4607,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         by: h.by,
         from: 'profile.wardrobe.minHeight / collision.clampUnitHeight',
       },
+      // ─── TURN 72 (CLAUDE.md F14): THE FOURTH NUMBER ───────────────────────
+      //
+      // *"tutaj jeszcze brakuje odsuniecia od sciany."*  Its floor is nought —
+      // a cabinet may stand on the plaster if somebody says so — and its
+      // ceiling is what the room has left once this carcass is in it, read
+      // from the very clamp the depth's ceiling is read from, so the field's
+      // end and `updateUnitParams`'s clamp cannot drift apart.
+      //
+      // `standard` is the PROJECT's own number, which is what the unit stands
+      // at until a hand types over it: the field shows it as the standard the
+      // way DEPTH shows the profile's.
+      wallGap: {
+        min: 0,
+        max: Math.max(0, Math.round(wallGapOf(unit, profile) + d.max - (Number(unit.params.depth) || 0))),
+        by: d.by,
+        standard: Math.round(wallClearance(profile)),
+        from: 'profile.room.wallBackClearance / collision.clampUnitDepth',
+      },
       step: profile.editor.mmStep,
     };
   },
@@ -4927,6 +4951,36 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }, profile);
       applied.depth = clamp.depth;
       if (clamp.blocked) notices.push(`Depth limited to ${formatMm(clamp.max)} mm by ${clamp.by}.`);
+    }
+    // ─── TURN 72 (CLAUDE.md F14): FROM THE WALL ─────────────────────────────
+    //
+    // The owner, on the SIZE step: *"tutaj jeszcze brakuje odsuniecia od
+    // sciany."*  Per unit, with the project's number as the default.
+    //
+    // A gap is room taken out of the same reach the depth comes out of, so it
+    // is clamped by the SAME call the depth is clamped by and the SAME call
+    // the field's own maximum is read from (`unitSizeBoundsFor` below) —
+    // asked with a reach of 1e6 so the clamp answers with its own ceiling.
+    // A field whose end and whose setter disagreed would be T60's own fault
+    // said again: *"a control that cannot act must not be shown as if it
+    // could."*
+    if (patch.wall_gap != null) {
+      const depth = Number(applied.depth ?? unit.params.depth) || 0;
+      const room = clampUnitDepth({
+        depth: 1e6,
+        x: unit.position.x_mm, width: applied.width ?? unit.params.width,
+        wall, walls, others,
+        backInset: backStandoff(unit, profile),
+      }, profile);
+      // What the room leaves for the gap: the reach this unit stands in
+      // today (its own gap plus the depth still available to it) less the
+      // carcass that has to fit inside it.
+      const ceiling = Math.max(0, Math.round(wallGapOf(unit, profile) + room.max - depth));
+      const want = Math.max(0, Math.round(Number(patch.wall_gap) || 0));
+      applied.wall_gap = Math.min(want, ceiling);
+      if (applied.wall_gap < want) {
+        notices.push(`From the wall limited to ${formatMm(applied.wall_gap)} mm by ${room.by || 'the room'}.`);
+      }
     }
     if (patch.height != null) {
       const clamp = clampUnitHeight({

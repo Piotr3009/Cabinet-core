@@ -42,7 +42,7 @@ import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
 import { materialSlotOf, runMaterialSetting } from '../../engine/materials.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
-import { hasTopInfill, unitTop } from '../../engine/runs.js';
+import { hasTopInfill, unitTop, wallGapOf } from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, elementMaterialChoices, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
@@ -2196,8 +2196,22 @@ export function selectionName(sel) {
 
 // ─── 1 · THE WARDROBE ──────────────────────────────────────────────────────
 
-/** The three sliders' ends, from the store's own reading of the engine. */
+/** The four fields' ends, from the store's own reading of the engine. */
 export const unitBounds = (unitId) => S().unitSizeBoundsFor?.(unitId) || null;
+
+/**
+ * ─── T72 F14 · HOW FAR THIS WARDROBE STANDS OFF ITS WALL ───────────────────
+ *
+ * The owner, on the SIZE step: *"tutaj jeszcze brakuje odsuniecia od
+ * sciany."*  The field shows what the ENGINE would use, which is the unit's
+ * own `params.wall_gap` when it has one and the project's number when it does
+ * not — `wallGapOf` is that one sentence, and this is retail asking it through
+ * the one door retail speaks engine by.
+ */
+export function wallGapOfUnit(unitId) {
+  const unit = S().units.find((u) => u.id === unitId) || null;
+  return unit ? wallGapOf(unit, getCabinetProfile()) : 0;
+}
 
 /**
  * A size, written the way PRO writes it (`UnitSizeModal`, `RightPanel`): the

@@ -12,6 +12,10 @@
 // number (CLAUDE.md rule 3).
 
 import { boxCorners } from './room.js';
+// T72 F14 · the ONE helper that answers how far a unit stands off its wall.
+// It lives in `runs.js` because CLAUDE.md F14 puts it there, and `runs.js`
+// imports nothing but `types.js`, so there is no cycle to weigh.
+import { wallGapOf } from './runs.js';
 
 /** Clamp that survives a reversed range: never returns a value outside [lo,hi]. */
 function clampTo(value, lo, hi) {
@@ -283,8 +287,22 @@ export function wallClearance(profile) {
   return Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
 }
 
+/**
+ * ─── TURN 72 (CLAUDE.md F14): …AND THE FIRST OF THE TWO IS NOW PER UNIT ────
+ *
+ * The owner, on the SIZE step: *"tutaj jeszcze brakuje odsuniecia od sciany."*
+ * The ten above is still what every cabinet gets and still what the project
+ * carries; `wallGapOf` returns exactly that number until a hand types another
+ * one onto ONE wardrobe. So this function answers the same millimetres it has
+ * answered since turn 8 for every unit ever saved, and a different one only
+ * where the client asked for it.
+ *
+ * This is THE placement read: the scene draws the unit here (`3d/UnitView.jsx`,
+ * `3d/Scene.jsx`), the drag clamps against it, and the store hands it to both.
+ * The two numbers still add for the reason they always did.
+ */
 export function backStandoff(unit, profile) {
-  return wallClearance(profile) + insetPads(unit).back;
+  return wallGapOf(unit, profile) + insetPads(unit).back;
 }
 
 /**

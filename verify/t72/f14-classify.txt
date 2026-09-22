@@ -1,0 +1,96 @@
+─── T72 · THE ENGINE/LIB DELTAS, AND WHAT THEY REACH ───
+
+  named     src/engine/cabinet.js
+             F9 · THE ONE EXCEPTION, ARGUED BELOW: the felt entry on the watch drawer's BOM line and `power: 0.5` on the glass strip. Both are published FIELDS on records that already existed; no panel, no size, no count moves — and the six goldens say so
+  named     src/engine/collision.js
+             F14 · `backStandoff` asks `wallGapOf` instead of the project number — the scene's placement and the drag's clamp, which is the same sentence twice
+  named     src/engine/cornice.js
+             F8 · `corniceRunNotice` — one sentence, returned to the store; reads nothing, writes nothing, cuts nothing
+  named     src/engine/dimensionArrows.js
+             F13 · `dimensionStyle` reads `labelHalo`, `labelBayInk`, `labelBayHalo` through. Drawing style only; nothing here is cut
+  named     src/engine/drawings/setPlan.js
+             F14 · the plan draws each unit at ITS OWN gap; the depth chain reads the nearest back and the furthest front. Named by F14 by file
+  named     src/engine/drawings/setSection.js
+             F14 · the section cuts each member at ITS OWN gap. Named by F14 by file
+  named     src/engine/endPanelAuto.js
+             F14 · `sideIsVisible` compares FRONT REACH (gap + depth) rather than depth alone: with one gap per job the two were the same question, with two they are not
+  named     src/engine/profile.js
+             F13 · `hoverDimensions.label.bayInk` and `.bayHaloAlpha` (the bay chain's ink and its halo) and the migration. No cut number
+  named     src/engine/roomFit.js
+             F14 · the room refuses a gap that will not fit, in the room's own words; the height, width and depth branches untouched
+  named     src/engine/runs.js
+             F14 · `wallGapOf(unit, profile)` — the ONE helper CLAUDE.md names, and `runEnd`'s `atWall` reads it. PLACEMENT: where a run stops, not what it cuts
+  named     src/engine/watchDrawer.js
+             F9 · `WATCH_FELT_COLOURS` and `felt` in `WATCH_FINISHES`: the accessories drawer's BASE FINISH, which the BOM names and no board is cut for
+
+  11 engine/lib file(s) changed or added · 0 not named above
+  named READ-ONLY by CLAUDE.md and touched: none
+  named and unspent: none
+
+  ok  src/engine/runs.js
+        F14 · `wallGapOf(unit, profile)` — the ONE helper CLAUDE.md names, and `runEnd`'s `atWall` reads it. PLACEMENT: where a run stops, not what it cuts
+        reach: on computeCabinet's import graph: true — but the DELTA is `wall_gap`, read by src/engine/roomFit.js, src/retail/design/Options.jsx, src/stores/projectStore.js; of those, on the graph and not the helper itself: none
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/collision.js
+        F14 · `backStandoff` asks `wallGapOf` instead of the project number — the scene's placement and the drag's clamp, which is the same sentence twice
+        reach: on computeCabinet's import graph: false — but the DELTA is `wall_gap`, read by src/engine/roomFit.js, src/engine/runs.js, src/retail/design/Options.jsx, src/stores/projectStore.js; of those, on the graph and not the helper itself: none
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/endPanelAuto.js
+        F14 · `sideIsVisible` compares FRONT REACH (gap + depth) rather than depth alone: with one gap per job the two were the same question, with two they are not
+        reach: imported by src/retail/design/adapter.js, src/retail/main-retail.jsx; on computeCabinet's import graph: false
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/roomFit.js
+        F14 · the room refuses a gap that will not fit, in the room's own words; the height, width and depth branches untouched
+        reach: imported by src/retail/design/adapter.js; on computeCabinet's import graph: false
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/drawings/setPlan.js
+        F14 · the plan draws each unit at ITS OWN gap; the depth chain reads the nearest back and the furthest front. Named by F14 by file
+        reach: imported by nothing; on computeCabinet's import graph: false
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/drawings/setSection.js
+        F14 · the section cuts each member at ITS OWN gap. Named by F14 by file
+        reach: imported by nothing; on computeCabinet's import graph: false
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/profile.js
+        F13 · `hoverDimensions.label.bayInk` and `.bayHaloAlpha` (the bay chain's ink and its halo) and the migration. No cut number
+        reach: the keys added, `label.bayInk` / `label.bayHaloAlpha`, are read by src/3d/HoverDimensions.jsx, src/engine/dimensionArrows.js; of those, on computeCabinet's import graph: none
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/dimensionArrows.js
+        F13 · `dimensionStyle` reads `labelHalo`, `labelBayInk`, `labelBayHalo` through. Drawing style only; nothing here is cut
+        reach: imported by src/3d/DimensionChain.jsx, src/3d/DistanceArrows.jsx, src/3d/Hardware.jsx, src/3d/HoverDimensions.jsx, src/3d/SpacingChain.jsx, src/3d/UnitView.jsx, src/components/PartDetailModal.jsx, src/main.jsx; on computeCabinet's import graph: false
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/watchDrawer.js
+        F9 · `WATCH_FELT_COLOURS` and `felt` in `WATCH_FINISHES`: the accessories drawer's BASE FINISH, which the BOM names and no board is cut for
+        reach: imported by src/3d/Scene.jsx, src/components/AddItems.jsx, src/components/ElementProperties.jsx, src/components/WatchLayoutModal.jsx, src/retail/design/adapter.js, src/retail/design/detail/AddItems.jsx, src/retail/design/detail/ElementProperties.jsx, src/retail/design/detail/WatchLayoutModal.jsx; on computeCabinet's import graph: true; the delta is a NAME (a felt colour, a notice sentence), not a size
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/cornice.js
+        F8 · `corniceRunNotice` — one sentence, returned to the store; reads nothing, writes nothing, cuts nothing
+        reach: imported by src/3d/Cornice.jsx, src/components/MultiUnitPanel.jsx, src/components/RightPanel.jsx, src/lib/contextActions.js, src/main.jsx, src/retail/design/adapter.js; on computeCabinet's import graph: true; the delta is a NAME (a felt colour, a notice sentence), not a size
+        fixtures that set it: NONE, no golden can enter this path
+  ok  src/engine/cabinet.js
+        F9 · THE ONE EXCEPTION, ARGUED BELOW: the felt entry on the watch drawer's BOM line and `power: 0.5` on the glass strip. Both are published FIELDS on records that already existed; no panel, no size, no count moves — and the six goldens say so
+        reach: IS the cut path; the six hashes below are the whole proof for this one
+        fixtures that set it: NONE, no golden can enter this path
+
+─── F14 · `wall_gap` PUT TO computeCabinet, KEY IN HAND ───
+  WARDROBE   no gap vs 60 mm: IDENTICAL  00351a8717aa2e6bd1e430c3d53947baf070db77433c40863e120bf6e1185624
+  BUD        no gap vs 60 mm: IDENTICAL  20629a7a67d4575261ae1b3b35c3b4e824e7162b4d5ed9b466830f81930db011
+  WUD        no gap vs 60 mm: IDENTICAL  2cde62541261cbee56eb4af226961ce187ed20d080e960db330bfaabcd477723
+  BUDR       no gap vs 60 mm: IDENTICAL  897770ec77b7697c09eda671b744c81622bd7c9ede06109e9de910d488720784
+  BUDR4      no gap vs 60 mm: IDENTICAL  915dd06049726793c31ba82fa011658ed0a48e78196d56b7e1eacfed173d9975
+  PANTRY     no gap vs 60 mm: IDENTICAL  37a6730fc3d0d3f45be8f4fba12ec546b10dd10cc30c9a17ad423c1c421fa5dd
+  the cut path reads `wall_gap`: NO
+
+─── F14 · …AND THE PLACEMENT READERS DO SEE IT ───
+  engine/runs.js wallGapOf           nothing typed: 10 mm · typed 60: 60 mm
+  engine/collision.js backStandoff   nothing typed: 10 mm · typed 60: 60 mm
+
+─── THE SIX ───
+  WARDROBE   IDENTICAL  f49a8c107dd6e66908412262c8c0c91613fe9d1523cce844b7ce68648a1f37c3
+  BUD        IDENTICAL  44d091b837b08075fd155719253b85b9cc8c65437395a1d8b2f31b80d3b2db4c
+  WUD        IDENTICAL  3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7
+  BUDR       IDENTICAL  1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2
+  BUDR4      IDENTICAL  583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17
+  PANTRY     IDENTICAL  4df94682e4f80424aa770ffad3e5e143eb8e14902372ec2193fd4acb9e452289
+
+IDENTICAL=6 UNNAMED=0 · deltas that cannot reach a fixture: 11/11 · engine files not named: 0 · read-only files touched: 0 · cut path blind to wall_gap: true · placement reads it: true

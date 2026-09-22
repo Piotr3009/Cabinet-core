@@ -78,8 +78,40 @@ const WORKSHOP_FIELDS = Object.freeze([
   'material',
 ]);
 
-/** What a docked `ElementProperties` leaves out — nothing, for a joiner. */
-const omitted = () => (RETAIL_SHOW_WORKSHOP_TOOLS ? [] : [...WORKSHOP_FIELDS]);
+/**
+ * ─── T72 F2 / F12 · SET BACK COMES OUT OF THAT LIST, FOR TWO PIECES ───────
+ *
+ * The owner, 22.09.2026, of the shelf:
+ *
+ *   *"nie ma opcji back 20 mm, czyli regulacji głębokości"*
+ *
+ * …and of the divider:
+ *
+ *   *"w 2klik menu przegrody nie ma możliwości regulacji cofnięcia lub
+ *   wyrównania głębokości (jak w półkach)"*
+ *
+ * So `setback` is a CLIENT's question on a SHELF and on a PARTITION, and the
+ * workshop's on everything else. CLAUDE.md F2 says exactly that and draws the
+ * line exactly there: *"`setback` leaves `WORKSHOP_FIELDS` in `docked.jsx` for
+ * the shelf and the partition only; the rest of that list stays hidden."*
+ *
+ * `setback-unit` — the FIXED shelf's and the rail's, which is the UNIT's own
+ * number and moves every such board in the cabinet — stays hidden, and so does
+ * every other name above.
+ */
+const SETBACK_IS_THE_CLIENT_S = Object.freeze(['shelf', 'partition']);
+
+/**
+ * What a docked `ElementProperties` leaves out — nothing, for a joiner.
+ *
+ * The KIND is the SELECTION's own (`adapter.resolveSelection` stamps it, off
+ * `engine/elements.js elementKind`), never read from the panel here: this file
+ * asks the adapter and the adapter asks the engine, which is the boundary
+ * `turn59-f4` holds every retail file to.
+ */
+const omitted = (kind = null) => (RETAIL_SHOW_WORKSHOP_TOOLS
+  ? []
+  : WORKSHOP_FIELDS.filter((f) => !(f === 'setback' && SETBACK_IS_THE_CLIENT_S.includes(kind))));
 
 /**
  * The modal names the DOCK owns. `Editors.jsx` renders exactly these inside
@@ -96,7 +128,7 @@ export const DOCK_MODALS = Object.freeze(['element', 'rail', 'watch-layout']);
  */
 export function dockFor(selection) {
   if (!selection?.unitId) return null;
-  const { menu, unitId, panel, item } = selection;
+  const { menu, unitId, panel, item, kind } = selection;
 
   // THE DOOR — `DoorModal`, PRO's window for every piece: the split, the
   // hinges, the handle, the mirror, and section A's own fields.
@@ -128,5 +160,5 @@ export function dockFor(selection) {
   // drawer front, a drawer box, an overlay front, a shoe drawer's face. PRO's
   // own piece panel, on the piece.
   if (!panel) return null;
-  return { props: { panel, item, omit: omitted() } };
+  return { props: { panel, item, omit: omitted(kind) } };
 }

@@ -309,23 +309,44 @@ export default function ElementProperties({
       // height) died with their world — a shoe is a `variant:'shoe'` DRAWER
       // and its boards take the drawer's own fields; the side is the 80 law
       // and offers no field at all (licence 2).
+      // ─── TURN 72 (CLAUDE.md F2): TWO CHIPS, NOT A CHOOSE ──────────────────
+      //
+      // The owner, 22.09.2026, of the shelf's own menu:
+      //
+      //   *"jest menu po 2kliku, ale nie ma opcji back 20 mm, czyli regulacji
+      //   głębokości, ani nie ma wyboru fix / adjustable, nie choose, tylko te
+      //   2 opcje."*
+      //
+      // TWO OPTIONS, both pressed, neither hidden behind a click. `SHELF_TYPES`
+      // is untouched and so is the store path — `setShelfType(unit.id,
+      // item.id, id)` is the call the `<select>` made — and the engine's four
+      // kinds are all still there: what left this MENU is the two nobody picks
+      // here. PULL-OUT is `enabled: false` and has been since turn 21 (a
+      // workshop number outstanding, BLOCKERS carries the ask), and the SHOE
+      // SHELF is the older pinned board — *"new shoe accessories are built as
+      // the shoe drawer"*, which is its own row in INSIDE.
+      //
+      // A shelf SAVED as one of the two keeps rendering exactly as saved:
+      // neither chip reads pressed, the note below says which board it is, and
+      // pressing a chip converts it. Nothing is migrated behind anybody's back.
       case 'shelf-type':
         return (
           <Field key={key} label="Type">
-            <select
-              className="cc-input w-full"
-              data-shelf-type="1"
-              value={shelfTypeOf(item)}
-              title="How this shelf is held"
-              onChange={(e) => setShelfType(unit.id, item.id, e.target.value)}
-            >
-              {SHELF_TYPES.map((t) => (
-                <option key={t.id} value={t.id} disabled={!t.enabled} title={t.hint}>
+            <div className="flex items-center gap-1" data-shelf-type="1">
+              {SHELF_TYPES.filter((t) => t.id === 'fix' || t.id === 'adjustable').map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  className={`cc-btn flex-1 px-2 text-[11px] ${shelfTypeOf(item) === t.id ? 'border-gold text-ink-50' : ''}`}
+                  data-shelf-type-chip={t.id}
+                  aria-pressed={shelfTypeOf(item) === t.id}
+                  title={t.hint}
+                  onClick={() => setShelfType(unit.id, item.id, t.id)}
+                >
                   {t.label}
-                  {t.enabled ? '' : ' — workshop number outstanding'}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
             {/* ─── TURN 34 (CLAUDE.md F4) / T54-F7: ONE GREY NOTE, ON THE OLD
                 SHELF. The pinned 15° shoe shelf keeps rendering exactly as
                 saved; what replaced it is tonight the SHOE DRAWER — a
@@ -450,19 +471,60 @@ export default function ElementProperties({
             </div>
           </Field>
         );
-      case 'setback':
+      // ─── TURN 72 (CLAUDE.md F2 / F12): SET BACK FROM THE FRONT ────────────
+      //
+      // The owner, of the shelf: *"nie ma opcji back 20 mm, czyli regulacji
+      // głębokości"*, and of the divider: *"w 2klik menu przegrody nie ma
+      // możliwości regulacji cofnięcia lub wyrównania głębokości (jak w
+      // półkach)."*  Answer, 22.09: *"setback as two chips plus a field"*, in
+      // retail and in PRO.
+      //
+      // THE TWO NUMBERS ARE NOT NEW AND NEITHER IS INVENTED HERE. `20 mm` is
+      // `profile.carcass.shelfDepthClearance` — the LISP's own setback, which
+      // is what a shelf with nothing said has been cut at since turn 1 — and
+      // `Flush` is zero, which is what the field's own title has said it means
+      // for just as long. The chips are a SHORTCUT to the field beside them,
+      // not a second law: all three press `setElementDepth`, through the same
+      // `applyToSelection` that reaches a whole ticked set.
+      case 'setback': {
+        const standardBack = Number(profile.carcass.shelfDepthClearance) || 0;
+        const backNow = Number(panel.meta?.front_mm ?? standardBack);
+        const backChips = [
+          { id: 'standard', mm: standardBack, label: `${formatMm(standardBack)} mm` },
+          { id: 'flush', mm: 0, label: 'Flush' },
+        ];
         return (
           <Field key={key} label="Set back">
-            <NumberField
-              className="cc-input text-right"
-              min={bounds.min}
-              max={bounds.max}
-              value={Number(panel.meta?.front_mm ?? profile.carcass.shelfDepthClearance)}
-              title={`From the face of the cabinet. 0 is flush; ${formatMm(bounds.max)} leaves the shallowest piece worth cutting.`}
-              onCommit={(v) => applyToSelection((row) => setElementDepth(row.unitId, row.id, v))}
-            />
+            <div className="space-y-1">
+              <div className="flex items-center gap-1" data-setback-chips="1">
+                {backChips.map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`cc-btn flex-1 px-2 text-[11px] ${backNow === c.mm ? 'border-gold text-ink-50' : ''}`}
+                    data-setback-chip={c.id}
+                    aria-pressed={backNow === c.mm}
+                    title={c.mm === 0
+                      ? 'Pulled out to the face of the cabinet'
+                      : 'The workshop standard — the setback a board with nothing said is cut at'}
+                    onClick={() => applyToSelection((row) => setElementDepth(row.unitId, row.id, c.mm))}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <NumberField
+                className="cc-input text-right w-full"
+                min={bounds.min}
+                max={bounds.max}
+                value={backNow}
+                title={`From the face of the cabinet. 0 is flush; ${formatMm(bounds.max)} leaves the shallowest piece worth cutting.`}
+                onCommit={(v) => applyToSelection((row) => setElementDepth(row.unitId, row.id, v))}
+              />
+            </div>
           </Field>
         );
+      }
       case 'setback-unit':
         return (
           <Field key={key} label="Set back">

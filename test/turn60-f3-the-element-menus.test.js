@@ -132,7 +132,11 @@ test('F3 · the editors, and the DOCK resolves every one of them', () => {
     'a window could be drawn in both places');
 
   // …and everything else the engine cuts a board for is PRO's own piece panel.
-  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(\) \} \}/);
+  // T72 F2 · `omitted` takes the SELECTION's own kind now, because `setback`
+  // is a client's question on a shelf and a divider and the workshop's on
+  // everything else. The law is untouched: ONE table, ONE default branch, and
+  // the fields are left out through PRO's own `omit` prop.
+  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind\) \} \}/);
   const detail = read('src/retail/design/Detail.jsx');
   assert.match(detail, /import ElementProperties from '\.\/detail\/ElementProperties\.jsx'/);
   assert.ok(isCopy('src/retail/design/detail/ElementProperties.jsx'),
@@ -144,8 +148,14 @@ test('F3 · the workshop\'s own fields are HIDDEN, not cut — and behind ONE fl
   // cut … behind `RETAIL_SHOW_WORKSHOP_TOOLS=false`."*
   const dock = read('src/retail/design/detail/docked.jsx');
   assert.match(dock, /import \{ RETAIL_SHOW_WORKSHOP_TOOLS \} from '\.\.\/\.\.\/config\.js'/);
-  assert.match(dock, /RETAIL_SHOW_WORKSHOP_TOOLS \? \[\] : \[\.\.\.WORKSHOP_FIELDS\]/,
+  // T72 F2 · the flag still answers `[]` first and nothing else reads it; what
+  // follows it is the per-kind filter that lets `setback` out for a shelf and a
+  // divider. Turn the flag on and a joiner gets PRO's panel entire, exactly as
+  // before.
+  assert.match(dock, /RETAIL_SHOW_WORKSHOP_TOOLS\s*\n?\s*\? \[\]/,
     'the flag does not turn the fields back on');
+  assert.match(dock, /WORKSHOP_FIELDS\.filter\(\(f\) => !\(f === 'setback' && SETBACK_IS_THE_CLIENT_S\.includes\(kind\)\)\)/,
+    'the per-kind exception is not the one F2 licensed');
   // They are left out through PRO's OWN `omit` prop — not by editing a copy.
   assert.match(read('src/retail/design/detail/ElementProperties.jsx'),
     /elementFields\(panel, type\)\.filter\(\(f\) => !omit\.includes\(f\)\)/,
@@ -514,7 +524,8 @@ test('F3.3 · SHELF — pinned is a NOTE, locked is a refusal, and they differ',
   // `setShelfPos` is the same setter — which is the point of docking a copy
   // rather than writing a fourteenth surface.
   const dock = read('src/retail/design/detail/docked.jsx');
-  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(\) \} \}/);
+  // T72 F2 · `omitted` takes the selection's own kind; the route is the route.
+  assert.match(dock, /return \{ props: \{ panel, item, omit: omitted\(kind\) \} \}/);
   assert.match(read('src/retail/design/detail/ElementProperties.jsx'), /case 'position-y':/,
     'PRO\'s own height field is gone from the copy');
   // …and the EVEN LADDER, which the copy has no button for, is re-homed on the

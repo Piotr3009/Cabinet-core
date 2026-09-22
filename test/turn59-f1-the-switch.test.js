@@ -73,6 +73,23 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
+  // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
+  // client cannot reach. Three of his fourteen points are answered in PRO's own
+  // files, because 1:1 = COPY and a retail copy may not be edited: the shelf's
+  // TYPE and its SETBACK (*"nie ma opcji back 20 mm, czyli regulacji
+  // głębokości, ani nie ma wyboru fix / adjustable, nie choose, tylko te 2
+  // opcje"*), the SPACING chain's CENTER ALL (*"dodaj na dole tego modalu
+  // CENTER ALL"*), the door's HINGES (*"mamy fajny w PRO to menu z zawiasami i
+  // ze strzałkami up and down, skopiuj z PRO"*) and the J run as a NUMBER
+  // (*"przesuwanie powiększenia J-hand nie może być przesuwakiem, musimy
+  // wpisywać liczby"*). Each is re-frozen at its new hash below and re-copied
+  // the same night by `scripts/t72-copy.mjs`. Overturnable with one word: the
+  // engine, the goldens and the cut path are untouched by every one of them.
+  'src/components/ElementProperties.jsx':
+    'T72 F2 · `shelf-type` becomes two chips and SET BACK FROM THE FRONT gains `20 mm` '
+    + '| `Flush` beside its field; F3 · CENTER ALL at the bottom of the shelf menu; '
+    + 'F12 · the divider reaches the same setback row. *"nie choose, tylko te 2 opcje."*',
   // ─── ADDED BY TURN 71 · THE DRAWING SET REACHES THE WINDOW ───────────────
   // The owner, 21.09.2026, Skylon Joinery's own AutoCAD set on the table:
   // *"nasze w CC teraz się nakładają, a tutaj jest wszystko osobno … mega
@@ -144,7 +161,8 @@ const FROZEN = {
   'src/components/DrawRoomModal.jsx': 'bbf2021f049146f6af31f1094b61a284a8d351a36361c3d549fbb0cb1372366b',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
-  'src/components/ElementProperties.jsx': '3c223158225645e691c6a840be20fe7ce2fa3114eef21602a3d1c7ac48a0f140',
+  // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/ElementProperties.jsx': 'd9e395792b041d77240bbd8b40f5b3bf32828245d9612ea5db3ce732f58ef092',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
@@ -364,14 +382,15 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
 // words), so two PRO files are licensed tonight, each with the owner's words
 // and its feature beside it, each re-frozen at its new hash. The list is held
 // to exactly these five; a sixth cannot be slipped in without this failing.
-test('T67 · the exemption names three files, each re-frozen, each with its reason', () => {
+test('T67 · the exemption names its files, each re-frozen, each with its reason', () => {
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
     'src/components/DrawingModal.jsx',
+    'src/components/ElementProperties.jsx',
     'src/components/RoomModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/pages/ConfiguratorPage.jsx',
-  ], 'the exemption list is not the five files CLAUDE.md names');
+  ], 'the exemption list is not the files CLAUDE.md names');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
     assert.match(why, /\bT\d{2} F\d/, `${rel} does not say which turn and feature licensed it`);

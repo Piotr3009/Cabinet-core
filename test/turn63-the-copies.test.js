@@ -96,7 +96,13 @@ function importedNames(source) {
  * renders the rulebook's) and are proved by their hooks and imports instead.
  */
 const FLOOR = {
-  'LightingPanel.jsx': 24, 'DoorModal.jsx': 31, 'ElementProperties.jsx': 51, 'UnitWarnings.jsx': 0,
+  // T72 F2 · 51 → 50. ONE literal left this file and it is the one the owner
+  // struck out: *" — workshop number outstanding"*, the sentence the disabled
+  // PULL-OUT `<option>` carried. The type is two chips now — *"nie choose,
+  // tylko te 2 opcje"* — so there is no disabled option to explain. Every
+  // other label is where it was, and the fidelity assertion above still holds
+  // both sides to all fifty.
+  'LightingPanel.jsx': 24, 'DoorModal.jsx': 31, 'ElementProperties.jsx': 50, 'UnitWarnings.jsx': 0,
   'WatchLayoutModal.jsx': 5, 'RailModal.jsx': 6, 'UnitSizeModal.jsx': 3, 'AddItemsModal.jsx': 4,
   'AddItems.jsx': 26, 'FrontGapModal.jsx': 5, 'FrontGapWarnings.jsx': 0, 'JpullRunModal.jsx': 2,
   'DecorPickerModal.jsx': 5, 'DecorPicker.jsx': 6, 'ColourPicker.jsx': 3, 'VeneerPicker.jsx': 6,
@@ -325,7 +331,27 @@ test('T63 · every class a copy wears is a class the generated sheet defines', (
 // is still green — both sides match, and no map was widened to make them.
 const T67_RENAMED = ['src/components/AddItems.jsx', 'src/components/WatchLayoutModal.jsx'];
 
-test('T63, amended by T67 · not one byte of the other NINETEEN originals moved', () => {
+// ─── AMENDED BY T72 · THREE MORE ORIGINALS, LICENSED THE SAME WAY ──────────
+//
+// T72's fourteen points are the owner walking the RETAIL configurator, and
+// three of his answers can only be written in PRO's own file — because 1:1 =
+// COPY, a copy may not be edited, and PRO may not lose a control. Each is in
+// `turn59-f1-the-switch.test.js`'s `EXEMPT` with the owner's own words and its
+// NEW hash, and each was re-copied the same night by `scripts/t72-copy.mjs` —
+// which is why every fidelity assertion above is still green: both sides
+// match, and no map was widened to make them.
+//
+// The T67 pair is held to LABEL LINES only, because a rename is all it bought.
+// These three bought a CONTROL, so the rule asked of them is the one that
+// actually applies: the file must be named in that `EXEMPT` table, and the
+// count of licensed originals must be exactly the five this file knows about.
+const T72_LICENSED = [
+  'src/components/ElementProperties.jsx',
+  'src/components/DoorModal.jsx',
+  'src/components/JpullRunModal.jsx',
+];
+
+test('T72 · every PRO original that MOVED is licensed, and every licence is spent', () => {
   let base = null;
   for (const ref of ['origin/main', 'main']) {
     try {
@@ -334,8 +360,40 @@ test('T63, amended by T67 · not one byte of the other NINETEEN originals moved'
     } catch { /* next */ }
   }
   if (!base) return;
-  const unmoved = T63_COPIES.map((c) => c.pro).filter((p) => !T67_RENAMED.includes(p));
-  assert.equal(unmoved.length, 19, 'the T67 exemption grew beyond the two files it names');
+
+  // What actually moved, asked of git rather than of a list somebody keeps.
+  const moved = execFileSync('git', ['diff', '--name-only', base, '--', ...T63_COPIES.map((c) => c.pro)],
+    { cwd: ROOT, encoding: 'utf8' }).split('\n').filter(Boolean)
+    .filter((p) => !T67_RENAMED.includes(p));
+
+  const freeze = read('test/turn59-f1-the-switch.test.js');
+  const at = freeze.indexOf('const EXEMPT = {');
+  const exempt = freeze.slice(at, freeze.indexOf('\n};', at));
+  for (const rel of moved) {
+    assert.ok(exempt.includes(`'${rel}':`), `${rel} moved without a licence in the freeze table`);
+    assert.ok(T72_LICENSED.includes(rel), `${rel} moved and this test does not know about it`);
+  }
+
+  // …and the copy machine names exactly what this test names, so a PRO edit
+  // can never be made without its copy being re-made the same night.
+  const copy = read('scripts/t72-copy.mjs');
+  const named = [...copy.matchAll(/pro: '([^']+)'/g)].map((m) => m[1]);
+  assert.deepEqual(named.sort(), [...T72_LICENSED].sort(),
+    'scripts/t72-copy.mjs and this test disagree about what PRO edited');
+});
+
+test('T63, amended by T67 and T72 · not one byte of the other SIXTEEN originals moved', () => {
+  let base = null;
+  for (const ref of ['origin/main', 'main']) {
+    try {
+      execFileSync('git', ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], { cwd: ROOT });
+      base = ref; break;
+    } catch { /* next */ }
+  }
+  if (!base) return;
+  const licensed = [...T67_RENAMED, ...T72_LICENSED];
+  const unmoved = T63_COPIES.map((c) => c.pro).filter((p) => !licensed.includes(p));
+  assert.equal(unmoved.length, 16, 'the exemption grew beyond the five files it names');
   const diff = execFileSync('git', ['diff', '--stat', base, '--', ...unmoved],
     { cwd: ROOT, encoding: 'utf8' }).trim();
   assert.equal(diff, '', `a PRO original moved to make the copy work:\n${diff}`);

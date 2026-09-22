@@ -215,8 +215,14 @@ test('F3 · the docked window is placed by the PANEL, not by an anchor', () => {
 
 test('F3 · the flag is ONE constant, and it is off for a client', () => {
   assert.equal(RETAIL_SHOW_WORKSHOP_TOOLS, false);
+  // T72 F2 · the flag still answers `[]` first and it is still the only thing
+  // that can turn the list off entirely; what follows it is the per-kind
+  // exception F2 licensed — `setback` is a client's question on a shelf and a
+  // divider. Turn the flag on and a joiner gets PRO's panel entire.
   assert.match(read('src/retail/design/detail/docked.jsx'),
-    /RETAIL_SHOW_WORKSHOP_TOOLS \? \[\] : \[\.\.\.WORKSHOP_FIELDS\]/);
+    /RETAIL_SHOW_WORKSHOP_TOOLS\s*\n?\s*\? \[\]/);
+  assert.match(read('src/retail/design/detail/docked.jsx'),
+    /: WORKSHOP_FIELDS\.filter\(\(f\) => !\(f === 'setback' && SETBACK_IS_THE_CLIENT_S\.includes\(kind\)\)\)/);
   assert.match(read('src/retail/RetailApp.jsx'),
     /data-workshop-tools=\{RETAIL_SHOW_WORKSHOP_TOOLS \? 'yes' : 'no'\}/);
 });

@@ -32,11 +32,15 @@ const SELECT = /setTimeout\(\(\) => \{ fieldRef\.current\?\.focus\(\); fieldRef\
 
 test('T74 F3 · retail: the field on the label opens focused, its whole number selected', () => {
   const src = uncomment(read(RETAIL));
-  assert.match(src, SELECT, 'not T73 F3\'s focus-then-select');
-  // …every time the field opens, since it opens at each click.
-  const effect = src.slice(src.indexOf('if (!field) return undefined;\n    const t = setTimeout'));
-  assert.ok(effect.length > 0 && /\}, \[field\]\);/.test(effect.slice(0, 260)),
-    'the select does not follow the field when it opens');
+  // T73 F3's pattern (a ref, `focus()` then `select()`), run in the commit
+  // that mounts the field, every time it opens: the F4 probe found a timer's
+  // focus could come after the first typed digits on a busy page.
+  assert.match(src, /useLayoutEffect\(\(\) => \{\s*if \(!field\) return;\s*fieldRef\.current\?\.focus\(\);\s*fieldRef\.current\?\.select\(\);\s*\}, \[field\]\);/,
+    'the field is not focused and selected in the commit that opens it');
+  // …and the opening click takes no default, so its mouse-down cannot pull
+  // the focus back out to the page.
+  const down = src.slice(src.indexOf('const onCanvasDown'), src.indexOf('const letGo'));
+  assert.match(down, /e\.preventDefault\(\);/);
   assert.match(src, /onFocus=\{\(e\) => e\.currentTarget\.select\(\)\}/);
   // …and the number in it is the length the mouse drew (the 3437).
   assert.match(src, /const drawn = Math\.max\(0, Math\.round\(Math\.abs\(d\.dx \? at\.x - pen\.x : at\.y - pen\.y\)\)\);/);
@@ -79,4 +83,5 @@ test('T74 F3 · PRO: the same focus and select, the same refusal, the same Escap
 
 test('T74 F3 · one pattern: the field\'s select is SpacingChain\'s, not a second one', () => {
   assert.match(read('src/3d/SpacingChain.jsx'), SELECT);
+  assert.match(read('src/3d/SpacingChain.jsx'), /fieldRef\.current\?\.focus\(\); fieldRef\.current\?\.select\(\);/);
 });

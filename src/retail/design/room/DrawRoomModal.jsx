@@ -1,5 +1,5 @@
 import {
-  useCallback, useEffect, useMemo, useRef, useState,
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
 import Modal from './Modal.jsx';
 import WallElevationModal from './WallElevationModal.jsx';
@@ -192,6 +192,10 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
     if (catching && !typed.trim()) { close(); return; }
     const r = svgRef.current?.getBoundingClientRect();
     if (!r || !pen) return;
+    // T74 F3 · the click's own mouse-down would move the focus to the page
+    // after the field has taken it; a pointer-down with no default sends no
+    // mouse-down, so the focus stays in the field that just opened.
+    e.preventDefault();
     const px = e.clientX - r.left;
     const py = e.clientY - r.top;
     const at = { x: view.mx(px), y: view.my(py) };
@@ -306,10 +310,18 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   // razu ma focus i całą wartość zaznaczoną (np. 3437, piszę 3500 bez
   // myszki)."*  The focus, then the WHOLE number selected: T73 F3's pattern
   // (`3d/SpacingChain.jsx`, a ref, `focus()` then `select()`), not a second one.
-  useEffect(() => {
-    if (!field) return undefined;
-    const t = setTimeout(() => { fieldRef.current?.focus(); fieldRef.current?.select(); }, 0);
-    return () => clearTimeout(t);
+  //
+  // It lands BEFORE the first key, not a tick later. The F4 probe typed 3500
+  // over a fresh field and, once in three runs, the field committed the drawn
+  // number instead: on a busy page the browser runs a queued key before a
+  // timer, so a focus put off by `setTimeout` came after the digits. The field
+  // is focused in the same commit that mounts it, and the click that opens it
+  // takes no default (below), so the pointer's own mouse-down cannot move the
+  // focus back out to the page.
+  useLayoutEffect(() => {
+    if (!field) return;
+    fieldRef.current?.focus();
+    fieldRef.current?.select();
   }, [field]);
 
   // …and Escape reaches the drawing even when the hand has left the field.

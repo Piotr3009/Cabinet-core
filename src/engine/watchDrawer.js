@@ -174,12 +174,14 @@ export function watchLayoutOf(item) {
 // The owner, 23.09.2026, testing T73: *"red raczej zrób kolor wine red, nie
 // krzykliwa czerwień."*  The entry keeps its id `red`, so every saved job
 // opens with the felt it was given; its LABEL is the wine the owner named,
-// which is what the BOM line and both windows read, and its hex is a wine
-// (the owner's start, #722F37: it reads as wine at the room camera, frame
-// `verify/t74/f02-wine-felt.png`).
+// which is what the BOM line and both windows read, and its hex is a wine.
+// The owner's start, #722F37, was measured in the room light on the open tray
+// (`verify/t74/f02-wine-felt-722f37-before.png`): the light lifts it to
+// rgb(164, 72, 81), lightness 46 %, a raspberry, not a wine. So, as the order
+// says, darkened: #501D23 (frame `verify/t74/f02-wine-felt.png`).
 export const WATCH_FELT_COLOURS = Object.freeze([
   { id: 'dark-green', label: 'Dark green', hex: '#1f3b2c' },
-  { id: 'red', label: 'Wine red', hex: '#722F37' },
+  { id: 'red', label: 'Wine red', hex: '#501D23' },
   { id: 'brown', label: 'Brown', hex: '#4b3524' },
   { id: 'black', label: 'Black', hex: '#141414' },
 ]);

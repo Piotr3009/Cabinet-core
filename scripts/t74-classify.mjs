@@ -133,7 +133,7 @@ export const LICENSED = {
     gates: ['wallUnit', 'freePanel'],
   },
   'src/engine/watchDrawer.js': {
-    why: 'F2 · the felt `red` entry reads "Wine red" at #722F37: a NAME on the watch drawer\'s BOM line and '
+    why: 'F2 · the felt `red` entry reads "Wine red" at #501D23 (the owner\'s #722F37 read as a raspberry in the room light, darkened): a NAME on the watch drawer\'s BOM line and '
       + 'a colour, no board. F6 · `secondShoeItem`, the one question the UI and the store ask (the cut '
       + 'path never calls it)',
     gates: ['watch'],

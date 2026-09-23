@@ -44,6 +44,12 @@ test('T74 F2 · the hex is a wine: dark, blue-leaning, never the loud red', () =
   assert.ok(r > g && r > b, 'it is not a red at all');
   assert.ok(b >= g, 'no blue in it: a brick, not a wine');
   assert.notEqual(red.hex.toLowerCase(), '#7d1f22', 'the loud red of T72 is still here');
+  // CLAUDE.md: *"start at #722F37; the frame of the open tray in the room
+  // light must read as wine, not as red: darken if it does not."*  The walk
+  // read #722F37 on the open tray at rgb(164, 72, 81), lightness 46 %: a
+  // raspberry. So it is darker than the start, every channel.
+  const start = rgb('#722F37');
+  assert.ok(r < start[0] && g < start[1] && b < start[2], `${red.hex} is not darker than the owner's start`);
 });
 
 test('T74 F2 · the BOM line reads "Wine red felt base"', () => {

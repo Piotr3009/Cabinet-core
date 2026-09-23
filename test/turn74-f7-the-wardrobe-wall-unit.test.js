@@ -193,7 +193,9 @@ test('T74 F7 · a top box stands on a wardrobe, never on the wall unit hung besi
   const w = aWardrobe();
   const { id } = S().addUnit('WARDROBE_WALL', { near: w, side: 'right' });
   const box = S().addUnit('WARDROBE_TOP', { near: id });
-  if (box.id) assert.notEqual(unit(box.id).params.rides_on, id, 'a top box rides on the wall unit');
+  assert.ok(box.id, box.error || 'the top box was refused');
+  assert.notEqual(unit(box.id).params.rides_on, id, 'a top box rides on the wall unit');
+  assert.equal(unit(box.id).params.rides_on, w, 'the top box does not stand on the wardrobe');
 });
 
 // ═══ 6 · WHERE ADDING LIVES: RETAIL EXTRAS AND THE PRO LIBRARY ═══════════════

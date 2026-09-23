@@ -48,7 +48,10 @@ test('the ghost reads the ONE ceilingAt, imported — no second chain', () => {
 
 test('it is a HELD signal — it appears on pointerdown and is gone on release', () => {
   assert.match(view, /const \[dragging, setDragging\] = useState\(false\);/);
-  assert.match(view, /drag\.current = \{ offset: alongMm\(hit\) - unit\.position\.x_mm \};\n\s*setDragging\(true\);/);
+  // T74 F13 AMENDED (23.09.2026): the grab also notes where the hand went
+  // down and whether it has travelled (`x0`, `y0`, `moved`), so only a drop
+  // that travelled takes a free panel's snap proposal. The signal is the same.
+  assert.match(view, /drag\.current = \{ offset: alongMm\(hit\) - unit\.position\.x_mm, x0: e\.clientX, y0: e\.clientY, moved: false \};\n\s*setDragging\(true\);/);
   assert.match(view, /drag\.current = null;\n\s*setDragging\(false\);/);
   // …and nothing is drawn at all when it is not being held.
   assert.match(view, /if \(!dragging\) return null;/);

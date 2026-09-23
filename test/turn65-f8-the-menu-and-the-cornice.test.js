@@ -40,7 +40,8 @@ test('F8 · ContextMenu is COPIED, not re-written — same line count, same labe
   assert.equal(lines(retail), lines(pro), 'the copy is not the same shape');
   // It is in the manifest, so the fidelity test and the classifier both see it.
   assert.ok(isCopy('src/retail/design/detail/ContextEdits.jsx'), 'the copy is not in the manifest');
-  assert.equal(ALL_COPIES.length, 26);
+  // AMENDED BY T74 F13: + PRO's piece editor, copied for the free panel's 2klik.
+  assert.equal(ALL_COPIES.length, 27);
   // The four the owner could not find are not strings in this file at all —
   // they are rows in the SHARED action table, and the copy reaches the same
   // one PRO reaches. That is what makes it a copy rather than a lookalike.

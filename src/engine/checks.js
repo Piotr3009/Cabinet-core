@@ -187,6 +187,13 @@ export const CHECKS = Object.freeze([
   // Both name the UNIT and the LEAF, because "a door somewhere is short of a
   // handle" is not a sentence anybody can act on.
   { n: 25, level: 'red', label: 'J-pull run does not fit the leaf' },
+  // ─── TURN 74 (CLAUDE.md F10): 150 MM FROM THE APEX ───────────────────────
+  //
+  // *"ZAWIASY NA SKOSIE: minimum 150 mm od wierzchołka trójkąta skosu
+  // (inaczej nie da się wkręcić śrubokrętem)."*  A door whose hinge edge the
+  // slope cuts cannot hold its hinges 150 mm clear of the apex at the house
+  // spacing: REFUSED in words, never squashed. RED: a person decides.
+  { n: 26, level: 'red', label: 'Hinges too near the slope\'s apex' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -999,6 +1006,39 @@ export function runChecks({
         subject: { unitId: entry.unit?.id || null, panelId: pnl.id, editor: 'element' },
         hingesWas: Number(h.was),
         hingesNow: Number(h.now),
+      }));
+    }
+  }
+
+  // ── #26 no hinge within 150 mm of the slope's apex (T74 F10) ────────────
+  //
+  // The engine re-ran the ladder under the apex and says on the piece what the
+  // edge could hold (`meta.slopeCut.hingeApex`), so this rule reads that record
+  // rather than a second opinion. A door refused there is RED, per door: its
+  // hinges were not squeezed to fit, so it hangs on fewer than its ladder asked,
+  // or a hand-drilled hinge stands inside the 150.
+  for (const entry of entries) {
+    for (const pnl of entry.result?.panels || []) {
+      const a = pnl?.meta?.slopeCut?.hingeApex;
+      if (!a?.refused) continue;
+      const num = entry.unit?.params?.unit_num || entry.result?.unitNum || entry.unit?.id || '';
+      const words = a.hand
+        ? `a hinge drilled by hand stands ${Math.round(a.edge - Math.max(...a.inside))} mm from the slope's apex; `
+          + `no hinge may stand closer than ${a.min} mm, a screwdriver cannot reach it. Move it down.`
+        : `its hinge edge is ${Math.round(a.edge)} mm and no hinge may stand within ${a.min} mm of the slope's apex, `
+          + `so it holds ${a.now} of the ${a.asked} hinges its ladder asks for at the house spacing. `
+          + 'Nothing was squeezed to fit: shorten the door or hang it another way.';
+      out.push(finding(26, 'red', {
+        unitId: entry.unit?.id || null,
+        unitNum: num,
+        panelId: pnl.id,
+        message: `${num} ${pnl.id}: ${words}`,
+        subject: {
+          unitId: entry.unit?.id || null, panelId: pnl.id, editor: 'element', section: 'hinges',
+        },
+        apexMinMm: a.min,
+        hingesAsked: a.asked,
+        hingesNow: a.now,
       }));
     }
   }

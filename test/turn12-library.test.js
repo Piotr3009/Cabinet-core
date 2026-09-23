@@ -73,6 +73,8 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 31 (CLAUDE.md F9): WUD_HOOD — the KIT_WUD envelope with its bottom
     // open, the extractor a BOM line and a GLB slot, and not one fixing hole.
     'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
+    // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
+    'FREE_PANEL',
   ]);
 });
 
@@ -84,7 +86,8 @@ test('a group says how much of it can be placed today', () => {
   // Turn 31 (CLAUDE.md F9): three of four — the hood joins them.
   assert.deepEqual(groupCounts(wall, P), { total: 4, enabled: 3 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
-  assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 0 });
+  // T74 F13 · one of the two can be placed now: the free-standing panel.
+  assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 1 });
 });
 
 test('the drawer unit is ONE expandable entry with four splits behind it', () => {
@@ -113,7 +116,8 @@ test('the Kitchen category carries the list, and the others are untouched', () =
   assert.equal(getCategory('sets').saved, true);
   assert.equal(getCategory('media').soon, true);
   // T36 F7: the wardrobe category gained the Top box, and nothing else moved.
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP']);
+  // T74 F7: …and the wardrobe's wall unit, a third kit of its own.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);
   // Nothing was lost in the restructure: every kit is still reachable.
   const reachable = new Set(UNIT_CATEGORIES.flatMap((c) => c.types));
   for (const id of UNIT_TYPE_ORDER) assert.ok(reachable.has(id), `${id} is in no category`);
@@ -148,7 +152,9 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // carcass and door, with the shaker frame taken through and a pane
     // ordered for the hole.
     'l-shape-wall',
-    'free-standing-panels', 'cornice-pelmet',
+    // T74 F13 · 'free-standing-panels' left this list: its owner in the model
+    // is a kit of its own, `FREE_PANEL`, one board in the room.
+    'cornice-pelmet',
   ]);
   for (const entry of soon) {
     const state = resolveEntry(entry, P);

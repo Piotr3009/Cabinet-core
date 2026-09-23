@@ -73,6 +73,39 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
+  // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
+  // with the owner's words from this file and re-frozen at its new hash in the
+  // same commit."*  Overturnable with one word each: the engine, the goldens
+  // and the cut path are untouched by every entry below.
+  'src/components/DrawRoomModal.jsx':
+    'T74 F3 · the Wall length field opens with the focus and its whole number '
+    + 'selected (T73 F3\'s ref, `focus()` then `select()`), a refused number stays '
+    + 'selected, and Escape cancels a typed number before it closes the window. '
+    + '*"pole ... od razu ma focus i całą wartość zaznaczoną (np. 3437, piszę 3500 '
+    + 'bez myszki) ... Escape anuluje."* T74 F4 · the first save of a drawing is a NEW '
+    + 'room: `setRoom(..., { replace: true })` clears the old room\'s openings, boxes and '
+    + 'wall elements. *"Przy tworzeniu nowego pokoju po starym jeden nachodzi na drugi '
+    + 'zamiast resetu."*',
+  'src/components/UnitSizeModal.jsx':
+    'T74 F7 · the wardrobe wall unit\'s DEPTH is a figure like its width and height, and '
+    + 'the size window it opens carries a Depth field and BACK | FRONT beside it (the store\'s '
+    + '`alignUnitDepth`, one writer). No other type gains a field. The clicked figure\'s '
+    + 'field is asked for the caret on a short timer until it has it (the walk found one '
+    + 'frame was not always enough). *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość '
+    + 'wyrównana do tyłu albo do frontu."*',
+  'src/components/ElementProperties.jsx':
+    'T74 F6 · the SECOND shoe drawer\'s own height is shown, not edited: it is set by its '
+    + 'MOUNTING HEIGHT (its drag and its clickable distance, one clamp). *"Regulacja = '
+    + 'WYSOKOŚĆ MONTAŻU, nie wysokość szuflady."* T74 F13 · the FREE PANEL\'s two rows, '
+    + 'how it stands (along or across the wall; vertical, horizontal or any angle) and its '
+    + 'board (length, width, thickness), each through `updateUnitParams`. *"ustawia '
+    + 'pion/poziom/każdą orientację, długość, grubość."* Before that, T72 F2 · `shelf-type` becomes '
+    + 'two chips and SET BACK FROM THE FRONT gains `20 mm` | `Flush` beside its field; F3 · '
+    + 'CENTER ALL at the bottom of the shelf menu; F6 · the board picker carries '
+    + '`data-board-thickness` so the room\'s sheet can name what it hides instead of taking '
+    + 'every `<select>` in the dock; F12 · the divider reaches the same setback row. *"nie '
+    + 'choose, tylko te 2 opcje."*',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -86,12 +119,6 @@ const EXEMPT = {
   // wpisywać liczby"*). Each is re-frozen at its new hash below and re-copied
   // the same night by `scripts/t72-copy.mjs`. Overturnable with one word: the
   // engine, the goldens and the cut path are untouched by every one of them.
-  'src/components/ElementProperties.jsx':
-    'T72 F2 · `shelf-type` becomes two chips and SET BACK FROM THE FRONT gains `20 mm` '
-    + '| `Flush` beside its field; F3 · CENTER ALL at the bottom of the shelf menu; '
-    + 'F6 · the board picker carries `data-board-thickness` so the room\'s sheet can name '
-    + 'what it hides instead of taking every `<select>` in the dock; '
-    + 'F12 · the divider reaches the same setback row. *"nie choose, tylko te 2 opcje."*',
   'src/components/JpullRunModal.jsx':
     'T72 F4 · the run length is a NUMBER FIELD with the engine\'s own min and max beside '
     + 'it; the slider is gone and T57\'s *"pasek albo pokrętło"* is set aside for this one '
@@ -172,11 +199,12 @@ const FROZEN = {
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
   'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
-  'src/components/DrawRoomModal.jsx': 'bbf2021f049146f6af31f1094b61a284a8d351a36361c3d549fbb0cb1372366b',
+  // T74 F3 + F4 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/DrawRoomModal.jsx': 'c5d7fe345511115a19ac488d78c55458bc373bfdc45ed992cde951c3b3c9c00c',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/ElementProperties.jsx': '8df224e7c5c8501f7440fdd34fab1a48e404a1022d13375753f40aa3464598ad',
+  'src/components/ElementProperties.jsx': '12cbeb62e1dc609f8b1a6013e891ec8abea4a2302bae5fed0094371afe68cee3',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',
@@ -211,7 +239,7 @@ const FROZEN = {
   'src/components/StartScreen.jsx': '6a6de6d1667872a45d18bb5b8e9e42d3d4522ac99f8ef2d1e9a32ce54ab363aa',
   'src/components/TopBar.jsx': '68fe1ff109ad1198a365ceae380fdead183ccfefb6eb579f98496a7308e1b681',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
-  'src/components/UnitSizeModal.jsx': '558973450f57e2f9b70324c41d9a8cea710a2668425b5b3dad56f39c8d09b55d',
+  'src/components/UnitSizeModal.jsx': '019529723e5844ed8796b7a0c870cc5f8d4b8b1c1869f71d37cc939695fb5054',
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
   'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
@@ -400,10 +428,12 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
 test('T67 · the exemption names its files, each re-frozen, each with its reason', () => {
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
+    'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
     'src/components/JpullRunModal.jsx',
     'src/components/RoomModal.jsx',
+    'src/components/UnitSizeModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/pages/ConfiguratorPage.jsx',
   ], 'the exemption list is not the files CLAUDE.md names');

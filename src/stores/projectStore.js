@@ -22,8 +22,11 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, isFreePanel, isWardrobeWallUnit, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
+// T74 F13 · the free panel's own arithmetic: a size read as meant, the board
+// kept one with its box, and where a drop would be caught.
+import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 // T37-F4a: `bandSegmentAt`/`bandSegments` — a split divider is an END of the
@@ -121,7 +124,7 @@ import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFi
 // Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
 import {
   askedSides, autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays,
-  isAutoEndPanel, withAsked, withDeclined,
+  inPlayWardrobe, isAutoEndPanel, withAsked, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, corniceRunNotice,
@@ -129,13 +132,13 @@ import {
 } from '../engine/cornice.js';
 // Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
 import {
-  isLeftSide, minRiderWidth, riddenList, riderFreeWidth, riderSlot, settleRiders,
+  hostsRidersOf, isLeftSide, minRiderWidth, riddenList, riderFreeWidth, riderSlot, settleRiders,
 } from '../engine/topBox.js';
 // T53 (CLAUDE.md F8): the watch drawer's own entry, its four layouts, its
 // finish and the shelf it puts its glass in.
 import {
   DEFAULT_WATCH_LAYOUT, WATCH_FELT_COLOURS, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
-  isShelfBoard, watchDrawerFixedHeight,
+  isShelfBoard, secondShoeItem, watchDrawerFixedHeight,
 } from '../engine/watchDrawer.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
@@ -349,6 +352,10 @@ function newUnit(typeId, profile, index, design) {
       ...(takesPlinth(type.id, profile) ? { plinth: true } : {}),
       sections: [{ width_mm: params.width, items }],
       materials: {},
+      // T74 F13 · a free panel's box is its board's: it is cut from the job's
+      // board (`board_t` above), so its box is worked out at that thickness.
+      ...(type.freePanel ? freePanelPatch({ ...params, board_t: projectBoardThickness(design, profile) },
+        { board_t: projectBoardThickness(design, profile) }, profile) : {}),
     },
   };
 }
@@ -440,7 +447,9 @@ function projectHeightParams(type, design, profile) {
   const group = type.heightGroup ?? null;
   return {
     ...(group ? { height: heights[group], height_custom: false } : { height_custom: false }),
-    ...(type.mount === 'wall' ? { mount_height: heights.wallMount } : {}),
+    // T74 F13 · …but a free panel hangs at the height it is given (its own
+    // default, the floor): it is not a wall unit of the project's.
+    ...(type.mount === 'wall' && !type.freePanel ? { mount_height: heights.wallMount } : {}),
     // ─── Turn 22 (CLAUDE.md F4.2) ───
     // A plinth-bearing type gets the project's toe kick whether or not it has
     // legs. The D/W panel has none — the machine stands where they would be —
@@ -1299,14 +1308,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * can create an overlap with nobody dragging anything, so it is blocked at
    * the setter rather than repaired afterwards (CLAUDE.md phase 3).
    *
+   * ─── T74 F4 · A NEW ROOM REPLACES THE OLD ONE ─────────────────────────────
+   *
+   * The owner, 23.09.2026: *"Przy tworzeniu nowego pokoju po starym jeden
+   * nachodzi na drugi zamiast resetu."*  The probe (`verify/t74/f04-probe.md`)
+   * convicted this setter: it MERGES, and the walls' elements live beside the
+   * room (`project.wallSlopes`), so a drawn room replaced the outline and kept
+   * every window, door, box, slope, recess and chimney of the room before it.
+   *
+   * `{ replace: true }` is the NEW ROOM: the old room's geometry goes (its
+   * openings, its boxes and every wall element) in the same write that puts
+   * the new outline in, and only when the guard lets the new outline stand, so
+   * a refused room clears nothing. The room's height and its returns are kept
+   * (the drawing asks for neither). Cabinets are NOT touched: one standing
+   * outside the new room is refused by the guard below, in its own words, as
+   * it always was. Without the option this is the merge it always was, which
+   * is what an edit of THIS room (a wall's width, a window) needs.
+   *
+   * @param {object} patch
+   * @param {{replace?:boolean}} [opts]
    * @returns {{ok:boolean, message:string|null, blocking:Array}}
    */
-  setRoom: (patch) => {
+  setRoom: (patch, opts = {}) => {
     const s = get();
-    const next = migrateRoom({ ...s.project.room, ...patch });
+    const fresh = opts?.replace === true;
+    const next = migrateRoom(fresh
+      ? {
+        ...s.project.room, ...patch, openings: [], boxes: [],
+      }
+      : { ...s.project.room, ...patch });
     const verdict = roomChangeGuard(next, s.units);
     if (!verdict.ok) return verdict;
-    set((st) => ({ project: { ...st.project, room: next } }));
+    set((st) => ({ project: { ...st.project, room: next, ...(fresh ? { wallSlopes: [] } : {}) } }));
     // A lower ceiling shortens every top infill; a longer wall opens a gap.
     get().refreshAutoParts();
     return verdict;
@@ -2302,6 +2335,27 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         const woodAt = (edge) => (result.panels || []).find((p) => p.part === 'VPART'
           && Number.isFinite(Number(p.meta?.x_mm))
           && edge >= Number(p.meta.x_mm) - tol && edge <= Number(p.meta.x_mm) + G + tol);
+        // ─── T74 F11 · LEAVING THE CORNER UNDOES WHAT PUSHING IN DID ────────
+        //
+        // The owner, 23.09.2026: *"dosunięcie szafy do ściany narożnej zmienia
+        // orientację drzwi i dokłada panel (perfekcyjnie), ale po odsunięciu
+        // nic nie wraca: drzwi nie wracają na oryginalną stronę, panel/divider
+        // nie znika. Brak odwrócenia operacji."*  The probe
+        // (`verify/t74/f11-probe.md`, a real drag in and out): this sweep kept
+        // no record of what it did and had no way back. It keeps one now,
+        // `params.slope_door_auto`, the end-panel automat's pattern (it marks
+        // its own work): the doors as they were, the partition it added (or
+        // the setback of the one it borrowed), and the bay doors it wrote. Once
+        // no leaf of this unit is forced by the slope any more (pulled out of
+        // it, or the slope gone), the same sweep undoes EXACTLY that, and only
+        // what still is what it wrote: a partition moved by hand, or doors a
+        // person changed since, are the client's and stay. The interior the
+        // flip cleared is not brought back (a removal is not a loan, T58 F4).
+        const record = unit.params.slope_door_auto || null;
+        if (record && leaves.length === 0) {
+          runBatch(() => get().undoSlopeDoorFlip(unit.id, record));
+          continue;
+        }
         const flipped = leaves.find((leaf) => {
           const edge = leaf.meta.hinge === 'R' ? leaf.box.x + leaf.box.w : leaf.box.x;
           // A hinge edge on the carcass side has its wood — never a trigger.
@@ -2352,6 +2406,32 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
               hinge: byX[i]?.meta?.hinge || hand,
             })));
           }
+          // 4. T74 F11 · WHAT THE AUTOMAT DID, WRITTEN DOWN. The state BEFORE
+          //    is read off the snapshot this pass began from, and only on the
+          //    first pass of a push: the re-entered passes that sync the hands
+          //    update what was WRITTEN and never what was there before.
+          const now = get().units.find((u2) => u2.id === unit.id);
+          const item = pid ? (now?.params.sections?.[0]?.items || []).find((i) => i.id === pid) : null;
+          const wrote = now?.params.bay_doors ?? null;
+          const next = record
+            ? { ...record, wrote }
+            : {
+              doors: 'doors' in unit.params ? (unit.params.doors ?? null) : undefined,
+              hinge: 'hinge' in unit.params ? (unit.params.hinge ?? null) : undefined,
+              bay_doors: 'bay_doors' in unit.params ? (unit.params.bay_doors ?? null) : undefined,
+              partition: item ? {
+                id: item.id,
+                added: !standing,
+                x_mm: Number(item.x_mm),
+                front_mm: standing ? (standing.front_mm ?? null) : null,
+              } : null,
+              wrote,
+            };
+          set((st) => ({
+            units: st.units.map((u2) => (u2.id === unit.id
+              ? { ...u2, params: { ...u2.params, slope_door_auto: next } }
+              : u2)),
+          }));
         });
         // The notify belongs to the TRANSITION — the pass that inserted the
         // partition or cleared the interior — never to the hand-sync pass.
@@ -2365,6 +2445,73 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     } finally {
       slopeDoorSweepDepth -= 1;
     }
+  },
+
+  /**
+   * ─── T74 F11 · THE WAY BACK OUT OF THE CORNER ─────────────────────────────
+   *
+   * Undo what `settleSlopeDoorPartitions` wrote down, and nothing else, then
+   * forget the record. Each part is undone only while it still is what the
+   * automat left: its own partition where it put it (removed; a borrowed
+   * one gets its setback back), and the bay doors exactly as it wrote them
+   * (then the doors, the hand and the bay doors as they were before the push).
+   * Anything a person changed since stands.
+   */
+  undoSlopeDoorFlip: (unitId, record) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !record) return false;
+    const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    let undone = false;
+    // Are the doors still the bay doors the automat wrote? If a person has
+    // changed them, they are hung on that partition by the person's choice,
+    // and neither the doors nor the partition under them is the automat's.
+    const doorsAsWritten = same(unit.params.bay_doors, record.wrote);
+    // 1. The partition, where the automat left it.
+    const part = record.partition;
+    const item = part ? (unit.params.sections?.[0]?.items || []).find((i) => i.id === part.id) : null;
+    if (doorsAsWritten && item && part.added && Math.abs(Number(item.x_mm) - Number(part.x_mm)) < 0.5) {
+      get().removeItem(unitId, item.id);
+      undone = true;
+    } else if (doorsAsWritten && item && !part.added && Number(item.front_mm ?? 0) === 0) {
+      // A borrowed partition gets back the setback it stood at, and a null
+      // one is a setback NOT SET (the engine's `setbackOf`: the house
+      // default), which the automat's 0 had overwritten (the audit: a
+      // borrowed divider stayed flush after the pull).
+      get().updateItem(unitId, item.id, { front_mm: part.front_mm ?? null });
+      undone = true;
+    }
+    // 2. The doors, as they were before the push.
+    const after = get().units.find((u) => u.id === unitId);
+    if (after && doorsAsWritten) {
+      set((st) => ({
+        units: st.units.map((u) => {
+          if (u.id !== unitId) return u;
+          const params = { ...u.params };
+          for (const key of ['doors', 'hinge', 'bay_doors']) {
+            if (record[key] === undefined) delete params[key];
+            else params[key] = record[key];
+          }
+          return { ...u, params };
+        }),
+      }));
+      undone = true;
+    }
+    // 3. The record goes either way: what is left is the client's.
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const { slope_door_auto: _gone, ...params } = u.params;
+        return { ...u, params };
+      }),
+    }));
+    if (undone) {
+      get().healFrontGaps();
+      useUiStore.getState().notify(
+        'Out of the slope: the doors hang as they did, and the door partition the slope added is gone.',
+        'ok',
+      );
+    }
+    return undone;
   },
 
   /**
@@ -2655,7 +2802,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   addBottomMask: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
-    if (!unit || getUnitType(unit.type).mount !== 'wall') return false;
+    // T74 F13 · a free panel is one board: nothing is fitted under it.
+    if (!unit || getUnitType(unit.type).mount !== 'wall' || getUnitType(unit.type).freePanel) return false;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, bottom_mask: true } } : u)),
     }));
@@ -2984,6 +3132,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { id: null, error: 'No unit selected.' };
+    // T74 F13 · a free panel is one board, not a carcass: no end panel is
+    // fitted to it (a board beside it is another free panel).
+    if (getUnitType(unit.type).freePanel) {
+      return { id: null, error: 'A free panel is one board: put another panel beside it instead.' };
+    }
     const design = migrateDesign(s.project.design);
     const wanted = side === 'R' ? 'R' : 'L';
     const existing = unit.params.end_panels || [];
@@ -3983,6 +4136,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // adding OR by dragging (a unit butted against its neighbour has nowhere to
     // go, and a clamp that let it through would be a worse bug).
     let beside = near ? state.units.find((u) => u.id === near) : null;
+    // ─── T74 F7 · THE WARDROBE'S WALL UNIT IS BORN MATCHED ──────────────────
+    // *"Domyślnie: góra równo z szafą, głębokość = głębokość szafy."*  Beside a
+    // wardrobe standing on the floor it takes THAT wardrobe's depth, and its
+    // gap off the wall where the wardrobe has one of its own, so the two backs
+    // are on one line (depth aligned to the BACK, `alignUnitDepth`'s first
+    // answer). Its top is lined up with that wardrobe's below, at the mount.
+    // A depth the caller states wins, as every template param does.
+    const hangsBeside = isWardrobeWallUnit(typeId) && beside && inPlayWardrobe(beside) ? beside : null;
+    if (hangsBeside && params?.depth == null) {
+      unit.params.depth = Number(hangsBeside.params.depth) || unit.params.depth;
+      if (hangsBeside.params.wall_gap != null) unit.params.wall_gap = hangsBeside.params.wall_gap;
+    }
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -4023,8 +4188,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       : null;
     const riderHost = riderOf
       ? [besideHost, beside, ...[...state.units].reverse()].find((u) => u
-        && getUnitType(u.type).family === riderOf
-        && !getUnitType(u.type).ridesOn)
+        && hostsRidersOf(getUnitType(u.type), riderOf))
       : null;
     if (riderHost) {
       unit.params.rides_on = riderHost.id;
@@ -4127,7 +4291,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // step; and it runs only where a SIDE was named, which is exactly the
     // gesture the owner's sentence is about (the + on a cabinet's left or
     // right). A wall-cursor add beside nothing has no junction to close.
-    if (beside && side) {
+    // T74 F7 · …and it is WARDROBE TO WARDROBE: beside a wardrobe, only a
+    // wardrobe standing on the floor makes its panel go. A wall unit (or a top
+    // box) beside it leaves the wardrobe's side exactly as it was: *"Bok szafy
+    // przy wall unit ZOSTAJE."*  Beside anything else the law is as T72 wrote it.
+    if (beside && side && (!inPlayWardrobe(beside) || inPlayWardrobe(unit))) {
       // …and the SPANS are re-read, because a panel that leaves changes both
       // the neighbour the new cabinet is placed beside and the obstacle it is
       // clamped against. `state` was read at the top of this action and is one
@@ -4156,7 +4324,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         wallMargin: wallMarginOf(state, unit),
         others: [
           ...state.units
-            .filter((u) => (u.position.wall ?? 0) === wall.index && obstructs(unit, u, profile))
+            .filter((u) => (u.position.wall ?? 0) === wall.index && (obstructs(unit, u, profile)
+              // T74 F13 · free panels do not hold each other off, but a new
+              // one asked to go BESIDE one still goes beside it, not on it.
+              || (onThisWall && isFreePanel(unit.type) && u.id === beside.id)))
             .map(unitSpan),
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
@@ -4183,7 +4354,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     //
     // It is a STARTING POINT and says so: `mount_height` stays an ordinary
     // editable field, and the unit can be hung wherever the window allows.
-    const aligned = alignedMountFor(state, unit, placed);
+    // T74 F7 · the wardrobe's wall unit lines up with THE wardrobe it was put
+    // beside, not merely the nearest tall one.
+    const aligned = alignedMountFor(state, unit, placed, hangsBeside);
     if (aligned != null) unit.params.mount_height = aligned;
     // T36 F7: a TOP BOX settles on its main the moment it is placed — same
     // wall, same x, same depth, hung at the main's own top.
@@ -4544,6 +4717,103 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return { ok: true };
   }),
 
+  /**
+   * ─── T74 F13 · THE SNAP, AS A PROPOSAL ─────────────────────────────────────
+   *
+   * The owner: *"Przyciąganie (snap) jako PROPOZYCJA, nie na siłę, zawsze do
+   * odrzucenia."*  Where the free panel, standing where it stands, WOULD be
+   * caught: the nearest edge of anything else on its wall within the unit
+   * magnet (`editor.unitMagnet`) of either of its own edges. Nothing moves
+   * here. The drag shows the line; the drop takes it (`acceptFreePanelSnap`)
+   * unless the hand refuses it.
+   *
+   * @returns {{left:number, at:number, edge:'left'|'right', label:string|null}|null}
+   */
+  freePanelProposal: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isFreePanel(unit.type)) return null;
+    const profile = getCabinetProfile();
+    const wall = unit.position?.wall ?? 0;
+    const edges = [];
+    for (const u of s.units) {
+      if (u.id === unit.id || (u.position?.wall ?? 0) !== wall) continue;
+      const sp = unitSpan(u);
+      const label = u.params?.unit_num || u.id;
+      edges.push({ at: sp.left, label }, { at: sp.right, label });
+    }
+    return freePanelSnap({
+      left: Number(unit.position?.x_mm) || 0,
+      width: Number(unit.params?.width) || 0,
+      edges,
+      magnet: profile.editor?.unitMagnet ?? 40,
+    });
+  },
+
+  /**
+   * T74 F13 · the drop TAKES the proposal: the panel moves to it, through
+   * `moveUnit` with the silent magnet off (the proposal is the only catch).
+   * The hand that refuses simply does not call this.
+   */
+  acceptFreePanelSnap: (unitId) => {
+    const proposal = get().freePanelProposal(unitId);
+    if (!proposal) return null;
+    get().moveUnit(unitId, proposal.left, 0.5, { magnet: false });
+    return proposal;
+  },
+
+  /**
+   * ─── T74 F7 · THE WALL UNIT'S DEPTH, ALIGNED TO THE BACK OR TO THE FRONT ──
+   *
+   * The owner: *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość
+   * wyrównana do tyłu albo do frontu."*  A wall unit shallower than the
+   * wardrobe beside it either keeps its back on the wardrobe's back line
+   * (BACK, the way it is born) or stands off the wall so its FRONT is on the
+   * wardrobe's front line. Both are one number, the unit's own gap off the
+   * wall (T72 F14's `wall_gap`), written through `updateUnitParams` with that
+   * number's own clamp; `depth_align` remembers which, so a later depth keeps
+   * the front where it was asked to be.
+   *
+   * The wardrobe is the nearest floor wardrobe on the unit's own wall. None
+   * there, or a unit deeper than it asked for FRONT: refused, in words.
+   *
+   * @returns {{ok:boolean, gap?:number, align?:string, error?:string, notices?:string[]}}
+   */
+  alignUnitDepth: (unitId, align) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isWardrobeWallUnit(unit.type)) return { ok: false, error: 'Only a wardrobe wall unit is lined up with a wardrobe.' };
+    const want = align === 'front' ? 'front' : 'back';
+    const profile = getCabinetProfile();
+    const mine = unitSpan(unit);
+    const distance = (u) => {
+      const o = unitSpan(u);
+      if (o.right <= mine.left) return mine.left - o.right;
+      if (o.left >= mine.right) return o.left - mine.right;
+      return 0;
+    };
+    const host = s.units
+      .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === (unit.position?.wall ?? 0) && inPlayWardrobe(u))
+      .reduce((best, u) => (!best || distance(u) < distance(best) ? u : best), null);
+    const name = unit.params.unit_num || unit.id;
+    if (!host) {
+      return { ok: false, error: `${name} hangs beside no wardrobe on its wall, so there is no back or front to line it up with.` };
+    }
+    const depth = Number(unit.params.depth) || 0;
+    const hostGap = wallGapOf(host, profile);
+    const gap = want === 'front' ? hostGap + (Number(host.params.depth) || 0) - depth : hostGap;
+    if (gap < 0) {
+      return {
+        ok: false,
+        error: `${name} is ${formatMm(-gap)} mm deeper than ${host.params.unit_num || host.id}, so its front cannot be on the wardrobe's front line.`,
+      };
+    }
+    const res = get().updateUnitParams(unit.id, { wall_gap: gap, depth_align: want });
+    return {
+      ok: true, gap: res?.applied?.wall_gap ?? gap, align: want, notices: res?.notices || [],
+    };
+  },
+
   unitSizeBoundsFor: (unitId) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
@@ -4858,11 +5128,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{applied:object, notices:string[]}}
    */
-  updateUnitParams: (unitId, patch) => runBatch(() => {
+  updateUnitParams: (unitId, asked) => runBatch(() => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { applied: {}, notices: [] };
     const profile = getCabinetProfile();
+    // ─── T74 F13 · A SIZE TYPED ON A FREE PANEL, READ AS IT WAS MEANT ───────
+    // Its box and its board are one: a width, a height or a depth typed on it
+    // (by any door: the size window, its own fields) is turned into the board
+    // it describes and the box that board fills, before any clamp runs.
+    const freeWanted = isFreePanel(unit.type) && FREE_PANEL_KEYS.some((k) => asked?.[k] != null)
+      ? freePanelPatch(unit.params, asked, profile)
+      : null;
+    const patch = freeWanted || asked;
     const walls = roomWalls(s.project.room);
     const wallIndex = unit.position.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
@@ -5009,6 +5287,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (patch.height_custom === undefined) applied.height_custom = true;
     }
 
+    // ─── T74 F13 · …AND IF THE ROOM CLAMPED ITS BOX, THE BOARD FOLLOWS ─────
+    // The clamps above spoke (their notices say by what); the board is then
+    // re-read from the box it was given, so a free panel is never drawn or cut
+    // bigger than the space the room let it have.
+    if (freeWanted && ['width', 'height', 'depth'].some((k) => applied[k] != null
+      && Math.abs(Number(applied[k]) - Number(freeWanted[k])) > 1e-6)) {
+      Object.assign(applied, freePanelFit({ ...unit.params, ...freeWanted }, applied, profile));
+    }
     set((st) => ({
       units: st.units.map((u) => {
         if (u.id !== unitId) return u;
@@ -5098,6 +5384,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (applied.width != null || applied.depth != null || applied.height != null) {
       get().settleLayout(unitId);
     }
+    // ─── T74 F7 · A NEW DEPTH KEEPS THE FRONT WHERE IT WAS ASKED TO BE ──────
+    // A wardrobe wall unit lined up to the FRONT stands off the wall by the
+    // wardrobe's reach less its own depth, so a new depth moves that number;
+    // `alignUnitDepth` writes it again, through this same setter.
+    if (applied.depth != null && patch.wall_gap == null && isWardrobeWallUnit(unit.type)
+      && get().units.find((u) => u.id === unitId)?.params?.depth_align === 'front') {
+      const again = get().alignUnitDepth(unitId, 'front');
+      if (!again.ok) notices.push(again.error);
+      else notices.push(...(again.notices || []));
+    }
     return { applied, notices };
   }),
 
@@ -5155,7 +5451,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         changes.height = resolved[group];
         changes.height_custom = false;
       }
-      if (applied.wallMount != null && type.mount === 'wall') changes.mount_height = resolved.wallMount;
+      // T74 F13 · a free panel stands at its OWN height (on the floor, or where
+      // its floor figure put it), as `projectHeightParams` births it: the
+      // kitchen's wall-unit line never moves it.
+      if (applied.wallMount != null && type.mount === 'wall' && !type.freePanel) changes.mount_height = resolved.wallMount;
       // Turn 22 (F4.2): every unit that STANDS on the run's legs follows the
       // toe kick, the D/W panel included — it is the unit the owner watched
       // ignore the field.
@@ -5465,6 +5764,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // A shelf added at a position someone else already occupies is a collision
     // like any other — it goes through the same clamp.
     if (item.kind === 'shelf' && Number.isFinite(item.pos_mm)) get().setShelfPos(unitId, id, item.pos_mm);
+    // T74 F6 · a drawer put on top of a raised one rides on it: the raised one
+    // is re-asked its clamp with the new drawer on its back.
+    if (item.kind === 'drawer') get().settleDrawerMounts(unitId);
     return id;
   },
 
@@ -5525,6 +5827,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           // re-add with none keeps each drawer's own previous answer.
           ...(variant != null ? { variant } : (previous[i]?.variant ? { variant: previous[i].variant } : {})),
           height_mm: Number(previous[i]?.height_mm) > 0 ? Number(previous[i].height_mm) : fallback,
+          // T74 F6 · a surviving drawer keeps its mounting height (the audit:
+          // a count change stood a raised second shoe drawer tight again);
+          // `settleDrawerMounts` then re-asks the clamp of the new stack.
+          ...(previous[i]?.pos_mm != null ? { pos_mm: previous[i].pos_mm } : {}),
         }));
         return { ...u, params: { ...u.params, sections: [{ ...section, items: [...drawers, ...kept] }] } };
       }),
@@ -6015,7 +6321,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
       ? null : Math.trunc(Number(i.zone)));
     const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone);
-    if (stack.some((i) => i.variant === 'shoe')) return null;
+    // ─── T74 F6 · A SECOND SHOE DRAWER, AND NO THIRD ─────────────────────────
+    // *"DRUGA SZUFLADA NA BUTY (niskie i wysokie buty)."*  The bay takes a
+    // second shoe drawer on top of its first; it arrives stacked on it and is
+    // moved by its MOUNTING HEIGHT (`setDrawerMount`). A third is refused, as
+    // the second was before tonight.
+    const shoes = stack.filter((i) => i.variant === 'shoe');
+    if (shoes.length >= 2) return null;
+    if (shoes.length === 1) {
+      const top = Math.max(...stack.map((i) => Number(i.index) || 0));
+      if ((Number(shoes[0].index) || 0) !== top) return null;
+    }
     // ─── T58 (CLAUDE.md F2): WATCHES XOR SHOES, PER CABINET ────────────────
     // *"jeśli będzie szuflada z zegarkami, to już nie możemy w tej szafie
     // zrobić butów."*  Asked of the WHOLE unit, not of this zone — the owner's
@@ -6425,6 +6741,108 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return {
       x, min, max, blocked: false,
     };
+  },
+
+  /**
+   * ─── T74 F6 · THE SECOND SHOE DRAWER'S MOUNTING HEIGHT, AND ITS ONE CLAMP ──
+   *
+   * The owner: *"Regulacja = WYSOKOŚĆ MONTAŻU, nie wysokość szuflady. Pierwsza
+   * szuflada ZAWSZE na dnie (ustalone, bez zmian). Druga przesuwana
+   * góra/dół."*  ONE setter, and the drag and the clickable dimension both
+   * write through it, so the two gestures cannot disagree about where the
+   * drawer may stand.
+   *
+   * Only the SECOND shoe drawer of a bay moves (a shoe drawer with a shoe
+   * drawer under it); the first stays on the bottom. `posMm` is the house
+   * datum (the drawer's slot underside, zero at the outside of the carcass
+   * bottom, as a shelf's). The clamp: never lower than stacked tight on the
+   * drawer under it, never higher than the engine's own stack guard lets a
+   * drawer of its height stand (`H - 2G - zoneHeadroom`). The shelves over it
+   * are then re-clamped the way every drawer change re-clamps them.
+   *
+   * @returns {{pos:number, min:number, max:number, clamped:boolean}|null}
+   */
+  setDrawerMount: (unitId, itemId, posMm) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const bounds = get().drawerMountBounds(unitId, itemId);
+    if (!unit || !bounds) return null;
+    const want = Number(posMm);
+    if (!Number.isFinite(want)) return null;
+    const pos = Math.round(Math.min(Math.max(want, bounds.min), bounds.max) * 2) / 2;
+    get().updateItem(unitId, itemId, { pos_mm: pos });
+    get().reclampShelves(unitId);
+    return {
+      pos, min: bounds.min, max: bounds.max, clamped: Math.abs(pos - want) > 0.25,
+    };
+  },
+
+  /**
+   * T74 F6 · where the second shoe drawer may stand, or null for a drawer
+   * that is not one. Read off the items and the profile, in the setter's own
+   * datum; the engine stacks the drawers under it tight, as it always has.
+   */
+  drawerMountBounds: (unitId, itemId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const items = unit.params.sections?.[0]?.items || [];
+    const item = items.find((i) => i.id === itemId && i.kind === 'drawer');
+    if (!item) return null;
+    const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    if (secondShoeItem(unit, item.index, zoneOf(item))?.id !== item.id) return null;
+    const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === zoneOf(item));
+    const below = stack.filter((i) => (Number(i.index) || 0) < (Number(item.index) || 0));
+    // The drawers ABOVE it ride on it (tight, as every drawer does), so the
+    // stack's guard is asked with them on its back: the audit raised the
+    // second to its max, put a plain drawer on top, and the engine dropped
+    // every drawer (DRAWERS_TOO_TALL).
+    const above = stack.filter((i) => (Number(i.index) || 0) > (Number(item.index) || 0));
+    const profile = getCabinetProfile();
+    const DR = profile.wardrobe.drawers;
+    const G = Number(unit.params.board_t) || profile.board.thickness;
+    const H = Number(unit.params.height) || 0;
+    const hOf = (i) => (Number(i.height_mm) > 0 ? Number(i.height_mm) : DR.frontHeight);
+    const min = G + below.reduce((sum, i) => sum + hOf(i) + DR.gap, 0);
+    const riding = above.reduce((sum, i) => sum + DR.gap + hOf(i), 0);
+    const max = Math.max(min, H - G - DR.zoneHeadroom - hOf(item) - riding);
+    return { min, max };
+  },
+
+  /**
+   * T74 F6 · every raised drawer put back inside its ONE clamp after the stack
+   * changed under it (a drawer added on top, a count changed, a height or the
+   * cabinet's height edited): clamped into `drawerMountBounds`, or, when it is
+   * no longer a second shoe drawer, stood tight again (`pos_mm` removed).
+   * Runs first in `reclampShelves`, the settle every stack change already
+   * calls, so the drawers settle before the shelves that stand on them.
+   */
+  settleDrawerMounts: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const items = unit?.params.sections?.[0]?.items || [];
+    const next = new Map();
+    for (const i of items) {
+      if (i.kind !== 'drawer' || i.pos_mm == null) continue;
+      const bounds = get().drawerMountBounds(unitId, i.id);
+      const pos = Number(i.pos_mm);
+      if (!bounds || !Number.isFinite(pos)) { next.set(i.id, null); continue; }
+      const clamped = Math.min(Math.max(pos, bounds.min), bounds.max);
+      if (clamped !== pos) next.set(i.id, clamped);
+    }
+    if (!next.size) return;
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const section = u.params.sections[0];
+        const settled = section.items.map((i) => {
+          if (!next.has(i.id)) return i;
+          const pos = next.get(i.id);
+          if (pos != null) return { ...i, pos_mm: pos };
+          const { pos_mm: _tight, ...rest } = i;
+          return rest;
+        });
+        return { ...u, params: { ...u.params, sections: [{ ...section, items: settled }] } };
+      }),
+    }));
   },
 
   /**
@@ -8252,6 +8670,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * nobody dragged.
    */
   reclampShelves: (unitId) => {
+    // T74 F6 · the raised drawers first: the shelves stand on the stack.
+    get().settleDrawerMounts(unitId);
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return;
@@ -8645,8 +9065,15 @@ function bandOf(unit, profile = getCabinetProfile()) {
  * was not — see engine/collision.js.
  */
 function obstructs(unit, other, profile = getCabinetProfile()) {
+  // T74 F13 · two free panels MEET: *"Z paneli można złożyć własną figurę
+  // (np. box)."*  A box is four boards touching and crossing at its corners,
+  // so a free panel never holds another off. Anything else still does.
+  if (isFreePanel(unit?.type) && isFreePanel(other?.type)) return false;
   return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
 }
+
+/** T74 F13 · the keys a size edit of a free panel is read through (`freePanelPatch`). */
+const FREE_PANEL_KEYS = ['width', 'height', 'depth', 'panel_width', 'panel_length', 'panel_tilt_deg', 'panel_facing', 'board_t'];
 
 /**
  * ─── TURN 51 (CLAUDE.md F1): EVERYTHING THE PLAN PUTS IN THE WAY ───────────
@@ -8747,9 +9174,11 @@ function toObstacleUnit(u) {
  * Null when there is no tall unit on that wall, or when the wall unit is too
  * tall to reach that line, in which case the project's own mount height stands.
  */
-function alignedMountFor(state, unit, placed) {
+function alignedMountFor(state, unit, placed, prefer = null) {
   const type = getUnitType(unit.type);
-  if (type.mount !== 'wall') return null;
+  // T74 F13 · a free panel hangs at the height it is given (the floor, new),
+  // never lined up with a tall unit's top the way a wall unit is.
+  if (type.mount !== 'wall' || type.freePanel) return null;
   const profile = getCabinetProfile();
   const span = { left: placed.x, right: placed.x + (Number(unit.params.width) || 0) };
   const talls = state.units.filter((u) => (u.position?.wall ?? 0) === placed.wall
@@ -8764,7 +9193,8 @@ function alignedMountFor(state, unit, placed) {
     if (s.left >= span.right) return s.left - span.right;
     return 0;
   };
-  const nearest = talls.reduce((best, u) => (distance(u) < distance(best) ? u : best), talls[0]);
+  const nearest = (prefer && talls.find((u) => u.id === prefer.id))
+    || talls.reduce((best, u) => (distance(u) < distance(best) ? u : best), talls[0]);
   return mountHeightAlignedWith({
     tallTop: unitTopOf(nearest, profile),
     unitHeight: Number(unit.params.height) || 0,

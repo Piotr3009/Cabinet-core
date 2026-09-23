@@ -37,7 +37,9 @@ const byId = (id) => units().find((u) => u.id === id);
 
 test('F7 — the library offers Main wardrobe AND Top box', () => {
   const wardrobes = UNIT_CATEGORIES.find((c) => c.id === 'wardrobe');
-  assert.deepEqual(wardrobes.types, ['WARDROBE', 'WARDROBE_TOP']);
+  // AMENDED BY T74 F7: the wardrobe's wall unit stands third; the two named
+  // here are still the first two.
+  assert.deepEqual(wardrobes.types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);
   assert.equal(UNIT_TYPES.WARDROBE_TOP.label, 'Top box');
   assert.equal(UNIT_TYPES.WARDROBE_TOP.available, true);
 });

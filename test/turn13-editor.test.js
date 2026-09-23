@@ -100,8 +100,10 @@ test('the clickable set is exactly shelves, partitions and rails', () => {
     for (const p of unit(id).panels) if (isMainViewElement(p)) kinds.add(elementKind(p));
   }
   // Whatever the kits happen to build, nothing outside the three may creep in.
+  // AMENDED BY T74 F13: …and the FREE PANEL's own board, which is not in a
+  // cabinet at all: a board a hand put in the room and moves by hand.
   for (const k of kinds) {
-    assert.ok(['shelf', 'partition', 'fixed-shelf'].includes(k), `${k} is not an added interior item`);
+    assert.ok(['shelf', 'partition', 'fixed-shelf', 'free-panel'].includes(k), `${k} is not an added interior item`);
   }
 });
 

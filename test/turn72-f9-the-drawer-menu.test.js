@@ -245,7 +245,9 @@ test('F9 · FINISH is Project | Sprayed | Felt base — and Veneer never existed
 
 test('F9 · FOUR colours and no fifth, and the store refuses anything else', () => {
   assert.deepEqual(WATCH_FELT_COLOURS.map((c) => c.id), ['dark-green', 'red', 'brown', 'black']);
-  assert.deepEqual(WATCH_FELT_COLOURS.map((c) => c.label), ['Dark green', 'Red', 'Brown', 'Black']);
+  // AMENDED BY T74 F2 · *"red raczej zrób kolor wine red, nie krzykliwa
+  // czerwień."*  The id stays `red`; the label is the owner's wine.
+  assert.deepEqual(WATCH_FELT_COLOURS.map((c) => c.label), ['Dark green', 'Wine red', 'Brown', 'Black']);
   for (const c of WATCH_FELT_COLOURS) assert.match(c.hex, /^#[0-9a-f]{6}$/i, `${c.id} has no hex`);
 
   const unitId = aWardrobeWithDrawers();

@@ -1,5 +1,5 @@
 import {
-  useCallback, useEffect, useMemo, useRef, useState,
+  useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState,
 } from 'react';
 import Modal from './Modal.jsx';
 import WallElevationModal from './WallElevationModal.jsx';
@@ -125,6 +125,8 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   const [wall, setWall] = useState(null);          // the elevation being edited
   const svgRef = useRef(null);
   const fieldRef = useRef(null);
+  // T74 F4 · true until this drawing is first saved: that save is a new room.
+  const newRoom = useRef(true);
 
   const pen = penOf(path);
   const closed = path.length > 3
@@ -192,15 +194,22 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
     if (catching && !typed.trim()) { close(); return; }
     const r = svgRef.current?.getBoundingClientRect();
     if (!r || !pen) return;
+    // T74 F3 · the click's own mouse-down would move the focus to the page
+    // after the field has taken it; a pointer-down with no default sends no
+    // mouse-down, so the focus stays in the field that just opened.
+    e.preventDefault();
     const px = e.clientX - r.left;
     const py = e.clientY - r.top;
     const at = { x: view.mx(px), y: view.my(py) };
     const d = dirFromCursor(at.x - pen.x, at.y - pen.y);
     if (!d) return;
     setDir(d.id);
-    setTyped(String(Math.max(0, Math.round(Math.abs(d.dx ? at.x - pen.x : at.y - pen.y)))));
+    // T74 F3 · the length the hand DREW is kept on the field as well as typed
+    // into it, so an Enter over an emptied field still confirms the drawing.
+    const drawn = Math.max(0, Math.round(Math.abs(d.dx ? at.x - pen.x : at.y - pen.y)));
+    setTyped(String(drawn));
     setError(null);
-    setField({ px, py, dir: d.id });
+    setField({ px, py, dir: d.id, drawn });
   };
 
   /** *"Escape lets go."* The field closes; the pen has not moved. */
@@ -210,10 +219,18 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
     setError(null);
   }, []);
 
-  /** Enter on a typed number: one wall, committed. */
+  /**
+   * Enter on a typed number: one wall, committed.
+   *
+   * T74 F3 · the owner: *"Enter potwierdza to, co narysowane myszką"*. A
+   * number typed over the field is the wall; with nothing typed, the wall is
+   * the length the mouse drew. A refusal leaves the number SELECTED, so the
+   * next keystroke replaces it.
+   */
   const commit = useCallback(() => {
-    const res = addSegment(path, dir, Number(typed));
-    if (res.error) { setError(res.error); return false; }
+    const want = typed.trim() ? Number(typed) : (field ? field.drawn : Number(typed));
+    const res = addSegment(path, dir, want);
+    if (res.error) { setError(res.error); fieldRef.current?.select(); return false; }
     setPath(res.path);
     setTyped('');
     setError(null);
@@ -223,7 +240,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
     // reading the cursor again the moment it is gone.
     setField(null);
     return true;
-  }, [path, dir, typed]);
+  }, [path, dir, typed, field]);
 
   const close = useCallback(() => {
     const res = closePath(path);
@@ -248,7 +265,12 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   const save = useCallback(() => {
     const issues = pathFaults(path);
     if (issues.length) { setError(issues[0]); return { ok: false, message: issues[0] }; }
-    const verdict = setRoom({ corners: cornersOfPath(path) });
+    // T74 F4 · *"Przy tworzeniu nowego pokoju po starym jeden nachodzi na
+    // drugi zamiast resetu."*  The FIRST save of a drawing is a new room: it
+    // replaces the old one (its openings, boxes and wall elements go with it).
+    // A later save of the same drawing merges, so a window put on a new wall
+    // through its elevation is kept.
+    const verdict = setRoom({ corners: cornersOfPath(path) }, { replace: newRoom.current });
     if (!verdict?.ok) {
       const message = verdict?.issues?.[0]?.message || verdict?.message
         || 'This outline cannot be applied — something in the room stands where a wall would go.';
@@ -256,6 +278,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
       notify(message, 'warn');
       return { ok: false, message };
     }
+    newRoom.current = false;
     setError(null);
     setSaved(true);
     notify(`Room drawn — ${cornersOfPath(path).length} walls.`, 'ok');
@@ -290,14 +313,38 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   // T69 F2: the field is not always there any more — it opens where the hand
   // clicked — so the focus follows it there, every time it opens. The eye never
   // has to find it: it is under the cursor.
-  useEffect(() => { if (field) fieldRef.current?.focus(); }, [field]);
+  //
+  // T74 F3 · the owner: *"Po kliknięciu długości ściany pole na karteczce od
+  // razu ma focus i całą wartość zaznaczoną (np. 3437, piszę 3500 bez
+  // myszki)."*  The focus, then the WHOLE number selected: T73 F3's pattern
+  // (`3d/SpacingChain.jsx`, a ref, `focus()` then `select()`), not a second one.
+  //
+  // It lands BEFORE the first key, not a tick later. The F4 probe typed 3500
+  // over a fresh field and, once in three runs, the field committed the drawn
+  // number instead: on a busy page the browser runs a queued key before a
+  // timer, so a focus put off by `setTimeout` came after the digits. The field
+  // is focused in the same commit that mounts it, and the click that opens it
+  // takes no default (below), so the pointer's own mouse-down cannot move the
+  // focus back out to the page.
+  useLayoutEffect(() => {
+    if (!field) return;
+    fieldRef.current?.focus();
+    fieldRef.current?.select();
+  }, [field]);
 
   // …and Escape reaches the drawing even when the hand has left the field.
+  //
+  // T74 F3 · *"Escape anuluje"*: it cancels the FIELD and nothing else. The
+  // window's shell also listens for Escape on `window` (and closes the whole
+  // drawing), so while a field is open this listener takes the key FIRST, in
+  // the capture phase, and stops it there: the field goes, the drawing stays.
+  // Rule 15 stands (no window turns the shell's key off); with no field open
+  // the key reaches the shell exactly as before.
   useEffect(() => {
     if (!field) return undefined;
-    const onKey = (ev) => { if (ev.key === 'Escape') letGo(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const onKey = (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); letGo(); } };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [field, letGo]);
 
   // ─── ONE WINDOW AT A TIME (T45's rule: no window-over-window, ever) ───────
@@ -333,7 +380,9 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   const reach = !closed && pen && d && cursor
     ? Math.max(0, Math.round(d.dx ? (cursor.x - pen.x) * d.dx : (cursor.y - pen.y) * d.dy))
     : 0;
-  const ghostLen = Number(typed) > 0 ? Number(typed) : (field ? 0 : reach);
+  // T74 F3 · an emptied field still commits the drawn length on Enter, so the
+  // ghost shows that length rather than nothing.
+  const ghostLen = Number(typed) > 0 ? Number(typed) : (field ? field.drawn : reach);
   const ghostTo = !closed && pen && d && ghostLen > 0
     ? { x: pen.x + d.dx * ghostLen, y: pen.y + d.dy * ghostLen }
     : null;
@@ -512,6 +561,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
                 value={typed}
                 placeholder="mm"
                 aria-label={`Wall length, ${DIRS.find((v) => v.id === field.dir)?.label}`}
+                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => { setTyped(e.target.value); setError(null); }}
                 onKeyDown={onKeyDown}
               />

@@ -265,7 +265,8 @@ test('F3 · the copies are reskinned through the GENERATED sheet, and their mark
   // T65 F8 adds the twenty-sixth: PRO's `ContextMenu.jsx`, the one surface the
   // T63 ledger listed as OWED and the reason cornice, top infill and end
   // panels were unreachable from the client's room.
-  assert.equal(ALL_COPIES.length, 26);
+  // AMENDED BY T74 F13: + PRO's piece editor, copied for the free panel's 2klik.
+  assert.equal(ALL_COPIES.length, 27);
 });
 
 // ═══ F4 · LAYOUT B ═══════════════════════════════════════════════════════════

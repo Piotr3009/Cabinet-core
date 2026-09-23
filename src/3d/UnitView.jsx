@@ -126,6 +126,8 @@ import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import DimensionChain from './DimensionChain.jsx';
 import { formatDimension, formatMm } from '../engine/format.js';
+// T74 F7 · the wardrobe's wall unit draws its DEPTH as a clickable figure too.
+import { isWardrobeWallUnit } from '../engine/types.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
@@ -147,7 +149,7 @@ import { drawerFrontDimsVisible, frontDimensionRows } from '../engine/frontDimen
 import { opensOwnModal } from '../engine/elements.js';
 import { picksOnClick } from './picking.js';
 import { panelFinish } from '../engine/materials.js';
-import { WATCH_FELT_COLOURS } from '../engine/watchDrawer.js';
+import { WATCH_FELT_COLOURS, secondShoeItem } from '../engine/watchDrawer.js';
 // ─── TURN 49 (CLAUDE.md F9): AND WHETHER IT IS A VENEER ────────────────────
 // The finish alone cannot say for a FRONT — a front veneer borrows an EGGER
 // scan (T20 F12.3) and is stored as a decor — so the piece's own material SLOT
@@ -333,7 +335,38 @@ function useMitre(panel) {
  * bevel program once for the whole project. Resizing a panel is then a uniform
  * write, which is why dragging a shelf does not stutter.
  */
-function useBevel(box, profile, sprayed = false) {
+/**
+ * ─── T74 F12 · WHERE THE J GROOVE IS, IN THE PIECE'S OWN FRAME ─────────────
+ *
+ * The strip the J machining takes out of a leaf (`cnc.jpull`, the engine's one
+ * law), as a box about the leaf's own centre, which is the frame the bevel
+ * shader reads its fragments in: across, as far as the deeper of the slot and
+ * the relief reaches in from the J edge; up, the run; through, everything
+ * between the back face and the room face, so the two faces themselves stay
+ * the door's own. `null` where there is no groove or no shade to give it.
+ */
+function jGrooveBox(p, profile, solid) {
+  const shade = Number(profile?.appearance?.jpull?.grooveShade) || 0;
+  const edge = p?.meta?.jpull?.edge;
+  const cut = p?.cnc?.jpull;
+  if (!solid || !(shade > 0) || !edge || !cut?.profile || !p?.box) return null;
+  const { w, h, d } = p.box;
+  const reach = Math.max(Number(cut.profile.slotDepth) || 0, Number(cut.profile.reliefMm) || 0);
+  const run = p.meta.jpull.run || null;
+  const faceMm = 0.5;
+  let x0 = -w / 2; let x1 = w / 2;
+  let y0 = (run?.from ?? 0) - h / 2; let y1 = (run?.to ?? h) - h / 2;
+  if (edge === 'L') x1 = -w / 2 + reach;
+  else if (edge === 'R') x0 = w / 2 - reach;
+  else if (edge === 'TOP') { y0 = h / 2 - reach; y1 = h / 2; }
+  return {
+    min: [mm(x0), mm(y0), mm(-d / 2 + faceMm)],
+    max: [mm(x1), mm(y1), mm(d / 2 - faceMm)],
+    shade,
+  };
+}
+
+function useBevel(box, profile, sprayed = false, groove = null) {
   const state = useMemo(() => createBevelState(), []);
   const hook = useMemo(() => bevelHook(state), [state]);
   const B = profile.appearance.bevel;
@@ -348,6 +381,16 @@ function useBevel(box, profile, sprayed = false) {
   // Orange peel: a sprayed piece only (turn 8, CLAUDE.md F1).
   state.spray = sprayed ? (S.normalScale ?? 0.1) : 0;
   state.sprayFreq = (2 * Math.PI) / Math.max(mm(S.peelMm ?? 2), 1e-6);
+  // T74 F12 · the J groove's box and its shade, or none.
+  if (groove) {
+    state.grooveMin.set(...groove.min);
+    state.grooveMax.set(...groove.max);
+    state.grooveShade = groove.shade;
+  } else {
+    state.grooveMin.set(1, 1, 1);
+    state.grooveMax.set(-1, -1, -1);
+    state.grooveShade = 0;
+  }
   syncBevelState(state);
 
   return useCallback((material) => {
@@ -364,6 +407,17 @@ function useBevel(box, profile, sprayed = false) {
  * static box. The animation lives here, per panel, so opening one drawer does
  * not re-render the rest of the unit.
  */
+/**
+ * T74 F1 · is this object drawn OVER the furniture rather than being part of
+ * it? The house flag for that is `userData.ccHelper` on the object or on any
+ * group above it (the figures, their hit strips, the plus markers), the same
+ * question `3d/Ruler.jsx` asks when it picks.
+ */
+function isOverlay(object) {
+  for (let o = object; o; o = o.parent) if (o.userData?.ccHelper) return true;
+  return false;
+}
+
 // Exported since turn 12 (CLAUDE.md F4): the cabinet-editor window renders THE
 // SAME meshes from THE SAME engine panels — "a viewer+editor over existing
 // data". A second panel renderer would be a second answer to what a mitre, a
@@ -451,7 +505,9 @@ export function MovingPanel({
   }, [p, mitre]);
   useEffect(() => () => { outlinePlain?.dispose?.(); }, [outlinePlain]);
   const cuts = built?.cuts || null;
-  const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
+  // T74 F12 · a J leaf's groove is drawn darker by `appearance.jpull.grooveShade`.
+  const groove = useMemo(() => jGrooveBox(p, profile, Boolean(built?.solid) && !shaker), [p, profile, built, shaker]);
+  const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray, groove);
 
   // ─── TURN 26 (CLAUDE.md F5.2): AND A D/W FRONT DROPS ────────────────────
   // Owner: "it opens sideways." It did, because the scene had one way for a
@@ -486,6 +542,16 @@ export function MovingPanel({
   // front or back, the bottom. It has no gesture of its own and no swing; it
   // rides the SAME 0..1 its front does, so the two cannot get out of step.
   const travels = Boolean(front) || slide;
+  // ─── T74 F8 · A LEANING PIECE TRAVELS IN THE DRAWER'S FRAME ───────────────
+  // The owner: *"skośne dno szuflady na buty zostaje w szafie przy otwieraniu,
+  // nie wysuwa się z szufladą."*  The probe (`verify/t74/f08-probe.md`): the
+  // slide moved the piece's own group, and a leaning piece's whole group sits
+  // inside its lean, so the shoe ramp slid along its OWN tilted axis, out and
+  // 114 mm down, and ended under the open drawer. A piece that both leans and
+  // travels now takes the travel on a group OUTSIDE the lean (`glide`), which
+  // is the drawer's own straight line; everything else moves as it always did.
+  const leans = Boolean(Number(p.meta?.tilt_deg) && p.meta?.tilt_pivot);
+  const glide = useRef(null);
   useFrame((_, delta) => {
     if (!group.current || !travels) return;
     const target = open;
@@ -503,7 +569,13 @@ export function MovingPanel({
       // box comes out its own length. `depth × 0.75` was turn 3's guess, made
       // before the app knew which runner a drawer was on, and it is what left
       // a face standing proud of a box that had not moved.
-      group.current.position.z = pivot[2] + mm(travel ?? depth * 0.75) * a;
+      const off = mm(travel ?? depth * 0.75) * a;
+      if (leans && glide.current) {
+        glide.current.position.z = off;
+        group.current.position.z = pivot[2];
+      } else {
+        group.current.position.z = pivot[2] + off;
+      }
       group.current.rotation.y = 0;
     } else if (drops) {
       // ─── TURN 27 (CLAUDE.md F2.1): THE AXIS WAS INVERTED ────────────────
@@ -799,7 +871,7 @@ export function MovingPanel({
   const px = mm(Number(tiltPivot.x) || 0);
   const py = mm(Number(tiltPivot.y) || 0);
   const pz = mm(Number(tiltPivot.z) || 0);
-  return (
+  const leaning = (
     <group
       position={[px, py, pz]}
       rotation={p.meta?.tilt_axis === 'z' ? [0, 0, rad] : [rad, 0, 0]}
@@ -807,6 +879,8 @@ export function MovingPanel({
       <group position={[-px, -py, -pz]}>{body}</group>
     </group>
   );
+  // T74 F8 · the travel of a leaning piece, straight out with its drawer.
+  return travels ? <group ref={glide}>{leaning}</group> : leaning;
 }
 
 
@@ -991,6 +1065,17 @@ export default function UnitView({
   // T68 F4 · a divider is dragged along the wall, through the store's own
   // `setPartitionX` — the very setter the docked field commits to.
   onMovePartition,
+  // T74 F6 · the SECOND shoe drawer is dragged up and down by its mounting
+  // height, through the store's own `setDrawerMount` (the clickable figure's
+  // setter too). Default null: a view nobody gave it to drags nothing new.
+  onMoveDrawer = null,
+  // T74 F13 · a free panel: its board opens in the piece editor on a 2klik
+  // (`onEditPart`), its drag ends in `onMoveEnd({ altKey })` (the drop takes or
+  // refuses the snap), and `snapProposal` is the catch a drop would take, drawn
+  // as a line while the hand is still moving. All three default to nothing.
+  onEditPart = null,
+  onMoveEnd = null,
+  snapProposal = null,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   // TURN 40 (CLAUDE.md F4c): { panelId, atMm } — fly to THAT piece.
   focusPanel = null, onFocusPanelDone = null,
@@ -1027,6 +1112,13 @@ export default function UnitView({
   // one-slider window. The view hands out a raw client point, never an anchor
   // — the parent makes the anchor, exactly as `onEditWatch` is served.
   onEditJpull = null,
+  // ─── TURN 74 (CLAUDE.md F1): A CLICK ON A WARDROBE SIDE, REPORTED ────────
+  // *"po naciśnięciu boku szafy jak nie ma panelu powinno się pokazać to
+  // pytanie"*. `onAskSide(panelId, at)` hears a plain CLICK (not a drag) on a
+  // carcass side, BUL or BUR, with its client point; the parent decides what
+  // it means. The J strip's road, kept: the view hands out a raw point, never
+  // an anchor. Default null, so PRO's sides are exactly what they were.
+  onAskSide = null,
   // ─── TURN 42 (CLAUDE.md F1): THE ALONE ROD'S OWN TWO VERBS ───────────────
   // `onEditRail(itemId, at)` opens the hanging-rail window; `onMoveRail(itemId,
   // offsetMm)` writes the item's `pos_mm`. Both are the rod's, and neither is
@@ -1188,7 +1280,7 @@ export default function UnitView({
     if (additive) return;
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
-    drag.current = { offset: alongMm(hit) - unit.position.x_mm };
+    drag.current = { offset: alongMm(hit) - unit.position.x_mm, x0: e.clientX, y0: e.clientY, moved: false };
     setDragging(true);
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
@@ -1203,21 +1295,30 @@ export default function UnitView({
       // the wall; the deliberate path is the Wall dropdown in the right panel.
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
+      // T74 F13 · a DRAG is a hand that travelled (2 px or more; a click
+      // presses and releases where it stands); only a drag's drop may take a
+      // proposal.
+      if (Math.hypot(ev.clientX - drag.current.x0, ev.clientY - drag.current.y0) >= 2) drag.current.moved = true;
       onMove(alongMm(p) - drag.current.offset, snapStep);
     };
-    const up = () => {
+    const up = (ev) => {
+      const moved = Boolean(drag.current?.moved);
       drag.current = null;
       setDragging(false);
       if (orbitRef?.current) orbitRef.current.enabled = true;
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
+      // T74 F13 · the DROP decides the proposal: taken, or refused with Alt
+      // held (a cancelled pointer refuses it too). A click that never
+      // travelled is no drop: it selects, it does not snap.
+      onMoveEnd?.({ altKey: Boolean(ev?.altKey), cancelled: ev?.type === 'pointercancel', moved });
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
   }, [onSelect, pointerToPlane, alongMm, unit.position.x_mm, unit.position.wall, orbitRef,
-    onMove, onMoveToWall, pointerToFloor, walls, snapStep, W]);
+    onMove, onMoveEnd, onMoveToWall, pointerToFloor, walls, snapStep, W]);
 
   // Cabinet origin: on its wall, back against it (local z = 0 is the wall
   // face), standing on its legs or hanging at its mount height.
@@ -1861,6 +1962,48 @@ export default function UnitView({
     window.addEventListener('pointercancel', up);
   }, [onMovePartition, onSelect, pointerToPlane, origin, along, orbitRef]);
 
+  // ─── T74 F6 · THE SECOND SHOE DRAWER, BY ITS MOUNTING HEIGHT ─────────────
+  // *"Druga przesuwana góra/dół."*  Which drawer a piece belongs to, and
+  // whether it is the second shoe drawer of its bay (a shoe drawer with a shoe
+  // drawer under it); its current height is its front's own underside, which
+  // is the setter's datum.
+  const secondShoeOf = useCallback((p) => {
+    if (!onMoveDrawer || !(p.part === 'DRAWER-FRONT' || p.role === 'drawer_box')) return null;
+    const index = Number(p.meta?.drawer);
+    if (!(index > 1)) return null;
+    const zone = p.meta?.zone ?? null;
+    const item = secondShoeItem(unit, index, zone);
+    if (!item) return null;
+    const face = (result?.panels || []).find((q) => q.part === 'DRAWER-FRONT' && q.box
+      && Number(q.meta?.drawer) === index && (q.meta?.zone ?? null) === zone);
+    const pos = Number.isFinite(Number(item.pos_mm)) ? Number(item.pos_mm) : (face ? face.box.y : null);
+    return pos == null ? null : { itemId: item.id, pos };
+  }, [onMoveDrawer, unit, result]);
+  // …and the drag, `startShelfDrag`'s own arithmetic with the drawer's setter.
+  const startDrawerDrag = useCallback((e, itemId, currentPosMm) => {
+    if (!itemId || !onMoveDrawer) return;
+    e.stopPropagation();
+    onSelect();
+    const hit = pointerToPlane(e.clientX, e.clientY);
+    if (!hit) return;
+    const grabDelta = currentPosMm - (hit.y - originY) / MM;
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+    const move = (ev) => {
+      const pt = pointerToPlane(ev.clientX, ev.clientY);
+      if (!pt) return;
+      onMoveDrawer(itemId, (pt.y - originY) / MM + grabDelta);
+    };
+    const up = () => {
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onMoveDrawer, onSelect, pointerToPlane, originY, orbitRef]);
+
   // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
   // clamping and snapping live in the store so the rules stay in one place.
   const startShelfDrag = useCallback((e, itemId, currentPosMm) => {
@@ -2249,6 +2392,10 @@ export default function UnitView({
                   return;
                 }
               }
+              // T74 F6 · the second shoe drawer's front or box is dragged up
+              // and down by its mounting height, the way a shelf is.
+              const shoe = secondShoeOf(p);
+              if (shoe) { startDrawerDrag(e, shoe.itemId, shoe.pos); return; }
               // Everything else still DRAGS THE UNIT. Selecting a side panel is
               // how you look at that piece's properties; grabbing a side panel
               // and pulling has meant "move this cabinet" since turn 3, and a
@@ -2256,6 +2403,29 @@ export default function UnitView({
               // would be the feature breaking the app it was added to.
               startDrag(e);
             }}
+            // ─── TURN 74 (CLAUDE.md F1): THE SIDE ASKS ON A CLICK ─────────────
+            // A side still DRAGS its cabinet at pointer-down (turn 3); the
+            // question is the CLICK, so a pull that moved the wardrobe asks
+            // nothing. `delta` is react-three-fiber's own pixel distance from
+            // pointer-down to the click, and 2 px is its own threshold for a
+            // click that missed. Present only when the parent asked for it.
+            //
+            // …and only when the SIDE is what the pointer is on. A click event
+            // travels on through every board the ray meets, and a door has no
+            // click handler to stop it, so a click on a door whose ray goes on
+            // into a side would reach the side too. The nearest BOARD the ray
+            // meets is the one that was clicked; the overlays drawn over the
+            // furniture (`ccHelper`: the figures, their invisible hit strips)
+            // are not boards, and the walk found a figure's strip lying over a
+            // side the moment the pointer-down selected its wardrobe.
+            onClick={onAskSide && (p.part === 'BUL' || p.part === 'BUR') ? (e) => {
+              if (((e.nativeEvent || e).button ?? 0) !== 0) return;
+              if (Number(e.delta) > 2) return;
+              const first = (e.intersections || []).find((h) => !isOverlay(h.eventObject))?.eventObject;
+              if (first && first !== e.eventObject) return;
+              e.stopPropagation();
+              onAskSide(p.id, { x: e.clientX, y: e.clientY });
+            } : undefined}
             onDoubleClick={(e) => {
               e.stopPropagation();
               // ─── Turn 11 (CLAUDE.md F3.3) ───
@@ -2303,6 +2473,15 @@ export default function UnitView({
               // the first thing anybody does to one.
               if (!front && p.role === 'drawer_box' && p.meta?.drawer && onEditDrawer) {
                 onEditDrawer(p.meta.drawer, { x: e.clientX, y: e.clientY });
+                return;
+              }
+              // ─── T74 F13 · 2KLIK ON A FREE PANEL IS PRO'S PIECE EDITOR ───────
+              // *"Dwuklik = wejście w edycję jak w PRO (wycięcie łuku itp.)."*
+              // The board opens in the piece editor itself (the arc, the line,
+              // the drill), the very window PRO's cabinet editor opens.
+              if (p.part === 'FREE-PANEL' && onEditPart) {
+                onSelectElement?.(p.id);
+                onEditPart(p.id, { x: e.clientX, y: e.clientY });
                 return;
               }
               if (opensModal && onEditElement) {
@@ -2489,6 +2668,23 @@ export default function UnitView({
           <DimLabel
             position={[mm(W / 2), mm(magnetLine) + 0.05, mm(D) + 0.1]}
             text={formatMm(fieldFromPos(magnetLine, G), { unit: true })}
+            tone="gold"
+          />
+        </group>
+      )}
+
+      {/* ─── T74 F13 · THE SNAP, SHOWN AS A PROPOSAL ─────────────────────────
+          *"Przyciąganie (snap) jako PROPOZYCJA, nie na siłę, zawsze do
+          odrzucenia."*  While a free panel is in the hand, the edge a drop
+          would catch is drawn upright where it is, in the magnet's gold; the
+          panel itself stays under the hand. The drop takes it, and the drop
+          with Alt held refuses it. */}
+      {snapProposal && !contour && (
+        <group userData={{ ccHelper: true, ccSnapProposal: snapProposal.at }}>
+          <UprightGuide x={snapProposal.at - (Number(unit.position.x_mm) || 0)} height={H} depth={D} />
+          <DimLabel
+            position={[mm(snapProposal.at - (Number(unit.position.x_mm) || 0)), mm(H) + 0.08, mm(D) + 0.05]}
+            text={`Snap to ${snapProposal.label || 'the edge'} · Alt refuses`}
             tone="gold"
           />
         </group>
@@ -2956,6 +3152,37 @@ export default function UnitView({
                   field: 'height', at: { x: e.clientX, y: e.clientY }, row: row.key,
                 }) : null}
               />
+              {/* ─── T74 F7 · THE WALL UNIT'S DEPTH, A FIGURE LIKE THE OTHER TWO ─
+                  *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość
+                  wyrównana do tyłu albo do frontu."*  Drawn for the wardrobe's
+                  wall unit alone (the owner's order names it and nothing else),
+                  and the 2klik opens the same size window, focused on DEPTH.
+
+                  WHERE, found by the walk: anywhere near the underside it met
+                  the width figure (the room camera looks in on the diagonal, and
+                  a wall unit hangs at eye level, so its underside is seen almost
+                  edge on), and flat on the top it sat in the run's cornice. So it
+                  is drawn in the plane of the unit's RIGHT SIDE, along its TOP
+                  edge and pushed up clear of the cornice: the group turns the
+                  chain's own 'xy' plane onto that side, its u running from the
+                  back (0) to the front (D). */}
+              {isWardrobeWallUnit(unit.type) && (
+                <group position={[mm(W), mm(floorY), 0]} rotation={[0, -Math.PI / 2, 0]}>
+                  <DimensionChain
+                    rows={[{
+                      key: 'd', from: [0, H], to: [D, H], offset: sideOffset, label: formatDimension(D),
+                    }]}
+                    style={dimStyle}
+                    plane="xy"
+                    at={0}
+                    colour={selected ? COLORS.gold : dimensionColour}
+                    name={`d-${unit.id}`}
+                    onPick={onEditSize ? (row, e) => onEditSize({
+                      field: 'depth', at: { x: e.clientX, y: e.clientY }, row: row.key,
+                    }) : null}
+                  />
+                </group>
+              )}
             </>
           )}
           {/* ─── Turn 17 (CLAUDE.md F6.3) ───
@@ -3067,6 +3294,29 @@ function SlopeGhost({ points, depth }) {
  * HELPER: `ccHelper` keeps it out of the bounds the camera frames and out of
  * every render and screenshot that asks for the furniture alone.
  */
+/**
+ * T74 F13 · the proposal's line: DashedGuide stood on end, at `x` in the
+ * unit's frame, from under the board to over it, on its front face.
+ */
+function UprightGuide({ x, height, depth, overhang = 120 }) {
+  const line = useRef(null);
+  const geometry = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setFromPoints([
+      new THREE.Vector3(mm(x), mm(-overhang), mm(depth) + 0.02),
+      new THREE.Vector3(mm(x), mm(height + overhang), mm(depth) + 0.02),
+    ]);
+    return g;
+  }, [x, height, depth, overhang]);
+  useLayoutEffect(() => { line.current?.computeLineDistances(); }, [geometry]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return (
+    <line ref={line} geometry={geometry}>
+      <lineDashedMaterial color="#c8a24a" dashSize={mm(24)} gapSize={mm(16)} depthTest={false} transparent opacity={0.95} />
+    </line>
+  );
+}
+
 function DashedGuide({ y, width, depth, overhang = 120 }) {
   const line = useRef(null);
   const geometry = useMemo(() => {

@@ -383,6 +383,16 @@ export const DEFAULT_CABINET_PROFILE = {
     xFromFrontEdge: 37,        // measured from the FRONT edge of the side panel
     layer: 'HINGES_5MM',
     endOffset: 100,            // first/last hinge centre, from panel end
+    // ─── T74 F10 · ON A SLOPE, 150 MM FROM THE APEX ─────────────────────────
+    // OWNER'S NUMBER, 23.09.2026: *"ZAWIASY NA SKOSIE: minimum 150 mm od
+    // wierzchołka trójkąta skosu (inaczej nie da się wkręcić śrubokrętem).
+    // Przeliczanie zawiasów na skosach inaczej."*  Where the slope cuts a
+    // door's HINGE EDGE, the top of that edge is the apex of an acute corner
+    // and a screwdriver cannot reach a hinge closer to it than this. The
+    // ladder is re-run so its top hinge lands here; a door whose edge cannot
+    // then hold its hinges at `minSpacingMm` is refused in words (Check #26),
+    // never squashed.
+    slopeApexMinMm: 150,
     // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER … ───────────────────────
     //
     // The LISP's ladders are what they are — Base is ALWAYS three, Low takes
@@ -1760,6 +1770,32 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── T74 F13 · THE FREE PANEL ─────────────────────────────────────────────
+  //
+  // What a board inserted into the room arrives as, before a hand types its
+  // own: 800 long, 400 wide, upright, on the floor. Its thickness is the
+  // board's (`board.thickness`), and every one of these is changed on the
+  // panel itself, never here.
+  freePanel: {
+    defaults: {
+      length: 800, width: 400, tilt: 0, mountHeight: 0,
+    },
+  },
+
+  // ─── T74 F7 · THE WARDROBE'S WALL UNIT ────────────────────────────────────
+  //
+  // KIT_WUD_FULL's own box, 1:1 from the kitchen (*"kopiować 1:1 z kuchni"*),
+  // with one number of the owner's own: its DEPTH is the wardrobe's
+  // (*"głębokość = głębokość szafy"*). Beside a wardrobe it is born at THAT
+  // wardrobe's depth and its top level with that wardrobe's top (the store's
+  // `addUnit`); the 568 here is `wardrobe.defaults.depth`, for the one left
+  // with no wardrobe to copy.
+  wardrobeWallUnit: {
+    defaults: {
+      width: 600, height: 720, depth: 568, mountHeight: 1500,
+    },
+  },
+
   // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
   //
   // The KIT_WUD envelope, with the bottom open. `aperture` is the clear height
@@ -2911,6 +2947,18 @@ export const DEFAULT_CABINET_PROFILE = {
       strength: 1.0,
       ao: { mm: 7, strength: 0.16, render: 0.3 },
     },
+
+    // ─── T74 F12 · THE J-PULL GROOVE IS SEEN ────────────────────────────────
+    // The owner, 23.09.2026: *"na 3D nie widać J-pulla w ogóle; czasami się
+    // pojawia ... pasowałoby, żeby miał cień, bo teraz nie ma i nic nie
+    // widać."*  The probe (`verify/t74/f12-probe.md`): the groove is in the
+    // solid in every state, but its floor faces the room exactly as the door
+    // does, in the same material, so head-on it differs from the door by 2 %;
+    // and the key light's shadow bias (20 mm) is as deep as the step, so the
+    // lip throws no shadow into it. Where the room light cannot show the step,
+    // the groove's inner faces are shaded darker by this share (0 = as the
+    // door, 1 = black). The workshop's number, like the bevel's cavity AO.
+    jpull: { grooveShade: 0.5 },
 
     // The room the furniture is lit BY. RoomEnvironment (three/examples, no
     // download, no .hdr file — CLAUDE.md forbids both) through PMREM. The
@@ -5135,6 +5183,18 @@ export function migrateCabinetProfile(profile) {
       ...profile.glassWallUnit,
       defaults: { ...D.glassWallUnit.defaults, ...profile.glassWallUnit?.defaults },
     },
+    // T74 F13 · the free panel's defaults, key by key.
+    freePanel: {
+      ...D.freePanel,
+      ...profile.freePanel,
+      defaults: { ...D.freePanel.defaults, ...profile.freePanel?.defaults },
+    },
+    // T74 F7 · the wardrobe's wall unit, its own block like the glass one's.
+    wardrobeWallUnit: {
+      ...D.wardrobeWallUnit,
+      ...profile.wardrobeWallUnit,
+      defaults: { ...D.wardrobeWallUnit.defaults, ...profile.wardrobeWallUnit?.defaults },
+    },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,
       ...profile.americanFridgeUnit,
@@ -5244,6 +5304,8 @@ export function migrateCabinetProfile(profile) {
         ...D.appearance.bevel, ...profile.appearance?.bevel,
         ao: { ...D.appearance.bevel.ao, ...profile.appearance?.bevel?.ao },
       },
+      // T74 F12 · the J groove's shade, merged the bevel's way.
+      jpull: { ...D.appearance.jpull, ...profile.appearance?.jpull },
       environment: { ...D.appearance.environment, ...profile.appearance?.environment },
       contactShadow: { ...D.appearance.contactShadow, ...profile.appearance?.contactShadow },
       room: {

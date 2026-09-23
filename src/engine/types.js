@@ -10,6 +10,8 @@
 //
 // Pure data — no React, no store imports.
 
+// T74 F13 · the free panel's box, from its board.
+import { freePanelDefaultParams } from './freePanel.js';
 import { KITCHEN_LIBRARY, libraryTypeIds } from './library.js';
 
 /**
@@ -136,6 +138,86 @@ export const UNIT_TYPES = {
     supports: {
       drawers: false, shelves: true, rail: false, pulldown: false, partition: true, doors: true,
       topInfill: true, cornice: true,
+    },
+    available: true,
+  },
+
+  // ─── T74 F7 · THE WARDROBE'S WALL UNIT ───────────────────────────────────
+  //
+  // The owner, 23.09.2026: *"ADD WALL UNIT (typ wallUnit): szafki wiszące w
+  // szafach (np. szafa L i P plus ciąg szafek nad łóżkiem; floating biurko).
+  // Osobny typ, NIE przełącznik przy szafie. Identyczny typ jak górka
+  // kuchenna, kopiować 1:1 z kuchni: bez nóg, zawieszka, wycięcia w plecach,
+  // panel maskujący pod spodem."*
+  //
+  // `WUD`, copied line for line: no legs, the hangers (their holes in the
+  // sides and the cut-outs at the back's top corners), the bottom masking
+  // panel a wall unit may carry, the same hinge and cup rules and the same
+  // LISP kit. What differs is only what files it: its own id and number
+  // prefix, the WARDROBE family (so a wardrobe job's library and run hold it)
+  // and its own defaults block. It rides on nothing: it hangs BESIDE a
+  // wardrobe, its top level with the wardrobe's, and it is not a top box.
+  WARDROBE_WALL: {
+    id: 'WARDROBE_WALL',
+    heightGroup: 'wall',
+    label: 'Wall unit',
+    family: 'wardrobe',
+    lisp: 'KIT_WUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,                  // hangs on the wall
+    legSource: null,
+    hangers: true,
+    doorExtend: true,             // optional +38 mm below the carcass
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeWallUnit.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+
+  // ─── T74 F13 · THE FREE PANEL ────────────────────────────────────────────
+  //
+  // The owner, 23.09.2026: *"SWOBODNY PANEL (wstaw panel). Użytkownik wstawia
+  // panel, ustawia pion/poziom/każdą orientację, długość, grubość ... Z paneli
+  // można złożyć własną figurę (np. box)."*
+  //
+  // A kit whose WHOLE carcass is one board standing free (`top: 'free'`; T28's
+  // law, the kit declares what it is made of), so it is placed, moved, cut,
+  // listed and machined by the roads every cabinet takes, and the piece editor
+  // edits its board as it edits any other. Its geometry is
+  // `engine/freePanel.js`. It hangs at its own height (`mount: 'wall'`, the
+  // height from the floor being `mount_height`, 0 on the floor), stands on no
+  // legs and no plinth, belongs to no family (every job's library shows it),
+  // and carries nothing: no doors, no shelves, no fillers.
+  FREE_PANEL: {
+    id: 'FREE_PANEL',
+    heightGroup: null,
+    label: 'Free-standing panel',
+    lisp: null,
+    freePanel: true,
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: null,
+    plinth: false,
+    hangers: false,
+    doorExtend: false,
+    mount: 'wall',
+    carcass: {
+      top: 'free', sides: 'none', bottom: 'none', back: 'none',
+    },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'freePanel.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false,
+      topInfill: false, cornice: false,
     },
     available: true,
   },
@@ -984,7 +1066,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1012,13 +1094,29 @@ export const UNIT_CATEGORIES = [
   // item — do not touch". The wardrobe is not a kitchen kit and keeps its own
   // place; saved sets and media walls are untouched.
   // Turn 36 (CLAUDE.md F7): "library offers Main wardrobe + Top box".
-  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP'] },
+  // T74 F7 · *"ADD WALL UNIT ... Osobny typ"*: the wardrobe's own wall unit.
+  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL'] },
   // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
   // rather than kits, so it carries no `types` — the panel reads them from the
   // template store.
   { id: 'sets', label: 'Saved sets', types: [], saved: true },
   { id: 'media', label: 'Media walls', types: [], soon: true },
 ];
+
+/**
+ * T74 F7 · is this the WARDROBE'S wall unit: a wardrobe-family type hung on
+ * the wall that rides on nothing (a top box rides; this hangs beside). The one
+ * question the store, the scene and the size window ask of it.
+ */
+export function isWardrobeWallUnit(typeId) {
+  const t = UNIT_TYPES[resolveTypeId(typeId)];
+  return Boolean(t && t.family === 'wardrobe' && t.mount === 'wall' && !t.ridesOn);
+}
+
+/** T74 F13 · is this the free panel kit (one board standing in the room)? */
+export function isFreePanel(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.freePanel);
+}
 
 export function getCategory(id) {
   return UNIT_CATEGORIES.find((c) => c.id === id) || null;
@@ -1122,6 +1220,11 @@ export function defaultParamsFor(typeId, profile) {
     // FRIDGE with a bigger envelope, and a kit that has an aperture says so by
     // having one in its defaults.
     ...(d.fridgeH != null ? { fridge_h: d.fridgeH } : {}),
+    // ─── T74 F13 · THE FREE PANEL'S BOX AND ITS BOARD ────────────────────
+    // Its defaults block names a BOARD (length, width, tilt), not a box, so
+    // the box is worked out from it (`engine/freePanel.js`). Spread, so no kit
+    // written before tonight carries a key it did not.
+    ...(type.freePanel ? freePanelDefaultParams(profile) : {}),
     unit_num: '01',
   };
 }
@@ -1131,5 +1234,8 @@ export const UNIT_NUM_PREFIX = {
   WARDROBE: 'W',
   // Turn 36 (F7): its own letter, so a cut list reads WT01 apart from W01 —
   // two carcasses, two numbers, one wardrobe.
-  WARDROBE_TOP: 'WT', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
+  WARDROBE_TOP: 'WT',
+  // T74 F7 · the wardrobe's wall unit: WW01, apart from the kitchen's WU01.
+  // T74 F13 · the free panel: FP01.
+  WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

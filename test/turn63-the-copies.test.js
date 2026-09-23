@@ -360,6 +360,19 @@ const T72_LICENSED = [
   'src/components/WatchLayoutModal.jsx',
 ];
 
+// ─── AMENDED BY T74 · TWO MORE, THE SAME WAY ────────────────────────────────
+//
+// CLAUDE.md T74: *"1:1 = COPY: a PRO surface edited is re-copied to its retail
+// copy by the copy script (`scripts/t72-copy.mjs` pattern), never by hand."*
+// F6 (the second shoe drawer's own height is shown, not edited) is written in
+// `ElementProperties`, already T72's; F7 (the wardrobe wall unit's depth and
+// its BACK | FRONT) in `UnitSizeModal`. Both are in `EXEMPT` with the owner's
+// words and their new hashes, and both were re-made by `scripts/t74-copy.mjs`.
+const T74_LICENSED = [
+  'src/components/ElementProperties.jsx',
+  'src/components/UnitSizeModal.jsx',
+];
+
 test('T72 · every PRO original that MOVED is licensed, and every licence is spent', () => {
   let base = null;
   for (const ref of ['origin/main', 'main']) {
@@ -380,8 +393,17 @@ test('T72 · every PRO original that MOVED is licensed, and every licence is spe
   const exempt = freeze.slice(at, freeze.indexOf('\n};', at));
   for (const rel of moved) {
     assert.ok(exempt.includes(`'${rel}':`), `${rel} moved without a licence in the freeze table`);
-    assert.ok(T72_LICENSED.includes(rel), `${rel} moved and this test does not know about it`);
+    assert.ok(T72_LICENSED.includes(rel) || T74_LICENSED.includes(rel),
+      `${rel} moved and this test does not know about it`);
   }
+  // T74 · …and tonight's machine names exactly tonight's licences (its list of
+  // PRO files EDITED; the fresh copies it makes are listed apart, below).
+  const copy74 = read('scripts/t74-copy.mjs');
+  const edits74 = copy74.slice(copy74.indexOf('export const T74_PRO_EDITS = ['),
+    copy74.indexOf('export const T74_NEW_COPIES = ['));
+  const named74 = [...edits74.matchAll(/pro: '([^']+)'/g)].map((m) => m[1]);
+  assert.deepEqual(named74.sort(), [...T74_LICENSED].sort(),
+    'scripts/t74-copy.mjs and this test disagree about what PRO edited tonight');
 
   // …and the copy machine names exactly what this test names, so a PRO edit
   // can never be made without its copy being re-made the same night.
@@ -402,7 +424,7 @@ test('T63, amended by T67 and T72 · not one byte of the other FIFTEEN originals
   if (!base) return;
   // `WatchLayoutModal` is on BOTH lists — T67 renamed it, T72 gave it three
   // controls — so the set is de-duplicated rather than counted twice.
-  const licensed = [...new Set([...T67_RENAMED, ...T72_LICENSED])];
+  const licensed = [...new Set([...T67_RENAMED, ...T72_LICENSED, ...T74_LICENSED])];
   const unmoved = T63_COPIES.map((c) => c.pro).filter((p) => !licensed.includes(p));
   assert.equal(unmoved.length, 21 - licensed.length, 'the exemption grew beyond the files it names');
   const diff = execFileSync('git', ['diff', '--stat', base, '--', ...unmoved],
@@ -589,7 +611,10 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
     ],
     // T73 F2 · the question a bare outer side asks (*"add panel (Yes / No)"*).
     // Retail's own, like the panel's menu: PRO has no such question to copy.
-    'AddPanelAsk.jsx': ['dock-add-panel', 'add-panel-yes', 'add-panel-no', 'add-panel-said'],
+    // AMENDED BY T74 F1: a small modal at the click, so its block is no longer
+    // the dock's (`dock-add-panel` becomes `add-panel-ask`); the same three
+    // controls, no fourth.
+    'AddPanelAsk.jsx': ['add-panel-ask', 'add-panel-yes', 'add-panel-no', 'add-panel-said'],
   };
   for (const f of files) {
     if (!/\.jsx$/.test(f)) continue;

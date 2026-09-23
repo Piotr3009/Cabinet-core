@@ -270,7 +270,12 @@ test('every library type is configured, available and buildable', () => {
   // Turn 31 (CLAUDE.md F9): the hood wall unit.
   // Turn 36 (CLAUDE.md F7): the TOP BOX — a second wardrobe kit, because
   // *"wysokie szafy nie wejdą do domu"*.
-  assert.equal(UNIT_TYPE_ORDER.length, 22, 'two wardrobe kits + 20 kitchen kits');
+  // Turn 74 (CLAUDE.md F7): the WARDROBE'S WALL UNIT, `WUD` copied 1:1 into
+  // the wardrobe family (*"Osobny typ, NIE przełącznik przy szafie"*).
+  // Turn 74 (CLAUDE.md F13): the FREE-STANDING PANEL, one board in the room
+  // (*"SWOBODNY PANEL (wstaw panel)"*), filed in the kitchen library's
+  // Extras, where its row had been held open since turn 12.
+  assert.equal(UNIT_TYPE_ORDER.length, 24, 'three wardrobe kits + 20 kitchen kits + the free panel');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

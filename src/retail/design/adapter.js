@@ -43,14 +43,14 @@ import { materialSlotOf, runMaterialSetting } from '../../engine/materials.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
 import {
-  hasTopInfill, paddedSpan, unitTop, wallGapOf,
+  hasTopInfill, unitTop, wallGapOf,
 } from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, elementMaterialChoices, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 // T61 F3: the top box's own two engine answers — the type's defaults and the
 // room's refusal — both read rather than retyped.
-import { defaultParamsFor, getUnitType } from '../../engine/types.js';
+import { defaultParamsFor, getUnitType, isFreePanel } from '../../engine/types.js';
 import { riderBornHeight } from '../../engine/roomFit.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
@@ -100,7 +100,10 @@ export const designUnit = (units) => {
   const list = Array.isArray(units) ? units : [];
   if (!list.length) return null;
   const mains = list.filter((u) => !u.params?.rides_on);
-  const pool = mains.length ? mains : list;
+  // T74 F7 · the fallback is a WARDROBE: a wall unit hung beside one is
+  // edited when it is the one selected, and never stands in for the wardrobe.
+  const standing = mains.filter((u) => isFloorWardrobe(u));
+  const pool = standing.length ? standing : (mains.length ? mains : list);
   // ─── T64 F1.2 · THE SELECTION, WHOLE ─────────────────────────────────────
   //
   // The owner: *"jak naciskam plusika żeby dodać, to dodaje wszystko do
@@ -118,7 +121,10 @@ export const designUnit = (units) => {
   const host = found?.params?.rides_on
     ? list.find((u) => u.id === found.params.rides_on) || null
     : found;
-  if (host && !host.params?.rides_on) return host;
+  // T74 F13 · a free panel is one board, edited on the RIGHT: the left
+  // column's doors, insides and sizes never land on it (the audit: ADD DOORS
+  // on a selected panel refused with no sentence). They go to the wardrobe.
+  if (host && !host.params?.rides_on && !isFreePanel(host.type)) return host;
   // The fallback is the wardrobe on the LOWEST wall, at the start of it — which
   // on a one-wall project is `units[0]` and nothing has moved.
   return [...pool].sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
@@ -363,13 +369,87 @@ function addFirstWardrobeNow() {
 }
 
 /**
+ * ─── T74 F7 · ADD WALL UNIT ────────────────────────────────────────────────
+ *
+ * The owner, 23.09.2026: *"ADD WALL UNIT (typ wallUnit): szafki wiszące w
+ * szafach (np. szafa L i P plus ciąg szafek nad łóżkiem; floating biurko).
+ * Osobny typ, NIE przełącznik przy szafie ... Domyślnie: góra równo z szafą,
+ * głębokość = głębokość szafy."*
+ *
+ * The same road the plus and ADD ANOTHER WARDROBE take (`addUnit` with a
+ * neighbour and a side): beside the SELECTED wardrobe (the first on the lowest
+ * wall when none is), on its right, else on its left. The store does the rest
+ * of the owner's sentence: the unit is born at that wardrobe's depth with its
+ * top level with that wardrobe's top, and the wardrobe's side keeps its panel.
+ * One press, one undo step (T68 F2).
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addWallUnit() {
+  return S().batch(() => addWallUnitNow());
+}
+
+function addWallUnitNow() {
+  const store = S();
+  const chosen = designUnit(store.units);
+  const wardrobe = isFloorWardrobe(chosen) ? chosen : [...store.units].filter(isFloorWardrobe)
+    .sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
+      || ((a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0)))[0] || null;
+  if (!wardrobe) return { id: null, said: REASONS.wallUnitNeedsAWardrobe };
+  let error = null;
+  for (const side of ['right', 'left']) {
+    const placed = store.addUnit('WARDROBE_WALL', { near: wardrobe.id, side });
+    if (placed?.id) return { id: placed.id, said: '' };
+    error = placed?.error || error;
+  }
+  return { id: null, said: error || REASONS.roomRefusedWardrobe() };
+}
+
+/**
+ * ─── T74 F13 · INSERT PANEL ─────────────────────────────────────────────────
+ *
+ * The owner, 23.09.2026: *"SWOBODNY PANEL (wstaw panel). Użytkownik wstawia
+ * panel ..."*  One board into the room through the store's own `addUnit`
+ * (the kit `FREE_PANEL`): beside the selected cabinet on its right, else its
+ * left, else wherever the room has space for it. Its board is then SELECTED,
+ * so its own menu (how it stands, its size) opens on the right: left adds,
+ * right edits. One press, one undo step.
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function insertPanel() {
+  return S().batch(() => insertPanelNow());
+}
+
+function insertPanelNow() {
+  const store = S();
+  // Beside the SELECTED panel when a panel is selected (a box is built board
+  // by board), else beside the wardrobe the left column is about.
+  const picked = store.units.find((u) => u.id === (U().selectedElement?.unitId || U().selectedUnitId));
+  const near = picked && isFreePanel(picked.type) ? picked : designUnit(store.units);
+  let placed = null;
+  let error = null;
+  for (const side of near ? ['right', 'left'] : [null]) {
+    placed = store.addUnit('FREE_PANEL', near ? { near: near.id, side } : {});
+    if (placed?.id) break;
+    error = placed?.error || error;
+  }
+  if (!placed?.id) placed = store.addUnit('FREE_PANEL');
+  if (!placed?.id) return { id: null, said: placed?.error || error || REASONS.roomRefusedPanel };
+  selectOnStage(placed.id, 'FP');
+  return { id: placed.id, said: '' };
+}
+
+/**
  * T73 F5 · the second wardrobe, placed the way the plus places it. Answers the
  * new id, or null when there is no wardrobe on wall 0 or no room either side
  * (the caller then takes the old road).
  */
 function besideOnFirstWall(store, width, p) {
+  // T74 F7 · a wardrobe goes beside a WARDROBE: a wall unit hung on wall 0 is
+  // not a run end for this to measure from.
   const mains = store.units
-    .filter((u) => (u.position?.wall ?? 0) === 0 && !isTopBox(u))
+    .filter((u) => (u.position?.wall ?? 0) === 0 && !isTopBox(u) && isFloorWardrobe(u))
     .sort((a, b) => (a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0));
   if (!mains.length) return null;
   const params = { width, height: p.wardrobe.defaults.height };
@@ -966,20 +1046,38 @@ function neighbourOf(unitId, side) {
 // The owner, 23.09.2026: *"jak klikniesz na bok szafy z zewnątrz, żeby się
 // pokazywało add panel (Yes / No), to będzie bardzo intuicyjne."*
 //
-// A side (BUL / BUR) with NO end panel on it and NO neighbour covering it asks
-// the question. A side with a panel never does (the panel is what is clicked),
-// and neither does a side a flush neighbour hides (there is nothing to cover).
-// YES is `addEndPanelByHand`, the EXTRAS road, so the panel is the client's own
-// and permanent; the panel's own menu (T72 F1) opens straight after.
+// ─── T74 F1 · ANY WARDROBE, A SMALL MODAL AT THE CLICK ─────────────────────
+//
+// The owner, retesting T73 on 23.09.2026: *"po naciśnięciu na bok szafy jak
+// nie ma panelu powinno się pokazać to pytanie, a nie pierwsza czy druga
+// szafa, po prostu po naciśnięciu boku szafy, a jak nic nie naciśniesz i
+// klikniesz na coś innego to znika mały modal jak wymiary lub j pull hands."*
+//
+// Two things changed, and both are his:
+//
+//   ANY SIDE ASKS.   Every side (BUL / BUR) of every wardrobe standing on the
+//                    floor asks, as long as NO end panel is on it. The T73
+//                    exclusion of a side a flush neighbour covers is gone: the
+//                    owner clicked the covered side of the first wardrobe and
+//                    got nothing. Where there is no room for a panel the
+//                    STORE refuses, in its own sentence, inside the question.
+//                    Top boxes stay out, and so does anything that hangs.
+//   IT IS A MODAL.   The question is not docked on the right any more. The
+//                    scene reports the click with its point (`onAskSide`,
+//                    T58b's J-strip road) and the question opens THERE, in the
+//                    same anchored shell the size figure and the J run open
+//                    in, and a click anywhere else closes it with nothing
+//                    added. The right-hand panel does not open for the click.
+//
+// YES is `addEndPanelByHand`, the EXTRAS road, so the panel is the client's
+// own and permanent; the question closes and the panel's own menu (T72 F1)
+// opens straight after.
 
-/** Does this side stand flush against the neighbour on that side? */
-function flushWith(unit, neighbour, side) {
-  if (!unit || !neighbour) return false;
-  const me = paddedSpan(unit);
-  const it = paddedSpan(neighbour);
-  const gap = side === 'R' ? it.left - me.right : me.left - it.right;
-  return gap <= 1;
-}
+/** A wardrobe that stands on the floor: not a top box, nothing that hangs. */
+const isFloorWardrobe = (unit) => {
+  const type = getUnitType(unit?.type);
+  return Boolean(type && type.family === 'wardrobe' && !type.ridesOn && type.mount !== 'wall');
+};
 
 /**
  * Should a click on this carcass side ask to add a panel?
@@ -988,26 +1086,48 @@ function flushWith(unit, neighbour, side) {
 export function sideAskFor(unitId, panel) {
   if (panel?.part !== 'BUL' && panel?.part !== 'BUR') return null;
   const unit = unitOf(unitId);
-  if (!unit || isTopBox(unit)) return null;
+  if (!unit || isTopBox(unit) || !isFloorWardrobe(unit)) return null;
   const side = panel.part === 'BUR' ? 'R' : 'L';
   const has = (unit.params?.end_panels || []).some((ep) => (ep.side === 'R' ? 'R' : 'L') === side);
   if (has) return null;
-  const neighbour = neighbourOf(unitId, side);
-  if (neighbour && flushWith(unit, neighbour, side)
-    && !sideIsVisible(unit, side, neighbour, { atWall: false }, P()).visible) return null;
   return { side };
 }
 
-/** YES: the panel goes on by hand, and its own menu opens on it. */
+/**
+ * THE CLICK, reported by the scene: open the question beside the pointer.
+ *
+ * The anchor is made from the client point the way every other scene gesture
+ * makes one (`uiStore.openModal` puts `at` through the shell's own
+ * `withModalAnchor`). Lights mode is left alone: a side clicked while the
+ * lighting window stands is not one of the three exits the owner named (T72
+ * F7), and opening a question would end it.
+ *
+ * @returns {boolean} whether the question opened
+ */
+export function askSide(unitId, panelId, at) {
+  if (lightsModeOn()) return false;
+  const panel = (resultOf(unitId)?.panels || []).find((p) => p.id === panelId) || null;
+  const ask = sideAskFor(unitId, panel);
+  if (!ask) return false;
+  openEditor('add-panel', {
+    unitId, panelId, side: ask.side, at: at ? { x: at.x, y: at.y } : null,
+  });
+  return true;
+}
+
+/** YES: the panel goes on by hand, the question closes, its own menu opens. */
 export function addEndPanelFromAsk(unitId, side) {
   const res = addEndPanelByHand(unitId, side);
-  if (res.ok) selectOnStage(unitId, `END-${side === 'R' ? 'R' : 'L'}`);
+  if (res.ok) {
+    closeEditor();
+    selectOnStage(unitId, `END-${side === 'R' ? 'R' : 'L'}`);
+  }
   return res;
 }
 
 /** NO: the question closes and nothing changes. */
 export function dismissSideAsk() {
-  U().clearElement?.();
+  closeEditor();
   return { ok: true, said: '' };
 }
 
@@ -2066,6 +2186,9 @@ export const MENU_FOR_KIND = Object.freeze({
   // carcass: it is an interior item a client ADDS, from a row that now exists.
   // So clicking a divider opens the divider.
   partition: 'partition',
+  // T74 F13 · the free panel's own board: how it stands and its size, PRO's
+  // own two rows (`ElementProperties`, copied), on the right where editing is.
+  'free-panel': 'free-panel',
   // ─── T66 F3 · THE CARCASS IS THE WAY OUT, AND SO IS A DERIVED BOARD ──────
   //
   // The owner: *"w zasadzie po prawej powinien być tylko menu edycji"*, and
@@ -2126,8 +2249,10 @@ export const MENUS = Object.freeze([
   // pattern T69 F8 established, for the same reason (PRO keeps its numeric
   // fields and a copy may not be edited).
   'panel',
-  // T73 F2 · the tenth: the question a bare outer side asks, YES or NO.
-  'add-panel',
+  // T74 F1 · TOMBSTONE: `add-panel` stood here (T73 F2's docked question). The
+  // question is a small modal at the click now (`askSide`), not a menu.
+  // T74 F13 · the tenth: the free panel's board (PRO's piece panel, docked).
+  'free-panel',
 ]);
 
 /**
@@ -2187,14 +2312,8 @@ export function resolveSelection(selected) {
   const panel = (result?.panels || []).find((p) => p.id === ref) || null;
   if (!panel || !isSelectableElement(panel)) return null;
   const kind = elementKind(panel);
-  // T73 F2 · a bare outer side asks whether to add an end panel. Every other
-  // carcass click is still the way out (T65 F10).
-  if (kind === 'side' && sideAskFor(unitId, panel)) {
-    return {
-      menu: 'add-panel', kind, unitId, ref, panel, item: null,
-      label: panel.part === 'BUR' ? 'Right side' : 'Left side',
-    };
-  }
+  // T74 F1 · a side is the way out again (T65 F10), like every carcass click:
+  // its question is a modal at the click (`askSide`), never a menu here.
   let menu = MENU_FOR_KIND[kind] || null;
   if (!menu) return null;
 

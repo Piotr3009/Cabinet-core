@@ -38,7 +38,9 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // "library offers Main wardrobe + Top box." The owner's reason: *"wysokie
   // szafy nie wejdą do domu"* — a 2600 wardrobe cannot be carried up a
   // staircase, so it is built as two. Nothing else in the list moved.
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP']);
+  // AMENDED BY T74 F7: *"ADD WALL UNIT ... Osobny typ"*: the wardrobe's own
+  // wall unit joins the category, a third kit; the first two did not move.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);
   // Turn 15 (CLAUDE.md F5.2): the same nine kits, in the order the owner's
   // CATALOGUE puts them in — base units, then talls, then walls.
   assert.deepEqual(getCategory('kitchen').types, [
@@ -48,9 +50,11 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
     // Turn 31 (CLAUDE.md F9): WUD_HOOD — the KIT_WUD envelope with its bottom
     // open, standing beside the two wall units it is one of.
     'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
+    // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
+    'FREE_PANEL',
   ]);
-  // T36 F7: Main wardrobe + Top box.
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP']);
+  // T36 F7: Main wardrobe + Top box. T74 F7: + the wardrobe's wall unit.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);
 
   // Turn 5 (BACKLOG #30): Saved sets is real. It holds the workshop's OWN units
   // rather than kits, so it lists no types and is marked `saved` — the panel

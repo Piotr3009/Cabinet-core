@@ -150,15 +150,20 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // new hash, each re-copied the same night. The assertion is the one it always
   // was, asked of a list that a turn may add to and never of a number: EVERY
   // name on it is one a turn argued, and F9's own door is not among them.
+  // AMENDED BY T74: `DrawRoomModal` (F3's focused, selected field), argued in
+  // the manifest with the owner's words, re-frozen at its new hash. And
+  // `UnitSizeModal` (T74 F7: the wardrobe wall unit's depth and its BACK |
+  // FRONT), licensed by T74 and not by F9: what F9 said it did not buy, it
+  // still did not buy, and the assertion below asks exactly that.
   const ARGUED = [
-    'AddItems', 'DoorModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
-    'RoomModal', 'WatchLayoutModal',
+    'AddItems', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
+    'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
   for (const [name, turn] of exempt) {
-    assert.ok(['67', '69', '71', '72'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
+    assert.ok(['67', '69', '71', '72', '74'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
   }
-  assert.ok(!exempt.some(([n]) => /UnitSize/.test(n)), 'F9 bought no exemption');
+  assert.ok(!exempt.some(([n, t]) => /UnitSize/.test(n) && t === '69'), 'F9 bought no exemption');
   assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), ['RoomModal'], 'T69 licensed RoomModal alone');
 });

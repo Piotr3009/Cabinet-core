@@ -168,9 +168,20 @@ export function watchLayoutOf(item) {
 // FOUR COLOURS AND NO FIFTH. *"tylko te 4 kolory filcu"* is a closed list and
 // this is it; the hexes are the felt a workshop actually buys, and the BOM
 // names the colour because a roll of dark green is not a roll of black.
+//
+// ─── T74 F2 · WINE RED, NOT A LOUD RED ─────────────────────────────────────
+//
+// The owner, 23.09.2026, testing T73: *"red raczej zrób kolor wine red, nie
+// krzykliwa czerwień."*  The entry keeps its id `red`, so every saved job
+// opens with the felt it was given; its LABEL is the wine the owner named,
+// which is what the BOM line and both windows read, and its hex is a wine.
+// The owner's start, #722F37, was measured in the room light on the open tray
+// (`verify/t74/f02-wine-felt-722f37-before.png`): the light lifts it to
+// rgb(164, 72, 81), lightness 46 %, a raspberry, not a wine. So, as the order
+// says, darkened: #501D23 (frame `verify/t74/f02-wine-felt.png`).
 export const WATCH_FELT_COLOURS = Object.freeze([
   { id: 'dark-green', label: 'Dark green', hex: '#1f3b2c' },
-  { id: 'red', label: 'Red', hex: '#7d1f22' },
+  { id: 'red', label: 'Wine red', hex: '#501D23' },
   { id: 'brown', label: 'Brown', hex: '#4b3524' },
   { id: 'black', label: 'Black', hex: '#141414' },
 ]);
@@ -275,6 +286,19 @@ export function drawerItemOf(unit, index, zone = null) {
   return items.find((i) => i?.kind === 'drawer'
     && Number(i.index) === Number(index)
     && zoneOf(i) === zone) || null;
+}
+
+/**
+ * T74 F6 · the SECOND shoe drawer of a bay: the drawer at `index` when it is a
+ * shoe drawer standing on a shoe drawer, else null. The one question the drag,
+ * the clickable distance, the drawer menu and the store's clamp all ask.
+ * *"Pierwsza szuflada ZAWSZE na dnie (ustalone, bez zmian). Druga przesuwana
+ * góra/dół."*
+ */
+export function secondShoeItem(unit, index, zone = null) {
+  const item = drawerItemOf(unit, index, zone);
+  if (item?.variant !== 'shoe') return null;
+  return drawerItemOf(unit, Number(index) - 1, zone)?.variant === 'shoe' ? item : null;
 }
 
 /**

@@ -180,6 +180,14 @@ export default function DesignRoom({ collection: wantCollection, query = {} }) {
   // `null` is closed; `{ anchor }` is open, and the rectangle is the
   // trigger's own, so the window stands BESIDE the button (rule 15).
   const [roomEditor, setRoomEditor] = useState(null);
+  // ─── T74 F4 · THE DRAWING TAKES THE ROOM WINDOW'S PLACE ──────────────────
+  // The probe (`verify/t74/f04-probe.md`): the room window stayed mounted
+  // under DRAW ROOM with its own draft of the OLD room, so after a new room was
+  // saved it went on showing the old outline over the new one. PRO's drawing
+  // REPLACES its room window (`openNav`); the client's does the same here, and
+  // EDIT THE ROOM opens a fresh window on the room that now stands.
+  const modalNow = useUiStore((s) => s.modal);
+  useEffect(() => { if (modalNow === 'draw-room') setRoomEditor(null); }, [modalNow]);
   // ─── T61 F1 · WHAT THE SHARED CORE SAID ABOUT THE LAST `+` ───────────────
   // One string, under the stage, in the third voice every refusal in this
   // app is written in. T64 F1.1: the Delete key's refusals land here too.

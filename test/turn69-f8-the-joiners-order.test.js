@@ -109,7 +109,8 @@ test('F8 · …and nothing behind it died: the engine, the store and PRO all sta
   // PRO's own road to it: the LIBRARY category a joiner adds one from, and the
   // part registry that machines it. Neither is a client control and neither moved.
   assert.match(read('src/engine/types.js'),
-    /\{ id: 'wardrobe', label: 'Wardrobes', types: \['WARDROBE', 'WARDROBE_TOP'\] \}/,
+    // AMENDED BY T74 F7: the category gained the wardrobe's wall unit after it.
+    /\{ id: 'wardrobe', label: 'Wardrobes', types: \['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL'\] \}/,
     'the top box left the library a joiner adds it from');
   assert.match(read('src/engine/partRegistry.js'), /typeId === 'WARDROBE_TOP'/,
     'the top box stopped being machined');

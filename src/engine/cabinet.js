@@ -20,6 +20,8 @@
 // differs per kit is a flag in engine/types.js, never a second copy of the
 // carcass arithmetic.
 
+// T74 F13 · the free panel's board and where it stands.
+import { freePanelOf, freePanelPlacement } from './freePanel.js';
 import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
@@ -886,7 +888,14 @@ function normalizeParams(raw, profile) {
           .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))
           // Turn 33 (F3): the variant rides with the drawer — the box is cut
           // exactly as ever; the INSERT (and the glass) is what it orders.
-          .map((i) => ({ height_mm: i.height_mm, mount: i.mount, variant: drawerVariantOf(i) })),
+          .map((i) => ({
+            height_mm: i.height_mm,
+            mount: i.mount,
+            variant: drawerVariantOf(i),
+            // T74 F6 · a raised drawer's mounting height rides with it. Absent
+            // where nothing was said, so every column before tonight is as it was.
+            ...(Number.isFinite(Number(i.pos_mm)) ? { pos_mm: Number(i.pos_mm) } : {}),
+          })),
       })),
     // Turn 33 (CLAUDE.md F3): the bought mechanisms, normalised — a kind the
     // profile knows, a column or the whole width, a height somebody may have
@@ -1071,6 +1080,38 @@ function resolveDrawerHeights(p, count, drawerItems, profile, warnings) {
   return out;
 }
 
+/**
+ * ─── T74 F6 · WHERE EACH DRAWER OF A STACK STANDS ───────────────────────────
+ *
+ * The owner, 23.09.2026: *"DRUGA SZUFLADA NA BUTY (niskie i wysokie buty).
+ * Regulacja = WYSOKOŚĆ MONTAŻU, nie wysokość szuflady. Pierwsza szuflada
+ * ZAWSZE na dnie (ustalone, bez zmian). Druga przesuwana góra/dół."*
+ *
+ * The offsets of a stack over its own floor, bottom-up. A drawer is stacked
+ * tight on the one below it, as every drawer has always been, UNLESS its item
+ * states a MOUNTING HEIGHT (`pos_mm`, the house datum: its slot's underside,
+ * zero at the outside of the carcass bottom, as a shelf's), in which case it
+ * stands there, never lower than tight. The first drawer is never moved.
+ *
+ * `top` is the stack's own height where a drawer was raised, and null where
+ * nothing was: then the caller keeps the arithmetic it has always used, so a
+ * stack that states no height is byte for byte what it was.
+ */
+function stackOffsets(heights, items, gap, G) {
+  const offsets = [];
+  let acc = 0;
+  let raised = false;
+  for (let i = 0; i < heights.length; i += 1) {
+    const pos = Number(items?.[i]?.pos_mm);
+    const at = i > 0 && Number.isFinite(pos) ? Math.max(acc, pos - G) : acc;
+    if (at !== acc) raised = true;
+    offsets.push(at);
+    acc = at + (heights[i] + gap);
+  }
+  const n = heights.length;
+  return { offsets, top: raised && n ? offsets[n - 1] + heights[n - 1] : null };
+}
+
 function collectItems(p) {
   if (Array.isArray(p.items)) return p.items;
   if (Array.isArray(p.sections)) return p.sections.flatMap((s) => s.items || []);
@@ -1160,7 +1201,11 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
  * drawer box. They live inside a carcass or behind a door — the workshop cuts
  * them from finished board and they never reach the spray booth.
  */
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask']);
+// T74 F13 adds `free_panel`: a board standing free in the room is seen on
+// both faces and all four edges. It is cut from the carcass board (it is a
+// board the client builds with, not a door), so it does NOT join the front
+// material below.
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1969,6 +2014,8 @@ export function computeCabinet(params, profileOverride) {
   // constant lists and every formula below collapses to the LISP's fixed one.
   let drawerHeights = [];
   let zoneOffsets = [];      // bottom of drawer i's front, relative to the stack base
+  // T74 F6 · where each drawer of the full-width stack stands (`stackOffsets`).
+  let drawerStack = { offsets: [], top: null };
   let boxSideH = [];
   let boxFrontHs = [];
 
@@ -2078,7 +2125,11 @@ export function computeCabinet(params, profileOverride) {
     // totalH = Σ hᵢ + (n−1)·gap. With every hᵢ = frontHeight this is exactly
     // the LISP's n·200 + (n−1)·3.
     drawerHeights = cfg.drawerHeights.slice(0, numDrawers);
-    drawerTotalH = drawerHeights.reduce((s, h) => s + h, 0) + (numDrawers - 1) * DR.gap;
+    // T74 F6 · a drawer raised to its own mounting height makes the stack as
+    // tall as its top drawer; with nothing raised this is the sum it always was.
+    drawerStack = stackOffsets(drawerHeights, cfg.drawerItems, DR.gap, G);
+    drawerTotalH = drawerStack.top
+      ?? drawerHeights.reduce((s, h) => s + h, 0) + (numDrawers - 1) * DR.gap;
     if (drawerTotalH > H - 2 * G - DR.zoneHeadroom) {
       warnings.push({ code: 'DRAWERS_TOO_TALL', message: `${numDrawers} drawers do not fit below the partition — drawers dropped.` });
       hasDrawers = false;
@@ -2114,8 +2165,9 @@ export function computeCabinet(params, profileOverride) {
     // gap)" in the LISP becomes "sum of the drawers below me, plus their gaps".
     let acc = 0;
     for (let i = 0; i < numDrawers; i += 1) {
-      zoneOffsets.push(acc);
-      acc += drawerHeights[i] + DR.gap;
+      // T74 F6 · the stack's own offsets: tight, or at a raised drawer's height.
+      zoneOffsets.push(drawerStack.offsets[i]);
+      acc = i + 1 < numDrawers ? drawerStack.offsets[i + 1] : drawerStack.offsets[i] + (drawerHeights[i] + DR.gap);
       // Box side = front − frontToSideDelta; box front/back = side − 15 − G − 1,
       // i.e. "as before, off the side" (200 → 164 → 130 with the defaults).
       // ─── TURN 25 (CLAUDE.md F8) ───
@@ -2952,6 +3004,34 @@ export function computeCabinet(params, profileOverride) {
       cnc: { rotated: true, drawn_w: topH, drawn_h: W, ...rectGeometry(topH, W) },
     }));
   }
+  // ─── T74 F13 · THE FREE PANEL: ONE BOARD, STANDING FREE ────────────────
+  //
+  // *"SWOBODNY PANEL (wstaw panel). Użytkownik wstawia panel, ustawia
+  // pion/poziom/każdą orientację, długość, grubość."*  The kit declares its
+  // whole carcass as this one board (`top: 'free'`), exactly as the D/W
+  // declares its rail. Its length along the wall, its width and the board's
+  // thickness are the cut; its lean is where it stands (`engine/freePanel.js`
+  // puts it in the box the unit states). All four edges are seen, so all four
+  // are banded; nothing joins to it, so it carries no pocket and no hole, and
+  // what the piece editor draws on it (an arc, a drill) is added the way it is
+  // added to any board (`applyPartEdits`).
+  if (type.carcass.top === 'free') {
+    const fp = freePanelOf({ ...params, width: W, height: H, depth: D, board_t: G }, P);
+    const at = freePanelPlacement(fp);
+    panels.push(panel({
+      id: 'FP', part: 'FREE-PANEL', role: 'free_panel', w: fp.length, h: fp.width, thickness: G,
+      edgeCode: codes.all, edgeLen: metres(2 * (fp.length + fp.width)),
+      box: at.box,
+      cnc: { rotated: false, drawn_w: fp.length, drawn_h: fp.width, ...rectGeometry(fp.length, fp.width) },
+      meta: {
+        facing: fp.facing,
+        tilt: fp.tilt,
+        ...(at.tilt ? {
+          tilt_deg: at.tilt.deg, tilt_pivot: at.tilt.pivot, ...(at.tilt.axis ? { tilt_axis: at.tilt.axis } : {}),
+        } : {}),
+      },
+    }));
+  }
   if (hasBottom) {
     panels.push(panel({
       id: 'BOTTOM', part: 'BOTTOM', role: 'bottom', w: topW, h: topH, thickness: G,
@@ -3754,9 +3834,20 @@ export function computeCabinet(params, profileOverride) {
       // which is all six standard configs — so this reads `G` exactly as it
       // did before tonight for every one of them.
       const partitionFloor = overlay ? overlay.shelfY + G : G;
+      // ─── T74 F9 · THE DIVIDER UNDER A SLOPE IS CUT TO IT ──────────────────
+      // The owner, 23.09.2026: *"divider przy skosie nie skraca się i nie ma
+      // cięcia pod kątem. Ma pokazywać najdłuższą krawędź plus kąt cięcia."*
+      // The probe (`verify/t74/f09-probe.md`): the sides and the end panel
+      // were cut to the slope and the divider stood to `H - G` through the
+      // roof. It takes the SIDE's own treatment (T47), from the side's own
+      // helpers and nothing new: it stops under the roof board over its own
+      // 18 mm (the blank, its longest edge), and carries the short face, the
+      // angles and the wedge the side carries. Under a flat stretch, and on
+      // every cabinet with no slope, the ceiling is `H - G` exactly as before.
+      const divCeil = roofList ? Math.min(H - G, sideTopAt(x, x + slotG)) : H - G;
       const span = partitionSpan({
         floor: partitionFloor,
-        ceiling: H - G,
+        ceiling: divCeil,
         shelves: crossing,
         // The board a partition is INTERRUPTED by is the SHELF's, not its own:
         // `partitionSpan` measures the run between two horizontal boards.
@@ -3766,6 +3857,9 @@ export function computeCabinet(params, profileOverride) {
       });
       if (span.height <= 0) break;
       n += 1;
+      // T74 F9 · cut by the slope where its ceiling came down, and ONLY there.
+      const divCut = roofList && divCeil < H - G - 1e-9 && span.to >= divCeil - 1e-9;
+      const divElevation = divCut ? bevelProfile(x, x + slotG, divCeil) : null;
       panels.push(panel({
         id: `VPART-${n}`, part: 'VPART', role: 'shelf', w: span.height, h: span.depth, thickness: slotG,
         // One long edge is seen from the room when the doors are open — the same
@@ -3808,7 +3902,9 @@ export function computeCabinet(params, profileOverride) {
           slot: partitionSlot(item),
           // Turn 21 (CLAUDE.md F12.1): the two physical preconditions for
           // hanging a door on this piece, read off the piece itself.
-          fullHeight: span.from <= G + 1e-9 && span.to >= H - G - 1e-9,
+          // T74 F9 · under a slope the top it reaches IS the roof board over
+          // it, so a divider cut to the slope is still full height.
+          fullHeight: span.from <= G + 1e-9 && span.to >= divCeil - 1e-9,
           itemId: item.id || null,
           x_mm: x,
           front_mm: span.front_mm,
@@ -3830,6 +3926,27 @@ export function computeCabinet(params, profileOverride) {
           // 3D view can draw the two as one joint rather than two pieces that
           // happen to touch.
           terminatesOn: span.terminatesOn,
+          // ─── T74 F9 · THE SIDE'S SLOPE RECORD, ON THE DIVIDER ────────────
+          // `h` is the blank (the longest edge, the cut size above), `low` the
+          // short face, both as lengths of the board; `angles` is what every
+          // sheet prints beside the blank (`slopeNoteText`, `CUT β°`), exactly
+          // as the side's; `bevel3d` is the wedge at its two faces in carcass
+          // y, which the scene takes off the top as it does the side's.
+          ...(divCut ? {
+            slopeCut: {
+              h: roundTo(span.height, 4),
+              full: roundTo(H - G - span.from, 4),
+              topAt: roundTo(divCeil, 4),
+              angles: anglesOver(x, x + slotG),
+              low: roundTo(Math.max(0, sideLowAt(x, x + slotG) - span.from), 4),
+              bevel3d: { a: sideEdgeAt(x), b: sideEdgeAt(x + slotG) },
+            },
+            // …and the wedge seen from the front, in the board's own frame.
+            ...(divElevation ? {
+              elevation: divElevation.map(([px, py], i) => (i < 2
+                ? [px, py] : [px, roundTo(Math.max(0, py - span.from), 4)])),
+            } : {}),
+          } : {}),
         },
       }));
     }
@@ -4069,7 +4186,10 @@ export function computeCabinet(params, profileOverride) {
         continue;
       }
       const heights = list.map((d) => (Number(d?.height_mm) > 0 ? Number(d.height_mm) : DR.frontHeight));
-      const totalH = heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
+      // T74 F6 · the column twin of the full-width stack: a raised drawer
+      // stands at its own mounting height, and nothing else moves.
+      const colStack = stackOffsets(heights, list, DR.gap, G);
+      const totalH = colStack.top ?? heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
       if (totalH > H - 2 * G - DR.zoneHeadroom) {
         warnings.push({
           code: 'DRAWERS_TOO_TALL',
@@ -4099,8 +4219,8 @@ export function computeCabinet(params, profileOverride) {
       const partY = G + totalH + DR.partitionClearance;
       let acc = 0;
       for (let i = 0; i < heights.length; i += 1) {
-        offsets.push(acc);
-        acc += heights[i] + DR.gap;
+        offsets.push(colStack.offsets[i]);
+        acc = i + 1 < heights.length ? colStack.offsets[i + 1] : colStack.offsets[i] + (heights[i] + DR.gap);
         const ceilingHere = i + 1 < heights.length ? G + acc : partY;
         // T54-F7: the shoe drawer's one override, the column twin of the
         // full-width law above — side height = `drawers.shoeSideMm`.
@@ -6022,22 +6142,101 @@ export function computeCabinet(params, profileOverride) {
    * whose PLATE lands on the board, which is T46's own margin: a hinge dropped
    * when its centre fits but its screws do not is a hinge nobody can fit.
    */
-  const slopeCupY = (sl) => {
+  //
+  // ─── T74 F10 · …AND NEVER CLOSER THAN 150 MM TO THE APEX ───────────────────
+  //
+  // The owner: *"ZAWIASY NA SKOSIE: minimum 150 mm od wierzchołka trójkąta
+  // skosu (inaczej nie da się wkręcić śrubokrętem). Przeliczanie zawiasów na
+  // skosach inaczej."*  The probe (`verify/t74/f10-probe.md`): the top cup sat
+  // `endOffset` (100) under the apex, and a low door kept its whole ladder
+  // squeezed to 44 mm. Where the slope CUTS the hinge edge (its top is the
+  // apex of the acute corner), the edge's own ladder (its count is the door's)
+  // has its top brought down to `hinges.slopeApexMinMm` under the apex and
+  // every row re-spaced with it, the bottom one where it always is; rows closer than `minSpacingMm`
+  // are thinned from the inside (bottom and top kept), never squeezed; and a
+  // door that then holds fewer hinges than its ladder asked, or fewer than
+  // two, is REFUSED IN WORDS on the piece (`meta.slopeCut.hingeApex`, read by
+  // Check #26). A list drilled BY HAND still wins and is not moved: the Check
+  // says where it stands inside the 150.
+  const APEX_MIN = Number(P.hinges.slopeApexMinMm) || 0;
+  const HINGE_GAP = Number(P.hinges.minSpacingMm) || 0;
+  const HINGE_END = Number(P.hinges.endOffset) || 0;
+  /** Rows closer than the house spacing, thinned from the inside: bottom and top stand. */
+  const unsquash = (rows) => {
+    const s = [...rows].sort((a, b) => a - b);
+    if (s.length < 2 || !(HINGE_GAP > 0)) return s;
+    const top = s[s.length - 1];
+    if (top - s[0] < HINGE_GAP - 1e-9) return [s[0]];
+    const out = [s[0]];
+    for (const y of s.slice(1, -1)) {
+      if (y - out[out.length - 1] >= HINGE_GAP - 1e-9 && top - y >= HINGE_GAP - 1e-9) out.push(y);
+    }
+    out.push(top);
+    return out;
+  };
+  /**
+   * The hinge plan of one hinge edge the slope may cut: `stile` is the edge's
+   * height, `full` the leaf's own. `ladder(h)` is the leaf's own ladder run
+   * over a height; `place(rows)` takes it into the leaf's frame and keeps the
+   * rows whose plate is on the board. Returns the cups and, where the edge is
+   * cut, the record the Check reads.
+   */
+  const apexPlan = ({
+    stile, full, ladder, place, handMade,
+  }) => {
+    const apexCut = APEX_MIN > 0 && stile < full - 1e-9;
+    if (!apexCut) return { cupY: place(ladder(stile)), apex: null };
+    const limit = stile - APEX_MIN;
+    if (handMade) {
+      const cupY = place(ladder(stile));
+      const inside = cupY.filter((y) => y > limit + 1e-3);
+      return {
+        cupY,
+        apex: {
+          min: APEX_MIN, edge: roundTo(stile, 4), limit: roundTo(limit, 4), hand: true,
+          asked: cupY.length, now: cupY.length, refused: inside.length > 0, inside,
+        },
+      };
+    }
+    // The ladder the edge takes by its own height (its COUNT is the door's),
+    // its top brought down to the limit and every row re-spaced with it, the
+    // bottom row standing where it always stands.
+    const rows = place(ladder(stile));
+    const lo = rows.length ? Math.min(...rows) : 0;
+    const hi = rows.length ? Math.max(...rows) : 0;
+    const k = hi > limit + 1e-9 && hi > lo + 1e-9 ? Math.max(0, limit - lo) / (hi - lo) : 1;
+    const clear = rows.map((y) => roundTo(lo + (y - lo) * k, 4)).filter((y) => y >= 0 && y <= limit + 1e-3);
+    const cupY = unsquash(clear);
+    return {
+      cupY,
+      apex: {
+        min: APEX_MIN, edge: roundTo(stile, 4), limit: roundTo(limit, 4), hand: false,
+        asked: clear.length, now: cupY.length, refused: cupY.length < clear.length || cupY.length < 2,
+      },
+    };
+  };
+  const slopeHinges = (sl) => {
     const stile = sl.hinge === 'R' ? sl.roomR : sl.roomL;
     const leafH = Math.max(0, Math.min(frontH, stile));
     const margin = Number(P.hinges.cups.screwOffsetY) || 0;
-    const rows = hingeRows({
-      height: leafH,
-      rule: hingeRule,
-      standard: cfg.hingeStandard,
-      own: cfg.hingeRows,
-      doorHeight: leafH,
-      twoBelowMm: cfg.hingeTwoBelowMm,
-    }, P);
-    return rows
-      .map((c) => roundTo(c - overlayBase + cfg.doorExtend, 4))
-      .filter((y) => y >= 0 && y + margin <= leafH);
+    return apexPlan({
+      stile: leafH,
+      full: frontH,
+      handMade: Array.isArray(cfg.hingeRows) && cfg.hingeRows.length > 0,
+      ladder: (height) => hingeRows({
+        height,
+        rule: hingeRule,
+        standard: cfg.hingeStandard,
+        own: cfg.hingeRows,
+        doorHeight: height,
+        twoBelowMm: cfg.hingeTwoBelowMm,
+      }, P),
+      place: (rows) => rows
+        .map((c) => roundTo(c - overlayBase + cfg.doorExtend, 4))
+        .filter((y) => y >= 0 && y + margin <= leafH),
+    });
   };
+  const slopeCupY = (sl) => slopeHinges(sl).cupY;
 
   /** A cut leaf's panel fields — its outline, its height, its forced hinge. */
   const cutFrontFields = (sl, leafW) => {
@@ -6045,7 +6244,8 @@ export function computeCabinet(params, profileOverride) {
     const geom = trimGeometryOnSlope(rectGeometry(leafW, frontH), {
       w: leafW, h: frontH, pts: sl.sheetPts,
     });
-    const fieldsCupY = slopeCupY(sl);
+    const plan = slopeHinges(sl);
+    const fieldsCupY = plan.cupY;
     return {
       h: roundTo(sl.tall, 4),
       cnc: {
@@ -6084,6 +6284,9 @@ export function computeCabinet(params, profileOverride) {
           // so `engine/checks.js` rule #21 reads them rather than re-deriving a
           // ladder of its own.
           hinges: { was: cupY.length, now: fieldsCupY.length },
+          // T74 F10 · the 150 from the apex, where the slope cuts the hinge
+          // edge: what the edge could hold and whether it is refused.
+          ...(plan.apex ? { hingeApex: plan.apex } : {}),
           // In the ROOM's frame, because that is the frame the owner's law is
           // spoken in — the outline beside it is the sheet's mirror of these.
           roomL: roundTo(sl.roomL, 4),
@@ -6316,11 +6519,23 @@ export function computeCabinet(params, profileOverride) {
         : seg.h;
       const segCount = segCut ? splitDoorHingeCount(segStile) : seg.hinges;
       const margin = Number(P.hinges.cups.screwOffsetY) || 0;
+      // T74 F10 · the same 150 from the apex on a cut segment's hinge edge,
+      // through the same plan as a whole leaf's; its own count and its own
+      // ladder, run over the edge less the difference.
+      const segPlan = segCut && !(own && own.length)
+        ? apexPlan({
+          stile: segStile,
+          full: seg.h,
+          handMade: false,
+          ladder: (height) => splitSegmentHingeRows(height, segCount, P.hinges.endOffset),
+          place: (rows) => rows.map((v) => roundTo(v, 4)).filter((v) => v >= 0 && v + margin <= segStile),
+        })
+        : null;
       const local = own && own.length
         ? own.map((v) => roundTo(v - base, 4))
-        : splitSegmentHingeRows(segCut ? segStile : seg.h, segCount, P.hinges.endOffset)
+        : (segPlan ? segPlan.cupY : splitSegmentHingeRows(segCut ? segStile : seg.h, segCount, P.hinges.endOffset)
           .map((v) => roundTo(v, 4))
-          .filter((v) => !segCut || (v >= 0 && v + margin <= segStile));
+          .filter((v) => !segCut || (v >= 0 && v + margin <= segStile)));
       // What this segment is ACTUALLY drilled for, which is what the BOM buys
       // and what `assemblies.splitDoors` publishes. Identical to the kit's own
       // count wherever nobody has said anything, which is every cabinet that
@@ -6380,6 +6595,7 @@ export function computeCabinet(params, profileOverride) {
                 low: roundTo(segCut.reduce((lo, q) => Math.min(lo, q.y), Infinity), 4),
                 corners: segGeom.outline.length,
                 hinges: { was: seg.hinges, now: local.length },
+                ...(segPlan?.apex ? { hingeApex: segPlan.apex } : {}),
               }
               : undefined,
           } : {}),
@@ -8054,7 +8270,13 @@ export function computeCabinet(params, profileOverride) {
           { reason: 'watch-in-cabinet', watch_drawer: watchAt.index });
         continue;
       }
-      if (index !== topIndex) {
+      // ─── T74 F6 · …UNLESS WHAT IS ABOVE IT IS THE SECOND SHOE DRAWER ──────
+      // *"DRUGA SZUFLADA NA BUTY (niskie i wysokie buty)"*: the lower of two
+      // shoe drawers keeps its ramp, and its headroom is the second one's box.
+      // The kit's law stands for everything else: a PLAIN drawer over a shoe
+      // drawer still refuses its insert.
+      const twin = index + 1 === topIndex && shoeInsertOn(shoeItemAt(topIndex, zone));
+      if (index !== topIndex && !twin) {
         say('shoe_insert_refused',
           `Drawer ${index} is not the top of its stack — a shoe drawer goes on top`
           + ` (drawer ${topIndex} is above it), so the insert is not cut.`,
@@ -8064,6 +8286,12 @@ export function computeCabinet(params, profileOverride) {
       const mineP = panels.filter((x) => (x.meta?.zone ?? null) === zone);
       const interior = drawerBoxInterior(mineP, index);
       if (!interior) continue;
+      // T74 F6 · the second shoe drawer's box, the lowest of it, is the ceiling
+      // the first one's ramp and shoes rise into.
+      const twinFloor = twin
+        ? mineP.filter((x) => x.role === 'drawer_box' && x.box && Number(x.meta?.drawer) === topIndex)
+          .reduce((low, x) => Math.min(low, x.box.y), Infinity)
+        : Infinity;
       // NOTHING ABOVE IT — *"nie może mieć półki nad sobą, bo buty będą
       // chodzić."*
       //
@@ -8085,6 +8313,8 @@ export function computeCabinet(params, profileOverride) {
       const above = panels.find((x) => x.part === 'SHELF' && x.box
         && (x.meta?.zone ?? null) === zone
         && x.box.y >= drawerTop - 1
+        // T74 F6 · under a second shoe drawer, only a shelf BETWEEN the two.
+        && x.box.y < twinFloor
         && x.box.x < interior.at.x + interior.width && x.box.x + x.box.w > interior.at.x);
       if (above) {
         say('shoe_insert_refused',
@@ -8103,7 +8333,7 @@ export function computeCabinet(params, profileOverride) {
         .filter((x) => isShelfBoard(x) && x.box && (x.meta?.zone ?? null) === zone
           && x.box.y >= drawerTop - 1
           && x.box.x < interior.at.x + interior.width && x.box.x + x.box.w > interior.at.x)
-        .reduce((low, x) => Math.min(low, x.box.y), Infinity);
+        .reduce((low, x) => Math.min(low, x.box.y), twinFloor);
       const headroom = ceiling === Infinity ? Infinity : ceiling - interior.at.y;
       const fit = shoeInsertFit(interior, P, { headroom });
       if (!fit.ok) {

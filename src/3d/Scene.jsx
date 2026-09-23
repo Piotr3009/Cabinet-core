@@ -45,7 +45,7 @@ import {
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
-import { categoryOf } from '../engine/types.js';
+import { categoryOf, isFreePanel } from '../engine/types.js';
 // T37-F1: the piece selection spans cabinets; each unit gets its own members.
 import { refsForUnit } from '../lib/selection.js';
 import Ruler from './Ruler.jsx';
@@ -1282,6 +1282,12 @@ export default function Scene({
   // default OFF, like the three above: PRO passes nothing and its plus is
   // exactly where it has always been.
   hideInnerPlus = false,
+  // ─── T74 F1 · A CLICK ON A WARDROBE SIDE, REPORTED ───────────────────────
+  // `onAskSide(unitId, panelId, at)`: a plain click on a carcass side (BUL or
+  // BUR) with the client point. REPORTED and never acted on here, like the
+  // 2klik above: the caller decides what it means. ADDITIVE and default null,
+  // so PRO passes nothing and its sides are exactly what they were.
+  onAskSide = null,
 }) {
   const orbitRef = useRef(null);
   // One entry per unit group, so the render can frame the furniture and only
@@ -1301,6 +1307,12 @@ export default function Scene({
   const runElements = useProjectStore((s) => s.runElements);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const moveUnitToWall = useProjectStore((s) => s.moveUnitToWall);
+  // T74 F13 · a free panel's drag: moved with the silent magnet off, the catch
+  // a drop would take kept here (and drawn by its UnitView), the drop taking
+  // it or, with Alt held, refusing it.
+  const freePanelProposal = useProjectStore((s) => s.freePanelProposal);
+  const acceptFreePanelSnap = useProjectStore((s) => s.acceptFreePanelSnap);
+  const [snapProposal, setSnapProposal] = useState(null);
   const allResults = useProjectStore((s) => s.allResults);
   const wallGapsFor = useProjectStore((s) => s.wallGapsFor);
   // Turn 34 (CLAUDE.md F5): the merged meeting-line figure, and the per-unit
@@ -1311,6 +1323,7 @@ export default function Scene({
   const moveShelfSet = useProjectStore((s) => s.moveShelfSet);
   // T68 F4 · the ONE setter a divider moves through, whichever door pressed it.
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
+  const setDrawerMount = useProjectStore((s) => s.setDrawerMount);
   // T42-F1: the ALONE rod's own writer — the same shape as a shelf's, and
   // the same one setter behind it.
   const moveRail = useProjectStore((s) => s.moveRail);
@@ -1696,7 +1709,21 @@ export default function Scene({
           // Turn 13 (F5.1): the modifier travels with the click — the SET is
           // built in the store, so the canvas only has to say what happened.
           onSelect={(opts) => selectUnit(unit.id, opts)}
-          onMove={(x, step) => moveUnit(unit.id, x, step)}
+          onMove={(x, step) => {
+            if (!isFreePanel(unit.type)) { moveUnit(unit.id, x, step); return; }
+            moveUnit(unit.id, x, step, { magnet: false });
+            const caught = freePanelProposal(unit.id);
+            setSnapProposal(caught ? { unitId: unit.id, ...caught } : null);
+          }}
+          onMoveEnd={isFreePanel(unit.type) ? ({ altKey, cancelled, moved }) => {
+            if (moved && !altKey && !cancelled) acceptFreePanelSnap(unit.id);
+            setSnapProposal(null);
+          } : null}
+          snapProposal={snapProposal?.unitId === unit.id ? snapProposal : null}
+          // T74 F13 · 2klik on a free panel: PRO's own piece editor.
+          onEditPart={(panelId, at) => openModal('part-detail', {
+            unitId: unit.id, panelId, at,
+          })}
           onMoveToWall={(wallIndex, x, step) => {
             const moved = moveUnitToWall(unit.id, wallIndex, x, step);
             if (moved?.error) notify(moved.error, 'warn');
@@ -1710,6 +1737,8 @@ export default function Scene({
           // HOW FAR FROM THE LEFT commits to `setPartitionX`; so does this.
           // The clamp, the grid and the refusal are the store's, once.
           onMovePartition={(itemId, xMm) => setPartitionX(unit.id, itemId, xMm)}
+          // T74 F6 · the second shoe drawer, by its mounting height: one clamp.
+          onMoveDrawer={(itemId, posMm) => setDrawerMount(unit.id, itemId, posMm)}
           onShelfDragState={setShelfDrag}
           shelfDrag={shelfDrag}
           orbitRef={orbitRef}
@@ -1829,6 +1858,9 @@ export default function Scene({
               },
             });
           }}
+          // T74 F1 · a click on a wardrobe side, reported with its point to
+          // the caller that asked (retail's question). PRO passes nothing.
+          onAskSide={onAskSide ? (panelId, at) => onAskSide(unit.id, panelId, at) : null}
           // ─── TURN 58b (CLAUDE.md F3.2): THE J STRIP'S OWN SLIDER ─────────
           // *"jedynie wysokość — jeden pasek, przedłuż wycięcie J na
           // pionowych i tyle, nic więcej."*  One window, one control, opened

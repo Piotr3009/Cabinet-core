@@ -169,6 +169,34 @@ export const REASONS = {
   anotherWardrobeGoesBeside: 'A second wardrobe, placed beside this one on the same wall.',
 
   /**
+   * T74 F7 · NOT a refusal: the note under ADD WALL UNIT. PREDICATE:
+   * `adapter.addWallUnit()`, which places through `store.addUnit` beside the
+   * selected wardrobe; the store's `alignedMountFor` levels its top and
+   * `addUnit` gives it the wardrobe's depth.
+   */
+  wallUnitGoesBeside: 'A wall unit, hung beside this wardrobe: its top level with the wardrobe\'s, as deep as it.',
+
+  /**
+   * T74 F7 · PREDICATE: no unit in the design is a wardrobe standing on the
+   * floor (`adapter.isFloorWardrobe`: the wardrobe family, riding on nothing,
+   * not hung on the wall), so there is nothing for a wall unit to hang beside.
+   */
+  wallUnitNeedsAWardrobe: 'Add a wardrobe first: a wall unit hangs beside one.',
+
+  /**
+   * T74 F13 · NOT a refusal: the note under INSERT PANEL. PREDICATE:
+   * `adapter.insertPanel()`, `store.addUnit('FREE_PANEL')` beside the selected
+   * cabinet; the board's menu then opens on the right.
+   */
+  panelGoesIn: 'One board, standing in the room: set how it stands and its size on the right. Several make a box.',
+
+  /**
+   * T74 F13 · PREDICATE: `store.addUnit('FREE_PANEL')` answered with no id and
+   * no sentence of its own: no wall had room for the board.
+   */
+  roomRefusedPanel: 'There is no room on these walls for another panel: move or remove something first.',
+
+  /**
    * T61 F5 · PREDICATE: the typed number against the bounds the caller was
    * given — `adapter.designBounds()` (the profile's, and for the room retail's
    * own two, declared as such in their `from` field) and

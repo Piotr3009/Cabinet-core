@@ -100,8 +100,11 @@ test('the rules, each with the owner’s colour', () => {
   // below is for. The number is 25 and not 22 because #22, #23 and #24 are
   // already emitted by T52/T53/T55 — they were never given rows in this
   // registry, which is a gap this turn found and did not widen.
-  assert.equal(CHECKS.length, 22);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25]);
+  // AMENDED BY T74 F10: #26, a hinge too near the slope's apex, RED, on the
+  // owner's word (*"minimum 150 mm od wierzchołka trójkąta skosu"*). The
+  // twenty-two before it are untouched.
+  assert.equal(CHECKS.length, 23);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -131,6 +134,7 @@ test('the rules, each with the owner’s colour', () => {
     20: 'red',
     21: 'red',
     25: 'red',
+    26: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

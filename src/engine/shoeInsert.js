@@ -180,8 +180,19 @@ export function shoeInsertParts(interior, profile, { drawer = 1, headroom = Infi
   const at = interior.at || { x: 0, y: 0, z: 0 };
   const innerW = interior.width - 2 * s.clearanceMm;
   const x0 = at.x + s.clearanceMm;
-  const z0 = at.z + s.clearanceMm;
   const y0 = at.y;
+  // ─── T74 F8 · THE RAMP STARTS AT THE FRONT FLOOR ─────────────────────────
+  // The front bottom edge, where the ramp touches the drawer floor: the pivot
+  // it leans about, and the edge its board runs BACK from. The pivot stood at
+  // the BACK edge, so the lean dropped the front 108 mm through the drawer
+  // floor (`verify/t74/f08-probe.md`), the opposite of what this file has
+  // always said: *"The ramp starts at the drawer's front floor and rises going
+  // back"*. The board, its length and its angle are unchanged; only the edge
+  // it is hung from moves to the one the words name. The run is the clear
+  // depth itself (`shoeRampPlan`), so the board spans the box back to front
+  // and its front edge is the box's inner front face.
+  const zFront = at.z + (Number(interior.depth) || 0);
+  const z0 = roundTo(zFront - fit.length, 4);
 
   const parts = [];
   /** A board, drawn standing, with the grain stated at birth. */
@@ -211,7 +222,7 @@ export function shoeInsertParts(interior, profile, { drawer = 1, headroom = Infi
     x: x0, y: y0, z: z0, w: innerW, h: s.insertT, d: fit.length,
   }, innerW, fit.length, {
     tilt_deg: roundTo(s.tiltDeg, 4),
-    tilt_pivot: { y: y0, z: z0 },
+    tilt_pivot: { y: y0, z: roundTo(zFront, 4) },
     rise_mm: fit.rise,
     run_mm: fit.run,
     clamped: fit.clamped,
@@ -228,7 +239,7 @@ export function shoeInsertParts(interior, profile, { drawer = 1, headroom = Infi
       divider: i + 1,
       lane_w_mm: roundTo(fit.lane, 4),
       tilt_deg: roundTo(s.tiltDeg, 4),
-      tilt_pivot: { y: y0, z: z0 },
+      tilt_pivot: { y: y0, z: roundTo(zFront, 4) },
     });
   });
 

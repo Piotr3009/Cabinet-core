@@ -82,6 +82,8 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   const [wall, setWall] = useState(null);          // the elevation being edited
   const svgRef = useRef(null);
   const fieldRef = useRef(null);
+  // T74 F4 · true until this drawing is first saved: that save is a new room.
+  const newRoom = useRef(true);
 
   const pen = penOf(path);
   const closed = path.length > 3
@@ -132,7 +134,8 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   /** Enter on a typed number: one wall, committed. */
   const commit = useCallback(() => {
     const res = addSegment(path, dir, Number(typed));
-    if (res.error) { setError(res.error); return false; }
+    // T74 F3 · a refused number stays SELECTED, so the next key replaces it.
+    if (res.error) { setError(res.error); fieldRef.current?.select(); return false; }
     setPath(res.path);
     setTyped('');
     setError(null);
@@ -163,7 +166,12 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   const save = useCallback(() => {
     const issues = pathFaults(path);
     if (issues.length) { setError(issues[0]); return { ok: false, message: issues[0] }; }
-    const verdict = setRoom({ corners: cornersOfPath(path) });
+    // T74 F4 · *"Przy tworzeniu nowego pokoju po starym jeden nachodzi na
+    // drugi zamiast resetu."*  The FIRST save of a drawing is a new room: it
+    // replaces the old one (its openings, boxes and wall elements go with it).
+    // A later save of the same drawing merges, so a window put on a new wall
+    // through its elevation is kept.
+    const verdict = setRoom({ corners: cornersOfPath(path) }, { replace: newRoom.current });
     if (!verdict?.ok) {
       const message = verdict?.issues?.[0]?.message || verdict?.message
         || 'This outline cannot be applied — something in the room stands where a wall would go.';
@@ -171,6 +179,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
       notify(message, 'warn');
       return { ok: false, message };
     }
+    newRoom.current = false;
     setError(null);
     setSaved(true);
     notify(`Room drawn — ${cornersOfPath(path).length} walls.`, 'ok');
@@ -194,6 +203,18 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
       commit();
       return;
     }
+    // T74 F3 · *"Escape anuluje"*: a typed number is cancelled and the
+    // drawing stays; with nothing typed, Escape is the window's own close.
+    // The key is stopped at the field, so the shell's listener on `window`
+    // never hears the Escape that was spent on the number (rule 15 stands:
+    // the shell's key is not turned off).
+    if (e.key === 'Escape' && typed.trim()) {
+      e.preventDefault();
+      e.stopPropagation();
+      setTyped('');
+      setError(null);
+      return;
+    }
     if (e.key === 'Backspace' && !typed) {
       e.preventDefault();
       undo();
@@ -202,7 +223,15 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
 
   // The field is where the hand is the whole time: it takes the number and it
   // takes the Enter, so it gets the focus the moment the window opens.
-  useEffect(() => { fieldRef.current?.focus(); }, []);
+  //
+  // T74 F3 · the owner: *"pole ... od razu ma focus i całą wartość
+  // zaznaczoną ... piszę 3500 bez myszki"*. The focus, then the whole number
+  // selected: T73 F3's pattern (`3d/SpacingChain.jsx`, a ref, `focus()` then
+  // `select()`), not a second one.
+  useEffect(() => {
+    const t = setTimeout(() => { fieldRef.current?.focus(); fieldRef.current?.select(); }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   // ─── ONE WINDOW AT A TIME (T45's rule: no window-over-window, ever) ───────
   if (wall !== null) {
@@ -383,6 +412,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
                 value={typed}
                 placeholder="mm"
                 disabled={closed}
+                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => { setTyped(e.target.value); setError(null); }}
                 onKeyDown={onKeyDown}
               />

@@ -72,7 +72,9 @@ test('every unit type either has a height group or says why not', () => {
       // rides on a main, and its height is the joiner's own answer to "what is
       // left between the wardrobe and the ceiling". No project default may set
       // it, which is exactly what `heightGroup: null` says.
-      assert.ok(['LOW_CABINET', 'OVEN_BASE', 'WARDROBE_TOP'].includes(id), `${id} has no height group and no reason`);
+      // T74 F13 · …and the FREE PANEL: one board, its size its own (length,
+      // width, thickness, how it stands), never a project's base, wall or tall.
+      assert.ok(['LOW_CABINET', 'OVEN_BASE', 'WARDROBE_TOP', 'FREE_PANEL'].includes(id), `${id} has no height group and no reason`);
       continue;
     }
     assert.ok(known.has(group), `${id} points at a group that does not exist: ${group}`);

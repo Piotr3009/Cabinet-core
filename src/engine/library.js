@@ -205,12 +205,15 @@ export const KITCHEN_LIBRARY = [
     label: 'Extras',
     hint: 'The pieces that finish a run',
     items: [
+      // ─── T74 F13 · THE ROW HELD OPEN SINCE TURN 12 OPENS ─────────────────
+      // *"SWOBODNY PANEL (wstaw panel)."*  Its owner in the model is a kit of
+      // its own, `FREE_PANEL`, one board standing in the room.
       {
-        kind: 'soon',
+        kind: 'type',
         id: 'free-standing-panels',
-        label: 'Free-standing panels',
+        typeId: 'FREE_PANEL',
+        label: 'Free-standing panel',
         hint: 'A panel that belongs to the room, not to a cabinet',
-        reason: 'End panels are per-cabinet today — a free-standing one needs its own owner in the model',
       },
       {
         kind: 'soon',

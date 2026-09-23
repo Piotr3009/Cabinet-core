@@ -40,13 +40,16 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 
-import { ALL_COPIES, T63_COPIES, T65_COPIES } from './t63-copies.mjs';
+import {
+  ALL_COPIES, T63_COPIES, T65_COPIES, T74_COPIES,
+} from './t63-copies.mjs';
 
 // T65 F8 adds `ContextMenu.jsx` to the manifest, and the machine that MAKES
 // the copies has to make that one too or the manifest and the disk disagree.
 // The T62 four are deliberately not re-made here — they were made by T62's own
 // hand and every copy since imports THOSE.
-const TO_MAKE = [...T63_COPIES, ...T65_COPIES];
+// T74 F13 adds PRO's piece editor (`PartDetailModal.jsx`) for the free panel.
+const TO_MAKE = [...T63_COPIES, ...T65_COPIES, ...T74_COPIES];
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const check = process.argv.includes('--check');
@@ -327,6 +330,44 @@ const MAP = {
   'stroke-shell-700': ['pbi-re-svg-stroke-hair', '.pbi-re-svg-stroke-hair { stroke: var(--pbi-stone-line); }'],
   'stroke-gold/70': ['pbi-re-svg-stroke-gold', '.pbi-re-svg-stroke-gold { stroke: var(--pbi-deep-gold); }'],
   'stroke-ink-500': ['pbi-re-svg-stroke-quiet', '.pbi-re-svg-stroke-quiet { stroke: var(--pbi-soft-graphite); }'],
+
+  // ─── T74 F13 · THE PIECE EDITOR'S OWN, FOR ITS COPY ─────────────────────
+  // `PartDetailModal` (the free panel's 2klik) wears thirty tokens no copy
+  // before it did. Geometry is PRO's to the pixel; the three colours are PBI's
+  // (the drawing's dark ground is Onyx, because the piece's own drawing is
+  // inked for a dark ground and on Porcelain its outline all but vanished, found
+  // in the frame; its hairlines Stone Line; its tool border Onyx at 40 %, the
+  // same hairline the copied buttons wear).
+  'px-1.5': ['pbi-re-px15', '.pbi-re-px15 { padding-left: 0.375rem; padding-right: 0.375rem; }'],
+  'gap-0.5': ['pbi-re-gap-05', '.pbi-re-gap-05 { gap: 0.125rem; }'],
+  'mx-1': ['pbi-re-mx1', '.pbi-re-mx1 { margin-left: 0.25rem; margin-right: 0.25rem; }'],
+  'leading-none': ['pbi-re-lead-none', '.pbi-re-lead-none { line-height: 1; }'],
+  'align-middle': ['pbi-re-valign-mid', '.pbi-re-valign-mid { vertical-align: middle; }'],
+  'text-[12px]': ['pbi-re-t12', '.pbi-re-t12 { font-size: 12px; }'],
+  'w-px': ['pbi-re-wpx', '.pbi-re-wpx { width: 1px; }'],
+  'w-5': ['pbi-re-w5', '.pbi-re-w5 { width: 1.25rem; }'],
+  'w-36': ['pbi-re-w36', '.pbi-re-w36 { width: 9rem; }'],
+  'w-40': ['pbi-re-w40', '.pbi-re-w40 { width: 10rem; }'],
+  'w-48': ['pbi-re-w48', '.pbi-re-w48 { width: 12rem; }'],
+  'h-[30px]': ['pbi-re-h30px', '.pbi-re-h30px { height: 30px; }'],
+  'h-[34px]': ['pbi-re-h34px', '.pbi-re-h34px { height: 34px; }'],
+  'max-h-[45vh]': ['pbi-re-maxh45vh', '.pbi-re-maxh45vh { max-height: 45vh; }'],
+  'inset-0': ['pbi-re-inset0', '.pbi-re-inset0 { top: 0; right: 0; bottom: 0; left: 0; }'],
+  'top-1': ['pbi-re-top1', '.pbi-re-top1 { top: 0.25rem; }'],
+  'top-2': ['pbi-re-top2', '.pbi-re-top2 { top: 0.5rem; }'],
+  'top-full': ['pbi-re-top-full', '.pbi-re-top-full { top: 100%; }'],
+  'left-1': ['pbi-re-left1', '.pbi-re-left1 { left: 0.25rem; }'],
+  'left-2': ['pbi-re-left2', '.pbi-re-left2 { left: 0.5rem; }'],
+  'left-1/2': ['pbi-re-left-half', '.pbi-re-left-half { left: 50%; }'],
+  '-translate-x-1/2': ['pbi-re-shift-half', '.pbi-re-shift-half { transform: translateX(-50%); }'],
+  'right-0': ['pbi-re-right0', '.pbi-re-right0 { right: 0; }'],
+  'right-2': ['pbi-re-right2', '.pbi-re-right2 { right: 0.5rem; }'],
+  'bottom-2': ['pbi-re-bottom2', '.pbi-re-bottom2 { bottom: 0.5rem; }'],
+  'rounded-sm': ['pbi-re-round', null],
+  shadow: ['pbi-re-shadow', '.pbi-re-shadow { box-shadow: 0 2px 8px rgba(9, 10, 9, 0.12); }'],
+  'bg-shell-600': ['pbi-re-fill-line', '.pbi-re-fill-line { background: var(--pbi-stone-line); }'],
+  'bg-[#131313]': ['pbi-re-fill-onyx', '.pbi-re-fill-onyx { background: var(--pbi-onyx); }'],
+  'border-black/40': ['pbi-re-hair-onyx40', '.pbi-re-hair-onyx40 { border-color: rgba(9, 10, 9, 0.4); }'],
 };
 
 /**
@@ -339,6 +380,13 @@ const HEX = {
   '#c8a24a': '#806A44',   // the LED mark → Deep Gold (a small mark, which is what gold is for)
   '#C2A485': '#D9D1C6',   // the veneer fallback swatch → Ivory
   '#1f3a5f': '#5C5B57',   // the placeholder's example hex
+  // T74 F13 · the piece editor's inks, drawn on its (Onyx) drawing ground:
+  // each the nearest of the twelve that still reads on a dark ground.
+  '#fafaf8': '#FAF8F3',   // the 3-D thumbnail's ground → Porcelain
+  '#f0ece4': '#F2EEE7',   // the outline's fallback ink → Warm White
+  '#e0b64a': '#D2C19F',   // a picked object, the snap mark → Gold Highlight
+  '#9fb4d8': '#D9D1C6',   // a live dimension's figure → Ivory
+  '#7bd88f': '#B8A588',   // the snap point → Gold
 };
 
 // ─── PASS 2 · THE CLASS WALK — the same shape T62's fidelity test parses ────

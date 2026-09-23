@@ -57,7 +57,8 @@ test('F2 · the click freezes the direction, so the orientation cannot be lost',
   assert.match(src, /const onCanvasDown = \(e\) => \{/, 'the canvas does not take the click');
   assert.match(src, /if \(field\) return;/,
     'the pointer still re-aims the wall while the number is being typed');
-  assert.match(src, /setField\(\{ px, py, dir: d\.id \}\)/, 'the click does not record its direction');
+  // AMENDED BY T74 F3: the click records the length the mouse drew, too.
+  assert.match(src, /setField\(\{ px, py, dir: d\.id, drawn \}\)/, 'the click does not record its direction');
 });
 
 test('F2 · Enter draws the wall and the next line starts; Escape lets go', () => {
@@ -69,8 +70,11 @@ test('F2 · Enter draws the wall and the next line starts; Escape lets go', () =
   assert.match(src, /const letGo = useCallback\(\(\) => \{\s*setField\(null\);/, 'nothing lets go');
   assert.match(src, /if \(e\.key === 'Escape'\) \{ e\.preventDefault\(\); letGo\(\); return; \}/,
     'Escape does not let go from the field');
-  assert.match(src, /const onKey = \(ev\) => \{ if \(ev\.key === 'Escape'\) letGo\(\); \};/,
+  // AMENDED BY T74 F3 · the listener takes the key in the capture phase and
+  // stops it, so the shell's own Escape does not close the whole drawing.
+  assert.match(src, /const onKey = \(ev\) => \{ if \(ev\.key === 'Escape'\) \{ ev\.stopPropagation\(\); letGo\(\); \} \};/,
     'Escape does not reach the drawing when the hand has left the field');
+  assert.match(src, /window\.addEventListener\('keydown', onKey, true\);/);
   assert.ok(!/setPath\(newPath\(\)\)/.test(src.slice(src.indexOf('const letGo'), src.indexOf('const undo'))),
     'letting go threw the drawing away');
 });
@@ -79,7 +83,9 @@ test('F2 · the line follows the mouse before a single key is pressed', () => {
   const src = uncomment(read(COPY));
   assert.match(src, /const reach = !closed && pen && d && cursor/,
     'nothing measures the cursor');
-  assert.match(src, /const ghostLen = Number\(typed\) > 0 \? Number\(typed\) : \(field \? 0 : reach\);/,
+  // AMENDED BY T74 F3 · with the field open and emptied, Enter confirms the
+  // length the mouse drew, so the ghost shows that length instead of nothing.
+  assert.match(src, /const ghostLen = Number\(typed\) > 0 \? Number\(typed\) : \(field \? field\.drawn : reach\);/,
     'the ghost is still drawn only from the keyboard');
   // Ortho: the reach is PROJECTED on the chosen axis, never a diagonal.
   assert.match(src, /d\.dx \? \(cursor\.x - pen\.x\) \* d\.dx : \(cursor\.y - pen\.y\) \* d\.dy/,

@@ -132,7 +132,8 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   /** Enter on a typed number: one wall, committed. */
   const commit = useCallback(() => {
     const res = addSegment(path, dir, Number(typed));
-    if (res.error) { setError(res.error); return false; }
+    // T74 F3 · a refused number stays SELECTED, so the next key replaces it.
+    if (res.error) { setError(res.error); fieldRef.current?.select(); return false; }
     setPath(res.path);
     setTyped('');
     setError(null);
@@ -194,6 +195,18 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
       commit();
       return;
     }
+    // T74 F3 · *"Escape anuluje"*: a typed number is cancelled and the
+    // drawing stays; with nothing typed, Escape is the window's own close.
+    // The key is stopped at the field, so the shell's listener on `window`
+    // never hears the Escape that was spent on the number (rule 15 stands:
+    // the shell's key is not turned off).
+    if (e.key === 'Escape' && typed.trim()) {
+      e.preventDefault();
+      e.stopPropagation();
+      setTyped('');
+      setError(null);
+      return;
+    }
     if (e.key === 'Backspace' && !typed) {
       e.preventDefault();
       undo();
@@ -202,7 +215,15 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
 
   // The field is where the hand is the whole time: it takes the number and it
   // takes the Enter, so it gets the focus the moment the window opens.
-  useEffect(() => { fieldRef.current?.focus(); }, []);
+  //
+  // T74 F3 · the owner: *"pole ... od razu ma focus i całą wartość
+  // zaznaczoną ... piszę 3500 bez myszki"*. The focus, then the whole number
+  // selected: T73 F3's pattern (`3d/SpacingChain.jsx`, a ref, `focus()` then
+  // `select()`), not a second one.
+  useEffect(() => {
+    const t = setTimeout(() => { fieldRef.current?.focus(); fieldRef.current?.select(); }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   // ─── ONE WINDOW AT A TIME (T45's rule: no window-over-window, ever) ───────
   if (wall !== null) {
@@ -383,6 +404,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
                 value={typed}
                 placeholder="mm"
                 disabled={closed}
+                onFocus={(e) => e.currentTarget.select()}
                 onChange={(e) => { setTyped(e.target.value); setError(null); }}
                 onKeyDown={onKeyDown}
               />

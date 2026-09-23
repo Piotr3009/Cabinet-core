@@ -206,7 +206,10 @@ export function panelSolids(panel, layers, profile, drills = []) {
   //
   // So the gate is the RECORD, which is the thing that says there is a wedge —
   // never the outline, which by design cannot.
-  const bevel3d = (panel.part === 'BUL' || panel.part === 'BUR')
+  //
+  // T74 F9 · …and the DIVIDER, which takes the side's slope treatment: it
+  // stands like a side (18 mm along x) and carries the same record.
+  const bevel3d = (panel.part === 'BUL' || panel.part === 'BUR' || panel.part === 'VPART')
     && panel.meta?.slopeCut?.bevel3d ? panel.meta.slopeCut.bevel3d : null;
 
   // ─── TURN 20 (CLAUDE.md F8.1): EVERY FEATURE, AS AN ABSENCE ──────────────

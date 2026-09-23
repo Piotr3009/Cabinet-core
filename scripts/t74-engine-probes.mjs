@@ -37,7 +37,11 @@ const table = (cols, rows) => [
   ...rows.map((r) => `| ${cols.map((c) => String(r[c] ?? '').replace(/\|/g, '/')).join(' | ')} |`),
 ].join('\n');
 const write = (name, lines) => {
-  writeFileSync(`${OUT}${name}${SUFFIX}.md`, `${lines.join('\n')}\n`);
+  // A re-run after a fix keeps the table and drops the "before" facts, which
+  // the committed probe already states; the after-note is written beside it.
+  const cut = SUFFIX ? lines.indexOf('## The facts') : -1;
+  const body = cut >= 0 ? lines.slice(0, cut) : lines;
+  writeFileSync(`${OUT}${name}${SUFFIX}.md`, `${body.join('\n')}\n`);
   process.stdout.write(`written verify/t74/${name}${SUFFIX}.md\n`);
 };
 

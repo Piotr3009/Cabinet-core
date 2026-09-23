@@ -3754,9 +3754,20 @@ export function computeCabinet(params, profileOverride) {
       // which is all six standard configs — so this reads `G` exactly as it
       // did before tonight for every one of them.
       const partitionFloor = overlay ? overlay.shelfY + G : G;
+      // ─── T74 F9 · THE DIVIDER UNDER A SLOPE IS CUT TO IT ──────────────────
+      // The owner, 23.09.2026: *"divider przy skosie nie skraca się i nie ma
+      // cięcia pod kątem. Ma pokazywać najdłuższą krawędź plus kąt cięcia."*
+      // The probe (`verify/t74/f09-probe.md`): the sides and the end panel
+      // were cut to the slope and the divider stood to `H - G` through the
+      // roof. It takes the SIDE's own treatment (T47), from the side's own
+      // helpers and nothing new: it stops under the roof board over its own
+      // 18 mm (the blank, its longest edge), and carries the short face, the
+      // angles and the wedge the side carries. Under a flat stretch, and on
+      // every cabinet with no slope, the ceiling is `H - G` exactly as before.
+      const divCeil = roofList ? Math.min(H - G, sideTopAt(x, x + slotG)) : H - G;
       const span = partitionSpan({
         floor: partitionFloor,
-        ceiling: H - G,
+        ceiling: divCeil,
         shelves: crossing,
         // The board a partition is INTERRUPTED by is the SHELF's, not its own:
         // `partitionSpan` measures the run between two horizontal boards.
@@ -3766,6 +3777,9 @@ export function computeCabinet(params, profileOverride) {
       });
       if (span.height <= 0) break;
       n += 1;
+      // T74 F9 · cut by the slope where its ceiling came down, and ONLY there.
+      const divCut = roofList && divCeil < H - G - 1e-9 && span.to >= divCeil - 1e-9;
+      const divElevation = divCut ? bevelProfile(x, x + slotG, divCeil) : null;
       panels.push(panel({
         id: `VPART-${n}`, part: 'VPART', role: 'shelf', w: span.height, h: span.depth, thickness: slotG,
         // One long edge is seen from the room when the doors are open — the same
@@ -3808,7 +3822,9 @@ export function computeCabinet(params, profileOverride) {
           slot: partitionSlot(item),
           // Turn 21 (CLAUDE.md F12.1): the two physical preconditions for
           // hanging a door on this piece, read off the piece itself.
-          fullHeight: span.from <= G + 1e-9 && span.to >= H - G - 1e-9,
+          // T74 F9 · under a slope the top it reaches IS the roof board over
+          // it, so a divider cut to the slope is still full height.
+          fullHeight: span.from <= G + 1e-9 && span.to >= divCeil - 1e-9,
           itemId: item.id || null,
           x_mm: x,
           front_mm: span.front_mm,
@@ -3830,6 +3846,27 @@ export function computeCabinet(params, profileOverride) {
           // 3D view can draw the two as one joint rather than two pieces that
           // happen to touch.
           terminatesOn: span.terminatesOn,
+          // ─── T74 F9 · THE SIDE'S SLOPE RECORD, ON THE DIVIDER ────────────
+          // `h` is the blank (the longest edge, the cut size above), `low` the
+          // short face, both as lengths of the board; `angles` is what every
+          // sheet prints beside the blank (`slopeNoteText`, `CUT β°`), exactly
+          // as the side's; `bevel3d` is the wedge at its two faces in carcass
+          // y, which the scene takes off the top as it does the side's.
+          ...(divCut ? {
+            slopeCut: {
+              h: roundTo(span.height, 4),
+              full: roundTo(H - G - span.from, 4),
+              topAt: roundTo(divCeil, 4),
+              angles: anglesOver(x, x + slotG),
+              low: roundTo(Math.max(0, sideLowAt(x, x + slotG) - span.from), 4),
+              bevel3d: { a: sideEdgeAt(x), b: sideEdgeAt(x + slotG) },
+            },
+            // …and the wedge seen from the front, in the board's own frame.
+            ...(divElevation ? {
+              elevation: divElevation.map(([px, py], i) => (i < 2
+                ? [px, py] : [px, roundTo(Math.max(0, py - span.from), 4)])),
+            } : {}),
+          } : {}),
         },
       }));
     }

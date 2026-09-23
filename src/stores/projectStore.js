@@ -1299,14 +1299,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * can create an overlap with nobody dragging anything, so it is blocked at
    * the setter rather than repaired afterwards (CLAUDE.md phase 3).
    *
+   * ─── T74 F4 · A NEW ROOM REPLACES THE OLD ONE ─────────────────────────────
+   *
+   * The owner, 23.09.2026: *"Przy tworzeniu nowego pokoju po starym jeden
+   * nachodzi na drugi zamiast resetu."*  The probe (`verify/t74/f04-probe.md`)
+   * convicted this setter: it MERGES, and the walls' elements live beside the
+   * room (`project.wallSlopes`), so a drawn room replaced the outline and kept
+   * every window, door, box, slope, recess and chimney of the room before it.
+   *
+   * `{ replace: true }` is the NEW ROOM: the old room's geometry goes (its
+   * openings, its boxes and every wall element) in the same write that puts
+   * the new outline in, and only when the guard lets the new outline stand, so
+   * a refused room clears nothing. The room's height and its returns are kept
+   * (the drawing asks for neither). Cabinets are NOT touched: one standing
+   * outside the new room is refused by the guard below, in its own words, as
+   * it always was. Without the option this is the merge it always was, which
+   * is what an edit of THIS room (a wall's width, a window) needs.
+   *
+   * @param {object} patch
+   * @param {{replace?:boolean}} [opts]
    * @returns {{ok:boolean, message:string|null, blocking:Array}}
    */
-  setRoom: (patch) => {
+  setRoom: (patch, opts = {}) => {
     const s = get();
-    const next = migrateRoom({ ...s.project.room, ...patch });
+    const fresh = opts?.replace === true;
+    const next = migrateRoom(fresh
+      ? {
+        ...s.project.room, ...patch, openings: [], boxes: [],
+      }
+      : { ...s.project.room, ...patch });
     const verdict = roomChangeGuard(next, s.units);
     if (!verdict.ok) return verdict;
-    set((st) => ({ project: { ...st.project, room: next } }));
+    set((st) => ({ project: { ...st.project, room: next, ...(fresh ? { wallSlopes: [] } : {}) } }));
     // A lower ceiling shortens every top infill; a longer wall opens a gap.
     get().refreshAutoParts();
     return verdict;

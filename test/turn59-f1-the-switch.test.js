@@ -83,7 +83,10 @@ const EXEMPT = {
     + 'selected (T73 F3\'s ref, `focus()` then `select()`), a refused number stays '
     + 'selected, and Escape cancels a typed number before it closes the window. '
     + '*"pole ... od razu ma focus i całą wartość zaznaczoną (np. 3437, piszę 3500 '
-    + 'bez myszki) ... Escape anuluje."*',
+    + 'bez myszki) ... Escape anuluje."* T74 F4 · the first save of a drawing is a NEW '
+    + 'room: `setRoom(..., { replace: true })` clears the old room\'s openings, boxes and '
+    + 'wall elements. *"Przy tworzeniu nowego pokoju po starym jeden nachodzi na drugi '
+    + 'zamiast resetu."*',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -183,8 +186,8 @@ const FROZEN = {
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
   'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
-  // T74 F3 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/DrawRoomModal.jsx': '6696d9e308248084b700576bae0a210f41f5f022a1e0d20fce629ffa4b4c7461',
+  // T74 F3 + F4 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/DrawRoomModal.jsx': 'c5d7fe345511115a19ac488d78c55458bc373bfdc45ed992cde951c3b3c9c00c',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.

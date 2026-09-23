@@ -82,6 +82,8 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   const [wall, setWall] = useState(null);          // the elevation being edited
   const svgRef = useRef(null);
   const fieldRef = useRef(null);
+  // T74 F4 · true until this drawing is first saved: that save is a new room.
+  const newRoom = useRef(true);
 
   const pen = penOf(path);
   const closed = path.length > 3
@@ -164,7 +166,12 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
   const save = useCallback(() => {
     const issues = pathFaults(path);
     if (issues.length) { setError(issues[0]); return { ok: false, message: issues[0] }; }
-    const verdict = setRoom({ corners: cornersOfPath(path) });
+    // T74 F4 · *"Przy tworzeniu nowego pokoju po starym jeden nachodzi na
+    // drugi zamiast resetu."*  The FIRST save of a drawing is a new room: it
+    // replaces the old one (its openings, boxes and wall elements go with it).
+    // A later save of the same drawing merges, so a window put on a new wall
+    // through its elevation is kept.
+    const verdict = setRoom({ corners: cornersOfPath(path) }, { replace: newRoom.current });
     if (!verdict?.ok) {
       const message = verdict?.issues?.[0]?.message || verdict?.message
         || 'This outline cannot be applied — something in the room stands where a wall would go.';
@@ -172,6 +179,7 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
       notify(message, 'warn');
       return { ok: false, message };
     }
+    newRoom.current = false;
     setError(null);
     setSaved(true);
     notify(`Room drawn — ${cornersOfPath(path).length} walls.`, 'ok');

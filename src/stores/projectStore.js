@@ -2472,8 +2472,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (doorsAsWritten && item && part.added && Math.abs(Number(item.x_mm) - Number(part.x_mm)) < 0.5) {
       get().removeItem(unitId, item.id);
       undone = true;
-    } else if (doorsAsWritten && item && !part.added && Number(item.front_mm ?? 0) === 0 && part.front_mm != null) {
-      get().updateItem(unitId, item.id, { front_mm: part.front_mm });
+    } else if (doorsAsWritten && item && !part.added && Number(item.front_mm ?? 0) === 0) {
+      // A borrowed partition gets back the setback it stood at, and a null
+      // one is a setback NOT SET (the engine's `setbackOf`: the house
+      // default), which the automat's 0 had overwritten (the audit: a
+      // borrowed divider stayed flush after the pull).
+      get().updateItem(unitId, item.id, { front_mm: part.front_mm ?? null });
       undone = true;
     }
     // 2. The doors, as they were before the push.

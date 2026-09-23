@@ -92,6 +92,32 @@ test('T74 F11 · a partition moved by hand is the client\'s: it stays, the doors
   assert.equal(partitions(id).length, 1, 'the client\'s divider was taken away');
 });
 
+test('T74 F11 · a partition the rule BORROWED gets its own setback back (not set stays not set)', () => {
+  // The rule borrows a divider already standing on the hinge line and brings
+  // it to the door plane (`front_mm: 0`). Its record says what the setback
+  // was; a divider that had NONE of its own (null: the engine's `setbackOf`
+  // then takes the house default) must get none back, not keep the 0 (the
+  // audit: it stayed flush after the pull).
+  const id = corner();
+  const pid = S().addPartition(id, 600);
+  S().updateItem(id, pid, { front_mm: 0 });
+  const record = {
+    doors: true,
+    hinge: undefined,
+    bay_doors: undefined,
+    partition: { id: pid, added: false, x_mm: Number(partitions(id)[0].x_mm), front_mm: null },
+    wrote: unitOf(id).params.bay_doors ?? null,
+  };
+  assert.equal(S().undoSlopeDoorFlip(id, record), true);
+  const after = partitions(id).find((i) => i.id === pid);
+  assert.ok(after, 'a borrowed divider is the client\'s: it stays');
+  assert.equal(after.front_mm ?? null, null, 'the borrowed divider stayed flush after the pull');
+  // …and one that HAD a setback of its own gets that number back.
+  S().updateItem(id, pid, { front_mm: 0 });
+  S().undoSlopeDoorFlip(id, { ...record, partition: { ...record.partition, front_mm: 25 } });
+  assert.equal(partitions(id).find((i) => i.id === pid).front_mm, 25);
+});
+
 test('T74 F11 · a wardrobe the slope never touched carries no record and no bay doors', () => {
   S().newProject();
   S().setRoom({ corners: rectCorners(4000, 3000), height: 2500 });

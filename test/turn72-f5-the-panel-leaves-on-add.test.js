@@ -186,7 +186,10 @@ test('F5 · ONE LAW: the sweep runs on the add, and the settle still runs after 
   assert.ok(add.indexOf('closeAutoEndPanelFacing') < add.indexOf('const x = freeSlotOnWall({'),
     'the sweep runs AFTER the placement — that is the fault, not the fix');
   // …and only where a SIDE was named, which is the gesture his sentence is about.
-  assert.match(add, /if \(beside && side\) \{/);
+  // AMENDED BY T74 F7: …and, beside a wardrobe, only when what arrives is a
+  // wardrobe standing on the floor: *"Bok szafy przy wall unit ZOSTAJE (to nie
+  // szafa do szafy, reguła znikającego panelu nie działa)."*
+  assert.match(add, /if \(beside && side && \(!inPlayWardrobe\(beside\) \|\| inPlayWardrobe\(unit\)\)\) \{/);
   // The settle is untouched and still ends the add.
   assert.match(add, /get\(\)\.settleLayout\(unit\.id\);/);
   // …and it is all one `runBatch`, so Ctrl+Z takes the whole add back.

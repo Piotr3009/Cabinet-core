@@ -104,7 +104,20 @@ export async function room(page, { base = BASE, hash = '#/design' } = {}) {
 
 export async function pro(page, { base = BASE } = {}) {
   await page.showroom(`${base}index.html`);
-  await page.waitFor('window.__cc && window.__cc.views && window.__cc.project', { timeout: 45000 });
+  await page.waitFor('window.__cc && window.__cc.project', { timeout: 45000 });
+  await page.sleep(1500);
+  // PRO opens on its START SCREEN, and its NEW PROJECT flow ends in the
+  // project-settings wizard (decors, boards, hardware), which is not what any
+  // point of this turn is about. The editor is opened the way
+  // `scripts/e2e-turn18.mjs` opens it: a new project and the editor's own
+  // door. That is the stage being set; every gesture a check below is about
+  // is still a real click.
+  if (!(await page.ask('Boolean(window.__cc.views && window.__cc.views.room)'))) {
+    await page.ask(`(() => { window.__cc.project.getState().newProject('T74 walk');
+      const ui = window.__cc.ui.getState(); ui.openEditor(); ui.closeModal(); ui.closeLibrary && ui.closeLibrary();
+      return true; })()`);
+    await page.waitFor('window.__cc.views && window.__cc.views.room', { timeout: 45000 });
+  }
   await page.sleep(2600);
 }
 

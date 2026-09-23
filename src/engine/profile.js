@@ -1770,6 +1770,20 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── T74 F7 · THE WARDROBE'S WALL UNIT ────────────────────────────────────
+  //
+  // KIT_WUD_FULL's own box, 1:1 from the kitchen (*"kopiować 1:1 z kuchni"*),
+  // with one number of the owner's own: its DEPTH is the wardrobe's
+  // (*"głębokość = głębokość szafy"*). Beside a wardrobe it is born at THAT
+  // wardrobe's depth and its top level with that wardrobe's top (the store's
+  // `addUnit`); the 568 here is `wardrobe.defaults.depth`, for the one left
+  // with no wardrobe to copy.
+  wardrobeWallUnit: {
+    defaults: {
+      width: 600, height: 720, depth: 568, mountHeight: 1500,
+    },
+  },
+
   // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
   //
   // The KIT_WUD envelope, with the bottom open. `aperture` is the clear height
@@ -5156,6 +5170,12 @@ export function migrateCabinetProfile(profile) {
       ...D.glassWallUnit,
       ...profile.glassWallUnit,
       defaults: { ...D.glassWallUnit.defaults, ...profile.glassWallUnit?.defaults },
+    },
+    // T74 F7 · the wardrobe's wall unit, its own block like the glass one's.
+    wardrobeWallUnit: {
+      ...D.wardrobeWallUnit,
+      ...profile.wardrobeWallUnit,
+      defaults: { ...D.wardrobeWallUnit.defaults, ...profile.wardrobeWallUnit?.defaults },
     },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,

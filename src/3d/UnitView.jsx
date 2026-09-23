@@ -126,6 +126,8 @@ import SelectionOutline, { solidBounds } from './SelectionOutline.jsx';
 import DimLabel from './DimLabel.jsx';
 import DimensionChain from './DimensionChain.jsx';
 import { formatDimension, formatMm } from '../engine/format.js';
+// T74 F7 · the wardrobe's wall unit draws its DEPTH as a clickable figure too.
+import { isWardrobeWallUnit } from '../engine/types.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
@@ -3108,6 +3110,37 @@ export default function UnitView({
                   field: 'height', at: { x: e.clientX, y: e.clientY }, row: row.key,
                 }) : null}
               />
+              {/* ─── T74 F7 · THE WALL UNIT'S DEPTH, A FIGURE LIKE THE OTHER TWO ─
+                  *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość
+                  wyrównana do tyłu albo do frontu."*  Drawn for the wardrobe's
+                  wall unit alone (the owner's order names it and nothing else),
+                  and the 2klik opens the same size window, focused on DEPTH.
+
+                  WHERE, found by the walk: anywhere near the underside it met
+                  the width figure (the room camera looks in on the diagonal, and
+                  a wall unit hangs at eye level, so its underside is seen almost
+                  edge on), and flat on the top it sat in the run's cornice. So it
+                  is drawn in the plane of the unit's RIGHT SIDE, along its TOP
+                  edge and pushed up clear of the cornice: the group turns the
+                  chain's own 'xy' plane onto that side, its u running from the
+                  back (0) to the front (D). */}
+              {isWardrobeWallUnit(unit.type) && (
+                <group position={[mm(W), mm(floorY), 0]} rotation={[0, -Math.PI / 2, 0]}>
+                  <DimensionChain
+                    rows={[{
+                      key: 'd', from: [0, H], to: [D, H], offset: sideOffset, label: formatDimension(D),
+                    }]}
+                    style={dimStyle}
+                    plane="xy"
+                    at={0}
+                    colour={selected ? COLORS.gold : dimensionColour}
+                    name={`d-${unit.id}`}
+                    onPick={onEditSize ? (row, e) => onEditSize({
+                      field: 'depth', at: { x: e.clientX, y: e.clientY }, row: row.key,
+                    }) : null}
+                  />
+                </group>
+              )}
             </>
           )}
           {/* ─── Turn 17 (CLAUDE.md F6.3) ───

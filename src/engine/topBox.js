@@ -329,13 +329,23 @@ export function riderOverlapMm(unit, units, profile) {
   return { overlap: through > 0.5, mm: Math.round(through * 100) / 100 };
 }
 
+/**
+ * T74 F7 · can a cabinet of `hostType` carry a rider of `family`? One of that
+ * family, riding on nothing, and STANDING: the wardrobe's wall unit is of the
+ * wardrobe family and rides on nothing, but it hangs on the wall beside a
+ * wardrobe, and a top box is built to stand on a wardrobe's top, not on it.
+ */
+export function hostsRidersOf(hostType, family) {
+  return Boolean(hostType && hostType.family === family && !hostType.ridesOn && hostType.mount !== 'wall');
+}
+
 /** The cabinet a rider stands on: its stored link, or the best overlap. */
 function hostForRider(rider, units, byId, type) {
   const said = rider.params?.rides_on;
   if (said) {
     const named = byId.get(said);
     // A link that names a unit of the right family is the answer, moved or not.
-    return named && getUnitType(named.type).family === type.ridesOn && !getUnitType(named.type).ridesOn
+    return named && hostsRidersOf(getUnitType(named.type), type.ridesOn)
       ? named
       : null;
   }
@@ -345,7 +355,7 @@ function hostForRider(rider, units, byId, type) {
   for (const u of units) {
     if (u.id === rider.id) continue;
     const t = getUnitType(u.type);
-    if (t.family !== type.ridesOn || t.ridesOn) continue;
+    if (!hostsRidersOf(t, type.ridesOn)) continue;
     if ((u.position?.wall ?? 0) !== (rider.position?.wall ?? 0)) continue;
     const other = unitSpan(u);
     const overlap = Math.min(span.right, other.right) - Math.max(span.left, other.left);
@@ -361,6 +371,6 @@ export function riderIsOrphaned(unit, units) {
   const said = unit.params?.rides_on;
   if (!said) return true;
   const host = (units || []).find((u) => u.id === said);
-  return !host || getUnitType(host.type).family !== type.ridesOn;
+  return !host || !hostsRidersOf(getUnitType(host.type), type.ridesOn);
 }
 

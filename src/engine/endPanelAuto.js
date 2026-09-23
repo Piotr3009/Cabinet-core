@@ -234,8 +234,16 @@ function inPlay(unit) {
   return rotation === 0;
 }
 
-/** T65 F6 · …and is this a WARDROBE standing on the floor? */
-function inPlayWardrobe(unit) {
+/**
+ * T65 F6 · …and is this a WARDROBE standing on the floor?
+ *
+ * T74 F7 · exported, because it is also the store's question when a cabinet
+ * is added beside one: the vanishing panel law is wardrobe to wardrobe
+ * (*"Bok szafy przy wall unit ZOSTAJE (to nie szafa do szafy, reguła
+ * znikającego panelu nie działa)"*), and a wall unit is not a wardrobe
+ * standing on the floor.
+ */
+export function inPlayWardrobe(unit) {
   const type = getUnitType(unit?.type);
   if (!type) return false;
   if (type.family !== 'wardrobe') return false;

@@ -87,6 +87,13 @@ const EXEMPT = {
     + 'room: `setRoom(..., { replace: true })` clears the old room\'s openings, boxes and '
     + 'wall elements. *"Przy tworzeniu nowego pokoju po starym jeden nachodzi na drugi '
     + 'zamiast resetu."*',
+  'src/components/UnitSizeModal.jsx':
+    'T74 F7 · the wardrobe wall unit\'s DEPTH is a figure like its width and height, and '
+    + 'the size window it opens carries a Depth field and BACK | FRONT beside it (the store\'s '
+    + '`alignUnitDepth`, one writer). No other type gains a field. The clicked figure\'s '
+    + 'field is asked for the caret on a short timer until it has it (the walk found one '
+    + 'frame was not always enough). *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość '
+    + 'wyrównana do tyłu albo do frontu."*',
   'src/components/ElementProperties.jsx':
     'T74 F6 · the SECOND shoe drawer\'s own height is shown, not edited: it is set by its '
     + 'MOUNTING HEIGHT (its drag and its clickable distance, one clamp). *"Regulacja = '
@@ -229,7 +236,7 @@ const FROZEN = {
   'src/components/StartScreen.jsx': '6a6de6d1667872a45d18bb5b8e9e42d3d4522ac99f8ef2d1e9a32ce54ab363aa',
   'src/components/TopBar.jsx': '68fe1ff109ad1198a365ceae380fdead183ccfefb6eb579f98496a7308e1b681',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
-  'src/components/UnitSizeModal.jsx': '558973450f57e2f9b70324c41d9a8cea710a2668425b5b3dad56f39c8d09b55d',
+  'src/components/UnitSizeModal.jsx': '019529723e5844ed8796b7a0c870cc5f8d4b8b1c1869f71d37cc939695fb5054',
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
   'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
@@ -423,6 +430,7 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/ElementProperties.jsx',
     'src/components/JpullRunModal.jsx',
     'src/components/RoomModal.jsx',
+    'src/components/UnitSizeModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/pages/ConfiguratorPage.jsx',
   ], 'the exemption list is not the files CLAUDE.md names');

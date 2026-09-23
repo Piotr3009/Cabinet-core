@@ -22,7 +22,7 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, isWardrobeWallUnit, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
@@ -121,7 +121,7 @@ import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFi
 // Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
 import {
   askedSides, autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays,
-  isAutoEndPanel, withAsked, withDeclined,
+  inPlayWardrobe, isAutoEndPanel, withAsked, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, corniceRunNotice,
@@ -129,7 +129,7 @@ import {
 } from '../engine/cornice.js';
 // Turn 36 (CLAUDE.md F7): a TOP BOX rides the wardrobe it stands on.
 import {
-  isLeftSide, minRiderWidth, riddenList, riderFreeWidth, riderSlot, settleRiders,
+  hostsRidersOf, isLeftSide, minRiderWidth, riddenList, riderFreeWidth, riderSlot, settleRiders,
 } from '../engine/topBox.js';
 // T53 (CLAUDE.md F8): the watch drawer's own entry, its four layouts, its
 // finish and the shelf it puts its glass in.
@@ -4117,6 +4117,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // adding OR by dragging (a unit butted against its neighbour has nowhere to
     // go, and a clamp that let it through would be a worse bug).
     let beside = near ? state.units.find((u) => u.id === near) : null;
+    // ─── T74 F7 · THE WARDROBE'S WALL UNIT IS BORN MATCHED ──────────────────
+    // *"Domyślnie: góra równo z szafą, głębokość = głębokość szafy."*  Beside a
+    // wardrobe standing on the floor it takes THAT wardrobe's depth, and its
+    // gap off the wall where the wardrobe has one of its own, so the two backs
+    // are on one line (depth aligned to the BACK, `alignUnitDepth`'s first
+    // answer). Its top is lined up with that wardrobe's below, at the mount.
+    // A depth the caller states wins, as every template param does.
+    const hangsBeside = isWardrobeWallUnit(typeId) && beside && inPlayWardrobe(beside) ? beside : null;
+    if (hangsBeside && params?.depth == null) {
+      unit.params.depth = Number(hangsBeside.params.depth) || unit.params.depth;
+      if (hangsBeside.params.wall_gap != null) unit.params.wall_gap = hangsBeside.params.wall_gap;
+    }
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
     // units occupy different bands of the same wall, so they are placed
@@ -4157,8 +4169,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       : null;
     const riderHost = riderOf
       ? [besideHost, beside, ...[...state.units].reverse()].find((u) => u
-        && getUnitType(u.type).family === riderOf
-        && !getUnitType(u.type).ridesOn)
+        && hostsRidersOf(getUnitType(u.type), riderOf))
       : null;
     if (riderHost) {
       unit.params.rides_on = riderHost.id;
@@ -4261,7 +4272,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // step; and it runs only where a SIDE was named, which is exactly the
     // gesture the owner's sentence is about (the + on a cabinet's left or
     // right). A wall-cursor add beside nothing has no junction to close.
-    if (beside && side) {
+    // T74 F7 · …and it is WARDROBE TO WARDROBE: beside a wardrobe, only a
+    // wardrobe standing on the floor makes its panel go. A wall unit (or a top
+    // box) beside it leaves the wardrobe's side exactly as it was: *"Bok szafy
+    // przy wall unit ZOSTAJE."*  Beside anything else the law is as T72 wrote it.
+    if (beside && side && (!inPlayWardrobe(beside) || inPlayWardrobe(unit))) {
       // …and the SPANS are re-read, because a panel that leaves changes both
       // the neighbour the new cabinet is placed beside and the obstacle it is
       // clamped against. `state` was read at the top of this action and is one
@@ -4317,7 +4332,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     //
     // It is a STARTING POINT and says so: `mount_height` stays an ordinary
     // editable field, and the unit can be hung wherever the window allows.
-    const aligned = alignedMountFor(state, unit, placed);
+    // T74 F7 · the wardrobe's wall unit lines up with THE wardrobe it was put
+    // beside, not merely the nearest tall one.
+    const aligned = alignedMountFor(state, unit, placed, hangsBeside);
     if (aligned != null) unit.params.mount_height = aligned;
     // T36 F7: a TOP BOX settles on its main the moment it is placed — same
     // wall, same x, same depth, hung at the main's own top.
@@ -4677,6 +4694,58 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     });
     return { ok: true };
   }),
+
+  /**
+   * ─── T74 F7 · THE WALL UNIT'S DEPTH, ALIGNED TO THE BACK OR TO THE FRONT ──
+   *
+   * The owner: *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość
+   * wyrównana do tyłu albo do frontu."*  A wall unit shallower than the
+   * wardrobe beside it either keeps its back on the wardrobe's back line
+   * (BACK, the way it is born) or stands off the wall so its FRONT is on the
+   * wardrobe's front line. Both are one number, the unit's own gap off the
+   * wall (T72 F14's `wall_gap`), written through `updateUnitParams` with that
+   * number's own clamp; `depth_align` remembers which, so a later depth keeps
+   * the front where it was asked to be.
+   *
+   * The wardrobe is the nearest floor wardrobe on the unit's own wall. None
+   * there, or a unit deeper than it asked for FRONT: refused, in words.
+   *
+   * @returns {{ok:boolean, gap?:number, align?:string, error?:string, notices?:string[]}}
+   */
+  alignUnitDepth: (unitId, align) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isWardrobeWallUnit(unit.type)) return { ok: false, error: 'Only a wardrobe wall unit is lined up with a wardrobe.' };
+    const want = align === 'front' ? 'front' : 'back';
+    const profile = getCabinetProfile();
+    const mine = unitSpan(unit);
+    const distance = (u) => {
+      const o = unitSpan(u);
+      if (o.right <= mine.left) return mine.left - o.right;
+      if (o.left >= mine.right) return o.left - mine.right;
+      return 0;
+    };
+    const host = s.units
+      .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === (unit.position?.wall ?? 0) && inPlayWardrobe(u))
+      .reduce((best, u) => (!best || distance(u) < distance(best) ? u : best), null);
+    const name = unit.params.unit_num || unit.id;
+    if (!host) {
+      return { ok: false, error: `${name} hangs beside no wardrobe on its wall, so there is no back or front to line it up with.` };
+    }
+    const depth = Number(unit.params.depth) || 0;
+    const hostGap = wallGapOf(host, profile);
+    const gap = want === 'front' ? hostGap + (Number(host.params.depth) || 0) - depth : hostGap;
+    if (gap < 0) {
+      return {
+        ok: false,
+        error: `${name} is ${formatMm(-gap)} mm deeper than ${host.params.unit_num || host.id}, so its front cannot be on the wardrobe's front line.`,
+      };
+    }
+    const res = get().updateUnitParams(unit.id, { wall_gap: gap, depth_align: want });
+    return {
+      ok: true, gap: res?.applied?.wall_gap ?? gap, align: want, notices: res?.notices || [],
+    };
+  },
 
   unitSizeBoundsFor: (unitId) => {
     const s = get();
@@ -5231,6 +5300,16 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // those can open or close a gap — *"a colour change must not pay for it"*.
     if (applied.width != null || applied.depth != null || applied.height != null) {
       get().settleLayout(unitId);
+    }
+    // ─── T74 F7 · A NEW DEPTH KEEPS THE FRONT WHERE IT WAS ASKED TO BE ──────
+    // A wardrobe wall unit lined up to the FRONT stands off the wall by the
+    // wardrobe's reach less its own depth, so a new depth moves that number;
+    // `alignUnitDepth` writes it again, through this same setter.
+    if (applied.depth != null && patch.wall_gap == null && isWardrobeWallUnit(unit.type)
+      && get().units.find((u) => u.id === unitId)?.params?.depth_align === 'front') {
+      const again = get().alignUnitDepth(unitId, 'front');
+      if (!again.ok) notices.push(again.error);
+      else notices.push(...(again.notices || []));
     }
     return { applied, notices };
   }),
@@ -8951,7 +9030,7 @@ function toObstacleUnit(u) {
  * Null when there is no tall unit on that wall, or when the wall unit is too
  * tall to reach that line, in which case the project's own mount height stands.
  */
-function alignedMountFor(state, unit, placed) {
+function alignedMountFor(state, unit, placed, prefer = null) {
   const type = getUnitType(unit.type);
   if (type.mount !== 'wall') return null;
   const profile = getCabinetProfile();
@@ -8968,7 +9047,8 @@ function alignedMountFor(state, unit, placed) {
     if (s.left >= span.right) return s.left - span.right;
     return 0;
   };
-  const nearest = talls.reduce((best, u) => (distance(u) < distance(best) ? u : best), talls[0]);
+  const nearest = (prefer && talls.find((u) => u.id === prefer.id))
+    || talls.reduce((best, u) => (distance(u) < distance(best) ? u : best), talls[0]);
   return mountHeightAlignedWith({
     tallTop: unitTopOf(nearest, profile),
     unitHeight: Number(unit.params.height) || 0,

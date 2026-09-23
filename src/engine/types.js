@@ -140,6 +140,45 @@ export const UNIT_TYPES = {
     available: true,
   },
 
+  // ─── T74 F7 · THE WARDROBE'S WALL UNIT ───────────────────────────────────
+  //
+  // The owner, 23.09.2026: *"ADD WALL UNIT (typ wallUnit): szafki wiszące w
+  // szafach (np. szafa L i P plus ciąg szafek nad łóżkiem; floating biurko).
+  // Osobny typ, NIE przełącznik przy szafie. Identyczny typ jak górka
+  // kuchenna, kopiować 1:1 z kuchni: bez nóg, zawieszka, wycięcia w plecach,
+  // panel maskujący pod spodem."*
+  //
+  // `WUD`, copied line for line: no legs, the hangers (their holes in the
+  // sides and the cut-outs at the back's top corners), the bottom masking
+  // panel a wall unit may carry, the same hinge and cup rules and the same
+  // LISP kit. What differs is only what files it: its own id and number
+  // prefix, the WARDROBE family (so a wardrobe job's library and run hold it)
+  // and its own defaults block. It rides on nothing: it hangs BESIDE a
+  // wardrobe, its top level with the wardrobe's, and it is not a top box.
+  WARDROBE_WALL: {
+    id: 'WARDROBE_WALL',
+    heightGroup: 'wall',
+    label: 'Wall unit',
+    family: 'wardrobe',
+    lisp: 'KIT_WUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,                  // hangs on the wall
+    legSource: null,
+    hangers: true,
+    doorExtend: true,             // optional +38 mm below the carcass
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeWallUnit.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+
   BUD: {
     id: 'BUD',
     heightGroup: 'base',
@@ -984,7 +1023,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1012,13 +1051,24 @@ export const UNIT_CATEGORIES = [
   // item — do not touch". The wardrobe is not a kitchen kit and keeps its own
   // place; saved sets and media walls are untouched.
   // Turn 36 (CLAUDE.md F7): "library offers Main wardrobe + Top box".
-  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP'] },
+  // T74 F7 · *"ADD WALL UNIT ... Osobny typ"*: the wardrobe's own wall unit.
+  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL'] },
   // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
   // rather than kits, so it carries no `types` — the panel reads them from the
   // template store.
   { id: 'sets', label: 'Saved sets', types: [], saved: true },
   { id: 'media', label: 'Media walls', types: [], soon: true },
 ];
+
+/**
+ * T74 F7 · is this the WARDROBE'S wall unit: a wardrobe-family type hung on
+ * the wall that rides on nothing (a top box rides; this hangs beside). The one
+ * question the store, the scene and the size window ask of it.
+ */
+export function isWardrobeWallUnit(typeId) {
+  const t = UNIT_TYPES[resolveTypeId(typeId)];
+  return Boolean(t && t.family === 'wardrobe' && t.mount === 'wall' && !t.ridesOn);
+}
 
 export function getCategory(id) {
   return UNIT_CATEGORIES.find((c) => c.id === id) || null;
@@ -1131,5 +1181,7 @@ export const UNIT_NUM_PREFIX = {
   WARDROBE: 'W',
   // Turn 36 (F7): its own letter, so a cut list reads WT01 apart from W01 —
   // two carcasses, two numbers, one wardrobe.
-  WARDROBE_TOP: 'WT', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
+  WARDROBE_TOP: 'WT',
+  // T74 F7 · the wardrobe's wall unit: WW01, apart from the kitchen's WU01.
+  WARDROBE_WALL: 'WW', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

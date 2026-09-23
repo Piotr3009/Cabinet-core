@@ -76,7 +76,10 @@ test('BOTH the width and the height figure carry the gesture', () => {
   assert.match(view, /field: 'height'/);
   // …and only on the cabinet's own SIZE chains, not on every dimension in the
   // scene: a shelf-gap readout is not a control.
-  assert.equal((view.match(/onPick=\{onEditSize/g) || []).length, 2);
+  // AMENDED BY T74 F7: a THIRD, the wardrobe wall unit's depth (*"Zmiana przez
+  // klik w wymiar (szer/wys/głęb)"*), drawn for that one type and no other.
+  assert.equal((view.match(/onPick=\{onEditSize/g) || []).length, 3);
+  assert.match(view, /\{isWardrobeWallUnit\(unit\.type\) && \(\s*<group[^>]*>\s*<DimensionChain[\s\S]*?field: 'depth'/);
 });
 
 test('the window goes through F1’s shell, beside the click', () => {
@@ -103,8 +106,12 @@ test('WIDTH AND HEIGHT fields — whichever figure was double-clicked', () => {
   // The figure clicked takes the focus, and it is focused a frame LATE on
   // purpose — the shell renders hidden until it has measured itself, and a
   // hidden element does not take focus.
-  assert.match(modal, /requestAnimationFrame/);
-  assert.match(modal, /focus === 'height' \? '\[data-unit-size-height\]' : '\[data-unit-size-width\]'/);
+  // AMENDED BY T74 F7: late on purpose still, and asked AGAIN on a short timer
+  // until the field has the caret (the walk found one frame not enough).
+  assert.match(modal, /id = setTimeout\(land, 0\);/);
+  assert.match(modal, /if \(\(!el \|\| document\.activeElement !== el\) && Date\.now\(\) < until\) id = setTimeout\(land, 30\);/);
+  // AMENDED BY T74 F7: the figure clicked may also be the wall unit's DEPTH.
+  assert.match(modal, /\{ height: '\[data-unit-size-height\]', depth: '\[data-unit-size-depth\]' \}\[focus\] \|\| '\[data-unit-size-width\]'/);
 });
 
 test('NOTHING NEW IN THE ENGINE — it types into the existing setter', () => {

@@ -100,7 +100,10 @@ export const designUnit = (units) => {
   const list = Array.isArray(units) ? units : [];
   if (!list.length) return null;
   const mains = list.filter((u) => !u.params?.rides_on);
-  const pool = mains.length ? mains : list;
+  // T74 F7 · the fallback is a WARDROBE: a wall unit hung beside one is
+  // edited when it is the one selected, and never stands in for the wardrobe.
+  const standing = mains.filter((u) => isFloorWardrobe(u));
+  const pool = standing.length ? standing : (mains.length ? mains : list);
   // ─── T64 F1.2 · THE SELECTION, WHOLE ─────────────────────────────────────
   //
   // The owner: *"jak naciskam plusika żeby dodać, to dodaje wszystko do
@@ -363,13 +366,52 @@ function addFirstWardrobeNow() {
 }
 
 /**
+ * ─── T74 F7 · ADD WALL UNIT ────────────────────────────────────────────────
+ *
+ * The owner, 23.09.2026: *"ADD WALL UNIT (typ wallUnit): szafki wiszące w
+ * szafach (np. szafa L i P plus ciąg szafek nad łóżkiem; floating biurko).
+ * Osobny typ, NIE przełącznik przy szafie ... Domyślnie: góra równo z szafą,
+ * głębokość = głębokość szafy."*
+ *
+ * The same road the plus and ADD ANOTHER WARDROBE take (`addUnit` with a
+ * neighbour and a side): beside the SELECTED wardrobe (the first on the lowest
+ * wall when none is), on its right, else on its left. The store does the rest
+ * of the owner's sentence: the unit is born at that wardrobe's depth with its
+ * top level with that wardrobe's top, and the wardrobe's side keeps its panel.
+ * One press, one undo step (T68 F2).
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addWallUnit() {
+  return S().batch(() => addWallUnitNow());
+}
+
+function addWallUnitNow() {
+  const store = S();
+  const chosen = designUnit(store.units);
+  const wardrobe = isFloorWardrobe(chosen) ? chosen : [...store.units].filter(isFloorWardrobe)
+    .sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
+      || ((a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0)))[0] || null;
+  if (!wardrobe) return { id: null, said: REASONS.wallUnitNeedsAWardrobe };
+  let error = null;
+  for (const side of ['right', 'left']) {
+    const placed = store.addUnit('WARDROBE_WALL', { near: wardrobe.id, side });
+    if (placed?.id) return { id: placed.id, said: '' };
+    error = placed?.error || error;
+  }
+  return { id: null, said: error || REASONS.roomRefusedWardrobe() };
+}
+
+/**
  * T73 F5 · the second wardrobe, placed the way the plus places it. Answers the
  * new id, or null when there is no wardrobe on wall 0 or no room either side
  * (the caller then takes the old road).
  */
 function besideOnFirstWall(store, width, p) {
+  // T74 F7 · a wardrobe goes beside a WARDROBE: a wall unit hung on wall 0 is
+  // not a run end for this to measure from.
   const mains = store.units
-    .filter((u) => (u.position?.wall ?? 0) === 0 && !isTopBox(u))
+    .filter((u) => (u.position?.wall ?? 0) === 0 && !isTopBox(u) && isFloorWardrobe(u))
     .sort((a, b) => (a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0));
   if (!mains.length) return null;
   const params = { width, height: p.wardrobe.defaults.height };

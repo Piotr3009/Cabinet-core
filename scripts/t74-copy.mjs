@@ -35,6 +35,12 @@ const check = process.argv.includes('--check');
  */
 export const T74_PRO_EDITS = [
   {
+    pro: 'src/components/UnitSizeModal.jsx',
+    why: 'F7 · the wardrobe wall unit\'s DEPTH is a figure too, with BACK | FRONT beside it, '
+      + 'and the clicked figure\'s field keeps asking for the focus until it has it. '
+      + '*"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość wyrównana do tyłu albo do frontu."*',
+  },
+  {
     pro: 'src/components/ElementProperties.jsx',
     why: 'F6 · the second shoe drawer\'s own height is shown, not edited: it is set by '
       + 'its mounting height. *"Regulacja = WYSOKOŚĆ MONTAŻU, nie wysokość szuflady."*',

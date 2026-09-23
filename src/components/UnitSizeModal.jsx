@@ -4,6 +4,7 @@ import NumberField from './NumberField.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { formatMm } from '../engine/format.js';
+import { isWardrobeWallUnit } from '../engine/types.js';
 
 // ─── F8: THE FIGURE ON THE CANVAS IS A CONTROL (turn 31, CLAUDE.md F8) ──────
 //
@@ -39,11 +40,14 @@ export default function UnitSizeModal() {
   const units = useProjectStore((s) => s.units);
   const updateUnitParams = useProjectStore((s) => s.updateUnitParams);
   const roomFitRefusalFor = useProjectStore((s) => s.roomFitRefusalFor);
+  // T74 F7 · the wardrobe wall unit's BACK | FRONT, the store's one writer.
+  const alignUnitDepth = useProjectStore((s) => s.alignUnitDepth);
 
   const unitId = args?.unitId || null;
   const unit = useMemo(() => units.find((u) => u.id === unitId) || null, [units, unitId]);
   // Which figure was double-clicked — the one that takes the focus.
-  const [focus] = useState(args?.field === 'height' ? 'height' : 'width');
+  // T74 F7 · …and the wardrobe wall unit's DEPTH is a figure too.
+  const [focus] = useState(['height', 'depth'].includes(args?.field) ? args.field : 'width');
   // ─── FOCUSED BY HAND, NOT BY `autoFocus` ─────────────────────────────────
   //
   // The shell renders a window `visibility: hidden` until it has MEASURED
@@ -57,15 +61,30 @@ export default function UnitSizeModal() {
   // blur, and a second one spread over it through `...rest` would quietly take
   // it away. Reaching for the node this window already labels costs one query
   // and breaks nothing.
+  //
+  // T74 F7 · …and ONE frame is not always enough, found by the walk: a real
+  // 2klik opened the window and the caret landed in it on some runs and on the
+  // page on others. A frame is the renderer's to give, and where the scene is
+  // heavy (the walk's machine draws one every few hundred milliseconds) the
+  // single frame came late or the field was not yet focusable in it. So the
+  // field is asked on a short timer, independent of the frame rate, until it
+  // HAS the caret, for as long as three seconds; then it is left alone, so a
+  // key already typed into it is never selected away.
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
+    let id = 0;
+    const until = Date.now() + 3000;
+    const land = () => {
       const el = document.querySelector(
-        focus === 'height' ? '[data-unit-size-height]' : '[data-unit-size-width]',
+        { height: '[data-unit-size-height]', depth: '[data-unit-size-depth]' }[focus] || '[data-unit-size-width]',
       );
-      el?.focus();
-      el?.select?.();
-    });
-    return () => cancelAnimationFrame(id);
+      if (el && document.activeElement !== el) {
+        el.focus();
+        el.select?.();
+      }
+      if ((!el || document.activeElement !== el) && Date.now() < until) id = setTimeout(land, 30);
+    };
+    id = setTimeout(land, 0);
+    return () => clearTimeout(id);
   }, [focus]);
 
   // Enter closes the window, wherever the caret is. The FIELD has already
@@ -78,6 +97,17 @@ export default function UnitSizeModal() {
   }, [closeModal]);
 
   if (!unit) return null;
+  // ─── T74 F7 · THE WALL UNIT'S THIRD FIGURE ─────────────────────────────────
+  // *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość wyrównana do tyłu
+  // albo do frontu."*  Only the wardrobe's wall unit has it: no other type was
+  // named, and a field nobody ordered does not appear.
+  const hangs = isWardrobeWallUnit(unit.type);
+  const align = unit.params.depth_align === 'front' ? 'front' : 'back';
+  const alignTo = (want) => {
+    const res = alignUnitDepth(unit.id, want);
+    if (!res?.ok) { notify(res?.error || 'The depth could not be lined up.', 'warn'); return; }
+    for (const note of res.notices || []) notify(note, 'warn');
+  };
 
   /** One field, straight into the existing setter. */
   const set = (key) => (value) => {
@@ -130,8 +160,39 @@ export default function UnitSizeModal() {
             onCommit={set('height')}
           />
         </label>
+        {hangs && (
+          <>
+            <label className="cc-row" htmlFor={`size-d-${unit.id}`}>
+              <span className="cc-label mb-0">Depth</span>
+              <NumberField
+                id={`size-d-${unit.id}`}
+                className="cc-input text-right w-[110px]"
+                data-unit-size-depth="1"
+                value={unit.params.depth}
+                onCommit={set('depth')}
+              />
+            </label>
+            <div className="cc-row" data-unit-size-align={align}>
+              <span className="cc-label mb-0">Aligned to</span>
+              <div className="flex gap-1">
+                {[['back', 'BACK'], ['front', 'FRONT']].map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={align === id ? 'cc-btn-gold px-2' : 'cc-btn px-2'}
+                    data-unit-size-align-to={id}
+                    aria-pressed={align === id}
+                    onClick={() => alignTo(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
         <p className="text-[11px] text-ink-400">
-          {formatMm(unit.params.width)} × {formatMm(unit.params.height)} mm.
+          {formatMm(unit.params.width)} × {formatMm(unit.params.height)}{hangs ? ` × ${formatMm(unit.params.depth)}` : ''} mm.
           Enter commits and closes. The same setter the right-hand panel uses —
           a width that would eat a neighbour is refused there and refused here.
         </p>

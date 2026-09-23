@@ -6,7 +6,53 @@ showroom. Every gesture is a REAL mouse or key event at a pixel the scene's
 own raycaster says the piece is under; the store is only READ. The frames
 beside this file are what the browser saw.
 
- ok  retail · EXTRAS' ADD WALL UNIT hangs a wall unit (its own type) on the wardrobe's wall · {"id":"u_bwlkvzq","type":"WARDROBE_WALL","num":"WW01","x":1258,"wall":0,"w":600,"h":720,"d":568,"mount":1530,"gap":10,"align":"back","ep":""}
+ ok  two wardrobes, both added through the real buttons · [{"id":"u_udslvao","type":"WARDROBE","x":40,"wall":0,"w":1200,"h":2150,"d":568,"ep":""},{"id":"u_zhi9jmx","type":"WARDROBE","x":1240,"wall":0,"w":1200,"h":2150,"d":568,"ep":"R"}]
+ ok  wardrobe 1 · a real click on its bare BUL opens ADD END PANEL? · click at 865,508; modal add-panel
+ ok  wardrobe 1 · …the small modal stands near the pointer · shell {"w":260,"h":193,"x":1105,"y":508}, 240 px from the click
+ ok  wardrobe 1 · …and the right-hand panel does not open · data-open no
+ ok  wardrobe 1 · a click elsewhere closes it
+ ok  wardrobe 1 · …and adds nothing
+ ok  wardrobe 2 · a real click on its bare BUL opens ADD END PANEL? · click at 857,303; modal add-panel
+ ok  wardrobe 2 · …the small modal stands near the pointer · shell {"w":260,"h":193,"x":1097,"y":303}, 240 px from the click
+ ok  wardrobe 2 · …and the right-hand panel does not open · data-open no
+ ok  wardrobe 2 · a click elsewhere closes it
+ ok  wardrobe 2 · …and adds nothing
+ ok  between two flush wardrobes, YES is refused in the store's own words, inside the modal · No room for a 18 mm end panel on the right \u2014 only 0 mm free before W02.
+ ok  NO closes it
+ ok  YES on an outer side: the panel goes on, the modal closes, the panel's own menu opens · BUL → ep L; dock end-panel
+ ok  an accessories drawer through INSIDE's own button · {"base":"D3-WB","front":"W01-DF3"}
+ ok  a real 2klik on its front opens its window · clicked 658,549
+ ok  the chip that was "Red" reads Wine red · Wine red felt in the tray \u2014 the BOM names it.
+ ok  the base wears the felt `red` (the id saved jobs keep), and the BOM reads "Wine red felt base" · {"felt":"red","bom":true}
+ ok  the same 2klik slid the tray out · open 1
+ ·   let go by a real click on the empty floor · selected null; tray out to z 920
+ ok  the open tray's felt in the room light reads as WINE: red leads, and dark (lightness under 35 %), not a loud red · median of 1634 felt pixels rgb(113, 48, 55) · hue 354 · lightness 32 %
+ ok  retail · a real click on the drawing opens the length field WITH the focus and the drawn number · {"focused":true,"value":"1138"}
+ ok  retail · typing 3500 REPLACES the number (it was selected), no mouse · {"focused":true,"value":"3500"}
+ ok  retail · Enter draws the typed wall · ["3500"]
+ ok  retail · Enter with nothing typed confirms the length drawn with the mouse · field held 886; walls ["3500","886"]
+ ok  retail · Escape cancels: no wall is drawn from the typed number · walls ["3500","886"]; field null
+ ok  retail · …and the drawing window is still open (Escape took the number, not the window)
+ ok  pro · the Wall length field has the focus the moment the drawing opens · {"focused":true,"value":""}
+ ok  pro · typed 3500 and Enter, no mouse on the field: the wall is drawn · ["3500"]
+ ok  pro · …and the focus stays in the field for the next wall · {"focused":true,"value":""}
+ ok  pro · a refused number stays selected, so typing replaces it · {"focused":true,"value":"2800"}
+ ok  pro · Escape cancels the typed number and the drawing stays open · {"focused":true,"value":""}
+ ok  the old room carries a window and a slope, put there by the elevation's own buttons · {"corners":"0,0 4000,0 4000,3000 0,3000","openings":1,"boxes":0,"slopes":1,"units":1}
+ ok  a drawn room REPLACES the old: its window and slope are gone, the cabinet stays · {"corners":"0,0 4000,0 4000,3000 0,3000","openings":1,"boxes":0,"slopes":1,"units":1} -> {"corners":"0,0 3600,0 3600,2800 0,2800","openings":0,"boxes":0,"slopes":0,"units":1}
+ ok  the room window is not left open under the drawing with the old outline
+ ok  pro · 3 WALLS draws a U: the far wall, the right and the LEFT; the side the camera looks in from is open · scope three; full walls ["far","left","right"]; returns 2; camera on the near side
+ ok  retail · 3 WALLS draws a U: the far wall, the right and the LEFT; the side the camera looks in from is open · scope three; full walls ["far","left","right"]; returns 2; camera on the near side
+ ok  two shoe drawers, both added through INSIDE's real button · 1:shoe front 21..134 ramp true | 2:shoe front 137..253 ramp true
+ ok  the second arrives stacked tight on the first; the first is on the bottom · first 21, second 137
+ ok  a real drag UP on the second front raises it by its mounting height · pos_mm 705; front 137 -> 705
+ ok  …its own height is unchanged, and the first has not moved · h 116 -> 116; first 21 -> 21
+ ok  …and both still carry their ramps
+ ok  the second drawer selected, the scene draws the distance between the two drawers · figure at 739,560
+ ok  a real click on the distance opens its field
+ ok  typing 300 puts the second drawer 300 mm over the first · gap 300; pos_mm 434
+ ok  a long drag DOWN stops tight on the first drawer (the one clamp) · second front 137, first top 134
+ ok  retail · EXTRAS' ADD WALL UNIT hangs a wall unit (its own type) on the wardrobe's wall · {"id":"u_zer10uw","type":"WARDROBE_WALL","num":"WW01","x":1258,"wall":0,"w":600,"h":720,"d":568,"mount":1530,"gap":10,"align":"back","ep":""}
  ok  retail · …beside the wardrobe, as deep as it · wardrobe x40 w1200 d568; wall unit x1258 d568
  ok  retail · …and its TOP is level with the wardrobe's · carcass tops in the scene: wardrobe 2250 mm, wall unit 2250 mm
  ok  retail · the wardrobe's side KEEPS its panel beside the wall unit · end panels R -> R
@@ -20,6 +66,29 @@ beside this file are what the browser saw.
  ok  retail · FRONT: its front stands on the wardrobe's front line · gap 228 + d 350 vs 10 + 568
  ok  retail · BACK: its back returns to the wardrobe's back line · gap 10
  ok  pro · the library's wardrobe category lists the wall unit
- ok  pro · added from the library beside the selected wardrobe: as deep as it, its top level with it · {"wardrobe":{"id":"u_mq67sxu","type":"WARDROBE","num":"W01","x":1700,"wall":0,"w":600,"h":2150,"d":558,"mount":null,"gap":10,"align":"back","ep":""},"wall":{"id":"u_9qgdl8b","type":"WARDROBE_WALL","num":"WW01","x":2300,"wall":0,"w":600,"h":720,"d":558,"mount":1530,"gap":10,"align":"back","ep":""}}
+ ok  pro · added from the library beside the selected wardrobe: as deep as it, its top level with it · {"wardrobe":{"id":"u_0pnccrw","type":"WARDROBE","num":"W01","x":1700,"wall":0,"w":600,"h":2150,"d":558,"mount":null,"gap":10,"align":"back","ep":""},"wall":{"id":"u_801d8vo","type":"WARDROBE_WALL","num":"WW01","x":2300,"wall":0,"w":600,"h":720,"d":558,"mount":1530,"gap":10,"align":"back","ep":""}}
+ ok  a shoe drawer through INSIDE's own button, with its ramp · {"ramp":"D1-SHOE-RAMP","floor":"D1-DNO","front":"W01-DF1"}
+ ok  shut: the ramp stands ON its drawer floor, not through it · ramp low 64.5, floor top 64.5
+ ok  a real 2klik opens the drawer: the ramp comes out WITH it, as far as its floor · floor out 440 mm, ramp out 440 mm
+ ok  …and, open, it is still on its floor · ramp low 64.5, floor top 64.5
+ ok  a second 2klik shuts it, and the ramp goes back in with it · ramp front 484.3 (shut 484.3)
+ ok  a real drag into the corner: the automat forces the hinge and adds the door partition (as before) · {"x":40,"doors":"true","bay":"null","hinges":"L R","partitions":0,"record":false} -> {"x":2760,"doors":"false","bay":"[{\"door\":\"one\",\"hinge\":\"L\"},{\"door\":\"one\",\"hinge\":\"L\"}]","hinges":"L L!","partitions":1,"record":true}
+ ok  a real drag back out: the doors, their hinge sides and the partition are as they were before the corner · {"x":2760,"doors":"false","bay":"[{\"door\":\"one\",\"hinge\":\"L\"},{\"door\":\"one\",\"hinge\":\"L\"}]","hinges":"L L!","partitions":1,"record":true} -> {"x":40,"doors":"true","bay":"null","hinges":"L R","partitions":0,"record":false}
+ ok  doors shut, front camera: the groove reads against its door (at least 10 % apart), and the door takes the scene's shadows · groove 49.5, face 65.8, 24.8 %
+ ok  shut again (OPEN ALL twice): the groove reads against its door (at least 10 % apart), and the door takes the scene's shadows · groove 49.5, face 65.8, 24.8 %
+ ok  the room camera, after a real orbit: the groove reads against its door (at least 10 % apart), and the door takes the scene's shadows · groove 109.3, face 153.7, 28.9 %
+ ok  INSERT PANEL (EXTRAS' real button) puts one board in the room, selected, its menu on the right · [{"id":"u_akqbltz","num":"FP01","x":1258,"w":800,"h":400,"d":18,"m":0,"facing":"along","tilt":0}]; selected {"unitId":"u_akqbltz","elementRef":"FP"}
+ ok  a real click on ACROSS THE WALL turns it across the wall (a side, 18 wide, its length out into the room) · {"id":"u_akqbltz","num":"FP01","x":1258,"w":18,"h":400,"d":800,"m":0,"facing":"across","tilt":0}
+ ·   the second INSERT PANEL did not land; under the pointer · nothing
+FAIL a second INSERT PANEL, and HORIZONTAL lays it flat · [{"id":"u_akqbltz","num":"FP01","x":1258,"w":400,"h":18,"d":800,"m":0,"facing":"across","tilt":90}]
+ ok  a real click on its floor figure opens the field
+ ok  typing 400 raises it 400 mm off the floor · {"id":"u_akqbltz","num":"FP01","x":1258,"w":400,"h":18,"d":800,"m":400,"facing":"across","tilt":90}
+FAIL dragged near the upright one, the scene draws the PROPOSAL (the panel stays under the hand) · proposal null; lines 0; x under the hand 1258
+FAIL …and the drop TAKES it: the panel is caught on the edge · x 1258 -> 1258
+FAIL the same drag dropped with Alt held REFUSES it: the panel stays where the hand left it · proposal null; x 1258 -> 1258
+ ·   the upright panel it was caught on
+ ok  a real 2klik on the board opens PRO's piece editor (the copied window) · modal part-detail
+ ok  a real click on its LEFT figure and 150 typed: it stands 150 mm clear of what is on its left · field true; x 1408, left neighbour at 1258
+FAIL the cut list carries each board, like any board · ["FP01,FP,800,400,<>^v,2.40,0.320"]
 
-15 checks · 0 failed
+81 checks · 5 failed

@@ -1,4 +1,5 @@
-import { Button, ChipRow, Field } from '../controls.jsx';
+import { Button, ChipRow, Field, NumberField } from '../controls.jsx';
+import { REASONS } from '../reasons.js';
 import * as A from '../adapter.js';
 
 // ─── TURN 72 · F1 — THE END PANEL'S MENU, AND IT SAYS TWO THINGS ───────────
@@ -56,6 +57,23 @@ export default function EndPanel({ unitId, panel }) {
           onPick={(id) => A.setEndPanelTopChip(unitId, panel, id)}
         />
       </Field>
+
+      {/* T73 F1 · the owner, 23.09.2026: *"nie ma możliwości ustawienia na
+          przykład 15 mm, a nie do sufitu; dodaj przy to ceiling następne pole
+          z wpisaniem milimetrów."* Shown only while CEILING is chosen: 0 is
+          the ceiling itself, 15 stops the panel 15 mm below it. */}
+      {menu.top === 'ceiling' ? (
+        <Field label="GAP UNDER CEILING">
+          <NumberField
+            testid="end-panel-ceiling-gap"
+            min={0}
+            max={menu.headroom}
+            value={menu.gap}
+            outOfRange={REASONS.outOfRange}
+            onCommit={(mm) => A.setEndPanelCeilingGap(unitId, panel, mm)}
+          />
+        </Field>
+      ) : null}
 
       {/* BOTTOM — *"drugi równo z carcasem od dołu; a default do ziemi"*. The
           default is FLOOR and it is the engine's, not this file's: a standing

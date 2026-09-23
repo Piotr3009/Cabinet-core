@@ -180,8 +180,13 @@ test('F5 · not one slider survives, and Slider itself is gone with them', () =>
     if (!/\.jsx$/.test(f)) continue;
     if (f === REHOMED_FILE) continue;
     if (isCopy(`src/retail/design/detail/${f}`)) continue;
+    // T73 F1 · the ONE typed field the owner ordered on 23.09.2026, GAP UNDER
+    // CEILING in `EndPanel.jsx` (*"dodaj przy to ceiling następne pole z
+    // wpisaniem milimetrów"*). Not a slider's heir, and held to exactly one
+    // by `turn72-f1-the-panel-menu.test.js`.
+    const own = f === 'EndPanel.jsx' ? 1 : 0;
     fields += (readFileSync(join(ROOT, 'src/retail/design/detail', f), 'utf8')
-      .match(/<NumberField/g) || []).length;
+      .match(/<NumberField/g) || []).length - own;
   }
   assert.equal(fields, 0, `${fields} typed fields survive in a retail detail file`);
   const both = read('src/retail/design/Options.jsx')

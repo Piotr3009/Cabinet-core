@@ -128,7 +128,9 @@ import {
 } from './shoeInsert.js';
 import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
-import { impliedLegHeight, maskDepthExtra, standsOnLegHeight } from './runs.js';
+import {
+  impliedLegHeight, maskDepthExtra, standsOnLegHeight, wallGapOf,
+} from './runs.js';
 import {
   corniceOption, corniceOrder, corniceProjection, corniceRise, takesCornice,
 } from './cornice.js';
@@ -5438,7 +5440,11 @@ export function computeCabinet(params, profileOverride) {
   // wall (panel depth = unit depth + inset)." So it does. This IS a cut-list
   // change and it is named where it shows: a project with a back inset on it
   // cuts a deeper end panel than it did yesterday.
-  const wallGap = Math.max(0, Number(P.room?.wallBackClearance) || 0);
+  // T73 F8 · the owner, 23.09.2026, on a wardrobe stood off its wall (T72
+  // F14): *"panele i cornice się nie przedłużają, a to źle."* The panel runs
+  // back to the wall across THIS unit's own gap; with nobody having typed one
+  // that is the project's number, so every saved job cuts the same board.
+  const wallGap = wallGapOf({ params }, P);
   const insetBack = Math.max(0, Number(params?.inset_back_mm) || 0);
   const endPanelDepth = wallGap + insetBack + D + P.doors.gap + frontT;
   // ─── Turn 13 (CLAUDE.md F4): A WALL UNIT'S PANEL ENDS WITH THE CABINET ───
@@ -7799,6 +7805,10 @@ export function computeCabinet(params, profileOverride) {
             ...q.meta,
             ...(zone == null ? {} : { zone }),
             ...(wFinish ? { watch_finish: wFinish } : {}),
+            // T73 F6 · the owner: *"nie dodaje koloru felt, czyli spodu
+            // szuflady"*. The felt lies on the BASE, so the base carries which
+            // one, and the picture reads it off the piece like any finish.
+            ...(wFelt && q.part === 'WATCH-BASE' ? { watch_felt: wFelt.id } : {}),
           },
         }));
       }
@@ -9161,7 +9171,8 @@ export function computeCabinet(params, profileOverride) {
       // door-top level (the carcass top), its back face in the door plane.
       carcassTop: H,
       doorPlane: D + P.doors.gap + frontT,
-      backZ: -Math.max(0, Number(P.room?.wallBackClearance) || 0),
+      // T73 F8 · the return's far end is the wall behind THIS unit.
+      backZ: -wallGapOf({ params }, P),
       order: corniceOrderRow,
     } : null,
   };

@@ -76,6 +76,11 @@ const WORKSHOP_FIELDS = Object.freeze([
   'partition-slot', 'partition-drill-face',
   'runner-variant',
   'material',
+  // T73 F9 · the drawer's WATCH INSERT switch. T72 F9 gave the client ONE
+  // road to the accessories drawer (ADD ACCESSORIES DRAWER, then its own
+  // menu), and the audit of 22.09 found this switch still standing under the
+  // drawer menu as a second road. PRO keeps it.
+  'watch-insert',
 ]);
 
 /**
@@ -177,6 +182,11 @@ export function dockFor(selection) {
   // name: *"No number fields in retail."*
   if (menu === 'panel') {
     return panel ? { chips: 'end-panel', args: { unitId, panelId: panel.id } } : null;
+  }
+
+  // T73 F2 · a bare outer side: the question, YES or NO.
+  if (menu === 'add-panel') {
+    return panel ? { chips: 'add-panel', args: { unitId, panelId: panel.id } } : null;
   }
 
   // EVERYTHING ELSE THE ENGINE CUTS A BOARD FOR — the shelf, the divider, a

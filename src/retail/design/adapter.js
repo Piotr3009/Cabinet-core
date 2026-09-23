@@ -42,7 +42,9 @@ import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
 import { materialSlotOf, runMaterialSetting } from '../../engine/materials.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
-import { hasTopInfill, unitTop, wallGapOf } from '../../engine/runs.js';
+import {
+  hasTopInfill, paddedSpan, unitTop, wallGapOf,
+} from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, elementMaterialChoices, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
@@ -328,6 +330,21 @@ function addFirstWardrobeNow() {
   const p = P();
   const wall = Math.round(wallLengthMm(store.project.room, 0));
   const width = Math.min(wall, RETAIL_FIRST_WIDTH_MAX);
+  // ─── T73 F5 · A SECOND WARDROBE TAKES THE PLUS'S OWN ROAD ────────────────
+  //
+  // The owner, 23.09.2026: *"jak dodasz przyciskiem plusikiem to działa, ale
+  // jak z menu EXTRAS / another wardrobe, to nie działa, pokazuje panel."*
+  //
+  // The plus calls `addUnit(type, { near, side })`, and only that road closes
+  // the neighbour's automatic end panel BEFORE the placement is measured
+  // (T72 F5, `closeAutoEndPanelFacing`). This button called `addUnit` with no
+  // neighbour and then dragged the unit to the wall start, so it landed one
+  // board out and the settle put the panel straight back. With a wardrobe
+  // already on the wall it now goes beside it through the same call the plus
+  // makes: the right of the last one, else the left of the first. Only when
+  // neither side has room does the old road run (it may find another wall).
+  const beside = besideOnFirstWall(store, width, p);
+  if (beside) return beside;
   const placed = store.addUnit('WARDROBE', {
     params: { width, height: p.wardrobe.defaults.height },
   });
@@ -343,6 +360,40 @@ function addFirstWardrobeNow() {
   // or less to the ceiling (decision 1). Removable like anything else.
   if (placed?.id) applyAutoCornice(placed.id);
   return placed?.id || null;
+}
+
+/**
+ * T73 F5 · the second wardrobe, placed the way the plus places it. Answers the
+ * new id, or null when there is no wardrobe on wall 0 or no room either side
+ * (the caller then takes the old road).
+ */
+function besideOnFirstWall(store, width, p) {
+  const mains = store.units
+    .filter((u) => (u.position?.wall ?? 0) === 0 && !isTopBox(u))
+    .sort((a, b) => (a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0));
+  if (!mains.length) return null;
+  const params = { width, height: p.wardrobe.defaults.height };
+  const tries = [
+    { near: mains[mains.length - 1], side: 'right' },
+    { near: mains[0], side: 'left' },
+  ];
+  for (const t of tries) {
+    const placed = store.addUnit('WARDROBE', { params, near: t.near.id, side: t.side });
+    if (!placed?.id) {
+      // A refused side may already have lost its automatic panel (the panel
+      // goes before the placement is measured). The ordinary settle grows it
+      // back on what is still a free end.
+      S().settleLayout?.(t.near.id);
+      continue;
+    }
+    setDoorCount(placed.id, 1);
+    // ALL OR NONE (T72 F8): `addUnit` already copied the run's cornice. A run
+    // whose neighbour carries none keeps none, so the automatic cornice is
+    // applied only when the neighbour has one (it may then grow to the ceiling).
+    if (corniceOf(t.near.id) > 0) applyAutoCornice(placed.id);
+    return placed.id;
+  }
+  return null;
 }
 
 /**
@@ -910,6 +961,56 @@ function neighbourOf(unitId, side) {
   });
 }
 
+// ─── T73 F2 · CLICK THE OUTSIDE OF A SIDE: "ADD END PANEL? YES / NO" ─────────
+//
+// The owner, 23.09.2026: *"jak klikniesz na bok szafy z zewnątrz, żeby się
+// pokazywało add panel (Yes / No), to będzie bardzo intuicyjne."*
+//
+// A side (BUL / BUR) with NO end panel on it and NO neighbour covering it asks
+// the question. A side with a panel never does (the panel is what is clicked),
+// and neither does a side a flush neighbour hides (there is nothing to cover).
+// YES is `addEndPanelByHand`, the EXTRAS road, so the panel is the client's own
+// and permanent; the panel's own menu (T72 F1) opens straight after.
+
+/** Does this side stand flush against the neighbour on that side? */
+function flushWith(unit, neighbour, side) {
+  if (!unit || !neighbour) return false;
+  const me = paddedSpan(unit);
+  const it = paddedSpan(neighbour);
+  const gap = side === 'R' ? it.left - me.right : me.left - it.right;
+  return gap <= 1;
+}
+
+/**
+ * Should a click on this carcass side ask to add a panel?
+ * @returns {{side:'L'|'R'}|null}
+ */
+export function sideAskFor(unitId, panel) {
+  if (panel?.part !== 'BUL' && panel?.part !== 'BUR') return null;
+  const unit = unitOf(unitId);
+  if (!unit || isTopBox(unit)) return null;
+  const side = panel.part === 'BUR' ? 'R' : 'L';
+  const has = (unit.params?.end_panels || []).some((ep) => (ep.side === 'R' ? 'R' : 'L') === side);
+  if (has) return null;
+  const neighbour = neighbourOf(unitId, side);
+  if (neighbour && flushWith(unit, neighbour, side)
+    && !sideIsVisible(unit, side, neighbour, { atWall: false }, P()).visible) return null;
+  return { side };
+}
+
+/** YES: the panel goes on by hand, and its own menu opens on it. */
+export function addEndPanelFromAsk(unitId, side) {
+  const res = addEndPanelByHand(unitId, side);
+  if (res.ok) selectOnStage(unitId, `END-${side === 'R' ? 'R' : 'L'}`);
+  return res;
+}
+
+/** NO: the question closes and nothing changes. */
+export function dismissSideAsk() {
+  U().clearElement?.();
+  return { ok: true, said: '' };
+}
+
 /** ADD END PANEL, by hand. Permanent — the automat never takes it back off. */
 export function addEndPanelByHand(unitId, side) {
   const res = S().addEndPanel(unitId, { side, applyToAll: false, asked: true });
@@ -977,7 +1078,23 @@ export function endPanelMenu(unitId, panel) {
     top: Number(panel?.meta?.top_mm) > 0 ? 'ceiling' : 'carcass',
     bottom: mode === 'floor' ? 'floor' : 'carcass',
     colour: runMaterialSetting(design, 'end_panel').sameAsFronts ? 'fronts' : 'other',
+    // T73 F1 · how far short of the ceiling the panel stops, read off what was
+    // cut: the headroom the store measures, less the panel's own rise.
+    gap: Math.max(0, S().endPanelHeadroom(unitId, ep.id) - (Number(panel?.meta?.top_mm) || 0)),
+    headroom: S().endPanelHeadroom(unitId, ep.id),
   };
+}
+
+/**
+ * T73 F1 · GAP UNDER CEILING. The owner, 23.09.2026: *"dodaj przy to ceiling
+ * następne pole z wpisaniem milimetrów"*. The same store road the CEILING chip
+ * presses, told how far short of the ceiling to stop.
+ */
+export function setEndPanelCeilingGap(unitId, panel, gapMm) {
+  const ep = endPanelRecord(unitId, panel);
+  if (!ep) return { ok: false, said: '' };
+  S().endPanelToCeiling(unitId, ep.id, gapMm);
+  return { ok: true, said: '' };
 }
 
 /** TOP — flush with the carcass, or all the way up. */
@@ -2009,6 +2126,8 @@ export const MENUS = Object.freeze([
   // pattern T69 F8 established, for the same reason (PRO keeps its numeric
   // fields and a copy may not be edited).
   'panel',
+  // T73 F2 · the tenth: the question a bare outer side asks, YES or NO.
+  'add-panel',
 ]);
 
 /**
@@ -2068,6 +2187,14 @@ export function resolveSelection(selected) {
   const panel = (result?.panels || []).find((p) => p.id === ref) || null;
   if (!panel || !isSelectableElement(panel)) return null;
   const kind = elementKind(panel);
+  // T73 F2 · a bare outer side asks whether to add an end panel. Every other
+  // carcass click is still the way out (T65 F10).
+  if (kind === 'side' && sideAskFor(unitId, panel)) {
+    return {
+      menu: 'add-panel', kind, unitId, ref, panel, item: null,
+      label: panel.part === 'BUR' ? 'Right side' : 'Left side',
+    };
+  }
   let menu = MENU_FOR_KIND[kind] || null;
   if (!menu) return null;
 

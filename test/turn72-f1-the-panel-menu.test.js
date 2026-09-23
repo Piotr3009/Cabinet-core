@@ -190,7 +190,11 @@ test('F1 · REMOVE PANEL takes the board off', () => {
 
 test('F1 · NO NUMBER FIELDS in retail\'s panel menu — three chip rows and a way out', () => {
   const menu = read('src/retail/design/detail/EndPanel.jsx');
-  assert.equal(/NumberField/.test(menu), false, '*"No number fields in retail."*');
+  // T73 F1 · ONE number field, on the owner's order of 23.09.2026 (*"dodaj
+  // przy to ceiling następne pole z wpisaniem milimetrów"*): GAP UNDER CEILING.
+  // Every other row stays a chip row.
+  assert.equal([...menu.matchAll(/<NumberField/g)].length, 1, 'only GAP UNDER CEILING may be typed');
+  assert.ok(menu.includes('testid="end-panel-ceiling-gap"'), 'the one number field is not the ceiling gap');
   for (const row of ['end-panel-top', 'end-panel-bottom', 'end-panel-colour']) {
     assert.ok(menu.includes(`testid="${row}"`), `the ${row} row is missing`);
   }

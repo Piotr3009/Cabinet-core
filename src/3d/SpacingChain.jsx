@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Html } from '@react-three/drei';
 import { mm } from './constants.js';
 import DimensionChain from './DimensionChain.jsx';
@@ -56,6 +56,38 @@ import { useProjectStore } from '../stores/projectStore.js';
 // reason: a control that lives in the scene has no page to route through, and
 // routing one through PRO's page and retail's stage would be two callers of one
 // law. The store IS the law; this presses it.
+
+// T73 F3 · the field's own look: big enough to read at the room camera,
+// white, onyx ink, a gold edge (the Ivory and Onyx tokens, written out here
+// because this component draws in PRO's page as well as in the client's).
+const SPACING_FIELD_WRAP = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 6,
+  padding: '4px 8px',
+  background: '#FFFFFF',
+  border: '2px solid #806A44',
+  borderRadius: 6,
+  boxShadow: '0 2px 10px rgba(9, 10, 9, 0.25)',
+};
+const SPACING_FIELD = {
+  width: 96,
+  height: 36,
+  fontSize: 16,
+  lineHeight: '36px',
+  textAlign: 'right',
+  color: '#090A09',
+  background: '#FFFFFF',
+  border: 'none',
+  outline: 'none',
+  fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif',
+};
+const SPACING_FIELD_UNIT = {
+  fontSize: 12,
+  letterSpacing: '0.12em',
+  color: '#5C5B57',
+  fontFamily: 'Inter, Helvetica Neue, Arial, sans-serif',
+};
 
 /** The gap's own faces, and which of them this piece is. */
 function touching(gap, piece) {
@@ -155,6 +187,14 @@ export default function SpacingChain({
   // the dimension overlay as a whole, and this is part of it.
   const [editing, setEditing] = useState(null);
   const [draft, setDraft] = useState('');
+  // T73 F3 · the field opens with its number SELECTED: typing replaces it,
+  // Enter confirms it as it stands.
+  const fieldRef = useRef(null);
+  useEffect(() => {
+    if (!editing) return undefined;
+    const t = setTimeout(() => { fieldRef.current?.focus(); fieldRef.current?.select(); }, 0);
+    return () => clearTimeout(t);
+  }, [editing]);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
 
@@ -222,21 +262,32 @@ export default function SpacingChain({
           userData={{ ccHelper: true, ccNoBounds: true }}
         >
           <Html center zIndexRange={[45, 35]} style={{ pointerEvents: 'auto' }}>
-            <input
-              type="number"
-              className="cc-input w-20 text-right text-[11px]"
-              data-spacing-field={row.key}
-              // eslint-disable-next-line jsx-a11y/no-autofocus -- the click WAS the focus
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+            {/* T73 F3 · the owner, 23.09.2026: *"2klik na wymiar otwiera
+                malutkie pole, którego nie widać i nie mam jak wpisać; powinien
+                tam być numer default i zaznaczone"*. The field carries its own
+                size and colours, so it reads the same in PRO and in the
+                client's room whatever stylesheet is loaded there. */}
+            <div style={SPACING_FIELD_WRAP} data-spacing-field-wrap={row.key}>
+              <input
+                ref={fieldRef}
+                type="text"
+                inputMode="numeric"
+                style={SPACING_FIELD}
+                data-spacing-field={row.key}
+                // eslint-disable-next-line jsx-a11y/no-autofocus -- the click WAS the focus
+                autoFocus
+                value={draft}
+                onFocus={(e) => e.currentTarget.select()}
+                onChange={(e) => setDraft(e.target.value.replace(/[^\d]/g, ''))}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') { e.preventDefault(); commit(); }
                 // *"Escape cancels."* — and so does a click anywhere else.
                 if (e.key === 'Escape') { e.preventDefault(); setEditing(null); setDraft(''); }
               }}
-              onBlur={() => { setEditing(null); setDraft(''); }}
-            />
+                onBlur={() => { setEditing(null); setDraft(''); }}
+              />
+              <span style={SPACING_FIELD_UNIT}>mm</span>
+            </div>
           </Html>
         </group>
       )}

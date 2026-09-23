@@ -583,7 +583,13 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
       'dock-end-panel',
       // …and the three rows and the way out.
       'end-panel-top', 'end-panel-bottom', 'end-panel-colour', 'end-panel-remove',
+      // T73 F1 · the owner, 23.09.2026: *"dodaj przy to ceiling następne pole
+      // z wpisaniem milimetrów"*. The one typed field, shown under CEILING.
+      'end-panel-ceiling-gap',
     ],
+    // T73 F2 · the question a bare outer side asks (*"add panel (Yes / No)"*).
+    // Retail's own, like the panel's menu: PRO has no such question to copy.
+    'AddPanelAsk.jsx': ['dock-add-panel', 'add-panel-yes', 'add-panel-no', 'add-panel-said'],
   };
   for (const f of files) {
     if (!/\.jsx$/.test(f)) continue;
@@ -593,7 +599,9 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
       const hooks = [...text.matchAll(/testid="([a-z][a-z0-9-]*)"/g)].map((m) => m[1]);
       assert.deepEqual(hooks.sort(), [...CHIP_BLOCKS[f]].sort(),
         `${f} grew a control nobody licensed`);
-      assert.doesNotMatch(text, /<NumberField/, `${f} typed a number where the owner asked for chips`);
+      // T73 F1 · one typed field, GAP UNDER CEILING, on the owner's order.
+      assert.ok((text.match(/<NumberField/g) || []).length <= (f === 'EndPanel.jsx' ? 1 : 0),
+        `${f} typed a number where the owner asked for chips`);
       continue;
     }
     if (f === 'ReHomed.jsx') {

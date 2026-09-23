@@ -147,6 +147,7 @@ import { drawerFrontDimsVisible, frontDimensionRows } from '../engine/frontDimen
 import { opensOwnModal } from '../engine/elements.js';
 import { picksOnClick } from './picking.js';
 import { panelFinish } from '../engine/materials.js';
+import { WATCH_FELT_COLOURS } from '../engine/watchDrawer.js';
 // ─── TURN 49 (CLAUDE.md F9): AND WHETHER IT IS A VENEER ────────────────────
 // The finish alone cannot say for a FRONT — a front veneer borrows an EGGER
 // scan (T20 F12.3) and is stored as a decor — so the piece's own material SLOT
@@ -210,6 +211,24 @@ export function frontKind(panel) {
  * Supabase Storage, so a machine with no network gets our own procedural grain
  * rather than 400 white panels. Mock mode WORKS (CLAUDE.md rule 7).
  */
+/**
+ * T73 F6 · FELT, AS A SURFACE: the chosen colour, matte, no sheen, no board
+ * figure. Built on the piece's own surface so opacity and the rest carry over.
+ */
+function feltSurface(surface, hex) {
+  return {
+    ...surface,
+    colour: hex,
+    texture: null,
+    fallback: null,
+    roughness: 1,
+    metalness: 0,
+    clearcoat: 0,
+    clearcoatRoughness: 1,
+    envMapIntensity: 0.15,
+  };
+}
+
 function useDecor(surface, panel, profile) {
   // `tick` is the COUNTER, not the setter: keying the memo on the setter (which
   // never changes) left every clone holding the placeholder the loader starts
@@ -2045,6 +2064,13 @@ export default function UnitView({
             veneered: design ? panelIsVeneered(p, unit, design) : false,
             ...(own ? { finish: own.finish } : {}),
           });
+        // T73 F6 · a felted tray: the base wears the felt the client chose,
+        // matte, and no board figure through it. Every other piece and every
+        // other finish is exactly the surface above.
+        const feltHex = !contour && p.part === 'WATCH-BASE' && p.meta?.watch_felt
+          ? (WATCH_FELT_COLOURS.find((c) => c.id === p.meta.watch_felt)?.hex || null)
+          : null;
+        const worn = feltHex ? feltSurface(surface, feltHex) : surface;
         return (
           <MovingPanel
             key={p.id}
@@ -2100,7 +2126,7 @@ export default function UnitView({
             // OVERLAY (`machining`) is still off in the room, because a room is
             // a picture of furniture and the lines are a workshop tool.
             drills={result.drills}
-            surface={beingDragged && !contour ? { ...surface, colour: COLORS.goldSoft, texture: null } : surface}
+            surface={beingDragged && !contour ? { ...worn, colour: COLORS.goldSoft, texture: null } : worn}
             // T69 F4: an unpainted board's silhouette and shaker frame are
             // drawn in its OWN edge cream — lighter than the field, which is
             // the photo's truth. Every other board is untouched.

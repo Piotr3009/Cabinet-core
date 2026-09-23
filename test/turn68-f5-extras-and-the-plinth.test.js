@@ -246,5 +246,10 @@ test('F5 · ADD ANOTHER WARDROBE is the same one store path, not a fourth', () =
   // Nothing in retail calls `addUnit('WARDROBE')` but that one function.
   const adapter = code('src/retail/design/adapter.js');
   const adds = [...adapter.matchAll(/addUnit\('WARDROBE'/g)];
-  assert.equal(adds.length, 2, `retail makes a wardrobe in ${adds.length} places`);
+  // T73 F5 · three: the SECOND wardrobe takes the plus's own call,
+  // `addUnit(type, { near, side })`, inside the same one function
+  // (`besideOnFirstWall`), so the neighbour's panel leaves on the add (owner,
+  // 23.09.2026: *"jak z menu EXTRAS / another wardrobe, to nie działa"*).
+  assert.equal(adds.length, 3, `retail makes a wardrobe in ${adds.length} places`);
+  assert.match(adapter, /function besideOnFirstWall\(store, width, p\)/);
 });

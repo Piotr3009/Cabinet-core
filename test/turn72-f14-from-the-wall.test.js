@@ -251,7 +251,17 @@ test('F14 one helper, and every reader calls it', () => {
   // the end panel's DEPTH, which is a board on a sheet: FROZEN 1 says the one
   // engine change is placement, and `scripts/t72-classify.mjs` hashes the six
   // to prove it.
-  assert.doesNotMatch(src('engine/cabinet.js'), /wallGapOf|wall_gap/);
+  //
+  // ─── AMENDED BY T73 F8 ────────────────────────────────────────────────
+  // The owner, 23.09.2026, on this very feature: *"działa, ale panele i
+  // cornice się nie przedłużają, a to źle."*  So the end panel's depth and the
+  // cornice return's far end now ask the helper too. With nothing typed it
+  // answers the project's own number, and the six goldens are unchanged
+  // (`test/turn73-f8-panels-and-cornice-reach-the-wall.test.js`).
+  const cab = src('engine/cabinet.js');
+  assert.match(cab, /const wallGap = wallGapOf\(\{ params \}, P\);/);
+  assert.match(cab, /backZ: -wallGapOf\(\{ params \}, P\),/);
+  assert.doesNotMatch(cab, /wall_gap/, 'the cut path names the key itself');
 });
 
 // ─── THE STORE: THE FIELD'S END AND THE SETTER'S CLAMP ARE ONE NUMBER ───────

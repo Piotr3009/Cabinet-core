@@ -99,8 +99,14 @@ test('F3 · a click on the CARCASS clears the selection — the panel slides out
     const kind = elementKind(panel);
     assert.ok(kind, `${part} is not even an element`);
     assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} is still mapped to a menu`);
-    assert.equal(A.resolveSelection({ unitId: id, elementRef: panel.id }), null,
-      `${part} still opens something on the right`);
+    // T73 F2 · a BARE outer side asks ADD END PANEL? (owner, 23.09.2026). A
+    // side with a panel, and every other carcass piece, is still the way out.
+    const found = A.resolveSelection({ unitId: id, elementRef: panel.id });
+    if (found && kind === 'side' && A.sideAskFor(id, panel)) {
+      assert.equal(found.menu, 'add-panel');
+      continue;
+    }
+    assert.equal(found, null, `${part} still opens something on the right`);
   }
   // …and the room CLEARS such a selection rather than leaving a highlight.
   const design = code('src/retail/design/DesignRoom.jsx');
@@ -252,7 +258,11 @@ test('F3 · nothing is DELETED from a copy — the fields are left out through P
   assert.ok(listed.length >= 8, `only ${listed.length} workshop fields named`);
   for (const f of listed) assert.ok(fields.has(f), `${f} is not a field the engine publishes`);
   // …and what is LEFT is what a client has an opinion about.
-  for (const kept of ['position-y', 'position-x', 'shelf-type', 'drawer-height', 'watch-insert']) {
+  // T73 F9 · `watch-insert` leaves this list: the accessories drawer has ONE
+  // road in retail since T72 F9 (ADD ACCESSORIES DRAWER), and the switch left
+  // under the drawer menu was the second (the audit of 22.09). PRO keeps it.
+  assert.ok(listed.includes('watch-insert'), 'the second road to the accessories drawer is back');
+  for (const kept of ['position-y', 'position-x', 'shelf-type', 'drawer-height']) {
     assert.ok(!listed.includes(kept), `${kept} was hidden — that is a client's own choice`);
   }
 });

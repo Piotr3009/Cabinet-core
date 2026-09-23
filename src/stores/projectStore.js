@@ -3330,17 +3330,27 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /** Double click on the edge: run it all the way to the ceiling. */
-  endPanelToCeiling: (unitId, panelId) => {
+  endPanelToCeiling: (unitId, panelId, gapMm = 0) => {
+    // T73 F1 · *"nie ma możliwości ustawienia na przykład 15 mm, a nie do
+    // sufitu"*: the same road, told how far short of the ceiling to stop.
+    // 0 (every older caller) is the ceiling itself, exactly as before.
+    const headroom = get().endPanelHeadroom(unitId, panelId);
+    return get().setEndPanelTop(unitId, panelId, Math.max(0, headroom - Math.max(0, Number(gapMm) || 0)));
+  },
+
+  /**
+   * T73 F1 · how far a panel CAN rise over its carcass: the ceiling over that
+   * piece less the carcass top. `endPanelToCeiling` reads it, and so does the
+   * client's GAP UNDER CEILING field, so the two can never disagree.
+   */
+  endPanelHeadroom: (unitId, panelId) => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return 0;
     const profile = getCabinetProfile();
     const panel = (unit.params?.end_panels || []).find((p) => p.id === panelId) || null;
     const side = panel?.side === 'R' ? 'right' : 'left';
-    return get().setEndPanelTop(
-      unitId, panelId,
-      Math.max(0, ceilingOverPiece(s, unit, side) - unitTopOf(unit, profile)),
-    );
+    return Math.max(0, ceilingOverPiece(s, unit, side) - unitTopOf(unit, profile));
   },
 
   /**

@@ -66,7 +66,7 @@ test('T74 F10 · a low door is never squashed: its rows keep the house spacing, 
   assert.equal(red[0].level, 'red');
   assert.match(red[0].message, /within 150 mm of the slope's apex/);
   assert.match(red[0].message, /holds \d+ of the \d+ hinges/);
-  assert.ok(!/[–—]/.test(red[0].message), 'a dash the owner forbade');
+  assert.ok(!/[\u2013\u2014]/.test(red[0].message), 'a dash the owner forbade');
   assert.ok(CHECKS.find((c) => c.n === 26 && c.level === 'red'));
 });
 

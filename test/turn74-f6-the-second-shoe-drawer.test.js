@@ -112,6 +112,28 @@ test('T74 F6 · ONE clamp: never below tight on the first, never above what the 
   assert.ok(P);
 });
 
+test('T74 F6 · the audit: the clamp carries the drawers ABOVE, and a count change keeps the mounting height', () => {
+  const { id, second } = twoShoeDrawers();
+  const alone = S().drawerMountBounds(id, second.id).max;
+  S().setDrawerMount(id, second.id, 99999);
+  assert.equal(drawersOf(id)[1].pos_mm, alone);
+  // A plain drawer put on top of the raised one rides on it: the raised one
+  // comes down so the stack still fits, and no drawer is dropped.
+  S().addItem(id, { kind: 'drawer', index: 3, mount: 'overlay', height_mm: 200 });
+  const { max } = S().drawerMountBounds(id, second.id);
+  assert.equal(max, alone - 3 - 200, 'the clamp forgot the drawer riding on the second');
+  assert.equal(drawersOf(id)[1].pos_mm, max, 'the raised drawer was not brought back inside its clamp');
+  assert.ok(!(S().unitResult(id).warnings || []).some((w) => w.code === 'DRAWERS_TOO_TALL'),
+    'the engine dropped every drawer');
+  assert.equal(S().unitResult(id).panels.filter((p) => p.part === 'DRAWER-FRONT').length, 3);
+  // The count goes back to two: the second keeps its mounting height (the
+  // audit: `addDrawers` rebuilt the stack without it and stood it tight).
+  S().addDrawers(id, 2, 'overlay');
+  assert.equal(drawersOf(id).length, 2);
+  assert.equal(drawersOf(id)[1].pos_mm, max);
+  assert.equal(front(id, 2).box.y, max);
+});
+
 test('T74 F6 · BOTH shoe drawers are cut with their ramps; the lower one\'s headroom is the upper box', () => {
   const { id, second } = twoShoeDrawers();
   S().setDrawerMount(id, second.id, 600);

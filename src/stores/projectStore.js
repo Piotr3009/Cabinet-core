@@ -5751,6 +5751,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // A shelf added at a position someone else already occupies is a collision
     // like any other — it goes through the same clamp.
     if (item.kind === 'shelf' && Number.isFinite(item.pos_mm)) get().setShelfPos(unitId, id, item.pos_mm);
+    // T74 F6 · a drawer put on top of a raised one rides on it: the raised one
+    // is re-asked its clamp with the new drawer on its back.
+    if (item.kind === 'drawer') get().settleDrawerMounts(unitId);
     return id;
   },
 
@@ -5811,6 +5814,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           // re-add with none keeps each drawer's own previous answer.
           ...(variant != null ? { variant } : (previous[i]?.variant ? { variant: previous[i].variant } : {})),
           height_mm: Number(previous[i]?.height_mm) > 0 ? Number(previous[i].height_mm) : fallback,
+          // T74 F6 · a surviving drawer keeps its mounting height (the audit:
+          // a count change stood a raised second shoe drawer tight again);
+          // `settleDrawerMounts` then re-asks the clamp of the new stack.
+          ...(previous[i]?.pos_mm != null ? { pos_mm: previous[i].pos_mm } : {}),
         }));
         return { ...u, params: { ...u.params, sections: [{ ...section, items: [...drawers, ...kept] }] } };
       }),
@@ -6770,17 +6777,59 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
       ? null : Math.trunc(Number(i.zone)));
     if (secondShoeItem(unit, item.index, zoneOf(item))?.id !== item.id) return null;
-    const below = items
-      .filter((i) => i.kind === 'drawer' && zoneOf(i) === zoneOf(item)
-        && (Number(i.index) || 0) < (Number(item.index) || 0));
+    const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === zoneOf(item));
+    const below = stack.filter((i) => (Number(i.index) || 0) < (Number(item.index) || 0));
+    // The drawers ABOVE it ride on it (tight, as every drawer does), so the
+    // stack's guard is asked with them on its back: the audit raised the
+    // second to its max, put a plain drawer on top, and the engine dropped
+    // every drawer (DRAWERS_TOO_TALL).
+    const above = stack.filter((i) => (Number(i.index) || 0) > (Number(item.index) || 0));
     const profile = getCabinetProfile();
     const DR = profile.wardrobe.drawers;
     const G = Number(unit.params.board_t) || profile.board.thickness;
     const H = Number(unit.params.height) || 0;
     const hOf = (i) => (Number(i.height_mm) > 0 ? Number(i.height_mm) : DR.frontHeight);
     const min = G + below.reduce((sum, i) => sum + hOf(i) + DR.gap, 0);
-    const max = Math.max(min, H - G - DR.zoneHeadroom - hOf(item));
+    const riding = above.reduce((sum, i) => sum + DR.gap + hOf(i), 0);
+    const max = Math.max(min, H - G - DR.zoneHeadroom - hOf(item) - riding);
     return { min, max };
+  },
+
+  /**
+   * T74 F6 · every raised drawer put back inside its ONE clamp after the stack
+   * changed under it (a drawer added on top, a count changed, a height or the
+   * cabinet's height edited): clamped into `drawerMountBounds`, or, when it is
+   * no longer a second shoe drawer, stood tight again (`pos_mm` removed).
+   * Runs first in `reclampShelves`, the settle every stack change already
+   * calls, so the drawers settle before the shelves that stand on them.
+   */
+  settleDrawerMounts: (unitId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const items = unit?.params.sections?.[0]?.items || [];
+    const next = new Map();
+    for (const i of items) {
+      if (i.kind !== 'drawer' || i.pos_mm == null) continue;
+      const bounds = get().drawerMountBounds(unitId, i.id);
+      const pos = Number(i.pos_mm);
+      if (!bounds || !Number.isFinite(pos)) { next.set(i.id, null); continue; }
+      const clamped = Math.min(Math.max(pos, bounds.min), bounds.max);
+      if (clamped !== pos) next.set(i.id, clamped);
+    }
+    if (!next.size) return;
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const section = u.params.sections[0];
+        const settled = section.items.map((i) => {
+          if (!next.has(i.id)) return i;
+          const pos = next.get(i.id);
+          if (pos != null) return { ...i, pos_mm: pos };
+          const { pos_mm: _tight, ...rest } = i;
+          return rest;
+        });
+        return { ...u, params: { ...u.params, sections: [{ ...section, items: settled }] } };
+      }),
+    }));
   },
 
   /**
@@ -8608,6 +8657,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * nobody dragged.
    */
   reclampShelves: (unitId) => {
+    // T74 F6 · the raised drawers first: the shelves stand on the stack.
+    get().settleDrawerMounts(unitId);
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return;

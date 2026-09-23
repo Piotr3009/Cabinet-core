@@ -36,11 +36,17 @@ const want = process.argv.slice(2).filter((a) => !a.startsWith('-'));
 const runs = (name) => want.length === 0 || want.includes(name);
 
 const steps = [];
+// The app's older sentences (a store refusal quoted in a detail) carry en and
+// em dashes; the ledger quotes them exactly with the dash ESCAPED, so the file
+// this turn writes stays dash-free (CLAUDE.md LAWS) and the quote stays true.
+const undash = (t) => String(t).replace(/\u2014/g, '\\u2014').replace(/\u2013/g, '\\u2013');
 const check = (label, ok, detail = '') => {
+  detail = undash(detail);
   steps.push({ label, ok: Boolean(ok), detail });
   process.stdout.write(`${ok ? '  ok' : 'FAIL'}  ${label}${detail ? ` · ${detail}` : ''}\n`);
 };
 const note = (label, detail = '') => {
+  detail = undash(detail);
   steps.push({ label, ok: true, detail, note: true });
   process.stdout.write(`  ·   ${label}${detail ? ` · ${detail}` : ''}\n`);
 };
@@ -146,6 +152,116 @@ const fieldNow = (page) => page.ask(`(() => { const f = document.querySelector('
 /** The walls drawn so far, each by the length its own label prints (the solid ink lines of the path). */
 const drawnWalls = (page) => page.ask(`[...document.querySelectorAll('[data-draw-canvas] line[stroke="#090A09"], [data-draw-canvas] line[stroke="#e9e4d8"]')]
   .map((l) => (l.parentNode.querySelector('text') || {}).textContent || '').map((t) => t.replace(/[^0-9]/g, ''))`);
+
+// ═══ F2 · FELT: WINE RED, IN THE ROOM LIGHT ═══════════════════════════════
+// *"red raczej zrób kolor wine red, nie krzykliwa czerwień."*  CLAUDE.md: the
+// frame of the open tray in the room light must read as wine, not as red. The
+// felt's pixels are sampled where the scene's own raycaster says the base is
+// the nearest thing, and read as a colour: red leading, and DARK (a wine), not
+// bright (a loud red).
+if (runs('f2')) {
+  process.stdout.write('\n─── F2 · THE WINE FELT, IN THE ROOM LIGHT ───\n');
+  const page = await open();
+  await room(page);
+  await withWardrobe(page);
+  // The accessories drawer goes ON TOP of a stack (*"dodajesz normalne
+  // szuflady i później masz..."*), so the drawers first, by INSIDE's own Add.
+  await page.press('[data-testid="cat-inside"]');
+  await page.press('[data-add-kind="drawers"]');
+  await page.click('[data-add-items="1"] button.pbi-re-btn-gold', 'Add', { exact: true });
+  await page.sleep(1500);
+  await page.press('[data-add-kind="watch_drawer"]');
+  await page.press('[data-add-watch-drawer="1"]');
+  await page.sleep(1500);
+  const [unit] = await unitsNow(page);
+  const ids = await page.ask(`(() => { const r = window.__cc.project.getState().unitResult(${JSON.stringify(unit.id)});
+    const base = r.panels.find((p) => p.part === 'WATCH-BASE'); if (!base) return null;
+    const n = base.meta && base.meta.drawer;
+    const front = r.panels.find((p) => p.part === 'DRAWER-FRONT' && p.meta && p.meta.drawer === n);
+    return { base: base.id, front: front ? front.id : null }; })()`);
+  check('an accessories drawer through INSIDE\'s own button', Boolean(ids && ids.front), JSON.stringify(ids));
+  if (ids && ids.front) {
+    const at = await reach(page, unit.id, ids.front);
+    if (at) await page.dblclick(at.x, at.y);
+    await page.sleep(1600);
+    const win = '[data-editor="watch-layout"] ';
+    check('a real 2klik on its front opens its window', await page.has('[data-editor="watch-layout"]'),
+      at ? `clicked ${Math.round(at.x)},${Math.round(at.y)}` : 'front not in reach');
+    if (await page.has(`${win}[data-watch-finish="felt"]`)) {
+      await page.press(`${win}[data-watch-finish="felt"]`);
+      await page.sleep(800);
+      const chip = await page.ask(`(() => { const el = document.querySelector('${win}[data-watch-felt="red"]');
+        return el ? (el.getAttribute('title') || el.getAttribute('aria-label') || el.textContent || '').trim() : null; })()`);
+      check('the chip that was "Red" reads Wine red', /wine red/i.test(chip || ''), chip);
+      await page.press(`${win}[data-watch-felt="red"]`);
+      await page.sleep(900);
+      await shot(page, 'f02-wine-chip.png');
+    }
+    const said = await page.ask(`(() => { const r = window.__cc.project.getState().unitResult(${JSON.stringify(unit.id)});
+      const base = r.panels.find((p) => p.part === 'WATCH-BASE');
+      return { felt: base && base.meta ? base.meta.watch_felt || null : null, bom: JSON.stringify(r).includes('Wine red felt base') }; })()`);
+    check('the base wears the felt `red` (the id saved jobs keep), and the BOM reads "Wine red felt base"',
+      said.felt === 'red' && said.bom, JSON.stringify(said));
+    await page.pressKey?.('Escape');
+    await page.sleep(700);
+    // The 2klik that opened the window also slid the drawer out (a front
+    // keeps its slide), and the doors stand open. The tray OPEN, in the room
+    // light: the room camera (the FRONT preset would shut every front), the
+    // slide let finish on the frame clock, a real click on the empty floor
+    // (the client's own way of letting go; the ledger says whether it did),
+    // and the camera raised a little at a time until it looks into the tray.
+    const open = await page.ask(`((window.__cc.ui.getState().openFronts || {})[${JSON.stringify(unit.id)}] || {})[${JSON.stringify(ids.front)}] || 0`);
+    check('the same 2klik slid the tray out', open > 0, `open ${open}`);
+    let last = null;
+    for (let t = 0; t < 30; t += 1) {
+      await page.sleep(400);
+      const b = await localBox(page, unit.id, ids.base);
+      if (last && b && Math.abs(b.z[1] - last.z[1]) < 0.5) break;
+      last = b;
+    }
+    const empty = await page.ask(`(() => { const v = window.__cc.views.room; const T = v.three;
+      const r = v.gl.domElement.getBoundingClientRect(); const ray = new T.Raycaster();
+      for (const fy of [0.92, 0.85, 0.2]) for (const fx of [0.9, 0.1, 0.8, 0.2]) {
+        ray.setFromCamera(new T.Vector2(fx * 2 - 1, -(fy * 2 - 1)), v.camera);
+        const hit = ray.intersectObjects(v.scene.children, true).find((h) => h.object.isMesh && h.object.visible);
+        let unit = false; for (let a = hit && hit.object; a; a = a.parent) { if (a.userData && a.userData.ccUnitId) unit = true; }
+        if (!unit) return { x: Math.round(r.left + fx * r.width), y: Math.round(r.top + fy * r.height) };
+      }
+      return null; })()`);
+    if (empty) await page.clickAt(empty.x, empty.y);
+    await page.sleep(900);
+    note('let go by a real click on the empty floor', `selected ${await page.ask('JSON.stringify(window.__cc.ui.getState().selectedUnitId || null)')}; tray out to z ${last ? last.z[1] : '?'}`);
+    let spot = null;
+    for (const dy of [40, 40, 40]) {
+      await orbit(page, 0, dy);
+      spot = await pointOn(page, unit.id, ids.base);
+      if (spot) break;
+    }
+    const path = `${SHOTS}f02-wine-felt.png`;
+    await page.screenshot(path);
+    const seen = spot ? await pointOn(page, unit.id, ids.base, { all: true, grid: 60 }) : null;
+    if (!seen) {
+      check('the open tray\'s felt is in sight of the room camera', false);
+    } else {
+      // Every pixel of the tray where the felt is the nearest thing, read one
+      // by one, and the MEDIAN taken (the lit felt, not a pocket's shadow).
+      const png = decodePng(readFileSync(path));
+      const px = seen.points.map(({ x, y }) => {
+        const i = (y * png.width + x) * png.channels;
+        return [png.data[i], png.data[i + 1], png.data[i + 2]];
+      });
+      const med = (k) => { const v = px.map((q) => q[k]).sort((a, b) => a - b); return v[Math.floor(v.length / 2)]; };
+      const [r, g, b] = [med(0), med(1), med(2)];
+      const mx = Math.max(r, g, b) / 255; const mn = Math.min(r, g, b) / 255;
+      const light = (mx + mn) / 2;
+      const hue = mx === mn ? 0 : (r / 255 === mx ? ((g - b) / 255 / (mx - mn) + 6) % 6 : 0) * 60;
+      const redLeads = r > g * 1.3 && r > b * 1.2 && (hue >= 330 || hue <= 20);
+      check('the open tray\'s felt in the room light reads as WINE: red leads, and dark (lightness under 35 %), not a loud red',
+        redLeads && light < 0.35, `median of ${px.length} felt pixels rgb(${r}, ${g}, ${b}) · hue ${Math.round(hue)} · lightness ${Math.round(light * 100)} %`);
+    }
+  }
+  await page.close();
+}
 
 // ═══ F3 · THE WALL LENGTH FIELD OPENS FOCUSED, ITS NUMBER SELECTED ═════════
 if (runs('f3')) {
@@ -577,9 +693,21 @@ if (runs('f8')) {
     if (!at) {
       check('the shoe drawer\'s front is in reach of the pointer', false);
     } else {
+      // The drawer slides on the frame clock (about 400 ms a frame headless,
+      // slower still under load), so the walk waits for it to come to rest,
+      // up to 12 s, instead of reading it at a fixed moment.
+      const rest = async (done) => {
+        let last = null;
+        for (let t = 0; t < 30; t += 1) {
+          await page.sleep(400);
+          const now = { ramp: await localBox(page, unit.id, ids.ramp), floor: await localBox(page, unit.id, ids.floor) };
+          if (last && done(now) && Math.abs(now.floor.z[1] - last.floor.z[1]) < 0.5) return now;
+          last = now;
+        }
+        return last;
+      };
       await page.dblclick(at.x, at.y);
-      await page.sleep(1800);
-      const open = { ramp: await localBox(page, unit.id, ids.ramp), floor: await localBox(page, unit.id, ids.floor) };
+      const open = await rest((b) => b.floor.z[1] - shut.floor.z[1] > 200);
       const rampOut = open.ramp.z[1] - shut.ramp.z[1];
       const floorOut = open.floor.z[1] - shut.floor.z[1];
       check('a real 2klik opens the drawer: the ramp comes out WITH it, as far as its floor',
@@ -589,8 +717,7 @@ if (runs('f8')) {
       await shot(page, 'f08-open.png');
       const back = (await reach(page, unit.id, ids.front)) || at;
       await page.dblclick(back.x, back.y);
-      await page.sleep(1800);
-      const again = await localBox(page, unit.id, ids.ramp);
+      const again = (await rest((b) => Math.abs(b.floor.z[1] - shut.floor.z[1]) < 2)).ramp;
       check('a second 2klik shuts it, and the ramp goes back in with it',
         Math.abs(again.z[1] - shut.ramp.z[1]) < 2, `ramp front ${again.z[1]} (shut ${shut.ramp.z[1]})`);
     }
@@ -735,9 +862,16 @@ if (runs('f13')) {
   fps = await panels();
   check('a real click on ACROSS THE WALL turns it across the wall (a side, 18 wide, its length out into the room)',
     fps[0].facing === 'across' && fps[0].w === 18 && fps[0].d === 800, JSON.stringify(fps[0]));
-  // A second one, laid flat.
+  // A second one, laid flat. The walk waits for the second board (up to 8 s)
+  // before it touches the menu, so HORIZONTAL is pressed on the NEW board; if
+  // none comes, what stood under the pointer is written down.
+  const under = await page.ask(`(() => { const el = document.querySelector('[data-testid="extras-insert-panel"]');
+    if (!el) return 'no button'; const r = el.getBoundingClientRect();
+    const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return top === el || el.contains(top) ? 'the button' : (top ? top.outerHTML.slice(0, 120) : 'nothing'); })()`);
   await page.press('[data-testid="extras-insert-panel"]');
-  await page.sleep(1500);
+  for (let t = 0; t < 20 && (await panels()).length < 2; t += 1) await page.sleep(400);
+  if ((await panels()).length < 2) note('the second INSERT PANEL did not land; under the pointer', under);
   await page.press('[data-free-panel-tilt-to="90"]');
   await page.sleep(900);
   fps = await panels();

@@ -181,6 +181,9 @@ export const FIND = `(function (unitId, panelId, opts) {
     if (firstAt(toNdc(rx, ry)) === target) good.push({ x: rx, y: ry });
   }
   if (!good.length) return null;
+  // Every pixel the piece is the nearest thing at (a colour read wants all of
+  // it, lit and shaded, not one point).
+  if (opts && opts.all) return { points: good, n: good.length };
   const want = (opts && opts.prefer) || 'middle';
   const cx = good.reduce((s, p) => s + p.x, 0) / good.length;
   const cy = good.reduce((s, p) => s + p.y, 0) / good.length;

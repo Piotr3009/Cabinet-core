@@ -1295,9 +1295,10 @@ export default function UnitView({
       // the wall; the deliberate path is the Wall dropdown in the right panel.
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
-      // T74 F13 · a DRAG is a hand that travelled (more than the 3 px a click
-      // wobbles); only a drag's drop may take a proposal.
-      if (Math.hypot(ev.clientX - drag.current.x0, ev.clientY - drag.current.y0) > 3) drag.current.moved = true;
+      // T74 F13 · a DRAG is a hand that travelled (2 px or more; a click
+      // presses and releases where it stands); only a drag's drop may take a
+      // proposal.
+      if (Math.hypot(ev.clientX - drag.current.x0, ev.clientY - drag.current.y0) >= 2) drag.current.moved = true;
       onMove(alongMm(p) - drag.current.offset, snapStep);
     };
     const up = (ev) => {

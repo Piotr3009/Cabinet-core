@@ -262,7 +262,7 @@ test('T74 F13 · the drag moves it with the silent magnet off, shows the proposa
   // snap (the audit: a typed 20 mm jumped to 0 on the click that selected it).
   assert.match(scene, /if \(moved && !altKey && !cancelled\) acceptFreePanelSnap\(unit\.id\);/);
   const view = uncomment(read('src/3d/UnitView.jsx'));
-  assert.match(view, /if \(Math\.hypot\(ev\.clientX - drag\.current\.x0, ev\.clientY - drag\.current\.y0\) > 3\) drag\.current\.moved = true;/);
+  assert.match(view, /if \(Math\.hypot\(ev\.clientX - drag\.current\.x0, ev\.clientY - drag\.current\.y0\) >= 2\) drag\.current\.moved = true;/);
   assert.match(view, /onMoveEnd\?\.\(\{ altKey: Boolean\(ev\?\.altKey\), cancelled: ev\?\.type === 'pointercancel', moved \}\);/);
   assert.match(view, /<group userData=\{\{ ccHelper: true, ccSnapProposal: snapProposal\.at \}\}>/);
 });

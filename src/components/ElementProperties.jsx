@@ -8,7 +8,7 @@ import {
 } from '../engine/elements.js';
 import { getUnitType } from '../engine/types.js';
 // T52 (CLAUDE.md F5): which drawer ITEM the clicked drawer is.
-import { drawerItemOf } from '../engine/watchDrawer.js';
+import { drawerItemOf, secondShoeItem } from '../engine/watchDrawer.js';
 import { doorExtendMm, doorHeightOf } from '../engine/doors.js';
 import { minDrawerFrontHeight } from '../engine/cabinet.js';
 import { drawerHeightValue, drawerRefOf } from '../engine/drawerRef.js';
@@ -911,7 +911,10 @@ export default function ElementProperties({
       // on the box behind it: with the fronts off, the box is what you click.
       case 'drawer-height': {
         const n = Number(panel.meta?.drawer);
-        if (!Number.isFinite(n) || n < 1) {
+        // T74 F6 · the SECOND shoe drawer is set by its MOUNTING HEIGHT (its
+        // drag and its clickable distance), so its own height is shown, not
+        // edited. *"Regulacja = WYSOKOŚĆ MONTAŻU, nie wysokość szuflady."*
+        if (!Number.isFinite(n) || n < 1 || secondShoeItem(unit, n, panel.meta?.zone ?? null)) {
           return (
             <Field key={key} label="Front height">
               <span className="cc-input block text-right opacity-70">{formatMm(panel.h)}</span>

@@ -147,7 +147,7 @@ import { drawerFrontDimsVisible, frontDimensionRows } from '../engine/frontDimen
 import { opensOwnModal } from '../engine/elements.js';
 import { picksOnClick } from './picking.js';
 import { panelFinish } from '../engine/materials.js';
-import { WATCH_FELT_COLOURS } from '../engine/watchDrawer.js';
+import { WATCH_FELT_COLOURS, secondShoeItem } from '../engine/watchDrawer.js';
 // ─── TURN 49 (CLAUDE.md F9): AND WHETHER IT IS A VENEER ────────────────────
 // The finish alone cannot say for a FRONT — a front veneer borrows an EGGER
 // scan (T20 F12.3) and is stored as a decor — so the piece's own material SLOT
@@ -1063,6 +1063,10 @@ export default function UnitView({
   // T68 F4 · a divider is dragged along the wall, through the store's own
   // `setPartitionX` — the very setter the docked field commits to.
   onMovePartition,
+  // T74 F6 · the SECOND shoe drawer is dragged up and down by its mounting
+  // height, through the store's own `setDrawerMount` (the clickable figure's
+  // setter too). Default null: a view nobody gave it to drags nothing new.
+  onMoveDrawer = null,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   // TURN 40 (CLAUDE.md F4c): { panelId, atMm } — fly to THAT piece.
   focusPanel = null, onFocusPanelDone = null,
@@ -1940,6 +1944,48 @@ export default function UnitView({
     window.addEventListener('pointercancel', up);
   }, [onMovePartition, onSelect, pointerToPlane, origin, along, orbitRef]);
 
+  // ─── T74 F6 · THE SECOND SHOE DRAWER, BY ITS MOUNTING HEIGHT ─────────────
+  // *"Druga przesuwana góra/dół."*  Which drawer a piece belongs to, and
+  // whether it is the second shoe drawer of its bay (a shoe drawer with a shoe
+  // drawer under it); its current height is its front's own underside, which
+  // is the setter's datum.
+  const secondShoeOf = useCallback((p) => {
+    if (!onMoveDrawer || !(p.part === 'DRAWER-FRONT' || p.role === 'drawer_box')) return null;
+    const index = Number(p.meta?.drawer);
+    if (!(index > 1)) return null;
+    const zone = p.meta?.zone ?? null;
+    const item = secondShoeItem(unit, index, zone);
+    if (!item) return null;
+    const face = (result?.panels || []).find((q) => q.part === 'DRAWER-FRONT' && q.box
+      && Number(q.meta?.drawer) === index && (q.meta?.zone ?? null) === zone);
+    const pos = Number.isFinite(Number(item.pos_mm)) ? Number(item.pos_mm) : (face ? face.box.y : null);
+    return pos == null ? null : { itemId: item.id, pos };
+  }, [onMoveDrawer, unit, result]);
+  // …and the drag, `startShelfDrag`'s own arithmetic with the drawer's setter.
+  const startDrawerDrag = useCallback((e, itemId, currentPosMm) => {
+    if (!itemId || !onMoveDrawer) return;
+    e.stopPropagation();
+    onSelect();
+    const hit = pointerToPlane(e.clientX, e.clientY);
+    if (!hit) return;
+    const grabDelta = currentPosMm - (hit.y - originY) / MM;
+    if (orbitRef?.current) orbitRef.current.enabled = false;
+    const move = (ev) => {
+      const pt = pointerToPlane(ev.clientX, ev.clientY);
+      if (!pt) return;
+      onMoveDrawer(itemId, (pt.y - originY) / MM + grabDelta);
+    };
+    const up = () => {
+      if (orbitRef?.current) orbitRef.current.enabled = true;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  }, [onMoveDrawer, onSelect, pointerToPlane, originY, orbitRef]);
+
   // Vertical shelf drag (SPEC 4.8). Same plane, but the Y of the hit is used;
   // clamping and snapping live in the store so the rules stay in one place.
   const startShelfDrag = useCallback((e, itemId, currentPosMm) => {
@@ -2328,6 +2374,10 @@ export default function UnitView({
                   return;
                 }
               }
+              // T74 F6 · the second shoe drawer's front or box is dragged up
+              // and down by its mounting height, the way a shelf is.
+              const shoe = secondShoeOf(p);
+              if (shoe) { startDrawerDrag(e, shoe.itemId, shoe.pos); return; }
               // Everything else still DRAGS THE UNIT. Selecting a side panel is
               // how you look at that piece's properties; grabbing a side panel
               // and pulling has meant "move this cabinet" since turn 3, and a

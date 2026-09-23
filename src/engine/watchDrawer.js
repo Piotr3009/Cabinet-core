@@ -287,6 +287,19 @@ export function drawerItemOf(unit, index, zone = null) {
 }
 
 /**
+ * T74 F6 · the SECOND shoe drawer of a bay: the drawer at `index` when it is a
+ * shoe drawer standing on a shoe drawer, else null. The one question the drag,
+ * the clickable distance, the drawer menu and the store's clamp all ask.
+ * *"Pierwsza szuflada ZAWSZE na dnie (ustalone, bez zmian). Druga przesuwana
+ * góra/dół."*
+ */
+export function secondShoeItem(unit, index, zone = null) {
+  const item = drawerItemOf(unit, index, zone);
+  if (item?.variant !== 'shoe') return null;
+  return drawerItemOf(unit, Number(index) - 1, zone)?.variant === 'shoe' ? item : null;
+}
+
+/**
  * How wide one pocket is, at `n` of them across `innerW`.
  *
  * `n` pockets take `n − 1` dividers between them — the frame's own two rails

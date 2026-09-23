@@ -1317,6 +1317,7 @@ export default function Scene({
   const moveShelfSet = useProjectStore((s) => s.moveShelfSet);
   // T68 F4 · the ONE setter a divider moves through, whichever door pressed it.
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
+  const setDrawerMount = useProjectStore((s) => s.setDrawerMount);
   // T42-F1: the ALONE rod's own writer — the same shape as a shelf's, and
   // the same one setter behind it.
   const moveRail = useProjectStore((s) => s.moveRail);
@@ -1716,6 +1717,8 @@ export default function Scene({
           // HOW FAR FROM THE LEFT commits to `setPartitionX`; so does this.
           // The clamp, the grid and the refusal are the store's, once.
           onMovePartition={(itemId, xMm) => setPartitionX(unit.id, itemId, xMm)}
+          // T74 F6 · the second shoe drawer, by its mounting height: one clamp.
+          onMoveDrawer={(itemId, posMm) => setDrawerMount(unit.id, itemId, posMm)}
           onShelfDragState={setShelfDrag}
           shelfDrag={shelfDrag}
           orbitRef={orbitRef}

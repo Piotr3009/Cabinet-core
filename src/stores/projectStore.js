@@ -135,7 +135,7 @@ import {
 // finish and the shelf it puts its glass in.
 import {
   DEFAULT_WATCH_LAYOUT, WATCH_FELT_COLOURS, WATCH_FINISHES, WATCH_LAYOUTS, drawerBoxInterior,
-  isShelfBoard, watchDrawerFixedHeight,
+  isShelfBoard, secondShoeItem, watchDrawerFixedHeight,
 } from '../engine/watchDrawer.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
@@ -6149,7 +6149,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
       ? null : Math.trunc(Number(i.zone)));
     const stack = items.filter((i) => i.kind === 'drawer' && zoneOf(i) === wantZone);
-    if (stack.some((i) => i.variant === 'shoe')) return null;
+    // ─── T74 F6 · A SECOND SHOE DRAWER, AND NO THIRD ─────────────────────────
+    // *"DRUGA SZUFLADA NA BUTY (niskie i wysokie buty)."*  The bay takes a
+    // second shoe drawer on top of its first; it arrives stacked on it and is
+    // moved by its MOUNTING HEIGHT (`setDrawerMount`). A third is refused, as
+    // the second was before tonight.
+    const shoes = stack.filter((i) => i.variant === 'shoe');
+    if (shoes.length >= 2) return null;
+    if (shoes.length === 1) {
+      const top = Math.max(...stack.map((i) => Number(i.index) || 0));
+      if ((Number(shoes[0].index) || 0) !== top) return null;
+    }
     // ─── T58 (CLAUDE.md F2): WATCHES XOR SHOES, PER CABINET ────────────────
     // *"jeśli będzie szuflada z zegarkami, to już nie możemy w tej szafie
     // zrobić butów."*  Asked of the WHOLE unit, not of this zone — the owner's
@@ -6559,6 +6569,66 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return {
       x, min, max, blocked: false,
     };
+  },
+
+  /**
+   * ─── T74 F6 · THE SECOND SHOE DRAWER'S MOUNTING HEIGHT, AND ITS ONE CLAMP ──
+   *
+   * The owner: *"Regulacja = WYSOKOŚĆ MONTAŻU, nie wysokość szuflady. Pierwsza
+   * szuflada ZAWSZE na dnie (ustalone, bez zmian). Druga przesuwana
+   * góra/dół."*  ONE setter, and the drag and the clickable dimension both
+   * write through it, so the two gestures cannot disagree about where the
+   * drawer may stand.
+   *
+   * Only the SECOND shoe drawer of a bay moves (a shoe drawer with a shoe
+   * drawer under it); the first stays on the bottom. `posMm` is the house
+   * datum (the drawer's slot underside, zero at the outside of the carcass
+   * bottom, as a shelf's). The clamp: never lower than stacked tight on the
+   * drawer under it, never higher than the engine's own stack guard lets a
+   * drawer of its height stand (`H - 2G - zoneHeadroom`). The shelves over it
+   * are then re-clamped the way every drawer change re-clamps them.
+   *
+   * @returns {{pos:number, min:number, max:number, clamped:boolean}|null}
+   */
+  setDrawerMount: (unitId, itemId, posMm) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    const bounds = get().drawerMountBounds(unitId, itemId);
+    if (!unit || !bounds) return null;
+    const want = Number(posMm);
+    if (!Number.isFinite(want)) return null;
+    const pos = Math.round(Math.min(Math.max(want, bounds.min), bounds.max) * 2) / 2;
+    get().updateItem(unitId, itemId, { pos_mm: pos });
+    get().reclampShelves(unitId);
+    return {
+      pos, min: bounds.min, max: bounds.max, clamped: Math.abs(pos - want) > 0.25,
+    };
+  },
+
+  /**
+   * T74 F6 · where the second shoe drawer may stand, or null for a drawer
+   * that is not one. Read off the items and the profile, in the setter's own
+   * datum; the engine stacks the drawers under it tight, as it always has.
+   */
+  drawerMountBounds: (unitId, itemId) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return null;
+    const items = unit.params.sections?.[0]?.items || [];
+    const item = items.find((i) => i.id === itemId && i.kind === 'drawer');
+    if (!item) return null;
+    const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
+      ? null : Math.trunc(Number(i.zone)));
+    if (secondShoeItem(unit, item.index, zoneOf(item))?.id !== item.id) return null;
+    const below = items
+      .filter((i) => i.kind === 'drawer' && zoneOf(i) === zoneOf(item)
+        && (Number(i.index) || 0) < (Number(item.index) || 0));
+    const profile = getCabinetProfile();
+    const DR = profile.wardrobe.drawers;
+    const G = Number(unit.params.board_t) || profile.board.thickness;
+    const H = Number(unit.params.height) || 0;
+    const hOf = (i) => (Number(i.height_mm) > 0 ? Number(i.height_mm) : DR.frontHeight);
+    const min = G + below.reduce((sum, i) => sum + hOf(i) + DR.gap, 0);
+    const max = Math.max(min, H - G - DR.zoneHeadroom - hOf(item));
+    return { min, max };
   },
 
   /**

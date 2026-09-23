@@ -87,6 +87,15 @@ const EXEMPT = {
     + 'room: `setRoom(..., { replace: true })` clears the old room\'s openings, boxes and '
     + 'wall elements. *"Przy tworzeniu nowego pokoju po starym jeden nachodzi na drugi '
     + 'zamiast resetu."*',
+  'src/components/ElementProperties.jsx':
+    'T74 F6 · the SECOND shoe drawer\'s own height is shown, not edited: it is set by its '
+    + 'MOUNTING HEIGHT (its drag and its clickable distance, one clamp). *"Regulacja = '
+    + 'WYSOKOŚĆ MONTAŻU, nie wysokość szuflady."* Before that, T72 F2 · `shelf-type` becomes '
+    + 'two chips and SET BACK FROM THE FRONT gains `20 mm` | `Flush` beside its field; F3 · '
+    + 'CENTER ALL at the bottom of the shelf menu; F6 · the board picker carries '
+    + '`data-board-thickness` so the room\'s sheet can name what it hides instead of taking '
+    + 'every `<select>` in the dock; F12 · the divider reaches the same setback row. *"nie '
+    + 'choose, tylko te 2 opcje."*',
   // ─── ADDED BY TURN 72 · THE FOURTEEN THINGS THE OWNER CLICKED ON ─────────
   // The owner, 22.09.2026, walking the RETAIL configurator and naming what a
   // client cannot reach. Three of his fourteen points are answered in PRO's own
@@ -100,12 +109,6 @@ const EXEMPT = {
   // wpisywać liczby"*). Each is re-frozen at its new hash below and re-copied
   // the same night by `scripts/t72-copy.mjs`. Overturnable with one word: the
   // engine, the goldens and the cut path are untouched by every one of them.
-  'src/components/ElementProperties.jsx':
-    'T72 F2 · `shelf-type` becomes two chips and SET BACK FROM THE FRONT gains `20 mm` '
-    + '| `Flush` beside its field; F3 · CENTER ALL at the bottom of the shelf menu; '
-    + 'F6 · the board picker carries `data-board-thickness` so the room\'s sheet can name '
-    + 'what it hides instead of taking every `<select>` in the dock; '
-    + 'F12 · the divider reaches the same setback row. *"nie choose, tylko te 2 opcje."*',
   'src/components/JpullRunModal.jsx':
     'T72 F4 · the run length is a NUMBER FIELD with the engine\'s own min and max beside '
     + 'it; the slider is gone and T57\'s *"pasek albo pokrętło"* is set aside for this one '
@@ -191,7 +194,7 @@ const FROZEN = {
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/ElementProperties.jsx': '8df224e7c5c8501f7440fdd34fab1a48e404a1022d13375753f40aa3464598ad',
+  'src/components/ElementProperties.jsx': '192948a97930d14a9ce9674f378c3e07b1d763924c43afe61fdecc74b7035c40',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',

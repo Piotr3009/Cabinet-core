@@ -886,7 +886,14 @@ function normalizeParams(raw, profile) {
           .sort((a, b) => (Number(a.index) || 0) - (Number(b.index) || 0))
           // Turn 33 (F3): the variant rides with the drawer — the box is cut
           // exactly as ever; the INSERT (and the glass) is what it orders.
-          .map((i) => ({ height_mm: i.height_mm, mount: i.mount, variant: drawerVariantOf(i) })),
+          .map((i) => ({
+            height_mm: i.height_mm,
+            mount: i.mount,
+            variant: drawerVariantOf(i),
+            // T74 F6 · a raised drawer's mounting height rides with it. Absent
+            // where nothing was said, so every column before tonight is as it was.
+            ...(Number.isFinite(Number(i.pos_mm)) ? { pos_mm: Number(i.pos_mm) } : {}),
+          })),
       })),
     // Turn 33 (CLAUDE.md F3): the bought mechanisms, normalised — a kind the
     // profile knows, a column or the whole width, a height somebody may have
@@ -1069,6 +1076,38 @@ function resolveDrawerHeights(p, count, drawerItems, profile, warnings) {
     });
   }
   return out;
+}
+
+/**
+ * ─── T74 F6 · WHERE EACH DRAWER OF A STACK STANDS ───────────────────────────
+ *
+ * The owner, 23.09.2026: *"DRUGA SZUFLADA NA BUTY (niskie i wysokie buty).
+ * Regulacja = WYSOKOŚĆ MONTAŻU, nie wysokość szuflady. Pierwsza szuflada
+ * ZAWSZE na dnie (ustalone, bez zmian). Druga przesuwana góra/dół."*
+ *
+ * The offsets of a stack over its own floor, bottom-up. A drawer is stacked
+ * tight on the one below it, as every drawer has always been, UNLESS its item
+ * states a MOUNTING HEIGHT (`pos_mm`, the house datum: its slot's underside,
+ * zero at the outside of the carcass bottom, as a shelf's), in which case it
+ * stands there, never lower than tight. The first drawer is never moved.
+ *
+ * `top` is the stack's own height where a drawer was raised, and null where
+ * nothing was: then the caller keeps the arithmetic it has always used, so a
+ * stack that states no height is byte for byte what it was.
+ */
+function stackOffsets(heights, items, gap, G) {
+  const offsets = [];
+  let acc = 0;
+  let raised = false;
+  for (let i = 0; i < heights.length; i += 1) {
+    const pos = Number(items?.[i]?.pos_mm);
+    const at = i > 0 && Number.isFinite(pos) ? Math.max(acc, pos - G) : acc;
+    if (at !== acc) raised = true;
+    offsets.push(at);
+    acc = at + (heights[i] + gap);
+  }
+  const n = heights.length;
+  return { offsets, top: raised && n ? offsets[n - 1] + heights[n - 1] : null };
 }
 
 function collectItems(p) {
@@ -1969,6 +2008,8 @@ export function computeCabinet(params, profileOverride) {
   // constant lists and every formula below collapses to the LISP's fixed one.
   let drawerHeights = [];
   let zoneOffsets = [];      // bottom of drawer i's front, relative to the stack base
+  // T74 F6 · where each drawer of the full-width stack stands (`stackOffsets`).
+  let drawerStack = { offsets: [], top: null };
   let boxSideH = [];
   let boxFrontHs = [];
 
@@ -2078,7 +2119,11 @@ export function computeCabinet(params, profileOverride) {
     // totalH = Σ hᵢ + (n−1)·gap. With every hᵢ = frontHeight this is exactly
     // the LISP's n·200 + (n−1)·3.
     drawerHeights = cfg.drawerHeights.slice(0, numDrawers);
-    drawerTotalH = drawerHeights.reduce((s, h) => s + h, 0) + (numDrawers - 1) * DR.gap;
+    // T74 F6 · a drawer raised to its own mounting height makes the stack as
+    // tall as its top drawer; with nothing raised this is the sum it always was.
+    drawerStack = stackOffsets(drawerHeights, cfg.drawerItems, DR.gap, G);
+    drawerTotalH = drawerStack.top
+      ?? drawerHeights.reduce((s, h) => s + h, 0) + (numDrawers - 1) * DR.gap;
     if (drawerTotalH > H - 2 * G - DR.zoneHeadroom) {
       warnings.push({ code: 'DRAWERS_TOO_TALL', message: `${numDrawers} drawers do not fit below the partition — drawers dropped.` });
       hasDrawers = false;
@@ -2114,8 +2159,9 @@ export function computeCabinet(params, profileOverride) {
     // gap)" in the LISP becomes "sum of the drawers below me, plus their gaps".
     let acc = 0;
     for (let i = 0; i < numDrawers; i += 1) {
-      zoneOffsets.push(acc);
-      acc += drawerHeights[i] + DR.gap;
+      // T74 F6 · the stack's own offsets: tight, or at a raised drawer's height.
+      zoneOffsets.push(drawerStack.offsets[i]);
+      acc = i + 1 < numDrawers ? drawerStack.offsets[i + 1] : drawerStack.offsets[i] + (drawerHeights[i] + DR.gap);
       // Box side = front − frontToSideDelta; box front/back = side − 15 − G − 1,
       // i.e. "as before, off the side" (200 → 164 → 130 with the defaults).
       // ─── TURN 25 (CLAUDE.md F8) ───
@@ -4106,7 +4152,10 @@ export function computeCabinet(params, profileOverride) {
         continue;
       }
       const heights = list.map((d) => (Number(d?.height_mm) > 0 ? Number(d.height_mm) : DR.frontHeight));
-      const totalH = heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
+      // T74 F6 · the column twin of the full-width stack: a raised drawer
+      // stands at its own mounting height, and nothing else moves.
+      const colStack = stackOffsets(heights, list, DR.gap, G);
+      const totalH = colStack.top ?? heights.reduce((s, h) => s + h, 0) + (heights.length - 1) * DR.gap;
       if (totalH > H - 2 * G - DR.zoneHeadroom) {
         warnings.push({
           code: 'DRAWERS_TOO_TALL',
@@ -4136,8 +4185,8 @@ export function computeCabinet(params, profileOverride) {
       const partY = G + totalH + DR.partitionClearance;
       let acc = 0;
       for (let i = 0; i < heights.length; i += 1) {
-        offsets.push(acc);
-        acc += heights[i] + DR.gap;
+        offsets.push(colStack.offsets[i]);
+        acc = i + 1 < heights.length ? colStack.offsets[i + 1] : colStack.offsets[i] + (heights[i] + DR.gap);
         const ceilingHere = i + 1 < heights.length ? G + acc : partY;
         // T54-F7: the shoe drawer's one override, the column twin of the
         // full-width law above — side height = `drawers.shoeSideMm`.
@@ -8187,7 +8236,13 @@ export function computeCabinet(params, profileOverride) {
           { reason: 'watch-in-cabinet', watch_drawer: watchAt.index });
         continue;
       }
-      if (index !== topIndex) {
+      // ─── T74 F6 · …UNLESS WHAT IS ABOVE IT IS THE SECOND SHOE DRAWER ──────
+      // *"DRUGA SZUFLADA NA BUTY (niskie i wysokie buty)"*: the lower of two
+      // shoe drawers keeps its ramp, and its headroom is the second one's box.
+      // The kit's law stands for everything else: a PLAIN drawer over a shoe
+      // drawer still refuses its insert.
+      const twin = index + 1 === topIndex && shoeInsertOn(shoeItemAt(topIndex, zone));
+      if (index !== topIndex && !twin) {
         say('shoe_insert_refused',
           `Drawer ${index} is not the top of its stack — a shoe drawer goes on top`
           + ` (drawer ${topIndex} is above it), so the insert is not cut.`,
@@ -8197,6 +8252,12 @@ export function computeCabinet(params, profileOverride) {
       const mineP = panels.filter((x) => (x.meta?.zone ?? null) === zone);
       const interior = drawerBoxInterior(mineP, index);
       if (!interior) continue;
+      // T74 F6 · the second shoe drawer's box, the lowest of it, is the ceiling
+      // the first one's ramp and shoes rise into.
+      const twinFloor = twin
+        ? mineP.filter((x) => x.role === 'drawer_box' && x.box && Number(x.meta?.drawer) === topIndex)
+          .reduce((low, x) => Math.min(low, x.box.y), Infinity)
+        : Infinity;
       // NOTHING ABOVE IT — *"nie może mieć półki nad sobą, bo buty będą
       // chodzić."*
       //
@@ -8218,6 +8279,8 @@ export function computeCabinet(params, profileOverride) {
       const above = panels.find((x) => x.part === 'SHELF' && x.box
         && (x.meta?.zone ?? null) === zone
         && x.box.y >= drawerTop - 1
+        // T74 F6 · under a second shoe drawer, only a shelf BETWEEN the two.
+        && x.box.y < twinFloor
         && x.box.x < interior.at.x + interior.width && x.box.x + x.box.w > interior.at.x);
       if (above) {
         say('shoe_insert_refused',
@@ -8236,7 +8299,7 @@ export function computeCabinet(params, profileOverride) {
         .filter((x) => isShelfBoard(x) && x.box && (x.meta?.zone ?? null) === zone
           && x.box.y >= drawerTop - 1
           && x.box.x < interior.at.x + interior.width && x.box.x + x.box.w > interior.at.x)
-        .reduce((low, x) => Math.min(low, x.box.y), Infinity);
+        .reduce((low, x) => Math.min(low, x.box.y), twinFloor);
       const headroom = ceiling === Infinity ? Infinity : ceiling - interior.at.y;
       const fit = shoeInsertFit(interior, P, { headroom });
       if (!fit.ok) {

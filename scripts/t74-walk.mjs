@@ -125,6 +125,103 @@ if (runs('f1')) {
   await page.close();
 }
 
+// ═══ F6 · THE SECOND SHOE DRAWER, SET BY ITS MOUNTING HEIGHT ═════════════
+if (runs('f6')) {
+  process.stdout.write('\n─── F6 · THE SECOND SHOE DRAWER, BY ITS MOUNTING HEIGHT ───\n');
+  const page = await open();
+  await room(page);
+  await withWardrobe(page);
+  // Two shoe drawers, each through INSIDE's own button.
+  for (let k = 0; k < 2; k += 1) {
+    if (!(await page.has('[data-add-shoe-box="1"]'))) {
+      if (!(await page.has('[data-add-kind="shoe_box"]'))) await page.press('[data-testid="cat-inside"]');
+      await page.press('[data-add-kind="shoe_box"]');
+    }
+    await page.press('[data-add-shoe-box="1"]');
+    await page.sleep(1300);
+  }
+  const [unit] = await unitsNow(page);
+  const stack = async () => page.ask(`(() => { const P = window.__cc.project.getState();
+    const u = P.units.find((x) => x.id === ${JSON.stringify(unit.id)});
+    const r = P.unitResult(u.id);
+    return u.params.sections[0].items.filter((i) => i.kind === 'drawer').sort((a, b) => a.index - b.index)
+      .map((i) => { const f = r.panels.find((p) => p.part === 'DRAWER-FRONT' && p.meta && p.meta.drawer === i.index);
+        const ramp = r.panels.find((p) => p.part === 'SHOE-RAMP' && p.meta && p.meta.drawer === i.index);
+        return { index: i.index, variant: i.variant || 'plain', pos: i.pos_mm ?? null,
+          front: f ? { id: f.id, y: f.box.y, top: f.box.y + f.box.h, h: f.box.h } : null, ramp: Boolean(ramp) }; }); })()`);
+  const two = await stack();
+  check('two shoe drawers, both added through INSIDE\'s real button',
+    two.length === 2 && two.every((d) => d.variant === 'shoe' && d.ramp),
+    two.map((d) => `${d.index}:${d.variant} front ${d.front?.y}..${d.front?.top} ramp ${d.ramp}`).join(' | '));
+  check('the second arrives stacked tight on the first; the first is on the bottom',
+    two.length === 2 && Math.abs(two[1].front.y - two[0].front.top - 3) < 0.5 && two[0].front.y < 40,
+    `first ${two[0]?.front?.y}, second ${two[1]?.front?.y}`);
+  // The doors open so the drawer fronts are under the pointer (INSIDE opens them; OPEN ALL where it has not).
+  await page.sleep(1200);
+  const doorsOpen = await page.ask(`(() => { const r = window.__cc.project.getState().unitResult(${JSON.stringify(unit.id)});
+    const o = (window.__cc.ui.getState().openFronts || {})[${JSON.stringify(unit.id)}] || {};
+    return r.panels.filter((p) => p.part === 'FRONT').every((p) => (o[p.id] || 0) > 0); })()`);
+  if (!doorsOpen && await page.has('[data-testid="view-open-all"]')) await page.press('[data-testid="view-open-all"]');
+  await page.sleep(1500);
+  await shot(page, 'f06-two-shoe-drawers.png');
+
+  if (two.length === 2) {
+    const front2 = two[1].front.id;
+    const at = await reach(page, unit.id, front2);
+    if (!at) {
+      check('the second drawer\'s front is in reach of the pointer', false, 'no camera tried shows it');
+    } else {
+      // A REAL drag straight up on the second front.
+      await page.dragFromTo(at.x, at.y, at.x, at.y - 90, { steps: 14 });
+      await page.sleep(1200);
+      const dragged = await stack();
+      check('a real drag UP on the second front raises it by its mounting height',
+        dragged[1].pos != null && dragged[1].front.y > two[1].front.y + 20,
+        `pos_mm ${dragged[1].pos}; front ${two[1].front.y} -> ${dragged[1].front.y}`);
+      check('…its own height is unchanged, and the first has not moved',
+        dragged[1].front.h === two[1].front.h && dragged[0].front.y === two[0].front.y,
+        `h ${two[1].front.h} -> ${dragged[1].front.h}; first ${two[0].front.y} -> ${dragged[0].front.y}`);
+      check('…and both still carry their ramps', dragged.every((d) => d.ramp));
+      // Selected, the scene shows the DISTANCE between the drawers.
+      const pick = await page.ask(`(() => { const v = window.__cc.views.room; const T = v.three; let m = null;
+        v.scene.traverse((o) => { if (!m && o.userData && o.userData.ccDimensionPick === 'drawer-gap') m = o; });
+        if (!m) return null; m.updateMatrixWorld(true);
+        const b = new T.Box3().setFromObject(m); const c = b.getCenter(new T.Vector3()).project(v.camera);
+        const r = v.gl.domElement.getBoundingClientRect();
+        return { x: Math.round(r.left + (c.x + 1) / 2 * r.width), y: Math.round(r.top + (1 - c.y) / 2 * r.height) }; })()`);
+      check('the second drawer selected, the scene draws the distance between the two drawers',
+        Boolean(pick), pick ? `figure at ${pick.x},${pick.y}` : 'no drawer-gap figure in the scene');
+      await shot(page, 'f06-dragged-distance.png');
+      if (pick) {
+        await page.clickAt(pick.x, pick.y);
+        await page.sleep(500);
+        const field = await page.has('[data-spacing-field="drawer-gap"]');
+        check('a real click on the distance opens its field', field);
+        if (field) {
+          await page.typeText('300');
+          await page.pressKey('Enter');
+          await page.sleep(1200);
+          const typed = await stack();
+          const gap = typed[1].front.y - typed[0].front.top;
+          check('typing 300 puts the second drawer 300 mm over the first', Math.abs(gap - 300) < 0.5,
+            `gap ${gap}; pos_mm ${typed[1].pos}`);
+          await shot(page, 'f06-distance-typed.png');
+        }
+      }
+      // The clamp: a long drag DOWN stops tight on the first.
+      const again = await reach(page, unit.id, front2);
+      if (again) {
+        await page.dragFromTo(again.x, again.y, again.x, again.y + 600, { steps: 20 });
+        await page.sleep(1200);
+        const low = await stack();
+        check('a long drag DOWN stops tight on the first drawer (the one clamp)',
+          Math.abs(low[1].front.y - low[0].front.top - 3) < 0.5, `second front ${low[1].front.y}, first top ${low[0].front.top}`);
+      }
+    }
+  }
+  await page.close();
+}
+
 // ═══ THE LEDGER ═══════════════════════════════════════════════════════════
 const fresh = process.argv.includes('--fresh');
 const failed = steps.filter((s) => !s.ok);

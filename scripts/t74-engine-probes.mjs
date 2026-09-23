@@ -76,6 +76,12 @@ if (runs('f6')) {
   const second = S().addShoeDrawer(id);
   rows.push(...rowsOf(id, `a SECOND addShoeDrawer -> ${second ? 'id' : 'null (refused, no words)'}`));
   const warnOne = (S().unitResult(id).warnings || []).map((w) => w.code).filter((c) => /SHOE|DRAWER/.test(c));
+  // After the fix: the second is raised by its mounting height, and a third asked for.
+  if (second && S().setDrawerMount) {
+    const said = S().setDrawerMount(id, second, 450);
+    rows.push(...rowsOf(id, `setDrawerMount(second, 450) -> ${JSON.stringify(said)}`));
+    rows.push(...rowsOf(id, `a THIRD addShoeDrawer -> ${S().addShoeDrawer(id) ? 'id' : 'null (refused)'}`));
+  }
 
   id = shoeRoom();
   S().addDrawers(id, 2);

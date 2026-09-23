@@ -6,6 +6,7 @@ import { dimensionStyle } from '../engine/dimensionArrows.js';
 import { formatDimension } from '../engine/format.js';
 import { columnOfShelf } from '../engine/shelfHeights.js';
 import { bayGapsAround, xFromChain } from '../engine/partitionPositions.js';
+import { secondShoeItem } from '../engine/watchDrawer.js';
 import { chromeOn } from './chrome.js';
 import { useProjectStore } from '../stores/projectStore.js';
 
@@ -103,9 +104,42 @@ function touching(gap, piece) {
  * @returns {{rows:Array, plane:string, at:number, name:string}|null}
  */
 function chainFor({
-  panel, result, columns, boardT,
+  panel, result, columns, boardT, unit = null,
 }) {
   if (!panel?.box) return null;
+
+  // ─── T74 F6 · THE SECOND SHOE DRAWER · the distance to the drawer under it ─
+  // *"Druga przesuwana góra/dół, program pokazuje odległość między
+  // szufladami."*  ONE figure: from the top of the drawer front under it to
+  // the bottom of its own. Typing a distance sets the drawer's MOUNTING
+  // HEIGHT through the store's one clamp (`setDrawerMount`), the same one the
+  // drag writes through; its own height is not a control here.
+  if (panel.part === 'DRAWER-FRONT' && Number(panel.meta?.drawer) > 1) {
+    const zone = panel.meta?.zone ?? null;
+    const item = unit ? secondShoeItem(unit, panel.meta.drawer, zone) : null;
+    const below = (result?.panels || []).find((p) => p.part === 'DRAWER-FRONT' && p.box
+      && Number(p.meta?.drawer) === Number(panel.meta.drawer) - 1 && (p.meta?.zone ?? null) === zone);
+    if (!item || !below) return null;
+    const from = below.box.y + below.box.h;
+    const to = panel.box.y;
+    const x = panel.box.x + panel.box.w - 60;
+    return {
+      rows: [{
+        key: 'drawer-gap',
+        from: [x, from],
+        to: [x, to],
+        offset: 0,
+        label: formatDimension(to - from),
+        value: to - from,
+        commit: (want) => from + want,
+      }],
+      plane: 'xy',
+      at: panel.box.z + panel.box.d,
+      name: `drawer-gap-${panel.id}`,
+      itemId: item.id,
+      write: 'drawer-mount',
+    };
+  }
 
   // ─── A SHELF · the whole ladder of its own bay ──────────────────────────
   if (panel.part === 'SHELF' || panel.part === 'FIXED') {
@@ -197,6 +231,8 @@ export default function SpacingChain({
   }, [editing]);
   const setShelfPos = useProjectStore((s) => s.setShelfPos);
   const setPartitionX = useProjectStore((s) => s.setPartitionX);
+  // T74 F6 · the second shoe drawer's mounting height, the drag's own setter.
+  const setDrawerMount = useProjectStore((s) => s.setDrawerMount);
 
   const panel = useMemo(
     () => (panelId ? (result?.panels || []).find((p) => p.id === panelId) || null : null),
@@ -206,9 +242,9 @@ export default function SpacingChain({
   const G = unit?.params?.board_t ?? profile?.board?.thickness ?? 18;
   const chain = useMemo(
     () => chainFor({
-      panel, result, columns, boardT: G,
+      panel, result, columns, boardT: G, unit,
     }),
-    [panel, result, columns, G],
+    [panel, result, columns, G, unit],
   );
 
   // A selection that moves takes the open field with it: an input standing on
@@ -218,14 +254,15 @@ export default function SpacingChain({
   if (!chromeOn('dimensions')) return null;
   if (!chain || !panel) return null;
 
-  const itemId = panel.meta?.itemId || null;
+  const itemId = chain.itemId || panel.meta?.itemId || null;
   const row = editing ? chain.rows.find((r) => r.key === editing) : null;
 
   const commit = () => {
     const want = Number(draft);
     if (!row?.commit || !Number.isFinite(want) || !itemId) { setEditing(null); return; }
     const next = row.commit(want);
-    if (panel.part === 'VPART') setPartitionX(unit.id, itemId, next);
+    if (chain.write === 'drawer-mount') setDrawerMount(unit.id, itemId, next);
+    else if (panel.part === 'VPART') setPartitionX(unit.id, itemId, next);
     else setShelfPos(unit.id, itemId, next);
     setEditing(null);
     setDraft('');

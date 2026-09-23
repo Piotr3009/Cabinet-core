@@ -560,12 +560,23 @@ if (runs('f7')) {
     await page.press('[data-testid="extras-add-wall-unit"]');
     await page.sleep(1500);
     const after = await wallUnitState(page);
-    // The two carcass TOPS as the scene draws them: the world top of each one's TOP board.
-    const tops = await page.ask(`(() => { const v = window.__cc.views.room; const T = v.three; const out = {};
+    // The two carcass TOPS as the scene draws them: the world top of each one's
+    // TOP board, read once the new unit's meshes stand where they will stand
+    // (two reads 400 ms apart agree; a fresh mesh draws a frame at its origin).
+    const readTops = () => page.ask(`(() => { const v = window.__cc.views.room; const T = v.three; const out = {};
       v.scene.traverse((o) => { if (!o.isMesh || !o.userData || o.userData.ccPanelId !== 'TOP') return;
         let a = o; while (a && !(a.userData && a.userData.ccUnitId)) a = a.parent; if (!a) return;
+        a.updateMatrixWorld(true);
         const b = new T.Box3().setFromObject(o); out[a.userData.ccUnitId] = Math.round(b.max.y * 10000) / 10; });
       return out; })()`);
+    let tops = await readTops();
+    for (let t = 0; t < 20; t += 1) {
+      await page.sleep(400);
+      const again = await readTops();
+      const same = after.wall && again[after.wall.id] != null && again[after.wall.id] === tops[after.wall.id];
+      tops = again;
+      if (same) break;
+    }
     check('retail · EXTRAS\' ADD WALL UNIT hangs a wall unit (its own type) on the wardrobe\'s wall',
       after.wall && after.wall.type === 'WARDROBE_WALL' && after.wall.wall === after.wardrobe.wall, JSON.stringify(after.wall));
     check('retail · …beside the wardrobe, as deep as it', after.wall && after.wall.d === after.wardrobe.d

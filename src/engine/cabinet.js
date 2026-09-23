@@ -6059,22 +6059,101 @@ export function computeCabinet(params, profileOverride) {
    * whose PLATE lands on the board, which is T46's own margin: a hinge dropped
    * when its centre fits but its screws do not is a hinge nobody can fit.
    */
-  const slopeCupY = (sl) => {
+  //
+  // ─── T74 F10 · …AND NEVER CLOSER THAN 150 MM TO THE APEX ───────────────────
+  //
+  // The owner: *"ZAWIASY NA SKOSIE: minimum 150 mm od wierzchołka trójkąta
+  // skosu (inaczej nie da się wkręcić śrubokrętem). Przeliczanie zawiasów na
+  // skosach inaczej."*  The probe (`verify/t74/f10-probe.md`): the top cup sat
+  // `endOffset` (100) under the apex, and a low door kept its whole ladder
+  // squeezed to 44 mm. Where the slope CUTS the hinge edge (its top is the
+  // apex of the acute corner), the edge's own ladder (its count is the door's)
+  // has its top brought down to `hinges.slopeApexMinMm` under the apex and
+  // every row re-spaced with it, the bottom one where it always is; rows closer than `minSpacingMm`
+  // are thinned from the inside (bottom and top kept), never squeezed; and a
+  // door that then holds fewer hinges than its ladder asked, or fewer than
+  // two, is REFUSED IN WORDS on the piece (`meta.slopeCut.hingeApex`, read by
+  // Check #26). A list drilled BY HAND still wins and is not moved: the Check
+  // says where it stands inside the 150.
+  const APEX_MIN = Number(P.hinges.slopeApexMinMm) || 0;
+  const HINGE_GAP = Number(P.hinges.minSpacingMm) || 0;
+  const HINGE_END = Number(P.hinges.endOffset) || 0;
+  /** Rows closer than the house spacing, thinned from the inside: bottom and top stand. */
+  const unsquash = (rows) => {
+    const s = [...rows].sort((a, b) => a - b);
+    if (s.length < 2 || !(HINGE_GAP > 0)) return s;
+    const top = s[s.length - 1];
+    if (top - s[0] < HINGE_GAP - 1e-9) return [s[0]];
+    const out = [s[0]];
+    for (const y of s.slice(1, -1)) {
+      if (y - out[out.length - 1] >= HINGE_GAP - 1e-9 && top - y >= HINGE_GAP - 1e-9) out.push(y);
+    }
+    out.push(top);
+    return out;
+  };
+  /**
+   * The hinge plan of one hinge edge the slope may cut: `stile` is the edge's
+   * height, `full` the leaf's own. `ladder(h)` is the leaf's own ladder run
+   * over a height; `place(rows)` takes it into the leaf's frame and keeps the
+   * rows whose plate is on the board. Returns the cups and, where the edge is
+   * cut, the record the Check reads.
+   */
+  const apexPlan = ({
+    stile, full, ladder, place, handMade,
+  }) => {
+    const apexCut = APEX_MIN > 0 && stile < full - 1e-9;
+    if (!apexCut) return { cupY: place(ladder(stile)), apex: null };
+    const limit = stile - APEX_MIN;
+    if (handMade) {
+      const cupY = place(ladder(stile));
+      const inside = cupY.filter((y) => y > limit + 1e-3);
+      return {
+        cupY,
+        apex: {
+          min: APEX_MIN, edge: roundTo(stile, 4), limit: roundTo(limit, 4), hand: true,
+          asked: cupY.length, now: cupY.length, refused: inside.length > 0, inside,
+        },
+      };
+    }
+    // The ladder the edge takes by its own height (its COUNT is the door's),
+    // its top brought down to the limit and every row re-spaced with it, the
+    // bottom row standing where it always stands.
+    const rows = place(ladder(stile));
+    const lo = rows.length ? Math.min(...rows) : 0;
+    const hi = rows.length ? Math.max(...rows) : 0;
+    const k = hi > limit + 1e-9 && hi > lo + 1e-9 ? Math.max(0, limit - lo) / (hi - lo) : 1;
+    const clear = rows.map((y) => roundTo(lo + (y - lo) * k, 4)).filter((y) => y >= 0 && y <= limit + 1e-3);
+    const cupY = unsquash(clear);
+    return {
+      cupY,
+      apex: {
+        min: APEX_MIN, edge: roundTo(stile, 4), limit: roundTo(limit, 4), hand: false,
+        asked: clear.length, now: cupY.length, refused: cupY.length < clear.length || cupY.length < 2,
+      },
+    };
+  };
+  const slopeHinges = (sl) => {
     const stile = sl.hinge === 'R' ? sl.roomR : sl.roomL;
     const leafH = Math.max(0, Math.min(frontH, stile));
     const margin = Number(P.hinges.cups.screwOffsetY) || 0;
-    const rows = hingeRows({
-      height: leafH,
-      rule: hingeRule,
-      standard: cfg.hingeStandard,
-      own: cfg.hingeRows,
-      doorHeight: leafH,
-      twoBelowMm: cfg.hingeTwoBelowMm,
-    }, P);
-    return rows
-      .map((c) => roundTo(c - overlayBase + cfg.doorExtend, 4))
-      .filter((y) => y >= 0 && y + margin <= leafH);
+    return apexPlan({
+      stile: leafH,
+      full: frontH,
+      handMade: Array.isArray(cfg.hingeRows) && cfg.hingeRows.length > 0,
+      ladder: (height) => hingeRows({
+        height,
+        rule: hingeRule,
+        standard: cfg.hingeStandard,
+        own: cfg.hingeRows,
+        doorHeight: height,
+        twoBelowMm: cfg.hingeTwoBelowMm,
+      }, P),
+      place: (rows) => rows
+        .map((c) => roundTo(c - overlayBase + cfg.doorExtend, 4))
+        .filter((y) => y >= 0 && y + margin <= leafH),
+    });
   };
+  const slopeCupY = (sl) => slopeHinges(sl).cupY;
 
   /** A cut leaf's panel fields — its outline, its height, its forced hinge. */
   const cutFrontFields = (sl, leafW) => {
@@ -6082,7 +6161,8 @@ export function computeCabinet(params, profileOverride) {
     const geom = trimGeometryOnSlope(rectGeometry(leafW, frontH), {
       w: leafW, h: frontH, pts: sl.sheetPts,
     });
-    const fieldsCupY = slopeCupY(sl);
+    const plan = slopeHinges(sl);
+    const fieldsCupY = plan.cupY;
     return {
       h: roundTo(sl.tall, 4),
       cnc: {
@@ -6121,6 +6201,9 @@ export function computeCabinet(params, profileOverride) {
           // so `engine/checks.js` rule #21 reads them rather than re-deriving a
           // ladder of its own.
           hinges: { was: cupY.length, now: fieldsCupY.length },
+          // T74 F10 · the 150 from the apex, where the slope cuts the hinge
+          // edge: what the edge could hold and whether it is refused.
+          ...(plan.apex ? { hingeApex: plan.apex } : {}),
           // In the ROOM's frame, because that is the frame the owner's law is
           // spoken in — the outline beside it is the sheet's mirror of these.
           roomL: roundTo(sl.roomL, 4),
@@ -6353,11 +6436,23 @@ export function computeCabinet(params, profileOverride) {
         : seg.h;
       const segCount = segCut ? splitDoorHingeCount(segStile) : seg.hinges;
       const margin = Number(P.hinges.cups.screwOffsetY) || 0;
+      // T74 F10 · the same 150 from the apex on a cut segment's hinge edge,
+      // through the same plan as a whole leaf's; its own count and its own
+      // ladder, run over the edge less the difference.
+      const segPlan = segCut && !(own && own.length)
+        ? apexPlan({
+          stile: segStile,
+          full: seg.h,
+          handMade: false,
+          ladder: (height) => splitSegmentHingeRows(height, segCount, P.hinges.endOffset),
+          place: (rows) => rows.map((v) => roundTo(v, 4)).filter((v) => v >= 0 && v + margin <= segStile),
+        })
+        : null;
       const local = own && own.length
         ? own.map((v) => roundTo(v - base, 4))
-        : splitSegmentHingeRows(segCut ? segStile : seg.h, segCount, P.hinges.endOffset)
+        : (segPlan ? segPlan.cupY : splitSegmentHingeRows(segCut ? segStile : seg.h, segCount, P.hinges.endOffset)
           .map((v) => roundTo(v, 4))
-          .filter((v) => !segCut || (v >= 0 && v + margin <= segStile));
+          .filter((v) => !segCut || (v >= 0 && v + margin <= segStile)));
       // What this segment is ACTUALLY drilled for, which is what the BOM buys
       // and what `assemblies.splitDoors` publishes. Identical to the kit's own
       // count wherever nobody has said anything, which is every cabinet that
@@ -6417,6 +6512,7 @@ export function computeCabinet(params, profileOverride) {
                 low: roundTo(segCut.reduce((lo, q) => Math.min(lo, q.y), Infinity), 4),
                 corners: segGeom.outline.length,
                 hinges: { was: seg.hinges, now: local.length },
+                ...(segPlan?.apex ? { hingeApex: segPlan.apex } : {}),
               }
               : undefined,
           } : {}),

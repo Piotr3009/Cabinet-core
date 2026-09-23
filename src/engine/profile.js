@@ -383,6 +383,16 @@ export const DEFAULT_CABINET_PROFILE = {
     xFromFrontEdge: 37,        // measured from the FRONT edge of the side panel
     layer: 'HINGES_5MM',
     endOffset: 100,            // first/last hinge centre, from panel end
+    // ─── T74 F10 · ON A SLOPE, 150 MM FROM THE APEX ─────────────────────────
+    // OWNER'S NUMBER, 23.09.2026: *"ZAWIASY NA SKOSIE: minimum 150 mm od
+    // wierzchołka trójkąta skosu (inaczej nie da się wkręcić śrubokrętem).
+    // Przeliczanie zawiasów na skosach inaczej."*  Where the slope cuts a
+    // door's HINGE EDGE, the top of that edge is the apex of an acute corner
+    // and a screwdriver cannot reach a hinge closer to it than this. The
+    // ladder is re-run so its top hinge lands here; a door whose edge cannot
+    // then hold its hinges at `minSpacingMm` is refused in words (Check #26),
+    // never squashed.
+    slopeApexMinMm: 150,
     // ─── TURN 30 (CLAUDE.md F11): TWO HINGES UNDER … ───────────────────────
     //
     // The LISP's ladders are what they are — Base is ALWAYS three, Low takes

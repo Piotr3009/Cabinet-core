@@ -10,6 +10,7 @@ import LightingPanel from './lighting/LightingPanel.jsx';
 import UnitFinishModal from './material/UnitFinishModal.jsx';
 import MaterialsModal from './material/MaterialsModal.jsx';
 import DrawRoomModal from './room/DrawRoomModal.jsx';
+import AddPanelAsk from './detail/AddPanelAsk.jsx';
 import { DOCK_MODALS } from './detail/docked.jsx';
 
 // ─── TURN 63 · PRO'S WINDOWS, MOUNTED IN THE CLIENT'S ROOM ─────────────────
@@ -63,6 +64,7 @@ import { DOCK_MODALS } from './detail/docked.jsx';
 // @param {'room'|'dock'} where
 export default function Editors({ where = 'room' }) {
   const modal = useUiStore((s) => s.modal);
+  const modalArgs = useUiStore((s) => s.modalArgs);
   const dock = where === 'dock';
   const here = (name) => (DOCK_MODALS.includes(name) ? dock : !dock);
   const is = (name) => modal === name && here(name);
@@ -86,6 +88,12 @@ export default function Editors({ where = 'room' }) {
           dead control on the client's screen. The window is copied tonight
           (`scripts/t67-copy.mjs`) and this is the route it was missing. */}
       {is('draw-room') && <DrawRoomModal />}
+      {/* ─── T74 F1 · THE SIDE ASKS, BESIDE THE CLICK ──────────────────────
+          *"to znika mały modal jak wymiary lub j pull"*: the same room-level
+          slot the size figure's window and the J run's window are drawn in,
+          never the dock, so the right-hand panel does not open for it. The
+          window takes the args as props (it reads no store of its own). */}
+      {is('add-panel') && <AddPanelAsk args={modalArgs} />}
     </>
   );
 }

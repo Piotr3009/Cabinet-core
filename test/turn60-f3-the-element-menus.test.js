@@ -94,12 +94,12 @@ const panelsOf = (unitId) => S().unitResult(unitId)?.panels || [];
 // edits on the right, so it is in the vocabulary. Nothing else moved: the
 // eight above it are the eight, in their order.
 test('F3 · the editors, and the DOCK resolves every one of them', () => {
-  // T73 F2 · `add-panel`: the question a bare outer side asks, on the
-  // owner's word of 23.09.2026 (*"jak klikniesz na bok szafy z zewnątrz, żeby
-  // się pokazywało add panel (Yes / No)"*).
+  // T73 F2 added `add-panel`, the question a bare outer side asks. AMENDED BY
+  // T74 F1: the question is a small modal at the click (*"znika mały modal
+  // jak wymiary lub j pull"*), not a menu on the right, so the name leaves.
   assert.deepEqual(A.MENUS, [
     'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'overlay', 'partition',
-    'panel', 'add-panel',
+    'panel',
   ], 'the vocabulary of things a client edits on the right');
 
   // ─── NOT ONE `*Menu.jsx` REMAINS ──────────────────────────────────────────
@@ -311,10 +311,9 @@ test('F3 · every engine kind is either mapped or unselectable — no third case
       continue;
     }
     // UNMAPPED — and then it must resolve to NOTHING, so the room clears it.
-    // T73 F2 · one exception, by the owner's word of 23.09.2026: a BARE outer
-    // side (no end panel, no neighbour covering it) asks ADD END PANEL?.
-    const asks = kind === 'side' && found?.menu === 'add-panel' && A.sideAskFor(unit.id, panel);
-    if (found && !asks) third.push(`${panel.part}/${panel.role} → ${kind} is unmapped but resolved to ${found.menu}`);
+    // T73 F2's one exception (a bare side resolved to `add-panel`) is gone:
+    // AMENDED BY T74 F1, the side's question is a modal at the click.
+    if (found) third.push(`${panel.part}/${panel.role} → ${kind} is unmapped but resolved to ${found.menu}`);
   }
   assert.deepEqual([...new Set(third)], [],
     `a kind that is neither mapped nor unselectable:\n  ${third.join('\n  ')}`);

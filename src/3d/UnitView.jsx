@@ -364,6 +364,17 @@ function useBevel(box, profile, sprayed = false) {
  * static box. The animation lives here, per panel, so opening one drawer does
  * not re-render the rest of the unit.
  */
+/**
+ * T74 F1 · is this object drawn OVER the furniture rather than being part of
+ * it? The house flag for that is `userData.ccHelper` on the object or on any
+ * group above it (the figures, their hit strips, the plus markers), the same
+ * question `3d/Ruler.jsx` asks when it picks.
+ */
+function isOverlay(object) {
+  for (let o = object; o; o = o.parent) if (o.userData?.ccHelper) return true;
+  return false;
+}
+
 // Exported since turn 12 (CLAUDE.md F4): the cabinet-editor window renders THE
 // SAME meshes from THE SAME engine panels — "a viewer+editor over existing
 // data". A second panel renderer would be a second answer to what a mitre, a
@@ -1027,6 +1038,13 @@ export default function UnitView({
   // one-slider window. The view hands out a raw client point, never an anchor
   // — the parent makes the anchor, exactly as `onEditWatch` is served.
   onEditJpull = null,
+  // ─── TURN 74 (CLAUDE.md F1): A CLICK ON A WARDROBE SIDE, REPORTED ────────
+  // *"po naciśnięciu boku szafy jak nie ma panelu powinno się pokazać to
+  // pytanie"*. `onAskSide(panelId, at)` hears a plain CLICK (not a drag) on a
+  // carcass side, BUL or BUR, with its client point; the parent decides what
+  // it means. The J strip's road, kept: the view hands out a raw point, never
+  // an anchor. Default null, so PRO's sides are exactly what they were.
+  onAskSide = null,
   // ─── TURN 42 (CLAUDE.md F1): THE ALONE ROD'S OWN TWO VERBS ───────────────
   // `onEditRail(itemId, at)` opens the hanging-rail window; `onMoveRail(itemId,
   // offsetMm)` writes the item's `pos_mm`. Both are the rod's, and neither is
@@ -2256,6 +2274,29 @@ export default function UnitView({
               // would be the feature breaking the app it was added to.
               startDrag(e);
             }}
+            // ─── TURN 74 (CLAUDE.md F1): THE SIDE ASKS ON A CLICK ─────────────
+            // A side still DRAGS its cabinet at pointer-down (turn 3); the
+            // question is the CLICK, so a pull that moved the wardrobe asks
+            // nothing. `delta` is react-three-fiber's own pixel distance from
+            // pointer-down to the click, and 2 px is its own threshold for a
+            // click that missed. Present only when the parent asked for it.
+            //
+            // …and only when the SIDE is what the pointer is on. A click event
+            // travels on through every board the ray meets, and a door has no
+            // click handler to stop it, so a click on a door whose ray goes on
+            // into a side would reach the side too. The nearest BOARD the ray
+            // meets is the one that was clicked; the overlays drawn over the
+            // furniture (`ccHelper`: the figures, their invisible hit strips)
+            // are not boards, and the walk found a figure's strip lying over a
+            // side the moment the pointer-down selected its wardrobe.
+            onClick={onAskSide && (p.part === 'BUL' || p.part === 'BUR') ? (e) => {
+              if (((e.nativeEvent || e).button ?? 0) !== 0) return;
+              if (Number(e.delta) > 2) return;
+              const first = (e.intersections || []).find((h) => !isOverlay(h.eventObject))?.eventObject;
+              if (first && first !== e.eventObject) return;
+              e.stopPropagation();
+              onAskSide(p.id, { x: e.clientX, y: e.clientY });
+            } : undefined}
             onDoubleClick={(e) => {
               e.stopPropagation();
               // ─── Turn 11 (CLAUDE.md F3.3) ───

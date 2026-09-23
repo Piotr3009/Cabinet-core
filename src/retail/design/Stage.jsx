@@ -117,6 +117,11 @@ export default function Stage({
         // open is not one of the three exits he named, and the dock's own CLOSE
         // × and the carcass click already answer that.
         onBackgroundDouble={() => { if (A.lightsModeOn()) A.closeEditor(); }}
+        // ─── T74 F1 · A CLICK ON A WARDROBE SIDE ASKS, BESIDE THE POINTER ──
+        // *"po naciśnięciu boku szafy jak nie ma panelu powinno się pokazać to
+        // pytanie"*. The scene reports the click and its point; the adapter
+        // decides whether this side asks and opens the small question there.
+        onAskSide={(unitId, panelId, at) => { A.askSide(unitId, panelId, at); }}
       />
       <FrontGapWarnings />
     </div>

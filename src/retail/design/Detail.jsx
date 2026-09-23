@@ -7,7 +7,6 @@ import Editors from './Editors.jsx';
 import ElementProperties from './detail/ElementProperties.jsx';
 import { DOCK_MODALS, dockFor } from './detail/docked.jsx';
 import EndPanel from './detail/EndPanel.jsx';
-import AddPanelAsk from './detail/AddPanelAsk.jsx';
 import ReHomed, { rowForSelection } from './detail/ReHomed.jsx';
 
 // ─── 7 · THE DETAIL — A PANEL THAT SLIDES IN OVER THE STAGE ────────────────
@@ -278,11 +277,9 @@ export default function Detail(props) {
             <EndPanel unitId={selection.unitId} panel={selection.panel} />
           ) : null}
 
-          {/* T73 F2 · the owner: *"jak klikniesz na bok szafy z zewnątrz, żeby
-              się pokazywało add panel (Yes / No)"*. */}
-          {route.chips === 'add-panel' && selection?.unitId ? (
-            <AddPanelAsk unitId={selection.unitId} panel={selection.panel} />
-          ) : null}
+          {/* T74 F1 · TOMBSTONE: T73 F2's docked ADD END PANEL? stood here.
+              The owner: *"to znika mały modal jak wymiary lub j pull"*, so it
+              is a small modal at the click (`Editors`, `AddPanelAsk.jsx`). */}
 
           {/* THE COPIED PANEL — PRO's own piece window, on the piece. */}
           {route.props && unit ? (

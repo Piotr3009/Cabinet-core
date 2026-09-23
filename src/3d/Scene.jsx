@@ -1282,6 +1282,12 @@ export default function Scene({
   // default OFF, like the three above: PRO passes nothing and its plus is
   // exactly where it has always been.
   hideInnerPlus = false,
+  // ─── T74 F1 · A CLICK ON A WARDROBE SIDE, REPORTED ───────────────────────
+  // `onAskSide(unitId, panelId, at)`: a plain click on a carcass side (BUL or
+  // BUR) with the client point. REPORTED and never acted on here, like the
+  // 2klik above: the caller decides what it means. ADDITIVE and default null,
+  // so PRO passes nothing and its sides are exactly what they were.
+  onAskSide = null,
 }) {
   const orbitRef = useRef(null);
   // One entry per unit group, so the render can frame the furniture and only
@@ -1829,6 +1835,9 @@ export default function Scene({
               },
             });
           }}
+          // T74 F1 · a click on a wardrobe side, reported with its point to
+          // the caller that asked (retail's question). PRO passes nothing.
+          onAskSide={onAskSide ? (panelId, at) => onAskSide(unit.id, panelId, at) : null}
           // ─── TURN 58b (CLAUDE.md F3.2): THE J STRIP'S OWN SLIDER ─────────
           // *"jedynie wysokość — jeden pasek, przedłuż wycięcie J na
           // pionowych i tyle, nic więcej."*  One window, one control, opened

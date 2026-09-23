@@ -43,7 +43,7 @@ import { materialSlotOf, runMaterialSetting } from '../../engine/materials.js';
 // T65 F8: the cornice stack's own arithmetic, and which types take one.
 import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
 import {
-  hasTopInfill, paddedSpan, unitTop, wallGapOf,
+  hasTopInfill, unitTop, wallGapOf,
 } from '../../engine/runs.js';
 import { FRONT_STYLE_OPTIONS, elementMaterialChoices, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
@@ -966,20 +966,38 @@ function neighbourOf(unitId, side) {
 // The owner, 23.09.2026: *"jak klikniesz na bok szafy z zewnątrz, żeby się
 // pokazywało add panel (Yes / No), to będzie bardzo intuicyjne."*
 //
-// A side (BUL / BUR) with NO end panel on it and NO neighbour covering it asks
-// the question. A side with a panel never does (the panel is what is clicked),
-// and neither does a side a flush neighbour hides (there is nothing to cover).
-// YES is `addEndPanelByHand`, the EXTRAS road, so the panel is the client's own
-// and permanent; the panel's own menu (T72 F1) opens straight after.
+// ─── T74 F1 · ANY WARDROBE, A SMALL MODAL AT THE CLICK ─────────────────────
+//
+// The owner, retesting T73 on 23.09.2026: *"po naciśnięciu na bok szafy jak
+// nie ma panelu powinno się pokazać to pytanie, a nie pierwsza czy druga
+// szafa, po prostu po naciśnięciu boku szafy, a jak nic nie naciśniesz i
+// klikniesz na coś innego to znika mały modal jak wymiary lub j pull hands."*
+//
+// Two things changed, and both are his:
+//
+//   ANY SIDE ASKS.   Every side (BUL / BUR) of every wardrobe standing on the
+//                    floor asks, as long as NO end panel is on it. The T73
+//                    exclusion of a side a flush neighbour covers is gone: the
+//                    owner clicked the covered side of the first wardrobe and
+//                    got nothing. Where there is no room for a panel the
+//                    STORE refuses, in its own sentence, inside the question.
+//                    Top boxes stay out, and so does anything that hangs.
+//   IT IS A MODAL.   The question is not docked on the right any more. The
+//                    scene reports the click with its point (`onAskSide`,
+//                    T58b's J-strip road) and the question opens THERE, in the
+//                    same anchored shell the size figure and the J run open
+//                    in, and a click anywhere else closes it with nothing
+//                    added. The right-hand panel does not open for the click.
+//
+// YES is `addEndPanelByHand`, the EXTRAS road, so the panel is the client's
+// own and permanent; the question closes and the panel's own menu (T72 F1)
+// opens straight after.
 
-/** Does this side stand flush against the neighbour on that side? */
-function flushWith(unit, neighbour, side) {
-  if (!unit || !neighbour) return false;
-  const me = paddedSpan(unit);
-  const it = paddedSpan(neighbour);
-  const gap = side === 'R' ? it.left - me.right : me.left - it.right;
-  return gap <= 1;
-}
+/** A wardrobe that stands on the floor: not a top box, nothing that hangs. */
+const isFloorWardrobe = (unit) => {
+  const type = getUnitType(unit?.type);
+  return Boolean(type && type.family === 'wardrobe' && !type.ridesOn && type.mount !== 'wall');
+};
 
 /**
  * Should a click on this carcass side ask to add a panel?
@@ -988,26 +1006,48 @@ function flushWith(unit, neighbour, side) {
 export function sideAskFor(unitId, panel) {
   if (panel?.part !== 'BUL' && panel?.part !== 'BUR') return null;
   const unit = unitOf(unitId);
-  if (!unit || isTopBox(unit)) return null;
+  if (!unit || isTopBox(unit) || !isFloorWardrobe(unit)) return null;
   const side = panel.part === 'BUR' ? 'R' : 'L';
   const has = (unit.params?.end_panels || []).some((ep) => (ep.side === 'R' ? 'R' : 'L') === side);
   if (has) return null;
-  const neighbour = neighbourOf(unitId, side);
-  if (neighbour && flushWith(unit, neighbour, side)
-    && !sideIsVisible(unit, side, neighbour, { atWall: false }, P()).visible) return null;
   return { side };
 }
 
-/** YES: the panel goes on by hand, and its own menu opens on it. */
+/**
+ * THE CLICK, reported by the scene: open the question beside the pointer.
+ *
+ * The anchor is made from the client point the way every other scene gesture
+ * makes one (`uiStore.openModal` puts `at` through the shell's own
+ * `withModalAnchor`). Lights mode is left alone: a side clicked while the
+ * lighting window stands is not one of the three exits the owner named (T72
+ * F7), and opening a question would end it.
+ *
+ * @returns {boolean} whether the question opened
+ */
+export function askSide(unitId, panelId, at) {
+  if (lightsModeOn()) return false;
+  const panel = (resultOf(unitId)?.panels || []).find((p) => p.id === panelId) || null;
+  const ask = sideAskFor(unitId, panel);
+  if (!ask) return false;
+  openEditor('add-panel', {
+    unitId, panelId, side: ask.side, at: at ? { x: at.x, y: at.y } : null,
+  });
+  return true;
+}
+
+/** YES: the panel goes on by hand, the question closes, its own menu opens. */
 export function addEndPanelFromAsk(unitId, side) {
   const res = addEndPanelByHand(unitId, side);
-  if (res.ok) selectOnStage(unitId, `END-${side === 'R' ? 'R' : 'L'}`);
+  if (res.ok) {
+    closeEditor();
+    selectOnStage(unitId, `END-${side === 'R' ? 'R' : 'L'}`);
+  }
   return res;
 }
 
 /** NO: the question closes and nothing changes. */
 export function dismissSideAsk() {
-  U().clearElement?.();
+  closeEditor();
   return { ok: true, said: '' };
 }
 
@@ -2126,8 +2166,8 @@ export const MENUS = Object.freeze([
   // pattern T69 F8 established, for the same reason (PRO keeps its numeric
   // fields and a copy may not be edited).
   'panel',
-  // T73 F2 · the tenth: the question a bare outer side asks, YES or NO.
-  'add-panel',
+  // T74 F1 · TOMBSTONE: `add-panel` stood here (T73 F2's docked question). The
+  // question is a small modal at the click now (`askSide`), not a menu.
 ]);
 
 /**
@@ -2187,14 +2227,8 @@ export function resolveSelection(selected) {
   const panel = (result?.panels || []).find((p) => p.id === ref) || null;
   if (!panel || !isSelectableElement(panel)) return null;
   const kind = elementKind(panel);
-  // T73 F2 · a bare outer side asks whether to add an end panel. Every other
-  // carcass click is still the way out (T65 F10).
-  if (kind === 'side' && sideAskFor(unitId, panel)) {
-    return {
-      menu: 'add-panel', kind, unitId, ref, panel, item: null,
-      label: panel.part === 'BUR' ? 'Right side' : 'Left side',
-    };
-  }
+  // T74 F1 · a side is the way out again (T65 F10), like every carcass click:
+  // its question is a modal at the click (`askSide`), never a menu here.
   let menu = MENU_FOR_KIND[kind] || null;
   if (!menu) return null;
 

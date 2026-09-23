@@ -589,7 +589,10 @@ test('T63 · the four sketches are gone, and no fifth stands beside a copy', () 
     ],
     // T73 F2 · the question a bare outer side asks (*"add panel (Yes / No)"*).
     // Retail's own, like the panel's menu: PRO has no such question to copy.
-    'AddPanelAsk.jsx': ['dock-add-panel', 'add-panel-yes', 'add-panel-no', 'add-panel-said'],
+    // AMENDED BY T74 F1: a small modal at the click, so its block is no longer
+    // the dock's (`dock-add-panel` becomes `add-panel-ask`); the same three
+    // controls, no fourth.
+    'AddPanelAsk.jsx': ['add-panel-ask', 'add-panel-yes', 'add-panel-no', 'add-panel-said'],
   };
   for (const f of files) {
     if (!/\.jsx$/.test(f)) continue;

@@ -184,10 +184,9 @@ export function dockFor(selection) {
     return panel ? { chips: 'end-panel', args: { unitId, panelId: panel.id } } : null;
   }
 
-  // T73 F2 · a bare outer side: the question, YES or NO.
-  if (menu === 'add-panel') {
-    return panel ? { chips: 'add-panel', args: { unitId, panelId: panel.id } } : null;
-  }
+  // T74 F1 · TOMBSTONE: T73 F2's docked `add-panel` question stood here. It
+  // is a small modal at the click now (`adapter.askSide`, `AddPanelAsk.jsx`,
+  // rendered by `Editors` at the room's level), and the dock is not opened.
 
   // EVERYTHING ELSE THE ENGINE CUTS A BOARD FOR — the shelf, the divider, a
   // drawer front, a drawer box, an overlay front, a shoe drawer's face. PRO's

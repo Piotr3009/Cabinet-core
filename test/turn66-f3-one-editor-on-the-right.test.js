@@ -99,13 +99,10 @@ test('F3 · a click on the CARCASS clears the selection — the panel slides out
     const kind = elementKind(panel);
     assert.ok(kind, `${part} is not even an element`);
     assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} is still mapped to a menu`);
-    // T73 F2 · a BARE outer side asks ADD END PANEL? (owner, 23.09.2026). A
-    // side with a panel, and every other carcass piece, is still the way out.
+    // T73 F2 made a BARE outer side resolve to ADD END PANEL?. AMENDED BY
+    // T74 F1: that question is a small modal at the click, so a side is the
+    // way out again, with every other carcass piece.
     const found = A.resolveSelection({ unitId: id, elementRef: panel.id });
-    if (found && kind === 'side' && A.sideAskFor(id, panel)) {
-      assert.equal(found.menu, 'add-panel');
-      continue;
-    }
     assert.equal(found, null, `${part} still opens something on the right`);
   }
   // …and the room CLEARS such a selection rather than leaving a highlight.

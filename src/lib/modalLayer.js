@@ -180,6 +180,11 @@ export const MODAL_KINDS = Object.freeze({
   // slider, about ONE LEAF's J run, opened by clicking the J strip itself —
   // so it is an OBJECT window and the guard holds it to an anchor.
   'jpull-run': { about: 'object', label: 'J-pull run' },
+  // ─── TURN 74 (CLAUDE.md F1) ────────────────────────────────────────────
+  // *"po naciśnięciu boku szafy ... to znika mały modal jak wymiary lub j
+  // pull"*. The client's ADD END PANEL? question, about ONE SIDE of one
+  // wardrobe and opened at the click on it: an OBJECT window, held to an anchor.
+  'add-panel': { about: 'object', label: 'Add end panel' },
 });
 
 /** Every modal name the app knows, as a list. */

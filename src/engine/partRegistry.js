@@ -135,6 +135,13 @@ export const PART_REGISTRY = {
     id: 'top_box_carcase', name: 'Top box carcase', group: G('board'), unit: 'm²', materialType: 'board',
     note: 'The small box that rides on a wardrobe — its own row because it is often cut from an offcut',
   },
+  // T74 F13 · the free-standing panel: one board in the room, cut from the
+  // carcass board and banded all round. Its own row, so a joiner pricing a job
+  // sees the boards the client built with apart from the cabinets.
+  free_panel: {
+    id: 'free_panel', name: 'Free panels', group: G('board'), unit: 'm²', materialType: 'board',
+    note: 'Free-standing boards in the room, banded on all four edges (T74 F13)',
+  },
   // T54-F7: `shoe_box_carcase` is DELETED with the world it priced — the
   // shoe is a standard drawer now (licence 2; the grave is named in the
   // verdict). The tilted shoe SHELF's rail below is a different entity.
@@ -456,6 +463,8 @@ export const ELEMENT_TO_PART_ID = {
   'END-PANEL': 'end_panel',
   INFILL: 'infill',
   MASK: 'mask',
+  // T74 F13 · the free-standing panel's one board.
+  'FREE-PANEL': 'free_panel',
 
   // The drawer box: three boards that are one board to buy, and a bottom that
   // is not.
@@ -570,6 +579,8 @@ const EDGE_OF_PART = {
   drawer_bottom: 'edge_carcase',
   shelf: 'edge_shelf',
   partition: 'edge_shelf',
+  // T74 F13 · a free panel's four seen edges are banded as a shelf's is.
+  free_panel: 'edge_shelf',
   door: 'edge_front',
   drawer_front: 'edge_front',
   false_front: 'edge_front',

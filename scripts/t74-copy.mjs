@@ -19,7 +19,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { ALL_COPIES } from './t63-copies.mjs';
@@ -43,15 +43,33 @@ export const T74_PRO_EDITS = [
   {
     pro: 'src/components/ElementProperties.jsx',
     why: 'F6 · the second shoe drawer\'s own height is shown, not edited: it is set by '
-      + 'its mounting height. *"Regulacja = WYSOKOŚĆ MONTAŻU, nie wysokość szuflady."*',
+      + 'its mounting height. *"Regulacja = WYSOKOŚĆ MONTAŻU, nie wysokość szuflady."* '
+      + 'F13 · the free panel\'s two rows: how it stands (along or across the wall, vertical, '
+      + 'horizontal or any angle) and its board (length, width, thickness). *"ustawia '
+      + 'pion/poziom/każdą orientację, długość, grubość."*',
   },
 ];
 
-const hash = (rel) => createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex');
+// A copy the machine is about to make for the first time has no hash yet.
+/**
+ * THE PRO FILES TONIGHT COPIES FOR THE FIRST TIME, not edited: the manifest's
+ * `T74_COPIES`. Their PRO original does not move; the copy is new.
+ */
+export const T74_NEW_COPIES = [
+  {
+    pro: 'src/components/PartDetailModal.jsx',
+    why: 'F13 · the free panel\'s 2klik opens PRO\'s own piece editor. *"Dwuklik = wejście '
+      + 'w edycję jak w PRO (wycięcie łuku itp.)."*',
+  },
+];
+
+const hash = (rel) => (existsSync(join(ROOT, rel))
+  ? createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex')
+  : null);
 const retailOf = (pro) => ALL_COPIES.find((c) => c.pro === pro)?.retail || null;
 
 if (check) {
-  for (const { pro, why } of T74_PRO_EDITS) {
+  for (const { pro, why } of [...T74_PRO_EDITS, ...T74_NEW_COPIES]) {
     console.log(`${pro}\n  -> ${retailOf(pro)}\n  ${why}\n`);
   }
   process.exit(0);
@@ -63,7 +81,7 @@ const before = new Map(ALL_COPIES.map((c) => [c.retail, hash(c.retail)]));
 execFileSync('node', [join(ROOT, 'scripts/t63-copy.mjs')], { cwd: ROOT, stdio: 'inherit' });
 
 const moved = ALL_COPIES.map((c) => c.retail).filter((rel) => hash(rel) !== before.get(rel));
-const wanted = T74_PRO_EDITS.map((e) => retailOf(e.pro)).filter(Boolean);
+const wanted = [...T74_PRO_EDITS, ...T74_NEW_COPIES].map((e) => retailOf(e.pro)).filter(Boolean);
 
 console.log('');
 for (const rel of wanted) {
@@ -75,7 +93,7 @@ if (stray.length) {
   console.error(`\nTHE MACHINE TOUCHED A COPY NOTHING LICENSED:\n  ${stray.join('\n  ')}`);
   process.exit(1);
 }
-const missing = T74_PRO_EDITS.filter((e) => !retailOf(e.pro));
+const missing = [...T74_PRO_EDITS, ...T74_NEW_COPIES].filter((e) => !retailOf(e.pro));
 if (missing.length) {
   console.error(`\nNOT IN THE MANIFEST:\n  ${missing.map((e) => e.pro).join('\n  ')}`);
   process.exit(1);

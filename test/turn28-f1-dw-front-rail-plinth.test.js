@@ -228,7 +228,8 @@ test('F1.4 the kit DECLARES what it is made of, in the keys every kit answers', 
   // …and on every kit that HAS the standard carcass they are still absent, so
   // nothing but those three moved a hundredth.
   for (const id of UNIT_TYPE_ORDER) {
-    if (id === 'DW_PANEL' || id === 'L_SHAPE' || id === 'WUD_HOOD') continue;
+    // T74 F13 · FREE_PANEL declares its whole carcass too: one free board.
+    if (id === 'DW_PANEL' || id === 'L_SHAPE' || id === 'WUD_HOOD' || id === 'FREE_PANEL') continue;
     const { carcass } = UNIT_TYPES[id];
     assert.equal(carcass.sides, undefined, `${id} says nothing about sides`);
     assert.equal(carcass.bottom, undefined, `${id} says nothing about a bottom`);

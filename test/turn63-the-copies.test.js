@@ -396,9 +396,12 @@ test('T72 · every PRO original that MOVED is licensed, and every licence is spe
     assert.ok(T72_LICENSED.includes(rel) || T74_LICENSED.includes(rel),
       `${rel} moved and this test does not know about it`);
   }
-  // T74 · …and tonight's machine names exactly tonight's licences.
+  // T74 · …and tonight's machine names exactly tonight's licences (its list of
+  // PRO files EDITED; the fresh copies it makes are listed apart, below).
   const copy74 = read('scripts/t74-copy.mjs');
-  const named74 = [...copy74.matchAll(/pro: '([^']+)'/g)].map((m) => m[1]);
+  const edits74 = copy74.slice(copy74.indexOf('export const T74_PRO_EDITS = ['),
+    copy74.indexOf('export const T74_NEW_COPIES = ['));
+  const named74 = [...edits74.matchAll(/pro: '([^']+)'/g)].map((m) => m[1]);
   assert.deepEqual(named74.sort(), [...T74_LICENSED].sort(),
     'scripts/t74-copy.mjs and this test disagree about what PRO edited tonight');
 

@@ -11,6 +11,8 @@ import UnitFinishModal from './material/UnitFinishModal.jsx';
 import MaterialsModal from './material/MaterialsModal.jsx';
 import DrawRoomModal from './room/DrawRoomModal.jsx';
 import AddPanelAsk from './detail/AddPanelAsk.jsx';
+// T74 F13 · PRO's piece editor, copied by the machine (`T74_COPIES`).
+import PartDetailModal from './detail/PartDetailModal.jsx';
 import { DOCK_MODALS } from './detail/docked.jsx';
 
 // ─── TURN 63 · PRO'S WINDOWS, MOUNTED IN THE CLIENT'S ROOM ─────────────────
@@ -94,6 +96,10 @@ export default function Editors({ where = 'room' }) {
           never the dock, so the right-hand panel does not open for it. The
           window takes the args as props (it reads no store of its own). */}
       {is('add-panel') && <AddPanelAsk args={modalArgs} />}
+      {/* ─── T74 F13 · THE FREE PANEL'S 2KLIK ──────────────────────────────
+          *"Dwuklik = wejście w edycję jak w PRO (wycięcie łuku itp.)."*  The
+          room-level slot, beside the board, as PRO opens it. */}
+      {is('part-detail') && <PartDetailModal />}
     </>
   );
 }

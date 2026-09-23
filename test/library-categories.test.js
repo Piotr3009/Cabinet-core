@@ -50,6 +50,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
     // Turn 31 (CLAUDE.md F9): WUD_HOOD — the KIT_WUD envelope with its bottom
     // open, standing beside the two wall units it is one of.
     'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
+    // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
+    'FREE_PANEL',
   ]);
   // T36 F7: Main wardrobe + Top box. T74 F7: + the wardrobe's wall unit.
   assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);

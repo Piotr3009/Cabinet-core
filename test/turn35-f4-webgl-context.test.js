@@ -209,13 +209,18 @@ test('F4 — three canvases, the same three, each guarded by name', () => {
   // to use the hook, and that example must not read as a fourth surface.
   const code = (f) => read(f).split('\n').filter((l) => !/^\s*(\*|\/\/)/.test(l)).join('\n');
   const sites = files.filter((f) => /<Canvas[\s>]/.test(code(f))).sort();
+  // AMENDED BY T74 F13: the fourth is not a new surface, it is the COPY of the
+  // third (PRO's piece editor, copied by the machine for the free panel's
+  // 2klik), guarded by the same name as its original.
   assert.deepEqual(sites, [
     '3d/Scene.jsx', 'components/CabinetEditorModal.jsx', 'components/PartDetailModal.jsx',
+    'retail/design/detail/PartDetailModal.jsx',
   ], 'no fourth <Canvas> was introduced by this turn');
   for (const [rel, name] of [
     ['3d/Scene.jsx', 'room'],
     ['components/CabinetEditorModal.jsx', 'editor'],
     ['components/PartDetailModal.jsx', 'part-detail'],
+    ['retail/design/detail/PartDetailModal.jsx', 'part-detail'],
   ]) {
     const src = read(rel);
     assert.ok(src.includes(`useContextGuard('${name}')`), `${rel} guards its canvas`);

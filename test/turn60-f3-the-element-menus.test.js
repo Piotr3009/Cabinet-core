@@ -97,9 +97,11 @@ test('F3 · the editors, and the DOCK resolves every one of them', () => {
   // T73 F2 added `add-panel`, the question a bare outer side asks. AMENDED BY
   // T74 F1: the question is a small modal at the click (*"znika mały modal
   // jak wymiary lub j pull"*), not a menu on the right, so the name leaves.
+  // AMENDED BY T74 F13: `free-panel`, the free-standing panel's board: how it
+  // stands and its size, PRO's own two rows on the right.
   assert.deepEqual(A.MENUS, [
     'door', 'shelf', 'drawers', 'rail', 'watch', 'shoe', 'overlay', 'partition',
-    'panel',
+    'panel', 'free-panel',
   ], 'the vocabulary of things a client edits on the right');
 
   // ─── NOT ONE `*Menu.jsx` REMAINS ──────────────────────────────────────────

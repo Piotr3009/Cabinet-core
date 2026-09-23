@@ -1770,6 +1770,18 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── T74 F13 · THE FREE PANEL ─────────────────────────────────────────────
+  //
+  // What a board inserted into the room arrives as, before a hand types its
+  // own: 800 long, 400 wide, upright, on the floor. Its thickness is the
+  // board's (`board.thickness`), and every one of these is changed on the
+  // panel itself, never here.
+  freePanel: {
+    defaults: {
+      length: 800, width: 400, tilt: 0, mountHeight: 0,
+    },
+  },
+
   // ─── T74 F7 · THE WARDROBE'S WALL UNIT ────────────────────────────────────
   //
   // KIT_WUD_FULL's own box, 1:1 from the kitchen (*"kopiować 1:1 z kuchni"*),
@@ -5170,6 +5182,12 @@ export function migrateCabinetProfile(profile) {
       ...D.glassWallUnit,
       ...profile.glassWallUnit,
       defaults: { ...D.glassWallUnit.defaults, ...profile.glassWallUnit?.defaults },
+    },
+    // T74 F13 · the free panel's defaults, key by key.
+    freePanel: {
+      ...D.freePanel,
+      ...profile.freePanel,
+      defaults: { ...D.freePanel.defaults, ...profile.freePanel?.defaults },
     },
     // T74 F7 · the wardrobe's wall unit, its own block like the glass one's.
     wardrobeWallUnit: {

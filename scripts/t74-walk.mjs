@@ -25,8 +25,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import {
   open, room, pro, withWardrobe, pointOn, reach, orbit, roomView, unitIds, unitsNow, modalNow,
-  showroomDown,
+  showroomDown, localBox,
 } from './t74-harness.mjs';
+import { decodePng, regionLuminance } from './png.mjs';
 
 const SHOTS = new URL('../verify/t74/', import.meta.url).pathname;
 mkdirSync(SHOTS, { recursive: true });
@@ -544,6 +545,311 @@ if (runs('f7')) {
     }
     await page.close();
   }
+}
+
+// ═══ F8 · THE SLOPED SHOE DRAWER BOTTOM TRAVELS WITH ITS DRAWER ═══════════
+if (runs('f8')) {
+  process.stdout.write('\n─── F8 · THE SHOE RAMP TRAVELS WITH ITS DRAWER ───\n');
+  const page = await open();
+  await room(page);
+  await withWardrobe(page);
+  await page.press('[data-testid="cat-inside"]');
+  await page.press('[data-add-kind="shoe_box"]');
+  await page.press('[data-add-shoe-box="1"]');
+  await page.sleep(1500);
+  const [unit] = await unitsNow(page);
+  const ids = await page.ask(`(() => { const r = window.__cc.project.getState().unitResult(${JSON.stringify(unit.id)});
+    const ramp = r.panels.find((p) => p.part === 'SHOE-RAMP'); if (!ramp) return null; const n = ramp.meta.drawer;
+    const pick = (f) => (r.panels.find(f) || {}).id || null;
+    return { ramp: ramp.id, floor: pick((p) => p.part === 'DRAWER-BOTTOM' && p.meta && p.meta.drawer === n),
+      front: pick((p) => p.part === 'DRAWER-FRONT' && p.meta && p.meta.drawer === n) }; })()`);
+  check('a shoe drawer through INSIDE\'s own button, with its ramp', Boolean(ids), JSON.stringify(ids));
+  if (ids) {
+    const doorsOpen = await page.ask(`(() => { const r = window.__cc.project.getState().unitResult(${JSON.stringify(unit.id)});
+      const o = (window.__cc.ui.getState().openFronts || {})[${JSON.stringify(unit.id)}] || {};
+      return r.panels.filter((p) => p.part === 'FRONT').every((p) => (o[p.id] || 0) > 0); })()`);
+    if (!doorsOpen && await page.has('[data-testid="view-open-all"]')) await page.press('[data-testid="view-open-all"]');
+    await page.sleep(1500);
+    const shut = { ramp: await localBox(page, unit.id, ids.ramp), floor: await localBox(page, unit.id, ids.floor) };
+    check('shut: the ramp stands ON its drawer floor, not through it',
+      shut.ramp && shut.floor && shut.ramp.y[0] >= shut.floor.y[1] - 1, `ramp low ${shut.ramp?.y[0]}, floor top ${shut.floor?.y[1]}`);
+    const at = await reach(page, unit.id, ids.front);
+    if (!at) {
+      check('the shoe drawer\'s front is in reach of the pointer', false);
+    } else {
+      await page.dblclick(at.x, at.y);
+      await page.sleep(1800);
+      const open = { ramp: await localBox(page, unit.id, ids.ramp), floor: await localBox(page, unit.id, ids.floor) };
+      const rampOut = open.ramp.z[1] - shut.ramp.z[1];
+      const floorOut = open.floor.z[1] - shut.floor.z[1];
+      check('a real 2klik opens the drawer: the ramp comes out WITH it, as far as its floor',
+        floorOut > 200 && Math.abs(rampOut - floorOut) < 2, `floor out ${Math.round(floorOut)} mm, ramp out ${Math.round(rampOut)} mm`);
+      check('…and, open, it is still on its floor', open.ramp.y[0] >= open.floor.y[1] - 1,
+        `ramp low ${open.ramp.y[0]}, floor top ${open.floor.y[1]}`);
+      await shot(page, 'f08-open.png');
+      const back = (await reach(page, unit.id, ids.front)) || at;
+      await page.dblclick(back.x, back.y);
+      await page.sleep(1800);
+      const again = await localBox(page, unit.id, ids.ramp);
+      check('a second 2klik shuts it, and the ramp goes back in with it',
+        Math.abs(again.z[1] - shut.ramp.z[1]) < 2, `ramp front ${again.z[1]} (shut ${shut.ramp.z[1]})`);
+    }
+  }
+  await page.close();
+}
+
+// ═══ F11 · OUT OF THE CORNER, THE DOORS AND THE DIVIDER COME BACK ═════════
+if (runs('f11')) {
+  process.stdout.write('\n─── F11 · PULLED AWAY FROM THE CORNER ───\n');
+  const page = await open();
+  await room(page);
+  await withWardrobe(page);
+  await page.press('[data-testid="space-edit-room"]');
+  await page.press('[data-elevation-add="slope-right"]');
+  await page.sleep(500);
+  if (await page.has('[data-room-apply="1"]')) await page.press('[data-room-apply="1"]');
+  await page.sleep(800);
+  if (await page.has('[data-modal-name="room"]')) await page.pressKey('Escape');
+  await page.sleep(600);
+  const [unit] = await unitsNow(page);
+  const state = () => page.ask(`(() => { const P = window.__cc.project.getState(); const u = P.units.find((x) => x.id === ${JSON.stringify(unit.id)});
+    const r = P.unitResult(u.id); const leaves = r.panels.filter((p) => p.part === 'FRONT');
+    const items = (u.params.sections && u.params.sections[0] && u.params.sections[0].items) || [];
+    return { x: Math.round(u.position.x_mm), doors: JSON.stringify(u.params.doors), bay: JSON.stringify(u.params.bay_doors ?? null),
+      hinges: leaves.map((p) => (p.meta.hinge || '?') + (p.meta.hingeForced ? '!' : '')).join(' '),
+      partitions: items.filter((i) => i.kind === 'partition').length, record: Boolean(u.params.slope_door_auto) }; })()`);
+  const leafOf = () => page.ask(`(() => { const r = window.__cc.project.getState().unitResult(${JSON.stringify(unit.id)});
+    const f = r.panels.filter((p) => p.part === 'FRONT'); return f.length ? f[0].id : null; })()`);
+  const before = await state();
+  let leaf = await leafOf();
+  let at = leaf ? await pointOn(page, unit.id, leaf) : null;
+  if (!at) {
+    check('a door leaf under the pointer', false);
+  } else {
+    await page.dragFromTo(at.x, at.y, at.x + 700, at.y, { steps: 30 });
+    await page.sleep(1200);
+    const inCorner = await state();
+    check('a real drag into the corner: the automat forces the hinge and adds the door partition (as before)',
+      inCorner.x > before.x && inCorner.hinges.includes('!') && inCorner.partitions > 0 && inCorner.record,
+      `${JSON.stringify(before)} -> ${JSON.stringify(inCorner)}`);
+    await shot(page, 'f11-in-the-corner.png');
+    leaf = await leafOf();
+    at = leaf ? await reach(page, unit.id, leaf) : null;
+    if (at) {
+      await page.dragFromTo(at.x, at.y, at.x - 900, at.y, { steps: 30 });
+      await page.sleep(1200);
+      const out = await state();
+      check('a real drag back out: the doors, their hinge sides and the partition are as they were before the corner',
+        out.x < inCorner.x && out.doors === before.doors && out.bay === before.bay && out.hinges === before.hinges
+          && out.partitions === before.partitions && !out.record,
+        `${JSON.stringify(inCorner)} -> ${JSON.stringify(out)}`);
+      await shot(page, 'f11-pulled-away.png');
+    } else {
+      check('the door leaf in reach after the push', false);
+    }
+  }
+  await page.close();
+}
+
+// ═══ F12 · THE J-PULL IS SEEN, ALWAYS ══════════════════════════════════════
+if (runs('f12')) {
+  process.stdout.write('\n─── F12 · THE J GROOVE ON THE GLASS ───\n');
+  const page = await open();
+  await room(page);
+  await withWardrobe(page);
+  await page.press('[data-testid="cat-extras"]');
+  if (!(await page.ask('(() => { const u = window.__cc.project.getState().units[0]; return Boolean(u && u.params.doors); })()'))) {
+    await page.press('[data-testid="extras-add-doors"]');
+  }
+  await page.press('[data-testid="extras-handle-jpull"]');
+  await page.sleep(1500);
+  const [unit] = await unitsNow(page);
+  const patches = () => page.ask(`(() => { const P = window.__cc.project.getState(); const r = P.unitResult(${JSON.stringify(unit.id)});
+    const leaf = r.panels.find((p) => p.part === 'FRONT' && p.cnc && p.cnc.jpull && p.cnc.jpull.edge); if (!leaf) return null;
+    const v = window.__cc.views.room; const T = v.three; let mesh = null; let unitG = null;
+    v.scene.traverse((o) => { if (o.userData && o.userData.ccUnitId === ${JSON.stringify(unit.id)}) unitG = o; });
+    if (unitG) unitG.traverse((o) => { if (!mesh && o.isMesh && o.userData && o.userData.ccPanelId === leaf.id) mesh = o; });
+    if (!mesh) return null;
+    const jp = leaf.meta.jpull || {}; const b = leaf.box;
+    const from = ((jp.run && jp.run.from) != null ? jp.run.from : 0) - b.h / 2;
+    const to = ((jp.run && jp.run.to) != null ? jp.run.to : b.h) - b.h / 2;
+    const edgeX = jp.edge === 'L' ? -b.w / 2 : (jp.edge === 'R' ? b.w / 2 : 0);
+    const inward = jp.edge === 'L' ? 1 : -1; const zFace = b.d / 2;
+    mesh.updateMatrixWorld(true);
+    const r0 = v.gl.domElement.getBoundingClientRect();
+    const scr = (x, y, z) => { const p = new T.Vector3(x / 1000, y / 1000, z / 1000).applyMatrix4(mesh.matrixWorld).project(v.camera);
+      return { x: r0.left + (p.x * 0.5 + 0.5) * r0.width, y: r0.top + (-p.y * 0.5 + 0.5) * r0.height }; };
+    const rect = (x0, x1, y0, y1, z) => { const pts = [scr(x0, y0, z), scr(x1, y0, z), scr(x0, y1, z), scr(x1, y1, z)];
+      const xs = pts.map((p) => p.x); const ys = pts.map((p) => p.y);
+      return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }; };
+    const mid0 = from + (to - from) * 0.2; const mid1 = from + (to - from) * 0.8;
+    const g0 = edgeX + inward * 6; const g1 = edgeX + inward * 26; const f0 = edgeX + inward * 60; const f1 = edgeX + inward * 120;
+    return { groove: rect(Math.min(g0, g1), Math.max(g0, g1), mid0, mid1, zFace), face: rect(Math.min(f0, f1), Math.max(f0, f1), mid0, mid1, zFace),
+      cast: mesh.castShadow, receive: mesh.receiveShadow }; })()`);
+  const seen = async (condition, file) => {
+    await page.sleep(1300);
+    const p = await patches();
+    const path = `${SHOTS}${file}`;
+    await page.screenshot(path);
+    if (!p) { check(`${condition}: the J leaf is drawn`, false); return; }
+    const png = decodePng(readFileSync(path));
+    const g = regionLuminance(png, p.groove);
+    const f = regionLuminance(png, p.face);
+    const contrast = f.mean ? Math.abs(f.mean - g.mean) / f.mean : 0;
+    check(`${condition}: the groove reads against its door (at least 10 % apart), and the door takes the scene's shadows`,
+      contrast >= 0.1 && p.cast && p.receive, `groove ${g.mean}, face ${f.mean}, ${Math.round(contrast * 1000) / 10} %`);
+  };
+  await page.press('[data-testid="view-front"]');
+  await seen('doors shut, front camera', 'f12-shut.png');
+  await page.press('[data-testid="view-open-all"]');
+  await page.sleep(1600);
+  await page.press('[data-testid="view-open-all"]');
+  await page.sleep(1600);
+  await seen('shut again (OPEN ALL twice)', 'f12-shut-again.png');
+  await roomView(page);
+  await orbit(page, 90, 0);
+  await seen('the room camera, after a real orbit', 'f12-orbit.png');
+  await page.close();
+}
+
+// ═══ F13 · THE FREE PANEL, "INSERT PANEL" ═════════════════════════════════
+if (runs('f13')) {
+  process.stdout.write('\n─── F13 · INSERT PANEL ───\n');
+  const page = await open();
+  await room(page);
+  await withWardrobe(page);
+  const panels = () => page.ask(`window.__cc.project.getState().units.filter((u) => u.type === 'FREE_PANEL')
+    .map((u) => ({ id: u.id, num: u.params.unit_num, x: u.position.x_mm, w: u.params.width, h: u.params.height, d: u.params.depth,
+      m: u.params.mount_height, facing: u.params.panel_facing, tilt: u.params.panel_tilt_deg }))`);
+  await page.press('[data-testid="cat-extras"]');
+  await page.press('[data-testid="extras-insert-panel"]');
+  await page.sleep(1500);
+  let fps = await panels();
+  const sel = await page.ask('JSON.stringify(window.__cc.ui.getState().selectedElement)');
+  check('INSERT PANEL (EXTRAS\' real button) puts one board in the room, selected, its menu on the right',
+    fps.length === 1 && /"FP"/.test(sel) && await page.has('[data-free-panel-orientation]'),
+    `${JSON.stringify(fps)}; selected ${sel}`);
+  // Its orientation, by the menu's own chip.
+  await page.press('[data-free-panel-facing="across"]');
+  await page.sleep(900);
+  fps = await panels();
+  check('a real click on ACROSS THE WALL turns it across the wall (a side, 18 wide, its length out into the room)',
+    fps[0].facing === 'across' && fps[0].w === 18 && fps[0].d === 800, JSON.stringify(fps[0]));
+  // A second one, laid flat.
+  await page.press('[data-testid="extras-insert-panel"]');
+  await page.sleep(1500);
+  await page.press('[data-free-panel-tilt-to="90"]');
+  await page.sleep(900);
+  fps = await panels();
+  const flat = fps.find((f) => f.tilt === 90);
+  check('a second INSERT PANEL, and HORIZONTAL lays it flat', fps.length === 2 && flat && flat.h === 18,
+    JSON.stringify(fps));
+  await roomView(page);
+  // Moved UP by its floor figure (the T73 F3 field): click, type, Enter.
+  if (flat) {
+    const fig = await figureAt(page, `free-panel-${flat.id}`, 'fp-floor');
+    if (!fig) {
+      check('the flat panel\'s floor figure is on the screen', false, 'not drawn in view');
+    } else {
+      await page.clickAt(fig.x, fig.y);
+      await page.sleep(500);
+      const field = await page.has('[data-spacing-field="fp-floor"]');
+      check('a real click on its floor figure opens the field', field);
+      if (field) {
+        await page.typeText('400');
+        await page.pressKey('Enter');
+        await page.sleep(1000);
+        const after = (await panels()).find((f) => f.id === flat.id);
+        check('typing 400 raises it 400 mm off the floor', after.m === 400, JSON.stringify(after));
+      }
+    }
+    await shot(page, 'f13-two-panels.png');
+    // THE PROPOSAL: a real drag of the flat panel toward the upright one; the
+    // store is READ each step to know when a drop would be caught.
+    const upright = (await panels()).find((f) => f.id !== flat.id);
+    const at = await reach(page, flat.id, 'FP');
+    if (!at) {
+      check('the flat panel is in reach of the pointer', false);
+    } else {
+      const drag = async ({ alt }) => {
+        const start = await reach(page, flat.id, 'FP');
+        await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y });
+        await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', clickCount: 1, buttons: 1 });
+        let proposal = null; let drawn = false; let x = start.x;
+        for (let i = 0; i < 200 && !proposal; i += 1) {
+          x -= 3;
+          await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y: start.y, button: 'left', buttons: 1 });
+          await page.sleep(60);
+          proposal = await page.ask(`window.__cc.project.getState().freePanelProposal(${JSON.stringify(flat.id)})`);
+        }
+        await page.sleep(300);
+        drawn = await page.ask(`(() => { let n = 0; window.__cc.views.room.scene.traverse((o) => { if (o.userData && o.userData.ccSnapProposal != null) n += 1; }); return n; })()`);
+        const before = (await panels()).find((f) => f.id === flat.id).x;
+        if (!alt) await shot(page, 'f13-snap-proposal.png');
+        await page.send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased', x, y: start.y, button: 'left', clickCount: 1, buttons: 0, modifiers: alt ? 1 : 0,
+        });
+        await page.sleep(900);
+        const after = (await panels()).find((f) => f.id === flat.id).x;
+        return { proposal, drawn, before, after };
+      };
+      const took = await drag({ alt: false });
+      check('dragged near the upright one, the scene draws the PROPOSAL (the panel stays under the hand)',
+        took.proposal && took.drawn > 0 && took.before !== took.proposal.left,
+        `proposal ${JSON.stringify(took.proposal)}; lines ${took.drawn}; x under the hand ${took.before}`);
+      check('…and the drop TAKES it: the panel is caught on the edge', took.proposal && Math.abs(took.after - took.proposal.left) < 0.6,
+        `x ${took.before} -> ${took.after}`);
+      // Brought back with Alt held on the drop.
+
+      const refused = await drag({ alt: true });
+      check('the same drag dropped with Alt held REFUSES it: the panel stays where the hand left it',
+        refused.proposal && Math.abs(refused.after - refused.before) < 0.6 && Math.abs(refused.after - refused.proposal.left) > 0.6,
+        `proposal ${JSON.stringify(refused.proposal)}; x ${refused.before} -> ${refused.after}`);
+      note('the upright panel it was caught on', JSON.stringify(upright));
+    }
+    // 2KLIK: PRO's own piece editor.
+    const board = await reach(page, flat.id, 'FP');
+    if (board) {
+      await page.dblclick(board.x, board.y);
+      await page.sleep(2500);
+      const open = await page.ask('window.__cc.ui.getState().modal || null');
+      check('a real 2klik on the board opens PRO\'s piece editor (the copied window)',
+        open === 'part-detail' && await page.has('[data-modal-name="part-detail"]'), `modal ${open}`);
+      await shot(page, 'f13-piece-editor.png');
+      await page.pressKey('Escape');
+      await page.sleep(600);
+    }
+  }
+  // MOVED ALONG THE WALL BY ITS LEFT FIGURE: a real drag first, so there is a
+  // gap to measure, then the figure clicked and 150 typed.
+  if (flat) {
+    const grab = await reach(page, flat.id, 'FP');
+    if (grab) await page.dragFromTo(grab.x, grab.y, grab.x + 60, grab.y, { steps: 10, modifiers: 1 });
+    await page.sleep(700);
+    const gapFig = await figureAt(page, `free-panel-${flat.id}`, 'fp-left');
+    if (!gapFig) {
+      check('its LEFT figure is on the screen once it stands clear of its neighbour', false, JSON.stringify((await panels()).find((f) => f.id === flat.id)));
+    } else {
+      const left = await page.ask(`(() => { const P = window.__cc.project.getState(); const u = P.units.find((x) => x.id === ${JSON.stringify(flat.id)});
+        return P.units.filter((x) => x.id !== u.id && (x.position.wall ?? 0) === (u.position.wall ?? 0))
+          .map((x) => x.position.x_mm + x.params.width + ((x.params.end_panels || []).some((e) => e.side === 'R') ? 18 : 0))
+          .filter((r) => r <= u.position.x_mm + 1e-6).reduce((a, b) => Math.max(a, b), 0); })()`);
+      await page.clickAt(gapFig.x, gapFig.y);
+      await page.sleep(500);
+      const field = await page.has('[data-spacing-field="fp-left"]');
+      if (field) {
+        await page.typeText('150');
+        await page.pressKey('Enter');
+        await page.sleep(900);
+      }
+      const moved = (await panels()).find((f) => f.id === flat.id);
+      check('a real click on its LEFT figure and 150 typed: it stands 150 mm clear of what is on its left',
+        field && Math.abs(moved.x - (left + 150)) < 0.6, `field ${field}; x ${moved.x}, left neighbour at ${left}`);
+    }
+  }
+  const cut = await page.ask(`window.__cc.project.getState().units.flatMap((u) => window.__cc.project.getState().unitResult(u.id).csvLines || []).filter((l) => /,FP,/.test(l))`);
+  check('the cut list carries each board, like any board', cut.length === 2, JSON.stringify(cut));
+  await page.close();
 }
 
 // ═══ THE LEDGER ═══════════════════════════════════════════════════════════

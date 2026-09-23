@@ -99,7 +99,10 @@ const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', '
  * click on a cabinet selects the CABINET.
  */
 export function isMainViewElement(panel) {
-  return isSelectableElement(panel) && ADDED_INTERIOR_KINDS.has(elementKind(panel));
+  // T74 F13 · a free panel is a piece a hand put in the room on purpose and
+  // moves by hand, as an added shelf is, so a click lands on the PIECE.
+  const kind = elementKind(panel);
+  return isSelectableElement(panel) && (ADDED_INTERIOR_KINDS.has(kind) || kind === 'free-panel');
 }
 
 /** An added-on piece: a door, a front, an end panel, a filler, a masking panel. */
@@ -157,6 +160,8 @@ export function elementKind(panel) {
     case 'MASK': return 'masking-panel';
     case 'FRONT': return 'door';
     case 'DRAWER-FRONT': return 'drawer-front';
+    // T74 F13 · the board of a free-standing panel.
+    case 'FREE-PANEL': return 'free-panel';
     default:
       // T54-F7: the SHOEBOX-* kind died with its world — a shoe is a
       // `variant:'shoe'` DRAWER now, so its boards answer as a drawer's do
@@ -184,6 +189,7 @@ const LABELS = {
   door: 'Door',
   'drawer-front': 'Drawer front',
   drawer: 'Drawer box',
+  'free-panel': 'Free-standing panel',
 };
 
 /** What each board of a drawer box is called, in a joiner's words. */
@@ -293,6 +299,12 @@ const FIELDS = {
   // clicks — so the drawer's height is edited on it as well as on its front.
   // One field id, one control, two places it can be reached from.
   drawer: ['drawer-height', 'runner-variant', 'watch-insert', 'material'],
+  // ─── T74 F13 · THE FREE PANEL ─────────────────────────────────────────────
+  // *"ustawia pion/poziom/każdą orientację, długość, grubość"*: its
+  // ORIENTATION (along or across the wall, upright or flat, or any lean
+  // between) and its SIZE (its two face sizes and its thickness), then what it
+  // is made of. Where it stands is moved by its distance figures in the room.
+  'free-panel': ['free-panel-orientation', 'free-panel-size', 'material'],
   // T54-F7: the shoe box's three decisions died with its world — a shoe is
   // a `variant:'shoe'` drawer and takes the DRAWER's fields above (its side
   // height is the 80 law and offers no field at all).
@@ -378,6 +390,9 @@ const ACTIONS = {
   infill: { remove: true, move: false, why: 'A filler IS the gap it closes.' },
   plinth: { remove: true, move: false, why: 'The toe kick runs the front of the run — its setback is a workshop number.' },
   'masking-panel': { remove: true, move: false, why: 'The board is the underside of the run — its depth is what hides the wall standoff.' },
+  // T74 F13 · the board IS its unit: it is moved by its distance figures in
+  // the room and taken out as the unit is, never nudged or hidden as a piece.
+  'free-panel': { remove: false, move: false, why: 'A free panel is its own unit: move it by its distance figures, delete it as a unit.' },
 };
 
 /**

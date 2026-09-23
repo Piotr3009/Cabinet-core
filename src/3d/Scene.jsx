@@ -45,7 +45,7 @@ import {
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useUiStore } from '../stores/uiStore.js';
-import { categoryOf } from '../engine/types.js';
+import { categoryOf, isFreePanel } from '../engine/types.js';
 // T37-F1: the piece selection spans cabinets; each unit gets its own members.
 import { refsForUnit } from '../lib/selection.js';
 import Ruler from './Ruler.jsx';
@@ -1307,6 +1307,12 @@ export default function Scene({
   const runElements = useProjectStore((s) => s.runElements);
   const moveUnit = useProjectStore((s) => s.moveUnit);
   const moveUnitToWall = useProjectStore((s) => s.moveUnitToWall);
+  // T74 F13 · a free panel's drag: moved with the silent magnet off, the catch
+  // a drop would take kept here (and drawn by its UnitView), the drop taking
+  // it or, with Alt held, refusing it.
+  const freePanelProposal = useProjectStore((s) => s.freePanelProposal);
+  const acceptFreePanelSnap = useProjectStore((s) => s.acceptFreePanelSnap);
+  const [snapProposal, setSnapProposal] = useState(null);
   const allResults = useProjectStore((s) => s.allResults);
   const wallGapsFor = useProjectStore((s) => s.wallGapsFor);
   // Turn 34 (CLAUDE.md F5): the merged meeting-line figure, and the per-unit
@@ -1703,7 +1709,21 @@ export default function Scene({
           // Turn 13 (F5.1): the modifier travels with the click — the SET is
           // built in the store, so the canvas only has to say what happened.
           onSelect={(opts) => selectUnit(unit.id, opts)}
-          onMove={(x, step) => moveUnit(unit.id, x, step)}
+          onMove={(x, step) => {
+            if (!isFreePanel(unit.type)) { moveUnit(unit.id, x, step); return; }
+            moveUnit(unit.id, x, step, { magnet: false });
+            const caught = freePanelProposal(unit.id);
+            setSnapProposal(caught ? { unitId: unit.id, ...caught } : null);
+          }}
+          onMoveEnd={isFreePanel(unit.type) ? ({ altKey, cancelled }) => {
+            if (!altKey && !cancelled) acceptFreePanelSnap(unit.id);
+            setSnapProposal(null);
+          } : null}
+          snapProposal={snapProposal?.unitId === unit.id ? snapProposal : null}
+          // T74 F13 · 2klik on a free panel: PRO's own piece editor.
+          onEditPart={(panelId, at) => openModal('part-detail', {
+            unitId: unit.id, panelId, at,
+          })}
           onMoveToWall={(wallIndex, x, step) => {
             const moved = moveUnitToWall(unit.id, wallIndex, x, step);
             if (moved?.error) notify(moved.error, 'warn');

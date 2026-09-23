@@ -9,6 +9,8 @@ import {
 import { getUnitType } from '../../../engine/types.js';
 // T52 (CLAUDE.md F5): which drawer ITEM the clicked drawer is.
 import { drawerItemOf, secondShoeItem } from '../../../engine/watchDrawer.js';
+// T74 F13 · a free panel's board, read off its params.
+import { freePanelOf } from '../../../engine/freePanel.js';
 import { doorExtendMm, doorHeightOf } from '../../../engine/doors.js';
 import { minDrawerFrontHeight } from '../../../engine/cabinet.js';
 import { drawerHeightValue, drawerRefOf } from '../../../engine/drawerRef.js';
@@ -1070,6 +1072,102 @@ export default function ElementProperties({
       // deliberately not a decor catalogue — and what it was missing is the
       // half a joiner actually recognises: the colour. Each option now carries
       // its own hex (engine/design.js), so the row shows what it means.
+      // ─── T74 F13 · THE FREE PANEL: HOW IT STANDS, AND ITS BOARD ─────────────
+      // *"Użytkownik wstawia panel, ustawia pion/poziom/każdą orientację,
+      // długość, grubość."*  Every number goes through `updateUnitParams`, which
+      // reads a free panel's sizes as its board (`engine/freePanel.js
+      // freePanelPatch`) and whose clamps speak when the room says no.
+      case 'free-panel-orientation': {
+        const facing = unit.params.panel_facing === 'across' ? 'across' : 'along';
+        const tilt = Number(unit.params.panel_tilt_deg) || 0;
+        const put = (patch) => {
+          const res = updateUnitParams(unit.id, patch);
+          for (const note of res?.notices || []) notify(note, 'warn');
+        };
+        return (
+          <div key={key} className="pbi-re-span-2 pbi-re-stack-1" data-free-panel-orientation={facing}>
+            <Field label="Faces">
+              <div className="pbi-re-row pbi-re-mid pbi-re-gap-1">
+                {[['along', 'Along the wall'], ['across', 'Across the wall']].map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    className={`pbi-re-btn pbi-re-px2 pbi-re-t11 ${facing === id ? 'pbi-re-hair-gold pbi-re-ink' : ''}`}
+                    data-free-panel-facing={id}
+                    aria-pressed={facing === id}
+                    onClick={() => put({ panel_facing: id })}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </Field>
+            <Field label="Stands">
+              <div className="pbi-re-row pbi-re-mid pbi-re-gap-1">
+                {[[0, 'Vertical'], [90, 'Horizontal']].map(([deg, label]) => (
+                  <button
+                    key={deg}
+                    type="button"
+                    className={`pbi-re-btn pbi-re-px2 pbi-re-t11 ${tilt === deg ? 'pbi-re-hair-gold pbi-re-ink' : ''}`}
+                    data-free-panel-tilt-to={deg}
+                    aria-pressed={tilt === deg}
+                    onClick={() => put({ panel_tilt_deg: deg })}
+                  >
+                    {label}
+                  </button>
+                ))}
+                <NumberField
+                  className="pbi-re-input pbi-re-right"
+                  data-free-panel-tilt="1"
+                  min={0}
+                  max={90}
+                  value={tilt}
+                  title="Any angle between: 0 stands it upright, 90 lays it flat"
+                  onCommit={(v) => put({ panel_tilt_deg: v })}
+                />
+              </div>
+            </Field>
+          </div>
+        );
+      }
+      case 'free-panel-size': {
+        const board = freePanelOf(unit.params, profile);
+        const put = (patch) => {
+          const res = updateUnitParams(unit.id, patch);
+          for (const note of res?.notices || []) notify(note, 'warn');
+        };
+        return (
+          <div key={key} className="pbi-re-span-2 pbi-re-stack-1" data-free-panel-size="1">
+            <Field label="Length">
+              <NumberField
+                className="pbi-re-input pbi-re-right"
+                data-free-panel-length="1"
+                min={1}
+                value={board.length}
+                onCommit={(v) => put({ panel_length: v })}
+              />
+            </Field>
+            <Field label="Width">
+              <NumberField
+                className="pbi-re-input pbi-re-right"
+                data-free-panel-width="1"
+                min={1}
+                value={board.width}
+                onCommit={(v) => put({ panel_width: v })}
+              />
+            </Field>
+            <Field label="Thickness">
+              <NumberField
+                className="pbi-re-input pbi-re-right"
+                data-free-panel-thickness="1"
+                min={1}
+                value={board.thickness}
+                onCommit={(v) => put({ board_t: v })}
+              />
+            </Field>
+          </div>
+        );
+      }
       case 'material':
         return (
           <Field key={key} label="Material">
@@ -1165,7 +1263,9 @@ export default function ElementProperties({
           socket is on its centre line. One board for all four, or the joint does not go together.
         </p>
       )}
-      {!fields.includes('material') && (
+      {/* T74 F13 · …never under a free panel: it is built from nothing but
+          itself, and the sentence would send a client to a stack it has not. */}
+      {!fields.includes('material') && !fields.includes('free-panel-size') && (
         <p className="pbi-re-t11 pbi-re-quiet">
           This piece is built from the drawers under it. Change the stack to change the piece.
         </p>

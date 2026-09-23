@@ -1394,6 +1394,22 @@ function ExtrasPanel({ unit, project }) {
           </div>
         </Field>
 
+        {/* ─── T74 F13 · INSERT PANEL ────────────────────────────────────────
+            *"SWOBODNY PANEL (wstaw panel)."*  One board into the room, through
+            the store's own `addUnit`; its menu opens on the right. */}
+        <Field label="FREE PANEL" note={REASONS.panelGoesIn}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-insert-panel"
+              onClick={() => setSaid(A.insertPanel().said)}
+            >
+              INSERT PANEL
+            </Button>
+          </div>
+        </Field>
+
         {said ? <Said testid="layout-said">{said}</Said> : null}
       </Group>
 

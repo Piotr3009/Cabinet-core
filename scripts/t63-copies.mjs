@@ -76,7 +76,18 @@ export const T65_COPIES = [
   { pro: 'src/components/ContextMenu.jsx', retail: 'src/retail/design/detail/ContextEdits.jsx', why: 'F8 · cornice, top infill, end panels and the bottom mask, with their refusals' },
 ];
 
-export const ALL_COPIES = [...T62_COPIES, ...T63_COPIES, ...T65_COPIES];
+// ─── TURN 74 · F13 · THE PIECE EDITOR, FOR THE FREE PANEL ──────────────────
+//
+// The owner, 23.09.2026: *"Dwuklik = wejście w edycję jak w PRO (wycięcie łuku
+// itp.)."*  CLAUDE.md T74 F13: *"2klik opens PRO's own piece editing (the arc
+// cut and the rest), copied, not rewritten."*  So PRO's `PartDetailModal` is
+// copied by this machine, like every surface above: its imports repointed, its
+// classes reskinned, nothing else.
+export const T74_COPIES = [
+  { pro: 'src/components/PartDetailModal.jsx', retail: 'src/retail/design/detail/PartDetailModal.jsx', why: 'T74 F13 · the free panel\'s 2klik: PRO\'s own piece editor (the arc, the line, the drill)' },
+];
+
+export const ALL_COPIES = [...T62_COPIES, ...T63_COPIES, ...T65_COPIES, ...T74_COPIES];
 
 /** The retail path a PRO component copies to, or null where it is not copied. */
 export function retailCopyOf(proPath) {

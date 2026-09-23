@@ -126,9 +126,10 @@ test('F3 · MENU_FOR_KIND sends the carcass kinds to NOTHING, by name', () => {
   ]) {
     assert.equal(A.MENU_FOR_KIND[kind], undefined, `${kind} still opens a wardrobe menu`);
   }
-  // …and the five that DO edit an element are still there, with T72 F1's sixth.
+  // …and the five that DO edit an element are still there, with T72 F1's sixth
+  // and T74 F13's seventh (the free-standing panel's board).
   assert.deepEqual(Object.keys(A.MENU_FOR_KIND).sort(),
-    ['door', 'drawer', 'drawer-front', 'end-panel', 'partition', 'shelf']);
+    ['door', 'drawer', 'drawer-front', 'end-panel', 'free-panel', 'partition', 'shelf']);
 });
 
 // ═══ 2 · WHAT IS DOCKED IS THE COPY, NOT A RE-WRITE ════════════════════════

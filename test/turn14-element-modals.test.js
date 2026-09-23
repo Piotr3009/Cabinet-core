@@ -123,6 +123,12 @@ test('F4.3 — every wall-unit LIBRARY entry resolves to a type that carries doo
       assert.equal(type.doorExtend, false, `${e.typeId} must not run below an open aperture`);
       continue;
     }
+    // T74 F13 · the free panel is `mount: 'wall'` for its HEIGHT alone (the
+    // field a hung unit's height lives in); it is one board, with no door.
+    if (type.freePanel) {
+      assert.equal(type.doorExtend, false, `${e.typeId} has no door to extend`);
+      continue;
+    }
     assert.equal(type.doorExtend, true,
       `library entry "${e.id}" → ${e.typeId} lost the handleless grab edge`);
   }
@@ -132,6 +138,7 @@ test('F4.3 — every wall-unit LIBRARY entry resolves to a type that carries doo
     const type = getUnitType(id);
     if (type.mount !== 'wall') continue;
     if (type.appliance === 'extractor') continue;   // turn 31 F9, above
+    if (type.freePanel) continue;                   // T74 F13, above
     // ─── TURN 36 (CLAUDE.md F7): THE SECOND HONEST EXCEPTION ──────────────
     // A TOP BOX is `mount: 'wall'` for one reason only — that is the field
     // this app puts a hung unit's HEIGHT in, and a top box's height is its

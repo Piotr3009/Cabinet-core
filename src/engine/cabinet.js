@@ -20,6 +20,8 @@
 // differs per kit is a flag in engine/types.js, never a second copy of the
 // carcass arithmetic.
 
+// T74 F13 · the free panel's board and where it stands.
+import { freePanelOf, freePanelPlacement } from './freePanel.js';
 import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
@@ -1199,7 +1201,11 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
  * drawer box. They live inside a carcass or behind a door — the workshop cuts
  * them from finished board and they never reach the spray booth.
  */
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask']);
+// T74 F13 adds `free_panel`: a board standing free in the room is seen on
+// both faces and all four edges. It is cut from the carcass board (it is a
+// board the client builds with, not a door), so it does NOT join the front
+// material below.
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -2996,6 +3002,34 @@ export function computeCabinet(params, profileOverride) {
       edgeCode: codes.right, edgeLen: metres(W),
       box: { x: 0, y: H - G, z: G, w: W, h: G, d: topH },
       cnc: { rotated: true, drawn_w: topH, drawn_h: W, ...rectGeometry(topH, W) },
+    }));
+  }
+  // ─── T74 F13 · THE FREE PANEL: ONE BOARD, STANDING FREE ────────────────
+  //
+  // *"SWOBODNY PANEL (wstaw panel). Użytkownik wstawia panel, ustawia
+  // pion/poziom/każdą orientację, długość, grubość."*  The kit declares its
+  // whole carcass as this one board (`top: 'free'`), exactly as the D/W
+  // declares its rail. Its length along the wall, its width and the board's
+  // thickness are the cut; its lean is where it stands (`engine/freePanel.js`
+  // puts it in the box the unit states). All four edges are seen, so all four
+  // are banded; nothing joins to it, so it carries no pocket and no hole, and
+  // what the piece editor draws on it (an arc, a drill) is added the way it is
+  // added to any board (`applyPartEdits`).
+  if (type.carcass.top === 'free') {
+    const fp = freePanelOf({ ...params, width: W, height: H, depth: D, board_t: G }, P);
+    const at = freePanelPlacement(fp);
+    panels.push(panel({
+      id: 'FP', part: 'FREE-PANEL', role: 'free_panel', w: fp.length, h: fp.width, thickness: G,
+      edgeCode: codes.all, edgeLen: metres(2 * (fp.length + fp.width)),
+      box: at.box,
+      cnc: { rotated: false, drawn_w: fp.length, drawn_h: fp.width, ...rectGeometry(fp.length, fp.width) },
+      meta: {
+        facing: fp.facing,
+        tilt: fp.tilt,
+        ...(at.tilt ? {
+          tilt_deg: at.tilt.deg, tilt_pivot: at.tilt.pivot, ...(at.tilt.axis ? { tilt_axis: at.tilt.axis } : {}),
+        } : {}),
+      },
     }));
   }
   if (hasBottom) {

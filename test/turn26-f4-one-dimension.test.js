@@ -102,6 +102,10 @@ test('R11 — every remaining `DimLabel` in the scene is a CHIP, and it is named
       + 'many words that turn 25’s magnet stays, and its chip with it',
       'the dragged shelf’s own stored height, the magnet chip’s pair: a live '
       + 'readout of a field, beside the piece, for the length of the drag',
+      // T74 F13 · the free panel's SNAP PROPOSAL: not a measurement, it names
+      // the edge a drop would catch and the key that refuses it.
+      'the free panel’s snap PROPOSAL while it is in the hand: what a drop would '
+      + 'catch, and that Alt refuses it (T74 F13). A sentence, not a dimension',
     ],
     '3d/Room.jsx': [
       'a WALL’s width — the room’s own caption, on the wall. A wall has no front '

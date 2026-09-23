@@ -22,8 +22,11 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, isWardrobeWallUnit, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, isFreePanel, isWardrobeWallUnit, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
+// T74 F13 · the free panel's own arithmetic: a size read as meant, the board
+// kept one with its box, and where a drop would be caught.
+import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 // T37-F4a: `bandSegmentAt`/`bandSegments` — a split divider is an END of the
@@ -349,6 +352,10 @@ function newUnit(typeId, profile, index, design) {
       ...(takesPlinth(type.id, profile) ? { plinth: true } : {}),
       sections: [{ width_mm: params.width, items }],
       materials: {},
+      // T74 F13 · a free panel's box is its board's: it is cut from the job's
+      // board (`board_t` above), so its box is worked out at that thickness.
+      ...(type.freePanel ? freePanelPatch({ ...params, board_t: projectBoardThickness(design, profile) },
+        { board_t: projectBoardThickness(design, profile) }, profile) : {}),
     },
   };
 }
@@ -440,7 +447,9 @@ function projectHeightParams(type, design, profile) {
   const group = type.heightGroup ?? null;
   return {
     ...(group ? { height: heights[group], height_custom: false } : { height_custom: false }),
-    ...(type.mount === 'wall' ? { mount_height: heights.wallMount } : {}),
+    // T74 F13 · …but a free panel hangs at the height it is given (its own
+    // default, the floor): it is not a wall unit of the project's.
+    ...(type.mount === 'wall' && !type.freePanel ? { mount_height: heights.wallMount } : {}),
     // ─── Turn 22 (CLAUDE.md F4.2) ───
     // A plinth-bearing type gets the project's toe kick whether or not it has
     // legs. The D/W panel has none — the machine stands where they would be —
@@ -4305,7 +4314,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         wallMargin: wallMarginOf(state, unit),
         others: [
           ...state.units
-            .filter((u) => (u.position.wall ?? 0) === wall.index && obstructs(unit, u, profile))
+            .filter((u) => (u.position.wall ?? 0) === wall.index && (obstructs(unit, u, profile)
+              // T74 F13 · free panels do not hold each other off, but a new
+              // one asked to go BESIDE one still goes beside it, not on it.
+              || (onThisWall && u.id === beside.id)))
             .map(unitSpan),
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
@@ -4696,6 +4708,51 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   }),
 
   /**
+   * ─── T74 F13 · THE SNAP, AS A PROPOSAL ─────────────────────────────────────
+   *
+   * The owner: *"Przyciąganie (snap) jako PROPOZYCJA, nie na siłę, zawsze do
+   * odrzucenia."*  Where the free panel, standing where it stands, WOULD be
+   * caught: the nearest edge of anything else on its wall within the unit
+   * magnet (`editor.unitMagnet`) of either of its own edges. Nothing moves
+   * here. The drag shows the line; the drop takes it (`acceptFreePanelSnap`)
+   * unless the hand refuses it.
+   *
+   * @returns {{left:number, at:number, edge:'left'|'right', label:string|null}|null}
+   */
+  freePanelProposal: (unitId) => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit || !isFreePanel(unit.type)) return null;
+    const profile = getCabinetProfile();
+    const wall = unit.position?.wall ?? 0;
+    const edges = [];
+    for (const u of s.units) {
+      if (u.id === unit.id || (u.position?.wall ?? 0) !== wall) continue;
+      const sp = unitSpan(u);
+      const label = u.params?.unit_num || u.id;
+      edges.push({ at: sp.left, label }, { at: sp.right, label });
+    }
+    return freePanelSnap({
+      left: Number(unit.position?.x_mm) || 0,
+      width: Number(unit.params?.width) || 0,
+      edges,
+      magnet: profile.editor?.unitMagnet ?? 40,
+    });
+  },
+
+  /**
+   * T74 F13 · the drop TAKES the proposal: the panel moves to it, through
+   * `moveUnit` with the silent magnet off (the proposal is the only catch).
+   * The hand that refuses simply does not call this.
+   */
+  acceptFreePanelSnap: (unitId) => {
+    const proposal = get().freePanelProposal(unitId);
+    if (!proposal) return null;
+    get().moveUnit(unitId, proposal.left, 0.5, { magnet: false });
+    return proposal;
+  },
+
+  /**
    * ─── T74 F7 · THE WALL UNIT'S DEPTH, ALIGNED TO THE BACK OR TO THE FRONT ──
    *
    * The owner: *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość
@@ -5061,11 +5118,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{applied:object, notices:string[]}}
    */
-  updateUnitParams: (unitId, patch) => runBatch(() => {
+  updateUnitParams: (unitId, asked) => runBatch(() => {
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { applied: {}, notices: [] };
     const profile = getCabinetProfile();
+    // ─── T74 F13 · A SIZE TYPED ON A FREE PANEL, READ AS IT WAS MEANT ───────
+    // Its box and its board are one: a width, a height or a depth typed on it
+    // (by any door: the size window, its own fields) is turned into the board
+    // it describes and the box that board fills, before any clamp runs.
+    const freeWanted = isFreePanel(unit.type) && FREE_PANEL_KEYS.some((k) => asked?.[k] != null)
+      ? freePanelPatch(unit.params, asked, profile)
+      : null;
+    const patch = freeWanted || asked;
     const walls = roomWalls(s.project.room);
     const wallIndex = unit.position.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
@@ -5212,6 +5277,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (patch.height_custom === undefined) applied.height_custom = true;
     }
 
+    // ─── T74 F13 · …AND IF THE ROOM CLAMPED ITS BOX, THE BOARD FOLLOWS ─────
+    // The clamps above spoke (their notices say by what); the board is then
+    // re-read from the box it was given, so a free panel is never drawn or cut
+    // bigger than the space the room let it have.
+    if (freeWanted && ['width', 'height', 'depth'].some((k) => applied[k] != null
+      && Math.abs(Number(applied[k]) - Number(freeWanted[k])) > 1e-6)) {
+      Object.assign(applied, freePanelFit({ ...unit.params, ...freeWanted }, applied, profile));
+    }
     set((st) => ({
       units: st.units.map((u) => {
         if (u.id !== unitId) return u;
@@ -8928,8 +9001,15 @@ function bandOf(unit, profile = getCabinetProfile()) {
  * was not — see engine/collision.js.
  */
 function obstructs(unit, other, profile = getCabinetProfile()) {
+  // T74 F13 · two free panels MEET: *"Z paneli można złożyć własną figurę
+  // (np. box)."*  A box is four boards touching and crossing at its corners,
+  // so a free panel never holds another off. Anything else still does.
+  if (isFreePanel(unit?.type) && isFreePanel(other?.type)) return false;
   return bandsOverlap(bandOf(unit, profile), bandOf(other, profile), profile.editor.levelOverlapMm);
 }
+
+/** T74 F13 · the keys a size edit of a free panel is read through (`freePanelPatch`). */
+const FREE_PANEL_KEYS = ['width', 'height', 'depth', 'panel_width', 'panel_length', 'panel_tilt_deg', 'panel_facing', 'board_t'];
 
 /**
  * ─── TURN 51 (CLAUDE.md F1): EVERYTHING THE PLAN PUTS IN THE WAY ───────────
@@ -9032,7 +9112,9 @@ function toObstacleUnit(u) {
  */
 function alignedMountFor(state, unit, placed, prefer = null) {
   const type = getUnitType(unit.type);
-  if (type.mount !== 'wall') return null;
+  // T74 F13 · a free panel hangs at the height it is given (the floor, new),
+  // never lined up with a tall unit's top the way a wall unit is.
+  if (type.mount !== 'wall' || type.freePanel) return null;
   const profile = getCabinetProfile();
   const span = { left: placed.x, right: placed.x + (Number(unit.params.width) || 0) };
   const talls = state.units.filter((u) => (u.position?.wall ?? 0) === placed.wall

@@ -171,6 +171,9 @@ function levelGroups(units, profile) {
     const rotation = (((Number(unit.position?.rotation_deg) || 0) % 360) + 360) % 360;
     if (rotation !== 0) continue;
     const type = getUnitType(unit.type);
+    // T74 F13 · a free panel is a board standing in the room, not a cabinet
+    // of a run: no run shares a plinth, a cornice or a mask with it.
+    if (type.freePanel) continue;
     const wall = unit.position?.wall ?? 0;
     // Rounded to a tenth: two units on the same project height differ by
     // nothing, and floating point should not be able to split a run.

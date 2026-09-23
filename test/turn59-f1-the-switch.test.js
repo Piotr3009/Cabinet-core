@@ -97,7 +97,10 @@ const EXEMPT = {
   'src/components/ElementProperties.jsx':
     'T74 F6 · the SECOND shoe drawer\'s own height is shown, not edited: it is set by its '
     + 'MOUNTING HEIGHT (its drag and its clickable distance, one clamp). *"Regulacja = '
-    + 'WYSOKOŚĆ MONTAŻU, nie wysokość szuflady."* Before that, T72 F2 · `shelf-type` becomes '
+    + 'WYSOKOŚĆ MONTAŻU, nie wysokość szuflady."* T74 F13 · the FREE PANEL\'s two rows, '
+    + 'how it stands (along or across the wall; vertical, horizontal or any angle) and its '
+    + 'board (length, width, thickness), each through `updateUnitParams`. *"ustawia '
+    + 'pion/poziom/każdą orientację, długość, grubość."* Before that, T72 F2 · `shelf-type` becomes '
     + 'two chips and SET BACK FROM THE FRONT gains `20 mm` | `Flush` beside its field; F3 · '
     + 'CENTER ALL at the bottom of the shelf menu; F6 · the board picker carries '
     + '`data-board-thickness` so the room\'s sheet can name what it hides instead of taking '
@@ -201,7 +204,7 @@ const FROZEN = {
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/ElementProperties.jsx': '192948a97930d14a9ce9674f378c3e07b1d763924c43afe61fdecc74b7035c40',
+  'src/components/ElementProperties.jsx': '12cbeb62e1dc609f8b1a6013e891ec8abea4a2302bae5fed0094371afe68cee3',
   'src/components/FrontGapModal.jsx': '9c2218d7f62684c2efe283df871af6a41df89152c674e093f3f721659524d4d5',
   'src/components/FrontGapWarnings.jsx': '84051f4e5178faf481c8c9f8a699576435a86e6f7138f94831748cac42f2433a',
   'src/components/FrontStyleGallery.jsx': '96ac40d58f9a1016d23256bcd95f6d1e037bfde609d4e17a9bf9f93c6127ed5e',

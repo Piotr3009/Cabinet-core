@@ -54,20 +54,22 @@ export async function open({ width = 1440, height = 900 } = {}) {
     await page.sleep(700);
   };
   /** A REAL drag: pressed at one pixel, moved in steps, released at another. */
-  page.dragFromTo = async (x0, y0, x1, y1, { steps: n = 14, button = 'left' } = {}) => {
+  // `modifiers` (CDP's bits: 1 Alt, 2 Ctrl, 4 Meta, 8 Shift) are held for the
+  // whole gesture, the drop included.
+  page.dragFromTo = async (x0, y0, x1, y1, { steps: n = 14, button = 'left', modifiers = 0 } = {}) => {
     const buttons = button === 'right' ? 2 : 1;
-    await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x0, y: y0 });
+    await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: x0, y: y0, modifiers });
     await page.send('Input.dispatchMouseEvent', {
-      type: 'mousePressed', x: x0, y: y0, button, clickCount: 1, buttons,
+      type: 'mousePressed', x: x0, y: y0, button, clickCount: 1, buttons, modifiers,
     });
     for (let i = 1; i <= n; i += 1) {
       const x = x0 + ((x1 - x0) * i) / n;
       const y = y0 + ((y1 - y0) * i) / n;
-      await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button, buttons });
+      await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, button, buttons, modifiers });
       await page.sleep(35);
     }
     await page.send('Input.dispatchMouseEvent', {
-      type: 'mouseReleased', x: x1, y: y1, button, clickCount: 1, buttons: 0,
+      type: 'mouseReleased', x: x1, y: y1, button, clickCount: 1, buttons: 0, modifiers,
     });
     await page.sleep(900);
   };
@@ -160,10 +162,16 @@ export const FIND = `(function (unitId, panelId, opts) {
   const ray = new T.Raycaster();
   const toPx = (nx, ny) => ({ x: r.left + (nx * 0.5 + 0.5) * r.width, y: r.top + (-ny * 0.5 + 0.5) * r.height });
   const toNdc = (px, py) => new T.Vector2(((px - r.left) / r.width) * 2 - 1, -(((py - r.top) / r.height) * 2 - 1));
+  // A dimension's pick box is invisible but it TAKES the click (the size and
+  // spacing figures), so a pixel behind one is not a pixel on the piece.
+  const isPick = (o) => { for (let a = o; a; a = a.parent) { if (a.userData && a.userData.ccDimensionPick != null) return true; } return false; };
   const firstAt = (ndc) => {
     ray.setFromCamera(ndc, v.camera);
-    const hits = ray.intersectObjects(v.scene.children, true).filter((h) => h.object.isMesh && !hidden(h.object));
-    return hits.length ? hits[0].object : null;
+    const all = ray.intersectObjects(v.scene.children, true).filter((h) => h.object.isMesh);
+    const hits = all.filter((h) => !hidden(h.object));
+    if (!hits.length) return null;
+    if (all.some((h) => isPick(h.object) && h.distance < hits[0].distance)) return null;
+    return hits[0].object;
   };
   const N = (opts && opts.grid) || 36; const good = [];
   for (let i = 1; i < N; i += 1) for (let j = 1; j < N; j += 1) {
@@ -239,3 +247,28 @@ export async function reach(page, unitId, panelId, opts = {}) {
   return null;
 }
 
+
+/**
+ * A panel's box in its UNIT's own frame, in millimetres, off the live scene:
+ * the mesh's world box corners taken back through the unit group's inverse.
+ * x along the unit, y up from its origin, z out from the wall toward the room.
+ * (The probe script's `LOCAL_BOX`, shared here for the walk.)
+ */
+export const localBox = (page, unitId, panelId) => page.ask(`(function (unitId, panelId) {
+  const v = window.__cc.views.room; const T = v.three; let mesh = null; let unit = null;
+  v.scene.traverse((o) => { if (o.userData && o.userData.ccUnitId === unitId) unit = o; });
+  if (!unit) return null;
+  unit.traverse((o) => { if (!mesh && o.isMesh && o.userData && o.userData.ccPanelId === panelId) mesh = o; });
+  if (!mesh) return null;
+  unit.updateMatrixWorld(true);
+  const inv = new T.Matrix4().copy(unit.matrixWorld).invert();
+  if (!mesh.geometry.boundingBox) mesh.geometry.computeBoundingBox();
+  const b = mesh.geometry.boundingBox; const lo = [Infinity, Infinity, Infinity]; const hi = [-Infinity, -Infinity, -Infinity];
+  for (const x of [b.min.x, b.max.x]) for (const y of [b.min.y, b.max.y]) for (const z of [b.min.z, b.max.z]) {
+    const p = new T.Vector3(x, y, z).applyMatrix4(mesh.matrixWorld).applyMatrix4(inv);
+    const q = [p.x * 1000, p.y * 1000, p.z * 1000];
+    for (let i = 0; i < 3; i += 1) { lo[i] = Math.min(lo[i], q[i]); hi[i] = Math.max(hi[i], q[i]); }
+  }
+  const r = (n) => Math.round(n * 10) / 10;
+  return { x: [r(lo[0]), r(hi[0])], y: [r(lo[1]), r(hi[1])], z: [r(lo[2]), r(hi[2])] };
+})(${JSON.stringify(unitId)}, ${JSON.stringify(panelId)})`);

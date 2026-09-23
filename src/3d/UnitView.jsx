@@ -1069,6 +1069,13 @@ export default function UnitView({
   // height, through the store's own `setDrawerMount` (the clickable figure's
   // setter too). Default null: a view nobody gave it to drags nothing new.
   onMoveDrawer = null,
+  // T74 F13 · a free panel: its board opens in the piece editor on a 2klik
+  // (`onEditPart`), its drag ends in `onMoveEnd({ altKey })` (the drop takes or
+  // refuses the snap), and `snapProposal` is the catch a drop would take, drawn
+  // as a line while the hand is still moving. All three default to nothing.
+  onEditPart = null,
+  onMoveEnd = null,
+  snapProposal = null,
   orbitRef, showLabels = true, shelfDrag = null, openFronts = null, onToggleFront, onFocus, onContextMenu,
   // TURN 40 (CLAUDE.md F4c): { panelId, atMm } — fly to THAT piece.
   focusPanel = null, onFocusPanelDone = null,
@@ -1290,19 +1297,22 @@ export default function UnitView({
       if (!p) return;
       onMove(alongMm(p) - drag.current.offset, snapStep);
     };
-    const up = () => {
+    const up = (ev) => {
       drag.current = null;
       setDragging(false);
       if (orbitRef?.current) orbitRef.current.enabled = true;
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
+      // T74 F13 · the DROP decides the proposal: taken, or refused with Alt
+      // held (a cancelled pointer refuses it too).
+      onMoveEnd?.({ altKey: Boolean(ev?.altKey), cancelled: ev?.type === 'pointercancel' });
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
   }, [onSelect, pointerToPlane, alongMm, unit.position.x_mm, unit.position.wall, orbitRef,
-    onMove, onMoveToWall, pointerToFloor, walls, snapStep, W]);
+    onMove, onMoveEnd, onMoveToWall, pointerToFloor, walls, snapStep, W]);
 
   // Cabinet origin: on its wall, back against it (local z = 0 is the wall
   // face), standing on its legs or hanging at its mount height.
@@ -2459,6 +2469,15 @@ export default function UnitView({
                 onEditDrawer(p.meta.drawer, { x: e.clientX, y: e.clientY });
                 return;
               }
+              // ─── T74 F13 · 2KLIK ON A FREE PANEL IS PRO'S PIECE EDITOR ───────
+              // *"Dwuklik = wejście w edycję jak w PRO (wycięcie łuku itp.)."*
+              // The board opens in the piece editor itself (the arc, the line,
+              // the drill), the very window PRO's cabinet editor opens.
+              if (p.part === 'FREE-PANEL' && onEditPart) {
+                onSelectElement?.(p.id);
+                onEditPart(p.id, { x: e.clientX, y: e.clientY });
+                return;
+              }
               if (opensModal && onEditElement) {
                 onSelectElement?.(p.id);
                 onEditElement(p.id, { x: e.clientX, y: e.clientY });
@@ -2643,6 +2662,23 @@ export default function UnitView({
           <DimLabel
             position={[mm(W / 2), mm(magnetLine) + 0.05, mm(D) + 0.1]}
             text={formatMm(fieldFromPos(magnetLine, G), { unit: true })}
+            tone="gold"
+          />
+        </group>
+      )}
+
+      {/* ─── T74 F13 · THE SNAP, SHOWN AS A PROPOSAL ─────────────────────────
+          *"Przyciąganie (snap) jako PROPOZYCJA, nie na siłę, zawsze do
+          odrzucenia."*  While a free panel is in the hand, the edge a drop
+          would catch is drawn upright where it is, in the magnet's gold; the
+          panel itself stays under the hand. The drop takes it, and the drop
+          with Alt held refuses it. */}
+      {snapProposal && !contour && (
+        <group userData={{ ccHelper: true, ccSnapProposal: snapProposal.at }}>
+          <UprightGuide x={snapProposal.at - (Number(unit.position.x_mm) || 0)} height={H} depth={D} />
+          <DimLabel
+            position={[mm(snapProposal.at - (Number(unit.position.x_mm) || 0)), mm(H) + 0.08, mm(D) + 0.05]}
+            text={`Snap to ${snapProposal.label || 'the edge'} · Alt refuses`}
             tone="gold"
           />
         </group>
@@ -3252,6 +3288,29 @@ function SlopeGhost({ points, depth }) {
  * HELPER: `ccHelper` keeps it out of the bounds the camera frames and out of
  * every render and screenshot that asks for the furniture alone.
  */
+/**
+ * T74 F13 · the proposal's line: DashedGuide stood on end, at `x` in the
+ * unit's frame, from under the board to over it, on its front face.
+ */
+function UprightGuide({ x, height, depth, overhang = 120 }) {
+  const line = useRef(null);
+  const geometry = useMemo(() => {
+    const g = new THREE.BufferGeometry();
+    g.setFromPoints([
+      new THREE.Vector3(mm(x), mm(-overhang), mm(depth) + 0.02),
+      new THREE.Vector3(mm(x), mm(height + overhang), mm(depth) + 0.02),
+    ]);
+    return g;
+  }, [x, height, depth, overhang]);
+  useLayoutEffect(() => { line.current?.computeLineDistances(); }, [geometry]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  return (
+    <line ref={line} geometry={geometry}>
+      <lineDashedMaterial color="#c8a24a" dashSize={mm(24)} gapSize={mm(16)} depthTest={false} transparent opacity={0.95} />
+    </line>
+  );
+}
+
 function DashedGuide({ y, width, depth, overhang = 120 }) {
   const line = useRef(null);
   const geometry = useMemo(() => {

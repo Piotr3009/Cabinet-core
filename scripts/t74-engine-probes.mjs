@@ -13,7 +13,7 @@
 //
 //   node scripts/t74-engine-probes.mjs [--suffix -after] [f6 f9 f10 f13]
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 import { computeCabinet } from '../src/engine/cabinet.js';
 import { defaultParamsFor, UNIT_TYPE_ORDER, UNIT_CATEGORIES } from '../src/engine/types.js';
@@ -229,8 +229,31 @@ if (runs('f13')) {
     { question: 'a unit type that is ONE free board', answer: UNIT_TYPE_ORDER.filter((t) => /FREE/.test(t)).join(', ') || '(none): the nearest is `DW_PANEL`, a dishwasher\'s front rail, which belongs to its gap' },
     { question: 'the library\'s free-standing panel row', answer: JSON.stringify(extras.map((e) => ({ id: e.id, kind: e.kind }))) },
     { question: 'the wardrobe category', answer: JSON.stringify(UNIT_CATEGORIES.find((c) => c.id === 'wardrobe')?.types) },
-    { question: 'the piece editor with the arc (PRO)', answer: '`src/components/PartDetailModal.jsx`, reached only from the cabinet editor (`CabinetEditorModal`), never by a 2klik in the room; no retail copy' },
-    { question: 'a room snap that PROPOSES (shows a line, can be refused)', answer: 'none: the unit magnet (`collision.js clampUnitX`, 40 mm) snaps silently; `moveUnit` takes `{ magnet: false }` but no gesture reaches it' },
+    // After the build these two are ASKED of the code, not written: a 2klik
+    // route to the piece editor in the room, its retail copy in the manifest,
+    // and a store proposal a drop may take or refuse.
+    (() => {
+      const view = readFileSync(new URL('../src/3d/UnitView.jsx', import.meta.url), 'utf8');
+      const manifest = readFileSync(new URL('./t63-copies.mjs', import.meta.url), 'utf8');
+      const room = /onEditPart\(p\.id/.test(view);
+      const copy = /retail\/design\/detail\/PartDetailModal\.jsx/.test(manifest);
+      return {
+        question: 'the piece editor with the arc (PRO)',
+        answer: room || copy
+          ? `\`src/components/PartDetailModal.jsx\`; a 2klik on a free panel in the room opens it: ${room}; its retail copy is in the manifest: ${copy}`
+          : '`src/components/PartDetailModal.jsx`, reached only from the cabinet editor (`CabinetEditorModal`), never by a 2klik in the room; no retail copy',
+      };
+    })(),
+    (() => {
+      const store = readFileSync(new URL('../src/stores/projectStore.js', import.meta.url), 'utf8');
+      const proposes = /freePanelProposal: \(unitId\) =>/.test(store) && /acceptFreePanelSnap: \(unitId\) =>/.test(store);
+      return {
+        question: 'a room snap that PROPOSES (shows a line, can be refused)',
+        answer: proposes
+          ? 'a free panel\'s drag: `freePanelProposal` names the edge a drop would catch (40 mm, `editor.unitMagnet`), the scene draws it, the drop takes it (`acceptFreePanelSnap`) or refuses it with Alt held'
+          : 'none: the unit magnet (`collision.js clampUnitX`, 40 mm) snaps silently; `moveUnit` takes `{ magnet: false }` but no gesture reaches it',
+      };
+    })(),
   ];
   write('f13-probe', [
     '# T74 F13 · the probe: is there anything like a free panel',
@@ -244,7 +267,9 @@ if (runs('f13')) {
     '',
     table(['question', 'answer'], rows),
     '',
-    'Nothing like it exists: a board belongs to a cabinet, and the library row held for this since turn 12 is `soon`.',
+    SUFFIX
+      ? 'After the build: a kit of its own (`FREE_PANEL`, one board, `carcass.top: \'free\'`), the Extras row opened, the piece editor one 2klik away in both apps, and the snap a proposal.'
+      : 'Nothing like it exists: a board belongs to a cabinet, and the library row held for this since turn 12 is `soon`.',
     '',
   ]);
 }

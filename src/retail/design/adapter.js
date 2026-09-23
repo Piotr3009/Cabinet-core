@@ -403,6 +403,38 @@ function addWallUnitNow() {
 }
 
 /**
+ * ─── T74 F13 · INSERT PANEL ─────────────────────────────────────────────────
+ *
+ * The owner, 23.09.2026: *"SWOBODNY PANEL (wstaw panel). Użytkownik wstawia
+ * panel ..."*  One board into the room through the store's own `addUnit`
+ * (the kit `FREE_PANEL`): beside the selected cabinet on its right, else its
+ * left, else wherever the room has space for it. Its board is then SELECTED,
+ * so its own menu (how it stands, its size) opens on the right: left adds,
+ * right edits. One press, one undo step.
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function insertPanel() {
+  return S().batch(() => insertPanelNow());
+}
+
+function insertPanelNow() {
+  const store = S();
+  const near = designUnit(store.units);
+  let placed = null;
+  let error = null;
+  for (const side of near ? ['right', 'left'] : [null]) {
+    placed = store.addUnit('FREE_PANEL', near ? { near: near.id, side } : {});
+    if (placed?.id) break;
+    error = placed?.error || error;
+  }
+  if (!placed?.id) placed = store.addUnit('FREE_PANEL');
+  if (!placed?.id) return { id: null, said: placed?.error || error || REASONS.roomRefusedPanel };
+  selectOnStage(placed.id, 'FP');
+  return { id: placed.id, said: '' };
+}
+
+/**
  * T73 F5 · the second wardrobe, placed the way the plus places it. Answers the
  * new id, or null when there is no wardrobe on wall 0 or no room either side
  * (the caller then takes the old road).
@@ -2148,6 +2180,9 @@ export const MENU_FOR_KIND = Object.freeze({
   // carcass: it is an interior item a client ADDS, from a row that now exists.
   // So clicking a divider opens the divider.
   partition: 'partition',
+  // T74 F13 · the free panel's own board: how it stands and its size, PRO's
+  // own two rows (`ElementProperties`, copied), on the right where editing is.
+  'free-panel': 'free-panel',
   // ─── T66 F3 · THE CARCASS IS THE WAY OUT, AND SO IS A DERIVED BOARD ──────
   //
   // The owner: *"w zasadzie po prawej powinien być tylko menu edycji"*, and
@@ -2210,6 +2245,8 @@ export const MENUS = Object.freeze([
   'panel',
   // T74 F1 · TOMBSTONE: `add-panel` stood here (T73 F2's docked question). The
   // question is a small modal at the click now (`askSide`), not a menu.
+  // T74 F13 · the tenth: the free panel's board (PRO's piece panel, docked).
+  'free-panel',
 ]);
 
 /**

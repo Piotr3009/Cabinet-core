@@ -51,8 +51,12 @@ export function floorOf(unit, profile, { host = null, patch = null } = {}) {
     // A rider's mounting height IS its host's top and is re-derived on every
     // settle, so the host wins over a stored number that may be one edit stale.
     if (type.ridesOn && host) return Math.max(0, unitTop(host, profile));
+    // T74 F13 · a board may stand ON the floor (`mount_height: 0`): a stated
+    // 0 is a height, read the way `projectStore.floorYOf` reads it (`??`), and
+    // only an unstated one falls back to the profile's hanging height.
     const said = patch?.mount_height ?? unit?.params?.mount_height;
-    return Math.max(0, Number(said) || Number(profile?.wallUnit?.defaults?.mountHeight) || 0);
+    const stated = said != null && said !== '' && Number.isFinite(Number(said));
+    return Math.max(0, stated ? Number(said) : Number(profile?.wallUnit?.defaults?.mountHeight) || 0);
   }
   if (!standsOnLegHeight(type)) return 0;
   return Math.max(0, impliedLegHeight(

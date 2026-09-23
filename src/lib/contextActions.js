@@ -502,5 +502,14 @@ export function menuActions({
   // named its own belongs to "the rest", which is what makes this a default
   // rather than a table anybody has to keep in step: a new entry lands
   // somewhere sensible on the day it is written.
-  return actions.map((a) => ({ ...a, group: a.group || GROUP_OF[a.id] || 'rest' }));
+  //
+  // T74 F13 · a FREE PANEL is one board, not a carcass: nothing is fitted to
+  // it (no end panel, no filler, no mask, no cornice) and it is never turned
+  // in plan (its facing and lean are its own menu). What a board has is its
+  // name, its colour, a template and the bin.
+  const offered = type.freePanel ? actions.filter((a) => FREE_PANEL_MENU.has(a.id)) : actions;
+  return offered.map((a) => ({ ...a, group: a.group || GROUP_OF[a.id] || 'rest' }));
 }
+
+/** T74 F13 · what the right-click offers on a free panel. */
+const FREE_PANEL_MENU = new Set(['rename', 'unit-colour', 'save-template', 'delete']);

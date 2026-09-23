@@ -1280,7 +1280,7 @@ export default function UnitView({
     if (additive) return;
     const hit = pointerToPlane(e.clientX, e.clientY);
     if (!hit) return;
-    drag.current = { offset: alongMm(hit) - unit.position.x_mm };
+    drag.current = { offset: alongMm(hit) - unit.position.x_mm, x0: e.clientX, y0: e.clientY, moved: false };
     setDragging(true);
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
@@ -1295,9 +1295,13 @@ export default function UnitView({
       // the wall; the deliberate path is the Wall dropdown in the right panel.
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
+      // T74 F13 · a DRAG is a hand that travelled (more than the 3 px a click
+      // wobbles); only a drag's drop may take a proposal.
+      if (Math.hypot(ev.clientX - drag.current.x0, ev.clientY - drag.current.y0) > 3) drag.current.moved = true;
       onMove(alongMm(p) - drag.current.offset, snapStep);
     };
     const up = (ev) => {
+      const moved = Boolean(drag.current?.moved);
       drag.current = null;
       setDragging(false);
       if (orbitRef?.current) orbitRef.current.enabled = true;
@@ -1305,8 +1309,9 @@ export default function UnitView({
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
       // T74 F13 · the DROP decides the proposal: taken, or refused with Alt
-      // held (a cancelled pointer refuses it too).
-      onMoveEnd?.({ altKey: Boolean(ev?.altKey), cancelled: ev?.type === 'pointercancel' });
+      // held (a cancelled pointer refuses it too). A click that never
+      // travelled is no drop: it selects, it does not snap.
+      onMoveEnd?.({ altKey: Boolean(ev?.altKey), cancelled: ev?.type === 'pointercancel', moved });
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);

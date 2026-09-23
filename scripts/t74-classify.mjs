@@ -160,6 +160,17 @@ export const LICENSED = {
     why: 'F7 · `hostsRidersOf`: a top box stands on a wardrobe, never on a wall unit. PLACEMENT',
     gates: [],
   },
+  'src/engine/roomFit.js': {
+    why: 'F13 · `floorOf` reads a STATED mounting height of 0 as a height (a board on the floor), the way '
+      + '`projectStore.floorYOf` reads it; only an unstated one falls back to the hanging height. The room '
+      + 'check and the size refusal read it; a bare `computeCabinet` has no room, so no cut',
+    gates: [],
+  },
+  'src/lib/contextActions.js': {
+    why: 'F13 · the right-click on a free panel offers what a board has (rename, colour, template, delete): '
+      + 'no end panel, filler, mask or rotation. UI',
+    gates: [],
+  },
   'src/lib/modalLayer.js': {
     why: 'F1 · the `add-panel` window kind (ADD END PANEL?) in the registry. UI',
     gates: [],

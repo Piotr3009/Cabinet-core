@@ -258,9 +258,12 @@ test('T74 F13 · the snap PROPOSES: the nearest edge within the magnet, nothing 
 test('T74 F13 · the drag moves it with the silent magnet off, shows the proposal, and the drop decides (Alt refuses)', () => {
   const scene = uncomment(read('src/3d/Scene.jsx'));
   assert.match(scene, /moveUnit\(unit\.id, x, step, \{ magnet: false \}\);\s*const caught = freePanelProposal\(unit\.id\);/);
-  assert.match(scene, /if \(!altKey && !cancelled\) acceptFreePanelSnap\(unit\.id\);/);
+  // Only a DROP takes it: a click that never travelled selects and does not
+  // snap (the audit: a typed 20 mm jumped to 0 on the click that selected it).
+  assert.match(scene, /if \(moved && !altKey && !cancelled\) acceptFreePanelSnap\(unit\.id\);/);
   const view = uncomment(read('src/3d/UnitView.jsx'));
-  assert.match(view, /onMoveEnd\?\.\(\{ altKey: Boolean\(ev\?\.altKey\), cancelled: ev\?\.type === 'pointercancel' \}\);/);
+  assert.match(view, /if \(Math\.hypot\(ev\.clientX - drag\.current\.x0, ev\.clientY - drag\.current\.y0\) > 3\) drag\.current\.moved = true;/);
+  assert.match(view, /onMoveEnd\?\.\(\{ altKey: Boolean\(ev\?\.altKey\), cancelled: ev\?\.type === 'pointercancel', moved \}\);/);
   assert.match(view, /<group userData=\{\{ ccHelper: true, ccSnapProposal: snapProposal\.at \}\}>/);
 });
 
@@ -318,6 +321,63 @@ test('T74 F13 · retail: INSERT PANEL in EXTRAS puts one in and opens its menu o
   assert.deepEqual({ unitId: sel?.unitId, ref: sel?.elementRef }, { unitId: res.id, ref: 'FP' });
   const resolved = A.resolveSelection(sel);
   assert.equal(resolved?.menu, 'free-panel', 'the right-hand menu is not the free panel\'s');
+});
+
+test('T74 F13 · retail: a second INSERT PANEL goes beside the SELECTED panel; the left column stays on the wardrobe', () => {
+  aRoom();
+  const w = S().addUnit('WARDROBE', { params: { width: 1000, height: 2150, depth: 568 } }).id;
+  useUiStore.getState().selectUnit?.(w);
+  const first = A.insertPanel().id;
+  S().updateUnitParams(first, { panel_facing: 'across' });
+  const second = A.insertPanel().id;
+  assert.ok(second);
+  assert.equal(unit(second).position.x_mm, unit(first).position.x_mm + unit(first).params.width,
+    'the second board is not beside the selected one');
+  // The audit: with a board selected, the left column's doors and insides
+  // acted on the BOARD (ADD DOORS refused with no sentence). They are the
+  // wardrobe's.
+  assert.equal(useUiStore.getState().selectedElement?.unitId, second);
+  assert.equal(A.designUnit(S().units)?.id, w);
+});
+
+test('T74 F13 · the audit: a board ON THE FLOOR is on the floor for every rule that reads a height', async () => {
+  const { floorOf, roomFitFaults } = await import('../src/engine/roomFit.js');
+  aRoom();
+  const id = S().addUnit('FREE_PANEL').id;
+  assert.equal(unit(id).params.mount_height, 0);
+  // The room check and the size window read it at 0, not at the 1500 a wall
+  // unit hangs at: a 2400 board stands in a 2500 room.
+  assert.equal(floorOf(unit(id), P), 0);
+  assert.equal(S().roomFitRefusalFor(id, { height: 2400 }), null, 'the size window refused a floor board at 2400');
+  S().updateUnitParams(id, { height: 1800 });
+  assert.equal(unit(id).params.height, 1800);
+  const faults = roomFitFaults(S().units, S().project.room, P).filter((f) => f.unit.id === id);
+  assert.equal(faults.length, 0, 'Check #20 hangs the board at 1500');
+  // A stated 0 is a height; an UNSTATED one is still the hanging height.
+  assert.equal(floorOf({ type: 'WUD', params: {} }, P), P.wallUnit.defaults.mountHeight);
+  assert.equal(floorOf({ type: 'WUD', params: { mount_height: 0 } }, P), 0);
+  // …and the kitchen's wall-unit line never lifts it.
+  S().setProjectHeights({ wallMount: 1450 });
+  assert.equal(unit(id).params.mount_height, 0, 'the project\'s wall mount lifted the board off the floor');
+});
+
+test('T74 F13 · the audit: a board is not a carcass: no end panel, no mask, no rotation in its right-click', async () => {
+  const { menuActions } = await import('../src/lib/contextActions.js');
+  aRoom();
+  const id = S().addUnit('FREE_PANEL').id;
+  const ids = menuActions({ unit: unit(id), store: {} }).map((a) => a.id).sort();
+  assert.deepEqual(ids, ['delete', 'rename', 'save-template', 'unit-colour']);
+  // A wardrobe's menu is as it was.
+  const w = S().addUnit('WARDROBE').id;
+  const wardrobe = menuActions({ unit: unit(w), store: {} }).map((a) => a.id);
+  for (const want of ['end-panel-L', 'rotate-90', 'edit-cabinet']) assert.ok(wardrobe.includes(want), want);
+  // The store refuses the carcass extras on a board, in words.
+  const ep = S().addEndPanel(id, { side: 'L' });
+  assert.equal(ep.id, null);
+  assert.match(ep.error, /one board/);
+  assert.equal(S().addBottomMask(id), false);
+  assert.equal(unit(id).params.bottom_mask ?? false, false);
+  assert.equal((unit(id).params.end_panels || []).length, 0);
 });
 
 test('T74 F13 · the drawing set (read-only) takes a job with a free panel in it, in every orientation', () => {

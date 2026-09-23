@@ -2802,7 +2802,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   addBottomMask: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
-    if (!unit || getUnitType(unit.type).mount !== 'wall') return false;
+    // T74 F13 · a free panel is one board: nothing is fitted under it.
+    if (!unit || getUnitType(unit.type).mount !== 'wall' || getUnitType(unit.type).freePanel) return false;
     set((s) => ({
       units: s.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, bottom_mask: true } } : u)),
     }));
@@ -3131,6 +3132,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { id: null, error: 'No unit selected.' };
+    // T74 F13 · a free panel is one board, not a carcass: no end panel is
+    // fitted to it (a board beside it is another free panel).
+    if (getUnitType(unit.type).freePanel) {
+      return { id: null, error: 'A free panel is one board: put another panel beside it instead.' };
+    }
     const design = migrateDesign(s.project.design);
     const wanted = side === 'R' ? 'R' : 'L';
     const existing = unit.params.end_panels || [];
@@ -4321,7 +4327,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
             .filter((u) => (u.position.wall ?? 0) === wall.index && (obstructs(unit, u, profile)
               // T74 F13 · free panels do not hold each other off, but a new
               // one asked to go BESIDE one still goes beside it, not on it.
-              || (onThisWall && u.id === beside.id)))
+              || (onThisWall && isFreePanel(unit.type) && u.id === beside.id)))
             .map(unitSpan),
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
@@ -5445,7 +5451,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         changes.height = resolved[group];
         changes.height_custom = false;
       }
-      if (applied.wallMount != null && type.mount === 'wall') changes.mount_height = resolved.wallMount;
+      // T74 F13 · a free panel stands at its OWN height (on the floor, or where
+      // its floor figure put it), as `projectHeightParams` births it: the
+      // kitchen's wall-unit line never moves it.
+      if (applied.wallMount != null && type.mount === 'wall' && !type.freePanel) changes.mount_height = resolved.wallMount;
       // Turn 22 (F4.2): every unit that STANDS on the run's legs follows the
       // toe kick, the D/W panel included — it is the unit the owner watched
       // ignore the field.

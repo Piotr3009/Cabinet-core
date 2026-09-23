@@ -50,7 +50,7 @@ import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 // T61 F3: the top box's own two engine answers — the type's defaults and the
 // room's refusal — both read rather than retyped.
-import { defaultParamsFor, getUnitType } from '../../engine/types.js';
+import { defaultParamsFor, getUnitType, isFreePanel } from '../../engine/types.js';
 import { riderBornHeight } from '../../engine/roomFit.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
@@ -121,7 +121,10 @@ export const designUnit = (units) => {
   const host = found?.params?.rides_on
     ? list.find((u) => u.id === found.params.rides_on) || null
     : found;
-  if (host && !host.params?.rides_on) return host;
+  // T74 F13 · a free panel is one board, edited on the RIGHT: the left
+  // column's doors, insides and sizes never land on it (the audit: ADD DOORS
+  // on a selected panel refused with no sentence). They go to the wardrobe.
+  if (host && !host.params?.rides_on && !isFreePanel(host.type)) return host;
   // The fallback is the wardrobe on the LOWEST wall, at the start of it — which
   // on a one-wall project is `units[0]` and nothing has moved.
   return [...pool].sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
@@ -420,7 +423,10 @@ export function insertPanel() {
 
 function insertPanelNow() {
   const store = S();
-  const near = designUnit(store.units);
+  // Beside the SELECTED panel when a panel is selected (a box is built board
+  // by board), else beside the wardrobe the left column is about.
+  const picked = store.units.find((u) => u.id === (U().selectedElement?.unitId || U().selectedUnitId));
+  const near = picked && isFreePanel(picked.type) ? picked : designUnit(store.units);
   let placed = null;
   let error = null;
   for (const side of near ? ['right', 'left'] : [null]) {

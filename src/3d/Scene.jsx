@@ -1715,8 +1715,8 @@ export default function Scene({
             const caught = freePanelProposal(unit.id);
             setSnapProposal(caught ? { unitId: unit.id, ...caught } : null);
           }}
-          onMoveEnd={isFreePanel(unit.type) ? ({ altKey, cancelled }) => {
-            if (!altKey && !cancelled) acceptFreePanelSnap(unit.id);
+          onMoveEnd={isFreePanel(unit.type) ? ({ altKey, cancelled, moved }) => {
+            if (moved && !altKey && !cancelled) acceptFreePanelSnap(unit.id);
             setSnapProposal(null);
           } : null}
           snapProposal={snapProposal?.unitId === unit.id ? snapProposal : null}

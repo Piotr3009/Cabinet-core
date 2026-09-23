@@ -497,6 +497,16 @@ export function MovingPanel({
   // front or back, the bottom. It has no gesture of its own and no swing; it
   // rides the SAME 0..1 its front does, so the two cannot get out of step.
   const travels = Boolean(front) || slide;
+  // ─── T74 F8 · A LEANING PIECE TRAVELS IN THE DRAWER'S FRAME ───────────────
+  // The owner: *"skośne dno szuflady na buty zostaje w szafie przy otwieraniu,
+  // nie wysuwa się z szufladą."*  The probe (`verify/t74/f08-probe.md`): the
+  // slide moved the piece's own group, and a leaning piece's whole group sits
+  // inside its lean, so the shoe ramp slid along its OWN tilted axis, out and
+  // 114 mm down, and ended under the open drawer. A piece that both leans and
+  // travels now takes the travel on a group OUTSIDE the lean (`glide`), which
+  // is the drawer's own straight line; everything else moves as it always did.
+  const leans = Boolean(Number(p.meta?.tilt_deg) && p.meta?.tilt_pivot);
+  const glide = useRef(null);
   useFrame((_, delta) => {
     if (!group.current || !travels) return;
     const target = open;
@@ -514,7 +524,13 @@ export function MovingPanel({
       // box comes out its own length. `depth × 0.75` was turn 3's guess, made
       // before the app knew which runner a drawer was on, and it is what left
       // a face standing proud of a box that had not moved.
-      group.current.position.z = pivot[2] + mm(travel ?? depth * 0.75) * a;
+      const off = mm(travel ?? depth * 0.75) * a;
+      if (leans && glide.current) {
+        glide.current.position.z = off;
+        group.current.position.z = pivot[2];
+      } else {
+        group.current.position.z = pivot[2] + off;
+      }
       group.current.rotation.y = 0;
     } else if (drops) {
       // ─── TURN 27 (CLAUDE.md F2.1): THE AXIS WAS INVERTED ────────────────
@@ -810,7 +826,7 @@ export function MovingPanel({
   const px = mm(Number(tiltPivot.x) || 0);
   const py = mm(Number(tiltPivot.y) || 0);
   const pz = mm(Number(tiltPivot.z) || 0);
-  return (
+  const leaning = (
     <group
       position={[px, py, pz]}
       rotation={p.meta?.tilt_axis === 'z' ? [0, 0, rad] : [rad, 0, 0]}
@@ -818,6 +834,8 @@ export function MovingPanel({
       <group position={[-px, -py, -pz]}>{body}</group>
     </group>
   );
+  // T74 F8 · the travel of a leaning piece, straight out with its drawer.
+  return travels ? <group ref={glide}>{leaning}</group> : leaning;
 }
 
 

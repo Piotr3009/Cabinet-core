@@ -100,8 +100,9 @@ function normaliseHandleOffsets(raw) {
 //   'wall'  ONE wall, with a stub at each of its two ends
 //   'two'   walls 0 and 1 — adjacent, sharing corner 1 — with a stub at each of
 //           the pair's two FREE ends. The owner: *"zrob 2 sciany"*.
-//   'three' walls 0, 1 and 2 — a U, left + back + right — with a stub at each
-//           of the run's two free ends, both cut from the open side. T69 F1.
+//   'three' the last wall, 0 and 1: a U, left + front + right, open toward
+//           the camera, with a stub at each of the run's two free ends. T69
+//           F1, turned by T74 F5 (it had been walls 0, 1 and 2).
 //
 // The GEOMETRY of each is `engine/room.js wallsInScope`; this is only the list
 // of words, and `normaliseScope` is the one gate every stored project passes.

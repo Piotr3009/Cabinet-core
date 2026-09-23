@@ -45,14 +45,19 @@ test('F1 · `three` is a scope the gate lets through', () => {
 
 // ═══ 2 · THE U — THREE REAL WALLS, TWO STUBS, BOTH FROM THE OPEN SIDE ═══════
 
-test('F1 · `three` draws walls 0, 1 and 2 and a stub at each free end', () => {
+// AMENDED BY T74 F5 · the owner, 23.09.2026: *"SETUP ROOM THREE WALLS daje
+// ścianę przednią, prawą i ścianę za kamerą; ma być przednia, prawa i LEWA
+// (kształt U). Logika trybu zostaje."*  The U is now the LEFT wall (the last),
+// the FRONT (wall 0) and the RIGHT (wall 1); the open side, wall 2, is the one
+// behind the camera. Everything else this block asserts stands.
+test('F1 · `three` draws the left, front and right walls and a stub at each free end', () => {
   const walls = wallsInScope(room4(), 'three');
   const real = walls.filter((w) => !w.stub);
   const stubs = walls.filter((w) => w.stub);
 
-  assert.deepEqual(real.map((w) => w.index), [0, 1, 2], 'the U is three consecutive walls');
+  assert.deepEqual(real.map((w) => w.index), [0, 1, 3], 'the U is three consecutive walls');
   assert.equal(stubs.length, 2, 'a stub at each of the run\'s two free ends');
-  assert.deepEqual(wallIndicesInScope(room4(), 'three'), [0, 1, 2],
+  assert.deepEqual(wallIndicesInScope(room4(), 'three'), [0, 1, 3],
     'and a stub is never a wall a client stands furniture against');
 });
 
@@ -60,11 +65,12 @@ test('F1 · the two returns are cut from the ONE wall the U leaves out', () => {
   const r = room4();
   const all = roomWalls(r);
   const stubs = wallsInScope(r, 'three').filter((w) => w.stub);
-  assert.deepEqual([...new Set(stubs.map((w) => w.index))], [all.length - 1],
+  // AMENDED BY T74 F5: the wall the U leaves out is wall 2, behind the camera.
+  assert.deepEqual([...new Set(stubs.map((w) => w.index))], [2],
     'both returns come from the open side, because it is the only wall left');
 
   // One keeps each end, so they stand AT the two free corners and nowhere else.
-  const open = all[all.length - 1];
+  const open = all[2];
   const at = (p) => `${Math.round(p.x)},${Math.round(p.y)}`;
   const touched = new Set(stubs.flatMap((w) => [at(w.start), at(w.end)]));
   assert.ok(touched.has(at(open.start)) && touched.has(at(open.end)),
@@ -81,8 +87,10 @@ test('F1 · the returns are the house\'s length, and never cross each other', ()
 
   // A narrow one cannot, and the arithmetic guard is what stops two returns
   // cut from one wall from crossing — which is geometry with no reading at all.
-  const narrow = migrateRoom({ corners: rectCorners(4000, 2000), height: 2500 });
-  const open = roomWalls(narrow)[roomWalls(narrow).length - 1].width;
+  const narrow = migrateRoom({ corners: rectCorners(2000, 4000), height: 2500 });
+  // AMENDED BY T74 F5: the open side is wall 2 (it runs across the room, as
+  // wide as wall 0), so the NARROW room is now the one that is narrow across.
+  const open = roomWalls(narrow)[2].width;
   const onNarrow = wallsInScope(narrow, 'three').filter((w) => w.stub).map((w) => w.width);
   assert.ok(onNarrow.every((w) => w <= open / 2 + 1e-6),
     'two returns cut from one wall overlapped each other');

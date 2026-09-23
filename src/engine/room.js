@@ -327,17 +327,41 @@ function truncateWall(wall, keep, length) {
  */
 export function wallsInScope(room, scope = 'room', profile = null) {
   const walls = roomWalls(room);
+  // ─── T74 F5 · THE U IS FRONT, RIGHT AND LEFT ─────────────────────────────
+  //
+  // The owner, 23.09.2026: *"SETUP ROOM THREE WALLS daje ścianę przednią,
+  // prawą i ścianę za kamerą; ma być przednia, prawa i LEWA (kształt U).
+  // Logika trybu zostaje."*
+  //
+  // Walls 0, 1 and 2 were the FRONT (wall 0, the one the camera looks at), the
+  // RIGHT (wall 1) and the wall BEHIND THE CAMERA (wall 2). The U the owner
+  // asked for is the LEFT (the last wall, which closes on corner 0), the FRONT
+  // and the RIGHT, so the open side faces the camera. It is still three
+  // consecutive walls, now centred on wall 0: they share corners 0 and 1, and
+  // the two free ends are the left wall's start and the right wall's end.
+  //
+  // THE LOGIC OF THE MODE STAYS, word for word: two returns, one at each free
+  // end, each cut from the wall that meets it. In a four-cornered room both
+  // come from the ONE wall left, the one behind the camera, so the arithmetic
+  // guard stands (two returns cut from one wall never cross). With more
+  // corners the two returns come from two different walls, as `'two'`'s do.
+  // Wall 0 is listed first, as it always was, so every reader that falls back
+  // to the first wall in scope still lands on the front one.
   if (scope === 'three') {
     if (walls.length < 4) return walls;
-    const open = walls[walls.length - 1];
-    const stub = Math.min(wallStub(room, profile), open.width / 2);
-    if (stub <= 0) return [walls[0], walls[1], walls[2]];
+    const left = walls[walls.length - 1];
+    const afterRight = walls[2];
+    const beforeLeft = walls[walls.length - 2];
+    const shared = afterRight === beforeLeft;
+    const house = wallStub(room, profile);
+    const stub = shared ? Math.min(house, afterRight.width / 2) : house;
+    if (stub <= 0) return [walls[0], walls[1], left];
     return [
       walls[0],
       walls[1],
-      walls[2],
-      truncateWall(open, 'end', stub),
-      truncateWall(open, 'start', stub),
+      left,
+      truncateWall(afterRight, 'start', stub),
+      truncateWall(beforeLeft, 'end', stub),
     ];
   }
   if (scope === 'two') {

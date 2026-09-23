@@ -2912,6 +2912,18 @@ export const DEFAULT_CABINET_PROFILE = {
       ao: { mm: 7, strength: 0.16, render: 0.3 },
     },
 
+    // ─── T74 F12 · THE J-PULL GROOVE IS SEEN ────────────────────────────────
+    // The owner, 23.09.2026: *"na 3D nie widać J-pulla w ogóle; czasami się
+    // pojawia ... pasowałoby, żeby miał cień, bo teraz nie ma i nic nie
+    // widać."*  The probe (`verify/t74/f12-probe.md`): the groove is in the
+    // solid in every state, but its floor faces the room exactly as the door
+    // does, in the same material, so head-on it differs from the door by 2 %;
+    // and the key light's shadow bias (20 mm) is as deep as the step, so the
+    // lip throws no shadow into it. Where the room light cannot show the step,
+    // the groove's inner faces are shaded darker by this share (0 = as the
+    // door, 1 = black). The workshop's number, like the bevel's cavity AO.
+    jpull: { grooveShade: 0.5 },
+
     // The room the furniture is lit BY. RoomEnvironment (three/examples, no
     // download, no .hdr file — CLAUDE.md forbids both) through PMREM. The
     // working view keeps it low so white walls stay white with no tone mapping;
@@ -5244,6 +5256,8 @@ export function migrateCabinetProfile(profile) {
         ...D.appearance.bevel, ...profile.appearance?.bevel,
         ao: { ...D.appearance.bevel.ao, ...profile.appearance?.bevel?.ao },
       },
+      // T74 F12 · the J groove's shade, merged the bevel's way.
+      jpull: { ...D.appearance.jpull, ...profile.appearance?.jpull },
       environment: { ...D.appearance.environment, ...profile.appearance?.environment },
       contactShadow: { ...D.appearance.contactShadow, ...profile.appearance?.contactShadow },
       room: {

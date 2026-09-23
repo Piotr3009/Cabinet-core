@@ -231,17 +231,21 @@ if (runs('f12')) {
     v.scene.traverse((o) => { if (o.userData && o.userData.ccUnitId === ${JSON.stringify(unit.id)}) unitG = o; });
     if (unitG) unitG.traverse((o) => { if (!mesh && o.isMesh && o.userData && o.userData.ccPanelId === leaf.id) mesh = o; });
     if (!mesh) return { leaf: leaf.id, mesh: false };
+    // In the LEAF's own frame (its mesh is centred on its box), so the patch
+    // follows the leaf when it swings open.
     const jp = leaf.meta.jpull || {}; const b = leaf.box;
-    const from = (jp.run && jp.run.from) != null ? jp.run.from : 0; const to = (jp.run && jp.run.to) != null ? jp.run.to : b.h;
-    const edgeX = jp.edge === 'L' ? b.x : (jp.edge === 'R' ? b.x + b.w : b.x + b.w / 2);
-    const inward = jp.edge === 'L' ? 1 : -1; const zFace = b.z + b.d;
+    const from = ((jp.run && jp.run.from) != null ? jp.run.from : 0) - b.h / 2;
+    const to = ((jp.run && jp.run.to) != null ? jp.run.to : b.h) - b.h / 2;
+    const edgeX = jp.edge === 'L' ? -b.w / 2 : (jp.edge === 'R' ? b.w / 2 : 0);
+    const inward = jp.edge === 'L' ? 1 : -1; const zFace = b.d / 2;
+    mesh.updateMatrixWorld(true);
     const r0 = v.gl.domElement.getBoundingClientRect();
-    const scr = (x, y, z) => { const p = new T.Vector3(x / 1000, y / 1000, z / 1000).applyMatrix4(unitG.matrixWorld).project(v.camera);
+    const scr = (x, y, z) => { const p = new T.Vector3(x / 1000, y / 1000, z / 1000).applyMatrix4(mesh.matrixWorld).project(v.camera);
       return { x: r0.left + (p.x * 0.5 + 0.5) * r0.width, y: r0.top + (-p.y * 0.5 + 0.5) * r0.height }; };
     const rect = (x0, x1, y0, y1, z) => { const pts = [scr(x0, y0, z), scr(x1, y0, z), scr(x0, y1, z), scr(x1, y1, z)];
       const xs = pts.map((p) => p.x); const ys = pts.map((p) => p.y);
       return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }; };
-    const mid0 = b.y + from + (to - from) * 0.2; const mid1 = b.y + from + (to - from) * 0.8;
+    const mid0 = from + (to - from) * 0.2; const mid1 = from + (to - from) * 0.8;
     const g0 = edgeX + inward * 6; const g1 = edgeX + inward * 26;
     const f0 = edgeX + inward * 60; const f1 = edgeX + inward * 120;
     const geo = mesh.geometry; let key = null;

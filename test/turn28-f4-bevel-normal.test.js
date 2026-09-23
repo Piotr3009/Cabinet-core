@@ -224,13 +224,19 @@ test('F4 the peel perturbs whatever survived, and is otherwise untouched', () =>
 
 test('F4 no new uniform, no new geometry, no CNC — the state is turn 6’s', () => {
   const state = createBevelState();
+  // AMENDED BY T74 F12 · three names join, and only three: the J-pull groove's
+  // box and its shade (*"na 3D nie widać J-pulla w ogóle"*), a darkening of
+  // the same kind as the cavity's, empty and zero on every board without a J.
+  // T28 F4's own fault (what the peel is applied to) is untouched.
   assert.deepEqual(Object.keys(state).sort(), [
-    'ao', 'aoRadius', 'bevel', 'half', 'spray', 'sprayFreq', 'strength', 'uniforms',
+    'ao', 'aoRadius', 'bevel', 'grooveMax', 'grooveMin', 'grooveShade', 'half', 'spray', 'sprayFreq',
+    'strength', 'uniforms',
   ]);
-  // The uniform block the hook writes is the same seven it always wrote.
+  // The uniform block the hook writes is the seven it always wrote, and T74's three.
   const declared = [...SRC.matchAll(/shader\.uniforms\.(\w+) = \{/g)].map((m) => m[1]).sort();
   assert.deepEqual(declared, [
-    'ccAo', 'ccAoRadius', 'ccBevel', 'ccBevelStrength', 'ccHalf', 'ccSpray', 'ccSprayFreq',
+    'ccAo', 'ccAoRadius', 'ccBevel', 'ccBevelStrength', 'ccGrooveMax', 'ccGrooveMin', 'ccGrooveShade',
+    'ccHalf', 'ccSpray', 'ccSprayFreq',
   ]);
   // …and the cavity darkening pass is not part of this fault and is untouched.
   assert.match(SRC, /diffuseColor\.rgb \*= 1\.0 - ccAo \* ccEdgeAmount;/);

@@ -333,7 +333,38 @@ function useMitre(panel) {
  * bevel program once for the whole project. Resizing a panel is then a uniform
  * write, which is why dragging a shelf does not stutter.
  */
-function useBevel(box, profile, sprayed = false) {
+/**
+ * ─── T74 F12 · WHERE THE J GROOVE IS, IN THE PIECE'S OWN FRAME ─────────────
+ *
+ * The strip the J machining takes out of a leaf (`cnc.jpull`, the engine's one
+ * law), as a box about the leaf's own centre, which is the frame the bevel
+ * shader reads its fragments in: across, as far as the deeper of the slot and
+ * the relief reaches in from the J edge; up, the run; through, everything
+ * between the back face and the room face, so the two faces themselves stay
+ * the door's own. `null` where there is no groove or no shade to give it.
+ */
+function jGrooveBox(p, profile, solid) {
+  const shade = Number(profile?.appearance?.jpull?.grooveShade) || 0;
+  const edge = p?.meta?.jpull?.edge;
+  const cut = p?.cnc?.jpull;
+  if (!solid || !(shade > 0) || !edge || !cut?.profile || !p?.box) return null;
+  const { w, h, d } = p.box;
+  const reach = Math.max(Number(cut.profile.slotDepth) || 0, Number(cut.profile.reliefMm) || 0);
+  const run = p.meta.jpull.run || null;
+  const faceMm = 0.5;
+  let x0 = -w / 2; let x1 = w / 2;
+  let y0 = (run?.from ?? 0) - h / 2; let y1 = (run?.to ?? h) - h / 2;
+  if (edge === 'L') x1 = -w / 2 + reach;
+  else if (edge === 'R') x0 = w / 2 - reach;
+  else if (edge === 'TOP') { y0 = h / 2 - reach; y1 = h / 2; }
+  return {
+    min: [mm(x0), mm(y0), mm(-d / 2 + faceMm)],
+    max: [mm(x1), mm(y1), mm(d / 2 - faceMm)],
+    shade,
+  };
+}
+
+function useBevel(box, profile, sprayed = false, groove = null) {
   const state = useMemo(() => createBevelState(), []);
   const hook = useMemo(() => bevelHook(state), [state]);
   const B = profile.appearance.bevel;
@@ -348,6 +379,16 @@ function useBevel(box, profile, sprayed = false) {
   // Orange peel: a sprayed piece only (turn 8, CLAUDE.md F1).
   state.spray = sprayed ? (S.normalScale ?? 0.1) : 0;
   state.sprayFreq = (2 * Math.PI) / Math.max(mm(S.peelMm ?? 2), 1e-6);
+  // T74 F12 · the J groove's box and its shade, or none.
+  if (groove) {
+    state.grooveMin.set(...groove.min);
+    state.grooveMax.set(...groove.max);
+    state.grooveShade = groove.shade;
+  } else {
+    state.grooveMin.set(1, 1, 1);
+    state.grooveMax.set(-1, -1, -1);
+    state.grooveShade = 0;
+  }
   syncBevelState(state);
 
   return useCallback((material) => {
@@ -462,7 +503,9 @@ export function MovingPanel({
   }, [p, mitre]);
   useEffect(() => () => { outlinePlain?.dispose?.(); }, [outlinePlain]);
   const cuts = built?.cuts || null;
-  const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray);
+  // T74 F12 · a J leaf's groove is drawn darker by `appearance.jpull.grooveShade`.
+  const groove = useMemo(() => jGrooveBox(p, profile, Boolean(built?.solid) && !shaker), [p, profile, built, shaker]);
+  const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray, groove);
 
   // ─── TURN 26 (CLAUDE.md F5.2): AND A D/W FRONT DROPS ────────────────────
   // Owner: "it opens sideways." It did, because the scene had one way for a

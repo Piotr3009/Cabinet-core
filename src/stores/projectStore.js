@@ -2326,6 +2326,27 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         const woodAt = (edge) => (result.panels || []).find((p) => p.part === 'VPART'
           && Number.isFinite(Number(p.meta?.x_mm))
           && edge >= Number(p.meta.x_mm) - tol && edge <= Number(p.meta.x_mm) + G + tol);
+        // ─── T74 F11 · LEAVING THE CORNER UNDOES WHAT PUSHING IN DID ────────
+        //
+        // The owner, 23.09.2026: *"dosunięcie szafy do ściany narożnej zmienia
+        // orientację drzwi i dokłada panel (perfekcyjnie), ale po odsunięciu
+        // nic nie wraca: drzwi nie wracają na oryginalną stronę, panel/divider
+        // nie znika. Brak odwrócenia operacji."*  The probe
+        // (`verify/t74/f11-probe.md`, a real drag in and out): this sweep kept
+        // no record of what it did and had no way back. It keeps one now,
+        // `params.slope_door_auto`, the end-panel automat's pattern (it marks
+        // its own work): the doors as they were, the partition it added (or
+        // the setback of the one it borrowed), and the bay doors it wrote. Once
+        // no leaf of this unit is forced by the slope any more (pulled out of
+        // it, or the slope gone), the same sweep undoes EXACTLY that, and only
+        // what still is what it wrote: a partition moved by hand, or doors a
+        // person changed since, are the client's and stay. The interior the
+        // flip cleared is not brought back (a removal is not a loan, T58 F4).
+        const record = unit.params.slope_door_auto || null;
+        if (record && leaves.length === 0) {
+          runBatch(() => get().undoSlopeDoorFlip(unit.id, record));
+          continue;
+        }
         const flipped = leaves.find((leaf) => {
           const edge = leaf.meta.hinge === 'R' ? leaf.box.x + leaf.box.w : leaf.box.x;
           // A hinge edge on the carcass side has its wood — never a trigger.
@@ -2376,6 +2397,32 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
               hinge: byX[i]?.meta?.hinge || hand,
             })));
           }
+          // 4. T74 F11 · WHAT THE AUTOMAT DID, WRITTEN DOWN. The state BEFORE
+          //    is read off the snapshot this pass began from, and only on the
+          //    first pass of a push: the re-entered passes that sync the hands
+          //    update what was WRITTEN and never what was there before.
+          const now = get().units.find((u2) => u2.id === unit.id);
+          const item = pid ? (now?.params.sections?.[0]?.items || []).find((i) => i.id === pid) : null;
+          const wrote = now?.params.bay_doors ?? null;
+          const next = record
+            ? { ...record, wrote }
+            : {
+              doors: 'doors' in unit.params ? (unit.params.doors ?? null) : undefined,
+              hinge: 'hinge' in unit.params ? (unit.params.hinge ?? null) : undefined,
+              bay_doors: 'bay_doors' in unit.params ? (unit.params.bay_doors ?? null) : undefined,
+              partition: item ? {
+                id: item.id,
+                added: !standing,
+                x_mm: Number(item.x_mm),
+                front_mm: standing ? (standing.front_mm ?? null) : null,
+              } : null,
+              wrote,
+            };
+          set((st) => ({
+            units: st.units.map((u2) => (u2.id === unit.id
+              ? { ...u2, params: { ...u2.params, slope_door_auto: next } }
+              : u2)),
+          }));
         });
         // The notify belongs to the TRANSITION — the pass that inserted the
         // partition or cleared the interior — never to the hand-sync pass.
@@ -2389,6 +2436,69 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     } finally {
       slopeDoorSweepDepth -= 1;
     }
+  },
+
+  /**
+   * ─── T74 F11 · THE WAY BACK OUT OF THE CORNER ─────────────────────────────
+   *
+   * Undo what `settleSlopeDoorPartitions` wrote down, and nothing else, then
+   * forget the record. Each part is undone only while it still is what the
+   * automat left: its own partition where it put it (removed; a borrowed
+   * one gets its setback back), and the bay doors exactly as it wrote them
+   * (then the doors, the hand and the bay doors as they were before the push).
+   * Anything a person changed since stands.
+   */
+  undoSlopeDoorFlip: (unitId, record) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit || !record) return false;
+    const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    let undone = false;
+    // Are the doors still the bay doors the automat wrote? If a person has
+    // changed them, they are hung on that partition by the person's choice,
+    // and neither the doors nor the partition under them is the automat's.
+    const doorsAsWritten = same(unit.params.bay_doors, record.wrote);
+    // 1. The partition, where the automat left it.
+    const part = record.partition;
+    const item = part ? (unit.params.sections?.[0]?.items || []).find((i) => i.id === part.id) : null;
+    if (doorsAsWritten && item && part.added && Math.abs(Number(item.x_mm) - Number(part.x_mm)) < 0.5) {
+      get().removeItem(unitId, item.id);
+      undone = true;
+    } else if (doorsAsWritten && item && !part.added && Number(item.front_mm ?? 0) === 0 && part.front_mm != null) {
+      get().updateItem(unitId, item.id, { front_mm: part.front_mm });
+      undone = true;
+    }
+    // 2. The doors, as they were before the push.
+    const after = get().units.find((u) => u.id === unitId);
+    if (after && doorsAsWritten) {
+      set((st) => ({
+        units: st.units.map((u) => {
+          if (u.id !== unitId) return u;
+          const params = { ...u.params };
+          for (const key of ['doors', 'hinge', 'bay_doors']) {
+            if (record[key] === undefined) delete params[key];
+            else params[key] = record[key];
+          }
+          return { ...u, params };
+        }),
+      }));
+      undone = true;
+    }
+    // 3. The record goes either way: what is left is the client's.
+    set((st) => ({
+      units: st.units.map((u) => {
+        if (u.id !== unitId) return u;
+        const { slope_door_auto: _gone, ...params } = u.params;
+        return { ...u, params };
+      }),
+    }));
+    if (undone) {
+      get().healFrontGaps();
+      useUiStore.getState().notify(
+        'Out of the slope: the doors hang as they did, and the door partition the slope added is gone.',
+        'ok',
+      );
+    }
+    return undone;
   },
 
   /**

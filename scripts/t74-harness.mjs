@@ -209,7 +209,29 @@ export async function roomView(page) {
   if (await page.has('[data-testid="view-room"]')) {
     await page.press('[data-testid="view-room"]');
     await page.sleep(1400);
+    await settleCamera(page);
   }
+}
+
+/**
+ * Wait (up to 8 s) until the room camera stops moving. OrbitControls damps a
+ * drag and the presets glide, so the camera keeps travelling for a while after
+ * the gesture; at the headless frame rate (about 400 ms a frame) a pixel read
+ * off a camera still in motion is not where the piece is by the time the
+ * mouse arrives. The full walk found exactly that: a 2klik a few pixels off.
+ */
+export async function settleCamera(page) {
+  const pose = () => page.ask(`(() => { const c = window.__cc.views && window.__cc.views.room && window.__cc.views.room.camera;
+    if (!c) return null; const p = c.position; const q = c.quaternion;
+    return [p.x, p.y, p.z, q.x, q.y, q.z, q.w].map((v) => Math.round(v * 1e4) / 1e4).join(','); })()`);
+  let last = await pose();
+  for (let t = 0; t < 20; t += 1) {
+    await page.sleep(400);
+    const now = await pose();
+    if (now === last) return true;
+    last = now;
+  }
+  return false;
 }
 
 /**
@@ -231,6 +253,7 @@ export async function orbit(page, dx, dy = 0) {
   if (!at) return false;
   await page.dragFromTo(at.x, at.y, at.x + dx, at.y + dy, { steps: 20 });
   await page.sleep(900);
+  await settleCamera(page);
   return true;
 }
 
@@ -242,6 +265,8 @@ export async function orbit(page, dx, dy = 0) {
  */
 export async function reach(page, unitId, panelId, opts = {}) {
   const tries = [[0, 0], [120, 0], [-240, 0], [120, 140], [260, 0]];
+  // A camera still gliding (a preset, an add that re-frames) is settled first.
+  await settleCamera(page);
   for (const [dx, dy] of tries) {
     if (dx || dy) await orbit(page, dx, dy);
     const at = await pointOn(page, unitId, panelId, opts);

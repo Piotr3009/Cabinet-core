@@ -645,6 +645,18 @@ export function MovingPanel({
     return null;
   }, [p, mitre]);
   useEffect(() => () => { outlinePlain?.dispose?.(); }, [outlinePlain]);
+  // T75 · a J leaf's pretty-view contour is the PLAIN board plus the J's own
+  // rim (drawn below), so the machined solid's many recess edges are neither
+  // doubled nor capped. The box is the leaf's own size.
+  const isJLeaf = Boolean(p?.meta?.jpull) && !mitre;
+  const jLeafBox = useMemo(
+    () => (isJLeaf ? new THREE.BoxGeometry(mm(p.box.w), mm(p.box.h), mm(p.box.d)) : null),
+    // The leaf's SIZE, not the panel object: a recompute that leaves the leaf
+    // the same size keeps the same box, so the contour is not rebuilt for it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isJLeaf, p.box.w, p.box.h, p.box.d],
+  );
+  useEffect(() => () => { jLeafBox?.dispose?.(); }, [jLeafBox]);
   const cuts = built?.cuts || null;
   // T74 F12 · a J leaf's groove is drawn darker by `appearance.jpull.grooveShade`.
   const groove = useMemo(() => jGrooveBox(p, profile, Boolean(built?.solid) && !shaker), [p, profile, built, shaker]);
@@ -652,10 +664,40 @@ export function MovingPanel({
   const jBand = useMemo(() => jpullBand(p, profile), [p, profile]);
   const jBandGeometry = useMemo(() => (jBand ? jpullBandGeometry(jBand) : null), [jBand]);
   useEffect(() => () => { jBandGeometry?.dispose?.(); }, [jBandGeometry]);
-  // …and its rim, drawn only where the leaf's solid does not carry the J
-  // itself (there the solid's own contour already turns round it).
-  const jRim = useMemo(() => (jBand && !built?.solid ? jpullRimPoints(jBand) : null), [jBand, built]);
+  // …and its rim, drawn on EVERY J leaf in the pretty view: it is the J's
+  // contour, and the board's own contour below is then asked for the plain
+  // box, so nothing is drawn twice and nothing depends on which solid the
+  // screen happens to hold.
+  const jRim = useMemo(() => (jBand ? jpullRimPoints(jBand) : null), [jBand]);
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray, groove);
+
+  // ─── T75 · THE CONTOUR IS BUILT AGAIN WHEN THE BOARD CHANGES SHAPE ──────
+  //
+  // The owner, 24.09.2026: *"OUTLINES się nie rysuje i nie wiedzieć dlaczego;
+  // przeanalizuj wszystkie powierzchnie i outlines linijka po linijce."*
+  //
+  // MEASURED on the running build. A leaf's contour is a fat line
+  // (drei `Edges`, a `LineSegments2`), and three caps an instanced geometry
+  // at the number of instances it had the FIRST time it was drawn
+  // (`WebGLBindingStates`: `_maxInstanceCount` is set once, when undefined;
+  // `WebGLRenderer.renderBufferDirect` draws `min(instanceCount,
+  // _maxInstanceCount)`). drei's `Edges` keeps ONE such geometry for the life
+  // of the component and only calls `setPositions` on it when the parent's
+  // geometry changes. So a door drawn first as a plain slab (24 segments) that
+  // later takes the J machining (117 segments) shows its first 24 segments for
+  // ever: the outer box, and never the rim of the groove. The probe:
+  // *A doors, no J: _max=24 · B J chosen: instanceCount 117, drawn 24 ·
+  // OUTLINES off and on: _max=117, the rim appears.* Every board that changes
+  // shape after its first frame (a slope cut, a notch, the J) is caught the
+  // same way.
+  //
+  // So the contour is REMOUNTED whenever the geometry it outlines is another
+  // object: the `key` below is that geometry's own id, and a new `Edges` is a
+  // new line geometry with a fresh cap. Nothing in drei or three is patched.
+  const outlineGeometry = (contour || xray)
+    ? undefined
+    : (outlinePlain || (jBand ? jLeafBox : undefined));
+  const outlineKey = `${(outlineGeometry || mitre?.geometry || machined)?.uuid || 'box'}:${outline.threshold}`;
 
   // ─── TURN 26 (CLAUDE.md F5.2): AND A D/W FRONT DROPS ────────────────────
   // Owner: "it opens sideways." It did, because the scene had one way for a
@@ -976,11 +1018,13 @@ export function MovingPanel({
             reads `proChromeOn()` exactly as it did. */}
         {chromeOn('outlines') && (outlines || contour || xray) && (
           <Edges
+            // T75 · a new contour for a new shape (see `outlineKey` above).
+            key={outlineKey}
             // The pretty view outlines the PLAIN board (see the block above);
             // contour and X-ray keep the machined solid — they are there to
             // show the work. `undefined` hands the choice back to the parent
             // mesh's own geometry, which is drei's default.
-            geometry={(contour || xray) ? undefined : (outlinePlain || undefined)}
+            geometry={outlineGeometry}
             threshold={outline.threshold}
             color={outline.colour}
             lineWidth={outline.width}
@@ -996,9 +1040,11 @@ export function MovingPanel({
             userData={{ ccHelper: true }}
           />
         )}
-        {/* T75 · the J's own rim in the contour, where the solid does not carry it. */}
-        {chromeOn('outlines') && (outlines || contour || xray) && jRim && (
+        {/* T75 · the J's own rim in the pretty view's contour (contour and X-ray
+            show the machined solid's own edges instead). */}
+        {chromeOn('outlines') && outlines && !contour && !xray && jRim && (
           <Line
+            key={`${jBand.edge}:${jBand.y0}:${jBand.y1}`}
             points={jRim}
             color={outline.colour}
             lineWidth={outline.width}

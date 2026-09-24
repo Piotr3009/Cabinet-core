@@ -184,7 +184,11 @@ test('the same sentence folds into a count; a different one queues; a red never 
 
 test('the pretty view outlines the PLAIN board; contour and X-ray keep the machined one', () => {
   const v = src('3d/UnitView.jsx');
-  assert.match(v, /geometry=\{\(contour \|\| xray\) \? undefined : \(outlinePlain \|\| undefined\)\}/);
+  // AMENDED BY T75: the same choice, made once in `outlineGeometry` (so the
+  // contour can be keyed on it), and a J leaf's pretty-view board is its plain
+  // box plus the J's own rim. Contour and X-ray still hand back `undefined`.
+  assert.match(v, /const outlineGeometry = \(contour \|\| xray\)\n\s*\? undefined\n\s*: \(outlinePlain \|\| \(jBand \? jLeafBox : undefined\)\);/);
+  assert.match(v, /geometry=\{outlineGeometry\}/);
 });
 
 test('hover figures go bare; the standing chains keep turn 25\'s plate', () => {

@@ -54,10 +54,25 @@ test('T75 · darkest at the J edge, fading inward; square on the edge, rounded o
   assert.match(src, /\{jBand && jBandGeometry && !contour && !xray && \(/);
 });
 
-test('T75 · the contour turns round the J where the leaf is drawn as its plain board', () => {
-  // The owner: *"linia outlines nadal się nie przerywa, tylko idzie prosto"*.
+test('T75 · the contour turns round the J on every screen: the rim is the J leaf\'s own, always', () => {
+  // The owner: *"OUTLINES się nie rysuje i nie wiedzieć dlaczego"*.
   assert.match(src, /function jpullRimPoints\(band\) \{/);
-  assert.match(src, /const jRim = useMemo\(\(\) => \(jBand && !built\?\.solid \? jpullRimPoints\(jBand\) : null\), \[jBand, built\]\);/);
-  assert.match(src, /chromeOn\('outlines'\) && \(outlines \|\| contour \|\| xray\) && jRim && \(/);
+  assert.match(src, /const jRim = useMemo\(\(\) => \(jBand \? jpullRimPoints\(jBand\) : null\), \[jBand\]\);/,
+    'the rim depends on the solid again');
+  assert.match(src, /chromeOn\('outlines'\) && outlines && !contour && !xray && jRim && \(/);
   assert.match(src, /userData=\{\{ ccHelper: true, ccJpullRim: p\.id \}\}/);
+  // …and the board's own contour is then the PLAIN box, so the rim is drawn once.
+  assert.match(src, /\(outlinePlain \|\| \(jBand \? jLeafBox : undefined\)\)/);
+});
+
+test('T75 · the contour is a NEW line whenever the board it outlines is another object', () => {
+  // MEASURED: three caps a fat line at the instance count it had when first
+  // drawn (`_maxInstanceCount`), and drei\'s Edges keeps one line geometry for
+  // its whole life. A slab that later takes the J showed its first 24 segments
+  // for ever. The key below remounts the contour with the geometry.
+  assert.match(src, /const outlineKey = `\$\{\(outlineGeometry \|\| mitre\?\.geometry \|\| machined\)\?\.uuid \|\| 'box'\}:\$\{outline\.threshold\}`;/);
+  assert.match(src, /<Edges\n\s*\/\/ T75 · a new contour for a new shape \(see `outlineKey` above\)\.\n\s*key=\{outlineKey\}/);
+  assert.match(src, /geometry=\{outlineGeometry\}/);
+  // The rim line too: keyed by the run it draws.
+  assert.match(src, /key=\{`\$\{jBand\.edge\}:\$\{jBand\.y0\}:\$\{jBand\.y1\}`\}/);
 });

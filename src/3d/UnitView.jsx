@@ -150,6 +150,7 @@ import { opensOwnModal } from '../engine/elements.js';
 import { picksOnClick } from './picking.js';
 import { panelFinish } from '../engine/materials.js';
 import { WATCH_FELT_COLOURS, secondShoeItem } from '../engine/watchDrawer.js';
+import { jpullSpec } from '../engine/handles.js';
 // ─── TURN 49 (CLAUDE.md F9): AND WHETHER IT IS A VENEER ────────────────────
 // The finish alone cannot say for a FRONT — a front veneer borrows an EGGER
 // scan (T20 F12.3) and is stored as a decor — so the piece's own material SLOT
@@ -336,6 +337,78 @@ function useMitre(panel) {
  * write, which is why dragging a shelf does not stutter.
  */
 /**
+ * ─── T75 · THE J-PULL BAND: SEEN IN EVERY LIGHT, ON EVERY SCREEN ───────────
+ *
+ * The owner, 24.09.2026, on his own screen, doors shut and seen head-on:
+ * *"jeśli ja tu widzę J hand to jestem świętym Mikołajem ... na pewno są w
+ * kodzie, ale nie na wizualizacji, coś jest nie tak, zmień to proszę."*
+ *
+ * T74 F12 darkened the groove INSIDE the machined solid, and that reads only
+ * where the solid is built and the light happens to leave the recess dark (a
+ * pair of doors shut, a front camera). Open the neighbour, look from the side,
+ * or have a screen where the leaf is drawn as its plain board, and the groove
+ * is the door's own colour again. So the J is now ALSO drawn as its own band:
+ * a flat, unlit strip on the room face of the leaf, over the engine's relief
+ * (`meta.jpull.edge`, `meta.jpull.run`, the J section's `reliefMm`), in the
+ * door's own colour darkened by `appearance.jpull.bandShade`. It does not
+ * depend on the machined solid, on the lights or on the shader, so what the
+ * engine says is cut is what every screen shows. Clicks pass through it.
+ */
+function jpullBand(p, profile) {
+  const jp = p?.meta?.jpull;
+  const edge = jp?.edge;
+  if (!edge || !p?.box) return null;
+  // Only a J the engine CUTS is drawn: a wall door and a leaf too short for
+  // its run carry the record and a reason, and no band.
+  if (jp.reason === 'wall-door' || jp.reason === 'too-short') return null;
+  const shade = Number(profile?.appearance?.jpull?.bandShade);
+  if (!(shade > 0)) return null;
+  const spec = jpullSpec(profile);
+  const cut = p?.cnc?.jpull?.profile || null;
+  const across = Math.max(1, Number(cut?.reliefMm) || spec.reliefMm);
+  const { w, h, d } = p.box;
+  let x0; let x1; let y0; let y1;
+  if (edge === 'L' || edge === 'R') {
+    const from = Number.isFinite(Number(jp.run?.from)) ? Number(jp.run.from) : 0;
+    const to = Number.isFinite(Number(jp.run?.to)) ? Number(jp.run.to) : h;
+    y0 = from - h / 2; y1 = to - h / 2;
+    if (edge === 'R') { x0 = w / 2 - across; x1 = w / 2; } else { x0 = -w / 2; x1 = -w / 2 + across; }
+  } else if (edge === 'TOP') {
+    x0 = -w / 2; x1 = w / 2; y0 = h / 2 - across; y1 = h / 2;
+  } else {
+    return null;
+  }
+  if (!(x1 > x0) || !(y1 > y0)) return null;
+  return {
+    x0, x1, y0, y1,
+    z: d / 2 + 0.4,
+    r: Math.min(12, (x1 - x0) / 2, (y1 - y0) / 2),
+    shade,
+  };
+}
+
+/** The band's flat shape, a rounded rectangle, built in metres about the leaf's centre. */
+function jpullBandGeometry(band) {
+  const x0 = mm(band.x0); const x1 = mm(band.x1); const y0 = mm(band.y0); const y1 = mm(band.y1);
+  const r = mm(band.r);
+  const shape = new THREE.Shape();
+  shape.moveTo(x0 + r, y0);
+  shape.lineTo(x1 - r, y0);
+  shape.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false);
+  shape.lineTo(x1, y1 - r);
+  shape.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
+  shape.lineTo(x0 + r, y1);
+  shape.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false);
+  shape.lineTo(x0, y0 + r);
+  shape.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false);
+  const g = new THREE.ShapeGeometry(shape, 6);
+  g.translate(0, 0, mm(band.z));
+  return g;
+}
+
+const NO_RAYCAST = () => null;
+
+/**
  * ─── T74 F12 · WHERE THE J GROOVE IS, IN THE PIECE'S OWN FRAME ─────────────
  *
  * The strip the J machining takes out of a leaf (`cnc.jpull`, the engine's one
@@ -507,6 +580,16 @@ export function MovingPanel({
   const cuts = built?.cuts || null;
   // T74 F12 · a J leaf's groove is drawn darker by `appearance.jpull.grooveShade`.
   const groove = useMemo(() => jGrooveBox(p, profile, Boolean(built?.solid) && !shaker), [p, profile, built, shaker]);
+  // T75 · the J-pull band and its colour: the door's own, darkened.
+  const jBand = useMemo(() => jpullBand(p, profile), [p, profile]);
+  const jBandGeometry = useMemo(() => (jBand ? jpullBandGeometry(jBand) : null), [jBand]);
+  useEffect(() => () => { jBandGeometry?.dispose?.(); }, [jBandGeometry]);
+  const jBandColour = useMemo(() => {
+    if (!jBand) return null;
+    const c = new THREE.Color();
+    try { c.set(surface?.colour || '#808080'); } catch { c.set('#808080'); }
+    return c.multiplyScalar(jBand.shade);
+  }, [jBand, surface?.colour]);
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray, groove);
 
   // ─── TURN 26 (CLAUDE.md F5.2): AND A D/W FRONT DROPS ────────────────────
@@ -713,6 +796,18 @@ export function MovingPanel({
         // room surface would let `<Hardware>`'s unmount clear it (turn 21's
         // registry clears a whole surface at once).
         <FrontHandle panel={p} profile={profile} pivot={pivot} surface="room-front" scope={p.id} />
+      )}
+      {/* T75 · the J-pull band, on the room face of the leaf (see `jpullBand`). */}
+      {jBand && jBandGeometry && !contour && !xray && (
+        <mesh
+          position={meshOffset}
+          geometry={jBandGeometry}
+          raycast={NO_RAYCAST}
+          renderOrder={2}
+          userData={{ ccJpullBand: p.id, ccNoBounds: true }}
+        >
+          <meshBasicMaterial color={jBandColour} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-2} />
+        </mesh>
       )}
       {/* ─── Turn 16 (CLAUDE.md F8): THE PIECE SAYS WHICH PIECE IT IS ───
           The wall-units-do-not-shine diagnosis has to READ the scene — "read

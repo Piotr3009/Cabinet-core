@@ -2958,7 +2958,10 @@ export const DEFAULT_CABINET_PROFILE = {
     // lip throws no shadow into it. Where the room light cannot show the step,
     // the groove's inner faces are shaded darker by this share (0 = as the
     // door, 1 = black). The workshop's number, like the bevel's cavity AO.
-    jpull: { grooveShade: 0.5 },
+    // T75 · …and the BAND: the J drawn as its own flat strip on the room face,
+    // in the door's colour times this share (0 = no band, 1 = the door's own
+    // colour). The workshop's number; what makes the J read on every screen.
+    jpull: { grooveShade: 0.5, bandShade: 0.3 },
 
     // The room the furniture is lit BY. RoomEnvironment (three/examples, no
     // download, no .hdr file — CLAUDE.md forbids both) through PMREM. The

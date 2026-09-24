@@ -20,10 +20,12 @@ import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engi
 const ROOT = new URL('../', import.meta.url).pathname;
 const src = readFileSync(`${ROOT}src/3d/UnitView.jsx`, 'utf8');
 
-test('T75 · the band share is a profile number, and a saved profile without it gets it', () => {
-  assert.equal(P.appearance.jpull.bandShade, 0.3);
+test('T75 · the shadow shares are profile numbers, and a saved profile without them gets them', () => {
+  // The owner: *"delikatny cień, bardzo delikatny, a nie czarne tło"*.
+  assert.equal(P.appearance.jpull.shadowEdge, 0.22);
+  assert.equal(P.appearance.jpull.shadowInner, 0.04);
   const old = migrateCabinetProfile({ ...P, appearance: { ...P.appearance, jpull: { grooveShade: 0.5 } } });
-  assert.equal(old.appearance.jpull.bandShade, 0.3, 'a profile saved before T75 draws no band');
+  assert.equal(old.appearance.jpull.shadowEdge, 0.22, 'a profile saved before T75 draws no shadow');
 });
 
 test('T75 · the band is drawn from the ENGINE record, not from the machined solid', () => {
@@ -37,14 +39,25 @@ test('T75 · the band is drawn from the ENGINE record, not from the machined sol
   assert.match(body, /jp\.reason === 'wall-door' \|\| jp\.reason === 'too-short'/);
 });
 
-test('T75 · unlit, in front of the face, and clicks pass through it', () => {
-  assert.match(src, /<meshBasicMaterial color=\{jBandColour\} polygonOffset/);
+test('T75 · a see-through film in front of the face, and clicks pass through it', () => {
+  assert.match(src, /vertexColors\n\s*transparent\n\s*depthWrite=\{false\}/);
   assert.match(src, /raycast=\{NO_RAYCAST\}/);
   assert.match(src, /z: d \/ 2 \+ 0\.4,/);
   assert.match(src, /userData=\{\{ ccJpullBand: p\.id, ccNoBounds: true \}\}/);
 });
 
-test('T75 · the band is the door colour darkened, and it is not drawn in contour or X-ray', () => {
-  assert.match(src, /c\.multiplyScalar\(jBand\.shade\)/);
+test('T75 · darkest at the J edge, fading inward; square on the edge, rounded on the inner side', () => {
+  // *"zakończenie miało być w drugą stronę, jak oryginalne J-pulle"*
+  assert.match(src, /rgba\[i \* 4 \+ 3\] = band\.aEdge \+ \(band\.aInner - band\.aEdge\) \* t;/);
+  assert.match(src, /if \(band\.edge === 'R'\) \{\n\s*shape\.moveTo\(x1, y0\);/);
+  assert.match(src, /Math\.min\(ramp, x1 - x0, \(y1 - y0\) \/ 2\)/);
   assert.match(src, /\{jBand && jBandGeometry && !contour && !xray && \(/);
+});
+
+test('T75 · the contour turns round the J where the leaf is drawn as its plain board', () => {
+  // The owner: *"linia outlines nadal się nie przerywa, tylko idzie prosto"*.
+  assert.match(src, /function jpullRimPoints\(band\) \{/);
+  assert.match(src, /const jRim = useMemo\(\(\) => \(jBand && !built\?\.solid \? jpullRimPoints\(jBand\) : null\), \[jBand, built\]\);/);
+  assert.match(src, /chromeOn\('outlines'\) && \(outlines \|\| contour \|\| xray\) && jRim && \(/);
+  assert.match(src, /userData=\{\{ ccHelper: true, ccJpullRim: p\.id \}\}/);
 });

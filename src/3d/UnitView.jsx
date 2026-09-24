@@ -3,7 +3,7 @@ import {
 } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Edges } from '@react-three/drei';
+import { Edges, Line } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
 import { chromeOn } from './chrome.js';
 
@@ -337,35 +337,41 @@ function useMitre(panel) {
  * write, which is why dragging a shelf does not stutter.
  */
 /**
- * ─── T75 · THE J-PULL BAND: SEEN IN EVERY LIGHT, ON EVERY SCREEN ───────────
+ * ─── T75 · THE J-PULL SHADOW: SEEN IN EVERY LIGHT, ON EVERY SCREEN ─────────
  *
  * The owner, 24.09.2026, on his own screen, doors shut and seen head-on:
  * *"jeśli ja tu widzę J hand to jestem świętym Mikołajem ... na pewno są w
  * kodzie, ale nie na wizualizacji, coś jest nie tak, zmień to proszę."*
+ * …and on the first answer, a flat dark band: *"to miał być delikatny cień,
+ * bardzo delikatny, a nie czarne tło; do tego zakończenie miało być w drugą
+ * stronę, jak oryginalne J-pulle."*
  *
  * T74 F12 darkened the groove INSIDE the machined solid, and that reads only
- * where the solid is built and the light happens to leave the recess dark (a
- * pair of doors shut, a front camera). Open the neighbour, look from the side,
- * or have a screen where the leaf is drawn as its plain board, and the groove
- * is the door's own colour again. So the J is now ALSO drawn as its own band:
- * a flat, unlit strip on the room face of the leaf, over the engine's relief
- * (`meta.jpull.edge`, `meta.jpull.run`, the J section's `reliefMm`), in the
- * door's own colour darkened by `appearance.jpull.bandShade`. It does not
- * depend on the machined solid, on the lights or on the shader, so what the
- * engine says is cut is what every screen shows. Clicks pass through it.
+ * where the solid is built and the light happens to leave the recess dark. So
+ * the J is ALSO drawn as its own SHADOW: a see-through film on the room face of
+ * the leaf, over the engine's relief (`meta.jpull.edge`, `meta.jpull.run`, the
+ * section's `reliefMm`), darkest at the J edge and fading into the door
+ * (`appearance.jpull.shadowEdge` to `shadowInner`, the share of black laid
+ * over whatever the light made of the door). Its shape is the groove's own:
+ * square where it runs out through the edge, rounded by the lead-in radius
+ * (`rampR`) on the side that turns into the door. It depends on nothing but
+ * the engine's record, so every screen shows it. Clicks pass through it.
  */
 function jpullBand(p, profile) {
   const jp = p?.meta?.jpull;
   const edge = jp?.edge;
   if (!edge || !p?.box) return null;
   // Only a J the engine CUTS is drawn: a wall door and a leaf too short for
-  // its run carry the record and a reason, and no band.
+  // its run carry the record and a reason, and no shadow.
   if (jp.reason === 'wall-door' || jp.reason === 'too-short') return null;
-  const shade = Number(profile?.appearance?.jpull?.bandShade);
-  if (!(shade > 0)) return null;
+  const J = profile?.appearance?.jpull || {};
+  const aEdge = Math.min(1, Math.max(0, Number(J.shadowEdge) || 0));
+  const aInner = Math.min(1, Math.max(0, Number(J.shadowInner) || 0));
+  if (!(aEdge > 0) && !(aInner > 0)) return null;
   const spec = jpullSpec(profile);
   const cut = p?.cnc?.jpull?.profile || null;
   const across = Math.max(1, Number(cut?.reliefMm) || spec.reliefMm);
+  const ramp = Math.max(0, Number(cut?.rampR) || spec.rampR);
   const { w, h, d } = p.box;
   let x0; let x1; let y0; let y1;
   if (edge === 'L' || edge === 'R') {
@@ -379,31 +385,93 @@ function jpullBand(p, profile) {
     return null;
   }
   if (!(x1 > x0) || !(y1 > y0)) return null;
+  // A run that stops short of the leaf's ends turns into the door on the lead-in
+  // radius; a TOP J runs the full width and has no turn.
+  const r = edge === 'TOP' ? 0 : Math.min(ramp, x1 - x0, (y1 - y0) / 2);
   return {
-    x0, x1, y0, y1,
-    z: d / 2 + 0.4,
-    r: Math.min(12, (x1 - x0) / 2, (y1 - y0) / 2),
-    shade,
+    edge, x0, x1, y0, y1, r, aEdge, aInner, z: d / 2 + 0.4,
   };
 }
 
-/** The band's flat shape, a rounded rectangle, built in metres about the leaf's centre. */
+/**
+ * The shadow's shape in metres about the leaf's centre: square on the J edge,
+ * rounded on the inner side, with a black whose opacity fades from the edge in.
+ */
 function jpullBandGeometry(band) {
   const x0 = mm(band.x0); const x1 = mm(band.x1); const y0 = mm(band.y0); const y1 = mm(band.y1);
   const r = mm(band.r);
   const shape = new THREE.Shape();
-  shape.moveTo(x0 + r, y0);
-  shape.lineTo(x1 - r, y0);
-  shape.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false);
-  shape.lineTo(x1, y1 - r);
-  shape.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
-  shape.lineTo(x0 + r, y1);
-  shape.absarc(x0 + r, y1 - r, r, Math.PI / 2, Math.PI, false);
-  shape.lineTo(x0, y0 + r);
-  shape.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false);
-  const g = new THREE.ShapeGeometry(shape, 6);
+  if (band.edge === 'R') {
+    shape.moveTo(x1, y0);
+    shape.lineTo(x0 + r, y0);
+    if (r > 0) shape.absarc(x0 + r, y0 + r, r, -Math.PI / 2, -Math.PI, true);
+    shape.lineTo(x0, y1 - r);
+    if (r > 0) shape.absarc(x0 + r, y1 - r, r, Math.PI, Math.PI / 2, true);
+    shape.lineTo(x1, y1);
+  } else if (band.edge === 'L') {
+    shape.moveTo(x0, y0);
+    shape.lineTo(x1 - r, y0);
+    if (r > 0) shape.absarc(x1 - r, y0 + r, r, -Math.PI / 2, 0, false);
+    shape.lineTo(x1, y1 - r);
+    if (r > 0) shape.absarc(x1 - r, y1 - r, r, 0, Math.PI / 2, false);
+    shape.lineTo(x0, y1);
+  } else {
+    shape.moveTo(x0, y0);
+    shape.lineTo(x1, y0);
+    shape.lineTo(x1, y1);
+    shape.lineTo(x0, y1);
+  }
+  shape.closePath();
+  const g = new THREE.ShapeGeometry(shape, 8);
+  // Black, and how much of it: the full share at the J edge, fading to the
+  // inner share where the groove turns into the door.
+  const pos = g.attributes.position;
+  const rgba = new Float32Array(pos.count * 4);
+  for (let i = 0; i < pos.count; i += 1) {
+    let t;
+    if (band.edge === 'R') t = (x1 - pos.getX(i)) / Math.max(x1 - x0, 1e-9);
+    else if (band.edge === 'L') t = (pos.getX(i) - x0) / Math.max(x1 - x0, 1e-9);
+    else t = (y1 - pos.getY(i)) / Math.max(y1 - y0, 1e-9);
+    t = Math.min(1, Math.max(0, t));
+    rgba[i * 4 + 3] = band.aEdge + (band.aInner - band.aEdge) * t;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(rgba, 4));
   g.translate(0, 0, mm(band.z));
   return g;
+}
+
+/**
+ * T75 · THE J'S OWN RIM, for the contour pass. The owner: *"linia outlines
+ * nadal się nie przerywa, tylko idzie prosto, tutaj jest problem"*. Where the
+ * leaf is drawn as its plain board the contour runs straight past the J; this
+ * is the groove's inner edge, the line the machined solid's own contour draws,
+ * so the outline turns round the J on every screen. Open at the J edge, where
+ * the board's own contour already runs. In metres about the leaf's centre.
+ */
+function jpullRimPoints(band) {
+  const x0 = mm(band.x0); const x1 = mm(band.x1); const y0 = mm(band.y0); const y1 = mm(band.y1);
+  const r = mm(band.r); const z = mm(band.z + 0.1);
+  const pts = [];
+  const arc = (cx, cy, a0, a1) => {
+    for (let i = 0; i <= 8; i += 1) {
+      const a = a0 + ((a1 - a0) * i) / 8;
+      pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a), z]);
+    }
+  };
+  if (band.edge === 'R') {
+    pts.push([x1, y0, z]);
+    if (r > 0) arc(x0 + r, y0 + r, -Math.PI / 2, -Math.PI); else pts.push([x0, y0, z]);
+    if (r > 0) arc(x0 + r, y1 - r, Math.PI, Math.PI / 2); else pts.push([x0, y1, z]);
+    pts.push([x1, y1, z]);
+  } else if (band.edge === 'L') {
+    pts.push([x0, y0, z]);
+    if (r > 0) arc(x1 - r, y0 + r, -Math.PI / 2, 0); else pts.push([x1, y0, z]);
+    if (r > 0) arc(x1 - r, y1 - r, 0, Math.PI / 2); else pts.push([x1, y1, z]);
+    pts.push([x0, y1, z]);
+  } else {
+    pts.push([x0, y0, z], [x1, y0, z]);
+  }
+  return pts;
 }
 
 const NO_RAYCAST = () => null;
@@ -580,16 +648,13 @@ export function MovingPanel({
   const cuts = built?.cuts || null;
   // T74 F12 · a J leaf's groove is drawn darker by `appearance.jpull.grooveShade`.
   const groove = useMemo(() => jGrooveBox(p, profile, Boolean(built?.solid) && !shaker), [p, profile, built, shaker]);
-  // T75 · the J-pull band and its colour: the door's own, darkened.
+  // T75 · the J-pull shadow (see `jpullBand`).
   const jBand = useMemo(() => jpullBand(p, profile), [p, profile]);
   const jBandGeometry = useMemo(() => (jBand ? jpullBandGeometry(jBand) : null), [jBand]);
   useEffect(() => () => { jBandGeometry?.dispose?.(); }, [jBandGeometry]);
-  const jBandColour = useMemo(() => {
-    if (!jBand) return null;
-    const c = new THREE.Color();
-    try { c.set(surface?.colour || '#808080'); } catch { c.set('#808080'); }
-    return c.multiplyScalar(jBand.shade);
-  }, [jBand, surface?.colour]);
+  // …and its rim, drawn only where the leaf's solid does not carry the J
+  // itself (there the solid's own contour already turns round it).
+  const jRim = useMemo(() => (jBand && !built?.solid ? jpullRimPoints(jBand) : null), [jBand, built]);
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray, groove);
 
   // ─── TURN 26 (CLAUDE.md F5.2): AND A D/W FRONT DROPS ────────────────────
@@ -797,7 +862,7 @@ export function MovingPanel({
         // registry clears a whole surface at once).
         <FrontHandle panel={p} profile={profile} pivot={pivot} surface="room-front" scope={p.id} />
       )}
-      {/* T75 · the J-pull band, on the room face of the leaf (see `jpullBand`). */}
+      {/* T75 · the J-pull shadow, on the room face of the leaf (see `jpullBand`). */}
       {jBand && jBandGeometry && !contour && !xray && (
         <mesh
           position={meshOffset}
@@ -806,7 +871,16 @@ export function MovingPanel({
           renderOrder={2}
           userData={{ ccJpullBand: p.id, ccNoBounds: true }}
         >
-          <meshBasicMaterial color={jBandColour} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-2} />
+          <meshBasicMaterial
+            color="#ffffff"
+            vertexColors
+            transparent
+            depthWrite={false}
+            toneMapped={false}
+            polygonOffset
+            polygonOffsetFactor={-2}
+            polygonOffsetUnits={-2}
+          />
         </mesh>
       )}
       {/* ─── Turn 16 (CLAUDE.md F8): THE PIECE SAYS WHICH PIECE IT IS ───
@@ -920,6 +994,16 @@ export function MovingPanel({
             // because drei draws a fat line as a LineSegments2 — which is a
             // Mesh, and reads as furniture to anything looking at the type.
             userData={{ ccHelper: true }}
+          />
+        )}
+        {/* T75 · the J's own rim in the contour, where the solid does not carry it. */}
+        {chromeOn('outlines') && (outlines || contour || xray) && jRim && (
+          <Line
+            points={jRim}
+            color={outline.colour}
+            lineWidth={outline.width}
+            {...panelOutlineOffset(profile)}
+            userData={{ ccHelper: true, ccJpullRim: p.id }}
           />
         )}
         {/* ─── Turn 20 (CLAUDE.md F8.2): THE CUT FACES ────────────────────

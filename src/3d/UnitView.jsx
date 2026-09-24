@@ -388,8 +388,11 @@ function jpullBand(p, profile) {
   // A run that stops short of the leaf's ends turns into the door on the lead-in
   // radius; a TOP J runs the full width and has no turn.
   const r = edge === 'TOP' ? 0 : Math.min(ramp, x1 - x0, (y1 - y0) / 2);
+  // The hook at the back of the section: the only board left on the J edge
+  // along the run, which is where the contour's depth edge ends (below).
+  const lip = Math.max(0, Number(cut?.lipT) || spec.lipT);
   return {
-    edge, x0, x1, y0, y1, r, aEdge, aInner, z: d / 2 + 0.4,
+    edge, x0, x1, y0, y1, r, lip, aEdge, aInner, z: d / 2 + 0.4,
   };
 }
 
@@ -472,6 +475,49 @@ function jpullRimPoints(band) {
     pts.push([x0, y0, z], [x1, y0, z]);
   }
   return pts;
+}
+
+/**
+ * ─── T75 · A J LEAF'S CONTOUR, EDGE BY EDGE ────────────────────────────────
+ *
+ * The owner, 25.09.2026: *"pionowy od frontu outline się nie kończy na J hand
+ * pull, a powinien; tylko tylny powinien zostać."*
+ *
+ * The board's twelve edges as explicit segments, in metres about the leaf's
+ * centre, with the J read off the engine's record: on the J side the FRONT
+ * vertical edge is interrupted along the run (the front skin is relieved
+ * there) and the BACK edge stays whole (the hook is the full board), and the
+ * J's own rim closes the gap on the face. A TOP J (a drawer front) relieves
+ * the whole width: the front top edge goes, the front verticals stop at the
+ * rim, and the top corners' depth edges end at the hook. Nothing here asks the
+ * machined solid or the light, so every screen draws the same lines, once.
+ */
+function jpullContourSegments(band, box) {
+  const W = mm(box.w) / 2; const H = mm(box.h) / 2; const D = mm(box.d) / 2;
+  const seg = [];
+  const add = (a, b) => { seg.push(a, b); };
+  // The back face and its four corners' depth edges: the hook is whole.
+  add([-W, -H, -D], [W, -H, -D]); add([W, -H, -D], [W, H, -D]);
+  add([W, H, -D], [-W, H, -D]); add([-W, H, -D], [-W, -H, -D]);
+  const rim = jpullRimPoints(band);
+  if (band.edge === 'TOP') {
+    const yr = mm(band.y0);
+    const lipZ = -D + mm(band.lip);
+    add([-W, -H, -D], [-W, -H, D]); add([W, -H, -D], [W, -H, D]);
+    add([-W, H, -D], [-W, H, lipZ]); add([W, H, -D], [W, H, lipZ]);
+    add([-W, -H, D], [W, -H, D]);
+    add([-W, -H, D], [-W, yr, D]); add([W, -H, D], [W, yr, D]);
+  } else {
+    add([-W, -H, -D], [-W, -H, D]); add([W, -H, -D], [W, -H, D]);
+    add([W, H, -D], [W, H, D]); add([-W, H, -D], [-W, H, D]);
+    add([-W, -H, D], [W, -H, D]); add([-W, H, D], [W, H, D]);
+    const jx = band.edge === 'R' ? W : -W;
+    const y0 = mm(band.y0); const y1 = mm(band.y1);
+    add([-jx, -H, D], [-jx, H, D]);
+    add([jx, -H, D], [jx, y0, D]); add([jx, y1, D], [jx, H, D]);
+  }
+  for (let i = 0; i + 1 < rim.length; i += 1) add(rim[i], rim[i + 1]);
+  return seg;
 }
 
 const NO_RAYCAST = () => null;
@@ -648,15 +694,6 @@ export function MovingPanel({
   // T75 · a J leaf's pretty-view contour is the PLAIN board plus the J's own
   // rim (drawn below), so the machined solid's many recess edges are neither
   // doubled nor capped. The box is the leaf's own size.
-  const isJLeaf = Boolean(p?.meta?.jpull) && !mitre;
-  const jLeafBox = useMemo(
-    () => (isJLeaf ? new THREE.BoxGeometry(mm(p.box.w), mm(p.box.h), mm(p.box.d)) : null),
-    // The leaf's SIZE, not the panel object: a recompute that leaves the leaf
-    // the same size keeps the same box, so the contour is not rebuilt for it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isJLeaf, p.box.w, p.box.h, p.box.d],
-  );
-  useEffect(() => () => { jLeafBox?.dispose?.(); }, [jLeafBox]);
   const cuts = built?.cuts || null;
   // T74 F12 · a J leaf's groove is drawn darker by `appearance.jpull.grooveShade`.
   const groove = useMemo(() => jGrooveBox(p, profile, Boolean(built?.solid) && !shaker), [p, profile, built, shaker]);
@@ -664,11 +701,10 @@ export function MovingPanel({
   const jBand = useMemo(() => jpullBand(p, profile), [p, profile]);
   const jBandGeometry = useMemo(() => (jBand ? jpullBandGeometry(jBand) : null), [jBand]);
   useEffect(() => () => { jBandGeometry?.dispose?.(); }, [jBandGeometry]);
-  // …and its rim, drawn on EVERY J leaf in the pretty view: it is the J's
-  // contour, and the board's own contour below is then asked for the plain
-  // box, so nothing is drawn twice and nothing depends on which solid the
-  // screen happens to hold.
-  const jRim = useMemo(() => (jBand ? jpullRimPoints(jBand) : null), [jBand]);
+  // …and its contour, the whole leaf's, drawn as explicit segments in the
+  // pretty view (see `jpullContourSegments`): nothing depends on which solid
+  // the screen happens to hold, and nothing is drawn twice.
+  const jContour = useMemo(() => (jBand && !mitre ? jpullContourSegments(jBand, p.box) : null), [jBand, mitre, p.box]);
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray, groove);
 
   // ─── T75 · THE CONTOUR IS BUILT AGAIN WHEN THE BOARD CHANGES SHAPE ──────
@@ -694,9 +730,7 @@ export function MovingPanel({
   // So the contour is REMOUNTED whenever the geometry it outlines is another
   // object: the `key` below is that geometry's own id, and a new `Edges` is a
   // new line geometry with a fresh cap. Nothing in drei or three is patched.
-  const outlineGeometry = (contour || xray)
-    ? undefined
-    : (outlinePlain || (jBand ? jLeafBox : undefined));
+  const outlineGeometry = (contour || xray) ? undefined : (outlinePlain || undefined);
   const outlineKey = `${(outlineGeometry || mitre?.geometry || machined)?.uuid || 'box'}:${outline.threshold}`;
 
   // ─── TURN 26 (CLAUDE.md F5.2): AND A D/W FRONT DROPS ────────────────────
@@ -1016,7 +1050,7 @@ export function MovingPanel({
             X-ray entries, and a contour pass that cannot be switched on is the
             dead control the standing law forbids. PRO sets no channel, so this
             reads `proChromeOn()` exactly as it did. */}
-        {chromeOn('outlines') && (outlines || contour || xray) && (
+        {chromeOn('outlines') && (outlines || contour || xray) && !(jContour && !contour && !xray) && (
           <Edges
             // T75 · a new contour for a new shape (see `outlineKey` above).
             key={outlineKey}
@@ -1040,16 +1074,19 @@ export function MovingPanel({
             userData={{ ccHelper: true }}
           />
         )}
-        {/* T75 · the J's own rim in the pretty view's contour (contour and X-ray
-            show the machined solid's own edges instead). */}
-        {chromeOn('outlines') && outlines && !contour && !xray && jRim && (
+        {/* T75 · a J leaf's contour in the pretty view: the board's edges with the
+            front edge interrupted along the run, and the J's rim (contour and
+            X-ray show the machined solid's own edges instead). */}
+        {chromeOn('outlines') && outlines && !contour && !xray && jContour && (
           <Line
-            key={`${jBand.edge}:${jBand.y0}:${jBand.y1}`}
-            points={jRim}
+            key={`${jBand.edge}:${p.box.w}:${p.box.h}:${p.box.d}:${jBand.x0}:${jBand.y0}:${jBand.y1}`}
+            segments
+            points={jContour}
             color={outline.colour}
             lineWidth={outline.width}
             {...panelOutlineOffset(profile)}
-            userData={{ ccHelper: true, ccJpullRim: p.id }}
+            raycast={NO_RAYCAST}
+            userData={{ ccHelper: true, ccJpullContour: p.id }}
           />
         )}
         {/* ─── Turn 20 (CLAUDE.md F8.2): THE CUT FACES ────────────────────

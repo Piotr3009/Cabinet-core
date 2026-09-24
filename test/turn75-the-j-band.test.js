@@ -54,15 +54,28 @@ test('T75 · darkest at the J edge, fading inward; square on the edge, rounded o
   assert.match(src, /\{jBand && jBandGeometry && !contour && !xray && \(/);
 });
 
-test('T75 · the contour turns round the J on every screen: the rim is the J leaf\'s own, always', () => {
-  // The owner: *"OUTLINES się nie rysuje i nie wiedzieć dlaczego"*.
-  assert.match(src, /function jpullRimPoints\(band\) \{/);
-  assert.match(src, /const jRim = useMemo\(\(\) => \(jBand \? jpullRimPoints\(jBand\) : null\), \[jBand\]\);/,
-    'the rim depends on the solid again');
-  assert.match(src, /chromeOn\('outlines'\) && outlines && !contour && !xray && jRim && \(/);
-  assert.match(src, /userData=\{\{ ccHelper: true, ccJpullRim: p\.id \}\}/);
-  // …and the board's own contour is then the PLAIN box, so the rim is drawn once.
-  assert.match(src, /\(outlinePlain \|\| \(jBand \? jLeafBox : undefined\)\)/);
+test('T75 · a J leaf\'s contour is its own, edge by edge: the front edge stops at the J, the back one stays', () => {
+  // The owner: *"pionowy od frontu outline się nie kończy na J hand pull, a
+  // powinien; tylko tylny powinien zostać."*
+  assert.match(src, /function jpullContourSegments\(band, box\) \{/);
+  const at = src.indexOf('function jpullContourSegments(band, box) {');
+  const body = src.slice(at, src.indexOf('\n}\n', at));
+  // The J side's FRONT vertical edge, in two pieces round the run…
+  assert.match(body, /add\(\[jx, -H, D\], \[jx, y0, D\]\); add\(\[jx, y1, D\], \[jx, H, D\]\);/);
+  // …the BACK face whole…
+  assert.match(body, /add\(\[W, -H, -D\], \[W, H, -D\]\);/);
+  // …and the rim closing the gap on the face.
+  assert.match(body, /for \(let i = 0; i \+ 1 < rim\.length; i \+= 1\) add\(rim\[i\], rim\[i \+ 1\]\);/);
+  // A TOP J (a drawer front): no front top edge, the verticals stop at the rim,
+  // the top corners\' depth edges end at the hook.
+  assert.match(body, /add\(\[-W, -H, D\], \[-W, yr, D\]\); add\(\[W, -H, D\], \[W, yr, D\]\);/);
+  assert.match(body, /const lipZ = -D \+ mm\(band\.lip\);/);
+  assert.doesNotMatch(body, /built|solid|shaker/, 'the contour depends on the solid again');
+  // Drawn once, as one segments line, in the pretty view; Edges steps aside for it.
+  assert.match(src, /chromeOn\('outlines'\) && outlines && !contour && !xray && jContour && \(/);
+  assert.match(src, /!\(jContour && !contour && !xray\) && \(\n\s*<Edges/);
+  assert.match(src, /userData=\{\{ ccHelper: true, ccJpullContour: p\.id \}\}/);
+  assert.doesNotMatch(src, /ccJpullRim/, 'the separate rim line is back');
 });
 
 test('T75 · the contour is a NEW line whenever the board it outlines is another object', () => {
@@ -73,6 +86,6 @@ test('T75 · the contour is a NEW line whenever the board it outlines is another
   assert.match(src, /const outlineKey = `\$\{\(outlineGeometry \|\| mitre\?\.geometry \|\| machined\)\?\.uuid \|\| 'box'\}:\$\{outline\.threshold\}`;/);
   assert.match(src, /<Edges\n\s*\/\/ T75 · a new contour for a new shape \(see `outlineKey` above\)\.\n\s*key=\{outlineKey\}/);
   assert.match(src, /geometry=\{outlineGeometry\}/);
-  // The rim line too: keyed by the run it draws.
-  assert.match(src, /key=\{`\$\{jBand\.edge\}:\$\{jBand\.y0\}:\$\{jBand\.y1\}`\}/);
+  // The J leaf\'s own line too: keyed by the leaf and the run it draws.
+  assert.match(src, /key=\{`\$\{jBand\.edge\}:\$\{p\.box\.w\}:\$\{p\.box\.h\}:\$\{p\.box\.d\}:\$\{jBand\.x0\}:\$\{jBand\.y0\}:\$\{jBand\.y1\}`\}/);
 });

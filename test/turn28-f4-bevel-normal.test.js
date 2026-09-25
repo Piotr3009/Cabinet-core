@@ -228,15 +228,19 @@ test('F4 no new uniform, no new geometry, no CNC — the state is turn 6’s', (
   // box and its shade (*"na 3D nie widać J-pulla w ogóle"*), a darkening of
   // the same kind as the cavity's, empty and zero on every board without a J.
   // T28 F4's own fault (what the peel is applied to) is untouched.
+  // AMENDED BY T75 · three more join the groove's, and only three: the J's own
+  // colour and whether it is set (*"kiedyś będę chciał zmieniać kolor tej
+  // powierzchni"*), and the level of the recess floor the shade stops at. A
+  // board without a J carries an empty box, no tint and a floor below it.
   assert.deepEqual(Object.keys(state).sort(), [
-    'ao', 'aoRadius', 'bevel', 'grooveMax', 'grooveMin', 'grooveShade', 'half', 'spray', 'sprayFreq',
-    'strength', 'uniforms',
+    'ao', 'aoRadius', 'bevel', 'grooveColour', 'grooveFloor', 'grooveMax', 'grooveMin', 'grooveShade',
+    'grooveTint', 'half', 'spray', 'sprayFreq', 'strength', 'uniforms',
   ]);
-  // The uniform block the hook writes is the seven it always wrote, and T74's three.
+  // The uniform block the hook writes is the seven it always wrote, T74's three and T75's three.
   const declared = [...SRC.matchAll(/shader\.uniforms\.(\w+) = \{/g)].map((m) => m[1]).sort();
   assert.deepEqual(declared, [
-    'ccAo', 'ccAoRadius', 'ccBevel', 'ccBevelStrength', 'ccGrooveMax', 'ccGrooveMin', 'ccGrooveShade',
-    'ccHalf', 'ccSpray', 'ccSprayFreq',
+    'ccAo', 'ccAoRadius', 'ccBevel', 'ccBevelStrength', 'ccGrooveColour', 'ccGrooveFloor', 'ccGrooveMax',
+    'ccGrooveMin', 'ccGrooveShade', 'ccGrooveTint', 'ccHalf', 'ccSpray', 'ccSprayFreq',
   ]);
   // …and the cavity darkening pass is not part of this fault and is untouched.
   assert.match(SRC, /diffuseColor\.rgb \*= 1\.0 - ccAo \* ccEdgeAmount;/);

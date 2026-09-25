@@ -2962,7 +2962,24 @@ export const DEFAULT_CABINET_PROFILE = {
     // on the room face, this share of black at the J edge fading to the inner
     // share where the groove turns into the door. The owner: *"delikatny cień,
     // bardzo delikatny"*. The workshop's numbers; 0 and 0 draw no shadow.
-    jpull: { grooveShade: 0.5, shadowEdge: 0.22, shadowInner: 0.04 },
+    // Since 25.09 that film is only the fallback for a leaf the view could not
+    // carve: the owner, *"powinna być powierzchnia wycięta, cofnięta, i cień na
+    // tej powierzchni; kiedyś będę chciał zmieniać kolor tej powierzchni."*
+    // So on a carved leaf the recess FLOOR carries the shadow: `floorShade`
+    // over the whole floor (it sits in the recess and gets less light), and
+    // `rimShadow` along the rim, where the front skin overhangs it, fading out
+    // over `rimShadowMm`. The shade above (`grooveShade`) darkens the walls and
+    // the undercut only. `colour` is the J's own colour for every routed face,
+    // a hex, or null for the door's own (as today).
+    jpull: {
+      grooveShade: 0.5,
+      shadowEdge: 0.22,
+      shadowInner: 0.04,
+      colour: null,
+      floorShade: 0.16,
+      rimShadow: 0.5,
+      rimShadowMm: 18,
+    },
 
     // The room the furniture is lit BY. RoomEnvironment (three/examples, no
     // download, no .hdr file — CLAUDE.md forbids both) through PMREM. The
@@ -5067,6 +5084,23 @@ export function migrateCabinetProfile(profile) {
       ...profile.handles,
       bar: { ...D.handles.bar, ...profile.handles?.bar },
       knob: { ...D.handles.knob, ...profile.handles?.knob },
+      // ─── T75 · THE J-PULL'S NUMBERS: THE CODE WINS ───────────────────────
+      //
+      // The owner, 25.09.2026: *"najlepiej to zobaczysz na x-rayu: jak
+      // włączysz x-ray, to J pull nie widać wcale"* and *"na milion procent
+      // to nie moja przeglądarka"*. On a fresh profile the leaf is carved and
+      // X-ray shows the J; the one thing a SAVED profile can change on that
+      // road is this block. T57 put its nine numbers on two screens and T58b
+      // deleted both screens on the owner's order (*"po co mi to? ja nie chcę
+      // tego"*), so what a browser saved here in between is a leftover no
+      // hand can see or correct, and a section that does not fit an 18 mm
+      // front leaves the leaf uncarved (`3d/jpullProfile.js jpullLayers`)
+      // while the engine still cuts it. It is the localStorage freeze T40
+      // closed for `plateBiteMm`, and it is closed the same way: nothing in
+      // Settings edits these numbers, so the code's own (the owner's
+      // `J_hand.dxf`) win, unconditionally, on every load. The run a hand
+      // does set is the LEAF's (`front_jpull`), in the project, untouched.
+      jpull: { ...D.handles.jpull },
     },
     hinges: {
       ...D.hinges, ...profile.hinges,

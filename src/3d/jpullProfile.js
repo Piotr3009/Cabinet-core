@@ -77,6 +77,63 @@ export function rampDepths(depth, r, segments = RAMP_SEGMENTS) {
   return out;
 }
 
+/**
+ * ─── T75 · THE NOTCH'S INNER EDGE, IN ONE PLACE ─────────────────────────────
+ *
+ * The line the cutter leaves on a vertical J edge, walked from the run's low
+ * end, round the inner side, to its high end: the lead-in, the straight at
+ * full depth, the lead-out. `notchVertical` splices it into the board and
+ * `jpullNotch` hands it to the view, so the solid, the recess floor and the
+ * contour are the same points to the micron.
+ *
+ * `r` is the lead-in radius already fitted to the run (the caller's
+ * `Math.min(rampR, (to - from) / 2)`), and `lo`, `hi` the run on this edge.
+ */
+export function notchRim(atX, into, lo, hi, depth, r) {
+  const ramp = rampDepths(depth, r);
+  const path = [];
+  for (const k of ramp) path.push([atX + into * k.d, lo + k.s]);
+  for (const k of [...ramp].reverse()) path.push([atX + into * k.d, hi - k.s]);
+  return path;
+}
+
+/**
+ * ─── T75 · THE RECESS, AS THE VIEW NEEDS IT ────────────────────────────────
+ *
+ * The owner, 25.09.2026: *"jak wyroutujesz, to powierzchnia rączki cofa się do
+ * tyłu, tam gdzie jest wcięcie ... powinna być powierzchnia wycięta, cofnięta,
+ * i cień na tej powierzchni."*
+ *
+ * The region a J takes off one face of the leaf, in whatever frame the edge
+ * letter is spoken in (origin bottom-left, y up, millimetres): `rim` is the
+ * cutter's inner edge, `foot` the matching point on the J edge itself, one for
+ * one, so row `i` runs straight across the recess from `foot[i]` to `rim[i]`.
+ * A TOP J runs the whole width, so its rim is one straight line.
+ *
+ * @returns {{edge:string, rim:Array<[number,number]>, foot:Array<[number,number]>}|null}
+ */
+export function jpullNotch({
+  w, h, edge, from = null, to = null, depth, rampR = 0,
+}) {
+  if (!(depth > 0) || !(w > 0) || !(h > 0)) return null;
+  if (edge === 'TOP') {
+    const d = Math.min(depth, h);
+    return { edge, rim: [[0, h - d], [w, h - d]], foot: [[0, h], [w, h]] };
+  }
+  if (edge !== 'L' && edge !== 'R') return null;
+  const f = from ?? 0;
+  const t = to ?? h;
+  // The same fit `notchVertical` makes, so the two cannot disagree.
+  const r = Math.min(Number(rampR) || 0, (t - f) / 2);
+  const lo = Math.max(0, f);
+  const hi = Math.min(h, t);
+  if (!(hi > lo)) return null;
+  const atX = edge === 'L' ? 0 : w;
+  const into = edge === 'L' ? 1 : -1;
+  const rim = notchRim(atX, into, lo, hi, depth, r);
+  return { edge, rim, foot: rim.map(([, y]) => [atX, y]) };
+}
+
 /** Sutherland–Hodgman against `y <= limit` — used for a TOP-edge pull-back. */
 function clipBelow(pts, limit) {
   const out = [];
@@ -113,7 +170,6 @@ function notchVertical(pts, atX, into, from, to, depth, rampR) {
   // clamped run on a short leaf still eases in and out rather than snapping to
   // square ends the moment it is shortened.
   const r = Math.min(rampR, (to - from) / 2);
-  const ramp = rampDepths(depth, r);
   const out = [];
   let spliced = false;
   for (let i = 0; i < pts.length; i += 1) {
@@ -129,9 +185,8 @@ function notchVertical(pts, atX, into, from, to, depth, rampR) {
     // Walked in the direction this edge is actually travelled, so the winding
     // of the whole polygon is untouched — a notch spliced backwards is a
     // self-crossing outline the triangulator is entitled to refuse.
-    const path = [];
-    for (const k of ramp) path.push([atX + into * k.d, lo + k.s]);
-    for (const k of [...ramp].reverse()) path.push([atX + into * k.d, hi - k.s]);
+    // T75 · the points are `notchRim`'s, the same ones the view draws.
+    const path = notchRim(atX, into, lo, hi, depth, r);
     for (const p of (up ? path : [...path].reverse())) out.push(p);
     spliced = true;
   }

@@ -59,9 +59,10 @@ export function machinedPanelGeometry(panel, layers, profile, drills = []) {
  * one answer and a cache that could hold one without the other would eventually
  * draw a hole with no wall in it.
  *
- * @returns {{solid:THREE.BufferGeometry|null, cuts:THREE.BufferGeometry|null}}
+ * @returns {{solid:THREE.BufferGeometry|null, cuts:THREE.BufferGeometry|null, jpull?:boolean}}
  *   `solid` is null where the panel is a plain box with nothing cut into it,
  *   which is what tells the caller to use a `boxGeometry` as it always has.
+ *   `jpull` (T75) is true where the J is carved into `solid`.
  */
 export function panelSolids(panel, layers, profile, drills = []) {
   // ─── T55 (CLAUDE.md F1): THE BOARD THAT KNOWS ITS OWN CORNERS ────────────
@@ -577,7 +578,10 @@ function build({
   const cuts = buildCuts({
     recesses, thickness, flipped, matrix: basis, box,
   });
-  return { solid: geometry, cuts };
+  // T75 · and whether the J is really IN this solid: the view lays the recess
+  // floor's shadow and colour on it only where the board was carved, and
+  // never where a section that does not fit its board left the slab whole.
+  return { solid: geometry, cuts, jpull: Boolean(jLayers) };
 }
 
 /** The path a feature cuts out of the board, in scene units. */

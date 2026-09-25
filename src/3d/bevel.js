@@ -26,7 +26,7 @@ import * as THREE from 'three';
 // One program for every bevelled material (`customProgramCacheKey`), so a room
 // of 400 panels compiles this shader once and varies only its uniforms.
 
-const CACHE_KEY = 'cc-bevel-2';
+const CACHE_KEY = 'cc-bevel-3';
 
 const VERT_COMMON = /* glsl */`
 varying vec3 vCcLocal;
@@ -62,6 +62,12 @@ uniform float ccSprayFreq;
 uniform vec3 ccGrooveMin;
 uniform vec3 ccGrooveMax;
 uniform float ccGrooveShade;
+// T75 · the J's own colour (tint 0 keeps the door's), and the level of the
+// recess floor: the shade darkens the walls and the undercut above it, never
+// the floor the hand sees, which carries its own shadow (UnitView.jsx).
+uniform vec3 ccGrooveColour;
+uniform float ccGrooveTint;
+uniform float ccGrooveFloor;
 
 // Distance from this fragment to each of the three face pairs, and a mask that
 // is 1 on the axis whose face we are standing on.
@@ -193,7 +199,10 @@ const FRAG_AO = /* glsl */`
   // within the machined strip), the board is drawn darker by the workshop's
   // share, so the groove reads where the room light cannot show its step.
   vec3 ccInG = step(ccGrooveMin, vCcLocal) * step(vCcLocal, ccGrooveMax);
-  diffuseColor.rgb *= 1.0 - ccGrooveShade * ccInG.x * ccInG.y * ccInG.z;
+  float ccInGroove = ccInG.x * ccInG.y * ccInG.z;
+  // T75 · every routed face of the J takes the J's own colour where one is set.
+  diffuseColor.rgb = mix(diffuseColor.rgb, ccGrooveColour, ccGrooveTint * ccInGroove);
+  diffuseColor.rgb *= 1.0 - ccGrooveShade * ccInGroove * step(ccGrooveFloor, vCcLocal.z);
 }
 `;
 
@@ -217,6 +226,11 @@ export function createBevelState() {
     grooveMin: new THREE.Vector3(1, 1, 1),
     grooveMax: new THREE.Vector3(-1, -1, -1),
     grooveShade: 0,
+    // T75 · no J colour (the door's own), and a floor below every board, so a
+    // groove that names no floor is shaded exactly as T74 shaded it.
+    grooveColour: new THREE.Vector3(1, 1, 1),
+    grooveTint: 0,
+    grooveFloor: -1,
     uniforms: null,
   };
 }
@@ -236,6 +250,11 @@ export function syncBevelState(state) {
     u.ccGrooveMin.value.copy(state.grooveMin);
     u.ccGrooveMax.value.copy(state.grooveMax);
     u.ccGrooveShade.value = state.grooveShade;
+  }
+  if (u.ccGrooveColour) {
+    u.ccGrooveColour.value.copy(state.grooveColour);
+    u.ccGrooveTint.value = state.grooveTint;
+    u.ccGrooveFloor.value = state.grooveFloor;
   }
 }
 
@@ -262,6 +281,9 @@ export function bevelHook(state) {
     shader.uniforms.ccGrooveMin = { value: state.grooveMin.clone() };
     shader.uniforms.ccGrooveMax = { value: state.grooveMax.clone() };
     shader.uniforms.ccGrooveShade = { value: state.grooveShade };
+    shader.uniforms.ccGrooveColour = { value: state.grooveColour.clone() };
+    shader.uniforms.ccGrooveTint = { value: state.grooveTint };
+    shader.uniforms.ccGrooveFloor = { value: state.grooveFloor };
     state.uniforms = shader.uniforms;
     state.renderer = renderer || null;
 

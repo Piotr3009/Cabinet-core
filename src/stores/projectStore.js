@@ -4006,7 +4006,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (unit.params.doors && unit.params.doors !== false) {
       return { count: get().unitResult(unitId)?.derived?.doors || 0, already: true };
     }
-    const count = doorCountFor(unit.params.width, profile);
+    // T75 F8 · a kit that says how many leaves it has (a blind corner is ONE,
+    // `doorCount: 1`) is fitted with that many, as the engine cuts it.
+    const own = Number(getUnitType(unit.type).doorCount);
+    const count = own > 0 ? own : doorCountFor(unit.params.width, profile);
     get().setDoors(unitId, { count, hinge: unit.params.hinge || profile.doors.defaultHinge });
     return { count, already: false };
   },

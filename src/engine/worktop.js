@@ -232,7 +232,20 @@ export function worktopsFor({
     if (onWalls.length === 2) {
       if (!walls) continue;
       const corner = cornerOfSelection(mine, walls, profile);
-      if (!corner) continue;
+      if (!corner) {
+        // ─── T75 F8 · THE CAUSE WENT, THE JOINT GOES, THE SLABS STAY ──────────
+        // *"Everything the corner automat adds (post, hinge flip, blank size,
+        // worktop joint, plinth butt, cornice return) is undone when the cause
+        // goes."*  A run pulled out of the corner leaves each wall's cabinets
+        // under a straight slab of their own, with no joint between them; put
+        // back on the corner, the joint returns.
+        for (const wi of onWalls) {
+          const group = mine.filter((u) => (u.position?.wall ?? 0) === wi);
+          const geometry = worktopGeometry({ units: group, record, profile });
+          if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}-w${wi}`, geometry }, group, profile));
+        }
+        continue;
+      }
       const pair = cornerSlabs({ units: mine, record, corner, walls, profile });
       if (pair) out.push(...pair);
       continue;

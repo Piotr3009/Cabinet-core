@@ -91,7 +91,7 @@ test('a group says how much of it can be placed today', () => {
   const wall = KITCHEN_LIBRARY.find((g) => g.id === 'wall-units');
   // Turn 30 (CLAUDE.md F21): two of the three can be placed now.
   // Turn 31 (CLAUDE.md F9): three of four — the hood joins them.
-  // T75 F3: four of five — the blind corner wall unit joins them.
+  // T75 F3: four of five, the blind corner wall unit joins them.
   // AMENDED BY T75 F4: five of five, the held-open L row opened as the Corner L wall.
   assert.deepEqual(groupCounts(wall, P), { total: 5, enabled: 5 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');

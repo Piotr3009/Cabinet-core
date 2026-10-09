@@ -160,7 +160,7 @@ export const PART_REGISTRY = {
     // Kept because CLAUDE.md F1 names the row, and T75 is the day the engine
     // learned to say "FIX": the blind kit's BLANK (F3) is a fixed front piece
     // beside the door, front material, no hinge, and it lands here.
-    note: 'FIX fronts — the blind corner\'s blank (T75 F3)',
+    note: 'FIX fronts: the blind corner\'s blank (T75 F3)',
   },
   end_panel: {
     id: 'end_panel', name: 'End panels', group: G('front'), unit: 'm²', materialType: 'front',

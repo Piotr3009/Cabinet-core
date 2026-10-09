@@ -1484,6 +1484,22 @@ function ExtrasPanel({ unit, project }) {
           </div>
         </Field>
 
+        {/* ─── T75 F18 · ADD LOW UNIT ───────────────────────────────────────
+            *"`WARDROBE_LOW` copied from `LOW_CABINET` ... Retail EXTRAS `ADD
+            LOW UNIT`."*  Through the store's own road (`adapter.addLowUnit`). */}
+        <Field label="LOW UNIT" note={REASONS.lowUnitGoesBeside}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-low-unit"
+              onClick={() => setSaid(A.addLowUnit().said)}
+            >
+              ADD LOW UNIT
+            </Button>
+          </div>
+        </Field>
+
         {/* ─── T74 F13 · INSERT PANEL ────────────────────────────────────────
             *"SWOBODNY PANEL (wstaw panel)."*  One board into the room, through
             the store's own `addUnit`; its menu opens on the right. */}

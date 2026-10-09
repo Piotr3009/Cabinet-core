@@ -224,6 +224,19 @@ export const REASONS = {
   deskNeedsAWardrobe: 'Add a wardrobe first: a desk hangs beside one.',
 
   /**
+   * T75 F18 · NOT a refusal: the note under ADD LOW UNIT. PREDICATE:
+   * `adapter.addLowUnit()`, `store.addUnit('WARDROBE_LOW')` beside the
+   * selected wardrobe, born at its depth, its door on.
+   */
+  lowUnitGoesBeside: 'A low cupboard beside this wardrobe, as deep as it, with its door.',
+
+  /**
+   * T75 F18 · PREDICATE: no unit in the design is a wardrobe standing on the
+   * floor (`adapter.isMainWardrobe`), so there is nothing to stand it beside.
+   */
+  lowUnitNeedsAWardrobe: 'Add a wardrobe first: a low unit stands beside one.',
+
+  /**
    * T74 F13 · NOT a refusal: the note under INSERT PANEL. PREDICATE:
    * `adapter.insertPanel()`, `store.addUnit('FREE_PANEL')` beside the selected
    * cabinet; the board's menu then opens on the right.

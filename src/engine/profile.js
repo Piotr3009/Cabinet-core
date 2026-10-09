@@ -1896,6 +1896,16 @@ export const DEFAULT_CABINET_PROFILE = {
     drawerRatio: [1],
   },
 
+  // ─── T75 F18 · THE LOW UNIT OF A WARDROBE JOB ─────────────────────────────
+  //
+  // CLAUDE.md T75 F18: *"its own low height (`wardrobeLow.defaults`, 500)"*,
+  // at the wardrobe's depth (beside one, the store copies THAT wardrobe's).
+  // Width and rail offset are LOW_CABINET's own (600, 200); its minimum
+  // height is the low cabinet's (`lowCabinet.minHeight`), the kit it is.
+  wardrobeLow: {
+    defaults: { width: 600, height: 500, depth: 568, railOffset: 200 },       // T75 proposed, owner to confirm
+  },
+
   // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
   //
   // The KIT_WUD envelope, with the bottom open. `aperture` is the clear height
@@ -5413,6 +5423,12 @@ export function migrateCabinetProfile(profile) {
       ...D.wardrobeChest,
       ...profile.wardrobeChest,
       defaults: { ...D.wardrobeChest.defaults, ...profile.wardrobeChest?.defaults },
+    },
+    // T75 F18 · the low unit's defaults, key by key.
+    wardrobeLow: {
+      ...D.wardrobeLow,
+      ...profile.wardrobeLow,
+      defaults: { ...D.wardrobeLow.defaults, ...profile.wardrobeLow?.defaults },
     },
     // T75 F17 · the desk's defaults, key by key; its one-drawer split whole.
     wardrobeDesk: {

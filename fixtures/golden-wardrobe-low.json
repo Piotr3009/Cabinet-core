@@ -1,0 +1,209 @@
+{
+  "meta": {
+    "name": "golden-wardrobe-low.json",
+    "turn": "T75",
+    "F": "F18",
+    "source": "KIT_LOW_CABINET_FULL.lsp (LOW_CABINET, hole for hole) at 600 x 500 x 568",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "WARDROBE_LOW",
+    "width": 600,
+    "height": 500,
+    "depth": 568,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": 200,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01"
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,550,500,<,0.50,0.275",
+      "01,BUR,550,500,>,0.50,0.275",
+      "01,TOP,564,550,>,0.56,0.310",
+      "01,BOTTOM,564,550,>,0.56,0.310",
+      "01,BACK,600,500,,0,0.300",
+      "01,01-F,597,497,<>^v,2.19,0.297"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 550,
+        "h": 500,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 500,
+          "d": 550
+        },
+        "outline": 24,
+        "holes": 14,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 550,
+        "h": 500,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 500,
+          "d": 550
+        },
+        "outline": 24,
+        "holes": 14,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 550,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 482,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 550
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 550,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 550
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 500,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 500,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 28,
+        "pockets": 8,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 497,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 571,
+          "w": 597,
+          "h": 497,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        2
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        4
+      ],
+      [
+        "HINGES_5MM|BUL",
+        4
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        16
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        12
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 2,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      }
+    ]
+  }
+}

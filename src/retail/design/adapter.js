@@ -453,6 +453,25 @@ export function addDesk() {
 }
 
 /**
+ * ─── T75 F18 · ADD LOW UNIT ────────────────────────────────────────────────
+ *
+ * CLAUDE.md T75 F18: *"`WARDROBE_LOW` copied from `LOW_CABINET` ... Retail
+ * EXTRAS `ADD LOW UNIT`."*  The same road: `store.addUnit` beside the selected
+ * wardrobe, right else left, born at that wardrobe's depth; and, as a
+ * wardrobe arrives with its doors on (T60), with its door: `setDoors`, the
+ * store's own door path, the engine's width law deciding the leaves.
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addLowUnit() {
+  return S().batch(() => {
+    const res = addBesideWardrobe('WARDROBE_LOW', REASONS.lowUnitNeedsAWardrobe);
+    if (res.id) S().setDoors(res.id, true);
+    return res;
+  });
+}
+
+/**
  * One piece of a wardrobe job, beside THE wardrobe: right, else left, through
  * `store.addUnit` (Room refuses first, in its own sentence).
  */

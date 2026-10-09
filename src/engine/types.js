@@ -1140,6 +1140,40 @@ export const UNIT_TYPES = {
     countsRailPartInPanels: true,
     available: true,
   },
+  // ─── T75 F18 · THE LOW UNITS OF A WARDROBE JOB ───────────────────────────
+  //
+  // CLAUDE.md T75 F18: *"`WARDROBE_LOW` copied from `LOW_CABINET`, family
+  // wardrobe, prefix `WL`, wardrobe depth, its own low height
+  // (`wardrobeLow.defaults`, 500). Hole for hole against LOW_CABINET."*
+  //
+  // LOW_CABINET to the letter (the same LISP, hinge and cup rules, its rail,
+  // its own minimum height) with what files it: its id and prefix, the
+  // WARDROBE family, its own defaults block, the wardrobe's leg source (the
+  // chest's, F16: a piece of a wardrobe job stands on the wardrobe's legs;
+  // both are 100 today, so no hole moves) and `besideWardrobe` (no top box
+  // rides it, it is never "the wardrobe", it takes no hanging kit).
+  WARDROBE_LOW: {
+    id: 'WARDROBE_LOW',
+    heightGroup: null,
+    label: 'Low unit',
+    family: 'wardrobe',
+    lisp: 'KIT_LOW_CABINET_FULL.lsp',
+    hingeRule: 'low',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    besideWardrobe: true,
+    minHeightKey: 'lowCabinet.minHeight',
+    defaultsKey: 'wardrobeLow.defaults',
+    supports: { drawers: false, shelves: true, rail: true, pulldown: false, partition: false, doors: true, topInfill: false },
+    countsRailPartInPanels: true,
+    available: true,
+  },
   SINK: {
     id: 'SINK',
     heightGroup: 'base',
@@ -1496,7 +1530,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1734,5 +1768,7 @@ export const UNIT_NUM_PREFIX = {
   WARDROBE_CHEST2: 'WC', WARDROBE_CHEST3: 'WC', WARDROBE_CHEST4: 'WC',
   // T75 F17 · the floating desk: WD01.
   WARDROBE_DESK: 'WD',
+  // T75 F18 · the wardrobe job's low unit: WL01, apart from the kitchen's LC01.
+  WARDROBE_LOW: 'WL',
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

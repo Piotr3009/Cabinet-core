@@ -288,7 +288,9 @@ test('every library type is configured, available and buildable', () => {
   // BUDR hole for hole in the wardrobe family (*"WARDROBE_CHEST2 / 3 / 4"*).
   // Turn 75 (CLAUDE.md F17): the FLOATING DESK, WUD's box with one drawer
   // and a top (*"`WARDROBE_DESK`: a wall-hung carcass"*).
-  assert.equal(UNIT_TYPE_ORDER.length, 38, 'every kit in the order, the free panel last');
+  // Turn 75 (CLAUDE.md F18): the wardrobe job's LOW UNIT, LOW_CABINET hole
+  // for hole (*"`WARDROBE_LOW` copied from `LOW_CABINET`"*).
+  assert.equal(UNIT_TYPE_ORDER.length, 39, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

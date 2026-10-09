@@ -318,6 +318,8 @@ export const WARDROBE_LIBRARY = [
   },
   // T75 F17 · *"`WARDROBE_DESK`: a wall-hung carcass ... ONE drawer row."*
   { kind: 'type', id: 'WARDROBE_DESK', typeId: 'WARDROBE_DESK', hint: 'Hung beside a wardrobe: one drawer under a 25 mm top' },
+  // T75 F18 · *"`WARDROBE_LOW` copied from `LOW_CABINET`."*
+  { kind: 'type', id: 'WARDROBE_LOW', typeId: 'WARDROBE_LOW', hint: 'A low cupboard beside a wardrobe, as deep as it' },
 ];
 
 /** Every entry, groups flattened — what a "which kits exist" question wants. */

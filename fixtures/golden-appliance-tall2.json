@@ -1,0 +1,342 @@
+{
+  "meta": {
+    "name": "golden-appliance-tall2.json",
+    "turn": "T75",
+    "F": "F12",
+    "source": "KIT_FRIDGE.lsp: two apertures, the lower closed by its FIXED again; the door on the dryer",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "APPLIANCE_TALL2",
+    "width": 600,
+    "height": 2150,
+    "depth": 558,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": true,
+    "apertures": [
+      {
+        "role": "washer",
+        "h": 850
+      },
+      {
+        "role": "dryer",
+        "h": 850
+      }
+    ],
+    "unit_num": "01"
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,540,2150,<,2.15,1.161",
+      "01,BUR,540,2150,>,2.15,1.161",
+      "01,TOP,564,540,>,0.56,0.305",
+      "01,BOTTOM,564,540,>,0.56,0.305",
+      "01,FIXED,564,540,>,0.56,0.305",
+      "01,FIXED1,564,540,>,0.56,0.305",
+      "01,RAIL1,600,200,,0,0.120",
+      "01,RAIL2,600,200,,0,0.120",
+      "01,BACK,600,414,,0,0.248",
+      "01,SPURS,556,378,,0,0.210",
+      "01,01-F,597,411,<>^v,2.02,0.245"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 540,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 540,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 2132,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "FIXED",
+        "part": "FIXED",
+        "role": "shelf",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 1736,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "FIXED1",
+        "part": "FIXED",
+        "role": "shelf",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 868,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "RAIL1",
+        "part": "BACK-RAIL",
+        "role": "back",
+        "w": 600,
+        "h": 200,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 200,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 8,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "RAIL2",
+        "part": "BACK-RAIL",
+        "role": "back",
+        "w": 600,
+        "h": 200,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 980,
+          "z": 0,
+          "w": 600,
+          "h": 200,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 4,
+        "pockets": 2,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 414,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 1736,
+          "z": 0,
+          "w": 600,
+          "h": 414,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 17,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "SPURS",
+        "part": "SPURS",
+        "role": "side",
+        "w": 556,
+        "h": 378,
+        "thickness": 18,
+        "box": {
+          "x": 22,
+          "y": 1754,
+          "z": 440,
+          "w": 556,
+          "h": 378,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 411,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 1736,
+          "z": 561,
+          "w": 597,
+          "h": 411,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        2
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        4
+      ],
+      [
+        "HINGES_5MM|BUL",
+        4
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|RAIL1",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|RAIL2",
+        4
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        9
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        13
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        13
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 2,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      },
+      {
+        "role": "appliance",
+        "qty": 1,
+        "label": "Washing machine"
+      },
+      {
+        "role": "appliance",
+        "qty": 1,
+        "label": "Tumble dryer"
+      }
+    ]
+  }
+}

@@ -278,6 +278,12 @@ export const PART_REGISTRY = {
     id: 'extractor', name: 'Extractor', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'The machine the hood unit is built around',
   },
+  // T75 F12 · the machine an appliance tower's aperture is ordered for (oven,
+  // microwave, washer, dryer, fridge freezer): bought, one line per aperture.
+  appliance: {
+    id: 'appliance', name: 'Appliance', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'The machine an appliance tower\'s aperture is built around',
+  },
   glass_pane: {
     id: 'glass_pane', name: 'Glass panes', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Filed here because it is bought in pieces, not cut from a sheet',
@@ -551,6 +557,7 @@ export const HARDWARE_TO_PART_ID = {
   bin_pullout: 'bin_pullout',
   cargo_frame: 'cargo_frame',
   extractor: 'extractor',
+  appliance: 'appliance',
   glass_pane: 'glass_pane',
   drawer_glass: 'drawer_glass',
   mirror: 'mirror',

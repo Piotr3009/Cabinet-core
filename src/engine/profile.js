@@ -1947,6 +1947,37 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 1000, height: 2100, depth: 558, fridgeH: 1900 },
   },
 
+  // ─── T75 F12 · THE APPLIANCE TOWER (KIT_FRIDGE's aperture, stacked) ─────
+  //
+  // CLAUDE.md T75 F12: *"each aperture `{ role, h }` cuts KIT_FRIDGE's own
+  // aperture pattern ... Aperture heights // T75 proposed, owner to confirm:
+  // oven 595, microwave 450, washer 850, dryer 850, fridge and freezer from
+  // fridgeH."*
+  //
+  // A ROLE says how tall its aperture is and whether the machine is the face
+  // (`machine`: no front over it, the door starts above it) or stands behind
+  // the door (`door`: an integrated fridge freezer, KIT_FRIDGE's own door).
+  // The oven's 595 is the owner's own (`ovenUnit.ovenHeight`, T17) and the
+  // fridge's is `fridgeUnit.defaults.fridgeH`: both read where they live, so
+  // there is one number each. No defaults block below carries `fridgeH` (the
+  // right panel would offer it as a typed field).
+  applianceTall: {
+    roles: {
+      fridge: { label: 'Fridge freezer', hKey: 'fridgeUnit.defaults.fridgeH', face: 'door' },
+      oven: { label: 'Oven', hKey: 'ovenUnit.ovenHeight', face: 'machine' },
+      microwave: { label: 'Microwave', h: 450, face: 'machine' },          // T75 proposed, owner to confirm
+      washer: { label: 'Washing machine', h: 850, face: 'machine' },      // T75 proposed, owner to confirm
+      dryer: { label: 'Tumble dryer', h: 850, face: 'machine' },          // T75 proposed, owner to confirm
+    },
+    // One defaults block per library row, the apertures bottom-up.
+    fridgeFreezer: {
+      defaults: { width: 600, height: 2150, depth: 558, apertures: [{ role: 'fridge' }] },       // T75 proposed, owner to confirm
+    },
+    washerDryer: {
+      defaults: { width: 600, height: 2150, depth: 558, apertures: [{ role: 'washer' }, { role: 'dryer' }] }, // T75 proposed, owner to confirm
+    },
+  },
+
   // ─── Construction automatics (turn 3, phase 7) ───
   // Parts nobody draws by hand: the plinth under a run of units, the scribe
   // filler between a unit and the wall, and the panel that closes the gap
@@ -5307,6 +5338,23 @@ export function migrateCabinetProfile(profile) {
       ...D.americanFridgeUnit,
       ...profile.americanFridgeUnit,
       defaults: { ...D.americanFridgeUnit.defaults, ...profile.americanFridgeUnit?.defaults },
+    },
+    // T75 F12 · the appliance tower's roles and rows, key by key.
+    applianceTall: {
+      ...D.applianceTall,
+      ...profile.applianceTall,
+      roles: Object.fromEntries(Object.entries({ ...D.applianceTall.roles, ...profile.applianceTall?.roles })
+        .map(([k, v]) => [k, { ...D.applianceTall.roles[k], ...v }])),
+      fridgeFreezer: {
+        ...D.applianceTall.fridgeFreezer,
+        ...profile.applianceTall?.fridgeFreezer,
+        defaults: { ...D.applianceTall.fridgeFreezer.defaults, ...profile.applianceTall?.fridgeFreezer?.defaults },
+      },
+      washerDryer: {
+        ...D.applianceTall.washerDryer,
+        ...profile.applianceTall?.washerDryer,
+        defaults: { ...D.applianceTall.washerDryer.defaults, ...profile.applianceTall?.washerDryer?.defaults },
+      },
     },
     // T75 F2 · the corner's numbers, key by key.
     corner: { ...D.corner, ...profile.corner },

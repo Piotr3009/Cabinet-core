@@ -12,6 +12,7 @@
 
 // T74 F13 · the free panel's box, from its board.
 import { freePanelDefaultParams } from './freePanel.js';
+import { resolveApertures } from './applianceTower.js';
 import { KITCHEN_LIBRARY, libraryTypeIds } from './library.js';
 
 /**
@@ -1169,6 +1170,73 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── T75 F12 · THE APPLIANCE TOWER, ONE KIT, PARENT KIT_FRIDGE ──────────
+  //
+  // CLAUDE.md T75 F12: *"`APPLIANCE_TALL` in `engine/types.js`, copied field
+  // by field from `FRIDGE` ... with `apertures: [...]` read from its defaults
+  // block ... Four library rows, Tall units, each a defaults block."*
+  //
+  // FRIDGE to the letter (the KIT_FRIDGE back on its rails, the fixed panel,
+  // the spurs panel, the tall hinge rule, the legs, the minimum height), plus
+  // `applianceTower: true`: the engine reads the defaults block's `apertures`
+  // and stacks them (`engine/applianceTower.js`). It does NOT declare
+  // `appliance`, which is a geometry switch for OVEN_BASE (its shelf and its
+  // drawer stack), not a label.
+  //
+  // A ROW IS A TYPE, as the drawer unit's splits are (BUDR2 / BUDR / BUDR4,
+  // one kit, the variant the only difference): a library row inserts a TYPE
+  // and its defaults block, so each row that carries a stack of its own is a
+  // type naming its block. The digit is the aperture count, BUDR2's grammar.
+  APPLIANCE_TALL: {
+    id: 'APPLIANCE_TALL',
+    widthFixed: true,
+    heightGroup: 'tall',
+    label: 'Fridge freezer tower',
+    family: 'kitchen',
+    lisp: 'KIT_FRIDGE.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'rails' },
+    drawerStyle: null,
+    applianceTower: true,
+    minHeightKey: 'fridgeUnit.minHeight',
+    defaultsKey: 'applianceTall.fridgeFreezer.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+  APPLIANCE_TALL2: {
+    id: 'APPLIANCE_TALL2',
+    widthFixed: true,
+    heightGroup: 'tall',
+    label: 'Washer + dryer tower',
+    family: 'kitchen',
+    lisp: 'KIT_FRIDGE.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'rails' },
+    drawerStyle: null,
+    applianceTower: true,
+    minHeightKey: 'fridgeUnit.minHeight',
+    defaultsKey: 'applianceTall.washerDryer.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
@@ -1203,7 +1271,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1387,6 +1455,10 @@ export function defaultParamsFor(typeId, profile) {
       arm_mm: Number(profilePath(profile, type.armDepthKey)) || 558,
       corner_side: 'left',
     } : {}),
+    // ─── T75 F12 · THE TOWER'S APERTURES, EACH GIVEN ITS HEIGHT ──────────
+    // Read off the kit's defaults block and written onto the unit, so a saved
+    // tower keeps the stack it was cut to. Spread, so no other kit carries it.
+    ...(type.applianceTower && Array.isArray(d.apertures) ? { apertures: resolveApertures(d.apertures, profile) } : {}),
     unit_num: '01',
   };
 }
@@ -1403,5 +1475,7 @@ export const UNIT_NUM_PREFIX = {
   BLIND_BASE: 'BB', BLIND_WALL: 'BW', BLIND_WARDROBE: 'BX',
   // T75 F4 · the true L: CL01 base, CW01 wall, CX01 wardrobe.
   CORNER_L_BASE: 'CL', CORNER_L_WALL: 'CW', CORNER_L_WARDROBE: 'CX',
+  // T75 F12 · the appliance towers: AT01, whichever stack they carry.
+  APPLIANCE_TALL: 'AT', APPLIANCE_TALL2: 'AT',
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

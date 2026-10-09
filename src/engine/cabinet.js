@@ -84,6 +84,7 @@ import {
 // below does all of that, which is CLAUDE.md's own "read the BUDR law, do not
 // re-derive it".
 import { overlayDrawerItems, overlayPlan } from './overlayDrawers.js';
+import { apertureStack, applianceLabelOf, resolveApertures } from './applianceTower.js';
 
 // ─── T65 F5 · THE SETBACK THE CAPPING SHELF DOES NOT TAKE ──────────────────
 //
@@ -876,6 +877,18 @@ function normalizeParams(raw, profile) {
 
   const railDefault = readPath(profile, `${type.defaultsKey}.railOffset`) ?? profile.wardrobe.defaults.railOffset;
 
+  // ─── T75 F12 · THE APPLIANCE TOWER'S STACK ──────────────────────────────
+  // The unit's own list (written from its defaults block when it was made),
+  // or the block's, each aperture given its height. Null on every kit that is
+  // not a tower, so FRIDGE, FRIDGE_US and the six cut what they cut.
+  const tower = type.applianceTower
+    ? apertureStack(resolveApertures(
+      Array.isArray(p.apertures) ? p.apertures : readPath(profile, `${type.defaultsKey}.apertures`),
+      profile,
+      { fridgeH: p.fridge_h },
+    ), carcassG, profile)
+    : null;
+
   return {
     type,
     width: Number(p.width) || 0,
@@ -1064,7 +1077,10 @@ function normalizeParams(raw, profile) {
     slopeCut: normaliseSlopeCut(p.slope_cut ?? p.slopeCut, Number(p.width) || 0),
     // T75 F4 KASACJA: T30's `cornerArm` input is gone with its kit; the true
     // L's arm is `cornerL.arm` above (`arm_mm`, a T30 save migrated on load).
-    fridgeH: Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
+    // T75 F12 · a tower hands KIT_FRIDGE the height of its whole stack: its
+    // TOP fixed panel is the fridge's FIXED at `G + fridgeH`.
+    fridgeH: tower ? tower.fridgeH : Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
+    ...(tower ? { tower } : {}),
     mountHeight: Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
     // Toe kick, per unit (turn 5, BACKLOG #29). The project sets it in Design
     // Settings and it arrives here as a parameter, so the plinth, the legs and
@@ -1946,7 +1962,14 @@ export function computeCabinet(params, profileOverride) {
   // THE DOOR IS SHORTENED, and by exactly the line the plan drew: it starts
   // above the top drawer front plus the gap, and runs to the top edge the
   // cabinet already demands (`doors.js topDemandMm`, untouched).
-  const overlayBase = overlay ? overlay.doorBase : 0;
+  // T75 F12 · …and an appliance tower's door stands on its highest machine:
+  // the machine is the face, so the door starts where the machine stops (the
+  // hood's line, a door ABOVE an aperture), on the overlay's own terms: its
+  // ladder run over its own height and lifted by its base. Zero on every
+  // other kit, so the line below is what it was.
+  const towerBase = cfg.tower ? cfg.tower.doorBase : 0;
+  const overlayBase = overlay ? overlay.doorBase : towerBase;
+  const shortDoor = Boolean(overlay) || towerBase > 0;
   // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
   // aperture, which is the same one line seen from the other end (F9).
   // TURN 40 (F3b): …and it STANDS on the overlay stack when there is one.
@@ -2022,7 +2045,12 @@ export function computeCabinet(params, profileOverride) {
   const hingedSides = hingedSidesOf(faceLeafPlan, { panels: faceLeafPlan[0]?.sides || [] });
 
   // ── Hinges + cups ──────────────────────────────────────────────────────────
-  const hingeRule = P.hinges.rules[type.hingeRule] || P.hinges.rules.base;
+  // T75 F12 · a tower's door standing on a machine is a SHORT door: KIT_FRIDGE's
+  // tall ladder (five or six rows) was written for a door the carcass's height
+  // and crams five onto 411 mm. Its rows are the ladder the LISP writes for a
+  // door of a low height (KIT_LOW_CABINET: two under 800, three under 1200).
+  // A full-height tower door (a fridge freezer) keeps the kit's own.
+  const hingeRule = P.hinges.rules[towerBase > 0 ? 'low' : type.hingeRule] || P.hinges.rules.base;
   // ─── Turn 17 (CLAUDE.md F7) ───
   // The kit's own maths, then the project's standard, then whatever the joiner
   // has said about THIS cabinet. A bare `computeCabinet()` — every golden
@@ -2036,7 +2064,7 @@ export function computeCabinet(params, profileOverride) {
     // frame — which is exactly what T39-F1b did for the top box's door and
     // what T36-F6 does for a split leaf. Every other cabinet passes the carcass
     // height, as it always has.
-    height: overlay ? frontH : H,
+    height: shortDoor ? frontH : H,
     rule: hingeRule,
     standard: cfg.hingeStandard,
     own: cfg.hingeRows,
@@ -2049,7 +2077,7 @@ export function computeCabinet(params, profileOverride) {
   // A hand-written list is already stated in the CARCASS's frame (that is the
   // frame the Doors modal shows and `setHingePos` writes), so it is NOT lifted
   // a second time. Only the rule's own answer is.
-  const centres = overlay && !saidRows
+  const centres = shortDoor && !saidRows
     ? centresRaw.map((c) => roundTo(c + overlayBase, 4))
     : centresRaw;
   // ─── THE CUPS FOLLOW THE HINGES (turn 17, CLAUDE.md F7.3) ────────────────
@@ -2708,6 +2736,18 @@ export function computeCabinet(params, profileOverride) {
       code: 'FRIDGE_RAIL_MEETS_FIXED_PANEL',
       message: `The middle back rail hangs on the tenon at ${roundTo(fridge.rail2Y + pz.tabCentresFromEnd, 0)} mm, which is above the fixed panel at ${roundTo(fridge.fixedPanelY, 0)} mm — raise the fridge height or lower the carcass.`,
     });
+  }
+  // T75 F12 · a tower names its STACK in KIT_FRIDGE's two sentences, not a
+  // fridge it may not have. The codes, and every fridge's words, are unchanged.
+  if (fridge && cfg.tower) {
+    const stack = cfg.tower.rows.map((r) => `${r.role} ${roundTo(r.h, 0)}`).join(', ');
+    for (const w of warnings) {
+      if (w.code === 'FRIDGE_ZONE_TOO_TALL') {
+        w.message = `The aperture stack (${stack}) reaches ${roundTo(fridge.fixedPanelY, 0)} mm and leaves no room for the spurs panel: take an aperture out or raise the carcass.`;
+      } else if (w.code === 'FRIDGE_RAIL_MEETS_FIXED_PANEL') {
+        w.message = `The middle back rail hangs on the tenon at ${roundTo(fridge.rail2Y + pz.tabCentresFromEnd, 0)} mm, above the stack's top fixed panel at ${roundTo(fridge.fixedPanelY, 0)} mm: the back over the stack (${stack}) would cross it. Stack more under it or lower the carcass.`;
+      }
+    }
   }
 
   // ─── THE OVEN HOUSING'S OWN GEOMETRY (turn 17 F10; turn 18 F5) ───────────
@@ -3392,6 +3432,19 @@ export function computeCabinet(params, profileOverride) {
       // kit already draws in is the fix, and it is the only thing that moves.
       cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
     }));
+    // ─── T75 F12 · THE TOWER'S LOWER FIXED PANELS ───────────────────────────
+    // KIT_FRIDGE's FIXED, cut again at the top of every aperture under the top
+    // one: the same board, the same frame, screwed the same way (below). The
+    // top aperture's is the FIXED above. A one-aperture tower has none.
+    for (const row of (cfg.tower?.rows || []).slice(0, -1)) {
+      panels.push(panel({
+        id: `FIXED${row.index}`, part: 'FIXED', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
+        edgeCode: codes.right, edgeLen: metres(internalWidth),
+        box: { x: G, y: row.fixedY, z: G, w: internalWidth, h: G, d: internalDepth },
+        cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
+        meta: { aperture: row.index, apertureRole: row.role },
+      }));
+    }
     const railSockets = (withBottom) => ({
       bottom: [pz.tabCentresFromEnd],
       top: [pz.tabCentresFromEnd],
@@ -8276,6 +8329,12 @@ export function computeCabinet(params, profileOverride) {
       for (const fx of [FR.fixedScrewFromEnd, sideW - FR.fixedScrewFromEnd]) {
         addDrill(sideId, 'fixed_screw', pz.layers.screw, fx, fridge.fixedPanelY + G / 2, pz.screwDiameter);
       }
+      // T75 F12 · every lower fixed panel of a tower, on its own centreline.
+      for (const row of (cfg.tower?.rows || []).slice(0, -1)) {
+        for (const fx of [FR.fixedScrewFromEnd, sideW - FR.fixedScrewFromEnd]) {
+          addDrill(sideId, 'fixed_screw', pz.layers.screw, fx, row.fixedY + G / 2, pz.screwDiameter);
+        }
+      }
     }
   }
 
@@ -9457,6 +9516,23 @@ export function computeCabinet(params, profileOverride) {
       },
       `${roundTo(internalWidth, 0)} × ${roundTo(hoodApertureMm, 0)} × ${roundTo(internalDepth, 0)} mm aperture`);
   }
+  // ─── T75 F12 · THE TOWER'S MACHINES ARE BOUGHT ───────────────────────────
+  // *"BOM line + GLB slot (the Blum pattern)."*  One line per aperture, ordered
+  // to the aperture as the extractor is, and NOT ONE HOLE: every make fixes
+  // differently and the repo has no published pattern for any of them.
+  for (const row of cfg.tower?.rows || []) {
+    hw('appliance', applianceLabelOf(row.role, P), 1, 'pcs',
+      {
+        role: row.role,
+        aperture_width_mm: roundTo(internalWidth, 1),
+        aperture_height_mm: roundTo(row.h, 1),
+        aperture_depth_mm: roundTo(internalDepth, 1),
+        floor_y_mm: roundTo(row.floorY, 1),
+      },
+      // The machine is named in the spec: the BOM merges a role's lines by
+      // their spec, and a washer and a dryer of one aperture are two machines.
+      `${applianceLabelOf(row.role, P)}, ${roundTo(internalWidth, 0)} x ${roundTo(row.h, 0)} x ${roundTo(internalDepth, 0)} mm aperture`);
+  }
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
   // ─── Turn 22 (CLAUDE.md F1.4): THE CORNICE IS ORDERED, NOT CUT ───────────
@@ -9630,6 +9706,13 @@ export function computeCabinet(params, profileOverride) {
       back_top_h: fridge.backTopH,
       spurs_w: fridge.spursW,
       spurs_h: fridge.spursPanelH,
+    } : {}),
+    // T75 F12 · the tower's stack, bottom-up, and where its door starts.
+    ...(cfg.tower ? {
+      apertures: cfg.tower.rows.map((r) => ({
+        role: r.role, h: r.h, floor_y: r.floorY, fixed_y: r.fixedY, face: r.face,
+      })),
+      door_base_y: cfg.tower.doorBase,
     } : {}),
   };
 

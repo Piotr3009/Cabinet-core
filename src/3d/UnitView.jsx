@@ -93,7 +93,7 @@ import {
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import Hardware, {
-  DoorHinges, Extractor, FrontHandle, hingeSpecsFor,
+  ApplianceSlots, DoorHinges, Extractor, FrontHandle, hingeSpecsFor,
 } from './Hardware.jsx';
 import HoverDimensions from './HoverDimensions.jsx';
 // T72 F3 · the chain that STAYS while a piece is selected, every figure a chip.
@@ -3210,6 +3210,19 @@ export default function UnitView({
             h: result.hardware.find((h) => h.role === 'extractor').spec.aperture_height_mm,
             d: result.hardware.find((h) => h.role === 'extractor').spec.aperture_depth_mm,
           }}
+        />
+      )}
+      {/* T75 F12 · the appliance tower's machines: a slot per aperture, nothing drawn. */}
+      {result.hardware?.some?.((h) => h.role === 'appliance') && (
+        <ApplianceSlots
+          unitId={unit.id}
+          apertures={result.hardware.filter((h) => h.role === 'appliance').map((h) => ({
+            role: h.spec.role,
+            w: h.spec.aperture_width_mm,
+            h: h.spec.aperture_height_mm,
+            d: h.spec.aperture_depth_mm,
+            y: h.spec.floor_y_mm,
+          }))}
         />
       )}
       <Hardware

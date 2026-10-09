@@ -63,6 +63,10 @@ test('F11 a BARE call passes no threshold and drills the kit’s own count', () 
       ...defaultParamsFor(type, P), unit_num: '01', height: 500, doors: true,
     }, P);
     if (!r.drillSummary.hinge_centers.length) continue;
+    // AMENDED BY T75 F12: an appliance tower's door standing on a machine is a
+    // short door on its own ladder (turn17-phases F7 asserts it); at 500 the
+    // stack does not even fit and the kit is raised to its minimum.
+    if (getUnitType(type).applianceTower && r.derived.door_base_y > 0) continue;
     seen += 1;
     // Which LADDER this kit is on is read off the type, never guessed.
     const rule = P.hinges.rules[getUnitType(type).hingeRule] || P.hinges.rules.base;

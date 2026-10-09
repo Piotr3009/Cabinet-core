@@ -56,9 +56,11 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   ]);
   // Turn 30 (CLAUDE.md F13/F14): Cargo 300 and the pantry land beside the kits
   // they are made of; the pantry's held-open row became a kit.
+  // AMENDED BY T75 F12: *"Four library rows, Tall units ... `Oven tall`
+  // (oven + cupboard), `Oven + microwave`, `Fridge freezer`, `Washer + dryer`."*
   assert.deepEqual(idsOf('tall-units'), [
     'tall', 'fridge', 'cargo-300', 'basket-tall', 'pantry', 'pantry-worktop',
-    'space-tower', 'oven-tall', 'american-fridge',
+    'space-tower', 'oven-tall', 'oven-microwave', 'fridge-freezer', 'washer-dryer', 'american-fridge',
   ]);
   // Turn 31 (CLAUDE.md F9): the HOOD unit joins the wall group.
   // T75 F3: the blind corner wall unit.
@@ -79,7 +81,8 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // open, the extractor a BOM line and a GLB slot, and not one fixing hole.
     // T75 F3: the blind corner (base) and the blind corner wall unit.
     // AMENDED BY T75 F4: T30's L_SHAPE is deleted; the true L's base kit takes its place and its wall kit follows the blind wall unit.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'BLIND_WALL', 'CORNER_L_WALL',
+    // AMENDED BY T75 F12: the appliance towers, *"Fridge freezer"* and *"Washer + dryer"*.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'BLIND_WALL', 'CORNER_L_WALL',
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
@@ -152,12 +155,16 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // KIT_BUDR_FULL turned out to be the three-drawer base unit and there is
     // no corner kit to inherit a hole from.
     // AMENDED BY T75 F4: 'l-shape' left this list: the true L, KIT_CORNER_L.lsp.
-    'small-fridge', 'twin-space',
+    // AMENDED BY T75 F12: 'small-fridge' left this list, *"the small fridge is
+    // `DW_PANEL`'s fridge front, said in the row"*.
+    'twin-space',
     // Turn 30 (CLAUDE.md F14): 'pantry' left this list — KIT_BUDTALL's carcass
     // with the wardrobe kit's own internal drawer machinery in it.
     // Turn 30 (CLAUDE.md F15): 'american-fridge' left it too — KIT_FRIDGE.lsp
     // exists and is the truth, so an american size is a wider envelope.
-    'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall',
+    // AMENDED BY T75 F12: 'oven-microwave' joins 'oven-tall', both held for
+    // the owner's stack (two door zones on one face; the rail rule).
+    'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall', 'oven-microwave',
     // Turn 30 (CLAUDE.md F21): 'glass-unit' left this list — KIT_WUD's own
     // carcass and door, with the shaker frame taken through and a pane
     // ordered for the hole.

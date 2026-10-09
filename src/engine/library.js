@@ -38,6 +38,11 @@
 /** The one-liner every held-open kit carries, so the wording cannot drift. */
 const NO_PATTERN = 'No kit or LISP defines this carcass yet — the pattern comes first';
 
+/** T75 F12 · why the two oven towers wait for the owner's stack. */
+const OVEN_STACK = 'An oven stands at eye level with cupboards under and over it: two door zones on one face, '
+  + 'and the door path cuts one. On the bottom panel instead, KIT_FRIDGE\'s middle back rail crosses its back. '
+  + 'The owner sets the stack first';
+
 /**
  * An entry is one of:
  *   { kind: 'type',  id, typeId, label?, hint? }
@@ -100,12 +105,16 @@ export const KITCHEN_LIBRARY = [
       // and no published pattern states a wine rack's joints, so the boards
       // ship UNDRILLED and unnotched and the gap is named in the report.
       { kind: 'type', id: 'wine-rack', typeId: 'WINE', label: 'Wine rack', hint: 'Open lattice of cells — boards only, no drilling truth exists yet' },
+      // ─── T75 F12 · THE SMALL FRIDGE CLOSES ONTO THE D/W PANEL ───────────
+      // *"the small fridge is `DW_PANEL`'s fridge front, said in the row."*
+      // An under-counter fridge stands between two carcasses exactly as a
+      // dishwasher does: the kit is the D/W panel, a front and nothing else.
       {
-        kind: 'soon',
+        kind: 'type',
         id: 'small-fridge',
+        typeId: 'DW_PANEL',
         label: 'Small fridge',
-        hint: 'Under-counter appliance housing',
-        reason: 'No kit defines the appliance aperture yet — the pattern comes first',
+        hint: 'Under-counter fridge: the D/W panel\'s fridge front, a front and nothing else',
       },
       {
         kind: 'soon',
@@ -155,12 +164,42 @@ export const KITCHEN_LIBRARY = [
       {
         kind: 'soon', id: 'space-tower', label: 'Space tower', hint: 'The drawer larder', reason: NO_PATTERN,
       },
+      // ─── T75 F12 · THE APPLIANCE TOWER, KIT_FRIDGE STACKED ──────────────
+      // *"Four library rows, Tall units, each a defaults block: `Oven tall`
+      // (oven + cupboard), `Oven + microwave`, `Fridge freezer`, `Washer +
+      // dryer`."*  The two oven rows stay held open, with the reason: an oven
+      // stands at eye level with cupboards under and over it, which is two
+      // door zones on one face, and the door path cuts one; stood on the
+      // bottom panel instead, KIT_FRIDGE's middle back rail crosses its back
+      // (FRIDGE_RAIL_MEETS_FIXED_PANEL). Neither can be cut honestly until the
+      // owner sets the stack.
       {
         kind: 'soon',
         id: 'oven-tall',
         label: 'Oven tall',
-        hint: 'Single or double appliance housing',
-        reason: 'No kit defines the appliance aperture yet — the pattern comes first',
+        hint: 'Oven and a cupboard, in KIT_FRIDGE\'s housing',
+        reason: OVEN_STACK,
+      },
+      {
+        kind: 'soon',
+        id: 'oven-microwave',
+        label: 'Oven + microwave',
+        hint: 'Oven and microwave, in KIT_FRIDGE\'s housing',
+        reason: OVEN_STACK,
+      },
+      {
+        kind: 'type',
+        id: 'fridge-freezer',
+        typeId: 'APPLIANCE_TALL',
+        label: 'Fridge freezer',
+        hint: 'KIT_FRIDGE\'s housing, one aperture, the fridge behind its door',
+      },
+      {
+        kind: 'type',
+        id: 'washer-dryer',
+        typeId: 'APPLIANCE_TALL2',
+        label: 'Washer + dryer',
+        hint: 'KIT_FRIDGE\'s housing, two apertures, a door over the top',
       },
       // ─── Turn 30 (CLAUDE.md F15): the american housing OPENS ─────────────
       // KIT_FRIDGE.lsp is the truth and it EXISTS: every panel it cuts already
@@ -281,7 +320,9 @@ export function flattenLibrary(entries = KITCHEN_LIBRARY) {
 
 /** Every unit TYPE the library can insert, in library order. */
 export function libraryTypeIds(entries = KITCHEN_LIBRARY) {
-  return flattenLibrary(entries).filter((e) => e.kind === 'type' && e.typeId).map((e) => e.typeId);
+  // T75 F12 · a kit two rows insert (the D/W panel is also the small fridge)
+  // is ONE type: named once, where it first appears.
+  return [...new Set(flattenLibrary(entries).filter((e) => e.kind === 'type' && e.typeId).map((e) => e.typeId))];
 }
 
 /**

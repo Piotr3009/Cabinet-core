@@ -1661,6 +1661,36 @@ export function Extractor({
   return null;
 }
 
+// ─── T75 F12 · THE APPLIANCE TOWER'S SLOTS ─────────────────────────────────
+//
+// CLAUDE.md T75 F12: *"the appliance itself shows no front (the machine is
+// the face), BOM line + GLB slot (the Blum pattern)."*  The extractor's slot,
+// one row per aperture: declared to the registry with `model: false` and the
+// reason, so the family counts as waiting for its file, and NOTHING DRAWN.
+
+/**
+ * @param {object} props
+ *   unitId     which tower these apertures are in
+ *   apertures  [{ role, w, h, d, y }] in mm, what the BOM ordered against
+ */
+export function ApplianceSlots({
+  unitId, apertures, surface = 'room', scope = '',
+}) {
+  const sig = (apertures || []).map((a) => `${a.role}:${a.w}:${a.h}:${a.d}:${a.y}`).join('|');
+  useEffect(() => {
+    if (!apertures?.length) return;
+    reportHardware(surface, 'appliance', apertures.map((a, i) => ({
+      key: `${unitId}:${i + 1}`,
+      url: null,
+      model: false,
+      reason: 'no model uploaded yet',
+      parent: 'carcass',
+      member: a.role,
+    })), scope || unitId);
+  }, [unitId, sig, surface, scope]);
+  return null;
+}
+
 // ─── THE ADJUSTABLE SHELF'S BRASS (turn 25, CLAUDE.md F6) ───────────────────
 //
 // Owner: he wants to SEE gold or silver sleeves — and they are the ⌀7.5 this

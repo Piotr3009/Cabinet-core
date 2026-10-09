@@ -8418,7 +8418,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // A cabinet lies under ONE slab. Asking for a worktop over a run that
     // already has one REPLACES it rather than stacking a second on top —
     // which is what a joiner means by "put a worktop on these".
-    const kept = design.worktops.filter((w) => !w.unitIds.some((id) => wanted.includes(id)));
+    // T75 F11 · on an island the slab is the ISLAND's: one over the whole,
+    // replacing whatever slab that island already carried.
+    const kept = design.worktops.filter((w) => !w.unitIds.some((id) => wanted.includes(id))
+      && !(gate.island && w.island === gate.island));
     const id = uid('worktop');
     get().setDesign({
       worktops: [...kept, {
@@ -8430,9 +8433,51 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         extendFront: 0,
         // T75 F4/F5 · one L corner unit takes a slab of its own.
         ...(units.length === 1 && getUnitType(units[0].type).corner ? { kind: 'L' } : {}),
+        ...(gate.island ? {
+          island: gate.island,
+          extend: {
+            A: 0, B: 0, E1: 0, E2: 0,
+          },
+        } : {}),
       }],
     });
     return { ok: true, id, error: null };
+  },
+
+  /**
+   * T75 F11 · one face of an island's slab drawn out (the per-face
+   * `extendFront`), and the SEATING overhang as one click: *"a seating overhang
+   * of `profile.worktop.seatingMm` offered as one click on a face with no
+   * units"*. A face carrying a cabinet is refused in words: knees do not go
+   * under a cupboard.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  extendIslandWorktop: (worktopId, face, mm) => {
+    const design = migrateDesign(get().project.design);
+    const record = design.worktops.find((w) => w.id === worktopId && w.island);
+    if (!record || !['A', 'B', 'E1', 'E2'].includes(face)) return { ok: false, error: 'No such island worktop face.' };
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId
+        ? { ...w, extend: { ...w.extend, [face]: Math.max(0, Number(mm) || 0) } }
+        : w)),
+    });
+    return { ok: true, error: null };
+  },
+
+  seatingOverhang: (worktopId, face) => {
+    const s = get();
+    const record = migrateDesign(s.project.design).worktops.find((w) => w.id === worktopId && w.island);
+    if (!record) return { ok: false, error: 'No such island worktop.' };
+    const walls = roomWalls(s.project.room);
+    const wall = walls.find((w) => w.island === record.island && w.face === face);
+    const seated = wall && s.units.some((u) => (u.position?.wall ?? 0) === wall.index && !getUnitType(u.type).freePanel);
+    if (!wall) return { ok: false, error: 'No such island face.' };
+    if (seated) {
+      return { ok: false, error: `A seating overhang goes over a face with no cabinets: face ${face} has some.` };
+    }
+    const mm = Number(getCabinetProfile()?.autoParts?.worktop?.seatingMm) || 300;
+    return get().extendIslandWorktop(worktopId, face, mm);
   },
 
   /** Take one off. No confirmation — Undo covers it (turn 25's rule, F11). */

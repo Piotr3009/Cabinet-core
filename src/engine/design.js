@@ -455,8 +455,14 @@ export function migrateDesign(design) {
         extendFront: Number(w?.extendFront) > 0 ? Number(w.extendFront) : 0,
         // T75 F4/F5 · an L corner unit's slab is a worktop of one unit.
         ...(w?.kind === 'L' ? { kind: 'L' } : {}),
+        // T75 F11 · an island's slab is the island's, with an extension per face.
+        ...(w?.island ? {
+          island: String(w.island),
+          extend: Object.fromEntries(['A', 'B', 'E1', 'E2']
+            .map((k) => [k, Number(w?.extend?.[k]) > 0 ? Number(w.extend[k]) : 0])),
+        } : {}),
       }))
-      .filter((w) => w.id && (w.unitIds.length >= 2 || (w.kind === 'L' && w.unitIds.length === 1))),
+      .filter((w) => w.id && (w.unitIds.length >= 2 || (w.kind === 'L' && w.unitIds.length === 1) || w.island)),
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: normaliseHandle(d.fronts?.handle),

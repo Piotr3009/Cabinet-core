@@ -98,6 +98,17 @@ function isCornerKit(unit) {
 export function worktopEligible(units, profile, { walls = null } = {}) {
   const spec = worktopSpec(profile);
   const list = units || [];
+  // ─── T75 F11 · ONE WORKTOP OVER THE WHOLE ISLAND ─────────────────────────
+  // *"`worktopsFor` on an island returns ONE slab: the bounding rectangle of
+  // every unit and panel on the island."*  A selection standing wholly on one
+  // island's faces asks for that slab: one cabinet is enough, any face goes.
+  const isle = islandOfSelection(list, walls);
+  if (isle) {
+    if (!list.every((u) => takesWorktop(u.type))) {
+      return { ok: false, why: 'A worktop lies on base cabinets: a wall unit has nothing to lie on.' };
+    }
+    return { ok: true, why: null, island: isle };
+  }
   // T75 F4/F5 · *"The L kit's worktop is one slab shaped like the L."*  An L
   // corner unit is a run of its own: one is enough.
   const loneL = list.length === 1 && isCornerKit(list[0]);
@@ -218,6 +229,13 @@ export function worktopsFor({
   const byId = new Map((units || []).map((u) => [u.id, u]));
   const out = [];
   for (const record of records || []) {
+    // ─── T75 F11 · AN ISLAND'S RECORD IS THE ISLAND'S, WHATEVER STANDS ON IT ─
+    if (record?.island) {
+      if (!walls) continue;
+      const slab = islandSlab({ record, units, walls, profile });
+      if (slab) out.push(slab);
+      continue;
+    }
     const mine = (record?.unitIds || []).map((id) => byId.get(id)).filter(Boolean);
     const loneL = mine.length === 1 && isCornerKit(mine[0]);
     if (mine.length < worktopSpec(profile).minUnits && !loneL) continue;
@@ -405,4 +423,119 @@ export function cutoutsFor(units, geometry, profile) {
     });
   }
   return out;
+}
+
+// ─── T75 F11 · THE ISLAND'S ONE SLAB ────────────────────────────────────────
+//
+// *"`worktopsFor` on an island returns ONE slab: the bounding rectangle of
+// every unit and panel on the island plus the front overhang law on every face
+// (20 mm), plus a per-face `extend` the client sets (the existing `extendFront`
+// record, now per face; a seating overhang of `profile.worktop.seatingMm =
+// 300` offered as one click on a face with no units). The slab is one BOM
+// line, one cut list line, one sheet in the T71 set with the cut-outs of F5."*
+//
+// The slab is drawn in FACE A's frame (along A, out from A, so the core and
+// face B lie at negative "out"), as an `outline`, which every slab reader
+// already draws for the L (F4/F5). Its cut-outs are each face's own, carried
+// into that frame.
+
+/** The island every unit of a selection stands on, or null. */
+function islandOfSelection(list, walls) {
+  if (!walls || !list.length) return null;
+  const ids = new Set(list.map((u) => walls[u.position?.wall ?? 0]?.island || null));
+  if (ids.size !== 1 || ids.has(null)) return null;
+  return [...ids][0];
+}
+
+const ISLAND_FACE_KEYS = ['A', 'B', 'E1', 'E2'];
+
+/** One record's per-face extensions, made real. */
+function islandExtend(record) {
+  const e = record?.extend || {};
+  return Object.fromEntries(ISLAND_FACE_KEYS.map((k) => [k, Math.max(0, Number(e[k]) || 0)]));
+}
+
+function islandSlab({ record, units, walls, profile }) {
+  const spec = worktopSpec(profile);
+  const faces = Object.fromEntries(walls.filter((w) => w.island === record.island).map((w) => [w.face, w]));
+  const A = faces.A;
+  if (!A || !faces.E1) return null;
+  const toA = (p) => [
+    (p.x - A.start.x) * A.along.x + (p.y - A.start.y) * A.along.y,
+    (p.x - A.start.x) * A.inward.x + (p.y - A.start.y) * A.inward.y,
+  ];
+  const plan = (wall, u, v) => ({
+    x: wall.start.x + wall.along.x * u + wall.inward.x * v,
+    y: wall.start.y + wall.along.y * u + wall.inward.y * v,
+  });
+  const gap = Number(profile?.doors?.gap) || 0;
+  const onIsland = (units || []).filter((u) => walls[u.position?.wall ?? 0]?.island === record.island);
+  const cabinets = onIsland.filter((u) => takesWorktop(u.type));
+  // The core itself, then every thing on a face out to its front.
+  const pts = [[0, 0], [A.width, 0], [A.width, -faces.E1.width], [0, -faces.E1.width]];
+  for (const u of onIsland) {
+    const wall = walls[u.position?.wall ?? 0];
+    const x = Number(u.position?.x_mm) || 0;
+    const w = Number(u.params?.width) || 0;
+    const reach = getUnitType(u.type)?.freePanel
+      ? wallGapOf(u, profile) + (Number(u.params?.depth) || 0)
+      : wallGapOf(u, profile) + (Number(u.params?.depth) || 0) + gap + (Number(u.params?.front_t) || 0);
+    for (const [pu, pv] of [[x, 0], [x + w, 0], [x + w, reach], [x, reach]]) pts.push(toA(plan(wall, pu, pv)));
+  }
+  const ext = islandExtend(record);
+  const over = spec.frontOverhang;
+  const us = pts.map((p) => p[0]);
+  const vs = pts.map((p) => p[1]);
+  // In A's frame: A is "out" (+v), B is behind the core (-v), E1 lies at the
+  // far end of A (+u), E2 at its start (-u).
+  const u0 = Math.min(...us) - over - ext.E2;
+  const u1 = Math.max(...us) + over + ext.E1;
+  const v0 = Math.min(...vs) - over - ext.B;
+  const v1 = Math.max(...vs) + over + ext.A;
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const tops = cabinets.map((u) => unitBase(u, profile) + (Number(u.params?.height) || 0));
+  const panels = onIsland.filter((u) => getUnitType(u.type)?.freePanel);
+  const top = tops.length ? Math.max(...tops) : Math.max(0, ...panels.map((u) => Number(u.params?.height) || 0));
+  const outline = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]].map(([u, v]) => [r2(u), r2(v)]);
+  const geometry = {
+    wall: A.index,
+    x: r2(u0),
+    w: r2(u1 - u0),
+    y: top,
+    h: spec.thickness,
+    z: r2(v0),
+    d: r2(v1 - v0),
+    depth: r2(v1 - v0),
+    thickness: spec.thickness,
+    decor: record?.decor ?? null,
+    overhang: { front: over, side: over, wall: 0 },
+    extensions: ext,
+    unitIds: onIsland.map((u) => u.id),
+    outline,
+    shape: 'island',
+    island: record.island,
+  };
+  // Each face's cut-outs, carried from that face's frame into A's.
+  const cutouts = [];
+  for (const u of cabinets) {
+    const wall = walls[u.position?.wall ?? 0];
+    for (const c of cutoutsFor([u], geometry, profile)) {
+      const corners = [[c.x, c.z], [c.x + c.w, c.z], [c.x + c.w, c.z + c.d], [c.x, c.z + c.d]]
+        .map(([pu, pv]) => toA(plan(wall, pu, pv)));
+      const cu = corners.map((p) => p[0]); const cv = corners.map((p) => p[1]);
+      cutouts.push({
+        ...c,
+        x: r2(Math.min(...cu)),
+        z: r2(Math.min(...cv)),
+        w: r2(Math.max(...cu) - Math.min(...cu)),
+        d: r2(Math.max(...cv) - Math.min(...cv)),
+      });
+    }
+  }
+  return {
+    ...record,
+    slabId: `${record.id}`,
+    cutouts,
+    geometry: { ...geometry, ...(cutouts.length ? { cutouts } : {}) },
+  };
 }

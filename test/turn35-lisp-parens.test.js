@@ -133,7 +133,7 @@ test('F13 — KIT_WARDROBE_FULL carries the `;; --- SPLIT DOORS (T35)` marker', 
 // above already balances every file in the folder; these name the new ones so
 // that one deleted by accident fails by name. Existing LISP is untouched.
 
-const T75_KITS = ['KIT_CORNER_L.lsp', 'SKYLON_JOINTS_DOWEL.lsp'];
+const T75_KITS = ['KIT_CORNER_L.lsp', 'KIT_NOTCH.lsp', 'SKYLON_JOINTS_DOWEL.lsp'];
 
 test('T75 · the new kits are in the folder, and the old fourteen are still there', () => {
   for (const kit of T75_KITS) assert.ok(KITS.includes(kit), `${kit} is missing`);

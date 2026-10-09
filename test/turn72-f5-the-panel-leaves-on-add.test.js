@@ -193,5 +193,7 @@ test('F5 · ONE LAW: the sweep runs on the add, and the settle still runs after 
   // The settle is untouched and still ends the add.
   assert.match(add, /get\(\)\.settleLayout\(unit\.id\);/);
   // …and it is all one `runBatch`, so Ctrl+Z takes the whole add back.
-  assert.match(store, /addUnit: \(typeId, \{ params = null, near = null, side = null \} = \{\}\) => runBatch\(\(\) => \{/);
+  // AMENDED BY T75 F10: the add takes a named WALL too (an island face's plus,
+  // *"`addUnit` with the face's index"*); it is still one `runBatch`.
+  assert.match(store, /addUnit: \(typeId, \{\n    params = null, near = null, side = null, wall: wallAsked = null,\n  \} = \{\}\) => runBatch\(\(\) => \{/);
 });

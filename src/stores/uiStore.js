@@ -218,10 +218,14 @@ export const useUiStore = create((set, get) => ({
   //
   // Cleared whenever the panel is closed or a category is chosen from the menu,
   // so a place picked on the canvas can never outlive the click that picked it.
-  libraryInsert: null,               // { near: unitId, side: 'left' | 'right' }
+  libraryInsert: null,               // { near: unitId, side: 'left' | 'right' } or { wall } (T75 F10)
   openLibraryToInsert: (categoryId, at) => set({
     libraryCategory: categoryId || null,
-    libraryInsert: at?.near ? { near: at.near, side: at.side === 'left' ? 'left' : 'right' } : null,
+    // T75 F10 · …or a WALL with nobody on it yet: an island face's own plus.
+    // eslint-disable-next-line no-nested-ternary
+    libraryInsert: at?.near
+      ? { near: at.near, side: at.side === 'left' ? 'left' : 'right' }
+      : (Number.isInteger(at?.wall) ? { wall: at.wall } : null),
   }),
   clearLibraryInsert: () => set({ libraryInsert: null }),
 

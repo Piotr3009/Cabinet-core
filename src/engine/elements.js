@@ -164,6 +164,8 @@ export function elementKind(panel) {
     case 'DRAWER-FRONT': return 'drawer-front';
     // T74 F13 · the board of a free-standing panel.
     case 'FREE-PANEL': return 'free-panel';
+    // T75 F10 · an island's own panels are free panels the automat placed.
+    case 'BACK-PANEL': case 'ISLAND-END-PANEL': return 'free-panel';
     // T75 F2 · the corner post; F3 · the blind kit's blank.
     case 'CORNER-POST': return 'corner-post';
     // T75 F5 · the upstand on the worktop.

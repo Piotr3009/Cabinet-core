@@ -49,8 +49,10 @@ import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, islandCorners, migrateRoom, plasterPosition, rehomeIslandUnits, roomBoxes,
   roomChangeGuard, roomIslands, roomWalls, wallName, wallPlanObstacles,
 } from '../engine/room.js';
-// T75 F9 · the island: what it would stand on (Room refuses first).
-import { islandClash, newIsland } from '../engine/island.js';
+// T75 F9 · the island: what it would stand on (Room refuses first); F10 · its panels.
+import {
+  isIslandAutoPanel, islandClash, islandPanelPlan, newIsland,
+} from '../engine/island.js';
 import { getProjectType } from '../engine/projectTypes.js';
 // T75 F1 · THE CORNER RULEBOOK: the one detection the corner stop, the post,
 // the hinge and every corner consumer below read.
@@ -1430,7 +1432,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   removeIsland: (id) => {
     const s = get();
     const walls = roomWalls(s.project.room);
-    const standing = s.units.filter((u) => walls[u.position?.wall ?? 0]?.island === id);
+    // The automat's own panels go with the island; anything else holds it.
+    const standing = s.units.filter((u) => walls[u.position?.wall ?? 0]?.island === id && !isIslandAutoPanel(u));
     if (standing.length) {
       return {
         ok: false,
@@ -2133,7 +2136,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const parts = autoPartsFor({
         unit: u, wallWidth: wall?.width ?? 0, others, roomHeight, design,
       }, profile);
-      notices.push(...parts.notices);
+      // T75 F10 · *"not given side infills or scribes (`sideInfill` returns
+      // none against a face)"*: an island face is not plaster.
+      const onFace = Boolean(wall?.island);
+      if (!onFace) notices.push(...parts.notices);
       // T75 F4 · an L's corner end is BACK-B against the adjacent wall, not a
       // front edge: no scribe filler is cut there.
       const lEnd = isCornerLKit(u.type) ? (cornerLHand(u, walls, profile) || u.params?.corner_side || 'left') : null;
@@ -2143,8 +2149,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           ...u.params,
           plinth: parts.plinth,
           top_infill_mm: parts.top_infill_mm,
-          side_infill_left_mm: lEnd === 'left' ? 0 : parts.side_infill_left_mm,
-          side_infill_right_mm: lEnd === 'right' ? 0 : parts.side_infill_right_mm,
+          side_infill_left_mm: onFace || lEnd === 'left' ? 0 : parts.side_infill_left_mm,
+          side_infill_right_mm: onFace || lEnd === 'right' ? 0 : parts.side_infill_right_mm,
         },
       };
     });
@@ -2452,7 +2458,96 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // being ACTIVE, knee or straight.
     get().settleSlopePulldowns();
 
+    // ─── T75 F10 · THE ISLAND'S PANELS, MADE AND UNMADE BY WHAT STANDS ON IT ─
+    // The same choke point: every add, move, resize, removal and room change
+    // ends here, so an empty face is covered and a face a cabinet arrives on
+    // is uncovered by one law (`engine/island.js islandPanelPlan`).
+    get().settleIslandPanels();
+
     return notices;
+  },
+
+  /**
+   * ─── T75 F10 · THE ISLAND AUTOMAT ─────────────────────────────────────────
+   *
+   * *"An empty long face gets an auto BACK PANEL ...; an empty end face gets
+   * the auto END PANEL ..., sized to the whole island depth. A unit added to a
+   * face takes the automat's panel off (the vanishing law); a panel the client
+   * added by hand stays."*  The boards are free panels carrying
+   * `island_auto: true`; only those are made, re-sized or removed here. It acts
+   * on the DIFFERENCE, so a settled scene passes through untouched and the
+   * refresh it triggers finds nothing more to do.
+   *
+   * @returns {number} how many panels it made, moved or removed
+   */
+  /** T75 F10 · take the automat's panels off one island face; how many went. */
+  clearFacePanels: (wallIndex) => {
+    const s = get();
+    if (!roomWalls(s.project.room)[wallIndex]?.island) return 0;
+    const gone = s.units.filter((u) => isIslandAutoPanel(u) && (u.position?.wall ?? 0) === wallIndex);
+    if (gone.length) set((st) => ({ units: st.units.filter((u) => !gone.some((p) => p.id === u.id)) }));
+    return gone.length;
+  },
+
+  settleIslandPanels: () => {
+    const s = get();
+    if (!(s.project.room?.islands || []).length && !s.units.some(isIslandAutoPanel)) return 0;
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    const plan = islandPanelPlan({
+      room: s.project.room,
+      units: s.units,
+      profile,
+      unitTopOf: (u) => unitTop(u, profile),
+      faceReachOf: (u) => cornerFaceMm(u, profile),
+      defaultTop: unitTop({ type: 'BUD', params: defaultParamsFor('BUD', profile) }, profile),
+    });
+    const keyOf = (island, face) => `${island}|${face}`;
+    const wanted = new Map(plan.map((p) => [keyOf(p.island, p.face), p]));
+    const paramsFor = (p) => ({
+      island_panel: p.kind,
+      island_auto: true,
+      panel_facing: 'along',
+      panel_tilt_deg: 0,
+      panel_width: p.height,
+      board_t: p.thickness,
+      width: p.length,
+      height: p.height,
+      depth: p.thickness,
+      mount_height: 0,
+      side_infill_off: true,
+    });
+    const same = (u, p) => u.position?.wall === p.wall
+      && Math.abs((Number(u.position?.x_mm) || 0) - p.x) < 0.01
+      && Object.entries(paramsFor(p)).every(([k, v]) => u.params?.[k] === v);
+    let changed = 0;
+    const kept = [];
+    for (const u of s.units) {
+      if (!isIslandAutoPanel(u)) { kept.push(u); continue; }
+      const p = wanted.get(keyOf(u.position?.island, u.position?.face));
+      if (!p) { changed += 1; continue; }
+      wanted.delete(keyOf(p.island, p.face));
+      if (same(u, p)) { kept.push(u); continue; }
+      changed += 1;
+      kept.push({
+        ...u,
+        position: { ...u.position, wall: p.wall, x_mm: p.x },
+        params: { ...u.params, ...paramsFor(p) },
+      });
+    }
+    for (const p of wanted.values()) {
+      const unit = newUnit('FREE_PANEL', profile, kept.length, s.project.design);
+      unit.params = { ...unit.params, ...paramsFor(p), unit_num: nextUnitNum(kept, getUnitType('FREE_PANEL')) };
+      unit.position = {
+        wall: p.wall, x_mm: p.x, rotation_deg: 0, island: p.island, face: p.face,
+      };
+      kept.push(unit);
+      changed += 1;
+    }
+    if (!changed) return 0;
+    set({ units: rehomeIslandUnits(kept, walls) });
+    get().refreshAutoParts();
+    return changed;
   },
 
   /**
@@ -4381,7 +4476,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *           not a second path: a template that could land on top of a
    *           neighbour would be exactly the bug turn 3 phase 4 closed off.
    */
-  addUnit: (typeId, { params = null, near = null, side = null } = {}) => runBatch(() => {
+  addUnit: (typeId, {
+    params = null, near = null, side = null, wall: wallAsked = null,
+  } = {}) => runBatch(() => {
     const profile = getCabinetProfile();
     // T72 F5 · `let`, because closing a neighbour's auto end panel below moves
     // the very spans this placement is measured against.
@@ -4589,14 +4686,20 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // …and when a SIDE was asked for as well, that wall is the only one tried:
     // "put one on the left of this" is not answered by a wall round the corner.
     const besideWall = beside ? walls[beside.position.wall ?? 0] : null;
-    // T75 F9 · going round the room looking for space never lands a cabinet
-    // on an island face: *"A face is NOT plaster"*.
+    // ─── T75 F10 · A FACE IS TRIED ONLY WHEN IT IS ASKED FOR ───────────────
+    // *"A unit is added to a face as to a wall (`addUnit` with the face's
+    // index)."*  A named wall (a face's plus, the library opened on it) is the
+    // only one tried; going round the room looking for space never lands a
+    // cabinet on an island nobody pointed at.
+    const asked = wallAsked != null && walls[Number(wallAsked)] ? walls[Number(wallAsked)] : null;
     const plaster = walls.filter((wl) => !wl.island);
-    const ordered = besideWall
-      ? (side
-        ? [besideWall]
-        : [besideWall, ...plaster.filter((wl) => wl.index !== besideWall.index)])
-      : plaster;
+    const ordered = asked
+      ? [asked]
+      : (besideWall
+        ? (side
+          ? [besideWall]
+          : [besideWall, ...plaster.filter((wl) => wl.index !== besideWall.index)])
+        : plaster);
     // ─── T75 F4 · AN L STANDS IN A ROOM CORNER ONLY ───────────────────────
     // *"the L stands in a room corner only (Room refuses first: any other spot
     // is refused in words)."*  The first free internal corner, on the wall of
@@ -4612,12 +4715,23 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }
       if (!placed) return { id: null, error: cornerLRefusal(unit) };
     }
+    // T75 F10 · THE VANISHING LAW, before the placement is measured: a
+    // cabinet put on an island face takes the automat's panel there off first
+    // (T72 F5's order: the board leaves, then the cabinet is placed), and the
+    // automat puts it back if the placement is refused.
+    const facePanels = asked?.island
+      ? state.units.filter((u) => isIslandAutoPanel(u) && (u.position?.wall ?? 0) === asked.index)
+      : [];
+    if (facePanels.length) {
+      set((st) => ({ units: st.units.filter((u) => !facePanels.some((p) => p.id === u.id)) }));
+      state = get();
+    }
     for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
       const x = freeSlotOnWall({
         width: unit.params.width,
         wallWidth: wall.width,
-        wallMargin: wallMarginOf(state, unit),
+        wallMargin: wallMarginOf(state, unit, wall),
         others: [
           ...state.units
             .filter((u) => (u.position.wall ?? 0) === wall.index && (obstructs(unit, u, profile)
@@ -4641,7 +4755,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!placed) {
       const where = side && beside
         ? `There is no room for ${formatMm(unit.params.width)} mm to the ${side === 'L' ? 'left' : 'right'} of ${beside.params.unit_num} — move something, or add it on the other side.`
-        : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`;
+        : (asked
+          ? `There is no room for ${formatMm(unit.params.width)} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
+          : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`);
+      if (facePanels.length) get().settleIslandPanels();
       return { id: null, error: where };
     }
     unit.position.wall = placed.wall;
@@ -5966,6 +6083,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * @returns {{wall:number, x_mm:number, blocked:boolean, error:string|null}}
    */
   moveUnitToWall: (unitId, wallIndex, xRaw, snapStep = 0) => {
+    // T75 F10 · as `setUnitWall`: an island face is cleared of the automat's panel first.
+    if (wallIndex !== (get().units.find((u) => u.id === unitId)?.position?.wall ?? 0)) get().clearFacePanels(wallIndex);
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     const walls = roomWalls(s.project.room);
@@ -6002,7 +6121,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const room = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
-      wallMargin: wallMarginOf(get(), unit),
+      wallMargin: wallMarginOf(get(), unit, walls[wallIndex]),
       others: [
         ...get().units
           .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex
@@ -6072,6 +6191,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * itself, which is exactly what phase 4 closes off.
    */
   setUnitWall: (unitId, wallIndex) => {
+    // T75 F10 · the vanishing law on the Wall select too: the automat's panel
+    // on an island face leaves before the unit is measured onto it.
+    get().clearFacePanels(wallIndex);
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     const walls = roomWalls(s.project.room);
@@ -6087,7 +6209,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const x = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
-      wallMargin: wallMarginOf(s, unit),
+      wallMargin: wallMarginOf(s, unit, walls[wallIndex]),
       others: [
         ...s.units
           .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && obstructs(unit, u))
@@ -6100,6 +6222,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ],
     }, getCabinetProfile());
     if (x == null) {
+      // T75 F10 · refused: the automat puts its panel back.
+      get().settleIslandPanels();
       return {
         wall: unit.position.wall ?? 0,
         x_mm: unit.position.x_mm,
@@ -8385,7 +8509,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       entries: view.entries,
       units: [...s.units.filter((u) => !view.units.some((v) => v.id === u.id)), ...view.units],
       baseOf: (u) => unitBase(u, profile),
-      wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      // T75 F10 · an island face has no wall end: rule 5 is not asked there.
+      wallWidthOf: (i) => (walls?.[i]?.island ? null : Number(walls?.[i]?.width) || null),
       profile,
     });
   },
@@ -8474,7 +8599,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       room: s.project.room,
       design: migrateDesign(s.project.design),
       materials: useMaterialAssignmentStore.getState().materials,
-      wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      // T75 F10 · an island face has no wall end: rule 5 is not asked there.
+      wallWidthOf: (i) => (walls?.[i]?.island ? null : Number(walls?.[i]?.width) || null),
       // ─── TURN 46 (CLAUDE.md F2): the 400 mm floor, measured HERE ─────────
       // `src/engine/**` imports nothing from `src/lib/**`, and the ceiling line
       // has to be the one the wall is drawn from — so the store asks
@@ -9882,8 +10008,13 @@ function blindSpanOf(state, unit) {
 export const BLIND_DIVIDER_REFUSAL = 'No divider in the blind part of a blind corner: it stands behind the next run, '
   + 'reached through the door, and the rail runs through it. Place the divider in the part the door opens.';
 
-function wallMarginOf(state, unit = null) {
+function wallMarginOf(state, unit = null, wall = null) {
   const profile = getCabinetProfile();
+  // ─── T75 F10 · A FACE IS NOT PLASTER ──────────────────────────────────────
+  // No scribe and no wall clearance at the end of an island face: a cabinet
+  // runs to the face's end, where the end panel or the end unit takes over.
+  const on = wall || roomWalls(state.project.room)[unit?.position?.wall ?? 0];
+  if (on?.island) return 0;
   // ─── Turn 11 (CLAUDE.md F5.3) ───
   // "Infill toggled OFF re-enables push to wall." It did not: the stop was a
   // PROJECT number, so a cabinet whose filler had been switched off still parked

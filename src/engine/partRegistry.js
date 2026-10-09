@@ -174,6 +174,11 @@ export const PART_REGISTRY = {
     id: 'mask', name: 'Bottom mask', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'The board under a run of wall units, hiding the standoff',
   },
+  // T75 F10 · the back panel on an island's empty long face, front material.
+  back_panel: {
+    id: 'back_panel', name: 'Back panels', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'The board on an island face no cabinet stands against (T75 F10)',
+  },
   // T75 F5 · the worktop's upstand along the wall, cut from worktop material.
   upstand: {
     id: 'upstand', name: 'Upstands', group: G('board'), unit: 'm²', materialType: 'board',
@@ -477,6 +482,9 @@ export const ELEMENT_TO_PART_ID = {
   'CORNER-POST': 'corner_post',
   // T75 F5 · the worktop's upstand.
   UPSTAND: 'upstand',
+  // T75 F10 · an island's panels: the back panel and the end panel across it.
+  'BACK-PANEL': 'back_panel',
+  'ISLAND-END-PANEL': 'end_panel',
   // T75 F3 · the blind kit's blank: a FIX front.
   'BLIND-BLANK': 'false_front',
   // T75 F7 · the corner notch's box (KIT_NOTCH.lsp D1, D2), carcass board
@@ -612,6 +620,7 @@ const EDGE_OF_PART = {
   mask: 'edge_front',
   corner_post: 'edge_front',
   upstand: 'edge_carcase',
+  back_panel: 'edge_front',
 };
 
 /** Which edging part pays for this part's banding, or null when none does. */

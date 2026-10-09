@@ -266,6 +266,8 @@ export function cornersOf({ units = [], walls = [], profile }) {
         island,
         wallA: fa.index,
         wallB: fb.index,
+        // T75 F10 · face A's length, so the plinth knows which run reaches it.
+        widthA: fa.width,
         runA: null,
         runB: null,
         level: null,

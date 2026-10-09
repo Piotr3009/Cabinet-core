@@ -1037,6 +1037,43 @@ function AddPluses({
 }
 
 /**
+ * ─── T75 F10 · A PLUS ON EVERY EMPTY ISLAND FACE ────────────────────────────
+ *
+ * *"A unit is added to a face as to a wall (`addUnit` with the face's index;
+ * the library's plus points on the plan show the faces)."*  `addPlusPoints`
+ * reads units, so a face with nothing on it but the automat's panel has no run
+ * to stand a plus beside: it gets one of its own, in the middle of the face,
+ * where a base unit would stand. The click opens the library ON that face.
+ */
+function IslandFacePluses({
+  units, walls, roomCentre, profile, onPick,
+}) {
+  const size = mm(profile.ui.addPlusMinGapMm) * 0.9;
+  const depth = Number(profile.baseUnit?.defaults?.depth) || 560;
+  const height = Number(profile.baseUnit?.defaults?.height) || 720;
+  return walls.filter((w) => w.island).map((wall) => {
+    const taken = units.some((u) => (u.position?.wall ?? 0) === wall.index && !isFreePanel(u.type));
+    if (taken) return null;
+    const world = new THREE.Vector3(
+      mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+    )
+      .addScaledVector(new THREE.Vector3(wall.along.x, 0, wall.along.y), mm(wall.width / 2))
+      .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(depth / 2))
+      .setY(mm(height / 2));
+    return (
+      <AddPlus
+        key={`island-${wall.index}`}
+        position={world.toArray()}
+        size={size}
+        colour={profile.appearance.addPlus.run}
+        title={`Add a unit to face ${wall.face} of the island`}
+        onClick={() => onPick(wall)}
+      />
+    );
+  });
+}
+
+/**
  * ─── T65 F1 · THE PLUS ON THE EMPTY FLOOR ──────────────────────────────────
  *
  * The owner: *"usuń szafę default"* … *"ściana 4000 mm, ale bez szaf"*. A room
@@ -2084,6 +2121,21 @@ export default function Scene({
           roomCentre={bounds.centre}
           profile={profile}
           onPick={() => { closeContextMenu(); onAddFirst(); }}
+        />
+      )}
+
+      {/* T75 F10 · the island's empty faces, each with a plus of its own (PRO:
+          retail never meets an island). */}
+      {!contourView && !shelfDrag && !onAddPlus && (
+        <IslandFacePluses
+          units={units}
+          walls={walls}
+          roomCentre={bounds.centre}
+          profile={profile}
+          onPick={(wall) => {
+            closeContextMenu();
+            openLibraryToInsert(categoryOf('BUD')?.id || null, { wall: wall.index });
+          }}
         />
       )}
 

@@ -561,7 +561,7 @@ export function infillCornerMitre(end, faceH, elementTop, tolerance = 0) {
  * @returns {{kind:'wall'|'infill'|'end-panel'|'open'|'corner', x:number, blockedBy?:string}}
  */
 export function runEnd(run, side, {
-  wallWidth, roomHeight, verticals = null, raked = false,
+  wallWidth, roomHeight, verticals = null, raked = false, island = false,
 }, profile) {
   const unit = side === 'left' ? run.units[0] : run.units[run.units.length - 1];
   const span = paddedSpan(unit);
@@ -623,7 +623,9 @@ export function runEnd(run, side, {
   // corners govern there, untouched). `raked` is that question, asked by the
   // caller that holds the room's ceiling and defaulting to false, which is
   // what every bare call has always meant.
-  if (Math.abs(outerEdge - wallAt) <= atWall) {
+  // T75 F10 · …unless the "wall" is an island's FACE: *"A face is NOT
+  // plaster"*. Its end is a free end, so rule 1 is not asked there.
+  if (!island && Math.abs(outerEdge - wallAt) <= atWall) {
     return { kind: 'wall', x: raked ? carcassEdge : wallAt };
   }
 
@@ -825,7 +827,7 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
  *   returns:{left:number|null, right:number|null}, unitIds:string[] }}
  */
 function runTopInfill(run, {
-  wallWidth, roomHeight, frontFaceDepth, verticals = null, runCutOf = null,
+  wallWidth, roomHeight, frontFaceDepth, verticals = null, runCutOf = null, island = false,
   isRaked = null,
 }, profile) {
   const T = profile.autoParts.topInfill;
@@ -848,10 +850,10 @@ function runTopInfill(run, {
     ? run.units.some((u) => isRaked(u) === true)
     : false;
   const left = runEnd(run, 'left', {
-    wallWidth, roomHeight, verticals, raked,
+    wallWidth, roomHeight, verticals, raked, island,
   }, profile);
   const right = runEnd(run, 'right', {
-    wallWidth, roomHeight, verticals, raked,
+    wallWidth, roomHeight, verticals, raked, island,
   }, profile);
   const owner = run.units[0];
   const ownerX = Number(owner.position?.x_mm) || 0;
@@ -981,6 +983,7 @@ export function runInfillParams(units, {
     const wallWidth = walls?.[run.wall]?.width ?? 0;
     const element = runTopInfill(run, {
       wallWidth,
+      island: Boolean(walls?.[run.wall]?.island),
       roomHeight,
       verticals,
       // T58-F5: the room's own answer to "is this unit under a live rake",
@@ -1301,6 +1304,47 @@ export function runPlinthParams(units, profile, { corners = [] } = {}) {
         : [...(element.spans || []), { id: 'corner-butt', width: ext }],
       corner: { side: atLeft ? 'left' : 'right', mm: ext, butt: 'square', faceOf: a.id },
     });
+  }
+  // ─── T75 F10 · THE ISLAND'S EXTERNAL CORNERS: A 45° MITRE ───────────────
+  //
+  // *"Plinth: one per face, 45° mitres at the island's four external corners
+  // (F6)."*  A face's runs stand outside the core, so two faces' kicks meet
+  // only where both runs reach the corner they share: there each kick is
+  // carried on across the empty corner square to the FRONT plane of the
+  // other's, and the two meet in a mitre (the cornice's own external mitre,
+  // F6). Where only one face reaches the corner, its kick ends square into the
+  // island's end panel, as a kick ends at any end panel.
+  const tol = 1 + (Number(profile?.autoParts?.topInfill?.runGap) || 0);
+  const kickFace = (u) => wallGapOf(u, profile) + (Number(u.params?.depth) || 0) - setback;
+  for (const c of corners || []) {
+    if (c?.kind !== 'external' || c.wallA == null || c.wallB == null) continue;
+    const widthA = Number(c.widthA) || 0;
+    // The unit of face A at its END, and of face B at its START.
+    const endA = units.filter((u) => (u.position?.wall ?? 0) === c.wallA && wantsPlinth(u)
+      && (Number(u.position?.x_mm) || 0) + (Number(u.params?.width) || 0) >= widthA - tol);
+    const startB = units.filter((u) => (u.position?.wall ?? 0) === c.wallB && wantsPlinth(u)
+      && (Number(u.position?.x_mm) || 0) <= tol);
+    if (!endA.length || !startB.length) continue;
+    const ua = endA[0];
+    const ub = startB[0];
+    const grow = (unit, side, mm) => {
+      const mine = out.get(unit.id);
+      const ownerId = mine?.role === 'member' ? mine.ownerId : unit.id;
+      const element = out.get(ownerId);
+      if (!element || element.role !== 'owner' || !(mm > 0)) return;
+      const ext = Math.round(mm * 100) / 100;
+      out.set(ownerId, {
+        ...element,
+        offset: side === 'left' ? element.offset - ext : element.offset,
+        length: element.length + ext,
+        spans: side === 'left'
+          ? [{ id: 'corner-mitre', width: ext }, ...(element.spans || [])]
+          : [...(element.spans || []), { id: 'corner-mitre', width: ext }],
+        mitres: [...(element.mitres || []), { side, mm: ext, deg: 45, external: true }],
+      });
+    };
+    grow(ua, 'right', kickFace(ub));
+    grow(ub, 'left', kickFace(ua));
   }
   return out;
 }

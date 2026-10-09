@@ -120,14 +120,17 @@ export default function LibraryPanel() {
     // which case the end of the run it was standing at IS the answer, and it
     // beats the selection. Same call, same free-slot search, same collision
     // clamp — this phase changed the trigger, not the mechanics.
+    // T75 F10 · a plus on an island face names the face, and nothing else.
+    const onFace = Number.isInteger(insertAt?.wall);
     const { id, error, wall } = addUnit(typeId, {
-      near: insertAt?.near ?? selectedUnitId,
+      near: onFace ? null : (insertAt?.near ?? selectedUnitId),
       side: insertAt?.side ?? null,
+      ...(onFace ? { wall: insertAt.wall } : {}),
       ...opts,
     });
     if (error) { notify(error, 'warn'); return; }
     selectUnit(id);
-    if (wall > 0) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
+    if (wall > 0 && !onFace) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
     // The place has been used up: leaving it set would put the NEXT type on the
     // same side of a cabinet that now has a neighbour there. The PANEL stays
     // open, because "add, add, add" is how a run gets built — and the unit just

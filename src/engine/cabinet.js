@@ -1277,7 +1277,7 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // T75 F2 adds `corner_post` (a board of the front material standing in the
 // door plane at an internal corner), and F3 `blind_blank` (the blind kit's
 // fixed face): both are seen from the room and both are front material.
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank']);
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'back_panel']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1307,7 +1307,7 @@ export function isFinishExposed(role) {
 // under the doors, in the plane the eye reads as the front of the run — so it
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank']);
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'back_panel']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -3102,10 +3102,22 @@ export function computeCabinet(params, profileOverride) {
   // what the piece editor draws on it (an arc, a drill) is added the way it is
   // added to any board (`applyPartEdits`).
   if (type.carcass.top === 'free') {
-    const fp = freePanelOf({ ...params, width: W, height: H, depth: D, board_t: G }, P);
+    // ─── T75 F10 · …OR AN ISLAND'S OWN PANEL ──────────────────────────────
+    // *"An empty long face gets an auto BACK PANEL (front material, the end
+    // panel's height law, role `back_panel`); an empty end face gets the auto
+    // END PANEL ... sized to the whole island depth."*  The same one board,
+    // named for the job it does, in the front material and at the front's
+    // thickness (`island_panel`, set by the store's island automat only: no
+    // saved free panel carries it).
+    const islandPanel = params?.island_panel === 'back' || params?.island_panel === 'end' ? params.island_panel : null;
+    const fpT = islandPanel ? frontT : G;
+    const fp = freePanelOf({ ...params, width: W, height: H, depth: D, board_t: fpT }, P);
     const at = freePanelPlacement(fp);
     panels.push(panel({
-      id: 'FP', part: 'FREE-PANEL', role: 'free_panel', w: fp.length, h: fp.width, thickness: G,
+      ...(islandPanel === 'back' ? { id: 'BACK-PANEL', part: 'BACK-PANEL', role: 'back_panel' } : {}),
+      ...(islandPanel === 'end' ? { id: 'ISLAND-END', part: 'ISLAND-END-PANEL', role: 'end_panel' } : {}),
+      ...(islandPanel ? {} : { id: 'FP', part: 'FREE-PANEL', role: 'free_panel' }),
+      w: fp.length, h: fp.width, thickness: fpT,
       edgeCode: codes.all, edgeLen: metres(2 * (fp.length + fp.width)),
       box: at.box,
       cnc: { rotated: false, drawn_w: fp.length, drawn_h: fp.width, ...rectGeometry(fp.length, fp.width) },
@@ -5314,6 +5326,8 @@ export function computeCabinet(params, profileOverride) {
           unitIds: runPlinth.unitIds,
           // T75 F6 · carried on to the face of the run round the corner.
           ...(runPlinth.corner ? { corner: runPlinth.corner } : {}),
+          // T75 F10 · …and mitred round an island's external corner.
+          ...(runPlinth.mitres ? { mitres: runPlinth.mitres } : {}),
         },
       } : {}),
     }));

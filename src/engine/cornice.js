@@ -285,7 +285,7 @@ export function corniceSegments(run, profile) {
  * @returns {null|object}
  */
 export function segmentCornice(segment, {
-  wall = 0, mount = 'floor', wallWidth = 0, roomHeight = 0,
+  wall = 0, mount = 'floor', wallWidth = 0, roomHeight = 0, island = false,
   verticals = null, frontFaceDepth = null, infillHeightOf = null,
   // Turn 26 (CLAUDE.md F9.3): what this segment MEETS at each end, where that
   // thing carries a moulding of its own — `{ height, depth, top, unitId }`.
@@ -312,8 +312,13 @@ export function segmentCornice(segment, {
     left: paddedSpan(segment.units[0]).left,
     right: paddedSpan(segment.units[segment.units.length - 1]).right,
   };
-  const left = runEnd(asRun, 'left', { wallWidth, roomHeight, verticals: reaching }, profile);
-  const right = runEnd(asRun, 'right', { wallWidth, roomHeight, verticals: reaching }, profile);
+  // T75 F10 · an island face's end is a free end, not a wall.
+  const left = runEnd(asRun, 'left', {
+    wallWidth, roomHeight, verticals: reaching, island,
+  }, profile);
+  const right = runEnd(asRun, 'right', {
+    wallWidth, roomHeight, verticals: reaching, island,
+  }, profile);
   const length = right.x - left.x;
   if (length <= 0) return null;
 
@@ -593,6 +598,7 @@ export function runCorniceParams(runs, {
     const wallWidth = walls?.[me.run.wall]?.width ?? 0;
     const element = segmentCornice(me.segment, {
       wall: me.run.wall,
+      island: Boolean(walls?.[me.run.wall]?.island),
       mount: me.run.mount,
       wallWidth,
       roomHeight,

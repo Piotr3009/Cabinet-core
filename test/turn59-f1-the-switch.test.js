@@ -73,6 +73,8 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  'src/components/LibraryPanel.jsx':
+    'T75 F10 · a plus on an empty island face opens the library ON that face and the unit is added there (addUnit with the face\'s index). *"A unit is added to a face as to a wall (addUnit with the face\'s index; the library\'s plus points on the plan show the faces)."*',
   // ─── ADDED BY TURN 75 · THE BIG TURN ───────────────────────────────────
   'src/components/ContextMenu.jsx':
     'T75 F5 · the right-click offers the UPSTAND beside the plinth, on and off per run, and the menu is handed the two store calls it needs (addUpstand, removeUpstand). *"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... on and off per run like the plinth (BACKLOG #16\'s grammar: added by a decision, visible only then)."*',
@@ -234,7 +236,8 @@ const FROZEN = {
   'src/components/JoineryPreview.jsx': '4313bbe216ce87f80ab6ee1b4d1e8e288465e5b2ef2bedbba1167346508add0a',
   // T72 F4 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/JpullRunModal.jsx': '652b4f701a455134eb2571565f03dc6fca89c273f4041ad9eb66d8b0c7bd6aa7',
-  'src/components/LibraryPanel.jsx': 'c0f86722ab66d0a00b28994639f257f7ebe596140f265331a556ba615f4226ef',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/LibraryPanel.jsx': '0d2ee2fc14ace0f68e22eba07b02af7cf53d74d162c686d49a72a8989d160aaa',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
@@ -460,6 +463,7 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
     'src/components/JpullRunModal.jsx',
+    'src/components/LibraryPanel.jsx',
     'src/components/RightPanel.jsx',
     'src/components/RoomModal.jsx',
     'src/components/UnitSizeModal.jsx',

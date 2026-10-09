@@ -98,6 +98,9 @@ function paramSets(typeId) {
     ['upstand', {
       ...base, doors: true, run_upstand: { role: 'owner', offset: 0, length: 1200, unitIds: ['u'] },
     }],
+    // T75 F10 · the island automat's two panels: a free panel the store names.
+    ['island-back', { ...base, island_panel: 'back' }],
+    ['island-end', { ...base, island_panel: 'end' }],
     // T75 F2 · the corner post the store writes when a unit lands on the corner stop.
     ['corner-post', { ...base, doors: true, corner_post_left_mm: 50, corner_post_right_mm: 50 }],
     // T75 F7 · the corner notch, full height (RETURN, STEP) and part height

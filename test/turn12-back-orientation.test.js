@@ -99,6 +99,9 @@ test('…and an upright BACK is untouched, on every other kit', () => {
   for (const id of UNIT_TYPE_ORDER) {
     for (const back of unit(id).panels.filter((p) => p.part === 'BACK')) {
       if (back.cnc.rotated) continue;
+      // AMENDED BY T75 F4: the L's BACK-B stands on the ADJACENT wall, so its
+      // CNC x runs along the depth (KIT_CORNER_L.lsp: X = room y - G).
+      if (back.meta?.lBoard === 'BACK-B') continue;
       const placement = panelPlacement(back);
       assert.deepEqual(placement.u, [1, 0, 0], `${id}`);
       assert.deepEqual(placement.v, [0, 1, 0], `${id}`);

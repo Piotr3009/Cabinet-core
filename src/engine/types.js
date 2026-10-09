@@ -570,43 +570,34 @@ export const UNIT_TYPES = {
     available: true,
   },
 
-  // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT ─────────────────────────────
+  // T75 F4 KASACJA: T30's `L_SHAPE` (eight undrilled rectangles, no legs, doors
+  // or plinth) is deleted; its two names live on in TYPE_ALIASES below.
   //
-  // "The riskiest of the batch. Start from what the LISP family actually
-  // supports (KIT_BUDR is in the repo — READ it first and say in the PR what it
-  // is); ship the L-carcass geometry + BOM; any hinge/drilling beyond the
-  // parent kit's own lines waits for a LISP. Do not improvise corner-post
-  // drilling overnight."
+  // ─── T75 F4 · THE TRUE L CARCASS, THREE KITS ─────────────────────────────
   //
-  // KIT_BUDR_FULL.lsp was read. Its header: "Base Unit Drawer - 3 drawers
-  // (4:3:2 ratio)", and its body is the MOVENTO runner outline drawn line by
-  // line. It is the THREE-DRAWER BASE UNIT this app has shipped since turn 3 —
-  // `BUDR` above is already built from it — and there is not one corner in it.
+  // The owner's recorded rule (Petros, 23.09.2026, list 11): *"one L-shaped
+  // board cut on the CNC, flat-face door overlap, no 45° cuts."*  And the order
+  // of 9.10.2026: *"daj od razu narożniki przemyślane"*, *"lisp najpierw"*.
   //
-  // So there is no parent kit for a corner unit, and no parent lines to
-  // inherit. The batch rule then settles the whole feature: GEOMETRY and a BOM,
-  // and NOT ONE HOLE. No cup, no shelf sleeve, no leg plate, no corner post.
-  //
-  //   `carcass` — all four 'none': the standard carcass is not this shape, so
-  //               none of it is emitted and the L builder in cabinet.js puts
-  //               the boards in instead.
-  //   `legs`    — false. A leg's position comes from a RECTANGULAR footprint,
-  //               and one of the four would stand in the L's missing corner.
-  //               Where a corner cabinet is really footed is a question for
-  //               the owner, not for tonight.
-  //   `doors`   — none. A corner door hangs on cups bored to a pattern nobody
-  //               has written down here.
-  L_SHAPE: {
-    id: 'L_SHAPE',
+  // The law is `reference/lisp/KIT_CORNER_L.lsp`, written before this code.
+  // Each kit is its parent's family to the letter (BUD, WUD, WARDROBE: the hinge
+  // rule, the cup rule, the legs, the hangers), with `corner: true` and
+  // `ownDepth: true`. `carcass` is all four 'none' because the standard box is
+  // not this shape: the L builder in `cabinet.js` emits the seven boards the
+  // LISP names. `parentType` is the kit a door, a side and a shelf row are cut
+  // through (the EXISTING door path, one virtual parent per arm), and
+  // `armDepthKey` is where the arm depth defaults from: the family's own depth.
+  // A top infill and a cornice that follow the L front are F6's, so they are
+  // not offered here until the run can mitre round the inner corner.
+  CORNER_L_BASE: {
+    id: 'CORNER_L_BASE',
     heightGroup: 'base',
-    label: 'L-shape unit',
+    label: 'Corner L',
     family: 'kitchen',
-    // Named for honesty, not for inheritance: this is the family the shape
-    // belongs to. Its own drilling waits for a LISP.
-    lisp: null,
+    lisp: 'KIT_CORNER_L.lsp',
     hingeRule: 'base',
     cupRule: 'baseOffsets',
-    legs: false,
+    legs: true,
     legSource: 'baseUnit',
     hangers: false,
     doorExtend: false,
@@ -616,12 +607,68 @@ export const UNIT_TYPES = {
     },
     drawerStyle: null,
     corner: true,
-    // Its depth is its identity, like a wall unit's 400: a corner unit turns
-    // the run, and a 558 corner is not a corner. See projectHeightParams.
     ownDepth: true,
+    parentType: 'BUD',
+    armDepthKey: 'baseUnit.defaults.depth',
     minHeightKey: null,
-    defaultsKey: 'cornerUnit.defaults',
-    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    defaultsKey: 'cornerBase.defaults',
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    available: true,
+  },
+  CORNER_L_WALL: {
+    id: 'CORNER_L_WALL',
+    heightGroup: 'wall',
+    label: 'Corner L wall',
+    family: 'kitchen',
+    lisp: 'KIT_CORNER_L.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: null,
+    hangers: true,
+    doorExtend: true,
+    mount: 'wall',
+    carcass: {
+      top: 'none', back: 'none', sides: 'none', bottom: 'none',
+    },
+    drawerStyle: null,
+    corner: true,
+    ownDepth: true,
+    parentType: 'WUD',
+    armDepthKey: 'wallUnit.defaults.depth',
+    minHeightKey: null,
+    defaultsKey: 'cornerWall.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false,
+    },
+    available: true,
+  },
+  CORNER_L_WARDROBE: {
+    id: 'CORNER_L_WARDROBE',
+    heightGroup: 'tall',
+    label: 'Corner L wardrobe',
+    family: 'wardrobe',
+    lisp: 'KIT_CORNER_L.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: {
+      top: 'none', back: 'none', sides: 'none', bottom: 'none',
+    },
+    drawerStyle: null,
+    corner: true,
+    ownDepth: true,
+    parentType: 'WARDROBE',
+    armDepthKey: 'wardrobe.defaults.depth',
+    minHeightKey: 'wardrobe.minHeight',
+    defaultsKey: 'cornerWardrobe.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: true, pulldown: false, partition: false, doors: true, topInfill: false,
+    },
     available: true,
   },
   // ─── TURN 30 (CLAUDE.md F18): THE TWIN CUPBOARD ───────────────────────────
@@ -1144,7 +1191,10 @@ export const UNIT_TYPES = {
  * something that was never in the box.
  */
 export const TYPE_ALIASES = Object.freeze({
-  CORNER: 'L_SHAPE',
+  // T75 F4: BOTH old names, forever, read as the true L's base kit (T30's
+  // L_SHAPE is deleted; `loadProject` maps its `corner_arm_mm` to `arm_mm`).
+  CORNER: 'CORNER_L_BASE',
+  L_SHAPE: 'CORNER_L_BASE',
 });
 
 /** The id a stored unit means, whatever it was called when it was saved. */
@@ -1153,7 +1203,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1183,7 +1233,8 @@ export const UNIT_CATEGORIES = [
   // Turn 36 (CLAUDE.md F7): "library offers Main wardrobe + Top box".
   // T74 F7 · *"ADD WALL UNIT ... Osobny typ"*: the wardrobe's own wall unit.
   // T75 F3 · *"the Wardrobes category "Blind corner wardrobe""*.
-  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE'] },
+  // T75 F4 · *"CORNER_L_WARDROBE ... family wardrobe"*: "Corner L wardrobe".
+  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE'] },
   // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
   // rather than kits, so it carries no `types` — the panel reads them from the
   // template store.
@@ -1204,6 +1255,11 @@ export function isWardrobeWallUnit(typeId) {
 /** T75 F3 · is this a blind corner kit (a blank beside one leaf)? */
 export function isBlindKit(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.blind);
+}
+
+/** T75 F4 · is this a true L corner kit (one carcass on two walls)? */
+export function isCornerLKit(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.corner);
 }
 
 /** T74 F13 · is this the free panel kit (one board standing in the room)? */
@@ -1322,6 +1378,15 @@ export function defaultParamsFor(typeId, profile) {
     // The store writes it from the corner the kit stands in; a new one arrives
     // with its blank on the left. Spread, so no other kit carries the key.
     ...(type.blind ? { blind_side: 'left' } : {}),
+    // ─── T75 F4 · THE L's ARM DEPTH AND ITS HAND ──────────────────────────
+    // `arm_mm` is the family's own depth (KIT_CORNER_L.lsp section 7);
+    // `corner_side` is which END of the unit stands in the room corner, written
+    // by the store from the corner it stands in. Spread, so no other kit
+    // carries either key and the six goldens stay byte for byte.
+    ...(type.corner ? {
+      arm_mm: Number(profilePath(profile, type.armDepthKey)) || 558,
+      corner_side: 'left',
+    } : {}),
     unit_num: '01',
   };
 }
@@ -1336,5 +1401,7 @@ export const UNIT_NUM_PREFIX = {
   // T74 F13 · the free panel: FP01.
   // T75 F3 · the blind kits: BB01 base, BW01 wall, BX01 wardrobe.
   BLIND_BASE: 'BB', BLIND_WALL: 'BW', BLIND_WARDROBE: 'BX',
-  WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
+  // T75 F4 · the true L: CL01 base, CW01 wall, CX01 wardrobe.
+  CORNER_L_BASE: 'CL', CORNER_L_WALL: 'CW', CORNER_L_WARDROBE: 'CX',
+  WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

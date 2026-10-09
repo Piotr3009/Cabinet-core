@@ -857,14 +857,16 @@ export function MovingPanel({
   // else sits at its own centre.
   const hingeAtRight = p.meta?.hinge === 'R';
   const centre = mitre?.box || p.box;
+  // T75 F4 · the L's door B faces the adjacent wall: it hangs on its far end (z max).
+  const alongZ = front === 'door' && !drops && p.meta?.swingZ;
   // eslint-disable-next-line no-nested-ternary
-  const pivot = drops
+  const pivot = alongZ ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d)] : drops
     ? [mm(p.box.x + p.box.w / 2), mm(p.box.y), mm(p.box.z + p.box.d / 2)]
     : (front === 'door'
       ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
       : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)]);
   // eslint-disable-next-line no-nested-ternary
-  const meshOffset = drops
+  const meshOffset = alongZ ? [0, 0, mm(-p.box.d / 2)] : drops
     ? [0, mm(p.box.h / 2), 0]
     : (front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0]);
 
@@ -928,7 +930,7 @@ export function MovingPanel({
       // by what is beside the cabinet (turn 8, CLAUDE.md F5): a door with a
       // wall on its hinge side stops square, because past square its free edge
       // comes back over the hinge and into the plaster.
-      const dir = p.meta?.hinge === 'R' ? 1 : -1;
+      const dir = alongZ ? p.meta.swingZ.dir : (p.meta?.hinge === 'R' ? 1 : -1);
       group.current.rotation.y = dir * a * (swing ?? Math.PI * 0.55);
       group.current.position.z = pivot[2];
     }

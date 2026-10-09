@@ -365,3 +365,95 @@ export function blindClearanceView(entries) {
   return { entries: out, units: out.map((e) => e.unit) };
 }
 
+
+/**
+ * T75 F4 · THE L CARCASS AS THE FRONT-CLEARANCE RULEBOOK SEES IT.
+ *
+ * An L stands on TWO walls and its two leaves face two ways; the rulebook
+ * (`frontClearance.js`, the fronts branch's file) measures a front in ONE
+ * wall's frame against its own carcass end. So the view hands it each ARM as a
+ * unit on its own wall: arm A on the unit's wall, its opening from the inner
+ * corner line to SIDE-A; arm B on the adjacent wall (the one meeting the
+ * unit's corner end), its opening from the inner corner line to SIDE-B. Each
+ * leaf keeps its own `meta.cornerEdge` (the covered and the overlapping edge,
+ * rule 7's two kinds), so the corner edge is measured by the L's own law and
+ * the OUTER edge meets whatever stands beside it on that wall: rule 1 against
+ * a neighbour's front, a wall, an end panel, as for any unit. Both arms keep
+ * the L's id, so a Check names the L and a healing trim lands on its params.
+ * Every other entry passes through untouched.
+ *
+ * @param {{entries:Array, units:Array}} view  `blindClearanceView`'s answer
+ * @param {Array} walls  `roomWalls(room)`
+ * @returns {{entries: Array, units: Array}}
+ */
+export function lClearanceView(view, walls, profile) {
+  const room = (walls || []).filter(isRoomWall);
+  const n = room.length;
+  const entries = [];
+  for (const e of view?.entries || []) {
+    const lc = e?.result?.derived?.corner_l;
+    if (!lc || !getUnitType(e.unit?.type).corner || !alongWall(e.unit) || n < 2) { entries.push(e); continue; }
+    const i = room.findIndex((w) => w.index === (e.unit.position?.wall ?? 0));
+    if (i < 0) { entries.push(e); continue; }
+    const left = lc.side !== 'right';
+    const W = num(lc.width);
+    const D = num(lc.depth);
+    const d = num(lc.arm);
+    const x = num(e.unit.position?.x_mm);
+    const gap = wallGapOf(e.unit, profile);
+    const doorOf = (arm) => (e.result.panels || []).find((p) => p?.meta?.arm === arm && p.role === 'front' && p.box);
+    // Arm A: the unit's own wall, the virtual frame moved to the arm's start.
+    const fromA = left ? d : 0;
+    const doorA = doorOf('A');
+    entries.push({
+      ...e,
+      unit: {
+        ...e.unit,
+        position: { ...e.unit.position, x_mm: x + fromA },
+        params: { ...e.unit.params, width: W - d },
+      },
+      result: {
+        ...e.result,
+        panels: doorA ? [{ ...doorA, box: { ...doorA.box, x: doorA.box.x - fromA } }] : [],
+      },
+    });
+    // Arm B: the adjacent wall, where the corner end meets it.
+    const wb = left ? room[(i - 1 + n) % n] : room[(i + 1) % n];
+    const doorB = doorOf('B');
+    const b = doorB?.box;
+    entries.push({
+      ...e,
+      unit: {
+        ...e.unit,
+        position: {
+          ...e.unit.position,
+          wall: wb.index,
+          x_mm: left ? num(wb.width) - gap - D : gap + d,
+        },
+        // Its back (BACK-B) stands where the L's corner end stands off wall B.
+        // The L's own end pieces (fillers, end panels, posts) stand on wall A,
+        // so arm B carries none of them onto wall B.
+        params: {
+          ...e.unit.params,
+          width: D - d,
+          wall_gap: left ? x : num(room[i].width) - x - W,
+          side_infill_left_mm: 0,
+          side_infill_right_mm: 0,
+          end_panels: [],
+          corner_post_left_mm: 0,
+          corner_post_right_mm: 0,
+        },
+      },
+      result: {
+        ...e.result,
+        panels: b ? [{
+          ...doorB,
+          box: left
+            ? { x: D - b.z - b.d, y: b.y, z: b.x, w: b.d, h: b.h, d: b.w }
+            : { x: b.z - d, y: b.y, z: W - (b.x + b.w), w: b.d, h: b.h, d: b.w },
+        }] : [],
+      },
+    });
+  }
+  return { entries, units: entries.map((x) => x.unit) };
+}

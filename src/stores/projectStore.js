@@ -22,7 +22,8 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, isBlindKit, isFreePanel, isWardrobeWallUnit, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, isBlindKit, isCornerLKit, isFreePanel, isWardrobeWallUnit, resolveTypeId,
+  TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
 // kept one with its box, and where a drop would be caught.
@@ -48,7 +49,8 @@ import {
 // T75 F1 · THE CORNER RULEBOOK: the one detection the corner stop, the post,
 // the hinge and every corner consumer below read.
 import {
-  blindClearanceView, carcassReachMm, cornerEndOf, cornerFaceMm, cornersOf, cornerSpec, cornerStopMm, occupantKind,
+  blindClearanceView, carcassReachMm, cornerEndOf, cornerFaceMm, cornersOf, cornerSpec, cornerStopMm,
+  isInternalCorner, lClearanceView, occupantKind,
 } from '../engine/corners.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
@@ -1027,6 +1029,24 @@ export function migrateUnitFrontStyle(unit, profile = null) {
 function migrateUnitType(unit) {
   const resolved = resolveTypeId(unit?.type);
   if (!unit || resolved === unit.type) return unit;
+  // ─── T75 F4 · A T30 L KEEPS ITS SHAPE ──────────────────────────────────
+  // *"`loadProject` migrates `cornerArm` to the new params."*  T30's L had its
+  // adjacent wall at x = 0 (the 'left' hand) and an arm of the profile's 600
+  // where the save typed none, so that is what it is read as: the new kit's
+  // default arm (the family depth) would change the shape of an old job.
+  if (Object.hasOwn(TYPE_ALIASES, unit.type) && getUnitType(resolved).corner) {
+    const { corner_arm_mm: armWas, ...rest } = unit.params || {};
+    return {
+      ...unit,
+      type: resolved,
+      params: {
+        ...rest,
+        type: resolved,
+        arm_mm: Number(armWas) > 0 ? Number(armWas) : 600,
+        corner_side: rest.corner_side === 'right' ? 'right' : 'left',
+      },
+    };
+  }
   return { ...unit, type: resolved, params: { ...unit.params, type: resolved } };
 }
 
@@ -2031,14 +2051,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         unit: u, wallWidth: wall?.width ?? 0, others, roomHeight, design,
       }, profile);
       notices.push(...parts.notices);
+      // T75 F4 · an L's corner end is BACK-B against the adjacent wall, not a
+      // front edge: no scribe filler is cut there.
+      const lEnd = isCornerLKit(u.type) ? (cornerLHand(u, walls, profile) || u.params?.corner_side || 'left') : null;
       return {
         ...u,
         params: {
           ...u.params,
           plinth: parts.plinth,
           top_infill_mm: parts.top_infill_mm,
-          side_infill_left_mm: parts.side_infill_left_mm,
-          side_infill_right_mm: parts.side_infill_right_mm,
+          side_infill_left_mm: lEnd === 'left' ? 0 : parts.side_infill_left_mm,
+          side_infill_right_mm: lEnd === 'right' ? 0 : parts.side_infill_right_mm,
         },
       };
     });
@@ -2075,6 +2098,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         if (right) params.corner_post_right_mm = right; else delete params.corner_post_right_mm;
         next[i] = { ...u, params };
       }
+    }
+
+    // ─── T75 F4 · THE L's HAND FOLLOWS THE CORNER IT STANDS IN ────────────
+    // *"corner_side is written from engine/corners.js cornerEndOf"*: which END
+    // of the unit is in the room corner. An L away from every corner (an old
+    // save, before the placement law) keeps the hand it has; the placement
+    // paths below never leave one there.
+    for (let i = 0; i < next.length; i += 1) {
+      const u = next[i];
+      if (!isCornerLKit(u.type)) continue;
+      const side = cornerLHand(u, walls, profile);
+      if (side && side !== u.params?.corner_side) next[i] = { ...u, params: { ...u.params, corner_side: side } };
     }
 
     // ─── T75 F3 · THE BLIND KIT'S BLANK FOLLOWS ITS CORNER ─────────────────
@@ -4437,6 +4472,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ? [besideWall]
         : [besideWall, ...walls.filter((wl) => wl.index !== besideWall.index)])
       : walls;
+    // ─── T75 F4 · AN L STANDS IN A ROOM CORNER ONLY ───────────────────────
+    // *"the L stands in a room corner only (Room refuses first: any other spot
+    // is refused in words)."*  The first free internal corner, on the wall of
+    // the unit it was asked beside first, takes it, with its hand.
+    if (!placed && isCornerLKit(typeId)) {
+      for (const wall of ordered) {
+        const slot = cornerLSlots(state, unit, wall, walls, profile).find((c) => c.free);
+        if (slot) {
+          placed = { wall: wall.index, x: slot.x };
+          unit.params.corner_side = slot.side;
+          break;
+        }
+      }
+      if (!placed) return { id: null, error: cornerLRefusal(unit) };
+    }
     for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
       const x = freeSlotOnWall({
@@ -5627,6 +5677,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const walls = roomWalls(s.project.room);
     const wallIndex = unit.position.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
+    // T75 F4 · an L moves from corner to corner of its wall, never along it.
+    if (isCornerLKit(unit.type)) return get().settleCornerL(unitId, wall.index, xRaw);
     // Obstacles include units on OTHER walls whose footprint reaches into this
     // one's depth band — the corner case, in both senses.
     const others = wallObstacles({
@@ -5723,6 +5775,52 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   }),
 
   /**
+   * ─── T75 F4 · THE L, SETTLED INTO A CORNER OR REFUSED ────────────────────
+   *
+   * CLAUDE.md T75 F4: *"the L stands in a room corner only (Room refuses
+   * first: any other spot is refused in words); it occupies the corner square
+   * in both walls' depth bands."*  The corner of `wallIndex` nearest `xRaw`
+   * (the first free one when `xRaw` is null); its x is the wall clearance off
+   * the adjacent wall, its hand the corner's. Occupied, or no internal corner
+   * on that wall: nothing moves and the sentence says why.
+   *
+   * @returns {{x:number, blocked:boolean, error:string|null}}
+   */
+  settleCornerL: (unitId, wallIndex, xRaw = null) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    const walls = roomWalls(s.project.room);
+    const wall = walls[wallIndex];
+    if (!unit || !wall) return { x: unit?.position?.x_mm ?? 0, blocked: true, error: null };
+    const profile = getCabinetProfile();
+    const probe = { ...unit, position: { ...unit.position, wall: wall.index } };
+    const slots = cornerLSlots(s, probe, wall, walls, profile);
+    const ordered = xRaw == null
+      ? slots
+      : [...slots].sort((a, b) => Math.abs(a.x - Number(xRaw)) - Math.abs(b.x - Number(xRaw)));
+    const slot = xRaw == null ? ordered.find((c) => c.free) : ordered[0];
+    if (!slot || !slot.free) {
+      return {
+        x: unit.position.x_mm,
+        blocked: true,
+        error: slot
+          ? `That corner of wall ${wall.index + 1} is not free for ${unit.params?.unit_num || 'this corner unit'}: move what stands there first.`
+          : cornerLRefusal(unit, wall.index),
+      };
+    }
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? {
+        ...u,
+        position: { ...u.position, wall: wall.index, x_mm: slot.x, rotation_deg: 0 },
+        params: { ...u.params, corner_side: slot.side },
+      } : u)),
+    }));
+    get().refreshAutoParts();
+    get().settleLayout(unitId);
+    return { x: slot.x, blocked: false, error: null };
+  }),
+
+  /**
    * ─── Re-home a unit (turn 11, CLAUDE.md F4.1) ───
    *
    * "Move a unit to another position/side/wall AFTER placement." Until now a
@@ -5746,6 +5844,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const walls = roomWalls(s.project.room);
     if (!unit || !walls[wallIndex]) return null;
     const from = { wall: unit.position.wall ?? 0, x_mm: unit.position.x_mm };
+    // T75 F4 · an L goes round the room corner to corner, or not at all.
+    if (isCornerLKit(unit.type)) {
+      const moved = get().settleCornerL(unitId, wallIndex, xRaw);
+      return {
+        wall: moved.blocked ? from.wall : wallIndex, x_mm: moved.x, blocked: moved.blocked, error: moved.error,
+      };
+    }
     if (wallIndex === from.wall) {
       const moved = get().moveUnit(unitId, xRaw, snapStep);
       return {
@@ -5813,6 +5918,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
     const current = Number(unit.position.rotation_deg) || 0;
+    // T75 F4 · an L stands on two walls; turning it would take it off both.
+    if (isCornerLKit(unit.type)) return current;
     let next = current;
     if (mode === 'step') next = current + (Number(value) || 90);
     else if (mode === 'set') next = Number(value) || 0;
@@ -5841,6 +5948,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     const walls = roomWalls(s.project.room);
     if (!unit || !walls[wallIndex]) return null;
+    // T75 F4 · an L takes a free corner of that wall, or the move is refused.
+    if (isCornerLKit(unit.type)) {
+      const moved = get().settleCornerL(unitId, wallIndex, null);
+      return {
+        wall: moved.blocked ? (unit.position.wall ?? 0) : wallIndex, x_mm: moved.x, blocked: moved.blocked, error: moved.error,
+      };
+    }
     const level = getUnitType(unit.type).mount;
     const x = freeSlotOnWall({
       width: unit.params.width,
@@ -8123,10 +8237,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const profile = getCabinetProfile();
     const walls = roomWalls(s.project.room);
     // T75 F3: the blind kit's leaf stands beside its blank, not its carcass end.
-    const view = blindClearanceView(s.allResults());
+    // T75 F4: an L's two leaves each on its own arm's wall.
+    const view = lClearanceView(blindClearanceView(s.allResults()), walls, profile);
     return frontClearances({
       entries: view.entries,
-      units: s.units.map((u) => view.units.find((v) => v.id === u.id) || u),
+      units: [...s.units.filter((u) => !view.units.some((v) => v.id === u.id)), ...view.units],
       baseOf: (u) => unitBase(u, profile),
       wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
       profile,
@@ -9313,6 +9428,67 @@ function cornerSpansFor(state, unit, wall, walls, profile = getCabinetProfile())
   return wallObstacles({
     wall, walls, depth: unit.params.depth, others,
   }).filter((o) => o.corner && !o.box);
+}
+
+/**
+ * T75 F4 · THE TWO PLACES AN L MAY STAND ON `wall`: its start corner and its
+ * end corner, each only where the next wall turns into the room
+ * (`corners.js isInternalCorner`), at the wall clearance off the adjacent
+ * wall. `free` asks the same spans a placement asks: the units on this wall,
+ * the boxes in the plan and the units round the corner (`cornerSpansFor`,
+ * at the L's own depth, which is its arm along the adjacent wall).
+ */
+function cornerLSlots(state, unit, wall, walls, profile = getCabinetProfile()) {
+  const room = (walls || []).filter((w) => !w.island);
+  const n = room.length;
+  const i = room.findIndex((w) => w.index === wall.index);
+  if (i < 0 || n < 2) return [];
+  const width = Number(unit.params?.width) || 0;
+  const margin = wallClearance(profile);
+  const slots = [];
+  if (isInternalCorner(room[(i - 1 + n) % n], wall)) slots.push({ x: margin, side: 'left' });
+  if (isInternalCorner(wall, room[(i + 1) % n])) slots.push({ x: Number(wall.width) - width - margin, side: 'right' });
+  const spans = [
+    ...state.units
+      .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === wall.index && obstructs(unit, u, profile))
+      .map(unitSpan),
+    ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) }),
+    ...cornerSpansFor(state, unit, wall, walls, profile),
+  ];
+  return slots.map((c) => ({
+    ...c,
+    free: c.x >= 0 && !spans.some((o) => Math.min(c.x + width, o.right) - Math.max(c.x, o.left) > 1e-6),
+  }));
+}
+
+/**
+ * T75 F4 · which END of an L stands in a room corner: the nearer of its two
+ * ends to an internal corner, within the rulebook's reach (`corners.js
+ * cornerSpec`). Nearer, not first: on a short wall both ends can be within
+ * reach, and the hand is the corner the L was put in.
+ */
+function cornerLHand(unit, walls, profile = getCabinetProfile()) {
+  if ((Number(unit?.position?.rotation_deg) || 0) % 360) return null;
+  const room = (walls || []).filter((w) => !w.island);
+  const n = room.length;
+  const i = room.findIndex((w) => w.index === (unit.position?.wall ?? 0));
+  if (i < 0 || n < 2) return null;
+  const wall = room[i];
+  const x = Number(unit.position?.x_mm) || 0;
+  const width = Number(unit.params?.width) || 0;
+  const left = isInternalCorner(room[(i - 1 + n) % n], wall) ? x : Infinity;
+  const right = isInternalCorner(wall, room[(i + 1) % n]) ? Number(wall.width) - (x + width) : Infinity;
+  if (Math.min(left, right) > cornerSpec(profile).reachMm) return null;
+  return right < left ? 'right' : 'left';
+}
+
+/** T75 F4 · the sentence an L is refused with, anywhere but a free room corner. */
+function cornerLRefusal(unit, wallIndex = null) {
+  const w = formatMm(Number(unit.params?.width) || 0);
+  const d = formatMm(Number(unit.params?.depth) || 0);
+  return wallIndex == null
+    ? `A corner L stands in a room corner only, and no corner has ${w} × ${d} mm free: clear a corner first.`
+    : `A corner L stands in a room corner only, and wall ${wallIndex + 1} has no free corner for its ${w} × ${d} mm.`;
 }
 
 /** Every obstacle a unit has to be clamped against: the cabinets AND the boards. */

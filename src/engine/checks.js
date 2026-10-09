@@ -46,7 +46,9 @@ import { frontClearances, frontGapRows, carcassGaps } from './frontClearance.js'
 import { unitFindings } from './cnc/exportGate.js';
 import { unitBase, unitTop, hasTopInfill } from './runs.js';
 // T75 F1 · the corner rulebook, the one detection every consumer reads.
-import { blindClearanceView, cornersOf, cornerChecks } from './corners.js';
+import {
+  blindClearanceView, cornersOf, cornerChecks, lClearanceView,
+} from './corners.js';
 import { roomWalls } from './room.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
@@ -783,10 +785,12 @@ export function runChecks({
   // ── #2 front gaps, under F4's neighbour measure ─────────────────────────
   // T75 F3: a blind kit's leaf is measured against its BLANK, not its carcass
   // end (`corners.js blindClearanceView`); every other unit passes untouched.
-  const view = blindClearanceView(entries);
+  // T75 F4: …and an L's two leaves each on its own arm's wall
+  // (`corners.js lClearanceView`), so neighbours on both walls meet them.
+  const view = lClearanceView(blindClearanceView(entries), room ? roomWalls(room) : [], profile);
   const clearances = frontClearances({
     entries: view.entries,
-    units: list.map((u) => view.units.find((v) => v.id === u.id) || u),
+    units: [...list.filter((u) => !view.units.some((v) => v.id === u.id)), ...view.units],
     baseOf: (u) => unitBase(u, profile),
     wallWidthOf,
     profile,

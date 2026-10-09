@@ -278,7 +278,9 @@ test('every library type is configured, available and buildable', () => {
   // Turn 75 (CLAUDE.md F3): the three BLIND corner kits, each its parent
   // (KIT_BUD, KIT_WUD, KIT_WARDROBE) hole for hole with a blank beside one leaf
   // (*"daj od razu narożniki przemyślane"*).
-  assert.equal(UNIT_TYPE_ORDER.length, 27, 'four wardrobe kits + 22 kitchen kits + the free panel');
+  // Turn 75 (CLAUDE.md F4): T30's L_SHAPE is deleted and the three TRUE L
+  // kits (KIT_CORNER_L.lsp) arrive: base and wall in the kitchen, one wardrobe.
+  assert.equal(UNIT_TYPE_ORDER.length, 29, 'five wardrobe kits + 23 kitchen kits + the free panel');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

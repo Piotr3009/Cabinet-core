@@ -47,7 +47,9 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // cabinet, both kits the workshop already builds.
   assert.deepEqual(idsOf('base-units'), [
     // T75 F3: the blind corner, beside the kits that turn a corner.
-    'door-base', 'drawer-unit', 'sink', 'l-shape-unit', 'blind-corner', 'l-shape', 'dishwasher',
+    // AMENDED BY T75 F4: T30's 'l-shape-unit' and the held-open 'l-shape' go;
+    // the true L, 'corner-l', takes their place (*"Base units "Corner L""*).
+    'door-base', 'drawer-unit', 'sink', 'corner-l', 'blind-corner', 'dishwasher',
     'oven-base', 'bin-storage', 'wine-rack', 'small-fridge', 'twin-space',
     // Turn 30 (CLAUDE.md F18): the twin cupboard, beside the kits it is made of.
     'twin-cupboard', 'low',
@@ -60,7 +62,8 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   ]);
   // Turn 31 (CLAUDE.md F9): the HOOD unit joins the wall group.
   // T75 F3: the blind corner wall unit.
-  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'blind-corner-wall', 'l-shape-wall']);
+  // AMENDED BY T75 F4: the held-open 'l-shape-wall' opens as 'corner-l-wall'.
+  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'blind-corner-wall', 'corner-l-wall']);
   // The new group (F5.2): not cabinets — the pieces that finish a run.
   assert.deepEqual(idsOf('extras'), ['free-standing-panels', 'cornice-pelmet']);
 });
@@ -75,7 +78,8 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 31 (CLAUDE.md F9): WUD_HOOD — the KIT_WUD envelope with its bottom
     // open, the extractor a BOM line and a GLB slot, and not one fixing hole.
     // T75 F3: the blind corner (base) and the blind corner wall unit.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'BLIND_WALL',
+    // AMENDED BY T75 F4: T30's L_SHAPE is deleted; the true L's base kit takes its place and its wall kit follows the blind wall unit.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'BLIND_WALL', 'CORNER_L_WALL',
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
@@ -88,7 +92,8 @@ test('a group says how much of it can be placed today', () => {
   // Turn 30 (CLAUDE.md F21): two of the three can be placed now.
   // Turn 31 (CLAUDE.md F9): three of four — the hood joins them.
   // T75 F3: four of five — the blind corner wall unit joins them.
-  assert.deepEqual(groupCounts(wall, P), { total: 5, enabled: 4 });
+  // AMENDED BY T75 F4: five of five, the held-open L row opened as the Corner L wall.
+  assert.deepEqual(groupCounts(wall, P), { total: 5, enabled: 5 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
   // T74 F13 · one of the two can be placed now: the free-standing panel.
   assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 1 });
@@ -122,7 +127,7 @@ test('the Kitchen category carries the list, and the others are untouched', () =
   // T36 F7: the wardrobe category gained the Top box, and nothing else moved.
   // T74 F7: …and the wardrobe's wall unit, a third kit of its own.
   // AMENDED BY T75 F3: + the blind corner wardrobe (*"the Wardrobes category "Blind corner wardrobe""*).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE']);
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
   // Nothing was lost in the restructure: every kit is still reachable.
   const reachable = new Set(UNIT_CATEGORIES.flatMap((c) => c.types));
   for (const id of UNIT_TYPE_ORDER) assert.ok(reachable.has(id), `${id} is in no category`);
@@ -146,7 +151,7 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // Turn 30 (CLAUDE.md F19): 'corner' left it too — as GEOMETRY, since
     // KIT_BUDR_FULL turned out to be the three-drawer base unit and there is
     // no corner kit to inherit a hole from.
-    'l-shape',
+    // AMENDED BY T75 F4: 'l-shape' left this list: the true L, KIT_CORNER_L.lsp.
     'small-fridge', 'twin-space',
     // Turn 30 (CLAUDE.md F14): 'pantry' left this list — KIT_BUDTALL's carcass
     // with the wardrobe kit's own internal drawer machinery in it.
@@ -156,7 +161,7 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // Turn 30 (CLAUDE.md F21): 'glass-unit' left this list — KIT_WUD's own
     // carcass and door, with the shaker frame taken through and a pane
     // ordered for the hole.
-    'l-shape-wall',
+    // AMENDED BY T75 F4: 'l-shape-wall' left this list: the Corner L wall.
     // T74 F13 · 'free-standing-panels' left this list: its owner in the model
     // is a kit of its own, `FREE_PANEL`, one board in the room.
     'cornice-pelmet',

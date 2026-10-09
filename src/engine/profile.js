@@ -1829,18 +1829,24 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
-  // ─── Corner unit (turn 30, CLAUDE.md F19) ─────────────────────────────────
+  // T75 F4 KASACJA: T30's `cornerUnit` (an L of eight undrilled rectangles)
+  // is deleted with its kit; the true L's numbers are the three blocks below.
   //
-  // "Ship the L-carcass geometry + BOM; any hinge/drilling beyond the parent
-  // kit's own lines waits for a LISP."
+  // ─── T75 F4 · THE TRUE L CARCASS, ITS DEFAULTS ────────────────────────────
   //
-  // There IS no parent kit — KIT_BUDR_FULL turned out to be the three-drawer
-  // base unit — so these numbers are a SHAPE and nothing more. `armMm` is the
-  // depth of each arm of the L; the two openings it leaves are `width − armMm`
-  // and `depth − armMm`, which at 1000 / 600 is 400 apiece.
-  cornerUnit: {
-    defaults: { width: 1000, height: 770, depth: 1000 },
-    armMm: 600,
+  // `reference/lisp/KIT_CORNER_L.lsp` section 7. `width` is the outer W along
+  // the unit's own wall, `depth` the outer D along the adjacent wall (the
+  // footprint the room understands, W x D), `height` the carcass. The ARM depth
+  // is not here: it is the family's own depth (`baseUnit`, `wallUnit`,
+  // `wardrobe` defaults), read by `engine/types.js` through `armDepthKey`.
+  cornerBase: {
+    defaults: { width: 900, height: 770, depth: 900 },                        // T75 proposed, owner to confirm
+  },
+  cornerWall: {
+    defaults: { width: 600, height: 720, depth: 600, mountHeight: 1500 },     // T75 proposed, owner to confirm
+  },
+  cornerWardrobe: {
+    defaults: { width: 1000, height: 2150, depth: 1000, railOffset: 1400 },   // T75 proposed, owner to confirm
   },
 
   // ─── T75 F3 · THE BLIND KITS' DEFAULTS ────────────────────────────────────
@@ -5242,7 +5248,6 @@ export function migrateCabinetProfile(profile) {
     binUnit: { ...D.binUnit, ...profile.binUnit, defaults: { ...D.binUnit.defaults, ...profile.binUnit?.defaults } },
     wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
     twinCupboard: { ...D.twinCupboard, ...profile.twinCupboard, defaults: { ...D.twinCupboard.defaults, ...profile.twinCupboard?.defaults } },
-    cornerUnit: { ...D.cornerUnit, ...profile.cornerUnit, defaults: { ...D.cornerUnit.defaults, ...profile.cornerUnit?.defaults } },
     hoodWallUnit: {
       ...D.hoodWallUnit,
       defaults: { ...D.hoodWallUnit.defaults, ...profile.hoodWallUnit?.defaults },
@@ -5271,6 +5276,14 @@ export function migrateCabinetProfile(profile) {
     },
     // T75 F2 · the corner's numbers, key by key.
     corner: { ...D.corner, ...profile.corner },
+    // T75 F4 · the true L's defaults, key by key (T30's cornerUnit went with its kit).
+    cornerBase: { ...D.cornerBase, ...profile.cornerBase, defaults: { ...D.cornerBase.defaults, ...profile.cornerBase?.defaults } },
+    cornerWall: { ...D.cornerWall, ...profile.cornerWall, defaults: { ...D.cornerWall.defaults, ...profile.cornerWall?.defaults } },
+    cornerWardrobe: {
+      ...D.cornerWardrobe,
+      ...profile.cornerWardrobe,
+      defaults: { ...D.cornerWardrobe.defaults, ...profile.cornerWardrobe?.defaults },
+    },
     // T75 F3 · the blind kits' defaults, key by key.
     blindBase: { ...D.blindBase, ...profile.blindBase, defaults: { ...D.blindBase.defaults, ...profile.blindBase?.defaults } },
     blindWall: { ...D.blindWall, ...profile.blindWall, defaults: { ...D.blindWall.defaults, ...profile.blindWall?.defaults } },

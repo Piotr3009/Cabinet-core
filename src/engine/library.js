@@ -72,26 +72,17 @@ export const KITCHEN_LIBRARY = [
         ],
       },
       { kind: 'type', id: 'sink', typeId: 'SINK', label: 'Sink' },
-      // ─── Turn 30 (CLAUDE.md F19): the corner unit, as GEOMETRY ───────────
-      // KIT_BUDR_FULL turned out to be the three-drawer base unit, so there is
-      // NO parent kit for a corner — and therefore no lines to inherit. The
-      // L-carcass ships as boards and a BOM, with not one hole in it, and the
-      // row says so.
-      // ─── TURN 31 (CLAUDE.md F10): CORNER → L-SHAPE ──────────────────────
-      // "The T30 type is an L-shape cabinet, not a corner system." A carousel,
-      // a magic corner and a bi-fold are mechanisms this app has none of, and
-      // calling the kit a corner unit promised something that was never in the
-      // box. The row id stays distinct from the held-open one below, which is
-      // a different promise: this kit is the L-CARCASS, and the JOINTS that
-      // would make it a corner SYSTEM stay parked by the owner's word.
-      { kind: 'type', id: 'l-shape-unit', typeId: 'L_SHAPE', label: 'L-shape unit', hint: 'The cabinet that turns a run — L-carcass only, no LISP defines its drilling' },
+      // T75 F4 KASACJA: T30's row `l-shape-unit` (eight undrilled rectangles) is
+      // deleted with its kit; the true L below replaces it and the held-open row.
+      // ─── T75 F4 · THE TRUE L CARCASS ────────────────────────────────────
+      // *"Library: Base units "Corner L" (replacing the T30 rows)."*  One L
+      // board top and bottom (KIT_CORNER_L.lsp), KIT_BUD's sides and backs, two
+      // doors through the parent's door path, door B overlapping door A.
+      { kind: 'type', id: 'corner-l', typeId: 'CORNER_L_BASE', label: 'Corner L', hint: 'One L carcass in a room corner: two doors, the one on the adjacent wall opens first' },
       // ─── T75 F3 · THE BLIND CORNER ──────────────────────────────────────
       // *"Library: Base units "Blind corner"."*  KIT_BUD hole for hole, one
       // leaf at the reachable end and a blank where the next run hides it.
       { kind: 'type', id: 'blind-corner', typeId: 'BLIND_BASE', label: 'Blind corner', hint: 'Base unit for a corner: one door, a blank behind the next run' },
-      {
-        kind: 'soon', id: 'l-shape', label: 'L-shape joints', hint: 'One carcass on two walls, jointed', reason: NO_PATTERN,
-      },
       // ─── Turn 17 (CLAUDE.md F9/F10): TWO OF THE HELD-OPEN ROWS OPEN ─────
       // The owner wrote the pattern for both, which is exactly the condition
       // the `soon` rows carried: "the pattern comes first". They are built from
@@ -196,9 +187,8 @@ export const KITCHEN_LIBRARY = [
       { kind: 'type', id: 'hood-unit', typeId: 'WUD_HOOD', label: 'Hood unit', hint: 'Wall unit over an extractor — open underneath, shorter door' },
       // T75 F3 · *"Wall units "Blind corner wall""*: KIT_WUD hole for hole.
       { kind: 'type', id: 'blind-corner-wall', typeId: 'BLIND_WALL', label: 'Blind corner wall', hint: 'Wall unit for a corner: one door, a blank behind the next run' },
-      {
-        kind: 'soon', id: 'l-shape-wall', label: 'L-shape wall', hint: 'One carcass on two walls', reason: NO_PATTERN,
-      },
+      // T75 F4 · *"Wall units "Corner L wall""*, replacing the held-open row.
+      { kind: 'type', id: 'corner-l-wall', typeId: 'CORNER_L_WALL', label: 'Corner L wall', hint: 'One L wall carcass in a room corner: two doors, hung on both far ends' },
     ],
   },
   {

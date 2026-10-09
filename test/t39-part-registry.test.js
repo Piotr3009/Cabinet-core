@@ -125,7 +125,8 @@ function paramSets(typeId) {
     }],
   ];
   if (T.appliance === 'extractor') sets.push(['hood', { ...base, doors: true, hood_aperture_mm: 400 }]);
-  if (T.id === 'L_SHAPE') sets.push(['arm', { ...base, doors: true, corner_arm_mm: 900, plinth: true }]);
+  // AMENDED BY T75 F4: T30's L_SHAPE is deleted; the true L walks with a deep arm, the right hand, a plinth and a shelf.
+  if (T.corner) sets.push(['arm', { ...base, doors: true, arm_mm: 600, corner_side: 'right', plinth: true, shelves: 1 }]);
   if (T.id === 'FRIDGE' || T.id === 'FRIDGE_US') {
     sets.push(['fridge', { ...base, doors: true, fridge_h: 1780, plinth: true }]);
   }

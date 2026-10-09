@@ -1,0 +1,278 @@
+{
+  "meta": {
+    "name": "golden-corner-l-wardrobe.json",
+    "turn": "T75",
+    "F": "F4",
+    "source": "KIT_CORNER_L.lsp (the L boards, the legs) + KIT_WARDROBE_FULL.lsp (sides, BACK-A, doors, plates and rails through the parent)",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "CORNER_L_WARDROBE",
+    "width": 1000,
+    "height": 2150,
+    "depth": 1000,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": true,
+    "rail_offset": 1400,
+    "hinge": "L",
+    "doors": true,
+    "arm_mm": 568,
+    "corner_side": "left",
+    "unit_num": "01"
+  },
+  "expected": {
+    "csvLines": [
+      "01,BACK-A,1000,2150,,0,2.150",
+      "01,BACK-B,982,2150,,0,2.111",
+      "01,SIDE-A,550,2150,>,2.15,1.183",
+      "01,SIDE-B,550,2150,<,2.15,1.183",
+      "01,TOP-L,964,964,>,0.83,0.758",
+      "01,BOTTOM-L,964,964,>,0.83,0.758",
+      "01,01-A-F,431,2147,<>^v,5.16,0.924",
+      "01,01-B-F,403,2147,<>^v,5.10,0.864"
+    ],
+    "panels": [
+      {
+        "id": "BACK-A",
+        "part": "BACK",
+        "role": "back",
+        "w": 1000,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1000,
+          "h": 2150,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "BACK-B",
+        "part": "BACK",
+        "role": "back",
+        "w": 982,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 982
+        },
+        "outline": 34,
+        "holes": 24,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "SIDE-A",
+        "part": "SIDE",
+        "role": "side",
+        "w": 550,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 982,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 2150,
+          "d": 550
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "SIDE-B",
+        "part": "SIDE",
+        "role": "side",
+        "w": 550,
+        "h": 2150,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 982,
+          "w": 550,
+          "h": 2150,
+          "d": 18
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP-L",
+        "part": "TOP",
+        "role": "top",
+        "w": 964,
+        "h": 964,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 2132,
+          "z": 18,
+          "w": 964,
+          "h": 18,
+          "d": 964
+        },
+        "outline": 86,
+        "holes": 0,
+        "pockets": 8,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM-L",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 964,
+        "h": 964,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 964,
+          "h": 18,
+          "d": 964
+        },
+        "outline": 86,
+        "holes": 0,
+        "pockets": 8,
+        "readiness": null
+      },
+      {
+        "id": "01-A-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 430.5,
+        "h": 2147,
+        "thickness": 25,
+        "box": {
+          "x": 568,
+          "y": 0,
+          "z": 571,
+          "w": 430.5,
+          "h": 2147,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "01-B-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 402.5,
+        "h": 2147,
+        "thickness": 25,
+        "box": {
+          "x": 571,
+          "y": 0,
+          "z": 596,
+          "w": 25,
+          "h": 2147,
+          "d": 402.5
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-A-F",
+        6
+      ],
+      [
+        "FRONT_HINGES_35MM|01-B-F",
+        6
+      ],
+      [
+        "FRONT_HINGES_3MM|01-A-F",
+        12
+      ],
+      [
+        "FRONT_HINGES_3MM|01-B-F",
+        12
+      ],
+      [
+        "HINGES_5MM|SIDE-A",
+        12
+      ],
+      [
+        "HINGES_5MM|SIDE-B",
+        12
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK-A",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK-B",
+        14
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|SIDE-A",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|SIDE-B",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK-A",
+        14
+      ],
+      [
+        "SCREWS_3MM|BACK-B",
+        10
+      ],
+      [
+        "SCREWS_3MM|SIDE-A",
+        7
+      ],
+      [
+        "SCREWS_3MM|SIDE-B",
+        7
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "legs",
+        "qty": 6,
+        "label": "Legs"
+      },
+      {
+        "role": "hinges",
+        "qty": 12,
+        "label": "Hinges"
+      },
+      {
+        "role": "rail",
+        "qty": 2,
+        "label": "Hanging rail"
+      }
+    ]
+  }
+}

@@ -96,6 +96,36 @@ export function panelSolids(panel, layers, profile, drills = []) {
     }
     return built;
   }
+  // ─── T75 F4 · ONE L-SHAPED BOARD, AS IT IS CUT ──────────────────────────
+  // The owner's law: *"one L-shaped board cut on the CNC"*. TOP-L, BOTTOM-L
+  // and SHELF-L publish their outline in the BOX's own plan frame
+  // (`meta.planOutline`, engine/cabinet.js: x from box.x, z from box.z), and
+  // the solid is that outline extruded through the board's height. Nothing is
+  // re-derived here; every other board keeps its own branch below.
+  const plan = panel?.box && Array.isArray(panel.meta?.planOutline)
+    && panel.meta.planOutline.length >= 3 ? panel.meta.planOutline : null;
+  if (plan) {
+    const key = `LPLAN|${panel.id}|${panel.box.w}|${panel.box.h}|${panel.box.d}|${plan.map((q) => q.join(',')).join(';')}`;
+    const hit = cache.get(key);
+    if (hit) {
+      cache.delete(key);
+      cache.set(key, hit);
+      return hit;
+    }
+    const geometry = planPrismGeometry(plan, panel.box);
+    applyBoxUVs(geometry, panel.box);
+    geometry.computeBoundingSphere();
+    const built = { solid: geometry, cuts: null };
+    cache.set(key, built);
+    if (cache.size > CACHE_LIMIT) {
+      const oldest = cache.keys().next().value;
+      const dropped = cache.get(oldest);
+      dropped?.solid?.dispose();
+      dropped?.cuts?.dispose();
+      cache.delete(oldest);
+    }
+    return built;
+  }
   // Chat-fix 29.08.2026: the leant-board branch stands BEFORE the placement
   // guard. T55 F1: the ROOF BOARD alone leans here now — the raked strip left
   // for the corners branch above.
@@ -339,6 +369,24 @@ function cornersPrismGeometry(corners, box) {
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   geometry.computeVertexNormals();
+  return geometry;
+}
+
+/**
+ * T75 F4 · a horizontal board extruded from its plan outline (box-local x, z,
+ * mm), centred on the panel's own box like every solid here. The shape is
+ * built in (x, -z) so the extrusion along +y after the turn stands the board
+ * where its box is.
+ */
+function planPrismGeometry(plan, box) {
+  const cx = box.w / 2;
+  const cz = box.d / 2;
+  const shape = new THREE.Shape(plan.map(([x, z]) => new THREE.Vector2(mm(x - cx), mm(-(z - cz)))));
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: mm(box.h), bevelEnabled: false, curveSegments: 1 });
+  // Extruded along +z of the shape's frame; turn it so the extrusion runs up
+  // (+y) and the shape's y becomes -z, then centre it on the box's height.
+  geometry.rotateX(-Math.PI / 2);
+  geometry.translate(0, -mm(box.h) / 2, 0);
   return geometry;
 }
 

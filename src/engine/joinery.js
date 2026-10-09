@@ -65,6 +65,38 @@ export function joineryLayers(profile, systemId = null) {
 export function panelPlacement(panel) {
   const box = panel?.box;
   if (!box) return null;
+  // ─── T75 F4 · THE TRUE L's BOARDS THAT DO NOT STAND WHERE A BOX's DO ─────
+  // SIDE-A is a BUL or a BUR by its hand; SIDE-B and BACK-B stand across the
+  // depth (their CNC x runs along z or x, not where a box's side or back
+  // runs), and door B faces the adjacent wall. Read off `meta.lBoard`, which
+  // no other kit's panel carries, so every other placement is untouched.
+  // Handedness is the file's rule (u x v = -n), and door B is the FRONT case
+  // turned a quarter round, so it keeps that case's own convention.
+  const lb = panel.meta?.lBoard;
+  if (lb === 'SIDE-A') return panelPlacement({ ...panel, part: panel.meta.hand === 'L' ? 'BUL' : 'BUR', meta: {} });
+  if (lb === 'SIDE-B') {
+    return {
+      origin: [box.x + box.w, box.y, box.z + box.d], u: [-1, 0, 0], v: [0, 1, 0], n: [0, 0, 1],
+    };
+  }
+  if (lb === 'BACK-B') {
+    return {
+      origin: [box.x + box.w, box.y, box.z], u: [0, 0, 1], v: [0, 1, 0], n: [1, 0, 0],
+    };
+  }
+  if (lb === 'TOP-L' || lb === 'BOTTOM-L' || lb === 'SHELF-L') {
+    // ONE L, drawn in the LISP's own plan frame (X from the room corner along
+    // wall A, Y off wall A), NOT turned like a box's top: the left hand reads
+    // it from above, the right hand (its mirror) from below.
+    return panel.meta.lSide === 'right'
+      ? { origin: [box.x + box.w, box.y, box.z], u: [-1, 0, 0], v: [0, 0, 1], n: [0, -1, 0] }
+      : { origin: [box.x, box.y + box.h, box.z], u: [1, 0, 0], v: [0, 0, 1], n: [0, 1, 0] };
+  }
+  if (lb === 'DOOR-B') {
+    return panel.meta.lSide === 'right'
+      ? { origin: [box.x + box.w, box.y, box.z + box.d], u: [0, 0, -1], v: [0, 1, 0], n: [1, 0, 0] }
+      : { origin: [box.x, box.y, box.z], u: [0, 0, 1], v: [0, 1, 0], n: [-1, 0, 0] };
+  }
   switch (panel.part) {
     case 'BUL':
       // A vertical slab in X. CNC x runs back from the front face; y is height.

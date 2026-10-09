@@ -6919,6 +6919,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ...(wantZone == null ? {} : { zone: wantZone }),
       // 30.08 (pull-down): the parked rod's own height from the top.
       ...(Number.isFinite(posMm) && posMm >= 0 ? { pos_mm: posMm } : {}),
+      // T75 F19 · a row of hooks may say how many; with none, the profile's.
+      ...(kind === 'hooks' && Number(extra?.count) > 0 ? { count: Math.trunc(Number(extra.count)) } : {}),
     });
   },
 

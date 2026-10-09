@@ -1101,6 +1101,12 @@ export const DEFAULT_CABINET_PROFILE = {
     kits: {
       trouser: { label: 'Trouser pull-out', bodyHeight: 120, posMm: 900 },
       tie_rack: { label: 'Tie rack', bodyHeight: 300, posMm: 1100 },
+      // T75 F19 · a row of hooks on the back (`count` of them, the BOM's qty)
+      // and the pull-out valet rod under the top: placeholders, zero holes.
+      hooks: {
+        label: 'Hooks', bodyHeight: 80, bodyDepth: 60, posMm: 1500, count: 4,       // T75 proposed, owner to confirm
+      },
+      valet_rod: { label: 'Valet rod', bodyHeight: 40, posMm: 1700 },            // T75 proposed, owner to confirm
       pulldown_rail: {
         label: 'Pull-down rail',
         // The REAL mechanism (30.08, the owner's sheet): base underside to

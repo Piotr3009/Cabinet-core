@@ -50,7 +50,9 @@ export const T75_PRO_EDITS = [
     pro: 'src/components/AddItems.jsx',
     why: 'F16 · the shoe box row says a chest of drawers IS its drawers, and the trouser pull-out and tie rack '
       + 'rows say they go in a wardrobe (a chest, desk or low unit stands beside one). *"`WARDROBE_CHEST2 / 3 / 4` '
-      + 'copied from `BUDR2 / BUDR / BUDR4`, family wardrobe."*',
+      + 'copied from `BUDR2 / BUDR / BUDR4`, family wardrobe."*'
+      + ' F19 · the Hooks and Valet rod rows, added as the trouser pull-out is. *"Two rows in Add items for '
+      + 'the wardrobe family: `Hooks` ... and `Valet rod`."*',
   },
 ];
 

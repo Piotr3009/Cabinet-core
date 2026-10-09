@@ -988,6 +988,9 @@ function normalizeParams(raw, profile) {
       kind: i.kind,
       zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
       pos_mm: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
+      // T75 F19 · a row of hooks says how many. Absent on every other kit, so
+      // no item written before tonight normalises to a key it did not have.
+      ...(i.kind === 'hooks' && Number(i.count) > 0 ? { count: Math.trunc(Number(i.count)) } : {}),
     })),
     columnRails: columnRailItems.map((i) => ({
       zone: Math.trunc(Number(i.zone)),
@@ -1360,7 +1363,10 @@ export const SHELF_VARIANTS = ['adjustable', 'fixed', 'pullout', 'shoe'];
 // mechanisms that are items in a column. Anything else says null and is the
 // plain drawer every project has always had.
 export const DRAWER_VARIANTS = ['shoe', 'belt_tie', 'belt_tie_glass'];
-export const WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail'];
+// T75 F19 · *"Two rows in Add items for the wardrobe family: `Hooks` (a row of
+// N, BOM line, placeholder bodies, zero holes) and `Valet rod` (pull-out, BOM
+// line, placeholder, zero holes)."*  Two more bought mechanisms, the same item.
+export const WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail', 'hooks', 'valet_rod'];
 
 /** A drawer item's variant, or null for the plain box. */
 export function drawerVariantOf(item) {
@@ -5002,8 +5008,12 @@ export function computeCabinet(params, profileOverride) {
         kind: spec.kind,
         zone: spec.zone,
         label: body.label,
+        // T75 F19 · the hooks' row: the item's count, else the profile's. A
+        // body may name its own depth (a strip of hooks on the back is not as
+        // deep as the opening); one that names none takes the opening's.
+        ...(spec.kind === 'hooks' ? { count: spec.count ?? Math.max(1, Math.trunc(Number(body.count) || 1)) } : {}),
         box: {
-          x: from, y, z: G, w: size, h: body.bodyHeight, d: internalDepth,
+          x: from, y, z: G, w: size, h: body.bodyHeight, d: Number(body.bodyDepth) > 0 ? Number(body.bodyDepth) : internalDepth,
         },
       });
     }
@@ -9358,9 +9368,11 @@ export function computeCabinet(params, profileOverride) {
   for (const kit of wardrobeKitBodies) {
     const art = kit.kind === 'pulldown_rail'
       ? P.wardrobeAccessories.kits.pulldown_rail?.conero?.article : null;
-    hw(`wardrobe_kit_${kit.kind}`, kit.label, 1, 'pcs',
+    // T75 F19 · a row of hooks is ordered by the hook: its count is the qty.
+    const qty = kit.kind === 'hooks' ? kit.count : 1;
+    hw(`wardrobe_kit_${kit.kind}`, kit.label, qty, 'pcs',
       { opening_width_mm: roundTo(kit.box.w, 0), zone: kit.zone, ...(art ? { article: art } : {}) },
-      `${kit.label} · ${roundTo(kit.box.w, 0)} mm opening${art ? ` · art. ${art}` : ''}`);
+      `${kit.label}${kit.kind === 'hooks' ? ` x ${qty}` : ''} · ${roundTo(kit.box.w, 0)} mm opening${art ? ` · art. ${art}` : ''}`);
   }
 
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────

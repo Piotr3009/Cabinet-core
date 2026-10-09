@@ -177,7 +177,8 @@ const EXEMPT = {
     + 'two sites its probe convicted: it sends only the keys this window changed, '
     + 'and it is never drawn dead and silent. *"APPLY does nothing — probe first."*',
   'src/components/AddItems.jsx':
-    'T75 F16 · the shoe box row says a chest of drawers IS its drawers (the store has always refused a shoe drawer in a ratio stack), and the trouser pull-out and tie rack rows say they go in a wardrobe: a chest stands beside one. *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR / BUDR4`, family wardrobe ... Wardrobes category."* '
+    'T75 F19 · two rows, Hooks (a row of the profile count, one BOM line, its qty the count) and Valet rod, added through the same bought-mechanism panel the trouser pull-out uses. *"Two rows in Add items for the wardrobe family: `Hooks` (a row of N, BOM line, placeholder bodies, zero holes) and `Valet rod` (pull-out, BOM line, placeholder, zero holes)."* '
+    + 'T75 F16 · the shoe box row says a chest of drawers IS its drawers (the store has always refused a shoe drawer in a ratio stack), and the trouser pull-out and tie rack rows say they go in a wardrobe: a chest stands beside one. *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR / BUDR4`, family wardrobe ... Wardrobes category."* '
     + 'T67 F9 · the label "Watch drawer" becomes "Accessories drawer" on the row, the '
     + 'button and the two notices. *"zmień w PRO też tę nazwę."*',
   // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
@@ -205,7 +206,7 @@ const FROZEN = {
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/AddItems.jsx': 'cd7cbef9d6dbc57da90ff9dcb159e2ad9dcaab6f02cc18b5b6cb5cb9dd110082',
+  'src/components/AddItems.jsx': '5be28cfd4ddc678b543efd07f1ed6f8b31282037739ada82ae03f9523b12c546',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   'src/components/AssignMaterialsModal.jsx': '32d48ece258aa562d6614606a65fd8df5a15adb3717d40f5736df8db45fac550',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',

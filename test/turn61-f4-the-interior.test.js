@@ -110,7 +110,8 @@ test('F4 · the parser is not a tautology — it finds what PRO actually hides',
 test('F4 · retail\'s rows are PRO\'s rows — same set, same order', () => {
   assert.deepEqual(A.INTERIOR_ROWS.map((r) => r.pro), proRows(),
     'the INTERIOR list and PRO\'s Add-items list have drifted');
-  assert.equal(A.INTERIOR_ROWS.length, 10, 'ten rows for a wardrobe');
+  // AMENDED BY T75 F19: PRO gained Hooks and Valet rod, so retail has twelve.
+  assert.equal(A.INTERIOR_ROWS.length, 12, 'twelve rows for a wardrobe');
   // Every id is unique, and every row opens a menu that exists — T60's law,
   // which is what made four new menus part of this feature rather than an extra.
   const ids = A.INTERIOR_ROWS.map((r) => r.id);

@@ -346,7 +346,8 @@ export default function ReHomed({ row, unitId, onAddAccessories = null }) {
 
   // THE TROUSER PULL-OUT AND THE TIE RACK — from `KitMenu`: the engine's own
   // sentence about a bought fitting, and the one act it allows.
-  if (row.id === 'trouser' || row.id === 'tie_rack') {
+  // T75 F19 · …and the hooks and the valet rod, the same bought kind.
+  if (row.id === 'trouser' || row.id === 'tie_rack' || row.id === 'hooks' || row.id === 'valet_rod') {
     const item = A.kitItem(unitId, row.id);
     if (!item) return null;
     return (

@@ -2121,6 +2121,15 @@ export const INTERIOR_ROWS = [
     id: 'tie_rack', pro: 'tie_rack', menu: 'tie_rack', name: 'Tie rack',
     add: (s, u) => s.addWardrobeKit(u, 'tie_rack'),
   },
+  // T75 F19 · PRO's two new rows, in PRO's order (the diff below holds them).
+  {
+    id: 'hooks', pro: 'hooks', menu: 'hooks', name: 'Hooks',
+    add: (s, u) => s.addWardrobeKit(u, 'hooks'),
+  },
+  {
+    id: 'valet_rod', pro: 'valet_rod', menu: 'valet_rod', name: 'Valet rod',
+    add: (s, u) => s.addWardrobeKit(u, 'valet_rod'),
+  },
 ];
 
 /**
@@ -2167,6 +2176,9 @@ export function interiorCounts(unit) {
     partition: items.filter((i) => i.kind === 'partition').length,
     trouser: items.filter((i) => i.kind === 'trouser').length,
     tie_rack: items.filter((i) => i.kind === 'tie_rack').length,
+    // T75 F19 · the two fittings Add items gained.
+    hooks: items.filter((i) => i.kind === 'hooks').length,
+    valet_rod: items.filter((i) => i.kind === 'valet_rod').length,
   };
 }
 
@@ -2186,6 +2198,7 @@ export function interiorRefusals(unitId, unit) {
   const items = unit?.params?.sections?.[0]?.items || [];
   const underSlope = Boolean(store.unitUnderSlope?.(unitId));
   const zones = (store.zonesOf?.(unitId) || []).length;
+  const beside = isBesideWardrobe(unit?.type);
   return {
     pulldown_rail: underSlope ? REASONS.pulldownUnderSlope : '',
     watch: counts.shoe > 0 ? REASONS.watchWithShoe
@@ -2206,8 +2219,17 @@ export function interiorRefusals(unitId, unit) {
     hanger: counts.hanger > 0 && zones <= 1 ? REASONS.railAlreadyThere : '',
     // ONE OF EACH BOUGHT MECHANISM PER OPENING (`addWardrobeKit` refuses a
     // second of the same kind in the same zone and answers null).
-    trouser: counts.trouser > 0 && zones <= 1 ? REASONS.kitAlreadyThere('trouser pull-out') : '',
-    tie_rack: counts.tie_rack > 0 && zones <= 1 ? REASONS.kitAlreadyThere('tie rack') : '',
+    // T75 F16 · …and none of them in a piece that stands beside a wardrobe
+    // (`addWardrobeKit` refuses; the words are `reasons.js`'s).
+    trouser: beside ? REASONS.kitGoesInAWardrobe
+      : (counts.trouser > 0 && zones <= 1 ? REASONS.kitAlreadyThere('trouser pull-out') : ''),
+    tie_rack: beside ? REASONS.kitGoesInAWardrobe
+      : (counts.tie_rack > 0 && zones <= 1 ? REASONS.kitAlreadyThere('tie rack') : ''),
+    // T75 F19 · the two new fittings, by the same two predicates.
+    hooks: beside ? REASONS.kitGoesInAWardrobe
+      : (counts.hooks > 0 && zones <= 1 ? REASONS.kitAlreadyThere('row of hooks') : ''),
+    valet_rod: beside ? REASONS.kitGoesInAWardrobe
+      : (counts.valet_rod > 0 && zones <= 1 ? REASONS.kitAlreadyThere('valet rod') : ''),
   };
 }
 

@@ -381,6 +381,23 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       disabled: type.family !== 'wardrobe' || Boolean(type.besideWardrobe),
       why: type.besideWardrobe ? 'it goes in a wardrobe' : 'a wardrobe thing',
     },
+    // ─── T75 F19 · HOOKS AND THE VALET ROD ─────────────────────────────────
+    // *"Two rows in Add items for the wardrobe family: `Hooks` (a row of N,
+    // BOM line, placeholder bodies, zero holes) and `Valet rod` (pull-out,
+    // BOM line, placeholder, zero holes), the `hardwareKit` grammar."*  Two
+    // more bought fittings, added as the three above are.
+    {
+      id: 'hooks',
+      label: 'Hooks',
+      disabled: type.family !== 'wardrobe' || Boolean(type.besideWardrobe),
+      why: type.besideWardrobe ? 'it goes in a wardrobe' : 'a wardrobe thing',
+    },
+    {
+      id: 'valet_rod',
+      label: 'Valet rod',
+      disabled: type.family !== 'wardrobe' || Boolean(type.besideWardrobe),
+      why: type.besideWardrobe ? 'it goes in a wardrobe' : 'a wardrobe thing',
+    },
   ];
 
   // What this FAMILY of cabinet offers by default (profile.itemsByContext) —
@@ -865,7 +882,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
               )}
 
               {/* ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS ─────────── */}
-              {['pulldown', 'trouser', 'tie_rack'].includes(kind.id) && (() => {
+              {['pulldown', 'trouser', 'tie_rack', 'hooks', 'valet_rod'].includes(kind.id) && (() => {
                 const kitKind = kind.id === 'pulldown' ? 'pulldown_rail' : kind.id;
                 return (
                   <>

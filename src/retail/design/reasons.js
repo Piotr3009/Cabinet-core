@@ -312,6 +312,13 @@ export const REASONS = {
   kitAlreadyThere: (what) => `There is already a ${what} in this column.`,
 
   /**
+   * T75 F16/F19 · PREDICATE: `type.besideWardrobe` (a chest of drawers, a
+   * desk, a low unit), where `store.addWardrobeKit` refuses every bought
+   * hanging fitting.
+   */
+  kitGoesInAWardrobe: 'This goes in a wardrobe: a chest, a desk or a low unit has no hanging space for it.',
+
+  /**
    * T61 F3 · PREDICATE: `adapter.topBoxesOn(hostId).length` — the store's own
    * `params.rides_on` link, read back. NOT a refusal: T53 made one main carry
    * several boxes side by side, and `addUnit`'s rider branch refuses in its own

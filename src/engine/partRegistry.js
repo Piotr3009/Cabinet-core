@@ -346,6 +346,15 @@ export const PART_REGISTRY = {
     id: 'kit_tie_rack', name: 'Tie rack', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism',
   },
+  // T75 F19 · the two bought fittings Add items gained, ordered as the others are.
+  kit_hooks: {
+    id: 'kit_hooks', name: 'Hooks', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought wardrobe fitting: one line, the row\'s count of hooks, zero holes',
+  },
+  kit_valet_rod: {
+    id: 'kit_valet_rod', name: 'Valet rod', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought wardrobe mechanism: a pull-out rod, zero holes',
+  },
   kit_pulldown_rail: {
     id: 'kit_pulldown_rail', name: 'Pull-down rail', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism — T33 put it on the order form, zero holes',
@@ -587,6 +596,9 @@ export const HARDWARE_TO_PART_ID = {
   wardrobe_kit_trouser: 'kit_trouser',
   wardrobe_kit_tie_rack: 'kit_tie_rack',
   wardrobe_kit_pulldown_rail: 'kit_pulldown_rail',
+  // T75 F19 · the two kinds WARDROBE_KIT_KINDS gained.
+  wardrobe_kit_hooks: 'kit_hooks',
+  wardrobe_kit_valet_rod: 'kit_valet_rod',
 };
 
 /**

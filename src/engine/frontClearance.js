@@ -70,9 +70,10 @@ export function clearanceMatrix(profile) {
     [NEIGHBOUR.APPLIANCE]: n(c.appliance, 0),
     [NEIGHBOUR.WALL]: n(c.wall, 3),
     [NEIGHBOUR.NONE]: n(c.none, 1.5),
-    // Rule 7. The L-shape corner is PARKED with the L-shape unit; nothing here
-    // invents a number for it, and the Check says "parked" rather than passing.
-    [NEIGHBOUR.CORNER]: null,
+    // Rule 7. T75 F2: a corner post is a rigid neighbour, like an infill, and
+    // the number is the profile's (`doors.clearance.corner`, T75 proposed,
+    // owner to confirm). A profile that names none keeps it PARKED.
+    [NEIGHBOUR.CORNER]: n(c.corner, null),
   });
 }
 
@@ -243,7 +244,8 @@ function neighbourOn(front, side, {
     if (!overlaps(front.y, front.y + front.h, v.bottom, v.top)) continue;
     const near = dir > 0 ? v.from : v.to;
     consider(
-      v.kind === 'end-panel' ? NEIGHBOUR.END_PANEL : NEIGHBOUR.INFILL,
+      // T75 F2 · rule 7: the corner post (`runs.js unitVerticals`, 'corner-post').
+      v.kind === 'end-panel' ? NEIGHBOUR.END_PANEL : (v.kind === 'corner-post' ? NEIGHBOUR.CORNER : NEIGHBOUR.INFILL),
       near,
       { of: { unitId: v.unitId, pieceId: v.pieceId } },
     );

@@ -45,6 +45,11 @@ import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
   wallPlanObstacles,
 } from '../engine/room.js';
+// T75 F1 · THE CORNER RULEBOOK: the one detection the corner stop, the post,
+// the hinge and every corner consumer below read.
+import {
+  carcassReachMm, cornersOf, cornerSpec, cornerStopMm, occupantKind,
+} from '../engine/corners.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
 // byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
@@ -2037,6 +2042,89 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         },
       };
     });
+
+    // ─── T75 F2 · THE CORNER POST, MADE AND UNMADE BY WHERE A UNIT STANDS ───
+    //
+    // *"the post appears when the unit lands. Pulling away removes the post
+    // (T74 F11's reversibility, extended through the same function)."*  The
+    // side infill's own grammar (BACKLOG #15): a unit parked ON the corner stop
+    // gets the post on its corner side; anywhere else it has none. Asked of the
+    // rulebook, so the post and the Check cannot disagree about which unit is
+    // run B. Written on every pass, which is what makes it reversible: the key
+    // is the automat's, and a unit that left the stop loses it.
+    {
+      const spec = cornerSpec(profile);
+      const posts = new Map();
+      for (const c of cornersOf({ units: next, walls, profile })) {
+        if (c.kind !== 'internal' || c.stopMm == null) continue;
+        const occupant = next.find((x) => x.id === c.runA.unitId);
+        if (!occupant || occupantKind(occupant) === 'L') continue;
+        if (Math.abs(c.runB.gapMm - c.stopMm) > 1) continue;
+        posts.set(c.runB.unitId, { ...(posts.get(c.runB.unitId) || {}), [c.runB.side]: spec.postMm });
+      }
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        const want = posts.get(u.id) || {};
+        const left = want.left || 0;
+        const right = want.right || 0;
+        const hadLeft = Number(u.params?.corner_post_left_mm) || 0;
+        const hadRight = Number(u.params?.corner_post_right_mm) || 0;
+        if (left === hadLeft && right === hadRight) continue;
+        const params = { ...u.params };
+        if (left) params.corner_post_left_mm = left; else delete params.corner_post_left_mm;
+        if (right) params.corner_post_right_mm = right; else delete params.corner_post_right_mm;
+        next[i] = { ...u, params };
+      }
+    }
+
+    // ─── T75 F2 · THE HINGE LAW AT A CORNER ────────────────────────────────
+    //
+    // *"the door nearest an internal corner hinges on the corner side so its
+    // handle swings away."*  The probe (verify/t75/p01-probe.md) found no
+    // such law on main: the only automatic hand change is the slope's
+    // (`settleSlopeDoorPartitions`, its record `slope_door_auto`). So it is
+    // written ONCE, here, for every family, in that sweep's grammar: the unit
+    // that stops on a corner (run B, beside the post or the blank) and hangs
+    // ONE leaf has it hinged on the corner side, and the record says what it
+    // was; pulled away, the leaf goes back, unless a hand has changed it
+    // since (what the client chose by hand stays). Run A never takes it: its
+    // corner door would swing into run B.
+    {
+      const corners = cornersOf({ units: next, walls, profile });
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        const c = corners.find((k) => k.kind === 'internal' && k.runB?.unitId === u.id
+          && (k.solution === 'post' || k.solution === 'blind'));
+        const doors = u.params?.doors;
+        const fitted = doors === true || (doors && typeof doors === 'object' && Number(doors.count) !== 0);
+        const count = doors && typeof doors === 'object' && Number.isFinite(Number(doors.count))
+          ? Number(doors.count)
+          : doorCountFor(u.params?.width, profile);
+        const single = fitted && count === 1 && !(Array.isArray(u.params?.bay_doors) && u.params.bay_doors.length);
+        const rec = u.params?.corner_hinge_auto || null;
+        const handOf = (p) => String((p?.doors && typeof p.doors === 'object' && p.doors.hinge) || p?.hinge || profile.doors.defaultHinge)
+          .toUpperCase() === 'R' ? 'R' : 'L';
+        const withHand = (p, hand) => ({
+          ...p,
+          hinge: hand,
+          ...(p.doors && typeof p.doors === 'object' ? { doors: { ...p.doors, hinge: hand } } : {}),
+        });
+        if (c && single) {
+          // On the TRANSITION only: once the record exists the automat has
+          // spoken, and a hand that changes the leaf afterwards is believed.
+          if (rec) continue;
+          const want = c.runB.side === 'left' ? 'L' : 'R';
+          const now = handOf(u.params);
+          const params = now === want ? { ...u.params } : withHand({ ...u.params }, want);
+          params.corner_hinge_auto = { was: now, wrote: want };
+          next[i] = { ...u, params };
+        } else if (rec) {
+          const params = { ...u.params };
+          delete params.corner_hinge_auto;
+          next[i] = { ...u, params: handOf(u.params) === rec.wrote ? withHand(params, rec.was) : params };
+        }
+      }
+    }
 
     // The RUN is decided last and always across ALL units, whatever one unit
     // was asked about (turn 6, CLAUDE.md F4). The top infill is one piece for a
@@ -4332,6 +4420,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
           ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) }),
+          // T75 F2 · …and a unit round the corner, at its corner stop. The
+          // room refuses first: a placement is never dropped into an occupied
+          // corner square (verify/t75/p01-probe.md measured it landing there).
+          ...cornerSpansFor(state, unit, wall, walls, profile),
         ],
         near: onThisWall ? unitSpan(beside) : null,
         side: onThisWall ? side : null,
@@ -5654,6 +5746,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...boxSpansOnWall({
           wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(get().project.room, get().project.wallSlopes),
         }),
+        // T75 F2 · the unit round the corner, at its corner stop.
+        ...cornerSpansFor(get(), unit, walls[wallIndex], walls),
       ],
     }, getCabinetProfile());
     if (room == null) {
@@ -5726,6 +5820,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...boxSpansOnWall({
           wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
         }),
+        // T75 F2 · the unit round the corner, at its corner stop.
+        ...cornerSpansFor(s, unit, walls[wallIndex], walls),
       ],
     }, getCabinetProfile());
     if (x == null) {
@@ -9137,6 +9233,23 @@ function panelObstaclesFor(state, unit, profile = getCabinetProfile()) {
   }));
 }
 
+/**
+ * T75 F2 · the units ROUND THE CORNER that stand in this unit's way on `wall`,
+ * as spans along it, each at its corner stop (`collision.js wallObstacles`,
+ * the one road the drag clamp takes). A placement asks it so that a unit is
+ * never dropped inside an occupied corner square: the room refuses first.
+ */
+function cornerSpansFor(state, unit, wall, walls, profile = getCabinetProfile()) {
+  if (!wall) return [];
+  const others = state.units
+    .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) !== wall.index && obstructs(unit, u, profile))
+    .map(toObstacleUnit);
+  if (!others.length) return [];
+  return wallObstacles({
+    wall, walls, depth: unit.params.depth, others,
+  }).filter((o) => o.corner && !o.box);
+}
+
 /** Every obstacle a unit has to be clamped against: the cabinets AND the boards. */
 function obstaclesFor(state, unit, profile = getCabinetProfile()) {
   return [...neighboursOf(state, unit).map(toObstacleUnit), ...panelObstaclesFor(state, unit, profile)];
@@ -9150,7 +9263,16 @@ const unitTopOf = unitTop;
  * INCLUDED, so a neighbour cannot be moved into a panel it cannot see.
  */
 function toObstacleUnit(u) {
-  const pad = footprintPads(u, u.params?.front_t, getCabinetProfile());
+  const profile = getCabinetProfile();
+  const pad = footprintPads(u, u.params?.front_t, profile);
+  // ─── T75 F2 · THE CORNER STOP ─────────────────────────────────────────────
+  // Round a corner this unit stops another at its FACE plus the post, not at
+  // its carcass: `cornerStopMm` less the carcass it already occupies. An L
+  // carcass is its own stop (null), and so is a unit turned off its wall.
+  const stop = cornerStopMm(u, profile);
+  const stopPad = stop == null || (Number(u.position?.rotation_deg) || 0) % 360
+    ? 0
+    : Math.max(0, stop - carcassReachMm(u, profile));
   return {
     wall: u.position?.wall ?? 0,
     x_mm: (Number(u.position?.x_mm) || 0) - pad.left,
@@ -9161,6 +9283,7 @@ function toObstacleUnit(u) {
     // is exactly what decides whether it fouls the one round the corner.
     backInset: pad.back,
     label: u.params?.unit_num || u.id,
+    ...(stopPad ? { stopPad } : {}),
   };
 }
 
@@ -9301,6 +9424,7 @@ function shareOutSubject(state, unitId, profile, { gated = false } = {}) {
   };
 }
 
+/**
 function wallMarginOf(state, unit = null) {
   const profile = getCabinetProfile();
   // ─── Turn 11 (CLAUDE.md F5.3) ───

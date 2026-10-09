@@ -123,7 +123,8 @@ export function groupOfPanel(panel) {
   // Everything that stands in the room beside the doors and is finished with
   // them: doors, drawer fronts, end panels, the wall unit's masking board.
   if (role === 'front' || role === 'end_panel' || role === 'mask') return 'fronts';
-  if (role === 'infill' || role === 'plinth') return 'infills';
+  // T75 F2 · the corner post is the side infill's sibling and goes with it.
+  if (role === 'infill' || role === 'plinth' || role === 'corner_post') return 'infills';
   if (role === 'shelf') return 'shelves';                     // SHELF, VPART, RAIL-PART, FIXED
   // …and everything else is board that lives inside a carcass: the sides, the
   // top and bottom, the back, the holders and spurs, the drawer panel and its

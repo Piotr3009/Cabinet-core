@@ -86,7 +86,9 @@ const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
  * time, and each of them is a decision with its own properties. Those you point
  * at directly.
  */
-const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel']);
+// T75 F2 · the corner post is hung on the carcass the same way: a piece a
+// joiner points at directly.
+const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel', 'corner-post']);
 
 /**
  * Is this piece clickable AS A PIECE in the room view?
@@ -162,6 +164,8 @@ export function elementKind(panel) {
     case 'DRAWER-FRONT': return 'drawer-front';
     // T74 F13 · the board of a free-standing panel.
     case 'FREE-PANEL': return 'free-panel';
+    // T75 F2 · the corner post.
+    case 'CORNER-POST': return 'corner-post';
     default:
       // T54-F7: the SHOEBOX-* kind died with its world — a shoe is a
       // `variant:'shoe'` DRAWER now, so its boards answer as a drawer's do
@@ -190,6 +194,7 @@ const LABELS = {
   'drawer-front': 'Drawer front',
   drawer: 'Drawer box',
   'free-panel': 'Free-standing panel',
+  'corner-post': 'Corner post',
 };
 
 /** What each board of a drawer box is called, in a joiner's words. */
@@ -292,6 +297,8 @@ const FIELDS = {
   // itself and on its face, because both are the drawer a joiner clicks.
   'drawer-front': ['drawer-height', 'runner-variant', 'watch-insert', 'front-board', 'material'],
   'masking-panel': ['masking-depth', 'material'],
+  // T75 F2 · what it is made of. Its width is the profile's.
+  'corner-post': ['material'],
   // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
   // stack — that is what F8 edits, on the unit — so what is said about one
   // board of it is what it is made of.
@@ -393,6 +400,8 @@ const ACTIONS = {
   // T74 F13 · the board IS its unit: it is moved by its distance figures in
   // the room and taken out as the unit is, never nudged or hidden as a piece.
   'free-panel': { remove: false, move: false, why: 'A free panel is its own unit: move it by its distance figures, delete it as a unit.' },
+  // T75 F2 · the post IS the corner stop it stands on: it goes when the unit is pulled away.
+  'corner-post': { remove: false, move: false, why: 'The post stands on the corner stop: pull the unit away from the corner and it goes.' },
 };
 
 /**

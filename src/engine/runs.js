@@ -386,6 +386,13 @@ export function unitVerticals(units, profile) {
       if (width < minInfill) continue;
       add(side, width, unit.params?.[topKey], 'infill', `${side}-infill`);
     }
+    // T75 F2 · the CORNER POST stands beside the carcass in the door plane, the
+    // infill's sibling: a rigid neighbour for the door next to it (rule 7). It
+    // finishes with its carcass, so it blocks nothing new above it.
+    for (const [side, key] of [['L', 'corner_post_left_mm'], ['R', 'corner_post_right_mm']]) {
+      const width = Number(unit.params?.[key]) || 0;
+      if (width > 0) add(side, width, 0, 'corner-post', `${side}-post`);
+    }
   }
   return out;
 }

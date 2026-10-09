@@ -302,6 +302,8 @@ export const DEFAULT_CABINET_PROFILE = {
       appliance: 0,    // 4. an appliance with its own front provides the 3 itself
       wall: 3,         // 5. a bare wall, + the yellow "infill? (dust collection)"
       none: 1.5,       // 6. the end of a run
+      // 7. a corner post: a rigid neighbour, like an infill (T75 F2).
+      corner: 3,       // T75 proposed, owner to confirm
     },
     // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
     // width 705 mm (704 is still ONE door — BLOCKERS.md #2)
@@ -322,6 +324,20 @@ export const DEFAULT_CABINET_PROFILE = {
     // Neither number reaches the cut list; a swing is a picture.
     openAngle: 99,
     openAngleAtWall: 90,
+  },
+
+  // ─── T75 F1/F2 · THE CORNER (CLAUDE.md T75 PART A) ─────────────────────────
+  //
+  // The owner, 9.10.2026: *"daj od razu narożniki przemyślane."*  How an
+  // internal corner is closed is `engine/corners.js`; these are its numbers.
+  //
+  //   postMm   the corner post's width: the board standing in the door plane of
+  //            the run that stops on the corner (F2).
+  //   overlap  which arm of an L corner unit carries the overlapping door (F4):
+  //            'adjacent' is the arm on the adjacent wall.
+  corner: {
+    postMm: 50,              // T75 proposed, owner to confirm
+    overlap: 'adjacent',     // T75 proposed, owner to confirm
   },
 
   // ─── Hinge drilling ───
@@ -5238,6 +5254,8 @@ export function migrateCabinetProfile(profile) {
       ...profile.americanFridgeUnit,
       defaults: { ...D.americanFridgeUnit.defaults, ...profile.americanFridgeUnit?.defaults },
     },
+    // T75 F2 · the corner's numbers, key by key.
+    corner: { ...D.corner, ...profile.corner },
     autoParts: {
       ...D.autoParts, ...profile.autoParts,
       plinth: { ...D.autoParts.plinth, ...profile.autoParts?.plinth },

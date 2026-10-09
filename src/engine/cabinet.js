@@ -1205,7 +1205,10 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // both faces and all four edges. It is cut from the carcass board (it is a
 // board the client builds with, not a door), so it does NOT join the front
 // material below.
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel']);
+// T75 F2 adds `corner_post` (a board of the front material standing in the
+// door plane at an internal corner), and F3 `blind_blank` (the blind kit's
+// fixed face): both are seen from the room and both are front material.
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1235,7 +1238,7 @@ export function isFinishExposed(role) {
 // under the doors, in the plane the eye reads as the front of the run — so it
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask']);
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -5949,6 +5952,52 @@ export function computeCabinet(params, profileOverride) {
         },
       }));
     }
+  }
+
+  // ─── T75 F2 · THE CORNER POST ────────────────────────────────────────────
+  //
+  // The owner, 9.10.2026: *"daj od razu narożniki przemyślane."*  CLAUDE.md
+  // T75 F2: *"A corner post is an AUTO-PART, the sibling of the side infill: a
+  // board of the FRONT material and front thickness, `profile.corner.postMm`
+  // wide, standing in the front plane of run B at the corner, from the plinth
+  // line to the top of run B's unit (the end panel's `carcass` height law),
+  // BOM role `corner_post`, cut list line, CNC a plain rectangle."*
+  //
+  // The store writes its width onto THIS unit (run B's) when the unit lands on
+  // the corner stop (`engine/corners.js cornerStopMm`), exactly as it writes a
+  // side infill when a unit lands on the wall stop, and takes it off again when
+  // the unit is pulled away. The engine only cuts what it is given: a unit with
+  // neither key cuts exactly what it always did.
+  for (const [side, key] of [['L', 'corner_post_left_mm'], ['R', 'corner_post_right_mm']]) {
+    const postW = Number(params?.[key]) || 0;
+    if (!(postW > 0) || !(H > 0)) continue;
+    const isLeft = side === 'L';
+    const t = frontT;
+    panels.push(panel({
+      id: `CORNER-POST-${side}`,
+      part: 'CORNER-POST',
+      role: 'corner_post',
+      w: postW,
+      h: H,
+      thickness: t,
+      // Both long edges are seen: one beside run A's door face, one beside this
+      // unit's own door.
+      edgeCode: `${codes.left}${codes.right}`,
+      edgeLen: metres(2 * H),
+      // In the door plane, outside this carcass on the corner side, carcass
+      // high: `y` 0 to H is the end panel's `carcass` law.
+      box: {
+        x: isLeft ? -postW : W, y: 0, z: infillFaceZ - t, w: postW, h: H, d: t,
+      },
+      cnc: rectGeometry(postW, H),
+      meta: {
+        side: isLeft ? 'left' : 'right',
+        corner: 'post',
+        // How it is fixed (screwed to this carcass side through a batten, or
+        // to run A's face) is the joiner's: no hole is drilled for it.
+        readiness: 'geometry',
+      },
+    }));
   }
 
   // Door fronts, always last (they close the unit — SPEC 4.10)

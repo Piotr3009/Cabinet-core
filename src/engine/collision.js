@@ -518,7 +518,24 @@ export function wallObstacles({
     // Behind this wall, or past the front of this unit: not in the way.
     if (span.far <= 0 || span.near >= depth) continue;
     if (span.right <= 0 || span.left >= wall.width) continue;
-    out.push({ left: span.left, right: span.right, label: o.label, corner: true });
+    // ─── T75 F2 · THE CORNER STOP ──────────────────────────────────────────
+    // *"A unit on wall B that approaches a corner where wall A's run ends in a
+    // BLIND kit or a plain unit stops at d_A_face + postMm ... the same clamp
+    // `clampUnitX({ wallMargin })` uses for the wall."*  The obstacle round the
+    // corner reaches out of the corner by its carcass; its door gap, its front
+    // and the post (`stopPad`, `engine/corners.js cornerStopMm` less the
+    // carcass, worked out by the caller) are added on the side facing away from
+    // the corner, so the magnet lands this unit ON the stop. An L carcass is
+    // its own stop and carries none.
+    const pad = Math.max(0, Number(o.stopPad) || 0);
+    const atStart = (span.left + span.right) / 2 <= (Number(wall.width) || 0) / 2;
+    out.push({
+      left: pad && !atStart ? span.left - pad : span.left,
+      right: pad && atStart ? span.right + pad : span.right,
+      label: o.label,
+      corner: true,
+      ...(pad ? { stopPad: pad } : {}),
+    });
   }
   return out;
 }

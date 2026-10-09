@@ -175,6 +175,12 @@ export const PART_REGISTRY = {
     id: 'mask', name: 'Bottom mask', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'The board under a run of wall units, hiding the standoff',
   },
+  // T75 F2 · the corner post: a front-material board in the door plane of the
+  // run that stops on the corner (`engine/corners.js`).
+  corner_post: {
+    id: 'corner_post', name: 'Corner posts', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'The board in the door plane at an internal corner, beside the run that stops on the corner',
+  },
 
   // ─── DRAWER BOX ───────────────────────────────────────────────────────────
   drawer_box_side: {
@@ -463,6 +469,8 @@ export const ELEMENT_TO_PART_ID = {
   'END-PANEL': 'end_panel',
   INFILL: 'infill',
   MASK: 'mask',
+  // T75 F2 · the corner post.
+  'CORNER-POST': 'corner_post',
   // T74 F13 · the free-standing panel's one board.
   'FREE-PANEL': 'free_panel',
 
@@ -587,6 +595,7 @@ const EDGE_OF_PART = {
   end_panel: 'edge_front',
   infill: 'edge_front',
   mask: 'edge_front',
+  corner_post: 'edge_front',
 };
 
 /** Which edging part pays for this part's banding, or null when none does. */

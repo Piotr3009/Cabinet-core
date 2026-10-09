@@ -94,6 +94,8 @@ function paramSets(typeId) {
       ...base, doors: true, top_infill_mm: 300, side_infill_left_mm: 120, side_infill_right_mm: 120,
     }],
     ['cornice', { ...base, doors: true, cornice: 90, top_infill_mm: 200 }],
+    // T75 F2 · the corner post the store writes when a unit lands on the corner stop.
+    ['corner-post', { ...base, doors: true, corner_post_left_mm: 50, corner_post_right_mm: 50 }],
     ['run-infill', {
       ...base,
       doors: true,

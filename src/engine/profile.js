@@ -1513,6 +1513,18 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── T75 F13 · THE BASE UNIT WITH DRAWERS BEHIND ITS DOORS ──────────────
+  //
+  // CLAUDE.md T75 F13: *"`BUD_INT`: `BUD` with `drawerStyle: 'wardrobe'`,
+  // `internalDrawers: 'all'`, `supports.drawers: true` (PANTRY's own two lines
+  // at base height)."*  BUD's box, and it arrives with its drawers as the
+  // pantry does (T31 F11). Two, not the pantry's three: at 770 the stack must
+  // leave the drawer zone's 200 mm headroom (`wardrobe.drawers.zoneHeadroom`),
+  // and three default 200 mm fronts are dropped with DRAWERS_TOO_TALL.
+  baseInternalDrawerUnit: {
+    defaults: { width: 600, height: 770, depth: 558, drawers: 2 },   // T75 proposed, owner to confirm
+  },
+
   // ─── Low cabinet (KIT_LOW_CABINET_FULL) ───
   lowCabinet: {
     minHeight: 300,
@@ -5284,6 +5296,12 @@ export function migrateCabinetProfile(profile) {
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
     cargoUnit: { ...D.cargoUnit, ...profile.cargoUnit, defaults: { ...D.cargoUnit.defaults, ...profile.cargoUnit?.defaults } },
     pantryUnit: { ...D.pantryUnit, ...profile.pantryUnit, defaults: { ...D.pantryUnit.defaults, ...profile.pantryUnit?.defaults } },
+    // T75 F13 · the drawers-behind-doors base unit's defaults, key by key.
+    baseInternalDrawerUnit: {
+      ...D.baseInternalDrawerUnit,
+      ...profile.baseInternalDrawerUnit,
+      defaults: { ...D.baseInternalDrawerUnit.defaults, ...profile.baseInternalDrawerUnit?.defaults },
+    },
     lowCabinet: { ...D.lowCabinet, ...profile.lowCabinet, defaults: { ...D.lowCabinet.defaults, ...profile.lowCabinet?.defaults } },
     baseDrawerUnit: {
       ...D.baseDrawerUnit,

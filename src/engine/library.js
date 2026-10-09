@@ -76,6 +76,9 @@ export const KITCHEN_LIBRARY = [
           { kind: 'type', id: 'drawer-4', typeId: 'BUDR4', variant: 'x4' },
         ],
       },
+      // ─── T75 F13 · *"Library Base units "Drawers behind doors"."* ─────────
+      // BUD's carcass and door with PANTRY's internal drawer machinery inside.
+      { kind: 'type', id: 'drawers-behind-doors', typeId: 'BUD_INT', label: 'Drawers behind doors', hint: 'Base unit with internal Blum drawers behind its door' },
       { kind: 'type', id: 'sink', typeId: 'SINK', label: 'Sink' },
       // T75 F4 KASACJA: T30's row `l-shape-unit` (eight undrilled rectangles) is
       // deleted with its kit; the true L below replaces it and the held-open row.

@@ -890,6 +890,39 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── T75 F13 · THE BASE UNIT WITH DRAWERS BEHIND ITS DOORS ──────────────
+  //
+  // CLAUDE.md T75 F13: *"`BUD_INT`: `BUD` with `drawerStyle: 'wardrobe'`,
+  // `internalDrawers: 'all'`, `supports.drawers: true` (PANTRY's own two lines
+  // at base height), the T33 F6 door setback for drawers behind doors applied
+  // as it is in a wardrobe."*
+  //
+  // BUD to the letter, with PANTRY's two lines: nothing in cabinet.js is
+  // written for it. The behind-door law (the DP panel and its fillers on every
+  // hinged side, the box set back), the runner rows and the boxes come with
+  // `drawerStyle: 'wardrobe'`; the frontless drawers with `internalDrawers`.
+  // Empty it is BUD hole for hole; its drawer machinery is PANTRY's.
+  BUD_INT: {
+    id: 'BUD_INT',
+    heightGroup: 'base',
+    label: 'Drawers behind doors',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'wardrobe',
+    internalDrawers: 'all',
+    minHeightKey: null,
+    defaultsKey: 'baseInternalDrawerUnit.defaults',
+    supports: { drawers: true, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    available: true,
+  },
   LOW_CABINET: {
     id: 'LOW_CABINET',
     // A low cabinet that inherits the 720 mm base height is a base unit with
@@ -1271,7 +1304,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1477,5 +1510,7 @@ export const UNIT_NUM_PREFIX = {
   CORNER_L_BASE: 'CL', CORNER_L_WALL: 'CW', CORNER_L_WARDROBE: 'CX',
   // T75 F12 · the appliance towers: AT01, whichever stack they carry.
   APPLIANCE_TALL: 'AT', APPLIANCE_TALL2: 'AT',
+  // T75 F13 · drawers behind doors: BI01.
+  BUD_INT: 'BI',
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

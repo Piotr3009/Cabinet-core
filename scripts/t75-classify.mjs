@@ -24,7 +24,7 @@
 
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 import { dump } from './t64-classify.mjs';
 import { computeCabinet } from '../src/engine/cabinet.js';
@@ -137,6 +137,40 @@ export const LICENSED = {
 /** THE NEW GOLDENS: each a fixture file and the params that re-make it. */
 export const NEW_GOLDENS = [];
 
+// ─── THE FRAGMENTS: ONE FILE PER F, SO NO TWO WRITERS SHARE A LINE ─────────
+//
+// Each F that lands after F6 names its deltas in `scripts/t75-classify.d/fNN.mjs`
+// (exports, all optional: GATES, LICENSED, LIVENESS). They are MERGED here: a
+// file licensed by two Fs carries both reasons and the union of their gates;
+// a gate or a liveness probe named twice is a failure, not a merge.
+const FRAGMENT_DIR = new URL('./t75-classify.d/', import.meta.url);
+const fragments = existsSync(FRAGMENT_DIR)
+  ? readdirSync(FRAGMENT_DIR).filter((n) => /^f\d\d[a-z0-9-]*\.mjs$/.test(n)).sort()
+  : [];
+const FRAGMENT_LIVENESS = {};
+for (const name of fragments) {
+  // eslint-disable-next-line no-await-in-loop
+  const frag = await import(new URL(name, FRAGMENT_DIR));
+  for (const [k, g] of Object.entries(frag.GATES || {})) {
+    if (GATES[k]) throw new Error(`${name}: gate ${k} is named twice`);
+    GATES[k] = g;
+  }
+  for (const [file, lic] of Object.entries(frag.LICENSED || {})) {
+    const had = LICENSED[file];
+    LICENSED[file] = had
+      ? {
+        why: `${had.why}. ${lic.why}`,
+        gates: [...new Set([...(had.gates || []), ...(lic.gates || [])])],
+        ...(had.drawing || lic.drawing ? { drawing: true } : {}),
+      }
+      : { ...lic, gates: lic.gates || [] };
+  }
+  for (const [k, probe] of Object.entries(frag.LIVENESS || {})) {
+    if (FRAGMENT_LIVENESS[k]) throw new Error(`${name}: liveness ${k} is named twice`);
+    FRAGMENT_LIVENESS[k] = probe;
+  }
+}
+
 /** Named read-only by CLAUDE.md FROZEN 2. A diff here is a failure, not a delta. */
 const READ_ONLY_PREFIX = ['src/engine/drawings/'];
 const READ_ONLY = [
@@ -212,7 +246,8 @@ const LIVENESS = {
 function liveness() {
   return Object.keys(GATES).map((gate) => {
     try {
-      const r = LIVENESS[gate] ? LIVENESS[gate]() : { live: false, said: 'no liveness probe written' };
+      const probe = LIVENESS[gate] || FRAGMENT_LIVENESS[gate];
+      const r = probe ? probe() : { live: false, said: 'no liveness probe written' };
       return { gate, ...r };
     } catch (e) {
       return { gate, live: false, said: `threw: ${e.message}` };

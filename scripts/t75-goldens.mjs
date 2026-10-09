@@ -11,7 +11,7 @@
 //   node scripts/t75-goldens.mjs --write golden-blind-base.json   write one
 //   node scripts/t75-goldens.mjs --check                          compare all
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 import { defaultParamsFor } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
@@ -20,11 +20,25 @@ import { goldenOf, writeGolden } from './t75-golden.mjs';
 const ROOT = new URL('../', import.meta.url).pathname;
 const kit = (type, extra = {}) => ({ ...defaultParamsFor(type, P), unit_num: '01', ...extra });
 
-export const T75_GOLDENS = [
+const BASE_GOLDENS = [
   { file: 'golden-blind-base.json', F: 'F3', source: 'KIT_BUD_FULL.lsp (the carcass); the blank is a rectangle', params: () => kit('BLIND_BASE', { doors: { count: 1 } }) },
   { file: 'golden-blind-wall.json', F: 'F3', source: 'KIT_WUD_FULL.lsp (the carcass); the blank is a rectangle', params: () => kit('BLIND_WALL', { doors: { count: 1 } }) },
   { file: 'golden-blind-wardrobe.json', F: 'F3', source: 'KIT_WARDROBE_FULL.lsp (the carcass); the blank is a rectangle', params: () => kit('BLIND_WARDROBE', { doors: { count: 1 } }) },
 ];
+
+// Every F after F6 names its goldens in its own fragment
+// (`scripts/t75-classify.d/fNN.mjs`, export GOLDENS: the same shape as above,
+// `params` a function of nothing), so no two writers share a line here.
+const FRAGMENT_DIR = new URL('./t75-classify.d/', import.meta.url);
+const fragmentGoldens = [];
+if (existsSync(FRAGMENT_DIR)) {
+  for (const name of readdirSync(FRAGMENT_DIR).filter((n) => /^f\d\d[a-z0-9-]*\.mjs$/.test(n)).sort()) {
+    // eslint-disable-next-line no-await-in-loop
+    const frag = await import(new URL(name, FRAGMENT_DIR));
+    fragmentGoldens.push(...(frag.GOLDENS || []));
+  }
+}
+export const T75_GOLDENS = [...BASE_GOLDENS, ...fragmentGoldens];
 
 const args = process.argv.slice(2);
 if (args[0] === '--write') {

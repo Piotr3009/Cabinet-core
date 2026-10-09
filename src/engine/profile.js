@@ -1864,6 +1864,22 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── T75 F16 · THE CHEST OF DRAWERS BETWEEN WARDROBES ─────────────────────
+  //
+  // CLAUDE.md T75 F16: *"defaults block `wardrobeChest.defaults` (width 800,
+  // height = the wardrobe's base-of-drawers law)."*  The law: a wardrobe's
+  // internal bank of three drawers is closed by its partition at
+  // G + 3 x frontHeight + 2 x gap + partitionClearance (`cabinet.js`,
+  // 18 + 600 + 6 + 5 = 629) and that board's top is 18 higher, 647 above the
+  // carcass bottom. The chest stands on the wardrobe's own legs, so a 647
+  // carcass puts its top level with that partition (747 off the floor at a
+  // 100 leg). One block for the three counts, as the drawer unit's is.
+  // `test/turn75-f16-the-chest-of-drawers.test.js` re-derives 647 from a real
+  // wardrobe's drawer zone, so the two cannot drift. Depth: the wardrobe's.
+  wardrobeChest: {
+    defaults: { width: 800, height: 647, depth: 568 },                        // T75 proposed, owner to confirm
+  },
+
   // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
   //
   // The KIT_WUD envelope, with the bottom open. `aperture` is the clear height
@@ -5375,6 +5391,12 @@ export function migrateCabinetProfile(profile) {
       ...D.wardrobeWallUnit,
       ...profile.wardrobeWallUnit,
       defaults: { ...D.wardrobeWallUnit.defaults, ...profile.wardrobeWallUnit?.defaults },
+    },
+    // T75 F16 · the chest of drawers' defaults, key by key.
+    wardrobeChest: {
+      ...D.wardrobeChest,
+      ...profile.wardrobeChest,
+      defaults: { ...D.wardrobeChest.defaults, ...profile.wardrobeChest?.defaults },
     },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,

@@ -74,7 +74,10 @@ test('every unit type either has a height group or says why not', () => {
       // it, which is exactly what `heightGroup: null` says.
       // T74 F13 · …and the FREE PANEL: one board, its size its own (length,
       // width, thickness, how it stands), never a project's base, wall or tall.
-      assert.ok(['LOW_CABINET', 'OVEN_BASE', 'WARDROBE_TOP', 'FREE_PANEL'].includes(id), `${id} has no height group and no reason`);
+      // AMENDED BY T75 F16 · …and the CHEST OF DRAWERS: its height is the
+      // wardrobe's base-of-drawers law (`profile.wardrobeChest`), which the
+      // kitchen's 770 base height would silently replace.
+      assert.ok(['LOW_CABINET', 'OVEN_BASE', 'WARDROBE_TOP', 'FREE_PANEL', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4'].includes(id), `${id} has no height group and no reason`);
       continue;
     }
     assert.ok(known.has(group), `${id} points at a group that does not exist: ${group}`);

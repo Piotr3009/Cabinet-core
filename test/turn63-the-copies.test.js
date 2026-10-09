@@ -373,6 +373,17 @@ const T74_LICENSED = [
   'src/components/UnitSizeModal.jsx',
 ];
 
+// ─── AMENDED BY T75 F16 · THE RENAMED FILE BUYS A CONTROL ───────────────────
+//
+// CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR /
+// BUDR4`, family wardrobe."*  A chest of drawers is a wardrobe-family kit, so
+// Add items' rows had to learn that the shoe box is refused in a stack that IS
+// its drawers and that a trouser pull-out or tie rack goes in a wardrobe, not
+// beside one. That is a CONTROL, so `AddItems.jsx` leaves T67's rename-only
+// list and is held the way T72's three are: its `EXEMPT` entry with the
+// owner's words and its new hash, and its copy re-made by `scripts/t75-copy.mjs`.
+const T75_LICENSED = ['src/components/AddItems.jsx'];
+
 test('T72 · every PRO original that MOVED is licensed, and every licence is spent', () => {
   let base = null;
   for (const ref of ['origin/main', 'main']) {
@@ -435,9 +446,17 @@ test('T63, amended by T67 and T72 · not one byte of the other FIFTEEN originals
   // no longer one of those: it is held by its own `EXEMPT` entry and its hash,
   // and by the licence test above. `AddItems.jsx` is still a rename and is
   // still held to one.
-  const renameOnly = T67_RENAMED.filter((p) => !T72_LICENSED.includes(p));
-  assert.deepEqual(renameOnly, ['src/components/AddItems.jsx'],
+  // AMENDED BY T75 F16: `AddItems.jsx` bought a control tonight (T75_LICENSED
+  // above), so no file is held to label lines only any more; the check below
+  // still runs for any file that returns to that list.
+  const renameOnly = T67_RENAMED.filter((p) => !T72_LICENSED.includes(p) && !T75_LICENSED.includes(p));
+  assert.deepEqual(renameOnly, [],
     'a file left the rename-only list without being licensed for a control');
+  const freeze = read('test/turn59-f1-the-switch.test.js');
+  for (const rel of T75_LICENSED) {
+    assert.ok(freeze.includes(`'${rel}':\n    'T75 F`), `${rel} bought a control with no T75 licence in the freeze table`);
+  }
+  if (!renameOnly.length) return;
   const renamed = execFileSync('git', ['diff', '-U0', base, '--', ...renameOnly],
     { cwd: ROOT, encoding: 'utf8' });
   const touched = renamed.split('\n').filter((l) => /^[+-][^+-]/.test(l));

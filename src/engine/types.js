@@ -13,7 +13,7 @@
 // T74 F13 · the free panel's box, from its board.
 import { freePanelDefaultParams } from './freePanel.js';
 import { resolveApertures } from './applianceTower.js';
-import { KITCHEN_LIBRARY, libraryTypeIds } from './library.js';
+import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js';
 
 /**
  * carcass.top      — 'panel' (TOP + BOTTOM) | 'holders' (SINK: 2 rails on edge)
@@ -330,6 +330,95 @@ export const UNIT_TYPES = {
     // KIT_BUDR_FULL counts its carcass panels WITHOUT the drawer fronts (L863)
     // and lists the fronts separately (L882-888) — the opposite of the wardrobe
     // kit, which folds drawer fronts into totalPanels.
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+
+  // ─── T75 F16 · THE CHEST OF DRAWERS BETWEEN WARDROBES ─────────────────────
+  //
+  // CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR /
+  // BUDR4`, family wardrobe, wardrobe depth and the wardrobe's leg source,
+  // prefix `WC`, defaults block `wardrobeChest.defaults` ... Hole for hole
+  // against the BUDR of the same numbers."*
+  //
+  // Each is its BUDR to the letter (the same LISP, the same variant, so the
+  // same drawerSplitFor ratio, runners, sync rods and fronts) with what files
+  // it changed: its own id and prefix, the WARDROBE family (a wardrobe job's
+  // library and laws hold it), the wardrobe's leg source and its own defaults
+  // block. `heightGroup: null`, because its height is its identity: the
+  // wardrobe's base-of-drawers law (`profile.wardrobeChest`), which the
+  // project's kitchen base height (770) would otherwise silently replace.
+  //
+  // `besideWardrobe: true`: a piece of a wardrobe job that stands BESIDE a
+  // wardrobe and is not one. No top box rides it (`topBox.hostsRidersOf`), it
+  // is never "the wardrobe" the retail columns are about, and a wardrobe's
+  // hanging kits (trouser pull-out, tie rack) are not offered in it.
+  WARDROBE_CHEST2: {
+    id: 'WARDROBE_CHEST2',
+    heightGroup: null,
+    label: 'Chest of drawers, 2 drawers',
+    drawerVariant: 'x2',
+    family: 'wardrobe',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    besideWardrobe: true,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeChest.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  WARDROBE_CHEST3: {
+    id: 'WARDROBE_CHEST3',
+    heightGroup: null,
+    label: 'Chest of drawers, 3 drawers',
+    drawerVariant: 'x3',
+    family: 'wardrobe',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    besideWardrobe: true,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeChest.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  WARDROBE_CHEST4: {
+    id: 'WARDROBE_CHEST4',
+    heightGroup: null,
+    label: 'Chest of drawers, 4 drawers',
+    drawerVariant: 'x4',
+    family: 'wardrobe',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    besideWardrobe: true,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeChest.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
     countsDrawerFrontsInPanels: false,
     available: true,
   },
@@ -1361,7 +1450,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1392,7 +1481,13 @@ export const UNIT_CATEGORIES = [
   // T74 F7 · *"ADD WALL UNIT ... Osobny typ"*: the wardrobe's own wall unit.
   // T75 F3 · *"the Wardrobes category "Blind corner wardrobe""*.
   // T75 F4 · *"CORNER_L_WARDROBE ... family wardrobe"*: "Corner L wardrobe".
-  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE'] },
+  // T75 F16 · *"Wardrobes category"* for the chest of drawers, its count by
+  // *"the existing variants control"*: the category carries its list as DATA
+  // now (`engine/library.js WARDROBE_LIBRARY`, the drawer group a flyout of the
+  // profile's variants, as Kitchen's is), and `types` is derived from it.
+  {
+    id: 'wardrobe', label: 'Wardrobes', entries: WARDROBE_LIBRARY, types: libraryTypeIds(WARDROBE_LIBRARY),
+  },
   // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
   // rather than kits, so it carries no `types` — the panel reads them from the
   // template store.
@@ -1408,6 +1503,15 @@ export const UNIT_CATEGORIES = [
 export function isWardrobeWallUnit(typeId) {
   const t = UNIT_TYPES[resolveTypeId(typeId)];
   return Boolean(t && t.family === 'wardrobe' && t.mount === 'wall' && !t.ridesOn);
+}
+
+/**
+ * T75 F16 · is this a piece that stands BESIDE a wardrobe and is not one (the
+ * chest of drawers, the desk, the low unit)? No top box rides it, it is never
+ * "the wardrobe" a retail column is about, and it takes no hanging kit.
+ */
+export function isBesideWardrobe(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.besideWardrobe);
 }
 
 /** T75 F3 · is this a blind corner kit (a blank beside one leaf)? */
@@ -1574,5 +1678,8 @@ export const UNIT_NUM_PREFIX = {
   BUD_INT: 'BI',
   // T75 F14 · *"Prefix stays `DR`"*.
   BUDR_HOB: 'DR', BUDR2_HOB: 'DR',
+  // T75 F16 · the chest of drawers: WC01, whatever its count (BUDR's DR is one
+  // prefix for three counts too).
+  WARDROBE_CHEST2: 'WC', WARDROBE_CHEST3: 'WC', WARDROBE_CHEST4: 'WC',
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

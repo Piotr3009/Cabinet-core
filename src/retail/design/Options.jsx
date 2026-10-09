@@ -1449,6 +1449,24 @@ function ExtrasPanel({ unit, project }) {
           </div>
         </Field>
 
+        {/* ─── T75 F16 · ADD CHEST OF DRAWERS ───────────────────────────────
+            *"retail EXTRAS `ADD CHEST OF DRAWERS` (x3 default; the count by
+            the existing variants control)."*  Beside the selected wardrobe,
+            through the store's own road (`adapter.addChestOfDrawers`); the
+            room refuses in its own sentence. */}
+        <Field label="CHEST OF DRAWERS" note={REASONS.chestGoesBeside}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-chest"
+              onClick={() => setSaid(A.addChestOfDrawers().said)}
+            >
+              ADD CHEST OF DRAWERS
+            </Button>
+          </div>
+        </Field>
+
         {/* ─── T74 F13 · INSERT PANEL ────────────────────────────────────────
             *"SWOBODNY PANEL (wstaw panel)."*  One board into the room, through
             the store's own `addUnit`; its menu opens on the right. */}

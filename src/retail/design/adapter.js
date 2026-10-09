@@ -55,7 +55,7 @@ import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 // T61 F3: the top box's own two engine answers — the type's defaults and the
 // room's refusal — both read rather than retyped.
-import { defaultParamsFor, getUnitType, isFreePanel } from '../../engine/types.js';
+import { defaultParamsFor, getUnitType, isBesideWardrobe, isFreePanel } from '../../engine/types.js';
 import { riderBornHeight } from '../../engine/roomFit.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
@@ -107,7 +107,8 @@ export const designUnit = (units) => {
   const mains = list.filter((u) => !u.params?.rides_on);
   // T74 F7 · the fallback is a WARDROBE: a wall unit hung beside one is
   // edited when it is the one selected, and never stands in for the wardrobe.
-  const standing = mains.filter((u) => isFloorWardrobe(u));
+  // T75 F16 · …nor does a chest of drawers standing beside one.
+  const standing = mains.filter((u) => isMainWardrobe(u));
   const pool = standing.length ? standing : (mains.length ? mains : list);
   // ─── T64 F1.2 · THE SELECTION, WHOLE ─────────────────────────────────────
   //
@@ -396,14 +397,57 @@ export function addWallUnit() {
 
 function addWallUnitNow() {
   const store = S();
-  const chosen = designUnit(store.units);
-  const wardrobe = isFloorWardrobe(chosen) ? chosen : [...store.units].filter(isFloorWardrobe)
-    .sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
-      || ((a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0)))[0] || null;
+  const wardrobe = theWardrobe(store);
   if (!wardrobe) return { id: null, said: REASONS.wallUnitNeedsAWardrobe };
   let error = null;
   for (const side of ['right', 'left']) {
     const placed = store.addUnit('WARDROBE_WALL', { near: wardrobe.id, side });
+    if (placed?.id) return { id: placed.id, said: '' };
+    error = placed?.error || error;
+  }
+  return { id: null, said: error || REASONS.roomRefusedWardrobe() };
+}
+
+/**
+ * The wardrobe an EXTRAS addition goes beside: the SELECTED one when it is a
+ * wardrobe, else the first on the lowest wall (T74 F7's choice, unchanged).
+ * T75 F16 · a WARDROBE: a chest of drawers or a low unit is never it.
+ */
+function theWardrobe(store) {
+  const chosen = designUnit(store.units);
+  return isMainWardrobe(chosen) ? chosen : [...store.units].filter(isMainWardrobe)
+    .sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
+      || ((a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0)))[0] || null;
+}
+
+/**
+ * ─── T75 F16 · ADD CHEST OF DRAWERS ────────────────────────────────────────
+ *
+ * CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` ... retail EXTRAS `ADD CHEST
+ * OF DRAWERS` (x3 default; the count by the existing variants control)."*
+ * Retail has no variants control (the drawer count is chosen in PRO's library
+ * flyout), so the button adds the x3 default. The same road ADD WALL UNIT
+ * takes: `store.addUnit` beside the selected wardrobe, on its right, else on
+ * its left, born at that wardrobe's depth and gap; the room refuses in its
+ * own sentence. One press, one undo step (T68 F2).
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addChestOfDrawers() {
+  return S().batch(() => addBesideWardrobe('WARDROBE_CHEST3', REASONS.chestNeedsAWardrobe));
+}
+
+/**
+ * One piece of a wardrobe job, beside THE wardrobe: right, else left, through
+ * `store.addUnit` (Room refuses first, in its own sentence).
+ */
+function addBesideWardrobe(typeId, noWardrobe) {
+  const store = S();
+  const wardrobe = theWardrobe(store);
+  if (!wardrobe) return { id: null, said: noWardrobe };
+  let error = null;
+  for (const side of ['right', 'left']) {
+    const placed = store.addUnit(typeId, { near: wardrobe.id, side });
     if (placed?.id) return { id: placed.id, said: '' };
     error = placed?.error || error;
   }
@@ -1144,6 +1188,15 @@ const isFloorWardrobe = (unit) => {
   const type = getUnitType(unit?.type);
   return Boolean(type && type.family === 'wardrobe' && !type.ridesOn && type.mount !== 'wall');
 };
+
+/**
+ * T75 F16 · …and a WARDROBE, not a piece beside one: the chest of drawers and
+ * the low unit stand on the floor in the wardrobe family, but the columns are
+ * never about them unless they are selected, and nothing is added beside them
+ * as if they were the wardrobe. Their sides still ask (`sideAskFor` keeps the
+ * wider test): a chest's free side shows like any carcass side.
+ */
+const isMainWardrobe = (unit) => isFloorWardrobe(unit) && !isBesideWardrobe(unit?.type);
 
 /**
  * Should a click on this carcass side ask to add a panel?

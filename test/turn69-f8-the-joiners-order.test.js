@@ -112,8 +112,13 @@ test('F8 · …and nothing behind it died: the engine, the store and PRO all sta
     // AMENDED BY T74 F7: the category gained the wardrobe's wall unit after it.
     // AMENDED BY T75 F3: …and the blind corner wardrobe after that
     // (*"the Wardrobes category "Blind corner wardrobe""*).
-    // AMENDED BY T75 F4: …and the Corner L wardrobe after that.
-    /\{ id: 'wardrobe', label: 'Wardrobes', types: \['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE'\] \}/,
+    // AMENDED BY T75 F16: the category carries its list as entries now
+    // (`engine/library.js WARDROBE_LIBRARY`, the chest's drawer group a flyout
+    // as Kitchen's is); the top box's row is still in it, second.
+    /id: 'wardrobe', label: 'Wardrobes', entries: WARDROBE_LIBRARY, types: libraryTypeIds\(WARDROBE_LIBRARY\),/,
+    'the top box left the library a joiner adds it from');
+  assert.match(read('src/engine/library.js'),
+    /export const WARDROBE_LIBRARY = \[\n  \{ kind: 'type', id: 'WARDROBE', typeId: 'WARDROBE' \},\n  \{ kind: 'type', id: 'WARDROBE_TOP', typeId: 'WARDROBE_TOP' \},/,
     'the top box left the library a joiner adds it from');
   assert.match(read('src/engine/partRegistry.js'), /typeId === 'WARDROBE_TOP'/,
     'the top box stopped being machined');

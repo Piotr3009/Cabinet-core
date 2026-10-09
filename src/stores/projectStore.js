@@ -22,7 +22,7 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, isBlindKit, isCornerLKit, isFreePanel, isWardrobeWallUnit, resolveTypeId,
+  defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isFreePanel, isWardrobeWallUnit, resolveTypeId,
   TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
@@ -140,7 +140,7 @@ import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFi
 // Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
 import {
   askedSides, autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays,
-  inPlayWardrobe, isAutoEndPanel, withAsked, withDeclined,
+  inPlayWardrobe, isAutoEndPanel, sideIsVisible, withAsked, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, corniceRunNotice,
@@ -4579,9 +4579,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // answer). Its top is lined up with that wardrobe's below, at the mount.
     // A depth the caller states wins, as every template param does.
     const hangsBeside = isWardrobeWallUnit(typeId) && beside && inPlayWardrobe(beside) ? beside : null;
-    if (hangsBeside && params?.depth == null) {
-      unit.params.depth = Number(hangsBeside.params.depth) || unit.params.depth;
-      if (hangsBeside.params.wall_gap != null) unit.params.wall_gap = hangsBeside.params.wall_gap;
+    // T75 F16 · *"wardrobe depth"*: a chest of drawers (and F18's low unit)
+    // standing beside a wardrobe is born at THAT wardrobe's depth and gap, by
+    // the same two lines, so its back and its front are on the wardrobe's.
+    const standsBeside = !hangsBeside && isBesideWardrobe(typeId) && beside && inPlayWardrobe(beside) ? beside : null;
+    const bornBeside = hangsBeside || standsBeside;
+    if (bornBeside && params?.depth == null) {
+      unit.params.depth = Number(bornBeside.params.depth) || unit.params.depth;
+      if (bornBeside.params.wall_gap != null) unit.params.wall_gap = bornBeside.params.wall_gap;
     }
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
@@ -4730,12 +4735,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // wardrobe standing on the floor makes its panel go. A wall unit (or a top
     // box) beside it leaves the wardrobe's side exactly as it was: *"Bok szafy
     // przy wall unit ZOSTAJE."*  Beside anything else the law is as T72 wrote it.
+    // T75 F16 · …and only where the two COVER each other. A wardrobe added
+    // beside a chest of drawers stands above it: its own side shows, so the
+    // board between them is not closed but HANDED OVER below, once the
+    // wardrobe has landed beside it. Closing it first landed the wardrobe
+    // flush with no room for its panel: a carcass side left visible
+    // (verify/t75/p05-probe.md). Two that cover each other close as T72 wrote.
+    const facing = side ? (isLeftSide(side) ? 'R' : 'L') : null;
+    const shows = (a, aSide, b) => sideIsVisible(a, aSide, b, { atWall: false }, profile).visible;
+    const wardrobePair = Boolean(beside && side && inPlayWardrobe(beside) && inPlayWardrobe(unit));
+    const newcomerShows = wardrobePair && shows(unit, facing, beside);
+    const besideShows = wardrobePair && shows(beside, facing === 'R' ? 'L' : 'R', unit);
     if (beside && side && (!inPlayWardrobe(beside) || inPlayWardrobe(unit))) {
       // …and the SPANS are re-read, because a panel that leaves changes both
       // the neighbour the new cabinet is placed beside and the obstacle it is
       // clamped against. `state` was read at the top of this action and is one
       // board out of date the moment the board goes.
-      if (get().closeAutoEndPanelFacing(beside.id, side) > 0) {
+      if ((!wardrobePair || (!newcomerShows && !besideShows))
+        && get().closeAutoEndPanelFacing(beside.id, side) > 0) {
         state = get();
         beside = state.units.find((u) => u.id === beside.id) || beside;
       }
@@ -4840,6 +4857,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // T36 F7: a TOP BOX settles on its main the moment it is placed — same
     // wall, same x, same depth, hung at the main's own top.
     set((s) => ({ units: settleRiders([...s.units, unit], profile) }));
+    // ─── T75 F16 · THE BOARD BETWEEN THEM IS THE TALLER ONE'S ──────────────
+    // *"A carcass side never stays visible."*  A wardrobe that has landed
+    // beside a chest (its side shows above it, the chest's does not) takes
+    // the automat's board the chest was carrying on that side: off there, on
+    // here, in the very room that board stood in, before the settle reads the
+    // junction. Left alone, the settle prunes the chest's covered board, grows
+    // it straight back (two free ends a board apart, the chest's first) and
+    // the short board then reads as finishing the wardrobe's taller side.
+    // A board the client asked for is his and is never moved.
+    if (newcomerShows && !besideShows) {
+      const want = facing === 'R' ? 'L' : 'R';
+      const held = get().units.find((u) => u.id === beside.id);
+      const board = (held?.params?.end_panels || [])
+        .find((ep) => (ep.side === 'R' ? 'R' : 'L') === want && isAutoEndPanel(ep));
+      if (board && !askedSides(held).includes(want)) {
+        get().removeEndPanel(beside.id, board.id, { decline: false });
+        const res = get().addEndPanel(unit.id, { side: facing, applyToAll: false });
+        if (res.id) {
+          set((st) => ({
+            units: st.units.map((u) => (u.id === unit.id
+              ? {
+                ...u,
+                params: {
+                  ...u.params,
+                  end_panels: (u.params.end_panels || []).map((ep) => (ep.id === res.id ? { ...ep, auto_added: true } : ep)),
+                },
+              }
+              : u)),
+          }));
+        }
+      }
+    }
     // A unit arrives with its SCRIBE FILLERS worked out from where it landed.
     // The plinth and the top infill are decisions and wait to be asked for
     // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
@@ -6841,6 +6890,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!WARDROBE_KIT_KINDS.includes(kind)) return null;
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
+    // T75 F16 · a hanging kit goes in a wardrobe's hanging space; a piece that
+    // stands beside a wardrobe (chest, desk, low unit) has none to give it.
+    if (isBesideWardrobe(unit.type)) return null;
     const wantZone = zone == null ? null : Math.trunc(Number(zone));
     const items = unit.params.sections?.[0]?.items || [];
     const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))

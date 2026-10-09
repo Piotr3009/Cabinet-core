@@ -334,9 +334,14 @@ export function riderOverlapMm(unit, units, profile) {
  * family, riding on nothing, and STANDING: the wardrobe's wall unit is of the
  * wardrobe family and rides on nothing, but it hangs on the wall beside a
  * wardrobe, and a top box is built to stand on a wardrobe's top, not on it.
+ *
+ * T75 F16 · …and it is a WARDROBE: a chest of drawers (or F18's low unit)
+ * stands beside one on the floor, of its family, and a top box on a 647 chest
+ * is not a top box (verify/t75/p05-probe.md measured it riding one).
  */
 export function hostsRidersOf(hostType, family) {
-  return Boolean(hostType && hostType.family === family && !hostType.ridesOn && hostType.mount !== 'wall');
+  return Boolean(hostType && hostType.family === family && !hostType.ridesOn && hostType.mount !== 'wall'
+    && !hostType.besideWardrobe);
 }
 
 /** The cabinet a rider stands on: its stored link, or the best overlap. */

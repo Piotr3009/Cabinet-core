@@ -46,6 +46,12 @@ export const T75_PRO_EDITS = [
       + '*"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... '
       + 'on and off per run like the plinth."*',
   },
+  {
+    pro: 'src/components/AddItems.jsx',
+    why: 'F16 · the shoe box row says a chest of drawers IS its drawers, and the trouser pull-out and tie rack '
+      + 'rows say they go in a wardrobe (a chest, desk or low unit stands beside one). *"`WARDROBE_CHEST2 / 3 / 4` '
+      + 'copied from `BUDR2 / BUDR / BUDR4`, family wardrobe."*',
+  },
 ];
 
 /** THE PRO FILES TONIGHT COPIES FOR THE FIRST TIME: none. */

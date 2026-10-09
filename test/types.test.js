@@ -284,7 +284,9 @@ test('every library type is configured, available and buildable', () => {
   // field by field from FRIDGE"*), one row each.
   // AMENDED BY T75 F13: + BUD_INT (*"`BUD` with `drawerStyle: 'wardrobe'`"*).
   // AMENDED BY T75 F14: + BUDR2_HOB and BUDR_HOB (*"`BUDR` variants take `hob: true`"*).
-  assert.equal(UNIT_TYPE_ORDER.length, 34, 'every kit in the order, the free panel last');
+  // Turn 75 (CLAUDE.md F16): the CHEST OF DRAWERS, three counts, each its
+  // BUDR hole for hole in the wardrobe family (*"WARDROBE_CHEST2 / 3 / 4"*).
+  assert.equal(UNIT_TYPE_ORDER.length, 37, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

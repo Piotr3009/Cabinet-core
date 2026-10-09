@@ -284,8 +284,10 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     {
       id: 'shoe_box',
       label: 'Shoe box',
-      disabled: !type.supports.drawers || type.family !== 'wardrobe',
-      why: 'a wardrobe thing',
+      // T75 F16 · a chest of drawers IS its drawers: the store has always
+      // refused a shoe drawer in a ratio stack, and the row now says so first.
+      disabled: !type.supports.drawers || type.family !== 'wardrobe' || ratioDrawers,
+      why: ratioDrawers ? 'this kit IS its drawers' : 'a wardrobe thing',
     },
     // Turn 11 (CLAUDE.md F3.4): the vertical partition, at last. It divides the
     // cabinet into columns and is placed and edited exactly as a shelf is —
@@ -364,17 +366,20 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       disabled: !type.supports.pulldown || underSlope,
       why: underSlope ? 'not under a slope — it parks at the top' : 'not for this type',
     },
+    // T75 F16 · a hanging kit goes in a wardrobe's hanging space: a chest of
+    // drawers, a desk or a low unit stands BESIDE a wardrobe and has none
+    // (`type.besideWardrobe`), so the row says so and the store refuses too.
     {
       id: 'trouser',
       label: 'Trouser pull-out',
-      disabled: type.family !== 'wardrobe',
-      why: 'a wardrobe thing',
+      disabled: type.family !== 'wardrobe' || Boolean(type.besideWardrobe),
+      why: type.besideWardrobe ? 'it goes in a wardrobe' : 'a wardrobe thing',
     },
     {
       id: 'tie_rack',
       label: 'Tie rack',
-      disabled: type.family !== 'wardrobe',
-      why: 'a wardrobe thing',
+      disabled: type.family !== 'wardrobe' || Boolean(type.besideWardrobe),
+      why: type.besideWardrobe ? 'it goes in a wardrobe' : 'a wardrobe thing',
     },
   ];
 

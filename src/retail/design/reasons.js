@@ -197,6 +197,19 @@ export const REASONS = {
   wallUnitNeedsAWardrobe: 'Add a wardrobe first: a wall unit hangs beside one.',
 
   /**
+   * T75 F16 · NOT a refusal: the note under ADD CHEST OF DRAWERS. PREDICATE:
+   * `adapter.addChestOfDrawers()`, `store.addUnit('WARDROBE_CHEST3')` beside
+   * the selected wardrobe, born at its depth.
+   */
+  chestGoesBeside: 'A chest of three drawers beside this wardrobe, as deep as it, its top level with the wardrobe\'s drawers.',
+
+  /**
+   * T75 F16 · PREDICATE: no unit in the design is a wardrobe standing on the
+   * floor (`adapter.isMainWardrobe`), so there is nothing to stand it beside.
+   */
+  chestNeedsAWardrobe: 'Add a wardrobe first: a chest of drawers stands beside one.',
+
+  /**
    * T74 F13 · NOT a refusal: the note under INSERT PANEL. PREDICATE:
    * `adapter.insertPanel()`, `store.addUnit('FREE_PANEL')` beside the selected
    * cabinet; the board's menu then opens on the right.

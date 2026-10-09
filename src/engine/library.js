@@ -284,6 +284,40 @@ export const KITCHEN_LIBRARY = [
   },
 ];
 
+/**
+ * ─── T75 F16 · THE WARDROBES LIST, AS DATA ─────────────────────────────────
+ *
+ * CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` ... Wardrobes category and
+ * retail EXTRAS `ADD CHEST OF DRAWERS` (x3 default; the count by the existing
+ * variants control)."*  The existing variants control is the drawer unit's
+ * flyout (`variantsOf: 'baseDrawerUnit'`, the profile's variants), so the
+ * Wardrobes category, a flat list of types until tonight, carries its list as
+ * entries the way Kitchen does. The kits it held keep their place and their
+ * row id (the type id, as the flat list made it), and the chest's three counts
+ * are one group. The 1x drawerline is not offered: it is a door kit's drawer,
+ * not a chest's.
+ */
+export const WARDROBE_LIBRARY = [
+  { kind: 'type', id: 'WARDROBE', typeId: 'WARDROBE' },
+  { kind: 'type', id: 'WARDROBE_TOP', typeId: 'WARDROBE_TOP' },
+  { kind: 'type', id: 'WARDROBE_WALL', typeId: 'WARDROBE_WALL' },
+  { kind: 'type', id: 'BLIND_WARDROBE', typeId: 'BLIND_WARDROBE' },
+  // T75 F4 · *"CORNER_L_WARDROBE ... family wardrobe"*: "Corner L wardrobe".
+  { kind: 'type', id: 'CORNER_L_WARDROBE', typeId: 'CORNER_L_WARDROBE' },
+  {
+    kind: 'group',
+    id: 'chest-of-drawers',
+    label: 'Chest of drawers',
+    hint: 'Drawers between wardrobes: how many the stack is split into',
+    variantsOf: 'baseDrawerUnit',
+    items: [
+      { kind: 'type', id: 'chest-2', typeId: 'WARDROBE_CHEST2', variant: 'x2' },
+      { kind: 'type', id: 'chest-3', typeId: 'WARDROBE_CHEST3', variant: 'x3' },
+      { kind: 'type', id: 'chest-4', typeId: 'WARDROBE_CHEST4', variant: 'x4' },
+    ],
+  },
+];
+
 /** Every entry, groups flattened — what a "which kits exist" question wants. */
 /**
  * ─── TURN 32 (CLAUDE.md F8): THE LIBRARY FOLLOWS THE PROJECT ────────────────

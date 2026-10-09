@@ -1843,6 +1843,21 @@ export const DEFAULT_CABINET_PROFILE = {
     armMm: 600,
   },
 
+  // ─── T75 F3 · THE BLIND KITS' DEFAULTS ────────────────────────────────────
+  //
+  // Each is its parent's box at the width a blind corner is built at. The
+  // blank itself is not a default: it is computed from the corner
+  // (`engine/corners.js`, the adjacent run's depth + front + post + rule 7).
+  blindBase: {
+    defaults: { width: 1000, height: 770, depth: 558 },                       // T75 proposed, owner to confirm
+  },
+  blindWall: {
+    defaults: { width: 900, height: 720, depth: 400, mountHeight: 1500 },     // T75 proposed, owner to confirm
+  },
+  blindWardrobe: {
+    defaults: { width: 1200, height: 2150, depth: 568, railOffset: 1400 },    // T75 proposed, owner to confirm
+  },
+
   // ─── Twin cupboard (turn 30, CLAUDE.md F18) ───────────────────────────────
   //
   // "Expose it in the Kitchen category with its own defaults." A two-door base
@@ -5256,6 +5271,14 @@ export function migrateCabinetProfile(profile) {
     },
     // T75 F2 · the corner's numbers, key by key.
     corner: { ...D.corner, ...profile.corner },
+    // T75 F3 · the blind kits' defaults, key by key.
+    blindBase: { ...D.blindBase, ...profile.blindBase, defaults: { ...D.blindBase.defaults, ...profile.blindBase?.defaults } },
+    blindWall: { ...D.blindWall, ...profile.blindWall, defaults: { ...D.blindWall.defaults, ...profile.blindWall?.defaults } },
+    blindWardrobe: {
+      ...D.blindWardrobe,
+      ...profile.blindWardrobe,
+      defaults: { ...D.blindWardrobe.defaults, ...profile.blindWardrobe?.defaults },
+    },
     autoParts: {
       ...D.autoParts, ...profile.autoParts,
       plinth: { ...D.autoParts.plinth, ...profile.autoParts?.plinth },

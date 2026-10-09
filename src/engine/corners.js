@@ -301,3 +301,67 @@ export function cornerChecks(corners, nameOf = (id) => id) {
 }
 
 /**
+ * T75 F3 · which END of a unit stands at an internal corner of its wall, if
+ * either: 'right' when its right end is within the reach of the wall's end and
+ * the next wall turns into the room there, 'left' for the start. Asked of a
+ * blind kit with no run beside it yet, so its blank faces the corner it stands
+ * in before anything stops on it.
+ */
+export function cornerEndOf(unit, walls, profile) {
+  if (!alongWall(unit)) return null;
+  const room = (walls || []).filter(isRoomWall);
+  const n = room.length;
+  const i = room.findIndex((w) => w.index === (unit.position?.wall ?? 0));
+  if (i < 0 || n < 2) return null;
+  const spec = cornerSpec(profile);
+  const x = num(unit.position?.x_mm);
+  const w = num(unit.params?.width);
+  const here = room[i];
+  if (num(here.width) - (x + w) <= spec.reachMm && isInternalCorner(here, room[(i + 1) % n])) return 'right';
+  if (x <= spec.reachMm && isInternalCorner(room[(i - 1 + n) % n], here)) return 'left';
+  return null;
+}
+
+/**
+ * T75 F3 · THE BLIND KIT AS THE FRONT-CLEARANCE RULEBOOK SEES IT.
+ *
+ * The rulebook (`frontClearance.js`, the fronts branch's file) measures a
+ * front's clearance from its own CARCASS END. A blind kit's leaf does not end
+ * at its carcass end on the blank's side: it ends at the BLANK, a fixed front
+ * piece standing where the next run hides the carcass. So the clearance view
+ * hands the rulebook what the leaf actually stands beside: a carcass that
+ * starts where the blank ends, with the blank as a rigid neighbour on that
+ * side (rule 2, the end panel's), and the leaf where it really is in the room.
+ * Every other unit passes through untouched.
+ *
+ * @param {Array<{unit:object, result:object}>} entries
+ * @returns {{entries: Array, units: Array}}
+ */
+export function blindClearanceView(entries) {
+  const out = [];
+  for (const e of entries || []) {
+    const blank = (e?.result?.panels || []).find((p) => p?.role === 'blind_blank' && p.box);
+    if (!blank) { out.push(e); continue; }
+    const t = num(blank.w);
+    const left = blank.meta?.side !== 'right';
+    const x = num(e.unit.position?.x_mm);
+    const unit = {
+      ...e.unit,
+      position: { ...e.unit.position, x_mm: left ? x + t : x },
+      params: {
+        ...e.unit.params,
+        width: num(e.unit.params?.width) - t,
+        end_panels: [
+          ...(e.unit.params?.end_panels || []).filter((ep) => (ep?.side === 'R') === left),
+          { id: 'blind-blank', side: left ? 'L' : 'R', thickness: t },
+        ],
+      },
+    };
+    const panels = (e.result.panels || [])
+      .filter((p) => p !== blank)
+      .map((p) => (left && p.box ? { ...p, box: { ...p.box, x: p.box.x - t } } : p));
+    out.push({ ...e, unit, result: { ...e.result, panels } });
+  }
+  return { entries: out, units: out.map((e) => e.unit) };
+}
+

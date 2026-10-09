@@ -157,11 +157,10 @@ export const PART_REGISTRY = {
   },
   false_front: {
     id: 'false_front', name: 'False fronts', group: G('front'), unit: 'm²', materialType: 'front',
-    // Kept because CLAUDE.md F1 names the row. No engine part maps here TODAY —
-    // a fixed dummy panel comes out of the engine as a `FRONT` and is a door as
-    // far as the cut list is concerned. The row is here so that the day the
-    // engine learns to say "FIX", the BOM already has somewhere to put it.
-    note: 'FIX fronts — no engine part reaches this row yet',
+    // Kept because CLAUDE.md F1 names the row, and T75 is the day the engine
+    // learned to say "FIX": the blind kit's BLANK (F3) is a fixed front piece
+    // beside the door, front material, no hinge, and it lands here.
+    note: 'FIX fronts — the blind corner\'s blank (T75 F3)',
   },
   end_panel: {
     id: 'end_panel', name: 'End panels', group: G('front'), unit: 'm²', materialType: 'front',
@@ -471,6 +470,8 @@ export const ELEMENT_TO_PART_ID = {
   MASK: 'mask',
   // T75 F2 · the corner post.
   'CORNER-POST': 'corner_post',
+  // T75 F3 · the blind kit's blank: a FIX front.
+  'BLIND-BLANK': 'false_front',
   // T74 F13 · the free-standing panel's one board.
   'FREE-PANEL': 'free_panel',
 

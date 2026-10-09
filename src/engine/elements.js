@@ -86,9 +86,9 @@ const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
  * time, and each of them is a decision with its own properties. Those you point
  * at directly.
  */
-// T75 F2 · the corner post is hung on the carcass the same way: a piece a
-// joiner points at directly.
-const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel', 'corner-post']);
+// T75 F2/F3 · the corner post and the blind kit's blank are hung on the
+// carcass the same way: pieces a joiner points at directly.
+const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel', 'corner-post', 'blind-blank']);
 
 /**
  * Is this piece clickable AS A PIECE in the room view?
@@ -164,8 +164,9 @@ export function elementKind(panel) {
     case 'DRAWER-FRONT': return 'drawer-front';
     // T74 F13 · the board of a free-standing panel.
     case 'FREE-PANEL': return 'free-panel';
-    // T75 F2 · the corner post.
+    // T75 F2 · the corner post; F3 · the blind kit's blank.
     case 'CORNER-POST': return 'corner-post';
+    case 'BLIND-BLANK': return 'blind-blank';
     default:
       // T54-F7: the SHOEBOX-* kind died with its world — a shoe is a
       // `variant:'shoe'` DRAWER now, so its boards answer as a drawer's do
@@ -195,6 +196,7 @@ const LABELS = {
   drawer: 'Drawer box',
   'free-panel': 'Free-standing panel',
   'corner-post': 'Corner post',
+  'blind-blank': 'Blind corner blank',
 };
 
 /** What each board of a drawer box is called, in a joiner's words. */
@@ -297,8 +299,10 @@ const FIELDS = {
   // itself and on its face, because both are the drawer a joiner clicks.
   'drawer-front': ['drawer-height', 'runner-variant', 'watch-insert', 'front-board', 'material'],
   'masking-panel': ['masking-depth', 'material'],
-  // T75 F2 · what it is made of. Its width is the profile's.
+  // T75 F2/F3 · what each is made of. The post's width is the profile's and the
+  // blank's is its dimension figure (the T73 F3 field on the scene).
   'corner-post': ['material'],
+  'blind-blank': ['material'],
   // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
   // stack — that is what F8 edits, on the unit — so what is said about one
   // board of it is what it is made of.
@@ -402,6 +406,8 @@ const ACTIONS = {
   'free-panel': { remove: false, move: false, why: 'A free panel is its own unit: move it by its distance figures, delete it as a unit.' },
   // T75 F2 · the post IS the corner stop it stands on: it goes when the unit is pulled away.
   'corner-post': { remove: false, move: false, why: 'The post stands on the corner stop: pull the unit away from the corner and it goes.' },
+  // T75 F3 · the blank IS the blind kit's face: set its width by its figure.
+  'blind-blank': { remove: false, move: false, why: 'The blank is the blind corner\'s face: set its width by clicking its dimension.' },
 };
 
 /**

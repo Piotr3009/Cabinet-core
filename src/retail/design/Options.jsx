@@ -1357,6 +1357,24 @@ function ExtrasPanel({ unit, project }) {
           ) : null;
         })}
 
+        {/* ─── T75 F3 · ADD CORNER WARDROBE ────────────────────────────────
+            *"a button `ADD CORNER WARDROBE` beside `ADD ANOTHER WARDROBE`
+            (places a `BLIND_WARDROBE` into the nearest free corner of the
+            room, or refuses in words when no corner is free)."*  Through the
+            store's own road (`adapter.addCornerWardrobe`). */}
+        <Field label="CORNER WARDROBE" note={REASONS.cornerWardrobeGoesIn}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-corner-wardrobe"
+              onClick={() => setSaid(A.addCornerWardrobe().said)}
+            >
+              ADD CORNER WARDROBE
+            </Button>
+          </div>
+        </Field>
+
         {/* ─── T68 F5 · ADD ANOTHER WARDROBE ───────────────────────────────
             T65 F1's law: *"The client places the first wardrobe: the plus on
             the empty floor, and an ADD A WARDROBE action in the step itself,

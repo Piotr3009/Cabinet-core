@@ -483,6 +483,93 @@ export const UNIT_TYPES = {
     available: true,
   },
 
+  // ─── T75 F3 · THE BLIND KITS, THREE OF THEM ───────────────────────────────
+  //
+  // The owner, 9.10.2026: *"daj od razu narożniki przemyślane."*  CLAUDE.md
+  // T75 F3: *"A blind unit stands at the corner with its door at the reachable
+  // end and a BLANK where the adjacent run hides its front. It is the parent
+  // kit at its own width, hole for hole; only the face differs ... copied field
+  // by field from their parents ... Each carries `blind: true`, `doorCount: 1`,
+  // and a defaults block."*
+  //
+  // So each is its parent to the letter (the same LISP, hinge rule, cup rule,
+  // legs, hangers, carcass and supports) with its own id, prefix and defaults,
+  // `blind: true` (the engine cuts the blank and narrows the one leaf,
+  // `cabinet.js normalizeParams`) and `doorCount: 1`. The test asserts each
+  // carcass hole for hole against its parent at the same width.
+  BLIND_BASE: {
+    id: 'BLIND_BASE',
+    heightGroup: 'base',
+    label: 'Blind corner',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    blind: true,
+    doorCount: 1,
+    minHeightKey: null,
+    defaultsKey: 'blindBase.defaults',
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    available: true,
+  },
+  BLIND_WALL: {
+    id: 'BLIND_WALL',
+    heightGroup: 'wall',
+    label: 'Blind corner wall',
+    family: 'kitchen',
+    lisp: 'KIT_WUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: null,
+    hangers: true,
+    doorExtend: true,
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    blind: true,
+    doorCount: 1,
+    minHeightKey: null,
+    defaultsKey: 'blindWall.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+  BLIND_WARDROBE: {
+    id: 'BLIND_WARDROBE',
+    heightGroup: 'tall',
+    label: 'Blind corner wardrobe',
+    family: 'wardrobe',
+    lisp: 'KIT_WARDROBE_FULL.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'wardrobe',
+    blind: true,
+    doorCount: 1,
+    minHeightKey: 'wardrobe.minHeight',
+    defaultsKey: 'blindWardrobe.defaults',
+    supports: {
+      drawers: true, shelves: true, rail: true, pulldown: true, partition: true, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+
   // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT ─────────────────────────────
   //
   // "The riskiest of the batch. Start from what the LISP family actually
@@ -1066,7 +1153,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1095,7 +1182,8 @@ export const UNIT_CATEGORIES = [
   // place; saved sets and media walls are untouched.
   // Turn 36 (CLAUDE.md F7): "library offers Main wardrobe + Top box".
   // T74 F7 · *"ADD WALL UNIT ... Osobny typ"*: the wardrobe's own wall unit.
-  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL'] },
+  // T75 F3 · *"the Wardrobes category "Blind corner wardrobe""*.
+  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE'] },
   // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
   // rather than kits, so it carries no `types` — the panel reads them from the
   // template store.
@@ -1111,6 +1199,11 @@ export const UNIT_CATEGORIES = [
 export function isWardrobeWallUnit(typeId) {
   const t = UNIT_TYPES[resolveTypeId(typeId)];
   return Boolean(t && t.family === 'wardrobe' && t.mount === 'wall' && !t.ridesOn);
+}
+
+/** T75 F3 · is this a blind corner kit (a blank beside one leaf)? */
+export function isBlindKit(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.blind);
 }
 
 /** T74 F13 · is this the free panel kit (one board standing in the room)? */
@@ -1225,6 +1318,10 @@ export function defaultParamsFor(typeId, profile) {
     // the box is worked out from it (`engine/freePanel.js`). Spread, so no kit
     // written before tonight carries a key it did not.
     ...(type.freePanel ? freePanelDefaultParams(profile) : {}),
+    // ─── T75 F3 · WHICH END OF A BLIND KIT IS IN THE CORNER ──────────────
+    // The store writes it from the corner the kit stands in; a new one arrives
+    // with its blank on the left. Spread, so no other kit carries the key.
+    ...(type.blind ? { blind_side: 'left' } : {}),
     unit_num: '01',
   };
 }
@@ -1237,5 +1334,7 @@ export const UNIT_NUM_PREFIX = {
   WARDROBE_TOP: 'WT',
   // T74 F7 · the wardrobe's wall unit: WW01, apart from the kitchen's WU01.
   // T74 F13 · the free panel: FP01.
+  // T75 F3 · the blind kits: BB01 base, BW01 wall, BX01 wardrobe.
+  BLIND_BASE: 'BB', BLIND_WALL: 'BW', BLIND_WARDROBE: 'BX',
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

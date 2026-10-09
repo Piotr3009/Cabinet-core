@@ -22,7 +22,7 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, isFreePanel, isWardrobeWallUnit, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, isBlindKit, isFreePanel, isWardrobeWallUnit, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
 // kept one with its box, and where a drop would be caught.
@@ -48,7 +48,7 @@ import {
 // T75 F1 · THE CORNER RULEBOOK: the one detection the corner stop, the post,
 // the hinge and every corner consumer below read.
 import {
-  carcassReachMm, cornersOf, cornerSpec, cornerStopMm, occupantKind,
+  blindClearanceView, carcassReachMm, cornerEndOf, cornerFaceMm, cornersOf, cornerSpec, cornerStopMm, occupantKind,
 } from '../engine/corners.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
@@ -2074,6 +2074,39 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         if (left) params.corner_post_left_mm = left; else delete params.corner_post_left_mm;
         if (right) params.corner_post_right_mm = right; else delete params.corner_post_right_mm;
         next[i] = { ...u, params };
+      }
+    }
+
+    // ─── T75 F3 · THE BLIND KIT'S BLANK FOLLOWS ITS CORNER ─────────────────
+    //
+    // *"`blindMm` is COMPUTED from the corner: the adjacent run's depth +
+    // front thickness + `corner.postMm` + `clearance.corner`, measured from
+    // the corner along the unit ... the override is the client's and the
+    // automat never takes it back."*  Read off the rulebook: the run that stops
+    // on the blind kit is run B, its FACE (wall gap, depth, door gap, front) is
+    // where it hides the kit's front, then the post and rule 7, less however
+    // far the kit itself stands off the corner. `blind_mm` is the automat's
+    // and is re-written on every pass; `blind_mm_own` is the client's and is
+    // never touched here. A blind kit with nothing beside it keeps its side
+    // (the corner it stands in) and the engine's own default width.
+    {
+      const corners = cornersOf({ units: next, walls, profile });
+      const spec = cornerSpec(profile);
+      const clear = Number(profile.doors?.clearance?.corner) || 0;
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        if (!isBlindKit(u.type)) continue;
+        const c = corners.find((k) => k.kind === 'internal' && k.runA?.unitId === u.id);
+        const side = c ? c.runA.side : (cornerEndOf(u, walls, profile) || u.params?.blind_side || 'left');
+        const b = c ? next.find((x) => x.id === c.runB.unitId) : null;
+        const auto = b
+          ? Math.round((cornerFaceMm(b, profile) + spec.postMm + clear - c.runA.gapMm) * 100) / 100
+          : null;
+        const params = { ...u.params, blind_side: side };
+        if (auto != null && auto > 0) params.blind_mm = auto; else delete params.blind_mm;
+        if (params.blind_side !== u.params?.blind_side || params.blind_mm !== u.params?.blind_mm) {
+          next[i] = { ...u, params };
+        }
       }
     }
 
@@ -6795,7 +6828,26 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const wanted = xMm != null && Number.isFinite(Number(xMm))
       ? Number(xMm)
       : best.from + (best.size - G) / 2;
-    const x = snapTo(Math.min(Math.max(wanted, G), W - G - G), profile.editor.mmStep);
+    let x = snapTo(Math.min(Math.max(wanted, G), W - G - G), profile.editor.mmStep);
+    // ─── T75 F3 · NO DIVIDER INSIDE THE BLIND PART ─────────────────────────
+    // *"no divider may be placed inside the blind part (refused in words)."*
+    // The blind part is behind the next run, reached through the door, and the
+    // rail runs through it. A divider ASKED for there is refused; one placed
+    // by the widest-bay rule is put in the reachable part instead.
+    const blindSpan = blindSpanOf(get(), unit);
+    if (blindSpan && x + G > blindSpan.from && x < blindSpan.to) {
+      if (xMm != null && Number.isFinite(Number(xMm))) {
+        useUiStore.getState().notify(BLIND_DIVIDER_REFUSAL, 'warn');
+        return null;
+      }
+      const from = blindSpan.side === 'left' ? Math.max(G, blindSpan.to) : G;
+      const to = blindSpan.side === 'left' ? W - G : Math.min(W - G, blindSpan.from);
+      if (to - from < G + 2 * profile.editor.minShelfGap) {
+        useUiStore.getState().notify(BLIND_DIVIDER_REFUSAL, 'warn');
+        return null;
+      }
+      x = snapTo(from + (to - from - G) / 2, profile.editor.mmStep);
+    }
     const id = get().addItem(unitId, { kind: 'partition', x_mm: x });
     // Turn 33 (CLAUDE.md F5): with BAY DOORS the leaf widths re-derive from
     // the partitions — a divider appearing re-shapes the fronts, so the
@@ -6827,8 +6879,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const self = Number(unit.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.x_mm) || G;
     const below = [...others].filter((x) => x <= self).pop();
     const above = others.find((x) => x > self);
-    const min = Math.max(G + gap, below != null ? below + gap : G + gap);
-    const max = Math.min(W - 2 * G - gap, above != null ? above - gap : W - 2 * G - gap);
+    let min = Math.max(G + gap, below != null ? below + gap : G + gap);
+    let max = Math.min(W - 2 * G - gap, above != null ? above - gap : W - 2 * G - gap);
+    // T75 F3 · the blind part is no place for a divider: the clamp stops at
+    // its edge, and a number typed inside it is refused in words.
+    const blindSpan = blindSpanOf(get(), unit);
+    if (blindSpan) {
+      if (blindSpan.side === 'left') min = Math.max(min, blindSpan.to);
+      else max = Math.min(max, blindSpan.from - G);
+      const raw = Number(xRaw) || 0;
+      if (raw + G > blindSpan.from && raw < blindSpan.to) {
+        useUiStore.getState().notify(BLIND_DIVIDER_REFUSAL, 'warn');
+      }
+    }
     if (max < min) return { x: self, min, max, blocked: true };
     const x = snapTo(Math.min(Math.max(Number(xRaw) || 0, min), max), profile.editor.mmStep);
     get().updateItem(unitId, itemId, { x_mm: x });
@@ -8059,9 +8122,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const s = get();
     const profile = getCabinetProfile();
     const walls = roomWalls(s.project.room);
+    // T75 F3: the blind kit's leaf stands beside its blank, not its carcass end.
+    const view = blindClearanceView(s.allResults());
     return frontClearances({
-      entries: s.allResults(),
-      units: s.units,
+      entries: view.entries,
+      units: s.units.map((u) => view.units.find((v) => v.id === u.id) || u),
       baseOf: (u) => unitBase(u, profile),
       wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
       profile,
@@ -9425,6 +9490,28 @@ function shareOutSubject(state, unitId, profile, { gated = false } = {}) {
 }
 
 /**
+ * T75 F3 · the stretch of a blind kit's width that is BLIND: behind its blank,
+ * reached only through the door. Read off the engine's own cut (the blank it
+ * emitted), so the store and the cut list cannot disagree. Null on every other
+ * unit.
+ */
+function blindSpanOf(state, unit) {
+  if (!unit || !isBlindKit(unit.type)) return null;
+  // Asked with its leaf fitted: the blind part is blind whether or not the
+  // door has been hung yet.
+  const params = { ...paramsForEngine(unit, state.project.design), doors: { count: 1 } };
+  const result = computeCabinet(params, getCabinetProfile());
+  const blank = (result.panels || []).find((p) => p.role === 'blind_blank' && p.box);
+  if (blank) {
+    return { from: blank.box.x, to: blank.box.x + blank.box.w, side: blank.meta?.side === 'right' ? 'right' : 'left' };
+  }
+  return null;
+}
+
+/** T75 F3 · the sentence a divider in the blind part is refused with. */
+export const BLIND_DIVIDER_REFUSAL = 'No divider in the blind part of a blind corner: it stands behind the next run, '
+  + 'reached through the door, and the rail runs through it. Place the divider in the part the door opens.';
+
 function wallMarginOf(state, unit = null) {
   const profile = getCabinetProfile();
   // ─── Turn 11 (CLAUDE.md F5.3) ───

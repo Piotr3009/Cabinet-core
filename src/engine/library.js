@@ -85,6 +85,10 @@ export const KITCHEN_LIBRARY = [
       // a different promise: this kit is the L-CARCASS, and the JOINTS that
       // would make it a corner SYSTEM stay parked by the owner's word.
       { kind: 'type', id: 'l-shape-unit', typeId: 'L_SHAPE', label: 'L-shape unit', hint: 'The cabinet that turns a run — L-carcass only, no LISP defines its drilling' },
+      // ─── T75 F3 · THE BLIND CORNER ──────────────────────────────────────
+      // *"Library: Base units "Blind corner"."*  KIT_BUD hole for hole, one
+      // leaf at the reachable end and a blank where the next run hides it.
+      { kind: 'type', id: 'blind-corner', typeId: 'BLIND_BASE', label: 'Blind corner', hint: 'Base unit for a corner: one door, a blank behind the next run' },
       {
         kind: 'soon', id: 'l-shape', label: 'L-shape joints', hint: 'One carcass on two walls, jointed', reason: NO_PATTERN,
       },
@@ -190,6 +194,8 @@ export const KITCHEN_LIBRARY = [
       // Turn 31 (CLAUDE.md F9): the hood cabinet. The APERTURE is geometry; the
       // extractor is a BOM line and a GLB slot, and not one fixing hole.
       { kind: 'type', id: 'hood-unit', typeId: 'WUD_HOOD', label: 'Hood unit', hint: 'Wall unit over an extractor — open underneath, shorter door' },
+      // T75 F3 · *"Wall units "Blind corner wall""*: KIT_WUD hole for hole.
+      { kind: 'type', id: 'blind-corner-wall', typeId: 'BLIND_WALL', label: 'Blind corner wall', hint: 'Wall unit for a corner: one door, a blank behind the next run' },
       {
         kind: 'soon', id: 'l-shape-wall', label: 'L-shape wall', hint: 'One carcass on two walls', reason: NO_PATTERN,
       },

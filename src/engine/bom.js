@@ -274,7 +274,7 @@ export function sheetsFor(m2, sheet) {
  * the same board or the two documents contradict each other, so this set is the
  * exact image of `groups.js:125`:
  *
- *     role 'front' | 'end_panel' | 'mask'  → fronts
+ *     role 'front' | 'end_panel' | 'mask' | 'blind_blank' (T75 F3)  → fronts
  *     everything else                      → carcasses
  *
  * Note what that puts on the CARCASS board: the plinth and the infills. They

@@ -28,8 +28,11 @@
 import { getCabinetProfile } from '../../engine/profile.js';
 import {
   clampOpening, DEFAULT_ROOM, OPENING_DEFAULTS, openingsOnWall,
-  rectCorners, wallIndicesInScope, wallWidth,
+  rectCorners, roomWalls, wallIndicesInScope, wallWidth,
 } from '../../engine/room.js';
+// T75 F3 · the corner rulebook: which corners turn into the room, and which
+// end of a wardrobe stands in one.
+import { cornerEndOf, isInternalCorner } from '../../engine/corners.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
 import { doorCountFor } from '../../engine/cabinet.js';
 // T65 F6: the engine's ONE visibility question, and the client's own
@@ -403,6 +406,67 @@ function addWallUnitNow() {
     error = placed?.error || error;
   }
   return { id: null, said: error || REASONS.roomRefusedWardrobe() };
+}
+
+/**
+ * ─── T75 F3 · ADD CORNER WARDROBE ──────────────────────────────────────────
+ *
+ * CLAUDE.md T75 F3: *"retail EXTRAS a button `ADD CORNER WARDROBE` beside `ADD
+ * ANOTHER WARDROBE` (places a `BLIND_WARDROBE` into the nearest free corner of
+ * the room, or refuses in words when no corner is free)."*  The owner,
+ * 9.10.2026: *"daj od razu narożniki przemyślane."*
+ *
+ * Every internal corner of the room is two candidate places (the end of one
+ * wall, the start of the next), tried nearest first: nearest to the wardrobe
+ * the left column is about, else to the start of wall 0. Each try is the
+ * store's own road (`addUnit`, then `moveUnit` into the corner, the clamp and
+ * the magnet deciding where it lands), and a try that does not end with the
+ * wardrobe's end in that corner is taken back out. One press, one undo step.
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addCornerWardrobe() {
+  return S().batch(() => addCornerWardrobeNow());
+}
+
+function addCornerWardrobeNow() {
+  const store = S();
+  const p = P();
+  const walls = roomWalls(store.project.room);
+  const n = walls.length;
+  const from = (() => {
+    const u = designUnit(store.units);
+    const w = u ? walls[u.position?.wall ?? 0] : walls[0];
+    if (!w) return { x: 0, y: 0 };
+    const along = u ? (Number(u.position?.x_mm) || 0) + (Number(u.params?.width) || 0) / 2 : 0;
+    return { x: w.start.x + w.along.x * along, y: w.start.y + w.along.y * along };
+  })();
+  const tries = [];
+  for (let i = 0; i < n; i += 1) {
+    const a = walls[i];
+    const b = walls[(i + 1) % n];
+    if (!isInternalCorner(a, b)) continue;
+    const d = Math.hypot(a.end.x - from.x, a.end.y - from.y);
+    tries.push({ wall: a.index, end: 'right', x: a.width, d });
+    tries.push({ wall: b.index, end: 'left', x: 0, d });
+  }
+  tries.sort((t, u) => t.d - u.d);
+  const width = Math.round(p.blindWardrobe?.defaults?.width || 1200);
+  for (const t of tries) {
+    const placed = store.addUnit('BLIND_WARDROBE', { params: { width, height: p.wardrobe.defaults.height } });
+    if (!placed?.id) continue;
+    if ((S().units.find((u) => u.id === placed.id)?.position?.wall ?? 0) !== t.wall) S().setUnitWall(placed.id, t.wall);
+    S().moveUnit(placed.id, t.x, 1);
+    const unit = S().units.find((u) => u.id === placed.id);
+    const inCorner = unit && (unit.position?.wall ?? 0) === t.wall
+      && cornerEndOf(unit, roomWalls(S().project.room), P()) === t.end
+      && !S().roomFitFaults().some((f) => f?.unit?.id === placed.id);
+    if (!inCorner) { S().removeUnit(placed.id); continue; }
+    setDoorCount(placed.id, 1);
+    applyAutoCornice(placed.id);
+    return { id: placed.id, said: '' };
+  }
+  return { id: null, said: REASONS.noFreeCorner };
 }
 
 /**

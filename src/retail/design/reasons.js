@@ -177,6 +177,19 @@ export const REASONS = {
   wallUnitGoesBeside: 'A wall unit, hung beside this wardrobe: its top level with the wardrobe\'s, as deep as it.',
 
   /**
+   * T75 F3 · NOT a refusal: the note under ADD CORNER WARDROBE. PREDICATE:
+   * `adapter.addCornerWardrobe()`, which tries every internal corner of the
+   * room through `store.addUnit`, nearest first.
+   */
+  cornerWardrobeGoesIn: 'A corner wardrobe: one door at the reachable end, a blank where the next wardrobe hides it.',
+
+  /**
+   * T75 F3 · PREDICATE: `adapter.addCornerWardrobe()` tried every internal
+   * corner of the room and none had room for a corner wardrobe.
+   */
+  noFreeCorner: 'There is no free corner in this room for a corner wardrobe: move or remove something first.',
+
+  /**
    * T74 F7 · PREDICATE: no unit in the design is a wardrobe standing on the
    * floor (`adapter.isFloorWardrobe`: the wardrobe family, riding on nothing,
    * not hung on the wall), so there is nothing for a wall unit to hang beside.

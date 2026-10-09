@@ -89,7 +89,8 @@ test('T74 F7 · it CUTS exactly what the kitchen wall unit cuts: no legs, the ha
 });
 
 test('T74 F7 · filed with the wardrobes: the library\'s wardrobe category, its own number prefix and profile block', () => {
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);
+  // AMENDED BY T75 F3: the blind corner wardrobe files after it.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE']);
   assert.ok(UNIT_TYPE_ORDER.includes('WARDROBE_WALL'));
   assert.equal(UNIT_NUM_PREFIX.WARDROBE_WALL, 'WW');
   assert.deepEqual(P.wardrobeWallUnit.defaults, { width: 600, height: 720, depth: 568, mountHeight: 1500 });

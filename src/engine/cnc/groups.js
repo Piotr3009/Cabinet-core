@@ -122,7 +122,8 @@ export function groupOfPanel(panel) {
   const role = panel?.role;
   // Everything that stands in the room beside the doors and is finished with
   // them: doors, drawer fronts, end panels, the wall unit's masking board.
-  if (role === 'front' || role === 'end_panel' || role === 'mask') return 'fronts';
+  // T75 F3 · the blind kit's blank is a FIX front, cut with the doors.
+  if (role === 'front' || role === 'end_panel' || role === 'mask' || role === 'blind_blank') return 'fronts';
   // T75 F2 · the corner post is the side infill's sibling and goes with it.
   if (role === 'infill' || role === 'plinth' || role === 'corner_post') return 'infills';
   if (role === 'shelf') return 'shelves';                     // SHELF, VPART, RAIL-PART, FIXED

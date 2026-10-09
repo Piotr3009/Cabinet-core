@@ -800,6 +800,40 @@ function normalizeParams(raw, profile) {
     doorCount = Number(type.doorCount) > 0 ? Number(type.doorCount) : doorCountFor(p.width, profile);
   }
 
+  // ─── T75 F3 · THE BLIND KIT'S BLANK ─────────────────────────────────────
+  //
+  // CLAUDE.md T75 F3: *"`blindMm` is COMPUTED from the corner: the adjacent
+  // run's depth + front thickness + `corner.postMm` + `clearance.corner` ...
+  // Clicking its dimension overrides `blindMm` by hand; the override is the
+  // client's and the automat never takes it back ... The DOOR: one leaf, width
+  // = W minus blank minus the gaps, hinged on the far side."*  The store writes
+  // `blind_mm` and `blind_side` from the corner the kit stands in
+  // (`engine/corners.js`); a bare call (every golden of a blind kit) takes the
+  // kit's own depth as the adjacent run's. Null on every other kit, so nothing
+  // below reads it for them.
+  let blind = null;
+  if (type.blind) {
+    const own = Number(p.blind_mm_own);
+    const auto = Number(p.blind_mm);
+    const kitDepth = Number(readPath(profile, `${type.defaultsKey}.depth`)) || Number(p.depth) || 0;
+    const fallback = kitDepth + (Number(p.front_t) || profile.front.thickness)
+      + (Number(profile.corner?.postMm) || 0) + (Number(profile.doors?.clearance?.corner) || 0);
+    const wanted = Number.isFinite(own) && own > 0 ? own : (Number.isFinite(auto) && auto > 0 ? auto : fallback);
+    const width = Number(p.width) || 0;
+    const side = p.blind_side === 'right' ? 'right' : 'left';
+    // A rigid fixed piece beside a door: rule 2's clearance (the end panel's).
+    const clear = Number(profile.doors?.clearance?.endPanel ?? 3);
+    blind = {
+      mm: Math.max(0, Math.min(wanted, width - clear - profile.doors.gap)),
+      side,
+      clear,
+      own: Number.isFinite(own) && own > 0,
+    };
+    // One leaf, hinged on the FAR side from the blank.
+    if (doorCount > 0) doorCount = 1;
+    hinge = side === 'left' ? 'R' : 'L';
+  }
+
   // Wall units may run their fronts below the carcass (handleless grab edge).
   // `true` means "the standard extend"; a number overrides it.
   let doorExtend = 0;
@@ -827,6 +861,8 @@ function normalizeParams(raw, profile) {
     hinge,
     doorCount,
     doorExtend,
+    // T75 F3 · the blind kit's blank (null on every other kit).
+    blind,
     // ─── Turn 17 (CLAUDE.md F7) ───
     // The project's standard (2 or 3) and, above it, this cabinet's own hinge
     // rows if a joiner has edited them. Both are INPUTS in the design layer's
@@ -1879,9 +1915,13 @@ export function computeCabinet(params, profileOverride) {
   // settled at this line, which is why it can move without moving a byte.
   const doorY = -cfg.doorExtend + hoodApertureMm + overlayBase;
   const frontH = H - topDemandMm(params, P) + cfg.doorExtend - hoodApertureMm - overlayBase;
+  // T75 F3 · a blind kit's one leaf stands beside its blank: W less the blank,
+  // rule 2's clearance against it, and the half gap at the far end.
+  const blind = cfg.blind;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
-    : W - P.doors.gap;
+    : (blind ? W - blind.mm - blind.clear - P.doors.gap / 2 : W - P.doors.gap);
+  const singleLeafX = blind && blind.side === 'left' ? blind.mm + blind.clear : P.doors.gap / 2;
   // Turn 29 (CLAUDE.md F3): an appliance face is screwed to the machine's own
   // door and hangs on nothing, so no side of this kit is a hinged side — which
   // matters now that such a kit answers the ordinary door control and can
@@ -1924,7 +1964,7 @@ export function computeCabinet(params, profileOverride) {
     ];
     const spans = doorCount === 2
       ? [{ x: half, free: 'L' }, { x: W - half - frontW, free: 'R' }]
-      : [{ x: half, free: cfg.hinge === 'R' ? 'R' : 'L' }];
+      : [{ x: singleLeafX, free: cfg.hinge === 'R' ? 'R' : 'L' }];
     return spans.map(({ x, free }) => {
       // The rake's verdict, from the ONE sampler and the ONE hand rule. With no
       // ceiling over this leaf `cutOver` answers null and the typed hand
@@ -6453,7 +6493,41 @@ export function computeCabinet(params, profileOverride) {
   }
 
   if (!dropsForward && !bayDoors.length && doorCount === 1) {
-    panels.push(faceLeaf(`${unitNum}-F`, P.doors.gap / 2, cfg.hinge));
+    panels.push(faceLeaf(`${unitNum}-F`, singleLeafX, cfg.hinge));
+    // ─── T75 F3 · THE BLANK, A FIXED FRONT PIECE BESIDE THE DOOR ──────────
+    //
+    // *"a fixed front piece (front material, front thickness, role
+    // `blind_blank`, emitted the way the end panel is) with NO holes: its
+    // fixing is the joiner's (BLOCKERS entry, readiness `manual`, F22)."*
+    // It is not a door and carries no hinge: the same height, plane and
+    // thickness as the leaf beside it, flush with the carcass end at the
+    // corner (hidden behind the adjacent run), stopping where the leaf's
+    // clearance starts.
+    if (blind && blind.mm > 0) {
+      panels.push(panel({
+        id: `${unitNum}-BLANK`,
+        part: 'BLIND-BLANK',
+        role: 'blind_blank',
+        w: blind.mm,
+        h: frontH,
+        thickness: frontT,
+        edgeCode: codes.all,
+        edgeLen: metres(2 * blind.mm + 2 * frontH),
+        box: {
+          x: blind.side === 'left' ? 0 : W - blind.mm, y: doorY, z: doorZ, w: blind.mm, h: frontH, d: frontT,
+        },
+        cnc: rectGeometry(blind.mm, frontH),
+        meta: {
+          side: blind.side,
+          corner: 'blind',
+          frontType: cfg.frontType,
+          // Outline only: no hole, no hinge. Its fixing is the joiner's.
+          readiness: 'geometry',
+          fixing: 'manual',
+          ...(blind.own ? { own: true } : {}),
+        },
+      }));
+    }
   } else if (!dropsForward && !bayDoors.length && doorCount === 2) {
     panels.push(faceLeaf(`${unitNum}-FL`, P.doors.gap / 2, 'L'));
     panels.push(faceLeaf(`${unitNum}-FR`, W - P.doors.gap / 2 - frontW, 'R'));

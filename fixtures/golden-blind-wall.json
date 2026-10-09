@@ -1,0 +1,239 @@
+{
+  "meta": {
+    "name": "golden-blind-wall.json",
+    "turn": "T75",
+    "F": "F3",
+    "source": "KIT_WUD_FULL.lsp (the carcass); the blank is a rectangle",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "BLIND_WALL",
+    "width": 900,
+    "height": 720,
+    "depth": 400,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": {
+      "count": 1
+    },
+    "mount_height": 1500,
+    "door_extend": false,
+    "blind_side": "left",
+    "unit_num": "01"
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,382,720,<,0.72,0.275",
+      "01,BUR,382,720,>,0.72,0.275",
+      "01,TOP,864,382,>,0.86,0.330",
+      "01,BOTTOM,864,382,>,0.86,0.330",
+      "01,BACK,900,720,,0,0.648",
+      "01,01-F,418,717,<>^v,2.27,0.299",
+      "01,01-BLANK,478,717,<>^v,2.39,0.343"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 382,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 720,
+          "d": 382
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 382,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 882,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 720,
+          "d": 382
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 864,
+        "h": 382,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 702,
+          "z": 18,
+          "w": 864,
+          "h": 18,
+          "d": 382
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 864,
+        "h": 382,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 864,
+          "h": 18,
+          "d": 382
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 900,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 900,
+          "h": 720,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 12,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 417.5,
+        "h": 717,
+        "thickness": 25,
+        "box": {
+          "x": 481,
+          "y": 0,
+          "z": 403,
+          "w": 417.5,
+          "h": 717,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "01-BLANK",
+        "part": "BLIND-BLANK",
+        "role": "blind_blank",
+        "w": 478,
+        "h": 717,
+        "thickness": 25,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 403,
+          "w": 478,
+          "h": 717,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        6
+      ],
+      [
+        "HINGES_5MM|BUL",
+        2
+      ],
+      [
+        "HINGES_5MM|BUR",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        14
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 3,
+        "label": "Hinges"
+      },
+      {
+        "role": "hangers",
+        "qty": 2,
+        "label": "Wall hangers"
+      }
+    ]
+  }
+}

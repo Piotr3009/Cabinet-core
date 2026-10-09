@@ -76,6 +76,19 @@ export const KITCHEN_LIBRARY = [
           { kind: 'type', id: 'drawer-4', typeId: 'BUDR4', variant: 'x4' },
         ],
       },
+      // ─── T75 F14 · *"a library row "Hob drawer unit" for x2 and x3"* ──────
+      // KIT_BUDR_FULL's own split with its top front a fixed dummy under the
+      // hob; the worktop over it proposes the hob cut-out (F5).
+      {
+        kind: 'group',
+        id: 'hob-drawer-unit',
+        label: 'Hob drawer unit',
+        hint: 'Under the hob: the top front fixed, the drawers below',
+        items: [
+          { kind: 'type', id: 'hob-drawer-2', typeId: 'BUDR2_HOB', label: '2×', hint: 'A fixed front over one deep drawer' },
+          { kind: 'type', id: 'hob-drawer-3', typeId: 'BUDR_HOB', label: '3×', hint: 'A fixed front over two drawers, 4:3:2' },
+        ],
+      },
       // ─── T75 F13 · *"Library Base units "Drawers behind doors"."* ─────────
       // BUD's carcass and door with PANTRY's internal drawer machinery inside.
       { kind: 'type', id: 'drawers-behind-doors', typeId: 'BUD_INT', label: 'Drawers behind doors', hint: 'Base unit with internal Blum drawers behind its door' },

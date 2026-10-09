@@ -88,7 +88,7 @@ const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
  */
 // T75 F2/F3 · the corner post and the blind kit's blank are hung on the
 // carcass the same way: pieces a joiner points at directly.
-const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel', 'corner-post', 'blind-blank', 'upstand']);
+const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel', 'corner-post', 'blind-blank', 'upstand', 'false-front']);
 
 /**
  * Is this piece clickable AS A PIECE in the room view?
@@ -171,6 +171,8 @@ export function elementKind(panel) {
     // T75 F5 · the upstand on the worktop.
     case 'UPSTAND': return 'upstand';
     case 'BLIND-BLANK': return 'blind-blank';
+    // T75 F14 · the hob unit's fixed dummy over its drawers.
+    case 'FALSE-FRONT': return 'false-front';
     default:
       // T54-F7: the SHOEBOX-* kind died with its world — a shoe is a
       // `variant:'shoe'` DRAWER now, so its boards answer as a drawer's do
@@ -202,6 +204,7 @@ const LABELS = {
   'corner-post': 'Corner post',
   upstand: 'Upstand',
   'blind-blank': 'Blind corner blank',
+  'false-front': 'Fixed front (hob)',
 };
 
 /** What each board of a drawer box is called, in a joiner's words. */
@@ -309,6 +312,7 @@ const FIELDS = {
   'corner-post': ['material'],
   upstand: ['material'],
   'blind-blank': ['material'],
+  'false-front': ['material'],
   // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
   // stack — that is what F8 edits, on the unit — so what is said about one
   // board of it is what it is made of.
@@ -416,6 +420,8 @@ const ACTIONS = {
   upstand: { remove: false, move: false, why: 'The upstand belongs to the run: take it off from the unit\'s menu (Upstand).' },
   // T75 F3 · the blank IS the blind kit's face: set its width by its figure.
   'blind-blank': { remove: false, move: false, why: 'The blank is the blind corner\'s face: set its width by clicking its dimension.' },
+  // T75 F14 · the dummy IS the hob unit's top: it is the kit, not an add-on.
+  'false-front': { remove: false, move: false, why: 'The fixed front is the hob unit\'s top: the hob stands over it. Choose the plain drawer unit for a drawer here.' },
 };
 
 /**

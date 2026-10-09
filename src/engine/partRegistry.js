@@ -160,7 +160,8 @@ export const PART_REGISTRY = {
     // Kept because CLAUDE.md F1 names the row, and T75 is the day the engine
     // learned to say "FIX": the blind kit's BLANK (F3) is a fixed front piece
     // beside the door, front material, no hinge, and it lands here.
-    note: 'FIX fronts: the blind corner\'s blank (T75 F3)',
+    // T75 F14 · …and the hob unit's dummy over its drawers, the same piece.
+    note: 'FIX fronts: the blind corner\'s blank (T75 F3) and the hob unit\'s dummy (T75 F14)',
   },
   end_panel: {
     id: 'end_panel', name: 'End panels', group: G('front'), unit: 'm²', materialType: 'front',
@@ -493,6 +494,8 @@ export const ELEMENT_TO_PART_ID = {
   'ISLAND-END-PANEL': 'end_panel',
   // T75 F3 · the blind kit's blank: a FIX front.
   'BLIND-BLANK': 'false_front',
+  // T75 F14 · the hob unit's dummy: the same FIX front.
+  'FALSE-FRONT': 'false_front',
   // T75 F7 · the corner notch's box (KIT_NOTCH.lsp D1, D2), carcass board
   // standing where the carcass's own boards stand: the RETURN is the side of
   // the full-depth part, the STEP the shallow part's own back (the BACK's

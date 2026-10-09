@@ -1531,6 +1531,15 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 600, height: 600, depth: 578, railOffset: 200 },
   },
 
+  // ─── T75 F14 · THE HOB UNIT ──────────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F14: *"the box under it keeps `profile.hob.clearanceMm = 60
+  // // T75 proposed` below the worktop for the hob body."*  Measured from the
+  // carcass top, which is where the worktop sits.
+  hob: {
+    clearanceMm: 60,   // T75 proposed, owner to confirm
+  },
+
   // ─── Base drawer unit, 3 drawers 4:3:2 (KIT_BUDR_FULL) ───
   baseDrawerUnit: {
     defaults: { width: 600, height: 770, depth: 558 },
@@ -5296,6 +5305,8 @@ export function migrateCabinetProfile(profile) {
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
     cargoUnit: { ...D.cargoUnit, ...profile.cargoUnit, defaults: { ...D.cargoUnit.defaults, ...profile.cargoUnit?.defaults } },
     pantryUnit: { ...D.pantryUnit, ...profile.pantryUnit, defaults: { ...D.pantryUnit.defaults, ...profile.pantryUnit?.defaults } },
+    // T75 F14 · the hob's clearance, key by key.
+    hob: { ...D.hob, ...profile.hob },
     // T75 F13 · the drawers-behind-doors base unit's defaults, key by key.
     baseInternalDrawerUnit: {
       ...D.baseInternalDrawerUnit,

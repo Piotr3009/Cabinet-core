@@ -1081,6 +1081,8 @@ function normalizeParams(raw, profile) {
     // TOP fixed panel is the fridge's FIXED at `G + fridgeH`.
     fridgeH: tower ? tower.fridgeH : Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
     ...(tower ? { tower } : {}),
+    // T75 F14 · a drawer unit under a hob (its top front a fixed dummy).
+    ...(p.hob === true ? { hob: true } : {}),
     mountHeight: Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
     // Toe kick, per unit (turn 5, BACKLOG #29). The project sets it in Design
     // Settings and it arrives here as a parameter, so the plinth, the legs and
@@ -1293,7 +1295,8 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // T75 F2 adds `corner_post` (a board of the front material standing in the
 // door plane at an internal corner), and F3 `blind_blank` (the blind kit's
 // fixed face): both are seen from the room and both are front material.
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'back_panel']);
+// T75 F14 · …and `false_front`, the hob unit's fixed dummy, the blank's sibling.
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'back_panel']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1323,7 +1326,7 @@ export function isFinishExposed(role) {
 // under the doors, in the plane the eye reads as the front of the run — so it
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'back_panel']);
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'back_panel']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -2431,9 +2434,19 @@ export function computeCabinet(params, profileOverride) {
     // separates it from the section above. Every other kit reads the top panel,
     // as it always has.
     const topOfBox = overlay ? overlay.shelfY : (hasTopPanel ? H - G : H);
-    const ceilingAbove = (i) => (i + 1 < runnerBottomY.length
+    // ─── T75 F14 · THE HOB UNIT: THE TOP FRONT IS A FIXED DUMMY ─────────────
+    // *"the TOP front is a FIXED DUMMY (front material, no box, no runner,
+    // emitted as the blind blank is), the box under it keeps
+    // `profile.hob.clearanceMm` below the worktop for the hob body."*  The
+    // dummy is the stack's highest index; the split, and so every other front,
+    // is the kit's own. Null on every unit that is not under a hob, on an
+    // overlay stack and on an appliance base (the oven's one drawer).
+    const dummy = cfg.hob && !overlay && !type.appliance && heights.length >= 2 ? heights.length : null;
+    const hobCeiling = dummy ? H - (Number(P.hob?.clearanceMm) || 0) : null;
+    const kitCeiling = (i) => (i + 1 < runnerBottomY.length
       ? runnerBottomY[i + 1]
       : (boxCeiling == null ? topOfBox : Math.min(topOfBox, boxCeiling)));
+    const ceilingAbove = (i) => (dummy && i + 2 === dummy ? Math.min(kitCeiling(i), hobCeiling) : kitCeiling(i));
     const boxSides = heights.map((h, i) => {
       const wanted = lispRound(h * B.sideRatio);
       // Turn 18's own clamp under an appliance shelf stands, and stands FIRST:
@@ -2527,8 +2540,11 @@ export function computeCabinet(params, profileOverride) {
       // — the fixed shelf, the published record, the BOM — asks the stack
       // rather than asking what kind of cabinet it is on.
       overlay: Boolean(overlay),
+      // T75 F14 · the index of the fixed dummy front (1-based), or null.
+      dummy,
     };
-    numDrawers = heights.length;
+    // T75 F14 · a dummy is not a drawer: no box, no runner pair, no rod.
+    numDrawers = heights.length - (dummy ? 1 : 0);
   }
 
   // ── Hanging rail ───────────────────────────────────────────────────────────
@@ -5023,6 +5039,7 @@ export function computeCabinet(params, profileOverride) {
     // which is the SCREW row 38 mm higher, so every box hung 38 mm high and the
     // façade's pilots missed the box front's by exactly that.
     for (let i = 1; i <= budr.count; i += 1) {
+      if (i === budr.dummy) continue;   // T75 F14 · no box behind the hob's dummy
       const sh = budr.sideHs[i - 1];
       const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - GB]]) {
@@ -5040,6 +5057,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     for (let i = 1; i <= budr.count; i += 1) {
+      if (i === budr.dummy) continue;
       const bfH = budr.boxFrontH[i - 1];
       const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       for (const suffix of ['BF', 'BB']) {
@@ -5068,6 +5086,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     for (let i = 1; i <= budr.count; i += 1) {
+      if (i === budr.dummy) continue;
       const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       const geom = rectGeometry(budr.bottomW, budr.depth);
       geom.holes = [];
@@ -5101,6 +5120,32 @@ export function computeCabinet(params, profileOverride) {
       // internal drawer, which is every unit written before tonight.
       const drop = budr.frontY[i - 1] - budr.frontY[bottom - 1];
       const fh = budr.heights[i - 1] + drop;
+      // ─── T75 F14 · THE HOB'S DUMMY, A FIXED FRONT PIECE ───────────────────
+      // Emitted as F3's blank is: front material, front thickness, its own
+      // role (`false_front`, the FIX fronts row), the drawer front's size and
+      // plane, and NO hole: no box, no runner, no screw. It is not a drawer and
+      // does not open; its fixing is the joiner's.
+      if (i === budr.dummy) {
+        panels.push(panel({
+          id: `${unitNum}-F${i}`,
+          part: 'FALSE-FRONT',
+          role: 'false_front',
+          w: budr.frontWidth,
+          h: fh,
+          thickness: frontT,
+          edgeCode: codes.all,
+          edgeLen: metres(2 * budr.frontWidth + 2 * fh),
+          box: { x: B.frontWidthDeduction / 2, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
+          cnc: rectGeometry(budr.frontWidth, fh),
+          meta: {
+            hob: true,
+            frontType: cfg.frontType,
+            readiness: 'geometry',
+            fixing: 'manual',
+          },
+        }));
+        continue;
+      }
       const geom = rectGeometry(budr.frontWidth, fh);
       // The bottom façade runs one CARCASS board lower to cover the floor, so
       // its screw line rises by that board (turn 24, F3.2: the carcass's).
@@ -8244,7 +8289,8 @@ export function computeCabinet(params, profileOverride) {
   if (budr) {
     runnerCarcassSide = 'both';
     for (const sideId of ['BUL', 'BUR']) {
-      for (const rowY of budr.runnerRows) {
+      // T75 F14 · the hob's dummy runs on nothing: its row is not drilled.
+      for (const rowY of budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy)) {
         for (const px of RN.holeXPattern) {
           const x = sideId === 'BUR' ? sideW - px : px;
           addDrill(sideId, 'runner', RN.layer, x, rowY, RN.holeDiameter);
@@ -9766,7 +9812,7 @@ export function computeCabinet(params, profileOverride) {
     shelf_screw_row_y: shelfScrewRows.map((r) => roundTo(r.y + r.thickness / 2, 4)),
     shelf_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
     runner_rows_dp_y: runnerRowsDp,
-    runner_rows_carcass_y: budr ? [...budr.runnerRows] : runnerRowsCarcass,
+    runner_rows_carcass_y: budr ? budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy) : runnerRowsCarcass,
     // ─── TURN 21 (CLAUDE.md F1.1/F1.3) ────────────────────────────────────
     // The runner's own UNDERSIDE — not a drilling, which is why it is named
     // apart from every `*_rows_*` key beside it. Two readers: the drawer box
@@ -10013,7 +10059,9 @@ export function computeCabinet(params, profileOverride) {
       to: set.bay.to,
     })),
     drawerFronts: budr
-      ? budr.heights.map((h, i) => ({ index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth }))
+      ? budr.heights.map((h, i) => ({
+        index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth, ...(i + 1 === budr.dummy ? { fixed: true } : {}),
+      }))
       : (hasDrawers
         ? drawerHeights.map((h, i) => ({
           index: i + 1,

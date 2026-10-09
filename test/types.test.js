@@ -283,7 +283,8 @@ test('every library type is configured, available and buildable', () => {
   // AMENDED BY T75 F12: + the two appliance towers (*"APPLIANCE_TALL ... copied
   // field by field from FRIDGE"*), one row each.
   // AMENDED BY T75 F13: + BUD_INT (*"`BUD` with `drawerStyle: 'wardrobe'`"*).
-  assert.equal(UNIT_TYPE_ORDER.length, 32, 'every kit in the order, the free panel last');
+  // AMENDED BY T75 F14: + BUDR2_HOB and BUDR_HOB (*"`BUDR` variants take `hob: true`"*).
+  assert.equal(UNIT_TYPE_ORDER.length, 34, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

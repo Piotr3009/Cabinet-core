@@ -923,6 +923,63 @@ export const UNIT_TYPES = {
     supports: { drawers: true, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
     available: true,
   },
+  // ─── T75 F14 · THE HOB UNIT ─────────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F14: *"`BUDR` variants take `hob: true` (a library row "Hob
+  // drawer unit" for x2 and x3): the TOP front is a FIXED DUMMY ... Prefix
+  // stays `DR`; the golden `golden-budr.json` is untouched because `hob` is
+  // absent on it."*
+  //
+  // BUDR and BUDR2 to the letter, with `hob: true`, which `defaultParamsFor`
+  // writes onto the unit as `params.hob`: the engine reads the PARAM, so the
+  // flag means one thing wherever a unit carries it. A row is a type, as the
+  // drawer unit's splits are, so the library inserts it with no PRO edit.
+  BUDR_HOB: {
+    id: 'BUDR_HOB',
+    heightGroup: 'base',
+    label: 'Hob drawer unit, 3 fronts',
+    drawerVariant: 'x3',
+    family: 'kitchen',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    hob: true,
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'baseDrawerUnit.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  BUDR2_HOB: {
+    id: 'BUDR2_HOB',
+    heightGroup: 'base',
+    label: 'Hob drawer unit, 2 fronts',
+    drawerVariant: 'x2',
+    family: 'kitchen',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    hob: true,
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'baseDrawerUnit.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
   LOW_CABINET: {
     id: 'LOW_CABINET',
     // A low cabinet that inherits the 720 mm base height is a base unit with
@@ -1304,7 +1361,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1492,6 +1549,9 @@ export function defaultParamsFor(typeId, profile) {
     // Read off the kit's defaults block and written onto the unit, so a saved
     // tower keeps the stack it was cut to. Spread, so no other kit carries it.
     ...(type.applianceTower && Array.isArray(d.apertures) ? { apertures: resolveApertures(d.apertures, profile) } : {}),
+    // T75 F14 · a hob drawer unit carries the flag the engine and the worktop
+    // read. Spread, so no other kit carries the key.
+    ...(type.hob ? { hob: true } : {}),
     unit_num: '01',
   };
 }
@@ -1512,5 +1572,7 @@ export const UNIT_NUM_PREFIX = {
   APPLIANCE_TALL: 'AT', APPLIANCE_TALL2: 'AT',
   // T75 F13 · drawers behind doors: BI01.
   BUD_INT: 'BI',
+  // T75 F14 · *"Prefix stays `DR`"*.
+  BUDR_HOB: 'DR', BUDR2_HOB: 'DR',
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

@@ -28,7 +28,9 @@ const PROSE = KIT.replace(/^\s*;+/gm, ' ').replace(/\s+/g, ' ');
 
 test('F1 — fourteen kits, every one 0/0, and the count is DERIVED', () => {
   const rows = balanceOfKits();
-  assert.equal(rows.length, 14, 'thirteen kits and the new one');
+  // T75 AMENDED: the turn's new kits join the walk (*"lisp najpierw"*): the
+  // L corner and the dowel pattern, then the corner notch.
+  assert.ok([16, 17].includes(rows.length), `fourteen kits and the T75 ones, ${rows.length}`);
   assert.ok(rows.some((r) => r.name === T57_KIT), 'and the new one is the J-pull');
   for (const r of rows) {
     assert.equal(r.balance, 0, `${r.name} is ${r.balance} out`);

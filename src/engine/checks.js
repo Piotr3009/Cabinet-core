@@ -45,6 +45,9 @@ import { groupOfPanel } from './cnc/groups.js';
 import { frontClearances, frontGapRows, carcassGaps } from './frontClearance.js';
 import { unitFindings } from './cnc/exportGate.js';
 import { unitBase, unitTop, hasTopInfill } from './runs.js';
+// T75 F1 · the corner rulebook, the one detection every consumer reads.
+import { cornersOf, cornerChecks } from './corners.js';
+import { roomWalls } from './room.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
@@ -194,6 +197,13 @@ export const CHECKS = Object.freeze([
   // slope cuts cannot hold its hinges 150 mm clear of the apex at the house
   // spacing: REFUSED in words, never squashed. RED: a person decides.
   { n: 26, level: 'red', label: 'Hinges too near the slope\'s apex' },
+  // ─── T75 F1 · A CORNER WITH NOTHING IN IT ───────────────────────────────
+  //
+  // *"`'none'` is a CHECK, in words, naming both units: the engine never
+  // guesses a post for a job that has not asked for one."*  Two plain units
+  // meeting in an internal corner with no post, no blind kit and no L: the
+  // door at the corner cannot open. RED: a person decides (`engine/corners.js`).
+  { n: 27, level: 'red', label: 'Corner with nothing between the runs' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -1006,6 +1016,29 @@ export function runChecks({
         subject: { unitId: entry.unit?.id || null, panelId: pnl.id, editor: 'element' },
         hingesWas: Number(h.was),
         hingesNow: Number(h.now),
+      }));
+    }
+  }
+
+  // ── #27 a corner with nothing between the runs (T75 F1) ─────────────────
+  //
+  // Asked of the rulebook (`engine/corners.js`), never re-derived: two plain
+  // units meeting in an internal corner with no post between them. Only where
+  // there is a room to have corners in.
+  if (room) {
+    const labelOf = (id) => {
+      const u = list.find((x) => x.id === id);
+      return u?.params?.unit_num || id;
+    };
+    const corners = cornersOf({ units: list, walls: roomWalls(room), profile });
+    for (const c of cornerChecks(corners, labelOf)) {
+      out.push(finding(27, 'red', {
+        unitId: c.unitIds[1],
+        unitNum: labelOf(c.unitIds[1]),
+        panelId: null,
+        message: c.message,
+        subject: { unitId: c.unitIds[1], editor: 'cabinet' },
+        cornerUnitIds: c.unitIds,
       }));
     }
   }

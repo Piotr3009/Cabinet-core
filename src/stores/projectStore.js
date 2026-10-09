@@ -46,9 +46,12 @@ import {
   bandsOverlap, unitBand, bandSegmentAt, bandSegments,
 } from '../engine/collision.js';
 import {
-  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
-  wallPlanObstacles,
+  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, islandCorners, migrateRoom, plasterPosition, rehomeIslandUnits, roomBoxes,
+  roomChangeGuard, roomIslands, roomWalls, wallName, wallPlanObstacles,
 } from '../engine/room.js';
+// T75 F9 · the island: what it would stand on (Room refuses first).
+import { islandClash, newIsland } from '../engine/island.js';
+import { getProjectType } from '../engine/projectTypes.js';
 // T75 F1 · THE CORNER RULEBOOK: the one detection the corner stop, the post,
 // the hinge and every corner consumer below read.
 import {
@@ -1369,16 +1372,90 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       : { ...s.project.room, ...patch });
     const verdict = roomChangeGuard(next, s.units);
     if (!verdict.ok) return verdict;
-    set((st) => ({ project: { ...st.project, room: next, ...(fresh ? { wallSlopes: [] } : {}) } }));
+    // ─── T75 F9 · THE ISLANDS: UNITS FOLLOW THEIR FACE, ROOM REFUSES FIRST ──
+    // A unit on an island stands on its face by reference; the index is
+    // re-derived against the new room. An island that moved, grew or turned is
+    // measured against every cabinet, box and island it would stand on.
+    const homed = rehomeIslandUnits(s.units, roomWalls(next));
+    if (JSON.stringify(next.islands || []) !== JSON.stringify(s.project.room.islands || [])) {
+      const clash = islandClash({ room: next, units: homed, profile: getCabinetProfile() });
+      if (clash) return { ok: false, message: clash, blocking: [] };
+    }
+    set((st) => ({
+      project: { ...st.project, room: next, ...(fresh ? { wallSlopes: [] } : {}) },
+      ...(homed !== s.units ? { units: homed } : {}),
+    }));
     // A lower ceiling shortens every top infill; a longer wall opens a gap.
     get().refreshAutoParts();
     return verdict;
   },
 
+  // ─── T75 F9 · THE ISLAND'S OWN ACTIONS, ALL THROUGH `setRoom` ─────────────
+  //
+  // *"Room setup gets `ADD ISLAND` ... the island draggable in the plan with
+  // its dimension labels clickable (T73 F3 field), `rotation` in 90° steps
+  // through the existing `rotateUnit` grammar applied to the island."*  Each
+  // builds the next room and hands it to `setRoom`, so the guard, the face
+  // re-homing and the refusal are ONE path. PRO kitchen jobs only: the gate is
+  // the job's family, which retail (a wardrobe job) never meets.
+  islandsAllowed: () => getProjectType(migrateDesign(get().project.design).projectType)?.category === 'kitchen',
+
+  addIsland: () => {
+    const s = get();
+    if (!get().islandsAllowed()) {
+      return { ok: false, message: 'An island belongs to a kitchen job: this job is not one.', id: null };
+    }
+    const island = newIsland(s.project.room, getCabinetProfile(), uid('island'));
+    const verdict = get().setRoom({ islands: [...roomIslands(s.project.room), island] });
+    return { ...verdict, id: verdict.ok ? island.id : null };
+  },
+
+  updateIsland: (id, patch) => {
+    const s = get();
+    const islands = roomIslands(s.project.room);
+    if (!islands.some((i) => i.id === id)) return { ok: false, message: 'No such island.', blocking: [] };
+    return get().setRoom({ islands: islands.map((i) => (i.id === id ? { ...i, ...patch } : i)) });
+  },
+
+  moveIsland: (id, cx, cy) => get().updateIsland(id, { cx: Number(cx), cy: Number(cy) }),
+
+  /** `rotateUnit`'s grammar: 'step' +90, 'set' to a value, normalised mod 360. */
+  rotateIsland: (id, mode = 'step', value = 0) => {
+    const island = roomIslands(get().project.room).find((i) => i.id === id);
+    if (!island) return { ok: false, message: 'No such island.', blocking: [] };
+    const next = mode === 'set' ? Number(value) || 0 : island.rotation + 90;
+    return get().updateIsland(id, { rotation: ((next % 360) + 360) % 360 });
+  },
+
+  removeIsland: (id) => {
+    const s = get();
+    const walls = roomWalls(s.project.room);
+    const standing = s.units.filter((u) => walls[u.position?.wall ?? 0]?.island === id);
+    if (standing.length) {
+      return {
+        ok: false,
+        message: `Cannot remove the island while cabinets stand on it: move or remove them first (${
+          standing.map((u) => u.params?.unit_num || u.id).join(', ')}).`,
+        blocking: standing.map((u) => ({ id: u.id, label: u.params?.unit_num || u.id, reason: 'it stands on the island' })),
+      };
+    }
+    return get().setRoom({ islands: roomIslands(s.project.room).filter((i) => i.id !== id) });
+  },
+
   /** What a room change WOULD do, without doing it (live preview in the modal). */
   previewRoom: (patch) => {
     const s = get();
-    return roomChangeGuard(migrateRoom({ ...s.project.room, ...patch }), s.units);
+    const next = migrateRoom({ ...s.project.room, ...patch });
+    const verdict = roomChangeGuard(next, s.units);
+    if (!verdict.ok) return verdict;
+    // T75 F9 · …and what a moved island would stand on, said before APPLY.
+    if (JSON.stringify(next.islands || []) !== JSON.stringify(s.project.room.islands || [])) {
+      const clash = islandClash({
+        room: next, units: rehomeIslandUnits(s.units, roomWalls(next)), profile: getCabinetProfile(),
+      });
+      if (clash) return { ok: false, message: clash, blocking: [] };
+    }
+    return verdict;
   },
 
   addOpening: (opening) => set((s) => ({
@@ -1559,7 +1636,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // tonight — is 1.0, the picture it was drawn under.
         sceneLight: migrateSceneLight(project?.sceneLight),
       },
-      units: migrateUnits(units),
+      // T75 F9 · a unit on an island finds its face by reference.
+      units: rehomeIslandUnits(migrateUnits(units), roomWalls(migrateRoom(project?.room))),
       runElements: {},
       dirty: false,
     });
@@ -4511,11 +4589,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // …and when a SIDE was asked for as well, that wall is the only one tried:
     // "put one on the left of this" is not answered by a wall round the corner.
     const besideWall = beside ? walls[beside.position.wall ?? 0] : null;
+    // T75 F9 · going round the room looking for space never lands a cabinet
+    // on an island face: *"A face is NOT plaster"*.
+    const plaster = walls.filter((wl) => !wl.island);
     const ordered = besideWall
       ? (side
         ? [besideWall]
-        : [besideWall, ...walls.filter((wl) => wl.index !== besideWall.index)])
-      : walls;
+        : [besideWall, ...plaster.filter((wl) => wl.index !== besideWall.index)])
+      : plaster;
     // ─── T75 F4 · AN L STANDS IN A ROOM CORNER ONLY ───────────────────────
     // *"the L stands in a room corner only (Room refuses first: any other spot
     // is refused in words)."*  The first free internal corner, on the wall of
@@ -4565,6 +4646,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     unit.position.wall = placed.wall;
     unit.position.x_mm = placed.x;
+    // T75 F9 · on a face, the unit carries what it stands on.
+    unit.position = plasterPosition(unit.position, walls);
     // ─── Turn 8 (CLAUDE.md F5) ───
     // A wall unit going in beside a TALL one hangs so that the two finish on
     // ONE line. A kitchen whose wall units stop 80 mm below the tall cabinet
@@ -5907,7 +5990,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // can have an opinion about the neighbours there.
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId
-        ? { ...u, position: { ...u.position, wall: wallIndex } }
+        ? { ...u, position: plasterPosition({ ...u.position, wall: wallIndex }, walls) }
         : u)),
     }));
     const moved = get().moveUnit(unitId, xRaw, snapStep);
@@ -5933,8 +6016,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ],
     }, getCabinetProfile());
     if (room == null) {
+      // T75 F9 · put back with what it stands on put back too.
       set((st) => ({
-        units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, ...from } } : u)),
+        units: st.units.map((u) => (u.id === unitId ? { ...u, position: plasterPosition({ ...u.position, ...from }, walls) } : u)),
       }));
       get().refreshAutoParts();
       return {
@@ -6020,11 +6104,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         wall: unit.position.wall ?? 0,
         x_mm: unit.position.x_mm,
         blocked: true,
-        error: `Wall ${wallIndex + 1} has no free space for this unit — move or remove something there first.`,
+        error: walls[wallIndex].island
+          ? `${wallName(walls, wallIndex).replace(/^./, (c) => c.toUpperCase())} has no free space for this unit: move or remove something there first.`
+          : `Wall ${wallIndex + 1} has no free space for this unit — move or remove something there first.`,
       };
     }
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, wall: wallIndex, x_mm: x } } : u)),
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, position: plasterPosition({ ...u.position, wall: wallIndex, x_mm: x }, walls) }
+        : u)),
     }));
     get().refreshAutoParts(unitId);
     return { wall: wallIndex, x_mm: x, blocked: false, error: null };
@@ -9467,6 +9555,11 @@ function planObstaclesOf(room, wallSlopeList) {
   return [
     ...roomBoxes(room),
     ...wallPlanObstacles(room, wallElements(wallSlopeList), { blocking: true }),
+    // T75 F9 · an island's core is an obstacle in every wall's frame, measured
+    // exactly as a box is: the cabinets on its faces stand outside it.
+    ...roomIslands(room).map((island, k) => ({
+      id: island.id, corners: islandCorners(island), label: `island ${k + 1}`,
+    })),
   ];
 }
 

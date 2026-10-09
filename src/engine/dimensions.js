@@ -103,7 +103,12 @@ export function roomDistances({ walls = [], units = [], minGap = 2 }) {
     const levels = [...new Set(here.map((u) => u.level ?? 'floor'))];
     for (const level of levels) {
       const marks = wallDistances({ wall, units: here.filter((u) => (u.level ?? 'floor') === level), minGap });
-      for (const m of marks) out.push({ ...m, wall: wall.index, level });
+      // T75 F9 · an island face is "not dimensioned as walls": its two corner
+      // arrows are dropped, the unit-to-unit ones stay.
+      for (const m of marks) {
+        if (wall.island && m.kind === 'wall') continue;
+        out.push({ ...m, wall: wall.index, level });
+      }
     }
   }
   return out;

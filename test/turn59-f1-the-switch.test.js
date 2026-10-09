@@ -83,7 +83,8 @@ const EXEMPT = {
   // with the owner's words from this file and re-frozen at its new hash in the
   // same commit."*  The engine and the goldens are untouched by it.
   'src/components/RightPanel.jsx':
-    'T75 F7 · CUT CORNER in the selected unit\'s panel: the button lights the four plan corners in the '
+    'T75 F9 · the Wall select names an island\'s face for what it is ("Island 1 · face A"), never "Wall 5". *"Nothing about it is a wall."* '
+    + 'T75 F7 · CUT CORNER in the selected unit\'s panel: the button lights the four plan corners in the '
     + 'scene (`3d/NotchCorners.jsx`), a click on one opens the small anchored window at the click with '
     + 'WIDTH, DEPTH, HEIGHT (the profile\'s `notch.defaults`), Enter cuts through the store\'s one action '
     + '`setUnitNotch` and a refusal shows in the engine\'s words; REMOVE takes the notch off. No retail copy '
@@ -95,7 +96,8 @@ const EXEMPT = {
   // same commit."*  Overturnable with one word each: the engine, the goldens
   // and the cut path are untouched by every entry below.
   'src/components/DrawRoomModal.jsx':
-    'T74 F3 · the Wall length field opens with the focus and its whole number '
+    'T75 F9 · "the project\'s room has N walls today" counts the room\'s own walls, never an island\'s faces. *"A face is NOT plaster."* '
+    + 'T74 F3 · the Wall length field opens with the focus and its whole number '
     + 'selected (T73 F3\'s ref, `focus()` then `select()`), a refused number stays '
     + 'selected, and Escape cancels a typed number before it closes the window. '
     + '*"pole ... od razu ma focus i całą wartość zaznaczoną (np. 3437, piszę 3500 '
@@ -166,7 +168,8 @@ const EXEMPT = {
   // — so tonight's edit is argued here again, with tonight's quote and
   // tonight's hash. The map does NOT grow: the count below is still three.
   'src/components/RoomModal.jsx':
-    'T69 F1 — the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
+    'T75 F9 · Room setup gets ADD ISLAND (a kitchen job\'s only: the gate is the job\'s family, which retail never meets), the island drawn in the plan, dragged whole and refused in words where it would stand on a cabinet, a box or outside the room, its two figures clickable into a focused, selected field, Rotate 90° and Remove island. *"twoja droga, plus dodawanie szafek po bokach lub end panele, w całości."* '
+    + 'T69 F1 — the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
     + 'IMPORT DXF is struck out (*"to nie przejdzie"*), and APPLY is fixed at the '
     + 'two sites its probe convicted: it sends only the keys this window changed, '
     + 'and it is never drawn dead and silent. *"APPLY does nothing — probe first."*',
@@ -218,8 +221,8 @@ const FROZEN = {
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
   'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
-  // T74 F3 + F4 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/DrawRoomModal.jsx': 'c5d7fe345511115a19ac488d78c55458bc373bfdc45ed992cde951c3b3c9c00c',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/DrawRoomModal.jsx': '31107a5dc23977013675fed7d5392ed5c4f89e82e86f9dc1f5c94433bf19d260',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -245,9 +248,10 @@ const FROZEN = {
   'src/components/PartDetailModal.jsx': '3e97f121e6932a9859d4a88616651c0ec08a7f871ca72192eb339521597afc83',
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
-  'src/components/RightPanel.jsx': 'bfdd632904e40d1fbdcf1995e38ae71b3bc1f5548ca69bc12143c3051e1b8ff7',
-  // T69 F1 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RoomModal.jsx': '1bd7aebbe8899d428fcbe66ab972c72af43ae98c18b73f15eb7346f8b7f2d210',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RightPanel.jsx': '9efd94b61a5421fbd2ad2b7639fa2ca07fa9a7cd5027697d1218082a32690d52',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RoomModal.jsx': 'cfee8d4d3597f6c37de41dc417d83ed2e57ecf6153b7a69cdf97c54aa282616c',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
   'src/components/SaveTemplateModal.jsx': '83a756327cd24f0a13f1c28e618a692b1b88b00df6c2735416d5711422cbc4c1',

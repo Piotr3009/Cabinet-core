@@ -104,6 +104,9 @@ export function migrateRoom(room) {
   // this turn opens with the defaults and nothing to migrate.
   const stub = Number(room.wall_stub_mm);
   const boxes = Array.isArray(room.boxes) ? room.boxes.map(migrateBox).filter(Boolean) : [];
+  // T75 F9 · the islands travel with the room as the boxes do: emitted only
+  // when there is one, so a project saved before tonight migrates to "none".
+  const islands = Array.isArray(room.islands) ? room.islands.map(migrateIsland).filter(Boolean) : [];
   return normalizeRoom({
     schema: ROOM_SCHEMA,
     height,
@@ -111,6 +114,7 @@ export function migrateRoom(room) {
     openings,
     ...(Number.isFinite(stub) && stub >= 0 ? { wall_stub_mm: stub } : {}),
     ...(boxes.length ? { boxes } : {}),
+    ...(islands.length ? { islands } : {}),
   });
 }
 
@@ -134,6 +138,29 @@ export function normalizeRoom(room) {
  * `inward` — the view needs nothing else.
  */
 export function roomWalls(room) {
+  const walls = realWalls(room);
+  // ─── T75 F9 · AFTER THE REAL WALLS, FOUR FACES PER ISLAND ──────────────────
+  //
+  // CLAUDE.md T75 F9: *"`roomWalls` returns, after the real walls, four FACES
+  // per island with `island: id`, `face: 'A' | 'B' | 'E1' | 'E2'`, their frames
+  // (`start`, `along`, `inward` pointing away from the island centre), so
+  // `collision.js`, `runs.js`, `autoparts.js`, the plinth, the end panels, the
+  // worktop and the lighting rig read them as places to stand units."*  A face
+  // is NOT plaster: the readers that draw, scope, dimension or open a wall ask
+  // `realWalls` (or test `wall.island`) and never see one.
+  let index = walls.length;
+  for (const island of roomIslands(room)) {
+    for (const face of islandFaces(island, index)) walls.push(face);
+    index += ISLAND_FACES.length;
+  }
+  return walls;
+}
+
+/**
+ * T75 F9 · the room's own walls, the plaster, without an island's faces. What
+ * every reader that DRAWS, SCOPES, DIMENSIONS or OPENS a wall asks.
+ */
+export function realWalls(room) {
   const corners = cornersOf(normalizeRoom(room));
   const n = corners.length;
   const cx = corners.reduce((s, c) => s + c.x, 0) / n;
@@ -190,7 +217,8 @@ export function wallWidth(room, index) {
  * @returns {{prev:{wall:number, end:'end'}, next:{wall:number, end:'start'}}|null}
  */
 export function wallNeighbours(room, index) {
-  const walls = roomWalls(room);
+  // T75 F9 · plaster only: an island face meets no wall of the room.
+  const walls = realWalls(room);
   const n = walls.length;
   const i = Math.trunc(Number(index) || 0);
   if (!n || i < 0 || i >= n) return null;
@@ -326,7 +354,8 @@ function truncateWall(wall, keep, length) {
  *   caller that has no profile to hand still gets the house's own answer.
  */
 export function wallsInScope(room, scope = 'room', profile = null) {
-  const walls = roomWalls(room);
+  // T75 F9 · plaster only: an island face is never drawn, scoped or offered.
+  const walls = realWalls(room);
   // ─── T74 F5 · THE U IS FRONT, RIGHT AND LEFT ─────────────────────────────
   //
   // The owner, 23.09.2026: *"SETUP ROOM THREE WALLS daje ścianę przednią,
@@ -466,7 +495,7 @@ const unit = (from, to) => {
 export function moveWall(room, index, deltaMm) {
   const corners = cornersOf(normalizeRoom(room)).map((c) => ({ ...c }));
   const n = corners.length;
-  const walls = roomWalls({ ...room, corners });
+  const walls = realWalls({ ...room, corners });
   const wall = walls[index];
   const delta = Number(deltaMm) || 0;
   if (!wall || n < 3 || !delta) return corners;
@@ -512,7 +541,7 @@ export function moveWall(room, index, deltaMm) {
  */
 export function setWallLength(room, index, lengthMm) {
   const corners = cornersOf(normalizeRoom(room)).map((c) => ({ ...c }));
-  const walls = roomWalls({ ...room, corners });
+  const walls = realWalls({ ...room, corners });
   const wall = walls[index];
   const want = Number(lengthMm);
   if (!wall || !Number.isFinite(want) || want <= 0) return corners;
@@ -680,7 +709,7 @@ export function planElementFootprint(el, wall) {
  *                          has to stop at, which is what the placement wants.
  */
 export function wallPlanObstacles(room, elements, { blocking = false } = {}) {
-  const walls = roomWalls(room);
+  const walls = realWalls(room);
   const out = [];
   for (const el of elements || []) {
     if (el?.kind !== 'recess' && el?.kind !== 'chimney') continue;
@@ -720,6 +749,204 @@ export function moveBox(box, dxMm, dyMm) {
   return migrateBox({ ...b, x: b.x + (Number(dxMm) || 0), y: b.y + (Number(dyMm) || 0) });
 }
 
+// ─── T75 F9 · THE ISLAND, AN INSIDE-OUT ROOM ────────────────────────────────
+//
+// The owner, 9.10.2026: *"twoja droga, plus dodawanie szafek po bokach lub end
+// panele, w całości."*  CLAUDE.md T75 PART B: *"An island is an INSIDE-OUT
+// ROOM: a rectangle whose four faces are places to stand a unit against, with
+// "inward" pointing OUT. Nothing about it is a wall."*
+//
+// The record is `{ id, cx, cy, w, d, rotation }`: the centre in the room's plan
+// frame, the length `w` along faces A and B, the depth `d` along the two ends,
+// and a rotation in quarter turns. The rectangle is the island's CORE: units
+// stand against its faces, outside it, exactly as they stand against plaster
+// inside a room. Its faces are walked A, E1, B, E2, the opposite turn to the
+// room's own ring, so each face's `inward` is the left normal of its `along`
+// (the frame law every wall obeys: the 3D turns a unit by `angle` alone) and
+// points away from the centre.
+
+/** The four faces of an island, in ring order. */
+export const ISLAND_FACES = ['A', 'E1', 'B', 'E2'];
+
+const quarterTurns = (deg) => (((Math.round((Number(deg) || 0) / 90) % 4) + 4) % 4) * 90;
+
+/** An island, from anything: id kept, sizes made real, rotation in quarter turns. */
+export function migrateIsland(island, i = 0) {
+  if (!island || typeof island !== 'object') return null;
+  return {
+    id: String(island.id || `island_${i + 1}`),
+    cx: round4(Number(island.cx) || 0),
+    cy: round4(Number(island.cy) || 0),
+    w: round4(Math.max(MIN_BOX_SIZE, Number(island.w) || 0)),
+    d: round4(Math.max(MIN_BOX_SIZE, Number(island.d) || 0)),
+    rotation: quarterTurns(island.rotation),
+  };
+}
+
+/** Every island of a room, normalised. */
+export function roomIslands(room) {
+  return (room?.islands || []).map(migrateIsland).filter(Boolean);
+}
+
+/**
+ * The four plan corners of an island core, in ring order: face A's start, then
+ * each face's end. Rotation turns the rectangle about its centre.
+ */
+export function islandCorners(island) {
+  const i = migrateIsland(island);
+  const rad = (i.rotation * Math.PI) / 180;
+  const cos = Math.cos(rad); const sin = Math.sin(rad);
+  const hw = i.w / 2; const hd = i.d / 2;
+  return [[hw, -hd], [-hw, -hd], [-hw, hd], [hw, hd]].map(([u, v]) => ({
+    x: round4(i.cx + u * cos - v * sin),
+    y: round4(i.cy + u * sin + v * cos),
+  }));
+}
+
+/** The four faces of one island as wall records, `index` from `base` on. */
+export function islandFaces(island, base = 0) {
+  const i = migrateIsland(island);
+  const corners = islandCorners(i);
+  return ISLAND_FACES.map((face, k) => {
+    const p = corners[k];
+    const q = corners[(k + 1) % 4];
+    const dx = q.x - p.x; const dy = q.y - p.y;
+    const width = Math.hypot(dx, dy);
+    const ux = width ? dx / width : 1;
+    const uy = width ? dy / width : 0;
+    return {
+      index: base + k,
+      start: { x: p.x, y: p.y },
+      end: { x: q.x, y: q.y },
+      width: round4(width),
+      along: { x: ux, y: uy },
+      // The left normal of `along`: on this ring it points AWAY from the core.
+      inward: { x: -uy, y: ux },
+      angle: Math.atan2(-uy, ux),
+      island: i.id,
+      face,
+    };
+  });
+}
+
+/** Is this wall record an island's face (and so not plaster)? */
+export function isIslandFace(wall) {
+  return Boolean(wall?.island);
+}
+
+/** The name a sentence gives a wall record: "wall 2", or "face A of island 1". */
+export function wallName(walls, index) {
+  const wall = walls?.[index];
+  if (wall?.island) {
+    const order = [...new Set((walls || []).filter((w) => w.island).map((w) => w.island))];
+    return `face ${wall.face} of island ${order.indexOf(wall.island) + 1}`;
+  }
+  return `wall ${(Number(index) || 0) + 1}`;
+}
+
+/** The label a list gives a wall record: "Wall 2", or "Island 1 · face A". */
+export function wallLabel(walls, index) {
+  const wall = walls?.[index];
+  if (wall?.island) {
+    const order = [...new Set((walls || []).filter((w) => w.island).map((w) => w.island))];
+    return `Island ${order.indexOf(wall.island) + 1} · face ${wall.face}`;
+  }
+  return `Wall ${(Number(index) || 0) + 1}`;
+}
+
+/** The index of an island's face in a walls list, or -1. */
+export function faceIndexOf(walls, islandId, face) {
+  return (walls || []).findIndex((w) => w.island === islandId && w.face === face);
+}
+
+/**
+ * Re-derive every island unit's wall index from what it STANDS ON (its
+ * `position.island` and `position.face`), and stamp that reference on every
+ * unit an index puts on a face. A face index is `n + 4k + f`: it moves when the
+ * room gains a corner or an earlier island goes, and the reference is what
+ * keeps a unit on its own face through both. A unit whose island is gone is
+ * left as it is: the room change that removes it is refused first.
+ */
+export function rehomeIslandUnits(units, walls) {
+  let changed = false;
+  const out = (units || []).map((u) => {
+    const pos = u.position || {};
+    if (pos.island) {
+      const at = faceIndexOf(walls, pos.island, pos.face);
+      if (at < 0 || at === pos.wall) return u;
+      changed = true;
+      return { ...u, position: { ...pos, wall: at } };
+    }
+    const wall = walls?.[pos.wall ?? 0];
+    if (wall?.island) {
+      changed = true;
+      return { ...u, position: { ...pos, island: wall.island, face: wall.face } };
+    }
+    return u;
+  });
+  return changed ? out : units;
+}
+
+/** Drop the island reference of a unit an index has put back on plaster. */
+export function plasterPosition(position, walls) {
+  const wall = walls?.[position?.wall ?? 0];
+  if (wall?.island) return { ...position, island: wall.island, face: wall.face };
+  if (!position || !('island' in position || 'face' in position)) return position;
+  const { island: _island, face: _face, ...rest } = position;
+  return rest;
+}
+
+/** Is a plan point inside a polygon (ray casting; on the edge counts as in)? */
+export function pointInPolygon(point, polygon) {
+  const pts = polygon || [];
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i, i += 1) {
+    const a = pts[i]; const b = pts[j];
+    // On the edge: inside.
+    const cross = (point.x - a.x) * (b.y - a.y) - (point.y - a.y) * (b.x - a.x);
+    const dot = (point.x - a.x) * (point.x - b.x) + (point.y - a.y) * (point.y - b.y);
+    if (Math.abs(cross) < 1e-6 && dot <= 1e-6) return true;
+    if ((a.y > point.y) !== (b.y > point.y)) {
+      const x = ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x;
+      if (point.x < x) inside = !inside;
+    }
+  }
+  return inside;
+}
+
+const segmentsCross = (p1, p2, q1, q2) => {
+  const o = (a, b, c) => Math.sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+  return o(p1, p2, q1) * o(p1, p2, q2) < 0 && o(q1, q2, p1) * o(q1, q2, p2) < 0;
+};
+
+/** Do two convex plan polygons overlap (separating axis; touching is not overlap)? */
+export function polygonsOverlap(a, b, slack = 0.5) {
+  for (const poly of [a, b]) {
+    for (let i = 0; i < poly.length; i += 1) {
+      const p = poly[i]; const q = poly[(i + 1) % poly.length];
+      const nx = -(q.y - p.y); const ny = q.x - p.x;
+      const len = Math.hypot(nx, ny) || 1;
+      const proj = (pts) => pts.map((c) => (c.x * nx + c.y * ny) / len);
+      const pa = proj(a); const pb = proj(b);
+      if (Math.max(...pa) <= Math.min(...pb) + slack || Math.max(...pb) <= Math.min(...pa) + slack) return false;
+    }
+  }
+  return true;
+}
+
+/** Does an island's core stand wholly inside the room's own polygon? */
+export function islandInsideRoom(room, island) {
+  const polygon = cornersOf(normalizeRoom(room));
+  const core = islandCorners(island);
+  if (!core.every((c) => pointInPolygon(c, polygon))) return false;
+  for (let i = 0; i < 4; i += 1) {
+    for (let j = 0; j < polygon.length; j += 1) {
+      if (segmentsCross(core[i], core[(i + 1) % 4], polygon[j], polygon[(j + 1) % polygon.length])) return false;
+    }
+  }
+  return true;
+}
+
 // ─── Openings ───────────────────────────────────────────────────────────────
 
 // ─── TURN 69 (CLAUDE.md F3): THE SILL IS 850 ───────────────────────────────
@@ -738,7 +965,7 @@ export const OPENING_DEFAULTS = {
  */
 export function clampOpening(opening, room) {
   const kind = opening.kind === 'door' ? 'door' : 'window';
-  const w = roomWalls(room)[opening.wall ?? 0];
+  const w = realWalls(room)[opening.wall ?? 0];
   const wallW = w?.width ?? 0;
   const roomH = Number(room.height) || DEFAULT_ROOM_HEIGHT;
   // ─── T69 F3 · THE FALLBACK IS A NUMBER, NOT A `??` ─────────────────────
@@ -787,22 +1014,37 @@ export function roomChangeGuard(next, units = []) {
   const roomH = Number(next.height) || 0;
   const blocking = [];
 
+  // ─── T75 F9 · ROOM REFUSES FIRST: AN ISLAND STANDS INSIDE THE ROOM ────────
+  const outside = roomIslands(next).filter((island) => !islandInsideRoom(next, island));
+  if (outside.length) {
+    return {
+      ok: false,
+      message: `The island would stand outside the room: move it inside the walls first (${outside.map((i) => i.id).join(', ')}).`,
+      blocking: outside.map((i) => ({ id: i.id, label: i.id, reason: 'it would stand outside the room' })),
+    };
+  }
+
   for (const u of units) {
     const label = u.params?.unit_num || u.id;
-    const wallIndex = u.position?.wall ?? 0;
+    // T75 F9 · a unit on an island is found by what it stands ON, not by an
+    // index the room change may have moved.
+    const onIsland = u.position?.island;
+    const wallIndex = onIsland ? faceIndexOf(walls, onIsland, u.position?.face) : (u.position?.wall ?? 0);
     const wall = walls[wallIndex];
     const width = Number(u.params?.width) || 0;
     const height = Number(u.params?.height) || 0;
     const x = Number(u.position?.x_mm) || 0;
 
     if (!wall) {
-      blocking.push({ id: u.id, label, reason: 'its wall would no longer exist' });
+      blocking.push({
+        id: u.id, label, reason: onIsland ? 'the island it stands on would no longer exist' : 'its wall would no longer exist',
+      });
       continue;
     }
     if (x + width > wall.width + 1e-6) {
       blocking.push({
         id: u.id, label,
-        reason: `it would hang ${Math.round(x + width - wall.width)} mm past the end of wall ${wallIndex + 1}`,
+        reason: `it would hang ${Math.round(x + width - wall.width)} mm past the end of ${wallName(walls, wallIndex)}`,
       });
     }
     if (roomH && height > roomH) {

@@ -351,6 +351,15 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { widthMm: 200, depthMm: 200, heightMm: 0 }, // T75 proposed, owner to confirm
   },
 
+  // ─── T75 F9 · THE ISLAND (CLAUDE.md T75 PART B) ────────────────────────────
+  //
+  // *"Room setup gets `ADD ISLAND` (default `profile.island.defaults` = 1800 x
+  // 900, T75 proposed)."*  `w` runs along faces A and B, `d` along the two
+  // ends: the CORE the units stand against, outside it (`engine/room.js`).
+  island: {
+    defaults: { w: 1800, d: 900 },   // T75 proposed, owner to confirm
+  },
+
   // ─── Hinge drilling ───
   hinges: {
     // ─── Turn 17 (CLAUDE.md F7.1): THE PROJECT STANDARD ────────────────────
@@ -5309,6 +5318,8 @@ export function migrateCabinetProfile(profile) {
       ...profile.cornerWardrobe,
       defaults: { ...D.cornerWardrobe.defaults, ...profile.cornerWardrobe?.defaults },
     },
+    // T75 F9 · the island's defaults, key by key.
+    island: { ...D.island, ...profile.island, defaults: { ...D.island.defaults, ...profile.island?.defaults } },
     // T75 F3 · the blind kits' defaults, key by key.
     blindBase: { ...D.blindBase, ...profile.blindBase, defaults: { ...D.blindBase.defaults, ...profile.blindBase?.defaults } },
     blindWall: { ...D.blindWall, ...profile.blindWall, defaults: { ...D.blindWall.defaults, ...profile.blindWall?.defaults } },

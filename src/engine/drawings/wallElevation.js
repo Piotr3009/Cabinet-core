@@ -523,7 +523,8 @@ export function buildHorizontalSection(entries = [], { room = null, profile }) {
   // BUILDING layer's 0.25 — LIGHTER than an uncut cabinet footprint at 0.35 —
   // so the section's cut line was the thinnest thing on the sheet, which is
   // the exact inversion of what a section is for.
-  for (const wall of walls) {
+  // T75 F9 · the cut passes through plaster only: an island's face is not a wall.
+  for (const wall of walls.filter((w) => !w.island)) {
     entities.push({ ...line('BUILDING', wall.start.x, wall.start.y, wall.end.x, wall.end.y), pen: 'CUT' });
   }
 

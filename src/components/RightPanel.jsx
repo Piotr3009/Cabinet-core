@@ -6,7 +6,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { HEIGHT_GROUPS, getUnitType, profilePath } from '../engine/types.js';
 import { doorCountFor, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
-import { roomWalls } from '../engine/room.js';
+import { roomWalls, wallLabel } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { corniceOption } from '../engine/cornice.js';
 import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
@@ -359,7 +359,8 @@ export default function RightPanel() {
                 }}
               >
                 {walls.map((w) => (
-                  <option key={w.index} value={w.index}>Wall {w.index + 1} · {formatMm(w.width)} mm</option>
+                  // T75 F9 · an island's face is named for what it is.
+                  <option key={w.index} value={w.index}>{wallLabel(walls, w.index)} · {formatMm(w.width)} mm</option>
                 ))}
               </select>
             </div>

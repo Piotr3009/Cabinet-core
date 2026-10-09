@@ -17,7 +17,7 @@
 
 import { buildTopView } from './views.js';
 import { entLine as line, entPoly as poly, entText as text } from './primitives.js';
-import { roomWalls, openingsOnWall } from '../room.js';
+import { realWalls, roomWalls, openingsOnWall } from '../room.js';
 import { wallGroups, wallLabel } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
 import { sectionStations } from './setSection.js';
@@ -45,7 +45,8 @@ export function cutEntries(entries, cut, profile) {
 
 /** The room's extent, for the scale: walls, plus a margin for the chains. */
 export function measurePlan({ room, profile }) {
-  const walls = roomWalls(room);
+  // T75 F9 · the extent is the building's: an island stands inside it.
+  const walls = realWalls(room);
   const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
   const ys = walls.flatMap((w) => [w.start.y, w.end.y]);
   // The walls themselves; the labels and the chains live in the bands the
@@ -83,7 +84,8 @@ function throughWall(entities, wall, u0, depth) {
 /** The room: walls as the cut line, openings, and a label outside each wall. */
 function roomFabric(room, { ctx, profile }) {
   const out = [];
-  const walls = roomWalls(room);
+  // T75 F9 · plaster only: an island's face is not a cut wall.
+  const walls = realWalls(room);
   for (const wall of walls) {
     const ops = openingsOnWall(room, wall.index);
     // The wall line, broken at each opening.

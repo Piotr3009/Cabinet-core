@@ -161,9 +161,11 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // AMENDED BY T75 F7: `RightPanel` (CUT CORNER and its small window), argued
   // in the manifest with the owner's words of 23.09 (*"Klikasz 'wytnij
   // narożnik'..."*), re-frozen at its new hash. Not a widening file.
+  // AMENDED BY T75 F9/F10: `LibraryPanel` (a plus on an island face) and
+  // `RightPanel` (the face named in the Wall select), argued the same way.
   const ARGUED = [
     'AddItems', 'BomPanel', 'ContextMenu', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
-    'RightPanel', 'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
+    'LibraryPanel', 'RightPanel', 'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
@@ -171,5 +173,8 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     assert.ok(['67', '69', '71', '72', '74', '75'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
   }
   assert.ok(!exempt.some(([n, t]) => /UnitSize/.test(n) && t === '69'), 'F9 bought no exemption');
-  assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), ['RoomModal'], 'T69 licensed RoomModal alone');
+  // AMENDED BY T75 F9: RoomModal's licence is renewed tonight (ADD ISLAND), so
+  // its newest reason names T75; T69's own sentence still stands beneath it.
+  assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), [], 'T69 licenses nothing new');
+  assert.match(read('test/turn59-f1-the-switch.test.js'), /T69 F1 — the preset row becomes 1 WALL/, 'T69\'s RoomModal reason was lost');
 });

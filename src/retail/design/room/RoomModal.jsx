@@ -12,7 +12,10 @@ import {
   setWallLength as setWallLengthCorners, wallsInScope, wallStub,
   moveWall, moveBoxSide, roomBoxes, migrateBox, BOX_SIDES,
   MIN_WALL_LENGTH, wallNeighbours,
+  islandCorners, rehomeIslandUnits, roomIslands,
 } from '../../../engine/room.js';
+// T75 F9 · the island: a new one at the profile's size, and what it would stand on.
+import { islandClash, newIsland } from '../../../engine/island.js';
 import { wallCornerHeights, impliedProfilesOnWall } from '../../../lib/wallElements.js';
 import { formatMm, snap } from '../../../engine/format.js';
 import { anchorOfEvent } from '../../../lib/modalAnchor.js';
@@ -160,6 +163,9 @@ export default function RoomModal({
   const room = useProjectStore((s) => s.project.room);
   const units = useProjectStore((s) => s.units);
   const setRoom = useProjectStore((s) => s.setRoom);
+  // T75 F9 · ADD ISLAND is a kitchen job's: the gate is the job's family,
+  // which retail (a wardrobe job) never meets.
+  const islandsAllowed = useProjectStore((s) => s.islandsAllowed?.() === true);
   // The hook is called unconditionally and the prop chosen afterwards — a hook
   // behind an `||` is a hook that sometimes does not run.
   const closeFromStore = useUiStore((s) => s.closeModal);
@@ -369,6 +375,56 @@ export default function RoomModal({
 
   const setBoxes = (next) => patch({ boxes: next });
 
+  // ─── T75 F9 · THE ISLAND IN THE PLAN ─────────────────────────────────────
+  //
+  // *"Room setup gets `ADD ISLAND` ..., the island draggable in the plan with
+  // its dimension labels clickable (T73 F3 field), `rotation` in 90° steps
+  // ... Room refuses first: an island must lie inside the room polygon with
+  // its footprint clear of every unit and box; a move that would collide is
+  // refused naming the obstacle."*  Every island edit goes through ONE
+  // function: it builds the candidate room, asks the guard and the clash, and
+  // either takes it or says why (the island stays where it last fitted).
+  const islands = useMemo(() => roomIslands(draft), [draft]);
+  const [islandSaid, setIslandSaid] = useState(null);
+  const [islandEdit, setIslandEdit] = useState(null);
+  const setIslands = (next) => {
+    const candidate = migrateRoom({ ...draft, islands: next });
+    const verdict = roomChangeGuard(candidate, units);
+    const said = verdict.ok
+      ? islandClash({
+        room: candidate, units: rehomeIslandUnits(units, roomWalls(candidate)), profile: getCabinetProfile(),
+      })
+      : verdict.message;
+    if (said) { setIslandSaid(said); return false; }
+    setIslandSaid(null);
+    setDraft(candidate);
+    return true;
+  };
+  const addIsland = () => {
+    const island = newIsland(draft, getCabinetProfile(), `island_${Math.random().toString(36).slice(2, 9)}`);
+    if (setIslands([...islands, island])) setPicked({ kind: 'island', id: island.id });
+  };
+  const changeIsland = (id, change) => setIslands(islands.map((i) => (i.id === id ? { ...i, ...change } : i)));
+  const startIslandDrag = (e, id) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.ownerSVGElement.getBoundingClientRect();
+    setPicked({ kind: 'island', id });
+    setTyped('');
+    drag.current = {
+      kind: 'island',
+      id,
+      from: { x: e.clientX - rect.left, y: e.clientY - rect.top },
+      island: islands.find((i) => i.id === id) || null,
+    };
+    e.currentTarget.ownerSVGElement.setPointerCapture?.(e.pointerId);
+  };
+  const commitIslandEdit = () => {
+    if (!islandEdit) return;
+    const value = Number(islandEdit.value);
+    if (Number.isFinite(value) && value > 0) changeIsland(islandEdit.id, { [islandEdit.key]: value });
+    setIslandEdit(null);
+  };
+
   const onPlanPointerMove = (e) => {
     const d = drag.current;
     if (!d) return;
@@ -379,6 +435,12 @@ export default function RoomModal({
       const delta = grid(alongNormal(d.wall, dx, dy));
       if (!delta) return;
       patch({ corners: moveWall(d.room, d.index, delta) });
+      return;
+    }
+    // T75 F9 · the whole island travels; a step that would collide is refused.
+    if (d.kind === 'island') {
+      if (!d.island) return;
+      changeIsland(d.id, { cx: grid(d.island.cx + dx), cy: grid(d.island.cy + dy) });
       return;
     }
     if (!d.box) return;
@@ -407,6 +469,8 @@ export default function RoomModal({
       setDraft((d) => migrateRoom({ ...d, corners: moveWall(picked.room || d, picked.index, value) }));
       return true;
     }
+    // T75 F9 · an island's size is typed into its own figure, not here.
+    if (picked.kind === 'island') return false;
     setDraft((d) => {
       const from = picked.boxes || roomBoxes(d);
       const was = from.find((b) => b.id === picked.id);
@@ -425,6 +489,11 @@ export default function RoomModal({
       // Anything typed into a real field belongs to that field.
       const tag = ev.target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      // T75 F9 · an island takes its size in its own field: here only Escape.
+      if (picked.kind === 'island') {
+        if (ev.key === 'Escape') { setPicked(null); ev.preventDefault(); }
+        return;
+      }
       if (/^[0-9]$/.test(ev.key) || (ev.key === '-' && !typed) || (ev.key === '.' && !typed.includes('.'))) {
         setTyped((t) => t + ev.key);
         ev.preventDefault();
@@ -516,6 +585,13 @@ export default function RoomModal({
     closeModal();
   };
 
+  // T75 F9 · what the line under the plan says, now that an island can be picked.
+  const planHint = (() => {
+    if (picked?.kind === 'island') return 'Drag the island, or click a figure and type its size. Rotate turns it a quarter turn.';
+    if (picked) return 'Drag it, or TYPE a distance in millimetres and press Enter. Escape lets go.';
+    return 'Grab a WALL and it moves along its own normal — the neighbours stretch and every angle is kept. Corners are not dragged.';
+  })();
+
   return (
     <Modal
       name="room"
@@ -584,9 +660,50 @@ export default function RoomModal({
               >
                 Draw room…
               </button>
+              {/* ─── T75 F9 · ADD ISLAND ──────────────────────────────────
+                  *"Room setup gets `ADD ISLAND`"*, a kitchen job's only. */}
+              {islandsAllowed && (
+                <button
+                  type="button"
+                  className="pbi-re-btn"
+                  data-room-add-island="1"
+                  title="An island in the middle of the room: cabinets stand on its four faces"
+                  onClick={addIsland}
+                >
+                  Add island
+                </button>
+              )}
+              {picked?.kind === 'island' && (
+                <>
+                  <button
+                    type="button"
+                    className="pbi-re-btn"
+                    data-island-rotate={picked.id}
+                    title="Turn the island a quarter turn about its centre"
+                    onClick={() => {
+                      const was = islands.find((i) => i.id === picked.id);
+                      if (was) changeIsland(picked.id, { rotation: (was.rotation + 90) % 360 });
+                    }}
+                  >
+                    Rotate 90°
+                  </button>
+                  <button
+                    type="button"
+                    className="pbi-re-btn"
+                    data-island-remove={picked.id}
+                    title="Take the island out of the room (refused while cabinets stand on it)"
+                    onClick={() => {
+                      if (setIslands(islands.filter((i) => i.id !== picked.id))) setPicked(null);
+                    }}
+                  >
+                    Remove island
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
+          <div style={{ position: 'relative', width: PLAN_W }}>
           <svg
             width={PLAN_W} height={PLAN_H}
             className="pbi-re-fill-ground pbi-re-line pbi-re-hair pbi-re-round pbi-re-notouch"
@@ -682,6 +799,52 @@ export default function RoomModal({
               );
             })}
 
+            {/* ─── T75 F9 · THE ISLANDS ───
+                The core drawn as the box is, grabbed whole and dragged; its
+                two figures (along face A, along the end E1) are clickable and
+                open the field below, focused and selected. */}
+            {islands.map((isl, k) => {
+              const pts = islandCorners(isl).map(toSvg);
+              const on = picked?.kind === 'island' && picked.id === isl.id;
+              const mid = (p, q) => ({ x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 });
+              const centre = mid(pts[0], pts[2]);
+              const out = (m) => ({ x: m.x + (m.x - centre.x) * 0.35, y: m.y + (m.y - centre.y) * 0.35 });
+              const wAt = out(mid(pts[0], pts[1]));
+              const dAt = out(mid(pts[1], pts[2]));
+              return (
+                <g key={isl.id} data-plan-island-group={isl.id}>
+                  <polygon
+                    points={pts.map((p) => `${p.x},${p.y}`).join(' ')}
+                    fill="#D9D1C6" stroke={on ? '#806A44' : '#090A09'} strokeWidth={on ? 2 : 1.2}
+                    style={{ cursor: 'move' }}
+                    data-plan-island={isl.id}
+                    onPointerDown={(e) => startIslandDrag(e, isl.id)}
+                  />
+                  <text x={centre.x} y={centre.y + 3} fill="#090A09" fontSize="9" textAnchor="middle" pointerEvents="none">
+                    Island {k + 1}
+                  </text>
+                  {[['w', wAt], ['d', dAt]].map(([key, at]) => (
+                    <text
+                      key={key}
+                      x={at.x} y={at.y + 3}
+                      fill="#806A44" fontSize="9" textAnchor="middle"
+                      style={{ cursor: 'pointer' }}
+                      data-island-dim={`${isl.id}:${key}`}
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        setPicked({ kind: 'island', id: isl.id });
+                        setIslandEdit({
+                          id: isl.id, key, value: String(isl[key]), x: at.x, y: at.y,
+                        });
+                      }}
+                    >
+                      {formatMm(isl[key])}
+                    </text>
+                  ))}
+                </g>
+              );
+            })}
+
             {/* ─── The WALLS, as grab bars (F10.1) ───
                 A transparent fat line on top of each wall: what you grab is the
                 wall itself, and it travels along its own normal. There are no
@@ -740,10 +903,32 @@ export default function RoomModal({
               </g>
             )}
           </svg>
+          {/* T75 F9 · the clicked figure's field (T73 F3): focused, selected;
+              Enter writes, Escape or a click elsewhere leaves it as it was. */}
+          {islandEdit && (
+            <input
+              autoFocus
+              className="pbi-re-input"
+              style={{
+                position: 'absolute', left: islandEdit.x - 32, top: islandEdit.y - 10, width: 64,
+              }}
+              data-island-field={`${islandEdit.id}:${islandEdit.key}`}
+              value={islandEdit.value}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => setIslandEdit((v) => ({ ...v, value: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); commitIslandEdit(); }
+                if (e.key === 'Escape') { e.preventDefault(); setIslandEdit(null); }
+              }}
+              onBlur={() => setIslandEdit(null)}
+            />
+          )}
+          </div>
+          {islandSaid && (
+            <p className="pbi-re-t11 pbi-re-quiet pbi-re-mt1" data-island-refusal="1">{islandSaid}</p>
+          )}
           <p className="pbi-re-t11 pbi-re-quiet pbi-re-mt1" data-plan-hint="1">
-            {picked
-              ? 'Drag it, or TYPE a distance in millimetres and press Enter. Escape lets go.'
-              : 'Grab a WALL and it moves along its own normal — the neighbours stretch and every angle is kept. Corners are not dragged.'}
+            {planHint}
           </p>
 
           <div className="pbi-re-divider" />

@@ -35,6 +35,12 @@ const check = process.argv.includes('--check');
  */
 export const T75_PRO_EDITS = [
   {
+    pro: 'src/components/RoomModal.jsx',
+    why: 'F9 · ADD ISLAND, the island in the plan (dragged whole, refused in words, its two figures '
+      + 'clickable, Rotate 90°, Remove island), gated by the job\'s family: retail, a wardrobe job, never '
+      + 'shows the button. *"twoja droga, plus dodawanie szafek po bokach lub end panele, w całości."*',
+  },
+  {
     pro: 'src/components/ContextMenu.jsx',
     why: 'F5 · the right-click offers the UPSTAND beside the plinth, on and off per run. '
       + '*"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... '
@@ -61,6 +67,12 @@ if (check) {
 const before = new Map(ALL_COPIES.map((c) => [c.retail, hash(c.retail)]));
 
 execFileSync('node', [join(ROOT, 'scripts/t63-copy.mjs')], { cwd: ROOT, stdio: 'inherit' });
+// RoomModal is one of T62's four, which T63's machine deliberately does not
+// re-make: its copy is re-made by T69's (T67's rules, T62's class map), the
+// machine every RoomModal edit since T67 has been copied with.
+if (T75_PRO_EDITS.some((e) => e.pro === 'src/components/RoomModal.jsx')) {
+  execFileSync('node', [join(ROOT, 'scripts/t69-copy.mjs')], { cwd: ROOT, stdio: 'inherit' });
+}
 
 const moved = ALL_COPIES.map((c) => c.retail).filter((rel) => hash(rel) !== before.get(rel));
 const wanted = [...T75_PRO_EDITS, ...T75_NEW_COPIES].map((e) => retailOf(e.pro)).filter(Boolean);

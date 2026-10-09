@@ -542,7 +542,8 @@ test('F7 · PRO: CUT CORNER in the right panel, the window has WIDTH, DEPTH, HEI
   assert.match(src, /setUnitNotch\(args\.unitId, \{/);
   assert.match(src, /'full'/, 'HEIGHT says full for 0');
   // Licensed in the freeze with the owner's words.
-  assert.match(read('test/turn59-f1-the-switch.test.js'), /'src\/components\/RightPanel\.jsx':\n\s+'T75 F7/);
+  // AMENDED BY T75 F9: RightPanel's licence names F9 (the face's name) and F7 together.
+  assert.match(read('test/turn59-f1-the-switch.test.js'), /'src\/components\/RightPanel\.jsx':\n\s+'T75 F9[^\n]*\n\s+\+ 'T75 F7/);
 });
 
 test('F7 · retail: the SIZE step carries CUT CORNER, the window is retail\'s own, the adapter speaks the store', () => {

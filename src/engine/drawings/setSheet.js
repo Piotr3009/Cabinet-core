@@ -23,7 +23,7 @@ import { PAGE_FORMATS } from './sheet.js';
 import {
   boundsOf, entLine as line, entRect as rect, entText as text, entPoly as poly,
 } from './primitives.js';
-import { roomWalls } from '../room.js';
+import { realWalls } from '../room.js';
 import { wallLabel } from './wallElevation.js';
 
 /** The A3 landscape every set sheet is printed on. */
@@ -361,7 +361,8 @@ export function keyPlan(zones, { room = null, highlight = null, arrow = true }, 
   const y = c.y + c.h - 8 - h;
   out.push({ ...text('SHEET_MUTED', x, y + h + 2.2, 'KEY PLAN', 2, 'left'), tracking: 0.3 });
   out.push({ ...rect('SHEET_MUTED', x, y, w, h), pen: 'FINE' });
-  const walls = room ? roomWalls(room) : [];
+  // T75 F9 · the key plan is the building: an island's faces are not walls.
+  const walls = room ? realWalls(room) : [];
   if (!walls.length) return out;
   const xs = walls.flatMap((wl) => [wl.start.x, wl.end.x]);
   const ys = walls.flatMap((wl) => [wl.start.y, wl.end.y]);

@@ -1,0 +1,18 @@
+T75: THE BIG TURN (narozniki, wyspa, nowe kity, zestawy, stock CSV, kolki). Spec dla Claude Code.
+
+1. Rozpakuj ten ZIP do folderu z repo Cabinet-core (tam gdzie jest package.json).
+   Nadpisuje JEDEN plik: CLAUDE.md. Nic wiecej.
+2. Usun ten plik CZYTAJ-T75.txt.
+3. git add CLAUDE.md
+   git commit -m "T75: the big turn spec"
+   git push
+4. Odpal nocna sesje Claude Code na main (Opus, xhigh, agenci dozwolone, ultracode OFF jak zawsze).
+   Galaz: claude/t75-the-big-turn, jeden commit na F, PR na koniec.
+5. Rano: audyt (clean clone, suita bez --silent, goldeny x6 + nowe, klasyfikator, parens, walk, frames verify/t75).
+
+Dla galezi GPT (fronty): ten sam main, te same LAWS i FROZEN, tylko pliki z sekcji THE FRONTS BOUNDARY.
+Niech GPT dostanie ten CLAUDE.md w calosci, zeby znal granice.
+
+Przed pushem przejrzyj tabele THE NUMBERS PROPOSED na koncu CLAUDE.md:
+to liczby, ktore podjalem za Ciebie. Kazda mozesz zmienic w pliku przed pushem.
+Kolejnosc czesci = kolejnosc wartosci: A narozniki, B wyspa, C kuchnia, D szafy, E zestawy, F stock i readiness, G kolki (ogon, moze zostac na nastepna ture).

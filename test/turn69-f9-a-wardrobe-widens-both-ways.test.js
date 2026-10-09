@@ -158,9 +158,12 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // AMENDED BY T75: `BomPanel` and `ContextMenu` (F5: the worktop reaches the
   // BOM, the upstand reaches the menu), argued in the manifest with the
   // owner's words, re-frozen at their new hashes. Neither is a widening file.
+  // AMENDED BY T75 F7: `RightPanel` (CUT CORNER and its small window), argued
+  // in the manifest with the owner's words of 23.09 (*"Klikasz 'wytnij
+  // narożnik'..."*), re-frozen at its new hash. Not a widening file.
   const ARGUED = [
     'AddItems', 'BomPanel', 'ContextMenu', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
-    'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
+    'RightPanel', 'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');

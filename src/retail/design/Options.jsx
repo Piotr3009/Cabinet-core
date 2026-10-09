@@ -342,11 +342,48 @@ function SizePanel({ unit }) {
         />
       </Field>
 
+      {/* ─── T75 F7 · CUT CORNER ──────────────────────────────────────────
+          *"Klikasz 'wytnij narożnik', program podświetla narożniki,
+          wybierasz, podajesz wysokość, głębokość, szerokość."*  CLAUDE.md:
+          *"retail SIZE step for a wardrobe"*. The button lights the four
+          corners in the room; a click on one opens the small window there. */}
+      {A.canCutCorner(unit.id) && (
+        <CutCornerRow unitId={unit.id} notch={unit.params?.notch || null} />
+      )}
+
       <p className="pbi-choice pbi-choice-15 pbi-panel-note">
         Millimetres, floor to top and wall to wall. We survey before we build, so these are the
         numbers we start from rather than the ones we cut to.
       </p>
     </Panel>
+  );
+}
+
+/** T75 F7 · CUT CORNER, and REMOVE once a corner is cut. */
+function CutCornerRow({ unitId, notch }) {
+  // Subscribed, so the row follows the lit corners; the notch is the unit's.
+  const lit = useUiStore((st) => st.notchPick === unitId);
+  // The corners go out with the row (another step, another wardrobe).
+  useEffect(() => () => { if (A.cuttingCorner(unitId)) A.toggleCutCorner(unitId); }, [unitId]);
+  // An ACTION under the four size fields, not a fifth field (T72 F14: "four
+  // fields, in the owner's order, and no fifth").
+  return (
+    <div className="pbi-duty-actions" data-testid="cut-corner-row">
+      <Button
+        kind={lit ? 'secondary' : 'primary'}
+        size="small"
+        data-testid="cut-corner"
+        title={lit ? 'Click one of the lit corners in the room' : 'Cut a corner out of this wardrobe'}
+        onClick={() => A.toggleCutCorner(unitId)}
+      >
+        {lit ? 'PICK A CORNER' : 'CUT CORNER'}
+      </Button>
+      {notch ? (
+        <Button kind="secondary" size="small" data-testid="remove-corner-cut" onClick={() => A.removeCornerCut(unitId)}>
+          {`REMOVE ${notch.corner} CUT`}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 

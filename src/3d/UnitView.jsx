@@ -160,6 +160,8 @@ import { frontsAreVeneered, panelIsVeneered } from '../lib/veneerSheen.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { panelSolids } from './panelSolid.js';
+// T75 F7 · CUT CORNER: the four plan corners, lit while the store asks.
+import NotchCorners from './NotchCorners.jsx';
 // T58b (CLAUDE.md F3.2): the J is not a mesh — it is slabs merged into the
 // leaf's own geometry — so a click on it is a hit test, and the hit test is a
 // pure function with a unit test behind it.
@@ -3050,6 +3052,14 @@ export default function UnitView({
           profile={profile}
           colour={COLORS.gold}
         />
+      )}
+
+      {/* ─── T75 F7 · CUT CORNER ─────────────────────────────────────────────
+          *"program podświetla narożniki, wybierasz"*: the four plan corners,
+          lit while `uiStore.notchPick` names this unit; a click on one opens
+          the small window at the click. Draws nothing otherwise. */}
+      {!contour && (
+        <NotchCorners unitId={unit.id} width={W} depth={D} height={H} notch={unit.params?.notch || null} />
       )}
 
       {/* ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET'S GUIDE LINE ───

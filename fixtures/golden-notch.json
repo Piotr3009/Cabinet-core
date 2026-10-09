@@ -1,0 +1,303 @@
+{
+  "meta": {
+    "name": "golden-notch.json",
+    "turn": "T75",
+    "F": "F7",
+    "source": "KIT_NOTCH.lsp (the notch, its NUMBERS block) on KIT_BUD_FULL.lsp (the parent)",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "BUD",
+    "width": 600,
+    "height": 770,
+    "depth": 558,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 1,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "notch": {
+      "corner": "BL",
+      "w": 200,
+      "d": 200,
+      "h": 0
+    }
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,340,770,<,0.77,0.262",
+      "01,BUR,540,770,>,0.77,0.416",
+      "01,TOP,564,540,>,0.56,0.265",
+      "01,BOTTOM,564,540,>,0.56,0.265",
+      "01,BACK,400,770,,0,0.308",
+      "01,SHELF-1,560,520,>,0.56,0.251",
+      "01,01-F,597,767,<>^v,2.73,0.458",
+      "01,RETURN,200,770,,0,0.154",
+      "01,STEP,200,770,,0,0.154"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 340,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 218,
+          "w": 18,
+          "h": 770,
+          "d": 340
+        },
+        "outline": 4,
+        "holes": 14,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 752,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 66,
+        "holes": 1,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 66,
+        "holes": 1,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 400,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 200,
+          "y": 0,
+          "z": 0,
+          "w": 400,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 28,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "SHELF-1",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 560,
+        "h": 520,
+        "thickness": 18,
+        "box": {
+          "x": 20,
+          "y": 385,
+          "z": 18,
+          "w": 560,
+          "h": 18,
+          "d": 520
+        },
+        "outline": 6,
+        "holes": 1,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 561,
+          "w": 597,
+          "h": 767,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "RETURN",
+        "part": "NOTCH-RETURN",
+        "role": "notch_box",
+        "w": 200,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 200,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 200
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "STEP",
+        "part": "NOTCH-STEP",
+        "role": "notch_box",
+        "w": 200,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 200,
+          "w": 200,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        6
+      ],
+      [
+        "HINGES_5MM|BUL",
+        6
+      ],
+      [
+        "PUZZLE_DOG_BONES|BOTTOM",
+        1
+      ],
+      [
+        "PUZZLE_DOG_BONES|SHELF-1",
+        1
+      ],
+      [
+        "PUZZLE_DOG_BONES|TOP",
+        1
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        14
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        14
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|BUL",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 3,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      },
+      {
+        "role": "shelf_pins",
+        "qty": 4,
+        "label": "Shelf pins"
+      }
+    ]
+  }
+}

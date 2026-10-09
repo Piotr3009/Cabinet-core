@@ -24,6 +24,15 @@ const BASE_GOLDENS = [
   { file: 'golden-blind-base.json', F: 'F3', source: 'KIT_BUD_FULL.lsp (the carcass); the blank is a rectangle', params: () => kit('BLIND_BASE', { doors: { count: 1 } }) },
   { file: 'golden-blind-wall.json', F: 'F3', source: 'KIT_WUD_FULL.lsp (the carcass); the blank is a rectangle', params: () => kit('BLIND_WALL', { doors: { count: 1 } }) },
   { file: 'golden-blind-wardrobe.json', F: 'F3', source: 'KIT_WARDROBE_FULL.lsp (the carcass); the blank is a rectangle', params: () => kit('BLIND_WARDROBE', { doors: { count: 1 } }) },
+  // T75 F7 · CLAUDE.md: *"a BUD 600 with a 200 x 200 full-height BL notch"*, the
+  // LISP's own NUMBERS case (KIT_NOTCH.lsp section I: golden-bud.json's BUD-A,
+  // front 25, one shelf, hinge L).
+  {
+    file: 'golden-notch.json',
+    F: 'F7',
+    source: 'KIT_NOTCH.lsp (the notch, its NUMBERS block) on KIT_BUD_FULL.lsp (the parent)',
+    params: () => kit('BUD', { shelves: 1, notch: { corner: 'BL', w: 200, d: 200, h: 0 } }),
+  },
 ];
 
 // Every F after F6 names its goldens in its own fragment

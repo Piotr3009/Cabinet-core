@@ -82,11 +82,14 @@ export const LICENSED = {
   },
   'src/engine/checks.js': {
     why: 'F1 · Check #27, red: a corner with nothing between the runs, asked of `cornersOf`. F3 · Check #2 '
-      + 'measures a blind leaf through `blindClearanceView`. Reads a room; cuts nothing',
+      + 'measures a blind leaf through `blindClearanceView`. F7 · Check #28, red: the engine\'s NOTCH_REFUSED, '
+      + 'in its words. Reads a room; cuts nothing',
     gates: [],
   },
   'src/engine/cabinet.js': {
-    why: 'F2 · the CORNER-POST board (front material, door plane, carcass high) cut when the store hands '
+    why: 'F7 · the corner notch: asked of the parent cut first (`notchVerdict`, refused: the parent and '
+      + 'NOTCH_REFUSED), `notchCarcass` before the drilling pass and `notchDrills` after it, `derived.notch`. '
+      + 'F2 · the CORNER-POST board (front material, door plane, carcass high) cut when the store hands '
       + '`corner_post_*_mm`; `corner_post` and `blind_blank` join the front-material and finish-exposed roles. '
       + 'F3 · `normalizeParams` resolves a blind kit\'s blank (`cfg.blind`), the one leaf stands beside it and '
       + 'the BLIND-BLANK fixed piece is cut. F5 · the UPSTAND board on the worktop line when the store hands '
@@ -299,6 +302,17 @@ const LIVENESS = {
     return {
       live: Boolean(blank) && Boolean(door) && door.w < 1000 - 3,
       said: `BLIND_BASE cuts ${blank ? `${blank.id} ${blank.w}` : 'no blank'} and one leaf ${door?.w} hinged ${door?.meta?.hinge}`,
+    };
+  },
+  notch: () => {
+    const r = computeCabinet({
+      ...defaultParamsFor('BUD', P), unit_num: '01', shelves: 1, notch: { corner: 'BL', w: 200, d: 200, h: 0 },
+    }, P);
+    const bul = r.panels.find((p) => p.id === 'BUL');
+    const ret = r.panels.find((p) => p.id === 'RETURN');
+    return {
+      live: Boolean(ret) && bul?.w === 340 && !r.warnings.some((w) => w.code === 'NOTCH_REFUSED'),
+      said: `BUD with a 200 x 200 BL notch cuts BUL ${bul?.w} and ${r.derived?.notch?.boards?.join(', ') || 'no box'}`,
     };
   },
 };

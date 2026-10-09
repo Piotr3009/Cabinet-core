@@ -106,8 +106,11 @@ test('the rules, each with the owner’s colour', () => {
   // AMENDED BY T75 F1: #27, a corner with nothing between the runs, RED
   // (*"`'none'` is a CHECK, in words, naming both units"*). The twenty-three
   // before it are untouched.
-  assert.equal(CHECKS.length, 24);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27]);
+  // AMENDED BY T75 F7: #28, a corner notch the carcass cannot take, RED
+  // (*"The Check refuses a notch that eats a joint it cannot re-plan, naming
+  // the board."*). The twenty-four before it are untouched.
+  assert.equal(CHECKS.length, 25);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -139,6 +142,7 @@ test('the rules, each with the owner’s colour', () => {
     25: 'red',
     26: 'red',
     27: 'red',
+    28: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

@@ -206,6 +206,14 @@ export const CHECKS = Object.freeze([
   // meeting in an internal corner with no post, no blind kit and no L: the
   // door at the corner cannot open. RED: a person decides (`engine/corners.js`).
   { n: 27, level: 'red', label: 'Corner with nothing between the runs' },
+  // ─── T75 F7 · A NOTCH THE CARCASS CANNOT TAKE ───────────────────────────
+  //
+  // *"The Check refuses a notch that eats a joint it cannot re-plan, naming
+  // the board."*  The engine asks the notch of the parent's own cut
+  // (`engine/notch.js notchVerdict`, KIT_NOTCH.lsp `notch-refusal`, D7, D8)
+  // and, refused, cuts the parent and says why (`NOTCH_REFUSED`). This is
+  // that sentence in front of the joiner. RED: a person decides.
+  { n: 28, level: 'red', label: 'Corner notch refused' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -559,7 +567,8 @@ export function runChecks({
     // already decided the front crosses the line, and a check that worked it
     // out a second way would be a second opinion about one board.
     for (const wn of result.warnings || []) {
-      const n = { SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21 }[wn.code];
+      // T75 F7 · #28: the notch the engine refused, in its own words.
+      const n = { SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28 }[wn.code];
       if (!n) continue;
       out.push(finding(n, 'red', at(wn.panel || null, {
         message: `${unitNum}: ${wn.message}`,

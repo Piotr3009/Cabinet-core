@@ -33,6 +33,8 @@ import {
 // T75 F3 · the corner rulebook: which corners turn into the room, and which
 // end of a wardrobe stands in one.
 import { cornerEndOf, isInternalCorner } from '../../engine/corners.js';
+// T75 F7 · which kits take a corner notch (KIT_NOTCH.lsp's two parents).
+import { notchApplies } from '../../engine/notch.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
 import { doorCountFor } from '../../engine/cabinet.js';
 // T65 F6: the engine's ONE visibility question, and the client's own
@@ -4499,4 +4501,72 @@ export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
   // pressed in.
   done.style = writeFrontLaw({ style: S().project.design?.fronts?.style || 'S' });
   return done;
+}
+
+// ─── T75 F7 · CUT CORNER, ON THE CLIENT'S SIZE STEP ────────────────────────
+//
+// The owner, 23.09.2026: *"Klikasz 'wytnij narożnik', program podświetla
+// narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np.
+// 200x200)."*  CLAUDE.md T75 F7: *"`CUT CORNER` in the selected unit's menu
+// (PRO right panel; retail SIZE step for a wardrobe)"*.
+//
+// NOT ONE NEW LAW: the corners are lit by the shared scene's own
+// `3d/NotchCorners.jsx` off the shared ui store's `notchPick`, the click opens
+// the `notch` window at the click (retail's `detail/NotchAsk.jsx`, drawn by
+// `Editors` at the room's level), and the cut is the store's ONE action
+// (`setUnitNotch`), which asks the engine first and hands back its refusal as
+// a whole sentence. Removing the notch is the same action with nothing.
+
+/** Does this wardrobe's carcass take a notch at all (KIT_NOTCH.lsp's parents)? */
+export function canCutCorner(unitId) {
+  const unit = unitOf(unitId);
+  return Boolean(unit && notchApplies(getUnitType(unit.type)));
+}
+
+/** The notch a unit carries, or null. */
+export function notchOfUnit(unitId) {
+  return unitOf(unitId)?.params?.notch || null;
+}
+
+/** Are this unit's four corners lit? */
+export function cuttingCorner(unitId) {
+  return Boolean(unitId) && U().notchPick === unitId;
+}
+
+/** CUT CORNER: light the four corners (or put them out again). */
+export function toggleCutCorner(unitId) {
+  if (cuttingCorner(unitId)) { U().stopNotchPick(); return false; }
+  if (!canCutCorner(unitId)) return false;
+  U().startNotchPick(unitId);
+  return true;
+}
+
+/** What the window opens with: the profile's own defaults (0 is "full"). */
+export function notchDefaults() {
+  const d = getCabinetProfile().notch?.defaults || {};
+  return { w: Number(d.widthMm) || 0, d: Number(d.depthMm) || 0, h: Number(d.heightMm) || 0 };
+}
+
+/** ENTER in the window: the cut, or the engine's refusal in its own words. */
+export function cutCorner(unitId, corner, { w, d, h } = {}) {
+  const res = S().setUnitNotch(unitId, { corner, w, d, h });
+  if (res?.ok) {
+    closeEditor();
+    U().stopNotchPick();
+  }
+  return { ok: Boolean(res?.ok), said: res?.said || '' };
+}
+
+/** A click elsewhere: the window closes and nothing is cut. */
+export function dismissCutCorner() {
+  closeEditor();
+  U().stopNotchPick();
+  return { ok: true, said: '' };
+}
+
+/** REMOVE CORNER CUT: the same one action, with nothing. */
+export function removeCornerCut(unitId) {
+  const res = S().setUnitNotch(unitId, null);
+  U().stopNotchPick();
+  return { ok: Boolean(res?.ok), said: res?.said || '' };
 }

@@ -100,6 +100,11 @@ function paramSets(typeId) {
     }],
     // T75 F2 · the corner post the store writes when a unit lands on the corner stop.
     ['corner-post', { ...base, doors: true, corner_post_left_mm: 50, corner_post_right_mm: 50 }],
+    // T75 F7 · the corner notch, full height (RETURN, STEP) and part height
+    // (and its LID). A kit the notch does not apply to refuses it in words and
+    // cuts its parent, so the walk asks every kit.
+    ['notch', { ...base, doors: true, hinge: 'R', notch: { corner: 'BL', w: 200, d: 200, h: 0 } }],
+    ['notch-part', { ...base, doors: true, hinge: 'R', notch: { corner: 'BL', w: 200, d: 200, h: 300 } }],
     ['run-infill', {
       ...base,
       doors: true,
@@ -245,6 +250,9 @@ const ENGINE_SRC = readFileSync(new URL('../src/engine/cabinet.js', import.meta.
 // here rather than quietly fixed or quietly ignored. Adding the six rows and
 // this file to the scan is one small turn's work.
 const INSERT_SRC = readFileSync(new URL('../src/engine/shoeInsert.js', import.meta.url), 'utf8');
+// T75 F7 · the corner notch names the boards of its box (`notch.js`, the
+// `board('RETURN', 'NOTCH-RETURN', ...)` helper), so it is read here too.
+const NOTCH_SRC = readFileSync(new URL('../src/engine/notch.js', import.meta.url), 'utf8');
 
 function partNamesInSource() {
   const names = new Set();
@@ -254,6 +262,7 @@ function partNamesInSource() {
     for (const m of src.matchAll(/push\(`[^`]*`,\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);
   }
   for (const m of ENGINE_SRC.matchAll(/\bboard\(\s*`[^`]*`\s*,\s*'([^']+)'/g)) names.add(m[1]);
+  for (const m of NOTCH_SRC.matchAll(/\bboard\(\s*'[^']*'\s*,\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);
   // T54-F7 AMENDED (28.08.2026): the shoe box suffix-map scan
   // (`const suffix = {…}[piece.role]` → SHOEBOX-*) is deleted — the map it
   // read is gone from cabinet.js with the rest of the shoe box world

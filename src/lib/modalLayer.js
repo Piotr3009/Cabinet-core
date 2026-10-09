@@ -185,6 +185,11 @@ export const MODAL_KINDS = Object.freeze({
   // pull"*. The client's ADD END PANEL? question, about ONE SIDE of one
   // wardrobe and opened at the click on it: an OBJECT window, held to an anchor.
   'add-panel': { about: 'object', label: 'Add end panel' },
+  // ─── T75 F7 ────────────────────────────────────────────────────────────
+  // *"wybierasz, podajesz wysokość, głębokość, szerokość"*: the CUT CORNER
+  // window, about ONE lit corner of one carcass and opened at the click on
+  // it: an OBJECT window, held to an anchor.
+  notch: { about: 'object', label: 'Cut corner' },
 });
 
 /** Every modal name the app knows, as a list. */

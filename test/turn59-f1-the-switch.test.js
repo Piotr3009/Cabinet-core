@@ -78,6 +78,17 @@ const EXEMPT = {
     'T75 F5 · the right-click offers the UPSTAND beside the plinth, on and off per run, and the menu is handed the two store calls it needs (addUpstand, removeUpstand). *"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... on and off per run like the plinth (BACKLOG #16\'s grammar: added by a decision, visible only then)."*',
   'src/components/BomPanel.jsx':
     'T75 F5 · the cut list and the BOM receive the room, so the worktop reaches them: its slabs (a corner is two, an L is one shaped like the L), the connector bolts as an order line, the joint and every cut-out as a NOTE. *"Done means the whole road ... lands in the cut list and the BOM."* One line: `room: project.room` handed to `buildBom`.',
+  // ─── ADDED BY TURN 75 · F7, THE CORNER NOTCH ─────────────────────────────
+  // CLAUDE.md T75, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
+  // with the owner's words from this file and re-frozen at its new hash in the
+  // same commit."*  The engine and the goldens are untouched by it.
+  'src/components/RightPanel.jsx':
+    'T75 F7 · CUT CORNER in the selected unit\'s panel: the button lights the four plan corners in the '
+    + 'scene (`3d/NotchCorners.jsx`), a click on one opens the small anchored window at the click with '
+    + 'WIDTH, DEPTH, HEIGHT (the profile\'s `notch.defaults`), Enter cuts through the store\'s one action '
+    + '`setUnitNotch` and a refusal shows in the engine\'s words; REMOVE takes the notch off. No retail copy '
+    + '(retail\'s SIZE step carries its own button). *"Klikasz \'wytnij narożnik\', program podświetla '
+    + 'narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np. 200x200)."*',
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
   // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
@@ -234,7 +245,7 @@ const FROZEN = {
   'src/components/PartDetailModal.jsx': '3e97f121e6932a9859d4a88616651c0ec08a7f871ca72192eb339521597afc83',
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
-  'src/components/RightPanel.jsx': 'ad0777675b240f39d649f9bf1dd79215161d79e3cca9c80ed5ffc9a21d68c788',
+  'src/components/RightPanel.jsx': 'bfdd632904e40d1fbdcf1995e38ae71b3bc1f5548ca69bc12143c3051e1b8ff7',
   // T69 F1 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RoomModal.jsx': '1bd7aebbe8899d428fcbe66ab972c72af43ae98c18b73f15eb7346f8b7f2d210',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
@@ -445,6 +456,7 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
     'src/components/JpullRunModal.jsx',
+    'src/components/RightPanel.jsx',
     'src/components/RoomModal.jsx',
     'src/components/UnitSizeModal.jsx',
     'src/components/WatchLayoutModal.jsx',

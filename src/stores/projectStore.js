@@ -28,6 +28,9 @@ import {
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
 // kept one with its box, and where a drop would be caught.
 import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
+// T75 F7 · the corner notch: whether a kit takes one, and the engine's own
+// refusal (KIT_NOTCH.lsp, asked of the parent's cut) read before it is kept.
+import { NOTCH_CORNERS, NOTCH_REFUSED, notchKitRefusal } from '../engine/notch.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 // T37-F4a: `bandSegmentAt`/`bandSegments` — a split divider is an END of the
@@ -9125,6 +9128,53 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // second path on which a hidden hole could come back. `computeCabinet` above
   // is handed nothing: the LISP is untouched, the kits are untouched, and the
   // next cabinet of the same kit is stock by construction.
+  // ─── T75 F7 · CUT CORNER ─────────────────────────────────────────────────
+  //
+  // The owner, 23.09.2026: *"Klikasz 'wytnij narożnik', program podświetla
+  // narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np.
+  // 200x200)."*  ONE action, one undo step: the notch is a unit param
+  // (`params.notch = { corner, w, d, h }`, h 0 = the full height), so it is
+  // saved and reloaded with the unit and nothing else has to know.
+  //
+  // Room refuses first: the engine asks the notch of the parent's own cut
+  // (`engine/notch.js notchVerdict`) and a refused notch is NOT kept; its
+  // sentence comes back here, in the engine's own words. `null` takes the
+  // notch off again.
+  setUnitNotch: (unitId, asked) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'There is no such unit.' };
+    if (asked == null) {
+      if (!unit.params?.notch) return { ok: true, said: '' };
+      set((st) => ({
+        units: st.units.map((u) => {
+          if (u.id !== unitId) return u;
+          const { notch: _gone, ...params } = u.params;
+          return { ...u, params };
+        }),
+      }));
+      return { ok: true, said: '' };
+    }
+    const kit = notchKitRefusal(getUnitType(unit.type));
+    if (kit) return { ok: false, said: kit };
+    const corner = String(asked.corner || '').toUpperCase();
+    if (!NOTCH_CORNERS.includes(corner)) return { ok: false, said: 'NOTCH: the corner is BL, BR, FL or FR.' };
+    const mm = (v) => Math.round(Number(v) || 0);
+    const notch = {
+      corner, w: mm(asked.w), d: mm(asked.d), h: Math.max(0, mm(asked.h)),
+    };
+    const trial = computeCabinet(
+      paramsForEngine({ ...unit, params: { ...unit.params, notch } }, s.project.design),
+      getCabinetProfile(),
+    );
+    const refused = (trial.warnings || []).find((w) => w.code === NOTCH_REFUSED);
+    if (refused) return { ok: false, said: refused.message };
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, notch } } : u)),
+    }));
+    return { ok: true, said: '', notch };
+  }),
+
   unitResult: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;

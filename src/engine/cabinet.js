@@ -45,6 +45,11 @@ import {
   plateBearerOf, slopeForcedHand, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
+// T75 F7 · the corner notch, KIT_NOTCH.lsp's mirror: a refusal asked of the
+// parent's own cut, a pass before the drilling and a pass after it.
+import {
+  notchCarcass, notchDrills, notchSummary, notchVerdict, withNotchRefusal,
+} from './notch.js';
 // T58b (CLAUDE.md F2): the LED strip's own dimensions — thickness and width —
 // are the lighting spec's, so the strip the glass births is cut to the same
 // law every other strip in the project is. `ledStrips.js` reaches nothing in
@@ -1501,6 +1506,16 @@ export function computeCabinet(params, profileOverride) {
   const profile = profileOverride || getCabinetProfile();
   const P = profile;
   const cfg = normalizeParams(params, P);
+  // ─── T75 F7 · THE NOTCH IS ASKED OF THE PARENT FIRST ─────────────────────
+  // *"Room refuses first: nothing is clipped silently."*  The unit is cut
+  // WITHOUT its notch and the notch is judged against that cut (KIT_NOTCH.lsp
+  // `notch-refusal`, D7, D8). Refused, the parent is what is cut and the
+  // sentence travels with it (Check #28). No `params.notch`, no line here runs.
+  if (params?.notch) {
+    const parent = computeCabinet({ ...params, notch: null }, profileOverride);
+    const verdict = notchVerdict({ parent, params, type: cfg.type, profile: P });
+    if (verdict) return withNotchRefusal(parent, verdict, params, P);
+  }
   const warnings = [...cfg.warnings];
 
   const { width: W, height: H, depth: D, G, GB, frontT, type, unitNum } = cfg;
@@ -7455,6 +7470,17 @@ export function computeCabinet(params, profileOverride) {
     };
   }
 
+  // ─── T75 F7 · THE CORNER NOTCH, CUT BEFORE THE DRILLING ──────────────────
+  // KIT_NOTCH.lsp: *"It runs AFTER the parent kit's carcass and BEFORE the
+  // drilling pass."*  Every board is cut in its own frame here, so the pass
+  // below drills the parent's pattern into what is left; `notchDrills` then
+  // drops, re-plans and re-origins. Null on every unit with no notch.
+  const notchCut = params?.notch
+    ? notchCarcass({
+      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
+    })
+    : null;
+
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];
   // ─── TURN 26 (CLAUDE.md R10 / F1.4): A DRILL MAY STATE ITS DEPTH ──────────
@@ -10048,6 +10074,14 @@ export function computeCabinet(params, profileOverride) {
     };
   }
 
+  // T75 F7 · the drilling the notch reaches (D7), the boards it shortened
+  // re-origined, the legs in its footprint stepped out of it.
+  if (notchCut) {
+    notchDrills({
+      cut: notchCut, panels, drills, legs,
+    });
+    derived.notch = notchSummary(notchCut);
+  }
   const cutDrills = (() => {
     if (!cut) return drills;
     const topOf = new Map(panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || Number(p.h) || 0]));

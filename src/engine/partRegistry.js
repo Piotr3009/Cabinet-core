@@ -479,6 +479,13 @@ export const ELEMENT_TO_PART_ID = {
   UPSTAND: 'upstand',
   // T75 F3 · the blind kit's blank: a FIX front.
   'BLIND-BLANK': 'false_front',
+  // T75 F7 · the corner notch's box (KIT_NOTCH.lsp D1, D2), carcass board
+  // standing where the carcass's own boards stand: the RETURN is the side of
+  // the full-depth part, the STEP the shallow part's own back (the BACK's
+  // corner, moved forward), the LID a horizontal over a part-height notch.
+  'NOTCH-RETURN': 'carcase_side',
+  'NOTCH-STEP': 'back',
+  'NOTCH-LID': 'carcase_horizontal',
   // T74 F13 · the free-standing panel's one board.
   'FREE-PANEL': 'free_panel',
 

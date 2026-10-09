@@ -5,6 +5,9 @@ import { cncRect, notchedOutline, socketNotches, tabOutlines } from '../engine/s
 // Turn 46 (F6a): the ONE cut, imported — never a second diagonal in the scene.
 import { slopeCutActive, trimOutlineOnSlope } from '../engine/puzzle.js';
 import { panelPlacement } from '../engine/joinery.js';
+// T75 F7 · the corner notch: the engine states which corner a board lost, and
+// the solid is cut by the same arithmetic (`engine/notch.js cutNotchCorner`).
+import { cutNotchCorner } from '../engine/notch.js';
 import { panelRecesses, recessKey } from '../engine/recesses.js';
 import { jpullLayers, jpullKey } from './jpullProfile.js';
 
@@ -264,8 +267,12 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // it honest this time is that the depth is real (`engine/recesses.js` reads
   // the record's own, then the workshop's table) and that WHICH classes are
   // bored is a named policy with a reason per class (`engine/machining.js`).
+  // T75 F7 · a notched board (`cnc.notch`, the engine's own corner in the
+  // board's drawn frame). Its dog-bone circle stands in the waste, outside the
+  // board, so it is the machine's and is not bored out of the solid.
+  const notch = panel?.cnc?.notch && Number(panel.cnc.notch.nw) > 0 ? panel.cnc.notch : null;
   const recesses = profile?.appearance?.cuts?.enabled
-    ? panelRecesses(panel, drills, {
+    ? panelRecesses(panel, notch ? drills.filter((d) => d.kind !== 'notch_dogbone') : drills, {
       thickness,
       // Turn 46 (F6a): …and the SHAKER rebate on a CUT leaf. Its pocket is a
       // rectangle whose bounding box reaches past the diagonal, so punching it
@@ -283,7 +290,9 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // side always has tabs, so this never bit — but a gate that depends on
   // another feature being present is exactly the fault F4 is about.
   if (!notches.length && !tabs.length && !recesses.length && !slopeCut && !bevel3d && !jpull) {
-    return NOTHING;
+    // T75 F7 · …and a board whose only feature is the corner a notch took is
+    // a shape too (a shelf has no joint of its own to make it one).
+    if (!notch) return NOTHING;
   }
 
   const key = [
@@ -303,6 +312,8 @@ export function panelSolids(panel, layers, profile, drills = []) {
     bevel3d ? `bevel:${bevel3d.a},${bevel3d.b}` : '',
     // Two leaves that differ only in where their J runs are two boards.
     jpullKey(jpull),
+    // Two boards that differ only in the corner a notch took are two boards.
+    notch ? `notch:${notch.fc}:${notch.nw}:${notch.nh}` : '',
     recessKey(recesses),
   ].join('|');
 
@@ -328,6 +339,7 @@ export function panelSolids(panel, layers, profile, drills = []) {
     slopeCut,
     bevel3d,
     jpull,
+    notch,
   });
   cache.set(key, built);
   if (cache.size > CACHE_LIMIT) {
@@ -472,7 +484,7 @@ function thicknessOf(panel, placement) {
 
 function build({
   w, h, thickness, radius, notches, tabs = [], recesses = [], placement, box, slopeCut = null,
-  bevel3d = null, jpull = null,
+  bevel3d = null, jpull = null, notch = null,
 }) {
   const shapeOf = (points) => new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y))));
   const extrudeShape = (shape) => new THREE.ExtrudeGeometry(shape, {
@@ -497,6 +509,8 @@ function build({
   }), slopeCut
     ? { w, h, ...slopeCut }
     : { w, h, pts: [{ x: 0, y: h }, { x: w, y: h }] });
+  // T75 F7 · the corner the notch took, out of the board's own polygon.
+  const shaped = notch ? cutNotchCorner(outline, w, h, notch) : outline;
 
   // ─── TURN 20 (CLAUDE.md F8.1): THE MATERIAL IS ACTUALLY GONE ─────────────
   //
@@ -506,7 +520,7 @@ function build({
   // 11. A BLIND feature then gets its floor back as a separate cap at the true
   // depth (below), which is what makes 2 mm read as 2 mm rather than as a slot
   // straight through an 18 mm board.
-  const board = shapeOf(outline);
+  const board = shapeOf(shaped);
   for (const f of recesses) board.holes.push(recessPath(f));
 
   // ─── TURN 57 (CLAUDE.md F3): THE J-PULL, AS THREE SLABS ──────────────────

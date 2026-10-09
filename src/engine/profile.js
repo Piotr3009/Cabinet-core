@@ -340,6 +340,17 @@ export const DEFAULT_CABINET_PROFILE = {
     overlap: 'adjacent',     // T75 proposed, owner to confirm
   },
 
+  // ─── T75 F7 · THE CORNER NOTCH (reference/lisp/KIT_NOTCH.lsp) ─────────────
+  //
+  // The owner, 23.09.2026: *"podajesz wysokość, głębokość, szerokość (np.
+  // 200x200)."*  What the CUT CORNER window opens with: WIDTH along the back,
+  // DEPTH into the carcass, HEIGHT up from the underside, 0 = the full height
+  // (the window shows "full"). Every other number the notch reads is the
+  // puzzle's and the cutter's own (KIT_NOTCH.lsp section A).
+  notch: {
+    defaults: { widthMm: 200, depthMm: 200, heightMm: 0 }, // T75 proposed, owner to confirm
+  },
+
   // ─── Hinge drilling ───
   hinges: {
     // ─── Turn 17 (CLAUDE.md F7.1): THE PROJECT STANDARD ────────────────────
@@ -5645,6 +5656,8 @@ export function migrateCabinetProfile(profile) {
       // undefineds that would offer the bar over every gap in the app.
       shareOut: { ...D.ui.shareOut, ...profile.ui?.shareOut },
     },
+    // T75 F7 · the notch's defaults, key by key.
+    notch: { ...D.notch, ...profile.notch, defaults: { ...D.notch.defaults, ...profile.notch?.defaults } },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's
     // answer for the rest, and a profile saved before this turn gets all of it.

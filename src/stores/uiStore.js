@@ -637,6 +637,15 @@ export const useUiStore = create((set, get) => ({
   zoneHint: null,                    // the bay's index, or null
   setZoneHint: (index) => set({ zoneHint: index == null ? null : Math.trunc(Number(index)) }),
 
+  // ─── T75 F7 · CUT CORNER: THE FOUR CORNERS ARE LIT ───────────────────────
+  // *"Klikasz 'wytnij narożnik', program podświetla narożniki, wybierasz."*
+  // Which unit's four plan corners stand lit in the scene (`3d/NotchCorners`),
+  // or null. A moment, like the bay hint above: the click on a corner opens
+  // the small window at the click, and a cut or a click elsewhere ends it.
+  notchPick: null,
+  startNotchPick: (unitId) => set({ notchPick: unitId || null }),
+  stopNotchPick: () => set({ notchPick: null }),
+
   // Which "Add items" type has its settings open. One at a time: they are
   // alternatives, not a form to fill in top to bottom.
   addItemKind: null,                 // 'drawers' | 'shelves' | 'hanger' | null

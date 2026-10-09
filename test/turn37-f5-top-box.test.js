@@ -135,7 +135,9 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // apex. Rule 15 is still the fifteenth and still says what it said.
   // RE-PINNED 09.10.2026 (T75-F1): and #27, a corner with nothing between the
   // runs. Rule 15 is still the fifteenth and still says what it said.
-  assert.equal(CHECKS.length, 24);
+  // RE-PINNED 09.10.2026 (T75-F7): and #28, a corner notch refused. Rule 15
+  // is still the fifteenth and still says what it said.
+  assert.equal(CHECKS.length, 25);
   assert.equal(CHECKS[14].n, 15);
 });
 

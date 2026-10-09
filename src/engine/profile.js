@@ -2201,6 +2201,12 @@ export const DEFAULT_CABINET_PROFILE = {
       // must not be refused as one. Past it the two really are different
       // pieces and the corner is refused out loud (BLOCKERS #92).
       cornerToleranceMm: 2,
+      // ─── T75 F6 · BLOCKERS #92, DECIDED FOR THE OWNER ───────────────────
+      // 'step': where a deeper run meets a shallower one, the moulding mitres
+      // round the deeper unit's front corner, returns along its side for the
+      // difference, and meets the shallower run in an internal mitre
+      // (`cornice.js corniceCorner`). Taken out, the corner is refused again.
+      cornerMode: 'step',   // T75 proposed, owner to confirm
     },
   },
 

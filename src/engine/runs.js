@@ -558,7 +558,7 @@ export function infillCornerMitre(end, faceH, elementTop, tolerance = 0) {
  * out, the run answers from its own units, which is what every caller before
  * this turn effectively asked and is what keeps a bare call honest.
  *
- * @returns {{kind:'wall'|'infill'|'end-panel'|'open', x:number, blockedBy?:string}}
+ * @returns {{kind:'wall'|'infill'|'end-panel'|'open'|'corner', x:number, blockedBy?:string}}
  */
 export function runEnd(run, side, {
   wallWidth, roomHeight, verticals = null, raked = false,
@@ -582,6 +582,17 @@ export function runEnd(run, side, {
   // the moment nothing has been typed, so a run of cabinets that have never
   // heard of the field stops exactly where it stopped yesterday.
   const atWall = tolerance + wallGapOf(unit, profile);
+
+  // ─── T75 F6 · A RUN THAT STOPS ON A CORNER ─────────────────────────────────
+  // The end unit carries the CORNER POST on this side (the store writes it from
+  // `engine/corners.js` when the unit stands on the corner stop): the run ends
+  // there. Not 'open' (a top infill or a cornice would turn and return into the
+  // dead corner, the probe measured 438 mm of it) and not a 'wall': it stops
+  // square on the post's outer edge, in the plane of the run round the corner.
+  const postMm = Number(unit.params?.[side === 'left' ? 'corner_post_left_mm' : 'corner_post_right_mm']) || 0;
+  if (postMm > 0) {
+    return { kind: 'corner', x: side === 'left' ? carcassEdge - postMm : carcassEdge + postMm };
+  }
 
   // 1 — the wall itself.
   //
@@ -1246,7 +1257,7 @@ export function runMaskParams(units, profile) {
  *
  * @returns {Map<string, object|null>} unit id → the parameter to store
  */
-export function runPlinthParams(units, profile) {
+export function runPlinthParams(units, profile, { corners = [] } = {}) {
   const out = new Map(units.map((u) => [u.id, null]));
   for (const run of buildRuns(units, profile)) {
     for (const segment of plinthSegments(run)) {
@@ -1255,6 +1266,41 @@ export function runPlinthParams(units, profile) {
       out.set(segment[0].id, element);
       for (const u of segment.slice(1)) out.set(u.id, { role: 'member', ownerId: segment[0].id });
     }
+  }
+  // ─── T75 F6 · THE PLINTH TURNS AN INTERNAL CORNER, SQUARE BUTT ──────────
+  //
+  // *"the plinth of the run that STARTS at the corner is lengthened to butt
+  // the face of the other run's plinth under the post (square butt, no mitre:
+  // the owner's "no 45° cuts")."*  The corners are the rulebook's
+  // (`engine/corners.js`, handed in by the caller so this module keeps one
+  // detection): run A runs into the corner and its kick runs with it; run B
+  // stops on the corner stop, so its kick is carried on from its carcass end
+  // to the FACE of run A's kick (A's wall gap + depth less the setback). The
+  // stretch is a span of its own, so a long kick still breaks only at a
+  // cabinet edge. An L carcass cuts its own two plinths (F4) and is left alone.
+  const setback = Number(profile?.autoParts?.plinth?.setback) || 0;
+  for (const c of corners || []) {
+    if (c?.kind !== 'internal' || c.solution === 'L' || !c.runA || !c.runB) continue;
+    const a = units.find((u) => u.id === c.runA.unitId);
+    const b = units.find((u) => u.id === c.runB.unitId);
+    if (!a || !b || !wantsPlinth(a) || !wantsPlinth(b)) continue;
+    const faceA = wallGapOf(a, profile) + (Number(a.params?.depth) || 0) - setback;
+    const ext = Math.round((Number(c.runB.gapMm) - faceA) * 100) / 100;
+    if (!(ext > 0)) continue;
+    const mine = out.get(b.id);
+    const ownerId = mine?.role === 'member' ? mine.ownerId : b.id;
+    const element = out.get(ownerId);
+    if (!element || element.role !== 'owner') continue;
+    const atLeft = c.runB.side === 'left';
+    out.set(ownerId, {
+      ...element,
+      offset: atLeft ? element.offset - ext : element.offset,
+      length: element.length + ext,
+      spans: atLeft
+        ? [{ id: 'corner-butt', width: ext }, ...(element.spans || [])]
+        : [...(element.spans || []), { id: 'corner-butt', width: ext }],
+      corner: { side: atLeft ? 'left' : 'right', mm: ext, butt: 'square', faceOf: a.id },
+    });
   }
   return out;
 }

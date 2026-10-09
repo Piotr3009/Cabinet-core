@@ -325,6 +325,9 @@ export function segmentCornice(segment, {
     left: left.kind === 'open' ? depthAt('left') : null,
     right: right.kind === 'open' ? depthAt('right') : null,
   };
+  // T75 F6 · where a returning end does not run to the wall but stops on a
+  // shallower neighbour's moulding (the step), it ends in an internal mitre.
+  const returnEnds = { left: 'wall', right: 'wall' };
 
   // ─── TURN 26 (CLAUDE.md F9.3/F9.4): IS THIS END A CORNER? ────────────────
   //
@@ -342,6 +345,15 @@ export function segmentCornice(segment, {
       theirs: neighbourAt?.right || null,
     }, profile),
   };
+  // T75 F6 · THE STEP: the deeper end returns for the depth difference and
+  // ends in an internal mitre against the shallower run's front.
+  for (const side of ['left', 'right']) {
+    const step = corners[side]?.step;
+    if (step?.role === 'deeper' && step.returnMm > 0) {
+      returns[side] = step.returnMm;
+      returnEnds[side] = 'internal';
+    }
+  }
   // The infill this moulding is fixed to. The tallest request in the segment,
   // exactly as the top infill's own run height is decided — one piece, one
   // height — because the moulding lands on ONE face.
@@ -371,11 +383,15 @@ export function segmentCornice(segment, {
     // `corniceCorner` decides — including the refusal when the two pieces are
     // different depths, which is BLOCKERS #92 and is NOT guessed at here.
     mitres: {
-      left: left.kind === 'open' || corners.left?.mitre === true,
-      right: right.kind === 'open' || corners.right?.mitre === true,
+      // T75 F6 · 'internal' where the shallower run's front meets a step.
+      left: corners.left?.mitre === 'internal' ? 'internal' : (left.kind === 'open' || corners.left?.mitre === true),
+      right: corners.right?.mitre === 'internal' ? 'internal' : (right.kind === 'open' || corners.right?.mitre === true),
     },
     corners,
     returns,
+    // Present only where a step made one, so every element before tonight
+    // carries exactly the keys it did.
+    ...(returnEnds.left !== 'wall' || returnEnds.right !== 'wall' ? { returnEnds } : {}),
     infillHeight,
     rise: corniceRise(height, infillHeight),
     top: stackTop,
@@ -449,6 +465,22 @@ export function corniceCorner({ mine, theirs }, profile) {
   // …and the owner's own open question: DIFFERENT DEPTHS.
   const a = Math.max(0, Number(mine.depth) || 0);
   const b = Math.max(0, Number(theirs.depth) || 0);
+  // ─── T75 F6 · BLOCKERS #92, DECIDED: THE STEP ────────────────────────────
+  //
+  // CLAUDE.md T75 F6: *"decided for the owner as `profile.cornice.cornerMode
+  // = 'step'` (T75 proposed): where a deeper run meets a shallower one at a
+  // corner, the cornice takes an external mitre at the deeper unit's front
+  // corner, returns along its side for the depth difference, and meets the
+  // shallower run's cornice in an internal mitre. `corniceCorner` stops
+  // refusing unequal depths and emits the return piece; the refusal sentence
+  // stays for the case the profile does not name."*
+  if (Math.abs(a - b) > tolerance && C.cornerMode === 'step') {
+    return a > b
+      ? {
+        kind: 'corner', mitre: true, with: withId, step: { role: 'deeper', returnMm: Math.round((a - b) * 100) / 100 },
+      }
+      : { kind: 'corner', mitre: 'internal', with: withId, step: { role: 'shallower' } };
+  }
   if (Math.abs(a - b) > tolerance) {
     return {
       kind: 'corner',
@@ -591,7 +623,9 @@ export function corniceOrder(element, profile) {
   const returns = ['left', 'right']
     .map((s) => Math.max(0, Number(element.returns?.[s]) || 0))
     .reduce((a, b) => a + b, 0);
-  const corners = ['left', 'right'].filter((s) => element.mitres?.[s]).length;
+  // T75 F6 · a step return's far end is a second mitre (internal).
+  const corners = ['left', 'right'].filter((s) => element.mitres?.[s]).length
+    + ['left', 'right'].filter((s) => element.returnEnds?.[s] === 'internal').length;
   const allowance = corners * Math.max(0, Number(C.mitreAllowance) || 0);
   const total = front + returns + allowance;
   return {
@@ -639,8 +673,11 @@ export function corniceSolids(element, { carcassTop = 0, doorPlane = 0, backZ = 
   // ── the front run ──
   // Along +x. A mitred LEFT end runs on to its long point at x0 − d; a mitred
   // RIGHT end at x1 + d. A stop is square, at x0 or x1 for every point.
-  const mL = element.mitres?.left ? 1 : 0;
-  const mR = element.mitres?.right ? 1 : 0;
+  // T75 F6 · an INTERNAL mitre (the shallower run meeting a step) slides the
+  // other way: the outer face stops short by the depth of the piece.
+  const slide = (m) => (m === 'internal' ? -1 : (m ? 1 : 0));
+  const mL = slide(element.mitres?.left);
+  const mR = slide(element.mitres?.right);
   out.push({
     id: 'front',
     a: section.map(([d, y]) => [x0 - mL * d, y0 + y, doorPlane + d]),
@@ -658,12 +695,17 @@ export function corniceSolids(element, { carcassTop = 0, doorPlane = 0, backZ = 
     const sign = side === 'left' ? -1 : 1;
     const face = side === 'left' ? x0 : x1;
     const wallEnd = Number(backZ) || 0;
+    const internal = element.returnEnds?.[side] === 'internal';
     out.push({
       id: `return-${side}`,
       // The corner end: mitred, so each point starts at its own long point.
       a: section.map(([d, y]) => [face + sign * d, y0 + y, doorPlane + d]),
-      // …and the far end butts into the wall, square.
-      b: section.map(([d, y]) => [face + sign * d, y0 + y, wallEnd]),
+      // …and the far end butts into the wall, square; or, at a step (T75 F6),
+      // stops on the shallower front `depth` behind this one in an internal
+      // mitre, each point on that front's own line.
+      b: internal
+        ? section.map(([d, y]) => [face + sign * d, y0 + y, doorPlane - depth + d])
+        : section.map(([d, y]) => [face + sign * d, y0 + y, wallEnd]),
     });
   }
   return out;

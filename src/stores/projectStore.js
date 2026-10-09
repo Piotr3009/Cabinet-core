@@ -2257,7 +2257,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // the top infill above, computed after `plinth` has been resolved on every
     // unit — a segment is a stretch of ADJACENT PLINTHED units, so it cannot be
     // worked out until the store knows which of them have a plinth at all.
-    const plinthParams = runPlinthParams(next, profile);
+    // T75 F6 · …and at an internal corner the kick of the run that stops on the
+    // corner is carried on to the face of the other's (corners.js, one law).
+    const plinthParams = runPlinthParams(next, profile, {
+      corners: cornersOf({ units: next, walls, profile }),
+    });
     // T75 F5 · the UPSTAND, the plinth's grammar at the top of the run.
     const upstandParams = runUpstandParams(next, profile);
     // ─── …and the MASKING PANEL, the same way (turn 14, CLAUDE.md F5) ───

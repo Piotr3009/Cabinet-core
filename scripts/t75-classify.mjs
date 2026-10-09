@@ -59,6 +59,10 @@ export const GATES = {
     what: 'a blind corner kit (BLIND_BASE, BLIND_WALL, BLIND_WARDROBE: `type.blind`, F3)',
     opens: (p, id) => Boolean(UNIT_TYPES[id]?.blind || UNIT_TYPES[p.type]?.blind),
   },
+  plinthCorner: {
+    what: 'a run plinth carried on round an internal corner (`params.run_plinth.corner`, written by the store from `cornersOf`, F6)',
+    opens: (p) => Boolean(p.run_plinth?.corner),
+  },
   upstand: {
     what: 'an upstand run element handed to the owner unit (`params.run_upstand.role === \'owner\'`, F5)',
     opens: (p) => p.run_upstand?.role === 'owner',
@@ -86,8 +90,9 @@ export const LICENSED = {
       + '`corner_post_*_mm`; `corner_post` and `blind_blank` join the front-material and finish-exposed roles. '
       + 'F3 · `normalizeParams` resolves a blind kit\'s blank (`cfg.blind`), the one leaf stands beside it and '
       + 'the BLIND-BLANK fixed piece is cut. F5 · the UPSTAND board on the worktop line when the store hands '
-      + '`run_upstand`. IS the cut path: every delta is behind a gate below',
-    gates: ['cornerPost', 'blind', 'upstand'],
+      + '`run_upstand`. F6 · the run plinth carries its corner butt in `meta.corner`. IS the cut path: every '
+      + 'delta is behind a gate below',
+    gates: ['cornerPost', 'blind', 'plinthCorner', 'upstand'],
   },
   'src/engine/partRegistry.js': {
     why: 'F2 · the `corner_post` part and its edging; F3 · BLIND-BLANK on the `false_front` row held open '
@@ -96,9 +101,10 @@ export const LICENSED = {
   },
   'src/engine/runs.js': {
     why: 'F2 · `unitVerticals` reports the corner post (kind `corner-post`) so rule 7 sees it. F5 · '
-      + '`runUpstandParams`, the plinth\'s grammar at the top of the run. Read by the store and the room\'s '
-      + 'rulebooks; the six carry no post and no upstand',
-    gates: ['cornerPost', 'upstand'],
+      + '`runUpstandParams`, the plinth\'s grammar at the top of the run. F6 · `runPlinthParams` carries run B\'s '
+      + 'kick to the face of run A\'s (square butt) and `runEnd` answers `corner` at a post. Read by the store '
+      + 'and the room\'s rulebooks; the six carry no post, no corner and no upstand',
+    gates: ['cornerPost', 'plinthCorner', 'upstand'],
   },
   'src/engine/frontClearance.js': {
     why: 'FRONTS BOUNDARY licence 1 · rule 7 reads `doors.clearance.corner` (null when a profile names none), '
@@ -112,8 +118,8 @@ export const LICENSED = {
   },
   'src/engine/profile.js': {
     why: 'F2 · `corner` (postMm, overlap) and `doors.clearance.corner`; F3 · `blindBase`, `blindWall`, '
-      + '`blindWardrobe` defaults; F5 · `autoParts.worktop` joint, cutout, upstand, seatingMm, cnc; '
-      + 'and their migrate lines. Every number marked T75 proposed. The six read none',
+      + '`blindWardrobe` defaults; F5 · `autoParts.worktop` joint, cutout, upstand, seatingMm, cnc; F6 · '
+      + '`autoParts.cornice.cornerMode`; and their migrate lines. Every number marked T75 proposed. The six read none',
     gates: ['cornerPost', 'blind'],
   },
   'src/engine/types.js': {
@@ -149,6 +155,12 @@ export const LICENSED = {
   },
   'src/engine/design.js': {
     why: 'F4/F5 · `migrateDesign` keeps a worktop record of one L unit (`kind: \'L\'`). The design layer',
+    gates: [],
+  },
+  'src/engine/cornice.js': {
+    why: 'F6 · BLOCKERS #92 decided as the step: `corniceCorner` returns the deeper end for the depth '
+      + 'difference and mitres the shallower internally; `corniceOrder` counts the second mitre; '
+      + '`corniceSolids` draws both. Read by the store\'s run elements; the six carry no cornice',
     gates: [],
   },
   'src/engine/drawings/setPlan.js': {
@@ -263,6 +275,12 @@ function gateTable() {
 // ─── …AND EACH GATE OPENED, SO THE DELTA IS SHOWN TO BE LIVE ─────────────
 
 const LIVENESS = {
+  plinthCorner: () => {
+    const run = { role: 'owner', offset: -128, length: 728, unitIds: ['u'], spans: [], corner: { side: 'left', mm: 128, butt: 'square' } };
+    const r = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', plinth: true, run_plinth: run }, P);
+    const kick = r.panels.find((p) => p.id === 'PLINTH');
+    return { live: kick?.meta?.corner?.mm === 128 && kick.box.w === 728, said: `BUD carries the corner butt: PLINTH ${kick?.box?.w} with ${kick?.meta?.corner?.mm} at the corner` };
+  },
   upstand: () => {
     const run = { role: 'owner', offset: 0, length: 600, unitIds: ['u'], spans: [] };
     const r = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', run_upstand: run }, P);

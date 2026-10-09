@@ -5293,7 +5293,14 @@ export function computeCabinet(params, profileOverride) {
       cnc: type.frontOpens === 'drop'
         ? notchedPlinth(plinthLength, plinthH, -plinthX, W, Number(type.plinthCutFromTop) || 0)
         : rectGeometry(plinthLength, plinthH),
-      ...(runPlinth?.role === 'owner' ? { meta: { run: true, unitIds: runPlinth.unitIds } } : {}),
+      ...(runPlinth?.role === 'owner' ? {
+        meta: {
+          run: true,
+          unitIds: runPlinth.unitIds,
+          // T75 F6 · carried on to the face of the run round the corner.
+          ...(runPlinth.corner ? { corner: runPlinth.corner } : {}),
+        },
+      } : {}),
     }));
   }
   // ─── T75 F4 · THE L's OWN PLINTH: TWO BOARDS, SQUARE BUTT ────────────────

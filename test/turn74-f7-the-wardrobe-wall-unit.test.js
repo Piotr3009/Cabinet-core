@@ -92,7 +92,8 @@ test('T74 F7 · filed with the wardrobes: the library\'s wardrobe category, its 
   // AMENDED BY T75 F3: the blind corner wardrobe files after it.
   // AMENDED BY T75 F4: …and the Corner L wardrobe after that.
   // AMENDED BY T75 F16: …and the chest of drawers' three counts after that.
-  assert.deepEqual(getCategory('wardrobe', 'WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'CORNER_L_WARDROBE']);
+  // AMENDED BY T75 F17: …and the floating desk, a wardrobe wall unit too.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
   assert.ok(UNIT_TYPE_ORDER.includes('WARDROBE_WALL'));
   assert.equal(UNIT_NUM_PREFIX.WARDROBE_WALL, 'WW');
   assert.deepEqual(P.wardrobeWallUnit.defaults, { width: 600, height: 720, depth: 568, mountHeight: 1500 });

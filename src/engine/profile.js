@@ -1880,6 +1880,22 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 800, height: 647, depth: 568 },                        // T75 proposed, owner to confirm
   },
 
+  // ─── T75 F17 · THE FLOATING DESK ──────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F17: *"height `wardrobeDesk.defaults.height = 160` ...
+  // Placed beside a wardrobe at `mount_height = 720` ... a desk or a sideboard
+  // top is 25."*  720 is the carcass UNDERSIDE (`runs.js unitBase` reads a
+  // wall unit's mount height as its base), so the writing surface stands at
+  // 720 + 160 + 25 = 905. The depth is the wardrobe's (beside one, the store
+  // copies THAT wardrobe's). The width is not the owner's: 1000, a desk a
+  // person sits at. `drawerRatio` is the one drawer, the oven base's grammar.
+  wardrobeDesk: {
+    defaults: {
+      width: 1000, height: 160, depth: 568, mountHeight: 720, topThickness: 25, // T75 proposed, owner to confirm
+    },
+    drawerRatio: [1],
+  },
+
   // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
   //
   // The KIT_WUD envelope, with the bottom open. `aperture` is the clear height
@@ -5397,6 +5413,14 @@ export function migrateCabinetProfile(profile) {
       ...D.wardrobeChest,
       ...profile.wardrobeChest,
       defaults: { ...D.wardrobeChest.defaults, ...profile.wardrobeChest?.defaults },
+    },
+    // T75 F17 · the desk's defaults, key by key; its one-drawer split whole.
+    wardrobeDesk: {
+      ...D.wardrobeDesk,
+      ...profile.wardrobeDesk,
+      defaults: { ...D.wardrobeDesk.defaults, ...profile.wardrobeDesk?.defaults },
+      drawerRatio: Array.isArray(profile.wardrobeDesk?.drawerRatio) && profile.wardrobeDesk.drawerRatio.length
+        ? [...profile.wardrobeDesk.drawerRatio] : [...D.wardrobeDesk.drawerRatio],
     },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,

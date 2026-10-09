@@ -142,7 +142,7 @@ test('F16 · hole for hole: each chest cuts its BUDR\'s boards, holes and hardwa
 test('F16 · library: the Wardrobes category, the chest\'s three counts one flyout of the drawer unit\'s variants', () => {
   const cat = getCategory('wardrobe');
   assert.equal(cat.entries, WARDROBE_LIBRARY);
-  assert.deepEqual(cat.types.slice(-3), ['WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4']);
+  assert.deepEqual(cat.types.filter((id) => id.startsWith('WARDROBE_CHEST')), ['WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4']);
   const group = WARDROBE_LIBRARY.find((e) => e.id === 'chest-of-drawers');
   assert.equal(group.kind, 'group');
   assert.equal(group.label, 'Chest of drawers');

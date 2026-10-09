@@ -139,6 +139,12 @@ test('F4.3 — every wall-unit LIBRARY entry resolves to a type that carries doo
     if (type.mount !== 'wall') continue;
     if (type.appliance === 'extractor') continue;   // turn 31 F9, above
     if (type.freePanel) continue;                   // T74 F13, above
+    // AMENDED BY T75 F17 · a DESK hangs for its height and its line, and its
+    // face is a drawer: there is no door to run a grab edge below.
+    if (type.desk) {
+      assert.equal(type.doorExtend, false, `${id} has no door to extend`);
+      continue;
+    }
     // ─── TURN 36 (CLAUDE.md F7): THE SECOND HONEST EXCEPTION ──────────────
     // A TOP BOX is `mount: 'wall'` for one reason only — that is the field
     // this app puts a hung unit's HEIGHT in, and a top box's height is its

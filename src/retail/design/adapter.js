@@ -438,6 +438,21 @@ export function addChestOfDrawers() {
 }
 
 /**
+ * ─── T75 F17 · ADD DESK ────────────────────────────────────────────────────
+ *
+ * CLAUDE.md T75 F17: *"Placed beside a wardrobe at `mount_height = 720`,
+ * aligned to the FRONT of the wardrobe by default (T74 F7's two choices).
+ * Retail EXTRAS `ADD DESK`."*  The same road: `store.addUnit` beside the
+ * selected wardrobe, right else left; the store hangs it at its 720, lines
+ * its front up with the wardrobe's and gives it its 25 mm top.
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addDesk() {
+  return S().batch(() => addBesideWardrobe('WARDROBE_DESK', REASONS.deskNeedsAWardrobe));
+}
+
+/**
  * One piece of a wardrobe job, beside THE wardrobe: right, else left, through
  * `store.addUnit` (Room refuses first, in its own sentence).
  */

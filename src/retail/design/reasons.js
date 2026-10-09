@@ -210,6 +210,20 @@ export const REASONS = {
   chestNeedsAWardrobe: 'Add a wardrobe first: a chest of drawers stands beside one.',
 
   /**
+   * T75 F17 · NOT a refusal: the note under ADD DESK. PREDICATE:
+   * `adapter.addDesk()`, `store.addUnit('WARDROBE_DESK')` beside the selected
+   * wardrobe; the store hangs it at `wardrobeDesk.defaults.mountHeight` and
+   * gives it its top (`addWorktop`, the desk's own thickness).
+   */
+  deskGoesBeside: 'A desk hung beside this wardrobe: one drawer under a 25 mm top, its front on the wardrobe\'s front.',
+
+  /**
+   * T75 F17 · PREDICATE: no unit in the design is a wardrobe standing on the
+   * floor (`adapter.isMainWardrobe`), so there is nothing to hang it beside.
+   */
+  deskNeedsAWardrobe: 'Add a wardrobe first: a desk hangs beside one.',
+
+  /**
    * T74 F13 · NOT a refusal: the note under INSERT PANEL. PREDICATE:
    * `adapter.insertPanel()`, `store.addUnit('FREE_PANEL')` beside the selected
    * cabinet; the board's menu then opens on the right.

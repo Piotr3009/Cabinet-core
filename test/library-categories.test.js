@@ -43,7 +43,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // AMENDED BY T75 F3: + the blind corner wardrobe (*"the Wardrobes category "Blind corner wardrobe""*).
   // AMENDED BY T75 F16: + the chest of drawers, its three counts (*"Wardrobes category"*), read off
   // the category's entries (the drawer group, as Kitchen's is).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  // AMENDED BY T75 F17: + the floating desk (*"`WARDROBE_DESK`: a wall-hung carcass"*).
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
   // Turn 15 (CLAUDE.md F5.2): the same nine kits, in the order the owner's
   // CATALOGUE puts them in — base units, then talls, then walls.
   assert.deepEqual(getCategory('kitchen').types, [
@@ -65,7 +66,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // AMENDED BY T75 F3: + the blind corner wardrobe (*"the Wardrobes category "Blind corner wardrobe""*).
   // AMENDED BY T75 F16: + the chest of drawers, its three counts (*"Wardrobes category"*), read off
   // the category's entries (the drawer group, as Kitchen's is).
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
+  // AMENDED BY T75 F17: + the floating desk (*"`WARDROBE_DESK`: a wall-hung carcass"*).
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
 
   // Turn 5 (BACKLOG #30): Saved sets is real. It holds the workshop's OWN units
   // rather than kits, so it lists no types and is marked `saved` — the panel

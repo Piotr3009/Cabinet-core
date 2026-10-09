@@ -1467,6 +1467,23 @@ function ExtrasPanel({ unit, project }) {
           </div>
         </Field>
 
+        {/* ─── T75 F17 · ADD DESK ───────────────────────────────────────────
+            *"Placed beside a wardrobe at `mount_height = 720`, aligned to the
+            FRONT of the wardrobe by default ... Retail EXTRAS `ADD DESK`."*
+            Through the store's own road (`adapter.addDesk`). */}
+        <Field label="DESK" note={REASONS.deskGoesBeside}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-desk"
+              onClick={() => setSaid(A.addDesk().said)}
+            >
+              ADD DESK
+            </Button>
+          </div>
+        </Field>
+
         {/* ─── T74 F13 · INSERT PANEL ────────────────────────────────────────
             *"SWOBODNY PANEL (wstaw panel)."*  One board into the room, through
             the store's own `addUnit`; its menu opens on the right. */}

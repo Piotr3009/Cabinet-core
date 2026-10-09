@@ -42,7 +42,8 @@ test('F7 — the library offers Main wardrobe AND Top box', () => {
   // AMENDED BY T75 F3: + the blind corner wardrobe, fourth.
   // AMENDED BY T75 F4: + the Corner L wardrobe, fifth.
   // AMENDED BY T75 F16: + the chest of drawers' three counts after it.
-  assert.deepEqual(wardrobes.types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'CORNER_L_WARDROBE']);
+  // AMENDED BY T75 F17: + the floating desk.
+  assert.deepEqual(wardrobes.types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'CORNER_L_WARDROBE']);
   assert.equal(UNIT_TYPES.WARDROBE_TOP.label, 'Top box');
   assert.equal(UNIT_TYPES.WARDROBE_TOP.available, true);
 });

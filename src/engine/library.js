@@ -316,6 +316,8 @@ export const WARDROBE_LIBRARY = [
       { kind: 'type', id: 'chest-4', typeId: 'WARDROBE_CHEST4', variant: 'x4' },
     ],
   },
+  // T75 F17 · *"`WARDROBE_DESK`: a wall-hung carcass ... ONE drawer row."*
+  { kind: 'type', id: 'WARDROBE_DESK', typeId: 'WARDROBE_DESK', hint: 'Hung beside a wardrobe: one drawer under a 25 mm top' },
 ];
 
 /** Every entry, groups flattened — what a "which kits exist" question wants. */

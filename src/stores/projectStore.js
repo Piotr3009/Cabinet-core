@@ -22,8 +22,8 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isFreePanel, isWardrobeWallUnit, resolveTypeId,
-  TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isWardrobeWallUnit,
+  resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
 // kept one with its box, and where a drop would be caught.
@@ -465,7 +465,9 @@ function projectHeightParams(type, design, profile) {
     ...(group ? { height: heights[group], height_custom: false } : { height_custom: false }),
     // T74 F13 · …but a free panel hangs at the height it is given (its own
     // default, the floor): it is not a wall unit of the project's.
-    ...(type.mount === 'wall' && !type.freePanel ? { mount_height: heights.wallMount } : {}),
+    // T75 F17 · …nor is a desk: it hangs at the 720 a person sits at
+    // (`wardrobeDesk.defaults.mountHeight`), never the kitchen's wall line.
+    ...(type.mount === 'wall' && !type.freePanel && !type.desk ? { mount_height: heights.wallMount } : {}),
     // ─── Turn 22 (CLAUDE.md F4.2) ───
     // A plinth-bearing type gets the project's toe kick whether or not it has
     // legs. The D/W panel has none — the machine stands where they would be —
@@ -4901,6 +4903,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // and a drag asked nothing. Both are `settleLayout` now, and every action
     // that can move a cabinet's edge ends by calling it.
     get().settleLayout(unit.id);
+    // ─── T75 F17 · A DESK: FRONT ON THE WARDROBE'S LINE, AND ITS TOP ────────
+    // *"Placed beside a wardrobe at `mount_height = 720`, aligned to the FRONT
+    // of the wardrobe by default (T74 F7's two choices). It takes a WORKTOP."*
+    // Born at that wardrobe's depth and gap above (BACK and FRONT agree at
+    // birth); FRONT is recorded so a new depth keeps the front on the line.
+    // The top IS the desk (`wardrobeDesk.defaults.topThickness`, 25), so it
+    // arrives with it, through the worktop's own `addWorktop`; PRO's worktop
+    // button asks for two cabinets, and a desk alone would never get one.
+    if (isDeskKit(unit.type)) {
+      if (hangsBeside) get().alignUnitDepth(unit.id, 'front');
+      get().addWorktop([unit.id]);
+    }
     // ─── TURN 72 (CLAUDE.md F8): …AND IT TAKES THE RUN'S CORNICE ───────────
     //
     // *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
@@ -5982,7 +5996,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // T74 F13 · a free panel stands at its OWN height (on the floor, or where
       // its floor figure put it), as `projectHeightParams` births it: the
       // kitchen's wall-unit line never moves it.
-      if (applied.wallMount != null && type.mount === 'wall' && !type.freePanel) changes.mount_height = resolved.wallMount;
+      // T75 F17 · …and neither does a desk: 720 is a sitting height, not a wall line.
+      if (applied.wallMount != null && type.mount === 'wall' && !type.freePanel && !type.desk) changes.mount_height = resolved.wallMount;
       // Turn 22 (F4.2): every unit that STANDS on the run's legs follows the
       // toe kick, the D/W panel included — it is the unit the owner watched
       // ignore the field.
@@ -8518,7 +8533,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{ok:boolean, id:string|null, error:string|null}}
    */
-  addWorktop: (unitIds) => {
+  addWorktop: (unitIds, { thickness = null } = {}) => {
     const s = get();
     const wanted = [...new Set((unitIds || []).filter(Boolean))];
     const units = wanted.map((id) => s.units.find((u) => u.id === id)).filter(Boolean);
@@ -8545,6 +8560,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         extendFront: 0,
         // T75 F4/F5 · one L corner unit takes a slab of its own.
         ...(units.length === 1 && getUnitType(units[0].type).corner ? { kind: 'L' } : {}),
+        // T75 F17 · …and so does one desk, and its top is the desk's own 25
+        // (*"a desk or a sideboard top is 25, a kitchen slab 38; the project
+        // default stays 38"*). A thickness the caller names wins; with none,
+        // the record carries none and the profile's 38 stands.
+        ...(units.length === 1 && isDeskKit(units[0].type) ? { kind: 'desk' } : {}),
+        ...recordThickness(thickness, units, profile),
         ...(gate.island ? {
           island: gate.island,
           extend: {
@@ -10019,7 +10040,8 @@ function alignedMountFor(state, unit, placed, prefer = null) {
   const type = getUnitType(unit.type);
   // T74 F13 · a free panel hangs at the height it is given (the floor, new),
   // never lined up with a tall unit's top the way a wall unit is.
-  if (type.mount !== 'wall' || type.freePanel) return null;
+  // T75 F17 · …and a desk hangs at its own 720, never level with a wardrobe's top.
+  if (type.mount !== 'wall' || type.freePanel || type.desk) return null;
   const profile = getCabinetProfile();
   const span = { left: placed.x, right: placed.x + (Number(unit.params.width) || 0) };
   const talls = state.units.filter((u) => (u.position?.wall ?? 0) === placed.wall
@@ -10041,6 +10063,17 @@ function alignedMountFor(state, unit, placed, prefer = null) {
     unitHeight: Number(unit.params.height) || 0,
     roomHeight: Number(state.project.room.height) || 0,
   });
+}
+
+/**
+ * T75 F17 · the per-worktop thickness a new record carries: the caller's, else
+ * a desk's own top when every unit under it is a desk, else none (the
+ * profile's 38 stands, `worktop.js worktopSpec`).
+ */
+function recordThickness(thickness, units, profile) {
+  const own = Number(thickness) > 0 ? Number(thickness)
+    : (units.length && units.every((u) => isDeskKit(u.type)) ? Number(profile.wardrobeDesk?.defaults?.topThickness) : 0);
+  return own > 0 ? { thickness: own } : {};
 }
 
 /**

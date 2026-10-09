@@ -286,7 +286,9 @@ test('every library type is configured, available and buildable', () => {
   // AMENDED BY T75 F14: + BUDR2_HOB and BUDR_HOB (*"`BUDR` variants take `hob: true`"*).
   // Turn 75 (CLAUDE.md F16): the CHEST OF DRAWERS, three counts, each its
   // BUDR hole for hole in the wardrobe family (*"WARDROBE_CHEST2 / 3 / 4"*).
-  assert.equal(UNIT_TYPE_ORDER.length, 37, 'every kit in the order, the free panel last');
+  // Turn 75 (CLAUDE.md F17): the FLOATING DESK, WUD's box with one drawer
+  // and a top (*"`WARDROBE_DESK`: a wall-hung carcass"*).
+  assert.equal(UNIT_TYPE_ORDER.length, 38, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

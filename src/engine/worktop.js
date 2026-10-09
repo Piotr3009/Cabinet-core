@@ -39,7 +39,7 @@
 // Pure functions and pure data. No React, no store, no three.js.
 
 import { getUnitType } from './types.js';
-import { paddedSpan, unitBase, wallGapOf } from './runs.js';
+import { paddedSpan, unitBase, unitTop, wallGapOf } from './runs.js';
 // T75 F5 · the corner rulebook: which two runs meet at a corner, and who is A.
 import { cornersOf } from './corners.js';
 
@@ -56,6 +56,9 @@ import { cornersOf } from './corners.js';
  */
 export function takesWorktop(typeId) {
   const type = getUnitType(typeId);
+  // T75 F17 · *"`takesWorktop` admits a wall-mounted kit that declares
+  // `desk: true`"*: a desk hangs, and its top is a worktop all the same.
+  if (type && type.mount === 'wall' && type.desk === true) return true;
   return Boolean(type && type.mount === 'floor' && type.supports?.topInfill === false);
 }
 
@@ -81,6 +84,20 @@ export function worktopSpec(profile) {
 /** T75 F4/F5 · is this the L corner kit, which takes a worktop of its own? */
 function isCornerKit(unit) {
   return Boolean(getUnitType(unit?.type)?.corner);
+}
+
+/** T75 F17 · …and a desk takes one of its own too: one unit is enough. */
+function isDeskUnit(unit) {
+  return Boolean(getUnitType(unit?.type)?.desk);
+}
+
+/**
+ * T75 F17 · THE PER-WORKTOP THICKNESS the T30 comment above deferred: the
+ * record's own (a desk or a sideboard top is 25), else the profile's (38).
+ */
+export function slabThickness(record, spec) {
+  const own = Number(record?.thickness);
+  return Number.isFinite(own) && own > 0 ? own : spec.thickness;
 }
 
 /**
@@ -111,7 +128,7 @@ export function worktopEligible(units, profile, { walls = null } = {}) {
   }
   // T75 F4/F5 · *"The L kit's worktop is one slab shaped like the L."*  An L
   // corner unit is a run of its own: one is enough.
-  const loneL = list.length === 1 && isCornerKit(list[0]);
+  const loneL = list.length === 1 && (isCornerKit(list[0]) || isDeskUnit(list[0]));
   if (list.length < spec.minUnits && !loneL) {
     return { ok: false, why: `A worktop covers a run: select ${spec.minUnits} or more base cabinets.` };
   }
@@ -199,16 +216,17 @@ export function worktopGeometry({ units, record = null, profile }) {
   // `worktopEligible` is what guarantees that and says so when they do not.
   const top = unitBase(list[0], profile) + (Number(list[0].params?.height) || 0);
 
+  const thick = slabThickness(record, spec);
   return {
     wall: list[0].position?.wall ?? 0,
     x: left,
     w: right - left,
     y: top,
-    h: spec.thickness,
+    h: thick,
     z: 0,
     d: depth,
     depth,
-    thickness: spec.thickness,
+    thickness: thick,
     decor: record?.decor ?? null,
     overhang: { front: spec.frontOverhang, side: spec.sideOverhang, wall: 0 },
     extensions: ext,
@@ -238,7 +256,9 @@ export function worktopsFor({
     }
     const mine = (record?.unitIds || []).map((id) => byId.get(id)).filter(Boolean);
     const loneL = mine.length === 1 && isCornerKit(mine[0]);
-    if (mine.length < worktopSpec(profile).minUnits && !loneL) continue;
+    // T75 F17 · one desk is a run of its own: its slab is the straight one.
+    const loneDesk = mine.length === 1 && isDeskUnit(mine[0]);
+    if (mine.length < worktopSpec(profile).minUnits && !loneL && !loneDesk) continue;
     // ─── T75 F4/F5 · ONE SLAB SHAPED LIKE THE L ────────────────────────────
     if (loneL) {
       const geometry = lSlabGeometry({ unit: mine[0], record, profile });
@@ -269,9 +289,40 @@ export function worktopsFor({
       continue;
     }
     const geometry = worktopGeometry({ units: mine, record, profile });
+    if (geometry && loneDesk) deskSideTrim(geometry, mine[0], units, profile);
     if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}`, geometry }, mine, profile));
   }
   return out;
+}
+
+/**
+ * T75 F17 · a desk's top BUTTS what stands beside it at its height (the
+ * wardrobe it hangs beside, that wardrobe's end panel): the automat's side
+ * overhang is taken off that end, so the slab is never drawn 10 mm into a
+ * board it could not be fitted through. A free end keeps its overhang, and a
+ * length the client typed (`extendLeft` / `extendRight`) is his and stays.
+ */
+function deskSideTrim(geometry, desk, units, profile) {
+  const spec = worktopSpec(profile);
+  const wall = desk.position?.wall ?? 0;
+  const mine = paddedSpan(desk);
+  const y0 = geometry.y;
+  const y1 = geometry.y + geometry.h;
+  const meets = (side) => (units || []).some((u) => {
+    if (u.id === desk.id || (u.position?.wall ?? 0) !== wall) return false;
+    if (!(unitBase(u, profile) < y1 && unitTop(u, profile) > y0)) return false;
+    const o = paddedSpan(u);
+    return side === 'left' ? Math.abs(o.right - mine.left) <= 1 : Math.abs(o.left - mine.right) <= 1;
+  });
+  if (meets('left')) {
+    geometry.x += spec.sideOverhang;
+    geometry.w -= spec.sideOverhang;
+    geometry.overhang = { ...geometry.overhang, left: 0 };
+  }
+  if (meets('right')) {
+    geometry.w -= spec.sideOverhang;
+    geometry.overhang = { ...geometry.overhang, right: 0 };
+  }
 }
 
 /**
@@ -367,11 +418,11 @@ function lSlabGeometry({ unit, record = null, profile }) {
     x: Math.min(...xs),
     w: Math.max(...xs) - Math.min(...xs),
     y: top,
-    h: spec.thickness,
+    h: slabThickness(record, spec),
     z: 0,
     d: D + side,
     depth: D + side,
-    thickness: spec.thickness,
+    thickness: slabThickness(record, spec),
     decor: record?.decor ?? null,
     overhang: { front: spec.frontOverhang, side: spec.sideOverhang, wall: 0 },
     extensions: { left: 0, right: 0, front: Math.max(0, Number(record?.extendFront) || 0) },

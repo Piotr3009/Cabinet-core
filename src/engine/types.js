@@ -182,6 +182,52 @@ export const UNIT_TYPES = {
     available: true,
   },
 
+  // ─── T75 F17 · THE FLOATING DESK ─────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F17: *"`WARDROBE_DESK`: a wall-hung carcass (WUD's hangers
+  // and back cut-outs, `mount: 'wall'`), height `wardrobeDesk.defaults.height
+  // = 160`, depth = wardrobe depth, ONE drawer row ... prefix `WD`. It takes a
+  // WORKTOP: `takesWorktop` admits a wall-mounted kit that declares `desk:
+  // true` ... Placed beside a wardrobe at `mount_height = 720`, aligned to the
+  // FRONT of the wardrobe by default (T74 F7's two choices)."*
+  //
+  // WUD's box to the letter (the same LISP carcass, hangers, back cut-outs,
+  // no legs, hinge and cup rules), filed with the wardrobes like
+  // WARDROBE_WALL, so the store's wardrobe wall-unit laws hold it: born at
+  // the wardrobe's depth, BACK or FRONT through `wall_gap`. Its FACE is one
+  // drawer, cut by KIT_BUDR's arithmetic through the drawer split the oven
+  // base already uses (`drawerRatioKey`, `wardrobeDesk.drawerRatio` = [1]):
+  // the x1 variant is held open with `ratio: null` and would cut 4:3:2.
+  // `heightGroup: null` and `desk: true`: its 160 and its 720 are its own, no
+  // project wall height or wall mount moves them, and it takes a worktop.
+  WARDROBE_DESK: {
+    id: 'WARDROBE_DESK',
+    heightGroup: null,
+    label: 'Floating desk',
+    family: 'wardrobe',
+    lisp: 'KIT_WUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,                  // hangs on the wall
+    legSource: null,
+    hangers: true,
+    doorExtend: false,
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    drawerRatioKey: 'wardrobeDesk.drawerRatio',
+    desk: true,
+    besideWardrobe: true,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeDesk.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      cornice: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+
   // ─── T74 F13 · THE FREE PANEL ────────────────────────────────────────────
   //
   // The owner, 23.09.2026: *"SWOBODNY PANEL (wstaw panel). Użytkownik wstawia
@@ -1450,7 +1496,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1512,6 +1558,11 @@ export function isWardrobeWallUnit(typeId) {
  */
 export function isBesideWardrobe(typeId) {
   return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.besideWardrobe);
+}
+
+/** T75 F17 · is this a desk: a wall-hung kit that takes a worktop of its own? */
+export function isDeskKit(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.desk);
 }
 
 /** T75 F3 · is this a blind corner kit (a blank beside one leaf)? */
@@ -1681,5 +1732,7 @@ export const UNIT_NUM_PREFIX = {
   // T75 F16 · the chest of drawers: WC01, whatever its count (BUDR's DR is one
   // prefix for three counts too).
   WARDROBE_CHEST2: 'WC', WARDROBE_CHEST3: 'WC', WARDROBE_CHEST4: 'WC',
+  // T75 F17 · the floating desk: WD01.
+  WARDROBE_DESK: 'WD',
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

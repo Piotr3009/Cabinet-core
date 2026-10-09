@@ -5336,6 +5336,40 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── T75 F5 · THE UPSTAND ───────────────────────────────────────────────────
+  //
+  // *"an auto-part along the wall behind every base run that has a worktop,
+  // `profile.worktop.upstand = { heightMm: 100, thicknessMm: 20 }`, worktop
+  // material, on and off per run like the plinth ... BOM role `upstand`, cut
+  // list line."*  The run element arrives from the store exactly as the
+  // plinth's does (`runs.js runUpstandParams`); the owner of the run cuts the
+  // one board, standing on the worktop against the wall. No run element, no
+  // board: a bare call (every golden) cuts what it always did.
+  const runUpstand = params?.run_upstand || null;
+  if (runUpstand?.role === 'owner') {
+    const WT = AP.worktop || {};
+    const uh = Number(WT.upstand?.heightMm) || 100;
+    const ut = Number(WT.upstand?.thicknessMm) || 20;
+    const len = Number(runUpstand.length) || W;
+    const onTop = H + (Number(WT.thickness) || 38);
+    const up = panel({
+      id: 'UPSTAND',
+      part: 'UPSTAND',
+      role: 'upstand',
+      w: len,
+      h: uh,
+      thickness: ut,
+      edgeCode: codes.topBottom,
+      edgeLen: metres(len),
+      box: {
+        x: Number(runUpstand.offset) || 0, y: onTop, z: -wallGapOf({ params }, P), w: len, h: uh, d: ut,
+      },
+      cnc: rectGeometry(len, uh),
+      meta: { run: true, unitIds: runUpstand.unitIds, material: 'worktop' },
+    });
+    panels.push({ ...up, material_role: 'worktop' });
+  }
+
   // ── The bottom masking panel (turn 14, CLAUDE.md F5 / BACKLOG #45) ───────
   //
   // One continuous board under a RUN of wall units: its length the sum of the

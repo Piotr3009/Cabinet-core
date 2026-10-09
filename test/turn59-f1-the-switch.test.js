@@ -73,6 +73,11 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  // ─── ADDED BY TURN 75 · THE BIG TURN ───────────────────────────────────
+  'src/components/ContextMenu.jsx':
+    'T75 F5 · the right-click offers the UPSTAND beside the plinth, on and off per run, and the menu is handed the two store calls it needs (addUpstand, removeUpstand). *"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... on and off per run like the plinth (BACKLOG #16\'s grammar: added by a decision, visible only then)."*',
+  'src/components/BomPanel.jsx':
+    'T75 F5 · the cut list and the BOM receive the room, so the worktop reaches them: its slabs (a corner is two, an L is one shaped like the L), the connector bolts as an order line, the joint and every cut-out as a NOTE. *"Done means the whole road ... lands in the cut list and the BOM."* One line: `room: project.room` handed to `buildBom`.',
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
   // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
@@ -142,7 +147,8 @@ const EXEMPT = {
     + 'numbered sheet buttons. *"nie zapomnij zostawić w stopce miejsca na '
     + 'firmę, daty, nazwy"*.',
   'src/pages/ConfiguratorPage.jsx':
-    'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
+    'T75 F5 · the BOM file is handed the room so the worktop that turns the corner (two slabs and one joint record) rides the file as it rides the panel. *"daj od razu narożniki przemyślane."* '
+    + 'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
     + 'same set with the same worktops and render. *"weź zakoduj"*.',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
@@ -185,7 +191,8 @@ const FROZEN = {
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   'src/components/AssignMaterialsModal.jsx': '32d48ece258aa562d6614606a65fd8df5a15adb3717d40f5736df8db45fac550',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
-  'src/components/BomPanel.jsx': '54109296695b50f20d8d7eaf1696b6d62d9969110c59623feb0f8fe0d75a2cd4',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/BomPanel.jsx': '645aa8921accc823833e16cfa109b2cbbfd317694dee434d0df3baf68ae50ca6',
   'src/components/CabinetEditorModal.jsx': '3d21bba5af9dc42fecbb620b6594b5a4be79be2e9ce5446cf4b53dc4b09b3ca4',
   'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
@@ -194,7 +201,8 @@ const FROZEN = {
   'src/components/CncView.jsx': 'bbfa3f571120d6bb089f2a885bc48f1f12e1c0431ebb57fb997b9f31ea8a540d',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   'src/components/CompanyDefaultsModal.jsx': '90365da4e2e0bc285c652ec252c62a11da199853fdd9e31a899cb74464e2a896',
-  'src/components/ContextMenu.jsx': '8c3adb3f6452fece13b76fe1a7db85679f35d73dd6c644cd280032a81d1e2d1b',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/ContextMenu.jsx': '9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c',
   'src/components/DecorPicker.jsx': '3ed5d2c75e1c7eb48b364f3b86cf9ec30fdad43acae9f1b30879f65f14e82e6a',
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
   'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
@@ -250,8 +258,8 @@ const FROZEN = {
   'src/components/WizardSettings.jsx': 'e78f35fff5107b21a5a775629ab899d2474d883df03b5873ad538bcfbd68fc74',
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
-  // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '8d321b5f9f8c9a9405c016871a978314ce66ae3648fa3d915a506afaaa899c8f',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '98963109213c78ceb115b9a31afa3cdf3a86a99400a254115e019d85acafa021',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -426,8 +434,13 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
 // and its feature beside it, each re-frozen at its new hash. The list is held
 // to exactly these five; a sixth cannot be slipped in without this failing.
 test('T67 · the exemption names its files, each re-frozen, each with its reason', () => {
+  // AMENDED BY T75: *"every PRO file edited is licensed in EXEMPT with the
+  // owner's words from this file and re-frozen at its new hash in the same
+  // commit."*  Each one T75 adds is named here by the commit that edits it.
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
+    'src/components/BomPanel.jsx',
+    'src/components/ContextMenu.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',

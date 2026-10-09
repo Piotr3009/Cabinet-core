@@ -174,6 +174,11 @@ export const PART_REGISTRY = {
     id: 'mask', name: 'Bottom mask', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'The board under a run of wall units, hiding the standoff',
   },
+  // T75 F5 · the worktop's upstand along the wall, cut from worktop material.
+  upstand: {
+    id: 'upstand', name: 'Upstands', group: G('board'), unit: 'm²', materialType: 'board',
+    note: 'The strip on the worktop against the wall, worktop material (T75 F5)',
+  },
   // T75 F2 · the corner post: a front-material board in the door plane of the
   // run that stops on the corner (`engine/corners.js`).
   corner_post: {
@@ -470,6 +475,8 @@ export const ELEMENT_TO_PART_ID = {
   MASK: 'mask',
   // T75 F2 · the corner post.
   'CORNER-POST': 'corner_post',
+  // T75 F5 · the worktop's upstand.
+  UPSTAND: 'upstand',
   // T75 F3 · the blind kit's blank: a FIX front.
   'BLIND-BLANK': 'false_front',
   // T74 F13 · the free-standing panel's one board.
@@ -597,6 +604,7 @@ const EDGE_OF_PART = {
   infill: 'edge_front',
   mask: 'edge_front',
   corner_post: 'edge_front',
+  upstand: 'edge_carcase',
 };
 
 /** Which edging part pays for this part's banding, or null when none does. */

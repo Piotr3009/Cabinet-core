@@ -39,7 +39,9 @@
 // Pure functions and pure data. No React, no store, no three.js.
 
 import { getUnitType } from './types.js';
-import { paddedSpan, unitBase } from './runs.js';
+import { paddedSpan, unitBase, wallGapOf } from './runs.js';
+// T75 F5 · the corner rulebook: which two runs meet at a corner, and who is A.
+import { cornersOf } from './corners.js';
 
 /**
  * Does this kit take a worktop at all?
@@ -66,7 +68,19 @@ export function worktopSpec(profile) {
     frontOverhang: num(W.frontOverhang, 20),
     sideOverhang: num(W.sideOverhang, 10),
     minUnits: num(W.minUnits, 2),
+    // ─── T75 F5 · the corner joint, the cut-outs, the upstand ──────────────
+    joint: {
+      kind: W.joint?.kind === 'mitre' ? 'mitre' : 'butt',
+      boltCount: num(W.joint?.boltCount, 3),
+    },
+    cutout: { insetMm: num(W.cutout?.insetMm, 20), radiusMm: num(W.cutout?.radiusMm, 10) },
+    cnc: W.cnc === true,
   };
+}
+
+/** T75 F4/F5 · is this the L corner kit, which takes a worktop of its own? */
+function isCornerKit(unit) {
+  return Boolean(getUnitType(unit?.type)?.corner);
 }
 
 /**
@@ -81,10 +95,13 @@ export function worktopSpec(profile) {
  *
  * @returns {{ok:boolean, why:string|null}}
  */
-export function worktopEligible(units, profile) {
+export function worktopEligible(units, profile, { walls = null } = {}) {
   const spec = worktopSpec(profile);
   const list = units || [];
-  if (list.length < spec.minUnits) {
+  // T75 F4/F5 · *"The L kit's worktop is one slab shaped like the L."*  An L
+  // corner unit is a run of its own: one is enough.
+  const loneL = list.length === 1 && isCornerKit(list[0]);
+  if (list.length < spec.minUnits && !loneL) {
     return { ok: false, why: `A worktop covers a run: select ${spec.minUnits} or more base cabinets.` };
   }
   if (!list.every((u) => takesWorktop(u.type))) {
@@ -92,7 +109,15 @@ export function worktopEligible(units, profile) {
   }
   const wall = list[0].position?.wall ?? 0;
   if (!list.every((u) => (u.position?.wall ?? 0) === wall)) {
-    return { ok: false, why: 'These cabinets are on different walls — one slab cannot turn a corner yet.' };
+    // ─── T75 F5 · THE WORKTOP TURNS THE CORNER ────────────────────────────
+    // *"`worktopsFor` accepts two runs on adjacent walls: two slabs and ONE
+    // JOINT RECORD at the corner."*  Two walls, and they must MEET: asked of
+    // the corner rulebook, which says which of the two is A (it runs through
+    // to the wall) and which is B (it butts A).
+    const corner = walls ? cornerOfSelection(list, walls, profile) : null;
+    if (!corner) {
+      return { ok: false, why: 'These cabinets are on walls that do not meet at a corner: one slab cannot join them.' };
+    }
   }
   if (!list.every((u) => !((Number(u.position?.rotation_deg) || 0) % 360))) {
     return { ok: false, why: 'A turned cabinet has no "along the wall" to share.' };
@@ -102,6 +127,20 @@ export function worktopEligible(units, profile) {
     return { ok: false, why: 'One slab cannot lie on two heights — level the run first.' };
   }
   return { ok: true, why: null };
+}
+
+/**
+ * T75 F5 · the internal corner a selection on two walls turns, or null: the
+ * selection holds units on exactly two walls, and the rulebook reports a
+ * corner between them whose two end units are both selected.
+ */
+function cornerOfSelection(list, walls, profile) {
+  const onWalls = [...new Set(list.map((u) => u.position?.wall ?? 0))];
+  if (onWalls.length !== 2) return null;
+  const ids = new Set(list.map((u) => u.id));
+  return cornersOf({ units: list, walls, profile }).find((c) => c.kind === 'internal'
+    && ids.has(c.runA.unitId) && ids.has(c.runB.unitId)
+    && onWalls.includes(c.wallA) && onWalls.includes(c.wallB)) || null;
 }
 
 /**
@@ -173,14 +212,184 @@ export function worktopGeometry({ units, record = null, profile }) {
  * drawn over a hole in the run — the same rule a stale hinge assignment
  * follows.
  */
-export function worktopsFor({ records = [], units = [], profile }) {
+export function worktopsFor({
+  records = [], units = [], profile, walls = null,
+}) {
   const byId = new Map((units || []).map((u) => [u.id, u]));
   const out = [];
   for (const record of records || []) {
     const mine = (record?.unitIds || []).map((id) => byId.get(id)).filter(Boolean);
-    if (mine.length < worktopSpec(profile).minUnits) continue;
+    const loneL = mine.length === 1 && isCornerKit(mine[0]);
+    if (mine.length < worktopSpec(profile).minUnits && !loneL) continue;
+    // ─── T75 F4/F5 · ONE SLAB SHAPED LIKE THE L ────────────────────────────
+    if (loneL) {
+      const geometry = lSlabGeometry({ unit: mine[0], record, profile });
+      if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}`, geometry }, mine, profile));
+      continue;
+    }
+    // ─── T75 F5 · TWO WALLS: TWO SLABS AND ONE JOINT ───────────────────────
+    const onWalls = [...new Set(mine.map((u) => u.position?.wall ?? 0))];
+    if (onWalls.length === 2) {
+      if (!walls) continue;
+      const corner = cornerOfSelection(mine, walls, profile);
+      if (!corner) continue;
+      const pair = cornerSlabs({ units: mine, record, corner, walls, profile });
+      if (pair) out.push(...pair);
+      continue;
+    }
     const geometry = worktopGeometry({ units: mine, record, profile });
-    if (geometry) out.push({ ...record, geometry });
+    if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}`, geometry }, mine, profile));
+  }
+  return out;
+}
+
+/**
+ * T75 F5 · a slab with the cut-outs it proposes, on the entry AND on its
+ * geometry (the drawing set reads geometry alone), and its joint likewise.
+ */
+function withCutouts(entry, units, profile) {
+  const cutouts = cutoutsFor(units, entry.geometry, profile);
+  return {
+    ...entry,
+    cutouts,
+    geometry: {
+      ...entry.geometry,
+      ...(cutouts.length ? { cutouts } : {}),
+      ...(entry.joint ? { joint: entry.joint } : {}),
+    },
+  };
+}
+
+/**
+ * T75 F5 · the corner's two slabs. Slab A lies on the occupant's wall and runs
+ * THROUGH to wall B (no side overhang at the corner: it meets the plaster);
+ * slab B lies on the other wall and BUTTS slab A's front edge. One joint
+ * record between them: a square butt, three connector bolts (an order line),
+ * their pockets a NOTE on the drawing, fixed by the joiner (readiness manual,
+ * never CNC).
+ */
+function cornerSlabs({
+  units, record, corner, walls, profile,
+}) {
+  const spec = worktopSpec(profile);
+  const onA = units.filter((u) => (u.position?.wall ?? 0) === corner.wallA);
+  const onB = units.filter((u) => (u.position?.wall ?? 0) === corner.wallB);
+  const a = worktopGeometry({ units: onA, record: { ...record, extendLeft: 0, extendRight: 0 }, profile });
+  const b = worktopGeometry({ units: onB, record: { ...record, extendLeft: 0, extendRight: 0 }, profile });
+  if (!a || !b) return null;
+  const wallA = walls[corner.wallA];
+  // A runs through to wall B on its corner end; B stops on A's front edge.
+  if (corner.runA.side === 'right') {
+    a.w = Number(wallA?.width || 0) - a.x;
+  } else {
+    a.w += a.x;
+    a.x = 0;
+  }
+  if (corner.runB.side === 'left') {
+    const right = b.x + b.w;
+    b.x = a.d;
+    b.w = right - b.x;
+  } else {
+    const wallB = walls[corner.wallB];
+    b.w = Number(wallB?.width || 0) - a.d - b.x;
+  }
+  const joint = {
+    kind: spec.joint.kind,
+    boltCount: spec.joint.boltCount,
+    at: { wall: corner.wallB, x: corner.runB.side === 'left' ? b.x : b.x + b.w, depth: b.d },
+    corner: { x: corner.corner.x, y: corner.corner.y },
+    readiness: 'manual',
+    note: `Worktop joint: square butt, slab ${record.id}-B into slab ${record.id}-A, `
+      + `${spec.joint.boltCount} connector bolts; bolt pockets cut by hand on site.`,
+  };
+  return [
+    withCutouts({ ...record, slabId: `${record.id}-A`, geometry: a, joint }, onA, profile),
+    withCutouts({ ...record, slabId: `${record.id}-B`, geometry: { ...b, butts: 'A' }, joint }, onB, profile),
+  ];
+}
+
+/**
+ * T75 F4/F5 · the L kit's slab: ONE piece shaped like the L, the front
+ * overhang along both fronts, the side overhang past both arm ends, flush at
+ * both walls. `x/w/d` stay its bounding box (a reader that is not upgraded
+ * still draws something true) and `outline` is the L, in the wall's frame.
+ */
+function lSlabGeometry({ unit, record = null, profile }) {
+  const spec = worktopSpec(profile);
+  const W = Number(unit.params?.width) || 0;
+  const D = Number(unit.params?.depth) || 0;
+  const arm = Number(unit.params?.arm_mm) || Number(profile?.baseUnit?.defaults?.depth) || 0;
+  const frontT = Number(unit.params?.front_t) || 0;
+  const gap = Number(profile?.doors?.gap) || 0;
+  const x0 = Number(unit.position?.x_mm) || 0;
+  const reach = arm + gap + frontT + spec.frontOverhang + Math.max(0, Number(record?.extendFront) || 0);
+  const side = spec.sideOverhang;
+  // In the unit's frame with the room corner at x = 0 (corner_side 'left'),
+  // mirrored for an L whose corner is on its right.
+  const local = [[0, 0], [W + side, 0], [W + side, reach], [reach, reach], [reach, D + side], [0, D + side]];
+  const right = unit.params?.corner_side === 'right';
+  const outline = local.map(([x, z]) => [Math.round((x0 + (right ? W - x : x)) * 100) / 100, z]);
+  const xs = outline.map((p) => p[0]);
+  const top = unitBase(unit, profile) + (Number(unit.params?.height) || 0);
+  return {
+    wall: unit.position?.wall ?? 0,
+    x: Math.min(...xs),
+    w: Math.max(...xs) - Math.min(...xs),
+    y: top,
+    h: spec.thickness,
+    z: 0,
+    d: D + side,
+    depth: D + side,
+    thickness: spec.thickness,
+    decor: record?.decor ?? null,
+    overhang: { front: spec.frontOverhang, side: spec.sideOverhang, wall: 0 },
+    extensions: { left: 0, right: 0, front: Math.max(0, Number(record?.extendFront) || 0) },
+    unitIds: [unit.id],
+    outline: right ? [...outline].reverse() : outline,
+    shape: 'L',
+  };
+}
+
+/**
+ * T75 F5 · THE CUT-OUTS a slab proposes. *"a SINK unit under the slab
+ * proposes a sink cut-out (rectangle = the carcass opening inset
+ * `worktop.cutout.insetMm` each way, corner radius ...); a drawer unit flagged
+ * `hob: true` (F14) proposes a hob cut-out the same way. A record is drawn on
+ * the worktop sheet ... and listed as a BOM note; it is machined only when the
+ * worktop is a CNC part."*  The carcass opening is the space between the two
+ * sides and from the back board to the carcass front; in the slab's own frame
+ * (along the wall, out from the wall).
+ */
+export function cutoutsFor(units, geometry, profile) {
+  const spec = worktopSpec(profile);
+  const out = [];
+  for (const u of units || []) {
+    const type = getUnitType(u.type);
+    const kind = type.id === 'SINK' ? 'sink' : ((u.params?.hob === true || type.hob) ? 'hob' : null);
+    if (!kind) continue;
+    const W = Number(u.params?.width) || 0;
+    const D = Number(u.params?.depth) || 0;
+    const G = Number(u.params?.board_t) || Number(profile?.board?.thickness) || 18;
+    const x0 = Number(u.position?.x_mm) || 0;
+    const back = wallGapOf(u, profile);
+    const inset = spec.cutout.insetMm;
+    const w = W - 2 * G - 2 * inset;
+    const d = D - G - 2 * inset;
+    if (!(w > 0 && d > 0)) continue;
+    out.push({
+      kind,
+      unitId: u.id,
+      unitNum: u.params?.unit_num || null,
+      x: Math.round((x0 + G + inset) * 100) / 100,
+      z: Math.round((back + G + inset) * 100) / 100,
+      w: Math.round(w * 100) / 100,
+      d: Math.round(d * 100) / 100,
+      r: spec.cutout.radiusMm,
+      machined: spec.cnc,
+      readiness: spec.cnc ? 'cut' : 'manual',
+      note: `${kind === 'sink' ? 'Sink' : 'Hob'} cut-out ${Math.round(w)} x ${Math.round(d)}, R${spec.cutout.radiusMm}, `
+        + `over ${u.params?.unit_num || u.id}${spec.cnc ? '' : ': cut on site'}.`,
+    });
   }
   return out;
 }

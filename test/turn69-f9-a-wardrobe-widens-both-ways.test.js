@@ -155,14 +155,17 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // `UnitSizeModal` (T74 F7: the wardrobe wall unit's depth and its BACK |
   // FRONT), licensed by T74 and not by F9: what F9 said it did not buy, it
   // still did not buy, and the assertion below asks exactly that.
+  // AMENDED BY T75: `BomPanel` and `ContextMenu` (F5: the worktop reaches the
+  // BOM, the upstand reaches the menu), argued in the manifest with the
+  // owner's words, re-frozen at their new hashes. Neither is a widening file.
   const ARGUED = [
-    'AddItems', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
+    'AddItems', 'BomPanel', 'ContextMenu', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
     'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
   for (const [name, turn] of exempt) {
-    assert.ok(['67', '69', '71', '72', '74'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
+    assert.ok(['67', '69', '71', '72', '74', '75'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
   }
   assert.ok(!exempt.some(([n, t]) => /UnitSize/.test(n) && t === '69'), 'F9 bought no exemption');
   assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), ['RoomModal'], 'T69 licensed RoomModal alone');

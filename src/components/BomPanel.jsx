@@ -54,9 +54,11 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   // ─── TURN 32 (CLAUDE.md F5/F7): THE INVOICE ──────────────────────────────
   const migrated = useMemo(() => migrateDesign(design), [design]);
   const readyBoxes = migrated.drawerBoxes?.mode === 'ready';
+  // T75 F5 · the room goes in, so the worktop (a slab that may turn a corner)
+  // reaches the cut list and the BOM: its slabs, its bolts and its notes.
   const bom = useMemo(() => buildBom(entries, {
-    design, profile, materials, excludeDrawerBoxes: readyBoxes,
-  }), [entries, design, profile, materials, readyBoxes]);
+    design, profile, materials, excludeDrawerBoxes: readyBoxes, room: project.room,
+  }), [entries, design, profile, materials, readyBoxes, project.room]);
   const invoiceSummary = useMemo(
     () => materialsSummary(bom, profile, { excludeDrawerBoxes: readyBoxes }),
     [bom, profile, readyBoxes],

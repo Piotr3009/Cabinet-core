@@ -453,8 +453,10 @@ export function migrateDesign(design) {
         extendLeft: Number(w?.extendLeft) > 0 ? Number(w.extendLeft) : 0,
         extendRight: Number(w?.extendRight) > 0 ? Number(w.extendRight) : 0,
         extendFront: Number(w?.extendFront) > 0 ? Number(w.extendFront) : 0,
+        // T75 F4/F5 · an L corner unit's slab is a worktop of one unit.
+        ...(w?.kind === 'L' ? { kind: 'L' } : {}),
       }))
-      .filter((w) => w.id && w.unitIds.length >= 2),
+      .filter((w) => w.id && (w.unitIds.length >= 2 || (w.kind === 'L' && w.unitIds.length === 1))),
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: normaliseHandle(d.fronts?.handle),

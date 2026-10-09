@@ -1964,6 +1964,14 @@ export const DEFAULT_CABINET_PROFILE = {
       frontOverhang: 20,
       sideOverhang: 10,
       minUnits: 2,          // "select 2+ base cabinets"
+      // ─── T75 F5 · THE CORNER, THE CUT-OUTS, THE UPSTAND ─────────────────
+      // CLAUDE.md T75 names these `profile.worktop.*`; the worktop's numbers
+      // have lived HERE since T30, so they join them (one namespace).
+      joint: { kind: 'butt', boltCount: 3 },          // T75 proposed, owner to confirm
+      cutout: { insetMm: 20, radiusMm: 10 },          // T75 proposed, owner to confirm
+      upstand: { heightMm: 100, thicknessMm: 20 },    // T75 proposed, owner to confirm
+      seatingMm: 300,                                 // T75 proposed, owner to confirm (F11)
+      cnc: false,                                     // a worktop is machined on site unless this says so
     },
     // ─── TURN 47 (CLAUDE.md F4): EVERY INFILL LEAVES THE MACHINE OVERSIZE ──
     //
@@ -5298,6 +5306,15 @@ export function migrateCabinetProfile(profile) {
       topInfill: { ...D.autoParts.topInfill, ...profile.autoParts?.topInfill },
       sideInfill: { ...D.autoParts.sideInfill, ...profile.autoParts?.sideInfill },
       endPanel: { ...D.autoParts.endPanel, ...profile.autoParts?.endPanel },
+      // T75 F5 · the worktop's numbers, key by key (a stored profile from
+      // before tonight comes back with the joint, the cut-out and the upstand).
+      worktop: {
+        ...D.autoParts.worktop,
+        ...profile.autoParts?.worktop,
+        joint: { ...D.autoParts.worktop.joint, ...profile.autoParts?.worktop?.joint },
+        cutout: { ...D.autoParts.worktop.cutout, ...profile.autoParts?.worktop?.cutout },
+        upstand: { ...D.autoParts.worktop.upstand, ...profile.autoParts?.worktop?.upstand },
+      },
       cornice: {
         ...D.autoParts.cornice,
         ...profile.autoParts?.cornice,

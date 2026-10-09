@@ -14,6 +14,10 @@ import {
 } from './partRegistry.js';
 import { sheetSizeForFamily } from './checks.js';
 import { lightingBomLines } from './ledStrips.js';
+// T75 F5 · the worktop's slabs, joint and cut-outs, resolved from the design.
+import { worktopsFor } from './worktop.js';
+import { migrateDesign } from './design.js';
+import { roomWalls } from './room.js';
 
 /**
  * What ONE piece is finished in, as a name a workshop can order against
@@ -52,7 +56,7 @@ function partMaterialLabel(panel, resolved) {
  * @returns aggregated BOM
  */
 export function buildBom(entries, {
-  design = null, profile = null, materials = [], excludeDrawerBoxes = false,
+  design = null, profile = null, materials = [], excludeDrawerBoxes = false, room = null,
 } = {}) {
   const units = [];
   const roleTotals = {};
@@ -64,6 +68,8 @@ export function buildBom(entries, {
   let frontArea = 0;
   let boardEdging = 0;
   let frontEdging = 0;
+  // T75 F5 · the worktop's own area (its slabs and upstands), kept apart.
+  let worktopArea = 0;
 
   for (const { unit, result } of entries) {
     // Per PIECE, not per project and not per unit: a cabinet on its own door
@@ -103,6 +109,8 @@ export function buildBom(entries, {
     for (const r of rows) {
       pieces += r.qty;
       if (r.material_role === 'front') { frontArea += r.area_m2 * r.qty; frontEdging += r.edge_m * r.qty; }
+      // T75 F5 · an upstand is worktop material: neither board nor front.
+      else if (r.material_role === 'worktop') { worktopArea += r.area_m2 * r.qty; }
       else { boardArea += r.area_m2 * r.qty; boardEdging += r.edge_m * r.qty; }
 
       const rt = roleTotals[r.role] || (roleTotals[r.role] = { role: r.role, pieces: 0, area_m2: 0, edging_m: 0, thicknesses: new Set() });
@@ -138,6 +146,112 @@ export function buildBom(entries, {
     }
   }
 
+  // ─── T75 F5 · THE WORKTOP REACHES THE BOM ──────────────────────────────
+  //
+  // *"one JOINT RECORD at the corner ... three worktop connector bolts as a
+  // hardware BOM line; the bolt pockets are a NOTE ... A [cut-out] record is
+  // drawn on the worktop sheet ... and listed as a BOM note."*  The slab is a
+  // design-layer piece `computeCabinet` never reads (T30's law, held), so it
+  // is resolved HERE from the design's records and the units it lies on, and
+  // listed as its own block: one line per slab (bought, its size), the bolts
+  // as an order line, and every cut-out and joint as a NOTE line. Only when a
+  // room is handed in, because a slab that turns a corner is resolved in two
+  // walls' frames; every caller written before tonight passes none and gets
+  // exactly the BOM it got.
+  if (design && room) {
+    const slabs = worktopsFor({
+      records: migrateDesign(design).worktops,
+      units: entries.map((e) => e.unit).filter(Boolean),
+      profile,
+      walls: roomWalls(room),
+    });
+    if (slabs.length) {
+      const rows = [];
+      const joints = new Map();
+      for (const slab of slabs) {
+        const g = slab.geometry;
+        const area = Array.isArray(g.outline) ? polygonAreaM2(g.outline) : roundTo((g.w * g.d) / 1e6, 4);
+        worktopArea += area;
+        rows.push({
+          unit_num: 'WT',
+          id: slab.slabId || slab.id,
+          part: 'WORKTOP',
+          role: 'worktop',
+          material_role: 'worktop',
+          material_label: g.decor || `Worktop ${g.thickness} mm${g.shape === 'L' ? ', L-shaped' : ''}`,
+          material_key: null,
+          material_id: null,
+          w: roundTo(g.w, 1),
+          h: roundTo(g.d, 1),
+          qty: 1,
+          thickness: g.thickness,
+          edge: '',
+          edge_m: 0,
+          area_m2: area,
+          readiness: 'bought',
+        });
+        for (const c of slab.cutouts || []) {
+          rows.push({
+            unit_num: 'WT',
+            id: `${slab.slabId || slab.id} ${c.kind} cut-out`,
+            part: 'WORKTOP-CUTOUT',
+            role: 'worktop_note',
+            material_role: 'note',
+            material_label: `NOTE: ${c.note}`,
+            w: c.w,
+            h: c.d,
+            qty: 1,
+            thickness: g.thickness,
+            edge: '',
+            edge_m: 0,
+            area_m2: 0,
+            readiness: c.readiness,
+          });
+        }
+        if (slab.joint) joints.set(slab.id, slab.joint);
+      }
+      for (const [id, joint] of joints) {
+        rows.push({
+          unit_num: 'WT',
+          id: `${id} joint`,
+          part: 'WORKTOP-JOINT',
+          role: 'worktop_note',
+          material_role: 'note',
+          material_label: `NOTE: ${joint.note}`,
+          w: 0,
+          h: 0,
+          qty: 1,
+          thickness: 0,
+          edge: '',
+          edge_m: 0,
+          area_m2: 0,
+          readiness: joint.readiness,
+        });
+        const key = 'worktop_bolts|connector bolt';
+        const merged = hardwareRows.get(key);
+        if (merged) { merged.qty += joint.boltCount; merged.units.add('WT'); } else {
+          hardwareRows.set(key, {
+            role: 'worktop_bolts',
+            label: 'Worktop connector bolts',
+            qty: joint.boltCount,
+            unit: 'pcs',
+            spec: { per_joint: joint.boltCount },
+            spec_label: 'connector bolt',
+            units: new Set(['WT']),
+          });
+        }
+      }
+      units.push({
+        unitId: 'worktops',
+        unitNum: 'WT',
+        type: 'WORKTOP',
+        rows,
+        totals: { pieces_total: rows.filter((r) => r.role === 'worktop').length },
+        warnings: [],
+      });
+    }
+  }
+
   const roles = Object.values(roleTotals).map((rt) => ({
     ...rt,
     thicknesses: [...rt.thicknesses].sort((a, b) => a - b),
@@ -158,8 +272,22 @@ export function buildBom(entries, {
       edging_m: roundTo(boardEdging, 3),
       edging_front_m: roundTo(frontEdging, 3),
       edging_total_m: roundTo(boardEdging + frontEdging, 3),
+      // T75 F5 · present only when a slab is listed, so every BOM before
+      // tonight reads the same totals.
+      ...(worktopArea > 0 ? { worktop_area_m2: roundTo(worktopArea, 4) } : {}),
     },
   };
+}
+
+/** T75 F5 · the area of a plan outline in m2 (the shoelace). */
+function polygonAreaM2(points) {
+  let a = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
+    a += x1 * y2 - x2 * y1;
+  }
+  return roundTo(Math.abs(a) / 2 / 1e6, 4);
 }
 
 /**

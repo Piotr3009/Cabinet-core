@@ -68,6 +68,9 @@ export function buildCuttingListCsv(entries, profile = getCabinetProfile()) {
  * made boxes (F7) drop their cut parts and appear as purchase lines.
  */
 export function exportBomCsv({
+  // T75 F5 · the room, so the worktop's lines ride the file as they ride the
+  // panel (`buildBom`'s worktop block): a corner slab needs the walls.
+  room = null,
   entries, design = null, profile = getCabinetProfile(), materials = [],
   projectName = 'project', redWarnings = [], lookup = registerLookup,
   // T45 F9c: the job's LED spec, so the FILE sizes the driver the same way the
@@ -79,7 +82,7 @@ export function exportBomCsv({
   const d = migrateDesign(design);
   const ready = d.drawerBoxes?.mode === 'ready';
   const bom = buildBom(entries, {
-    design: d, profile, materials, excludeDrawerBoxes: ready,
+    design: d, profile, materials, excludeDrawerBoxes: ready, room,
   });
   const summary = materialsSummary(bom, profile, { excludeDrawerBoxes: ready });
   const ironmongery = [

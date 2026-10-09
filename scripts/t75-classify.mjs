@@ -59,6 +59,10 @@ export const GATES = {
     what: 'a blind corner kit (BLIND_BASE, BLIND_WALL, BLIND_WARDROBE: `type.blind`, F3)',
     opens: (p, id) => Boolean(UNIT_TYPES[id]?.blind || UNIT_TYPES[p.type]?.blind),
   },
+  upstand: {
+    what: 'an upstand run element handed to the owner unit (`params.run_upstand.role === \'owner\'`, F5)',
+    opens: (p) => p.run_upstand?.role === 'owner',
+  },
 };
 
 /**
@@ -81,18 +85,20 @@ export const LICENSED = {
     why: 'F2 · the CORNER-POST board (front material, door plane, carcass high) cut when the store hands '
       + '`corner_post_*_mm`; `corner_post` and `blind_blank` join the front-material and finish-exposed roles. '
       + 'F3 · `normalizeParams` resolves a blind kit\'s blank (`cfg.blind`), the one leaf stands beside it and '
-      + 'the BLIND-BLANK fixed piece is cut. IS the cut path: every delta is behind a gate below',
-    gates: ['cornerPost', 'blind'],
+      + 'the BLIND-BLANK fixed piece is cut. F5 · the UPSTAND board on the worktop line when the store hands '
+      + '`run_upstand`. IS the cut path: every delta is behind a gate below',
+    gates: ['cornerPost', 'blind', 'upstand'],
   },
   'src/engine/partRegistry.js': {
     why: 'F2 · the `corner_post` part and its edging; F3 · BLIND-BLANK on the `false_front` row held open '
-      + 'since T39 for the day the engine says FIX. No fixture emits either part',
-    gates: ['cornerPost', 'blind'],
+      + 'since T39 for the day the engine says FIX. F5 · the `upstand` part and its edging. No fixture emits any',
+    gates: ['cornerPost', 'blind', 'upstand'],
   },
   'src/engine/runs.js': {
-    why: 'F2 · `unitVerticals` reports the corner post (kind `corner-post`) so rule 7 sees it. Read by the '
-      + 'room\'s rulebooks; the six carry no post',
-    gates: ['cornerPost'],
+    why: 'F2 · `unitVerticals` reports the corner post (kind `corner-post`) so rule 7 sees it. F5 · '
+      + '`runUpstandParams`, the plinth\'s grammar at the top of the run. Read by the store and the room\'s '
+      + 'rulebooks; the six carry no post and no upstand',
+    gates: ['cornerPost', 'upstand'],
   },
   'src/engine/frontClearance.js': {
     why: 'FRONTS BOUNDARY licence 1 · rule 7 reads `doors.clearance.corner` (null when a profile names none), '
@@ -106,7 +112,8 @@ export const LICENSED = {
   },
   'src/engine/profile.js': {
     why: 'F2 · `corner` (postMm, overlap) and `doors.clearance.corner`; F3 · `blindBase`, `blindWall`, '
-      + '`blindWardrobe` defaults; and their migrate lines. Every number marked T75 proposed. The six read none',
+      + '`blindWardrobe` defaults; F5 · `autoParts.worktop` joint, cutout, upstand, seatingMm, cnc; '
+      + 'and their migrate lines. Every number marked T75 proposed. The six read none',
     gates: ['cornerPost', 'blind'],
   },
   'src/engine/types.js': {
@@ -124,12 +131,39 @@ export const LICENSED = {
     gates: [],
   },
   'src/engine/bom.js': {
-    why: 'F3 · the comment naming `blind_blank` among the front-sheet roles. No code',
+    why: 'F3 · the comment naming `blind_blank` among the front-sheet roles. F5 · `buildBom` given the room '
+      + 'lists the worktop: its slabs, the connector bolts as an order line, the joint and the cut-outs as notes. '
+      + 'A purchase list read off the design layer, not a cut',
     gates: [],
   },
   'src/engine/elements.js': {
-    why: 'F2/F3 · the `corner-post` and `blind-blank` kinds: their labels, rows and actions, clicked as '
-      + 'attached pieces. What a piece is CALLED and offered, not what it is cut',
+    why: 'F2/F3/F5 · the `corner-post`, `blind-blank` and `upstand` kinds: their labels, rows and actions, '
+      + 'clicked as attached pieces. What a piece is CALLED and offered, not what it is cut',
+    gates: [],
+  },
+  'src/engine/worktop.js': {
+    why: 'F5 · `worktopsFor` turns the corner: two slabs and one butt joint record (bolts, notes), the L kit\'s '
+      + 'slab shaped like the L, the sink and hob cut-outs as records. The design layer; computeCabinet never '
+      + 'reads it (test/turn30-f8-worktop.test.js)',
+    gates: [],
+  },
+  'src/engine/design.js': {
+    why: 'F4/F5 · `migrateDesign` keeps a worktop record of one L unit (`kind: \'L\'`). The design layer',
+    gates: [],
+  },
+  'src/engine/drawings/setPlan.js': {
+    why: 'F5 · LICENSED by FROZEN 2 (*"unless a point below needs the drawing to show what the engine now '
+      + 'cuts"*): the worktop sheet draws the slab\'s outline (an L is not a rectangle), its cut-outs and the '
+      + 'joint note. A drawing, not a cut',
+    gates: [],
+    drawing: true,
+  },
+  'src/lib/exporters.js': {
+    why: 'F5 · the BOM file is handed the room so the worktop rides it. A file writer, not a cut',
+    gates: [],
+  },
+  'src/lib/contextActions.js': {
+    why: 'F5 · the right-click entry Upstand, on and off per run. A menu, not a cut',
     gates: [],
   },
 };
@@ -182,7 +216,9 @@ const READ_ONLY = [
   'src/engine/frontStyleArt.js', 'src/engine/hinges.js', 'src/engine/hingeLadder.js',
   'src/engine/frontDimensions.js', 'src/engine/frontGapClash.js',
 ];
-const isReadOnly = (f) => READ_ONLY.includes(f) || READ_ONLY_PREFIX.some((p) => f.startsWith(p));
+// A drawing file is read-only unless its LICENSED entry carries `drawing: true`.
+const isReadOnly = (f) => READ_ONLY.includes(f)
+  || (READ_ONLY_PREFIX.some((p) => f.startsWith(p)) && !LICENSED[f]?.drawing);
 
 /** Every file under `src/` that names this symbol, comments stripped. */
 const strip = (t) => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^[ \t]*\/\/.*$/gm, ' ');
@@ -227,6 +263,12 @@ function gateTable() {
 // ─── …AND EACH GATE OPENED, SO THE DELTA IS SHOWN TO BE LIVE ─────────────
 
 const LIVENESS = {
+  upstand: () => {
+    const run = { role: 'owner', offset: 0, length: 600, unitIds: ['u'], spans: [] };
+    const r = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', run_upstand: run }, P);
+    const up = r.panels.find((p) => p.id === 'UPSTAND');
+    return { live: Boolean(up) && up.box.w === 600, said: `BUD with an upstand cuts ${up ? `${up.id} ${up.box.w} x ${up.box.h}` : 'nothing'}` };
+  },
   cornerPost: () => {
     const r = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', corner_post_left_mm: 50 }, P);
     const post = r.panels.find((p) => p.role === 'corner_post');

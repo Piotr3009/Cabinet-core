@@ -355,6 +355,8 @@ export default function ConfiguratorPage() {
       entries: allResults(),
       design,
       materials,
+      // T75 F5 · the room, so a slab that turns a corner rides the file.
+      room: project.room,
       projectName: project.name,
       redWarnings: found.filter((f) => f.level === 'red').map((f) => f.message),
       // T45 F9c: the driver is sized in the FILE the same way it is on the

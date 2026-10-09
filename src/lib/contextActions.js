@@ -103,6 +103,8 @@ const GROUP_OF = {
   'cornice-70': 'run-pieces',
   'cornice-100': 'run-pieces',
   plinth: 'run-pieces',
+  // T75 F5 · the upstand finishes a run as the plinth does.
+  upstand: 'run-pieces',
   'bottom-mask': 'run-pieces',
   'end-panel-L': 'end-panels',
   'end-panel-R': 'end-panels',
@@ -386,6 +388,24 @@ export function menuActions({
       run: () => {
         each((id) => (fitted ? store.removePlinth?.(id) : store.addPlinth?.(id)));
         if (!fitted) store.openPanelSection?.('construction');
+      },
+    });
+  }
+
+  // ── 4a. the upstand (T75 F5) ──
+  // *"on and off per run like the plinth (BACKLOG #16's grammar: added by a
+  // decision, visible only then)."*  Offered only where a worktop lies.
+  if (type.mount === 'floor' && type.supports?.topInfill === false) {
+    const fitted = unit.params.upstand === true;
+    actions.push({
+      id: 'upstand',
+      label: forAll('Upstand'),
+      checked: fitted,
+      hint: fitted
+        ? 'Fitted. Click to take it off the run'
+        : 'A strip on the worktop against the wall, along the whole run, in the worktop\'s material',
+      run: () => {
+        each((id) => (fitted ? store.removeUpstand?.(id) : store.addUpstand?.(id)));
       },
     });
   }

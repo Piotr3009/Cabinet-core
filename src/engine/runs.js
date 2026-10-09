@@ -1258,3 +1258,56 @@ export function runPlinthParams(units, profile) {
   }
   return out;
 }
+
+// ─── T75 F5 · THE UPSTAND, A RUN ELEMENT LIKE THE PLINTH ────────────────────
+//
+// *"UPSTAND: an auto-part along the wall behind every base run that has a
+// worktop ... on and off per run like the plinth (BACKLOG #16's grammar: added
+// by a decision, visible only then), BOM role `upstand`, cut list line."*
+// The decision is the unit's (`params.upstand === true`, as `params.plinth`);
+// the piece is the run's: one board along the wall over adjacent units that
+// want it, carried by the first of them. Only a kit a worktop lies on.
+
+function wantsUpstand(unit) {
+  if (unit?.params?.upstand !== true) return false;
+  const type = getUnitType(unit.type);
+  return Boolean(type && type.mount === 'floor' && type.supports?.topInfill === false);
+}
+
+/** @returns {Map<string, object|null>} unit id → the upstand element to store */
+export function runUpstandParams(units, profile) {
+  const out = new Map(units.map((u) => [u.id, null]));
+  const tolerance = Number(profile?.autoParts?.topInfill?.runGap) || 0;
+  for (const run of buildRuns(units, profile)) {
+    let current = [];
+    const close = () => {
+      if (current.length) {
+        const first = current[0];
+        const last = current[current.length - 1];
+        const left = Number(first.position?.x_mm) || 0;
+        const right = (Number(last.position?.x_mm) || 0) + (Number(last.params?.width) || 0);
+        out.set(first.id, {
+          role: 'owner',
+          offset: 0,
+          length: right - left,
+          unitIds: current.map((u) => u.id),
+          spans: current.map((u) => ({ id: u.id, width: Number(u.params?.width) || 0 })),
+        });
+        for (const u of current.slice(1)) out.set(u.id, { role: 'member', ownerId: first.id });
+      }
+      current = [];
+    };
+    for (const unit of run.units) {
+      if (!wantsUpstand(unit)) { close(); continue; }
+      if (current.length) {
+        const prev = current[current.length - 1];
+        const gap = (Number(unit.position?.x_mm) || 0)
+          - ((Number(prev.position?.x_mm) || 0) + (Number(prev.params?.width) || 0));
+        if (gap > tolerance) close();
+      }
+      current.push(unit);
+    }
+    close();
+  }
+  return out;
+}

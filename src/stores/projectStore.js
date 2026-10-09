@@ -118,7 +118,7 @@ import {
 // `params.wall_gap`, or the project's number when nobody has said.
 import {
   buildRuns, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
-  runMemberIds, runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
+  runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
@@ -711,7 +711,7 @@ function paramsForEngine(unit, design = null) {
   // engine hears run elements from ONE place: state.runElements, this sweep.
   const {
     run_top_infill: _fossilTop, run_plinth: _fossilPlinth,
-    run_mask: _fossilMask, run_cornice: _fossilCornice,
+    run_mask: _fossilMask, run_cornice: _fossilCornice, run_upstand: _fossilUpstand,
     ...p
   } = unit.params;
   const items = p.sections?.[0]?.items || [];
@@ -725,6 +725,8 @@ function paramsForEngine(unit, design = null) {
       run_plinth: elements.plinth,
       run_mask: elements.mask,
       run_cornice: elements.cornice,
+      // T75 F5 · spread only where the run carries one.
+      ...(elements.upstand ? { run_upstand: elements.upstand } : {}),
     } : {}),
     type: unit.type,
     items,
@@ -2256,6 +2258,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // unit — a segment is a stretch of ADJACENT PLINTHED units, so it cannot be
     // worked out until the store knows which of them have a plinth at all.
     const plinthParams = runPlinthParams(next, profile);
+    // T75 F5 · the UPSTAND, the plinth's grammar at the top of the run.
+    const upstandParams = runUpstandParams(next, profile);
     // ─── …and the MASKING PANEL, the same way (turn 14, CLAUDE.md F5) ───
     // One board under a run of wall units, its segments decided by the same
     // adjacency the plinth's are: docking a cabinet extends it, an end panel or
@@ -2320,8 +2324,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         plinth: plinthParams.get(u.id) ?? null,
         mask: maskParams.get(u.id) ?? null,
         cornice: corniceParams.get(u.id) ?? null,
+        // T75 F5 · present only where a run has asked for one.
+        ...(upstandParams.get(u.id) ? { upstand: upstandParams.get(u.id) } : {}),
       };
-      if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice) continue;
+      if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice && !entry.upstand) continue;
       const prev = prevElements[u.id];
       // Reference equality matters (drag frames), and the test is BYTE
       // equality of the WHOLE element — a field list here rotted twice
@@ -2830,6 +2836,34 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }));
     get().refreshAutoParts();
     return true;
+  },
+
+  /**
+   * ─── T75 F5 · THE UPSTAND, ON AND OFF PER RUN ─────────────────────────────
+   *
+   * *"on and off per run like the plinth (BACKLOG #16's grammar: added by a
+   * decision, visible only then)."*  The decision is written on every unit of
+   * the run (`runMemberIds`), because the board is the run's; a kit no worktop
+   * lies on never takes one (`runs.js wantsUpstand`).
+   */
+  addUpstand: (unitId) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return false;
+    const ids = new Set(runMemberIds(get().units, unitId, profile));
+    set((s) => ({
+      units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, upstand: true } } : u)),
+    }));
+    get().refreshAutoParts();
+    return Boolean(get().runElements?.[unitId]?.upstand || [...ids].some((id) => get().runElements?.[id]?.upstand));
+  },
+
+  removeUpstand: (unitId) => {
+    const ids = new Set(runMemberIds(get().units, unitId, getCabinetProfile()));
+    set((s) => ({
+      units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, upstand: false } } : u)),
+    }));
+    get().refreshAutoParts();
   },
 
   removePlinth: (unitId) => {
@@ -8155,7 +8189,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const wanted = [...new Set((unitIds || []).filter(Boolean))];
     const units = wanted.map((id) => s.units.find((u) => u.id === id)).filter(Boolean);
     const profile = getCabinetProfile();
-    const gate = worktopEligible(units, profile);
+    // T75 F5 · the walls go in, so two runs meeting at a corner may share it.
+    const gate = worktopEligible(units, profile, { walls: roomWalls(s.project.room) });
     if (!gate.ok) return { ok: false, id: null, error: gate.why };
     const design = migrateDesign(s.project.design);
     // A cabinet lies under ONE slab. Asking for a worktop over a run that
@@ -8165,7 +8200,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const id = uid('worktop');
     get().setDesign({
       worktops: [...kept, {
-        id, unitIds: wanted, decor: null, extendLeft: 0, extendRight: 0, extendFront: 0,
+        id,
+        unitIds: wanted,
+        decor: null,
+        extendLeft: 0,
+        extendRight: 0,
+        extendFront: 0,
+        // T75 F4/F5 · one L corner unit takes a slab of its own.
+        ...(units.length === 1 && getUnitType(units[0].type).corner ? { kind: 'L' } : {}),
       }],
     });
     return { ok: true, id, error: null };
@@ -8197,6 +8239,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       records: migrateDesign(s.project.design).worktops,
       units: s.units,
       profile: getCabinetProfile(),
+      // T75 F5 · a slab that turns a corner is resolved in both walls' frames.
+      walls: roomWalls(s.project.room),
     });
   },
 

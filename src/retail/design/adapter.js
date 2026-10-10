@@ -531,6 +531,13 @@ function addCornerWardrobeNow() {
     tries.push({ wall: b.index, end: 'left', x: 0, d });
   }
   tries.sort((t, u) => t.d - u.d);
+  // T75 F3 · the job's own walls only: a one-wall job's corner wardrobe stands
+  // on that wall, at one of its ends, never on a wall the job does not draw
+  // (the walk found them placed on walls 4, 2 and 3 of a one-wall job).
+  const shown = new Set(wallsShown(store.project, store.project.room));
+  const inScope = tries.filter((t) => shown.has(t.wall));
+  tries.length = 0;
+  tries.push(...inScope);
   const width = Math.round(p.blindWardrobe?.defaults?.width || 1200);
   for (const t of tries) {
     const placed = store.addUnit('BLIND_WARDROBE', { params: { width, height: p.wardrobe.defaults.height } });

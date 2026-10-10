@@ -670,7 +670,10 @@ function FragmentRows({ unit }) {
               </div>
             )}
           </td>
-          <td className="px-2 py-1 text-ink-400 max-w-[180px] truncate" title={r.material_label || ''}>
+          {/* T76 F7 · the walk measured the State column pushed past the panel
+              (AM: a strip's stock and the gluing NOTE): the material cell
+              truncates at 160, and the state may wrap ("Fit on / site"). */}
+          <td className="px-2 py-1 text-ink-400 max-w-[160px] truncate" title={r.material_label || ''}>
             {formatMm(r.thickness)} · {r.material_label || '—'}
           </td>
           <td className="px-2 py-1 text-right tabular-nums">{formatMm(r.w)}</td>
@@ -679,7 +682,7 @@ function FragmentRows({ unit }) {
           <td className="px-2 py-1 text-center font-mono text-ink-400">{r.edge || '—'}</td>
           <td className="px-2 py-1 text-right tabular-nums">{r.area_m2.toFixed(3)}</td>
           <td
-            className={`px-2 py-1 whitespace-nowrap ${r.readiness && r.readiness !== 'cut' ? 'text-status-warn' : 'text-ink-400'}`}
+            className={`px-2 py-1 ${r.readiness && r.readiness !== 'cut' ? 'text-status-warn' : 'text-ink-400'}`}
             data-readiness={r.readiness || undefined}
           >
             {READINESS_LABELS[r.readiness] || ''}

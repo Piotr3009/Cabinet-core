@@ -830,6 +830,9 @@ export default function RoomModal({
                       fill="#C8A678" fontSize="9" textAnchor="middle"
                       style={{ cursor: 'pointer' }}
                       data-island-dim={`${isl.id}:${key}`}
+                      // T75 F9 · the same press's mousedown must not take the
+                      // focus off the field it has just opened (the walk's FAIL).
+                      onMouseDown={(e) => e.preventDefault()}
                       onPointerDown={(e) => {
                         e.stopPropagation();
                         setPicked({ kind: 'island', id: isl.id });

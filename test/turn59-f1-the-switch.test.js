@@ -97,7 +97,8 @@ const EXEMPT = {
   // with the owner's words from this file and re-frozen at its new hash in the
   // same commit."*  The engine and the goldens are untouched by it.
   'src/components/RightPanel.jsx':
-    'T75 F9 · the Wall select names an island\'s face for what it is ("Island 1 · face A"), never "Wall 5". *"Nothing about it is a wall."* '
+    'T75 F4/F11 · the Construction section\'s Worktop row for ONE cabinet: Add worktop where it may carry one alone (an L, a cabinet on an island), Remove, and on an island\'s slab a Seating overhang button per face with no cabinets (the profile\'s number, nothing typed). *"The L kit\'s worktop is one slab shaped like the L"*; *"a seating overhang of `profile.worktop.seatingMm = 300` offered as one click on a face with no units"*. '
+    + 'T75 F9 · the Wall select names an island\'s face for what it is ("Island 1 · face A"), never "Wall 5". *"Nothing about it is a wall."* '
     + 'T75 F7 · CUT CORNER in the selected unit\'s panel: the button lights the four plan corners in the '
     + 'scene (`3d/NotchCorners.jsx`), a click on one opens the small anchored window at the click with '
     + 'WIDTH, DEPTH, HEIGHT (the profile\'s `notch.defaults`), Enter cuts through the store\'s one action '
@@ -185,7 +186,8 @@ const EXEMPT = {
   // — so tonight's edit is argued here again, with tonight's quote and
   // tonight's hash. The map does NOT grow: the count below is still three.
   'src/components/RoomModal.jsx':
-    'T75 F9 · Room setup gets ADD ISLAND (a kitchen job\'s only: the gate is the job\'s family, which retail never meets), the island drawn in the plan, dragged whole and refused in words where it would stand on a cabinet, a box or outside the room, its two figures clickable into a focused, selected field, Rotate 90° and Remove island. *"twoja droga, plus dodawanie szafek po bokach lub end panele, w całości."* '
+    'T75 F9 · the island\'s figure keeps the field it opens: the same press no longer takes the focus off it (the walk\'s one FAIL). *"the island draggable in the plan with its dimension labels clickable (T73 F3 field)"*. '
+    + 'T75 F9 · Room setup gets ADD ISLAND (a kitchen job\'s only: the gate is the job\'s family, which retail never meets), the island drawn in the plan, dragged whole and refused in words where it would stand on a cabinet, a box or outside the room, its two figures clickable into a focused, selected field, Rotate 90° and Remove island. *"twoja droga, plus dodawanie szafek po bokach lub end panele, w całości."* '
     + 'T69 F1 — the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
     + 'IMPORT DXF is struck out (*"to nie przejdzie"*), and APPLY is fixed at the '
     + 'two sites its probe convicted: it sends only the keys this window changed, '
@@ -270,9 +272,9 @@ const FROZEN = {
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RightPanel.jsx': '68c5e1e6a4d202f85e05712c5f9b61aff04a4377c973f53ae81c8cdef5bb7e82',
+  'src/components/RightPanel.jsx': '2891d8258ec102eec6596c35bfd50fc94535a9c65a9c7814f6e1a14794870d25',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RoomModal.jsx': 'cfee8d4d3597f6c37de41dc417d83ed2e57ecf6153b7a69cdf97c54aa282616c',
+  'src/components/RoomModal.jsx': '1c9ae6b07726f4c46011f06c370e1bbf93d58ce1f96f8f9ae2fad57bd2aa39fb',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.

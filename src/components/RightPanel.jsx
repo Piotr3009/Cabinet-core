@@ -20,6 +20,8 @@ import NumberField from './NumberField.jsx';
 // T75 F7 · CUT CORNER: the small window at the click on a lit corner.
 import Modal from './Modal.jsx';
 import { notchApplies } from '../engine/notch.js';
+// T75 F4/F11 · the worktop row: who takes one alone, and the island's seating.
+import { takesWorktop, worktopEligible } from '../engine/worktop.js';
 import { CABINEO_REFUSAL, dowelKitRefusal, jointSystemOf } from '../engine/dowels.js';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
@@ -1033,6 +1035,11 @@ export default function RightPanel() {
           </div>
           )}
 
+          {/* T75 F4/F11 · the worktop of ONE cabinet (the L's slab shaped like
+              the L, a cabinet on an island) and the island's seating overhang:
+              the walk found no click reached either. */}
+          <WorktopRow unit={unit} />
+
           {/* ─── THE CORNICE (turn 22, CLAUDE.md F1) ───
               Three states, one control: none, 70, 100. It is offered on the
               kits that finish below the ceiling with a face somebody looks up
@@ -1759,5 +1766,91 @@ function NotchWindow({ args }) {
         </div>
       </form>
     </Modal>
+  );
+}
+
+/**
+ * ─── T75 F4 / F11 · THE WORKTOP OF ONE CABINET, AND THE ISLAND'S SEATING ───
+ *
+ * *"The L kit's worktop is one slab shaped like the L"* and *"a seating
+ * overhang of `profile.worktop.seatingMm` offered as one click on a face with
+ * no units"*: the walk found that no click reached either (the worktop button
+ * lives in the panel of two or more). Here, for the one selected cabinet: Add
+ * worktop where the cabinet may carry one alone (an L, a desk, a cabinet on an
+ * island; the store's own `worktopEligible` decides and its refusal is said),
+ * Remove where it carries one, and on an island's slab one button per face
+ * with no cabinet on it. The overhang is the profile's number; nothing typed.
+ */
+function WorktopRow({ unit }) {
+  const design = useProjectStore((s) => s.project.design);
+  const room = useProjectStore((s) => s.project.room);
+  const units = useProjectStore((s) => s.units);
+  const addWorktop = useProjectStore((s) => s.addWorktop);
+  const removeWorktop = useProjectStore((s) => s.removeWorktop);
+  const seatingOverhang = useProjectStore((s) => s.seatingOverhang);
+  const extendIslandWorktop = useProjectStore((s) => s.extendIslandWorktop);
+  const notify = useUiStore((s) => s.notify);
+  const profile = useCabinetProfileStore((s) => s.profile);
+  if (!takesWorktop(unit.type)) return null;
+  const walls = roomWalls(room);
+  const records = migrateDesign(design).worktops;
+  const isle = unit.position?.island ?? null;
+  const record = records.find((w) => (isle != null && w.island === isle) || w.unitIds.includes(unit.id)) || null;
+  const alone = worktopEligible([unit], profile, { walls });
+  if (!record) {
+    if (!alone.ok) return null;
+    return (
+      <div className="cc-row" data-worktop-row="add">
+        <div className="flex flex-col">
+          <span className="text-sm text-ink-100">Worktop</span>
+          <span className="text-[11px] text-ink-400">not fitted</span>
+        </div>
+        <button
+          type="button"
+          className="cc-btn"
+          data-add-worktop-one="1"
+          onClick={() => { const res = addWorktop([unit.id]); if (!res.ok) notify(res.error, 'warn'); }}
+        >
+          Add worktop
+        </button>
+      </div>
+    );
+  }
+  const faces = record.island ? walls.filter((w) => w.island === record.island) : [];
+  const empty = faces.filter((f) => !units.some((u) => (u.position?.wall ?? 0) === f.index && !getUnitType(u.type).freePanel));
+  return (
+    <div className="space-y-1" data-worktop-row={record.id}>
+      <div className="cc-row">
+        <div className="flex flex-col">
+          <span className="text-sm text-ink-100">Worktop</span>
+          <span className="text-[11px] text-ink-400">
+            {record.island ? 'one slab over the whole island' : (record.kind === 'L' ? 'one slab shaped like the L' : `over ${record.unitIds.length} cabinet${record.unitIds.length === 1 ? '' : 's'}`)}
+          </span>
+        </div>
+        <button type="button" className="cc-btn" data-remove-worktop-one={record.id} onClick={() => removeWorktop(record.id)}>Remove</button>
+      </div>
+      {empty.map((f) => {
+        const on = Number(record.extend?.[f.face]) > 0;
+        return (
+          <div key={f.face} className="cc-row" data-seating-face={f.face}>
+            <span className="text-[11px] text-ink-400">
+              {on ? `Seating on face ${f.face}: ${formatMm(record.extend[f.face])} mm` : `Face ${f.face} has no cabinets`}
+            </span>
+            {on ? (
+              <button type="button" className="cc-btn-ghost" title="Take the seating overhang off" onClick={() => extendIslandWorktop(record.id, f.face, 0)}>×</button>
+            ) : (
+              <button
+                type="button"
+                className="cc-btn"
+                data-seating-add={f.face}
+                onClick={() => { const res = seatingOverhang(record.id, f.face); if (!res.ok) notify(res.error, 'warn'); }}
+              >
+                Seating overhang
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }

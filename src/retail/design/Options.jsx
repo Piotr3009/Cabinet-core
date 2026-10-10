@@ -840,10 +840,14 @@ function FrontsPanel({ design, project, unit }) {
         </Field>
       ) : null}
 
+      {/* T76 F6 · the lazy client: picking a style gives the owner's recipe
+          (`frontStyleSelection`), and no number of it is typed here; the
+          recipe controls are PRO's. Only an old saved front's activation. */}
       <FrontDecorationControls
         style={style}
         value={design?.fronts?.decoration}
         onChange={(decoration) => A.setFrontDecoration(decoration)}
+        fields={false}
       />
 
       {/* ─── AND THE SENTENCES COLLECT HERE, ONCE ──────────────────────────

@@ -14,10 +14,14 @@ const FIELD_LABELS = {
   mouldingProjectionMm: 'Moulding projection',
 };
 
-export default function FrontDecorationControls({ style, value, onChange }) {
+// T76 F6 · `fields={false}` is retail's: *"a client picks a style and gets
+// the owner's recipe with NO numeric fields (lazy client law; the recipe
+// controls are PRO's)"*. Only the activation of an old saved front is left.
+export default function FrontDecorationControls({ style, value, onChange, fields = true }) {
   const defaults = defaultFrontDecoration(style);
   if (!defaults) return null;
   const config = normaliseFrontDecoration(value, style);
+  if (config && !fields) return null;
   const update = (key, next) => onChange({ ...config, [key]: next });
   return (
     <div className="pbi-re-line pbi-re-hair pbi-re-round pbi-re-p2 pbi-re-stack-2" data-front-decoration={style}>

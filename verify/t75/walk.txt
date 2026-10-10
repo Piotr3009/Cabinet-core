@@ -55,10 +55,12 @@ The frames beside this file are what the browser saw.
  ok  a second Standard, put on wall 4 (the L's other arm) by the Wall select · option "Wall 4 · 3000 mm"; wall 3, x 40
  ok  a real drag toward the corner stops it on the L's arm B end (the L is its own stop: no post) · x 40 -> 1490; its end 910 from the corner, the L's arm reaches 910; posts 0
  ·   the L's doors as the clearance rulebook measures them, a neighbour on each wall · [{"panel":"CL01-A-F","wall":0,"left":"cornerCovered","right":"none"},{"panel":"CL01-B-F","wall":3,"left":"none","right":"cornerOverlap"}]
- ·   NO UI: a worktop over the L ALONE has no control. The right panel for one unit has no worktop button and the right-click menu has no worktop entry; `addWorktop([L])` (the store takes a lone L, kind L) is reached by no click · buttons naming a worktop with the L selected: []; right-click entries: ["edit-cabinet","rename","plinth","upstand","end-panel-L","end-panel-R","end-panel-B","side-infill","pin-infill-L","pin-infill-R","unit-colour","save-template","center-shelves","rotate-90","back-to-wall","side-to-wall","close-fronts","delete"]
- ok  the L and both runs selected by a click and two Ctrl+clicks · ["u_hhgbvc5","u_vkgta4g","u_19pun3k"]
- ok  ADD WORKTOP over the L and its two runs lies a worktop (records and slabs read off the store) · records [{"id":"worktop_zqzy0bv","units":3,"kind":null,"island":null}]; slabs [{"slab":"worktop_zqzy0bv-A","wall":0,"x":0,"w":1520,"d":948,"island":null,"kind":null,"outline":false,"joint":"{\"kind\":\"butt\",\"boltCount\":3,\"at\":{\"wall\":3,\"x\":2052,\"depth\":606},\"corner\":{\"x\":0,\"y\":0},\"readiness\":\"manual\",\"note\":\"Worktop joint: square butt, slab worktop_zqzy0bv-B into slab worktop_zqzy0bv-A, 3 connector bolts; bolt pockets cut by hand on site.\"}","cutouts":[]},{"slab":"worktop_zqzy0bv-B","wall":3,"x":1480,"w":572,"d":606,"island":null,"kind":null,"outline":false,"joint":"{\"kind\":\"butt\",\"boltCount\":3,\"at\":{\"wall\":3,\"x\":2052,\"depth\":606},\"corner\":{\"x\":0,\"y\":0},\"readiness\":\"manual\",\"note\":\"Worktop joint: square butt, slab worktop_zqzy0bv-B into slab worktop_zqzy0bv-A, 3 connector bolts; bolt pockets cut by hand on site.\"}","cutouts":[]}]; said null
- ·   console errors on the page · Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json]
+ ok  the L selected alone: Construction shows the Worktop row's ADD WORKTOP · rows ["add: Worktopnot fittedAdd worktop"]
+ ok  ADD WORKTOP on the lone L: ONE record of kind L, over the L alone · records [{"id":"worktop_aywrm3k","units":1,"kind":"L","island":null,"extend":null}]; said null
+ ok  …and ONE slab shaped like the L (an outline of six corners, the L's shape) · [{"slab":"worktop_aywrm3k","wall":0,"x":10,"w":900,"d":910,"island":null,"kind":"L","outline":true,"shape":"L","points":6,"extend":null,"joint":null,"cutouts":[]}]
+ ·   the row now reads · "Worktopone slab shaped like the LRemove"
+ ok  the L and both runs selected by a click and two Ctrl+clicks · ["u_6xb43pc","u_tabwqth","u_4mlyati"]
+ ok  ADD WORKTOP over the L and its two runs lies a worktop (records and slabs read off the store) · records [{"id":"worktop_hn7kryy","units":3,"kind":null,"island":null,"extend":null}]; slabs [{"slab":"worktop_hn7kryy-A","wall":0,"x":0,"w":1520,"d":948,"island":null,"kind":null,"outline":false,"shape":null,"points":0,"extend":null,"joint":"{\"kind\":\"butt\",\"boltCount\":3,\"at\":{\"wall\":3,\"x\":2052,\"depth\":606},\"corner\":{\"x\":0,\"y\":0},\"readiness\":\"manual\",\"note\":\"Worktop joint: square butt, slab worktop_hn7kryy-B into slab worktop_hn7kryy-A, 3 connector bolts; bolt pockets cut by hand on site.\"}","cutouts":[]},{"slab":"worktop_hn7kryy-B","wall":3,"x":1480,"w":572,"d":606,"island":null,"kind":null,"outline":false,"shape":null,"points":0,"extend":null,"joint":"{\"kind\":\"butt\",\"boltCount\":3,\"at\":{\"wall\":3,\"x\":2052,\"depth\":606},\"corner\":{\"x\":0,\"y\":0},\"readiness\":\"manual\",\"note\":\"Worktop joint: square butt, slab worktop_hn7kryy-B into slab worktop_hn7kryy-A, 3 connector bolts; bolt pockets cut by hand on site.\"}","cutouts":[]}]; said null
 
 === F05 · THE WORKTOP TURNS THE CORNER, THE CUT-OUT, THE UPSTAND
  ok  run A: Library, Kitchen, Base units, "door-base" adds a BUD · {"id":"u_52hevql","type":"BUD","x":1700,"wall":0,"w":600,"h":770,"d":558,"ep":""}
@@ -126,13 +128,13 @@ The frames beside this file are what the browser saw.
 
 === F09 · THE ISLAND IN ROOM SETUP (PRO, a kitchen job)
  ok  Settings, Room setup: a kitchen job shows ADD ISLAND · projectType null
- ok  ADD ISLAND draws an island in the plan at the profile's size (1800 x 900, proposed) · {"id":"island_f9no51b","cx":167.33333333333334,"cy":130,"figures":["island_f9no51b:w=1800","island_f9no51b:d=900"]}
+ ok  ADD ISLAND draws an island in the plan at the profile's size (1800 x 900, proposed) · {"id":"island_gw1j3ub","cx":167.33333333333334,"cy":130,"figures":["island_gw1j3ub:w=1800","island_gw1j3ub:d=900"]}
  ok  a real drag moves the island in the plan · centre 167,130 -> 197,110 (plan px)
-FAIL a real click on the island's width figure opens its field, focused, the number selected · APP DEFECT (RoomModal.jsx: the figure opens its field on pointerdown, the field takes the focus, then the same press's mousedown moves the focus off it and its onBlur closes it): null; the click's events in order: pointerdown text, focusin INPUT (the field), mousedown text, focusout INPUT (the field), click text; field on the page now false
- ·   2000 not typed: there was no field to type it into (the FAIL above) · the plan's figures stay ["island_f9no51b:w=1800","island_f9no51b:d=900"]
- ok  dragged out through the wall: refused, and it says why under the plan; the island stays where it last fitted · said "The island would stand outside the room: move it inside the walls first (island_f9no51b)."; centre 197,110 -> 197,60
- ok  APPLY: the room carries the island as the plan showed it (its size, moved off the room's centre) · plan showed w 1800; store [{"id":"island_f9no51b","cx":2402,"cy":562.5,"w":1800,"d":900,"rotation":0}]
- ok  an empty island is dressed by the automat: a back panel on each long face, an end panel on each end · [{"id":"u_73jy4fg","face":"A","wall":4,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_7ckxtvh","face":"E1","wall":5,"kind":"end","w":970,"h":870,"d":25},{"id":"u_owv2ww3","face":"B","wall":6,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_9g8ti0y","face":"E2","wall":7,"kind":"end","w":970,"h":870,"d":25}]
+ ok  a real click on the island's width figure opens its field, focused, the number selected · {"value":"1800","selected":true}; the click's events in order: pointerdown text, focusin INPUT (the field), mousedown text, click DIV; field on the page now true
+ ok  typed 2000 and Enter: the plan's figure reads 2000 · ["island_gw1j3ub:w=2000","island_gw1j3ub:d=900"]
+ ok  dragged out through the wall: refused, and it says why under the plan; the island stays where it last fitted · said "The island would stand outside the room: move it inside the walls first (island_gw1j3ub)."; centre 197,110 -> 197,60
+ ok  APPLY: the room carries the island 2000 x 900 as the plan showed it, moved off the room's centre · plan showed w 2000; store [{"id":"island_gw1j3ub","cx":2402,"cy":562.5,"w":2000,"d":900,"rotation":0}]
+ ok  an empty island is dressed by the automat: a back panel on each long face, an end panel on each end · [{"id":"u_nlgr9yh","face":"A","wall":4,"kind":"back","w":2000,"h":870,"d":25},{"id":"u_gkg0kmx","face":"E1","wall":5,"kind":"end","w":970,"h":870,"d":25},{"id":"u_572a88l","face":"B","wall":6,"kind":"back","w":2000,"h":870,"d":25},{"id":"u_3737onz","face":"E2","wall":7,"kind":"end","w":970,"h":870,"d":25}]
 
 === F10 · A UNIT ON AN ISLAND FACE, BY ITS PLUS
  ok  the island (Room setup, ADD ISLAND, APPLY) stands dressed in four automat panels · [{"id":"u_6fczztc","face":"A","wall":4,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_370gxc8","face":"E1","wall":5,"kind":"end","w":970,"h":870,"d":25},{"id":"u_sbuoqip","face":"B","wall":6,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_ay6mpcu","face":"E2","wall":7,"kind":"end","w":970,"h":870,"d":25}]
@@ -143,20 +145,22 @@ FAIL a real click on the island's width figure opens its field, focused, the num
  ok  the right panel's Wall select names it "Island 1 · face A" · "Island 1 · face A · 1800 mm"
 
 === F11 · ONE WORKTOP OVER THE WHOLE ISLAND
- ok  two units on the island, each by a face's plus (faces B and A) · B {"id":"u_eyptefp","type":"BUD","x":600,"wall":6,"w":600,"h":770,"d":558,"ep":""}; A {"id":"u_xsr860d","type":"BUD","x":600,"wall":4,"w":600,"h":770,"d":558,"ep":""}
- ok  both selected by a click and a Ctrl+click · ["u_eyptefp","u_xsr860d"]
- ok  "Add worktop (2)" on an island selection lays ONE slab, the island's · slabs [{"slab":"worktop_g9ycdym","wall":4,"x":-55,"w":1910,"d":2132,"island":"island_0u050nq","kind":null,"outline":true,"joint":null,"cutouts":[]}]; records [{"id":"worktop_g9ycdym","units":2,"kind":null,"island":"island_0u050nq"}]; said null
- ·   NO UI: the SEATING overhang (store `seatingOverhang`, and the per-face `extendIslandWorktop`) has no button, menu entry or figure that calls it; not clicked, not faked · controls naming seat, overhang or extend on the screen: []
+ ok  two units on the island, each by a face's plus (faces B and A) · B {"id":"u_njnl496","type":"BUD","x":600,"wall":6,"w":600,"h":770,"d":558,"ep":""}; A {"id":"u_8otc2mc","type":"BUD","x":600,"wall":4,"w":600,"h":770,"d":558,"ep":""}
+ ok  both selected by a click and a Ctrl+click · ["u_njnl496","u_8otc2mc"]
+ ok  "Add worktop (2)" on an island selection lays ONE slab, the island's · slabs [{"slab":"worktop_ibza4nt","wall":4,"x":-55,"w":1910,"d":2132,"island":"island_dgihty7","kind":null,"outline":true,"shape":"island","points":4,"extend":null,"joint":null,"cutouts":[]}]; records [{"id":"worktop_ibza4nt","units":2,"kind":null,"island":"island_dgihty7","extend":"{\"A\":0,\"B\":0,\"E1\":0,\"E2\":0}"}]; said null
+ ok  the island's slab in the Worktop row offers SEATING OVERHANG on each face with no cabinets (E1, E2) · ["E1","E2"]
+ ok  SEATING OVERHANG on face E1: the slab grows 300 out over that face, the record says so, the row reads it · slab 1910 x 2132 -> 2210 x 2132 (+300); record extend {"A":0,"B":0,"E1":300,"E2":0}; row "Seating on face E1: 300 mm×"
+ ok  its X takes the seating off: the slab is back to its size, the face offers the button again · X clicked; slab 1910 x 2132; record extend {"A":0,"B":0,"E1":0,"E2":0}
 
 SECTION f02: 15 ok, 0 FAIL, 2 notes
 SECTION f03: 13 ok, 0 FAIL, 5 notes
-SECTION f04: 8 ok, 0 FAIL, 3 notes
+SECTION f04: 11 ok, 0 FAIL, 2 notes
 SECTION f05: 11 ok, 0 FAIL, 0 notes
 SECTION f06: 8 ok, 0 FAIL, 0 notes
 SECTION f07: 12 ok, 0 FAIL, 2 notes
 SECTION f03r: 6 ok, 0 FAIL, 1 notes
 SECTION f08: 13 ok, 0 FAIL, 1 notes
-SECTION f09: 6 ok, 1 FAIL, 1 notes
+SECTION f09: 8 ok, 0 FAIL, 0 notes
 SECTION f10: 6 ok, 0 FAIL, 0 notes
-SECTION f11: 3 ok, 0 FAIL, 1 notes
-TOTAL 102 checks · 1 failed · 16 notes
+SECTION f11: 6 ok, 0 FAIL, 0 notes
+TOTAL 109 checks · 0 failed · 13 notes

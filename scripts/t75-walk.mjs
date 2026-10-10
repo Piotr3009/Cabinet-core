@@ -121,8 +121,11 @@ const wallLength = (page, i) => page.ask(`(() => { const c = ${S}.project.room.c
 const worktopsNow = (page) => page.ask(`${S}.worktopsOf().map((w) => ({ slab: w.slabId || w.id, wall: w.geometry && w.geometry.wall,
   x: w.geometry && w.geometry.x, w: w.geometry && w.geometry.w, d: w.geometry && w.geometry.d, island: w.island || (w.record && w.record.island) || null,
   kind: w.kind || (w.record && w.record.kind) || null, outline: Boolean(w.outline || (w.geometry && w.geometry.outline)),
+  shape: (w.geometry && w.geometry.shape) || null, points: ((w.geometry && w.geometry.outline) || w.outline || []).length,
+  extend: w.record && w.record.extend ? JSON.stringify(w.record.extend) : null,
   joint: w.joint ? JSON.stringify(w.joint) : null, cutouts: (w.cutouts || []).map((c) => c.kind + ' ' + c.w + 'x' + c.d + ' r' + c.r + ' machined ' + c.machined + ' ' + c.readiness) }))`);
-const recordsNow = (page) => page.ask(`(${S}.project.design.worktops || []).map((w) => ({ id: w.id, units: w.unitIds.length, kind: w.kind || null, island: w.island || null }))`);
+const recordsNow = (page) => page.ask(`(${S}.project.design.worktops || []).map((w) => ({ id: w.id, units: w.unitIds.length, kind: w.kind || null, island: w.island || null,
+  extend: w.extend ? JSON.stringify(w.extend) : null }))`);
 
 // ─── THE PANEL'S CONTROLS, FOUND THE WAY AN EYE FINDS THEM ─────────────────
 const selectAfter = (label) => `[...document.querySelectorAll('select')].find((s) => s.offsetParent && s.previousElementSibling && s.previousElementSibling.textContent.trim() === '${label}')`;
@@ -481,20 +484,27 @@ if (runs('f04')) {
       note('the L\'s doors as the clearance rulebook measures them, a neighbour on each wall', JSON.stringify(doorRows));
     }
     await framed(page, 'f04-corner-l.png');
-    // THE WORKTOP. One L alone: the store takes a one-unit L record, but the
-    // only Add worktop button is the selection panel's, shown for two or more.
+    // THE WORKTOP OF THE L ALONE: the L selected by a real click, its
+    // Construction section, the Worktop row's own Add worktop (c9a9b41).
     await selectUnit(page, l0.id);
-    const single = await page.ask('[...document.querySelectorAll(\'button\')].filter((b) => b.offsetParent && /worktop/i.test(b.textContent)).map((b) => b.textContent.trim())');
-    const at = await clickUnit(page, l0.id);
-    let menu = [];
-    if (at) {
-      await page.rightclick(at.x, at.y);
-      await page.sleep(700);
-      menu = await page.ask('[...document.querySelectorAll(\'[data-menu-entry]\')].map((e) => e.getAttribute(\'data-menu-entry\'))');
-      await key(page, 'Escape');
+    await section(page, 'Construction');
+    const row = await page.has('[data-add-worktop-one="1"]');
+    check('the L selected alone: Construction shows the Worktop row\'s ADD WORKTOP', row,
+      `rows ${JSON.stringify(await page.ask('[...document.querySelectorAll(\'[data-worktop-row]\')].map((r) => r.getAttribute(\'data-worktop-row\') + \': \' + r.textContent.trim().slice(0, 60))'))}`);
+    if (row) {
+      await page.press('[data-add-worktop-one="1"]');
+      await page.sleep(900);
+      const recs = await recordsNow(page);
+      const slabs = await worktopsNow(page);
+      const said = await lastSaid(page);
+      check('ADD WORKTOP on the lone L: ONE record of kind L, over the L alone', recs.length === 1 && recs[0].kind === 'L' && recs[0].units === 1,
+        `records ${JSON.stringify(recs)}; said ${JSON.stringify(said)}`);
+      check('…and ONE slab shaped like the L (an outline of six corners, the L\'s shape)', slabs.length === 1 && slabs[0].shape === 'L' && slabs[0].points === 6,
+        JSON.stringify(slabs));
+      const label = await page.text('[data-worktop-row]:not([data-worktop-row="add"])');
+      note('the row now reads', JSON.stringify(label));
+      await framed(page, 'f04-worktop-l-alone.png');
     }
-    note('NO UI: a worktop over the L ALONE has no control. The right panel for one unit has no worktop button and the right-click menu has no worktop entry; `addWorktop([L])` (the store takes a lone L, kind L) is reached by no click',
-      `buttons naming a worktop with the L selected: ${JSON.stringify(single)}; right-click entries: ${JSON.stringify(menu)}`);
     // The worktop over what the UI CAN select: the L and both runs, Ctrl+click.
     const ids3 = [l0.id, RA.unit && RA.unit.id, RB.unit && RB.unit.id].filter(Boolean);
     await clickUnit(page, ids3[0]);
@@ -936,7 +946,7 @@ if (runs('f09')) {
     const isl = await islandsNow(page);
     // The size the plan showed when APPLY was pressed (2000 if the typed figure took).
     const shownW = Number(((i3 && i3.figures) || []).map((f) => f.match(/:w=(\d+)/)).filter(Boolean).map((m) => m[1])[0]);
-    check('APPLY: the room carries the island as the plan showed it (its size, moved off the room\'s centre)', isl.length === 1 && isl[0].w === shownW && isl[0].d === 900 && (isl[0].cx !== 2000 || isl[0].cy !== 1500),
+    check('APPLY: the room carries the island 2000 x 900 as the plan showed it, moved off the room\'s centre', isl.length === 1 && isl[0].w === 2000 && shownW === 2000 && isl[0].d === 900 && (isl[0].cx !== 2000 || isl[0].cy !== 1500),
       `plan showed w ${shownW}; store ${JSON.stringify(isl)}`);
     const panels = await islandPanels(page);
     check('an empty island is dressed by the automat: a back panel on each long face, an end panel on each end',
@@ -1018,9 +1028,40 @@ if (runs('f11')) {
     if (bom) note('bom', bom);
     await framed(page, 'f11-one-slab.png');
   }
-  const seat = await page.ask('[...document.querySelectorAll(\'button, [data-menu-entry]\')].filter((b) => /seat|overhang|extend/i.test(b.textContent || \'\')).map((b) => b.textContent.trim())');
-  note('NO UI: the SEATING overhang (store `seatingOverhang`, and the per-face `extendIslandWorktop`) has no button, menu entry or figure that calls it; not clicked, not faked',
-    `controls naming seat, overhang or extend on the screen: ${JSON.stringify(seat)}`);
+  // THE SEATING OVERHANG: one unit selected by a real click, its Construction
+  // section's Worktop row, one button per face with no cabinets (c9a9b41).
+  if (ids.length) {
+    await selectUnit(page, ids[0]);
+    await section(page, 'Construction');
+    const faces = await page.ask('[...document.querySelectorAll(\'[data-seating-add]\')].map((b) => b.getAttribute(\'data-seating-add\'))');
+    check('the island\'s slab in the Worktop row offers SEATING OVERHANG on each face with no cabinets (E1, E2)', faces.length > 0 && faces.every((f) => /^E[12]$/.test(f)),
+      JSON.stringify(faces));
+    const face = faces[0];
+    if (face) {
+      const before = (await worktopsNow(page))[0];
+      await page.press(`[data-seating-add="${face}"]`);
+      await page.sleep(900);
+      const on = (await worktopsNow(page))[0];
+      const rec = (await recordsNow(page))[0];
+      const line = await page.text(`[data-seating-face="${face}"]`);
+      const grew = on && before ? Math.round((on.w + on.d - before.w - before.d) * 100) / 100 : null;
+      check(`SEATING OVERHANG on face ${face}: the slab grows 300 out over that face, the record says so, the row reads it`,
+        grew === 300 && rec && JSON.parse(rec.extend || '{}')[face] === 300 && /Seating on face .*: 300 mm/.test(line || ''),
+        `slab ${before && `${before.w} x ${before.d}`} -> ${on && `${on.w} x ${on.d}`} (+${grew}); record extend ${rec && rec.extend}; row ${JSON.stringify(line)}`);
+      await framed(page, 'f11-seating.png');
+      await selectUnit(page, ids[0]);
+      await section(page, 'Construction');
+      const x = await boxOf(page, `document.querySelector('[data-seating-face="${face}"] button[title="Take the seating overhang off"]')`);
+      if (x) await clickWith(page, x.x, x.y);
+      await page.sleep(900);
+      const off = (await worktopsNow(page))[0];
+      const rec2 = (await recordsNow(page))[0];
+      check('its X takes the seating off: the slab is back to its size, the face offers the button again',
+        off && before && off.w === before.w && off.d === before.d && JSON.parse((rec2 && rec2.extend) || '{}')[face] === 0
+          && await page.has(`[data-seating-add="${face}"]`),
+        `X ${x ? 'clicked' : 'not on the screen'}; slab ${off && `${off.w} x ${off.d}`}; record extend ${rec2 && rec2.extend}`);
+    }
+  }
   const errs = pageErrors(page);
   if (errs.length) note('console errors on the page', errs.slice(0, 3).join(' | '));
   await page.close();

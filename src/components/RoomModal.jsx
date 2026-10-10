@@ -589,7 +589,7 @@ export default function RoomModal({
   const planHint = (() => {
     if (picked?.kind === 'island') return 'Drag the island, or click a figure and type its size. Rotate turns it a quarter turn.';
     if (picked) return 'Drag it, or TYPE a distance in millimetres and press Enter. Escape lets go.';
-    return 'Grab a WALL and it moves along its own normal — the neighbours stretch and every angle is kept. Corners are not dragged.';
+    return 'Grab a WALL and it moves along its own normal: the neighbours stretch and every angle is kept. Corners are not dragged.';
   })();
 
   return (

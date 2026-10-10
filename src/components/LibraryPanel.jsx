@@ -136,7 +136,7 @@ export default function LibraryPanel() {
     });
     if (error) { notify(error, 'warn'); return; }
     selectUnit(id);
-    if (wall > 0 && !onFace) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
+    if (wall > 0 && !onFace) notify(`Wall 1 is full: placed on wall ${wall + 1}.`, 'info');
     // The place has been used up: leaving it set would put the NEXT type on the
     // same side of a cabinet that now has a neighbour there. The PANEL stays
     // open, because "add, add, add" is how a run gets built — and the unit just

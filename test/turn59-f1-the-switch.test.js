@@ -188,7 +188,7 @@ const EXEMPT = {
   'src/components/RoomModal.jsx':
     'T75 F9 · the island\'s figure keeps the field it opens: the same press no longer takes the focus off it (the walk\'s one FAIL). *"the island draggable in the plan with its dimension labels clickable (T73 F3 field)"*. '
     + 'T75 F9 · Room setup gets ADD ISLAND (a kitchen job\'s only: the gate is the job\'s family, which retail never meets), the island drawn in the plan, dragged whole and refused in words where it would stand on a cabinet, a box or outside the room, its two figures clickable into a focused, selected field, Rotate 90° and Remove island. *"twoja droga, plus dodawanie szafek po bokach lub end panele, w całości."* '
-    + 'T69 F1 — the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
+    + 'T69 F1 · the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
     + 'IMPORT DXF is struck out (*"to nie przejdzie"*), and APPLY is fixed at the '
     + 'two sites its probe convicted: it sends only the keys this window changed, '
     + 'and it is never drawn dead and silent. *"APPLY does nothing — probe first."*',
@@ -257,7 +257,7 @@ const FROZEN = {
   // T72 F4 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/JpullRunModal.jsx': '652b4f701a455134eb2571565f03dc6fca89c273f4041ad9eb66d8b0c7bd6aa7',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/LibraryPanel.jsx': 'b8fc2349f5c78cdc979ca2ca1868d7dd4ad2e0acd5aabe51214a72263487739b',
+  'src/components/LibraryPanel.jsx': 'ce948c2fb0a4092f3fb66a523dfb77fb2609504ca1bcc248930deab6110f7153',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
@@ -274,7 +274,7 @@ const FROZEN = {
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RightPanel.jsx': '2891d8258ec102eec6596c35bfd50fc94535a9c65a9c7814f6e1a14794870d25',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RoomModal.jsx': '1c9ae6b07726f4c46011f06c370e1bbf93d58ce1f96f8f9ae2fad57bd2aa39fb',
+  'src/components/RoomModal.jsx': '29ffa1a4b710d3d3c7d168dfce23aa765fc76a3c9ba159b71b01964996dbd263',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.

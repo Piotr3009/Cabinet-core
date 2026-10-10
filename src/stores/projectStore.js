@@ -4895,7 +4895,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ? `There is no room for ${formatMm(unit.params.width)} mm to the ${side === 'L' ? 'left' : 'right'} of ${beside.params.unit_num} — move something, or add it on the other side.`
         : (asked
           ? `There is no room for ${formatMm(unit.params.width)} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
-          : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`);
+          : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit: move or remove something first.`);
       if (facePanels.length) get().settleIslandPanels();
       return { id: null, error: where };
     }
@@ -6584,7 +6584,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         blocked: true,
         error: walls[wallIndex].island
           ? `${wallName(walls, wallIndex).replace(/^./, (c) => c.toUpperCase())} has no free space for this unit: move or remove something there first.`
-          : `Wall ${wallIndex + 1} has no free space for this unit — move or remove something there first.`,
+          : `Wall ${wallIndex + 1} has no free space for this unit: move or remove something there first.`,
       };
     }
     set((st) => ({

@@ -74,7 +74,8 @@ const SRC = join(ROOT, 'src');
  */
 const EXEMPT = {
   'src/components/CncTree.jsx':
-    'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*',
+    'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*'
+    + ' DECOR F3: await packaged front/back CNC exports. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
   'src/components/SaveTemplateModal.jsx':
     'T75 F20 · right-clicked inside a selection of two or more, the modal saves a SET (templateStore.saveSet): the units left to right with the gaps between them. *"`lib/templates.js` grows `kind: \'set\'`: an ORDERED list of units (type + params, positions stripped as today) with the gaps between them."*',
   'src/components/TopBar.jsx':
@@ -91,7 +92,10 @@ const EXEMPT = {
   'src/components/BomPanel.jsx':
     'T75 F22 · the cut list shows each part\'s state (Cut, Outline only, Fit on site, Bought) in a State column, and every ironmongery line says Bought. *"The cut list, the BOM and the CNC export show the state on every line."* '
     + 'T75 F21 · the purchase list is priced at what the job was quoted at (project.warehouseStamp), the file carries it, and Accept today\'s prices is the owner\'s decision to re-price. *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*; *"prices change a quote only by the owner\'s decision"*. '
-    + 'T75 F5 · the cut list and the BOM receive the room, so the worktop reaches them: its slabs (a corner is two, an L is one shaped like the L), the connector bolts as an order line, the joint and every cut-out as a NOTE. *"Done means the whole road ... lands in the cut list and the BOM."* One line: `room: project.room` handed to `buildBom`.',
+    + 'T75 F5 · the cut list and the BOM receive the room, so the worktop reaches them: its slabs (a corner is two, an L is one shaped like the L), the connector bolts as an order line, the joint and every cut-out as a NOTE. *"Done means the whole road ... lands in the cut list and the BOM."* One line: `room: project.room` handed to `buildBom`.'
+    + ' DECOR F4: show the decorative construction and production status on each BOM row. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+    + ' T76 F5 · the row shows the construction label under the part and its state in the T75 State column, never a second status. *"the BOM panel shows the T75 State column and the construction label, not a second status."*'
+    + ' T76 F7 · the walk measured the State column past the 560 px panel (AM strips and their gluing NOTE): the material cell truncates at 160 and the state may wrap. *"Test the way the client clicks."*',
   // ─── ADDED BY TURN 75 · F7, THE CORNER NOTCH ─────────────────────────────
   // CLAUDE.md T75, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
@@ -105,7 +109,26 @@ const EXEMPT = {
     + '`setUnitNotch` and a refusal shows in the engine\'s words; REMOVE takes the notch off. No retail copy '
     + '(retail\'s SIZE step carries its own button). *"Klikasz \'wytnij narożnik\', program podświetla '
     + 'narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np. 200x200)."* '
-    + 'T75 F23 · the Construction section\'s Joints row: Puzzle or Dowel per unit, written to the unit\'s joints_system through updateUnitParams; the status line reads the engine\'s own answer (derived.joints: the dowel count, the gate, or the refusal in its words); Cabineo shown disabled with its sentence; no typed number. No retail copy (PART G is PRO only). *"lisp najpierw."* *"a per-unit override through the unit\'s settings section (no typed numbers in the UI)."*',
+    + 'T75 F23 · the Construction section\'s Joints row: Puzzle or Dowel per unit, written to the unit\'s joints_system through updateUnitParams; the status line reads the engine\'s own answer (derived.joints: the dowel count, the gate, or the refusal in its words); Cabineo shown disabled with its sentence; no typed number. No retail copy (PART G is PRO only). *"lisp najpierw."* *"a per-unit override through the unit\'s settings section (no typed numbers in the UI)."*'
+    + ' DECOR F1: per-unit decorative style selection and recipe editing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
+  // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
+  // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
+  // with the owner's words from this file (or GPT's licence line, which quotes
+  // the owner's own authorisation of 9.10.2026) and re-frozen at its new hash
+  // in the same commit."*  GPT's lines below are its own, as its patch wrote
+  // them; the three files T75 also licensed (BomPanel, CncTree, RightPanel)
+  // carry ONE entry above, T75's text and GPT's line.
+  'src/components/AssignMaterialsModal.jsx': 'DECOR F4: applied strip stock badges use the same thickness validation as purchasing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
+  'src/components/CncView.jsx': 'DECOR F3: explicit front/back machining preview from shared export geometry. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+    + ' T76 F4 · the readout names a V groove for what it is: V, its width at the mouth, its centre line. *"The V groove is a V ... The DXF layer name and the `front-operations.json` entry say which."*',
+  'src/components/FrontDecorationControls.jsx': 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+    + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
+    + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
+    + ' T76 integration · the AH sentence gets the space GPT\'s line lacked (F2 probe). *"AH (Arched handleless) | A\'s recipe; the J-pull is chosen separately under Opening"*',
+  'src/components/PartDetailModal.jsx': 'DECOR F4: decorative layer colours follow the canonical part legend. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
+  'src/components/SettingsPanel.jsx': 'DECOR F1: project and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
+  'src/components/WizardSettings.jsx': 'DECOR F1: material-slot and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
+
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
   // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
@@ -179,6 +202,7 @@ const EXEMPT = {
     'T75 F22 · the Output menu\'s DXF export says the same banner as the CNC view\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."* '
     + 'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
     + 'T75 F5 · the BOM file is handed the room so the worktop that turns the corner (two slabs and one joint record) rides the file as it rides the panel. *"daj od razu narożniki przemyślane."* '
+    + 'DECOR F4: pass actual stock to decorative strip assignment checks. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*. '
     + 'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
     + 'same set with the same worktops and render. *"weź zakoduj"*.',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
@@ -219,22 +243,23 @@ const EXEMPT = {
  * t58b merged). Not one of them is touched by this turn.
  */
 const FROZEN = {
+  'src/components/FrontDecorationControls.jsx': 'fcccbc5d110f4a83143913a4acdfcd2232ccc73ee8d35b3ebfb20743f17ea978',
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AddItems.jsx': '5be28cfd4ddc678b543efd07f1ed6f8b31282037739ada82ae03f9523b12c546',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
-  'src/components/AssignMaterialsModal.jsx': '32d48ece258aa562d6614606a65fd8df5a15adb3717d40f5736df8db45fac550',
+  'src/components/AssignMaterialsModal.jsx': 'a5110598cd1393143d4a1ba0575ab0974f77390ead98d8213d218ca8551dc754',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
-  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/BomPanel.jsx': '789d546fa314ef51fccfa023d137aceaab863438c490e2b2cff1424a0d4fe490',
+  // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
+  'src/components/BomPanel.jsx': '966d6494dfb42fa5e7e3bf35e6f25e9bc7514ef558e7eec4a96e1ed96d586733',
   'src/components/CabinetEditorModal.jsx': '3d21bba5af9dc42fecbb620b6594b5a4be79be2e9ce5446cf4b53dc4b09b3ca4',
   'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
-  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/CncTree.jsx': '87bd2103612c33d9abcd0d637f38b7b4e71e28c91dc9ef3e8245e96916e30019',
-  'src/components/CncView.jsx': 'bbfa3f571120d6bb089f2a885bc48f1f12e1c0431ebb57fb997b9f31ea8a540d',
+  // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
+  'src/components/CncTree.jsx': 'a439e4706bb74c99f368efe3a84090fb2303dfab7c8b59bf191f5a8421983c00',
+  'src/components/CncView.jsx': 'f21cfee1de2f02a379aedac9dbc3615a5fa1968f2fce3312a5832497067a82fd',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   'src/components/CompanyDefaultsModal.jsx': '90365da4e2e0bc285c652ec252c62a11da199853fdd9e31a899cb74464e2a896',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -268,11 +293,11 @@ const FROZEN = {
   'src/components/MultiUnitPanel.jsx': 'ad7d770b51042f0c2e8d9633df4067c5a7d8d4af6e358fad2e90cf62e631531c',
   'src/components/NewProjectFlow.jsx': '504081eb2764b691da4209f87ac3d59dcc8643b7828ef26ba03aa870543d8966',
   'src/components/NumberField.jsx': 'ae2f9b89ea20a8da26fdf77db1cdb00cb487a2e5110128263f4c33f32eb5c176',
-  'src/components/PartDetailModal.jsx': '3e97f121e6932a9859d4a88616651c0ec08a7f871ca72192eb339521597afc83',
+  'src/components/PartDetailModal.jsx': '69a8764cdb984ec7c523a3cd97559f03ddc169778d1d997fa24905b8efce1a93',
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
-  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RightPanel.jsx': '2891d8258ec102eec6596c35bfd50fc94535a9c65a9c7814f6e1a14794870d25',
+  // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
+  'src/components/RightPanel.jsx': '468d1f08a8e1a552b9f1cf9c468ff3a1ec33c7b845079ad8ee1bd76d6200c464',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RoomModal.jsx': '29ffa1a4b710d3d3c7d168dfce23aa765fc76a3c9ba159b71b01964996dbd263',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
@@ -280,7 +305,7 @@ const FROZEN = {
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/SaveTemplateModal.jsx': '5de923d96cd981fd785005716ea84b7288d77c9b4ea044763112e672c6d1ba24',
   'src/components/Section.jsx': 'f3f64ad9f4d024d31a508f469a1f816c2bf1c0ffcf7d9221e95e2ee42d2a1a56',
-  'src/components/SettingsPanel.jsx': '13f1ce656e27a273545d055d59ad453685f456dd031bfbd61e9c9525c8738537',
+  'src/components/SettingsPanel.jsx': '29cbcb97665db6b448dae9d4cec84c69a7acf7416ccafcfe344aca51840b9329',
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   'src/components/StartScreen.jsx': '6a6de6d1667872a45d18bb5b8e9e42d3d4522ac99f8ef2d1e9a32ce54ab363aa',
@@ -296,11 +321,11 @@ const FROZEN = {
   // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
-  'src/components/WizardSettings.jsx': 'e78f35fff5107b21a5a775629ab899d2474d883df03b5873ad538bcfbd68fc74',
+  'src/components/WizardSettings.jsx': '60df82c8620ef9d6af4148293ea717cb1690335d3a71f5234f8087aef936e091',
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
-  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': 'a43851062d522b7838d506ba2547a4a635be77bb3e4809f11edccb89f54e33c6',
+  // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
+  'src/pages/ConfiguratorPage.jsx': 'e7570c6ed5d86093c26a308cbdd417adce9a5fcec1afcb7b4c6f8da7981256dc',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -423,7 +448,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1 · the frozen surface — 66 files of PRO, byte for byte', () => {
+test('F1: the frozen surface, 67 files of PRO, byte for byte', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -482,30 +507,36 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
   // *"lisp najpierw."*) and re-frozen at its new hash; the list did not grow.
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
+    'src/components/AssignMaterialsModal.jsx',
     'src/components/BomPanel.jsx',
     // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
     'src/components/CncTree.jsx',
+    'src/components/CncView.jsx',
     'src/components/ContextMenu.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
+    'src/components/FrontDecorationControls.jsx',
     'src/components/JpullRunModal.jsx',
     // T75 F15 · *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet"*.
     'src/components/LibraryPanel.jsx',
+    'src/components/PartDetailModal.jsx',
     'src/components/RightPanel.jsx',
     'src/components/RoomModal.jsx',
     // T75 F20 · *"`lib/templates.js` grows `kind: 'set'`"*: the modal saves a selection as a set.
     'src/components/SaveTemplateModal.jsx',
+    'src/components/SettingsPanel.jsx',
     // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets shelf"*.
     'src/components/TopBar.jsx',
     'src/components/UnitSizeModal.jsx',
     'src/components/WarehouseModal.jsx',
     'src/components/WatchLayoutModal.jsx',
+    'src/components/WizardSettings.jsx',
     'src/pages/ConfiguratorPage.jsx',
-  ], 'the exemption list is not the files CLAUDE.md names');
+], 'the exemption list is not the files CLAUDE.md names');
   for (const [rel, why] of Object.entries(EXEMPT)) {
     assert.ok(FROZEN[rel], `${rel} is exempt but not re-frozen — that is a hole, not an exemption`);
-    assert.match(why, /\bT\d{2} F\d/, `${rel} does not say which turn and feature licensed it`);
+    assert.match(why, /\b(?:T\d{2}|DECOR) F\d/, `${rel} does not say which turn and feature licensed it`);
     assert.match(why, /\*"/, `${rel} does not carry the owner's own words`);
     const got = createHash('sha256').update(readFileSync(join(ROOT, rel))).digest('hex');
     assert.equal(got, FROZEN[rel], `${rel}'s new hash is not the one written down`);
@@ -522,7 +553,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 66, 'no base ref — the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 67, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

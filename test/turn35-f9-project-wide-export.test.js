@@ -221,7 +221,7 @@ test('the per-cabinet row is untouched, and still inside the branch', () => {
 
 // ─── "Ale export poprzez materiał zostaw jak jest" ─────────────────────────
 
-test('EXPORT BY MATERIAL — not one character of it moved', () => {
+test('EXPORT BY MATERIAL - selection controls stay unchanged; download awaits its package', () => {
   for (const line of [
     '      <div className="border border-shell-600 rounded p-2 space-y-1.5" data-material-export="1">',
     '        <span className="text-[11px] uppercase tracking-wide text-ink-400">Export by material</span>',
@@ -231,24 +231,32 @@ test('EXPORT BY MATERIAL — not one character of it moved', () => {
     '          data-download-material="1"',
     '          disabled={!entries.length}',
     '          onClick={() => downloadMaterial(false)}',
-    "          Download DXF — {materialKey === 'all' ? 'all materials' : (sections.find((s) => s.key === materialKey)?.label || 'material')}",
+    "          {materialHasDecoration ? 'Download CNC package' : 'Download DXF'} · {materialKey === 'all' ? 'all materials' : (sections.find((s) => s.key === materialKey)?.label || 'material')}",
   ]) {
     assert.ok(TREE.includes(line), `the material export lost: ${line.trim()}`);
   }
-  // Its handler, its memo and its state, exactly as they were.
+  // Decorative fronts package both setups asynchronously. Selection, memo and state are unchanged.
   assert.match(TREE, /const \[material, setMaterial\] = useState\('all'\);/);
   assert.match(TREE, /const sections = useMemo\(\n {4}\(\) => groupByMaterial\(entries, \{ design: storedDesign, profile, materials \}\),/);
   assert.match(TREE, /const materialKey = material === 'all' \|\| sections\.some\(\(s\) => s\.key === material\) \? material : 'all';/);
-  assert.match(TREE, /const res = exportMaterialDxf\(entries, \{\n {8}key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName,\n {6}\}\);/);
+  assert.match(TREE, /const res = await exportMaterialDxf\(entries, \{\n {8}key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName,\n {6}\}\);/);
   // One caller, one path — this turn added no second way to write that file.
   assert.equal(TREE.split('exportMaterialDxf').length - 1, 2, 'imported once, called once');
 });
 
-test('EXPORT BY MATERIAL — the export function itself is where it was', () => {
+test('EXPORT BY MATERIAL - one grouping path with optional front setup packaging', () => {
   const src = readFileSync(new URL('../src/lib/cncExport.js', import.meta.url), 'utf8');
+  // T76 F1 · back to T35's line: the export is synchronous again (its refusals
+  // throw, T75 F23); only a decorated selection answers with a Promise.
   assert.ok(src.includes('export function exportMaterialDxf(entries, {'));
   assert.ok(src.includes("  key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,"));
+  // T76 F1 · T35's `const filename` is back; the package path RETURNS its
+  // Promise (no `await` inside), the ordinary path downloads as before.
   assert.ok(src.includes('  const filename = materialDxfFileName(section.label, { project });'));
-  // F9 is a SELECTION. It writes no file of its own and needed no new export.
+  assert.match(src, /const section = materialExportSection\(passed, \{/);
+  assert.match(src, /if \(hasFrontDecorations\(manifestEntries\)\)\s*\{/);
+  assert.match(src, /return downloadFrontSetups\(\{/);
+  assert.match(src, /\n  download\(filename, new Blob\(\[dxf\], \{ type: 'application\/dxf' \}\)\);/);
+  // F9 remains a selection. It does not get a second grouping or export path.
   assert.ok(!/projectQuickSelect/.test(src), 'nothing in the export path had to learn about it');
 });

@@ -28,6 +28,7 @@
 
 import { resultFindings } from './edgeGuard.js';
 import { drillFindings } from './drillGuard.js';
+import { frontDecorationFindings, frontLayerFindings } from './frontOperations.js';
 
 /**
  * Both guards, on one computed cabinet, in the app's own finding shape.
@@ -42,7 +43,7 @@ import { drillFindings } from './drillGuard.js';
  * @returns {Array} findings, each { check, level, unitId, unitNum, panel,
  *                  layer, code, message }
  */
-export function unitFindings(result, { profile = null, unitId = null, unitNum = null } = {}) {
+export function unitFindings(result, { profile = null, unitId = null, unitNum = null, decorationLayerFindings = null } = {}) {
   const num = unitNum || result?.unitNum || '';
   const out = resultFindings(result).map((f) => ({
     check: 9,
@@ -56,6 +57,8 @@ export function unitFindings(result, { profile = null, unitId = null, unitNum = 
     message: `${num ? `${num} ` : ''}${f.message}`,
   }));
   out.push(...drillFindings(result, { profile, unitId, unitNum: num }));
+  out.push(...frontDecorationFindings(result, { unitId, unitNum: num }));
+  out.push(...(decorationLayerFindings || frontLayerFindings([{ result, unit: { id: unitId } }])));
   return out;
 }
 
@@ -101,13 +104,17 @@ export function exportGate(entries, { profile = null } = {}) {
   const findings = [];
   const held = [];
   const heldPanelIds = new Set();
+  const layerFindings = frontLayerFindings(entries);
 
   for (const entry of entries || []) {
     const { unit, result } = entry || {};
     if (!result) continue;
     const unitId = unit?.id || result.unitId || null;
     const unitNum = result.unitNum || unit?.params?.unit_num || '';
-    const mine = unitFindings(result, { profile, unitId, unitNum });
+    const mine = unitFindings(result, {
+      profile, unitId, unitNum,
+      decorationLayerFindings: layerFindings.filter((finding) => finding.unitId === unitId),
+    });
     if (!mine.length) continue;
     findings.push(...mine);
 

@@ -50,8 +50,10 @@ import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
 import {
   hasTopInfill, unitTop, wallGapOf,
 } from '../../engine/runs.js';
-import { FRONT_STYLE_OPTIONS, elementMaterialChoices, normaliseScope } from '../../engine/design.js';
-import { carcassSources, frontSources } from '../../engine/projectSettings.js';
+import { FRONT_STYLE_OPTIONS, elementMaterialChoices, frontStyleSelection, normaliseScope } from '../../engine/design.js';
+import { carcassSources, frontSources, projectFrontThickness } from '../../engine/projectSettings.js';
+// T76 F7 · the walk's finding: a style these doors are too thin to route.
+import { boardRefusal } from '../../engine/frontDecoration.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 // T61 F3: the top box's own two engine answers — the type's defaults and the
 // room's refusal — both read rather than retyped.
@@ -195,25 +197,39 @@ export function designBounds() {
 
 // ─── THE FRONT STYLES THE ENGINE HAS ───────────────────────────────────────
 
-/**
- * F4.3: *"SLAB · SHAKER · J-PULL — the three the engine has today; GROOVED and
- * ARCHED disabled 'coming soon'."* The ids and labels come from
- * `FRONT_STYLE_OPTIONS`; which three are LIVE is the brief's own decision and
- * is stated here once.
- */
-const LIVE_STYLES = ['F', 'S', 'HJ'];
-const SOON_STYLES = ['G', 'A'];
+// All decorative styles have a production definition. Old saved slabs stay
+// inactive until the owner selects a style or explicitly activates it.
+const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM'];
+const SOON_STYLES = [];
 
-export const frontStyles = () => [...LIVE_STYLES, ...SOON_STYLES].map((id) => {
-  const option = FRONT_STYLE_OPTIONS.find((o) => o.id === id);
-  return {
-    id,
-    label: id === 'F' ? 'SLAB' : (id === 'HJ' ? 'J-PULL' : String(option?.label || id).toUpperCase()),
-    engineLabel: option?.label || id,
-    soon: SOON_STYLES.includes(id),
-    reason: SOON_STYLES.includes(id) ? REASONS.styleComingSoon : '',
-  };
-});
+// ─── T76 F7 · A STYLE THE DOORS CANNOT TAKE IS REFUSED IN WORDS ──────────
+//
+// The walk clicked ARCHED on a retail wardrobe and got a plain slab and no
+// sentence: retail's doors are 18 to 20 mm (the front sources), and the
+// owner's arch is an 18 mm recess drawn for a 30 board, which leaves no skin.
+// The recipe is not shrunk and the door is not swapped (CLAUDE.md T76 F4), so
+// the row is offered greyed with the engine's answer, as a coming-soon row
+// is: the board the job's doors are cut from, the same one the store hands the
+// engine (`projectFrontThickness`), asked of `boardRefusal`.
+export const frontStyles = () => {
+  const doors = projectFrontThickness(
+    migrateDesign(S().project.design), P(), useMaterialAssignmentStore.getState().materials || [],
+  );
+  return [...LIVE_STYLES, ...SOON_STYLES].map((id) => {
+    const option = FRONT_STYLE_OPTIONS.find((o) => o.id === id);
+    const label = id === 'F' ? 'SLAB' : (id === 'HJ' ? 'J-PULL' : String(option?.label || id).toUpperCase());
+    const refusal = SOON_STYLES.includes(id) ? null : boardRefusal(id, doors, P());
+    return {
+      id,
+      label,
+      engineLabel: option?.label || id,
+      soon: SOON_STYLES.includes(id),
+      refused: Boolean(refusal),
+      reason: SOON_STYLES.includes(id) ? REASONS.styleComingSoon
+        : (refusal ? REASONS.styleNeedsThickerDoor({ label, needMm: refusal.needMm, haveMm: refusal.haveMm }) : ''),
+    };
+  });
+};
 
 // ─── THE HANDLE SYSTEMS THE ENGINE OFFERS ──────────────────────────────────
 
@@ -1866,8 +1882,9 @@ export function writeFrontLaw({ style = null, opening = null } = {}) {
   //     because `resolveUnitDesign`'s cascade reads the SLOT before the
   //     project (engine/design.js) and a unit pointed at a slot would
   //     otherwise keep yesterday's shape.
-  store.setDesign({ fronts: { ...design.fronts, style: nextStyle } });
-  store.setFrontType(frontTypeId(design), { style: nextStyle });
+  const selected = style ? frontStyleSelection(nextStyle, design.fronts) : { style: nextStyle };
+  store.setDesign({ fronts: { ...design.fronts, ...selected } });
+  store.setFrontType(frontTypeId(design), selected);
 
   // 2 · AND THE OPENING, ALWAYS. Not "when asked": a style written without an
   //     opening is T64's J-pull lesson repeating itself. Re-read first —
@@ -1897,6 +1914,14 @@ export function openingForHandle(handle) {
 /** F4.2 · THE SHAPE — one of the four the STYLE list offers. Through the law. */
 export function setFrontStyle(styleId) {
   return writeFrontLaw({ style: styleId }).style;
+}
+
+export function setFrontDecoration(decoration) {
+  const store = S();
+  const design = migrateDesign(store.project.design);
+  store.setDesign({ fronts: { ...design.fronts, decoration } });
+  S().setFrontType(frontTypeId(design), { decoration });
+  return S().project.design.fronts.decoration;
 }
 
 export function setShakerFrame(mm) {

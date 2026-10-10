@@ -44,6 +44,19 @@ const OUTER = { x: 4, y: 4, w: 92, h: 132 };
  * draws it thinner, so a shaker's rails read as joints and not as cut lines.
  */
 export const FRONT_STYLE_ART = {
+  FL: [
+    { rect: [OUTER.x, OUTER.y, OUTER.w, OUTER.h] },
+    ...[0, 1, 2, 3, 4, 5].flatMap((i) => [
+      { line: [OUTER.x + 12 + i * 13, OUTER.y + 7, OUTER.x + 12 + i * 13, OUTER.y + OUTER.h - 7] },
+      { line: [OUTER.x + 17 + i * 13, OUTER.y + 7, OUTER.x + 17 + i * 13, OUTER.y + OUTER.h - 7], soft: true },
+    ]),
+  ],
+  AM: [
+    { rect: [OUTER.x, OUTER.y, OUTER.w, OUTER.h] },
+    { rect: [OUTER.x + 14, OUTER.y + 16, OUTER.w - 28, OUTER.h - 32] },
+    { rect: [OUTER.x + 19, OUTER.y + 21, OUTER.w - 38, OUTER.h - 42] },
+    ...[[18, 20, 23, 25], [82, 20, 77, 25], [18, 120, 23, 115], [82, 120, 77, 115]].map((line) => ({ line, soft: true })),
+  ],
   // Shaker: a frame with a flat centre panel. The rails and stiles are what
   // make it a shaker, so they are the drawing.
   S: [

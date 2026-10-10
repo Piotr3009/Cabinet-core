@@ -1,0 +1,212 @@
+─── T76 · THE ENGINE/LIB DELTAS, AND WHAT THEY REACH ───
+
+  base: b810560 (origin/main before this turn)
+  fragments merged: f01.mjs, f03.mjs, f04.mjs, f05.mjs, f07.mjs
+  named     src/engine/bom.js
+  named     src/engine/cabinet.js
+  named     src/engine/checks.js
+  named     src/engine/cnc/dxf.js
+  named     src/engine/cnc/exportGate.js
+  named     src/engine/cnc/frontOperations.js
+  named     src/engine/design.js
+  named     src/engine/drawings/frontDecorationDrawing.js
+  named     src/engine/drawings/frontElevation.js
+  named     src/engine/drawings/partDetail.js
+  named     src/engine/frontDecoration.js
+  named     src/engine/frontDecorationBom.js
+  named     src/engine/frontStyleArt.js
+  named     src/engine/materials.js
+  named     src/engine/partEdits.js
+  named     src/engine/partRegistry.js
+  named     src/engine/profile.js
+  named     src/engine/projectSettings.js
+  named     src/engine/readiness.js
+  named     src/lib/cncExport.js
+  named     src/lib/exporters.js
+
+  21 engine/lib file(s) changed or added · 0 not named
+  named READ-ONLY by CLAUDE.md and touched: none
+  named read-only and not in this repo: src/engine/lisp.js
+  the LISP (*.lsp) touched: none (of 18 file(s))
+  named and unspent: none
+
+  ok  src/engine/bom.js
+        GPT patch: Distinct manufacturing identity and real strip quantities. A list, not a cut. F1 · both on the row: T75's `readiness` and GPT's `manufacturing`; ONE merge key carrying both (two fronts with different recipes are never one line, an outline never merges into a cut part); `FRONT_SHEET_PARTS` the union, `pelmet` AND `front_moulding`. Off computeCabinet's import graph. F5 · the gluing NOTE row (`manual`) in the dowel and worktop-joint grammar: counted in nothing, merged with nothing. A list, not a cut
+        on computeCabinet's import graph: false; imported by 6 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/cabinet.js
+        GPT patch: Optional front_decoration pass after drilling; AM parts before totals. IS the cut path: the pass runs only under `params.front_decoration`, the strips (`appliedFrontParts`, `reconcileAppliedFrontParts`) only for a recipe that adds them (AM). F1 · the conflict at ~9189, both sides in this order: T75 F4's L block FIRST (it pushes the L's two leaves), GPT's `front_decoration` pass AFTER it, so the L's leaves are decorated like every other front. F4 · the decoration's advisories ride the warnings (Check #32 says them); nothing is cut differently
+        on computeCabinet's import graph: true; imported by 9 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing); an applied moulding recipe (`params.front_decoration` on a leaf of style AM: the FRONT-MOULDING cut parts); a decorative recipe on a true L kit (`params.front_decoration` on CORNER_L_*: the L block pushes its two leaves, the decoration pass after it decorates them, F1)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/cnc/dxf.js
+        GPT patch: Separate front setup vectors; existing back output retained. The machine file: a -FRONT.dxf is written only beside a part with `meta.frontDecoration`, and `setup` defaults to 'back'
+        on computeCabinet's import graph: false; imported by 5 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/cnc/exportGate.js
+        GPT patch: Hold invalid recipes and conflicting operation layers. Two findings read off `meta.frontDecoration`, empty without it. A refusal, not a cut
+        on computeCabinet's import graph: false; imported by 3 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/cnc/frontOperations.js
+        GPT patch: Single front export frame and explicit machining manifest. NEW: read by the DXF writer, the export gate and the ZIP; each function answers nothing for a part without `meta.frontDecoration`. F4 · the `vgroove` operation: validated, exported as its open centre line, named in the layer table and in front-operations.json (tool kind v, width, depth, "groove centre line"). F5 · front-operations.json carries readiness: the part's, each operation's, each strip's, the gluing's
+        on computeCabinet's import graph: false; imported by 6 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/design.js
+        GPT patch: Stable new style IDs and optional recipe cascade. The design layer: a cut sees the recipe only as `params.front_decoration`, which the store writes from `resolveUnitDesign`. F3 · `SS` deleted from FRONT_STYLE_OPTIONS, a two-line tombstone with the owner's words. The design layer
+        on computeCabinet's import graph: true; imported by 52 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/drawings/frontDecorationDrawing.js
+        GPT patch: Canonical decorative projection for elevations and part detail. NEW. A drawing, not a cut: it draws `meta.frontDecoration` and nothing else
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/drawings/frontElevation.js
+        GPT patch: Draw the machining and applied strips that the engine now emits. A drawing, not a cut: a front without `meta.frontDecoration` is drawn by `frontDetail` as before
+        on computeCabinet's import graph: false; imported by 8 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/drawings/partDetail.js
+        GPT patch: Draw exact operation contours, depths and setup notes. A drawing, not a cut
+        on computeCabinet's import graph: false; imported by 3 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/frontDecoration.js
+        GPT patch: Versioned canonical geometry, defaults and opposing-cut validation. NEW: on the cut path only through cabinet.js's pass, behind `params.front_decoration`. F3 · SS's recipe (frame 25, recess 2) deleted; no golden carries a recipe. F4 · RECIPES and MIN_SKIN deleted: recipes off the profile handed in, else getCabinetProfile(); the V groove (`vgroove`, width and depth, no angle assumed), the semicircular arch and its refusal in words, the AM mitre off the profile, the board advisory (`advisories`). F7 · `boardRefusal(style, board)`: the skin rule asked of a board before any leaf is cut (one comparison, `skinShort`, shared with the validator), so retail greys a style its doors cannot take and says why. Reads a recipe; cuts nothing differently
+        on computeCabinet's import graph: true; imported by 6 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing); an applied moulding recipe (`params.front_decoration` on a leaf of style AM: the FRONT-MOULDING cut parts)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/frontDecorationBom.js
+        GPT patch: Manufacturing identity, status and construction descriptions. NEW: read by bom.js, null for a part with neither `meta.frontDecoration` nor `meta.frontDecorationParent`. A list, not a cut. F5 · `manufacturing` keeps `identity` and `construction`; its `status` and `summary` deleted. A list, not a cut. F7 · the construction label made short ("G · Routed slab, depths 3 mm", "Applied strip, 45/45 mitres") so the State column stays in the panel. A list, not a cut
+        on computeCabinet's import graph: false; imported by 1 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/frontStyleArt.js
+        GPT patch: Gallery art for the three added style IDs. Pictures, not a cut; FROZEN 5 lifts T75's FRONTS BOUNDARY for this file tonight. F3 · SS's drawing deleted (FROZEN 5 lifts the FRONTS BOUNDARY for this file tonight). Pictures, not a cut
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/materials.js
+        GPT patch: Separate thickness-correct material identity for applied strips. Which stock a strip (`meta.frontDecorationParent`) is cut from, not the cut
+        on computeCabinet's import graph: false; imported by 13 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/partEdits.js
+        GPT patch: Revalidate decorated fronts after hand-added drilling. A hand edit's re-cut: only a front with `meta.frontDecoration` that the edit touched is rebuilt, its strips with it
+        on computeCabinet's import graph: false; imported by 4 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing); an applied moulding recipe (`params.front_decoration` on a leaf of style AM: the FRONT-MOULDING cut parts)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/partRegistry.js
+        GPT patch: Register actual FRONT-MOULDING cut parts for purchasing. The `front_moulding` row and FRONT-MOULDING mapped to it; no fixture cuts one
+        on computeCabinet's import graph: true; imported by 7 file(s)
+        gates: an applied moulding recipe (`params.front_decoration` on a leaf of style AM: the FRONT-MOULDING cut parts)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/projectSettings.js
+        GPT patch: Keep optional recipes in the saved material palette. A design record, not a cut
+        on computeCabinet's import graph: true; imported by 13 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/lib/cncExport.js
+        GPT patch: Package both setups and the operation specification. The FRONT setup and the manifest ride the export only for a decorated selection. F1 · both files ride the unit ZIP: T75 F22's READINESS.txt and GPT's front-operations.json; the sheet and material exports stay synchronous (T75 F23's refusals still throw), a Promise only for a decorated selection. A file writer, not a cut. F5 · the banner counts the gluing as a line of its own; GPT's packaged ZIP carries READINESS.txt as the unit ZIP does. A file writer, not a cut
+        on computeCabinet's import graph: false; imported by 3 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/lib/exporters.js
+        GPT patch: Print decorative construction and status in BOM PDF. A file writer, not a cut: the note prints only on a row that carries `manufacturing`. F5 · the BOM PDF prints the construction label, not a second status. A file writer, not a cut
+        on computeCabinet's import graph: false; imported by 5 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/profile.js
+        F4 · NEW block `front.decoration` (one recipe per decorative style: the owner's numbers of 31.08.2026 first, GPT's marked "T76 proposed, owner to confirm") and `front.decorationMinSkinMm`, with their migrate line. Read only by frontDecoration.js, behind `params.front_decoration`; the six read none of it
+        on computeCabinet's import graph: true; imported by 28 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/checks.js
+        F4 · Check #32, yellow, "Front thinner than its decoration's board", read off the engine's FRONT_DECORATION_BOARD. Reads a result; cuts nothing
+        on computeCabinet's import graph: false; imported by 6 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/readiness.js
+        F5 · `readinessOf` answers a decorated front and an applied strip by name (cut, whatever the recipe's state: a blocked recipe is Check #9's); `appliedStripNotes` says which fronts carry the manual gluing NOTE; `notCutParts` lists it for Check #30. Pure, reads only
+        on computeCabinet's import graph: false; imported by 6 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+
+─── EVERY OLD GOLDEN, GATE BY GATE (THE SIX AND T75'S 16) ───
+  WARDROBE                           opens: none
+  BUD                                opens: none
+  WUD                                opens: none
+  BUDR                               opens: none
+  BUDR4                              opens: none
+  PANTRY                             opens: none
+  golden-blind-base.json             opens: none
+  golden-blind-wall.json             opens: none
+  golden-blind-wardrobe.json         opens: none
+  golden-notch.json                  opens: none
+  golden-corner-l-base.json          opens: none
+  golden-corner-l-wall.json          opens: none
+  golden-corner-l-wardrobe.json      opens: none
+  golden-appliance-tall.json         opens: none
+  golden-appliance-tall2.json        opens: none
+  golden-bud-int.json                opens: none
+  golden-budr-hob.json               opens: none
+  golden-pelmet.json                 opens: none
+  golden-wardrobe-chest.json         opens: none
+  golden-wardrobe-desk.json          opens: none
+  golden-wardrobe-low.json           opens: none
+  golden-dowel-bud.json              opens: none
+
+─── THE SIX CARRY NO RECIPE AND CUT NO DECORATED PART ───
+  ok    WARDROBE   front_decoration: absent · decorated parts: 0
+  ok    BUD        front_decoration: absent · decorated parts: 0
+  ok    WUD        front_decoration: absent · decorated parts: 0
+  ok    BUDR       front_decoration: absent · decorated parts: 0
+  ok    BUDR4      front_decoration: absent · decorated parts: 0
+  ok    PANTRY     front_decoration: absent · decorated parts: 0
+
+─── EACH GATE OPENED ON A CRAFTED CABINET: THE DELTA IS LIVE ───
+  live  frontDecoration BUD G with its recipe: 1 of 1 leaf ready, 6 operations; the style alone: 0 decorated part(s)
+  live  appliedStrips   BUD AM cuts 4 FRONT-MOULDING strip(s) on 01-F (477 x 20 x 8, 647 x 20 x 8, 477 x 20 x 8, 647 x 20 x 8)
+  live  decoratedL      CORNER_L_BASE with G fronts: 2 of 2 leaves decorated (A 3 op, B 3 op), door B opens first
+
+─── T75'S GOLDENS (CLAUDE.md NAMES NINE; THE REPO HOLDS 16) ───
+  ok    golden-blind-base.json             F3   byte-identical to its fixture
+  ok    golden-blind-wall.json             F3   byte-identical to its fixture
+  ok    golden-blind-wardrobe.json         F3   byte-identical to its fixture
+  ok    golden-notch.json                  F7   byte-identical to its fixture
+  ok    golden-corner-l-base.json          F4   byte-identical to its fixture
+  ok    golden-corner-l-wall.json          F4   byte-identical to its fixture
+  ok    golden-corner-l-wardrobe.json      F4   byte-identical to its fixture
+  ok    golden-appliance-tall.json         F12  byte-identical to its fixture
+  ok    golden-appliance-tall2.json        F12  byte-identical to its fixture
+  ok    golden-bud-int.json                F13  byte-identical to its fixture
+  ok    golden-budr-hob.json               F14  byte-identical to its fixture
+  ok    golden-pelmet.json                 F15  byte-identical to its fixture
+  ok    golden-wardrobe-chest.json         F16  byte-identical to its fixture
+  ok    golden-wardrobe-desk.json          F17  byte-identical to its fixture
+  ok    golden-wardrobe-low.json           F18  byte-identical to its fixture
+  ok    golden-dowel-bud.json              F23  byte-identical to its fixture
+
+─── THE TENTH GOLDEN FILE: fixtures/golden-decorative-fronts.json ───
+  ok    G    01-F 597 x 767 x 25, 6 op · sha256 92ecf47dcd6e6bca
+  ok    GF   01-F 597 x 767 x 25, 7 op · sha256 4b6aac9e3c1dd2c5
+  ok    A    01-F 597 x 767 x 25, 1 op · sha256 68e841766633f96c
+  ok    AH   01-F 597 x 767 x 25, 1 op · sha256 7cbd357561caacb3
+  ok    FL   01-F 597 x 767 x 25, 25 op · sha256 dc02d1f2df95b8a6
+  ok    AM   01-F 597 x 767 x 25; 01-F-MOULDING-BOTTOM 477 x 20 x 8; 01-F-MOULDING-RIGHT 647 x 20 x 8; 01-F-MOULDING-TOP 477 x 20 x 8; 01-F-MOULDING-LEFT 647 x 20 x 8 · sha256 ae924b04c7e9f83a
+  ok    the styles the engine offers with a recipe: G, GF, A, AH, FL, AM · the styles the file pins: G, GF, A, AH, FL, AM
+
+─── THE SIX ───
+  WARDROBE   IDENTICAL  f49a8c107dd6e66908412262c8c0c91613fe9d1523cce844b7ce68648a1f37c3
+  BUD        IDENTICAL  44d091b837b08075fd155719253b85b9cc8c65437395a1d8b2f31b80d3b2db4c
+  WUD        IDENTICAL  3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7
+  BUDR       IDENTICAL  1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2
+  BUDR4      IDENTICAL  583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17
+  PANTRY     IDENTICAL  4df94682e4f80424aa770ffad3e5e143eb8e14902372ec2193fd4acb9e452289
+
+IDENTICAL=6 UNNAMED=0 · deltas a golden can reach: 0/21 · engine files not named: 0 · named and unspent: 0 (fragments: 0) · read-only files touched: 0 · LISP files touched: 0 · unknown gates: 0 · six without a recipe: 6/6 · every gate live: true · T75 goldens: 16/16 · decoration goldens: 6/6 (the styles agree)
+dump cdf0709d5483c203

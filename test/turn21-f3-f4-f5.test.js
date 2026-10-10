@@ -125,8 +125,10 @@ test('F3.3 — the recess pass has ONE call site, and it is guarded', () => {
   // through `panelSolids` at all: a SHAKER leaf, whose tray is its own solid
   // (3d/shakerSolid.js) and which therefore has to bore its own cups or be the
   // single FRONT class the scene does not show. It is named, not incidental.
-  assert.equal((view.match(/cuts\?\.enabled/g) || []).length, 1, 'exactly one reader in the view, and it is the shaker tray');
-  assert.match(view, /shakerFrontGeometry\(p, panelRecesses\(/);
+  assert.equal((view.match(/cuts\?\.enabled/g) || []).length, 1, 'exactly one reader serves the front solid builders');
+  assert.equal((view.match(/panelRecesses\(/g) || []).length, 1, 'both front builders share one bore producer');
+  assert.match(view, /shakerFrontGeometry\(p, frontBores\)/);
+  assert.match(view, /frontDecorationGeometry\(p, frontBores\)/);
   assert.match(view, /cuts && !contour/);
 });
 

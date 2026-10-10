@@ -1,0 +1,102 @@
+{
+  "G": {
+    "sha256": "92ecf47dcd6e6bca4f70784621a675b459aa76ccb24c3ed2be79d84e3c970b0e",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 6
+      }
+    ]
+  },
+  "GF": {
+    "sha256": "4b6aac9e3c1dd2c544ad1cb36af90a0cded7ea2f33917984f82c60eee0605a95",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 7
+      }
+    ]
+  },
+  "A": {
+    "sha256": "68e841766633f96c3bf010779135305c3febb2769f8db993497dffe78f10240b",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 1
+      }
+    ]
+  },
+  "AH": {
+    "sha256": "7cbd357561caacb3338bb9eb63217b00de6a4089868bb5050464b272e0c9c765",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 1
+      }
+    ]
+  },
+  "FL": {
+    "sha256": "dc02d1f2df95b8a6de06bf0139451fa89312851045bece01073944cb3011291f",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 25
+      }
+    ]
+  },
+  "AM": {
+    "sha256": "ae924b04c7e9f83ae3f7b2d1f9117e29311091266ae4edb3220b7113257818fb",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 0
+      },
+      {
+        "id": "01-F-MOULDING-BOTTOM",
+        "w": 477,
+        "h": 20,
+        "thickness": 8,
+        "operations": 0
+      },
+      {
+        "id": "01-F-MOULDING-RIGHT",
+        "w": 647,
+        "h": 20,
+        "thickness": 8,
+        "operations": 0
+      },
+      {
+        "id": "01-F-MOULDING-TOP",
+        "w": 477,
+        "h": 20,
+        "thickness": 8,
+        "operations": 0
+      },
+      {
+        "id": "01-F-MOULDING-LEFT",
+        "w": 647,
+        "h": 20,
+        "thickness": 8,
+        "operations": 0
+      }
+    ]
+  }
+}

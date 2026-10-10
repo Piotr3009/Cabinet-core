@@ -170,6 +170,25 @@ function stockById(materials, id) {
  *   `finish`/`colour`  what the 3D view paints (F1.4).
  */
 export function resolvePanelMaterial(panel, unit, design, profile, materials = []) {
+  const resolved = resolvePanelMaterialBase(panel, unit, design, profile, materials);
+  if (!panel?.meta?.frontDecorationParent) return resolved;
+  const stock = stockById(materials, resolved.material_id);
+  const explicit = elementMaterialOverride(panel);
+  // A bonded strip shares the door's finish, but its 8 mm stock is a
+  // separate assignment from the door blank. Never group it into 25 mm MDF.
+  if (explicit && stock && Number(stock.thickness) === Number(panel.thickness)) return resolved;
+  const label = `Applied moulding stock ${panel.thickness} mm`;
+  return {
+    ...resolved,
+    key: `unassigned:front-moulding:${panel.thickness}:${resolved.finish?.id || ''}`,
+    slot: null, material_id: null, label, assigned: false, placeholder: false,
+    assignmentProblem: explicit
+      ? `Assign moulding stock matching its ${panel.thickness} mm thickness.`
+      : `Assign separate ${panel.thickness} mm stock for the applied moulding.`,
+  };
+}
+
+function resolvePanelMaterialBase(panel, unit, design, profile, materials = []) {
   const d = migrateDesign(design);
   const override = elementMaterialOverride(panel);
   const finishes = resolveFinishes(unit, d, profile);

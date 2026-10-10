@@ -41,7 +41,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 
 import {
-  ALL_COPIES, T63_COPIES, T65_COPIES, T74_COPIES,
+  ALL_COPIES, T63_COPIES, T65_COPIES, T74_COPIES, DECORATIVE_FRONT_COPIES,
 } from './t63-copies.mjs';
 
 // T65 F8 adds `ContextMenu.jsx` to the manifest, and the machine that MAKES
@@ -49,7 +49,7 @@ import {
 // The T62 four are deliberately not re-made here — they were made by T62's own
 // hand and every copy since imports THOSE.
 // T74 F13 adds PRO's piece editor (`PartDetailModal.jsx`) for the free panel.
-const TO_MAKE = [...T63_COPIES, ...T65_COPIES, ...T74_COPIES];
+const TO_MAKE = [...T63_COPIES, ...T65_COPIES, ...T74_COPIES, ...DECORATIVE_FRONT_COPIES];
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const check = process.argv.includes('--check');

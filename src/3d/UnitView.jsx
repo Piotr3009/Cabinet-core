@@ -111,6 +111,7 @@ import LedIcons from './LedIcons.jsx';
 const EMPTY_DRILLS = [];
 import PartMachining from './PartMachining.jsx';
 import { shakerFrontGeometry } from './shakerSolid.js';
+import { frontDecorationGeometry } from './frontDecorationSolid.js';
 import { isShakerFront } from '../engine/shaker.js';
 import { panelRecesses } from '../engine/recesses.js';
 // T54-F1: the ghost line draws the CARCASS cut — the engine's own offset of
@@ -744,9 +745,17 @@ export function MovingPanel({
   // the J is the board's own shape, not a joint, so it does not wait for the
   // joint system's layers (the contour view hands none).
   const jpullCut = Boolean(p?.cnc?.jpull?.edge);
+  const frontBores = useMemo(() => {
+    if (mitre || !(p.meta?.frontDecoration || isShakerFront(p))
+      || !profile?.appearance?.cuts?.enabled) return EMPTY_DRILLS;
+    return panelRecesses(p, p.meta?.frontDecoration ? boredDrills : drills,
+      { thickness: p.box.d, profile });
+  }, [p, mitre, boredDrills, drills, profile]);
+  const decoration = useMemo(() => (mitre ? null : frontDecorationGeometry(p, frontBores)),
+    [p, mitre, frontBores]);
   const built = useMemo(
-    () => ((layers || jpullCut) && !mitre ? panelSolids(p, layers, profile, boredDrills) : null),
-    [p, layers, profile, mitre, boredDrills, jpullCut],
+    () => ((layers || jpullCut) && !mitre && !decoration ? panelSolids(p, layers, profile, boredDrills) : null),
+    [p, layers, profile, mitre, boredDrills, jpullCut, decoration],
   );
   // ─── Turn 25 (CLAUDE.md F3): THE SHAKER IS A TRAY, NOT A SLAB ───────────
   // A recess in the face, leaving the frame standing — one solid, so the
@@ -766,11 +775,10 @@ export function MovingPanel({
   // się renderować razem z drzwiami."*  The tray holds a polygon now, so the
   // line below is unchanged and it is `shakerSolid.js` that stopped refusing.
   const shaker = useMemo(() => {
-    if (mitre) return null;
-    if (!isShakerFront(p) || !profile?.appearance?.cuts?.enabled) return shakerFrontGeometry(p);
-    return shakerFrontGeometry(p, panelRecesses(p, drills, { thickness: p.box.d, profile }));
-  }, [p, mitre, drills, profile]);
-  const machined = shaker || built?.solid || null;
+    if (mitre || decoration) return null;
+    return shakerFrontGeometry(p, frontBores);
+  }, [p, mitre, frontBores, decoration]);
+  const machined = decoration || shaker || built?.solid || null;
 
   // ─── CHAT FIX 15.08.2026: THE OUTLINE DRAWS THE BOARD, NOT THE DRILLING ──
   //
@@ -789,17 +797,19 @@ export function MovingPanel({
   // work, so there the pass still reads the machined geometry.
   const outlinePlain = useMemo(() => {
     if (mitre) return null;
+    if (decoration) return frontDecorationGeometry(p);
     if (isShakerFront(p)) return shakerFrontGeometry(p);
     return null;
-  }, [p, mitre]);
-  useEffect(() => () => { outlinePlain?.dispose?.(); }, [outlinePlain]);
+  }, [p, mitre, decoration]);
+  useEffect(() => () => { if (!decoration) outlinePlain?.dispose?.(); }, [outlinePlain, decoration]);
   // T75 · a J leaf's pretty-view contour is the PLAIN board plus the J's own
   // rim (drawn below), so the machined solid's many recess edges are neither
   // doubled nor capped. The box is the leaf's own size.
   const cuts = built?.cuts || null;
   // T75 · is the J really carved into the solid this leaf is drawn with? (A
   // shaker tray or a mitre is another solid, and has no J in it.)
-  const jCarved = Boolean(built?.solid && built?.jpull) && !shaker && !mitre;
+  const jCarved = Boolean(decoration?.userData?.frontDecoration?.jpull
+    || (built?.solid && built?.jpull)) && !shaker && !mitre;
   // T74 F12 · a J leaf's groove is drawn darker by `appearance.jpull.grooveShade`.
   const groove = useMemo(() => jGrooveBox(p, profile, jCarved), [p, profile, jCarved]);
   // T75 · the J-pull recess (see `jpullBand`): on a carved leaf its shadow lies
@@ -813,7 +823,8 @@ export function MovingPanel({
   // …and its contour, the whole leaf's, drawn as explicit segments in the
   // pretty view (see `jpullContourSegments`): nothing depends on which solid
   // the screen happens to hold, and nothing is drawn twice.
-  const jContour = useMemo(() => (jBand && !mitre ? jpullContourSegments(jBand, p.box) : null), [jBand, mitre, p.box]);
+  const jContour = useMemo(() => (jBand && !mitre && !decoration
+    ? jpullContourSegments(jBand, p.box) : null), [jBand, mitre, decoration, p.box]);
   const bevelRef = useBevel(mitre?.box || p.box, profile, surface.sprayed && !contour && !xray, groove);
 
   // ─── T75 · THE CONTOUR IS BUILT AGAIN WHEN THE BOARD CHANGES SHAPE ──────
@@ -2510,7 +2521,8 @@ export default function UnitView({
           is not recomputed, the BOM and the CNC sheet read it unchanged, and
           the params never hear about this. It is a lens over the same cabinet,
           which is what makes it different in kind from "Remove doors". */}
-      {result.panels.filter((p) => p.box && !(hideFronts && frontKind(p))).map((p) => {
+      {result.panels.filter((p) => p.box && !p.meta?.frontDecorationParent
+        && !(hideFronts && frontKind(p))).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         // ─── Turn 9 (CLAUDE.md F4.1) ───
         // What can be selected as an ELEMENT. It is the engine's own `shelf`

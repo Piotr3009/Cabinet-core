@@ -184,7 +184,7 @@ test('F10 loading a project from before this turn makes its fronts follow', () =
 
 test('F10 it travels the OVERRIDE CHANNEL, and the engine gained no rule', () => {
   const store300 = readFileSync(new URL('../src/stores/projectStore.js', import.meta.url), 'utf8');
-  assert.match(store300, /front_type: design \? resolveUnitDesign\(unit, design\)\.frontType : p\.front_type,/);
+  assert.match(store300, /front_type: resolvedFront \? resolvedFront\.frontType : p\.front_type,/);
   // The engine's own fallback is untouched — it is the profile's, which is the
   // AutoLISP's.
   const engine = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
@@ -196,7 +196,7 @@ test('F10 the unit’s own select can now say "Project default", and names it', 
   const panel = readFileSync(new URL('../src/components/RightPanel.jsx', import.meta.url), 'utf8');
   assert.match(panel, /data-unit-front-type="1"/);
   assert.match(panel, /value=\{unit\.params\.front_type \|\| ''\}/);
-  assert.match(panel, /front_type: e\.target\.value \|\| null/);
+  assert.match(panel, /front_type: value \|\| null/);
   assert.match(panel, /Project default \(\{profile\.front\.types\[projectFrontStyle\]\?\.label/);
 });
 

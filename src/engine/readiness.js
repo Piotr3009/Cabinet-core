@@ -23,6 +23,18 @@
 //      LISP's or the agreed pattern's. A note row that names no state is
 //      `manual` (a note is something somebody does by hand).
 //
+// ─── T76 F5 · ONE STATE: THE DECORATED FRONT ─────────────────────────────
+//
+// CLAUDE.md T76 F5: *"a front whose recipe validated is `'cut'`; a front whose
+// recipe is BLOCKED by GPT's validator (the pattern is not exported) is
+// `'cut'` for the slab and the Check names the blocked recipe (the state of
+// the LINE is the slab's; the decoration's refusal is a Check, as GPT built
+// it); an AM strip is a `'cut'` part of its own and the host front carries a
+// `'manual'` NOTE for the gluing of its strips (the T75 worktop-joint
+// grammar)."*  So a decoration never makes a state of its own (question 4b
+// below), and `appliedStripNotes` is the one place that says which fronts
+// carry a gluing NOTE: the cut list, the Check and the CNC banner read it.
+//
 // Pure: no store, no React, no profile. It READS; the panel records are never
 // written, so no golden can move.
 
@@ -82,8 +94,37 @@ export function readinessOf(line, { drills = null, side = READINESS_SIDE_MAP } =
   }
   const mapped = known(side?.[line.part]) || known(side?.[id]);
   if (mapped) return mapped;
+  // 4b. T76 F5 · a decorated front is the slab's state, ready or blocked (a
+  // blocked recipe is Check #9's, never a state), and an applied strip is a
+  // cut part of its own: both are `cut`, asked by name so no later rule can
+  // read the decoration as something else.
+  if (line.meta?.frontDecoration || line.meta?.frontDecorationParent) return 'cut';
   if (line.material_role === 'note' || line.role === 'worktop_note') return 'manual';
   return 'cut';
+}
+
+/**
+ * T76 F5 · the gluing of applied strips, one NOTE per host front: the strips
+ * are cut parts (`cut`), fixing them to the front is the joiner's (`manual`).
+ * Only a front whose recipe validated carries strips (a blocked recipe has
+ * none), so only it carries the note.
+ *
+ * @returns {Array<{id, part, host, strips, mitre, state}>}
+ */
+export function appliedStripNotes(panels) {
+  return (panels || [])
+    .filter((p) => p?.meta?.frontDecoration?.status === 'ready' && (p.meta.frontDecoration.additions || []).length)
+    .map((p) => {
+      const additions = p.meta.frontDecoration.additions;
+      return {
+        id: `${p.id} strips`,
+        part: 'APPLIED-STRIPS',
+        host: p.id,
+        strips: additions.length,
+        mitre: additions[0]?.mitres?.start ?? null,
+        state: 'manual',
+      };
+    });
 }
 
 /**
@@ -94,9 +135,13 @@ export function readinessOf(line, { drills = null, side = READINESS_SIDE_MAP } =
  */
 export function notCutParts(result) {
   const drills = result?.drills || [];
-  return (result?.panels || [])
-    .map((p) => ({ id: p.id, part: p.part, state: readinessOf(p, { drills }) }))
-    .filter((r) => r.state !== 'cut');
+  return [
+    ...(result?.panels || [])
+      .map((p) => ({ id: p.id, part: p.part, state: readinessOf(p, { drills }) }))
+      .filter((r) => r.state !== 'cut'),
+    // T76 F5 · and the strips a joiner glues on, as the worktop joint is listed.
+    ...appliedStripNotes(result?.panels).map((n) => ({ id: n.id, part: n.part, state: n.state })),
+  ];
 }
 
 /**

@@ -242,6 +242,14 @@ export const CHECKS = Object.freeze([
   // (`JOINTS_REFUSED`: Cabineo reserved, a kit the LISP's table does not
   // describe, a dowel that meets a hole). RED: a person decides.
   { n: 31, level: 'red', label: 'Joint system: dowels not confirmed, or refused' },
+  // ─── T76 F4 · THE BOARD THE ARCH WAS DRAWN FOR ───────────────────────────
+  //
+  // *"The A and AH recipes carry `boardMm: 30`, and the Check says, in words,
+  // when the assigned front material is thinner than the recipe's board (the
+  // recipe is not silently shrunk and the material is not silently swapped).
+  // The owner decides per job."*  Read off the engine's own warning
+  // (`FRONT_DECORATION_BOARD`). YELLOW: the leaf is cut; a person decides.
+  { n: 32, level: 'yellow', label: 'Front thinner than its decoration\'s board' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -599,10 +607,19 @@ export function runChecks({
     for (const wn of result.warnings || []) {
       // T75 F7 · #28: the notch the engine refused, in its own words.
       // T75 F23 · #31: the dowel gate, and a joint system refused, likewise.
+      // T76 F4 · #32: the board the decoration was drawn for, yellow.
       const n = {
         SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28, DOWEL_GATE: 31, JOINTS_REFUSED: 31,
+        FRONT_DECORATION_BOARD: 32,
       }[wn.code];
       if (!n) continue;
+      if (n === 32) {
+        out.push(finding(32, 'yellow', at(wn.panel || null, {
+          message: `${unitNum} ${wn.message}`,
+          subject: { unitId, panelId: wn.panel, editor: 'element' },
+        })));
+        continue;
+      }
       out.push(finding(n, 'red', at(wn.panel || null, {
         message: `${unitNum}: ${wn.message}`,
         // A REFUSED shelf has no panel to fly to — it was never cut — so the

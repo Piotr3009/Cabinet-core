@@ -9,7 +9,7 @@ import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { corniceOption } from '../engine/cornice.js';
-import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
+import { FRONT_STYLE_OPTIONS, frontStyleSelection, migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { isDuplicateName, unitName } from '../engine/naming.js';
 import { formatMm, formatMmPair } from '../engine/format.js';
@@ -23,6 +23,7 @@ import { notchApplies } from '../engine/notch.js';
 // T75 F4/F11 · the worktop row: who takes one alone, and the island's seating.
 import { takesWorktop, worktopEligible } from '../engine/worktop.js';
 import { CABINEO_REFUSAL, dowelKitRefusal, jointSystemOf } from '../engine/dowels.js';
+import FrontDecorationControls from './FrontDecorationControls.jsx';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
 import Section from './Section.jsx';
@@ -460,12 +461,19 @@ export default function RightPanel() {
                 className="cc-input"
                 data-unit-front-type="1"
                 value={unit.params.front_type || ''}
-                onChange={(e) => updateUnitParams(unit.id, { front_type: e.target.value || null })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  const selected = value ? frontStyleSelection(value, {
+                    style: resolvedDesign?.frontType, decoration: resolvedDesign?.frontDecoration,
+                  }) : null;
+                  updateUnitParams(unit.id, { front_type: value || null, front_decoration: selected?.decoration || null });
+                }}
               >
                 <option value="">
                   Project default ({profile.front.types[projectFrontStyle]?.label || projectFrontStyle})
                 </option>
-                {Object.entries(profile.front.types).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+                {FRONT_STYLE_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
+                {unit.params.front_type === 'H' && <option value="H">Legacy handleless</option>}
               </select>
             </div>
             <div>
@@ -511,6 +519,12 @@ export default function RightPanel() {
               })()}
             </div>
           </div>
+
+          <FrontDecorationControls
+            style={resolvedDesign?.frontType}
+            value={resolvedDesign?.frontDecoration}
+            onChange={(decoration) => updateUnitParams(unit.id, { front_decoration: decoration })}
+          />
 
           {resolvedDesign?.colour && (
             <div className="cc-row text-[11px] text-ink-400">

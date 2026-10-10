@@ -20,6 +20,11 @@ import { clampMenuPosition } from '../lib/menuPlacement.js';
 // T48-F5: the groove's own layer record — the layer `ledMakeLayers` declares.
 import { LED_GROOVE_LAYER } from '../lib/ledGroove.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
+import {
+  FRONT_REFERENCE_LAYER, frontDecorationOf, frontDecorationProblems,
+  frontDecorationLayers, frontPanelEntities, hasFrontDecorations,
+} from '../engine/cnc/frontOperations.js';
+import { formatMm } from '../engine/format.js';
 
 // ─── CNC view ───
 // The workshop's visual check before the machine — the job AutoCAD used to do.
@@ -84,10 +89,15 @@ export default function CncView() {
   const storedDesign = useProjectStore((s) => s.project.design);
   // Turn 38 (F3): this project's own CNC layers, for the legend and the ink.
   const projectLayers = useProjectStore((s) => s.project.cncLayers);
+  const rightPanelOpen = useUiStore((s) => s.rightPanelOpen);
+  const bomOpen = useUiStore((s) => s.bomOpen);
+  const checkOpen = useUiStore((s) => s.checkOpen);
 
   const wrapRef = useRef(null);
   const svgRef = useRef(null);
   const [hidden, setHidden] = useState(() => new Set());
+  const [requestedFace, setRequestedFace] = useState('back');
+  const [rightInset, setRightInset] = useState(0);
   // ─── Turn 20 (CLAUDE.md F7): the rollover ─────────────────────────────────
   // `{ readout, at:{x,y} }` — WHAT is under the pointer and WHERE the pointer
   // is, in client px. It is state and nothing else: no store, no project, no
@@ -118,6 +128,32 @@ export default function CncView() {
     }
     return out;
   }, [units, unitCncResult, hiddenUnits, hiddenParts]);
+
+  // Both setups keep the same layout slots. Only the individual part is
+  // reflected, using the exact entities written to its FRONT DXF.
+  const hasDecorations = hasFrontDecorations(entries);
+  const face = hasDecorations ? requestedFace : 'back';
+
+  // Measure the actual adjacent panel, including its current BOM tab width.
+  // The drawing viewport must end where the visible sheet ends.
+  useEffect(() => {
+    if (!hasDecorations) return undefined;
+    const parent = wrapRef.current?.parentElement;
+    if (!parent) return undefined;
+    const panels = [...parent.children].filter((element) => element.tagName === 'ASIDE');
+    const measure = () => {
+      const frame = parent.getBoundingClientRect();
+      const widths = panels.map((element) => element.getBoundingClientRect())
+        .filter((rect) => rect.width > 0 && Math.abs(rect.right - frame.right) < 2)
+        .map((rect) => rect.width);
+      setRightInset(Math.max(0, ...widths));
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(parent);
+    panels.forEach((element) => observer.observe(element));
+    measure();
+    return () => observer.disconnect();
+  }, [hasDecorations, rightPanelOpen, bomOpen, checkOpen]);
 
   // ─── The two views (turn 15, CLAUDE.md F9) ──────────────────────────────
   //
@@ -190,6 +226,25 @@ export default function CncView() {
     return out;
   }, [sections, profile.cnc.layoutGap, profile.cnc.layoutRowWidth]);
 
+  // The front setup retains manufacturing coordinates. Its viewport and
+  // section frames only follow the parts actually machined on this face.
+  const visibleSections = useMemo(() => face === 'back' ? placed : placed.flatMap((section) => {
+    const parts = section.blocks.flatMap((block) => block.layout.places
+      .filter((place) => frontDecorationOf(place.panel))
+      .map((place) => ({ x: place.x, y: place.y + block.offsetY, w: place.w, h: place.h })));
+    if (!parts.length) return [];
+    const x = Math.min(...parts.map((part) => part.x));
+    const y = Math.min(...parts.map((part) => part.y));
+    return [{
+      ...section,
+      visibleBounds: {
+        x, y,
+        w: Math.max(...parts.map((part) => part.x + part.w)) - x,
+        h: Math.max(...parts.map((part) => part.y + part.h)) - y,
+      },
+    }];
+  }), [placed, face]);
+
   const sheet = useMemo(() => {
     if (!placed.length) return null;
     const last = placed[placed.length - 1];
@@ -218,12 +273,18 @@ export default function CncView() {
   // this sheet's own, because a sheet holding a whole project zooms further out
   // than a single part does.
   const size = useElementSize(wrapRef);
-  const content = useMemo(() => (sheet ? {
-    x: -PADDING_MM,
-    y: -PADDING_MM,
-    w: sheet.width + PADDING_MM * 2,
-    h: sheet.height + PADDING_MM * 2,
-  } : null), [sheet]);
+  const content = useMemo(() => {
+    if (!sheet) return null;
+    if (face === 'front' && visibleSections.length) {
+      const gap = profile.cnc.layoutGap;
+      const left = Math.min(...visibleSections.map((section) => section.offsetX + section.visibleBounds.x));
+      const top = Math.min(...visibleSections.map((section) => section.offsetY + section.visibleBounds.y)) - gap * HEADROOM_GAPS;
+      const right = Math.max(...visibleSections.map((section) => section.offsetX + section.visibleBounds.x + section.visibleBounds.w));
+      const bottom = Math.max(...visibleSections.map((section) => section.offsetY + section.visibleBounds.y + section.visibleBounds.h));
+      return { x: left - PADDING_MM, y: top - PADDING_MM, w: right - left + PADDING_MM * 2, h: bottom - top + PADDING_MM * 2 };
+    }
+    return { x: -PADDING_MM, y: -PADDING_MM, w: sheet.width + PADDING_MM * 2, h: sheet.height + PADDING_MM * 2 };
+  }, [sheet, face, visibleSections, profile.cnc.layoutGap]);
   const sheetView = useSheetView({
     svgRef,
     content,
@@ -239,6 +300,10 @@ export default function CncView() {
     box, viewH, mmPerPx, zoomBy, panning,
   } = sheetView;
 
+  useEffect(() => {
+    if (hasDecorations) sheetView.fit();
+  }, [hasDecorations, rightInset, size.w, size.h]);
+
 
   // ── layers actually present, for the legend ───────────────────────────────
   // Counted over the parts actually on the SHEET — every unit's, since turn 11
@@ -251,6 +316,10 @@ export default function CncView() {
       const onSheet = new Set(s2.layout.places.map((pl) => pl.panel.id));
       for (const place of s2.layout.places) {
         const p = place.panel;
+        if (face === 'front') {
+          for (const entity of frontPanelEntities(p)) bump(entity.layer);
+          continue;
+        }
         bump(p.cnc.layer || profile.puzzle.layers.outline);
         for (const pk of p.cnc?.pockets || []) bump(pk.layer);
         // Turn 13 (F8): the biscuit marks are a layer of their own, so the
@@ -265,10 +334,10 @@ export default function CncView() {
         for (const pt of p.cnc?.paths || []) bump(pt.layer);
         for (const cv of p.cnc?.curves || []) bump(cv.layer);
       }
-      for (const d of s2.result.drills) if (onSheet.has(d.panel)) bump(d.layer);
+      if (face === 'back') for (const d of s2.result.drills) if (onSheet.has(d.panel)) bump(d.layer);
     }
     return counts;
-  }, [blocks, profile.puzzle.layers.outline]);
+  }, [blocks, profile.puzzle.layers.outline, face]);
 
   // ─── TURN 38 (CLAUDE.md F3): …AND THE PROJECT'S OWN LAYERS ARE IN IT ────
   // A legend that counted a user layer's entities and then refused to list the
@@ -284,8 +353,11 @@ export default function CncView() {
   // project's own — ONE list, which both the legend and the ink read, so the
   // two cannot disagree about a colour.
   const sheetLayers = useMemo(
-    () => [...allLayers(projectLayers), LED_GROOVE_LAYER],
-    [projectLayers],
+    () => {
+      const existing = [...allLayers(projectLayers), LED_GROOVE_LAYER];
+      return [...existing, ...frontDecorationLayers(entries.flatMap((entry) => entry.panels))];
+    },
+    [projectLayers, entries],
   );
   const legend = sheetLayers.filter((l) => layerCounts.has(l.name));
   const colourOf = useMemo(() => (name) => (
@@ -303,7 +375,8 @@ export default function CncView() {
     return <Empty text="Add a unit from the Library, then switch to CNC." />;
   }
 
-  const partCount = blocks.reduce((n, s2) => n + s2.layout.places.length, 0);
+  const shownPlaces = (layout) => layout.places.filter((place) => face === 'back' || frontDecorationOf(place.panel));
+  const partCount = blocks.reduce((n, s2) => n + shownPlaces(s2.layout).length, 0);
   // ─── Turn 16 (CLAUDE.md F3): the lettering is part of the DRAWING ────────
   // Sheet millimetres from the profile, NOT pixels converted at the current
   // zoom — which is what made every caption grow as the drawing shrank. The
@@ -312,7 +385,7 @@ export default function CncView() {
   const A = profile.cnc.annotation;
 
   return (
-    <div ref={wrapRef} className="absolute inset-0 bg-[#131313] overflow-hidden select-none">
+    <div ref={wrapRef} data-cnc-face={face} style={hasDecorations ? { right: rightInset } : undefined} className="absolute inset-0 bg-[#131313] overflow-hidden select-none">
       {box && sheet && (
         <svg
           ref={svgRef}
@@ -321,7 +394,7 @@ export default function CncView() {
           viewBox={`${box.x} ${box.y} ${box.w} ${viewH}`}
           {...sheetView.handlers}
         >
-          {placed.map((s2) => (
+          {visibleSections.map((s2) => (
             // One group per SECTION, moved across the sheet by its offset, and
             // one group per BLOCK inside it. A block is exactly the layout that
             // unit would export (turn 11, CLAUDE.md F8.1); what turn 15 changes
@@ -331,10 +404,10 @@ export default function CncView() {
                   sections too, because a section boundary a joiner cannot see
                   is the same complaint as the settings panel's. */}
               <rect
-                x={-profile.cnc.layoutGap}
-                y={-profile.cnc.layoutGap * 2.6}
-                width={s2.width + profile.cnc.layoutGap * 2}
-                height={s2.height + profile.cnc.layoutGap * 3.6}
+                x={(s2.visibleBounds?.x || 0) - profile.cnc.layoutGap}
+                y={(s2.visibleBounds?.y || 0) - profile.cnc.layoutGap * 2.6}
+                width={(s2.visibleBounds?.w ?? s2.width) + profile.cnc.layoutGap * 2}
+                height={(s2.visibleBounds?.h ?? s2.height) + profile.cnc.layoutGap * 3.6}
                 fill="none"
                 stroke={s2.kind === 'run' ? '#7a6a3a' : '#3a3a3a'}
                 strokeWidth={1}
@@ -345,30 +418,30 @@ export default function CncView() {
                   further — a header that overprints the section beside it is
                   the same complaint as a part code that does. */}
               <Caption
-                x={0}
-                y={-profile.cnc.layoutGap * 3.2}
+                x={s2.visibleBounds?.x || 0}
+                y={(s2.visibleBounds?.y || 0) - profile.cnc.layoutGap * 3.2}
                 text={s2.label}
-                tail={`  ${s2.blocks.reduce((n, b) => n + b.layout.places.length, 0)} parts`}
+                tail={`  ${s2.blocks.reduce((n, b) => n + shownPlaces(b.layout).length, 0)} parts`}
                 sizeMm={A.sectionLabelMm}
-                boxW={s2.width + profile.cnc.layoutGap * 2}
+                boxW={(s2.visibleBounds?.w ?? s2.width) + profile.cnc.layoutGap * 2}
                 mmPerPx={mmPerPx}
                 minPx={A.minLabelPx}
                 fill="#e0b64a"
               />
-              {s2.blocks.map((b) => (
+              {s2.blocks.filter((block) => shownPlaces(block.layout).length > 0).map((b) => (
                 <g key={b.unit.id} transform={`translate(0 ${b.offsetY})`}>
                   <Caption
-                    x={0}
-                    y={-profile.cnc.layoutGap}
+                    x={face === 'front' ? Math.min(...shownPlaces(b.layout).map((place) => place.x)) : 0}
+                    y={(face === 'front' ? Math.min(...shownPlaces(b.layout).map((place) => place.y)) : 0) - profile.cnc.layoutGap}
                     text={b.unit.params.unit_num}
-                    tail={`  ${b.layout.places.length} parts`}
+                    tail={`  ${shownPlaces(b.layout).length} parts`}
                     sizeMm={A.blockLabelMm}
                     boxW={Math.max(b.layout.width, profile.cnc.layoutGap * 4)}
                     mmPerPx={mmPerPx}
                     minPx={A.minLabelPx}
                     fill={b.unit.id === selectedUnitId ? '#e0b64a' : '#9a9a92'}
                   />
-                  {b.layout.places.map((place) => (
+                  {shownPlaces(b.layout).map((place) => (
                     <Part
                       // Turn 23 (F9.3): how many hand changes this part
                       // carries, straight off the result the sheet is drawn
@@ -376,6 +449,7 @@ export default function CncView() {
                       handEdits={b.result.handEdits?.byPanel?.[place.panel.id]?.count || 0}
                       key={place.panel.id}
                       place={place}
+                      face={face}
                       unitNum={b.unit.params.unit_num}
                       drills={b.result.drills}
                       outlineLayer={profile.puzzle.layers.outline}
@@ -385,7 +459,7 @@ export default function CncView() {
                       visible={visible}
                       colourOf={colourOf}
                       lit={focus?.unitId === b.unit.id && focus?.panelId === place.panel.id}
-                      onOpenInTree={() => focusCncPart(b.unit.id, place.panel.id)}
+                      onOpenInTree={face === 'back' ? () => focusCncPart(b.unit.id, place.panel.id) : null}
                       onRollover={setRollover}
                       rollover={rollover}
                     />
@@ -414,7 +488,10 @@ export default function CncView() {
       {rollover?.readout && <Rollover at={rollover.at} readout={rollover.readout} wrap={wrapRef.current} />}
 
       {/* toolbar */}
-      <div className="absolute top-3 left-3 flex items-center gap-2 bg-shell-800/95 border border-shell-600 rounded px-2 py-1.5">
+      <div
+        data-testid="cnc-toolbar"
+        className={`absolute ${hasDecorations ? 'top-20 flex-wrap max-w-[calc(100%_-_1.5rem)]' : 'top-3'} left-3 flex items-center gap-2 bg-shell-800/95 border border-shell-600 rounded px-2 py-1.5`}
+      >
         <span className="text-xs text-gold uppercase tracking-wide">CNC</span>
         <span className="text-[11px] text-ink-400 tabular-nums">
           {entries.length} of {units.length} units · {partCount} parts
@@ -443,6 +520,25 @@ export default function CncView() {
             </button>
           ))}
         </div>
+        {hasDecorations && (
+          <div className="flex rounded border border-shell-600 overflow-hidden" role="group" aria-label="Machining face">
+            {['back', 'front'].map((side) => (
+              <button
+                key={side}
+                type="button"
+                data-testid={`cnc-face-${side}`}
+                aria-pressed={face === side}
+                title={side === 'front' ? 'Front face up: decorative machining only' : 'Back face up: existing drilling and machining'}
+                className={`px-2 py-1 text-[11px] transition-colors ${face === side
+                  ? 'bg-gold text-shell-900'
+                  : 'text-ink-200 hover:bg-shell-700'}`}
+                onClick={() => { setRequestedFace(side); setRollover(null); }}
+              >
+                {side === 'front' ? 'Front decoration' : 'Back machining'}
+              </button>
+            ))}
+          </div>
+        )}
         <span className="w-px h-4 bg-shell-600" />
         <button type="button" className="cc-btn-ghost" title="Zoom out" onClick={() => zoomBy(ZOOM_STEP)}>−</button>
         <button type="button" className="cc-btn-ghost" title="Zoom in" onClick={() => zoomBy(1 / ZOOM_STEP)}>+</button>
@@ -469,7 +565,9 @@ export default function CncView() {
           ))}
         </ul>
         <p className="text-[10px] text-ink-400 mt-1.5 leading-snug">
-          Preview only. Drag to pan, scroll to zoom.
+          {face === 'front'
+            ? 'Front face up. Read-only preview. Hover a cut for its tool and depth. Grey outline is a reference, not a cut.'
+            : 'Preview only. Drag to pan, scroll to zoom.'}
         </p>
       </div>
     </div>
@@ -510,6 +608,7 @@ function Caption({
 
 function Part({
   place, unitNum, drills, outlineLayer, annotation, profile, mmPerPx, visible,
+  face = 'back',
   lit = false, onOpenInTree = null, onRollover = null, rollover = null, handEdits = 0,
   // Turn 38 (F3): ONE resolver for "what colour is this layer", built-in and
   // the project's own alike — handed down so this component never has to know
@@ -517,8 +616,15 @@ function Part({
   colourOf = layerScreenColor,
 }) {
   const { panel } = place;
-  const cnc = panel.cnc || {};
-  const holes = drills.filter((d) => d.panel === panel.id);
+  const front = face === 'front';
+  const frontEntities = useMemo(() => front ? frontPanelEntities(panel) : [], [front, panel]);
+  const decoration = frontDecorationOf(panel);
+  const frontProblems = useMemo(() => front ? frontDecorationProblems(panel) : [], [front, panel]);
+  const cnc = front ? {
+    layer: FRONT_REFERENCE_LAYER,
+    outline: frontEntities.find((entity) => entity.layer === FRONT_REFERENCE_LAYER)?.pts,
+  } : panel.cnc || {};
+  const holes = front ? [] : drills.filter((d) => d.panel === panel.id);
   const oLayer = cnc.layer || outlineLayer;
 
   // ─── Turn 20 (CLAUDE.md F7): WHAT EACH FEATURE IS ─────────────────────────
@@ -527,8 +633,26 @@ function Part({
   // `hole-11` — so the tooltip and the part-detail window name the same cut by
   // the same id. Memoised on the part and its drills: hovering builds nothing.
   const readouts = useMemo(
-    () => new Map(partRollovers(panel, drills, profile).map((f) => [f.id, f.readout])),
-    [panel, drills, profile],
+    () => front
+      ? new Map((decoration?.operations || []).map((operation) => [operation.id, {
+        // T76 F4 · a V groove reads as one: its width at the mouth, its centre line.
+        title: `${{ flute: 'Flute', vgroove: 'V groove' }[operation.kind] || 'Pocket'} | Front face`,
+        subtitle: operation.layer,
+        rows: [
+          {
+            label: 'Tool',
+            value: operation.kind === 'vgroove'
+              ? `V, ${formatMm(operation.crossSection?.width)} mm wide at the mouth`
+              : `${operation.tool?.kind || 'Unspecified'} ${formatMm(operation.tool?.diameter)} mm`,
+          },
+          { label: 'Start depth', value: `${formatMm(operation.startDepth)} mm` },
+          { label: 'Final depth', value: `${formatMm(operation.depth)} mm` },
+          { label: 'Vector', value: { flute: 'Tool centre path', vgroove: 'Groove centre line' }[operation.kind] || 'Finished pocket boundary' },
+          { label: 'Status', value: frontProblems.length ? 'Blocked: see checks' : 'Ready' },
+        ],
+      }]))
+      : new Map(partRollovers(panel, drills, profile).map((f) => [f.id, f.readout])),
+    [panel, drills, profile, front, decoration, frontProblems],
   );
   // The hover handlers, made once per feature id rather than per render of it.
   const hoverProps = (id) => (onRollover ? {
@@ -616,6 +740,8 @@ function Part({
     // the part being lit.
     <g
       data-cnc-part={panel.id}
+      data-cnc-part-face={face}
+      data-front-status={front ? (frontProblems.length ? 'blocked' : 'ready') : undefined}
       data-hand-edited={handEdits ? String(handEdits) : undefined}
       onDoubleClick={onOpenInTree || undefined}
       style={onOpenInTree ? { cursor: 'pointer' } : undefined}
@@ -647,6 +773,35 @@ function Part({
           strokeWidth={lit ? 2.4 : 1.4}
           vectorEffect="non-scaling-stroke"
         />
+      )}
+
+      {front && frontEntities.filter((entity) => entity.layer !== FRONT_REFERENCE_LAYER && visible(entity.layer)).map((entity) => {
+        const points = entity.pts.map(([x, y]) => toSheet(place, x, y));
+        const id = entity.operationId;
+        const path = `${points.map(([x, y], index) => `${index ? 'L' : 'M'}${x} ${y}`).join(' ')}${entity.closed ? ' Z' : ''}`;
+        return (
+          <g key={id} data-cnc-decoration={id}>
+            <path
+              d={path} fill="none" stroke={colourOf(entity.layer)}
+              strokeWidth={hovered(id) ? 2.4 : 1.4} vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d={path} fill="none" stroke="transparent"
+              strokeWidth={Math.max(graceMm, 2 * mmPerPx)} data-cnc-feature={id}
+              {...hoverProps(id)}
+            />
+          </g>
+        );
+      })}
+      {front && frontProblems.length > 0 && (
+        <text
+          x={labelX} y={labelY - annotation.blockLabelMm * 2}
+          fill="#ff6b6b" textAnchor="middle" fontSize={annotation.blockLabelMm}
+          data-cnc-front-blocked={panel.id}
+        >
+          <title>{frontProblems.join('\n')}</title>
+          Decoration blocked
+        </text>
       )}
 
       {(cnc.pockets || []).filter((p) => visible(p.layer)).map((p, i) => {

@@ -5,7 +5,7 @@ import { isJcMaterial, useMaterialAssignmentStore } from '../stores/materialAssi
 import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import {
-  FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights, resolveJoinery,
+  FRONT_STYLE_OPTIONS, colourLabel, finishById, frontStyleSelection, migrateDesign, projectHeights, resolveJoinery,
 } from '../engine/design.js';
 import { getProjectType, PROJECT_TYPES as PROJECT_TYPE_OPTIONS } from '../engine/projectTypes.js';
 import {
@@ -25,6 +25,7 @@ import { loadDecorCatalogue } from '../lib/decorCatalogue.js';
 import { contrastInk } from '../lib/pswColors.js';
 import { getVeneers, veneerFinishId } from '../engine/veneers.js';
 import FrontStyleGallery, { FrontStyleArt } from './FrontStyleGallery.jsx';
+import FrontDecorationControls from './FrontDecorationControls.jsx';
 import ColourPicker from './ColourPicker.jsx';
 import JoineryPreview from './JoineryPreview.jsx';
 import SheenSlider from './SheenSlider.jsx';
@@ -1834,6 +1835,15 @@ export default function WizardSettings({
                                   <span className="text-[10px] text-ink-400">mm</span>
                                 </div>
                               )}
+                              <FrontDecorationControls
+                                style={t.style || design.fronts.style}
+                                value={t.decoration || (!(t.style && t.style !== design.fronts.style) ? design.fronts.decoration : null)}
+                                onChange={(decoration) => {
+                                  touchFronts();
+                                  setFrontType(t.id, { decoration });
+                                  if (frontTypes[0]?.id === t.id) setProjectDefaults({ fronts: { decoration } });
+                                }}
+                              />
                             </div>
                           );
                         })}
@@ -1846,11 +1856,15 @@ export default function WizardSettings({
                               value={t.style || design.fronts.style}
                               onPick={(id) => {
                                 touchFronts();
-                                setFrontType(t.id, { style: id });
+                                const selected = frontStyleSelection(id, {
+                                  ...t, style: t.style || design.fronts.style,
+                                  decoration: t.decoration || (!t.style || t.style === design.fronts.style ? design.fronts.decoration : null),
+                                });
+                                setFrontType(t.id, selected);
                                 // Slot 1's shape IS the project's shape — the field every
                                 // pre-T32 reader (door styles, drawings) still reads.
                                 if (frontTypes[0] && t.id === frontTypes[0].id) {
-                                  setProjectDefaults({ fronts: { style: id } });
+                                  setProjectDefaults({ fronts: selected });
                                 }
                               }}
                             />
@@ -1966,6 +1980,7 @@ export default function WizardSettings({
                                 const id = addDoorStyle({
                                   name: `Style ${design.doorStyles.length + 1}`,
                                   frontType: design.fronts.style,
+                                  ...(design.fronts.decoration ? { decoration: design.fronts.decoration } : {}),
                                   material_id: frontMaterials[0]?.id || null,
                                   colour: design.colour.front,
                                 });
@@ -1995,7 +2010,10 @@ export default function WizardSettings({
                                   <select
                                     className="cc-input w-28"
                                     value={style.frontType}
-                                    onChange={(e) => updateDoorStyle(style.id, { frontType: e.target.value })}
+                                    onChange={(e) => {
+                                      const selected = frontStyleSelection(e.target.value, style);
+                                      updateDoorStyle(style.id, { frontType: selected.style, decoration: selected.decoration });
+                                    }}
                                   >
                                     {FRONT_STYLE_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                                   </select>
@@ -2033,6 +2051,11 @@ export default function WizardSettings({
                                   </button>
                                   <button type="button" className="cc-btn-ghost text-status-danger" data-door-style-remove={style.id} onClick={() => removeDoorStyle(style.id)}>×</button>
                                 </div>
+                                <FrontDecorationControls
+                                  style={style.frontType}
+                                  value={style.decoration}
+                                  onChange={(decoration) => updateDoorStyle(style.id, { decoration })}
+                                />
                                 {editingStyle === style.id && (
                                   <ColourPicker
                                     label={`${style.name} colour`}

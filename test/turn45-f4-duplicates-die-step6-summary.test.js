@@ -51,7 +51,7 @@ test('F4 — ONE front-type choice: the tail repeat is gone, the per-front galle
   assert.match(WIZ, /<FrontStyleGallery/);
   assert.equal((WIZ.match(/<FrontStyleGallery/g) || []).length, 1, 'ONE gallery, not two');
   // Slot 1's shape IS the project's shape, so nothing became unreachable.
-  assert.match(WIZ, /setProjectDefaults\(\{ fronts: \{ style: id \} \}\)/);
+  assert.match(WIZ, /setProjectDefaults\(\{ fronts: selected \}\)/);
   // The tail's second gallery and its node are gone.
   assert.doesNotMatch(WIZ, /data-settings-section="door-style"/);
   assert.equal(WIZARD_NODES.some((n) => n.id === 'fronts.style'), false);

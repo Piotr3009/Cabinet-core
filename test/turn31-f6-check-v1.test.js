@@ -116,8 +116,12 @@ test('the rules, each with the owner’s colour', () => {
   // AMENDED BY T75 F23: #31, the dowel gate and a joint system refused, RED
   // (*"the CNC export REFUSES a dowel job while `joints.dowel.confirmed` is
   // false ... the Check says the same"*). The twenty-seven before it are untouched.
-  assert.equal(CHECKS.length, 28);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31]);
+  // AMENDED BY T76 F4: #32, the front thinner than its decoration's board,
+  // YELLOW (*"the Check says, in words, when the assigned front material is
+  // thinner than the recipe's board ... The owner decides per job."*). The
+  // twenty-eight before it are untouched.
+  assert.equal(CHECKS.length, 29);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -155,6 +159,8 @@ test('the rules, each with the owner’s colour', () => {
     // T75 F22 · what the machine does not finish: it informs, never blocks.
     30: 'yellow',
     31: 'red',
+    // T76 F4 · the board the arch was drawn for: the leaf is cut, a person decides.
+    32: 'yellow',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

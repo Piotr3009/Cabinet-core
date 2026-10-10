@@ -44,6 +44,8 @@
 // Pure functions and pure data. No React, no store, no three.js.
 
 import { rectCorners } from './partObjects.js';
+import { buildFrontDecoration } from './frontDecoration.js';
+import { reconcileAppliedFrontParts } from './cabinet.js';
 
 /** Round to the micrometre — the same 4 places `addDrill` stores at. */
 const q = (v) => {
@@ -170,7 +172,7 @@ export function dowelPositions({
  *   A project with no edits gets the SAME OBJECT back, identity and all: the
  *   stock path must not even allocate, because it is every project.
  */
-export function applyPartEdits(result, partEdits = null) {
+export function applyPartEdits(result, partEdits = null, profile = undefined) {
   const entries = Object.entries(partEdits || {}).filter(([, e]) => editCount(e) > 0);
   if (!result || !entries.length) return result;
 
@@ -348,10 +350,33 @@ export function applyPartEdits(result, partEdits = null) {
     ...edited.flatMap((panelId) => added.get(panelId)?.drills || []),
   ];
 
+  // A hand-added bore must pass the same opposing-cut check as a cup placed
+  // by the engine. Rebuild only opted-in fronts that this edit actually touched.
+  const decorated = panels.filter((panel) => edited.includes(panel.id) && panel.meta?.frontDecoration);
+  let warnings = result.warnings;
+  if (decorated.length) {
+    const ids = new Set(decorated.map((panel) => panel.id));
+    warnings = (result.warnings || []).filter((warning) => !(ids.has(warning.panel)
+      && warning.code?.startsWith('FRONT_DECORATION_')));
+    for (const panel of decorated) {
+      const before = panel.meta.frontDecoration;
+      const decoration = buildFrontDecoration({ panel, config: before.parameters, style: before.style, drills, profile });
+      panel.meta = { ...panel.meta, frontDecoration: decoration };
+      warnings.push(...decoration.problems.map((problem) => ({
+        ...problem, panel: panel.id, message: `${panel.id}: ${problem.message}`,
+      })));
+    }
+  }
+
+  const appliedIds = new Set(decorated.filter((panel) => panel.meta.frontDecoration.style === 'AM').map((panel) => panel.id));
+  const reconciled = appliedIds.size ? reconcileAppliedFrontParts(result, panels, appliedIds, profile) : null;
+  const surviving = new Set((reconciled?.panels || panels).map((panel) => panel.id));
   return {
     ...result,
     panels,
-    drills,
+    ...(reconciled || {}),
+    drills: reconciled ? drills.filter((drill) => surviving.has(drill.panel)) : drills,
+    ...(decorated.length ? { warnings } : {}),
     handEdits: { byPanel, stale, edited },
   };
 }

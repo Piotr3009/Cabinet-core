@@ -73,10 +73,10 @@ test('T75 · the J numbers are the code\'s on every load: a saved section cannot
 
 test('T75 · a J leaf is carved whatever else is on: it does not wait for the joint system', () => {
   assert.match(src, /const jpullCut = Boolean\(p\?\.cnc\?\.jpull\?\.edge\);/);
-  assert.match(src, /\(\(layers \|\| jpullCut\) && !mitre \? panelSolids\(p, layers, profile, boredDrills\) : null\)/);
+  assert.match(src, /\(\(layers \|\| jpullCut\) && !mitre && !decoration \? panelSolids\(p, layers, profile, boredDrills\) : null\)/);
   // The solid says whether the J is really in it, and the view asks.
   assert.match(solidSrc, /return \{ solid: geometry, cuts, jpull: Boolean\(jLayers\) \};/);
-  assert.match(src, /const jCarved = Boolean\(built\?\.solid && built\?\.jpull\) && !shaker && !mitre;/);
+  assert.match(src, /const jCarved = Boolean\(decoration\?\.userData\?\.frontDecoration\?\.jpull\s*\|\| \(built\?\.solid && built\?\.jpull\)\) && !shaker && !mitre;/);
 });
 
 // ─── THE SHAPE: ONE SET OF POINTS FOR THE SOLID, THE FLOOR AND THE RIM ─────

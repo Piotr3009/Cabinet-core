@@ -360,6 +360,7 @@ export default function ConfiguratorPage() {
       assignments: useMaterialAssignmentStore.getState().data,
       profile,
       design: project.design,
+      materials,
     });
     if (unassigned) notify(unassigned, 'warn');
     const found = runChecks();
@@ -373,7 +374,7 @@ export default function ConfiguratorPage() {
     );
     return found;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runChecks, setCheckOpen, notify, allResults, profile, project.design]);
+  }, [runChecks, setCheckOpen, notify, allResults, profile, project.design, materials]);
 
   const onExportCsv = useCallback(() => {
     if (!guard()) return;

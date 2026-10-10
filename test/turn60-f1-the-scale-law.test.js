@@ -209,7 +209,10 @@ test('F1.2 · …and the SVG drawings are shapes, not sizes', () => {
   // place a dimension can hide behind an attribute rather than a style.
   for (const rel of ['design/FrontThumb.jsx', 'design/detail/drawings.jsx']) {
     const text = read(join(RETAIL, rel));
-    assert.match(text, /viewBox/, `${rel} has no viewBox`);
+    const artwork = rel === 'design/FrontThumb.jsx'
+      ? read(join(RETAIL, 'design/material/FrontStyleGallery.jsx')) : text;
+    assert.match(artwork, /viewBox/, `${rel} has no viewBox`);
+    if (rel === 'design/FrontThumb.jsx') assert.match(text, /<FrontStyleArt/);
     assert.ok(!/<svg[^>]*\swidth=/.test(text), `${rel} sizes an <svg> by attribute`);
     //  may be written as an attribute or spread from a props object;
     // what matters is that the size comes from the stylesheet.

@@ -118,6 +118,74 @@ export const DEFAULT_CABINET_PROFILE = {
       GL: { label: 'Glass', apertureLayer: 'GLASS_APERTURE' },
     },
     defaultType: 'S',
+    // ─── T76 F4 · THE DECORATIVE RECIPES LIVE HERE ──────────────────────────
+    //
+    // GPT's decorative fronts (09.10.2026) kept their recipe defaults in code
+    // (`RECIPES` in engine/frontDecoration.js). The house law: numbers live in
+    // the profile. One entry per decorative style, read by
+    // `defaultFrontDecoration(style, profile)` and
+    // `normaliseFrontDecoration(config, style, profile)` off the active
+    // workshop profile; a saved decoration keeps the numbers it was saved
+    // with, and only a key it lacks falls back to these.
+    //
+    // The OWNER's numbers come first, from his DXF drawings of the pattern
+    // session (31.08.2026, T56). Where he gave none, GPT's stand, each marked.
+    // None of them is a field a client types: the PRO recipe controls show the
+    // keys GPT's controls already showed, retail shows none.
+    decoration: {
+      // Owner, 31.08.2026: vertical grooves every 80 centre to centre, a V 4
+      // wide x 3 deep, 60 margin to the first groove. A V records its width
+      // and its depth and CAM picks the bit: no included angle is assumed.
+      G: {
+        grooveCutter: 'v',
+        grooveWidthMm: 4,
+        grooveDepthMm: 3,
+        groovePitchMm: 80,
+        grooveInsetMm: 60,
+        grooveDirection: 'vertical',
+      },
+      // Owner: frame 60 (the shaker's own frame law), grooves every 80, V 4 x 3.
+      GF: {
+        frameMm: 60,
+        recessDepthMm: 6,            // T76 proposed, owner to confirm (GPT's)
+        grooveCutter: 'v',
+        grooveWidthMm: 4,
+        grooveDepthMm: 3,            // below the recess floor
+        groovePitchMm: 80,
+        grooveInsetMm: 10,           // T76 proposed, owner to confirm (GPT's inner margin)
+        grooveDirection: 'vertical',
+      },
+      // Owner, 31.08.2026: a 30 board, frame 60, recess 18, and a SEMICIRCULAR
+      // head (the rise is half the inner width). A leaf too short for that rise
+      // is refused in words, never squashed to an ellipse; a front material
+      // thinner than `boardMm` is said by the Check, never swapped or shrunk.
+      A: { boardMm: 30, frameMm: 60, recessDepthMm: 18 },
+      // Owner: A's recipe; the J-pull is chosen separately under Opening, from
+      // the underside (*"J-pull from underside"*).
+      AH: { boardMm: 30, frameMm: 60, recessDepthMm: 18 },
+      // T76 proposed, owner to confirm (GPT's): a 12 ballnose, 3 deep, every 20, 50 margin.
+      FL: {
+        grooveCutter: 'ballnose',
+        fluteDiameterMm: 12,
+        grooveDepthMm: 3,
+        groovePitchMm: 20,
+        grooveInsetMm: 50,
+        grooveDirection: 'vertical',
+      },
+      // T76 proposed, owner to confirm (GPT's): inset 60, a strip 20 wide x 8
+      // proud, 45 degree mitres (the only angle four strips close a rectangle
+      // with); the strips are cut parts of their own 8 mm stock.
+      AM: {
+        mouldingInsetMm: 60,
+        mouldingWidthMm: 20,
+        mouldingProjectionMm: 8,
+        mitreDeg: 45,
+      },
+    },
+    // T76 proposed, owner to confirm (GPT's): the least board a decoration
+    // leaves under its own deepest cut and between it and an opposing cut
+    // from the back (a cup, a screw).
+    decorationMinSkinMm: 3,
   },
 
   // ─── Carcass panel deductions ───
@@ -5269,7 +5337,16 @@ export function migrateCabinetProfile(profile) {
         mdf_lacquered: { ...D.board.kgM2.mdf_lacquered, ...profile.board?.kgM2?.mdf_lacquered },
       },
     },
-    front: { ...D.front, ...profile.front, types: { ...D.front.types, ...profile.front?.types } },
+    front: {
+      ...D.front,
+      ...profile.front,
+      types: { ...D.front.types, ...profile.front?.types },
+      // T76 F4 · the decorative recipes, style by style and key by key: a
+      // workshop that tuned one number of one style keeps the rest.
+      decoration: Object.fromEntries(Object.keys(D.front.decoration).map((style) => [
+        style, { ...D.front.decoration[style], ...profile.front?.decoration?.[style] },
+      ])),
+    },
     // ─── CHAT-FIX 16.08 (owner): THE LIGHTING SPEC IS THE APP'S ─────────────
     // There was NO merge for top-level `lighting`, so a stored profile
     // replaced it WHOLESALE — the owner switched 3000/4000/6000 K and saw

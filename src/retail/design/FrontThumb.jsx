@@ -1,55 +1,7 @@
-// ─── F4.3 · THE FRONT STYLES, DRAWN ────────────────────────────────────────
-//
-// *"Front style chips with small Onyx-hairline SVG thumbnails drawn by you"*.
-//
-// Drawn here, in one-pixel Onyx on nothing, because that is what the system
-// allows and because a photograph of a door would be an EGGER image used the
-// one way the licence forbids. Four lines each: a slab is an outline, a shaker
-// adds its frame, a J-pull cuts its lip off the top edge, a grooved door is
-// scored, an arched one has its head curved.
+import { FrontStyleArt } from './material/FrontStyleGallery.jsx';
 
-// T60 F1: the viewBox is a SHAPE, not a size — the drawing's own coordinate
-// space, which scales with nothing. How big it is DRAWN is `.pbi-mini` in
-// `styles/room.css`, which is a token, which is the scale.
-const BOX = { viewBox: '0 0 44 58', className: 'pbi-mini' };
-const LINE = { fill: 'none', stroke: 'var(--pbi-onyx)', strokeWidth: 1 };
-
-/**
- * ─── T66 F4 · …AND A SMALLER ONE, FOR A ROW ────────────────────────────────
- *
- * The owner, of the mosaic of tiles this drawing sat in: *"style front to mega
- * burdel … to powinno być lista, a nie obok siebie … lista jak internals."*
- *
- * A LIST needs a smaller drawing than a tile did, and ONE size for every row —
- * `.pbi-mini-row` in `styles/room.css`, which is a token like `.pbi-mini` is.
- * The drawing itself is untouched: the viewBox is a SHAPE and scales with
- * nothing, which is exactly why it can be drawn at two sizes without a second
- * copy of it existing.
- */
+// The row and the gallery read the same artwork, including rectangular arch
+// blanks, flutes and applied mouldings. Size remains the retail row's token.
 export default function FrontThumb({ style, size = null }) {
-  return (
-    <svg {...BOX} className={size === 'row' ? 'pbi-mini-row' : BOX.className} aria-hidden="true">
-      {style === 'A' ? (
-        <path d="M2.5 55.5 V14 A19.5 12 0 0 1 41.5 14 V55.5 Z" {...LINE} />
-      ) : (
-        <rect x="2.5" y="2.5" width="39" height="53" {...LINE} />
-      )}
-
-      {/* SHAKER — the frame, equal on all four sides (engine/shaker.js). */}
-      {style === 'S' ? <rect x="8.5" y="8.5" width="27" height="41" {...LINE} /> : null}
-
-      {/* J-PULL — the lip machined into the front's own top edge (T57). */}
-      {style === 'HJ' ? (
-        <>
-          <line x1="2.5" y1="10.5" x2="41.5" y2="10.5" {...LINE} />
-          <line x1="6.5" y1="2.5" x2="6.5" y2="10.5" {...LINE} />
-        </>
-      ) : null}
-
-      {/* GROOVED — scored, evenly. */}
-      {style === 'G' ? [14, 22, 30].map((x) => (
-        <line key={x} x1={x} y1="6.5" x2={x} y2="51.5" {...LINE} />
-      )) : null}
-    </svg>
-  );
+  return <FrontStyleArt styleId={style} className={size === 'row' ? 'pbi-mini-row' : 'pbi-mini'} />;
 }

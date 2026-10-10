@@ -1485,7 +1485,8 @@ function PartDrawing({
 
           {drawing.machinings.map((m) => {
             if (hidden.has(m.layer)) return null;
-            const colour = resolveLayer(m.layer, userLayers).screen;
+            const colour = drawing.legend.find((layer) => layer.name === m.layer)?.colour
+              || resolveLayer(m.layer, userLayers).screen;
             const mine = m.opId && selected.includes(m.opId);
             const common = {
               stroke: mine ? '#D2C19F' : colour,

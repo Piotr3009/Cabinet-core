@@ -155,6 +155,10 @@ export const PART_REGISTRY = {
     id: 'drawer_front', name: 'Drawer fronts', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'Drawer fronts — the shoe drawer’s face included (T54-F7)',
   },
+  front_moulding: {
+    id: 'front_moulding', name: 'Applied front mouldings', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'Separate strip stock at its own thickness, bonded to the front with mitred ends',
+  },
   false_front: {
     id: 'false_front', name: 'False fronts', group: G('front'), unit: 'm²', materialType: 'front',
     // Kept because CLAUDE.md F1 names the row, and T75 is the day the engine
@@ -494,6 +498,7 @@ export const ELEMENT_TO_PART_ID = {
   // Fronts.
   FRONT: 'door',
   'DRAWER-FRONT': 'drawer_front',
+  'FRONT-MOULDING': 'front_moulding',
 
   // The pieces that FINISH a run. Front material since turn 6, and each its own
   // row because a workshop prices a 2.4 m filler differently from a door.
@@ -645,6 +650,7 @@ const EDGE_OF_PART = {
   door: 'edge_front',
   drawer_front: 'edge_front',
   false_front: 'edge_front',
+  front_moulding: 'edge_front',
   end_panel: 'edge_front',
   infill: 'edge_front',
   mask: 'edge_front',

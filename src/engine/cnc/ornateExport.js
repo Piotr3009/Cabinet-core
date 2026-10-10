@@ -1,4 +1,3 @@
-// Copyright (c) Skylon Development Ltd. All rights reserved.
 // The reconstructed Ornate family is a CAD/CAM reference handoff. It never
 // creates approved production machining or G-code, including Export anyway.
 import { writeDxf, entitiesExtents } from './dxf.js';

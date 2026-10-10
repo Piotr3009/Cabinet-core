@@ -1,4 +1,3 @@
-// Copyright Skylon Development Ltd. All rights reserved.
 // Ornate A: one canonical, sculpted 2.5D target surface for preview and CAM.
 // All coordinates are the existing CNC BACK datum, millimetres, y up.
 // The third surface coordinate is POSITIVE DEPTH below the original FRONT.

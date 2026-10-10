@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// Copyright Skylon Development Ltd. All rights reserved.
 // Offline QA view using the exact engine and the exact Three.js solid builder.
 // Browser screenshots are local QA evidence. Deliverable PNGs are exported
 // straight from the real WebGL canvas, not a copy of browser UI.

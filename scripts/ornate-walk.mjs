@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// Copyright Skylon Development Ltd. All rights reserved.
 // Ornate A acceptance: genuine mouse / keyboard input into PRO and retail.
 // T74's empty-project staging is the only direct store setup. Feature state
 // is only READ: selectors, mirroring, saving and opening use actual controls.

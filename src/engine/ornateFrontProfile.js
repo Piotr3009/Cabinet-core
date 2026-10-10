@@ -1,4 +1,3 @@
-// Copyright Skylon Development Ltd. All rights reserved.
 // Proposed numbers from Piotr's 600 × 800 concept board, 10 October 2026.
 // These are profile seeds, not a measured cutter catalogue or production recipe.
 // profile.js imports this object into front.decoration; engines read the profile.

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// Copyright (c) 2026 Skylon Development Ltd.
 // Reproducible 600 x 800 x 18 mm reference examples, without cabinet hardware.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';

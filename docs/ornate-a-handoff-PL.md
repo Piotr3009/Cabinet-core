@@ -1,7 +1,5 @@
 # Cabinet Core: Ornate A, paczka dla Claude
 
-Copyright (c) 2026 Skylon Development Ltd.
-
 ## Zakres
 
 Osobna rodzina czterech klasycznych frontów, na podstawie planszy Piotra z 10.10.2026. Kod obejmuje wybór w PRO i retail, zapis receptury i odbicia, geometrię reliefu, rysunki, opis w BOM oraz eksport referencji CAD/CAM. Istniejące Shaker, Arched, Grooved i pozostałe fronty zachowują własne receptury.

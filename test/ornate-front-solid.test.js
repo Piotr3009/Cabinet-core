@@ -1,4 +1,3 @@
-// Copyright Skylon Development Ltd. All rights reserved.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';

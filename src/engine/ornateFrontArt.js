@@ -1,4 +1,3 @@
-// Copyright (c) 2026 Skylon Development Ltd.
 // Gallery artwork in proportional SVG units, not manufacturing dimensions.
 const ring = (inset, symmetric, soft) => {
   const l = 15 + inset, r = 85 - inset, t = 15 + inset, b = 125 - inset;

@@ -1,0 +1,24 @@
+T76: FRONTY DEKORACYJNE GPT laduja na main. Spec dla Claude Code + patch GPT.
+
+KOLEJNOSC (wazne):
+1. Najpierw eye-test i merge T75 (galaz claude/t75-the-big-turn) do main.
+   Jesli nie zdazysz: spec i tak dziala, noc odbije od galezi T75 i powie to w tytule PR.
+2. Rozpakuj ten ZIP do folderu z repo Cabinet-core (tam gdzie package.json).
+   Nadpisuje CLAUDE.md i dodaje patches/gpt-decorative-fronts.patch (66 plikow GPT, baza f60d18f).
+3. Usun ten plik CZYTAJ-T76.txt.
+4. git add CLAUDE.md patches/gpt-decorative-fronts.patch
+   git commit -m "T76: decorative fronts spec + GPT patch"
+   git push
+5. Nocna sesja Claude Code (Opus, wysilek max, agenci ON, tryb rownolegly ON).
+   Galaz: claude/t76-decorative-fronts. Noc sama usunie katalog patches/ w ostatnim commicie.
+6. Rano: audyt (clean clone, suita, 6 + 9 goldenow + golden dekoracji, klasyfikator, parens 17, walk PRO i retail, frames verify/t76).
+
+CO TA TURA ROBI Z PACZKA GPT:
+- naklada patch 3-way na main po T75, 6 konfliktow rozwiazanych wg tabeli (oba boki, nigdy jeden),
+- KASUJE slim shaker (Twoja decyzja 10.10: "bez sensu, mamy ustawianie shakera"),
+- przenosi receptury z kodu do profile.js i wstawia TWOJE liczby z 31.08 (rowki co 80, V 4x3, rama 60; luk: plyta 30, wpust 18, polkole),
+- jeden stan na linii: readiness z T75 wchlania "manufacturing" GPT,
+- retail przez skrypt kopiujacy, walk prawdziwa myszka, EXEMPT re-freeze.
+
+PRZED PUSHEM sprawdz tabele THE NUMBERS PROPOSED na koncu CLAUDE.md:
+FL (ryflowanie) i AM (listwy) maja liczby GPT, bo swoich nie podales. Zmien w pliku, jesli chcesz.

@@ -180,7 +180,7 @@ test('canonical ballnose flutes have closed spherical stopped ends and a round f
 });
 
 test('all shipped recipes render the actual cabinet engine drilling on both hinge hands', () => {
-  for (const style of ['G', 'GF', 'A', 'AH', 'SS', 'FL', 'AM']) {
+  for (const style of ['G', 'GF', 'A', 'AH', 'FL', 'AM']) {
     for (const hinge of ['L', 'R']) {
       const result = computeCabinet({
         ...defaultParamsFor('BUD', PROFILE), hinge, front_type: style,

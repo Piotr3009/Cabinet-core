@@ -17,7 +17,6 @@ const RECIPES = {
   GF: { frameMm: 60, recessDepthMm: 6, grooveWidthMm: 6, grooveDepthMm: 3, groovePitchMm: 25, grooveInsetMm: 10, grooveDirection: 'vertical' },
   A: { frameMm: 60, recessDepthMm: 6, archRatio: 0.5 },
   AH: { frameMm: 60, recessDepthMm: 6, archRatio: 0.5 },
-  SS: { frameMm: 25, recessDepthMm: 2 },
   FL: { fluteDiameterMm: 12, grooveDepthMm: 3, groovePitchMm: 20, grooveInsetMm: 50, grooveDirection: 'vertical' },
   AM: { mouldingInsetMm: 60, mouldingWidthMm: 20, mouldingProjectionMm: 8 },
 };

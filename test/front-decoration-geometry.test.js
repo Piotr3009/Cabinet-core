@@ -73,7 +73,7 @@ test('framed grooves keep absolute depth and their separate initial recess', () 
 test('convex sloped leaves inset along the true edge normal', () => {
   const outline = [[0, 0], [600, 0], [600, 480], [300, 720], [0, 720]];
   const sloped = { ...panel, cnc: { outline, drawn_w: 600, drawn_h: 720 } };
-  for (const style of ['G', 'GF', 'SS', 'FL']) {
+  for (const style of ['G', 'GF', 'FL']) {
     const result = build(style, {}, sloped);
     assert.equal(result.status, 'ready', `${style}: ${JSON.stringify(result.problems)}`);
     for (const op of result.operations) {
@@ -143,7 +143,7 @@ test('narrow fronts and unsupported outlines are refused without partial machini
   const curved = { ...panel, cnc: { outline: [[0, 0, 0.5], [600, 0], [600, 720], [0, 720]] } };
   const slope = { ...panel, cnc: { outline: [[0, 0], [600, 0], [600, 400], [0, 720]] } };
   const results = [build('GF', {}, { ...panel, h: 120 }), build('G', {}, { ...panel, w: 61 }),
-    build('G', {}, concave), build('SS', {}, crossed), build('A', {}, curved), build('AM', {}, slope)];
+    build('G', {}, concave), build('GF', {}, crossed), build('A', {}, curved), build('AM', {}, slope)];
   for (const result of results) {
     assert.equal(result.status, 'blocked');
     assert.ok(result.problems.length);
@@ -244,7 +244,6 @@ test('DXF layer names retain exact depth distinctions in uppercase within the R1
 });
 
 test('default recipes fit real wardrobe leaves at 18 and 25 mm with both hinge hands', () => {
-  assert.equal(defaultFrontDecoration('SS').recessDepthMm, 2);
   assert.equal(defaultFrontDecoration('G').grooveInsetMm, 50);
   assert.equal(defaultFrontDecoration('FL').grooveInsetMm, 50);
   for (const thickness of [18, 25]) {
@@ -253,14 +252,15 @@ test('default recipes fit real wardrobe leaves at 18 and 25 mm with both hinge h
     assert.deepEqual(leaves.map((p) => p.meta.hinge).sort(), ['L', 'R']);
     for (const front of leaves) {
       assert.equal(front.thickness, thickness);
-      for (const style of ['G', 'FL', 'SS']) {
+      for (const style of ['G', 'FL']) {
         const result = build(style, {}, front, cabinet.drills);
         assert.equal(result.status, 'ready', `${style}/${thickness}/${front.meta.hinge}: ${JSON.stringify(result.problems)}`);
         const deeperCups = cabinet.drills.map((drill) => drill.kind === 'cup' ? { ...drill, depth: 13 } : drill);
         assert.equal(build(style, {}, front, deeperCups).status, 'ready', 'also leaves 3 mm behind a 13 mm cup');
       }
       if (thickness === 18) {
-        assert.equal(build('SS', { recessDepthMm: 6 }, front, cabinet.drills).status, 'blocked', 'an explicit deeper recipe still gets validated');
+        // T76 F3 · SS is gone; its own geometry (a 25 frame, now 6 deep) is asked of GF instead.
+        assert.equal(build('GF', { frameMm: 25, recessDepthMm: 6 }, front, cabinet.drills).status, 'blocked', 'an explicit deeper recipe still gets validated');
       }
     }
   }

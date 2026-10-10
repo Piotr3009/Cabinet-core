@@ -197,7 +197,7 @@ export function designBounds() {
 
 // All decorative styles have a production definition. Old saved slabs stay
 // inactive until the owner selects a style or explicitly activates it.
-const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'SS', 'FL', 'AM'];
+const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM'];
 const SOON_STYLES = [];
 
 export const frontStyles = () => [...LIVE_STYLES, ...SOON_STYLES].map((id) => {

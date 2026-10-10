@@ -131,13 +131,13 @@ test('F8 · the STYLE list is the one road for all approved decorations', () => 
   // …and the OPENING list is where the J now honestly lives (T57's doctrine).
   assert.match(panel, /data-testid="fronts-opening"/);
   assert.match(panel, /A\.setFrontOpening\(o\.id\)/);
-  assert.match(panel, /order = \['F', 'S', 'SS', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'\]/);
+  assert.match(panel, /order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'\]/);
   assert.match(panel, /filter\(\(s\) => s\.id !== 'HJ'\)/, 'the legacy J is offered as a shape again');
 });
 
 test('F8 · all decorative styles share the list and the J stays with opening', () => {
   const gallery = new Set(FRONT_STYLE_OPTIONS.map((o) => o.id));
-  const list = ['F', 'S', 'SS', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
+  const list = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
   const extras = [...gallery].filter((id) => !list.includes(id));
   assert.deepEqual(extras, ['HJ']);
   assert.match(frontsRaw(), /`HJ` remains/);

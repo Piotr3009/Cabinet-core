@@ -214,7 +214,7 @@ test('F4.2 · the door-width refusal is the ENGINE\'s number and the ENGINE\'s c
 test('F4.3 · all offered decorative styles are live after the owner approved defaults', () => {
   const styles = A.frontStyles();
   const live = styles.filter((s) => !s.soon).map((s) => s.id);
-  assert.deepEqual(live, ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'SS', 'FL', 'AM']);
+  assert.deepEqual(live, ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM']);
   const soon = styles.filter((s) => s.soon);
   assert.deepEqual(soon.map((s) => s.id), []);
   for (const s of soon) assert.equal(s.reason, REASONS.styleComingSoon);

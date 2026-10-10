@@ -47,18 +47,6 @@
       }
     ]
   },
-  "SS": {
-    "sha256": "c8393f4e8bde1213898b825ce3ecfcb87f448f1f6e056cca74905bccf85e459d",
-    "parts": [
-      {
-        "id": "01-F",
-        "w": 597,
-        "h": 767,
-        "thickness": 25,
-        "operations": 1
-      }
-    ]
-  },
   "FL": {
     "sha256": "c6187d60b7fc33f8ec240a125dfb14ff08d714acd4c10d7d4fcdafbe12cfad10",
     "parts": [

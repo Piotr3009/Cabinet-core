@@ -44,10 +44,6 @@ const OUTER = { x: 4, y: 4, w: 92, h: 132 };
  * draws it thinner, so a shaker's rails read as joints and not as cut lines.
  */
 export const FRONT_STYLE_ART = {
-  SS: [
-    { rect: [OUTER.x, OUTER.y, OUTER.w, OUTER.h] },
-    { rect: [OUTER.x + 6, OUTER.y + 6, OUTER.w - 12, OUTER.h - 12] },
-  ],
   FL: [
     { rect: [OUTER.x, OUTER.y, OUTER.w, OUTER.h] },
     ...[0, 1, 2, 3, 4, 5].flatMap((i) => [

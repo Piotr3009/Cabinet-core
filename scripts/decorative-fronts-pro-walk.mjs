@@ -93,7 +93,7 @@ try {
     const text = await page.ask('document.body.innerText');
     throw new Error(`Unit front selector not visible after add: ${text}`);
   }
-  const styles = process.env.CC_WALK_EXPORTS_ONLY === '1' ? ['GF'] : ['G', 'GF', 'A', 'AH', 'SS', 'FL', 'AM'];
+  const styles = process.env.CC_WALK_EXPORTS_ONLY === '1' ? ['GF'] : ['G', 'GF', 'A', 'AH', 'FL', 'AM'];
   for (const style of styles) {
     await select('[data-unit-front-type]', style);
     const current = await state();

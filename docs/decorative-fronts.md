@@ -14,7 +14,6 @@ The recipes below are editable workshop defaults, not manufacturer tooling speci
 | GF | Recessed slab with grooves | 60 frame, 6 recess, 6 wide grooves another 3 deep, 25 spacing, 10 inner margin |
 | A | Slab with arched recess | 60 frame, 6 recess, rise 50% of shorter inner dimension |
 | AH | Slab with arched recess | Same decorative recipe as A; choose J-pull separately under Opening |
-| SS | Slim shaker routed from one slab | 25 frame, 2 recess |
 | FL | Fluted slab | 12 ballnose cutter, 3 depth, 20 centre spacing, 50 margin |
 | AM | Slab with four applied rectangular strips | 60 inset, 20 strip width, 8 projection, 45 degree mitres |
 

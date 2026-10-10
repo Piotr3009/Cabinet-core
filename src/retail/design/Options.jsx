@@ -701,7 +701,6 @@ const STYLE_LINES = Object.freeze({
   A: 'An arched recess inside a rectangular front.',
   AH: 'An arched recess. Set the J-pull separately in Opening.',
   GL: 'A frame cut through for a glass pane.',
-  SS: 'A narrow frame around a panel recessed into one slab.',
   FL: 'Round-bottom flutes machined with a ballnose cutter.',
   AM: 'Four mitred mouldings applied to a slab front.',
 });
@@ -734,7 +733,7 @@ function FrontsPanel({ design, project, unit }) {
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
   const opening = A.frontOpeningOf(project);
   // SLAB · SHAKER · GROOVED · ARCHED, in CLAUDE.md F4's own order.
-  const order = ['F', 'S', 'SS', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
+  const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
   const styles = A.frontStyles()
     .filter((s) => s.id !== 'HJ')
     .sort((x, y) => order.indexOf(x.id) - order.indexOf(y.id));
@@ -1010,7 +1009,7 @@ function FrontsPanel({ design, project, unit }) {
 
           THE STYLE GALLERY stood here and is a LICENSED REMOVAL. The STYLE
           LIST remains the one road. The owner's decorative-front scope of
-          09.10.2026 adds GF, AH, GL, SS, FL and AM to that list. `HJ` remains
+          09.10.2026 adds GF, AH, GL, FL and AM to that list. `HJ` remains
           on the OPENING axis: T57's J-pull is a handle, not a face pattern.
           The copied component material/FrontStyleGallery.jsx remains and its
           artwork supplies the row thumbnails.

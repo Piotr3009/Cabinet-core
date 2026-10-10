@@ -37,7 +37,7 @@ try {
       .map((p) => ({ id: p.id, decoration: p.meta.frontDecoration, pockets: p.cnc?.pockets?.length,
         paths: p.cnc?.paths?.length, width: p.w, thickness: p.thickness, drills: result.drills.filter((drill) => (drill.panel || drill.panelId) === p.id) })), warnings: result.warnings };
   })()`);
-  for (const style of (probe || lifecycle ? ['G'] : ['G', 'GF', 'A', 'AH', 'SS', 'FL', 'AM'])) {
+  for (const style of (probe || lifecycle ? ['G'] : ['G', 'GF', 'A', 'AH', 'FL', 'AM'])) {
     await page.press(`[data-testid="fronts-style-${style}"]`);
     const now = await read();
     check(`click ${style} stores its explicit defaults`, now.style === style && now.decoration?.style === style, now.decoration);

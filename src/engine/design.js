@@ -44,7 +44,8 @@ export const FRONT_STYLE_OPTIONS = [
   // Turn 30 (CLAUDE.md F21): the glass door — a shaker frame with the panel
   // taken all the way through, and a pane ordered for the hole.
   { id: 'GL', label: 'Glass' },
-  { id: 'SS', label: 'Slim shaker' },
+  // T76 F3 · KASACJA: GPT's 'SS' (slim shaker) is deleted. Owner, 10.10.2026: *"a po co mi slim
+  // shaker jak mamy ustawianie shakera po wyborze shaker, bez sensu"* (S + frame width is the slim).
   { id: 'FL', label: 'Fluted' },
   { id: 'AM', label: 'Applied moulding' },
 ];

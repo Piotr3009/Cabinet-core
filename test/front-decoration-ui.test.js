@@ -23,7 +23,7 @@ test('old decorative names acquire no machining by migration or engine input res
 });
 
 test('selecting each decorative style stores an explicit recipe that survives a JSON save', () => {
-  for (const style of ['G', 'GF', 'A', 'AH', 'SS', 'FL', 'AM']) {
+  for (const style of ['G', 'GF', 'A', 'AH', 'FL', 'AM']) {
     const selected = frontStyleSelection(style);
     const design = migrateDesign(JSON.parse(JSON.stringify({ fronts: selected })));
     const resolved = resolveUnitDesign({ params: {} }, design);
@@ -77,7 +77,7 @@ test('store changes and serialization retain front recipes at project, slot and 
 });
 
 test('new gallery styles all have artwork and the same controls reach PRO and retail', () => {
-  for (const id of ['SS', 'FL', 'AM']) {
+  for (const id of ['FL', 'AM']) {
     assert.ok(FRONT_STYLE_OPTIONS.some((style) => style.id === id));
     assert.ok(drawnFrontStyleIds().includes(id));
   }

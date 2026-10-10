@@ -28,6 +28,7 @@ import {
   boundsOf, entCircle as circle, entLine as line, entRect as rect, entText as text, moveEntities,
 } from './primitives.js';
 import { shakerFits, shakerFrameMm } from '../shaker.js';
+import { frontDecorationElevation } from './frontDecorationDrawing.js';
 
 // ─── TURN 43 (CLAUDE.md F4): A SILHOUETTE IS HEAVY, A PANEL EDGE IS NOT ─────
 //
@@ -440,7 +441,11 @@ export function buildFrontElevation(result, {
     // the sheet level and threaded down; `null` keeps the pre-T43 answer (the
     // profile default), which is what every caller that has not been taught to
     // ask still gets.
-    entities.push(...frontDetail(p.box, p.meta?.frontType || style, profile, shakerFrame));
+    // An opted-in decorative face follows its production contours. Legacy
+    // fronts retain their existing drawing path and the plan keeps its own.
+    entities.push(...(p.meta?.frontDecoration
+      ? frontDecorationElevation(p)
+      : frontDetail(p.box, p.meta?.frontType || style, profile, shakerFrame)));
     // A drawer does not swing. A door does, and the diagonals say which way.
     if (p.part === 'FRONT') entities.push(...doorSwing(p.box, p.meta?.hinge));
   }

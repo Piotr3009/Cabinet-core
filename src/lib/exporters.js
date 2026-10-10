@@ -279,7 +279,12 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
 
   for (const unit of bom.units) {
     for (const r of unit.rows) {
-      if (y > pageH - margin - 8) { doc.addPage(); y = margin + 6; header(); }
+      doc.setFontSize(7);
+      const manufacturingNotes = r.manufacturing
+        ? doc.splitTextToSize(r.manufacturing.summary, pageW - margin * 2 - 18) : [];
+      if (y > pageH - margin - 8 - manufacturingNotes.length * 3.5) {
+        doc.addPage(); y = margin + 6; header();
+      }
       let x = margin + 1;
       doc.setFontSize(8);
       for (const c of cols) {
@@ -291,6 +296,15 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
         x += c.w;
       }
       y += 4.6;
+      if (manufacturingNotes.length) {
+        doc.setFontSize(7);
+        doc.setTextColor(80);
+        for (const note of manufacturingNotes) {
+          doc.text(note, margin + 17, y);
+          y += 3.5;
+        }
+        doc.setTextColor(40);
+      }
     }
   }
 

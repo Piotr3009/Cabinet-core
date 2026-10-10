@@ -169,7 +169,9 @@ test('F6 — the view paints the tray with the leaf’s OWN surface, and nothing
   // `meshPhysicalMaterial` the panel wears. There is no second material and no
   // `cutFace` on a shaker leaf: the recess is the door's own board, not a cut
   // through it, and turn 20's grey is for what a cutter has been through.
-  assert.match(view, /const machined = shaker \|\| built\?\.solid \|\| null;/);
+  // Opt-in decorative solids use the same leaf material; legacy trays keep
+  // their original fallback before the generic machined board.
+  assert.match(view, /const machined = decoration \|\| shaker \|\| built\?\.solid \|\| null;/);
   assert.match(view, /\? <primitive object=\{machined\} attach="geometry" dispose=\{null\} \/>/);
   const solid = readFileSync(new URL('../src/3d/shakerSolid.js', import.meta.url), 'utf8');
   assert.ok(!/Material/.test(solid), 'the tray builder has no opinion about material at all');

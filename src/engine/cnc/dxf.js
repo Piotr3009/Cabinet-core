@@ -29,6 +29,7 @@ import { partLabelText, slopeNoteText } from './partLabel.js';
 import { labelBlock } from './annotation.js';
 import { turnPoint } from './layout.js';
 import { exportFileName, fileSafeName } from '../naming.js';
+import { frontDecorationOf, frontDecorationLayers, frontPanelEntities } from './frontOperations.js';
 
 // ─── Low-level R12 serialiser (shape from production-core/dxfWriter.js) ───
 
@@ -533,15 +534,27 @@ export function buildUnitDxfFiles(result, profile, { userLayers = [] } = {}) {
   const unitNum = result.unitNum;
   return result.panels
     .filter((p) => p.cnc && Array.isArray(p.cnc.outline) && p.cnc.outline.length >= 2)
-    .map((panel) => {
+    .flatMap((panel) => {
       const entities = panelEntities(panel, result.drills, { unitNum, profile });
       const layers = layerTableFor(entities.map((e) => e.layer), userLayers);
-      return {
-        name: dxfFileName(unitNum, panel.id),
+      const name = dxfFileName(unitNum, panel.id);
+      const files = [{
+        name,
         panelId: panel.id,
         entities,
         dxf: writeDxf(entities, layers, entitiesExtents(entities)),
-      };
+      }];
+      if (frontDecorationOf(panel)) {
+        const front = frontPanelEntities(panel);
+        files.push({
+          name: name.replace(/\.dxf$/, '-FRONT.dxf'),
+          panelId: panel.id,
+          setup: 'front',
+          entities: front,
+          dxf: writeDxf(front, layerTableFor(front.map((e) => e.layer), [...userLayers, ...frontDecorationLayers([panel])]), entitiesExtents(front)),
+        });
+      }
+      return files;
     });
 }
 
@@ -562,7 +575,7 @@ export function buildUnitDxfFiles(result, profile, { userLayers = [] } = {}) {
  *   unitNum, profile
  */
 export function sheetEntities({
-  panels, drills, layout, unitNum, profile, sheetHeight = null, offsetY = 0,
+  panels, drills, layout, unitNum, profile, sheetHeight = null, offsetY = 0, setup = 'back',
 }) {
   const byId = new Map(layout.places.map((pl) => [pl.panel.id, pl]));
   const entities = [];
@@ -587,7 +600,9 @@ export function sheetEntities({
       const [tx, ty] = turnPoint(x, y, turn);
       return [tx + dx, ty + dy];
     };
-    for (const e of panelEntities(panel, drills, { unitNum, profile })) {
+    const localEntities = setup === 'front' ? frontPanelEntities(panel)
+      : panelEntities(panel, drills, { unitNum, profile });
+    for (const e of localEntities) {
       if (e.type === 'poly') entities.push({ ...e, pts: e.pts.map(([x, y]) => at(x, y)) });
       else if (e.type === 'circle') {
         const [cx, cy] = at(e.cx, e.cy);
@@ -635,7 +650,9 @@ export function sheetDxfFileName(unitNum, presetId, { project = null, now = new 
 /** Complete DXF text for a whole sheet of selected parts. */
 export function sheetDxf(args) {
   const entities = sheetEntities(args);
-  const layers = layerTableFor(entities.map((e) => e.layer), args?.userLayers);
+  const userLayers = args?.setup === 'front'
+    ? [...(args.userLayers || []), ...frontDecorationLayers(args.panels)] : args?.userLayers;
+  const layers = layerTableFor(entities.map((e) => e.layer), userLayers);
   return writeDxf(entities, layers, entitiesExtents(entities));
 }
 
@@ -660,7 +677,7 @@ export function sheetDxf(args) {
  *           as the preview stacks them
  *   profile
  */
-export function materialSheetEntities({ blocks = [], gap = 0, profile }) {
+export function materialSheetEntities({ blocks = [], gap = 0, profile, setup = 'back' }) {
   const step = gap * 3;
   const height = blocks.reduce((h, b) => h + b.layout.height, 0)
     + step * Math.max(0, blocks.length - 1);
@@ -675,6 +692,7 @@ export function materialSheetEntities({ blocks = [], gap = 0, profile }) {
       profile,
       sheetHeight: height,
       offsetY,
+      setup,
     }));
     offsetY += block.layout.height + step;
   }
@@ -701,7 +719,10 @@ export function materialDxfFileName(label, { project = null, now = new Date() } 
 /** Complete DXF text for one material's worth of parts, across every cabinet. */
 export function materialSheetDxf(args) {
   const entities = materialSheetEntities(args);
-  const layers = layerTableFor(entities.map((e) => e.layer), args?.userLayers);
+  const userLayers = args?.setup === 'front'
+    ? [...(args.userLayers || []), ...frontDecorationLayers((args.blocks || []).flatMap((block) => block.panels))]
+    : args?.userLayers;
+  const layers = layerTableFor(entities.map((e) => e.layer), userLayers);
   return writeDxf(entities, layers, entitiesExtents(entities));
 }
 

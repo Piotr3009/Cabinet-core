@@ -8,6 +8,7 @@ import {
   projectQuickSelect, treePathOfPanel,
 } from '../engine/cnc/groups.js';
 import { groupByMaterial } from '../engine/cnc/views.js';
+import { hasFrontDecorations } from '../engine/cnc/frontOperations.js';
 import { exportMaterialDxf, exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
 import { formatMm } from '../engine/format.js';
 // Turn 39 (CLAUDE.md F7): the warning a cut file carries when nobody has said
@@ -125,6 +126,8 @@ export default function CncTree() {
   // picker pointing at nothing — the download would then say "nothing on the
   // sheet for that material" about a board the joiner can still see listed.
   const materialKey = material === 'all' || sections.some((s) => s.key === material) ? material : 'all';
+  const materialEntries = materialKey === 'all' ? entries : (sections.find((s) => s.key === materialKey)?.units || []);
+  const materialHasDecoration = hasFrontDecorations(materialEntries);
 
   // ─── TURN 31 (CLAUDE.md F3): THE EXPORT GATE, SAID ────────────────────────
   //
@@ -146,6 +149,7 @@ export default function CncTree() {
       assignments: useMaterialAssignmentStore.getState().data,
       profile,
       design: storedDesign,
+      materials,
     });
     if (unassigned) notify(unassigned, 'warn');
     const found = runChecks();
@@ -165,10 +169,10 @@ export default function CncTree() {
     if (res?.readinessBanner) notify(res.readinessBanner, 'warn');
   };
 
-  const downloadMaterial = (exportAnyway = false) => {
+  const downloadMaterial = async (exportAnyway = false) => {
     preflight(exportAnyway);
     try {
-      const res = exportMaterialDxf(entries, {
+      const res = await exportMaterialDxf(entries, {
         key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName,
       });
       notify(`${res.filename} — ${res.parts} parts off ${res.label}.`, 'ok');
@@ -178,7 +182,7 @@ export default function CncTree() {
     }
   };
 
-  const download = (sheet, kind, exportAnyway = false) => {
+  const download = async (sheet, kind, exportAnyway = false) => {
     preflight(exportAnyway);
     const ids = shownIds(sheet.unit.id, sheet.parts);
     if (!ids.length) { notify('Nothing ticked on this unit.', 'warn'); return; }
@@ -199,7 +203,7 @@ export default function CncTree() {
       return;
     }
     try {
-      const res = exportSheetDxf(sheet.result, ids, profile, { exportAnyway, project: projectName });
+      const res = await exportSheetDxf(sheet.result, ids, profile, { exportAnyway, project: projectName });
       notify(`${res.filename} — ${res.parts} parts, laid out as shown.`, 'ok');
       sayGate(res, () => download(sheet, kind, true));
     } catch (e) {
@@ -320,11 +324,12 @@ export default function CncTree() {
           disabled={!entries.length}
           onClick={() => downloadMaterial(false)}
         >
-          Download DXF — {materialKey === 'all' ? 'all materials' : (sections.find((s) => s.key === materialKey)?.label || 'material')}
+          {materialHasDecoration ? 'Download CNC package' : 'Download DXF'} · {materialKey === 'all' ? 'all materials' : (sections.find((s) => s.key === materialKey)?.label || 'material')}
         </button>
         <p className="text-[10px] text-ink-400 leading-snug">
-          The file carries each part’s own label and nothing else — no headings, no material names, no
-          counts. Those are for the screen.
+          {materialHasDecoration
+            ? 'ZIP with separate front and back DXF files and the machining specification.'
+            : 'The file carries each part label. Headings, material names and counts remain on screen.'}
         </p>
       </div>
 
@@ -467,7 +472,8 @@ export default function CncTree() {
 
                 <div className="space-y-1 pt-1">
                   <button type="button" className="cc-btn-gold w-full" onClick={() => download(sheet, 'sheet')}>
-                    Download DXF (one file)
+                    {hasFrontDecorations([{ panels: parts.filter((p) => !hiddenParts[unit.id]?.[p.id]) }])
+                      ? 'Download CNC package (ZIP)' : 'Download DXF (one file)'}
                   </button>
                   <button type="button" className="cc-btn w-full" disabled={busy} onClick={() => download(sheet, 'zip')}>
                     {busy ? 'Zipping…' : 'Download ZIP (per panel)'}

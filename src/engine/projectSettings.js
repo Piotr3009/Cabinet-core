@@ -214,6 +214,7 @@ export function normaliseFrontTypes(types, profile) {
     // `null` means "the project's style" (design.fronts.style), which is what
     // every slot saved before this turn is.
     style: t.style ?? null,
+    ...(t.decoration ? { decoration: { ...t.decoration } } : {}),
   }));
 }
 
@@ -470,9 +471,11 @@ export function settingsSectionData(design, section) {
   if (section === 'fronts') {
     return {
       style: d.fronts?.style ?? null,
+      ...(d.fronts?.decoration ? { decoration: d.fronts.decoration } : {}),
       types: (d.fronts?.types || []).map((t) => ({
         id: t.id, label: t.label, source: t.source ?? null,
         colour: t.colour ?? null, material_id: t.material_id ?? null, finish_id: t.finish_id ?? null,
+        ...(t.decoration ? { decoration: t.decoration } : {}),
       })),
       runMaterials: d.runMaterials ?? null,
     };

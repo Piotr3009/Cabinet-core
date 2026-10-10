@@ -33,6 +33,8 @@ import { arcSweep } from '../partObjects.js';
 import { dimensionEntities } from './frontElevation.js';
 import { formatMm } from '../format.js';
 import { slopeNoteText } from '../cnc/partLabel.js';
+import { frontDecorationLayers } from '../cnc/frontOperations.js';
+import { frontDecorationDetailNote, frontDecorationMachinings } from './frontDecorationDrawing.js';
 
 /** The rectangle a panel is drawn in: its CNC frame, which may be rotated. */
 export function partSize(panel) {
@@ -52,8 +54,13 @@ export function partMachinings(panel, drills = [], profile = null, userLayers = 
   const label = (name) => resolveLayer(name, userLayers).label;
 
   (cnc.pockets || []).forEach((p, i) => {
-    const w = Math.abs(p.x2 - p.x1);
-    const h = Math.abs(p.y2 - p.y1);
+    const pts = Array.isArray(p.pts) && p.pts.length >= 3 ? p.pts : null;
+    const x1 = pts ? Math.min(...pts.map((v) => v[0])) : Math.min(p.x1, p.x2);
+    const y1 = pts ? Math.min(...pts.map((v) => v[1])) : Math.min(p.y1, p.y2);
+    const x2 = pts ? Math.max(...pts.map((v) => v[0])) : Math.max(p.x1, p.x2);
+    const y2 = pts ? Math.max(...pts.map((v) => v[1])) : Math.max(p.y1, p.y2);
+    const w = x2 - x1;
+    const h = y2 - y1;
     // Turn 17 (CLAUDE.md F4.3): a pocket is a CUT, and a cut has a depth. Where
     // the engine states one — the drawer box's runner groove at 2 mm and its
     // bottom groove at 7 mm — the note says how deep, because "how deep" is the
@@ -61,16 +68,19 @@ export function partMachinings(panel, drills = [], profile = null, userLayers = 
     const deep = Number(p.depth) > 0 ? ` × ${formatMm(p.depth)} deep` : '';
     out.push({
       id: `pocket-${i}`,
-      kind: 'pocket',
+      // The detail renderer already draws closed paths exactly. Keep the
+      // pocket's stable selection id while preserving its real polygon.
+      kind: pts ? 'path' : 'pocket',
+      ...(pts ? { pts: pts.map((v) => [...v]), closed: true, machiningKind: 'pocket' } : {}),
       layer: p.layer,
-      x: Math.min(p.x1, p.x2),
-      y: Math.min(p.y1, p.y2),
+      x: x1,
+      y: y1,
       w,
       h,
       depth: Number(p.depth) > 0 ? Number(p.depth) : null,
-      at: [Math.min(p.x1, p.x2) + w / 2, Math.min(p.y1, p.y2) + h / 2],
+      at: [x1 + w / 2, y1 + h / 2],
       // What a joiner would say about it: what it is, how big, how deep, where.
-      note: `${label(p.layer)} · ${formatMm(w)} × ${formatMm(h)}${deep} pocket at ${formatMm(Math.min(p.x1, p.x2) + w / 2)}, ${formatMm(Math.min(p.y1, p.y2) + h / 2)}`,
+      note: `${label(p.layer)} · ${formatMm(w)} × ${formatMm(h)}${deep} pocket at ${formatMm(x1 + w / 2)}, ${formatMm(y1 + h / 2)}`,
     });
   });
 
@@ -148,6 +158,7 @@ export function partMachinings(panel, drills = [], profile = null, userLayers = 
     });
   });
 
+  out.push(...frontDecorationMachinings(panel));
   return { outlineLayer, machinings: out };
 }
 
@@ -159,11 +170,14 @@ export function partMachinings(panel, drills = [], profile = null, userLayers = 
  * legend listing fourteen layers of which two are present is a legend nobody
  * reads. The outline counts as one entry, which is what it is.
  */
-export function partLegend(outlineLayer, machinings, userLayers = []) {
+export function partLegend(outlineLayer, machinings, userLayers = [], generatedLayers = []) {
   const counts = new Map([[outlineLayer, 1]]);
+  const generated = new Map(generatedLayers.map((layer) => [layer.name, layer]));
   for (const m of machinings) counts.set(m.layer, (counts.get(m.layer) || 0) + 1);
   return [...counts.entries()].map(([name, count]) => {
-    const layer = resolveLayer(name, userLayers);
+    // Generated machining declarations carry their production meaning. The
+    // user's colour-only layer normaliser deliberately discards that meaning.
+    const layer = generated.get(name) || resolveLayer(name, userLayers);
     return {
       name, count, colour: layer.screen, label: layer.label, kind: layer.kind,
     };
@@ -200,6 +214,7 @@ export function partDetailDrawing(panel, {
 } = {}) {
   if (!panel) return null;
   const size = partSize(panel);
+  const generatedLayers = frontDecorationLayers([panel]);
   const { outlineLayer, machinings } = partMachinings(panel, drills, profile, userLayers);
   const height = Number(textHeight) || Math.max(8, Math.min(size.w, size.h) * 0.06);
   const offset = height * 2.4;
@@ -235,9 +250,9 @@ export function partDetailDrawing(panel, {
     // EXPORT's own formatter (engine/cnc/partLabel.js), not a second wording,
     // exactly as the part label itself has been since turn 17. '' on every part
     // that has nothing extra to say.
-    note: slopeNoteText(panel),
+    note: [slopeNoteText(panel), frontDecorationDetailNote(panel)].filter(Boolean).join('. '),
     machinings,
-    legend: partLegend(outlineLayer, machinings, userLayers),
+    legend: partLegend(outlineLayer, machinings, userLayers, generatedLayers),
     dimensions,
     textHeight: height,
     dimensionOffset: offset,

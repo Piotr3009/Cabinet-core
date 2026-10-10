@@ -11,6 +11,7 @@
 import { decorFinish } from './decors.js';
 import { veneerFinish } from './veneers.js';
 import { DEFAULT_CABINET_PROFILE } from './profile.js';
+import { defaultFrontDecoration, normaliseFrontDecoration } from './frontDecoration.js';
 // Turn 24 (CLAUDE.md F3.1): the six slots the caliper answers for.
 import { THICKNESS_SLOTS } from './thickness.js';
 
@@ -32,12 +33,7 @@ const RUNNER_VARIANT_IDS = new Set(
 );
 
 export const FRONT_STYLE_OPTIONS = [
-  // ─── Owner's list, 09.08: SHAPES ONLY — colour lives with the front TYPE ───
-  // above, never here. The engine cuts every one of these as the same slab
-  // today; 'S' keeps its shaker look, the rest render flat until each style's
-  // little instruction/picture arrives (owner: "będziemy później wstawiać małe
-  // instrukcje"). The ids are stable so a saved project keeps its choice when
-  // the pictures land.
+  // Stable saved IDs. New machining is opt-in through decoration.version.
   { id: 'S', label: 'Shaker' },
   { id: 'F', label: 'Flat' },
   { id: 'HJ', label: 'Handleless J-type' },
@@ -48,7 +44,28 @@ export const FRONT_STYLE_OPTIONS = [
   // Turn 30 (CLAUDE.md F21): the glass door — a shaker frame with the panel
   // taken all the way through, and a pane ordered for the hole.
   { id: 'GL', label: 'Glass' },
+  { id: 'SS', label: 'Slim shaker' },
+  { id: 'FL', label: 'Fluted' },
+  { id: 'AM', label: 'Applied moulding' },
 ];
+
+// Selecting a style is the explicit opt-in. Merely loading a saved style is not.
+export function frontStyleSelection(style, current = {}) {
+  const selected = FRONT_STYLE_OPTIONS.some((o) => o.id === style) ? style : 'F';
+  const previous = current.style || current.frontType;
+  return {
+    style: selected,
+    decoration: previous === selected && current.decoration
+      ? normaliseFrontDecoration(current.decoration, selected)
+      : defaultFrontDecoration(selected),
+  };
+}
+
+function savedDecoration(value, style) {
+  if (!value || (value.style && value.style !== style)) return {};
+  const decoration = normaliseFrontDecoration(value, style);
+  return decoration ? { decoration } : {};
+}
 
 /**
  * A project's handle, normalised (turn 25, CLAUDE.md F4).
@@ -471,6 +488,7 @@ export function migrateDesign(design) {
         || ((w.kind === 'L' || w.kind === 'desk' || w.kind === 'top') && w.unitIds.length === 1) || w.island)),
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
+      ...savedDecoration(d.fronts?.decoration, d.fronts?.style),
       handle: normaliseHandle(d.fronts?.handle),
       shakerFrame: Number(d.fronts?.shakerFrame) > 0 ? Number(d.fronts.shakerFrame) : null,
       handleOffsets: normaliseHandleOffsets(d.fronts?.handleOffsets),
@@ -661,6 +679,7 @@ function coupleFrontTypes(d) {
       // The slot's own door shape from the 8-style gallery; null = the
       // project's `fronts.style`, which is what every older slot meant.
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === t.style) ? t.style : null,
+      ...savedDecoration(t.decoration, t.style || d.fronts?.style),
     }))
     : [];
   if (!types.length) return types;
@@ -909,6 +928,7 @@ export function normaliseDoorStyle(style) {
     id: String(style.id),
     name: String(style.name || 'Untitled style'),
     frontType: FRONT_STYLE_OPTIONS.some((o) => o.id === style.frontType) ? style.frontType : 'S',
+    ...savedDecoration(style.decoration, style.frontType),
     material_id: style.material_id ?? null,
     finish_id: style.finish_id ?? null,
     colour: normaliseColour(style.colour),
@@ -983,6 +1003,15 @@ export function resolveUnitDesign(unit, design) {
     || wornType?.style
     || d.fronts.style;
 
+  // Each decoration belongs to its chosen shape. An unrelated palette style
+  // must never inherit machining from the project's decorative front.
+  const candidates = [
+    unit?.params?.front_decoration, unit?.design?.decoration,
+    style?.decoration, wornType?.decoration, d.fronts.decoration,
+  ];
+  const ownDecoration = candidates.find((c) => c && c.style === frontType);
+  const frontDecoration = normaliseFrontDecoration(ownDecoration, frontType);
+
   // ─── Turn 13 (CLAUDE.md F3.1): THE UNIT LEVEL, WHICH WAS MISSING ───
   //
   // The owner set the project colours in step 5, then edited ONE cabinet and
@@ -1020,6 +1049,7 @@ export function resolveUnitDesign(unit, design) {
 
   return {
     frontType,
+    ...(frontDecoration ? { frontDecoration } : {}),
     colour,
     doorStyle: style,
     carcassType,

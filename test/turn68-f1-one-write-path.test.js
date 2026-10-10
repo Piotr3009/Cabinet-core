@@ -131,9 +131,10 @@ test('F1 · no path writes a style without an opening', () => {
 test('F1 · there is exactly ONE writer of the front style, and the doors call it', () => {
   const adapter = code('src/retail/design/adapter.js');
   // `fronts.style` is written in ONE place in retail, and that place is the law.
-  const writes = [...adapter.matchAll(/setDesign\(\{\s*fronts:\s*\{[^}]*style:/g)];
+  const writes = [...adapter.matchAll(/setDesign\(\{\s*fronts:\s*\{[^}]*(?:style:|\.\.\.selected)/g)];
   assert.equal(writes.length, 1, `retail writes fronts.style in ${writes.length} places`);
   assert.match(adapter, /export function writeFrontLaw/);
+  assert.match(adapter, /const selected = style \? frontStyleSelection\(nextStyle, design\.fronts\) : \{ style: nextStyle \}/);
   // Both doors go through it and neither writes the field itself.
   assert.match(adapter, /export function setFrontStyle\(styleId\) \{\s*return writeFrontLaw\(\{ style: styleId \}\)\.style;/);
   assert.match(adapter, /export function setFrontOpening\(id\) \{\s*return writeFrontLaw\(\{ opening: id \}\)\.opening;/);

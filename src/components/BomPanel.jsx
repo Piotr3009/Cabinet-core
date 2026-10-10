@@ -661,7 +661,14 @@ function FragmentRows({ unit }) {
       {unit.rows.map((r) => (
         <tr key={`${unit.unitId}-${r.id}`} className="border-b border-shell-600/40 text-ink-100">
           <td className="px-2 py-1 text-ink-400">{r.unit_num}</td>
-          <td className="px-2 py-1">{r.id}</td>
+          <td className="px-2 py-1">
+            {r.id}
+            {r.manufacturing && (
+              <div className="text-[10px] text-ink-400 max-w-[260px]" data-front-manufacturing={r.id}>
+                {r.manufacturing.summary}
+              </div>
+            )}
+          </td>
           <td className="px-2 py-1 text-ink-400 max-w-[180px] truncate" title={r.material_label || ''}>
             {formatMm(r.thickness)} · {r.material_label || '—'}
           </td>

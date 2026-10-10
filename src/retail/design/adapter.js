@@ -50,7 +50,7 @@ import { corniceStackTop, takesCornice } from '../../engine/cornice.js';
 import {
   hasTopInfill, unitTop, wallGapOf,
 } from '../../engine/runs.js';
-import { FRONT_STYLE_OPTIONS, elementMaterialChoices, normaliseScope } from '../../engine/design.js';
+import { FRONT_STYLE_OPTIONS, elementMaterialChoices, frontStyleSelection, normaliseScope } from '../../engine/design.js';
 import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 // T61 F3: the top box's own two engine answers — the type's defaults and the
@@ -195,14 +195,10 @@ export function designBounds() {
 
 // ─── THE FRONT STYLES THE ENGINE HAS ───────────────────────────────────────
 
-/**
- * F4.3: *"SLAB · SHAKER · J-PULL — the three the engine has today; GROOVED and
- * ARCHED disabled 'coming soon'."* The ids and labels come from
- * `FRONT_STYLE_OPTIONS`; which three are LIVE is the brief's own decision and
- * is stated here once.
- */
-const LIVE_STYLES = ['F', 'S', 'HJ'];
-const SOON_STYLES = ['G', 'A'];
+// All decorative styles have a production definition. Old saved slabs stay
+// inactive until the owner selects a style or explicitly activates it.
+const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'SS', 'FL', 'AM'];
+const SOON_STYLES = [];
 
 export const frontStyles = () => [...LIVE_STYLES, ...SOON_STYLES].map((id) => {
   const option = FRONT_STYLE_OPTIONS.find((o) => o.id === id);
@@ -1866,8 +1862,9 @@ export function writeFrontLaw({ style = null, opening = null } = {}) {
   //     because `resolveUnitDesign`'s cascade reads the SLOT before the
   //     project (engine/design.js) and a unit pointed at a slot would
   //     otherwise keep yesterday's shape.
-  store.setDesign({ fronts: { ...design.fronts, style: nextStyle } });
-  store.setFrontType(frontTypeId(design), { style: nextStyle });
+  const selected = style ? frontStyleSelection(nextStyle, design.fronts) : { style: nextStyle };
+  store.setDesign({ fronts: { ...design.fronts, ...selected } });
+  store.setFrontType(frontTypeId(design), selected);
 
   // 2 · AND THE OPENING, ALWAYS. Not "when asked": a style written without an
   //     opening is T64's J-pull lesson repeating itself. Re-read first —
@@ -1897,6 +1894,14 @@ export function openingForHandle(handle) {
 /** F4.2 · THE SHAPE — one of the four the STYLE list offers. Through the law. */
 export function setFrontStyle(styleId) {
   return writeFrontLaw({ style: styleId }).style;
+}
+
+export function setFrontDecoration(decoration) {
+  const store = S();
+  const design = migrateDesign(store.project.design);
+  store.setDesign({ fronts: { ...design.fronts, decoration } });
+  S().setFrontType(frontTypeId(design), { decoration });
+  return S().project.design.fronts.decoration;
 }
 
 export function setShakerFrame(mm) {

@@ -775,8 +775,12 @@ function paramsForEngine(unit, design = null) {
     run_top_infill: _fossilTop, run_plinth: _fossilPlinth,
     run_mask: _fossilMask, run_cornice: _fossilCornice, run_upstand: _fossilUpstand,
     run_pelmet: _fossilPelmet,
+    // T76 F1 · GPT's saved decoration, in the same one destructuring.
+    front_decoration: storedDecoration,
     ...p
   } = unit.params;
+  const resolvedFront = design ? resolveUnitDesign(unit, design) : null;
+  const frontDecoration = resolvedFront?.frontDecoration || (!design ? storedDecoration : null);
   const items = p.sections?.[0]?.items || [];
   const profile = getCabinetProfile();
   const slopeCut = slopeCutFor(unit, design);
@@ -875,7 +879,8 @@ function paramsForEngine(unit, design = null) {
     // formula in the engine: a bare `computeCabinet()` — every golden fixture —
     // is handed no design at all and falls back to the profile's own default,
     // which is what the AutoLISP cuts.
-    front_type: design ? resolveUnitDesign(unit, design).frontType : p.front_type,
+    front_type: resolvedFront ? resolvedFront.frontType : p.front_type,
+    ...(frontDecoration ? { front_decoration: frontDecoration } : {}),
     // ─── TURN 31 (CLAUDE.md F4.8): THE ASYMMETRY LAW'S OWN INPUT ───────────
     //
     // Per-front, per-EDGE millimetres, decided by the owner's clearance matrix
@@ -9813,6 +9818,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return applyPartEdits(
       computeCabinet(paramsForEngine(unit, get().project.design), getCabinetProfile()),
       unit.params?.part_edits || null,
+      getCabinetProfile(),
     );
   },
 
@@ -9821,6 +9827,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     result: applyPartEdits(
       computeCabinet(paramsForEngine(u, get().project.design), getCabinetProfile()),
       u.params?.part_edits || null,
+      getCabinetProfile(),
     ),
   })),
 

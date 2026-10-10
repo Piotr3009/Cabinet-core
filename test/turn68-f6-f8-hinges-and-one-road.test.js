@@ -121,7 +121,7 @@ test('F8 · the COLLECTION block and the STYLE GALLERY have left FRONTS', () => 
   assert.ok(!/import FrontStyleGallery/.test(options));
 });
 
-test('F8 · the STYLE list is the one road, and it is still the four', () => {
+test('F8 · the STYLE list is the one road for all approved decorations', () => {
   const panel = fronts();
   assert.match(panel, /data-testid="fronts-style"/);
   assert.match(panel, /A\.setFrontStyle\(s\.id\)/);
@@ -131,23 +131,16 @@ test('F8 · the STYLE list is the one road, and it is still the four', () => {
   // …and the OPENING list is where the J now honestly lives (T57's doctrine).
   assert.match(panel, /data-testid="fronts-opening"/);
   assert.match(panel, /A\.setFrontOpening\(o\.id\)/);
-  assert.match(panel, /order = \['F', 'S', 'G', 'A'\]/);
+  assert.match(panel, /order = \['F', 'S', 'SS', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'\]/);
   assert.match(panel, /filter\(\(s\) => s\.id !== 'HJ'\)/, 'the legacy J is offered as a shape again');
 });
 
-test('F8 · nothing re-homes, and the four ids that went are NAMED', () => {
-  // *"Any control that existed ONLY there re-homes and is named; duplicates
-  // die."* The gallery's extras are not capabilities the list dropped — they
-  // are `FRONT_STYLE_OPTIONS` whole, and T66 F4 narrowed a client's choice to
-  // four on purpose. Each of the four is named in the tombstone.
+test('F8 · all decorative styles share the list and the J stays with opening', () => {
   const gallery = new Set(FRONT_STYLE_OPTIONS.map((o) => o.id));
-  const list = ['F', 'S', 'G', 'A'];
+  const list = ['F', 'S', 'SS', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
   const extras = [...gallery].filter((id) => !list.includes(id));
-  assert.deepEqual(extras.sort(), ['AH', 'GF', 'GL', 'HJ']);
-  const tomb = frontsRaw();
-  for (const id of extras) {
-    assert.ok(new RegExp(`\`${id}\``).test(tomb), `${id} left FRONTS without being named`);
-  }
+  assert.deepEqual(extras, ['HJ']);
+  assert.match(frontsRaw(), /`HJ` remains/);
   // The copied COMPONENT is not deleted — 1:1 = COPY, and a copy is not cut
   // because its caller count fell.
   assert.ok(T63_COPIES.some((c) => c.retail === 'src/retail/design/material/FrontStyleGallery.jsx'));

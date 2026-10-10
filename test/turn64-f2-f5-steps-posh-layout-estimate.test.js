@@ -266,7 +266,9 @@ test('F3 · the copies are reskinned through the GENERATED sheet, and their mark
   // T63 ledger listed as OWED and the reason cornice, top infill and end
   // panels were unreachable from the client's room.
   // AMENDED BY T74 F13: + PRO's piece editor, copied for the free panel's 2klik.
-  assert.equal(ALL_COPIES.length, 27);
+  // Decorative front controls use the same copy generator, approved 09.10.2026.
+  assert.equal(ALL_COPIES.length, 28);
+  assert.ok(ALL_COPIES.some((entry) => entry.pro === 'src/components/FrontDecorationControls.jsx'));
 });
 
 // ═══ F4 · LAYOUT B ═══════════════════════════════════════════════════════════

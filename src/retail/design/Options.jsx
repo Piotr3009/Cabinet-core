@@ -3,6 +3,7 @@ import GoldLine from '../ui/GoldLine.jsx';
 import Chip from '../ui/Chip.jsx';
 import ComingSoon from '../ui/ComingSoon.jsx';
 import FrontThumb from './FrontThumb.jsx';
+import FrontDecorationControls from './material/FrontDecorationControls.jsx';
 import {
   Button, ChipRow, Field, MoreOptions, NumberField, Said,
 } from './controls.jsx';
@@ -693,10 +694,16 @@ function InsidePanel({ unit, project }) {
  * so a style the engine adds cannot silently acquire another style's line.
  */
 const STYLE_LINES = Object.freeze({
-  F: 'A flat slab, edge to edge. The quietest of the four and the one that shows a decor best.',
-  S: 'A frame around a recessed panel — the English wardrobe door. The frame width is yours to set.',
-  G: 'Vertical grooves machined into the face, evenly across the leaf.',
-  A: 'A curved head on a full-height leaf, for a room with the height to carry it.',
+  F: 'A flat slab, edge to edge, showing the chosen material.',
+  S: 'A recessed panel routed into one slab. The frame width is yours to set.',
+  G: 'Straight grooves machined into the face at equal centre spacing.',
+  GF: 'A recessed panel with grooves inside the surrounding frame.',
+  A: 'An arched recess inside a rectangular front.',
+  AH: 'An arched recess. Set the J-pull separately in Opening.',
+  GL: 'A frame cut through for a glass pane.',
+  SS: 'A narrow frame around a panel recessed into one slab.',
+  FL: 'Round-bottom flutes machined with a ballnose cutter.',
+  AM: 'Four mitred mouldings applied to a slab front.',
 });
 
 function FrontsPanel({ design, project, unit }) {
@@ -727,7 +734,7 @@ function FrontsPanel({ design, project, unit }) {
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
   const opening = A.frontOpeningOf(project);
   // SLAB · SHAKER · GROOVED · ARCHED, in CLAUDE.md F4's own order.
-  const order = ['F', 'S', 'G', 'A'];
+  const order = ['F', 'S', 'SS', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
   const styles = A.frontStyles()
     .filter((s) => s.id !== 'HJ')
     .sort((x, y) => order.indexOf(x.id) - order.indexOf(y.id));
@@ -833,6 +840,12 @@ function FrontsPanel({ design, project, unit }) {
           />
         </Field>
       ) : null}
+
+      <FrontDecorationControls
+        style={style}
+        value={design?.fronts?.decoration}
+        onChange={(decoration) => A.setFrontDecoration(decoration)}
+      />
 
       {/* ─── AND THE SENTENCES COLLECT HERE, ONCE ──────────────────────────
           The selected style's line, and the coming-soon note if any greyed
@@ -996,17 +1009,11 @@ function FrontsPanel({ design, project, unit }) {
           still what the landing page presses.
 
           THE STYLE GALLERY stood here and is a LICENSED REMOVAL. The STYLE
-          LIST at the top of this step (T66 F4) is the one road. Nothing
-          RE-HOMES: the gallery's four extra ids — `HJ`, `GF`, `AH`, `GL` —
-          are not capabilities the list dropped, they are `FRONT_STYLE_OPTIONS`
-          whole, and T66 F4 narrowed the client's choice to four on purpose
-          (*"SLAB · SHAKER · GROOVED · ARCHED"*). `HJ` in particular is the
-          very lie F1's probe measured: it reads as J-pull and machines
-          NOTHING — no `meta.jpull`, no shaker recess — because T57 moved the J
-          onto the HANDLE axis, where the OPENING list above now offers it
-          honestly. The copied component `material/FrontStyleGallery.jsx` is
-          NOT deleted: 1:1 = COPY, and a copy is not cut because its caller
-          count fell.
+          LIST remains the one road. The owner's decorative-front scope of
+          09.10.2026 adds GF, AH, GL, SS, FL and AM to that list. `HJ` remains
+          on the OPENING axis: T57's J-pull is a handle, not a face pattern.
+          The copied component material/FrontStyleGallery.jsx remains and its
+          artwork supplies the row thumbnails.
 
           AND THE FOLD ITSELF GOES WITH THEM, on this step's own standing law:
           *"A fold with nothing behind it is a control that does nothing."*

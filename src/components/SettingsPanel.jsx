@@ -1,3 +1,4 @@
+import FrontDecorationControls from './FrontDecorationControls.jsx';
 import { useMemo, useState } from 'react';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
@@ -5,7 +6,7 @@ import { useSettingsSetsStore } from '../stores/settingsSetsStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { isJcMaterial, materialSlotState, useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import {
-  FRONT_STYLE_OPTIONS, colourLabel, finishById, migrateDesign, projectHeights, resolveJoinery,
+  FRONT_STYLE_OPTIONS, colourLabel, finishById, frontStyleSelection, migrateDesign, projectHeights, resolveJoinery,
 } from '../engine/design.js';
 import { RUN_MATERIAL_GROUPS, runMaterialSetting } from '../engine/materials.js';
 import {
@@ -1250,6 +1251,7 @@ export default function SettingsPanel({ onRoomSetup = null }) {
               const id = addDoorStyle({
                 name: `Style ${design.doorStyles.length + 1}`,
                 frontType: design.fronts.style,
+                ...(design.fronts.decoration ? { decoration: design.fronts.decoration } : {}),
                 material_id: frontMaterials[0]?.id || null,
                 colour: design.colour.front,
               });
@@ -1268,7 +1270,13 @@ export default function SettingsPanel({ onRoomSetup = null }) {
             two data entries and no component work (F4.2). */}
         <FrontStyleGallery
           value={design.fronts.style}
-          onPick={(id) => setDesign({ fronts: { ...design.fronts, style: id } })}
+          onPick={(id) => setDesign({ fronts: { ...design.fronts, ...frontStyleSelection(id, design.fronts) } })}
+        />
+
+        <FrontDecorationControls
+          style={design.fronts.style}
+          value={design.fronts.decoration}
+          onChange={(decoration) => setDesign({ fronts: { ...design.fronts, decoration } })}
         />
 
         {/* ─── Turn 25 (CLAUDE.md F3.1): THE SHAKER FRAME ───
@@ -1325,7 +1333,10 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                 <select
                   className="cc-input w-28"
                   value={style.frontType}
-                  onChange={(e) => updateDoorStyle(style.id, { frontType: e.target.value })}
+                  onChange={(e) => {
+                    const selected = frontStyleSelection(e.target.value, style);
+                    updateDoorStyle(style.id, { frontType: selected.style, decoration: selected.decoration });
+                  }}
                 >
                   {FRONT_STYLE_OPTIONS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                 </select>
@@ -1363,6 +1374,11 @@ export default function SettingsPanel({ onRoomSetup = null }) {
                 </button>
                 <button type="button" className="cc-btn-ghost text-status-danger" onClick={() => removeDoorStyle(style.id)}>×</button>
               </div>
+              <FrontDecorationControls
+                style={style.frontType}
+                value={style.decoration}
+                onChange={(decoration) => updateDoorStyle(style.id, { decoration })}
+              />
               {editingStyle === style.id && (
                 <ColourPicker
                   label={`${style.name} colour`}

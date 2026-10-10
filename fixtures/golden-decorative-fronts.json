@@ -1,0 +1,114 @@
+{
+  "G": {
+    "sha256": "60480ec69a6a0abf1ccfd8963cb4be5f842f36ca768e119de1ca0668f97fc461",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 20
+      }
+    ]
+  },
+  "GF": {
+    "sha256": "f6bc1ad39f2c16e3294a6912a096d4a70bd0574b1d6fe29d2efc0302c92676a2",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 20
+      }
+    ]
+  },
+  "A": {
+    "sha256": "a676114894fcd042145ddd1aa5fa280238de07724d271a2c3bf18fd2a251f9be",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 1
+      }
+    ]
+  },
+  "AH": {
+    "sha256": "28ff6e4df6ff4a2a3a1c710854705ad04f7002ccd50a965979a217188646cf20",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 1
+      }
+    ]
+  },
+  "SS": {
+    "sha256": "c8393f4e8bde1213898b825ce3ecfcb87f448f1f6e056cca74905bccf85e459d",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 1
+      }
+    ]
+  },
+  "FL": {
+    "sha256": "c6187d60b7fc33f8ec240a125dfb14ff08d714acd4c10d7d4fcdafbe12cfad10",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 25
+      }
+    ]
+  },
+  "AM": {
+    "sha256": "28bfe34bd194c23835ee97815229e1b120f0fe72bb0d372a5b30102d5bc2a38d",
+    "parts": [
+      {
+        "id": "01-F",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "operations": 0
+      },
+      {
+        "id": "01-F-MOULDING-BOTTOM",
+        "w": 477,
+        "h": 20,
+        "thickness": 8,
+        "operations": 0
+      },
+      {
+        "id": "01-F-MOULDING-RIGHT",
+        "w": 647,
+        "h": 20,
+        "thickness": 8,
+        "operations": 0
+      },
+      {
+        "id": "01-F-MOULDING-TOP",
+        "w": 477,
+        "h": 20,
+        "thickness": 8,
+        "operations": 0
+      },
+      {
+        "id": "01-F-MOULDING-LEFT",
+        "w": 647,
+        "h": 20,
+        "thickness": 8,
+        "operations": 0
+      }
+    ]
+  }
+}

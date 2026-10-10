@@ -211,12 +211,12 @@ test('F4.2 · the door-width refusal is the ENGINE\'s number and the ENGINE\'s c
 
 // ─── F4.3 · FRONTS AND THE COLLECTIONS ─────────────────────────────────────
 
-test('F4.3 · the three live styles are the engine\'s, and the other two say why', () => {
+test('F4.3 · all offered decorative styles are live after the owner approved defaults', () => {
   const styles = A.frontStyles();
   const live = styles.filter((s) => !s.soon).map((s) => s.id);
-  assert.deepEqual(live, ['F', 'S', 'HJ'], 'SLAB, SHAKER and J-PULL are what the engine cuts today');
+  assert.deepEqual(live, ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'SS', 'FL', 'AM']);
   const soon = styles.filter((s) => s.soon);
-  assert.deepEqual(soon.map((s) => s.id), ['G', 'A']);
+  assert.deepEqual(soon.map((s) => s.id), []);
   for (const s of soon) assert.equal(s.reason, REASONS.styleComingSoon);
   assert.deepEqual(styles.map((s) => s.label).slice(0, 3), ['SLAB', 'SHAKER', 'J-PULL']);
 

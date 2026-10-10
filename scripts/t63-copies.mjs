@@ -87,7 +87,11 @@ export const T74_COPIES = [
   { pro: 'src/components/PartDetailModal.jsx', retail: 'src/retail/design/detail/PartDetailModal.jsx', why: 'T74 F13 · the free panel\'s 2klik: PRO\'s own piece editor (the arc, the line, the drill)' },
 ];
 
-export const ALL_COPIES = [...T62_COPIES, ...T63_COPIES, ...T65_COPIES, ...T74_COPIES];
+export const DECORATIVE_FRONT_COPIES = [
+  { pro: 'src/components/FrontDecorationControls.jsx', retail: 'src/retail/design/material/FrontDecorationControls.jsx', why: 'Decorative front dimensions approved by the owner, 09.10.2026' },
+];
+
+export const ALL_COPIES = [...T62_COPIES, ...T63_COPIES, ...T65_COPIES, ...T74_COPIES, ...DECORATIVE_FRONT_COPIES];
 
 /** The retail path a PRO component copies to, or null where it is not copied. */
 export function retailCopyOf(proPath) {

@@ -10,7 +10,7 @@ import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js
 import {
   PART_GROUPS, partsInGroup, assignmentFor, familyLabel, VARIANT_ORDER,
 } from '../engine/partRegistry.js';
-import { projectPartUsage, formatQty } from '../engine/bom.js';
+import { projectPartUsage, unassignedInUse, formatQty } from '../engine/bom.js';
 // ─── Turn 39 (CLAUDE.md F4): the rules that fill a part in without being asked.
 import { autoAssignments, applicable, refusals } from '../engine/autoAssign.js';
 
@@ -81,13 +81,11 @@ export default function AssignMaterialsModal() {
   // everything his kitchen holds must not be told 41 things are outstanding.
   const missingOf = useMemo(() => {
     const out = {};
-    for (const [partId, use] of Object.entries(usage)) {
-      const families = use.families.length ? use.families : [null];
-      const missing = families.filter((f) => !assignmentFor(data, partId, f)?.material_id);
-      if (missing.length) out[partId] = missing;
+    for (const missing of unassignedInUse(entries, { assignments: data, profile, design, materials })) {
+      out[missing.partId] = missing.families;
     }
     return out;
-  }, [usage, data]);
+  }, [entries, data, profile, design, materials]);
 
   const counts = useMemo(() => {
     const out = {};

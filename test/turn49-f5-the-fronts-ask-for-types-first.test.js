@@ -43,8 +43,8 @@ test('F5 — the NUMBER and the TYPE are what this step asks', () => {
   // still the project's shape.
   assert.match(countStop, /data-style-slot=\{t\.id\}/);
   assert.match(countStop, /<FrontStyleGallery/);
-  assert.match(countStop, /setFrontType\(t\.id, \{ style: id \}\)/);
-  assert.match(countStop, /setProjectDefaults\(\{ fronts: \{ style: id \} \}\)/);
+  assert.match(countStop, /setFrontType\(t\.id, selected\)/);
+  assert.match(countStop, /setProjectDefaults\(\{ fronts: selected \}\)/);
   assert.ok(FRONT_STYLE_OPTIONS.length >= 8, 'the gallery it opens still has its styles');
 });
 

@@ -8,6 +8,7 @@
 
 import { roundTo } from './format.js';
 import { resolvePanelMaterial } from './materials.js';
+import { frontManufacturing } from './frontDecorationBom.js';
 import {
   ALL_PARTS as REGISTRY_PARTS, PART_REGISTRY, HARDWARE_TO_PART_ID, LIGHTING_TO_PART_ID,
   partIdForElement, edgePartFor, cabinetFamilyOf, assignmentFor, normalizeAssignments,
@@ -41,6 +42,7 @@ import { dowelNoteRow } from './dowels.js';
  * only want quantities, and a made-up label would be worse than none).
  */
 function partMaterialLabel(panel, resolved) {
+  if (resolved?.assignmentProblem) return resolved.label;
   const own = panel.meta?.material_label;
   if (own) return String(own);
   return resolved?.label || null;
@@ -86,6 +88,7 @@ export function buildBom(entries, {
       : result.panels;
     const rows = counted.map((p) => {
       const resolved = design ? resolvePanelMaterial(p, unit, design, profile, materials) : null;
+      const manufacturing = frontManufacturing(p);
       return {
         unit_num: result.unitNum,
         id: p.id,
@@ -97,7 +100,7 @@ export function buildBom(entries, {
         // front types on one board merge; two on different boards do not, and
         // an override moves a piece between groups.
         material_key: resolved?.key || null,
-        material_id: resolved?.material_id ?? p.meta?.material_id ?? null,
+        material_id: resolved ? resolved.material_id : (p.meta?.material_id ?? null),
         w: p.w,
         h: p.h,
         qty: p.qty,
@@ -108,6 +111,7 @@ export function buildBom(entries, {
         // T75 F22 · *"The cut list, the BOM and the CNC export show the state
         // on every line"*: read off the part, never written into it.
         readiness: readinessOf(p, { drills: result.drills }),
+        ...(manufacturing ? { manufacturing } : {}),
       };
     });
     // T75 F23 · a dowel unit's cut list says so in a NOTE row (the gate while
@@ -140,7 +144,10 @@ export function buildBom(entries, {
       // types on ONE board merge; two on different boards do not, even when the
       // label reads the same because neither has been given a finish.
       // T75 F22 · …and its state: an outline is not merged into a cut part.
-      const key = `${r.part}|${r.w}|${r.h}|${r.thickness}|${r.edge}|${r.material_key || r.material_label || ''}|${r.readiness}`;
+      // T76 F1 · …and its decoration: two fronts with different recipes are
+      // never one line (GPT's `manufacturing.identity`, one key with both).
+      const key = `${r.part}|${r.w}|${r.h}|${r.thickness}|${r.edge}|${r.material_key || r.material_label || ''}|${r.readiness}`
+        + (r.manufacturing ? `|${r.manufacturing.identity}` : '');
       const merged = cutRows.get(key);
       if (merged) merged.qty += r.qty;
       else cutRows.set(key, { ...r, qty: r.qty, units: new Set([r.unit_num]) });
@@ -427,7 +434,8 @@ export function sheetsFor(m2, sheet) {
  * workshop cuts them off it. `test/t39-bom-engine.test.js` walks every cabinet
  * and asserts the two answers agree panel by panel.
  */
-const FRONT_SHEET_PARTS = new Set(['door', 'drawer_front', 'false_front', 'end_panel', 'mask', 'pelmet']);
+// T76 F1 · the union: T75's `pelmet` and GPT's `front_moulding` both.
+const FRONT_SHEET_PARTS = new Set(['door', 'drawer_front', 'front_moulding', 'false_front', 'end_panel', 'mask', 'pelmet']);
 
 export function sheetFamilyOfPart(partId) {
   return FRONT_SHEET_PARTS.has(partId) ? 'fronts' : 'carcasses';
@@ -573,6 +581,16 @@ export function resolvePartTotal(entry, yieldCoeff = 1.0) {
   return { total: (Number(raw) || 0) * y, unit: entry.unit };
 }
 
+// Purchasing and assignment warnings validate the same individual strip stock.
+function resolveMouldingMaterial(panel, unit, assignment, { design, profile, materials }) {
+  const resolved = resolvePanelMaterial(panel, unit, design, profile, materials);
+  if (resolved.overridden || !assignment?.material_id) return resolved;
+  return resolvePanelMaterial({
+    ...panel,
+    meta: { ...panel.meta, material_key: null, material_label: null, material_id: assignment.material_id },
+  }, unit, design, profile, materials);
+}
+
 /**
  * MANY CABINETS → ONE FLAT PURCHASE LIST.
  *
@@ -696,10 +714,45 @@ export function mergeUnitMaterials(unitsIn = [], {
     }
   };
 
+  // Moulding thickness is chosen per front. Keep each strip's dimensions and
+  // explicit stock until material validation has run, before areas merge.
+  // Family assignments use the same material resolver as the cut list.
+  const mouldingPart = parts.find((part) => part.id === 'front_moulding');
+  const consumeMouldings = (entry, family) => {
+    if (!mouldingPart) return;
+    const assignment = assignmentFor(data, mouldingPart.id, family);
+    for (const panel of entry.result.panels || []) {
+      if (panel.part !== 'FRONT-MOULDING') continue;
+      const area = (Number(panel.area_m2) || 0) * (Number(panel.qty) || 1);
+      const { total, unit } = resolvePartTotal({ m2: area, unit: mouldingPart.unit }, assignment?.yield ?? 1.0);
+      if (!(total > 0)) continue;
+      const resolved = resolveMouldingMaterial(panel, entry.unit, assignment, { design, profile, materials });
+      const mat = resolved.assigned ? byId.get(resolved.material_id) : null;
+      const sheetFamily = sheetFamilyOfPart(mouldingPart.id);
+      if (mat) {
+        bump(`mat:${mat.id}`, {
+          name: mat.name || mat.id, unit, costPerUnit: costOf(mat),
+          source: 'material', material: mat, group: mouldingPart.group, _assigned: true,
+        }, total, { partId: mouldingPart.id, family: sheetFamily });
+      } else {
+        bump(`part:front_moulding:${panel.thickness}`, {
+          name: `Applied front mouldings ${panel.thickness} mm`, unit, costPerUnit: 0,
+          source: 'part', material: null, group: mouldingPart.group, _assigned: false,
+          assignmentProblem: resolved.assignmentProblem,
+        }, total, { partId: mouldingPart.id, family: sheetFamily });
+      }
+    }
+  };
+
   for (const entry of units) {
     if (!entry?.result) continue;
     const family = cabinetFamilyOf(entry.result.type || entry.unit?.type);
-    consume(buildCabinetPartQtys(entry.result, entry.unit, { profile }), family);
+    const quantities = buildCabinetPartQtys(entry.result, entry.unit, { profile });
+    if (quantities.front_moulding) {
+      delete quantities.front_moulding;
+      consumeMouldings(entry, family);
+    }
+    consume(quantities, family);
     // ── F8: the joiner's own rows, a fixed quantity per cabinet ────────────
     for (const cp of data.customParts || []) {
       const assignment = assignmentFor(data, cp.id, family);
@@ -840,14 +893,29 @@ export function projectPartUsage(entries = [], { profile = null, design = null }
  * @returns {Array<{ partId:string, part:object, families:string[] }>}
  */
 export function unassignedInUse(entries = [], {
-  assignments = null, assignmentsData = null, profile = null, design = null,
+  assignments = null, assignmentsData = null, profile = null, design = null, materials = [],
 } = {}) {
   const data = normalizeAssignments(assignmentsData || assignments);
   const usage = projectPartUsage(entries, { profile, design });
+  const missingMouldingFamilies = new Set();
+  if (usage.front_moulding) {
+    for (const entry of entries) {
+      if (!entry?.result) continue;
+      const family = cabinetFamilyOf(entry.result.type || entry.unit?.type);
+      const assignment = assignmentFor(data, 'front_moulding', family);
+      for (const panel of entry.result.panels || []) {
+        if (panel.part !== 'FRONT-MOULDING' || !(panel.area_m2 * (Number(panel.qty) || 1) > 0)) continue;
+        const resolved = resolveMouldingMaterial(panel, entry.unit, assignment, { design, profile, materials });
+        if (!resolved.assigned) missingMouldingFamilies.add(family);
+      }
+    }
+  }
   const out = [];
   for (const [partId, use] of Object.entries(usage)) {
     const families = use.families.length ? use.families : [null];
-    const missing = families.filter((f) => !assignmentFor(data, partId, f)?.material_id);
+    const missing = families.filter((f) => partId === 'front_moulding'
+      ? missingMouldingFamilies.has(f)
+      : !assignmentFor(data, partId, f)?.material_id);
     if (missing.length) {
       out.push({ partId, part: PART_REGISTRY[partId], families: missing.filter(Boolean) });
     }
@@ -874,10 +942,10 @@ export function unassignedInUse(entries = [], {
  * @returns {string|null}
  */
 export function cncAssignmentWarning(entries = [], {
-  assignments = null, assignmentsData = null, profile = null, design = null,
+  assignments = null, assignmentsData = null, profile = null, design = null, materials = [],
 } = {}) {
   const missing = unassignedInUse(entries, {
-    assignments, assignmentsData, profile, design,
+    assignments, assignmentsData, profile, design, materials,
   }).filter((m) => PART_REGISTRY[m.partId]?.unit === 'm²');
   if (!missing.length) return null;
   const names = missing.slice(0, 4).map((m) => m.part.name);

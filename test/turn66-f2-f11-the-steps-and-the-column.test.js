@@ -104,7 +104,7 @@ test('F2 · INSIDE carries no size field, and opens on the carcass material', ()
 test('F4 · STYLE is a vertical list of rows, in the owner\'s own order', () => {
   const options = read('src/retail/design/Options.jsx');
   assert.match(options, /className="pbi-style-list"/, 'STYLE is still a mosaic of chips');
-  assert.match(options, /const order = \['F', 'S', 'G', 'A'\];/, 'SLAB · SHAKER · GROOVED · ARCHED');
+  assert.match(options, /const order = \['F', 'S', 'SS', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'\];/, 'SLAB · SHAKER · GROOVED · ARCHED');
   assert.match(options, /<FrontThumb style=\{s\.id\} size="row" \/>/, 'the rows have no drawing');
   // The J is a HANDLE system, not a shape (T57) — still not offered as a style.
   assert.match(options, /filter\(\(s\) => s\.id !== 'HJ'\)/);

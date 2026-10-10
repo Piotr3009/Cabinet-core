@@ -23,6 +23,7 @@
 // T74 F13 · the free panel's board and where it stands.
 import { freePanelOf, freePanelPlacement } from './freePanel.js';
 import { getCabinetProfile } from './profile.js';
+import { buildFrontDecoration } from './frontDecoration.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
 // T75 F4 · the true L carcass, KIT_CORNER_L.lsp mirrored line for line.
@@ -1496,6 +1497,46 @@ function panel({ id, part, role, w, h, thickness, edgeCode, edgeLen, box, cnc, m
     box: box || null,
     cnc: cnc || null,
     ...(meta ? { meta } : {}),
+  };
+}
+
+// Shared by initial computation and the hand-edit revalidation pass.
+function appliedFrontParts(front, profile) {
+  const parts = (front.meta?.frontDecoration?.additions || []).map((addition) => {
+    const cut = addition.cut;
+    return panel({
+      id: `${front.id}-${addition.id.toUpperCase()}`,
+      part: 'FRONT-MOULDING', role: 'front',
+      w: cut.length, h: cut.width, thickness: cut.thickness,
+      edgeCode: profile.csv.codes.none, edgeLen: 0,
+      cnc: { ...rectGeometry(cut.length, cut.width), outline: cut.outline.map((point) => [...point]), grain: 'w' },
+      meta: { frontDecorationParent: front.id, construction: addition.construction,
+        mitres: addition.mitres, assemblySide: addition.id, frontType: 'F' },
+    });
+  });
+  applyGrainAxis(parts);
+  return parts;
+}
+
+export function reconcileAppliedFrontParts(result, editedPanels, frontIds, profile = getCabinetProfile()) {
+  const oldParts = result.panels.filter((p) => frontIds.has(p.meta?.frontDecorationParent));
+  const existing = new Map(editedPanels.map((p) => [p.id, p]));
+  const newParts = editedPanels.filter((p) => frontIds.has(p.id))
+    .flatMap((front) => appliedFrontParts(front, profile))
+    .map((part) => existing.get(part.id) || part);
+  const panels = editedPanels.filter((p) => !frontIds.has(p.meta?.frontDecorationParent)).concat(newParts);
+  const area = (list) => list.reduce((sum, p) => sum + p.area_m2, 0);
+  const deltaArea = area(newParts) - area(oldParts);
+  const removed = new Set(oldParts.map((p) => p.id));
+  const csvLines = result.csvLines.filter((line) => !removed.has(line.split(',')[1]));
+  csvLines.push(...buildCsvLines(result.unitNum, newParts, profile));
+  return {
+    panels, csvLines,
+    totals: { ...result.totals,
+      pieces_total: result.totals.pieces_total + newParts.length - oldParts.length,
+      front_area_m2: roundTo(result.totals.front_area_m2 + deltaArea, 6),
+      area_m2: roundTo(result.totals.area_m2 + deltaArea, 6),
+    },
   };
 }
 
@@ -9171,6 +9212,27 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // T76 F1 · GPT's decoration pass runs AFTER the L's block, so the L's two
+  // leaves (pushed just above) are decorated like every other front.
+  // Piotr, 09.10.2026: decorative fronts with editable defaults and CNC.
+  // Check opposing cuts after the existing cup drilling and J edge exist.
+  if (params?.front_decoration) {
+    const fronts = panels.filter((p) => p.role === 'front');
+    for (const front of fronts) {
+      const decoration = buildFrontDecoration({
+        panel: front, config: params.front_decoration,
+        style: front.meta?.frontType || cfg.frontType, drills, profile: P,
+      });
+      if (!decoration) continue;
+      front.meta = { ...front.meta, frontDecoration: decoration };
+      for (const finding of decoration.problems) {
+        warnings.push({ ...finding, panel: front.id, message: `${front.id}: ${finding.message}` });
+      }
+      // Applied strips are real cut parts. Their scene geometry belongs to
+      // the moving front, while these records feed the BOM, CSV and CNC.
+      panels.push(...appliedFrontParts(front, P));
+    }
+  }
   applyGrainAxis(panels);
 
   // ── Totals ─────────────────────────────────────────────────────────────────

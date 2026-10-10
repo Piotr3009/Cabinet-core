@@ -19,6 +19,8 @@ Odbicie `mirror` zmienia kompozycję frontu. Jest niezależne od koniecznego odb
 
 Plansza nie jest zwymiarowanym modelem CAD ani skanem ornamentu. Kwiat z płatkami i dwiema gałązkami liści jest odtworzeniem proceduralnym. Profil jest interpretacją czterech płynnych pasów przechodzących przez wskazane poziomy, bez udawania rozpoznania konkretnego frezu profilowego. Do wiernej kopii fizycznego wzoru potrzebny będzie jego pomiar lub model źródłowy.
 
+T77 F6: ornament wchodzi do silnika przez jedną funkcję, `ornamentSurface(variant, config, profile)` w `src/engine/ornateFront.js`. Dopóki klucz profilu `front.decoration.ornateReference.ornamentModel` ma wartość `null`, wycinany jest ornament proceduralny i jest on tak opisany: w zdaniu listy cięć (`ornament: procedural placeholder`) i w pliku JSON operacji (`"ornament": "procedural placeholder"`, dla wariantu 4 `"none"`). Miejsce na model właściciela opisuje `reference/hardware/ornate/README.md` (STL lub OBJ rzeźbionego ornamentu, w mm, licem do góry, początek układu w narożniku jego obrysu). Wczytywanie modelu nie należy do tej tury: nazwany model jest dziś odrzucany słowami (`ORNATE_ORNAMENT_MODEL`), a ornament proceduralny nigdy nie jest po cichu wycinany w jego miejsce.
+
 ## Wymiary i dane profilu
 
 Wartości znajdują się w `src/engine/ornateFrontProfile.js`, importowanym przez `profile.js` do `profile.front.decoration`. Zapisana receptura przechowuje własne liczby, łącznie z niezależnymi tablicami szerokości i głębokości. Ustawienia produkcyjne nie zostały dodane jako kolejne pola liczbowe klienta. Użytkownik wybiera wariant oraz odbicie, a profil warsztatu zawiera parametry.

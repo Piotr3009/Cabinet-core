@@ -193,6 +193,38 @@ function floralMotif() {
 
 const MOTIF = floralMotif();
 
+// ─── T77 F6 · THE ORNAMENT IS A PLACEHOLDER UNTIL THE OWNER'S MODEL ARRIVES ──
+// CLAUDE.md T77 F6: *"The ornament enters the engine through ONE function
+// (ornamentSurface(variant, config, profile) in engine/ornateFront.js ...).
+// Beside it a slot the owner fills: reference/hardware/ornate/README.md ...
+// and the profile key front.decoration.ornateReference.ornamentModel = null.
+// While it is null, the procedural ornament stands, labelled in the BOM
+// sentence and the JSON as ornament: 'procedural placeholder'. When a model
+// is named, the SAME function returns the model's surface and the label
+// changes. Loading the model is NOT this turn; only the slot, the label and
+// the README are."*
+// So a named model is refused here in words, never silently swapped for the
+// placeholder: what is cut must be what the label says.
+export const ORNAMENT_PLACEHOLDER = 'procedural placeholder';
+export function ornamentSurface(variant, config, profile = getCabinetProfile()) {
+  if (variant === 4 || config?.ornament !== true) return { label: 'none', outlines: [], ridges: [], heightAt: () => 0 };
+  const own = decorationOf(profile).ornateReference;
+  const model = own && Object.hasOwn(own, 'ornamentModel') ? own.ornamentModel
+    : (activeDecoration().ornateReference?.ornamentModel ?? null);
+  if (model === null || model === undefined || model === '') {
+    return { label: ORNAMENT_PLACEHOLDER, outlines: MOTIF.outlines, ridges: MOTIF.ridges, heightAt: MOTIF.heightAt };
+  }
+  return {
+    label: String(model),
+    problem: {
+      code: 'ORNATE_ORNAMENT_MODEL',
+      message: `The profile names the ornament model "${model}", and reading an ornament model is not built yet: `
+        + 'set front.decoration.ornateReference.ornamentModel to null to cut the procedural placeholder '
+        + '(reference/hardware/ornate/README.md).',
+    },
+  };
+}
+
 /** Build canonical surface. A valid design is still a PROPOSED reference. */
 export function buildOrnateFront({ panel, config, style = config?.style, profile = getCabinetProfile(), level = 'solid' }) {
   const parameters = normaliseOrnateConfig(config, style, profile);
@@ -200,7 +232,7 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   const result = {
     version: 1, style, face: 'front', parameters, outline: [], thickness: Number(panel?.thickness),
     operations: [], additions: [], problems: [], advisories: [], status: 'ready',
-    referenceOnly: true, productionApproval: 'proposed-reference',
+    referenceOnly: true, productionApproval: 'proposed-reference', ornament: null,
     approval: { status: 'proposed', productionApproved: false },
     coordinateSystem: 'cnc-back-mm-depth-positive',
     designInterpretation: 'Procedural interpretation of the 10 October 2026 concept board. The outer frame and the total inner moulding band are separate dimensions. Four smooth profile bands terminate at the proposed depth levels. Floral relief is sculpted from the same board; it is not a scan or a production-approved reproduction. Variant 2 uses true semicircular ends fitted to its clear width.',
@@ -290,13 +322,17 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   const motifScale = (corner) => c.ornamentScale * outerRadii[corner] / motifReferenceRadius;
   // The original 600 mm plate sets a 180 mm outer corner radius. The divisor
   // derives that same radius from the profile's reference width and bands.
+  // T77 F6 · the ornament, through its one function.
+  const ornament = ornamentSurface(c.variant, c, profile);
+  if (ornament.problem) return fail(ornament.problem.code, ornament.problem.message);
+  result.ornament = ornament.label;
   const placements = c.ornament ? activeCorners.map((corner) => ({ corner, origin: corners[corner], axes: axes[corner], scale: motifScale(corner) })) : [];
   if (placements.some((p) => !(p.scale > 0) || p.scale > 4)) return fail('ORNATE_ORNAMENT_FIT', 'The reference ornament scale is not suitable for this corner.');
   const placedPoint = (placement, p) => [
     placement.origin[0] + placement.scale * (p[0] * placement.axes[0][0] + p[1] * placement.axes[1][0]),
     placement.origin[1] + placement.scale * (p[0] * placement.axes[0][1] + p[1] * placement.axes[1][1]),
   ];
-  if (placements.some((placement) => MOTIF.outlines.some((points) => points.some((p) => {
+  if (placements.some((placement) => ornament.outlines.some((points) => points.some((p) => {
     const q = placedPoint(placement, p);
     return q[0] < c.outerFrameMm - EPS || q[0] > width - c.outerFrameMm + EPS
       || q[1] < c.outerFrameMm - EPS || q[1] > height - c.outerFrameMm + EPS || insideConvex(mouth, q);
@@ -316,7 +352,7 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
       const dx = p[0] - placement.origin[0]; const dy = p[1] - placement.origin[1];
       const local = placement.axes.map((axis) => (dx * axis[0] + dy * axis[1]) / placement.scale);
       if (local[0] < 0 || local[1] < 0 || local[0] > 150 || local[1] > 150) continue;
-      highest = Math.max(highest, MOTIF.heightAt(local));
+      highest = Math.max(highest, ornament.heightAt(local));
     }
     return highest;
   };
@@ -401,10 +437,10 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   if (mesh.vertices.length > MAX_VERTICES) return fail('ORNATE_COMPLEXITY', `This detailed relief exceeds the ${MAX_VERTICES} vertex limit. Reduce its dimensions or corner span.`);
   for (const placement of placements) {
     const transform = (p) => placedPoint(placement, p);
-    MOTIF.outlines.forEach((points, i) => contours.push({ id: `ornate-floral-${placement.corner}-${i}`, kind: 'ornament-reference',
+    ornament.outlines.forEach((points, i) => contours.push({ id: `ornate-floral-${placement.corner}-${i}`, kind: 'ornament-reference',
       points: points.map(transform), closed: true, layer: 'FRONT_REF_ORNAMENT', depth: null,
       role: 'projected-relief-reference-not-toolpath', readiness: 'geometry' }));
-    MOTIF.ridges.forEach((points, i) => contours.push({ id: `ornate-ridge-${placement.corner}-${i}`, kind: 'ornament-reference',
+    ornament.ridges.forEach((points, i) => contours.push({ id: `ornate-ridge-${placement.corner}-${i}`, kind: 'ornament-reference',
       points: points.map(transform), closed: false, layer: 'FRONT_REF_ORNAMENT', depth: null,
       role: 'projected-relief-reference-not-toolpath', readiness: 'geometry' }));
   }

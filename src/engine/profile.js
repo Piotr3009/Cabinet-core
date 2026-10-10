@@ -157,6 +157,10 @@ export const DEFAULT_CABINET_PROFILE = {
         chordErrorMm: 0.06,         // T77 proposed, owner to confirm
         fullSampleMm: 1.0,          // T77 proposed, owner to confirm
         leafTargetBytes: 4000000,   // T77 proposed, owner to confirm
+        // T77 F6 · the slot for the owner's carved ornament (an STL or OBJ,
+        // see reference/hardware/ornate/README.md). null: the procedural
+        // placeholder is cut and labelled so. Reading a model is not built yet.
+        ornamentModel: null,
       },
       // Owner, 31.08.2026: vertical grooves every 80 centre to centre, a V 4
       // wide x 3 deep, 60 margin to the first groove. A V records its width

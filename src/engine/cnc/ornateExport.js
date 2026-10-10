@@ -216,6 +216,9 @@ function referencePartFiles(panel, { unitId, unitNum, index, level, profile }) {
   const spec = {
     schema: 'cabinet-core.ornate-reference', version: 1, units: 'mm',
     unitId, unitNum, panelId: panel.id, style: decoration.style,
+    // T77 F6 · which ornament this relief carries: 'procedural placeholder'
+    // until the owner's model is read, 'none' on the Plain variant.
+    ornament: decoration.ornament ?? null,
     widthMm: width, heightMm: height, thicknessMm: thickness,
     referenceOnly: true, productionApproved: false, status: problems.length ? 'invalid-reference' : 'reference-only',
     // T77 F3 · which of the two levels this file set is, with its numbers.

@@ -97,3 +97,14 @@ test('board refusal counts the deeper corner relief in an owner-adjusted ornate 
  assert.equal(refusal.code,'FRONT_DECORATION_BOARD_TOO_THIN');
  assert.equal(boardRefusal('ORNATE_A_1',19,profile),null);
 });
+
+// T77 F6 · the cut list sentence names the ornament it carries.
+test('the cut list sentence says relief proposed, and names the ornament placeholder',()=>{
+ for(const style of STYLES){
+  const bom=buildBom([{unit:{id:style},result:make(style)}]);
+  const front=bom.cutRows.find(p=>p.role==='front');
+  assert.match(front.manufacturing.construction,/relief proposed, not production approved/);
+  assert.match(front.manufacturing.construction,style==='ORNATE_A_4'?/ornament: none$/:/ornament: procedural placeholder$/);
+  assert.equal(front.readiness,'cut','the slab is cut');
+ }
+});

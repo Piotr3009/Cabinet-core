@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_CABINET_PROFILE } from '../src/engine/profile.js';
 import { ORNATE_PROFILE_DEFAULTS } from '../src/engine/ornateFrontProfile.js';
-import { buildOrnateFront, defaultOrnateConfig, normaliseOrnateConfig, ORNATE_STYLE_IDS } from '../src/engine/ornateFront.js';
+import { buildOrnateFront, defaultOrnateConfig, normaliseOrnateConfig, ORNATE_STYLE_IDS, ORNAMENT_PLACEHOLDER, ornamentSurface } from '../src/engine/ornateFront.js';
 
 const profile = { ...DEFAULT_CABINET_PROFILE, front: { ...DEFAULT_CABINET_PROFILE.front,
   decoration: { ...DEFAULT_CABINET_PROFILE.front.decoration, ...ORNATE_PROFILE_DEFAULTS } } };
@@ -149,4 +149,36 @@ test('the export levels read ornateReference and are built lean from the same fu
     assert.deepEqual(full.contours.filter((c) => c.kind === 'profile-level').map((c) => c.depth), [3, 6, 9, 12]);
     assert.equal(full.points.length <= record.points.length, true);
   }
+});
+
+// T77 F6 · the ornament enters through ONE function, labelled a procedural
+// placeholder while the profile's model slot is null.
+test('the ornament is the procedural placeholder, through ornamentSurface, until a model is named', () => {
+  assert.equal(ORNAMENT_PLACEHOLDER, 'procedural placeholder');
+  assert.equal(profile.front.decoration.ornateReference.ornamentModel, null);
+  for (const style of ORNATE_STYLE_IDS) {
+    const config = defaultOrnateConfig(style, profile);
+    const ornament = ornamentSurface(config.variant, config, profile);
+    const record = make(style);
+    if (style === 'ORNATE_A_4') {
+      assert.equal(ornament.label, 'none');
+      assert.deepEqual(ornament.outlines, []);
+      assert.equal(record.ornament, 'none');
+    } else {
+      assert.equal(ornament.label, ORNAMENT_PLACEHOLDER);
+      assert.ok(ornament.outlines.length > 0 && typeof ornament.heightAt === 'function');
+      assert.equal(record.ornament, ORNAMENT_PLACEHOLDER);
+      // Every floral contour of the record is one of the function's outlines, placed.
+      const floral = record.operations[0].contours.filter((c) => c.kind === 'ornament-reference' && c.closed);
+      assert.equal(floral.length % ornament.outlines.length, 0);
+    }
+  }
+  const named = { ...profile, front: { ...profile.front, decoration: { ...profile.front.decoration,
+    ornateReference: { ...profile.front.decoration.ornateReference, ornamentModel: 'owner-ornament.stl' } } } };
+  const refused = buildOrnateFront({ panel, profile: named, style: 'ORNATE_A_1', config: defaultOrnateConfig('ORNATE_A_1', profile) });
+  assert.equal(refused.status, 'blocked', 'a named model is never swapped silently for the placeholder');
+  assert.equal(refused.problems[0].code, 'ORNATE_ORNAMENT_MODEL');
+  assert.match(refused.problems[0].message, /owner-ornament\.stl/);
+  const plain = buildOrnateFront({ panel, profile: named, style: 'ORNATE_A_4', config: defaultOrnateConfig('ORNATE_A_4', profile) });
+  assert.equal(plain.status, 'ready', 'the Plain variant carries no ornament to read');
 });

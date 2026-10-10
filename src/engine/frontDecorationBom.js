@@ -13,8 +13,12 @@ export function frontManufacturing(panel) {
     const depths = [...new Set(decoration.operations.map((op) => op.depth))];
     // T76 F7 · short, so the T75 State column stays inside the panel (the walk
     // measured it pushed past the edge by the longer label).
+    // T77 F6 · the Ornate sentence names its ornament: the procedural
+    // placeholder until the owner's model arrives (CLAUDE.md T77 F6), none
+    // on the Plain variant. Its separator is the column's own.
     const construction = decoration.referenceOnly
-      ? `${decoration.style} - Slab; relief proposed, not production approved`
+      ? `${decoration.style} · Slab; relief proposed, not production approved`
+        + `${decoration.ornament ? `; ornament: ${decoration.ornament}` : ''}`
       : applied
       ? `${decoration.style} · Slab, ${decoration.additions.length} applied strips`
       : `${decoration.style} · Routed slab${depths.length ? `, depths ${depths.join('/')} mm` : ''}`;

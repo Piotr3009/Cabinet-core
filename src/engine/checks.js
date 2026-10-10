@@ -214,6 +214,12 @@ export const CHECKS = Object.freeze([
   // and, refused, cuts the parent and says why (`NOTCH_REFUSED`). This is
   // that sentence in front of the joiner. RED: a person decides.
   { n: 28, level: 'red', label: 'Corner notch refused' },
+  // ─── T75 F21 · THE PRICE LIST MOVED SINCE THE JOB WAS PRICED ────────────
+  //
+  // *"opening a project whose catalogue has moved since raises a CHECK, in
+  // words, never a silent recompute (prices change a quote only by the
+  // owner's decision)."*  YELLOW: the quote stands; the owner decides.
+  { n: 29, level: 'yellow', label: 'The price list moved since this job was priced' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -462,6 +468,8 @@ export function shelfHingeFindings({
 export function runChecks({
   entries = [], units = null, room = null, design = null, materials = [], profile = null,
   wallWidthOf = null, slopeShortfallOf = null,
+  // T75 F21 · the quoted prices today's list no longer says (warehouse.js `catalogueMoves`).
+  priceMoves = [],
 } = {}) {
   const list = units || entries.map((e) => e.unit).filter(Boolean);
   const out = [];
@@ -1034,6 +1042,20 @@ export function runChecks({
         hingesNow: Number(h.now),
       }));
     }
+  }
+
+  // ── #29 the price list moved since the job was priced (T75 F21) ──────────
+  if ((priceMoves || []).length) {
+    const money = (v) => (v == null ? 'gone from the list' : Number(v).toFixed(2));
+    const said = priceMoves.map((m) => `${m.name} ${money(m.was)} to ${money(m.now)}`).join('; ');
+    out.push(finding(29, 'yellow', {
+      unitId: null,
+      unitNum: '',
+      panelId: null,
+      message: `The price list has moved since this job was priced: ${said}. The quote keeps the prices it `
+        + 'was priced at; Accept today\'s prices in the BOM panel to re-price it.',
+      subject: null,
+    }));
   }
 
   // ── #27 a corner with nothing between the runs (T75 F1) ─────────────────

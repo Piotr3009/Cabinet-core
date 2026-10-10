@@ -56,6 +56,8 @@ import {
 import { getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
 // T75 F20 · a set is a recipe: its layout and its reading are the engine's.
 import { setIsOneLevel, setLayout, setRecipe } from '../engine/sets.js';
+// T75 F21 · what a job was priced against, and what moved since.
+import { catalogueMoves, priceSnapshot } from '../engine/warehouse.js';
 // T75 F1 · THE CORNER RULEBOOK: the one detection the corner stop, the post,
 // the hinge and every corner consumer below read.
 import {
@@ -9012,6 +9014,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       materials: useMaterialAssignmentStore.getState().materials,
       // T75 F10 · an island face has no wall end: rule 5 is not asked there.
       wallWidthOf: (i) => (walls?.[i]?.island ? null : Number(walls?.[i]?.width) || null),
+      // T75 F21 · what the job was quoted at, against today's list (Check #29).
+      priceMoves: get().catalogueMoves(),
       // ─── TURN 46 (CLAUDE.md F2): the 400 mm floor, measured HERE ─────────
       // `src/engine/**` imports nothing from `src/lib/**`, and the ceiling line
       // has to be the one the wall is drawn from — so the store asks
@@ -10002,10 +10006,44 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   projectForSave: () => {
     const s = get();
     try {
-      return { ...s.project, assignments: useMaterialAssignmentStore.getState().data };
+      const assignments = useMaterialAssignmentStore.getState().data;
+      // ─── T75 F21 · THE PRICES THE JOB WAS QUOTED AT, KEPT WITH IT ──────────
+      // *"The project stores the `warehouseStamp` it was priced against and the
+      // `price_source` per assigned material."*  Written at the save that first
+      // has materials to price; later saves add newly assigned materials at
+      // today's price and never move a quoted one (that is `acceptCatalogue`).
+      const stamp = priceSnapshot({
+        assignments,
+        materials: useMaterialAssignmentStore.getState().materials,
+        at: s.project.warehouseStamp?.at || new Date().toISOString(),
+        keep: s.project.warehouseStamp || null,
+      });
+      const priced = Object.keys(stamp.prices).length ? { warehouseStamp: stamp } : {};
+      if (priced.warehouseStamp && JSON.stringify(priced.warehouseStamp) !== JSON.stringify(s.project.warehouseStamp)) {
+        set((st) => ({ project: { ...st.project, warehouseStamp: priced.warehouseStamp } }));
+      }
+      return { ...s.project, ...priced, assignments };
     } catch {
       return s.project;
     }
+  },
+
+  /**
+   * T75 F21 · the quoted prices today's list no longer says (Check #29), and
+   * the owner's decision to re-price the job against today's list.
+   */
+  catalogueMoves: () => catalogueMoves(get().project.warehouseStamp, {
+    materials: useMaterialAssignmentStore.getState().materials,
+  }),
+
+  acceptCatalogue: () => {
+    const stamp = priceSnapshot({
+      assignments: useMaterialAssignmentStore.getState().data,
+      materials: useMaterialAssignmentStore.getState().materials,
+      at: new Date().toISOString(),
+    });
+    set((s) => ({ project: { ...s.project, warehouseStamp: stamp } }));
+    return stamp;
   },
 })));
 

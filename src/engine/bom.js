@@ -587,6 +587,9 @@ export function mergeUnitMaterials(unitsIn = [], {
   ALL_PARTS: parts = REGISTRY_PARTS,
   profile = null,
   design = null,
+  // T75 F21 · the prices this job was quoted at (`project.warehouseStamp`):
+  // a material in it is priced at its quoted figure, never silently at today's.
+  pricedAt = null,
 } = {}) {
   // `= []` only defends against `undefined`; a caller with nothing to show may
   // well hand us a null, and a BOM screen must not be the thing that crashes.
@@ -613,12 +616,25 @@ export function mergeUnitMaterials(unitsIn = [], {
   };
 
   const costOf = (mat) => {
+    // T75 F21 · the quoted price first: *"prices change a quote only by the
+    // owner's decision"*.
+    const quoted = pricedAt?.prices?.[mat?.id];
+    if (quoted && quoted.price != null) return Number(quoted.price) || 0;
     // CLAUDE.md F5 says `cc_materials.cost_per_unit`; Cabinet Core's own table
     // (sql/001_init.sql) calls the column `price`. Both are read, so the spec's
     // name works the day somebody adds it and today's column works now.
     const v = mat?.cost_per_unit ?? mat?.price;
     return Number(v) || 0;
   };
+  // T75 F21 · *"The purchase BOM export carries `jc_uuid` and the material code
+  // on every line that has them, so JoineryCore can import the shopping list by
+  // identity."*  The code is the stock row's own `code`, else the warehouse's
+  // `item_number`; and where the price came from rides beside it.
+  const identityOf = (mat) => ({
+    jc_uuid: mat?.jc_uuid ? String(mat.jc_uuid) : null,
+    code: mat?.code ?? mat?.item_number ?? null,
+    price_source: pricedAt?.prices?.[mat?.id] ? 'quoted' : (mat?.price_source || 'stock list'),
+  });
 
   const consume = (partQtys, family) => {
     for (const part of parts) {
@@ -638,6 +654,7 @@ export function mergeUnitMaterials(unitsIn = [], {
           costPerUnit: costOf(mat),
           source: 'material',
           material: mat,
+          ...identityOf(mat),
           group: part.group,
           _assigned: true,
         }, total, { partId: part.id, family: sheetFamily });
@@ -676,6 +693,7 @@ export function mergeUnitMaterials(unitsIn = [], {
           costPerUnit: costOf(mat),
           source: 'material',
           material: mat,
+          ...identityOf(mat),
           group: 'consumable',
           _assigned: true,
         }, total, { partId: cp.id });

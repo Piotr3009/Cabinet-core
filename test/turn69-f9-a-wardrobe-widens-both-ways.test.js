@@ -168,7 +168,8 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // run), argued in the manifest, re-frozen. Not a widening file.
   const ARGUED = [
     'AddItems', 'BomPanel', 'ContextMenu', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
-    'LibraryPanel', 'RightPanel', 'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
+    // AMENDED BY T75 F21: `WarehouseModal` (the JoineryCore CSV contract).
+    'LibraryPanel', 'RightPanel', 'RoomModal', 'UnitSizeModal', 'WarehouseModal', 'WatchLayoutModal',
     // AMENDED BY T75 F20: `SaveTemplateModal` (a selection saved as a set) and `TopBar` (the Sets
     // shelf's menu line), *"`lib/templates.js` grows `kind: 'set'`"*. Neither is a widening file.
     'SaveTemplateModal', 'TopBar',
@@ -182,5 +183,5 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // AMENDED BY T75 F9: RoomModal's licence is renewed tonight (ADD ISLAND), so
   // its newest reason names T75; T69's own sentence still stands beneath it.
   assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), [], 'T69 licenses nothing new');
-  assert.match(read('test/turn59-f1-the-switch.test.js'), /T69 F1 — the preset row becomes 1 WALL/, 'T69\'s RoomModal reason was lost');
+  assert.match(read('test/turn59-f1-the-switch.test.js'), /T69 F1 . the preset row becomes 1 WALL/, 'T69\'s RoomModal reason was lost');
 });

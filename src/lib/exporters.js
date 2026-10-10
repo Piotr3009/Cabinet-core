@@ -141,7 +141,8 @@ export function buildPurchaseBomCsvText(bom, { scope = 'project' } = {}) {
   };
   const money = (v) => (v == null ? '' : Number(v).toFixed(2));
   const lines = [`SCOPE,${q(scope)}`, ''];
-  lines.push('GROUP,MATERIAL,ASSIGNED,QTY,UNIT,SHEETS,UNIT_COST,LINE_COST,PARTS');
+  // T75 F21 · JC_UUID and CODE after PARTS, so JoineryCore imports the list by identity.
+  lines.push('GROUP,MATERIAL,ASSIGNED,QTY,UNIT,SHEETS,UNIT_COST,LINE_COST,PARTS,JC_UUID,CODE');
   const groupOf = (id) => PART_GROUPS.find((g) => g.id === id)?.label || 'OTHER';
   for (const g of [null, ...PART_GROUPS.map((x) => x.id)]) {
     const rows = bom.rows.filter((r) => (g === null ? !r.group : r.group === g));
@@ -151,6 +152,7 @@ export function buildPurchaseBomCsvText(bom, { scope = 'project' } = {}) {
         q(g ? groupOf(g) : 'OTHER'), q(r.name), r._assigned ? 'yes' : 'NO',
         Number(r.qty).toFixed(3), q(r.unit), r.sheets ?? '',
         money(r._assigned ? r.costPerUnit : null), money(r.lineCost), q(r.parts.join(' + ')),
+        q(r.jc_uuid || ''), q(r.code || ''),
       ].join(','));
     }
     const sub = rows.reduce((s2, r) => s2 + (r.lineCost || 0), 0);
@@ -169,9 +171,11 @@ export function buildPurchaseBomCsvText(bom, { scope = 'project' } = {}) {
 export function exportPurchaseBomCsv({
   entries, assignments = null, materials = [], profile = getCabinetProfile(),
   design = null, projectName = 'project', scope = 'project',
+  // T75 F21 · the prices the job was quoted at, as the panel shows them.
+  pricedAt = null,
 }) {
   const bom = purchaseBom(entries, {
-    assignments, materials, profile, design: migrateDesign(design),
+    assignments, materials, profile, design: migrateDesign(design), pricedAt,
   });
   const csv = buildPurchaseBomCsvText(bom, { scope });
   download(

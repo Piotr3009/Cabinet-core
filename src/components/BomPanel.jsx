@@ -107,9 +107,14 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
     const one = entries.find((e) => e.unit?.id === selectedUnitId) || entries[0] || null;
     return one ? [one] : [];
   }, [entries, scope, selectedUnitId]);
+  // T75 F21 · priced at what the job was quoted at; a moved list is said, not obeyed.
+  const pricedAt = useProjectStore((s) => s.project.warehouseStamp) || null;
+  const catalogueMoves = useProjectStore((s) => s.catalogueMoves);
+  const acceptCatalogue = useProjectStore((s) => s.acceptCatalogue);
+  const moved = useMemo(() => catalogueMoves(), [catalogueMoves, pricedAt, materials]);
   const purchase = useMemo(() => purchaseBom(scoped, {
-    assignments: assignmentData, materials, profile, design: migrated,
-  }), [scoped, assignmentData, materials, profile, migrated]);
+    assignments: assignmentData, materials, profile, design: migrated, pricedAt,
+  }), [scoped, assignmentData, materials, profile, migrated, pricedAt]);
 
   const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
   const hardware = useMemo(() => hardwareDemand(bom, assignments, materials), [bom, assignments, materials]);
@@ -602,6 +607,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                 design: migrated,
                 projectName: project?.name || 'project',
                 scope,
+                pricedAt,
               });
               notify(`Purchase BOM exported — ${scope === 'project' ? 'whole project' : 'this cabinet'}.`, 'ok');
             }}
@@ -609,6 +615,18 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
             Purchase CSV
           </button>
           <button type="button" className="cc-btn flex-1" onClick={onExportPdf}>PDF</button>
+          {/* T75 F21 · the owner's decision: re-price the job against today's list. */}
+          {moved.length > 0 && (
+            <button
+              type="button"
+              className="cc-btn flex-1"
+              data-bom-accept-prices="1"
+              title={`The price list moved for ${moved.length} material(s) since this job was priced: re-price it against today's list`}
+              onClick={() => { acceptCatalogue(); notify('Re-priced against today\'s list.', 'ok'); }}
+            >
+              Accept today&apos;s prices
+            </button>
+          )}
           <button
             type="button"
             className="cc-btn flex-1 opacity-60"

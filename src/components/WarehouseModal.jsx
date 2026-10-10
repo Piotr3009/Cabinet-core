@@ -9,7 +9,7 @@ import { OFFLINE_NOTICE } from '../lib/warehouseDb.js';
 import {
   CATEGORIES, JC_NOTICE, OTHERS, PRICE_IMPORT,
   departmentCounts, departmentLabel, fromCsv, importSummary, materialsFilename,
-  projectMaterialNames, rowsOfDepartment, subcategoriesInUse, toCsv, usedInProject,
+  projectMaterialNames, projectUuids, rowsOfDepartment, subcategoriesInUse, toCsv, usedInProject,
 } from '../engine/warehouse.js';
 
 // ─── THE MATERIALS WAREHOUSE (turn 51, CLAUDE.md F7) ────────────────────────
@@ -252,10 +252,13 @@ export default function WarehouseModal() {
     notify(`Catalogue exported — ${rows.length} material${rows.length === 1 ? '' : 's'}.`, 'info');
   };
 
+  // T75 F21 · the uuids THIS project's assigned stock carries, not every
+  // uuid in the warehouse (the probe exported 3 of 3 for a project naming none).
+  const stock = useMaterialAssignmentStore((s) => s.materials);
   const projectRows = useMemo(() => usedInProject(rows, {
     names: projectMaterialNames(project?.design, assignments),
-    uuids: rows.map((r) => r.jc_uuid).filter(Boolean),
-  }), [rows, project, assignments]);
+    uuids: projectUuids({ assignments, materials: stock }),
+  }), [rows, project, assignments, stock]);
 
   const exportProject = () => {
     if (!projectRows.length) {
@@ -292,14 +295,14 @@ export default function WarehouseModal() {
               onChange={(e) => onImport(e.target.files?.[0])}
             />
             <button type="button" className="cc-btn" data-warehouse-import onClick={() => fileRef.current?.click()}>
-              Import CSV…
+              Import from JoineryCore (CSV)
             </button>
             <span className="flex-1" />
             <button type="button" className="cc-btn" data-warehouse-export-project onClick={exportProject}>
-              Export this project ({projectRows.length})
+              Export project list for JoineryCore (CSV) ({projectRows.length})
             </button>
             <button type="button" className="cc-btn-gold" data-warehouse-export-all onClick={exportCatalogue}>
-              Export catalogue ({rows.length})
+              Export for JoineryCore (CSV) ({rows.length})
             </button>
           </>
         )}

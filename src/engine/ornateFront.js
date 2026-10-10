@@ -7,6 +7,7 @@
 // No THREE, canvas, bitmap, silhouette overlays or separately floating petals.
 
 import { getCabinetProfile } from './profile.js';
+import { boardShortfall, deepestCutMm, minSkinOf } from './frontBoard.js';
 
 export const ORNATE_STYLE_IDS = Object.freeze(['ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4']);
 const EPS = 1e-7;
@@ -205,8 +206,8 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
     coordinateSystem: 'cnc-back-mm-depth-positive',
     designInterpretation: 'Procedural interpretation of the 10 October 2026 concept board. The outer frame and the total inner moulding band are separate dimensions. Four smooth profile bands terminate at the proposed depth levels. Floral relief is sculpted from the same board; it is not a scan or a production-approved reproduction. Variant 2 uses true semicircular ends fitted to its clear width.',
   };
-  const fail = (code, message) => {
-    result.status = 'blocked'; result.operations = []; result.problems.push({ code, message }); return result;
+  const fail = (code, message, extra = {}) => {
+    result.status = 'blocked'; result.operations = []; result.problems.push({ code, message, ...extra }); return result;
   };
   if (!recipeOf(style, profile)) return fail('ORNATE_PROFILE', 'This workshop profile has no Ornate A recipe.');
   if (parameters.version !== 1) return fail('ORNATE_VERSION', 'This Ornate A recipe version is not supported.');
@@ -236,9 +237,14 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   if (outline.length !== 4 || Math.abs(Math.abs(signedArea(outline)) - width * height) > EPS
     || outline.some(([x, y]) => !((Math.abs(x) < EPS || Math.abs(x - width) < EPS) && (Math.abs(y) < EPS || Math.abs(y - height) < EPS)))) return fail('ORNATE_OUTLINE', 'Ornate A currently supports the full rectangular front outline only; it cannot be squeezed into a slope.');
   result.outline = ccw(outline);
-  const maxDepth = Math.max(...c.stepDepthsMm, c.cornerDepthMm);
-  const skin = Number(profile?.front?.decorationMinSkinMm);
-  if (!(skin > 0) || result.thickness - maxDepth < skin - EPS) return fail('ORNATE_SKIN', `The deepest cut leaves ${round(result.thickness - maxDepth)} mm; this profile requires ${skin} mm of material.`);
+  // T77 F4 · the board is the leaf's own (the assigned material's), never the
+  // board the drawing was made on (`boardMm`, 18): the one board rule of
+  // `engine/frontBoard.js` (T76's for A/AH) refuses a board thinner than the
+  // deepest step plus the skin, in its words, and is silent above it.
+  const maxDepth = deepestCutMm(c);
+  if (!(minSkinOf(profile) > 0)) return fail('ORNATE_SKIN', 'This workshop profile names no skin to leave under a decoration.');
+  const thin = boardShortfall(style, result.thickness, c, profile);
+  if (thin) return fail(thin.code, thin.message, { needMm: thin.needMm, haveMm: thin.haveMm });
   const profileWidth = c.stepWidthsMm.reduce((a, b) => a + b, 0);
   if (profileWidth >= c.innerFrameMm) return fail('ORNATE_PROFILE_FIT', 'The total profile width must be smaller than the inner moulding band so its corner background remains.');
   const innerInset = c.outerFrameMm + c.innerFrameMm;
@@ -418,7 +424,9 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
       maxContourChordErrorMm: chordErrorMm, reliefRadialSampleMm: radialSpacing,
       reliefMaxAngularChordMm: chordMm, closedSolid: false },
   });
-  result.advisories.push({ code: 'ORNATE_PROPOSED_REFERENCE', message: 'Proposed ornamental design: confirm the physical pattern, board, tooling, residual material, and CAM setup before production. These contours and the shared relief mesh are reference geometry, not cutter-centre toolpaths.' });
+  // T77 F4 · the board is said only when it is too thin (the refusal above);
+  // a board that leaves the skin is silently fine, so this note names none.
+  result.advisories.push({ code: 'ORNATE_PROPOSED_REFERENCE', message: 'Proposed ornamental design: the physical pattern, the tooling and the CAM setup need approval before production. These contours and the shared relief mesh are reference geometry, not cutter-centre toolpaths.' });
   result.advisories.push({ code: 'ORNATE_BORE_ENVELOPE', message: 'Hardware clearance uses the deepest relief envelope across its recessed footprint. A rejected rear drilling may need a measured local CAM check.' });
   return result;
 }

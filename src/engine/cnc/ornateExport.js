@@ -226,7 +226,11 @@ function referencePartFiles(panel, { unitId, unitNum, index, level, profile }) {
       surface: `the same surface function at ${chosen.label}; lean: samples on a flat straight side are left out, the surface is the same` },
     notice: ORNATE_REFERENCE_MESSAGE,
     proposal: 'Reconstructed from the supplied concept illustration. The physical ornament and all proposed dimensions need workshop approval.',
-    parameters: decoration.parameters, designInterpretation: decoration.designInterpretation,
+    // T77 F4 · the JSON prints the leaf's ACTUAL board (`thicknessMm`, the
+    // assigned material's), never the board the drawing was made on: the
+    // recipe's `boardMm` is left out of the parameters printed here.
+    parameters: Object.fromEntries(Object.entries(decoration.parameters || {}).filter(([key]) => key !== 'boardMm')),
+    designInterpretation: decoration.designInterpretation,
     datum: {
       setup: 'Front face up, local origin at bottom left of the original front surface.',
       axes: { x: 'right', y: 'up along the front', z: 'out of the original front surface' },

@@ -49,12 +49,16 @@ async function captureDownload(run) {
   }
 }
 
-test('proposed Ornate geometry is held, stays geometry readiness, and cannot self-approve', () => {
+// T77 F4 · "The slab is cut; the relief ships as CAD/CAM reference files with
+// the state geometry" (CLAUDE.md T77, THE ORDER 2), and the Check speaks only
+// of a board too thin: a relief that BUILT holds nothing and says nothing.
+test('a built Ornate relief holds nothing: the slab is cut, the relief stays geometry and cannot self-approve', () => {
   const { result, panel } = fixture();
   panel.meta.frontDecoration.productionApproved = true;
   panel.meta.frontDecoration.referenceOnly = false;
   const gate = exportGate([{ result }], { profile: P });
-  assert.ok(gate.held.some((h) => h.panelId === panel.id));
+  assert.ok(!gate.held.some((h) => h.panelId === panel.id), 'the slab is cut');
+  assert.ok(!gate.findings.some((f) => f.panel === panel.id), 'the Check says nothing of a relief that built');
   const manifest = frontOperationsManifest([{ result }], { gate, exportAnyway: true });
   assert.equal(manifest.parts[0].readiness, 'cut', 'existing slab readiness is unchanged');
   assert.equal(manifest.parts[0].productionApproved, false);
@@ -126,7 +130,7 @@ test('all ordinary BACK DXFs stay byte-identical when Ornate metadata is attache
   assert.deepEqual(buildUnitDxfFiles(result, P), decorated);
 });
 
-test('all three ZIP routes include proposed DXF/STL/JSON when the only selected panel is held', async () => {
+test('all three ZIP routes carry the slab\'s back DXF beside the proposed DXF/STL/JSON', async () => {
   const { result, panel } = fixture();
   const only = { ...result, panels: [panel], drills: result.drills.filter((d) => d.panel === panel.id) };
   for (const run of [
@@ -140,23 +144,27 @@ test('all three ZIP routes include proposed DXF/STL/JSON when the only selected 
     assert.ok(names.some((n) => /PROPOSED-FRONT\.dxf$/.test(n)));
     assert.ok(names.some((n) => /PROPOSED-RELIEF-1\.stl$/.test(n)));
     assert.ok(names.some((n) => /PROPOSED-operations\.json$/.test(n)));
-    assert.ok(!names.some((n) => /BACK\.dxf$/.test(n)));
-    assert.ok(output.held.some((h) => h.panelId === panel.id));
-    assert.ok(output.readinessBanner);
+    // T77 F4 · the slab goes to the machine: its back setup is in the ZIP.
+    assert.ok(names.some((n) => /\.dxf$/i.test(n) && !/PROPOSED/.test(n) && !/-FRONT\.dxf$/.test(n)), names.join(', '));
+    assert.deepEqual(output.held, []);
+    assert.ok(output.readinessBanner, 'the reference files are counted as geometry, not cut');
     const manifest = JSON.parse(await zip.file(output.operationManifest).async('string'));
-    assert.equal(manifest.parts[0].exported, false);
+    assert.equal(manifest.parts[0].exported, false, 'the relief is never exported as machining');
     assert.equal(manifest.parts[0].referenceFiles.length, 3);
+    // T77 F3 · the manifest records which level was written, and the bytes.
+    assert.ok(manifest.parts[0].referenceFiles.every((f) => f.referenceLevel === 'reference' && f.bytes > 0));
     assert.equal(manifest.parts[0].operations[0].readiness, 'geometry');
   }
 });
 
-test('Export anyway retains explicit production hold provenance and never promotes the proposed relief', async () => {
+test('Export anyway overrides nothing for a built relief and never promotes it', async () => {
   const { result, panel } = fixture();
   const { zip, output } = await captureDownload(() => exportSheetDxf(result, [panel.id], P, { exportAnyway: true }));
   const names = Object.keys(zip.files);
   assert.ok(names.some((n) => /-BACK\.dxf$/.test(n)));
   const manifest = JSON.parse(await zip.file(output.operationManifest).async('string'));
-  assert.equal(manifest.parts[0].override, true);
+  // T77 F4 · nothing was held, so nothing was overridden.
+  assert.equal(manifest.parts[0].override, false);
   assert.equal(manifest.parts[0].productionApproved, false);
   assert.equal(manifest.parts[0].operations[0].exported, false);
   const standardFrontName = names.find((n) => /-FRONT\.dxf$/.test(n) && !n.includes('PROPOSED'));

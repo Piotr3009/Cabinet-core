@@ -88,10 +88,12 @@ export function frontDecorationProblems(panel) {
   if (decoration.version !== 1) out.push('Unsupported decorative machining version.');
   if (decoration.status !== 'ready' && !out.length) out.push('Decorative machining is not ready.');
   if (!Array.isArray(decoration.operations)) out.push('Decorative machining operations are missing.');
-  if (isOrnateReference(panel)) {
-    out.push(ORNATE_REFERENCE_MESSAGE);
-    return [...new Set(out)];
-  }
+  // T77 F4 · an Ornate relief that built is a proposal, not a fault: its slab
+  // is cut (state `cut`) and its relief rides the reference files (state
+  // `geometry`), so the Check and the export gate say nothing about it. A
+  // relief that was refused (a board too thin, radii that do not fit) is said
+  // in its own words above and holds its leaf, as every refused recipe does.
+  if (isOrnateReference(panel)) return [...new Set(out)];
   for (const operation of Array.isArray(decoration.operations) ? decoration.operations : []) out.push(...operationProblems(operation, panel));
   return [...new Set(out)];
 }

@@ -9,6 +9,8 @@ import {
   projectPartUsage, unassignedInUse, cncAssignmentWarning,
 } from '../src/engine/bom.js';
 import { PART_REGISTRY } from '../src/engine/partRegistry.js';
+// T76 F5 · one state: the line's state is T75's readiness.
+import { readinessOf } from '../src/engine/readiness.js';
 
 const materials = [
   { id: 'mdf25', name: 'MDF 25 mm', thickness: 25, price: 30 },
@@ -42,6 +44,15 @@ test('8 mm applied strips cannot merge into a 25 mm door stock purchase line', (
   assert.equal(moulding.lineCost, null);
   assert.match(moulding.name, /8 mm/);
   near(moulding.qty, areaOf(strips(entry)));
+  // T76 F5 · read off readiness: each strip a cut part of its own, the door
+  // cut, and the gluing of the four a manual NOTE on the door's unit.
+  for (const strip of strips(entry)) assert.equal(readinessOf(strip, { drills: entry.result.drills }), 'cut');
+  const cut = buildBom([entry]).units[0].rows;
+  assert.ok(cut.filter((row) => row.part === 'FRONT-MOULDING').every((row) => row.readiness === 'cut'));
+  assert.equal(cut.find((row) => row.part === 'FRONT').readiness, 'cut');
+  const note = cut.find((row) => row.part === 'APPLIED-STRIPS');
+  assert.equal(note.readiness, 'manual');
+  assert.equal(note.material_role, 'note');
 });
 
 test('each moulding thickness is checked before family quantities merge', () => {

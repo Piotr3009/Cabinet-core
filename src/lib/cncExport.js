@@ -20,7 +20,9 @@ import { dowelExportRefusal } from '../engine/dowels.js';
 import { download } from './exporters.js';
 // T75 F22 · *"the CNC export carries a banner counting the lines that are not
 // 'cut'"*: read off the parts that go, never written into them.
-import { READINESS_LABELS, readinessBanner, readinessOf } from '../engine/readiness.js';
+import {
+  READINESS_LABELS, appliedStripNotes, readinessBanner, readinessOf,
+} from '../engine/readiness.js';
 // ─── TURN 45 (CLAUDE.md F9-CNC): THE GROOVE UNDER EVERY PLACED LINE ─────────
 // Born in `reference/lisp/KIT_LED_GROOVE.lsp` (iron rule 3), cut here. It is
 // ADDITIVE and GATED: a unit with no LED line is handed back the very result
@@ -90,7 +92,12 @@ export function grooved(result, {
  * are not `cut`: `{ lines: [{ id, state }], count, banner }`.
  */
 export function exportReadiness(panels, drills = []) {
-  const lines = (panels || []).map((p) => ({ id: p.id, part: p.part, state: readinessOf(p, { drills }) }));
+  // T76 F5 · a decorated front and its strips are lines like any other (cut);
+  // the gluing of the strips is a line of its own, to fit on site.
+  const lines = [
+    ...(panels || []).map((p) => ({ id: p.id, part: p.part, state: readinessOf(p, { drills }) })),
+    ...appliedStripNotes(panels).map((n) => ({ id: n.id, part: n.part, state: n.state })),
+  ];
   const { count, banner } = readinessBanner(lines);
   return { lines, count, banner };
 }
@@ -224,6 +231,9 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
       frontDxf: hasFrontDecorations([{ panels }]) ? sheetDxf({ ...args, setup: 'front' }) : null,
       entries: [{ result, panels: chosen }], gate, exportAnyway,
       placements: frontSetupPlacements([args]),
+      // T76 F5 · the package is a ZIP, so the banner rides it as a file, as
+      // the unit ZIP's does.
+      note: readinessNote(result.unitNum, exportReadiness(panels, result.drills)),
     }).then(said);
   }
   download(filename, new Blob([dxf], { type: 'application/dxf' }));
@@ -291,12 +301,15 @@ export function exportMaterialDxf(entries, {
   // T76 F1 · as the sheet export: a Promise only when the ZIP of two setups
   // is built; the refusals above throw synchronously (T75 F23).
   if (hasFrontDecorations(manifestEntries)) {
+    const lines = section.blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines);
     return downloadFrontSetups({
       filename, backDxf: dxf,
       frontDxf: hasFrontDecorations(section.blocks)
         ? materialSheetDxf({ blocks: section.blocks, gap: profile.cnc.layoutGap, profile, setup: 'front' }) : null,
       entries: manifestEntries, gate, exportAnyway,
       placements: frontSetupPlacements(section.blocks, profile.cnc.layoutGap),
+      // T76 F5 · the banner rides the package as a file.
+      note: readinessNote(section.label, { lines, ...readinessBanner(lines) }),
     }).then(said);
   }
   download(filename, new Blob([dxf], { type: 'application/dxf' }));
@@ -305,8 +318,9 @@ export function exportMaterialDxf(entries, {
 
 // A single download keeps the operation specification with both setups.
 // Ordinary exports do not enter this path and keep their original DXF bytes.
-async function downloadFrontSetups({ filename, backDxf, frontDxf, entries, gate, exportAnyway, placements }) {
+async function downloadFrontSetups({ filename, backDxf, frontDxf, entries, gate, exportAnyway, placements, note = null }) {
   const zip = new JSZip();
+  if (note) zip.file(filename.replace(/\.dxf$/, '-READINESS.txt'), note);
   const backName = filename.replace(/\.dxf$/, '-BACK.dxf');
   const frontName = filename.replace(/\.dxf$/, '-FRONT.dxf');
   const operationManifest = filename.replace(/\.dxf$/, '-operations.json');

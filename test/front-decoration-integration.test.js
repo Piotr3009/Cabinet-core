@@ -53,7 +53,9 @@ test('BOM distinguishes machining recipes on equal front blanks', () => {
   const bom = buildBom([{ unit: { id: 'one' }, result: first }, { unit: { id: 'two' }, result: second }]);
   const fronts = bom.cutRows.filter((p) => p.role === 'front');
   assert.equal(fronts.length, 2);
-  assert.deepEqual(fronts.map((p) => p.manufacturing.style), ['G', 'FL']);
+  // T76 F5 · `manufacturing` keeps identity and construction; the line's state is readiness.
+  assert.deepEqual(fronts.map((p) => p.manufacturing.construction.split(' · ')[0]), ['G', 'FL']);
+  assert.ok(fronts.every((p) => p.readiness === 'cut'));
   assert.ok(fronts.every((p) => p.qty === 1));
 });
 
@@ -78,7 +80,9 @@ test('applied moulding is four real cut parts, with independent thickness-correc
   const bom = buildBom([{ unit: { id: 'one', params }, result: made }], { design, profile: P, materials });
   const rows = bom.units[0].rows.filter((p) => p.part === 'FRONT-MOULDING');
   assert.equal(rows.length, 4);
-  assert.ok(rows.every((row) => row.manufacturing.summary.includes('45/45')));
+  // T76 F5 · the mitres ride the construction label; each strip is a cut line of its own.
+  assert.ok(rows.every((row) => row.manufacturing.construction.includes('45/45')));
+  assert.ok(rows.every((row) => row.readiness === 'cut'));
   assert.ok(strips.every((strip) => made.csvLines.some((line) => line.includes(`,${strip.id},`))));
 });
 

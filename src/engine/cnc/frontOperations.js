@@ -2,6 +2,8 @@
 // A separate front setup reflects each PART about its own vertical axis.
 // It is not a whole-sheet flip, and no back drilling enters that setup.
 
+import { appliedStripNotes, readinessOf } from '../readiness.js';
+
 export const FRONT_REFERENCE_LAYER = 'FRONT_REFERENCE_NO_CUT';
 
 export function frontDecorationOf(panel) {
@@ -130,11 +132,17 @@ export function frontOperationsManifest(entries = [], {
         ...(gate?.findings || []).filter((finding) => finding.unitId === unitId
           && finding.panel === panel.id && finding.code === 'front-layer-conflict').map((finding) => finding.message),
       ])];
+      // T76 F5 · T75's readiness, the one production state: the part's, each
+      // operation's, each strip's, and the gluing of the strips (one law,
+      // `engine/readiness.js`). `status` below is the EXPORT's (held,
+      // blocked), not a second production state.
+      const fixing = appliedStripNotes([panel])[0] || null;
       parts.push({
         unitId, unitNum, panelId: panel.id,
         widthMm: panel.cnc?.drawn_w ?? panel.w,
         heightMm: panel.cnc?.drawn_h ?? panel.h,
         thicknessMm: panel.thickness,
+        readiness: readinessOf(panel, { drills: result.drills || null }),
         style: decoration.style,
         status: problems.length ? 'blocked' : (held ? 'held' : 'ready'),
         exported: exportAnyway || !held,
@@ -146,12 +154,14 @@ export function frontOperationsManifest(entries = [], {
           face: 'front', mitres: addition.mitres, cut: addition.cut,
           assemblyPointsFrontMm: (addition.points || []).map(([x, y]) => [Number(panel.cnc?.drawn_w ?? panel.w) - x, y]),
           attachment: 'Applied strip assembly; fix to the front after machining.',
+          readiness: fixing?.state || null,
         })),
         appliedParts: (entry.panels || result.panels || [])
           .filter((part) => part.meta?.frontDecorationParent === panel.id)
           .map((part) => ({
             panelId: part.id, part: part.part, widthMm: part.w, heightMm: part.h, thicknessMm: part.thickness,
             construction: part.meta.construction, mitres: part.meta.mitres, assemblySide: part.meta.assemblySide,
+            readiness: readinessOf(part, { drills: result.drills || null }),
           })),
         operations: (Array.isArray(decoration.operations) ? decoration.operations : []).map((operation, index) => ({
           sequence: index + 1,
@@ -165,6 +175,7 @@ export function frontOperationsManifest(entries = [], {
           tool: operation.tool,
           ...(operation.crossSection ? { crossSection: operation.crossSection } : {}),
           vectorMeaning: { flute: 'tool-centre path', vgroove: 'groove centre line' }[operation.kind] || 'finished pocket boundary',
+          readiness: readinessOf(operation),
           exported: (exportAnyway || !held) && operationProblems(operation, panel).length === 0,
         })),
       });

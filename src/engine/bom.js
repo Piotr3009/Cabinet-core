@@ -17,7 +17,7 @@ import { sheetSizeForFamily } from './checks.js';
 import { lightingBomLines } from './ledStrips.js';
 // T75 F5 · the worktop's slabs, joint and cut-outs, resolved from the design.
 // T75 F22 · the state of every line, read off the part.
-import { readinessOf } from './readiness.js';
+import { appliedStripNotes, readinessOf } from './readiness.js';
 import { worktopsFor } from './worktop.js';
 import { migrateDesign } from './design.js';
 import { roomWalls } from './room.js';
@@ -117,8 +117,27 @@ export function buildBom(entries, {
     // T75 F23 · a dowel unit's cut list says so in a NOTE row (the gate while
     // it is shut); counted in nothing, merged with nothing.
     const dowelNote = dowelNoteRow(result);
+    // T76 F5 · a front with applied strips carries a NOTE for their gluing,
+    // `manual`, in the same grammar: counted in nothing, merged with nothing.
+    const stripNotes = appliedStripNotes(counted).map((n) => ({
+      unit_num: result.unitNum,
+      id: n.id,
+      part: n.part,
+      role: 'front_note',
+      material_role: 'note',
+      material_label: `NOTE: glue the ${n.strips} applied strips to ${n.host}`
+        + `${n.mitre != null ? `, ${n.mitre} degree mitres` : ''}, after machining`,
+      w: 0,
+      h: 0,
+      qty: 1,
+      thickness: 0,
+      edge: '',
+      edge_m: 0,
+      area_m2: 0,
+      readiness: n.state,
+    }));
     units.push({
-      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: dowelNote ? [...rows, dowelNote] : rows, totals: result.totals, warnings: result.warnings,
+      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : [])], totals: result.totals, warnings: result.warnings,
     });
 
     for (const r of rows) {

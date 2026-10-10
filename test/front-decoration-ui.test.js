@@ -7,6 +7,8 @@ import { setFrontTypeCount, settingsSectionSnapshot } from '../src/engine/projec
 import { DEFAULT_CABINET_PROFILE } from '../src/engine/profile.js';
 import { drawnFrontStyleIds } from '../src/engine/frontStyleArt.js';
 import { paramsForEngine, useProjectStore } from '../src/stores/projectStore.js';
+// T76 F5 · one state: the line's state is T75's readiness.
+import { readinessOf } from '../src/engine/readiness.js';
 import { migrateRoom, rectCorners } from '../src/engine/room.js';
 
 const store = () => useProjectStore.getState();
@@ -119,5 +121,7 @@ test('non-finite recipe input stays invalid after JSON persistence instead of ac
     assert.equal(decoration.status, 'blocked');
     assert.equal(decoration.problems[0].code, 'FRONT_DECORATION_PARAMETER');
     assert.equal(decoration.operations.length, 0);
+    // T76 F5 · the LINE is the slab's: still cut; the refusal is the Check's.
+    assert.equal(readinessOf({ id: '01-F', part: 'FRONT', cnc: {}, meta: { frontDecoration: decoration } }), 'cut');
   }
 });

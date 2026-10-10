@@ -280,8 +280,9 @@ export function exportProjectPdf({ entries, project, capture, assignments, mater
   for (const unit of bom.units) {
     for (const r of unit.rows) {
       doc.setFontSize(7);
+      // T76 F5 · the construction label; the line's state is its readiness.
       const manufacturingNotes = r.manufacturing
-        ? doc.splitTextToSize(r.manufacturing.summary, pageW - margin * 2 - 18) : [];
+        ? doc.splitTextToSize(r.manufacturing.construction, pageW - margin * 2 - 18) : [];
       if (y > pageH - margin - 8 - manufacturingNotes.length * 3.5) {
         doc.addPage(); y = margin + 6; header();
       }

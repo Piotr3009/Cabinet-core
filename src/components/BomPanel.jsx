@@ -663,9 +663,10 @@ function FragmentRows({ unit }) {
           <td className="px-2 py-1 text-ink-400">{r.unit_num}</td>
           <td className="px-2 py-1">
             {r.id}
+            {/* T76 F5 · the construction label; the state is the State column's. */}
             {r.manufacturing && (
               <div className="text-[10px] text-ink-400 max-w-[260px]" data-front-manufacturing={r.id}>
-                {r.manufacturing.summary}
+                {r.manufacturing.construction}
               </div>
             )}
           </td>

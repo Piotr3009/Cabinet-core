@@ -1296,7 +1296,8 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // door plane at an internal corner), and F3 `blind_blank` (the blind kit's
 // fixed face): both are seen from the room and both are front material.
 // T75 F14 · …and `false_front`, the hob unit's fixed dummy, the blank's sibling.
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'back_panel']);
+// T75 F15 · …and `pelmet`, the strip under a run of wall units, front material.
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1326,7 +1327,7 @@ export function isFinishExposed(role) {
 // under the doors, in the plane the eye reads as the front of the run — so it
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'back_panel']);
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -5502,6 +5503,70 @@ export function computeCabinet(params, profileOverride) {
       meta: { run: true, unitIds: runUpstand.unitIds, material: 'worktop' },
     });
     panels.push({ ...up, material_role: 'worktop' });
+  }
+
+  // ─── T75 F15 · THE PELMET, PLAIN ─────────────────────────────────────────
+  //
+  // *"a flat strip under a run of wall units ... front material, the
+  // cornice's run, segment and mitre arithmetic reused ... on the bottom edge
+  // instead of the top, BOM role `pelmet`, cut list line."*  The run element
+  // arrives from the store (`engine/pelmet.js runPelmetParams`); its owner
+  // cuts the strip in the door plane, one door gap under the door's bottom
+  // edge, and a RETURN at every open end, back to the wall along the side.
+  // The 45° at a mitred end is a saw cut on a strip, not a CNC outline: the
+  // outline is the rectangle to the long point, and the meta says where the
+  // saw goes. No run element, no strip: a bare call cuts what it always did.
+  const runPelmet = params?.run_pelmet || null;
+  if (runPelmet?.role === 'owner' && type.mount === 'wall') {
+    const PM = P.pelmet || {};
+    const ph = Number(runPelmet.height) || Number(PM.heightMm) || 0;
+    const pt = Number(PM.thicknessMm) > 0 ? Number(PM.thicknessMm) : frontT;
+    if (ph > 0) {
+      const retL = Math.max(0, Number(runPelmet.returns?.left) || 0);
+      const retR = Math.max(0, Number(runPelmet.returns?.right) || 0);
+      const pz = D + P.doors.gap;
+      const py = -P.doors.gap - ph;
+      const px = (Number(runPelmet.offset) || 0) - (retL > 0 ? pt : 0);
+      const plen = (Number(runPelmet.length) || W) + (retL > 0 ? pt : 0) + (retR > 0 ? pt : 0);
+      const common = {
+        role: 'pelmet', part: 'PELMET', h: ph, thickness: pt, edgeCode: codes.all,
+      };
+      const meta = (extra) => ({
+        run: true,
+        unitIds: runPelmet.unitIds || [],
+        // Outline only, no hole: the joiner screws it up under the carcass.
+        readiness: 'geometry',
+        fixing: 'manual',
+        ...extra,
+      });
+      panels.push(panel({
+        ...common,
+        id: 'PELMET',
+        w: plen,
+        edgeLen: metres(2 * plen + 2 * ph),
+        box: { x: px, y: py, z: pz, w: plen, h: ph, d: pt },
+        cnc: rectGeometry(plen, ph),
+        meta: meta({
+          piece: 'front',
+          ends: runPelmet.ends || null,
+          mitres: { left: Boolean(runPelmet.mitres?.left), right: Boolean(runPelmet.mitres?.right) },
+        }),
+      }));
+      for (const [side, ret] of [['left', retL], ['right', retR]]) {
+        if (!(ret > 0)) continue;
+        panels.push(panel({
+          ...common,
+          id: side === 'left' ? 'PELMET-L' : 'PELMET-R',
+          w: ret,
+          edgeLen: metres(2 * ret + 2 * ph),
+          box: {
+            x: side === 'left' ? px : px + plen - pt, y: py, z: pz + pt - ret, w: pt, h: ph, d: ret,
+          },
+          cnc: rectGeometry(ret, ph),
+          meta: meta({ piece: 'return', side, mitres: { front: true } }),
+        }));
+      }
+    }
   }
 
   // ── The bottom masking panel (turn 14, CLAUDE.md F5 / BACKLOG #45) ───────

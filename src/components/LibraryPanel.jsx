@@ -35,6 +35,8 @@ export default function LibraryPanel() {
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const notify = useUiStore((s) => s.notify);
   const addUnit = useProjectStore((s) => s.addUnit);
+  // T75 F15 · a row that is an ACTION on the selected unit's run (the pelmet).
+  const libraryAction = useProjectStore((s) => s.libraryAction);
   const units = useProjectStore((s) => s.units);
   const profile = useCabinetProfileStore((s) => s.profile);
   const design = useProjectStore((s) => s.project.design);
@@ -138,6 +140,14 @@ export default function LibraryPanel() {
     if (insertAt) clearLibraryInsert();
   };
 
+  // T75 F15 · an action row is done to the SELECTED unit's run; the store
+  // answers, and a refusal is said in words.
+  const handleAction = (entry) => {
+    const { ok, error, said } = libraryAction(entry.action, selectedUnitId) || {};
+    if (!ok) { notify(error || 'Not yet.', 'warn'); return; }
+    if (said) notify(said, 'info');
+  };
+
   return (
     <div className={`cc-panel absolute w-[248px] ${LAYER_CLASS.panel} select-none`} style={{ left: pos.x, top: pos.y }}>
       <div
@@ -227,6 +237,7 @@ export default function LibraryPanel() {
                   profile={profile}
                   heights={heights}
                   onAdd={handleAdd}
+                  onAction={handleAction}
                 />
               ))}
               {filtered.hidden > 0 && (
@@ -258,7 +269,7 @@ export default function LibraryPanel() {
  * not say why is a row a workshop asks about twice.
  */
 function LibraryEntry({
-  entry, profile, heights, onAdd, nested = false,
+  entry, profile, heights, onAdd, onAction = null, nested = false,
 }) {
   const [open, setOpen] = useState(false);
   const rowRef = useRef(null);
@@ -295,12 +306,30 @@ function LibraryEntry({
                 profile={profile}
                 heights={heights}
                 onAdd={onAdd}
+                onAction={onAction}
                 nested
               />
             ))}
           </Flyout>
         )}
       </div>
+    );
+  }
+
+  // T75 F15 · an ACTION row: no kit, no size line, the click is done to the run.
+  if (entry.kind === 'action' && state.enabled) {
+    return (
+      <button
+        type="button"
+        className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 border border-transparent hover:border-shell-600 transition-colors"
+        data-library-entry={entry.id}
+        data-library-action={entry.action}
+        title={state.hint || ''}
+        onClick={() => onAction?.(entry)}
+      >
+        <div className="text-sm text-ink-50">{state.label || entry.id}</div>
+        <div className="text-[11px] text-ink-400">{state.hint}</div>
+      </button>
     );
   }
 

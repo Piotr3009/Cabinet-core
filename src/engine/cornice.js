@@ -253,14 +253,20 @@ function dedupe(points) {
  * that finishes with its carcass. A panel taken up past the cornice is caught
  * where every other obstacle is — `runEnd`, on the verticals.
  */
-export function corniceSegments(run, profile) {
+// T75 F15 · `heightOf` asks the same question of another strip run along the
+// same units (the pelmet, on the BOTTOM edge): what height does this unit want.
+// Left out, it is the cornice's own question, so every caller before tonight
+// gets the segments it got.
+export function corniceSegments(run, profile, { heightOf = null } = {}) {
   const segments = [];
   let current = [];
   let height = 0;
   const close = () => { if (current.length) segments.push({ units: current, height }); current = []; };
 
   for (const unit of run.units) {
-    const want = takesCornice(unit.type) ? corniceOption(unit.params?.cornice, profile) : 0;
+    const want = heightOf
+      ? (Number(heightOf(unit)) || 0)
+      : (takesCornice(unit.type) ? corniceOption(unit.params?.cornice, profile) : 0);
     if (!want) { close(); height = 0; continue; }
     if (current.length && want !== height) close();
     height = want;
@@ -438,12 +444,15 @@ export function segmentCornice(segment, {
  *   `null` is "this is not a corner", which leaves `runEnd`'s own answer
  *   standing. A refusal is a corner that exists and cannot be cut.
  */
-export function corniceCorner({ mine, theirs }, profile) {
+// T75 F15 · `option` says which heights are a moulding at all: the cornice's
+// two (70, 100) unless a strip of another height (the pelmet's) says its own.
+export function corniceCorner({ mine, theirs, option = null }, profile) {
   if (!mine || !theirs) return null;
   const C = profile?.autoParts?.cornice || {};
   const tolerance = Math.max(0, Number(C.cornerToleranceMm ?? 2));
-  const mineH = corniceOption(mine.height, profile);
-  const theirsH = corniceOption(theirs.height, profile);
+  const heightOk = option || ((h) => corniceOption(h, profile));
+  const mineH = heightOk(mine.height);
+  const theirsH = heightOk(theirs.height);
   if (!mineH || !theirsH) return null;
 
   // TOPS MUST MEET. A moulding that finishes 300 mm above its neighbour's is

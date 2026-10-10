@@ -88,7 +88,7 @@ const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
  */
 // T75 F2/F3 · the corner post and the blind kit's blank are hung on the
 // carcass the same way: pieces a joiner points at directly.
-const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel', 'corner-post', 'blind-blank', 'upstand', 'false-front']);
+const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel', 'corner-post', 'blind-blank', 'upstand', 'false-front', 'pelmet']);
 
 /**
  * Is this piece clickable AS A PIECE in the room view?
@@ -173,6 +173,8 @@ export function elementKind(panel) {
     case 'BLIND-BLANK': return 'blind-blank';
     // T75 F14 · the hob unit's fixed dummy over its drawers.
     case 'FALSE-FRONT': return 'false-front';
+    // T75 F15 · the pelmet under a run of wall units.
+    case 'PELMET': return 'pelmet';
     default:
       // T54-F7: the SHOEBOX-* kind died with its world — a shoe is a
       // `variant:'shoe'` DRAWER now, so its boards answer as a drawer's do
@@ -205,6 +207,7 @@ const LABELS = {
   upstand: 'Upstand',
   'blind-blank': 'Blind corner blank',
   'false-front': 'Fixed front (hob)',
+  pelmet: 'Pelmet',
 };
 
 /** What each board of a drawer box is called, in a joiner's words. */
@@ -313,6 +316,7 @@ const FIELDS = {
   upstand: ['material'],
   'blind-blank': ['material'],
   'false-front': ['material'],
+  pelmet: ['material'],
   // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
   // stack — that is what F8 edits, on the unit — so what is said about one
   // board of it is what it is made of.
@@ -422,6 +426,8 @@ const ACTIONS = {
   'blind-blank': { remove: false, move: false, why: 'The blank is the blind corner\'s face: set its width by clicking its dimension.' },
   // T75 F14 · the dummy IS the hob unit's top: it is the kit, not an add-on.
   'false-front': { remove: false, move: false, why: 'The fixed front is the hob unit\'s top: the hob stands over it. Choose the plain drawer unit for a drawer here.' },
+  // T75 F15 · the pelmet is the run's: it comes off as it went on.
+  pelmet: { remove: false, move: false, why: 'The pelmet belongs to the run: select a unit of it and click Pelmet in the library\'s Extras to take it off.' },
 };
 
 /**

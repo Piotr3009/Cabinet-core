@@ -48,6 +48,7 @@ const OVEN_STACK = 'An oven stands at eye level with cupboards under and over it
  *   { kind: 'type',  id, typeId, label?, hint? }
  *   { kind: 'group', id, label, hint?, items: [entry…] }   — flies out to the side
  *   { kind: 'soon',  id, label, hint, reason }             — held open
+ *   { kind: 'action', id, action, label, hint }  (T75 F15: done to the selected unit's run)
  *
  * `label` left out means "whatever the unit type calls itself", which keeps one
  * name for a kit instead of two that can drift.
@@ -266,12 +267,18 @@ export const KITCHEN_LIBRARY = [
         label: 'Free-standing panel',
         hint: 'A panel that belongs to the room, not to a cabinet',
       },
+      // ─── T75 F15 · THE ROW HELD OPEN SINCE TURN 15 OPENS ────────────────
+      // *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet: a flat
+      // strip under a run of wall units."*  It is not a kit to place but a
+      // thing done to the run of the selected wall unit, so the row is an
+      // ACTION: one click hangs the strip along the whole run, the same click
+      // on a run that has it takes it off (the store's `libraryAction`).
       {
-        kind: 'soon',
+        kind: 'action',
         id: 'cornice-pelmet',
-        label: 'Cornice / pelmet',
-        hint: 'One click adds the strip along a whole run',
-        reason: 'Run-logic like the plinth is ready; the strip\'s own profile and cut pattern are not',
+        action: 'pelmet',
+        label: 'Pelmet',
+        hint: 'One click adds the strip along the selected wall unit\'s whole run; again, it comes off',
       },
     ],
   },
@@ -359,6 +366,13 @@ export function resolveEntry(entry, profile) {
   if (entry.kind === 'soon') {
     return {
       enabled: false, reason: entry.reason || null, label: entry.label, hint: entry.hint || null, count: null,
+    };
+  }
+  // T75 F15 · an action row is always offered: what it is done to (the
+  // selected unit) answers for itself, refusing in words where it must.
+  if (entry.kind === 'action') {
+    return {
+      enabled: Boolean(entry.action), reason: entry.action ? null : 'Not yet', label: entry.label, hint: entry.hint || null, count: null,
     };
   }
   const variant = entry.variant

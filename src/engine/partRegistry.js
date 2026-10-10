@@ -180,6 +180,12 @@ export const PART_REGISTRY = {
     id: 'back_panel', name: 'Back panels', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'The board on an island face no cabinet stands against (T75 F10)',
   },
+  // T75 F15 · the plain pelmet: a strip in the door plane under a run of wall
+  // units, front material, cut (a cut list line), its returns with it.
+  pelmet: {
+    id: 'pelmet', name: 'Pelmet', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'The strip under a run of wall units, hiding the light',
+  },
   // T75 F5 · the worktop's upstand along the wall, cut from worktop material.
   upstand: {
     id: 'upstand', name: 'Upstands', group: G('board'), unit: 'm²', materialType: 'board',
@@ -500,8 +506,10 @@ export const ELEMENT_TO_PART_ID = {
   // standing where the carcass's own boards stand: the RETURN is the side of
   // the full-depth part, the STEP the shallow part's own back (the BACK's
   // corner, moved forward), the LID a horizontal over a part-height notch.
+  // T75 F15 · the pelmet's strip and its returns.
   'NOTCH-RETURN': 'carcase_side',
   'NOTCH-STEP': 'back',
+  PELMET: 'pelmet',
   'NOTCH-LID': 'carcase_horizontal',
   // T74 F13 · the free-standing panel's one board.
   'FREE-PANEL': 'free_panel',
@@ -628,6 +636,8 @@ const EDGE_OF_PART = {
   end_panel: 'edge_front',
   infill: 'edge_front',
   mask: 'edge_front',
+  // T75 F15 · the pelmet is banded as the mask is: front edging.
+  pelmet: 'edge_front',
   corner_post: 'edge_front',
   upstand: 'edge_carcase',
   back_panel: 'edge_front',

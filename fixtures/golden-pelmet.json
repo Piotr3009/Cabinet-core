@@ -1,0 +1,284 @@
+{
+  "meta": {
+    "name": "golden-pelmet.json",
+    "turn": "T75",
+    "F": "F15",
+    "source": "No LISP: a plain strip and its return, rectangles; the 45 degree ends are a saw cut",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "WUD",
+    "width": 600,
+    "height": 720,
+    "depth": 400,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "mount_height": 1500,
+    "door_extend": false,
+    "unit_num": "01",
+    "pelmet": true,
+    "run_pelmet": {
+      "role": "owner",
+      "height": 50,
+      "offset": 0,
+      "length": 600,
+      "ends": {
+        "left": "wall",
+        "right": "open"
+      },
+      "mitres": {
+        "left": false,
+        "right": true
+      },
+      "returns": {
+        "left": null,
+        "right": 438
+      },
+      "corners": {
+        "left": null,
+        "right": null
+      },
+      "bottom": 1447,
+      "unitIds": [
+        "u"
+      ]
+    }
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,382,720,<,0.72,0.275",
+      "01,BUR,382,720,>,0.72,0.275",
+      "01,TOP,564,382,>,0.56,0.215",
+      "01,BOTTOM,564,382,>,0.56,0.215",
+      "01,BACK,600,720,,0,0.432",
+      "01,PELMET,625,50,<>^v,1.35,0.031",
+      "01,PELMET-R,438,50,<>^v,0.98,0.022",
+      "01,01-F,597,717,<>^v,2.63,0.428"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 382,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 720,
+          "d": 382
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 382,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 720,
+          "d": 382
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 382,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 702,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 382
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 382,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 382
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 720,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 12,
+        "readiness": null
+      },
+      {
+        "id": "PELMET",
+        "part": "PELMET",
+        "role": "pelmet",
+        "w": 625,
+        "h": 50,
+        "thickness": 25,
+        "box": {
+          "x": 0,
+          "y": -53,
+          "z": 403,
+          "w": 625,
+          "h": 50,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "PELMET-R",
+        "part": "PELMET",
+        "role": "pelmet",
+        "w": 438,
+        "h": 50,
+        "thickness": 25,
+        "box": {
+          "x": 600,
+          "y": -53,
+          "z": -10,
+          "w": 25,
+          "h": 50,
+          "d": 438
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 717,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 403,
+          "w": 597,
+          "h": 717,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        6
+      ],
+      [
+        "HINGES_5MM|BUL",
+        8
+      ],
+      [
+        "HINGES_5MM|BUR",
+        2
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        14
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 3,
+        "label": "Hinges"
+      },
+      {
+        "role": "hangers",
+        "qty": 2,
+        "label": "Wall hangers"
+      }
+    ]
+  }
+}

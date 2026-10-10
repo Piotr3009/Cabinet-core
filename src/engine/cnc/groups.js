@@ -124,7 +124,9 @@ export function groupOfPanel(panel) {
   // them: doors, drawer fronts, end panels, the wall unit's masking board.
   // T75 F3 · the blind kit's blank is a FIX front, cut with the doors.
   // T75 F14 · …and the hob unit's dummy, the same FIX front.
-  if (role === 'front' || role === 'end_panel' || role === 'mask' || role === 'blind_blank' || role === 'false_front') return 'fronts';
+  // T75 F15 · …and the pelmet, a strip of front board.
+  if (role === 'front' || role === 'end_panel' || role === 'mask' || role === 'blind_blank' || role === 'false_front'
+    || role === 'pelmet') return 'fronts';
   // T75 F2 · the corner post is the side infill's sibling and goes with it.
   if (role === 'infill' || role === 'plinth' || role === 'corner_post') return 'infills';
   if (role === 'shelf') return 'shelves';                     // SHELF, VPART, RAIL-PART, FIXED

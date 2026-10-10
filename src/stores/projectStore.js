@@ -90,6 +90,7 @@ import {
 import { handleClassCount } from '../engine/handles.js';
 // Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
 import { worktopEligible, worktopsFor } from '../engine/worktop.js';
+import { pelmetRefusal, runPelmetParams } from '../engine/pelmet.js';
 import { frontGapClashes } from '../engine/frontGapClash.js';
 // Turn 31 (CLAUDE.md F4): the owner's 18-point front-gap rulebook.
 // Turn 32 (CLAUDE.md F3): …and the healing plan that APPLIES it.
@@ -720,6 +721,7 @@ function paramsForEngine(unit, design = null) {
   const {
     run_top_infill: _fossilTop, run_plinth: _fossilPlinth,
     run_mask: _fossilMask, run_cornice: _fossilCornice, run_upstand: _fossilUpstand,
+    run_pelmet: _fossilPelmet,
     ...p
   } = unit.params;
   const items = p.sections?.[0]?.items || [];
@@ -735,6 +737,8 @@ function paramsForEngine(unit, design = null) {
       run_cornice: elements.cornice,
       // T75 F5 · spread only where the run carries one.
       ...(elements.upstand ? { run_upstand: elements.upstand } : {}),
+      // T75 F15 · …and the pelmet, the same way.
+      ...(elements.pelmet ? { run_pelmet: elements.pelmet } : {}),
     } : {}),
     type: unit.type,
     items,
@@ -2374,6 +2378,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         + (Number(u.params?.front_t) || profile.front.thickness),
       infillHeightOf: (u) => Number(u.params?.top_infill_mm) || 0,
     }, profile);
+    // T75 F15 · …and the PELMET, the cornice's segments and mitres on the
+    // bottom edge of a run of wall units (engine/pelmet.js).
+    const pelmetParams = runPelmetParams(next, {
+      walls,
+      frontFaceDepthOf: (u) => wallGapOf(u, profile)
+        + (Number(u.params?.depth) || 0)
+        + profile.doors.gap
+        + (Number(u.params?.front_t) || profile.front.thickness),
+    }, profile);
 
     // ─── Ceiling honesty (CLAUDE.md F1.5) ───
     // "a 2400 wardrobe under a 2400 ceiling WARNS instead of clipping". A
@@ -2417,8 +2430,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         cornice: corniceParams.get(u.id) ?? null,
         // T75 F5 · present only where a run has asked for one.
         ...(upstandParams.get(u.id) ? { upstand: upstandParams.get(u.id) } : {}),
+        // T75 F15 · …and the pelmet, likewise.
+        ...(pelmetParams.get(u.id) ? { pelmet: pelmetParams.get(u.id) } : {}),
       };
-      if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice && !entry.upstand) continue;
+      if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice && !entry.upstand
+        && !entry.pelmet) continue;
       const prev = prevElements[u.id];
       // Reference equality matters (drag frames), and the test is BYTE
       // equality of the WHOLE element — a field list here rotted twice
@@ -3036,6 +3052,50 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }));
     get().refreshAutoParts();
     return Boolean(get().runElements?.[unitId]?.upstand || [...ids].some((id) => get().runElements?.[id]?.upstand));
+  },
+
+  /**
+   * ─── T75 F15 · THE PELMET, ONE CLICK ALONG A WHOLE RUN ────────────────────
+   *
+   * *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet: a flat strip
+   * under a run of wall units."*  Its row said *"One click adds the strip along
+   * a whole run"*, so the decision is written on every unit of the selected
+   * unit's run that may take it (the upstand's grammar, T75 F5), and the same
+   * click on a run that has it takes it off. Refused in words, never clipped:
+   * a unit not hung on a wall, or a door running below its carcass.
+   *
+   * @returns {{ok:boolean, on?:boolean, said?:string, error?:string}}
+   */
+  togglePelmet: (unitId) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, error: 'Select a wall unit first: the pelmet hangs under its whole run.' };
+    const ids = runMemberIds(get().units, unitId, profile);
+    if (unit.params?.pelmet === true) {
+      const off = new Set(ids);
+      set((s) => ({
+        units: s.units.map((u) => (off.has(u.id) ? { ...u, params: { ...u.params, pelmet: false } } : u)),
+      }));
+      get().refreshAutoParts();
+      return { ok: true, on: false, said: 'The pelmet is off this run.' };
+    }
+    const refusal = pelmetRefusal(unit);
+    if (refusal) return { ok: false, error: refusal };
+    const on = new Set(ids.filter((id) => !pelmetRefusal(get().units.find((u) => u.id === id))));
+    set((s) => ({
+      units: s.units.map((u) => (on.has(u.id) ? { ...u, params: { ...u.params, pelmet: true } } : u)),
+    }));
+    get().refreshAutoParts();
+    return { ok: true, on: true, said: `Pelmet under ${on.size} wall unit${on.size === 1 ? '' : 's'}.` };
+  },
+
+  /**
+   * T75 F15 · what a library row that is an ACTION does (not a kit to place):
+   * the panel names the action and the selected unit, and the store answers.
+   */
+  libraryAction: (action, unitId) => {
+    if (action === 'pelmet') return get().togglePelmet(unitId);
+    return { ok: false, error: 'Not yet.' };
   },
 
   removeUpstand: (unitId) => {

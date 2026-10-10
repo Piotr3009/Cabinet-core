@@ -402,7 +402,8 @@ export function sheetsFor(m2, sheet) {
  * the same board or the two documents contradict each other, so this set is the
  * exact image of `groups.js:125`:
  *
- *     role 'front' | 'end_panel' | 'mask' | 'blind_blank' (T75 F3) | 'false_front' (T75 F14)  → fronts
+ *     role 'front' | 'end_panel' | 'mask' | 'blind_blank' (T75 F3) | 'false_front' (T75 F14)
+ *       | 'pelmet' (T75 F15)  → fronts
  *     everything else                      → carcasses
  *
  * Note what that puts on the CARCASS board: the plinth and the infills. They
@@ -411,7 +412,7 @@ export function sheetsFor(m2, sheet) {
  * workshop cuts them off it. `test/t39-bom-engine.test.js` walks every cabinet
  * and asserts the two answers agree panel by panel.
  */
-const FRONT_SHEET_PARTS = new Set(['door', 'drawer_front', 'false_front', 'end_panel', 'mask']);
+const FRONT_SHEET_PARTS = new Set(['door', 'drawer_front', 'false_front', 'end_panel', 'mask', 'pelmet']);
 
 export function sheetFamilyOfPart(partId) {
   return FRONT_SHEET_PARTS.has(partId) ? 'fronts' : 'carcasses';

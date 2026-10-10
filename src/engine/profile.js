@@ -1531,6 +1531,17 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 600, height: 600, depth: 578, railOffset: 200 },
   },
 
+  // ─── T75 F15 · THE PELMET, PLAIN ─────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F15: *"a flat strip under a run of wall units,
+  // `profile.pelmet = { heightMm: 50, thicknessMm: front_t } // T75 proposed`,
+  // front material."*  `thicknessMm: null` is "the front's own thickness"
+  // (`front_t`), the number the spec names; a stated number wins.
+  pelmet: {
+    heightMm: 50,        // T75 proposed, owner to confirm
+    thicknessMm: null,   // T75 proposed, owner to confirm (null = front_t)
+  },
+
   // ─── T75 F14 · THE HOB UNIT ──────────────────────────────────────────────
   //
   // CLAUDE.md T75 F14: *"the box under it keeps `profile.hob.clearanceMm = 60
@@ -5305,6 +5316,8 @@ export function migrateCabinetProfile(profile) {
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
     cargoUnit: { ...D.cargoUnit, ...profile.cargoUnit, defaults: { ...D.cargoUnit.defaults, ...profile.cargoUnit?.defaults } },
     pantryUnit: { ...D.pantryUnit, ...profile.pantryUnit, defaults: { ...D.pantryUnit.defaults, ...profile.pantryUnit?.defaults } },
+    // T75 F15 · the pelmet's numbers, key by key.
+    pelmet: { ...D.pelmet, ...profile.pelmet },
     // T75 F14 · the hob's clearance, key by key.
     hob: { ...D.hob, ...profile.hob },
     // T75 F13 · the drawers-behind-doors base unit's defaults, key by key.

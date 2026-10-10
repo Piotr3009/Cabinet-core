@@ -101,6 +101,12 @@ function paramSets(typeId) {
     // T75 F10 · the island automat's two panels: a free panel the store names.
     ['island-back', { ...base, island_panel: 'back' }],
     ['island-end', { ...base, island_panel: 'end' }],
+    // T75 F15 · the pelmet the store writes as a run element (cut by a wall unit).
+    ['pelmet', {
+      ...base, doors: true, mount_height: 1500, run_pelmet: {
+        role: 'owner', height: 50, offset: 0, length: 1200, returns: { left: 400, right: null }, unitIds: ['u'],
+      },
+    }],
     // T75 F2 · the corner post the store writes when a unit lands on the corner stop.
     ['corner-post', { ...base, doors: true, corner_post_left_mm: 50, corner_post_right_mm: 50 }],
     // T75 F7 · the corner notch, full height (RETURN, STEP) and part height

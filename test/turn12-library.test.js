@@ -105,7 +105,9 @@ test('a group says how much of it can be placed today', () => {
   assert.deepEqual(groupCounts(wall, P), { total: 5, enabled: 5 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
   // T74 F13 · one of the two can be placed now: the free-standing panel.
-  assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 1 });
+  // AMENDED BY T75 F15: both now, *"The held-open row `cornice-pelmet` opens as
+  // a PLAIN pelmet"* (an action row on the selected unit's run).
+  assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 2 });
 });
 
 test('the drawer unit is ONE expandable entry with four splits behind it', () => {
@@ -177,7 +179,8 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // AMENDED BY T75 F4: 'l-shape-wall' left this list: the Corner L wall.
     // T74 F13 · 'free-standing-panels' left this list: its owner in the model
     // is a kit of its own, `FREE_PANEL`, one board in the room.
-    'cornice-pelmet',
+    // AMENDED BY T75 F15: 'cornice-pelmet' left it too, *"The held-open row
+    // `cornice-pelmet` opens as a PLAIN pelmet"*.
   ]);
   for (const entry of soon) {
     const state = resolveEntry(entry, P);

@@ -10,6 +10,9 @@ import { exportFileName, fileSafeName } from '../engine/naming.js';
 import { exportGate, panelsThatGo } from '../engine/cnc/exportGate.js';
 import { getCabinetProfile } from '../engine/profile.js';
 import { download } from './exporters.js';
+// T75 F22 · *"the CNC export carries a banner counting the lines that are not
+// 'cut'"*: read off the parts that go, never written into them.
+import { READINESS_LABELS, readinessBanner, readinessOf } from '../engine/readiness.js';
 // ─── TURN 45 (CLAUDE.md F9-CNC): THE GROOVE UNDER EVERY PLACED LINE ─────────
 // Born in `reference/lisp/KIT_LED_GROOVE.lsp` (iron rule 3), cut here. It is
 // ADDITIVE and GATED: a unit with no LED line is handed back the very result
@@ -75,6 +78,28 @@ export function grooved(result, {
 // it never fixes).
 
 /**
+ * T75 F22 · the state of every part that goes, and the banner for those that
+ * are not `cut`: `{ lines: [{ id, state }], count, banner }`.
+ */
+export function exportReadiness(panels, drills = []) {
+  const lines = (panels || []).map((p) => ({ id: p.id, part: p.part, state: readinessOf(p, { drills }) }));
+  const { count, banner } = readinessBanner(lines);
+  return { lines, count, banner };
+}
+
+/**
+ * T75 F22 · the banner a unit's ZIP carries as a file of its own beside the
+ * DXFs (a DXF carries no letters but the part's own, T17 F2.2): the count,
+ * then every part that is not `cut` with its state. Null when all are cut.
+ */
+export function readinessNote(unitNum, ready) {
+  if (!ready?.count) return null;
+  const rows = ready.lines.filter((l) => l.state !== 'cut')
+    .map((l) => `${l.id}: ${READINESS_LABELS[l.state]}`);
+  return [`${unitNum}: ${ready.banner}`, '', ...rows, ''].join('\r\n');
+}
+
+/**
  * One ZIP per unit: `{unitNum}-dxf.zip`, containing `{unitNum}-{PANEL_ID}.dxf`
  * for every cut part of that unit.
  *
@@ -106,6 +131,10 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
 
   const zip = new JSZip();
   for (const f of files) zip.file(f.name, f.dxf);
+  // T75 F22 · the banner rides the ZIP as a file of its own.
+  const ready = exportReadiness(safe.panels, safe.drills);
+  const note = readinessNote(result.unitNum, ready);
+  if (note) zip.file(`${fileSafeName(result.unitNum, 'unit')}-READINESS.txt`, note);
 
   // DEFLATE: the DXFs are ASCII group codes, so they compress ~10:1.
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
@@ -125,6 +154,7 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
     files: files.map((f) => f.name),
     held: exportAnyway ? [] : gate.held,
     gateMessage: exportAnyway ? null : gate.message,
+    readinessBanner: ready.banner,
   };
 }
 
@@ -162,6 +192,7 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
     presetId,
     held: exportAnyway ? [] : gate.held,
     gateMessage: exportAnyway ? null : gate.message,
+    readinessBanner: exportReadiness(panels, result.drills).banner,
   };
 }
 
@@ -215,5 +246,6 @@ export function exportMaterialDxf(entries, {
     units: section.blocks.length,
     held: exportAnyway ? [] : gate.held,
     gateMessage: exportAnyway ? null : gate.message,
+    readinessBanner: readinessBanner(section.blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines)).banner,
   };
 }

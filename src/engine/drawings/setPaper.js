@@ -10,6 +10,8 @@
 // Pure functions: no React, no store imports.
 
 import { entLine as line, entRect as rect, entText as text } from './primitives.js';
+// T75 F22 · the state of every part on the parts card.
+import { readinessOf } from '../readiness.js';
 import { formatMm } from '../format.js';
 import { SET_LEGEND, SET_NOTES, wrapWords } from './setSheet.js';
 
@@ -113,6 +115,9 @@ export function cutRows(result) {
   const carcass = []; const fronts = [];
   for (const p of result.panels || []) {
     const row = { id: p.id, part: p.part, qty: Number(p.qty) || 1, w: p.w, h: p.h, t: p.thickness, edging: p.edging?.len_m || 0, area: p.area_m2 || 0 };
+    // T75 F22 · *"The T71 drawing set prints the state in the parts card"*:
+    // read off the part (`engine/readiness.js`), never written into it.
+    row.state = readinessOf(p, { drills: result.drills });
     if (p.material_role === 'front') fronts.push(row); else carcass.push(row);
   }
   return { carcass, fronts };
@@ -132,6 +137,10 @@ function cutBlock(e, rowH) {
 
 const CUT_ROW = 3.0;
 const CUT_COLS = 4;
+/** T75 F22 · the state as the parts card prints it, short enough for its column. */
+const READINESS_SHORT = {
+  cut: 'CNC', geometry: 'OUTLINE', manual: 'ON SITE', bought: 'BOUGHT',
+};
 
 /**
  * HOW THE CUT LIST PAGINATES: blocks flow down four columns, a block that does
@@ -189,6 +198,9 @@ export function buildCutList(zones, { entries = [], page = null, showTotals = tr
       out.push({ ...text('SHEET_MUTED', x + 34, yy, `${r.qty} x`, 2.0, 'right') });
       out.push({ ...text(layer, x + 37, yy, `${formatMm(r.w)} x ${formatMm(r.h)}`, 2.0, 'left') });
       out.push({ ...text('SHEET_MUTED', x + w - 2, yy, `t${formatMm(r.t)}`, 1.7, 'right') });
+      // T75 F22 · the state, on every line: what the machine finishes reads
+      // CNC; anything else is said in the joiner's words.
+      out.push({ ...text(r.state === 'cut' ? 'SHEET_MUTED' : 'BUILDING', x + w - 10, yy, READINESS_SHORT[r.state] || '', 1.6, 'right') });
       yy -= CUT_ROW;
     };
     bl.rows.carcass.forEach((r) => put(r, 'FRAME'));

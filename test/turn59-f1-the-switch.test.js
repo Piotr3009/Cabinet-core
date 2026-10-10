@@ -73,6 +73,8 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  'src/components/CncTree.jsx':
+    'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*',
   'src/components/SaveTemplateModal.jsx':
     'T75 F20 · right-clicked inside a selection of two or more, the modal saves a SET (templateStore.saveSet): the units left to right with the gaps between them. *"`lib/templates.js` grows `kind: \'set\'`: an ORDERED list of units (type + params, positions stripped as today) with the gaps between them."*',
   'src/components/TopBar.jsx':
@@ -87,7 +89,8 @@ const EXEMPT = {
   'src/components/ContextMenu.jsx':
     'T75 F5 · the right-click offers the UPSTAND beside the plinth, on and off per run, and the menu is handed the two store calls it needs (addUpstand, removeUpstand). *"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... on and off per run like the plinth (BACKLOG #16\'s grammar: added by a decision, visible only then)."*',
   'src/components/BomPanel.jsx':
-    'T75 F21 · the purchase list is priced at what the job was quoted at (project.warehouseStamp), the file carries it, and Accept today\'s prices is the owner\'s decision to re-price. *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*; *"prices change a quote only by the owner\'s decision"*. '
+    'T75 F22 · the cut list shows each part\'s state (Cut, Outline only, Fit on site, Bought) in a State column, and every ironmongery line says Bought. *"The cut list, the BOM and the CNC export show the state on every line."* '
+    + 'T75 F21 · the purchase list is priced at what the job was quoted at (project.warehouseStamp), the file carries it, and Accept today\'s prices is the owner\'s decision to re-price. *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*; *"prices change a quote only by the owner\'s decision"*. '
     + 'T75 F5 · the cut list and the BOM receive the room, so the worktop reaches them: its slabs (a corner is two, an L is one shaped like the L), the connector bolts as an order line, the joint and every cut-out as a NOTE. *"Done means the whole road ... lands in the cut list and the BOM."* One line: `room: project.room` handed to `buildBom`.',
   // ─── ADDED BY TURN 75 · F7, THE CORNER NOTCH ─────────────────────────────
   // CLAUDE.md T75, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
@@ -171,7 +174,8 @@ const EXEMPT = {
     + 'numbered sheet buttons. *"nie zapomnij zostawić w stopce miejsca na '
     + 'firmę, daty, nazwy"*.',
   'src/pages/ConfiguratorPage.jsx':
-    'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
+    'T75 F22 · the Output menu\'s DXF export says the same banner as the CNC view\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."* '
+    + 'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
     + 'T75 F5 · the BOM file is handed the room so the worktop that turns the corner (two slabs and one joint record) rides the file as it rides the panel. *"daj od razu narożniki przemyślane."* '
     + 'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
     + 'same set with the same worktops and render. *"weź zakoduj"*.',
@@ -220,12 +224,13 @@ const FROZEN = {
   'src/components/AssignMaterialsModal.jsx': '32d48ece258aa562d6614606a65fd8df5a15adb3717d40f5736df8db45fac550',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/BomPanel.jsx': 'a746d2abe0dc230acf4c04012c63bfde099f044f49363113ed9f47d4c2be2af7',
+  'src/components/BomPanel.jsx': '789d546fa314ef51fccfa023d137aceaab863438c490e2b2cff1424a0d4fe490',
   'src/components/CabinetEditorModal.jsx': '3d21bba5af9dc42fecbb620b6594b5a4be79be2e9ce5446cf4b53dc4b09b3ca4',
   'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
-  'src/components/CncTree.jsx': 'f8a478a57677e257d4bafdc379bc4e224b7bd397a29bfaa28f923569463712f5',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/CncTree.jsx': '87bd2103612c33d9abcd0d637f38b7b4e71e28c91dc9ef3e8245e96916e30019',
   'src/components/CncView.jsx': 'bbfa3f571120d6bb089f2a885bc48f1f12e1c0431ebb57fb997b9f31ea8a540d',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   'src/components/CompanyDefaultsModal.jsx': '90365da4e2e0bc285c652ec252c62a11da199853fdd9e31a899cb74464e2a896',
@@ -292,7 +297,7 @@ const FROZEN = {
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '4ffb73fd3a037684314aff3a9f04b1905294ff9983ac85ec8adc8e8cf450338b',
+  'src/pages/ConfiguratorPage.jsx': 'a43851062d522b7838d506ba2547a4a635be77bb3e4809f11edccb89f54e33c6',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -473,6 +478,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
     'src/components/BomPanel.jsx',
+    // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
+    'src/components/CncTree.jsx',
     'src/components/ContextMenu.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',

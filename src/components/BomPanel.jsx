@@ -18,6 +18,8 @@ import { lightingBomLines, stripsForUnit } from '../engine/ledStrips.js';
 import { applyDriverPlan, driverSummary } from '../lib/ledDrivers.js';
 import { registerLookup } from '../lib/hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
+// T75 F22 · the state of every line.
+import { READINESS_LABELS } from '../engine/readiness.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -178,6 +180,9 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                 <th className="text-center font-normal px-2 py-1.5">Qty</th>
                 <th className="text-center font-normal px-2 py-1.5">Edge</th>
                 <th className="text-right font-normal px-2 py-1.5">m²</th>
+                {/* T75 F22 · *"The cut list, the BOM and the CNC export show
+                    the state on every line"* (`engine/readiness.js`). */}
+                <th className="text-left font-normal px-2 py-1.5">State</th>
               </tr>
             </thead>
             <tbody>
@@ -415,6 +420,10 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                         ? <>art. {l.article}</>
                         : <>{l.spec_label} · SPEC</>}
                     </span>
+                    {/* T75 F22 · an ironmongery line is an order line. */}
+                    <span className="text-[10px] text-ink-400 whitespace-nowrap" data-readiness="bought">
+                      {READINESS_LABELS.bought}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -645,7 +654,7 @@ function FragmentRows({ unit }) {
   return (
     <>
       <tr className="bg-shell-700/60">
-        <td colSpan={8} className="px-2 py-1 text-[11px] uppercase tracking-wide text-gold">
+        <td colSpan={9} className="px-2 py-1 text-[11px] uppercase tracking-wide text-gold">
           {unit.unitNum} · {unit.type} · {unit.totals.pieces_total} pcs
         </td>
       </tr>
@@ -661,6 +670,12 @@ function FragmentRows({ unit }) {
           <td className="px-2 py-1 text-center">{r.qty}</td>
           <td className="px-2 py-1 text-center font-mono text-ink-400">{r.edge || '—'}</td>
           <td className="px-2 py-1 text-right tabular-nums">{r.area_m2.toFixed(3)}</td>
+          <td
+            className={`px-2 py-1 whitespace-nowrap ${r.readiness && r.readiness !== 'cut' ? 'text-status-warn' : 'text-ink-400'}`}
+            data-readiness={r.readiness || undefined}
+          >
+            {READINESS_LABELS[r.readiness] || ''}
+          </td>
         </tr>
       ))}
     </>

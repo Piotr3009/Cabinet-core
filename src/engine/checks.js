@@ -50,6 +50,10 @@ import {
   blindClearanceView, cornersOf, cornerChecks, lClearanceView,
 } from './corners.js';
 import { roomWalls } from './room.js';
+// T75 F22 · what the machine does not finish, by unit.
+import { notCutParts, readinessCheckMessage, readinessOf } from './readiness.js';
+import { worktopsFor } from './worktop.js';
+import { migrateDesign } from './design.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
@@ -220,6 +224,14 @@ export const CHECKS = Object.freeze([
   // words, never a silent recompute (prices change a quote only by the
   // owner's decision)."*  YELLOW: the quote stands; the owner decides.
   { n: 29, level: 'yellow', label: 'The price list moved since this job was priced' },
+  // ─── T75 F22 · WHAT THE MACHINE DOES NOT FINISH ─────────────────────────
+  //
+  // *"the Check lists them by unit."*  Every part that is not `cut`
+  // (`engine/readiness.js`): an outline with no holes (the blind blank, a
+  // box-out board, the lattice) or a thing fitted on site (a dowel's edge
+  // bore, the worktop's joint and cut-outs). YELLOW: it informs, it never
+  // blocks; the joiner knows what is his before the job reaches the shop.
+  { n: 30, level: 'yellow', label: 'Parts the machine does not finish' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -1056,6 +1068,51 @@ export function runChecks({
         + 'was priced at; Accept today\'s prices in the BOM panel to re-price it.',
       subject: null,
     }));
+  }
+
+  // ── #30 the parts the machine does not finish (T75 F22) ───────────────────
+  //
+  // One finding per unit, every part named with its state; the worktop's
+  // joint and cut-outs (a design-layer piece, resolved only where there is a
+  // room to resolve it in) as one more, under WT.
+  for (const { unit, result } of entries) {
+    if (!unit || !result) continue;
+    const lines = notCutParts(result);
+    if (!lines.length) continue;
+    out.push(finding(30, 'yellow', {
+      unitId: unit.id,
+      unitNum: result.unitNum,
+      panelId: lines[0].id,
+      message: readinessCheckMessage([{ unitNum: result.unitNum, lines }]),
+      subject: { unitId: unit.id, panelId: lines[0].id, editor: 'element' },
+    }));
+  }
+  if (room && design) {
+    const slabs = worktopsFor({
+      records: migrateDesign(design).worktops, units: list, profile, walls: roomWalls(room),
+    });
+    const lines = [];
+    const joints = new Set();
+    for (const slab of slabs) {
+      for (const c of slab.cutouts || []) {
+        const state = readinessOf(c);
+        if (state !== 'cut') lines.push({ id: `${c.kind} cut-out over ${c.unitNum || c.unitId}`, state });
+      }
+      if (slab.joint && !joints.has(slab.id)) {
+        joints.add(slab.id);
+        const state = readinessOf(slab.joint);
+        if (state !== 'cut') lines.push({ id: 'worktop joint', state });
+      }
+    }
+    if (lines.length) {
+      out.push(finding(30, 'yellow', {
+        unitId: null,
+        unitNum: 'WT',
+        panelId: null,
+        message: readinessCheckMessage([{ unitNum: 'WT', lines }]),
+        subject: null,
+      }));
+    }
   }
 
   // ── #27 a corner with nothing between the runs (T75 F1) ─────────────────

@@ -437,6 +437,8 @@ export default function ConfiguratorPage() {
         ledSpec: project.ledSpec,
       });
       notify(`${res.files.length} DXF files exported as ${res.filename}.`, 'ok');
+      // T75 F22 · the parts the machine does not finish, counted.
+      if (res.readinessBanner) notify(res.readinessBanner, 'warn');
       if (res.gateMessage) {
         notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: () => onExportDxfZip({ exportAnyway: true }) } });
       }

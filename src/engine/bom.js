@@ -15,6 +15,8 @@ import {
 import { sheetSizeForFamily } from './checks.js';
 import { lightingBomLines } from './ledStrips.js';
 // T75 F5 · the worktop's slabs, joint and cut-outs, resolved from the design.
+// T75 F22 · the state of every line, read off the part.
+import { readinessOf } from './readiness.js';
 import { worktopsFor } from './worktop.js';
 import { migrateDesign } from './design.js';
 import { roomWalls } from './room.js';
@@ -102,6 +104,9 @@ export function buildBom(entries, {
         edge: p.edging.code,
         edge_m: p.edging.len_m,
         area_m2: p.area_m2,
+        // T75 F22 · *"The cut list, the BOM and the CNC export show the state
+        // on every line"*: read off the part, never written into it.
+        readiness: readinessOf(p, { drills: result.drills }),
       };
     });
     units.push({ unitId: unit.id, unitNum: result.unitNum, type: result.type, rows, totals: result.totals, warnings: result.warnings });
@@ -128,7 +133,8 @@ export function buildBom(entries, {
       // is one — the owner's rule, in the place the rule is applied. Two front
       // types on ONE board merge; two on different boards do not, even when the
       // label reads the same because neither has been given a finish.
-      const key = `${r.part}|${r.w}|${r.h}|${r.thickness}|${r.edge}|${r.material_key || r.material_label || ''}`;
+      // T75 F22 · …and its state: an outline is not merged into a cut part.
+      const key = `${r.part}|${r.w}|${r.h}|${r.thickness}|${r.edge}|${r.material_key || r.material_label || ''}|${r.readiness}`;
       const merged = cutRows.get(key);
       if (merged) merged.qty += r.qty;
       else cutRows.set(key, { ...r, qty: r.qty, units: new Set([r.unit_num]) });
@@ -141,7 +147,9 @@ export function buildBom(entries, {
       const key = `${h.role}|${h.spec_label}`;
       const merged = hardwareRows.get(key);
       if (merged) { merged.qty += h.qty; merged.units.add(result.unitNum); } else {
-        hardwareRows.set(key, { ...h, qty: h.qty, units: new Set([result.unitNum]) });
+        hardwareRows.set(key, {
+          ...h, qty: h.qty, units: new Set([result.unitNum]), readiness: 'bought',
+        });
       }
     }
   }
@@ -238,6 +246,7 @@ export function buildBom(entries, {
             spec: { per_joint: joint.boltCount },
             spec_label: 'connector bolt',
             units: new Set(['WT']),
+            readiness: 'bought',
           });
         }
       }

@@ -161,6 +161,8 @@ export default function CncTree() {
 
   const sayGate = (res, again) => {
     if (res?.gateMessage) notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: again } });
+    // T75 F22 · the parts the machine does not finish, counted.
+    if (res?.readinessBanner) notify(res.readinessBanner, 'warn');
   };
 
   const downloadMaterial = (exportAnyway = false) => {

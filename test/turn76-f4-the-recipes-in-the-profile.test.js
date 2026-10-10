@@ -37,6 +37,9 @@ test('F4 · RECIPES no longer exists in code; no recipe number is typed outside 
   assert.doesNotMatch(src, /\bRECIPES\b/, 'the recipe table is still in code');
   assert.doesNotMatch(src, /\bMIN_SKIN\s*=\s*\d/, 'the skin is still a number in code');
   assert.doesNotMatch(src, /archRatio/, 'the ellipse ratio survived');
+  // *"Every caller that today reaches `DEFAULT_CABINET_PROFILE` for this takes
+  // the active workshop profile instead."*
+  assert.doesNotMatch(src, /DEFAULT_CABINET_PROFILE/, 'the decoration still reads the shipped defaults');
   for (const rel of ['src/engine/frontDecoration.js', 'src/engine/design.js', 'src/components/FrontDecorationControls.jsx']) {
     assert.doesNotMatch(code(read(rel)), /(?:groovePitchMm|grooveWidthMm|frameMm|recessDepthMm|mouldingInsetMm)\s*:\s*\d/, `${rel} types a recipe number`);
   }

@@ -122,7 +122,8 @@ const EXEMPT = {
     + ' T76 F4 · the readout names a V groove for what it is: V, its width at the mouth, its centre line. *"The V groove is a V ... The DXF layer name and the `front-operations.json` entry say which."*',
   'src/components/FrontDecorationControls.jsx': 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
-    + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*',
+    + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
+    + ' T76 integration · the AH sentence gets the space GPT\'s line lacked (F2 probe). *"AH (Arched handleless) | A\'s recipe; the J-pull is chosen separately under Opening"*',
   'src/components/PartDetailModal.jsx': 'DECOR F4: decorative layer colours follow the canonical part legend. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
   'src/components/SettingsPanel.jsx': 'DECOR F1: project and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
   'src/components/WizardSettings.jsx': 'DECOR F1: material-slot and saved-style decorative recipes. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
@@ -241,7 +242,7 @@ const EXEMPT = {
  * t58b merged). Not one of them is touched by this turn.
  */
 const FROZEN = {
-  'src/components/FrontDecorationControls.jsx': '4ed03229916b6ee18c46ca8d560fe38ba6b63b89039e981552a91de35517b5c4',
+  'src/components/FrontDecorationControls.jsx': 'fcccbc5d110f4a83143913a4acdfcd2232ccc73ee8d35b3ebfb20743f17ea978',
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.

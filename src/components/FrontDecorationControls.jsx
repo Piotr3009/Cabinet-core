@@ -43,7 +43,7 @@ export default function FrontDecorationControls({ style, value, onChange, fields
                 ? 'Round-bottom grooves cut with a ballnose tool. The cutter and depth determine their opening width.'
                 : 'Decorative machining in the face of one slab. Dimensions below are editable workshop defaults.'}
             {style === 'GF' ? ' Groove depth is additional to the panel recess.' : ''}
-            {style === 'AH' ? 'Choose the J-pull separately in Opening.' : ''}
+            {style === 'AH' ? ' Choose the J-pull separately in Opening.' : ''}
           </p>
           {Object.entries(FIELD_LABELS).filter(([key]) => Object.hasOwn(defaults, key)).map(([key, label]) => (
             <label key={key} className="flex items-center gap-2 text-[11px] text-ink-200">

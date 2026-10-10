@@ -1,6 +1,11 @@
 import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { open, room, withWardrobe, showroomDown } from './t74-harness.mjs';
+// T76 F6 · the lazy client: retail shows no recipe number, so the walk reads
+// the owner's numbers off the profile instead of typing one.
+import { DEFAULT_CABINET_PROFILE } from '../src/engine/profile.js';
+
+const OWNER_PITCH = DEFAULT_CABINET_PROFILE.front.decoration.G.groovePitchMm;
 
 const output = new URL('../verify/front-decoration/', import.meta.url).pathname;
 mkdirSync(output, { recursive: true });
@@ -43,7 +48,7 @@ try {
     check(`click ${style} stores its explicit defaults`, now.style === style && now.decoration?.style === style, now.decoration);
     check(`click ${style} reaches the cabinet fronts`, now.fronts.length > 0, now.fronts.map((front) => ({ id: front.id, style: front.decoration.style, status: front.decoration.status, problems: front.decoration.problems, thickness: front.thickness, drills: front.decoration.status === 'blocked' ? front.drills : undefined })));
     check(`click ${style} defaults are ready for production`, now.fronts.length > 0 && now.fronts.every((front) => front.decoration.status === 'ready'));
-    check(`click ${style} shows editable decoration fields`, await page.count('[data-decoration-field]') > 0);
+    check(`click ${style} shows no recipe number (T76 F6)`, await page.count('[data-decoration-field]') === 0);
     await page.sleep(1800);
     const meshes = await page.ask(`(() => { const out = []; window.__cc.views.room.scene.traverse((mesh) => {
       if (!mesh.isMesh || !String(mesh.userData?.ccPanelId || '').includes('-F')) return;
@@ -57,13 +62,9 @@ try {
   }
   if (!probe && !stylesOnly) {
   await page.press('[data-testid="fronts-style-G"]');
-  await page.press('[data-decoration-field="groovePitchMm"]');
-  await page.key('a', { ctrl: true });
-  await page.typeText('32');
-  await page.pressKey('Enter');
-  check('typed groove spacing is saved', (await read()).decoration.groovePitchMm === 32);
+  check('the owner\'s groove spacing is the recipe', (await read()).decoration.groovePitchMm === OWNER_PITCH);
   await page.press('[data-testid="fronts-opening-jhandle"]');
-  check('opening change preserves face pattern', (await read()).decoration.groovePitchMm === 32 && (await read()).style === 'G');
+  check('opening change preserves face pattern', (await read()).decoration.groovePitchMm === OWNER_PITCH && (await read()).style === 'G');
   await page.press('[data-testid="fronts-opening-handles"]');
   await page.waitFor(`document.querySelector('[data-testid="cat-size"]')`, { timeout: 15000 });
   await page.press('[data-testid="cat-size"]');
@@ -89,7 +90,7 @@ try {
   if (!filename) throw new Error('SAVE THIS ESTIMATE did not download a JSON file');
   const savedPath = `${downloads}/${filename}`;
   const saved = JSON.parse(readFileSync(savedPath, 'utf8'));
-  check('Save estimate downloads the edited recipe', JSON.stringify(saved).includes('"groovePitchMm":32'), { file: savedPath });
+  check('Save estimate downloads the recipe', JSON.stringify(saved).includes(`"groovePitchMm":${OWNER_PITCH}`), { file: savedPath });
   const documentStarted = await page.ask('performance.timeOrigin');
   await page.send('Page.reload', {});
   await page.waitFor(`performance.timeOrigin !== ${documentStarted} && document.querySelector('[data-testid="estimate-empty"]')`, { timeout: 60000 });
@@ -103,7 +104,7 @@ try {
   await page.waitFor(`window.__cc && window.__cc.project && window.__cc.project.getState().units.length > 0 && document.querySelector('[data-testid="cat-fronts"]')`, { timeout: 60000 });
   await page.sleep(2000);
   const reloaded = await read();
-  check('saved file reload keeps the chosen recipe and width', reloaded.decoration?.groovePitchMm === 32 && reloaded.width === 850, { recipe: reloaded.decoration, width: reloaded.width });
+  check('saved file reload keeps the chosen recipe and width', reloaded.decoration?.groovePitchMm === OWNER_PITCH && reloaded.width === 850, { recipe: reloaded.decoration, width: reloaded.width });
   check('saved file reload rebuilds production-ready fronts', reloaded.fronts.length > 0 && reloaded.fronts.every((front) => front.decoration.status === 'ready'));
   await page.press('[data-testid="cat-fronts"]');
   await page.screenshot(`${output}retail-reloaded.png`);

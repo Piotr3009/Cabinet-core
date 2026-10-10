@@ -12,7 +12,7 @@
 // here is the geometry: which styles this module can machine, and how.
 
 import { machiningFor } from './machining.js';
-import { DEFAULT_CABINET_PROFILE, getCabinetProfile } from './profile.js';
+import { getCabinetProfile } from './profile.js';
 
 const EPS = 1e-7;
 const MAX_OPERATIONS = 256;
@@ -31,9 +31,10 @@ function recipeOf(style, profile) {
   return profile?.front?.decoration?.[style] || null;
 }
 
-/** The least board left under and between cuts: the profile's number. */
+/** The least board left under and between cuts: the profile's number (the
+ *  active workshop profile's when the one handed in does not name it). */
 function minSkinOf(profile) {
-  return Number(profile?.front?.decorationMinSkinMm ?? DEFAULT_CABINET_PROFILE.front.decorationMinSkinMm);
+  return Number(profile?.front?.decorationMinSkinMm ?? getCabinetProfile().front.decorationMinSkinMm);
 }
 
 /** Explicit opt-in: no object is created merely by opening an old style. */

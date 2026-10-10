@@ -136,6 +136,9 @@ export function readinessNote(unitNum, ready) {
  */
 export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
   exportAnyway = false, project = null,
+  // T77 F3 · which of the two levels the Ornate reference files are written
+  // at ('reference', the default, or 'full'); nothing else reads it.
+  referenceLevel = 'reference',
   // T45 F9-CNC: hand the unit, the design and the LED spec in and the grooves
   // are cut. Left out — every caller that predates this turn — nothing changes
   // at all, which is the gate stated as a default.
@@ -152,7 +155,7 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
     ? cut
     : { ...cut, panels: (cut.panels || []).filter((p) => !held.has(p.id)) };
   const files = buildUnitDxfFiles(safe, profile, { userLayers: [LED_GROOVE_LAYER] });
-  const referenceFiles = buildOrnateReferenceFiles([{ result }]);
+  const referenceFiles = buildOrnateReferenceFiles([{ result }], { level: referenceLevel, profile });
   if (!files.length && !referenceFiles.length) {
     throw new Error(gate.ok
       ? 'This unit has no CNC geometry to export.'
@@ -208,7 +211,9 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
  * @param {string[]} selectedIds  panel ids to include
  * @param {object} [profile]
  */
-export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(), { exportAnyway = false, project = null } = {}) {
+export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(), {
+  exportAnyway = false, project = null, referenceLevel = 'reference',
+} = {}) {
   const wanted = new Set(selectedIds);
   const chosen = exportablePanels(result.panels).filter((p) => wanted.has(p.id));
   if (!chosen.length) throw new Error('Nothing selected to export.');
@@ -216,7 +221,7 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   if (dowelRefused) throw new Error(dowelRefused);
   const gate = exportGate([{ result, panels: chosen }], { profile });
   const panels = panelsThatGo(chosen, { gate, unitId: result.unitId || null, exportAnyway });
-  const referenceFiles = buildOrnateReferenceFiles([{ result, panels: chosen }]);
+  const referenceFiles = buildOrnateReferenceFiles([{ result, panels: chosen }], { level: referenceLevel, profile });
   if (!panels.length && !referenceFiles.length) throw new Error(`Every selected part is held back: ${gate.message}`);
 
   const layout = layoutPanels(panels, result.drills, {
@@ -275,7 +280,7 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
  */
 export function exportMaterialDxf(entries, {
   key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,
-  project = null,
+  project = null, referenceLevel = 'reference',
 } = {}) {
   const dowelRefused = dowelExportRefusal(entries, profile);
   if (dowelRefused) throw new Error(dowelRefused);
@@ -284,7 +289,7 @@ export function exportMaterialDxf(entries, {
   const manifestEntries = (requested?.blocks || []).map((block) => ({
     unit: block.unit, result: { unitNum: block.unitNum, drills: block.drills }, panels: block.panels,
   }));
-  const referenceFiles = buildOrnateReferenceFiles(manifestEntries);
+  const referenceFiles = buildOrnateReferenceFiles(manifestEntries, { level: referenceLevel, profile });
   // The held-back parts leave the SELECTION before the section is laid out, so
   // the sheet the file carries is the sheet that was actually cut — no gap
   // where a board was quietly dropped afterwards.

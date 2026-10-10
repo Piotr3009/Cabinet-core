@@ -11,10 +11,42 @@ import { getCabinetProfile } from './profile.js';
 export const ORNATE_STYLE_IDS = Object.freeze(['ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4']);
 const EPS = 1e-7;
 const MAX_PANEL_MM = 5000;
-const CHORD_ERROR_MM = 0.06;
-const RELIEF_SAMPLE_MM = 1.0;
-const SURFACE_CHORD_MM = 2.0;
 const MAX_VERTICES = 110000;
+
+// ─── T77 F3 · THE SAMPLING NUMBERS LEFT THIS FILE ───────────────────────────
+// CLAUDE.md T77 F3: *"RELIEF_SAMPLE_MM, SURFACE_CHORD_MM and CHORD_ERROR_MM
+// move from constants in engine/ornateFront.js into
+// profile.front.decoration.ornateReference ... The 3D solid keeps the finer
+// sampling it has (its own number), the EXPORT reads the profile."*
+// Three LEVELS of one surface, each read off the profile handed in (the
+// active workshop profile where it names none):
+//   'solid'      the canonical record the 3D solid, the drawings and the CNC
+//                preview read: `front.decoration.ornateSolid`, GPT's numbers
+//                (1.0 relief, 2.0 chord, 0.06 chord error), its own, so no
+//                export option can ever thin or block what the 3D shows;
+//   'reference'  the default CNC reference files: `ornateReference.sampleMm`
+//                with `chordMm` and `chordErrorMm`;
+//   'full'       the same at `ornateReference.fullSampleMm`.
+// The two export levels are built LEAN: a sample on a straight side whose
+// column carries no relief, and whose neighbours carry none, lies on the plane
+// its neighbours already span, so it is left out. Nothing else changes: the
+// same function, the same law, the same surface, fewer collinear points.
+const decorationOf = (profile) => profile?.front?.decoration || {};
+const activeDecoration = () => decorationOf(getCabinetProfile());
+/** One level's three sampling numbers (mm), and whether it is built lean. */
+export function ornateSampling(profile, level = 'solid') {
+  const pick = (block, key) => {
+    const own = decorationOf(profile)[block]?.[key];
+    return Number(own ?? activeDecoration()[block]?.[key]);
+  };
+  if (level === 'solid') {
+    return { level, sampleMm: pick('ornateSolid', 'sampleMm'), chordMm: pick('ornateSolid', 'chordMm'),
+      chordErrorMm: pick('ornateSolid', 'chordErrorMm'), lean: false };
+  }
+  return { level: level === 'full' ? 'full' : 'reference',
+    sampleMm: pick('ornateReference', level === 'full' ? 'fullSampleMm' : 'sampleMm'),
+    chordMm: pick('ornateReference', 'chordMm'), chordErrorMm: pick('ornateReference', 'chordErrorMm'), lean: true };
+}
 const round = (n) => Math.round(n * 1e7) / 1e7;
 const clone = (value) => Array.isArray(value) ? value.map(clone)
   : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, clone(v)])) : value;
@@ -162,7 +194,7 @@ function floralMotif() {
 const MOTIF = floralMotif();
 
 /** Build canonical surface. A valid design is still a PROPOSED reference. */
-export function buildOrnateFront({ panel, config, style = config?.style, profile = getCabinetProfile() }) {
+export function buildOrnateFront({ panel, config, style = config?.style, profile = getCabinetProfile(), level = 'solid' }) {
   const parameters = normaliseOrnateConfig(config, style, profile);
   if (!parameters) return null;
   const result = {
@@ -190,6 +222,11 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   }
   if (c.stepDepthsMm.some((d, i) => i && d <= c.stepDepthsMm[i - 1])) return fail('ORNATE_PROFILE_SECTION', 'The four absolute depth levels must increase strictly.');
   if (c.ornamentReliefMm >= c.cornerDepthMm) return fail('ORNATE_RELIEF', 'Floral relief must remain below the original face and within its recessed background.');
+  const sampling = ornateSampling(profile, level);
+  if (![sampling.sampleMm, sampling.chordMm, sampling.chordErrorMm].every((v) => Number.isFinite(v) && v > 0)) {
+    return fail('ORNATE_SAMPLING', `The ${sampling.level} sampling of Ornate A (relief sample, chord and chord error in the profile) must be finite positive millimetres.`);
+  }
+  const { sampleMm: reliefSampleMm, chordMm, chordErrorMm } = sampling;
   const width = Number(panel?.cnc?.drawn_w ?? panel?.w); const height = Number(panel?.cnc?.drawn_h ?? panel?.h);
   if (![width, height, result.thickness].every((v) => Number.isFinite(v) && v > 0 && v <= MAX_PANEL_MM)) return fail('ORNATE_PANEL', `Ornate A needs finite positive dimensions no larger than ${MAX_PANEL_MM} mm.`);
   const raw = panel?.cnc?.outline || rect(0, 0, width, height);
@@ -215,16 +252,23 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   const outerInset = innerInset - profileWidth;
   const activeCorners = c.variant === 2 ? [0, 1, 2, 3] : [1, 3];
   const outerRadii = radii.map((r, i) => activeCorners.includes(i) ? r + profileWidth : r);
-  const steps = outerRadii.map((r) => Math.max(4, Math.ceil(Math.PI * r / (2 * SURFACE_CHORD_MM)),
-    Math.ceil((Math.PI / 2) / (2 * Math.acos(Math.max(-1, 1 - CHORD_ERROR_MM / r))))));
+  const steps = outerRadii.map((r) => Math.max(4, Math.ceil(Math.PI * r / (2 * chordMm)),
+    Math.ceil((Math.PI / 2) / (2 * Math.acos(Math.max(-1, 1 - chordErrorMm / r))))));
+  // T77 F3 · a finer sampling in the profile is refused before a contour is
+  // built, not after a million points: the corner arcs of every ring of the
+  // bands alone must fit the budget.
+  const bandRows = c.stepWidthsMm.reduce((sum, w) => sum + Math.max(6, Math.ceil(w / chordMm)), 0);
+  if (!steps.every(Number.isFinite) || steps.reduce((a, b) => a + b + 1, 0) * (bandRows + 2) > MAX_VERTICES) {
+    return fail('ORNATE_COMPLEXITY', `This sampling would exceed the ${MAX_VERTICES} vertex limit. Use a coarser chord in the profile.`);
+  }
   const motifReferenceRadius = c.referenceWidthMm / 2 - c.outerFrameMm - c.innerFrameMm;
   if (!(motifReferenceRadius > 0)) return fail('ORNATE_REFERENCE', 'The reference width must leave room for both frame bands.');
   // Refine the long straight sides where a floral spray can enter them. A
   // single side-spanning quad would interpolate a leaf tip across the panel.
   const edgeSpan = Math.max(...outerRadii) / motifReferenceRadius * 150 * c.ornamentScale;
-  const edgeFractions = [width - 2 * c.outerFrameMm, height - 2 * c.outerFrameMm,
+  let edgeFractions = [width - 2 * c.outerFrameMm, height - 2 * c.outerFrameMm,
     width - 2 * c.outerFrameMm, height - 2 * c.outerFrameMm].map((length) => {
-    const reach = Math.min(length / 2, edgeSpan); const count = Math.ceil(reach / SURFACE_CHORD_MM);
+    const reach = Math.min(length / 2, edgeSpan); const count = Math.ceil(reach / chordMm);
     const fractions = [];
     for (let n = 1; n <= count; n += 1) {
       const t = reach * n / count / length;
@@ -233,8 +277,8 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
     return [...new Set(fractions.map(round))].sort((a, b) => a - b);
   });
   const contour = (inset, rr) => roundedRectangle(width, height, inset, rr, steps, edgeFractions);
-  const outer = contour(c.outerFrameMm, [0, 0, 0, 0]);
-  const mouth = contour(outerInset, outerRadii);
+  let outer = contour(c.outerFrameMm, [0, 0, 0, 0]);
+  let mouth = contour(outerInset, outerRadii);
   const corners = [[c.outerFrameMm, c.outerFrameMm], [width - c.outerFrameMm, c.outerFrameMm],
     [width - c.outerFrameMm, height - c.outerFrameMm], [c.outerFrameMm, height - c.outerFrameMm]];
   const axes = [[[1, 0], [0, 1]], [[-1, 0], [0, 1]], [[-1, 0], [0, -1]], [[1, 0], [0, -1]]];
@@ -252,14 +296,13 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
     return q[0] < c.outerFrameMm - EPS || q[0] > width - c.outerFrameMm + EPS
       || q[1] < c.outerFrameMm - EPS || q[1] > height - c.outerFrameMm + EPS || insideConvex(mouth, q);
   })))) return fail('ORNATE_ORNAMENT_FIT', 'The complete floral ornament does not fit its corner background. Reduce the ornament scale or use another radius; the flower is never silently cropped.');
-  const columnLengths = outer.map((p, i) => Math.hypot(p[0] - mouth[i][0], p[1] - mouth[i][1]));
-  const bandRows = c.stepWidthsMm.reduce((sum, w) => sum + Math.max(6, Math.ceil(w / SURFACE_CHORD_MM)), 0);
+  let columnLengths = outer.map((p, i) => Math.hypot(p[0] - mouth[i][0], p[1] - mouth[i][1]));
   const available = MAX_VERTICES - (bandRows + 2) * outer.length - 1;
   if (available <= 0) return fail('ORNATE_COMPLEXITY', `This recipe would exceed the ${MAX_VERTICES} vertex limit. Reduce its dimensions or corner span.`);
   // Flat areas need only their exact boundary. Sample the botanical relief
   // densely, then retain those samples and their neighbours. This avoids
   // spending most of the budget on flat corners in the capsule variant.
-  const radialSpacing = RELIEF_SAMPLE_MM;
+  const radialSpacing = reliefSampleMm;
   if (columnLengths.reduce((a, b) => a + b, 0) / radialSpacing > MAX_VERTICES * 8) return fail('ORNATE_COMPLEXITY', 'The requested relief is too large for bounded surface sampling. Reduce its dimensions or corner span.');
   const mesh = meshBuilder();
   const reliefAt = (p) => {
@@ -272,6 +315,37 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
     }
     return highest;
   };
+  if (sampling.lean) {
+    // T77 F3 · the lean build. Each side's refinement is a column from the
+    // frame to the mouth, sampled exactly as the columns below sample it; a
+    // column is kept when it, or a neighbour, meets the relief. Every column
+    // left out is flat and so are both its neighbours: on a straight side the
+    // strip they bound is one plane (each ring of the bands is a straight
+    // line there too), so the surface is the same with fewer points.
+    const sideEnds = (inset, rr) => {
+      const plain = roundedRectangle(width, height, inset, rr, steps);
+      let at = 0;
+      return [0, 1, 2, 3].map((side) => { at += steps[side] + 1; return [plain[at - 1], plain[at % plain.length]]; });
+    };
+    const outerEnds = sideEnds(c.outerFrameMm, [0, 0, 0, 0]);
+    const mouthEnds = sideEnds(outerInset, outerRadii);
+    const along = ([a, b], t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    const meetsRelief = (side, t) => {
+      const p = along(outerEnds[side], t); const q = along(mouthEnds[side], t);
+      const count = Math.max(2, Math.ceil(Math.hypot(p[0] - q[0], p[1] - q[1]) / reliefSampleMm));
+      for (let n = 0; n <= count; n += 1) {
+        if (reliefAt([p[0] + (q[0] - p[0]) * n / count, p[1] + (q[1] - p[1]) * n / count]) > EPS) return true;
+      }
+      return false;
+    };
+    edgeFractions = edgeFractions.map((list, side) => {
+      const meets = list.map((t) => meetsRelief(side, t));
+      return list.filter((_, i) => meets[i] || meets[i - 1] || meets[i + 1]);
+    });
+    outer = contour(c.outerFrameMm, [0, 0, 0, 0]);
+    mouth = contour(outerInset, outerRadii);
+    columnLengths = outer.map((p, i) => Math.hypot(p[0] - mouth[i][0], p[1] - mouth[i][1]));
+  }
   const columns = outer.map((p, i) => {
     const count = Math.max(2, Math.ceil(columnLengths[i] / radialSpacing));
     const positionAt = (t) => [p[0] + (mouth[i][0] - p[0]) * t, p[1] + (mouth[i][1] - p[1]) * t];
@@ -300,7 +374,7 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   const contours = []; let usedWidth = 0; let previousDepth = 0;
   for (let level = 0; level < 4; level += 1) {
     const band = c.stepWidthsMm[level]; const depth = c.stepDepthsMm[level];
-    const samples = Math.max(6, Math.ceil(band / SURFACE_CHORD_MM));
+    const samples = Math.max(6, Math.ceil(band / chordMm));
     for (let n = 1; n <= samples; n += 1) {
       const t = n / samples; const travel = usedWidth + band * t;
       const currentRadii = radii.map((r, i) => activeCorners.includes(i) ? r + profileWidth - travel : r);
@@ -341,8 +415,8 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
     contours: contours.map((contour) => ({ ...contour, points: contour.closed ? ccw(contour.points.map(toBack)) : contour.points.map(toBack) })),
     crossSection: { kind: 'four-smooth-bands', widthsMm: [...c.stepWidthsMm], absoluteDepthsMm: [...c.stepDepthsMm] },
     targetSurface: { units: 'mm', depthDatum: 'original-front-face', depthDirection: 'positive-into-board',
-      maxContourChordErrorMm: CHORD_ERROR_MM, reliefRadialSampleMm: radialSpacing,
-      reliefMaxAngularChordMm: SURFACE_CHORD_MM, closedSolid: false },
+      maxContourChordErrorMm: chordErrorMm, reliefRadialSampleMm: radialSpacing,
+      reliefMaxAngularChordMm: chordMm, closedSolid: false },
   });
   result.advisories.push({ code: 'ORNATE_PROPOSED_REFERENCE', message: 'Proposed ornamental design: confirm the physical pattern, board, tooling, residual material, and CAM setup before production. These contours and the shared relief mesh are reference geometry, not cutter-centre toolpaths.' });
   result.advisories.push({ code: 'ORNATE_BORE_ENVELOPE', message: 'Hardware clearance uses the deepest relief envelope across its recessed footprint. A rejected rear drilling may need a measured local CAM check.' });

@@ -436,6 +436,8 @@ export default function ConfiguratorPage() {
         unit,
         design: project.design,
         ledSpec: project.ledSpec,
+        // T77 F3 · the Ornate reference files at the level the CNC panel chose.
+        referenceLevel: useUiStore.getState().cncReferenceLevel,
       });
       notify(`${res.files.length} DXF files exported as ${res.filename}.`, 'ok');
       // T75 F22 · the parts the machine does not finish, counted.

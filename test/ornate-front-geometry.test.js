@@ -109,3 +109,45 @@ test('invalid production geometry is refused rather than squeezed, cropped, or t
   }
   assert.equal(make('ORNATE_A_2', {}, { ...panel, h: 500 }).status, 'blocked');
 });
+
+// T77 F3 · the sampling numbers are the profile's. The record (what the 3D,
+// the drawings and the CNC preview read) is built at `ornateSolid`, its own;
+// the export's numbers (`ornateReference`) never reach it.
+test('the record samples at the profile\'s ornateSolid numbers and no export number reaches it', () => {
+  const record = make().operations[0];
+  const solid = profile.front.decoration.ornateSolid;
+  assert.deepEqual(
+    [record.targetSurface.reliefRadialSampleMm, record.targetSurface.reliefMaxAngularChordMm, record.targetSurface.maxContourChordErrorMm],
+    [solid.sampleMm, solid.chordMm, solid.chordErrorMm],
+  );
+  const coarseExport = { ...profile, front: { ...profile.front, decoration: { ...profile.front.decoration,
+    ornateReference: { ...profile.front.decoration.ornateReference, sampleMm: 7, chordMm: 9, fullSampleMm: 5 } } } };
+  const again = buildOrnateFront({ panel, profile: coarseExport, style: 'ORNATE_A_1', config: defaultOrnateConfig('ORNATE_A_1', profile) });
+  assert.deepEqual(again.operations[0].surface, record.surface, 'an export number cannot change the 3D');
+  const broken = { ...profile, front: { ...profile.front, decoration: { ...profile.front.decoration,
+    ornateSolid: { ...profile.front.decoration.ornateSolid, sampleMm: 0 } } } };
+  const refused = buildOrnateFront({ panel, profile: broken, style: 'ORNATE_A_1', config: defaultOrnateConfig('ORNATE_A_1', profile) });
+  assert.equal(refused.status, 'blocked');
+  assert.equal(refused.problems[0].code, 'ORNATE_SAMPLING');
+  const fine = { ...profile, front: { ...profile.front, decoration: { ...profile.front.decoration,
+    ornateSolid: { ...profile.front.decoration.ornateSolid, chordMm: 0.001 } } } };
+  const tooFine = buildOrnateFront({ panel, profile: fine, style: 'ORNATE_A_1', config: defaultOrnateConfig('ORNATE_A_1', profile) });
+  assert.equal(tooFine.problems[0].code, 'ORNATE_COMPLEXITY', 'refused before a million points are built');
+});
+
+test('the export levels read ornateReference and are built lean from the same function', () => {
+  for (const style of ORNATE_STYLE_IDS) {
+    const record = make(style).operations[0];
+    const reference = buildOrnateFront({ panel, profile, style, level: 'reference', config: defaultOrnateConfig(style, profile) }).operations[0];
+    const full = buildOrnateFront({ panel, profile, style, level: 'full', config: defaultOrnateConfig(style, profile) }).operations[0];
+    const R = profile.front.decoration.ornateReference;
+    assert.equal(reference.targetSurface.reliefRadialSampleMm, R.sampleMm);
+    assert.equal(full.targetSurface.reliefRadialSampleMm, R.fullSampleMm);
+    assert.equal(reference.targetSurface.reliefMaxAngularChordMm, R.chordMm);
+    assert.ok(full.surface.triangles.length <= record.surface.triangles.length, `${style}: lean never adds a triangle`);
+    assert.ok(reference.surface.triangles.length <= full.surface.triangles.length, `${style}: a coarser sample never adds a triangle`);
+    // The same law: the four levels of the profile and the floor are the record's.
+    assert.deepEqual(full.contours.filter((c) => c.kind === 'profile-level').map((c) => c.depth), [3, 6, 9, 12]);
+    assert.equal(full.points.length <= record.points.length, true);
+  }
+});

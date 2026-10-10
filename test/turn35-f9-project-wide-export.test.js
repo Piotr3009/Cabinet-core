@@ -239,7 +239,10 @@ test('EXPORT BY MATERIAL - selection controls stay unchanged; download awaits it
   assert.match(TREE, /const \[material, setMaterial\] = useState\('all'\);/);
   assert.match(TREE, /const sections = useMemo\(\n {4}\(\) => groupByMaterial\(entries, \{ design: storedDesign, profile, materials \}\),/);
   assert.match(TREE, /const materialKey = material === 'all' \|\| sections\.some\(\(s\) => s\.key === material\) \? material : 'all';/);
-  assert.match(TREE, /const res = await exportMaterialDxf\(entries, \{\n {8}key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName,\n {6}\}\);/);
+  // T77 F3 · the one call carries the level of the Ornate reference files
+  // (CLAUDE.md T77 F3: "two levels in the existing export options"); still
+  // pinned whole, still one caller.
+  assert.match(TREE, /const res = await exportMaterialDxf\(entries, \{\n {8}key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName, referenceLevel,\n {6}\}\);/);
   // One caller, one path — this turn added no second way to write that file.
   assert.equal(TREE.split('exportMaterialDxf').length - 1, 2, 'imported once, called once');
 });

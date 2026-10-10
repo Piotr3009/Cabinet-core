@@ -8,7 +8,7 @@ import { defaultParamsFor } from '../src/engine/types.js';
 import { buildUnitDxfFiles, parseDxf } from '../src/engine/cnc/dxf.js';
 import { exportGate } from '../src/engine/cnc/exportGate.js';
 import { frontOperationsManifest, frontPanelEntities, frontDecorationLayers, ornateReferenceContourLayer, FRONT_REFERENCE_LAYER } from '../src/engine/cnc/frontOperations.js';
-import { buildOrnateReferenceFiles, ornateFrontSurface, ornateReferenceProblems, ornateSurfaceStl } from '../src/engine/cnc/ornateExport.js';
+import { buildOrnateReferenceFiles, ornateFrontSurface, ornateLevelSurface, ornateReferenceProblems, ornateSurfaceStl, readBinaryStl } from '../src/engine/cnc/ornateExport.js';
 import { exportUnitDxfZip, exportSheetDxf, exportMaterialDxf } from '../src/lib/cncExport.js';
 
 const box = (x1, y1, x2, y2) => [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
@@ -87,10 +87,16 @@ test('STL uses canonical vertices at mm scale, local reflection once, depth belo
   const surface = { vertices: [[10, 20, 3], [30, 20, 3], [30, 40, 3]], triangles: [[0, 1, 2]] };
   const front = ornateFrontSurface(surface, 600);
   assert.deepEqual(front.vertices, [[590, 20, -3], [570, 20, -3], [570, 40, -3]]);
+  // T77 F3 · BINARY STL: 80 byte header, uint32 count, 50 bytes a triangle.
   const stl = ornateSurfaceStl(front);
-  assert.match(stl, /facet normal 0 0 1/);
-  assert.match(stl, /vertex 590 20 -3/);
-  assert.equal((stl.match(/facet normal/g) || []).length, 1);
+  assert.ok(stl instanceof Uint8Array);
+  assert.equal(stl.byteLength, 80 + 4 + 50);
+  const read = readBinaryStl(stl);
+  assert.equal(read.count, 1);
+  assert.doesNotMatch(read.header, /^solid/, 'a binary header never opens with "solid"');
+  assert.match(read.header, /mm/);
+  assert.deepEqual(read.triangles[0].normal, [0, 0, 1]);
+  assert.deepEqual(read.triangles[0].vertices[0], [590, 20, -3]);
 });
 
 test('invalid proposed depth or surface cannot leak NaN or machining geometry into reference files', () => {
@@ -168,7 +174,7 @@ test('duplicate cabinet names and panel IDs produce distinct reference filenames
   assert.equal(new Set(files.map((f) => f.name)).size, 6);
 });
 
-test('all four real 600 by 800 reference fronts hand off the same canonical mesh and layer depths', async () => {
+test('all four real 600 by 800 reference fronts hand off the same surface function and layer depths', async () => {
   const { buildOrnateFront, defaultOrnateConfig, ORNATE_STYLE_IDS } = await import('../src/engine/ornateFront.js');
   for (const style of ORNATE_STYLE_IDS) {
     const panel = { id: style, w: 600, h: 800, thickness: 18, cnc: { drawn_w: 600, drawn_h: 800, outline: box(0, 0, 600, 800) }, meta: {} };
@@ -177,8 +183,14 @@ test('all four real 600 by 800 reference fronts hand off the same canonical mesh
     const op = panel.meta.frontDecoration.operations[0];
     const files = buildOrnateReferenceFiles([{ panels: [panel] }]);
     const spec = JSON.parse(files.find((f) => f.type === 'json').contents);
-    const stl = files.find((f) => f.type === 'stl').contents;
-    assert.equal((stl.match(/facet normal/g) || []).length, op.surface.triangles.length);
+    // T77 F3 · the STL is the default level ('reference') of the SAME
+    // function, on the record's own panel and parameters; binary, mm.
+    const stl = readBinaryStl(files.find((f) => f.type === 'stl').contents);
+    assert.equal(stl.count, ornateLevelSurface(panel, 'reference', P).surface.triangles.length);
+    assert.equal(spec.operations[0].surface.triangles, stl.count);
+    assert.equal(spec.operations[0].surface.format, 'binary STL');
+    assert.equal(spec.reference.level, 'reference');
+    assert.equal(spec.reference.sampleMm, P.front.decoration.ornateReference.sampleMm);
     assert.deepEqual(spec.operations[0].contours.filter((c) => c.kind === 'profile-level').map((c) => c.finalDepthMm), [3, 6, 9, 12]);
     assert.equal(spec.operations[0].remainingThicknessMm, 6);
     const ornaments = spec.operations[0].contours.filter((c) => c.kind === 'ornament-reference');

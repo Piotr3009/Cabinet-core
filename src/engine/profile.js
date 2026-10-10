@@ -12,6 +12,8 @@
 // RULE: formulas in cabinet.js read EXCLUSIVELY from this object. If you find a
 // bare number in a formula, it belongs here.
 
+import { ORNATE_PROFILE_DEFAULTS } from './ornateFrontProfile.js';
+
 export const PROFILE_SCHEMA = 1;
 
 export const DEFAULT_CABINET_PROFILE = {
@@ -133,6 +135,9 @@ export const DEFAULT_CABINET_PROFILE = {
     // None of them is a field a client types: the PRO recipe controls show the
     // keys GPT's controls already showed, retail shows none.
     decoration: {
+      // Piotr, 10.10.2026: code the four proposed ornamental reference variants.
+      // Full profile data stays in the profile module; no production approval implied.
+      ...ORNATE_PROFILE_DEFAULTS,
       // Owner, 31.08.2026: vertical grooves every 80 centre to centre, a V 4
       // wide x 3 deep, 60 margin to the first groove. A V records its width
       // and its depth and CAM picks the bit: no included angle is assumed.

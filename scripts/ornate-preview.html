@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- Copyright Skylon Development Ltd. All rights reserved. --><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ornate A | geometry proof</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#eeebe6;color:#2e3436;font-family:Arial,sans-serif}header{padding:34px 54px 20px;border-bottom:1px solid #cbc8c2;display:flex;justify-content:space-between;align-items:end}.kicker{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#75746d}h1{margin:8px 0 0;font-family:Georgia,serif;font-weight:400;font-size:36px}header p{font-size:13px;line-height:1.7;margin:0;color:#6b6c67;text-align:right}.gallery{display:grid;grid-template-columns:repeat(4,1fr);padding:14px 26px 16px;gap:0}.card{min-width:0;text-align:center}.stage{width:100%;height:655px;position:relative}canvas{display:block;width:100%;height:100%}.variant{color:#7c817e;letter-spacing:2px;font-size:11px;margin:0 0 9px}h2{font-family:Georgia,serif;font-weight:400;font-size:23px;margin:0}.description{font-size:12px;color:#7b7f79;margin:9px 0 0}footer{display:flex;justify-content:space-between;border-top:1px solid #cbc8c2;margin:20px 54px;padding:20px 0;font-size:12px;line-height:1.6;color:#757770}.warning{color:#927542}.error{color:#a22;white-space:pre-wrap;padding:20px}.detail .gallery{grid-template-columns:1fr;max-width:1050px;margin:auto}.detail .stage{height:1120px}.detail .card:not(:first-child){display:none}.detail header{padding-bottom:10px}.detail footer{margin-top:0}</style></head><body><header><div><div class="kicker">Cabinet Core / Ornate A</div><h1>Four profiles. One door family.</h1></div><p>600 × 800 × 18 mm<br>Actual parametric geometry rendered in Three.js</p></header><main class="gallery"></main><footer><span>VISUAL CHECK<br>Neutral painted finish / raking light / orthographic view</span><span class="warning">PROPOSED PATTERN<br>Dimensions, carving and CAM require workshop approval.</span></footer>
+<script type="module">
+import * as THREE from '/node_modules/three/build/three.module.js';
+import { frontDecorationGeometry } from '/src/3d/frontDecorationSolid.js';
+import { buildFrontDecoration, defaultFrontDecoration } from '/src/engine/frontDecoration.js';
+const variants=[['ORNATE_A_1','Classic','Rounded head with floral carving'],['ORNATE_A_2','Symmetric','Paired curved ends and ornaments'],['ORNATE_A_3','Soft','A quieter curve with floral carving'],['ORNATE_A_4','Plain','Profiled frame without ornament']];
+const detail=new URLSearchParams(location.search).has('detail');if(detail)document.body.classList.add('detail');
+window.__ornatePreview={ready:false,variants:[],errors:[]};
+try{
+ for(let i=0;i<(detail?1:variants.length);i++){
+  const [style,label,description]=variants[i];const card=document.createElement('section');card.className='card';
+  card.innerHTML=`<div class="stage"></div><p class="variant">VARIANT ${i+1}</p><h2>${label}</h2><p class="description">${description}</p>`;document.querySelector('.gallery').append(card);
+  const stage=card.querySelector('.stage');const w=stage.clientWidth,h=stage.clientHeight;
+  const scene=new THREE.Scene();scene.background=new THREE.Color('#eeebe6');
+  const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(w,h);renderer.setPixelRatio(1.5);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;stage.append(renderer.domElement);
+  const panel={id:style,part:'FRONT',role:'front',w:600,h:800,thickness:18,box:{x:0,y:0,z:0,w:600,h:800,d:18},cnc:{}};
+  panel.meta={frontDecoration:buildFrontDecoration({panel,style,config:defaultFrontDecoration(style)})};
+  const geometry=frontDecorationGeometry(panel);if(!geometry)throw Error(`${style}: no geometry (${panel.meta.frontDecoration.status} ${JSON.stringify(panel.meta.frontDecoration.problems)})`);
+  const material=new THREE.MeshStandardMaterial({color:'#525b5c',roughness:0.47,metalness:0.05});
+  const door=new THREE.Mesh(geometry,material);door.castShadow=true;door.receiveShadow=false;scene.add(door);
+  const key=new THREE.DirectionalLight('#fff3dc',3.5);key.position.set(-0.45,0.75,0.5);key.castShadow=true;
+  key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-.7;key.shadow.camera.right=.7;key.shadow.camera.top=.65;key.shadow.camera.bottom=-.65;key.shadow.camera.near=.05;key.shadow.camera.far=3;key.shadow.bias=-.00005;key.shadow.normalBias=.00008;scene.add(key);
+  scene.add(new THREE.HemisphereLight('#dce7f0','#aaa597',1.2));
+  const fill=new THREE.DirectionalLight('#dbe9f2',.45);fill.position.set(.6,-.1,.7);scene.add(fill);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshStandardMaterial({color:'#eeebe6',roughness:1}));ground.position.z=-.05;ground.receiveShadow=true;scene.add(ground);
+  const viewHeight=detail?.95:1.02;const camera=new THREE.OrthographicCamera(-viewHeight*w/h/2,viewHeight*w/h/2,viewHeight/2,-viewHeight/2,.01,10);
+  camera.position.set(detail?.06:.025,detail?.015:.005,2);camera.lookAt(0,0,0);scene.add(camera);
+  renderer.render(scene,camera);
+  window.__ornatePreview.variants.push({style,vertices:geometry.attributes.position.count,status:panel.meta.frontDecoration.status,referenceOnly:panel.meta.frontDecoration.referenceOnly});
+ }
+ window.__ornatePreview.ready=true;
+}catch(error){window.__ornatePreview.errors.push(String(error.stack||error));document.body.insertAdjacentHTML('beforeend',`<pre class="error">${String(error.stack||error)}</pre>`);throw error;}
+</script></body></html>

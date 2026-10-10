@@ -13,13 +13,16 @@
 
 import { machiningFor } from './machining.js';
 import { getCabinetProfile } from './profile.js';
+import { ORNATE_STYLE_IDS, buildOrnateFront, defaultOrnateConfig, normaliseOrnateConfig } from './ornateFront.js';
+
+export { ORNATE_STYLE_IDS } from './ornateFront.js';
 
 const EPS = 1e-7;
 const MAX_OPERATIONS = 256;
 const CURVE_STEPS = 24;
 const CONTOUR_TOLERANCE_MM = 0.025;
 
-/** The styles this module has geometry for. Their numbers are the profile's. */
+/** Existing 2.5D machining recipes. Proposed 3D reliefs are ORNATE_STYLE_IDS. */
 export const DECORATIVE_FRONT_STYLES = Object.freeze(['G', 'GF', 'A', 'AH', 'FL', 'AM']);
 
 /** The cutters a groove recipe may name, per style (T76 F4: a V is a V). */
@@ -27,7 +30,7 @@ const GROOVE_CUTTERS = Object.freeze({ G: ['v', 'endmill'], GF: ['v', 'endmill']
 
 /** One style's recipe in this profile, or null where the style has none. */
 function recipeOf(style, profile) {
-  if (!DECORATIVE_FRONT_STYLES.includes(style)) return null;
+  if (![...DECORATIVE_FRONT_STYLES, ...ORNATE_STYLE_IDS].includes(style)) return null;
   return profile?.front?.decoration?.[style] || null;
 }
 
@@ -45,6 +48,7 @@ function skinShort(board, depth, profile) {
 
 /** Explicit opt-in: no object is created merely by opening an old style. */
 export function defaultFrontDecoration(style, profile = getCabinetProfile()) {
+  if (ORNATE_STYLE_IDS.includes(style)) return defaultOrnateConfig(style, profile);
   const recipe = recipeOf(style, profile);
   return recipe ? { version: 1, style, ...recipe } : null;
 }
@@ -52,6 +56,7 @@ export function defaultFrontDecoration(style, profile = getCabinetProfile()) {
 /** Preserve invalid entered numbers for validation, never silently clamp. */
 export function normaliseFrontDecoration(config, style = config?.style, profile = getCabinetProfile()) {
   if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
+  if (ORNATE_STYLE_IDS.includes(style)) return normaliseOrnateConfig(config, style, profile);
   const recipe = recipeOf(style, profile);
   if (!recipe) return { ...config, version: config.version ?? 1, style };
   const out = { version: config.version ?? 1, style };
@@ -443,7 +448,9 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
 export function boardRefusal(style, thicknessMm, profile = getCabinetProfile()) {
   const recipe = recipeOf(style, profile);
   if (!recipe) return null;
-  const deepest = (Number(recipe.recessDepthMm) || 0) + (Number(recipe.grooveDepthMm) || 0);
+  const deepest = ORNATE_STYLE_IDS.includes(style)
+    ? Math.max(Number(recipe.cornerDepthMm) || 0, ...(Array.isArray(recipe.stepDepthsMm) ? recipe.stepDepthsMm : []))
+    : (Number(recipe.recessDepthMm) || 0) + (Number(recipe.grooveDepthMm) || 0);
   const board = Number(thicknessMm);
   if (!(deepest > 0) || !Number.isFinite(board) || !skinShort(board, deepest, profile)) return null;
   const needMm = round(deepest + minSkinOf(profile));
@@ -457,6 +464,15 @@ export function boardRefusal(style, thicknessMm, profile = getCabinetProfile()) 
 
 /** The one canonical record read by CNC, 3D, BOM and drawings. */
 export function buildFrontDecoration({ panel, config, style = config?.style, drills = [], profile = getCabinetProfile() }) {
+  if (ORNATE_STYLE_IDS.includes(style)) {
+    if (!config) return null;
+    const ornate = buildOrnateFront({ panel, config, style, profile });
+    if (ornate?.status === 'ready') {
+      const problems = validateFrontDecoration({ panel, decoration: ornate, drills, profile });
+      if (problems.length) return { ...ornate, status: 'blocked', operations: [], additions: [], problems: [...ornate.problems, ...problems] };
+    }
+    return ornate;
+  }
   const parameters = normaliseFrontDecoration(config, style, profile);
   if (!parameters) return null;
   // T76 F4 · `advisories` are said by the Check and block nothing (the board

@@ -733,7 +733,7 @@ function FrontsPanel({ design, project, unit }) {
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
   const opening = A.frontOpeningOf(project);
   // SLAB · SHAKER · GROOVED · ARCHED, in CLAUDE.md F4's own order.
-  const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
+  const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
   const styles = A.frontStyles()
     .filter((s) => s.id !== 'HJ')
     .sort((x, y) => order.indexOf(x.id) - order.indexOf(y.id));

@@ -252,7 +252,10 @@ test('EXPORT BY MATERIAL - one grouping path with optional front setup packaging
   assert.ok(src.includes("  key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,"));
   // T76 F1 · T35's `const filename` is back; the package path RETURNS its
   // Promise (no `await` inside), the ordinary path downloads as before.
-  assert.ok(src.includes('  const filename = materialDxfFileName(section.label, { project });'));
+  // Ornate reference-only selections can have no released production section.
+  // The existing grouping still supplies the requested material label.
+  assert.ok(src.includes("  const label = section?.label || requested?.label || 'Ornate-reference';"));
+  assert.ok(src.includes('  const filename = materialDxfFileName(label, { project });'));
   assert.match(src, /const section = materialExportSection\(passed, \{/);
   assert.match(src, /if \(hasFrontDecorations\(manifestEntries\)\)\s*\{/);
   assert.match(src, /return downloadFrontSetups\(\{/);

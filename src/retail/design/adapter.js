@@ -199,7 +199,7 @@ export function designBounds() {
 
 // All decorative styles have a production definition. Old saved slabs stay
 // inactive until the owner selects a style or explicitly activates it.
-const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM'];
+const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
 const SOON_STYLES = [];
 
 // ─── T76 F7 · A STYLE THE DOORS CANNOT TAKE IS REFUSED IN WORDS ──────────

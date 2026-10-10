@@ -1,3 +1,4 @@
+// Ornate A, 10.10.2026: retain the existing order, append four owner-requested proposed styles.
 // ─── TURN 68 · F6 + F8 — THE HINGES GO BACK TO PRO, FRONTS KEEPS ONE ROAD ──
 //
 // F6, the owner: *"wybór hinges to nie jest dobry pomysł, nie tutaj — zostaw
@@ -131,13 +132,13 @@ test('F8 · the STYLE list is the one road for all approved decorations', () => 
   // …and the OPENING list is where the J now honestly lives (T57's doctrine).
   assert.match(panel, /data-testid="fronts-opening"/);
   assert.match(panel, /A\.setFrontOpening\(o\.id\)/);
-  assert.match(panel, /order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'\]/);
+  assert.match(panel, /order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'\]/);
   assert.match(panel, /filter\(\(s\) => s\.id !== 'HJ'\)/, 'the legacy J is offered as a shape again');
 });
 
 test('F8 · all decorative styles share the list and the J stays with opening', () => {
   const gallery = new Set(FRONT_STYLE_OPTIONS.map((o) => o.id));
-  const list = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
+  const list = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
   const extras = [...gallery].filter((id) => !list.includes(id));
   assert.deepEqual(extras, ['HJ']);
   assert.match(frontsRaw(), /`HJ` remains/);

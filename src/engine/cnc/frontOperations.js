@@ -6,6 +6,23 @@ import { appliedStripNotes, readinessOf } from '../readiness.js';
 
 export const FRONT_REFERENCE_LAYER = 'FRONT_REFERENCE_NO_CUT';
 
+// Approval belongs to the physical pattern and workshop CAM validation. A
+// saved recipe cannot make this reconstructed family production approved.
+export const ORNATE_REFERENCE_MESSAGE = 'Ornate A is a proposed reference pattern. Its separate CAD and relief files need physical-pattern approval and CAM verification before production.';
+export function isOrnateReference(panel) {
+  return /^ORNATE_A_[1-4]$/.test(frontDecorationOf(panel)?.style || '');
+}
+
+/** Shared reference layer grammar for the read-only view and reference DXF. */
+export function ornateReferenceContourLayer(contour) {
+  if (contour?.kind === 'ornament-reference') return 'FRONT_REF_ORNAMENT';
+  if (contour?.kind !== 'profile-level' || !Number.isFinite(contour.depth) || contour.depth <= 0
+    || Math.abs(contour.depth - Number(contour.depth.toFixed(6))) > 1e-10) return null;
+  const token = contour.depth.toFixed(6).replace(/\.?0+$/, '').replace('.', 'P');
+  const layer = `FRONT_REF_PROFILE_D${token}`;
+  return layer.length <= 31 ? layer : null;
+}
+
 export function frontDecorationOf(panel) {
   return panel?.meta?.frontDecoration || null;
 }
@@ -71,6 +88,10 @@ export function frontDecorationProblems(panel) {
   if (decoration.version !== 1) out.push('Unsupported decorative machining version.');
   if (decoration.status !== 'ready' && !out.length) out.push('Decorative machining is not ready.');
   if (!Array.isArray(decoration.operations)) out.push('Decorative machining operations are missing.');
+  if (isOrnateReference(panel)) {
+    out.push(ORNATE_REFERENCE_MESSAGE);
+    return [...new Set(out)];
+  }
   for (const operation of Array.isArray(decoration.operations) ? decoration.operations : []) out.push(...operationProblems(operation, panel));
   return [...new Set(out)];
 }
@@ -90,7 +111,7 @@ export function frontDecorationFindings(result, { unitId = null, unitNum = '' } 
 }
 
 /** Reference and machining only. A reflected CCW contour is a CW pocket. */
-export function frontPanelEntities(panel) {
+export function frontPanelEntities(panel, { referencePreview = false } = {}) {
   const decoration = frontDecorationOf(panel);
   if (!decoration) return [];
   const width = Number(panel.cnc?.drawn_w ?? panel.w);
@@ -101,6 +122,26 @@ export function frontPanelEntities(panel) {
     type: 'poly', layer: FRONT_REFERENCE_LAYER, closed: true,
     pts: outline.map(mirror).reverse(),
   });
+  // Proposed relief contours live in explicitly named reference files. They
+  // are never pocket boundaries in the normal production FRONT setup.
+  if (isOrnateReference(panel)) {
+    if (!referencePreview || !Number.isFinite(width) || decoration.status !== 'ready') return entities;
+    for (const [operationIndex, operation] of (decoration.operations || []).entries()) {
+      for (const [contourIndex, contour] of (operation.contours || []).entries()) {
+        const layer = ornateReferenceContourLayer(contour);
+        const closed = contour.closed !== false;
+        if (!layer || !pointsOk(contour.points, closed ? 3 : 2)) continue;
+        entities.push({
+          type: 'poly', layer, closed,
+          operationId: `${operation.id || operationIndex}/${contour.id || contourIndex}`,
+          pts: contour.points.map(mirror), referenceOnly: true,
+          referenceKind: contour.kind, depth: contour.depth ?? null,
+          startDepth: contour.startDepth ?? null, surfaceDepth: operation.depth,
+        });
+      }
+    }
+    return entities;
+  }
   for (const operation of Array.isArray(decoration.operations) ? decoration.operations : []) {
     // Export-anyway retains every geometrically valid operation and reports
     // the blocked state in the manifest. Non-finite entities cannot be DXF.
@@ -145,7 +186,12 @@ export function frontOperationsManifest(entries = [], {
         readiness: readinessOf(panel, { drills: result.drills || null }),
         style: decoration.style,
         status: problems.length ? 'blocked' : (held ? 'held' : 'ready'),
-        exported: exportAnyway || !held,
+        exported: !isOrnateReference(panel) && (exportAnyway || !held),
+        ...(isOrnateReference(panel) ? {
+          referenceOnly: true, productionApproved: false,
+          referenceFiles: files.filter((file) => file.referenceOnly && file.panelId === panel.id
+            && (!file.unitId || file.unitId === unitId)),
+        } : {}),
         override: exportAnyway && (held || problems.length > 0),
         problems,
         placement: placements.find((place) => place.unitId === unitId && place.unitNum === unitNum && place.panelId === panel.id) || null,
@@ -174,9 +220,10 @@ export function frontOperationsManifest(entries = [], {
           cuttingDepthMm: operation.depth - operation.startDepth,
           tool: operation.tool,
           ...(operation.crossSection ? { crossSection: operation.crossSection } : {}),
-          vectorMeaning: { flute: 'tool-centre path', vgroove: 'groove centre line' }[operation.kind] || 'finished pocket boundary',
-          readiness: readinessOf(operation),
-          exported: (exportAnyway || !held) && operationProblems(operation, panel).length === 0,
+          vectorMeaning: { flute: 'tool-centre path', vgroove: 'groove centre line', relief: 'proposed 3D machining surface; DXF contours are references only' }[operation.kind] || 'finished pocket boundary',
+          readiness: readinessOf(isOrnateReference(panel) ? { ...operation, readiness: 'geometry' } : operation),
+          ...(isOrnateReference(panel) ? { referenceOnly: true, productionApproved: false } : {}),
+          exported: !isOrnateReference(panel) && (exportAnyway || !held) && operationProblems(operation, panel).length === 0,
         })),
       });
     }
@@ -232,7 +279,7 @@ export function frontSetupPlacements(blocks = [], gap = 0) {
 }
 
 /** Shared preview and DXF layer declarations for each configured cutter. */
-export function frontDecorationLayers(panels = []) {
+export function frontDecorationLayers(panels = [], { referencePreview = false } = {}) {
   const layers = new Map();
   for (const panel of panels) {
     const decoration = frontDecorationOf(panel);
@@ -241,6 +288,19 @@ export function frontDecorationLayers(panels = []) {
       name: FRONT_REFERENCE_LAYER, label: 'Front reference (do not cut)',
       screen: '#8d8d92', aci: 8, kind: 'outline',
     });
+    if (isOrnateReference(panel)) {
+      if (referencePreview) for (const entity of frontPanelEntities(panel, { referencePreview: true })) {
+        if (!entity.referenceOnly) continue;
+        const ornament = entity.referenceKind === 'ornament-reference';
+        layers.set(entity.layer, {
+          name: entity.layer,
+          label: ornament ? 'Proposed ornament (3D surface)' : `Proposed profile reference: ${entity.depth} mm`,
+          screen: ornament ? '#63e6e2' : '#c3a06a', aci: ornament ? 4 : 41,
+          kind: 'mark', referenceOnly: true,
+        });
+      }
+      continue;
+    }
     for (const operation of Array.isArray(decoration.operations) ? decoration.operations : []) {
       if (operationProblems(operation, panel).length) continue;
       const line = CENTRELINE_KINDS.includes(operation.kind);
@@ -265,6 +325,7 @@ export function frontLayerFindings(entries = []) {
     const unitId = entry.unit?.id || result.unitId || null;
     const unitNum = result.unitNum || entry.unitNum || '';
     for (const panel of entry.panels || result.panels || []) {
+      if (isOrnateReference(panel)) continue;
       const operations = frontDecorationOf(panel)?.operations;
       for (const operation of Array.isArray(operations) ? operations : []) {
         if (operationProblems(operation, panel).length) continue;

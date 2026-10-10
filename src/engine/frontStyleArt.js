@@ -28,6 +28,8 @@
 //
 // Pure data + pure functions. No React.
 
+import { ORNATE_FRONT_ART } from './ornateFrontArt.js';
+
 export const FRONT_ART_VIEWBOX = { w: 100, h: 140 };
 
 /** The door's own outer rectangle, inset a hair so the stroke is not clipped. */
@@ -44,6 +46,7 @@ const OUTER = { x: 4, y: 4, w: 92, h: 132 };
  * draws it thinner, so a shaker's rails read as joints and not as cut lines.
  */
 export const FRONT_STYLE_ART = {
+  ...ORNATE_FRONT_ART,
   FL: [
     { rect: [OUTER.x, OUTER.y, OUTER.w, OUTER.h] },
     ...[0, 1, 2, 3, 4, 5].flatMap((i) => [

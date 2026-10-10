@@ -3,9 +3,23 @@
 import { entPoly } from './primitives.js';
 import { formatMm } from '../format.js';
 
-function contourPoints(points) {
-  return Array.isArray(points) && points.length >= 3
+function contourPoints(points, minimumPoints = 3) {
+  return Array.isArray(points) && points.length >= minimumPoints
     && points.every((p) => Array.isArray(p) && p.length >= 2 && p.every(Number.isFinite));
+}
+
+// A sculpted relief has one canonical surface and several contour references.
+// These curves describe that surface; each curve is not a separate pocket.
+function operationContours(operation) {
+  return [
+    { ...operation, contourId: null },
+    ...(operation.contours || []).map((contour) => ({
+      ...contour, face: operation.face, contourId: contour.id,
+      layer: contour.layer || operation.layer,
+      kind: 'relief-reference',
+    })),
+  ].filter((contour) => contour.face === 'front'
+    && contourPoints(contour.points, contour.closed === false ? 2 : 3));
 }
 
 /** Front elevation only. A top view must not flatten this face onto a plan. */
@@ -16,11 +30,13 @@ export function frontDecorationElevation(panel) {
   const projected = (points) => points.map(([x, y]) => [box.x + box.w - x, box.y + y]);
   const out = [];
   for (const operation of decoration.operations || []) {
-    if (operation.face !== 'front' || !contourPoints(operation.points)) continue;
-    out.push({
-      ...entPoly('DOORS', projected(operation.points)),
-      pen: 'FINE', meta: 'front-decoration', operationId: operation.id,
-    });
+    for (const contour of operationContours(operation)) {
+      out.push({
+        ...entPoly('DOORS', projected(contour.points), { open: contour.closed === false }),
+        pen: 'FINE', meta: 'front-decoration', operationId: operation.id,
+        ...(contour.contourId ? { contourId: contour.contourId } : {}),
+      });
+    }
   }
   for (const addition of decoration.additions || []) {
     if (addition.face !== 'front' || !contourPoints(addition.points)) continue;
@@ -38,23 +54,28 @@ export function frontDecorationMachinings(panel) {
   if (!decoration) return [];
   const out = [];
   for (const operation of decoration.operations || []) {
-    if (operation.face !== 'front' || !contourPoints(operation.points)) continue;
-    const pts = operation.points.map((p) => [...p]);
-    const xs = pts.map((p) => p[0]);
-    const ys = pts.map((p) => p[1]);
-    const x = Math.min(...xs); const y = Math.min(...ys);
-    const w = Math.max(...xs) - x; const h = Math.max(...ys) - y;
-    const tool = operation.tool;
-    const cutter = tool?.diameter > 0 ? `, ${tool.kind || 'cutter'} diameter ${formatMm(tool.diameter)} mm` : '';
-    const start = Number(operation.startDepth) > 0 ? `, starts ${formatMm(operation.startDepth)} mm below face` : '';
-    out.push({
-      id: `decoration-${operation.id}`,
-      kind: 'path', machiningKind: operation.kind,
-      layer: operation.layer, pts, closed: true,
-      face: 'front', depth: operation.depth, startDepth: operation.startDepth || 0,
-      x, y, w, h, at: [x + w / 2, y + h / 2],
-      note: `FRONT FACE ${operation.kind} · ${formatMm(operation.depth)} mm total depth${start}${cutter}`,
-    });
+    for (const contour of operationContours(operation)) {
+      const pts = contour.points.map((p) => [...p]);
+      const xs = pts.map((p) => p[0]);
+      const ys = pts.map((p) => p[1]);
+      const x = Math.min(...xs); const y = Math.min(...ys);
+      const w = Math.max(...xs) - x; const h = Math.max(...ys) - y;
+      const tool = operation.tool;
+      const cutter = tool?.diameter > 0 ? `, ${tool.kind || 'cutter'} diameter ${formatMm(tool.diameter)} mm` : '';
+      const start = Number(contour.startDepth) > 0 ? `, starts ${formatMm(contour.startDepth)} mm below face` : '';
+      const reference = operation.kind === 'relief';
+      const depthNote = Number.isFinite(contour.depth) ? `, ${formatMm(contour.depth)} mm below front face` : '';
+      out.push({
+        id: `decoration-${operation.id}${contour.contourId ? `-${contour.contourId}` : ''}`,
+        kind: 'path', machiningKind: reference ? 'relief-reference' : operation.kind,
+        layer: contour.layer, pts, closed: contour.closed !== false,
+        face: 'front', depth: contour.depth, startDepth: contour.startDepth || 0,
+        x, y, w, h, at: [x + w / 2, y + h / 2],
+        note: reference
+          ? `FRONT FACE RELIEF REFERENCE${depthNote}. Surface geometry requires CAM and sample approval; this curve is not a pocket toolpath.`
+          : `FRONT FACE ${operation.kind} · ${formatMm(operation.depth)} mm total depth${start}${cutter}`,
+      });
+    }
   }
   for (const addition of decoration.additions || []) {
     if (addition.face !== 'front' || !contourPoints(addition.points)) continue;
@@ -83,6 +104,9 @@ export function frontDecorationDetailNote(panel) {
     notes.push(`Decoration blocked: ${(decoration.problems || []).map((p) => p.message).filter(Boolean).join('; ') || 'Check the front recipe'}`);
   }
   if (decoration.operations?.length) notes.push('Front-face decoration shown in the CNC back-view datum; the separate FRONT DXF mirrors X for front-face setup');
+  if (decoration.operations?.some((operation) => operation.kind === 'relief')) {
+    notes.push('Ornate relief is a proposed reconstruction. Dimensions, ornament and cutter access require a physical sample and workshop approval. Relief contours are references, not independent pocket cuts');
+  }
   if (decoration.additions?.length) {
     const count = decoration.additions.length;
     notes.push(`${count} applied moulding ${count === 1 ? 'piece' : 'pieces'}, fit to FRONT face`);

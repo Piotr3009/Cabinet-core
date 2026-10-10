@@ -119,9 +119,9 @@ const EXEMPT = {
   // them; the three files T75 also licensed (BomPanel, CncTree, RightPanel)
   // carry ONE entry above, T75's text and GPT's line.
   'src/components/AssignMaterialsModal.jsx': 'DECOR F4: applied strip stock badges use the same thickness validation as purchasing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
-  'src/components/CncView.jsx': 'DECOR F3: explicit front/back machining preview from shared export geometry. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+  'src/components/CncView.jsx': 'ORNATE, Piotr 10.10.2026: gotowy kod wlacznei z leyersami prosze do cnc. Shows canonical reference layers and relief depth readouts without changing production export approval. ' + 'DECOR F3: explicit front/back machining preview from shared export geometry. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the readout names a V groove for what it is: V, its width at the mouth, its centre line. *"The V groove is a V ... The DXF layer name and the `front-operations.json` entry say which."*',
-  'src/components/FrontDecorationControls.jsx': 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+  'src/components/FrontDecorationControls.jsx': 'ORNATE, Piotr 10.10.2026: rozpisz zakoduj dokaldnei prosze i ja roto dam do clauda, ale daj gotowy kod wlacznei z leyersami prosze do cnc. Adds proposed relief note and mirror choice; no new numeric fields. ' + 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
     + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
     + ' T76 integration · the AH sentence gets the space GPT\'s line lacked (F2 probe). *"AH (Arched handleless) | A\'s recipe; the J-pull is chosen separately under Opening"*',
@@ -243,7 +243,7 @@ const EXEMPT = {
  * t58b merged). Not one of them is touched by this turn.
  */
 const FROZEN = {
-  'src/components/FrontDecorationControls.jsx': 'fcccbc5d110f4a83143913a4acdfcd2232ccc73ee8d35b3ebfb20743f17ea978',
+  'src/components/FrontDecorationControls.jsx': '029b9a2c4488bcb4e9bdbda77fa4798d2531caaca1d98ff4790d9947dd6171e4',
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -259,7 +259,7 @@ const FROZEN = {
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
   'src/components/CncTree.jsx': 'a439e4706bb74c99f368efe3a84090fb2303dfab7c8b59bf191f5a8421983c00',
-  'src/components/CncView.jsx': 'f21cfee1de2f02a379aedac9dbc3615a5fa1968f2fce3312a5832497067a82fd',
+  'src/components/CncView.jsx': 'b10dca8c39ce130b2be5f68f8aa43d16ea81f64654510ad36d8ae52b74301ff6',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   'src/components/CompanyDefaultsModal.jsx': '90365da4e2e0bc285c652ec252c62a11da199853fdd9e31a899cb74464e2a896',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.

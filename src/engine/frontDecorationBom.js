@@ -13,7 +13,9 @@ export function frontManufacturing(panel) {
     const depths = [...new Set(decoration.operations.map((op) => op.depth))];
     // T76 F7 · short, so the T75 State column stays inside the panel (the walk
     // measured it pushed past the edge by the longer label).
-    const construction = applied
+    const construction = decoration.referenceOnly
+      ? `${decoration.style} - Slab; relief proposed, not production approved`
+      : applied
       ? `${decoration.style} · Slab, ${decoration.additions.length} applied strips`
       : `${decoration.style} · Routed slab${depths.length ? `, depths ${depths.join('/')} mm` : ''}`;
     return {

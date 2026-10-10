@@ -166,6 +166,8 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // AMENDED BY T75 F15: `LibraryPanel` (*"The held-open row `cornice-pelmet`
   // opens as a PLAIN pelmet"*: the Extras row is an action on the selected
   // run), argued in the manifest, re-frozen. Not a widening file.
+  // AMENDED BY T75 F23: `RightPanel` again (the Joints row, Puzzle or Dowel,
+  // *"lisp najpierw."*), argued in the manifest, re-frozen. Not a widening file.
   const ARGUED = [
     'AddItems', 'BomPanel', 'ContextMenu', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
     // AMENDED BY T75 F21: `WarehouseModal` (the JoineryCore CSV contract).

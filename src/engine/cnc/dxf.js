@@ -418,6 +418,10 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
 
   for (const hole of drills) {
     if (hole.panel !== panel.id) continue;
+    // T75 F23 · a dowel's EDGE bore is horizontal: a 3-axis bed drills from
+    // above and a circle here would plunge it through the face. It stays on
+    // the sheet and the drawings, and never reaches the machine file.
+    if (hole.face === 'edge') continue;
     entities.push({ type: 'circle', layer: hole.layer, cx: hole.x, cy: hole.y, r: hole.d / 2 });
   }
 

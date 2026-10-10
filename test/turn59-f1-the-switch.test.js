@@ -103,7 +103,8 @@ const EXEMPT = {
     + 'WIDTH, DEPTH, HEIGHT (the profile\'s `notch.defaults`), Enter cuts through the store\'s one action '
     + '`setUnitNotch` and a refusal shows in the engine\'s words; REMOVE takes the notch off. No retail copy '
     + '(retail\'s SIZE step carries its own button). *"Klikasz \'wytnij narożnik\', program podświetla '
-    + 'narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np. 200x200)."*',
+    + 'narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np. 200x200)."* '
+    + 'T75 F23 · the Construction section\'s Joints row: Puzzle or Dowel per unit, written to the unit\'s joints_system through updateUnitParams; the status line reads the engine\'s own answer (derived.joints: the dowel count, the gate, or the refusal in its words); Cabineo shown disabled with its sentence; no typed number. No retail copy (PART G is PRO only). *"lisp najpierw."* *"a per-unit override through the unit\'s settings section (no typed numbers in the UI)."*',
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
   // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
@@ -269,7 +270,7 @@ const FROZEN = {
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RightPanel.jsx': '9efd94b61a5421fbd2ad2b7639fa2ca07fa9a7cd5027697d1218082a32690d52',
+  'src/components/RightPanel.jsx': '68c5e1e6a4d202f85e05712c5f9b61aff04a4377c973f53ae81c8cdef5bb7e82',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RoomModal.jsx': 'cfee8d4d3597f6c37de41dc417d83ed2e57ecf6153b7a69cdf97c54aa282616c',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
@@ -475,6 +476,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
   // AMENDED BY T75: *"every PRO file edited is licensed in EXEMPT with the
   // owner's words from this file and re-frozen at its new hash in the same
   // commit."*  Each one T75 adds is named here by the commit that edits it.
+  // AMENDED BY T75 F23: `RightPanel`'s licence is RENEWED (the Joints row,
+  // *"lisp najpierw."*) and re-frozen at its new hash; the list did not grow.
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
     'src/components/BomPanel.jsx',

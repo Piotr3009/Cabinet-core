@@ -50,6 +50,13 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   notchCarcass, notchDrills, notchSummary, notchVerdict, withNotchRefusal,
 } from './notch.js';
+// T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
+// of the parent's own puzzle cut, the puzzle stripped before the drilling and
+// the pairs added after it. Never reached while the system is the puzzle.
+import {
+  dowelDrills, dowelGateWarning, dowelStrip, dowelSummary, dowelVerdict, dowelledShelf,
+  jointSystemOf, withJointsRefusal,
+} from './dowels.js';
 // T58b (CLAUDE.md F2): the LED strip's own dimensions — thickness and width —
 // are the lighting spec's, so the strip the glass births is cut to the same
 // law every other strip in the project is. `ledStrips.js` reaches nothing in
@@ -1532,6 +1539,22 @@ export function computeCabinet(params, profileOverride) {
   const profile = profileOverride || getCabinetProfile();
   const P = profile;
   const cfg = normalizeParams(params, P);
+  // ─── T75 F23 · THE JOINT SYSTEM IS ASKED OF THE PARENT FIRST ─────────────
+  // *"Switching a unit REPLACES all of its puzzle sockets and tenons with dowel
+  // pairs on both boards."*  The unit is cut with the puzzle and the pattern is
+  // judged against that cut (`dowelVerdict`); refused, the puzzle cut is what
+  // goes and the sentence travels with it (Check #31). 'puzzle', the house
+  // default, runs no line here and no line of the three hooks below.
+  const jointsAsked = jointSystemOf(params, P);
+  let dowelPlan = null;
+  if (jointsAsked !== 'puzzle') {
+    const parent = computeCabinet({ ...params, joints_system: 'puzzle' }, profileOverride);
+    const verdict = dowelVerdict({
+      parent, params, asked: jointsAsked, type: cfg.type, profile: P,
+    });
+    if (verdict.refused) return withJointsRefusal(parent, verdict, jointsAsked);
+    dowelPlan = verdict.plan;
+  }
   // ─── T75 F7 · THE NOTCH IS ASKED OF THE PARENT FIRST ─────────────────────
   // *"Room refuses first: nothing is clipped silently."*  The unit is cut
   // WITHOUT its notch and the notch is judged against that cut (KIT_NOTCH.lsp
@@ -7657,6 +7680,12 @@ export function computeCabinet(params, profileOverride) {
     };
   }
 
+  // ─── T75 F23 · A DOWEL UNIT'S BOARDS GIVE UP THE PUZZLE, WHOLE ───────────
+  // SKYLON_JOINTS_DOWEL.lsp section E: the tenons, the sockets, their dog
+  // bones, the dia 7.5 holes and the joint's own dia 3 screw rows go, so the
+  // pass below copies none of them. Null plan on every puzzle unit.
+  if (dowelPlan) dowelStrip({ panels, plan: dowelPlan, profile: P });
+
   // ─── T75 F7 · THE CORNER NOTCH, CUT BEFORE THE DRILLING ──────────────────
   // KIT_NOTCH.lsp: *"It runs AFTER the parent kit's carcass and BEFORE the
   // drilling pass."*  Every board is cut in its own frame here, so the pass
@@ -7717,6 +7746,9 @@ export function computeCabinet(params, profileOverride) {
   for (const pnl of panels) {
     for (const hole of pnl.cnc?.holes || []) addDrill(pnl.id, hole.kind, hole.layer, hole.x, hole.y, hole.d);
   }
+  // T75 F23 · the dowel pairs: a face hole and an edge bore on both boards of
+  // every joint the puzzle made (SKYLON_JOINTS_DOWEL.lsp section D).
+  if (dowelPlan) drills.push(...dowelDrills(dowelPlan));
 
   // ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ─────────────
   //
@@ -8056,7 +8088,9 @@ export function computeCabinet(params, profileOverride) {
       walls: carryingWalls, run: { from: runFrom, to: runTo }, level: jointY, tolerance: 0,
     }));
 
-    for (const bearer of bearers) {
+    // T75 F23 · one system per joint: a shelf the dowel plan owns gives up its
+    // biscuit set and its through screws on both sides; the BACK's row stays.
+    for (const bearer of (dowelledShelf(dowelPlan, shelf.id) ? [] : bearers)) {
       if (bearer.kind === 'side') {
         // The side's own frame: BUL's x runs from the FRONT of the cabinet
         // towards the back, BUR's runs with z (engine/joinery.js). A point at
@@ -10303,6 +10337,12 @@ export function computeCabinet(params, profileOverride) {
       cut: notchCut, panels, drills, legs,
     });
     derived.notch = notchSummary(notchCut);
+  }
+  // T75 F23 · what the dowel unit is, and THE GATE while it is shut.
+  if (dowelPlan) {
+    derived.joints = dowelSummary(dowelPlan);
+    const gate = dowelGateWarning(derived.joints);
+    if (gate) warnings.push(gate);
   }
   const cutDrills = (() => {
     if (!cut) return drills;

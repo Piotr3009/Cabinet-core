@@ -31,6 +31,8 @@ wins; the table is only the default, and it is the workshop's own
 | `SHAKER_PANEL_POCKET` | no | — | drawn by the TRAY solid (3d/shakerSolid.js), which is the door’s own geometry — boring it again here would stand two coplanar surfaces a hundredth of a millimetre apart, which is z-fighting by construction. |
 | `HANDLES_5MM` | **yes** | through | a handle bolt goes through the front and takes a nut on the back — through is the truth. |
 | `HINGES_5MM` | **yes** | 12 mm | the knock-in plate’s two ⌀5 dowels. BLIND: a dowel that broke through the outer face of a side panel would be visible in the room. |
+| `DOWEL_8MM` | **yes** | through | the face half of a dowel joint. BLIND, to the depth its own record states (12 into an 18 board), so the outer face of a side is never pierced. |
+| `DOWEL_EDGE_8MM` | no | n/a | the edge half of a dowel joint is a HORIZONTAL bore into the board's edge, centred in its thickness; boring it through the face would draw a hole that is not there. Its record says face edge, which edge and how deep, and the joiner bores it with a jig. |
 | `SHELVES_7_5MM` | **yes** | 12 mm | the shelf-pin ladder — bored EMPTY ones too, so the full set of levels reads at a glance exactly as it does on the sheet (F3.1). BLIND: a pin hole through a side panel would show daylight. |
 | `RUNNERS_3MM` | **yes** | through | the runner’s fixing screws, drawn to whatever the workshop’s own drillDefaults row says — which today is THROUGH. Nobody has given a pilot depth for a MOVENTO screw and this turn does not invent one; BLOCKERS carries the question. |
 | `FRONT_HINGES_35MM` | **yes** | 11 mm | the ⌀35 cup. BLIND to the owner’s measured 11 mm — and the RECORD states it (engine/cabinet.js), so this default is never the number actually used. |
@@ -49,6 +51,7 @@ wins; the table is only the default, and it is the workshop's own
 * **`PUZZLE_SOCKET`** — cut by the OUTLINE since turn 11 — a socket is a notch in the board’s own polygon, and boring it a second time would punch a hole through a notch.
 * **`BISCUIT_4MM`** — a MARK is an open path the cutter runs in and out of, not a closed removal — it is drawn as a line on the face by 3d/JointLines.jsx and 3d/PartMachining.jsx, which is what a set-out transfer looks like on the bench.
 * **`SHAKER_PANEL_POCKET`** — drawn by the TRAY solid (3d/shakerSolid.js), which is the door’s own geometry — boring it again here would stand two coplanar surfaces a hundredth of a millimetre apart, which is z-fighting by construction.
+* **`DOWEL_EDGE_8MM`**: the edge half of a dowel joint is a HORIZONTAL bore into the board's edge, centred in its thickness; boring it through the face would draw a hole that is not there. Its record says face edge, which edge and how deep, and the joiner bores it with a jig.
 * **`UNIT_NUMBER`** — text, not machining — the label is engraved or printed and is drawn as type by the CNC preview.
 
 One further omission is a DRAWING rule rather than a class, and it is named

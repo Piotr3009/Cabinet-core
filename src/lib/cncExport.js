@@ -9,6 +9,13 @@ import { exportFileName, fileSafeName } from '../engine/naming.js';
 // Turn 31 (CLAUDE.md F3): both guards run before any file is written.
 import { exportGate, panelsThatGo } from '../engine/cnc/exportGate.js';
 import { getCabinetProfile } from '../engine/profile.js';
+// ─── T75 F23 · THE DOWEL GATE ─────────────────────────────────────────────
+// CLAUDE.md: *"the CNC export REFUSES a dowel job while
+// `joints.dowel.confirmed` is false, in words ("the dowel pattern is proposed,
+// not confirmed by the owner")."*  A REFUSAL, not a hold: it is thrown at the
+// top of each export, BEFORE `exportGate`, so "Export anyway" cannot pass it.
+// Only an export that would machine a dowel hole is refused.
+import { dowelExportRefusal } from '../engine/dowels.js';
 import { download } from './exporters.js';
 // T75 F22 · *"the CNC export carries a banner counting the lines that are not
 // 'cut'"*: read off the parts that go, never written into them.
@@ -114,6 +121,8 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
   // at all, which is the gate stated as a default.
   unit = null, design = null, ledSpec = null,
 } = {}) {
+  const dowelRefused = dowelExportRefusal([{ result }], profile);
+  if (dowelRefused) throw new Error(dowelRefused);
   const gate = exportGate([{ result }], { profile });
   const held = new Set(gate.held.map((h) => h.panelId));
   const cut = grooved(result, {
@@ -172,6 +181,8 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   const wanted = new Set(selectedIds);
   const chosen = exportablePanels(result.panels).filter((p) => wanted.has(p.id));
   if (!chosen.length) throw new Error('Nothing selected to export.');
+  const dowelRefused = dowelExportRefusal([{ result, panels: chosen }], profile);
+  if (dowelRefused) throw new Error(dowelRefused);
   const gate = exportGate([{ result, panels: chosen }], { profile });
   const panels = panelsThatGo(chosen, { gate, unitId: result.unitId || null, exportAnyway });
   if (!panels.length) throw new Error(`Every selected part is held back: ${gate.message}`);
@@ -217,6 +228,8 @@ export function exportMaterialDxf(entries, {
   key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,
   project = null,
 } = {}) {
+  const dowelRefused = dowelExportRefusal(entries, profile);
+  if (dowelRefused) throw new Error(dowelRefused);
   const gate = exportGate(entries, { profile });
   // The held-back parts leave the SELECTION before the section is laid out, so
   // the sheet the file carries is the sheet that was actually cut — no gap

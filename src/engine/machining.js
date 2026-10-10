@@ -121,6 +121,17 @@ const CLASSES = [
     draw: true,
     reason: 'the knock-in plate’s two fixing pilots, drilled ⌀3 where the workshop screws rather than knocks them in. BLIND for the same reason the ⌀5 is: a hole through the outer face of a side panel would be visible in the room.',
   },
+  // ─── T75 F23 (SKYLON_JOINTS_DOWEL.lsp): THE DOWEL'S TWO HALVES ──────────
+  {
+    layer: 'DOWEL_8MM',
+    draw: true,
+    reason: 'the face half of a dowel joint. BLIND, to the depth its own record states (12 into an 18 board), so the outer face of a side is never pierced.',
+  },
+  {
+    layer: 'DOWEL_EDGE_8MM',
+    draw: false,
+    reason: 'the edge half of a dowel joint is a HORIZONTAL bore into the board\'s edge, centred in its thickness; boring it through the face would draw a hole that is not there. Its record says face edge, which edge and how deep, and the joiner bores it with a jig.',
+  },
   {
     layer: 'SHELVES_7_5MM',
     draw: true,

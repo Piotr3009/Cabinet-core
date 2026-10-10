@@ -351,6 +351,40 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { widthMm: 200, depthMm: 200, heightMm: 0 }, // T75 proposed, owner to confirm
   },
 
+  // ─── T75 F23 · THE JOINT SYSTEM (reference/lisp/SKYLON_JOINTS_DOWEL.lsp) ──
+  //
+  // The owner, 9.10.2026: *"lisp najpierw."*  `system` is the ONE CUT LAW for
+  // how a carcass is held together: 'puzzle' (the Skylon tabs and sockets
+  // every kit is traced from, the house default) or 'dowel' (the LISP above,
+  // `engine/dowels.js`). 'cabineo' is RESERVED and refused until the owner's
+  // Lamello data is in the repo (reference/hardware/cabineo/README.md). A unit
+  // overrides it with `params.joints_system`.
+  //
+  // `joinery` further down is NOT this and stays as it is: it is the VISUAL
+  // layer picker the settings, the wizard and the 3-D read (which machining
+  // layers to draw), and `computeCabinet` has never read it. One picks what is
+  // SHOWN, this one picks what is CUT, so they are two keys and not one.
+  //
+  // `dowel` is the LISP's `dowel-profile`, key for key. `confirmed` is THE
+  // GATE: while it is false every CNC export that would machine a dowel hole
+  // refuses, and Check #31 says so. `maxGapMm` is the LISP's own addition to
+  // the CLAUDE.md table (the spacing rule needs a stated maximum gap).
+  joints: {
+    system: 'puzzle',
+    dowel: {
+      diaMm: 8,           // T75 proposed, owner to confirm
+      edgeDepthMm: 20,    // T75 proposed, owner to confirm
+      faceDepthMm: 12,    // T75 proposed, owner to confirm
+      pitchMm: 32,        // T75 proposed, owner to confirm
+      endOffsetMm: 50,    // T75 proposed, owner to confirm
+      maxGapMm: 128,      // T75 proposed, owner to confirm
+      confirmed: false,   // T75 proposed, owner to confirm
+      // The two CNC layers (engine/cnc/layers.js), named by the house grammar
+      // `{FEATURE}_{DIAMETER}MM`: the face half, and the edge half by hand.
+      layers: { face: 'DOWEL_8MM', edge: 'DOWEL_EDGE_8MM' },
+    },
+  },
+
   // ─── T75 F9 · THE ISLAND (CLAUDE.md T75 PART B) ────────────────────────────
   //
   // *"Room setup gets `ADD ISLAND` (default `profile.island.defaults` = 1800 x
@@ -5827,6 +5861,17 @@ export function migrateCabinetProfile(profile) {
     },
     // T75 F7 · the notch's defaults, key by key.
     notch: { ...D.notch, ...profile.notch, defaults: { ...D.notch.defaults, ...profile.notch?.defaults } },
+    // T75 F23 · the joint system and the dowel numbers, key by key, so a
+    // profile saved before tonight cuts the puzzle and holds the gate shut.
+    joints: {
+      ...D.joints,
+      ...profile.joints,
+      dowel: {
+        ...D.joints.dowel,
+        ...profile.joints?.dowel,
+        layers: { ...D.joints.dowel.layers, ...profile.joints?.dowel?.layers },
+      },
+    },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's
     // answer for the rest, and a profile saved before this turn gets all of it.

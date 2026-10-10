@@ -20,6 +20,7 @@ import NumberField from './NumberField.jsx';
 // T75 F7 · CUT CORNER: the small window at the click on a lit corner.
 import Modal from './Modal.jsx';
 import { notchApplies } from '../engine/notch.js';
+import { CABINEO_REFUSAL, dowelKitRefusal, jointSystemOf } from '../engine/dowels.js';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
 import Section from './Section.jsx';
@@ -1114,6 +1115,22 @@ export default function RightPanel() {
 
           <div className="cc-divider !my-2" />
 
+          {/* ─── T75 F23 · THE JOINT SYSTEM, PER UNIT ───────────────────────
+              *"lisp najpierw."*  Puzzle or Dowel, written to the unit's
+              `joints_system` through `updateUnitParams`; the engine asks the
+              pattern of the puzzle cut first and refuses in its own words.
+              Cabineo is shown and refused with its sentence. No typed number:
+              every dowel number is the profile's. */}
+          <JointsRow
+            unit={unit}
+            type={type}
+            result={result}
+            profile={profile}
+            onSet={(system) => updateUnitParams(unit.id, { joints_system: system })}
+          />
+
+          <div className="cc-divider !my-2" />
+
           {/* ── deliberate clearances (turn 7, BACKLOG #32) ──
               Not a mistake to be tidied up: a soil pipe in the corner, a wall
               that bows, a radiator bracket. The collision clamp respects these
@@ -1598,6 +1615,67 @@ function NotchRow({ unit }) {
           {`REMOVE ${notch.corner} CUT`}
         </button>
       )}
+    </div>
+  );
+}
+
+// ─── T75 F23 · PUZZLE, DOWEL, AND CABINEO RESERVED ─────────────────────────
+// What the unit is CUT with, read back off the engine's own answer
+// (`result.derived.joints`), so the row never claims a system the cut did not
+// take: a refusal shows in the engine's words and the puzzle stays lit.
+function JointsRow({
+  unit, type, result, profile, onSet,
+}) {
+  const asked = jointSystemOf(unit.params, profile);
+  const cut = result?.derived?.joints || null;
+  const kitRefusal = dowelKitRefusal(type);
+  let status = 'Skylon puzzle: tabs, sockets and dog bones';
+  if (cut?.system === 'dowel') {
+    status = `${cut.dowels} dowels, ${cut.edge_bores} edge bores by hand · `
+      + `${cut.gate ? `${cut.gate}: the CNC export refuses it` : 'confirmed by the owner'}`;
+  } else if (cut?.refused) {
+    status = `Kept the puzzle: ${cut.refused}`;
+  }
+  const lit = cut?.system === 'dowel' ? 'dowel' : 'puzzle';
+  return (
+    <div className="space-y-1" data-joints-row={unit.id}>
+      <div className="cc-row">
+        <div className="flex flex-col">
+          <span className="text-sm text-ink-100">Joints</span>
+          <span className="text-[11px] text-ink-400" data-joints-status="1">{status}</span>
+        </div>
+        <div className="flex items-center gap-1" data-joints-options="1">
+          <button
+            type="button"
+            data-joints="puzzle"
+            className={lit === 'puzzle' ? 'cc-btn-gold' : 'cc-btn'}
+            onClick={() => onSet('puzzle')}
+          >
+            Puzzle
+          </button>
+          <button
+            type="button"
+            data-joints="dowel"
+            disabled={Boolean(kitRefusal)}
+            title={kitRefusal || 'Dowel pairs on both boards of every joint (SKYLON_JOINTS_DOWEL.lsp)'}
+            className={`${lit === 'dowel' ? 'cc-btn-gold' : 'cc-btn'} ${kitRefusal ? 'opacity-50' : ''}`}
+            onClick={() => onSet('dowel')}
+          >
+            Dowel
+          </button>
+          <button
+            type="button"
+            data-joints="cabineo"
+            disabled
+            title={CABINEO_REFUSAL}
+            className="cc-btn opacity-50"
+          >
+            Cabineo
+          </button>
+        </div>
+      </div>
+      {asked === 'dowel' && kitRefusal && <p className="text-[11px] text-ink-400">{kitRefusal}</p>}
+      <p className="text-[11px] text-ink-400" data-joints-cabineo="1">{CABINEO_REFUSAL}</p>
     </div>
   );
 }

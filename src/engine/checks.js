@@ -232,6 +232,16 @@ export const CHECKS = Object.freeze([
   // bore, the worktop's joint and cut-outs). YELLOW: it informs, it never
   // blocks; the joiner knows what is his before the job reaches the shop.
   { n: 30, level: 'yellow', label: 'Parts the machine does not finish' },
+  // ─── T75 F23 · THE JOINT SYSTEM: THE DOWEL GATE, AND A REFUSAL ───────────
+  //
+  // *"THE GATE: the CNC export REFUSES a dowel job while
+  // `joints.dowel.confirmed` is false, in words ("the dowel pattern is
+  // proposed, not confirmed by the owner"); the Check says the same."*  One
+  // red per dowel unit while the gate is shut (`DOWEL_GATE`), and one per unit
+  // whose chosen system the engine refused and cut with the puzzle instead
+  // (`JOINTS_REFUSED`: Cabineo reserved, a kit the LISP's table does not
+  // describe, a dowel that meets a hole). RED: a person decides.
+  { n: 31, level: 'red', label: 'Joint system: dowels not confirmed, or refused' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -588,7 +598,10 @@ export function runChecks({
     // out a second way would be a second opinion about one board.
     for (const wn of result.warnings || []) {
       // T75 F7 · #28: the notch the engine refused, in its own words.
-      const n = { SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28 }[wn.code];
+      // T75 F23 · #31: the dowel gate, and a joint system refused, likewise.
+      const n = {
+        SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28, DOWEL_GATE: 31, JOINTS_REFUSED: 31,
+      }[wn.code];
       if (!n) continue;
       out.push(finding(n, 'red', at(wn.panel || null, {
         message: `${unitNum}: ${wn.message}`,

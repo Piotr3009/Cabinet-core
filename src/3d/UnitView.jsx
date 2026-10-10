@@ -3062,6 +3062,20 @@ export default function UnitView({
         <NotchCorners unitId={unit.id} width={W} depth={D} height={H} notch={unit.params?.notch || null} />
       )}
 
+      {/* ─── T75 F23 · THE DOWEL GATE, SAID ON THE UNIT ──────────────────────
+          *"the CNC export REFUSES a dowel job while `joints.dowel.confirmed` is
+          false ... the 3D and the cut list show it."*  One caption over a dowel
+          unit while the gate is shut, the scene's own label; nothing else. */}
+      {!contour && result?.derived?.joints?.gate && (
+        <group userData={{ ccHelper: true, ccDowelGate: unit.id }}>
+          <DimLabel
+            position={[mm(W / 2), mm(H) + 0.12, mm(D) + 0.05]}
+            text="Dowels: proposed, not confirmed"
+            tone="gold"
+          />
+        </group>
+      )}
+
       {/* ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET'S GUIDE LINE ───
           Drawn by BOTH cabinets — the one with the shelf in the hand and the
           one it caught — each at its own stored height, which is the whole

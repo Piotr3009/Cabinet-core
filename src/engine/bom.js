@@ -20,6 +20,7 @@ import { readinessOf } from './readiness.js';
 import { worktopsFor } from './worktop.js';
 import { migrateDesign } from './design.js';
 import { roomWalls } from './room.js';
+import { dowelNoteRow } from './dowels.js';
 
 /**
  * What ONE piece is finished in, as a name a workshop can order against
@@ -109,7 +110,12 @@ export function buildBom(entries, {
         readiness: readinessOf(p, { drills: result.drills }),
       };
     });
-    units.push({ unitId: unit.id, unitNum: result.unitNum, type: result.type, rows, totals: result.totals, warnings: result.warnings });
+    // T75 F23 · a dowel unit's cut list says so in a NOTE row (the gate while
+    // it is shut); counted in nothing, merged with nothing.
+    const dowelNote = dowelNoteRow(result);
+    units.push({
+      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: dowelNote ? [...rows, dowelNote] : rows, totals: result.totals, warnings: result.warnings,
+    });
 
     for (const r of rows) {
       pieces += r.qty;
@@ -512,6 +518,10 @@ export function buildCabinetPartQtys(computed, unit, settings = {}) {
   if (screws > 0) addQty('screw_confirmat', screws);
   const puzzles = drills.filter((d) => d.kind === 'puzzle').length;
   if (puzzles > 0) addQty('puzzle_screw', puzzles);
+  // T75 F23 · *"dowels count in the BOM by the hardware law"*: one dowel per
+  // pair, counted ONCE, off its FACE hole (the edge bore is its other half).
+  const dowels = drills.filter((d) => d.kind === 'dowel' && d.face !== 'edge').length;
+  if (dowels > 0) addQty('dowel', dowels);
   // Handles are placements, not a hardware role — the engine publishes them on
   // `drillSummary.handles`, and the key is ABSENT when there are none.
   const handles = computed.drillSummary?.handles?.length || 0;
@@ -521,7 +531,8 @@ export function buildCabinetPartQtys(computed, unit, settings = {}) {
   //   false_front        a FIX front comes off the engine as a `FRONT` today
   //   top_box_connector  no LISP line fixes a top box to its host, so there is
   //                      no count to read (rule: no invented numbers)
-  //   dowel, glue        the joiner's own quantities — F8's custom rows
+  //   glue               the joiner's own quantity, F8's custom rows
+  //   (dowel has a producer since T75 F23: the dowel unit's pairs, above)
   //   led_profile        derived at PROJECT level, from the strip metres
   // Each can still be ASSIGNED a product; none of them fabricates a quantity.
 

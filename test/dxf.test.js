@@ -318,6 +318,13 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // beyond the handles' 42 and is unused by the LISP's own table, so nothing
     // AutoCAD already draws changes colour.
     HINGES_3MM: 43,
+    // ─── AMENDED BY T75 F23: TWO NEW NAMES, THE DOWEL'S TWO HALVES ────────
+    // *"lisp najpierw."*  SKYLON_JOINTS_DOWEL.lsp's pair: the blind face hole
+    // drilled from above, and the edge bore the 3-axis bed cannot make (named
+    // for the sheet, never written to the machine file). ACI 45 and 46 sit
+    // beyond the LED groove's 44 and are unused by the LISP's own table.
+    DOWEL_8MM: 45,
+    DOWEL_EDGE_8MM: 46,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

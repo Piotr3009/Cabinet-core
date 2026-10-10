@@ -46,19 +46,28 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // Wine rack · Small fridge · Twin space — plus the drawer group and the low
   // cabinet, both kits the workshop already builds.
   assert.deepEqual(idsOf('base-units'), [
-    'door-base', 'drawer-unit', 'sink', 'l-shape-unit', 'l-shape', 'dishwasher',
+    // T75 F3: the blind corner, beside the kits that turn a corner.
+    // AMENDED BY T75 F4: T30's 'l-shape-unit' and the held-open 'l-shape' go;
+    // the true L, 'corner-l', takes their place (*"Base units "Corner L""*).
+    // AMENDED BY T75 F13: *"Library Base units "Drawers behind doors""*, after the drawer unit.
+    // AMENDED BY T75 F14: *"a library row "Hob drawer unit" for x2 and x3"*, beside the drawer unit.
+    'door-base', 'drawer-unit', 'hob-drawer-unit', 'drawers-behind-doors', 'sink', 'corner-l', 'blind-corner', 'dishwasher',
     'oven-base', 'bin-storage', 'wine-rack', 'small-fridge', 'twin-space',
     // Turn 30 (CLAUDE.md F18): the twin cupboard, beside the kits it is made of.
     'twin-cupboard', 'low',
   ]);
   // Turn 30 (CLAUDE.md F13/F14): Cargo 300 and the pantry land beside the kits
   // they are made of; the pantry's held-open row became a kit.
+  // AMENDED BY T75 F12: *"Four library rows, Tall units ... `Oven tall`
+  // (oven + cupboard), `Oven + microwave`, `Fridge freezer`, `Washer + dryer`."*
   assert.deepEqual(idsOf('tall-units'), [
     'tall', 'fridge', 'cargo-300', 'basket-tall', 'pantry', 'pantry-worktop',
-    'space-tower', 'oven-tall', 'american-fridge',
+    'space-tower', 'oven-tall', 'oven-microwave', 'fridge-freezer', 'washer-dryer', 'american-fridge',
   ]);
   // Turn 31 (CLAUDE.md F9): the HOOD unit joins the wall group.
-  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'l-shape-wall']);
+  // T75 F3: the blind corner wall unit.
+  // AMENDED BY T75 F4: the held-open 'l-shape-wall' opens as 'corner-l-wall'.
+  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'blind-corner-wall', 'corner-l-wall']);
   // The new group (F5.2): not cabinets — the pieces that finish a run.
   assert.deepEqual(idsOf('extras'), ['free-standing-panels', 'cornice-pelmet']);
 });
@@ -72,7 +81,14 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
     // Turn 31 (CLAUDE.md F9): WUD_HOOD — the KIT_WUD envelope with its bottom
     // open, the extractor a BOM line and a GLB slot, and not one fixing hole.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
+    // T75 F3: the blind corner (base) and the blind corner wall unit.
+    // AMENDED BY T75 F4: T30's L_SHAPE is deleted; the true L's base kit takes its place and its wall kit follows the blind wall unit.
+    // AMENDED BY T75 F12: the appliance towers, *"Fridge freezer"* and *"Washer + dryer"*.
+    // AMENDED BY T75 F12: the appliance towers, *"Fridge freezer"* and
+    // *"Washer + dryer"*; the small fridge is DW_PANEL, named once.
+    // AMENDED BY T75 F13: BUD_INT, *"Drawers behind doors"*.
+    // AMENDED BY T75 F14: the hob drawer units, 2x and 3x.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'BLIND_WALL', 'CORNER_L_WALL',
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
@@ -84,10 +100,14 @@ test('a group says how much of it can be placed today', () => {
   const wall = KITCHEN_LIBRARY.find((g) => g.id === 'wall-units');
   // Turn 30 (CLAUDE.md F21): two of the three can be placed now.
   // Turn 31 (CLAUDE.md F9): three of four — the hood joins them.
-  assert.deepEqual(groupCounts(wall, P), { total: 4, enabled: 3 });
+  // T75 F3: four of five, the blind corner wall unit joins them.
+  // AMENDED BY T75 F4: five of five, the held-open L row opened as the Corner L wall.
+  assert.deepEqual(groupCounts(wall, P), { total: 5, enabled: 5 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
   // T74 F13 · one of the two can be placed now: the free-standing panel.
-  assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 1 });
+  // AMENDED BY T75 F15: both now, *"The held-open row `cornice-pelmet` opens as
+  // a PLAIN pelmet"* (an action row on the selected unit's run).
+  assert.deepEqual(groupCounts(extras, P), { total: 2, enabled: 2 });
 });
 
 test('the drawer unit is ONE expandable entry with four splits behind it', () => {
@@ -114,10 +134,16 @@ test('the Kitchen category carries the list, and the others are untouched', () =
   assert.deepEqual(getCategory('kitchen').types, libraryTypeIds());
   // CLAUDE.md F3.7: "Categories beyond Kitchen stay as today — do not touch."
   assert.equal(getCategory('sets').saved, true);
-  assert.equal(getCategory('media').soon, true);
+  // AMENDED BY T75 F20: *"the Library's `media` category (`soon`) becomes the sets shelf"*.
+  assert.equal(getCategory('media').soon, undefined);
+  assert.equal(getCategory('media').sets, true);
   // T36 F7: the wardrobe category gained the Top box, and nothing else moved.
   // T74 F7: …and the wardrobe's wall unit, a third kit of its own.
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);
+  // AMENDED BY T75 F3: + the blind corner wardrobe (*"the Wardrobes category "Blind corner wardrobe""*).
+  // AMENDED BY T75 F16: + the chest of drawers' three counts (*"Wardrobes category"*).
+  // AMENDED BY T75 F17: + the floating desk.
+  // AMENDED BY T75 F18: + the low unit.
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
   // Nothing was lost in the restructure: every kit is still reachable.
   const reachable = new Set(UNIT_CATEGORIES.flatMap((c) => c.types));
   for (const id of UNIT_TYPE_ORDER) assert.ok(reachable.has(id), `${id} is in no category`);
@@ -141,20 +167,25 @@ test('every held-open entry is PRESENT, disabled, and says why', () => {
     // Turn 30 (CLAUDE.md F19): 'corner' left it too — as GEOMETRY, since
     // KIT_BUDR_FULL turned out to be the three-drawer base unit and there is
     // no corner kit to inherit a hole from.
-    'l-shape',
-    'small-fridge', 'twin-space',
+    // AMENDED BY T75 F4: 'l-shape' left this list: the true L, KIT_CORNER_L.lsp.
+    // AMENDED BY T75 F12: 'small-fridge' left this list, *"the small fridge is
+    // `DW_PANEL`'s fridge front, said in the row"*.
+    'twin-space',
     // Turn 30 (CLAUDE.md F14): 'pantry' left this list — KIT_BUDTALL's carcass
     // with the wardrobe kit's own internal drawer machinery in it.
     // Turn 30 (CLAUDE.md F15): 'american-fridge' left it too — KIT_FRIDGE.lsp
     // exists and is the truth, so an american size is a wider envelope.
-    'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall',
+    // AMENDED BY T75 F12: 'oven-microwave' joins 'oven-tall', both held for
+    // the owner's stack (two door zones on one face; the rail rule).
+    'basket-tall', 'pantry-worktop', 'space-tower', 'oven-tall', 'oven-microwave',
     // Turn 30 (CLAUDE.md F21): 'glass-unit' left this list — KIT_WUD's own
     // carcass and door, with the shaker frame taken through and a pane
     // ordered for the hole.
-    'l-shape-wall',
+    // AMENDED BY T75 F4: 'l-shape-wall' left this list: the Corner L wall.
     // T74 F13 · 'free-standing-panels' left this list: its owner in the model
     // is a kit of its own, `FREE_PANEL`, one board in the room.
-    'cornice-pelmet',
+    // AMENDED BY T75 F15: 'cornice-pelmet' left it too, *"The held-open row
+    // `cornice-pelmet` opens as a PLAIN pelmet"*.
   ]);
   for (const entry of soon) {
     const state = resolveEntry(entry, P);

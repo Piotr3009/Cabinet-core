@@ -103,6 +103,8 @@ const GROUP_OF = {
   'cornice-70': 'run-pieces',
   'cornice-100': 'run-pieces',
   plinth: 'run-pieces',
+  // T75 F5 · the upstand finishes a run as the plinth does.
+  upstand: 'run-pieces',
   'bottom-mask': 'run-pieces',
   'end-panel-L': 'end-panels',
   'end-panel-R': 'end-panels',
@@ -390,6 +392,24 @@ export function menuActions({
     });
   }
 
+  // ── 4a. the upstand (T75 F5) ──
+  // *"on and off per run like the plinth (BACKLOG #16's grammar: added by a
+  // decision, visible only then)."*  Offered only where a worktop lies.
+  if (type.mount === 'floor' && type.supports?.topInfill === false) {
+    const fitted = unit.params.upstand === true;
+    actions.push({
+      id: 'upstand',
+      label: forAll('Upstand'),
+      checked: fitted,
+      hint: fitted
+        ? 'Fitted. Click to take it off the run'
+        : 'A strip on the worktop against the wall, along the whole run, in the worktop\'s material',
+      run: () => {
+        each((id) => (fitted ? store.removeUpstand?.(id) : store.addUpstand?.(id)));
+      },
+    });
+  }
+
   // ── 4b. the colour (turn 13, CLAUDE.md F5.3) ──
   //
   // ─── TURN 50 (CLAUDE.md F10): "ADD DOORS" LEAVES THIS MENU ───────────────
@@ -449,10 +469,15 @@ export function menuActions({
   // just finished configuring is where a joiner reaches for this. It asks for a
   // NAME (the modal), because a library of "Wardrobe", "Wardrobe (2)" and
   // "Wardrobe (3)" is a library nobody uses.
+  // T75 F20 · over a selection it saves a SET: the units, left to right, and
+  // the gaps between them (`lib/templates.js`, `kind: 'set'`). The modal reads
+  // the same selection this menu is about.
   actions.push({
     id: 'save-template',
-    label: 'Save as template',
-    hint: 'Keep these parameters in Library ▸ Saved sets, ready to insert again',
+    label: many ? forAll('Save as a set') : 'Save as template',
+    hint: many
+      ? 'Keep these units, left to right with the gaps between them, in Library ▸ Sets'
+      : 'Keep these parameters in Library ▸ Saved sets, ready to insert again',
     run: () => store.saveAsTemplate?.(unit.id),
   });
 

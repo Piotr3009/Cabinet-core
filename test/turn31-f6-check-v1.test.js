@@ -103,8 +103,21 @@ test('the rules, each with the owner’s colour', () => {
   // AMENDED BY T74 F10: #26, a hinge too near the slope's apex, RED, on the
   // owner's word (*"minimum 150 mm od wierzchołka trójkąta skosu"*). The
   // twenty-two before it are untouched.
-  assert.equal(CHECKS.length, 23);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26]);
+  // AMENDED BY T75 F1: #27, a corner with nothing between the runs, RED
+  // (*"`'none'` is a CHECK, in words, naming both units"*). The twenty-three
+  // before it are untouched.
+  // AMENDED BY T75 F7: #28, a corner notch the carcass cannot take, RED
+  // (*"The Check refuses a notch that eats a joint it cannot re-plan, naming
+  // the board."*). The twenty-four before it are untouched.
+  // AMENDED BY T75 F21: #29, the price list moved since the job was priced,
+  // YELLOW (*"raises a CHECK, in words, never a silent recompute"*).
+  // AMENDED BY T75 F22: #30, the parts the machine does not finish, YELLOW
+  // (*"the Check lists them by unit"*).
+  // AMENDED BY T75 F23: #31, the dowel gate and a joint system refused, RED
+  // (*"the CNC export REFUSES a dowel job while `joints.dowel.confirmed` is
+  // false ... the Check says the same"*). The twenty-seven before it are untouched.
+  assert.equal(CHECKS.length, 28);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -135,6 +148,13 @@ test('the rules, each with the owner’s colour', () => {
     21: 'red',
     25: 'red',
     26: 'red',
+    27: 'red',
+    28: 'red',
+    // T75 F21 · the price list moved: the quote stands, the owner decides.
+    29: 'yellow',
+    // T75 F22 · what the machine does not finish: it informs, never blocks.
+    30: 'yellow',
+    31: 'red',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

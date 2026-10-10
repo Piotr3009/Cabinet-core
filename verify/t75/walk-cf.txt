@@ -1,0 +1,119 @@
+T75 · THE ACCEPTANCE WALK, PARTS C TO F (F12 to F14, F16 to F18, F20, F21)
+
+CLAUDE.md T75 TESTS AND PROOF, run section by section against
+`npx vite preview`, the hardware served from the silent showroom. Every
+gesture is a REAL mouse or key event at a DOM control's centre, or at a pixel
+the scene's own raycaster says the cabinet is under (and the page says the
+canvas owns); the store is only READ. A NOTE names a gesture the app offers
+no control for, or a reading worth keeping. The frames beside this file
+(fNN-*.png) are what the browser saw.
+
+=== F12 · THE APPLIANCE TOWER, ONE KIT, PARENT KIT_FRIDGE
+ ok  Library > Kitchen > Tall units > "Fridge freezer": a real click adds APPLIANCE_TALL · {"type":"APPLIANCE_TALL","num":"AT01"}; row "Fridge freezer · KIT_FRIDGE's housing, one aperture, the fridge behind its door600 × 2150 × 558 mm"
+ ok  APPLIANCE_TALL · its width is the defaults block's (600), its prefix AT · w 600, h 2150, d 558, num AT01
+ ok  APPLIANCE_TALL · its apertures are the defaults block's, in order, each at its role's height · unit [{"role":"fridge","h":1786}]; block [{"role":"fridge"}] at the roles' heights [{"role":"fridge","h":1786}]
+ ok  APPLIANCE_TALL · the engine cut one fixed panel per aperture (KIT_FRIDGE's FIXED, stacked) · fixed panels ["FIXED"]
+ ok  Library > Kitchen > Tall units > "Washer + dryer": a real click adds APPLIANCE_TALL2 · {"type":"APPLIANCE_TALL2","num":"AT02"}; row "Washer + dryer · KIT_FRIDGE's housing, two apertures, a door over the top600 × 2150 × 558 mm"
+ ok  APPLIANCE_TALL2 · its width is the defaults block's (600), its prefix AT · w 600, h 2150, d 558, num AT02
+ ok  APPLIANCE_TALL2 · its apertures are the defaults block's, in order, each at its role's height · unit [{"role":"washer","h":850},{"role":"dryer","h":850}]; block [{"role":"washer"},{"role":"dryer"}] at the roles' heights [{"role":"washer","h":850},{"role":"dryer","h":850}]
+ ok  APPLIANCE_TALL2 · the engine cut one fixed panel per aperture (KIT_FRIDGE's FIXED, stacked) · fixed panels ["FIXED","FIXED1"]
+ ok  APPLIANCE_TALL2 · its door through the Doors section's own "Add doors" button
+ ok  APPLIANCE_TALL2 · no front over the washer and the dryer: the one door starts on the highest machine · {"doors":[{"y":1736,"h":414}],"fixed":[{"id":"FIXED","y":1736,"h":18},{"id":"FIXED1","y":868,"h":18}]}
+ ok  the BOM panel (Order tab) lists an appliance line per aperture: fridge freezer, washer, dryer · ["Fridge freezer | 1 pcs | Fridge freezer, 564 x 1786 x 540 mm aperture · SPEC | Bought","Washing machine | 1 pcs | Washing machine, 564 x 850 x 540 mm aperture · SPEC | Bought","Tumble dryer | 1 pcs | Tumble dryer, 564 x 850 x 540 mm aperture · SPEC | Bought"]
+ ok  the BOM tab (the purchase list) carries one "Appliance" line counting the three machines · ["Appliance","3","pcs","\u2014","\u2014","\u2014","Assign…"]
+ ok  a base unit beside them, its Width typed to 875: the scene offers the share-out (under 400 mm left at the wall) · leftover 200; run ["APPLIANCE_TALL 1700+600","APPLIANCE_TALL2 2300+600","BUD 2925+600"]
+ ok  "Share it out equally": WIDTH FIXED, the towers keep their 600 and the base unit takes the leftover · ["APPLIANCE_TALL 1700+600","APPLIANCE_TALL2 2300+600","BUD 2925+1035"]; said "Run shared out \u2014 1 cabinet(s) at 1035 mm. Ctrl+Z takes it back."
+
+=== F13 · THE BASE UNIT WITH DRAWERS BEHIND ITS DOORS
+ ok  Library > Kitchen > Base units > "Drawers behind doors": a real click adds BUD_INT, prefix BI · {"type":"BUD_INT","num":"BI01","w":600,"h":770,"d":558}
+ ok  the right panel offers Add items > Drawers (internal) on it · section open true; kinds ["drawers","overlay_drawers (off)","watch_drawer (off)","shelves","shoe_box (off)","partition","hanger (off)","cargo (off)","bins (off)","pulldown (off)","trouser (off)","tie_rack (off)","hooks (off)","valet_rod (off)"]
+ ok  Add with the count the field offers (2), "Bare boxes": the drawers are on the unit · drawers ["internal","internal"]; said null
+ ok  its door through the Doors section's own "Add doors" button
+ ok  the drawers are cut as bare boxes behind the door: two boxes, no drawer front, one door · {"boxes":["D1-DNO","D2-DNO"],"faces":0,"doors":1}
+ ok  the DP panel stands on the hinged side, a filler each side (the wardrobe's behind-door law) · hinge L; DP ["DP-L"]; fillers ["FILLER-1","FILLER-2"]
+ ok  THE DOOR SETBACK: the box front stands back by the wardrobe's setback behind the door (z + d = depth - setback - front_t) · D1-BF z 465 + d 18 = 483; depth 558 - setback 50 - front 25 = 483
+ ok  two runner pairs in the hardware · runner_pairs 2
+
+=== F14 · THE HOB UNIT
+ ok  a standard base unit beside it first (Library > Base units > Standard) · {"id":"u_1emuump","type":"BUD","x":1700,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  Library > Base units > Hob drawer unit > "3x": a real click adds BUDR_HOB, prefix DR, hob on · {"type":"BUDR_HOB","num":"DR01","hob":true}
+ ok  BUDR_HOB · the TOP front is a fixed dummy: FALSE-FRONT, role false_front, no holes, no drawer behind it, readiness geometry · {"id":"DR01-F3","part":"FALSE-FRONT","y":598,"h":169,"holes":0,"readiness":"geometry","fixing":"manual","drawer":null}; drawer fronts below it reach 595
+ ok  BUDR_HOB · 2 drawer boxes under the dummy, none behind it · ["D1-DNO","D2-DNO"]
+ ok  BUDR_HOB · the highest box stays the hob's 60 mm below the top · box top 532.5; carcass 770 - 60 = 710
+ ok  Library > Base units > Hob drawer unit > "2x": a real click adds BUDR2_HOB, prefix DR, hob on · {"type":"BUDR2_HOB","num":"DR02","hob":true}
+ ok  BUDR2_HOB · the TOP front is a fixed dummy: FALSE-FRONT, role false_front, no holes, no drawer behind it, readiness geometry · {"id":"DR02-F2","part":"FALSE-FRONT","y":385,"h":382,"holes":0,"readiness":"geometry","fixing":"manual","drawer":null}; drawer fronts below it reach 382
+ ok  BUDR2_HOB · 1 drawer box under the dummy, none behind it · ["D1-DNO"]
+ ok  BUDR2_HOB · the highest box stays the hob's 60 mm below the top · box top 298.5; carcass 770 - 60 = 710
+ ok  all 3 selected by a click and Ctrl+clicks on the cabinets · selected ["u_1emuump","u_6rpjfri","u_0x0zgwm"]; first click by TOP
+ ok  "Add worktop (3)" lays the worktop, and it proposes a HOB cut-out over each hob unit · [{"id":"worktop_vp7oeb9","t":38,"cutouts":[{"kind":"hob","unit":"u_6rpjfri","w":524,"d":500,"r":10,"machined":false,"readiness":"manual"},{"kind":"hob","unit":"u_0x0zgwm","w":524,"d":500,"r":10,"machined":false,"readiness":"manual"}]}]; said null
+ ok  the BOM panel's cut list (Parts) shows the worktop and its hob cut-out note · ["WT · WORKTOP · 1 PCS","WT worktop_vp7oeb9 38 · Worktop 38 mm 1820 606 1 \u2014 1.103 Bought","WT worktop_vp7oeb9 hob cut-out 38 · NOTE: Hob cut-out 524 x 500, R10, over DR01: cut on site. 524 500 1 \u2014 0.000 Fit on site","WT worktop_vp7oeb9 hob cut-out 38 · NOTE: Hob cut-out 524 x 500, R10, over DR02: cut on site. 524 500 1 \u2014 0.000 Fit on site"]
+
+=== F16 · THE CHEST OF DRAWERS BETWEEN WARDROBES
+ ok  PRO: NEW PROJECT > Wardrobe > One wall > the settings sequence > Start designing, all by hand: the editor opens on a wardrobe job · start screen > New project: step info | type "Wardrobe" + Next: step scope, projectType wardrobe | One wall + the wall's Save: step settings | settings: carcass:c1=generic-18, Save carcasses, front:f1=generic-18, Save fronts; summary reached true | Start designing: the editor opened
+ ok  the library opens on Wardrobes (wardrobe); its first row adds a WARDROBE · {"id":"u_kqqzwj3","type":"WARDROBE","x":1700,"wall":0,"w":600,"h":2150,"d":568,"ep":""}
+ ok  Wardrobes > "Chest of drawers" flies out the variants control: 2x, 3x, 4x · ["chest-2: 2× · Two equal deep drawers800 × 647 × 568 mm","chest-3: 3× · The workshop standard \u2014 4:3:2800 × 647 × 568 mm","chest-4: 4× · Four equal drawers800 × 647 × 568 mm"]
+ ok  PRO: the 2x row adds WARDROBE_CHEST2, prefix WC, 2 drawer fronts, the defaults block's width and height · WC01 800 x 647 x 568, 2 fronts; block {"width":800,"height":647,"depth":568}
+ ok  PRO: WARDROBE_CHEST2 is born at the wardrobe's depth and gap, beside a wardrobe-job piece · chest d 568 gap 10 x 2300; wardrobe d 568 gap 10 x 1700 w 600
+ ok  PRO: the 3x row adds WARDROBE_CHEST3, prefix WC, 3 drawer fronts, the defaults block's width and height · WC02 800 x 647 x 568, 3 fronts; block {"width":800,"height":647,"depth":568}
+ ok  PRO: WARDROBE_CHEST3 is born at the wardrobe's depth and gap, beside a wardrobe-job piece · chest d 568 gap 10 x 3100; wardrobe d 568 gap 10 x 1700 w 600
+ ok  RETAIL: a wardrobe through the WHERE step's own button, then the EXTRAS step · [["WARDROBE","W01"]]
+ ok  RETAIL: EXTRAS "ADD CHEST OF DRAWERS" adds a WARDROBE_CHEST3 (the x3 default) beside the wardrobe · WC01 at x 1258 w 800; wardrobe x 40 w 1200; said ""
+ ok  RETAIL: the chest is as deep as the wardrobe, its three drawers cut · chest d 568, wardrobe d 568; 3 drawer fronts
+
+=== F17 · THE FLOATING DESK
+ ok  PRO: NEW PROJECT > Wardrobe > One wall > the settings sequence > Start designing, all by hand: the editor opens on a wardrobe job · start screen > New project: step info | type "Wardrobe" + Next: step scope, projectType wardrobe | One wall + the wall's Save: step settings | settings: carcass:c1=generic-18, Save carcasses, front:f1=generic-18, Save fronts; summary reached true | Start designing: the editor opened
+ ok  the library opens on Wardrobes (wardrobe); its first row adds a WARDROBE · {"id":"u_zja14bh","type":"WARDROBE","x":1700,"wall":0,"w":600,"h":2150,"d":568,"ep":""}
+ ok  PRO: Wardrobes > the desk row, a real click · {"id":"u_b51qzil","type":"WARDROBE_DESK","x":2300,"wall":0,"w":1000,"h":160,"d":568,"ep":""}
+ ok  PRO: WARDROBE_DESK, prefix WD, one drawer, hung at mount_height 720, the defaults block's height · WD01 1000 x 160 x 568, mount 720, 1 drawer front(s)
+ ok  PRO: as deep as the wardrobe and its FRONT on the wardrobe's front (T74 F7's default), beside it · desk d 568 front 578 x 2300; wardrobe d 568 front 578 x 1700 w 600
+ ok  PRO: it arrives with its own top: a worktop record of kind desk, 25 mm, and the slab is 25 thick · {"rec":{"kind":"desk","thickness":25,"units":1},"slab":{"t":25,"w":1010,"d":609}}
+ ok  RETAIL: a wardrobe through the WHERE step's own button, then the EXTRAS step · [["WARDROBE","W01"]]
+ ok  RETAIL: EXTRAS "ADD DESK" hangs a desk beside the wardrobe · WARDROBE_DESK WD01; said ""
+ ok  RETAIL: WARDROBE_DESK, prefix WD, one drawer, hung at mount_height 720, the defaults block's height · WD01 1000 x 160 x 568, mount 720, 1 drawer front(s)
+ ok  RETAIL: as deep as the wardrobe and its FRONT on the wardrobe's front (T74 F7's default), beside it · desk d 568 front 578 x 1258; wardrobe d 568 front 578 x 40 w 1200
+ ok  RETAIL: it arrives with its own top: a worktop record of kind desk, 25 mm, and the slab is 25 thick · {"rec":{"kind":"desk","thickness":25,"units":1},"slab":{"t":25,"w":1010,"d":609}}
+
+=== F18 · THE LOW UNITS OF A WARDROBE JOB
+ ok  PRO: NEW PROJECT > Wardrobe > One wall > the settings sequence > Start designing, all by hand: the editor opens on a wardrobe job · start screen > New project: step info | type "Wardrobe" + Next: step scope, projectType wardrobe | One wall + the wall's Save: step settings | settings: carcass:c1=generic-18, Save carcasses, front:f1=generic-18, Save fronts; summary reached true | Start designing: the editor opened
+ ok  the library opens on Wardrobes (wardrobe); its first row adds a WARDROBE · {"id":"u_c2v0dtv","type":"WARDROBE","x":1700,"wall":0,"w":600,"h":2150,"d":568,"ep":""}
+ ok  PRO: Wardrobes > "Low unit" adds WARDROBE_LOW, prefix WL, its own low height (500) · WL01 600 x 500 x 568
+ ok  PRO: born at the wardrobe's depth and gap, beside it · low d 568 gap 10 x 2300; wardrobe d 568 gap 10 x 1700 w 600
+ ok  RETAIL: a wardrobe through the WHERE step's own button, then the EXTRAS step · [["WARDROBE","W01"]]
+ ok  RETAIL: EXTRAS "ADD LOW UNIT" adds a WARDROBE_LOW beside the wardrobe, as deep as it, 500 high · WL01 600 x 500 x 568 at x 1258; wardrobe d 568 x 40 w 1200; said ""
+ ok  RETAIL: it arrives with its door on (the store's setDoors), cut as a leaf · doors true, leaves 1
+
+=== F20 · MULTI-UNIT SETS, AND FIVE OF THEM SHIPPED AS DATA
+ ok  Library (top bar) > Sets: the shelf lists the five shipped sets, in the job types' order · ["Media wall 5 units: Tall unit, Wall unit, Free-standing panel, Free-standing panel, Tall unit","Sideboard 3 units: Base unit, Drawer unit \u2014 3 drawers, Base unit","Vanity 2 units: Sink base, Wall unit","Utility 4 units: Tall unit, D/W panel, Washer + dryer tower, Base unit","Hallway 3 units: Low cabinet, Wardrobe, Tall unit"]
+ ok  a real click on "Sideboard": three units in, door, drawer, door, left to right · ["01 BUD x 1100 w 600 ep L","DR01 BUDR x 1700 w 600 ep -","02 BUD x 2300 w 600 ep R"]; said "Sideboard: 3 units in. They are ordinary units now."
+ ok  end panels at both ends of the set (L on the first, R on the last) · ["L","","R"]
+ ok  one 25 mm top over the three (the per-worktop thickness, F17's) · records [{"units":3,"kind":null,"thickness":25}]; slabs [25]
+ ok  Ctrl+Z (the real key, pressed once) takes the whole set back in one step: units and top · units 3 -> 0; undo stack 1 -> 2 (the set was 1 step); tops []
+ ok  NEW PROJECT > Media wall > One wall > the settings sequence > Start designing, all by hand · start screen > New project: step info | type "Media wall" + Next: step scope, projectType media_wall | One wall + the wall's Save: step settings | settings: carcass:c1=generic-18, Save carcasses, front:f1=generic-18, Save fronts; summary reached true | Start designing: the editor opened
+ ok  the first plus says "Add the Media wall set" · {"set":"set-media-wall","aria":"Add the Media wall set","said":"Add the Media wall set"}
+ ok  a real click on it inserts the set: two tall columns, the wall unit hung at 300 as the floating base, two shelf panels · ["T01 BUDTALL x 800 w 600","WU01 WUD x 1400 w 1200 mount 300","FP01 FREE_PANEL x 1400 w 1200 mount 1200","FP02 FREE_PANEL x 1400 w 1200 mount 1600","T02 BUDTALL x 2600 w 600"]; said "Media wall: 5 units in. They are ordinary units now; Ctrl+Z takes the set back."
+ ok  the two columns selected by a click and a Ctrl+click · selected ["u_7du9nct","u_clua63v"]; clicks by TOP, TOP
+ ok  a right-click on one of them: the menu offers "Save as a set (2)" · entry "Save as a set (2)"; right-click by TOP
+ ok  typed "Walk columns", Save: the Sets shelf opens and lists it as a set of 2 units · {"head":"Sets","row":"Walk columns 2 units: Tall unit, Tall unit"}; said "“Walk columns” saved to Library ▸ Sets."
+
+=== F21 · THE CSV CONTRACT WITH JOINERYCORE
+ ·   a base unit in the room so the job has a bill of materials · BUD u_ucb1d5u
+ ok  BOM > Assign… on "Carcase sides", the picker, "MFC White W980 18 mm": the board is assigned by hand (a stock row with a code) · part carcase_side; clicked true; the record holds mat_mfc18_white
+ ok  Database > Materials… opens the warehouse
+ ok  its three buttons read "Import from JoineryCore (CSV)", "Export project list for JoineryCore (CSV)", "Export for JoineryCore (CSV)" · {"imp":"Import from JoineryCore (CSV)","proj":"Export project list for JoineryCore (CSV) (0)","all":"Export for JoineryCore (CSV) (0)"}
+ ok  Import from JoineryCore (CSV): the row lands by its jc_uuid, "42,50" read as 42.5, the two-line note whole · {"item":"JC-7501","name":"MFC White W980 18 mm","cost":42.5,"jc":"9F1C2A7E-75F2-4B0C-9D2E-0A1B2C3D4E5F","notes":"Two lines:\nthe second survives","src":"import"}; said "1 new · 0 matched on jc_uuid and overwritten."
+ ok  Export for JoineryCore (CSV): a file is saved, its header the twelve columns of the contract · Cabinet Core - Full catalogue - 2026-10-10 01-31 - materials.csv: item_number,name,category,subcategory,size,thickness,color,unit,cost_per_unit,image_url,jc_uuid,notes
+ ok  …and the imported row comes back out by identity: its jc_uuid, 42.5, the note · ["JC-7501,MFC White W980 18 mm,sheets,MFC,2800 x 2070,18,White,sheet,42.5,,9F1C2A7E-75F2-4B0C-9D2E-0A1B2C3D4E5F,\"Two lines:","the second survives\"",""]
+ ·   Export project list (Export project list for JoineryCore (CSV) (0)): no file. The list is by IDENTITY (the jc_uuid of the stock rows the project's assignments name); the board assigned above is a mock stock row with no jc_uuid, so the project names no warehouse row and the app says so in words · "This project names no material that is in the warehouse yet."
+ ok  the BOM panel's "Purchase CSV" is saved with JC_UUID and CODE after PARTS · T74-walk-purchase-bom-1010-0131.csv: GROUP,MATERIAL,ASSIGNED,QTY,UNIT,SHEETS,UNIT_COST,LINE_COST,PARTS,JC_UUID,CODE
+ ok  the line assigned by hand carries the stock row's code in CODE · "BOARD,MFC White W980 18 mm,yes,0.832,m²,1,11.40,9.48,carcase_side,,W980 SM"
+ ·   JC_UUID on a purchase line is the STOCK row's jc_uuid; the mock stock list carries none, so the column is empty here (the warehouse rows carry it, above) · ["BOARD,MFC White W980 18 mm,yes,0.832,m²,1,11.40,9.48,carcase_side,,W980 SM"]
+
+SECTION f12: 14 ok, 0 FAIL, 0 notes
+SECTION f13: 8 ok, 0 FAIL, 0 notes
+SECTION f14: 12 ok, 0 FAIL, 0 notes
+SECTION f16: 10 ok, 0 FAIL, 0 notes
+SECTION f17: 11 ok, 0 FAIL, 0 notes
+SECTION f18: 7 ok, 0 FAIL, 0 notes
+SECTION f20: 11 ok, 0 FAIL, 0 notes
+SECTION f21: 8 ok, 0 FAIL, 3 notes
+TOTAL 81 checks · 0 failed · 3 notes

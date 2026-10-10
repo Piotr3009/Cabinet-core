@@ -93,7 +93,7 @@ import {
 } from './materials.js';
 import { bevelHook, createBevelState, syncBevelState } from './bevel.js';
 import Hardware, {
-  DoorHinges, Extractor, FrontHandle, hingeSpecsFor,
+  ApplianceSlots, DoorHinges, Extractor, FrontHandle, hingeSpecsFor,
 } from './Hardware.jsx';
 import HoverDimensions from './HoverDimensions.jsx';
 // T72 F3 · the chain that STAYS while a piece is selected, every figure a chip.
@@ -160,6 +160,8 @@ import { frontsAreVeneered, panelIsVeneered } from '../lib/veneerSheen.js';
 import { wallAtPoint } from '../engine/room.js';
 import { widthZones } from '../engine/zones.js';
 import { panelSolids } from './panelSolid.js';
+// T75 F7 · CUT CORNER: the four plan corners, lit while the store asks.
+import NotchCorners from './NotchCorners.jsx';
 // T58b (CLAUDE.md F3.2): the J is not a mesh — it is slabs merged into the
 // leaf's own geometry — so a click on it is a hit test, and the hit test is a
 // pure function with a unit test behind it.
@@ -857,14 +859,16 @@ export function MovingPanel({
   // else sits at its own centre.
   const hingeAtRight = p.meta?.hinge === 'R';
   const centre = mitre?.box || p.box;
+  // T75 F4 · the L's door B faces the adjacent wall: it hangs on its far end (z max).
+  const alongZ = front === 'door' && !drops && p.meta?.swingZ;
   // eslint-disable-next-line no-nested-ternary
-  const pivot = drops
+  const pivot = alongZ ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d)] : drops
     ? [mm(p.box.x + p.box.w / 2), mm(p.box.y), mm(p.box.z + p.box.d / 2)]
     : (front === 'door'
       ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
       : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)]);
   // eslint-disable-next-line no-nested-ternary
-  const meshOffset = drops
+  const meshOffset = alongZ ? [0, 0, mm(-p.box.d / 2)] : drops
     ? [0, mm(p.box.h / 2), 0]
     : (front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0]);
 
@@ -928,7 +932,7 @@ export function MovingPanel({
       // by what is beside the cabinet (turn 8, CLAUDE.md F5): a door with a
       // wall on its hinge side stops square, because past square its free edge
       // comes back over the hinge and into the plaster.
-      const dir = p.meta?.hinge === 'R' ? 1 : -1;
+      const dir = alongZ ? p.meta.swingZ.dir : (p.meta?.hinge === 'R' ? 1 : -1);
       group.current.rotation.y = dir * a * (swing ?? Math.PI * 0.55);
       group.current.position.z = pivot[2];
     }
@@ -3050,6 +3054,28 @@ export default function UnitView({
         />
       )}
 
+      {/* ─── T75 F7 · CUT CORNER ─────────────────────────────────────────────
+          *"program podświetla narożniki, wybierasz"*: the four plan corners,
+          lit while `uiStore.notchPick` names this unit; a click on one opens
+          the small window at the click. Draws nothing otherwise. */}
+      {!contour && (
+        <NotchCorners unitId={unit.id} width={W} depth={D} height={H} notch={unit.params?.notch || null} />
+      )}
+
+      {/* ─── T75 F23 · THE DOWEL GATE, SAID ON THE UNIT ──────────────────────
+          *"the CNC export REFUSES a dowel job while `joints.dowel.confirmed` is
+          false ... the 3D and the cut list show it."*  One caption over a dowel
+          unit while the gate is shut, the scene's own label; nothing else. */}
+      {!contour && result?.derived?.joints?.gate && (
+        <group userData={{ ccHelper: true, ccDowelGate: unit.id }}>
+          <DimLabel
+            position={[mm(W / 2), mm(H) + 0.12, mm(D) + 0.05]}
+            text="Dowels: proposed, not confirmed"
+            tone="gold"
+          />
+        </group>
+      )}
+
       {/* ─── TURN 21 (CLAUDE.md F11): THE HEIGHT MAGNET'S GUIDE LINE ───
           Drawn by BOTH cabinets — the one with the shelf in the hand and the
           one it caught — each at its own stored height, which is the whole
@@ -3198,6 +3224,19 @@ export default function UnitView({
             h: result.hardware.find((h) => h.role === 'extractor').spec.aperture_height_mm,
             d: result.hardware.find((h) => h.role === 'extractor').spec.aperture_depth_mm,
           }}
+        />
+      )}
+      {/* T75 F12 · the appliance tower's machines: a slot per aperture, nothing drawn. */}
+      {result.hardware?.some?.((h) => h.role === 'appliance') && (
+        <ApplianceSlots
+          unitId={unit.id}
+          apertures={result.hardware.filter((h) => h.role === 'appliance').map((h) => ({
+            role: h.spec.role,
+            w: h.spec.aperture_width_mm,
+            h: h.spec.aperture_height_mm,
+            d: h.spec.aperture_depth_mm,
+            y: h.spec.floor_y_mm,
+          }))}
         />
       )}
       <Hardware

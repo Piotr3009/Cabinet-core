@@ -155,15 +155,37 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   // `UnitSizeModal` (T74 F7: the wardrobe wall unit's depth and its BACK |
   // FRONT), licensed by T74 and not by F9: what F9 said it did not buy, it
   // still did not buy, and the assertion below asks exactly that.
+  // AMENDED BY T75: `BomPanel` and `ContextMenu` (F5: the worktop reaches the
+  // BOM, the upstand reaches the menu), argued in the manifest with the
+  // owner's words, re-frozen at their new hashes. Neither is a widening file.
+  // AMENDED BY T75 F7: `RightPanel` (CUT CORNER and its small window), argued
+  // in the manifest with the owner's words of 23.09 (*"Klikasz 'wytnij
+  // narożnik'..."*), re-frozen at its new hash. Not a widening file.
+  // AMENDED BY T75 F9/F10: `LibraryPanel` (a plus on an island face) and
+  // `RightPanel` (the face named in the Wall select), argued the same way.
+  // AMENDED BY T75 F15: `LibraryPanel` (*"The held-open row `cornice-pelmet`
+  // opens as a PLAIN pelmet"*: the Extras row is an action on the selected
+  // run), argued in the manifest, re-frozen. Not a widening file.
+  // AMENDED BY T75 F23: `RightPanel` again (the Joints row, Puzzle or Dowel,
+  // *"lisp najpierw."*), argued in the manifest, re-frozen. Not a widening file.
   const ARGUED = [
-    'AddItems', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
-    'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
+    'AddItems', 'BomPanel', 'ContextMenu', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
+    // AMENDED BY T75 F21: `WarehouseModal` (the JoineryCore CSV contract).
+    'LibraryPanel', 'RightPanel', 'RoomModal', 'UnitSizeModal', 'WarehouseModal', 'WatchLayoutModal',
+    // AMENDED BY T75 F20: `SaveTemplateModal` (a selection saved as a set) and `TopBar` (the Sets
+    // shelf's menu line), *"`lib/templates.js` grows `kind: 'set'`"*. Neither is a widening file.
+    'SaveTemplateModal', 'TopBar',
+    // AMENDED BY T75 F22: `CncTree` (the readiness banner after an export). Not a widening file.
+    'CncTree',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');
   for (const [name, turn] of exempt) {
-    assert.ok(['67', '69', '71', '72', '74'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
+    assert.ok(['67', '69', '71', '72', '74', '75'].includes(turn), `${name} names turn ${turn}, which licensed nothing`);
   }
   assert.ok(!exempt.some(([n, t]) => /UnitSize/.test(n) && t === '69'), 'F9 bought no exemption');
-  assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), ['RoomModal'], 'T69 licensed RoomModal alone');
+  // AMENDED BY T75 F9: RoomModal's licence is renewed tonight (ADD ISLAND), so
+  // its newest reason names T75; T69's own sentence still stands beneath it.
+  assert.deepEqual(exempt.filter(([, t]) => t === '69').map(([n]) => n), [], 'T69 licenses nothing new');
+  assert.match(read('test/turn59-f1-the-switch.test.js'), /T69 F1 . the preset row becomes 1 WALL/, 'T69\'s RoomModal reason was lost');
 });

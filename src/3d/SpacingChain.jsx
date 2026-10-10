@@ -165,6 +165,31 @@ function chainFor({
     };
   }
 
+  // ─── T75 F3 · THE BLIND KIT'S BLANK · its width, and the hand that sets it ─
+  // *"Clicking its dimension (T73 F3 field) overrides `blindMm` by hand; the
+  // override is the client's and the automat never takes it back."*  ONE
+  // figure along the blank, from the carcass end at the corner to its edge.
+  // Typing writes `blind_mm_own`, which the engine reads before the corner's.
+  if (panel.part === 'BLIND-BLANK' && unit) {
+    const y = panel.box.y + panel.box.h / 2;
+    return {
+      rows: [{
+        key: 'blind-width',
+        from: [panel.box.x, y],
+        to: [panel.box.x + panel.box.w, y],
+        offset: 0,
+        label: formatDimension(panel.box.w),
+        value: panel.box.w,
+        commit: (want) => want,
+        write: 'blind-own',
+      }],
+      plane: 'xy',
+      at: panel.box.z + panel.box.d,
+      name: `blind-blank-${unit.id}`,
+      itemId: unit.id,
+    };
+  }
+
   // ─── T74 F6 · THE SECOND SHOE DRAWER · the distance to the drawer under it ─
   // *"Druga przesuwana góra/dół, program pokazuje odległość między
   // szufladami."*  ONE figure: from the top of the drawer front under it to
@@ -324,6 +349,9 @@ export default function SpacingChain({
     if (!row?.commit || !Number.isFinite(want) || !itemId) { setEditing(null); return; }
     const next = row.commit(want);
     if (row.write === 'unit-x') moveUnit(unit.id, next, 0.5, { magnet: false });
+    else if (row.write === 'blind-own') {
+      for (const note of updateUnitParams(unit.id, { blind_mm_own: next })?.notices || []) notify(note, 'warn');
+    }
     else if (row.write === 'unit-mount') {
       for (const note of updateUnitParams(unit.id, { mount_height: next })?.notices || []) notify(note, 'warn');
     } else if (chain.write === 'drawer-mount') setDrawerMount(unit.id, itemId, next);

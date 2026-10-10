@@ -1,0 +1,586 @@
+{
+  "project": {
+    "id": null,
+    "name": "T75 wardrobe corner",
+    "number": "075/2026",
+    "client": "T75 proof",
+    "room": {
+      "schema": 2,
+      "height": 2500,
+      "corners": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 5000,
+          "y": 0
+        },
+        {
+          "x": 5000,
+          "y": 4000
+        },
+        {
+          "x": 0,
+          "y": 4000
+        }
+      ],
+      "openings": []
+    },
+    "design": {
+      "schema": 2,
+      "carcass": {
+        "types": [
+          {
+            "id": "c1",
+            "label": "Carcass 1",
+            "material_id": null,
+            "finish_id": null,
+            "source": null
+          }
+        ]
+      },
+      "depth": null,
+      "thickness": {
+        "board": null,
+        "custom": null,
+        "slots": {
+          "carcass1": {
+            "measured": null,
+            "confirmed": false
+          },
+          "carcass2": {
+            "measured": null,
+            "confirmed": false
+          },
+          "carcass3": {
+            "measured": null,
+            "confirmed": false
+          },
+          "front1": {
+            "measured": null,
+            "confirmed": false
+          },
+          "front2": {
+            "measured": null,
+            "confirmed": false
+          },
+          "box": {
+            "measured": null,
+            "confirmed": false
+          }
+        }
+      },
+      "hardware": {
+        "hinges": null,
+        "runners": null,
+        "shelfSleeve": null,
+        "handles": null
+      },
+      "hinges": {
+        "standard": null,
+        "system": null,
+        "finish": null,
+        "plate": null
+      },
+      "drawerBoxes": {
+        "mode": null
+      },
+      "lighting": {
+        "on": false,
+        "temperature": null,
+        "switch": null,
+        "items": []
+      },
+      "cncCorner": "dogbone",
+      "runners": {
+        "system": null,
+        "variant": null
+      },
+      "shelves": {
+        "pinSetback": null
+      },
+      "hingeTwoBelow": null,
+      "worktops": [],
+      "fronts": {
+        "style": "S",
+        "handle": null,
+        "shakerFrame": 60,
+        "handleOffsets": {},
+        "types": []
+      },
+      "doorStyles": [],
+      "colour": {
+        "front": null,
+        "carcass": null
+      },
+      "infill": {
+        "sideWidth": 40
+      },
+      "finish": {
+        "carcass": null,
+        "front": null
+      },
+      "endPanel": {
+        "height": "floor",
+        "thickness": null,
+        "applyToAll": true
+      },
+      "runMaterials": {
+        "infill": {
+          "sameAsFronts": true,
+          "material_id": null
+        },
+        "plinth": {
+          "sameAsFronts": true,
+          "material_id": null
+        },
+        "end_panel": {
+          "sameAsFronts": true,
+          "material_id": null
+        },
+        "mask": {
+          "sameAsFronts": true,
+          "material_id": null
+        }
+      },
+      "heights": {
+        "base": 770,
+        "wall": 720,
+        "tall": 2150,
+        "wallMount": 1500,
+        "toeKick": 100
+      },
+      "projectType": "wardrobe",
+      "scope": "room",
+      "ceiling": null,
+      "joinery": null,
+      "sheen": null
+    },
+    "wallSlopes": [],
+    "ledSpec": {
+      "mode": "flexi",
+      "channelWidth": 12,
+      "wattsPerMetre": null
+    },
+    "lightRig": {
+      "preset": "showroom",
+      "lamps": {
+        "ceiling": {
+          "on": true,
+          "strength": 1
+        },
+        "leftWall": {
+          "on": false,
+          "strength": 1
+        },
+        "rightWall": {
+          "on": true,
+          "strength": 1
+        },
+        "facing": {
+          "on": true,
+          "strength": 1
+        }
+      }
+    },
+    "sceneLight": {
+      "scale": 1
+    },
+    "titleBlock": {},
+    "jc_tenant_id": null,
+    "jc_project_id": null
+  },
+  "units": [
+    {
+      "id": "u_8qekkow",
+      "type": "CORNER_L_WARDROBE",
+      "position": {
+        "wall": 0,
+        "x_mm": 10,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "CORNER_L_WARDROBE",
+        "width": 1000,
+        "height": 2150,
+        "depth": 1000,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": 1400,
+        "hinge": "L",
+        "doors": {
+          "count": 2,
+          "hinge": "L"
+        },
+        "arm_mm": 568,
+        "corner_side": "left",
+        "unit_num": "CX01",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 1000,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_5wb9r3f",
+      "type": "WARDROBE",
+      "position": {
+        "wall": 0,
+        "x_mm": 1010,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WARDROBE",
+        "width": 600,
+        "height": 2150,
+        "depth": 568,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": 1400,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "W01",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "front_edge_trim": null,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_r2z1mu2",
+      "type": "WARDROBE",
+      "position": {
+        "wall": 3,
+        "x_mm": 2390,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WARDROBE",
+        "width": 600,
+        "height": 2150,
+        "depth": 568,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": 1400,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "W02",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "front_edge_trim": null,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_y304xel",
+      "type": "WARDROBE",
+      "position": {
+        "wall": 0,
+        "x_mm": 4360,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WARDROBE",
+        "width": 600,
+        "height": 2150,
+        "depth": 568,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": 1400,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "W03",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 40,
+        "front_edge_trim": {
+          "W03-F": {
+            "left": 0,
+            "right": 1.5
+          }
+        },
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_aj7kckg",
+      "type": "WARDROBE",
+      "position": {
+        "wall": 1,
+        "x_mm": 656,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WARDROBE",
+        "width": 600,
+        "height": 2150,
+        "depth": 568,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": 1400,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "W04",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "corner_post_left_mm": 50,
+        "corner_hinge_auto": {
+          "was": "L",
+          "wrote": "L"
+        },
+        "front_edge_trim": {
+          "W04-F": {
+            "left": 1.5,
+            "right": 0
+          }
+        },
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_5100c8n",
+      "type": "BLIND_WARDROBE",
+      "position": {
+        "wall": 1,
+        "x_mm": 2760,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "BLIND_WARDROBE",
+        "width": 1200,
+        "height": 2150,
+        "depth": 568,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": 1400,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "blind_side": "right",
+        "unit_num": "BX01",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 1200,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 40,
+        "blind_mm": 619,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_bdr2wvm",
+      "type": "WARDROBE",
+      "position": {
+        "wall": 2,
+        "x_mm": 656,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WARDROBE",
+        "width": 600,
+        "height": 2150,
+        "depth": 568,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": 1400,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "W05",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "corner_post_left_mm": 50,
+        "corner_hinge_auto": {
+          "was": "L",
+          "wrote": "L"
+        },
+        "front_edge_trim": {
+          "W05-F": {
+            "left": 1.5,
+            "right": 0
+          }
+        },
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_5wz6uh3",
+      "type": "WARDROBE",
+      "position": {
+        "wall": 3,
+        "x_mm": 40,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WARDROBE",
+        "width": 600,
+        "height": 2150,
+        "depth": 568,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": 1400,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "W06",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 40,
+        "side_infill_right_mm": 0,
+        "front_edge_trim": {
+          "W06-F": {
+            "left": 1.5,
+            "right": 0
+          }
+        },
+        "notch": {
+          "corner": "BL",
+          "w": 200,
+          "d": 200,
+          "h": 0
+        },
+        "shelf_schema": 2
+      }
+    }
+  ]
+}

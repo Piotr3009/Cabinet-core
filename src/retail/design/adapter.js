@@ -28,8 +28,13 @@
 import { getCabinetProfile } from '../../engine/profile.js';
 import {
   clampOpening, DEFAULT_ROOM, OPENING_DEFAULTS, openingsOnWall,
-  rectCorners, wallIndicesInScope, wallWidth,
+  rectCorners, roomWalls, wallIndicesInScope, wallWidth,
 } from '../../engine/room.js';
+// T75 F3 · the corner rulebook: which corners turn into the room, and which
+// end of a wardrobe stands in one.
+import { cornerEndOf, isInternalCorner } from '../../engine/corners.js';
+// T75 F7 · which kits take a corner notch (KIT_NOTCH.lsp's two parents).
+import { notchApplies } from '../../engine/notch.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
 import { doorCountFor } from '../../engine/cabinet.js';
 // T65 F6: the engine's ONE visibility question, and the client's own
@@ -50,7 +55,7 @@ import { carcassSources, frontSources } from '../../engine/projectSettings.js';
 import { HANDLE_TYPES } from '../../engine/handles.js';
 // T61 F3: the top box's own two engine answers — the type's defaults and the
 // room's refusal — both read rather than retyped.
-import { defaultParamsFor, getUnitType, isFreePanel } from '../../engine/types.js';
+import { defaultParamsFor, getUnitType, isBesideWardrobe, isFreePanel } from '../../engine/types.js';
 import { riderBornHeight } from '../../engine/roomFit.js';
 import { decorById, decorLabel, finishIdForDecor } from '../../engine/decors.js';
 import { useProjectStore } from '../../stores/projectStore.js';
@@ -102,7 +107,8 @@ export const designUnit = (units) => {
   const mains = list.filter((u) => !u.params?.rides_on);
   // T74 F7 · the fallback is a WARDROBE: a wall unit hung beside one is
   // edited when it is the one selected, and never stands in for the wardrobe.
-  const standing = mains.filter((u) => isFloorWardrobe(u));
+  // T75 F16 · …nor does a chest of drawers standing beside one.
+  const standing = mains.filter((u) => isMainWardrobe(u));
   const pool = standing.length ? standing : (mains.length ? mains : list);
   // ─── T64 F1.2 · THE SELECTION, WHOLE ─────────────────────────────────────
   //
@@ -391,10 +397,7 @@ export function addWallUnit() {
 
 function addWallUnitNow() {
   const store = S();
-  const chosen = designUnit(store.units);
-  const wardrobe = isFloorWardrobe(chosen) ? chosen : [...store.units].filter(isFloorWardrobe)
-    .sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
-      || ((a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0)))[0] || null;
+  const wardrobe = theWardrobe(store);
   if (!wardrobe) return { id: null, said: REASONS.wallUnitNeedsAWardrobe };
   let error = null;
   for (const side of ['right', 'left']) {
@@ -403,6 +406,154 @@ function addWallUnitNow() {
     error = placed?.error || error;
   }
   return { id: null, said: error || REASONS.roomRefusedWardrobe() };
+}
+
+/**
+ * The wardrobe an EXTRAS addition goes beside: the SELECTED one when it is a
+ * wardrobe, else the first on the lowest wall (T74 F7's choice, unchanged).
+ * T75 F16 · a WARDROBE: a chest of drawers or a low unit is never it.
+ */
+function theWardrobe(store) {
+  const chosen = designUnit(store.units);
+  return isMainWardrobe(chosen) ? chosen : [...store.units].filter(isMainWardrobe)
+    .sort((a, b) => ((a.position?.wall ?? 0) - (b.position?.wall ?? 0))
+      || ((a.position?.x_mm ?? 0) - (b.position?.x_mm ?? 0)))[0] || null;
+}
+
+/**
+ * ─── T75 F16 · ADD CHEST OF DRAWERS ────────────────────────────────────────
+ *
+ * CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` ... retail EXTRAS `ADD CHEST
+ * OF DRAWERS` (x3 default; the count by the existing variants control)."*
+ * Retail has no variants control (the drawer count is chosen in PRO's library
+ * flyout), so the button adds the x3 default. The same road ADD WALL UNIT
+ * takes: `store.addUnit` beside the selected wardrobe, on its right, else on
+ * its left, born at that wardrobe's depth and gap; the room refuses in its
+ * own sentence. One press, one undo step (T68 F2).
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addChestOfDrawers() {
+  return S().batch(() => addBesideWardrobe('WARDROBE_CHEST3', REASONS.chestNeedsAWardrobe));
+}
+
+/**
+ * ─── T75 F17 · ADD DESK ────────────────────────────────────────────────────
+ *
+ * CLAUDE.md T75 F17: *"Placed beside a wardrobe at `mount_height = 720`,
+ * aligned to the FRONT of the wardrobe by default (T74 F7's two choices).
+ * Retail EXTRAS `ADD DESK`."*  The same road: `store.addUnit` beside the
+ * selected wardrobe, right else left; the store hangs it at its 720, lines
+ * its front up with the wardrobe's and gives it its 25 mm top.
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addDesk() {
+  return S().batch(() => addBesideWardrobe('WARDROBE_DESK', REASONS.deskNeedsAWardrobe));
+}
+
+/**
+ * ─── T75 F18 · ADD LOW UNIT ────────────────────────────────────────────────
+ *
+ * CLAUDE.md T75 F18: *"`WARDROBE_LOW` copied from `LOW_CABINET` ... Retail
+ * EXTRAS `ADD LOW UNIT`."*  The same road: `store.addUnit` beside the selected
+ * wardrobe, right else left, born at that wardrobe's depth; and, as a
+ * wardrobe arrives with its doors on (T60), with its door: `setDoors`, the
+ * store's own door path, the engine's width law deciding the leaves.
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addLowUnit() {
+  return S().batch(() => {
+    const res = addBesideWardrobe('WARDROBE_LOW', REASONS.lowUnitNeedsAWardrobe);
+    if (res.id) S().setDoors(res.id, true);
+    return res;
+  });
+}
+
+/**
+ * One piece of a wardrobe job, beside THE wardrobe: right, else left, through
+ * `store.addUnit` (Room refuses first, in its own sentence).
+ */
+function addBesideWardrobe(typeId, noWardrobe) {
+  const store = S();
+  const wardrobe = theWardrobe(store);
+  if (!wardrobe) return { id: null, said: noWardrobe };
+  let error = null;
+  for (const side of ['right', 'left']) {
+    const placed = store.addUnit(typeId, { near: wardrobe.id, side });
+    if (placed?.id) return { id: placed.id, said: '' };
+    error = placed?.error || error;
+  }
+  return { id: null, said: error || REASONS.roomRefusedWardrobe() };
+}
+
+/**
+ * ─── T75 F3 · ADD CORNER WARDROBE ──────────────────────────────────────────
+ *
+ * CLAUDE.md T75 F3: *"retail EXTRAS a button `ADD CORNER WARDROBE` beside `ADD
+ * ANOTHER WARDROBE` (places a `BLIND_WARDROBE` into the nearest free corner of
+ * the room, or refuses in words when no corner is free)."*  The owner,
+ * 9.10.2026: *"daj od razu narożniki przemyślane."*
+ *
+ * Every internal corner of the room is two candidate places (the end of one
+ * wall, the start of the next), tried nearest first: nearest to the wardrobe
+ * the left column is about, else to the start of wall 0. Each try is the
+ * store's own road (`addUnit`, then `moveUnit` into the corner, the clamp and
+ * the magnet deciding where it lands), and a try that does not end with the
+ * wardrobe's end in that corner is taken back out. One press, one undo step.
+ *
+ * @returns {{id:string|null, said:string}}
+ */
+export function addCornerWardrobe() {
+  return S().batch(() => addCornerWardrobeNow());
+}
+
+function addCornerWardrobeNow() {
+  const store = S();
+  const p = P();
+  const walls = roomWalls(store.project.room);
+  const n = walls.length;
+  const from = (() => {
+    const u = designUnit(store.units);
+    const w = u ? walls[u.position?.wall ?? 0] : walls[0];
+    if (!w) return { x: 0, y: 0 };
+    const along = u ? (Number(u.position?.x_mm) || 0) + (Number(u.params?.width) || 0) / 2 : 0;
+    return { x: w.start.x + w.along.x * along, y: w.start.y + w.along.y * along };
+  })();
+  const tries = [];
+  for (let i = 0; i < n; i += 1) {
+    const a = walls[i];
+    const b = walls[(i + 1) % n];
+    if (!isInternalCorner(a, b)) continue;
+    const d = Math.hypot(a.end.x - from.x, a.end.y - from.y);
+    tries.push({ wall: a.index, end: 'right', x: a.width, d });
+    tries.push({ wall: b.index, end: 'left', x: 0, d });
+  }
+  tries.sort((t, u) => t.d - u.d);
+  // T75 F3 · the job's own walls only: a one-wall job's corner wardrobe stands
+  // on that wall, at one of its ends, never on a wall the job does not draw
+  // (the walk found them placed on walls 4, 2 and 3 of a one-wall job).
+  const shown = new Set(wallsShown(store.project, store.project.room));
+  const inScope = tries.filter((t) => shown.has(t.wall));
+  tries.length = 0;
+  tries.push(...inScope);
+  const width = Math.round(p.blindWardrobe?.defaults?.width || 1200);
+  for (const t of tries) {
+    const placed = store.addUnit('BLIND_WARDROBE', { params: { width, height: p.wardrobe.defaults.height } });
+    if (!placed?.id) continue;
+    if ((S().units.find((u) => u.id === placed.id)?.position?.wall ?? 0) !== t.wall) S().setUnitWall(placed.id, t.wall);
+    S().moveUnit(placed.id, t.x, 1);
+    const unit = S().units.find((u) => u.id === placed.id);
+    const inCorner = unit && (unit.position?.wall ?? 0) === t.wall
+      && cornerEndOf(unit, roomWalls(S().project.room), P()) === t.end
+      && !S().roomFitFaults().some((f) => f?.unit?.id === placed.id);
+    if (!inCorner) { S().removeUnit(placed.id); continue; }
+    setDoorCount(placed.id, 1);
+    applyAutoCornice(placed.id);
+    return { id: placed.id, said: '' };
+  }
+  return { id: null, said: REASONS.noFreeCorner };
 }
 
 /**
@@ -1078,6 +1229,15 @@ const isFloorWardrobe = (unit) => {
   const type = getUnitType(unit?.type);
   return Boolean(type && type.family === 'wardrobe' && !type.ridesOn && type.mount !== 'wall');
 };
+
+/**
+ * T75 F16 · …and a WARDROBE, not a piece beside one: the chest of drawers and
+ * the low unit stand on the floor in the wardrobe family, but the columns are
+ * never about them unless they are selected, and nothing is added beside them
+ * as if they were the wardrobe. Their sides still ask (`sideAskFor` keeps the
+ * wider test): a chest's free side shows like any carcass side.
+ */
+const isMainWardrobe = (unit) => isFloorWardrobe(unit) && !isBesideWardrobe(unit?.type);
 
 /**
  * Should a click on this carcass side ask to add a panel?
@@ -1968,6 +2128,15 @@ export const INTERIOR_ROWS = [
     id: 'tie_rack', pro: 'tie_rack', menu: 'tie_rack', name: 'Tie rack',
     add: (s, u) => s.addWardrobeKit(u, 'tie_rack'),
   },
+  // T75 F19 · PRO's two new rows, in PRO's order (the diff below holds them).
+  {
+    id: 'hooks', pro: 'hooks', menu: 'hooks', name: 'Hooks',
+    add: (s, u) => s.addWardrobeKit(u, 'hooks'),
+  },
+  {
+    id: 'valet_rod', pro: 'valet_rod', menu: 'valet_rod', name: 'Valet rod',
+    add: (s, u) => s.addWardrobeKit(u, 'valet_rod'),
+  },
 ];
 
 /**
@@ -2014,6 +2183,9 @@ export function interiorCounts(unit) {
     partition: items.filter((i) => i.kind === 'partition').length,
     trouser: items.filter((i) => i.kind === 'trouser').length,
     tie_rack: items.filter((i) => i.kind === 'tie_rack').length,
+    // T75 F19 · the two fittings Add items gained.
+    hooks: items.filter((i) => i.kind === 'hooks').length,
+    valet_rod: items.filter((i) => i.kind === 'valet_rod').length,
   };
 }
 
@@ -2033,6 +2205,7 @@ export function interiorRefusals(unitId, unit) {
   const items = unit?.params?.sections?.[0]?.items || [];
   const underSlope = Boolean(store.unitUnderSlope?.(unitId));
   const zones = (store.zonesOf?.(unitId) || []).length;
+  const beside = isBesideWardrobe(unit?.type);
   return {
     pulldown_rail: underSlope ? REASONS.pulldownUnderSlope : '',
     watch: counts.shoe > 0 ? REASONS.watchWithShoe
@@ -2053,8 +2226,17 @@ export function interiorRefusals(unitId, unit) {
     hanger: counts.hanger > 0 && zones <= 1 ? REASONS.railAlreadyThere : '',
     // ONE OF EACH BOUGHT MECHANISM PER OPENING (`addWardrobeKit` refuses a
     // second of the same kind in the same zone and answers null).
-    trouser: counts.trouser > 0 && zones <= 1 ? REASONS.kitAlreadyThere('trouser pull-out') : '',
-    tie_rack: counts.tie_rack > 0 && zones <= 1 ? REASONS.kitAlreadyThere('tie rack') : '',
+    // T75 F16 · …and none of them in a piece that stands beside a wardrobe
+    // (`addWardrobeKit` refuses; the words are `reasons.js`'s).
+    trouser: beside ? REASONS.kitGoesInAWardrobe
+      : (counts.trouser > 0 && zones <= 1 ? REASONS.kitAlreadyThere('trouser pull-out') : ''),
+    tie_rack: beside ? REASONS.kitGoesInAWardrobe
+      : (counts.tie_rack > 0 && zones <= 1 ? REASONS.kitAlreadyThere('tie rack') : ''),
+    // T75 F19 · the two new fittings, by the same two predicates.
+    hooks: beside ? REASONS.kitGoesInAWardrobe
+      : (counts.hooks > 0 && zones <= 1 ? REASONS.kitAlreadyThere('row of hooks') : ''),
+    valet_rod: beside ? REASONS.kitGoesInAWardrobe
+      : (counts.valet_rod > 0 && zones <= 1 ? REASONS.kitAlreadyThere('valet rod') : ''),
   };
 }
 
@@ -4435,4 +4617,72 @@ export function applyLazyDefaults(unitId, { collectionId = null } = {}) {
   // pressed in.
   done.style = writeFrontLaw({ style: S().project.design?.fronts?.style || 'S' });
   return done;
+}
+
+// ─── T75 F7 · CUT CORNER, ON THE CLIENT'S SIZE STEP ────────────────────────
+//
+// The owner, 23.09.2026: *"Klikasz 'wytnij narożnik', program podświetla
+// narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np.
+// 200x200)."*  CLAUDE.md T75 F7: *"`CUT CORNER` in the selected unit's menu
+// (PRO right panel; retail SIZE step for a wardrobe)"*.
+//
+// NOT ONE NEW LAW: the corners are lit by the shared scene's own
+// `3d/NotchCorners.jsx` off the shared ui store's `notchPick`, the click opens
+// the `notch` window at the click (retail's `detail/NotchAsk.jsx`, drawn by
+// `Editors` at the room's level), and the cut is the store's ONE action
+// (`setUnitNotch`), which asks the engine first and hands back its refusal as
+// a whole sentence. Removing the notch is the same action with nothing.
+
+/** Does this wardrobe's carcass take a notch at all (KIT_NOTCH.lsp's parents)? */
+export function canCutCorner(unitId) {
+  const unit = unitOf(unitId);
+  return Boolean(unit && notchApplies(getUnitType(unit.type)));
+}
+
+/** The notch a unit carries, or null. */
+export function notchOfUnit(unitId) {
+  return unitOf(unitId)?.params?.notch || null;
+}
+
+/** Are this unit's four corners lit? */
+export function cuttingCorner(unitId) {
+  return Boolean(unitId) && U().notchPick === unitId;
+}
+
+/** CUT CORNER: light the four corners (or put them out again). */
+export function toggleCutCorner(unitId) {
+  if (cuttingCorner(unitId)) { U().stopNotchPick(); return false; }
+  if (!canCutCorner(unitId)) return false;
+  U().startNotchPick(unitId);
+  return true;
+}
+
+/** What the window opens with: the profile's own defaults (0 is "full"). */
+export function notchDefaults() {
+  const d = getCabinetProfile().notch?.defaults || {};
+  return { w: Number(d.widthMm) || 0, d: Number(d.depthMm) || 0, h: Number(d.heightMm) || 0 };
+}
+
+/** ENTER in the window: the cut, or the engine's refusal in its own words. */
+export function cutCorner(unitId, corner, { w, d, h } = {}) {
+  const res = S().setUnitNotch(unitId, { corner, w, d, h });
+  if (res?.ok) {
+    closeEditor();
+    U().stopNotchPick();
+  }
+  return { ok: Boolean(res?.ok), said: res?.said || '' };
+}
+
+/** A click elsewhere: the window closes and nothing is cut. */
+export function dismissCutCorner() {
+  closeEditor();
+  U().stopNotchPick();
+  return { ok: true, said: '' };
+}
+
+/** REMOVE CORNER CUT: the same one action, with nothing. */
+export function removeCornerCut(unitId) {
+  const res = S().setUnitNotch(unitId, null);
+  U().stopNotchPick();
+  return { ok: Boolean(res?.ok), said: res?.said || '' };
 }

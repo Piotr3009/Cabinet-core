@@ -5,7 +5,7 @@ import Modal from './Modal.jsx';
 import WallElevationModal from './WallElevationModal.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
-import { migrateRoom, roomWalls } from '../engine/room.js';
+import { migrateRoom, realWalls } from '../engine/room.js';
 import { formatMm } from '../engine/format.js';
 import {
   DIRS, dirOf, dirFromCursor, newPath, penOf, addSegment, undoSegment,
@@ -259,7 +259,8 @@ export default function DrawRoomModal({ anchor: anchorProp = null, onClose = nul
     ? { x: pen.x + d.dx * ghostLen, y: pen.y + d.dy * ghostLen }
     : null;
 
-  const savedWalls = roomWalls(migrateRoom(room));
+  // T75 F9 · the room's own walls: an island's faces are not walls.
+  const savedWalls = realWalls(migrateRoom(room));
 
   return (
     <Modal

@@ -218,10 +218,14 @@ export const useUiStore = create((set, get) => ({
   //
   // Cleared whenever the panel is closed or a category is chosen from the menu,
   // so a place picked on the canvas can never outlive the click that picked it.
-  libraryInsert: null,               // { near: unitId, side: 'left' | 'right' }
+  libraryInsert: null,               // { near: unitId, side: 'left' | 'right' } or { wall } (T75 F10)
   openLibraryToInsert: (categoryId, at) => set({
     libraryCategory: categoryId || null,
-    libraryInsert: at?.near ? { near: at.near, side: at.side === 'left' ? 'left' : 'right' } : null,
+    // T75 F10 · …or a WALL with nobody on it yet: an island face's own plus.
+    // eslint-disable-next-line no-nested-ternary
+    libraryInsert: at?.near
+      ? { near: at.near, side: at.side === 'left' ? 'left' : 'right' }
+      : (Number.isInteger(at?.wall) ? { wall: at.wall } : null),
   }),
   clearLibraryInsert: () => set({ libraryInsert: null }),
 
@@ -636,6 +640,15 @@ export const useUiStore = create((set, get) => ({
   // choice, so it belongs here with the drag and the hover and nowhere else.
   zoneHint: null,                    // the bay's index, or null
   setZoneHint: (index) => set({ zoneHint: index == null ? null : Math.trunc(Number(index)) }),
+
+  // ─── T75 F7 · CUT CORNER: THE FOUR CORNERS ARE LIT ───────────────────────
+  // *"Klikasz 'wytnij narożnik', program podświetla narożniki, wybierasz."*
+  // Which unit's four plan corners stand lit in the scene (`3d/NotchCorners`),
+  // or null. A moment, like the bay hint above: the click on a corner opens
+  // the small window at the click, and a cut or a click elsewhere ends it.
+  notchPick: null,
+  startNotchPick: (unitId) => set({ notchPick: unitId || null }),
+  stopNotchPick: () => set({ notchPick: null }),
 
   // Which "Add items" type has its settings open. One at a time: they are
   // alternatives, not a form to fill in top to bottom.

@@ -36,7 +36,9 @@ test('F8 · ContextMenu is COPIED, not re-written — same line count, same labe
   const retail = read('src/retail/design/detail/ContextEdits.jsx');
   const lines = (t) => t.replace(/\n$/, '').split('\n').length;
   // CLAUDE.md names the file's size, and the copy is the same file.
-  assert.equal(lines(pro), 334, "PRO's ContextMenu is not 334 lines any more");
+  // AMENDED BY T75 F5: + five lines, the UPSTAND's two store calls, *"on and
+  // off per run like the plinth"*; the copy is re-made by scripts/t75-copy.mjs.
+  assert.equal(lines(pro), 339, "PRO's ContextMenu is not 339 lines any more");
   assert.equal(lines(retail), lines(pro), 'the copy is not the same shape');
   // It is in the manifest, so the fidelity test and the classifier both see it.
   assert.ok(isCopy('src/retail/design/detail/ContextEdits.jsx'), 'the copy is not in the manifest');

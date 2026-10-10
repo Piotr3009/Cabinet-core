@@ -255,7 +255,10 @@ export default function TopBar({
           ? 'Coming later'
           : (c.saved
             ? 'Units you have saved — right-click a unit to add one'
-            : `${c.types.length} type${c.types.length === 1 ? '' : 's'}`),
+            // T75 F20 · the sets shelf: the five shipped and the workshop's own.
+            : (c.sets
+              ? 'Media wall, sideboard, vanity, utility, hallway, and the sets you have saved'
+              : `${c.types.length} type${c.types.length === 1 ? '' : 's'}`)),
         soon: c.soon,
         disabled: c.soon,
         run: () => setLibraryCategory(c.id),

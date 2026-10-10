@@ -1,0 +1,350 @@
+{
+  "meta": {
+    "name": "golden-corner-l-base.json",
+    "turn": "T75",
+    "F": "F4",
+    "source": "KIT_CORNER_L.lsp (the L boards, the legs) + KIT_BUD_FULL.lsp (sides, BACK-A, doors and plates through the parent)",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "CORNER_L_BASE",
+    "width": 900,
+    "height": 770,
+    "depth": 900,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 1,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": true,
+    "arm_mm": 558,
+    "corner_side": "left",
+    "unit_num": "01",
+    "plinth": true
+  },
+  "expected": {
+    "csvLines": [
+      "01,BACK-A,900,770,,0,0.693",
+      "01,BACK-B,882,770,,0,0.679",
+      "01,SIDE-A,540,770,>,0.77,0.416",
+      "01,SIDE-B,540,770,<,0.77,0.416",
+      "01,TOP-L,864,864,>,0.65,0.642",
+      "01,BOTTOM-L,864,864,>,0.65,0.642",
+      "01,SHELF-L-1,862,862,>,0.68,0.626",
+      "01,PLINTH-A,410,100,^v,0.82,0.041",
+      "01,PLINTH-B,392,100,^v,0.78,0.039",
+      "01,01-A-F,341,767,<>^v,2.22,0.261",
+      "01,01-B-F,313,767,<>^v,2.16,0.240"
+    ],
+    "panels": [
+      {
+        "id": "BACK-A",
+        "part": "BACK",
+        "role": "back",
+        "w": 900,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 900,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "BACK-B",
+        "part": "BACK",
+        "role": "back",
+        "w": 882,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 882
+        },
+        "outline": 34,
+        "holes": 24,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "SIDE-A",
+        "part": "SIDE",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 882,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "SIDE-B",
+        "part": "SIDE",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 882,
+          "w": 540,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP-L",
+        "part": "TOP",
+        "role": "top",
+        "w": 864,
+        "h": 864,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 752,
+          "z": 18,
+          "w": 864,
+          "h": 18,
+          "d": 864
+        },
+        "outline": 86,
+        "holes": 0,
+        "pockets": 8,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM-L",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 864,
+        "h": 864,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 864,
+          "h": 18,
+          "d": 864
+        },
+        "outline": 86,
+        "holes": 0,
+        "pockets": 8,
+        "readiness": null
+      },
+      {
+        "id": "SHELF-L-1",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 862,
+        "h": 862,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 385,
+          "z": 18,
+          "w": 862,
+          "h": 18,
+          "d": 862
+        },
+        "outline": 6,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "PLINTH-A",
+        "part": "PLINTH",
+        "role": "plinth",
+        "w": 410,
+        "h": 100,
+        "thickness": 18,
+        "box": {
+          "x": 490,
+          "y": -100,
+          "z": 490,
+          "w": 410,
+          "h": 100,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "PLINTH-B",
+        "part": "PLINTH",
+        "role": "plinth",
+        "w": 392,
+        "h": 100,
+        "thickness": 18,
+        "box": {
+          "x": 490,
+          "y": -100,
+          "z": 508,
+          "w": 18,
+          "h": 100,
+          "d": 392
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-A-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 340.5,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 558,
+          "y": 0,
+          "z": 561,
+          "w": 340.5,
+          "h": 767,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "01-B-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 312.5,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 561,
+          "y": 0,
+          "z": 586,
+          "w": 25,
+          "h": 767,
+          "d": 312.5
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-A-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_35MM|01-B-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-A-F",
+        6
+      ],
+      [
+        "FRONT_HINGES_3MM|01-B-F",
+        6
+      ],
+      [
+        "HINGES_5MM|SIDE-A",
+        6
+      ],
+      [
+        "HINGES_5MM|SIDE-B",
+        6
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK-A",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK-B",
+        14
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|SIDE-A",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|SIDE-B",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK-A",
+        14
+      ],
+      [
+        "SCREWS_3MM|BACK-B",
+        10
+      ],
+      [
+        "SCREWS_3MM|SIDE-A",
+        6
+      ],
+      [
+        "SCREWS_3MM|SIDE-B",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|SIDE-A",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|SIDE-B",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "legs",
+        "qty": 6,
+        "label": "Legs"
+      },
+      {
+        "role": "hinges",
+        "qty": 6,
+        "label": "Hinges"
+      },
+      {
+        "role": "shelf_pins",
+        "qty": 4,
+        "label": "Shelf pins"
+      }
+    ]
+  }
+}

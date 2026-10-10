@@ -13,7 +13,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
+import { DEFAULT_CABINET_PROFILE as HOUSE } from '../src/engine/profile.js';
+
+// AMENDED BY T75 F6: BLOCKERS #92 is decided for the owner as
+// `autoParts.cornice.cornerMode = 'step'` (T75 proposed, owner to confirm):
+// *"`corniceCorner` stops refusing unequal depths and emits the return piece;
+// the refusal sentence stays for the case the profile does not name."*  These
+// tests argue that refusal, so they are handed the house profile with no mode
+// named. The step itself is argued in test/turn75-f6-plinth-and-cornice-at-the-corner.test.js.
+const P = {
+  ...HOUSE,
+  autoParts: { ...HOUSE.autoParts, cornice: { ...HOUSE.autoParts.cornice, cornerMode: undefined } },
+};
 import {
   corniceCorner, corniceOption, corniceRefusals, corniceSegments, runCorniceParams,
   segmentCornice, takesCornice,

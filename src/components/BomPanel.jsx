@@ -18,6 +18,8 @@ import { lightingBomLines, stripsForUnit } from '../engine/ledStrips.js';
 import { applyDriverPlan, driverSummary } from '../lib/ledDrivers.js';
 import { registerLookup } from '../lib/hardwareRegister.js';
 import { formatMm } from '../engine/format.js';
+// T75 F22 · the state of every line.
+import { READINESS_LABELS } from '../engine/readiness.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
@@ -54,9 +56,11 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   // ─── TURN 32 (CLAUDE.md F5/F7): THE INVOICE ──────────────────────────────
   const migrated = useMemo(() => migrateDesign(design), [design]);
   const readyBoxes = migrated.drawerBoxes?.mode === 'ready';
+  // T75 F5 · the room goes in, so the worktop (a slab that may turn a corner)
+  // reaches the cut list and the BOM: its slabs, its bolts and its notes.
   const bom = useMemo(() => buildBom(entries, {
-    design, profile, materials, excludeDrawerBoxes: readyBoxes,
-  }), [entries, design, profile, materials, readyBoxes]);
+    design, profile, materials, excludeDrawerBoxes: readyBoxes, room: project.room,
+  }), [entries, design, profile, materials, readyBoxes, project.room]);
   const invoiceSummary = useMemo(
     () => materialsSummary(bom, profile, { excludeDrawerBoxes: readyBoxes }),
     [bom, profile, readyBoxes],
@@ -105,9 +109,14 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
     const one = entries.find((e) => e.unit?.id === selectedUnitId) || entries[0] || null;
     return one ? [one] : [];
   }, [entries, scope, selectedUnitId]);
+  // T75 F21 · priced at what the job was quoted at; a moved list is said, not obeyed.
+  const pricedAt = useProjectStore((s) => s.project.warehouseStamp) || null;
+  const catalogueMoves = useProjectStore((s) => s.catalogueMoves);
+  const acceptCatalogue = useProjectStore((s) => s.acceptCatalogue);
+  const moved = useMemo(() => catalogueMoves(), [catalogueMoves, pricedAt, materials]);
   const purchase = useMemo(() => purchaseBom(scoped, {
-    assignments: assignmentData, materials, profile, design: migrated,
-  }), [scoped, assignmentData, materials, profile, migrated]);
+    assignments: assignmentData, materials, profile, design: migrated, pricedAt,
+  }), [scoped, assignmentData, materials, profile, migrated, pricedAt]);
 
   const demand = useMemo(() => materialDemand(bom, assignments, materials), [bom, assignments, materials]);
   const hardware = useMemo(() => hardwareDemand(bom, assignments, materials), [bom, assignments, materials]);
@@ -171,6 +180,9 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                 <th className="text-center font-normal px-2 py-1.5">Qty</th>
                 <th className="text-center font-normal px-2 py-1.5">Edge</th>
                 <th className="text-right font-normal px-2 py-1.5">m²</th>
+                {/* T75 F22 · *"The cut list, the BOM and the CNC export show
+                    the state on every line"* (`engine/readiness.js`). */}
+                <th className="text-left font-normal px-2 py-1.5">State</th>
               </tr>
             </thead>
             <tbody>
@@ -408,6 +420,10 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                         ? <>art. {l.article}</>
                         : <>{l.spec_label} · SPEC</>}
                     </span>
+                    {/* T75 F22 · an ironmongery line is an order line. */}
+                    <span className="text-[10px] text-ink-400 whitespace-nowrap" data-readiness="bought">
+                      {READINESS_LABELS.bought}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -600,6 +616,7 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
                 design: migrated,
                 projectName: project?.name || 'project',
                 scope,
+                pricedAt,
               });
               notify(`Purchase BOM exported — ${scope === 'project' ? 'whole project' : 'this cabinet'}.`, 'ok');
             }}
@@ -607,6 +624,18 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
             Purchase CSV
           </button>
           <button type="button" className="cc-btn flex-1" onClick={onExportPdf}>PDF</button>
+          {/* T75 F21 · the owner's decision: re-price the job against today's list. */}
+          {moved.length > 0 && (
+            <button
+              type="button"
+              className="cc-btn flex-1"
+              data-bom-accept-prices="1"
+              title={`The price list moved for ${moved.length} material(s) since this job was priced: re-price it against today's list`}
+              onClick={() => { acceptCatalogue(); notify('Re-priced against today\'s list.', 'ok'); }}
+            >
+              Accept today&apos;s prices
+            </button>
+          )}
           <button
             type="button"
             className="cc-btn flex-1 opacity-60"
@@ -625,7 +654,7 @@ function FragmentRows({ unit }) {
   return (
     <>
       <tr className="bg-shell-700/60">
-        <td colSpan={8} className="px-2 py-1 text-[11px] uppercase tracking-wide text-gold">
+        <td colSpan={9} className="px-2 py-1 text-[11px] uppercase tracking-wide text-gold">
           {unit.unitNum} · {unit.type} · {unit.totals.pieces_total} pcs
         </td>
       </tr>
@@ -641,6 +670,12 @@ function FragmentRows({ unit }) {
           <td className="px-2 py-1 text-center">{r.qty}</td>
           <td className="px-2 py-1 text-center font-mono text-ink-400">{r.edge || '—'}</td>
           <td className="px-2 py-1 text-right tabular-nums">{r.area_m2.toFixed(3)}</td>
+          <td
+            className={`px-2 py-1 whitespace-nowrap ${r.readiness && r.readiness !== 'cut' ? 'text-status-warn' : 'text-ink-400'}`}
+            data-readiness={r.readiness || undefined}
+          >
+            {READINESS_LABELS[r.readiness] || ''}
+          </td>
         </tr>
       ))}
     </>

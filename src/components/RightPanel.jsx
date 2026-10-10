@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useUiStore } from '../stores/uiStore.js';
 import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
@@ -6,7 +6,7 @@ import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { HEIGHT_GROUPS, getUnitType, profilePath } from '../engine/types.js';
 import { doorCountFor, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
-import { roomWalls } from '../engine/room.js';
+import { roomWalls, wallLabel } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { corniceOption } from '../engine/cornice.js';
 import { migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
@@ -17,6 +17,12 @@ import { SHELF_TYPES, shelfTypeOf } from '../engine/shelfTypes.js';
 import { fieldFromPos, posFromField } from '../engine/shelfHeights.js';
 import { bayWidthsOf, chainFromX, xFromChain } from '../engine/partitionPositions.js';
 import NumberField from './NumberField.jsx';
+// T75 F7 · CUT CORNER: the small window at the click on a lit corner.
+import Modal from './Modal.jsx';
+import { notchApplies } from '../engine/notch.js';
+// T75 F4/F11 · the worktop row: who takes one alone, and the island's seating.
+import { takesWorktop, worktopEligible } from '../engine/worktop.js';
+import { CABINEO_REFUSAL, dowelKitRefusal, jointSystemOf } from '../engine/dowels.js';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
 import Section from './Section.jsx';
@@ -356,7 +362,8 @@ export default function RightPanel() {
                 }}
               >
                 {walls.map((w) => (
-                  <option key={w.index} value={w.index}>Wall {w.index + 1} · {formatMm(w.width)} mm</option>
+                  // T75 F9 · an island's face is named for what it is.
+                  <option key={w.index} value={w.index}>{wallLabel(walls, w.index)} · {formatMm(w.width)} mm</option>
                 ))}
               </select>
             </div>
@@ -379,6 +386,9 @@ export default function RightPanel() {
             <button type="button" className="cc-btn flex-1" onClick={() => rotateUnit(unit.id, 'back')}>Back to wall</button>
             <button type="button" className="cc-btn flex-1" onClick={() => rotateUnit(unit.id, 'side')}>Side to wall</button>
           </div>
+
+          {/* T75 F7 · CUT CORNER: lights the four plan corners in the scene. */}
+          {notchApplies(type) && <NotchRow unit={unit} />}
 
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -1025,6 +1035,11 @@ export default function RightPanel() {
           </div>
           )}
 
+          {/* T75 F4/F11 · the worktop of ONE cabinet (the L's slab shaped like
+              the L, a cabinet on an island) and the island's seating overhang:
+              the walk found no click reached either. */}
+          <WorktopRow unit={unit} />
+
           {/* ─── THE CORNICE (turn 22, CLAUDE.md F1) ───
               Three states, one control: none, 70, 100. It is offered on the
               kits that finish below the ceiling with a face somebody looks up
@@ -1104,6 +1119,22 @@ export default function RightPanel() {
             Click a filler in the canvas to set how far it runs above the unit, pin it, or cut it from
             another board.
           </p>
+
+          <div className="cc-divider !my-2" />
+
+          {/* ─── T75 F23 · THE JOINT SYSTEM, PER UNIT ───────────────────────
+              *"lisp najpierw."*  Puzzle or Dowel, written to the unit's
+              `joints_system` through `updateUnitParams`; the engine asks the
+              pattern of the puzzle cut first and refuses in its own words.
+              Cabineo is shown and refused with its sentence. No typed number:
+              every dowel number is the profile's. */}
+          <JointsRow
+            unit={unit}
+            type={type}
+            result={result}
+            profile={profile}
+            onSet={(system) => updateUnitParams(unit.id, { joints_system: system })}
+          />
 
           <div className="cc-divider !my-2" />
 
@@ -1280,6 +1311,8 @@ export default function RightPanel() {
           </button>
         </div>
       </div>
+      {/* T75 F7 · the CUT CORNER window, opened at the click on a lit corner. */}
+      <NotchModal />
     </aside>
   );
 }
@@ -1544,3 +1577,280 @@ function contentsBadge(drawers, shelves, rail) {
   return parts.join(' · ');
 }
 
+// ─── T75 F7 · CUT CORNER ────────────────────────────────────────────────────
+//
+// The owner, 23.09.2026: *"Klikasz 'wytnij narożnik', program podświetla
+// narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np.
+// 200x200)."*
+//
+// The button lights the selected unit's four plan corners in the scene
+// (`3d/NotchCorners.jsx`, `uiStore.notchPick`); a click on one opens the small
+// window AT THE CLICK (the T74 F1 kind: the shell's anchor, and a click
+// anywhere else closes it with nothing cut). WIDTH, DEPTH and HEIGHT open on
+// `profile.notch.defaults` (200, 200, full: the owner's own example) and Enter
+// cuts, through the store's ONE action (`setUnitNotch`, one undo step), which
+// asks the engine first and shows its refusal here in its own words. A notch
+// that exists is taken off from the same row.
+function NotchRow({ unit }) {
+  const pick = useUiStore((s) => s.notchPick);
+  const startNotchPick = useUiStore((s) => s.startNotchPick);
+  const stopNotchPick = useUiStore((s) => s.stopNotchPick);
+  const setUnitNotch = useProjectStore((s) => s.setUnitNotch);
+  const notch = unit.params?.notch || null;
+  const lit = pick === unit.id;
+  // The corners go out with the row: a unit deselected, a section folded.
+  useEffect(() => () => { if (useUiStore.getState().notchPick === unit.id) stopNotchPick(); }, [unit.id, stopNotchPick]);
+  return (
+    <div className="flex gap-1" data-notch-row={unit.id}>
+      <button
+        type="button"
+        className={`cc-btn flex-1 ${lit ? 'border-gold text-gold' : ''}`}
+        data-testid="cut-corner"
+        title={lit ? 'Click one of the lit corners in the scene' : 'Cut a corner out of this carcass'}
+        onClick={() => (lit ? stopNotchPick() : startNotchPick(unit.id))}
+      >
+        {lit ? 'PICK A CORNER' : 'CUT CORNER'}
+      </button>
+      {notch && (
+        <button
+          type="button"
+          className="cc-btn px-2"
+          data-testid="remove-corner-cut"
+          title={`Take the ${notch.corner} notch off again`}
+          onClick={() => { setUnitNotch(unit.id, null); stopNotchPick(); }}
+        >
+          {`REMOVE ${notch.corner} CUT`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─── T75 F23 · PUZZLE, DOWEL, AND CABINEO RESERVED ─────────────────────────
+// What the unit is CUT with, read back off the engine's own answer
+// (`result.derived.joints`), so the row never claims a system the cut did not
+// take: a refusal shows in the engine's words and the puzzle stays lit.
+function JointsRow({
+  unit, type, result, profile, onSet,
+}) {
+  const asked = jointSystemOf(unit.params, profile);
+  const cut = result?.derived?.joints || null;
+  const kitRefusal = dowelKitRefusal(type);
+  let status = 'Skylon puzzle: tabs, sockets and dog bones';
+  if (cut?.system === 'dowel') {
+    status = `${cut.dowels} dowels, ${cut.edge_bores} edge bores by hand · `
+      + `${cut.gate ? `${cut.gate}: the CNC export refuses it` : 'confirmed by the owner'}`;
+  } else if (cut?.refused) {
+    status = `Kept the puzzle: ${cut.refused}`;
+  }
+  const lit = cut?.system === 'dowel' ? 'dowel' : 'puzzle';
+  return (
+    <div className="space-y-1" data-joints-row={unit.id}>
+      <div className="cc-row">
+        <div className="flex flex-col">
+          <span className="text-sm text-ink-100">Joints</span>
+          <span className="text-[11px] text-ink-400" data-joints-status="1">{status}</span>
+        </div>
+        <div className="flex items-center gap-1" data-joints-options="1">
+          <button
+            type="button"
+            data-joints="puzzle"
+            className={lit === 'puzzle' ? 'cc-btn-gold' : 'cc-btn'}
+            onClick={() => onSet('puzzle')}
+          >
+            Puzzle
+          </button>
+          <button
+            type="button"
+            data-joints="dowel"
+            disabled={Boolean(kitRefusal)}
+            title={kitRefusal || 'Dowel pairs on both boards of every joint (SKYLON_JOINTS_DOWEL.lsp)'}
+            className={`${lit === 'dowel' ? 'cc-btn-gold' : 'cc-btn'} ${kitRefusal ? 'opacity-50' : ''}`}
+            onClick={() => onSet('dowel')}
+          >
+            Dowel
+          </button>
+          <button
+            type="button"
+            data-joints="cabineo"
+            disabled
+            title={CABINEO_REFUSAL}
+            className="cc-btn opacity-50"
+          >
+            Cabineo
+          </button>
+        </div>
+      </div>
+      {asked === 'dowel' && kitRefusal && <p className="text-[11px] text-ink-400">{kitRefusal}</p>}
+      <p className="text-[11px] text-ink-400" data-joints-cabineo="1">{CABINEO_REFUSAL}</p>
+    </div>
+  );
+}
+
+/** "full" for 0, the number otherwise. */
+function notchHeightText(h) { return Number(h) > 0 ? String(Math.round(Number(h))) : 'full'; }
+
+function NotchModal() {
+  const modal = useUiStore((s) => s.modal);
+  const args = useUiStore((s) => s.modalArgs);
+  if (modal !== 'notch' || !args?.unitId || !args?.corner) return null;
+  return <NotchWindow key={`${args.unitId}:${args.corner}`} args={args} />;
+}
+
+function NotchWindow({ args }) {
+  const profile = useCabinetProfileStore((s) => s.profile);
+  const closeModal = useUiStore((s) => s.closeModal);
+  const stopNotchPick = useUiStore((s) => s.stopNotchPick);
+  const setUnitNotch = useProjectStore((s) => s.setUnitNotch);
+  const unit = useProjectStore((s) => s.units.find((u) => u.id === args.unitId)) || null;
+  const def = profile?.notch?.defaults || {};
+  const had = unit?.params?.notch?.corner === args.corner ? unit.params.notch : null;
+  const [w, setW] = useState(String(had?.w ?? def.widthMm ?? ''));
+  const [d, setD] = useState(String(had?.d ?? def.depthMm ?? ''));
+  const [h, setH] = useState(notchHeightText(had?.h ?? def.heightMm ?? 0));
+  const [said, setSaid] = useState('');
+  const close = () => { closeModal(); stopNotchPick(); };
+  // The shell measures itself in a hidden frame first, so `autoFocus` alone
+  // can miss; WIDTH is asked for the caret on a short timer until it has it
+  // (UnitSizeModal's own answer, T74 F7), then left alone.
+  useEffect(() => {
+    let id = 0;
+    const until = Date.now() + 3000;
+    const land = () => {
+      const el = document.querySelector('[data-testid="notch-ask"] [data-notch-field="width"]');
+      if (el && document.activeElement !== el) { el.focus(); el.select?.(); }
+      if ((!el || document.activeElement !== el) && Date.now() < until) id = setTimeout(land, 30);
+    };
+    id = setTimeout(land, 0);
+    return () => clearTimeout(id);
+  }, []);
+  const apply = () => {
+    const height = /^\s*(full|0)?\s*$/i.test(h) ? 0 : Number(h);
+    const res = setUnitNotch(args.unitId, {
+      corner: args.corner, w: Number(w), d: Number(d), h: height,
+    });
+    if (!res?.ok) { setSaid(res?.said || ''); return; }
+    close();
+  };
+  const field = (label, key, value, onChange, autoFocus = false) => (
+    <label className="block">
+      <span className="cc-label">{label}</span>
+      <input
+        className="cc-input w-full text-right"
+        data-notch-field={key}
+        value={value}
+        autoFocus={autoFocus}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => { onChange(e.target.value); setSaid(''); }}
+      />
+    </label>
+  );
+  return (
+    <Modal name="notch" title={`CUT CORNER ${args.corner}`} anchor={args.anchor || null} width="w-64" onClose={close}>
+      <form
+        className="space-y-2"
+        data-testid="notch-ask"
+        data-notch-corner={args.corner}
+        data-notch-unit={args.unitId}
+        onSubmit={(e) => { e.preventDefault(); apply(); }}
+      >
+        <div className="grid grid-cols-3 gap-2">
+          {field('WIDTH', 'width', w, setW, true)}
+          {field('DEPTH', 'depth', d, setD)}
+          {field('HEIGHT', 'height', h, setH)}
+        </div>
+        <p className="text-[11px] text-ink-400">mm. WIDTH along the back, DEPTH into the carcass, HEIGHT from the floor; full runs top to bottom.</p>
+        {said && <p className="text-[11px] text-status-danger" data-testid="notch-said">{said}</p>}
+        <div className="flex justify-end">
+          <button type="submit" className="cc-btn" data-testid="notch-cut">CUT</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/**
+ * ─── T75 F4 / F11 · THE WORKTOP OF ONE CABINET, AND THE ISLAND'S SEATING ───
+ *
+ * *"The L kit's worktop is one slab shaped like the L"* and *"a seating
+ * overhang of `profile.worktop.seatingMm` offered as one click on a face with
+ * no units"*: the walk found that no click reached either (the worktop button
+ * lives in the panel of two or more). Here, for the one selected cabinet: Add
+ * worktop where the cabinet may carry one alone (an L, a desk, a cabinet on an
+ * island; the store's own `worktopEligible` decides and its refusal is said),
+ * Remove where it carries one, and on an island's slab one button per face
+ * with no cabinet on it. The overhang is the profile's number; nothing typed.
+ */
+function WorktopRow({ unit }) {
+  const design = useProjectStore((s) => s.project.design);
+  const room = useProjectStore((s) => s.project.room);
+  const units = useProjectStore((s) => s.units);
+  const addWorktop = useProjectStore((s) => s.addWorktop);
+  const removeWorktop = useProjectStore((s) => s.removeWorktop);
+  const seatingOverhang = useProjectStore((s) => s.seatingOverhang);
+  const extendIslandWorktop = useProjectStore((s) => s.extendIslandWorktop);
+  const notify = useUiStore((s) => s.notify);
+  const profile = useCabinetProfileStore((s) => s.profile);
+  if (!takesWorktop(unit.type)) return null;
+  const walls = roomWalls(room);
+  const records = migrateDesign(design).worktops;
+  const isle = unit.position?.island ?? null;
+  const record = records.find((w) => (isle != null && w.island === isle) || w.unitIds.includes(unit.id)) || null;
+  const alone = worktopEligible([unit], profile, { walls });
+  if (!record) {
+    if (!alone.ok) return null;
+    return (
+      <div className="cc-row" data-worktop-row="add">
+        <div className="flex flex-col">
+          <span className="text-sm text-ink-100">Worktop</span>
+          <span className="text-[11px] text-ink-400">not fitted</span>
+        </div>
+        <button
+          type="button"
+          className="cc-btn"
+          data-add-worktop-one="1"
+          onClick={() => { const res = addWorktop([unit.id]); if (!res.ok) notify(res.error, 'warn'); }}
+        >
+          Add worktop
+        </button>
+      </div>
+    );
+  }
+  const faces = record.island ? walls.filter((w) => w.island === record.island) : [];
+  const empty = faces.filter((f) => !units.some((u) => (u.position?.wall ?? 0) === f.index && !getUnitType(u.type).freePanel));
+  return (
+    <div className="space-y-1" data-worktop-row={record.id}>
+      <div className="cc-row">
+        <div className="flex flex-col">
+          <span className="text-sm text-ink-100">Worktop</span>
+          <span className="text-[11px] text-ink-400">
+            {record.island ? 'one slab over the whole island' : (record.kind === 'L' ? 'one slab shaped like the L' : `over ${record.unitIds.length} cabinet${record.unitIds.length === 1 ? '' : 's'}`)}
+          </span>
+        </div>
+        <button type="button" className="cc-btn" data-remove-worktop-one={record.id} onClick={() => removeWorktop(record.id)}>Remove</button>
+      </div>
+      {empty.map((f) => {
+        const on = Number(record.extend?.[f.face]) > 0;
+        return (
+          <div key={f.face} className="cc-row" data-seating-face={f.face}>
+            <span className="text-[11px] text-ink-400">
+              {on ? `Seating on face ${f.face}: ${formatMm(record.extend[f.face])} mm` : `Face ${f.face} has no cabinets`}
+            </span>
+            {on ? (
+              <button type="button" className="cc-btn-ghost" title="Take the seating overhang off" onClick={() => extendIslandWorktop(record.id, f.face, 0)}>×</button>
+            ) : (
+              <button
+                type="button"
+                className="cc-btn"
+                data-seating-add={f.face}
+                onClick={() => { const res = seatingOverhang(record.id, f.face); if (!res.ok) notify(res.error, 'warn'); }}
+              >
+                Seating overhang
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

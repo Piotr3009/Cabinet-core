@@ -17,7 +17,7 @@
 
 import { buildTopView } from './views.js';
 import { entLine as line, entPoly as poly, entText as text } from './primitives.js';
-import { roomWalls, openingsOnWall } from '../room.js';
+import { realWalls, roomWalls, openingsOnWall } from '../room.js';
 import { wallGroups, wallLabel } from './wallElevation.js';
 import { chainH, chainV } from './setChains.js';
 import { sectionStations } from './setSection.js';
@@ -45,7 +45,8 @@ export function cutEntries(entries, cut, profile) {
 
 /** The room's extent, for the scale: walls, plus a margin for the chains. */
 export function measurePlan({ room, profile }) {
-  const walls = roomWalls(room);
+  // T75 F9 · the extent is the building's: an island stands inside it.
+  const walls = realWalls(room);
   const xs = walls.flatMap((w) => [w.start.x, w.end.x]);
   const ys = walls.flatMap((w) => [w.start.y, w.end.y]);
   // The walls themselves; the labels and the chains live in the bands the
@@ -83,7 +84,8 @@ function throughWall(entities, wall, u0, depth) {
 /** The room: walls as the cut line, openings, and a label outside each wall. */
 function roomFabric(room, { ctx, profile }) {
   const out = [];
-  const walls = roomWalls(room);
+  // T75 F9 · plaster only: an island's face is not a cut wall.
+  const walls = realWalls(room);
   for (const wall of walls) {
     const ops = openingsOnWall(room, wall.index);
     // The wall line, broken at each opening.
@@ -150,10 +152,41 @@ export function buildPlan(entries, {
   for (const w of worktops) {
     const wall = walls[Number(w.wall ?? 0)] || walls[0];
     if (!wall) continue;
-    const q = [at(wall, w.x, 0), at(wall, w.x + w.w, 0), at(wall, w.x + w.w, w.d), at(wall, w.x, w.d)];
+    // T75 F4/F5 · an L slab is drawn as its outline, not its bounding box.
+    const q = Array.isArray(w.outline) && w.outline.length >= 3
+      ? w.outline.map(([x, z]) => at(wall, x, z))
+      : [at(wall, w.x, 0), at(wall, w.x + w.w, 0), at(wall, w.x + w.w, w.d), at(wall, w.x, w.d)];
     entities.push(which === 'wall'
       ? { ...poly('CARCASE', q, { fill: '#f6f6f6' }), pen: 'THIN', solid: true }
       : { ...poly('SHELVES', q), pen: 'HIDDEN', hidden: true });
+    // ─── T75 F5 · THE CUT-OUTS AND THE JOINT, ON THE SHEET ────────────────
+    // *"A record is drawn on the worktop sheet of the T71 set"*: the plan seen
+    // from above the worktop is where the slab is drawn, so each cut-out is a
+    // rectangle on it with its size, and a corner joint is its line with the
+    // bolt count. Notes, not machining: the slab is cut on site.
+    if (which === 'wall') {
+      for (const c of w.cutouts || []) {
+        const r = [at(wall, c.x, c.z), at(wall, c.x + c.w, c.z), at(wall, c.x + c.w, c.z + c.d), at(wall, c.x, c.z + c.d)];
+        entities.push({ ...poly('CARCASE', r), pen: 'THIN' });
+        const mid = at(wall, c.x + c.w / 2, c.z + c.d / 2);
+        entities.push({
+          ...text('FRAME', mid[0], mid[1], `${c.kind.toUpperCase()} ${Math.round(c.w)} x ${Math.round(c.d)} R${c.r}`, ctx.mm(2.2)),
+          paperHeight: 2.2,
+          mask: true,
+        });
+      }
+      if (w.butts && w.joint?.at) {
+        const jx = Number(w.joint.at.x) || 0;
+        const a = at(wall, jx, 0); const b = at(wall, jx, w.d);
+        entities.push({ ...line('CARCASE', a[0], a[1], b[0], b[1]), pen: 'VISIBLE' });
+        const mid = at(wall, jx, w.d / 2);
+        entities.push({
+          ...text('FRAME', mid[0], mid[1], `BUTT JOINT, ${w.joint.boltCount} BOLTS`, ctx.mm(2.2)),
+          paperHeight: 2.2,
+          mask: true,
+        });
+      }
+    }
   }
 
   // ── the section stations, marked on both plans so the sections can be found ──

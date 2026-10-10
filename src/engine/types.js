@@ -12,7 +12,8 @@
 
 // T74 F13 · the free panel's box, from its board.
 import { freePanelDefaultParams } from './freePanel.js';
-import { KITCHEN_LIBRARY, libraryTypeIds } from './library.js';
+import { resolveApertures } from './applianceTower.js';
+import { KITCHEN_LIBRARY, WARDROBE_LIBRARY, libraryTypeIds } from './library.js';
 
 /**
  * carcass.top      — 'panel' (TOP + BOTTOM) | 'holders' (SINK: 2 rails on edge)
@@ -181,6 +182,52 @@ export const UNIT_TYPES = {
     available: true,
   },
 
+  // ─── T75 F17 · THE FLOATING DESK ─────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F17: *"`WARDROBE_DESK`: a wall-hung carcass (WUD's hangers
+  // and back cut-outs, `mount: 'wall'`), height `wardrobeDesk.defaults.height
+  // = 160`, depth = wardrobe depth, ONE drawer row ... prefix `WD`. It takes a
+  // WORKTOP: `takesWorktop` admits a wall-mounted kit that declares `desk:
+  // true` ... Placed beside a wardrobe at `mount_height = 720`, aligned to the
+  // FRONT of the wardrobe by default (T74 F7's two choices)."*
+  //
+  // WUD's box to the letter (the same LISP carcass, hangers, back cut-outs,
+  // no legs, hinge and cup rules), filed with the wardrobes like
+  // WARDROBE_WALL, so the store's wardrobe wall-unit laws hold it: born at
+  // the wardrobe's depth, BACK or FRONT through `wall_gap`. Its FACE is one
+  // drawer, cut by KIT_BUDR's arithmetic through the drawer split the oven
+  // base already uses (`drawerRatioKey`, `wardrobeDesk.drawerRatio` = [1]):
+  // the x1 variant is held open with `ratio: null` and would cut 4:3:2.
+  // `heightGroup: null` and `desk: true`: its 160 and its 720 are its own, no
+  // project wall height or wall mount moves them, and it takes a worktop.
+  WARDROBE_DESK: {
+    id: 'WARDROBE_DESK',
+    heightGroup: null,
+    label: 'Floating desk',
+    family: 'wardrobe',
+    lisp: 'KIT_WUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,                  // hangs on the wall
+    legSource: null,
+    hangers: true,
+    doorExtend: false,
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    drawerRatioKey: 'wardrobeDesk.drawerRatio',
+    desk: true,
+    besideWardrobe: true,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeDesk.defaults',
+    supports: {
+      drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false,
+      cornice: false,
+    },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+
   // ─── T74 F13 · THE FREE PANEL ────────────────────────────────────────────
   //
   // The owner, 23.09.2026: *"SWOBODNY PANEL (wstaw panel). Użytkownik wstawia
@@ -329,6 +376,95 @@ export const UNIT_TYPES = {
     // KIT_BUDR_FULL counts its carcass panels WITHOUT the drawer fronts (L863)
     // and lists the fronts separately (L882-888) — the opposite of the wardrobe
     // kit, which folds drawer fronts into totalPanels.
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+
+  // ─── T75 F16 · THE CHEST OF DRAWERS BETWEEN WARDROBES ─────────────────────
+  //
+  // CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR /
+  // BUDR4`, family wardrobe, wardrobe depth and the wardrobe's leg source,
+  // prefix `WC`, defaults block `wardrobeChest.defaults` ... Hole for hole
+  // against the BUDR of the same numbers."*
+  //
+  // Each is its BUDR to the letter (the same LISP, the same variant, so the
+  // same drawerSplitFor ratio, runners, sync rods and fronts) with what files
+  // it changed: its own id and prefix, the WARDROBE family (a wardrobe job's
+  // library and laws hold it), the wardrobe's leg source and its own defaults
+  // block. `heightGroup: null`, because its height is its identity: the
+  // wardrobe's base-of-drawers law (`profile.wardrobeChest`), which the
+  // project's kitchen base height (770) would otherwise silently replace.
+  //
+  // `besideWardrobe: true`: a piece of a wardrobe job that stands BESIDE a
+  // wardrobe and is not one. No top box rides it (`topBox.hostsRidersOf`), it
+  // is never "the wardrobe" the retail columns are about, and a wardrobe's
+  // hanging kits (trouser pull-out, tie rack) are not offered in it.
+  WARDROBE_CHEST2: {
+    id: 'WARDROBE_CHEST2',
+    heightGroup: null,
+    label: 'Chest of drawers, 2 drawers',
+    drawerVariant: 'x2',
+    family: 'wardrobe',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    besideWardrobe: true,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeChest.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  WARDROBE_CHEST3: {
+    id: 'WARDROBE_CHEST3',
+    heightGroup: null,
+    label: 'Chest of drawers, 3 drawers',
+    drawerVariant: 'x3',
+    family: 'wardrobe',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    besideWardrobe: true,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeChest.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  WARDROBE_CHEST4: {
+    id: 'WARDROBE_CHEST4',
+    heightGroup: null,
+    label: 'Chest of drawers, 4 drawers',
+    drawerVariant: 'x4',
+    family: 'wardrobe',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'budr',
+    besideWardrobe: true,
+    minHeightKey: null,
+    defaultsKey: 'wardrobeChest.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
     countsDrawerFrontsInPanels: false,
     available: true,
   },
@@ -483,43 +619,121 @@ export const UNIT_TYPES = {
     available: true,
   },
 
-  // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT ─────────────────────────────
+  // ─── T75 F3 · THE BLIND KITS, THREE OF THEM ───────────────────────────────
   //
-  // "The riskiest of the batch. Start from what the LISP family actually
-  // supports (KIT_BUDR is in the repo — READ it first and say in the PR what it
-  // is); ship the L-carcass geometry + BOM; any hinge/drilling beyond the
-  // parent kit's own lines waits for a LISP. Do not improvise corner-post
-  // drilling overnight."
+  // The owner, 9.10.2026: *"daj od razu narożniki przemyślane."*  CLAUDE.md
+  // T75 F3: *"A blind unit stands at the corner with its door at the reachable
+  // end and a BLANK where the adjacent run hides its front. It is the parent
+  // kit at its own width, hole for hole; only the face differs ... copied field
+  // by field from their parents ... Each carries `blind: true`, `doorCount: 1`,
+  // and a defaults block."*
   //
-  // KIT_BUDR_FULL.lsp was read. Its header: "Base Unit Drawer - 3 drawers
-  // (4:3:2 ratio)", and its body is the MOVENTO runner outline drawn line by
-  // line. It is the THREE-DRAWER BASE UNIT this app has shipped since turn 3 —
-  // `BUDR` above is already built from it — and there is not one corner in it.
-  //
-  // So there is no parent kit for a corner unit, and no parent lines to
-  // inherit. The batch rule then settles the whole feature: GEOMETRY and a BOM,
-  // and NOT ONE HOLE. No cup, no shelf sleeve, no leg plate, no corner post.
-  //
-  //   `carcass` — all four 'none': the standard carcass is not this shape, so
-  //               none of it is emitted and the L builder in cabinet.js puts
-  //               the boards in instead.
-  //   `legs`    — false. A leg's position comes from a RECTANGULAR footprint,
-  //               and one of the four would stand in the L's missing corner.
-  //               Where a corner cabinet is really footed is a question for
-  //               the owner, not for tonight.
-  //   `doors`   — none. A corner door hangs on cups bored to a pattern nobody
-  //               has written down here.
-  L_SHAPE: {
-    id: 'L_SHAPE',
+  // So each is its parent to the letter (the same LISP, hinge rule, cup rule,
+  // legs, hangers, carcass and supports) with its own id, prefix and defaults,
+  // `blind: true` (the engine cuts the blank and narrows the one leaf,
+  // `cabinet.js normalizeParams`) and `doorCount: 1`. The test asserts each
+  // carcass hole for hole against its parent at the same width.
+  BLIND_BASE: {
+    id: 'BLIND_BASE',
     heightGroup: 'base',
-    label: 'L-shape unit',
+    label: 'Blind corner',
     family: 'kitchen',
-    // Named for honesty, not for inheritance: this is the family the shape
-    // belongs to. Its own drilling waits for a LISP.
-    lisp: null,
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    blind: true,
+    doorCount: 1,
+    minHeightKey: null,
+    defaultsKey: 'blindBase.defaults',
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    available: true,
+  },
+  BLIND_WALL: {
+    id: 'BLIND_WALL',
+    heightGroup: 'wall',
+    label: 'Blind corner wall',
+    family: 'kitchen',
+    lisp: 'KIT_WUD_FULL.lsp',
     hingeRule: 'base',
     cupRule: 'baseOffsets',
     legs: false,
+    legSource: null,
+    hangers: true,
+    doorExtend: true,
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    blind: true,
+    doorCount: 1,
+    minHeightKey: null,
+    defaultsKey: 'blindWall.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+  BLIND_WARDROBE: {
+    id: 'BLIND_WARDROBE',
+    heightGroup: 'tall',
+    label: 'Blind corner wardrobe',
+    family: 'wardrobe',
+    lisp: 'KIT_WARDROBE_FULL.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'wardrobe',
+    blind: true,
+    doorCount: 1,
+    minHeightKey: 'wardrobe.minHeight',
+    defaultsKey: 'blindWardrobe.defaults',
+    supports: {
+      drawers: true, shelves: true, rail: true, pulldown: true, partition: true, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+
+  // T75 F4 KASACJA: T30's `L_SHAPE` (eight undrilled rectangles, no legs, doors
+  // or plinth) is deleted; its two names live on in TYPE_ALIASES below.
+  //
+  // ─── T75 F4 · THE TRUE L CARCASS, THREE KITS ─────────────────────────────
+  //
+  // The owner's recorded rule (Petros, 23.09.2026, list 11): *"one L-shaped
+  // board cut on the CNC, flat-face door overlap, no 45° cuts."*  And the order
+  // of 9.10.2026: *"daj od razu narożniki przemyślane"*, *"lisp najpierw"*.
+  //
+  // The law is `reference/lisp/KIT_CORNER_L.lsp`, written before this code.
+  // Each kit is its parent's family to the letter (BUD, WUD, WARDROBE: the hinge
+  // rule, the cup rule, the legs, the hangers), with `corner: true` and
+  // `ownDepth: true`. `carcass` is all four 'none' because the standard box is
+  // not this shape: the L builder in `cabinet.js` emits the seven boards the
+  // LISP names. `parentType` is the kit a door, a side and a shelf row are cut
+  // through (the EXISTING door path, one virtual parent per arm), and
+  // `armDepthKey` is where the arm depth defaults from: the family's own depth.
+  // A top infill and a cornice that follow the L front are F6's, so they are
+  // not offered here until the run can mitre round the inner corner.
+  CORNER_L_BASE: {
+    id: 'CORNER_L_BASE',
+    heightGroup: 'base',
+    label: 'Corner L',
+    family: 'kitchen',
+    lisp: 'KIT_CORNER_L.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
     legSource: 'baseUnit',
     hangers: false,
     doorExtend: false,
@@ -529,12 +743,68 @@ export const UNIT_TYPES = {
     },
     drawerStyle: null,
     corner: true,
-    // Its depth is its identity, like a wall unit's 400: a corner unit turns
-    // the run, and a 558 corner is not a corner. See projectHeightParams.
     ownDepth: true,
+    parentType: 'BUD',
+    armDepthKey: 'baseUnit.defaults.depth',
     minHeightKey: null,
-    defaultsKey: 'cornerUnit.defaults',
-    supports: { drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    defaultsKey: 'cornerBase.defaults',
+    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    available: true,
+  },
+  CORNER_L_WALL: {
+    id: 'CORNER_L_WALL',
+    heightGroup: 'wall',
+    label: 'Corner L wall',
+    family: 'kitchen',
+    lisp: 'KIT_CORNER_L.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: false,
+    legSource: null,
+    hangers: true,
+    doorExtend: true,
+    mount: 'wall',
+    carcass: {
+      top: 'none', back: 'none', sides: 'none', bottom: 'none',
+    },
+    drawerStyle: null,
+    corner: true,
+    ownDepth: true,
+    parentType: 'WUD',
+    armDepthKey: 'wallUnit.defaults.depth',
+    minHeightKey: null,
+    defaultsKey: 'cornerWall.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false,
+    },
+    available: true,
+  },
+  CORNER_L_WARDROBE: {
+    id: 'CORNER_L_WARDROBE',
+    heightGroup: 'tall',
+    label: 'Corner L wardrobe',
+    family: 'wardrobe',
+    lisp: 'KIT_CORNER_L.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: {
+      top: 'none', back: 'none', sides: 'none', bottom: 'none',
+    },
+    drawerStyle: null,
+    corner: true,
+    ownDepth: true,
+    parentType: 'WARDROBE',
+    armDepthKey: 'wardrobe.defaults.depth',
+    minHeightKey: 'wardrobe.minHeight',
+    defaultsKey: 'cornerWardrobe.defaults',
+    supports: {
+      drawers: false, shelves: true, rail: true, pulldown: false, partition: false, doors: true, topInfill: false,
+    },
     available: true,
   },
   // ─── TURN 30 (CLAUDE.md F18): THE TWIN CUPBOARD ───────────────────────────
@@ -755,6 +1025,96 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── T75 F13 · THE BASE UNIT WITH DRAWERS BEHIND ITS DOORS ──────────────
+  //
+  // CLAUDE.md T75 F13: *"`BUD_INT`: `BUD` with `drawerStyle: 'wardrobe'`,
+  // `internalDrawers: 'all'`, `supports.drawers: true` (PANTRY's own two lines
+  // at base height), the T33 F6 door setback for drawers behind doors applied
+  // as it is in a wardrobe."*
+  //
+  // BUD to the letter, with PANTRY's two lines: nothing in cabinet.js is
+  // written for it. The behind-door law (the DP panel and its fillers on every
+  // hinged side, the box set back), the runner rows and the boxes come with
+  // `drawerStyle: 'wardrobe'`; the frontless drawers with `internalDrawers`.
+  // Empty it is BUD hole for hole; its drawer machinery is PANTRY's.
+  BUD_INT: {
+    id: 'BUD_INT',
+    heightGroup: 'base',
+    label: 'Drawers behind doors',
+    family: 'kitchen',
+    lisp: 'KIT_BUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: 'wardrobe',
+    internalDrawers: 'all',
+    minHeightKey: null,
+    defaultsKey: 'baseInternalDrawerUnit.defaults',
+    supports: { drawers: true, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    available: true,
+  },
+  // ─── T75 F14 · THE HOB UNIT ─────────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F14: *"`BUDR` variants take `hob: true` (a library row "Hob
+  // drawer unit" for x2 and x3): the TOP front is a FIXED DUMMY ... Prefix
+  // stays `DR`; the golden `golden-budr.json` is untouched because `hob` is
+  // absent on it."*
+  //
+  // BUDR and BUDR2 to the letter, with `hob: true`, which `defaultParamsFor`
+  // writes onto the unit as `params.hob`: the engine reads the PARAM, so the
+  // flag means one thing wherever a unit carries it. A row is a type, as the
+  // drawer unit's splits are, so the library inserts it with no PRO edit.
+  BUDR_HOB: {
+    id: 'BUDR_HOB',
+    heightGroup: 'base',
+    label: 'Hob drawer unit, 3 fronts',
+    drawerVariant: 'x3',
+    family: 'kitchen',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    hob: true,
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'baseDrawerUnit.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
+  BUDR2_HOB: {
+    id: 'BUDR2_HOB',
+    heightGroup: 'base',
+    label: 'Hob drawer unit, 2 fronts',
+    drawerVariant: 'x2',
+    family: 'kitchen',
+    lisp: 'KIT_BUDR_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    hob: true,
+    drawerStyle: 'budr',
+    minHeightKey: null,
+    defaultsKey: 'baseDrawerUnit.defaults',
+    supports: { drawers: true, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: false },
+    countsDrawerFrontsInPanels: false,
+    available: true,
+  },
   LOW_CABINET: {
     id: 'LOW_CABINET',
     // A low cabinet that inherits the 720 mm base height is a base unit with
@@ -777,6 +1137,40 @@ export const UNIT_TYPES = {
     supports: { drawers: false, shelves: true, rail: true, pulldown: false, partition: false, doors: true, topInfill: false },
     // The LISP counts the rail partition in PANELS for this kit (L464-465),
     // unlike the wardrobe — recorded so the totals stay honest per type.
+    countsRailPartInPanels: true,
+    available: true,
+  },
+  // ─── T75 F18 · THE LOW UNITS OF A WARDROBE JOB ───────────────────────────
+  //
+  // CLAUDE.md T75 F18: *"`WARDROBE_LOW` copied from `LOW_CABINET`, family
+  // wardrobe, prefix `WL`, wardrobe depth, its own low height
+  // (`wardrobeLow.defaults`, 500). Hole for hole against LOW_CABINET."*
+  //
+  // LOW_CABINET to the letter (the same LISP, hinge and cup rules, its rail,
+  // its own minimum height) with what files it: its id and prefix, the
+  // WARDROBE family, its own defaults block, the wardrobe's leg source (the
+  // chest's, F16: a piece of a wardrobe job stands on the wardrobe's legs;
+  // both are 100 today, so no hole moves) and `besideWardrobe` (no top box
+  // rides it, it is never "the wardrobe", it takes no hanging kit).
+  WARDROBE_LOW: {
+    id: 'WARDROBE_LOW',
+    heightGroup: null,
+    label: 'Low unit',
+    family: 'wardrobe',
+    lisp: 'KIT_LOW_CABINET_FULL.lsp',
+    hingeRule: 'low',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'wardrobe',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    besideWardrobe: true,
+    minHeightKey: 'lowCabinet.minHeight',
+    defaultsKey: 'wardrobeLow.defaults',
+    supports: { drawers: false, shelves: true, rail: true, pulldown: false, partition: false, doors: true, topInfill: false },
     countsRailPartInPanels: true,
     available: true,
   },
@@ -1035,6 +1429,73 @@ export const UNIT_TYPES = {
     },
     available: true,
   },
+  // ─── T75 F12 · THE APPLIANCE TOWER, ONE KIT, PARENT KIT_FRIDGE ──────────
+  //
+  // CLAUDE.md T75 F12: *"`APPLIANCE_TALL` in `engine/types.js`, copied field
+  // by field from `FRIDGE` ... with `apertures: [...]` read from its defaults
+  // block ... Four library rows, Tall units, each a defaults block."*
+  //
+  // FRIDGE to the letter (the KIT_FRIDGE back on its rails, the fixed panel,
+  // the spurs panel, the tall hinge rule, the legs, the minimum height), plus
+  // `applianceTower: true`: the engine reads the defaults block's `apertures`
+  // and stacks them (`engine/applianceTower.js`). It does NOT declare
+  // `appliance`, which is a geometry switch for OVEN_BASE (its shelf and its
+  // drawer stack), not a label.
+  //
+  // A ROW IS A TYPE, as the drawer unit's splits are (BUDR2 / BUDR / BUDR4,
+  // one kit, the variant the only difference): a library row inserts a TYPE
+  // and its defaults block, so each row that carries a stack of its own is a
+  // type naming its block. The digit is the aperture count, BUDR2's grammar.
+  APPLIANCE_TALL: {
+    id: 'APPLIANCE_TALL',
+    widthFixed: true,
+    heightGroup: 'tall',
+    label: 'Fridge freezer tower',
+    family: 'kitchen',
+    lisp: 'KIT_FRIDGE.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'rails' },
+    drawerStyle: null,
+    applianceTower: true,
+    minHeightKey: 'fridgeUnit.minHeight',
+    defaultsKey: 'applianceTall.fridgeFreezer.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+  APPLIANCE_TALL2: {
+    id: 'APPLIANCE_TALL2',
+    widthFixed: true,
+    heightGroup: 'tall',
+    label: 'Washer + dryer tower',
+    family: 'kitchen',
+    lisp: 'KIT_FRIDGE.lsp',
+    hingeRule: 'tall',
+    cupRule: 'hingeCentres',
+    legs: true,
+    legSource: 'baseUnit',
+    hangers: false,
+    doorExtend: false,
+    mount: 'floor',
+    carcass: { top: 'panel', back: 'rails' },
+    drawerStyle: null,
+    applianceTower: true,
+    minHeightKey: 'fridgeUnit.minHeight',
+    defaultsKey: 'applianceTall.washerDryer.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
 };
 
 /** Ordered list for the Library panel (UI never reads Object.keys of stored JSON). */
@@ -1057,7 +1518,10 @@ export const UNIT_TYPES = {
  * something that was never in the box.
  */
 export const TYPE_ALIASES = Object.freeze({
-  CORNER: 'L_SHAPE',
+  // T75 F4: BOTH old names, forever, read as the true L's base kit (T30's
+  // L_SHAPE is deleted; `loadProject` maps its `corner_arm_mm` to `arm_mm`).
+  CORNER: 'CORNER_L_BASE',
+  L_SHAPE: 'CORNER_L_BASE',
 });
 
 /** The id a stored unit means, whatever it was called when it was saved. */
@@ -1066,15 +1530,15 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'L_SHAPE', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
  * and the category opens one panel with just those types in it — no categories
  * nested inside a single long list.
  *
- * `soon: true` is a place already held in the menu for work that is not done:
- * saved sets and media walls. Every type must belong to exactly one category,
+ * `saved: true` is the workshop's own saved units; `sets: true` (T75 F20) the
+ * shelf of sets, shipped and saved. Every type must belong to exactly one category,
  * which test/library-categories.test.js enforces — a new kit that nobody can
  * reach from the menu is a kit nobody can insert.
  */
@@ -1095,12 +1559,24 @@ export const UNIT_CATEGORIES = [
   // place; saved sets and media walls are untouched.
   // Turn 36 (CLAUDE.md F7): "library offers Main wardrobe + Top box".
   // T74 F7 · *"ADD WALL UNIT ... Osobny typ"*: the wardrobe's own wall unit.
-  { id: 'wardrobe', label: 'Wardrobes', types: ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL'] },
+  // T75 F3 · *"the Wardrobes category "Blind corner wardrobe""*.
+  // T75 F4 · *"CORNER_L_WARDROBE ... family wardrobe"*: "Corner L wardrobe".
+  // T75 F16 · *"Wardrobes category"* for the chest of drawers, its count by
+  // *"the existing variants control"*: the category carries its list as DATA
+  // now (`engine/library.js WARDROBE_LIBRARY`, the drawer group a flyout of the
+  // profile's variants, as Kitchen's is), and `types` is derived from it.
+  {
+    id: 'wardrobe', label: 'Wardrobes', entries: WARDROBE_LIBRARY, types: libraryTypeIds(WARDROBE_LIBRARY),
+  },
   // Turn 5 (BACKLOG #30): its contents are the workshop's OWN saved units
   // rather than kits, so it carries no `types` — the panel reads them from the
   // template store.
   { id: 'sets', label: 'Saved sets', types: [], saved: true },
-  { id: 'media', label: 'Media walls', types: [], soon: true },
+  // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets
+  // shelf (saved sets and shipped sets on one list)"*: `engine/sets.js`'s five
+  // and the workshop's own, one list. Kasacja: the `soon` flag, deleted.
+  // Tombstone: `soon: true` held this place from T4 to T74.
+  { id: 'media', label: 'Sets', types: [], sets: true },
 ];
 
 /**
@@ -1111,6 +1587,30 @@ export const UNIT_CATEGORIES = [
 export function isWardrobeWallUnit(typeId) {
   const t = UNIT_TYPES[resolveTypeId(typeId)];
   return Boolean(t && t.family === 'wardrobe' && t.mount === 'wall' && !t.ridesOn);
+}
+
+/**
+ * T75 F16 · is this a piece that stands BESIDE a wardrobe and is not one (the
+ * chest of drawers, the desk, the low unit)? No top box rides it, it is never
+ * "the wardrobe" a retail column is about, and it takes no hanging kit.
+ */
+export function isBesideWardrobe(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.besideWardrobe);
+}
+
+/** T75 F17 · is this a desk: a wall-hung kit that takes a worktop of its own? */
+export function isDeskKit(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.desk);
+}
+
+/** T75 F3 · is this a blind corner kit (a blank beside one leaf)? */
+export function isBlindKit(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.blind);
+}
+
+/** T75 F4 · is this a true L corner kit (one carcass on two walls)? */
+export function isCornerLKit(typeId) {
+  return Boolean(UNIT_TYPES[resolveTypeId(typeId)]?.corner);
 }
 
 /** T74 F13 · is this the free panel kit (one board standing in the room)? */
@@ -1225,6 +1725,26 @@ export function defaultParamsFor(typeId, profile) {
     // the box is worked out from it (`engine/freePanel.js`). Spread, so no kit
     // written before tonight carries a key it did not.
     ...(type.freePanel ? freePanelDefaultParams(profile) : {}),
+    // ─── T75 F3 · WHICH END OF A BLIND KIT IS IN THE CORNER ──────────────
+    // The store writes it from the corner the kit stands in; a new one arrives
+    // with its blank on the left. Spread, so no other kit carries the key.
+    ...(type.blind ? { blind_side: 'left' } : {}),
+    // ─── T75 F4 · THE L's ARM DEPTH AND ITS HAND ──────────────────────────
+    // `arm_mm` is the family's own depth (KIT_CORNER_L.lsp section 7);
+    // `corner_side` is which END of the unit stands in the room corner, written
+    // by the store from the corner it stands in. Spread, so no other kit
+    // carries either key and the six goldens stay byte for byte.
+    ...(type.corner ? {
+      arm_mm: Number(profilePath(profile, type.armDepthKey)) || 558,
+      corner_side: 'left',
+    } : {}),
+    // ─── T75 F12 · THE TOWER'S APERTURES, EACH GIVEN ITS HEIGHT ──────────
+    // Read off the kit's defaults block and written onto the unit, so a saved
+    // tower keeps the stack it was cut to. Spread, so no other kit carries it.
+    ...(type.applianceTower && Array.isArray(d.apertures) ? { apertures: resolveApertures(d.apertures, profile) } : {}),
+    // T75 F14 · a hob drawer unit carries the flag the engine and the worktop
+    // read. Spread, so no other kit carries the key.
+    ...(type.hob ? { hob: true } : {}),
     unit_num: '01',
   };
 }
@@ -1237,5 +1757,22 @@ export const UNIT_NUM_PREFIX = {
   WARDROBE_TOP: 'WT',
   // T74 F7 · the wardrobe's wall unit: WW01, apart from the kitchen's WU01.
   // T74 F13 · the free panel: FP01.
-  WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', L_SHAPE: 'CR', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
+  // T75 F3 · the blind kits: BB01 base, BW01 wall, BX01 wardrobe.
+  BLIND_BASE: 'BB', BLIND_WALL: 'BW', BLIND_WARDROBE: 'BX',
+  // T75 F4 · the true L: CL01 base, CW01 wall, CX01 wardrobe.
+  CORNER_L_BASE: 'CL', CORNER_L_WALL: 'CW', CORNER_L_WARDROBE: 'CX',
+  // T75 F12 · the appliance towers: AT01, whichever stack they carry.
+  APPLIANCE_TALL: 'AT', APPLIANCE_TALL2: 'AT',
+  // T75 F13 · drawers behind doors: BI01.
+  BUD_INT: 'BI',
+  // T75 F14 · *"Prefix stays `DR`"*.
+  BUDR_HOB: 'DR', BUDR2_HOB: 'DR',
+  // T75 F16 · the chest of drawers: WC01, whatever its count (BUDR's DR is one
+  // prefix for three counts too).
+  WARDROBE_CHEST2: 'WC', WARDROBE_CHEST3: 'WC', WARDROBE_CHEST4: 'WC',
+  // T75 F17 · the floating desk: WD01.
+  WARDROBE_DESK: 'WD',
+  // T75 F18 · the wardrobe job's low unit: WL01, apart from the kitchen's LC01.
+  WARDROBE_LOW: 'WL',
+  WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
 };

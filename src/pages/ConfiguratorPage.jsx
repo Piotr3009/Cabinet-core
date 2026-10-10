@@ -38,6 +38,8 @@ import { useUiStore } from '../stores/uiStore.js';
 // T54-F6: the dimensions' sleep clock — a lib module so fake timers can test it.
 import { createDimensionSleep, dimensionsIdleMs } from '../lib/dimensionSleep.js';
 import { getProjectType } from '../engine/projectTypes.js';
+// T75 F20 · a set job's first plus puts its set.
+import { shippedSet } from '../engine/sets.js';
 import { migrateDesign, resolveUnitDesign } from '../engine/design.js';
 import { elementLabel } from '../engine/elements.js';
 import { useHistoryStore } from '../stores/historyStore.js';
@@ -78,8 +80,44 @@ import { isDeleteKey } from '../lib/deleteKey.js';
  */
 function FirstUnitPlus() {
   const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
+  const notify = useUiStore((s) => s.notify);
+  const selectUnit = useUiStore((s) => s.selectUnit);
+  const insertSet = useProjectStore((s) => s.insertSet);
   const design = useProjectStore((s) => s.project.design);
-  const category = getProjectType(migrateDesign(design).projectType)?.category || 'base';
+  const jobType = getProjectType(migrateDesign(design).projectType);
+  const category = jobType?.category || 'base';
+  // T75 F20 · *"NEW PROJECT with one of them offers the set first (the first
+  // plus point on the first wall)"*: a Media wall, Sideboard, Vanity, Utility
+  // or Hallway job's first plus puts its set on the first wall. Room refuses
+  // first, in words; the Library stays one menu away for anything else.
+  const set = jobType?.set ? shippedSet(jobType.set) : null;
+  if (set) {
+    const put = () => {
+      const { ids, error } = insertSet(set, { wall: 0 });
+      if (error) { notify(error, 'warn'); return; }
+      selectUnit(ids[0]);
+      notify(`${set.name}: ${ids.length} units in. They are ordinary units now; Ctrl+Z takes the set back.`, 'ok');
+    };
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <button
+          type="button"
+          className="pointer-events-auto w-28 h-28 rounded-full border-2 border-dashed border-gold/70
+            text-gold text-6xl leading-none flex items-center justify-center bg-white/70
+            hover:bg-gold hover:text-shell-900 hover:border-solid transition-colors shadow-lg"
+          title={set.hint}
+          aria-label={`Add the ${set.name} set`}
+          data-first-set={set.id}
+          onClick={put}
+        >
+          +
+        </button>
+        <span className="pointer-events-none mt-3 text-sm text-neutral-600 bg-white/80 px-3 py-1 rounded border border-neutral-200">
+          Add the {set.name} set
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
       <button
@@ -355,6 +393,8 @@ export default function ConfiguratorPage() {
       entries: allResults(),
       design,
       materials,
+      // T75 F5 · the room, so a slab that turns a corner rides the file.
+      room: project.room,
       projectName: project.name,
       redWarnings: found.filter((f) => f.level === 'red').map((f) => f.message),
       // T45 F9c: the driver is sized in the FILE the same way it is on the
@@ -397,6 +437,8 @@ export default function ConfiguratorPage() {
         ledSpec: project.ledSpec,
       });
       notify(`${res.files.length} DXF files exported as ${res.filename}.`, 'ok');
+      // T75 F22 · the parts the machine does not finish, counted.
+      if (res.readinessBanner) notify(res.readinessBanner, 'warn');
       if (res.gateMessage) {
         notify(res.gateMessage, 'error', { action: { label: 'Export anyway', run: () => onExportDxfZip({ exportAnyway: true }) } });
       }

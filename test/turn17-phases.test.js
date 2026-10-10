@@ -276,6 +276,18 @@ test('F7 — a bare kit call is untouched: nothing said, nothing changes', () =>
       assert.equal(r.totals.hinges, 0);
       continue;
     }
+    // AMENDED BY T75 F12: an appliance tower whose door stands on a machine
+    // (*"the appliance itself shows no front (the machine is the face)"*) hangs
+    // a SHORT door, so its ladder is the LISP's low one run over the door's own
+    // height and lifted onto the machine, the overlay door's grammar.
+    if (type.applianceTower && r.derived.door_base_y > 0) {
+      const base = r.derived.door_base_y;
+      const door = r.panels.find((x) => x.role === 'front');
+      assert.deepEqual(r.drillSummary.hinge_centers,
+        hingeCentres(door.h, P.hinges.rules.low, P).map((c) => Math.round((c + base) * 10000) / 10000),
+        `${id}: the short door's own ladder, lifted onto the machine`);
+      continue;
+    }
     const rule = P.hinges.rules[type.hingeRule];
     assert.deepEqual(r.drillSummary.hinge_centers, hingeCentres(defaultParamsFor(id, P).height, rule, P),
       `${id} must still drill exactly what the AutoLISP drills`);

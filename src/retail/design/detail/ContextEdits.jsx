@@ -29,6 +29,9 @@ export default function ContextMenu() {
   const addEndPanel = useProjectStore((s) => s.addEndPanel);
   const addPlinth = useProjectStore((s) => s.addPlinth);
   const removePlinth = useProjectStore((s) => s.removePlinth);
+  // T75 F5 · the upstand, on and off per run like the plinth.
+  const addUpstand = useProjectStore((s) => s.addUpstand);
+  const removeUpstand = useProjectStore((s) => s.removeUpstand);
   const addTopInfill = useProjectStore((s) => s.addTopInfill);
   const removeEndPanel = useProjectStore((s) => s.removeEndPanel);
   const setSideInfillEnabled = useProjectStore((s) => s.setSideInfillEnabled);
@@ -90,6 +93,8 @@ export default function ContextMenu() {
         removeEndPanel,
         addPlinth: (unitId) => { if (!addPlinth(unitId)) notify('This type stands on no legs — it takes no plinth.', 'warn'); },
         removePlinth,
+        addUpstand: (unitId) => { if (!addUpstand(unitId)) notify('An upstand stands on a worktop: this unit has none to stand on.', 'warn'); },
+        removeUpstand,
         addTopInfill: (unitId) => {
           if (!addTopInfill(unitId)) notify('No room between this unit and the ceiling.', 'warn');
         },
@@ -187,7 +192,7 @@ export default function ContextMenu() {
     // as turn 13 left them (the store flag and its profile default are
     // untouched, and View still owns it), and REDRAWING them is parked.
     : []), [unit, menu, unitDimensions, redistributeShelves, rotateUnit,
-    removeUnit, closeAllFronts, toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addTopInfill,
+    removeUnit, closeAllFronts, toggleUnitDimensions, addEndPanel, removeEndPanel, addPlinth, removePlinth, addUpstand, removeUpstand, addTopInfill,
     removeTopInfill, setCornice, addBottomMask, removeBottomMask,
     setSideInfillEnabled, setSideInfillPinned, notify, openRightPanel,
     setPanelSection, openModal, selectUnit, removeDrawerFronts, addDrawerFronts]);

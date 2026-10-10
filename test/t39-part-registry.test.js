@@ -94,6 +94,26 @@ function paramSets(typeId) {
       ...base, doors: true, top_infill_mm: 300, side_infill_left_mm: 120, side_infill_right_mm: 120,
     }],
     ['cornice', { ...base, doors: true, cornice: 90, top_infill_mm: 200 }],
+    // T75 F5 · the upstand the store writes as a run element.
+    ['upstand', {
+      ...base, doors: true, run_upstand: { role: 'owner', offset: 0, length: 1200, unitIds: ['u'] },
+    }],
+    // T75 F10 · the island automat's two panels: a free panel the store names.
+    ['island-back', { ...base, island_panel: 'back' }],
+    ['island-end', { ...base, island_panel: 'end' }],
+    // T75 F15 · the pelmet the store writes as a run element (cut by a wall unit).
+    ['pelmet', {
+      ...base, doors: true, mount_height: 1500, run_pelmet: {
+        role: 'owner', height: 50, offset: 0, length: 1200, returns: { left: 400, right: null }, unitIds: ['u'],
+      },
+    }],
+    // T75 F2 · the corner post the store writes when a unit lands on the corner stop.
+    ['corner-post', { ...base, doors: true, corner_post_left_mm: 50, corner_post_right_mm: 50 }],
+    // T75 F7 · the corner notch, full height (RETURN, STEP) and part height
+    // (and its LID). A kit the notch does not apply to refuses it in words and
+    // cuts its parent, so the walk asks every kit.
+    ['notch', { ...base, doors: true, hinge: 'R', notch: { corner: 'BL', w: 200, d: 200, h: 0 } }],
+    ['notch-part', { ...base, doors: true, hinge: 'R', notch: { corner: 'BL', w: 200, d: 200, h: 300 } }],
     ['run-infill', {
       ...base,
       doors: true,
@@ -123,7 +143,8 @@ function paramSets(typeId) {
     }],
   ];
   if (T.appliance === 'extractor') sets.push(['hood', { ...base, doors: true, hood_aperture_mm: 400 }]);
-  if (T.id === 'L_SHAPE') sets.push(['arm', { ...base, doors: true, corner_arm_mm: 900, plinth: true }]);
+  // AMENDED BY T75 F4: T30's L_SHAPE is deleted; the true L walks with a deep arm, the right hand, a plinth and a shelf.
+  if (T.corner) sets.push(['arm', { ...base, doors: true, arm_mm: 600, corner_side: 'right', plinth: true, shelves: 1 }]);
   if (T.id === 'FRIDGE' || T.id === 'FRIDGE_US') {
     sets.push(['fridge', { ...base, doors: true, fridge_h: 1780, plinth: true }]);
   }
@@ -238,6 +259,9 @@ const ENGINE_SRC = readFileSync(new URL('../src/engine/cabinet.js', import.meta.
 // here rather than quietly fixed or quietly ignored. Adding the six rows and
 // this file to the scan is one small turn's work.
 const INSERT_SRC = readFileSync(new URL('../src/engine/shoeInsert.js', import.meta.url), 'utf8');
+// T75 F7 · the corner notch names the boards of its box (`notch.js`, the
+// `board('RETURN', 'NOTCH-RETURN', ...)` helper), so it is read here too.
+const NOTCH_SRC = readFileSync(new URL('../src/engine/notch.js', import.meta.url), 'utf8');
 
 function partNamesInSource() {
   const names = new Set();
@@ -247,6 +271,7 @@ function partNamesInSource() {
     for (const m of src.matchAll(/push\(`[^`]*`,\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);
   }
   for (const m of ENGINE_SRC.matchAll(/\bboard\(\s*`[^`]*`\s*,\s*'([^']+)'/g)) names.add(m[1]);
+  for (const m of NOTCH_SRC.matchAll(/\bboard\(\s*'[^']*'\s*,\s*'([A-Z][A-Z0-9-]+)'/g)) names.add(m[1]);
   // T54-F7 AMENDED (28.08.2026): the shoe box suffix-map scan
   // (`const suffix = {…}[piece.role]` → SHOEBOX-*) is deleted — the map it
   // read is gone from cabinet.js with the rest of the shoe box world

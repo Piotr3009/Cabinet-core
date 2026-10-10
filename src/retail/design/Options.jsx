@@ -342,11 +342,48 @@ function SizePanel({ unit }) {
         />
       </Field>
 
+      {/* ─── T75 F7 · CUT CORNER ──────────────────────────────────────────
+          *"Klikasz 'wytnij narożnik', program podświetla narożniki,
+          wybierasz, podajesz wysokość, głębokość, szerokość."*  CLAUDE.md:
+          *"retail SIZE step for a wardrobe"*. The button lights the four
+          corners in the room; a click on one opens the small window there. */}
+      {A.canCutCorner(unit.id) && (
+        <CutCornerRow unitId={unit.id} notch={unit.params?.notch || null} />
+      )}
+
       <p className="pbi-choice pbi-choice-15 pbi-panel-note">
         Millimetres, floor to top and wall to wall. We survey before we build, so these are the
         numbers we start from rather than the ones we cut to.
       </p>
     </Panel>
+  );
+}
+
+/** T75 F7 · CUT CORNER, and REMOVE once a corner is cut. */
+function CutCornerRow({ unitId, notch }) {
+  // Subscribed, so the row follows the lit corners; the notch is the unit's.
+  const lit = useUiStore((st) => st.notchPick === unitId);
+  // The corners go out with the row (another step, another wardrobe).
+  useEffect(() => () => { if (A.cuttingCorner(unitId)) A.toggleCutCorner(unitId); }, [unitId]);
+  // An ACTION under the four size fields, not a fifth field (T72 F14: "four
+  // fields, in the owner's order, and no fifth").
+  return (
+    <div className="pbi-duty-actions" data-testid="cut-corner-row">
+      <Button
+        kind={lit ? 'secondary' : 'primary'}
+        size="small"
+        data-testid="cut-corner"
+        title={lit ? 'Click one of the lit corners in the room' : 'Cut a corner out of this wardrobe'}
+        onClick={() => A.toggleCutCorner(unitId)}
+      >
+        {lit ? 'PICK A CORNER' : 'CUT CORNER'}
+      </Button>
+      {notch ? (
+        <Button kind="secondary" size="small" data-testid="remove-corner-cut" onClick={() => A.removeCornerCut(unitId)}>
+          {`REMOVE ${notch.corner} CUT`}
+        </Button>
+      ) : null}
+    </div>
   );
 }
 
@@ -1357,6 +1394,24 @@ function ExtrasPanel({ unit, project }) {
           ) : null;
         })}
 
+        {/* ─── T75 F3 · ADD CORNER WARDROBE ────────────────────────────────
+            *"a button `ADD CORNER WARDROBE` beside `ADD ANOTHER WARDROBE`
+            (places a `BLIND_WARDROBE` into the nearest free corner of the
+            room, or refuses in words when no corner is free)."*  Through the
+            store's own road (`adapter.addCornerWardrobe`). */}
+        <Field label="CORNER WARDROBE" note={REASONS.cornerWardrobeGoesIn}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-corner-wardrobe"
+              onClick={() => setSaid(A.addCornerWardrobe().said)}
+            >
+              ADD CORNER WARDROBE
+            </Button>
+          </div>
+        </Field>
+
         {/* ─── T68 F5 · ADD ANOTHER WARDROBE ───────────────────────────────
             T65 F1's law: *"The client places the first wardrobe: the plus on
             the empty floor, and an ADD A WARDROBE action in the step itself,
@@ -1390,6 +1445,57 @@ function ExtrasPanel({ unit, project }) {
               onClick={() => setSaid(A.addWallUnit().said)}
             >
               ADD WALL UNIT
+            </Button>
+          </div>
+        </Field>
+
+        {/* ─── T75 F16 · ADD CHEST OF DRAWERS ───────────────────────────────
+            *"retail EXTRAS `ADD CHEST OF DRAWERS` (x3 default; the count by
+            the existing variants control)."*  Beside the selected wardrobe,
+            through the store's own road (`adapter.addChestOfDrawers`); the
+            room refuses in its own sentence. */}
+        <Field label="CHEST OF DRAWERS" note={REASONS.chestGoesBeside}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-chest"
+              onClick={() => setSaid(A.addChestOfDrawers().said)}
+            >
+              ADD CHEST OF DRAWERS
+            </Button>
+          </div>
+        </Field>
+
+        {/* ─── T75 F17 · ADD DESK ───────────────────────────────────────────
+            *"Placed beside a wardrobe at `mount_height = 720`, aligned to the
+            FRONT of the wardrobe by default ... Retail EXTRAS `ADD DESK`."*
+            Through the store's own road (`adapter.addDesk`). */}
+        <Field label="DESK" note={REASONS.deskGoesBeside}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-desk"
+              onClick={() => setSaid(A.addDesk().said)}
+            >
+              ADD DESK
+            </Button>
+          </div>
+        </Field>
+
+        {/* ─── T75 F18 · ADD LOW UNIT ───────────────────────────────────────
+            *"`WARDROBE_LOW` copied from `LOW_CABINET` ... Retail EXTRAS `ADD
+            LOW UNIT`."*  Through the store's own road (`adapter.addLowUnit`). */}
+        <Field label="LOW UNIT" note={REASONS.lowUnitGoesBeside}>
+          <div className="pbi-duty-actions">
+            <Button
+              kind="secondary"
+              size="small"
+              data-testid="extras-add-low-unit"
+              onClick={() => setSaid(A.addLowUnit().said)}
+            >
+              ADD LOW UNIT
             </Button>
           </div>
         </Field>

@@ -106,6 +106,10 @@ test('R11 — every remaining `DimLabel` in the scene is a CHIP, and it is named
       // the edge a drop would catch and the key that refuses it.
       'the free panel’s snap PROPOSAL while it is in the hand: what a drop would '
       + 'catch, and that Alt refuses it (T74 F13). A sentence, not a dimension',
+      // AMENDED BY T75 F23 · the DOWEL GATE over a dowel unit while the owner has
+      // not confirmed the pattern: *"the 3D and the cut list show it."*
+      'the dowel unit’s GATE while the pattern is unconfirmed: "Dowels: proposed, '
+      + 'not confirmed" (T75 F23). A sentence, not a dimension',
     ],
     '3d/Room.jsx': [
       'a WALL’s width — the room’s own caption, on the wall. A wall has no front '

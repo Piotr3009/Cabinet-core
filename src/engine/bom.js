@@ -14,6 +14,13 @@ import {
 } from './partRegistry.js';
 import { sheetSizeForFamily } from './checks.js';
 import { lightingBomLines } from './ledStrips.js';
+// T75 F5 · the worktop's slabs, joint and cut-outs, resolved from the design.
+// T75 F22 · the state of every line, read off the part.
+import { readinessOf } from './readiness.js';
+import { worktopsFor } from './worktop.js';
+import { migrateDesign } from './design.js';
+import { roomWalls } from './room.js';
+import { dowelNoteRow } from './dowels.js';
 
 /**
  * What ONE piece is finished in, as a name a workshop can order against
@@ -52,7 +59,7 @@ function partMaterialLabel(panel, resolved) {
  * @returns aggregated BOM
  */
 export function buildBom(entries, {
-  design = null, profile = null, materials = [], excludeDrawerBoxes = false,
+  design = null, profile = null, materials = [], excludeDrawerBoxes = false, room = null,
 } = {}) {
   const units = [];
   const roleTotals = {};
@@ -64,6 +71,8 @@ export function buildBom(entries, {
   let frontArea = 0;
   let boardEdging = 0;
   let frontEdging = 0;
+  // T75 F5 · the worktop's own area (its slabs and upstands), kept apart.
+  let worktopArea = 0;
 
   for (const { unit, result } of entries) {
     // Per PIECE, not per project and not per unit: a cabinet on its own door
@@ -96,13 +105,23 @@ export function buildBom(entries, {
         edge: p.edging.code,
         edge_m: p.edging.len_m,
         area_m2: p.area_m2,
+        // T75 F22 · *"The cut list, the BOM and the CNC export show the state
+        // on every line"*: read off the part, never written into it.
+        readiness: readinessOf(p, { drills: result.drills }),
       };
     });
-    units.push({ unitId: unit.id, unitNum: result.unitNum, type: result.type, rows, totals: result.totals, warnings: result.warnings });
+    // T75 F23 · a dowel unit's cut list says so in a NOTE row (the gate while
+    // it is shut); counted in nothing, merged with nothing.
+    const dowelNote = dowelNoteRow(result);
+    units.push({
+      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: dowelNote ? [...rows, dowelNote] : rows, totals: result.totals, warnings: result.warnings,
+    });
 
     for (const r of rows) {
       pieces += r.qty;
       if (r.material_role === 'front') { frontArea += r.area_m2 * r.qty; frontEdging += r.edge_m * r.qty; }
+      // T75 F5 · an upstand is worktop material: neither board nor front.
+      else if (r.material_role === 'worktop') { worktopArea += r.area_m2 * r.qty; }
       else { boardArea += r.area_m2 * r.qty; boardEdging += r.edge_m * r.qty; }
 
       const rt = roleTotals[r.role] || (roleTotals[r.role] = { role: r.role, pieces: 0, area_m2: 0, edging_m: 0, thicknesses: new Set() });
@@ -120,7 +139,8 @@ export function buildBom(entries, {
       // is one — the owner's rule, in the place the rule is applied. Two front
       // types on ONE board merge; two on different boards do not, even when the
       // label reads the same because neither has been given a finish.
-      const key = `${r.part}|${r.w}|${r.h}|${r.thickness}|${r.edge}|${r.material_key || r.material_label || ''}`;
+      // T75 F22 · …and its state: an outline is not merged into a cut part.
+      const key = `${r.part}|${r.w}|${r.h}|${r.thickness}|${r.edge}|${r.material_key || r.material_label || ''}|${r.readiness}`;
       const merged = cutRows.get(key);
       if (merged) merged.qty += r.qty;
       else cutRows.set(key, { ...r, qty: r.qty, units: new Set([r.unit_num]) });
@@ -133,8 +153,117 @@ export function buildBom(entries, {
       const key = `${h.role}|${h.spec_label}`;
       const merged = hardwareRows.get(key);
       if (merged) { merged.qty += h.qty; merged.units.add(result.unitNum); } else {
-        hardwareRows.set(key, { ...h, qty: h.qty, units: new Set([result.unitNum]) });
+        hardwareRows.set(key, {
+          ...h, qty: h.qty, units: new Set([result.unitNum]), readiness: 'bought',
+        });
       }
+    }
+  }
+
+  // ─── T75 F5 · THE WORKTOP REACHES THE BOM ──────────────────────────────
+  //
+  // *"one JOINT RECORD at the corner ... three worktop connector bolts as a
+  // hardware BOM line; the bolt pockets are a NOTE ... A [cut-out] record is
+  // drawn on the worktop sheet ... and listed as a BOM note."*  The slab is a
+  // design-layer piece `computeCabinet` never reads (T30's law, held), so it
+  // is resolved HERE from the design's records and the units it lies on, and
+  // listed as its own block: one line per slab (bought, its size), the bolts
+  // as an order line, and every cut-out and joint as a NOTE line. Only when a
+  // room is handed in, because a slab that turns a corner is resolved in two
+  // walls' frames; every caller written before tonight passes none and gets
+  // exactly the BOM it got.
+  if (design && room) {
+    const slabs = worktopsFor({
+      records: migrateDesign(design).worktops,
+      units: entries.map((e) => e.unit).filter(Boolean),
+      profile,
+      walls: roomWalls(room),
+    });
+    if (slabs.length) {
+      const rows = [];
+      const joints = new Map();
+      for (const slab of slabs) {
+        const g = slab.geometry;
+        const area = Array.isArray(g.outline) ? polygonAreaM2(g.outline) : roundTo((g.w * g.d) / 1e6, 4);
+        worktopArea += area;
+        rows.push({
+          unit_num: 'WT',
+          id: slab.slabId || slab.id,
+          part: 'WORKTOP',
+          role: 'worktop',
+          material_role: 'worktop',
+          material_label: g.decor || `Worktop ${g.thickness} mm${g.shape === 'L' ? ', L-shaped' : ''}`,
+          material_key: null,
+          material_id: null,
+          w: roundTo(g.w, 1),
+          h: roundTo(g.d, 1),
+          qty: 1,
+          thickness: g.thickness,
+          edge: '',
+          edge_m: 0,
+          area_m2: area,
+          readiness: 'bought',
+        });
+        for (const c of slab.cutouts || []) {
+          rows.push({
+            unit_num: 'WT',
+            id: `${slab.slabId || slab.id} ${c.kind} cut-out`,
+            part: 'WORKTOP-CUTOUT',
+            role: 'worktop_note',
+            material_role: 'note',
+            material_label: `NOTE: ${c.note}`,
+            w: c.w,
+            h: c.d,
+            qty: 1,
+            thickness: g.thickness,
+            edge: '',
+            edge_m: 0,
+            area_m2: 0,
+            readiness: c.readiness,
+          });
+        }
+        if (slab.joint) joints.set(slab.id, slab.joint);
+      }
+      for (const [id, joint] of joints) {
+        rows.push({
+          unit_num: 'WT',
+          id: `${id} joint`,
+          part: 'WORKTOP-JOINT',
+          role: 'worktop_note',
+          material_role: 'note',
+          material_label: `NOTE: ${joint.note}`,
+          w: 0,
+          h: 0,
+          qty: 1,
+          thickness: 0,
+          edge: '',
+          edge_m: 0,
+          area_m2: 0,
+          readiness: joint.readiness,
+        });
+        const key = 'worktop_bolts|connector bolt';
+        const merged = hardwareRows.get(key);
+        if (merged) { merged.qty += joint.boltCount; merged.units.add('WT'); } else {
+          hardwareRows.set(key, {
+            role: 'worktop_bolts',
+            label: 'Worktop connector bolts',
+            qty: joint.boltCount,
+            unit: 'pcs',
+            spec: { per_joint: joint.boltCount },
+            spec_label: 'connector bolt',
+            units: new Set(['WT']),
+            readiness: 'bought',
+          });
+        }
+      }
+      units.push({
+        unitId: 'worktops',
+        unitNum: 'WT',
+        type: 'WORKTOP',
+        rows,
+        totals: { pieces_total: rows.filter((r) => r.role === 'worktop').length },
+        warnings: [],
+      });
     }
   }
 
@@ -158,8 +287,22 @@ export function buildBom(entries, {
       edging_m: roundTo(boardEdging, 3),
       edging_front_m: roundTo(frontEdging, 3),
       edging_total_m: roundTo(boardEdging + frontEdging, 3),
+      // T75 F5 · present only when a slab is listed, so every BOM before
+      // tonight reads the same totals.
+      ...(worktopArea > 0 ? { worktop_area_m2: roundTo(worktopArea, 4) } : {}),
     },
   };
+}
+
+/** T75 F5 · the area of a plan outline in m2 (the shoelace). */
+function polygonAreaM2(points) {
+  let a = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
+    a += x1 * y2 - x2 * y1;
+  }
+  return roundTo(Math.abs(a) / 2 / 1e6, 4);
 }
 
 /**
@@ -274,7 +417,8 @@ export function sheetsFor(m2, sheet) {
  * the same board or the two documents contradict each other, so this set is the
  * exact image of `groups.js:125`:
  *
- *     role 'front' | 'end_panel' | 'mask'  → fronts
+ *     role 'front' | 'end_panel' | 'mask' | 'blind_blank' (T75 F3) | 'false_front' (T75 F14)
+ *       | 'pelmet' (T75 F15)  → fronts
  *     everything else                      → carcasses
  *
  * Note what that puts on the CARCASS board: the plinth and the infills. They
@@ -283,7 +427,7 @@ export function sheetsFor(m2, sheet) {
  * workshop cuts them off it. `test/t39-bom-engine.test.js` walks every cabinet
  * and asserts the two answers agree panel by panel.
  */
-const FRONT_SHEET_PARTS = new Set(['door', 'drawer_front', 'false_front', 'end_panel', 'mask']);
+const FRONT_SHEET_PARTS = new Set(['door', 'drawer_front', 'false_front', 'end_panel', 'mask', 'pelmet']);
 
 export function sheetFamilyOfPart(partId) {
   return FRONT_SHEET_PARTS.has(partId) ? 'fronts' : 'carcasses';
@@ -374,6 +518,10 @@ export function buildCabinetPartQtys(computed, unit, settings = {}) {
   if (screws > 0) addQty('screw_confirmat', screws);
   const puzzles = drills.filter((d) => d.kind === 'puzzle').length;
   if (puzzles > 0) addQty('puzzle_screw', puzzles);
+  // T75 F23 · *"dowels count in the BOM by the hardware law"*: one dowel per
+  // pair, counted ONCE, off its FACE hole (the edge bore is its other half).
+  const dowels = drills.filter((d) => d.kind === 'dowel' && d.face !== 'edge').length;
+  if (dowels > 0) addQty('dowel', dowels);
   // Handles are placements, not a hardware role — the engine publishes them on
   // `drillSummary.handles`, and the key is ABSENT when there are none.
   const handles = computed.drillSummary?.handles?.length || 0;
@@ -383,7 +531,8 @@ export function buildCabinetPartQtys(computed, unit, settings = {}) {
   //   false_front        a FIX front comes off the engine as a `FRONT` today
   //   top_box_connector  no LISP line fixes a top box to its host, so there is
   //                      no count to read (rule: no invented numbers)
-  //   dowel, glue        the joiner's own quantities — F8's custom rows
+  //   glue               the joiner's own quantity, F8's custom rows
+  //   (dowel has a producer since T75 F23: the dowel unit's pairs, above)
   //   led_profile        derived at PROJECT level, from the strip metres
   // Each can still be ASSIGNED a product; none of them fabricates a quantity.
 
@@ -458,6 +607,9 @@ export function mergeUnitMaterials(unitsIn = [], {
   ALL_PARTS: parts = REGISTRY_PARTS,
   profile = null,
   design = null,
+  // T75 F21 · the prices this job was quoted at (`project.warehouseStamp`):
+  // a material in it is priced at its quoted figure, never silently at today's.
+  pricedAt = null,
 } = {}) {
   // `= []` only defends against `undefined`; a caller with nothing to show may
   // well hand us a null, and a BOM screen must not be the thing that crashes.
@@ -484,12 +636,25 @@ export function mergeUnitMaterials(unitsIn = [], {
   };
 
   const costOf = (mat) => {
+    // T75 F21 · the quoted price first: *"prices change a quote only by the
+    // owner's decision"*.
+    const quoted = pricedAt?.prices?.[mat?.id];
+    if (quoted && quoted.price != null) return Number(quoted.price) || 0;
     // CLAUDE.md F5 says `cc_materials.cost_per_unit`; Cabinet Core's own table
     // (sql/001_init.sql) calls the column `price`. Both are read, so the spec's
     // name works the day somebody adds it and today's column works now.
     const v = mat?.cost_per_unit ?? mat?.price;
     return Number(v) || 0;
   };
+  // T75 F21 · *"The purchase BOM export carries `jc_uuid` and the material code
+  // on every line that has them, so JoineryCore can import the shopping list by
+  // identity."*  The code is the stock row's own `code`, else the warehouse's
+  // `item_number`; and where the price came from rides beside it.
+  const identityOf = (mat) => ({
+    jc_uuid: mat?.jc_uuid ? String(mat.jc_uuid) : null,
+    code: mat?.code ?? mat?.item_number ?? null,
+    price_source: pricedAt?.prices?.[mat?.id] ? 'quoted' : (mat?.price_source || 'stock list'),
+  });
 
   const consume = (partQtys, family) => {
     for (const part of parts) {
@@ -509,6 +674,7 @@ export function mergeUnitMaterials(unitsIn = [], {
           costPerUnit: costOf(mat),
           source: 'material',
           material: mat,
+          ...identityOf(mat),
           group: part.group,
           _assigned: true,
         }, total, { partId: part.id, family: sheetFamily });
@@ -547,6 +713,7 @@ export function mergeUnitMaterials(unitsIn = [], {
           costPerUnit: costOf(mat),
           source: 'material',
           material: mat,
+          ...identityOf(mat),
           group: 'consumable',
           _assigned: true,
         }, total, { partId: cp.id });

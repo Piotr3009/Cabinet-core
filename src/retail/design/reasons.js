@@ -177,11 +177,64 @@ export const REASONS = {
   wallUnitGoesBeside: 'A wall unit, hung beside this wardrobe: its top level with the wardrobe\'s, as deep as it.',
 
   /**
+   * T75 F3 · NOT a refusal: the note under ADD CORNER WARDROBE. PREDICATE:
+   * `adapter.addCornerWardrobe()`, which tries every internal corner of the
+   * room through `store.addUnit`, nearest first.
+   */
+  cornerWardrobeGoesIn: 'A corner wardrobe: one door at the reachable end, a blank where the next wardrobe hides it.',
+
+  /**
+   * T75 F3 · PREDICATE: `adapter.addCornerWardrobe()` tried every internal
+   * corner of the room and none had room for a corner wardrobe.
+   */
+  noFreeCorner: 'There is no free corner in this room for a corner wardrobe: move or remove something first.',
+
+  /**
    * T74 F7 · PREDICATE: no unit in the design is a wardrobe standing on the
    * floor (`adapter.isFloorWardrobe`: the wardrobe family, riding on nothing,
    * not hung on the wall), so there is nothing for a wall unit to hang beside.
    */
   wallUnitNeedsAWardrobe: 'Add a wardrobe first: a wall unit hangs beside one.',
+
+  /**
+   * T75 F16 · NOT a refusal: the note under ADD CHEST OF DRAWERS. PREDICATE:
+   * `adapter.addChestOfDrawers()`, `store.addUnit('WARDROBE_CHEST3')` beside
+   * the selected wardrobe, born at its depth.
+   */
+  chestGoesBeside: 'A chest of three drawers beside this wardrobe, as deep as it, its top level with the wardrobe\'s drawers.',
+
+  /**
+   * T75 F16 · PREDICATE: no unit in the design is a wardrobe standing on the
+   * floor (`adapter.isMainWardrobe`), so there is nothing to stand it beside.
+   */
+  chestNeedsAWardrobe: 'Add a wardrobe first: a chest of drawers stands beside one.',
+
+  /**
+   * T75 F17 · NOT a refusal: the note under ADD DESK. PREDICATE:
+   * `adapter.addDesk()`, `store.addUnit('WARDROBE_DESK')` beside the selected
+   * wardrobe; the store hangs it at `wardrobeDesk.defaults.mountHeight` and
+   * gives it its top (`addWorktop`, the desk's own thickness).
+   */
+  deskGoesBeside: 'A desk hung beside this wardrobe: one drawer under a 25 mm top, its front on the wardrobe\'s front.',
+
+  /**
+   * T75 F17 · PREDICATE: no unit in the design is a wardrobe standing on the
+   * floor (`adapter.isMainWardrobe`), so there is nothing to hang it beside.
+   */
+  deskNeedsAWardrobe: 'Add a wardrobe first: a desk hangs beside one.',
+
+  /**
+   * T75 F18 · NOT a refusal: the note under ADD LOW UNIT. PREDICATE:
+   * `adapter.addLowUnit()`, `store.addUnit('WARDROBE_LOW')` beside the
+   * selected wardrobe, born at its depth, its door on.
+   */
+  lowUnitGoesBeside: 'A low cupboard beside this wardrobe, as deep as it, with its door.',
+
+  /**
+   * T75 F18 · PREDICATE: no unit in the design is a wardrobe standing on the
+   * floor (`adapter.isMainWardrobe`), so there is nothing to stand it beside.
+   */
+  lowUnitNeedsAWardrobe: 'Add a wardrobe first: a low unit stands beside one.',
 
   /**
    * T74 F13 · NOT a refusal: the note under INSERT PANEL. PREDICATE:
@@ -257,6 +310,13 @@ export const REASONS = {
    * half of the vocabulary.
    */
   kitAlreadyThere: (what) => `There is already a ${what} in this column.`,
+
+  /**
+   * T75 F16/F19 · PREDICATE: `type.besideWardrobe` (a chest of drawers, a
+   * desk, a low unit), where `store.addWardrobeKit` refuses every bought
+   * hanging fitting.
+   */
+  kitGoesInAWardrobe: 'This goes in a wardrobe: a chest, a desk or a low unit has no hanging space for it.',
 
   /**
    * T61 F3 · PREDICATE: `adapter.topBoxesOn(hostId).length` — the store's own

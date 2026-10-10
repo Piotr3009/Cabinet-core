@@ -45,6 +45,15 @@ import { groupOfPanel } from './cnc/groups.js';
 import { frontClearances, frontGapRows, carcassGaps } from './frontClearance.js';
 import { unitFindings } from './cnc/exportGate.js';
 import { unitBase, unitTop, hasTopInfill } from './runs.js';
+// T75 F1 · the corner rulebook, the one detection every consumer reads.
+import {
+  blindClearanceView, cornersOf, cornerChecks, lClearanceView,
+} from './corners.js';
+import { roomWalls } from './room.js';
+// T75 F22 · what the machine does not finish, by unit.
+import { notCutParts, readinessCheckMessage, readinessOf } from './readiness.js';
+import { worktopsFor } from './worktop.js';
+import { migrateDesign } from './design.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
 import { takesPlinth } from './autoparts.js';
@@ -194,6 +203,45 @@ export const CHECKS = Object.freeze([
   // slope cuts cannot hold its hinges 150 mm clear of the apex at the house
   // spacing: REFUSED in words, never squashed. RED: a person decides.
   { n: 26, level: 'red', label: 'Hinges too near the slope\'s apex' },
+  // ─── T75 F1 · A CORNER WITH NOTHING IN IT ───────────────────────────────
+  //
+  // *"`'none'` is a CHECK, in words, naming both units: the engine never
+  // guesses a post for a job that has not asked for one."*  Two plain units
+  // meeting in an internal corner with no post, no blind kit and no L: the
+  // door at the corner cannot open. RED: a person decides (`engine/corners.js`).
+  { n: 27, level: 'red', label: 'Corner with nothing between the runs' },
+  // ─── T75 F7 · A NOTCH THE CARCASS CANNOT TAKE ───────────────────────────
+  //
+  // *"The Check refuses a notch that eats a joint it cannot re-plan, naming
+  // the board."*  The engine asks the notch of the parent's own cut
+  // (`engine/notch.js notchVerdict`, KIT_NOTCH.lsp `notch-refusal`, D7, D8)
+  // and, refused, cuts the parent and says why (`NOTCH_REFUSED`). This is
+  // that sentence in front of the joiner. RED: a person decides.
+  { n: 28, level: 'red', label: 'Corner notch refused' },
+  // ─── T75 F21 · THE PRICE LIST MOVED SINCE THE JOB WAS PRICED ────────────
+  //
+  // *"opening a project whose catalogue has moved since raises a CHECK, in
+  // words, never a silent recompute (prices change a quote only by the
+  // owner's decision)."*  YELLOW: the quote stands; the owner decides.
+  { n: 29, level: 'yellow', label: 'The price list moved since this job was priced' },
+  // ─── T75 F22 · WHAT THE MACHINE DOES NOT FINISH ─────────────────────────
+  //
+  // *"the Check lists them by unit."*  Every part that is not `cut`
+  // (`engine/readiness.js`): an outline with no holes (the blind blank, a
+  // box-out board, the lattice) or a thing fitted on site (a dowel's edge
+  // bore, the worktop's joint and cut-outs). YELLOW: it informs, it never
+  // blocks; the joiner knows what is his before the job reaches the shop.
+  { n: 30, level: 'yellow', label: 'Parts the machine does not finish' },
+  // ─── T75 F23 · THE JOINT SYSTEM: THE DOWEL GATE, AND A REFUSAL ───────────
+  //
+  // *"THE GATE: the CNC export REFUSES a dowel job while
+  // `joints.dowel.confirmed` is false, in words ("the dowel pattern is
+  // proposed, not confirmed by the owner"); the Check says the same."*  One
+  // red per dowel unit while the gate is shut (`DOWEL_GATE`), and one per unit
+  // whose chosen system the engine refused and cut with the puzzle instead
+  // (`JOINTS_REFUSED`: Cabineo reserved, a kit the LISP's table does not
+  // describe, a dowel that meets a hole). RED: a person decides.
+  { n: 31, level: 'red', label: 'Joint system: dowels not confirmed, or refused' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -442,6 +490,8 @@ export function shelfHingeFindings({
 export function runChecks({
   entries = [], units = null, room = null, design = null, materials = [], profile = null,
   wallWidthOf = null, slopeShortfallOf = null,
+  // T75 F21 · the quoted prices today's list no longer says (warehouse.js `catalogueMoves`).
+  priceMoves = [],
 } = {}) {
   const list = units || entries.map((e) => e.unit).filter(Boolean);
   const out = [];
@@ -547,7 +597,11 @@ export function runChecks({
     // already decided the front crosses the line, and a check that worked it
     // out a second way would be a second opinion about one board.
     for (const wn of result.warnings || []) {
-      const n = { SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21 }[wn.code];
+      // T75 F7 · #28: the notch the engine refused, in its own words.
+      // T75 F23 · #31: the dowel gate, and a joint system refused, likewise.
+      const n = {
+        SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28, DOWEL_GATE: 31, JOINTS_REFUSED: 31,
+      }[wn.code];
       if (!n) continue;
       out.push(finding(n, 'red', at(wn.panel || null, {
         message: `${unitNum}: ${wn.message}`,
@@ -771,9 +825,14 @@ export function runChecks({
   }
 
   // ── #2 front gaps, under F4's neighbour measure ─────────────────────────
+  // T75 F3: a blind kit's leaf is measured against its BLANK, not its carcass
+  // end (`corners.js blindClearanceView`); every other unit passes untouched.
+  // T75 F4: …and an L's two leaves each on its own arm's wall
+  // (`corners.js lClearanceView`), so neighbours on both walls meet them.
+  const view = lClearanceView(blindClearanceView(entries), room ? roomWalls(room) : [], profile);
   const clearances = frontClearances({
-    entries,
-    units: list,
+    entries: view.entries,
+    units: [...list.filter((u) => !view.units.some((v) => v.id === u.id)), ...view.units],
     baseOf: (u) => unitBase(u, profile),
     wallWidthOf,
     profile,
@@ -1006,6 +1065,88 @@ export function runChecks({
         subject: { unitId: entry.unit?.id || null, panelId: pnl.id, editor: 'element' },
         hingesWas: Number(h.was),
         hingesNow: Number(h.now),
+      }));
+    }
+  }
+
+  // ── #29 the price list moved since the job was priced (T75 F21) ──────────
+  if ((priceMoves || []).length) {
+    const money = (v) => (v == null ? 'gone from the list' : Number(v).toFixed(2));
+    const said = priceMoves.map((m) => `${m.name} ${money(m.was)} to ${money(m.now)}`).join('; ');
+    out.push(finding(29, 'yellow', {
+      unitId: null,
+      unitNum: '',
+      panelId: null,
+      message: `The price list has moved since this job was priced: ${said}. The quote keeps the prices it `
+        + 'was priced at; Accept today\'s prices in the BOM panel to re-price it.',
+      subject: null,
+    }));
+  }
+
+  // ── #30 the parts the machine does not finish (T75 F22) ───────────────────
+  //
+  // One finding per unit, every part named with its state; the worktop's
+  // joint and cut-outs (a design-layer piece, resolved only where there is a
+  // room to resolve it in) as one more, under WT.
+  for (const { unit, result } of entries) {
+    if (!unit || !result) continue;
+    const lines = notCutParts(result);
+    if (!lines.length) continue;
+    out.push(finding(30, 'yellow', {
+      unitId: unit.id,
+      unitNum: result.unitNum,
+      panelId: lines[0].id,
+      message: readinessCheckMessage([{ unitNum: result.unitNum, lines }]),
+      subject: { unitId: unit.id, panelId: lines[0].id, editor: 'element' },
+    }));
+  }
+  if (room && design) {
+    const slabs = worktopsFor({
+      records: migrateDesign(design).worktops, units: list, profile, walls: roomWalls(room),
+    });
+    const lines = [];
+    const joints = new Set();
+    for (const slab of slabs) {
+      for (const c of slab.cutouts || []) {
+        const state = readinessOf(c);
+        if (state !== 'cut') lines.push({ id: `${c.kind} cut-out over ${c.unitNum || c.unitId}`, state });
+      }
+      if (slab.joint && !joints.has(slab.id)) {
+        joints.add(slab.id);
+        const state = readinessOf(slab.joint);
+        if (state !== 'cut') lines.push({ id: 'worktop joint', state });
+      }
+    }
+    if (lines.length) {
+      out.push(finding(30, 'yellow', {
+        unitId: null,
+        unitNum: 'WT',
+        panelId: null,
+        message: readinessCheckMessage([{ unitNum: 'WT', lines }]),
+        subject: null,
+      }));
+    }
+  }
+
+  // ── #27 a corner with nothing between the runs (T75 F1) ─────────────────
+  //
+  // Asked of the rulebook (`engine/corners.js`), never re-derived: two plain
+  // units meeting in an internal corner with no post between them. Only where
+  // there is a room to have corners in.
+  if (room) {
+    const labelOf = (id) => {
+      const u = list.find((x) => x.id === id);
+      return u?.params?.unit_num || id;
+    };
+    const corners = cornersOf({ units: list, walls: roomWalls(room), profile });
+    for (const c of cornerChecks(corners, labelOf)) {
+      out.push(finding(27, 'red', {
+        unitId: c.unitIds[1],
+        unitNum: labelOf(c.unitIds[1]),
+        panelId: null,
+        message: c.message,
+        subject: { unitId: c.unitIds[1], editor: 'cabinet' },
+        cornerUnitIds: c.unitIds,
       }));
     }
   }

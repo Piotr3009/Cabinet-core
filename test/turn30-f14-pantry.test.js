@@ -172,6 +172,9 @@ test('F14 the mechanism cannot reach a hole, a box or an order line', () => {
 test('F14 no kit written before tonight became internal', () => {
   for (const id of UNIT_TYPE_ORDER) {
     if (id === 'PANTRY') continue;
+    // AMENDED BY T75 F13: BUD_INT is written tonight with PANTRY's own line,
+    // *"`BUD` with `drawerStyle: 'wardrobe'`, `internalDrawers: 'all'`"*.
+    if (id === 'BUD_INT') continue;
     assert.notEqual(getUnitType(id).internalDrawers, 'all', id);
   }
   // …and the kits that HAVE drawer faces still cut them.

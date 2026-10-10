@@ -123,3 +123,32 @@ test('F13 — KIT_WARDROBE_FULL carries the `;; --- SPLIT DOORS (T35)` marker', 
   const text = readFileSync(join(LISP_DIR, 'KIT_WARDROBE_FULL.lsp'), 'utf8');
   assert.match(text, /^;; --- SPLIT DOORS \(T35\)$/m);
 });
+
+// ─── T75 · LISP FIRST: THE TURN'S NEW KITS, PRESENT AND BALANCED ────────────
+//
+// CLAUDE.md T75 LAWS: *"LISP IS LAW, and "lisp najpierw". Every new cut
+// geometry in this turn (the L carcass, the blind blank, the corner notch, the
+// dowel pattern) is written as `reference/lisp/*.lsp` FIRST, paren-balanced in
+// `test/turn35-lisp-parens.test.js` (14 become 14 + the new files)."*  The walk
+// above already balances every file in the folder; these name the new ones so
+// that one deleted by accident fails by name. Existing LISP is untouched.
+
+const T75_KITS = ['KIT_CORNER_L.lsp', 'KIT_NOTCH.lsp', 'SKYLON_JOINTS_DOWEL.lsp'];
+
+test('T75 · the new kits are in the folder, and the old fourteen are still there', () => {
+  for (const kit of T75_KITS) assert.ok(KITS.includes(kit), `${kit} is missing`);
+  assert.ok(KITS.length >= 14 + T75_KITS.length, `${KITS.length} kits`);
+});
+
+for (const kit of T75_KITS) {
+  test(`T75 · ${kit} balances 0/0 and carries its NUMBERS block`, () => {
+    const text = readFileSync(join(LISP_DIR, kit), 'utf8');
+    const { balance, min, open } = parenScan(text);
+    assert.equal(balance, 0);
+    assert.equal(min, 0);
+    assert.ok(open > 100, 'a kit, not a stub');
+    assert.match(text, /NUMBERS/, 'the numbers the engine mirrors line for line');
+    assert.doesNotMatch(text, /[\u2013\u2014]/, 'no em or en dash');
+  });
+}
+

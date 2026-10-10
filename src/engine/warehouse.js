@@ -79,9 +79,32 @@ export const PRICE_TYPED = 'typed';
 export const PRICE_IMPORT = 'import';
 
 const str = (v) => (v == null ? '' : String(v).trim());
+// ─── T75 F21 · A NUMBER, READ THE WAY A JOINERYCORE FILE WRITES IT ────────────
+//
+// verify/t75/p07-probe.md measured the old reading on JoineryCore-shaped rows:
+// `42,50` came back as 4250 and `n/a` as 0. A price list from a Polish locale
+// would have multiplied every price by a hundred. Now: a unit or a currency
+// sign is dropped; where a comma and a point are both present the LAST one is
+// the decimal and the other groups thousands; a lone comma with exactly three
+// digits after it groups thousands (`1,234`), any other lone comma is the
+// decimal (`42,50`); a space groups thousands (`1 234,56`). Anything that is
+// still not a number is NULL, never 0: a price nobody gave is not free.
 const numOrNull = (v) => {
-  if (v == null || v === '') return null;
-  const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
+  if (v == null) return null;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+  let t = String(v).trim().replace(/[\s\u00a0]/g, '');
+  if (t === '') return null;
+  t = t.replace(/[^0-9.,\-eE]/g, '');
+  if (!/[0-9]/.test(t)) return null;
+  const comma = t.lastIndexOf(',');
+  const point = t.lastIndexOf('.');
+  if (comma >= 0 && point >= 0) {
+    t = comma > point ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+  } else if (comma >= 0) {
+    t = /^-?\d{1,3}(,\d{3})+$/.test(t) ? t.replace(/,/g, '') : t.replace(/,/g, '.');
+  }
+  if (!/^-?(\d+\.?\d*|\.\d+)([eE]-?\d+)?$/.test(t)) return null;
+  const n = Number(t);
   return Number.isFinite(n) ? n : null;
 };
 
@@ -198,6 +221,36 @@ export function toCsv(rows = []) {
   return `${lines.join('\r\n')}\r\n`;
 }
 
+/**
+ * T75 F21 · the file split into RECORDS with quotes honoured: a newline inside
+ * a quoted cell (a note of two lines) is part of the cell, not the end of the
+ * row. The probe measured the old split losing the second line of every such
+ * note and dropping it silently.
+ */
+function splitCsvRecords(text) {
+  const out = [];
+  let rec = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text[i];
+    if (c === '"') {
+      if (quoted && text[i + 1] === '"') { rec += '""'; i += 1; continue; }
+      quoted = !quoted;
+      rec += c;
+      continue;
+    }
+    if (!quoted && (c === '\n' || c === '\r')) {
+      if (c === '\r' && text[i + 1] === '\n') i += 1;
+      out.push(rec);
+      rec = '';
+      continue;
+    }
+    rec += c;
+  }
+  if (rec !== '') out.push(rec);
+  return out;
+}
+
 /** One CSV line, split with quotes honoured. */
 function splitCsvLine(line) {
   const out = [];
@@ -227,7 +280,7 @@ function splitCsvLine(line) {
  * @returns {{rows:Array, error:string|null}}
  */
 export function fromCsv(text) {
-  const lines = String(text || '').split(/\r?\n/).filter((l) => l.trim() !== '');
+  const lines = splitCsvRecords(String(text || '')).filter((l) => l.trim() !== '');
   if (!lines.length) return { rows: [], error: 'That file is empty.' };
   const header = splitCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
   const known = header.filter((h) => CSV_COLUMNS.includes(h));
@@ -274,11 +327,19 @@ export function fromCsv(text) {
 export function mergeImport(existing = [], incoming = []) {
   const rows = [...existing];
   const byUuid = new Map();
-  rows.forEach((r, i) => { if (r.jc_uuid) byUuid.set(r.jc_uuid, i); });
+  // T75 F21 · ONE identity, however it is printed: JoineryCore's Postgres
+  // prints a uuid in lower case, a hand or a spreadsheet may not. The probe
+  // measured the same uuid in upper case ADDED as a second row.
+  const keyOf = (u) => String(u ?? '').trim().toLowerCase();
+  rows.forEach((r, i) => { if (r.jc_uuid) byUuid.set(keyOf(r.jc_uuid), i); });
 
   let added = 0;
   let updated = 0;
   const repriced = [];
+  // T75 F21 · a NEW row arriving with a number the warehouse already wears is
+  // given the next free one, and SAID: two rows wearing one number is the
+  // fault T40 spent a turn on (and the table's unique key would refuse it).
+  const renumbered = [];
 
   for (const raw of incoming) {
     // THIS IS THE IMPORT, so this is where a price becomes an imported price.
@@ -287,10 +348,15 @@ export function mergeImport(existing = [], incoming = []) {
     // marked `typed`, and the next import would then have reported it as a
     // hand-typed figure being overruled by a machine that had written it.
     const next = migrateMaterial({ ...raw, price_source: PRICE_IMPORT }, { rows });
-    const at = next.jc_uuid ? byUuid.get(next.jc_uuid) : undefined;
+    const at = next.jc_uuid ? byUuid.get(keyOf(next.jc_uuid)) : undefined;
     if (at == null) {
+      if (rows.some((r) => r.item_number === next.item_number)) {
+        const was = next.item_number;
+        next.item_number = nextItemNumber(rows);
+        renumbered.push({ name: next.name, was, now: next.item_number });
+      }
       rows.push(next);
-      if (next.jc_uuid) byUuid.set(next.jc_uuid, rows.length - 1);
+      if (next.jc_uuid) byUuid.set(keyOf(next.jc_uuid), rows.length - 1);
       added += 1;
       continue;
     }
@@ -312,16 +378,94 @@ export function mergeImport(existing = [], incoming = []) {
     rows[at] = { ...next, id: was.id, item_number: was.item_number };
     updated += 1;
   }
-  return { rows, added, updated, repriced };
+  return {
+    rows, added, updated, repriced, renumbered,
+  };
+}
+
+/**
+ * ─── T75 F21 · WHAT A PROJECT WAS PRICED AGAINST ───────────────────────────
+ *
+ * `project.warehouseStamp`: the stamp of the materials the project assigns,
+ * and each one's price and `price_source` at that moment. A material assigned
+ * since joins at today's price; one already in it keeps the price the job was
+ * quoted at until the owner accepts today's (`keep` merges, never overwrites).
+ */
+export function priceSnapshot({
+  assignments = null, materials = [], at = null, keep = null,
+} = {}) {
+  const ids = assignedMaterialIds(assignments);
+  const prices = {};
+  for (const m of materials || []) {
+    if (!m || !ids.has(String(m.id))) continue;
+    prices[m.id] = {
+      name: str(m.name) || String(m.id),
+      price: numOrNull(m.price ?? m.cost_per_unit),
+      price_source: str(m.price_source) || 'stock list',
+      jc_uuid: str(m.jc_uuid) || null,
+    };
+  }
+  const merged = { ...prices, ...(keep?.prices || {}) };
+  const rows = Object.entries(merged).map(([id, p]) => ({ id, jc_uuid: p.jc_uuid, price: p.price }));
+  return { stamp: catalogueStamp(rows), at, prices: merged };
+}
+
+/**
+ * Which quoted prices today's list no longer says: `[{ id, name, was, now }]`
+ * (`now` null when the material has left the list). Empty when nothing moved,
+ * or when the project was never priced.
+ */
+export function catalogueMoves(snapshot, { materials = [] } = {}) {
+  if (!snapshot?.prices) return [];
+  const byId = new Map((materials || []).filter(Boolean).map((m) => [String(m.id), m]));
+  const out = [];
+  for (const [id, p] of Object.entries(snapshot.prices)) {
+    const m = byId.get(String(id));
+    const now = m ? numOrNull(m.price ?? m.cost_per_unit) : null;
+    if (m && (now ?? null) === (p.price ?? null)) continue;
+    if (m && now != null && p.price != null && Math.abs(now - p.price) < 1e-9) continue;
+    out.push({
+      id, name: p.name, was: p.price, now,
+    });
+  }
+  return out;
+}
+
+/**
+ * ─── T75 F21 · THE CATALOGUE'S STAMP ───────────────────────────────────────
+ *
+ * *"The project stores the `warehouseStamp` it was priced against ...;
+ * opening a project whose catalogue has moved since raises a CHECK, in words,
+ * never a silent recompute."*  No row carries an `updated_at` the app reads
+ * (the probe), so the stamp is a fingerprint of what prices a job: each
+ * material's identity and price, sorted, hashed. Two lists that price every
+ * material the same have the same stamp, whatever order they arrived in.
+ */
+export function catalogueStamp(materials = []) {
+  const key = (m) => [str(m?.id), str(m?.jc_uuid).toLowerCase(), numOrNull(m?.price ?? m?.cost_per_unit) ?? ''].join('|');
+  const text = (materials || []).filter(Boolean).map(key).sort().join('\n');
+  // FNV-1a, 32 bits, in hex: a stamp to compare, not a secret to keep.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
 }
 
 /** The sentence the panel prints after an import. */
-export function importSummary({ added = 0, updated = 0, repriced = [] } = {}) {
+export function importSummary({
+  added = 0, updated = 0, repriced = [], renumbered = [],
+} = {}) {
   const parts = [];
   parts.push(`${added} new`);
   parts.push(`${updated} matched on jc_uuid and overwritten`);
   if (repriced.length) {
     parts.push(`${repriced.length} hand-typed price${repriced.length === 1 ? '' : 's'} changed`);
+  }
+  // T75 F21 · a number already worn was given the next free one, and said.
+  if (renumbered.length) {
+    parts.push(`${renumbered.length} given a new item number (${renumbered.map((r) => `${r.was} to ${r.now}`).join(', ')})`);
   }
   return `${parts.join(' · ')}.`;
 }
@@ -357,8 +501,37 @@ export function usedInProject(rows = [], { names = [], uuids = [] } = {}) {
   // line the joiner has to strike out costs him less than one he never saw.
   const key = (v) => String(v || '').toLowerCase().replace(/\s+/g, '');
   const wantNames = new Set(names.map(key).filter(Boolean));
-  const wantUuids = new Set(uuids.map((u) => String(u || '')).filter(Boolean));
-  return rows.filter((r) => (r.jc_uuid && wantUuids.has(r.jc_uuid)) || wantNames.has(key(r.name)));
+  // T75 F21 · a uuid is one identity however it is printed.
+  const wantUuids = new Set(uuids.map((u) => String(u || '').trim().toLowerCase()).filter(Boolean));
+  return rows.filter((r) => (r.jc_uuid && wantUuids.has(String(r.jc_uuid).trim().toLowerCase())) || wantNames.has(key(r.name)));
+}
+
+/**
+ * ─── T75 F21 · THE UUIDS A PROJECT ACTUALLY USES ──────────────────────────
+ *
+ * The probe measured the project export handed EVERY warehouse uuid as "used",
+ * so a project naming none of three JoineryCore rows exported all three. The
+ * uuids a project uses are those of the stock materials its assignments name
+ * (every `material_id` in the record, however deep), read off the stock list.
+ */
+/** Every `material_id` a project's assignment record names, however deep. */
+function assignedMaterialIds(assignments) {
+  const ids = new Set();
+  const walk = (v) => {
+    if (!v || typeof v !== 'object') return;
+    if (Array.isArray(v)) { v.forEach(walk); return; }
+    if (v.material_id != null) ids.add(String(v.material_id));
+    Object.values(v).forEach(walk);
+  };
+  walk(assignments);
+  return ids;
+}
+
+export function projectUuids({ assignments = null, materials = [] } = {}) {
+  const ids = assignedMaterialIds(assignments);
+  return (materials || [])
+    .filter((m) => m && ids.has(String(m.id)) && m.jc_uuid)
+    .map((m) => String(m.jc_uuid));
 }
 
 /**

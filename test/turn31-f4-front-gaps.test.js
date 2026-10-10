@@ -58,9 +58,14 @@ test('A. the matrix IS the owner’s six numbers, and the seventh is PARKED', ()
   assert.equal(m[NEIGHBOUR.APPLIANCE], 0, '4. an appliance provides the 3 itself');
   assert.equal(m[NEIGHBOUR.WALL], 3, '5. a bare wall');
   assert.equal(m[NEIGHBOUR.NONE], 1.5, '6. the end of a run');
-  // 7. An L-shape corner is PARKED with the L-shape unit. `null` and not 1.5:
-  // a default here would be the app inventing a rule the owner has not agreed.
-  assert.equal(m[NEIGHBOUR.CORNER], null, '7. the L-shape corner is parked');
+  // 7. AMENDED BY T75 F2: rule 7 gets its number from the profile
+  // (`doors.clearance.corner`, T75 proposed, owner to confirm): *"Rule 7 gets
+  // its number ... (a post is a rigid neighbour, like an infill). The Check
+  // that said "parked" now measures."*  A profile that names none keeps it
+  // PARKED: `null` and not 1.5, never an invented rule.
+  assert.equal(m[NEIGHBOUR.CORNER], 3, '7. the corner post, a rigid neighbour');
+  const bare = clearanceMatrix({ doors: { clearance: { front: 1.5 } } });
+  assert.equal(bare[NEIGHBOUR.CORNER], null, '7. parked where the profile names no number');
   assert.equal(clearanceFor(NEIGHBOUR.END_PANEL, P), 3);
 });
 
@@ -188,7 +193,10 @@ test('6. the END OF A RUN — nothing there at all — wants 1.5', () => {
 });
 
 test('7. the L-SHAPE corner is PARKED — reported as parked, never judged', () => {
-  assert.equal(clearanceFor(NEIGHBOUR.CORNER, P), null);
+  // AMENDED BY T75 F2: the house profile gives rule 7 its number (3); a profile
+  // that names none still parks it, and a parked edge still reads as parked.
+  assert.equal(clearanceFor(NEIGHBOUR.CORNER, P), 3);
+  assert.equal(clearanceFor(NEIGHBOUR.CORNER, { doors: { clearance: {} } }), null);
   assert.equal(isCornerType('L_SHAPE'), true);
   assert.equal(isCornerType('CORNER'), true, 'the pre-F10 name still reads');
   assert.equal(isCornerType('BUD'), false);
@@ -493,8 +501,9 @@ test('18. every threshold is a PROFILE number, and survives an old profile', () 
   assert.equal(P.doors.maxNeighbourGapMm, 6);
   assert.equal(P.hinges.sideAdjustMm, 1.5);
   assert.equal(P.doors.neighbourReachMm, 200);
+  // AMENDED BY T75 F2: rule 7's number joins the six (`corner`, T75 proposed).
   assert.deepEqual(P.doors.clearance, {
-    front: 1.5, endPanel: 3, infill: 3, appliance: 0, wall: 3, none: 1.5,
+    front: 1.5, endPanel: 3, infill: 3, appliance: 0, wall: 3, none: 1.5, corner: 3,
   });
   // A workshop's own numbers are read, not ignored.
   assert.equal(minGapMm({ doors: { minNeighbourGapMm: 2 } }), 2);

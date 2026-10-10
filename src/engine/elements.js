@@ -86,7 +86,9 @@ const ADDED_INTERIOR_KINDS = new Set(['shelf', 'partition', 'fixed-shelf']);
  * time, and each of them is a decision with its own properties. Those you point
  * at directly.
  */
-const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel']);
+// T75 F2/F3 · the corner post and the blind kit's blank are hung on the
+// carcass the same way: pieces a joiner points at directly.
+const ATTACHED_KINDS = new Set(['door', 'drawer-front', 'end-panel', 'infill', 'masking-panel', 'corner-post', 'blind-blank', 'upstand', 'false-front', 'pelmet']);
 
 /**
  * Is this piece clickable AS A PIECE in the room view?
@@ -162,6 +164,17 @@ export function elementKind(panel) {
     case 'DRAWER-FRONT': return 'drawer-front';
     // T74 F13 · the board of a free-standing panel.
     case 'FREE-PANEL': return 'free-panel';
+    // T75 F10 · an island's own panels are free panels the automat placed.
+    case 'BACK-PANEL': case 'ISLAND-END-PANEL': return 'free-panel';
+    // T75 F2 · the corner post; F3 · the blind kit's blank.
+    case 'CORNER-POST': return 'corner-post';
+    // T75 F5 · the upstand on the worktop.
+    case 'UPSTAND': return 'upstand';
+    case 'BLIND-BLANK': return 'blind-blank';
+    // T75 F14 · the hob unit's fixed dummy over its drawers.
+    case 'FALSE-FRONT': return 'false-front';
+    // T75 F15 · the pelmet under a run of wall units.
+    case 'PELMET': return 'pelmet';
     default:
       // T54-F7: the SHOEBOX-* kind died with its world — a shoe is a
       // `variant:'shoe'` DRAWER now, so its boards answer as a drawer's do
@@ -190,6 +203,11 @@ const LABELS = {
   'drawer-front': 'Drawer front',
   drawer: 'Drawer box',
   'free-panel': 'Free-standing panel',
+  'corner-post': 'Corner post',
+  upstand: 'Upstand',
+  'blind-blank': 'Blind corner blank',
+  'false-front': 'Fixed front (hob)',
+  pelmet: 'Pelmet',
 };
 
 /** What each board of a drawer box is called, in a joiner's words. */
@@ -292,6 +310,13 @@ const FIELDS = {
   // itself and on its face, because both are the drawer a joiner clicks.
   'drawer-front': ['drawer-height', 'runner-variant', 'watch-insert', 'front-board', 'material'],
   'masking-panel': ['masking-depth', 'material'],
+  // T75 F2/F3 · what each is made of. The post's width is the profile's and the
+  // blank's is its dimension figure (the T73 F3 field on the scene).
+  'corner-post': ['material'],
+  upstand: ['material'],
+  'blind-blank': ['material'],
+  'false-front': ['material'],
+  pelmet: ['material'],
   // Turn 17 (F4.2): a drawer box is a box of boards. Its SIZE follows the
   // stack — that is what F8 edits, on the unit — so what is said about one
   // board of it is what it is made of.
@@ -393,6 +418,16 @@ const ACTIONS = {
   // T74 F13 · the board IS its unit: it is moved by its distance figures in
   // the room and taken out as the unit is, never nudged or hidden as a piece.
   'free-panel': { remove: false, move: false, why: 'A free panel is its own unit: move it by its distance figures, delete it as a unit.' },
+  // T75 F2 · the post IS the corner stop it stands on: it goes when the unit is pulled away.
+  'corner-post': { remove: false, move: false, why: 'The post stands on the corner stop: pull the unit away from the corner and it goes.' },
+  // T75 F5 · the upstand is the run's: it goes off the run from the unit's menu.
+  upstand: { remove: false, move: false, why: 'The upstand belongs to the run: take it off from the unit\'s menu (Upstand).' },
+  // T75 F3 · the blank IS the blind kit's face: set its width by its figure.
+  'blind-blank': { remove: false, move: false, why: 'The blank is the blind corner\'s face: set its width by clicking its dimension.' },
+  // T75 F14 · the dummy IS the hob unit's top: it is the kit, not an add-on.
+  'false-front': { remove: false, move: false, why: 'The fixed front is the hob unit\'s top: the hob stands over it. Choose the plain drawer unit for a drawer here.' },
+  // T75 F15 · the pelmet is the run's: it comes off as it went on.
+  pelmet: { remove: false, move: false, why: 'The pelmet belongs to the run: select a unit of it and click Pelmet in the library\'s Extras to take it off.' },
 };
 
 /**

@@ -57,6 +57,9 @@ export const NEIGHBOUR = Object.freeze({
   WALL: 'wall',
   NONE: 'none',
   CORNER: 'corner',
+  // T75 F4 (FRONTS BOUNDARY licence 1): the L kit's two door edges at its inner corner.
+  CORNER_COVERED: 'cornerCovered',
+  CORNER_OVERLAP: 'cornerOverlap',
 });
 
 /** Section A, as data. `null` is PARKED — never a guess. */
@@ -70,9 +73,13 @@ export function clearanceMatrix(profile) {
     [NEIGHBOUR.APPLIANCE]: n(c.appliance, 0),
     [NEIGHBOUR.WALL]: n(c.wall, 3),
     [NEIGHBOUR.NONE]: n(c.none, 1.5),
-    // Rule 7. The L-shape corner is PARKED with the L-shape unit; nothing here
-    // invents a number for it, and the Check says "parked" rather than passing.
-    [NEIGHBOUR.CORNER]: null,
+    // Rule 7. T75 F2: a corner post is a rigid neighbour, like an infill, and
+    // the number is the profile's (`doors.clearance.corner`, T75 proposed,
+    // owner to confirm). A profile that names none keeps it PARKED.
+    [NEIGHBOUR.CORNER]: n(c.corner, null),
+    // T75 F4: the covered leaf runs to the inner corner (0); the overlapping leaf stops front_t + rule 7 beyond it.
+    [NEIGHBOUR.CORNER_COVERED]: 0,
+    [NEIGHBOUR.CORNER_OVERLAP]: c.corner == null ? null : n(profile?.front?.thickness, 0) + n(c.corner, 0),
   });
 }
 
@@ -181,6 +188,7 @@ export function frontsInRoom(entries, baseOf) {
         // off the unit type — a fact about a PART belongs on the part.
         appliance: p.meta?.appliance || null,
         trim: p.meta?.edgeTrim || null,
+        cornerEdge: p.meta?.cornerEdge || null,   // T75 F4: an L door's inner edge
       });
     }
   }
@@ -211,6 +219,7 @@ function neighbourOn(front, side, {
   fronts, verticals, units, wallWidth, profile,
 }) {
   const reach = neighbourReachMm(profile);
+  if (front.cornerEdge?.side === side) return { kind: front.cornerEdge.kind === 'overlap' ? NEIGHBOUR.CORNER_OVERLAP : NEIGHBOUR.CORNER_COVERED, gapMm: null }; // T75 F4
   const edge = side === 'left' ? front.x : front.x + front.w;
   const dir = side === 'left' ? -1 : 1;
   let best = null;
@@ -243,7 +252,8 @@ function neighbourOn(front, side, {
     if (!overlaps(front.y, front.y + front.h, v.bottom, v.top)) continue;
     const near = dir > 0 ? v.from : v.to;
     consider(
-      v.kind === 'end-panel' ? NEIGHBOUR.END_PANEL : NEIGHBOUR.INFILL,
+      // T75 F2 · rule 7: the corner post (`runs.js unitVerticals`, 'corner-post').
+      v.kind === 'end-panel' ? NEIGHBOUR.END_PANEL : (v.kind === 'corner-post' ? NEIGHBOUR.CORNER : NEIGHBOUR.INFILL),
       near,
       { of: { unitId: v.unitId, pieceId: v.pieceId } },
     );
@@ -616,6 +626,7 @@ export function labelOf(kind) {
     [NEIGHBOUR.INFILL]: 'an infill',
     [NEIGHBOUR.APPLIANCE]: 'an appliance front',
     [NEIGHBOUR.WALL]: 'the wall',
+    [NEIGHBOUR.CORNER_COVERED]: 'the L corner (covered)', [NEIGHBOUR.CORNER_OVERLAP]: 'the L corner (overlapping)', // T75 F4
     [NEIGHBOUR.NONE]: 'the end of the run',
     [NEIGHBOUR.CORNER]: 'an L-shape corner',
   }[kind] || kind;

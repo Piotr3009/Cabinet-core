@@ -118,14 +118,25 @@ export function finishesOf(design) {
  *   renderImage   a data URL of the scene's render for the visualisation, or null
  * @returns {Array<{no:string, name:string, wall:number|null, variant:string, sheet:object}>}
  */
+/** T75 F9 · the wall groups that stand against plaster: an island face's are left out. */
+function onPlaster(groups) {
+  return groups.filter((g) => !g.members.some((m) => m.unit?.position?.island != null));
+}
+
 export function wallDrawingSheets({
   entries = [], project = {}, room = null, worktops = [], frontTypeOf = null, profile,
   date = '', design = null, sectionUnitId = null, renderImage = null,
 }) {
-  const groups = wallGroups(entries, profile);
+  // T75 F9 · *"A face is NOT plaster ... not dimensioned as walls ... not
+  // elevated"*, and wall elevations of island faces are NOT this turn: a
+  // face's cabinets are drawn on the plans and cut on the cut list, and get
+  // no elevation, section or perspective sheet of a wall.
+  const standing = wallGroups(entries, profile);
+  const groups = onPlaster(standing);
   // No cabinet against a wall: no set. The window and the menu read an empty
   // list as "nothing to draw yet" (T42 F0), and a cover of nothing is not a set.
-  if (!groups.length) return [];
+  // T75 F9 · …a cabinet on an island face is a cabinet: its job has a set.
+  if (!standing.length) return [];
   const shakerFrame = shakerFrameMm(design ?? project?.design ?? null, profile);
   const theRoom = room || project?.room || null;
   // The worktops: the store's own resolution when the caller passes it, else
@@ -311,6 +322,11 @@ export function wallSetReport({ entries = [], profile } = {}) {
     // unit with no result is a unit the engine could not answer for; a turned
     // one cannot be drawn on an elevation of the wall it stands against.
     if (!e.result) { at.skipped.push({ unit: nameOf(e, i), reason: 'has nothing to draw yet' }); return; }
+    // T75 F9 · an island face is not a wall: no elevation this turn.
+    if (e.unit.position?.island != null) {
+      at.skipped.push({ unit: nameOf(e, i), reason: 'stands on an island face: no elevation this turn, see the plans' });
+      return;
+    }
     if (turnedAway(e.unit)) {
       at.skipped.push({ unit: nameOf(e, i), reason: 'is turned away from the wall — see the horizontal section' });
       return;
@@ -321,7 +337,7 @@ export function wallSetReport({ entries = [], profile } = {}) {
 
   // Asked, so the census and the sheet list cannot drift: every wall that got
   // an elevation is a wall this reader counted a drawn member on.
-  const grouped = new Set(wallGroups(entries, profile).map((g) => g.wall));
+  const grouped = new Set(onPlaster(wallGroups(entries, profile)).map((g) => g.wall));
   for (const at of walls.values()) at.elevation = grouped.has(at.wall);
 
   return {
@@ -338,7 +354,7 @@ export function wallSetReport({ entries = [], profile } = {}) {
  * screen and the sheet the set builds are the same census asked twice.
  */
 export function wallSectionUnits({ entries = [], profile } = {}) {
-  return sectionableUnits(wallGroups(entries, profile))
+  return sectionableUnits(onPlaster(wallGroups(entries, profile)))
     .map(({ id, unitNum, wallLabel }) => ({ id, unitNum, wallLabel }))
     // By the number the workshop calls the cabinet, because that is what the
     // person choosing is reading off the screen.

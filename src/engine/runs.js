@@ -386,6 +386,13 @@ export function unitVerticals(units, profile) {
       if (width < minInfill) continue;
       add(side, width, unit.params?.[topKey], 'infill', `${side}-infill`);
     }
+    // T75 F2 · the CORNER POST stands beside the carcass in the door plane, the
+    // infill's sibling: a rigid neighbour for the door next to it (rule 7). It
+    // finishes with its carcass, so it blocks nothing new above it.
+    for (const [side, key] of [['L', 'corner_post_left_mm'], ['R', 'corner_post_right_mm']]) {
+      const width = Number(unit.params?.[key]) || 0;
+      if (width > 0) add(side, width, 0, 'corner-post', `${side}-post`);
+    }
   }
   return out;
 }
@@ -551,10 +558,10 @@ export function infillCornerMitre(end, faceH, elementTop, tolerance = 0) {
  * out, the run answers from its own units, which is what every caller before
  * this turn effectively asked and is what keeps a bare call honest.
  *
- * @returns {{kind:'wall'|'infill'|'end-panel'|'open', x:number, blockedBy?:string}}
+ * @returns {{kind:'wall'|'infill'|'end-panel'|'open'|'corner', x:number, blockedBy?:string}}
  */
 export function runEnd(run, side, {
-  wallWidth, roomHeight, verticals = null, raked = false,
+  wallWidth, roomHeight, verticals = null, raked = false, island = false,
 }, profile) {
   const unit = side === 'left' ? run.units[0] : run.units[run.units.length - 1];
   const span = paddedSpan(unit);
@@ -575,6 +582,17 @@ export function runEnd(run, side, {
   // the moment nothing has been typed, so a run of cabinets that have never
   // heard of the field stops exactly where it stopped yesterday.
   const atWall = tolerance + wallGapOf(unit, profile);
+
+  // ─── T75 F6 · A RUN THAT STOPS ON A CORNER ─────────────────────────────────
+  // The end unit carries the CORNER POST on this side (the store writes it from
+  // `engine/corners.js` when the unit stands on the corner stop): the run ends
+  // there. Not 'open' (a top infill or a cornice would turn and return into the
+  // dead corner, the probe measured 438 mm of it) and not a 'wall': it stops
+  // square on the post's outer edge, in the plane of the run round the corner.
+  const postMm = Number(unit.params?.[side === 'left' ? 'corner_post_left_mm' : 'corner_post_right_mm']) || 0;
+  if (postMm > 0) {
+    return { kind: 'corner', x: side === 'left' ? carcassEdge - postMm : carcassEdge + postMm };
+  }
 
   // 1 — the wall itself.
   //
@@ -605,7 +623,9 @@ export function runEnd(run, side, {
   // corners govern there, untouched). `raked` is that question, asked by the
   // caller that holds the room's ceiling and defaulting to false, which is
   // what every bare call has always meant.
-  if (Math.abs(outerEdge - wallAt) <= atWall) {
+  // T75 F10 · …unless the "wall" is an island's FACE: *"A face is NOT
+  // plaster"*. Its end is a free end, so rule 1 is not asked there.
+  if (!island && Math.abs(outerEdge - wallAt) <= atWall) {
     return { kind: 'wall', x: raked ? carcassEdge : wallAt };
   }
 
@@ -807,7 +827,7 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
  *   returns:{left:number|null, right:number|null}, unitIds:string[] }}
  */
 function runTopInfill(run, {
-  wallWidth, roomHeight, frontFaceDepth, verticals = null, runCutOf = null,
+  wallWidth, roomHeight, frontFaceDepth, verticals = null, runCutOf = null, island = false,
   isRaked = null,
 }, profile) {
   const T = profile.autoParts.topInfill;
@@ -830,10 +850,10 @@ function runTopInfill(run, {
     ? run.units.some((u) => isRaked(u) === true)
     : false;
   const left = runEnd(run, 'left', {
-    wallWidth, roomHeight, verticals, raked,
+    wallWidth, roomHeight, verticals, raked, island,
   }, profile);
   const right = runEnd(run, 'right', {
-    wallWidth, roomHeight, verticals, raked,
+    wallWidth, roomHeight, verticals, raked, island,
   }, profile);
   const owner = run.units[0];
   const ownerX = Number(owner.position?.x_mm) || 0;
@@ -963,6 +983,7 @@ export function runInfillParams(units, {
     const wallWidth = walls?.[run.wall]?.width ?? 0;
     const element = runTopInfill(run, {
       wallWidth,
+      island: Boolean(walls?.[run.wall]?.island),
       roomHeight,
       verticals,
       // T58-F5: the room's own answer to "is this unit under a live rake",
@@ -1239,7 +1260,7 @@ export function runMaskParams(units, profile) {
  *
  * @returns {Map<string, object|null>} unit id → the parameter to store
  */
-export function runPlinthParams(units, profile) {
+export function runPlinthParams(units, profile, { corners = [] } = {}) {
   const out = new Map(units.map((u) => [u.id, null]));
   for (const run of buildRuns(units, profile)) {
     for (const segment of plinthSegments(run)) {
@@ -1248,6 +1269,135 @@ export function runPlinthParams(units, profile) {
       out.set(segment[0].id, element);
       for (const u of segment.slice(1)) out.set(u.id, { role: 'member', ownerId: segment[0].id });
     }
+  }
+  // ─── T75 F6 · THE PLINTH TURNS AN INTERNAL CORNER, SQUARE BUTT ──────────
+  //
+  // *"the plinth of the run that STARTS at the corner is lengthened to butt
+  // the face of the other run's plinth under the post (square butt, no mitre:
+  // the owner's "no 45° cuts")."*  The corners are the rulebook's
+  // (`engine/corners.js`, handed in by the caller so this module keeps one
+  // detection): run A runs into the corner and its kick runs with it; run B
+  // stops on the corner stop, so its kick is carried on from its carcass end
+  // to the FACE of run A's kick (A's wall gap + depth less the setback). The
+  // stretch is a span of its own, so a long kick still breaks only at a
+  // cabinet edge. An L carcass cuts its own two plinths (F4) and is left alone.
+  const setback = Number(profile?.autoParts?.plinth?.setback) || 0;
+  for (const c of corners || []) {
+    if (c?.kind !== 'internal' || c.solution === 'L' || !c.runA || !c.runB) continue;
+    const a = units.find((u) => u.id === c.runA.unitId);
+    const b = units.find((u) => u.id === c.runB.unitId);
+    if (!a || !b || !wantsPlinth(a) || !wantsPlinth(b)) continue;
+    const faceA = wallGapOf(a, profile) + (Number(a.params?.depth) || 0) - setback;
+    const ext = Math.round((Number(c.runB.gapMm) - faceA) * 100) / 100;
+    if (!(ext > 0)) continue;
+    const mine = out.get(b.id);
+    const ownerId = mine?.role === 'member' ? mine.ownerId : b.id;
+    const element = out.get(ownerId);
+    if (!element || element.role !== 'owner') continue;
+    const atLeft = c.runB.side === 'left';
+    out.set(ownerId, {
+      ...element,
+      offset: atLeft ? element.offset - ext : element.offset,
+      length: element.length + ext,
+      spans: atLeft
+        ? [{ id: 'corner-butt', width: ext }, ...(element.spans || [])]
+        : [...(element.spans || []), { id: 'corner-butt', width: ext }],
+      corner: { side: atLeft ? 'left' : 'right', mm: ext, butt: 'square', faceOf: a.id },
+    });
+  }
+  // ─── T75 F10 · THE ISLAND'S EXTERNAL CORNERS: A 45° MITRE ───────────────
+  //
+  // *"Plinth: one per face, 45° mitres at the island's four external corners
+  // (F6)."*  A face's runs stand outside the core, so two faces' kicks meet
+  // only where both runs reach the corner they share: there each kick is
+  // carried on across the empty corner square to the FRONT plane of the
+  // other's, and the two meet in a mitre (the cornice's own external mitre,
+  // F6). Where only one face reaches the corner, its kick ends square into the
+  // island's end panel, as a kick ends at any end panel.
+  const tol = 1 + (Number(profile?.autoParts?.topInfill?.runGap) || 0);
+  const kickFace = (u) => wallGapOf(u, profile) + (Number(u.params?.depth) || 0) - setback;
+  for (const c of corners || []) {
+    if (c?.kind !== 'external' || c.wallA == null || c.wallB == null) continue;
+    const widthA = Number(c.widthA) || 0;
+    // The unit of face A at its END, and of face B at its START.
+    const endA = units.filter((u) => (u.position?.wall ?? 0) === c.wallA && wantsPlinth(u)
+      && (Number(u.position?.x_mm) || 0) + (Number(u.params?.width) || 0) >= widthA - tol);
+    const startB = units.filter((u) => (u.position?.wall ?? 0) === c.wallB && wantsPlinth(u)
+      && (Number(u.position?.x_mm) || 0) <= tol);
+    if (!endA.length || !startB.length) continue;
+    const ua = endA[0];
+    const ub = startB[0];
+    const grow = (unit, side, mm) => {
+      const mine = out.get(unit.id);
+      const ownerId = mine?.role === 'member' ? mine.ownerId : unit.id;
+      const element = out.get(ownerId);
+      if (!element || element.role !== 'owner' || !(mm > 0)) return;
+      const ext = Math.round(mm * 100) / 100;
+      out.set(ownerId, {
+        ...element,
+        offset: side === 'left' ? element.offset - ext : element.offset,
+        length: element.length + ext,
+        spans: side === 'left'
+          ? [{ id: 'corner-mitre', width: ext }, ...(element.spans || [])]
+          : [...(element.spans || []), { id: 'corner-mitre', width: ext }],
+        mitres: [...(element.mitres || []), { side, mm: ext, deg: 45, external: true }],
+      });
+    };
+    grow(ua, 'right', kickFace(ub));
+    grow(ub, 'left', kickFace(ua));
+  }
+  return out;
+}
+
+// ─── T75 F5 · THE UPSTAND, A RUN ELEMENT LIKE THE PLINTH ────────────────────
+//
+// *"UPSTAND: an auto-part along the wall behind every base run that has a
+// worktop ... on and off per run like the plinth (BACKLOG #16's grammar: added
+// by a decision, visible only then), BOM role `upstand`, cut list line."*
+// The decision is the unit's (`params.upstand === true`, as `params.plinth`);
+// the piece is the run's: one board along the wall over adjacent units that
+// want it, carried by the first of them. Only a kit a worktop lies on.
+
+function wantsUpstand(unit) {
+  if (unit?.params?.upstand !== true) return false;
+  const type = getUnitType(unit.type);
+  return Boolean(type && type.mount === 'floor' && type.supports?.topInfill === false);
+}
+
+/** @returns {Map<string, object|null>} unit id → the upstand element to store */
+export function runUpstandParams(units, profile) {
+  const out = new Map(units.map((u) => [u.id, null]));
+  const tolerance = Number(profile?.autoParts?.topInfill?.runGap) || 0;
+  for (const run of buildRuns(units, profile)) {
+    let current = [];
+    const close = () => {
+      if (current.length) {
+        const first = current[0];
+        const last = current[current.length - 1];
+        const left = Number(first.position?.x_mm) || 0;
+        const right = (Number(last.position?.x_mm) || 0) + (Number(last.params?.width) || 0);
+        out.set(first.id, {
+          role: 'owner',
+          offset: 0,
+          length: right - left,
+          unitIds: current.map((u) => u.id),
+          spans: current.map((u) => ({ id: u.id, width: Number(u.params?.width) || 0 })),
+        });
+        for (const u of current.slice(1)) out.set(u.id, { role: 'member', ownerId: first.id });
+      }
+      current = [];
+    };
+    for (const unit of run.units) {
+      if (!wantsUpstand(unit)) { close(); continue; }
+      if (current.length) {
+        const prev = current[current.length - 1];
+        const gap = (Number(unit.position?.x_mm) || 0)
+          - ((Number(prev.position?.x_mm) || 0) + (Number(prev.params?.width) || 0));
+        if (gap > tolerance) close();
+      }
+      current.push(unit);
+    }
+    close();
   }
   return out;
 }

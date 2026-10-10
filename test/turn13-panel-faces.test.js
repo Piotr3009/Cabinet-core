@@ -243,6 +243,13 @@ test('THE RULE: a horizontal panel grains along the cabinet’s X, whatever the 
     if (panel.part !== 'TOP' && panel.part !== 'BOTTOM') continue;
     // The machining truth this must NOT follow: a top is nested turned, its CNC
     // x running along the cabinet's depth.
+    // AMENDED BY T75 F4: the L's ONE board is drawn in the LISP's own plan
+    // frame (KIT_CORNER_L.lsp), not turned; its grain is still the width's.
+    if (panel.meta?.lBoard) {
+      const lAxis = uAxis(machinedPanelGeometry(panel, LAYERS, P));
+      if (lAxis !== 'x') wrong.push(`${id} ${panel.id} (${panel.part}): grain along ${lAxis}, not the cabinet's width`);
+      continue;
+    }
     assert.equal(panel.cnc?.rotated, true, `${id} ${panel.id}: tops are nested turned — joinery.js says so`);
     const axis = uAxis(machinedPanelGeometry(panel, LAYERS, P));
     if (axis !== 'x') wrong.push(`${id} ${panel.id} (${panel.part}): grain along ${axis}, not the cabinet's width`);

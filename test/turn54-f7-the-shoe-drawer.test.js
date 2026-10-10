@@ -217,7 +217,10 @@ test('F7.1 · the graves: the old world is gone, file by file', () => {
   // folder simply gained `KIT_FRONT_JPULL.lsp` tonight. The number is written
   // out here so that a kit deleted by accident still fails this test; what is
   // asserted is the grave above, not the size of the shelf.
-  assert.equal(kits.length, 14, 'the paren walk ends at 14 — derived, never typed');
+  // T75 AMENDED (09.10.2026): 14 → 16, then 17. *"lisp najpierw"*: the L
+  // corner and the dowel pattern are written as kits before their engine code
+  // (KIT_CORNER_L.lsp, SKYLON_JOINTS_DOWEL.lsp; KIT_NOTCH.lsp lands before F7).
+  assert.ok([16, 17].includes(kits.length), `the paren walk ends at ${kits.length}, derived, never typed`);
   assert.equal(kits.includes('KIT_SHOE_BOX.lsp'), false, 'and the grave is still a grave');
   const engine = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
   assert.doesNotMatch(engine, /shoeBoxPlan|shoeBoxBoxFor|SHOEBOX-/,

@@ -133,7 +133,17 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // its leaf. Rule 15 is still the fifteenth and still says what it said.
   // RE-PINNED 23.09.2026 (T74-F10): and #26, a hinge too near the slope's
   // apex. Rule 15 is still the fifteenth and still says what it said.
-  assert.equal(CHECKS.length, 23);
+  // RE-PINNED 09.10.2026 (T75-F1): and #27, a corner with nothing between the
+  // runs. Rule 15 is still the fifteenth and still says what it said.
+  // RE-PINNED 09.10.2026 (T75-F7): and #28, a corner notch refused. Rule 15
+  // is still the fifteenth and still says what it said.
+  // RE-PINNED 10.10.2026 (T75-F21): and #29, the price list moved. Rule 15
+  // is still the fifteenth and still says what it said.
+  // RE-PINNED 10.10.2026 (T75-F22): and #30, the parts the machine does not
+  // finish. Rule 15 is still the fifteenth and still says what it said.
+  // RE-PINNED 09.10.2026 (T75-F23): and #31, the dowel gate. Rule 15 is still
+  // the fifteenth and still says what it said.
+  assert.equal(CHECKS.length, 28);
   assert.equal(CHECKS[14].n, 15);
 });
 

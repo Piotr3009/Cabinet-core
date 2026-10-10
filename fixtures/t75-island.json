@@ -1,0 +1,964 @@
+{
+  "project": {
+    "id": null,
+    "name": "T75 island kitchen",
+    "number": "075/2026",
+    "client": "T75 proof",
+    "room": {
+      "schema": 2,
+      "height": 2500,
+      "corners": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 5000,
+          "y": 0
+        },
+        {
+          "x": 5000,
+          "y": 4000
+        },
+        {
+          "x": 0,
+          "y": 4000
+        }
+      ],
+      "openings": [],
+      "islands": [
+        {
+          "id": "island_pyhu5by",
+          "cx": 2500,
+          "cy": 2000,
+          "w": 1800,
+          "d": 900,
+          "rotation": 0
+        }
+      ]
+    },
+    "design": {
+      "schema": 2,
+      "carcass": {
+        "types": [
+          {
+            "id": "c1",
+            "label": "Carcass 1",
+            "material_id": null,
+            "finish_id": null,
+            "source": null
+          }
+        ]
+      },
+      "depth": null,
+      "thickness": {
+        "board": null,
+        "custom": null,
+        "slots": {
+          "carcass1": {
+            "measured": null,
+            "confirmed": false
+          },
+          "carcass2": {
+            "measured": null,
+            "confirmed": false
+          },
+          "carcass3": {
+            "measured": null,
+            "confirmed": false
+          },
+          "front1": {
+            "measured": null,
+            "confirmed": false
+          },
+          "front2": {
+            "measured": null,
+            "confirmed": false
+          },
+          "box": {
+            "measured": null,
+            "confirmed": false
+          }
+        }
+      },
+      "hardware": {
+        "hinges": null,
+        "runners": null,
+        "shelfSleeve": null,
+        "handles": null
+      },
+      "hinges": {
+        "standard": null,
+        "system": null,
+        "finish": null,
+        "plate": null
+      },
+      "drawerBoxes": {
+        "mode": null
+      },
+      "lighting": {
+        "on": false,
+        "temperature": null,
+        "switch": null,
+        "items": []
+      },
+      "cncCorner": "dogbone",
+      "runners": {
+        "system": null,
+        "variant": null
+      },
+      "shelves": {
+        "pinSetback": null
+      },
+      "hingeTwoBelow": null,
+      "worktops": [
+        {
+          "id": "worktop_dqrwam7",
+          "unitIds": [
+            "u_gn6ccxt",
+            "u_9belb0e",
+            "u_b824t8v",
+            "u_dhbzzrj",
+            "u_qel0eps",
+            "u_8effrcq",
+            "u_2jw067r"
+          ],
+          "decor": null,
+          "extendLeft": 0,
+          "extendRight": 0,
+          "extendFront": 0,
+          "island": "island_pyhu5by",
+          "extend": {
+            "A": 0,
+            "B": 0,
+            "E1": 0,
+            "E2": 300
+          }
+        },
+        {
+          "id": "worktop_k8ms2r5",
+          "unitIds": [
+            "u_6wwq7c9",
+            "u_s6qzsut",
+            "u_g9ftm7y"
+          ],
+          "decor": null,
+          "extendLeft": 0,
+          "extendRight": 0,
+          "extendFront": 0
+        }
+      ],
+      "fronts": {
+        "style": "S",
+        "handle": null,
+        "shakerFrame": 60,
+        "handleOffsets": {},
+        "types": []
+      },
+      "doorStyles": [],
+      "colour": {
+        "front": null,
+        "carcass": null
+      },
+      "infill": {
+        "sideWidth": 40
+      },
+      "finish": {
+        "carcass": null,
+        "front": null
+      },
+      "endPanel": {
+        "height": "floor",
+        "thickness": null,
+        "applyToAll": true
+      },
+      "runMaterials": {
+        "infill": {
+          "sameAsFronts": true,
+          "material_id": null
+        },
+        "plinth": {
+          "sameAsFronts": true,
+          "material_id": null
+        },
+        "end_panel": {
+          "sameAsFronts": true,
+          "material_id": null
+        },
+        "mask": {
+          "sameAsFronts": true,
+          "material_id": null
+        }
+      },
+      "heights": {
+        "base": null,
+        "wall": null,
+        "tall": null,
+        "wallMount": null,
+        "toeKick": null
+      },
+      "projectType": null,
+      "scope": "room",
+      "ceiling": null,
+      "joinery": null,
+      "sheen": null
+    },
+    "wallSlopes": [],
+    "ledSpec": {
+      "mode": "flexi",
+      "channelWidth": 12,
+      "wattsPerMetre": null
+    },
+    "lightRig": {
+      "preset": "showroom",
+      "lamps": {
+        "ceiling": {
+          "on": true,
+          "strength": 1
+        },
+        "leftWall": {
+          "on": false,
+          "strength": 1
+        },
+        "rightWall": {
+          "on": true,
+          "strength": 1
+        },
+        "facing": {
+          "on": true,
+          "strength": 1
+        }
+      }
+    },
+    "sceneLight": {
+      "scale": 1
+    },
+    "titleBlock": {},
+    "jc_tenant_id": null,
+    "jc_project_id": null
+  },
+  "units": [
+    {
+      "id": "u_ynhpsjc",
+      "type": "FREE_PANEL",
+      "position": {
+        "wall": 7,
+        "x_mm": -596,
+        "rotation_deg": 0,
+        "island": "island_pyhu5by",
+        "face": "E2"
+      },
+      "params": {
+        "type": "FREE_PANEL",
+        "width": 2092,
+        "height": 870,
+        "depth": 25,
+        "board_t": 25,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": null,
+        "mount_height": 0,
+        "panel_facing": "along",
+        "panel_width": 870,
+        "panel_tilt_deg": 0,
+        "side_infill_off": true,
+        "unit_num": "FP04",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "sections": [
+          {
+            "width_mm": 800,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "island_panel": "end",
+        "island_auto": true,
+        "plinth": false,
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_gn6ccxt",
+      "type": "BUD",
+      "position": {
+        "wall": 4,
+        "x_mm": 0,
+        "rotation_deg": 0,
+        "island": "island_pyhu5by",
+        "face": "A"
+      },
+      "params": {
+        "type": "BUD",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "01",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "front_edge_trim": {
+          "01-F": {
+            "left": 1.5,
+            "right": 0
+          }
+        },
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_9belb0e",
+      "type": "SINK",
+      "position": {
+        "wall": 4,
+        "x_mm": 600,
+        "rotation_deg": 0,
+        "island": "island_pyhu5by",
+        "face": "A"
+      },
+      "params": {
+        "type": "SINK",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "S01",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_b824t8v",
+      "type": "BUD",
+      "position": {
+        "wall": 4,
+        "x_mm": 1200,
+        "rotation_deg": 0,
+        "island": "island_pyhu5by",
+        "face": "A"
+      },
+      "params": {
+        "type": "BUD",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "02",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_dhbzzrj",
+      "type": "BUDR",
+      "position": {
+        "wall": 6,
+        "x_mm": 0,
+        "rotation_deg": 0,
+        "island": "island_pyhu5by",
+        "face": "B"
+      },
+      "params": {
+        "type": "BUDR",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 3,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": null,
+        "unit_num": "DR01",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": [
+              {
+                "id": "drawer_81i7nf0",
+                "kind": "drawer",
+                "index": 1,
+                "mount": "overlay"
+              },
+              {
+                "id": "drawer_txdxqxm",
+                "kind": "drawer",
+                "index": 2,
+                "mount": "overlay"
+              },
+              {
+                "id": "drawer_d5lg2qo",
+                "kind": "drawer",
+                "index": 3,
+                "mount": "overlay"
+              }
+            ]
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "front_edge_trim": {
+          "DR01-F1": {
+            "left": 1.5,
+            "right": 0
+          },
+          "DR01-F2": {
+            "left": 1.5,
+            "right": 0
+          },
+          "DR01-F3": {
+            "left": 1.5,
+            "right": 0
+          }
+        },
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_qel0eps",
+      "type": "BUD",
+      "position": {
+        "wall": 6,
+        "x_mm": 600,
+        "rotation_deg": 0,
+        "island": "island_pyhu5by",
+        "face": "B"
+      },
+      "params": {
+        "type": "BUD",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "03",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_8effrcq",
+      "type": "BUDR",
+      "position": {
+        "wall": 6,
+        "x_mm": 1200,
+        "rotation_deg": 0,
+        "island": "island_pyhu5by",
+        "face": "B"
+      },
+      "params": {
+        "type": "BUDR",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 3,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": null,
+        "unit_num": "DR02",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": [
+              {
+                "id": "drawer_kba6nit",
+                "kind": "drawer",
+                "index": 1,
+                "mount": "overlay"
+              },
+              {
+                "id": "drawer_1l1rpey",
+                "kind": "drawer",
+                "index": 2,
+                "mount": "overlay"
+              },
+              {
+                "id": "drawer_q2wa0wk",
+                "kind": "drawer",
+                "index": 3,
+                "mount": "overlay"
+              }
+            ]
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_2jw067r",
+      "type": "BUDR",
+      "position": {
+        "wall": 5,
+        "x_mm": 150,
+        "rotation_deg": 0,
+        "island": "island_pyhu5by",
+        "face": "E1"
+      },
+      "params": {
+        "type": "BUDR",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 3,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": null,
+        "unit_num": "DR03",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": [
+              {
+                "id": "drawer_a1sbnu4",
+                "kind": "drawer",
+                "index": 1,
+                "mount": "overlay"
+              },
+              {
+                "id": "drawer_004xk9u",
+                "kind": "drawer",
+                "index": 2,
+                "mount": "overlay"
+              },
+              {
+                "id": "drawer_1f71yc0",
+                "kind": "drawer",
+                "index": 3,
+                "mount": "overlay"
+              }
+            ]
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "front_edge_trim": {
+          "DR03-F1": {
+            "left": 1.5,
+            "right": 0
+          },
+          "DR03-F2": {
+            "left": 1.5,
+            "right": 0
+          },
+          "DR03-F3": {
+            "left": 1.5,
+            "right": 0
+          }
+        },
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_6wwq7c9",
+      "type": "BUD",
+      "position": {
+        "wall": 0,
+        "x_mm": 1500,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "BUD",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "04",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_s6qzsut",
+      "type": "BUDR",
+      "position": {
+        "wall": 0,
+        "x_mm": 2100,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "BUDR",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 3,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": null,
+        "unit_num": "DR04",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": [
+              {
+                "id": "drawer_v0jwzra",
+                "kind": "drawer",
+                "index": 1,
+                "mount": "overlay"
+              },
+              {
+                "id": "drawer_f21qogj",
+                "kind": "drawer",
+                "index": 2,
+                "mount": "overlay"
+              },
+              {
+                "id": "drawer_ufzhq8t",
+                "kind": "drawer",
+                "index": 3,
+                "mount": "overlay"
+              }
+            ]
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_g9ftm7y",
+      "type": "BUD",
+      "position": {
+        "wall": 0,
+        "x_mm": 2700,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "BUD",
+        "width": 600,
+        "height": 770,
+        "depth": 558,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "unit_num": "05",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "leg_height": 100,
+        "plinth": true,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_6gle4ye",
+      "type": "WUD",
+      "position": {
+        "wall": 0,
+        "x_mm": 1500,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WUD",
+        "width": 600,
+        "height": 720,
+        "depth": 400,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "mount_height": 1500,
+        "door_extend": false,
+        "unit_num": "WU01",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "plinth": false,
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_myfpb0p",
+      "type": "WUD",
+      "position": {
+        "wall": 0,
+        "x_mm": 2100,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WUD",
+        "width": 600,
+        "height": 720,
+        "depth": 400,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "mount_height": 1500,
+        "door_extend": false,
+        "unit_num": "WU02",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "plinth": false,
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    },
+    {
+      "id": "u_j2vlkxk",
+      "type": "WUD",
+      "position": {
+        "wall": 0,
+        "x_mm": 2700,
+        "rotation_deg": 0
+      },
+      "params": {
+        "type": "WUD",
+        "width": 600,
+        "height": 720,
+        "depth": 400,
+        "board_t": 18,
+        "front_t": 25,
+        "front_type": null,
+        "shelves": 0,
+        "drawers": 0,
+        "rail": false,
+        "rail_offset": null,
+        "hinge": "L",
+        "doors": {
+          "count": 1,
+          "hinge": "L"
+        },
+        "mount_height": 1500,
+        "door_extend": false,
+        "unit_num": "WU03",
+        "front_style_schema": 1,
+        "height_custom": false,
+        "sections": [
+          {
+            "width_mm": 600,
+            "items": []
+          }
+        ],
+        "materials": {},
+        "plinth": false,
+        "top_infill_mm": 0,
+        "side_infill_left_mm": 0,
+        "side_infill_right_mm": 0,
+        "shelf_schema": 2
+      }
+    }
+  ]
+}

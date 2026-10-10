@@ -38,11 +38,17 @@
 /** The one-liner every held-open kit carries, so the wording cannot drift. */
 const NO_PATTERN = 'No kit or LISP defines this carcass yet — the pattern comes first';
 
+/** T75 F12 · why the two oven towers wait for the owner's stack. */
+const OVEN_STACK = 'An oven stands at eye level with cupboards under and over it: two door zones on one face, '
+  + 'and the door path cuts one. On the bottom panel instead, KIT_FRIDGE\'s middle back rail crosses its back. '
+  + 'The owner sets the stack first';
+
 /**
  * An entry is one of:
  *   { kind: 'type',  id, typeId, label?, hint? }
  *   { kind: 'group', id, label, hint?, items: [entry…] }   — flies out to the side
  *   { kind: 'soon',  id, label, hint, reason }             — held open
+ *   { kind: 'action', id, action, label, hint }  (T75 F15: done to the selected unit's run)
  *
  * `label` left out means "whatever the unit type calls itself", which keeps one
  * name for a kit instead of two that can drift.
@@ -71,23 +77,34 @@ export const KITCHEN_LIBRARY = [
           { kind: 'type', id: 'drawer-4', typeId: 'BUDR4', variant: 'x4' },
         ],
       },
-      { kind: 'type', id: 'sink', typeId: 'SINK', label: 'Sink' },
-      // ─── Turn 30 (CLAUDE.md F19): the corner unit, as GEOMETRY ───────────
-      // KIT_BUDR_FULL turned out to be the three-drawer base unit, so there is
-      // NO parent kit for a corner — and therefore no lines to inherit. The
-      // L-carcass ships as boards and a BOM, with not one hole in it, and the
-      // row says so.
-      // ─── TURN 31 (CLAUDE.md F10): CORNER → L-SHAPE ──────────────────────
-      // "The T30 type is an L-shape cabinet, not a corner system." A carousel,
-      // a magic corner and a bi-fold are mechanisms this app has none of, and
-      // calling the kit a corner unit promised something that was never in the
-      // box. The row id stays distinct from the held-open one below, which is
-      // a different promise: this kit is the L-CARCASS, and the JOINTS that
-      // would make it a corner SYSTEM stay parked by the owner's word.
-      { kind: 'type', id: 'l-shape-unit', typeId: 'L_SHAPE', label: 'L-shape unit', hint: 'The cabinet that turns a run — L-carcass only, no LISP defines its drilling' },
+      // ─── T75 F14 · *"a library row "Hob drawer unit" for x2 and x3"* ──────
+      // KIT_BUDR_FULL's own split with its top front a fixed dummy under the
+      // hob; the worktop over it proposes the hob cut-out (F5).
       {
-        kind: 'soon', id: 'l-shape', label: 'L-shape joints', hint: 'One carcass on two walls, jointed', reason: NO_PATTERN,
+        kind: 'group',
+        id: 'hob-drawer-unit',
+        label: 'Hob drawer unit',
+        hint: 'Under the hob: the top front fixed, the drawers below',
+        items: [
+          { kind: 'type', id: 'hob-drawer-2', typeId: 'BUDR2_HOB', label: '2×', hint: 'A fixed front over one deep drawer' },
+          { kind: 'type', id: 'hob-drawer-3', typeId: 'BUDR_HOB', label: '3×', hint: 'A fixed front over two drawers, 4:3:2' },
+        ],
       },
+      // ─── T75 F13 · *"Library Base units "Drawers behind doors"."* ─────────
+      // BUD's carcass and door with PANTRY's internal drawer machinery inside.
+      { kind: 'type', id: 'drawers-behind-doors', typeId: 'BUD_INT', label: 'Drawers behind doors', hint: 'Base unit with internal Blum drawers behind its door' },
+      { kind: 'type', id: 'sink', typeId: 'SINK', label: 'Sink' },
+      // T75 F4 KASACJA: T30's row `l-shape-unit` (eight undrilled rectangles) is
+      // deleted with its kit; the true L below replaces it and the held-open row.
+      // ─── T75 F4 · THE TRUE L CARCASS ────────────────────────────────────
+      // *"Library: Base units "Corner L" (replacing the T30 rows)."*  One L
+      // board top and bottom (KIT_CORNER_L.lsp), KIT_BUD's sides and backs, two
+      // doors through the parent's door path, door B overlapping door A.
+      { kind: 'type', id: 'corner-l', typeId: 'CORNER_L_BASE', label: 'Corner L', hint: 'One L carcass in a room corner: two doors, the one on the adjacent wall opens first' },
+      // ─── T75 F3 · THE BLIND CORNER ──────────────────────────────────────
+      // *"Library: Base units "Blind corner"."*  KIT_BUD hole for hole, one
+      // leaf at the reachable end and a blank where the next run hides it.
+      { kind: 'type', id: 'blind-corner', typeId: 'BLIND_BASE', label: 'Blind corner', hint: 'Base unit for a corner: one door, a blank behind the next run' },
       // ─── Turn 17 (CLAUDE.md F9/F10): TWO OF THE HELD-OPEN ROWS OPEN ─────
       // The owner wrote the pattern for both, which is exactly the condition
       // the `soon` rows carried: "the pattern comes first". They are built from
@@ -105,12 +122,16 @@ export const KITCHEN_LIBRARY = [
       // and no published pattern states a wine rack's joints, so the boards
       // ship UNDRILLED and unnotched and the gap is named in the report.
       { kind: 'type', id: 'wine-rack', typeId: 'WINE', label: 'Wine rack', hint: 'Open lattice of cells — boards only, no drilling truth exists yet' },
+      // ─── T75 F12 · THE SMALL FRIDGE CLOSES ONTO THE D/W PANEL ───────────
+      // *"the small fridge is `DW_PANEL`'s fridge front, said in the row."*
+      // An under-counter fridge stands between two carcasses exactly as a
+      // dishwasher does: the kit is the D/W panel, a front and nothing else.
       {
-        kind: 'soon',
+        kind: 'type',
         id: 'small-fridge',
+        typeId: 'DW_PANEL',
         label: 'Small fridge',
-        hint: 'Under-counter appliance housing',
-        reason: 'No kit defines the appliance aperture yet — the pattern comes first',
+        hint: 'Under-counter fridge: the D/W panel\'s fridge front, a front and nothing else',
       },
       {
         kind: 'soon',
@@ -160,12 +181,42 @@ export const KITCHEN_LIBRARY = [
       {
         kind: 'soon', id: 'space-tower', label: 'Space tower', hint: 'The drawer larder', reason: NO_PATTERN,
       },
+      // ─── T75 F12 · THE APPLIANCE TOWER, KIT_FRIDGE STACKED ──────────────
+      // *"Four library rows, Tall units, each a defaults block: `Oven tall`
+      // (oven + cupboard), `Oven + microwave`, `Fridge freezer`, `Washer +
+      // dryer`."*  The two oven rows stay held open, with the reason: an oven
+      // stands at eye level with cupboards under and over it, which is two
+      // door zones on one face, and the door path cuts one; stood on the
+      // bottom panel instead, KIT_FRIDGE's middle back rail crosses its back
+      // (FRIDGE_RAIL_MEETS_FIXED_PANEL). Neither can be cut honestly until the
+      // owner sets the stack.
       {
         kind: 'soon',
         id: 'oven-tall',
         label: 'Oven tall',
-        hint: 'Single or double appliance housing',
-        reason: 'No kit defines the appliance aperture yet — the pattern comes first',
+        hint: 'Oven and a cupboard, in KIT_FRIDGE\'s housing',
+        reason: OVEN_STACK,
+      },
+      {
+        kind: 'soon',
+        id: 'oven-microwave',
+        label: 'Oven + microwave',
+        hint: 'Oven and microwave, in KIT_FRIDGE\'s housing',
+        reason: OVEN_STACK,
+      },
+      {
+        kind: 'type',
+        id: 'fridge-freezer',
+        typeId: 'APPLIANCE_TALL',
+        label: 'Fridge freezer',
+        hint: 'KIT_FRIDGE\'s housing, one aperture, the fridge behind its door',
+      },
+      {
+        kind: 'type',
+        id: 'washer-dryer',
+        typeId: 'APPLIANCE_TALL2',
+        label: 'Washer + dryer',
+        hint: 'KIT_FRIDGE\'s housing, two apertures, a door over the top',
       },
       // ─── Turn 30 (CLAUDE.md F15): the american housing OPENS ─────────────
       // KIT_FRIDGE.lsp is the truth and it EXISTS: every panel it cuts already
@@ -190,9 +241,10 @@ export const KITCHEN_LIBRARY = [
       // Turn 31 (CLAUDE.md F9): the hood cabinet. The APERTURE is geometry; the
       // extractor is a BOM line and a GLB slot, and not one fixing hole.
       { kind: 'type', id: 'hood-unit', typeId: 'WUD_HOOD', label: 'Hood unit', hint: 'Wall unit over an extractor — open underneath, shorter door' },
-      {
-        kind: 'soon', id: 'l-shape-wall', label: 'L-shape wall', hint: 'One carcass on two walls', reason: NO_PATTERN,
-      },
+      // T75 F3 · *"Wall units "Blind corner wall""*: KIT_WUD hole for hole.
+      { kind: 'type', id: 'blind-corner-wall', typeId: 'BLIND_WALL', label: 'Blind corner wall', hint: 'Wall unit for a corner: one door, a blank behind the next run' },
+      // T75 F4 · *"Wall units "Corner L wall""*, replacing the held-open row.
+      { kind: 'type', id: 'corner-l-wall', typeId: 'CORNER_L_WALL', label: 'Corner L wall', hint: 'One L wall carcass in a room corner: two doors, hung on both far ends' },
     ],
   },
   {
@@ -215,15 +267,59 @@ export const KITCHEN_LIBRARY = [
         label: 'Free-standing panel',
         hint: 'A panel that belongs to the room, not to a cabinet',
       },
+      // ─── T75 F15 · THE ROW HELD OPEN SINCE TURN 15 OPENS ────────────────
+      // *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet: a flat
+      // strip under a run of wall units."*  It is not a kit to place but a
+      // thing done to the run of the selected wall unit, so the row is an
+      // ACTION: one click hangs the strip along the whole run, the same click
+      // on a run that has it takes it off (the store's `libraryAction`).
       {
-        kind: 'soon',
+        kind: 'action',
         id: 'cornice-pelmet',
-        label: 'Cornice / pelmet',
-        hint: 'One click adds the strip along a whole run',
-        reason: 'Run-logic like the plinth is ready; the strip\'s own profile and cut pattern are not',
+        action: 'pelmet',
+        label: 'Pelmet',
+        hint: 'One click adds the strip along the selected wall unit\'s whole run; again, it comes off',
       },
     ],
   },
+];
+
+/**
+ * ─── T75 F16 · THE WARDROBES LIST, AS DATA ─────────────────────────────────
+ *
+ * CLAUDE.md T75 F16: *"`WARDROBE_CHEST2 / 3 / 4` ... Wardrobes category and
+ * retail EXTRAS `ADD CHEST OF DRAWERS` (x3 default; the count by the existing
+ * variants control)."*  The existing variants control is the drawer unit's
+ * flyout (`variantsOf: 'baseDrawerUnit'`, the profile's variants), so the
+ * Wardrobes category, a flat list of types until tonight, carries its list as
+ * entries the way Kitchen does. The kits it held keep their place and their
+ * row id (the type id, as the flat list made it), and the chest's three counts
+ * are one group. The 1x drawerline is not offered: it is a door kit's drawer,
+ * not a chest's.
+ */
+export const WARDROBE_LIBRARY = [
+  { kind: 'type', id: 'WARDROBE', typeId: 'WARDROBE' },
+  { kind: 'type', id: 'WARDROBE_TOP', typeId: 'WARDROBE_TOP' },
+  { kind: 'type', id: 'WARDROBE_WALL', typeId: 'WARDROBE_WALL' },
+  { kind: 'type', id: 'BLIND_WARDROBE', typeId: 'BLIND_WARDROBE' },
+  // T75 F4 · *"CORNER_L_WARDROBE ... family wardrobe"*: "Corner L wardrobe".
+  { kind: 'type', id: 'CORNER_L_WARDROBE', typeId: 'CORNER_L_WARDROBE' },
+  {
+    kind: 'group',
+    id: 'chest-of-drawers',
+    label: 'Chest of drawers',
+    hint: 'Drawers between wardrobes: how many the stack is split into',
+    variantsOf: 'baseDrawerUnit',
+    items: [
+      { kind: 'type', id: 'chest-2', typeId: 'WARDROBE_CHEST2', variant: 'x2' },
+      { kind: 'type', id: 'chest-3', typeId: 'WARDROBE_CHEST3', variant: 'x3' },
+      { kind: 'type', id: 'chest-4', typeId: 'WARDROBE_CHEST4', variant: 'x4' },
+    ],
+  },
+  // T75 F17 · *"`WARDROBE_DESK`: a wall-hung carcass ... ONE drawer row."*
+  { kind: 'type', id: 'WARDROBE_DESK', typeId: 'WARDROBE_DESK', hint: 'Hung beside a wardrobe: one drawer under a 25 mm top' },
+  // T75 F18 · *"`WARDROBE_LOW` copied from `LOW_CABINET`."*
+  { kind: 'type', id: 'WARDROBE_LOW', typeId: 'WARDROBE_LOW', hint: 'A low cupboard beside a wardrobe, as deep as it' },
 ];
 
 /** Every entry, groups flattened — what a "which kits exist" question wants. */
@@ -285,7 +381,9 @@ export function flattenLibrary(entries = KITCHEN_LIBRARY) {
 
 /** Every unit TYPE the library can insert, in library order. */
 export function libraryTypeIds(entries = KITCHEN_LIBRARY) {
-  return flattenLibrary(entries).filter((e) => e.kind === 'type' && e.typeId).map((e) => e.typeId);
+  // T75 F12 · a kit two rows insert (the D/W panel is also the small fridge)
+  // is ONE type: named once, where it first appears.
+  return [...new Set(flattenLibrary(entries).filter((e) => e.kind === 'type' && e.typeId).map((e) => e.typeId))];
 }
 
 /**
@@ -306,6 +404,13 @@ export function resolveEntry(entry, profile) {
   if (entry.kind === 'soon') {
     return {
       enabled: false, reason: entry.reason || null, label: entry.label, hint: entry.hint || null, count: null,
+    };
+  }
+  // T75 F15 · an action row is always offered: what it is done to (the
+  // selected unit) answers for itself, refusing in words where it must.
+  if (entry.kind === 'action') {
+    return {
+      enabled: Boolean(entry.action), reason: entry.action ? null : 'Not yet', label: entry.label, hint: entry.hint || null, count: null,
     };
   }
   const variant = entry.variant

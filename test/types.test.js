@@ -275,7 +275,22 @@ test('every library type is configured, available and buildable', () => {
   // Turn 74 (CLAUDE.md F13): the FREE-STANDING PANEL, one board in the room
   // (*"SWOBODNY PANEL (wstaw panel)"*), filed in the kitchen library's
   // Extras, where its row had been held open since turn 12.
-  assert.equal(UNIT_TYPE_ORDER.length, 24, 'three wardrobe kits + 20 kitchen kits + the free panel');
+  // Turn 75 (CLAUDE.md F3): the three BLIND corner kits, each its parent
+  // (KIT_BUD, KIT_WUD, KIT_WARDROBE) hole for hole with a blank beside one leaf
+  // (*"daj od razu narożniki przemyślane"*).
+  // Turn 75 (CLAUDE.md F4): T30's L_SHAPE is deleted and the three TRUE L
+  // kits (KIT_CORNER_L.lsp) arrive: base and wall in the kitchen, one wardrobe.
+  // AMENDED BY T75 F12: + the two appliance towers (*"APPLIANCE_TALL ... copied
+  // field by field from FRIDGE"*), one row each.
+  // AMENDED BY T75 F13: + BUD_INT (*"`BUD` with `drawerStyle: 'wardrobe'`"*).
+  // AMENDED BY T75 F14: + BUDR2_HOB and BUDR_HOB (*"`BUDR` variants take `hob: true`"*).
+  // Turn 75 (CLAUDE.md F16): the CHEST OF DRAWERS, three counts, each its
+  // BUDR hole for hole in the wardrobe family (*"WARDROBE_CHEST2 / 3 / 4"*).
+  // Turn 75 (CLAUDE.md F17): the FLOATING DESK, WUD's box with one drawer
+  // and a top (*"`WARDROBE_DESK`: a wall-hung carcass"*).
+  // Turn 75 (CLAUDE.md F18): the wardrobe job's LOW UNIT, LOW_CABINET hole
+  // for hole (*"`WARDROBE_LOW` copied from `LOW_CABINET`"*).
+  assert.equal(UNIT_TYPE_ORDER.length, 39, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

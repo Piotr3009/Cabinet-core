@@ -157,11 +157,11 @@ export const PART_REGISTRY = {
   },
   false_front: {
     id: 'false_front', name: 'False fronts', group: G('front'), unit: 'm²', materialType: 'front',
-    // Kept because CLAUDE.md F1 names the row. No engine part maps here TODAY —
-    // a fixed dummy panel comes out of the engine as a `FRONT` and is a door as
-    // far as the cut list is concerned. The row is here so that the day the
-    // engine learns to say "FIX", the BOM already has somewhere to put it.
-    note: 'FIX fronts — no engine part reaches this row yet',
+    // Kept because CLAUDE.md F1 names the row, and T75 is the day the engine
+    // learned to say "FIX": the blind kit's BLANK (F3) is a fixed front piece
+    // beside the door, front material, no hinge, and it lands here.
+    // T75 F14 · …and the hob unit's dummy over its drawers, the same piece.
+    note: 'FIX fronts: the blind corner\'s blank (T75 F3) and the hob unit\'s dummy (T75 F14)',
   },
   end_panel: {
     id: 'end_panel', name: 'End panels', group: G('front'), unit: 'm²', materialType: 'front',
@@ -174,6 +174,28 @@ export const PART_REGISTRY = {
   mask: {
     id: 'mask', name: 'Bottom mask', group: G('front'), unit: 'm²', materialType: 'front',
     note: 'The board under a run of wall units, hiding the standoff',
+  },
+  // T75 F10 · the back panel on an island's empty long face, front material.
+  back_panel: {
+    id: 'back_panel', name: 'Back panels', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'The board on an island face no cabinet stands against (T75 F10)',
+  },
+  // T75 F15 · the plain pelmet: a strip in the door plane under a run of wall
+  // units, front material, cut (a cut list line), its returns with it.
+  pelmet: {
+    id: 'pelmet', name: 'Pelmet', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'The strip under a run of wall units, hiding the light',
+  },
+  // T75 F5 · the worktop's upstand along the wall, cut from worktop material.
+  upstand: {
+    id: 'upstand', name: 'Upstands', group: G('board'), unit: 'm²', materialType: 'board',
+    note: 'The strip on the worktop against the wall, worktop material (T75 F5)',
+  },
+  // T75 F2 · the corner post: a front-material board in the door plane of the
+  // run that stops on the corner (`engine/corners.js`).
+  corner_post: {
+    id: 'corner_post', name: 'Corner posts', group: G('front'), unit: 'm²', materialType: 'front',
+    note: 'The board in the door plane at an internal corner, beside the run that stops on the corner',
   },
 
   // ─── DRAWER BOX ───────────────────────────────────────────────────────────
@@ -263,6 +285,12 @@ export const PART_REGISTRY = {
     id: 'extractor', name: 'Extractor', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'The machine the hood unit is built around',
   },
+  // T75 F12 · the machine an appliance tower's aperture is ordered for (oven,
+  // microwave, washer, dryer, fridge freezer): bought, one line per aperture.
+  appliance: {
+    id: 'appliance', name: 'Appliance', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'The machine an appliance tower\'s aperture is built around',
+  },
   glass_pane: {
     id: 'glass_pane', name: 'Glass panes', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Filed here because it is bought in pieces, not cut from a sheet',
@@ -317,6 +345,15 @@ export const PART_REGISTRY = {
   kit_tie_rack: {
     id: 'kit_tie_rack', name: 'Tie rack', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism',
+  },
+  // T75 F19 · the two bought fittings Add items gained, ordered as the others are.
+  kit_hooks: {
+    id: 'kit_hooks', name: 'Hooks', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought wardrobe fitting: one line, the row\'s count of hooks, zero holes',
+  },
+  kit_valet_rod: {
+    id: 'kit_valet_rod', name: 'Valet rod', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought wardrobe mechanism: a pull-out rod, zero holes',
   },
   kit_pulldown_rail: {
     id: 'kit_pulldown_rail', name: 'Pull-down rail', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
@@ -463,6 +500,26 @@ export const ELEMENT_TO_PART_ID = {
   'END-PANEL': 'end_panel',
   INFILL: 'infill',
   MASK: 'mask',
+  // T75 F2 · the corner post.
+  'CORNER-POST': 'corner_post',
+  // T75 F5 · the worktop's upstand.
+  UPSTAND: 'upstand',
+  // T75 F10 · an island's panels: the back panel and the end panel across it.
+  'BACK-PANEL': 'back_panel',
+  'ISLAND-END-PANEL': 'end_panel',
+  // T75 F3 · the blind kit's blank: a FIX front.
+  'BLIND-BLANK': 'false_front',
+  // T75 F14 · the hob unit's dummy: the same FIX front.
+  'FALSE-FRONT': 'false_front',
+  // T75 F7 · the corner notch's box (KIT_NOTCH.lsp D1, D2), carcass board
+  // standing where the carcass's own boards stand: the RETURN is the side of
+  // the full-depth part, the STEP the shallow part's own back (the BACK's
+  // corner, moved forward), the LID a horizontal over a part-height notch.
+  // T75 F15 · the pelmet's strip and its returns.
+  'NOTCH-RETURN': 'carcase_side',
+  'NOTCH-STEP': 'back',
+  PELMET: 'pelmet',
+  'NOTCH-LID': 'carcase_horizontal',
   // T74 F13 · the free-standing panel's one board.
   'FREE-PANEL': 'free_panel',
 
@@ -520,6 +577,7 @@ export const HARDWARE_TO_PART_ID = {
   bin_pullout: 'bin_pullout',
   cargo_frame: 'cargo_frame',
   extractor: 'extractor',
+  appliance: 'appliance',
   glass_pane: 'glass_pane',
   drawer_glass: 'drawer_glass',
   mirror: 'mirror',
@@ -538,6 +596,9 @@ export const HARDWARE_TO_PART_ID = {
   wardrobe_kit_trouser: 'kit_trouser',
   wardrobe_kit_tie_rack: 'kit_tie_rack',
   wardrobe_kit_pulldown_rail: 'kit_pulldown_rail',
+  // T75 F19 · the two kinds WARDROBE_KIT_KINDS gained.
+  wardrobe_kit_hooks: 'kit_hooks',
+  wardrobe_kit_valet_rod: 'kit_valet_rod',
 };
 
 /**
@@ -587,6 +648,11 @@ const EDGE_OF_PART = {
   end_panel: 'edge_front',
   infill: 'edge_front',
   mask: 'edge_front',
+  // T75 F15 · the pelmet is banded as the mask is: front edging.
+  pelmet: 'edge_front',
+  corner_post: 'edge_front',
+  upstand: 'edge_carcase',
+  back_panel: 'edge_front',
 };
 
 /** Which edging part pays for this part's banding, or null when none does. */

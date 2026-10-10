@@ -16,7 +16,7 @@
 
 import { entLine as line, entPoly as poly, entText as text } from './primitives.js';
 import { handleMarks } from './wallElevation.js';
-import { roomWalls } from '../room.js';
+import { realWalls } from '../room.js';
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const norm = (v) => { const l = Math.hypot(...v) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
@@ -100,7 +100,8 @@ export function buildPerspective(group, { room = null, worktops = [], profile, c
   const entities = [];
 
   // The building behind: the floor line, the wall's two ends, the ceiling.
-  const walls = room ? roomWalls(room) : [];
+  // T75 F9 · plaster only: behind an island face there is no building.
+  const walls = room ? realWalls(room) : [];
   const wall = walls[group.wall];
   const ceiling = Number(room?.height) || 0;
   const x0 = wall ? 0 : group.from - 300;

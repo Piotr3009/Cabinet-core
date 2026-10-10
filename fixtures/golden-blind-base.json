@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "name": "golden-blind-base.json",
+    "turn": "T75",
+    "F": "F3",
+    "source": "KIT_BUD_FULL.lsp (the carcass); the blank is a rectangle",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "BLIND_BASE",
+    "width": 1000,
+    "height": 770,
+    "depth": 558,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": {
+      "count": 1
+    },
+    "blind_side": "left",
+    "unit_num": "01"
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,540,770,<,0.77,0.416",
+      "01,BUR,540,770,>,0.77,0.416",
+      "01,TOP,964,540,>,0.96,0.521",
+      "01,BOTTOM,964,540,>,0.96,0.521",
+      "01,BACK,1000,770,,0,0.770",
+      "01,01-F,360,767,<>^v,2.25,0.276",
+      "01,01-BLANK,636,767,<>^v,2.81,0.488"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 982,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 964,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 752,
+          "z": 18,
+          "w": 964,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 964,
+        "h": 540,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 964,
+          "h": 18,
+          "d": 540
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 1000,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 1000,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 359.5,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 639,
+          "y": 0,
+          "z": 561,
+          "w": 359.5,
+          "h": 767,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "01-BLANK",
+        "part": "BLIND-BLANK",
+        "role": "blind_blank",
+        "w": 636,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 561,
+          "w": 636,
+          "h": 767,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        6
+      ],
+      [
+        "HINGES_5MM|BUR",
+        6
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        14
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 3,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      }
+    ]
+  }
+}

@@ -10,6 +10,9 @@ import { filterLibraryByProject, groupCounts, resolveEntry } from '../engine/lib
 import { getProjectType } from '../engine/projectTypes.js';
 import { formatMm } from '../engine/format.js';
 import { projectHeights } from '../engine/design.js';
+// T75 F20 · the sets shelf: the five shipped and the workshop's own.
+import { SHIPPED_SETS } from '../engine/sets.js';
+import { isSetRow } from '../lib/templates.js';
 import { placeBesideAnchor } from '../lib/menuPlacement.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 
@@ -35,6 +38,9 @@ export default function LibraryPanel() {
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const notify = useUiStore((s) => s.notify);
   const addUnit = useProjectStore((s) => s.addUnit);
+  const insertSet = useProjectStore((s) => s.insertSet);
+  // T75 F15 · a row that is an ACTION on the selected unit's run (the pelmet).
+  const libraryAction = useProjectStore((s) => s.libraryAction);
   const units = useProjectStore((s) => s.units);
   const profile = useCabinetProfileStore((s) => s.profile);
   const design = useProjectStore((s) => s.project.design);
@@ -120,19 +126,46 @@ export default function LibraryPanel() {
     // which case the end of the run it was standing at IS the answer, and it
     // beats the selection. Same call, same free-slot search, same collision
     // clamp — this phase changed the trigger, not the mechanics.
+    // T75 F10 · a plus on an island face names the face, and nothing else.
+    const onFace = Number.isInteger(insertAt?.wall);
     const { id, error, wall } = addUnit(typeId, {
-      near: insertAt?.near ?? selectedUnitId,
+      near: onFace ? null : (insertAt?.near ?? selectedUnitId),
       side: insertAt?.side ?? null,
+      ...(onFace ? { wall: insertAt.wall } : {}),
       ...opts,
     });
     if (error) { notify(error, 'warn'); return; }
     selectUnit(id);
-    if (wall > 0) notify(`Wall 1 is full — placed on wall ${wall + 1}.`, 'info');
+    if (wall > 0 && !onFace) notify(`Wall 1 is full: placed on wall ${wall + 1}.`, 'info');
     // The place has been used up: leaving it set would put the NEXT type on the
     // same side of a cabinet that now has a neighbour there. The PANEL stays
     // open, because "add, add, add" is how a run gets built — and the unit just
     // placed is the selection now, so the next one lands beside it.
     if (insertAt) clearLibraryInsert();
+  };
+
+  // T75 F20 · a SET goes in where a unit would: the plus that opened the
+  // panel, the face it named, or beside the selection. Room refuses first:
+  // the store measures the whole span before the first unit goes in.
+  const handleAddSet = (row) => {
+    const onFace = Number.isInteger(insertAt?.wall);
+    const { ids, error, shared } = insertSet(row, {
+      near: onFace ? null : (insertAt?.near ?? selectedUnitId),
+      side: insertAt?.side ?? null,
+      ...(onFace ? { wall: insertAt.wall } : {}),
+    });
+    if (error) { notify(error, 'warn'); return; }
+    selectUnit(ids[0]);
+    notify(`${row.name}: ${ids.length} units in${shared ? ', shared out to the wall' : ''}. They are ordinary units now.`, 'ok');
+    if (insertAt) clearLibraryInsert();
+  };
+
+  // T75 F15 · an action row is done to the SELECTED unit's run; the store
+  // answers, and a refusal is said in words.
+  const handleAction = (entry) => {
+    const { ok, error, said } = libraryAction(entry.action, selectedUnitId) || {};
+    if (!ok) { notify(error || 'Not yet.', 'warn'); return; }
+    if (said) notify(said, 'info');
   };
 
   return (
@@ -197,8 +230,9 @@ export default function LibraryPanel() {
           than a fixed pixel count, because this panel is dragged around and a
           fixed height would be wrong the moment it is dropped near an edge. */}
       <div className="p-2 space-y-1 cc-scroll max-h-[60vh]" data-library-list="1">
-        {category.saved && <SavedSets onInsert={handleAdd} />}
-        {!category.saved && !category.entries && category.types.length === 0 && (
+        {category.sets && <ShippedSets onInsertSet={handleAddSet} />}
+        {(category.saved || category.sets) && <SavedSets onInsert={handleAdd} onInsertSet={handleAddSet} />}
+        {!category.saved && !category.sets && !category.entries && category.types.length === 0 && (
           <p className="text-[11px] text-ink-400 px-2 py-3">
             Nothing here yet — {category.label.toLowerCase()} are a later phase.
           </p>
@@ -224,6 +258,7 @@ export default function LibraryPanel() {
                   profile={profile}
                   heights={heights}
                   onAdd={handleAdd}
+                  onAction={handleAction}
                 />
               ))}
               {filtered.hidden > 0 && (
@@ -255,7 +290,7 @@ export default function LibraryPanel() {
  * not say why is a row a workshop asks about twice.
  */
 function LibraryEntry({
-  entry, profile, heights, onAdd, nested = false,
+  entry, profile, heights, onAdd, onAction = null, nested = false,
 }) {
   const [open, setOpen] = useState(false);
   const rowRef = useRef(null);
@@ -292,12 +327,30 @@ function LibraryEntry({
                 profile={profile}
                 heights={heights}
                 onAdd={onAdd}
+                onAction={onAction}
                 nested
               />
             ))}
           </Flyout>
         )}
       </div>
+    );
+  }
+
+  // T75 F15 · an ACTION row: no kit, no size line, the click is done to the run.
+  if (entry.kind === 'action' && state.enabled) {
+    return (
+      <button
+        type="button"
+        className="w-full text-left px-2 py-2 rounded hover:bg-shell-700 border border-transparent hover:border-shell-600 transition-colors"
+        data-library-entry={entry.id}
+        data-library-action={entry.action}
+        title={state.hint || ''}
+        onClick={() => onAction?.(entry)}
+      >
+        <div className="text-sm text-ink-50">{state.label || entry.id}</div>
+        <div className="text-[11px] text-ink-400">{state.hint}</div>
+      </button>
     );
   }
 
@@ -423,6 +476,34 @@ function Flyout({
 }
 
 /**
+ * T75 F20 · THE FIVE SETS SHIPPED AS DATA (`engine/sets.js`): a recipe of
+ * kits that exist, inserted left to right through the ordinary add path. A
+ * set is a RECIPE, not a group: once in, the units are ordinary units.
+ */
+function ShippedSets({ onInsertSet }) {
+  return (
+    <ul className="space-y-1" data-shipped-sets="1">
+      {SHIPPED_SETS.map((set) => (
+        <li key={set.id} className="rounded border border-transparent hover:border-shell-600 hover:bg-shell-700/60 transition-colors">
+          <button
+            type="button"
+            className="w-full text-left px-2 py-2 min-w-0"
+            title={set.hint}
+            data-set={set.id}
+            onClick={() => onInsertSet(set)}
+          >
+            <div className="text-sm text-ink-50 truncate">{set.name}</div>
+            <div className="text-[11px] text-ink-400 truncate">
+              {set.units.length} units: {set.units.map((u) => getUnitType(u.type).label).join(', ')}
+            </div>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
  * Saved sets (BACKLOG #30): the workshop's own configured units.
  *
  * Clicking one INSERTS it through the ordinary add path, so a template can no
@@ -430,7 +511,7 @@ function Flyout({
  * live here, where the list is — a set you cannot correct is a set you stop
  * trusting.
  */
-function SavedSets({ onInsert }) {
+function SavedSets({ onInsert, onInsertSet }) {
   const templates = useTemplateStore((s) => s.templates);
   const rename = useTemplateStore((s) => s.rename);
   const remove = useTemplateStore((s) => s.remove);
@@ -456,7 +537,9 @@ function SavedSets({ onInsert }) {
   return (
     <ul className="space-y-1">
       {templates.map((t) => {
-        const type = getUnitType(t.type);
+        // T75 F20 · a SET row has no single type: it names its units.
+        const asSet = isSetRow(t);
+        const type = asSet ? null : getUnitType(t.type);
         const isEditing = editing?.id === t.id;
         return (
           <li key={t.id} className="rounded border border-transparent hover:border-shell-600 hover:bg-shell-700/60 transition-colors">
@@ -477,17 +560,31 @@ function SavedSets({ onInsert }) {
               </div>
             ) : (
               <div className="flex items-center">
-                <button
-                  type="button"
-                  className="flex-1 text-left px-2 py-2 min-w-0"
-                  title={`Insert a ${type.label} with these parameters`}
-                  onClick={() => onInsert(t.type, { params: t.params })}
-                >
-                  <div className="text-sm text-ink-50 truncate">{t.name}</div>
-                  <div className="text-[11px] text-ink-400">
-                    {type.label} · {formatMm(t.params.width)} × {formatMm(t.params.height)} × {formatMm(t.params.depth)} mm
-                  </div>
-                </button>
+                {asSet ? (
+                  <button
+                    type="button"
+                    className="flex-1 text-left px-2 py-2 min-w-0"
+                    title={`Insert these ${t.units.length} units, left to right`}
+                    onClick={() => onInsertSet(t)}
+                  >
+                    <div className="text-sm text-ink-50 truncate">{t.name}</div>
+                    <div className="text-[11px] text-ink-400 truncate">
+                      {t.units.length} units: {t.units.map((u) => getUnitType(u.type).label).join(', ')}
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="flex-1 text-left px-2 py-2 min-w-0"
+                    title={`Insert a ${type.label} with these parameters`}
+                    onClick={() => onInsert(t.type, { params: t.params })}
+                  >
+                    <div className="text-sm text-ink-50 truncate">{t.name}</div>
+                    <div className="text-[11px] text-ink-400">
+                      {type.label} · {formatMm(t.params.width)} × {formatMm(t.params.height)} × {formatMm(t.params.depth)} mm
+                    </div>
+                  </button>
+                )}
                 <button
                   type="button" className="cc-btn-ghost shrink-0" title="Rename this set"
                   onClick={() => setEditing({ id: t.id, name: t.name })}

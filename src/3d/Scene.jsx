@@ -890,6 +890,16 @@ function Worktops({
     const g = w.geometry;
     const wall = walls[g.wall] || walls[0];
     if (!wall) return null;
+    // ─── T75 F4/F5 · AN L SLAB IS ITS OUTLINE, A CORNER IS TWO SLABS ─────────
+    // The engine hands the L as `outline` (wall frame: along, out from the
+    // wall) and keeps x/w/d as its bounding box; the shape is extruded so the
+    // bite in the L is not drawn as stone. Each slab of a corner pair has its
+    // own `slabId`. The cut-outs are drawn as dark insets on the top face.
+    if (Array.isArray(g.outline) && g.outline.length >= 3) {
+      return (
+        <WorktopOutline key={w.slabId || w.id} w={w} wall={wall} roomCentre={roomCentre} colour={colour} />
+      );
+    }
     const along = new THREE.Vector3(wall.along.x, 0, wall.along.y);
     const inward = new THREE.Vector3(wall.inward.x, 0, wall.inward.y);
     const centre = new THREE.Vector3(
@@ -899,25 +909,82 @@ function Worktops({
       .addScaledVector(inward, mm(g.d / 2))
       .setY(mm(g.y + g.h / 2));
     return (
-      <mesh
-        key={w.id}
-        position={centre.toArray()}
-        rotation={[0, wall.angle, 0]}
-        castShadow
-        receiveShadow
-        userData={{
-          ccWorktopId: w.id,
-          ccWorktopUnits: g.unitIds,
-          ccWorktopMm: {
-            w: g.w, d: g.d, t: g.h, y: g.y, overhang: g.overhang,
-          },
-        }}
-      >
-        <boxGeometry args={[mm(g.w), mm(g.h), mm(g.d)]} />
-        <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} />
+      <group key={w.slabId || w.id}>
+        <mesh
+          position={centre.toArray()}
+          rotation={[0, wall.angle, 0]}
+          castShadow
+          receiveShadow
+          userData={{
+            ccWorktopId: w.id,
+            ccWorktopSlab: w.slabId || w.id,
+            ccWorktopUnits: g.unitIds,
+            ccWorktopMm: {
+              w: g.w, d: g.d, t: g.h, y: g.y, overhang: g.overhang,
+            },
+          }}
+        >
+          <boxGeometry args={[mm(g.w), mm(g.h), mm(g.d)]} />
+          <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} />
+        </mesh>
+        <WorktopCutouts w={w} wall={wall} roomCentre={roomCentre} />
+      </group>
+    );
+  });
+}
+
+/** T75 F5 · the wall-frame point (along, out) of a worktop, in the scene. */
+function worktopPoint(wall, roomCentre, along, out, y) {
+  return new THREE.Vector3(mm(wall.start.x - roomCentre.x), mm(y), mm(wall.start.y - roomCentre.y))
+    .addScaledVector(new THREE.Vector3(wall.along.x, 0, wall.along.y), mm(along))
+    .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(out));
+}
+
+/** T75 F5 · each cut-out a slab proposes, a dark inset on its top face. */
+function WorktopCutouts({ w, wall, roomCentre }) {
+  const g = w.geometry;
+  return (w.cutouts || []).map((c) => {
+    const at = worktopPoint(wall, roomCentre, c.x + c.w / 2, c.z + c.d / 2, g.y + g.h + 0.6);
+    return (
+      <mesh key={`${c.kind}-${c.unitId}`} position={at.toArray()} rotation={[-Math.PI / 2, 0, wall.angle]}
+        userData={{ ccWorktopCutout: c.kind, ccCutoutMm: { w: c.w, d: c.d, r: c.r } }}>
+        <planeGeometry args={[mm(c.w), mm(c.d)]} />
+        <meshStandardMaterial color="#2a2a2c" roughness={0.9} />
       </mesh>
     );
   });
+}
+
+/**
+ * T75 F4/F5 · an L slab, extruded from the engine's own outline: the shape is
+ * built in the wall's frame (x along the wall, y out from it) and stood on the
+ * carcass tops at the slab's height.
+ */
+function WorktopOutline({ w, wall, roomCentre, colour }) {
+  const g = w.geometry;
+  const geometry = useMemo(() => {
+    const shape = new THREE.Shape(g.outline.map(([x, z]) => new THREE.Vector2(mm(x), mm(z))));
+    const extruded = new THREE.ExtrudeGeometry(shape, { depth: mm(g.h), bevelEnabled: false });
+    // Shape lies in XY; lift it so +Y of the shape becomes the wall's inward.
+    extruded.rotateX(Math.PI / 2);
+    return extruded;
+  }, [g.outline, g.h]);
+  const origin = worktopPoint(wall, roomCentre, 0, 0, g.y + g.h);
+  return (
+    <group>
+      <mesh
+        geometry={geometry}
+        position={origin.toArray()}
+        rotation={[0, wall.angle, 0]}
+        castShadow
+        receiveShadow
+        userData={{ ccWorktopId: w.id, ccWorktopSlab: w.slabId || w.id, ccWorktopUnits: g.unitIds, ccWorktopShape: 'L' }}
+      >
+        <meshStandardMaterial color={colour} roughness={0.55} metalness={0.04} side={THREE.DoubleSide} />
+      </mesh>
+      <WorktopCutouts w={w} wall={wall} roomCentre={roomCentre} />
+    </group>
+  );
 }
 
 /**
@@ -964,6 +1031,43 @@ function AddPluses({
         colour={profile.appearance.addPlus.run}
         title={`Add a unit to the ${point.side} of ${unit.params?.unit_num ?? ''}`}
         onClick={() => onPick(point)}
+      />
+    );
+  });
+}
+
+/**
+ * ─── T75 F10 · A PLUS ON EVERY EMPTY ISLAND FACE ────────────────────────────
+ *
+ * *"A unit is added to a face as to a wall (`addUnit` with the face's index;
+ * the library's plus points on the plan show the faces)."*  `addPlusPoints`
+ * reads units, so a face with nothing on it but the automat's panel has no run
+ * to stand a plus beside: it gets one of its own, in the middle of the face,
+ * where a base unit would stand. The click opens the library ON that face.
+ */
+function IslandFacePluses({
+  units, walls, roomCentre, profile, onPick,
+}) {
+  const size = mm(profile.ui.addPlusMinGapMm) * 0.9;
+  const depth = Number(profile.baseUnit?.defaults?.depth) || 560;
+  const height = Number(profile.baseUnit?.defaults?.height) || 720;
+  return walls.filter((w) => w.island).map((wall) => {
+    const taken = units.some((u) => (u.position?.wall ?? 0) === wall.index && !isFreePanel(u.type));
+    if (taken) return null;
+    const world = new THREE.Vector3(
+      mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+    )
+      .addScaledVector(new THREE.Vector3(wall.along.x, 0, wall.along.y), mm(wall.width / 2))
+      .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(depth / 2))
+      .setY(mm(height / 2));
+    return (
+      <AddPlus
+        key={`island-${wall.index}`}
+        position={world.toArray()}
+        size={size}
+        colour={profile.appearance.addPlus.run}
+        title={`Add a unit to face ${wall.face} of the island`}
+        onClick={() => onPick(wall)}
       />
     );
   });
@@ -2017,6 +2121,21 @@ export default function Scene({
           roomCentre={bounds.centre}
           profile={profile}
           onPick={() => { closeContextMenu(); onAddFirst(); }}
+        />
+      )}
+
+      {/* T75 F10 · the island's empty faces, each with a plus of its own (PRO:
+          retail never meets an island). */}
+      {!contourView && !shelfDrag && !onAddPlus && (
+        <IslandFacePluses
+          units={units}
+          walls={walls}
+          roomCentre={bounds.centre}
+          profile={profile}
+          onPick={(wall) => {
+            closeContextMenu();
+            openLibraryToInsert(categoryOf('BUD')?.id || null, { wall: wall.index });
+          }}
         />
       )}
 

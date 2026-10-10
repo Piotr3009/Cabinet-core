@@ -40,7 +40,12 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   // staircase, so it is built as two. Nothing else in the list moved.
   // AMENDED BY T74 F7: *"ADD WALL UNIT ... Osobny typ"*: the wardrobe's own
   // wall unit joins the category, a third kit; the first two did not move.
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);
+  // AMENDED BY T75 F3: + the blind corner wardrobe (*"the Wardrobes category "Blind corner wardrobe""*).
+  // AMENDED BY T75 F16: + the chest of drawers, its three counts (*"Wardrobes category"*), read off
+  // the category's entries (the drawer group, as Kitchen's is).
+  // AMENDED BY T75 F17: + the floating desk (*"`WARDROBE_DESK`: a wall-hung carcass"*).
+  // AMENDED BY T75 F18: + the low unit (*"`WARDROBE_LOW` copied from `LOW_CABINET`"*).
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
   // Turn 15 (CLAUDE.md F5.2): the same nine kits, in the order the owner's
   // CATALOGUE puts them in — base units, then talls, then walls.
   assert.deepEqual(getCategory('kitchen').types, [
@@ -49,12 +54,22 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
     // Turn 30 (CLAUDE.md F13): CARGO — KIT_BUDTALL's carcass at 300 wide.
     // Turn 31 (CLAUDE.md F9): WUD_HOOD — the KIT_WUD envelope with its bottom
     // open, standing beside the two wall units it is one of.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'SINK', 'L_SHAPE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD',
+    // T75 F3: the blind corner (base) and the blind corner wall unit.
+    // AMENDED BY T75 F4: T30's L_SHAPE is deleted; the true L's base kit takes its place and its wall kit follows the blind wall unit.
+    // AMENDED BY T75 F12: the appliance towers, *"Fridge freezer"* and *"Washer + dryer"*.
+    // AMENDED BY T75 F13: BUD_INT, *"Drawers behind doors"*.
+    // AMENDED BY T75 F14: the hob drawer units, 2x and 3x.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'BLIND_WALL', 'CORNER_L_WALL',
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
   // T36 F7: Main wardrobe + Top box. T74 F7: + the wardrobe's wall unit.
-  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL']);
+  // AMENDED BY T75 F3: + the blind corner wardrobe (*"the Wardrobes category "Blind corner wardrobe""*).
+  // AMENDED BY T75 F16: + the chest of drawers, its three counts (*"Wardrobes category"*), read off
+  // the category's entries (the drawer group, as Kitchen's is).
+  // AMENDED BY T75 F17: + the floating desk (*"`WARDROBE_DESK`: a wall-hung carcass"*).
+  // AMENDED BY T75 F18: + the low unit (*"`WARDROBE_LOW` copied from `LOW_CABINET`"*).
+  assert.deepEqual(getCategory('wardrobe').types, ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'CORNER_L_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW'] /* AMENDED BY T75 F4: + the Corner L wardrobe */);
 
   // Turn 5 (BACKLOG #30): Saved sets is real. It holds the workshop's OWN units
   // rather than kits, so it lists no types and is marked `saved` — the panel
@@ -64,7 +79,10 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   assert.deepEqual(getCategory('sets').types, []);
 
   // Held open, not pretended: an empty category says "soon" and is not clickable.
-  assert.equal(getCategory('media').soon, true);
+  // AMENDED BY T75 F20: *"the Library's `media` category (`soon`) becomes the sets shelf
+  // (saved sets and shipped sets on one list)"*: the `soon` flag is deleted, `sets` marks the shelf.
+  assert.equal(getCategory('media').soon, undefined);
+  assert.equal(getCategory('media').sets, true);
   assert.deepEqual(getCategory('media').types, []);
   for (const id of ['kitchen', 'wardrobe']) {
     assert.equal(getCategory(id).soon, undefined);

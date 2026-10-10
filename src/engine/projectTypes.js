@@ -41,6 +41,8 @@ export const PROJECT_TYPES = [
     category: 'kitchen',
     scope: 'wall',
     hint: 'A single run around a television',
+    // T75 F20 · the furniture behind the name: `engine/sets.js`.
+    set: 'set-media-wall',
   },
   {
     id: 'sideboard',
@@ -48,6 +50,8 @@ export const PROJECT_TYPES = [
     category: 'kitchen',
     scope: 'wall',
     hint: 'One freestanding-looking run',
+    // T75 F20 · the furniture behind the name: `engine/sets.js`.
+    set: 'set-sideboard',
   },
   {
     id: 'vanity',
@@ -55,6 +59,8 @@ export const PROJECT_TYPES = [
     category: 'kitchen',
     scope: 'wall',
     hint: 'Bathroom units under a basin — lower than a kitchen',
+    // T75 F20 · the furniture behind the name: `engine/sets.js`.
+    set: 'set-vanity',
   },
   {
     id: 'utility',
@@ -62,6 +68,8 @@ export const PROJECT_TYPES = [
     category: 'kitchen',
     scope: 'room',
     hint: 'Kitchen construction, laundry layout',
+    // T75 F20 · the furniture behind the name: `engine/sets.js`.
+    set: 'set-utility',
   },
   {
     id: 'hallway',
@@ -69,6 +77,8 @@ export const PROJECT_TYPES = [
     category: 'kitchen',
     scope: 'wall',
     hint: 'Tall storage, shoe benches, a coat run',
+    // T75 F20 · the furniture behind the name: `engine/sets.js`.
+    set: 'set-hallway',
   },
   {
     id: 'other',

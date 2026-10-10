@@ -25,6 +25,8 @@ import { freePanelOf, freePanelPlacement } from './freePanel.js';
 import { getCabinetProfile } from './profile.js';
 import { getUnitType } from './types.js';
 import { legCount, legLayout } from './legs.js';
+// T75 F4 · the true L carcass, KIT_CORNER_L.lsp mirrored line for line.
+import { cornerLPlan } from './cornerL.js';
 import { partitionSpan, shelfCrossesPartition, widthZones } from './zones.js';
 // Turn 27 (CLAUDE.md F1): which TWO boards a shelf actually lands on, and how
 // a world height reads in each of their own frames.
@@ -43,6 +45,18 @@ import {
   plateBearerOf, slopeForcedHand, topDemandMm,
 } from './doors.js';
 import { areaM2, metres, roundTo, rtos } from './format.js';
+// T75 F7 · the corner notch, KIT_NOTCH.lsp's mirror: a refusal asked of the
+// parent's own cut, a pass before the drilling and a pass after it.
+import {
+  notchCarcass, notchDrills, notchSummary, notchVerdict, withNotchRefusal,
+} from './notch.js';
+// T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
+// of the parent's own puzzle cut, the puzzle stripped before the drilling and
+// the pairs added after it. Never reached while the system is the puzzle.
+import {
+  dowelDrills, dowelGateWarning, dowelStrip, dowelSummary, dowelVerdict, dowelledShelf,
+  jointSystemOf, withJointsRefusal,
+} from './dowels.js';
 // T58b (CLAUDE.md F2): the LED strip's own dimensions — thickness and width —
 // are the lighting spec's, so the strip the glass births is cut to the same
 // law every other strip in the project is. `ledStrips.js` reaches nothing in
@@ -77,6 +91,7 @@ import {
 // below does all of that, which is CLAUDE.md's own "read the BUDR law, do not
 // re-derive it".
 import { overlayDrawerItems, overlayPlan } from './overlayDrawers.js';
+import { apertureStack, applianceLabelOf, resolveApertures } from './applianceTower.js';
 
 // ─── T65 F5 · THE SETBACK THE CAPPING SHELF DOES NOT TAKE ──────────────────
 //
@@ -700,7 +715,9 @@ function normalizeParams(raw, profile) {
   // interior derivation, rather than as a `supports` flag each of them checks
   // for itself.
   const occupied = type.interiorOccupied === true;
-  const shelves = type.supports.shelves && !occupied
+  // T75 F4: an L's shelves are cut as SHELF-L by its own builder (through the
+  // parent kit's shelf rows), so the box-shaped shelf pass is handed none.
+  const shelves = type.supports.shelves && !occupied && !type.corner
     ? (items.length ? shelvesFromItems.length : clampInt(p.shelves, 0, 10))
     : 0;
 
@@ -771,7 +788,7 @@ function normalizeParams(raw, profile) {
     // kit's own ratio for the rest. Nothing set = `budrFrontHeights` unchanged.
     ? budrHeightsWithOwn(stackHeight, profile, budrSplit, p.drawer_heights, warnings)
     : resolveDrawerHeights(p, drawers, drawerItems, profile, warnings);
-  const rail = type.supports.rail && !occupied
+  const rail = type.supports.rail && !occupied && !type.corner
     ? (items.length ? Boolean(hangerFromItems) : Boolean(p.rail))
     : false;
 
@@ -800,6 +817,63 @@ function normalizeParams(raw, profile) {
     doorCount = Number(type.doorCount) > 0 ? Number(type.doorCount) : doorCountFor(p.width, profile);
   }
 
+  // ─── T75 F3 · THE BLIND KIT'S BLANK ─────────────────────────────────────
+  //
+  // CLAUDE.md T75 F3: *"`blindMm` is COMPUTED from the corner: the adjacent
+  // run's depth + front thickness + `corner.postMm` + `clearance.corner` ...
+  // Clicking its dimension overrides `blindMm` by hand; the override is the
+  // client's and the automat never takes it back ... The DOOR: one leaf, width
+  // = W minus blank minus the gaps, hinged on the far side."*  The store writes
+  // `blind_mm` and `blind_side` from the corner the kit stands in
+  // (`engine/corners.js`); a bare call (every golden of a blind kit) takes the
+  // kit's own depth as the adjacent run's. Null on every other kit, so nothing
+  // below reads it for them.
+  let blind = null;
+  if (type.blind) {
+    const own = Number(p.blind_mm_own);
+    const auto = Number(p.blind_mm);
+    const kitDepth = Number(readPath(profile, `${type.defaultsKey}.depth`)) || Number(p.depth) || 0;
+    const fallback = kitDepth + (Number(p.front_t) || profile.front.thickness)
+      + (Number(profile.corner?.postMm) || 0) + (Number(profile.doors?.clearance?.corner) || 0);
+    const wanted = Number.isFinite(own) && own > 0 ? own : (Number.isFinite(auto) && auto > 0 ? auto : fallback);
+    const width = Number(p.width) || 0;
+    const side = p.blind_side === 'right' ? 'right' : 'left';
+    // A rigid fixed piece beside a door: rule 2's clearance (the end panel's).
+    const clear = Number(profile.doors?.clearance?.endPanel ?? 3);
+    blind = {
+      mm: Math.max(0, Math.min(wanted, width - clear - profile.doors.gap)),
+      side,
+      clear,
+      own: Number.isFinite(own) && own > 0,
+    };
+    // One leaf, hinged on the FAR side from the blank.
+    if (doorCount > 0) doorCount = 1;
+    hinge = side === 'left' ? 'R' : 'L';
+  }
+
+  // ─── T75 F4 · THE TRUE L: ITS ARM, ITS HAND, ITS TWO DOORS ──────────────
+  //
+  // KIT_CORNER_L.lsp: the arm depth `d` (the family's own depth unless the
+  // unit says otherwise), the hand (which END of the unit stands in the room
+  // corner: 'left' is the LISP's frame copied, 'right' its mirror), and the
+  // doors: one per arm, through the parent kit's own door path, so the box's
+  // own front pass is handed none (`doorCount` 0). Null on every other kit.
+  let cornerL = null;
+  if (type.corner) {
+    const armDefault = Number(readPath(profile, type.armDepthKey)) || 0;
+    const fitted = !(p.doors === false || p.doors === 0
+      || (p.doors && typeof p.doors === 'object' && Number(p.doors.count) === 0));
+    cornerL = {
+      arm: Number(p.arm_mm) > 0 ? Number(p.arm_mm) : armDefault,
+      side: p.corner_side === 'right' ? 'right' : 'left',
+      doors: Boolean(type.supports.doors) && fitted,
+      // T75 proposed, owner to confirm (`profile.corner.overlap`): the arm on
+      // the ADJACENT wall overlaps; 'own' turns it round.
+      overlap: profile.corner?.overlap === 'own' ? 'own' : 'adjacent',
+    };
+    doorCount = 0;
+  }
+
   // Wall units may run their fronts below the carcass (handleless grab edge).
   // `true` means "the standard extend"; a number overrides it.
   let doorExtend = 0;
@@ -809,6 +883,18 @@ function normalizeParams(raw, profile) {
   }
 
   const railDefault = readPath(profile, `${type.defaultsKey}.railOffset`) ?? profile.wardrobe.defaults.railOffset;
+
+  // ─── T75 F12 · THE APPLIANCE TOWER'S STACK ──────────────────────────────
+  // The unit's own list (written from its defaults block when it was made),
+  // or the block's, each aperture given its height. Null on every kit that is
+  // not a tower, so FRIDGE, FRIDGE_US and the six cut what they cut.
+  const tower = type.applianceTower
+    ? apertureStack(resolveApertures(
+      Array.isArray(p.apertures) ? p.apertures : readPath(profile, `${type.defaultsKey}.apertures`),
+      profile,
+      { fridgeH: p.fridge_h },
+    ), carcassG, profile)
+    : null;
 
   return {
     type,
@@ -827,6 +913,10 @@ function normalizeParams(raw, profile) {
     hinge,
     doorCount,
     doorExtend,
+    // T75 F3 · the blind kit's blank (null on every other kit).
+    blind,
+    // T75 F4 · the true L's arm, hand and doors (null on every other kit).
+    cornerL,
     // ─── Turn 17 (CLAUDE.md F7) ───
     // The project's standard (2 or 3) and, above it, this cabinet's own hinge
     // rows if a joiner has edited them. Both are INPUTS in the design layer's
@@ -905,6 +995,9 @@ function normalizeParams(raw, profile) {
       kind: i.kind,
       zone: i.zone != null && Number.isFinite(Number(i.zone)) ? Math.trunc(Number(i.zone)) : null,
       pos_mm: Number(i.pos_mm) > 0 ? Number(i.pos_mm) : null,
+      // T75 F19 · a row of hooks says how many. Absent on every other kit, so
+      // no item written before tonight normalises to a key it did not have.
+      ...(i.kind === 'hooks' && Number(i.count) > 0 ? { count: Math.trunc(Number(i.count)) } : {}),
     })),
     columnRails: columnRailItems.map((i) => ({
       zone: Math.trunc(Number(i.zone)),
@@ -992,10 +1085,14 @@ function normalizeParams(raw, profile) {
     // two numbers before they get here (src/engine/** imports nothing from
     // src/lib/** — the layering law).
     slopeCut: normaliseSlopeCut(p.slope_cut ?? p.slopeCut, Number(p.width) || 0),
-    // Turn 30 (CLAUDE.md F19): the depth of each arm of a corner unit's L. An
-    // INPUT, defaulting to the profile's, like every other number a kit has.
-    cornerArm: Number(p.corner_arm_mm) > 0 ? Number(p.corner_arm_mm) : profile.cornerUnit.armMm,
-    fridgeH: Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
+    // T75 F4 KASACJA: T30's `cornerArm` input is gone with its kit; the true
+    // L's arm is `cornerL.arm` above (`arm_mm`, a T30 save migrated on load).
+    // T75 F12 · a tower hands KIT_FRIDGE the height of its whole stack: its
+    // TOP fixed panel is the fridge's FIXED at `G + fridgeH`.
+    fridgeH: tower ? tower.fridgeH : Number(p.fridge_h ?? profile.fridgeUnit.defaults.fridgeH),
+    ...(tower ? { tower } : {}),
+    // T75 F14 · a drawer unit under a hob (its top front a fixed dummy).
+    ...(p.hob === true ? { hob: true } : {}),
     mountHeight: Number(p.mount_height ?? profile.wallUnit.defaults.mountHeight),
     // Toe kick, per unit (turn 5, BACKLOG #29). The project sets it in Design
     // Settings and it arrives here as a parameter, so the plinth, the legs and
@@ -1005,7 +1102,7 @@ function normalizeParams(raw, profile) {
     // Turn 27 (CLAUDE.md F2.1): a carcass with an appliance in it carries no
     // interior items at all — the partition pass reads this list, so the gate
     // is on the list rather than on each of its readers.
-    items: occupied ? [] : items,
+    items: occupied || type.corner ? [] : items,
     warnings,
   };
 }
@@ -1205,7 +1302,12 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // both faces and all four edges. It is cut from the carcass board (it is a
 // board the client builds with, not a door), so it does NOT join the front
 // material below.
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel']);
+// T75 F2 adds `corner_post` (a board of the front material standing in the
+// door plane at an internal corner), and F3 `blind_blank` (the blind kit's
+// fixed face): both are seen from the room and both are front material.
+// T75 F14 · …and `false_front`, the hob unit's fixed dummy, the blank's sibling.
+// T75 F15 · …and `pelmet`, the strip under a run of wall units, front material.
+const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1235,7 +1337,7 @@ export function isFinishExposed(role) {
 // under the doors, in the plane the eye reads as the front of the run — so it
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask']);
+const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -1268,7 +1370,10 @@ export const SHELF_VARIANTS = ['adjustable', 'fixed', 'pullout', 'shoe'];
 // mechanisms that are items in a column. Anything else says null and is the
 // plain drawer every project has always had.
 export const DRAWER_VARIANTS = ['shoe', 'belt_tie', 'belt_tie_glass'];
-export const WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail'];
+// T75 F19 · *"Two rows in Add items for the wardrobe family: `Hooks` (a row of
+// N, BOM line, placeholder bodies, zero holes) and `Valet rod` (pull-out, BOM
+// line, placeholder, zero holes)."*  Two more bought mechanisms, the same item.
+export const WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail', 'hooks', 'valet_rod'];
 
 /** A drawer item's variant, or null for the plain box. */
 export function drawerVariantOf(item) {
@@ -1434,6 +1539,32 @@ export function computeCabinet(params, profileOverride) {
   const profile = profileOverride || getCabinetProfile();
   const P = profile;
   const cfg = normalizeParams(params, P);
+  // ─── T75 F23 · THE JOINT SYSTEM IS ASKED OF THE PARENT FIRST ─────────────
+  // *"Switching a unit REPLACES all of its puzzle sockets and tenons with dowel
+  // pairs on both boards."*  The unit is cut with the puzzle and the pattern is
+  // judged against that cut (`dowelVerdict`); refused, the puzzle cut is what
+  // goes and the sentence travels with it (Check #31). 'puzzle', the house
+  // default, runs no line here and no line of the three hooks below.
+  const jointsAsked = jointSystemOf(params, P);
+  let dowelPlan = null;
+  if (jointsAsked !== 'puzzle') {
+    const parent = computeCabinet({ ...params, joints_system: 'puzzle' }, profileOverride);
+    const verdict = dowelVerdict({
+      parent, params, asked: jointsAsked, type: cfg.type, profile: P,
+    });
+    if (verdict.refused) return withJointsRefusal(parent, verdict, jointsAsked);
+    dowelPlan = verdict.plan;
+  }
+  // ─── T75 F7 · THE NOTCH IS ASKED OF THE PARENT FIRST ─────────────────────
+  // *"Room refuses first: nothing is clipped silently."*  The unit is cut
+  // WITHOUT its notch and the notch is judged against that cut (KIT_NOTCH.lsp
+  // `notch-refusal`, D7, D8). Refused, the parent is what is cut and the
+  // sentence travels with it (Check #28). No `params.notch`, no line here runs.
+  if (params?.notch) {
+    const parent = computeCabinet({ ...params, notch: null }, profileOverride);
+    const verdict = notchVerdict({ parent, params, type: cfg.type, profile: P });
+    if (verdict) return withNotchRefusal(parent, verdict, params, P);
+  }
   const warnings = [...cfg.warnings];
 
   const { width: W, height: H, depth: D, G, GB, frontT, type, unitNum } = cfg;
@@ -1864,7 +1995,14 @@ export function computeCabinet(params, profileOverride) {
   // THE DOOR IS SHORTENED, and by exactly the line the plan drew: it starts
   // above the top drawer front plus the gap, and runs to the top edge the
   // cabinet already demands (`doors.js topDemandMm`, untouched).
-  const overlayBase = overlay ? overlay.doorBase : 0;
+  // T75 F12 · …and an appliance tower's door stands on its highest machine:
+  // the machine is the face, so the door starts where the machine stops (the
+  // hood's line, a door ABOVE an aperture), on the overlay's own terms: its
+  // ladder run over its own height and lifted by its base. Zero on every
+  // other kit, so the line below is what it was.
+  const towerBase = cfg.tower ? cfg.tower.doorBase : 0;
+  const overlayBase = overlay ? overlay.doorBase : towerBase;
+  const shortDoor = Boolean(overlay) || towerBase > 0;
   // A wall-unit front may run below the box; a HOOD's front starts ABOVE the
   // aperture, which is the same one line seen from the other end (F9).
   // TURN 40 (F3b): …and it STANDS on the overlay stack when there is one.
@@ -1876,9 +2014,13 @@ export function computeCabinet(params, profileOverride) {
   // settled at this line, which is why it can move without moving a byte.
   const doorY = -cfg.doorExtend + hoodApertureMm + overlayBase;
   const frontH = H - topDemandMm(params, P) + cfg.doorExtend - hoodApertureMm - overlayBase;
+  // T75 F3 · a blind kit's one leaf stands beside its blank: W less the blank,
+  // rule 2's clearance against it, and the half gap at the far end.
+  const blind = cfg.blind;
   const frontW = doorCount === 2
     ? (W - P.doors.doubleTotalGap) / 2
-    : W - P.doors.gap;
+    : (blind ? W - blind.mm - blind.clear - P.doors.gap / 2 : W - P.doors.gap);
+  const singleLeafX = blind && blind.side === 'left' ? blind.mm + blind.clear : P.doors.gap / 2;
   // Turn 29 (CLAUDE.md F3): an appliance face is screwed to the machine's own
   // door and hangs on nothing, so no side of this kit is a hinged side — which
   // matters now that such a kit answers the ordinary door control and can
@@ -1921,7 +2063,7 @@ export function computeCabinet(params, profileOverride) {
     ];
     const spans = doorCount === 2
       ? [{ x: half, free: 'L' }, { x: W - half - frontW, free: 'R' }]
-      : [{ x: half, free: cfg.hinge === 'R' ? 'R' : 'L' }];
+      : [{ x: singleLeafX, free: cfg.hinge === 'R' ? 'R' : 'L' }];
     return spans.map(({ x, free }) => {
       // The rake's verdict, from the ONE sampler and the ONE hand rule. With no
       // ceiling over this leaf `cutOver` answers null and the typed hand
@@ -1936,7 +2078,12 @@ export function computeCabinet(params, profileOverride) {
   const hingedSides = hingedSidesOf(faceLeafPlan, { panels: faceLeafPlan[0]?.sides || [] });
 
   // ── Hinges + cups ──────────────────────────────────────────────────────────
-  const hingeRule = P.hinges.rules[type.hingeRule] || P.hinges.rules.base;
+  // T75 F12 · a tower's door standing on a machine is a SHORT door: KIT_FRIDGE's
+  // tall ladder (five or six rows) was written for a door the carcass's height
+  // and crams five onto 411 mm. Its rows are the ladder the LISP writes for a
+  // door of a low height (KIT_LOW_CABINET: two under 800, three under 1200).
+  // A full-height tower door (a fridge freezer) keeps the kit's own.
+  const hingeRule = P.hinges.rules[towerBase > 0 ? 'low' : type.hingeRule] || P.hinges.rules.base;
   // ─── Turn 17 (CLAUDE.md F7) ───
   // The kit's own maths, then the project's standard, then whatever the joiner
   // has said about THIS cabinet. A bare `computeCabinet()` — every golden
@@ -1950,7 +2097,7 @@ export function computeCabinet(params, profileOverride) {
     // frame — which is exactly what T39-F1b did for the top box's door and
     // what T36-F6 does for a split leaf. Every other cabinet passes the carcass
     // height, as it always has.
-    height: overlay ? frontH : H,
+    height: shortDoor ? frontH : H,
     rule: hingeRule,
     standard: cfg.hingeStandard,
     own: cfg.hingeRows,
@@ -1963,7 +2110,7 @@ export function computeCabinet(params, profileOverride) {
   // A hand-written list is already stated in the CARCASS's frame (that is the
   // frame the Doors modal shows and `setHingePos` writes), so it is NOT lifted
   // a second time. Only the rule's own answer is.
-  const centres = overlay && !saidRows
+  const centres = shortDoor && !saidRows
     ? centresRaw.map((c) => roundTo(c + overlayBase, 4))
     : centresRaw;
   // ─── THE CUPS FOLLOW THE HINGES (turn 17, CLAUDE.md F7.3) ────────────────
@@ -2317,9 +2464,19 @@ export function computeCabinet(params, profileOverride) {
     // separates it from the section above. Every other kit reads the top panel,
     // as it always has.
     const topOfBox = overlay ? overlay.shelfY : (hasTopPanel ? H - G : H);
-    const ceilingAbove = (i) => (i + 1 < runnerBottomY.length
+    // ─── T75 F14 · THE HOB UNIT: THE TOP FRONT IS A FIXED DUMMY ─────────────
+    // *"the TOP front is a FIXED DUMMY (front material, no box, no runner,
+    // emitted as the blind blank is), the box under it keeps
+    // `profile.hob.clearanceMm` below the worktop for the hob body."*  The
+    // dummy is the stack's highest index; the split, and so every other front,
+    // is the kit's own. Null on every unit that is not under a hob, on an
+    // overlay stack and on an appliance base (the oven's one drawer).
+    const dummy = cfg.hob && !overlay && !type.appliance && heights.length >= 2 ? heights.length : null;
+    const hobCeiling = dummy ? H - (Number(P.hob?.clearanceMm) || 0) : null;
+    const kitCeiling = (i) => (i + 1 < runnerBottomY.length
       ? runnerBottomY[i + 1]
       : (boxCeiling == null ? topOfBox : Math.min(topOfBox, boxCeiling)));
+    const ceilingAbove = (i) => (dummy && i + 2 === dummy ? Math.min(kitCeiling(i), hobCeiling) : kitCeiling(i));
     const boxSides = heights.map((h, i) => {
       const wanted = lispRound(h * B.sideRatio);
       // Turn 18's own clamp under an appliance shelf stands, and stands FIRST:
@@ -2413,8 +2570,11 @@ export function computeCabinet(params, profileOverride) {
       // — the fixed shelf, the published record, the BOM — asks the stack
       // rather than asking what kind of cabinet it is on.
       overlay: Boolean(overlay),
+      // T75 F14 · the index of the fixed dummy front (1-based), or null.
+      dummy,
     };
-    numDrawers = heights.length;
+    // T75 F14 · a dummy is not a drawer: no box, no runner pair, no rod.
+    numDrawers = heights.length - (dummy ? 1 : 0);
   }
 
   // ── Hanging rail ───────────────────────────────────────────────────────────
@@ -2622,6 +2782,18 @@ export function computeCabinet(params, profileOverride) {
       code: 'FRIDGE_RAIL_MEETS_FIXED_PANEL',
       message: `The middle back rail hangs on the tenon at ${roundTo(fridge.rail2Y + pz.tabCentresFromEnd, 0)} mm, which is above the fixed panel at ${roundTo(fridge.fixedPanelY, 0)} mm — raise the fridge height or lower the carcass.`,
     });
+  }
+  // T75 F12 · a tower names its STACK in KIT_FRIDGE's two sentences, not a
+  // fridge it may not have. The codes, and every fridge's words, are unchanged.
+  if (fridge && cfg.tower) {
+    const stack = cfg.tower.rows.map((r) => `${r.role} ${roundTo(r.h, 0)}`).join(', ');
+    for (const w of warnings) {
+      if (w.code === 'FRIDGE_ZONE_TOO_TALL') {
+        w.message = `The aperture stack (${stack}) reaches ${roundTo(fridge.fixedPanelY, 0)} mm and leaves no room for the spurs panel: take an aperture out or raise the carcass.`;
+      } else if (w.code === 'FRIDGE_RAIL_MEETS_FIXED_PANEL') {
+        w.message = `The middle back rail hangs on the tenon at ${roundTo(fridge.rail2Y + pz.tabCentresFromEnd, 0)} mm, above the stack's top fixed panel at ${roundTo(fridge.fixedPanelY, 0)} mm: the back over the stack (${stack}) would cross it. Stack more under it or lower the carcass.`;
+      }
+    }
   }
 
   // ─── THE OVEN HOUSING'S OWN GEOMETRY (turn 17 F10; turn 18 F5) ───────────
@@ -3016,10 +3188,22 @@ export function computeCabinet(params, profileOverride) {
   // what the piece editor draws on it (an arc, a drill) is added the way it is
   // added to any board (`applyPartEdits`).
   if (type.carcass.top === 'free') {
-    const fp = freePanelOf({ ...params, width: W, height: H, depth: D, board_t: G }, P);
+    // ─── T75 F10 · …OR AN ISLAND'S OWN PANEL ──────────────────────────────
+    // *"An empty long face gets an auto BACK PANEL (front material, the end
+    // panel's height law, role `back_panel`); an empty end face gets the auto
+    // END PANEL ... sized to the whole island depth."*  The same one board,
+    // named for the job it does, in the front material and at the front's
+    // thickness (`island_panel`, set by the store's island automat only: no
+    // saved free panel carries it).
+    const islandPanel = params?.island_panel === 'back' || params?.island_panel === 'end' ? params.island_panel : null;
+    const fpT = islandPanel ? frontT : G;
+    const fp = freePanelOf({ ...params, width: W, height: H, depth: D, board_t: fpT }, P);
     const at = freePanelPlacement(fp);
     panels.push(panel({
-      id: 'FP', part: 'FREE-PANEL', role: 'free_panel', w: fp.length, h: fp.width, thickness: G,
+      ...(islandPanel === 'back' ? { id: 'BACK-PANEL', part: 'BACK-PANEL', role: 'back_panel' } : {}),
+      ...(islandPanel === 'end' ? { id: 'ISLAND-END', part: 'ISLAND-END-PANEL', role: 'end_panel' } : {}),
+      ...(islandPanel ? {} : { id: 'FP', part: 'FREE-PANEL', role: 'free_panel' }),
+      w: fp.length, h: fp.width, thickness: fpT,
       edgeCode: codes.all, edgeLen: metres(2 * (fp.length + fp.width)),
       box: at.box,
       cnc: { rotated: false, drawn_w: fp.length, drawn_h: fp.width, ...rectGeometry(fp.length, fp.width) },
@@ -3294,6 +3478,19 @@ export function computeCabinet(params, profileOverride) {
       // kit already draws in is the fix, and it is the only thing that moves.
       cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
     }));
+    // ─── T75 F12 · THE TOWER'S LOWER FIXED PANELS ───────────────────────────
+    // KIT_FRIDGE's FIXED, cut again at the top of every aperture under the top
+    // one: the same board, the same frame, screwed the same way (below). The
+    // top aperture's is the FIXED above. A one-aperture tower has none.
+    for (const row of (cfg.tower?.rows || []).slice(0, -1)) {
+      panels.push(panel({
+        id: `FIXED${row.index}`, part: 'FIXED', role: 'shelf', w: internalWidth, h: internalDepth, thickness: G,
+        edgeCode: codes.right, edgeLen: metres(internalWidth),
+        box: { x: G, y: row.fixedY, z: G, w: internalWidth, h: G, d: internalDepth },
+        cnc: { rotated: true, drawn_w: internalDepth, drawn_h: internalWidth, ...rectGeometry(internalDepth, internalWidth) },
+        meta: { aperture: row.index, apertureRole: row.role },
+      }));
+    }
     const railSockets = (withBottom) => ({
       bottom: [pz.tabCentresFromEnd],
       top: [pz.tabCentresFromEnd],
@@ -3373,65 +3570,325 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
-  // ─── TURN 30 (CLAUDE.md F19): THE CORNER UNIT'S L-CARCASS ─────────────────
+  // T75 F4 KASACJA: T30's L block (eight undrilled rectangles, "not one hole")
+  // is deleted; the true L below replaces it, gated on `type.corner` as it was.
   //
-  // "The riskiest of the batch. Start from what the LISP family actually
-  // supports (KIT_BUDR is in the repo — READ it first and say in the PR what it
-  // is); ship the L-carcass geometry + BOM; any hinge/drilling beyond the
-  // parent kit's own lines waits for a LISP. Do not improvise corner-post
-  // drilling overnight."
+  // ─── T75 F4 · THE TRUE L CARCASS, KIT_CORNER_L.lsp LINE FOR LINE ─────────
   //
-  // KIT_BUDR_FULL.lsp was read. Its own header says "Base Unit Drawer - 3
-  // drawers (4:3:2 ratio)" and its body is the MOVENTO runner outline drawn
-  // line by line. It is the THREE-DRAWER BASE UNIT this app has shipped since
-  // turn 3, and there is not one corner in it. So there is no parent kit for a
-  // corner unit, which means there are no parent lines to inherit — and by the
-  // batch rule that settles it: this ships GEOMETRY and a BOM, and NOT ONE
-  // HOLE.
+  // The owner's law (Petros, 23.09.2026): *"one L-shaped board cut on the CNC,
+  // flat-face door overlap, no 45° cuts."*  `engine/cornerL.js` states the
+  // boards exactly as the LISP draws them, each in its own frame; this block
+  // puts them in the box and cuts them. The LISP's frame is the box's for the
+  // 'left' hand (box.x = LISP x, box.z = LISP y, box.y = LISP z: the room
+  // corner at the unit's x = 0, the adjacent wall along z at x = 0); 'right' is
+  // its mirror in x. A board's OUTLINE is the same in both hands (the same
+  // blank, turned over), only where it stands moves.
   //
-  // ─── THE SHAPE, AND WHY IT IS MADE OF RECTANGLES ──────────────────────────
+  //   BACK-A    KIT_BUD's BACK at width W, hole for hole (backPanelGeometry).
+  //   BACK-B    its own (CL:backB*): corner-end tabs into BACK-A, far-end
+  //             sockets for SIDE-B, top/bottom sockets, the screw rows.
+  //   SIDE-A/B  KIT_BUD's side at depth d - G, cut by the PARENT kit (a
+  //             virtual BUD / WUD / WARDROBE per arm, below), so every socket,
+  //             hinge plate, pin and hanger is the parent's own, by
+  //             construction. Which is drawn as BUL and which as BUR follows
+  //             the hand: the LISP's own frame (SIDE-A drawBUL, SIDE-B drawBUR)
+  //             is, seen from the room, the 'right' hand; the 'left' hand is
+  //             its mirror, so there SIDE-A is drawn as BUR and SIDE-B as BUL,
+  //             and each hinge plate stays on the face the door hangs from.
+  //   TOP-L,    ONE L outline each (CL:lTop), tabs on the four outer edges, the
+  //   BOTTOM-L  inner edges plain, the dog-bone relief at the inner corner
+  //             (r = cnc.toolDiameter / 2, a circle on PUZZLE_DOG_BONES).
+  //   SHELF-L   ONE L (CL:lShelf), at the parent kit's own shelf rows.
+  //   legs      six, CL:legPositions; no leg holes (KIT_BUD drills none).
   //
-  // Two arms meeting in the corner, inside the footprint the room already
-  // understands (W × D, backed onto both walls):
-  //
-  //     z=D  ┌──────┐              arm A: x 0..W,   z 0..arm
-  //          │  B   │              arm B: x 0..arm, z 0..D
-  //   z=arm  ├──────┴───────┐      the bite at (arm, arm) is the open front
-  //          │      A       │      corner, where two door openings meet
-  //     z=0  └──────────────┘
-  //          x=0   x=arm    x=W
-  //
-  // Every board is a plain RECTANGLE — the L floor and the L top are each cut
-  // as two pieces rather than as one L-shaped board, because two rectangles are
-  // two boards a machine cuts today, and an L outline is a shape nobody's LISP
-  // has drawn. Nothing here is notched, bored or jointed.
+  // THE DOORS go through the EXISTING door path (the FRONTS boundary): one
+  // virtual parent cabinet per arm, the arm's opening span wide, one leaf hung
+  // on the arm's end side, its corner edge set by the override channel
+  // (`front_edge_trim`): the covered door runs to the inner corner with ZERO
+  // clearance, the overlapping door stops front_t + clearance.corner beyond it
+  // (`profile.corner.overlap`, 'adjacent': the arm on the adjacent wall
+  // overlaps, and it opens first). They are merged after the box's own front
+  // and drilling passes (below, before the totals), so nothing re-drills them.
+  let lCorner = null;
   if (type.corner && W > 0 && D > 0) {
-    const CN = P.cornerUnit;
-    const arm = Math.min(cfg.cornerArm || CN.armMm, Math.min(W, D) - G);
-    const board = (id, part, w, h, box, meta) => panels.push(panel({
-      id, part, role: 'side', w, h, thickness: G,
-      edgeCode: codes.right, edgeLen: metres(w), box, cnc: rectGeometry(w, h), meta,
-    }));
-    // The two walls it stands against.
-    board(`${unitNum}-BACK-A`, 'BACK', W, H, { x: 0, y: 0, z: 0, w: W, h: H, d: G }, { corner: 'wallA' });
-    board(`${unitNum}-BACK-B`, 'BACK', D - G, H, { x: 0, y: 0, z: G, w: G, h: H, d: D - G }, { corner: 'wallB' });
-    // The two ends, one at the far end of each arm.
-    board(`${unitNum}-SIDE-A`, 'SIDE', arm, H, { x: W - G, y: 0, z: 0, w: G, h: H, d: arm }, { corner: 'endA' });
-    board(`${unitNum}-SIDE-B`, 'SIDE', arm - G, H, { x: G, y: 0, z: D - G, w: arm - G, h: H, d: G }, { corner: 'endB' });
-    // …and the floor and the top, each as the two rectangles the L is made of.
-    const aW = W - 2 * G;
-    const aD = arm - G;
-    const bW = arm - 2 * G;
-    const bD = D - arm - G;
-    for (const [name, y] of [['BOTTOM', G], ['TOP', H - G]]) {
-      board(`${unitNum}-${name}-A`, name, aW, aD, {
-        x: G, y: y - (name === 'TOP' ? 0 : G), z: G, w: aW, h: G, d: aD,
-      }, { corner: 'armA' });
-      if (bD > 0 && bW > 0) {
-        board(`${unitNum}-${name}-B`, name, bW, bD, {
-          x: G, y: y - (name === 'TOP' ? 0 : G), z: arm, w: bW, h: G, d: bD,
-        }, { corner: 'armB' });
+    const cl = cfg.cornerL;
+    const mount = type.mount === 'wall' ? 'W' : (type.family === 'wardrobe' ? 'X' : 'B');
+    const plan = cornerLPlan({
+      W, D, d: cl.arm, H, G, mount,
+    }, P);
+    if (!plan.valid) {
+      warnings.push({ code: 'CORNER_L_REFUSED', message: `${unitNum}: ${plan.refusal}` });
+    } else {
+      const right = cl.side === 'right';
+      const d = cl.arm;
+      const mir = (b) => (right ? { ...b, x: roundTo(W - b.x - b.w, 4) } : b);
+      const board = (id, part, spec) => {
+        const made = panel({ id, part, ...spec });
+        panels.push(made);
+        return made;
+      };
+      // A plan outline in the BOX's own frame, for the scene (3d/panelSolid.js
+      // extrudes it): the LISP frame's X runs from the room corner, so the
+      // 'right' hand reads it from the other end of the box.
+      const toBox = (pts, w) => pts.map(([x, y]) => [roundTo(right ? w - x : x, 4), roundTo(y, 4)]);
+      const hand = { A: right ? 'L' : 'R', B: right ? 'R' : 'L' };
+      const gap = P.doors.gap;
+      const cornerClear = Number(P.doors?.clearance?.corner) || 0;
+      const overlapArm = cl.overlap === 'adjacent' ? 'B' : 'A';
+      const ownTrim = params?.front_edge_trim || {};
+
+      // ── one virtual parent per arm: its side, its shelf rows, its door ──
+      const DROP = [
+        'type', 'width', 'depth', 'unit_num', 'doors', 'hinge', 'arm_mm', 'corner_side', 'plinth',
+        'run_plinth', 'run_top_infill', 'run_mask', 'run_cornice', 'top_infill_mm', 'side_infill_left_mm',
+        'side_infill_right_mm', 'end_panels', 'corner_post_left_mm', 'corner_post_right_mm', 'bottom_mask',
+        'cornice', 'slope_cut', 'slopeCut', 'bay_doors', 'hinged_carcass_sides', 'front_edge_trim',
+        'element_overrides', 'drawers', 'blind_mm', 'blind_mm_own', 'blind_side',
+      ];
+      const arms = {};
+      for (const arm of ['A', 'B']) {
+        const span = arm === 'A' ? W - d : D - d;
+        const h = hand[arm];
+        const doorId = `${unitNum}-${arm}-F`;
+        const kind = arm === overlapArm ? 'overlap' : 'covered';
+        // The corner edge, in the virtual cabinet's own frame: the side away
+        // from the arm's end side.
+        const innerSide = h === 'R' ? 'left' : 'right';
+        const innerTrim = kind === 'covered' ? -gap / 2 : frontT + cornerClear - gap / 2;
+        const own = ownTrim[doorId] || {};
+        const trim = {
+          left: (innerSide === 'left' ? innerTrim : 0) + (Number(own.left) || 0),
+          right: (innerSide === 'right' ? innerTrim : 0) + (Number(own.right) || 0),
+        };
+        const base = { ...(params || {}) };
+        for (const k of DROP) delete base[k];
+        const vParams = {
+          ...base,
+          type: type.parentType,
+          width: span,
+          depth: d,
+          height: H,
+          unit_num: `${unitNum}-${arm}`,
+          hinge: h,
+          doors: cl.doors ? { count: 1, hinge: h } : false,
+          drawers: 0,
+          rail: type.supports.rail ? Boolean(params?.rail) : false,
+          front_edge_trim: cl.doors ? { [doorId]: trim } : null,
+        };
+        const v = computeCabinet(vParams, P);
+        const sideVId = h === 'L' ? 'BUL' : 'BUR';
+        arms[arm] = {
+          arm, span, hand: h, doorId, kind, innerSide, trim, v, sideVId,
+          vSide: v.panels.find((x) => x.id === sideVId) || null,
+        };
       }
+
+      // ── the two walls it stands against ──
+      const HG = P.wallUnit.hangers;
+      const hangerAt = (len) => {
+        const [x1, y1, x2, y2] = [len - HG.cutoutWidth, H - HG.cutoutHeight, len, H];
+        return { layer: HG.cutoutLayer, x1, y1, x2, y2 };
+      };
+      const backA = backPanelGeometry({
+        w: W, h: H, G, puzzle: pz,
+      });
+      if (type.hangers) {
+        // KIT_WUD's cut-out at the FAR top corner only (CL:hangerBack): the room
+        // corner end has no side for a hanger to screw to.
+        const far = hangerAt(W);
+        backA.pockets = [...backA.pockets, right ? { ...far, x1: 0, x2: HG.cutoutWidth } : far];
+      }
+      board('BACK-A', 'BACK', {
+        role: 'back', w: W, h: H, thickness: G, edgeCode: codes.none, edgeLen: 0,
+        box: { x: 0, y: 0, z: 0, w: W, h: H, d: G },
+        cnc: {
+          rotated: false, drawn_w: W, drawn_h: H, ...backA, ...(!(H > W) ? { grain: 'h' } : {}),
+        },
+        meta: { lBoard: 'BACK-A', lSide: cl.side },
+      });
+      const bB = plan.backB;
+      board('BACK-B', 'BACK', {
+        role: 'back', w: bB.len, h: H, thickness: G, edgeCode: codes.none, edgeLen: 0,
+        box: mir({ x: 0, y: 0, z: G, w: G, h: H, d: bB.len }),
+        cnc: {
+          rotated: false,
+          drawn_w: bB.len,
+          drawn_h: H,
+          outline: bB.outline.map(([x, y]) => [roundTo(x, 4), roundTo(y, 4)]),
+          pockets: [
+            ...bB.bones.map(([x1, y1, x2, y2]) => ({ layer: pz.layers.dogbone, x1, y1, x2, y2 })),
+            ...bB.pockets.map(([layer, x1, y1, x2, y2]) => ({
+              layer, x1, y1, x2, y2,
+            })),
+            ...(type.hangers ? [hangerAt(bB.len)] : []),
+          ],
+          holes: bB.holes.map(([layer, kind, x, y, dia]) => ({
+            layer, kind, x: roundTo(x, 4), y: roundTo(y, 4), d: dia,
+          })),
+          ...(!(H > bB.len) ? { grain: 'h' } : {}),
+        },
+        meta: { lBoard: 'BACK-B', lSide: cl.side },
+      });
+
+      // ── the two ends: the parent kit's own side, from the virtual parent ──
+      const sideW = plan.sideW;
+      for (const arm of ['A', 'B']) {
+        const a = arms[arm];
+        const cnc = a.vSide?.cnc
+          ? {
+            ...a.vSide.cnc,
+            outline: [...(a.vSide.cnc.outline || [])],
+            pockets: [...(a.vSide.cnc.pockets || [])],
+            holes: [...(a.vSide.cnc.holes || [])],
+          }
+          : rectGeometry(sideW, H);
+        const box = arm === 'A'
+          ? mir({ x: W - G, y: 0, z: G, w: G, h: H, d: sideW })
+          : mir({ x: G, y: 0, z: D - G, w: sideW, h: H, d: G });
+        board(`SIDE-${arm}`, 'SIDE', {
+          role: 'side', w: sideW, h: H, thickness: G,
+          edgeCode: a.hand === 'L' ? codes.left : codes.right, edgeLen: metres(H),
+          box, cnc,
+          meta: { lBoard: `SIDE-${arm}`, lSide: cl.side, hand: a.hand },
+        });
+      }
+
+      // ── TOP-L and BOTTOM-L: ONE L each, the owner's law ──
+      const top = plan.top;
+      const lBoard = (id, part, role, y, shape, t, extraMeta = {}) => {
+        const made = board(id, part, {
+          role, w: shape.w, h: shape.h, thickness: t,
+          edgeCode: codes.right, edgeLen: metres(shape.frontLen),
+          box: mir({
+            x: G, y, z: G, w: shape.w, h: t, d: shape.h,
+          }),
+          cnc: {
+            rotated: false,
+            drawn_w: shape.w,
+            drawn_h: shape.h,
+            outline: (shape.outline || shape.nominal).map(([x, y2]) => [roundTo(x, 4), roundTo(y2, 4)]),
+            pockets: (shape.bones || []).map(([x1, y1, x2, y2]) => ({ layer: pz.layers.dogbone, x1, y1, x2, y2 })),
+            holes: [],
+            curves: [{
+              kind: 'circle', layer: pz.layers.dogbone,
+              cx: roundTo(shape.relief.cx, 4), cy: roundTo(shape.relief.cy, 4), r: shape.relief.r,
+            }],
+          },
+          meta: {
+            lBoard: id.replace(/-\d+$/, ''),
+            lSide: cl.side,
+            planOutline: toBox(shape.outline || shape.nominal, shape.w),
+            ...extraMeta,
+          },
+        });
+        // The blank is the L, not its bounding rectangle (CL:area).
+        made.area_m2 = roundTo(shape.area / 1e6, 6);
+        return made;
+      };
+      lBoard('TOP-L', 'TOP', 'top', H - G, top, G);
+      lBoard('BOTTOM-L', 'BOTTOM', 'bottom', 0, top, G);
+
+      // ── SHELF-L at the parent kit's own rows (KIT_BUD's pin columns) ──
+      const vShelves = arms.A.v.panels
+        .filter((x) => x.part === 'SHELF' && x.box)
+        .sort((x, y) => (x.meta?.index || 0) - (y.meta?.index || 0));
+      vShelves.forEach((vs, i) => {
+        lBoard(`SHELF-L-${i + 1}`, 'SHELF', 'shelf', vs.box.y, plan.shelf, vs.box.h, {
+          index: vs.meta?.index ?? i + 1,
+          itemId: vs.meta?.itemId ?? null,
+          locked: vs.meta?.locked ?? false,
+          variant: vs.meta?.variant ?? null,
+        });
+      });
+
+      // ── the six legs (CL:legPositions), box frame, min corners ──
+      const lw = P.legs.width;
+      const legs = plan.legs.map((l) => ({
+        x: roundTo(right ? W - l.x - lw : l.x, 4),
+        z: roundTo(l.y, 4),
+        role: 'corner',
+        name: l.name,
+        edge: l.role,
+      }));
+
+      // ── the doors, cut by the parent's door path, placed on their arms ──
+      const doors = [];
+      if (cl.doors) {
+        for (const arm of ['A', 'B']) {
+          const a = arms[arm];
+          const vDoor = a.v.panels.find((x) => x.id === a.doorId);
+          if (!vDoor) continue;
+          const b = vDoor.box;
+          let box;
+          if (arm === 'A') {
+            // Arm A stands on the unit's own wall: the virtual frame is the
+            // box frame, moved to where the arm's opening starts.
+            box = { ...b, x: roundTo((right ? 0 : d) + b.x, 4) };
+          } else if (!right) {
+            // Arm B on the adjacent wall at x = 0, its front facing +x.
+            box = {
+              x: roundTo(b.z, 4), y: b.y, z: roundTo(D - (b.x + b.w), 4), w: b.d, h: b.h, d: b.w,
+            };
+          } else {
+            // …and at x = W, facing -x.
+            box = {
+              x: roundTo(W - (b.z + b.d), 4), y: b.y, z: roundTo(d + b.x, 4), w: b.d, h: b.h, d: b.w,
+            };
+          }
+          // The parent's trim pass narrows a leaf and leaves its blank's area
+          // and banding at the untrimmed size; the L's leaves are trimmed by
+          // the corner law itself, so they are stated at the size they are cut.
+          const door = {
+            ...vDoor,
+            area_m2: areaM2(vDoor.w, vDoor.h),
+            edging: { ...vDoor.edging, len_m: roundTo(metres(2 * vDoor.w + 2 * vDoor.h), 6) },
+            box,
+            cnc: vDoor.cnc ? { ...vDoor.cnc } : vDoor.cnc,
+            meta: {
+              ...(vDoor.meta || {}),
+              arm,
+              lSide: cl.side,
+              // Which edge meets the corner, and how (frontClearance.js rule 7's
+              // two kinds, read by `corners.js lClearanceView`), in the arm's
+              // own frame.
+              cornerEdge: { side: a.innerSide, kind: a.kind },
+              ...(a.kind === 'overlap'
+                ? { opensFirst: true, note: `door ${arm} opens first` }
+                : { coveredBy: arm === 'A' ? 'B' : 'A' }),
+              ...(arm === 'B' ? {
+                lBoard: 'DOOR-B',
+                // The scene swings it about its hinge edge at the far end of
+                // the arm (z = D), out into the room.
+                swingZ: { dir: right ? 1 : -1 },
+              } : {}),
+            },
+          };
+          // All of them: the door joins after the box's own copy loop, so its
+          // cups, cup screws and handle holes come over from the parent whole.
+          const drills = a.v.drills.filter((x) => x.panel === a.doorId);
+          // …and what the parent said about THIS leaf (a shaker frame that
+          // does not fit, a trim too deep), said on the L.
+          const said = (a.v.warnings || []).filter((wn) => wn.panel === a.doorId);
+          doors.push({
+            arm, door, drills, said,
+          });
+        }
+      }
+
+      // Every drill the parent bored in the arm's end side after its own
+      // sockets and screws (those travel on the side's cnc.holes): hinge
+      // plates, shelf pins, hangers, the rail's bracket.
+      const sideDrills = [];
+      for (const arm of ['A', 'B']) {
+        const a = arms[arm];
+        const ownHoles = (a.vSide?.cnc?.holes || []).length;
+        const extra = a.v.drills.filter((x) => x.panel === a.sideVId).slice(ownHoles);
+        for (const dr of extra) sideDrills.push({ ...dr, panel: `SIDE-${arm}` });
+      }
+
+      lCorner = {
+        plan, cl, arms, doors, sideDrills, legs, right, d,
+      };
     }
   }
 
@@ -4574,8 +5031,12 @@ export function computeCabinet(params, profileOverride) {
         kind: spec.kind,
         zone: spec.zone,
         label: body.label,
+        // T75 F19 · the hooks' row: the item's count, else the profile's. A
+        // body may name its own depth (a strip of hooks on the back is not as
+        // deep as the opening); one that names none takes the opening's.
+        ...(spec.kind === 'hooks' ? { count: spec.count ?? Math.max(1, Math.trunc(Number(body.count) || 1)) } : {}),
         box: {
-          x: from, y, z: G, w: size, h: body.bodyHeight, d: internalDepth,
+          x: from, y, z: G, w: size, h: body.bodyHeight, d: Number(body.bodyDepth) > 0 ? Number(body.bodyDepth) : internalDepth,
         },
       });
     }
@@ -4612,6 +5073,7 @@ export function computeCabinet(params, profileOverride) {
     // which is the SCREW row 38 mm higher, so every box hung 38 mm high and the
     // façade's pilots missed the box front's by exactly that.
     for (let i = 1; i <= budr.count; i += 1) {
+      if (i === budr.dummy) continue;   // T75 F14 · no box behind the hob's dummy
       const sh = budr.sideHs[i - 1];
       const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - GB]]) {
@@ -4629,6 +5091,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     for (let i = 1; i <= budr.count; i += 1) {
+      if (i === budr.dummy) continue;
       const bfH = budr.boxFrontH[i - 1];
       const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       for (const suffix of ['BF', 'BB']) {
@@ -4657,6 +5120,7 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     for (let i = 1; i <= budr.count; i += 1) {
+      if (i === budr.dummy) continue;
       const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
       const geom = rectGeometry(budr.bottomW, budr.depth);
       geom.holes = [];
@@ -4690,6 +5154,32 @@ export function computeCabinet(params, profileOverride) {
       // internal drawer, which is every unit written before tonight.
       const drop = budr.frontY[i - 1] - budr.frontY[bottom - 1];
       const fh = budr.heights[i - 1] + drop;
+      // ─── T75 F14 · THE HOB'S DUMMY, A FIXED FRONT PIECE ───────────────────
+      // Emitted as F3's blank is: front material, front thickness, its own
+      // role (`false_front`, the FIX fronts row), the drawer front's size and
+      // plane, and NO hole: no box, no runner, no screw. It is not a drawer and
+      // does not open; its fixing is the joiner's.
+      if (i === budr.dummy) {
+        panels.push(panel({
+          id: `${unitNum}-F${i}`,
+          part: 'FALSE-FRONT',
+          role: 'false_front',
+          w: budr.frontWidth,
+          h: fh,
+          thickness: frontT,
+          edgeCode: codes.all,
+          edgeLen: metres(2 * budr.frontWidth + 2 * fh),
+          box: { x: B.frontWidthDeduction / 2, y: budr.frontY[bottom - 1], z: D + P.doors.gap, w: budr.frontWidth, h: fh, d: frontT },
+          cnc: rectGeometry(budr.frontWidth, fh),
+          meta: {
+            hob: true,
+            frontType: cfg.frontType,
+            readiness: 'geometry',
+            fixing: 'manual',
+          },
+        }));
+        continue;
+      }
       const geom = rectGeometry(budr.frontWidth, fh);
       // The bottom façade runs one CARCASS board lower to cover the floor, so
       // its screw line rises by that board (turn 24, F3.2: the carcass's).
@@ -4845,8 +5335,9 @@ export function computeCabinet(params, profileOverride) {
   // its own property, defaulting to `legs` so that every type written before
   // this line behaves exactly as it did.
   const takesPlinth = type.plinth ?? type.legs;
+  // T75 F4: an L cuts its own two plinth boards (below), never the box's one.
   const wantsPlinth = AP.plinth.enabled && takesPlinth && type.mount === 'floor'
-    && params?.plinth === true && plinthH > 0;
+    && params?.plinth === true && plinthH > 0 && !type.corner;
   // ─── ONE PLINTH ACROSS A RUN (turn 12, CLAUDE.md F8) ───
   //
   // The toe kick is a RUN element now, exactly as the top infill has been since
@@ -4961,8 +5452,154 @@ export function computeCabinet(params, profileOverride) {
       cnc: type.frontOpens === 'drop'
         ? notchedPlinth(plinthLength, plinthH, -plinthX, W, Number(type.plinthCutFromTop) || 0)
         : rectGeometry(plinthLength, plinthH),
-      ...(runPlinth?.role === 'owner' ? { meta: { run: true, unitIds: runPlinth.unitIds } } : {}),
+      ...(runPlinth?.role === 'owner' ? {
+        meta: {
+          run: true,
+          unitIds: runPlinth.unitIds,
+          // T75 F6 · carried on to the face of the run round the corner.
+          ...(runPlinth.corner ? { corner: runPlinth.corner } : {}),
+          // T75 F10 · …and mitred round an island's external corner.
+          ...(runPlinth.mitres ? { mitres: runPlinth.mitres } : {}),
+        },
+      } : {}),
     }));
+  }
+  // ─── T75 F4 · THE L's OWN PLINTH: TWO BOARDS, SQUARE BUTT ────────────────
+  //
+  // CLAUDE.md T75 F4: *"Plinth: two boards meeting at the inner corner, square
+  // butt (F6)"*, and the owner's *"no 45° cuts"*. One board along the front of
+  // each arm, set back from it by the profile's setback, exactly as the box's
+  // own toe kick stands. The COVERED door's arm runs through the corner square
+  // and the overlapping door's arm butts its face, so the plinth turns the
+  // corner the way the doors do. When `params.plinth` is asked the L is never
+  // plinthless; the run's plinth meeting the L is F6's.
+  if (lCorner && AP.plinth.enabled && takesPlinth && type.mount === 'floor'
+    && params?.plinth === true && plinthH > 0) {
+    const t = AP.plinth.thickness ?? G;
+    const s = AP.plinth.setback;
+    const d = lCorner.d;
+    const face = d - s;                 // each plinth's front face, off its own wall
+    const through = lCorner.cl.overlap === 'adjacent' ? 'A' : 'B';
+    const runA = through === 'A' ? W - (face - t) : W - face;
+    const runB = through === 'B' ? D - (face - t) : D - face;
+    const mirX = (b) => (lCorner.right ? { ...b, x: roundTo(W - b.x - b.w, 4) } : b);
+    const plinths = [
+      ['A', runA, mirX({
+        x: W - runA, y: -plinthH, z: face - t, w: runA, h: plinthH, d: t,
+      })],
+      ['B', runB, mirX({
+        x: face - t, y: -plinthH, z: D - runB, w: t, h: plinthH, d: runB,
+      })],
+    ];
+    for (const [arm, len, box] of plinths) {
+      panels.push(panel({
+        id: `PLINTH-${arm}`, part: 'PLINTH', role: 'plinth', w: roundTo(len, 4), h: plinthH, thickness: t,
+        edgeCode: codes.topBottom, edgeLen: metres(2 * len),
+        box: {
+          ...box, x: roundTo(box.x, 4), z: roundTo(box.z, 4), w: roundTo(box.w, 4), d: roundTo(box.d, 4),
+        },
+        cnc: rectGeometry(len, plinthH),
+        meta: { arm, lCorner: arm === through ? 'through' : 'butt' },
+      }));
+    }
+  }
+
+  // ─── T75 F5 · THE UPSTAND ───────────────────────────────────────────────────
+  //
+  // *"an auto-part along the wall behind every base run that has a worktop,
+  // `profile.worktop.upstand = { heightMm: 100, thicknessMm: 20 }`, worktop
+  // material, on and off per run like the plinth ... BOM role `upstand`, cut
+  // list line."*  The run element arrives from the store exactly as the
+  // plinth's does (`runs.js runUpstandParams`); the owner of the run cuts the
+  // one board, standing on the worktop against the wall. No run element, no
+  // board: a bare call (every golden) cuts what it always did.
+  const runUpstand = params?.run_upstand || null;
+  if (runUpstand?.role === 'owner') {
+    const WT = AP.worktop || {};
+    const uh = Number(WT.upstand?.heightMm) || 100;
+    const ut = Number(WT.upstand?.thicknessMm) || 20;
+    const len = Number(runUpstand.length) || W;
+    const onTop = H + (Number(WT.thickness) || 38);
+    const up = panel({
+      id: 'UPSTAND',
+      part: 'UPSTAND',
+      role: 'upstand',
+      w: len,
+      h: uh,
+      thickness: ut,
+      edgeCode: codes.topBottom,
+      edgeLen: metres(len),
+      box: {
+        x: Number(runUpstand.offset) || 0, y: onTop, z: -wallGapOf({ params }, P), w: len, h: uh, d: ut,
+      },
+      cnc: rectGeometry(len, uh),
+      meta: { run: true, unitIds: runUpstand.unitIds, material: 'worktop' },
+    });
+    panels.push({ ...up, material_role: 'worktop' });
+  }
+
+  // ─── T75 F15 · THE PELMET, PLAIN ─────────────────────────────────────────
+  //
+  // *"a flat strip under a run of wall units ... front material, the
+  // cornice's run, segment and mitre arithmetic reused ... on the bottom edge
+  // instead of the top, BOM role `pelmet`, cut list line."*  The run element
+  // arrives from the store (`engine/pelmet.js runPelmetParams`); its owner
+  // cuts the strip in the door plane, one door gap under the door's bottom
+  // edge, and a RETURN at every open end, back to the wall along the side.
+  // The 45° at a mitred end is a saw cut on a strip, not a CNC outline: the
+  // outline is the rectangle to the long point, and the meta says where the
+  // saw goes. No run element, no strip: a bare call cuts what it always did.
+  const runPelmet = params?.run_pelmet || null;
+  if (runPelmet?.role === 'owner' && type.mount === 'wall') {
+    const PM = P.pelmet || {};
+    const ph = Number(runPelmet.height) || Number(PM.heightMm) || 0;
+    const pt = Number(PM.thicknessMm) > 0 ? Number(PM.thicknessMm) : frontT;
+    if (ph > 0) {
+      const retL = Math.max(0, Number(runPelmet.returns?.left) || 0);
+      const retR = Math.max(0, Number(runPelmet.returns?.right) || 0);
+      const pz = D + P.doors.gap;
+      const py = -P.doors.gap - ph;
+      const px = (Number(runPelmet.offset) || 0) - (retL > 0 ? pt : 0);
+      const plen = (Number(runPelmet.length) || W) + (retL > 0 ? pt : 0) + (retR > 0 ? pt : 0);
+      const common = {
+        role: 'pelmet', part: 'PELMET', h: ph, thickness: pt, edgeCode: codes.all,
+      };
+      const meta = (extra) => ({
+        run: true,
+        unitIds: runPelmet.unitIds || [],
+        // Outline only, no hole: the joiner screws it up under the carcass.
+        readiness: 'geometry',
+        fixing: 'manual',
+        ...extra,
+      });
+      panels.push(panel({
+        ...common,
+        id: 'PELMET',
+        w: plen,
+        edgeLen: metres(2 * plen + 2 * ph),
+        box: { x: px, y: py, z: pz, w: plen, h: ph, d: pt },
+        cnc: rectGeometry(plen, ph),
+        meta: meta({
+          piece: 'front',
+          ends: runPelmet.ends || null,
+          mitres: { left: Boolean(runPelmet.mitres?.left), right: Boolean(runPelmet.mitres?.right) },
+        }),
+      }));
+      for (const [side, ret] of [['left', retL], ['right', retR]]) {
+        if (!(ret > 0)) continue;
+        panels.push(panel({
+          ...common,
+          id: side === 'left' ? 'PELMET-L' : 'PELMET-R',
+          w: ret,
+          edgeLen: metres(2 * ret + 2 * ph),
+          box: {
+            x: side === 'left' ? px : px + plen - pt, y: py, z: pz + pt - ret, w: pt, h: ph, d: ret,
+          },
+          cnc: rectGeometry(ret, ph),
+          meta: meta({ piece: 'return', side, mitres: { front: true } }),
+        }));
+      }
+    }
   }
 
   // ── The bottom masking panel (turn 14, CLAUDE.md F5 / BACKLOG #45) ───────
@@ -5951,6 +6588,52 @@ export function computeCabinet(params, profileOverride) {
     }
   }
 
+  // ─── T75 F2 · THE CORNER POST ────────────────────────────────────────────
+  //
+  // The owner, 9.10.2026: *"daj od razu narożniki przemyślane."*  CLAUDE.md
+  // T75 F2: *"A corner post is an AUTO-PART, the sibling of the side infill: a
+  // board of the FRONT material and front thickness, `profile.corner.postMm`
+  // wide, standing in the front plane of run B at the corner, from the plinth
+  // line to the top of run B's unit (the end panel's `carcass` height law),
+  // BOM role `corner_post`, cut list line, CNC a plain rectangle."*
+  //
+  // The store writes its width onto THIS unit (run B's) when the unit lands on
+  // the corner stop (`engine/corners.js cornerStopMm`), exactly as it writes a
+  // side infill when a unit lands on the wall stop, and takes it off again when
+  // the unit is pulled away. The engine only cuts what it is given: a unit with
+  // neither key cuts exactly what it always did.
+  for (const [side, key] of [['L', 'corner_post_left_mm'], ['R', 'corner_post_right_mm']]) {
+    const postW = Number(params?.[key]) || 0;
+    if (!(postW > 0) || !(H > 0)) continue;
+    const isLeft = side === 'L';
+    const t = frontT;
+    panels.push(panel({
+      id: `CORNER-POST-${side}`,
+      part: 'CORNER-POST',
+      role: 'corner_post',
+      w: postW,
+      h: H,
+      thickness: t,
+      // Both long edges are seen: one beside run A's door face, one beside this
+      // unit's own door.
+      edgeCode: `${codes.left}${codes.right}`,
+      edgeLen: metres(2 * H),
+      // In the door plane, outside this carcass on the corner side, carcass
+      // high: `y` 0 to H is the end panel's `carcass` law.
+      box: {
+        x: isLeft ? -postW : W, y: 0, z: infillFaceZ - t, w: postW, h: H, d: t,
+      },
+      cnc: rectGeometry(postW, H),
+      meta: {
+        side: isLeft ? 'left' : 'right',
+        corner: 'post',
+        // How it is fixed (screwed to this carcass side through a batten, or
+        // to run A's face) is the joiner's: no hole is drilled for it.
+        readiness: 'geometry',
+      },
+    }));
+  }
+
   // Door fronts, always last (they close the unit — SPEC 4.10)
   const doorZ = D + P.doors.gap;
   // ─── TURN 21 (CLAUDE.md F12): DOORS ON THE PARTITION ─────────────────────
@@ -6404,7 +7087,41 @@ export function computeCabinet(params, profileOverride) {
   }
 
   if (!dropsForward && !bayDoors.length && doorCount === 1) {
-    panels.push(faceLeaf(`${unitNum}-F`, P.doors.gap / 2, cfg.hinge));
+    panels.push(faceLeaf(`${unitNum}-F`, singleLeafX, cfg.hinge));
+    // ─── T75 F3 · THE BLANK, A FIXED FRONT PIECE BESIDE THE DOOR ──────────
+    //
+    // *"a fixed front piece (front material, front thickness, role
+    // `blind_blank`, emitted the way the end panel is) with NO holes: its
+    // fixing is the joiner's (BLOCKERS entry, readiness `manual`, F22)."*
+    // It is not a door and carries no hinge: the same height, plane and
+    // thickness as the leaf beside it, flush with the carcass end at the
+    // corner (hidden behind the adjacent run), stopping where the leaf's
+    // clearance starts.
+    if (blind && blind.mm > 0) {
+      panels.push(panel({
+        id: `${unitNum}-BLANK`,
+        part: 'BLIND-BLANK',
+        role: 'blind_blank',
+        w: blind.mm,
+        h: frontH,
+        thickness: frontT,
+        edgeCode: codes.all,
+        edgeLen: metres(2 * blind.mm + 2 * frontH),
+        box: {
+          x: blind.side === 'left' ? 0 : W - blind.mm, y: doorY, z: doorZ, w: blind.mm, h: frontH, d: frontT,
+        },
+        cnc: rectGeometry(blind.mm, frontH),
+        meta: {
+          side: blind.side,
+          corner: 'blind',
+          frontType: cfg.frontType,
+          // Outline only: no hole, no hinge. Its fixing is the joiner's.
+          readiness: 'geometry',
+          fixing: 'manual',
+          ...(blind.own ? { own: true } : {}),
+        },
+      }));
+    }
   } else if (!dropsForward && !bayDoors.length && doorCount === 2) {
     panels.push(faceLeaf(`${unitNum}-FL`, P.doors.gap / 2, 'L'));
     panels.push(faceLeaf(`${unitNum}-FR`, W - P.doors.gap / 2 - frontW, 'R'));
@@ -6963,6 +7680,23 @@ export function computeCabinet(params, profileOverride) {
     };
   }
 
+  // ─── T75 F23 · A DOWEL UNIT'S BOARDS GIVE UP THE PUZZLE, WHOLE ───────────
+  // SKYLON_JOINTS_DOWEL.lsp section E: the tenons, the sockets, their dog
+  // bones, the dia 7.5 holes and the joint's own dia 3 screw rows go, so the
+  // pass below copies none of them. Null plan on every puzzle unit.
+  if (dowelPlan) dowelStrip({ panels, plan: dowelPlan, profile: P });
+
+  // ─── T75 F7 · THE CORNER NOTCH, CUT BEFORE THE DRILLING ──────────────────
+  // KIT_NOTCH.lsp: *"It runs AFTER the parent kit's carcass and BEFORE the
+  // drilling pass."*  Every board is cut in its own frame here, so the pass
+  // below drills the parent's pattern into what is left; `notchDrills` then
+  // drops, re-plans and re-origins. Null on every unit with no notch.
+  const notchCut = params?.notch
+    ? notchCarcass({
+      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
+    })
+    : null;
+
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];
   // ─── TURN 26 (CLAUDE.md R10 / F1.4): A DRILL MAY STATE ITS DEPTH ──────────
@@ -7012,6 +7746,9 @@ export function computeCabinet(params, profileOverride) {
   for (const pnl of panels) {
     for (const hole of pnl.cnc?.holes || []) addDrill(pnl.id, hole.kind, hole.layer, hole.x, hole.y, hole.d);
   }
+  // T75 F23 · the dowel pairs: a face hole and an edge bore on both boards of
+  // every joint the puzzle made (SKYLON_JOINTS_DOWEL.lsp section D).
+  if (dowelPlan) drills.push(...dowelDrills(dowelPlan));
 
   // ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ─────────────
   //
@@ -7351,7 +8088,9 @@ export function computeCabinet(params, profileOverride) {
       walls: carryingWalls, run: { from: runFrom, to: runTo }, level: jointY, tolerance: 0,
     }));
 
-    for (const bearer of bearers) {
+    // T75 F23 · one system per joint: a shelf the dowel plan owns gives up its
+    // biscuit set and its through screws on both sides; the BACK's row stays.
+    for (const bearer of (dowelledShelf(dowelPlan, shelf.id) ? [] : bearers)) {
       if (bearer.kind === 'side') {
         // The side's own frame: BUL's x runs from the FRONT of the cabinet
         // towards the back, BUR's runs with z (engine/joinery.js). A point at
@@ -7659,7 +8398,8 @@ export function computeCabinet(params, profileOverride) {
   if (budr) {
     runnerCarcassSide = 'both';
     for (const sideId of ['BUL', 'BUR']) {
-      for (const rowY of budr.runnerRows) {
+      // T75 F14 · the hob's dummy runs on nothing: its row is not drilled.
+      for (const rowY of budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy)) {
         for (const px of RN.holeXPattern) {
           const x = sideId === 'BUR' ? sideW - px : px;
           addDrill(sideId, 'runner', RN.layer, x, rowY, RN.holeDiameter);
@@ -7669,7 +8409,8 @@ export function computeCabinet(params, profileOverride) {
   }
 
   // Wall-unit hangers: two holes per side panel, measured off the back edge.
-  if (type.hangers) {
+  // T75 F4: an L's hangers are its parent's, on SIDE-A and SIDE-B (merged below).
+  if (type.hangers && !type.corner) {
     const HG = P.wallUnit.hangers;
     for (const fromBack of HG.fromBackEdge) {
       addDrill('BUL', 'hanger', HG.layer, sideW - fromBack, H - HG.fromTop, HG.holeDiameter);
@@ -7742,6 +8483,12 @@ export function computeCabinet(params, profileOverride) {
       addDrill(sideId, 'block_screw', pz.layers.screw, x, H - FR.blockScrewFromTop, pz.screwDiameter);
       for (const fx of [FR.fixedScrewFromEnd, sideW - FR.fixedScrewFromEnd]) {
         addDrill(sideId, 'fixed_screw', pz.layers.screw, fx, fridge.fixedPanelY + G / 2, pz.screwDiameter);
+      }
+      // T75 F12 · every lower fixed panel of a tower, on its own centreline.
+      for (const row of (cfg.tower?.rows || []).slice(0, -1)) {
+        for (const fx of [FR.fixedScrewFromEnd, sideW - FR.fixedScrewFromEnd]) {
+          addDrill(sideId, 'fixed_screw', pz.layers.screw, fx, row.fixedY + G / 2, pz.screwDiameter);
+        }
       }
     }
   }
@@ -8398,6 +9145,32 @@ export function computeCabinet(params, profileOverride) {
   // It STATES an axis and moves nothing: `engine/decors.js grainRun` is the
   // one reader, the drawn frame is untouched, and a piece that already says
   // something (the shoe box's boards) keeps what it says.
+  // ─── T75 F4 · THE L's DOORS AND ITS PARENTS' DRILLING JOIN HERE ─────────
+  //
+  // After every front and drilling pass of the box (which cut none of them),
+  // so nothing is bored twice: the two leaves the parent kit cut, placed on
+  // their arms, with their cups, cup screws and handle holes, and the parent's
+  // hinge plates, shelf pins, hangers and rail brackets in SIDE-A and SIDE-B.
+  if (lCorner) {
+    for (const { door, drills: dd, said } of lCorner.doors) {
+      panels.push(door);
+      for (const dr of dd) drills.push({ ...dr });
+      for (const wn of said) warnings.push({ ...wn });
+    }
+    for (const dr of lCorner.sideDrills) drills.push(dr);
+    const first = lCorner.doors.find((x) => x.door.meta?.opensFirst);
+    if (first) {
+      // The line the BOM carries (`bom.js buildBom` units[].warnings): an
+      // INFO, never a fault. The leaf carries it too (`meta.note`).
+      warnings.push({
+        code: 'CORNER_L_OPENS_FIRST',
+        level: 'info',
+        panel: first.door.id,
+        message: `${unitNum}: door ${first.arm} opens first (it overlaps door ${first.arm === 'A' ? 'B' : 'A'} at the inner corner).`,
+      });
+    }
+  }
+
   applyGrainAxis(panels);
 
   // ── Totals ─────────────────────────────────────────────────────────────────
@@ -8427,8 +9200,13 @@ export function computeCabinet(params, profileOverride) {
   // was: a type with no legs lays none out, whatever it stands on.
   const standHeight = legHeightForPlinth;
   const legHeight = cfg.legHeight;
-  const legsPerUnit = type.legs ? legCount(W, P) : 0;
-  const legs = type.legs ? legLayout({ width: W, depth: D, boardT: G, height: legHeight }, P) : null;
+  // T75 F4: an L stands on its own six (CL:legPositions), not the box's four.
+  const legsPerUnit = lCorner && type.legs ? lCorner.legs.length : (type.legs ? legCount(W, P) : 0);
+  const legs = lCorner && type.legs
+    ? {
+      count: lCorner.legs.length, height: legHeight, width: P.legs.width, positions: lCorner.legs,
+    }
+    : (type.legs ? legLayout({ width: W, depth: D, boardT: G, height: legHeight }, P) : null);
 
   // Which fronts a kit folds into its panel count differs by kit, so the type
   // says so. The invariant that DOES hold everywhere: panels_lisp + fronts
@@ -8624,9 +9402,11 @@ export function computeCabinet(params, profileOverride) {
   for (const kit of wardrobeKitBodies) {
     const art = kit.kind === 'pulldown_rail'
       ? P.wardrobeAccessories.kits.pulldown_rail?.conero?.article : null;
-    hw(`wardrobe_kit_${kit.kind}`, kit.label, 1, 'pcs',
+    // T75 F19 · a row of hooks is ordered by the hook: its count is the qty.
+    const qty = kit.kind === 'hooks' ? kit.count : 1;
+    hw(`wardrobe_kit_${kit.kind}`, kit.label, qty, 'pcs',
       { opening_width_mm: roundTo(kit.box.w, 0), zone: kit.zone, ...(art ? { article: art } : {}) },
-      `${kit.label} · ${roundTo(kit.box.w, 0)} mm opening${art ? ` · art. ${art}` : ''}`);
+      `${kit.label}${kit.kind === 'hooks' ? ` x ${qty}` : ''} · ${roundTo(kit.box.w, 0)} mm opening${art ? ` · art. ${art}` : ''}`);
   }
 
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────
@@ -8893,6 +9673,23 @@ export function computeCabinet(params, profileOverride) {
       },
       `${roundTo(internalWidth, 0)} × ${roundTo(hoodApertureMm, 0)} × ${roundTo(internalDepth, 0)} mm aperture`);
   }
+  // ─── T75 F12 · THE TOWER'S MACHINES ARE BOUGHT ───────────────────────────
+  // *"BOM line + GLB slot (the Blum pattern)."*  One line per aperture, ordered
+  // to the aperture as the extractor is, and NOT ONE HOLE: every make fixes
+  // differently and the repo has no published pattern for any of them.
+  for (const row of cfg.tower?.rows || []) {
+    hw('appliance', applianceLabelOf(row.role, P), 1, 'pcs',
+      {
+        role: row.role,
+        aperture_width_mm: roundTo(internalWidth, 1),
+        aperture_height_mm: roundTo(row.h, 1),
+        aperture_depth_mm: roundTo(internalDepth, 1),
+        floor_y_mm: roundTo(row.floorY, 1),
+      },
+      // The machine is named in the spec: the BOM merges a role's lines by
+      // their spec, and a washer and a dryer of one aperture are two machines.
+      `${applianceLabelOf(row.role, P)}, ${roundTo(internalWidth, 0)} x ${roundTo(row.h, 0)} x ${roundTo(internalDepth, 0)} mm aperture`);
+  }
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
   // ─── Turn 22 (CLAUDE.md F1.4): THE CORNICE IS ORDERED, NOT CUT ───────────
@@ -9067,6 +9864,13 @@ export function computeCabinet(params, profileOverride) {
       spurs_w: fridge.spursW,
       spurs_h: fridge.spursPanelH,
     } : {}),
+    // T75 F12 · the tower's stack, bottom-up, and where its door starts.
+    ...(cfg.tower ? {
+      apertures: cfg.tower.rows.map((r) => ({
+        role: r.role, h: r.h, floor_y: r.floorY, fixed_y: r.fixedY, face: r.face,
+      })),
+      door_base_y: cfg.tower.doorBase,
+    } : {}),
   };
 
   const drillSummary = {
@@ -9119,7 +9923,7 @@ export function computeCabinet(params, profileOverride) {
     shelf_screw_row_y: shelfScrewRows.map((r) => roundTo(r.y + r.thickness / 2, 4)),
     shelf_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
     runner_rows_dp_y: runnerRowsDp,
-    runner_rows_carcass_y: budr ? [...budr.runnerRows] : runnerRowsCarcass,
+    runner_rows_carcass_y: budr ? budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy) : runnerRowsCarcass,
     // ─── TURN 21 (CLAUDE.md F1.1/F1.3) ────────────────────────────────────
     // The runner's own UNDERSIDE — not a drilling, which is why it is named
     // apart from every `*_rows_*` key beside it. Two readers: the drawer box
@@ -9366,7 +10170,9 @@ export function computeCabinet(params, profileOverride) {
       to: set.bay.to,
     })),
     drawerFronts: budr
-      ? budr.heights.map((h, i) => ({ index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth }))
+      ? budr.heights.map((h, i) => ({
+        index: i + 1, y: budr.frontY[i], h, w: budr.frontWidth, ...(i + 1 === budr.dummy ? { fixed: true } : {}),
+      }))
       : (hasDrawers
         ? drawerHeights.map((h, i) => ({
           index: i + 1,
@@ -9457,6 +10263,87 @@ export function computeCabinet(params, profileOverride) {
   // One filter, gated on the cut, reading each panel's OWN cut height — so it
   // cannot disagree with the outline beside it. With no cut the guard is not
   // built and `drills` is the array it has always been, by identity.
+  // ─── T75 F4 · WHAT THE L's PARENTS BOUGHT, AND WHAT IT IS ─────────────────
+  //
+  // The hinges (and, on the wardrobe, each arm's rail; on a glass or mirrored
+  // leaf, its pane) are the parent kit's own order lines, one parent per arm;
+  // the shelf pins once (each shelf rests on SIDE-A and SIDE-B, four pins, the
+  // parent's count). The legs and the hangers are the L's own lines above.
+  if (lCorner) {
+    for (const arm of ['A', 'B']) {
+      for (const h of lCorner.arms[arm].v.hardware || []) {
+        if (h.role === 'legs' || h.role === 'hangers') continue;
+        if (arm === 'B' && h.role === 'shelf_pins') continue;
+        const same = hardware.find((x) => x.role === h.role && x.spec_label === h.spec_label);
+        if (same) {
+          same.qty += h.qty;
+          if (same.role === 'hinges' && same.spec && Number.isFinite(Number(h.spec?.doors))) {
+            // Two parents' leaves, one order line: the label counts them both.
+            same.spec = { ...same.spec, doors: (Number(same.spec.doors) || 0) + Number(h.spec.doors) };
+            same.spec_label = hingeSpecLabel({
+              perDoor: same.spec.per_door,
+              doors: same.spec.doors,
+              angle: same.spec.angle,
+              finish: same.spec.finish,
+              article: same.spec.article,
+              systemLabel: same.spec.system,
+              assigned: same.spec.assigned,
+            });
+          }
+        } else {
+          hardware.push({ ...h, spec: h.spec ? { ...h.spec } : h.spec });
+        }
+      }
+    }
+    totals.hinges = lCorner.doors.length
+      ? lCorner.doors.reduce((n, { arm }) => n + (Number(lCorner.arms[arm].v.totals?.hinges) || 0), 0)
+      : 0;
+    totals.rail = ['A', 'B'].reduce((n, arm) => n + (Number(lCorner.arms[arm].v.totals?.rail) || 0), 0);
+    derived.doors = lCorner.doors.length;
+    // The ladder, the cup rows and the shelf rows are the parent's: one
+    // derivation, read where the drawings and the readouts read a box's.
+    const vs = lCorner.arms.A.v.drillSummary || {};
+    if (lCorner.doors.length) {
+      drillSummary.hinge_centers = [...(vs.hinge_centers || [])];
+      drillSummary.side_hinge_holes_y = (vs.side_hinge_holes_y || []).map((pair) => [...pair]);
+      drillSummary.front_cup_y = [...(vs.front_cup_y || [])];
+      drillSummary.hinged_sides = lCorner.doors.map(({ arm }) => `SIDE-${arm}`);
+    }
+    drillSummary.shelf_row_y = [...(vs.shelf_row_y || [])];
+    drillSummary.shelf_cluster_y = (vs.shelf_cluster_y || []).map((row) => [...row]);
+    drillSummary.shelf_pin_row_y = [...(vs.shelf_pin_row_y || [])];
+    derived.corner_l = {
+      width: W,
+      depth: D,
+      arm: lCorner.d,
+      side: lCorner.cl.side,
+      overlap: lCorner.cl.overlap,
+      opens_first: lCorner.doors.find((x) => x.door.meta?.opensFirst)?.arm ?? null,
+      doors: lCorner.doors.map(({ arm, door }) => ({
+        arm,
+        id: door.id,
+        w: door.w,
+        hinge: door.meta?.hinge ?? null,
+        corner_edge: door.meta?.cornerEdge ?? null,
+      })),
+      top_area_m2: roundTo(lCorner.plan.top.area / 1e6, 6),
+    };
+  }
+
+  // T75 F7 · the drilling the notch reaches (D7), the boards it shortened
+  // re-origined, the legs in its footprint stepped out of it.
+  if (notchCut) {
+    notchDrills({
+      cut: notchCut, panels, drills, legs,
+    });
+    derived.notch = notchSummary(notchCut);
+  }
+  // T75 F23 · what the dowel unit is, and THE GATE while it is shut.
+  if (dowelPlan) {
+    derived.joints = dowelSummary(dowelPlan);
+    const gate = dowelGateWarning(derived.joints);
+    if (gate) warnings.push(gate);
+  }
   const cutDrills = (() => {
     if (!cut) return drills;
     const topOf = new Map(panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || Number(p.h) || 0]));
@@ -9468,8 +10355,10 @@ export function computeCabinet(params, profileOverride) {
     unitNum,
     params: {
       width: W, height: H, depth: D, board_t: G, front_t: frontT,
-      front_type: cfg.frontType, hinge: cfg.hinge, doors: doorCount,
-      shelves: numShelves, drawers: numDrawers, drawer_heights: [...(budr ? budr.heights : drawerHeights)],
+      // T75 F4: an L echoes its own two leaves and its SHELF-L count.
+      front_type: cfg.frontType, hinge: cfg.hinge, doors: lCorner ? lCorner.doors.length : doorCount,
+      shelves: lCorner ? panels.filter((x) => x.meta?.lBoard === 'SHELF-L').length : numShelves,
+      drawers: numDrawers, drawer_heights: [...(budr ? budr.heights : drawerHeights)],
       rail: hasRail, rail_offset: cfg.railOffset,
       // T35-F12: echoed so `doors.js doorHeightOf` — the panel's OTHER reader,
       // the one the properties panel prints — lands on the same number the

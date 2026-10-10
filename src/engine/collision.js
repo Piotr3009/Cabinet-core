@@ -518,7 +518,24 @@ export function wallObstacles({
     // Behind this wall, or past the front of this unit: not in the way.
     if (span.far <= 0 || span.near >= depth) continue;
     if (span.right <= 0 || span.left >= wall.width) continue;
-    out.push({ left: span.left, right: span.right, label: o.label, corner: true });
+    // ─── T75 F2 · THE CORNER STOP ──────────────────────────────────────────
+    // *"A unit on wall B that approaches a corner where wall A's run ends in a
+    // BLIND kit or a plain unit stops at d_A_face + postMm ... the same clamp
+    // `clampUnitX({ wallMargin })` uses for the wall."*  The obstacle round the
+    // corner reaches out of the corner by its carcass; its door gap, its front
+    // and the post (`stopPad`, `engine/corners.js cornerStopMm` less the
+    // carcass, worked out by the caller) are added on the side facing away from
+    // the corner, so the magnet lands this unit ON the stop. An L carcass is
+    // its own stop and carries none.
+    const pad = Math.max(0, Number(o.stopPad) || 0);
+    const atStart = (span.left + span.right) / 2 <= (Number(wall.width) || 0) / 2;
+    out.push({
+      left: pad && !atStart ? span.left - pad : span.left,
+      right: pad && atStart ? span.right + pad : span.right,
+      label: o.label,
+      corner: true,
+      ...(pad ? { stopPad: pad } : {}),
+    });
   }
   return out;
 }
@@ -870,6 +887,28 @@ export function freeSlotOnWall({
     cursor = Math.max(cursor, s.right + clearance);
   }
   return null;
+}
+
+/**
+ * T75 F20 · does a unit `width` wide fit with its left edge EXACTLY at `x`?
+ * A set stands each of its units where the recipe puts it, so the question is
+ * not "where is there room" but "is there room here": the same free stretches
+ * `freeSlotOnWall` reads (the wall's margin, the neighbours, the clearance),
+ * asked of one x. Half a millimetre of slack for the arithmetic.
+ */
+export function slotTakes({
+  x, width, wallWidth, others = [], wallMargin = 0,
+}, profile) {
+  const clearance = profile?.editor?.minUnitGap ?? 0;
+  const w = Number(width) || 0;
+  const at = Number(x);
+  if (w <= 0 || !Number.isFinite(at) || wallWidth < w) return false;
+  const margin = Math.max(0, Number(wallMargin) || 0);
+  const wallMax = Math.max(0, wallWidth - w - margin);
+  const wallMin = Math.min(margin, wallMax);
+  return freeSlots(others, {
+    wallMin, wallMax, width: w, clearance,
+  }).some((slot) => at >= slot.from - 0.5 && at <= slot.to + 0.5);
 }
 
 /**

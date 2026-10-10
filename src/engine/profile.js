@@ -302,6 +302,8 @@ export const DEFAULT_CABINET_PROFILE = {
       appliance: 0,    // 4. an appliance with its own front provides the 3 itself
       wall: 3,         // 5. a bare wall, + the yellow "infill? (dust collection)"
       none: 1.5,       // 6. the end of a run
+      // 7. a corner post: a rigid neighbour, like an infill (T75 F2).
+      corner: 3,       // T75 proposed, owner to confirm
     },
     // 1 door while (width − widthDeduction) ≤ singleDoorMaxWidth → 2 doors from
     // width 705 mm (704 is still ONE door — BLOCKERS.md #2)
@@ -322,6 +324,74 @@ export const DEFAULT_CABINET_PROFILE = {
     // Neither number reaches the cut list; a swing is a picture.
     openAngle: 99,
     openAngleAtWall: 90,
+  },
+
+  // ─── T75 F1/F2 · THE CORNER (CLAUDE.md T75 PART A) ─────────────────────────
+  //
+  // The owner, 9.10.2026: *"daj od razu narożniki przemyślane."*  How an
+  // internal corner is closed is `engine/corners.js`; these are its numbers.
+  //
+  //   postMm   the corner post's width: the board standing in the door plane of
+  //            the run that stops on the corner (F2).
+  //   overlap  which arm of an L corner unit carries the overlapping door (F4):
+  //            'adjacent' is the arm on the adjacent wall.
+  corner: {
+    postMm: 50,              // T75 proposed, owner to confirm
+    overlap: 'adjacent',     // T75 proposed, owner to confirm
+  },
+
+  // ─── T75 F7 · THE CORNER NOTCH (reference/lisp/KIT_NOTCH.lsp) ─────────────
+  //
+  // The owner, 23.09.2026: *"podajesz wysokość, głębokość, szerokość (np.
+  // 200x200)."*  What the CUT CORNER window opens with: WIDTH along the back,
+  // DEPTH into the carcass, HEIGHT up from the underside, 0 = the full height
+  // (the window shows "full"). Every other number the notch reads is the
+  // puzzle's and the cutter's own (KIT_NOTCH.lsp section A).
+  notch: {
+    defaults: { widthMm: 200, depthMm: 200, heightMm: 0 }, // T75 proposed, owner to confirm
+  },
+
+  // ─── T75 F23 · THE JOINT SYSTEM (reference/lisp/SKYLON_JOINTS_DOWEL.lsp) ──
+  //
+  // The owner, 9.10.2026: *"lisp najpierw."*  `system` is the ONE CUT LAW for
+  // how a carcass is held together: 'puzzle' (the Skylon tabs and sockets
+  // every kit is traced from, the house default) or 'dowel' (the LISP above,
+  // `engine/dowels.js`). 'cabineo' is RESERVED and refused until the owner's
+  // Lamello data is in the repo (reference/hardware/cabineo/README.md). A unit
+  // overrides it with `params.joints_system`.
+  //
+  // `joinery` further down is NOT this and stays as it is: it is the VISUAL
+  // layer picker the settings, the wizard and the 3-D read (which machining
+  // layers to draw), and `computeCabinet` has never read it. One picks what is
+  // SHOWN, this one picks what is CUT, so they are two keys and not one.
+  //
+  // `dowel` is the LISP's `dowel-profile`, key for key. `confirmed` is THE
+  // GATE: while it is false every CNC export that would machine a dowel hole
+  // refuses, and Check #31 says so. `maxGapMm` is the LISP's own addition to
+  // the CLAUDE.md table (the spacing rule needs a stated maximum gap).
+  joints: {
+    system: 'puzzle',
+    dowel: {
+      diaMm: 8,           // T75 proposed, owner to confirm
+      edgeDepthMm: 20,    // T75 proposed, owner to confirm
+      faceDepthMm: 12,    // T75 proposed, owner to confirm
+      pitchMm: 32,        // T75 proposed, owner to confirm
+      endOffsetMm: 50,    // T75 proposed, owner to confirm
+      maxGapMm: 128,      // T75 proposed, owner to confirm
+      confirmed: false,   // T75 proposed, owner to confirm
+      // The two CNC layers (engine/cnc/layers.js), named by the house grammar
+      // `{FEATURE}_{DIAMETER}MM`: the face half, and the edge half by hand.
+      layers: { face: 'DOWEL_8MM', edge: 'DOWEL_EDGE_8MM' },
+    },
+  },
+
+  // ─── T75 F9 · THE ISLAND (CLAUDE.md T75 PART B) ────────────────────────────
+  //
+  // *"Room setup gets `ADD ISLAND` (default `profile.island.defaults` = 1800 x
+  // 900, T75 proposed)."*  `w` runs along faces A and B, `d` along the two
+  // ends: the CORE the units stand against, outside it (`engine/room.js`).
+  island: {
+    defaults: { w: 1800, d: 900 },   // T75 proposed, owner to confirm
   },
 
   // ─── Hinge drilling ───
@@ -1065,6 +1135,12 @@ export const DEFAULT_CABINET_PROFILE = {
     kits: {
       trouser: { label: 'Trouser pull-out', bodyHeight: 120, posMm: 900 },
       tie_rack: { label: 'Tie rack', bodyHeight: 300, posMm: 1100 },
+      // T75 F19 · a row of hooks on the back (`count` of them, the BOM's qty)
+      // and the pull-out valet rod under the top: placeholders, zero holes.
+      hooks: {
+        label: 'Hooks', bodyHeight: 80, bodyDepth: 60, posMm: 1500, count: 4,       // T75 proposed, owner to confirm
+      },
+      valet_rod: { label: 'Valet rod', bodyHeight: 40, posMm: 1700 },            // T75 proposed, owner to confirm
       pulldown_rail: {
         label: 'Pull-down rail',
         // The REAL mechanism (30.08, the owner's sheet): base underside to
@@ -1477,10 +1553,42 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── T75 F13 · THE BASE UNIT WITH DRAWERS BEHIND ITS DOORS ──────────────
+  //
+  // CLAUDE.md T75 F13: *"`BUD_INT`: `BUD` with `drawerStyle: 'wardrobe'`,
+  // `internalDrawers: 'all'`, `supports.drawers: true` (PANTRY's own two lines
+  // at base height)."*  BUD's box, and it arrives with its drawers as the
+  // pantry does (T31 F11). Two, not the pantry's three: at 770 the stack must
+  // leave the drawer zone's 200 mm headroom (`wardrobe.drawers.zoneHeadroom`),
+  // and three default 200 mm fronts are dropped with DRAWERS_TOO_TALL.
+  baseInternalDrawerUnit: {
+    defaults: { width: 600, height: 770, depth: 558, drawers: 2 },   // T75 proposed, owner to confirm
+  },
+
   // ─── Low cabinet (KIT_LOW_CABINET_FULL) ───
   lowCabinet: {
     minHeight: 300,
     defaults: { width: 600, height: 600, depth: 578, railOffset: 200 },
+  },
+
+  // ─── T75 F15 · THE PELMET, PLAIN ─────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F15: *"a flat strip under a run of wall units,
+  // `profile.pelmet = { heightMm: 50, thicknessMm: front_t } // T75 proposed`,
+  // front material."*  `thicknessMm: null` is "the front's own thickness"
+  // (`front_t`), the number the spec names; a stated number wins.
+  pelmet: {
+    heightMm: 50,        // T75 proposed, owner to confirm
+    thicknessMm: null,   // T75 proposed, owner to confirm (null = front_t)
+  },
+
+  // ─── T75 F14 · THE HOB UNIT ──────────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F14: *"the box under it keeps `profile.hob.clearanceMm = 60
+  // // T75 proposed` below the worktop for the hob body."*  Measured from the
+  // carcass top, which is where the worktop sits.
+  hob: {
+    clearanceMm: 60,   // T75 proposed, owner to confirm
   },
 
   // ─── Base drawer unit, 3 drawers 4:3:2 (KIT_BUDR_FULL) ───
@@ -1796,6 +1904,48 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
+  // ─── T75 F16 · THE CHEST OF DRAWERS BETWEEN WARDROBES ─────────────────────
+  //
+  // CLAUDE.md T75 F16: *"defaults block `wardrobeChest.defaults` (width 800,
+  // height = the wardrobe's base-of-drawers law)."*  The law: a wardrobe's
+  // internal bank of three drawers is closed by its partition at
+  // G + 3 x frontHeight + 2 x gap + partitionClearance (`cabinet.js`,
+  // 18 + 600 + 6 + 5 = 629) and that board's top is 18 higher, 647 above the
+  // carcass bottom. The chest stands on the wardrobe's own legs, so a 647
+  // carcass puts its top level with that partition (747 off the floor at a
+  // 100 leg). One block for the three counts, as the drawer unit's is.
+  // `test/turn75-f16-the-chest-of-drawers.test.js` re-derives 647 from a real
+  // wardrobe's drawer zone, so the two cannot drift. Depth: the wardrobe's.
+  wardrobeChest: {
+    defaults: { width: 800, height: 647, depth: 568 },                        // T75 proposed, owner to confirm
+  },
+
+  // ─── T75 F17 · THE FLOATING DESK ──────────────────────────────────────────
+  //
+  // CLAUDE.md T75 F17: *"height `wardrobeDesk.defaults.height = 160` ...
+  // Placed beside a wardrobe at `mount_height = 720` ... a desk or a sideboard
+  // top is 25."*  720 is the carcass UNDERSIDE (`runs.js unitBase` reads a
+  // wall unit's mount height as its base), so the writing surface stands at
+  // 720 + 160 + 25 = 905. The depth is the wardrobe's (beside one, the store
+  // copies THAT wardrobe's). The width is not the owner's: 1000, a desk a
+  // person sits at. `drawerRatio` is the one drawer, the oven base's grammar.
+  wardrobeDesk: {
+    defaults: {
+      width: 1000, height: 160, depth: 568, mountHeight: 720, topThickness: 25, // T75 proposed, owner to confirm
+    },
+    drawerRatio: [1],
+  },
+
+  // ─── T75 F18 · THE LOW UNIT OF A WARDROBE JOB ─────────────────────────────
+  //
+  // CLAUDE.md T75 F18: *"its own low height (`wardrobeLow.defaults`, 500)"*,
+  // at the wardrobe's depth (beside one, the store copies THAT wardrobe's).
+  // Width and rail offset are LOW_CABINET's own (600, 200); its minimum
+  // height is the low cabinet's (`lowCabinet.minHeight`), the kit it is.
+  wardrobeLow: {
+    defaults: { width: 600, height: 500, depth: 568, railOffset: 200 },       // T75 proposed, owner to confirm
+  },
+
   // ─── TURN 31 (CLAUDE.md F9): THE HOOD WALL UNIT ───────────────────────────
   //
   // The KIT_WUD envelope, with the bottom open. `aperture` is the clear height
@@ -1813,18 +1963,39 @@ export const DEFAULT_CABINET_PROFILE = {
     },
   },
 
-  // ─── Corner unit (turn 30, CLAUDE.md F19) ─────────────────────────────────
+  // T75 F4 KASACJA: T30's `cornerUnit` (an L of eight undrilled rectangles)
+  // is deleted with its kit; the true L's numbers are the three blocks below.
   //
-  // "Ship the L-carcass geometry + BOM; any hinge/drilling beyond the parent
-  // kit's own lines waits for a LISP."
+  // ─── T75 F4 · THE TRUE L CARCASS, ITS DEFAULTS ────────────────────────────
   //
-  // There IS no parent kit — KIT_BUDR_FULL turned out to be the three-drawer
-  // base unit — so these numbers are a SHAPE and nothing more. `armMm` is the
-  // depth of each arm of the L; the two openings it leaves are `width − armMm`
-  // and `depth − armMm`, which at 1000 / 600 is 400 apiece.
-  cornerUnit: {
-    defaults: { width: 1000, height: 770, depth: 1000 },
-    armMm: 600,
+  // `reference/lisp/KIT_CORNER_L.lsp` section 7. `width` is the outer W along
+  // the unit's own wall, `depth` the outer D along the adjacent wall (the
+  // footprint the room understands, W x D), `height` the carcass. The ARM depth
+  // is not here: it is the family's own depth (`baseUnit`, `wallUnit`,
+  // `wardrobe` defaults), read by `engine/types.js` through `armDepthKey`.
+  cornerBase: {
+    defaults: { width: 900, height: 770, depth: 900 },                        // T75 proposed, owner to confirm
+  },
+  cornerWall: {
+    defaults: { width: 600, height: 720, depth: 600, mountHeight: 1500 },     // T75 proposed, owner to confirm
+  },
+  cornerWardrobe: {
+    defaults: { width: 1000, height: 2150, depth: 1000, railOffset: 1400 },   // T75 proposed, owner to confirm
+  },
+
+  // ─── T75 F3 · THE BLIND KITS' DEFAULTS ────────────────────────────────────
+  //
+  // Each is its parent's box at the width a blind corner is built at. The
+  // blank itself is not a default: it is computed from the corner
+  // (`engine/corners.js`, the adjacent run's depth + front + post + rule 7).
+  blindBase: {
+    defaults: { width: 1000, height: 770, depth: 558 },                       // T75 proposed, owner to confirm
+  },
+  blindWall: {
+    defaults: { width: 900, height: 720, depth: 400, mountHeight: 1500 },     // T75 proposed, owner to confirm
+  },
+  blindWardrobe: {
+    defaults: { width: 1200, height: 2150, depth: 568, railOffset: 1400 },    // T75 proposed, owner to confirm
   },
 
   // ─── Twin cupboard (turn 30, CLAUDE.md F18) ───────────────────────────────
@@ -1890,6 +2061,37 @@ export const DEFAULT_CABINET_PROFILE = {
     defaults: { width: 1000, height: 2100, depth: 558, fridgeH: 1900 },
   },
 
+  // ─── T75 F12 · THE APPLIANCE TOWER (KIT_FRIDGE's aperture, stacked) ─────
+  //
+  // CLAUDE.md T75 F12: *"each aperture `{ role, h }` cuts KIT_FRIDGE's own
+  // aperture pattern ... Aperture heights // T75 proposed, owner to confirm:
+  // oven 595, microwave 450, washer 850, dryer 850, fridge and freezer from
+  // fridgeH."*
+  //
+  // A ROLE says how tall its aperture is and whether the machine is the face
+  // (`machine`: no front over it, the door starts above it) or stands behind
+  // the door (`door`: an integrated fridge freezer, KIT_FRIDGE's own door).
+  // The oven's 595 is the owner's own (`ovenUnit.ovenHeight`, T17) and the
+  // fridge's is `fridgeUnit.defaults.fridgeH`: both read where they live, so
+  // there is one number each. No defaults block below carries `fridgeH` (the
+  // right panel would offer it as a typed field).
+  applianceTall: {
+    roles: {
+      fridge: { label: 'Fridge freezer', hKey: 'fridgeUnit.defaults.fridgeH', face: 'door' },
+      oven: { label: 'Oven', hKey: 'ovenUnit.ovenHeight', face: 'machine' },
+      microwave: { label: 'Microwave', h: 450, face: 'machine' },          // T75 proposed, owner to confirm
+      washer: { label: 'Washing machine', h: 850, face: 'machine' },      // T75 proposed, owner to confirm
+      dryer: { label: 'Tumble dryer', h: 850, face: 'machine' },          // T75 proposed, owner to confirm
+    },
+    // One defaults block per library row, the apertures bottom-up.
+    fridgeFreezer: {
+      defaults: { width: 600, height: 2150, depth: 558, apertures: [{ role: 'fridge' }] },       // T75 proposed, owner to confirm
+    },
+    washerDryer: {
+      defaults: { width: 600, height: 2150, depth: 558, apertures: [{ role: 'washer' }, { role: 'dryer' }] }, // T75 proposed, owner to confirm
+    },
+  },
+
   // ─── Construction automatics (turn 3, phase 7) ───
   // Parts nobody draws by hand: the plinth under a run of units, the scribe
   // filler between a unit and the wall, and the panel that closes the gap
@@ -1927,6 +2129,14 @@ export const DEFAULT_CABINET_PROFILE = {
       frontOverhang: 20,
       sideOverhang: 10,
       minUnits: 2,          // "select 2+ base cabinets"
+      // ─── T75 F5 · THE CORNER, THE CUT-OUTS, THE UPSTAND ─────────────────
+      // CLAUDE.md T75 names these `profile.worktop.*`; the worktop's numbers
+      // have lived HERE since T30, so they join them (one namespace).
+      joint: { kind: 'butt', boltCount: 3 },          // T75 proposed, owner to confirm
+      cutout: { insetMm: 20, radiusMm: 10 },          // T75 proposed, owner to confirm
+      upstand: { heightMm: 100, thicknessMm: 20 },    // T75 proposed, owner to confirm
+      seatingMm: 300,                                 // T75 proposed, owner to confirm (F11)
+      cnc: false,                                     // a worktop is machined on site unless this says so
     },
     // ─── TURN 47 (CLAUDE.md F4): EVERY INFILL LEAVES THE MACHINE OVERSIZE ──
     //
@@ -2156,6 +2366,12 @@ export const DEFAULT_CABINET_PROFILE = {
       // must not be refused as one. Past it the two really are different
       // pieces and the corner is refused out loud (BLOCKERS #92).
       cornerToleranceMm: 2,
+      // ─── T75 F6 · BLOCKERS #92, DECIDED FOR THE OWNER ───────────────────
+      // 'step': where a deeper run meets a shallower one, the moulding mitres
+      // round the deeper unit's front corner, returns along its side for the
+      // difference, and meets the shallower run in an internal mitre
+      // (`cornice.js corniceCorner`). Taken out, the corner is refused again.
+      cornerMode: 'step',   // T75 proposed, owner to confirm
     },
   },
 
@@ -5182,6 +5398,16 @@ export function migrateCabinetProfile(profile) {
     tallUnit: { ...D.tallUnit, ...profile.tallUnit, defaults: { ...D.tallUnit.defaults, ...profile.tallUnit?.defaults } },
     cargoUnit: { ...D.cargoUnit, ...profile.cargoUnit, defaults: { ...D.cargoUnit.defaults, ...profile.cargoUnit?.defaults } },
     pantryUnit: { ...D.pantryUnit, ...profile.pantryUnit, defaults: { ...D.pantryUnit.defaults, ...profile.pantryUnit?.defaults } },
+    // T75 F15 · the pelmet's numbers, key by key.
+    pelmet: { ...D.pelmet, ...profile.pelmet },
+    // T75 F14 · the hob's clearance, key by key.
+    hob: { ...D.hob, ...profile.hob },
+    // T75 F13 · the drawers-behind-doors base unit's defaults, key by key.
+    baseInternalDrawerUnit: {
+      ...D.baseInternalDrawerUnit,
+      ...profile.baseInternalDrawerUnit,
+      defaults: { ...D.baseInternalDrawerUnit.defaults, ...profile.baseInternalDrawerUnit?.defaults },
+    },
     lowCabinet: { ...D.lowCabinet, ...profile.lowCabinet, defaults: { ...D.lowCabinet.defaults, ...profile.lowCabinet?.defaults } },
     baseDrawerUnit: {
       ...D.baseDrawerUnit,
@@ -5211,7 +5437,6 @@ export function migrateCabinetProfile(profile) {
     binUnit: { ...D.binUnit, ...profile.binUnit, defaults: { ...D.binUnit.defaults, ...profile.binUnit?.defaults } },
     wineRack: { ...D.wineRack, ...profile.wineRack, defaults: { ...D.wineRack.defaults, ...profile.wineRack?.defaults } },
     twinCupboard: { ...D.twinCupboard, ...profile.twinCupboard, defaults: { ...D.twinCupboard.defaults, ...profile.twinCupboard?.defaults } },
-    cornerUnit: { ...D.cornerUnit, ...profile.cornerUnit, defaults: { ...D.cornerUnit.defaults, ...profile.cornerUnit?.defaults } },
     hoodWallUnit: {
       ...D.hoodWallUnit,
       defaults: { ...D.hoodWallUnit.defaults, ...profile.hoodWallUnit?.defaults },
@@ -5233,10 +5458,67 @@ export function migrateCabinetProfile(profile) {
       ...profile.wardrobeWallUnit,
       defaults: { ...D.wardrobeWallUnit.defaults, ...profile.wardrobeWallUnit?.defaults },
     },
+    // T75 F16 · the chest of drawers' defaults, key by key.
+    wardrobeChest: {
+      ...D.wardrobeChest,
+      ...profile.wardrobeChest,
+      defaults: { ...D.wardrobeChest.defaults, ...profile.wardrobeChest?.defaults },
+    },
+    // T75 F18 · the low unit's defaults, key by key.
+    wardrobeLow: {
+      ...D.wardrobeLow,
+      ...profile.wardrobeLow,
+      defaults: { ...D.wardrobeLow.defaults, ...profile.wardrobeLow?.defaults },
+    },
+    // T75 F17 · the desk's defaults, key by key; its one-drawer split whole.
+    wardrobeDesk: {
+      ...D.wardrobeDesk,
+      ...profile.wardrobeDesk,
+      defaults: { ...D.wardrobeDesk.defaults, ...profile.wardrobeDesk?.defaults },
+      drawerRatio: Array.isArray(profile.wardrobeDesk?.drawerRatio) && profile.wardrobeDesk.drawerRatio.length
+        ? [...profile.wardrobeDesk.drawerRatio] : [...D.wardrobeDesk.drawerRatio],
+    },
     americanFridgeUnit: {
       ...D.americanFridgeUnit,
       ...profile.americanFridgeUnit,
       defaults: { ...D.americanFridgeUnit.defaults, ...profile.americanFridgeUnit?.defaults },
+    },
+    // T75 F12 · the appliance tower's roles and rows, key by key.
+    applianceTall: {
+      ...D.applianceTall,
+      ...profile.applianceTall,
+      roles: Object.fromEntries(Object.entries({ ...D.applianceTall.roles, ...profile.applianceTall?.roles })
+        .map(([k, v]) => [k, { ...D.applianceTall.roles[k], ...v }])),
+      fridgeFreezer: {
+        ...D.applianceTall.fridgeFreezer,
+        ...profile.applianceTall?.fridgeFreezer,
+        defaults: { ...D.applianceTall.fridgeFreezer.defaults, ...profile.applianceTall?.fridgeFreezer?.defaults },
+      },
+      washerDryer: {
+        ...D.applianceTall.washerDryer,
+        ...profile.applianceTall?.washerDryer,
+        defaults: { ...D.applianceTall.washerDryer.defaults, ...profile.applianceTall?.washerDryer?.defaults },
+      },
+    },
+    // T75 F2 · the corner's numbers, key by key.
+    corner: { ...D.corner, ...profile.corner },
+    // T75 F4 · the true L's defaults, key by key (T30's cornerUnit went with its kit).
+    cornerBase: { ...D.cornerBase, ...profile.cornerBase, defaults: { ...D.cornerBase.defaults, ...profile.cornerBase?.defaults } },
+    cornerWall: { ...D.cornerWall, ...profile.cornerWall, defaults: { ...D.cornerWall.defaults, ...profile.cornerWall?.defaults } },
+    cornerWardrobe: {
+      ...D.cornerWardrobe,
+      ...profile.cornerWardrobe,
+      defaults: { ...D.cornerWardrobe.defaults, ...profile.cornerWardrobe?.defaults },
+    },
+    // T75 F9 · the island's defaults, key by key.
+    island: { ...D.island, ...profile.island, defaults: { ...D.island.defaults, ...profile.island?.defaults } },
+    // T75 F3 · the blind kits' defaults, key by key.
+    blindBase: { ...D.blindBase, ...profile.blindBase, defaults: { ...D.blindBase.defaults, ...profile.blindBase?.defaults } },
+    blindWall: { ...D.blindWall, ...profile.blindWall, defaults: { ...D.blindWall.defaults, ...profile.blindWall?.defaults } },
+    blindWardrobe: {
+      ...D.blindWardrobe,
+      ...profile.blindWardrobe,
+      defaults: { ...D.blindWardrobe.defaults, ...profile.blindWardrobe?.defaults },
     },
     autoParts: {
       ...D.autoParts, ...profile.autoParts,
@@ -5244,6 +5526,15 @@ export function migrateCabinetProfile(profile) {
       topInfill: { ...D.autoParts.topInfill, ...profile.autoParts?.topInfill },
       sideInfill: { ...D.autoParts.sideInfill, ...profile.autoParts?.sideInfill },
       endPanel: { ...D.autoParts.endPanel, ...profile.autoParts?.endPanel },
+      // T75 F5 · the worktop's numbers, key by key (a stored profile from
+      // before tonight comes back with the joint, the cut-out and the upstand).
+      worktop: {
+        ...D.autoParts.worktop,
+        ...profile.autoParts?.worktop,
+        joint: { ...D.autoParts.worktop.joint, ...profile.autoParts?.worktop?.joint },
+        cutout: { ...D.autoParts.worktop.cutout, ...profile.autoParts?.worktop?.cutout },
+        upstand: { ...D.autoParts.worktop.upstand, ...profile.autoParts?.worktop?.upstand },
+      },
       cornice: {
         ...D.autoParts.cornice,
         ...profile.autoParts?.cornice,
@@ -5567,6 +5858,19 @@ export function migrateCabinetProfile(profile) {
       // existed comes back with the owner's 400 and 620 rather than with two
       // undefineds that would offer the bar over every gap in the app.
       shareOut: { ...D.ui.shareOut, ...profile.ui?.shareOut },
+    },
+    // T75 F7 · the notch's defaults, key by key.
+    notch: { ...D.notch, ...profile.notch, defaults: { ...D.notch.defaults, ...profile.notch?.defaults } },
+    // T75 F23 · the joint system and the dowel numbers, key by key, so a
+    // profile saved before tonight cuts the puzzle and holds the gate shut.
+    joints: {
+      ...D.joints,
+      ...profile.joints,
+      dowel: {
+        ...D.joints.dowel,
+        ...profile.joints?.dowel,
+        layers: { ...D.joints.dowel.layers, ...profile.joints?.dowel?.layers },
+      },
     },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
     // block here — a workshop that has tuned ONE caption height keeps the app's

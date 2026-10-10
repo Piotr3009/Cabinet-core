@@ -73,13 +73,47 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  'src/components/CncTree.jsx':
+    'T75 F22 · after an export the CNC view says how many parts the machine does not finish (the export\'s readiness banner), one line beside the gate\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."*',
+  'src/components/SaveTemplateModal.jsx':
+    'T75 F20 · right-clicked inside a selection of two or more, the modal saves a SET (templateStore.saveSet): the units left to right with the gaps between them. *"`lib/templates.js` grows `kind: \'set\'`: an ORDERED list of units (type + params, positions stripped as today) with the gaps between them."*',
+  'src/components/TopBar.jsx':
+    'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*',
+  'src/components/WarehouseModal.jsx':
+    'T75 F21 · the three buttons read Import from JoineryCore (CSV), Export project list for JoineryCore (CSV) and Export for JoineryCore (CSV); the project list holds the rows THIS project\'s stock carries (projectUuids), not every uuid in the warehouse (the probe exported 3 of 3 for a project naming none). *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*.',
+  'src/components/LibraryPanel.jsx':
+    'T75 F20 · the sets shelf: the Library\'s Sets category lists the five shipped sets (engine/sets.js) above the saved ones, a saved SET row names its units, and a click inserts the whole set through the store (insertSet) where a unit would go. *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."* '
+    + 'T75 F10 · a plus on an empty island face opens the library ON that face and the unit is added there (addUnit with the face\'s index). *"A unit is added to a face as to a wall (addUnit with the face\'s index; the library\'s plus points on the plan show the faces)."*'
+    + ' ' + 'T75 F15 · the Extras row "Pelmet" is an ACTION done to the selected wall unit\'s run: the panel hands the store the action and the selection (libraryAction) and says its answer. *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet: a flat strip under a run of wall units."*',
+  // ─── ADDED BY TURN 75 · THE BIG TURN ───────────────────────────────────
+  'src/components/ContextMenu.jsx':
+    'T75 F5 · the right-click offers the UPSTAND beside the plinth, on and off per run, and the menu is handed the two store calls it needs (addUpstand, removeUpstand). *"UPSTAND: an auto-part along the wall behind every base run that has a worktop ... on and off per run like the plinth (BACKLOG #16\'s grammar: added by a decision, visible only then)."*',
+  'src/components/BomPanel.jsx':
+    'T75 F22 · the cut list shows each part\'s state (Cut, Outline only, Fit on site, Bought) in a State column, and every ironmongery line says Bought. *"The cut list, the BOM and the CNC export show the state on every line."* '
+    + 'T75 F21 · the purchase list is priced at what the job was quoted at (project.warehouseStamp), the file carries it, and Accept today\'s prices is the owner\'s decision to re-price. *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*; *"prices change a quote only by the owner\'s decision"*. '
+    + 'T75 F5 · the cut list and the BOM receive the room, so the worktop reaches them: its slabs (a corner is two, an L is one shaped like the L), the connector bolts as an order line, the joint and every cut-out as a NOTE. *"Done means the whole road ... lands in the cut list and the BOM."* One line: `room: project.room` handed to `buildBom`.',
+  // ─── ADDED BY TURN 75 · F7, THE CORNER NOTCH ─────────────────────────────
+  // CLAUDE.md T75, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
+  // with the owner's words from this file and re-frozen at its new hash in the
+  // same commit."*  The engine and the goldens are untouched by it.
+  'src/components/RightPanel.jsx':
+    'T75 F4/F11 · the Construction section\'s Worktop row for ONE cabinet: Add worktop where it may carry one alone (an L, a cabinet on an island), Remove, and on an island\'s slab a Seating overhang button per face with no cabinets (the profile\'s number, nothing typed). *"The L kit\'s worktop is one slab shaped like the L"*; *"a seating overhang of `profile.worktop.seatingMm = 300` offered as one click on a face with no units"*. '
+    + 'T75 F9 · the Wall select names an island\'s face for what it is ("Island 1 · face A"), never "Wall 5". *"Nothing about it is a wall."* '
+    + 'T75 F7 · CUT CORNER in the selected unit\'s panel: the button lights the four plan corners in the '
+    + 'scene (`3d/NotchCorners.jsx`), a click on one opens the small anchored window at the click with '
+    + 'WIDTH, DEPTH, HEIGHT (the profile\'s `notch.defaults`), Enter cuts through the store\'s one action '
+    + '`setUnitNotch` and a refusal shows in the engine\'s words; REMOVE takes the notch off. No retail copy '
+    + '(retail\'s SIZE step carries its own button). *"Klikasz \'wytnij narożnik\', program podświetla '
+    + 'narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np. 200x200)."* '
+    + 'T75 F23 · the Construction section\'s Joints row: Puzzle or Dowel per unit, written to the unit\'s joints_system through updateUnitParams; the status line reads the engine\'s own answer (derived.joints: the dowel count, the gate, or the refusal in its words); Cabineo shown disabled with its sentence; no typed number. No retail copy (PART G is PRO only). *"lisp najpierw."* *"a per-unit override through the unit\'s settings section (no typed numbers in the UI)."*',
   // ─── ADDED BY TURN 74 · THE OWNER'S LIST OF 23.09 ────────────────────────
   // CLAUDE.md T74, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
   // same commit."*  Overturnable with one word each: the engine, the goldens
   // and the cut path are untouched by every entry below.
   'src/components/DrawRoomModal.jsx':
-    'T74 F3 · the Wall length field opens with the focus and its whole number '
+    'T75 F9 · "the project\'s room has N walls today" counts the room\'s own walls, never an island\'s faces. *"A face is NOT plaster."* '
+    + 'T74 F3 · the Wall length field opens with the focus and its whole number '
     + 'selected (T73 F3\'s ref, `focus()` then `select()`), a refused number stays '
     + 'selected, and Escape cancels a typed number before it closes the window. '
     + '*"pole ... od razu ma focus i całą wartość zaznaczoną (np. 3437, piszę 3500 '
@@ -142,19 +176,26 @@ const EXEMPT = {
     + 'numbered sheet buttons. *"nie zapomnij zostawić w stopce miejsca na '
     + 'firmę, daty, nazwy"*.',
   'src/pages/ConfiguratorPage.jsx':
-    'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
+    'T75 F22 · the Output menu\'s DXF export says the same banner as the CNC view\'s. *"the CNC export carries a banner counting the lines that are not `\'cut\'`."* '
+    + 'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
+    + 'T75 F5 · the BOM file is handed the room so the worktop that turns the corner (two slabs and one joint record) rides the file as it rides the panel. *"daj od razu narożniki przemyślane."* '
+    + 'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
     + 'same set with the same worktops and render. *"weź zakoduj"*.',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
   // tonight's hash. The map does NOT grow: the count below is still three.
   'src/components/RoomModal.jsx':
-    'T69 F1 — the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
+    'T75 F9 · the island\'s figure keeps the field it opens: the same press no longer takes the focus off it (the walk\'s one FAIL). *"the island draggable in the plan with its dimension labels clickable (T73 F3 field)"*. '
+    + 'T75 F9 · Room setup gets ADD ISLAND (a kitchen job\'s only: the gate is the job\'s family, which retail never meets), the island drawn in the plan, dragged whole and refused in words where it would stand on a cabinet, a box or outside the room, its two figures clickable into a focused, selected field, Rotate 90° and Remove island. *"twoja droga, plus dodawanie szafek po bokach lub end panele, w całości."* '
+    + 'T69 F1 · the preset row becomes 1 WALL · 2 WALLS · 3 WALLS · DRAW ROOM…, '
     + 'IMPORT DXF is struck out (*"to nie przejdzie"*), and APPLY is fixed at the '
     + 'two sites its probe convicted: it sends only the keys this window changed, '
     + 'and it is never drawn dead and silent. *"APPLY does nothing — probe first."*',
   'src/components/AddItems.jsx':
-    'T67 F9 — the label "Watch drawer" becomes "Accessories drawer" on the row, the '
+    'T75 F19 · two rows, Hooks (a row of the profile count, one BOM line, its qty the count) and Valet rod, added through the same bought-mechanism panel the trouser pull-out uses. *"Two rows in Add items for the wardrobe family: `Hooks` (a row of N, BOM line, placeholder bodies, zero holes) and `Valet rod` (pull-out, BOM line, placeholder, zero holes)."* '
+    + 'T75 F16 · the shoe box row says a chest of drawers IS its drawers (the store has always refused a shoe drawer in a ratio stack), and the trouser pull-out and tie rack rows say they go in a wardrobe: a chest stands beside one. *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR / BUDR4`, family wardrobe ... Wardrobes category."* '
+    + 'T67 F9 · the label "Watch drawer" becomes "Accessories drawer" on the row, the '
     + 'button and the two notices. *"zmień w PRO też tę nazwę."*',
   // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission, so tonight's
@@ -180,27 +221,30 @@ const EXEMPT = {
 const FROZEN = {
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
-  // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/AddItems.jsx': '7a11844fe6ad83d0226d74fbda37bf114c73c0f8d63a660cf0bec4d59ff0cae7',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/AddItems.jsx': '5be28cfd4ddc678b543efd07f1ed6f8b31282037739ada82ae03f9523b12c546',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   'src/components/AssignMaterialsModal.jsx': '32d48ece258aa562d6614606a65fd8df5a15adb3717d40f5736df8db45fac550',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
-  'src/components/BomPanel.jsx': '54109296695b50f20d8d7eaf1696b6d62d9969110c59623feb0f8fe0d75a2cd4',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/BomPanel.jsx': '789d546fa314ef51fccfa023d137aceaab863438c490e2b2cff1424a0d4fe490',
   'src/components/CabinetEditorModal.jsx': '3d21bba5af9dc42fecbb620b6594b5a4be79be2e9ce5446cf4b53dc4b09b3ca4',
   'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
-  'src/components/CncTree.jsx': 'f8a478a57677e257d4bafdc379bc4e224b7bd397a29bfaa28f923569463712f5',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/CncTree.jsx': '87bd2103612c33d9abcd0d637f38b7b4e71e28c91dc9ef3e8245e96916e30019',
   'src/components/CncView.jsx': 'bbfa3f571120d6bb089f2a885bc48f1f12e1c0431ebb57fb997b9f31ea8a540d',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
   'src/components/CompanyDefaultsModal.jsx': '90365da4e2e0bc285c652ec252c62a11da199853fdd9e31a899cb74464e2a896',
-  'src/components/ContextMenu.jsx': '8c3adb3f6452fece13b76fe1a7db85679f35d73dd6c644cd280032a81d1e2d1b',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/ContextMenu.jsx': '9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c',
   'src/components/DecorPicker.jsx': '3ed5d2c75e1c7eb48b364f3b86cf9ec30fdad43acae9f1b30879f65f14e82e6a',
   'src/components/DecorPickerModal.jsx': 'eff9e583740f2381cfa8e796339f5b664f88ddf010e427a61cd450ed2ad44411',
   'src/components/DesignSettingsModal.jsx': '370f34cccd0b9907215eead9d27884ae14e6806ca192361bece6ef049116cf56',
   'src/components/DoorModal.jsx': '4e5e539c734fe6ccf32f030f5c90e3678196828aad35be244248c0992e16efe7',
-  // T74 F3 + F4 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/DrawRoomModal.jsx': 'c5d7fe345511115a19ac488d78c55458bc373bfdc45ed992cde951c3b3c9c00c',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/DrawRoomModal.jsx': '31107a5dc23977013675fed7d5392ed5c4f89e82e86f9dc1f5c94433bf19d260',
   // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/DrawingModal.jsx': 'f13778b711d2e8c23fe2014c0ac1dbf4b029dbe9f351412e22c6035b0bc324c7',
   // T72 F2/F3/F12 — re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -212,7 +256,8 @@ const FROZEN = {
   'src/components/JoineryPreview.jsx': '4313bbe216ce87f80ab6ee1b4d1e8e288465e5b2ef2bedbba1167346508add0a',
   // T72 F4 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/JpullRunModal.jsx': '652b4f701a455134eb2571565f03dc6fca89c273f4041ad9eb66d8b0c7bd6aa7',
-  'src/components/LibraryPanel.jsx': 'c0f86722ab66d0a00b28994639f257f7ebe596140f265331a556ba615f4226ef',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/LibraryPanel.jsx': 'ce948c2fb0a4092f3fb66a523dfb77fb2609504ca1bcc248930deab6110f7153',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
@@ -226,32 +271,36 @@ const FROZEN = {
   'src/components/PartDetailModal.jsx': '3e97f121e6932a9859d4a88616651c0ec08a7f871ca72192eb339521597afc83',
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
-  'src/components/RightPanel.jsx': 'ad0777675b240f39d649f9bf1dd79215161d79e3cca9c80ed5ffc9a21d68c788',
-  // T69 F1 — re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RoomModal.jsx': '1bd7aebbe8899d428fcbe66ab972c72af43ae98c18b73f15eb7346f8b7f2d210',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RightPanel.jsx': '2891d8258ec102eec6596c35bfd50fc94535a9c65a9c7814f6e1a14794870d25',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RoomModal.jsx': '29ffa1a4b710d3d3c7d168dfce23aa765fc76a3c9ba159b71b01964996dbd263',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
-  'src/components/SaveTemplateModal.jsx': '83a756327cd24f0a13f1c28e618a692b1b88b00df6c2735416d5711422cbc4c1',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/SaveTemplateModal.jsx': '5de923d96cd981fd785005716ea84b7288d77c9b4ea044763112e672c6d1ba24',
   'src/components/Section.jsx': 'f3f64ad9f4d024d31a508f469a1f816c2bf1c0ffcf7d9221e95e2ee42d2a1a56',
   'src/components/SettingsPanel.jsx': '13f1ce656e27a273545d055d59ad453685f456dd031bfbd61e9c9525c8738537',
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   'src/components/StartScreen.jsx': '6a6de6d1667872a45d18bb5b8e9e42d3d4522ac99f8ef2d1e9a32ce54ab363aa',
-  'src/components/TopBar.jsx': '68fe1ff109ad1198a365ceae380fdead183ccfefb6eb579f98496a7308e1b681',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/TopBar.jsx': '31511deaa4fcbfee230c7ed1955e80c4945bac6c8278a0c4c07f3fa4c6a1de13',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   'src/components/UnitSizeModal.jsx': '019529723e5844ed8796b7a0c870cc5f8d4b8b1c1869f71d37cc939695fb5054',
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
   'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
-  'src/components/WarehouseModal.jsx': '891e9065b7a6ae95612b4de88dc9cdd3d015a99c709c3ce47cdf458b1bf9da62',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/WarehouseModal.jsx': '269eef79dba50c1472e87bd4e882dd87d9561154067bfdffca68cdc4ca348ab3',
   // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   'src/components/WizardSettings.jsx': 'e78f35fff5107b21a5a775629ab899d2474d883df03b5873ad538bcfbd68fc74',
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
-  // T71 F5: re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '8d321b5f9f8c9a9405c016871a978314ce66ae3648fa3d915a506afaaa899c8f',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': 'a43851062d522b7838d506ba2547a4a635be77bb3e4809f11edccb89f54e33c6',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -426,14 +475,31 @@ test('F1 · the frozen surface — nothing was ADDED to it either', () => {
 // and its feature beside it, each re-frozen at its new hash. The list is held
 // to exactly these five; a sixth cannot be slipped in without this failing.
 test('T67 · the exemption names its files, each re-frozen, each with its reason', () => {
+  // AMENDED BY T75: *"every PRO file edited is licensed in EXEMPT with the
+  // owner's words from this file and re-frozen at its new hash in the same
+  // commit."*  Each one T75 adds is named here by the commit that edits it.
+  // AMENDED BY T75 F23: `RightPanel`'s licence is RENEWED (the Joints row,
+  // *"lisp najpierw."*) and re-frozen at its new hash; the list did not grow.
   assert.deepEqual(Object.keys(EXEMPT).sort(), [
     'src/components/AddItems.jsx',
+    'src/components/BomPanel.jsx',
+    // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
+    'src/components/CncTree.jsx',
+    'src/components/ContextMenu.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',
     'src/components/ElementProperties.jsx',
     'src/components/JpullRunModal.jsx',
+    // T75 F15 · *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet"*.
+    'src/components/LibraryPanel.jsx',
+    'src/components/RightPanel.jsx',
     'src/components/RoomModal.jsx',
+    // T75 F20 · *"`lib/templates.js` grows `kind: 'set'`"*: the modal saves a selection as a set.
+    'src/components/SaveTemplateModal.jsx',
+    // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets shelf"*.
+    'src/components/TopBar.jsx',
     'src/components/UnitSizeModal.jsx',
+    'src/components/WarehouseModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/pages/ConfiguratorPage.jsx',
   ], 'the exemption list is not the files CLAUDE.md names');

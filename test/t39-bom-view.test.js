@@ -94,8 +94,11 @@ test('a material name with a comma cannot break the file', () => {
   }), {});
   assert.match(csv, /"Egger W980, 18 mm ""SM"""/);
   // …and every data row still has exactly nine columns.
+  // AMENDED BY T75 F21: eleven, JC_UUID and CODE after PARTS: *"The purchase
+  // BOM export carries `jc_uuid` and the material code on every line that has
+  // them, so JoineryCore can import the shopping list by identity."*
   const header = rows(csv).find((l) => l.startsWith('GROUP,'));
-  assert.equal(header.split(',').length, 9);
+  assert.equal(header.split(',').length, 11);
 });
 
 test('the scope is on the file, so a cabinet order is not read as a project order', () => {

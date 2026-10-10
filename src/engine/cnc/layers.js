@@ -63,6 +63,17 @@ export const CNC_LAYERS = [
   // DEEPER blue than HINGES_5MM's #74a9ff: the same feature, read at a glance
   // as the other diameter, never mistaken for it.
   { name: 'HINGES_3MM',         aci: 43, screen: '#4c6ef5', label: 'Hinges ⌀3',      kind: 'hole' },
+  // ─── T75 F23 (SKYLON_JOINTS_DOWEL.lsp): THE DOWEL, ITS TWO HALVES ────────
+  // The owner: *"lisp najpierw."*  A dowel unit's joint is a FACE hole in one
+  // board and an EDGE bore in the other. The face half is a blind ⌀8 drilled
+  // from above like a hinge plate, a tool of its own, so a layer of its own by
+  // the house grammar `{FEATURE}_{DIAMETER}MM`. The edge half is a horizontal
+  // bore a 3-axis bed cannot make: it is named so the sheet and the drawings
+  // can say where it goes, and the machine file never carries it
+  // (engine/cnc/dxf.js). ACI 45 and 46: beyond the LED groove's 44, unused by
+  // the LISP's own table, so nothing AutoCAD already draws changes colour.
+  { name: 'DOWEL_8MM',          aci: 45, screen: '#a9e34b', label: 'Dowels ⌀8',      kind: 'hole' },
+  { name: 'DOWEL_EDGE_8MM',     aci: 46, screen: '#5c940d', label: 'Dowel edge bores ⌀8 (by hand)', kind: 'hole' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },

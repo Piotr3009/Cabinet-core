@@ -22,11 +22,15 @@ import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
-  defaultParamsFor, getUnitType, isFreePanel, isWardrobeWallUnit, resolveTypeId, UNIT_NUM_PREFIX, UNIT_TYPES,
+  defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isWardrobeWallUnit,
+  resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
 // kept one with its box, and where a drop would be caught.
 import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel.js';
+// T75 F7 · the corner notch: whether a kit takes one, and the engine's own
+// refusal (KIT_NOTCH.lsp, asked of the parent's cut) read before it is kept.
+import { NOTCH_CORNERS, NOTCH_REFUSED, notchKitRefusal } from '../engine/notch.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
 // T37-F4a: `bandSegmentAt`/`bandSegments` — a split divider is an END of the
@@ -36,15 +40,30 @@ import {
   boxSpansOnWall,
   clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
   backStandoff, clampElementDepth, elementDepthBounds, freeSlotOnWall, insetPads, shelfBand,
-  shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  shelfBounds, unitIssues, unitPlanSpan, unitSpan, slotTakes,
   wallClearance,
   wallObstacles,
   bandsOverlap, unitBand, bandSegmentAt, bandSegments,
 } from '../engine/collision.js';
 import {
-  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, migrateRoom, roomBoxes, roomChangeGuard, roomWalls,
-  wallPlanObstacles,
+  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, islandCorners, migrateRoom, plasterPosition, rehomeIslandUnits, roomBoxes,
+  roomChangeGuard, roomIslands, roomWalls, wallName, wallPlanObstacles,
 } from '../engine/room.js';
+// T75 F9 · the island: what it would stand on (Room refuses first); F10 · its panels.
+import {
+  isIslandAutoPanel, islandClash, islandPanelPlan, newIsland,
+} from '../engine/island.js';
+import { getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
+// T75 F20 · a set is a recipe: its layout and its reading are the engine's.
+import { setIsOneLevel, setLayout, setRecipe } from '../engine/sets.js';
+// T75 F21 · what a job was priced against, and what moved since.
+import { catalogueMoves, priceSnapshot } from '../engine/warehouse.js';
+// T75 F1 · THE CORNER RULEBOOK: the one detection the corner stop, the post,
+// the hinge and every corner consumer below read.
+import {
+  blindClearanceView, carcassReachMm, cornerEndOf, cornerFaceMm, cornersOf, cornerSpec, cornerStopMm,
+  isInternalCorner, lClearanceView, occupantKind,
+} from '../engine/corners.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
 // byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
@@ -75,6 +94,7 @@ import {
 import { handleClassCount } from '../engine/handles.js';
 // Turn 30 (CLAUDE.md F8): the worktop, a design-layer auto-part over a run.
 import { worktopEligible, worktopsFor } from '../engine/worktop.js';
+import { pelmetRefusal, runPelmetParams } from '../engine/pelmet.js';
 import { frontGapClashes } from '../engine/frontGapClash.js';
 // Turn 31 (CLAUDE.md F4): the owner's 18-point front-gap rulebook.
 // Turn 32 (CLAUDE.md F3): …and the healing plan that APPLIES it.
@@ -111,7 +131,7 @@ import {
 // `params.wall_gap`, or the project's number when nobody has said.
 import {
   buildRuns, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
-  runMemberIds, runPlinthParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
+  runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
 // Turn 50 (CLAUDE.md F2): the run is shared out, equally, once.
@@ -124,7 +144,7 @@ import { roomFitRefusal, roomFitFaults, riderBornHeight } from '../engine/roomFi
 // Turn 50 (CLAUDE.md F4): a low unit meeting a tall one grows its own end panel.
 import {
   askedSides, autoEndPanelJunctions, autoEndPanelMessage, autoEndPanelStrays,
-  inPlayWardrobe, isAutoEndPanel, withAsked, withDeclined,
+  inPlayWardrobe, isAutoEndPanel, sideIsVisible, withAsked, withDeclined,
 } from '../engine/endPanelAuto.js';
 import {
   corniceCeilingNotice, corniceOption, corniceRefusals, corniceRunNotice,
@@ -449,7 +469,9 @@ function projectHeightParams(type, design, profile) {
     ...(group ? { height: heights[group], height_custom: false } : { height_custom: false }),
     // T74 F13 · …but a free panel hangs at the height it is given (its own
     // default, the floor): it is not a wall unit of the project's.
-    ...(type.mount === 'wall' && !type.freePanel ? { mount_height: heights.wallMount } : {}),
+    // T75 F17 · …nor is a desk: it hangs at the 720 a person sits at
+    // (`wardrobeDesk.defaults.mountHeight`), never the kitchen's wall line.
+    ...(type.mount === 'wall' && !type.freePanel && !type.desk ? { mount_height: heights.wallMount } : {}),
     // ─── Turn 22 (CLAUDE.md F4.2) ───
     // A plinth-bearing type gets the project's toe kick whether or not it has
     // legs. The D/W panel has none — the machine stands where they would be —
@@ -491,6 +513,53 @@ function projectHeightParams(type, design, profile) {
  * produce two units whose shelves share an id, and a drag on one would move the
  * other.
  */
+/**
+ * T75 F20 · one unit of a set as it will be BORN, before it is placed: the
+ * project's new unit with the recipe's params on it (so the set's span is
+ * measured off the widths the units will really have), the params to hand
+ * `addUnit`, and what to write back after the lone add's own decisions.
+ *
+ *   a FREE PANEL's box is worked out from the board the recipe names (its
+ *     tilt, its width), by `freePanelPatch`, the edit path's own reading;
+ *   a typed WIDTH carries the unit's one section with it, as a width typed
+ *     in the panel does;
+ *   `heightOf` stands the unit at that job type's height for its group (the
+ *     vanity's 600), custom where the job's own differs;
+ *   a hung unit's `mount_height` is written back after the add, because a
+ *     lone wall unit beside a tall one is born lined up with its top.
+ */
+function setUnitBorn(u, i, state, profile) {
+  const design = state.project.design;
+  const type = getUnitType(u.type);
+  const unit = newUnit(u.type, profile, state.units.length + i, design);
+  const ask = { ...(u.params || {}) };
+  if (type.freePanel && u.params) Object.assign(ask, freePanelPatch(unit.params, u.params, profile));
+  if (u.heightOf && type.heightGroup) {
+    const h = Number(heightsForProjectType(u.heightOf, profile)?.[type.heightGroup]);
+    if (h > 0) {
+      ask.height = h;
+      ask.height_custom = Number(projectHeights(design, profile)?.[type.heightGroup]) !== h;
+    }
+  }
+  if (ask.width != null && !ask.sections && unit.params.sections?.[0]) {
+    ask.sections = [{ ...unit.params.sections[0], width_mm: Number(ask.width) }];
+  }
+  const params = Object.keys(ask).length ? ask : null;
+  if (params) applyTemplateParams(unit, params);
+  const after = type.mount === 'wall' && !type.freePanel && u.params?.mount_height != null
+    ? { mount_height: Number(u.params.mount_height) }
+    : {};
+  return { unit, params, after };
+}
+
+/** T75 F20 · the end panel a set asks for, as thick as `addEndPanel` makes it. */
+function endPanelThicknessOf(unit, design, profile) {
+  const d = migrateDesign(design);
+  return Number(d.endPanel?.thickness) > 0
+    ? Number(d.endPanel.thickness)
+    : (Number(unit.params.front_t) || Number(profile.front?.thickness) || 18);
+}
+
 function applyTemplateParams(unit, params) {
   const saved = JSON.parse(JSON.stringify(params));
   // ─── TURN 41 (F2): AND THE CROSS-REFERENCES COME WITH THEM ────────────────
@@ -704,7 +773,8 @@ function paramsForEngine(unit, design = null) {
   // engine hears run elements from ONE place: state.runElements, this sweep.
   const {
     run_top_infill: _fossilTop, run_plinth: _fossilPlinth,
-    run_mask: _fossilMask, run_cornice: _fossilCornice,
+    run_mask: _fossilMask, run_cornice: _fossilCornice, run_upstand: _fossilUpstand,
+    run_pelmet: _fossilPelmet,
     ...p
   } = unit.params;
   const items = p.sections?.[0]?.items || [];
@@ -718,6 +788,10 @@ function paramsForEngine(unit, design = null) {
       run_plinth: elements.plinth,
       run_mask: elements.mask,
       run_cornice: elements.cornice,
+      // T75 F5 · spread only where the run carries one.
+      ...(elements.upstand ? { run_upstand: elements.upstand } : {}),
+      // T75 F15 · …and the pelmet, the same way.
+      ...(elements.pelmet ? { run_pelmet: elements.pelmet } : {}),
     } : {}),
     type: unit.type,
     items,
@@ -1022,6 +1096,24 @@ export function migrateUnitFrontStyle(unit, profile = null) {
 function migrateUnitType(unit) {
   const resolved = resolveTypeId(unit?.type);
   if (!unit || resolved === unit.type) return unit;
+  // ─── T75 F4 · A T30 L KEEPS ITS SHAPE ──────────────────────────────────
+  // *"`loadProject` migrates `cornerArm` to the new params."*  T30's L had its
+  // adjacent wall at x = 0 (the 'left' hand) and an arm of the profile's 600
+  // where the save typed none, so that is what it is read as: the new kit's
+  // default arm (the family depth) would change the shape of an old job.
+  if (Object.hasOwn(TYPE_ALIASES, unit.type) && getUnitType(resolved).corner) {
+    const { corner_arm_mm: armWas, ...rest } = unit.params || {};
+    return {
+      ...unit,
+      type: resolved,
+      params: {
+        ...rest,
+        type: resolved,
+        arm_mm: Number(armWas) > 0 ? Number(armWas) : 600,
+        corner_side: rest.corner_side === 'right' ? 'right' : 'left',
+      },
+    };
+  }
   return { ...unit, type: resolved, params: { ...unit.params, type: resolved } };
 }
 
@@ -1339,16 +1431,91 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       : { ...s.project.room, ...patch });
     const verdict = roomChangeGuard(next, s.units);
     if (!verdict.ok) return verdict;
-    set((st) => ({ project: { ...st.project, room: next, ...(fresh ? { wallSlopes: [] } : {}) } }));
+    // ─── T75 F9 · THE ISLANDS: UNITS FOLLOW THEIR FACE, ROOM REFUSES FIRST ──
+    // A unit on an island stands on its face by reference; the index is
+    // re-derived against the new room. An island that moved, grew or turned is
+    // measured against every cabinet, box and island it would stand on.
+    const homed = rehomeIslandUnits(s.units, roomWalls(next));
+    if (JSON.stringify(next.islands || []) !== JSON.stringify(s.project.room.islands || [])) {
+      const clash = islandClash({ room: next, units: homed, profile: getCabinetProfile() });
+      if (clash) return { ok: false, message: clash, blocking: [] };
+    }
+    set((st) => ({
+      project: { ...st.project, room: next, ...(fresh ? { wallSlopes: [] } : {}) },
+      ...(homed !== s.units ? { units: homed } : {}),
+    }));
     // A lower ceiling shortens every top infill; a longer wall opens a gap.
     get().refreshAutoParts();
     return verdict;
   },
 
+  // ─── T75 F9 · THE ISLAND'S OWN ACTIONS, ALL THROUGH `setRoom` ─────────────
+  //
+  // *"Room setup gets `ADD ISLAND` ... the island draggable in the plan with
+  // its dimension labels clickable (T73 F3 field), `rotation` in 90° steps
+  // through the existing `rotateUnit` grammar applied to the island."*  Each
+  // builds the next room and hands it to `setRoom`, so the guard, the face
+  // re-homing and the refusal are ONE path. PRO kitchen jobs only: the gate is
+  // the job's family, which retail (a wardrobe job) never meets.
+  islandsAllowed: () => getProjectType(migrateDesign(get().project.design).projectType)?.category === 'kitchen',
+
+  addIsland: () => {
+    const s = get();
+    if (!get().islandsAllowed()) {
+      return { ok: false, message: 'An island belongs to a kitchen job: this job is not one.', id: null };
+    }
+    const island = newIsland(s.project.room, getCabinetProfile(), uid('island'));
+    const verdict = get().setRoom({ islands: [...roomIslands(s.project.room), island] });
+    return { ...verdict, id: verdict.ok ? island.id : null };
+  },
+
+  updateIsland: (id, patch) => {
+    const s = get();
+    const islands = roomIslands(s.project.room);
+    if (!islands.some((i) => i.id === id)) return { ok: false, message: 'No such island.', blocking: [] };
+    return get().setRoom({ islands: islands.map((i) => (i.id === id ? { ...i, ...patch } : i)) });
+  },
+
+  moveIsland: (id, cx, cy) => get().updateIsland(id, { cx: Number(cx), cy: Number(cy) }),
+
+  /** `rotateUnit`'s grammar: 'step' +90, 'set' to a value, normalised mod 360. */
+  rotateIsland: (id, mode = 'step', value = 0) => {
+    const island = roomIslands(get().project.room).find((i) => i.id === id);
+    if (!island) return { ok: false, message: 'No such island.', blocking: [] };
+    const next = mode === 'set' ? Number(value) || 0 : island.rotation + 90;
+    return get().updateIsland(id, { rotation: ((next % 360) + 360) % 360 });
+  },
+
+  removeIsland: (id) => {
+    const s = get();
+    const walls = roomWalls(s.project.room);
+    // The automat's own panels go with the island; anything else holds it.
+    const standing = s.units.filter((u) => walls[u.position?.wall ?? 0]?.island === id && !isIslandAutoPanel(u));
+    if (standing.length) {
+      return {
+        ok: false,
+        message: `Cannot remove the island while cabinets stand on it: move or remove them first (${
+          standing.map((u) => u.params?.unit_num || u.id).join(', ')}).`,
+        blocking: standing.map((u) => ({ id: u.id, label: u.params?.unit_num || u.id, reason: 'it stands on the island' })),
+      };
+    }
+    return get().setRoom({ islands: roomIslands(s.project.room).filter((i) => i.id !== id) });
+  },
+
   /** What a room change WOULD do, without doing it (live preview in the modal). */
   previewRoom: (patch) => {
     const s = get();
-    return roomChangeGuard(migrateRoom({ ...s.project.room, ...patch }), s.units);
+    const next = migrateRoom({ ...s.project.room, ...patch });
+    const verdict = roomChangeGuard(next, s.units);
+    if (!verdict.ok) return verdict;
+    // T75 F9 · …and what a moved island would stand on, said before APPLY.
+    if (JSON.stringify(next.islands || []) !== JSON.stringify(s.project.room.islands || [])) {
+      const clash = islandClash({
+        room: next, units: rehomeIslandUnits(s.units, roomWalls(next)), profile: getCabinetProfile(),
+      });
+      if (clash) return { ok: false, message: clash, blocking: [] };
+    }
+    return verdict;
   },
 
   addOpening: (opening) => set((s) => ({
@@ -1529,7 +1696,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // tonight — is 1.0, the picture it was drawn under.
         sceneLight: migrateSceneLight(project?.sceneLight),
       },
-      units: migrateUnits(units),
+      // T75 F9 · a unit on an island finds its face by reference.
+      units: rehomeIslandUnits(migrateUnits(units), roomWalls(migrateRoom(project?.room))),
       runElements: {},
       dirty: false,
     });
@@ -2025,18 +2193,152 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const parts = autoPartsFor({
         unit: u, wallWidth: wall?.width ?? 0, others, roomHeight, design,
       }, profile);
-      notices.push(...parts.notices);
+      // T75 F10 · *"not given side infills or scribes (`sideInfill` returns
+      // none against a face)"*: an island face is not plaster.
+      const onFace = Boolean(wall?.island);
+      if (!onFace) notices.push(...parts.notices);
+      // T75 F4 · an L's corner end is BACK-B against the adjacent wall, not a
+      // front edge: no scribe filler is cut there.
+      const lEnd = isCornerLKit(u.type) ? (cornerLHand(u, walls, profile) || u.params?.corner_side || 'left') : null;
       return {
         ...u,
         params: {
           ...u.params,
           plinth: parts.plinth,
           top_infill_mm: parts.top_infill_mm,
-          side_infill_left_mm: parts.side_infill_left_mm,
-          side_infill_right_mm: parts.side_infill_right_mm,
+          side_infill_left_mm: onFace || lEnd === 'left' ? 0 : parts.side_infill_left_mm,
+          side_infill_right_mm: onFace || lEnd === 'right' ? 0 : parts.side_infill_right_mm,
         },
       };
     });
+
+    // ─── T75 F2 · THE CORNER POST, MADE AND UNMADE BY WHERE A UNIT STANDS ───
+    //
+    // *"the post appears when the unit lands. Pulling away removes the post
+    // (T74 F11's reversibility, extended through the same function)."*  The
+    // side infill's own grammar (BACKLOG #15): a unit parked ON the corner stop
+    // gets the post on its corner side; anywhere else it has none. Asked of the
+    // rulebook, so the post and the Check cannot disagree about which unit is
+    // run B. Written on every pass, which is what makes it reversible: the key
+    // is the automat's, and a unit that left the stop loses it.
+    {
+      const spec = cornerSpec(profile);
+      const posts = new Map();
+      for (const c of cornersOf({ units: next, walls, profile })) {
+        if (c.kind !== 'internal' || c.stopMm == null) continue;
+        const occupant = next.find((x) => x.id === c.runA.unitId);
+        if (!occupant || occupantKind(occupant) === 'L') continue;
+        if (Math.abs(c.runB.gapMm - c.stopMm) > 1) continue;
+        posts.set(c.runB.unitId, { ...(posts.get(c.runB.unitId) || {}), [c.runB.side]: spec.postMm });
+      }
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        const want = posts.get(u.id) || {};
+        const left = want.left || 0;
+        const right = want.right || 0;
+        const hadLeft = Number(u.params?.corner_post_left_mm) || 0;
+        const hadRight = Number(u.params?.corner_post_right_mm) || 0;
+        if (left === hadLeft && right === hadRight) continue;
+        const params = { ...u.params };
+        if (left) params.corner_post_left_mm = left; else delete params.corner_post_left_mm;
+        if (right) params.corner_post_right_mm = right; else delete params.corner_post_right_mm;
+        next[i] = { ...u, params };
+      }
+    }
+
+    // ─── T75 F4 · THE L's HAND FOLLOWS THE CORNER IT STANDS IN ────────────
+    // *"corner_side is written from engine/corners.js cornerEndOf"*: which END
+    // of the unit is in the room corner. An L away from every corner (an old
+    // save, before the placement law) keeps the hand it has; the placement
+    // paths below never leave one there.
+    for (let i = 0; i < next.length; i += 1) {
+      const u = next[i];
+      if (!isCornerLKit(u.type)) continue;
+      const side = cornerLHand(u, walls, profile);
+      if (side && side !== u.params?.corner_side) next[i] = { ...u, params: { ...u.params, corner_side: side } };
+    }
+
+    // ─── T75 F3 · THE BLIND KIT'S BLANK FOLLOWS ITS CORNER ─────────────────
+    //
+    // *"`blindMm` is COMPUTED from the corner: the adjacent run's depth +
+    // front thickness + `corner.postMm` + `clearance.corner`, measured from
+    // the corner along the unit ... the override is the client's and the
+    // automat never takes it back."*  Read off the rulebook: the run that stops
+    // on the blind kit is run B, its FACE (wall gap, depth, door gap, front) is
+    // where it hides the kit's front, then the post and rule 7, less however
+    // far the kit itself stands off the corner. `blind_mm` is the automat's
+    // and is re-written on every pass; `blind_mm_own` is the client's and is
+    // never touched here. A blind kit with nothing beside it keeps its side
+    // (the corner it stands in) and the engine's own default width.
+    {
+      const corners = cornersOf({ units: next, walls, profile });
+      const spec = cornerSpec(profile);
+      const clear = Number(profile.doors?.clearance?.corner) || 0;
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        if (!isBlindKit(u.type)) continue;
+        const c = corners.find((k) => k.kind === 'internal' && k.runA?.unitId === u.id);
+        const side = c ? c.runA.side : (cornerEndOf(u, walls, profile) || u.params?.blind_side || 'left');
+        const b = c ? next.find((x) => x.id === c.runB.unitId) : null;
+        const auto = b
+          ? Math.round((cornerFaceMm(b, profile) + spec.postMm + clear - c.runA.gapMm) * 100) / 100
+          : null;
+        const params = { ...u.params, blind_side: side };
+        if (auto != null && auto > 0) params.blind_mm = auto; else delete params.blind_mm;
+        if (params.blind_side !== u.params?.blind_side || params.blind_mm !== u.params?.blind_mm) {
+          next[i] = { ...u, params };
+        }
+      }
+    }
+
+    // ─── T75 F2 · THE HINGE LAW AT A CORNER ────────────────────────────────
+    //
+    // *"the door nearest an internal corner hinges on the corner side so its
+    // handle swings away."*  The probe (verify/t75/p01-probe.md) found no
+    // such law on main: the only automatic hand change is the slope's
+    // (`settleSlopeDoorPartitions`, its record `slope_door_auto`). So it is
+    // written ONCE, here, for every family, in that sweep's grammar: the unit
+    // that stops on a corner (run B, beside the post or the blank) and hangs
+    // ONE leaf has it hinged on the corner side, and the record says what it
+    // was; pulled away, the leaf goes back, unless a hand has changed it
+    // since (what the client chose by hand stays). Run A never takes it: its
+    // corner door would swing into run B.
+    {
+      const corners = cornersOf({ units: next, walls, profile });
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        const c = corners.find((k) => k.kind === 'internal' && k.runB?.unitId === u.id
+          && (k.solution === 'post' || k.solution === 'blind'));
+        const doors = u.params?.doors;
+        const fitted = doors === true || (doors && typeof doors === 'object' && Number(doors.count) !== 0);
+        const count = doors && typeof doors === 'object' && Number.isFinite(Number(doors.count))
+          ? Number(doors.count)
+          : doorCountFor(u.params?.width, profile);
+        const single = fitted && count === 1 && !(Array.isArray(u.params?.bay_doors) && u.params.bay_doors.length);
+        const rec = u.params?.corner_hinge_auto || null;
+        const handOf = (p) => String((p?.doors && typeof p.doors === 'object' && p.doors.hinge) || p?.hinge || profile.doors.defaultHinge)
+          .toUpperCase() === 'R' ? 'R' : 'L';
+        const withHand = (p, hand) => ({
+          ...p,
+          hinge: hand,
+          ...(p.doors && typeof p.doors === 'object' ? { doors: { ...p.doors, hinge: hand } } : {}),
+        });
+        if (c && single) {
+          // On the TRANSITION only: once the record exists the automat has
+          // spoken, and a hand that changes the leaf afterwards is believed.
+          if (rec) continue;
+          const want = c.runB.side === 'left' ? 'L' : 'R';
+          const now = handOf(u.params);
+          const params = now === want ? { ...u.params } : withHand({ ...u.params }, want);
+          params.corner_hinge_auto = { was: now, wrote: want };
+          next[i] = { ...u, params };
+        } else if (rec) {
+          const params = { ...u.params };
+          delete params.corner_hinge_auto;
+          next[i] = { ...u, params: handOf(u.params) === rec.wrote ? withHand(params, rec.was) : params };
+        }
+      }
+    }
 
     // The RUN is decided last and always across ALL units, whatever one unit
     // was asked about (turn 6, CLAUDE.md F4). The top infill is one piece for a
@@ -2099,7 +2401,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // the top infill above, computed after `plinth` has been resolved on every
     // unit — a segment is a stretch of ADJACENT PLINTHED units, so it cannot be
     // worked out until the store knows which of them have a plinth at all.
-    const plinthParams = runPlinthParams(next, profile);
+    // T75 F6 · …and at an internal corner the kick of the run that stops on the
+    // corner is carried on to the face of the other's (corners.js, one law).
+    const plinthParams = runPlinthParams(next, profile, {
+      corners: cornersOf({ units: next, walls, profile }),
+    });
+    // T75 F5 · the UPSTAND, the plinth's grammar at the top of the run.
+    const upstandParams = runUpstandParams(next, profile);
     // ─── …and the MASKING PANEL, the same way (turn 14, CLAUDE.md F5) ───
     // One board under a run of wall units, its segments decided by the same
     // adjacency the plinth's are: docking a cabinet extends it, an end panel or
@@ -2122,6 +2430,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         + profile.doors.gap
         + (Number(u.params?.front_t) || profile.front.thickness),
       infillHeightOf: (u) => Number(u.params?.top_infill_mm) || 0,
+    }, profile);
+    // T75 F15 · …and the PELMET, the cornice's segments and mitres on the
+    // bottom edge of a run of wall units (engine/pelmet.js).
+    const pelmetParams = runPelmetParams(next, {
+      walls,
+      frontFaceDepthOf: (u) => wallGapOf(u, profile)
+        + (Number(u.params?.depth) || 0)
+        + profile.doors.gap
+        + (Number(u.params?.front_t) || profile.front.thickness),
     }, profile);
 
     // ─── Ceiling honesty (CLAUDE.md F1.5) ───
@@ -2164,8 +2481,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         plinth: plinthParams.get(u.id) ?? null,
         mask: maskParams.get(u.id) ?? null,
         cornice: corniceParams.get(u.id) ?? null,
+        // T75 F5 · present only where a run has asked for one.
+        ...(upstandParams.get(u.id) ? { upstand: upstandParams.get(u.id) } : {}),
+        // T75 F15 · …and the pelmet, likewise.
+        ...(pelmetParams.get(u.id) ? { pelmet: pelmetParams.get(u.id) } : {}),
       };
-      if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice) continue;
+      if (!entry.top_infill && !entry.plinth && !entry.mask && !entry.cornice && !entry.upstand
+        && !entry.pelmet) continue;
       const prev = prevElements[u.id];
       // Reference equality matters (drag frames), and the test is BYTE
       // equality of the WHOLE element — a field list here rotted twice
@@ -2205,7 +2527,96 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // being ACTIVE, knee or straight.
     get().settleSlopePulldowns();
 
+    // ─── T75 F10 · THE ISLAND'S PANELS, MADE AND UNMADE BY WHAT STANDS ON IT ─
+    // The same choke point: every add, move, resize, removal and room change
+    // ends here, so an empty face is covered and a face a cabinet arrives on
+    // is uncovered by one law (`engine/island.js islandPanelPlan`).
+    get().settleIslandPanels();
+
     return notices;
+  },
+
+  /**
+   * ─── T75 F10 · THE ISLAND AUTOMAT ─────────────────────────────────────────
+   *
+   * *"An empty long face gets an auto BACK PANEL ...; an empty end face gets
+   * the auto END PANEL ..., sized to the whole island depth. A unit added to a
+   * face takes the automat's panel off (the vanishing law); a panel the client
+   * added by hand stays."*  The boards are free panels carrying
+   * `island_auto: true`; only those are made, re-sized or removed here. It acts
+   * on the DIFFERENCE, so a settled scene passes through untouched and the
+   * refresh it triggers finds nothing more to do.
+   *
+   * @returns {number} how many panels it made, moved or removed
+   */
+  /** T75 F10 · take the automat's panels off one island face; how many went. */
+  clearFacePanels: (wallIndex) => {
+    const s = get();
+    if (!roomWalls(s.project.room)[wallIndex]?.island) return 0;
+    const gone = s.units.filter((u) => isIslandAutoPanel(u) && (u.position?.wall ?? 0) === wallIndex);
+    if (gone.length) set((st) => ({ units: st.units.filter((u) => !gone.some((p) => p.id === u.id)) }));
+    return gone.length;
+  },
+
+  settleIslandPanels: () => {
+    const s = get();
+    if (!(s.project.room?.islands || []).length && !s.units.some(isIslandAutoPanel)) return 0;
+    const profile = getCabinetProfile();
+    const walls = roomWalls(s.project.room);
+    const plan = islandPanelPlan({
+      room: s.project.room,
+      units: s.units,
+      profile,
+      unitTopOf: (u) => unitTop(u, profile),
+      faceReachOf: (u) => cornerFaceMm(u, profile),
+      defaultTop: unitTop({ type: 'BUD', params: defaultParamsFor('BUD', profile) }, profile),
+    });
+    const keyOf = (island, face) => `${island}|${face}`;
+    const wanted = new Map(plan.map((p) => [keyOf(p.island, p.face), p]));
+    const paramsFor = (p) => ({
+      island_panel: p.kind,
+      island_auto: true,
+      panel_facing: 'along',
+      panel_tilt_deg: 0,
+      panel_width: p.height,
+      board_t: p.thickness,
+      width: p.length,
+      height: p.height,
+      depth: p.thickness,
+      mount_height: 0,
+      side_infill_off: true,
+    });
+    const same = (u, p) => u.position?.wall === p.wall
+      && Math.abs((Number(u.position?.x_mm) || 0) - p.x) < 0.01
+      && Object.entries(paramsFor(p)).every(([k, v]) => u.params?.[k] === v);
+    let changed = 0;
+    const kept = [];
+    for (const u of s.units) {
+      if (!isIslandAutoPanel(u)) { kept.push(u); continue; }
+      const p = wanted.get(keyOf(u.position?.island, u.position?.face));
+      if (!p) { changed += 1; continue; }
+      wanted.delete(keyOf(p.island, p.face));
+      if (same(u, p)) { kept.push(u); continue; }
+      changed += 1;
+      kept.push({
+        ...u,
+        position: { ...u.position, wall: p.wall, x_mm: p.x },
+        params: { ...u.params, ...paramsFor(p) },
+      });
+    }
+    for (const p of wanted.values()) {
+      const unit = newUnit('FREE_PANEL', profile, kept.length, s.project.design);
+      unit.params = { ...unit.params, ...paramsFor(p), unit_num: nextUnitNum(kept, getUnitType('FREE_PANEL')) };
+      unit.position = {
+        wall: p.wall, x_mm: p.x, rotation_deg: 0, island: p.island, face: p.face,
+      };
+      kept.push(unit);
+      changed += 1;
+    }
+    if (!changed) return 0;
+    set({ units: rehomeIslandUnits(kept, walls) });
+    get().refreshAutoParts();
+    return changed;
   },
 
   /**
@@ -2674,6 +3085,78 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }));
     get().refreshAutoParts();
     return true;
+  },
+
+  /**
+   * ─── T75 F5 · THE UPSTAND, ON AND OFF PER RUN ─────────────────────────────
+   *
+   * *"on and off per run like the plinth (BACKLOG #16's grammar: added by a
+   * decision, visible only then)."*  The decision is written on every unit of
+   * the run (`runMemberIds`), because the board is the run's; a kit no worktop
+   * lies on never takes one (`runs.js wantsUpstand`).
+   */
+  addUpstand: (unitId) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return false;
+    const ids = new Set(runMemberIds(get().units, unitId, profile));
+    set((s) => ({
+      units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, upstand: true } } : u)),
+    }));
+    get().refreshAutoParts();
+    return Boolean(get().runElements?.[unitId]?.upstand || [...ids].some((id) => get().runElements?.[id]?.upstand));
+  },
+
+  /**
+   * ─── T75 F15 · THE PELMET, ONE CLICK ALONG A WHOLE RUN ────────────────────
+   *
+   * *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet: a flat strip
+   * under a run of wall units."*  Its row said *"One click adds the strip along
+   * a whole run"*, so the decision is written on every unit of the selected
+   * unit's run that may take it (the upstand's grammar, T75 F5), and the same
+   * click on a run that has it takes it off. Refused in words, never clipped:
+   * a unit not hung on a wall, or a door running below its carcass.
+   *
+   * @returns {{ok:boolean, on?:boolean, said?:string, error?:string}}
+   */
+  togglePelmet: (unitId) => {
+    const profile = getCabinetProfile();
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, error: 'Select a wall unit first: the pelmet hangs under its whole run.' };
+    const ids = runMemberIds(get().units, unitId, profile);
+    if (unit.params?.pelmet === true) {
+      const off = new Set(ids);
+      set((s) => ({
+        units: s.units.map((u) => (off.has(u.id) ? { ...u, params: { ...u.params, pelmet: false } } : u)),
+      }));
+      get().refreshAutoParts();
+      return { ok: true, on: false, said: 'The pelmet is off this run.' };
+    }
+    const refusal = pelmetRefusal(unit);
+    if (refusal) return { ok: false, error: refusal };
+    const on = new Set(ids.filter((id) => !pelmetRefusal(get().units.find((u) => u.id === id))));
+    set((s) => ({
+      units: s.units.map((u) => (on.has(u.id) ? { ...u, params: { ...u.params, pelmet: true } } : u)),
+    }));
+    get().refreshAutoParts();
+    return { ok: true, on: true, said: `Pelmet under ${on.size} wall unit${on.size === 1 ? '' : 's'}.` };
+  },
+
+  /**
+   * T75 F15 · what a library row that is an ACTION does (not a kit to place):
+   * the panel names the action and the selected unit, and the store answers.
+   */
+  libraryAction: (action, unitId) => {
+    if (action === 'pelmet') return get().togglePelmet(unitId);
+    return { ok: false, error: 'Not yet.' };
+  },
+
+  removeUpstand: (unitId) => {
+    const ids = new Set(runMemberIds(get().units, unitId, getCabinetProfile()));
+    set((s) => ({
+      units: s.units.map((u) => (ids.has(u.id) ? { ...u, params: { ...u.params, upstand: false } } : u)),
+    }));
+    get().refreshAutoParts();
   },
 
   removePlinth: (unitId) => {
@@ -3809,7 +4292,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (unit.params.doors && unit.params.doors !== false) {
       return { count: get().unitResult(unitId)?.derived?.doors || 0, already: true };
     }
-    const count = doorCountFor(unit.params.width, profile);
+    // T75 F8 · a kit that says how many leaves it has (a blind corner is ONE,
+    // `doorCount: 1`) is fitted with that many, as the engine cuts it.
+    const own = Number(getUnitType(unit.type).doorCount);
+    const count = own > 0 ? own : doorCountFor(unit.params.width, profile);
     get().setDoors(unitId, { count, hinge: unit.params.hinge || profile.doors.defaultHinge });
     return { count, already: false };
   },
@@ -4103,7 +4589,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *           not a second path: a template that could land on top of a
    *           neighbour would be exactly the bug turn 3 phase 4 closed off.
    */
-  addUnit: (typeId, { params = null, near = null, side = null } = {}) => runBatch(() => {
+  addUnit: (typeId, {
+    params = null, near = null, side = null, wall: wallAsked = null,
+    // T75 F20 · a set stands each unit where its recipe puts it: on the wall
+    // asked, at exactly this x, or refused, never moved somewhere else.
+    x: xAsked = null,
+  } = {}) => runBatch(() => {
     const profile = getCabinetProfile();
     // T72 F5 · `let`, because closing a neighbour's auto end panel below moves
     // the very spans this placement is measured against.
@@ -4144,9 +4635,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // answer). Its top is lined up with that wardrobe's below, at the mount.
     // A depth the caller states wins, as every template param does.
     const hangsBeside = isWardrobeWallUnit(typeId) && beside && inPlayWardrobe(beside) ? beside : null;
-    if (hangsBeside && params?.depth == null) {
-      unit.params.depth = Number(hangsBeside.params.depth) || unit.params.depth;
-      if (hangsBeside.params.wall_gap != null) unit.params.wall_gap = hangsBeside.params.wall_gap;
+    // T75 F16 · *"wardrobe depth"*: a chest of drawers (and F18's low unit)
+    // standing beside a wardrobe is born at THAT wardrobe's depth and gap, by
+    // the same two lines, so its back and its front are on the wardrobe's.
+    const standsBeside = !hangsBeside && isBesideWardrobe(typeId) && beside && inPlayWardrobe(beside) ? beside : null;
+    const bornBeside = hangsBeside || standsBeside;
+    if (bornBeside && params?.depth == null) {
+      unit.params.depth = Number(bornBeside.params.depth) || unit.params.depth;
+      if (bornBeside.params.wall_gap != null) unit.params.wall_gap = bornBeside.params.wall_gap;
     }
     // Centred on an empty wall, otherwise butted onto the end of the run —
     // a new unit never lands on top of an existing one. Wall units and floor
@@ -4295,12 +4791,24 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // wardrobe standing on the floor makes its panel go. A wall unit (or a top
     // box) beside it leaves the wardrobe's side exactly as it was: *"Bok szafy
     // przy wall unit ZOSTAJE."*  Beside anything else the law is as T72 wrote it.
+    // T75 F16 · …and only where the two COVER each other. A wardrobe added
+    // beside a chest of drawers stands above it: its own side shows, so the
+    // board between them is not closed but HANDED OVER below, once the
+    // wardrobe has landed beside it. Closing it first landed the wardrobe
+    // flush with no room for its panel: a carcass side left visible
+    // (verify/t75/p05-probe.md). Two that cover each other close as T72 wrote.
+    const facing = side ? (isLeftSide(side) ? 'R' : 'L') : null;
+    const shows = (a, aSide, b) => sideIsVisible(a, aSide, b, { atWall: false }, profile).visible;
+    const wardrobePair = Boolean(beside && side && inPlayWardrobe(beside) && inPlayWardrobe(unit));
+    const newcomerShows = wardrobePair && shows(unit, facing, beside);
+    const besideShows = wardrobePair && shows(beside, facing === 'R' ? 'L' : 'R', unit);
     if (beside && side && (!inPlayWardrobe(beside) || inPlayWardrobe(unit))) {
       // …and the SPANS are re-read, because a panel that leaves changes both
       // the neighbour the new cabinet is placed beside and the obstacle it is
       // clamped against. `state` was read at the top of this action and is one
       // board out of date the moment the board goes.
-      if (get().closeAutoEndPanelFacing(beside.id, side) > 0) {
+      if ((!wardrobePair || (!newcomerShows && !besideShows))
+        && get().closeAutoEndPanelFacing(beside.id, side) > 0) {
         state = get();
         beside = state.units.find((u) => u.id === beside.id) || beside;
       }
@@ -4311,17 +4819,55 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // …and when a SIDE was asked for as well, that wall is the only one tried:
     // "put one on the left of this" is not answered by a wall round the corner.
     const besideWall = beside ? walls[beside.position.wall ?? 0] : null;
-    const ordered = besideWall
-      ? (side
-        ? [besideWall]
-        : [besideWall, ...walls.filter((wl) => wl.index !== besideWall.index)])
-      : walls;
+    // ─── T75 F10 · A FACE IS TRIED ONLY WHEN IT IS ASKED FOR ───────────────
+    // *"A unit is added to a face as to a wall (`addUnit` with the face's
+    // index)."*  A named wall (a face's plus, the library opened on it) is the
+    // only one tried; going round the room looking for space never lands a
+    // cabinet on an island nobody pointed at.
+    const asked = wallAsked != null && walls[Number(wallAsked)] ? walls[Number(wallAsked)] : null;
+    const plaster = walls.filter((wl) => !wl.island);
+    const ordered = asked
+      ? [asked]
+      : (besideWall
+        ? (side
+          ? [besideWall]
+          : [besideWall, ...plaster.filter((wl) => wl.index !== besideWall.index)])
+        : plaster);
+    // ─── T75 F4 · AN L STANDS IN A ROOM CORNER ONLY ───────────────────────
+    // *"the L stands in a room corner only (Room refuses first: any other spot
+    // is refused in words)."*  The first free internal corner, on the wall of
+    // the unit it was asked beside first, takes it, with its hand.
+    if (!placed && isCornerLKit(typeId)) {
+      for (const wall of ordered) {
+        const slot = cornerLSlots(state, unit, wall, walls, profile).find((c) => c.free);
+        if (slot) {
+          placed = { wall: wall.index, x: slot.x };
+          unit.params.corner_side = slot.side;
+          break;
+        }
+      }
+      if (!placed) return { id: null, error: cornerLRefusal(unit) };
+    }
+    // T75 F10 · THE VANISHING LAW, before the placement is measured: a
+    // cabinet put on an island face takes the automat's panel there off first
+    // (T72 F5's order: the board leaves, then the cabinet is placed), and the
+    // automat puts it back if the placement is refused.
+    const facePanels = asked?.island
+      ? state.units.filter((u) => isIslandAutoPanel(u) && (u.position?.wall ?? 0) === asked.index)
+      : [];
+    if (facePanels.length) {
+      set((st) => ({ units: st.units.filter((u) => !facePanels.some((p) => p.id === u.id)) }));
+      state = get();
+    }
     for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
-      const x = freeSlotOnWall({
+      const slotAt = asked && xAsked != null
+        ? (q) => (slotTakes({ ...q, x: Number(xAsked) }, profile) ? Math.round(Number(xAsked)) : null)
+        : (q) => freeSlotOnWall(q, profile);
+      const x = slotAt({
         width: unit.params.width,
         wallWidth: wall.width,
-        wallMargin: wallMarginOf(state, unit),
+        wallMargin: wallMarginOf(state, unit, wall),
         others: [
           ...state.units
             .filter((u) => (u.position.wall ?? 0) === wall.index && (obstructs(unit, u, profile)
@@ -4332,20 +4878,31 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           // A box in the plan refuses a placement exactly as a neighbour does
           // (turn 14, CLAUDE.md F10.3): a unit is never DROPPED into a chimney.
           ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) }),
+          // T75 F2 · …and a unit round the corner, at its corner stop. The
+          // room refuses first: a placement is never dropped into an occupied
+          // corner square (verify/t75/p01-probe.md measured it landing there).
+          ...cornerSpansFor(state, unit, wall, walls, profile),
         ],
         near: onThisWall ? unitSpan(beside) : null,
         side: onThisWall ? side : null,
-      }, profile);
+      });
       if (x != null) { placed = { wall: wall.index, x }; break; }
     }
     if (!placed) {
-      const where = side && beside
+      const where = asked && xAsked != null
+        ? `There is no room for ${formatMm(unit.params.width)} mm at ${formatMm(Math.round(Number(xAsked)))} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
+        : side && beside
         ? `There is no room for ${formatMm(unit.params.width)} mm to the ${side === 'L' ? 'left' : 'right'} of ${beside.params.unit_num} — move something, or add it on the other side.`
-        : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit — move or remove something first.`;
+        : (asked
+          ? `There is no room for ${formatMm(unit.params.width)} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
+          : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit: move or remove something first.`);
+      if (facePanels.length) get().settleIslandPanels();
       return { id: null, error: where };
     }
     unit.position.wall = placed.wall;
     unit.position.x_mm = placed.x;
+    // T75 F9 · on a face, the unit carries what it stands on.
+    unit.position = plasterPosition(unit.position, walls);
     // ─── Turn 8 (CLAUDE.md F5) ───
     // A wall unit going in beside a TALL one hangs so that the two finish on
     // ONE line. A kitchen whose wall units stop 80 mm below the tall cabinet
@@ -4361,6 +4918,38 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // T36 F7: a TOP BOX settles on its main the moment it is placed — same
     // wall, same x, same depth, hung at the main's own top.
     set((s) => ({ units: settleRiders([...s.units, unit], profile) }));
+    // ─── T75 F16 · THE BOARD BETWEEN THEM IS THE TALLER ONE'S ──────────────
+    // *"A carcass side never stays visible."*  A wardrobe that has landed
+    // beside a chest (its side shows above it, the chest's does not) takes
+    // the automat's board the chest was carrying on that side: off there, on
+    // here, in the very room that board stood in, before the settle reads the
+    // junction. Left alone, the settle prunes the chest's covered board, grows
+    // it straight back (two free ends a board apart, the chest's first) and
+    // the short board then reads as finishing the wardrobe's taller side.
+    // A board the client asked for is his and is never moved.
+    if (newcomerShows && !besideShows) {
+      const want = facing === 'R' ? 'L' : 'R';
+      const held = get().units.find((u) => u.id === beside.id);
+      const board = (held?.params?.end_panels || [])
+        .find((ep) => (ep.side === 'R' ? 'R' : 'L') === want && isAutoEndPanel(ep));
+      if (board && !askedSides(held).includes(want)) {
+        get().removeEndPanel(beside.id, board.id, { decline: false });
+        const res = get().addEndPanel(unit.id, { side: facing, applyToAll: false });
+        if (res.id) {
+          set((st) => ({
+            units: st.units.map((u) => (u.id === unit.id
+              ? {
+                ...u,
+                params: {
+                  ...u.params,
+                  end_panels: (u.params.end_panels || []).map((ep) => (ep.id === res.id ? { ...ep, auto_added: true } : ep)),
+                },
+              }
+              : u)),
+          }));
+        }
+      }
+    }
     // A unit arrives with its SCRIBE FILLERS worked out from where it landed.
     // The plinth and the top infill are decisions and wait to be asked for
     // (turn 4, BACKLOG #16) — turn 3 put both in the cut list unasked.
@@ -4373,6 +4962,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // and a drag asked nothing. Both are `settleLayout` now, and every action
     // that can move a cabinet's edge ends by calling it.
     get().settleLayout(unit.id);
+    // ─── T75 F17 · A DESK: FRONT ON THE WARDROBE'S LINE, AND ITS TOP ────────
+    // *"Placed beside a wardrobe at `mount_height = 720`, aligned to the FRONT
+    // of the wardrobe by default (T74 F7's two choices). It takes a WORKTOP."*
+    // Born at that wardrobe's depth and gap above (BACK and FRONT agree at
+    // birth); FRONT is recorded so a new depth keeps the front on the line.
+    // The top IS the desk (`wardrobeDesk.defaults.topThickness`, 25), so it
+    // arrives with it, through the worktop's own `addWorktop`; PRO's worktop
+    // button asks for two cabinets, and a desk alone would never get one.
+    if (isDeskKit(unit.type)) {
+      if (hangsBeside) get().alignUnitDepth(unit.id, 'front');
+      get().addWorktop([unit.id]);
+    }
     // ─── TURN 72 (CLAUDE.md F8): …AND IT TAKES THE RUN'S CORNICE ───────────
     //
     // *"każda dodatkowa szafa albo też ma cornice, albo żadna nie ma, bo jak
@@ -4397,6 +4998,177 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (answer > 0) get().setCornice(unit.id, answer);
     }
     return { id: unit.id, error: null, wall: placed.wall };
+  }),
+
+  /**
+   * ─── T75 F20 · A SET, LEFT TO RIGHT, AS ORDINARY UNITS ───────────────────
+   *
+   * CLAUDE.md T75 F20: *"inserting a set on a wall adds them left to right
+   * through `addUnit` (collisions and refusals as for any unit); the set's
+   * total width adapts to the wall through `shareOut` (`widthFixed` kits keep
+   * their width). A set is a RECIPE, not a group: after insertion the units
+   * are ordinary units."*
+   *
+   * ROOM REFUSES FIRST. The whole span (end panels included) is measured
+   * against the wall before the first unit goes in: five plain adds left half
+   * a Media wall in the room (verify/t75/p06-probe.md). A refusal on the way
+   * puts the room back exactly as it was. Each unit then goes in through
+   * `addUnit` itself: a butted one beside the unit before it (the run's own
+   * law, the automat's panels and all), the first one and a hung one at its
+   * x. What a lone add decides and the recipe decides otherwise (a wall unit
+   * hung at the recipe's height) is written back through `updateUnitParams`,
+   * the edit path. One Ctrl+Z takes the whole set.
+   *
+   * THE WIDTH ADAPTS where the set is the whole run at its level on that wall
+   * and the leftover is under the share-out gap: the run's own share-out, the
+   * kits that fix their width keeping it. Beside cabinets already there, the
+   * offer bar stands as it does for any add: those widths are the client's.
+   *
+   * @returns {{ ids:string[], error:string|null, wall:number|null, shared:boolean }}
+   */
+  insertSet: (row, { wall: wallAsked = null, near = null, side = null } = {}) => runBatch(() => {
+    const recipe = setRecipe(row);
+    if (!recipe) return { ids: [], error: 'This set has no units to insert.', wall: null, shared: false };
+    const profile = getCabinetProfile();
+    const before = get();
+    const walls = roomWalls(before.project.room);
+    const born = recipe.units.map((u, i) => setUnitBorn(u, i, before, profile));
+    const bodies = born.map((b) => b.unit);
+    const layout = setLayout(recipe.units, (i) => Number(bodies[i].params.width) || 0);
+    const panelT = recipe.endPanels ? endPanelThicknessOf(bodies[0], before.project.design, profile) : 0;
+    // …and the automat's own boards between the set's units (low meets tall)
+    // are part of the span: asked of the set laid out on its own.
+    const laid = bodies.map((b, i) => ({ ...b, position: { wall: 0, x_mm: layout.xs[i], rotation_deg: 0 } }));
+    const owedInside = autoEndPanelJunctions(laid, profile, {})
+      .filter((j) => j.otherId && laid.some((b) => b.id === j.otherId)).length;
+    const need = layout.span + 2 * panelT
+      + owedInside * endPanelThicknessOf(bodies[0], before.project.design, profile);
+    const beside = near ? before.units.find((u) => u.id === near) || null : null;
+    const asked = wallAsked != null && walls[Number(wallAsked)] ? walls[Number(wallAsked)] : null;
+    const besideWall = beside ? walls[beside.position?.wall ?? 0] : null;
+    const ordered = asked ? [asked] : (besideWall ? [besideWall] : walls.filter((wl) => !wl.island));
+    const deepest = bodies.reduce((a, b) => ((Number(b.params.depth) || 0) > (Number(a.params.depth) || 0) ? b : a));
+    let start = null;
+    let onWall = null;
+    for (const wall of ordered) {
+      const x = freeSlotOnWall({
+        width: need,
+        wallWidth: wall.width,
+        wallMargin: wallMarginOf(before, bodies[0], wall),
+        others: [
+          ...before.units
+            .filter((u) => (u.position?.wall ?? 0) === wall.index && bodies.some((b) => obstructs(b, u, profile)))
+            .map(unitSpan),
+          ...boxSpansOnWall({
+            wall, depth: deepest.params.depth, boxes: planObstaclesOf(before.project.room, before.project.wallSlopes),
+          }),
+          ...bodies.flatMap((b) => cornerSpansFor(before, b, wall, walls, profile)),
+        ],
+        near: beside && (beside.position?.wall ?? 0) === wall.index ? unitSpan(beside) : null,
+        side: beside ? side : null,
+      }, profile);
+      if (x != null) { start = x + panelT; onWall = wall; break; }
+    }
+    if (start == null) {
+      const where = asked ? `on ${wallName(walls, asked.index)}` : (beside ? `beside ${beside.params.unit_num}` : 'on any wall');
+      return {
+        ids: [], error: `There is no room for the ${recipe.name} (${formatMm(need)} mm) ${where}: move or remove something first.`, wall: null, shared: false,
+      };
+    }
+    const ids = [];
+    const undo = (why) => {
+      set({ units: before.units, project: before.project });
+      return {
+        ids: [], error: `The ${recipe.name} does not fit there: ${why}`, wall: null, shared: false,
+      };
+    };
+    for (let i = 0; i < recipe.units.length; i += 1) {
+      const u = recipe.units[i];
+      const butt = layout.butts[i];
+      const res = butt != null
+        ? get().addUnit(u.type, { params: born[i].params, near: ids[butt], side: 'R' })
+        : get().addUnit(u.type, { params: born[i].params, wall: onWall.index, x: start + layout.xs[i] });
+      if (!res?.id) return undo(res?.error || 'a unit was refused.');
+      ids.push(res.id);
+      if (butt != null) {
+        // A carcass side never stays visible: where the two butted units
+        // owe each other the automat's panel (low meets tall), the NEW one
+        // steps along by the board (it is the set's open end, the room the
+        // span was measured with) and the panel goes in between, the way
+        // `growAutoEndPanels` makes room for one by hand.
+        const pair = [res.id, ids[butt]];
+        const owed = autoEndPanelJunctions(get().units, profile, { room: get().project.room })
+          .find((j) => pair.includes(j.unitId) && pair.includes(j.otherId));
+        if (owed) {
+          const stepper = get().units.find((x) => x.id === res.id);
+          const home = Number(stepper.position?.x_mm) || 0;
+          const thick = endPanelThicknessOf(stepper, get().project.design, profile);
+          // Magnet off: one board along, exactly, and the automat's board in
+          // the room left, marked as the automat's (`growAutoEndPanels`'
+          // own mark), so it goes again with its junction.
+          get().moveUnit(res.id, home + thick, 0, { magnet: false });
+          const board = get().addEndPanel(owed.unitId, { side: owed.side, applyToAll: false });
+          if (board?.id) {
+            set((st) => ({
+              units: st.units.map((x) => (x.id === owed.unitId
+                ? {
+                  ...x,
+                  params: {
+                    ...x.params,
+                    end_panels: (x.params.end_panels || []).map((ep) => (ep.id === board.id ? { ...ep, auto_added: true } : ep)),
+                  },
+                }
+                : x)),
+            }));
+            get().refreshAutoParts();
+          }
+        }
+        // Butted means AT the unit before it: a free stretch further along
+        // is the set come apart, not a set.
+        const now = get().units;
+        const mine = now.find((x) => x.id === res.id);
+        const host = now.find((x) => x.id === ids[butt]);
+        if ((mine.position?.wall ?? 0) !== onWall.index || unitSpan(mine).left - unitSpan(host).right > 1) {
+          return undo(`${mine.params.unit_num} could not stand beside ${host.params.unit_num}.`);
+        }
+      }
+      if (Object.keys(born[i].after).length) get().updateUnitParams(res.id, born[i].after);
+      if (u.rail && !get().addHangerRail(res.id)) return undo('the rail could not be hung.');
+    }
+    const floorIds = ids.filter((id, i) => layout.butts[i] != null || i === 0)
+      .filter((id) => getUnitType(get().units.find((x) => x.id === id)?.type).mount === 'floor');
+    if (recipe.endPanels && floorIds.length) {
+      for (const [id, one] of [[floorIds[0], 'L'], [floorIds[floorIds.length - 1], 'R']]) {
+        const has = (get().units.find((x) => x.id === id)?.params?.end_panels || []).some((ep) => ep.side === one);
+        if (!has) {
+          const res = get().addEndPanel(id, { side: one, asked: true });
+          if (res?.error) return undo(res.error);
+        }
+      }
+    }
+    if (recipe.top) {
+      const res = get().addWorktop(recipe.top.units.map((i) => ids[i]).filter(Boolean), {
+        thickness: recipe.top.thickness ?? null, single: recipe.top.single === true,
+      });
+      if (!res.ok) return undo(res.error);
+    }
+    // THE WIDTH ADAPTS, through the run's own share-out, where the run is the set's.
+    let shared = false;
+    if (setIsOneLevel(recipe.units, (t) => getUnitType(t).mount)) {
+      const st = get();
+      const found = shareOutRunFor(st.units, ids[0], { walls, wallMargin: wallMarginOf(st, st.units.find((x) => x.id === ids[0])) }, profile);
+      // The set IS the run: every one of its units in it (a tall unit breaks
+      // a share-out run by its height), nobody else's.
+      const onlyMine = found && found.run.units.every((x) => ids.includes(x.id) || isIslandAutoPanel(x))
+        && ids.every((id) => found.run.units.some((x) => x.id === id));
+      if (onlyMine && shareOutOffered(found.run, found.context, profile)) {
+        get().shareOutRun(ids[0]);
+        shared = true;
+      }
+    }
+    return {
+      ids, error: null, wall: onWall.index, shared,
+    };
   }),
 
   // ─── TURN 50 (CLAUDE.md F2): THE RUN IS SHARED OUT, EQUALLY, ONCE ────────
@@ -5454,7 +6226,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // T74 F13 · a free panel stands at its OWN height (on the floor, or where
       // its floor figure put it), as `projectHeightParams` births it: the
       // kitchen's wall-unit line never moves it.
-      if (applied.wallMount != null && type.mount === 'wall' && !type.freePanel) changes.mount_height = resolved.wallMount;
+      // T75 F17 · …and neither does a desk: 720 is a sitting height, not a wall line.
+      if (applied.wallMount != null && type.mount === 'wall' && !type.freePanel && !type.desk) changes.mount_height = resolved.wallMount;
       // Turn 22 (F4.2): every unit that STANDS on the run's legs follows the
       // toe kick, the D/W panel included — it is the unit the owner watched
       // ignore the field.
@@ -5502,6 +6275,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const walls = roomWalls(s.project.room);
     const wallIndex = unit.position.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
+    // T75 F4 · an L moves from corner to corner of its wall, never along it.
+    if (isCornerLKit(unit.type)) return get().settleCornerL(unitId, wall.index, xRaw);
     // Obstacles include units on OTHER walls whose footprint reaches into this
     // one's depth band — the corner case, in both senses.
     const others = wallObstacles({
@@ -5598,6 +6373,52 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   }),
 
   /**
+   * ─── T75 F4 · THE L, SETTLED INTO A CORNER OR REFUSED ────────────────────
+   *
+   * CLAUDE.md T75 F4: *"the L stands in a room corner only (Room refuses
+   * first: any other spot is refused in words); it occupies the corner square
+   * in both walls' depth bands."*  The corner of `wallIndex` nearest `xRaw`
+   * (the first free one when `xRaw` is null); its x is the wall clearance off
+   * the adjacent wall, its hand the corner's. Occupied, or no internal corner
+   * on that wall: nothing moves and the sentence says why.
+   *
+   * @returns {{x:number, blocked:boolean, error:string|null}}
+   */
+  settleCornerL: (unitId, wallIndex, xRaw = null) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    const walls = roomWalls(s.project.room);
+    const wall = walls[wallIndex];
+    if (!unit || !wall) return { x: unit?.position?.x_mm ?? 0, blocked: true, error: null };
+    const profile = getCabinetProfile();
+    const probe = { ...unit, position: { ...unit.position, wall: wall.index } };
+    const slots = cornerLSlots(s, probe, wall, walls, profile);
+    const ordered = xRaw == null
+      ? slots
+      : [...slots].sort((a, b) => Math.abs(a.x - Number(xRaw)) - Math.abs(b.x - Number(xRaw)));
+    const slot = xRaw == null ? ordered.find((c) => c.free) : ordered[0];
+    if (!slot || !slot.free) {
+      return {
+        x: unit.position.x_mm,
+        blocked: true,
+        error: slot
+          ? `That corner of wall ${wall.index + 1} is not free for ${unit.params?.unit_num || 'this corner unit'}: move what stands there first.`
+          : cornerLRefusal(unit, wall.index),
+      };
+    }
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? {
+        ...u,
+        position: { ...u.position, wall: wall.index, x_mm: slot.x, rotation_deg: 0 },
+        params: { ...u.params, corner_side: slot.side },
+      } : u)),
+    }));
+    get().refreshAutoParts();
+    get().settleLayout(unitId);
+    return { x: slot.x, blocked: false, error: null };
+  }),
+
+  /**
    * ─── Re-home a unit (turn 11, CLAUDE.md F4.1) ───
    *
    * "Move a unit to another position/side/wall AFTER placement." Until now a
@@ -5616,11 +6437,20 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * @returns {{wall:number, x_mm:number, blocked:boolean, error:string|null}}
    */
   moveUnitToWall: (unitId, wallIndex, xRaw, snapStep = 0) => {
+    // T75 F10 · as `setUnitWall`: an island face is cleared of the automat's panel first.
+    if (wallIndex !== (get().units.find((u) => u.id === unitId)?.position?.wall ?? 0)) get().clearFacePanels(wallIndex);
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     const walls = roomWalls(s.project.room);
     if (!unit || !walls[wallIndex]) return null;
     const from = { wall: unit.position.wall ?? 0, x_mm: unit.position.x_mm };
+    // T75 F4 · an L goes round the room corner to corner, or not at all.
+    if (isCornerLKit(unit.type)) {
+      const moved = get().settleCornerL(unitId, wallIndex, xRaw);
+      return {
+        wall: moved.blocked ? from.wall : wallIndex, x_mm: moved.x, blocked: moved.blocked, error: moved.error,
+      };
+    }
     if (wallIndex === from.wall) {
       const moved = get().moveUnit(unitId, xRaw, snapStep);
       return {
@@ -5633,7 +6463,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // can have an opinion about the neighbours there.
     set((st) => ({
       units: st.units.map((u) => (u.id === unitId
-        ? { ...u, position: { ...u.position, wall: wallIndex } }
+        ? { ...u, position: plasterPosition({ ...u.position, wall: wallIndex }, walls) }
         : u)),
     }));
     const moved = get().moveUnit(unitId, xRaw, snapStep);
@@ -5645,7 +6475,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const room = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
-      wallMargin: wallMarginOf(get(), unit),
+      wallMargin: wallMarginOf(get(), unit, walls[wallIndex]),
       others: [
         ...get().units
           .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex
@@ -5654,11 +6484,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...boxSpansOnWall({
           wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(get().project.room, get().project.wallSlopes),
         }),
+        // T75 F2 · the unit round the corner, at its corner stop.
+        ...cornerSpansFor(get(), unit, walls[wallIndex], walls),
       ],
     }, getCabinetProfile());
     if (room == null) {
+      // T75 F9 · put back with what it stands on put back too.
       set((st) => ({
-        units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, ...from } } : u)),
+        units: st.units.map((u) => (u.id === unitId ? { ...u, position: plasterPosition({ ...u.position, ...from }, walls) } : u)),
       }));
       get().refreshAutoParts();
       return {
@@ -5686,6 +6519,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return null;
     const current = Number(unit.position.rotation_deg) || 0;
+    // T75 F4 · an L stands on two walls; turning it would take it off both.
+    if (isCornerLKit(unit.type)) return current;
     let next = current;
     if (mode === 'step') next = current + (Number(value) || 90);
     else if (mode === 'set') next = Number(value) || 0;
@@ -5710,15 +6545,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * itself, which is exactly what phase 4 closes off.
    */
   setUnitWall: (unitId, wallIndex) => {
+    // T75 F10 · the vanishing law on the Wall select too: the automat's panel
+    // on an island face leaves before the unit is measured onto it.
+    get().clearFacePanels(wallIndex);
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     const walls = roomWalls(s.project.room);
     if (!unit || !walls[wallIndex]) return null;
+    // T75 F4 · an L takes a free corner of that wall, or the move is refused.
+    if (isCornerLKit(unit.type)) {
+      const moved = get().settleCornerL(unitId, wallIndex, null);
+      return {
+        wall: moved.blocked ? (unit.position.wall ?? 0) : wallIndex, x_mm: moved.x, blocked: moved.blocked, error: moved.error,
+      };
+    }
     const level = getUnitType(unit.type).mount;
     const x = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
-      wallMargin: wallMarginOf(s, unit),
+      wallMargin: wallMarginOf(s, unit, walls[wallIndex]),
       others: [
         ...s.units
           .filter((u) => u.id !== unitId && (u.position.wall ?? 0) === wallIndex && obstructs(unit, u))
@@ -5726,18 +6571,26 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ...boxSpansOnWall({
           wall: walls[wallIndex], depth: unit.params.depth, boxes: planObstaclesOf(s.project.room, s.project.wallSlopes),
         }),
+        // T75 F2 · the unit round the corner, at its corner stop.
+        ...cornerSpansFor(s, unit, walls[wallIndex], walls),
       ],
     }, getCabinetProfile());
     if (x == null) {
+      // T75 F10 · refused: the automat puts its panel back.
+      get().settleIslandPanels();
       return {
         wall: unit.position.wall ?? 0,
         x_mm: unit.position.x_mm,
         blocked: true,
-        error: `Wall ${wallIndex + 1} has no free space for this unit — move or remove something there first.`,
+        error: walls[wallIndex].island
+          ? `${wallName(walls, wallIndex).replace(/^./, (c) => c.toUpperCase())} has no free space for this unit: move or remove something there first.`
+          : `Wall ${wallIndex + 1} has no free space for this unit: move or remove something there first.`,
       };
     }
     set((st) => ({
-      units: st.units.map((u) => (u.id === unitId ? { ...u, position: { ...u.position, wall: wallIndex, x_mm: x } } : u)),
+      units: st.units.map((u) => (u.id === unitId
+        ? { ...u, position: plasterPosition({ ...u.position, wall: wallIndex, x_mm: x }, walls) }
+        : u)),
     }));
     get().refreshAutoParts(unitId);
     return { wall: wallIndex, x_mm: x, blocked: false, error: null };
@@ -6282,6 +7135,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     if (!WARDROBE_KIT_KINDS.includes(kind)) return null;
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
+    // T75 F16 · a hanging kit goes in a wardrobe's hanging space; a piece that
+    // stands beside a wardrobe (chest, desk, low unit) has none to give it.
+    if (isBesideWardrobe(unit.type)) return null;
     const wantZone = zone == null ? null : Math.trunc(Number(zone));
     const items = unit.params.sections?.[0]?.items || [];
     const zoneOf = (i) => (i.zone == null || !Number.isFinite(Number(i.zone))
@@ -6293,6 +7149,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       ...(wantZone == null ? {} : { zone: wantZone }),
       // 30.08 (pull-down): the parked rod's own height from the top.
       ...(Number.isFinite(posMm) && posMm >= 0 ? { pos_mm: posMm } : {}),
+      // T75 F19 · a row of hooks may say how many; with none, the profile's.
+      ...(kind === 'hooks' && Number(extra?.count) > 0 ? { count: Math.trunc(Number(extra.count)) } : {}),
     });
   },
 
@@ -6699,7 +7557,26 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const wanted = xMm != null && Number.isFinite(Number(xMm))
       ? Number(xMm)
       : best.from + (best.size - G) / 2;
-    const x = snapTo(Math.min(Math.max(wanted, G), W - G - G), profile.editor.mmStep);
+    let x = snapTo(Math.min(Math.max(wanted, G), W - G - G), profile.editor.mmStep);
+    // ─── T75 F3 · NO DIVIDER INSIDE THE BLIND PART ─────────────────────────
+    // *"no divider may be placed inside the blind part (refused in words)."*
+    // The blind part is behind the next run, reached through the door, and the
+    // rail runs through it. A divider ASKED for there is refused; one placed
+    // by the widest-bay rule is put in the reachable part instead.
+    const blindSpan = blindSpanOf(get(), unit);
+    if (blindSpan && x + G > blindSpan.from && x < blindSpan.to) {
+      if (xMm != null && Number.isFinite(Number(xMm))) {
+        useUiStore.getState().notify(BLIND_DIVIDER_REFUSAL, 'warn');
+        return null;
+      }
+      const from = blindSpan.side === 'left' ? Math.max(G, blindSpan.to) : G;
+      const to = blindSpan.side === 'left' ? W - G : Math.min(W - G, blindSpan.from);
+      if (to - from < G + 2 * profile.editor.minShelfGap) {
+        useUiStore.getState().notify(BLIND_DIVIDER_REFUSAL, 'warn');
+        return null;
+      }
+      x = snapTo(from + (to - from - G) / 2, profile.editor.mmStep);
+    }
     const id = get().addItem(unitId, { kind: 'partition', x_mm: x });
     // Turn 33 (CLAUDE.md F5): with BAY DOORS the leaf widths re-derive from
     // the partitions — a divider appearing re-shapes the fronts, so the
@@ -6731,8 +7608,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const self = Number(unit.params.sections?.[0]?.items?.find((i) => i.id === itemId)?.x_mm) || G;
     const below = [...others].filter((x) => x <= self).pop();
     const above = others.find((x) => x > self);
-    const min = Math.max(G + gap, below != null ? below + gap : G + gap);
-    const max = Math.min(W - 2 * G - gap, above != null ? above - gap : W - 2 * G - gap);
+    let min = Math.max(G + gap, below != null ? below + gap : G + gap);
+    let max = Math.min(W - 2 * G - gap, above != null ? above - gap : W - 2 * G - gap);
+    // T75 F3 · the blind part is no place for a divider: the clamp stops at
+    // its edge, and a number typed inside it is refused in words.
+    const blindSpan = blindSpanOf(get(), unit);
+    if (blindSpan) {
+      if (blindSpan.side === 'left') min = Math.max(min, blindSpan.to);
+      else max = Math.min(max, blindSpan.from - G);
+      const raw = Number(xRaw) || 0;
+      if (raw + G > blindSpan.from && raw < blindSpan.to) {
+        useUiStore.getState().notify(BLIND_DIVIDER_REFUSAL, 'warn');
+      }
+    }
     if (max < min) return { x: self, min, max, blocked: true };
     const x = snapTo(Math.min(Math.max(Number(xRaw) || 0, min), max), profile.editor.mmStep);
     get().updateItem(unitId, itemId, { x_mm: x });
@@ -7877,25 +8765,87 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{ok:boolean, id:string|null, error:string|null}}
    */
-  addWorktop: (unitIds) => {
+  addWorktop: (unitIds, { thickness = null, single = false } = {}) => {
     const s = get();
     const wanted = [...new Set((unitIds || []).filter(Boolean))];
     const units = wanted.map((id) => s.units.find((u) => u.id === id)).filter(Boolean);
     const profile = getCabinetProfile();
-    const gate = worktopEligible(units, profile);
+    // T75 F5 · the walls go in, so two runs meeting at a corner may share it.
+    const gate = worktopEligible(units, profile, { walls: roomWalls(s.project.room), single });
     if (!gate.ok) return { ok: false, id: null, error: gate.why };
     const design = migrateDesign(s.project.design);
     // A cabinet lies under ONE slab. Asking for a worktop over a run that
     // already has one REPLACES it rather than stacking a second on top —
     // which is what a joiner means by "put a worktop on these".
-    const kept = design.worktops.filter((w) => !w.unitIds.some((id) => wanted.includes(id)));
+    // T75 F11 · on an island the slab is the ISLAND's: one over the whole,
+    // replacing whatever slab that island already carried.
+    const kept = design.worktops.filter((w) => !w.unitIds.some((id) => wanted.includes(id))
+      && !(gate.island && w.island === gate.island));
     const id = uid('worktop');
     get().setDesign({
       worktops: [...kept, {
-        id, unitIds: wanted, decor: null, extendLeft: 0, extendRight: 0, extendFront: 0,
+        id,
+        unitIds: wanted,
+        decor: null,
+        extendLeft: 0,
+        extendRight: 0,
+        extendFront: 0,
+        // T75 F4/F5 · one L corner unit takes a slab of its own.
+        ...(units.length === 1 && getUnitType(units[0].type).corner ? { kind: 'L' } : {}),
+        // T75 F17 · …and so does one desk, and its top is the desk's own 25
+        // (*"a desk or a sideboard top is 25, a kitchen slab 38; the project
+        // default stays 38"*). A thickness the caller names wins; with none,
+        // the record carries none and the profile's 38 stands.
+        ...(units.length === 1 && isDeskKit(units[0].type) ? { kind: 'desk' } : {}),
+        // T75 F20 · …and so does the one cabinet a SET lays a top on.
+        ...(units.length === 1 && single && !getUnitType(units[0].type).corner && !isDeskKit(units[0].type)
+          ? { kind: 'top' } : {}),
+        ...recordThickness(thickness, units, profile),
+        ...(gate.island ? {
+          island: gate.island,
+          extend: {
+            A: 0, B: 0, E1: 0, E2: 0,
+          },
+        } : {}),
       }],
     });
     return { ok: true, id, error: null };
+  },
+
+  /**
+   * T75 F11 · one face of an island's slab drawn out (the per-face
+   * `extendFront`), and the SEATING overhang as one click: *"a seating overhang
+   * of `profile.worktop.seatingMm` offered as one click on a face with no
+   * units"*. A face carrying a cabinet is refused in words: knees do not go
+   * under a cupboard.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  extendIslandWorktop: (worktopId, face, mm) => {
+    const design = migrateDesign(get().project.design);
+    const record = design.worktops.find((w) => w.id === worktopId && w.island);
+    if (!record || !['A', 'B', 'E1', 'E2'].includes(face)) return { ok: false, error: 'No such island worktop face.' };
+    get().setDesign({
+      worktops: design.worktops.map((w) => (w.id === worktopId
+        ? { ...w, extend: { ...w.extend, [face]: Math.max(0, Number(mm) || 0) } }
+        : w)),
+    });
+    return { ok: true, error: null };
+  },
+
+  seatingOverhang: (worktopId, face) => {
+    const s = get();
+    const record = migrateDesign(s.project.design).worktops.find((w) => w.id === worktopId && w.island);
+    if (!record) return { ok: false, error: 'No such island worktop.' };
+    const walls = roomWalls(s.project.room);
+    const wall = walls.find((w) => w.island === record.island && w.face === face);
+    const seated = wall && s.units.some((u) => (u.position?.wall ?? 0) === wall.index && !getUnitType(u.type).freePanel);
+    if (!wall) return { ok: false, error: 'No such island face.' };
+    if (seated) {
+      return { ok: false, error: `A seating overhang goes over a face with no cabinets: face ${face} has some.` };
+    }
+    const mm = Number(getCabinetProfile()?.autoParts?.worktop?.seatingMm) || 300;
+    return get().extendIslandWorktop(worktopId, face, mm);
   },
 
   /** Take one off. No confirmation — Undo covers it (turn 25's rule, F11). */
@@ -7924,6 +8874,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       records: migrateDesign(s.project.design).worktops,
       units: s.units,
       profile: getCabinetProfile(),
+      // T75 F5 · a slab that turns a corner is resolved in both walls' frames.
+      walls: roomWalls(s.project.room),
     });
   },
 
@@ -7963,11 +8915,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const s = get();
     const profile = getCabinetProfile();
     const walls = roomWalls(s.project.room);
+    // T75 F3: the blind kit's leaf stands beside its blank, not its carcass end.
+    // T75 F4: an L's two leaves each on its own arm's wall.
+    const view = lClearanceView(blindClearanceView(s.allResults()), walls, profile);
     return frontClearances({
-      entries: s.allResults(),
-      units: s.units,
+      entries: view.entries,
+      units: [...s.units.filter((u) => !view.units.some((v) => v.id === u.id)), ...view.units],
       baseOf: (u) => unitBase(u, profile),
-      wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      // T75 F10 · an island face has no wall end: rule 5 is not asked there.
+      wallWidthOf: (i) => (walls?.[i]?.island ? null : Number(walls?.[i]?.width) || null),
       profile,
     });
   },
@@ -8056,7 +9012,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       room: s.project.room,
       design: migrateDesign(s.project.design),
       materials: useMaterialAssignmentStore.getState().materials,
-      wallWidthOf: (i) => Number(walls?.[i]?.width) || null,
+      // T75 F10 · an island face has no wall end: rule 5 is not asked there.
+      wallWidthOf: (i) => (walls?.[i]?.island ? null : Number(walls?.[i]?.width) || null),
+      // T75 F21 · what the job was quoted at, against today's list (Check #29).
+      priceMoves: get().catalogueMoves(),
       // ─── TURN 46 (CLAUDE.md F2): the 400 mm floor, measured HERE ─────────
       // `src/engine/**` imports nothing from `src/lib/**`, and the ceiling line
       // has to be the one the wall is drawn from — so the store asks
@@ -8801,6 +9760,53 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   // second path on which a hidden hole could come back. `computeCabinet` above
   // is handed nothing: the LISP is untouched, the kits are untouched, and the
   // next cabinet of the same kit is stock by construction.
+  // ─── T75 F7 · CUT CORNER ─────────────────────────────────────────────────
+  //
+  // The owner, 23.09.2026: *"Klikasz 'wytnij narożnik', program podświetla
+  // narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np.
+  // 200x200)."*  ONE action, one undo step: the notch is a unit param
+  // (`params.notch = { corner, w, d, h }`, h 0 = the full height), so it is
+  // saved and reloaded with the unit and nothing else has to know.
+  //
+  // Room refuses first: the engine asks the notch of the parent's own cut
+  // (`engine/notch.js notchVerdict`) and a refused notch is NOT kept; its
+  // sentence comes back here, in the engine's own words. `null` takes the
+  // notch off again.
+  setUnitNotch: (unitId, asked) => runBatch(() => {
+    const s = get();
+    const unit = s.units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, said: 'There is no such unit.' };
+    if (asked == null) {
+      if (!unit.params?.notch) return { ok: true, said: '' };
+      set((st) => ({
+        units: st.units.map((u) => {
+          if (u.id !== unitId) return u;
+          const { notch: _gone, ...params } = u.params;
+          return { ...u, params };
+        }),
+      }));
+      return { ok: true, said: '' };
+    }
+    const kit = notchKitRefusal(getUnitType(unit.type));
+    if (kit) return { ok: false, said: kit };
+    const corner = String(asked.corner || '').toUpperCase();
+    if (!NOTCH_CORNERS.includes(corner)) return { ok: false, said: 'NOTCH: the corner is BL, BR, FL or FR.' };
+    const mm = (v) => Math.round(Number(v) || 0);
+    const notch = {
+      corner, w: mm(asked.w), d: mm(asked.d), h: Math.max(0, mm(asked.h)),
+    };
+    const trial = computeCabinet(
+      paramsForEngine({ ...unit, params: { ...unit.params, notch } }, s.project.design),
+      getCabinetProfile(),
+    );
+    const refused = (trial.warnings || []).find((w) => w.code === NOTCH_REFUSED);
+    if (refused) return { ok: false, said: refused.message };
+    set((st) => ({
+      units: st.units.map((u) => (u.id === unitId ? { ...u, params: { ...u.params, notch } } : u)),
+    }));
+    return { ok: true, said: '', notch };
+  }),
+
   unitResult: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
@@ -9000,10 +10006,44 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   projectForSave: () => {
     const s = get();
     try {
-      return { ...s.project, assignments: useMaterialAssignmentStore.getState().data };
+      const assignments = useMaterialAssignmentStore.getState().data;
+      // ─── T75 F21 · THE PRICES THE JOB WAS QUOTED AT, KEPT WITH IT ──────────
+      // *"The project stores the `warehouseStamp` it was priced against and the
+      // `price_source` per assigned material."*  Written at the save that first
+      // has materials to price; later saves add newly assigned materials at
+      // today's price and never move a quoted one (that is `acceptCatalogue`).
+      const stamp = priceSnapshot({
+        assignments,
+        materials: useMaterialAssignmentStore.getState().materials,
+        at: s.project.warehouseStamp?.at || new Date().toISOString(),
+        keep: s.project.warehouseStamp || null,
+      });
+      const priced = Object.keys(stamp.prices).length ? { warehouseStamp: stamp } : {};
+      if (priced.warehouseStamp && JSON.stringify(priced.warehouseStamp) !== JSON.stringify(s.project.warehouseStamp)) {
+        set((st) => ({ project: { ...st.project, warehouseStamp: priced.warehouseStamp } }));
+      }
+      return { ...s.project, ...priced, assignments };
     } catch {
       return s.project;
     }
+  },
+
+  /**
+   * T75 F21 · the quoted prices today's list no longer says (Check #29), and
+   * the owner's decision to re-price the job against today's list.
+   */
+  catalogueMoves: () => catalogueMoves(get().project.warehouseStamp, {
+    materials: useMaterialAssignmentStore.getState().materials,
+  }),
+
+  acceptCatalogue: () => {
+    const stamp = priceSnapshot({
+      assignments: useMaterialAssignmentStore.getState().data,
+      materials: useMaterialAssignmentStore.getState().materials,
+      at: new Date().toISOString(),
+    });
+    set((s) => ({ project: { ...s.project, warehouseStamp: stamp } }));
+    return stamp;
   },
 })));
 
@@ -9090,6 +10130,11 @@ function planObstaclesOf(room, wallSlopeList) {
   return [
     ...roomBoxes(room),
     ...wallPlanObstacles(room, wallElements(wallSlopeList), { blocking: true }),
+    // T75 F9 · an island's core is an obstacle in every wall's frame, measured
+    // exactly as a box is: the cabinets on its faces stand outside it.
+    ...roomIslands(room).map((island, k) => ({
+      id: island.id, corners: islandCorners(island), label: `island ${k + 1}`,
+    })),
   ];
 }
 
@@ -9137,6 +10182,84 @@ function panelObstaclesFor(state, unit, profile = getCabinetProfile()) {
   }));
 }
 
+/**
+ * T75 F2 · the units ROUND THE CORNER that stand in this unit's way on `wall`,
+ * as spans along it, each at its corner stop (`collision.js wallObstacles`,
+ * the one road the drag clamp takes). A placement asks it so that a unit is
+ * never dropped inside an occupied corner square: the room refuses first.
+ */
+function cornerSpansFor(state, unit, wall, walls, profile = getCabinetProfile()) {
+  if (!wall) return [];
+  const others = state.units
+    .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) !== wall.index && obstructs(unit, u, profile))
+    .map(toObstacleUnit);
+  if (!others.length) return [];
+  return wallObstacles({
+    wall, walls, depth: unit.params.depth, others,
+  }).filter((o) => o.corner && !o.box);
+}
+
+/**
+ * T75 F4 · THE TWO PLACES AN L MAY STAND ON `wall`: its start corner and its
+ * end corner, each only where the next wall turns into the room
+ * (`corners.js isInternalCorner`), at the wall clearance off the adjacent
+ * wall. `free` asks the same spans a placement asks: the units on this wall,
+ * the boxes in the plan and the units round the corner (`cornerSpansFor`,
+ * at the L's own depth, which is its arm along the adjacent wall).
+ */
+function cornerLSlots(state, unit, wall, walls, profile = getCabinetProfile()) {
+  const room = (walls || []).filter((w) => !w.island);
+  const n = room.length;
+  const i = room.findIndex((w) => w.index === wall.index);
+  if (i < 0 || n < 2) return [];
+  const width = Number(unit.params?.width) || 0;
+  const margin = wallClearance(profile);
+  const slots = [];
+  if (isInternalCorner(room[(i - 1 + n) % n], wall)) slots.push({ x: margin, side: 'left' });
+  if (isInternalCorner(wall, room[(i + 1) % n])) slots.push({ x: Number(wall.width) - width - margin, side: 'right' });
+  const spans = [
+    ...state.units
+      .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === wall.index && obstructs(unit, u, profile))
+      .map(unitSpan),
+    ...boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) }),
+    ...cornerSpansFor(state, unit, wall, walls, profile),
+  ];
+  return slots.map((c) => ({
+    ...c,
+    free: c.x >= 0 && !spans.some((o) => Math.min(c.x + width, o.right) - Math.max(c.x, o.left) > 1e-6),
+  }));
+}
+
+/**
+ * T75 F4 · which END of an L stands in a room corner: the nearer of its two
+ * ends to an internal corner, within the rulebook's reach (`corners.js
+ * cornerSpec`). Nearer, not first: on a short wall both ends can be within
+ * reach, and the hand is the corner the L was put in.
+ */
+function cornerLHand(unit, walls, profile = getCabinetProfile()) {
+  if ((Number(unit?.position?.rotation_deg) || 0) % 360) return null;
+  const room = (walls || []).filter((w) => !w.island);
+  const n = room.length;
+  const i = room.findIndex((w) => w.index === (unit.position?.wall ?? 0));
+  if (i < 0 || n < 2) return null;
+  const wall = room[i];
+  const x = Number(unit.position?.x_mm) || 0;
+  const width = Number(unit.params?.width) || 0;
+  const left = isInternalCorner(room[(i - 1 + n) % n], wall) ? x : Infinity;
+  const right = isInternalCorner(wall, room[(i + 1) % n]) ? Number(wall.width) - (x + width) : Infinity;
+  if (Math.min(left, right) > cornerSpec(profile).reachMm) return null;
+  return right < left ? 'right' : 'left';
+}
+
+/** T75 F4 · the sentence an L is refused with, anywhere but a free room corner. */
+function cornerLRefusal(unit, wallIndex = null) {
+  const w = formatMm(Number(unit.params?.width) || 0);
+  const d = formatMm(Number(unit.params?.depth) || 0);
+  return wallIndex == null
+    ? `A corner L stands in a room corner only, and no corner has ${w} × ${d} mm free: clear a corner first.`
+    : `A corner L stands in a room corner only, and wall ${wallIndex + 1} has no free corner for its ${w} × ${d} mm.`;
+}
+
 /** Every obstacle a unit has to be clamped against: the cabinets AND the boards. */
 function obstaclesFor(state, unit, profile = getCabinetProfile()) {
   return [...neighboursOf(state, unit).map(toObstacleUnit), ...panelObstaclesFor(state, unit, profile)];
@@ -9150,7 +10273,16 @@ const unitTopOf = unitTop;
  * INCLUDED, so a neighbour cannot be moved into a panel it cannot see.
  */
 function toObstacleUnit(u) {
-  const pad = footprintPads(u, u.params?.front_t, getCabinetProfile());
+  const profile = getCabinetProfile();
+  const pad = footprintPads(u, u.params?.front_t, profile);
+  // ─── T75 F2 · THE CORNER STOP ─────────────────────────────────────────────
+  // Round a corner this unit stops another at its FACE plus the post, not at
+  // its carcass: `cornerStopMm` less the carcass it already occupies. An L
+  // carcass is its own stop (null), and so is a unit turned off its wall.
+  const stop = cornerStopMm(u, profile);
+  const stopPad = stop == null || (Number(u.position?.rotation_deg) || 0) % 360
+    ? 0
+    : Math.max(0, stop - carcassReachMm(u, profile));
   return {
     wall: u.position?.wall ?? 0,
     x_mm: (Number(u.position?.x_mm) || 0) - pad.left,
@@ -9161,6 +10293,7 @@ function toObstacleUnit(u) {
     // is exactly what decides whether it fouls the one round the corner.
     backInset: pad.back,
     label: u.params?.unit_num || u.id,
+    ...(stopPad ? { stopPad } : {}),
   };
 }
 
@@ -9178,7 +10311,8 @@ function alignedMountFor(state, unit, placed, prefer = null) {
   const type = getUnitType(unit.type);
   // T74 F13 · a free panel hangs at the height it is given (the floor, new),
   // never lined up with a tall unit's top the way a wall unit is.
-  if (type.mount !== 'wall' || type.freePanel) return null;
+  // T75 F17 · …and a desk hangs at its own 720, never level with a wardrobe's top.
+  if (type.mount !== 'wall' || type.freePanel || type.desk) return null;
   const profile = getCabinetProfile();
   const span = { left: placed.x, right: placed.x + (Number(unit.params.width) || 0) };
   const talls = state.units.filter((u) => (u.position?.wall ?? 0) === placed.wall
@@ -9200,6 +10334,17 @@ function alignedMountFor(state, unit, placed, prefer = null) {
     unitHeight: Number(unit.params.height) || 0,
     roomHeight: Number(state.project.room.height) || 0,
   });
+}
+
+/**
+ * T75 F17 · the per-worktop thickness a new record carries: the caller's, else
+ * a desk's own top when every unit under it is a desk, else none (the
+ * profile's 38 stands, `worktop.js worktopSpec`).
+ */
+function recordThickness(thickness, units, profile) {
+  const own = Number(thickness) > 0 ? Number(thickness)
+    : (units.length && units.every((u) => isDeskKit(u.type)) ? Number(profile.wardrobeDesk?.defaults?.topThickness) : 0);
+  return own > 0 ? { thickness: own } : {};
 }
 
 /**
@@ -9301,8 +10446,36 @@ function shareOutSubject(state, unitId, profile, { gated = false } = {}) {
   };
 }
 
-function wallMarginOf(state, unit = null) {
+/**
+ * T75 F3 · the stretch of a blind kit's width that is BLIND: behind its blank,
+ * reached only through the door. Read off the engine's own cut (the blank it
+ * emitted), so the store and the cut list cannot disagree. Null on every other
+ * unit.
+ */
+function blindSpanOf(state, unit) {
+  if (!unit || !isBlindKit(unit.type)) return null;
+  // Asked with its leaf fitted: the blind part is blind whether or not the
+  // door has been hung yet.
+  const params = { ...paramsForEngine(unit, state.project.design), doors: { count: 1 } };
+  const result = computeCabinet(params, getCabinetProfile());
+  const blank = (result.panels || []).find((p) => p.role === 'blind_blank' && p.box);
+  if (blank) {
+    return { from: blank.box.x, to: blank.box.x + blank.box.w, side: blank.meta?.side === 'right' ? 'right' : 'left' };
+  }
+  return null;
+}
+
+/** T75 F3 · the sentence a divider in the blind part is refused with. */
+export const BLIND_DIVIDER_REFUSAL = 'No divider in the blind part of a blind corner: it stands behind the next run, '
+  + 'reached through the door, and the rail runs through it. Place the divider in the part the door opens.';
+
+function wallMarginOf(state, unit = null, wall = null) {
   const profile = getCabinetProfile();
+  // ─── T75 F10 · A FACE IS NOT PLASTER ──────────────────────────────────────
+  // No scribe and no wall clearance at the end of an island face: a cabinet
+  // runs to the face's end, where the end panel or the end unit takes over.
+  const on = wall || roomWalls(state.project.room)[unit?.position?.wall ?? 0];
+  if (on?.island) return 0;
   // ─── Turn 11 (CLAUDE.md F5.3) ───
   // "Infill toggled OFF re-enables push to wall." It did not: the stop was a
   // PROJECT number, so a cabinet whose filler had been switched off still parked

@@ -159,7 +159,9 @@ test('one mechanism per kind per column — a second is refused, another column 
   assert.equal(store().addWardrobeKit(id, 'tie_rack', 0), null, 'refused in the same column');
   assert.ok(store().addWardrobeKit(id, 'tie_rack', 1), 'welcome next door');
   assert.equal(store().addWardrobeKit(id, 'laser_rack', 0), null, 'an unknown kind is not an item');
-  assert.deepEqual(WARDROBE_KIT_KINDS, ['trouser', 'tie_rack', 'pulldown_rail']);
+  // AMENDED BY T75 F19: + the hooks and the valet rod (*"Two rows in Add items
+  // for the wardrobe family: `Hooks` ... and `Valet rod`"*), the same item.
+  assert.deepEqual(WARDROBE_KIT_KINDS, ['trouser', 'tie_rack', 'pulldown_rail', 'hooks', 'valet_rod']);
 });
 
 test('the pull-down rail hangs from the top and the wardrobe now supports it', () => {

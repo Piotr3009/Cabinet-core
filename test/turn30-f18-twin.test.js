@@ -116,6 +116,8 @@ test('F18 …and a job that says otherwise still wins', () => {
 test('F18 no kit written before tonight has a `doorCount`, so none moved', () => {
   for (const id of UNIT_TYPE_ORDER) {
     if (id === 'TWIN') continue;
+    // T75 F3: the blind kits are written tonight, each one leaf beside a blank.
+    if (getUnitType(id).blind) continue;
     assert.equal(getUnitType(id).doorCount, undefined, id);
   }
   // The width threshold is exactly what it was, on the kit it was written for.

@@ -48,7 +48,8 @@ export function applianceLabel(unit) {
 /** The wall this group stands on, with its width, when the room knows it. */
 function wallOf(group, room) {
   const walls = room ? roomWalls(room) : [];
-  return walls[group.wall] || null;
+  // T75 F9 · an island face has no wall ends to draw: the group stands alone.
+  return walls[group.wall]?.island ? null : (walls[group.wall] || null);
 }
 
 /**

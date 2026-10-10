@@ -30,7 +30,7 @@
 // Pure functions — no React, no store, no three.js.
 
 import { getUnitType } from './types.js';
-import { roomWalls } from './room.js';
+import { roomWalls, wallName } from './room.js';
 import { maxDepthOnWall } from './collision.js';
 import { unitTop, standsOnLegHeight, impliedLegHeight } from './runs.js';
 
@@ -122,11 +122,23 @@ export function roomFitRefusal({
   //
   // The wall it stands on, and only that wall: a cabinet is not "too wide for
   // the room", it is too wide for the wall it is against.
-  if (patch.width != null) {
+  // T75 F10 · …but the island automat's own end panel is sized to the WHOLE
+  // island (the core and both faces' reach), not to the end face it stands
+  // on: it is the island's board, not a cabinet against a wall, and a red
+  // Check on every island was the fixture's finding. A face is named as one.
+  if (patch.width != null && !unit.params?.island_auto) {
     const walls = roomWalls(room);
     const wall = walls[unit.position?.wall ?? 0] || walls[0];
     const wallW = Number(wall?.width) || 0;
     const wanted = Number(patch.width) || 0;
+    if (wallW > 0 && wanted > wallW + 1e-6 && wall?.island) {
+      return {
+        key: 'width',
+        limit: round1(wallW),
+        wanted: round1(wanted),
+        message: `${label}${wallName(walls, unit.position?.wall ?? 0)} is ${round1(wallW)} mm: a ${round1(wanted)} mm unit will not fit on it.`,
+      };
+    }
     if (wallW > 0 && wanted > wallW + 1e-6) {
       return {
         key: 'width',

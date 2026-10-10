@@ -264,7 +264,9 @@ export function worktopsFor({
     if (mine.length < worktopSpec(profile).minUnits && !loneL && !loneDesk) continue;
     // ─── T75 F4/F5 · ONE SLAB SHAPED LIKE THE L ────────────────────────────
     if (loneL) {
-      const geometry = lSlabGeometry({ unit: mine[0], record, profile });
+      const geometry = lSlabGeometry({
+        unit: mine[0], record, profile, units,
+      });
       if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}`, geometry }, mine, profile));
       continue;
     }
@@ -287,12 +289,15 @@ export function worktopsFor({
         }
         continue;
       }
-      const pair = cornerSlabs({ units: mine, record, corner, walls, profile });
+      const pair = cornerSlabs({
+        units: mine, record, corner, walls, profile, everyone: units,
+      });
       if (pair) out.push(...pair);
       continue;
     }
     const geometry = worktopGeometry({ units: mine, record, profile });
     if (geometry && loneDesk && isDeskUnit(mine[0])) deskSideTrim(geometry, mine[0], units, profile);
+    else if (geometry) sideTrim(geometry, mine, units, profile);
     if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}`, geometry }, mine, profile));
   }
   return out;
@@ -306,23 +311,46 @@ export function worktopsFor({
  * length the client typed (`extendLeft` / `extendRight`) is his and stays.
  */
 function deskSideTrim(geometry, desk, units, profile) {
+  sideTrim(geometry, [desk], units, profile);
+}
+
+/**
+ * Does something stand butted against this end of these units, at the slab's
+ * height, on their wall? The other slab's cabinet, a tall unit, an end panel:
+ * then the slab's end BUTTS it and takes no side overhang there.
+ */
+function endMeets(list, side, units, profile, y0, y1) {
+  const ids = new Set(list.map((u) => u.id));
+  const wall = list[0].position?.wall ?? 0;
+  const spans = list.map((u) => paddedSpan(u));
+  const edge = side === 'left' ? Math.min(...spans.map((sp) => sp.left)) : Math.max(...spans.map((sp) => sp.right));
+  return (units || []).some((u) => {
+    if (ids.has(u.id) || (u.position?.wall ?? 0) !== wall) return false;
+    // At the slab's height: standing through it (a wardrobe beside a desk)
+    // or up to its underside (a base unit carrying a slab of its own).
+    if (!(unitBase(u, profile) < y1 && unitTop(u, profile) > y0 - 1)) return false;
+    const o = paddedSpan(u);
+    return side === 'left' ? Math.abs(o.right - edge) <= 1 : Math.abs(o.left - edge) <= 1;
+  });
+}
+
+/**
+ * T75 · the desk's law (F17) for every straight slab: an end that butts what
+ * stands beside it at its height loses the automat's side overhang, so two
+ * slabs meeting on one wall, or a slab meeting a tall unit, are never drawn
+ * 10 mm into each other (the T75 fixtures measured 20 mm of overlap). A free
+ * end keeps its overhang; a length the client typed is his and stays.
+ */
+function sideTrim(geometry, list, units, profile) {
   const spec = worktopSpec(profile);
-  const wall = desk.position?.wall ?? 0;
-  const mine = paddedSpan(desk);
   const y0 = geometry.y;
   const y1 = geometry.y + geometry.h;
-  const meets = (side) => (units || []).some((u) => {
-    if (u.id === desk.id || (u.position?.wall ?? 0) !== wall) return false;
-    if (!(unitBase(u, profile) < y1 && unitTop(u, profile) > y0)) return false;
-    const o = paddedSpan(u);
-    return side === 'left' ? Math.abs(o.right - mine.left) <= 1 : Math.abs(o.left - mine.right) <= 1;
-  });
-  if (meets('left')) {
+  if (endMeets(list, 'left', units, profile, y0, y1)) {
     geometry.x += spec.sideOverhang;
     geometry.w -= spec.sideOverhang;
     geometry.overhang = { ...geometry.overhang, left: 0 };
   }
-  if (meets('right')) {
+  if (endMeets(list, 'right', units, profile, y0, y1)) {
     geometry.w -= spec.sideOverhang;
     geometry.overhang = { ...geometry.overhang, right: 0 };
   }
@@ -354,7 +382,7 @@ function withCutouts(entry, units, profile) {
  * never CNC).
  */
 function cornerSlabs({
-  units, record, corner, walls, profile,
+  units, record, corner, walls, profile, everyone = units,
 }) {
   const spec = worktopSpec(profile);
   const onA = units.filter((u) => (u.position?.wall ?? 0) === corner.wallA);
@@ -362,6 +390,10 @@ function cornerSlabs({
   const a = worktopGeometry({ units: onA, record: { ...record, extendLeft: 0, extendRight: 0 }, profile });
   const b = worktopGeometry({ units: onB, record: { ...record, extendLeft: 0, extendRight: 0 }, profile });
   if (!a || !b) return null;
+  // T75 · the free ends butt what stands beside them (`sideTrim`); the
+  // corner ends are set below, to the wall and to slab A's front.
+  sideTrim(a, onA, everyone, profile);
+  sideTrim(b, onB, everyone, profile);
   const wallA = walls[corner.wallA];
   // A runs through to wall B on its corner end; B stops on A's front edge.
   if (corner.runA.side === 'right') {
@@ -399,7 +431,9 @@ function cornerSlabs({
  * both walls. `x/w/d` stay its bounding box (a reader that is not upgraded
  * still draws something true) and `outline` is the L, in the wall's frame.
  */
-function lSlabGeometry({ unit, record = null, profile }) {
+function lSlabGeometry({
+  unit, record = null, profile, units = [],
+}) {
   const spec = worktopSpec(profile);
   const W = Number(unit.params?.width) || 0;
   const D = Number(unit.params?.depth) || 0;
@@ -409,13 +443,16 @@ function lSlabGeometry({ unit, record = null, profile }) {
   const x0 = Number(unit.position?.x_mm) || 0;
   const reach = arm + gap + frontT + spec.frontOverhang + Math.max(0, Number(record?.extendFront) || 0);
   const side = spec.sideOverhang;
+  const right = unit.params?.corner_side === 'right';
+  const top = unitBase(unit, profile) + (Number(unit.params?.height) || 0);
+  // T75 · the far end of the L's own arm BUTTS a neighbour standing there
+  // (`sideTrim`'s law): no side overhang into its top.
+  const sideA = endMeets([unit], right ? 'left' : 'right', units, profile, top, top + slabThickness(record, spec)) ? 0 : side;
   // In the unit's frame with the room corner at x = 0 (corner_side 'left'),
   // mirrored for an L whose corner is on its right.
-  const local = [[0, 0], [W + side, 0], [W + side, reach], [reach, reach], [reach, D + side], [0, D + side]];
-  const right = unit.params?.corner_side === 'right';
+  const local = [[0, 0], [W + sideA, 0], [W + sideA, reach], [reach, reach], [reach, D + side], [0, D + side]];
   const outline = local.map(([x, z]) => [Math.round((x0 + (right ? W - x : x)) * 100) / 100, z]);
   const xs = outline.map((p) => p[0]);
-  const top = unitBase(unit, profile) + (Number(unit.params?.height) || 0);
   return {
     wall: unit.position?.wall ?? 0,
     x: Math.min(...xs),

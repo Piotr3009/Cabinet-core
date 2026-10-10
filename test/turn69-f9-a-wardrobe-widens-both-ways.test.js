@@ -169,6 +169,9 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
   const ARGUED = [
     'AddItems', 'BomPanel', 'ContextMenu', 'DoorModal', 'DrawRoomModal', 'DrawingModal', 'ElementProperties', 'JpullRunModal',
     'LibraryPanel', 'RightPanel', 'RoomModal', 'UnitSizeModal', 'WatchLayoutModal',
+    // AMENDED BY T75 F20: `SaveTemplateModal` (a selection saved as a set) and `TopBar` (the Sets
+    // shelf's menu line), *"`lib/templates.js` grows `kind: 'set'`"*. Neither is a widening file.
+    'SaveTemplateModal', 'TopBar',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');

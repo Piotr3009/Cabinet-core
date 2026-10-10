@@ -73,8 +73,13 @@ const SRC = join(ROOT, 'src');
  * is the failure this table is shaped to make obvious.
  */
 const EXEMPT = {
+  'src/components/SaveTemplateModal.jsx':
+    'T75 F20 · right-clicked inside a selection of two or more, the modal saves a SET (templateStore.saveSet): the units left to right with the gaps between them. *"`lib/templates.js` grows `kind: \'set\'`: an ORDERED list of units (type + params, positions stripped as today) with the gaps between them."*',
+  'src/components/TopBar.jsx':
+    'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*',
   'src/components/LibraryPanel.jsx':
-    'T75 F10 · a plus on an empty island face opens the library ON that face and the unit is added there (addUnit with the face\'s index). *"A unit is added to a face as to a wall (addUnit with the face\'s index; the library\'s plus points on the plan show the faces)."*'
+    'T75 F20 · the sets shelf: the Library\'s Sets category lists the five shipped sets (engine/sets.js) above the saved ones, a saved SET row names its units, and a click inserts the whole set through the store (insertSet) where a unit would go. *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."* '
+    + 'T75 F10 · a plus on an empty island face opens the library ON that face and the unit is added there (addUnit with the face\'s index). *"A unit is added to a face as to a wall (addUnit with the face\'s index; the library\'s plus points on the plan show the faces)."*'
     + ' ' + 'T75 F15 · the Extras row "Pelmet" is an ACTION done to the selected wall unit\'s run: the panel hands the store the action and the selection (libraryAction) and says its answer. *"The held-open row `cornice-pelmet` opens as a PLAIN pelmet: a flat strip under a run of wall units."*',
   // ─── ADDED BY TURN 75 · THE BIG TURN ───────────────────────────────────
   'src/components/ContextMenu.jsx':
@@ -163,7 +168,8 @@ const EXEMPT = {
     + 'numbered sheet buttons. *"nie zapomnij zostawić w stopce miejsca na '
     + 'firmę, daty, nazwy"*.',
   'src/pages/ConfiguratorPage.jsx':
-    'T75 F5 · the BOM file is handed the room so the worktop that turns the corner (two slabs and one joint record) rides the file as it rides the panel. *"daj od razu narożniki przemyślane."* '
+    'T75 F20 · a Media wall, Sideboard, Vanity, Utility or Hallway job\'s first plus puts its shipped set on the first wall (insertSet, Room refuses first). *"NEW PROJECT with one of them offers the set first (the first plus point on the first wall)."* '
+    + 'T75 F5 · the BOM file is handed the room so the worktop that turns the corner (two slabs and one joint record) rides the file as it rides the panel. *"daj od razu narożniki przemyślane."* '
     + 'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
     + 'same set with the same worktops and render. *"weź zakoduj"*.',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
@@ -240,7 +246,7 @@ const FROZEN = {
   // T72 F4 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/JpullRunModal.jsx': '652b4f701a455134eb2571565f03dc6fca89c273f4041ad9eb66d8b0c7bd6aa7',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/LibraryPanel.jsx': '12775385af89c7ceaab6e051867835c0244dd7e9bc33022df8c4fc55a51e36eb',
+  'src/components/LibraryPanel.jsx': 'b8fc2349f5c78cdc979ca2ca1868d7dd4ad2e0acd5aabe51214a72263487739b',
   'src/components/LightingPanel.jsx': '65bf9cbc3cf6fe4b687def6f2d9538d4b363690c3c5d5ad2fddb0f7a77e48d2d',
   'src/components/MaterialChoicePanel.jsx': '16d2ed3171b4756141f21f693123c46bd6b33f772cad58013b2a45ec9a8fcb71',
   'src/components/MaterialPicker.jsx': 'd2b1d49bb1ef08d55652437986d4d40a2cac7c1683b42d16b0523b0e08fca5b7',
@@ -260,13 +266,15 @@ const FROZEN = {
   'src/components/RoomModal.jsx': 'cfee8d4d3597f6c37de41dc417d83ed2e57ecf6153b7a69cdf97c54aa282616c',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
   'src/components/SaveSettingsSetModal.jsx': 'e89dc83a41dbadbf472496c5674216171221f7bda5fa240c61dbaab09dd86951',
-  'src/components/SaveTemplateModal.jsx': '83a756327cd24f0a13f1c28e618a692b1b88b00df6c2735416d5711422cbc4c1',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/SaveTemplateModal.jsx': '5de923d96cd981fd785005716ea84b7288d77c9b4ea044763112e672c6d1ba24',
   'src/components/Section.jsx': 'f3f64ad9f4d024d31a508f469a1f816c2bf1c0ffcf7d9221e95e2ee42d2a1a56',
   'src/components/SettingsPanel.jsx': '13f1ce656e27a273545d055d59ad453685f456dd031bfbd61e9c9525c8738537',
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   'src/components/StartScreen.jsx': '6a6de6d1667872a45d18bb5b8e9e42d3d4522ac99f8ef2d1e9a32ce54ab363aa',
-  'src/components/TopBar.jsx': '68fe1ff109ad1198a365ceae380fdead183ccfefb6eb579f98496a7308e1b681',
+  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/TopBar.jsx': '31511deaa4fcbfee230c7ed1955e80c4945bac6c8278a0c4c07f3fa4c6a1de13',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   'src/components/UnitSizeModal.jsx': '019529723e5844ed8796b7a0c870cc5f8d4b8b1c1869f71d37cc939695fb5054',
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
@@ -280,7 +288,7 @@ const FROZEN = {
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/pages/ConfiguratorPage.jsx': '98963109213c78ceb115b9a31afa3cdf3a86a99400a254115e019d85acafa021',
+  'src/pages/ConfiguratorPage.jsx': '4ffb73fd3a037684314aff3a9f04b1905294ff9983ac85ec8adc8e8cf450338b',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -470,6 +478,10 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     'src/components/LibraryPanel.jsx',
     'src/components/RightPanel.jsx',
     'src/components/RoomModal.jsx',
+    // T75 F20 · *"`lib/templates.js` grows `kind: 'set'`"*: the modal saves a selection as a set.
+    'src/components/SaveTemplateModal.jsx',
+    // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets shelf"*.
+    'src/components/TopBar.jsx',
     'src/components/UnitSizeModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/pages/ConfiguratorPage.jsx',

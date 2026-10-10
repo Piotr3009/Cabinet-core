@@ -890,6 +890,28 @@ export function freeSlotOnWall({
 }
 
 /**
+ * T75 F20 · does a unit `width` wide fit with its left edge EXACTLY at `x`?
+ * A set stands each of its units where the recipe puts it, so the question is
+ * not "where is there room" but "is there room here": the same free stretches
+ * `freeSlotOnWall` reads (the wall's margin, the neighbours, the clearance),
+ * asked of one x. Half a millimetre of slack for the arithmetic.
+ */
+export function slotTakes({
+  x, width, wallWidth, others = [], wallMargin = 0,
+}, profile) {
+  const clearance = profile?.editor?.minUnitGap ?? 0;
+  const w = Number(width) || 0;
+  const at = Number(x);
+  if (w <= 0 || !Number.isFinite(at) || wallWidth < w) return false;
+  const margin = Math.max(0, Number(wallMargin) || 0);
+  const wallMax = Math.max(0, wallWidth - w - margin);
+  const wallMin = Math.min(margin, wallMax);
+  return freeSlots(others, {
+    wallMin, wallMax, width: w, clearance,
+  }).some((slot) => at >= slot.from - 0.5 && at <= slot.to + 0.5);
+}
+
+/**
  * Every stretch of wall a unit `width` wide actually fits in, as the range of
  * left-edge positions it could take there: `{ from, to }` with from ≤ to.
  *

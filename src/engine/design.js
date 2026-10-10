@@ -455,7 +455,8 @@ export function migrateDesign(design) {
         extendFront: Number(w?.extendFront) > 0 ? Number(w.extendFront) : 0,
         // T75 F4/F5 · an L corner unit's slab is a worktop of one unit.
         // T75 F17 · …and so is a desk's top.
-        ...(w?.kind === 'L' || w?.kind === 'desk' ? { kind: w.kind } : {}),
+        // T75 F20 · …and so is the one cabinet a set lays a top on.
+        ...(w?.kind === 'L' || w?.kind === 'desk' || w?.kind === 'top' ? { kind: w.kind } : {}),
         // T75 F17 · the per-worktop thickness: a positive number, or nothing
         // (the profile's 38 stands).
         ...(Number(w?.thickness) > 0 ? { thickness: Number(w.thickness) } : {}),
@@ -467,7 +468,7 @@ export function migrateDesign(design) {
         } : {}),
       }))
       .filter((w) => w.id && (w.unitIds.length >= 2
-        || ((w.kind === 'L' || w.kind === 'desk') && w.unitIds.length === 1) || w.island)),
+        || ((w.kind === 'L' || w.kind === 'desk' || w.kind === 'top') && w.unitIds.length === 1) || w.island)),
     fronts: {
       style: FRONT_STYLE_OPTIONS.some((o) => o.id === d.fronts?.style) ? d.fronts.style : base.fronts.style,
       handle: normaliseHandle(d.fronts?.handle),

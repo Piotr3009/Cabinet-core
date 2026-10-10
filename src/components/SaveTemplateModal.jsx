@@ -24,11 +24,21 @@ export default function SaveTemplateModal() {
   const setLibraryCategory = useUiStore((s) => s.setLibraryCategory);
   const units = useProjectStore((s) => s.units);
   const save = useTemplateStore((s) => s.save);
+  const saveSet = useTemplateStore((s) => s.saveSet);
   const templates = useTemplateStore((s) => s.templates);
+  // T75 F20 · right-clicked inside a selection of two or more, it is a SET:
+  // the units the menu was about, left to right.
+  const selectedUnitIds = useUiStore((s) => s.selectedUnitIds);
 
   const unit = units.find((u) => u.id === modalArgs?.unitId) || null;
+  const group = unit && (selectedUnitIds || []).length > 1 && selectedUnitIds.includes(unit.id)
+    ? units.filter((u) => selectedUnitIds.includes(u.id))
+    : null;
   const type = unit ? getUnitType(unit.type) : null;
-  const [name, setName] = useState(() => (unit ? `${getUnitType(unit.type).label} ${unit.params.width} mm` : ''));
+  const [name, setName] = useState(() => {
+    if (!unit) return '';
+    return group ? `Set of ${group.length}` : `${getUnitType(unit.type).label} ${unit.params.width} mm`;
+  });
 
   if (!unit) return null;
 
@@ -37,10 +47,11 @@ export default function SaveTemplateModal() {
 
   const commit = () => {
     if (!clean) return;
-    const { error, replaced } = save(unit, clean);
+    const { error, replaced } = group ? saveSet(group, clean) : save(unit, clean);
     if (error) { notify(error, 'warn'); return; }
-    notify(replaced ? `“${clean}” updated in Saved sets.` : `“${clean}” saved to Library ▸ Saved sets.`, 'ok');
-    setLibraryCategory('sets');
+    const shelf = group ? 'Sets' : 'Saved sets';
+    notify(replaced ? `“${clean}” updated in ${shelf}.` : `“${clean}” saved to Library ▸ ${shelf}.`, 'ok');
+    setLibraryCategory(group ? 'media' : 'sets');
     closeModal();
   };
 
@@ -57,7 +68,7 @@ export default function SaveTemplateModal() {
     <Modal
       name="save-template"
       anchor={anchor}
-      title="Save as template"
+      title={group ? 'Save as a set' : 'Save as template'}
       onClose={closeModal}
       width="w-[440px]"
       footer={(
@@ -82,14 +93,26 @@ export default function SaveTemplateModal() {
       </label>
 
       <div className="mt-3 text-[11px] text-ink-400 space-y-1">
-        <p>
-          {type.label} · {formatMm(unit.params.width)} × {formatMm(unit.params.height)} × {formatMm(unit.params.depth)} mm
-          {counts.length ? ` · ${counts.join(', ')}` : ''}
-        </p>
-        <p>
-          The set keeps how this unit is BUILT — not where it stands and not its unit number.
-          Inserting it places a new unit through the ordinary collision rules.
-        </p>
+        {group ? (
+          <>
+            <p>{group.length} units: {group.map((u) => u.params.unit_num).join(', ')}</p>
+            <p>
+              The set keeps how each unit is BUILT, left to right, with the gaps between them: not where
+              they stand and not their numbers. Inserting it places new units through the ordinary collision rules.
+            </p>
+          </>
+        ) : (
+          <>
+            <p>
+              {type.label} · {formatMm(unit.params.width)} × {formatMm(unit.params.height)} × {formatMm(unit.params.depth)} mm
+              {counts.length ? ` · ${counts.join(', ')}` : ''}
+            </p>
+            <p>
+              The set keeps how this unit is BUILT: not where it stands and not its unit number.
+              Inserting it places a new unit through the ordinary collision rules.
+            </p>
+          </>
+        )}
         {replaces && (
           <p className="text-status-warn">
             There is already a set called “{replaces.name}” — saving replaces it.

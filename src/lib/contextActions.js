@@ -469,10 +469,15 @@ export function menuActions({
   // just finished configuring is where a joiner reaches for this. It asks for a
   // NAME (the modal), because a library of "Wardrobe", "Wardrobe (2)" and
   // "Wardrobe (3)" is a library nobody uses.
+  // T75 F20 · over a selection it saves a SET: the units, left to right, and
+  // the gaps between them (`lib/templates.js`, `kind: 'set'`). The modal reads
+  // the same selection this menu is about.
   actions.push({
     id: 'save-template',
-    label: 'Save as template',
-    hint: 'Keep these parameters in Library ▸ Saved sets, ready to insert again',
+    label: many ? forAll('Save as a set') : 'Save as template',
+    hint: many
+      ? 'Keep these units, left to right with the gaps between them, in Library ▸ Sets'
+      : 'Keep these parameters in Library ▸ Saved sets, ready to insert again',
     run: () => store.saveAsTemplate?.(unit.id),
   });
 

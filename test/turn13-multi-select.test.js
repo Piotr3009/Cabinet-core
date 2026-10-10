@@ -148,10 +148,12 @@ test('the menu names the five bulk entries and only those', () => {
   // what this entry was reaching for.
   // AMENDED BY T75 F5: the UPSTAND joins the plinth as a bulk entry, *"on and
   // off per run like the plinth (BACKLOG #16's grammar)"*, on a base unit.
+  // AMENDED BY T75 F20: over a selection "Save as template" saves a SET, *"`lib/templates.js`
+  // grows `kind: 'set'`: an ORDERED list of units"*, and says over how many.
   assert.deepEqual(bulk, [
     'end-panel-L', 'end-panel-R', 'end-panel-B',
     'pin-infill-L', 'pin-infill-R',
-    'plinth', 'upstand', 'unit-colour',
+    'plinth', 'upstand', 'unit-colour', 'save-template',
   ]);
   // …and the entries that are NOT bulk say nothing about a count, which is what
   // stops the menu quietly doing three things where it says one.

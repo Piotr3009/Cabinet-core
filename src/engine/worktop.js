@@ -112,7 +112,7 @@ export function slabThickness(record, spec) {
  *
  * @returns {{ok:boolean, why:string|null}}
  */
-export function worktopEligible(units, profile, { walls = null } = {}) {
+export function worktopEligible(units, profile, { walls = null, single = false } = {}) {
   const spec = worktopSpec(profile);
   const list = units || [];
   // ─── T75 F11 · ONE WORKTOP OVER THE WHOLE ISLAND ─────────────────────────
@@ -128,7 +128,9 @@ export function worktopEligible(units, profile, { walls = null } = {}) {
   }
   // T75 F4/F5 · *"The L kit's worktop is one slab shaped like the L."*  An L
   // corner unit is a run of its own: one is enough.
-  const loneL = list.length === 1 && (isCornerKit(list[0]) || isDeskUnit(list[0]));
+  // T75 F20 · …and so is the one cabinet a SET lays a top on (the Vanity's
+  // sink, the Hallway's shoe bench): asked for as one, it is one.
+  const loneL = list.length === 1 && (isCornerKit(list[0]) || isDeskUnit(list[0]) || single === true);
   if (list.length < spec.minUnits && !loneL) {
     return { ok: false, why: `A worktop covers a run: select ${spec.minUnits} or more base cabinets.` };
   }
@@ -257,7 +259,8 @@ export function worktopsFor({
     const mine = (record?.unitIds || []).map((id) => byId.get(id)).filter(Boolean);
     const loneL = mine.length === 1 && isCornerKit(mine[0]);
     // T75 F17 · one desk is a run of its own: its slab is the straight one.
-    const loneDesk = mine.length === 1 && isDeskUnit(mine[0]);
+    // T75 F20 · …and so is the one cabinet a set's record names as a 'top'.
+    const loneDesk = mine.length === 1 && (isDeskUnit(mine[0]) || record?.kind === 'top');
     if (mine.length < worktopSpec(profile).minUnits && !loneL && !loneDesk) continue;
     // ─── T75 F4/F5 · ONE SLAB SHAPED LIKE THE L ────────────────────────────
     if (loneL) {
@@ -289,7 +292,7 @@ export function worktopsFor({
       continue;
     }
     const geometry = worktopGeometry({ units: mine, record, profile });
-    if (geometry && loneDesk) deskSideTrim(geometry, mine[0], units, profile);
+    if (geometry && loneDesk && isDeskUnit(mine[0])) deskSideTrim(geometry, mine[0], units, profile);
     if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}`, geometry }, mine, profile));
   }
   return out;

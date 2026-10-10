@@ -1537,8 +1537,8 @@ export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BL
  * and the category opens one panel with just those types in it — no categories
  * nested inside a single long list.
  *
- * `soon: true` is a place already held in the menu for work that is not done:
- * saved sets and media walls. Every type must belong to exactly one category,
+ * `saved: true` is the workshop's own saved units; `sets: true` (T75 F20) the
+ * shelf of sets, shipped and saved. Every type must belong to exactly one category,
  * which test/library-categories.test.js enforces — a new kit that nobody can
  * reach from the menu is a kit nobody can insert.
  */
@@ -1572,7 +1572,11 @@ export const UNIT_CATEGORIES = [
   // rather than kits, so it carries no `types` — the panel reads them from the
   // template store.
   { id: 'sets', label: 'Saved sets', types: [], saved: true },
-  { id: 'media', label: 'Media walls', types: [], soon: true },
+  // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets
+  // shelf (saved sets and shipped sets on one list)"*: `engine/sets.js`'s five
+  // and the workshop's own, one list. Kasacja: the `soon` flag, deleted.
+  // Tombstone: `soon: true` held this place from T4 to T74.
+  { id: 'media', label: 'Sets', types: [], sets: true },
 ];
 
 /**

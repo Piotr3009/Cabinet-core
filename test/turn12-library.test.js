@@ -134,7 +134,9 @@ test('the Kitchen category carries the list, and the others are untouched', () =
   assert.deepEqual(getCategory('kitchen').types, libraryTypeIds());
   // CLAUDE.md F3.7: "Categories beyond Kitchen stay as today — do not touch."
   assert.equal(getCategory('sets').saved, true);
-  assert.equal(getCategory('media').soon, true);
+  // AMENDED BY T75 F20: *"the Library's `media` category (`soon`) becomes the sets shelf"*.
+  assert.equal(getCategory('media').soon, undefined);
+  assert.equal(getCategory('media').sets, true);
   // T36 F7: the wardrobe category gained the Top box, and nothing else moved.
   // T74 F7: …and the wardrobe's wall unit, a third kit of its own.
   // AMENDED BY T75 F3: + the blind corner wardrobe (*"the Wardrobes category "Blind corner wardrobe""*).

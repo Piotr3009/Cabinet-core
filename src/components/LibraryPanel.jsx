@@ -10,6 +10,9 @@ import { filterLibraryByProject, groupCounts, resolveEntry } from '../engine/lib
 import { getProjectType } from '../engine/projectTypes.js';
 import { formatMm } from '../engine/format.js';
 import { projectHeights } from '../engine/design.js';
+// T75 F20 · the sets shelf: the five shipped and the workshop's own.
+import { SHIPPED_SETS } from '../engine/sets.js';
+import { isSetRow } from '../lib/templates.js';
 import { placeBesideAnchor } from '../lib/menuPlacement.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 
@@ -35,6 +38,7 @@ export default function LibraryPanel() {
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
   const notify = useUiStore((s) => s.notify);
   const addUnit = useProjectStore((s) => s.addUnit);
+  const insertSet = useProjectStore((s) => s.insertSet);
   // T75 F15 · a row that is an ACTION on the selected unit's run (the pelmet).
   const libraryAction = useProjectStore((s) => s.libraryAction);
   const units = useProjectStore((s) => s.units);
@@ -140,6 +144,22 @@ export default function LibraryPanel() {
     if (insertAt) clearLibraryInsert();
   };
 
+  // T75 F20 · a SET goes in where a unit would: the plus that opened the
+  // panel, the face it named, or beside the selection. Room refuses first:
+  // the store measures the whole span before the first unit goes in.
+  const handleAddSet = (row) => {
+    const onFace = Number.isInteger(insertAt?.wall);
+    const { ids, error, shared } = insertSet(row, {
+      near: onFace ? null : (insertAt?.near ?? selectedUnitId),
+      side: insertAt?.side ?? null,
+      ...(onFace ? { wall: insertAt.wall } : {}),
+    });
+    if (error) { notify(error, 'warn'); return; }
+    selectUnit(ids[0]);
+    notify(`${row.name}: ${ids.length} units in${shared ? ', shared out to the wall' : ''}. They are ordinary units now.`, 'ok');
+    if (insertAt) clearLibraryInsert();
+  };
+
   // T75 F15 · an action row is done to the SELECTED unit's run; the store
   // answers, and a refusal is said in words.
   const handleAction = (entry) => {
@@ -210,8 +230,9 @@ export default function LibraryPanel() {
           than a fixed pixel count, because this panel is dragged around and a
           fixed height would be wrong the moment it is dropped near an edge. */}
       <div className="p-2 space-y-1 cc-scroll max-h-[60vh]" data-library-list="1">
-        {category.saved && <SavedSets onInsert={handleAdd} />}
-        {!category.saved && !category.entries && category.types.length === 0 && (
+        {category.sets && <ShippedSets onInsertSet={handleAddSet} />}
+        {(category.saved || category.sets) && <SavedSets onInsert={handleAdd} onInsertSet={handleAddSet} />}
+        {!category.saved && !category.sets && !category.entries && category.types.length === 0 && (
           <p className="text-[11px] text-ink-400 px-2 py-3">
             Nothing here yet — {category.label.toLowerCase()} are a later phase.
           </p>
@@ -455,6 +476,34 @@ function Flyout({
 }
 
 /**
+ * T75 F20 · THE FIVE SETS SHIPPED AS DATA (`engine/sets.js`): a recipe of
+ * kits that exist, inserted left to right through the ordinary add path. A
+ * set is a RECIPE, not a group: once in, the units are ordinary units.
+ */
+function ShippedSets({ onInsertSet }) {
+  return (
+    <ul className="space-y-1" data-shipped-sets="1">
+      {SHIPPED_SETS.map((set) => (
+        <li key={set.id} className="rounded border border-transparent hover:border-shell-600 hover:bg-shell-700/60 transition-colors">
+          <button
+            type="button"
+            className="w-full text-left px-2 py-2 min-w-0"
+            title={set.hint}
+            data-set={set.id}
+            onClick={() => onInsertSet(set)}
+          >
+            <div className="text-sm text-ink-50 truncate">{set.name}</div>
+            <div className="text-[11px] text-ink-400 truncate">
+              {set.units.length} units: {set.units.map((u) => getUnitType(u.type).label).join(', ')}
+            </div>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
  * Saved sets (BACKLOG #30): the workshop's own configured units.
  *
  * Clicking one INSERTS it through the ordinary add path, so a template can no
@@ -462,7 +511,7 @@ function Flyout({
  * live here, where the list is — a set you cannot correct is a set you stop
  * trusting.
  */
-function SavedSets({ onInsert }) {
+function SavedSets({ onInsert, onInsertSet }) {
   const templates = useTemplateStore((s) => s.templates);
   const rename = useTemplateStore((s) => s.rename);
   const remove = useTemplateStore((s) => s.remove);
@@ -488,7 +537,9 @@ function SavedSets({ onInsert }) {
   return (
     <ul className="space-y-1">
       {templates.map((t) => {
-        const type = getUnitType(t.type);
+        // T75 F20 · a SET row has no single type: it names its units.
+        const asSet = isSetRow(t);
+        const type = asSet ? null : getUnitType(t.type);
         const isEditing = editing?.id === t.id;
         return (
           <li key={t.id} className="rounded border border-transparent hover:border-shell-600 hover:bg-shell-700/60 transition-colors">
@@ -509,17 +560,31 @@ function SavedSets({ onInsert }) {
               </div>
             ) : (
               <div className="flex items-center">
-                <button
-                  type="button"
-                  className="flex-1 text-left px-2 py-2 min-w-0"
-                  title={`Insert a ${type.label} with these parameters`}
-                  onClick={() => onInsert(t.type, { params: t.params })}
-                >
-                  <div className="text-sm text-ink-50 truncate">{t.name}</div>
-                  <div className="text-[11px] text-ink-400">
-                    {type.label} · {formatMm(t.params.width)} × {formatMm(t.params.height)} × {formatMm(t.params.depth)} mm
-                  </div>
-                </button>
+                {asSet ? (
+                  <button
+                    type="button"
+                    className="flex-1 text-left px-2 py-2 min-w-0"
+                    title={`Insert these ${t.units.length} units, left to right`}
+                    onClick={() => onInsertSet(t)}
+                  >
+                    <div className="text-sm text-ink-50 truncate">{t.name}</div>
+                    <div className="text-[11px] text-ink-400 truncate">
+                      {t.units.length} units: {t.units.map((u) => getUnitType(u.type).label).join(', ')}
+                    </div>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="flex-1 text-left px-2 py-2 min-w-0"
+                    title={`Insert a ${type.label} with these parameters`}
+                    onClick={() => onInsert(t.type, { params: t.params })}
+                  >
+                    <div className="text-sm text-ink-50 truncate">{t.name}</div>
+                    <div className="text-[11px] text-ink-400">
+                      {type.label} · {formatMm(t.params.width)} × {formatMm(t.params.height)} × {formatMm(t.params.depth)} mm
+                    </div>
+                  </button>
+                )}
                 <button
                   type="button" className="cc-btn-ghost shrink-0" title="Rename this set"
                   onClick={() => setEditing({ id: t.id, name: t.name })}

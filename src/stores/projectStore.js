@@ -40,7 +40,7 @@ import {
   boxSpansOnWall,
   clampShelfPos, clampUnitDepth, clampUnitHeight, clampUnitWidth, clampUnitX, footprintPads,
   backStandoff, clampElementDepth, elementDepthBounds, freeSlotOnWall, insetPads, shelfBand,
-  shelfBounds, unitIssues, unitPlanSpan, unitSpan,
+  shelfBounds, unitIssues, unitPlanSpan, unitSpan, slotTakes,
   wallClearance,
   wallObstacles,
   bandsOverlap, unitBand, bandSegmentAt, bandSegments,
@@ -53,7 +53,9 @@ import {
 import {
   isIslandAutoPanel, islandClash, islandPanelPlan, newIsland,
 } from '../engine/island.js';
-import { getProjectType } from '../engine/projectTypes.js';
+import { getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
+// T75 F20 · a set is a recipe: its layout and its reading are the engine's.
+import { setIsOneLevel, setLayout, setRecipe } from '../engine/sets.js';
 // T75 F1 · THE CORNER RULEBOOK: the one detection the corner stop, the post,
 // the hinge and every corner consumer below read.
 import {
@@ -509,6 +511,53 @@ function projectHeightParams(type, design, profile) {
  * produce two units whose shelves share an id, and a drag on one would move the
  * other.
  */
+/**
+ * T75 F20 · one unit of a set as it will be BORN, before it is placed: the
+ * project's new unit with the recipe's params on it (so the set's span is
+ * measured off the widths the units will really have), the params to hand
+ * `addUnit`, and what to write back after the lone add's own decisions.
+ *
+ *   a FREE PANEL's box is worked out from the board the recipe names (its
+ *     tilt, its width), by `freePanelPatch`, the edit path's own reading;
+ *   a typed WIDTH carries the unit's one section with it, as a width typed
+ *     in the panel does;
+ *   `heightOf` stands the unit at that job type's height for its group (the
+ *     vanity's 600), custom where the job's own differs;
+ *   a hung unit's `mount_height` is written back after the add, because a
+ *     lone wall unit beside a tall one is born lined up with its top.
+ */
+function setUnitBorn(u, i, state, profile) {
+  const design = state.project.design;
+  const type = getUnitType(u.type);
+  const unit = newUnit(u.type, profile, state.units.length + i, design);
+  const ask = { ...(u.params || {}) };
+  if (type.freePanel && u.params) Object.assign(ask, freePanelPatch(unit.params, u.params, profile));
+  if (u.heightOf && type.heightGroup) {
+    const h = Number(heightsForProjectType(u.heightOf, profile)?.[type.heightGroup]);
+    if (h > 0) {
+      ask.height = h;
+      ask.height_custom = Number(projectHeights(design, profile)?.[type.heightGroup]) !== h;
+    }
+  }
+  if (ask.width != null && !ask.sections && unit.params.sections?.[0]) {
+    ask.sections = [{ ...unit.params.sections[0], width_mm: Number(ask.width) }];
+  }
+  const params = Object.keys(ask).length ? ask : null;
+  if (params) applyTemplateParams(unit, params);
+  const after = type.mount === 'wall' && !type.freePanel && u.params?.mount_height != null
+    ? { mount_height: Number(u.params.mount_height) }
+    : {};
+  return { unit, params, after };
+}
+
+/** T75 F20 · the end panel a set asks for, as thick as `addEndPanel` makes it. */
+function endPanelThicknessOf(unit, design, profile) {
+  const d = migrateDesign(design);
+  return Number(d.endPanel?.thickness) > 0
+    ? Number(d.endPanel.thickness)
+    : (Number(unit.params.front_t) || Number(profile.front?.thickness) || 18);
+}
+
 function applyTemplateParams(unit, params) {
   const saved = JSON.parse(JSON.stringify(params));
   // ─── TURN 41 (F2): AND THE CROSS-REFERENCES COME WITH THEM ────────────────
@@ -4540,6 +4589,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    */
   addUnit: (typeId, {
     params = null, near = null, side = null, wall: wallAsked = null,
+    // T75 F20 · a set stands each unit where its recipe puts it: on the wall
+    // asked, at exactly this x, or refused, never moved somewhere else.
+    x: xAsked = null,
   } = {}) => runBatch(() => {
     const profile = getCabinetProfile();
     // T72 F5 · `let`, because closing a neighbour's auto end panel below moves
@@ -4807,7 +4859,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
-      const x = freeSlotOnWall({
+      const slotAt = asked && xAsked != null
+        ? (q) => (slotTakes({ ...q, x: Number(xAsked) }, profile) ? Math.round(Number(xAsked)) : null)
+        : (q) => freeSlotOnWall(q, profile);
+      const x = slotAt({
         width: unit.params.width,
         wallWidth: wall.width,
         wallMargin: wallMarginOf(state, unit, wall),
@@ -4828,11 +4883,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         ],
         near: onThisWall ? unitSpan(beside) : null,
         side: onThisWall ? side : null,
-      }, profile);
+      });
       if (x != null) { placed = { wall: wall.index, x }; break; }
     }
     if (!placed) {
-      const where = side && beside
+      const where = asked && xAsked != null
+        ? `There is no room for ${formatMm(unit.params.width)} mm at ${formatMm(Math.round(Number(xAsked)))} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
+        : side && beside
         ? `There is no room for ${formatMm(unit.params.width)} mm to the ${side === 'L' ? 'left' : 'right'} of ${beside.params.unit_num} — move something, or add it on the other side.`
         : (asked
           ? `There is no room for ${formatMm(unit.params.width)} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
@@ -4939,6 +4996,177 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (answer > 0) get().setCornice(unit.id, answer);
     }
     return { id: unit.id, error: null, wall: placed.wall };
+  }),
+
+  /**
+   * ─── T75 F20 · A SET, LEFT TO RIGHT, AS ORDINARY UNITS ───────────────────
+   *
+   * CLAUDE.md T75 F20: *"inserting a set on a wall adds them left to right
+   * through `addUnit` (collisions and refusals as for any unit); the set's
+   * total width adapts to the wall through `shareOut` (`widthFixed` kits keep
+   * their width). A set is a RECIPE, not a group: after insertion the units
+   * are ordinary units."*
+   *
+   * ROOM REFUSES FIRST. The whole span (end panels included) is measured
+   * against the wall before the first unit goes in: five plain adds left half
+   * a Media wall in the room (verify/t75/p06-probe.md). A refusal on the way
+   * puts the room back exactly as it was. Each unit then goes in through
+   * `addUnit` itself: a butted one beside the unit before it (the run's own
+   * law, the automat's panels and all), the first one and a hung one at its
+   * x. What a lone add decides and the recipe decides otherwise (a wall unit
+   * hung at the recipe's height) is written back through `updateUnitParams`,
+   * the edit path. One Ctrl+Z takes the whole set.
+   *
+   * THE WIDTH ADAPTS where the set is the whole run at its level on that wall
+   * and the leftover is under the share-out gap: the run's own share-out, the
+   * kits that fix their width keeping it. Beside cabinets already there, the
+   * offer bar stands as it does for any add: those widths are the client's.
+   *
+   * @returns {{ ids:string[], error:string|null, wall:number|null, shared:boolean }}
+   */
+  insertSet: (row, { wall: wallAsked = null, near = null, side = null } = {}) => runBatch(() => {
+    const recipe = setRecipe(row);
+    if (!recipe) return { ids: [], error: 'This set has no units to insert.', wall: null, shared: false };
+    const profile = getCabinetProfile();
+    const before = get();
+    const walls = roomWalls(before.project.room);
+    const born = recipe.units.map((u, i) => setUnitBorn(u, i, before, profile));
+    const bodies = born.map((b) => b.unit);
+    const layout = setLayout(recipe.units, (i) => Number(bodies[i].params.width) || 0);
+    const panelT = recipe.endPanels ? endPanelThicknessOf(bodies[0], before.project.design, profile) : 0;
+    // …and the automat's own boards between the set's units (low meets tall)
+    // are part of the span: asked of the set laid out on its own.
+    const laid = bodies.map((b, i) => ({ ...b, position: { wall: 0, x_mm: layout.xs[i], rotation_deg: 0 } }));
+    const owedInside = autoEndPanelJunctions(laid, profile, {})
+      .filter((j) => j.otherId && laid.some((b) => b.id === j.otherId)).length;
+    const need = layout.span + 2 * panelT
+      + owedInside * endPanelThicknessOf(bodies[0], before.project.design, profile);
+    const beside = near ? before.units.find((u) => u.id === near) || null : null;
+    const asked = wallAsked != null && walls[Number(wallAsked)] ? walls[Number(wallAsked)] : null;
+    const besideWall = beside ? walls[beside.position?.wall ?? 0] : null;
+    const ordered = asked ? [asked] : (besideWall ? [besideWall] : walls.filter((wl) => !wl.island));
+    const deepest = bodies.reduce((a, b) => ((Number(b.params.depth) || 0) > (Number(a.params.depth) || 0) ? b : a));
+    let start = null;
+    let onWall = null;
+    for (const wall of ordered) {
+      const x = freeSlotOnWall({
+        width: need,
+        wallWidth: wall.width,
+        wallMargin: wallMarginOf(before, bodies[0], wall),
+        others: [
+          ...before.units
+            .filter((u) => (u.position?.wall ?? 0) === wall.index && bodies.some((b) => obstructs(b, u, profile)))
+            .map(unitSpan),
+          ...boxSpansOnWall({
+            wall, depth: deepest.params.depth, boxes: planObstaclesOf(before.project.room, before.project.wallSlopes),
+          }),
+          ...bodies.flatMap((b) => cornerSpansFor(before, b, wall, walls, profile)),
+        ],
+        near: beside && (beside.position?.wall ?? 0) === wall.index ? unitSpan(beside) : null,
+        side: beside ? side : null,
+      }, profile);
+      if (x != null) { start = x + panelT; onWall = wall; break; }
+    }
+    if (start == null) {
+      const where = asked ? `on ${wallName(walls, asked.index)}` : (beside ? `beside ${beside.params.unit_num}` : 'on any wall');
+      return {
+        ids: [], error: `There is no room for the ${recipe.name} (${formatMm(need)} mm) ${where}: move or remove something first.`, wall: null, shared: false,
+      };
+    }
+    const ids = [];
+    const undo = (why) => {
+      set({ units: before.units, project: before.project });
+      return {
+        ids: [], error: `The ${recipe.name} does not fit there: ${why}`, wall: null, shared: false,
+      };
+    };
+    for (let i = 0; i < recipe.units.length; i += 1) {
+      const u = recipe.units[i];
+      const butt = layout.butts[i];
+      const res = butt != null
+        ? get().addUnit(u.type, { params: born[i].params, near: ids[butt], side: 'R' })
+        : get().addUnit(u.type, { params: born[i].params, wall: onWall.index, x: start + layout.xs[i] });
+      if (!res?.id) return undo(res?.error || 'a unit was refused.');
+      ids.push(res.id);
+      if (butt != null) {
+        // A carcass side never stays visible: where the two butted units
+        // owe each other the automat's panel (low meets tall), the NEW one
+        // steps along by the board (it is the set's open end, the room the
+        // span was measured with) and the panel goes in between, the way
+        // `growAutoEndPanels` makes room for one by hand.
+        const pair = [res.id, ids[butt]];
+        const owed = autoEndPanelJunctions(get().units, profile, { room: get().project.room })
+          .find((j) => pair.includes(j.unitId) && pair.includes(j.otherId));
+        if (owed) {
+          const stepper = get().units.find((x) => x.id === res.id);
+          const home = Number(stepper.position?.x_mm) || 0;
+          const thick = endPanelThicknessOf(stepper, get().project.design, profile);
+          // Magnet off: one board along, exactly, and the automat's board in
+          // the room left, marked as the automat's (`growAutoEndPanels`'
+          // own mark), so it goes again with its junction.
+          get().moveUnit(res.id, home + thick, 0, { magnet: false });
+          const board = get().addEndPanel(owed.unitId, { side: owed.side, applyToAll: false });
+          if (board?.id) {
+            set((st) => ({
+              units: st.units.map((x) => (x.id === owed.unitId
+                ? {
+                  ...x,
+                  params: {
+                    ...x.params,
+                    end_panels: (x.params.end_panels || []).map((ep) => (ep.id === board.id ? { ...ep, auto_added: true } : ep)),
+                  },
+                }
+                : x)),
+            }));
+            get().refreshAutoParts();
+          }
+        }
+        // Butted means AT the unit before it: a free stretch further along
+        // is the set come apart, not a set.
+        const now = get().units;
+        const mine = now.find((x) => x.id === res.id);
+        const host = now.find((x) => x.id === ids[butt]);
+        if ((mine.position?.wall ?? 0) !== onWall.index || unitSpan(mine).left - unitSpan(host).right > 1) {
+          return undo(`${mine.params.unit_num} could not stand beside ${host.params.unit_num}.`);
+        }
+      }
+      if (Object.keys(born[i].after).length) get().updateUnitParams(res.id, born[i].after);
+      if (u.rail && !get().addHangerRail(res.id)) return undo('the rail could not be hung.');
+    }
+    const floorIds = ids.filter((id, i) => layout.butts[i] != null || i === 0)
+      .filter((id) => getUnitType(get().units.find((x) => x.id === id)?.type).mount === 'floor');
+    if (recipe.endPanels && floorIds.length) {
+      for (const [id, one] of [[floorIds[0], 'L'], [floorIds[floorIds.length - 1], 'R']]) {
+        const has = (get().units.find((x) => x.id === id)?.params?.end_panels || []).some((ep) => ep.side === one);
+        if (!has) {
+          const res = get().addEndPanel(id, { side: one, asked: true });
+          if (res?.error) return undo(res.error);
+        }
+      }
+    }
+    if (recipe.top) {
+      const res = get().addWorktop(recipe.top.units.map((i) => ids[i]).filter(Boolean), {
+        thickness: recipe.top.thickness ?? null, single: recipe.top.single === true,
+      });
+      if (!res.ok) return undo(res.error);
+    }
+    // THE WIDTH ADAPTS, through the run's own share-out, where the run is the set's.
+    let shared = false;
+    if (setIsOneLevel(recipe.units, (t) => getUnitType(t).mount)) {
+      const st = get();
+      const found = shareOutRunFor(st.units, ids[0], { walls, wallMargin: wallMarginOf(st, st.units.find((x) => x.id === ids[0])) }, profile);
+      // The set IS the run: every one of its units in it (a tall unit breaks
+      // a share-out run by its height), nobody else's.
+      const onlyMine = found && found.run.units.every((x) => ids.includes(x.id) || isIslandAutoPanel(x))
+        && ids.every((id) => found.run.units.some((x) => x.id === id));
+      if (onlyMine && shareOutOffered(found.run, found.context, profile)) {
+        get().shareOutRun(ids[0]);
+        shared = true;
+      }
+    }
+    return {
+      ids, error: null, wall: onWall.index, shared,
+    };
   }),
 
   // ─── TURN 50 (CLAUDE.md F2): THE RUN IS SHARED OUT, EQUALLY, ONCE ────────
@@ -8535,13 +8763,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {{ok:boolean, id:string|null, error:string|null}}
    */
-  addWorktop: (unitIds, { thickness = null } = {}) => {
+  addWorktop: (unitIds, { thickness = null, single = false } = {}) => {
     const s = get();
     const wanted = [...new Set((unitIds || []).filter(Boolean))];
     const units = wanted.map((id) => s.units.find((u) => u.id === id)).filter(Boolean);
     const profile = getCabinetProfile();
     // T75 F5 · the walls go in, so two runs meeting at a corner may share it.
-    const gate = worktopEligible(units, profile, { walls: roomWalls(s.project.room) });
+    const gate = worktopEligible(units, profile, { walls: roomWalls(s.project.room), single });
     if (!gate.ok) return { ok: false, id: null, error: gate.why };
     const design = migrateDesign(s.project.design);
     // A cabinet lies under ONE slab. Asking for a worktop over a run that
@@ -8567,6 +8795,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // default stays 38"*). A thickness the caller names wins; with none,
         // the record carries none and the profile's 38 stands.
         ...(units.length === 1 && isDeskKit(units[0].type) ? { kind: 'desk' } : {}),
+        // T75 F20 · …and so does the one cabinet a SET lays a top on.
+        ...(units.length === 1 && single && !getUnitType(units[0].type).corner && !isDeskKit(units[0].type)
+          ? { kind: 'top' } : {}),
         ...recordThickness(thickness, units, profile),
         ...(gate.island ? {
           island: gate.island,

@@ -79,7 +79,10 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
   assert.deepEqual(getCategory('sets').types, []);
 
   // Held open, not pretended: an empty category says "soon" and is not clickable.
-  assert.equal(getCategory('media').soon, true);
+  // AMENDED BY T75 F20: *"the Library's `media` category (`soon`) becomes the sets shelf
+  // (saved sets and shipped sets on one list)"*: the `soon` flag is deleted, `sets` marks the shelf.
+  assert.equal(getCategory('media').soon, undefined);
+  assert.equal(getCategory('media').sets, true);
   assert.deepEqual(getCategory('media').types, []);
   for (const id of ['kitchen', 'wardrobe']) {
     assert.equal(getCategory(id).soon, undefined);

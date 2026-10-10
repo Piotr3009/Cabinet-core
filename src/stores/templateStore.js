@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { browserStorage } from '../lib/projectLibrary.js';
 import {
-  deleteTemplate, listTemplates, renameTemplate, saveTemplate,
+  deleteTemplate, listTemplates, renameTemplate, saveSet, saveTemplate,
 } from '../lib/templates.js';
 
 // ─── Saved sets (BACKLOG #30) ───
@@ -29,6 +29,17 @@ export const useTemplateStore = create((set, get) => ({
    */
   save: (unit, name, at = Date.now()) => {
     const result = saveTemplate(get().storage, { unit, name, at });
+    if (result.template) set((s) => ({ templates: listTemplates(s.storage) }));
+    return result;
+  },
+
+  /**
+   * T75 F20 · save a selection as a SET: two or more units on one wall, left
+   * to right, the gaps between them (`lib/templates.js saveSet`).
+   * @returns {{template:object|null, error:string|null, replaced?:boolean}}
+   */
+  saveSet: (units, name, at = Date.now()) => {
+    const result = saveSet(get().storage, { units, name, at });
     if (result.template) set((s) => ({ templates: listTemplates(s.storage) }));
     return result;
   },

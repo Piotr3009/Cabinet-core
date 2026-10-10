@@ -183,7 +183,10 @@ test('F5 · ONE LAW: the sweep runs on the add, and the settle still runs after 
   // Called from the add, before the placement is measured…
   const add = store.slice(store.indexOf('addUnit: (typeId,'), store.indexOf('return { id: unit.id, error: null, wall: placed.wall };'));
   assert.match(add, /get\(\)\.closeAutoEndPanelFacing\(beside\.id, side\)/);
-  assert.ok(add.indexOf('closeAutoEndPanelFacing') < add.indexOf('const x = freeSlotOnWall({'),
+  // AMENDED BY T75 F20: the placement asks `slotAt`, which is `freeSlotOnWall` unless a set
+  // names the exact x (*"inserting a set on a wall adds them left to right through `addUnit`"*).
+  assert.ok(add.indexOf('const x = slotAt({') > 0, 'the placement is measured by one call');
+  assert.ok(add.indexOf('closeAutoEndPanelFacing') < add.indexOf('const x = slotAt({'),
     'the sweep runs AFTER the placement — that is the fault, not the fix');
   // …and only where a SIDE was named, which is the gesture his sentence is about.
   // AMENDED BY T74 F7: …and, beside a wardrobe, only when what arrives is a
@@ -195,5 +198,6 @@ test('F5 · ONE LAW: the sweep runs on the add, and the settle still runs after 
   // …and it is all one `runBatch`, so Ctrl+Z takes the whole add back.
   // AMENDED BY T75 F10: the add takes a named WALL too (an island face's plus,
   // *"`addUnit` with the face's index"*); it is still one `runBatch`.
-  assert.match(store, /addUnit: \(typeId, \{\n    params = null, near = null, side = null, wall: wallAsked = null,\n  \} = \{\}\) => runBatch\(\(\) => \{/);
+  // AMENDED BY T75 F20: …and an exact x, for a set's units.
+  assert.match(store, /addUnit: \(typeId, \{\n    params = null, near = null, side = null, wall: wallAsked = null,\n(?:    \/\/[^\n]*\n)*    x: xAsked = null,\n  \} = \{\}\) => runBatch\(\(\) => \{/);
 });

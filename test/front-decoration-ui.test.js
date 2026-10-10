@@ -86,7 +86,8 @@ test('new gallery styles all have artwork and the same controls reach PRO and re
   }
   const controls = read('src/components/FrontDecorationControls.jsx');
   const retail = read('src/retail/design/material/FrontDecorationControls.jsx');
-  for (const control of ['Activate decorative front', 'data-decoration-field', 'grooveDirection', 'archRatio', 'fluteDiameterMm']) {
+  // T76 F4 · `archRatio` left with the ellipse: the owner's arch is a semicircle.
+  for (const control of ['Activate decorative front', 'data-decoration-field', 'grooveDirection', 'fluteDiameterMm']) {
     assert.ok(controls.includes(control));
     assert.ok(retail.includes(control));
   }

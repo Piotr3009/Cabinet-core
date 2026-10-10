@@ -55,20 +55,6 @@ export default function FrontDecorationControls({ style, value, onChange }) {
               <span className="pbi-re-quiet">mm</span>
             </label>
           ))}
-          {Object.hasOwn(defaults, 'archRatio') && (
-            <label className="pbi-re-row pbi-re-mid pbi-re-gap-2 pbi-re-t11 pbi-re-ink-2">
-              <span className="pbi-re-grow" title="Percentage of the shorter inner opening dimension">Arch rise</span>
-              <NumberField
-                className="pbi-re-input pbi-re-w20 pbi-re-right"
-                aria-label="Arch rise percent"
-                data-decoration-field="archRatio"
-                value={config.archRatio * 100}
-                integer={false}
-                onCommit={(next) => update('archRatio', next / 100)}
-              />
-              <span className="pbi-re-quiet">%</span>
-            </label>
-          )}
           {Object.hasOwn(defaults, 'grooveDirection') && (
             <label className="pbi-re-row pbi-re-mid pbi-re-gap-2 pbi-re-t11 pbi-re-ink-2">
               <span className="pbi-re-grow">Groove direction</span>

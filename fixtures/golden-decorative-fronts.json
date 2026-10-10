@@ -1,30 +1,30 @@
 {
   "G": {
-    "sha256": "60480ec69a6a0abf1ccfd8963cb4be5f842f36ca768e119de1ca0668f97fc461",
+    "sha256": "92ecf47dcd6e6bca4f70784621a675b459aa76ccb24c3ed2be79d84e3c970b0e",
     "parts": [
       {
         "id": "01-F",
         "w": 597,
         "h": 767,
         "thickness": 25,
-        "operations": 20
+        "operations": 6
       }
     ]
   },
   "GF": {
-    "sha256": "f6bc1ad39f2c16e3294a6912a096d4a70bd0574b1d6fe29d2efc0302c92676a2",
+    "sha256": "4b6aac9e3c1dd2c544ad1cb36af90a0cded7ea2f33917984f82c60eee0605a95",
     "parts": [
       {
         "id": "01-F",
         "w": 597,
         "h": 767,
         "thickness": 25,
-        "operations": 20
+        "operations": 7
       }
     ]
   },
   "A": {
-    "sha256": "a676114894fcd042145ddd1aa5fa280238de07724d271a2c3bf18fd2a251f9be",
+    "sha256": "68e841766633f96c3bf010779135305c3febb2769f8db993497dffe78f10240b",
     "parts": [
       {
         "id": "01-F",
@@ -36,7 +36,7 @@
     ]
   },
   "AH": {
-    "sha256": "28ff6e4df6ff4a2a3a1c710854705ad04f7002ccd50a965979a217188646cf20",
+    "sha256": "7cbd357561caacb3338bb9eb63217b00de6a4089868bb5050464b272e0c9c765",
     "parts": [
       {
         "id": "01-F",
@@ -48,7 +48,7 @@
     ]
   },
   "FL": {
-    "sha256": "c6187d60b7fc33f8ec240a125dfb14ff08d714acd4c10d7d4fcdafbe12cfad10",
+    "sha256": "dc02d1f2df95b8a6de06bf0139451fa89312851045bece01073944cb3011291f",
     "parts": [
       {
         "id": "01-F",
@@ -60,7 +60,7 @@
     ]
   },
   "AM": {
-    "sha256": "28bfe34bd194c23835ee97815229e1b120f0fe72bb0d372a5b30102d5bc2a38d",
+    "sha256": "ae924b04c7e9f83ae3f7b2d1f9117e29311091266ae4edb3220b7113257818fb",
     "parts": [
       {
         "id": "01-F",

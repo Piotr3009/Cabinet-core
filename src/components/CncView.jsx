@@ -635,13 +635,19 @@ function Part({
   const readouts = useMemo(
     () => front
       ? new Map((decoration?.operations || []).map((operation) => [operation.id, {
-        title: `${operation.kind === 'flute' ? 'Flute' : 'Pocket'} | Front face`,
+        // T76 F4 · a V groove reads as one: its width at the mouth, its centre line.
+        title: `${{ flute: 'Flute', vgroove: 'V groove' }[operation.kind] || 'Pocket'} | Front face`,
         subtitle: operation.layer,
         rows: [
-          { label: 'Tool', value: `${operation.tool?.kind || 'Unspecified'} ${formatMm(operation.tool?.diameter)} mm` },
+          {
+            label: 'Tool',
+            value: operation.kind === 'vgroove'
+              ? `V, ${formatMm(operation.crossSection?.width)} mm wide at the mouth`
+              : `${operation.tool?.kind || 'Unspecified'} ${formatMm(operation.tool?.diameter)} mm`,
+          },
           { label: 'Start depth', value: `${formatMm(operation.startDepth)} mm` },
           { label: 'Final depth', value: `${formatMm(operation.depth)} mm` },
-          { label: 'Vector', value: operation.kind === 'flute' ? 'Tool centre path' : 'Finished pocket boundary' },
+          { label: 'Vector', value: { flute: 'Tool centre path', vgroove: 'Groove centre line' }[operation.kind] || 'Finished pocket boundary' },
           { label: 'Status', value: frontProblems.length ? 'Blocked: see checks' : 'Ready' },
         ],
       }]))

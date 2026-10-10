@@ -224,8 +224,9 @@ function build(panel, bores) {
       through: Boolean(bore.through) || depth >= thickness - frontDepth - EPS,
     };
   });
+  // T76 F4 · a V groove carries its floor surface as a flute does.
   complexHoles = allHoles.filter((bore) => bore.through && (
-    bore.pocket?.kind === 'flute'
+    Boolean(bore.pocket?.surface?.triangles)
     || operations.some((op) => edgesOf(bore.ring).some(([a, b]) =>
       edgesOf(op.ring).some(([c, d]) => crossingAt(a, b, c, d) != null)))
   ));
@@ -248,7 +249,7 @@ function build(panel, bores) {
       -half + next.z0, removed ? +1 : -1);
   }
   for (const op of operations) {
-    if (op.kind === 'flute' && op.surface?.vertices && op.surface?.triangles) {
+    if (op.surface?.vertices && op.surface?.triangles) {
       for (const vertices of op.triangles) {
         // Reflecting the CNC x coordinate reverses every triangle's winding.
         triangle(vertices[0], vertices[2], vertices[1]);

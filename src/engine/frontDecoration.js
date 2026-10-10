@@ -2,39 +2,53 @@
 // Piotr, 09.10.2026: choose defaults and code; they remain editable recipe
 // values, not manufacturer specifications. Existing styles without a recipe
 // keep their existing geometry. Coordinates are the CNC back-view in mm.
+//
+// ─── T76 F4 · THE NUMBERS LEFT THIS FILE ────────────────────────────────────
+// CLAUDE.md T76 F4: *"GPT put the recipe defaults in code (`RECIPES` ...).
+// The house law: numbers live in `engine/profile.js`."*  `RECIPES` is deleted;
+// every recipe is `profile.front.decoration[style]` of the profile handed in,
+// and a caller that hands none gets the active workshop profile
+// (`getCabinetProfile()`, the road every other number travels). What stays
+// here is the geometry: which styles this module can machine, and how.
 
 import { machiningFor } from './machining.js';
-import { DEFAULT_CABINET_PROFILE } from './profile.js';
+import { DEFAULT_CABINET_PROFILE, getCabinetProfile } from './profile.js';
 
 const EPS = 1e-7;
-const MIN_SKIN = 3;
 const MAX_OPERATIONS = 256;
 const CURVE_STEPS = 24;
 const CONTOUR_TOLERANCE_MM = 0.025;
 
-const RECIPES = {
-  G: { grooveWidthMm: 6, grooveDepthMm: 3, groovePitchMm: 25, grooveInsetMm: 50, grooveDirection: 'vertical' },
-  GF: { frameMm: 60, recessDepthMm: 6, grooveWidthMm: 6, grooveDepthMm: 3, groovePitchMm: 25, grooveInsetMm: 10, grooveDirection: 'vertical' },
-  A: { frameMm: 60, recessDepthMm: 6, archRatio: 0.5 },
-  AH: { frameMm: 60, recessDepthMm: 6, archRatio: 0.5 },
-  FL: { fluteDiameterMm: 12, grooveDepthMm: 3, groovePitchMm: 20, grooveInsetMm: 50, grooveDirection: 'vertical' },
-  AM: { mouldingInsetMm: 60, mouldingWidthMm: 20, mouldingProjectionMm: 8 },
-};
+/** The styles this module has geometry for. Their numbers are the profile's. */
+export const DECORATIVE_FRONT_STYLES = Object.freeze(['G', 'GF', 'A', 'AH', 'FL', 'AM']);
 
-export const DECORATIVE_FRONT_STYLES = Object.freeze(Object.keys(RECIPES));
+/** The cutters a groove recipe may name, per style (T76 F4: a V is a V). */
+const GROOVE_CUTTERS = Object.freeze({ G: ['v', 'endmill'], GF: ['v', 'endmill'], FL: ['ballnose'] });
+
+/** One style's recipe in this profile, or null where the style has none. */
+function recipeOf(style, profile) {
+  if (!DECORATIVE_FRONT_STYLES.includes(style)) return null;
+  return profile?.front?.decoration?.[style] || null;
+}
+
+/** The least board left under and between cuts: the profile's number. */
+function minSkinOf(profile) {
+  return Number(profile?.front?.decorationMinSkinMm ?? DEFAULT_CABINET_PROFILE.front.decorationMinSkinMm);
+}
 
 /** Explicit opt-in: no object is created merely by opening an old style. */
-export function defaultFrontDecoration(style) {
-  return RECIPES[style] ? { version: 1, style, ...RECIPES[style] } : null;
+export function defaultFrontDecoration(style, profile = getCabinetProfile()) {
+  const recipe = recipeOf(style, profile);
+  return recipe ? { version: 1, style, ...recipe } : null;
 }
 
 /** Preserve invalid entered numbers for validation, never silently clamp. */
-export function normaliseFrontDecoration(config, style = config?.style) {
+export function normaliseFrontDecoration(config, style = config?.style, profile = getCabinetProfile()) {
   if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
-  const defaults = defaultFrontDecoration(style);
-  if (!defaults) return { ...config, version: config.version ?? 1, style };
+  const recipe = recipeOf(style, profile);
+  if (!recipe) return { ...config, version: config.version ?? 1, style };
   const out = { version: config.version ?? 1, style };
-  for (const [key, fallback] of Object.entries(RECIPES[style])) {
+  for (const [key, fallback] of Object.entries(recipe)) {
     const value = Object.hasOwn(config, key) ? config[key] : fallback;
     out[key] = typeof fallback === 'number'
       ? (typeof value === 'number' ? value : (typeof value === 'string' && value.trim() ? Number(value) : NaN))
@@ -59,12 +73,14 @@ const bounds = (pts) => ({
 const rect = (x1, y1, x2, y2) => [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
 const problem = (code, message) => ({ code, message });
 const token = (value) => String(value).replace('.', 'P').replace('e', 'E').replace('-', 'N').replace('+', '');
-function operationLayer(kind, depth, startDepth, diameter) {
-  const readable = `FRONT_${kind}_D${token(depth)}_S${token(startDepth)}_T${token(diameter)}`;
+// T76 F4 · `sizeLetter` T is a tool diameter; W is a V groove's width at the
+// face (a V names no diameter: CAM picks the bit).
+function operationLayer(kind, depth, startDepth, diameter, sizeLetter = 'T') {
+  const readable = `FRONT_${kind}_D${token(depth)}_S${token(startDepth)}_${sizeLetter}${token(diameter)}`;
   if (readable.length <= 31) return readable;
   // R12 layer names stay within 31 characters. Exact decimal values remain in
   // the operation manifest; they are never rounded to manufacture a label.
-  const signature = `${kind}|${depth}|${startDepth}|${diameter}`;
+  const signature = `${kind}|${depth}|${startDepth}|${sizeLetter}${diameter}`;
   let hash = 14695981039346656037n;
   for (const char of signature) hash = BigInt.asUintN(64, (hash ^ BigInt(char.charCodeAt(0))) * 1099511628211n);
   return `FRONT_${kind}_${hash.toString(16).padStart(16, '0').toUpperCase()}`;
@@ -180,10 +196,13 @@ function capsule(x, y0, y1, radius) {
   return points;
 }
 
-function fluteSurface({ x, y0, y1, radius, depth, mouth, transform, horizontal }) {
+// T76 F4 · one builder for a groove's floor, whatever its section: `atDepth`
+// is the depth below the groove's own mouth at a distance from its centre
+// line (a circle for the ballnose, a straight V for the V), and `base` is the
+// floor the mouth opens in (0 on the face, the recess floor in GF).
+function grooveSurface({ x, y0, y1, depth, mouth, transform, horizontal, atDepth, base = 0 }) {
   const vertices = []; const triangles = [];
-  const atDepth = (rho) => Math.max(0, Math.sqrt(Math.max(0, radius * radius - rho * rho)) - (radius - depth));
-  const add = (x0, y, d) => { vertices.push([...point(transform([x0, y])), round(d)]); return vertices.length - 1; };
+  const add = (x0, y, d) => { vertices.push([...point(transform([x0, y])), round(base + d)]); return vertices.length - 1; };
   const profile = [];
   for (let i = 0; i <= CURVE_STEPS; i += 1) {
     const offset = -mouth + 2 * mouth * i / CURVE_STEPS;
@@ -195,8 +214,9 @@ function fluteSurface({ x, y0, y1, radius, depth, mouth, transform, horizontal }
       triangles.push([n, n + 2, n + 1], [n + 1, n + 2, n + 3]);
     }
   }
-  // Spherical stopped ends: the same ballnose cross-section revolved around
-  // each endpoint, not a flat-ended rectangular groove in the preview.
+  // Stopped ends: the same cross-section revolved around each endpoint
+  // (spherical for the ballnose, conical for the V), not a flat-ended
+  // rectangular groove in the preview.
   const capSteps = halfCurveSteps(mouth);
   for (const [cy, start] of [[y0, Math.PI], [y1, 0]]) {
     const centre = add(x, cy, depth);
@@ -217,7 +237,9 @@ function fluteSurface({ x, y0, y1, radius, depth, mouth, transform, horizontal }
   return { profile, surface: { vertices, triangles } };
 }
 
-function makeGrooves(outline, config, depthStart, flute) {
+function makeGrooves(outline, config, depthStart) {
+  const flute = config.grooveCutter === 'ballnose';
+  const vee = config.grooveCutter === 'v';
   const horizontal = config.grooveDirection === 'horizontal';
   const transform = horizontal ? ([x, y]) => [y, x] : ([x, y]) => [x, y];
   const local = ccw(outline.map(transform));
@@ -242,8 +264,26 @@ function makeGrooves(outline, config, depthStart, flute) {
     const points = ccw(capsule(x, y0, y1, width / 2).map(transform));
     if (!contains(outline, points)) return { problem: problem('FRONT_DECORATION_OUTSIDE', 'A groove would cross the cut front outline.') };
     const op = pocket(`groove-${i + 1}`, points, depthStart + depth, depthStart, Math.min(6, width));
-    if (flute) {
-      const section = fluteSurface({ x, y0, y1, radius, depth, mouth: width / 2, transform, horizontal });
+    if (vee) {
+      // T76 F4 · the owner's V (31.08.2026): its width at the mouth and its
+      // depth, both recorded; the vector is the centre line CAM follows.
+      const mouth = width / 2;
+      const section = grooveSurface({
+        x, y0, y1, depth, mouth, transform, horizontal, base: depthStart,
+        atDepth: (rho) => Math.max(0, depth * (1 - Math.abs(rho) / mouth)),
+      });
+      Object.assign(op, {
+        kind: 'vgroove', centreline: [point(transform([x, y0])), point(transform([x, y1]))],
+        tool: { kind: 'v' },
+        layer: operationLayer('VGROOVE', depthStart + depth, depthStart, width, 'W'),
+        crossSection: { kind: 'v', width: round(width), depth, profile: section.profile },
+        surface: section.surface,
+      });
+    } else if (flute) {
+      const section = grooveSurface({
+        x, y0, y1, depth, mouth: width / 2, transform, horizontal,
+        atDepth: (rho) => Math.max(0, Math.sqrt(Math.max(0, radius * radius - rho * rho)) - (radius - depth)),
+      });
       Object.assign(op, {
         kind: 'flute', centreline: [point(transform([x, y0])), point(transform([x, y1]))],
         tool: { kind: 'ballnose', diameter: config.fluteDiameterMm },
@@ -257,11 +297,19 @@ function makeGrooves(outline, config, depthStart, flute) {
   return { operations };
 }
 
-function makeArch(inner, config) {
+// T76 F4 · the owner, 31.08.2026: a SEMICIRCULAR head, its rise half the
+// inner width. *"A leaf narrower than the rise allows is refused in words,
+// never squashed to an ellipse."*  The ratio GPT scaled by is gone with it.
+function makeArch(inner) {
   const b = bounds(inner); const width = b.x2 - b.x1; const height = b.y2 - b.y1;
-  // Ratio scales against both available dimensions. This is the specified
-  // resize rule, not a correction of an entered radius or rise.
-  const rise = config.archRatio * Math.min(width, height);
+  const rise = width / 2;
+  if (height <= rise + EPS) {
+    return {
+      problem: problem('FRONT_DECORATION_ARCH', `A semicircular arch rises half the inner width, ${round(rise)} mm here, `
+        + `and this leaf gives ${round(height)} mm of inner height. The arch is never squashed to an ellipse: `
+        + 'choose another style for this leaf, or a taller one.'),
+    };
+  }
   const shoulder = b.y2 - rise; const cx = (b.x1 + b.x2) / 2;
   const points = [[b.x1, b.y1], [b.x2, b.y1], [b.x2, shoulder]];
   const steps = halfCurveSteps(Math.max(width / 2, rise), 48);
@@ -269,8 +317,8 @@ function makeArch(inner, config) {
     const a = Math.PI * i / steps;
     points.push([cx + width / 2 * Math.cos(a), shoulder + rise * Math.sin(a)]);
   }
-  if (!contains(inner, points)) return [];
-  return roundedPolygon(points, 3);
+  if (!contains(inner, points)) return { points: [] };
+  return { points: roundedPolygon(points, 3) };
 }
 
 function makeMouldings(panel, outline, c) {
@@ -288,11 +336,11 @@ function makeMouldings(panel, outline, c) {
   return strips.map(([id, points, length]) => ({
     id: `moulding-${id}`, kind: 'moulding', face: 'front', parentFrontId: panel.id,
     points: ccw(points).map(point), width: w, thickness: c.mouldingProjectionMm,
-    projection: c.mouldingProjectionMm, length, mitreStart: 45, mitreEnd: 45,
+    projection: c.mouldingProjectionMm, length, mitreStart: c.mitreDeg, mitreEnd: c.mitreDeg,
     layer: 'FRONT_REFERENCE_NO_CUT',
     cutOutline: [[0, 0], [length, 0], [length - w, w], [w, w]],
     cut: { length, width: w, thickness: c.mouldingProjectionMm, outline: [[0, 0], [length, 0], [length - w, w], [w, w]] },
-    mitres: { start: 45, end: 45 },
+    mitres: { start: c.mitreDeg, end: c.mitreDeg },
     construction: 'applied-rectangular-strip',
   }));
 }
@@ -324,9 +372,10 @@ function polygonsOverlap(a, b) {
 }
 
 /** Validate opposing machining after the cabinet has placed its hardware. */
-export function validateFrontDecoration({ panel, decoration, drills = [], profile = DEFAULT_CABINET_PROFILE }) {
+export function validateFrontDecoration({ panel, decoration, drills = [], profile = getCabinetProfile() }) {
   if (!decoration || decoration.status === 'blocked') return decoration?.problems || [];
   const problems = []; const thickness = Number(panel?.thickness);
+  const MIN_SKIN = minSkinOf(profile);
   for (const drill of drills) {
     if (drill.panel && drill.panel !== panel.id) continue;
     const depth = Number(drill.depth) > 0 ? Number(drill.depth) : machiningFor(drill.layer, profile).depth;
@@ -375,25 +424,31 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
 }
 
 /** The one canonical record read by CNC, 3D, BOM and drawings. */
-export function buildFrontDecoration({ panel, config, style = config?.style, drills = [], profile = DEFAULT_CABINET_PROFILE }) {
-  const parameters = normaliseFrontDecoration(config, style);
+export function buildFrontDecoration({ panel, config, style = config?.style, drills = [], profile = getCabinetProfile() }) {
+  const parameters = normaliseFrontDecoration(config, style, profile);
   if (!parameters) return null;
+  // T76 F4 · `advisories` are said by the Check and block nothing (the board
+  // thinner than the recipe's); `problems` stay GPT's refusals.
   const result = {
     version: 1, style, face: 'front', parameters, outline: [], thickness: Number(panel?.thickness),
-    operations: [], additions: [], problems: [], status: 'ready',
+    operations: [], additions: [], problems: [], advisories: [], status: 'ready',
   };
   const fail = (p) => {
     result.problems.push(p); result.status = 'blocked'; result.operations = []; result.additions = [];
     return result;
   };
-  if (!RECIPES[style]) return fail(problem('FRONT_DECORATION_STYLE', 'This decorative front recipe is not supported.'));
+  const recipe = recipeOf(style, profile);
+  if (!recipe) return fail(problem('FRONT_DECORATION_STYLE', 'This decorative front recipe is not supported.'));
   if (parameters.version !== 1) return fail(problem('FRONT_DECORATION_VERSION', 'This decorative front recipe version is not supported.'));
-  for (const [key, fallback] of Object.entries(RECIPES[style])) {
+  for (const [key, fallback] of Object.entries(recipe)) {
     const value = parameters[key];
     if (typeof fallback === 'number' && (!Number.isFinite(value) || value <= 0)) return fail(problem('FRONT_DECORATION_PARAMETER', `${key} must be a finite positive number.`));
   }
   if (parameters.grooveDirection && !['vertical', 'horizontal'].includes(parameters.grooveDirection)) return fail(problem('FRONT_DECORATION_DIRECTION', 'Choose vertical or horizontal grooves.'));
-  if (parameters.archRatio && parameters.archRatio > 0.8) return fail(problem('FRONT_DECORATION_ARCH', 'Arch ratio must be above zero and no more than 0.8.'));
+  if (GROOVE_CUTTERS[style] && !GROOVE_CUTTERS[style].includes(parameters.grooveCutter)) {
+    return fail(problem('FRONT_DECORATION_CUTTER', `${style} grooves are cut with ${GROOVE_CUTTERS[style].join(' or ')}, not ${parameters.grooveCutter}.`));
+  }
+  if (style === 'AM' && parameters.mitreDeg !== 45) return fail(problem('FRONT_DECORATION_MITRE', 'Four strips close a rectangle only with 45 degree mitres.'));
   if (style === 'FL' && parameters.grooveDepthMm > parameters.fluteDiameterMm / 2) return fail(problem('FRONT_DECORATION_FLUTE', 'Flute depth cannot exceed the ballnose radius.'));
   const width = Number(panel?.cnc?.drawn_w ?? panel?.w); const height = Number(panel?.cnc?.drawn_h ?? panel?.h);
   if (![width, height, result.thickness].every((v) => Number.isFinite(v) && v > 0 && v <= 100000)) return fail(problem('FRONT_DECORATION_PANEL', 'The front needs finite positive dimensions no greater than 100000 mm.'));
@@ -414,14 +469,16 @@ export function buildFrontDecoration({ panel, config, style = config?.style, dri
       if (!inner.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The frame leaves no inner panel on this cut front.'));
       const b = bounds(inner);
       if (b.x2 - b.x1 < 12 || b.y2 - b.y1 < 12) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The frame must leave at least 12 mm of inner panel in both directions.'));
-      const points = ['A', 'AH'].includes(style) ? makeArch(inner, parameters) : roundedPolygon(inner, 3);
+      const arch = ['A', 'AH'].includes(style) ? makeArch(inner) : null;
+      if (arch?.problem) return fail(arch.problem);
+      const points = arch ? arch.points : roundedPolygon(inner, 3);
       if (!points.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The complete recessed pattern does not fit inside this cut front.'));
       result.operations.push(pocket('panel-recess', points, parameters.recessDepthMm));
     }
     if (['G', 'GF', 'FL'].includes(style)) {
       const grooveRegion = insetPolygon(inner, parameters.grooveInsetMm);
       if (!grooveRegion.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The groove margins leave no usable front area.'));
-      const grooves = makeGrooves(grooveRegion, parameters, parameters.recessDepthMm || 0, style === 'FL');
+      const grooves = makeGrooves(grooveRegion, parameters, parameters.recessDepthMm || 0);
       if (grooves.problem) return fail(grooves.problem);
       result.operations.push(...grooves.operations);
     }
@@ -429,6 +486,16 @@ export function buildFrontDecoration({ panel, config, style = config?.style, dri
   const validation = validateFrontDecoration({ panel, decoration: result, drills, profile });
   if (validation.length) {
     result.problems.push(...validation); result.status = 'blocked'; result.operations = []; result.additions = [];
+    return result;
+  }
+  // T76 F4 · the owner's arched recipe is drawn for a 30 board. On a thinner
+  // front it still cuts (the skin rule above holds) and the Check says so in
+  // words: the recipe is not shrunk and the material is not swapped.
+  if (Number.isFinite(parameters.boardMm) && result.thickness < parameters.boardMm - EPS) {
+    const left = round(result.thickness - (parameters.recessDepthMm || 0));
+    result.advisories.push(problem('FRONT_DECORATION_BOARD', `${style} is drawn for a ${parameters.boardMm} mm board and this front is `
+      + `${result.thickness} mm: the ${parameters.recessDepthMm} mm recess leaves ${left} mm. Assign a ${parameters.boardMm} mm `
+      + 'front material, or keep this board by decision.'));
   }
   return result;
 }

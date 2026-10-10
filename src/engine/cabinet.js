@@ -9228,6 +9228,11 @@ export function computeCabinet(params, profileOverride) {
       for (const finding of decoration.problems) {
         warnings.push({ ...finding, panel: front.id, message: `${front.id}: ${finding.message}` });
       }
+      // T76 F4 · an advisory (a board thinner than the recipe's) blocks
+      // nothing: it rides the warnings and the Check (#32) says it in words.
+      for (const advice of decoration.advisories || []) {
+        warnings.push({ ...advice, panel: front.id, message: `${front.id}: ${advice.message}` });
+      }
       // Applied strips are real cut parts. Their scene geometry belongs to
       // the moving front, while these records feed the BOM, CSV and CNC.
       panels.push(...appliedFrontParts(front, P));

@@ -41,22 +41,25 @@ test('every enabled default recipe is bounded, deterministic and uses the front 
     }
     for (const op of result.operations) {
       assert.ok(op.depth > op.startDepth);
-      assert.ok(op.tool.diameter > 0);
+      // T76 F4 · a V names no diameter: its width at the mouth is recorded instead.
+      assert.ok(op.kind === 'vgroove' ? op.crossSection.width > 0 && op.tool.kind === 'v' : op.tool.diameter > 0);
       assert.match(op.layer, /^FRONT_[A-Z0-9_p]+$/);
     }
   }
 });
 
 test('grooves centre the exact pitch with equal opposite margins and rounded stopped ends', () => {
+  // T76 F4 · the owner's G, read off the profile: a V 4 wide, every 80.
+  const { grooveWidthMm, groovePitchMm } = P.front.decoration.G;
   const result = build('G');
   const centres = result.operations.map((op) => {
     const xs = op.points.map((p) => p[0]);
     assert.ok(op.points.length > 20, 'actual circular ends, not a square rectangle');
-    assert.equal(Math.max(...xs) - Math.min(...xs), 6);
+    assert.equal(Math.max(...xs) - Math.min(...xs), grooveWidthMm);
     return (Math.max(...xs) + Math.min(...xs)) / 2;
   });
   assert.equal(centres[0] + centres.at(-1), panel.w);
-  for (let i = 1; i < centres.length; i += 1) assert.equal(centres[i] - centres[i - 1], 25);
+  for (let i = 1; i < centres.length; i += 1) assert.equal(centres[i] - centres[i - 1], groovePitchMm);
   assert.ok(result.operations.every((op) => op.depth === 3 && op.startDepth === 0));
 });
 
@@ -97,7 +100,15 @@ test('arch resize rule retains a genuine curved internal opening within its fram
   assert.ok(points.length > 50);
   assert.ok(Math.abs(Math.max(...points.map((p) => p[1])) - 660) < 0.1);
   assert.ok(points.some((p) => p[0] > 60 && p[0] < 300 && p[1] > 420 && p[1] < 650));
-  assert.equal(build('A', { archRatio: 2 }).status, 'blocked');
+  // T76 F4 · the owner's arch is a SEMICIRCLE: the inner width 480 rises 240,
+  // so every point of the head lies on one circle about (300, 420).
+  const head = points.filter((p) => p[1] > 425);
+  assert.ok(head.length > 20);
+  assert.ok(head.every((p) => Math.abs(Math.hypot(p[0] - 300, p[1] - 420) - 240) < 0.1), 'a semicircle, not an ellipse');
+  // A leaf too short for that rise is refused in words, never squashed.
+  const short = build('A', {}, { ...panel, h: 300 });
+  assert.equal(short.status, 'blocked');
+  assert.ok(short.problems.some((p) => p.code === 'FRONT_DECORATION_ARCH' && /never squashed/.test(p.message)));
 });
 
 test('ballnose opening and the sampled surface agree with cutter radius and depth', () => {
@@ -157,7 +168,8 @@ test('invalid numbers, unknown versions, excessive work and overlapping grooves 
   }
   assert.equal(normaliseFrontDecoration({ grooveDepthMm: '4.5' }, 'G').grooveDepthMm, 4.5);
   assert.equal(build('G', { version: 2 }).status, 'blocked');
-  assert.equal(build('G', { groovePitchMm: 5 }).status, 'blocked');
+  // T76 F4 · overlapping grooves: a pitch under the owner's V width (4).
+  assert.equal(build('G', { groovePitchMm: P.front.decoration.G.grooveWidthMm - 1 }).status, 'blocked');
   assert.equal(build('G', { grooveWidthMm: 0.1, groovePitchMm: 0.2 }).status, 'blocked');
   assert.equal(build('G', { grooveDirection: 'diagonal' }).status, 'blocked');
   assert.equal(build('FL', { grooveDepthMm: 7 }).status, 'blocked');
@@ -186,7 +198,9 @@ test('back cup conflicts inspect its full bore disc and preserve a 3 mm web', ()
 test('left, right and top J-pull machining bands reject intersecting decoration', () => {
   for (const edge of ['L', 'R', 'TOP']) {
     const part = { ...panel, cnc: { jpull: { edge, from: 100, to: 600, profile: { slotDepth: 40, slotR: 5, reliefMm: 30, rampR: 25 } } } };
-    assert.equal(build('G', { grooveInsetMm: 30 }, part).status, 'blocked', edge);
+    // T76 F4 · at the owner's pitch (80) a 30 margin centres the grooves clear
+    // of a 45 band; a 10 margin carries them into it, which is the case asked.
+    assert.equal(build('G', { grooveInsetMm: 10 }, part).status, 'blocked', edge);
     assert.equal(build('GF', {}, part).status, 'ready', `${edge}: 60 mm frame clears the band`);
   }
 });
@@ -244,7 +258,8 @@ test('DXF layer names retain exact depth distinctions in uppercase within the R1
 });
 
 test('default recipes fit real wardrobe leaves at 18 and 25 mm with both hinge hands', () => {
-  assert.equal(defaultFrontDecoration('G').grooveInsetMm, 50);
+  // T76 F4 · the owner's margin, 31.08.2026; FL keeps GPT's, proposed.
+  assert.equal(defaultFrontDecoration('G').grooveInsetMm, 60);
   assert.equal(defaultFrontDecoration('FL').grooveInsetMm, 50);
   for (const thickness of [18, 25]) {
     const cabinet = computeCabinet({ ...defaultParamsFor('WARDROBE', P), width: 1200, height: 2150, front_t: thickness }, P);

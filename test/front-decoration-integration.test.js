@@ -23,7 +23,8 @@ test('six production goldens stay byte-identical with decorative recipes opt-in'
   assert.deepEqual(dump(), baseline);
 });
 
-test('seven decorative production goldens preserve exact contours and machining data', () => {
+// T76 F3/F4 · six now (SS went), re-pinned on the owner's numbers.
+test('six decorative production goldens preserve exact contours and machining data', () => {
   const goldens = JSON.parse(readFileSync(new URL('../fixtures/golden-decorative-fronts.json', import.meta.url)));
   for (const [style, expected] of Object.entries(goldens)) {
     const parts = result(style).panels.filter((p) => p.meta?.frontDecoration || p.meta?.frontDecorationParent);

@@ -215,7 +215,8 @@ test('all production recipes reach separate CNC setups and applied mouldings hav
     for (const operation of panel.meta.frontDecoration.operations) {
       const matched = machining.filter((poly) => poly.layer === operation.layer);
       assert.ok(matched.length > 0);
-      if (operation.kind === 'flute') assert.ok(matched.every((poly) => !poly.closed));
+      // T76 F4 · a V groove, like a flute, is its open centre line.
+      if (['flute', 'vgroove'].includes(operation.kind)) assert.ok(matched.every((poly) => !poly.closed));
       else assert.ok(matched.every((poly) => poly.closed && area(poly.points) < 0));
     }
     if (style === 'AM') {

@@ -55,20 +55,6 @@ export default function FrontDecorationControls({ style, value, onChange }) {
               <span className="text-ink-400">mm</span>
             </label>
           ))}
-          {Object.hasOwn(defaults, 'archRatio') && (
-            <label className="flex items-center gap-2 text-[11px] text-ink-200">
-              <span className="flex-1" title="Percentage of the shorter inner opening dimension">Arch rise</span>
-              <NumberField
-                className="cc-input w-20 text-right"
-                aria-label="Arch rise percent"
-                data-decoration-field="archRatio"
-                value={config.archRatio * 100}
-                integer={false}
-                onCommit={(next) => update('archRatio', next / 100)}
-              />
-              <span className="text-ink-400">%</span>
-            </label>
-          )}
           {Object.hasOwn(defaults, 'grooveDirection') && (
             <label className="flex items-center gap-2 text-[11px] text-ink-200">
               <span className="flex-1">Groove direction</span>

@@ -143,7 +143,9 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // finish. Rule 15 is still the fifteenth and still says what it said.
   // RE-PINNED 09.10.2026 (T75-F23): and #31, the dowel gate. Rule 15 is still
   // the fifteenth and still says what it said.
-  assert.equal(CHECKS.length, 28);
+  // RE-PINNED 10.10.2026 (T76-F4): and #32, the decoration's board. Rule 15 is
+  // still the fifteenth and still says what it said.
+  assert.equal(CHECKS.length, 29);
   assert.equal(CHECKS[14].n, 15);
 });
 

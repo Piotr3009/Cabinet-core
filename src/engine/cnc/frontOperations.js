@@ -17,11 +17,16 @@ const pointsOk = (points, count) => Array.isArray(points) && points.length >= co
   && points.every((point) => Array.isArray(point) && point.length >= 2
     && Number.isFinite(point[0]) && Number.isFinite(point[1]));
 
+// T76 F4 · a V groove (`vgroove`) is the owner's G and GF groove: like a
+// flute its vector is the centre line, and unlike one it names no diameter.
+// Its record carries the width at the mouth and the depth; CAM picks the bit.
+const CENTRELINE_KINDS = ['flute', 'vgroove'];
+
 function operationProblems(operation, panel) {
   const out = [];
   const op = operation || {};
   const name = op.id || 'unnamed operation';
-  if (!['pocket', 'flute'].includes(op.kind)) out.push(`${name}: unsupported machining kind.`);
+  if (!['pocket', 'flute', 'vgroove'].includes(op.kind)) out.push(`${name}: unsupported machining kind.`);
   if (op.face !== 'front') out.push(`${name}: front machining must name the front face.`);
   if (!Number.isFinite(Number(panel.thickness)) || Number(panel.thickness) <= 0
     || !Number.isFinite(op.depth) || op.depth <= 0 || op.depth >= Number(panel.thickness)) {
@@ -30,7 +35,12 @@ function operationProblems(operation, panel) {
   if (!Number.isFinite(op.startDepth) || op.startDepth < 0 || op.startDepth >= op.depth) {
     out.push(`${name}: start depth must be below the finished depth.`);
   }
-  if (!['endmill', 'ballnose'].includes(op.tool?.kind)
+  if (op.kind === 'vgroove') {
+    if (op.tool?.kind !== 'v') out.push(`${name}: cutter kind does not match the machining operation.`);
+    if (op.crossSection?.kind !== 'v' || !(Number(op.crossSection?.width) > 0) || !(Number(op.crossSection?.depth) > 0)) {
+      out.push(`${name}: the V groove's width and depth are missing.`);
+    }
+  } else if (!['endmill', 'ballnose'].includes(op.tool?.kind)
     || !Number.isFinite(op.tool?.diameter) || op.tool.diameter <= 0) {
     out.push(`${name}: a cutter kind and positive diameter are required.`);
   }
@@ -44,7 +54,8 @@ function operationProblems(operation, panel) {
   if (typeof op.layer !== 'string' || op.layer.length > 31 || !/^FRONT_[A-Z0-9_]+$/.test(op.layer)) {
     out.push(`${name}: an uppercase FRONT machining layer of at most 31 characters is required.`);
   }
-  if (!pointsOk(op.kind === 'flute' ? op.centreline : op.points, op.kind === 'flute' ? 2 : 3)) {
+  const line = CENTRELINE_KINDS.includes(op.kind);
+  if (!pointsOk(line ? op.centreline : op.points, line ? 2 : 3)) {
     out.push(`${name}: machining geometry is missing or non-finite.`);
   }
   return out;
@@ -92,10 +103,10 @@ export function frontPanelEntities(panel) {
     // Export-anyway retains every geometrically valid operation and reports
     // the blocked state in the manifest. Non-finite entities cannot be DXF.
     if (operationProblems(operation, panel).length) continue;
-    const flute = operation.kind === 'flute';
+    const line = CENTRELINE_KINDS.includes(operation.kind);
     entities.push({
-      type: 'poly', layer: operation.layer, closed: !flute, operationId: operation.id,
-      pts: (flute ? operation.centreline : operation.points).map(mirror),
+      type: 'poly', layer: operation.layer, closed: !line, operationId: operation.id,
+      pts: (line ? operation.centreline : operation.points).map(mirror),
     });
   }
   return entities;
@@ -153,7 +164,7 @@ export function frontOperationsManifest(entries = [], {
           cuttingDepthMm: operation.depth - operation.startDepth,
           tool: operation.tool,
           ...(operation.crossSection ? { crossSection: operation.crossSection } : {}),
-          vectorMeaning: operation.kind === 'flute' ? 'tool-centre path' : 'finished pocket boundary',
+          vectorMeaning: { flute: 'tool-centre path', vgroove: 'groove centre line' }[operation.kind] || 'finished pocket boundary',
           exported: (exportAnyway || !held) && operationProblems(operation, panel).length === 0,
         })),
       });
@@ -173,6 +184,7 @@ export function frontOperationsManifest(entries = [], {
       depths: 'All final and start depths are positive millimetres below the original front face. Recessed grooves start at the preceding pocket floor.',
       pocket: 'Closed vectors describe finished pocket boundaries. Apply tool-radius compensation in CAM.',
       flute: 'Open vectors are ballnose cutter centre paths. Use the specified cutter and final depth.',
+      vgroove: 'Open vectors are V groove centre lines. The record gives the width at the mouth and the depth; select a V cutter that cuts that width at that depth in CAM. No included angle is assumed.',
       registration: 'No registration holes or fixtures are generated. Set the part datum and secure each part for both setups.',
       cam: 'Select tools, feeds, speeds, stepdown, stepover and workholding in CAM. Simulate the supplied depths and both setups before machining.',
     },
@@ -220,12 +232,14 @@ export function frontDecorationLayers(panels = []) {
     });
     for (const operation of Array.isArray(decoration.operations) ? decoration.operations : []) {
       if (operationProblems(operation, panel).length) continue;
-      const flute = operation.kind === 'flute';
+      const line = CENTRELINE_KINDS.includes(operation.kind);
       layers.set(operation.layer, {
         name: operation.layer,
-        label: `${flute ? 'Flute' : 'Pocket'}: ${operation.depth} mm, ${operation.tool.diameter} mm ${operation.tool.kind}`,
-        screen: flute ? '#63e6e2' : '#c3a06a', aci: flute ? 4 : 41,
-        kind: flute ? 'mark' : 'pocket',
+        label: operation.kind === 'vgroove'
+          ? `V groove: ${operation.depth} mm, ${operation.crossSection.width} mm wide at the mouth`
+          : `${line ? 'Flute' : 'Pocket'}: ${operation.depth} mm, ${operation.tool.diameter} mm ${operation.tool.kind}`,
+        screen: line ? '#63e6e2' : '#c3a06a', aci: line ? 4 : 41,
+        kind: line ? 'mark' : 'pocket',
       });
     }
   }
@@ -245,7 +259,7 @@ export function frontLayerFindings(entries = []) {
         if (operationProblems(operation, panel).length) continue;
         const signature = JSON.stringify([
           operation.kind, operation.face, operation.depth, operation.startDepth,
-          operation.tool.kind, operation.tool.diameter,
+          operation.tool.kind, operation.tool.diameter, operation.crossSection?.width ?? null,
         ]);
         const rows = layers.get(operation.layer) || [];
         rows.push({ signature, unitId, unitNum, panel: panel.id, part: panel.part });

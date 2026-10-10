@@ -1,0 +1,23 @@
+T77: ORNATE A (4 fronty klasyczne z Twojej planszy 10.10) laduje na main. Spec + patch GPT.
+
+1. Baza = dzisiejszy main 2766045 (PR #75, T75 + T76 juz w srodku). Patch wchodzi czysto, zero konfliktow.
+2. Rozpakuj ten ZIP do folderu z repo Cabinet-core (tam gdzie package.json).
+   Nadpisuje CLAUDE.md i dodaje patches/gpt-ornate-a.patch (36 plikow GPT).
+3. Usun ten plik CZYTAJ-T77.txt.
+4. git add CLAUDE.md patches/gpt-ornate-a.patch
+   git commit -m "T77: ornate A spec + GPT patch"
+   git push
+5. Nocna sesja Claude Code (Opus, wysilek max). Tura krotka: trzon liniowo, agenci tylko do probe, testow i walka.
+   Galaz: claude/t77-ornate-a. Noc sama usunie patches/ w ostatnim commicie.
+6. Rano: audyt (clean clone, suita, goldeny 6 + 9 + dekoracje, klasyfikator, parens 17, walk PRO i retail, tabela rozmiarow plikow STL).
+
+CO TA TURA ROBI Z PACZKA GPT:
+- naklada patch (czysto),
+- zmniejsza pliki referencyjne: STL binarny zamiast ASCII, gestosc probkowania do profilu (12-36 MB na drzwi dzis, cel: ponizej 4 MB na skrzydlo),
+- plansza 18 mm vs Twoj front 25: Check mowi tylko, gdy material jest za cienki (ponizej 15 mm przy domyslnej recepturze),
+- kasuje naglowki "Copyright Skylon Development Ltd." (repo ich nie ma, spolka nie Twoja),
+- ornament (kwiat, liscie) oznaczony jako placeholder proceduralny + slot na Twoj model STL/OBJ,
+- relief zostaje PROPOZYCJA (plyta cut, pliki referencyjne geometry) do Twojej akceptacji.
+
+PRZED PUSHEM: tabela THE NUMBERS PROPOSED na koncu CLAUDE.md. Twoje liczby z planszy sa Twoje;
+R110/R18 (wariant 3), ornament 3/2.5, R3 i gestosc probkowania to propozycje. Zmien w pliku, jesli chcesz.

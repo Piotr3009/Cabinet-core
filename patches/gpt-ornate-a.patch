@@ -1,0 +1,2998 @@
+diff --git a/docs/ornate-a-handoff-PL.md b/docs/ornate-a-handoff-PL.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..fea35996d436a93cd7df7bb12c4250224d4329ba
+--- /dev/null
++++ b/docs/ornate-a-handoff-PL.md
+@@ -0,0 +1,115 @@
++# Cabinet Core: Ornate A, paczka dla Claude
++
++Copyright (c) 2026 Skylon Development Ltd.
++
++## Zakres
++
++Osobna rodzina czterech klasycznych frontów, na podstawie planszy Piotra z 10.10.2026. Kod obejmuje wybór w PRO i retail, zapis receptury i odbicia, geometrię reliefu, rysunki, opis w BOM oraz eksport referencji CAD/CAM. Istniejące Shaker, Arched, Grooved i pozostałe fronty zachowują własne receptury.
++
++Baza tej paczki: `2766045116637e0b0cc37894d4333290abe0e894`, repo `Piotr3009/Cabinet-core`. Jest to przekazanie kodu do połączenia przez Claude. Ta sesja nie publikuje zmian ani nie wykonuje push.
++
++## Warianty i interpretacja planszy
++
++| ID zapisu | Nazwa w programie | Geometria |
++| --- | --- | --- |
++| `ORNATE_A_1` | Ornate A - Classic | Duży łuk w lewym górnym i prawym dolnym narożniku, dwa ornamenty |
++| `ORNATE_A_2` | Ornate A - Symmetric | Półokrągłe zakończenia góra/dół, cztery ornamenty narożne |
++| `ORNATE_A_3` | Ornate A - Soft | Łagodniejsza wersja dwóch narożników, dwa ornamenty |
++| `ORNATE_A_4` | Ornate A - Plain | Profil wariantu 1, bez ornamentu |
++
++Odbicie `mirror` zmienia kompozycję frontu. Jest niezależne od koniecznego odbicia współrzędnych przy przejściu z tylnej na przednią stronę obróbki. Nazwa stylu bez zapisanej receptury niczego nie frezuje; wybór w galerii jest jawnym włączeniem receptury.
++
++Plansza nie jest zwymiarowanym modelem CAD ani skanem ornamentu. Kwiat z płatkami i dwiema gałązkami liści jest odtworzeniem proceduralnym. Profil jest interpretacją czterech płynnych pasów przechodzących przez wskazane poziomy, bez udawania rozpoznania konkretnego frezu profilowego. Do wiernej kopii fizycznego wzoru potrzebny będzie jego pomiar lub model źródłowy.
++
++## Wymiary i dane profilu
++
++Wartości znajdują się w `src/engine/ornateFrontProfile.js`, importowanym przez `profile.js` do `profile.front.decoration`. Zapisana receptura przechowuje własne liczby, łącznie z niezależnymi tablicami szerokości i głębokości. Ustawienia produkcyjne nie zostały dodane jako kolejne pola liczbowe klienta. Użytkownik wybiera wariant oraz odbicie, a profil warsztatu zawiera parametry.
++
++| Parametr | Wartość startowa | Pochodzenie |
++| --- | --- | --- |
++| Przykładowy front | 600 x 800 mm | Propozycja na planszy |
++| Przykładowa grubość | 18 mm | Propozycja na planszy |
++| Zewnętrzna ramka | 60 mm | Propozycja na planszy |
++| Wewnętrzny pas | 60 mm | Propozycja na planszy; osobny od zewnętrznej ramki |
++| Wewnętrzny promień 1 i 4 | 150 mm | Propozycja na planszy |
++| Szerokości czterech pasów | 12 / 8 / 6 / 4 mm | Propozycja na planszy |
++| Głębokości bezwzględne | 3 / 6 / 9 / 12 mm | Propozycja na planszy, od pierwotnego lica |
++| Zagłębienie tła ornamentu | 3 mm | Interpretacja kodu |
++| Wysokość ornamentu ponad tłem | 2,5 mm | Propozycja kodu; całość pozostaje pod pierwotnym licem |
++| Małe narożniki 1 i 4 | R3 | Propozycja kodu |
++| Promienie wariantu 3 | R110 i R18 | Propozycja kodu; plansza nie podaje ich wartości |
++| Promień wariantu 2 | połowa szerokości wewnętrznej | Półokrąg, dla przykładu R180; odrębna interpretacja wariantu symetrycznego |
++| Minimalna pozostała grubość | 3 mm | Istniejąca reguła profilu Cabinet Core |
++
++Ramki nie są oddzielnymi doklejonymi płytami. Przykład 18 mm z zagłębieniem 12 mm pozostawia 6 mm materiału w środku. W programie zachowuje się grubość faktycznie przypisanego materiału; nie jest automatycznie zmieniana na 18 mm.
++
++## Jedna geometria
++
++`buildOrnateFront` tworzy jeden rekord dekoracji. `operations[0].surface` zawiera wierzchołki i trójkąty całego zagłębionego lica, łącznie z ornamentem. Renderer 3D i eksport STL czytają tę samą powierzchnię. Rysunki i DXF korzystają z dołączonych konturów `operations[0].contours`.
++
++Główne pliki:
++
++| Plik | Odpowiedzialność |
++| --- | --- |
++| `src/engine/ornateFrontProfile.js` | Proponowane parametry czterech wariantów |
++| `src/engine/ornateFront.js` | Normalizacja, walidacja i powierzchnia reliefu |
++| `src/engine/frontDecoration.js` | Włączenie do istniejącego silnika i kontrola otworów od tyłu |
++| `src/3d/frontDecorationSolid.js` | Zamknięta bryła frontu, rzeczywiste otwory, cieniowanie |
++| `src/engine/drawings/frontDecorationDrawing.js` | Elewacje oraz szczegóły części |
++| `src/engine/cnc/ornateExport.js` | DXF, STL i opis referencji |
++| `src/lib/cncExport.js` | Dołączenie referencji do istniejących eksportów ZIP |
++| `src/engine/ornateFrontArt.js` | Miniatury galerii, wyłącznie proporcje graficzne |
++
++Nie powstaje nowy korpus ani nowy kit LISP. Zgodnie z rozdzieleniem receptur w T76 jest to obróbka powierzchni istniejącej płyty. Istniejące pliki LISP i ich referencyjne wyniki pozostają bez zmian. Nowego reliefu nie przedstawiamy jako sprawdzonej receptury produkcyjnej LISP.
++
++## CNC: pliki i warstwy
++
++W ZIP programu folder `ornate-reference/` zawiera dla każdego wybranego frontu:
++
++- `*-ORNATE-PROPOSED-FRONT.dxf`: DXF R12, widok od lica.
++- `*-ORNATE-PROPOSED-RELIEF-1.stl`: otwarta powierzchnia docelowa do obróbki 3D, w mm. To nie jest zamknięta bryła całej części i nie zawiera wierceń od tyłu.
++- `*-ORNATE-PROPOSED-operations.json`: parametry, wymiary, głębokości, znaczenie warstw, układ współrzędnych i powiązanie plików.
++
++| Warstwa domyślna | Znaczenie |
++| --- | --- |
++| `FRONT_REFERENCE_NO_CUT` | Zewnętrzny obrys odniesienia i ustawienia części |
++| `FRONT_REF_PROFILE_D3` | Kontur proponowanego profilu na poziomie 3 mm |
++| `FRONT_REF_PROFILE_D6` | Kontur na poziomie 6 mm |
++| `FRONT_REF_PROFILE_D9` | Kontur na poziomie 9 mm |
++| `FRONT_REF_PROFILE_D12` | Kontur na poziomie 12 mm |
++| `FRONT_REF_ORNAMENT` | Rzut płatków, liści i ich grzbietów; wysokość określa powierzchnia STL |
++
++Głębokości 3/6/9/12 są liczone od pierwotnego lica. Nie należy ich sumować. Kontury poziomów opisują powierzchnię profilowaną, więc nie są czterema gotowymi poleceniami płaskiego pocket. Ornament ma zmienną głębokość; JSON zapisuje dla jego konturów `null`, a dokładne wysokości pochodzą z STL. Dobór frezów, przejazdów zgrubnych, wykańczania, posuwów i postprocesora pozostaje w CAM.
++
++Układ: lico do góry, zero XY w lewym dolnym narożniku, zero Z na pierwotnej powierzchni. Kod przeprowadza już transformację `frontX = width - backX`, `frontY = backY`, `frontZ = -depth`. Nie odbijać STL ani DXF ponownie. Import DXF R12 i STL jawnie w milimetrach, z kontrolą wymiaru części.
++
++Istniejące warstwy i geometria BACK pozostają bez zmian. Podgląd FRONT w CNC pokazuje te same warstwy referencyjne i opis zmiennej głębokości ornamentu. Proponowany relief jest wstrzymany jako obróbka produkcyjna, a referencje są dostępne także przy wstrzymanym froncie. `Export anyway` nie zmienia propozycji w zatwierdzony relief. Stan samej płyty nadal pochodzi z istniejącej reguły `readiness`; opis BOM wyraźnie dopisuje proponowany relief.
++
++## Ograniczenia kontrolowane przez kod
++
++- Obsługiwane są pełne prostokątne fronty. Skosy i nieregularne obrysy wymagają osobnej receptury.
++- Zbyt mały front jest odrzucany z przyczyną. Promienie nie są potajemnie ściskane.
++- Kontrolowane są liczby skończone, kompletność czterech poziomów, rosnące głębokości, wariant, wartości logiczne i pozostały materiał.
++- Kolizja z nieprzelotowym otworem od tyłu jest sprawdzana zachowawczo względem najgłębszego zagłębienia całego pola reliefu. Odrzucony przypadek może wymagać dokładnej lokalnej analizy CAM.
++- Geometria nie zatwierdza narzędzi, materiału, zamocowania ani technologii na konkretnej maszynie.
++
++## Połączenie przez Claude
++
++Na czystej gałęzi bazującej na wskazanym SHA:
++
++```bash
++git switch -c claude/ornate-a 2766045116637e0b0cc37894d4333290abe0e894
++git apply --check /sciezka/ornate-a.patch
++git apply /sciezka/ornate-a.patch
++npm ci
++npm test
++npm run build
++node scripts/ornate-classify.mjs
++node scripts/ornate-export-examples.mjs
++```
++
++Jeśli main jest już dalej, użyć `git apply --3way`, przejrzeć każdy konflikt i zachować obie niezależne zmiany. `changed-files/` w paczce zawiera pełną treść plików do przeglądu, nie służy do nadpisania nowszego main w całości.
++
++Kopia `FrontDecorationControls` w retail jest wytworzona skryptem `t63-copy.mjs`; zawiera tę samą logikę oraz mechanicznie podmienione importy i klasy. Zmiany `FrontDecorationControls` i `CncView` w PRO mają cytat autoryzacji Piotra i nowe hashe w istniejącym teście zamrożenia. Dostosowane starsze asercje obejmują powiększenie katalogu o cztery style oraz nazwę paczki eksportu zawierającego wyłącznie referencje wstrzymanych frontów. Nie osłabiają geometrii dotychczasowych wzorów.
++
++Test przeglądarkowy: `CHROME_PATH=/sciezka/do/chromium CC_WALK_SERVER=1 node scripts/ornate-walk.mjs`. Szczegóły uruchomienia znajdują się w komentarzu skryptu. `scripts/ornate-preview.html` to lokalny podgląd kontrolny geometrii przez Vite. Wyniki weryfikacji tej paczki są zapisane w `verification/` paczki.
+diff --git a/scripts/ornate-classify.mjs b/scripts/ornate-classify.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..f78ae3def60fda7dce2aec4558536c8da9a0c5c4
+--- /dev/null
++++ b/scripts/ornate-classify.mjs
+@@ -0,0 +1,180 @@
++#!/usr/bin/env node
++/*
++ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
++ *
++ * This file is proprietary and confidential. Unauthorised copying,
++ * modification, distribution or use of this file, in whole or in part,
++ * by any means including automated tools and AI systems, is strictly
++ * prohibited without prior written permission from Skylon Development Ltd.
++ */
++// Read-only proof for Ornate A. This does not re-pin any fixture or reuse a
++// previous turn's mutable base. Run: node scripts/ornate-classify.mjs
++import { createHash } from 'node:crypto';
++import { execFileSync } from 'node:child_process';
++import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { fileURLToPath } from 'node:url';
++
++const ROOT = fileURLToPath(new URL('../', import.meta.url));
++const BASE = '2766045116637e0b0cc37894d4333290abe0e894';
++const ORNATE = ['ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
++const LEGACY_DECORATION = ['G', 'GF', 'A', 'AH', 'FL', 'AM'];
++const sha = (value) => createHash('sha256').update(value).digest('hex');
++const stable = (value) => JSON.stringify(value, (_, item) => item && typeof item === 'object' && !Array.isArray(item)
++  ? Object.fromEntries(Object.keys(item).sort().map((key) => [key, item[key]])) : item);
++const git = (...args) => execFileSync('git', args, { cwd: ROOT, maxBuffer: 64 * 1024 * 1024 });
++const names = (buffer) => buffer.toString('utf8').split(/\r?\n/).filter(Boolean);
++
++export const LICENSED = {
++  'src/3d/frontDecorationSolid.js': 'Render the canonical Ornate relief surface only when the explicit recipe emitted it.',
++  'src/components/CncView.jsx': 'Preview only: show shared proposed relief contours and reference depth labels; default production entities unchanged.',
++  'src/components/FrontDecorationControls.jsx': 'Expose the requested Ornate variant and mirror controls; retain legacy controls.',
++  'src/engine/cnc/frontOperations.js': 'Recognise Ornate reference-only reliefs and prevent production DXF machining layers.',
++  'src/engine/cnc/ornateExport.js': 'New reference DXF, STL and manifest from canonical Ornate geometry; no approved toolpaths.',
++  'src/engine/design.js': 'Add four explicit ORNATE_A style IDs to the existing style cascade.',
++  'src/engine/drawings/frontDecorationDrawing.js': 'Project the canonical Ornate contours in existing front and part drawings.',
++  'src/engine/frontDecoration.js': 'Delegate only the four ORNATE_A recipe IDs; leave legacy geometry in its existing path.',
++  'src/engine/frontDecorationBom.js': 'Describe Ornate reliefs and their reference-only manufacturing status.',
++  'src/engine/frontStyleArt.js': 'Register the four new gallery thumbnails.',
++  'src/engine/ornateFront.js': 'New pure opt-in Ornate normalization, validation and canonical relief geometry.',
++  'src/engine/ornateFrontArt.js': 'New four-variant gallery art, independent of production geometry.',
++  'src/engine/ornateFrontProfile.js': 'New proposed profile numbers for the four Ornate recipes.',
++  'src/engine/profile.js': 'Append proposed Ornate recipes without changing legacy profile values.',
++  'src/lib/cncExport.js': 'Package Ornate CAD/CAM references through the existing export route.',
++  'src/retail/design/Options.jsx': 'Recognise the explicitly selected Ornate recipe in Retail.',
++  'src/retail/design/adapter.js': 'Persist the explicitly selected Ornate recipe through Retail updates.',
++  'src/retail/design/material/FrontDecorationControls.jsx': 'Maintain the independent Retail copy of Ornate controls.',
++};
++
++// The same worker is executed against the named commit and the current tree.
++// It never calls a fixture writer and it checks stored expected results too.
++const WORKER = String.raw`
++import { createHash } from 'node:crypto';
++import { readFileSync } from 'node:fs';
++import { dump } from './scripts/t64-classify.mjs';
++import { T75_GOLDENS } from './scripts/t75-goldens.mjs';
++import { goldenOf } from './scripts/t75-golden.mjs';
++import { computeCabinet } from './src/engine/cabinet.js';
++import { defaultParamsFor } from './src/engine/types.js';
++import { DEFAULT_CABINET_PROFILE as P } from './src/engine/profile.js';
++import { defaultFrontDecoration } from './src/engine/frontDecoration.js';
++const stable = (value) => JSON.stringify(value, (_, item) => item && typeof item === 'object' && !Array.isArray(item)
++  ? Object.fromEntries(Object.keys(item).sort().map((key) => [key, item[key]])) : item);
++const sha = (value) => createHash('sha256').update(value).digest('hex');
++const decorated = (panel) => Boolean(panel.meta?.frontDecoration || panel.meta?.frontDecorationParent);
++const six = dump();
++const pinnedSix = JSON.parse(readFileSync('./verify/t70/goldens-base.json', 'utf8'));
++const t75 = T75_GOLDENS.map((g) => {
++  const file = JSON.parse(readFileSync('./fixtures/' + g.file, 'utf8'));
++  const value = g.make ? g.make() : goldenOf(file.params, P);
++  const expected = file.expected ?? file;
++  return { file: g.file, sha256: sha(stable(value)), expectedSha256: sha(stable(expected)),
++    matchesFixture: stable(value) === stable(expected),
++    ornateGateOpen: String(file.params?.front_type || '').startsWith('ORNATE_A_')
++      || String(file.params?.front_decoration?.style || '').startsWith('ORNATE_A_') };
++});
++const fixture = JSON.parse(readFileSync('./fixtures/golden-decorative-fronts.json', 'utf8'));
++const decoration = Object.entries(fixture).map(([style, want]) => {
++  const params = { ...defaultParamsFor('BUD', P), front_type: style };
++  const withoutRecipe = computeCabinet(params, P).panels.filter(decorated).length;
++  const cut = computeCabinet({ ...params, front_decoration: defaultFrontDecoration(style, P) }, P).panels.filter(decorated);
++  const parts = cut.map((p) => ({ id: p.id, w: p.w, h: p.h, thickness: p.thickness,
++    operations: p.meta?.frontDecoration?.operations?.length || 0 }));
++  const hash = sha(JSON.stringify(cut));
++  return { style, sha256: hash, matchesFixture: hash === want.sha256 && stable(parts) === stable(want.parts),
++    withoutRecipe, ready: cut.filter((p) => p.meta?.frontDecoration).every((p) => p.meta.frontDecoration.status === 'ready') };
++});
++const oldGates = Object.keys(six).map((type) => {
++  const params = defaultParamsFor(type, P);
++  return { type, recipeAbsent: params.front_decoration === undefined,
++    decoratedParts: computeCabinet(params, P).panels.filter(decorated).length };
++});
++console.log(JSON.stringify({ six, pinnedSix, t75, decoration, oldGates }));
++`;
++
++function runtimeAt(root) {
++  return JSON.parse(execFileSync(process.execPath, ['--input-type=module', '-e', WORKER], {
++    cwd: root, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024,
++  }));
++}
++
++function baseRuntime() {
++  git('rev-parse', '--verify', `${BASE}^{commit}`);
++  const folder = mkdtempSync(join(tmpdir(), 'cabinet-ornate-proof-'));
++  try {
++    const archive = git('archive', BASE, 'package.json', 'src', 'scripts', 'fixtures', 'reference', 'verify/t70/goldens-base.json');
++    execFileSync('tar', ['-xf', '-', '-C', folder], { input: archive });
++    const dependencies = join(ROOT, 'node_modules');
++    if (existsSync(dependencies)) symlinkSync(dependencies, join(folder, 'node_modules'), 'dir');
++    return runtimeAt(folder);
++  } finally {
++    rmSync(folder, { recursive: true, force: true });
++  }
++}
++
++const failures = [];
++const requireProof = (value, reason) => { if (!value) failures.push(reason); };
++const trackedBase = names(git('ls-tree', '-r', '--name-only', BASE));
++const frozenPaths = trackedBase.filter((path) => /(^|\/)fixtures\/.*\.json$/i.test(path) || /\.lsp$/i.test(path));
++const bytes = frozenPaths.map((path) => {
++  const baseHash = sha(git('show', `${BASE}:${path}`));
++  const currentHash = existsSync(join(ROOT, path)) ? sha(readFileSync(join(ROOT, path))) : null;
++  const identical = baseHash === currentHash;
++  requireProof(identical, `Frozen fixture/LISP bytes changed: ${path}`);
++  return { path, baseSha256: baseHash, headSha256: currentHash, identical };
++});
++const touched = [...new Set([
++  ...names(git('diff', '--name-only', BASE, '--', 'src')),
++  ...names(git('ls-files', '--others', '--exclude-standard', '--', 'src')),
++])].sort();
++const sourceChanges = touched.map((path) => ({ path, why: LICENSED[path] ?? null }));
++const unnamed = sourceChanges.filter((row) => !row.why);
++requireProof(!unnamed.length, `Unnamed source changes: ${unnamed.map((row) => row.path).join(', ')}`);
++const addedLisp = [...new Set([
++  ...names(git('diff', '--name-only', '--diff-filter=A', BASE, '--', '*.lsp')),
++  ...names(git('ls-files', '--others', '--exclude-standard', '--', '*.lsp')),
++])];
++requireProof(addedLisp.length === 0, `LISP is unchanged for this reference-only extension: ${addedLisp.join(', ')}`);
++
++const base = baseRuntime();
++const head = runtimeAt(ROOT);
++requireProof(stable(base.six) === stable(head.six), 'Six legacy runtime goldens differ from the exact base commit.');
++requireProof(stable(head.six) === stable(head.pinnedSix), 'Six legacy runtime goldens differ from their pinned expectations.');
++requireProof(stable(base.t75) === stable(head.t75), 'T75 golden summaries differ from the exact base commit.');
++requireProof(head.t75.length > 0 && head.t75.every((g) => g.matchesFixture && !g.ornateGateOpen), 'A T75 fixture changed or opens the Ornate gate.');
++requireProof(stable(base.decoration) === stable(head.decoration), 'Legacy decoration results differ from the exact base commit.');
++requireProof(stable(head.decoration.map((g) => g.style).sort()) === stable([...LEGACY_DECORATION].sort()), 'The six existing decorative fixtures changed identity.');
++requireProof(head.decoration.every((g) => g.matchesFixture && g.withoutRecipe === 0 && g.ready), 'A legacy decoration fixture or explicit opt-in changed.');
++requireProof(head.oldGates.every((g) => g.recipeAbsent && g.decoratedParts === 0), 'A standard cabinet now carries decoration without opt-in.');
++
++const { ORNATE_STYLE_IDS, defaultFrontDecoration } = await import('../src/engine/frontDecoration.js');
++const { computeCabinet } = await import('../src/engine/cabinet.js');
++const { defaultParamsFor } = await import('../src/engine/types.js');
++const { DEFAULT_CABINET_PROFILE: P } = await import('../src/engine/profile.js');
++const { FRONT_STYLE_OPTIONS } = await import('../src/engine/design.js');
++requireProof(stable(ORNATE_STYLE_IDS) === stable(ORNATE), 'Ornate geometry IDs differ from the four authorised IDs.');
++requireProof(stable(FRONT_STYLE_OPTIONS.filter((s) => s.id.startsWith('ORNATE')).map((s) => s.id)) === stable(ORNATE), 'The gallery exposes unexpected Ornate IDs.');
++const ornateOptIn = ORNATE.map((style) => {
++  const params = { ...defaultParamsFor('BUD', P), front_type: style };
++  const withoutRecipe = computeCabinet(params, P).panels.filter((p) => p.meta?.frontDecoration).length;
++  const recipe = defaultFrontDecoration(style, P);
++  const fronts = computeCabinet({ ...params, front_decoration: recipe }, P).panels.filter((p) => p.meta?.frontDecoration);
++  const readyReliefs = fronts.filter((p) => p.meta.frontDecoration.status === 'ready'
++    && p.meta.frontDecoration.operations.some((op) => op.kind === 'relief')).length;
++  requireProof(withoutRecipe === 0 && fronts.length > 0 && readyReliefs === fronts.length,
++    `${style} has no live explicit opt-in, or produces decoration without a recipe.`);
++  return { style, withoutRecipe, explicitFronts: fronts.length, readyReliefs };
++});
++
++console.log(JSON.stringify({
++  schema: 'cabinet-core.ornate-proof', base: BASE, passed: failures.length === 0,
++  UNNAMED: unnamed.length, sourceChanges,
++  frozenBytes: { fixtureJson: bytes.filter((r) => /\.json$/i.test(r.path)).length,
++    lisp: bytes.filter((r) => /\.lsp$/i.test(r.path)).length, rows: bytes },
++  addedLisp, legacyRuntime: head, exactBaseRuntimeMatches: {
++    six: stable(base.six) === stable(head.six), t75: stable(base.t75) === stable(head.t75),
++    decoration: stable(base.decoration) === stable(head.decoration),
++  }, ornateOptIn, failures,
++}, null, 2));
++process.exitCode = failures.length ? 1 : 0;
+diff --git a/scripts/ornate-export-examples.mjs b/scripts/ornate-export-examples.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..10dbb1f2e5d2c2bd80d3d1ae3304a66be6e039e4
+--- /dev/null
++++ b/scripts/ornate-export-examples.mjs
+@@ -0,0 +1,38 @@
++#!/usr/bin/env node
++// Copyright (c) 2026 Skylon Development Ltd.
++// Reproducible 600 x 800 x 18 mm reference examples, without cabinet hardware.
++import { mkdirSync, writeFileSync } from 'node:fs';
++import { resolve, dirname } from 'node:path';
++import { buildFrontDecoration, defaultFrontDecoration, ORNATE_STYLE_IDS } from '../src/engine/frontDecoration.js';
++import { buildOrnateReferenceFiles } from '../src/engine/cnc/ornateExport.js';
++
++const destination = resolve(process.argv[2] || 'verify/ornate-a/examples');
++mkdirSync(destination, { recursive: true });
++const examples = [];
++const escape = (value) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('"', '&quot;');
++for (const style of ORNATE_STYLE_IDS) {
++  const config = defaultFrontDecoration(style);
++  const panel = {
++    id: style, part: 'FRONT', role: 'front', w: 600, h: 800, thickness: 18,
++    box: { x: 0, y: 0, z: 0, w: 600, h: 800, d: 18 },
++    cnc: { drawn_w: 600, drawn_h: 800, outline: [[0, 0], [600, 0], [600, 800], [0, 800]] },
++  };
++  const decoration = buildFrontDecoration({ panel, config, style });
++  if (decoration.status !== 'ready') throw new Error(`${style}: ${JSON.stringify(decoration.problems)}`);
++  panel.meta = { frontDecoration: decoration };
++  const files = buildOrnateReferenceFiles([{ result: { unitNum: 'EXAMPLE', panels: [panel], drills: [] } }]);
++  if (!files.some((f) => f.type === 'stl') || !files.some((f) => f.type === 'dxf')) throw new Error(`${style}: incomplete reference export`);
++  for (const file of files) {
++    const path = resolve(destination, file.name);
++    mkdirSync(dirname(path), { recursive: true });
++    writeFileSync(path, file.contents);
++  }
++  const paths = decoration.operations.flatMap((op) => op.contours || []).map((contour) => {
++    const points = contour.points.map(([x, y]) => `${(600 - x).toFixed(4)},${(800 - y).toFixed(4)}`).join(' ');
++    return `<${contour.closed === false ? 'polyline' : 'polygon'} points="${points}" fill="none" stroke="${contour.kind === 'profile-level' ? '#333d3f' : '#8f703b'}" stroke-width="${contour.kind === 'profile-level' ? 1.3 : .8}"/>`;
++  }).join('\n');
++  writeFileSync(resolve(destination, `${style}-front.svg`), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -50 640 900"><rect x="0" y="0" width="600" height="800" fill="#f4f1e9" stroke="#30383b" stroke-width="2"/>${paths}<text x="0" y="-17" font-size="18" font-family="sans-serif">${escape(style)} | 600 x 800 x 18 mm</text><text x="0" y="835" font-size="13" font-family="sans-serif">PROPOSED REFERENCE - not production approved</text></svg>`);
++  examples.push({ style, files: files.map((f) => f.name), parameters: decoration.parameters, vertices: decoration.operations[0].surface.vertices.length, triangles: decoration.operations[0].surface.triangles.length });
++}
++writeFileSync(resolve(destination, 'examples.json'), JSON.stringify({ units: 'mm', referenceOnly: true, examples }, null, 2));
++console.log(JSON.stringify({ destination, examples: examples.map(({ style, vertices, triangles }) => ({ style, vertices, triangles })) }, null, 2));
+diff --git a/scripts/ornate-preview.html b/scripts/ornate-preview.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..c6060c1ec1265ccd147f8ff5aa57dea3441ea7c8
+--- /dev/null
++++ b/scripts/ornate-preview.html
+@@ -0,0 +1,37 @@
++<!doctype html>
++<!-- Copyright Skylon Development Ltd. All rights reserved. --><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ornate A | geometry proof</title>
++<style>*{box-sizing:border-box}body{margin:0;background:#eeebe6;color:#2e3436;font-family:Arial,sans-serif}header{padding:34px 54px 20px;border-bottom:1px solid #cbc8c2;display:flex;justify-content:space-between;align-items:end}.kicker{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#75746d}h1{margin:8px 0 0;font-family:Georgia,serif;font-weight:400;font-size:36px}header p{font-size:13px;line-height:1.7;margin:0;color:#6b6c67;text-align:right}.gallery{display:grid;grid-template-columns:repeat(4,1fr);padding:14px 26px 16px;gap:0}.card{min-width:0;text-align:center}.stage{width:100%;height:655px;position:relative}canvas{display:block;width:100%;height:100%}.variant{color:#7c817e;letter-spacing:2px;font-size:11px;margin:0 0 9px}h2{font-family:Georgia,serif;font-weight:400;font-size:23px;margin:0}.description{font-size:12px;color:#7b7f79;margin:9px 0 0}footer{display:flex;justify-content:space-between;border-top:1px solid #cbc8c2;margin:20px 54px;padding:20px 0;font-size:12px;line-height:1.6;color:#757770}.warning{color:#927542}.error{color:#a22;white-space:pre-wrap;padding:20px}.detail .gallery{grid-template-columns:1fr;max-width:1050px;margin:auto}.detail .stage{height:1120px}.detail .card:not(:first-child){display:none}.detail header{padding-bottom:10px}.detail footer{margin-top:0}</style></head><body><header><div><div class="kicker">Cabinet Core / Ornate A</div><h1>Four profiles. One door family.</h1></div><p>600 × 800 × 18 mm<br>Actual parametric geometry rendered in Three.js</p></header><main class="gallery"></main><footer><span>VISUAL CHECK<br>Neutral painted finish / raking light / orthographic view</span><span class="warning">PROPOSED PATTERN<br>Dimensions, carving and CAM require workshop approval.</span></footer>
++<script type="module">
++import * as THREE from '/node_modules/three/build/three.module.js';
++import { frontDecorationGeometry } from '/src/3d/frontDecorationSolid.js';
++import { buildFrontDecoration, defaultFrontDecoration } from '/src/engine/frontDecoration.js';
++const variants=[['ORNATE_A_1','Classic','Rounded head with floral carving'],['ORNATE_A_2','Symmetric','Paired curved ends and ornaments'],['ORNATE_A_3','Soft','A quieter curve with floral carving'],['ORNATE_A_4','Plain','Profiled frame without ornament']];
++const detail=new URLSearchParams(location.search).has('detail');if(detail)document.body.classList.add('detail');
++window.__ornatePreview={ready:false,variants:[],errors:[]};
++try{
++ for(let i=0;i<(detail?1:variants.length);i++){
++  const [style,label,description]=variants[i];const card=document.createElement('section');card.className='card';
++  card.innerHTML=`<div class="stage"></div><p class="variant">VARIANT ${i+1}</p><h2>${label}</h2><p class="description">${description}</p>`;document.querySelector('.gallery').append(card);
++  const stage=card.querySelector('.stage');const w=stage.clientWidth,h=stage.clientHeight;
++  const scene=new THREE.Scene();scene.background=new THREE.Color('#eeebe6');
++  const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});renderer.setSize(w,h);renderer.setPixelRatio(1.5);
++  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
++  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;stage.append(renderer.domElement);
++  const panel={id:style,part:'FRONT',role:'front',w:600,h:800,thickness:18,box:{x:0,y:0,z:0,w:600,h:800,d:18},cnc:{}};
++  panel.meta={frontDecoration:buildFrontDecoration({panel,style,config:defaultFrontDecoration(style)})};
++  const geometry=frontDecorationGeometry(panel);if(!geometry)throw Error(`${style}: no geometry (${panel.meta.frontDecoration.status} ${JSON.stringify(panel.meta.frontDecoration.problems)})`);
++  const material=new THREE.MeshStandardMaterial({color:'#525b5c',roughness:0.47,metalness:0.05});
++  const door=new THREE.Mesh(geometry,material);door.castShadow=true;door.receiveShadow=false;scene.add(door);
++  const key=new THREE.DirectionalLight('#fff3dc',3.5);key.position.set(-0.45,0.75,0.5);key.castShadow=true;
++  key.shadow.mapSize.set(2048,2048);key.shadow.camera.left=-.7;key.shadow.camera.right=.7;key.shadow.camera.top=.65;key.shadow.camera.bottom=-.65;key.shadow.camera.near=.05;key.shadow.camera.far=3;key.shadow.bias=-.00005;key.shadow.normalBias=.00008;scene.add(key);
++  scene.add(new THREE.HemisphereLight('#dce7f0','#aaa597',1.2));
++  const fill=new THREE.DirectionalLight('#dbe9f2',.45);fill.position.set(.6,-.1,.7);scene.add(fill);
++  const ground=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshStandardMaterial({color:'#eeebe6',roughness:1}));ground.position.z=-.05;ground.receiveShadow=true;scene.add(ground);
++  const viewHeight=detail?.95:1.02;const camera=new THREE.OrthographicCamera(-viewHeight*w/h/2,viewHeight*w/h/2,viewHeight/2,-viewHeight/2,.01,10);
++  camera.position.set(detail?.06:.025,detail?.015:.005,2);camera.lookAt(0,0,0);scene.add(camera);
++  renderer.render(scene,camera);
++  window.__ornatePreview.variants.push({style,vertices:geometry.attributes.position.count,status:panel.meta.frontDecoration.status,referenceOnly:panel.meta.frontDecoration.referenceOnly});
++ }
++ window.__ornatePreview.ready=true;
++}catch(error){window.__ornatePreview.errors.push(String(error.stack||error));document.body.insertAdjacentHTML('beforeend',`<pre class="error">${String(error.stack||error)}</pre>`);throw error;}
++</script></body></html>
+diff --git a/scripts/ornate-render.mjs b/scripts/ornate-render.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..6be66247705da42bd9abd57a9664d50058a5659d
+--- /dev/null
++++ b/scripts/ornate-render.mjs
+@@ -0,0 +1,46 @@
++#!/usr/bin/env node
++// Copyright Skylon Development Ltd. All rights reserved.
++// Offline QA view using the exact engine and the exact Three.js solid builder.
++// Browser screenshots are local QA evidence. Deliverable PNGs are exported
++// straight from the real WebGL canvas, not a copy of browser UI.
++import { mkdirSync, writeFileSync } from 'node:fs';
++import { resolve } from 'node:path';
++import { createServer } from 'vite';
++import { open } from './t74-harness.mjs';
++const root=resolve('verify/ornate-a');mkdirSync(root,{recursive:true});
++const port=Number(process.env.ORNATE_RENDER_PORT||4187);
++const server=await createServer({server:{host:'127.0.0.1',port,strictPort:true,hmr:false,watch:{ignored:['**/*']}},clearScreen:false});
++await server.listen();
++const page=await open({width:1880,height:1000});
++try{
++ await page.goto(`http://127.0.0.1:${port}/scripts/ornate-preview.html`);
++ await page.waitFor('window.__ornatePreview?.ready',{timeout:90000});
++ const status=await page.ask('window.__ornatePreview');
++ if(status.errors.length||status.variants.length!==4)throw Error(JSON.stringify(status));
++ await page.screenshot(resolve(root,'preview-browser-qa.png'));
++ const canvases=await page.ask(`[...document.querySelectorAll('canvas')].map(c=>c.toDataURL('image/png'))`);
++ canvases.forEach((png,i)=>writeFileSync(resolve(root,`render-variant-${i+1}.png`),Buffer.from(png.split(',')[1],'base64')));
++ // Compose a reusable figure from rendered canvas content only.
++ const figure=await page.ask(`(() => {
++  const c=document.createElement('canvas');c.width=2400;c.height=1400;const g=c.getContext('2d');
++  g.fillStyle='#eeebe6';g.fillRect(0,0,c.width,c.height);g.fillStyle='#2e3436';
++  g.font='48px Georgia';g.fillText('Ornate A | Four variants',66,90);
++  g.font='22px Arial';g.fillStyle='#747870';g.fillText('600 × 800 × 18 mm | Actual Cabinet Core geometry',66,134);
++  [...document.querySelectorAll('canvas')].forEach((source,i)=>{
++   g.drawImage(source,40+i*580,190,580,580*source.height/source.width);g.fillStyle='#85877f';g.font='18px Arial';
++   g.fillText('VARIANT '+(i+1),76+i*580,1100);g.fillStyle='#333c3b';g.font='32px Georgia';
++   g.fillText(['Classic','Symmetric','Soft','Plain'][i],76+i*580,1148);
++  });
++  g.strokeStyle='#cbc8c2';g.beginPath();g.moveTo(66,1235);g.lineTo(2334,1235);g.stroke();
++  g.font='22px Arial';g.fillStyle='#8c784f';g.fillText('Proposed pattern. Physical ornament, dimensions and CAM require workshop approval.',66,1308);
++  return c.toDataURL('image/png');
++ })()`);
++ writeFileSync(resolve(root,'render-four-variants.png'),Buffer.from(figure.split(',')[1],'base64'));
++ await page.goto(`http://127.0.0.1:${port}/scripts/ornate-preview.html?detail`);
++ await page.waitFor('window.__ornatePreview?.ready',{timeout:90000});
++ const large=await page.ask(`document.querySelector('canvas').toDataURL('image/png')`);
++ writeFileSync(resolve(root,'render-variant-1-large.png'),Buffer.from(large.split(',')[1],'base64'));
++ await page.screenshot(resolve(root,'preview-detail-browser-qa.png'));
++ writeFileSync(resolve(root,'render-verification.json'),JSON.stringify({variants:status.variants,errors:page.errors},null,2));
++ console.log(JSON.stringify(status));
++}finally{await page.close();await server.close();}
+diff --git a/scripts/ornate-walk.mjs b/scripts/ornate-walk.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..27e90ef0ece5bd453275d73ef589c1fa944dcfd4
+--- /dev/null
++++ b/scripts/ornate-walk.mjs
+@@ -0,0 +1,180 @@
++#!/usr/bin/env node
++// Copyright Skylon Development Ltd. All rights reserved.
++// Ornate A acceptance: genuine mouse / keyboard input into PRO and retail.
++// T74's empty-project staging is the only direct store setup. Feature state
++// is only READ: selectors, mirroring, saving and opening use actual controls.
++// Run against a build or dev server: E2E_URL=http://127.0.0.1:4173/
++// CHROME_PATH=/path/to/chromium node scripts/ornate-walk.mjs [pro|retail|cnc]
++import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
++import { resolve } from 'node:path';
++import JSZip from 'jszip';
++import { createServer } from 'vite';
++import { open, pro, room, withWardrobe, showroomDown, reach, BASE } from './t74-harness.mjs';
++import { boxOf, clickWith, choose } from './t75-harness.mjs';
++
++const output = resolve('verify/ornate-a');
++const downloads = resolve(output, `browser-downloads-${Date.now()}`);
++mkdirSync(downloads, { recursive: true });
++const styles = ['ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
++const checks = [];
++const j = JSON.stringify;
++const wanted = process.argv.slice(2);
++const check = (label, ok, detail = null) => {
++  checks.push({ label, ok: Boolean(ok), detail });
++  console.log(`${ok ? 'PASS' : 'FAIL'} ${label}${detail == null ? '' : `: ${JSON.stringify(detail)}`}`);
++};
++const vite = process.env.CC_WALK_SERVER === '1'
++  ? await createServer({ server: { host: '127.0.0.1', port: Number(new URL(BASE).port || 4173), strictPort: true, hmr: false, watch: { ignored: ['**/*'] } }, clearScreen: false }) : null;
++await vite?.listen();
++const state = (page) => page.ask(`(() => {
++  const s=window.__cc.project.getState(); const u=s.units[0]; const r=u&&s.unitResult(u.id);
++  return { projectName:s.project.name, dirty:s.dirty, projectFront:s.project.design?.fronts,
++    unitId:u?.id, type:u?.type, params:u?.params,
++    fronts:r?.panels.filter(p=>p.role==='front'&&!p.meta?.frontDecorationParent).map(p=>({
++      id:p.id,w:p.w,h:p.h,t:p.thickness,deco:p.meta?.frontDecoration }))||[] };
++})()`);
++const compact = (s) => ({ style:s.params?.front_type || s.projectFront?.style,
++  fronts:s.fronts.map(p=>({id:p.id,w:p.w,h:p.h,t:p.t,style:p.deco?.style,status:p.deco?.status,
++    referenceOnly:p.deco?.referenceOnly,mirror:p.deco?.parameters?.mirror,
++    problems:p.deco?.problems,operations:p.deco?.operations?.length})) });
++const meshes = (page) => page.ask(`(() => { const out=[]; window.__cc.views?.room?.scene.traverse(m=> {
++ if(!m.isMesh||!m.geometry?.userData?.frontDecoration) return; out.push({ id:m.userData?.ccPanelId,
++ style:m.geometry.userData.frontDecoration.style, vertices:m.geometry.attributes.position.count });
++ });return out;})()`);
++const waitMeshes = (page, style) => page.waitFor(`(() => {let yes=false; window.__cc.views?.room?.scene.traverse(m=>{
++ if(m.isMesh&&m.geometry?.userData?.frontDecoration?.style===${j(style)})yes=true;});return yes;})()`, { timeout:45000 });
++const shot = (page, name) => page.screenshot(resolve(output, `${name}.png`));
++async function menu(page,name,item) {
++ await page.click('nav[aria-label="Main menu"] > div > button',name,{exact:true});await page.sleep(250);
++ if(item)await page.press('[role="menuitem"]',item);
++}
++async function downloadAfter(page, action, extension) {
++ const before=new Set(readdirSync(downloads));await action();
++ for(let n=0;n<100;n+=1){const file=readdirSync(downloads).find(f=>!before.has(f)&&f.endsWith(extension));
++  if(file)return resolve(downloads,file); await page.sleep(200);}
++ throw Error(`No ${extension} download; ${await page.ask('document.body.innerText')}`);
++}
++async function runPro(page) {
++ await pro(page);await page.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:downloads,eventsEnabled:true});
++ await menu(page,'Library','Kitchen');await page.press('[data-library-group="base-units"]');
++ await page.press('[data-library-entry="door-base"]');await page.press('[aria-label="Close the library"]');
++ await page.press('button','Doors');await page.press('button','Add doors');
++ const target=(await state(page));
++ for(const prefer of ['top','bottom','middle']) {const p=await reach(page,target.unitId,target.fronts[0].id,{prefer});
++  if(!p)continue;await page.clickAt(p.x,p.y);if(await page.has('[data-unit-name]'))break;}
++ if(await page.has('[data-section="Carcass"][data-open="0"]'))await page.press('[data-section="Carcass"] > button');
++ check('PRO adds a base and doors through the library', (await state(page)).fronts.length>0);
++ for(const style of styles) {
++  const chosen=await choose(page,"document.querySelector('[data-unit-front-type]')",style);
++  if(!chosen.ok)throw Error(`Could not select ${style}`);
++  await page.sleep(600);const s=await state(page);
++  check(`PRO ${style} selection reaches front metadata`,s.params.front_type===style&&s.fronts.length>0&&s.fronts.every(p=>p.deco?.style===style),compact(s));
++  check(`PRO ${style} remains a proposal`,s.fronts.every(p=>p.deco?.referenceOnly===true),compact(s));
++  await waitMeshes(page,style);const m=await meshes(page);
++  check(`PRO ${style} renders its solid`,m.some(p=>p.style===style&&p.vertices>100),m);
++  check(`PRO ${style} has no numeric recipe controls`,await page.count('[data-decoration-field]')===0);
++  await shot(page,`pro-${style}`);
++ }
++ // A chiral variation must survive a real save/open cycle.
++ await choose(page,"document.querySelector('[data-unit-front-type]')",'ORNATE_A_1');await page.sleep(700);
++ await page.press('[data-ornate-mirror="ORNATE_A_1"]');
++ const mirrored=await state(page);
++ check('PRO mirror checkbox changes stored recipe',mirrored.params.front_decoration?.mirror===true&&mirrored.fronts.every(p=>p.deco?.parameters?.mirror===true),compact(mirrored));
++ await shot(page,'pro-mirrored');
++ // The existing CNC menu exports a reference package for unapproved faces.
++ const zipPath=await downloadAfter(page,()=>menu(page,'Output','CNC / DXF'),'.zip');
++ const archive=await JSZip.loadAsync(readFileSync(zipPath));const names=Object.keys(archive.files);
++ const jsons=names.filter(n=>/operations\.json$/.test(n));
++ const manifests=await Promise.all(jsons.map(async n=>({name:n,value:JSON.parse(await archive.file(n).async('string'))})));
++ const dxfs=names.filter(n=>/\.dxf$/i.test(n));
++ const dxfTexts=await Promise.all(dxfs.map(async n=>({name:n,text:await archive.file(n).async('string')})));
++ check('PRO CNC menu downloads DXF and operation metadata',dxfs.length>0&&jsons.length>0,{file:zipPath,names});
++ check('PRO downloaded package labels ornate proposal as reference',dxfTexts.some(f=>/REF|REFERENCE/i.test(f.name+' '+f.text))&&manifests.some(m=>/reference|approval|unapproved/i.test(JSON.stringify(m.value))),{manifests:manifests.map(m=>m.name),dxfs});
++ writeFileSync(resolve(output,'browser-cnc-manifests.json'),JSON.stringify(manifests,null,2));
++ if(await page.has('[data-check-panel] button[title="Close"]'))await page.press('[data-check-panel] button[title="Close"]');
++ const before=JSON.stringify((await state(page)).fronts);const name=(await state(page)).projectName;
++ await page.press('[data-save-control]');await page.waitFor('!window.__cc.project.getState().dirty',{timeout:15000});
++ check('PRO Save writes the selected recipe',!((await state(page)).dirty));
++ await page.send('Page.reload',{ignoreCache:true});await page.sleep(2000);
++ await page.waitFor('window.__cc && window.__cc.project',{timeout:45000});
++ await page.waitFor(`[...document.querySelectorAll('li button')].some(b=>b.offsetParent&&b.textContent.includes(${j(name)}))`,{timeout:25000});
++ const at=await boxOf(page,`[...document.querySelectorAll('li button')].find(b=>b.offsetParent&&b.textContent.includes(${j(name)}))`);
++ await clickWith(page,at.x,at.y);await page.waitFor('window.__cc.views?.room',{timeout:45000});await page.sleep(1800);
++ check('PRO saved project reopens with identical front metadata',JSON.stringify((await state(page)).fronts)===before,compact(await state(page)));
++ await waitMeshes(page,'ORNATE_A_1');await shot(page,'pro-reloaded');
++}
++async function runRetail(page) {
++ await room(page);await withWardrobe(page);
++ await page.send('Browser.setDownloadBehavior',{behavior:'allow',downloadPath:downloads,eventsEnabled:true});
++ await page.press('[data-testid="cat-fronts"]');
++ if(!(await state(page)).params.doors)await page.press('[data-testid="fronts-add-doors"]');
++ for(const style of styles){
++  await page.press(`[data-testid="fronts-style-${style}"]`);await page.sleep(700);const s=await state(page);
++  check(`Retail ${style} real tile selects style and geometry`,s.projectFront.style===style&&s.fronts.length>0&&s.fronts.every(p=>p.deco?.style===style),compact(s));
++  check(`Retail ${style} offers no numeric recipe fields`,await page.count('[data-testid="panel-fronts"] input[type="number"], [data-decoration-field]')===0);
++  await waitMeshes(page,style);check(`Retail ${style} renders ornate solid`,(await meshes(page)).some(m=>m.style===style));
++  await shot(page,`retail-${style}`);
++ }
++ await page.press('[data-testid="fronts-style-ORNATE_A_1"]');await page.sleep(500);
++ await page.press('[data-ornate-mirror="ORNATE_A_1"]');const before=JSON.stringify((await state(page)).fronts);
++ check('Retail mirror checkbox changes recipe',(await state(page)).projectFront.decoration.mirror===true);
++ await page.press('[data-testid="cat-review"]');await page.press('[data-testid="review-done"]');
++ await page.waitFor('document.querySelector(\'[data-testid="estimate-edit-1"]\')',{timeout:45000});
++ const file=await downloadAfter(page,()=>page.press('[data-testid="estimate-save"]'),'.json');
++ const saved=JSON.parse(readFileSync(file,'utf8'));
++ check('Retail estimate file contains selected ornate recipe and mirror',/ORNATE_A_1/.test(JSON.stringify(saved))&&/"mirror":true/.test(JSON.stringify(saved)),{file});
++ const started=await page.ask('performance.timeOrigin');await page.send('Page.reload',{});
++ await page.waitFor(`performance.timeOrigin!==${started}&&document.querySelector('[data-testid="estimate-empty"]')`,{timeout:60000});
++ const doc=await page.send('DOM.getDocument',{});
++ const input=await page.send('DOM.querySelector',{nodeId:doc.root.nodeId,selector:'[data-testid="detail-load"]'});
++ await page.send('DOM.setFileInputFiles',{nodeId:input.nodeId,files:[file]});
++ await page.waitFor('document.querySelector(\'[data-testid="estimate-edit-1"]\')',{timeout:30000});
++ await page.press('[data-testid="estimate-edit-1"]');
++ await page.waitFor('window.__cc?.project?.getState().units.length>0&&document.querySelector(\'[data-testid="cat-fronts"]\')',{timeout:60000});
++ await page.sleep(1800);const after=await state(page);
++ check('Retail actual save/load preserves identical front metadata',JSON.stringify(after.fronts)===before,compact(after));
++ await page.press('[data-testid="cat-fronts"]');await waitMeshes(page,'ORNATE_A_1');await shot(page,'retail-reloaded');
++}
++
++async function runCnc(page) {
++ await pro(page);
++ await menu(page,'Library','Kitchen');await page.press('[data-library-group="base-units"]');
++ await page.press('[data-library-entry="door-base"]');await page.press('[aria-label="Close the library"]');
++ await page.press('button','Doors');await page.press('button','Add doors');
++ const target=await state(page);
++ for(const prefer of ['top','bottom','middle']){const at=await reach(page,target.unitId,target.fronts[0].id,{prefer});
++  if(!at)continue;await page.clickAt(at.x,at.y);if(await page.has('[data-unit-name]'))break;}
++ if(await page.has('[data-section="Carcass"][data-open="0"]'))await page.press('[data-section="Carcass"] > button');
++ const chosen=await choose(page,"document.querySelector('[data-unit-front-type]')",'ORNATE_A_1');
++ check('CNC focused run selects actual ornate style',chosen.ok&&(await state(page)).fronts.every(p=>p.deco?.style==='ORNATE_A_1'));
++ await waitMeshes(page,'ORNATE_A_1');
++ check('Final detailed ornate surface renders after the real selection',(await meshes(page)).some(m=>m.style==='ORNATE_A_1'&&m.vertices>100));
++ await menu(page,'View','CNC sheet');await page.press('[data-testid="cnc-face-front"]');
++ if(await page.has('button[title="Fit the whole sheet"]'))await page.press('button[title="Fit the whole sheet"]');
++ const frontView=await page.ask(`({face:document.querySelector('[data-cnc-face]')?.getAttribute('data-cnc-face'),
++  features:document.querySelectorAll('[data-cnc-decoration]').length,
++  labels:document.body.innerText})`);
++ check('Front CNC sheet visibly draws reference entities',frontView.face==='front'&&frontView.features>4,{face:frontView.face,features:frontView.features});
++ const expected=['FRONT_REF_PROFILE_D3','FRONT_REF_PROFILE_D6','FRONT_REF_PROFILE_D9','FRONT_REF_PROFILE_D12','FRONT_REF_ORNAMENT'];
++ check('Front CNC legend names profile depths and ornamental reference layer',expected.every(layer=>frontView.labels.includes(layer)),expected);
++ check('Front CNC sheet marks relief as a proposed reference',frontView.labels.includes('Proposed relief reference'));
++ await shot(page,'pro-cnc-front-reference');
++ await page.press('[data-testid="cnc-face-back"]');
++ check('Rear CNC setup remains selectable',await page.has('[data-cnc-face="back"]'));
++}
++
++try {
++ for(const [name,run] of [['pro',runPro],['retail',runRetail],['cnc',runCnc]]){
++  if(wanted.length&&!wanted.includes(name))continue;
++  const page=await open({width:1600,height:1050});const exceptions=[];
++  page.socket.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.method==='Runtime.exceptionThrown')exceptions.push(m.params.exceptionDetails);});
++  try{await run(page);check(`${name} has no runtime exception`,exceptions.length===0,exceptions);}
++  catch(error){check(`${name} walk completes`,false,String(error.stack||error));await shot(page,`${name}-failure`).catch(()=>{});
++   writeFileSync(resolve(output,`${name}-failure-dom.txt`),await page.ask('document.body.innerText').catch(()=>''));}
++  finally{writeFileSync(resolve(output,`${name}-browser.json`),JSON.stringify({errors:page.errors,exceptions},null,2));await page.close();}
++ }
++}finally{
++ writeFileSync(resolve(output,`walk${wanted.length?'-'+wanted.join('-'):''}.json`),JSON.stringify({base:BASE,checks,downloads},null,2));
++ await showroomDown();await vite?.close();
++}
++if(checks.some(c=>!c.ok))process.exitCode=1;
+diff --git a/src/3d/frontDecorationSolid.js b/src/3d/frontDecorationSolid.js
+index 8ceacd0a9fa0608470c7f408655a7f70af5d2c71..52037b972445f97768b4efc9809167e81bcf8dfe 100644
+--- a/src/3d/frontDecorationSolid.js
++++ b/src/3d/frontDecorationSolid.js
+@@ -35,9 +35,9 @@ function circle(x, y, radius) {
+ const sideOf = (a, b, p) => (b[0] - a[0]) * (p[1] - a[1])
+   - (b[1] - a[1]) * (p[0] - a[0]);
+ 
+-// Clip in XY and interpolate all three coordinates along the original
+-// surface edge. The canonical ballnose surface therefore remains unchanged
+-// everywhere except inside the bore, including its spherical stopped ends.
++// Clip in XY and interpolate position and optional relief normal along the
++// original surface edge. The canonical surface therefore remains unchanged
++// everywhere except inside the bore, including spherical stopped ends.
+ function splitSurfacePolygon(points, a, b) {
+   const inside = []; const outside = [];
+   for (let i = 0; i < points.length; i += 1) {
+@@ -95,6 +95,36 @@ function triangleHeight(triangle, point, requireInside = false) {
+   return u * a[2] + v * b[2] + w * c[2];
+ }
+ 
++const faceNormal = (a, b, c) => {
++  const ab = b.map((value, axis) => value - a[axis]);
++  const ac = c.map((value, axis) => value - a[axis]);
++  return [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
++};
++
++// The carved surface is continuous material, so adjacent relief triangles
++// share an area-weighted vertex normal. Slab faces and bore walls are emitted
++// separately and retain their hard edges. This changes lighting only: the
++// canonical CNC positions, triangle winding and physical cut stay identical.
++function surfaceTriangles(operation, toMesh, half) {
++  if (!operation.surface?.vertices || !operation.surface?.triangles) return [];
++  const vertices = operation.surface.vertices.map(([x, y, depth]) => [...toMesh([x, y]), half - depth]);
++  if (operation.kind === 'relief') {
++    const normals = vertices.map(() => [0, 0, 0]);
++    for (const [a, b, c] of operation.surface.triangles) {
++      // The drawing's single X reflection reverses the visible winding.
++      const normal = faceNormal(vertices[a], vertices[c], vertices[b]);
++      for (const index of [a, b, c]) {
++        for (let axis = 0; axis < 3; axis += 1) normals[index][axis] += normal[axis];
++      }
++    }
++    for (let index = 0; index < vertices.length; index += 1) {
++      const length = Math.hypot(...normals[index]);
++      vertices[index].push(...(length > EPS ? normals[index].map((value) => value / length) : [0, 0, 1]));
++    }
++  }
++  return operation.surface.triangles.map((indices) => indices.map((index) => vertices[index]));
++}
++
+ /**
+  * A front-face decoration, including its back-face bores and existing J edge.
+  * Metadata is opt-in. Legacy fronts retain their existing solid builders.
+@@ -139,10 +169,7 @@ function build(panel, bores) {
+   const ring = (points) => ccw(points.map(toMesh));
+   const operations = (decoration.operations || []).map((op) => ({
+     ...op, ring: ring(op.points), children: [],
+-    triangles: op.surface?.triangles?.map((indices) => indices.map((index) => {
+-      const [x, y, depth] = op.surface.vertices[index];
+-      return [...toMesh([x, y]), half - depth];
+-    })) || [],
++    triangles: surfaceTriangles(op, toMesh, half),
+   }));
+   const roots = [];
+   for (const op of operations) {
+@@ -158,14 +185,17 @@ function build(panel, bores) {
+   const uv = [];
+   let complexHoles = [];
+   const rawTriangle = (a, b, c) => {
+-    const ab = b.map((v, i) => v - a[i]);
+-    const ac = c.map((v, i) => v - a[i]);
+-    const n = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
++    const n = faceNormal(a, b, c);
+     const len = Math.hypot(...n);
+     if (len <= EPS) return;
+     for (const p of [a, b, c]) {
+-      position.push(...p.map(mm));
+-      normal.push(...n.map((v) => v / len));
++      position.push(mm(p[0]), mm(p[1]), mm(p[2]));
++      // splitSurfacePolygon interpolates every component. A clipped relief
++      // therefore keeps the same interpolated normal right up to a bore rim;
++      // the new cylindrical wall still receives its own flat facet normal.
++      const vertexNormal = p.length >= 6 ? p.slice(3, 6) : n;
++      const normalLength = Math.hypot(...vertexNormal);
++      normal.push(...(normalLength > EPS ? vertexNormal.map((v) => v / normalLength) : n.map((v) => v / len)));
+       uv.push(p[0] / w + 0.5, p[1] / h + 0.5);
+     }
+   };
+@@ -216,7 +246,12 @@ function build(panel, bores) {
+     const centre = toMesh([Number(bore.x), Number(bore.y)]);
+     const pocket = operations.filter((op) => contains(op.ring, centre))
+       .sort((a, b) => b.depth - a.depth)[0];
+-    const frontDepth = pocket?.depth || 0;
++    // A relief's depth is its deepest point, not the depth everywhere inside
++    // its boundary. Sample the same triangles which form the visible face.
++    // Otherwise a blind bore beneath a shallow leaf would be shortened to
++    // the deepest floor's skin even though that floor is elsewhere.
++    const faceTriangle = pocket?.triangles.find((surface) => triangleHeight(surface, centre, true) != null);
++    const frontDepth = faceTriangle ? half - triangleHeight(faceTriangle, centre) : pocket?.depth || 0;
+     const depth = bore.through ? thickness - frontDepth : Math.min(Number(bore.depth), thickness - frontDepth);
+     return {
+       ring: circle(...centre, Number(bore.r)),
+@@ -337,6 +372,9 @@ function build(panel, bores) {
+   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+   geometry.computeBoundingBox();
+   geometry.computeBoundingSphere();
+-  geometry.userData.frontDecoration = { style: decoration.style, jpull: slices.length > 1 };
++  geometry.userData.frontDecoration = {
++    style: decoration.style, jpull: slices.length > 1,
++    ...(decoration.productionApproved === false ? { productionApproved: false } : {}),
++  };
+   return geometry;
+ }
+diff --git a/src/components/CncView.jsx b/src/components/CncView.jsx
+index 06511f27dc37959d8cd0ef1a426ef6781d173838..54789bcd9232ab5e0cf28072c0d82cb8f82a6850 100644
+--- a/src/components/CncView.jsx
++++ b/src/components/CncView.jsx
+@@ -22,7 +22,7 @@ import { LED_GROOVE_LAYER } from '../lib/ledGroove.js';
+ import { LAYER_CLASS } from '../lib/modalLayer.js';
+ import {
+   FRONT_REFERENCE_LAYER, frontDecorationOf, frontDecorationProblems,
+-  frontDecorationLayers, frontPanelEntities, hasFrontDecorations,
++  frontDecorationLayers, frontPanelEntities, hasFrontDecorations, isOrnateReference,
+ } from '../engine/cnc/frontOperations.js';
+ import { formatMm } from '../engine/format.js';
+ 
+@@ -130,7 +130,7 @@ export default function CncView() {
+   }, [units, unitCncResult, hiddenUnits, hiddenParts]);
+ 
+   // Both setups keep the same layout slots. Only the individual part is
+-  // reflected, using the exact entities written to its FRONT DXF.
++  // reflected. Proposed contours match the separate reference DXF.
+   const hasDecorations = hasFrontDecorations(entries);
+   const face = hasDecorations ? requestedFace : 'back';
+ 
+@@ -317,7 +317,7 @@ export default function CncView() {
+       for (const place of s2.layout.places) {
+         const p = place.panel;
+         if (face === 'front') {
+-          for (const entity of frontPanelEntities(p)) bump(entity.layer);
++          for (const entity of frontPanelEntities(p, { referencePreview: true })) bump(entity.layer);
+           continue;
+         }
+         bump(p.cnc.layer || profile.puzzle.layers.outline);
+@@ -355,7 +355,7 @@ export default function CncView() {
+   const sheetLayers = useMemo(
+     () => {
+       const existing = [...allLayers(projectLayers), LED_GROOVE_LAYER];
+-      return [...existing, ...frontDecorationLayers(entries.flatMap((entry) => entry.panels))];
++      return [...existing, ...frontDecorationLayers(entries.flatMap((entry) => entry.panels), { referencePreview: true })];
+     },
+     [projectLayers, entries],
+   );
+@@ -566,7 +566,7 @@ export default function CncView() {
+         </ul>
+         <p className="text-[10px] text-ink-400 mt-1.5 leading-snug">
+           {face === 'front'
+-            ? 'Front face up. Read-only preview. Hover a cut for its tool and depth. Grey outline is a reference, not a cut.'
++            ? 'Front face up. Read-only preview. Hover a feature for its details. Proposed relief contours are references; use their 3D surface in CAM. Grey outline is not a cut.'
+             : 'Preview only. Drag to pan, scroll to zoom.'}
+         </p>
+       </div>
+@@ -617,7 +617,7 @@ function Part({
+ }) {
+   const { panel } = place;
+   const front = face === 'front';
+-  const frontEntities = useMemo(() => front ? frontPanelEntities(panel) : [], [front, panel]);
++  const frontEntities = useMemo(() => front ? frontPanelEntities(panel, { referencePreview: true }) : [], [front, panel]);
+   const decoration = frontDecorationOf(panel);
+   const frontProblems = useMemo(() => front ? frontDecorationProblems(panel) : [], [front, panel]);
+   const cnc = front ? {
+@@ -634,7 +634,7 @@ function Part({
+   // the same id. Memoised on the part and its drills: hovering builds nothing.
+   const readouts = useMemo(
+     () => front
+-      ? new Map((decoration?.operations || []).map((operation) => [operation.id, {
++      ? new Map([...(decoration?.operations || []).filter((operation) => operation.kind !== 'relief').map((operation) => [operation.id, {
+         // T76 F4 · a V groove reads as one: its width at the mouth, its centre line.
+         title: `${{ flute: 'Flute', vgroove: 'V groove' }[operation.kind] || 'Pocket'} | Front face`,
+         subtitle: operation.layer,
+@@ -650,9 +650,19 @@ function Part({
+           { label: 'Vector', value: { flute: 'Tool centre path', vgroove: 'Groove centre line' }[operation.kind] || 'Finished pocket boundary' },
+           { label: 'Status', value: frontProblems.length ? 'Blocked: see checks' : 'Ready' },
+         ],
+-      }]))
++      }]), ...frontEntities.filter((entity) => entity.referenceOnly).map((entity) => [entity.operationId, {
++        title: 'Proposed relief reference | Front face',
++        subtitle: entity.layer,
++        rows: [
++          { label: 'Geometry', value: entity.referenceKind === 'profile-level' ? 'Profile level boundary' : 'Ornament projection' },
++          { label: 'Depth', value: entity.depth == null ? 'Variable, defined by the 3D surface' : `${formatMm(entity.depth)} mm below the original face` },
++          { label: 'Surface depth', value: `Up to ${formatMm(entity.surfaceDepth)} mm` },
++          { label: 'CAM', value: 'Use the reference STL for 3D toolpaths' },
++          { label: 'Status', value: 'Proposed reference, not approved for production' },
++        ],
++      }])])
+       : new Map(partRollovers(panel, drills, profile).map((f) => [f.id, f.readout])),
+-    [panel, drills, profile, front, decoration, frontProblems],
++    [panel, drills, profile, front, decoration, frontProblems, frontEntities],
+   );
+   // The hover handlers, made once per feature id rather than per render of it.
+   const hoverProps = (id) => (onRollover ? {
+@@ -800,7 +810,7 @@ function Part({
+           data-cnc-front-blocked={panel.id}
+         >
+           <title>{frontProblems.join('\n')}</title>
+-          Decoration blocked
++          {isOrnateReference(panel) && decoration?.status === 'ready' ? 'Proposed relief reference' : 'Decoration blocked'}
+         </text>
+       )}
+ 
+diff --git a/src/components/FrontDecorationControls.jsx b/src/components/FrontDecorationControls.jsx
+index ceb1f2ab75a762ad67a7d7adcc58e2a24667b60e..8d6ab5c17361bdf6c1ea3e3664bc324bc12e7c4a 100644
+--- a/src/components/FrontDecorationControls.jsx
++++ b/src/components/FrontDecorationControls.jsx
+@@ -1,5 +1,5 @@
+ import NumberField from './NumberField.jsx';
+-import { defaultFrontDecoration, normaliseFrontDecoration } from '../engine/frontDecoration.js';
++import { defaultFrontDecoration, normaliseFrontDecoration, ORNATE_STYLE_IDS } from '../engine/frontDecoration.js';
+ 
+ const FIELD_LABELS = {
+   frameMm: 'Frame width',
+@@ -21,6 +21,20 @@ export default function FrontDecorationControls({ style, value, onChange, fields
+   const defaults = defaultFrontDecoration(style);
+   if (!defaults) return null;
+   const config = normaliseFrontDecoration(value, style);
++  const ornate = ORNATE_STYLE_IDS.includes(style);
++  if (ornate && config) return (
++    <div className="border border-shell-600 rounded p-2 space-y-2" data-front-decoration={style}>
++      <p className="text-[11px] text-ink-400" data-ornate-proposal={style}>
++        Proposed carved relief from the reference drawing. Dimensions and ornament need workshop approval.
++        The CNC pack includes reference DXF, a relief model and a machining description.
++      </p>
++      <label className="flex items-center gap-2 text-[11px] text-ink-200">
++        <input type="checkbox" aria-label="Mirror ornate pattern" data-ornate-mirror={style}
++          checked={config.mirror === true} onChange={(event) => onChange({ ...config, mirror: event.target.checked })} />
++        <span>Mirror ornate pattern</span>
++      </label>
++    </div>
++  );
+   if (config && !fields) return null;
+   const update = (key, next) => onChange({ ...config, [key]: next });
+   return (
+diff --git a/src/engine/cnc/frontOperations.js b/src/engine/cnc/frontOperations.js
+index 920aa8d802ecda33ae6aaed6e8724f13ca60f5d5..5db3986a997784ef697eadb68347acf720fbbba4 100644
+--- a/src/engine/cnc/frontOperations.js
++++ b/src/engine/cnc/frontOperations.js
+@@ -6,6 +6,23 @@ import { appliedStripNotes, readinessOf } from '../readiness.js';
+ 
+ export const FRONT_REFERENCE_LAYER = 'FRONT_REFERENCE_NO_CUT';
+ 
++// Approval belongs to the physical pattern and workshop CAM validation. A
++// saved recipe cannot make this reconstructed family production approved.
++export const ORNATE_REFERENCE_MESSAGE = 'Ornate A is a proposed reference pattern. Its separate CAD and relief files need physical-pattern approval and CAM verification before production.';
++export function isOrnateReference(panel) {
++  return /^ORNATE_A_[1-4]$/.test(frontDecorationOf(panel)?.style || '');
++}
++
++/** Shared reference layer grammar for the read-only view and reference DXF. */
++export function ornateReferenceContourLayer(contour) {
++  if (contour?.kind === 'ornament-reference') return 'FRONT_REF_ORNAMENT';
++  if (contour?.kind !== 'profile-level' || !Number.isFinite(contour.depth) || contour.depth <= 0
++    || Math.abs(contour.depth - Number(contour.depth.toFixed(6))) > 1e-10) return null;
++  const token = contour.depth.toFixed(6).replace(/\.?0+$/, '').replace('.', 'P');
++  const layer = `FRONT_REF_PROFILE_D${token}`;
++  return layer.length <= 31 ? layer : null;
++}
++
+ export function frontDecorationOf(panel) {
+   return panel?.meta?.frontDecoration || null;
+ }
+@@ -71,6 +88,10 @@ export function frontDecorationProblems(panel) {
+   if (decoration.version !== 1) out.push('Unsupported decorative machining version.');
+   if (decoration.status !== 'ready' && !out.length) out.push('Decorative machining is not ready.');
+   if (!Array.isArray(decoration.operations)) out.push('Decorative machining operations are missing.');
++  if (isOrnateReference(panel)) {
++    out.push(ORNATE_REFERENCE_MESSAGE);
++    return [...new Set(out)];
++  }
+   for (const operation of Array.isArray(decoration.operations) ? decoration.operations : []) out.push(...operationProblems(operation, panel));
+   return [...new Set(out)];
+ }
+@@ -90,7 +111,7 @@ export function frontDecorationFindings(result, { unitId = null, unitNum = '' }
+ }
+ 
+ /** Reference and machining only. A reflected CCW contour is a CW pocket. */
+-export function frontPanelEntities(panel) {
++export function frontPanelEntities(panel, { referencePreview = false } = {}) {
+   const decoration = frontDecorationOf(panel);
+   if (!decoration) return [];
+   const width = Number(panel.cnc?.drawn_w ?? panel.w);
+@@ -101,6 +122,26 @@ export function frontPanelEntities(panel) {
+     type: 'poly', layer: FRONT_REFERENCE_LAYER, closed: true,
+     pts: outline.map(mirror).reverse(),
+   });
++  // Proposed relief contours live in explicitly named reference files. They
++  // are never pocket boundaries in the normal production FRONT setup.
++  if (isOrnateReference(panel)) {
++    if (!referencePreview || !Number.isFinite(width) || decoration.status !== 'ready') return entities;
++    for (const [operationIndex, operation] of (decoration.operations || []).entries()) {
++      for (const [contourIndex, contour] of (operation.contours || []).entries()) {
++        const layer = ornateReferenceContourLayer(contour);
++        const closed = contour.closed !== false;
++        if (!layer || !pointsOk(contour.points, closed ? 3 : 2)) continue;
++        entities.push({
++          type: 'poly', layer, closed,
++          operationId: `${operation.id || operationIndex}/${contour.id || contourIndex}`,
++          pts: contour.points.map(mirror), referenceOnly: true,
++          referenceKind: contour.kind, depth: contour.depth ?? null,
++          startDepth: contour.startDepth ?? null, surfaceDepth: operation.depth,
++        });
++      }
++    }
++    return entities;
++  }
+   for (const operation of Array.isArray(decoration.operations) ? decoration.operations : []) {
+     // Export-anyway retains every geometrically valid operation and reports
+     // the blocked state in the manifest. Non-finite entities cannot be DXF.
+@@ -145,7 +186,12 @@ export function frontOperationsManifest(entries = [], {
+         readiness: readinessOf(panel, { drills: result.drills || null }),
+         style: decoration.style,
+         status: problems.length ? 'blocked' : (held ? 'held' : 'ready'),
+-        exported: exportAnyway || !held,
++        exported: !isOrnateReference(panel) && (exportAnyway || !held),
++        ...(isOrnateReference(panel) ? {
++          referenceOnly: true, productionApproved: false,
++          referenceFiles: files.filter((file) => file.referenceOnly && file.panelId === panel.id
++            && (!file.unitId || file.unitId === unitId)),
++        } : {}),
+         override: exportAnyway && (held || problems.length > 0),
+         problems,
+         placement: placements.find((place) => place.unitId === unitId && place.unitNum === unitNum && place.panelId === panel.id) || null,
+@@ -174,9 +220,10 @@ export function frontOperationsManifest(entries = [], {
+           cuttingDepthMm: operation.depth - operation.startDepth,
+           tool: operation.tool,
+           ...(operation.crossSection ? { crossSection: operation.crossSection } : {}),
+-          vectorMeaning: { flute: 'tool-centre path', vgroove: 'groove centre line' }[operation.kind] || 'finished pocket boundary',
+-          readiness: readinessOf(operation),
+-          exported: (exportAnyway || !held) && operationProblems(operation, panel).length === 0,
++          vectorMeaning: { flute: 'tool-centre path', vgroove: 'groove centre line', relief: 'proposed 3D machining surface; DXF contours are references only' }[operation.kind] || 'finished pocket boundary',
++          readiness: readinessOf(isOrnateReference(panel) ? { ...operation, readiness: 'geometry' } : operation),
++          ...(isOrnateReference(panel) ? { referenceOnly: true, productionApproved: false } : {}),
++          exported: !isOrnateReference(panel) && (exportAnyway || !held) && operationProblems(operation, panel).length === 0,
+         })),
+       });
+     }
+@@ -232,7 +279,7 @@ export function frontSetupPlacements(blocks = [], gap = 0) {
+ }
+ 
+ /** Shared preview and DXF layer declarations for each configured cutter. */
+-export function frontDecorationLayers(panels = []) {
++export function frontDecorationLayers(panels = [], { referencePreview = false } = {}) {
+   const layers = new Map();
+   for (const panel of panels) {
+     const decoration = frontDecorationOf(panel);
+@@ -241,6 +288,19 @@ export function frontDecorationLayers(panels = []) {
+       name: FRONT_REFERENCE_LAYER, label: 'Front reference (do not cut)',
+       screen: '#8d8d92', aci: 8, kind: 'outline',
+     });
++    if (isOrnateReference(panel)) {
++      if (referencePreview) for (const entity of frontPanelEntities(panel, { referencePreview: true })) {
++        if (!entity.referenceOnly) continue;
++        const ornament = entity.referenceKind === 'ornament-reference';
++        layers.set(entity.layer, {
++          name: entity.layer,
++          label: ornament ? 'Proposed ornament (3D surface)' : `Proposed profile reference: ${entity.depth} mm`,
++          screen: ornament ? '#63e6e2' : '#c3a06a', aci: ornament ? 4 : 41,
++          kind: 'mark', referenceOnly: true,
++        });
++      }
++      continue;
++    }
+     for (const operation of Array.isArray(decoration.operations) ? decoration.operations : []) {
+       if (operationProblems(operation, panel).length) continue;
+       const line = CENTRELINE_KINDS.includes(operation.kind);
+@@ -265,6 +325,7 @@ export function frontLayerFindings(entries = []) {
+     const unitId = entry.unit?.id || result.unitId || null;
+     const unitNum = result.unitNum || entry.unitNum || '';
+     for (const panel of entry.panels || result.panels || []) {
++      if (isOrnateReference(panel)) continue;
+       const operations = frontDecorationOf(panel)?.operations;
+       for (const operation of Array.isArray(operations) ? operations : []) {
+         if (operationProblems(operation, panel).length) continue;
+diff --git a/src/engine/cnc/ornateExport.js b/src/engine/cnc/ornateExport.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5212da51afcf16c7d5777cad9f97024d51386402
+--- /dev/null
++++ b/src/engine/cnc/ornateExport.js
+@@ -0,0 +1,183 @@
++// Copyright (c) Skylon Development Ltd. All rights reserved.
++// The reconstructed Ornate family is a CAD/CAM reference handoff. It never
++// creates approved production machining or G-code, including Export anyway.
++import { writeDxf, entitiesExtents } from './dxf.js';
++import { fileSafeName } from '../naming.js';
++import { frontDecorationOf, isOrnateReference, ornateReferenceContourLayer, FRONT_REFERENCE_LAYER, ORNATE_REFERENCE_MESSAGE } from './frontOperations.js';
++
++const EPS = 1e-6;
++const MAX_VERTICES = 1000000;
++const finitePositive = (value) => Number.isFinite(value) && value > 0;
++const pointsOk = (points, count = 3) => Array.isArray(points) && points.length >= count
++  && points.every((point) => Array.isArray(point) && point.length >= 2 && point.slice(0, 2).every(Number.isFinite));
++const sizeOf = (panel) => ({
++  width: Number(panel.cnc?.drawn_w ?? panel.w),
++  height: Number(panel.cnc?.drawn_h ?? panel.h),
++  thickness: Number(panel.thickness),
++});
++const localFront = (point, width) => [width - point[0], point[1]];
++const fmt = (value) => {
++  const result = value.toFixed(6).replace(/\.?0+$/, '');
++  return result === '-0' ? '0' : result;
++};
++
++function normalOf(a, b, c) {
++  const u = b.map((v, i) => v - a[i]); const v = c.map((n, i) => n - a[i]);
++  const normal = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
++  const length = Math.hypot(...normal);
++  return length > 1e-10 ? normal.map((n) => n / length) : null;
++}
++
++/** Numeric and datum validation before any proposed CAD geometry is written. */
++export function ornateReferenceProblems(panel) {
++  if (!isOrnateReference(panel)) return [];
++  const decoration = frontDecorationOf(panel);
++  const problems = (Array.isArray(decoration.problems) ? decoration.problems : []).map((p) => typeof p === 'string' ? p : p.message || p.code || 'Invalid pattern.');
++  const { width, height, thickness } = sizeOf(panel);
++  if (![width, height, thickness].every((v) => finitePositive(v) && v <= 100000)) problems.push('Reference part dimensions must be finite positive millimetres.');
++  if (decoration.version !== 1) problems.push('Unsupported reference decoration version.');
++  if (decoration.status !== 'ready') problems.push('The proposed geometry is not valid for reference export.');
++  const operations = decoration.operations;
++  if (!Array.isArray(operations) || !operations.length) problems.push('Reference relief geometry is missing.');
++  for (const operation of Array.isArray(operations) ? operations : []) {
++    const op = operation || {};
++    const name = op.id || 'relief';
++    if (op.kind !== 'relief' || op.face !== 'front') problems.push(`${name}: a front-face relief surface is required.`);
++    if (!finitePositive(op.depth) || op.depth >= thickness || !Number.isFinite(op.startDepth)
++      || op.startDepth < 0 || op.startDepth >= op.depth) problems.push(`${name}: invalid start or final depth.`);
++    if (!pointsOk(op.points)) problems.push(`${name}: reference boundary is missing or non-finite.`);
++    if (!Array.isArray(op.contours) || !op.contours.length) problems.push(`${name}: profile reference contours are missing.`);
++    for (const contour of Array.isArray(op.contours) ? op.contours : []) {
++      if (!pointsOk(contour.points, contour.closed === false ? 2 : 3)) problems.push(`${name}: contour coordinates are missing or non-finite.`);
++      if (!ornateReferenceContourLayer(contour)) problems.push(`${name}: unsupported reference contour kind or layer depth.`);
++      if (contour.kind === 'profile-level' && (!finitePositive(contour.depth) || contour.depth > op.depth || contour.depth >= thickness
++        || !Number.isFinite(contour.startDepth) || contour.startDepth < 0 || contour.startDepth >= contour.depth
++        || Math.abs(contour.depth - Number(contour.depth.toFixed(6))) > 1e-10)) problems.push(`${name}: contour depth is invalid or cannot be represented to 0.000001 mm.`);
++      if (contour.kind === 'ornament-reference' && (contour.depth != null || contour.startDepth != null)) problems.push(`${name}: ornament projections have variable surface depth, not a constant cutting depth.`);
++      if ((Array.isArray(contour.points) ? contour.points : []).some((p) => !Array.isArray(p) || p[0] < -EPS || p[0] > width + EPS || p[1] < -EPS || p[1] > height + EPS)) problems.push(`${name}: contour leaves the part boundary.`);
++    }
++    const vertices = op.surface?.vertices;
++    const triangles = op.surface?.triangles;
++    if (!Array.isArray(vertices) || vertices.length < 3 || vertices.length > MAX_VERTICES
++      || !vertices.every((p) => Array.isArray(p) && p.length === 3 && p.every(Number.isFinite)
++        && p[0] >= -EPS && p[0] <= width + EPS && p[1] >= -EPS && p[1] <= height + EPS
++        && p[2] >= -EPS && p[2] <= op.depth + EPS)) {
++      problems.push(`${name}: relief vertices are missing, non-finite or outside the part and depth bounds.`);
++      continue;
++    }
++    if (!Array.isArray(triangles) || !triangles.length || triangles.length > MAX_VERTICES * 4
++      || !triangles.every((t) => Array.isArray(t) && t.length === 3
++        && t.every((i) => Number.isInteger(i) && i >= 0 && i < vertices.length)
++        && normalOf(...t.map((i) => vertices[i])))) problems.push(`${name}: relief triangles contain invalid indices or degenerate faces.`);
++  }
++  return [...new Set(problems)];
++}
++
++/** An exact transform of the canonical mesh; no independent sampled relief. */
++export function ornateFrontSurface(surface, width) {
++  return {
++    vertices: surface.vertices.map(([x, y, depth]) => [width - x, y, -depth]),
++    // Canonical floors are CCW in back-view XY, with depth stored as a
++    // scalar. After the front-view reflection their winding is reversed so
++    // the machining target points out of the stock, toward positive Z.
++    triangles: surface.triangles.map(([a, b, c]) => [a, c, b]),
++  };
++}
++
++/** ASCII STL has no unit field: the accompanying operation JSON specifies mm. */
++export function ornateSurfaceStl(surface, name = 'ORNATE_PROPOSED_REFERENCE') {
++  const lines = [`solid ${fileSafeName(name, 'ORNATE_PROPOSED_REFERENCE')}`];
++  for (const triangle of surface.triangles) {
++    const points = triangle.map((index) => surface.vertices[index]);
++    const normal = normalOf(...points);
++    if (!normal || !points.every((p) => p.every(Number.isFinite))) throw new Error('Cannot serialize invalid Ornate relief triangles.');
++    lines.push(`  facet normal ${normal.map(fmt).join(' ')}`, '    outer loop');
++    for (const point of points) lines.push(`      vertex ${point.map(fmt).join(' ')}`);
++    lines.push('    endloop', '  endfacet');
++  }
++  lines.push(`endsolid ${fileSafeName(name, 'ORNATE_PROPOSED_REFERENCE')}`, '');
++  return lines.join('\n');
++}
++
++function referencePartFiles(panel, { unitId, unitNum, index }) {
++  const decoration = frontDecorationOf(panel);
++  const { width, height, thickness } = sizeOf(panel);
++  const problems = ornateReferenceProblems(panel);
++  const stem = `ornate-reference/${fileSafeName(unitNum, 'unit')}-${fileSafeName(panel.id, 'part')}-${index + 1}-ORNATE-PROPOSED`;
++  const common = { unitId, unitNum, panelId: panel.id, setup: 'front-reference', referenceOnly: true };
++  const files = [];
++  const operations = [];
++  if (!problems.length) {
++    const outline = [[0, 0], [width, 0], [width, height], [0, height]];
++    const entities = [{ type: 'poly', layer: FRONT_REFERENCE_LAYER, closed: true, pts: outline }];
++    for (const [operationIndex, op] of decoration.operations.entries()) {
++      const contours = op.contours.map((contour) => ({
++        id: contour.id, kind: contour.kind, layer: ornateReferenceContourLayer(contour), closed: contour.closed !== false,
++        startDepthMm: contour.startDepth ?? null, finalDepthMm: contour.depth ?? null,
++        pointsFrontMm: contour.points.map((p) => localFront(p, width)),
++        meaning: contour.kind === 'profile-level' ? 'Proposed profile level boundary on the 3D target surface. Not a flat pocket recipe.' : 'Ornament projection for reference. Relief shape and height are defined by the STL surface.',
++      }));
++      for (const contour of contours) entities.push({ type: 'poly', layer: contour.layer, closed: contour.closed, pts: contour.pointsFrontMm });
++      const surface = ornateFrontSurface(op.surface, width);
++      const stlName = `${stem}-RELIEF-${operationIndex + 1}.stl`;
++      files.push({ ...common, name: stlName, type: 'stl', contents: ornateSurfaceStl(surface, `${decoration.style}_PROPOSED_REFERENCE`) });
++      operations.push({
++        sequence: operationIndex + 1, id: op.id, kind: op.kind, face: 'front', readiness: 'geometry',
++        referenceOnly: true, productionApproved: false,
++        startDepthMm: op.startDepth, finalDepthMm: op.depth, remainingThicknessMm: thickness - op.depth,
++        crossSection: op.crossSection, targetSurface: op.targetSurface,
++        boundaryFrontMm: op.points.map((p) => localFront(p, width)),
++        contours,
++        surface: { file: stlName, vertices: surface.vertices.length, triangles: surface.triangles.length,
++          units: 'mm', watertight: false, includesBackFace: false,
++          meaning: 'Open machining target surface with profile walls. This is not a watertight finished part, back drilling or a toolpath.' },
++        cam: 'Import the STL at millimetre scale without additional mirroring. Derive and simulate roughing and 3D finishing toolpaths in CAM; do not pocket all DXF contours.',
++      });
++    }
++    const names = [...new Set(entities.map((entity) => entity.layer))];
++    const layers = names.map((name, i) => ({ name, color: name === FRONT_REFERENCE_LAYER ? 8 : i + 1 }));
++    files.unshift({ ...common, name: `${stem}-FRONT.dxf`, type: 'dxf', contents: writeDxf(entities, layers, entitiesExtents(entities)) });
++  }
++  const spec = {
++    schema: 'cabinet-core.ornate-reference', version: 1, units: 'mm',
++    unitId, unitNum, panelId: panel.id, style: decoration.style,
++    widthMm: width, heightMm: height, thicknessMm: thickness,
++    referenceOnly: true, productionApproved: false, status: problems.length ? 'invalid-reference' : 'reference-only',
++    notice: ORNATE_REFERENCE_MESSAGE,
++    proposal: 'Reconstructed from the supplied concept illustration. The physical ornament and all proposed dimensions need workshop approval.',
++    parameters: decoration.parameters, designInterpretation: decoration.designInterpretation,
++    datum: {
++      setup: 'Front face up, local origin at bottom left of the original front surface.',
++      axes: { x: 'right', y: 'up along the front', z: 'out of the original front surface' },
++      zeroZ: 'Original unmachined front surface; stock occupies -thickness <= Z <= 0.',
++      canonical: 'Engine uses back-view XY millimetres and positive depth into the material.',
++      transform: 'frontX = width - backX; frontY = backY; frontZ = -depth. Already applied once to DXF and STL.',
++      placement: 'Individual part coordinates only. No sheet rotation or translation. Re-fixture and verify the datum; do not flip a whole sheet.',
++      units: 'DXF R12 and STL do not encode reliable millimetre units. Import both explicitly in mm and verify the stated width and height.',
++    },
++    depthMeaning: 'All start and final depths are positive mm below original front surface; they are absolute depths, not cumulative stepdowns.',
++    layerMeaning: 'FRONT_REF_PROFILE_Dn names a proposed profile depth reference. FRONT_REF_ORNAMENT is a projection only. FRONT_REFERENCE_NO_CUT is the alignment outline. None is an approved cutting layer.',
++    excluded: ['back drilling', 'toolpaths', 'G-code', 'feeds and speeds', 'workholding', 'machine-specific postprocessor'],
++    problems, operations,
++    files: files.map(({ contents, ...file }) => file),
++  };
++  files.push({ ...common, name: `${stem}-operations.json`, type: 'json', contents: JSON.stringify(spec, null, 2) });
++  return files;
++}
++
++/** References remain available even when the production gate holds the part. */
++export function buildOrnateReferenceFiles(entries = []) {
++  const files = [];
++  let index = 0;
++  for (const entry of entries) {
++    const result = entry.result || {};
++    const unitId = entry.unit?.id || result.unitId || null;
++    const unitNum = result.unitNum || entry.unitNum || entry.unit?.params?.unit_num || '';
++    for (const panel of entry.panels || result.panels || []) {
++      if (!isOrnateReference(panel)) continue;
++      files.push(...referencePartFiles(panel, { unitId, unitNum, index }));
++      index += 1;
++    }
++  }
++  return files;
++}
+diff --git a/src/engine/design.js b/src/engine/design.js
+index 479144cec2df087d1b4ba13bde9968099e547d63..3dd2c8430c7003faf98c2614ffa28075728296ac 100644
+--- a/src/engine/design.js
++++ b/src/engine/design.js
+@@ -48,6 +48,10 @@ export const FRONT_STYLE_OPTIONS = [
+   // shaker jak mamy ustawianie shakera po wyborze shaker, bez sensu"* (S + frame width is the slim).
+   { id: 'FL', label: 'Fluted' },
+   { id: 'AM', label: 'Applied moulding' },
++  { id: 'ORNATE_A_1', label: 'Ornate A - Classic' },
++  { id: 'ORNATE_A_2', label: 'Ornate A - Symmetric' },
++  { id: 'ORNATE_A_3', label: 'Ornate A - Soft' },
++  { id: 'ORNATE_A_4', label: 'Ornate A - Plain' },
+ ];
+ 
+ // Selecting a style is the explicit opt-in. Merely loading a saved style is not.
+diff --git a/src/engine/drawings/frontDecorationDrawing.js b/src/engine/drawings/frontDecorationDrawing.js
+index 70db92b9bf39474bb13263c6795db41243880ec7..39e275beaf677ecf25bb653698fa77baedd5a73d 100644
+--- a/src/engine/drawings/frontDecorationDrawing.js
++++ b/src/engine/drawings/frontDecorationDrawing.js
+@@ -3,11 +3,25 @@
+ import { entPoly } from './primitives.js';
+ import { formatMm } from '../format.js';
+ 
+-function contourPoints(points) {
+-  return Array.isArray(points) && points.length >= 3
++function contourPoints(points, minimumPoints = 3) {
++  return Array.isArray(points) && points.length >= minimumPoints
+     && points.every((p) => Array.isArray(p) && p.length >= 2 && p.every(Number.isFinite));
+ }
+ 
++// A sculpted relief has one canonical surface and several contour references.
++// These curves describe that surface; each curve is not a separate pocket.
++function operationContours(operation) {
++  return [
++    { ...operation, contourId: null },
++    ...(operation.contours || []).map((contour) => ({
++      ...contour, face: operation.face, contourId: contour.id,
++      layer: contour.layer || operation.layer,
++      kind: 'relief-reference',
++    })),
++  ].filter((contour) => contour.face === 'front'
++    && contourPoints(contour.points, contour.closed === false ? 2 : 3));
++}
++
+ /** Front elevation only. A top view must not flatten this face onto a plan. */
+ export function frontDecorationElevation(panel) {
+   const decoration = panel?.meta?.frontDecoration;
+@@ -16,11 +30,13 @@ export function frontDecorationElevation(panel) {
+   const projected = (points) => points.map(([x, y]) => [box.x + box.w - x, box.y + y]);
+   const out = [];
+   for (const operation of decoration.operations || []) {
+-    if (operation.face !== 'front' || !contourPoints(operation.points)) continue;
+-    out.push({
+-      ...entPoly('DOORS', projected(operation.points)),
+-      pen: 'FINE', meta: 'front-decoration', operationId: operation.id,
+-    });
++    for (const contour of operationContours(operation)) {
++      out.push({
++        ...entPoly('DOORS', projected(contour.points), { open: contour.closed === false }),
++        pen: 'FINE', meta: 'front-decoration', operationId: operation.id,
++        ...(contour.contourId ? { contourId: contour.contourId } : {}),
++      });
++    }
+   }
+   for (const addition of decoration.additions || []) {
+     if (addition.face !== 'front' || !contourPoints(addition.points)) continue;
+@@ -38,23 +54,28 @@ export function frontDecorationMachinings(panel) {
+   if (!decoration) return [];
+   const out = [];
+   for (const operation of decoration.operations || []) {
+-    if (operation.face !== 'front' || !contourPoints(operation.points)) continue;
+-    const pts = operation.points.map((p) => [...p]);
+-    const xs = pts.map((p) => p[0]);
+-    const ys = pts.map((p) => p[1]);
+-    const x = Math.min(...xs); const y = Math.min(...ys);
+-    const w = Math.max(...xs) - x; const h = Math.max(...ys) - y;
+-    const tool = operation.tool;
+-    const cutter = tool?.diameter > 0 ? `, ${tool.kind || 'cutter'} diameter ${formatMm(tool.diameter)} mm` : '';
+-    const start = Number(operation.startDepth) > 0 ? `, starts ${formatMm(operation.startDepth)} mm below face` : '';
+-    out.push({
+-      id: `decoration-${operation.id}`,
+-      kind: 'path', machiningKind: operation.kind,
+-      layer: operation.layer, pts, closed: true,
+-      face: 'front', depth: operation.depth, startDepth: operation.startDepth || 0,
+-      x, y, w, h, at: [x + w / 2, y + h / 2],
+-      note: `FRONT FACE ${operation.kind} · ${formatMm(operation.depth)} mm total depth${start}${cutter}`,
+-    });
++    for (const contour of operationContours(operation)) {
++      const pts = contour.points.map((p) => [...p]);
++      const xs = pts.map((p) => p[0]);
++      const ys = pts.map((p) => p[1]);
++      const x = Math.min(...xs); const y = Math.min(...ys);
++      const w = Math.max(...xs) - x; const h = Math.max(...ys) - y;
++      const tool = operation.tool;
++      const cutter = tool?.diameter > 0 ? `, ${tool.kind || 'cutter'} diameter ${formatMm(tool.diameter)} mm` : '';
++      const start = Number(contour.startDepth) > 0 ? `, starts ${formatMm(contour.startDepth)} mm below face` : '';
++      const reference = operation.kind === 'relief';
++      const depthNote = Number.isFinite(contour.depth) ? `, ${formatMm(contour.depth)} mm below front face` : '';
++      out.push({
++        id: `decoration-${operation.id}${contour.contourId ? `-${contour.contourId}` : ''}`,
++        kind: 'path', machiningKind: reference ? 'relief-reference' : operation.kind,
++        layer: contour.layer, pts, closed: contour.closed !== false,
++        face: 'front', depth: contour.depth, startDepth: contour.startDepth || 0,
++        x, y, w, h, at: [x + w / 2, y + h / 2],
++        note: reference
++          ? `FRONT FACE RELIEF REFERENCE${depthNote}. Surface geometry requires CAM and sample approval; this curve is not a pocket toolpath.`
++          : `FRONT FACE ${operation.kind} · ${formatMm(operation.depth)} mm total depth${start}${cutter}`,
++      });
++    }
+   }
+   for (const addition of decoration.additions || []) {
+     if (addition.face !== 'front' || !contourPoints(addition.points)) continue;
+@@ -83,6 +104,9 @@ export function frontDecorationDetailNote(panel) {
+     notes.push(`Decoration blocked: ${(decoration.problems || []).map((p) => p.message).filter(Boolean).join('; ') || 'Check the front recipe'}`);
+   }
+   if (decoration.operations?.length) notes.push('Front-face decoration shown in the CNC back-view datum; the separate FRONT DXF mirrors X for front-face setup');
++  if (decoration.operations?.some((operation) => operation.kind === 'relief')) {
++    notes.push('Ornate relief is a proposed reconstruction. Dimensions, ornament and cutter access require a physical sample and workshop approval. Relief contours are references, not independent pocket cuts');
++  }
+   if (decoration.additions?.length) {
+     const count = decoration.additions.length;
+     notes.push(`${count} applied moulding ${count === 1 ? 'piece' : 'pieces'}, fit to FRONT face`);
+diff --git a/src/engine/frontDecoration.js b/src/engine/frontDecoration.js
+index d70cafce483fc9f26d3cd7e2aeddf98724b4e377..1a04607a6341d30fdb5a89a8a29d8ea5da282c4d 100644
+--- a/src/engine/frontDecoration.js
++++ b/src/engine/frontDecoration.js
+@@ -13,13 +13,16 @@
+ 
+ import { machiningFor } from './machining.js';
+ import { getCabinetProfile } from './profile.js';
++import { ORNATE_STYLE_IDS, buildOrnateFront, defaultOrnateConfig, normaliseOrnateConfig } from './ornateFront.js';
++
++export { ORNATE_STYLE_IDS } from './ornateFront.js';
+ 
+ const EPS = 1e-7;
+ const MAX_OPERATIONS = 256;
+ const CURVE_STEPS = 24;
+ const CONTOUR_TOLERANCE_MM = 0.025;
+ 
+-/** The styles this module has geometry for. Their numbers are the profile's. */
++/** Existing 2.5D machining recipes. Proposed 3D reliefs are ORNATE_STYLE_IDS. */
+ export const DECORATIVE_FRONT_STYLES = Object.freeze(['G', 'GF', 'A', 'AH', 'FL', 'AM']);
+ 
+ /** The cutters a groove recipe may name, per style (T76 F4: a V is a V). */
+@@ -27,7 +30,7 @@ const GROOVE_CUTTERS = Object.freeze({ G: ['v', 'endmill'], GF: ['v', 'endmill']
+ 
+ /** One style's recipe in this profile, or null where the style has none. */
+ function recipeOf(style, profile) {
+-  if (!DECORATIVE_FRONT_STYLES.includes(style)) return null;
++  if (![...DECORATIVE_FRONT_STYLES, ...ORNATE_STYLE_IDS].includes(style)) return null;
+   return profile?.front?.decoration?.[style] || null;
+ }
+ 
+@@ -45,6 +48,7 @@ function skinShort(board, depth, profile) {
+ 
+ /** Explicit opt-in: no object is created merely by opening an old style. */
+ export function defaultFrontDecoration(style, profile = getCabinetProfile()) {
++  if (ORNATE_STYLE_IDS.includes(style)) return defaultOrnateConfig(style, profile);
+   const recipe = recipeOf(style, profile);
+   return recipe ? { version: 1, style, ...recipe } : null;
+ }
+@@ -52,6 +56,7 @@ export function defaultFrontDecoration(style, profile = getCabinetProfile()) {
+ /** Preserve invalid entered numbers for validation, never silently clamp. */
+ export function normaliseFrontDecoration(config, style = config?.style, profile = getCabinetProfile()) {
+   if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
++  if (ORNATE_STYLE_IDS.includes(style)) return normaliseOrnateConfig(config, style, profile);
+   const recipe = recipeOf(style, profile);
+   if (!recipe) return { ...config, version: config.version ?? 1, style };
+   const out = { version: config.version ?? 1, style };
+@@ -443,7 +448,9 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
+ export function boardRefusal(style, thicknessMm, profile = getCabinetProfile()) {
+   const recipe = recipeOf(style, profile);
+   if (!recipe) return null;
+-  const deepest = (Number(recipe.recessDepthMm) || 0) + (Number(recipe.grooveDepthMm) || 0);
++  const deepest = ORNATE_STYLE_IDS.includes(style)
++    ? Math.max(Number(recipe.cornerDepthMm) || 0, ...(Array.isArray(recipe.stepDepthsMm) ? recipe.stepDepthsMm : []))
++    : (Number(recipe.recessDepthMm) || 0) + (Number(recipe.grooveDepthMm) || 0);
+   const board = Number(thicknessMm);
+   if (!(deepest > 0) || !Number.isFinite(board) || !skinShort(board, deepest, profile)) return null;
+   const needMm = round(deepest + minSkinOf(profile));
+@@ -457,6 +464,15 @@ export function boardRefusal(style, thicknessMm, profile = getCabinetProfile())
+ 
+ /** The one canonical record read by CNC, 3D, BOM and drawings. */
+ export function buildFrontDecoration({ panel, config, style = config?.style, drills = [], profile = getCabinetProfile() }) {
++  if (ORNATE_STYLE_IDS.includes(style)) {
++    if (!config) return null;
++    const ornate = buildOrnateFront({ panel, config, style, profile });
++    if (ornate?.status === 'ready') {
++      const problems = validateFrontDecoration({ panel, decoration: ornate, drills, profile });
++      if (problems.length) return { ...ornate, status: 'blocked', operations: [], additions: [], problems: [...ornate.problems, ...problems] };
++    }
++    return ornate;
++  }
+   const parameters = normaliseFrontDecoration(config, style, profile);
+   if (!parameters) return null;
+   // T76 F4 · `advisories` are said by the Check and block nothing (the board
+diff --git a/src/engine/frontDecorationBom.js b/src/engine/frontDecorationBom.js
+index dceda9b9ed74713b18f10df815c4133f3698dc40..b5025e6fdb778026a567f6680bb8235a10981213 100644
+--- a/src/engine/frontDecorationBom.js
++++ b/src/engine/frontDecorationBom.js
+@@ -13,7 +13,9 @@ export function frontManufacturing(panel) {
+     const depths = [...new Set(decoration.operations.map((op) => op.depth))];
+     // T76 F7 · short, so the T75 State column stays inside the panel (the walk
+     // measured it pushed past the edge by the longer label).
+-    const construction = applied
++    const construction = decoration.referenceOnly
++      ? `${decoration.style} - Slab; relief proposed, not production approved`
++      : applied
+       ? `${decoration.style} · Slab, ${decoration.additions.length} applied strips`
+       : `${decoration.style} · Routed slab${depths.length ? `, depths ${depths.join('/')} mm` : ''}`;
+     return {
+diff --git a/src/engine/frontStyleArt.js b/src/engine/frontStyleArt.js
+index 83f58651025f7f43fd658d4b4691b38cd246f093..56c7feb6c426d229f90b216e878c01a391942e4c 100644
+--- a/src/engine/frontStyleArt.js
++++ b/src/engine/frontStyleArt.js
+@@ -28,6 +28,8 @@
+ //
+ // Pure data + pure functions. No React.
+ 
++import { ORNATE_FRONT_ART } from './ornateFrontArt.js';
++
+ export const FRONT_ART_VIEWBOX = { w: 100, h: 140 };
+ 
+ /** The door's own outer rectangle, inset a hair so the stroke is not clipped. */
+@@ -44,6 +46,7 @@ const OUTER = { x: 4, y: 4, w: 92, h: 132 };
+  * draws it thinner, so a shaker's rails read as joints and not as cut lines.
+  */
+ export const FRONT_STYLE_ART = {
++  ...ORNATE_FRONT_ART,
+   FL: [
+     { rect: [OUTER.x, OUTER.y, OUTER.w, OUTER.h] },
+     ...[0, 1, 2, 3, 4, 5].flatMap((i) => [
+diff --git a/src/engine/ornateFront.js b/src/engine/ornateFront.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..071b284333f75d56352f8d7e1a958cb543f0a82f
+--- /dev/null
++++ b/src/engine/ornateFront.js
+@@ -0,0 +1,350 @@
++// Copyright Skylon Development Ltd. All rights reserved.
++// Ornate A: one canonical, sculpted 2.5D target surface for preview and CAM.
++// All coordinates are the existing CNC BACK datum, millimetres, y up.
++// The third surface coordinate is POSITIVE DEPTH below the original FRONT.
++// It is a depth scalar, not spatial z. Consumers use z = frontZ - depth and
++// preserve the existing frontDecorationSolid winding convention.
++// No THREE, canvas, bitmap, silhouette overlays or separately floating petals.
++
++import { getCabinetProfile } from './profile.js';
++
++export const ORNATE_STYLE_IDS = Object.freeze(['ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4']);
++const EPS = 1e-7;
++const MAX_PANEL_MM = 5000;
++const CHORD_ERROR_MM = 0.06;
++const RELIEF_SAMPLE_MM = 1.0;
++const SURFACE_CHORD_MM = 2.0;
++const MAX_VERTICES = 110000;
++const round = (n) => Math.round(n * 1e7) / 1e7;
++const clone = (value) => Array.isArray(value) ? value.map(clone)
++  : value && typeof value === 'object' ? Object.fromEntries(Object.entries(value).map(([k, v]) => [k, clone(v)])) : value;
++const numeric = (v) => typeof v === 'number' ? v : typeof v === 'string' && v.trim() ? Number(v) : NaN;
++const recipeOf = (style, profile) => ORNATE_STYLE_IDS.includes(style) ? profile?.front?.decoration?.[style] : null;
++const clamp = (v, low = 0, high = 1) => Math.max(low, Math.min(high, v));
++const smooth = (v) => { const t = clamp(v); return t * t * (3 - 2 * t); };
++const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
++const signedArea = (points) => points.reduce((sum, p, i) => {
++  const q = points[(i + 1) % points.length]; return sum + p[0] * q[1] - q[0] * p[1];
++}, 0) / 2;
++const ccw = (points) => signedArea(points) < 0 ? [...points].reverse() : points;
++const same = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]) < EPS;
++const cleaned = (points) => points.filter((p, i) => !same(p, points[(i + points.length - 1) % points.length]));
++const insideConvex = (points, p) => points.every((a, i) => {
++  const b = points[(i + 1) % points.length];
++  return (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) >= -EPS;
++});
++
++export function defaultOrnateConfig(style, profile = getCabinetProfile()) {
++  const recipe = recipeOf(style, profile);
++  return recipe ? { version: 1, style, ...clone(recipe) } : null;
++}
++
++/** Deep-copy arrays and retain invalid values for an explicit refusal. */
++export function normaliseOrnateConfig(config, style = config?.style, profile = getCabinetProfile()) {
++  if (!config || typeof config !== 'object' || Array.isArray(config)) return null;
++  const recipe = recipeOf(style, profile);
++  if (!recipe) return { ...clone(config), version: config.version ?? 1, style };
++  const out = { version: config.version ?? 1, style };
++  for (const [key, fallback] of Object.entries(recipe)) {
++    const value = Object.hasOwn(config, key) ? config[key] : fallback;
++    out[key] = typeof fallback === 'number' ? numeric(value)
++      : Array.isArray(fallback) ? (Array.isArray(value) ? Array.from(value, numeric) : clone(value)) : clone(value);
++  }
++  return out;
++}
++
++// Corner order: bottom-left, bottom-right, top-right, top-left in FRONT view.
++// Keeping identical sampling on all moulding contours joins them without gaps.
++function roundedRectangle(width, height, inset, radii, steps, edgeFractions = [[], [], [], []]) {
++  const x0 = inset; const y0 = inset; const x1 = width - inset; const y1 = height - inset;
++  const centres = [[x0 + radii[0], y0 + radii[0]], [x1 - radii[1], y0 + radii[1]],
++    [x1 - radii[2], y1 - radii[2]], [x0 + radii[3], y1 - radii[3]]];
++  const points = [];
++  for (let corner = 0; corner < 4; corner += 1) {
++    const start = Math.PI + corner * Math.PI / 2;
++    for (let i = 0; i <= steps[corner]; i += 1) {
++      const a = start + Math.PI / 2 * i / steps[corner];
++      points.push([centres[corner][0] + radii[corner] * Math.cos(a), centres[corner][1] + radii[corner] * Math.sin(a)]);
++    }
++    const end = points.at(-1); const next = (corner + 1) % 4;
++    const nextAngle = Math.PI + next * Math.PI / 2;
++    const nextPoint = [centres[next][0] + radii[next] * Math.cos(nextAngle), centres[next][1] + radii[next] * Math.sin(nextAngle)];
++    for (const t of edgeFractions[corner]) points.push([end[0] + (nextPoint[0] - end[0]) * t, end[1] + (nextPoint[1] - end[1]) * t]);
++  }
++  return points;
++}
++
++function meshBuilder() {
++  const vertices = []; const triangles = []; const index = new Map();
++  const vertex = (p) => {
++    const rounded = p.map(round); const key = rounded.join(',');
++    if (index.has(key)) return index.get(key);
++    const n = vertices.length; vertices.push(rounded); index.set(key, n); return n;
++  };
++  const triangle = (a, b, c) => {
++    const p = vertices[a]; const q = vertices[b]; const r = vertices[c];
++    const cross = (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]);
++    if (Math.abs(cross) <= EPS || a === b || b === c || c === a) return;
++    triangles.push(cross > 0 ? [a, b, c] : [a, c, b]);
++  };
++  const ring = (points, depthAt) => points.map((p, i) => vertex([p[0], p[1], depthAt(p, i)]));
++  const join = (outer, inner) => {
++    for (let i = 0; i < outer.length; i += 1) {
++      const j = (i + 1) % outer.length;
++      triangle(outer[i], outer[j], inner[j]); triangle(outer[i], inner[j], inner[i]);
++    }
++  };
++  return { vertices, triangles, vertex, triangle, ring, join };
++}
++
++// A leaf is an actual arched/ridged lamina in the same carved surface.
++// Its outline is a tapered curved spindle. The crease down its centre and
++// the slight left/right asymmetry are heights, not painted lines.
++function leaf(origin, tip, width, bend, height = 1) {
++  const dx = tip[0] - origin[0]; const dy = tip[1] - origin[1]; const length = Math.hypot(dx, dy);
++  const u = [dx / length, dy / length]; const v = [-u[1], u[0]];
++  const at = (t) => [origin[0] + dx * t + v[0] * bend * Math.sin(Math.PI * t),
++    origin[1] + dy * t + v[1] * bend * Math.sin(Math.PI * t)];
++  const outline = [];
++  for (let side = -1; side <= 1; side += 2) {
++    for (let n = 0; n <= 20; n += 1) {
++      const t = side < 0 ? n / 20 : 1 - n / 20; const c = at(t);
++      const spread = width * Math.sin(Math.PI * t);
++      outline.push([c[0] + v[0] * spread * side, c[1] + v[1] * spread * side]);
++    }
++  }
++  return {
++    outline: cleaned(outline),
++    ridge: Array.from({ length: 21 }, (_, i) => at(i / 20)),
++    heightAt: (p) => {
++      const t = ((p[0] - origin[0]) * u[0] + (p[1] - origin[1]) * u[1]) / length;
++      if (t <= 0 || t >= 1) return 0;
++      const c = at(t); const side = (p[0] - c[0]) * v[0] + (p[1] - c[1]) * v[1];
++      const spread = width * Math.sin(Math.PI * t); const s = Math.abs(side / spread);
++      if (s >= 1) return 0;
++      const ridgeNotch = 1 - 0.2 * Math.exp(-Math.pow(side / (width * 0.09), 2));
++      return height * Math.pow(Math.sin(Math.PI * t), 0.55) * Math.pow(1 - s * s, 0.6) * ridgeNotch;
++    },
++  };
++}
++
++function floralMotif() {
++  const leaves = []; const centre = [34, 34];
++  for (let i = 0; i < 11; i += 1) {
++    const angle = 2 * Math.PI * i / 11; const cos = Math.cos(angle); const sin = Math.sin(angle);
++    leaves.push(leaf([centre[0] + cos * 7, centre[1] + sin * 7],
++      [centre[0] + cos * 28, centre[1] + sin * 28], 4.7, i % 2 ? 1.2 : -1.2));
++  }
++  // Two leafy sprays follow the corner, tied into the central flower.
++  for (const transpose of [false, true]) {
++    for (const [origin, tip, w, bend] of [
++      [[49, 29], [87, 11], 5.2, 2], [[59, 28], [100, 26], 6.6, -3],
++      [[82, 21], [120, 9], 4.8, 2], [[87, 25], [123, 36], 5.4, -2],
++      [[108, 20], [145, 16], 4, 1],
++    ]) {
++      const swap = (p) => transpose ? [p[1], p[0]] : p;
++      leaves.push(leaf(swap(origin), swap(tip), w, transpose ? -bend : bend, 0.83));
++    }
++  }
++  const disc = Array.from({ length: 48 }, (_, i) => [centre[0] + 8 * Math.cos(i * Math.PI / 24), centre[1] + 8 * Math.sin(i * Math.PI / 24)]);
++  return {
++    outlines: [...leaves.map((l) => l.outline), disc], ridges: leaves.map((l) => l.ridge),
++    heightAt: (p) => {
++      let value = 0;
++      for (const l of leaves) value = Math.max(value, l.heightAt(p));
++      const r = Math.hypot(p[0] - centre[0], p[1] - centre[1]);
++      if (r < 8) value = Math.max(value, Math.sqrt(Math.max(0, 1 - r * r / 64)));
++      return value;
++    },
++  };
++}
++
++const MOTIF = floralMotif();
++
++/** Build canonical surface. A valid design is still a PROPOSED reference. */
++export function buildOrnateFront({ panel, config, style = config?.style, profile = getCabinetProfile() }) {
++  const parameters = normaliseOrnateConfig(config, style, profile);
++  if (!parameters) return null;
++  const result = {
++    version: 1, style, face: 'front', parameters, outline: [], thickness: Number(panel?.thickness),
++    operations: [], additions: [], problems: [], advisories: [], status: 'ready',
++    referenceOnly: true, productionApproval: 'proposed-reference',
++    approval: { status: 'proposed', productionApproved: false },
++    coordinateSystem: 'cnc-back-mm-depth-positive',
++    designInterpretation: 'Procedural interpretation of the 10 October 2026 concept board. The outer frame and the total inner moulding band are separate dimensions. Four smooth profile bands terminate at the proposed depth levels. Floral relief is sculpted from the same board; it is not a scan or a production-approved reproduction. Variant 2 uses true semicircular ends fitted to its clear width.',
++  };
++  const fail = (code, message) => {
++    result.status = 'blocked'; result.operations = []; result.problems.push({ code, message }); return result;
++  };
++  if (!recipeOf(style, profile)) return fail('ORNATE_PROFILE', 'This workshop profile has no Ornate A recipe.');
++  if (parameters.version !== 1) return fail('ORNATE_VERSION', 'This Ornate A recipe version is not supported.');
++  const c = parameters;
++  if (!Number.isInteger(c.variant) || c.variant !== ORNATE_STYLE_IDS.indexOf(style) + 1) return fail('ORNATE_VARIANT', 'The selected style and its variant do not match.');
++  if (typeof c.mirror !== 'boolean' || typeof c.ornament !== 'boolean') return fail('ORNATE_BOOLEAN', 'Mirror and ornament settings must be booleans.');
++  if (c.variant === 4 && c.ornament) return fail('ORNATE_VARIANT', 'Variant 4 is the version without an ornament.');
++  for (const key of ['boardMm', 'referenceWidthMm', 'referenceHeightMm', 'outerFrameMm', 'innerFrameMm', 'innerRadiusMm', 'secondaryRadiusMm', 'cornerDepthMm', 'ornamentReliefMm', 'ornamentScale']) {
++    if (!(Number.isFinite(c[key]) && c[key] > 0)) return fail('ORNATE_PARAMETER', `${key} must be a finite positive number.`);
++  }
++  for (const key of ['stepWidthsMm', 'stepDepthsMm']) {
++    if (!Array.isArray(c[key]) || c[key].length !== 4 || c[key].some((v) => !Number.isFinite(v) || v <= 0)) return fail('ORNATE_PROFILE_SECTION', `${key} must contain four finite positive numbers.`);
++  }
++  if (c.stepDepthsMm.some((d, i) => i && d <= c.stepDepthsMm[i - 1])) return fail('ORNATE_PROFILE_SECTION', 'The four absolute depth levels must increase strictly.');
++  if (c.ornamentReliefMm >= c.cornerDepthMm) return fail('ORNATE_RELIEF', 'Floral relief must remain below the original face and within its recessed background.');
++  const width = Number(panel?.cnc?.drawn_w ?? panel?.w); const height = Number(panel?.cnc?.drawn_h ?? panel?.h);
++  if (![width, height, result.thickness].every((v) => Number.isFinite(v) && v > 0 && v <= MAX_PANEL_MM)) return fail('ORNATE_PANEL', `Ornate A needs finite positive dimensions no larger than ${MAX_PANEL_MM} mm.`);
++  const raw = panel?.cnc?.outline || rect(0, 0, width, height);
++  if (!Array.isArray(raw) || raw.length < 4 || raw.length > 512 || Array.from(raw).some((p) => !Array.isArray(p) || !Number.isFinite(p[0]) || !Number.isFinite(p[1])
++    || (p.length > 2 && (!Number.isFinite(p[2]) || Math.abs(p[2]) > EPS)))) return fail('ORNATE_OUTLINE', 'Ornate A currently supports a rectangular front without arcs or slopes.');
++  const outline = cleaned(raw.map((p) => [p[0], p[1]]));
++  if (outline.length !== 4 || Math.abs(Math.abs(signedArea(outline)) - width * height) > EPS
++    || outline.some(([x, y]) => !((Math.abs(x) < EPS || Math.abs(x - width) < EPS) && (Math.abs(y) < EPS || Math.abs(y - height) < EPS)))) return fail('ORNATE_OUTLINE', 'Ornate A currently supports the full rectangular front outline only; it cannot be squeezed into a slope.');
++  result.outline = ccw(outline);
++  const maxDepth = Math.max(...c.stepDepthsMm, c.cornerDepthMm);
++  const skin = Number(profile?.front?.decorationMinSkinMm);
++  if (!(skin > 0) || result.thickness - maxDepth < skin - EPS) return fail('ORNATE_SKIN', `The deepest cut leaves ${round(result.thickness - maxDepth)} mm; this profile requires ${skin} mm of material.`);
++  const profileWidth = c.stepWidthsMm.reduce((a, b) => a + b, 0);
++  if (profileWidth >= c.innerFrameMm) return fail('ORNATE_PROFILE_FIT', 'The total profile width must be smaller than the inner moulding band so its corner background remains.');
++  const innerInset = c.outerFrameMm + c.innerFrameMm;
++  const innerW = width - 2 * innerInset; const innerH = height - 2 * innerInset;
++  if (innerW <= 0 || innerH <= 0) return fail('ORNATE_TOO_SMALL', 'The two frame bands leave no inner panel at this front size.');
++  const radii = c.variant === 2 ? [innerW / 2, innerW / 2, innerW / 2, innerW / 2]
++    : [c.secondaryRadiusMm, c.innerRadiusMm, c.secondaryRadiusMm, c.innerRadiusMm];
++  if (radii[0] + radii[1] > innerW + EPS || radii[2] + radii[3] > innerW + EPS
++    || radii[0] + radii[3] > innerH + EPS || radii[1] + radii[2] > innerH + EPS) return fail('ORNATE_RADIUS_FIT', 'The specified corner radii do not fit this inner panel. Change the size or recipe; the radii are never silently clamped.');
++  if (c.variant === 2 && innerH < innerW - EPS) return fail('ORNATE_CAPSULE_FIT', 'Variant 2 needs an inner height at least equal to its width for true semicircular ends.');
++  const outerInset = innerInset - profileWidth;
++  const activeCorners = c.variant === 2 ? [0, 1, 2, 3] : [1, 3];
++  const outerRadii = radii.map((r, i) => activeCorners.includes(i) ? r + profileWidth : r);
++  const steps = outerRadii.map((r) => Math.max(4, Math.ceil(Math.PI * r / (2 * SURFACE_CHORD_MM)),
++    Math.ceil((Math.PI / 2) / (2 * Math.acos(Math.max(-1, 1 - CHORD_ERROR_MM / r))))));
++  const motifReferenceRadius = c.referenceWidthMm / 2 - c.outerFrameMm - c.innerFrameMm;
++  if (!(motifReferenceRadius > 0)) return fail('ORNATE_REFERENCE', 'The reference width must leave room for both frame bands.');
++  // Refine the long straight sides where a floral spray can enter them. A
++  // single side-spanning quad would interpolate a leaf tip across the panel.
++  const edgeSpan = Math.max(...outerRadii) / motifReferenceRadius * 150 * c.ornamentScale;
++  const edgeFractions = [width - 2 * c.outerFrameMm, height - 2 * c.outerFrameMm,
++    width - 2 * c.outerFrameMm, height - 2 * c.outerFrameMm].map((length) => {
++    const reach = Math.min(length / 2, edgeSpan); const count = Math.ceil(reach / SURFACE_CHORD_MM);
++    const fractions = [];
++    for (let n = 1; n <= count; n += 1) {
++      const t = reach * n / count / length;
++      if (t > EPS && t < 1 - EPS) fractions.push(t, 1 - t);
++    }
++    return [...new Set(fractions.map(round))].sort((a, b) => a - b);
++  });
++  const contour = (inset, rr) => roundedRectangle(width, height, inset, rr, steps, edgeFractions);
++  const outer = contour(c.outerFrameMm, [0, 0, 0, 0]);
++  const mouth = contour(outerInset, outerRadii);
++  const corners = [[c.outerFrameMm, c.outerFrameMm], [width - c.outerFrameMm, c.outerFrameMm],
++    [width - c.outerFrameMm, height - c.outerFrameMm], [c.outerFrameMm, height - c.outerFrameMm]];
++  const axes = [[[1, 0], [0, 1]], [[-1, 0], [0, 1]], [[-1, 0], [0, -1]], [[1, 0], [0, -1]]];
++  const motifScale = (corner) => c.ornamentScale * outerRadii[corner] / motifReferenceRadius;
++  // The original 600 mm plate sets a 180 mm outer corner radius. The divisor
++  // derives that same radius from the profile's reference width and bands.
++  const placements = c.ornament ? activeCorners.map((corner) => ({ corner, origin: corners[corner], axes: axes[corner], scale: motifScale(corner) })) : [];
++  if (placements.some((p) => !(p.scale > 0) || p.scale > 4)) return fail('ORNATE_ORNAMENT_FIT', 'The reference ornament scale is not suitable for this corner.');
++  const placedPoint = (placement, p) => [
++    placement.origin[0] + placement.scale * (p[0] * placement.axes[0][0] + p[1] * placement.axes[1][0]),
++    placement.origin[1] + placement.scale * (p[0] * placement.axes[0][1] + p[1] * placement.axes[1][1]),
++  ];
++  if (placements.some((placement) => MOTIF.outlines.some((points) => points.some((p) => {
++    const q = placedPoint(placement, p);
++    return q[0] < c.outerFrameMm - EPS || q[0] > width - c.outerFrameMm + EPS
++      || q[1] < c.outerFrameMm - EPS || q[1] > height - c.outerFrameMm + EPS || insideConvex(mouth, q);
++  })))) return fail('ORNATE_ORNAMENT_FIT', 'The complete floral ornament does not fit its corner background. Reduce the ornament scale or use another radius; the flower is never silently cropped.');
++  const columnLengths = outer.map((p, i) => Math.hypot(p[0] - mouth[i][0], p[1] - mouth[i][1]));
++  const bandRows = c.stepWidthsMm.reduce((sum, w) => sum + Math.max(6, Math.ceil(w / SURFACE_CHORD_MM)), 0);
++  const available = MAX_VERTICES - (bandRows + 2) * outer.length - 1;
++  if (available <= 0) return fail('ORNATE_COMPLEXITY', `This recipe would exceed the ${MAX_VERTICES} vertex limit. Reduce its dimensions or corner span.`);
++  // Flat areas need only their exact boundary. Sample the botanical relief
++  // densely, then retain those samples and their neighbours. This avoids
++  // spending most of the budget on flat corners in the capsule variant.
++  const radialSpacing = RELIEF_SAMPLE_MM;
++  if (columnLengths.reduce((a, b) => a + b, 0) / radialSpacing > MAX_VERTICES * 8) return fail('ORNATE_COMPLEXITY', 'The requested relief is too large for bounded surface sampling. Reduce its dimensions or corner span.');
++  const mesh = meshBuilder();
++  const reliefAt = (p) => {
++    let highest = 0;
++    for (const placement of placements) {
++      const dx = p[0] - placement.origin[0]; const dy = p[1] - placement.origin[1];
++      const local = placement.axes.map((axis) => (dx * axis[0] + dy * axis[1]) / placement.scale);
++      if (local[0] < 0 || local[1] < 0 || local[0] > 150 || local[1] > 150) continue;
++      highest = Math.max(highest, MOTIF.heightAt(local));
++    }
++    return highest;
++  };
++  const columns = outer.map((p, i) => {
++    const count = Math.max(2, Math.ceil(columnLengths[i] / radialSpacing));
++    const positionAt = (t) => [p[0] + (mouth[i][0] - p[0]) * t, p[1] + (mouth[i][1] - p[1]) * t];
++    const dense = Array.from({ length: count + 1 }, (_, n) => reliefAt(positionAt(n / count)));
++    const keep = new Set([0, 0.015, 0.03, 0.045, 0.06, 0.075, 0.09, 0.91, 0.925, 0.94, 0.955, 0.97, 0.985, 1]);
++    for (let n = 0; n <= count; n += 1) {
++      if (dense[n] <= EPS) continue;
++      for (let neighbour = Math.max(0, n - 2); neighbour <= Math.min(count, n + 2); neighbour += 1) keep.add(neighbour / count);
++    }
++    return [...keep].sort((a, b) => a - b).map((t) => {
++      const q = positionAt(t);
++      const edgeBlend = smooth(t / 0.09) * smooth((1 - t) / 0.09);
++      return { t, index: mesh.vertex([...q, edgeBlend * (c.cornerDepthMm - c.ornamentReliefMm * reliefAt(q))]) };
++    });
++  });
++  for (let column = 0; column < columns.length; column += 1) {
++    const a = columns[column]; const b = columns[(column + 1) % columns.length]; let i = 0; let j = 0;
++    while (i + 1 < a.length || j + 1 < b.length) {
++      const nextA = i + 1 < a.length ? a[i + 1].t : Infinity;
++      const nextB = j + 1 < b.length ? b[j + 1].t : Infinity;
++      if (nextA <= nextB) { mesh.triangle(a[i].index, b[j].index, a[i + 1].index); i += 1; }
++      else { mesh.triangle(a[i].index, b[j].index, b[j + 1].index); j += 1; }
++    }
++  }
++  let previous = columns.map((column) => column.at(-1).index);
++  const contours = []; let usedWidth = 0; let previousDepth = 0;
++  for (let level = 0; level < 4; level += 1) {
++    const band = c.stepWidthsMm[level]; const depth = c.stepDepthsMm[level];
++    const samples = Math.max(6, Math.ceil(band / SURFACE_CHORD_MM));
++    for (let n = 1; n <= samples; n += 1) {
++      const t = n / samples; const travel = usedWidth + band * t;
++      const currentRadii = radii.map((r, i) => activeCorners.includes(i) ? r + profileWidth - travel : r);
++      const points = contour(outerInset + travel, currentRadii);
++      const current = mesh.ring(points, () => previousDepth + (depth - previousDepth) * smooth(t));
++      mesh.join(previous, current); previous = current;
++    }
++    usedWidth += band;
++    const currentRadii = radii.map((r, i) => activeCorners.includes(i) ? r + profileWidth - usedWidth : r);
++    contours.push({ id: `ornate-profile-${level + 1}`, kind: 'profile-level', closed: true,
++      points: cleaned(contour(outerInset + usedWidth, currentRadii)),
++      depth, startDepth: previousDepth, widthMm: band, layer: `FRONT_REF_PROFILE_D${String(depth).replace('.', 'P')}`,
++      role: 'target-surface-boundary-not-toolpath', readiness: 'geometry' });
++    previousDepth = depth;
++  }
++  // Rounded rectangles/capsules are convex, so this exact boundary fan is safe.
++  const centre = mesh.vertex([width / 2, height / 2, previousDepth]);
++  for (let i = 0; i < previous.length; i += 1) mesh.triangle(previous[i], previous[(i + 1) % previous.length], centre);
++  if (mesh.vertices.length > MAX_VERTICES) return fail('ORNATE_COMPLEXITY', `This detailed relief exceeds the ${MAX_VERTICES} vertex limit. Reduce its dimensions or corner span.`);
++  for (const placement of placements) {
++    const transform = (p) => placedPoint(placement, p);
++    MOTIF.outlines.forEach((points, i) => contours.push({ id: `ornate-floral-${placement.corner}-${i}`, kind: 'ornament-reference',
++      points: points.map(transform), closed: true, layer: 'FRONT_REF_ORNAMENT', depth: null,
++      role: 'projected-relief-reference-not-toolpath', readiness: 'geometry' }));
++    MOTIF.ridges.forEach((points, i) => contours.push({ id: `ornate-ridge-${placement.corner}-${i}`, kind: 'ornament-reference',
++      points: points.map(transform), closed: false, layer: 'FRONT_REF_ORNAMENT', depth: null,
++      role: 'projected-relief-reference-not-toolpath', readiness: 'geometry' }));
++  }
++  // Construct in FRONT view to match the board, then store BACK exactly once.
++  // A user mirror changes the front design; the CNC datum conversion is separate.
++  const toBack = (p) => [round(c.mirror ? p[0] : width - p[0]), round(p[1])];
++  const vertices = mesh.vertices.map(([x, y, d]) => [...toBack([x, y]), d]);
++  const triangles = c.mirror ? mesh.triangles : mesh.triangles.map(([a, b, d]) => [a, d, b]);
++  result.operations.push({
++    id: 'ornate-sculpted-front', kind: 'relief', face: 'front', points: ccw(cleaned(outer).map(toBack)),
++    startDepth: 0, depth: maxDepth, tool: { kind: 'cam-selected' }, layer: 'FRONT_REF_RELIEF',
++    readiness: 'geometry', referenceOnly: true, surface: { vertices, triangles },
++    contours: contours.map((contour) => ({ ...contour, points: contour.closed ? ccw(contour.points.map(toBack)) : contour.points.map(toBack) })),
++    crossSection: { kind: 'four-smooth-bands', widthsMm: [...c.stepWidthsMm], absoluteDepthsMm: [...c.stepDepthsMm] },
++    targetSurface: { units: 'mm', depthDatum: 'original-front-face', depthDirection: 'positive-into-board',
++      maxContourChordErrorMm: CHORD_ERROR_MM, reliefRadialSampleMm: radialSpacing,
++      reliefMaxAngularChordMm: SURFACE_CHORD_MM, closedSolid: false },
++  });
++  result.advisories.push({ code: 'ORNATE_PROPOSED_REFERENCE', message: 'Proposed ornamental design: confirm the physical pattern, board, tooling, residual material, and CAM setup before production. These contours and the shared relief mesh are reference geometry, not cutter-centre toolpaths.' });
++  result.advisories.push({ code: 'ORNATE_BORE_ENVELOPE', message: 'Hardware clearance uses the deepest relief envelope across its recessed footprint. A rejected rear drilling may need a measured local CAM check.' });
++  return result;
++}
+diff --git a/src/engine/ornateFrontArt.js b/src/engine/ornateFrontArt.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ecddd72890f3ce310e2427c7fbd2bb8eabb16485
+--- /dev/null
++++ b/src/engine/ornateFrontArt.js
+@@ -0,0 +1,36 @@
++// Copyright (c) 2026 Skylon Development Ltd.
++// Gallery artwork in proportional SVG units, not manufacturing dimensions.
++const ring = (inset, symmetric, soft) => {
++  const l = 15 + inset, r = 85 - inset, t = 15 + inset, b = 125 - inset;
++  const radius = symmetric ? (r - l) / 2 : (soft ? 22 : 37) - inset;
++  return symmetric
++    ? `M ${l} ${t + radius} A ${radius} ${radius} 0 0 1 ${r} ${t + radius} L ${r} ${b - radius} A ${radius} ${radius} 0 0 1 ${l} ${b - radius} Z`
++    : `M ${l + radius} ${t} H ${r} V ${b - radius} A ${radius} ${radius} 0 0 1 ${r - radius} ${b} H ${l} V ${t + radius} A ${radius} ${radius} 0 0 1 ${l + radius} ${t} Z`;
++};
++
++function flower(x, y, sx, sy) {
++  const path = [];
++  const p = (a, b) => `${x + sx * a} ${y + sy * b}`;
++  for (let i = 0; i < 8; i += 1) {
++    const a = i * Math.PI / 4;
++    const dx = Math.cos(a), dy = Math.sin(a);
++    path.push({ path: `M ${p(dx * 1.8, dy * 1.8)} Q ${p(dx * 7 - dy * 2, dy * 7 + dx * 2)} ${p(dx * 7.4, dy * 7.4)} Q ${p(dx * 7 + dy * 2, dy * 7 - dx * 2)} ${p(dx * 1.8, dy * 1.8)} Z`, soft: true });
++  }
++  path.push({ path: `M ${p(-2, 0)} A 2 2 0 1 0 ${p(2, 0)} A 2 2 0 1 0 ${p(-2, 0)} Z` });
++  for (const [a, b, c, d] of [[7, -1, 16, -5], [0, 8, -4, 18], [11, -3, 22, -5]]) {
++    path.push({ path: `M ${p(a, b)} Q ${p(c, b + 2)} ${p(c, d)} Q ${p(a, d - 1)} ${p(a, b)} Z`, soft: true });
++  }
++  return path;
++}
++
++const art = (variant) => [
++  { rect: [4, 4, 92, 132] },
++  { rect: [13, 13, 74, 114] },
++  ...[0, 2, 4, 6].map((n) => ({ path: ring(n, variant === 2, variant === 3), soft: n > 0 })),
++  ...(variant === 4 ? [] : [
++    ...flower(21, 22, 1, 1), ...flower(79, 118, -1, -1),
++    ...(variant === 2 ? [...flower(79, 22, -1, 1), ...flower(21, 118, 1, -1)] : []),
++  ]),
++];
++
++export const ORNATE_FRONT_ART = Object.fromEntries([1, 2, 3, 4].map((v) => [`ORNATE_A_${v}`, art(v)]));
+diff --git a/src/engine/ornateFrontProfile.js b/src/engine/ornateFrontProfile.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e1a7b5e1b585ab63b4cbed1409607f1b27a8ac1e
+--- /dev/null
++++ b/src/engine/ornateFrontProfile.js
+@@ -0,0 +1,33 @@
++// Copyright Skylon Development Ltd. All rights reserved.
++// Proposed numbers from Piotr's 600 × 800 concept board, 10 October 2026.
++// These are profile seeds, not a measured cutter catalogue or production recipe.
++// profile.js imports this object into front.decoration; engines read the profile.
++
++const proposal = {
++  boardMm: 18,
++  referenceWidthMm: 600,
++  referenceHeightMm: 800,
++  outerFrameMm: 60,
++  innerFrameMm: 60,
++  innerRadiusMm: 150,
++  secondaryRadiusMm: 3,
++  stepWidthsMm: [12, 8, 6, 4],
++  stepDepthsMm: [3, 6, 9, 12],
++  cornerDepthMm: 3,
++  ornamentReliefMm: 2.5,
++  ornamentScale: 1,
++  mirror: false,
++};
++
++export const ORNATE_PROFILE_DEFAULTS = Object.freeze(Object.fromEntries(
++  [1, 2, 3, 4].map((variant) => [`ORNATE_A_${variant}`, Object.freeze({
++    ...proposal,
++    variant,
++    ornament: variant !== 4,
++    // Variant 2 is a true capsule: its semicircle follows the available width.
++    // Variant 3's gentler diagonal corners are a proposed interpretation.
++    ...(variant === 3 ? { innerRadiusMm: 110, secondaryRadiusMm: 18 } : {}),
++    stepWidthsMm: Object.freeze([...proposal.stepWidthsMm]),
++    stepDepthsMm: Object.freeze([...proposal.stepDepthsMm]),
++  })]),
++));
+diff --git a/src/engine/profile.js b/src/engine/profile.js
+index 4d6e7014e26b60249ac092530a96293e3239eb67..d1ca2d72978ea8f16fe567831c34dac6cdd4e6ff 100644
+--- a/src/engine/profile.js
++++ b/src/engine/profile.js
+@@ -12,6 +12,8 @@
+ // RULE: formulas in cabinet.js read EXCLUSIVELY from this object. If you find a
+ // bare number in a formula, it belongs here.
+ 
++import { ORNATE_PROFILE_DEFAULTS } from './ornateFrontProfile.js';
++
+ export const PROFILE_SCHEMA = 1;
+ 
+ export const DEFAULT_CABINET_PROFILE = {
+@@ -133,6 +135,9 @@ export const DEFAULT_CABINET_PROFILE = {
+     // None of them is a field a client types: the PRO recipe controls show the
+     // keys GPT's controls already showed, retail shows none.
+     decoration: {
++      // Piotr, 10.10.2026: code the four proposed ornamental reference variants.
++      // Full profile data stays in the profile module; no production approval implied.
++      ...ORNATE_PROFILE_DEFAULTS,
+       // Owner, 31.08.2026: vertical grooves every 80 centre to centre, a V 4
+       // wide x 3 deep, 60 margin to the first groove. A V records its width
+       // and its depth and CAM picks the bit: no included angle is assumed.
+diff --git a/src/lib/cncExport.js b/src/lib/cncExport.js
+index d57f0ba8546dc7c669844aa24e75c533428e3c55..8b6a4fa6e39f98edd4e8fd1c001aef1eeac7a44f 100644
+--- a/src/lib/cncExport.js
++++ b/src/lib/cncExport.js
+@@ -9,6 +9,7 @@ import { exportFileName, fileSafeName } from '../engine/naming.js';
+ // Turn 31 (CLAUDE.md F3): both guards run before any file is written.
+ import { exportGate, panelsThatGo } from '../engine/cnc/exportGate.js';
+ import { frontOperationsManifest, frontSetupPlacements, hasFrontDecorations } from '../engine/cnc/frontOperations.js';
++import { buildOrnateReferenceFiles } from '../engine/cnc/ornateExport.js';
+ import { getCabinetProfile } from '../engine/profile.js';
+ // ─── T75 F23 · THE DOWEL GATE ─────────────────────────────────────────────
+ // CLAUDE.md: *"the CNC export REFUSES a dowel job while
+@@ -102,6 +103,17 @@ export function exportReadiness(panels, drills = []) {
+   return { lines, count, banner };
+ }
+ 
++// Proposed CAD/CAM references use the existing geometry state, separately
++// from the unchanged slab state. A reference is never counted as a cut line.
++function withReferenceReadiness(ready, files) {
++  const lines = [...ready.lines, ...files.filter((file) => file.type === 'json').map((file) => ({
++    id: `${file.unitNum} ${file.panelId} Ornate proposed reference`, part: 'front_reference', state: 'geometry',
++  }))];
++  return { lines, ...readinessBanner(lines) };
++}
++
++const fileRecord = ({ contents, ...file }) => file;
++
+ /**
+  * T75 F22 · the banner a unit's ZIP carries as a file of its own beside the
+  * DXFs (a DXF carries no letters but the part's own, T17 F2.2): the count,
+@@ -140,7 +152,8 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
+     ? cut
+     : { ...cut, panels: (cut.panels || []).filter((p) => !held.has(p.id)) };
+   const files = buildUnitDxfFiles(safe, profile, { userLayers: [LED_GROOVE_LAYER] });
+-  if (!files.length) {
++  const referenceFiles = buildOrnateReferenceFiles([{ result }]);
++  if (!files.length && !referenceFiles.length) {
+     throw new Error(gate.ok
+       ? 'This unit has no CNC geometry to export.'
+       : `Every part of this unit is held back: ${gate.message}`);
+@@ -148,15 +161,16 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
+ 
+   const zip = new JSZip();
+   for (const f of files) zip.file(f.name, f.dxf);
++  for (const f of referenceFiles) zip.file(f.name, f.contents);
+   // T75 F22 · the banner rides the ZIP as a file of its own.
+-  const ready = exportReadiness(safe.panels, safe.drills);
++  const ready = withReferenceReadiness(exportReadiness(safe.panels, safe.drills), referenceFiles);
+   const note = readinessNote(result.unitNum, ready);
+   if (note) zip.file(`${fileSafeName(result.unitNum, 'unit')}-READINESS.txt`, note);
+   // T76 F1 · GPT's operation manifest rides the same ZIP beside it.
+   const manifestName = 'front-operations.json';
+   const decorated = hasFrontDecorations([{ result }]);
+   if (decorated) zip.file(manifestName, JSON.stringify(frontOperationsManifest([{ result }], {
+-    files: files.map((f) => ({ name: f.name, setup: f.setup || 'back', panelId: f.panelId })),
++    files: [...files.map((f) => ({ name: f.name, setup: f.setup || 'back', panelId: f.panelId })), ...referenceFiles.map(fileRecord)],
+     gate, exportAnyway,
+   }), null, 2));
+ 
+@@ -175,7 +189,8 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
+   download(filename, blob);
+   return {
+     filename,
+-    files: files.map((f) => f.name),
++    files: [...files.map((f) => f.name), ...referenceFiles.map((f) => f.name)],
++    ...(referenceFiles.length ? { referenceFiles: referenceFiles.map((f) => f.name) } : {}),
+     ...(decorated ? { operationManifest: manifestName } : {}),
+     held: exportAnyway ? [] : gate.held,
+     gateMessage: exportAnyway ? null : gate.message,
+@@ -201,7 +216,8 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
+   if (dowelRefused) throw new Error(dowelRefused);
+   const gate = exportGate([{ result, panels: chosen }], { profile });
+   const panels = panelsThatGo(chosen, { gate, unitId: result.unitId || null, exportAnyway });
+-  if (!panels.length) throw new Error(`Every selected part is held back: ${gate.message}`);
++  const referenceFiles = buildOrnateReferenceFiles([{ result, panels: chosen }]);
++  if (!panels.length && !referenceFiles.length) throw new Error(`Every selected part is held back: ${gate.message}`);
+ 
+   const layout = layoutPanels(panels, result.drills, {
+     gap: profile.cnc.layoutGap,
+@@ -216,10 +232,10 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
+     filename: exported ? exported.filename : filename,
+     parts: panels.length,
+     presetId,
+-    ...(exported ? { operationManifest: exported.operationManifest } : {}),
++    ...(exported ? { operationManifest: exported.operationManifest, ...(exported.referenceFiles?.length ? { referenceFiles: exported.referenceFiles } : {}) } : {}),
+     held: exportAnyway ? [] : gate.held,
+     gateMessage: exportAnyway ? null : gate.message,
+-    readinessBanner: exportReadiness(panels, result.drills).banner,
++    readinessBanner: withReferenceReadiness(exportReadiness(panels, result.drills), referenceFiles).banner,
+   });
+   // T76 F1 · GPT's two setups ride one ZIP, which JSZip builds asynchronously,
+   // so a decorated selection answers with a Promise; an ordinary export stays
+@@ -227,13 +243,13 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
+   if (hasFrontDecorations([{ result, panels: chosen }])) {
+     const args = { panels, drills: result.drills, layout, unitNum: result.unitNum, unitId: result.unitId || null, profile };
+     return downloadFrontSetups({
+-      filename, backDxf: dxf,
++      filename, backDxf: panels.length ? dxf : null, referenceFiles,
+       frontDxf: hasFrontDecorations([{ panels }]) ? sheetDxf({ ...args, setup: 'front' }) : null,
+       entries: [{ result, panels: chosen }], gate, exportAnyway,
+       placements: frontSetupPlacements([args]),
+       // T76 F5 · the package is a ZIP, so the banner rides it as a file, as
+       // the unit ZIP's does.
+-      note: readinessNote(result.unitNum, exportReadiness(panels, result.drills)),
++      note: readinessNote(result.unitNum, withReferenceReadiness(exportReadiness(panels, result.drills), referenceFiles)),
+     }).then(said);
+   }
+   download(filename, new Blob([dxf], { type: 'application/dxf' }));
+@@ -264,6 +280,11 @@ export function exportMaterialDxf(entries, {
+   const dowelRefused = dowelExportRefusal(entries, profile);
+   if (dowelRefused) throw new Error(dowelRefused);
+   const gate = exportGate(entries, { profile });
++  const requested = materialExportSection(entries, { key, design, profile, materials });
++  const manifestEntries = (requested?.blocks || []).map((block) => ({
++    unit: block.unit, result: { unitNum: block.unitNum, drills: block.drills }, panels: block.panels,
++  }));
++  const referenceFiles = buildOrnateReferenceFiles(manifestEntries);
+   // The held-back parts leave the SELECTION before the section is laid out, so
+   // the sheet the file carries is the sheet that was actually cut — no gap
+   // where a board was quietly dropped afterwards.
+@@ -274,42 +295,40 @@ export function exportMaterialDxf(entries, {
+   const section = materialExportSection(passed, {
+     key, design, profile, materials,
+   });
+-  if (!section || !section.blocks.length) {
++  if ((!section || !section.blocks.length) && !referenceFiles.length) {
+     throw new Error(gate.ok
+       ? 'Nothing on the sheet for that material.'
+       : `Every part on this sheet is held back: ${gate.message}`);
+   }
+ 
+-  const dxf = materialSheetDxf({
+-    blocks: section.blocks, gap: profile.cnc.layoutGap, profile,
+-  });
+-  const filename = materialDxfFileName(section.label, { project });
++  const blocks = section?.blocks || [];
++  const label = section?.label || requested?.label || 'Ornate-reference';
++  const dxf = blocks.length ? materialSheetDxf({
++    blocks, gap: profile.cnc.layoutGap, profile,
++  }) : null;
++  const filename = materialDxfFileName(label, { project });
+   const said = (exported = null) => ({
+     filename: exported ? exported.filename : filename,
+-    label: section.label,
+-    ...(exported ? { operationManifest: exported.operationManifest } : {}),
+-    parts: section.blocks.reduce((n, b) => n + b.panels.length, 0),
+-    units: section.blocks.length,
++    label,
++    ...(exported ? { operationManifest: exported.operationManifest, ...(exported.referenceFiles?.length ? { referenceFiles: exported.referenceFiles } : {}) } : {}),
++    parts: blocks.reduce((n, b) => n + b.panels.length, 0),
++    units: blocks.length,
+     held: exportAnyway ? [] : gate.held,
+     gateMessage: exportAnyway ? null : gate.message,
+-    readinessBanner: readinessBanner(section.blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines)).banner,
++    readinessBanner: withReferenceReadiness({ lines: blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines) }, referenceFiles).banner,
+   });
+-  const requested = materialExportSection(entries, { key, design, profile, materials });
+-  const manifestEntries = (requested?.blocks || []).map((block) => ({
+-    unit: block.unit, result: { unitNum: block.unitNum }, panels: block.panels,
+-  }));
+   // T76 F1 · as the sheet export: a Promise only when the ZIP of two setups
+   // is built; the refusals above throw synchronously (T75 F23).
+   if (hasFrontDecorations(manifestEntries)) {
+-    const lines = section.blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines);
++    const lines = blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines);
+     return downloadFrontSetups({
+-      filename, backDxf: dxf,
+-      frontDxf: hasFrontDecorations(section.blocks)
+-        ? materialSheetDxf({ blocks: section.blocks, gap: profile.cnc.layoutGap, profile, setup: 'front' }) : null,
++      filename, backDxf: dxf, referenceFiles,
++      frontDxf: hasFrontDecorations(blocks)
++        ? materialSheetDxf({ blocks, gap: profile.cnc.layoutGap, profile, setup: 'front' }) : null,
+       entries: manifestEntries, gate, exportAnyway,
+-      placements: frontSetupPlacements(section.blocks, profile.cnc.layoutGap),
++      placements: frontSetupPlacements(blocks, profile.cnc.layoutGap),
+       // T76 F5 · the banner rides the package as a file.
+-      note: readinessNote(section.label, { lines, ...readinessBanner(lines) }),
++      note: readinessNote(label, withReferenceReadiness({ lines }, referenceFiles)),
+     }).then(said);
+   }
+   download(filename, new Blob([dxf], { type: 'application/dxf' }));
+@@ -318,14 +337,21 @@ export function exportMaterialDxf(entries, {
+ 
+ // A single download keeps the operation specification with both setups.
+ // Ordinary exports do not enter this path and keep their original DXF bytes.
+-async function downloadFrontSetups({ filename, backDxf, frontDxf, entries, gate, exportAnyway, placements, note = null }) {
++async function downloadFrontSetups({ filename, backDxf, frontDxf, entries, gate, exportAnyway, placements, note = null, referenceFiles = [] }) {
+   const zip = new JSZip();
+   if (note) zip.file(filename.replace(/\.dxf$/, '-READINESS.txt'), note);
+   const backName = filename.replace(/\.dxf$/, '-BACK.dxf');
+   const frontName = filename.replace(/\.dxf$/, '-FRONT.dxf');
+   const operationManifest = filename.replace(/\.dxf$/, '-operations.json');
+-  const files = [{ name: backName, setup: 'back' }];
+-  zip.file(backName, backDxf);
++  const files = [];
++  if (backDxf) {
++    files.push({ name: backName, setup: 'back' });
++    zip.file(backName, backDxf);
++  }
++  for (const file of referenceFiles) {
++    zip.file(file.name, file.contents);
++    files.push(fileRecord(file));
++  }
+   if (frontDxf) {
+     zip.file(frontName, frontDxf);
+     files.push({ name: frontName, setup: 'front' });
+@@ -336,5 +362,5 @@ async function downloadFrontSetups({ filename, backDxf, frontDxf, entries, gate,
+   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+   const zipName = filename.replace(/\.dxf$/, '.zip');
+   download(zipName, blob);
+-  return { filename: zipName, operationManifest };
++  return { filename: zipName, operationManifest, referenceFiles: referenceFiles.map((file) => file.name) };
+ }
+diff --git a/src/retail/design/Options.jsx b/src/retail/design/Options.jsx
+index 8fbe47ab42dcdd17e2c1c0be926cce6df29cdd04..6f55b197661abae38bc3f6c832345b5351a9a0ba 100644
+--- a/src/retail/design/Options.jsx
++++ b/src/retail/design/Options.jsx
+@@ -733,7 +733,7 @@ function FrontsPanel({ design, project, unit }) {
+   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
+   const opening = A.frontOpeningOf(project);
+   // SLAB · SHAKER · GROOVED · ARCHED, in CLAUDE.md F4's own order.
+-  const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
++  const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
+   const styles = A.frontStyles()
+     .filter((s) => s.id !== 'HJ')
+     .sort((x, y) => order.indexOf(x.id) - order.indexOf(y.id));
+diff --git a/src/retail/design/adapter.js b/src/retail/design/adapter.js
+index 715d53d597a1f1918329de9b0fc9688f7bfdd250..c2953476d3a632db76198e6f115810d15bcca280 100644
+--- a/src/retail/design/adapter.js
++++ b/src/retail/design/adapter.js
+@@ -199,7 +199,7 @@ export function designBounds() {
+ 
+ // All decorative styles have a production definition. Old saved slabs stay
+ // inactive until the owner selects a style or explicitly activates it.
+-const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM'];
++const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
+ const SOON_STYLES = [];
+ 
+ // ─── T76 F7 · A STYLE THE DOORS CANNOT TAKE IS REFUSED IN WORDS ──────────
+diff --git a/src/retail/design/material/FrontDecorationControls.jsx b/src/retail/design/material/FrontDecorationControls.jsx
+index 2c35cb73c2a3ea84e796a5eb9298f3edab73648a..4dbfd549722983d15545030e8e941ff3eafe5a91 100644
+--- a/src/retail/design/material/FrontDecorationControls.jsx
++++ b/src/retail/design/material/FrontDecorationControls.jsx
+@@ -1,5 +1,5 @@
+ import NumberField from '../room/NumberField.jsx';
+-import { defaultFrontDecoration, normaliseFrontDecoration } from '../../../engine/frontDecoration.js';
++import { defaultFrontDecoration, normaliseFrontDecoration, ORNATE_STYLE_IDS } from '../../../engine/frontDecoration.js';
+ 
+ const FIELD_LABELS = {
+   frameMm: 'Frame width',
+@@ -21,6 +21,20 @@ export default function FrontDecorationControls({ style, value, onChange, fields
+   const defaults = defaultFrontDecoration(style);
+   if (!defaults) return null;
+   const config = normaliseFrontDecoration(value, style);
++  const ornate = ORNATE_STYLE_IDS.includes(style);
++  if (ornate && config) return (
++    <div className="pbi-re-line pbi-re-hair pbi-re-round pbi-re-p2 pbi-re-stack-2" data-front-decoration={style}>
++      <p className="pbi-re-t11 pbi-re-quiet" data-ornate-proposal={style}>
++        Proposed carved relief from the reference drawing. Dimensions and ornament need workshop approval.
++        The CNC pack includes reference DXF, a relief model and a machining description.
++      </p>
++      <label className="pbi-re-row pbi-re-mid pbi-re-gap-2 pbi-re-t11 pbi-re-ink-2">
++        <input type="checkbox" aria-label="Mirror ornate pattern" data-ornate-mirror={style}
++          checked={config.mirror === true} onChange={(event) => onChange({ ...config, mirror: event.target.checked })} />
++        <span>Mirror ornate pattern</span>
++      </label>
++    </div>
++  );
+   if (config && !fields) return null;
+   const update = (key, next) => onChange({ ...config, [key]: next });
+   return (
+diff --git a/test/design.test.js b/test/design.test.js
+index f087f5ef51a4a7447036f352c54af1ed233098e4..026282f73623ea60b6a063e9b1674689042379eb 100644
+--- a/test/design.test.js
++++ b/test/design.test.js
+@@ -132,7 +132,7 @@ test('a stored design survives a round trip, and an older one is filled in', ()
+ test('the door-style list is the owner\'s SHAPE list (09.08) — colours never live here', () => {
+   // Turn 30 (CLAUDE.md F21): 'GL' — a glass door is a SHAPE like the rest,
+   // and it is cut with the shaker's own frame.
+-  assert.deepEqual(FRONT_STYLE_OPTIONS.map((o) => o.id), ['S', 'F', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM']);
++  assert.deepEqual(FRONT_STYLE_OPTIONS.map((o) => o.id), ['S', 'F', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4']);
+   // The old engine-only 'H' id was never a stored standard; anything unknown
+   // still falls back to Shaker, exactly as before.
+   assert.equal(migrateDesign({ fronts: { style: 'H' } }).fronts.style, 'S');
+diff --git a/test/ornate-front-cnc.test.js b/test/ornate-front-cnc.test.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8a3a8c50cfd2576a3dae0e450f1a162ffdd9a397
+--- /dev/null
++++ b/test/ornate-front-cnc.test.js
+@@ -0,0 +1,243 @@
++// Copyright (c) Skylon Development Ltd. All rights reserved.
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import JSZip from 'jszip';
++import { computeCabinet } from '../src/engine/cabinet.js';
++import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
++import { defaultParamsFor } from '../src/engine/types.js';
++import { buildUnitDxfFiles, parseDxf } from '../src/engine/cnc/dxf.js';
++import { exportGate } from '../src/engine/cnc/exportGate.js';
++import { frontOperationsManifest, frontPanelEntities, frontDecorationLayers, ornateReferenceContourLayer, FRONT_REFERENCE_LAYER } from '../src/engine/cnc/frontOperations.js';
++import { buildOrnateReferenceFiles, ornateFrontSurface, ornateReferenceProblems, ornateSurfaceStl } from '../src/engine/cnc/ornateExport.js';
++import { exportUnitDxfZip, exportSheetDxf, exportMaterialDxf } from '../src/lib/cncExport.js';
++
++const box = (x1, y1, x2, y2) => [[x1, y1], [x2, y1], [x2, y2], [x1, y2]];
++function fixture() {
++  const result = computeCabinet({ ...defaultParamsFor('BUD', P), front_type: 'F' }, P);
++  const panel = result.panels.find((p) => p.role === 'front');
++  panel.meta.frontDecoration = {
++    version: 1, style: 'ORNATE_A_1', status: 'ready', problems: [], additions: [],
++    referenceOnly: true, parameters: { version: 1, style: 'ORNATE_A_1', boardMm: 18 },
++    operations: [{
++      id: 'proposed-relief', kind: 'relief', face: 'front', readiness: 'geometry',
++      startDepth: 0, depth: 12, points: box(60, 60, 200, 250),
++      contours: [3, 6, 9, 12].map((depth, index) => ({
++        id: `level-${index + 1}`, kind: 'profile-level', depth, startDepth: index * 3,
++        points: box(80 + index, 80 + index, 160 - index, 190 - index),
++      })).concat([{ id: 'leaf', kind: 'ornament-reference', depth: null, points: [[64, 68], [69, 64], [75, 72]] }]),
++      surface: {
++        vertices: [[60, 60, 0], [200, 60, 0], [200, 250, 12], [60, 250, 12]],
++        triangles: [[0, 1, 2], [0, 2, 3]],
++      },
++    }],
++  };
++  return { result, panel };
++}
++
++async function captureDownload(run) {
++  const saved = { document: globalThis.document, create: URL.createObjectURL, revoke: URL.revokeObjectURL };
++  let blob; let name;
++  URL.createObjectURL = (value) => { blob = value; return 'blob:test'; };
++  URL.revokeObjectURL = () => {};
++  globalThis.document = { body: { appendChild() {} }, createElement: () => ({ click() { name = this.download; }, remove() {} }) };
++  try {
++    const output = await run();
++    return { output, name, zip: await JSZip.loadAsync(await blob.arrayBuffer()) };
++  } finally {
++    if (saved.document === undefined) delete globalThis.document; else globalThis.document = saved.document;
++    URL.createObjectURL = saved.create; URL.revokeObjectURL = saved.revoke;
++  }
++}
++
++test('proposed Ornate geometry is held, stays geometry readiness, and cannot self-approve', () => {
++  const { result, panel } = fixture();
++  panel.meta.frontDecoration.productionApproved = true;
++  panel.meta.frontDecoration.referenceOnly = false;
++  const gate = exportGate([{ result }], { profile: P });
++  assert.ok(gate.held.some((h) => h.panelId === panel.id));
++  const manifest = frontOperationsManifest([{ result }], { gate, exportAnyway: true });
++  assert.equal(manifest.parts[0].readiness, 'cut', 'existing slab readiness is unchanged');
++  assert.equal(manifest.parts[0].productionApproved, false);
++  assert.equal(manifest.parts[0].operations[0].readiness, 'geometry');
++  assert.equal(manifest.parts[0].operations[0].exported, false);
++  assert.equal(manifest.parts[0].exported, false);
++  assert.deepEqual(frontPanelEntities(panel).map((e) => e.layer), [FRONT_REFERENCE_LAYER]);
++});
++
++test('Ornate reference DXF declares 3/6/9/12 depth layers plus ornament without back drilling', () => {
++  const { result, panel } = fixture();
++  const files = buildOrnateReferenceFiles([{ result }]);
++  assert.equal(files.length, 3);
++  const dxf = parseDxf(files.find((f) => f.type === 'dxf').contents);
++  assert.ok(dxf.entities.every((entity) => entity.type === 'poly'));
++  const layers = new Set(dxf.layerTable.map((l) => l.name));
++  for (const name of [FRONT_REFERENCE_LAYER, 'FRONT_REF_ORNAMENT', ...[3, 6, 9, 12].map((d) => `FRONT_REF_PROFILE_D${d}`)]) assert.ok(layers.has(name), name);
++  const leaf = dxf.entities.find((e) => e.layer === 'FRONT_REF_ORNAMENT');
++  assert.deepEqual(leaf.pts, [[panel.w - 64, 68], [panel.w - 69, 64], [panel.w - 75, 72]], 'exactly one part reflection');
++  const spec = JSON.parse(files.find((f) => f.type === 'json').contents);
++  assert.equal(spec.units, 'mm');
++  assert.equal(spec.productionApproved, false);
++  assert.deepEqual(spec.operations[0].contours.slice(0, 4).map((c) => c.finalDepthMm), [3, 6, 9, 12]);
++  assert.match(spec.operations[0].contours[0].meaning, /Not a flat pocket/);
++  assert.match(spec.datum.transform, /frontZ = -depth/);
++  assert.match(spec.operations[0].surface.meaning, /not a watertight/);
++});
++
++test('STL uses canonical vertices at mm scale, local reflection once, depth below Z0 and outward normals', () => {
++  const surface = { vertices: [[10, 20, 3], [30, 20, 3], [30, 40, 3]], triangles: [[0, 1, 2]] };
++  const front = ornateFrontSurface(surface, 600);
++  assert.deepEqual(front.vertices, [[590, 20, -3], [570, 20, -3], [570, 40, -3]]);
++  const stl = ornateSurfaceStl(front);
++  assert.match(stl, /facet normal 0 0 1/);
++  assert.match(stl, /vertex 590 20 -3/);
++  assert.equal((stl.match(/facet normal/g) || []).length, 1);
++});
++
++test('invalid proposed depth or surface cannot leak NaN or machining geometry into reference files', () => {
++  for (const change of [
++    (op) => { op.contours[0].depth = NaN; },
++    (op) => { op.surface.vertices[0][0] = Infinity; },
++    (op) => { op.surface.triangles[0][0] = 999999; },
++    (op) => { op.surface.triangles[0] = [0, 0, 0]; },
++    (op) => { op.depth = 100; },
++  ]) {
++    const { result, panel } = fixture();
++    change(panel.meta.frontDecoration.operations[0]);
++    assert.ok(ornateReferenceProblems(panel).length);
++    const files = buildOrnateReferenceFiles([{ result }]);
++    assert.deepEqual(files.map((f) => f.type), ['json']);
++    const spec = JSON.parse(files[0].contents);
++    assert.equal(spec.status, 'invalid-reference');
++    assert.ok(spec.problems.length);
++    assert.deepEqual(spec.operations, []);
++  }
++});
++
++test('all ordinary BACK DXFs stay byte-identical when Ornate metadata is attached', () => {
++  const { result, panel } = fixture();
++  const decorated = buildUnitDxfFiles(result, P).filter((file) => file.setup !== 'front');
++  delete panel.meta.frontDecoration;
++  assert.deepEqual(buildUnitDxfFiles(result, P), decorated);
++});
++
++test('all three ZIP routes include proposed DXF/STL/JSON when the only selected panel is held', async () => {
++  const { result, panel } = fixture();
++  const only = { ...result, panels: [panel], drills: result.drills.filter((d) => d.panel === panel.id) };
++  for (const run of [
++    () => exportUnitDxfZip(only, P),
++    () => exportSheetDxf(result, [panel.id], P),
++    () => exportMaterialDxf([{ unit: { id: 'u1' }, result, panels: [panel] }], { profile: P }),
++  ]) {
++    const { zip, output, name } = await captureDownload(run);
++    assert.match(name, /\.zip$/);
++    const names = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
++    assert.ok(names.some((n) => /PROPOSED-FRONT\.dxf$/.test(n)));
++    assert.ok(names.some((n) => /PROPOSED-RELIEF-1\.stl$/.test(n)));
++    assert.ok(names.some((n) => /PROPOSED-operations\.json$/.test(n)));
++    assert.ok(!names.some((n) => /BACK\.dxf$/.test(n)));
++    assert.ok(output.held.some((h) => h.panelId === panel.id));
++    assert.ok(output.readinessBanner);
++    const manifest = JSON.parse(await zip.file(output.operationManifest).async('string'));
++    assert.equal(manifest.parts[0].exported, false);
++    assert.equal(manifest.parts[0].referenceFiles.length, 3);
++    assert.equal(manifest.parts[0].operations[0].readiness, 'geometry');
++  }
++});
++
++test('Export anyway retains explicit production hold provenance and never promotes the proposed relief', async () => {
++  const { result, panel } = fixture();
++  const { zip, output } = await captureDownload(() => exportSheetDxf(result, [panel.id], P, { exportAnyway: true }));
++  const names = Object.keys(zip.files);
++  assert.ok(names.some((n) => /-BACK\.dxf$/.test(n)));
++  const manifest = JSON.parse(await zip.file(output.operationManifest).async('string'));
++  assert.equal(manifest.parts[0].override, true);
++  assert.equal(manifest.parts[0].productionApproved, false);
++  assert.equal(manifest.parts[0].operations[0].exported, false);
++  const standardFrontName = names.find((n) => /-FRONT\.dxf$/.test(n) && !n.includes('PROPOSED'));
++  const front = parseDxf(await zip.file(standardFrontName).async('string'));
++  assert.deepEqual(front.entities.map((e) => e.layer), [FRONT_REFERENCE_LAYER]);
++});
++
++test('duplicate cabinet names and panel IDs produce distinct reference filenames', () => {
++  const { result, panel } = fixture();
++  const files = buildOrnateReferenceFiles([
++    { unit: { id: 'first' }, result, panels: [panel] },
++    { unit: { id: 'second' }, result, panels: [panel] },
++  ]);
++  assert.equal(files.length, 6);
++  assert.equal(new Set(files.map((f) => f.name)).size, 6);
++});
++
++test('all four real 600 by 800 reference fronts hand off the same canonical mesh and layer depths', async () => {
++  const { buildOrnateFront, defaultOrnateConfig, ORNATE_STYLE_IDS } = await import('../src/engine/ornateFront.js');
++  for (const style of ORNATE_STYLE_IDS) {
++    const panel = { id: style, w: 600, h: 800, thickness: 18, cnc: { drawn_w: 600, drawn_h: 800, outline: box(0, 0, 600, 800) }, meta: {} };
++    panel.meta.frontDecoration = buildOrnateFront({ panel, style, config: defaultOrnateConfig(style, P), profile: P });
++    assert.deepEqual(ornateReferenceProblems(panel), [], style);
++    const op = panel.meta.frontDecoration.operations[0];
++    const files = buildOrnateReferenceFiles([{ panels: [panel] }]);
++    const spec = JSON.parse(files.find((f) => f.type === 'json').contents);
++    const stl = files.find((f) => f.type === 'stl').contents;
++    assert.equal((stl.match(/facet normal/g) || []).length, op.surface.triangles.length);
++    assert.deepEqual(spec.operations[0].contours.filter((c) => c.kind === 'profile-level').map((c) => c.finalDepthMm), [3, 6, 9, 12]);
++    assert.equal(spec.operations[0].remainingThicknessMm, 6);
++    const ornaments = spec.operations[0].contours.filter((c) => c.kind === 'ornament-reference');
++    assert.equal(ornaments.length > 0, style !== 'ORNATE_A_4');
++    assert.ok(ornaments.every((c) => c.finalDepthMm === null && c.startDepthMm === null));
++    const transformed = ornateFrontSurface(op.surface, 600);
++    const floorTriangles = transformed.triangles.filter((tri) => tri.every((index) => Math.abs(transformed.vertices[index][2] + 12) < 1e-6));
++    assert.ok(floorTriangles.length);
++    for (const tri of floorTriangles) {
++      const [a, b, c] = tri.map((i) => transformed.vertices[i]);
++      assert.ok((b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]) > 0, `${style} STL floor points out of stock`);
++    }
++  }
++});
++
++test('real computeCabinet Ornate selection produces references through the existing unit ZIP button', async () => {
++  const { defaultFrontDecoration } = await import('../src/engine/frontDecoration.js');
++  const result = computeCabinet({ ...defaultParamsFor('BUD', P), front_type: 'ORNATE_A_1', front_decoration: defaultFrontDecoration('ORNATE_A_1', P) }, P);
++  const panel = result.panels.find((p) => p.meta?.frontDecoration?.style === 'ORNATE_A_1');
++  assert.ok(panel);
++  assert.equal(panel.meta.frontDecoration.status, 'ready');
++  const { zip, output } = await captureDownload(() => exportUnitDxfZip(result, P));
++  assert.ok(output.referenceFiles.some((name) => name.endsWith('.stl')));
++  const manifest = JSON.parse(await zip.file(output.operationManifest).async('string'));
++  assert.equal(manifest.parts[0].productionApproved, false);
++  assert.equal(manifest.parts[0].operations[0].readiness, 'geometry');
++});
++
++
++test('read-only CNC preview matches proposed DXF contours, datum and layers without enabling production entities', () => {
++  const { result, panel } = fixture();
++  const preview = frontPanelEntities(panel, { referencePreview: true });
++  const references = preview.filter((entity) => entity.referenceOnly);
++  const files = buildOrnateReferenceFiles([{ result }]);
++  const dxf = parseDxf(files.find((file) => file.type === 'dxf').contents);
++  const dxfReferences = dxf.entities.filter((entity) => entity.layer !== FRONT_REFERENCE_LAYER);
++  assert.equal(references.length, 5);
++  assert.equal(new Set(references.map((entity) => entity.operationId)).size, references.length);
++  assert.deepEqual(references.map(({ layer, closed, pts }) => ({ layer, closed, pts })),
++    dxfReferences.map(({ layer, closed, pts }) => ({ layer, closed, pts })));
++  assert.equal(references.find((entity) => entity.referenceKind === 'ornament-reference').depth, null);
++  const previewLayers = frontDecorationLayers([panel], { referencePreview: true });
++  for (const entity of references) {
++    const layer = previewLayers.find((entry) => entry.name === entity.layer);
++    assert.equal(layer.referenceOnly, true);
++    assert.match(layer.label, /Proposed/);
++    assert.equal(layer.kind, 'mark');
++  }
++  assert.deepEqual(frontPanelEntities(panel).map((entity) => entity.layer), [FRONT_REFERENCE_LAYER]);
++  assert.deepEqual(frontDecorationLayers([panel]).map((layer) => layer.name), [FRONT_REFERENCE_LAYER]);
++  assert.equal(ornateReferenceContourLayer({ kind: 'profile-level', depth: 3.5 }), 'FRONT_REF_PROFILE_D3P5');
++  assert.equal(ornateReferenceContourLayer({ kind: 'profile-level', depth: NaN }), null);
++});
++
++test('opting into reference preview leaves existing production pocket geometry and layers unchanged', () => {
++  const { panel } = fixture();
++  panel.meta.frontDecoration.style = 'G';
++  panel.meta.frontDecoration.operations = [{ id: 'legacy-pocket', kind: 'pocket', face: 'front', points: box(20, 20, 90, 90),
++    depth: 3, startDepth: 0, tool: { kind: 'endmill', diameter: 6 }, layer: 'FRONT_POCKET_D3_T6' }];
++  assert.deepEqual(frontPanelEntities(panel, { referencePreview: true }), frontPanelEntities(panel));
++  assert.deepEqual(frontDecorationLayers([panel], { referencePreview: true }), frontDecorationLayers([panel]));
++});
+diff --git a/test/ornate-front-geometry.test.js b/test/ornate-front-geometry.test.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..adf80eca9008b405d41fc521e8a9c0c0c60ac381
+--- /dev/null
++++ b/test/ornate-front-geometry.test.js
+@@ -0,0 +1,111 @@
++// Copyright Skylon Development Ltd. All rights reserved.
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { DEFAULT_CABINET_PROFILE } from '../src/engine/profile.js';
++import { ORNATE_PROFILE_DEFAULTS } from '../src/engine/ornateFrontProfile.js';
++import { buildOrnateFront, defaultOrnateConfig, normaliseOrnateConfig, ORNATE_STYLE_IDS } from '../src/engine/ornateFront.js';
++
++const profile = { ...DEFAULT_CABINET_PROFILE, front: { ...DEFAULT_CABINET_PROFILE.front,
++  decoration: { ...DEFAULT_CABINET_PROFILE.front.decoration, ...ORNATE_PROFILE_DEFAULTS } } };
++const panel = { id: 'ornate-test', w: 600, h: 800, thickness: 18 };
++const make = (style = 'ORNATE_A_1', overrides = {}, part = panel) => buildOrnateFront({ panel: part, profile, style,
++  config: { ...defaultOrnateConfig(style, profile), ...overrides } });
++const area = (points) => points.reduce((sum, p, i) => {
++  const q = points[(i + 1) % points.length]; return sum + p[0] * q[1] - q[0] * p[1];
++}, 0) / 2;
++
++test('all variants share finite bounded target geometry and four exact proposed levels', () => {
++  for (const style of ORNATE_STYLE_IDS) {
++    const result = make(style); assert.equal(result.status, 'ready', JSON.stringify(result.problems));
++    assert.equal(result.referenceOnly, true); assert.equal(result.approval.productionApproved, false);
++    assert.equal(result.operations.length, 1); assert.deepEqual(result.additions, []);
++    const op = result.operations[0]; assert.equal(op.kind, 'relief'); assert.equal(op.readiness, 'geometry');
++    assert.equal(op.depth, 12); assert.equal(op.startDepth, 0); assert.equal(op.surface.closedSolid, undefined);
++    const { vertices, triangles } = op.surface;
++    assert.ok(vertices.length < 110000 && vertices.length > 1000);
++    assert.ok(vertices.every(([x, y, d]) => [x, y, d].every(Number.isFinite)
++      && x >= 60 && x <= 540 && y >= 60 && y <= 740 && d >= 0 && d <= 12));
++    assert.ok(triangles.every((t) => t.length === 3 && t.every((i) => Number.isInteger(i) && i >= 0 && i < vertices.length)));
++    assert.ok(triangles.every((t) => area(t.map((i) => vertices[i])) > 0), 'canonical floor winding is CCW in BACK XY');
++    const levels = op.contours.filter((c) => c.kind === 'profile-level');
++    assert.deepEqual(levels.map((c) => c.depth), [3, 6, 9, 12]);
++    assert.deepEqual(levels.map((c) => c.widthMm), [12, 8, 6, 4]);
++    assert.ok(levels.every((c) => area(c.points) > 0));
++    assert.ok(vertices.some(([x, y, d]) => x === 300 && y === 400 && d === 12));
++  }
++});
++
++test('a canonical relief has one open perimeter and no internal holes or duplicate coplanar skin', () => {
++  for (const style of ORNATE_STYLE_IDS) {
++    const op = make(style).operations[0]; const counts = new Map();
++    for (const t of op.surface.triangles) {
++      for (let i = 0; i < 3; i += 1) {
++        const a = t[i]; const b = t[(i + 1) % 3]; const k = a < b ? `${a}:${b}` : `${b}:${a}`;
++        counts.set(k, (counts.get(k) || 0) + 1);
++      }
++    }
++    const open = [...counts].filter(([, n]) => n === 1);
++    assert.equal(open.length, op.points.length, `${style} has only the sampled rectangular outer mouth edges`);
++    assert.ok([...counts.values()].every((n) => n === 1 || n === 2), 'no non-manifold edges');
++    for (const [edge] of open) assert.ok(edge.split(':').map(Number).every((i) => op.surface.vertices[i][2] === 0));
++  }
++});
++
++test('ornaments are sculpted into the surface and variant 4 really removes them', () => {
++  const ornament = make().operations[0]; const plain = make('ORNATE_A_4').operations[0];
++  const depthAt = (surface, p) => {
++    for (const indices of surface.triangles) {
++      const [a, b, c] = indices.map((i) => surface.vertices[i]); const total = area([a, b, c]);
++      const weights = [area([p, b, c]) / total, area([a, p, c]) / total, area([a, b, p]) / total];
++      if (weights.every((w) => w >= -1e-7 && w <= 1 + 1e-7)) return weights[0] * a[2] + weights[1] * b[2] + weights[2] * c[2];
++    }
++    return null;
++  };
++  // Reference TOP LEFT is TOP RIGHT in the engine's BACK datum.
++  for (const p of [[506, 706], [94, 94]]) {
++    assert.ok(depthAt(ornament.surface, p) < depthAt(plain.surface, p) - 1, 'flower centres stand above their carved background');
++  }
++  assert.ok(ornament.contours.some((c) => c.kind === 'ornament-reference' && c.depth === null));
++  assert.equal(plain.contours.filter((c) => c.kind === 'ornament-reference').length, 0);
++});
++
++test('mirror reflects the same surface exactly once and keeps correct winding', () => {
++  const normal = make().operations[0]; const mirror = make('ORNATE_A_1', { mirror: true }).operations[0];
++  assert.equal(normal.surface.vertices.length, mirror.surface.vertices.length);
++  normal.surface.vertices.forEach(([x, y, d], i) => {
++    const reflected = mirror.surface.vertices[i];
++    assert.ok(Math.abs(reflected[0] - (600 - x)) < 1e-6); assert.equal(reflected[1], y); assert.equal(reflected[2], d);
++  });
++  normal.surface.triangles.forEach(([a, b, c], i) => assert.deepEqual(mirror.surface.triangles[i], [a, c, b]));
++});
++
++test('defaults and normalization never share recipe arrays or silently coerce invalid booleans', () => {
++  const a = defaultOrnateConfig('ORNATE_A_1', profile); const b = defaultOrnateConfig('ORNATE_A_1', profile);
++  a.stepWidthsMm[0] = 99; assert.equal(b.stepWidthsMm[0], 12); assert.equal(ORNATE_PROFILE_DEFAULTS.ORNATE_A_1.stepWidthsMm[0], 12);
++  const source = { ...b, stepDepthsMm: ['3', '6', '9', '12'] };
++  const out = normaliseOrnateConfig(source, 'ORNATE_A_1', profile);
++  assert.deepEqual(out.stepDepthsMm, [3, 6, 9, 12]); out.stepDepthsMm[0] = 7; assert.equal(source.stepDepthsMm[0], '3');
++  assert.equal(make('ORNATE_A_1', { mirror: 'false' }).status, 'blocked');
++});
++
++test('invalid production geometry is refused rather than squeezed, cropped, or thinned', () => {
++  for (const [override, part] of [
++    [{ stepDepthsMm: [3, 6, 9, 17] }, panel],
++    [{ stepDepthsMm: [3, 6, 6, 12] }, panel],
++    [{ stepWidthsMm: [12, 8, NaN, 4] }, panel],
++    [{ stepWidthsMm: [12, , 6, 4] }, panel],
++    [{ stepWidthsMm: new Array(4) }, panel],
++    [{ stepDepthsMm: new Array(4) }, panel],
++    [{ innerRadiusMm: 1000 }, panel],
++    [{ ornamentScale: 4 }, panel],
++    [{}, { ...panel, w: 200 }],
++    [{}, { ...panel, cnc: { outline: [[0, 0], [600, 0], [600, 700], [0, 800]] } }],
++    [{}, { ...panel, cnc: { outline: [[0, 0, NaN], [600, 0], [600, 800], [0, 800]] } }],
++    [{}, { ...panel, cnc: { outline: [[0, 0], , [600, 800], [0, 800]] } }],
++    [{ version: 2 }, panel],
++  ]) {
++    const result = make('ORNATE_A_1', override, part);
++    assert.equal(result.status, 'blocked'); assert.ok(result.problems.length); assert.deepEqual(result.operations, []);
++  }
++  assert.equal(make('ORNATE_A_2', {}, { ...panel, h: 500 }).status, 'blocked');
++});
+diff --git a/test/ornate-front-integration.test.js b/test/ornate-front-integration.test.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..6d6e37826871c525a4e3bd1827afde6e000b1792
+--- /dev/null
++++ b/test/ornate-front-integration.test.js
+@@ -0,0 +1,100 @@
++// Copyright Skylon Development Ltd. All rights reserved.
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { createHash } from 'node:crypto';
++import { FRONT_STYLE_OPTIONS, frontStyleSelection, migrateDesign, normaliseDoorStyle, resolveUnitDesign } from '../src/engine/design.js';
++import { defaultFrontDecoration, boardRefusal } from '../src/engine/frontDecoration.js';
++import { drawnFrontStyleIds } from '../src/engine/frontStyleArt.js';
++import { DEFAULT_CABINET_PROFILE as PROFILE } from '../src/engine/profile.js';
++import { computeCabinet } from '../src/engine/cabinet.js';
++import { defaultParamsFor } from '../src/engine/types.js';
++import { paramsForEngine, useProjectStore } from '../src/stores/projectStore.js';
++import { migrateRoom, rectCorners } from '../src/engine/room.js';
++import { buildBom } from '../src/engine/bom.js';
++
++const STYLES=['ORNATE_A_1','ORNATE_A_2','ORNATE_A_3','ORNATE_A_4'];
++const room=()=>migrateRoom({height:2500,corners:rectCorners(6000,3000)});
++const make=(style,extra={})=>computeCabinet({...defaultParamsFor('BUD',PROFILE),front_type:style,
++  front_decoration:defaultFrontDecoration(style),...extra},PROFILE);
++
++test('all four ornate gallery selections resolve explicit profile recipes through JSON persistence',()=>{
++ for(const style of STYLES){
++  assert.ok(FRONT_STYLE_OPTIONS.some(option=>option.id===style),`${style} option`);
++  assert.ok(drawnFrontStyleIds().includes(style),`${style} thumbnail`);
++  const chosen=frontStyleSelection(style);
++  assert.deepEqual(chosen.decoration,defaultFrontDecoration(style));
++  const saved=migrateDesign(JSON.parse(JSON.stringify({fronts:chosen})));
++  assert.deepEqual(resolveUnitDesign({params:{}},saved).frontDecoration,chosen.decoration);
++  assert.equal(chosen.decoration.mirror,false);
++ }
++});
++
++test('project, front slot, saved style and unit retain ornate mirroring without crossing styles',()=>{
++ const recipe={...defaultFrontDecoration('ORNATE_A_1'),mirror:true};
++ const design=migrateDesign({fronts:{style:'ORNATE_A_1',decoration:recipe,types:[{id:'f1',style:'ORNATE_A_1',decoration:recipe}]},
++  doorStyles:[{id:'s1',frontType:'ORNATE_A_1',decoration:recipe}]});
++ for(const params of [{},{front_type_id:'f1'},{door_style_id:'s1'},{front_type:'ORNATE_A_1',front_decoration:recipe}]){
++  assert.equal(resolveUnitDesign({params},design).frontDecoration.mirror,true);
++ }
++ assert.equal(frontStyleSelection('ORNATE_A_1',design.fronts).decoration.mirror,true);
++ assert.equal(frontStyleSelection('ORNATE_A_4',design.fronts).decoration.mirror,false);
++ assert.equal(normaliseDoorStyle({id:'different',frontType:'G',decoration:recipe}).decoration,undefined);
++ assert.equal(resolveUnitDesign({params:{front_type:'F'}},design).frontDecoration,undefined);
++});
++
++test('saved ornate projects rebuild the same cabinet fronts and operation coordinates',()=>{
++ const s=()=>useProjectStore.getState();
++ s().loadProject({id:null,name:'Ornate integration',room:room(),design:{}},[]);
++ const recipe={...defaultFrontDecoration('ORNATE_A_1'),mirror:true};
++ s().setProjectDefaults({fronts:{...frontStyleSelection('ORNATE_A_1'),decoration:recipe}});
++ const unit={id:'ornate-unit',type:'BUD',params:{...defaultParamsFor('BUD',PROFILE),front_type:'ORNATE_A_1',front_decoration:recipe},position:{x_mm:0}};
++ // First load performs the application's existing unit migrations. The
++ // round trip starts with that canonical state, just like a real saved job.
++ s().loadProject(JSON.parse(JSON.stringify(s().project)),[unit]);
++ const project=JSON.parse(JSON.stringify(s().project));const units=JSON.parse(JSON.stringify(s().units));
++ const before=computeCabinet(paramsForEngine(s().units[0],s().project.design),PROFILE);
++ s().loadProject(project,units);
++ const after=computeCabinet(paramsForEngine(s().units[0],s().project.design),PROFILE);
++ const hash=(value)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
++ assert.equal(hash(after.panels),hash(before.panels));
++ assert.deepEqual(after.drills,before.drills);
++ assert.ok(after.panels.some(p=>p.meta?.frontDecoration?.parameters.mirror));
++});
++
++test('ornate styles preserve cabinet structure, hardware and rear drilling while changing only front records',()=>{
++ const plain=make('F');
++ for(const style of STYLES){
++  const built=make(style);
++  assert.deepEqual(built.panels.filter(p=>p.role!=='front'),plain.panels.filter(p=>p.role!=='front'),style);
++  assert.deepEqual(built.drills,plain.drills,style);
++  assert.deepEqual(built.hardware,plain.hardware,style);
++  const fronts=built.panels.filter(p=>p.role==='front');assert.ok(fronts.length>0);
++  for(const p of fronts){assert.equal(p.meta.frontDecoration.style,style);assert.equal(p.meta.frontDecoration.referenceOnly,true);}
++ }
++});
++
++test('BOM never merges different ornate variants or mirrored recipes into the same front row',()=>{
++ const jobs=STYLES.map((style,i)=>({unit:{id:`ornate-${i}`},result:make(style)}));
++ jobs.push({unit:{id:'ornate-mirror'},result:make('ORNATE_A_1',{front_decoration:{...defaultFrontDecoration('ORNATE_A_1'),mirror:true}})});
++ const bom=buildBom(jobs);const fronts=bom.cutRows.filter(p=>p.role==='front');
++ assert.equal(fronts.length,5);
++ assert.ok(fronts.every(p=>p.qty===1));
++ assert.equal(new Set(fronts.map(p=>p.manufacturing.identity)).size,5);
++});
++
++test('legacy ornate name without a recipe does not silently opt into machining',()=>{
++ const legacy=migrateDesign({fronts:{style:'ORNATE_A_1'}});
++ assert.equal(Object.hasOwn(legacy.fronts,'decoration'),false);
++ assert.equal(resolveUnitDesign({params:{}},legacy).frontDecoration,undefined);
++});
++
++
++test('board refusal counts the deeper corner relief in an owner-adjusted ornate profile',()=>{
++ const profile=structuredClone(PROFILE);
++ profile.front.decoration.ORNATE_A_1.cornerDepthMm=16;
++ const refusal=boardRefusal('ORNATE_A_1',18,profile);
++ assert.equal(refusal.needMm,19);
++ assert.equal(refusal.haveMm,18);
++ assert.equal(refusal.code,'FRONT_DECORATION_BOARD_TOO_THIN');
++ assert.equal(boardRefusal('ORNATE_A_1',19,profile),null);
++});
+diff --git a/test/ornate-front-solid.test.js b/test/ornate-front-solid.test.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..254fedf687c6631622a372c1bb2bb82fbb3b1bca
+--- /dev/null
++++ b/test/ornate-front-solid.test.js
+@@ -0,0 +1,202 @@
++// Copyright Skylon Development Ltd. All rights reserved.
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import * as THREE from 'three';
++import { frontDecorationGeometry } from '../src/3d/frontDecorationSolid.js';
++import { buildFrontDecoration, defaultFrontDecoration } from '../src/engine/frontDecoration.js';
++import {
++  frontDecorationElevation, frontDecorationMachinings, frontDecorationDetailNote,
++} from '../src/engine/drawings/frontDecorationDrawing.js';
++
++const STYLES = ['ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
++const rectangle = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
++const panelFor = (style) => {
++  const panel = {
++    id: 'ORNATE-TEST', part: 'FRONT', role: 'front',
++    w: 600, h: 800, thickness: 18, cnc: {},
++    box: { x: 11, y: 23, z: 0, w: 600, h: 800, d: 18 }, meta: {},
++  };
++  panel.meta.frontDecoration = buildFrontDecoration({ panel, config: defaultFrontDecoration(style), style });
++  return panel;
++};
++
++function hitAt(geometry, x, y, fromBack = false) {
++  const mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial());
++  mesh.updateMatrixWorld(true);
++  return new THREE.Raycaster(
++    new THREE.Vector3((300 - x) / 1000, (y - 400) / 1000, fromBack ? -1 : 1),
++    new THREE.Vector3(0, 0, fromBack ? 1 : -1),
++  ).intersectObject(mesh)[0]?.point;
++}
++
++function openEdges(geometry) {
++  const positions = geometry.attributes.position;
++  const key = (index) => [positions.getX(index), positions.getY(index), positions.getZ(index)]
++    .map((value) => value.toFixed(7)).join(',');
++  const edges = new Map();
++  for (let index = 0; index < positions.count; index += 3) {
++    for (const [from, to] of [[0, 1], [1, 2], [2, 0]]) {
++      const edge = `${key(index + from)}>${key(index + to)}`;
++      edges.set(edge, (edges.get(edge) || 0) + 1);
++    }
++  }
++  return [...edges].filter(([edge, count]) => {
++    const [from, to] = edge.split('>');
++    return edges.get(`${to}>${from}`) !== count;
++  });
++}
++
++function volumeMm3(geometry) {
++  const positions = geometry.attributes.position;
++  let volume = 0;
++  for (let index = 0; index < positions.count; index += 3) {
++    const a = new THREE.Vector3().fromBufferAttribute(positions, index);
++    const b = new THREE.Vector3().fromBufferAttribute(positions, index + 1);
++    const c = new THREE.Vector3().fromBufferAttribute(positions, index + 2);
++    volume += a.dot(b.cross(c)) / 6;
++  }
++  return volume * 1e9;
++}
++
++const near = (actual, expected, tolerance = 1e-6) => assert.ok(
++  Math.abs(actual - expected) < tolerance, `${actual} should equal ${expected}`,
++);
++
++test('four ornate variants are closed carved slabs with real thickness, finite normals and no added material', () => {
++  for (const style of STYLES) {
++    const panel = panelFor(style);
++    const record = panel.meta.frontDecoration;
++    assert.equal(record?.status, 'ready', `${style}: ${JSON.stringify(record?.problems)}`);
++    const geometry = frontDecorationGeometry(panel);
++    assert.ok(geometry, `${style} builds`);
++    assert.equal(openEdges(geometry).length, 0, `${style} has no unpaired surface edges`);
++    near(geometry.boundingBox.min.x, -0.3);
++    near(geometry.boundingBox.max.x, 0.3);
++    near(geometry.boundingBox.min.y, -0.4);
++    near(geometry.boundingBox.max.y, 0.4);
++    near(geometry.boundingBox.min.z, -0.009);
++    near(geometry.boundingBox.max.z, 0.009);
++    for (const attribute of ['position', 'normal', 'uv']) {
++      assert.ok([...geometry.attributes[attribute].array].every(Number.isFinite), `${style} finite ${attribute}`);
++    }
++    const normals = geometry.attributes.normal;
++    for (let index = 0; index < normals.count; index += 3) {
++      near(Math.hypot(normals.getX(index), normals.getY(index), normals.getZ(index)), 1);
++    }
++    const volume = volumeMm3(geometry);
++    assert.ok(volume > 600 * 800 * 6 && volume < 600 * 800 * 18,
++      `${style} leaves a continuous skin and removes material: ${volume}`);
++    near(hitAt(geometry, 30, 400).z, 0.009);
++    near(hitAt(geometry, 300, 400).z, -0.003);
++    near(hitAt(geometry, 300, 400, true).z, -0.009);
++  }
++});
++
++test('ornate back hinge cups remain in the frame and a through bore opens the exact relief surface', () => {
++  const panel = panelFor('ORNATE_A_1');
++  const plain = frontDecorationGeometry(panel);
++  const drilled = frontDecorationGeometry(panel, [
++    { kind: 'round', x: 21.5, y: 150, r: 17.5, depth: 11 },
++    { kind: 'round', x: 300, y: 400, r: 2.5, through: true },
++  ]);
++  near(hitAt(drilled, 21.5, 150, true).z, 0.002);
++  near(hitAt(drilled, 21.5, 150).z, 0.009);
++  assert.equal(hitAt(drilled, 300, 400), undefined);
++  assert.equal(hitAt(drilled, 300, 400, true), undefined);
++  const polygonArea = (radius) => 32 / 2 * radius ** 2 * Math.sin(2 * Math.PI / 32);
++  near(volumeMm3(plain) - volumeMm3(drilled), polygonArea(17.5) * 11 + polygonArea(2.5) * 6, 3);
++});
++
++test('blind bores beneath a variable relief use its local height, not the deepest cut elsewhere', () => {
++  const panel = panelFor('ORNATE_A_4');
++  const points = rectangle(60, 60, 480, 680);
++  const vertices = [
++    ...points.map(([x, y]) => [x, y, 0]),
++    ...points.map(([x, y]) => [x, y, x === 60 ? 3 : 12]),
++  ];
++  // Canonical surface includes all walls and the sloping floor, with CCW
++  // floor triangles in CNC XY. No loose decorative mesh sits on the board.
++  const triangles = [[4, 5, 6], [4, 6, 7]];
++  for (let index = 0; index < 4; index += 1) {
++    const next = (index + 1) % 4;
++    triangles.push([index, next + 4, index + 4], [index, next, next + 4]);
++  }
++  panel.meta.frontDecoration = {
++    style: 'ORNATE_A_4', status: 'ready', outline: rectangle(0, 0, 600, 800),
++    operations: [{ id: 'variable-relief', kind: 'relief', face: 'front', points,
++      startDepth: 0, depth: 12, surface: { vertices, triangles } }], additions: [],
++  };
++  const geometry = frontDecorationGeometry(panel, [
++    { kind: 'round', x: 100, y: 400, r: 2, depth: 11 },
++  ]);
++  near(hitAt(geometry, 100, 400, true).z, 0.002);
++  near(hitAt(geometry, 100, 400).z, 0.00525);
++  assert.equal(openEdges(geometry).length, 0);
++});
++
++test('ornate drawing contours keep one datum reflection and identify relief references explicitly', () => {
++  const panel = panelFor('ORNATE_A_1');
++  const record = panel.meta.frontDecoration;
++  const original = structuredClone(record);
++  const operation = record.operations[0];
++  assert.ok(operation.contours.length > 4, 'profile and floral detail contours exist');
++  const elevation = frontDecorationElevation(panel);
++  const details = frontDecorationMachinings(panel);
++  assert.equal(elevation.length, 1 + operation.contours.length);
++  assert.equal(details.length, elevation.length);
++  for (const contour of operation.contours) {
++    const drawn = elevation.find((item) => item.contourId === contour.id);
++    assert.deepEqual(drawn.pts, contour.points.map(([x, y]) => [panel.box.x + 600 - x, panel.box.y + y]));
++    const detail = details.find((item) => item.id === `decoration-${operation.id}-${contour.id}`);
++    assert.deepEqual(detail.pts, contour.points);
++    assert.equal(detail.machiningKind, 'relief-reference');
++    assert.match(detail.note, /not a pocket toolpath/);
++    assert.match(detail.layer, /^FRONT_REF_/);
++  }
++  assert.match(frontDecorationDetailNote(panel), /physical sample/);
++  assert.deepEqual(record, original, 'drawing never modifies canonical CNC coordinates');
++});
++
++test('smooth relief normals leave canonical triangles and bore cuts unchanged, with hard slab and bore walls', () => {
++  const panel = panelFor('ORNATE_A_1');
++  const flatPanel = structuredClone(panel);
++  // Other canonical surfaces keep their established face-normal renderer.
++  flatPanel.meta.frontDecoration.operations[0].kind = 'pocket';
++  const bores = [{ kind: 'round', x: 160, y: 710, r: 3, through: true }];
++  for (const holes of [[], bores]) {
++    const smooth = frontDecorationGeometry(panel, holes);
++    const flat = frontDecorationGeometry(flatPanel, holes);
++    assert.deepEqual(smooth.attributes.position.array, flat.attributes.position.array,
++      'lighting cannot move a CNC vertex, remove a triangle or change a clipped bore');
++    assert.deepEqual(smooth.attributes.uv.array, flat.attributes.uv.array);
++    let changed = 0; let hardBoreVertices = 0;
++    const positions = smooth.attributes.position;
++    const normals = smooth.attributes.normal;
++    for (let index = 0; index < positions.count; index += 1) {
++      const nx = normals.getX(index); const ny = normals.getY(index); const nz = normals.getZ(index);
++      near(Math.hypot(nx, ny, nz), 1);
++      if (Math.abs(nx - flat.attributes.normal.getX(index)) > 1e-5
++        || Math.abs(ny - flat.attributes.normal.getY(index)) > 1e-5
++        || Math.abs(nz - flat.attributes.normal.getZ(index)) > 1e-5) changed += 1;
++      const outerWall = Math.abs(Math.abs(positions.getX(index)) - 0.3) < 1e-7
++        || Math.abs(Math.abs(positions.getY(index)) - 0.4) < 1e-7;
++      if (outerWall || positions.getZ(index) < -0.008999) {
++        near(nx, flat.attributes.normal.getX(index));
++        near(ny, flat.attributes.normal.getY(index));
++        near(nz, flat.attributes.normal.getZ(index));
++      }
++      const boreRadius = Math.hypot(positions.getX(index) - 0.14, positions.getY(index) - 0.31);
++      if (holes.length && Math.abs(boreRadius - 0.003) < 0.00002
++        && Math.abs(flat.attributes.normal.getZ(index)) < 1e-6) {
++        near(nx, flat.attributes.normal.getX(index));
++        near(ny, flat.attributes.normal.getY(index));
++        near(nz, flat.attributes.normal.getZ(index));
++        hardBoreVertices += 1;
++      }
++    }
++    assert.ok(changed > 100, 'the relief receives shared smooth normals');
++    if (holes.length) assert.equal(hitAt(smooth, 160, 710), undefined);
++    else assert.ok(hitAt(smooth, 160, 710));
++    if (holes.length) assert.ok(hardBoreVertices > 32, 'new bore wall facets keep their geometric normals');
++  }
++});
+diff --git a/test/turn35-f9-project-wide-export.test.js b/test/turn35-f9-project-wide-export.test.js
+index 72cefe49572af0de0a067aac8c13d5f250b61637..d8fcccd1d35fa3bbefc6db74e7a13c03416cee91 100644
+--- a/test/turn35-f9-project-wide-export.test.js
++++ b/test/turn35-f9-project-wide-export.test.js
+@@ -252,7 +252,10 @@ test('EXPORT BY MATERIAL - one grouping path with optional front setup packaging
+   assert.ok(src.includes("  key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,"));
+   // T76 F1 · T35's `const filename` is back; the package path RETURNS its
+   // Promise (no `await` inside), the ordinary path downloads as before.
+-  assert.ok(src.includes('  const filename = materialDxfFileName(section.label, { project });'));
++  // Ornate reference-only selections can have no released production section.
++  // The existing grouping still supplies the requested material label.
++  assert.ok(src.includes("  const label = section?.label || requested?.label || 'Ornate-reference';"));
++  assert.ok(src.includes('  const filename = materialDxfFileName(label, { project });'));
+   assert.match(src, /const section = materialExportSection\(passed, \{/);
+   assert.match(src, /if \(hasFrontDecorations\(manifestEntries\)\)\s*\{/);
+   assert.match(src, /return downloadFrontSetups\(\{/);
+diff --git a/test/turn59-f1-the-switch.test.js b/test/turn59-f1-the-switch.test.js
+index 9fc948dcfebc87fc292a3e7e21fcc889ebb7dbfb..48f9beda10c626e114b8969d26fe07b4d3f5a1af 100644
+--- a/test/turn59-f1-the-switch.test.js
++++ b/test/turn59-f1-the-switch.test.js
+@@ -119,9 +119,9 @@ const EXEMPT = {
+   // them; the three files T75 also licensed (BomPanel, CncTree, RightPanel)
+   // carry ONE entry above, T75's text and GPT's line.
+   'src/components/AssignMaterialsModal.jsx': 'DECOR F4: applied strip stock badges use the same thickness validation as purchasing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
+-  'src/components/CncView.jsx': 'DECOR F3: explicit front/back machining preview from shared export geometry. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
++  'src/components/CncView.jsx': 'ORNATE, Piotr 10.10.2026: gotowy kod wlacznei z leyersami prosze do cnc. Shows canonical reference layers and relief depth readouts without changing production export approval. ' + 'DECOR F3: explicit front/back machining preview from shared export geometry. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+     + ' T76 F4 · the readout names a V groove for what it is: V, its width at the mouth, its centre line. *"The V groove is a V ... The DXF layer name and the `front-operations.json` entry say which."*',
+-  'src/components/FrontDecorationControls.jsx': 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
++  'src/components/FrontDecorationControls.jsx': 'ORNATE, Piotr 10.10.2026: rozpisz zakoduj dokaldnei prosze i ja roto dam do clauda, ale daj gotowy kod wlacznei z leyersami prosze do cnc. Adds proposed relief note and mirror choice; no new numeric fields. ' + 'DECOR F1: editable, versioned decorative machining defaults shared with Retail. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+     + ' T76 F4 · the Arch rise field goes with the ellipse it set; the defaults the controls show are the profile\'s. *"SEMICIRCULAR arch (rise = half the inner width; ... never squashed to an ellipse)"*'
+     + ' T76 F6 · one prop, `fields` (PRO passes nothing and keeps every field); retail passes false and shows no number of a recipe. *"a client picks a style and gets the owner\'s recipe with NO numeric fields (lazy client law; the recipe controls are PRO\'s)"*'
+     + ' T76 integration · the AH sentence gets the space GPT\'s line lacked (F2 probe). *"AH (Arched handleless) | A\'s recipe; the J-pull is chosen separately under Opening"*',
+@@ -243,7 +243,7 @@ const EXEMPT = {
+  * t58b merged). Not one of them is touched by this turn.
+  */
+ const FROZEN = {
+-  'src/components/FrontDecorationControls.jsx': 'fcccbc5d110f4a83143913a4acdfcd2232ccc73ee8d35b3ebfb20743f17ea978',
++  'src/components/FrontDecorationControls.jsx': '029b9a2c4488bcb4e9bdbda77fa4798d2531caaca1d98ff4790d9947dd6171e4',
+   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
+   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
+   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+@@ -259,7 +259,7 @@ const FROZEN = {
+   'src/components/ChosenDecorTile.jsx': '38d960b752ed6d5e99519573a3c6b9d31d687820f38b4e39ee11b971b2c3b683',
+   // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
+   'src/components/CncTree.jsx': 'a439e4706bb74c99f368efe3a84090fb2303dfab7c8b59bf191f5a8421983c00',
+-  'src/components/CncView.jsx': 'f21cfee1de2f02a379aedac9dbc3615a5fa1968f2fce3312a5832497067a82fd',
++  'src/components/CncView.jsx': 'b10dca8c39ce130b2be5f68f8aa43d16ea81f64654510ad36d8ae52b74301ff6',
+   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
+   'src/components/CompanyDefaultsModal.jsx': '90365da4e2e0bc285c652ec252c62a11da199853fdd9e31a899cb74464e2a896',
+   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+diff --git a/test/turn59-f4-the-options.test.js b/test/turn59-f4-the-options.test.js
+index 3baf5dec37cac3ec466b4f93e29c7f39d99c64df..8046eb6f0a0d975086d3bfc5ee60204afd583c7f 100644
+--- a/test/turn59-f4-the-options.test.js
++++ b/test/turn59-f4-the-options.test.js
+@@ -1,3 +1,4 @@
++// Ornate A, 10.10.2026: retain the existing order, append four owner-requested proposed styles.
+ // ─── TURN 59 · F4 — EVERY CONTROL, THROUGH THE ONE ADAPTER ─────────────────
+ //
+ // CLAUDE.md F4: *"Tests (`test/turn59-f4-the-options.test.js`): every control's
+@@ -214,7 +215,7 @@ test('F4.2 · the door-width refusal is the ENGINE\'s number and the ENGINE\'s c
+ test('F4.3 · all offered decorative styles are live after the owner approved defaults', () => {
+   const styles = A.frontStyles();
+   const live = styles.filter((s) => !s.soon).map((s) => s.id);
+-  assert.deepEqual(live, ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM']);
++  assert.deepEqual(live, ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4']);
+   const soon = styles.filter((s) => s.soon);
+   assert.deepEqual(soon.map((s) => s.id), []);
+   for (const s of soon) assert.equal(s.reason, REASONS.styleComingSoon);
+diff --git a/test/turn66-f2-f11-the-steps-and-the-column.test.js b/test/turn66-f2-f11-the-steps-and-the-column.test.js
+index c297f3deccd927eda4b793dd2e55dcec783402c3..d8e6d1f57b8e9fbdd3b4ae1db4789fa49ca4296e 100644
+--- a/test/turn66-f2-f11-the-steps-and-the-column.test.js
++++ b/test/turn66-f2-f11-the-steps-and-the-column.test.js
+@@ -1,3 +1,4 @@
++// Ornate A, 10.10.2026: retain the existing order, append four owner-requested proposed styles.
+ // ─── TURN 66 · F2, F4, F5, F6, F7, F8, F9, F11 — THE STEPS ─────────────────
+ //
+ // Eight of tonight's eleven land in the OPTIONS column, and every one of them
+@@ -104,7 +105,7 @@ test('F2 · INSIDE carries no size field, and opens on the carcass material', ()
+ test('F4 · STYLE is a vertical list of rows, in the owner\'s own order', () => {
+   const options = read('src/retail/design/Options.jsx');
+   assert.match(options, /className="pbi-style-list"/, 'STYLE is still a mosaic of chips');
+-  assert.match(options, /const order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'\];/, 'SLAB · SHAKER · GROOVED · ARCHED');
++  assert.match(options, /const order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'\];/, 'SLAB · SHAKER · GROOVED · ARCHED');
+   assert.match(options, /<FrontThumb style=\{s\.id\} size="row" \/>/, 'the rows have no drawing');
+   // The J is a HANDLE system, not a shape (T57) — still not offered as a style.
+   assert.match(options, /filter\(\(s\) => s\.id !== 'HJ'\)/);
+diff --git a/test/turn68-f6-f8-hinges-and-one-road.test.js b/test/turn68-f6-f8-hinges-and-one-road.test.js
+index 4bbef0e66ad843d04f6ba495f2fb6239d9654867..9752ad583a3ff21232defd4a6d72feab49cbeffc 100644
+--- a/test/turn68-f6-f8-hinges-and-one-road.test.js
++++ b/test/turn68-f6-f8-hinges-and-one-road.test.js
+@@ -1,3 +1,4 @@
++// Ornate A, 10.10.2026: retain the existing order, append four owner-requested proposed styles.
+ // ─── TURN 68 · F6 + F8 — THE HINGES GO BACK TO PRO, FRONTS KEEPS ONE ROAD ──
+ //
+ // F6, the owner: *"wybór hinges to nie jest dobry pomysł, nie tutaj — zostaw
+@@ -131,13 +132,13 @@ test('F8 · the STYLE list is the one road for all approved decorations', () =>
+   // …and the OPENING list is where the J now honestly lives (T57's doctrine).
+   assert.match(panel, /data-testid="fronts-opening"/);
+   assert.match(panel, /A\.setFrontOpening\(o\.id\)/);
+-  assert.match(panel, /order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'\]/);
++  assert.match(panel, /order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'\]/);
+   assert.match(panel, /filter\(\(s\) => s\.id !== 'HJ'\)/, 'the legacy J is offered as a shape again');
+ });
+ 
+ test('F8 · all decorative styles share the list and the J stays with opening', () => {
+   const gallery = new Set(FRONT_STYLE_OPTIONS.map((o) => o.id));
+-  const list = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
++  const list = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
+   const extras = [...gallery].filter((id) => !list.includes(id));
+   assert.deepEqual(extras, ['HJ']);
+   assert.match(frontsRaw(), /`HJ` remains/);
+diff --git a/test/turn76-f4-the-recipes-in-the-profile.test.js b/test/turn76-f4-the-recipes-in-the-profile.test.js
+index 5feda328b1b3d31add567f37407393ab99b02e4f..8505419c654d11fe62bb61a8b140a484aa6b8b9b 100644
+--- a/test/turn76-f4-the-recipes-in-the-profile.test.js
++++ b/test/turn76-f4-the-recipes-in-the-profile.test.js
+@@ -47,7 +47,7 @@ test('F4 · RECIPES no longer exists in code; no recipe number is typed outside
+ 
+ test('F4 · the owner\'s numbers, read off the profile', () => {
+   const D = P.front.decoration;
+-  assert.deepEqual(Object.keys(D).sort(), [...DECORATIVE_FRONT_STYLES].sort(), 'one entry per decorative style');
++  assert.deepEqual(Object.keys(D).sort(), [...DECORATIVE_FRONT_STYLES, 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'].sort(), 'one entry per production recipe or proposed relief');
+   // Owner, 31.08.2026.
+   assert.deepEqual(D.G, {
+     grooveCutter: 'v', grooveWidthMm: 4, grooveDepthMm: 3, groovePitchMm: 80, grooveInsetMm: 60, grooveDirection: 'vertical',
+diff --git a/test/turn76-f6-pro-and-retail.test.js b/test/turn76-f6-pro-and-retail.test.js
+index 34941e0fcae67580b115615003a35e0299407713..903e27f62f3b230a6f106d49573b9a483b20cd93 100644
+--- a/test/turn76-f6-pro-and-retail.test.js
++++ b/test/turn76-f6-pro-and-retail.test.js
+@@ -28,7 +28,7 @@ const SIX = ['G', 'GF', 'A', 'AH', 'FL', 'AM'];
+ 
+ test('F6 · the FRONTS list offers the six, each drawn from frontStyleArt.js', () => {
+   const order = read('src/retail/design/Options.jsx').match(/const order = \[([^\]]*)\]/)[1];
+-  assert.equal(order, "'F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'");
++  assert.equal(order, "'F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'");
+   const live = A.frontStyles().filter((s) => !s.soon).map((s) => s.id);
+   for (const id of SIX) {
+     assert.ok(live.includes(id), `${id} is not live in retail`);

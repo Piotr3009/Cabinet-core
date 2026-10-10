@@ -1,242 +1,198 @@
-# CLAUDE.md, TURN 76 · THE DECORATIVE FRONTS LAND: GPT'S BRANCH JOINS MAIN
+# CLAUDE.md, TURN 77 · ORNATE A LANDS: FOUR CLASSICAL FRONTS FROM THE OWNER'S BOARD
 
 Run autonomously. Zero questions, zero stops: every decision below is the
-owner's own (9 and 10.10.2026), so nothing here is asked again. If a point
-cannot be done, skip it, write why in the PR, and go on to the next. Full
-suite, never `--silent`. Frames under `verify/t76/`. Branch
-`claude/t76-decorative-fronts`, one commit per F, PR at the end; the owner
-merges. Nothing lands in Petros from this session.
+owner's own (10.10.2026), so nothing here is asked again. If a point cannot
+be done, skip it, write why in the PR, and go on to the next. Full suite,
+never `--silent`. Frames under `verify/t77/`. Branch `claude/t77-ornate-a`,
+one commit per F, PR at the end; the owner merges. Nothing lands in Petros
+from this session.
 
 ## THE ORDER
-1. The owner, 9.10.2026: *"gpt robi fronty, reszta my."* GPT's work is done
-   and sits in this repo as ONE patch file, `patches/gpt-decorative-fronts.patch`
-   (66 files, base `f60d18f1`, GPT's own suite 6007 green on that base). This
-   turn lands it on main AFTER T75 and makes it obey the house laws it missed.
-2. The owner, 10.10.2026, on GPT's slim shaker: *"a po co mi slim shaker jak
-   mamy ustawianie shakera po wyborze shaker, bez sensu, reszta chyba ok."*
-   SS goes (F3). Everything else in the patch stays.
-3. The owner's own front measurements, from his DXF drawings (pattern session
-   of 31.08.2026, T56), are the recipe defaults where they exist (F4).
-4. BASE: `origin/main` with T75 merged. If T75 is not on main when this runs,
-   branch from `origin/claude/t75-the-big-turn` instead and say so in the PR
-   title; the owner merges both in order.
+1. The owner's board of 10.10.2026 (600 x 800 x 18, outer frame 60, inner
+   band 60, R150, four steps 12 / 8 / 6 / 4 wide at 3 / 6 / 9 / 12 deep, four
+   variants: Classic, Symmetric, Soft, Plain) was coded by GPT at the owner's
+   request: *"rozpisz zakoduj dokładnie proszę i ja to dam do Clauda, ale daj
+   gotowy kod włącznie z leyersami proszę do CNC."* That code sits in this
+   repo as ONE patch, `patches/gpt-ornate-a.patch` (36 files, base
+   `2766045116637e0b0cc37894d4333290abe0e894`, which IS the current main after
+   PR #75). This turn lands it and corrects three things it got wrong.
+2. The relief is a PROPOSAL and stays one: the owner's board says *"Do
+   produkcji wymagane pomiary i akceptacja fizycznego wzoru."* The slab is
+   cut; the relief ships as CAD/CAM reference files with the state
+   `geometry`, never as approved machining, until the owner says otherwise.
+3. BASE: `origin/main` at `2766045` or later. The patch applies clean there
+   (checked 10.10.2026, 22:50). If main has moved past it, `git apply --3way`
+   and keep both sides of every conflict.
 
 ## LAWS
-T75's LAWS hold in full and are not repeated: done means the whole road
-(UI, construction, BOM, drawing, save and reload, export with readiness),
-LISP IS LAW, diagnose before you cut, test the way the client clicks, one law
-one path, 1:1 = COPY, numbers in the profile and never typed into the UI
-without the owner's order, material never enters material, room refuses
-first, left adds right edits, no em or en dash in anything written, kasacja
-is physical deletion. Two laws are THIS turn's own:
-**GPT's code is a patch, not a paste.** It is applied with `git apply --3way`
-and every conflict is resolved by the table in F1, never by taking one side
-whole, never by copying a file from `changed-files/` over main. Main's T75
-lines and GPT's lines both survive unless F1 says otherwise.
-**One state, one column.** T75's `readiness` (`engine/readiness.js`) is the
-single production state of a line. GPT's `manufacturing` keeps only what
-readiness cannot carry (F5).
+T75's LAWS and T76's two laws hold in full and are not repeated: done means
+the whole road, LISP IS LAW, diagnose before you cut, test the way the client
+clicks, one law one path, 1:1 = COPY, numbers in the profile and never typed
+into the UI without the owner's order, room refuses first, no em or en dash
+in anything written, kasacja is physical deletion, GPT's code is a patch not
+a paste, one state one column. One law is this turn's own:
+**A reference file is a file somebody has to download.** Everything the ZIP
+carries for a relief must fit a browser export of a whole kitchen: sizes are
+measured in the walk and written in the PR.
 
 ## FROZEN
-1. Goldens: the six (`scripts/t64-classify.mjs dump()` against
-   `verify/t70/goldens-base.json`) plus T75's nine, byte-identical.
-   `scripts/t76-classify.mjs` (T75's pattern) names every engine delta of this
-   turn and proves no golden can reach it. GPT's
-   `fixtures/golden-decorative-fronts.json` becomes the tenth golden file of
-   this repo, re-pinned after F3 and F4 (six records, SS gone, the owner's
-   numbers in), and joins the classifier.
-2. Existing LISP untouched: a decorative recipe is front machining on top of
-   a slab the kits already cut, not a new carcass geometry, so no LISP is
-   asked for; the PR says so in one line. `engine/drawings/**` only through
-   GPT's own patch hunks. Lighting files untouched.
+1. Goldens: the six, T75's nine, T76's decoration file, byte-identical
+   (`scripts/t64-classify.mjs dump()` against `verify/t70/goldens-base.json`
+   and the later bases). `scripts/t77-classify.mjs` (T76's pattern) names
+   every engine delta and proves no golden can reach it: no old project
+   carries an `ORNATE_A_*` style, so none moves.
+2. LISP untouched: the relief is surface machining on a slab the kits
+   already cut, like T76's recipes; no LISP is asked for and the PR says so.
+   `engine/drawings/**` only through GPT's own hunks. Lighting untouched.
+   `doors.js`, `hinges.js`, `hingeLadder.js`, `handles.js`, `splitDoors.js`,
+   `shaker.js`, `frontDimensions.js`, `frontGapClash.js` untouched
+   (`test/turn68-f6-f8-hinges-and-one-road.test.js` changes only its style
+   ORDER list; that is the whole of the hinge file's involvement).
 3. PRO freeze (`test/turn59-f1-the-switch.test.js`): every PRO file edited is
-   licensed in `EXEMPT` with the owner's words from this file (or GPT's
-   licence line, which quotes the owner's own authorisation of 9.10.2026) and
-   re-frozen at its new hash in the same commit.
-4. The suite is green at the start (record the count) and at the end.
-5. T75's FRONTS BOUNDARY is lifted for this turn and this turn only: the
-   patch edits `design.js FRONT_STYLE_OPTIONS` and `frontStyleArt.js` as GPT
-   wrote them. `doors.js`, `hinges.js`, `hingeLadder.js`, `handles.js`,
-   `splitDoors.js`, `shaker.js`, `frontDimensions.js`, `frontGapClash.js` are
-   NOT in the patch and stay untouched tonight.
+   licensed in `EXEMPT` with the owner's words (GPT's two entries quote the
+   owner's authorisation of 10.10.2026 and stay) and re-frozen at its final
+   hash in the same commit.
+4. The suite is green at the start (record the count; GPT recorded 6325 on
+   this base) and green at the end.
 
-## F1 · THE PATCH LANDS, CONFLICTS RESOLVED BY THIS TABLE
-- `git apply --3way patches/gpt-decorative-fronts.patch` on the base. The
-  probe (committed first, `verify/t76/f01-probe.md`): the list of files the
-  patch touches, the list that conflicted, and for each conflict the two
-  sides, before any resolution. Expected from the dry run of 10.10.2026: six
-  files conflict, all shallow.
-- Resolutions, each one BOTH sides unless stated:
+## F1 · THE PATCH LANDS
+- Commit `verify/t77/f01-probe.md` first: the base SHA, the result of
+  `git apply --check`, the 36 files, and the suite count on the base.
+- `git apply patches/gpt-ornate-a.patch` (3-way only if main moved). Suite.
+  What is red is fixed in GPT's code, never by loosening an older test.
+- Delete `patches/gpt-ornate-a.patch` in this turn's LAST commit (packaging,
+  not code: the T71 and T76 precedent).
 
-| File | Conflict | Resolution |
-| - | - | - |
-| `src/engine/cabinet.js` ~9189 | T75 F4 L-doors block vs GPT decoration pass | Both, in this order: the L block FIRST (it pushes the L's two leaves), GPT's `front_decoration` pass AFTER it, so the L's doors are decorated like every other front. |
-| `src/stores/projectStore.js` ~776 | fossil strip list vs `front_decoration: storedDecoration` | Both fields in the one destructuring: `run_upstand`, `run_pelmet` AND `front_decoration`. |
-| `src/lib/cncExport.js` ~144 | T75 F22 READINESS.txt vs GPT `front-operations.json` | Both files ride the ZIP. |
-| `src/components/RightPanel.jsx` ~20 | T75 imports vs `FrontDecorationControls` import | Both imports. |
-| `src/engine/bom.js` ~111 | `readiness` vs `manufacturing` on the row | Both on the row this commit; F5 then folds the state (see F5). |
-| `src/engine/bom.js` ~149 | merge key | One key carrying BOTH `readiness` and `manufacturing.identity`: two fronts with different recipes never merge into one line, and an outline never merges into a cut part. |
-| `src/engine/bom.js` ~442 | `FRONT_SHEET_PARTS` | The union: `pelmet` AND `front_moulding`. |
-| `test/turn59-f1-the-switch.test.js` | two EXEMPT blocks | Both blocks; a file in both gets ONE entry whose text is T75's line + GPT's line; hashes recomputed at the end of the turn (F8). |
+## F2 · THE PROBE OF WHAT GPT BUILT
+Committed table `verify/t77/f02-probe.md`: the four style ids and their
+profile entries (`engine/ornateFrontProfile.js` imported into
+`profile.front.decoration`); where the recipe is written and read (the T76
+roads: project, front-material slot, saved style, unit); how
+`buildOrnateFront` hands ONE surface to the 3D solid, the drawings, the DXF
+and the STL; the readiness of the slab (`cut`) and of the reference files
+(`geometry`) and the BOM sentence; the export layers
+(`FRONT_REFERENCE_NO_CUT`, `FRONT_REF_PROFILE_D3 / D6 / D9 / D12`,
+`FRONT_REF_ORNAMENT`); the size in bytes of each reference file for a
+600 x 800 leaf of each variant as the patch produces them today.
 
-- After the apply: `npm ci`, the suite, record what is red. Anything red
-  that is a T75 test colliding with GPT's rename of a label or a count is
-  amended with the reason in the test; anything red in GPT's own tests
-  against T75's main is fixed in GPT's code, never by loosening the T75 test.
-- Rename GPT's `test/turn75-the-j-band.test.js` to
-  `test/turn76-the-j-band.test.js` (T75's tests own the `turn75-` prefix).
-- Delete `patches/gpt-decorative-fronts.patch` in this turn's LAST commit:
-  the patch is packaging, not code (the T71 precedent).
+## F3 · THE REFERENCE FILES SHRINK TO WHAT A BROWSER CAN SHIP
+GPT's STL for one 600 x 800 leaf is 12 to 36 MB (ASCII STL at a 1 mm relief
+sample). A kitchen of eight ornate leaves would hand the browser a quarter of
+a gigabyte. Fix, with no change to the geometry the 3D shows:
+- `RELIEF_SAMPLE_MM`, `SURFACE_CHORD_MM` and `CHORD_ERROR_MM` move from
+  constants in `engine/ornateFront.js` into
+  `profile.front.decoration.ornateReference = { sampleMm: 2.0, chordMm: 2.0,
+  chordErrorMm: 0.06, fullSampleMm: 1.0 } // T77 proposed, owner to
+  confirm`. The 3D solid keeps the finer sampling it has (its own number),
+  the EXPORT reads the profile.
+- `ornateSurfaceStl` writes BINARY STL (80-byte header, uint32 count, 50
+  bytes per triangle), units in the operations JSON as today. ASCII goes.
+- The CNC export offers two levels in the existing export options (no new
+  numeric field): `Reference (default)` at `sampleMm` and `Full resolution`
+  at `fullSampleMm`; the manifest records which one was written.
+- The walk (F7) records the bytes per file before and after; the PR carries
+  the table. Target, said here so the walk can fail it: one leaf's three
+  reference files under 4 MB at the default level.
 
-## F2 · THE PROBE OF WHAT GPT BUILT, IN ONE TABLE
-Before F3, a committed table (`verify/t76/f02-probe.md`): every style id and
-its recipe keys as the patch has them; where `params.front_decoration` is
-written (project, front-material slot, saved style, unit) and read; the
-opt-in rule (an old project with a style name alone gets NO machining and an
-activation button); the CNC handoff (back DXF unchanged, FRONT DXF per part,
-`front-operations.json`); where the AM strips become cut parts. The table is
-the baseline the rest of the turn is measured against.
+## F4 · THE BOARD: 18 ON THE BOARD, 25 IN THE WORKSHOP
+The owner's board is drawn for 18 mm; the workshop's default front is 25
+(`profile.front.thickness`). GPT keeps the ASSIGNED material's thickness
+(right: a 12 mm relief in a 25 board leaves 13 and passes the 3 mm skin).
+- `boardMm: 18` in the ornate profile is the BOARD OF THE DRAWING, not a
+  demand: the Check speaks only when the assigned front is THINNER than the
+  deepest step plus the 3 mm skin (15 mm for the default recipe), in words,
+  naming the leaf and the number; a thicker board is silently fine. This is
+  T76 F4's rule for A/AH applied the same way; one function serves both.
+- The JSON and the drawing print the ACTUAL board of the leaf, never the
+  board of the drawing.
 
-## F3 · KASACJA: SLIM SHAKER GOES
-Owner: *"a po co mi slim shaker jak mamy ustawianie shakera po wyborze
-shaker, bez sensu."* A slim shaker is `profile.front.types.S` with
-`frameWidth` 25 and `recessDepth` 2, both numbers the shaker already owns
-(`frameMin` 10, `frameMax` 200, T33 F8's wizard field).
-- Delete `SS` from `FRONT_STYLE_OPTIONS` (`engine/design.js`), from
-  `RECIPES` / its profile block (F4), from `FRONT_STYLE_ART`
-  (`engine/frontStyleArt.js`), from the retail thumbnails, from GPT's goldens
-  (the SS record), tests and walks. No alias: SS never shipped, no saved
-  project carries it. Tombstone two lines in `design.js`.
-- The shaker's own `recessDepth` stays 6 and is NOT made a per-front field
-  tonight (a number does not enter the UI without the owner's order); the
-  frame width field the wizard already has is the "slim".
+## F5 · KASACJA: THE COPYRIGHT HEADERS
+Eight new files open with `// Copyright Skylon Development Ltd. All rights
+reserved.` No file in this repo carries a copyright header, and that company
+name is not one of the owner's. Delete the line from every file the patch
+adds (`src/engine/ornateFront.js`, `ornateFrontProfile.js`,
+`ornateFrontArt.js`, `engine/cnc/ornateExport.js`, the four `ornate-*`
+scripts and tests that carry it) and from `docs/ornate-a-handoff-PL.md`. The
+owner decides any notice for the whole repo separately; nothing is invented
+in its place.
 
-## F4 · THE RECIPES MOVE INTO THE PROFILE, THE OWNER'S NUMBERS FIRST
-GPT put the recipe defaults in code (`RECIPES` in
-`src/engine/frontDecoration.js`). The house law: numbers live in
-`engine/profile.js`.
-- New block `profile.front.decoration` with one entry per decorative style,
-  read by `defaultFrontDecoration(style, profile)` and
-  `normaliseFrontDecoration(config, style, profile)`; `RECIPES` in code is
-  deleted. Every caller that today reaches `DEFAULT_CABINET_PROFILE` for this
-  takes the active workshop profile instead (the same `getCabinetProfile()`
-  road every other number travels). The design's saved `decoration` object
-  stays as GPT shaped it: a project that overrode a number keeps its number.
-- The OWNER'S numbers (his DXF drawings, 31.08.2026) are the defaults where
-  they exist; GPT's stand where the owner gave none and are marked `// T76
-  proposed, owner to confirm`:
-
-| Style | Default recipe | Source |
-| - | - | - |
-| G (Grooved) | vertical grooves every 80 centre to centre, V profile 4 wide x 3 deep, margin 60 to the first groove | owner, 31.08.2026 |
-| GF (Grooved with frame) | frame 60 (the shaker's own frame law), recess 6, grooves inside the recess: every 80, V 4 x 3, inner margin 10 | owner (60, 80, 4 x 3); GPT (recess 6, margin 10), proposed |
-| A (Arched) | board 30, frame 60, recess 18, SEMICIRCULAR arch (rise = half the inner width; a leaf narrower than the rise allows is refused in words, never squashed to an ellipse) | owner, 31.08.2026 |
-| AH (Arched handleless) | A's recipe; the J-pull is chosen separately under Opening, from the underside (owner: *"J-pull from underside"*) | owner |
-| FL (Fluted) | 12 ballnose, 3 deep, every 20, margin 50 | GPT, proposed |
-| AM (Applied moulding) | inset 60, strip 20 wide x 8 proud, 45 degree mitres, strips are cut parts of their own 8 mm stock | GPT, proposed |
-
-- The V groove is a V: GPT's groove operation carries a cutter KIND; G and GF
-  take `kind: 'v'` with the 4 x 3 section (a 90 degree V bit is implied by
-  4 wide at 3 deep is NOT assumed: the JSON records width and depth and CAM
-  picks the bit). FL keeps its ballnose. The DXF layer name and the
-  `front-operations.json` entry say which.
-- The 30 mm board for A/AH: the front thickness is the material's
-  (`profile.front.thickness`, 25 today); a recess of 18 in a 25 board leaves
-  7, which passes GPT's 3 mm skin rule but is not the owner's board. So the A
-  and AH recipes carry `boardMm: 30`, and the Check says, in words, when the
-  assigned front material is thinner than the recipe's board (the recipe is
-  not silently shrunk and the material is not silently swapped). The owner
-  decides per job.
-- Re-pin `fixtures/golden-decorative-fronts.json` with the six styles on the
-  new numbers; `scripts/t76-classify.mjs` proves the six + nine old goldens
-  did not move (no old project carries `front_decoration`).
-
-## F5 · ONE STATE: READINESS ABSORBS MANUFACTURING
-- `engine/readiness.js readinessOf` learns the decorated front: a front whose
-  recipe validated is `'cut'`; a front whose recipe is BLOCKED by GPT's
-  validator (the pattern is not exported) is `'cut'` for the slab and the
-  Check names the blocked recipe (the state of the LINE is the slab's; the
-  decoration's refusal is a Check, as GPT built it); an AM strip is a `'cut'`
-  part of its own and the host front carries a `'manual'` NOTE for the
-  gluing of its strips (the T75 worktop-joint grammar).
-- `manufacturing` on the BOM row keeps ONLY `identity` (for the merge key)
-  and `construction` (the label: routed slab, applied strips); its `status`
-  is deleted, the BOM panel shows the T75 State column and the construction
-  label, not a second status. GPT's `front-decoration-purchase.test.js` and
-  `front-decoration-ui.test.js` are amended to read readiness.
-- The CNC export's T75 readiness banner counts GPT's FRONT files like any
-  other line; `front-operations.json` carries each operation's readiness.
-
-## F6 · PRO AND RETAIL, THROUGH THE COPY SCRIPT
-- GPT edited `scripts/t63-copy.mjs` and `t63-copies.mjs` to add
-  `FrontDecorationControls.jsx` and the retail `PartDetailModal.jsx` to the
-  manifest. Keep that, then run `scripts/t76-copy.mjs` (T75's pattern): every
-  PRO surface this turn edits is re-copied, and the script proves the only
-  retail files that moved are the copies of the files named. Retail
-  divergences (the design-system skin) are listed in the PR by file and line,
-  as every turn since T63.
-- Retail FRONTS step: the style tiles show G, GF, A, AH, FL, AM thumbnails
-  from `frontStyleArt.js`; a client picks a style and gets the owner's recipe
-  with NO numeric fields (lazy client law; the recipe controls are PRO's);
-  the 3D shows the recess, grooves, flutes or strips on the leaf.
+## F6 · THE ORNAMENT IS A PLACEHOLDER UNTIL THE OWNER'S MODEL ARRIVES
+GPT's flower and leaves are procedural: *"odtworzenie proceduralne ... Do
+wiernej kopii fizycznego wzoru potrzebny będzie jego pomiar lub model
+źródłowy."*
+- The ornament enters the engine through ONE function
+  (`ornamentSurface(variant, config, profile)` in `engine/ornateFront.js`,
+  as GPT has it or refactored to it in one step). Beside it a slot the owner
+  fills: `reference/hardware/ornate/README.md` naming what to drop in (an STL
+  or OBJ of the carved ornament in mm, lying face up, origin at its bounding
+  corner) and the profile key `front.decoration.ornateReference.ornamentModel
+  = null`. While it is null, the procedural ornament stands, labelled in the
+  BOM sentence and the JSON as `ornament: 'procedural placeholder'`. When a
+  model is named, the SAME function returns the model's surface and the
+  label changes. Loading the model is NOT this turn; only the slot, the
+  label and the README are.
+- `docs/ornate-a-handoff-PL.md` says so in one paragraph.
 
 ## F7 · THE WALK, REAL MOUSE, PRO AND RETAIL
-`scripts/t76-walk.mjs` (T75's harness), frames `verify/t76/fNN-*.png`,
-output `verify/t76/walk.txt`:
-- PRO: a wardrobe and a base unit; Fronts set to G, then GF, A, AH, FL, AM in
-  turn by the real select; for each: the leaf's solid shows the pattern; the
-  recipe controls show the profile's numbers; one number changed by typing
-  regenerates the pattern; the cut list names the leaf with its construction
-  and state; AM adds four strip lines per leaf; CNC export ZIP holds the back
-  DXF, a FRONT DXF per decorated leaf, `front-operations.json` and
-  READINESS.txt; the T71 drawing set draws the pattern on the elevation.
-- PRO, the L of T75: a `CORNER_L_BASE` with G fronts: both leaves decorated,
-  door B still "opens first".
-- PRO, old project: the Herbal Hill fixture opened, no decoration appears, no
-  cut list line moves (byte-compare the cut list before and after).
-- PRO, refusal: a 300 mm wide A leaf (rise impossible) is refused in words;
-  a recipe with a 25 mm groove pitch on a 100 mm leaf is refused, never
-  clamped.
-- Retail: FRONTS step, each tile once, the leaf changes, no numeric field is
-  on the page, MY ESTIMATE lists the style name.
-- Save, reload, the same result: a decorated project round-trips.
+`scripts/t77-walk.mjs` (GPT's `ornate-walk.mjs` folded into T76's harness;
+GPT's script is deleted after, one walk per turn), frames
+`verify/t77/fNN-*.png`, output `verify/t77/walk.txt`:
+- PRO: a wardrobe and a base unit; Fronts set to ORNATE_A_1 .. 4 in turn by
+  the real select; each leaf's solid shows the relief; `Mirror ornate
+  pattern` flips the composition; the cut list names the leaf with
+  `construction` reading "relief proposed, not production approved" and
+  State `Cut`; the CNC export ZIP holds the back DXF, the `ornate-reference/`
+  folder (DXF, binary STL, JSON per leaf), READINESS.txt and
+  `front-operations.json`; bytes per file recorded (F3's target); the T71
+  drawing set draws the profile contours on the elevation.
+- PRO, the L of T75 with ORNATE_A_2: both leaves carry the relief, door B
+  still "opens first".
+- PRO, refusals: a 250 x 400 leaf with ORNATE_A_1 is refused in words (the
+  radii do not fit; nothing is squeezed); a 12 mm board with the default
+  recipe is refused by F4's Check.
+- PRO, old project: the Herbal Hill fixture opened, no relief appears, the
+  cut list byte-identical before and after.
+- Retail: FRONTS step shows the four tiles from `ornateFrontArt.js`, a click
+  changes the leaf, no numeric field on the page, MY ESTIMATE names the
+  style; save, reload, the same result.
 
 ## F8 · FREEZE AND PROOF
-- Every PRO file edited: one EXEMPT entry, re-frozen at its final hash.
-- `scripts/t76-classify.mjs`: every engine delta named, six + nine + the
-  decoration golden file proven.
-- Parens: 17 of 17 (no LISP touched).
-- Delete the patch file (F1, last commit).
+EXEMPT entries re-frozen at final hashes; `scripts/t77-classify.mjs`;
+`scripts/t77-copy.mjs` (retail only through the copy script; GPT's T63 copy
+of `FrontDecorationControls` re-run after F3 to F6); parens 17 of 17; the
+patch file deleted.
 
 ## NOT THIS TURN (named so nobody builds it)
-- Sliding, bifold, lift, pocket and tambour doors; applied moulding as a
-  bought ornate profile or a five-piece timber door (GPT's AM is a
-  rectangular strip, by its own doc, and stays that).
-- A per-front recess depth for the shaker; any new typed number in the UI.
-- Bent or curved fronts (list 13).
-- Lighting, in any form.
-- G-code or toolpaths: CAM's job, by GPT's doc and the owner's VCarve.
+- Loading the owner's ornament model (the slot only).
+- Approving the relief for production; toolpaths or G-code (CAM's job).
+- Ornate on sloped or non-rectangular leaves (refused in words today).
+- Any new typed number in the UI; lighting; sliding or any opening system.
 
 ## TESTS AND PROOF
-Full suite, GPT's eight new test files kept and amended per F3 to F5, the
-T75 suite green, `test/turn76-*.test.js` for the conflict resolutions (F1:
-the L's leaves ARE decorated; both ZIP files present; both sheet parts
-counted), for the profile move (F4: `RECIPES` no longer exists in code, the
-owner's numbers read from the profile), and for one state (F5). The walk
-above with frames.
+Full suite; GPT's four `ornate-front-*.test.js` kept, amended for F3 (binary
+STL, profile-driven sampling), F4 (the thinner-board Check) and F6 (the
+placeholder label); `test/turn77-*.test.js` for F3's size target on the four
+variants, for F4's one-function rule shared with A/AH, and for F5 (no file
+under `src/` or `scripts/` starts with a copyright line). The walk above with
+frames.
 
 ## PR BODY
-The two probe tables verbatim; the conflict table with what was done per
-file; the files and lines per F; the EXEMPT entries; the retail divergences;
-the goldens (six, nine, the decoration file re-pinned); the count of tests;
-the walk result; what was skipped and why; THE NUMBERS PROPOSED.
+The two probe tables verbatim; files and lines per F; the EXEMPT entries;
+the retail divergences by file and line; the goldens; the test count before
+and after; the reference-file size table before and after F3; the walk
+result; what was skipped and why; THE NUMBERS PROPOSED.
 
 ## THE NUMBERS PROPOSED (owner to confirm, all in profile.js, none typed in the UI)
 | Number | Value | Source |
 | - | - | - |
-| G grooves | every 80, V 4 x 3, margin 60 | owner 31.08.2026 |
-| GF | frame 60, recess 6, grooves every 80 V 4 x 3, inner margin 10 | owner 60 / 80 / 4 x 3; GPT recess 6, margin 10 |
-| A, AH | board 30, frame 60, recess 18, semicircle | owner 31.08.2026 |
-| FL | 12 ballnose, 3 deep, every 20, margin 50 | GPT |
-| AM | inset 60, strip 20 x 8, mitre 45 | GPT |
-| Skin under opposing cuts | 3 | GPT |
+| Outer frame, inner band | 60, 60 | owner's board 10.10.2026 |
+| Inner radius (variants 1, 4) | 150 | owner's board |
+| Step widths | 12 / 8 / 6 / 4 | owner's board |
+| Step depths from the face | 3 / 6 / 9 / 12 | owner's board |
+| Variant 3 radii | R110, R18 | GPT, proposed |
+| Variant 2 | semicircle on the inner width | GPT's reading of the board |
+| Ornament background, relief | 3 down, 2.5 up (under the face) | GPT, proposed |
+| Small corners | R3 | GPT, proposed |
+| Skin under the deepest step | 3 | house rule |
+| Reference sampling | 2.0 default, 1.0 full | T77, proposed |
+| Reference size target | under 4 MB per leaf at default | T77, proposed |

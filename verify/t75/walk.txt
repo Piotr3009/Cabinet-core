@@ -1,0 +1,162 @@
+T75 · THE ACCEPTANCE WALK, PART A (CORNERS) AND PART B (THE ISLAND)
+
+CLAUDE.md T75 F8 walks (a) to (f) and PART B, F9 to F11, run section by
+section against `npx vite preview`, the hardware served from the silent
+showroom. Every gesture is a REAL mouse or key event at a pixel the scene's
+own raycaster says the piece is under (and the page says the canvas owns),
+or at a DOM control's centre; the store is only READ. A NOTE names a
+gesture the app offers no control for, or a reading worth keeping.
+The frames beside this file are what the browser saw.
+
+=== F02 · THE CORNER POST, RULE 7 AND THE HINGE (walk a)
+ ·   the profile's proposed numbers · corner.postMm 50, doors.clearance.corner 3
+ ok  run A: Library, Kitchen, Base units, "door-base" adds a BUD · {"id":"u_3j5o13j","type":"BUD","x":1700,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  run A: a real drag right takes it into the corner at the end of wall 1 (the wall clamp stops it) · x 1700 -> 3360, w 600, wall 4000; grabbed by 01-F
+ ok  run B: a second Standard from the library · {"id":"u_mpcqu95","type":"BUD","x":2760,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  run B: its hinge chosen RIGHT by hand in the Hinge side select · select "R"; leaves 02-F:R
+ ok  run B: the Wall select (a real click, the arrows, Enter) puts it on wall 2 · option "Wall 2 · 3000 mm"; wall 1, x 646
+ ·   the Wall select's free slot on wall 2 is the corner stop itself · landed at x 646; stop 646; post 50
+ ok  a real drag along wall 2 takes run B away from the corner: no post, the hinge the hand chose · x 646 -> 1550; postL null; leaves 02-F:R
+ ok  a real drag toward the corner lands run B ON the stop (A's face plus the post) · x 1550 -> 646; stop = wall gap 10 + depth 558 + door gap 3 + front 25 + post 50 = 646
+ ok  the CORNER POST stands: the post on B's corner side and a CORNER-POST board in its cut · postL 50; CORNER-POST-L 50x770 at x -50
+ ok  rule 7 measures: B's door beside the post wants 3 and has 3, not parked · {"kind":"corner","want":3,"have":3,"parked":false}
+ ok  the HINGE LAW: B's leaf, nearest the corner, hinges on the corner side (left); the record says the hand had R · leaves 02-F:L; record {"was":"R","wrote":"L"}
+ ok  run A keeps its own hinge (its corner door would swing into run B) · A leaves 01-F:L; record null
+ ok  pulled away by a real drag: B leaves the stop · x 646 -> 1449
+ ok  …the post goes (no param, no board) · postL null; posts 0
+ ok  …rule 7 is no longer asked at B's left edge · {"kind":"none","want":1.5,"have":1.5,"parked":false}
+ ok  …and the hinge goes back to the hand's RIGHT, the record gone · leaves 02-F:R; record null
+
+=== F03 · THE BLIND CORNER AND ITS BLANK (walk b)
+ ok  run A: Library, Kitchen, Base units, "blind-corner" adds a BLIND_BASE · {"id":"u_fqjvqsl","type":"BLIND_BASE","x":1500,"wall":0,"w":1000,"h":770,"d":558,"ep":""}
+ ok  run A: a real drag right takes it into the corner at the end of wall 1 (the wall clamp stops it) · x 1500 -> 2960, w 1000, wall 4000; grabbed by BB01-F
+ ok  run B: a second Standard from the library · {"id":"u_wk0zk7t","type":"BUD","x":2360,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  run B: the Wall select (a real click, the arrows, Enter) puts it on wall 2 · option "Wall 2 · 3000 mm"; wall 1, x 646
+ ·   the blind kit as the library placed it and the drag took it · type BLIND_BASE, w 1000, x 2960; blind_side right; blank {"id":"BB01-BLANK","x":391,"w":609,"side":"right","holes":0}; leaves [{"id":"BB01-F","x":1.5,"w":386.5,"z":561,"d":25,"hinge":"L","opensFirst":false,"note":null,"cornerEdge":null}]
+ ·   run B dragged away first: the blind kit with nobody beside it · B x 1557; blank {"id":"BB01-BLANK","x":364,"w":636,"side":"right","holes":0}; blind_mm null
+ ok  run B: a real drag toward the corner lands it ON the stop the blind kit makes (its face plus the post) · x 1557 -> 646; stop = wall gap 10 + depth 558 + door gap 3 + front 25 + post 50 = 646
+ ok  the BLANK's width is the corner's arithmetic, read off the store: B's face + post + rule 7, less the kit's stand-off · blank 609, blind_mm 609; B face (wall gap 10 + depth 558 + door gap 3 + front 25) 596 + post 50 + rule 7 3 - stand-off 40 = 609
+ ok  …so the blank reaches from the corner to B's face, the post and rule 7, exactly · stand-off 40 + blank 609 = 649; B face + post + 3 = 649
+ ·   CLAUDE.md F3's words, read literally (adjacent depth + front_t + postMm + clearance.corner) · 558 + 25 + 50 + 3 = 636; the engine's 609 measures the same from the corner itself (it adds B's wall gap 10 and the door gap 3, and takes off the 40 the blind kit stands off the corner): the two differ by 27
+ ok  the blank stands on the corner side, has no holes (its fixing is the joiner's) · blank side right, holes 0; blind_side right
+ ok  the one leaf stands beside the blank and hinges on the far side (away from the corner) · {"id":"BB01-F","x":1.5,"w":386.5,"z":561,"d":25,"hinge":"L","opensFirst":false,"note":null,"cornerEdge":null}
+ ok  run B carries the post, as at any blind or plain corner · postL 50; CORNER-POST-L 50x770 at x -50
+ ·   with run B ON the stop, the blank's width figure is drawn in the slot between the blank and run B's side; from the front camera a hand cannot reach it (nearer boards under every pixel of it) · click: element null; 2klik: element {"unitId":"u_fqjvqsl","elementRef":"BB01-BLANK"}, window element; after its X: element {"unitId":"u_fqjvqsl","elementRef":"BB01-BLANK"}; figure {"why":"the pick is never the first thing under the pointer","firsts":{"Mesh:{\"ccPanelId\":\"BUL\",\"ccRole\":\"side\",\"ccMaterialRole\":\"board\"}":16,"Sprite:{\"ccHelper\":true}":14,"Mesh:{\"ccPanelId\":\"BUR\",\"ccRole\":\"side\",\"ccMaterialRole\":\"board\"}":195},"box":"0.33,0.34,0.34,0.34,0.42,0.43,0.43,0.43 / -0.18,-0.2,-0.1,-0.12,-0.18,-0.2,-0.1,-0.12"}
+ ·   run B dragged away: a click selects the cabinet, a 2klik opens the piece, its X closes the window and the piece stays picked · click: element null; 2klik: element {"unitId":"u_fqjvqsl","elementRef":"BB01-BLANK"}, window element; after its X: element {"unitId":"u_fqjvqsl","elementRef":"BB01-BLANK"}
+ ok  a real click on the blank's width figure opens its field, focused, the number selected · figure at 918,524; field {"focused":true,"value":"636","selected":true}
+ ok  typed 700 and Enter: the blank is the client's 700 (blind_mm_own) · blind_mm_own 700, blind_mm null, blank 700
+ ok  run B dragged back onto the stop: the automat writes its number beside the client's and never takes the client's back · B x 646; blind_mm_own 700, blind_mm 609, blank 700
+
+=== F04 · THE TRUE L CARCASS IN A CORNER (walk c)
+ ok  Library, Kitchen, Base units, "Corner L" places a CORNER_L_BASE into a room corner · wall 0, x 10, w 900, corner_side left
+ ok  DOORS adds the L's two leaves: door A (covered at the inner corner) and door B (the overlap) · [{"id":"CL01-A-F","x":558,"w":340.5,"z":561,"d":25,"hinge":"R","opensFirst":false,"note":null,"cornerEdge":"{\"side\":\"left\",\"kind\":\"covered\"}"},{"id":"CL01-B-F","x":561,"w":25,"z":586,"d":312.5,"hinge":"L","opensFirst":true,"note":"door B opens first","cornerEdge":"{\"side\":\"right\",\"kind\":\"overlap\"}"}]
+ ok  door B opens first: the leaf says so and the unit carries the line the BOM prints · door B opens first; CORNER_L_OPENS_FIRST: CL01: door B opens first (it overlaps door A at the inner corner).
+ ok  a Standard added beside the L on its own wall stands on the L's arm end · wall 0, x 910..1510; L arm end 910
+ ok  a second Standard, put on wall 4 (the L's other arm) by the Wall select · option "Wall 4 · 3000 mm"; wall 3, x 40
+ ok  a real drag toward the corner stops it on the L's arm B end (the L is its own stop: no post) · x 40 -> 1490; its end 910 from the corner, the L's arm reaches 910; posts 0
+ ·   the L's doors as the clearance rulebook measures them, a neighbour on each wall · [{"panel":"CL01-A-F","wall":0,"left":"cornerCovered","right":"none"},{"panel":"CL01-B-F","wall":3,"left":"none","right":"cornerOverlap"}]
+ ·   NO UI: a worktop over the L ALONE has no control. The right panel for one unit has no worktop button and the right-click menu has no worktop entry; `addWorktop([L])` (the store takes a lone L, kind L) is reached by no click · buttons naming a worktop with the L selected: []; right-click entries: ["edit-cabinet","rename","plinth","upstand","end-panel-L","end-panel-R","end-panel-B","side-infill","pin-infill-L","pin-infill-R","unit-colour","save-template","center-shelves","rotate-90","back-to-wall","side-to-wall","close-fronts","delete"]
+ ok  the L and both runs selected by a click and two Ctrl+clicks · ["u_hhgbvc5","u_vkgta4g","u_19pun3k"]
+ ok  ADD WORKTOP over the L and its two runs lies a worktop (records and slabs read off the store) · records [{"id":"worktop_zqzy0bv","units":3,"kind":null,"island":null}]; slabs [{"slab":"worktop_zqzy0bv-A","wall":0,"x":0,"w":1520,"d":948,"island":null,"kind":null,"outline":false,"joint":"{\"kind\":\"butt\",\"boltCount\":3,\"at\":{\"wall\":3,\"x\":2052,\"depth\":606},\"corner\":{\"x\":0,\"y\":0},\"readiness\":\"manual\",\"note\":\"Worktop joint: square butt, slab worktop_zqzy0bv-B into slab worktop_zqzy0bv-A, 3 connector bolts; bolt pockets cut by hand on site.\"}","cutouts":[]},{"slab":"worktop_zqzy0bv-B","wall":3,"x":1480,"w":572,"d":606,"island":null,"kind":null,"outline":false,"joint":"{\"kind\":\"butt\",\"boltCount\":3,\"at\":{\"wall\":3,\"x\":2052,\"depth\":606},\"corner\":{\"x\":0,\"y\":0},\"readiness\":\"manual\",\"note\":\"Worktop joint: square butt, slab worktop_zqzy0bv-B into slab worktop_zqzy0bv-A, 3 connector bolts; bolt pockets cut by hand on site.\"}","cutouts":[]}]; said null
+ ·   console errors on the page · Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED [https://uhzwyhvwngfnyhxxlvmq.supabase.co/storage/v1/object/public/hardware/runners/blum/movento/manifest.json]
+
+=== F05 · THE WORKTOP TURNS THE CORNER, THE CUT-OUT, THE UPSTAND
+ ok  run A: Library, Kitchen, Base units, "door-base" adds a BUD · {"id":"u_52hevql","type":"BUD","x":1700,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  run A: a real drag right takes it into the corner at the end of wall 1 (the wall clamp stops it) · x 1700 -> 3360, w 600, wall 4000; grabbed by TOP
+ ok  a SINK from the library stands beside run A, on wall 1 · sink x 2760..3360, A from 3360
+ ok  run B: a second Standard from the library · {"id":"u_vy2iy4i","type":"BUD","x":2160,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  run B: the Wall select (a real click, the arrows, Enter) puts it on wall 2 · option "Wall 2 · 3000 mm"; wall 1, x 646
+ ok  run A, the sink and run B selected by a click and two Ctrl+clicks · ["u_52hevql","u_i8a4rq8","u_vy2iy4i"]
+ ok  "Add worktop (3)": two slabs, one on each wall · [{"slab":"worktop_6fjzivt-A","wall":0,"x":2750,"w":1250,"d":606,"island":null,"kind":null,"outline":false,"joint":"{\"kind\":\"butt\",\"boltCount\":3,\"at\":{\"wall\":1,\"x\":606,\"depth\":606},\"corner\":{\"x\":4000,\"y\":0},\"readiness\":\"manual\",\"note\":\"Worktop joint: square butt, slab worktop_6fjzivt-B into slab worktop_6fjzivt-A, 3 connector bolts; bolt pockets cut by hand on site.\"}","cutouts":["sink 524x500 r10 machined false manual"]},{"slab":"worktop_6fjzivt-B","wall":1,"x":606,"w":650,"d":606,"island":null,"kind":null,"outline":false,"joint":"{\"kind\":\"butt\",\"boltCount\":3,\"at\":{\"wall\":1,\"x\":606,\"depth\":606},\"corner\":{\"x\":4000,\"y\":0},\"readiness\":\"manual\",\"note\":\"Worktop joint: square butt, slab worktop_6fjzivt-B into slab worktop_6fjzivt-A, 3 connector bolts; bolt pockets cut by hand on site.\"}","cutouts":[]}]; said null
+ ok  ONE joint record at the corner, shared by both slabs: a square butt, 3 bolts, manual · {"kind":"butt","boltCount":3,"at":{"wall":1,"x":606,"depth":606},"corner":{"x":4000,"y":0},"readiness":"manual","note":"Worktop joint: square butt, slab worktop_6fjzivt-B into slab worktop_6fjzivt-A, 3 connector bolts; bolt pockets cut by hand on site."}
+ ok  slab A runs through to the wall; slab B butts slab A's front edge · A 2750..4000 of 4000, A deep 606; B from 606
+ ok  the SINK under slab A proposes its cut-out (inset 20, radius 10), a note and not machined · ["sink 524x500 r10 machined false manual"]
+ ok  the right-click menu's UPSTAND switches it on: one board on the worktop at the wall, worktop material, a cut list line · {"boards":[{"unit":"S01","w":1200,"h":100,"t":20,"y":808,"material":"worktop"}],"csv":["S01,UPSTAND,1200,100,^v,1.20,0.120"],"flags":["01:true","S01:true","02:false"]}
+
+=== F06 · THE PLINTH BUTT AT THE CORNER
+ ok  run A: Library, Kitchen, Base units, "door-base" adds a BUD · {"id":"u_ue5smj5","type":"BUD","x":1700,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  run A: a real drag right takes it into the corner at the end of wall 1 (the wall clamp stops it) · x 1700 -> 3360, w 600, wall 4000; grabbed by TOP
+ ok  run B: a second Standard from the library · {"id":"u_8m5qmqe","type":"BUD","x":2760,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  run B: the Wall select (a real click, the arrows, Enter) puts it on wall 2 · option "Wall 2 · 3000 mm"; wall 1, x 646
+ ok  run B on the stop (a real drag), both runs on their plinths · B x 646 (stop 646); plinths A {"x":0,"w":600,"corner":null}, B {"x":-128,"w":728,"corner":"{\"side\":\"left\",\"mm\":128,\"butt\":\"square\",\"faceOf\":\"u_ue5smj5\"}"}
+ ok  B's kick is carried on to A's kick FACE, square: longer by the arithmetic · A kick face = wall gap 10 + depth 558 - setback 50 = 518; B x 646 - 518 = 128; B kick 728 = 600 + 128? meta {"side":"left","mm":128,"butt":"square","faceOf":"u_ue5smj5"}
+ ok  A runs into the corner and keeps its own kick · {"x":0,"w":600,"corner":null}
+ ok  pulled away by a real drag: B's kick is its own width again, the butt gone · x 646 -> 1557; kick {"x":0,"w":600,"corner":null}
+
+=== F07 · CUT CORNER ON A WARDROBE, 200 x 200 BL (walk e)
+ ok  retail · a wardrobe through WHERE's own button · {"id":"u_n26un4k","type":"WARDROBE","x":40,"wall":0,"w":1200,"h":2150,"d":568,"ep":"R"}
+ ok  retail · CUT CORNER (the real button) lights the four plan corners · notchPick u_n26un4k; BL handle {"x":758,"y":251,"first":true,"data":"{\"ccNotchCorner\":\"BL\",\"ccUnitId\":\"u_n26un4k\"}"}
+ ok  retail · a real click on the lit BL corner opens the small window AT the click: WIDTH 200, DEPTH 200, HEIGHT full, WIDTH focused · {"focused":true,"fields":["width=200","depth=200","height=full"],"corner":"BL"}; window centre 1128,428, 410 px from the click
+ ok  retail · Enter cuts it: the notch is BL 200 x 200, full height · {"corner":"BL","w":200,"d":200,"h":0}
+ ok  retail · the cut list shows the RETURN board · ["W01,RETURN,200,2150,,0,0.430","W01,STEP,200,2150,,0,0.430"]; boards ["RETURN 200x2150","STEP 200x2150"]
+ ·   retail · THE SOCKET TABLE of BUL (the side at BL), off the store's unitResult: y (mm) | sockets before | sockets after · 8 | 95,455 | 95,255 ; 2142 | 95,455 | 95,255 ; BUL 550 x 2150 -> 350 x 2150, puzzle holes 8 -> 8, all holes 26 -> 26
+ ok  retail · BUL is shorter by the notch depth and its sockets are RE-PLANNED for the shorter edge · BUL width 550 -> 350
+ ok  pro · a wardrobe from the library's Wardrobes category · {"id":"u_lcp0a14","type":"WARDROBE","x":1700,"wall":0,"w":600,"h":2150,"d":558,"ep":""}
+ ok  pro · CUT CORNER (the real button) lights the four plan corners · notchPick u_lcp0a14; BL handle {"x":314,"y":257,"first":true,"data":"{\"ccNotchCorner\":\"BL\",\"ccUnitId\":\"u_lcp0a14\"}"}
+ ok  pro · a real click on the lit BL corner opens the small window AT the click: WIDTH 200, DEPTH 200, HEIGHT full, WIDTH focused · {"focused":true,"fields":["width=200","depth=200","height=full"],"corner":"BL"}; window centre 682,398, 394 px from the click
+ ok  pro · Enter cuts it: the notch is BL 200 x 200, full height · {"corner":"BL","w":200,"d":200,"h":0}
+ ok  pro · the cut list shows the RETURN board · ["W01,RETURN,200,2150,,0,0.430","W01,STEP,200,2150,,0,0.430"]; boards ["RETURN 200x2150","STEP 200x2150"]
+ ·   pro · THE SOCKET TABLE of BUL (the side at BL), off the store's unitResult: y (mm) | sockets before | sockets after · 8 | 95,445 | 95,245 ; 2142 | 95,445 | 95,245 ; BUL 540 x 2150 -> 340 x 2150, puzzle holes 8 -> 8, all holes 14 -> 14
+ ok  pro · BUL is shorter by the notch depth and its sockets are RE-PLANNED for the shorter edge · BUL width 540 -> 340
+
+=== F03R · RETAIL: TWO WARDROBES INTO A CORNER, ADD CORNER WARDROBE (walk d)
+ ok  two wardrobes, through WHERE and EXTRAS' ADD ANOTHER WARDROBE · [{"id":"u_vt4qiam","type":"WARDROBE","x":40,"wall":0,"w":1200,"h":2150,"d":568,"ep":""},{"id":"u_ivcfhyw","type":"WARDROBE","x":1240,"wall":0,"w":1200,"h":2150,"d":568,"ep":"R"}]
+ ok  a real drag takes the two wardrobes into the right-hand corner of their wall, side by side · wall 0 (4000); [{"id":"u_vt4qiam","type":"WARDROBE","x":1524,"wall":0,"w":1200,"h":2150,"d":568,"ep":"L"},{"id":"u_ivcfhyw","type":"WARDROBE","x":2724,"wall":0,"w":1200,"h":2150,"d":568,"ep":""}]
+ ·   the retail room these stand in · scope wall; corners 0,0 4000,0 4000,3000 0,3000
+ ok  ADD CORNER WARDROBE (press 1): a BLIND_WARDROBE stands in a free corner, its blank on the corner side · wall 3 (3000), x 1760, w 1200; blind_side right, blind_mm null; blank {"id":"BX01-BLANK","x":561,"w":639,"side":"right","holes":0}; leaves BX01-F:L
+ ok  ADD CORNER WARDROBE (press 2): a BLIND_WARDROBE stands in a free corner, its blank on the corner side · wall 1 (3000), x 1760, w 1200; blind_side right, blind_mm null; blank {"id":"BX02-BLANK","x":561,"w":639,"side":"right","holes":0}; leaves BX02-F:L
+ ok  ADD CORNER WARDROBE (press 3): a BLIND_WARDROBE stands in a free corner, its blank on the corner side · wall 2 (4000), x 2760, w 1200; blind_side right, blind_mm null; blank {"id":"BX03-BLANK","x":561,"w":639,"side":"right","holes":0}; leaves BX03-F:L
+ ok  when no corner is free, ADD CORNER WARDROBE refuses in words · 3 placed; said "There is no free corner in this room for a corner wardrobe: move or remove something first."
+
+=== F08 · PULL EACH ONE AWAY, ALL GONE (walk f)
+ ok  run A: Library, Kitchen, Base units, "blind-corner" adds a BLIND_BASE · {"id":"u_ahyluoa","type":"BLIND_BASE","x":1500,"wall":0,"w":1000,"h":770,"d":558,"ep":""}
+ ok  run A: a real drag right takes it into the corner at the end of wall 1 (the wall clamp stops it) · x 1500 -> 2960, w 1000, wall 4000; grabbed by BB01-F
+ ok  a SINK from the library stands beside run A, on wall 1 · sink x 2360..2960, A from 2960
+ ok  run B: a second Standard from the library · {"id":"u_fasakgo","type":"BUD","x":1760,"wall":0,"w":600,"h":770,"d":558,"ep":""}
+ ok  run B: its hinge chosen RIGHT by hand in the Hinge side select · select "R"; leaves 01-F:R
+ ok  run B: the Wall select (a real click, the arrows, Enter) puts it on wall 2 · option "Wall 2 · 3000 mm"; wall 1, x 646
+ ·   IN THE CORNER (all made by the hand's drags and clicks) · B x 646 (stop 646); post 50; hinge 01-F:L record {"was":"R","wrote":"L"}; blank 609 (alone it was 636); B kick {"x":-128,"w":728,"corner":"{\"side\":\"left\",\"mm\":128,\"butt\":\"square\",\"faceOf\":\"u_ahyluoa\"}"}; slabs 2, joint {"kind":"butt","boltCount":3,"at":{"wall":1,"x":606,"depth":606},"corner":{"x":4000,"y":0},"readiness":"manual","note":"Worktop joint: square butt, slab worktop_s0cviz9-B into slab worktop_s0cviz9-A, 3 connector bolts; bolt pockets cut by hand on site."}
+ ok  in the corner: post, hinge flip, the blank at the corner's size, the plinth butt and the worktop joint all stand · post 50; record {"was":"R","wrote":"L"}; blind_mm 609; kick {"side":"left","mm":128,"butt":"square","faceOf":"u_ahyluoa"}; slabs 2
+ ok  pulled away by a real drag · x 646 -> 1550
+ ok  …the post is gone · postL null; 
+ ok  …the hinge flip is gone: the hand's RIGHT is back · leaves 01-F:R; record null
+ ok  …the blank is back to the size it has with nobody beside it · blank 609 -> 636 (alone 636); blind_mm null
+ ok  …the plinth butt is gone: B's kick is its own width · {"x":0,"w":600,"corner":null}
+ ok  …the worktop joint is gone: no slab carries a joint record · slabs [{"slab":"worktop_s0cviz9-w0","wall":0,"x":2350,"w":1620,"d":606,"island":null,"kind":null,"outline":false,"joint":null,"cutouts":["sink 524x500 r10 machined false manual"]},{"slab":"worktop_s0cviz9-w1","wall":1,"x":1540,"w":620,"d":606,"island":null,"kind":null,"outline":false,"joint":null,"cutouts":[]}]; records [{"id":"worktop_s0cviz9","units":3,"kind":null,"island":null}]
+
+=== F09 · THE ISLAND IN ROOM SETUP (PRO, a kitchen job)
+ ok  Settings, Room setup: a kitchen job shows ADD ISLAND · projectType null
+ ok  ADD ISLAND draws an island in the plan at the profile's size (1800 x 900, proposed) · {"id":"island_f9no51b","cx":167.33333333333334,"cy":130,"figures":["island_f9no51b:w=1800","island_f9no51b:d=900"]}
+ ok  a real drag moves the island in the plan · centre 167,130 -> 197,110 (plan px)
+FAIL a real click on the island's width figure opens its field, focused, the number selected · APP DEFECT (RoomModal.jsx: the figure opens its field on pointerdown, the field takes the focus, then the same press's mousedown moves the focus off it and its onBlur closes it): null; the click's events in order: pointerdown text, focusin INPUT (the field), mousedown text, focusout INPUT (the field), click text; field on the page now false
+ ·   2000 not typed: there was no field to type it into (the FAIL above) · the plan's figures stay ["island_f9no51b:w=1800","island_f9no51b:d=900"]
+ ok  dragged out through the wall: refused, and it says why under the plan; the island stays where it last fitted · said "The island would stand outside the room: move it inside the walls first (island_f9no51b)."; centre 197,110 -> 197,60
+ ok  APPLY: the room carries the island as the plan showed it (its size, moved off the room's centre) · plan showed w 1800; store [{"id":"island_f9no51b","cx":2402,"cy":562.5,"w":1800,"d":900,"rotation":0}]
+ ok  an empty island is dressed by the automat: a back panel on each long face, an end panel on each end · [{"id":"u_73jy4fg","face":"A","wall":4,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_7ckxtvh","face":"E1","wall":5,"kind":"end","w":970,"h":870,"d":25},{"id":"u_owv2ww3","face":"B","wall":6,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_9g8ti0y","face":"E2","wall":7,"kind":"end","w":970,"h":870,"d":25}]
+
+=== F10 · A UNIT ON AN ISLAND FACE, BY ITS PLUS
+ ok  the island (Room setup, ADD ISLAND, APPLY) stands dressed in four automat panels · [{"id":"u_6fczztc","face":"A","wall":4,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_370gxc8","face":"E1","wall":5,"kind":"end","w":970,"h":870,"d":25},{"id":"u_sbuoqip","face":"B","wall":6,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_ay6mpcu","face":"E2","wall":7,"kind":"end","w":970,"h":870,"d":25}]
+ ok  a real click on face A's plus opens the library ON that face · plus {"x":562,"y":664,"first":true,"canvas":true,"firstIs":"{\"ccHelper\":true,\"ccAddPlus\":true}"}; insert {"wall":4}
+ ok  Base units, Standard: the unit stands on face A of the island · wall 4, island island_6yr66ex, face A, x 600
+ ok  the automat's back panel on face A vanishes · [{"id":"u_370gxc8","face":"E1","wall":5,"kind":"end","w":1531,"h":870,"d":25},{"id":"u_sbuoqip","face":"B","wall":6,"kind":"back","w":1800,"h":870,"d":25},{"id":"u_ay6mpcu","face":"E2","wall":7,"kind":"end","w":1531,"h":870,"d":25}]
+ ok  …and the end panels grow to the island's new depth · E1 970x25, E2 970x25 -> E1 1531x25, E2 1531x25
+ ok  the right panel's Wall select names it "Island 1 · face A" · "Island 1 · face A · 1800 mm"
+
+=== F11 · ONE WORKTOP OVER THE WHOLE ISLAND
+ ok  two units on the island, each by a face's plus (faces B and A) · B {"id":"u_eyptefp","type":"BUD","x":600,"wall":6,"w":600,"h":770,"d":558,"ep":""}; A {"id":"u_xsr860d","type":"BUD","x":600,"wall":4,"w":600,"h":770,"d":558,"ep":""}
+ ok  both selected by a click and a Ctrl+click · ["u_eyptefp","u_xsr860d"]
+ ok  "Add worktop (2)" on an island selection lays ONE slab, the island's · slabs [{"slab":"worktop_g9ycdym","wall":4,"x":-55,"w":1910,"d":2132,"island":"island_0u050nq","kind":null,"outline":true,"joint":null,"cutouts":[]}]; records [{"id":"worktop_g9ycdym","units":2,"kind":null,"island":"island_0u050nq"}]; said null
+ ·   NO UI: the SEATING overhang (store `seatingOverhang`, and the per-face `extendIslandWorktop`) has no button, menu entry or figure that calls it; not clicked, not faked · controls naming seat, overhang or extend on the screen: []
+
+SECTION f02: 15 ok, 0 FAIL, 2 notes
+SECTION f03: 13 ok, 0 FAIL, 5 notes
+SECTION f04: 8 ok, 0 FAIL, 3 notes
+SECTION f05: 11 ok, 0 FAIL, 0 notes
+SECTION f06: 8 ok, 0 FAIL, 0 notes
+SECTION f07: 12 ok, 0 FAIL, 2 notes
+SECTION f03r: 6 ok, 0 FAIL, 1 notes
+SECTION f08: 13 ok, 0 FAIL, 1 notes
+SECTION f09: 6 ok, 1 FAIL, 1 notes
+SECTION f10: 6 ok, 0 FAIL, 0 notes
+SECTION f11: 3 ok, 0 FAIL, 1 notes
+TOTAL 102 checks · 1 failed · 16 notes

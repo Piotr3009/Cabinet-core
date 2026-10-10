@@ -33,7 +33,8 @@
   src/retail/design/adapter.js                             retail edit, named
   src/retail/design/detail/PartDetailModal.jsx             copy of src/components/PartDetailModal.jsx
   src/retail/design/material/FrontDecorationControls.jsx   copy of src/components/FrontDecorationControls.jsx
-  5 moved · retail edits named and unspent: none · retail edits that are copies: none
+  src/retail/design/reasons.js                             retail edit, named
+  6 moved · retail edits named and unspent: none · retail edits that are copies: none
 
 ─── THE RETAIL EDITS (NOT COPIES), BY FILE AND LINE ───
   src/retail/design/FrontThumb.jsx
@@ -41,10 +42,13 @@
     now at lines 1, 3-4, 6 · +4 -52
   src/retail/design/Options.jsx
     GPT patch: retail FRONTS step · Retail decorative selection and copied controls.
-    now at lines 6, 697-705, 736, 843-852, 1015-1019 · +26 -16
+    now at lines 6, 697-705, 736, 763, 767-768, 844-853, 863-866, 1020-1024 · +33 -18
   src/retail/design/adapter.js
-    GPT patch: retail FRONTS step · Persist recipes through the existing Retail update path.
-    now at lines 53, 198-201, 1865-1867, 1899-1906 · +16 -11
+    GPT patch: retail FRONTS step · Persist recipes through the existing Retail update path. T76 F7 · a style the doors are too thin to route is offered greyed with the engine's answer (`boardRefusal`).
+    now at lines 53-56, 200-203, 205-232, 1885-1887, 1919-1926 · +47 -22
+  src/retail/design/reasons.js
+    T76 F7 · the walk's finding: the sentence a refused style says (REASONS.styleNeedsThickerDoor).
+    now at lines 293-296 · +4 -0
 
 ─── THE DIVERGENCES: EACH NAMED COPY AGAINST ITS PRO FILE, BY LINE ───
   src/retail/design/detail/PartDetailModal.jsx
@@ -58,4 +62,4 @@
     imports repointed (2): 1-2
     the skin, classes and colours (11): 27, 30, 33, 39, 49-50, 52, 59, 63-64, 66
 
-CLEAN · 2 named PRO surface(s), each copy what the machine makes from PRO today; 5 retail file(s) moved since the base, each a named copy or a named retail edit; nothing written.
+CLEAN · 2 named PRO surface(s), each copy what the machine makes from PRO today; 6 retail file(s) moved since the base, each a named copy or a named retail edit; nothing written.

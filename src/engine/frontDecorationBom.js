@@ -11,9 +11,11 @@ export function frontManufacturing(panel) {
   if (decoration) {
     const applied = decoration.style === 'AM';
     const depths = [...new Set(decoration.operations.map((op) => op.depth))];
+    // T76 F7 · short, so the T75 State column stays inside the panel (the walk
+    // measured it pushed past the edge by the longer label).
     const construction = applied
-      ? `${decoration.style} · Slab with applied strips, ${decoration.additions.length} strips`
-      : `${decoration.style} · Routed slab, front face${depths.length ? `, depths ${depths.join('/')} mm` : ''}`;
+      ? `${decoration.style} · Slab, ${decoration.additions.length} applied strips`
+      : `${decoration.style} · Routed slab${depths.length ? `, depths ${depths.join('/')} mm` : ''}`;
     return {
       construction,
       identity: JSON.stringify({
@@ -25,7 +27,7 @@ export function frontManufacturing(panel) {
   if (panel.meta?.frontDecorationParent) {
     const { mitres } = panel.meta;
     return {
-      construction: `Applied strip for ${panel.meta.frontDecorationParent}, ${mitres.start}/${mitres.end} degree mitres`,
+      construction: `Applied strip, ${mitres.start}/${mitres.end} mitres`,
       identity: JSON.stringify({ outline: panel.cnc.outline, mitres }),
     };
   }

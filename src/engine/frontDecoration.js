@@ -37,6 +37,12 @@ function minSkinOf(profile) {
   return Number(profile?.front?.decorationMinSkinMm ?? getCabinetProfile().front.decorationMinSkinMm);
 }
 
+/** THE skin rule, one comparison for every caller: a cut `depth` into a
+ *  `board` that leaves less than the profile's skin is refused. */
+function skinShort(board, depth, profile) {
+  return board - depth < minSkinOf(profile) - EPS;
+}
+
 /** Explicit opt-in: no object is created merely by opening an old style. */
 export function defaultFrontDecoration(style, profile = getCabinetProfile()) {
   const recipe = recipeOf(style, profile);
@@ -391,7 +397,7 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
     }
   }
   for (const op of decoration.operations) {
-    if (thickness - op.depth < MIN_SKIN - EPS) {
+    if (skinShort(thickness, op.depth, profile)) {
       problems.push(problem('FRONT_DECORATION_SKIN', `${op.id} leaves less than ${MIN_SKIN} mm of front material.`));
     }
     for (const drill of drills) {
@@ -401,7 +407,7 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
       if (!(depth > 0) || !Number.isFinite(depth) || depth >= thickness - EPS) continue;
       const radius = Number(drill.d ?? drill.diameter) / 2;
       if (!(radius > 0) || !Number.isFinite(radius)) continue;
-      if (thickness - depth - op.depth >= MIN_SKIN - EPS) continue;
+      if (!skinShort(thickness - depth, op.depth, profile)) continue;
       if (circleTouchesPolygon([Number(drill.x), Number(drill.y)], radius, op.points)) {
         problems.push(problem('FRONT_DECORATION_BACK_BORE', `${op.id} conflicts with the back ${drill.kind || 'bore'} or leaves less than ${MIN_SKIN} mm between cuts.`));
       }
@@ -422,6 +428,31 @@ export function validateFrontDecoration({ panel, decoration, drills = [], profil
     }
   }
   return problems;
+}
+
+/**
+ * T76 F7 · the skin rule asked of a BOARD before any leaf is cut. The walk
+ * found retail's doors (18 to 20 mm) cannot take the owner's arch (an 18 mm
+ * recess and the 3 mm skin under it): the recipe is not shrunk and the door
+ * is not swapped, so a caller that offers styles asks this first and says
+ * the answer in words. The recipe's deepest cut is its recess and the groove
+ * below it (GF), or its groove alone (G, FL); applied strips cut nothing.
+ *
+ * @returns {{code, message, needMm, haveMm}|null}
+ */
+export function boardRefusal(style, thicknessMm, profile = getCabinetProfile()) {
+  const recipe = recipeOf(style, profile);
+  if (!recipe) return null;
+  const deepest = (Number(recipe.recessDepthMm) || 0) + (Number(recipe.grooveDepthMm) || 0);
+  const board = Number(thicknessMm);
+  if (!(deepest > 0) || !Number.isFinite(board) || !skinShort(board, deepest, profile)) return null;
+  const needMm = round(deepest + minSkinOf(profile));
+  return {
+    ...problem('FRONT_DECORATION_BOARD_TOO_THIN', `${style} cuts ${round(deepest)} mm into the face and must leave `
+      + `${minSkinOf(profile)} mm under it: it needs a board of at least ${needMm} mm, and this one is ${round(board)} mm.`),
+    needMm,
+    haveMm: round(board),
+  };
 }
 
 /** The one canonical record read by CNC, 3D, BOM and drawings. */

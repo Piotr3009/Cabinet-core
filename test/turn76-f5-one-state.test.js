@@ -88,10 +88,10 @@ test('F5 · manufacturing keeps ONLY identity and construction; its status is de
     }
   }
   const g = buildBom([make('GF')]).units[0].rows.find((r) => r.part === 'FRONT');
-  assert.equal(g.manufacturing.construction, 'GF · Routed slab, front face, depths 6/9 mm');
+  assert.equal(g.manufacturing.construction, 'GF · Routed slab, depths 6/9 mm');
   const am = buildBom([make('AM')]).units[0].rows;
-  assert.equal(am.find((r) => r.part === 'FRONT').manufacturing.construction, 'AM · Slab with applied strips, 4 strips');
-  assert.match(am.find((r) => r.part === 'FRONT-MOULDING').manufacturing.construction, /^Applied strip for 01-F, 45\/45 degree mitres$/);
+  assert.equal(am.find((r) => r.part === 'FRONT').manufacturing.construction, 'AM · Slab, 4 applied strips');
+  assert.match(am.find((r) => r.part === 'FRONT-MOULDING').manufacturing.construction, /^Applied strip, 45\/45 mitres$/);
   // The identity still tells a blocked recipe from a ready one: never one line.
   const two = buildBom([make('G'), { ...make('G', { groovePitchMm: 3 }), unit: { id: 'u-blocked' } }]);
   assert.equal(two.cutRows.filter((r) => r.role === 'front').length, 2);

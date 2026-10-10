@@ -91,7 +91,12 @@ export const T76_RETAIL_EDITS = [
   },
   {
     retail: 'src/retail/design/adapter.js',
-    why: 'GPT patch: retail FRONTS step · Persist recipes through the existing Retail update path.',
+    why: 'GPT patch: retail FRONTS step · Persist recipes through the existing Retail update path. '
+      + 'T76 F7 · a style the doors are too thin to route is offered greyed with the engine\'s answer (`boardRefusal`).',
+  },
+  {
+    retail: 'src/retail/design/reasons.js',
+    why: 'T76 F7 · the walk\'s finding: the sentence a refused style says (REASONS.styleNeedsThickerDoor).',
   },
 ];
 

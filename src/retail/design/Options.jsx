@@ -760,11 +760,12 @@ function FrontsPanel({ design, project, unit }) {
             <button
               key={s.id}
               type="button"
-              className={`pbi-style-row${style === s.id ? ' is-on' : ''}${s.soon ? ' is-soon' : ''}`}
+              className={`pbi-style-row${style === s.id ? ' is-on' : ''}${s.soon || s.refused ? ' is-soon' : ''}`}
               data-testid={`fronts-style-${s.id}`}
               data-on={style === s.id ? 'yes' : 'no'}
               data-soon={s.soon ? 'yes' : 'no'}
-              disabled={s.soon}
+              data-refused={s.refused ? 'yes' : 'no'}
+              disabled={s.soon || s.refused}
               aria-pressed={style === s.id}
               onClick={() => A.setFrontStyle(s.id)}
             >
@@ -859,6 +860,10 @@ function FrontsPanel({ design, project, unit }) {
         {styles.some((s) => s.soon) ? (
           <p className="pbi-choice pbi-quiet" data-testid="fronts-style-soon">{REASONS.styleComingSoon}</p>
         ) : null}
+        {/* T76 F7 · a style these doors cannot take says why, once each. */}
+        {styles.filter((s) => s.refused).map((s) => (
+          <p key={s.id} className="pbi-choice pbi-quiet" data-testid={`fronts-style-refused-${s.id}`}>{s.reason}</p>
+        ))}
       </div>
 
       {/* ─── T66 F4 · THE OPENING IS AN ALIGNED LIST ───────────────────────

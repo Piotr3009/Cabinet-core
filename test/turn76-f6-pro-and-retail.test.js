@@ -18,7 +18,7 @@ setPersistence('none');
 const { useProjectStore } = await import('../src/stores/projectStore.js');
 const A = await import('../src/retail/design/adapter.js');
 const { describeDesign } = await import('../src/retail/estimate/document.js');
-const { defaultFrontDecoration } = await import('../src/engine/frontDecoration.js');
+const { boardRefusal, defaultFrontDecoration } = await import('../src/engine/frontDecoration.js');
 const { FRONT_STYLE_ART } = await import('../src/engine/frontStyleArt.js');
 const { FRONT_STYLE_OPTIONS } = await import('../src/engine/design.js');
 
@@ -57,11 +57,15 @@ test('F6 · retail shows no numeric field of a recipe: the controls are PRO\'s',
   assert.match(fronts, /\{style === 'S' \? \(\s*<Field label="FRAME WIDTH">/);
 });
 
-test('F6 · a client picks each style and gets the owner\'s recipe, the leaf decorated, the estimate naming it', () => {
+test('F6 · a client picks each style the doors can take and gets the owner\'s recipe, cut, and named', () => {
   A.startDesign('T76 fronts');
   const unitId = A.addFirstWardrobe();
   assert.ok(unitId, 'no wardrobe');
-  for (const style of SIX) {
+  // The client's road: a collection on the doors (sprayed, 18 mm).
+  A.applyCollection('mayfair-green');
+  const offered = Object.fromEntries(A.frontStyles().map((s) => [s.id, s]));
+  for (const style of ['G', 'GF', 'FL', 'AM']) {
+    assert.equal(offered[style].refused, false, `${style} is refused on these doors`);
     A.setFrontStyle(style);
     const fronts = S().project.design.fronts;
     assert.equal(fronts.style, style);
@@ -71,9 +75,38 @@ test('F6 · a client picks each style and gets the owner\'s recipe, the leaf dec
     assert.ok(leaves.length, style);
     for (const leaf of leaves) {
       assert.equal(leaf.meta.frontDecoration?.style, style, `${style}: ${leaf.id} is not decorated`);
+      // T76 F7 · the walk's lesson: decorated is not enough, it must be CUT.
+      assert.equal(leaf.meta.frontDecoration.status, 'ready', `${style}: ${JSON.stringify(leaf.meta.frontDecoration.problems)}`);
     }
     const label = FRONT_STYLE_OPTIONS.find((o) => o.id === style).label;
     const said = JSON.stringify(describeDesign({ project: S().project, units: S().units }));
     assert.ok(said.includes(label), `${style}: MY ESTIMATE does not name "${label}"`);
   }
+});
+
+// ─── T76 F7 · THE WALK'S FINDING: ARCHED ON RETAIL'S 18 MM DOORS ──────────
+//
+// The walk clicked ARCHED and ARCHED HANDLELESS on a retail wardrobe and got a
+// plain slab with no sentence: the owner's arch is an 18 mm recess (drawn for
+// a 30 board) and retail's doors are 18 to 20 mm, which leaves no skin. Not
+// shrunk, not swapped: the two rows are greyed with the engine's answer.
+test('F7 · a style these doors cannot take is greyed and says why, in words', () => {
+  A.startDesign('T76 arched');
+  const unitId = A.addFirstWardrobe();
+  A.applyCollection('mayfair-green');
+  const doors = S().unitResult(unitId).panels.filter((p) => p.part === 'FRONT').map((p) => p.thickness);
+  assert.ok(doors.length && doors.every((t) => t === 18), `the doors are ${doors.join(', ')} mm`);
+  const offered = Object.fromEntries(A.frontStyles().map((s) => [s.id, s]));
+  for (const style of ['A', 'AH']) {
+    assert.equal(offered[style].refused, true, `${style} is offered on 18 mm doors`);
+    assert.match(offered[style].reason, /is routed into a door at least 21 mm thick; these doors are 18 mm, so it cannot be cut in them\./);
+  }
+  // The row is a disabled button and the sentence stands under the list.
+  const options = read('src/retail/design/Options.jsx');
+  assert.match(options, /disabled=\{s\.soon \|\| s\.refused\}/);
+  assert.match(options, /data-testid=\{`fronts-style-refused-\$\{s\.id\}`\}>\{s\.reason\}</);
+  // The engine's answer, one rule: the arch fits a 21 mm door and up.
+  assert.equal(boardRefusal('A', 21), null);
+  assert.equal(boardRefusal('A', 25), null);
+  assert.equal(boardRefusal('A', 20).needMm, 21);
 });

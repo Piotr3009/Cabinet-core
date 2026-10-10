@@ -110,7 +110,10 @@ test('F4 · STYLE is a vertical list of rows, in the owner\'s own order', () => 
   assert.match(options, /filter\(\(s\) => s\.id !== 'HJ'\)/);
   // A coming-soon row is a GREYED ROW, and it says so on the row itself.
   assert.match(options, /data-soon=\{s\.soon \? 'yes' : 'no'\}/);
-  assert.match(options, /disabled=\{s\.soon\}/);
+  // AMENDED BY T76 F7: a row the job's doors are too thin to route (the
+  // owner's arch on retail's 18 mm doors) is greyed and disabled the same way,
+  // with its reason under the list (*"refused in words, never squashed"*).
+  assert.match(options, /disabled=\{s\.soon \|\| s\.refused\}/);
   const css = read('src/retail/styles/room.css');
   assert.match(css, /\.pbi-style-row\.is-soon \{[^}]*opacity/);
   assert.match(css, /\.pbi-style-row\.is-on \{[^}]*border-color: var\(--pbi-deep-gold\)/,

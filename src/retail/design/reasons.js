@@ -290,6 +290,10 @@ export const REASONS = {
   /** PREDICATE: the style id is not one the engine cuts today. */
   styleComingSoon: 'Coming soon — the drawing exists, the machining does not yet.',
 
+  /** PREDICATE: `boardRefusal(style, doors)` (T76 F7): the recipe cuts deeper than these doors allow. */
+  styleNeedsThickerDoor: ({ label, needMm, haveMm }) => `${label} is routed into a door at least ${needMm} mm thick; `
+    + `these doors are ${haveMm} mm, so it cannot be cut in them.`,
+
   /** PREDICATE: `wideFrontMm(profile)` — profile.checks.wideFrontMm, the owner's 600. */
   doorTooWide: ({ leaf, wide, check }) => `${check}: ${leaf} mm each — over ${wide} mm a door will not `
     + 'open far enough to get a drawer past it.',

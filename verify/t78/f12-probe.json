@@ -1,0 +1,1472 @@
+{
+  "wud": {
+    "shut": {
+      "unit": {
+        "id": "u_hnj6pt9",
+        "type": "WUD_GLASS",
+        "num": "WG01",
+        "wall": 0,
+        "x_mm": 1700,
+        "w": 600,
+        "h": 720,
+        "d": 400,
+        "frontType": "GL",
+        "mountHeight": 1500
+      },
+      "origin": [
+        -300,
+        1500,
+        -1490
+      ],
+      "rotYdeg": 0,
+      "open": {},
+      "bom": [
+        {
+          "role": "glass_pane",
+          "label": "Glass pane",
+          "qty": 1,
+          "spec": {
+            "aperture_w_mm": 477,
+            "aperture_h_mm": 600
+          }
+        }
+      ],
+      "warnings": [],
+      "leaves": [
+        {
+          "id": "WG01-F",
+          "part": "FRONT",
+          "hinge": "L",
+          "frontType": "GL",
+          "box": {
+            "x": 1.5,
+            "y": 0,
+            "z": 403,
+            "w": 597,
+            "h": 720,
+            "d": 25
+          },
+          "thickness": 25,
+          "glass": {
+            "frame": 60,
+            "aperture": {
+              "w": 477,
+              "h": 600
+            }
+          },
+          "door": {
+            "world": {
+              "min": [
+                -298.5,
+                1500,
+                -1087
+              ],
+              "max": [
+                298.5,
+                2220,
+                -1062
+              ],
+              "centre": [
+                0,
+                1860,
+                -1074.5
+              ],
+              "size": [
+                597,
+                720,
+                25
+              ]
+            },
+            "local": {
+              "min": [
+                1.5,
+                0,
+                403
+              ],
+              "max": [
+                598.5,
+                720,
+                428
+              ],
+              "centre": [
+                300,
+                360,
+                415.5
+              ],
+              "size": [
+                597,
+                720,
+                25
+              ]
+            },
+            "position": [
+              298.5,
+              0,
+              0
+            ],
+            "parentPosition": [
+              1.5,
+              360,
+              415.5
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 96
+          },
+          "pane": {
+            "world": {
+              "min": [
+                -538.5,
+                1200,
+                -1492
+              ],
+              "max": [
+                -61.5,
+                1800,
+                -1488
+              ],
+              "centre": [
+                -300,
+                1500,
+                -1490
+              ],
+              "size": [
+                477,
+                600,
+                4
+              ]
+            },
+            "local": {
+              "min": [
+                -238.5,
+                -300,
+                -2
+              ],
+              "max": [
+                238.5,
+                300,
+                2
+              ],
+              "centre": [
+                0,
+                0,
+                0
+              ],
+              "size": [
+                477,
+                600,
+                4
+              ]
+            },
+            "position": [
+              -1.5,
+              -360,
+              -415.5
+            ],
+            "parentPosition": [
+              1.5,
+              360,
+              415.5
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 24
+          },
+          "sameGroup": true,
+          "expectedLocalCentre": [
+            300,
+            360,
+            415.5
+          ],
+          "paneMinusDoorWorld": [
+            -300,
+            -360,
+            -415.5
+          ],
+          "paneMinusExpectedLocal": [
+            -300,
+            -360,
+            -415.5
+          ]
+        }
+      ]
+    },
+    "open": {
+      "unit": {
+        "id": "u_hnj6pt9",
+        "type": "WUD_GLASS",
+        "num": "WG01",
+        "wall": 0,
+        "x_mm": 1700,
+        "w": 600,
+        "h": 720,
+        "d": 400,
+        "frontType": "GL",
+        "mountHeight": 1500
+      },
+      "origin": [
+        -300,
+        1500,
+        -1490
+      ],
+      "rotYdeg": 0,
+      "open": {
+        "WG01-F": 1
+      },
+      "bom": [
+        {
+          "role": "glass_pane",
+          "label": "Glass pane",
+          "qty": 1,
+          "spec": {
+            "aperture_w_mm": 477,
+            "aperture_h_mm": 600
+          }
+        }
+      ],
+      "warnings": [],
+      "leaves": [
+        {
+          "id": "WG01-F",
+          "part": "FRONT",
+          "hinge": "L",
+          "frontType": "GL",
+          "box": {
+            "x": 1.5,
+            "y": 0,
+            "z": 403,
+            "w": 597,
+            "h": 720,
+            "d": 25
+          },
+          "thickness": 25,
+          "glass": {
+            "frame": 60,
+            "aperture": {
+              "w": 477,
+              "h": 600
+            }
+          },
+          "door": {
+            "world": {
+              "min": [
+                -404.2,
+                1500,
+                -1076.5
+              ],
+              "max": [
+                -286.2,
+                2220,
+                -482.9
+              ],
+              "centre": [
+                -345.2,
+                1860,
+                -779.7
+              ],
+              "size": [
+                118.1,
+                720,
+                593.6
+              ]
+            },
+            "local": {
+              "min": [
+                -104.2,
+                0,
+                413.5
+              ],
+              "max": [
+                13.8,
+                720,
+                1007.1
+              ],
+              "centre": [
+                -45.2,
+                360,
+                710.3
+              ],
+              "size": [
+                118.1,
+                720,
+                593.6
+              ]
+            },
+            "position": [
+              298.5,
+              0,
+              0
+            ],
+            "parentPosition": [
+              1.5,
+              360,
+              415.5
+            ],
+            "parentRotYdeg": -99,
+            "visible": true,
+            "vertices": 96
+          },
+          "pane": {
+            "world": {
+              "min": [
+                72.8,
+                1200,
+                -1246.9
+              ],
+              "max": [
+                151.4,
+                1800,
+                -775.1
+              ],
+              "centre": [
+                112.1,
+                1500,
+                -1011
+              ],
+              "size": [
+                78.6,
+                600,
+                471.8
+              ]
+            },
+            "local": {
+              "min": [
+                372.8,
+                -300,
+                243.1
+              ],
+              "max": [
+                451.4,
+                300,
+                714.9
+              ],
+              "centre": [
+                412.1,
+                0,
+                479
+              ],
+              "size": [
+                78.6,
+                600,
+                471.8
+              ]
+            },
+            "position": [
+              -1.5,
+              -360,
+              -415.5
+            ],
+            "parentPosition": [
+              1.5,
+              360,
+              415.5
+            ],
+            "parentRotYdeg": -99,
+            "visible": true,
+            "vertices": 24
+          },
+          "sameGroup": true,
+          "expectedLocalCentre": [
+            300,
+            360,
+            415.5
+          ],
+          "paneMinusDoorWorld": [
+            457.3,
+            -360,
+            -231.3
+          ],
+          "paneMinusExpectedLocal": [
+            112.1,
+            -360,
+            63.5
+          ]
+        }
+      ]
+    }
+  },
+  "wardrobe": {
+    "shut": {
+      "unit": {
+        "id": "u_re5rj9o",
+        "type": "WARDROBE",
+        "num": "W01",
+        "wall": 0,
+        "x_mm": 1700,
+        "w": 600,
+        "h": 2150,
+        "d": 558,
+        "frontType": "GL",
+        "mountHeight": 0
+      },
+      "origin": [
+        -300,
+        100,
+        -1490
+      ],
+      "rotYdeg": 0,
+      "open": {},
+      "bom": [
+        {
+          "role": "glass_pane",
+          "label": "Glass pane",
+          "qty": 1,
+          "spec": {
+            "aperture_w_mm": 477,
+            "aperture_h_mm": 2030
+          }
+        }
+      ],
+      "warnings": [],
+      "leaves": [
+        {
+          "id": "W01-F",
+          "part": "FRONT",
+          "hinge": "L",
+          "frontType": "GL",
+          "box": {
+            "x": 1.5,
+            "y": 0,
+            "z": 561,
+            "w": 597,
+            "h": 2150,
+            "d": 25
+          },
+          "thickness": 25,
+          "glass": {
+            "frame": 60,
+            "aperture": {
+              "w": 477,
+              "h": 2030
+            }
+          },
+          "door": {
+            "world": {
+              "min": [
+                -298.5,
+                100,
+                -929
+              ],
+              "max": [
+                298.5,
+                2250,
+                -904
+              ],
+              "centre": [
+                0,
+                1175,
+                -916.5
+              ],
+              "size": [
+                597,
+                2150,
+                25
+              ]
+            },
+            "local": {
+              "min": [
+                1.5,
+                0,
+                561
+              ],
+              "max": [
+                598.5,
+                2150,
+                586
+              ],
+              "centre": [
+                300,
+                1075,
+                573.5
+              ],
+              "size": [
+                597,
+                2150,
+                25
+              ]
+            },
+            "position": [
+              298.5,
+              0,
+              0
+            ],
+            "parentPosition": [
+              1.5,
+              1075,
+              573.5
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 96
+          },
+          "pane": {
+            "world": {
+              "min": [
+                -538.5,
+                -915,
+                -1492
+              ],
+              "max": [
+                -61.5,
+                1115,
+                -1488
+              ],
+              "centre": [
+                -300,
+                100,
+                -1490
+              ],
+              "size": [
+                477,
+                2030,
+                4
+              ]
+            },
+            "local": {
+              "min": [
+                -238.5,
+                -1015,
+                -2
+              ],
+              "max": [
+                238.5,
+                1015,
+                2
+              ],
+              "centre": [
+                0,
+                0,
+                0
+              ],
+              "size": [
+                477,
+                2030,
+                4
+              ]
+            },
+            "position": [
+              -1.5,
+              -1075,
+              -573.5
+            ],
+            "parentPosition": [
+              1.5,
+              1075,
+              573.5
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 24
+          },
+          "sameGroup": true,
+          "expectedLocalCentre": [
+            300,
+            1075,
+            573.5
+          ],
+          "paneMinusDoorWorld": [
+            -300,
+            -1075,
+            -573.5
+          ],
+          "paneMinusExpectedLocal": [
+            -300,
+            -1075,
+            -573.5
+          ]
+        }
+      ]
+    },
+    "open": {
+      "unit": {
+        "id": "u_re5rj9o",
+        "type": "WARDROBE",
+        "num": "W01",
+        "wall": 0,
+        "x_mm": 1700,
+        "w": 600,
+        "h": 2150,
+        "d": 558,
+        "frontType": "GL",
+        "mountHeight": 0
+      },
+      "origin": [
+        -300,
+        100,
+        -1490
+      ],
+      "rotYdeg": 0,
+      "open": {
+        "W01-F": 1
+      },
+      "bom": [
+        {
+          "role": "glass_pane",
+          "label": "Glass pane",
+          "qty": 1,
+          "spec": {
+            "aperture_w_mm": 477,
+            "aperture_h_mm": 2030
+          }
+        }
+      ],
+      "warnings": [],
+      "leaves": [
+        {
+          "id": "W01-F",
+          "part": "FRONT",
+          "hinge": "L",
+          "frontType": "GL",
+          "box": {
+            "x": 1.5,
+            "y": 0,
+            "z": 561,
+            "w": 597,
+            "h": 2150,
+            "d": 25
+          },
+          "thickness": 25,
+          "glass": {
+            "frame": 60,
+            "aperture": {
+              "w": 477,
+              "h": 2030
+            }
+          },
+          "door": {
+            "world": {
+              "min": [
+                -404.2,
+                100,
+                -918.5
+              ],
+              "max": [
+                -286.2,
+                2250,
+                -324.9
+              ],
+              "centre": [
+                -345.2,
+                1175,
+                -621.7
+              ],
+              "size": [
+                118.1,
+                2150,
+                593.6
+              ]
+            },
+            "local": {
+              "min": [
+                -104.2,
+                0,
+                571.5
+              ],
+              "max": [
+                13.8,
+                2150,
+                1165.1
+              ],
+              "centre": [
+                -45.2,
+                1075,
+                868.3
+              ],
+              "size": [
+                118.1,
+                2150,
+                593.6
+              ]
+            },
+            "position": [
+              298.5,
+              0,
+              0
+            ],
+            "parentPosition": [
+              1.5,
+              1075,
+              573.5
+            ],
+            "parentRotYdeg": -99,
+            "visible": true,
+            "vertices": 96
+          },
+          "pane": {
+            "world": {
+              "min": [
+                228.9,
+                -915,
+                -1064.1
+              ],
+              "max": [
+                307.5,
+                1115,
+                -592.4
+              ],
+              "centre": [
+                268.2,
+                100,
+                -828.3
+              ],
+              "size": [
+                78.6,
+                2030,
+                471.8
+              ]
+            },
+            "local": {
+              "min": [
+                528.9,
+                -1015,
+                425.9
+              ],
+              "max": [
+                607.5,
+                1015,
+                897.6
+              ],
+              "centre": [
+                568.2,
+                0,
+                661.7
+              ],
+              "size": [
+                78.6,
+                2030,
+                471.8
+              ]
+            },
+            "position": [
+              -1.5,
+              -1075,
+              -573.5
+            ],
+            "parentPosition": [
+              1.5,
+              1075,
+              573.5
+            ],
+            "parentRotYdeg": -99,
+            "visible": true,
+            "vertices": 24
+          },
+          "sameGroup": true,
+          "expectedLocalCentre": [
+            300,
+            1075,
+            573.5
+          ],
+          "paneMinusDoorWorld": [
+            613.4,
+            -1075,
+            -206.6
+          ],
+          "paneMinusExpectedLocal": [
+            268.2,
+            -1075,
+            88.2
+          ]
+        }
+      ]
+    }
+  },
+  "retail": {
+    "shut": {
+      "unit": {
+        "id": "u_xslncd4",
+        "type": "WARDROBE",
+        "num": "W01",
+        "wall": 0,
+        "x_mm": 40,
+        "w": 1200,
+        "h": 2150,
+        "d": 568,
+        "frontType": null,
+        "mountHeight": 0
+      },
+      "origin": [
+        -1960,
+        100,
+        -1490
+      ],
+      "rotYdeg": 0,
+      "open": {},
+      "bom": [
+        {
+          "role": "glass_pane",
+          "label": "Glass pane",
+          "qty": 2,
+          "spec": {
+            "aperture_w_mm": 475.5,
+            "aperture_h_mm": 2027
+          }
+        }
+      ],
+      "warnings": [],
+      "leaves": [
+        {
+          "id": "W01-FL",
+          "part": "FRONT",
+          "hinge": "L",
+          "frontType": "GL",
+          "box": {
+            "x": 3,
+            "y": 0,
+            "z": 571,
+            "w": 595.5,
+            "h": 2147,
+            "d": 18
+          },
+          "thickness": 18,
+          "glass": {
+            "frame": 60,
+            "aperture": {
+              "w": 475.5,
+              "h": 2027
+            }
+          },
+          "door": {
+            "world": {
+              "min": [
+                -1957,
+                100,
+                -919
+              ],
+              "max": [
+                -1361.5,
+                2247,
+                -901
+              ],
+              "centre": [
+                -1659.2,
+                1173.5,
+                -910
+              ],
+              "size": [
+                595.5,
+                2147,
+                18
+              ]
+            },
+            "local": {
+              "min": [
+                3,
+                0,
+                571
+              ],
+              "max": [
+                598.5,
+                2147,
+                589
+              ],
+              "centre": [
+                300.7,
+                1073.5,
+                580
+              ],
+              "size": [
+                595.5,
+                2147,
+                18
+              ]
+            },
+            "position": [
+              297.8,
+              0,
+              0
+            ],
+            "parentPosition": [
+              3,
+              1073.5,
+              580
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 96
+          },
+          "pane": {
+            "world": {
+              "min": [
+                -2197.7,
+                -913.5,
+                -1492
+              ],
+              "max": [
+                -1722.3,
+                1113.5,
+                -1488
+              ],
+              "centre": [
+                -1960,
+                100,
+                -1490
+              ],
+              "size": [
+                475.5,
+                2027,
+                4
+              ]
+            },
+            "local": {
+              "min": [
+                -237.7,
+                -1013.5,
+                -2
+              ],
+              "max": [
+                237.7,
+                1013.5,
+                2
+              ],
+              "centre": [
+                0,
+                0,
+                0
+              ],
+              "size": [
+                475.5,
+                2027,
+                4
+              ]
+            },
+            "position": [
+              -3,
+              -1073.5,
+              -580
+            ],
+            "parentPosition": [
+              3,
+              1073.5,
+              580
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 24
+          },
+          "sameGroup": true,
+          "expectedLocalCentre": [
+            300.75,
+            1073.5,
+            580
+          ],
+          "paneMinusDoorWorld": [
+            -300.8,
+            -1073.5,
+            -580
+          ],
+          "paneMinusExpectedLocal": [
+            -300.7,
+            -1073.5,
+            -580
+          ]
+        },
+        {
+          "id": "W01-FR",
+          "part": "FRONT",
+          "hinge": "R",
+          "frontType": "GL",
+          "box": {
+            "x": 601.5,
+            "y": 0,
+            "z": 571,
+            "w": 595.5,
+            "h": 2147,
+            "d": 18
+          },
+          "thickness": 18,
+          "glass": {
+            "frame": 60,
+            "aperture": {
+              "w": 475.5,
+              "h": 2027
+            }
+          },
+          "door": {
+            "world": {
+              "min": [
+                -1358.5,
+                100,
+                -919
+              ],
+              "max": [
+                -763,
+                2247,
+                -901
+              ],
+              "centre": [
+                -1060.7,
+                1173.5,
+                -910
+              ],
+              "size": [
+                595.5,
+                2147,
+                18
+              ]
+            },
+            "local": {
+              "min": [
+                601.5,
+                0,
+                571
+              ],
+              "max": [
+                1197,
+                2147,
+                589
+              ],
+              "centre": [
+                899.3,
+                1073.5,
+                580
+              ],
+              "size": [
+                595.5,
+                2147,
+                18
+              ]
+            },
+            "position": [
+              -297.7,
+              0,
+              0
+            ],
+            "parentPosition": [
+              1197,
+              1073.5,
+              580
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 96
+          },
+          "pane": {
+            "world": {
+              "min": [
+                -2197.7,
+                -913.5,
+                -1492
+              ],
+              "max": [
+                -1722.3,
+                1113.5,
+                -1488
+              ],
+              "centre": [
+                -1960,
+                100,
+                -1490
+              ],
+              "size": [
+                475.5,
+                2027,
+                4
+              ]
+            },
+            "local": {
+              "min": [
+                -237.7,
+                -1013.5,
+                -2
+              ],
+              "max": [
+                237.7,
+                1013.5,
+                2
+              ],
+              "centre": [
+                0,
+                0,
+                0
+              ],
+              "size": [
+                475.5,
+                2027,
+                4
+              ]
+            },
+            "position": [
+              -1197,
+              -1073.5,
+              -580
+            ],
+            "parentPosition": [
+              1197,
+              1073.5,
+              580
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 24
+          },
+          "sameGroup": true,
+          "expectedLocalCentre": [
+            899.25,
+            1073.5,
+            580
+          ],
+          "paneMinusDoorWorld": [
+            -899.3,
+            -1073.5,
+            -580
+          ],
+          "paneMinusExpectedLocal": [
+            -899.2,
+            -1073.5,
+            -580
+          ]
+        }
+      ]
+    },
+    "open": {
+      "unit": {
+        "id": "u_xslncd4",
+        "type": "WARDROBE",
+        "num": "W01",
+        "wall": 0,
+        "x_mm": 40,
+        "w": 1200,
+        "h": 2150,
+        "d": 568,
+        "frontType": null,
+        "mountHeight": 0
+      },
+      "origin": [
+        -1960,
+        100,
+        -1490
+      ],
+      "rotYdeg": 0,
+      "open": {
+        "W01-FL": 1
+      },
+      "bom": [
+        {
+          "role": "glass_pane",
+          "label": "Glass pane",
+          "qty": 2,
+          "spec": {
+            "aperture_w_mm": 475.5,
+            "aperture_h_mm": 2027
+          }
+        }
+      ],
+      "warnings": [],
+      "leaves": [
+        {
+          "id": "W01-FL",
+          "part": "FRONT",
+          "hinge": "L",
+          "frontType": "GL",
+          "box": {
+            "x": 3,
+            "y": 0,
+            "z": 571,
+            "w": 595.5,
+            "h": 2147,
+            "d": 18
+          },
+          "thickness": 18,
+          "glass": {
+            "frame": 60,
+            "aperture": {
+              "w": 475.5,
+              "h": 2027
+            }
+          },
+          "door": {
+            "world": {
+              "min": [
+                -1966,
+                100,
+                -910
+              ],
+              "max": [
+                -1948,
+                2247,
+                -314.5
+              ],
+              "centre": [
+                -1957,
+                1173.5,
+                -612.2
+              ],
+              "size": [
+                18,
+                2147,
+                595.5
+              ]
+            },
+            "local": {
+              "min": [
+                -6,
+                0,
+                580
+              ],
+              "max": [
+                12,
+                2147,
+                1175.5
+              ],
+              "centre": [
+                3,
+                1073.5,
+                877.8
+              ],
+              "size": [
+                18,
+                2147,
+                595.5
+              ]
+            },
+            "position": [
+              297.8,
+              0,
+              0
+            ],
+            "parentPosition": [
+              3,
+              1073.5,
+              580
+            ],
+            "parentRotYdeg": -90,
+            "visible": true,
+            "vertices": 96
+          },
+          "pane": {
+            "world": {
+              "min": [
+                -1379,
+                -913.5,
+                -1150.7
+              ],
+              "max": [
+                -1375,
+                1113.5,
+                -675.3
+              ],
+              "centre": [
+                -1377,
+                100,
+                -913
+              ],
+              "size": [
+                4,
+                2027,
+                475.5
+              ]
+            },
+            "local": {
+              "min": [
+                581,
+                -1013.5,
+                339.3
+              ],
+              "max": [
+                585,
+                1013.5,
+                814.7
+              ],
+              "centre": [
+                583,
+                0,
+                577
+              ],
+              "size": [
+                4,
+                2027,
+                475.5
+              ]
+            },
+            "position": [
+              -3,
+              -1073.5,
+              -580
+            ],
+            "parentPosition": [
+              3,
+              1073.5,
+              580
+            ],
+            "parentRotYdeg": -90,
+            "visible": true,
+            "vertices": 24
+          },
+          "sameGroup": true,
+          "expectedLocalCentre": [
+            300.75,
+            1073.5,
+            580
+          ],
+          "paneMinusDoorWorld": [
+            580,
+            -1073.5,
+            -300.8
+          ],
+          "paneMinusExpectedLocal": [
+            282.3,
+            -1073.5,
+            -3
+          ]
+        },
+        {
+          "id": "W01-FR",
+          "part": "FRONT",
+          "hinge": "R",
+          "frontType": "GL",
+          "box": {
+            "x": 601.5,
+            "y": 0,
+            "z": 571,
+            "w": 595.5,
+            "h": 2147,
+            "d": 18
+          },
+          "thickness": 18,
+          "glass": {
+            "frame": 60,
+            "aperture": {
+              "w": 475.5,
+              "h": 2027
+            }
+          },
+          "door": {
+            "world": {
+              "min": [
+                -1358.5,
+                100,
+                -919
+              ],
+              "max": [
+                -763,
+                2247,
+                -901
+              ],
+              "centre": [
+                -1060.7,
+                1173.5,
+                -910
+              ],
+              "size": [
+                595.5,
+                2147,
+                18
+              ]
+            },
+            "local": {
+              "min": [
+                601.5,
+                0,
+                571
+              ],
+              "max": [
+                1197,
+                2147,
+                589
+              ],
+              "centre": [
+                899.3,
+                1073.5,
+                580
+              ],
+              "size": [
+                595.5,
+                2147,
+                18
+              ]
+            },
+            "position": [
+              -297.7,
+              0,
+              0
+            ],
+            "parentPosition": [
+              1197,
+              1073.5,
+              580
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 96
+          },
+          "pane": {
+            "world": {
+              "min": [
+                -2197.7,
+                -913.5,
+                -1492
+              ],
+              "max": [
+                -1722.3,
+                1113.5,
+                -1488
+              ],
+              "centre": [
+                -1960,
+                100,
+                -1490
+              ],
+              "size": [
+                475.5,
+                2027,
+                4
+              ]
+            },
+            "local": {
+              "min": [
+                -237.7,
+                -1013.5,
+                -2
+              ],
+              "max": [
+                237.7,
+                1013.5,
+                2
+              ],
+              "centre": [
+                0,
+                0,
+                0
+              ],
+              "size": [
+                475.5,
+                2027,
+                4
+              ]
+            },
+            "position": [
+              -1197,
+              -1073.5,
+              -580
+            ],
+            "parentPosition": [
+              1197,
+              1073.5,
+              580
+            ],
+            "parentRotYdeg": 0,
+            "visible": true,
+            "vertices": 24
+          },
+          "sameGroup": true,
+          "expectedLocalCentre": [
+            899.25,
+            1073.5,
+            580
+          ],
+          "paneMinusDoorWorld": [
+            -899.3,
+            -1073.5,
+            -580
+          ],
+          "paneMinusExpectedLocal": [
+            -899.2,
+            -1073.5,
+            -580
+          ]
+        }
+      ]
+    }
+  }
+}

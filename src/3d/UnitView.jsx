@@ -748,8 +748,10 @@ export function MovingPanel({
   const frontBores = useMemo(() => {
     if (mitre || !(p.meta?.frontDecoration || isShakerFront(p))
       || !profile?.appearance?.cuts?.enabled) return EMPTY_DRILLS;
+    // T78 F3 · the leaf's own thickness: the L's door B hangs along Z, so
+    // its box holds its width in `d` (see frontDecorationSolid.js cutSizeOf).
     return panelRecesses(p, p.meta?.frontDecoration ? boredDrills : drills,
-      { thickness: p.box.d, profile });
+      { thickness: Number(p.thickness) > 0 ? Number(p.thickness) : p.box.d, profile });
   }, [p, mitre, boredDrills, drills, profile]);
   const decoration = useMemo(() => (mitre ? null : frontDecorationGeometry(p, frontBores)),
     [p, mitre, frontBores]);
@@ -779,6 +781,24 @@ export function MovingPanel({
     return shakerFrontGeometry(p, frontBores);
   }, [p, mitre, frontBores, decoration]);
   const machined = decoration || shaker || built?.solid || null;
+  // ─── T78 F3 · A CARVED LEAF HUNG ALONG Z IS TURNED ONTO ITS ARM ──────────
+  //
+  // The owner, 11.10.2026: *"drzwiczki na L shape sa i jak sa ozdobne to maja
+  // grubosc okolo 40 mm."*  The probe (verify/t78/f03-probe.md): a decorated
+  // or shaker leaf is carved in the LEAF's own frame (width across x, the
+  // thickness through z, `cutSizeOf`), while the L's door B stands along Z
+  // with its front facing along x (`meta.swingZ`), and the carved solid was
+  // laid down untouched: a 312.5 deep block in a 25 mm door (rows 15, 16, 25,
+  // 26). The carved solid is turned a quarter about Y onto its arm: its front
+  // (+z) faces the way the door faces (+x on the left hand, -x on the right),
+  // its width runs along the arm the way the parent's leaf ran. A plain leaf
+  // is the box the engine emitted and was never wrong.
+  // T78 F7 · a drawer front board on the L's arm B stands along z too
+  // (`meta.faceX`, its face normal along x), and turns the same way.
+  const faceX = front === 'drawer' && p.meta?.faceX ? Number(p.meta.faceX.dir) || 1 : 0;
+  const turned = Boolean((alongZ || faceX) && (decoration || shaker));
+  // eslint-disable-next-line no-nested-ternary
+  const turnY = !turned ? 0 : (faceX ? faceX * (Math.PI / 2) : -(Number(p.meta.swingZ.dir) || -1) * (Math.PI / 2));
 
   // ─── CHAT FIX 15.08.2026: THE OUTLINE DRAWS THE BOARD, NOT THE DRILLING ──
   //
@@ -1115,9 +1135,12 @@ export function MovingPanel({
           It costs one object per mesh and reaches nothing. */}
       <mesh
         position={meshOffset}
+        rotation={[0, turnY, 0]}
         castShadow={!contour}
         receiveShadow={!contour}
-        userData={{ ccPanelId: p.id, ccRole: p.role, ccMaterialRole: p.material_role }}
+        userData={{
+          ccPanelId: p.id, ccRole: p.role, ccMaterialRole: p.material_role, ...(turned ? { ccTurnedY: turnY } : {}),
+        }}
         {...handlers}
       >
         {/* A mitred strip carries its own geometry (turn 8, CLAUDE.md F6), and

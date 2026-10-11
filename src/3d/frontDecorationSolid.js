@@ -134,7 +134,7 @@ export function frontDecorationGeometry(panel, bores = []) {
   const box = panel?.box;
   if (!decoration || decoration.status !== 'ready' || !box
     || !Array.isArray(decoration.outline) || decoration.outline.length < 3) return null;
-  const { w, h, d: thickness } = box;
+  const { w, h, thickness } = cutSizeOf(panel);
   if (!(w > 0 && h > 0 && thickness > 0)) return null;
   const rounds = bores.filter((b) => b?.kind === 'round' && Number(b.r) > 0
     && (b.through || Number(b.depth) > 0));
@@ -160,9 +160,30 @@ export function clearFrontDecorationCache() {
   cache.clear();
 }
 
+/**
+ * T78 F3 · THE LEAF'S OWN CUT SIZE, NOT ITS BOX.
+ *
+ * The owner, 11.10.2026: *"drzwiczki na L shape sa i jak sa ozdobne to maja
+ * grubosc okolo 40 mm."*  The probe (verify/t78/f03-probe.md, rows 15, 16,
+ * 25, 26): the L's door B hangs along Z (`meta.swingZ`), so its box carries
+ * its WIDTH in `box.d` and its THICKNESS in `box.w`; this builder read the
+ * box as every other leaf's (w across, d through) and carved a solid as
+ * THICK as the door was wide (312.5 on a 25 leaf, 287.5 mm back into the
+ * carcass). A leaf's cut size is the panel's own `w`, `h`, `thickness` (the
+ * cut list's numbers), the same for every hand it hangs on; the box only says
+ * where it stands. The scene turns the solid onto its arm (UnitView.jsx).
+ */
+export function cutSizeOf(panel) {
+  const box = panel?.box || {};
+  const w = Number(panel?.w) > 0 ? Number(panel.w) : Number(box.w) || 0;
+  const h = Number(panel?.h) > 0 ? Number(panel.h) : Number(box.h) || 0;
+  const thickness = Number(panel?.thickness) > 0 ? Number(panel.thickness) : Number(box.d) || 0;
+  return { w, h, thickness };
+}
+
 function build(panel, bores) {
   const decoration = panel.meta.frontDecoration;
-  const { w, h, d: thickness } = panel.box;
+  const { w, h, thickness } = cutSizeOf(panel);
   const half = thickness / 2;
   // CNC fronts are viewed from the hinge face. Reflect x once for the room.
   const toMesh = ([x, y]) => [w / 2 - x, y - h / 2];

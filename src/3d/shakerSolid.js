@@ -89,9 +89,12 @@ export function shakerFrontGeometry(panel, bores = []) {
   if (!s || !box) return null;
   const frame = Number(s.frame) || 0;
   const depth = Number(s.depth) || 0;
-  const w = Number(box.w) || 0;
-  const h = Number(box.h) || 0;
-  const t = Number(box.d) || 0;
+  // T78 F3 · the leaf's own cut size (the L's door B hangs along Z, its box
+  // holds its width in `d` and its thickness in `w`; see
+  // frontDecorationSolid.js cutSizeOf). The box only says where it stands.
+  const w = Number(panel?.w) > 0 ? Number(panel.w) : Number(box.w) || 0;
+  const h = Number(panel?.h) > 0 ? Number(panel.h) : Number(box.h) || 0;
+  const t = Number(panel?.thickness) > 0 ? Number(panel.thickness) : Number(box.d) || 0;
   if (!(frame > 0) || !(depth > 0) || !(t > depth)) return null;
   const cut = Boolean(panel?.cnc?.slopeCut);
   if (!cut && (!(w > 2 * frame) || !(h > 2 * frame))) return null;

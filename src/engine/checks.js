@@ -250,6 +250,12 @@ export const CHECKS = Object.freeze([
   // The owner decides per job."*  Read off the engine's own warning
   // (`FRONT_DECORATION_BOARD`). YELLOW: the leaf is cut; a person decides.
   { n: 32, level: 'yellow', label: 'Front thinner than its decoration\'s board' },
+  // ─── T78 F13 · THE WIDE-ANGLE SWING ────────────────────────────────────────
+  // The owner: *"otwieranie drzwi wiekszy kat otwarcia 180 stopni, zawiasy."*
+  // A 155 or 170 door's free edge swings PAST its hinge plane by w x (-cos a);
+  // where that reaches the neighbour, the wall or the corner post on its hinge
+  // side the Check says so, in words. Never clipped: the leaf is cut as asked.
+  { n: 33, level: 'yellow', label: 'Door swing at 155 / 170 reaches a neighbour' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -854,6 +860,27 @@ export function runChecks({
     wallWidthOf,
     profile,
   });
+  // T78 F13 · the swing of a wide-angle door against what stands on its hinge side.
+  for (const front of clearances) {
+    const deg = Number(front.openAngleDeg);
+    if (!(deg > 90) || !front.hinge) continue;
+    const side = front.hinge === 'R' ? 'right' : 'left';
+    const edge = front.edges?.[side];
+    if (!edge) continue;
+    const over = round2(Number(front.w) * -Math.cos((deg * Math.PI) / 180));
+    const room = Number.isFinite(Number(edge.gapMm)) ? Number(edge.gapMm) + (Number(edge.haveClearanceMm) || 0) : null;
+    if (room == null || over <= room) continue;
+    const what = edge.kind === 'wall' ? 'the wall' : (edge.kind === 'cornerPost' || /post/i.test(String(edge.pieceId || '')) ? 'the corner post' : `its neighbour (${edge.kind})`);
+    out.push(finding(33, 'yellow', {
+      unitId: front.unitId || null,
+      unitNum: front.unitNum || '',
+      panelId: front.panelId || null,
+      message: `${front.unitNum ? `${front.unitNum} ` : ''}${front.panelId}: at ${deg} degrees its free edge swings ${over} mm past its hinge edge and `
+        + `${what} stands ${round2(room)} mm away on that side. The leaf is cut as asked; a ${deg === 170 ? '155' : 'standard'} hinge, `
+        + 'a gap or a filler clears it.',
+      subject: front.panelId ? { unitId: front.unitId, panelId: front.panelId, editor: 'element' } : null,
+    }));
+  }
   for (const row of frontGapRows(clearances, profile)) {
     if (row.level === 'ok') continue;
     const first = row.fronts?.[0] || {};

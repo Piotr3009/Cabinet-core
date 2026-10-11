@@ -3803,6 +3803,10 @@ export function computeCabinet(params, profileOverride) {
         }
         const vParams = {
           ...base,
+          // T78 F8 / F13 · in bifold leaf A takes the wide family (catalogue
+          // p. 116: the bi-fold hinge works with the 155 or 170) unless the
+          // door chose one itself.
+          ...(bifold && arm === 'A' && !base.hinge_family ? { hinge_family: 'wide' } : {}),
           type: cl.drawers ? budrTypeFor(cl.drawers) : type.parentType,
           width: span,
           depth: d,
@@ -10015,6 +10019,40 @@ export function computeCabinet(params, profileOverride) {
   // whose only drawers lived in a column hung 110° hinges over boxes that
   // need the wider swing. One count, both stacks.
   const innerDrawer = type.family === 'wardrobe' && (numDrawers + columnDrawerCount) > 0;
+  // ─── T78 F13 · THE DOOR CHOOSES A HINGE FAMILY ─────────────────────────────
+  // `door_hinge_family[id]` (the leaf's own), else the unit's `hinge_family`,
+  // else `standard`. The angle inside the family is derived (T22 law): the
+  // leaf carries it as `meta.openAngleDeg` only for the wide family, where it
+  // drives the scene's swing and the Check (#33); the standard family keeps
+  // the picture angle of the profile. The cup pattern does not move.
+  const hingeFamilyOf = (id) => {
+    const per = params?.door_hinge_family?.[id];
+    if (per === 'wide' || per === 'standard') return per;
+    return params?.hinge_family === 'wide' ? 'wide' : 'standard';
+  };
+  for (const pnl of panels) {
+    if (pnl.part !== 'FRONT' || pnl.role !== 'front' || !pnl.meta?.hinge) continue;
+    // An L's leaves were decided by their arms' virtual parents (the bi-fold's
+    // leaf A takes the wide family there): their word stands.
+    if (lCorner && pnl.meta?.arm && pnl.meta?.hingeFamily) continue;
+    const fam = hingeFamilyOf(pnl.id);
+    pnl.meta.hingeFamily = fam;
+    if (fam === 'wide') {
+      const sp = resolveDoorHinge({
+        frontThickness: pnl.thickness || frontT, innerDrawer, finish: cfg.hingeFinish, family: 'wide',
+      });
+      pnl.meta.openAngleDeg = sp.angle ?? null;
+      if (sp.angle == null) {
+        warnings.push({
+          code: 'HINGE_WIDE_NO_RUNG',
+          level: 'warn',
+          panel: pnl.id,
+          message: `${pnl.id}: the wide-angle family has no hinge for a ${pnl.thickness || frontT} mm front `
+            + '(reference/hardware/blum-hinges.json: the 170 to 21 mm, the 155 to 24 mm, owner to confirm). The standard family fits it.',
+        });
+      }
+    }
+  }
   const hingeGroups = new Map();
   if (hingedLeafCount > 0 && centres.length > 0) {
     // A kit whose door panels are not one-per-door (a fridge housing's fixed
@@ -10034,6 +10072,8 @@ export function computeCabinet(params, profileOverride) {
         frontThickness: frontT,
         innerDrawer,
         finish: cfg.hingeFinish,
+        // T78 F13 · the leaf's family.
+        family: pnl ? hingeFamilyOf(pnl.id) : 'standard',
       });
       // ─── TURN 36 (CLAUDE.md F6): PER-SEGMENT HINGE SETS ──────────────────
       // "A split is two doors, not one door with a line drawn on it." Each

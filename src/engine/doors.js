@@ -40,8 +40,14 @@ const DEG = Math.PI / 180;
  *               what is beside it is not a wall (a neighbour, open room)
  * @param {object} profile
  */
-export function doorOpenAngle({ doorWidth, hingeOffset = 0, gapToWall = null }, profile) {
-  const full = (profile?.doors?.openAngle ?? 99) * DEG;
+export function doorOpenAngle({
+  doorWidth, hingeOffset = 0, gapToWall = null, fullDeg = null,
+}, profile) {
+  // T78 F13 · a wide-angle family's door opens to its family's angle (the
+  // leaf's `meta.openAngleDeg`, 155 or 170); every other door to the
+  // profile's picture angle. The wall law below is unchanged: a door with a
+  // wall on its hinge side still stops square.
+  const full = (Number(fullDeg) > 0 ? Number(fullDeg) : (profile?.doors?.openAngle ?? 99)) * DEG;
   if (gapToWall == null) return full;
 
   const atWall = (profile?.doors?.openAngleAtWall ?? 90) * DEG;

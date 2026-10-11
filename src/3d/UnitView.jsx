@@ -2241,6 +2241,8 @@ export default function UnitView({
       doorWidth: panel?.w ?? result.panels.find((p) => p.part === 'FRONT')?.w ?? W,
       hingeOffset: profile.doors.gap / 2,
       gapToWall: gap ?? null,
+      // T78 F13 · a wide-angle family's leaf opens to its family's angle.
+      fullDeg: Number(panel?.meta?.openAngleDeg) > 0 ? Number(panel.meta.openAngleDeg) : null,
     }, profile);
   }, [wallGaps, result.panels, W, profile]);
 

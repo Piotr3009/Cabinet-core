@@ -86,6 +86,32 @@ export function blumHingeFamilies() {
   return FAMILIES;
 }
 
+/** T78 F13 · the wide family's thickness rule, from the file; null unloaded. */
+export function wideHingeRule() {
+  const rule = FAMILIES?.rules?.families?.wide?.hinge_by_front_thickness;
+  if (!Array.isArray(rule)) return null;
+  const rungs = rule
+    .map((r) => ({ max: Number(r?.max), angle: Number(r?.angle) }))
+    .filter((r) => r.max > 0 && r.angle > 0)
+    .sort((a, b) => a.max - b.max);
+  return rungs.length ? rungs : null;
+}
+
+/** T78 F13 · the wide family's article for an angle (screw-on, sprung), owner to confirm; null where the page gave none. */
+export function wideHingeArticle(angle) {
+  const h = FAMILIES?.families?.wide?.hinges?.[String(angle)];
+  const a = h?.articles || {};
+  const node = a.screw_on ?? a.screw_on_sprung ?? null;
+  const v = node && typeof node === 'object' && !Array.isArray(node) ? node.value : node;
+  return v == null ? null : String(v);
+}
+
+/** T78 F13 · the catalogue page the wide family's angle stands on, or null. */
+export function wideHingePage(angle) {
+  const h = FAMILIES?.families?.wide?.hinges?.[String(angle)];
+  return h?.opening_angle?.page ?? h?.articles?.screw_on?.page ?? null;
+}
+
 /** A catalogue leaf is `{ value, page, status, note }`; this reads the value. */
 const leafValue = (node) => (node && typeof node === 'object' && !Array.isArray(node) && 'value' in node ? node.value : node);
 const leafNumber = (node) => {
@@ -205,7 +231,24 @@ export function parseHingeCatalogue(raw) {
  *                   the caller knows what is behind the door
  * @returns {number|null} degrees, or null with no catalogue to read
  */
-export function hingeAngleFor({ frontThickness, innerDrawer = false } = {}) {
+export function hingeAngleFor({ frontThickness, innerDrawer = false, family = 'standard' } = {}) {
+  // ─── T78 F13 · THE WIDE FAMILY (155 / 170) ────────────────────────────────
+  // The owner: *"otwieranie drzwi wiekszy kat otwarcia 180 stopni, zawiasy."*
+  // T22 law held: the ANGLE stays derived from the front thickness; the door
+  // chooses a FAMILY (`standard` | `wide`), and inside the wide family the
+  // catalogue's rule (reference/hardware/blum-hinges.json
+  // rules.families.wide.hinge_by_front_thickness: the 170 up to the thickness
+  // Blum needs no gap for, the 155 above it, no rung past 24; owner to
+  // confirm) answers exactly as the CLIP top rule answers for `standard`.
+  // Unloaded, the wide family has no rung and the BOM says so.
+  if (family === 'wide') {
+    const rule = wideHingeRule();
+    if (!rule) return null;
+    const t = Number(frontThickness);
+    if (!(t > 0)) return null;
+    for (const rung of rule) if (t <= rung.max) return rung.angle;
+    return null;
+  }
   const cat = CATALOGUE;
   if (!cat) return null;
   if (innerDrawer && cat.rules.wardrobeInnerDrawer) return cat.rules.wardrobeInnerDrawer;
@@ -413,10 +456,33 @@ export function hingeAutomat({
  *            assigned:boolean, ruleAngle:number|null, complete:boolean}}
  */
 export function resolveDoorHinge({
-  assigned = null, frontThickness = null, innerDrawer = false, finish = null,
+  assigned = null, frontThickness = null, innerDrawer = false, finish = null, family = 'standard',
 } = {}) {
-  const ruleAngle = hingeAngleFor({ frontThickness, innerDrawer });
+  // T78 F13 · the door's FAMILY; the angle inside it is still derived (T22).
+  const hingeFamily = family === 'wide' ? 'wide' : 'standard';
+  const ruleAngle = hingeAngleFor({ frontThickness, innerDrawer, family: hingeFamily });
   const wantFinish = finish ? String(finish).toLowerCase() : null;
+  if (hingeFamily === 'wide' && !assigned) {
+    // The wide family is the Blum file's: its article (owner to confirm) when
+    // the CLIP top catalogue has no row of that angle; no rung is said in words
+    // by the BOM (`complete: false`, no article).
+    const [row] = ruleAngle != null ? hingeFamilies({ angle: ruleAngle, finish: wantFinish, role: 'hinge' }) : [];
+    const article = row?.article ?? (ruleAngle != null ? wideHingeArticle(ruleAngle) : null);
+    return {
+      angle: ruleAngle,
+      family: ruleAngle != null ? (row?.family ?? `CLIP top ${ruleAngle} (wide-angle)`) : null,
+      article,
+      articles: row?.articles ? [...row.articles] : (article ? [article] : []),
+      finish: row?.finish ?? wantFinish,
+      file: row?.file ?? null,
+      assigned: false,
+      ruleAngle,
+      complete: Boolean(article),
+      hingeFamily,
+      page: ruleAngle != null ? wideHingePage(ruleAngle) : null,
+      status: 'owner to confirm',
+    };
+  }
 
   if (assigned) {
     const own = hingeFamily(assigned);
@@ -431,6 +497,7 @@ export function resolveDoorHinge({
         assigned: true,
         ruleAngle,
         complete: Boolean(own.article),
+        hingeFamily,
       };
     }
   }
@@ -447,6 +514,7 @@ export function resolveDoorHinge({
       assigned: false,
       ruleAngle,
       complete: false,
+      hingeFamily,
     };
   }
   return {
@@ -462,6 +530,7 @@ export function resolveDoorHinge({
     assigned: false,
     ruleAngle,
     complete: Boolean(match.article),
+    hingeFamily,
   };
 }
 

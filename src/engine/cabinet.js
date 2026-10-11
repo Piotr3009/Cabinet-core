@@ -3909,7 +3909,13 @@ export function computeCabinet(params, profileOverride) {
           const drills = a.v.drills.filter((x) => x.panel === a.doorId);
           // …and what the parent said about THIS leaf (a shaker frame that
           // does not fit, a trim too deep), said on the L.
-          const said = (a.v.warnings || []).filter((wn) => wn.panel === a.doorId);
+          // T77 F7 · the walk found each finding of a decorated leaf said
+          // twice on the L's panel: the L's own decoration pass (after this
+          // block) decorates this leaf again and says its findings once, so
+          // the parent's decoration findings are not carried over.
+          const vDeco = vDoor.meta?.frontDecoration;
+          const decoCodes = new Set([...(vDeco?.problems || []), ...(vDeco?.advisories || [])].map((x) => x.code));
+          const said = (a.v.warnings || []).filter((wn) => wn.panel === a.doorId && !decoCodes.has(wn.code));
           doors.push({
             arm, door, drills, said,
           });

@@ -23,6 +23,7 @@ import { LAYER_CLASS } from '../lib/modalLayer.js';
 import {
   FRONT_REFERENCE_LAYER, frontDecorationOf, frontDecorationProblems,
   frontDecorationLayers, frontPanelEntities, hasFrontDecorations, isOrnateReference,
+  ORNATE_REFERENCE_MESSAGE,
 } from '../engine/cnc/frontOperations.js';
 import { formatMm } from '../engine/format.js';
 
@@ -810,7 +811,21 @@ function Part({
           data-cnc-front-blocked={panel.id}
         >
           <title>{frontProblems.join('\n')}</title>
-          {isOrnateReference(panel) && decoration?.status === 'ready' ? 'Proposed relief reference' : 'Decoration blocked'}
+          Decoration blocked
+        </text>
+      )}
+      {/* T77 F7 · since F4 a relief that built is not a fault, so the blocked
+          label above no longer carries it (the walk found GPT's label could
+          not be reached): a ready Ornate leaf says it is a proposal, in the
+          colour of its reference contours. */}
+      {front && frontProblems.length === 0 && isOrnateReference(panel) && decoration?.status === 'ready' && (
+        <text
+          x={labelX} y={labelY - annotation.blockLabelMm * 2}
+          fill="#c3a06a" textAnchor="middle" fontSize={annotation.blockLabelMm}
+          data-cnc-front-proposal={panel.id}
+        >
+          <title>{ORNATE_REFERENCE_MESSAGE}</title>
+          Proposed relief reference
         </text>
       )}
 

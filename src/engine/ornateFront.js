@@ -246,6 +246,13 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   if (!Number.isInteger(c.variant) || c.variant !== ORNATE_STYLE_IDS.indexOf(style) + 1) return fail('ORNATE_VARIANT', 'The selected style and its variant do not match.');
   if (typeof c.mirror !== 'boolean' || typeof c.ornament !== 'boolean') return fail('ORNATE_BOOLEAN', 'Mirror and ornament settings must be booleans.');
   if (c.variant === 4 && c.ornament) return fail('ORNATE_VARIANT', 'Variant 4 is the version without an ornament.');
+  // T77 F6 · the ornament, through its one function, named on the record as
+  // soon as the variant is known: a relief refused further down (a board too
+  // thin, radii that do not fit) still says which ornament it carries (the
+  // walk found the label missing on a refused leaf, T77 F7).
+  const ornament = ornamentSurface(c.variant, c, profile);
+  result.ornament = ornament.label;
+  if (ornament.problem) return fail(ornament.problem.code, ornament.problem.message);
   for (const key of ['boardMm', 'referenceWidthMm', 'referenceHeightMm', 'outerFrameMm', 'innerFrameMm', 'innerRadiusMm', 'secondaryRadiusMm', 'cornerDepthMm', 'ornamentReliefMm', 'ornamentScale']) {
     if (!(Number.isFinite(c[key]) && c[key] > 0)) return fail('ORNATE_PARAMETER', `${key} must be a finite positive number.`);
   }
@@ -322,10 +329,6 @@ export function buildOrnateFront({ panel, config, style = config?.style, profile
   const motifScale = (corner) => c.ornamentScale * outerRadii[corner] / motifReferenceRadius;
   // The original 600 mm plate sets a 180 mm outer corner radius. The divisor
   // derives that same radius from the profile's reference width and bands.
-  // T77 F6 · the ornament, through its one function.
-  const ornament = ornamentSurface(c.variant, c, profile);
-  if (ornament.problem) return fail(ornament.problem.code, ornament.problem.message);
-  result.ornament = ornament.label;
   const placements = c.ornament ? activeCorners.map((corner) => ({ corner, origin: corners[corner], axes: axes[corner], scale: motifScale(corner) })) : [];
   if (placements.some((p) => !(p.scale > 0) || p.scale > 4)) return fail('ORNATE_ORNAMENT_FIT', 'The reference ornament scale is not suitable for this corner.');
   const placedPoint = (placement, p) => [

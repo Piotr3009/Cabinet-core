@@ -105,8 +105,13 @@ export function exportReadiness(panels, drills = []) {
 
 // Proposed CAD/CAM references use the existing geometry state, separately
 // from the unchanged slab state. A reference is never counted as a cut line.
+// T77 F7 · the walk found a refused relief (a 12 mm board) counted here
+// though only its invalid-reference JSON shipped: a line is a leaf whose
+// relief model (its STL) is in the package.
 function withReferenceReadiness(ready, files) {
-  const lines = [...ready.lines, ...files.filter((file) => file.type === 'json').map((file) => ({
+  const shipped = new Set(files.filter((file) => file.type === 'stl').map((file) => `${file.unitId}|${file.unitNum}|${file.panelId}`));
+  const lines = [...ready.lines, ...files.filter((file) => file.type === 'json'
+    && shipped.has(`${file.unitId}|${file.unitNum}|${file.panelId}`)).map((file) => ({
     id: `${file.unitNum} ${file.panelId} Ornate proposed reference`, part: 'front_reference', state: 'geometry',
   }))];
   return { lines, ...readinessBanner(lines) };

@@ -103,14 +103,14 @@
       "hingeTwoBelow": null,
       "worktops": [
         {
-          "id": "worktop_p5o5xm0",
+          "id": "worktop_w2flr0q",
           "unitIds": [
-            "u_8fa37hx",
-            "u_k2jqhxm",
+            "u_tm5qah4",
             "u_qtuwtlm",
-            "u_m2ysl7k",
-            "u_n0cqxrs",
-            "u_tktnlz6"
+            "u_yeyqxa0",
+            "u_8fa37hx",
+            "u_0vhhp9p",
+            "u_5qhayb4"
           ],
           "decor": null,
           "extendLeft": 0,
@@ -118,12 +118,12 @@
           "extendFront": 0
         },
         {
-          "id": "worktop_a1qk07p",
+          "id": "worktop_whc1pkf",
           "unitIds": [
-            "u_5jqrl2x",
-            "u_3h747wy",
-            "u_yc8erys",
-            "u_j7dersc"
+            "u_j66yl4o",
+            "u_n0cqxrs",
+            "u_33j760v",
+            "u_27r7pcm"
           ],
           "decor": null,
           "extendLeft": 0,
@@ -131,7 +131,7 @@
           "extendFront": 0
         },
         {
-          "id": "worktop_gdf3h1g",
+          "id": "worktop_p5o5xm0",
           "unitIds": [
             "u_pf4ys2v"
           ],
@@ -142,7 +142,7 @@
           "kind": "L"
         },
         {
-          "id": "worktop_tjrfjki",
+          "id": "worktop_a1qk07p",
           "unitIds": [
             "u_hjx65we",
             "u_82nr5c0"
@@ -431,12 +431,11 @@
         "top_infill_mm": 0,
         "side_infill_left_mm": 0,
         "side_infill_right_mm": 0,
-        "front_edge_trim": null,
         "shelf_schema": 2
       }
     },
     {
-      "id": "u_qtuwtlm",
+      "id": "u_yeyqxa0",
       "type": "BUD",
       "position": {
         "wall": 0,
@@ -486,7 +485,7 @@
       }
     },
     {
-      "id": "u_k2jqhxm",
+      "id": "u_qtuwtlm",
       "type": "SINK",
       "position": {
         "wall": 0,
@@ -536,7 +535,7 @@
       }
     },
     {
-      "id": "u_8fa37hx",
+      "id": "u_tm5qah4",
       "type": "DW_PANEL",
       "position": {
         "wall": 0,
@@ -577,11 +576,11 @@
       }
     },
     {
-      "id": "u_m2ysl7k",
+      "id": "u_8fa37hx",
       "type": "BUD",
       "position": {
         "wall": 1,
-        "x_mm": 646,
+        "x_mm": 636,
         "rotation_deg": 0
       },
       "params": {
@@ -616,7 +615,7 @@
         "top_infill_mm": 0,
         "side_infill_left_mm": 0,
         "side_infill_right_mm": 0,
-        "corner_post_left_mm": 50,
+        "corner_post_left_mm": 40,
         "corner_hinge_auto": {
           "was": "L",
           "wrote": "L"
@@ -631,11 +630,11 @@
       }
     },
     {
-      "id": "u_n0cqxrs",
+      "id": "u_0vhhp9p",
       "type": "BUDR",
       "position": {
         "wall": 1,
-        "x_mm": 1246,
+        "x_mm": 1236,
         "rotation_deg": 0
       },
       "params": {
@@ -662,19 +661,19 @@
             "width_mm": 600,
             "items": [
               {
-                "id": "drawer_tzx1i97",
+                "id": "drawer_m2ysl7k",
                 "kind": "drawer",
                 "index": 1,
                 "mount": "overlay"
               },
               {
-                "id": "drawer_0vhhp9p",
+                "id": "drawer_254vu46",
                 "kind": "drawer",
                 "index": 2,
                 "mount": "overlay"
               },
               {
-                "id": "drawer_5qhayb4",
+                "id": "drawer_tzx1i97",
                 "kind": "drawer",
                 "index": 3,
                 "mount": "overlay"
@@ -690,11 +689,11 @@
       }
     },
     {
-      "id": "u_tktnlz6",
+      "id": "u_5qhayb4",
       "type": "BUD",
       "position": {
         "wall": 1,
-        "x_mm": 1846,
+        "x_mm": 1836,
         "rotation_deg": 0
       },
       "params": {
@@ -734,7 +733,7 @@
       }
     },
     {
-      "id": "u_3h747wy",
+      "id": "u_n0cqxrs",
       "type": "BLIND_BASE",
       "position": {
         "wall": 1,
@@ -775,21 +774,22 @@
         "side_infill_left_mm": 0,
         "side_infill_right_mm": 40,
         "front_edge_trim": null,
-        "blind_mm": 609,
+        "blind_mm": 599,
+        "corner_post_at_mm": 556,
         "shelf_schema": 2
       }
     },
     {
-      "id": "u_5jqrl2x",
+      "id": "u_j66yl4o",
       "type": "BUD",
       "position": {
         "wall": 1,
-        "x_mm": 2446,
+        "x_mm": 2436,
         "rotation_deg": 0
       },
       "params": {
         "type": "BUD",
-        "width": 514,
+        "width": 524,
         "height": 770,
         "depth": 558,
         "board_t": 18,
@@ -824,11 +824,11 @@
       }
     },
     {
-      "id": "u_yc8erys",
+      "id": "u_33j760v",
       "type": "BUD",
       "position": {
         "wall": 2,
-        "x_mm": 646,
+        "x_mm": 636,
         "rotation_deg": 0
       },
       "params": {
@@ -863,7 +863,7 @@
         "top_infill_mm": 0,
         "side_infill_left_mm": 0,
         "side_infill_right_mm": 0,
-        "corner_post_left_mm": 50,
+        "corner_butt_left_mm": 40,
         "corner_hinge_auto": {
           "was": "L",
           "wrote": "L"
@@ -878,11 +878,11 @@
       }
     },
     {
-      "id": "u_j7dersc",
+      "id": "u_27r7pcm",
       "type": "BUDR",
       "position": {
         "wall": 2,
-        "x_mm": 1246,
+        "x_mm": 1236,
         "rotation_deg": 0
       },
       "params": {
@@ -909,19 +909,19 @@
             "width_mm": 600,
             "items": [
               {
-                "id": "drawer_jv0pcef",
+                "id": "drawer_yc8erys",
                 "kind": "drawer",
                 "index": 1,
                 "mount": "overlay"
               },
               {
-                "id": "drawer_27r7pcm",
+                "id": "drawer_z9ose9c",
                 "kind": "drawer",
                 "index": 2,
                 "mount": "overlay"
               },
               {
-                "id": "drawer_wsetnw4",
+                "id": "drawer_jv0pcef",
                 "kind": "drawer",
                 "index": 3,
                 "mount": "overlay"
@@ -937,7 +937,7 @@
       }
     },
     {
-      "id": "u_hot432t",
+      "id": "u_wsetnw4",
       "type": "WUD",
       "position": {
         "wall": 0,
@@ -987,7 +987,7 @@
       }
     },
     {
-      "id": "u_ccozl3k",
+      "id": "u_hot432t",
       "type": "WUD",
       "position": {
         "wall": 0,
@@ -1031,11 +1031,11 @@
       }
     },
     {
-      "id": "u_3160ciq",
+      "id": "u_uiyf7at",
       "type": "WUD",
       "position": {
         "wall": 1,
-        "x_mm": 488,
+        "x_mm": 478,
         "rotation_deg": 0
       },
       "params": {
@@ -1077,7 +1077,7 @@
             "right": 0
           }
         },
-        "corner_post_left_mm": 50,
+        "corner_post_left_mm": 40,
         "corner_hinge_auto": {
           "was": "L",
           "wrote": "L"
@@ -1086,11 +1086,11 @@
       }
     },
     {
-      "id": "u_whc1pkf",
+      "id": "u_3160ciq",
       "type": "WUD",
       "position": {
         "wall": 1,
-        "x_mm": 1088,
+        "x_mm": 1078,
         "rotation_deg": 0
       },
       "params": {

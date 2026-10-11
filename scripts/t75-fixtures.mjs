@@ -162,7 +162,10 @@ export function buildCornerKitchen() {
   // wall 1 / wall 2: the blind corner, wall 1's run closed up to it.
   const bl = doors(add('BLIND_BASE', {}, 'the blind base'));
   toWall(bl, 1, 4000, 'blind base into the wall 1 / wall 2 corner');
-  const b4 = doors(add('BUD', { near: b3, side: 'R', params: { width: 514 } }, 'wall 1, the filler cupboard'));
+  // AMENDED BY T78 F10: the run on wall 1 stands on the post stop, which is the
+  // owner's 40 now (it was 50), so the filler closes whatever is left to the blind.
+  const fillerW = U(bl).position.x_mm - (U(b3).position.x_mm + U(b3).params.width);
+  const b4 = doors(add('BUD', { near: b3, side: 'R', params: { width: fillerW } }, 'wall 1, the filler cupboard'));
   if (U(b4).position.x_mm + U(b4).params.width !== U(bl).position.x_mm) {
     throw new Error(`wall 1 is not closed: ${U(b4).position.x_mm} + ${U(b4).params.width} against the blind at ${U(bl).position.x_mm}`);
   }

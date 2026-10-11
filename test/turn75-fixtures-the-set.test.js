@@ -250,13 +250,22 @@ test('T75 set · the corner kitchen: the corners the engine solved, the joints a
   // F2: every corner post the engine cuts is on the cut list at its size.
   const texts = cutTexts(set);
   const posted = S().units.filter((u) => u.params.corner_post_left_mm > 0 || u.params.corner_post_right_mm > 0);
-  assert.equal(posted.length, 3, 'the base post on wall B, the post at the blind stop, the wall unit post');
+  // AMENDED BY T78 F10: the strip at the BLIND stop is the blind kit's own part
+  // (`${unitNum}-POST`, cut the moment the kit is placed); the run landing there
+  // carries the stop record only (`corner_butt_*_mm`), so two auto posts remain.
+  assert.equal(posted.length, 2, 'the base post on wall B, the wall unit post');
   for (const u of posted) {
     const id = u.params.corner_post_left_mm > 0 ? 'CORNER-POST-L' : 'CORNER-POST-R';
     const post = assertCutRow(texts, u, id);
     assert.equal(post.w, P.corner.postMm);
     assert.equal(post.role, 'corner_post');
   }
+  const butted = S().units.filter((u) => u.params.corner_butt_left_mm > 0 || u.params.corner_butt_right_mm > 0);
+  assert.equal(butted.length, 1, 'the run at the blind stop carries the stop record');
+  const blindKit = S().units.find((u) => u.type === 'BLIND_BASE');
+  const kitPost = assertCutRow(texts, blindKit, `${blindKit.params.unit_num}-POST`);
+  assert.equal(kitPost.w, P.corner.postMm);
+  assert.equal(kitPost.role, 'corner_post');
   // F3: the blind blank, the engine's arithmetic.
   const blind = S().units.find((u) => u.type === 'BLIND_BASE');
   const blank = assertCutRow(texts, blind, `${blind.params.unit_num}-BLANK`);

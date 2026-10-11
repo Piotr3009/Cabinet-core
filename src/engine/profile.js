@@ -445,7 +445,10 @@ export const DEFAULT_CABINET_PROFILE = {
   // deleted by T75 F4 (kasacja, asserted by its test), so they live in the
   // corner's own block beside the post.
   corner: {
-    postMm: 50,              // T75 proposed, owner to confirm
+    // T78 F10 · the owner, 11.10.2026, decided: *"listwa narozinkowa musi miec
+    // 40 mm bo jak beda raczki to sie nie otworza."*  The strip is the BLIND
+    // kit's own part (front material, flat, 40 x front_t, plinth line to top).
+    postMm: 40,              // owner 11.10.2026, decided
     overlap: 'adjacent',     // T75 proposed, owner to confirm
     leafMinMm: 200,          // T78 proposed, owner to confirm
     wallLeafMaxMm: 700,      // owner 11.10.2026, decided ("wieksze niz 700")

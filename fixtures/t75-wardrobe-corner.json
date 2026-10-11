@@ -321,12 +321,11 @@
         "top_infill_mm": 0,
         "side_infill_left_mm": 0,
         "side_infill_right_mm": 0,
-        "front_edge_trim": null,
         "shelf_schema": 2
       }
     },
     {
-      "id": "u_y304xel",
+      "id": "u_xvi6lwb",
       "type": "WARDROBE",
       "position": {
         "wall": 0,
@@ -375,11 +374,11 @@
       }
     },
     {
-      "id": "u_aj7kckg",
+      "id": "u_y304xel",
       "type": "WARDROBE",
       "position": {
         "wall": 1,
-        "x_mm": 656,
+        "x_mm": 646,
         "rotation_deg": 0
       },
       "params": {
@@ -414,7 +413,7 @@
         "top_infill_mm": 0,
         "side_infill_left_mm": 0,
         "side_infill_right_mm": 0,
-        "corner_post_left_mm": 50,
+        "corner_post_left_mm": 40,
         "corner_hinge_auto": {
           "was": "L",
           "wrote": "L"
@@ -429,7 +428,7 @@
       }
     },
     {
-      "id": "u_5100c8n",
+      "id": "u_aj7kckg",
       "type": "BLIND_WARDROBE",
       "position": {
         "wall": 1,
@@ -469,16 +468,17 @@
         "top_infill_mm": 0,
         "side_infill_left_mm": 0,
         "side_infill_right_mm": 40,
-        "blind_mm": 619,
+        "blind_mm": 609,
+        "corner_post_at_mm": 566,
         "shelf_schema": 2
       }
     },
     {
-      "id": "u_bdr2wvm",
+      "id": "u_0ph9yy9",
       "type": "WARDROBE",
       "position": {
         "wall": 2,
-        "x_mm": 656,
+        "x_mm": 646,
         "rotation_deg": 0
       },
       "params": {
@@ -513,7 +513,7 @@
         "top_infill_mm": 0,
         "side_infill_left_mm": 0,
         "side_infill_right_mm": 0,
-        "corner_post_left_mm": 50,
+        "corner_butt_left_mm": 40,
         "corner_hinge_auto": {
           "was": "L",
           "wrote": "L"
@@ -528,7 +528,7 @@
       }
     },
     {
-      "id": "u_5wz6uh3",
+      "id": "u_bdr2wvm",
       "type": "WARDROBE",
       "position": {
         "wall": 3,

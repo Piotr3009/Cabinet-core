@@ -2229,12 +2229,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     {
       const spec = cornerSpec(profile);
       const posts = new Map();
+      // T78 F10 · when the occupant is a BLIND kit the strip is the kit's own
+      // part (cabinet.js, `${unitNum}-POST`); the run landing on the stop gets
+      // the STOP RECORD only (`corner_butt_*_mm`: the run ends there, its door
+      // sees a rigid neighbour, no board is cut for it).
+      const butts = new Map();
       for (const c of cornersOf({ units: next, walls, profile })) {
         if (c.kind !== 'internal' || c.stopMm == null) continue;
         const occupant = next.find((x) => x.id === c.runA.unitId);
         if (!occupant || occupantKind(occupant) === 'L') continue;
         if (Math.abs(c.runB.gapMm - c.stopMm) > 1) continue;
-        posts.set(c.runB.unitId, { ...(posts.get(c.runB.unitId) || {}), [c.runB.side]: spec.postMm });
+        const into = isBlindKit(occupant.type) ? butts : posts;
+        into.set(c.runB.unitId, { ...(into.get(c.runB.unitId) || {}), [c.runB.side]: spec.postMm });
       }
       for (let i = 0; i < next.length; i += 1) {
         const u = next[i];
@@ -2243,10 +2249,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         const right = want.right || 0;
         const hadLeft = Number(u.params?.corner_post_left_mm) || 0;
         const hadRight = Number(u.params?.corner_post_right_mm) || 0;
-        if (left === hadLeft && right === hadRight) continue;
+        const butt = butts.get(u.id) || {};
+        const bLeft = butt.left || 0;
+        const bRight = butt.right || 0;
+        const hadBLeft = Number(u.params?.corner_butt_left_mm) || 0;
+        const hadBRight = Number(u.params?.corner_butt_right_mm) || 0;
+        if (left === hadLeft && right === hadRight && bLeft === hadBLeft && bRight === hadBRight) continue;
         const params = { ...u.params };
         if (left) params.corner_post_left_mm = left; else delete params.corner_post_left_mm;
         if (right) params.corner_post_right_mm = right; else delete params.corner_post_right_mm;
+        if (bLeft) params.corner_butt_left_mm = bLeft; else delete params.corner_butt_left_mm;
+        if (bRight) params.corner_butt_right_mm = bRight; else delete params.corner_butt_right_mm;
         next[i] = { ...u, params };
       }
     }
@@ -2412,7 +2425,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           : null;
         const params = { ...u.params, blind_side: side };
         if (auto != null && auto > 0) params.blind_mm = auto; else delete params.blind_mm;
-        if (params.blind_side !== u.params?.blind_side || params.blind_mm !== u.params?.blind_mm) {
+        // T78 F10 · where the kit's own corner strip stands: the neighbour's
+        // face plane, measured from this unit's blind end (its gap to the wall
+        // taken off). Absent, the engine takes the family's own face plane.
+        const postAt = b ? Math.round((cornerFaceMm(b, profile) - c.runA.gapMm) * 100) / 100 : null;
+        if (postAt != null && postAt > 0) params.corner_post_at_mm = postAt; else delete params.corner_post_at_mm;
+        if (params.blind_side !== u.params?.blind_side || params.blind_mm !== u.params?.blind_mm
+          || params.corner_post_at_mm !== u.params?.corner_post_at_mm) {
           next[i] = { ...u, params };
         }
       }

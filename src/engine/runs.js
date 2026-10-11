@@ -393,6 +393,15 @@ export function unitVerticals(units, profile) {
       const width = Number(unit.params?.[key]) || 0;
       if (width > 0) add(side, width, 0, 'corner-post', `${side}-post`);
     }
+    // T78 F10 · the run that stops on a BLIND kit's own corner strip: the strip
+    // is the blind kit's board, but it stands here, beside this unit in its
+    // door plane, so the door beside it sees the same rigid neighbour.
+    for (const [side, key] of [['L', 'corner_butt_left_mm'], ['R', 'corner_butt_right_mm']]) {
+      const width = Number(unit.params?.[key]) || 0;
+      if (width > 0 && !(Number(unit.params?.[side === 'L' ? 'corner_post_left_mm' : 'corner_post_right_mm']) > 0)) {
+        add(side, width, 0, 'corner-post', `${side}-post`);
+      }
+    }
   }
   return out;
 }
@@ -589,7 +598,9 @@ export function runEnd(run, side, {
   // there. Not 'open' (a top infill or a cornice would turn and return into the
   // dead corner, the probe measured 438 mm of it) and not a 'wall': it stops
   // square on the post's outer edge, in the plane of the run round the corner.
-  const postMm = Number(unit.params?.[side === 'left' ? 'corner_post_left_mm' : 'corner_post_right_mm']) || 0;
+  // T78 F10 · …or on a blind kit's own strip (`corner_butt_*_mm`, the stop record).
+  const postMm = Number(unit.params?.[side === 'left' ? 'corner_post_left_mm' : 'corner_post_right_mm'])
+    || Number(unit.params?.[side === 'left' ? 'corner_butt_left_mm' : 'corner_butt_right_mm']) || 0;
   if (postMm > 0) {
     return { kind: 'corner', x: side === 'left' ? carcassEdge - postMm : carcassEdge + postMm };
   }

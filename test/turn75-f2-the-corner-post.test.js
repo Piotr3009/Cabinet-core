@@ -27,7 +27,9 @@ const S = () => useProjectStore.getState();
 const U = (id) => S().units.find((u) => u.id === id);
 
 test('F2 · the numbers are the profile\'s, marked proposed: post 50, rule 7 at 3', () => {
-  assert.equal(P.corner.postMm, 50);
+  // AMENDED BY T78 F10: the owner decided the strip, 11.10.2026: *"listwa
+  // narozinkowa musi miec 40 mm bo jak beda raczki to sie nie otworza."*
+  assert.equal(P.corner.postMm, 40);
   assert.equal(P.doors.clearance.corner, 3);
   assert.equal(clearanceMatrix(P)[NEIGHBOUR.CORNER], 3);
   // A profile that names no corner number keeps rule 7 parked, as T31 had it.
@@ -73,10 +75,11 @@ test('F2 · run B lands ON the stop with the magnet, and the post appears', () =
   S().moveUnit(b, 0, 0);
   const face = 10 + U(a).params.depth + P.doors.gap + U(a).params.front_t;
   assert.equal(U(b).position.x_mm, face + P.corner.postMm, 'B stopped on A\'s face plus the post');
-  assert.equal(U(b).params.corner_post_left_mm, 50, 'the post appears when the unit lands');
+  // AMENDED BY T78 F10: the auto post is the profile's number (40, the owner's).
+  assert.equal(U(b).params.corner_post_left_mm, P.corner.postMm, 'the post appears when the unit lands');
   const post = S().unitResult(b).panels.find((x) => x.role === 'corner_post');
   assert.ok(post);
-  assert.equal(post.box.x, -50, 'on B\'s corner side');
+  assert.equal(post.box.x, -P.corner.postMm, 'on B\'s corner side');
   // The corner is answered: no Check #27.
   assert.equal(S().runChecks().filter((f) => f.check === 27).length, 0);
 });
@@ -88,7 +91,7 @@ test('F2 · pulled away, the post goes; pushed back, it returns', () => {
   assert.equal(U(b).params.corner_post_left_mm, undefined, 'the post outlived its reason');
   assert.equal(S().unitResult(b).panels.filter((x) => x.role === 'corner_post').length, 0);
   S().moveUnit(b, 0, 0);
-  assert.equal(U(b).params.corner_post_left_mm, 50);
+  assert.equal(U(b).params.corner_post_left_mm, P.corner.postMm);
 });
 
 test('F2 · rule 7 measures: the door beside the post stands 3 inside its carcass end', () => {

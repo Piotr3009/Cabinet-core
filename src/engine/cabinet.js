@@ -3740,6 +3740,8 @@ export function computeCabinet(params, profileOverride) {
         'side_infill_right_mm', 'end_panels', 'corner_post_left_mm', 'corner_post_right_mm', 'bottom_mask',
         'cornice', 'slope_cut', 'slopeCut', 'bay_doors', 'hinged_carcass_sides', 'front_edge_trim',
         'element_overrides', 'drawers', 'blind_mm', 'blind_mm_own', 'blind_side',
+        // T78 F10 · the blind kit's own corner strip and the stop records.
+        'corner_post_at_mm', 'corner_butt_left_mm', 'corner_butt_right_mm',
       ];
       const arms = {};
       for (const arm of ['A', 'B']) {
@@ -7508,6 +7510,85 @@ export function computeCabinet(params, profileOverride) {
           ...(blind.own ? { own: true } : {}),
         },
       }));
+      // ─── T78 F10 · THE 40 MM CORNER STRIP IS THE BLIND KIT'S OWN PART ────
+      // The owner, 11.10.2026: *"slepy naroznik powinien miec panel i listwe 40
+      // mm narozinkowa zeby odsunac jedna szafke od drugiej, pusta szafka nic
+      // nie daje"*; *"listwa narozinkowa musi miec 40 mm bo jak beda raczki to
+      // sie nie otworza."*  T75 F2 cut the post as the ADJACENT run's auto-part
+      // (`corner_post_*_mm`, written when that run landed on the stop) and it
+      // was 50. It is the blind kit's from the moment the kit is placed: a
+      // board of the FRONT material, flat (no return), `profile.corner.postMm`
+      // (40, the owner's) by front_t, from the plinth line to the unit top,
+      // standing in the FRONT PLANE OF THE ADJACENT RUN at the corner: that
+      // plane is `corner_post_at_mm` from the blind end (the store writes it
+      // from the rulebook: the neighbour's face less this unit's gap to the
+      // wall); alone, the family's own face plane less the room's wall
+      // clearance, so the cut list carries BLANK and POST at once. A second
+      // run landing on the stop changes nothing about them; pulling it away
+      // removes nothing (`corner_butt_*_mm` on the neighbour is the stop
+      // record, never a board). The corner stop stays d_A_face + postMm.
+      // ─── T78 F11 · THE HAFELE BLIND-CORNER PULL-OUT ──────────────────────
+      // A bought mechanism in the BLIND part (behind the blank): one BOM line,
+      // a placeholder body of two wire trays that swing out, ZERO holes, the
+      // GLB slot `KIT_MODEL_SLOTS.blind_pullout` for the day the owner drops a
+      // model in. The kit's shelves stepped aside in normalizeParams; a fixed
+      // shelf refused it there, said here.
+      if (cfg.blindPulloutRefused) {
+        warnings.push({
+          code: 'BLIND_PULLOUT_REFUSED',
+          level: 'warn',
+          message: `${unitNum}: a fixed shelf stands in the blind corner pull-out's way. Remove the fixed shelf first; adjustable shelves step aside on their own.`,
+        });
+      }
+      if (cfg.blindPullout) {
+        const BP = P.corner?.blindPullout || {};
+        const trayCount = Math.max(1, Number(BP.trays) || 2);
+        const innerH = H - 2 * G;
+        const left = blind.side === 'left';
+        cornerKitBodies.push({
+          id: 'blind-pullout',
+          kind: 'blind_pullout',
+          label: BP.label || 'Hafele blind corner pull-out',
+          placeholder: true,
+          side: blind.side,
+          box: {
+            x: roundTo(left ? G : W - blind.mm, 4), y: G, z: G, w: roundTo(blind.mm - G, 4), h: roundTo(innerH, 4), d: roundTo(D - 2 * G, 4),
+          },
+          trayMm: Number(BP.trayMm) || 20,
+          clearMm: Number(BP.clearMm) || 10,
+          trays: Array.from({ length: trayCount }, (_, i) => roundTo(G + (innerH * (i + 1)) / (trayCount + 1), 4)),
+        });
+      }
+      const postW = Number(P.corner?.postMm) || 0;
+      if (postW > 0 && H > 0) {
+        const faceOwn = D + P.doors.gap + frontT;
+        const postAt = Number(params?.corner_post_at_mm) > 0
+          ? Number(params.corner_post_at_mm)
+          : faceOwn - Math.max(0, Number(P.room?.wallBackClearance) || 0);
+        const left = blind.side === 'left';
+        panels.push(panel({
+          id: `${unitNum}-POST`,
+          part: 'CORNER-POST',
+          role: 'corner_post',
+          w: postW,
+          h: H,
+          thickness: frontT,
+          edgeCode: `${codes.left}${codes.right}`,
+          edgeLen: metres(2 * H),
+          box: {
+            x: roundTo(left ? postAt - frontT : W - postAt, 4), y: 0, z: roundTo(faceOwn, 4), w: frontT, h: H, d: postW,
+          },
+          cnc: rectGeometry(postW, H),
+          meta: {
+            side: blind.side,
+            corner: 'post',
+            kit: 'blind',
+            at_mm: roundTo(postAt, 4),
+            readiness: 'geometry',
+            fixing: 'manual',
+          },
+        }));
+      }
     }
   } else if (!dropsForward && !bayDoors.length && doorCount === 2) {
     panels.push(faceLeaf(`${unitNum}-FL`, P.doors.gap / 2, 'L'));

@@ -21,6 +21,8 @@ import {
 import { roomWalls, rectCorners, lCorners } from '../src/engine/room.js';
 import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 
+// AMENDED BY T78 F10: the post is the profile's number (40, the owner's), not the 50 of the day.
+const POST = cornerSpec(P).postMm;
 const ROOT = new URL('../', import.meta.url).pathname;
 const walls = roomWalls({ corners: rectCorners(4000, 3000) });
 const bud = (id, wall, x, extra = {}) => ({
@@ -36,6 +38,7 @@ test('F1 · the face and the stop are one sum: wall gap + depth + door gap + fro
   assert.equal(cornerFaceMm(u, P), face);
   assert.equal(carcassReachMm(u, P), 10 + 558);
   assert.equal(cornerStopMm(u, P), face + cornerSpec(P).postMm);
+  assert.equal(POST, cornerSpec(P).postMm);
 });
 
 test('F1 · a rectangle has four internal corners and no outside one', () => {
@@ -48,7 +51,7 @@ test('F1 · a rectangle has four internal corners and no outside one', () => {
 
 test('F1 · the occupant is wall A, whichever wall it is on', () => {
   // A on wall 0 runs into its end; B on wall 1 stands beyond A's face.
-  const one = cornersOf({ units: [bud('a', 0, 4000 - 600 - 10), bud('b', 1, face + 50)], walls, profile: P });
+  const one = cornersOf({ units: [bud('a', 0, 4000 - 600 - 10), bud('b', 1, face + POST)], walls, profile: P });
   assert.equal(one.length, 1);
   assert.equal(one[0].wallA, 0);
   assert.equal(one[0].wallB, 1);
@@ -56,9 +59,9 @@ test('F1 · the occupant is wall A, whichever wall it is on', () => {
   assert.equal(one[0].runA.side, 'right');
   assert.equal(one[0].runB.unitId, 'b');
   assert.equal(one[0].runB.side, 'left');
-  assert.equal(one[0].stopMm, face + 50);
+  assert.equal(one[0].stopMm, face + POST);
   // Turned round: the unit on wall 1 runs into the corner, the one on wall 0 stops.
-  const two = cornersOf({ units: [bud('a', 0, 4000 - 600 - face - 50), bud('b', 1, 10)], walls, profile: P });
+  const two = cornersOf({ units: [bud('a', 0, 4000 - 600 - face - POST), bud('b', 1, 10)], walls, profile: P });
   assert.equal(two.length, 1);
   assert.equal(two[0].wallA, 1);
   assert.equal(two[0].runA.unitId, 'b');
@@ -68,7 +71,7 @@ test('F1 · the occupant is wall A, whichever wall it is on', () => {
 });
 
 test('F1 · two plain units and no post is NONE, a Check in words naming both', () => {
-  const corners = cornersOf({ units: [bud('A01', 0, 4000 - 610), bud('B01', 1, face + 50)], walls, profile: P });
+  const corners = cornersOf({ units: [bud('A01', 0, 4000 - 610), bud('B01', 1, face + POST)], walls, profile: P });
   assert.equal(corners[0].solution, 'none');
   const checks = cornerChecks(corners);
   assert.equal(checks.length, 1);
@@ -78,7 +81,7 @@ test('F1 · two plain units and no post is NONE, a Check in words naming both', 
 
 test('F1 · the post the job asked for makes it POST; the engine never guesses one', () => {
   const posted = cornersOf({
-    units: [bud('a', 0, 4000 - 610), bud('b', 1, face + 50, { corner_post_left_mm: 50 })], walls, profile: P,
+    units: [bud('a', 0, 4000 - 610), bud('b', 1, face + POST, { corner_post_left_mm: POST })], walls, profile: P,
   });
   assert.equal(posted[0].solution, 'post');
   assert.equal(cornerChecks(posted).length, 0);
@@ -86,7 +89,7 @@ test('F1 · the post the job asked for makes it POST; the engine never guesses o
 
 test('F1 · units far from a corner, or at another height, do not meet', () => {
   assert.equal(cornersOf({ units: [bud('a', 0, 1000), bud('b', 1, 1500)], walls, profile: P }).length, 0);
-  const wall = { ...bud('w', 1, face + 50), type: 'WUD', params: { width: 600, height: 720, depth: 350, mount_height: 1500 } };
+  const wall = { ...bud('w', 1, face + POST), type: 'WUD', params: { width: 600, height: 720, depth: 350, mount_height: 1500 } };
   assert.equal(cornersOf({ units: [bud('a', 0, 4000 - 610), wall], walls, profile: P }).length, 0,
     'a wall unit over a base unit is not the base run turning the corner');
 });
@@ -107,7 +110,7 @@ test('F1 · the Check reads the rulebook: #27, red, both units named', async () 
   assert.equal(row.level, 'red');
   const findings = runChecks({
     entries: [],
-    units: [bud('A01', 0, 4000 - 610), bud('B01', 1, face + 50)],
+    units: [bud('A01', 0, 4000 - 610), bud('B01', 1, face + POST)],
     room: { corners: rectCorners(4000, 3000), height: 2500 },
     profile: P,
   }).filter((f) => f.check === 27);

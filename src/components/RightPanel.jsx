@@ -486,6 +486,35 @@ export default function RightPanel() {
                 {unit.params.front_type === 'H' && <option value="H">Legacy handleless</option>}
               </select>
             </div>
+            {/* ─── T78 F8 · CORNER DOORS: PAIR OR BI-FOLD ─────────────────────
+                The owner, 11.10.2026: *"zawiasy podwojne czyli jedne drzwiczki
+                do carcasu a pozniej zawiasy od drzwiczek do drzwiczek."*  A
+                choice on the L only: `pair` is today's two leaves (A on SIDE-A,
+                B on SIDE-B, B overlapping at the corner); `bifold` hangs leaf B
+                on leaf A's free edge with Blum's CLIP top 60 degree bi-fold
+                corner hinge. Written through `updateUnitParams` as
+                `corner_doors`; the engine says what it bores and what it does
+                not (CORNER_L_BIFOLD). No number is typed here. */}
+            {type?.corner && result.derived.doors > 0 && (
+              <div>
+                <span className="cc-label">Corner doors</span>
+                <select
+                  className="cc-input"
+                  data-corner-doors="1"
+                  value={unit.params.corner_doors === 'bifold' ? 'bifold' : 'pair'}
+                  title="Pair: door A on SIDE-A and door B on SIDE-B. Bi-fold: door B hangs on door A's free edge (Blum CLIP top 60 degree bi-fold corner hinge, owner to confirm)"
+                  onChange={(e) => updateUnitParams(unit.id, { corner_doors: e.target.value === 'bifold' ? 'bifold' : null })}
+                >
+                  <option value="pair">Pair (A on the carcass, B on the carcass)</option>
+                  <option value="bifold">Bi-fold (B hangs on A)</option>
+                </select>
+                {result.derived.corner_l?.doors_mode === 'bifold' && (
+                  <p className="text-[11px] text-ink-400 mt-1" data-corner-doors-said="1">
+                    {(result.warnings || []).find((w) => w.code === 'CORNER_L_BIFOLD')?.message || ''}
+                  </p>
+                )}
+              </div>
+            )}
             <div>
               <span className="cc-label">Hinge side</span>
               {/* ─── T55 (CLAUDE.md F8): THE PANEL STOPS LYING ABOUT THE HINGE

@@ -144,7 +144,9 @@ import {
 import {
   shoeInsertFit, shoeInsertOn, shoeInsertParts, watchDrawerItem,
 } from './shoeInsert.js';
-import { doorHingeAssignment, hingeSpecLabel, resolveDoorHinge } from './hinges.js';
+import {
+  bifoldHingeSpec, doorHingeAssignment, hingeSpecLabel, resolveDoorHinge,
+} from './hinges.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import {
   impliedLegHeight, maskDepthExtra, standsOnLegHeight, wallGapOf,
@@ -3740,13 +3742,24 @@ export function computeCabinet(params, profileOverride) {
       const arms = {};
       for (const arm of ['A', 'B']) {
         const span = arm === 'A' ? W - d : D - d;
-        const h = hand[arm];
+        const hPair = hand[arm];
         const doorId = `${unitNum}-${arm}-F`;
-        const kind = arm === overlapArm ? 'overlap' : 'covered';
         // The corner edge, in the virtual cabinet's own frame: the side away
         // from the arm's end side.
-        const innerSide = h === 'R' ? 'left' : 'right';
-        const innerTrim = kind === 'covered' ? -gap / 2 : frontT + cornerClear - gap / 2;
+        const innerSide = hPair === 'R' ? 'left' : 'right';
+        // T78 F8 · BIFOLD: leaf B hangs on leaf A's free edge, so its hinge
+        // edge is its INNER edge (the catalogue: the cup bored at the hinge
+        // edge toward leaf A); leaf A stays the covered leaf, to the corner.
+        // Leaf B stands `gap` off A's face: its inner trim is front_t plus
+        // one and a half gaps (its untrimmed edge is gap/2 past the corner
+        // line). The pair's overlap law does not apply between two leaves
+        // hinged to each other.
+        const bifold = cl.doorsMode === 'bifold' && cl.doors;
+        const h = bifold && arm === 'B' ? (innerSide === 'left' ? 'L' : 'R') : hPair;
+        // eslint-disable-next-line no-nested-ternary
+        const kind = bifold ? (arm === 'A' ? 'covered' : 'bifold') : (arm === overlapArm ? 'overlap' : 'covered');
+        // eslint-disable-next-line no-nested-ternary
+        const innerTrim = kind === 'covered' ? -gap / 2 : (kind === 'bifold' ? frontT + 1.5 * gap : frontT + cornerClear - gap / 2);
         const own = ownTrim[doorId] || {};
         const trim = {
           left: (innerSide === 'left' ? innerTrim : 0) + (Number(own.left) || 0),
@@ -3782,10 +3795,15 @@ export function computeCabinet(params, profileOverride) {
           doors: cl.doors ? { count: 1, hinge: h } : false,
           drawers: 0,
           rail: type.supports.rail ? Boolean(params?.rail) : false,
-          front_edge_trim: cl.doors ? { [doorId]: trim } : null,
+          // eslint-disable-next-line no-nested-ternary
+          front_edge_trim: cl.doors ? { [doorId]: trim } : (cl.drawers ? rowTrims : null),
         };
         const v = computeCabinet(vParams, P);
-        const sideVId = h === 'L' ? 'BUL' : 'BUR';
+        // The arm's END side is the hinge side of the pair; in bifold leaf B
+        // hinges at the inner edge, so its end side is the other one (and the
+        // parent's plate rows, bored on its hinge side, never reach SIDE-B).
+        // eslint-disable-next-line no-nested-ternary
+        const sideVId = kind === 'bifold' ? (h === 'L' ? 'BUR' : 'BUL') : (h === 'L' ? 'BUL' : 'BUR');
         arms[arm] = {
           arm, span, hand: h, doorId, kind, innerSide, trim, v, sideVId,
           vSide: v.panels.find((x) => x.id === sideVId) || null,
@@ -3974,9 +3992,24 @@ export function computeCabinet(params, profileOverride) {
               // two kinds, read by `corners.js lClearanceView`), in the arm's
               // own frame.
               cornerEdge: { side: a.innerSide, kind: a.kind },
+              // eslint-disable-next-line no-nested-ternary
               ...(a.kind === 'overlap'
                 ? { opensFirst: true, note: `door ${arm} opens first` }
-                : { coveredBy: arm === 'A' ? 'B' : 'A' }),
+                : (cl.doorsMode === 'bifold' ? {} : { coveredBy: arm === 'A' ? 'B' : 'A' })),
+              // T78 F8 · the bi-fold pair: A carries B (`bifold.child`), B hangs
+              // on A's free edge (`bifold.parent`) and folds toward A's face by
+              // the family's angle; the scene nests B in A's swing group.
+              ...(cl.doorsMode === 'bifold' ? {
+                bifold: arm === 'A'
+                  ? { child: `${unitNum}-B-F`, companion: bifoldSpec.companion }
+                  : {
+                    // The fold opens the L outward (the angle between the
+                    // leaves grows from 90 by the family's 60): B turns the
+                    // way door B of the pair swings. The owner confirms the
+                    // direction on his screen.
+                    parent: `${unitNum}-A-F`, angleDeg: bifoldSpec.angleDeg, dir: right ? 1 : -1, hinge: bifoldSpec.label,
+                  },
+              } : {}),
               ...(arm === 'B' ? {
                 lBoard: 'DOOR-B',
                 // The scene swings it about its hinge edge at the far end of
@@ -3987,7 +4020,30 @@ export function computeCabinet(params, profileOverride) {
           };
           // All of them: the door joins after the box's own copy loop, so its
           // cups, cup screws and handle holes come over from the parent whole.
-          const drills = a.v.drills.filter((x) => x.panel === a.doorId);
+          let drills = a.v.drills.filter((x) => x.panel === a.doorId);
+          if (a.kind === 'bifold') {
+            // T78 F8 · leaf B's cups are the BI-FOLD hinge's, by the catalogue's
+            // cup pattern (its drilling distance from the hinge edge). The
+            // parent bored the standard pattern on the inner edge; it moves to
+            // the catalogue's distance when the page has given it up, and is
+            // NOT bored while the file says null: a bought mechanism is a line
+            // and a body, never a hole (said below, CORNER_L_BIFOLD).
+            const cupDrills = drills.filter((x) => x.kind === 'cup' || x.kind === 'cup_screw');
+            drills = drills.filter((x) => x.kind !== 'cup' && x.kind !== 'cup_screw');
+            if (Number.isFinite(bifoldSpec.cupFromEdgeMm)) {
+              // The front's drill frame is its BACK face (T76's reflection):
+              // a right-hinged leaf has its hinge edge at x = 0 there, a
+              // left-hinged one at x = w; the shift runs away from that edge.
+              const shift = bifoldSpec.cupFromEdgeMm - (Number(P.hinges?.cups?.xFromHingeEdge) || 0);
+              const sign = a.hand === 'R' ? 1 : -1;
+              drills.push(...cupDrills.map((x) => ({
+                ...x,
+                x: roundTo(x.x + sign * shift, 4),
+                ...(x.kind === 'cup' && Number.isFinite(bifoldSpec.cupDepthMm) ? { depth: bifoldSpec.cupDepthMm } : {}),
+              })));
+            }
+            bifoldRows = Array.isArray(vDoor.meta?.cupY) ? vDoor.meta.cupY.length : cupDrills.filter((x) => x.kind === 'cup').length;
+          }
           // …and what the parent said about THIS leaf (a shaker frame that
           // does not fit, a trim too deep), said on the L.
           // T77 F7 · the walk found each finding of a decorated leaf said
@@ -10630,6 +10686,8 @@ export function computeCabinet(params, profileOverride) {
       for (const h of lCorner.arms[arm].v.hardware || []) {
         if (h.role === 'legs' || h.role === 'hangers') continue;
         if (arm === 'B' && h.role === 'shelf_pins') continue;
+        // T78 F8 · in bifold leaf B carries no carcass hinge: the parent's line is not merged.
+        if (arm === 'B' && h.role === 'hinges' && lCorner.bifold) continue;
         const same = hardware.find((x) => x.role === h.role && x.spec_label === h.spec_label);
         if (same) {
           same.qty += h.qty;
@@ -10652,8 +10710,18 @@ export function computeCabinet(params, profileOverride) {
       }
     }
     totals.hinges = lCorner.doors.length
-      ? lCorner.doors.reduce((n, { arm }) => n + (Number(lCorner.arms[arm].v.totals?.hinges) || 0), 0)
+      ? lCorner.doors.reduce((n, { arm }) => n + (arm === 'B' && lCorner.bifold ? 0 : (Number(lCorner.arms[arm].v.totals?.hinges) || 0)), 0)
       : 0;
+    if (lCorner.bifold) {
+      // T78 F8 · the bi-fold corner hinge: one per hinge row of leaf B, a bought line.
+      const sp = lCorner.bifold.spec;
+      hw('bifold_hinges', sp.label, lCorner.bifold.rows, 'pcs',
+        {
+          angle: sp.angleDeg, article: sp.article, page: sp.page, companion_on_leaf_a: sp.companion,
+          cup_from_edge_mm: sp.cupFromEdgeMm, cup_depth_mm: sp.cupDepthMm, status: sp.status,
+        },
+        `${sp.label} · ${sp.angleDeg} degrees · ${sp.article || 'article: owner to confirm'} · leaf A with ${sp.companion}`);
+    }
     totals.rail = ['A', 'B'].reduce((n, arm) => n + (Number(lCorner.arms[arm].v.totals?.rail) || 0), 0);
     derived.doors = lCorner.doors.length;
     // The ladder, the cup rows and the shelf rows are the parent's: one
@@ -10663,7 +10731,8 @@ export function computeCabinet(params, profileOverride) {
       drillSummary.hinge_centers = [...(vs.hinge_centers || [])];
       drillSummary.side_hinge_holes_y = (vs.side_hinge_holes_y || []).map((pair) => [...pair]);
       drillSummary.front_cup_y = [...(vs.front_cup_y || [])];
-      drillSummary.hinged_sides = lCorner.doors.map(({ arm }) => `SIDE-${arm}`);
+      // T78 F8 · in bifold only SIDE-A carries plates (leaf B hangs on leaf A).
+      drillSummary.hinged_sides = lCorner.doors.filter(({ door }) => !door.meta?.bifold?.parent).map(({ arm }) => `SIDE-${arm}`);
     }
     drillSummary.shelf_row_y = [...(vs.shelf_row_y || [])];
     drillSummary.shelf_cluster_y = (vs.shelf_cluster_y || []).map((row) => [...row]);

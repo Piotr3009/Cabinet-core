@@ -63,6 +63,68 @@ export function hingeCatalogue() {
   return CATALOGUE;
 }
 
+// ─── T78 F8 / F13 · THE BLUM HINGE FAMILIES (reference/hardware/blum-hinges.json) ──
+//
+// The owner, 11.10.2026: *"otwieranie drzwi wiekszy kat otwarcia 180 stopni,
+// zawiasy"* and *"zawiasy podwojne czyli jedne drzwiczki do carcasu a pozniej
+// zawiasy od drzwiczek do drzwiczek."*  The file is the catalogue's word
+// (every number `owner to confirm`, with its page); this module only reads it.
+// Loaded by `lib/hardwareCatalogue.js`, like the CLIP top catalogue above; a
+// test loads it the same way. Unloaded, every reader answers with nulls and
+// the engine says so in words: a bought mechanism is a line and a body, never
+// a hole, until the drilling is in the file with a page.
+let FAMILIES = null;
+
+/** Hand the engine `reference/hardware/blum-hinges.json`. Null clears it. */
+export function setBlumHingeFamilies(raw) {
+  FAMILIES = raw && typeof raw === 'object' && raw.families && typeof raw.families === 'object' ? raw : null;
+  return Boolean(FAMILIES);
+}
+
+/** The loaded families file, or null. */
+export function blumHingeFamilies() {
+  return FAMILIES;
+}
+
+/** A catalogue leaf is `{ value, page, status, note }`; this reads the value. */
+const leafValue = (node) => (node && typeof node === 'object' && !Array.isArray(node) && 'value' in node ? node.value : node);
+const leafNumber = (node) => {
+  const raw = leafValue(node);
+  // A null in the file is a number the page did not give up: never a zero.
+  if (raw === null || raw === undefined || raw === '') return null;
+  const v = Number(raw);
+  return Number.isFinite(v) ? v : null;
+};
+
+/**
+ * The bi-fold corner hinge (CLIP top 60 degree, Hinge systems p. 116): what the
+ * engine needs to hang leaf B on leaf A. Every null is a number the catalogue
+ * page did not give up; the engine bores nothing on a null.
+ *
+ * @param {object|null} profile  for the fallbacks the profile proposes
+ */
+export function bifoldHingeSpec(profile = null) {
+  const fam = FAMILIES?.families?.bifold || null;
+  const hinge = fam?.hinge || {};
+  const own = profile?.corner?.bifold || {};
+  const cup = hinge.cup_on_leaf_b || {};
+  return {
+    loaded: Boolean(fam),
+    label: String(fam?.label || own.label || 'CLIP top 60 degree bi-fold corner hinge').split(' (')[0],
+    angleDeg: leafNumber(hinge.opening_angle) ?? (Number(own.angleDeg) || 60),
+    article: leafValue(hinge.articles?.screw_on) ?? null,
+    page: hinge.articles?.screw_on?.page ?? hinge.opening_angle?.page ?? null,
+    cupDiameterMm: leafNumber(cup.diameter) ?? 35,
+    // The drilling distance of the cup from leaf B's hinge edge, and its
+    // depth: the p. 117 planning table. Null until the owner reads the page.
+    cupFromEdgeMm: leafNumber(cup.drilling_distance_tb),
+    cupDepthMm: leafNumber(cup.depth_catalogue),
+    plateOnLeafA: leafValue(hinge.plate_on_leaf_a?.position_on_leaf_a) ?? null,
+    companion: leafValue(hinge.companion_hinge_on_leaf_a) ?? '155 or 170',
+    status: 'owner to confirm',
+  };
+}
+
 /** Forget it — for tests, and for a workshop switching catalogues. */
 export function clearHingeCatalogue() {
   CATALOGUE = null;

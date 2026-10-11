@@ -1013,11 +1013,36 @@ export function MovingPanel({
   const translucent = faded < 1;
 
   const body = (
-    <group ref={group} position={pivot}>
+    <group ref={group} position={base}>
       {/* Anything screwed TO this piece and travelling with it — the door half
           of a hinge (turn 12, CLAUDE.md F6.1). Inside the group, so the swing
           is free: no second animation to keep in step with this one. */}
       {children}
+      {/* T78 F8 · the bi-fold child leaf, in the carrier's frame: it rides the
+          carrier's swing and folds about the hinge line between the two by the
+          catalogue family's angle (60 degrees, owner to confirm). The pair is
+          one gesture: the child reads the carrier's open amount and the
+          carrier's handlers (a click on either leaf is a click on the pair). */}
+      {bifoldChild && (
+        <MovingPanel
+          panel={bifoldChild}
+          parentPivot={pivot}
+          front="door"
+          open={open}
+          swing={((Number(bifoldChild.meta?.bifold?.angleDeg) || 60) * Math.PI) / 180}
+          surface={surface}
+          outline={outline}
+          outlines={outlines}
+          contour={contour}
+          xray={xray}
+          depth={depth}
+          profile={profile}
+          drills={drills}
+          joineryLayers={layers}
+          machining={machining}
+          {...handlers}
+        />
+      )}
       {/* ─── Turn 17 (CLAUDE.md F4.1): THE MACHINING, ON THE PIECE ───────────
           Every pocket, mark and drilled hole this part carries, read off the
           SAME `panel.cnc` and `drills` the DXF is written from
@@ -2568,7 +2593,9 @@ export default function UnitView({
           the params never hear about this. It is a lens over the same cabinet,
           which is what makes it different in kind from "Remove doors". */}
       {result.panels.filter((p) => p.box && !p.meta?.frontDecorationParent
-        && !(hideFronts && frontKind(p))).map((p) => {
+        && !(hideFronts && frontKind(p))
+        // T78 F8 · a bi-fold child leaf is rendered inside its carrier's group, not here.
+        && !p.meta?.bifold?.parent).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         // ─── Turn 9 (CLAUDE.md F4.1) ───
         // What can be selected as an ELEMENT. It is the engine's own `shelf`
@@ -2716,7 +2743,16 @@ export default function UnitView({
                 />
               ),
             } : {})}
-            open={front ? (openFronts?.[p.id] ?? 0) : (ride?.open ?? 0)}
+            {...(front === 'door' && p.meta?.bifold?.child ? (() => {
+              // T78 F8 · the carrier leaf: its child rides inside its group, and
+              // the pair opens as one (either leaf's gesture opens both).
+              const child = result.panels.find((q) => q.id === p.meta.bifold.child && q.box) || null;
+              return child ? {
+                bifoldChild: child,
+                open: Math.max(openFronts?.[p.id] ?? 0, openFronts?.[child.id] ?? 0),
+              } : {};
+            })() : {})}
+            {...(front === 'door' && p.meta?.bifold?.child ? {} : { open: front ? (openFronts?.[p.id] ?? 0) : (ride?.open ?? 0) })}
             slide={slide}
             travel={ride?.travel ?? null}
             // ─── Turn 20 (CLAUDE.md F8.1) ───

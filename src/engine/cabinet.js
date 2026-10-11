@@ -1399,6 +1399,8 @@ export const DRAWER_VARIANTS = ['shoe', 'belt_tie', 'belt_tie_glass'];
 // N, BOM line, placeholder bodies, zero holes) and `Valet rod` (pull-out, BOM
 // line, placeholder, zero holes)."*  Two more bought mechanisms, the same item.
 export const WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail', 'hooks', 'valet_rod'];
+/** T78 F9 · the bought mechanisms an L corner unit may carry (`params[kind] === true`). */
+export const CORNER_KIT_KINDS = ['carousel'];
 
 /** A drawer item's variant, or null for the plain box. */
 export function drawerVariantOf(item) {
@@ -3947,7 +3949,52 @@ export function computeCabinet(params, profileOverride) {
       const vShelves = arms.A.v.panels
         .filter((x) => x.part === 'SHELF' && x.box)
         .sort((x, y) => (x.meta?.index || 0) - (y.meta?.index || 0));
-      vShelves.forEach((vs, i) => {
+      // ─── T78 F9 · THE CAROUSEL ─────────────────────────────────────────────
+      //
+      // The owner, 11.10.2026: *"krecacy sie naroznik na garnki w srodku."*
+      // A BOUGHT mechanism is a line and a body, never a hole (T78 LAWS): one
+      // BOM line, one placeholder body (two round trays on a post, inset into
+      // the L's inner-corner square), zero holes, readiness bought. The L's
+      // adjustable shelves STEP ASIDE when it is fitted (their boards are not
+      // cut; the parent's pin rows stay, as a shelf taken out leaves them); a
+      // FIXED shelf stands in its way and is said so in words, and then the
+      // carousel is not fitted and the shelves are cut as before.
+      const CAR = P.corner?.carousel || {};
+      let carouselOn = params?.carousel === true;
+      if (carouselOn) {
+        const fixed = vShelves.filter((vs) => vs.meta?.locked === true || vs.meta?.variant === 'fixed');
+        if (fixed.length) {
+          carouselOn = false;
+          warnings.push({
+            code: 'CAROUSEL_REFUSED',
+            level: 'yellow',
+            message: `${unitNum}: the carousel is not fitted: a fixed shelf (${fixed.map((vs) => `SHELF-L-${vs.meta?.index ?? 1}`).join(', ')}) `
+              + 'stands in its way. Remove the fixed shelf first; adjustable shelves step aside on their own.',
+          });
+        } else {
+          const inner = d - G;
+          const clear = Number(CAR.clearMm) || 0;
+          const trays = Math.max(1, Math.trunc(Number(CAR.trays) || 2));
+          const innerH = H - 2 * G;
+          const cx = right ? W - G - inner / 2 : G + inner / 2;
+          cornerKitBodies.push({
+            id: 'carousel',
+            kind: 'carousel',
+            label: String(CAR.label || 'Carousel (pots)'),
+            placeholder: true,
+            box: {
+              x: right ? W - G - inner : G, y: G, z: G, w: inner, h: innerH, d: inner,
+            },
+            centre: { x: roundTo(cx, 4), z: roundTo(G + inner / 2, 4) },
+            radius: roundTo(Math.max(0, inner / 2 - clear), 4),
+            post: { dia: Number(CAR.postMm) || 25 },
+            trayMm: Number(CAR.trayMm) || 15,
+            trays: Array.from({ length: trays }, (_, k) => roundTo(G + (innerH * (k + 1)) / (trays + 1), 4)),
+            shelvesStoodAside: vShelves.length,
+          });
+        }
+      }
+      if (!carouselOn) vShelves.forEach((vs, i) => {
         lBoard(`SHELF-L-${i + 1}`, 'SHELF', 'shelf', vs.box.y, plan.shelf, vs.box.h, {
           index: vs.meta?.index ?? i + 1,
           itemId: vs.meta?.itemId ?? null,

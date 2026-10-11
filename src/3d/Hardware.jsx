@@ -8,7 +8,7 @@ import {
   runnerAskFor, runnerEntry, runnerLadder, runnerModelSrc,
 } from '../engine/runners.js';
 import { hingeModelSrc } from '../engine/hinges.js';
-import { clearHardwareSurface, reportHardware } from './hardwareRegistry.js';
+import { clearHardwareSurface, kitModelUrl, reportHardware } from './hardwareRegistry.js';
 import {
   onRunnerLoad, runnerModel, runnerModelFits, runnerSource,
 } from './runnerModels.js';
@@ -1167,6 +1167,16 @@ function KitBodies({ items, colour, profile, storageBase }) {
         />
       );
     }
+    // ─── T78 F9 · THE CAROUSEL: TWO ROUND TRAYS ON A POST ──────────────────
+    // The owner: *"krecacy sie naroznik na garnki w srodku."*  A placeholder
+    // in the L's inner-corner square (engine/hardware3d.js
+    // cornerKitInstances), the GLB slot `KIT_MODEL_SLOTS.carousel` empty
+    // until the owner drops a model in. Never a hole.
+    if (k.body === 'carousel') {
+      return (
+        <CarouselBody key={k.id || k.role} k={k} colour={colour} storageBase={storageBase} />
+      );
+    }
     const walls = [
       // floor, back, front, left, right — in the cabinet's own frame
       { x: k.w / 2, y: T / 2, z: k.d / 2, w: k.w, h: T, d: k.d },
@@ -1202,6 +1212,42 @@ function KitBodies({ items, colour, profile, storageBase }) {
       </group>
     );
   });
+}
+
+/**
+ * T78 F9 · the carousel's placeholder: a post from the bottom board to the top
+ * and the profile's number of round trays on it, in the cabinet's own frame
+ * (`k.centre`, `k.radius`, `k.trays` are the L builder's). Marked a
+ * placeholder; the model slot is read so the walk can say which it saw.
+ */
+function CarouselBody({ k, colour, storageBase = '' }) {
+  const slot = kitModelUrl('carousel', storageBase);
+  const r = Math.max(0.001, mm(k.radius || 0));
+  const post = Math.max(0.002, mm((k.post?.dia || 25) / 2));
+  const tray = Math.max(0.002, mm(k.trayMm || 15));
+  return (
+    <group
+      position={[mm(k.centre?.x ?? k.x + k.w / 2), mm(k.y), mm(k.centre?.z ?? k.z + k.d / 2)]}
+      userData={{
+        ccKitBody: k.role, ccKitPlaceholder: true, ccKitModel: slot, ccNoBounds: true, ccCarouselTrays: (k.trays || []).length,
+      }}
+    >
+      <mesh position={[0, mm(k.h) / 2, 0]}>
+        <cylinderGeometry args={[post, post, mm(k.h), 16]} />
+        <meshStandardMaterial color={colour} roughness={0.5} metalness={0.4} transparent opacity={0.6} />
+      </mesh>
+      {(k.trays || []).map((y, i) => (
+        <mesh
+          // eslint-disable-next-line react/no-array-index-key
+          key={i}
+          position={[0, mm(y - k.y) + tray / 2, 0]}
+        >
+          <cylinderGeometry args={[r, r, tray, 48]} />
+          <meshStandardMaterial color={colour} roughness={0.7} metalness={0.1} transparent opacity={0.45} />
+        </mesh>
+      ))}
+    </group>
+  );
 }
 
 /** The placeholder walls, reusable for the pull-down's not-yet-loaded state. */

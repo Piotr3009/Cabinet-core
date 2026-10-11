@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
-  minDrawerFrontHeight, SHELF_VARIANTS, WARDROBE_KIT_KINDS,
+  minDrawerFrontHeight, SHELF_VARIANTS, CORNER_KIT_KINDS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
   applyPartEdits, partSignature, withPartEdit, withPartOps, withoutLastPartEdit, withoutPartEdits,
@@ -7346,6 +7346,40 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // T75 F19 · a row of hooks may say how many; with none, the profile's.
       ...(kind === 'hooks' && Number(extra?.count) > 0 ? { count: Math.trunc(Number(extra.count)) } : {}),
     });
+  },
+
+  /**
+   * ─── T78 F9 · THE CAROUSEL, ON THE L ONLY ─────────────────────────────────
+   *
+   * The owner, 11.10.2026: *"krecacy sie naroznik na garnki w srodku."*  A
+   * bought mechanism is a line and a body, never a hole: `params.carousel`
+   * on an L is read by the L builder (cabinet.js) into one BOM line and one
+   * placeholder body; the L's adjustable shelves step aside. A FIXED shelf in
+   * its way is refused here in words (the engine says the same, so a saved
+   * project that grows one later is told too). `on: false` takes it out.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setCornerKit: (unitId, kind, on = true) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, error: 'No such unit.' };
+    if (!CORNER_KIT_KINDS.includes(kind)) return { ok: false, error: `${kind} is not a corner mechanism this app knows.` };
+    if (!isCornerLKit(unit.type)) {
+      return { ok: false, error: `A ${kind === 'carousel' ? 'carousel' : kind} goes in an L corner unit only.` };
+    }
+    if (on) {
+      const result = computeCabinet(unit.params, getCabinetProfile());
+      const fixed = (result.panels || []).filter((p) => p.part === 'SHELF' && (p.meta?.locked === true || p.meta?.variant === 'fixed'));
+      if (fixed.length) {
+        return {
+          ok: false,
+          error: `${unit.params.unit_num || unitId}: a fixed shelf (${fixed.map((p) => p.id).join(', ')}) stands in the carousel's way. `
+            + 'Remove the fixed shelf first; adjustable shelves step aside on their own.',
+        };
+      }
+    }
+    get().updateUnitParams(unitId, { [kind]: on ? true : null });
+    return { ok: true, error: null };
   },
 
   /**

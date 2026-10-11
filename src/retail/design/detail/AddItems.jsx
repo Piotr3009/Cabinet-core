@@ -223,6 +223,19 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
     done();
   };
 
+  // T78 F9 · the L's carousel: on or off through the store's one writer
+  // (`setCornerKit`), which refuses in words where a fixed shelf is in the way.
+  const setCornerKit = useProjectStore((s) => s.setCornerKit);
+  const carouselOn = unit.params?.carousel === true;
+  const onCornerKit = (kind, label, on) => {
+    const res = setCornerKit(unit.id, kind, on);
+    if (!res?.ok) { notify(res?.error || `The ${label.toLowerCase()} could not be fitted.`, 'warn'); return; }
+    notify(on
+      ? `${label} fitted: a purchase line in the BOM and the room it takes in the scene. Nothing is drilled; the shelves step aside.`
+      : `${label} taken out: the shelves are cut again.`, 'ok');
+    done();
+  };
+
   // Turn 33 (CLAUDE.md F3): a bought mechanism into its column — the store
   // refuses a second of the same kind in the same opening, and says so.
   const onAddKit = (kitKind, label, extra = null) => {
@@ -397,6 +410,17 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       label: 'Valet rod',
       disabled: type.family !== 'wardrobe' || Boolean(type.besideWardrobe),
       why: type.besideWardrobe ? 'it goes in a wardrobe' : 'a wardrobe thing',
+    },
+    // ─── T78 F9 · THE CAROUSEL, ON THE L ONLY ─────────────────────────────
+    // The owner, 11.10.2026: *"krecacy sie naroznik na garnki w srodku."*  A
+    // bought mechanism: one BOM line, a placeholder body in the inner corner,
+    // zero holes; the L's shelves step aside (a fixed one refuses, in words).
+    {
+      id: 'carousel',
+      label: 'Carousel',
+      families: ['kitchen'],
+      disabled: !type.corner,
+      why: 'an L corner thing',
     },
   ];
 
@@ -881,6 +905,25 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                 </>
               )}
 
+              {/* ─── T78 F9 · THE CAROUSEL ─────────────────────────────────── */}
+              {kind.id === 'carousel' && (
+                <>
+                  <button
+                    type="button"
+                    className={carouselOn ? 'pbi-re-btn pbi-re-wfull' : 'pbi-re-btn-gold pbi-re-wfull'}
+                    data-corner-kit="carousel"
+                    data-corner-kit-on={carouselOn ? '1' : '0'}
+                    onClick={() => onCornerKit('carousel', 'Carousel', !carouselOn)}
+                  >
+                    {carouselOn ? 'Remove carousel' : 'Add carousel'}
+                  </button>
+                  <p className="pbi-re-t11 pbi-re-quiet">
+                    BOUGHT, never cut: a named line in the BOM ordered to the inner-corner square, and two round
+                    trays on a post drawn in the scene as a placeholder until the owner&apos;s model arrives. Nothing
+                    is drilled. The L&apos;s adjustable shelves step aside; a fixed shelf in its way is refused.
+                  </p>
+                </>
+              )}
               {/* ─── TURN 33 (CLAUDE.md F3): THE BOUGHT MECHANISMS ─────────── */}
               {['pulldown', 'trouser', 'tie_rack', 'hooks', 'valet_rod'].includes(kind.id) && (() => {
                 const kitKind = kind.id === 'pulldown' ? 'pulldown_rail' : kind.id;

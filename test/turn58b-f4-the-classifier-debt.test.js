@@ -80,7 +80,8 @@ test('F4 · the LISP census is DERIVED, and it is 14/14', () => {
     .filter((f) => f.toLowerCase().endsWith('.lsp')).length;
   assert.equal(kitCount('reference/lisp'), onDisk);
   // T75 AMENDED: new geometry is written as LISP first, so the census grew.
-  assert.ok([16, 17].includes(onDisk), `the census is ${onDisk}`);
+  // T78 AMENDED: the biscuit set and the Cabineo pattern are LISP first too.
+  assert.ok([16, 17, 18, 19].includes(onDisk), `the census is ${onDisk}`);
 });
 
 test('F4 · the file argues BOTH turns, and names its two bases', () => {

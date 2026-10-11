@@ -111,7 +111,10 @@ const EXEMPT = {
     + '(retail\'s SIZE step carries its own button). *"Klikasz \'wytnij narożnik\', program podświetla '
     + 'narożniki, wybierasz, podajesz wysokość, głębokość, szerokość (np. 200x200)."* '
     + 'T75 F23 · the Construction section\'s Joints row: Puzzle or Dowel per unit, written to the unit\'s joints_system through updateUnitParams; the status line reads the engine\'s own answer (derived.joints: the dowel count, the gate, or the refusal in its words); Cabineo shown disabled with its sentence; no typed number. No retail copy (PART G is PRO only). *"lisp najpierw."* *"a per-unit override through the unit\'s settings section (no typed numbers in the UI)."*'
-    + ' DECOR F1: per-unit decorative style selection and recipe editing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
+    + ' DECOR F1: per-unit decorative style selection and recipe editing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+    + ' T78 F5 · the Carcass section\'s three fields read Arm A, Height, Arm B on an L; the fields and the setter are the same, the words are the L\'s. *"powiekszenie L shape szafek prawa lewa strona."*'
+    + ' T78 F7 · the Drawers rows on an L are a SPACE CORNER stack: added and removed here, their heights the drawer unit\'s own split per arm, shown and not typed (no Equal heights, no field); the status line names the kit and its nominal length. *"szuflady w narozniku L shape."*'
+    + ' T78 F8 · the Doors section\'s Corner doors choice on an L: Pair or Bi-fold, written as `corner_doors` through updateUnitParams; the engine\'s own sentence (CORNER_L_BIFOLD) under it; no number typed. *"zawiasy podwojne czyli jedne drzwiczki do carcasu a pozniej zawiasy od drzwiczek do drzwiczek."*',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -152,7 +155,8 @@ const EXEMPT = {
     + '`alignUnitDepth`, one writer). No other type gains a field. The clicked figure\'s '
     + 'field is asked for the caret on a short timer until it has it (the walk found one '
     + 'frame was not always enough). *"Zmiana przez klik w wymiar (szer/wys/głęb), głębokość '
-    + 'wyrównana do tyłu albo do frontu."*',
+    + 'wyrównana do tyłu albo do frontu."*'
+    + ' T78 F5 · an L\'s two fields read ARM A (its width) and ARM B (its depth), both in the window, each through the same setter, which clamps each arm alone. *"powiekszenie L shape szafek prawa lewa strona."*',
   'src/components/ElementProperties.jsx':
     'T74 F6 · the SECOND shoe drawer\'s own height is shown, not edited: it is set by its '
     + 'MOUNTING HEIGHT (its drag and its clickable distance, one clamp). *"Regulacja = '
@@ -223,7 +227,8 @@ const EXEMPT = {
     'T75 F19 · two rows, Hooks (a row of the profile count, one BOM line, its qty the count) and Valet rod, added through the same bought-mechanism panel the trouser pull-out uses. *"Two rows in Add items for the wardrobe family: `Hooks` (a row of N, BOM line, placeholder bodies, zero holes) and `Valet rod` (pull-out, BOM line, placeholder, zero holes)."* '
     + 'T75 F16 · the shoe box row says a chest of drawers IS its drawers (the store has always refused a shoe drawer in a ratio stack), and the trouser pull-out and tie rack rows say they go in a wardrobe: a chest stands beside one. *"`WARDROBE_CHEST2 / 3 / 4` copied from `BUDR2 / BUDR / BUDR4`, family wardrobe ... Wardrobes category."* '
     + 'T67 F9 · the label "Watch drawer" becomes "Accessories drawer" on the row, the '
-    + 'button and the two notices. *"zmień w PRO też tę nazwę."*',
+    + 'button and the two notices. *"zmień w PRO też tę nazwę."*'
+    + ' T78 F9 · a Carousel row on the L only: one click fits or takes out the bought mechanism through the store\'s `setCornerKit` (one BOM line, a placeholder body, zero holes; a fixed shelf in its way is refused in words). *"krecacy sie naroznik na garnki w srodku."*',
   // ─── RENEWED BY TURN 72 · THE SAME FILE, A THIRD LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission, so tonight's
   // edit is argued again with tonight's quote and tonight's hash. The map does
@@ -249,8 +254,8 @@ const FROZEN = {
   'src/components/FrontDecorationControls.jsx': '029b9a2c4488bcb4e9bdbda77fa4798d2531caaca1d98ff4790d9947dd6171e4',
   'index.html': '9474860393b6e8dd6070d8178b35fbd2fbd309b26cb07b0e6140dcbf914e4912',
   'src/App.jsx': 'f6c33592a05affc52d8167cd776f5164ee2aeaccfea1dfce5dc3756e93f9b968',
-  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/AddItems.jsx': '5be28cfd4ddc678b543efd07f1ed6f8b31282037739ada82ae03f9523b12c546',
+  // T78 F9 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/AddItems.jsx': 'f0d12fd271868aa35931129edef7b7f17c7fab8a80c0594667301266e1264f5d',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
   'src/components/AssignMaterialsModal.jsx': 'a5110598cd1393143d4a1ba0575ab0974f77390ead98d8213d218ca8551dc754',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
@@ -299,8 +304,8 @@ const FROZEN = {
   'src/components/PartDetailModal.jsx': '69a8764cdb984ec7c523a3cd97559f03ddc169778d1d997fa24905b8efce1a93',
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
-  // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
-  'src/components/RightPanel.jsx': '468d1f08a8e1a552b9f1cf9c468ff3a1ec33c7b845079ad8ee1bd76d6200c464',
+  // T78 F8 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RightPanel.jsx': '670dde888e4f6fcf9342776a0de740fda176f9b3454a704703106571b07632f1',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RoomModal.jsx': '29ffa1a4b710d3d3c7d168dfce23aa765fc76a3c9ba159b71b01964996dbd263',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
@@ -315,7 +320,8 @@ const FROZEN = {
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/TopBar.jsx': '31511deaa4fcbfee230c7ed1955e80c4945bac6c8278a0c4c07f3fa4c6a1de13',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
-  'src/components/UnitSizeModal.jsx': '019529723e5844ed8796b7a0c870cc5f8d4b8b1c1869f71d37cc939695fb5054',
+  // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
   'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',

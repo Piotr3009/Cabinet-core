@@ -339,6 +339,12 @@ function hardwareRolesInSource() {
     for (const m of kinds[1].matchAll(/'([a-z_]+)'/g)) roles.add(`wardrobe_kit_${m[1]}`);
   }
   for (const m of TYPES_SRC.matchAll(/hardwareKit:\s*\{\s*role:\s*'([a-z_]+)'/g)) roles.add(m[1]);
+  // T78 F9 · the L's bought corner mechanisms: `hw(kit.kind, ...)` over
+  // CORNER_KIT_KINDS, the role being the kind (the carousel).
+  const corner = ENGINE_SRC.match(/CORNER_KIT_KINDS\s*=\s*\[([^\]]*)\]/);
+  if (corner) {
+    for (const m of corner[1].matchAll(/'([a-z_]+)'/g)) roles.add(m[1]);
+  }
   return roles;
 }
 

@@ -1015,7 +1015,9 @@ function AddPluses({
     // Along the wall from its start corner, out into the gap by half a disc,
     // and forward of the cabinet's face so nothing can hide it.
     const along = point.x_mm + (point.side === 'left' ? -1 : 1) * (profile.ui.addPlusMinGapMm * 0.45);
-    const depth = Number(unit.params?.depth) || 0;
+    // T78 F1 · an L's plus on its ADJACENT wall stands in front of its arm
+    // there (`point.depth_mm`, the arm), not half the L's whole depth out.
+    const depth = Number(point.depth_mm) || Number(unit.params?.depth) || 0;
     const world = new THREE.Vector3(
       mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
     )
@@ -1025,11 +1027,13 @@ function AddPluses({
 
     return (
       <AddPlus
-        key={`${point.unitId}-${point.side}`}
+        key={`${point.unitId}-${point.side}-${point.wall}`}
         position={world.toArray()}
         size={size}
         colour={profile.appearance.addPlus.run}
-        title={`Add a unit to the ${point.side} of ${unit.params?.unit_num ?? ''}`}
+        title={point.corner
+          ? `Add a unit beside ${unit.params?.unit_num ?? ''} on wall ${point.wall + 1}`
+          : `Add a unit to the ${point.side} of ${unit.params?.unit_num ?? ''}`}
         onClick={() => onPick(point)}
       />
     );

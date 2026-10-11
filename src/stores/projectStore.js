@@ -130,7 +130,7 @@ import {
 // T72 F14 · `wallGapOf` — how far ONE unit stands off its wall: its own
 // `params.wall_gap`, or the project's number when nobody has said.
 import {
-  buildRuns, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
+  buildRuns, cornerLAdjacentSpan, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
   runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
@@ -4824,6 +4824,22 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // …and when a SIDE was asked for as well, that wall is the only one tried:
     // "put one on the left of this" is not answered by a wall round the corner.
     const besideWall = beside ? walls[beside.position.wall ?? 0] : null;
+    // ─── T78 F1 · "ANOTHER ONE HERE" ON THE L's CORNER SIDE MEANS WALL B ─────
+    //
+    // The owner, 11.10.2026: *"dodawanie szafek po lewej stronie l shape
+    // szafki prosze, teraz nie mozna dodac zadnych szafek."*  An L stands on
+    // two walls (T75 F4). The side of it that faces its room corner has no
+    // room on its OWN wall by definition, so a plus or a library add asked on
+    // that side (the probe, verify/t78/f01-probe.md: refused in `freeSlotOnWall`'s
+    // words, "no room to the left of CL01") means the ADJACENT wall: the first
+    // free slot there begins at the end of arm B, the one span the plus stands
+    // on (`runs.js cornerLAdjacentSpan`), and the new cabinet lands flush
+    // against it. Asked on its other side, or with a wall named, nothing here
+    // changes.
+    const cornerAim = beside && isCornerLKit(beside.type) && side && wallAsked == null
+      && isLeftSide(side) === ((beside.params?.corner_side || 'left') === 'left')
+      ? cornerLAdjacentSpan(beside, walls, profile)
+      : null;
     // ─── T75 F10 · A FACE IS TRIED ONLY WHEN IT IS ASKED FOR ───────────────
     // *"A unit is added to a face as to a wall (`addUnit` with the face's
     // index)."*  A named wall (a face's plus, the library opened on it) is the
@@ -4833,11 +4849,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const plaster = walls.filter((wl) => !wl.island);
     const ordered = asked
       ? [asked]
-      : (besideWall
-        ? (side
-          ? [besideWall]
-          : [besideWall, ...plaster.filter((wl) => wl.index !== besideWall.index)])
-        : plaster);
+      : (cornerAim && walls[cornerAim.wall]
+        ? [walls[cornerAim.wall]]
+        : (besideWall
+          ? (side
+            ? [besideWall]
+            : [besideWall, ...plaster.filter((wl) => wl.index !== besideWall.index)])
+          : plaster));
     // ─── T75 F4 · AN L STANDS IN A ROOM CORNER ONLY ───────────────────────
     // *"the L stands in a room corner only (Room refuses first: any other spot
     // is refused in words)."*  The first free internal corner, on the wall of
@@ -4866,6 +4884,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
+      // T78 F1 · on the adjacent wall the L's arm B is the thing to stand beside.
+      const viaCorner = Boolean(cornerAim && wall.index === cornerAim.wall);
       const slotAt = asked && xAsked != null
         ? (q) => (slotTakes({ ...q, x: Number(xAsked) }, profile) ? Math.round(Number(xAsked)) : null)
         : (q) => freeSlotOnWall(q, profile);
@@ -4888,8 +4908,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           // corner square (verify/t75/p01-probe.md measured it landing there).
           ...cornerSpansFor(state, unit, wall, walls, profile),
         ],
-        near: onThisWall ? unitSpan(beside) : null,
-        side: onThisWall ? side : null,
+        // eslint-disable-next-line no-nested-ternary
+        near: viaCorner ? cornerAim.span : (onThisWall ? unitSpan(beside) : null),
+        // eslint-disable-next-line no-nested-ternary
+        side: viaCorner ? (cornerAim.side === 'left' ? 'L' : 'R') : (onThisWall ? side : null),
       });
       if (x != null) { placed = { wall: wall.index, x }; break; }
     }
@@ -4897,7 +4919,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const where = asked && xAsked != null
         ? `There is no room for ${formatMm(unit.params.width)} mm at ${formatMm(Math.round(Number(xAsked)))} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
         : side && beside
-        ? `There is no room for ${formatMm(unit.params.width)} mm to the ${side === 'L' ? 'left' : 'right'} of ${beside.params.unit_num} — move something, or add it on the other side.`
+        // T78 F1 · the probe (verify/t78/f01-probe.md, row 14) read "to the right"
+        // for a plus that said 'left': the side is read by `isLeftSide`, the
+        // app's one reading of that word.
+        ? `There is no room for ${formatMm(unit.params.width)} mm to the ${isLeftSide(side) ? 'left' : 'right'} of ${beside.params.unit_num}: move something, or add it on the other side.`
         : (asked
           ? `There is no room for ${formatMm(unit.params.width)} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
           : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit: move or remove something first.`);
@@ -6565,6 +6590,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       };
     }
     const level = getUnitType(unit.type).mount;
+    // ─── T78 F1 · THE WALL SELECT ONTO THE WALL AN L's ARM B REACHES ────────
+    // The probe (verify/t78/f01-probe.md, row 6): with the L in the corner of
+    // wall 1, the Wall select put a Standard on wall 4 at x 40, the FAR corner,
+    // 1450 mm from the L's arm, because `freeSlotOnWall` with no `near` takes
+    // the first gap from the wall's start once the right-hand end is taken.
+    // The first free slot on wall B begins at the end of arm B: the same span
+    // the plus and the placement read (`runs.js cornerLAdjacentSpan`), handed
+    // in as the thing to stand beside, so the unit lands flush against the arm.
+    const armB = s.units
+      .map((u) => (u.id !== unitId && (u.position?.wall ?? 0) !== wallIndex && obstructs(unit, u)
+        ? cornerLAdjacentSpan(u, walls, getCabinetProfile())
+        : null))
+      .find((adj) => adj && adj.wall === wallIndex) || null;
     const x = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
@@ -6579,6 +6617,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // T75 F2 · the unit round the corner, at its corner stop.
         ...cornerSpansFor(s, unit, walls[wallIndex], walls),
       ],
+      near: armB ? armB.span : null,
+      side: armB ? (armB.side === 'left' ? 'L' : 'R') : null,
     }, getCabinetProfile());
     if (x == null) {
       // T75 F10 · refused: the automat puts its panel back.

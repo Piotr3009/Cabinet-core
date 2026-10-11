@@ -2263,6 +2263,128 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (side && side !== u.params?.corner_side) next[i] = { ...u, params: { ...u.params, corner_side: side } };
     }
 
+    // ─── T78 F6 · THE WALL L FOLLOWS THE BASE L, AND SPLITS ABOVE 700 ───────
+    //
+    // The owner, 11.10.2026: *"automatycznie wyrownanie szafki wiszacej
+    // naroznej do szerokosci dolnej, chyba ze bardzo duza to wtedy propozycja
+    // nastepnej szafki jesli drzwiczki beda wieksze niz 700 w szafce
+    // wiszacej."*  A wall L standing in the corner a base L stands in takes
+    // the base's two arm lengths (its own ARM depth stays the wall depth).
+    // When either arm's leaf would exceed `profile.corner.wallLeafMaxMm`
+    // (700, the owner's), the app does NOT hang one wide leaf: the arm is
+    // set to the length that keeps the leaf at 700 and a plain wall unit for
+    // the remainder is PROPOSED (the grey hint, T33's pull-down grammar, with
+    // one click that adds it beside the wall L through `addUnit`, the F1 road
+    // for the arm on the adjacent wall). Written on every pass, so a base arm
+    // changed later re-runs the law; a wall L the client sized by hand
+    // (`corner_arms_own`, written by `updateUnitParams`) is left alone.
+    {
+      const spec = cornerSpec(profile);
+      const leafMax = spec.wallLeafMaxMm;
+      const cornerPointOf = (u) => {
+        const wall = walls[u.position?.wall ?? 0];
+        if (!wall || wall.island) return null;
+        const side = cornerLHand(u, walls, profile) || u.params?.corner_side || 'left';
+        const pt = side === 'left' ? wall.start : wall.end;
+        return { x: Math.round(pt.x), y: Math.round(pt.y), side, wall: wall.index };
+      };
+      const armOf = (u) => {
+        const type = getUnitType(u.type);
+        const own = Number(u.params?.arm_mm);
+        if (own > 0) return own;
+        const key = type.armDepthKey ? String(type.armDepthKey).split('.') : [];
+        return Number(key.reduce((o, k) => (o == null ? o : o[k]), profile)) || 0;
+      };
+      const bases = next.filter((u) => isCornerLKit(u.type) && getUnitType(u.type).mount === 'floor').map((u) => ({ u, at: cornerPointOf(u) }));
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        if (!isCornerLKit(u.type) || getUnitType(u.type).mount !== 'wall') continue;
+        const at = cornerPointOf(u);
+        if (!at) continue;
+        const base = bases.find((b) => b.at && b.at.x === at.x && b.at.y === at.y)?.u || null;
+        const params = { ...u.params };
+        if (!base) {
+          if (params.corner_arms_auto) { delete params.corner_arms_auto; next[i] = { ...u, params }; }
+          splitProposed.delete(u.id);
+          continue;
+        }
+        if (params.corner_arms_own === true) continue;
+        // The base's arms in THIS unit's frame: on the same wall arm A is arm
+        // A; on the adjacent wall the two swap.
+        const sameWall = (base.position?.wall ?? 0) === (u.position?.wall ?? 0);
+        const want = {
+          width: Number(sameWall ? base.params.width : base.params.depth) || 0,
+          depth: Number(sameWall ? base.params.depth : base.params.width) || 0,
+        };
+        const arm = armOf(u);
+        const kinds = lArmKinds(profile);
+        const proposals = [];
+        for (const key of ['width', 'depth']) {
+          // The leaf by the L's own door law (`corners.js lLeafTrimMm`): the
+          // arm's opening less the gap and the corner edge's trim.
+          const trim = lLeafTrimMm(kinds[key === 'width' ? 'A' : 'B'], profile, params.front_t);
+          const leaf = want[key] - arm - trim;
+          if (leaf > leafMax) {
+            // Whole millimetres, as every width in this app: rounded DOWN so
+            // the leaf is never over the owner's 700.
+            const kept = Math.floor(arm + leafMax + trim);
+            proposals.push({ arm: key === 'width' ? 'A' : 'B', remainder: Math.round((want[key] - kept) * 100) / 100 });
+            want[key] = kept;
+          }
+        }
+        const changed = Number(params.width) !== want.width || Number(params.depth) !== want.depth;
+        if (changed || !params.corner_arms_auto || params.corner_arms_auto.from !== base.id) {
+          params.width = want.width;
+          params.depth = want.depth;
+          params.corner_arms_auto = { from: base.id, width: want.width, depth: want.depth, split: proposals.map((p) => p.arm) };
+          next[i] = { ...u, params };
+        }
+        // THE PROPOSAL, once per remainder, and only while nothing stands at
+        // that arm's end on its wall at the wall level.
+        const level = getUnitType(u.type).mount;
+        const side = params.corner_side === 'right' ? 'right' : 'left';
+        const taken = (armName) => {
+          if (armName === 'A') {
+            const edge = side === 'left' ? (Number(u.position?.x_mm) || 0) + want.width : Number(u.position?.x_mm) || 0;
+            return next.some((o) => o.id !== u.id && (o.position?.wall ?? 0) === (u.position?.wall ?? 0)
+              && getUnitType(o.type).mount === level && Math.abs((side === 'left' ? paddedSpan(o).left : paddedSpan(o).right) - edge) <= 1);
+          }
+          const adj = cornerLAdjacentSpan({ ...u, params }, walls, profile);
+          return Boolean(adj) && next.some((o) => o.id !== u.id && (o.position?.wall ?? 0) === adj.wall
+            && getUnitType(o.type).mount === level
+            && Math.abs((adj.side === 'left' ? paddedSpan(o).right : paddedSpan(o).left) - adj.x_mm) <= 1);
+        };
+        const open = proposals.filter((p) => p.remainder >= 100 && !taken(p.arm));
+        const key = open.map((p) => `${p.arm}:${p.remainder}`).join('|');
+        if (!open.length) { splitProposed.delete(u.id); continue; }
+        if (splitProposed.get(u.id) === key) continue;
+        splitProposed.set(u.id, key);
+        for (const p of open) {
+          const num = params.unit_num || u.id;
+          const addSide = p.arm === 'A' ? (side === 'left' ? 'right' : 'left') : side;
+          useUiStore.getState().notify(
+            `${num}: arm ${p.arm} of the base L is ${formatMm(want[p.arm === 'A' ? 'width' : 'depth'] + p.remainder)} mm; a wall leaf `
+              + `over ${formatMm(leafMax)} mm is not hung, so the wall L stops at ${formatMm(want[p.arm === 'A' ? 'width' : 'depth'])} mm `
+              + `and a ${formatMm(p.remainder)} mm wall unit is proposed beside it.`,
+            // A yellow, not a grey: the house law (engine/messages.js, T31)
+            // gives a button only to a level that WAITS for a person; a grey
+            // is gone in three seconds and its button could not be reached.
+            // The words are T33's pull-down hint, the click is the proposal.
+            'warn',
+            {
+              action: {
+                label: `Add ${formatMm(p.remainder)} mm wall unit`,
+                run: () => {
+                  const res = get().addUnit('WUD', { near: u.id, side: addSide, params: { width: p.remainder } });
+                  if (res?.error) useUiStore.getState().notify(res.error, 'warn');
+                },
+              },
+            },
+          );
+        }
+      }
+    }
+
     // ─── T75 F3 · THE BLIND KIT'S BLANK FOLLOWS ITS CORNER ─────────────────
     //
     // *"`blindMm` is COMPUTED from the corner: the adjacent run's depth +
@@ -10324,6 +10446,9 @@ function cornerLHand(unit, walls, profile = getCabinetProfile()) {
   if (Math.min(left, right) > cornerSpec(profile).reachMm) return null;
   return right < left ? 'right' : 'left';
 }
+
+/** T78 F6 · the split proposals said so far, per wall L (the key names the remainders), so a pass does not repeat one. */
+const splitProposed = new Map();
 
 /** T75 F4 · the sentence an L is refused with, anywhere but a free room corner. */
 function cornerLRefusal(unit, wallIndex = null) {

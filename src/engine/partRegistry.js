@@ -359,6 +359,27 @@ export const PART_REGISTRY = {
     id: 'kit_valet_rod', name: 'Valet rod', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism: a pull-out rod, zero holes',
   },
+  // T78 F9 · the L corner unit's carousel (the owner: *"krecacy sie naroznik
+  // na garnki w srodku"*): bought, one line per L, a placeholder body, zero holes.
+  kit_carousel: {
+    id: 'kit_carousel', name: 'Carousel', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought corner mechanism: round trays on a post in the L\'s inner corner, zero holes',
+  },
+  // T78 F7 · the L's SPACE CORNER kit (the owner: *"szuflady w narozniku L
+  // shape"*): the corner front pieces and the rear fixing bracket of a drawer
+  // row, one line per row, a placeholder body, zero holes.
+  // T78 F8 · the bi-fold corner hinge (the owner: *"zawiasy podwojne czyli
+  // jedne drzwiczki do carcasu a pozniej zawiasy od drzwiczek do drzwiczek"*):
+  // bought, counted per hinge row of leaf B, zero holes until the catalogue's
+  // cup pattern is in reference/hardware/blum-hinges.json.
+  hinge_bifold: {
+    id: 'hinge_bifold', name: 'Bi-fold corner hinge', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Blum CLIP top 60 degree bi-fold corner hinge: leaf B hangs on leaf A, a line and a body, zero holes',
+  },
+  kit_space_corner: {
+    id: 'kit_space_corner', name: 'SPACE CORNER kit', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought corner drawer mechanism (Blum SPACE CORNER): joins the two boxes of an L drawer row, zero holes',
+  },
   kit_pulldown_rail: {
     id: 'kit_pulldown_rail', name: 'Pull-down rail', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism — T33 put it on the order form, zero holes',
@@ -604,6 +625,12 @@ export const HARDWARE_TO_PART_ID = {
   // T75 F19 · the two kinds WARDROBE_KIT_KINDS gained.
   wardrobe_kit_hooks: 'kit_hooks',
   wardrobe_kit_valet_rod: 'kit_valet_rod',
+  // T78 F9 · `hw(kit.kind, …)` for CORNER_KIT_KINDS: the L's carousel.
+  carousel: 'kit_carousel',
+  // T78 F7 · `hw('space_corner', …)`, one per L drawer row.
+  space_corner: 'kit_space_corner',
+  // T78 F8 · `hw('bifold_hinges', …)`, leaf B's hinge rows.
+  bifold_hinges: 'hinge_bifold',
 };
 
 /**

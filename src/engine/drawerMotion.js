@@ -83,7 +83,9 @@ export function drawerTravel(panels = []) {
     if (p?.part !== 'DRAWER-SIDE' || !p.box) continue;
     const n = Number(p.meta?.drawer);
     if (!(n > 0)) continue;
-    out.set(n, Math.max(out.get(n) || 0, Number(p.box.d) || 0));
+    // T78 F7 · a box turned onto the adjacent wall of an L (its length in
+    // box.w) states its own travel; the box's own depth otherwise.
+    out.set(n, Math.max(out.get(n) || 0, Number(p.meta?.travel_mm) || Number(p.box.d) || 0));
   }
   return out;
 }

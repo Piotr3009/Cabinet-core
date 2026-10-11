@@ -148,6 +148,11 @@ export default function RightPanel() {
   // drawers — it IS its three drawers. Its HEIGHTS are editable since turn 17
   // (CLAUDE.md F8.2), and since turn 18 they are editable HERE too (F2.2).
   const ratioDrawers = type?.drawerStyle === 'budr';
+  // T78 F7 · an L's drawer stack (Blum SPACE CORNER) is the drawer unit's own
+  // split per arm: the rows are added and removed here, their heights are the
+  // kit's and are shown, not typed.
+  const lStack = Boolean(type?.corner) && drawers.length > 0;
+  const lRowOf = (num) => (result?.derived?.corner_l?.drawer_rows || []).find((r) => r.row === num) || null;
   // Has anybody set one by hand? Then there is a stack to hand back to the kit.
   const ownDrawerHeights = Array.isArray(unit?.params.drawer_heights)
     && unit.params.drawer_heights.length > 0;
@@ -611,14 +616,17 @@ export default function RightPanel() {
               <div className="cc-row">
                 <span className="text-ink-100">{drawers.length} × drawer</span>
                 <span className="text-ink-400 text-xs">
-                  {result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped'}
+                  {/* eslint-disable-next-line no-nested-ternary */}
+                  {lStack
+                    ? `SPACE CORNER · two boxes a row · NL ${formatMm(lRowOf(1)?.travel_mm || 0)} mm`
+                    : (result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped')}
                 </span>
               </div>
 
               {/* Equal heights ✓ by default: one field for the whole stack
                   (BACKLOG #11). Unticked, every drawer gets its own — listed
                   TOP-DOWN, so the first row is the drawer nearest the ceiling. */}
-              {!ratioDrawers && (
+              {!ratioDrawers && !lStack && (
                 <label className="flex items-center gap-2 text-[12px] text-ink-100">
                   <input
                     type="checkbox"
@@ -629,7 +637,7 @@ export default function RightPanel() {
                 </label>
               )}
 
-              {!ratioDrawers && equalHeights ? (
+              {!ratioDrawers && !lStack && equalHeights ? (
                 <div className="flex items-center gap-2">
                   <span className="text-ink-400 w-6 text-xs">all</span>
                   <NumberField
@@ -656,7 +664,12 @@ export default function RightPanel() {
                           so it is the same NumberField the element editor has,
                           against the same engine clamp: no shorter than the
                           runner screws plus the air under them. */}
-                      {ratioDrawers ? (
+                      {/* eslint-disable-next-line no-nested-ternary */}
+                      {lStack ? (
+                        <span className="cc-input w-20 text-right text-ink-100" data-l-row-height={num} title="The kit's own split (the drawer unit's ratio), per arm">
+                          {formatMm(lRowOf(num)?.fronts?.[0]?.h ?? 0)}
+                        </span>
+                      ) : ratioDrawers ? (
                         <NumberField
                           min={minDrawerFrontHeight(profile)}
                           className="cc-input w-20 text-right"

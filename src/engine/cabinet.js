@@ -864,15 +864,37 @@ function normalizeParams(raw, profile) {
     const armDefault = Number(readPath(profile, type.armDepthKey)) || 0;
     const fitted = !(p.doors === false || p.doors === 0
       || (p.doors && typeof p.doors === 'object' && Number(p.doors.count) === 0));
+    // ─── T78 F7 · DRAWERS IN THE L (BLUM SPACE CORNER) ──────────────────
+    // The owner, 11.10.2026: *"szuflady w narozniku L shape."*  A drawer row
+    // on an L is a STACK of two to four rows (the drawer unit's own x2 / x3 /
+    // x4 splits), two boxes per row (one per arm) and one L front per row;
+    // the L's own body cuts none of it (the arms' virtual parents do, below),
+    // and a stack takes the place of the two doors, as Blum's SPACE CORNER
+    // does. One row, or more than four, is refused in words, never clamped.
+    const SC = profile.corner?.spaceCorner || {};
+    let lRows = type.supports.drawers ? drawers : 0;
+    if (lRows > 0 && (lRows < (Number(SC.rowsMin) || 2) || lRows > (Number(SC.rowsMax) || 4))) {
+      warnings.push({
+        code: 'CORNER_L_DRAWERS_REFUSED',
+        message: `${lRows} drawer row${lRows === 1 ? '' : 's'} on an L: a SPACE CORNER stack is ${Number(SC.rowsMin) || 2} to ${Number(SC.rowsMax) || 4} rows (the drawer unit's own splits). No drawers were generated.`,
+      });
+      lRows = 0;
+    }
     cornerL = {
       arm: Number(p.arm_mm) > 0 ? Number(p.arm_mm) : armDefault,
       side: p.corner_side === 'right' ? 'right' : 'left',
-      doors: Boolean(type.supports.doors) && fitted,
+      doors: Boolean(type.supports.doors) && fitted && !lRows,
+      drawers: lRows,
+      // T78 F8 · the owner: *"zawiasy podwojne czyli jedne drzwiczki do carcasu
+      // a pozniej zawiasy od drzwiczek do drzwiczek."*  `pair` is today's A
+      // and B; `bifold` hangs leaf B on leaf A's free edge.
+      doorsMode: p.corner_doors === 'bifold' ? 'bifold' : 'pair',
       // T75 proposed, owner to confirm (`profile.corner.overlap`): the arm on
       // the ADJACENT wall overlaps; 'own' turns it round.
       overlap: profile.corner?.overlap === 'own' ? 'own' : 'adjacent',
     };
     doorCount = 0;
+    drawers = 0;
   }
 
   // Wall units may run their fronts below the carcass (handleless grab edge).
@@ -3651,6 +3673,14 @@ export function computeCabinet(params, profileOverride) {
   // overlaps, and it opens first). They are merged after the box's own front
   // and drilling passes (below, before the totals), so nothing re-drills them.
   let lCorner = null;
+  // T78 F9 · the L's bought corner mechanisms (the carousel): bodies for the
+  // scene and the BOM, never a hole. Filled by the L block, ordered below with
+  // the wardrobe's kits, absent on every other kit.
+  const cornerKitBodies = [];
+  // T78 F7 · how a row's two front boards meet at the inner corner
+  // (`KIT_CORNER_L_DRAWERS.lsp` CL:frontJoint): a butt, B's end on A's face.
+  // A mitre is the owner's alternative, one word here.
+  const SC_JOINT = 'butt';
   if (type.corner && W > 0 && D > 0) {
     const cl = cfg.cornerL;
     const mount = type.mount === 'wall' ? 'W' : (type.family === 'wardrobe' ? 'X' : 'B');
@@ -3677,6 +3707,27 @@ export function computeCabinet(params, profileOverride) {
       const cornerClear = Number(P.doors?.clearance?.corner) || 0;
       const overlapArm = cl.overlap === 'adjacent' ? 'B' : 'A';
       const ownTrim = params?.front_edge_trim || {};
+      // T78 F7 · the drawer unit of each split (profile.baseDrawerUnit.variants).
+      const budrTypeFor = (n) => ({ 2: 'BUDR2', 3: 'BUDR', 4: 'BUDR4' })[n] || type.parentType;
+      // T78 F8 · the bi-fold hinge as the catalogue file states it (nulls where
+      // the page has not been read); the rows leaf B would carry.
+      const bifoldSpec = bifoldHingeSpec(P);
+      let bifoldRows = 0;
+      // The arm's frame into the L's: arm A stands on the unit's own wall (the
+      // virtual frame moved to where the arm's opening starts); arm B turns
+      // onto the adjacent wall at x = 0 facing +x (left hand) or at x = W
+      // facing -x (right hand). One rule for a door, a drawer box, a front.
+      const placeBox = (arm, b) => {
+        if (arm === 'A') return { ...b, x: roundTo((right ? 0 : d) + b.x, 4) };
+        if (!right) {
+          return {
+            x: roundTo(b.z, 4), y: b.y, z: roundTo(D - (b.x + b.w), 4), w: b.d, h: b.h, d: b.w,
+          };
+        }
+        return {
+          x: roundTo(W - (b.z + b.d), 4), y: b.y, z: roundTo(d + b.x, 4), w: b.d, h: b.h, d: b.w,
+        };
+      };
 
       // ── one virtual parent per arm: its side, its shelf rows, its door ──
       const DROP = [
@@ -3703,9 +3754,26 @@ export function computeCabinet(params, profileOverride) {
         };
         const base = { ...(params || {}) };
         for (const k of DROP) delete base[k];
+        // T78 F7 · a drawer stack: the arm's parent is the drawer unit of
+        // that split (its boxes, its runner ladder for the arm depth, its
+        // fronts), and each row's front is trimmed at the inner corner so
+        // the two boards of a row meet as ONE L front: A's end flush with
+        // B's back (gap/2), B's end on A's face (gap/2 + front_t). The pair
+        // law of door B (front_t + the corner clearance) is retired here:
+        // the two boards move together and need no clearance between them.
+        const rowTrims = {};
+        if (cl.drawers) {
+          const t = arm === 'A' ? gap / 2 : gap / 2 + frontT;
+          for (let i = 1; i <= cl.drawers; i += 1) {
+            rowTrims[`${unitNum}-${arm}-F${i}`] = {
+              left: innerSide === 'left' ? t : 0,
+              right: innerSide === 'right' ? t : 0,
+            };
+          }
+        }
         const vParams = {
           ...base,
-          type: type.parentType,
+          type: cl.drawers ? budrTypeFor(cl.drawers) : type.parentType,
           width: span,
           depth: d,
           height: H,
@@ -3887,23 +3955,8 @@ export function computeCabinet(params, profileOverride) {
           const a = arms[arm];
           const vDoor = a.v.panels.find((x) => x.id === a.doorId);
           if (!vDoor) continue;
-          const b = vDoor.box;
-          let box;
-          if (arm === 'A') {
-            // Arm A stands on the unit's own wall: the virtual frame is the
-            // box frame, moved to where the arm's opening starts.
-            box = { ...b, x: roundTo((right ? 0 : d) + b.x, 4) };
-          } else if (!right) {
-            // Arm B on the adjacent wall at x = 0, its front facing +x.
-            box = {
-              x: roundTo(b.z, 4), y: b.y, z: roundTo(D - (b.x + b.w), 4), w: b.d, h: b.h, d: b.w,
-            };
-          } else {
-            // …and at x = W, facing -x.
-            box = {
-              x: roundTo(W - (b.z + b.d), 4), y: b.y, z: roundTo(d + b.x, 4), w: b.d, h: b.h, d: b.w,
-            };
-          }
+          // T78 F7 · the one placing rule (`placeBox`), shared with the drawers.
+          const box = placeBox(arm, vDoor.box);
           // The parent's trim pass narrows a leaf and leaves its blank's area
           // and banding at the untrimmed size; the L's leaves are trimmed by
           // the corner law itself, so they are stated at the size they are cut.
@@ -3950,6 +4003,107 @@ export function computeCabinet(params, profileOverride) {
         }
       }
 
+      // ─── T78 F7 · THE DRAWER STACK: TWO BOXES A ROW, ONE L FRONT, ONE KIT ──
+      // The owner, 11.10.2026: *"szuflady w narozniku L shape."*  LISP first:
+      // `reference/lisp/KIT_CORNER_L_DRAWERS.lsp`. Each arm's parent (the
+      // drawer unit of the split) has cut its boxes, its fronts and its runner
+      // rows on the END side (which came over as SIDE-A / SIDE-B's own cnc);
+      // here its boxes and fronts are placed into the L's frame by the same
+      // rule as the doors, the box ids take the arm's letter (two parents, two
+      // D1-SL), and every part of a row carries the row's motion: the whole
+      // row (two boxes, two front boards) runs out of the inner corner along
+      // the 45 degree diagonal, the way Blum's fixed corner front does, by the
+      // box's own nominal length (`meta.slide`, `meta.travel_mm`, read by
+      // `3d/UnitView.jsx` MovingPanel and `engine/drawerMotion.js`).
+      // The corner joint of a row's two boxes (the corner front pieces and
+      // the rear fixing bracket) is a BOUGHT SPACE CORNER kit: one BOM line
+      // and a placeholder body per row, ZERO HOLES, until its drilling is in
+      // `reference/hardware/blum-space-corner.json` with a page.
+      const drawerParts = [];
+      const drawerDrills = [];
+      const drawerSaid = [];
+      if (cl.drawers) {
+        const dirX = right ? -1 : 1;
+        const slide = { x: roundTo(dirX / Math.SQRT2, 6), z: roundTo(1 / Math.SQRT2, 6) };
+        for (const arm of ['A', 'B']) {
+          const a = arms[arm];
+          const other = arm === 'A' ? 'B' : 'A';
+          const sides = a.v.panels.filter((x) => x.part === 'DRAWER-SIDE' && x.box);
+          const travel = sides.reduce((m, x) => Math.max(m, Number(x.box.d) || 0), 0);
+          const parts = a.v.panels.filter((x) => x.role === 'drawer_box' || x.part === 'DRAWER-FRONT');
+          const renamed = new Map();
+          for (const vp of parts) {
+            const row = Number(vp.meta?.drawer) || 0;
+            const isFront = vp.part === 'DRAWER-FRONT';
+            const id = isFront ? vp.id : vp.id.replace(/^D(\d+)-/, `D$1${arm}-`);
+            if (!isFront) renamed.set(vp.id, id);
+            drawerParts.push({
+              arm,
+              panel: {
+                ...vp,
+                id,
+                ...(isFront ? {
+                  area_m2: areaM2(vp.w, vp.h),
+                  edging: { ...vp.edging, len_m: roundTo(metres(2 * vp.w + 2 * vp.h), 6) },
+                } : {}),
+                box: vp.box ? placeBox(arm, vp.box) : vp.box,
+                cnc: vp.cnc ? { ...vp.cnc } : vp.cnc,
+                meta: {
+                  ...(vp.meta || {}),
+                  arm,
+                  lSide: cl.side,
+                  slide,
+                  travel_mm: roundTo(travel, 4),
+                  ...(isFront ? {
+                    lFront: {
+                      row, arm, joint: SC_JOINT, with: `${unitNum}-${other}-F${row}`,
+                    },
+                    lBoard: `DRAWER-FRONT-${arm}`,
+                    // Arm B's board stands along z; the scene turns a decorated
+                    // or shaker solid onto it by this (T78 F3's rule for door B).
+                    ...(arm === 'B' ? { faceX: { dir: dirX } } : {}),
+                  } : {}),
+                },
+              },
+            });
+          }
+          const ids = new Set(parts.map((x) => x.id));
+          for (const dr of a.v.drills.filter((x) => ids.has(x.panel))) {
+            drawerDrills.push({ ...dr, panel: renamed.get(dr.panel) || dr.panel });
+          }
+          for (const wn of (a.v.warnings || []).filter((x) => x.panel && ids.has(x.panel))) drawerSaid.push(wn);
+        }
+        // The kit, one per row, standing in the corner square right behind
+        // the inner corner point at the row's height (a placeholder body).
+        const frontsA = drawerParts
+          .filter((x) => x.arm === 'A' && x.panel.part === 'DRAWER-FRONT')
+          .sort((p1, p2) => (Number(p1.panel.meta.drawer) || 0) - (Number(p2.panel.meta.drawer) || 0));
+        const SCK = P.corner?.spaceCorner || {};
+        const bracket = Math.max(20, Number(SCK.bracketMm) || 60);
+        for (const { panel: f } of frontsA) {
+          const row = Number(f.meta.drawer) || 0;
+          cornerKitBodies.push({
+            id: `space-corner-${row}`,
+            kind: 'space_corner',
+            label: SCK.label || 'Blum SPACE CORNER kit',
+            placeholder: true,
+            row,
+            box: {
+              x: roundTo(right ? W - d : d - bracket, 4),
+              y: roundTo(f.box.y, 4),
+              z: roundTo(d - bracket, 4),
+              w: bracket,
+              h: roundTo(f.box.h, 4),
+              d: bracket,
+            },
+            armA_mm: roundTo(W - d, 4),
+            armB_mm: roundTo(D - d, 4),
+            nl_mm: roundTo(drawerParts.find((x) => x.arm === 'A')?.panel.meta.travel_mm || 0, 4),
+            trays: [],
+          });
+        }
+      }
+
       // Every drill the parent bored in the arm's end side after its own
       // sockets and screws (those travel on the side's cnc.holes): hinge
       // plates, shelf pins, hangers, the rail's bracket.
@@ -3963,6 +4117,10 @@ export function computeCabinet(params, profileOverride) {
 
       lCorner = {
         plan, cl, arms, doors, sideDrills, legs, right, d,
+        // T78 F7
+        drawerParts, drawerDrills, drawerSaid,
+        // T78 F8
+        bifold: cl.doorsMode === 'bifold' && cl.doors ? { spec: bifoldSpec, rows: bifoldRows } : null,
       };
     }
   }
@@ -9284,6 +9442,25 @@ export function computeCabinet(params, profileOverride) {
       for (const wn of said) warnings.push({ ...wn });
     }
     for (const dr of lCorner.sideDrills) drills.push(dr);
+    // T78 F7 · the drawer stack's boxes and fronts join the same way, with
+    // their drills (handle holes, the box's own) and what the parents said.
+    for (const { panel: dp } of lCorner.drawerParts) panels.push(dp);
+    for (const dr of lCorner.drawerDrills) drills.push(dr);
+    for (const wn of lCorner.drawerSaid) warnings.push({ ...wn });
+    if (lCorner.bifold) {
+      // T78 F8 · the pair is a bi-fold: said once, with what is and is not bored.
+      const sp = lCorner.bifold.spec;
+      warnings.push({
+        code: 'CORNER_L_BIFOLD',
+        level: 'info',
+        panel: `${unitNum}-B-F`,
+        message: `${unitNum}: door B hangs on door A's free edge (${sp.label}, ${sp.angleDeg} degrees, `
+          + `${lCorner.bifold.rows} hinge${lCorner.bifold.rows === 1 ? '' : 's'}; leaf A takes the ${sp.companion} family). `
+          + (Number.isFinite(sp.cupFromEdgeMm)
+            ? `Cups bored ${sp.cupFromEdgeMm} mm from B's hinge edge (catalogue p. ${sp.page ?? '?'}, owner to confirm).`
+            : 'A line and a body, no hole: the cup pattern waits for the catalogue page (reference/hardware/blum-hinges.json, owner to confirm).'),
+      });
+    }
     const first = lCorner.doors.find((x) => x.door.meta?.opensFirst);
     if (first) {
       // The line the BOM carries (`bom.js buildBom` units[].warnings): an
@@ -9559,6 +9736,31 @@ export function computeCabinet(params, profileOverride) {
     hw(`wardrobe_kit_${kit.kind}`, kit.label, qty, 'pcs',
       { opening_width_mm: roundTo(kit.box.w, 0), zone: kit.zone, ...(art ? { article: art } : {}) },
       `${kit.label}${kit.kind === 'hooks' ? ` x ${qty}` : ''} · ${roundTo(kit.box.w, 0)} mm opening${art ? ` · art. ${art}` : ''}`);
+  }
+
+  // ─── T78 F9 · THE L's BOUGHT MECHANISMS, ORDERED TO THE CORNER SQUARE ─────
+  // One line per body, to the inner-corner square it has to fit, zero holes.
+  for (const kit of cornerKitBodies) {
+    if (kit.kind === 'space_corner') {
+      // T78 F7 · one kit per drawer row: the corner front pieces and the rear
+      // fixing bracket that join the row's two boxes. A line and a body,
+      // never a hole (`reference/hardware/blum-space-corner.json`, owner to
+      // confirm).
+      hw('space_corner', kit.label, 1, 'pcs',
+        {
+          row: kit.row, arm_a_mm: kit.armA_mm, arm_b_mm: kit.armB_mm, nl_mm: kit.nl_mm,
+        },
+        `${kit.label} · row ${kit.row} · arms ${roundTo(kit.armA_mm, 0)} / ${roundTo(kit.armB_mm, 0)} mm · NL ${roundTo(kit.nl_mm, 0)}`);
+      continue;
+    }
+    hw(kit.kind, kit.label, 1, 'pcs',
+      {
+        opening_width_mm: roundTo(kit.box.w, 0),
+        opening_height_mm: roundTo(kit.box.h, 0),
+        opening_depth_mm: roundTo(kit.box.d, 0),
+        trays: kit.trays.length,
+      },
+      `${kit.label} · ${roundTo(kit.box.w, 0)} x ${roundTo(kit.box.d, 0)} mm corner square, ${roundTo(kit.box.h, 0)} high · ${kit.trays.length} trays`);
   }
 
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────
@@ -10261,6 +10463,8 @@ export function computeCabinet(params, profileOverride) {
     ...(watchGlassPanes.length ? { watchGlass: watchGlassPanes } : {}),
     ...(watchInsertsBuilt.length ? { watchInserts: watchInsertsBuilt } : {}),
     wardrobeKits: wardrobeKitBodies,
+    // T78 F9 · the L's bought corner mechanisms, present only where one is fitted.
+    ...(cornerKitBodies.length ? { cornerKits: cornerKitBodies } : {}),
     // ─── TURN 40 (CLAUDE.md F3b): THE OVERLAY STACK, AS THE KIT MEASURED IT ─
     //
     // The key appears ONLY where a wardrobe actually carries one — the same
@@ -10471,14 +10675,28 @@ export function computeCabinet(params, profileOverride) {
       side: lCorner.cl.side,
       overlap: lCorner.cl.overlap,
       opens_first: lCorner.doors.find((x) => x.door.meta?.opensFirst)?.arm ?? null,
+      // T78 F8 · which pair this is, and where each leaf hangs.
+      doors_mode: lCorner.cl.doorsMode,
       doors: lCorner.doors.map(({ arm, door }) => ({
         arm,
         id: door.id,
         w: door.w,
         hinge: door.meta?.hinge ?? null,
         corner_edge: door.meta?.cornerEdge ?? null,
+        hinged_on: door.meta?.bifold?.parent ? door.meta.bifold.parent : `SIDE-${arm}`,
       })),
       top_area_m2: roundTo(lCorner.plan.top.area / 1e6, 6),
+      // T78 F7 · the drawer stack: rows, and per row the two boxes' ids, the
+      // two front boards and the row's travel along the diagonal.
+      drawers: lCorner.cl.drawers,
+      drawer_rows: Array.from({ length: lCorner.cl.drawers }, (_, k) => k + 1).map((row) => ({
+        row,
+        fronts: lCorner.drawerParts.filter((x) => x.panel.part === 'DRAWER-FRONT' && Number(x.panel.meta.drawer) === row)
+          .map((x) => ({ arm: x.arm, id: x.panel.id, w: x.panel.w, h: x.panel.h })),
+        boxes: lCorner.drawerParts.filter((x) => x.panel.role === 'drawer_box' && Number(x.panel.meta.drawer) === row)
+          .map((x) => x.panel.id),
+        travel_mm: lCorner.drawerParts.find((x) => Number(x.panel.meta.drawer) === row)?.panel.meta.travel_mm ?? 0,
+      })),
     };
   }
 
@@ -10510,7 +10728,8 @@ export function computeCabinet(params, profileOverride) {
       // T75 F4: an L echoes its own two leaves and its SHELF-L count.
       front_type: cfg.frontType, hinge: cfg.hinge, doors: lCorner ? lCorner.doors.length : doorCount,
       shelves: lCorner ? panels.filter((x) => x.meta?.lBoard === 'SHELF-L').length : numShelves,
-      drawers: numDrawers, drawer_heights: [...(budr ? budr.heights : drawerHeights)],
+      // T78 F7 · an L echoes its drawer rows (its own body cut none).
+      drawers: lCorner ? lCorner.cl.drawers : numDrawers, drawer_heights: [...(budr ? budr.heights : drawerHeights)],
       rail: hasRail, rail_offset: cfg.railOffset,
       // T35-F12: echoed so `doors.js doorHeightOf` — the panel's OTHER reader,
       // the one the properties panel prints — lands on the same number the

@@ -711,7 +711,12 @@ function isOverlay(object) {
 export function MovingPanel({
   panel: p, front, open, surface, outline, outlines, contour, xray, depth, profile,
   swing = null, joineryLayers: layers = null, children = null,
-  machining = false, drills = [], slide = false, travel = null, ...handlers
+  machining = false, drills = [], slide = false, travel = null,
+  // T78 F8 · a bi-fold pair: the carrier leaf renders its child leaf INSIDE its
+  // own swing group (`bifoldChild`), and the child stands at its pivot
+  // relative to the carrier's (`parentPivot`), so it rides the carrier's swing
+  // and adds its own fold about the hinge line between the two.
+  bifoldChild = null, parentPivot = null, ...handlers
 }) {
   const group = useRef(null);
   const amount = useRef(0);
@@ -892,16 +897,24 @@ export function MovingPanel({
   const centre = mitre?.box || p.box;
   // T75 F4 · the L's door B faces the adjacent wall: it hangs on its far end (z max).
   const alongZ = front === 'door' && !drops && p.meta?.swingZ;
+  // T78 F8 · the bi-fold child leaf hangs on its NEAR end (toward the carrier
+  // leaf), not on the far end of the arm the pair's door B hangs on.
+  const bifold = front === 'door' && !drops && p.meta?.bifold?.parent ? p.meta.bifold : null;
   // eslint-disable-next-line no-nested-ternary
-  const pivot = alongZ ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d)] : drops
+  const pivot = bifold ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z)] : alongZ ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d)] : drops
     ? [mm(p.box.x + p.box.w / 2), mm(p.box.y), mm(p.box.z + p.box.d / 2)]
     : (front === 'door'
       ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
       : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)]);
   // eslint-disable-next-line no-nested-ternary
-  const meshOffset = alongZ ? [0, 0, mm(-p.box.d / 2)] : drops
+  const meshOffset = bifold ? [0, 0, mm(p.box.d / 2)] : alongZ ? [0, 0, mm(-p.box.d / 2)] : drops
     ? [0, mm(p.box.h / 2), 0]
     : (front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0]);
+  // Where the group stands: at its pivot, or, nested in a carrier leaf's group,
+  // at its pivot relative to the carrier's (T78 F8).
+  const base = parentPivot
+    ? [pivot[0] - parentPivot[0], pivot[1] - parentPivot[1], pivot[2] - parentPivot[2]]
+    : pivot;
 
   // ─── Turn 20 (CLAUDE.md F3): THE BOX TRAVELS TOO ───────────────────────
   // `slide` is a piece of a drawer that is not its face — a side, the box
@@ -936,11 +949,19 @@ export function MovingPanel({
       // before the app knew which runner a drawer was on, and it is what left
       // a face standing proud of a box that had not moved.
       const off = mm(travel ?? depth * 0.75) * a;
+      // ─── T78 F7 · THE L ROW RUNS OUT ALONG THE DIAGONAL ─────────────────
+      // A SPACE CORNER row (two boxes, two front boards) moves as one body
+      // out of the inner corner, along `meta.slide` (a unit vector in the
+      // plan: (+-1, +1) / sqrt 2); a plain drawer has none and slides +z.
+      const sv = p.meta?.slide;
       if (leans && glide.current) {
         glide.current.position.z = off;
-        group.current.position.z = pivot[2];
+        group.current.position.z = base[2];
+      } else if (sv && Number.isFinite(Number(sv.x)) && Number.isFinite(Number(sv.z))) {
+        group.current.position.x = base[0] + off * Number(sv.x);
+        group.current.position.z = base[2] + off * Number(sv.z);
       } else {
-        group.current.position.z = pivot[2] + off;
+        group.current.position.z = base[2] + off;
       }
       group.current.rotation.y = 0;
     } else if (drops) {
@@ -957,15 +978,17 @@ export function MovingPanel({
       // handed down as this front's `swing` like every other front's.
       group.current.rotation.x = a * (swing ?? Math.PI / 4);
       group.current.rotation.y = 0;
-      group.current.position.z = pivot[2];
+      group.current.position.z = base[2];
     } else {
       // Swings on the hinge side, about the group's origin. How FAR is decided
       // by what is beside the cabinet (turn 8, CLAUDE.md F5): a door with a
       // wall on its hinge side stops square, because past square its free edge
       // comes back over the hinge and into the plaster.
-      const dir = alongZ ? p.meta.swingZ.dir : (p.meta?.hinge === 'R' ? 1 : -1);
+      // T78 F8 · a bi-fold child folds about the hinge line to the carrier by the family's angle (`swing`), its own way round.
+      // eslint-disable-next-line no-nested-ternary
+      const dir = bifold ? (Number(bifold.dir) || 1) : (alongZ ? p.meta.swingZ.dir : (p.meta?.hinge === 'R' ? 1 : -1));
       group.current.rotation.y = dir * a * (swing ?? Math.PI * 0.55);
-      group.current.position.z = pivot[2];
+      group.current.position.z = base[2];
     }
   });
 

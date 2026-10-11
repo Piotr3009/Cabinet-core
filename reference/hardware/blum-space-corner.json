@@ -1,0 +1,267 @@
+{
+  "system": "space_corner",
+  "units": "mm",
+  "status": "owner to confirm",
+  "source": {
+    "catalogue": "Blum Catalogue and technical manual 2024/2025, online at https://publications.blum.com/2024/catalogue/en/ (Box systems from p. 194, CLAUDE.md T78)",
+    "read": "T78 F7, 11.10.2026. From this container publications.blum.com, www.blum.com, d2.blum.com, e-services.blum.com and every dealer host answer 403 to CONNECT at the egress proxy (recorded in the proxy's status, 22:26 UTC) and WebFetch cannot resolve them, so NO page was opened. Every value below was read from web-search result snippets of the named URL; `page` is the catalogue page the search index attaches to that URL. Nothing is taken from memory; a value nobody printed is null and the sentence beside it says so.",
+    "caveat": "three kinds of value: `printed` (as the snippet of the named URL shows it), null (not found, with a note), and `derived` (arithmetic or a reading on printed values, with `how`). Every one is owner to confirm against the catalogue page itself.",
+    "pages": {
+      "en/292": "TANDEMBOX antaro, applications overview: the row 'Corner cabinet SPACE CORNER with SYNCROMOTION' with the figure 65 and a page reference and web code the snippet cuts off",
+      "en/337": "TANDEMBOX plus, applications overview: the same row 'Corner cabinet SPACE CORNER with SYNCROMOTION', 65 (also the de edition, de/337)",
+      "en/412": "MOVENTO with BLUMOTION: the locking device T51.7601 (orange nylon / steel) listed among the runner's parts",
+      "en/687": "Universal drilling template 65.1000.01 / 65.1001.01: 'Add-on for SPACE CORNER 65.1106', the part that makes SPACE CORNER assembly possible",
+      "2022 en/304": "the TANDEMBOX SPACE CORNER application page of the PREVIOUS edition (2022/2023); its 2024/2025 page number was not readable from here",
+      "2022 de/548": "ORGA-LINE for TANDEMBOX, single sets, previous edition: 'SPACE CORNER, NL 650 mm' with ZSI.450BI3E (600) and ZSI.500BI3E (650)"
+    }
+  },
+  "what": {
+    "printed": "A user-friendly alternative to conventional corner solutions is the SPACE CORNER. Full extensions use every inch of storage space available. (blum.com overview) ... the SPACE CORNER cabinet comes in all heights and widths and puts corner space to optimal use. Ergonomic full extensions ensure that you have easy access to all items. (publications.blum.com/2022/ep557/en/)",
+    "url": "https://www.blum.com/aa/en/products/cabinet-applications/space-corner/overview/",
+    "reading": "a corner base cabinet whose rows are full-extension drawers that run diagonally out of the inner corner; each row has TWO front leaves, one per arm, meeting at the inner corner. Blum sells the kit in two generations: the FIXED corner front (the two leaves carried on 'corner front pieces' and 'corner rear fixing brackets', wooden drawers on MOVENTO or TANDEM with the T51.7601 locking devices, or TANDEMBOX with the ZSF sets) and SPACE CORNER with SYNCROMOTION (TANDEMBOX antaro, the Z33 sets), whose two standard fronts are hinged and SWING INWARD on opening so they clear the neighbouring fronts. CLAUDE.md T78 F7 describes 'ONE L-shaped front per row'; that is the FIXED generation. The owner decides which generation the engine models (see engineNotes)."
+  },
+  "cabinet": {
+    "recommendedWidthMm": {
+      "min": 900,
+      "max": 1200,
+      "printed": "a wide range of cabinet dimensions to choose from, the recommended width is between 900 and 1200 mm",
+      "url": "https://www.blum.com/in/en/products/cabinet-applications/space-corner/overview/",
+      "page": null,
+      "status": "owner to confirm"
+    },
+    "minimumWidthMm": {
+      "value": null,
+      "note": "no source read prints a minimum carcass width per arm; 900 is a recommendation, not a minimum. The US MOVENTO sheet offers the kit for 33, 36, 39 and 42 inch corner cabinets (838, 914, 991, 1067 mm, derived from the inches), which is the narrowest Blum names anywhere read."
+    },
+    "maximumWidthMm": {
+      "value": 1200,
+      "how": "derived: the upper end of the recommended range; no source prints a hard maximum",
+      "status": "owner to confirm"
+    },
+    "usCornerCabinetSizesInch": {
+      "values": [33, 36, 39, 42],
+      "printed": "corner cabinet sizes 33\", 36\", 39\" or 42\" for its runner set ... Requires special cabinet and drawer construction",
+      "url": "https://d2.blum.com/services/BEC003/cme120138_ma_dok_bus_$sen-us_$aof_$v1.pdf",
+      "page": null,
+      "status": "owner to confirm"
+    },
+    "construction": {
+      "printed": "recommends the construction of a cabinet within a cabinet for SPACE CORNER (Blum installation sheet, M and D heights, SPACE CORNER with SYNCROMOTION); Requires special cabinet and drawer construction (MOVENTO SPACE CORNER sheet); Sample SPACE CORNER drawer and cabinet plans are available for download at blum.com (TANDEM 569 SPACE CORNER sheet)",
+      "url": "https://www.wwhardware.com/media/installation/bz33.pdf",
+      "page": null
+    },
+    "depth": {
+      "minInternalDepthMm": {
+        "value": "NL + 75",
+        "printed": "Z33M00E0A6: minimum internal cabinet depth equals the nominal length plus 75 mm (schachermayer.com, PL listing); Blum's M sheet: 'RL + 75 min.', 'RL = Actual runner length'; Blum's D sheet: 'AL + 75 min.', AL the actual cabinet profile length",
+        "url": "https://webshop.schachermayer.com/cat/pl-PL/product/blum-z33m00e0a6-tandembox-antaro-space-corner-syncromotion-zestaw-m-ciemnoszary/103354930",
+        "page": null,
+        "note": "the three sources name the length differently (nominal, runner, cabinet profile); the 75 is the same in all three. SYNCROMOTION generation only.",
+        "status": "owner to confirm"
+      },
+      "drawerNominalLengthMm": {
+        "value": 650,
+        "printed": "the corner cabinet uses 650 mm length drawers in standard or pot drawer height (fff.ie); Blum NZ shop 'SPACE CORNER set for system height M (96.5 mm)' lists nominal length 650 mm; the 2022/2023 catalogue de/548 prints 'SPACE CORNER, NL 650 mm'",
+        "url": "https://www.fff.ie/space-corner",
+        "page": "2022 de/548",
+        "status": "owner to confirm"
+      }
+    }
+  },
+  "variants": {
+    "movento_wooden_drawer": {
+      "label": "SPACE CORNER with wooden drawers on MOVENTO (fixed corner front, locking devices)",
+      "url": "https://d2.blum.com/services/BEC003/cme120138_ma_dok_bus_$sen-us_$aof_$v1.pdf",
+      "page": null,
+      "runner": {
+        "article": "769.6860S",
+        "printed": "Blum's MOVENTO space-corner guidance lists 769.6860S for corner cabinets of 33\", 36\", 39\", or 42\" with a maximum 5/8\" drawer side ... 170 lb static load rating and one set per drawer",
+        "nominalLengthMm": {
+          "value": 686,
+          "how": "derived: dealers title the article '27 Inch' / '27in Movento 170lb 769.6860S' (hdlusa.com, walmart.com, mckillican.com) and the article's digits 6860 follow Blum's US coding of the length in tenths of a millimetre; 27 in = 685.8 mm",
+          "status": "owner to confirm"
+        },
+        "staticLoadLb": 170,
+        "dynamicLoadKg": {
+          "value": 60,
+          "printed": "another gives a 60 kg dynamic load rating (one dealer listing of 769.6860S)",
+          "status": "owner to confirm"
+        },
+        "euMoventoArticle": {
+          "value": null,
+          "note": "the European MOVENTO 760H article the engine's ladder orders (reference/hardware/movento.json, NL 250 to 450 today) is not named for SPACE CORNER by any source read; the owner's ladder reaches 700 (profile.hardware.runner.movento.nominalLadder) and a 650 or 700 rung would be the European equivalent of the US 27 inch runner. Null until Blum's EU page is read."
+        }
+      },
+      "lockingDevice": {
+        "articles": { "right": "T51.7601 R", "left": "T51.7601 L" },
+        "printed": "Right locking device T51.7601 R; Left locking device T51.7601 L; Installation screw 606N or 606P ... for use with MOVENTO runners only ... one right and one left are required per drawer",
+        "minInsideDrawerWidthMm": 170,
+        "minInsideDrawerWidthPrinted": "minimum inside drawer width 170 (6-11/16\") for the locking device",
+        "sideAdjustmentMm": 1.5,
+        "sideAdjustmentPrinted": "side-to-side adjustment +/- 1.5 (1/16\")",
+        "catalogue2024": "en/412: the locking device T51.7601 (orange nylon / steel) is listed among the parts of MOVENTO with BLUMOTION",
+        "installationScrews": ["606N", "606P"],
+        "systemScrew": "662.1150.HG",
+        "woodScrew": {
+          "value": null,
+          "note": "one snippet reads 'wood screw 769.6860S', which is the runner's own article and therefore a mis-read of the sheet's table; the wood screw article is null"
+        },
+        "status": "owner to confirm"
+      },
+      "maxDrawerSideThicknessMm": {
+        "value": 16,
+        "printed": "maximum 16 (5/8\") drawer side thickness",
+        "status": "owner to confirm"
+      },
+      "predecessor": {
+        "label": "TANDEM plus BLUMOTION 569 SPACE CORNER (discontinued, replaced by MOVENTO 769)",
+        "articles": { "sideFiveEighths": "569.6860B", "sideThreeQuarters": "569A6860B" },
+        "printed": "Blum's SPACE CORNER sheet lists 36\", 39\" and 42\" corner cabinets. For 3/4\" drawer sides, the part is 569A6860B. For 5/8\" sides, it is 569.6860B ... minimum inside drawer width is 170 mm (6-11/16\") ... 150 lb static per pair ... the heavy-duty TANDEM 569 series has been discontinued and the replacement series are the MOVENTO series, search 769.6860S",
+        "url": "https://downloads.cabinetparts.com/auto/blumtandembm569adotspacecorner.pdf",
+        "status": "owner to confirm"
+      }
+    },
+    "tandembox_antaro_syncromotion": {
+      "label": "SPACE CORNER with SYNCROMOTION, TANDEMBOX antaro (hinged fronts that swing inward)",
+      "catalogue2024": { "overviewPages": ["en/292", "en/337", "de/337"], "applicationPage": null, "applicationPageNote": "the overview rows carry a page reference and a web code that the search snippets cut off; the 2022/2023 edition's page is en/304" },
+      "overviewFigure65": {
+        "value": 65,
+        "printed": "Corner cabinet SPACE CORNER with SYNCROMOTION ... 65 (the overview row, en/292 and en/337); a retailer text: pull-outs with a load-bearing capacity of up to 65 kg (buildingandinteriors.com)",
+        "reading": "the column is most likely the load class in kg; the snippet does not print the column head",
+        "status": "owner to confirm"
+      },
+      "frontBehaviour": {
+        "printed": "SYNCROMOTION lets standard fronts be used with no extra assembly. When closing, the fronts return to their original position. (blum.com) ... The drawer fronts swing inwards to open, ensuring that they do not interfere with the fronts of the adjacent cabinet. (Blum M sheet bz33.pdf) ... a set of front fittings for a new version of the corner drawer SPACE CORNER with SYNCROMOTION with hinged fronts (demos-trade.eu, Z33D00E0A6)",
+        "url": "https://www.wwhardware.com/media/installation/bz33.pdf"
+      },
+      "sets": {
+        "M": {
+          "article": "Z33M00E0A6",
+          "forDrawerHeight": "M (TANDEMBOX antaro drawer side 84 mm; Blum NZ shop calls the same set 'for system height M (96.5 mm)')",
+          "spaceRequirementHeightMm": 101.5,
+          "spaceRequirementPrinted": "requires a space in the cabinet body of 101.5 mm in height (schachermayer.com PL listing)",
+          "minInternalDepth": "NL + 75",
+          "dynamicWeightCapacityLb": 110,
+          "dynamicWeightPrinted": "Dynamic weight capacity of 110 lb (Blum M sheet bz33.pdf)",
+          "contents": ["Syncro front fitting", "corner front element left", "corner front element right", "two Syncro front mounts", "roll front mount", "decorative covers", "gap template", "two BLUMOTION dampers 970.1002", "five screws"],
+          "contentsPrinted": "a Syncro front fitting, a left and right corner front element, two Syncro front mounts, a Roll front mount, decorative covers, a gap template, and two BLUMOTION 970.1002 dampers with five screws (schachermayer.com, PL, machine-read)",
+          "url": "https://webshop.schachermayer.com/cat/pl-PL/product/blum-z33m00e0a6-tandembox-antaro-space-corner-syncromotion-zestaw-m-ciemnoszary/103354930",
+          "status": "owner to confirm"
+        },
+        "D": {
+          "article": "Z33D00E0A6",
+          "forDrawerHeight": "D (TANDEMBOX antaro drawer side 203 mm; Galaxus: 'for panel heights M or C/D')",
+          "spaceRequirementHeightMm": 228,
+          "spaceRequirementPrinted": "a space requirement of 228 mm in height with the same nominal length plus 75 mm rule (schachermayer.com PL listing)",
+          "drawerHeightMm": {
+            "value": 204,
+            "printed": "Blum's spec sheet for the D-height SPACE CORNER gives a drawer height of 204 (in mm, as the sheet's inch conversion shows)",
+            "url": "https://downloads.cabinetparts.com/auto/Intivo-D-height-SPACE-CORNER.pdf"
+          },
+          "minInternalDepth": "AL + 75 (AL = actual cabinet profile length, the D sheet) / NL + 75 (the PL listing)",
+          "backPieceCut": {
+            "value": "X = interior width minus 75 x 0.707",
+            "printed": "The back piece uses a formula with the interior width, X = interior width minus 75 x 0.707 (D-height SYNCROMOTION sheet)",
+            "reading": "0.707 is cos 45, so the back piece is cut for a 45 degree corner 75 wide at the inner corner"
+          },
+          "frontClearanceMm": {
+            "value": 3,
+            "printed": "a minimum clearance of 3 (1/8\") between the opening path of the drawer front of the SPACE CORNER and the edge of the adjacent drawer front (D sheet)"
+          },
+          "contents": "the same as the M set (schachermayer.com PL listing: 'The contents match the M set'); demos-trade.eu adds 'it is necessary to add back holders (13894)'",
+          "url": "https://webshop.schachermayer.com/cat/pl-PL/product/blum-z33d00e0a6-tandembox-antaro-space-corner-syncromotion-zestaw-d-ciemnoszary/103354931",
+          "status": "owner to confirm"
+        },
+        "C": {
+          "article": null,
+          "note": "no C set article was found; Galaxus lists the M set 'for panel heights M or C/D' and the D set is the one named for C/D. Owner to confirm with Blum."
+        },
+        "K": { "article": null, "note": "no K set found in any source read" }
+      },
+      "trigger": {
+        "articles": { "right": "Z33.005-01", "left": "Z33005LH (as Wilson & Bradley writes it)" },
+        "printed": "Blum SPACE CORNER Trigger Right Hand in Grey Z33.005-01 ... a dust-grey nylon trigger",
+        "url": "https://www.wilbrad.com.au/shop/productdetails?pid=3106&name=Blum-SPACE-CORNER-Trigger-Right-Hand-in-Grey-Z33-005-01&cid=369",
+        "status": "owner to confirm"
+      },
+      "tandemboxAntaroDrawerSideHeightsMm": {
+        "N": 69, "M": 84, "K": 116, "C": 171, "D": 203,
+        "printed": "Height N - 69 mm ... Height M - 84 mm ... Height K - 116 mm ... Height C - 171 mm ... Height D - 203 mm",
+        "url": "https://www.blum.com/eu/en/products/boxsystems/tandembox/tandembox-antaro/programme/",
+        "conflict": "one retailer lists the corner-drawer heights as C 167 and D 199; Blum's own page is the one recorded",
+        "status": "owner to confirm"
+      },
+      "spaceRequirementMDrawerMm": {
+        "value": 98.5,
+        "printed": "In Blum's catalog, the M-height drawer side is 84 (3-5/16\"), with a space requirement of 98.5 (US TANDEMBOX catalogue pdf)",
+        "url": "https://downloads.cabinetparts.com/auto/Tandembox-Complete-Catalog-92-pages.pdf",
+        "status": "owner to confirm"
+      },
+      "orgaLineSets": {
+        "printed2022": "2022/2023 de/548: 'SPACE CORNER, NL 650 mm' with 600 ZSI.450BI3E, 650 ZSI.500BI3E (the article digits 450 / 500 do not match the 600 / 650 the row prints; the snippet does not settle what 600 and 650 are)",
+        "printed2024": "the 2024/2025 edition lists SPACE CORNER combo sets ZSI.450KI3N + ZSI.450KI4N and similar (page not readable from here)",
+        "url": "https://publications.blum.com/2022/catalogue/de/548/",
+        "status": "owner to confirm"
+      }
+    },
+    "tandembox_fixed_corner_front_sets": {
+      "label": "TANDEMBOX SPACE CORNER sets with a fixed corner front (front and rear brackets), US / older",
+      "sets": {
+        "M": { "article": "ZSF.340E.M1", "printed": "two corner rear fixing brackets, two corner front pieces and two drawer front support brackets ... nylon and zinc ... Installation type is screw ... rated at 3-5/16\" (about 84 mm)", "url": "https://www.woodworkerexpress.com/blum-tandembox-drawer-system-tandembox-m-height-space-corner-set-dust-grey-tandembox-m-height-space-corner-set.html" },
+        "D_singleGallery": { "article": "ZSF.345E.D1", "printed": "designed for 'D' height space corner drawer systems with single gallery ... the same three bracket types", "url": "https://ahturf.com/blum-zsf-345e-d1-tandembox-space-corner-set-front-rear-brackets-d-height-dust-gray-nickel/" },
+        "D_designElements": { "article": "ZSF.535E.D", "printed": "TANDEMBOX Space Corner Set (Front and Rear Brackets), D Height with Design Elements", "url": "https://www.woodworkerexpress.com/blum-tandembox-drawer-system-tandembox-d-height-space-corner-design-elements-set-dust-grey-nickel-tandembox-d-height-space-corner-design-elements-set-dust-grey-nickel.html" },
+        "K": { "article": null, "note": "no K set found (ZSF.340E.K1 was searched and not found)" }
+      },
+      "status": "owner to confirm"
+    },
+    "legrabox": {
+      "article": null,
+      "note": "No source read offers SPACE CORNER with LEGRABOX (the overview pages pair it with TANDEMBOX, MOVENTO and TANDEM; an Irish retailer lists MERIVOBOX, LEGRABOX, TANDEMBOX, MOVENTO, TANDEM and METABOX as compatible without a Blum reference). CLAUDE.md T78 F7 says 'MOVENTO/LEGRABOX runners': MOVENTO is confirmed by Blum's own sheet, LEGRABOX is not. Null until Blum's page is read.",
+      "url": "https://www.fff.ie/space-corner"
+    }
+  },
+  "fronts": {
+    "leavesPerRow": {
+      "value": 2,
+      "how": "derived from the kit contents (corner front element left and right; two corner front pieces) and the D sheet's clearance 'between the opening path of the drawer front of the SPACE CORNER and the edge of the adjacent drawer front': one leaf per arm, meeting at the inner corner",
+      "status": "owner to confirm"
+    },
+    "shape": {
+      "fixedGeneration": "the two leaves fixed to the drawer at 90 degrees on the corner front pieces: ONE rigid L-shaped front per row (CLAUDE.md T78 F7's reading)",
+      "syncromotionGeneration": "two standard fronts, hinged, swinging inward on opening (Blum: 'standard fronts ... with no extra assembly'); not one rigid L",
+      "meetingEdgeMitre": {
+        "value": null,
+        "note": "no Blum source read prints the mitre of the two leaves' meeting edges; a forum anecdote (festoolownersgroup.com) says 45 degree cuts on both edges of the drawer fronts; not Blum's, so null"
+      },
+      "frontMaterial": "the client's front material (Blum: 'standard fronts')",
+      "clearanceToAdjacentFrontMm": { "value": 3, "source": "the D sheet, SYNCROMOTION generation (see variants.tandembox_antaro_syncromotion.sets.D.frontClearanceMm)", "status": "owner to confirm" }
+    }
+  },
+  "cornerElement": {
+    "what": "the bought part at the inner corner that the two boxes (or the two halves of the drawer) and the two front leaves meet on: the pair of T51.7601 locking devices with the wooden drawer (fixed generation), the two 'corner front pieces' and 'corner rear fixing brackets' of a ZSF set (TANDEMBOX, fixed), or the 'corner front element left / right' and 'Syncro front fitting' of a Z33 set (SYNCROMOTION)",
+    "bomLine": "SPACE CORNER kit, 1 per drawer row (Blum: 'one set required per drawer')",
+    "holes": "none drilled by the engine (CLAUDE.md T78 law: a bought mechanism is a line and a body, never a hole, until its manufacturer's drilling is here with a page number; no drilling pattern was read)",
+    "envelopeMm": {
+      "value": null,
+      "note": "no source read prints the dimensions of the locking device, the corner front piece or the Syncro front fitting"
+    }
+  },
+  "bodyPlaceholder": {
+    "status": "placeholder, owner to confirm",
+    "shape": "a block standing at the inner corner where the two arms' boxes meet, the drawer row's height, square in plan",
+    "footprintMm": {
+      "x": 75,
+      "z": 75,
+      "how": "derived: 75 is the only corner dimension Blum prints (the depth rule NL + 75 and the back piece cut 'interior width minus 75 x 0.707', both the SYNCROMOTION sheets); it is a PLACEHOLDER footprint for the 3D, not the part's measured size"
+    },
+    "heightMm": "the row's box side height (the engine's own drawer law), never a number from here",
+    "position": "the inner corner of the L, in the front plane behind the two leaves' meeting line, on the drawer bottom's plane",
+    "readiness": "bought"
+  },
+  "engineNotes": {
+    "frontDecision": "CLAUDE.md T78 F7 wants ONE L-shaped front per drawer row. Blum's current SPACE CORNER (SYNCROMOTION, Z33) uses two hinged standard fronts that swing inward; the fixed L front is the earlier generation (T51.7601 wooden drawer, ZSF sets). Both are real Blum kits. The owner chooses; the data for both is above.",
+    "runnersPerArm": "the fixed-front wooden-drawer kit runs ONE drawer on one pair of 769 runners set diagonally, not two boxes on two pairs; CLAUDE.md T78 F7's 'TWO boxes (one per arm) on the existing drawer machinery' is the engine's own construction and has no Blum source in this file. The runner ladder per arm depth stays the engine's (profile.hardware.runner.movento.nominalLadder).",
+    "widthLaw": "cabinet width 900 to 1200 is Blum's recommendation, not a limit; the engine refuses nothing on it, it proposes (CLAUDE.md T78: 'proposal, never a block').",
+    "notRead": "the 2024/2025 SPACE CORNER application page itself (its number, web code, cabinet width table and front dimensions), Blum's downloadable sample drawer and cabinet plans, the EU MOVENTO article for SPACE CORNER, any LEGRABOX pairing"
+  }
+}

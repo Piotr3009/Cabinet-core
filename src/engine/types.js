@@ -748,7 +748,8 @@ export const UNIT_TYPES = {
     armDepthKey: 'baseUnit.defaults.depth',
     minHeightKey: null,
     defaultsKey: 'cornerBase.defaults',
-    supports: { drawers: false, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
+    // T78 F7 · drawers: a SPACE CORNER stack (two boxes a row, one L front).
+    supports: { drawers: true, shelves: true, rail: false, pulldown: false, partition: false, doors: true, topInfill: false },
     available: true,
   },
   CORNER_L_WALL: {

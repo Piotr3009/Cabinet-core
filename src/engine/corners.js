@@ -454,10 +454,12 @@ export function lClearanceView(view, walls, profile) {
     const d = num(lc.arm);
     const x = num(e.unit.position?.x_mm);
     const gap = wallGapOf(e.unit, profile);
-    const doorOf = (arm) => (e.result.panels || []).find((p) => p?.meta?.arm === arm && p.role === 'front' && p.box);
+    // T78 F7 · an arm carries its door, or every front board of a drawer
+    // stack; each is read where it stands, in the arm's own frame.
+    const frontsOf = (arm) => (e.result.panels || []).filter((p) => p?.meta?.arm === arm && p.role === 'front' && p.box);
     // Arm A: the unit's own wall, the virtual frame moved to the arm's start.
     const fromA = left ? d : 0;
-    const doorA = doorOf('A');
+    const frontsA = frontsOf('A');
     entries.push({
       ...e,
       unit: {
@@ -467,13 +469,12 @@ export function lClearanceView(view, walls, profile) {
       },
       result: {
         ...e.result,
-        panels: doorA ? [{ ...doorA, box: { ...doorA.box, x: doorA.box.x - fromA } }] : [],
+        panels: frontsA.map((f) => ({ ...f, box: { ...f.box, x: f.box.x - fromA } })),
       },
     });
     // Arm B: the adjacent wall, where the corner end meets it.
     const wb = left ? room[(i - 1 + n) % n] : room[(i + 1) % n];
-    const doorB = doorOf('B');
-    const b = doorB?.box;
+    const frontsB = frontsOf('B');
     entries.push({
       ...e,
       unit: {
@@ -499,12 +500,15 @@ export function lClearanceView(view, walls, profile) {
       },
       result: {
         ...e.result,
-        panels: b ? [{
-          ...doorB,
-          box: left
-            ? { x: D - b.z - b.d, y: b.y, z: b.x, w: b.d, h: b.h, d: b.w }
-            : { x: b.z - d, y: b.y, z: W - (b.x + b.w), w: b.d, h: b.h, d: b.w },
-        }] : [],
+        panels: frontsB.map((f) => {
+          const b = f.box;
+          return {
+            ...f,
+            box: left
+              ? { x: D - b.z - b.d, y: b.y, z: b.x, w: b.d, h: b.h, d: b.w }
+              : { x: b.z - d, y: b.y, z: W - (b.x + b.w), w: b.d, h: b.h, d: b.w },
+          };
+        }),
       },
     });
   }

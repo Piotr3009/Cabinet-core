@@ -128,7 +128,7 @@ import DimLabel from './DimLabel.jsx';
 import DimensionChain from './DimensionChain.jsx';
 import { formatDimension, formatMm } from '../engine/format.js';
 // T74 F7 · the wardrobe's wall unit draws its DEPTH as a clickable figure too.
-import { isWardrobeWallUnit } from '../engine/types.js';
+import { isCornerLKit, isWardrobeWallUnit } from '../engine/types.js';
 import { hardwareInstances } from '../engine/hardware3d.js';
 import { resolveRunnerVariant } from '../engine/runners.js';
 import { resolveHingeFinish, resolveHingePlate } from '../engine/hinges.js';
@@ -3651,6 +3651,33 @@ export default function UnitView({
                   />
                 </group>
               )}
+              {/* ─── T78 F5 · THE L's ARM B, A FIGURE OF ITS OWN ───────────────
+                  The owner, 11.10.2026: *"powiekszenie L shape szafek prawa
+                  lewa strona."*  Arm A is the width figure above (the L's
+                  width runs along its own wall); arm B is the L's DEPTH, along
+                  the adjacent wall. Its figure lies over the middle of arm B's
+                  top, above a worktop's height so a slab cannot hide it, from
+                  the back wall to the arm's end; the 2klik opens the same size
+                  window as the other two, focused on the ARM B field. */}
+              {isCornerLKit(unit.type) && result.derived?.corner_l && (() => {
+                const arm = Number(result.derived.corner_l.arm) || 0;
+                const xc = result.derived.corner_l.side === 'right' ? W - arm / 2 : arm / 2;
+                return (
+                  <DimensionChain
+                    rows={[{
+                      key: 'd', from: [xc, 0], to: [xc, D], offset: 0, label: formatDimension(D),
+                    }]}
+                    style={dimStyle}
+                    plane="xz"
+                    at={H + sideOffset}
+                    colour={selected ? COLORS.gold : dimensionColour}
+                    name={`d-${unit.id}`}
+                    onPick={onEditSize ? (row, e) => onEditSize({
+                      field: 'depth', at: { x: e.clientX, y: e.clientY }, row: row.key,
+                    }) : null}
+                  />
+                );
+              })()}
             </>
           )}
           {/* ─── Turn 17 (CLAUDE.md F6.3) ───

@@ -287,7 +287,12 @@ export default function RightPanel() {
           onToggle={() => togglePanelSection('carcass')}
         >
           <div className="grid grid-cols-3 gap-2">
-            {[['width', 'Width'], ['height', 'Height'], ['depth', 'Depth']].map(([key, label]) => (
+            {/* T78 F5 · an L's width is ARM A and its depth ARM B (the owner,
+                11.10.2026: *"powiekszenie L shape szafek prawa lewa strona"*);
+                the fields and the setter are the same, the words are the L's. */}
+            {(getUnitType(unit.type).corner
+              ? [['width', 'Arm A'], ['height', 'Height'], ['depth', 'Arm B']]
+              : [['width', 'Width'], ['height', 'Height'], ['depth', 'Depth']]).map(([key, label]) => (
               <div key={key}>
                 <span className="cc-label">
                   {label}

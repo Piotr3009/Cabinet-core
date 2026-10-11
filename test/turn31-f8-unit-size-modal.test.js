@@ -78,7 +78,11 @@ test('BOTH the width and the height figure carry the gesture', () => {
   // scene: a shelf-gap readout is not a control.
   // AMENDED BY T74 F7: a THIRD, the wardrobe wall unit's depth (*"Zmiana przez
   // klik w wymiar (szer/wys/głęb)"*), drawn for that one type and no other.
-  assert.equal((view.match(/onPick=\{onEditSize/g) || []).length, 3);
+  // AMENDED BY T78 F5: a FOURTH, the L corner unit's ARM B figure (its depth,
+  // along the adjacent wall: *"powiekszenie L shape szafek prawa lewa strona"*),
+  // drawn for the L kits and no other; the 2klik opens the same window on DEPTH.
+  assert.equal((view.match(/onPick=\{onEditSize/g) || []).length, 4);
+  assert.match(view, /isCornerLKit\(unit\.type\) && result\.derived\?\.corner_l && \(\(\) => \{[\s\S]*?field: 'depth'/);
   assert.match(view, /\{isWardrobeWallUnit\(unit\.type\) && \(\s*<group[^>]*>\s*<DimensionChain[\s\S]*?field: 'depth'/);
 });
 

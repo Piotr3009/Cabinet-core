@@ -432,9 +432,44 @@ export const DEFAULT_CABINET_PROFILE = {
   //            the run that stops on the corner (F2).
   //   overlap  which arm of an L corner unit carries the overlapping door (F4):
   //            'adjacent' is the arm on the adjacent wall.
+  //
+  //   leafMinMm      T78 F5: the smallest leaf an L's arm may hang; an arm is
+  //                  never shorter than its depth plus this (the top box's own
+  //                  200, the one "not worth hanging under" number the house
+  //                  has, read here as a number of its own).
+  //   wallLeafMaxMm  T78 F6: the widest leaf a wall L hangs; a longer arm is
+  //                  split and the rest proposed as a plain wall unit. The
+  //                  owner, 11.10.2026: *"jesli drzwiczki beda wieksze niz 700
+  //                  w szafce wiszacej"*.
+  // T78: CLAUDE.md names these under `profile.cornerUnit`; that block was
+  // deleted by T75 F4 (kasacja, asserted by its test), so they live in the
+  // corner's own block beside the post.
   corner: {
     postMm: 50,              // T75 proposed, owner to confirm
     overlap: 'adjacent',     // T75 proposed, owner to confirm
+    leafMinMm: 200,          // T78 proposed, owner to confirm
+    wallLeafMaxMm: 700,      // owner 11.10.2026, decided ("wieksze niz 700")
+    // T78 F9 · the carousel in the L's inner corner (the owner: *"krecacy sie
+    // naroznik na garnki w srodku"*): a BOUGHT mechanism, a BOM line and a
+    // placeholder body, zero holes (CLAUDE.md T78 LAWS). These are the
+    // PLACEHOLDER's numbers (two round trays on a post, inset from the corner
+    // square), not a product's: a GLB slot waits in 3d/hardwareRegistry.
+    // T78 F7 · the SPACE CORNER drawer stack: rows two to four (the drawer
+    // unit's own splits), the kit's placeholder body at the inner corner.
+    // T78 proposed, owner to confirm (the catalogue's numbers are in
+    // reference/hardware/blum-space-corner.json).
+    // T78 F8 · the bi-fold corner door: leaf B hangs on leaf A's free edge
+    // with Blum's CLIP top 60 degree bi-fold corner hinge (Hinge systems
+    // p. 116, reference/hardware/blum-hinges.json families.bifold). The angle
+    // is the catalogue's; this is the fallback while the file is not loaded.
+    // Owner to confirm.
+    bifold: { angleDeg: 60, label: 'CLIP top 60 degree bi-fold corner hinge' },
+    spaceCorner: {
+      label: 'Blum SPACE CORNER kit', rowsMin: 2, rowsMax: 4, bracketMm: 60,
+    },
+    carousel: {
+      label: 'Carousel (pots)', trays: 2, trayMm: 15, postMm: 25, clearMm: 10, // T78 proposed, owner to confirm
+    },
   },
 
   // ─── T75 F7 · THE CORNER NOTCH (reference/lisp/KIT_NOTCH.lsp) ─────────────

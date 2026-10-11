@@ -62,7 +62,7 @@ import { catalogueMoves, priceSnapshot } from '../engine/warehouse.js';
 // the hinge and every corner consumer below read.
 import {
   blindClearanceView, carcassReachMm, cornerEndOf, cornerFaceMm, cornersOf, cornerSpec, cornerStopMm,
-  isInternalCorner, lClearanceView, occupantKind,
+  isInternalCorner, lArmKinds, lArmMinMm, lClearanceView, lLeafTrimMm, occupantKind,
 } from '../engine/corners.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
@@ -5942,12 +5942,39 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const freeWanted = isFreePanel(unit.type) && FREE_PANEL_KEYS.some((k) => asked?.[k] != null)
       ? freePanelPatch(unit.params, asked, profile)
       : null;
-    const patch = freeWanted || asked;
+    const patch = { ...(freeWanted || asked) };
     const walls = roomWalls(s.project.room);
     const wallIndex = unit.position.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
     const others = obstaclesFor(s, unit);
     const notices = [];
+    // ─── T78 F5 · THE L GROWS LEFT AND RIGHT ON ITS OWN ─────────────────────
+    //
+    // The owner, 11.10.2026: *"powiekszenie L shape szafek prawa lewa strona."*
+    // Arm A is the L's width, arm B its depth: two figures, two fields, each
+    // clamped ALONE. The least an arm can be is its depth plus the smallest
+    // leaf the profile hangs (`corners.js lArmMinMm`, said in words below); the
+    // most is the room, which refuses first (`roomFitRefusalFor`, at the two
+    // places a number is typed), then whatever stands on that wall (the width
+    // and depth clamps below, unchanged). The doors, shelves, plinth, worktop
+    // and mask follow each arm because the engine cuts the L from W and D.
+    if (isCornerLKit(unit.type)) {
+      const least = lArmMinMm(unit, profile);
+      // T78 F6 · a wall L sized by hand is the client's: the automat that
+      // sizes it to the base L below leaves it alone from now on.
+      if (getUnitType(unit.type).mount === 'wall' && (asked?.width != null || asked?.depth != null)) {
+        patch.corner_arms_own = true;
+      }
+      for (const key of ['width', 'depth']) {
+        if (patch[key] == null) continue;
+        const want = Number(patch[key]) || 0;
+        if (want < least) {
+          patch[key] = least;
+          notices.push(`Arm ${key === 'width' ? 'A' : 'B'} limited to ${formatMm(least)} mm: the arm's own depth `
+            + `plus the smallest leaf (${formatMm(cornerSpec(profile).leafMinMm)} mm).`);
+        }
+      }
+    }
     const applied = { ...patch };
     // T69 F9: where the NEAR edge ends up when a widening takes space on the
     // left. `null` means it did not move, which is every other edit there is.

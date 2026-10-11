@@ -4,7 +4,7 @@ import NumberField from './NumberField.jsx';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { formatMm } from '../engine/format.js';
-import { isWardrobeWallUnit } from '../engine/types.js';
+import { isCornerLKit, isWardrobeWallUnit } from '../engine/types.js';
 
 // ─── F8: THE FIGURE ON THE CANVAS IS A CONTROL (turn 31, CLAUDE.md F8) ──────
 //
@@ -102,6 +102,15 @@ export default function UnitSizeModal() {
   // albo do frontu."*  Only the wardrobe's wall unit has it: no other type was
   // named, and a field nobody ordered does not appear.
   const hangs = isWardrobeWallUnit(unit.type);
+  // ─── T78 F5 · THE L's TWO ARMS ────────────────────────────────────────────
+  // The owner, 11.10.2026: *"powiekszenie L shape szafek prawa lewa strona."*
+  // Arm A is the L's width, arm B its depth (KIT_CORNER_L.lsp): the two
+  // fields read ARM A and ARM B, both here, each through the same setter
+  // (`updateUnitParams`, which clamps each arm alone), the room refusing first.
+  const corner = isCornerLKit(unit.type);
+  const third = hangs || corner;
+  const widthLabel = corner ? 'Arm A' : 'Width';
+  const depthLabel = corner ? 'Arm B' : 'Depth';
   const align = unit.params.depth_align === 'front' ? 'front' : 'back';
   const alignTo = (want) => {
     const res = alignUnitDepth(unit.id, want);
@@ -141,7 +150,7 @@ export default function UnitSizeModal() {
     >
       <div className="space-y-2" data-unit-size={unit.id}>
         <label className="cc-row" htmlFor={`size-w-${unit.id}`}>
-          <span className="cc-label mb-0">Width</span>
+          <span className="cc-label mb-0">{widthLabel}</span>
           <NumberField
             id={`size-w-${unit.id}`}
             className="cc-input text-right w-[110px]"
@@ -160,10 +169,10 @@ export default function UnitSizeModal() {
             onCommit={set('height')}
           />
         </label>
-        {hangs && (
+        {third && (
           <>
             <label className="cc-row" htmlFor={`size-d-${unit.id}`}>
-              <span className="cc-label mb-0">Depth</span>
+              <span className="cc-label mb-0">{depthLabel}</span>
               <NumberField
                 id={`size-d-${unit.id}`}
                 className="cc-input text-right w-[110px]"
@@ -172,6 +181,7 @@ export default function UnitSizeModal() {
                 onCommit={set('depth')}
               />
             </label>
+            {hangs && (
             <div className="cc-row" data-unit-size-align={align}>
               <span className="cc-label mb-0">Aligned to</span>
               <div className="flex gap-1">
@@ -189,10 +199,11 @@ export default function UnitSizeModal() {
                 ))}
               </div>
             </div>
+            )}
           </>
         )}
         <p className="text-[11px] text-ink-400">
-          {formatMm(unit.params.width)} × {formatMm(unit.params.height)}{hangs ? ` × ${formatMm(unit.params.depth)}` : ''} mm.
+          {formatMm(unit.params.width)} × {formatMm(unit.params.height)}{third ? ` × ${formatMm(unit.params.depth)}` : ''} mm.
           Enter commits and closes. The same setter the right-hand panel uses —
           a width that would eat a neighbour is refused there and refused here.
         </p>

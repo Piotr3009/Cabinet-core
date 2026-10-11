@@ -1128,10 +1128,12 @@ export function runChecks({
         const state = readinessOf(c);
         if (state !== 'cut') lines.push({ id: `${c.kind} cut-out over ${c.unitNum || c.unitId}`, state });
       }
-      if (slab.joint && !joints.has(slab.id)) {
-        joints.add(slab.id);
+      // T78 F2 · one line per JOINT (the L's two arms are two), keyed where it is.
+      const jointKey = slab.joint ? `${slab.id}@${slab.joint.at?.wall ?? ''}:${slab.joint.at?.x ?? ''}` : null;
+      if (slab.joint && !joints.has(jointKey)) {
+        joints.add(jointKey);
         const state = readinessOf(slab.joint);
-        if (state !== 'cut') lines.push({ id: 'worktop joint', state });
+        if (state !== 'cut') lines.push({ id: `worktop joint${slab.joint.arm ? ` (arm ${slab.joint.arm})` : ''}`, state });
       }
     }
     if (lines.length) {

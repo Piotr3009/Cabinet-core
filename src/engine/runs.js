@@ -1286,6 +1286,19 @@ export function maskSegments(run) {
 
   for (const unit of run.units) {
     if (!wantsMask(unit)) { close(); continue; }
+    // ─── T78 F2 · AN L IS ITS OWN SEGMENT ───────────────────────────────────
+    // The owner, 11.10.2026: *"dolna maskujaca plyta nie wycina sie w
+    // ksztalcie L."*  The probe (verify/t78/f02-probe.md, rows 17 to 19): the
+    // L and the wall unit beside it were ONE segment, one rectangle as deep as
+    // the L over both. The L's board is the L (cabinet.js cuts it from the
+    // L's own plan), so it closes the run's segment on both sides and stands
+    // in one of its own; the cabinets along its arm are a board of their own
+    // from the arm end, as a plinth beside an L is (T75 F4).
+    if (getUnitType(unit.type).corner) {
+      close();
+      segments.push([unit]);
+      continue;
+    }
     if (current.length) {
       const previous = current[current.length - 1];
       const between = endPanelSpread(previous, previous.params?.front_t).right > 0

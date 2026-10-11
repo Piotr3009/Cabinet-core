@@ -248,12 +248,21 @@ export function buildBom(entries, {
             readiness: c.readiness,
           });
         }
-        if (slab.joint) joints.set(slab.id, slab.joint);
+        // T78 F2 · one note per JOINT, not per record: an L with a run along
+        // each arm carries TWO (arm A, arm B) under one record, and T75's
+        // corner pair carries ONE shared by its two slabs (the same `at`), so
+        // the key is where the joint is. The probe (verify/t78/f02-probe.md,
+        // THE FIX) found the second arm's joint overwrote the first: one note
+        // and three bolts for two joints.
+        if (slab.joint) {
+          const at = slab.joint.at || {};
+          joints.set(`${slab.id}@${at.wall ?? ''}:${at.x ?? ''}`, { recordId: slab.id, joint: slab.joint });
+        }
       }
-      for (const [id, joint] of joints) {
+      for (const { recordId, joint } of joints.values()) {
         rows.push({
           unit_num: 'WT',
-          id: `${id} joint`,
+          id: `${recordId} joint${joint.arm ? ` arm ${joint.arm}` : ''}`,
           part: 'WORKTOP-JOINT',
           role: 'worktop_note',
           material_role: 'note',

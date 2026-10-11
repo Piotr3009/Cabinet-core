@@ -5663,7 +5663,58 @@ export function computeCabinet(params, profileOverride) {
   const runMask = params?.run_mask || null;
   const maskMember = runMask?.role === 'member';
   const wantsMask = type.mount === 'wall' && params?.bottom_mask === true && AP.mask.enabled !== false;
-  if (wantsMask && !maskMember) {
+  // ─── T78 F2 · ONE L BOARD UNDER THE L WALL UNIT ─────────────────────────
+  //
+  // The owner, 11.10.2026: *"dolna maskujaca plyta nie wycina sie w ksztalcie
+  // L."*  The probe (verify/t78/f02-probe.md, rows 18 and 21): the L cut the
+  // run's rectangle, W x (D + 10), the whole corner square. The board is the
+  // L's own plan: the mask's depth law on BOTH arms (the arm depth plus the
+  // standoff it hides, `maskDepthExtra`), its outer edges to both walls, the
+  // inner corner where the arm fronts meet; ONE board, mitred nowhere, front
+  // material like every mask, its outline in the cut list and its true area
+  // in the BOM. An L is its own mask segment (`runs.js maskSegments`), so no
+  // run element reaches here as a member or lengthens it.
+  if (wantsMask && !maskMember && lCorner) {
+    const t = AP.mask.thickness ?? frontT;
+    const g = maskDepthExtra(P);
+    const d = lCorner.d;
+    const right = lCorner.right;
+    const mw = W + g;
+    const md = D + g;
+    const local = [[0, 0], [mw, 0], [mw, d + g], [d + g, d + g], [d + g, md], [0, md]];
+    const outline = (right ? local.map(([x, y]) => [mw - x, y]).reverse() : local)
+      .map(([x, y]) => [roundTo(x, 4), roundTo(y, 4)]);
+    let area = 0;
+    for (let i = 0; i < local.length; i += 1) {
+      const [x1, y1] = local[i];
+      const [x2, y2] = local[(i + 1) % local.length];
+      area += x1 * y2 - x2 * y1;
+    }
+    // The visible edges: the two arm fronts and the two arm ends (the wall
+    // edges are against plaster, as the straight mask's back edge is).
+    const seen = (mw - (d + g)) + (md - (d + g)) + 2 * (d + g);
+    const box = {
+      x: right ? 0 : -g, y: -t, z: -g, w: mw, h: t, d: md,
+    };
+    const made = panel({
+      id: 'MASK-L', part: 'MASK', role: 'mask', w: mw, h: md, thickness: t,
+      edgeCode: codes.all, edgeLen: metres(seen),
+      box,
+      cnc: {
+        rotated: false, drawn_w: mw, drawn_h: md, outline, pockets: [], holes: [],
+      },
+      meta: {
+        lBoard: 'MASK-L',
+        lSide: lCorner.cl.side,
+        // The plan outline in the BOX's own frame (3d/panelSolid.js extrudes it).
+        planOutline: local.map(([x, y]) => [roundTo(box.x + (right ? mw - x : x), 4), roundTo(box.z + y, 4)]),
+        ...(runMask?.role === 'owner' ? { run: true, unitIds: runMask.unitIds } : {}),
+      },
+    });
+    made.area_m2 = roundTo(Math.abs(area) / 2 / 1e6, 6);
+    panels.push(made);
+  }
+  if (wantsMask && !maskMember && !lCorner) {
     const t = AP.mask.thickness ?? frontT;
     const maskLen = runMask?.role === 'owner' ? Number(runMask.length) || W : W;
     const maskX = runMask?.role === 'owner' ? Number(runMask.offset) || 0 : 0;

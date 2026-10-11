@@ -496,11 +496,28 @@ export function imageGrainAxis(surface) {
  * `grainAxis` against `imageGrainAxis(surface)`, and the fix is where the scene
  * reads it rather than a second flag beside the first.
  *
+ * ─── T78 F4 · THE SQUARE FACE: THE PIECE'S OWN AXIS BREAKS THE TIE ─────────
+ *
+ * The owner, 11.10.2026: *"na L półkach odwróć na CNC i na wizualizacji słoje
+ * o 90 stopni."* The L boards of KIT_CORNER_L are SQUARE at every default
+ * (W = D: 864 x 864, 564 x 564, 964 x 964), and a square face cannot be
+ * matched by size: `|width - length|` equals `|height - length|`, and the
+ * tie fell to 'v' whatever the cut said. So the figure of a square L board
+ * ran along wall B however the sheet laid it, and the 3D did not follow the
+ * cut (T40's law). The cut's own answer, `grainRun(panel).axis`, is handed in
+ * as the third argument and breaks the tie: on every face three.js gives a
+ * box, u runs along the panel's `w` and v along its `h` (a ±X side: u along
+ * Z = its depth = its `w`; a ±Y top: u along X = its width = its `w`; a ±Z
+ * back: u along X = its `w`), so 'w' is u and 'h' is v. Size still decides
+ * wherever size can (every rectangle is answered exactly as before); without
+ * an axis a tie still falls to 'v', as it always did.
+ *
  * @param {{w:number,h:number,d:number}} box  the panel's box, in mm
  * @param {number} grainMm  the piece's length along the grain (grainRun above)
+ * @param {'w'|'h'|null} [axis]  the cut's own axis (grainRun above), for a square face
  * @returns {{widthMm:number, heightMm:number, grainAxis:'u'|'v'}}
  */
-export function decorMapping(box, grainMm) {
+export function decorMapping(box, grainMm, axis = null) {
   const w = Math.abs(Number(box?.w) || 0);
   const h = Math.abs(Number(box?.h) || 0);
   const d = Math.abs(Number(box?.d) || 0);
@@ -511,6 +528,12 @@ export function decorMapping(box, grainMm) {
   ];
   const face = faces.reduce((best, f) => (f.area > best.area ? f : best), faces[0]);
   const target = Math.abs(Number(grainMm) || 0);
-  const grainAxis = Math.abs(face.widthMm - target) < Math.abs(face.heightMm - target) ? 'u' : 'v';
+  const dU = Math.abs(face.widthMm - target);
+  const dV = Math.abs(face.heightMm - target);
+  let grainAxis;
+  if (dU < dV) grainAxis = 'u';
+  else if (dV < dU) grainAxis = 'v';
+  // The square face (T78 F4, above): the piece's own axis, or the old 'v'.
+  else grainAxis = axis === 'w' ? 'u' : 'v';
   return { widthMm: face.widthMm, heightMm: face.heightMm, grainAxis };
 }

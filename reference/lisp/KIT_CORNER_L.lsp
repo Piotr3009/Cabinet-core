@@ -3,6 +3,7 @@
 ;;; The TRUE L corner carcass - PLAN view + CNC panels + labels CSV
 ;;; Command: CORNER_L_FULL
 ;;; Turn 75 (CLAUDE.md PART A, F4) - LISP FIRST
+;;; Turn 78 (CLAUDE.md PART A, F4) - the L boards drawn TURNED 90 (section 10)
 ;;; Derived from: KIT_BUD_FULL.lsp + SKYLON_COMMON.lsp
 ;;; Requires: SKYLON_COMMON.lsp loaded first
 ;;;========================================
@@ -356,6 +357,54 @@
 ;;;   L1 (50 50) L2 (904 50) L3 (904 440) L4 (440 440) L5 (440 904)
 ;;;   L6 (50 904); hinge rows calcHingePositionsTall 2150 =
 ;;;   100, 490, 880, 1270, 1660, 2050.
+;;;
+;;;========================================
+
+;;;========================================
+;;; 10. THE GRAIN OF THE L BOARDS (T78 F4, LISP FIRST)
+;;;========================================
+;;;
+;;; THE OWNER, 11.10.2026, on the eye-test of T75 to T77:
+;;;
+;;;   "na L polkach odwroc na CNC i na wizualizacji sloje o 90 stopni"
+;;;
+;;; Every board in the CNC section is nested with the GRAIN RUNNING UP THE
+;;; DRAWING (+Y). T75 drew TOP-L, BOTTOM-L and SHELF-L in their PLAN frame
+;;; (section 1: X along wall A, Y along wall B), so the figure of all three
+;;; ran along WALL B, across the figure of the KIT_BUD shelves and tops
+;;; standing beside the L on wall A (drawTOP_ROT90 and drawSHELF both put the
+;;; cabinet's WIDTH up the page). The probe (T78 F4) found the three boards
+;;; the same way, so all three turn: the owner named the shelves, and the
+;;; top and the bottom are the same board laid the same way.
+;;;
+;;; THE TURN. CL:rot90 turns a board's own frame a quarter turn LEFT and sets
+;;; it down in positive coordinates:  (x y) -> (spanY - y, x), spanY the
+;;; board's span along wall B (v5's y). The wall-A span now runs UP the page
+;;; and the grain with it. The board's OWN FRAME (CL:lOutline, the tabs, the
+;;; dog bones, the relief, the NUMBERS of section 9) does not move a
+;;; millimetre: what moves is how the CNC section PUTS IT DOWN, T17 F3's law
+;;; word for word ("odwroc wszystkie polki o 90 stopni w CNC": the placement
+;;; turns, the part does not). drawCL_LBOARD stays as it is; drawCL_LBOARD_ROT90
+;;; is the same board through the one turn, and the command calls it for
+;;; TOP-L, BOTTOM-L and every SHELF-L.
+;;;
+;;; THE ENGINE MIRRORS IT with the routine it already has for this very law:
+;;; src/engine/cabinet.js states `grain: 'w'` on the three L boards (the
+;;; T37 F7a field, in the DRAWN frame: "the drawn width goes up the sheet"),
+;;; engine/cnc/layout.js sheetTurn answers 90, turnPoint(x, y, 90) = (-y, x)
+;;; is CL:rot90Pt before the shift, and the nest's shift by -minX is the
+;;; + spanY. sheetLay then says axis 'w', decors.js grainRun paints the
+;;; figure along wall A in the 3D, the nest DXF turns the blank. One change,
+;;; three readers. The CSV below does not change: it carries no grain
+;;; column, and SZER x WYS is the board's bounding size either way.
+;;;
+;;; Worked, BASE defaults: SHELF-L nominal (0 0) (862 0) (862 520) (520 520)
+;;; (520 862) (0 862) turns to (862 0) (862 862) (342 862) (342 520) (0 520)
+;;; (0 0): the back edge on wall A (v0 -> v1) now runs up X = 862, the arm A
+;;; end (v1 -> v2) is the top edge, the bite sits at the upper left, the
+;;; relief circle lands at (862 - 522.8284, 522.8284) = (339.1716 522.8284).
+;;; TOP-L (tabs standing G proud on both axes) is laid G in on both axes as
+;;; before; the across-the-page advance is spanY + G + odstep, not spanX.
 ;;;
 ;;;========================================
 
@@ -786,6 +835,42 @@
   (setq arm (car (nth 3 nominal)))
   (drawText "UNIT_NUMBER" (+ x0 (/ arm 2.0)) (+ y0 (/ arm 2.0)) 40.0 label))
 
+;;; T78 F4: THE QUARTER TURN (section 10). A point of a board's own frame
+;;; turned 90 LEFT and set down in positive coordinates: (x y) -> (spanY - y, x).
+;;; The engine's turnPoint(x, y, 90) = (-y, x) plus the nest's shift by spanY.
+(defun CL:rot90Pt (p spanY / )
+  (list (- spanY (cadr p)) (car p)))
+
+;;; A list of points through the turn.
+(defun CL:rot90 (pts spanY / )
+  (mapcar '(lambda (p) (CL:rot90Pt p spanY)) pts))
+
+;;; A min/max rectangle (x1 y1 x2 y2) through the turn, re-sorted min/max.
+(defun CL:rot90Rect (r spanY / a b)
+  (setq a (CL:rot90Pt (list (nth 0 r) (nth 1 r)) spanY)
+        b (CL:rot90Pt (list (nth 2 r) (nth 3 r)) spanY))
+  (list (min (car a) (car b)) (min (cadr a) (cadr b))
+        (max (car a) (car b)) (max (cadr a) (cadr b))))
+
+;;; An L board drawn TURNED 90 (T78 F4): drawCL_LBOARD's outline, tabs, dog
+;;; bones, relief and label, every one through CL:rot90 about the board's own
+;;; frame, spanY = v5's y. The board is the same board; only its lay moves.
+(defun drawCL_LBOARD_ROT90 (x0 y0 nominal joints relief label G / spanY b r arm lbl)
+  (setq spanY (cadr (nth 5 nominal)))
+  (drawCL_POLY "OUTLINE" x0 y0
+    (CL:rot90 (if joints (CL:walkOutline nominal joints G) nominal) spanY))
+  (if joints
+    (foreach b (CL:walkBones joints G)
+      (setq r (CL:rot90Rect b spanY))
+      (drawRect "PUZZLE_DOG_BONES" (+ x0 (nth 0 r)) (+ y0 (nth 1 r)) (+ x0 (nth 2 r)) (+ y0 (nth 3 r)))))
+  (if relief
+    (progn
+      (setq r (CL:rot90Pt (list (nth 0 relief) (nth 1 relief)) spanY))
+      (drawCircle "PUZZLE_DOG_BONES" (+ x0 (car r)) (+ y0 (cadr r)) (nth 2 relief))))
+  (setq arm (car (nth 3 nominal)))
+  (setq lbl (CL:rot90Pt (list (/ arm 2.0) (/ arm 2.0)) spanY))
+  (drawText "UNIT_NUMBER" (+ x0 (car lbl)) (+ y0 (cadr lbl)) 40.0 label))
+
 ;;; BACK-B, whole: outline and tabs, dog bones, sockets, holes, the hanger.
 (defun drawCL_BACKB (x0 y0 outD H G label hanger / b k r)
   (drawCL_POLY "OUTLINE" x0 y0 (CL:backBPts outD H G))
@@ -953,16 +1038,18 @@
           (if (= mount "W") (drawCL_HANGERSIDE cncX cncY sideW hgt "R"))
           (setq cncX (+ cncX sideW odstep))
 
-          ;; TOP-L - its back-edge tabs stand G proud of its origin, so it is
-          ;; laid G in on both axes
+          ;; TOP-L - T78 F4: drawn TURNED 90 (drawCL_LBOARD_ROT90, section 10),
+          ;; its wall-A span up the page, the grain with it. Its tabs stand G
+          ;; proud on both axes of the turned board too, so it is still laid G
+          ;; in; across the page it now measures spanY (v5's y), not spanX.
           (setq cncX (+ cncX G))
-          (drawCL_LBOARD cncX (+ cncY G) nomTop jTop relTop (strcat unitNum " TOP-L") G)
-          (setq cncX (+ cncX (car (nth 1 nomTop)) G odstep))
+          (drawCL_LBOARD_ROT90 cncX (+ cncY G) nomTop jTop relTop (strcat unitNum " TOP-L") G)
+          (setq cncX (+ cncX (cadr (nth 5 nomTop)) G odstep))
 
-          ;; BOTTOM-L - the same board (drawBOTTOM_ROT90 is drawTOP_ROT90)
+          ;; BOTTOM-L - the same board (drawBOTTOM_ROT90 is drawTOP_ROT90), turned too
           (setq cncX (+ cncX G))
-          (drawCL_LBOARD cncX (+ cncY G) nomTop jTop relTop (strcat unitNum " BOTTOM-L") G)
-          (setq cncX (+ cncX (car (nth 1 nomTop)) G odstep))
+          (drawCL_LBOARD_ROT90 cncX (+ cncY G) nomTop jTop relTop (strcat unitNum " BOTTOM-L") G)
+          (setq cncX (+ cncX (cadr (nth 5 nomTop)) G odstep))
 
           ;; BACK-A = KIT_BUD's BACK at width W
           (drawBACK cncX cncY outW hgt unitNum G)
@@ -978,11 +1065,12 @@
           (drawCL_BACKB cncX cncY outD hgt G (strcat unitNum " BACK-B") (= mount "W"))
           (setq cncX (+ cncX (- outD G) odstep))
 
-          ;; SHELF-L
+          ;; SHELF-L - T78 F4, the owner's own words: "na L polkach odwroc na
+          ;; CNC i na wizualizacji sloje o 90 stopni". Turned (section 10).
           (setq i 1)
           (while (<= i numShelves)
-            (drawCL_LBOARD cncX cncY nomShelf nil relShelf (strcat unitNum "-S" (itoa i)) G)
-            (setq cncX (+ cncX (car (nth 1 nomShelf)) odstep))
+            (drawCL_LBOARD_ROT90 cncX cncY nomShelf nil relShelf (strcat unitNum "-S" (itoa i)) G)
+            (setq cncX (+ cncX (cadr (nth 5 nomShelf)) odstep))
             (setq i (1+ i)))
 
           ;;;========================================

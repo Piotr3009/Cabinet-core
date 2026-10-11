@@ -3807,6 +3807,34 @@ export function computeCabinet(params, profileOverride) {
             rotated: false,
             drawn_w: shape.w,
             drawn_h: shape.h,
+            // ─── T78 F4 · THE GRAIN OF THE L BOARDS, KIT_CORNER_L.lsp SECTION 10 ──
+            //
+            // The owner, 11.10.2026: *"na L półkach odwróć na CNC i na
+            // wizualizacji słoje o 90 stopni."*
+            //
+            // The drawn frame is the plan frame (x along wall A, y along wall
+            // B) and nothing here said which way the figure runs, so the sheet
+            // laid every L board at turn 0: the drawn HEIGHT, the wall-B span,
+            // up the page and the figure along wall B, across the figure of
+            // the BUD shelves and tops standing beside the L on wall A. The
+            // probe (test/turn78-f04-l-grain.test.js, PROBE rows) found
+            // TOP-L, BOTTOM-L and SHELF-L the same way (sheetLay axis 'h' on
+            // all three; on a non-square L the SHELF family's size rule turned
+            // the shelf and left the top, the T17 complaint on the L), so all
+            // three turn. STATED in the drawn frame (T37 F7a: 'w' is "the
+            // drawn width goes up the sheet"): sheetTurn answers 90 for the
+            // three whatever their proportions, the nest turns the blank
+            // through turnPoint(x, y, 90), which is the LISP's CL:rot90Pt
+            // before the nest's shift, sheetLay says axis 'w', decors.js
+            // grainRun paints the figure along wall A in the 3D. One field,
+            // the readers follow (T40: the cut decides, the 3D shows what was
+            // cut). Mirrors drawCL_LBOARD_ROT90 in the LISP's CNC section.
+            //
+            // THE CNC FRAME DOES NOT MOVE (T17 F3: the placement turns, the
+            // part does not): outline, bones, relief, area, box and the CSV
+            // row are what T75 cut, so golden-corner-l-base, -wall and
+            // -wardrobe hold byte for byte; their summary carries no lay.
+            grain: 'w',
             outline: (shape.outline || shape.nominal).map(([x, y2]) => [roundTo(x, 4), roundTo(y2, 4)]),
             pockets: (shape.bones || []).map(([x1, y1, x2, y2]) => ({ layer: pz.layers.dogbone, x1, y1, x2, y2 })),
             holes: [],

@@ -168,8 +168,11 @@ export function applyDecorTransform(tex, { repeatX, repeatY, rotate = false }) {
 export function decorPlacement(surface, panel, profile) {
   if (!surface?.texture || !panel?.box) return null;
   const anisotropy = profile?.appearance?.decor?.anisotropy ?? 8;
-  const { lengthMm } = grainRun(panel);
-  const map = decorMapping(panel.box, lengthMm);
+  // T78 F4: the cut's AXIS goes with its length, for the square face a length
+  // cannot decide (the L boards, W = D at every default; engine/decors.js
+  // decorMapping). Every rectangle is answered by size exactly as before.
+  const { lengthMm, axis } = grainRun(panel);
+  const map = decorMapping(panel.box, lengthMm, axis);
 
   // ─── TURN 29 (CLAUDE.md F1): WHERE THE QUARTER TURN IS DECIDED ───────────
   //

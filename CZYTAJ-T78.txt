@@ -1,0 +1,30 @@
+T78: LISTA Z 11.10 (narozniki naprawde, drzwi, kity, zlacza, spray). Spec dla Claude Code.
+
+1. Baza = main po T77 (dbef3f1, PR #76). Spec nie ma patcha, to czysta tura nocna.
+2. Rozpakuj ten ZIP do folderu z repo Cabinet-core (tam gdzie package.json). Nadpisuje CLAUDE.md i dodaje
+   reference/hardware/cabineo/Operating_instructions_Cabineo.pdf (arkusz Lamello, zrodlo liczb Cabineo, zostaje w repo na stale).
+3. Usun ten plik CZYTAJ-T78.txt.
+4. git add CLAUDE.md reference/hardware/cabineo/Operating_instructions_Cabineo.pdf
+   git commit -m "T78: the list of 11.10"
+   git push
+5. Nocna sesja Claude Code (Opus, wysilek max, agenci ON, tryb rownolegly ON; trzon jednym pisarzem, agenci do probe/LISP/JSON/testow/walka).
+   Galaz: claude/t78-the-list-of-11-10.
+6. Rano: audyt (clean clone, suita, goldeny stare + nowe, klasyfikator, parens +3, walk, frames verify/t78).
+
+CO JEST W SRODKU (22 F w 7 czesciach, kolejnosc = wartosc):
+A. L corner (F1-F9): BUG brak dodawania z lewej, BUG blat i maska nie w L, BUG drzwi 40 mm, sloje polek L,
+   ramiona A/B osobno, gorna L = dolna z podzialem powyzej 700, szuflady SPACE CORNER, drzwi bi-fold, karuzela.
+B. Slepy naroznik (F10-F11): listwa 40 i panel jako czesci kitu (od razu w cut liscie), wysuw Hafele.
+C. Drzwi i fronty (F12-F16): BUG szyba przy scianie + smoke z wyborem, zawiasy 155/170 (rodzina, kat dalej z grubosci),
+   luk na malych drzwiach i jeden luk przez stos szuflad, fronty szuflad wewnetrznych, szuflada podwojna z wkladem na sztucce.
+D. Kuchnia (F17-F18): okap canopy / short z propozycja 650/750 (klient decyduje), gorki AVENTOS HK/HS/HL/HF.
+E. Zlacza (F19-F20): kolki 6 co 250 min 2 (LISP), wybor systemu w Company defaults (puzzle/dowel/biscuit/cabineo8/cabineo12),
+   ciastka bez zmian liczb, na korpus z LISP, Cabineo z arkusza Lamello w repo (kieszen od ZEWNETRZNEJ strony plyty poziomej,
+   otwor 5 mm w licu boku od srodka, DXF odbity jak FRONT z T76, etykieta OUTSIDE FACE UP, kazda liczba "owner to confirm", bramka blokuje CNC).
+F. Spray (F21): prawo 20 elementow w profile.spray.rules, strona Output > Spraying wg PC (info, Part A per kolor, Part B karty otwarte,
+   Part C farba w litrach do purchase listy), dzial Paints w Materials, przypisanie w Assign Materials, kod malowania na etykiecie CNC, PDF.
+G. Top infill zawsze z mitra (F22).
+
+PRZED PUSHEM: tabela THE NUMBERS PROPOSED na koncu CLAUDE.md. Twoje decyzje sa wpisane jako Twoje;
+liczby z katalogu Blum i Lamello wchodza jako "owner to confirm" z numerem strony / URL i NIE sa jeszcze prawda produkcyjna.
+Jesli punkt F3 (drzwi L 40 mm) znaczyl co innego niz bug, zmien jedna linie w F3.

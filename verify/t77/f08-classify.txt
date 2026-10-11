@@ -1,0 +1,213 @@
+─── T77 · THE ENGINE/LIB DELTAS, AND WHAT THEY REACH ───
+
+  base: 405b98c (origin/main before this turn)
+  fragments merged: f03.mjs, f04.mjs, f05.mjs, f06.mjs, f07.mjs, f08.mjs
+  named     src/engine/cabinet.js
+  named     src/engine/cnc/frontOperations.js
+  named     src/engine/cnc/ornateExport.js
+  named     src/engine/design.js
+  named     src/engine/drawings/frontDecorationDrawing.js
+  named     src/engine/frontBoard.js
+  named     src/engine/frontDecoration.js
+  named     src/engine/frontDecorationBom.js
+  named     src/engine/frontStyleArt.js
+  named     src/engine/ornateFront.js
+  named     src/engine/ornateFrontArt.js
+  named     src/engine/ornateFrontProfile.js
+  named     src/engine/profile.js
+  named     src/lib/cncExport.js
+
+  14 engine/lib file(s) changed or added · 0 not named
+  named READ-ONLY by CLAUDE.md and touched: none
+  named read-only and not in this repo: src/engine/lisp.js
+  the LISP (*.lsp) touched: none (of 18 file(s))
+  named and unspent: none
+
+  each licence against its own commit (git show --name-only <commit> -- src/engine src/lib):
+  ok    GPT patch (this file)  8ff45c6 12 named, 12 touched
+  ok    f03.mjs                e8ecf03 4 named, 4 touched
+  ok    f04.mjs                5961db1 5 named, 5 touched
+  ok    f05.mjs                f4e34b1 4 named, 4 touched
+  ok    f06.mjs                db84116 4 named, 4 touched
+  ----  f07.mjs                names no COMMIT: its 3 licence(s) asked at file level (T76's rule)
+  ----  f08.mjs                names no COMMIT: its 1 licence(s) asked at file level (T76's rule)
+  the turn's engine/lib commits: 8ff45c6 GPT patch (this file) · e8ecf03 f03.mjs · 5961db1 f04.mjs · f4e34b1 f05.mjs · db84116 f06.mjs · 7ef057c (no fragment names it: asked at file level) · c1429c9 (no fragment names it: asked at file level)
+  engine/lib changes in the working tree, in no commit yet: src/engine/ornateFrontProfile.js (asked above, by name)
+  ok    GPT's reasons word for word against scripts/ornate-classify.mjs: 12 of 12
+
+  ok    git diff --stat 405b98c -- the eight fronts files, the lighting files, src/engine/lisp.js, reference/lisp: empty
+  ok    src/engine/drawings: git log 405b98c..HEAD names 8ff45c6 (GPT's patch only); changed since GPT's commit: nothing
+  ok    fixtures/ against the base: none changed (33 file(s))
+
+  ok  src/engine/cnc/frontOperations.js
+        GPT patch: Recognise Ornate reference-only reliefs and prevent production DXF machining layers. Read by the DXF writer, the export gate and the ZIP: each new branch asks `isOrnateReference(panel)` (a leaf whose `meta.frontDecoration.style` is ORNATE_A_1..4), so a relief is never a pocket in the FRONT setup and its manifest row reads reference only, exported false; every other part is answered as before. F4 · `frontDecorationProblems` no longer pushes ORNATE_REFERENCE_MESSAGE for every Ornate leaf: a relief that built holds nothing (its slab is cut, its relief rides the reference files); a refused one is said in its own words and holds its leaf. `isOrnateReference` asks it, so only an Ornate leaf is answered differently
+        on computeCabinet's import graph: false; imported by 7 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/cnc/ornateExport.js
+        GPT patch: New reference DXF, STL and manifest from canonical Ornate geometry; no approved toolpaths. NEW: read by cncExport.js; `buildOrnateReferenceFiles` writes the `ornate-reference/` DXF, STL and JSON only for a leaf that `isOrnateReference`, so a selection without one gets no file from it. F3 · BINARY STL (`ornateSurfaceStl`, 80 byte header, uint32 count, 50 bytes a triangle; `readBinaryStl`), the two levels (`ORNATE_REFERENCE_LEVELS`, `ornateLevelSurface` at the level's numbers off the profile), number arrays on one line in the JSON, `referenceLevel` and `bytes` on every file record. Written only for an Ornate leaf. F4 · the operations JSON prints the leaf's ACTUAL board (`thicknessMm`) and leaves the recipe's `boardMm` out of the parameters it prints. Written only for an Ornate leaf. F5 · the copyright line deleted (the first line, a comment); nothing takes its place and no code changes. F6 · the operations JSON carries `ornament` ('procedural placeholder', 'none' on ORNATE_A_4). Written only for an Ornate leaf
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/design.js
+        GPT patch: Add four explicit ORNATE_A style IDs to the existing style cascade. Four rows appended to FRONT_STYLE_OPTIONS, offered in the gallery (a list, not a cut); a cut sees one only as the unit's `front_type` with its recipe, which the store writes when the style is picked
+        on computeCabinet's import graph: true; imported by 52 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/drawings/frontDecorationDrawing.js
+        GPT patch: Project the canonical Ornate contours in existing front and part drawings. A drawing, not a cut: an operation's `contours` (only a relief carries them) are drawn beside it, open where `closed` is false; an operation without them is drawn entity for entity as before
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/frontDecoration.js
+        GPT patch: Delegate only the four ORNATE_A recipe IDs; leave legacy geometry in its existing path. On the cut path through cabinet.js's pass, behind `params.front_decoration`: each new branch asks `ORNATE_STYLE_IDS.includes(style)` and hands that leaf to ornateFront.js; the six recipes keep their path. F4 · `minSkinOf` and `skinShort` imported from frontBoard.js (the validator's skin rule, every decorated front); `boardRefusal` (T76 F7, retail's question) keeps its name and sentence and asks `boardShortfall`, with a leaf's own recipe where a caller has one; GPT's Ornate branch of it gone into the one function
+        on computeCabinet's import graph: true; imported by 6 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4); a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: G, GF, A, AH, FL, AM (on the cut: held by their re-made bytes below)
+  ok  src/engine/frontDecorationBom.js
+        GPT patch: Describe Ornate reliefs and their reference-only manufacturing status. Read by bom.js: the new sentence only for a record with `referenceOnly` (an Ornate relief). A list, not a cut. F6 · the Ornate sentence names its ornament ("ORNATE_A_1 · Slab; relief proposed, not production approved; ornament: procedural placeholder"), GPT's " - " separator now the column's own " · ". Only for a record with `referenceOnly` (an Ornate relief). A list, not a cut
+        on computeCabinet's import graph: false; imported by 1 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/frontStyleArt.js
+        GPT patch: Register the four new gallery thumbnails. `ORNATE_FRONT_ART` spread into FRONT_STYLE_ART. Pictures, not a cut: the gallery draws them for every user and no cut reads them
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/ornateFront.js
+        GPT patch: New pure opt-in Ornate normalization, validation and canonical relief geometry. NEW: on the cut path only through frontDecoration.js, which hands it a leaf only for an ORNATE_A style behind `params.front_decoration`. F3 · RELIEF_SAMPLE_MM, SURFACE_CHORD_MM and CHORD_ERROR_MM deleted: `ornateSampling(profile, level)` reads `front.decoration.ornateSolid` for the record (level 'solid', GPT's numbers: what the 3D, the drawings and the CNC preview read) and `ornateReference` for the two export levels, built lean (a flat straight-side column left out); ORNATE_SAMPLING and ORNATE_COMPLEXITY refuse in words. Reached only through an Ornate recipe. F4 · GPT's second copy of the rule (ORNATE_SKIN, its own sentence) replaced by `boardShortfall` on the leaf's ACTUAL board, never `boardMm`; the refusal carries needMm and haveMm; the always-on advisory names no board. Reached only through an Ornate recipe. F5 · the copyright line deleted (the first line, a comment); nothing takes its place and no code changes. F6 · `ornamentSurface(variant, config, profile)`, the one road GPT's MOTIF reaches `buildOrnateFront` by: the procedural placeholder while the slot is null, nothing on the Plain variant, a named model refused in words (ORNATE_ORNAMENT_MODEL); the record carries `ornament` (its label). Reached only through an Ornate recipe. F7 · `ornamentSurface` is asked as soon as the variant is known, so a relief refused further down (a board too thin, radii that do not fit) still names its ornament on the record and in the cut list sentence; the surface of a relief that builds is the same
+        on computeCabinet's import graph: true; imported by 2 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/ornateFrontArt.js
+        GPT patch: New four-variant gallery art, independent of production geometry. NEW: read only by frontStyleArt.js. Pictures, not a cut. F5 · the copyright line deleted (the first line, a comment); nothing takes its place and no code changes
+        on computeCabinet's import graph: false; imported by 1 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/ornateFrontProfile.js
+        GPT patch: New proposed profile numbers for the four Ornate recipes. NEW: spread by profile.js into `front.decoration` under the four ORNATE_A keys, read only for an ORNATE_A style (`recipeOf` asks the style first). F5 · the copyright line deleted (the first line, a comment); nothing takes its place and no code changes. F8 · comments only: each number of the Ornate seed names its source (the owner's board, or "T77 proposed, owner to confirm" for GPT's); no value changes
+        on computeCabinet's import graph: true; imported by 1 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/engine/profile.js
+        GPT patch: Append proposed Ornate recipes without changing legacy profile values. The four ORNATE_A keys spread into `front.decoration`; a legacy recipe is read by its own key, an ORNATE_A key only for an ORNATE_A style; the six read none of it. F3 · `front.decoration.ornateSolid` (1.0 / 2.0 / 0.06, GPT's, the 3D's own) and `ornateReference` (2.0 / 2.0 / 0.06 / 1.0 and leafTargetBytes 4000000, "T77 proposed, owner to confirm"). Read only by ornateFront.js and ornateExport.js; no style is named by either key, so no recipe of the six reads them. F6 · `front.decoration.ornateReference.ornamentModel = null`, the owner's slot. Read only by `ornamentSurface`
+        on computeCabinet's import graph: true; imported by 31 file(s)
+        gates: an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: none
+  ok  src/lib/cncExport.js
+        GPT patch: Package Ornate CAD/CAM references through the existing export route. The `ornate-reference/` files and their `geometry` readiness lines ride a ZIP only when `buildOrnateReferenceFiles` finds an Ornate leaf; the material export's manifest entries now carry each block's drills (any decorated selection). A file writer, not a cut. F3 · `referenceLevel` (default 'reference') on the three ZIP routes, handed with the profile to `buildOrnateReferenceFiles`; nothing else reads it. A file writer, not a cut. F7 · `withReferenceReadiness` counts a READINESS line only for a leaf whose relief model (its STL) is in the package: a refused relief (a 12 mm board) shipped only its invalid-reference JSON and was still listed. A file writer, not a cut
+        on computeCabinet's import graph: false; imported by 3 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing); an Ornate A recipe on the unit (`params.front_decoration` whose style, or the unit's `front_type`, is ORNATE_A_1..4)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: G, GF, A, AH, FL, AM (off the cut: a record is the cut parts and cannot see it)
+  ok  src/engine/frontBoard.js
+        F4 · NEW: THE one board rule. `minSkinOf` and `skinShort` moved here from frontDecoration.js unchanged; `deepestCutMm` reads either family (an Ornate relief's deepest step or corner background; a recess plus its groove); `boardShortfall(style, board, recipe, profile)` says a too-thin board in words (FRONT_DECORATION_BOARD_TOO_THIN, needMm, haveMm) and is silent above it. On the cut path through frontDecoration.js and ornateFront.js, behind `params.front_decoration`
+        on computeCabinet's import graph: true; imported by 2 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: G, GF, A, AH, FL, AM (on the cut: held by their re-made bytes below)
+  ok  src/engine/cabinet.js
+        F7 · the L block no longer carries the virtual arm parent's DECORATION findings (problems and advisories) over to the L: the L's own decoration pass decorates the leaf again and says them once (the walk found each said twice on the L's panel, T76's A as much as Ornate). Every other finding of the parent is carried as before; a leaf with no decoration carries everything as before
+        on computeCabinet's import graph: true; imported by 9 file(s)
+        gates: a decorative recipe on the unit (`params.front_decoration`, GPT's opt-in: written when a style is picked, never by opening one; a style name alone machines nothing)
+        goldens that open them: NONE, no golden can enter this path
+        T76's decoration records that open them: G, GF, A, AH, FL, AM (on the cut: held by their re-made bytes below)
+
+─── EVERY OLD GOLDEN, GATE BY GATE (THE SIX AND T75'S 16) ───
+  WARDROBE                           opens: none   · carries an ORNATE_A_* style: no
+  BUD                                opens: none   · carries an ORNATE_A_* style: no
+  WUD                                opens: none   · carries an ORNATE_A_* style: no
+  BUDR                               opens: none   · carries an ORNATE_A_* style: no
+  BUDR4                              opens: none   · carries an ORNATE_A_* style: no
+  PANTRY                             opens: none   · carries an ORNATE_A_* style: no
+  golden-blind-base.json             opens: none   · carries an ORNATE_A_* style: no
+  golden-blind-wall.json             opens: none   · carries an ORNATE_A_* style: no
+  golden-blind-wardrobe.json         opens: none   · carries an ORNATE_A_* style: no
+  golden-notch.json                  opens: none   · carries an ORNATE_A_* style: no
+  golden-corner-l-base.json          opens: none   · carries an ORNATE_A_* style: no
+  golden-corner-l-wall.json          opens: none   · carries an ORNATE_A_* style: no
+  golden-corner-l-wardrobe.json      opens: none   · carries an ORNATE_A_* style: no
+  golden-appliance-tall.json         opens: none   · carries an ORNATE_A_* style: no
+  golden-appliance-tall2.json        opens: none   · carries an ORNATE_A_* style: no
+  golden-bud-int.json                opens: none   · carries an ORNATE_A_* style: no
+  golden-budr-hob.json               opens: none   · carries an ORNATE_A_* style: no
+  golden-pelmet.json                 opens: none   · carries an ORNATE_A_* style: no
+  golden-wardrobe-chest.json         opens: none   · carries an ORNATE_A_* style: no
+  golden-wardrobe-desk.json          opens: none   · carries an ORNATE_A_* style: no
+  golden-wardrobe-low.json           opens: none   · carries an ORNATE_A_* style: no
+  golden-dowel-bud.json              opens: none   · carries an ORNATE_A_* style: no
+
+─── T76'S DECORATION RECORDS, GATE BY GATE (THEIR OWN GATE OPEN BY DESIGN) ───
+  ok    G    opens: frontDecoration
+  ok    GF   opens: frontDecoration
+  ok    A    opens: frontDecoration
+  ok    AH   opens: frontDecoration
+  ok    FL   opens: frontDecoration
+  ok    AM   opens: frontDecoration, appliedStrips
+
+─── THE SIX CARRY NO RECIPE AND CUT NO DECORATED PART ───
+  ok    WARDROBE   front_decoration: absent · decorated parts: 0
+  ok    BUD        front_decoration: absent · decorated parts: 0
+  ok    WUD        front_decoration: absent · decorated parts: 0
+  ok    BUDR       front_decoration: absent · decorated parts: 0
+  ok    BUDR4      front_decoration: absent · decorated parts: 0
+  ok    PANTRY     front_decoration: absent · decorated parts: 0
+
+─── EACH GATE OPENED ON A CRAFTED CABINET: THE DELTA IS LIVE ───
+  live  frontDecoration BUD G with its recipe: 1 of 1 leaf ready, 6 operations; the style alone: 0 decorated part(s)
+  live  appliedStrips   BUD AM cuts 4 FRONT-MOULDING strip(s) on 01-F (477 x 20 x 8, 647 x 20 x 8, 477 x 20 x 8, 647 x 20 x 8)
+  live  ornateRecipe    BUD ORNATE_A_1 with its recipe: 1 of 1 leaf ready, 1 with one 'relief' operation, ornament 'procedural placeholder'; the style alone: 0 decorated part(s)
+
+─── T75'S GOLDENS (CLAUDE.md NAMES NINE; THE REPO HOLDS 16) ───
+  ok    golden-blind-base.json             F3   byte-identical to its fixture
+  ok    golden-blind-wall.json             F3   byte-identical to its fixture
+  ok    golden-blind-wardrobe.json         F3   byte-identical to its fixture
+  ok    golden-notch.json                  F7   byte-identical to its fixture
+  ok    golden-corner-l-base.json          F4   byte-identical to its fixture
+  ok    golden-corner-l-wall.json          F4   byte-identical to its fixture
+  ok    golden-corner-l-wardrobe.json      F4   byte-identical to its fixture
+  ok    golden-appliance-tall.json         F12  byte-identical to its fixture
+  ok    golden-appliance-tall2.json        F12  byte-identical to its fixture
+  ok    golden-bud-int.json                F13  byte-identical to its fixture
+  ok    golden-budr-hob.json               F14  byte-identical to its fixture
+  ok    golden-pelmet.json                 F15  byte-identical to its fixture
+  ok    golden-wardrobe-chest.json         F16  byte-identical to its fixture
+  ok    golden-wardrobe-desk.json          F17  byte-identical to its fixture
+  ok    golden-wardrobe-low.json           F18  byte-identical to its fixture
+  ok    golden-dowel-bud.json              F23  byte-identical to its fixture
+
+─── T76'S DECORATION GOLDEN FILE: fixtures/golden-decorative-fronts.json ───
+  ok    G          01-F 597 x 767 x 25, 6 op · sha256 92ecf47dcd6e6bca
+  ok    GF         01-F 597 x 767 x 25, 7 op · sha256 4b6aac9e3c1dd2c5
+  ok    A          01-F 597 x 767 x 25, 1 op · sha256 68e841766633f96c
+  ok    AH         01-F 597 x 767 x 25, 1 op · sha256 7cbd357561caacb3
+  ok    FL         01-F 597 x 767 x 25, 25 op · sha256 dc02d1f2df95b8a6
+  ok    AM         01-F 597 x 767 x 25; 01-F-MOULDING-BOTTOM 477 x 20 x 8; 01-F-MOULDING-RIGHT 647 x 20 x 8; 01-F-MOULDING-TOP 477 x 20 x 8; 01-F-MOULDING-LEFT 647 x 20 x 8 · sha256 ae924b04c7e9f83a
+  the four proposals, named and not pinned (CLAUDE.md T77, THE ORDER 2):
+  ok    ORNATE_A_1 01-F 597 x 767 x 25, relief · ornament: procedural placeholder · proposed, not production approved · not pinned
+  ok    ORNATE_A_2 01-F 597 x 767 x 25, relief · ornament: procedural placeholder · proposed, not production approved · not pinned
+  ok    ORNATE_A_3 01-F 597 x 767 x 25, relief · ornament: procedural placeholder · proposed, not production approved · not pinned
+  ok    ORNATE_A_4 01-F 597 x 767 x 25, relief · ornament: none · proposed, not production approved · not pinned
+  ok    the styles the engine offers with a recipe: G, GF, A, AH, FL, AM, ORNATE_A_1, ORNATE_A_2, ORNATE_A_3, ORNATE_A_4 · the styles the file pins: G, GF, A, AH, FL, AM · the proposals: ORNATE_A_1, ORNATE_A_2, ORNATE_A_3, ORNATE_A_4 · the engine's ORNATE_STYLE_IDS: ORNATE_A_1, ORNATE_A_2, ORNATE_A_3, ORNATE_A_4
+
+─── THE SIX ───
+  WARDROBE   IDENTICAL  f49a8c107dd6e66908412262c8c0c91613fe9d1523cce844b7ce68648a1f37c3
+  BUD        IDENTICAL  44d091b837b08075fd155719253b85b9cc8c65437395a1d8b2f31b80d3b2db4c
+  WUD        IDENTICAL  3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7
+  BUDR       IDENTICAL  1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2
+  BUDR4      IDENTICAL  583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17
+  PANTRY     IDENTICAL  4df94682e4f80424aa770ffad3e5e143eb8e14902372ec2193fd4acb9e452289
+
+IDENTICAL=6 UNNAMED=0 · deltas a golden can reach: 0/14 · engine files not named: 0 · named and unspent: 0 (fragments: 0) · licences not matching their commit: 0 · read-only files touched: 0 · frontier empty: true · drawings only GPT's: true · LISP files touched: 0 · fixtures unchanged: true · GPT's words: true · unknown gates: 0 · old goldens carrying ORNATE_A_*: 0 · decoration records opening the Ornate gate: 0 · six without a recipe: 6/6 · every gate live: true · T75 goldens: 16/16 · decoration goldens: 6/6 (the styles agree) · proposals: 4/4
+dump cdf0709d5483c203

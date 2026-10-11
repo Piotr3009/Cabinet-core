@@ -1,0 +1,73 @@
+─── T77 · THE COPY: RETAIL ONLY THROUGH THE COPY SCRIPT ───
+
+  base: 405b98c (origin/main before this turn); src/, scripts/ and test/ there equal 2766045, the base of GPT's patch: yes
+  mode: --check · the machine runs in memory; nothing is written
+
+─── THE MACHINE ───
+  scripts/t63-copy.mjs, scripts/t63-copies.mjs
+  moved since the base: none
+  run in memory: 25 files made (24 copies said "copied", the sheet 156 rules); 0 bytes written by it
+  made outside src/retail: none
+
+─── THE PRO SURFACES THIS TURN EDITS THAT HAVE A RETAIL COPY ───
+  src/components/FrontDecorationControls.jsx
+    -> src/retail/design/material/FrontDecorationControls.jsx
+    by: GPT's patch (T77 F1, 8ff45c6)
+    why: an Ornate leaf shows the proposed relief note and the "Mirror ornate pattern" choice, and no new numeric field; the copy is the T63 machine's, re-run after F3 to F6.
+    words: the owner to GPT, 10.10.2026 (CLAUDE.md T77 THE ORDER 1): *"rozpisz zakoduj dokładnie proszę i ja to dam do Clauda, ale daj gotowy kod włącznie z leyersami proszę do CNC."* CLAUDE.md T77 F8: *"GPT's T63 copy of FrontDecorationControls re-run after F3 to F6"*.
+    the copy: byte for byte what the machine makes from PRO today
+
+─── EVERY PRO SURFACE WITH A COPY, AGAINST THE BASE ───
+  PRO files moved since the base: src/components/CncTree.jsx, src/components/CncView.jsx, src/components/FrontDecorationControls.jsx
+  of them with a retail copy: src/components/FrontDecorationControls.jsx
+  moved, with a copy, and NOT named: none
+  named and unspent: none
+  src/components/FrontDecorationControls.jsx: EXEMPT line present; frozen at 029b9a2c4488, on disk 029b9a2c4488: the same
+
+─── EVERY FILE THE MACHINE MAKES, AGAINST THE DISK ───
+  24 copies and the sheet: 25 byte for byte the same, 0 would change
+  would change, a copy of a named PRO file: none
+  would change, NOTHING LICENSED: none
+
+─── 1. EVERY RETAIL FILE THAT DIFFERS FROM THE BASE ───
+  src/retail/design/Options.jsx                            retail edit, named
+  src/retail/design/adapter.js                             retail edit, named
+  src/retail/design/material/FrontDecorationControls.jsx   copy of src/components/FrontDecorationControls.jsx, byte for byte the machine's
+  3 moved · retail edits named and unspent: none · retail edits that are the machine's files: none
+
+─── 2. THE RETAIL EDITS (NOT COPIES), BY FILE AND HUNK (git diff -U0 405b98c) ───
+  src/retail/design/Options.jsx
+    by: GPT's patch (T77 F1, 8ff45c6), and T77 F7 fixes (what the walk found)
+    why: GPT: the FRONTS step's order list gains ORNATE_A_1, ORNATE_A_2, ORNATE_A_3 and ORNATE_A_4, after AM, so the four Ornate tiles stand in the step in order (the hunk at 736, now 741). T77 F7: STYLE_LINES gains a line for each of the four (the hunk at 706): the walk found the Ornate tiles with an empty sentence under the list, where every other style has one.
+    words: the owner to GPT, 10.10.2026 (CLAUDE.md T77 THE ORDER 1): *"rozpisz zakoduj dokładnie proszę i ja to dam do Clauda, ale daj gotowy kod włącznie z leyersami proszę do CNC."* CLAUDE.md T77 F7: *"Retail: FRONTS step shows the four tiles from ornateFrontArt.js, a click changes the leaf, no numeric field on the page"*. CLAUDE.md T75 LAWS, held in T77: *"done means the whole road"*.
+    2 hunk(s) · +6 -1 · now at lines 706-710, 741
+      @@ -705,0 +706,5 @@  base none (after 705) -> now 706-710
+        + // T77 F7 · the walk found the four Ornate tiles with no line under them.
+        + ORNATE_A_1: 'A stepped moulding with two large curved corners and a carved flower in each.',
+        + ORNATE_A_2: 'A stepped moulding with round ends and a carved flower in all four corners.',
+        + ORNATE_A_3: 'A stepped moulding with two gentler curved corners and a carved flower in each.',
+        + ORNATE_A_4: 'The stepped moulding of the Classic, without the carved flowers.',
+      @@ -736 +741 @@  base 736 -> now 741
+        - const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
+        + const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
+    pinned hunks: the same as on disk
+  src/retail/design/adapter.js
+    by: GPT's patch (T77 F1, 8ff45c6)
+    why: LIVE_STYLES gains ORNATE_A_1, ORNATE_A_2, ORNATE_A_3 and ORNATE_A_4, so frontStyles() offers the four Ornate styles to retail as live styles, through the existing retail update path.
+    words: the owner to GPT, 10.10.2026 (CLAUDE.md T77 THE ORDER 1): *"rozpisz zakoduj dokładnie proszę i ja to dam do Clauda, ale daj gotowy kod włącznie z leyersami proszę do CNC."* CLAUDE.md T77 F7: *"Retail: FRONTS step shows the four tiles from ornateFrontArt.js, a click changes the leaf"*.
+    1 hunk(s) · +1 -1 · now at lines 202
+      @@ -202 +202 @@  base 202 -> now 202
+        - const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM'];
+        + const LIVE_STYLES = ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
+    pinned hunks: the same as on disk
+
+─── THE COPIES: EACH NAMED COPY'S HUNKS SINCE THE BASE, AND ITS DIVERGENCE FROM ITS PRO FILE ───
+  src/retail/design/material/FrontDecorationControls.jsx
+    copy of src/components/FrontDecorationControls.jsx
+    the copy since the base: @@ -2 +2 @@, @@ -23,0 +24,14 @@ · +15 -1
+    PRO since the base:      @@ -2 +2 @@, @@ -23,0 +24,14 @@ · +15 -1 (the same places)
+    95 lines, as PRO; 16 differ from PRO
+    imports repointed (2): 1-2
+    the skin, classes and colours (14): 26-27, 31, 41, 44, 47, 53, 63-64, 66, 73, 77-78, 80
+
+CLEAN · 1 named PRO surface(s), each copy byte for byte what the machine makes from PRO today; 3 retail file(s) moved since the base, each a named copy or a named retail edit with its hunks pinned; nothing else under src/retail moved; nothing written.

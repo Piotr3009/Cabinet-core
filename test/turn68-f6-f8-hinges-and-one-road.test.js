@@ -1,4 +1,3 @@
-// Ornate A, 10.10.2026: retain the existing order, append four owner-requested proposed styles.
 // ─── TURN 68 · F6 + F8 — THE HINGES GO BACK TO PRO, FRONTS KEEPS ONE ROAD ──
 //
 // F6, the owner: *"wybór hinges to nie jest dobry pomysł, nie tutaj — zostaw

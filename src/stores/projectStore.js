@@ -850,6 +850,10 @@ function paramsForEngine(unit, design = null) {
     // engine stamps a meta face, draws a plane and orders the glass, and NOT
     // ONE hole travels with it.
     door_mirrors: p.door_mirrors || null,
+    // T78 F12 / F13 · the glass kind and the hinge family: the unit's own, else the
+    // project's (retail's FRONTS step writes `design.fronts.glassKind`); a CHOICE.
+    glass_kind: p.glass_kind ?? design?.fronts?.glassKind ?? null,
+    hinge_family: p.hinge_family ?? design?.fronts?.hingeFamily ?? null,
     // ─── Turn 18 (CLAUDE.md F6.4) ───
     // The PROJECT's runner variant, travelling exactly as the hinge standard
     // does. It is deliberately NOT `runner_variant` — that name belongs to the

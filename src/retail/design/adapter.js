@@ -1916,6 +1916,31 @@ export function setFrontStyle(styleId) {
   return writeFrontLaw({ style: styleId }).style;
 }
 
+// ─── T78 F12 · THE GLASS KIND, A CHOICE ─────────────────────────────────────
+// The owner: *"domyslnie smoke ale z wyborem."*  The kinds and the default are
+// the profile's; the choice is the project's (`design.fronts.glassKind`) and
+// reaches every GL leaf without its own through the store's effective params.
+export function glassKinds() {
+  const g = getCabinetProfile().front?.glass || {};
+  const labels = g.labels || {};
+  return (g.kinds || ['clear', 'smoke', 'reeded']).map((id) => ({ id, label: `${labels[id] || id} glass` }));
+}
+
+export function glassKind(project = S().project) {
+  const g = getCabinetProfile().front?.glass || {};
+  const own = project?.design?.fronts?.glassKind;
+  return (g.kinds || []).includes(own) ? own : (g.default || 'smoke');
+}
+
+export function setGlassKind(kind) {
+  const store = S();
+  const g = getCabinetProfile().front?.glass || {};
+  const next = (g.kinds || []).includes(kind) ? kind : (g.default || 'smoke');
+  const design = store.project.design;
+  store.setDesign({ fronts: { ...(design?.fronts || {}), glassKind: next } });
+  return glassKind(S().project);
+}
+
 export function setFrontDecoration(decoration) {
   const store = S();
   const design = migrateDesign(store.project.design);

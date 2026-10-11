@@ -114,7 +114,8 @@ const EXEMPT = {
     + ' DECOR F1: per-unit decorative style selection and recipe editing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T78 F5 · the Carcass section\'s three fields read Arm A, Height, Arm B on an L; the fields and the setter are the same, the words are the L\'s. *"powiekszenie L shape szafek prawa lewa strona."*'
     + ' T78 F7 · the Drawers rows on an L are a SPACE CORNER stack: added and removed here, their heights the drawer unit\'s own split per arm, shown and not typed (no Equal heights, no field); the status line names the kit and its nominal length. *"szuflady w narozniku L shape."*'
-    + ' T78 F8 · the Doors section\'s Corner doors choice on an L: Pair or Bi-fold, written as `corner_doors` through updateUnitParams; the engine\'s own sentence (CORNER_L_BIFOLD) under it; no number typed. *"zawiasy podwojne czyli jedne drzwiczki do carcasu a pozniej zawiasy od drzwiczek do drzwiczek."*',
+    + ' T78 F8 · the Doors section\'s Corner doors choice on an L: Pair or Bi-fold, written as `corner_doors` through updateUnitParams; the engine\'s own sentence (CORNER_L_BIFOLD) under it; no number typed. *"zawiasy podwojne czyli jedne drzwiczki do carcasu a pozniej zawiasy od drzwiczek do drzwiczek."*'
+    + ' T78 F12 / F13 · the Doors section\'s Per leaf rows: the glass kind of a glazed leaf (clear | smoke | reeded, the BOM line names it) and the hinge FAMILY of every hinged leaf (standard | wide), written per leaf as door_glass and door_hinge_family; the angle inside the family stays derived from the front thickness (T22), no number typed. *"domyslnie smoke ale z wyborem"*; *"otwieranie drzwi wiekszy kat otwarcia 180 stopni, zawiasy."*',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -305,8 +306,8 @@ const FROZEN = {
   'src/components/PartDetailModal.jsx': '69a8764cdb984ec7c523a3cd97559f03ddc169778d1d997fa24905b8efce1a93',
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
-  // T78 F8 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RightPanel.jsx': '670dde888e4f6fcf9342776a0de740fda176f9b3454a704703106571b07632f1',
+  // T78 F12 / F13 · re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RightPanel.jsx': '776f49bd842a80169756d1f56fbca5323be093598cfd8bc4bfcb556aaf7e35ae',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RoomModal.jsx': '29ffa1a4b710d3d3c7d168dfce23aa765fc76a3c9ba159b71b01964996dbd263',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',

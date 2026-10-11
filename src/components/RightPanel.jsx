@@ -559,6 +559,55 @@ export default function RightPanel() {
             </div>
           </div>
 
+          {/* ─── T78 F12 / F13 · PER LEAF: THE GLASS KIND AND THE HINGE FAMILY ─
+              The owner, 11.10.2026: *"domyslnie smoke ale z wyborem"* and
+              *"otwieranie drzwi wiekszy kat otwarcia 180 stopni, zawiasy."*  One
+              row per hinged leaf: its glass (clear | smoke | reeded, on a glazed
+              leaf) and its hinge FAMILY (standard | wide); the angle inside the
+              family stays derived from the front thickness (T22 law), so no
+              number is typed here. Written per leaf as `door_glass[id]` and
+              `door_hinge_family[id]` through updateUnitParams. */}
+          {(() => {
+            const leaves = (result.panels || []).filter((p) => p.part === 'FRONT' && p.role === 'front' && p.meta?.hinge);
+            if (!leaves.length) return null;
+            const kinds = profile.front?.glass?.kinds || ['clear', 'smoke', 'reeded'];
+            const labels = profile.front?.glass?.labels || {};
+            const num = unit.params.unit_num || '';
+            return (
+              <div className="mt-2 space-y-1" data-leaf-choices="1">
+                <span className="cc-label">Per leaf</span>
+                {leaves.map((p) => (
+                  <div key={p.id} className="flex items-center gap-1 text-[12px]">
+                    <span className="text-ink-400 w-16 truncate" title={p.id}>{num && p.id.startsWith(`${num}-`) ? p.id.slice(num.length + 1) : p.id}</span>
+                    {p.meta?.glass && (
+                      <select
+                        className="cc-input flex-1"
+                        data-door-glass={p.id}
+                        value={p.meta.glass.kind || 'smoke'}
+                        title="The glass in this leaf (the BOM line names it; smoke is the default)"
+                        onChange={(e) => updateUnitParams(unit.id, { door_glass: { ...(unit.params.door_glass || {}), [p.id]: e.target.value } })}
+                      >
+                        {kinds.map((k) => <option key={k} value={k}>{`${labels[k] || k} glass`}</option>)}
+                      </select>
+                    )}
+                    <select
+                      className="cc-input flex-1"
+                      data-door-hinge-family={p.id}
+                      value={p.meta?.hingeFamily === 'wide' ? 'wide' : 'standard'}
+                      title={`Hinge family: the angle follows the front thickness inside it${p.meta?.openAngleDeg ? ` (${p.meta.openAngleDeg} degrees here)` : ''}`}
+                      onChange={(e) => updateUnitParams(unit.id, {
+                        door_hinge_family: { ...(unit.params.door_hinge_family || {}), [p.id]: e.target.value === 'wide' ? 'wide' : 'standard' },
+                      })}
+                    >
+                      <option value="standard">Standard hinges</option>
+                      <option value="wide">Wide-angle hinges (155 / 170)</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
           <FrontDecorationControls
             style={resolvedDesign?.frontType}
             value={resolvedDesign?.frontDecoration}

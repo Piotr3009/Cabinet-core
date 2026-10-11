@@ -781,6 +781,30 @@ function FrontsPanel({ design, project, unit }) {
         </div>
       </Field>
 
+      {/* ─── T78 F12 · GLASS: SMOKE BY DEFAULT, WITH A CHOICE ─────────────
+          The owner: *"domyslnie smoke ale z wyborem."*  Shown for the GL
+          style only, a list like the styles; one click writes the project's
+          glass kind through the adapter (`A.setGlassKind`), no number. */}
+      {style === 'GL' && (
+        <Field label="GLASS" block>
+          <div className="pbi-style-list" data-testid="fronts-glass">
+            {A.glassKinds().map((k) => (
+              <button
+                key={k.id}
+                type="button"
+                className={`pbi-style-row${A.glassKind(project) === k.id ? ' is-on' : ''}`}
+                data-testid={`fronts-glass-${k.id}`}
+                data-on={A.glassKind(project) === k.id ? 'yes' : 'no'}
+                aria-pressed={A.glassKind(project) === k.id}
+                onClick={() => A.setGlassKind(k.id)}
+              >
+                <span className="pbi-choice pbi-style-name">{k.label}</span>
+              </button>
+            ))}
+          </div>
+        </Field>
+      )}
+
       {/* ─── T70 F4 · DOORS ON THE FIRST LINE ─────────────────────────────
           The owner: *"dodawanie drzwi jest tak schowane, że dopiero w
           accessories można znaleźć — a powinno być na pierwszej linii, zaraz

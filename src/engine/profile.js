@@ -119,6 +119,18 @@ export const DEFAULT_CABINET_PROFILE = {
       // the report.
       GL: { label: 'Glass', apertureLayer: 'GLASS_APERTURE' },
     },
+    // ─── T78 F12 · THE GLASS: SMOKE BY DEFAULT, WITH A CHOICE ─────────────
+    // The owner, 11.10.2026: *"szyba powinna byc smoke, i powinna byc na
+    // drzwiczkach a nie gdzies na scianie"*; *"domyslnie smoke ale z wyborem."*
+    // A CHOICE per door (never a number typed): the BOM line names it, the
+    // scene tints it. `paneMm` is the glazier's pane on the order line (the
+    // scene drew 4 since T58b); T78 proposed, owner to confirm.
+    glass: {
+      kinds: ['clear', 'smoke', 'reeded'],
+      default: 'smoke',        // owner 11.10.2026, decided
+      paneMm: 4,               // T78 proposed, owner to confirm
+      labels: { clear: 'Clear', smoke: 'Smoked', reeded: 'Reeded' },
+    },
     defaultType: 'S',
     // ─── T76 F4 · THE DECORATIVE RECIPES LIVE HERE ──────────────────────────
     //

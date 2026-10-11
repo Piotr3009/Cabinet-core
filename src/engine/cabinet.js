@@ -8137,6 +8137,15 @@ export function computeCabinet(params, profileOverride) {
   // the recess simply goes all the way through, and what is left is the frame.
   // The pane itself is BOUGHT: it is on the order form to the aperture it has
   // to fill, and it reaches no cut list, because glass is not board.
+  const glassKinds = Array.isArray(P.front?.glass?.kinds) && P.front.glass.kinds.length
+    ? P.front.glass.kinds : ['clear', 'smoke', 'reeded'];
+  const glassDefault = glassKinds.includes(P.front?.glass?.default) ? P.front.glass.default : 'smoke';
+  const glassKindOf = (id) => {
+    const per = params?.door_glass?.[id];
+    if (glassKinds.includes(per)) return per;
+    const own = params?.glass_kind;
+    return glassKinds.includes(own) ? own : glassDefault;
+  };
   const glassFronts = panels.filter((x) => isGlassFront(x));
   for (const pnl of glassFronts) {
     const aperture = glassAperture({
@@ -8152,12 +8161,17 @@ export function computeCabinet(params, profileOverride) {
     }
     pnl.cnc.pockets = [...(pnl.cnc.pockets || []), aperture];
     // On the PIECE, so the 3-D pane and the order line read one answer.
+    // T78 F12 · the glass KIND: the door's own choice (`door_glass[id]`), the
+    // unit's (`glass_kind`, retail's FRONTS step through the design), or the
+    // profile's default (smoke, the owner's). A choice, never a number.
     pnl.meta.glass = {
       frame: shakerFrame,
       aperture: {
         w: roundTo(aperture.x2 - aperture.x1, 1),
         h: roundTo(aperture.y2 - aperture.y1, 1),
       },
+      kind: glassKindOf(pnl.id),
+      paneMm: Number(P.front?.glass?.paneMm) || 4,
     };
   }
 
@@ -10165,14 +10179,20 @@ export function computeCabinet(params, profileOverride) {
   // Two doors of the same size are one order line of two, which is what the
   // hardware merge key (role + spec label) already does for every other bought
   // thing in this list.
+  // T78 F12 · one order line per KIND and aperture, named ("Smoked glass 4 mm").
+  const glassLabels = P.front?.glass?.labels || { clear: 'Clear', smoke: 'Smoked', reeded: 'Reeded' };
   for (const pane of [...new Set(panels
     .filter((x) => x.meta?.glass)
-    .map((x) => `${x.meta.glass.aperture.w}×${x.meta.glass.aperture.h}`))]) {
-    const [aw, ah] = pane.split('×').map(Number);
-    const count = panels.filter((x) => x.meta?.glass
-      && `${x.meta.glass.aperture.w}×${x.meta.glass.aperture.h}` === pane).length;
-    hw('glass_pane', 'Glass pane', count, 'pcs',
-      { aperture_w_mm: aw, aperture_h_mm: ah },
+    .map((x) => `${x.meta.glass.kind || 'smoke'}|${x.meta.glass.aperture.w}×${x.meta.glass.aperture.h}`))]) {
+    const [kind, size] = pane.split('|');
+    const [aw, ah] = size.split('×').map(Number);
+    const same = panels.filter((x) => x.meta?.glass
+      && `${x.meta.glass.kind || 'smoke'}|${x.meta.glass.aperture.w}×${x.meta.glass.aperture.h}` === pane);
+    const paneMm = same[0]?.meta.glass.paneMm || 4;
+    hw('glass_pane', `${glassLabels[kind] || kind} glass ${paneMm} mm`, same.length, 'pcs',
+      {
+        kind, pane_mm: paneMm, aperture_w_mm: aw, aperture_h_mm: ah,
+      },
       `${aw} × ${ah} mm aperture`);
   }
   // ─── TURN 30 (CLAUDE.md F13–F21): A BOUGHT MECHANISM IS A LINE TO ORDER ───

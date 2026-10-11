@@ -51,6 +51,45 @@ const PANE_ALPHA_GLASS = {
   depthWrite: false,
   side: THREE.FrontSide,
 };
+// ─── T78 F12 · THE GLASS KIND: SMOKE (today's), CLEAR, REEDED ───────────────
+// The owner: *"domyslnie smoke ale z wyborem."*  Smoke is T58b's alpha glass
+// darkened; clear is the same glass lighter and thinner to the eye; reeded is
+// smoke with a vertical ridge normal map drawn in code (no new dependency).
+const PANE_BY_KIND = {
+  smoke: PANE_ALPHA_GLASS,
+  clear: {
+    ...PANE_ALPHA_GLASS, color: '#dfe9ec', opacity: 0.16, roughness: 0.05,
+  },
+  reeded: {
+    ...PANE_ALPHA_GLASS, color: '#cfd8d6', opacity: 0.3, roughness: 0.35,
+  },
+};
+export function paneMaterialFor(kind) {
+  return PANE_BY_KIND[kind] || PANE_BY_KIND.smoke;
+}
+let reededNormal = null;
+function reededNormalMap() {
+  if (reededNormal || typeof document === 'undefined') return reededNormal;
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 4;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
+  const img = ctx.createImageData(64, 4);
+  for (let x = 0; x < 64; x += 1) {
+    const nx = Math.sin((x / 64) * Math.PI * 8) * 0.6;
+    const r = Math.round((nx * 0.5 + 0.5) * 255);
+    for (let y = 0; y < 4; y += 1) {
+      const i = (y * 64 + x) * 4;
+      img.data[i] = r; img.data[i + 1] = 128; img.data[i + 2] = 255; img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  reededNormal = new THREE.CanvasTexture(c);
+  reededNormal.wrapS = THREE.RepeatWrapping;
+  reededNormal.wrapT = THREE.RepeatWrapping;
+  reededNormal.repeat.set(6, 1);
+  return reededNormal;
+}
 // The pane draws AFTER the opaque interior it is meant to be seen through.
 const PANE_RENDER_ORDER = 20;
 
@@ -1101,12 +1140,28 @@ export function MovingPanel({
           />
         </mesh>
       )}
+      {/* ─── T78 F12 · THE PANE IS IN THE DOOR'S OWN FRAME, LIKE THE MIRROR ──
+          The owner, 11.10.2026: *"szyba powinna byc smoke, i powinna byc na
+          drzwiczkach a nie gdzies na scianie."*  The probe
+          (`verify/t78/f12-probe.md`): the pane backed only `pivot` out of the
+          swing group, with nothing of `p.box` in it, so it stood at the UNIT's
+          origin: centre [0, 0, 0] in the unit frame against the leaf's
+          [300, 360, 415.5] on a 600 x 720 WUD_GLASS, half below the carcass,
+          half past its side, 4 mm off the wall; and with the leaf open it had
+          turned about the hinge INTO the carcass. The term
+          `frame + aperture.w / 2 - box.w / 2` was 0 on every leaf, because the
+          aperture is centred on the leaf (`shaker.js shakerPanelRect`: x1 = f,
+          x2 = w - f, the same above and below). So the pane is placed exactly
+          as the mirror is (just above): the leaf's own centre in the unit
+          frame, backed out of the pivot the group stands at, and it swings
+          with the leaf. It sits mid-board, inside the through cut, a picture
+          of what the glazier delivers and never a cut. */}
       {p.meta?.glass && (
         <mesh
           position={[
-            -pivot[0] + mm((p.meta.glass.frame + p.meta.glass.aperture.w / 2) - p.box.w / 2),
-            -pivot[1],
-            -pivot[2],
+            mm(p.box.x + p.box.w / 2) - pivot[0],
+            mm(p.box.y + p.box.h / 2) - pivot[1],
+            mm(p.box.z + p.box.d / 2) - pivot[2],
           ]}
           renderOrder={PANE_RENDER_ORDER}
           userData={{ ccGlassPane: p.id, ccNoBounds: true }}
@@ -1114,11 +1169,15 @@ export function MovingPanel({
           <boxGeometry args={[
             mm(p.meta.glass.aperture.w),
             mm(p.meta.glass.aperture.h),
-            mm(GLASS_PANE_MM),
+            mm(p.meta.glass.paneMm || GLASS_PANE_MM),
           ]}
           />
-          {/* T58b F1: alpha glass, one law for every pane in this file. */}
-          <meshStandardMaterial key="pane-alpha" {...PANE_ALPHA_GLASS} />
+          {/* T58b F1: alpha glass, one law for every pane in this file; T78 F12: tinted by the door's kind. */}
+          <meshStandardMaterial
+            key={`pane-${p.meta.glass.kind || 'smoke'}`}
+            {...paneMaterialFor(p.meta.glass.kind)}
+            {...(p.meta.glass.kind === 'reeded' && reededNormalMap() ? { normalMap: reededNormalMap() } : {})}
+          />
         </mesh>
       )}
       {p.meta?.handle && (

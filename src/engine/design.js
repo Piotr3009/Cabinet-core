@@ -189,6 +189,14 @@ export const DEFAULT_DESIGN = {
     // Handles are a later phase — the slot is here so the shape does not change
     // under a saved project when they arrive.
     handle: null,
+    // ─── T78 F12 / F13 · THE GLASS KIND AND THE HINGE FAMILY, PROJECT-WIDE ──
+    // The owner: *"domyslnie smoke ale z wyborem"*; the hinge family is the
+    // door's choice (`standard` | `wide`), the angle inside it derived (T22).
+    // `null` means "nobody has said": the profile's default answers (smoke;
+    // standard). Retail's FRONTS step writes `glassKind`; a unit's own choice
+    // (`glass_kind`, `door_glass`, `hinge_family`, `door_hinge_family`) wins.
+    glassKind: null,
+    hingeFamily: null,
     // ─── TURN 25 (CLAUDE.md F3.1): THE SHAKER FRAME, PROJECT-WIDE ─────────
     // Equal on all four sides ("shaker zawsze równy"), 10…200 mm. `null` means
     // "nobody has said", and the profile's 70 answers it — the same shape of
@@ -497,6 +505,9 @@ export function migrateDesign(design) {
       handle: normaliseHandle(d.fronts?.handle),
       shakerFrame: Number(d.fronts?.shakerFrame) > 0 ? Number(d.fronts.shakerFrame) : null,
       handleOffsets: normaliseHandleOffsets(d.fronts?.handleOffsets),
+      // T78 F12 / F13 · a word, validated against the profile's kinds by the engine.
+      glassKind: typeof d.fronts?.glassKind === 'string' && d.fronts.glassKind ? d.fronts.glassKind : null,
+      hingeFamily: d.fronts?.hingeFamily === 'wide' ? 'wide' : null,
       types: coupleFrontTypes(d),
     },
     doorStyles: Array.isArray(d.doorStyles)

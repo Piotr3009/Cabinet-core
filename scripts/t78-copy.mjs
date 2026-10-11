@@ -84,7 +84,25 @@ export const T78_PRO_EDITS = [
  * manifest, so no machine re-makes them). Each pins its hunks as
  * `git diff -U0 <base> -- <file>` prints their headers.
  */
-export const T78_RETAIL_EDITS = [];
+export const T78_RETAIL_EDITS = [
+  {
+    retail: 'src/retail/design/Options.jsx',
+    by: 'T78 F12 (the one writer of the central files)',
+    why: 'the FRONTS step gains a GLASS list under the style list, shown for the GL style only: clear, smoke, reeded, one '
+      + 'click writes the project\'s glass kind through the adapter (A.setGlassKind); no number on the page.',
+    words: 'the owner, 11.10.2026: *"szyba powinna byc smoke ... domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12: '
+      + '*"Retail: the choice in the FRONTS step for a GL style."*',
+    hunks: ['@@ -783,0 +784,24 @@'],
+  },
+  {
+    retail: 'src/retail/design/adapter.js',
+    by: 'T78 F12 (the one writer of the central files)',
+    why: 'glassKinds(), glassKind(project) and setGlassKind(kind): the profile\'s kinds and default, the project\'s choice '
+      + '(design.fronts.glassKind) written through the store\'s setDesign; the engine validates the word.',
+    words: 'the owner, 11.10.2026: *"domyslnie smoke ale z wyborem"*; CLAUDE.md T78 F12.',
+    hunks: ['@@ -1918,0 +1919,25 @@'],
+  },
+];
 
 /**
  * THE COPY MACHINE'S OWN FILES EDITED THIS TURN, each `{ file, by, why, words }`.

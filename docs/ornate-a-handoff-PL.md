@@ -68,6 +68,8 @@ W ZIP programu folder `ornate-reference/` zawiera dla każdego wybranego frontu:
 
 - `*-ORNATE-PROPOSED-FRONT.dxf`: DXF R12, widok od lica.
 - `*-ORNATE-PROPOSED-RELIEF-1.stl`: otwarta powierzchnia docelowa do obróbki 3D, w mm. To nie jest zamknięta bryła całej części i nie zawiera wierceń od tyłu.
+
+T77 F3: STL jest binarny (80 bajtów nagłówka, liczba trójkątów uint32, 50 bajtów na trójkąt). Eksport CNC ma dwa poziomy w istniejących opcjach eksportu, bez nowego pola liczbowego: `Reference (default)` przy `sampleMm` i `Full resolution` przy `fullSampleMm` (`profile.front.decoration.ornateReference`); plik JSON i `front-operations.json` zapisują, który poziom wyszedł. Bryła 3D zachowuje własne próbkowanie (`profile.front.decoration.ornateSolid`). Płyta skrzydła jest cięta (stan `cut`, jej DXF od tyłu jest w paczce), relief jedzie jako pliki referencyjne (stan `geometry`).
 - `*-ORNATE-PROPOSED-operations.json`: parametry, wymiary, głębokości, znaczenie warstw, układ współrzędnych i powiązanie plików.
 
 | Warstwa domyślna | Znaczenie |
@@ -112,4 +114,4 @@ Jeśli main jest już dalej, użyć `git apply --3way`, przejrzeć każdy konfli
 
 Kopia `FrontDecorationControls` w retail jest wytworzona skryptem `t63-copy.mjs`; zawiera tę samą logikę oraz mechanicznie podmienione importy i klasy. Zmiany `FrontDecorationControls` i `CncView` w PRO mają cytat autoryzacji Piotra i nowe hashe w istniejącym teście zamrożenia. Dostosowane starsze asercje obejmują powiększenie katalogu o cztery style oraz nazwę paczki eksportu zawierającego wyłącznie referencje wstrzymanych frontów. Nie osłabiają geometrii dotychczasowych wzorów.
 
-Test przeglądarkowy: `CHROME_PATH=/sciezka/do/chromium CC_WALK_SERVER=1 node scripts/ornate-walk.mjs`. Szczegóły uruchomienia znajdują się w komentarzu skryptu. `scripts/ornate-preview.html` to lokalny podgląd kontrolny geometrii przez Vite. Wyniki weryfikacji tej paczki są zapisane w `verification/` paczki.
+Test przeglądarkowy: `npm run build && npx vite preview --port 4173 --strictPort`, potem `node scripts/t77-walk.mjs --fresh` (przejście T77 F7; skrypt GPT `ornate-walk.mjs` został w nie włączony i usunięty). Szczegóły uruchomienia znajdują się w komentarzu skryptu. `scripts/ornate-preview.html` to lokalny podgląd kontrolny geometrii przez Vite. Wyniki weryfikacji tej paczki są zapisane w `verification/` paczki.

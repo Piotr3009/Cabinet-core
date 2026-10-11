@@ -223,7 +223,9 @@ test('F7.1 · the graves: the old world is gone, file by file', () => {
   // T78 AMENDED (11.10.2026): 17 → 18, then 19. *"lisp najpierw"* again: the
   // biscuit carcass set and the Cabineo pattern are written as kits before
   // their engine code (SKYLON_JOINTS_BISCUIT.lsp, SKYLON_JOINTS_CABINEO.lsp).
-  assert.ok([16, 17, 18, 19].includes(kits.length), `the paren walk ends at ${kits.length}, derived, never typed`);
+  // T78 AMENDED again: the L corner's drawer stack and bi-fold door are kits of their own
+  // (KIT_CORNER_L_DRAWERS.lsp, KIT_CORNER_L_BIFOLD.lsp): the walk ends between 16 and 23.
+  assert.ok([16, 17, 18, 19, 20, 21, 22, 23].includes(kits.length), `the paren walk ends at ${kits.length}, derived, never typed`);
   assert.equal(kits.includes('KIT_SHOE_BOX.lsp'), false, 'and the grave is still a grave');
   const engine = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
   assert.doesNotMatch(engine, /shoeBoxPlan|shoeBoxBoxFor|SHOEBOX-/,

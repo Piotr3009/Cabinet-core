@@ -81,7 +81,9 @@ test('F4 · the LISP census is DERIVED, and it is 14/14', () => {
   assert.equal(kitCount('reference/lisp'), onDisk);
   // T75 AMENDED: new geometry is written as LISP first, so the census grew.
   // T78 AMENDED: the biscuit set and the Cabineo pattern are LISP first too.
-  assert.ok([16, 17, 18, 19].includes(onDisk), `the census is ${onDisk}`);
+  // T78 AMENDED again: the L corner's drawer stack and bi-fold door are kits of their own
+  // (KIT_CORNER_L_DRAWERS.lsp, KIT_CORNER_L_BIFOLD.lsp): the walk ends between 16 and 23.
+  assert.ok([16, 17, 18, 19, 20, 21, 22, 23].includes(onDisk), `the census is ${onDisk}`);
 });
 
 test('F4 · the file argues BOTH turns, and names its two bases', () => {

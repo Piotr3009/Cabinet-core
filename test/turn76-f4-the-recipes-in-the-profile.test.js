@@ -47,7 +47,9 @@ test('F4 · RECIPES no longer exists in code; no recipe number is typed outside 
 
 test('F4 · the owner\'s numbers, read off the profile', () => {
   const D = P.front.decoration;
-  assert.deepEqual(Object.keys(D).sort(), [...DECORATIVE_FRONT_STYLES].sort(), 'one entry per decorative style');
+  // T77 F3 · beside the recipes, the two sampling blocks of the Ornate surface
+  // (the 3D's own, and the CNC reference files'), numbers and nothing else.
+  assert.deepEqual(Object.keys(D).sort(), [...DECORATIVE_FRONT_STYLES, 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4', 'ornateReference', 'ornateSolid'].sort(), 'one entry per production recipe or proposed relief, and the Ornate sampling');
   // Owner, 31.08.2026.
   assert.deepEqual(D.G, {
     grooveCutter: 'v', grooveWidthMm: 4, grooveDepthMm: 3, groovePitchMm: 80, grooveInsetMm: 60, grooveDirection: 'vertical',

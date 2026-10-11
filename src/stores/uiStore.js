@@ -340,6 +340,15 @@ export const useUiStore = create((set, get) => ({
   })),
   clearCncFocus: () => set({ cncFocusPart: null }),
 
+  // ─── T77 F3 · THE LEVEL OF THE ORNATE REFERENCE FILES ──────────────────────
+  // CLAUDE.md T77 F3: *"The CNC export offers two levels in the existing
+  // export options (no new numeric field): Reference (default) at sampleMm
+  // and Full resolution at fullSampleMm."*  A choice of the export, not of the
+  // project: it is not saved, and every export of the session reads it (the
+  // CNC panel's downloads and Output > CNC / DXF alike).
+  cncReferenceLevel: 'reference',    // 'reference' | 'full'
+  setCncReferenceLevel: (level) => set({ cncReferenceLevel: level === 'full' ? 'full' : 'reference' }),
+
   // Canvas view: the 3D room, or the flat CNC sheet of the selected unit.
   // Both read the SAME engine output — the toggle changes nothing but the way
   // it is drawn, so a parameter edited in 3D is already correct in CNC.

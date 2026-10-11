@@ -35,9 +35,9 @@ function circle(x, y, radius) {
 const sideOf = (a, b, p) => (b[0] - a[0]) * (p[1] - a[1])
   - (b[1] - a[1]) * (p[0] - a[0]);
 
-// Clip in XY and interpolate all three coordinates along the original
-// surface edge. The canonical ballnose surface therefore remains unchanged
-// everywhere except inside the bore, including its spherical stopped ends.
+// Clip in XY and interpolate position and optional relief normal along the
+// original surface edge. The canonical surface therefore remains unchanged
+// everywhere except inside the bore, including spherical stopped ends.
 function splitSurfacePolygon(points, a, b) {
   const inside = []; const outside = [];
   for (let i = 0; i < points.length; i += 1) {
@@ -95,6 +95,36 @@ function triangleHeight(triangle, point, requireInside = false) {
   return u * a[2] + v * b[2] + w * c[2];
 }
 
+const faceNormal = (a, b, c) => {
+  const ab = b.map((value, axis) => value - a[axis]);
+  const ac = c.map((value, axis) => value - a[axis]);
+  return [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+};
+
+// The carved surface is continuous material, so adjacent relief triangles
+// share an area-weighted vertex normal. Slab faces and bore walls are emitted
+// separately and retain their hard edges. This changes lighting only: the
+// canonical CNC positions, triangle winding and physical cut stay identical.
+function surfaceTriangles(operation, toMesh, half) {
+  if (!operation.surface?.vertices || !operation.surface?.triangles) return [];
+  const vertices = operation.surface.vertices.map(([x, y, depth]) => [...toMesh([x, y]), half - depth]);
+  if (operation.kind === 'relief') {
+    const normals = vertices.map(() => [0, 0, 0]);
+    for (const [a, b, c] of operation.surface.triangles) {
+      // The drawing's single X reflection reverses the visible winding.
+      const normal = faceNormal(vertices[a], vertices[c], vertices[b]);
+      for (const index of [a, b, c]) {
+        for (let axis = 0; axis < 3; axis += 1) normals[index][axis] += normal[axis];
+      }
+    }
+    for (let index = 0; index < vertices.length; index += 1) {
+      const length = Math.hypot(...normals[index]);
+      vertices[index].push(...(length > EPS ? normals[index].map((value) => value / length) : [0, 0, 1]));
+    }
+  }
+  return operation.surface.triangles.map((indices) => indices.map((index) => vertices[index]));
+}
+
 /**
  * A front-face decoration, including its back-face bores and existing J edge.
  * Metadata is opt-in. Legacy fronts retain their existing solid builders.
@@ -139,10 +169,7 @@ function build(panel, bores) {
   const ring = (points) => ccw(points.map(toMesh));
   const operations = (decoration.operations || []).map((op) => ({
     ...op, ring: ring(op.points), children: [],
-    triangles: op.surface?.triangles?.map((indices) => indices.map((index) => {
-      const [x, y, depth] = op.surface.vertices[index];
-      return [...toMesh([x, y]), half - depth];
-    })) || [],
+    triangles: surfaceTriangles(op, toMesh, half),
   }));
   const roots = [];
   for (const op of operations) {
@@ -158,14 +185,17 @@ function build(panel, bores) {
   const uv = [];
   let complexHoles = [];
   const rawTriangle = (a, b, c) => {
-    const ab = b.map((v, i) => v - a[i]);
-    const ac = c.map((v, i) => v - a[i]);
-    const n = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+    const n = faceNormal(a, b, c);
     const len = Math.hypot(...n);
     if (len <= EPS) return;
     for (const p of [a, b, c]) {
-      position.push(...p.map(mm));
-      normal.push(...n.map((v) => v / len));
+      position.push(mm(p[0]), mm(p[1]), mm(p[2]));
+      // splitSurfacePolygon interpolates every component. A clipped relief
+      // therefore keeps the same interpolated normal right up to a bore rim;
+      // the new cylindrical wall still receives its own flat facet normal.
+      const vertexNormal = p.length >= 6 ? p.slice(3, 6) : n;
+      const normalLength = Math.hypot(...vertexNormal);
+      normal.push(...(normalLength > EPS ? vertexNormal.map((v) => v / normalLength) : n.map((v) => v / len)));
       uv.push(p[0] / w + 0.5, p[1] / h + 0.5);
     }
   };
@@ -216,7 +246,12 @@ function build(panel, bores) {
     const centre = toMesh([Number(bore.x), Number(bore.y)]);
     const pocket = operations.filter((op) => contains(op.ring, centre))
       .sort((a, b) => b.depth - a.depth)[0];
-    const frontDepth = pocket?.depth || 0;
+    // A relief's depth is its deepest point, not the depth everywhere inside
+    // its boundary. Sample the same triangles which form the visible face.
+    // Otherwise a blind bore beneath a shallow leaf would be shortened to
+    // the deepest floor's skin even though that floor is elsewhere.
+    const faceTriangle = pocket?.triangles.find((surface) => triangleHeight(surface, centre, true) != null);
+    const frontDepth = faceTriangle ? half - triangleHeight(faceTriangle, centre) : pocket?.depth || 0;
     const depth = bore.through ? thickness - frontDepth : Math.min(Number(bore.depth), thickness - frontDepth);
     return {
       ring: circle(...centre, Number(bore.r)),
@@ -337,6 +372,9 @@ function build(panel, bores) {
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
   geometry.computeBoundingBox();
   geometry.computeBoundingSphere();
-  geometry.userData.frontDecoration = { style: decoration.style, jpull: slices.length > 1 };
+  geometry.userData.frontDecoration = {
+    style: decoration.style, jpull: slices.length > 1,
+    ...(decoration.productionApproved === false ? { productionApproved: false } : {}),
+  };
   return geometry;
 }

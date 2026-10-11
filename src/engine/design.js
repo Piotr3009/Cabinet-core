@@ -48,6 +48,10 @@ export const FRONT_STYLE_OPTIONS = [
   // shaker jak mamy ustawianie shakera po wyborze shaker, bez sensu"* (S + frame width is the slim).
   { id: 'FL', label: 'Fluted' },
   { id: 'AM', label: 'Applied moulding' },
+  { id: 'ORNATE_A_1', label: 'Ornate A - Classic' },
+  { id: 'ORNATE_A_2', label: 'Ornate A - Symmetric' },
+  { id: 'ORNATE_A_3', label: 'Ornate A - Soft' },
+  { id: 'ORNATE_A_4', label: 'Ornate A - Plain' },
 ];
 
 // Selecting a style is the explicit opt-in. Merely loading a saved style is not.

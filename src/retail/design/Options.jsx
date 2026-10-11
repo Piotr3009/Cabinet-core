@@ -703,6 +703,11 @@ const STYLE_LINES = Object.freeze({
   GL: 'A frame cut through for a glass pane.',
   FL: 'Round-bottom flutes machined with a ballnose cutter.',
   AM: 'Four mitred mouldings applied to a slab front.',
+  // T77 F7 · the walk found the four Ornate tiles with no line under them.
+  ORNATE_A_1: 'A stepped moulding with two large curved corners and a carved flower in each.',
+  ORNATE_A_2: 'A stepped moulding with round ends and a carved flower in all four corners.',
+  ORNATE_A_3: 'A stepped moulding with two gentler curved corners and a carved flower in each.',
+  ORNATE_A_4: 'The stepped moulding of the Classic, without the carved flowers.',
 });
 
 function FrontsPanel({ design, project, unit }) {
@@ -733,7 +738,7 @@ function FrontsPanel({ design, project, unit }) {
   const frame = design?.fronts?.shakerFrame || b.shakerFrame.standard;
   const opening = A.frontOpeningOf(project);
   // SLAB · SHAKER · GROOVED · ARCHED, in CLAUDE.md F4's own order.
-  const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'];
+  const order = ['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'];
   const styles = A.frontStyles()
     .filter((s) => s.id !== 'HJ')
     .sort((x, y) => order.indexOf(x.id) - order.indexOf(y.id));

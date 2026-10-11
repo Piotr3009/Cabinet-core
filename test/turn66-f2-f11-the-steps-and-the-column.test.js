@@ -1,3 +1,4 @@
+// Ornate A, 10.10.2026: retain the existing order, append four owner-requested proposed styles.
 // ─── TURN 66 · F2, F4, F5, F6, F7, F8, F9, F11 — THE STEPS ─────────────────
 //
 // Eight of tonight's eleven land in the OPTIONS column, and every one of them
@@ -104,7 +105,7 @@ test('F2 · INSIDE carries no size field, and opens on the carcass material', ()
 test('F4 · STYLE is a vertical list of rows, in the owner\'s own order', () => {
   const options = read('src/retail/design/Options.jsx');
   assert.match(options, /className="pbi-style-list"/, 'STYLE is still a mosaic of chips');
-  assert.match(options, /const order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'\];/, 'SLAB · SHAKER · GROOVED · ARCHED');
+  assert.match(options, /const order = \['F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'\];/, 'SLAB · SHAKER · GROOVED · ARCHED');
   assert.match(options, /<FrontThumb style=\{s\.id\} size="row" \/>/, 'the rows have no drawing');
   // The J is a HANDLE system, not a shape (T57) — still not offered as a style.
   assert.match(options, /filter\(\(s\) => s\.id !== 'HJ'\)/);

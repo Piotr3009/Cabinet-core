@@ -1,0 +1,272 @@
+[
+ {
+  "context": "the L CL01-A-F 340.5 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/CL01-CL01-A-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 516435
+ },
+ {
+  "context": "the L CL01-A-F 340.5 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/CL01-CL01-A-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 2052684
+ },
+ {
+  "context": "the L CL01-A-F 340.5 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/CL01-CL01-A-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 362990
+ },
+ {
+  "context": "the L CL01-B-F 312.5 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/CL01-CL01-B-F-2-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 496439
+ },
+ {
+  "context": "the L CL01-B-F 312.5 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/CL01-CL01-B-F-2-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 1632084
+ },
+ {
+  "context": "the L CL01-B-F 312.5 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/CL01-CL01-B-F-2-ORNATE-PROPOSED-operations.json",
+  "bytes": 350256
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_1 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 451943
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_1 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 2669984
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_1 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 293891
+ },
+ {
+  "context": "base 01-F ORNATE_A_1 reference: the three files",
+  "file": "(total)",
+  "bytes": 3415818
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_1 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 451943
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_1 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 3474184
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_1 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 293868
+ },
+ {
+  "context": "base 01-F ORNATE_A_1 full: the three files",
+  "file": "(total)",
+  "bytes": 4219995
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 695227
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 5955484
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 471430
+ },
+ {
+  "context": "base 01-F ORNATE_A_2 reference: the three files",
+  "file": "(total)",
+  "bytes": 7122141
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_2 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 695227
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_2 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 7980484
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_2 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 471407
+ },
+ {
+  "context": "base 01-F ORNATE_A_2 full: the three files",
+  "file": "(total)",
+  "bytes": 9147118
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_3 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 406320
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_3 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 2142384
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_3 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 268967
+ },
+ {
+  "context": "base 01-F ORNATE_A_3 reference: the three files",
+  "file": "(total)",
+  "bytes": 2817671
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_3 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 406320
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_3 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 2692184
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_3 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 268944
+ },
+ {
+  "context": "base 01-F ORNATE_A_3 full: the three files",
+  "file": "(total)",
+  "bytes": 3367448
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_4 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 252910
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_4 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 1095484
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_4 reference",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 150633
+ },
+ {
+  "context": "base 01-F ORNATE_A_4 reference: the three files",
+  "file": "(total)",
+  "bytes": 1499027
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_4 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 252910
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_4 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 1095484
+ },
+ {
+  "context": "base 01-F 597 x 770 x 25 ORNATE_A_4 full",
+  "file": "ornate-reference/01-01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 150610
+ },
+ {
+  "context": "base 01-F ORNATE_A_4 full: the three files",
+  "file": "(total)",
+  "bytes": 1499004
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_1 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 455485
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_1 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 2634084
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_1 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 297825
+ },
+ {
+  "context": "wardrobe W01-F ORNATE_A_1 reference: the three files",
+  "file": "(total)",
+  "bytes": 3387394
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 700142
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 5789684
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_2 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 476783
+ },
+ {
+  "context": "wardrobe W01-F ORNATE_A_2 reference: the three files",
+  "file": "(total)",
+  "bytes": 6966609
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_3 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 408847
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_3 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 2127484
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_3 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 271883
+ },
+ {
+  "context": "wardrobe W01-F ORNATE_A_3 reference: the three files",
+  "file": "(total)",
+  "bytes": 2808214
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_4 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-FRONT.dxf",
+  "bytes": 255126
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_4 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-RELIEF-1.stl",
+  "bytes": 1095484
+ },
+ {
+  "context": "wardrobe W01-F 597 x 2150 x 25 ORNATE_A_4 reference",
+  "file": "ornate-reference/W01-W01-F-1-ORNATE-PROPOSED-operations.json",
+  "bytes": 153238
+ },
+ {
+  "context": "wardrobe W01-F ORNATE_A_4 reference: the three files",
+  "file": "(total)",
+  "bytes": 1503848
+ }
+]

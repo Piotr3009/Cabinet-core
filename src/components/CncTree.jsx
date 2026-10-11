@@ -8,7 +8,8 @@ import {
   projectQuickSelect, treePathOfPanel,
 } from '../engine/cnc/groups.js';
 import { groupByMaterial } from '../engine/cnc/views.js';
-import { hasFrontDecorations } from '../engine/cnc/frontOperations.js';
+import { hasFrontDecorations, isOrnateReference } from '../engine/cnc/frontOperations.js';
+import { ORNATE_REFERENCE_LEVELS } from '../engine/cnc/ornateExport.js';
 import { exportMaterialDxf, exportSheetDxf, exportUnitDxfZip } from '../lib/cncExport.js';
 import { formatMm } from '../engine/format.js';
 // Turn 39 (CLAUDE.md F7): the warning a cut file carries when nobody has said
@@ -56,6 +57,10 @@ export default function CncTree() {
   const ledSpec = useProjectStore((s) => s.project.ledSpec);
   const runChecks = useProjectStore((s) => s.runChecks);
   const setCheckOpen = useUiStore((s) => s.setCheckOpen);
+  // T77 F3 · the level of the Ornate reference files, one choice for every
+  // download this panel makes (and Output > CNC / DXF reads the same).
+  const referenceLevel = useUiStore((s) => s.cncReferenceLevel);
+  const setReferenceLevel = useUiStore((s) => s.setCncReferenceLevel);
 
   const [open, setOpen] = useState(() => new Set());
   const [busy, setBusy] = useState(false);
@@ -128,6 +133,9 @@ export default function CncTree() {
   const materialKey = material === 'all' || sections.some((s) => s.key === material) ? material : 'all';
   const materialEntries = materialKey === 'all' ? entries : (sections.find((s) => s.key === materialKey)?.units || []);
   const materialHasDecoration = hasFrontDecorations(materialEntries);
+  // T77 F3 · the level choice is shown only to a job that carries an Ornate
+  // leaf; every other job's panel is what it was.
+  const hasOrnate = sheets.some((s) => (s.result?.panels || []).some(isOrnateReference));
 
   // ─── TURN 31 (CLAUDE.md F3): THE EXPORT GATE, SAID ────────────────────────
   //
@@ -173,7 +181,7 @@ export default function CncTree() {
     preflight(exportAnyway);
     try {
       const res = await exportMaterialDxf(entries, {
-        key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName,
+        key: materialKey, design: storedDesign, materials, profile, exportAnyway, project: projectName, referenceLevel,
       });
       notify(`${res.filename} — ${res.parts} parts off ${res.label}.`, 'ok');
       sayGate(res, () => downloadMaterial(true));
@@ -192,7 +200,7 @@ export default function CncTree() {
       // one. `sheet.unit` is the cabinet this row is of, so the export can ask
       // which lines were placed on it.
       exportUnitDxfZip(sheet.result, profile, {
-        exportAnyway, project: projectName, unit: sheet.unit, design: storedDesign, ledSpec,
+        exportAnyway, project: projectName, unit: sheet.unit, design: storedDesign, ledSpec, referenceLevel,
       })
         .then((res) => {
           notify(`${res.filename} — ${res.files.length} DXF files.`, 'ok');
@@ -203,7 +211,7 @@ export default function CncTree() {
       return;
     }
     try {
-      const res = await exportSheetDxf(sheet.result, ids, profile, { exportAnyway, project: projectName });
+      const res = await exportSheetDxf(sheet.result, ids, profile, { exportAnyway, project: projectName, referenceLevel });
       notify(`${res.filename} — ${res.parts} parts, laid out as shown.`, 'ok');
       sayGate(res, () => download(sheet, kind, true));
     } catch (e) {
@@ -296,6 +304,32 @@ export default function CncTree() {
           across the whole job. Each cabinet keeps its own row of these below.
         </p>
       </div>
+
+      {/* ─── T77 F3 · THE TWO LEVELS OF THE ORNATE REFERENCE FILES ───────────
+          "The CNC export offers two levels in the existing export options (no
+          new numeric field): Reference (default) at sampleMm and Full
+          resolution at fullSampleMm; the manifest records which one was
+          written." A choice of two, the numbers are the profile's. */}
+      {hasOrnate && (
+        <div className="border border-shell-600 rounded p-2 space-y-1.5" data-ornate-reference-level="1">
+          <span className="text-[11px] uppercase tracking-wide text-ink-400">Ornate relief reference files</span>
+          <select
+            className="cc-input w-full"
+            data-export-reference-level="1"
+            value={referenceLevel}
+            title="How finely the proposed relief model (STL) is written. Every download below carries the reference files at this level."
+            onChange={(e) => setReferenceLevel(e.target.value)}
+          >
+            {ORNATE_REFERENCE_LEVELS.map((level) => (
+              <option key={level.id} value={level.id}>{level.label}</option>
+            ))}
+          </select>
+          <p className="text-[10px] text-ink-400 leading-snug">
+            Reference keeps one leaf&apos;s files small enough to send. Full resolution writes the relief as finely as
+            the 3D shows it. The manifest says which was written.
+          </p>
+        </div>
+      )}
 
       {/* ─── Turn 17 (CLAUDE.md F2.1): CHOOSE THE MATERIAL, EXPORT THE LOT ───
           One board, one file, across every ticked cabinet — the section the

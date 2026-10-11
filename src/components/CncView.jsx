@@ -22,7 +22,8 @@ import { LED_GROOVE_LAYER } from '../lib/ledGroove.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import {
   FRONT_REFERENCE_LAYER, frontDecorationOf, frontDecorationProblems,
-  frontDecorationLayers, frontPanelEntities, hasFrontDecorations,
+  frontDecorationLayers, frontPanelEntities, hasFrontDecorations, isOrnateReference,
+  ORNATE_REFERENCE_MESSAGE,
 } from '../engine/cnc/frontOperations.js';
 import { formatMm } from '../engine/format.js';
 
@@ -130,7 +131,7 @@ export default function CncView() {
   }, [units, unitCncResult, hiddenUnits, hiddenParts]);
 
   // Both setups keep the same layout slots. Only the individual part is
-  // reflected, using the exact entities written to its FRONT DXF.
+  // reflected. Proposed contours match the separate reference DXF.
   const hasDecorations = hasFrontDecorations(entries);
   const face = hasDecorations ? requestedFace : 'back';
 
@@ -317,7 +318,7 @@ export default function CncView() {
       for (const place of s2.layout.places) {
         const p = place.panel;
         if (face === 'front') {
-          for (const entity of frontPanelEntities(p)) bump(entity.layer);
+          for (const entity of frontPanelEntities(p, { referencePreview: true })) bump(entity.layer);
           continue;
         }
         bump(p.cnc.layer || profile.puzzle.layers.outline);
@@ -355,7 +356,7 @@ export default function CncView() {
   const sheetLayers = useMemo(
     () => {
       const existing = [...allLayers(projectLayers), LED_GROOVE_LAYER];
-      return [...existing, ...frontDecorationLayers(entries.flatMap((entry) => entry.panels))];
+      return [...existing, ...frontDecorationLayers(entries.flatMap((entry) => entry.panels), { referencePreview: true })];
     },
     [projectLayers, entries],
   );
@@ -566,7 +567,7 @@ export default function CncView() {
         </ul>
         <p className="text-[10px] text-ink-400 mt-1.5 leading-snug">
           {face === 'front'
-            ? 'Front face up. Read-only preview. Hover a cut for its tool and depth. Grey outline is a reference, not a cut.'
+            ? 'Front face up. Read-only preview. Hover a feature for its details. Proposed relief contours are references; use their 3D surface in CAM. Grey outline is not a cut.'
             : 'Preview only. Drag to pan, scroll to zoom.'}
         </p>
       </div>
@@ -617,7 +618,7 @@ function Part({
 }) {
   const { panel } = place;
   const front = face === 'front';
-  const frontEntities = useMemo(() => front ? frontPanelEntities(panel) : [], [front, panel]);
+  const frontEntities = useMemo(() => front ? frontPanelEntities(panel, { referencePreview: true }) : [], [front, panel]);
   const decoration = frontDecorationOf(panel);
   const frontProblems = useMemo(() => front ? frontDecorationProblems(panel) : [], [front, panel]);
   const cnc = front ? {
@@ -634,7 +635,7 @@ function Part({
   // the same id. Memoised on the part and its drills: hovering builds nothing.
   const readouts = useMemo(
     () => front
-      ? new Map((decoration?.operations || []).map((operation) => [operation.id, {
+      ? new Map([...(decoration?.operations || []).filter((operation) => operation.kind !== 'relief').map((operation) => [operation.id, {
         // T76 F4 · a V groove reads as one: its width at the mouth, its centre line.
         title: `${{ flute: 'Flute', vgroove: 'V groove' }[operation.kind] || 'Pocket'} | Front face`,
         subtitle: operation.layer,
@@ -650,9 +651,19 @@ function Part({
           { label: 'Vector', value: { flute: 'Tool centre path', vgroove: 'Groove centre line' }[operation.kind] || 'Finished pocket boundary' },
           { label: 'Status', value: frontProblems.length ? 'Blocked: see checks' : 'Ready' },
         ],
-      }]))
+      }]), ...frontEntities.filter((entity) => entity.referenceOnly).map((entity) => [entity.operationId, {
+        title: 'Proposed relief reference | Front face',
+        subtitle: entity.layer,
+        rows: [
+          { label: 'Geometry', value: entity.referenceKind === 'profile-level' ? 'Profile level boundary' : 'Ornament projection' },
+          { label: 'Depth', value: entity.depth == null ? 'Variable, defined by the 3D surface' : `${formatMm(entity.depth)} mm below the original face` },
+          { label: 'Surface depth', value: `Up to ${formatMm(entity.surfaceDepth)} mm` },
+          { label: 'CAM', value: 'Use the reference STL for 3D toolpaths' },
+          { label: 'Status', value: 'Proposed reference, not approved for production' },
+        ],
+      }])])
       : new Map(partRollovers(panel, drills, profile).map((f) => [f.id, f.readout])),
-    [panel, drills, profile, front, decoration, frontProblems],
+    [panel, drills, profile, front, decoration, frontProblems, frontEntities],
   );
   // The hover handlers, made once per feature id rather than per render of it.
   const hoverProps = (id) => (onRollover ? {
@@ -801,6 +812,20 @@ function Part({
         >
           <title>{frontProblems.join('\n')}</title>
           Decoration blocked
+        </text>
+      )}
+      {/* T77 F7 · since F4 a relief that built is not a fault, so the blocked
+          label above no longer carries it (the walk found GPT's label could
+          not be reached): a ready Ornate leaf says it is a proposal, in the
+          colour of its reference contours. */}
+      {front && frontProblems.length === 0 && isOrnateReference(panel) && decoration?.status === 'ready' && (
+        <text
+          x={labelX} y={labelY - annotation.blockLabelMm * 2}
+          fill="#c3a06a" textAnchor="middle" fontSize={annotation.blockLabelMm}
+          data-cnc-front-proposal={panel.id}
+        >
+          <title>{ORNATE_REFERENCE_MESSAGE}</title>
+          Proposed relief reference
         </text>
       )}
 

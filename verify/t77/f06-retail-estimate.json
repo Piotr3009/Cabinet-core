@@ -1,0 +1,389 @@
+{
+  "document": "pbi-estimate",
+  "version": 1,
+  "brand": "PRIME BESPOKE INTERIORS",
+  "line": "Bespoke fitted furniture · Made in London",
+  "date": "2026-10-11",
+  "price": "Price on request",
+  "details": null,
+  "designs": [
+    {
+      "name": "Bedroom wardrobe",
+      "choices": [
+        {
+          "label": "The space",
+          "value": "4000 mm wall, ceiling 2500 mm, level"
+        },
+        {
+          "label": "Wardrobe",
+          "value": "1200 mm wide · 2150 mm high · 568 mm deep"
+        },
+        {
+          "label": "Doors",
+          "value": "1"
+        },
+        {
+          "label": "Front style",
+          "value": "Ornate A - Classic"
+        },
+        {
+          "label": "Front finish",
+          "value": "RAL 3005 Wine Red, sprayed"
+        },
+        {
+          "label": "Carcass finish",
+          "value": "EGGER H3325 ST28 Tobacco Gladstone Oak"
+        },
+        {
+          "label": "Handles",
+          "value": "None"
+        },
+        {
+          "label": "Plinth",
+          "value": "100 mm"
+        },
+        {
+          "label": "Interior",
+          "value": "empty"
+        },
+        {
+          "label": "Lighting",
+          "value": "none"
+        }
+      ],
+      "price": "Price on request",
+      "snapshot": {
+        "project": {
+          "id": null,
+          "name": "Bedroom wardrobe",
+          "number": "",
+          "client": "",
+          "room": {
+            "schema": 2,
+            "height": 2500,
+            "corners": [
+              {
+                "x": 0,
+                "y": 0
+              },
+              {
+                "x": 4000,
+                "y": 0
+              },
+              {
+                "x": 4000,
+                "y": 3000
+              },
+              {
+                "x": 0,
+                "y": 3000
+              }
+            ],
+            "openings": []
+          },
+          "design": {
+            "schema": 2,
+            "carcass": {
+              "types": [
+                {
+                  "id": "c1",
+                  "label": "Carcass 1",
+                  "material_id": null,
+                  "finish_id": "egger:H3325_28",
+                  "source": "egger"
+                }
+              ]
+            },
+            "depth": null,
+            "thickness": {
+              "board": null,
+              "custom": null,
+              "slots": {
+                "carcass1": {
+                  "measured": null,
+                  "confirmed": false
+                },
+                "carcass2": {
+                  "measured": null,
+                  "confirmed": false
+                },
+                "carcass3": {
+                  "measured": null,
+                  "confirmed": false
+                },
+                "front1": {
+                  "measured": null,
+                  "confirmed": false
+                },
+                "front2": {
+                  "measured": null,
+                  "confirmed": false
+                },
+                "box": {
+                  "measured": null,
+                  "confirmed": false
+                }
+              }
+            },
+            "hardware": {
+              "hinges": null,
+              "runners": null,
+              "shelfSleeve": null,
+              "handles": null
+            },
+            "hinges": {
+              "standard": null,
+              "system": null,
+              "finish": null,
+              "plate": null
+            },
+            "drawerBoxes": {
+              "mode": null
+            },
+            "lighting": {
+              "on": false,
+              "temperature": null,
+              "switch": null,
+              "items": []
+            },
+            "cncCorner": "dogbone",
+            "runners": {
+              "system": null,
+              "variant": "T"
+            },
+            "shelves": {
+              "pinSetback": null
+            },
+            "hingeTwoBelow": null,
+            "worktops": [],
+            "fronts": {
+              "style": "ORNATE_A_1",
+              "decoration": {
+                "version": 1,
+                "style": "ORNATE_A_1",
+                "boardMm": 18,
+                "referenceWidthMm": 600,
+                "referenceHeightMm": 800,
+                "outerFrameMm": 60,
+                "innerFrameMm": 60,
+                "innerRadiusMm": 150,
+                "secondaryRadiusMm": 3,
+                "stepWidthsMm": [
+                  12,
+                  8,
+                  6,
+                  4
+                ],
+                "stepDepthsMm": [
+                  3,
+                  6,
+                  9,
+                  12
+                ],
+                "cornerDepthMm": 3,
+                "ornamentReliefMm": 2.5,
+                "ornamentScale": 1,
+                "mirror": true,
+                "variant": 1,
+                "ornament": true
+              },
+              "handle": null,
+              "shakerFrame": null,
+              "handleOffsets": {},
+              "types": [
+                {
+                  "id": "f1",
+                  "label": "Front 1",
+                  "source": "spray",
+                  "colour": {
+                    "hex": "#5e2129",
+                    "name": "3005 Wine Red",
+                    "system": "RAL"
+                  },
+                  "material_id": null,
+                  "finish_id": null,
+                  "style": "ORNATE_A_1",
+                  "decoration": {
+                    "version": 1,
+                    "style": "ORNATE_A_1",
+                    "boardMm": 18,
+                    "referenceWidthMm": 600,
+                    "referenceHeightMm": 800,
+                    "outerFrameMm": 60,
+                    "innerFrameMm": 60,
+                    "innerRadiusMm": 150,
+                    "secondaryRadiusMm": 3,
+                    "stepWidthsMm": [
+                      12,
+                      8,
+                      6,
+                      4
+                    ],
+                    "stepDepthsMm": [
+                      3,
+                      6,
+                      9,
+                      12
+                    ],
+                    "cornerDepthMm": 3,
+                    "ornamentReliefMm": 2.5,
+                    "ornamentScale": 1,
+                    "mirror": true,
+                    "variant": 1,
+                    "ornament": true
+                  }
+                }
+              ]
+            },
+            "doorStyles": [],
+            "colour": {
+              "front": {
+                "hex": "#5e2129",
+                "name": "3005 Wine Red",
+                "system": "RAL"
+              },
+              "carcass": null
+            },
+            "infill": {
+              "sideWidth": 40
+            },
+            "finish": {
+              "carcass": null,
+              "front": null
+            },
+            "endPanel": {
+              "height": "floor",
+              "thickness": null,
+              "applyToAll": true
+            },
+            "runMaterials": {
+              "infill": {
+                "sameAsFronts": true,
+                "material_id": null
+              },
+              "plinth": {
+                "sameAsFronts": true,
+                "material_id": null
+              },
+              "end_panel": {
+                "sameAsFronts": true,
+                "material_id": null
+              },
+              "mask": {
+                "sameAsFronts": true,
+                "material_id": null
+              }
+            },
+            "heights": {
+              "base": null,
+              "wall": null,
+              "tall": null,
+              "wallMount": null,
+              "toeKick": null
+            },
+            "projectType": "wardrobe",
+            "scope": "wall",
+            "ceiling": null,
+            "joinery": null,
+            "sheen": null
+          },
+          "wallSlopes": [],
+          "ledSpec": {
+            "mode": "flexi",
+            "channelWidth": 12,
+            "wattsPerMetre": null
+          },
+          "lightRig": {
+            "preset": "showroom",
+            "lamps": {
+              "ceiling": {
+                "on": true,
+                "strength": 1
+              },
+              "leftWall": {
+                "on": false,
+                "strength": 1
+              },
+              "rightWall": {
+                "on": true,
+                "strength": 1
+              },
+              "facing": {
+                "on": true,
+                "strength": 1
+              }
+            }
+          },
+          "sceneLight": {
+            "scale": 1
+          },
+          "titleBlock": {},
+          "jc_tenant_id": null,
+          "jc_project_id": null
+        },
+        "units": [
+          {
+            "id": "u_6f914w4",
+            "type": "WARDROBE",
+            "position": {
+              "wall": 0,
+              "x_mm": 40,
+              "rotation_deg": 0
+            },
+            "params": {
+              "type": "WARDROBE",
+              "width": 1200,
+              "height": 2150,
+              "depth": 568,
+              "board_t": 18,
+              "front_t": 18,
+              "front_type": null,
+              "shelves": 0,
+              "drawers": 0,
+              "rail": false,
+              "rail_offset": 1400,
+              "hinge": "L",
+              "doors": true,
+              "unit_num": "W01",
+              "front_style_schema": 1,
+              "height_custom": false,
+              "leg_height": 100,
+              "plinth": true,
+              "sections": [
+                {
+                  "width_mm": 600,
+                  "items": []
+                }
+              ],
+              "materials": {},
+              "end_panels": [
+                {
+                  "id": "ep_sadj6t5",
+                  "side": "R",
+                  "height": "floor",
+                  "thickness": 18,
+                  "auto_added": true
+                }
+              ],
+              "top_infill_mm": 40,
+              "side_infill_left_mm": 40,
+              "side_infill_right_mm": 0,
+              "front_edge_trim": {
+                "W01-FL": {
+                  "left": 1.5,
+                  "right": 0
+                },
+                "W01-FR": {
+                  "left": 0,
+                  "right": 1.5
+                }
+              },
+              "bay_doors": null,
+              "cornice": 70
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

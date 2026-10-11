@@ -1,5 +1,5 @@
 import NumberField from './NumberField.jsx';
-import { defaultFrontDecoration, normaliseFrontDecoration } from '../engine/frontDecoration.js';
+import { defaultFrontDecoration, normaliseFrontDecoration, ORNATE_STYLE_IDS } from '../engine/frontDecoration.js';
 
 const FIELD_LABELS = {
   frameMm: 'Frame width',
@@ -21,6 +21,20 @@ export default function FrontDecorationControls({ style, value, onChange, fields
   const defaults = defaultFrontDecoration(style);
   if (!defaults) return null;
   const config = normaliseFrontDecoration(value, style);
+  const ornate = ORNATE_STYLE_IDS.includes(style);
+  if (ornate && config) return (
+    <div className="border border-shell-600 rounded p-2 space-y-2" data-front-decoration={style}>
+      <p className="text-[11px] text-ink-400" data-ornate-proposal={style}>
+        Proposed carved relief from the reference drawing. Dimensions and ornament need workshop approval.
+        The CNC pack includes reference DXF, a relief model and a machining description.
+      </p>
+      <label className="flex items-center gap-2 text-[11px] text-ink-200">
+        <input type="checkbox" aria-label="Mirror ornate pattern" data-ornate-mirror={style}
+          checked={config.mirror === true} onChange={(event) => onChange({ ...config, mirror: event.target.checked })} />
+        <span>Mirror ornate pattern</span>
+      </label>
+    </div>
+  );
   if (config && !fields) return null;
   const update = (key, next) => onChange({ ...config, [key]: next });
   return (

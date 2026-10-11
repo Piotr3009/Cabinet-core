@@ -28,7 +28,7 @@ const SIX = ['G', 'GF', 'A', 'AH', 'FL', 'AM'];
 
 test('F6 · the FRONTS list offers the six, each drawn from frontStyleArt.js', () => {
   const order = read('src/retail/design/Options.jsx').match(/const order = \[([^\]]*)\]/)[1];
-  assert.equal(order, "'F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM'");
+  assert.equal(order, "'F', 'S', 'G', 'GF', 'FL', 'A', 'AH', 'GL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4'");
   const live = A.frontStyles().filter((s) => !s.soon).map((s) => s.id);
   for (const id of SIX) {
     assert.ok(live.includes(id), `${id} is not live in retail`);

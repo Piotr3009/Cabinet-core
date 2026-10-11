@@ -12,6 +12,8 @@
 // RULE: formulas in cabinet.js read EXCLUSIVELY from this object. If you find a
 // bare number in a formula, it belongs here.
 
+import { ORNATE_PROFILE_DEFAULTS } from './ornateFrontProfile.js';
+
 export const PROFILE_SCHEMA = 1;
 
 export const DEFAULT_CABINET_PROFILE = {
@@ -133,6 +135,33 @@ export const DEFAULT_CABINET_PROFILE = {
     // None of them is a field a client types: the PRO recipe controls show the
     // keys GPT's controls already showed, retail shows none.
     decoration: {
+      // Piotr, 10.10.2026: code the four proposed ornamental reference variants.
+      // Full profile data stays in the profile module; no production approval implied.
+      ...ORNATE_PROFILE_DEFAULTS,
+      // ─── T77 F3 · THE SAMPLING OF ONE ORNATE SURFACE ─────────────────────
+      // CLAUDE.md T77 F3: *"RELIEF_SAMPLE_MM, SURFACE_CHORD_MM and
+      // CHORD_ERROR_MM move from constants in engine/ornateFront.js into
+      // profile.front.decoration.ornateReference ... The 3D solid keeps the
+      // finer sampling it has (its own number), the EXPORT reads the profile."*
+      // The 3D solid's own numbers: GPT's, unchanged (the record the 3D, the
+      // drawings and the CNC preview read). No export option reaches them.
+      ornateSolid: { sampleMm: 1.0, chordMm: 2.0, chordErrorMm: 0.06 },
+      // The CNC reference files (DXF, binary STL, JSON per leaf). `sampleMm` is
+      // the default level ("Reference"), `fullSampleMm` the "Full resolution"
+      // level; both chords are the ones below. `leafTargetBytes`: one leaf's
+      // three reference files at the default level, the size the walk holds
+      // them to (CLAUDE.md T77 F3: "under 4 MB").
+      ornateReference: {
+        sampleMm: 2.0,              // T77 proposed, owner to confirm
+        chordMm: 2.0,               // T77 proposed, owner to confirm
+        chordErrorMm: 0.06,         // T77 proposed, owner to confirm
+        fullSampleMm: 1.0,          // T77 proposed, owner to confirm
+        leafTargetBytes: 4000000,   // T77 proposed, owner to confirm
+        // T77 F6 · the slot for the owner's carved ornament (an STL or OBJ,
+        // see reference/hardware/ornate/README.md). null: the procedural
+        // placeholder is cut and labelled so. Reading a model is not built yet.
+        ornamentModel: null,
+      },
       // Owner, 31.08.2026: vertical grooves every 80 centre to centre, a V 4
       // wide x 3 deep, 60 margin to the first groove. A V records its width
       // and its depth and CAM picks the bit: no included angle is assumed.

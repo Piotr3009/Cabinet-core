@@ -1,3 +1,4 @@
+// Ornate A, 10.10.2026: retain the existing order, append four owner-requested proposed styles.
 // ─── TURN 59 · F4 — EVERY CONTROL, THROUGH THE ONE ADAPTER ─────────────────
 //
 // CLAUDE.md F4: *"Tests (`test/turn59-f4-the-options.test.js`): every control's
@@ -214,7 +215,7 @@ test('F4.2 · the door-width refusal is the ENGINE\'s number and the ENGINE\'s c
 test('F4.3 · all offered decorative styles are live after the owner approved defaults', () => {
   const styles = A.frontStyles();
   const live = styles.filter((s) => !s.soon).map((s) => s.id);
-  assert.deepEqual(live, ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM']);
+  assert.deepEqual(live, ['F', 'S', 'HJ', 'G', 'GF', 'A', 'AH', 'GL', 'FL', 'AM', 'ORNATE_A_1', 'ORNATE_A_2', 'ORNATE_A_3', 'ORNATE_A_4']);
   const soon = styles.filter((s) => s.soon);
   assert.deepEqual(soon.map((s) => s.id), []);
   for (const s of soon) assert.equal(s.reason, REASONS.styleComingSoon);

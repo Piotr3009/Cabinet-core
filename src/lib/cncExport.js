@@ -9,6 +9,7 @@ import { exportFileName, fileSafeName } from '../engine/naming.js';
 // Turn 31 (CLAUDE.md F3): both guards run before any file is written.
 import { exportGate, panelsThatGo } from '../engine/cnc/exportGate.js';
 import { frontOperationsManifest, frontSetupPlacements, hasFrontDecorations } from '../engine/cnc/frontOperations.js';
+import { buildOrnateReferenceFiles } from '../engine/cnc/ornateExport.js';
 import { getCabinetProfile } from '../engine/profile.js';
 // ─── T75 F23 · THE DOWEL GATE ─────────────────────────────────────────────
 // CLAUDE.md: *"the CNC export REFUSES a dowel job while
@@ -102,6 +103,22 @@ export function exportReadiness(panels, drills = []) {
   return { lines, count, banner };
 }
 
+// Proposed CAD/CAM references use the existing geometry state, separately
+// from the unchanged slab state. A reference is never counted as a cut line.
+// T77 F7 · the walk found a refused relief (a 12 mm board) counted here
+// though only its invalid-reference JSON shipped: a line is a leaf whose
+// relief model (its STL) is in the package.
+function withReferenceReadiness(ready, files) {
+  const shipped = new Set(files.filter((file) => file.type === 'stl').map((file) => `${file.unitId}|${file.unitNum}|${file.panelId}`));
+  const lines = [...ready.lines, ...files.filter((file) => file.type === 'json'
+    && shipped.has(`${file.unitId}|${file.unitNum}|${file.panelId}`)).map((file) => ({
+    id: `${file.unitNum} ${file.panelId} Ornate proposed reference`, part: 'front_reference', state: 'geometry',
+  }))];
+  return { lines, ...readinessBanner(lines) };
+}
+
+const fileRecord = ({ contents, ...file }) => file;
+
 /**
  * T75 F22 · the banner a unit's ZIP carries as a file of its own beside the
  * DXFs (a DXF carries no letters but the part's own, T17 F2.2): the count,
@@ -124,6 +141,9 @@ export function readinessNote(unitNum, ready) {
  */
 export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
   exportAnyway = false, project = null,
+  // T77 F3 · which of the two levels the Ornate reference files are written
+  // at ('reference', the default, or 'full'); nothing else reads it.
+  referenceLevel = 'reference',
   // T45 F9-CNC: hand the unit, the design and the LED spec in and the grooves
   // are cut. Left out — every caller that predates this turn — nothing changes
   // at all, which is the gate stated as a default.
@@ -140,7 +160,8 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
     ? cut
     : { ...cut, panels: (cut.panels || []).filter((p) => !held.has(p.id)) };
   const files = buildUnitDxfFiles(safe, profile, { userLayers: [LED_GROOVE_LAYER] });
-  if (!files.length) {
+  const referenceFiles = buildOrnateReferenceFiles([{ result }], { level: referenceLevel, profile });
+  if (!files.length && !referenceFiles.length) {
     throw new Error(gate.ok
       ? 'This unit has no CNC geometry to export.'
       : `Every part of this unit is held back: ${gate.message}`);
@@ -148,15 +169,16 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
 
   const zip = new JSZip();
   for (const f of files) zip.file(f.name, f.dxf);
+  for (const f of referenceFiles) zip.file(f.name, f.contents);
   // T75 F22 · the banner rides the ZIP as a file of its own.
-  const ready = exportReadiness(safe.panels, safe.drills);
+  const ready = withReferenceReadiness(exportReadiness(safe.panels, safe.drills), referenceFiles);
   const note = readinessNote(result.unitNum, ready);
   if (note) zip.file(`${fileSafeName(result.unitNum, 'unit')}-READINESS.txt`, note);
   // T76 F1 · GPT's operation manifest rides the same ZIP beside it.
   const manifestName = 'front-operations.json';
   const decorated = hasFrontDecorations([{ result }]);
   if (decorated) zip.file(manifestName, JSON.stringify(frontOperationsManifest([{ result }], {
-    files: files.map((f) => ({ name: f.name, setup: f.setup || 'back', panelId: f.panelId })),
+    files: [...files.map((f) => ({ name: f.name, setup: f.setup || 'back', panelId: f.panelId })), ...referenceFiles.map(fileRecord)],
     gate, exportAnyway,
   }), null, 2));
 
@@ -175,7 +197,8 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
   download(filename, blob);
   return {
     filename,
-    files: files.map((f) => f.name),
+    files: [...files.map((f) => f.name), ...referenceFiles.map((f) => f.name)],
+    ...(referenceFiles.length ? { referenceFiles: referenceFiles.map((f) => f.name) } : {}),
     ...(decorated ? { operationManifest: manifestName } : {}),
     held: exportAnyway ? [] : gate.held,
     gateMessage: exportAnyway ? null : gate.message,
@@ -193,7 +216,9 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
  * @param {string[]} selectedIds  panel ids to include
  * @param {object} [profile]
  */
-export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(), { exportAnyway = false, project = null } = {}) {
+export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(), {
+  exportAnyway = false, project = null, referenceLevel = 'reference',
+} = {}) {
   const wanted = new Set(selectedIds);
   const chosen = exportablePanels(result.panels).filter((p) => wanted.has(p.id));
   if (!chosen.length) throw new Error('Nothing selected to export.');
@@ -201,7 +226,8 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   if (dowelRefused) throw new Error(dowelRefused);
   const gate = exportGate([{ result, panels: chosen }], { profile });
   const panels = panelsThatGo(chosen, { gate, unitId: result.unitId || null, exportAnyway });
-  if (!panels.length) throw new Error(`Every selected part is held back: ${gate.message}`);
+  const referenceFiles = buildOrnateReferenceFiles([{ result, panels: chosen }], { level: referenceLevel, profile });
+  if (!panels.length && !referenceFiles.length) throw new Error(`Every selected part is held back: ${gate.message}`);
 
   const layout = layoutPanels(panels, result.drills, {
     gap: profile.cnc.layoutGap,
@@ -216,10 +242,10 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
     filename: exported ? exported.filename : filename,
     parts: panels.length,
     presetId,
-    ...(exported ? { operationManifest: exported.operationManifest } : {}),
+    ...(exported ? { operationManifest: exported.operationManifest, ...(exported.referenceFiles?.length ? { referenceFiles: exported.referenceFiles } : {}) } : {}),
     held: exportAnyway ? [] : gate.held,
     gateMessage: exportAnyway ? null : gate.message,
-    readinessBanner: exportReadiness(panels, result.drills).banner,
+    readinessBanner: withReferenceReadiness(exportReadiness(panels, result.drills), referenceFiles).banner,
   });
   // T76 F1 · GPT's two setups ride one ZIP, which JSZip builds asynchronously,
   // so a decorated selection answers with a Promise; an ordinary export stays
@@ -227,13 +253,13 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   if (hasFrontDecorations([{ result, panels: chosen }])) {
     const args = { panels, drills: result.drills, layout, unitNum: result.unitNum, unitId: result.unitId || null, profile };
     return downloadFrontSetups({
-      filename, backDxf: dxf,
+      filename, backDxf: panels.length ? dxf : null, referenceFiles,
       frontDxf: hasFrontDecorations([{ panels }]) ? sheetDxf({ ...args, setup: 'front' }) : null,
       entries: [{ result, panels: chosen }], gate, exportAnyway,
       placements: frontSetupPlacements([args]),
       // T76 F5 · the package is a ZIP, so the banner rides it as a file, as
       // the unit ZIP's does.
-      note: readinessNote(result.unitNum, exportReadiness(panels, result.drills)),
+      note: readinessNote(result.unitNum, withReferenceReadiness(exportReadiness(panels, result.drills), referenceFiles)),
     }).then(said);
   }
   download(filename, new Blob([dxf], { type: 'application/dxf' }));
@@ -259,11 +285,16 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
  */
 export function exportMaterialDxf(entries, {
   key = 'all', design = null, materials = [], profile = getCabinetProfile(), exportAnyway = false,
-  project = null,
+  project = null, referenceLevel = 'reference',
 } = {}) {
   const dowelRefused = dowelExportRefusal(entries, profile);
   if (dowelRefused) throw new Error(dowelRefused);
   const gate = exportGate(entries, { profile });
+  const requested = materialExportSection(entries, { key, design, profile, materials });
+  const manifestEntries = (requested?.blocks || []).map((block) => ({
+    unit: block.unit, result: { unitNum: block.unitNum, drills: block.drills }, panels: block.panels,
+  }));
+  const referenceFiles = buildOrnateReferenceFiles(manifestEntries, { level: referenceLevel, profile });
   // The held-back parts leave the SELECTION before the section is laid out, so
   // the sheet the file carries is the sheet that was actually cut — no gap
   // where a board was quietly dropped afterwards.
@@ -274,42 +305,40 @@ export function exportMaterialDxf(entries, {
   const section = materialExportSection(passed, {
     key, design, profile, materials,
   });
-  if (!section || !section.blocks.length) {
+  if ((!section || !section.blocks.length) && !referenceFiles.length) {
     throw new Error(gate.ok
       ? 'Nothing on the sheet for that material.'
       : `Every part on this sheet is held back: ${gate.message}`);
   }
 
-  const dxf = materialSheetDxf({
-    blocks: section.blocks, gap: profile.cnc.layoutGap, profile,
-  });
-  const filename = materialDxfFileName(section.label, { project });
+  const blocks = section?.blocks || [];
+  const label = section?.label || requested?.label || 'Ornate-reference';
+  const dxf = blocks.length ? materialSheetDxf({
+    blocks, gap: profile.cnc.layoutGap, profile,
+  }) : null;
+  const filename = materialDxfFileName(label, { project });
   const said = (exported = null) => ({
     filename: exported ? exported.filename : filename,
-    label: section.label,
-    ...(exported ? { operationManifest: exported.operationManifest } : {}),
-    parts: section.blocks.reduce((n, b) => n + b.panels.length, 0),
-    units: section.blocks.length,
+    label,
+    ...(exported ? { operationManifest: exported.operationManifest, ...(exported.referenceFiles?.length ? { referenceFiles: exported.referenceFiles } : {}) } : {}),
+    parts: blocks.reduce((n, b) => n + b.panels.length, 0),
+    units: blocks.length,
     held: exportAnyway ? [] : gate.held,
     gateMessage: exportAnyway ? null : gate.message,
-    readinessBanner: readinessBanner(section.blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines)).banner,
+    readinessBanner: withReferenceReadiness({ lines: blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines) }, referenceFiles).banner,
   });
-  const requested = materialExportSection(entries, { key, design, profile, materials });
-  const manifestEntries = (requested?.blocks || []).map((block) => ({
-    unit: block.unit, result: { unitNum: block.unitNum }, panels: block.panels,
-  }));
   // T76 F1 · as the sheet export: a Promise only when the ZIP of two setups
   // is built; the refusals above throw synchronously (T75 F23).
   if (hasFrontDecorations(manifestEntries)) {
-    const lines = section.blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines);
+    const lines = blocks.flatMap((b) => exportReadiness(b.panels, b.drills).lines);
     return downloadFrontSetups({
-      filename, backDxf: dxf,
-      frontDxf: hasFrontDecorations(section.blocks)
-        ? materialSheetDxf({ blocks: section.blocks, gap: profile.cnc.layoutGap, profile, setup: 'front' }) : null,
+      filename, backDxf: dxf, referenceFiles,
+      frontDxf: hasFrontDecorations(blocks)
+        ? materialSheetDxf({ blocks, gap: profile.cnc.layoutGap, profile, setup: 'front' }) : null,
       entries: manifestEntries, gate, exportAnyway,
-      placements: frontSetupPlacements(section.blocks, profile.cnc.layoutGap),
+      placements: frontSetupPlacements(blocks, profile.cnc.layoutGap),
       // T76 F5 · the banner rides the package as a file.
-      note: readinessNote(section.label, { lines, ...readinessBanner(lines) }),
+      note: readinessNote(label, withReferenceReadiness({ lines }, referenceFiles)),
     }).then(said);
   }
   download(filename, new Blob([dxf], { type: 'application/dxf' }));
@@ -318,14 +347,21 @@ export function exportMaterialDxf(entries, {
 
 // A single download keeps the operation specification with both setups.
 // Ordinary exports do not enter this path and keep their original DXF bytes.
-async function downloadFrontSetups({ filename, backDxf, frontDxf, entries, gate, exportAnyway, placements, note = null }) {
+async function downloadFrontSetups({ filename, backDxf, frontDxf, entries, gate, exportAnyway, placements, note = null, referenceFiles = [] }) {
   const zip = new JSZip();
   if (note) zip.file(filename.replace(/\.dxf$/, '-READINESS.txt'), note);
   const backName = filename.replace(/\.dxf$/, '-BACK.dxf');
   const frontName = filename.replace(/\.dxf$/, '-FRONT.dxf');
   const operationManifest = filename.replace(/\.dxf$/, '-operations.json');
-  const files = [{ name: backName, setup: 'back' }];
-  zip.file(backName, backDxf);
+  const files = [];
+  if (backDxf) {
+    files.push({ name: backName, setup: 'back' });
+    zip.file(backName, backDxf);
+  }
+  for (const file of referenceFiles) {
+    zip.file(file.name, file.contents);
+    files.push(fileRecord(file));
+  }
   if (frontDxf) {
     zip.file(frontName, frontDxf);
     files.push({ name: frontName, setup: 'front' });
@@ -336,5 +372,5 @@ async function downloadFrontSetups({ filename, backDxf, frontDxf, entries, gate,
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   const zipName = filename.replace(/\.dxf$/, '.zip');
   download(zipName, blob);
-  return { filename: zipName, operationManifest };
+  return { filename: zipName, operationManifest, referenceFiles: referenceFiles.map((file) => file.name) };
 }

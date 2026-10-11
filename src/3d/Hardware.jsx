@@ -1177,6 +1177,16 @@ function KitBodies({ items, colour, profile, storageBase }) {
         <CarouselBody key={k.id || k.role} k={k} colour={colour} storageBase={storageBase} />
       );
     }
+    // ─── T78 F11 · THE HAFELE BLIND-CORNER PULL-OUT: TWO WIRE TRAYS ────────
+    // The owner: *"hafele naroznik slepy czyli wysuwane."*  A placeholder in
+    // the blind part behind the blank (engine/hardware3d.js
+    // cornerKitInstances), the GLB slot `KIT_MODEL_SLOTS.blind_pullout` empty
+    // until the owner drops a model in. Never a hole.
+    if (k.body === 'blind_pullout') {
+      return (
+        <BlindPulloutBody key={k.id || k.role} k={k} colour={colour} storageBase={storageBase} />
+      );
+    }
     const walls = [
       // floor, back, front, left, right — in the cabinet's own frame
       { x: k.w / 2, y: T / 2, z: k.d / 2, w: k.w, h: T, d: k.d },
@@ -1220,6 +1230,39 @@ function KitBodies({ items, colour, profile, storageBase }) {
  * (`k.centre`, `k.radius`, `k.trays` are the L builder's). Marked a
  * placeholder; the model slot is read so the walk can say which it saw.
  */
+function BlindPulloutBody({ k, colour, storageBase = '' }) {
+  const slot = kitModelUrl('blind_pullout', storageBase);
+  const tray = Math.max(0.002, mm(k.trayMm || 20));
+  const clear = mm(Number.isFinite(Number(k.clearMm)) ? Number(k.clearMm) : 10);
+  const w = Math.max(0.01, mm(k.w) - 2 * clear);
+  const d = Math.max(0.01, mm(k.d) - 2 * clear);
+  // The swing post stands at the blind part's open side (toward the door).
+  const postX = k.side === 'left' ? mm(k.w) - clear : clear;
+  return (
+    <group
+      position={[mm(k.x), mm(k.y), mm(k.z)]}
+      userData={{
+        ccKitBody: k.role, ccKitPlaceholder: true, ccKitModel: slot, ccNoBounds: true, ccPulloutTrays: (k.trays || []).length,
+      }}
+    >
+      <mesh position={[postX, mm(k.h) / 2, mm(k.d) / 2]}>
+        <cylinderGeometry args={[0.012, 0.012, mm(k.h), 12]} />
+        <meshStandardMaterial color={colour} roughness={0.5} metalness={0.4} transparent opacity={0.6} />
+      </mesh>
+      {(k.trays || []).map((y, i) => (
+        <mesh
+          // eslint-disable-next-line react/no-array-index-key
+          key={i}
+          position={[mm(k.w) / 2, mm(y - k.y) + tray / 2, mm(k.d) / 2]}
+        >
+          <boxGeometry args={[w, tray, d]} />
+          <meshStandardMaterial color={colour} roughness={0.7} metalness={0.2} transparent opacity={0.4} wireframe />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function CarouselBody({ k, colour, storageBase = '' }) {
   const slot = kitModelUrl('carousel', storageBase);
   const r = Math.max(0.001, mm(k.radius || 0));

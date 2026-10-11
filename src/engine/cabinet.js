@@ -720,7 +720,15 @@ function normalizeParams(raw, profile) {
   const occupied = type.interiorOccupied === true;
   // T75 F4: an L's shelves are cut as SHELF-L by its own builder (through the
   // parent kit's shelf rows), so the box-shaped shelf pass is handed none.
-  const shelves = type.supports.shelves && !occupied && !type.corner
+  // T78 F11 · a blind kit with the Hafele pull-out fitted: its shelves step
+  // aside (the trays take the blind part, which the kit's shelves run into);
+  // a FIXED shelf in the way refuses the pull-out, in words, and the shelves
+  // are cut as asked. The owner: *"hafele naroznik slepy czyli wysuwane."*
+  const blindPulloutAsked = Boolean(type.blind) && p.blind_pullout === true;
+  const blindPulloutRefused = blindPulloutAsked
+    && shelvesFromItems.some((i) => i?.locked === true || i?.variant === 'fixed');
+  const blindPullout = blindPulloutAsked && !blindPulloutRefused;
+  const shelves = type.supports.shelves && !occupied && !type.corner && !blindPullout
     ? (items.length ? shelvesFromItems.length : clampInt(p.shelves, 0, 10))
     : 0;
 
@@ -942,6 +950,9 @@ function normalizeParams(raw, profile) {
     blind,
     // T75 F4 · the true L's arm, hand and doors (null on every other kit).
     cornerL,
+    // T78 F11
+    blindPullout,
+    blindPulloutRefused,
     // ─── Turn 17 (CLAUDE.md F7) ───
     // The project's standard (2 or 3) and, above it, this cabinet's own hinge
     // rows if a joiner has edited them. Both are INPUTS in the design layer's
@@ -1401,6 +1412,8 @@ export const DRAWER_VARIANTS = ['shoe', 'belt_tie', 'belt_tie_glass'];
 export const WARDROBE_KIT_KINDS = ['trouser', 'tie_rack', 'pulldown_rail', 'hooks', 'valet_rod'];
 /** T78 F9 · the bought mechanisms an L corner unit may carry (`params[kind] === true`). */
 export const CORNER_KIT_KINDS = ['carousel'];
+/** T78 F11 · the bought mechanisms a BLIND corner kit may carry (`params[kind] === true`). */
+export const BLIND_KIT_KINDS = ['blind_pullout'];
 
 /** A drawer item's variant, or null for the plain box. */
 export function drawerVariantOf(item) {
@@ -9944,7 +9957,8 @@ export function computeCabinet(params, profileOverride) {
         opening_depth_mm: roundTo(kit.box.d, 0),
         trays: kit.trays.length,
       },
-      `${kit.label} · ${roundTo(kit.box.w, 0)} x ${roundTo(kit.box.d, 0)} mm corner square, ${roundTo(kit.box.h, 0)} high · ${kit.trays.length} trays`);
+      // T78 F11 · the pull-out names the blind part, the carousel the corner square.
+      `${kit.label} · ${roundTo(kit.box.w, 0)} x ${roundTo(kit.box.d, 0)} mm ${kit.kind === 'blind_pullout' ? 'blind part' : 'corner square'}, ${roundTo(kit.box.h, 0)} high · ${kit.trays.length} trays`);
   }
 
   // ─── TURN 19 (CLAUDE.md F1.2): THE RIGHT ARTICLE, PER DOOR ────────────────

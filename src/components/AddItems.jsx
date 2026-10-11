@@ -227,6 +227,7 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
   // (`setCornerKit`), which refuses in words where a fixed shelf is in the way.
   const setCornerKit = useProjectStore((s) => s.setCornerKit);
   const carouselOn = unit.params?.carousel === true;
+  const blindPulloutOn = unit.params?.blind_pullout === true;
   const onCornerKit = (kind, label, on) => {
     const res = setCornerKit(unit.id, kind, on);
     if (!res?.ok) { notify(res?.error || `The ${label.toLowerCase()} could not be fitted.`, 'warn'); return; }
@@ -421,6 +422,16 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
       families: ['kitchen'],
       disabled: !type.corner,
       why: 'an L corner thing',
+    },
+    // T78 F11 · the Hafele blind-corner pull-out, on the blind kits only (the
+    // owner: *"hafele naroznik slepy czyli wysuwane"*): a bought mechanism, one
+    // BOM line, a placeholder body behind the blank, zero holes.
+    {
+      id: 'blind_pullout',
+      label: 'Blind corner pull-out',
+      families: ['kitchen'],
+      disabled: !type.blind,
+      why: 'a blind corner thing',
     },
   ];
 
@@ -921,6 +932,25 @@ export default function AddItems({ unit, onDone = null, onZoneHover = null }) {
                     BOUGHT, never cut: a named line in the BOM ordered to the inner-corner square, and two round
                     trays on a post drawn in the scene as a placeholder until the owner&apos;s model arrives. Nothing
                     is drilled. The L&apos;s adjustable shelves step aside; a fixed shelf in its way is refused.
+                  </p>
+                </>
+              )}
+              {/* ─── T78 F11 · THE HAFELE BLIND-CORNER PULL-OUT ─────────────── */}
+              {kind.id === 'blind_pullout' && (
+                <>
+                  <button
+                    type="button"
+                    className={blindPulloutOn ? 'cc-btn w-full' : 'cc-btn-gold w-full'}
+                    data-corner-kit="blind_pullout"
+                    data-corner-kit-on={blindPulloutOn ? '1' : '0'}
+                    onClick={() => onCornerKit('blind_pullout', 'Blind corner pull-out', !blindPulloutOn)}
+                  >
+                    {blindPulloutOn ? 'Remove blind corner pull-out' : 'Add Hafele blind corner pull-out'}
+                  </button>
+                  <p className="text-[11px] text-ink-400">
+                    BOUGHT, never cut: a named line in the BOM, and two wire trays behind the blank drawn in the scene
+                    as a placeholder until the owner&apos;s model arrives. Nothing is drilled. The kit&apos;s shelves step
+                    aside while it is fitted; a fixed shelf in its way is refused.
                   </p>
                 </>
               )}

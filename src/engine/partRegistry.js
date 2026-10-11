@@ -376,6 +376,13 @@ export const PART_REGISTRY = {
     id: 'hinge_bifold', name: 'Bi-fold corner hinge', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'Blum CLIP top 60 degree bi-fold corner hinge: leaf B hangs on leaf A, a line and a body, zero holes',
   },
+  // T78 F11 · the Hafele blind-corner pull-out (the owner: *"hafele naroznik
+  // slepy czyli wysuwane"*): bought, one line per blind kit, a placeholder body
+  // of two wire trays, zero holes.
+  kit_blind_pullout: {
+    id: 'kit_blind_pullout', name: 'Blind corner pull-out', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought blind-corner mechanism (Hafele): two wire trays swinging out of the blind part, zero holes',
+  },
   kit_space_corner: {
     id: 'kit_space_corner', name: 'SPACE CORNER kit', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought corner drawer mechanism (Blum SPACE CORNER): joins the two boxes of an L drawer row, zero holes',
@@ -431,6 +438,19 @@ export const PART_REGISTRY = {
   dowel: {
     id: 'dowel', name: 'Dowels', group: G('consumable'), unit: 'pcs', materialType: 'consumable',
     note: 'Counted from the biscuit / dowel joints the engine drilled',
+  },
+  // T78 F20 · the Cabineo connector and its cover cap: order lines of a
+  // Cabineo unit (engine/cabineo.js cabineoHardwareLines), counted off the
+  // engine's pockets, never recomputed. Articles are NOT on Lamello's sheet
+  // (reference/hardware/cabineo/cabineo.json: null), so the product is the
+  // workshop's assignment, as every hardware row here is.
+  cabineo_connector: {
+    id: 'cabineo_connector', name: 'Cabineo connectors', group: G('consumable'), unit: 'pcs', materialType: 'consumable',
+    note: 'One per Cabineo pocket (8 or 12, the company default); article owner to supply',
+  },
+  cabineo_cap: {
+    id: 'cabineo_cap', name: 'Cabineo cover caps', group: G('consumable'), unit: 'pcs', materialType: 'consumable',
+    note: 'One per Cabineo pocket under caps all, per fixed-shelf pocket under caps shelves; article owner to supply',
   },
   glue: {
     id: 'glue', name: 'Glue', group: G('consumable'), unit: 'L', materialType: 'consumable',
@@ -594,6 +614,9 @@ export function partIdForElement(partName, { typeId = null } = {}) {
 // line nobody ever sees.
 export const HARDWARE_TO_PART_ID = {
   hinges: 'hinge',
+  // T78 F20 · the Cabineo order lines (engine/cabineo.js).
+  cabineo_connector: 'cabineo_connector',
+  cabineo_cap: 'cabineo_cap',
   runner_pairs: 'runner',
   runner_sync_rods: 'runner_sync_rod',
   legs: 'leg',
@@ -629,6 +652,8 @@ export const HARDWARE_TO_PART_ID = {
   carousel: 'kit_carousel',
   // T78 F7 · `hw('space_corner', …)`, one per L drawer row.
   space_corner: 'kit_space_corner',
+  // T78 F11 · `hw(kit.kind, …)` for BLIND_KIT_KINDS: the blind kit's pull-out.
+  blind_pullout: 'kit_blind_pullout',
   // T78 F8 · `hw('bifold_hinges', …)`, leaf B's hinge rows.
   bifold_hinges: 'hinge_bifold',
 };

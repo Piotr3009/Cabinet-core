@@ -342,6 +342,9 @@ function hardwareRolesInSource() {
   // T78 F9 · the L's bought corner mechanisms: `hw(kit.kind, ...)` over
   // CORNER_KIT_KINDS, the role being the kind (the carousel).
   const corner = ENGINE_SRC.match(/CORNER_KIT_KINDS\s*=\s*\[([^\]]*)\]/);
+  // T78 F11: BLIND_KIT_KINDS the same way (the blind kits' pull-out).
+  const blindKinds = ENGINE_SRC.match(/BLIND_KIT_KINDS\s*=\s*\[([^\]]*)\]/);
+  if (blindKinds) for (const m of blindKinds[1].matchAll(/'([a-z_]+)'/g)) roles.add(m[1]);
   if (corner) {
     for (const m of corner[1].matchAll(/'([a-z_]+)'/g)) roles.add(m[1]);
   }

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
-  minDrawerFrontHeight, SHELF_VARIANTS, CORNER_KIT_KINDS, WARDROBE_KIT_KINDS,
+  minDrawerFrontHeight, SHELF_VARIANTS, CORNER_KIT_KINDS, BLIND_KIT_KINDS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
   applyPartEdits, partSignature, withPartEdit, withPartOps, withoutLastPartEdit, withoutPartEdits,
@@ -7382,9 +7382,15 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   setCornerKit: (unitId, kind, on = true) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return { ok: false, error: 'No such unit.' };
-    if (!CORNER_KIT_KINDS.includes(kind)) return { ok: false, error: `${kind} is not a corner mechanism this app knows.` };
-    if (!isCornerLKit(unit.type)) {
+    // T78 F11 · the same writer fits the blind kits' pull-out (`BLIND_KIT_KINDS`).
+    const forL = CORNER_KIT_KINDS.includes(kind);
+    const forBlind = BLIND_KIT_KINDS.includes(kind);
+    if (!forL && !forBlind) return { ok: false, error: `${kind} is not a corner mechanism this app knows.` };
+    if (forL && !isCornerLKit(unit.type)) {
       return { ok: false, error: `A ${kind === 'carousel' ? 'carousel' : kind} goes in an L corner unit only.` };
+    }
+    if (forBlind && !isBlindKit(unit.type)) {
+      return { ok: false, error: 'A blind corner pull-out goes in a blind corner unit only.' };
     }
     if (on) {
       const result = computeCabinet(unit.params, getCabinetProfile());
@@ -7392,7 +7398,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (fixed.length) {
         return {
           ok: false,
-          error: `${unit.params.unit_num || unitId}: a fixed shelf (${fixed.map((p) => p.id).join(', ')}) stands in the carousel's way. `
+          error: `${unit.params.unit_num || unitId}: a fixed shelf (${fixed.map((p) => p.id).join(', ')}) stands in the ${forBlind ? 'pull-out' : 'carousel'}'s way. `
             + 'Remove the fixed shelf first; adjustable shelves step aside on their own.',
         };
       }

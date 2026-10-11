@@ -470,6 +470,13 @@ export const DEFAULT_CABINET_PROFILE = {
     spaceCorner: {
       label: 'Blum SPACE CORNER kit', rowsMin: 2, rowsMax: 4, bracketMm: 60,
     },
+    // T78 F11 · the Hafele blind-corner pull-out (the owner: *"hafele naroznik
+    // slepy czyli wysuwane"*): a bought mechanism in the blind part, two wire
+    // trays that swing out, a placeholder body until the owner drops a model
+    // in. T78 proposed, owner to confirm.
+    blindPullout: {
+      label: 'Hafele blind corner pull-out', trays: 2, trayMm: 20, clearMm: 10,
+    },
     carousel: {
       label: 'Carousel (pots)', trays: 2, trayMm: 15, postMm: 25, clearMm: 10, // T78 proposed, owner to confirm
     },

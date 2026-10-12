@@ -62,7 +62,7 @@ test('F6 · the toggle it flips is the store\'s own, and it is not persisted', (
   const ui = useUiStore.getState();
   assert.equal(typeof ui.setShowDimensions, 'function');
   assert.equal(typeof ui.toggleDimensions, 'function');
-  assert.equal(useUiStore.getState().showDimensions, true, 'dimensions start shown');
+  assert.equal(useUiStore.getState().showDimensions, false, 'dimensions start hidden (owner, 12.10.2026)');
   ui.setShowDimensions(false);
   assert.equal(useUiStore.getState().showDimensions, false, 'the same action the button uses');
   ui.setShowDimensions(true);

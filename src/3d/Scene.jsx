@@ -963,13 +963,18 @@ function WorktopCutouts({ w, wall, roomCentre }) {
  */
 function WorktopOutline({ w, wall, roomCentre, colour }) {
   const g = w.geometry;
+  // Chat-fix 12.10.2026: keyed by the outline's NUMBERS (a fresh array came in
+  // every render, so a new slab was built each time) and the old one released.
+  const outlineKey = JSON.stringify([g.outline, g.h]);
   const geometry = useMemo(() => {
     const shape = new THREE.Shape(g.outline.map(([x, z]) => new THREE.Vector2(mm(x), mm(z))));
     const extruded = new THREE.ExtrudeGeometry(shape, { depth: mm(g.h), bevelEnabled: false });
     // Shape lies in XY; lift it so +Y of the shape becomes the wall's inward.
     extruded.rotateX(Math.PI / 2);
     return extruded;
-  }, [g.outline, g.h]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by content on purpose
+  }, [outlineKey]);
+  useEffect(() => () => geometry.dispose(), [geometry]);
   const origin = worktopPoint(wall, roomCentre, 0, 0, g.y + g.h);
   return (
     <group>
@@ -1288,11 +1293,20 @@ function ToneMapping({ exposure }) {
  * do not exist before that — and only when the units change, so an orbit does
  * not walk 400 meshes per frame.
  */
-function ShadowFit({ signal, unitsRef, onFit, units = [], onRuns = null }) {
+function ShadowFit({
+  signal, unitsRef, onFit, units = [], onRuns = null, paused = false,
+}) {
+  // Chat-fix 12.10.2026: every drag step handed the Scene a new bounds object
+  // and a new runs list, and the whole Scene rendered a second time for them.
+  // Not while a drag holds the shadows still; and the same numbers are not news.
+  const sent = useRef({ fit: null, runs: null });
   useEffect(() => {
+    if (paused) return undefined;
     const id = requestAnimationFrame(() => {
       const groups = Object.values(unitsRef.current).filter(Boolean);
-      onFit(furnitureBounds(groups));
+      const fit = furnitureBounds(groups);
+      const fitKey = JSON.stringify(fit);
+      if (fitKey !== sent.current.fit) { sent.current.fit = fitKey; onFit(fit); }
       // ─── CHAT-FIX 25.08.2026: ONE BAND PER RUN ──────────────────────────
       //
       // The owner, on the four hot spots: *"z drugiej strony 4 reflektory
@@ -1313,12 +1327,14 @@ function ShadowFit({ signal, unitsRef, onFit, units = [], onRuns = null }) {
         if (!byWall.has(wall)) byWall.set(wall, []);
         byWall.get(wall).push(group);
       }
-      onRuns([...byWall.entries()]
+      const runs = [...byWall.entries()]
         .map(([wall, gs]) => ({ wall, bounds: furnitureBounds(gs) }))
-        .filter((r) => r.bounds));
+        .filter((r) => r.bounds);
+      const runsKey = JSON.stringify(runs);
+      if (runsKey !== sent.current.runs) { sent.current.runs = runsKey; onRuns(runs); }
     });
     return () => cancelAnimationFrame(id);
-  }, [signal, unitsRef, onFit, units, onRuns]);
+  }, [signal, unitsRef, onFit, units, onRuns, paused]);
   return null;
 }
 
@@ -1754,6 +1770,7 @@ export default function Scene({
         onFit={setSubject}
         units={units}
         onRuns={setRuns}
+        paused={held}
       />
       {/* ─── Turn 17 (CLAUDE.md F11): the ruler ───
           Mounted always, drawn only when it is on. It reaches nothing: its

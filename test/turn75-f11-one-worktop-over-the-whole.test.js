@@ -45,7 +45,7 @@ test('F11 · one slab, the island\'s, from one cabinet: the bounding rectangle p
   const g = slabs[0].geometry;
   const unit = S().units.find((u) => u.id === a);
   const faceA = 10 + unit.params.depth + P.doors.gap + unit.params.front_t;
-  const panel = 10 + P.front.thickness;
+  const panel = 0; // no island automat boards since 12.10.2026 (owner)
   // Face A's frame: along A, out from A; the core and face B at negative "out".
   assert.equal(g.shape, 'island');
   assert.deepEqual(g.outline, [

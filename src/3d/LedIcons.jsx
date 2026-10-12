@@ -160,8 +160,9 @@ function LedIcon({
  * @returns {{ show: boolean, why: 'pro'|'closed'|'on'|'off' }}
  */
 function ledIconState({ pro = true, panelOpen = false, lightOn = false } = {}) {
-  if (pro) return { show: true, why: 'pro' };
+  // Chat-fix 12.10.2026 (owner): in PRO too, only while the Lighting panel is open.
   if (!panelOpen) return { show: false, why: 'closed' };
+  if (pro) return { show: true, why: 'pro' };
   if (lightOn) return { show: false, why: 'on' };
   return { show: true, why: 'off' };
 }

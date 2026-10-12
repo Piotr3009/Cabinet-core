@@ -1025,9 +1025,6 @@ export function roomChangeGuard(next, units = []) {
   }
 
   for (const u of units) {
-    // T75 F10 · the island automat's own panels are re-made after any room
-    // change (`settleIslandPanels`): they never hold a room edit up.
-    if (u.params?.island_auto === true) continue;
     const label = u.params?.unit_num || u.id;
     // T75 F9 · a unit on an island is found by what it stands ON, not by an
     // index the room change may have moved.

@@ -53,10 +53,8 @@ import {
   DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, islandCorners, migrateRoom, plasterPosition, rehomeIslandUnits, roomBoxes,
   roomChangeGuard, roomIslands, roomWalls, wallName, wallPlanObstacles,
 } from '../engine/room.js';
-// T75 F9 · the island: what it would stand on (Room refuses first); F10 · its panels.
-import {
-  isIslandAutoPanel, islandClash, islandPanelPlan, newIsland,
-} from '../engine/island.js';
+// T75 F9 · the island: what it would stand on (Room refuses first).
+import { islandClash, newIsland } from '../engine/island.js';
 import { getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
 // T75 F20 · a set is a recipe: its layout and its reading are the engine's.
 import { setIsOneLevel, setLayout, setRecipe } from '../engine/sets.js';
@@ -1559,7 +1557,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const s = get();
     const walls = roomWalls(s.project.room);
     // The automat's own panels go with the island; anything else holds it.
-    const standing = s.units.filter((u) => walls[u.position?.wall ?? 0]?.island === id && !isIslandAutoPanel(u));
+    const standing = s.units.filter((u) => walls[u.position?.wall ?? 0]?.island === id);
     if (standing.length) {
       return {
         ok: false,
@@ -2797,11 +2795,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // being ACTIVE, knee or straight.
     get().settleSlopePulldowns();
 
-    // ─── T75 F10 · THE ISLAND'S PANELS, MADE AND UNMADE BY WHAT STANDS ON IT ─
-    // The same choke point: every add, move, resize, removal and room change
-    // ends here, so an empty face is covered and a face a cabinet arrives on
-    // is uncovered by one law (`engine/island.js islandPanelPlan`).
-    get().settleIslandPanels();
+    // Chat-fix 12.10.2026: the island automat is gone (owner); a saved board of its goes too.
+    if (get().units.some((u) => u.params?.island_auto === true)) set((st) => ({ units: st.units.filter((u) => u.params?.island_auto !== true) }));
 
     // --- T78 F17 . THE HOOD OVER THE HOB, PROPOSED --------------------------
     // The same choke point: every add, move, resize and room change ends
@@ -2810,89 +2805,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     get().proposeHoodClearance();
 
     return notices;
-  },
-
-  /**
-   * ─── T75 F10 · THE ISLAND AUTOMAT ─────────────────────────────────────────
-   *
-   * *"An empty long face gets an auto BACK PANEL ...; an empty end face gets
-   * the auto END PANEL ..., sized to the whole island depth. A unit added to a
-   * face takes the automat's panel off (the vanishing law); a panel the client
-   * added by hand stays."*  The boards are free panels carrying
-   * `island_auto: true`; only those are made, re-sized or removed here. It acts
-   * on the DIFFERENCE, so a settled scene passes through untouched and the
-   * refresh it triggers finds nothing more to do.
-   *
-   * @returns {number} how many panels it made, moved or removed
-   */
-  /** T75 F10 · take the automat's panels off one island face; how many went. */
-  clearFacePanels: (wallIndex) => {
-    const s = get();
-    if (!roomWalls(s.project.room)[wallIndex]?.island) return 0;
-    const gone = s.units.filter((u) => isIslandAutoPanel(u) && (u.position?.wall ?? 0) === wallIndex);
-    if (gone.length) set((st) => ({ units: st.units.filter((u) => !gone.some((p) => p.id === u.id)) }));
-    return gone.length;
-  },
-
-  settleIslandPanels: () => {
-    const s = get();
-    if (!(s.project.room?.islands || []).length && !s.units.some(isIslandAutoPanel)) return 0;
-    const profile = getCabinetProfile();
-    const walls = roomWalls(s.project.room);
-    const plan = islandPanelPlan({
-      room: s.project.room,
-      units: s.units,
-      profile,
-      unitTopOf: (u) => unitTop(u, profile),
-      faceReachOf: (u) => cornerFaceMm(u, profile),
-      defaultTop: unitTop({ type: 'BUD', params: defaultParamsFor('BUD', profile) }, profile),
-    });
-    const keyOf = (island, face) => `${island}|${face}`;
-    const wanted = new Map(plan.map((p) => [keyOf(p.island, p.face), p]));
-    const paramsFor = (p) => ({
-      island_panel: p.kind,
-      island_auto: true,
-      panel_facing: 'along',
-      panel_tilt_deg: 0,
-      panel_width: p.height,
-      board_t: p.thickness,
-      width: p.length,
-      height: p.height,
-      depth: p.thickness,
-      mount_height: 0,
-      side_infill_off: true,
-    });
-    const same = (u, p) => u.position?.wall === p.wall
-      && Math.abs((Number(u.position?.x_mm) || 0) - p.x) < 0.01
-      && Object.entries(paramsFor(p)).every(([k, v]) => u.params?.[k] === v);
-    let changed = 0;
-    const kept = [];
-    for (const u of s.units) {
-      if (!isIslandAutoPanel(u)) { kept.push(u); continue; }
-      const p = wanted.get(keyOf(u.position?.island, u.position?.face));
-      if (!p) { changed += 1; continue; }
-      wanted.delete(keyOf(p.island, p.face));
-      if (same(u, p)) { kept.push(u); continue; }
-      changed += 1;
-      kept.push({
-        ...u,
-        position: { ...u.position, wall: p.wall, x_mm: p.x },
-        params: { ...u.params, ...paramsFor(p) },
-      });
-    }
-    for (const p of wanted.values()) {
-      const unit = newUnit('FREE_PANEL', profile, kept.length, s.project.design);
-      unit.params = { ...unit.params, ...paramsFor(p), unit_num: nextUnitNum(kept, getUnitType('FREE_PANEL')) };
-      unit.position = {
-        wall: p.wall, x_mm: p.x, rotation_deg: 0, island: p.island, face: p.face,
-      };
-      kept.push(unit);
-      changed += 1;
-    }
-    if (!changed) return 0;
-    set({ units: rehomeIslandUnits(kept, walls) });
-    get().refreshAutoParts();
-    return changed;
   },
 
   /**
@@ -5142,17 +5054,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       }
       if (!placed) return { id: null, error: cornerLRefusal(unit) };
     }
-    // T75 F10 · THE VANISHING LAW, before the placement is measured: a
-    // cabinet put on an island face takes the automat's panel there off first
-    // (T72 F5's order: the board leaves, then the cabinet is placed), and the
-    // automat puts it back if the placement is refused.
-    const facePanels = asked?.island
-      ? state.units.filter((u) => isIslandAutoPanel(u) && (u.position?.wall ?? 0) === asked.index)
-      : [];
-    if (facePanels.length) {
-      set((st) => ({ units: st.units.filter((u) => !facePanels.some((p) => p.id === u.id)) }));
-      state = get();
-    }
     for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
       // T78 F1 · on the adjacent wall the L's arm B is the thing to stand beside.
@@ -5197,7 +5098,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         : (asked
           ? `There is no room for ${formatMm(unit.params.width)} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
           : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit: move or remove something first.`);
-      if (facePanels.length) get().settleIslandPanels();
       return { id: null, error: where };
     }
     unit.position.wall = placed.wall;
@@ -5460,7 +5360,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const found = shareOutRunFor(st.units, ids[0], { walls, wallMargin: wallMarginOf(st, st.units.find((x) => x.id === ids[0])) }, profile);
       // The set IS the run: every one of its units in it (a tall unit breaks
       // a share-out run by its height), nobody else's.
-      const onlyMine = found && found.run.units.every((x) => ids.includes(x.id) || isIslandAutoPanel(x))
+      const onlyMine = found && found.run.units.every((x) => ids.includes(x.id))
         && ids.every((id) => found.run.units.some((x) => x.id === id));
       if (onlyMine && shareOutOffered(found.run, found.context, profile)) {
         get().shareOutRun(ids[0]);
@@ -6775,8 +6675,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * @returns {{wall:number, x_mm:number, blocked:boolean, error:string|null}}
    */
   moveUnitToWall: (unitId, wallIndex, xRaw, snapStep = 0) => {
-    // T75 F10 · as `setUnitWall`: an island face is cleared of the automat's panel first.
-    if (wallIndex !== (get().units.find((u) => u.id === unitId)?.position?.wall ?? 0)) get().clearFacePanels(wallIndex);
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     const walls = roomWalls(s.project.room);
@@ -6883,9 +6781,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * itself, which is exactly what phase 4 closes off.
    */
   setUnitWall: (unitId, wallIndex) => {
-    // T75 F10 · the vanishing law on the Wall select too: the automat's panel
-    // on an island face leaves before the unit is measured onto it.
-    get().clearFacePanels(wallIndex);
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     const walls = roomWalls(s.project.room);
@@ -6929,8 +6824,6 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       side: armB ? (armB.side === 'left' ? 'L' : 'R') : null,
     }, getCabinetProfile());
     if (x == null) {
-      // T75 F10 · refused: the automat puts its panel back.
-      get().settleIslandPanels();
       return {
         wall: unit.position.wall ?? 0,
         x_mm: unit.position.x_mm,

@@ -216,10 +216,10 @@ test('F1.3 · three states for the client\'s room, read off two existing flags',
   assert.deepEqual(ledIconState({ pro: false, panelOpen: false, lightOn: true }), { show: false, why: 'closed' });
 });
 
-test('F1.3 · PRO sets no such flag and keeps its behaviour — shown, whatever the flags say', () => {
+test('F1.3 · PRO: shown while the Lighting panel is open, whatever the light (owner, 12.10.2026)', () => {
   for (const panelOpen of [false, true]) {
     for (const lightOn of [false, true]) {
-      assert.equal(ledIconState({ pro: true, panelOpen, lightOn }).show, true);
+      assert.equal(ledIconState({ pro: true, panelOpen, lightOn }).show, panelOpen);
     }
   }
   const icons = read('src/3d/LedIcons.jsx');

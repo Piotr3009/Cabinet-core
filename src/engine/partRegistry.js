@@ -594,9 +594,6 @@ export const ELEMENT_TO_PART_ID = {
   'CORNER-POST': 'corner_post',
   // T75 F5 · the worktop's upstand.
   UPSTAND: 'upstand',
-  // T75 F10 · an island's panels: the back panel and the end panel across it.
-  'BACK-PANEL': 'back_panel',
-  'ISLAND-END-PANEL': 'end_panel',
   // T75 F3 · the blind kit's blank: a FIX front.
   'BLIND-BLANK': 'false_front',
   // T75 F14 · the hob unit's dummy: the same FIX front.

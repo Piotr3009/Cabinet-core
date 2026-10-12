@@ -126,7 +126,7 @@ export function roomFitRefusal({
   // island (the core and both faces' reach), not to the end face it stands
   // on: it is the island's board, not a cabinet against a wall, and a red
   // Check on every island was the fixture's finding. A face is named as one.
-  if (patch.width != null && !unit.params?.island_auto) {
+  if (patch.width != null) {
     const walls = roomWalls(room);
     const wall = walls[unit.position?.wall ?? 0] || walls[0];
     const wallW = Number(wall?.width) || 0;

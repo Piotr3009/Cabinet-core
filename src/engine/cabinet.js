@@ -3417,21 +3417,11 @@ export function computeCabinet(params, profileOverride) {
   // what the piece editor draws on it (an arc, a drill) is added the way it is
   // added to any board (`applyPartEdits`).
   if (type.carcass.top === 'free') {
-    // ─── T75 F10 · …OR AN ISLAND'S OWN PANEL ──────────────────────────────
-    // *"An empty long face gets an auto BACK PANEL (front material, the end
-    // panel's height law, role `back_panel`); an empty end face gets the auto
-    // END PANEL ... sized to the whole island depth."*  The same one board,
-    // named for the job it does, in the front material and at the front's
-    // thickness (`island_panel`, set by the store's island automat only: no
-    // saved free panel carries it).
-    const islandPanel = params?.island_panel === 'back' || params?.island_panel === 'end' ? params.island_panel : null;
-    const fpT = islandPanel ? frontT : G;
+    const fpT = G;
     const fp = freePanelOf({ ...params, width: W, height: H, depth: D, board_t: fpT }, P);
     const at = freePanelPlacement(fp);
     panels.push(panel({
-      ...(islandPanel === 'back' ? { id: 'BACK-PANEL', part: 'BACK-PANEL', role: 'back_panel' } : {}),
-      ...(islandPanel === 'end' ? { id: 'ISLAND-END', part: 'ISLAND-END-PANEL', role: 'end_panel' } : {}),
-      ...(islandPanel ? {} : { id: 'FP', part: 'FREE-PANEL', role: 'free_panel' }),
+      id: 'FP', part: 'FREE-PANEL', role: 'free_panel',
       w: fp.length, h: fp.width, thickness: fpT,
       edgeCode: codes.all, edgeLen: metres(2 * (fp.length + fp.width)),
       box: at.box,

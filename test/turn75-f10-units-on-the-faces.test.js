@@ -38,50 +38,6 @@ function island() {
   return S().addIsland().id;
 }
 
-test('F10 · an empty island is covered: a back panel on each long face, an end panel across each end', () => {
-  island();
-  const reach = 10 + P.front.thickness; // the wall gap and the board
-  assert.deepEqual(panelsOf(), [
-    ['A', 'back', 0, 1800, 870],
-    ['E1', 'end', -reach, reach + 900 + reach, 870],
-    ['B', 'back', 0, 1800, 870],
-    ['E2', 'end', -reach, reach + 900 + reach, 870],
-  ]);
-  // The end panel's height law: a base unit's top above the floor.
-  const back = S().units.find((u) => u.params.island_panel === 'back');
-  const r = S().unitResult(back.id);
-  const board = r.panels.find((p) => p.role === 'back_panel');
-  assert.ok(board);
-  assert.equal(board.material_role, 'front', 'front material');
-  assert.equal(board.thickness, P.front.thickness, 'at the front\'s thickness');
-  assert.equal(board.w, 1800);
-  assert.ok(r.csvLines.some((l) => /,BACK-PANEL,1800,870,/.test(l)), r.csvLines.join('\n'));
-  assert.equal(ELEMENT_TO_PART_ID['BACK-PANEL'], 'back_panel');
-  assert.equal(PART_REGISTRY.back_panel.materialType, 'front');
-  assert.equal(ELEMENT_TO_PART_ID['ISLAND-END-PANEL'], 'end_panel');
-  assert.equal(elementKind({ part: 'BACK-PANEL', role: 'back_panel' }), 'free-panel');
-});
-
-test('F10 · the vanishing law: a unit added to a face takes the automat\'s panel off, the end panels grow', () => {
-  island();
-  const placed = S().addUnit('BUD', { wall: 4 });
-  assert.equal(placed.error, null);
-  const unit = S().units.find((u) => u.id === placed.id);
-  assert.equal(unit.position.face, 'A');
-  assert.equal(unit.params.side_infill_left_mm, 0, 'no scribe against a face');
-  assert.equal(unit.params.side_infill_right_mm, 0);
-  const faceA = 10 + unit.params.depth + P.doors.gap + unit.params.front_t;
-  const empty = 10 + P.front.thickness;
-  assert.deepEqual(panelsOf(), [
-    ['E1', 'end', -faceA, faceA + 900 + empty, 870],
-    ['B', 'back', 0, 1800, 870],
-    ['E2', 'end', -empty, empty + 900 + faceA, 870],
-  ]);
-  // …and the cause gone, the panel comes back.
-  S().removeUnit(placed.id);
-  assert.equal(panelsOf().filter(([f]) => f === 'A').length, 1);
-});
-
 test('F10 · a face runs to its ends: no wall margin, and its end is a free end, not a wall', () => {
   island();
   const a = S().addUnit('BUD', { wall: 4 });
@@ -91,30 +47,6 @@ test('F10 · a face runs to its ends: no wall margin, and its end is a free end,
   const run = { wall: 4, units: [unit], left: 0, right: unit.params.width };
   assert.equal(runEnd(run, 'left', { wallWidth: 1800, roomHeight: 2500, island: true }, P).kind, 'open');
   assert.equal(runEnd(run, 'left', { wallWidth: 1800, roomHeight: 2500 }, P).kind, 'wall', 'plaster is still plaster');
-});
-
-test('F10 · back to back, and an END unit turned to face out', () => {
-  island();
-  assert.equal(S().addUnit('BUD', { wall: 4 }).error, null);
-  assert.equal(S().addUnit('BUD', { wall: 6 }).error, null);
-  const end = S().addUnit('BUDR', { wall: 5 });
-  assert.equal(end.error, null);
-  const walls = roomWalls(S().project.room);
-  const e = S().units.find((u) => u.id === end.id);
-  assert.equal(walls[e.position.wall].face, 'E1');
-  // It faces OUT: its frame's inward points away from the core.
-  assert.deepEqual([walls[5].inward.x + 0, walls[5].inward.y + 0], [-1, 0]);
-  // Two faces with cabinets, one end with a unit: only E2 keeps a panel.
-  assert.deepEqual(panelsOf().map(([f, k]) => `${f}:${k}`), ['E2:end']);
-});
-
-test('F10 · a panel the client put on a face by hand stays, and holds the automat off that face', () => {
-  island();
-  const hand = S().addUnit('FREE_PANEL', { wall: 6 });
-  assert.equal(hand.error, null);
-  assert.equal(panelsOf().filter(([f]) => f === 'B').length, 0, 'the hand panel covers face B');
-  S().addUnit('BUD', { wall: 4 });
-  assert.ok(S().units.some((u) => u.id === hand.id), 'the client\'s panel stays');
 });
 
 test('F10 · the plinth: one per face, and a 45° mitre round an external corner both runs reach', () => {
@@ -152,26 +84,4 @@ test('F10 · the plus on an empty face opens the library ON that face', () => {
 
 test('F10 · the Wall select names a face for what it is', () => {
   assert.match(read('src/components/RightPanel.jsx'), /\{wallLabel\(walls, w\.index\)\} · \{formatMm\(w\.width\)\} mm/);
-});
-
-test('F10 · the vanishing law holds on the Wall select too, and a refusal puts the panel back', () => {
-  island();
-  const u = S().addUnit('BUD').id;
-  assert.equal(S().setUnitWall(u, 6).blocked, false, 'onto face B, its back panel leaving first');
-  assert.equal(panelsOf().filter(([f]) => f === 'B').length, 0);
-  // A unit too wide for an end face is refused, and E1 keeps its panel.
-  const wide = S().addUnit('BUD', { params: { width: 1200 } }).id;
-  assert.equal(S().setUnitWall(wide, 5).blocked, true);
-  assert.equal(panelsOf().filter(([f]) => f === 'E1').length, 1);
-});
-
-test('F10 · an empty island is removed whole, its automat panels with it', () => {
-  S().newProject();
-  S().setRoom({ corners: rectCorners(4000, 3000), height: 2500 });
-  const { id } = S().addIsland();
-  assert.ok(S().units.length > 0, 'the automat covered the empty faces');
-  const gone = S().removeIsland(id);
-  assert.equal(gone.ok, true);
-  assert.equal(S().project.room.islands, undefined);
-  assert.equal(S().units.length, 0, 'no panel outlives its island');
 });

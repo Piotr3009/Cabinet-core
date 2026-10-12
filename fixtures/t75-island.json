@@ -244,54 +244,6 @@
   },
   "units": [
     {
-      "id": "u_ynhpsjc",
-      "type": "FREE_PANEL",
-      "position": {
-        "wall": 7,
-        "x_mm": -596,
-        "rotation_deg": 0,
-        "island": "island_pyhu5by",
-        "face": "E2"
-      },
-      "params": {
-        "type": "FREE_PANEL",
-        "width": 2092,
-        "height": 870,
-        "depth": 25,
-        "board_t": 25,
-        "front_t": 25,
-        "front_type": null,
-        "shelves": 0,
-        "drawers": 0,
-        "rail": false,
-        "rail_offset": null,
-        "hinge": "L",
-        "doors": null,
-        "mount_height": 0,
-        "panel_facing": "along",
-        "panel_width": 870,
-        "panel_tilt_deg": 0,
-        "side_infill_off": true,
-        "unit_num": "FP04",
-        "front_style_schema": 1,
-        "height_custom": false,
-        "sections": [
-          {
-            "width_mm": 800,
-            "items": []
-          }
-        ],
-        "materials": {},
-        "island_panel": "end",
-        "island_auto": true,
-        "plinth": false,
-        "top_infill_mm": 0,
-        "side_infill_left_mm": 0,
-        "side_infill_right_mm": 0,
-        "shelf_schema": 2
-      }
-    },
-    {
       "id": "u_gn6ccxt",
       "type": "BUD",
       "position": {

@@ -284,8 +284,8 @@ test('T75 set · the island: its units on the plan, ONE slab over the whole at i
   const walls = roomWalls(S().project.room);
   const faceOf = (u) => walls[u.position?.wall ?? 0]?.face || null;
   const onIsland = S().units.filter((u) => walls[u.position?.wall ?? 0]?.island);
-  assert.deepEqual([...new Set(onIsland.map(faceOf))].sort(), ['A', 'B', 'E1', 'E2'], 'every face is used');
-  assert.ok(onIsland.some((u) => faceOf(u) === 'E2' && u.params.island_auto === true && u.params.island_panel === 'end'), 'the empty end is closed by the automat');
+  // Since 12.10.2026 (owner) no automat board closes the empty end E2.
+  assert.deepEqual([...new Set(onIsland.map(faceOf))].sort(), ['A', 'B', 'E1'], 'every face but the empty end is used');
   assert.ok(onIsland.some((u) => faceOf(u) === 'E1' && !u.params.island_auto), 'an end unit stands on E1');
   const set = theSet();
   // The island's units are drawn on the base plan, each by its number.
@@ -307,10 +307,6 @@ test('T75 set · the island: its units on the plan, ONE slab over the whole at i
   const [c] = islandSlabs[0].cutouts;
   assert.equal(c.kind, 'sink');
   assert.ok(textsOf(plan.sheet).includes(`SINK ${Math.round(c.w)} x ${Math.round(c.d)} R${c.r}`), 'the island sink cut-out is not on the plan');
-  // The automat's end panel is cut, and the cut list says so at its size.
-  const panel = onIsland.find((u) => u.params.island_auto === true);
-  const board = S().unitResult(panel.id).panels[0];
-  assertCutRow(cutTexts(set), panel, board.id);
 });
 
 test('T75 set · the wardrobe corner: the L, the blind and the post, and the CUT CORNER box boards on the cut list', () => {

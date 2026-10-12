@@ -367,7 +367,7 @@ export const useUiStore = create((set, get) => ({
   // Dimensions on the 3D canvas: each unit's own W/H/D captions AND the
   // distance arrows between units and to the walls (CLAUDE.md phase 8). One
   // switch, because they are one thing to Piotr: "show me the numbers".
-  showDimensions: true,
+  showDimensions: false,  // Chat-fix 12.10.2026 (owner): off until asked for.
   setShowDimensions: (v) => set({ showDimensions: Boolean(v) }),
   toggleDimensions: () => set((s) => ({ showDimensions: !s.showDimensions })),
 

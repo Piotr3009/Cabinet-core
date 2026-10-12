@@ -290,7 +290,8 @@ test('every library type is configured, available and buildable', () => {
   // and a top (*"`WARDROBE_DESK`: a wall-hung carcass"*).
   // Turn 75 (CLAUDE.md F18): the wardrobe job's LOW UNIT, LOW_CABINET hole
   // for hole (*"`WARDROBE_LOW` copied from `LOW_CABINET`"*).
-  assert.equal(UNIT_TYPE_ORDER.length, 39, 'every kit in the order, the free panel last');
+  // AMENDED BY T78 F17 (12.10.2026): the canopy hood and the short hood, 39 became 41.
+  assert.equal(UNIT_TYPE_ORDER.length, 41, 'every kit in the order, the free panel last');
   for (const id of UNIT_TYPE_ORDER) {
     const type = UNIT_TYPES[id];
     assert.ok(type, `${id} missing from UNIT_TYPES`);

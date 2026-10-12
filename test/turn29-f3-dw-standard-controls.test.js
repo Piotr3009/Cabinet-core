@@ -190,8 +190,11 @@ test('F3 the two counts are one number on every kit but this one', () => {
   // are the same on every type that is not a drop front, which is what makes
   // the split safe: nothing else in the BOM or the export can have moved.
   const src = readFileSync(new URL('../src/engine/cabinet.js', import.meta.url), 'utf8');
-  assert.match(src, /const leafCount = dropsForward \? Math\.min\(1, doorCount\) : \(bayDoors\.length \|\| doorCount\);/);
-  assert.match(src, /const hingedLeafCount = dropsForward \? 0 : \(bayDoors\.length \|\| doorCount\);/);
+  // AMENDED BY T78 F18 (12.10.2026): a LIFT-UP leaf (AVENTOS, `liftOn`) is the
+  // drop front's own two numbers again: ONE leaf on the face, NOTHING on cups.
+  // The owner: *"szafki poziome otwierane do gory system blum."*
+  assert.match(src, /const leafCount = dropsForward \? Math\.min\(1, doorCount\) : \(liftOn \? 1 : \(bayDoors\.length \|\| doorCount\)\);/);
+  assert.match(src, /const hingedLeafCount = dropsForward \|\| liftOn \? 0 : \(bayDoors\.length \|\| doorCount\);/);
   for (const id of ['BUD', 'BUDTALL', 'WUD', 'SINK', 'WARDROBE', 'LOW_CABINET']) {
     const r = computeCabinet({ ...defaultParamsFor(id, P), unit_num: '01', doors: true }, P);
     const leaves = r.panels.filter((p) => p.part === 'FRONT' && p.role === 'front').length;

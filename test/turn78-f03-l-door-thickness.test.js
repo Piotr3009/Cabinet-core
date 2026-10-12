@@ -95,6 +95,16 @@ test('F3 · the scene turns a carved door B a quarter onto its arm: +90 for the 
   // AMENDED BY T78 F7 (same turn): the rule is shared with the drawer front on arm B (`meta.faceX`).
   assert.match(src, /const turned = Boolean\(\(alongZ \|\| faceX\) && \(decoration \|\| shaker\)\);/);
   assert.match(src, /-\(Number\(p\.meta\.swingZ\.dir\) \|\| -1\) \* \(Math\.PI \/ 2\)/);
+  // AMENDED AFTER THE PART A WALK (12.10.2026): the walk's first frame was a dead
+  // canvas: `turned` read `alongZ` before its `const` (a temporal dead zone throw on
+  // every render), and a regex test cannot see that. The order is asserted now:
+  // every fact `turned` reads is declared above it in MovingPanel.
+  const body = src.slice(src.indexOf('export function MovingPanel('));
+  const at = (re) => { const m = body.match(re); assert.ok(m, String(re)); return m.index; };
+  const turnedAt = at(/const turned = Boolean/);
+  for (const re of [/const drops = front === 'door'/, /const alongZ = front === 'door'/, /const bifold = front === 'door'/, /const faceX = front === 'drawer'/, /const decoration = useMemo/, /const shaker = useMemo/]) {
+    assert.ok(at(re) < turnedAt, `${re} is declared before turned reads it`);
+  }
   assert.match(src, /rotation=\{\[0, turnY, 0\]\}/);
   // The hands: left hand door B faces +x (dir -1 -> +90), right hand faces -x (dir 1 -> -90).
   const left = doorB(L('G'));

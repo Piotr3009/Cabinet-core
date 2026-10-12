@@ -1,0 +1,171 @@
+T78 PART A walk, 2026-10-11, HEAD 8bb4eee
+(the repo's HEAD when the walk ran: af1c5b0; the app under the mouse: http://127.0.0.1:4184/, its build stamp is the first NOTE of f01)
+
+CLAUDE.md T78 PART A (F1 to F9), walked section by section against npx vite
+preview of the branch (dist/), the hardware served from the silent showroom.
+Every gesture is a REAL mouse or key event at a DOM control's centre or at a
+pixel the scene's own raycaster says the thing is under (and the page says
+the canvas owns); the store is only READ. Line grammar:
+  PASS|FAIL  <section> | <gesture> | expect: <what was expected> | observed: <what was read>
+  NOTE       <section> | <reading> | <value>
+  FRAME      <section> | <file>  (the frame is beside this file)
+A FAIL is written down, never patched.
+
+=== f01 NOTHING CAN BE ADDED LEFT OF AN L: the plus on wall B, a Standard by each arm
+NOTE       f01 | walked at | 2026-10-11 23:46 UTC, HEAD af1c5b0
+NOTE       f01 | the build under the mouse | 2026-10-11 23:45 UTC \u00b7 8bb4eee; node HEAD af1c5b0
+PASS       f01 | a new project (the stage), its room | expect: a 4000 x 3000 room | observed: 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f01 | Library, Kitchen, Base units, Corner L (the real row) | expect: a CORNER_L_BASE in a room corner | observed: CORNER_L_BASE CL01 on wall 1 at x 10, arm A 900, arm B 900, arm 558, corner_side left, wall gap 10
+FAIL       f01 | the room canvas after the L is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: DEAD: ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17
+FAIL       f01 | f01 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f01 | f01-walk-failure.png
+
+=== f02 THE L WORKTOP IS L-SHAPED, THE L MASK IS ONE L BOARD
+NOTE       f02 | walked at | 2026-10-11 23:46 UTC, HEAD af1c5b0
+FAIL       f02 | f02 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f02 | f02-walk-failure.png
+
+=== f03 AN L DOOR WITH A DECORATIVE FRONT IS front_t THICK (Arched)
+NOTE       f03 | walked at | 2026-10-11 23:46 UTC, HEAD af1c5b0
+FAIL       f03 | f03 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f03 | f03-walk-failure.png
+
+=== f04 THE GRAIN OF THE L BOARDS RUNS ALONG WALL A (the owner's quarter turn)
+NOTE       f04 | walked at | 2026-10-11 23:46 UTC, HEAD af1c5b0
+FAIL       f04 | f04 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f04 | f04-walk-failure.png
+NOTE       f04 | page 1: console errors | ReferenceError: Cannot access 'S0' before initialization
+    at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296)
+    at _t (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:20948)
+    at G5 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:36829)
+    at u7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:47394)
+    at X7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:83168)
+    at yi (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82206)
+    at m3 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82034)
+    at L7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:79004)
+    at w1 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:8729)
+    at Qe (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:7508) | ReferenceError: Cannot access 'S0' before initialization
+    at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296)
+    at _t (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:20948)
+    at G5 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:36829)
+    at u7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:47394)
+    at X7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:83168)
+    at yi (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82206)
+    at m3 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82034)
+    at L7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:79004)
+    at w1 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:8729)
+    at Qe (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:7508)
+
+=== f05 THE L GROWS LEFT AND RIGHT ON ITS OWN: the ARM B figure, a 2klik, 1100
+NOTE       f05 | walked at | 2026-10-11 23:46 UTC, HEAD af1c5b0
+PASS       f05 | a fresh project, Library, Kitchen, Base units, Corner L | expect: a CORNER_L_BASE | observed: CL01 on wall 1, arms 900 / 900, arm 558, corner_side left
+FAIL       f05 | the room canvas after the L is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: DEAD: ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17
+FAIL       f05 | f05 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f05 | f05-walk-failure.png
+
+=== f06 THE WALL L FOLLOWS THE BASE L, AND SPLITS ABOVE 700
+NOTE       f06 | walked at | 2026-10-11 23:46 UTC, HEAD af1c5b0
+FAIL       f06 | f06 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f06 | f06-walk-failure.png
+NOTE       f06 | page 2: console errors | ReferenceError: Cannot access 'S0' before initialization
+    at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296)
+    at _t (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:20948)
+    at G5 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:36829)
+    at u7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:47394)
+    at X7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:83168)
+    at yi (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82206)
+    at m3 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82034)
+    at L7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:79004)
+    at w1 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:8729)
+    at Qe (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:7508) | ReferenceError: Cannot access 'S0' before initialization
+    at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296)
+    at _t (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:20948)
+    at G5 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:36829)
+    at u7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:47394)
+    at X7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:83168)
+    at yi (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82206)
+    at m3 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82034)
+    at L7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:79004)
+    at w1 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:8729)
+    at Qe (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:7508)
+
+=== f07 DRAWERS IN THE L: two boxes a row, one L front, the SPACE CORNER kit, the diagonal
+NOTE       f07 | walked at | 2026-10-11 23:46 UTC, HEAD af1c5b0
+PASS       f07 | a fresh project, Library, Kitchen, Base units, Corner L | expect: a CORNER_L_BASE | observed: CL01, arms 900 / 900, arm 558, hand left
+FAIL       f07 | the room canvas after the L is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: DEAD: ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17
+FAIL       f07 | f07 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f07 | f07-walk-failure.png
+NOTE       f07 | page 3: console errors | ReferenceError: Cannot access 'S0' before initialization
+    at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296)
+    at _t (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:20948)
+    at G5 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:36829)
+    at u7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:47394)
+    at X7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:83168)
+    at yi (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82206)
+    at m3 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82034)
+    at L7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:79004)
+    at w1 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:8729)
+    at Qe (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:7508) | ReferenceError: Cannot access 'S0' before initialization
+    at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296)
+    at _t (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:20948)
+    at G5 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:36829)
+    at u7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:47394)
+    at X7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:83168)
+    at yi (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82206)
+    at m3 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82034)
+    at L7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:79004)
+    at w1 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:8729)
+    at Qe (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:7508)
+
+=== f08 THE BI-FOLD CORNER DOOR: B hangs on A, a line and a body, A swings and B rides
+NOTE       f08 | walked at | 2026-10-11 23:47 UTC, HEAD af1c5b0
+PASS       f08 | a fresh project, Library, Kitchen, Base units, Corner L | expect: a CORNER_L_BASE | observed: CL01, arms 900 / 900, arm 558, hand left
+FAIL       f08 | the room canvas after the L is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: DEAD: ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17
+FAIL       f08 | f08 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f08 | f08-walk-failure.png
+
+=== f09 THE CAROUSEL: a line and a body in the corner square, the shelves step aside, and back
+NOTE       f09 | walked at | 2026-10-11 23:47 UTC, HEAD af1c5b0
+FAIL       f09 | f09 walked to its end | expect: the canvas alive for the gestures below | observed: not walked: the scene is dead (ReferenceError: Cannot access 'S0' before initialization at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296) -> src/3d/UnitView.jsx:804:17); every gesture of this section needs the canvas
+FRAME      f09 | f09-walk-failure.png
+NOTE       f09 | page 4: console errors | ReferenceError: Cannot access 'S0' before initialization
+    at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296)
+    at _t (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:20948)
+    at G5 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:36829)
+    at u7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:47394)
+    at X7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:83168)
+    at yi (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82206)
+    at m3 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82034)
+    at L7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:79004)
+    at w1 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:8729)
+    at Qe (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:7508) | ReferenceError: Cannot access 'S0' before initialization
+    at Ql (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:730:364296)
+    at _t (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:20948)
+    at G5 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:36829)
+    at u7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:47394)
+    at X7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:83168)
+    at yi (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82206)
+    at m3 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:82034)
+    at L7 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:79004)
+    at w1 (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:8729)
+    at Qe (http://127.0.0.1:4184/assets/deleteKey-weUe_Jrh.js:198:7508)
+
+SECTION f01: 2 pass, 2 fail
+SECTION f02: 0 pass, 1 fail
+SECTION f03: 0 pass, 1 fail
+SECTION f04: 0 pass, 1 fail
+SECTION f05: 1 pass, 2 fail
+SECTION f06: 0 pass, 1 fail
+SECTION f07: 1 pass, 2 fail
+SECTION f08: 1 pass, 2 fail
+SECTION f09: 0 pass, 1 fail
+FRAMES f01 (1): f01-walk-failure.png
+FRAMES f02 (1): f02-walk-failure.png
+FRAMES f03 (1): f03-walk-failure.png
+FRAMES f04 (1): f04-walk-failure.png
+FRAMES f05 (1): f05-walk-failure.png
+FRAMES f06 (1): f06-walk-failure.png
+FRAMES f07 (1): f07-walk-failure.png
+FRAMES f08 (1): f08-walk-failure.png
+FRAMES f09 (1): f09-walk-failure.png
+PART A: 18 steps, 5 pass, 13 fail

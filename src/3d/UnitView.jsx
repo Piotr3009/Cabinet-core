@@ -839,6 +839,17 @@ export function MovingPanel({
   // is the box the engine emitted and was never wrong.
   // T78 F7 · a drawer front board on the L's arm B stands along z too
   // (`meta.faceX`, its face normal along x), and turns the same way.
+  // ─── T78 (the PART A walk): WHAT THE PIECE IS, DECLARED BEFORE IT IS READ ──
+  // The walk's first frame was a dead canvas: `turned` (F3) read `alongZ`,
+  // declared by `const` ninety lines below (a temporal dead zone throw on
+  // every MovingPanel render). The three facts a leaf's geometry and its
+  // swing both need stand here, once, above both readers.
+  // A drop front rotates about its bottom edge (`frontOpens: 'drop'`).
+  const drops = front === 'door' && p.meta?.opening === 'drop';
+  // T75 F4 · the L's door B faces the adjacent wall: it hangs on its far end (z max).
+  const alongZ = front === 'door' && !drops && p.meta?.swingZ;
+  // T78 F8 · the bi-fold child leaf hangs on its NEAR end (toward the carrier leaf).
+  const bifold = front === 'door' && !drops && p.meta?.bifold?.parent ? p.meta.bifold : null;
   const faceX = front === 'drawer' && p.meta?.faceX ? Number(p.meta.faceX.dir) || 1 : 0;
   const turned = Boolean((alongZ || faceX) && (decoration || shaker));
   // eslint-disable-next-line no-nested-ternary
@@ -927,7 +938,6 @@ export function MovingPanel({
   // Turn 27 (CLAUDE.md F2.1): the value is `'drop'` — the same word the unit
   // type uses (`frontOpens: 'drop'`), because a front that falls forward is
   // not a species of cabinet and the two names for it were one name too many.
-  const drops = front === 'door' && p.meta?.opening === 'drop';
 
   // A door rotates about its hinge edge, so the mesh is offset inside a group
   // pinned to that edge; a drop front rotates about its BOTTOM one; everything
@@ -935,10 +945,8 @@ export function MovingPanel({
   const hingeAtRight = p.meta?.hinge === 'R';
   const centre = mitre?.box || p.box;
   // T75 F4 · the L's door B faces the adjacent wall: it hangs on its far end (z max).
-  const alongZ = front === 'door' && !drops && p.meta?.swingZ;
   // T78 F8 · the bi-fold child leaf hangs on its NEAR end (toward the carrier
   // leaf), not on the far end of the arm the pair's door B hangs on.
-  const bifold = front === 'door' && !drops && p.meta?.bifold?.parent ? p.meta.bifold : null;
   // eslint-disable-next-line no-nested-ternary
   const pivot = bifold ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z)] : alongZ ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d)] : drops
     ? [mm(p.box.x + p.box.w / 2), mm(p.box.y), mm(p.box.z + p.box.d / 2)]
@@ -2813,7 +2821,14 @@ export default function UnitView({
                 open: Math.max(openFronts?.[p.id] ?? 0, openFronts?.[child.id] ?? 0),
               } : {};
             })() : {})}
-            {...(front === 'door' && p.meta?.bifold?.child ? {} : { open: front ? (openFronts?.[p.id] ?? 0) : (ride?.open ?? 0) })}
+            {...(front === 'door' && p.meta?.bifold?.child ? {} : {
+              // T78 F7 (the PART A walk): the twin front board of an L drawer row rides the
+              // row like its boxes do (either board's gesture opens both).
+              // eslint-disable-next-line no-nested-ternary
+              open: front
+                ? (p.meta?.lFront ? Math.max(openFronts?.[p.id] ?? 0, ride?.open ?? 0) : (openFronts?.[p.id] ?? 0))
+                : (ride?.open ?? 0),
+            })}
             slide={slide}
             travel={ride?.travel ?? null}
             // ─── Turn 20 (CLAUDE.md F8.1) ───

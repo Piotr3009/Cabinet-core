@@ -1,0 +1,138 @@
+T78 PART A walk, 2026-10-12, HEAD 8bb4eee (VARIANT-fixed-head: HEAD after the TDZ hoist and the lFront ride)
+(the repo's HEAD when the walk ran: 0c3d9e2; the app under the mouse: http://127.0.0.1:4173/, its build stamp is the first NOTE of f01)
+
+CLAUDE.md T78 PART A (F1 to F9), walked section by section against npx vite
+preview of the branch (dist/), the hardware served from the silent showroom.
+Every gesture is a REAL mouse or key event at a DOM control's centre or at a
+pixel the scene's own raycaster says the thing is under (and the page says
+the canvas owns); the store is only READ. Line grammar:
+  PASS|FAIL  <section> | <gesture> | expect: <what was expected> | observed: <what was read>
+  NOTE       <section> | <reading> | <value>
+  FRAME      <section> | <file>  (the frame is beside this file)
+A FAIL is written down, never patched.
+
+=== f01 NOTHING CAN BE ADDED LEFT OF AN L: the plus on wall B, a Standard by each arm
+NOTE       f01 | walked at | 2026-10-12 00:02 UTC, HEAD 0c3d9e2
+NOTE       f01 | the build under the mouse | #917 \u00b7 2026-10-12 00:02 UTC \u00b7 0c3d9e2; node HEAD 0c3d9e2
+PASS       f01 | a new project (the stage), its room | expect: a 4000 x 3000 room | observed: 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f01 | Library, Kitchen, Base units, Corner L (the real row) | expect: a CORNER_L_BASE in a room corner | observed: CORNER_L_BASE CL01 on wall 1 at x 10, arm A 900, arm B 900, arm 558, corner_side left, wall gap 10
+PASS       f01 | the room canvas after the L is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+FRAME      f01 | f01-walk-fixed-head-01-the-l.png
+PASS       f01 | the scene, the L alone: the plus sprites it draws (addPlusPoints through Scene.jsx AddPluses) | expect: a corner plus on wall 4 (wall B) at arm B's end (u 2090 = 3000 - gap 10 - arm B 900), and a run plus on wall 1 at arm A's end (x 910) | observed: 2 run plus(es): "Add a unit to the right of CL01" at plan {"x":955,"y":450}; "Add a unit beside CL01 on wall 4" at plan {"x":279,"y":955}; wall B plus: u 2045, 279 out of wall 4; wall A plus: u 955, 450 out of wall 1
+FRAME      f01 | f01-walk-fixed-head-02-pluses.png
+PASS       f01 | a real click on the wall-B plus (pixel 364,576), then Standard in the library it opened | expect: a BUD on wall 4 flush with arm B's end: x + width = 2090 (within 1 mm) | observed: library insert {"near":"u_g3b55fa","side":"left"}; row pressed true; BUD 01 on wall 4 at x 1490..2090; said ["grey: Wall 1 is full: placed on wall 4."]
+FRAME      f01 | f01-walk-fixed-head-03-wall-b-added.png
+PASS       f01 | a real click on the wall-A plus (pixel 520,546), then Standard | expect: a BUD on wall 1 flush with arm A's end (x 910) | observed: library insert {"near":"u_g3b55fa","side":"right"}; row pressed true; BUD 02 on wall 1 at x 910..1510; said []
+FRAME      f01 | f01-walk-fixed-head-04-wall-a-added.png
+
+=== f02 THE L WORKTOP IS L-SHAPED, THE L MASK IS ONE L BOARD
+NOTE       f02 | walked at | 2026-10-12 00:03 UTC, HEAD 0c3d9e2
+PASS       f02 | the L selected by a real click (by TOP-L), Construction open: the Worktop row offers Add worktop | expect: the row [data-add-worktop-one] | observed: selected true; Construction true; row true; rows ["add: Worktopnot fittedAdd worktop"]
+PASS       f02 | Add worktop on the L | expect: one record of kind L over the L alone; one slab whose geometry.shape is L with a closed L outline (six vertices by test/turn78-f02; CLAUDE.md F2 wrote eight) | observed: records [{"id":"worktop_9ks41z8","units":1,"kind":"L"}]; slabs [{"slab":"worktop_9ks41z8","wall":0,"shape":"L","points":6,"w":910,"d":900}]; outline [[0,0],[910,0],[910,606],[616,606],[616,900],[0,900]]; said []
+FRAME      f02 | f02-walk-fixed-head-01-worktop.png
+PASS       f02 | BOM (the Bill of materials button), Parts: the L worktop line | expect: a worktop line naming the L slab L-shaped (its true area) | observed: 2 worktop row(s): ["WT \u00b7 WORKTOP \u00b7 1 pcs","WTworktop_9ks41z838 \u00b7 Worktop 38 mm, L-shaped9109001-0.733Bought"]; "L-shaped" on the panel: true
+FRAME      f02 | f02-walk-fixed-head-02-bom-worktop.png
+PASS       f02 | the L selected, Library, Kitchen, Wall units, Corner L wall | expect: a CORNER_L_WALL in the same corner at the wall level | observed: CORNER_L_WALL CW01 on wall 1 at x 10, arms 900 / 900, corner_side left, mount 1500, arms auto {"from":"u_g3b55fa","width":900,"depth":900,"split":[]}
+PASS       f02 | the wall L selected (already selected by the add), Construction, Add masking panel (a real click) | expect: bottom_mask on; the cut list carries MASK-L, one L board | observed: button clicked; bottom_mask true; mask MASK-L 910 x 910 x 25; said []
+PASS       f02 | BOM, Parts: the MASK-L line | expect: one MASK-L row | observed: 1 row(s): ["CW01MASK-L25 \u00b7 Broken white9109101<>^v0.578Cut"]
+FRAME      f02 | f02-walk-fixed-head-03-bom-mask.png
+FRAME      f02 | f02-walk-fixed-head-04-wall-l-mask.png
+
+=== f03 AN L DOOR WITH A DECORATIVE FRONT IS front_t THICK (Arched)
+NOTE       f03 | walked at | 2026-10-12 00:03 UTC, HEAD 0c3d9e2
+PASS       f03 | DOORS, Add doors (Add doors pressed) | expect: the L's two leaves CL01-A-F and CL01-B-F | observed: leaves ["CL01-A-F 340.5 x 770 x 25","CL01-B-F 312.5 x 770 x 25"]
+PASS       f03 | Front type select set to Arched by the real select ("Arched") | expect: both leaves carry the A recipe | observed: select "A"; records CL01-A-F A, CL01-B-F A; scene styles A, A
+PASS       f03 | door B in the SCENE, measured in the unit frame (x along wall A) | expect: a solid 25 thick along x (front_t), its width 312.5 along z, not 300+ | observed: BufferGeometry 2868 vertices: x 561..586 (25 thick), z 586..898.5 (312.5 wide), y 0..770
+PASS       f03 | door A in the SCENE, the same | expect: a solid 25 thick along z, its width 340.5 along x | observed: BufferGeometry 3048 vertices: x 558..898.5 (340.5), z 561..586 (25 thick)
+PASS       f03 | the cut list (the BOM Parts rows) states both leaves at front_t | expect: thickness 25 on both records and two rows on the panel | observed: records CL01-A-F t 25, CL01-B-F t 25; panel rows ["CL01CL01-A-FA \u00b7 Routed slab, depths 18 mm25 \u00b7 Broken white340.57701<>^v0.262Cut","CL01CL01-B-FA \u00b7 Routed slab, depths 18 mm25 \u00b7 Broken white312.57701<>^v0.241Cut"]
+FRAME      f03 | f03-walk-fixed-head-A.png
+FRAME      f03 | f03-walk-fixed-head-A-leaves.png
+
+=== f04 THE GRAIN OF THE L BOARDS RUNS ALONG WALL A (the owner's quarter turn)
+NOTE       f04 | walked at | 2026-10-12 00:04 UTC, HEAD 0c3d9e2
+NOTE       f04 | the engine's statement (panel.cnc.grain, the drawn frame) and the boxes | TOP-L grain w, 864 x 864 x 18, box {"x":18,"y":752,"z":18,"w":864,"h":18,"d":864}; no SHELF-L; BUD TOP grain null, 564 x 540
+PASS       f04 | the engine the scene draws from (grainRun, decorMapping, decorPlacement on the store's TOP-L and the BUD TOP beside it) | expect: TOP-L: the figure along box.w (x, wall A), grainAxis u, the same quarter turn as the BUD top for both picture families; the old tie-break (no axis) gave v, along wall B: the 90 degrees the owner asked for | observed: TOP-L {"id":"TOP-L","axis":"w","lengthMm":864,"acrossMm":864,"grainAxis":"u","oldTie":"v","rotateTile":false,"rotateScan":true}; BUD TOP {"id":"TOP","axis":"w","lengthMm":564,"acrossMm":540,"grainAxis":"u","oldTie":"u","rotateTile":false,"rotateScan":true}
+NOTE       f04 | the grain readout: eye only (no decor map readable on the mesh), see the frame f04-walk-grain.png | TOP-L {"why":"no decor map on TOP-L","materials":1,"color":"#f2f0ec"}; BUD TOP {"why":"no decor map on TOP","materials":1,"color":"#f2f0ec"}
+FRAME      f04 | f04-walk-fixed-head-grain.png
+FRAME      f04 | f04-walk-fixed-head-grain-top-l.png
+NOTE       f04 | page 1: console errors | none
+
+=== f05 THE L GROWS LEFT AND RIGHT ON ITS OWN: the ARM B figure, a 2klik, 1100
+NOTE       f05 | walked at | 2026-10-12 00:04 UTC, HEAD 0c3d9e2
+PASS       f05 | a fresh project, Library, Kitchen, Base units, Corner L | expect: a CORNER_L_BASE | observed: CL01 on wall 1, arms 900 / 900, arm 558, corner_side left
+PASS       f05 | the room canvas after the L is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f05 | the L selected (already selected by the add; dimensions already shown): the ARM B figure (chain d-<unitId>, row d) where a hand can click it | expect: a pixel on the figure's pick box, the first thing under the pointer, the canvas's own | observed: {"x":386,"y":464,"n":180,"turn":[0,0]}
+FRAME      f05 | f05-walk-fixed-head-01-chain.png
+PASS       f05 | a 2klik on the ARM B figure | expect: the size window opens focused on the ARM B field (#size-d-<unitId>); its fields read Arm A, Height, Arm B | observed: modal unit-size; field {"focused":true,"value":"900","labels":["Arm A","Height","Arm B"]}
+FRAME      f05 | f05-walk-fixed-head-02-size-window.png
+PASS       f05 | 1100, Enter | expect: params.depth 1100 (arm B), width 900 unchanged (arm A), the arm depth 558 unchanged | observed: width 900, depth 1100, arm 558; modal after null; said []
+FRAME      f05 | f05-walk-fixed-head-03-arm-b-1100.png
+
+=== f06 THE WALL L FOLLOWS THE BASE L, AND SPLITS ABOVE 700
+NOTE       f06 | walked at | 2026-10-12 00:04 UTC, HEAD 0c3d9e2
+PASS       f06 | the base L selected, Library, Kitchen, Wall units, Corner L wall | expect: a CORNER_L_WALL in the same corner taking the base's arms 900 / 1100 (corner_arms_auto from the base), unless a leaf would pass 700 | observed: CW01 on wall 1 at x 10, arms 900 / 1100, arm depth 400, mount 1500, corner_arms_auto {"from":"u_d3flawr","width":900,"depth":1100,"split":[]}; messages []
+FRAME      f06 | f06-walk-fixed-head-01-wall-l.png
+PASS       f06 | the base L selected: its ARM A figure (chain w-<unitId>, row w) in reach | expect: a clickable pixel | observed: {"x":397,"y":679,"n":133,"turn":[0,0]}
+PASS       f06 | a 2klik on the base's ARM A figure, 1600, Enter (window opened, field focused) | expect: the base's arm A 1600; the wall L follows: equal when its leaf stays under 700, else the wall L stops where the leaf is 700 and a yellow proposes the remainder with one button "Add N mm wall unit" | observed: base arms 1600 / 1100; wall L arms 1101 / 1100 (arm depth 400, opening less arm 701), corner_arms_auto {"from":"u_d3flawr","width":1101,"depth":1100,"split":["A"]}; yellow: "CW01: arm A of the base L is 1600 mm; a wall leaf over 700 mm is not hung, so the wall L stops at 1101 mm and a 499 mm wall unit is proposed beside it." button "Add 499 mm wall unit"; all messages ["yellow: CW01: arm A of the base L is 1600 mm; a wall leaf over 700 mm is not hung, so th"]; said since ["yellow: CW01: arm A of the base L is 1600 mm; a wall leaf over 700 mm is not hung, so the wall L stops at 1101 mm and a 499 mm wall unit is proposed beside it."]
+FRAME      f06 | f06-walk-fixed-head-02-proposal.png
+PASS       f06 | the yellow's button "Add 499 mm wall unit" clicked with the real mouse | expect: a WUD 499 wide added beside the wall L on wall 1, flush with its arm A end | observed: button at 978,847; WUD WU01 on wall 1 at x 1111..1610, width 499, mount 1500; wall L x 10..1111; said ["yellow: CW01: arm A of the base L is 1600 mm; a wall leaf over 700 mm is not hung, so the wall L stops at 1101 mm and a 499 mm wall unit is proposed beside it."]
+FRAME      f06 | f06-walk-fixed-head-03-remainder-added.png
+NOTE       f06 | page 2: console errors | none
+
+=== f07 DRAWERS IN THE L: two boxes a row, one L front, the SPACE CORNER kit, the diagonal
+NOTE       f07 | walked at | 2026-10-12 00:05 UTC, HEAD 0c3d9e2
+PASS       f07 | a fresh project, Library, Kitchen, Base units, Corner L | expect: a CORNER_L_BASE | observed: CL01, arms 900 / 900, arm 558, hand left
+PASS       f07 | the room canvas after the L is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f07 | the L selected (already selected by the add), Add items open (true), the Drawers row | expect: the row [data-add-kind=drawers] enabled, its Count field on the screen | observed: row {"there":true,"disabled":false,"text":"Drawers (internal)\u25b8"}; count field at 1201,257
+PASS       f07 | Count 3 (typed, Enter), Add (clicked) | expect: three drawer items in sections[0]; the engine cuts six DRAWER-FRONT boards, three per arm, and no door | observed: items ["drawer","drawer","drawer"]; corner_l.drawers 3; fronts ["CL01-A-F1","CL01-A-F2","CL01-A-F3","CL01-B-F1","CL01-B-F2","CL01-B-F3"]; doors left 0; said ["grey: 3 \u00d7 200 mm drawers added - the partition above them is automatic."]
+PASS       f07 | the scene draws the stack | expect: six DRAWER-FRONT meshes, three per arm | observed: ["CL01-A-F1","CL01-A-F2","CL01-A-F3","CL01-B-F1","CL01-B-F2","CL01-B-F3"]
+PASS       f07 | BOM, Order tab, Ironmongery | expect: SPACE CORNER kit x3 (one a row) and runner pairs x6 (two boxes a row) | observed: runner_pairs "Drawer runners 490 mm" 6 pairs (490 mm \u00b7 orders NL 500 \u00b7 MOVENTO 760H \u00b7 T \u00b7 SPEC); space_corner "Blum SPACE CORNER kit" 1 pcs (Blum SPACE CORNER kit \u00b7 row 1 \u00b7 arms 342 / 342 mm \u00b7 NL 490 \u00b7 SPEC); space_corner "Blum SPACE CORNER kit" 1 pcs (Blum SPACE CORNER kit \u00b7 row 2 \u00b7 arms 342 / 342 mm \u00b7 NL 490 \u00b7 SPEC); space_corner "Blum SPACE CORNER kit" 1 pcs (Blum SPACE CORNER kit \u00b7 row 3 \u00b7 arms 342 / 342 mm \u00b7 NL 490 \u00b7 SPEC); engine hardware ["space_corner 1 Blum SPACE CORNER kit Blum SPACE CORNER kit \u00b7 row 1 \u00b7 arms 342 / 342 mm \u00b7 NL 490","space_corner 1 Blum SPACE CORNER kit Blum SPACE CORNER kit \u00b7 row 2 \u00b7 arms 342 / 342 mm \u00b7 NL 490","space_corner 1 Blum SPACE CORNER kit Blum SPACE CORNER kit \u00b7 row 3 \u00b7 arms 342 / 342 mm \u00b7 NL 490","runner_pairs 6 Drawer runners 490 mm \u00b7 orders NL 500 \u00b7 MOVENTO 760H \u00b7 T"]
+FRAME      f07 | f07-walk-fixed-head-02-bom.png
+FRAME      f07 | f07-walk-fixed-head-01-stack-shut.png
+PASS       f07 | a 2klik on CL01-A-F2 (pixel 475,535), 1.8 s later | expect: both fronts and both boxes of row 2 displaced along the diagonal: x and z change by the same amount (over 50 mm), nothing else; row 1 stays | observed: row 2: [{"id":"CL01-A-F2","dx":346.5,"dz":346.5,"dy":0},{"id":"CL01-B-F2","dx":346.5,"dz":346.4,"dy":0},{"id":"D2A-SL","dx":346.5,"dz":346.5,"dy":0},{"id":"D2B-SL","dx":346.5,"dz":346.5,"dy":0}]; row 1 front {"dx":0,"dz":0,"dy":0}
+FRAME      f07 | f07-walk-fixed-head-03-row-open.png
+NOTE       f07 | page 3: console errors | none
+
+=== f08 THE BI-FOLD CORNER DOOR: B hangs on A, a line and a body, A swings and B rides
+NOTE       f08 | walked at | 2026-10-12 00:05 UTC, HEAD 0c3d9e2
+PASS       f08 | a fresh project, Library, Kitchen, Base units, Corner L | expect: a CORNER_L_BASE | observed: CL01, arms 900 / 900, arm 558, hand left
+PASS       f08 | the room canvas after the L is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f08 | DOORS, Add doors (Add doors pressed); the Corner doors select set to Bi-fold ("Bi-fold (B hangs on A)") | expect: corner_doors bifold: door B hangs on door A (meta.bifold parent / child) | observed: select "bifold"; doors_mode bifold; A.bifold {"child":"CL01-B-F","companion":"155 or 170"}; B.bifold {"parent":"CL01-A-F","angleDeg":60,"dir":-1,"hinge":"CLIP top 60 degree bi-fold corner hinge"}, B hinge R
+PASS       f08 | the sentence under the select (data-corner-doors-said) | expect: names the bought hinge and says "no hole" | observed: "CL01: door B hangs on door A's free edge (CLIP top 60 degree bi-fold corner hinge, 60 degrees, 3 hinges; leaf A takes the 155 or 170 family). A line and a body, no hole: the cup pattern waits for the catalogue page (reference/hardware/blum-hinges.json, owner to confirm)."
+PASS       f08 | BOM, Order tab, Ironmongery | expect: the CLIP top 60 degree bi-fold corner hinge x3 and the carcass hinges x3 (not 6) | observed: hinges "Hinges 110\u00b0" 3 pcs (Hinge 110\u00b0 \u00b7 soft-close \u00b7 gold \u00b7 SPEC); bifold_hinges "CLIP top 60 degree bi-fold corner hinge" 3 pcs (CLIP top 60 degree bi-fold corner hinge \u00b7 60 degrees \u00b7 79T8500 \u00b7 leaf A with 155 or 170 \u00b7 SPEC); engine hardware ["hinges 3 3 per door \u00d7 1 \u00b7 CLIP top BLUMOTION \u00b7 nickel","bifold_hinges 3 CLIP top 60 degree bi-fold corner hinge \u00b7 60 degrees \u00b7 79T8500 \u00b7 leaf A with 155 or 170"]
+FRAME      f08 | f08-walk-fixed-head-03-bom.png
+FRAME      f08 | f08-walk-fixed-head-01-shut.png
+PASS       f08 | a 2klik on door A (pixel 475,545), 2 s later | expect: door B's mesh moves with A (its centre travels over 50 mm) and after the swing B's box lies outside the carcass footprint (arm A z 0..arm, arm B x 0..arm) | observed: A centre moved dx 196.8 dz 168.2; B centre moved dx 488.5 dz 268.6; B box after x [954.9,1169.1] z [884.2,1140.5]; footprint arm 558, W 900, D 900; B outside true
+FRAME      f08 | f08-walk-fixed-head-02-open.png
+
+=== f09 THE CAROUSEL: a line and a body in the corner square, the shelves step aside, and back
+NOTE       f09 | walked at | 2026-10-12 00:06 UTC, HEAD 0c3d9e2
+PASS       f09 | the L selected (already selected by the add), Add items (true), Shelves, 1, Add | expect: one SHELF-L board in the cut list and drawn | observed: count field typed; shelves cut ["SHELF-L-1"]; drawn ["SHELF-L-1"]
+PASS       f09 | the Carousel row of Add items | expect: the row [data-add-kind=carousel] and its button [data-corner-kit=carousel] | observed: row true; button "Add carousel" at 1294,497; shelves drawn before ["SHELF-L-1"]
+PASS       f09 | Add carousel (a real click) | expect: params.carousel true; a BOM line Carousel x1 (bought); a scene body with ccKitBody carousel and ccCarouselTrays 2; the SHELF-L meshes gone | observed: carousel true; kits [{"kind":"carousel","placeholder":true,"trays":2}]; bodies [{"role":"carousel","placeholder":true,"trays":2,"model":null,"meshes":3}]; shelves drawn []; BOM carousel "Carousel (pots)" 1 pcs (Carousel (pots) \u00b7 540 x 540 mm corner square, 734 high \u00b7 2 trays \u00b7 SPEC); engine line [{"role":"carousel","qty":1,"unit":"pcs","label":"Carousel (pots)","spec":"Carousel (pots) \u00b7 540 x 540 mm corner square, 734 high \u00b7 2 trays"}]; said ["grey: Carousel fitted: a purchase line in the BOM and the room it takes in the scene. Nothing is drilled; the shelves step aside."]
+FRAME      f09 | f09-walk-fixed-head-02-bom.png
+FRAME      f09 | f09-walk-fixed-head-01-carousel.png
+FRAME      f09 | f09-walk-fixed-head-01-carousel-close.png
+PASS       f09 | the same button again ("Remove carousel") | expect: the carousel is taken out: no line, no body, the SHELF-L boards back as before | observed: carousel false; bodies []; shelves drawn ["SHELF-L-1"] (before ["SHELF-L-1"]); BOM none of carousel
+FRAME      f09 | f09-walk-fixed-head-03-removed.png
+NOTE       f09 | page 4: console errors | none
+
+SECTION f01: 6 pass, 0 fail
+SECTION f02: 6 pass, 0 fail
+SECTION f03: 5 pass, 0 fail
+SECTION f04: 1 pass, 0 fail
+SECTION f05: 5 pass, 0 fail
+SECTION f06: 4 pass, 0 fail
+SECTION f07: 7 pass, 0 fail
+SECTION f08: 6 pass, 0 fail
+SECTION f09: 4 pass, 0 fail
+FRAMES f01 (4): f01-walk-fixed-head-01-the-l.png, f01-walk-fixed-head-02-pluses.png, f01-walk-fixed-head-03-wall-b-added.png, f01-walk-fixed-head-04-wall-a-added.png
+FRAMES f02 (4): f02-walk-fixed-head-01-worktop.png, f02-walk-fixed-head-02-bom-worktop.png, f02-walk-fixed-head-03-bom-mask.png, f02-walk-fixed-head-04-wall-l-mask.png
+FRAMES f03 (2): f03-walk-fixed-head-A.png, f03-walk-fixed-head-A-leaves.png
+FRAMES f04 (2): f04-walk-fixed-head-grain.png, f04-walk-fixed-head-grain-top-l.png
+FRAMES f05 (3): f05-walk-fixed-head-01-chain.png, f05-walk-fixed-head-02-size-window.png, f05-walk-fixed-head-03-arm-b-1100.png
+FRAMES f06 (3): f06-walk-fixed-head-01-wall-l.png, f06-walk-fixed-head-02-proposal.png, f06-walk-fixed-head-03-remainder-added.png
+FRAMES f07 (3): f07-walk-fixed-head-02-bom.png, f07-walk-fixed-head-01-stack-shut.png, f07-walk-fixed-head-03-row-open.png
+FRAMES f08 (3): f08-walk-fixed-head-03-bom.png, f08-walk-fixed-head-01-shut.png, f08-walk-fixed-head-02-open.png
+FRAMES f09 (4): f09-walk-fixed-head-02-bom.png, f09-walk-fixed-head-01-carousel.png, f09-walk-fixed-head-01-carousel-close.png, f09-walk-fixed-head-03-removed.png
+PART A: 44 steps, 44 pass, 0 fail

@@ -137,7 +137,9 @@ test('F13 · the library row, and the six stations through the store', () => {
   S().addDrawers(id, 2, 'internal');
   const r = S().unitResult(id);
   assert.equal(r.panels.filter((x) => /^D\d+-DNO$/.test(x.id)).length, 2, 'the drawers were not cut');
-  assert.equal(r.panels.filter((x) => x.part === 'DRAWER-FRONT').length, 0, 'a drawer behind a door got a face');
+  // AMENDED BY T78 F15: no OVERLAY face behind the door; an INNER front per box.
+  assert.equal(r.panels.filter((x) => x.part === 'DRAWER-FRONT' && x.role === 'front').length, 0, 'a drawer behind a door got an overlay face');
+  assert.equal(r.panels.filter((x) => x.role === 'drawer_front' && x.meta.inner).length, 2, 'two inner fronts');
   assert.ok(r.panels.some((x) => x.id.startsWith('DP')), 'no DP panel behind the door');
   const bom = buildBom(S().allResults(), { design: S().project.design, profile: P });
   assert.ok(bom.hardware.some((h) => h.role === 'runner_pairs'));

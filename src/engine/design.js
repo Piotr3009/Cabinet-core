@@ -189,6 +189,14 @@ export const DEFAULT_DESIGN = {
     // Handles are a later phase — the slot is here so the shape does not change
     // under a saved project when they arrive.
     handle: null,
+    // ─── T78 F12 / F13 · THE GLASS KIND AND THE HINGE FAMILY, PROJECT-WIDE ──
+    // The owner: *"domyslnie smoke ale z wyborem"*; the hinge family is the
+    // door's choice (`standard` | `wide`), the angle inside it derived (T22).
+    // `null` means "nobody has said": the profile's default answers (smoke;
+    // standard). Retail's FRONTS step writes `glassKind`; a unit's own choice
+    // (`glass_kind`, `door_glass`, `hinge_family`, `door_hinge_family`) wins.
+    glassKind: null,
+    hingeFamily: null,
     // ─── TURN 25 (CLAUDE.md F3.1): THE SHAKER FRAME, PROJECT-WIDE ─────────
     // Equal on all four sides ("shaker zawsze równy"), 10…200 mm. `null` means
     // "nobody has said", and the profile's 70 answers it — the same shape of
@@ -309,6 +317,15 @@ export const DEFAULT_DESIGN = {
   // identical for both, so nothing in the engine branches on it. It decides
   // which model the view loads and which article the BOM orders.
   runners: { system: null, variant: null },
+  // ─── T78 F19 (CLAUDE.md T78 PART E): WHICH JOINT SYSTEM THIS JOB IS CUT WITH
+  // The owner's four (11.10.2026): puzzle, dowels, biscuits, Cabineo (8 or
+  // 12). An ID, prefilled from the company row (`companyDefaults.js
+  // prefillDesignFromCompany`), overruled by a unit's own `joints_system`
+  // (the T75 F23 Joints row); `null` is the profile's own answer, the puzzle,
+  // so a project saved before this turn is cut exactly as it was. Not one
+  // number: the pitch, the diameter and the pocket are the profile's and the
+  // LISP's (`engine/dowels.js`, `engine/biscuitJoints.js`, `engine/cabineo.js`).
+  joints: { system: null },
   // ─── TURN 32 (CLAUDE.md F7): READY-MADE DRAWER BOXES ──────────────────────
   // The wizard's materials block asks ONCE per project: same board as the
   // carcass (the default — the engine's own behaviour since the 15.08 chat
@@ -458,6 +475,12 @@ export function migrateDesign(design) {
         ? String(d.runners.variant).toUpperCase()
         : null,
     },
+    // T78 F19: the joint system, an id or nothing; the engine's one reader
+    // (`dowels.js jointSystemOf` / `resolveJointSystem`) refuses an id it does
+    // not cut, so nothing is judged here beyond "a string".
+    joints: {
+      system: d.joints?.system ? String(d.joints.system).trim().toLowerCase() : null,
+    },
     // Turn 30 (CLAUDE.md F5): the shelf-pin setback, migrated like the shaker
     // frame above it — a positive number or nothing at all.
     shelves: {
@@ -497,6 +520,9 @@ export function migrateDesign(design) {
       handle: normaliseHandle(d.fronts?.handle),
       shakerFrame: Number(d.fronts?.shakerFrame) > 0 ? Number(d.fronts.shakerFrame) : null,
       handleOffsets: normaliseHandleOffsets(d.fronts?.handleOffsets),
+      // T78 F12 / F13 · a word, validated against the profile's kinds by the engine.
+      glassKind: typeof d.fronts?.glassKind === 'string' && d.fronts.glassKind ? d.fronts.glassKind : null,
+      hingeFamily: d.fronts?.hingeFamily === 'wide' ? 'wide' : null,
       types: coupleFrontTypes(d),
     },
     doorStyles: Array.isArray(d.doorStyles)

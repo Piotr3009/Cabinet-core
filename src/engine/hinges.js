@@ -63,6 +63,94 @@ export function hingeCatalogue() {
   return CATALOGUE;
 }
 
+// ─── T78 F8 / F13 · THE BLUM HINGE FAMILIES (reference/hardware/blum-hinges.json) ──
+//
+// The owner, 11.10.2026: *"otwieranie drzwi wiekszy kat otwarcia 180 stopni,
+// zawiasy"* and *"zawiasy podwojne czyli jedne drzwiczki do carcasu a pozniej
+// zawiasy od drzwiczek do drzwiczek."*  The file is the catalogue's word
+// (every number `owner to confirm`, with its page); this module only reads it.
+// Loaded by `lib/hardwareCatalogue.js`, like the CLIP top catalogue above; a
+// test loads it the same way. Unloaded, every reader answers with nulls and
+// the engine says so in words: a bought mechanism is a line and a body, never
+// a hole, until the drilling is in the file with a page.
+let FAMILIES = null;
+
+/** Hand the engine `reference/hardware/blum-hinges.json`. Null clears it. */
+export function setBlumHingeFamilies(raw) {
+  FAMILIES = raw && typeof raw === 'object' && raw.families && typeof raw.families === 'object' ? raw : null;
+  return Boolean(FAMILIES);
+}
+
+/** The loaded families file, or null. */
+export function blumHingeFamilies() {
+  return FAMILIES;
+}
+
+/** T78 F13 · the wide family's thickness rule, from the file; null unloaded. */
+export function wideHingeRule() {
+  const rule = FAMILIES?.rules?.families?.wide?.hinge_by_front_thickness;
+  if (!Array.isArray(rule)) return null;
+  const rungs = rule
+    .map((r) => ({ max: Number(r?.max), angle: Number(r?.angle) }))
+    .filter((r) => r.max > 0 && r.angle > 0)
+    .sort((a, b) => a.max - b.max);
+  return rungs.length ? rungs : null;
+}
+
+/** T78 F13 · the wide family's article for an angle (screw-on, sprung), owner to confirm; null where the page gave none. */
+export function wideHingeArticle(angle) {
+  const h = FAMILIES?.families?.wide?.hinges?.[String(angle)];
+  const a = h?.articles || {};
+  const node = a.screw_on ?? a.screw_on_sprung ?? null;
+  const v = node && typeof node === 'object' && !Array.isArray(node) ? node.value : node;
+  return v == null ? null : String(v);
+}
+
+/** T78 F13 · the catalogue page the wide family's angle stands on, or null. */
+export function wideHingePage(angle) {
+  const h = FAMILIES?.families?.wide?.hinges?.[String(angle)];
+  return h?.opening_angle?.page ?? h?.articles?.screw_on?.page ?? null;
+}
+
+/** A catalogue leaf is `{ value, page, status, note }`; this reads the value. */
+const leafValue = (node) => (node && typeof node === 'object' && !Array.isArray(node) && 'value' in node ? node.value : node);
+const leafNumber = (node) => {
+  const raw = leafValue(node);
+  // A null in the file is a number the page did not give up: never a zero.
+  if (raw === null || raw === undefined || raw === '') return null;
+  const v = Number(raw);
+  return Number.isFinite(v) ? v : null;
+};
+
+/**
+ * The bi-fold corner hinge (CLIP top 60 degree, Hinge systems p. 116): what the
+ * engine needs to hang leaf B on leaf A. Every null is a number the catalogue
+ * page did not give up; the engine bores nothing on a null.
+ *
+ * @param {object|null} profile  for the fallbacks the profile proposes
+ */
+export function bifoldHingeSpec(profile = null) {
+  const fam = FAMILIES?.families?.bifold || null;
+  const hinge = fam?.hinge || {};
+  const own = profile?.corner?.bifold || {};
+  const cup = hinge.cup_on_leaf_b || {};
+  return {
+    loaded: Boolean(fam),
+    label: String(fam?.label || own.label || 'CLIP top 60 degree bi-fold corner hinge').split(' (')[0],
+    angleDeg: leafNumber(hinge.opening_angle) ?? (Number(own.angleDeg) || 60),
+    article: leafValue(hinge.articles?.screw_on) ?? null,
+    page: hinge.articles?.screw_on?.page ?? hinge.opening_angle?.page ?? null,
+    cupDiameterMm: leafNumber(cup.diameter) ?? 35,
+    // The drilling distance of the cup from leaf B's hinge edge, and its
+    // depth: the p. 117 planning table. Null until the owner reads the page.
+    cupFromEdgeMm: leafNumber(cup.drilling_distance_tb),
+    cupDepthMm: leafNumber(cup.depth_catalogue),
+    plateOnLeafA: leafValue(hinge.plate_on_leaf_a?.position_on_leaf_a) ?? null,
+    companion: leafValue(hinge.companion_hinge_on_leaf_a) ?? '155 or 170',
+    status: 'owner to confirm',
+  };
+}
+
 /** Forget it — for tests, and for a workshop switching catalogues. */
 export function clearHingeCatalogue() {
   CATALOGUE = null;
@@ -143,7 +231,24 @@ export function parseHingeCatalogue(raw) {
  *                   the caller knows what is behind the door
  * @returns {number|null} degrees, or null with no catalogue to read
  */
-export function hingeAngleFor({ frontThickness, innerDrawer = false } = {}) {
+export function hingeAngleFor({ frontThickness, innerDrawer = false, family = 'standard' } = {}) {
+  // ─── T78 F13 · THE WIDE FAMILY (155 / 170) ────────────────────────────────
+  // The owner: *"otwieranie drzwi wiekszy kat otwarcia 180 stopni, zawiasy."*
+  // T22 law held: the ANGLE stays derived from the front thickness; the door
+  // chooses a FAMILY (`standard` | `wide`), and inside the wide family the
+  // catalogue's rule (reference/hardware/blum-hinges.json
+  // rules.families.wide.hinge_by_front_thickness: the 170 up to the thickness
+  // Blum needs no gap for, the 155 above it, no rung past 24; owner to
+  // confirm) answers exactly as the CLIP top rule answers for `standard`.
+  // Unloaded, the wide family has no rung and the BOM says so.
+  if (family === 'wide') {
+    const rule = wideHingeRule();
+    if (!rule) return null;
+    const t = Number(frontThickness);
+    if (!(t > 0)) return null;
+    for (const rung of rule) if (t <= rung.max) return rung.angle;
+    return null;
+  }
   const cat = CATALOGUE;
   if (!cat) return null;
   if (innerDrawer && cat.rules.wardrobeInnerDrawer) return cat.rules.wardrobeInnerDrawer;
@@ -351,10 +456,33 @@ export function hingeAutomat({
  *            assigned:boolean, ruleAngle:number|null, complete:boolean}}
  */
 export function resolveDoorHinge({
-  assigned = null, frontThickness = null, innerDrawer = false, finish = null,
+  assigned = null, frontThickness = null, innerDrawer = false, finish = null, family = 'standard',
 } = {}) {
-  const ruleAngle = hingeAngleFor({ frontThickness, innerDrawer });
+  // T78 F13 · the door's FAMILY; the angle inside it is still derived (T22).
+  const familyChosen = family === 'wide' ? 'wide' : 'standard';
+  const ruleAngle = hingeAngleFor({ frontThickness, innerDrawer, family: familyChosen });
   const wantFinish = finish ? String(finish).toLowerCase() : null;
+  if (familyChosen === 'wide' && !assigned) {
+    // The wide family is the Blum file's: its article (owner to confirm) when
+    // the CLIP top catalogue has no row of that angle; no rung is said in words
+    // by the BOM (`complete: false`, no article).
+    const [row] = ruleAngle != null ? hingeFamilies({ angle: ruleAngle, finish: wantFinish, role: 'hinge' }) : [];
+    const article = row?.article ?? (ruleAngle != null ? wideHingeArticle(ruleAngle) : null);
+    return {
+      angle: ruleAngle,
+      family: ruleAngle != null ? (row?.family ?? `CLIP top ${ruleAngle} (wide-angle)`) : null,
+      article,
+      articles: row?.articles ? [...row.articles] : (article ? [article] : []),
+      finish: row?.finish ?? wantFinish,
+      file: row?.file ?? null,
+      assigned: false,
+      ruleAngle,
+      complete: Boolean(article),
+      hingeFamily: familyChosen,
+      page: ruleAngle != null ? wideHingePage(ruleAngle) : null,
+      status: 'owner to confirm',
+    };
+  }
 
   if (assigned) {
     const own = hingeFamily(assigned);
@@ -369,6 +497,7 @@ export function resolveDoorHinge({
         assigned: true,
         ruleAngle,
         complete: Boolean(own.article),
+        hingeFamily: familyChosen,
       };
     }
   }
@@ -385,6 +514,7 @@ export function resolveDoorHinge({
       assigned: false,
       ruleAngle,
       complete: false,
+      hingeFamily: familyChosen,
     };
   }
   return {
@@ -400,6 +530,7 @@ export function resolveDoorHinge({
     assigned: false,
     ruleAngle,
     complete: Boolean(match.article),
+    hingeFamily: familyChosen,
   };
 }
 

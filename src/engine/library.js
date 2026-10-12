@@ -241,6 +241,12 @@ export const KITCHEN_LIBRARY = [
       // Turn 31 (CLAUDE.md F9): the hood cabinet. The APERTURE is geometry; the
       // extractor is a BOM line and a GLB slot, and not one fixing hole.
       { kind: 'type', id: 'hood-unit', typeId: 'WUD_HOOD', label: 'Hood unit', hint: 'Wall unit over an extractor — open underneath, shorter door' },
+      // T78 F17 . the owner: "szafka na hood tradycyjna czyli wysunieta pod
+      // skosem albo normalna szafka tylko mniejsza": the canopy and the short
+      // hood beside WUD_HOOD. The clearance over the hob is a Check (#34) and
+      // a proposal, never a block.
+      { kind: 'type', id: 'hood-canopy', typeId: 'WUD_HOOD_CANOPY', label: 'Hood canopy', hint: 'Chimney canopy over an extractor: the front slopes out to a deeper bottom, no door' },
+      { kind: 'type', id: 'hood-unit-short', typeId: 'WUD_HOOD_SHORT', label: 'Hood unit, short', hint: 'Hood unit 660 high, its top on the wall line, 650 mm over the worktop' },
       // T75 F3 · *"Wall units "Blind corner wall""*: KIT_WUD hole for hole.
       { kind: 'type', id: 'blind-corner-wall', typeId: 'BLIND_WALL', label: 'Blind corner wall', hint: 'Wall unit for a corner: one door, a blank behind the next run' },
       // T75 F4 · *"Wall units "Corner L wall""*, replacing the held-open row.

@@ -234,7 +234,9 @@ test('F1.4 the kit DECLARES what it is made of, in the keys every kit answers', 
   for (const id of UNIT_TYPE_ORDER) {
     // T74 F13 · FREE_PANEL declares its whole carcass too: one free board.
     // AMENDED BY T75 F4: the three true L kits declare theirs (above).
-    if (id === 'DW_PANEL' || getUnitType(id).corner || id === 'WUD_HOOD' || id === 'FREE_PANEL') continue;
+    // AMENDED BY T78 F17: WUD_HOOD_SHORT is WUD_HOOD to the letter (its open
+    // bottom too), so every extractor kit is the hood's own case.
+    if (id === 'DW_PANEL' || getUnitType(id).corner || getUnitType(id).appliance === 'extractor' || id === 'FREE_PANEL') continue;
     const { carcass } = UNIT_TYPES[id];
     assert.equal(carcass.sides, undefined, `${id} says nothing about sides`);
     assert.equal(carcass.bottom, undefined, `${id} says nothing about a bottom`);

@@ -56,8 +56,42 @@ export function hardwareInstances(result, profile) {
     // Turn 33 (CLAUDE.md F3): …and the wardrobe's own bought mechanisms —
     // trouser pull-out, tie rack, pull-down rail — the same placeholder
     // grammar, per COLUMN, from the assemblies the engine measured.
-    kits: [...kitInstances(result), ...wardrobeKitInstances(result)],
+    // T78 F9 · …and the L's bought corner mechanisms (the carousel), the same
+    // placeholder grammar, from the body the L builder placed in its inner corner.
+    // T78 F18 · …and the lift-up wall unit's two lift mechanisms, placeholder
+    // bodies at the top front of each side (a line and a body, never a hole).
+    kits: [...kitInstances(result), ...wardrobeKitInstances(result), ...cornerKitInstances(result), ...liftKitInstances(result)],
   };
+}
+
+/**
+ * T78 F9 · THE CAROUSEL'S PLACEHOLDER: two round trays on a post, in the L's
+ * inner-corner square (`assemblies.cornerKits`, the L builder's body). Marked a
+ * placeholder like every other kit body; the GLB slot in `3d/hardwareRegistry`
+ * (`KIT_MODEL_SLOTS`) replaces it the day the owner drops a model in.
+ */
+export function cornerKitInstances(result) {
+  const kits = result?.assemblies?.cornerKits;
+  if (!Array.isArray(kits) || !kits.length) return [];
+  return kits.map((k) => ({
+    kind: 'kit',
+    id: k.id,
+    role: k.kind,
+    body: k.kind,
+    label: k.label,
+    placeholder: true,
+    x: k.box.x,
+    y: k.box.y,
+    z: k.box.z,
+    w: k.box.w,
+    h: k.box.h,
+    d: k.box.d,
+    centre: k.centre,
+    radius: k.radius,
+    post: k.post,
+    trayMm: k.trayMm,
+    trays: [...(k.trays || [])],
+  }));
 }
 
 /**
@@ -69,6 +103,37 @@ export function hardwareInstances(result, profile) {
  * the day the owner supplies files, a datum wrapper over `glbSource` replaces
  * the walls exactly as the cargo frame's slot is replaced.
  */
+/**
+ * ─── T78 F18 · THE LIFT MECHANISMS' PLACEHOLDERS ───────────────────────────
+ *
+ * The engine has already said where each one stands (`assemblies.liftKits`,
+ * engine/liftSystems.js: on the side's inner face at the top front of the
+ * box, the size of a mechanism housing); this hands the body to the scene in
+ * the kit grammar, so `KitBodies` draws the same walled placeholder it draws
+ * for every bought mechanism nobody has a model of. The day the owner drops
+ * a GLB in, a slot replaces the walls exactly as the cargo frame's did.
+ */
+export function liftKitInstances(result) {
+  const kits = result?.assemblies?.liftKits;
+  if (!Array.isArray(kits) || !kits.length) return [];
+  return kits.map((k) => ({
+    kind: 'kit',
+    id: k.id,
+    role: 'lift_unit',
+    body: k.kind,
+    label: k.label,
+    placeholder: true,
+    system: k.system,
+    side: k.side,
+    x: k.box.x,
+    y: k.box.y,
+    z: k.box.z,
+    w: k.box.w,
+    h: k.box.h,
+    d: k.box.d,
+  }));
+}
+
 export function wardrobeKitInstances(result) {
   const kits = result?.assemblies?.wardrobeKits;
   if (!Array.isArray(kits) || !kits.length) return [];

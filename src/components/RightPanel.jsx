@@ -9,6 +9,8 @@ import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { corniceOption } from '../engine/cornice.js';
+// T78 F18 · the four lift systems a wall unit's front may open by, and which kits take one.
+import { LIFT_SYSTEMS, liftTakesKit } from '../engine/liftSystems.js';
 import { FRONT_STYLE_OPTIONS, frontStyleSelection, migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { isDuplicateName, unitName } from '../engine/naming.js';
@@ -23,6 +25,8 @@ import { notchApplies } from '../engine/notch.js';
 // T75 F4/F11 · the worktop row: who takes one alone, and the island's seating.
 import { takesWorktop, worktopEligible } from '../engine/worktop.js';
 import { CABINEO_REFUSAL, dowelKitRefusal, jointSystemOf } from '../engine/dowels.js';
+import { biscuitKitRefusal } from '../engine/biscuitJoints.js';
+import { cabineoKitRefusal, isCabineoSystem } from '../engine/cabineo.js';
 import FrontDecorationControls from './FrontDecorationControls.jsx';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
@@ -128,6 +132,9 @@ export default function RightPanel() {
   // KIT_FRIDGE with different envelopes, so the control asks the kit rather
   // than naming a type.
   const apertureDefault = type ? (profilePath(profile, type.defaultsKey)?.fridgeH ?? null) : null;
+  // T78 F17 . is this the hob's unit (T75 F14's flag, or the oven base)? Its
+  // hob KIND is a choice here; the hood's clearance Check (#34) reads it.
+  const isHob = unit ? (unit.params.hob === true || type?.appliance === 'oven') : false;
   // Turn 22 (CLAUDE.md F1.1): the per-unit cornice option, resolved. A stored
   // value this workshop does not buy reads as 'none' rather than as itself.
   const corniceValue = unit ? corniceOption(unit.params.cornice, profile) : 0;
@@ -148,6 +155,11 @@ export default function RightPanel() {
   // drawers — it IS its three drawers. Its HEIGHTS are editable since turn 17
   // (CLAUDE.md F8.2), and since turn 18 they are editable HERE too (F2.2).
   const ratioDrawers = type?.drawerStyle === 'budr';
+  // T78 F7 · an L's drawer stack (Blum SPACE CORNER) is the drawer unit's own
+  // split per arm: the rows are added and removed here, their heights are the
+  // kit's and are shown, not typed.
+  const lStack = Boolean(type?.corner) && drawers.length > 0;
+  const lRowOf = (num) => (result?.derived?.corner_l?.drawer_rows || []).find((r) => r.row === num) || null;
   // Has anybody set one by hand? Then there is a stack to hand back to the kit.
   const ownDrawerHeights = Array.isArray(unit?.params.drawer_heights)
     && unit.params.drawer_heights.length > 0;
@@ -287,7 +299,12 @@ export default function RightPanel() {
           onToggle={() => togglePanelSection('carcass')}
         >
           <div className="grid grid-cols-3 gap-2">
-            {[['width', 'Width'], ['height', 'Height'], ['depth', 'Depth']].map(([key, label]) => (
+            {/* T78 F5 · an L's width is ARM A and its depth ARM B (the owner,
+                11.10.2026: *"powiekszenie L shape szafek prawa lewa strona"*);
+                the fields and the setter are the same, the words are the L's. */}
+            {(getUnitType(unit.type).corner
+              ? [['width', 'Arm A'], ['height', 'Height'], ['depth', 'Arm B']]
+              : [['width', 'Width'], ['height', 'Height'], ['depth', 'Depth']]).map(([key, label]) => (
               <div key={key}>
                 <span className="cc-label">
                   {label}
@@ -476,6 +493,35 @@ export default function RightPanel() {
                 {unit.params.front_type === 'H' && <option value="H">Legacy handleless</option>}
               </select>
             </div>
+            {/* ─── T78 F8 · CORNER DOORS: PAIR OR BI-FOLD ─────────────────────
+                The owner, 11.10.2026: *"zawiasy podwojne czyli jedne drzwiczki
+                do carcasu a pozniej zawiasy od drzwiczek do drzwiczek."*  A
+                choice on the L only: `pair` is today's two leaves (A on SIDE-A,
+                B on SIDE-B, B overlapping at the corner); `bifold` hangs leaf B
+                on leaf A's free edge with Blum's CLIP top 60 degree bi-fold
+                corner hinge. Written through `updateUnitParams` as
+                `corner_doors`; the engine says what it bores and what it does
+                not (CORNER_L_BIFOLD). No number is typed here. */}
+            {type?.corner && result.derived.doors > 0 && (
+              <div>
+                <span className="cc-label">Corner doors</span>
+                <select
+                  className="cc-input"
+                  data-corner-doors="1"
+                  value={unit.params.corner_doors === 'bifold' ? 'bifold' : 'pair'}
+                  title="Pair: door A on SIDE-A and door B on SIDE-B. Bi-fold: door B hangs on door A's free edge (Blum CLIP top 60 degree bi-fold corner hinge, owner to confirm)"
+                  onChange={(e) => updateUnitParams(unit.id, { corner_doors: e.target.value === 'bifold' ? 'bifold' : null })}
+                >
+                  <option value="pair">Pair (A on the carcass, B on the carcass)</option>
+                  <option value="bifold">Bi-fold (B hangs on A)</option>
+                </select>
+                {result.derived.corner_l?.doors_mode === 'bifold' && (
+                  <p className="text-[11px] text-ink-400 mt-1" data-corner-doors-said="1">
+                    {(result.warnings || []).find((w) => w.code === 'CORNER_L_BIFOLD')?.message || ''}
+                  </p>
+                )}
+              </div>
+            )}
             <div>
               <span className="cc-label">Hinge side</span>
               {/* ─── T55 (CLAUDE.md F8): THE PANEL STOPS LYING ABOUT THE HINGE
@@ -518,7 +564,89 @@ export default function RightPanel() {
                 );
               })()}
             </div>
+            {/* ─── T78 F18 · FRONT OPENS: HINGED, OR A BLUM AVENTOS LIFT ──────
+                The owner, 11.10.2026: *"szafki poziome otwierane do gory system
+                blum ... podwojne drzwi pojedyncze etc."*  On a wall unit only
+                (WUD, WUD_GLASS, WARDROBE_WALL): hinged is today's door; HK top
+                lifts up about the top edge, HS swings up and over, HL lifts
+                parallel, HF folds up in two halves. A CHOICE, written as
+                `front_system` through updateUnitParams; the engine chooses the
+                set off the catalogue file and says what it bought and what it
+                does not bore (LIFT_NO_UNIT, LIFT_CABINET, LIFT_NO_PATTERN). No
+                number is typed here. */}
+            {liftTakesKit(type) && result.derived.doors > 0 && (
+              <div>
+                <span className="cc-label">Front opens</span>
+                <select
+                  className="cc-input"
+                  data-front-system="1"
+                  value={LIFT_SYSTEMS.includes(unit.params.front_system) ? unit.params.front_system : 'hinged'}
+                  title="Hinged: cup hinges. A Blum AVENTOS lift: one full-width leaf on two lift mechanisms, no cups; the set is chosen off the catalogue (owner to confirm), zero holes until its fixing pattern is in the catalogue file"
+                  onChange={(e) => updateUnitParams(unit.id, { front_system: LIFT_SYSTEMS.includes(e.target.value) ? e.target.value : null })}
+                >
+                  <option value="hinged">Hinged</option>
+                  <option value="hk">HK top (lift up)</option>
+                  <option value="hs">HS (up and over)</option>
+                  <option value="hl">HL (lift parallel)</option>
+                  <option value="hf">HF (bi-fold up)</option>
+                </select>
+                {result.derived.lift && (
+                  <p className="text-[11px] text-ink-400 mt-1" data-front-system-said="1">
+                    {result.derived.lift.said}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* ─── T78 F12 / F13 · PER LEAF: THE GLASS KIND AND THE HINGE FAMILY ─
+              The owner, 11.10.2026: *"domyslnie smoke ale z wyborem"* and
+              *"otwieranie drzwi wiekszy kat otwarcia 180 stopni, zawiasy."*  One
+              row per hinged leaf: its glass (clear | smoke | reeded, on a glazed
+              leaf) and its hinge FAMILY (standard | wide); the angle inside the
+              family stays derived from the front thickness (T22 law), so no
+              number is typed here. Written per leaf as `door_glass[id]` and
+              `door_hinge_family[id]` through updateUnitParams. */}
+          {(() => {
+            const leaves = (result.panels || []).filter((p) => p.part === 'FRONT' && p.role === 'front' && p.meta?.hinge);
+            if (!leaves.length) return null;
+            const kinds = profile.front?.glass?.kinds || ['clear', 'smoke', 'reeded'];
+            const labels = profile.front?.glass?.labels || {};
+            const num = unit.params.unit_num || '';
+            return (
+              <div className="mt-2 space-y-1" data-leaf-choices="1">
+                <span className="cc-label">Per leaf</span>
+                {leaves.map((p) => (
+                  <div key={p.id} className="flex items-center gap-1 text-[12px]">
+                    <span className="text-ink-400 w-16 truncate" title={p.id}>{num && p.id.startsWith(`${num}-`) ? p.id.slice(num.length + 1) : p.id}</span>
+                    {p.meta?.glass && (
+                      <select
+                        className="cc-input flex-1"
+                        data-door-glass={p.id}
+                        value={p.meta.glass.kind || 'smoke'}
+                        title="The glass in this leaf (the BOM line names it; smoke is the default)"
+                        onChange={(e) => updateUnitParams(unit.id, { door_glass: { ...(unit.params.door_glass || {}), [p.id]: e.target.value } })}
+                      >
+                        {kinds.map((k) => <option key={k} value={k}>{`${labels[k] || k} glass`}</option>)}
+                      </select>
+                    )}
+                    <select
+                      className="cc-input flex-1"
+                      data-door-hinge-family={p.id}
+                      value={p.meta?.hingeFamily === 'wide' ? 'wide' : 'standard'}
+                      title={`Hinge family: the angle follows the front thickness inside it${p.meta?.openAngleDeg ? ` (${p.meta.openAngleDeg} degrees here)` : ''}`}
+                      onChange={(e) => updateUnitParams(unit.id, {
+                        door_hinge_family: { ...(unit.params.door_hinge_family || {}), [p.id]: e.target.value === 'wide' ? 'wide' : 'standard' },
+                      })}
+                    >
+                      <option value="standard">Standard hinges</option>
+                      <option value="wide">Wide-angle hinges (155 / 170)</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
           <FrontDecorationControls
             style={resolvedDesign?.frontType}
@@ -536,7 +664,7 @@ export default function RightPanel() {
           )}
 
           {/* per-type parameters: only the ones this kit actually has */}
-          {(type.mount === 'wall' || type.doorExtend || apertureDefault != null) && (
+          {(type.mount === 'wall' || type.doorExtend || apertureDefault != null || isHob) && (
             <div className="grid grid-cols-2 gap-2">
               {type.mount === 'wall' && (
                 <div>
@@ -546,6 +674,24 @@ export default function RightPanel() {
                     value={unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight}
                     onCommit={(v) => updateUnitParams(unit.id, { mount_height: v })}
                   />
+                </div>
+              )}
+              {/* T78 F17 . the hob kind, a CHOICE on the hob unit (induction the
+                  default, unwritten): the hood's clearance Check (#34) and the
+                  store's proposal read it (engine/hoodClearance.js). The numbers
+                  live in the profile (hood.clearance), never here. */}
+              {isHob && (
+                <div>
+                  <span className="cc-label">Hob</span>
+                  <select
+                    className="cc-input"
+                    title="Induction asks 650 mm of hood clearance over the worktop, gas 750 (profile.hood.clearance, proposed): the Check says the number, the client decides"
+                    value={unit.params.hob_kind === 'gas' ? 'gas' : 'induction'}
+                    onChange={(e) => updateUnitParams(unit.id, { hob_kind: e.target.value })}
+                  >
+                    <option value="induction">Induction</option>
+                    <option value="gas">Gas</option>
+                  </select>
                 </div>
               )}
               {/* Turn 30 (CLAUDE.md F15): the aperture is offered by any kit
@@ -606,14 +752,17 @@ export default function RightPanel() {
               <div className="cc-row">
                 <span className="text-ink-100">{drawers.length} × drawer</span>
                 <span className="text-ink-400 text-xs">
-                  {result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped'}
+                  {/* eslint-disable-next-line no-nested-ternary */}
+                  {lStack
+                    ? `SPACE CORNER · two boxes a row · NL ${formatMm(lRowOf(1)?.travel_mm || 0)} mm`
+                    : (result.derived.szufDl ? `${result.derived.szufSzer} × ${result.derived.szufDl} mm` : 'dropped')}
                 </span>
               </div>
 
               {/* Equal heights ✓ by default: one field for the whole stack
                   (BACKLOG #11). Unticked, every drawer gets its own — listed
                   TOP-DOWN, so the first row is the drawer nearest the ceiling. */}
-              {!ratioDrawers && (
+              {!ratioDrawers && !lStack && (
                 <label className="flex items-center gap-2 text-[12px] text-ink-100">
                   <input
                     type="checkbox"
@@ -624,7 +773,7 @@ export default function RightPanel() {
                 </label>
               )}
 
-              {!ratioDrawers && equalHeights ? (
+              {!ratioDrawers && !lStack && equalHeights ? (
                 <div className="flex items-center gap-2">
                   <span className="text-ink-400 w-6 text-xs">all</span>
                   <NumberField
@@ -651,7 +800,12 @@ export default function RightPanel() {
                           so it is the same NumberField the element editor has,
                           against the same engine clamp: no shorter than the
                           runner screws plus the air under them. */}
-                      {ratioDrawers ? (
+                      {/* eslint-disable-next-line no-nested-ternary */}
+                      {lStack ? (
+                        <span className="cc-input w-20 text-right text-ink-100" data-l-row-height={num} title="The kit's own split (the drawer unit's ratio), per arm">
+                          {formatMm(lRowOf(num)?.fronts?.[0]?.h ?? 0)}
+                        </span>
+                      ) : ratioDrawers ? (
                         <NumberField
                           min={minDrawerFrontHeight(profile)}
                           className="cc-input w-20 text-right"
@@ -675,6 +829,28 @@ export default function RightPanel() {
                         {result.derived.drawer_box_side_h?.[num - 1] != null
                           && ` · box ${formatMm(result.derived.drawer_box_side_h[num - 1])}`}
                       </span>
+                      {/* ─── T78 F16 · THE DOUBLE DRAWER ──────────────────────
+                          The owner: *"podwojne szuflady szafki z szuflada na
+                          sztucce z bluma."*  A drawer-unit row may be DOUBLE:
+                          behind its one front a deep box and, above it, an
+                          inner cutlery drawer on its own runners (Blum's inner
+                          drawer behind a front, reference/hardware/
+                          blum-inner-drawer.json, owner to confirm). A choice,
+                          written as params.drawer_double[row]; the engine says
+                          in words where the row is too short (DOUBLE_DRAWER_REFUSED). */}
+                      {ratioDrawers && !lStack && (
+                        <label className="flex items-center gap-1 text-[11px] text-ink-300" title="Double: a deep box below and an inner cutlery drawer above, behind this one front">
+                          <input
+                            type="checkbox"
+                            data-drawer-double={num}
+                            checked={unit.params.drawer_double?.[num] === true}
+                            onChange={(e) => updateUnitParams(unit.id, {
+                              drawer_double: { ...(unit.params.drawer_double || {}), [num]: e.target.checked ? true : null },
+                            })}
+                          />
+                          <span>Double</span>
+                        </label>
+                      )}
                       {!ratioDrawers && (
                         <button
                           type="button" className="cc-btn-ghost" title="Remove this drawer"
@@ -1644,20 +1820,46 @@ function NotchRow({ unit }) {
 // What the unit is CUT with, read back off the engine's own answer
 // (`result.derived.joints`), so the row never claims a system the cut did not
 // take: a refusal shows in the engine's words and the puzzle stays lit.
+//
+// T78 F19 / F20 (CLAUDE.md T78 PART E): the owner's four systems, Cabineo in
+// its two variants (11.10.2026). The company row chooses the default
+// (`companyDefaults.js joints_system`), the project inherits it, this row is
+// the UNIT's override (`params.joints_system`), so a lit button that is not
+// the puzzle may be the company's choice as much as a click here. The
+// reserved id 'cabineo' of T75 is still refused in words when a saved unit
+// carries it. Not one number on this row: the numbers are the profile's.
+const JOINT_CHOICES = [
+  { id: 'puzzle', label: 'Puzzle', title: 'Skylon puzzle: tabs, sockets and dog bones' },
+  { id: 'dowel', label: 'Dowel', title: 'Dowel pairs on both boards of every joint (SKYLON_JOINTS_DOWEL.lsp)' },
+  { id: 'biscuit', label: 'Biscuit', title: 'The owner\'s biscuit set on side to top and side to bottom, never the back (SKYLON_JOINTS_BISCUIT.lsp)' },
+  { id: 'cabineo8', label: 'Cabineo 8', title: 'Lamello Cabineo 8: pockets from the outside face of the top, the bottom and a fixed shelf, the screw holes in the sides (SKYLON_JOINTS_CABINEO.lsp)' },
+  { id: 'cabineo12', label: 'Cabineo 12', title: 'Lamello Cabineo 12: pockets from the outside face of the top, the bottom and a fixed shelf, the screw holes in the sides (SKYLON_JOINTS_CABINEO.lsp)' },
+];
 function JointsRow({
   unit, type, result, profile, onSet,
 }) {
   const asked = jointSystemOf(unit.params, profile);
   const cut = result?.derived?.joints || null;
-  const kitRefusal = dowelKitRefusal(type);
+  const refusals = {
+    dowel: dowelKitRefusal(type),
+    biscuit: biscuitKitRefusal(type),
+    cabineo8: cabineoKitRefusal(type),
+    cabineo12: cabineoKitRefusal(type),
+  };
   let status = 'Skylon puzzle: tabs, sockets and dog bones';
   if (cut?.system === 'dowel') {
     status = `${cut.dowels} dowels, ${cut.edge_bores} edge bores by hand · `
       + `${cut.gate ? `${cut.gate}: the CNC export refuses it` : 'confirmed by the owner'}`;
+  } else if (cut?.system === 'biscuit') {
+    status = `${cut.sets} biscuit sets, ${cut.screws} screws, the marks on the sides · the owner's own set, no gate`;
+  } else if (isCabineoSystem(cut?.system)) {
+    status = `Cabineo ${cut.variant}: ${cut.pockets} pockets from the outside face, ${cut.holes} holes in the sides · `
+      + `${cut.gate ? `${cut.gate}: the CNC export refuses it` : 'confirmed by the owner'}`;
   } else if (cut?.refused) {
     status = `Kept the puzzle: ${cut.refused}`;
   }
-  const lit = cut?.system === 'dowel' ? 'dowel' : 'puzzle';
+  const lit = cut?.system && JOINT_CHOICES.some((c) => c.id === cut.system) ? cut.system : 'puzzle';
+  const askedRefusal = refusals[asked] || null;
   return (
     <div className="space-y-1" data-joints-row={unit.id}>
       <div className="cc-row">
@@ -1665,38 +1867,28 @@ function JointsRow({
           <span className="text-sm text-ink-100">Joints</span>
           <span className="text-[11px] text-ink-400" data-joints-status="1">{status}</span>
         </div>
-        <div className="flex items-center gap-1" data-joints-options="1">
-          <button
-            type="button"
-            data-joints="puzzle"
-            className={lit === 'puzzle' ? 'cc-btn-gold' : 'cc-btn'}
-            onClick={() => onSet('puzzle')}
-          >
-            Puzzle
-          </button>
-          <button
-            type="button"
-            data-joints="dowel"
-            disabled={Boolean(kitRefusal)}
-            title={kitRefusal || 'Dowel pairs on both boards of every joint (SKYLON_JOINTS_DOWEL.lsp)'}
-            className={`${lit === 'dowel' ? 'cc-btn-gold' : 'cc-btn'} ${kitRefusal ? 'opacity-50' : ''}`}
-            onClick={() => onSet('dowel')}
-          >
-            Dowel
-          </button>
-          <button
-            type="button"
-            data-joints="cabineo"
-            disabled
-            title={CABINEO_REFUSAL}
-            className="cc-btn opacity-50"
-          >
-            Cabineo
-          </button>
+        {/* five buttons on a 310 px panel: they wrap (the PART E walk read Cabineo 8 / 12 past the panel edge) */}
+        <div className="flex flex-wrap items-center justify-end gap-1 max-w-[180px]" data-joints-options="1">
+          {JOINT_CHOICES.map((c) => {
+            const refusal = refusals[c.id] || null;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                data-joints={c.id}
+                disabled={Boolean(refusal)}
+                title={refusal || c.title}
+                className={`${lit === c.id ? 'cc-btn-gold' : 'cc-btn'} ${refusal ? 'opacity-50' : ''}`}
+                onClick={() => onSet(c.id)}
+              >
+                {c.label}
+              </button>
+            );
+          })}
         </div>
       </div>
-      {asked === 'dowel' && kitRefusal && <p className="text-[11px] text-ink-400">{kitRefusal}</p>}
-      <p className="text-[11px] text-ink-400" data-joints-cabineo="1">{CABINEO_REFUSAL}</p>
+      {askedRefusal && <p className="text-[11px] text-ink-400">{askedRefusal}</p>}
+      {asked === 'cabineo' && <p className="text-[11px] text-ink-400" data-joints-cabineo="1">{CABINEO_REFUSAL}</p>}
     </div>
   );
 }

@@ -1,0 +1,146 @@
+T78 PART B+C walk, 2026-10-12, HEAD 180b0a1
+(the repo's HEAD when the walk ran: 3676abc; the app under the mouse: http://127.0.0.1:4185/, built from HEAD 180b0a1; its build stamp is the first NOTE of each section)
+
+CLAUDE.md T78 PART B (F10, F11) and PART C (F12 to F15), walked section by
+section against npx vite preview of a build of HEAD (git archive, npm run
+build), the hardware served from the silent showroom. Every gesture is a REAL
+mouse or key event at a DOM control's centre or at a pixel the scene's own
+raycaster says the thing is under (and the page says the canvas owns); the
+store is only READ. Line grammar:
+  PASS|FAIL  <section> | <gesture> | expect: <what was expected> | observed: <what was read>
+  NOTE       <section> | <reading> | <value>
+  FRAME      <section> | <file>  (the frame is beside this file)
+A FAIL is written down, never patched.
+
+=== f10 THE 40 MM CORNER STRIP AND THE BLANK ARE THE BLIND KIT'S OWN PARTS
+NOTE       f10 | walked at | 2026-10-12 09:49 UTC, HEAD 180b0a1 (repo 3676abc)
+NOTE       f10 | the build under the mouse | 2026-10-12 09:08 UTC; built from HEAD 180b0a1; the repo's HEAD 3676abc; url http://127.0.0.1:4185/
+PASS       f10 | a new project (the stage for the blind corner), its room | expect: a 4000 x 3000 room | observed: 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f10 | Library, Kitchen, Base units, Blind corner (the real row) | expect: a BLIND_BASE on wall 1 | observed: BLIND_BASE BB01 on wall 1 at x 1500, 1000 x 770 x 558, blind_side left, front_t 25, wall gap 10
+PASS       f10 | the room canvas after the blind base is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f10 | the blind selected (already selected by the add), dragged along wall 1 to its end (3 drag(s) of 900 by TOP) | expect: x_mm = 4000 - the wall-end stop 40 (the side infill's width 40, never under the wall clearance 10; wallMarginOf) - width 1000 = 2960: the right corner of wall 1; blind_side turned to right | observed: x after each drag [2400,2960,2960]; blind_side now right; said []
+PASS       f10 | DOORS, Add doors (Add doors pressed) | expect: one leaf; the blank BB01-BLANK and the strip BB01-POST (40 x front_t 25, front material) cut at once, no neighbour yet | observed: leaves ["BB01-F"]; blank BB01-BLANK 626 x 770 x 25 (front); post BB01-POST 40 x 770 x 25 (front), at_mm 576, box {"x":424,"y":0,"z":586,"w":25,"h":770,"d":40}; corner_post_at_mm null
+PASS       f10 | BOM (the Bill of materials button), Parts: BOTH the blank and the strip | expect: one -BLANK row and one -POST row 40 wide | observed: blank rows ["BB01BB01-BLANK25 \u00b7 Broken white6267701<>^v0.482Outline only"]; post rows ["BB01BB01-POST25 \u00b7 Broken white407701<>0.031Outline only"]
+FRAME      f10 | f10-walk-02-bom-blank-post.png
+PASS       f10 | the scene draws the strip | expect: one mesh whose ccPanelId ends with -POST | observed: post meshes ["BB01-POST"]; blank meshes ["BB01-BLANK"]
+FRAME      f10 | f10-walk-01-blind-alone.png
+FRAME      f10 | f10-walk-01-blind-close.png
+PASS       f10 | Library, Kitchen, Base units, Standard | expect: a BUD | observed: 01 on wall 1 at x 40, width 600
+PASS       f10 | the BUD selected (already selected by the add), Carcass, the Wall select set to wall 2 by the real select ("Wall 2 \u00b7 3000 mm") | expect: position.wall 1 (wall 2) | observed: wall 2 at x 636; select after "1"; said []
+PASS       f10 | Add doors on it (Add doors pressed); dragged along wall 2 toward the corner (1 drag(s) by TOP) | expect: x_mm = the blind's face 596 (gap 10 + depth 558 + door gap + front 25) + 40 = 636 | observed: x after each drag [636]; final x 636; said []
+PASS       f10 | the stop record on the second run, the strip on the kit | expect: the BUD: corner_butt_left_mm 40, no corner_post_left_mm, no post of its own; the blind: corner_post_at_mm a number, one CORNER-POST still | observed: BUD corner_butt_left_mm 40, corner_post_left_mm null, its corner_post boards 0; blind corner_post_at_mm 556, CORNER-POST boards 1 (at_mm [556])
+NOTE       f10 | the Check after the second run (no #27 open corner expected) | 1 finding(s): ["#30 yellow: Not fully machined, the joiner's to finish: BB01: BLIND-BLANK (outline only), CORNER-POST "]
+FRAME      f10 | f10-walk-03-second-run.png
+FRAME      f10 | f10-walk-03-strip-close.png
+PASS       f10 | the BUD dragged 1200 away from the corner (by TOP) | expect: the stop record gone from the BUD and corner_post_at_mm from the blind; the strip STAYS in the cut list and the scene (it is the kit's) | observed: BUD x 1846, corner_butt_left_mm null; blind corner_post_at_mm null, CORNER-POST boards 1 (at_mm [576]); post meshes ["BB01-POST"]; said ["grey: front 01 01-F +1.5 mm at the end of the run"]
+FRAME      f10 | f10-walk-04-pulled-away.png
+
+=== f11 THE HAFELE BLIND-CORNER PULL-OUT: a line and a body, the shelves step aside, and back
+NOTE       f11 | walked at | 2026-10-12 09:52 UTC, HEAD 180b0a1 (repo 3676abc)
+PASS       f11 | the blind selected (by TOP), Add items (true), Shelves, 1, Add | expect: one SHELF board in the cut list and drawn | observed: count field typed; shelves cut ["SHELF-1"]; drawn ["SHELF-1"]
+PASS       f11 | the Blind corner pull-out row of Add items | expect: the row [data-add-kind=blind_pullout] and its button [data-corner-kit=blind_pullout] | observed: row true; button "Add Hafele blind corner pull-out" at 1294,496
+PASS       f11 | "Add Hafele blind corner pull-out" (a real click) | expect: params.blind_pullout true; a BOM line "Hafele blind corner pull-out" x1; a scene body with ccKitBody blind_pullout (two trays, a placeholder); the SHELF meshes gone | observed: blind_pullout true; kits [{"kind":"blind_pullout","placeholder":true,"trays":2}]; bodies [{"role":"blind_pullout","placeholder":true,"trays":2,"model":null,"meshes":3}]; shelves drawn []; shelves cut []; BOM blind_pullout "Hafele blind corner pull-out" 1 pcs (Hafele blind corner pull-out \u00b7 608 x 522 mm blind part, 734 high \u00b7 2 trays \u00b7 SPEC); engine line [{"role":"blind_pullout","qty":1,"unit":"pcs","label":"Hafele blind corner pull-out","spec":"Hafele blind corner pull-out \u00b7 608 x 522 mm blind part, 734 high \u00b7 2 trays","article":null,"angle":null}]; warnings []; said ["grey: Blind corner pull-out fitted: a purchase line in the BOM and the room it takes in the scene. Nothing is drilled; the shelves step aside."]
+FRAME      f11 | f11-walk-02-bom.png
+FRAME      f11 | f11-walk-01-fitted.png
+FRAME      f11 | f11-walk-01-fitted-close.png
+PASS       f11 | the same button again ("Remove blind corner pull-out") | expect: the pull-out is taken out: no line, no body, the SHELF boards back as before | observed: blind_pullout false; bodies []; shelves drawn ["SHELF-1"] (before ["SHELF-1"]); BOM none of blind_pullout
+FRAME      f11 | f11-walk-03-removed.png
+NOTE       f11 | page 1: console errors | none
+
+=== f12 THE GLASS IS IN THE DOOR, SMOKE BY DEFAULT, WITH A CHOICE: PRO, then retail
+NOTE       f12 | walked at | 2026-10-12 09:31 UTC, HEAD 180b0a1 (repo f523b34)
+NOTE       f12 | the build under the mouse | 2026-10-12 09:08 UTC; built from HEAD 180b0a1; the repo's HEAD f523b34; url http://127.0.0.1:4185/
+PASS       f12 | a new project (the stage for the glass unit), its room | expect: a 4000 x 3000 room | observed: 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f12 | Library, Kitchen, Wall units, Glass unit (the real row) | expect: a WUD_GLASS | observed: WUD_GLASS WG01 on wall 1 at x 1700, 600 x 720 x 400, mount 1500, front_type GL
+PASS       f12 | the room canvas after the glass unit is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f12 | DOORS, Add doors (Add doors pressed) | expect: one glazed leaf whose meta.glass.kind is smoke (the owner's default), pane 4 mm | observed: leaves ["WG01-F 597 x 720 x 25 glass {\"kind\":\"smoke\",\"paneMm\":4,\"aperture\":{\"w\":477,\"h\":600}}"]
+PASS       f12 | the pane in the SCENE, shut, measured in the unit frame | expect: the pane mesh (ccGlassPane) centred on the leaf mesh within 1 mm, the aperture's size (477 x 600), inside the leaf's own swing group | observed: leaf centre {"x":300,"y":360,"z":415.5} (size {"x":597,"y":720,"z":25}); pane centre {"x":300,"y":360,"z":415.5} (size {"x":477,"y":600,"z":4}); d {"x":0,"y":0,"z":0}; shared swing group true; material {"color":"#5a4636","opacity":0.28,"roughness":0.12,"normalMap":false}
+FRAME      f12 | f12-walk-01-shut.png
+FRAME      f12 | f12-walk-01-shut-close.png
+PASS       f12 | a 2klik on the leaf (pixel 671,268; the element window shut by its Done / Close button), 1.8 s later | expect: the leaf swung (its centre travels over 50 mm) and the pane still centred on it within 1 mm: it moves with the door | observed: leaf centre {"x":-45.2,"y":360,"z":710.3} (moved 453.9); pane centre {"x":-45.2,"y":360,"z":710.3}; d {"x":0,"y":0,"z":0}; swing {"rotY":-1.73,"rotX":0,"deg":99,"faceDeg":81,"hops":0}
+FRAME      f12 | f12-walk-02-open.png
+FRAME      f12 | f12-walk-02-open-close.png
+PASS       f12 | BOM, Order tab, Ironmongery: the glass line | expect: "Smoked glass 4 mm" x1 | observed: glass_pane "Smoked glass 4 mm" 1 pcs (477 \u00d7 600 mm aperture \u00b7 SPEC); engine [{"role":"glass_pane","qty":1,"unit":"pcs","label":"Smoked glass 4 mm","spec":"477 \u00d7 600 mm aperture","article":null,"angle":null}]
+FRAME      f12 | f12-walk-03-bom-smoke.png
+PASS       f12 | the glass unit selected (already selected by the add); the Per leaf row's glass select set to Clear by the real select ("Clear glass") | expect: meta.glass.kind clear; the BOM line "Clear glass 4 mm"; the pane's material colour or opacity changed from the smoke one | observed: select "clear" (options ["clear","smoke","reeded"]); kind clear; BOM glass_pane "Clear glass 4 mm" 1 pcs (477 \u00d7 600 mm aperture \u00b7 SPEC); pane material smoke {"color":"#5a4636","opacity":0.28,"roughness":0.12,"normalMap":false} -> clear {"color":"#dfe9ec","opacity":0.16,"roughness":0.05,"normalMap":false}
+FRAME      f12 | f12-walk-04-bom-clear.png
+FRAME      f12 | f12-walk-04-clear.png
+NOTE       f12 | page 2 (PRO): console errors | none
+PASS       f12 | retail.html#/design: WHERE, Add a wardrobe (real clicks) | expect: a wardrobe in the room | observed: WARDROBE W01, 1200 x 2150 x 568, doors 2
+PASS       f12 | the room canvas after the wardrobe is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f12 | FRONTS, the Glass style (row there, disabled false, soon no, refused no) | expect: the GLASS list ([data-testid=fronts-glass]) with three rows, Smoked on; the wardrobe's leaves glazed smoke | observed: list [{"id":"fronts-glass-clear","on":"no","text":"Clear glass"},{"id":"fronts-glass-smoke","on":"yes","text":"Smoked glass"},{"id":"fronts-glass-reeded","on":"no","text":"Reeded glass"}]; leaves ["W01-FL glass {\"kind\":\"smoke\",\"paneMm\":4,\"aperture\":{\"w\":475.5,\"h\":2027}}","W01-FR glass {\"kind\":\"smoke\",\"paneMm\":4,\"aperture\":{\"w\":475.5,\"h\":2027}}"]
+FRAME      f12 | f12-walk-05-retail-glass.png
+PASS       f12 | Clear glass (a real click on the row) | expect: design.fronts.glassKind clear; the leaf's meta.glass.kind clear; the retail scene's pane material changed | observed: glassKind null -> "clear"; leaf kind clear; pane material {"color":"#5a4636","opacity":0.28,"roughness":0.12,"normalMap":false} -> {"color":"#dfe9ec","opacity":0.16,"roughness":0.05,"normalMap":false}; pane centred {"x":0,"y":0,"z":0}
+FRAME      f12 | f12-walk-06-retail-clear.png
+NOTE       f12 | page 2 (retail): console errors | none
+
+=== f13 WIDE-ANGLE HINGES: no rung at 25 (said), 170 at 19, a 2klik past 90, Check #33 names the door
+NOTE       f13 | walked at | 2026-10-12 09:46 UTC, HEAD 180b0a1 (repo 3676abc)
+NOTE       f13 | the build under the mouse | 2026-10-12 09:08 UTC; built from HEAD 180b0a1; the repo's HEAD 3676abc; url http://127.0.0.1:4185/
+PASS       f13 | a new project (the stage for the wide hinge), its room | expect: a 4000 x 3000 room | observed: 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f13 | Library, Kitchen, Base units, Standard | expect: a BUD | observed: 01 on wall 1 at x 1700, width 600, front_t 25
+PASS       f13 | the room canvas after the BUD is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f13 | DOORS, Add doors (Add doors pressed) | expect: one leaf, the standard family (no hingeFamily on the record) | observed: leaves ["01-F hinge L family null angle null"]
+PASS       f13 | the BUD selected (by TOP); the Per leaf row's hinge family select set to Wide-angle by the real select ("Wide-angle hinges (155 / 170)"), the house 25 mm front | expect: meta.hingeFamily wide; the warning HINGE_WIDE_NO_RUNG in the unit's warnings (the file as read has no rung above 24; owner to confirm) and drawn in the panel; the hinge line without an article | observed: family wide, angle null; warnings ["HINGE_WIDE_NO_RUNG: 01-F: the wide-angle family has no hinge for a 25 mm front (reference/hardware/blum-hinges.json: the"]; drawn ["HINGE_WIDE_NO_RUNG: \u25b201-F: the wide-angle family has no hinge for a 25 mm front (reference/hardware/blum-hinges.json: the 170 to 21 mm, the 155 to 24 mm, owner to confirm). The sta"]; engine hinge lines [{"role":"hinges","qty":3,"unit":"pcs","label":"Hinges","spec":"3 per door \u00d7 1 \u00b7 CLIP top BLUMOTION \u00b7 nickel","article":null,"angle":null}]; BOM ["Hinges 110\u00b03 pcsHinge 110\u00b0 \u00b7 soft-close \u00b7 gold \u00b7 SPECBought"]
+FRAME      f13 | f13-walk-01-bom-no-rung.png
+FRAME      f13 | f13-walk-01-warning-no-rung.png
+FAIL       f13 | the unit's Front (mm) select set to 19 by the real select ("19") | expect: params.front_t 19 and the leaf cut 19 thick; meta.openAngleDeg 170 (the wide family's rung to 21); no HINGE_WIDE_NO_RUNG; the hinge line with the 170 article | observed: params.front_t 19; the leaf cut 25 thick, family wide, angle null; warnings ["HINGE_WIDE_NO_RUNG: 01-F: the wide-angle family has no hinge for a 25 mm front (reference/hardware/blum-hinges"]; engine hinge lines [{"role":"hinges","qty":3,"unit":"pcs","label":"Hinges","spec":"3 per door \u00d7 1 \u00b7 CLIP top BLUMOTION \u00b7 nickel","article":null,"angle":null}]; DIAGNOSIS: the leaf is cut from the PROJECT front slot, not the unit param: stores/projectStore.js paramsForEngine passes thickness_slots (projectThicknesses, the profile nominal 25 when nobody measured) and engine/cabinet.js:702-709 resolves front1 = slotT(front1, frontT) over params.front_t, so the select at components/RightPanel.jsx:420 writes a number the engine never reads for the leaf (one law, two answers for one board)
+FRAME      f13 | f13-walk-02-bom-unit-select.png
+PASS       f13 | Settings, Settings... (modal design), the Front 1 measured field (data-slot-measured=front1, found on the production tab, was 25) clicked, 19, Enter, the window shut by Escape | expect: design.thickness.slots.front1.measured 19; the leaf cut 19; meta.openAngleDeg 170; no HINGE_WIDE_NO_RUNG; the hinge line with the 170 article (71T6550, owner to confirm) | observed: tabs ["settings","carcases","fronts","hardware","production","lighting"]; slot front1 {"measured":19,"confirmed":false}; params.front_t 19; the leaf cut 19 thick, family wide, angle 170; warnings []; engine hinge lines [{"role":"hinges","qty":3,"unit":"pcs","label":"Hinges","spec":"3 per door \u00d7 1 \u00b7 170\u00b0 \u00b7 CLIP top BLUMOTION \u00b7 nickel \u00b7 71T6550","article":"71T6550","angle":170}]; BOM ["Hinges 170\u00b03 pcsHinge 170\u00b0 \u00b7 soft-close \u00b7 gold \u00b7 SPECBought"]; said []
+FRAME      f13 | f13-walk-02-bom-170.png
+PASS       f13 | a 2klik on the leaf (pixel 693,545, off the plus sprite), 1.5 s later (the element window shut by its Done / Close button) | expect: the leaf's swing group rotation.y past pi/2 (over 90 degrees), toward 170 | observed: shut {"rotY":0,"rotX":0,"deg":0,"faceDeg":0,"hops":1}; 1.5 s after the 2klik (window up) {"rotY":-2.97,"rotX":0,"deg":170,"faceDeg":10,"hops":0}; after the window shut {"rotY":-2.97,"rotX":0,"deg":170,"faceDeg":10,"hops":0}
+FRAME      f13 | f13-walk-03-open-170.png
+FRAME      f13 | f13-walk-03-open-170-close.png
+PASS       f13 | the plus "Add a unit to the left of 01" clicked (pixel 656,536), Standard in the library it opened, Add doors on it (Add doors pressed) | expect: a BUD flush on the leaf's hinge side (L); runChecks() carries #33 naming 01-F: "at 170 degrees its free edge swings N mm past its hinge edge and its neighbour stands M mm away" | observed: neighbour 02 at x 1100..1700 (the wide door at 1700..2300, hinge L); #33 findings ["01-F: 01 01-F: at 170 degrees its free edge swings 587.93 mm past its hinge edge and its neighbour (front) stands 4.5 mm away on that side. The leaf is cut as asked; "]; all ["#33"]; said []
+NOTE       f13 | the Check panel (its toolbar button, a real click) | ["33: #33 \u00b7 Door swing at 155 / 170 reaches a neighbour01 01-F: at 170 degrees its free edge swings 587.93 mm past its hinge edge and its neighbour (front) stands 4.5 mm away on that side. The leaf is cut a"]
+FRAME      f13 | f13-walk-04-check-33.png
+NOTE       f13 | page 3: console errors | none
+
+=== f14 ONE ARCH ACROSS A DRAWER STACK (the top front a ready slice, the lower ones blocked and said); A 300 WUD ARCHED
+NOTE       f14 | walked at | 2026-10-12 09:41 UTC, HEAD 180b0a1 (repo e85a729)
+NOTE       f14 | the build under the mouse | 2026-10-12 09:08 UTC; built from HEAD 180b0a1; the repo's HEAD e85a729; url http://127.0.0.1:4185/
+PASS       f14 | a new project (the stage for the arch), its room | expect: a 4000 x 3000 room | observed: 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f14 | Library, Kitchen, Base units, Drawer unit, 3 (the real row) | expect: a BUDR (x3) | observed: BUDR DR01 on wall 1 at x 1700, 600 x 770 x 558, fronts ["DR01-F1","DR01-F2","DR01-F3"]
+PASS       f14 | the room canvas after the drawer unit is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+PASS       f14 | the BUDR selected (already selected by the add); Front type set to Arched by the real select ("Arched") | expect: three fronts, every one a SLICE of one arch on the stack (stack.fronts 3): the top front ready (the crown), the two lower blocked with FRONT_DECORATION_BACK_BORE only (the recess reaches the box's front fixing on the house 25 board), said in the unit's warnings and drawn in the panel | observed: fronts [{"id":"DR01-F1","y":0,"h":338,"deco":{"style":"A","status":"blocked","problems":["FRONT_DECORATION_BACK_BORE","FRONT_DECORATION_BACK_BORE"],"slice":true,"stack":{"fronts":3,"heightMm":767,"offsetMm":0}}},{"id":"DR01-F2","y":341,"h":254,"deco":{"style":"A","status":"blocked","problems":["FRONT_DECORATION_BACK_BORE","FRONT_DECORATION_BACK_BORE"],"slice":true,"stack":{"fronts":3,"heightMm":767,"offsetMm":341}}},{"id":"DR01-F3","y":598,"h":169,"deco":{"style":"A","status":"ready","problems":[],"slice":true,"stack":{"fronts":3,"heightMm":767,"offsetMm":598}}}]; warnings ["FRONT_DECORATION_BACK_BORE DR01-F1","FRONT_DECORATION_BACK_BORE DR01-F1","FRONT_DECORATION_BACK_BORE DR01-F2","FRONT_DECORATION_BACK_BORE DR01-F2","FRONT_DECORATION_BOARD DR01-F3"]; drawn ["FRONT_DECORATION_BACK_BORE: \u25b2DR01-F1: panel-recess conflicts with the back front_screw or leaves less than 3 mm between cuts.","FRONT_DECORATION_BACK_BORE: \u25b2DR01-F1: panel-recess conflicts with the back front_screw or leaves less than 3 mm between cuts.","FRONT_DECORATION_BACK_BORE: \u25b2DR01-F2: panel-recess conflicts with the back front_screw or leaves less than 3 mm between cuts.","FRONT_DECORATION_BACK_BORE: \u25b2DR01-F2: panel-recess conflicts with the back front_screw or leaves less than 3 mm between cuts.","FRONT_DECORATION_BOARD: \u25b2DR01-F3: A is drawn for a 30 mm board and this front is 25 mm: the 18 mm recess leaves 7 mm. Assign a 30 mm front material, or keep this board by decision."]
+FRAME      f14 | f14-walk-01-stack.png
+FRAME      f14 | f14-walk-02-stack-close.png
+FRAME      f14 | f14-walk-03-warnings.png
+PASS       f14 | Library, Kitchen, Wall units, Standard | expect: a WUD | observed: WU01 on wall 1 at x 1700, 600 x 720, mount 1500
+PASS       f14 | the WUD selected (already selected by the add); Carcass, the Width field (data-unit-size-field=width) clicked, 300, Enter | expect: params.width 300 | observed: field typed; width 300; said []
+PASS       f14 | DOORS, Add doors (Add doors pressed); Front type Arched by the real select ("Arched") | expect: the 300 wide leaf's decoration ready (the A recipe applies at any leaf size; the semicircle fits) | observed: leaf WU01-F 297 x 720, deco {"style":"A","status":"ready","problems":[],"slice":false,"stack":null}; warnings ["FRONT_DECORATION_BOARD"]
+FRAME      f14 | f14-walk-04-wud-300.png
+FRAME      f14 | f14-walk-04-wud-300-close.png
+NOTE       f14 | page 4: console errors | none
+
+=== f15 INTERNAL DRAWERS GET FRONTS: two inner fronts in the cut list, the BOM and the scene; the box rides its front
+NOTE       f15 | walked at | 2026-10-12 09:46 UTC, HEAD 180b0a1 (repo 3676abc)
+NOTE       f15 | the build under the mouse | 2026-10-12 09:08 UTC; built from HEAD 180b0a1; the repo's HEAD 3676abc; url http://127.0.0.1:4185/
+PASS       f15 | a new project (the stage for the inner fronts), its room | expect: a 4000 x 3000 room | observed: 4 walls: wall 1 4000, wall 2 3000, wall 3 4000, wall 4 3000; height 2500
+PASS       f15 | Library, Kitchen, Base units, Drawers behind doors (the real row) | expect: a BUD_INT | observed: BUD_INT BI01 on wall 1 at x 1700, drawers param 2, items [], inner fronts cut []
+PASS       f15 | the room canvas after the unit is drawn | expect: the scene alive (window.__cc.views.room.three) | observed: alive
+NOTE       f15 | DOORS (Add doors pressed) | leaves ["BI01-F"]
+PASS       f15 | the unit selected (by TOP), Add items open (true), the Drawers (internal) row | expect: the row [data-add-kind=drawers] enabled, its Count field on the screen | observed: row {"there":true,"disabled":false,"text":"Drawers (internal)\u25b8"}; count field at 1201,257
+PASS       f15 | Count 2 (typed, Enter), Add (clicked) | expect: two drawer items; two inner fronts BI01-IF1 and BI01-IF2 (role drawer_front, part DRAWER-FRONT, meta.inner, front material, 25 thick) | observed: items ["drawer","drawer"]; inner fronts ["BI01-IF1 506 x 164 x 25 (front) inner true drawer 1","BI01-IF2 506 x 164 x 25 (front) inner true drawer 2"]; said ["grey: 2 \u00d7 200 mm drawers added - the partition above them is automatic."]
+PASS       f15 | BOM, Parts: the inner front rows | expect: rows BI01-IF1, BI01-IF2 | observed: rows ["BI01BI01-IF125 \u00b7 Broken white5061641<>^v0.083Cut","BI01BI01-IF225 \u00b7 Broken white5061641<>^v0.083Cut"]
+FRAME      f15 | f15-walk-02-bom.png
+PASS       f15 | the scene draws them | expect: two meshes whose ccPanelId ends with -IF1 / -IF2 | observed: ["BI01-IF1","BI01-IF2"]
+FRAME      f15 | f15-walk-01-shut.png
+PASS       f15 | Open all (read "Close all", already open (not pressed)), a 2klik on BI01-IF1 (pixel 720,598), 1.8 s later (the element window shut by Escape) | expect: the inner front travels out of the wall (z over 50 mm) and the box side D1-SL travels the same: the box rides its front; drawer 2 stays | observed: dz: BI01-IF1 440, D1-SL 440, D1-SR 440, BI01-IF2 0; before {"x":324,"y":113.5,"z":495.5}, after {"x":324,"y":113.5,"z":935.5}
+FRAME      f15 | f15-walk-03-box-out.png
+FRAME      f15 | f15-walk-03-box-out-close.png
+NOTE       f15 | page 5: console errors | none
+
+SECTION f10: 12 pass, 0 fail
+SECTION f11: 4 pass, 0 fail
+SECTION f12: 12 pass, 0 fail
+SECTION f13: 8 pass, 1 fail
+SECTION f14: 7 pass, 0 fail
+SECTION f15: 8 pass, 0 fail
+FRAMES f10 (6): f10-walk-02-bom-blank-post.png, f10-walk-01-blind-alone.png, f10-walk-01-blind-close.png, f10-walk-03-second-run.png, f10-walk-03-strip-close.png, f10-walk-04-pulled-away.png
+FRAMES f11 (4): f11-walk-02-bom.png, f11-walk-01-fitted.png, f11-walk-01-fitted-close.png, f11-walk-03-removed.png
+FRAMES f12 (9): f12-walk-01-shut.png, f12-walk-01-shut-close.png, f12-walk-02-open.png, f12-walk-02-open-close.png, f12-walk-03-bom-smoke.png, f12-walk-04-bom-clear.png, f12-walk-04-clear.png, f12-walk-05-retail-glass.png, f12-walk-06-retail-clear.png
+FRAMES f13 (7): f13-walk-01-bom-no-rung.png, f13-walk-01-warning-no-rung.png, f13-walk-02-bom-unit-select.png, f13-walk-02-bom-170.png, f13-walk-03-open-170.png, f13-walk-03-open-170-close.png, f13-walk-04-check-33.png
+FRAMES f14 (5): f14-walk-01-stack.png, f14-walk-02-stack-close.png, f14-walk-03-warnings.png, f14-walk-04-wud-300.png, f14-walk-04-wud-300-close.png
+FRAMES f15 (4): f15-walk-02-bom.png, f15-walk-01-shut.png, f15-walk-03-box-out.png, f15-walk-03-box-out-close.png
+PART B+C: 52 steps, 51 pass, 1 fail

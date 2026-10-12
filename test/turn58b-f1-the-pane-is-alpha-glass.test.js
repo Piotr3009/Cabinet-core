@@ -86,10 +86,15 @@ test('F1 · the material is meshStandard, and it is REMOUNTED by identity', () =
   // This file's own Turn-11 note: three caches a compiled program per material,
   // and `transparent` is part of what that program is built for. A NEW material
   // identity is the way to ask for a new program — which is what the key is.
-  const uses = LIVE.match(/<meshStandardMaterial key="pane-alpha" \{\.\.\.PANE_ALPHA_GLASS \} ?\/>/g)
-    || LIVE.match(/<meshStandardMaterial key="pane-alpha" \{\.\.\.PANE_ALPHA_GLASS\} \/>/g);
-  assert.ok(uses && uses.length >= 2,
+  // AMENDED BY T78 F12 (12.10.2026): the door's pane is tinted by its KIND
+  // (clear | smoke | reeded, `paneMaterialFor`), every kind built on
+  // PANE_ALPHA_GLASS by spread; the other panes wear the law by name as before.
+  const byName = LIVE.match(/<meshStandardMaterial key="pane-alpha" \{\.\.\.PANE_ALPHA_GLASS ?\} ?\/>/g) || [];
+  const byKind = LIVE.match(/\{\.\.\.paneMaterialFor\(p\.meta\.glass\.kind\)\}/g) || [];
+  assert.ok(byName.length + byKind.length >= 2,
     'every pane that wore the physical material now wears this one');
+  assert.match(LIVE, /smoke: PANE_ALPHA_GLASS,/, 'smoke IS the alpha law');
+  assert.match(LIVE, /clear: \{\n\s+\.\.\.PANE_ALPHA_GLASS,/, 'clear is built on it');
 });
 
 // ═══ 3. IT DRAWS AFTER THE INTERIOR IT EXISTS TO SHOW ══════════════════════

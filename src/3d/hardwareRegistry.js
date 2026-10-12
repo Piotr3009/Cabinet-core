@@ -112,6 +112,28 @@ export function reportHardware(surface, family, rows, scope = '') {
   publish();
 }
 
+/**
+ * T78 F9 / F11 · THE GLB SLOTS OF THE BOUGHT CORNER MECHANISMS.
+ *
+ * A bought mechanism is a line and a body, never a hole (CLAUDE.md T78 LAWS).
+ * The carousel (F9) and the Hafele blind-corner pull-out (F11) are drawn as
+ * placeholders until the owner drops a model in: the day he does, its file
+ * (relative to the hardware base, as every Blum family's is) goes here and
+ * `kitModelUrl` hands it to the loader; `null` is the placeholder, and the
+ * walk can assert which it saw. Nothing else about the body has to change.
+ */
+export const KIT_MODEL_SLOTS = Object.freeze({
+  carousel: null,
+  blind_pullout: null,
+});
+
+/** The slot's file for a kit kind, or null while the slot is empty. */
+export function kitModelUrl(kind, storageBase = '') {
+  const file = KIT_MODEL_SLOTS[kind];
+  if (!file) return null;
+  return `${String(storageBase || '').replace(/\/+$/, '')}/${file}`;
+}
+
 /** A surface has gone. Its rows go with it — nothing is mounted any more. */
 export function clearHardwareSurface(surface) {
   if (surfaces.delete(surface)) publish();

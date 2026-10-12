@@ -63,7 +63,12 @@ test('F14 with drawers, the drilling is the WARDROBE machinery, hole for hole', 
   const w = of('WARDROBE', { drawers: 3, drawer_fronts: false });
   assert.equal(p.drills.length, w.drills.length);
   assert.deepEqual(holes(p), holes(w));
-  assert.deepEqual(parts(p), parts(w));
+  // AMENDED BY T78 F15 (12.10.2026): the pantry's drawers are BEHIND DOORS, so
+  // each carries an inner front now (the owner: *"szuflady wewnetrzne powinny
+  // miec fronty"*); a wardrobe with its fronts OFF is a phase and carries none.
+  // The carcass, the boxes and every hole are still one string.
+  assert.deepEqual(parts(p).filter((n) => n !== 'DRAWER-FRONT'), parts(w));
+  assert.equal(p.panels.filter((x) => x.part === 'DRAWER-FRONT' && x.meta?.inner).length, 3, 'three inner fronts');
 });
 
 test('F14 …and the drawers really are drilled: MOVENTO rows on the runner layer', () => {
@@ -96,7 +101,11 @@ test('F14 the BOM buys the boxes and the runners, because they are really there'
 
 test('F14 the drawers are INTERNAL: boxes and runners, no faces', () => {
   const p = of('PANTRY', { drawers: 3 });
-  assert.equal(p.panels.filter((x) => x.part === 'DRAWER-FRONT').length, 0, 'no drawer faces');
+  // AMENDED BY T78 F15 (the owner, 11.10.2026: *"szuflady wewnetrzne powinny
+  // miec fronty"*): an internal drawer has no OVERLAY face (role front), and
+  // it has an INNER front on its box (part DRAWER-FRONT, role drawer_front).
+  assert.equal(p.panels.filter((x) => x.part === 'DRAWER-FRONT' && x.role === 'front').length, 0, 'no drawer faces');
+  assert.equal(p.panels.filter((x) => x.role === 'drawer_front' && x.meta.inner).length, 3, 'three inner fronts');
   // The unit's own face is its DOOR, and it is there.
   assert.equal(p.panels.filter((x) => x.part === 'FRONT').length, 1);
   assert.equal(p.drillSummary.hinge_centers.length, 6, 'on the tall kit’s own ladder');
@@ -109,11 +118,14 @@ test('F14 …and omitting a face changes NOTHING else — same holes, same boxes
   const faced = of('PANTRY', { drawers: 3, internal_drawers: [] });
   assert.equal(faced.panels.filter((x) => x.part === 'DRAWER-FRONT').length, 3);
   assert.deepEqual(holes(internal), holes(faced), 'not one hole differs');
+  // AMENDED BY T78 F15: the internal drawers carry inner fronts (DRAWER-FRONT,
+  // role drawer_front) in place of the overlay faces; the boxes are the same.
   assert.deepEqual(
-    parts(internal),
+    parts(internal).filter((x) => x !== 'DRAWER-FRONT'),
     parts(faced).filter((x) => x !== 'DRAWER-FRONT'),
     'the difference is three boards and nothing else',
   );
+  assert.equal(internal.panels.filter((x) => x.role === 'drawer_front').length, 3);
   assert.deepEqual(
     internal.hardware.map((h) => `${h.role}:${h.qty}`),
     faced.hardware.map((h) => `${h.role}:${h.qty}`),
@@ -164,7 +176,10 @@ test('F14 the mechanism cannot reach a hole, a box or an order line', () => {
   ]) {
     const at = src.indexOf(stack);
     assert.ok(at > 0, stack);
-    const body = src.slice(at, at + 2500);
+    // AMENDED BY T78 F15 (12.10.2026): the inner-front block (a drawer behind
+    // doors gets a board on its box, `cfg.innerFrontDrawers`) now sits between
+    // the two uses, so the window is longer; the count is what it always was.
+    const body = src.slice(at, at + 4500);
     assert.equal(body.split('cfg.internalDrawers').length - 1, 2, stack);
   }
 });

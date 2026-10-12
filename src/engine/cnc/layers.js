@@ -74,6 +74,23 @@ export const CNC_LAYERS = [
   // the LISP's own table, so nothing AutoCAD already draws changes colour.
   { name: 'DOWEL_8MM',          aci: 45, screen: '#a9e34b', label: 'Dowels ⌀8',      kind: 'hole' },
   { name: 'DOWEL_EDGE_8MM',     aci: 46, screen: '#5c940d', label: 'Dowel edge bores ⌀8 (by hand)', kind: 'hole' },
+  // ─── T78 F20 (SKYLON_JOINTS_CABINEO.lsp): THE CABINEO'S FIVE ─────────────
+  // The owner: *"lisp najpierw."*  A Cabineo pocket is milled into the FACE of
+  // the horizontal board at its end, from the carcass's OUTSIDE face, by one
+  // of Lamello's three machining options (page 2 of the sheet: a dia 15 drill,
+  // a cutter of at least dia 10, a dia 12 cutter): three layers, one per tool,
+  // by the house grammar `{FEATURE}_{DIAMETER}MM` (the LISP's D.9, T78
+  // proposed). The cover cap's recess (2.1 deep, 18.8 wide under the flush
+  // cover cap mounting) is a second, shallower pocket and a layer of its own;
+  // the side's dia 5 counterpart hole is drilled from the inside face like a
+  // hinge plate, a tool of its own. ACI 47 to 51: beyond the dowel's 46,
+  // unused by the LISP's own table, so nothing AutoCAD already draws changes
+  // colour. The engine names them in engine/cabineo.js.
+  { name: 'CABINEO_POCKET_15MM', aci: 47, screen: '#f06595', label: 'Cabineo pocket (drill ⌀15)', kind: 'hole' },
+  { name: 'CABINEO_POCKET_10MM', aci: 48, screen: '#cc5de8', label: 'Cabineo pocket (cutter ⌀10)', kind: 'pocket' },
+  { name: 'CABINEO_POCKET_12MM', aci: 49, screen: '#9775fa', label: 'Cabineo pocket (cutter ⌀12)', kind: 'pocket' },
+  { name: 'CABINEO_RECESS',      aci: 50, screen: '#d0bfff', label: 'Cabineo cap recess', kind: 'pocket' },
+  { name: 'CABINEO_HOLE_5MM',    aci: 51, screen: '#3bc9db', label: 'Cabineo ⌀5 (side)', kind: 'hole' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },

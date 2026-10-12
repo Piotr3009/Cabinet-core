@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
-  minDrawerFrontHeight, SHELF_VARIANTS, WARDROBE_KIT_KINDS,
+  minDrawerFrontHeight, SHELF_VARIANTS, CORNER_KIT_KINDS, BLIND_KIT_KINDS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
   applyPartEdits, partSignature, withPartEdit, withPartOps, withoutLastPartEdit, withoutPartEdits,
@@ -23,6 +23,7 @@ import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
   defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isWardrobeWallUnit,
+  profilePath,
   resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
@@ -33,6 +34,8 @@ import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel
 import { NOTCH_CORNERS, NOTCH_REFUSED, notchKitRefusal } from '../engine/notch.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
+// T78 F17 . the hood's clearance over the hob: the one measure Check #34 reads too.
+import { hoodClearanceMessage, hoodClearanceRows, hoodRaiseTo } from '../engine/hoodClearance.js';
 // T37-F4a: `bandSegmentAt`/`bandSegments` — a split divider is an END of the
 // cabinet, so the band a shelf lives in is cut by the boards that cross it.
 // That law lives in one place and every path below reads it from there.
@@ -62,7 +65,7 @@ import { catalogueMoves, priceSnapshot } from '../engine/warehouse.js';
 // the hinge and every corner consumer below read.
 import {
   blindClearanceView, carcassReachMm, cornerEndOf, cornerFaceMm, cornersOf, cornerSpec, cornerStopMm,
-  isInternalCorner, lClearanceView, occupantKind,
+  isInternalCorner, lArmKinds, lArmMinMm, lClearanceView, lLeafTrimMm, occupantKind,
 } from '../engine/corners.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
@@ -130,7 +133,7 @@ import {
 // T72 F14 · `wallGapOf` — how far ONE unit stands off its wall: its own
 // `params.wall_gap`, or the project's number when nobody has said.
 import {
-  buildRuns, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
+  buildRuns, cornerLAdjacentSpan, impliedLegHeight, paddedSpan, runEndGap, runInfillParams, runMaskParams,
   runMemberIds, runPlinthParams, runUpstandParams, standsOnLegHeight, unitBase, unitTop, unitVerticals,
   verticalsInBand, wallGapOf,
 } from '../engine/runs.js';
@@ -161,6 +164,9 @@ import {
   isShelfBoard, secondShoeItem, watchDrawerFixedHeight,
 } from '../engine/watchDrawer.js';
 import { prefillDesignFromCompany } from '../engine/companyDefaults.js';
+// T78 F19 · the joint system's four-storey ladder (profile, company row,
+// project, unit) resolved once, here, and handed to the engine as a param.
+import { jointSystemOf, resolveJointSystem } from '../engine/dowels.js';
 // T48-F5: the LED groove, cut on the way to the sheet as well as to the file.
 // It lives in `lib/` and not in the engine on purpose (T45's own argument):
 // `computeCabinet()` cannot reach it, so a project with no line cannot move.
@@ -462,6 +468,15 @@ export function nextUnitNum(units, type, { except = null } = {}) {
  * is the answer to "did somebody set this by hand?", and the panel and the
  * project-wide push both read it.
  */
+/**
+ * T78 F17 . the mount height that puts a kit's TOP on the wall run's top line:
+ * wallMount + wall - the kit's own height (its default, or the height it has).
+ */
+function wallTopLineMount(type, heights, profile, ownHeight = null) {
+  const own = Number(ownHeight) > 0 ? Number(ownHeight) : Number(profilePath(profile, type.defaultsKey)?.height) || 0;
+  return (Number(heights.wallMount) || 0) + (Number(heights.wall) || 0) - own;
+}
+
 function projectHeightParams(type, design, profile) {
   const heights = projectHeights(design, profile);
   const group = type.heightGroup ?? null;
@@ -471,7 +486,12 @@ function projectHeightParams(type, design, profile) {
     // default, the floor): it is not a wall unit of the project's.
     // T75 F17 · …nor is a desk: it hangs at the 720 a person sits at
     // (`wardrobeDesk.defaults.mountHeight`), never the kitchen's wall line.
-    ...(type.mount === 'wall' && !type.freePanel && !type.desk ? { mount_height: heights.wallMount } : {}),
+    // T78 F17 . a kit whose TOP meets the wall run's top line (`topLine: 'wall'`,
+    // the two hoods whose height is their own) hangs at wallMount + wall less
+    // its own height, so a 660 or a 500 box sits level with the 720 run's top.
+    ...(type.mount === 'wall' && !type.freePanel && !type.desk
+      ? { mount_height: type.topLine === 'wall' ? wallTopLineMount(type, heights, profile) : heights.wallMount }
+      : {}),
     // ─── Turn 22 (CLAUDE.md F4.2) ───
     // A plinth-bearing type gets the project's toe kick whether or not it has
     // legs. The D/W panel has none — the machine stands where they would be —
@@ -850,6 +870,23 @@ function paramsForEngine(unit, design = null) {
     // engine stamps a meta face, draws a plane and orders the glass, and NOT
     // ONE hole travels with it.
     door_mirrors: p.door_mirrors || null,
+    // T78 F12 / F13 · the glass kind and the hinge family: the unit's own, else the
+    // project's (retail's FRONTS step writes `design.fronts.glassKind`); a CHOICE.
+    glass_kind: p.glass_kind ?? design?.fronts?.glassKind ?? null,
+    hinge_family: p.hinge_family ?? design?.fronts?.hingeFamily ?? null,
+    // ─── T78 F19 (CLAUDE.md T78 PART E): THE JOINT SYSTEM ──────────────────
+    // The owner's choice lives in the company row (puzzle | dowel | biscuit |
+    // cabineo8 | cabineo12), the project inherits it (prefilled into
+    // `design.joints.system`), a unit may override (`joints_system`, the T75
+    // F23 Joints row). ONE cascade (`engine/dowels.js resolveJointSystem`,
+    // the T22 ladder) answers here, and the answer travels as the unit's own
+    // key, so the engine keeps its one reader (`jointSystemOf`). Written only
+    // where the ladder's answer is not the profile's own: a unit nobody has
+    // said anything about carries no key, exactly as every golden fixture.
+    ...(() => {
+      const system = resolveJointSystem({ params: p, design, profile });
+      return system !== jointSystemOf(null, profile) ? { joints_system: system } : {};
+    })(),
     // ─── Turn 18 (CLAUDE.md F6.4) ───
     // The PROJECT's runner variant, travelling exactly as the hinge standard
     // does. It is deliberately NOT `runner_variant` — that name belongs to the
@@ -1398,6 +1435,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     set((s) => ({ project: { ...s.project, titleBlock: next } }));
   },
+
+  /**
+   * T78 F21 - THE SPRAYING PAGE'S TYPED NOTE (Additional info), one per line
+   * key (engine/spray.js lineKeyOf: colour, rule, size, code), printed on the
+   * page and on the PDF. It rides `project.sprayNotes`, so it is saved and
+   * reloaded with the job; an emptied note is removed, not kept as ''.
+   */
+  setSprayNote: (lineKey, text) => set((s) => {
+    const key = String(lineKey || '');
+    if (!key) return {};
+    const notes = { ...(s.project.sprayNotes || {}) };
+    const t = String(text ?? '').trim();
+    if (t) notes[key] = t; else delete notes[key];
+    return { project: { ...s.project, sprayNotes: notes } };
+  }),
 
   /**
    * Change the room. REFUSED when the new shape would leave a unit hanging off
@@ -2173,6 +2225,55 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {string[]} notices worth telling the user about
    */
+  // --- T78 F17 . THE HOOD OVER THE HOB: THE PROPOSAL AND THE CLICK -----------
+  //
+  // The owner: *"zeby bylo 650 do 750 minimum nad blatem, nad hobem"*, and:
+  // *"pozostaw to dla klienta, tylko proponuj."*  The measure is
+  // `engine/hoodClearance.js` (the one Check #34 reads); this says each short
+  // row ONCE as a yellow with a button (T78 F6's grammar: a level that waits
+  // for a person gets the button) and the button is `raiseHoodToClearance`.
+  // Never a block: the client may leave it.
+  proposeHoodClearance: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const rows = hoodClearanceRows({
+      units: s.units, profile, design: s.project.design, walls: roomWalls(s.project.room),
+    });
+    const live = new Set();
+    for (const row of rows) {
+      if (!(row.shortMm > 0)) continue;
+      const key = `${row.hoodId}|${row.hobId}`;
+      live.add(key);
+      if (hoodClearanceSaid.get(key) === row.raiseToMm) continue;
+      hoodClearanceSaid.set(key, row.raiseToMm);
+      useUiStore.getState().notify(hoodClearanceMessage(row), 'warn', {
+        action: {
+          label: `Raise hood to ${formatMm(row.raiseToMm)} mm`,
+          run: () => {
+            const res = get().raiseHoodToClearance(row.hoodId);
+            if (res?.error) useUiStore.getState().notify(res.error, 'warn');
+          },
+        },
+      });
+    }
+    for (const key of [...hoodClearanceSaid.keys()]) if (!live.has(key)) hoodClearanceSaid.delete(key);
+    return rows;
+  },
+
+  /** T78 F17 . the one click: the hood's mount height set to the clearance over every hob under it. */
+  raiseHoodToClearance: (hoodUnitId) => {
+    const s = get();
+    const hood = s.units.find((u) => u.id === hoodUnitId);
+    if (!hood) return { error: 'No such hood.' };
+    const profile = getCabinetProfile();
+    const to = hoodRaiseTo(hoodUnitId, {
+      units: s.units, profile, design: s.project.design, walls: roomWalls(s.project.room),
+    });
+    if (to == null) return { error: `${hood.params?.unit_num || hoodUnitId}: the hood already clears every hob under it.` };
+    const res = get().updateUnitParams(hoodUnitId, { mount_height: to });
+    return { ...res, raisedTo: to };
+  },
+
   refreshAutoParts: (unitId = null) => {
     const s = get();
     const profile = getCabinetProfile();
@@ -2229,12 +2330,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     {
       const spec = cornerSpec(profile);
       const posts = new Map();
+      // T78 F10 · when the occupant is a BLIND kit the strip is the kit's own
+      // part (cabinet.js, `${unitNum}-POST`); the run landing on the stop gets
+      // the STOP RECORD only (`corner_butt_*_mm`: the run ends there, its door
+      // sees a rigid neighbour, no board is cut for it).
+      const butts = new Map();
       for (const c of cornersOf({ units: next, walls, profile })) {
         if (c.kind !== 'internal' || c.stopMm == null) continue;
         const occupant = next.find((x) => x.id === c.runA.unitId);
         if (!occupant || occupantKind(occupant) === 'L') continue;
         if (Math.abs(c.runB.gapMm - c.stopMm) > 1) continue;
-        posts.set(c.runB.unitId, { ...(posts.get(c.runB.unitId) || {}), [c.runB.side]: spec.postMm });
+        const into = isBlindKit(occupant.type) ? butts : posts;
+        into.set(c.runB.unitId, { ...(into.get(c.runB.unitId) || {}), [c.runB.side]: spec.postMm });
       }
       for (let i = 0; i < next.length; i += 1) {
         const u = next[i];
@@ -2243,10 +2350,17 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         const right = want.right || 0;
         const hadLeft = Number(u.params?.corner_post_left_mm) || 0;
         const hadRight = Number(u.params?.corner_post_right_mm) || 0;
-        if (left === hadLeft && right === hadRight) continue;
+        const butt = butts.get(u.id) || {};
+        const bLeft = butt.left || 0;
+        const bRight = butt.right || 0;
+        const hadBLeft = Number(u.params?.corner_butt_left_mm) || 0;
+        const hadBRight = Number(u.params?.corner_butt_right_mm) || 0;
+        if (left === hadLeft && right === hadRight && bLeft === hadBLeft && bRight === hadBRight) continue;
         const params = { ...u.params };
         if (left) params.corner_post_left_mm = left; else delete params.corner_post_left_mm;
         if (right) params.corner_post_right_mm = right; else delete params.corner_post_right_mm;
+        if (bLeft) params.corner_butt_left_mm = bLeft; else delete params.corner_butt_left_mm;
+        if (bRight) params.corner_butt_right_mm = bRight; else delete params.corner_butt_right_mm;
         next[i] = { ...u, params };
       }
     }
@@ -2261,6 +2375,128 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (!isCornerLKit(u.type)) continue;
       const side = cornerLHand(u, walls, profile);
       if (side && side !== u.params?.corner_side) next[i] = { ...u, params: { ...u.params, corner_side: side } };
+    }
+
+    // ─── T78 F6 · THE WALL L FOLLOWS THE BASE L, AND SPLITS ABOVE 700 ───────
+    //
+    // The owner, 11.10.2026: *"automatycznie wyrownanie szafki wiszacej
+    // naroznej do szerokosci dolnej, chyba ze bardzo duza to wtedy propozycja
+    // nastepnej szafki jesli drzwiczki beda wieksze niz 700 w szafce
+    // wiszacej."*  A wall L standing in the corner a base L stands in takes
+    // the base's two arm lengths (its own ARM depth stays the wall depth).
+    // When either arm's leaf would exceed `profile.corner.wallLeafMaxMm`
+    // (700, the owner's), the app does NOT hang one wide leaf: the arm is
+    // set to the length that keeps the leaf at 700 and a plain wall unit for
+    // the remainder is PROPOSED (the grey hint, T33's pull-down grammar, with
+    // one click that adds it beside the wall L through `addUnit`, the F1 road
+    // for the arm on the adjacent wall). Written on every pass, so a base arm
+    // changed later re-runs the law; a wall L the client sized by hand
+    // (`corner_arms_own`, written by `updateUnitParams`) is left alone.
+    {
+      const spec = cornerSpec(profile);
+      const leafMax = spec.wallLeafMaxMm;
+      const cornerPointOf = (u) => {
+        const wall = walls[u.position?.wall ?? 0];
+        if (!wall || wall.island) return null;
+        const side = cornerLHand(u, walls, profile) || u.params?.corner_side || 'left';
+        const pt = side === 'left' ? wall.start : wall.end;
+        return { x: Math.round(pt.x), y: Math.round(pt.y), side, wall: wall.index };
+      };
+      const armOf = (u) => {
+        const type = getUnitType(u.type);
+        const own = Number(u.params?.arm_mm);
+        if (own > 0) return own;
+        const key = type.armDepthKey ? String(type.armDepthKey).split('.') : [];
+        return Number(key.reduce((o, k) => (o == null ? o : o[k]), profile)) || 0;
+      };
+      const bases = next.filter((u) => isCornerLKit(u.type) && getUnitType(u.type).mount === 'floor').map((u) => ({ u, at: cornerPointOf(u) }));
+      for (let i = 0; i < next.length; i += 1) {
+        const u = next[i];
+        if (!isCornerLKit(u.type) || getUnitType(u.type).mount !== 'wall') continue;
+        const at = cornerPointOf(u);
+        if (!at) continue;
+        const base = bases.find((b) => b.at && b.at.x === at.x && b.at.y === at.y)?.u || null;
+        const params = { ...u.params };
+        if (!base) {
+          if (params.corner_arms_auto) { delete params.corner_arms_auto; next[i] = { ...u, params }; }
+          splitProposed.delete(u.id);
+          continue;
+        }
+        if (params.corner_arms_own === true) continue;
+        // The base's arms in THIS unit's frame: on the same wall arm A is arm
+        // A; on the adjacent wall the two swap.
+        const sameWall = (base.position?.wall ?? 0) === (u.position?.wall ?? 0);
+        const want = {
+          width: Number(sameWall ? base.params.width : base.params.depth) || 0,
+          depth: Number(sameWall ? base.params.depth : base.params.width) || 0,
+        };
+        const arm = armOf(u);
+        const kinds = lArmKinds(profile);
+        const proposals = [];
+        for (const key of ['width', 'depth']) {
+          // The leaf by the L's own door law (`corners.js lLeafTrimMm`): the
+          // arm's opening less the gap and the corner edge's trim.
+          const trim = lLeafTrimMm(kinds[key === 'width' ? 'A' : 'B'], profile, params.front_t);
+          const leaf = want[key] - arm - trim;
+          if (leaf > leafMax) {
+            // Whole millimetres, as every width in this app: rounded DOWN so
+            // the leaf is never over the owner's 700.
+            const kept = Math.floor(arm + leafMax + trim);
+            proposals.push({ arm: key === 'width' ? 'A' : 'B', remainder: Math.round((want[key] - kept) * 100) / 100 });
+            want[key] = kept;
+          }
+        }
+        const changed = Number(params.width) !== want.width || Number(params.depth) !== want.depth;
+        if (changed || !params.corner_arms_auto || params.corner_arms_auto.from !== base.id) {
+          params.width = want.width;
+          params.depth = want.depth;
+          params.corner_arms_auto = { from: base.id, width: want.width, depth: want.depth, split: proposals.map((p) => p.arm) };
+          next[i] = { ...u, params };
+        }
+        // THE PROPOSAL, once per remainder, and only while nothing stands at
+        // that arm's end on its wall at the wall level.
+        const level = getUnitType(u.type).mount;
+        const side = params.corner_side === 'right' ? 'right' : 'left';
+        const taken = (armName) => {
+          if (armName === 'A') {
+            const edge = side === 'left' ? (Number(u.position?.x_mm) || 0) + want.width : Number(u.position?.x_mm) || 0;
+            return next.some((o) => o.id !== u.id && (o.position?.wall ?? 0) === (u.position?.wall ?? 0)
+              && getUnitType(o.type).mount === level && Math.abs((side === 'left' ? paddedSpan(o).left : paddedSpan(o).right) - edge) <= 1);
+          }
+          const adj = cornerLAdjacentSpan({ ...u, params }, walls, profile);
+          return Boolean(adj) && next.some((o) => o.id !== u.id && (o.position?.wall ?? 0) === adj.wall
+            && getUnitType(o.type).mount === level
+            && Math.abs((adj.side === 'left' ? paddedSpan(o).right : paddedSpan(o).left) - adj.x_mm) <= 1);
+        };
+        const open = proposals.filter((p) => p.remainder >= 100 && !taken(p.arm));
+        const key = open.map((p) => `${p.arm}:${p.remainder}`).join('|');
+        if (!open.length) { splitProposed.delete(u.id); continue; }
+        if (splitProposed.get(u.id) === key) continue;
+        splitProposed.set(u.id, key);
+        for (const p of open) {
+          const num = params.unit_num || u.id;
+          const addSide = p.arm === 'A' ? (side === 'left' ? 'right' : 'left') : side;
+          useUiStore.getState().notify(
+            `${num}: arm ${p.arm} of the base L is ${formatMm(want[p.arm === 'A' ? 'width' : 'depth'] + p.remainder)} mm; a wall leaf `
+              + `over ${formatMm(leafMax)} mm is not hung, so the wall L stops at ${formatMm(want[p.arm === 'A' ? 'width' : 'depth'])} mm `
+              + `and a ${formatMm(p.remainder)} mm wall unit is proposed beside it.`,
+            // A yellow, not a grey: the house law (engine/messages.js, T31)
+            // gives a button only to a level that WAITS for a person; a grey
+            // is gone in three seconds and its button could not be reached.
+            // The words are T33's pull-down hint, the click is the proposal.
+            'warn',
+            {
+              action: {
+                label: `Add ${formatMm(p.remainder)} mm wall unit`,
+                run: () => {
+                  const res = get().addUnit('WUD', { near: u.id, side: addSide, params: { width: p.remainder } });
+                  if (res?.error) useUiStore.getState().notify(res.error, 'warn');
+                },
+              },
+            },
+          );
+        }
+      }
     }
 
     // ─── T75 F3 · THE BLIND KIT'S BLANK FOLLOWS ITS CORNER ─────────────────
@@ -2290,7 +2526,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           : null;
         const params = { ...u.params, blind_side: side };
         if (auto != null && auto > 0) params.blind_mm = auto; else delete params.blind_mm;
-        if (params.blind_side !== u.params?.blind_side || params.blind_mm !== u.params?.blind_mm) {
+        // T78 F10 · where the kit's own corner strip stands: the neighbour's
+        // face plane, measured from this unit's blind end (its gap to the wall
+        // taken off). Absent, the engine takes the family's own face plane.
+        const postAt = b ? Math.round((cornerFaceMm(b, profile) - c.runA.gapMm) * 100) / 100 : null;
+        if (postAt != null && postAt > 0) params.corner_post_at_mm = postAt; else delete params.corner_post_at_mm;
+        if (params.blind_side !== u.params?.blind_side || params.blind_mm !== u.params?.blind_mm
+          || params.corner_post_at_mm !== u.params?.corner_post_at_mm) {
           next[i] = { ...u, params };
         }
       }
@@ -2537,6 +2779,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // ends here, so an empty face is covered and a face a cabinet arrives on
     // is uncovered by one law (`engine/island.js islandPanelPlan`).
     get().settleIslandPanels();
+
+    // --- T78 F17 . THE HOOD OVER THE HOB, PROPOSED --------------------------
+    // The same choke point: every add, move, resize and room change ends
+    // here, so a hood short of its clearance is said ONCE, with the click
+    // that raises it (`proposeHoodClearance`). Never a block.
+    get().proposeHoodClearance();
 
     return notices;
   },
@@ -4824,6 +5072,22 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // …and when a SIDE was asked for as well, that wall is the only one tried:
     // "put one on the left of this" is not answered by a wall round the corner.
     const besideWall = beside ? walls[beside.position.wall ?? 0] : null;
+    // ─── T78 F1 · "ANOTHER ONE HERE" ON THE L's CORNER SIDE MEANS WALL B ─────
+    //
+    // The owner, 11.10.2026: *"dodawanie szafek po lewej stronie l shape
+    // szafki prosze, teraz nie mozna dodac zadnych szafek."*  An L stands on
+    // two walls (T75 F4). The side of it that faces its room corner has no
+    // room on its OWN wall by definition, so a plus or a library add asked on
+    // that side (the probe, verify/t78/f01-probe.md: refused in `freeSlotOnWall`'s
+    // words, "no room to the left of CL01") means the ADJACENT wall: the first
+    // free slot there begins at the end of arm B, the one span the plus stands
+    // on (`runs.js cornerLAdjacentSpan`), and the new cabinet lands flush
+    // against it. Asked on its other side, or with a wall named, nothing here
+    // changes.
+    const cornerAim = beside && isCornerLKit(beside.type) && side && wallAsked == null
+      && isLeftSide(side) === ((beside.params?.corner_side || 'left') === 'left')
+      ? cornerLAdjacentSpan(beside, walls, profile)
+      : null;
     // ─── T75 F10 · A FACE IS TRIED ONLY WHEN IT IS ASKED FOR ───────────────
     // *"A unit is added to a face as to a wall (`addUnit` with the face's
     // index)."*  A named wall (a face's plus, the library opened on it) is the
@@ -4833,11 +5097,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const plaster = walls.filter((wl) => !wl.island);
     const ordered = asked
       ? [asked]
-      : (besideWall
-        ? (side
-          ? [besideWall]
-          : [besideWall, ...plaster.filter((wl) => wl.index !== besideWall.index)])
-        : plaster);
+      : (cornerAim && walls[cornerAim.wall]
+        ? [walls[cornerAim.wall]]
+        : (besideWall
+          ? (side
+            ? [besideWall]
+            : [besideWall, ...plaster.filter((wl) => wl.index !== besideWall.index)])
+          : plaster));
     // ─── T75 F4 · AN L STANDS IN A ROOM CORNER ONLY ───────────────────────
     // *"the L stands in a room corner only (Room refuses first: any other spot
     // is refused in words)."*  The first free internal corner, on the wall of
@@ -4866,6 +5132,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     for (const wall of (placed ? [] : ordered)) {
       const onThisWall = beside && (beside.position.wall ?? 0) === wall.index;
+      // T78 F1 · on the adjacent wall the L's arm B is the thing to stand beside.
+      const viaCorner = Boolean(cornerAim && wall.index === cornerAim.wall);
       const slotAt = asked && xAsked != null
         ? (q) => (slotTakes({ ...q, x: Number(xAsked) }, profile) ? Math.round(Number(xAsked)) : null)
         : (q) => freeSlotOnWall(q, profile);
@@ -4888,8 +5156,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           // corner square (verify/t75/p01-probe.md measured it landing there).
           ...cornerSpansFor(state, unit, wall, walls, profile),
         ],
-        near: onThisWall ? unitSpan(beside) : null,
-        side: onThisWall ? side : null,
+        // eslint-disable-next-line no-nested-ternary
+        near: viaCorner ? cornerAim.span : (onThisWall ? unitSpan(beside) : null),
+        // eslint-disable-next-line no-nested-ternary
+        side: viaCorner ? (cornerAim.side === 'left' ? 'L' : 'R') : (onThisWall ? side : null),
       });
       if (x != null) { placed = { wall: wall.index, x }; break; }
     }
@@ -4897,7 +5167,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const where = asked && xAsked != null
         ? `There is no room for ${formatMm(unit.params.width)} mm at ${formatMm(Math.round(Number(xAsked)))} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
         : side && beside
-        ? `There is no room for ${formatMm(unit.params.width)} mm to the ${side === 'L' ? 'left' : 'right'} of ${beside.params.unit_num} — move something, or add it on the other side.`
+        // T78 F1 · the probe (verify/t78/f01-probe.md, row 14) read "to the right"
+        // for a plus that said 'left': the side is read by `isLeftSide`, the
+        // app's one reading of that word.
+        ? `There is no room for ${formatMm(unit.params.width)} mm to the ${isLeftSide(side) ? 'left' : 'right'} of ${beside.params.unit_num}: move something, or add it on the other side.`
         : (asked
           ? `There is no room for ${formatMm(unit.params.width)} mm on ${wallName(walls, asked.index)}: move or remove something there first.`
           : `No wall has ${formatMm(unit.params.width)} mm of free space for this unit: move or remove something first.`);
@@ -5917,12 +6190,39 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const freeWanted = isFreePanel(unit.type) && FREE_PANEL_KEYS.some((k) => asked?.[k] != null)
       ? freePanelPatch(unit.params, asked, profile)
       : null;
-    const patch = freeWanted || asked;
+    const patch = { ...(freeWanted || asked) };
     const walls = roomWalls(s.project.room);
     const wallIndex = unit.position.wall ?? 0;
     const wall = walls[wallIndex] || walls[0];
     const others = obstaclesFor(s, unit);
     const notices = [];
+    // ─── T78 F5 · THE L GROWS LEFT AND RIGHT ON ITS OWN ─────────────────────
+    //
+    // The owner, 11.10.2026: *"powiekszenie L shape szafek prawa lewa strona."*
+    // Arm A is the L's width, arm B its depth: two figures, two fields, each
+    // clamped ALONE. The least an arm can be is its depth plus the smallest
+    // leaf the profile hangs (`corners.js lArmMinMm`, said in words below); the
+    // most is the room, which refuses first (`roomFitRefusalFor`, at the two
+    // places a number is typed), then whatever stands on that wall (the width
+    // and depth clamps below, unchanged). The doors, shelves, plinth, worktop
+    // and mask follow each arm because the engine cuts the L from W and D.
+    if (isCornerLKit(unit.type)) {
+      const least = lArmMinMm(unit, profile);
+      // T78 F6 · a wall L sized by hand is the client's: the automat that
+      // sizes it to the base L below leaves it alone from now on.
+      if (getUnitType(unit.type).mount === 'wall' && (asked?.width != null || asked?.depth != null)) {
+        patch.corner_arms_own = true;
+      }
+      for (const key of ['width', 'depth']) {
+        if (patch[key] == null) continue;
+        const want = Number(patch[key]) || 0;
+        if (want < least) {
+          patch[key] = least;
+          notices.push(`Arm ${key === 'width' ? 'A' : 'B'} limited to ${formatMm(least)} mm: the arm's own depth `
+            + `plus the smallest leaf (${formatMm(cornerSpec(profile).leafMinMm)} mm).`);
+        }
+      }
+    }
     const applied = { ...patch };
     // T69 F9: where the NEAR edge ends up when a widening takes space on the
     // left. `null` means it did not move, which is every other edit there is.
@@ -6232,7 +6532,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // its floor figure put it), as `projectHeightParams` births it: the
       // kitchen's wall-unit line never moves it.
       // T75 F17 · …and neither does a desk: 720 is a sitting height, not a wall line.
-      if (applied.wallMount != null && type.mount === 'wall' && !type.freePanel && !type.desk) changes.mount_height = resolved.wallMount;
+      // T78 F17 . a top-line kit follows the wall line AND the wall height: its top stays on the run's top.
+      if ((applied.wallMount != null || (applied.wall != null && type.topLine === 'wall'))
+        && type.mount === 'wall' && !type.freePanel && !type.desk) {
+        changes.mount_height = type.topLine === 'wall'
+          ? wallTopLineMount(type, resolved, profile, unit.params.height)
+          : resolved.wallMount;
+      }
       // Turn 22 (F4.2): every unit that STANDS on the run's legs follows the
       // toe kick, the D/W panel included — it is the unit the owner watched
       // ignore the field.
@@ -6565,6 +6871,19 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       };
     }
     const level = getUnitType(unit.type).mount;
+    // ─── T78 F1 · THE WALL SELECT ONTO THE WALL AN L's ARM B REACHES ────────
+    // The probe (verify/t78/f01-probe.md, row 6): with the L in the corner of
+    // wall 1, the Wall select put a Standard on wall 4 at x 40, the FAR corner,
+    // 1450 mm from the L's arm, because `freeSlotOnWall` with no `near` takes
+    // the first gap from the wall's start once the right-hand end is taken.
+    // The first free slot on wall B begins at the end of arm B: the same span
+    // the plus and the placement read (`runs.js cornerLAdjacentSpan`), handed
+    // in as the thing to stand beside, so the unit lands flush against the arm.
+    const armB = s.units
+      .map((u) => (u.id !== unitId && (u.position?.wall ?? 0) !== wallIndex && obstructs(unit, u)
+        ? cornerLAdjacentSpan(u, walls, getCabinetProfile())
+        : null))
+      .find((adj) => adj && adj.wall === wallIndex) || null;
     const x = freeSlotOnWall({
       width: unit.params.width,
       wallWidth: walls[wallIndex].width,
@@ -6579,6 +6898,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
         // T75 F2 · the unit round the corner, at its corner stop.
         ...cornerSpansFor(s, unit, walls[wallIndex], walls),
       ],
+      near: armB ? armB.span : null,
+      side: armB ? (armB.side === 'left' ? 'L' : 'R') : null,
     }, getCabinetProfile());
     if (x == null) {
       // T75 F10 · refused: the automat puts its panel back.
@@ -7157,6 +7478,46 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // T75 F19 · a row of hooks may say how many; with none, the profile's.
       ...(kind === 'hooks' && Number(extra?.count) > 0 ? { count: Math.trunc(Number(extra.count)) } : {}),
     });
+  },
+
+  /**
+   * ─── T78 F9 · THE CAROUSEL, ON THE L ONLY ─────────────────────────────────
+   *
+   * The owner, 11.10.2026: *"krecacy sie naroznik na garnki w srodku."*  A
+   * bought mechanism is a line and a body, never a hole: `params.carousel`
+   * on an L is read by the L builder (cabinet.js) into one BOM line and one
+   * placeholder body; the L's adjustable shelves step aside. A FIXED shelf in
+   * its way is refused here in words (the engine says the same, so a saved
+   * project that grows one later is told too). `on: false` takes it out.
+   *
+   * @returns {{ok:boolean, error:string|null}}
+   */
+  setCornerKit: (unitId, kind, on = true) => {
+    const unit = get().units.find((u) => u.id === unitId);
+    if (!unit) return { ok: false, error: 'No such unit.' };
+    // T78 F11 · the same writer fits the blind kits' pull-out (`BLIND_KIT_KINDS`).
+    const forL = CORNER_KIT_KINDS.includes(kind);
+    const forBlind = BLIND_KIT_KINDS.includes(kind);
+    if (!forL && !forBlind) return { ok: false, error: `${kind} is not a corner mechanism this app knows.` };
+    if (forL && !isCornerLKit(unit.type)) {
+      return { ok: false, error: `A ${kind === 'carousel' ? 'carousel' : kind} goes in an L corner unit only.` };
+    }
+    if (forBlind && !isBlindKit(unit.type)) {
+      return { ok: false, error: 'A blind corner pull-out goes in a blind corner unit only.' };
+    }
+    if (on) {
+      const result = computeCabinet(unit.params, getCabinetProfile());
+      const fixed = (result.panels || []).filter((p) => p.part === 'SHELF' && (p.meta?.locked === true || p.meta?.variant === 'fixed'));
+      if (fixed.length) {
+        return {
+          ok: false,
+          error: `${unit.params.unit_num || unitId}: a fixed shelf (${fixed.map((p) => p.id).join(', ')}) stands in the ${forBlind ? 'pull-out' : 'carousel'}'s way. `
+            + 'Remove the fixed shelf first; adjustable shelves step aside on their own.',
+        };
+      }
+    }
+    get().updateUnitParams(unitId, { [kind]: on ? true : null });
+    return { ok: true, error: null };
   },
 
   /**
@@ -10257,6 +10618,11 @@ function cornerLHand(unit, walls, profile = getCabinetProfile()) {
   if (Math.min(left, right) > cornerSpec(profile).reachMm) return null;
   return right < left ? 'right' : 'left';
 }
+
+/** T78 F6 · the split proposals said so far, per wall L (the key names the remainders), so a pass does not repeat one. */
+const splitProposed = new Map();
+/** T78 F17 . the hood clearances said so far, per hood and hob (the value is the mount height asked), so a pass does not repeat one. */
+const hoodClearanceSaid = new Map();
 
 /** T75 F4 · the sentence an L is refused with, anywhere but a free room corner. */
 function cornerLRefusal(unit, wallIndex = null) {

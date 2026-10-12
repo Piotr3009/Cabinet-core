@@ -189,6 +189,8 @@ export function frontsInRoom(entries, baseOf) {
         appliance: p.meta?.appliance || null,
         trim: p.meta?.edgeTrim || null,
         cornerEdge: p.meta?.cornerEdge || null,   // T75 F4: an L door's inner edge
+        openAngleDeg: Number(p.meta?.openAngleDeg) > 0 ? Number(p.meta.openAngleDeg) : null, // T78 F13: a wide family's swing
+        hingeFamily: p.meta?.hingeFamily || null,
       });
     }
   }

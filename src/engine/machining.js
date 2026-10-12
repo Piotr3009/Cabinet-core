@@ -132,6 +132,32 @@ const CLASSES = [
     draw: false,
     reason: 'the edge half of a dowel joint is a HORIZONTAL bore into the board\'s edge, centred in its thickness; boring it through the face would draw a hole that is not there. Its record says face edge, which edge and how deep, and the joiner bores it with a jig.',
   },
+  // ─── T78 F20 (SKYLON_JOINTS_CABINEO.lsp): THE CABINEO'S FIVE ─────────────
+  {
+    layer: 'CABINEO_POCKET_15MM',
+    draw: true,
+    reason: 'Lamello Option 1: three overlapping dia 15 holes that make the connector pocket, BLIND to the depth the record states (13 under the flush cover cap, from the OUTSIDE face of the top, the bottom or a fixed shelf); the record says face outside.',
+  },
+  {
+    layer: 'CABINEO_POCKET_10MM',
+    draw: true,
+    reason: 'Lamello Option 2: the three-lobe connector pocket milled with a cutter of at least dia 10, BLIND to the depth the record states, cut from the OUTSIDE face of the horizontal board (the record says so); the channel runs out of the board end.',
+  },
+  {
+    layer: 'CABINEO_POCKET_12MM',
+    draw: true,
+    reason: 'Lamello Option 3: the three lobes joined by a straight 12 channel, milled with a dia 12 cutter, BLIND to the depth the record states (13 under the flush cover cap), cut from the OUTSIDE face of the horizontal board; the channel runs out of the board end.',
+  },
+  {
+    layer: 'CABINEO_RECESS',
+    draw: true,
+    reason: 'the cover cap recess around a Cabineo pocket (2.1 deep and 18.8 wide under the flush cover cap mounting), a second, shallower pocket from the same OUTSIDE face, cut to the depth its own record states.',
+  },
+  {
+    layer: 'CABINEO_HOLE_5MM',
+    draw: false,
+    reason: 'the dia 5 counterpart hole in the side for the Cabineo screw: the sheet prints no depth for it, and boring it through would pierce the side\'s outer face, which the real screw (X = 8 or 12 beyond the board end) never does; it is drawn as a circle on the face by 3d/PartMachining.jsx until the owner names the depth.',
+  },
   {
     layer: 'SHELVES_7_5MM',
     draw: true,

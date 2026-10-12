@@ -66,7 +66,10 @@ test('WITHOUT slopeCut the six standard configs are byte-identical', () => {
     WUD: '3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7',
     BUDR: '1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2',
     BUDR4: '583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17',
-    PANTRY: '4df94682e4f80424aa770ffad3e5e143eb8e14902372ec2193fd4acb9e452289',
+    // AMENDED BY T78 F15 (12.10.2026): PANTRY's internal drawers got inner fronts
+    // by the owner's order (*"szuflady wewnetrzne powinny miec fronty"*); the sha
+    // is re-pinned knowingly, the same value verify/t70/goldens-base.json carries.
+    PANTRY: '8eeee6a05c17d21d745b1e83e849b3a344d051ff76173c1e3a8eb98f20cea727',
   });
 });
 

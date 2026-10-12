@@ -165,6 +165,11 @@ test('F20 a PANTRY — every drawer internal — is unaffected by the covering r
   const pantry = computeCabinet({
     ...defaultParamsFor('PANTRY', P), unit_num: '01', drawers: 3, doors: true,
   }, P);
-  assert.equal(faces(pantry).length, 0);
+  // AMENDED BY T78 F15 (12.10.2026): the owner, *"szuflady wewnetrzne powinny
+  // miec fronty"*: every internal drawer behind doors carries an INNER front
+  // (meta.inner, on the box front), which is not a facade and covers nothing;
+  // the covering rule still has nothing to grow.
+  assert.equal(faces(pantry).filter((p) => !p.meta?.inner).length, 0, 'no facade on a pantry');
+  assert.equal(faces(pantry).filter((p) => p.meta?.inner).length, 3, 'three inner fronts, one per internal drawer');
   assert.equal(boxes(pantry), 3);
 });

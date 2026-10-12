@@ -302,11 +302,17 @@ export default function TopBar({
       // Turn 39 (CLAUDE.md F3): the third.
       onAssignMaterials: (e) => openModal('assign-materials', { anchor: anchorOfEvent(e) }),
     }),
-    // BACKLOG #36 — the place in the menu, held open. What goes behind it
-    // (finish per element, the list, m², the price) is still being designed with
-    // Piotr; a button that opened a half-answer would be worse than one that
-    // says "not yet".
-    { label: 'Spraying', soon: true, disabled: true, hint: 'Spray finishing — a later phase' },
+    // === T78 F21 (CLAUDE.md PART F): SPRAYING, THE OWNER'S OWN MENU =========
+    // BACKLOG #36's held-open place, filled. The owner, 11.10.2026: *"cale
+    // sprayowanie jako osobne menu Cabinet Core."*  A BUTTON like Lighting: it
+    // opens the Spraying page (components/SprayingPanel.jsx) beside itself.
+    // Output > Spraying... (lib/outputMenu.js) opens the same page: one window,
+    // one registry entry (lib/modalLayer.js 'spraying').
+    {
+      label: 'Spraying',
+      hint: 'The spray schedule: every sprayed element, its paint code, the m2 and the paint to order',
+      run: (e) => openModal('spraying', { anchor: anchorOfEvent(e) }),
+    },
     // ─── TURN 33 (CLAUDE.md F1): LIGHTING, BEFORE OUTPUT ─────────────────────
     // A BUTTON, not a dropdown — it opens the Lighting panel beside itself
     // (rule 5: draggable, beside, never covering). Its place in the bar is
@@ -327,6 +333,8 @@ export default function TopBar({
       onExportCsv,
       onExportPdf,
       onOpenBom: () => setBomOpen(true),
+      // T78 F21 - Output > Spraying..., the same page the Spraying button opens.
+      onOpenSpraying: (e) => openModal('spraying', { anchor: anchorOfEvent(e) }),
     }),
   ];
 

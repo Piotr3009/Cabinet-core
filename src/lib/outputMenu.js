@@ -80,10 +80,11 @@ export const DRAWING_KINDS = [
  *   onExportCsv   the cutting-list CSV
  *   onExportPdf   the project PDF
  *   onOpenBom     the live BOM panel
+ *   onOpenSpraying  the Spraying page (T78 F21)
  * @returns {{label:string, items:Array}}  a MenuBar menu
  */
 export function buildOutputMenu({
-  onRender, onDrawing, onExportDxf, onExportCsv, onExportPdf, onOpenBom,
+  onRender, onDrawing, onExportDxf, onExportCsv, onExportPdf, onOpenBom, onOpenSpraying,
 } = {}) {
   return {
     label: 'Output',
@@ -114,6 +115,13 @@ export function buildOutputMenu({
       { label: 'BOM PDF', hint: 'The project sheet: 3D view, parts, materials, hardware', run: onExportPdf },
       { divider: true },
       { label: 'Bill of materials…', hint: 'Live BOM, with the export buttons', run: onOpenBom },
+      // T78 F21 (CLAUDE.md PART F): *"Output > Spraying"*, one page on the
+      // Production Core pattern: the sprayed elements by colour with their
+      // paint codes, the cards of the rules that are not all around, the paint
+      // per colour (litres, tins), Export PDF in the T71 frame. The same page
+      // the owner's Spraying button opens (*"cale sprayowanie jako osobne menu
+      // Cabinet Core"*), in the BOM's own group: both are live documents.
+      { label: 'Spraying…', hint: 'The spray schedule: elements by colour, paint codes, m2, the paint to order', run: onOpenSpraying },
     ],
   };
 }

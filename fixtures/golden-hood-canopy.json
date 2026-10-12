@@ -1,0 +1,207 @@
+{
+  "meta": {
+    "name": "golden-hood-canopy.json",
+    "turn": "T78",
+    "F": "F17",
+    "source": "KIT_WUD_HOOD_CANOPY.lsp sections 3 and 4: trapezoid sides (the parent's joints from the back, the slant closing), the bottom 150 deeper at the front, the sloped front W x Lblank of the front material, no door, the extractor a line",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "WUD_HOOD_CANOPY",
+    "width": 600,
+    "height": 500,
+    "depth": 400,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "mount_height": 1720,
+    "hood_aperture_mm": 350,
+    "unit_num": "01"
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,532,500,<,0.52,0.266",
+      "01,BUR,532,500,>,0.52,0.266",
+      "01,TOP,564,382,>,0.56,0.215",
+      "01,BOTTOM,564,532,>,0.56,0.300",
+      "01,BACK,600,500,,0,0.300",
+      "01,CANOPY-FRONT,600,530,<>^v,2.26,0.318"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 532,
+        "h": 500,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 500,
+          "d": 532
+        },
+        "outline": 24,
+        "holes": 14,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 532,
+        "h": 500,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 500,
+          "d": 532
+        },
+        "outline": 24,
+        "holes": 14,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 382,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 482,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 382
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 532,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 532
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 500,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 500,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 28,
+        "pockets": 10,
+        "readiness": null
+      },
+      {
+        "id": "CANOPY-FRONT",
+        "part": "FALSE-FRONT",
+        "role": "false_front",
+        "w": 600,
+        "h": 529.5153,
+        "thickness": 25,
+        "box": {
+          "x": 0,
+          "y": -29.5153,
+          "z": 400,
+          "w": 600,
+          "h": 529.5153,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "HINGES_5MM|BUL",
+        2
+      ],
+      [
+        "HINGES_5MM|BUR",
+        2
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        16
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        12
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "extractor",
+        "qty": 1,
+        "label": "Extractor"
+      },
+      {
+        "role": "hangers",
+        "qty": 2,
+        "label": "Wall hangers"
+      }
+    ]
+  }
+}

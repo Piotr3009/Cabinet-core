@@ -22,6 +22,10 @@ import { worktopsFor } from './worktop.js';
 import { migrateDesign } from './design.js';
 import { roomWalls } from './room.js';
 import { dowelNoteRow } from './dowels.js';
+// T78 F20 · a Cabineo unit's cut list says so in a NOTE row of the same grammar (OUTSIDE FACE UP, the gate).
+import { cabineoNoteRow } from './cabineo.js';
+// T78 F21 - the paint of the sprayed sets, litres off the spray schedule (CLAUDE.md PART F).
+import { paintPurchaseQtys } from './spray.js';
 
 /**
  * What ONE piece is finished in, as a name a workshop can order against
@@ -117,6 +121,7 @@ export function buildBom(entries, {
     // T75 F23 · a dowel unit's cut list says so in a NOTE row (the gate while
     // it is shut); counted in nothing, merged with nothing.
     const dowelNote = dowelNoteRow(result);
+    const cabineoNote = cabineoNoteRow(result);
     // T76 F5 · a front with applied strips carries a NOTE for their gluing,
     // `manual`, in the same grammar: counted in nothing, merged with nothing.
     const stripNotes = appliedStripNotes(counted).map((n) => ({
@@ -137,7 +142,7 @@ export function buildBom(entries, {
       readiness: n.state,
     }));
     units.push({
-      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : [])], totals: result.totals, warnings: result.warnings,
+      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : []), ...(cabineoNote ? [cabineoNote] : [])], totals: result.totals, warnings: result.warnings,
     });
 
     for (const r of rows) {
@@ -248,12 +253,21 @@ export function buildBom(entries, {
             readiness: c.readiness,
           });
         }
-        if (slab.joint) joints.set(slab.id, slab.joint);
+        // T78 F2 · one note per JOINT, not per record: an L with a run along
+        // each arm carries TWO (arm A, arm B) under one record, and T75's
+        // corner pair carries ONE shared by its two slabs (the same `at`), so
+        // the key is where the joint is. The probe (verify/t78/f02-probe.md,
+        // THE FIX) found the second arm's joint overwrote the first: one note
+        // and three bolts for two joints.
+        if (slab.joint) {
+          const at = slab.joint.at || {};
+          joints.set(`${slab.id}@${at.wall ?? ''}:${at.x ?? ''}`, { recordId: slab.id, joint: slab.joint });
+        }
       }
-      for (const [id, joint] of joints) {
+      for (const { recordId, joint } of joints.values()) {
         rows.push({
           unit_num: 'WT',
-          id: `${id} joint`,
+          id: `${recordId} joint${joint.arm ? ` arm ${joint.arm}` : ''}`,
           part: 'WORKTOP-JOINT',
           role: 'worktop_note',
           material_role: 'note',
@@ -810,6 +824,18 @@ export function mergeUnitMaterials(unitsIn = [], {
     consume(lightingPartQtys(units, { design, profile }), null);
   }
 
+  // -- T78 F21 - THE PAINT, which is a PROJECT fact like the lighting --------
+  // *"lines go to BOM > Purchase list"*: litres per sprayed set (set 1 the
+  // fronts and the run pieces, set 2 a veneer or sprayed carcass), computed by
+  // the spray law over the whole job, through the SAME door every registry
+  // part takes: `paint_fronts` / `paint_carcass` under the base assignments,
+  // priced by the paint the Assign Materials modal chose, or an unassigned
+  // line that says so. The litres read the assigned paint's own coverage and
+  // coats, so the assignment is handed in.
+  if (design && profile && units.length) {
+    consume(paintPurchaseQtys(units, { design, profile, assignments: data, materials }), null);
+  }
+
   const carcassSheet = sheetSizeForFamily(profile, 'carcasses');
   const frontSheet = sheetSizeForFamily(profile, 'fronts');
 
@@ -898,6 +924,11 @@ export function projectPartUsage(entries = [], { profile = null, design = null }
     for (const [partId, entry] of Object.entries(lightingPartQtys(rows, { design, profile }))) {
       note(partId, entry, null);
     }
+    // T78 F21 - and the paint, so the Assign Materials modal lists the two
+    // paint parts as "used by this job" the moment a door exists.
+    for (const [partId, entry] of Object.entries(paintPurchaseQtys(rows, { design, profile }))) {
+      note(partId, entry, null);
+    }
   }
   return out;
 }
@@ -931,6 +962,11 @@ export function unassignedInUse(entries = [], {
   }
   const out = [];
   for (const [partId, use] of Object.entries(usage)) {
+    // T78 F21 · the PAINT is not a cut part: a sprayed set with no paint
+    // assigned is said on the Spraying page (PART C) and in the purchase list
+    // (a missing price, the BOM law), never as a CNC assignment warning about
+    // a board nobody chose. The litres ride the usage for the purchase list only.
+    if (PART_REGISTRY[partId]?.materialType === 'paint') continue;
     const families = use.families.length ? use.families : [null];
     const missing = families.filter((f) => partId === 'front_moulding'
       ? missingMouldingFamilies.has(f)

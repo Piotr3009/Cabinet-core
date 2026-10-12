@@ -145,7 +145,10 @@ test('F5c — the rule is in the list, in red, and it is the fifteenth', () => {
   // the fifteenth and still says what it said.
   // RE-PINNED 10.10.2026 (T76-F4): and #32, the decoration's board. Rule 15 is
   // still the fifteenth and still says what it said.
-  assert.equal(CHECKS.length, 29);
+  // AMENDED BY T78 (12.10.2026): three rules joined, all yellow: #33 the wide-angle
+  // door's swing (F13), #34 the hood's clearance over the hob (F17, a proposal),
+  // #35 the lift-up leaf at full opening (F18). Twenty-nine became thirty-two.
+  assert.equal(CHECKS.length, 32);
   assert.equal(CHECKS[14].n, 15);
 });
 

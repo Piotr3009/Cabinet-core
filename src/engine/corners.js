@@ -55,11 +55,62 @@ export function cornerSpec(profile) {
   return {
     postMm: num(c.postMm, 50),
     overlap: c.overlap === 'own' ? 'own' : 'adjacent',
+    // T78 F5 / F6 · the smallest leaf an L arm hangs, the widest a wall L hangs.
+    leafMinMm: num(c.leafMinMm, 200),
+    wallLeafMaxMm: num(c.wallLeafMaxMm, 700),
     // How far from a corner a unit can stand and still be the one AT it: the
     // front-clearance rulebook's own neighbour reach, so "beside" means one
     // thing in this app.
     reachMm: num(profile?.doors?.neighbourReachMm, 200),
   };
+}
+
+/**
+ * T78 F5 · THE LEAST AN L's ARM CAN BE: its depth and the smallest leaf.
+ *
+ * The owner, 11.10.2026: *"powiekszenie L shape szafek prawa lewa strona."*
+ * Arm A is the L's `width`, arm B its `depth` (KIT_CORNER_L.lsp section 1),
+ * each its own figure; the arm's opening is the arm less its depth (the other
+ * arm's carcass runs across its end), and a leaf under `corner.leafMinMm` is
+ * not worth hanging. The arm depth is the unit's own, else the family's
+ * (`types.js armDepthKey`), as `cabinet.js normalizeParams` reads it.
+ */
+export function lArmMinMm(unit, profile) {
+  const type = getUnitType(unit?.type);
+  const own = num(unit?.params?.arm_mm);
+  const key = type?.armDepthKey ? String(type.armDepthKey).split('.') : [];
+  const family = key.length ? num(key.reduce((o, k) => (o == null ? o : o[k]), profile)) : 0;
+  const arm = own > 0 ? own : family;
+  return arm + cornerSpec(profile).leafMinMm;
+}
+
+/**
+ * T78 F6 · WHICH ARM OVERLAPS (T75 F4's law, `profile.corner.overlap`): the
+ * arm on the ADJACENT wall (B) by default, 'own' turns it round. The other arm
+ * is covered.
+ */
+export function lArmKinds(profile) {
+  const overlapArm = profile?.corner?.overlap === 'own' ? 'A' : 'B';
+  return {
+    A: overlapArm === 'A' ? 'overlap' : 'covered',
+    B: overlapArm === 'B' ? 'overlap' : 'covered',
+  };
+}
+
+/**
+ * T78 F6 · HOW MUCH SHORTER THAN ITS OPENING AN L LEAF IS, by the L's own door
+ * law (cabinet.js, the L builder): the parent's single leaf is the opening
+ * less the door gap, and the corner edge is trimmed by `innerTrim`: a covered
+ * leaf runs to the inner corner with zero clearance (minus half the gap), the
+ * overlapping leaf stops the front thickness plus `clearance.corner` beyond it.
+ * So leaf = (arm length - arm depth) - this.
+ */
+export function lLeafTrimMm(kind, profile, frontT = null) {
+  const gap = num(profile?.doors?.gap);
+  const clear = num(profile?.doors?.clearance?.corner);
+  const t = num(frontT, num(profile?.front?.thickness));
+  const inner = kind === 'covered' ? -gap / 2 : t + clear - gap / 2;
+  return gap + inner;
 }
 
 /**
@@ -403,10 +454,12 @@ export function lClearanceView(view, walls, profile) {
     const d = num(lc.arm);
     const x = num(e.unit.position?.x_mm);
     const gap = wallGapOf(e.unit, profile);
-    const doorOf = (arm) => (e.result.panels || []).find((p) => p?.meta?.arm === arm && p.role === 'front' && p.box);
+    // T78 F7 · an arm carries its door, or every front board of a drawer
+    // stack; each is read where it stands, in the arm's own frame.
+    const frontsOf = (arm) => (e.result.panels || []).filter((p) => p?.meta?.arm === arm && p.role === 'front' && p.box);
     // Arm A: the unit's own wall, the virtual frame moved to the arm's start.
     const fromA = left ? d : 0;
-    const doorA = doorOf('A');
+    const frontsA = frontsOf('A');
     entries.push({
       ...e,
       unit: {
@@ -416,13 +469,12 @@ export function lClearanceView(view, walls, profile) {
       },
       result: {
         ...e.result,
-        panels: doorA ? [{ ...doorA, box: { ...doorA.box, x: doorA.box.x - fromA } }] : [],
+        panels: frontsA.map((f) => ({ ...f, box: { ...f.box, x: f.box.x - fromA } })),
       },
     });
     // Arm B: the adjacent wall, where the corner end meets it.
     const wb = left ? room[(i - 1 + n) % n] : room[(i + 1) % n];
-    const doorB = doorOf('B');
-    const b = doorB?.box;
+    const frontsB = frontsOf('B');
     entries.push({
       ...e,
       unit: {
@@ -448,12 +500,15 @@ export function lClearanceView(view, walls, profile) {
       },
       result: {
         ...e.result,
-        panels: b ? [{
-          ...doorB,
-          box: left
-            ? { x: D - b.z - b.d, y: b.y, z: b.x, w: b.d, h: b.h, d: b.w }
-            : { x: b.z - d, y: b.y, z: W - (b.x + b.w), w: b.d, h: b.h, d: b.w },
-        }] : [],
+        panels: frontsB.map((f) => {
+          const b = f.box;
+          return {
+            ...f,
+            box: left
+              ? { x: D - b.z - b.d, y: b.y, z: b.x, w: b.d, h: b.h, d: b.w }
+              : { x: b.z - d, y: b.y, z: W - (b.x + b.w), w: b.d, h: b.h, d: b.w },
+          };
+        }),
       },
     });
   }

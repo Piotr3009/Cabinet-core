@@ -58,7 +58,10 @@ test('readinessOf: order lines are bought; a part says its own state; a manual h
 test('the kits as the probe found them: a BUD is all cut; the blank, the dummy hob front and the lattice are outlines', () => {
   assert.deepEqual(notCutParts(kit('BUD')), []);
   assert.deepEqual(notCutParts(kit('WARDROBE')), []);
-  assert.deepEqual(notCutParts(kit('BLIND_BASE')).map((r) => [r.part, r.state]), [['BLIND-BLANK', 'geometry']]);
+  // AMENDED BY T78 F10 (12.10.2026): the blind kit's own CORNER-POST (the
+  // owner's 40 strip, front material) is a part of the kit from the moment it
+  // is placed, an outline like the blank.
+  assert.deepEqual(notCutParts(kit('BLIND_BASE')).map((r) => [r.part, r.state]), [['BLIND-BLANK', 'geometry'], ['CORNER-POST', 'geometry']]);
   assert.deepEqual(notCutParts(kit('BUDR_HOB')).map((r) => [r.part, r.state]), [['FALSE-FRONT', 'geometry']]);
   const wine = notCutParts(kit('WINE'));
   assert.ok(wine.length > 0 && wine.every((r) => r.state === 'geometry' && /^LATTICE-/.test(r.part)));
@@ -133,6 +136,7 @@ test('THE T71 DRAWING SET prints the state on every line of the parts card', () 
   const entries = [{ unit: unitOf('BLIND_BASE'), result }];
   const ents = buildCutList(zones, { entries, page: cutListPages(zones, entries)[0] });
   const words = ents.filter((e) => e.text).map((e) => e.text);
-  assert.equal(words.filter((t) => t === 'OUTLINE').length, 1);
-  assert.equal(words.filter((t) => t === 'CNC').length, all.length - 1);
+  // AMENDED BY T78 F10: two outlines on a blind kit, the blank and the corner post.
+  assert.equal(words.filter((t) => t === 'OUTLINE').length, 2);
+  assert.equal(words.filter((t) => t === 'CNC').length, all.length - 2);
 });

@@ -84,8 +84,10 @@ test('T74 F8 · the ramp rides its drawer: the same open amount and the same tra
 test('T74 F8 · the 3-D: a piece that leans AND travels slides outside its lean (the drawer\'s straight line)', () => {
   const src = uncomment(read('src/3d/UnitView.jsx'));
   assert.match(src, /const leans = Boolean\(Number\(p\.meta\?\.tilt_deg\) && p\.meta\?\.tilt_pivot\);/);
-  assert.match(src, /if \(leans && glide\.current\) \{\s*glide\.current\.position\.z = off;\s*group\.current\.position\.z = pivot\[2\];/);
+  // AMENDED BY T78 F8: the group stands at `base` (its pivot, or its pivot relative to a
+  // carrier leaf's when nested in a bi-fold pair); the lean law is the same line.
+  assert.match(src, /if \(leans && glide\.current\) \{\s*glide\.current\.position\.z = off;\s*group\.current\.position\.z = base\[2\];/);
   assert.match(src, /return travels \? <group ref=\{glide\}>\{leaning\}<\/group> : leaning;/);
   // …and everything that does not lean moves exactly as it did.
-  assert.match(src, /group\.current\.position\.z = pivot\[2\] \+ off;/);
+  assert.match(src, /group\.current\.position\.z = base\[2\] \+ off;/);
 });

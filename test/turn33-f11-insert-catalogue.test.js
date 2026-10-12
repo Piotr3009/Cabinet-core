@@ -30,7 +30,13 @@ test('the fit is snap-below: the largest nominal not above the box interior', ()
   assert.equal(insertFor('belt_tie', 450, P).nominal, 450);
   assert.equal(insertFor('belt_tie_glass', 450, P).nominal, 450, 'the glass variant shares the divider row');
   assert.equal(insertFor('shoe', 250, P), null, 'below every nominal: the plain spec stands');
-  assert.equal(insertFor('cutlery', 500, P), null, 'no row, no invention');
+  // AMENDED BY T78 F16 (12.10.2026): the double drawer's inner drawer is the
+  // cutlery drawer, so the catalogue gained a `cutlery` row (T78 proposed, owner
+  // to confirm): snap-below answers it like every other row, and below every
+  // nominal the plain spec still stands.
+  assert.equal(insertFor('cutlery', 500, P).nominal, 500, 'the T78 F16 row');
+  assert.equal(insertFor('cutlery', 250, P), null, 'below every nominal: the plain spec stands');
+  assert.equal(insertFor('spaghetti', 500, P), null, 'no row, no invention');
 });
 
 test('the BOM insert line names the nominal beside the box’s own numbers', () => {

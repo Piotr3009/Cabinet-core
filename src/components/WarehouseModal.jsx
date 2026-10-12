@@ -7,8 +7,8 @@ import { useWarehouseStore } from '../stores/warehouseStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
 import { OFFLINE_NOTICE } from '../lib/warehouseDb.js';
 import {
-  CATEGORIES, JC_NOTICE, OTHERS, PRICE_IMPORT,
-  departmentCounts, departmentLabel, fromCsv, importSummary, materialsFilename,
+  CATEGORIES, JC_NOTICE, OTHERS, PAINT_TYPES, PRICE_IMPORT,
+  departmentCounts, departmentLabel, fromCsv, importSummary, materialsFilename, paintOf,
   projectMaterialNames, projectUuids, rowsOfDepartment, subcategoriesInUse, toCsv, usedInProject,
 } from '../engine/warehouse.js';
 
@@ -66,6 +66,42 @@ function Thumb({ url, alt, size = 40 }) {
  * that shows all twelve: the list shows a name, a code and a price, which is
  * what a joiner reads down a shelf.
  */
+/**
+ * T78 F21 - the five columns a PAINT carries over the twelve. The tin sizes are
+ * typed as a list ("1, 2.5, 5") and kept as typed; `paintOf` parses them.
+ */
+function PaintFields({ material, onPatch }) {
+  const paint = paintOf(material) || {};
+  const put = (patch) => onPatch(material.id, { paint: { ...(material.paint || {}), ...patch } });
+  return (
+    <div className="grid grid-cols-3 gap-2 rounded border border-shell-600 bg-shell-700/30 p-2" data-material-paint="1">
+      <label className="block">
+        <span className="cc-label">Paint type</span>
+        <select className="cc-input w-full" data-paint-type value={paint.type || ''} onChange={(e) => put({ type: e.target.value || null })}>
+          <option value="">not said</option>
+          {PAINT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </label>
+      <label className="block">
+        <span className="cc-label">Sheen</span>
+        <input className="cc-input w-full" data-paint-sheen value={paint.sheen || ''} onChange={(e) => put({ sheen: e.target.value })} />
+      </label>
+      <label className="block">
+        <span className="cc-label">Coverage (m2 per litre per coat)</span>
+        <NumberField className="cc-input w-full" data-paint-coverage integer={false} value={paint.coverage_m2_per_l ?? ''} onCommit={(v) => put({ coverage_m2_per_l: v })} />
+      </label>
+      <label className="block">
+        <span className="cc-label">Coats</span>
+        <NumberField className="cc-input w-full" data-paint-coats value={paint.coats ?? ''} onCommit={(v) => put({ coats: v })} />
+      </label>
+      <label className="block col-span-2">
+        <span className="cc-label">Tin sizes (litres, comma separated)</span>
+        <input className="cc-input w-full" data-paint-tins value={paint.tin_sizes ?? ''} onChange={(e) => put({ tin_sizes: e.target.value })} />
+      </label>
+    </div>
+  );
+}
+
 function MaterialCard({ material, onClose, anchor, onPatch, onRemove, subcategories }) {
   const set = (field) => (v) => onPatch(material.id, { [field]: v });
   const text = (field) => (e) => onPatch(material.id, { [field]: e.target.value });
@@ -178,6 +214,15 @@ function MaterialCard({ material, onClose, anchor, onPatch, onRemove, subcategor
             <input className="cc-input w-full font-mono text-[11px]" data-material-jc value={material.jc_uuid} onChange={text('jc_uuid')} />
           </label>
         </div>
+
+        {/* T78 F21 (CLAUDE.md PART F) - THE PAINT AS A MATERIAL: the Paints
+            department's own columns beside the twelve (engine/warehouse.js
+            PAINT_FIELDS): type topcoat | primer, sheen, coverage m2 per litre
+            per coat, coats, tin sizes. They ride the row and the table (the
+            `paint` column, supabase/migrations/t78_warehouse_paint.sql), not
+            the CSV, which PC's twelve columns define. The spray page reads
+            them for the litres and the tins (engine/spray.js paintSpecOf). */}
+        {material.category === 'paints' && <PaintFields material={material} onPatch={onPatch} />}
 
         <label className="block">
           <span className="cc-label">Notes</span>

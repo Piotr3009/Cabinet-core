@@ -1,0 +1,297 @@
+{
+  "meta": {
+    "name": "golden-corner-l-mask.json",
+    "turn": "T78",
+    "F": "F2",
+    "source": "KIT_CORNER_L.lsp (the carcass); the mask is the L plan with the mask depth law on both arms",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "CORNER_L_WALL",
+    "width": 600,
+    "height": 720,
+    "depth": 600,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": true,
+    "mount_height": 1500,
+    "door_extend": false,
+    "arm_mm": 400,
+    "corner_side": "left",
+    "unit_num": "01",
+    "bottom_mask": true
+  },
+  "expected": {
+    "csvLines": [
+      "01,BACK-A,600,720,,0,0.432",
+      "01,BACK-B,582,720,,0,0.419",
+      "01,SIDE-A,382,720,>,0.72,0.275",
+      "01,SIDE-B,382,720,<,0.72,0.275",
+      "01,TOP-L,564,564,>,0.36,0.285",
+      "01,BOTTOM-L,564,564,>,0.36,0.285",
+      "01,MASK-L,610,610,<>^v,1.22,0.332",
+      "01,01-A-F,199,717,<>^v,1.83,0.142",
+      "01,01-B-F,171,717,<>^v,1.78,0.122"
+    ],
+    "panels": [
+      {
+        "id": "BACK-A",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 720,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 11,
+        "readiness": null
+      },
+      {
+        "id": "BACK-B",
+        "part": "BACK",
+        "role": "back",
+        "w": 582,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 720,
+          "d": 582
+        },
+        "outline": 34,
+        "holes": 24,
+        "pockets": 11,
+        "readiness": null
+      },
+      {
+        "id": "SIDE-A",
+        "part": "SIDE",
+        "role": "side",
+        "w": 382,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 720,
+          "d": 382
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "SIDE-B",
+        "part": "SIDE",
+        "role": "side",
+        "w": 382,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 582,
+          "w": 382,
+          "h": 720,
+          "d": 18
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP-L",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 564,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 702,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 564
+        },
+        "outline": 86,
+        "holes": 0,
+        "pockets": 8,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM-L",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 564,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 564
+        },
+        "outline": 86,
+        "holes": 0,
+        "pockets": 8,
+        "readiness": null
+      },
+      {
+        "id": "MASK-L",
+        "part": "MASK",
+        "role": "mask",
+        "w": 610,
+        "h": 610,
+        "thickness": 25,
+        "box": {
+          "x": -10,
+          "y": -25,
+          "z": -10,
+          "w": 610,
+          "h": 25,
+          "d": 610
+        },
+        "outline": 6,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-A-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 198.5,
+        "h": 717,
+        "thickness": 25,
+        "box": {
+          "x": 400,
+          "y": 0,
+          "z": 403,
+          "w": 198.5,
+          "h": 717,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "01-B-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 170.5,
+        "h": 717,
+        "thickness": 25,
+        "box": {
+          "x": 403,
+          "y": 0,
+          "z": 428,
+          "w": 25,
+          "h": 717,
+          "d": 170.5
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-A-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_35MM|01-B-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-A-F",
+        6
+      ],
+      [
+        "FRONT_HINGES_3MM|01-B-F",
+        6
+      ],
+      [
+        "HINGES_5MM|SIDE-A",
+        8
+      ],
+      [
+        "HINGES_5MM|SIDE-B",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK-A",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK-B",
+        14
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|SIDE-A",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|SIDE-B",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK-A",
+        14
+      ],
+      [
+        "SCREWS_3MM|BACK-B",
+        10
+      ],
+      [
+        "SCREWS_3MM|SIDE-A",
+        6
+      ],
+      [
+        "SCREWS_3MM|SIDE-B",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hangers",
+        "qty": 2,
+        "label": "Wall hangers"
+      },
+      {
+        "role": "hinges",
+        "qty": 6,
+        "label": "Hinges"
+      }
+    ]
+  }
+}

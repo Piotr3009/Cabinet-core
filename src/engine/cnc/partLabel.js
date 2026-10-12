@@ -34,6 +34,8 @@
 // Pure functions — no React, no store, no DOM.
 
 import { formatMm } from '../format.js';
+// T78 F21 - the paint code of the spray law, read off the panel's role.
+import { sprayCodeFor } from '../spray.js';
 
 /**
  * The part code, with the cabinet number stripped off the front of it.
@@ -135,17 +137,62 @@ export function slopeNoteText(panel, { ascii = false } = {}) {
 }
 
 /**
+ * WHICH FACE THE BOARD IS MACHINED FROM (T78 F20, CLAUDE.md PART E).
+ *
+ * The owner, 11.10.2026: the Cabineo pocket is cut from the OUTSIDE face of
+ * the carcass board (*"ciecie nie od srodka korpusu tylko do zewnatrz"*), so
+ * the top, the bottom and a fixed shelf of a Cabineo unit are exported as
+ * seen from that face (their DXF reflected through T76's one reflection,
+ * cnc/dxf.js) and the board must SAY so on the bench, where a top put down
+ * inside face up would have its pockets milled into the wrong face. The
+ * engine marks such a board `meta.machinedFace: 'outside'`
+ * (engine/cabineo.js) and this prints the LISP's own words for it
+ * (SKYLON_JOINTS_CABINEO.lsp `cabineo-face-label`): `OUTSIDE FACE UP`. Every
+ * other board prints nothing more, so no existing label moves.
+ *
+ * @returns {string} 'OUTSIDE FACE UP' or ''
+ */
+export function faceTag(panel) {
+  return panel?.meta?.machinedFace === 'outside' ? 'OUTSIDE FACE UP' : '';
+}
+
+/**
+ * THE PAINT CODE (T78 F21, CLAUDE.md PART F).
+ *
+ * The owner's law of 11.10.2026 says what of each sprayed element is painted,
+ * and *"the CNC part label carries the paint code beside the part number"*:
+ * a door reads `2S+4E` (two faces, four edges), an end panel `1S+F100+4E`
+ * (one face, the 100 mm frame on the back, four edges), a plinth `1S+TE`.
+ * The code is the rule's own (profile.spray.rules, engine/spray.js
+ * sprayCodeFor), read off the panel's ROLE the way every other tag here is,
+ * and printed COMPACT (no spaces) so the label block keeps its word count on a
+ * narrow board. A part the law does not paint (a side, a back, a drawer box)
+ * prints nothing more, so no carcass label moves. Set 2 (a sprayed or veneered
+ * carcass) is said by the caller, because a label knows nothing about the
+ * job's carcass material.
+ *
+ * @returns {string} the compact code, or ''
+ */
+export function paintTag(panel, { set2 = false, openUnit = false } = {}) {
+  return sprayCodeFor(panel, { set2, openUnit });
+}
+
+/**
  * `F-01 BUR 597x568` — the cabinet, the part, the cut size.
  *
  * …and on a SHELF, the kind it is: `F-01 SHELF-1 564x520 (FIX)`.
+ * …and on a board machined from the carcass's outside face (T78 F20):
+ * `F-01 TOP 564x540 OUTSIDE FACE UP`.
+ * …and on a sprayed element, its paint code (T78 F21): `F-01 F 597x767 2S+4E`.
  *
  * @param {string} unitNum  what the cabinet is called (result.unitNum)
  * @param {object} panel    an engine panel record
+ * @param {{set2?:boolean, openUnit?:boolean}} [opts]  T78 F21: the job's carcass is sprayed or veneered; the unit stands open
  * @returns {string}
  */
-export function partLabelText(unitNum, panel) {
+export function partLabelText(unitNum, panel, { set2 = false, openUnit = false } = {}) {
   const name = String(unitNum ?? '').trim();
   const code = partCode(name, panel?.id);
   const size = `${formatMm(panel?.w)}x${formatMm(panel?.h)}`;
-  return [name, code, size, shelfTypeTag(panel)].filter((s) => s !== '').join(' ');
+  return [name, code, size, shelfTypeTag(panel), faceTag(panel), paintTag(panel, { set2, openUnit })].filter((s) => s !== '').join(' ');
 }

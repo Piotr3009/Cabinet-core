@@ -5,7 +5,7 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useAuthStore } from '../stores/authStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useCompanyDefaultsStore } from '../stores/companyDefaultsStore.js';
-import { BOARD_FAMILIES } from '../engine/companyDefaults.js';
+import { BOARD_FAMILIES, JOINT_SYSTEM_IDS } from '../engine/companyDefaults.js';
 import { hardwareHealth } from '../lib/hardwareHealth.js';
 
 // ─── DATABASE ▸ COMPANY DEFAULTS (turn 22, CLAUDE.md F2b.2 / F3) ────────────
@@ -30,6 +30,16 @@ import { hardwareHealth } from '../lib/hardwareHealth.js';
 // second window, because it answers the same question this screen exists for —
 // "what is this app actually working from?" — and because a status line nobody
 // can find is a status line that goes on being read out of DevTools.
+
+// T78 F19 · what the five ids are called on this screen (the ids themselves
+// are the engine's, `engine/companyDefaults.js JOINT_SYSTEM_IDS`).
+const JOINT_LABELS = {
+  puzzle: 'Skylon puzzle (tabs, sockets, dog bones)',
+  dowel: 'Dowels',
+  biscuit: 'Biscuits',
+  cabineo8: 'Lamello Cabineo 8',
+  cabineo12: 'Lamello Cabineo 12',
+};
 
 export default function CompanyDefaultsModal() {
   const closeModal = useUiStore((s) => s.closeModal);
@@ -152,6 +162,20 @@ export default function CompanyDefaultsModal() {
             value={row.runner_variant}
             options={(M.variants || []).map((v) => ({ id: v.id, label: v.label || v.id }))}
             onPick={(v) => setField({ runner_variant: v })}
+          />
+          {/* T78 F19 (CLAUDE.md T78 PART E): the owner's four joint systems,
+              Cabineo in its two variants, chosen HERE as he said ("chosen in
+              the company's default settings"). An id and never a number: the
+              dowel's pitch, the Cabineo pocket and the biscuit set are the
+              profile's and the LISP's, and the validator refuses a typed
+              number as it refuses the hinge angle. */}
+          <Choice
+            testKey="joints_system"
+            label="Joints"
+            hint={profile.joints?.system || 'puzzle'}
+            value={row.joints_system}
+            options={JOINT_SYSTEM_IDS.map((id) => ({ id, label: JOINT_LABELS[id] || id }))}
+            onPick={(v) => setField({ joints_system: v })}
           />
         </div>
 

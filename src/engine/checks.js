@@ -53,6 +53,9 @@ import { roomWalls } from './room.js';
 // T75 F22 · what the machine does not finish, by unit.
 import { notCutParts, readinessCheckMessage, readinessOf } from './readiness.js';
 import { worktopsFor } from './worktop.js';
+// T78 F17 . the hood's clearance over the hob: the one measure the store's
+// proposal reads too (Check #34 says it, the store's button fixes it).
+import { hoodClearanceMessage, hoodClearanceShortfalls } from './hoodClearance.js';
 import { migrateDesign } from './design.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
@@ -65,6 +68,9 @@ import { roomFitFaults } from './roomFit.js';
 // report and the bore cannot disagree about the same door.
 import { cupBoreOf } from './doors.js';
 import { panelWeight } from './lifts.js';
+// T78 F18 · Check #35: a lift leaf at full opening against the ceiling, a
+// cornice and the unit above; said in words, never clipped.
+import { liftClearanceFindings } from './liftChecks.js';
 // Turn 38 (CLAUDE.md F9): the two guards on what a hand has drawn on a print.
 import { manualGeometryFaults } from './partEdits.js';
 import { resolvePanelMaterial } from './materials.js';
@@ -241,7 +247,8 @@ export const CHECKS = Object.freeze([
   // whose chosen system the engine refused and cut with the puzzle instead
   // (`JOINTS_REFUSED`: Cabineo reserved, a kit the LISP's table does not
   // describe, a dowel that meets a hole). RED: a person decides.
-  { n: 31, level: 'red', label: 'Joint system: dowels not confirmed, or refused' },
+  // T78 F20: the Cabineo pattern is gated as the dowel's is, so the row names the joint system, not one of them.
+  { n: 31, level: 'red', label: 'Joint system: not confirmed (dowels, Cabineo), or refused' },
   // ─── T76 F4 · THE BOARD THE ARCH WAS DRAWN FOR ───────────────────────────
   //
   // *"The A and AH recipes carry `boardMm: 30`, and the Check says, in words,
@@ -250,6 +257,29 @@ export const CHECKS = Object.freeze([
   // The owner decides per job."*  Read off the engine's own warning
   // (`FRONT_DECORATION_BOARD`). YELLOW: the leaf is cut; a person decides.
   { n: 32, level: 'yellow', label: 'Front thinner than its decoration\'s board' },
+  // ─── T78 F13 · THE WIDE-ANGLE SWING ────────────────────────────────────────
+  // The owner: *"otwieranie drzwi wiekszy kat otwarcia 180 stopni, zawiasy."*
+  // A 155 or 170 door's free edge swings PAST its hinge plane by w x (-cos a);
+  // where that reaches the neighbour, the wall or the corner post on its hinge
+  // side the Check says so, in words. Never clipped: the leaf is cut as asked.
+  { n: 33, level: 'yellow', label: 'Door swing at 155 / 170 reaches a neighbour' },
+  // --- T78 F17 . THE HOOD OVER THE HOB ---------------------------------------
+  // The owner: *"zeby bylo 650 do 750 minimum nad blatem, nad hobem"*, and on
+  // the number: *"pozostaw to dla klienta, tylko proponuj."*  The gap from the
+  // worktop top to the hood's underside against `profile.hood.clearance` for
+  // the hob kind the client set (`engine/hoodClearance.js`, the one measure);
+  // the row says the number and carries ONE CLICK, raise the hood (the store's
+  // `raiseHoodToClearance`, run by the panel's flight). YELLOW: a proposal,
+  // never a block: the client may leave it.
+  { n: 34, level: 'yellow', label: 'Hood clearance over the hob' },
+  // ─── T78 F18 · THE LIFT-UP LEAF AT FULL OPENING ────────────────────────────
+  // The owner: *"szafki poziome otwierane do gory system blum."*  An AVENTOS
+  // leaf rises above its own top edge when open (the HK top's free edge by
+  // FH x 0.29 + FD at 107 degrees, the catalogue's own Y); where that reaches
+  // the ceiling, the cornice on its top or a wall unit hanging higher on the
+  // same span the Check says so, in words (engine/liftChecks.js). Never
+  // clipped: the leaf is cut as asked.
+  { n: 35, level: 'yellow', label: 'Lift-up leaf reaches the ceiling, a cornice or the unit above' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -610,6 +640,8 @@ export function runChecks({
       // T76 F4 · #32: the board the decoration was drawn for, yellow.
       const n = {
         SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28, DOWEL_GATE: 31, JOINTS_REFUSED: 31,
+        // T78 F20 · #31 again: the Cabineo gate (engine/cabineo.js CABINEO_GATE_CODE), the same law as the dowel's.
+        CABINEO_GATE: 31,
         FRONT_DECORATION_BOARD: 32,
       }[wn.code];
       if (!n) continue;
@@ -670,6 +702,11 @@ export function runChecks({
     const rowsByPanel = result.drillSummary?.hinge_rows_by_panel || {};
     for (const panel of result.panels || []) {
       if (panel.part !== 'FRONT' || panel.role !== 'front' || panel.meta?.appliance) continue;
+      // T78 F18 · a LIFT-UP leaf (AVENTOS) hangs on its arms, not on cups: zero
+      // hinges is the design, and its weight is judged by the lift plan's own
+      // power-factor bands (LIFT_NO_UNIT / LIFT_FRONT_WEIGHT, in words). The
+      // CLIP top table has nothing to say about it.
+      if (panel.meta?.lift) continue;
       const rows = rowsByPanel[panel.id] || allRows;
       const material = resolvePanelMaterial(panel, unit, design, profile, materials);
       const weight = panelWeight({
@@ -854,6 +891,53 @@ export function runChecks({
     wallWidthOf,
     profile,
   });
+  // T78 F13 · the swing of a wide-angle door against what stands on its hinge side.
+  for (const front of clearances) {
+    const deg = Number(front.openAngleDeg);
+    if (!(deg > 90) || !front.hinge) continue;
+    const side = front.hinge === 'R' ? 'right' : 'left';
+    const edge = front.edges?.[side];
+    if (!edge) continue;
+    const over = round2(Number(front.w) * -Math.cos((deg * Math.PI) / 180));
+    const room = Number.isFinite(Number(edge.gapMm)) ? Number(edge.gapMm) + (Number(edge.haveClearanceMm) || 0) : null;
+    if (room == null || over <= room) continue;
+    const what = edge.kind === 'wall' ? 'the wall' : (edge.kind === 'cornerPost' || /post/i.test(String(edge.pieceId || '')) ? 'the corner post' : `its neighbour (${edge.kind})`);
+    out.push(finding(33, 'yellow', {
+      unitId: front.unitId || null,
+      unitNum: front.unitNum || '',
+      panelId: front.panelId || null,
+      message: `${front.unitNum ? `${front.unitNum} ` : ''}${front.panelId}: at ${deg} degrees its free edge swings ${over} mm past its hinge edge and `
+        + `${what} stands ${round2(room)} mm away on that side. The leaf is cut as asked; a ${deg === 170 ? '155' : 'standard'} hinge, `
+        + 'a gap or a filler clears it.',
+      subject: front.panelId ? { unitId: front.unitId, panelId: front.panelId, editor: 'element' } : null,
+    }));
+  }
+  // -- #34 the hood over the hob (T78 F17) ----------------------------------
+  // Read off `engine/hoodClearance.js`, the one measure the store's proposal
+  // reads too; the button is a STORE ACTION the Check panel's flight runs
+  // (`lib/checkFindings.js useGoToSubject`, `subject.store`) before it opens
+  // the hood. Never a block: the client may leave it.
+  for (const row of hoodClearanceShortfalls({
+    units: list, profile, design, walls: room ? roomWalls(room) : null,
+  })) {
+    out.push(finding(34, 'yellow', {
+      unitId: row.hoodId,
+      unitNum: row.hoodNum,
+      panelId: null,
+      message: hoodClearanceMessage(row),
+      subject: { unitId: row.hoodId, editor: 'cabinet' },
+      actions: [{
+        id: 'raise-hood',
+        label: `Raise hood to ${row.raiseToMm} mm`,
+        title: `Set the hood's mount height to ${row.raiseToMm} mm: ${row.wantMm} mm over the worktop for `
+          + `${row.hobKind === 'induction' ? 'an' : 'a'} ${row.hobKind} hob (a proposal; the client may leave it)`,
+        subject: {
+          unitId: row.hoodId, editor: 'cabinet', store: { action: 'raiseHoodToClearance', args: [row.hoodId] },
+        },
+      }],
+      hoodClearance: row,
+    }));
+  }
   for (const row of frontGapRows(clearances, profile)) {
     if (row.level === 'ok') continue;
     const first = row.fronts?.[0] || {};
@@ -1128,10 +1212,12 @@ export function runChecks({
         const state = readinessOf(c);
         if (state !== 'cut') lines.push({ id: `${c.kind} cut-out over ${c.unitNum || c.unitId}`, state });
       }
-      if (slab.joint && !joints.has(slab.id)) {
-        joints.add(slab.id);
+      // T78 F2 · one line per JOINT (the L's two arms are two), keyed where it is.
+      const jointKey = slab.joint ? `${slab.id}@${slab.joint.at?.wall ?? ''}:${slab.joint.at?.x ?? ''}` : null;
+      if (slab.joint && !joints.has(jointKey)) {
+        joints.add(jointKey);
         const state = readinessOf(slab.joint);
-        if (state !== 'cut') lines.push({ id: 'worktop joint', state });
+        if (state !== 'cut') lines.push({ id: `worktop joint${slab.joint.arm ? ` (arm ${slab.joint.arm})` : ''}`, state });
       }
     }
     if (lines.length) {
@@ -1241,6 +1327,16 @@ export function runChecks({
   // one fault twice into a list a joiner works down. Two REAL faults on two
   // cabinets differ by `unitId` and both survive, which is the whole point of
   // keying on the id rather than on the message alone.
+  // ── #35 a lift-up leaf that would hit what stands over it (T78 F18) ──────
+  //
+  // Read off the leaf's own `meta.lift.riseMm` (engine/liftSystems.js, the
+  // ONE derivation the scene animates to) against the room height, the
+  // unit's cornice and any wall unit standing higher on the same wall span.
+  // Never a cut: the leaf is cut as asked and the sentence names the way out.
+  out.push(...liftClearanceFindings({
+    entries, units: list, room, profile,
+  }));
+
   const seen = new Set();
   const once = out.filter((f) => {
     const key = `${f.check}|${f.unitId}|${f.panelId ?? ''}|${f.message}`;

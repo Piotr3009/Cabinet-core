@@ -300,7 +300,14 @@ test('the one-file sheet DXF is byte-for-byte what it was', () => {
   // One board off the sheet, nine screws off two of the boards that stay,
   // and every remaining part re-laid because the sheet packs what it is
   // given. See this file's header for the layer census that names it.
-  assert.equal(fingerprint(sheetOf(result, all)), '666789ea', 'the whole-unit sheet has changed');
+  // ─── T78 F21 (CLAUDE.md PART F), 12.10.2026: 666789ea → 17582204 ────────
+  // THE LABEL CARRIES THE PAINT CODE (*"the CNC part label carries the paint
+  // code beside the part number"*): every FACE's label block gains its code
+  // (2S + 4E on the doors and the drawer fronts), one TEXT line each, and
+  // NOTHING else moves: no coordinate, no hole, no outline; the carcass-only
+  // sheet below is byte-for-byte what it was, which is the proof the delta
+  // lands where its cause is.
+  assert.equal(fingerprint(sheetOf(result, all)), '17582204', 'the whole-unit sheet has changed');
 });
 
 test('…and so is each preset’s', () => {
@@ -362,11 +369,14 @@ test('…and so is each preset’s', () => {
   // not: the rail partitioner is a carcass board with carcass screws, so the
   // two sheets that carry a carcass move and the two that are doors and drawer
   // faces are byte-for-byte what they were.
+  // ─── T78 F21, 12.10.2026: THE CENSUS LOGIC AGAIN, THE FACES' WAY ────────
+  // The paint code is a FACE's line (door, drawer front): the two sheets that
+  // carry the faces move, the carcass-only sheet stands still to the character.
   const expected = {
-    all: '666789ea',           // was 5c5629f0 — one board and nine screws leave
-    'non-sprayed': '0224886a', // was 0bfd72e9 — the same, on the carcass sheet
-    sprayed: '106a8227',       // UNCHANGED — a door never carried a partitioner
-    fronts: '106a8227',        // UNCHANGED — the same three faces, the same file
+    all: '17582204',           // was 666789ea: the faces' labels carry the paint code
+    'non-sprayed': '0224886a', // UNCHANGED: a carcass board prints no paint code
+    sprayed: 'ceb3045b',       // was 106a8227: the faces' labels, 2S + 4E
+    fronts: 'ceb3045b',        // was 106a8227: the same faces, the same file
   };
   for (const [preset, print] of Object.entries(expected)) {
     const ids = panelIdsForPreset(exportablePanels(result.panels), preset);
@@ -431,7 +441,8 @@ test('the entities are grouped by layer exactly as before', () => {
     // DELTA 1 — one label per part still, but written as a BLOCK: 31 parts,
     // 72 lines between them. Nothing else on this list moves by one.
     // T42-F1: 72 → 69. The partitioner's own three centred label lines.
-    UNIT_NUMBER: 69,
+    // T78 F21: four more TEXT lines, the paint codes of the four faces (2S + 4E); no other layer moves.
+    UNIT_NUMBER: 73,
   }, 'the layer census of the exported sheet has changed');
 });
 

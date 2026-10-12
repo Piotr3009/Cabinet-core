@@ -110,6 +110,11 @@ test('R11 — every remaining `DimLabel` in the scene is a CHIP, and it is named
       // not confirmed the pattern: *"the 3D and the cut list show it."*
       'the dowel unit’s GATE while the pattern is unconfirmed: "Dowels: proposed, '
       + 'not confirmed" (T75 F23). A sentence, not a dimension',
+      // AMENDED BY T78 F20 · the same gate over a CABINEO unit names its variant
+      // ("Cabineo 12: proposed, not confirmed"): the PART E walk read "Dowels"
+      // over a Cabineo 12, so the caption is the system's, a second chip.
+      'the Cabineo unit’s GATE while the pattern is unconfirmed: "Cabineo 8 / 12: '
+      + 'proposed, not confirmed" (T78 F20). A sentence, not a dimension',
     ],
     '3d/Room.jsx': [
       'a WALL’s width — the room’s own caption, on the wall. A wall has no front '

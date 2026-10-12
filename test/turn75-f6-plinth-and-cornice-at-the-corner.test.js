@@ -49,13 +49,15 @@ test('F6 · run B\'s kick is carried on to the FACE of run A\'s kick, square', (
   const faceA = 10 + U(a).params.depth - setback;
   const ext = U(b).position.x_mm - faceA;
   assert.equal(faceA, 518);
-  assert.equal(ext, 128, 'B stands on the stop at 646; A\'s kick face is at 518');
+  // AMENDED BY T78 F10 (12.10.2026): the post is the owner's 40 (profile.corner.postMm),
+  // so B stands on the stop at 596 + 40 = 636 and the kick is carried 118, not 128.
+  assert.equal(ext, 596 + P.corner.postMm - faceA, 'B stands on the stop at A\'s face + the post; A\'s kick face is at 518');
   const plinth = S().unitResult(b).panels.find((x) => x.id === 'PLINTH');
   assert.ok(plinth);
   assert.equal(plinth.box.x, -ext, 'it starts at A\'s kick face');
   assert.equal(plinth.box.w, U(b).params.width + ext);
   assert.equal(plinth.meta.corner.butt, 'square', 'no 45° cut');
-  assert.equal(plinth.meta.corner.mm, 128);
+  assert.equal(plinth.meta.corner.mm, ext);
   assert.equal(plinth.meta.corner.faceOf, a);
   assert.ok(S().unitResult(b).csvLines.some((l) => l.startsWith(`02,PLINTH,${U(b).params.width + ext},`)));
   // Run A runs into the corner and keeps its own kick, unchanged.
@@ -102,7 +104,8 @@ test('F6 · a run that stops on the post ENDS there: kind corner, at the post\'s
   const run = { wall: 1, units: [unit], left: unit.position.x_mm, right: unit.position.x_mm + unit.params.width };
   const end = runEnd(run, 'left', { wallWidth: 3000, roomHeight: 2500 }, P);
   assert.equal(end.kind, 'corner');
-  assert.equal(end.x, unit.position.x_mm - 50);
+  // AMENDED BY T78 F10: the post's outer edge is the owner's 40 from the unit.
+  assert.equal(end.x, unit.position.x_mm - P.corner.postMm);
   // The other end of the same run is what it always was.
   assert.notEqual(runEnd(run, 'right', { wallWidth: 3000, roomHeight: 2500 }, P).kind, 'corner');
 });

@@ -1,0 +1,162 @@
+{
+  "system": "legrabox_inner_drawer",
+  "units": "mm",
+  "status": "owner to confirm",
+  "source": {
+    "catalogue": "Blum Catalogue and technical manual 2024/2025, online at https://publications.blum.com/2024/catalogue/en/ (Box systems from p. 194, CLAUDE.md T78); LEGRABOX standard cabinet pages: inner drawer M en/204, inner drawer K en/208",
+    "read": "T78 F16, 11.10.2026. From this container publications.blum.com, www.blum.com, d2.blum.com and every dealer host answer 403 to CONNECT at the egress proxy (recorded in the proxy's status, 22:26 UTC) and WebFetch cannot resolve them, so NO page was opened. Every value below was read from web-search result snippets of the named URL; `page` is the catalogue page the search index attaches to that URL. Nothing is taken from memory; a value nobody printed is null and the sentence beside it says so.",
+    "caveat": "three kinds of value: `printed` (as the snippet of the named URL shows it), null (not found, with a note), and `derived` (arithmetic on printed values, with `how`). Every one is owner to confirm against the catalogue page itself. The catalogue's own titles use a dash between the kind and the height ('Inner drawer', dash, 'M'); this file writes a comma in its place.",
+    "pages": {
+      "en/204": "LEGRABOX, standard cabinet: 'Inner drawer, M', web code DQBPDA, drawer side height 90.5, the latch set ZI7.0M07, a Space requirement section (its numbers cut off in every snippet), the front fixing set ZI7.0MS0 / ZI7.0MI0 (left and right front fixing pieces, external cover caps, a locking piece and screws)",
+      "en/208": "LEGRABOX, standard cabinet: 'Inner drawer, K', web code DQGPIM, 'mid-height solid front piece', suitable for LEGRABOX pure and free, SERVO-DRIVE or TIP-ON BLUMOTION; the same page carries the front piece ZV7.1043C01 'For cutting to size', 'Suitable for cabinet width KB 1200 mm', LW minus 126 (the snippet is jumbled with fixing-set and screw text)",
+      "en/213 (de/213)": "inner pull-out, insert elements: X = LW minus 80, Y = 70 (low) / 138 (high) for the insert element (de snippet)",
+      "en/219 (et/219)": "LEGRABOX free, 'High fronted pull-out, C', web code DQBQRY, Planning: Space requirement in cabinet, with the footnote +1 mm if the cabinet profile is fitted before assembly",
+      "en/230": "TIP-ON BLUMOTION for LEGRABOX: minimum front gap 2.5 mm; an example for a C drawer with NL 500",
+      "en/234": "glass design elements for LEGRABOX inner pull-out fronts (ZE7V488G and similar)",
+      "en/238 (da/242)": "LEGRABOX individual / colour mix: drawer sides M, K, C, F in nominal lengths 270, 300, 350, 400, 450, 500, 550, 600, 650; 'the drawer side in height N is not included in the range of design options'",
+      "en/292": "TANDEMBOX antaro, applications overview: inner pull-out gallery C 192 (DQCAHA), gallery D 224 (DQCB6M), 30 kg",
+      "en/547": "steel frame for LEGRABOX high fronted pull-outs, frame height 110 mm",
+      "en/549": "AMBIA-LINE steel cross gallery, for cutting to size: 'Suitable for LEGRABOX high fronted pull-out and inner pull-out, height C and F'",
+      "2022 en/199": "the previous edition's 'Inner drawer, M' page (same web code DQBPDA): 'Inner drawer with latch set possible from height 71 mm'; '+1 mm must be added to the space requirement if the cabinet profile is installed before the cabinet is assembled'",
+      "2022 en/192": "the previous edition's LEGRABOX free overview: 'Inner pull-out, gallery, C 40 191 70 DQBUZY' (40 and 70 the load classes, 191 the space requirement)"
+    }
+  },
+  "arrangement": {
+    "what": "the Blum 'inner drawer behind a front': behind ONE front, a deep pull-out below (LEGRABOX high fronted pull-out C or F on its own cabinet profiles) and, above it in the same opening, an inner drawer (M or K) or inner pull-out (C) on its own cabinet profiles, reached when the front pull-out is open. CLAUDE.md T78 F16: a drawer row may be `double: true`; the inner drawer's box height, runner length and the clearance between the two boxes come from here.",
+    "blumPairingEvidence": {
+      "printed": "A locking bar set is specified for one drawer, M, and one high fronted pull-out, C, which shows that an M drawer and a C-height high-fronted pull-out are planned together in a tier (2024/2025 catalogue, the locking bar page; page number not readable from the snippet)",
+      "url": "https://publications.blum.com/2024/catalogue/en/",
+      "page": null
+    },
+    "minimumFrontHeightRule": {
+      "value": null,
+      "note": "no source read prints Blum's minimum FRONT height for a deep pull-out with an inner drawer above it. The arithmetic the engine can use is the SUM of the two space requirements below (derived.stackMinimumMm); it is the engine's own until the owner confirms it against the catalogue's planning page."
+    }
+  },
+  "legraboxHeightsMm": {
+    "N": 66.5, "M": 90.5, "K": 128.5, "C": 177, "F": 241,
+    "printed": "Height N - 66.5 mm, Height M - 90.5 mm, Height K - 128.5 mm, Height C - 177 mm, Height F - 241 mm (blum.com/aa/en, gb/en, in/en programme pages); the NZ page prints C 177.5 and F 241.0",
+    "url": "https://www.blum.com/gb/en/products/boxsystems/legrabox/programme/",
+    "conflict": "C is printed 177 on three regional pages and 177.5 on the NZ page; a US dealer prints F as 241 (9-1/2 in). 177 is recorded; the owner confirms.",
+    "status": "owner to confirm"
+  },
+  "nominalLengthsMm": {
+    "values": [270, 300, 350, 400, 450, 500, 550, 600, 650],
+    "printed": "LEGRABOX drawer side heights M, K, C and F with nominal lengths of 270, 300, 350, 400, 450, 500, 550, 600 and 650 mm (2024/2025 catalogue, LEGRABOX individual pages en/238, da/242); nominal cabinet profile lengths from 270 to 650 mm (dakotahardwoods.com)",
+    "url": "https://publications.blum.com/2024/catalogue/en/238/",
+    "nNote": "height N: 'the drawer side in height N is not included in the range of design options' (en/238); the 2022/2023 edition shows N in a centre-piece table for NL 450 to 650 only; N's full length list was not read",
+    "innerDrawerKitsSold": "interfitco.com sells LEGRABOX inner drawer kits in 450, 500, 550 and 600 NL, 40 kg or 70 kg",
+    "status": "owner to confirm"
+  },
+  "innerDrawers": {
+    "M": {
+      "label": "Inner drawer, M (solid front piece)",
+      "webCode": "DQBPDA",
+      "catalogue2024": "en/204",
+      "drawerSideHeightMm": 90.5,
+      "spaceRequirementInCabinetMm": {
+        "value": 109,
+        "printed": "LEGRABOX pure, M-height inner drawer: the drawer side height is 90.5 mm, and the space requirement in the cabinet is 109 mm (Blum Hong Kong price list 2023, publications.blum.com/2023/price-lists/bhk/en/); interfitco.com: Drawer side height: 90.5mm Height required in cabinet: 109mm",
+        "url": "https://publications.blum.com/2023/price-lists/bhk/en/",
+        "note": "the plain M DRAWER (not inner) is 106 on the same list (Blum Vietnam 2025/2026: 106; Blum Vietnam 2024/2025: 'Minimum required space: 104mm'); the inner drawer's 109 is the figure for F16",
+        "status": "owner to confirm"
+      },
+      "latchSet": { "article": "ZI7.0M07", "printed": "The 2024/2025 catalogue lists DQBPDA on page 204 with the latch set ZI7.0M07 and a drawer side height of 90.5 mm", "fromHeightMm": 71, "fromHeightPrinted": "Inner drawer with latch set possible from height 71 mm (2022 en/199, the same web code)", "status": "owner to confirm" },
+      "frontFixingSet": { "steelColour": "ZI7.0MS0", "stainless": "ZI7.0MI0", "contents": "left and right front fixing pieces, external cover caps, a locking piece and screws (en/204)" },
+      "frontPiece": "ZV7.1043C01, see reference/hardware/blum-inner-front.json"
+    },
+    "K": {
+      "label": "Inner drawer, K (mid-height solid front piece)",
+      "webCode": "DQGPIM",
+      "catalogue2024": "en/208",
+      "drawerSideHeightMm": 128.5,
+      "spaceRequirementInCabinetMm": { "value": null, "note": "not printed in any snippet read (the Hong Kong list shows no K line); null" },
+      "frontFixingSet": { "steelColour": "ZI7.0KS0", "stainless": "ZI7.0KI0", "printed": "LEGRABOX front fixing bracket, height K, for interior drawer, right+left (ahturf.com); interfitco.com lists ZI7.0KS0 for the 98 mm cut-to-size inner front", "status": "owner to confirm" },
+      "status": "owner to confirm"
+    },
+    "N": {
+      "label": "Inner drawer, N",
+      "value": null,
+      "note": "no inner drawer N page, web code, front fixing set (ZI7.0NS0 was searched and not found) or space requirement was found; Blum's programme lists the N drawer side (66.5) but nothing read pairs it with an inner front"
+    },
+    "C_innerPullOut": {
+      "label": "Inner pull-out, C (front piece with gallery / cross gallery)",
+      "webCode": { "legraboxFree2022": "DQBUZY", "legraboxPure2024": null, "note": "the 2024/2025 page of the pure C inner pull-out was not located; the LEGRABOX free high fronted pull-out C is DQBQRY on en/219" },
+      "drawerSideHeightMm": 177,
+      "spaceRequirementInCabinetMm": {
+        "value": 191,
+        "printed": "LEGRABOX pure box system C height inner pull-out (front piece with gallery): the drawer side height is 177 mm, and the space requirement in the cabinet is 191 mm (Blum Hong Kong price list 2023); LEGRABOX free C inner pull-out: 191 (same list); 2022 en/192 overview: Inner pull-out, gallery, C 40 191 70 DQBUZY",
+        "url": "https://publications.blum.com/2023/price-lists/bhk/en/16-17/",
+        "note": "interfitco.com prints 193 for its bespoke C inner drawer and 191 for its C inner front with cross gallery (height 185); the Hong Kong list prints 193 for the C HIGH FRONTED pull-out (pure). 191 is recorded for the inner pull-out.",
+        "status": "owner to confirm"
+      },
+      "frontFixingSet": { "crossGallery": { "steelColour": "ZI7.3CS0", "stainless": "ZI7.3CI0" }, "designElement": "ZI7.2CS0 (includes an adaptor piece for the low design element)", "printed": "LEGRABOX inner front end fixings R+L, height C for use with LEGRABOX cut to size inner front 98mm and inner front gallery (interfitco.com, ZI7.3CS0)", "status": "owner to confirm" },
+      "crossGallery": { "catalogue2024": "en/549", "printed": "AMBIA-LINE steel cross gallery, for cutting to size, Suitable for LEGRABOX high fronted pull-out and inner pull-out, height C and F", "status": "owner to confirm" },
+      "status": "owner to confirm"
+    },
+    "F_innerPullOut": {
+      "label": "Inner pull-out, F",
+      "drawerSideHeightMm": 241,
+      "spaceRequirementInCabinetMm": { "value": null, "note": "not printed in any snippet read; null" },
+      "crossGallery": "the en/549 cross gallery names height F as suitable",
+      "status": "owner to confirm"
+    }
+  },
+  "deepPullOutBelow": {
+    "what": "the lower, front-carrying box of the double drawer: a LEGRABOX high fronted pull-out",
+    "C": {
+      "drawerSideHeightMm": 177,
+      "spaceRequirementInCabinetMm": { "value": 193, "printed": "C-height high-fronted pull-out: Drawer side height is 177 mm Space requirement in cabinet is 193 mm (LEGRABOX pure, Blum Hong Kong price list 2023)", "url": "https://publications.blum.com/2023/price-lists/bhk/en/16-17/", "status": "owner to confirm" },
+      "webCodeLegraboxFree2024": "DQBQRY (en/219)"
+    },
+    "F": {
+      "drawerSideHeightMm": 241,
+      "spaceRequirementInCabinetMm": { "value": null, "note": "not printed in any snippet read; null" }
+    },
+    "M_drawer": {
+      "drawerSideHeightMm": 90.5,
+      "spaceRequirementInCabinetMm": { "value": 106, "printed": "M-height drawer (LEGRABOX pure): a drawer side height of 90.5 mm with a space requirement in the cabinet of 106 mm (Blum Hong Kong price list 2023; Blum Vietnam 2025/2026 price list: 106)", "status": "owner to confirm" }
+    }
+  },
+  "planning": {
+    "minInternalCabinetDepth": { "value": "NL + 3", "printed": "minimum internal cabinet depth equal to the nominal length plus 3 mm (Blum LEGRABOX order specification, ldlonline.co.uk/media/wysiwyg/others/media/legrabox-pure.pdf; Richelieu planning sheet); with an extra 1 mm if the cabinet profiles are fitted before the cabinet is assembled", "status": "owner to confirm" },
+    "innerWidthRules": { "value": ["LW - 38", "LW - 35"], "printed": "The planning drawings list LW - 38 mm and LW - 35 mm dimensions (the same order specification); the snippet does not say which part each belongs to", "status": "owner to confirm" },
+    "backCut": { "value": "NL - 10", "printed": "a chipboard back cut of nominal length minus 10 mm (Richelieu planning sheet, static.richelieu.com/documents/docsGr/117/711/5/1177115/1750793.pdf)", "note": "the snippet does not say whether this is the drawer bottom or the drawer back; recorded as read", "status": "owner to confirm" },
+    "profileFittedBeforeAssembly": { "value": "+1", "printed": "1 mm must be added to the space requirement if the cabinet profile is installed before the cabinet is assembled (2022 en/199; en/219; ko/225)" },
+    "tipOnMinFrontGapMm": { "value": 2.5, "printed": "minimum front gap of 2.5 mm (TIP-ON BLUMOTION for LEGRABOX, en/230; the 2022 edition the same)", "status": "owner to confirm" },
+    "insertElementXY": { "printed": "X = LW minus 80 mm; Y = 70 mm (low) / 138 mm (high) for the insert element of the inner pull-out (de/213, machine-read)", "status": "owner to confirm" }
+  },
+  "derived": {
+    "stackMinimumMm": {
+      "how": "the SUM of the two space requirements of the pair, nothing else added: the deep pull-out below plus the inner drawer above; the engine's own `profile.baseDrawerUnit.boxTopClearance` (5) is NOT in this sum and is a separate owner's number",
+      "C_below_M_above": { "value": 302, "how": "193 + 109" },
+      "C_below_C_above": { "value": 384, "how": "193 + 191" },
+      "F_below_M_above": { "value": null, "how": "would be F's space requirement + 109", "note": "the F high fronted pull-out's space requirement in cabinet was not printed in any snippet read, so the sum cannot be formed; null until the owner reads it off the catalogue page" },
+      "status": "derived, owner to confirm"
+    },
+    "clearanceBetweenBoxes": {
+      "value": null,
+      "note": "Blum prints a space requirement per drawer (the cabinet height one drawer takes, runner included), not a gap between two boxes; the gap is inside the space requirement. The engine's `boxTopClearance` 5 is the owner's own and stays."
+    }
+  },
+  "articles": {
+    "cabinetProfiles": {
+      "value": null,
+      "note": "the European LEGRABOX cabinet profile articles (750.xxxx / 770 series) were not read; US dealer KIT codes seen: 770M50S0S (M, NL 500, orion grey), 770F50S0S (F, 500), 770N50S0S (N, 500), 770N45S0S, 770N55S0S, 770F40S0S, 770F45S0S, 770F55S0I (stainless), BS773F50S0I (cabinetparts.com); the pattern 770 + height letter + NL/10 + S0 + finish is the dealers', not Blum's statement"
+    },
+    "frontFixingSets": { "M": ["ZI7.0MS0", "ZI7.0MI0"], "K": ["ZI7.0KS0", "ZI7.0KI0"], "C_crossGallery": ["ZI7.3CS0", "ZI7.3CI0"], "C_designElement": ["ZI7.2CS0"], "N": null },
+    "latchSetM": "ZI7.0M07",
+    "frontPieces": { "withoutGroove": "ZV7.1043C01", "withGroove48": "ZV7.1043MN1" }
+  },
+  "tandemboxAlternative": {
+    "innerPullOutGalleryC": { "spaceRequirementMm": 192, "webCode": "DQCAHA", "loadKg": 30, "catalogue2024": "en/292 (overview); the gallery C page of the 2022/2023 edition gives the depth as NL + 3" },
+    "innerPullOutGalleryD": { "spaceRequirementMm": 224, "webCode": "DQCB6M", "loadKg": 30, "catalogue2024": "en/292 (overview); gallery D page among en/310 to en/314" },
+    "printed": "The 2024/2025 overview table lists the inner pull-out gallery C at 192 mm height with web code DQCAHA, and gallery D at 224 mm with web code DQCB6M. It also gives a 30 kg rating",
+    "status": "owner to confirm"
+  },
+  "engineNotes": {
+    "whatF16Takes": "box height options: the inner drawer M (side 90.5, space 109) and K (side 128.5, space null) and the inner pull-out C (side 177, space 191); the lower box: a high fronted pull-out C (space 193) or F (space null); runner nominal lengths 270 to 650 in Blum's ladder, 450 to 600 as sold in inner drawer kits; the clearance between the boxes is inside Blum's space requirements, so the engine's `double` row needs the SUM (derived.stackMinimumMm) and refuses a front shorter than it in words.",
+    "ourBoxes": "the engine's boxes are wooden (profile.baseDrawerUnit, drawerBox.js), not LEGRABOX; Blum's numbers here size the CATALOGUE arrangement the owner asked for ('szuflada na sztućce z bluma'); the wooden box's own height law stays the engine's.",
+    "notRead": "the 2024/2025 space requirement tables themselves (en/204, en/208), any N or F inner drawer data, the European cabinet profile articles, Blum's minimum front height for the pair"
+  }
+}

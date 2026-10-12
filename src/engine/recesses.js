@@ -89,6 +89,10 @@ export function panelRecesses(panel, drills = [], { thickness = 0, skipLayers = 
       layer: p.layer,
       depth: Math.min(depth, thickness || depth),
       through: thickness > 0 && depth >= thickness - 1e-6,
+      // T78 F20 · which face the cut is made from: 'outside' for a Cabineo
+      // pocket (cut from the carcass's outside face, engine/cabineo.js), else
+      // the drawn face. Carried, never decided here: the scene reads it.
+      ...(p.face ? { face: p.face } : {}),
       ...clipped,
     });
   }
@@ -116,6 +120,8 @@ export function panelRecesses(panel, drills = [], { thickness = 0, skipLayers = 
       layer: hole.layer,
       depth: depth > 0 ? Math.min(depth, thickness || depth) : null,
       through: !(depth > 0) || (thickness > 0 && depth >= thickness - 1e-6),
+      // T78 F20 · as for a pocket: the face the hole is drilled from, when the record says it.
+      ...(hole.face ? { face: hole.face } : {}),
       x: hole.x,
       y: hole.y,
       r,

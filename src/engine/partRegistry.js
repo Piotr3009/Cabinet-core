@@ -359,6 +359,61 @@ export const PART_REGISTRY = {
     id: 'kit_valet_rod', name: 'Valet rod', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism: a pull-out rod, zero holes',
   },
+  // T78 F9 · the L corner unit's carousel (the owner: *"krecacy sie naroznik
+  // na garnki w srodku"*): bought, one line per L, a placeholder body, zero holes.
+  kit_carousel: {
+    id: 'kit_carousel', name: 'Carousel', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought corner mechanism: round trays on a post in the L\'s inner corner, zero holes',
+  },
+  // T78 F7 · the L's SPACE CORNER kit (the owner: *"szuflady w narozniku L
+  // shape"*): the corner front pieces and the rear fixing bracket of a drawer
+  // row, one line per row, a placeholder body, zero holes.
+  // T78 F8 · the bi-fold corner hinge (the owner: *"zawiasy podwojne czyli
+  // jedne drzwiczki do carcasu a pozniej zawiasy od drzwiczek do drzwiczek"*):
+  // bought, counted per hinge row of leaf B, zero holes until the catalogue's
+  // cup pattern is in reference/hardware/blum-hinges.json.
+  hinge_bifold: {
+    id: 'hinge_bifold', name: 'Bi-fold corner hinge', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Blum CLIP top 60 degree bi-fold corner hinge: leaf B hangs on leaf A, a line and a body, zero holes',
+  },
+  // T78 F11 · the Hafele blind-corner pull-out (the owner: *"hafele naroznik
+  // slepy czyli wysuwane"*): bought, one line per blind kit, a placeholder body
+  // of two wire trays, zero holes.
+  kit_blind_pullout: {
+    id: 'kit_blind_pullout', name: 'Blind corner pull-out', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought blind-corner mechanism (Hafele): two wire trays swinging out of the blind part, zero holes',
+  },
+  kit_space_corner: {
+    id: 'kit_space_corner', name: 'SPACE CORNER kit', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'A bought corner drawer mechanism (Blum SPACE CORNER): joins the two boxes of an L drawer row, zero holes',
+  },
+  // ─── T78 F18 · THE LIFT-UP WALL UNIT'S BOUGHT LIFT (BLUM AVENTOS) ────────
+  // The owner: *"szafki poziome otwierane do gory system blum ... podwojne
+  // drzwi pojedyncze etc."*  Five lines a lift unit orders (engine/
+  // liftSystems.js liftPlanFor, off reference/hardware/aventos.json): the
+  // lift mechanism set, the lever arm set (HS, HL, HF), the cover cap set,
+  // the front fixing bracket set, and the HF top's hinge set. A line and a
+  // body, zero holes (the fixing patterns are null in the catalogue file).
+  lift_mechanism: {
+    id: 'lift_mechanism', name: 'AVENTOS lift mechanism set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Blum AVENTOS HK / HS / HL / HF top lift mechanism set (two mechanisms), chosen off the catalogue file by power factor or by cabinet height and front weight; owner to confirm',
+  },
+  lift_lever_arm: {
+    id: 'lift_lever_arm', name: 'AVENTOS lever arm set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'The HS / HL / HF top lever arm set, by cabinet height; the HK top has none',
+  },
+  lift_cover_caps: {
+    id: 'lift_cover_caps', name: 'AVENTOS cover cap set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'One set per lift unit (22K8000 for the HK top, 22.8000 for HS / HL / HF top), owner to confirm',
+  },
+  lift_front_bracket: {
+    id: 'lift_front_bracket', name: 'AVENTOS front fixing bracket set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'One set (two brackets) per lift leaf; its holes on the leaf are marked with the ZML.2200 template, never bored here',
+  },
+  hinge_aventos_hf: {
+    id: 'hinge_aventos_hf', name: 'AVENTOS HF hinge set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'CLIP top 120 degree unsprung hinge and centre hinge of the HF top bi-fold, counted per the catalogue rule; cup pattern not read, zero holes',
+  },
   kit_pulldown_rail: {
     id: 'kit_pulldown_rail', name: 'Pull-down rail', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism — T33 put it on the order form, zero holes',
@@ -410,6 +465,36 @@ export const PART_REGISTRY = {
   dowel: {
     id: 'dowel', name: 'Dowels', group: G('consumable'), unit: 'pcs', materialType: 'consumable',
     note: 'Counted from the biscuit / dowel joints the engine drilled',
+  },
+  // T78 F20 · the Cabineo connector and its cover cap: order lines of a
+  // Cabineo unit (engine/cabineo.js cabineoHardwareLines, pushed by
+  // computeCabinet), counted off the engine's pockets, never recomputed. The
+  // articles are NOT on Lamello's sheet (reference/hardware/cabineo/
+  // cabineo.json: null), so the product is the workshop's assignment, as
+  // every hardware row here is.
+  cabineo_connector: {
+    id: 'cabineo_connector', name: 'Cabineo connectors', group: G('consumable'), unit: 'pcs', materialType: 'consumable',
+    note: 'One per Cabineo pocket (8 or 12, the company default); article owner to supply',
+  },
+  cabineo_cap: {
+    id: 'cabineo_cap', name: 'Cabineo cover caps', group: G('consumable'), unit: 'pcs', materialType: 'consumable',
+    note: 'One per Cabineo pocket under caps all, per fixed-shelf pocket under caps shelves; article owner to supply',
+  },
+  // T78 F21 - THE PAINT OF THE SPRAYED SETS, by the LITRE (CLAUDE.md PART F).
+  // Set 1 is the fronts and every element of the spray law (doors, drawer
+  // fronts, end panels, plinths, infills, masks, posts, blanks, strips,
+  // pelmets, cornices, open shelves); set 2 is a veneer or sprayed CARCASS.
+  // The quantity is the spray schedule's (engine/spray.js paintPurchaseQtys:
+  // m2 x coats / coverage + the waste), never typed; the material is a row of
+  // the warehouse's Paints department, offered to the picker by
+  // engine/spray.js withPaints with `category: 'paint'`.
+  paint_fronts: {
+    id: 'paint_fronts', name: 'Paint, set 1 (fronts and run pieces)', group: G('consumable'), unit: 'L', materialType: 'paint',
+    note: 'Litres off the spray schedule for the fronts, the run pieces and every element of the spray law (T78 F21)',
+  },
+  paint_carcass: {
+    id: 'paint_carcass', name: 'Paint, set 2 (veneer or sprayed carcass)', group: G('consumable'), unit: 'L', materialType: 'paint',
+    note: 'Litres off the spray schedule for the inside faces of a veneer or sprayed carcass (T78 F21)',
   },
   glue: {
     id: 'glue', name: 'Glue', group: G('consumable'), unit: 'L', materialType: 'consumable',
@@ -573,6 +658,9 @@ export function partIdForElement(partName, { typeId = null } = {}) {
 // line nobody ever sees.
 export const HARDWARE_TO_PART_ID = {
   hinges: 'hinge',
+  // T78 F20 · the Cabineo order lines (engine/cabineo.js, pushed by computeCabinet's `hw`).
+  cabineo_connector: 'cabineo_connector',
+  cabineo_cap: 'cabineo_cap',
   runner_pairs: 'runner',
   runner_sync_rods: 'runner_sync_rod',
   legs: 'leg',
@@ -604,6 +692,20 @@ export const HARDWARE_TO_PART_ID = {
   // T75 F19 · the two kinds WARDROBE_KIT_KINDS gained.
   wardrobe_kit_hooks: 'kit_hooks',
   wardrobe_kit_valet_rod: 'kit_valet_rod',
+  // T78 F9 · `hw(kit.kind, …)` for CORNER_KIT_KINDS: the L's carousel.
+  carousel: 'kit_carousel',
+  // T78 F7 · `hw('space_corner', …)`, one per L drawer row.
+  space_corner: 'kit_space_corner',
+  // T78 F11 · `hw(kit.kind, …)` for BLIND_KIT_KINDS: the blind kit's pull-out.
+  blind_pullout: 'kit_blind_pullout',
+  // T78 F8 · `hw('bifold_hinges', …)`, leaf B's hinge rows.
+  bifold_hinges: 'hinge_bifold',
+  // T78 F18 · `hw('lift_*', …)`, the lift-up wall unit's bought lift.
+  lift_unit: 'lift_mechanism',
+  lift_arm: 'lift_lever_arm',
+  lift_caps: 'lift_cover_caps',
+  lift_bracket: 'lift_front_bracket',
+  lift_hinges: 'hinge_aventos_hf',
 };
 
 /**

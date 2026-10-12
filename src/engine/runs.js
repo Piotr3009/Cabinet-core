@@ -393,6 +393,15 @@ export function unitVerticals(units, profile) {
       const width = Number(unit.params?.[key]) || 0;
       if (width > 0) add(side, width, 0, 'corner-post', `${side}-post`);
     }
+    // T78 F10 · the run that stops on a BLIND kit's own corner strip: the strip
+    // is the blind kit's board, but it stands here, beside this unit in its
+    // door plane, so the door beside it sees the same rigid neighbour.
+    for (const [side, key] of [['L', 'corner_butt_left_mm'], ['R', 'corner_butt_right_mm']]) {
+      const width = Number(unit.params?.[key]) || 0;
+      if (width > 0 && !(Number(unit.params?.[side === 'L' ? 'corner_post_left_mm' : 'corner_post_right_mm']) > 0)) {
+        add(side, width, 0, 'corner-post', `${side}-post`);
+      }
+    }
   }
   return out;
 }
@@ -516,10 +525,36 @@ function nearestVertical(verticals, side, { wall, carcassEdge, tolerance }) {
 // it is a very shallow angle. So the corner is mitred when the filler is at
 // least as wide as the gap is tall, and butted otherwise, and a test holds both.
 
+// --- T78 F22 . THE TOP INFILL IS ALWAYS MITRED AT A CORNER -------------------
+//
+// The owner, 11.10.2026, on the eye-test of T75 to T77: *"zawsze z mitra,
+// gorny infill to samo co boczny."*  T75 F6 gave `runEnd` its fifth answer,
+// 'corner': a run that stops on the corner post (or, since T78 F10, on a blind
+// kit's own 40 mm strip) ENDS there, square on the post's outer edge, in the
+// face plane of the run round the corner. So a top infill turning an INTERNAL
+// PLAN corner met the other run's strip with a square butt, while the frame
+// corner (the side infill, standing in the SAME face plane) has been mitred
+// since T15. The owner wants the one law: every internal corner a top infill
+// turns is a 45, whether the piece it meets stands in its own face plane (the
+// side infill) or across it (the corner post and the perpendicular run's strip).
+//
+// What the number means did not change. It is the record of the frame corner,
+// `faceH`, so every reader of it (`cabinet.js` meta.corner, `mitre.js`,
+// readiness) keeps one grammar; and since T50-F11 it is a RECORD on the part,
+// never a cut: both boards leave the machine square and the corner is cut on
+// site from the 20 mm allowance (in plan the leg of that cut is the strip's own
+// thickness). The T-joint keeps its tolerance case: a side filler standing
+// proud of the strip beyond `tolerance` is not a corner, and a filler too
+// narrow for the cut is still butted. A 'corner' end carries no filler top and
+// no filler width (the post runs to the unit top; the other run's strip is a
+// run's own piece), so neither question is asked of it.
+
 /**
  * The 45° mitre at one end of a top infill, or 0 for a square corner.
  *
- * THREE things have to be true, and each of them is a joiner's reason:
+ * At a 'corner' end (T75 F6 / T78 F10: the run stops on the corner post) the
+ * answer is the 45, always (T78 F22). At a side infill THREE things have to be
+ * true, and each of them is a joiner's reason:
  *
  *   1. the thing in the way is a SIDE INFILL. `blockedBy` is what separates the
  *      two answers that both call themselves 'infill': a ceiling-height filler
@@ -538,7 +573,12 @@ function nearestVertical(verticals, side, { wall, carcassEdge, tolerance }) {
 export function infillCornerMitre(end, faceH, elementTop, tolerance = 0) {
   const h = Math.max(0, Number(faceH) || 0);
   if (h <= 0) return 0;
-  if (!end || end.kind !== 'infill' || !end.blockedBy) return 0;
+  if (!end) return 0;
+  // T78 F22: the internal plan corner. The strip stops on the corner post and
+  // meets the other run's strip across its face plane: a 45, with no filler top
+  // to be flush with and no filler width to have room in.
+  if (end.kind === 'corner') return h;
+  if (end.kind !== 'infill' || !end.blockedBy) return 0;
   const flush = Math.abs((Number(end.blockerTop) || 0) - (Number(elementTop) || 0))
     <= Math.max(0, Number(tolerance) || 0);
   if (!flush) return 0;
@@ -589,7 +629,9 @@ export function runEnd(run, side, {
   // there. Not 'open' (a top infill or a cornice would turn and return into the
   // dead corner, the probe measured 438 mm of it) and not a 'wall': it stops
   // square on the post's outer edge, in the plane of the run round the corner.
-  const postMm = Number(unit.params?.[side === 'left' ? 'corner_post_left_mm' : 'corner_post_right_mm']) || 0;
+  // T78 F10 · …or on a blind kit's own strip (`corner_butt_*_mm`, the stop record).
+  const postMm = Number(unit.params?.[side === 'left' ? 'corner_post_left_mm' : 'corner_post_right_mm'])
+    || Number(unit.params?.[side === 'left' ? 'corner_butt_left_mm' : 'corner_butt_right_mm']) || 0;
   if (postMm > 0) {
     return { kind: 'corner', x: side === 'left' ? carcassEdge - postMm : carcassEdge + postMm };
   }
@@ -796,6 +838,17 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
     // of the same wall and do not block each other.
     const others = units.filter((u) => (u.position?.wall ?? 0) === run.wall
       && getUnitType(u.type).mount === run.mount);
+    // T78 F1 · an L on the NEXT wall reaches onto this one with its arm B: a
+    // run that ends at that arm has no gap there, so it offers no plus into
+    // the L (the span is the same one `cornerLAdjacentSpan` gives the plus
+    // and the placement; a stand-in unit of that span is what `runEndGap`
+    // measures, since it reads units by `paddedSpan`).
+    for (const u of units) {
+      if ((u.position?.wall ?? 0) === run.wall || getUnitType(u.type).mount !== run.mount) continue;
+      const adj = cornerLAdjacentSpan(u, walls, profile);
+      if (!adj || adj.wall !== run.wall) continue;
+      others.push({ id: `${u.id}:arm-b`, position: { wall: run.wall, x_mm: adj.left }, params: { width: adj.right - adj.left } });
+    }
     for (const side of ['left', 'right']) {
       const { gap } = runEndGap(run, side, { wallWidth, others });
       if (gap < min) continue;
@@ -812,7 +865,98 @@ export function addPlusPoints(units, { walls = [] } = {}, profile) {
       });
     }
   }
+  // ─── T78 F1 · THE L's SECOND END, ON THE ADJACENT WALL ────────────────────
+  //
+  // The owner, 11.10.2026: *"dodawanie szafek po lewej stronie l shape szafki
+  // prosze, teraz nie mozna dodac zadnych szafek."*  A run is one wall's
+  // (`levelGroups` keys on the wall), so the L's arm on the ADJACENT wall stood
+  // in no run and offered no plus: the first cabinet on that wall had no
+  // gesture at all. The L occupies the corner square in BOTH walls' depth
+  // bands and nothing else, so on the adjacent wall the first free slot begins
+  // at the end of arm B, and a plus stands there exactly as one stands at the
+  // free end of a run: the same threshold, the same gap to the next thing at
+  // the same level. `cornerLAdjacentSpan` is the one arithmetic the plus, the
+  // placement (`projectStore.addUnit`) and the test read.
+  for (const unit of units) {
+    const adj = cornerLAdjacentSpan(unit, walls, profile);
+    if (!adj) continue;
+    const type = getUnitType(unit.type);
+    const spans = units
+      .filter((u) => u.id !== unit.id && (u.position?.wall ?? 0) === adj.wall
+        && getUnitType(u.type).mount === type.mount
+        && !((((Number(u.position?.rotation_deg) || 0) % 360) + 360) % 360))
+      .map(paddedSpan);
+    const wallWidth = walls?.[adj.wall]?.width ?? 0;
+    let gap;
+    if (adj.side === 'left') {
+      const blocked = spans.filter((s) => s.right <= adj.x_mm + 1e-6).map((s) => s.right);
+      gap = Math.max(0, adj.x_mm - (blocked.length ? Math.max(...blocked) : 0));
+    } else {
+      const blocked = spans.filter((s) => s.left >= adj.x_mm - 1e-6).map((s) => s.left);
+      gap = Math.max(0, (blocked.length ? Math.min(...blocked) : wallWidth) - adj.x_mm);
+    }
+    if (gap < min) continue;
+    out.push({
+      unitId: unit.id,
+      side: adj.side,
+      wall: adj.wall,
+      mount: type.mount,
+      x_mm: adj.x_mm,
+      gap,
+      top: unitTop(unit, profile),
+      // The plus stands in front of the ARM, not half the L's depth out.
+      corner: true,
+      depth_mm: adj.armMm,
+    });
+  }
   return out;
+}
+
+/**
+ * T78 F1 · THE L AS THE ADJACENT WALL SEES IT.
+ *
+ * An L stands on two walls (T75 F4): arm A along its own wall, arm B along the
+ * wall its corner end meets. In the ADJACENT wall's frame arm B is a span
+ * along that wall from the corner: the wall gap the L keeps off its own wall,
+ * then its depth D (`toObstacleUnit` and `wallObstacles` measure the same
+ * footprint, so the plus, the placement and the clamp stop at one line: the
+ * L's own arm end, its corner stop). The L's LEFT end in the corner means the
+ * adjacent wall is the one BEFORE it (that wall runs INTO the corner, so arm
+ * B occupies its END and the free side is the left); its RIGHT end in the
+ * corner means the wall AFTER it (arm B at its START, the free side right).
+ *
+ * @returns {null | {wall:number, span:{left:number,right:number}, left:number,
+ *   right:number, x_mm:number, side:'left'|'right', armMm:number}}
+ *   null for anything that is not an L standing along its wall.
+ */
+export function cornerLAdjacentSpan(unit, walls = [], profile) {
+  const type = getUnitType(unit?.type);
+  if (!unit || !type.corner) return null;
+  if ((((Number(unit.position?.rotation_deg) || 0) % 360) + 360) % 360) return null;
+  const room = (walls || []).filter((w) => w && !w.island);
+  const n = room.length;
+  const i = room.findIndex((w) => w.index === (unit.position?.wall ?? 0));
+  if (i < 0 || n < 2) return null;
+  const right = unit.params?.corner_side === 'right';
+  const wb = right ? room[(i + 1) % n] : room[(i - 1 + n) % n];
+  if (!wb) return null;
+  const gap = wallGapOf(unit, profile);
+  const D = Number(unit.params?.depth) || 0;
+  const wbWidth = Number(wb.width) || 0;
+  const span = right ? { left: gap, right: gap + D } : { left: wbWidth - gap - D, right: wbWidth - gap };
+  const side = right ? 'right' : 'left';
+  const armDefault = type.armDepthKey
+    ? Number(String(type.armDepthKey).split('.').reduce((o, k) => (o == null ? o : o[k]), profile)) || 0
+    : 0;
+  return {
+    wall: wb.index,
+    span,
+    left: span.left,
+    right: span.right,
+    x_mm: side === 'left' ? span.left : span.right,
+    side,
+    armMm: Number(unit.params?.arm_mm) > 0 ? Number(unit.params.arm_mm) : armDefault,
+  };
 }
 
 /**
@@ -1009,9 +1153,12 @@ export function runInfillParams(units, {
     // about its own corner, and everyone in the middle is told about neither.
     const first = run.units[0];
     const last = run.units[run.units.length - 1];
+    // T78 F22: the side filler carries the other half of a FRAME corner only.
+    // At a 'corner' end the other half is the perpendicular run's own strip,
+    // and no side filler is told about it (the number stays 0 there, as it was).
     const sideMitreFor = (u) => ({
-      left: u.id === first.id ? element.mitre.left : 0,
-      right: u.id === last.id ? element.mitre.right : 0,
+      left: u.id === first.id && element.ends.left === 'infill' ? element.mitre.left : 0,
+      right: u.id === last.id && element.ends.right === 'infill' ? element.mitre.right : 0,
     });
     out.set(first.id, { ...element, sideMitre: sideMitreFor(first) });
     for (const u of run.units.slice(1)) {
@@ -1184,6 +1331,19 @@ export function maskSegments(run) {
 
   for (const unit of run.units) {
     if (!wantsMask(unit)) { close(); continue; }
+    // ─── T78 F2 · AN L IS ITS OWN SEGMENT ───────────────────────────────────
+    // The owner, 11.10.2026: *"dolna maskujaca plyta nie wycina sie w
+    // ksztalcie L."*  The probe (verify/t78/f02-probe.md, rows 17 to 19): the
+    // L and the wall unit beside it were ONE segment, one rectangle as deep as
+    // the L over both. The L's board is the L (cabinet.js cuts it from the
+    // L's own plan), so it closes the run's segment on both sides and stands
+    // in one of its own; the cabinets along its arm are a board of their own
+    // from the arm end, as a plinth beside an L is (T75 F4).
+    if (getUnitType(unit.type).corner) {
+      close();
+      segments.push([unit]);
+      continue;
+    }
     if (current.length) {
       const previous = current[current.length - 1];
       const between = endPanelSpread(previous, previous.params?.front_t).right > 0

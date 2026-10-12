@@ -41,6 +41,8 @@ test('Output carries the three groups CLAUDE.md asks for, in that order', () => 
     'Cutting list CSV',
     'BOM PDF',
     'Bill of materials…',
+    // T78 F21: the Spraying page, in the BOM's group (a live document, like it).
+    'Spraying…',
   ]);
 
   // The groups are separated, not run together: a joiner scanning the menu
@@ -83,13 +85,14 @@ test('every entry runs the handler it was given — and only that one', () => {
     onExportCsv: () => fired.push('csv'),
     onExportPdf: () => fired.push('pdf'),
     onOpenBom: () => fired.push('bom'),
+    onOpenSpraying: () => fired.push('spraying'),
   });
 
   for (const item of entries(menu)) item.run?.();
   assert.deepEqual(fired, [
     'render',
     ...DRAWING_KINDS.map((d) => `drawing:${d.id}`),
-    'dxf', 'csv', 'pdf', 'bom',
+    'dxf', 'csv', 'pdf', 'bom', 'spraying',
   ]);
 });
 

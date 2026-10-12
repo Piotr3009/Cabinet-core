@@ -118,6 +118,9 @@ export const MODAL_KINDS = Object.freeze({
   // opens beside it — *"a draggable card on click"* — which is what 'object'
   // means here.
   warehouse: { about: 'project', label: 'Materials warehouse' },
+  // T78 F21 (CLAUDE.md PART F): the spray schedule is a document about the
+  // whole job, opened from the Spraying button and from Output > Spraying...
+  spraying: { about: 'project', label: 'Spraying' },
   'material-card': { about: 'object', label: 'Material' },
   'save-template': { about: 'object', label: 'Save as template' },
   element: { about: 'object', label: 'Element' },

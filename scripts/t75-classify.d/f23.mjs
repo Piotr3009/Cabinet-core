@@ -65,13 +65,16 @@ export const LICENSED = {
 };
 
 export const LIVENESS = {
+  // T78 F19 (11.10.2026): the owner's numbers (*"minimum 2 a kołki co mniej więcej co 250 mm"*, 6 mm) replace
+  // T75's proposals in SKYLON_JOINTS_DOWEL.lsp section A, and its NUMBERS block (section H) now counts 26 dowels
+  // on the BUD 600 where T75's rule at pitch 32 counted 44. The probe moves with the LISP, knowingly.
   dowel: () => {
     const r = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', joints_system: 'dowel' }, P);
     const bul = r.panels.find((p) => p.id === 'BUL');
     const dowels = r.drills.filter((d) => d.kind === 'dowel' && d.face !== 'edge').length;
     const edges = r.drills.filter((d) => d.kind === 'dowel' && d.face === 'edge').length;
     return {
-      live: dowels === 44 && edges === 44 && bul?.cnc?.outline?.length === 4
+      live: dowels === 26 && edges === 26 && bul?.cnc?.outline?.length === 4
         && !r.drills.some((d) => d.kind === 'puzzle') && r.warnings.some((w) => w.code === 'DOWEL_GATE'),
       said: `BUD with dowels cuts ${dowels} face holes and ${edges} edge bores, BUL outline ${bul?.cnc?.outline?.length} points, `
         + `${r.drills.filter((d) => d.kind === 'puzzle').length} puzzle holes`,

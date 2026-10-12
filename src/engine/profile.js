@@ -119,6 +119,18 @@ export const DEFAULT_CABINET_PROFILE = {
       // the report.
       GL: { label: 'Glass', apertureLayer: 'GLASS_APERTURE' },
     },
+    // ─── T78 F12 · THE GLASS: SMOKE BY DEFAULT, WITH A CHOICE ─────────────
+    // The owner, 11.10.2026: *"szyba powinna byc smoke, i powinna byc na
+    // drzwiczkach a nie gdzies na scianie"*; *"domyslnie smoke ale z wyborem."*
+    // A CHOICE per door (never a number typed): the BOM line names it, the
+    // scene tints it. `paneMm` is the glazier's pane on the order line (the
+    // scene drew 4 since T58b); T78 proposed, owner to confirm.
+    glass: {
+      kinds: ['clear', 'smoke', 'reeded'],
+      default: 'smoke',        // owner 11.10.2026, decided
+      paneMm: 4,               // T78 proposed, owner to confirm
+      labels: { clear: 'Clear', smoke: 'Smoked', reeded: 'Reeded' },
+    },
     defaultType: 'S',
     // ─── T76 F4 · THE DECORATIVE RECIPES LIVE HERE ──────────────────────────
     //
@@ -432,9 +444,54 @@ export const DEFAULT_CABINET_PROFILE = {
   //            the run that stops on the corner (F2).
   //   overlap  which arm of an L corner unit carries the overlapping door (F4):
   //            'adjacent' is the arm on the adjacent wall.
+  //
+  //   leafMinMm      T78 F5: the smallest leaf an L's arm may hang; an arm is
+  //                  never shorter than its depth plus this (the top box's own
+  //                  200, the one "not worth hanging under" number the house
+  //                  has, read here as a number of its own).
+  //   wallLeafMaxMm  T78 F6: the widest leaf a wall L hangs; a longer arm is
+  //                  split and the rest proposed as a plain wall unit. The
+  //                  owner, 11.10.2026: *"jesli drzwiczki beda wieksze niz 700
+  //                  w szafce wiszacej"*.
+  // T78: CLAUDE.md names these under `profile.cornerUnit`; that block was
+  // deleted by T75 F4 (kasacja, asserted by its test), so they live in the
+  // corner's own block beside the post.
   corner: {
-    postMm: 50,              // T75 proposed, owner to confirm
+    // T78 F10 · the owner, 11.10.2026, decided: *"listwa narozinkowa musi miec
+    // 40 mm bo jak beda raczki to sie nie otworza."*  The strip is the BLIND
+    // kit's own part (front material, flat, 40 x front_t, plinth line to top).
+    postMm: 40,              // owner 11.10.2026, decided
     overlap: 'adjacent',     // T75 proposed, owner to confirm
+    leafMinMm: 200,          // T78 proposed, owner to confirm
+    wallLeafMaxMm: 700,      // owner 11.10.2026, decided ("wieksze niz 700")
+    // T78 F9 · the carousel in the L's inner corner (the owner: *"krecacy sie
+    // naroznik na garnki w srodku"*): a BOUGHT mechanism, a BOM line and a
+    // placeholder body, zero holes (CLAUDE.md T78 LAWS). These are the
+    // PLACEHOLDER's numbers (two round trays on a post, inset from the corner
+    // square), not a product's: a GLB slot waits in 3d/hardwareRegistry.
+    // T78 F7 · the SPACE CORNER drawer stack: rows two to four (the drawer
+    // unit's own splits), the kit's placeholder body at the inner corner.
+    // T78 proposed, owner to confirm (the catalogue's numbers are in
+    // reference/hardware/blum-space-corner.json).
+    // T78 F8 · the bi-fold corner door: leaf B hangs on leaf A's free edge
+    // with Blum's CLIP top 60 degree bi-fold corner hinge (Hinge systems
+    // p. 116, reference/hardware/blum-hinges.json families.bifold). The angle
+    // is the catalogue's; this is the fallback while the file is not loaded.
+    // Owner to confirm.
+    bifold: { angleDeg: 60, label: 'CLIP top 60 degree bi-fold corner hinge' },
+    spaceCorner: {
+      label: 'Blum SPACE CORNER kit', rowsMin: 2, rowsMax: 4, bracketMm: 60,
+    },
+    // T78 F11 · the Hafele blind-corner pull-out (the owner: *"hafele naroznik
+    // slepy czyli wysuwane"*): a bought mechanism in the blind part, two wire
+    // trays that swing out, a placeholder body until the owner drops a model
+    // in. T78 proposed, owner to confirm.
+    blindPullout: {
+      label: 'Hafele blind corner pull-out', trays: 2, trayMm: 20, clearMm: 10,
+    },
+    carousel: {
+      label: 'Carousel (pots)', trays: 2, trayMm: 15, postMm: 25, clearMm: 10, // T78 proposed, owner to confirm
+    },
   },
 
   // ─── T75 F7 · THE CORNER NOTCH (reference/lisp/KIT_NOTCH.lsp) ─────────────
@@ -464,21 +521,74 @@ export const DEFAULT_CABINET_PROFILE = {
   //
   // `dowel` is the LISP's `dowel-profile`, key for key. `confirmed` is THE
   // GATE: while it is false every CNC export that would machine a dowel hole
-  // refuses, and Check #31 says so. `maxGapMm` is the LISP's own addition to
-  // the CLAUDE.md table (the spacing rule needs a stated maximum gap).
+  // refuses, and Check #31 says so.
+  //
+  // T78 F19 (11.10.2026): four of the numbers are the OWNER'S, decided:
+  // *"minimum 2 a kołki co mniej więcej co 250 mm"*, dowels 6 mm, the end
+  // offset 50 kept as his. The two depths stay T75 proposed. T75's `maxGapMm`
+  // (128, the LISP's own addition: its spacing rule needed a stated maximum
+  // gap) is NO LONGER PART OF THE RULE: the dowels are set out at the end
+  // offset from each end and spread evenly, never fewer than two, no gap over
+  // the pitch, so the owner's pitch IS the widest gap. It is gone from here,
+  // from SKYLON_JOINTS_DOWEL.lsp and from `engine/dowels.js`; the migrate
+  // line drops it from a saved profile. The gate stays shut until the owner
+  // says the dowel is confirmed.
   joints: {
     system: 'puzzle',
     dowel: {
-      diaMm: 8,           // T75 proposed, owner to confirm
+      diaMm: 6,           // owner 11.10.2026, decided ("6 mm"), T78 F19
       edgeDepthMm: 20,    // T75 proposed, owner to confirm
       faceDepthMm: 12,    // T75 proposed, owner to confirm
-      pitchMm: 32,        // T75 proposed, owner to confirm
-      endOffsetMm: 50,    // T75 proposed, owner to confirm
-      maxGapMm: 128,      // T75 proposed, owner to confirm
-      confirmed: false,   // T75 proposed, owner to confirm
+      pitchMm: 250,       // owner 11.10.2026, decided ("kołki co mniej więcej co 250 mm"), T78 F19
+      minPerJoint: 2,     // owner 11.10.2026, decided ("minimum 2"), T78 F19
+      endOffsetMm: 50,    // owner 11.10.2026, decided, T78 F19
+      confirmed: false,   // THE GATE, T75: shut until the owner says the dowel is confirmed
       // The two CNC layers (engine/cnc/layers.js), named by the house grammar
       // `{FEATURE}_{DIAMETER}MM`: the face half, and the edge half by hand.
+      // T78 F19 leaves the names as T75 wrote them (the dowel is 6 now; a
+      // rename to DOWEL_6MM touches layers.js, machining.js and the DXF test
+      // and is the owner's call, named in the PR).
       layers: { face: 'DOWEL_8MM', edge: 'DOWEL_EDGE_8MM' },
+    },
+    // ─── T78 F20 · CABINEO (reference/lisp/SKYLON_JOINTS_CABINEO.lsp) ──────
+    //
+    // The owner, 11.10.2026: Cabineo 8 AND 12, chosen in the company's default
+    // settings (`joints.system` 'cabineo8' | 'cabineo12'); the VARIANT is that
+    // choice and is not repeated here (one law, one path: engine/cabineo.js
+    // reads it off the system id). Lamello's numbers are not here either:
+    // they live in reference/hardware/cabineo/cabineo.json (the page and the
+    // drawing beside each, owner to confirm), and the LISP's section A
+    // restates them key for key. This block is the LISP's `cabineo-profile`:
+    // the CHOICES and the set-out, nothing of Lamello's. `mounting` and
+    // `machining` are T78 proposed (the owner's Biesse mills; he decides).
+    // `pitchMm` and `endOffsetMm` must sit inside the sheet's two limits (min.
+    // 20 from the board's edge, max. 300 between connectors, page 1 Assembly
+    // panel 1), which `cabineoRefusal` holds in words. `confirmed` is THE
+    // GATE, as the dowel's below: while false every CNC export that would
+    // machine a pocket refuses, in the LISP's sentence ("the Cabineo pattern
+    // is proposed, not confirmed by the owner").
+    //
+    // THE INVERTED SIDE (the owner, 11.10.2026, decided): the pocket is cut
+    // from the OUTSIDE face of the top, the bottom and a fixed shelf, the dia 5
+    // hole from the inside face of the side; those boards carry machinedFace
+    // 'outside' and are exported through T76's one reflection (the LISP,
+    // section C). No number of that is a profile number.
+    cabineo: {
+      mounting: 'flushCap',   // surface | flush | flushCap | hpl       T78 proposed, owner to confirm
+      machining: 'cutter12',  // drill15 | cutter10 | cutter12          T78 proposed, owner to confirm
+      pitchMm: 250,           // the widest gap between two pockets     T78 proposed, owner to confirm (never over the sheet's 300)
+      endOffsetMm: 50,        // first and last pocket from each end    T78 proposed, owner to confirm (never under the sheet's 20)
+      minPerJoint: 2,         // CLAUDE.md T78 F20: never fewer than two on one joint
+      caps: 'all',            // 'all' | 'shelves': which pockets get a cover cap   T78 proposed, owner to confirm
+      confirmed: false,       // THE GATE: false until the owner confirms the Cabineo pattern
+      // The CNC layers (engine/cnc/layers.js), the house grammar
+      // `{FEATURE}_{DIAMETER}MM`: the pocket by the tool that cuts it (the
+      // LISP's cabineo-pocket-layer), the recess, the side's hole.
+      layers: {
+        pocket: { drill15: 'CABINEO_POCKET_15MM', cutter10: 'CABINEO_POCKET_10MM', cutter12: 'CABINEO_POCKET_12MM' },
+        recess: 'CABINEO_RECESS',
+        hole: 'CABINEO_HOLE_5MM',
+      },
     },
   },
 
@@ -1162,7 +1272,15 @@ export const DEFAULT_CABINET_PROFILE = {
       // change what the largest-that-fits is for a deep cabinet, which is why
       // every existing unit keeps today's runner — and there is a test that
       // says so rather than a sentence.
-      depthSteps: [250, 270, 300, 320, 350, 380, 390, 440, 490, 540, 590, 640, 690],
+      // ─── T78 F15 · INTERNAL DRAWERS GET FRONTS ───────────────────────────
+    // The owner, 11.10.2026: *"szuflady wewnetrzne powinny miec fronty."*  A
+    // board of the front material on the box front of every drawer behind
+    // doors: width = the box width plus this overhang (total), height = the
+    // box side height. Blum's own inner front is an aluminium piece
+    // (reference/hardware/blum-inner-front.json, owner to confirm); this is
+    // the wooden board the owner asked for. T78 proposed, owner to confirm.
+    innerFront: { overhangMm: 0, heightMm: 'box side height' },
+    depthSteps: [250, 270, 300, 320, 350, 380, 390, 440, 490, 540, 590, 640, 690],
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
       partitionClearance: 5,   // partition sits 5 mm above the top drawer front
@@ -1688,6 +1806,19 @@ export const DEFAULT_CABINET_PROFILE = {
     clearanceMm: 60,   // T75 proposed, owner to confirm
   },
 
+  // --- T78 F17 . THE HOOD'S CLEARANCE OVER THE HOB ----------------------------
+  //
+  // The owner, 11.10.2026: *"zeby bylo 650 do 750 minimum nad blatem, nad
+  // hobem"*, and on 650 or 750: *"tak jak mowisz ale pozostaw to dla klienta,
+  // tylko proponuj."*  The gap from the worktop top to the hood's underside,
+  // by the hob kind the client set on the hob unit (`hob_kind`, induction the
+  // default, a CHOICE). A Check (#34) and a proposal with one click
+  // (engine/hoodClearance.js, projectStore raiseHoodToClearance), never a
+  // block.
+  hood: {
+    clearance: { induction: 650, gas: 750 },   // T78 proposed, owner to confirm
+  },
+
   // ─── Base drawer unit, 3 drawers 4:3:2 (KIT_BUDR_FULL) ───
   baseDrawerUnit: {
     defaults: { width: 600, height: 770, depth: 558 },
@@ -2057,6 +2188,38 @@ export const DEFAULT_CABINET_PROFILE = {
   hoodWallUnit: {
     defaults: {
       width: 600, height: 720, depth: 400, mountHeight: 1500, aperture: 350,
+    },
+  },
+
+  // --- T78 F17 . THE CANOPY HOOD AND THE SHORT HOOD ---------------------------
+  //
+  // The owner, 11.10.2026: *"szafka na hood tradycyjna czyli wysunieta pod
+  // skosem albo normalna szafka tylko mniejsza zeby bylo 650 do 750 minimum
+  // nad blatem, nad hobem."*  Two kits beside WUD_HOOD (engine/types.js),
+  // LISP FIRST: reference/lisp/KIT_WUD_HOOD_CANOPY.lsp (sections 2, 3, 7).
+  //
+  // hoodCanopy: the KIT_WUD envelope (600 x 400 at the top) at the canopy's
+  // own height, with the bottom projecting `bottomProjectionMm` beyond the top
+  // depth; the slope is DERIVED (atan(150 / 500) = 16.7 degrees,
+  // engine/hoodCanopy.js canopyGeometry), never a setting. CLAUDE.md T78 F17
+  // names the height `heightMm`; the defaults block's own grammar (what
+  // defaultParamsFor and the store read) calls it `height`, so it is `height`
+  // here and the number is the same 500. mountHeight 1720 = the wall run's
+  // top line (1500 + 720) less 500: its top meets the run's (types.js
+  // `topLine: 'wall'`).
+  hoodCanopy: {
+    defaults: {
+      width: 600, height: 500, depth: 400, mountHeight: 1720, bottomProjectionMm: 150,   // T78 proposed, owner to confirm
+    },
+  },
+  // hoodShort: WUD_HOOD to the letter at the height that leaves the clearance.
+  // The wall unit hangs at 1500 over a worktop top of 908 (770 + 100 + 38):
+  // 592 of clearance; induction asks 650 (`hood.clearance`), 58 more; 720 -
+  // 58 = 662, rounded to 660 so the top line (2220) and the mount (1560) are
+  // whole tens. Gas (750) is Check #34's proposal, not a kit.
+  hoodShort: {
+    defaults: {
+      width: 600, height: 660, depth: 400, mountHeight: 1560, aperture: 350,   // T78 proposed, owner to confirm
     },
   },
 
@@ -4663,6 +4826,53 @@ export const DEFAULT_CABINET_PROFILE = {
     sheet: { width: 2800, height: 2070 },
   },
 
+  // === T78 F21 (CLAUDE.md PART F): THE SPRAY LAW =============================
+  //
+  // The owner, 11.10.2026, element by element: what of each sprayed element
+  // is painted. NUMBERS ONLY HERE; the arithmetic is engine/spray.js, the page
+  // components/SprayingPanel.jsx, the PDF engine/drawings/spraySheets.js.
+  // `wastePct`, `frameMm`, the strip's 8 and the twenty rows are the owner's
+  // decision of 11.10.2026; `defaults` (what a paint is assumed to do when its
+  // warehouse row says nothing) and row 19's partition code are T78 proposed,
+  // owner to confirm.
+  //
+  // The paint code grammar the page and the CNC label print: nS = n faces
+  // (sides), nE = n edges, F100 = a 100 mm frame on the back, 1S100 = a 100 mm
+  // strip of the face, 2E100 = two edges for 100 mm, TE = the top edge, FE =
+  // the front edge, 2E8 = both 8 mm sides of an applied strip, ALL = all around.
+  // Rows 8, 9 and 15 read `as:` the row they repeat (the owner: "as 7", "as 14").
+  spray: {
+    wastePct: 10,          // owner 11.10.2026, decided
+    edgesInM2: true,       // owner 11.10.2026, decided: edges count in the m2 for the paint, the lm beside is the work
+    frameMm: 100,          // owner 11.10.2026, decided: the end panel's back frame, the blind blank's strip
+    // T78 proposed, owner to confirm. Read only where the paint's warehouse row says nothing.
+    defaults: { coats: 2, coverageM2PerL: 10, tinSizesL: [1, 2.5, 5] },
+    rules: {
+      door:           { no: 1, faces: 2, edges: 4, grooves: 'inside the face', code: '2S + 4E' },
+      drawer_front:   { no: 2, faces: 2, edges: 4, code: '2S + 4E' },
+      false_front:    { no: 3, faces: 2, edges: 4, code: '2S + 4E' },
+      blind_blank:    { no: 4, faceStripMm: 100, doorSideEdge: 1, endEdgesMm: 100, code: '1S100 + 1E + 2E100' },
+      front_moulding: { no: 5, afterGluing: true, sides: 2, sideMm: 8, code: '2E8' },
+      inner_front:    { no: 6, faces: 2, edges: 4, code: '2S + 4E' },
+      end_panel:      { no: 7, faces: 1, edges: 4, backFrameMm: 100, code: '1S + F100 + 4E' },
+      island_end:     { no: 8, as: 'end_panel' },
+      back_panel:     { no: 9, as: 'end_panel' },
+      mask:           { no: 10, underside: 1, frontEdge: 1, code: '1S + FE' },
+      corner_post:    { no: 11, face: 1, longEdges: 2, topEdge: 1, code: '1S + 2E + TE' },
+      free_panel:     { no: 12, faces: 2, edges: 4, code: '2S + 4E' },
+      plinth:         { no: 13, face: 1, topEdge: 1, code: '1S + TE' },
+      infill:         { no: 14, face: 1, unitEdge: 1, code: '1S + 1E' },
+      top_infill:     { no: 15, as: 'infill' },
+      cornice:        { no: 16, all: true, perimeter: 'height + projection, both faces', code: 'ALL' },
+      pelmet:         { no: 17, all: true, code: 'ALL' },
+      upstand:        { no: 18, none: true, code: '' },
+      // 19: every face visible from inside (sides, top, bottom, the back's inside face), shelves all around;
+      // a partition is seen on both faces from inside: 2S + FE is T78 proposed, owner to confirm.
+      carcass_set2:   { no: 19, insideFaces: true, shelvesAll: true, codes: { side: '1S + FE', horizontal: '1S + FE', back: '1S', shelf: 'ALL', partition: '2S + FE' } },
+      open_shelf25:   { no: 20, all: true, thicknessMm: 25, code: 'ALL' },
+    },
+  },
+
   // ─── TURN 39 (CLAUDE.md F2/F4): THE WORKSHOP'S OWN MATERIAL ANSWERS ───────
   //
   // The owner: *"każdy jeden projekt powinien mieć Assign materials"* — so an
@@ -4747,6 +4957,9 @@ export const DEFAULT_CABINET_PROFILE = {
     catalogue: [
       { id: 'shoe', label: 'Shoe drawer insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
       { id: 'belt_tie', label: 'Belt/tie divider insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
+      // T78 F16 · the cutlery insert of the double drawer's inner drawer (the
+      // owner: *"szuflada na sztucce z bluma"*). T78 proposed, owner to confirm.
+      { id: 'cutlery', label: 'Cutlery insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
     ],
   },
 
@@ -5350,6 +5563,10 @@ export function migrateCabinetProfile(profile) {
     // Unknown/older shape: nothing user-set is safely transferable yet.
     if (!profile.carcass || !profile.puzzle || !profile.wardrobe) return { ...D };
   }
+  // T78 F19 · a profile saved under T75 carries `joints.dowel.maxGapMm` (128),
+  // a key that is no longer part of the dowel rule (the owner's pitch is the
+  // widest gap). It is dropped here, not spread back in below.
+  const { maxGapMm: _dowelMaxGapGone, ...savedDowel } = profile.joints?.dowel || {};
   return {
     ...D, ...profile,
     schema: PROFILE_SCHEMA,
@@ -5508,6 +5725,8 @@ export function migrateCabinetProfile(profile) {
     pelmet: { ...D.pelmet, ...profile.pelmet },
     // T75 F14 · the hob's clearance, key by key.
     hob: { ...D.hob, ...profile.hob },
+    // T78 F17 . the hood's clearance over the hob, key by key.
+    hood: { ...D.hood, ...profile.hood, clearance: { ...D.hood.clearance, ...profile.hood?.clearance } },
     // T75 F13 · the drawers-behind-doors base unit's defaults, key by key.
     baseInternalDrawerUnit: {
       ...D.baseInternalDrawerUnit,
@@ -5546,6 +5765,17 @@ export function migrateCabinetProfile(profile) {
     hoodWallUnit: {
       ...D.hoodWallUnit,
       defaults: { ...D.hoodWallUnit.defaults, ...profile.hoodWallUnit?.defaults },
+    },
+    // T78 F17 . the canopy hood and the short hood, each its own block like the hood's.
+    hoodCanopy: {
+      ...D.hoodCanopy,
+      ...profile.hoodCanopy,
+      defaults: { ...D.hoodCanopy.defaults, ...profile.hoodCanopy?.defaults },
+    },
+    hoodShort: {
+      ...D.hoodShort,
+      ...profile.hoodShort,
+      defaults: { ...D.hoodShort.defaults, ...profile.hoodShort?.defaults },
     },
     glassWallUnit: {
       ...D.glassWallUnit,
@@ -5932,6 +6162,18 @@ export function migrateCabinetProfile(profile) {
         ...D.drawings.set,
         company: { ...D.drawings.set.company, ...profile.drawings?.set?.company },
       },
+      // T78 F20 · the Cabineo choices and the gate, key by key, so a profile
+      // saved before tonight cuts the puzzle and holds this gate shut too; the
+      // layer names nested one level deeper (the pocket's by machining option).
+      cabineo: {
+        ...D.joints.cabineo,
+        ...profile.joints?.cabineo,
+        layers: {
+          ...D.joints.cabineo.layers,
+          ...profile.joints?.cabineo?.layers,
+          pocket: { ...D.joints.cabineo.layers.pocket, ...profile.joints?.cabineo?.layers?.pocket },
+        },
+      },
     },
     room: { ...D.room, ...profile.room },
     // Turn 31 (CLAUDE.md F6): key by key, so a profile saved before Check v1
@@ -5969,13 +6211,28 @@ export function migrateCabinetProfile(profile) {
     notch: { ...D.notch, ...profile.notch, defaults: { ...D.notch.defaults, ...profile.notch?.defaults } },
     // T75 F23 · the joint system and the dowel numbers, key by key, so a
     // profile saved before tonight cuts the puzzle and holds the gate shut.
+    //
+    // T78 F19 · THE CODE WINS for the owner's four numbers (dia 6, pitch 250,
+    // minPerJoint 2, endOffset 50), by the TURN 40 `plateBiteMm` law:
+    // `cc.profile.v1` is written whole on every `setProfile`, so a browser
+    // that saved a profile under T75 carries dia 8, pitch 32 and maxGapMm 128
+    // in it, and the plain spread would let that stale block outvote the
+    // owner for ever. Nothing in Settings edits these keys and nothing ever
+    // has, so a saved value can only be T75's persisted default, never a
+    // choice. The two depths (T75 proposed) and `confirmed` (the gate, the
+    // owner's to open) keep the saved value; `maxGapMm` was dropped above.
+    // Unconditional, so running the migration twice answers the same.
     joints: {
       ...D.joints,
       ...profile.joints,
       dowel: {
         ...D.joints.dowel,
-        ...profile.joints?.dowel,
-        layers: { ...D.joints.dowel.layers, ...profile.joints?.dowel?.layers },
+        ...savedDowel,
+        diaMm: D.joints.dowel.diaMm,
+        pitchMm: D.joints.dowel.pitchMm,
+        minPerJoint: D.joints.dowel.minPerJoint,
+        endOffsetMm: D.joints.dowel.endOffsetMm,
+        layers: { ...D.joints.dowel.layers, ...savedDowel.layers },
       },
     },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested
@@ -6001,6 +6258,16 @@ export function migrateCabinetProfile(profile) {
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     // Turn 32 (CLAUDE.md F5): key by key, like every other nested block.
     bom: { ...D.bom, ...profile.bom, sheet: { ...D.bom.sheet, ...profile.bom?.sheet } },
+    // T78 F21 - the spray law. A profile saved before tonight gains the block
+    // whole; the ROWS are the app's (the law is the owner's and moves only by
+    // his word in this file, as the lighting spec does); the waste and the
+    // defaults merge key by key.
+    spray: {
+      ...D.spray,
+      ...profile.spray,
+      defaults: { ...D.spray.defaults, ...profile.spray?.defaults },
+      rules: { ...D.spray.rules },
+    },
     // Turn 39 (F2): the workshop's own answers survive a migration key by key,
     // the same merge every nested block above gets. `defaults` and `legRules`
     // are WORKSHOP VALUES, not app shape, so unlike `sheetOptions` they are NOT

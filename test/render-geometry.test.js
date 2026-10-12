@@ -48,7 +48,21 @@ test('every panel the view draws carries a box, and it is inside the carcass', (
       // the kit whose toe kick is one of its three pieces, so it arrives with
       // one, and the invariant has to say what it always meant.
       const floor = p.role === 'plinth' ? -h : (isFront ? -P.wallUnit.doorExtend : 0);
-      assert.ok(z >= -1e-6 && z + d <= D + P.doors.gap + P.front.thickness + 1e-6,
+      // ─── T78 F10 (12.10.2026): THE CORNER POST STANDS IN THE NEIGHBOUR'S PLANE
+      // The owner: *"listwa naroznikowa musi miec 40 mm bo jak beda raczki to
+      // sie nie otworza."*  A blind kit's CORNER-POST is a flat strip in the
+      // ADJACENT run's front plane, so in this unit's frame it runs from the
+      // unit's own door face `profile.corner.postMm` into the room: that is
+      // what pushes the neighbour's door clear of the handle. Every other
+      // part keeps the invariant it always had.
+      // ─── T78 F17 (12.10.2026): THE CANOPY HOOD IS DEEPER AT ITS BOTTOM ────
+      // The owner: *"szafka na hood tradycyjna czyli wysunieta pod skosem."*
+      // KIT_WUD_HOOD_CANOPY.lsp: the sides are trapezoids and the bottom and
+      // the sloped front stand `profile.hoodCanopy.defaults.bottomProjectionMm`
+      // beyond the top's depth, which IS the kit; its parts reach that far.
+      const canopyReach = UNIT_TYPES[id].canopy ? (Number(P.hoodCanopy?.defaults?.bottomProjectionMm) || 0) : 0;
+      const reach = (p.role === 'corner_post' ? P.corner.postMm : 0) + canopyReach;
+      assert.ok(z >= -1e-6 && z + d <= D + P.doors.gap + P.front.thickness + reach + 1e-6,
         `${id} ${p.id} sticks out front/back: ${z}..${z + d} of ${D}`);
       assert.ok(y >= floor - 1e-6 && y + h <= H + 1e-6,
         `${id} ${p.id} sticks out vertically: ${y}..${y + h} of ${H}`);

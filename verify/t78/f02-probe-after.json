@@ -1,0 +1,374 @@
+{
+  "L": {
+    "id": "u_e6vhb1y",
+    "type": "CORNER_L_BASE",
+    "wall": 0,
+    "x_mm": 10,
+    "width": 900,
+    "depth": 900,
+    "height": 770,
+    "arm_mm": 558,
+    "front_t": 25,
+    "corner_side": "left",
+    "leg_height": 100,
+    "wallGap": 10
+  },
+  "loneRecord": {
+    "id": "worktop_wca01yt",
+    "unitIds": [
+      "u_e6vhb1y"
+    ],
+    "decor": null,
+    "extendLeft": 0,
+    "extendRight": 0,
+    "extendFront": 0,
+    "kind": "L"
+  },
+  "loneSlabs": [
+    {
+      "slab": "worktop_wca01yt",
+      "wall": 0,
+      "x": 0,
+      "w": 920,
+      "d": 910,
+      "y": 870,
+      "h": 38,
+      "shape": "L",
+      "points": 6,
+      "outline": [
+        [
+          0,
+          0
+        ],
+        [
+          920,
+          0
+        ],
+        [
+          920,
+          606
+        ],
+        [
+          616,
+          606
+        ],
+        [
+          616,
+          910
+        ],
+        [
+          0,
+          910
+        ]
+      ],
+      "joint": null,
+      "boxAreaM2": 0.8372,
+      "outlineAreaM2": 0.7448
+    }
+  ],
+  "loneReach": 606,
+  "oneWallSlabs": [
+    {
+      "slab": "worktop_0pnw5fu-L",
+      "wall": 0,
+      "x": 0,
+      "w": 910,
+      "d": 910,
+      "y": 870,
+      "h": 38,
+      "shape": "L",
+      "points": 6,
+      "outline": [
+        [
+          0,
+          0
+        ],
+        [
+          910,
+          0
+        ],
+        [
+          910,
+          606
+        ],
+        [
+          616,
+          606
+        ],
+        [
+          616,
+          910
+        ],
+        [
+          0,
+          910
+        ]
+      ],
+      "joint": null,
+      "boxAreaM2": 0.8281,
+      "outlineAreaM2": 0.7387
+    },
+    {
+      "slab": "worktop_0pnw5fu-w0",
+      "wall": 0,
+      "x": 910,
+      "w": 610,
+      "d": 606,
+      "y": 870,
+      "h": 38,
+      "shape": null,
+      "points": 0,
+      "outline": null,
+      "joint": {
+        "at": {
+          "wall": 0,
+          "x": 910,
+          "depth": 606
+        },
+        "kind": "butt"
+      },
+      "boxAreaM2": 0.3697,
+      "outlineAreaM2": null
+    }
+  ],
+  "twoWallSlabs": [
+    {
+      "slab": "worktop_mf02wsk-L",
+      "wall": 0,
+      "x": 0,
+      "w": 910,
+      "d": 900,
+      "y": 870,
+      "h": 38,
+      "shape": "L",
+      "points": 6,
+      "outline": [
+        [
+          0,
+          0
+        ],
+        [
+          910,
+          0
+        ],
+        [
+          910,
+          606
+        ],
+        [
+          616,
+          606
+        ],
+        [
+          616,
+          900
+        ],
+        [
+          0,
+          900
+        ]
+      ],
+      "joint": null,
+      "boxAreaM2": 0.819,
+      "outlineAreaM2": 0.7326
+    },
+    {
+      "slab": "worktop_mf02wsk-w0",
+      "wall": 0,
+      "x": 910,
+      "w": 610,
+      "d": 606,
+      "y": 870,
+      "h": 38,
+      "shape": null,
+      "points": 0,
+      "outline": null,
+      "joint": {
+        "at": {
+          "wall": 0,
+          "x": 910,
+          "depth": 606
+        },
+        "kind": "butt"
+      },
+      "boxAreaM2": 0.3697,
+      "outlineAreaM2": null
+    },
+    {
+      "slab": "worktop_mf02wsk-w3",
+      "wall": 3,
+      "x": 1480,
+      "w": 610,
+      "d": 606,
+      "y": 870,
+      "h": 38,
+      "shape": null,
+      "points": 0,
+      "outline": null,
+      "joint": {
+        "at": {
+          "wall": 3,
+          "x": 2090,
+          "depth": 606
+        },
+        "kind": "butt"
+      },
+      "boxAreaM2": 0.3697,
+      "outlineAreaM2": null
+    }
+  ],
+  "bomRows": [
+    {
+      "id": "worktop_9w18gtm",
+      "w": 910,
+      "h": 900,
+      "area_m2": 0.7326,
+      "label": "Worktop 38 mm, L-shaped",
+      "readiness": "bought"
+    }
+  ],
+  "csvWorktopLines": 0,
+  "planLone": {
+    "sheets": 13,
+    "plan": "02 Plan · wall units",
+    "entities": 110,
+    "slabs": [
+      6
+    ]
+  },
+  "planThree": {
+    "sheets": 13,
+    "plan": "02 Plan · wall units",
+    "entities": 116,
+    "slabs": [
+      6,
+      4,
+      4
+    ]
+  },
+  "mask": {
+    "L": {
+      "width": 600,
+      "depth": 600,
+      "arm_mm": 400,
+      "x_mm": 10,
+      "mount_height": 1500
+    },
+    "elements": {
+      "L": {
+        "role": "owner",
+        "offset": 0,
+        "length": 600,
+        "depth": 610,
+        "unitIds": [
+          "u_lljc7h9"
+        ]
+      },
+      "WA": {
+        "role": "owner",
+        "offset": 0,
+        "length": 600,
+        "depth": 410,
+        "unitIds": [
+          "u_zb9t8s0"
+        ]
+      },
+      "WB": {
+        "role": "owner",
+        "offset": 0,
+        "length": 600,
+        "depth": 410,
+        "unitIds": [
+          "u_8wazh09"
+        ]
+      }
+    },
+    "depthExtra": 10
+  },
+  "maskPanels": [
+    {
+      "id": "MASK-L",
+      "w": 610,
+      "h": 610,
+      "t": 25,
+      "box": {
+        "x": -10,
+        "y": -25,
+        "z": -10,
+        "w": 610,
+        "h": 25,
+        "d": 610
+      },
+      "cnc": {
+        "kind": null,
+        "keys": [
+          "rotated",
+          "drawn_w",
+          "drawn_h",
+          "outline",
+          "pockets",
+          "holes"
+        ],
+        "outline": 6
+      },
+      "meta": {
+        "lBoard": "MASK-L",
+        "lSide": "left",
+        "planOutline": [
+          [
+            -10,
+            -10
+          ],
+          [
+            600,
+            -10
+          ],
+          [
+            600,
+            400
+          ],
+          [
+            400,
+            400
+          ],
+          [
+            400,
+            600
+          ],
+          [
+            -10,
+            600
+          ]
+        ],
+        "run": true,
+        "unitIds": [
+          "u_lljc7h9"
+        ]
+      }
+    }
+  ],
+  "bareMask": [
+    {
+      "w": 610,
+      "h": 610,
+      "box": {
+        "x": -10,
+        "y": -25,
+        "z": -10,
+        "w": 610,
+        "h": 25,
+        "d": 610
+      }
+    }
+  ],
+  "cornerL": {
+    "width": 600,
+    "depth": 600,
+    "arm": 400,
+    "side": "left",
+    "overlap": "adjacent",
+    "opens_first": null,
+    "doors": [],
+    "top_area_m2": 0.284972
+  }
+}

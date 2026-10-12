@@ -6,6 +6,20 @@ import { appliedStripNotes, readinessOf } from '../readiness.js';
 
 export const FRONT_REFERENCE_LAYER = 'FRONT_REFERENCE_NO_CUT';
 
+// ─── THE ONE REFLECTION (T76; T78 F20 names it) ──────────────────────────
+// A part drawn in the engine's back-view frame and machined from its OTHER
+// face is written as seen from that face: every x is reflected about the
+// part's own vertical axis, `frontX = partWidth - backX`, y untouched. T76
+// wrote it for the decorative fronts' FRONT files; T78 F20 reads the SAME
+// helper for a Cabineo board whose pockets are cut from the carcass's outside
+// face (`meta.machinedFace === 'outside'`, engine/cabineo.js and cnc/dxf.js).
+// One formula, exported once, so no second one can drift from it.
+/** The reflection of one part about its own vertical axis: `([x, y]) => [width - x, y]`. */
+export function mirrorAboutVerticalAxis(width) {
+  const w = Number(width);
+  return ([x, y]) => [w - x, y];
+}
+
 // Approval belongs to the physical pattern and workshop CAM validation. A
 // saved recipe cannot make this reconstructed family production approved.
 export const ORNATE_REFERENCE_MESSAGE = 'Ornate A is a proposed reference pattern. Its separate CAD and relief files need physical-pattern approval and CAM verification before production.';
@@ -117,7 +131,7 @@ export function frontPanelEntities(panel, { referencePreview = false } = {}) {
   const decoration = frontDecorationOf(panel);
   if (!decoration) return [];
   const width = Number(panel.cnc?.drawn_w ?? panel.w);
-  const mirror = ([x, y]) => [width - x, y];
+  const mirror = mirrorAboutVerticalAxis(width);
   const entities = [];
   const outline = panel.cnc?.outline;
   if (pointsOk(outline, 3)) entities.push({
@@ -200,7 +214,7 @@ export function frontOperationsManifest(entries = [], {
         additions: (decoration.additions || []).map((addition) => ({
           id: addition.id, construction: addition.construction,
           face: 'front', mitres: addition.mitres, cut: addition.cut,
-          assemblyPointsFrontMm: (addition.points || []).map(([x, y]) => [Number(panel.cnc?.drawn_w ?? panel.w) - x, y]),
+          assemblyPointsFrontMm: (addition.points || []).map(mirrorAboutVerticalAxis(panel.cnc?.drawn_w ?? panel.w)),
           attachment: 'Applied strip assembly; fix to the front after machining.',
           readiness: fixing?.state || null,
         })),

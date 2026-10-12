@@ -1,0 +1,1953 @@
+{
+  "system": "cliptop_blumotion",
+  "systems_covered": [
+    "CLIP top BLUMOTION (integrated soft close: 110, 95, 155)",
+    "CLIP top (spring, soft close by clip-on 973A6000: 170; bi-fold 60)"
+  ],
+  "units": "mm",
+  "status": "owner to confirm",
+  "turn": "T78 F13 (wide-angle families) and F8 (the bi-fold corner hinge), 11.10.2026",
+  "source": {
+    "catalogue": "Blum catalogue and technical manual 2024/2025, English edition",
+    "url": "https://publications.blum.com/2024/catalogue/en/",
+    "sections": {
+      "lift_systems_from_page": 10,
+      "hinge_systems_from_page": 70,
+      "box_systems_from_page": 194
+    },
+    "access": "Read 11.10.2026 through web search result snippets of publications.blum.com pages only. The container proxy refuses publications.blum.com, d2.blum.com, e-services.blum.com, blum.com and every dealer host (CONNECT tunnel 403) and the WebFetch tool resolved no host at all (getaddrinfo ENOTFOUND, example.com included), so no page and no PDF was opened. Every catalogue number below is what a search snippet of the named page printed, with the page number the snippet carried; a table whose cells the snippet garbled is null with a sentence beside it. Dealer numbers are listed as such, by dealer id, and are not the catalogue.",
+    "pages_read": {
+      "76": {
+        "url": "https://publications.blum.com/2024/catalogue/en/76/",
+        "what": "110 degree hinge, standard application (web code DQDELA): CLIP top BLUMOTION NI | ONS 71B3550 in the order table; INSERTA and knock-in boss part numbers beside it; 71B3750 (inset) on the same page; integrated, switchable BLUMOTION; 110 opening angle"
+      },
+      "79": {
+        "url": "https://publications.blum.com/2024/catalogue/en/79/",
+        "what": "110 degree hinge planning (web code DQDFAM, the snippet labelled it a 110 special hinge): hinge dimensions and gap calculation on the factory setting, mounting plate spacing MD = 0; drilling distance TB 3 to 7; front overlay FA from about 5 to 20 in the grid; minimum gap F by front thickness FD"
+      },
+      "82": {
+        "url": "https://publications.blum.com/2024/catalogue/en/82/",
+        "what": "100 degree CLIP hinge: BLUMOTION clip-on 973A0500.01, 973A0600, 973A0700 belong to the 100 / 107 / 110 / 95 aluminium frame hinges, NOT to the 170"
+      },
+      "84": {
+        "url": "https://publications.blum.com/2024/catalogue/en/84/",
+        "what": "155 degree hinge, wide angled application (web code DQDHEM): CLIP top BLUMOTION, overlay / 0-protrusion / dual / inset applications; 71B7550 in the screw-on boss table; 71B7590 in the INSERTA boss table; 71B7580 listed on the page; 155 opening angle; 3-dimensional front adjustment; tool-free door to cabinet assembly and removal"
+      },
+      "85": {
+        "url": "https://publications.blum.com/2024/catalogue/en/85/",
+        "what": "155 degree hinge planning: hinge dimensions and gap calculation on the factory setting, mounting plate spacing 0 or 9 mm, measured at a 90 degree opening; the axes drilling distance TB, front overlay FA, mounting plate spacing MD; minimum gap F for fronts with a front radius of 1 by TB and front thickness FD; the mounting plate fixing position is moved back by FD + 1.5"
+      },
+      "88": {
+        "url": "https://publications.blum.com/2024/catalogue/en/88/",
+        "what": "170 degree hinge, CLIP top with or without closing mechanism (spring): NI 71T6550 (screw-on, sprung), NI 70T6550.TL (unsprung), NI 71T6540B, NI 71T6650 (dual, screw-on), NI 71T6580 (knock-in), NI 71T6680 (dual, knock-in); BLUMOTION 973A version, part no. clip-on 973A6000; 170 opening angle; 3-dimensional front adjustment; depth adjustment with spiral screw"
+      },
+      "89": {
+        "url": "https://publications.blum.com/2024/catalogue/en/89/",
+        "what": "170 degree hinge planning (web code DQDI3Y): factory setting, mounting plate spacing 0 or 9 mm; drilling distance TB against front overlay FA; the mounting plate position moved back by FD + 1.5; minimum gap F for fronts with a 1 mm radius; for front thicknesses FD up to 21 no gap F is required; for FD in excess of 22 a trial application is recommended; the grid carried FA values 5 to 19 and MD values -4.5 to 9.5 but the cells could not be matched"
+      },
+      "91": {
+        "url": "https://publications.blum.com/2024/catalogue/en/91/",
+        "what": "profile door application: a Hinge boss dimensions section; a drilling distance TB table keyed to front thickness FD; move back the fixing position of the mounting plate by front thickness FD + 1.5"
+      },
+      "98": {
+        "url": "https://publications.blum.com/2024/catalogue/en/98/",
+        "what": "candidate page for the thick door hinge (see 100)"
+      },
+      "100": {
+        "url": "https://publications.blum.com/2024/catalogue/en/100/",
+        "what": "CLIP top BLUMOTION NI | ONS 71B9550, hinge for thick doors and doors with profile, 95 opening angle, 3-dimensional front adjustment (the search listed p. 100 first and p. 98 beside it for the same text)"
+      },
+      "114": {
+        "url": "https://publications.blum.com/2024/catalogue/en/114/",
+        "what": "drilling template: hinge system assembly, door: perform boss drilling (dia 35) e.g. with a pillar drill; position the template and fix with a spacer; drill the side holes for the hinges"
+      },
+      "116": {
+        "url": "https://publications.blum.com/2024/catalogue/en/116/",
+        "what": "corner cabinet bi-fold hinge: CLIP top NI | ONS 79T8500 (screw-on) and 79T8530 (knock-in); special hinge for corner cabinets with bi-fold doors; for front thicknesses FD from 15 to 23, factory setting for 19; for use in combination with 155 or 170 hinge; 60 opening angle; 3-dimensional front adjustment; spring closing mechanism; the 155 and 170 hinges referenced as pages 84 and 88"
+      },
+      "117": {
+        "url": "https://publications.blum.com/2024/catalogue/en/117/",
+        "what": "bi-fold hinge planning: hinge dimensions and gap calculation on the factory setting; applications with a 0 mm or 3 mm spaced standard mounting plate; the TB and FA values did not come through the snippet"
+      },
+      "119": {
+        "url": "https://publications.blum.com/2024/catalogue/en/119/",
+        "what": "inward-opening door planning: the drawing text carries 45, 9.5, 13 and 5 (the boss dimensions: screw spacing, screw offset, cup depth, dowel dia by reading, not confirmed which is which); horizontal mounting plate 20/32: X = FU - 53.5"
+      },
+      "150": {
+        "url": "https://publications.blum.com/2024/catalogue/en/150/",
+        "what": "horizontal cam mounting plate 20/32, cam adjustment +/-2.0"
+      },
+      "152": {
+        "url": "https://publications.blum.com/2024/catalogue/en/152/",
+        "what": "cruciform cam mounting plate 37/32"
+      },
+      "153": {
+        "url": "https://publications.blum.com/2024/catalogue/en/153/",
+        "what": "cruciform mounting plate 37/32: 173L6100 spacing 0 height 8.5; 173L6130 spacing 3 height 11.5; 175H7100 0 / 8.5; 175H7130 3 / 11.5; 175H7190 9 / 17.5; 175H7190.22 18 / 26.5; 175H9100 0, 175H9130 3, 175H9160 6, 175H9190 9, 175H9190.22 18; note as printed: Additional screw for wide angle- and 0-protrusion hinges (min. 20 mm)"
+      },
+      "154": {
+        "url": "https://publications.blum.com/2024/catalogue/en/154/",
+        "what": "cruciform mounting plate 37/32, order table continued"
+      },
+      "178": {
+        "url": "https://publications.blum.com/2024/catalogue/en/178/",
+        "what": "applications overview: 973A6000 listed against the 170 degree hinge"
+      },
+      "180": {
+        "url": "https://publications.blum.com/2024/catalogue/en/180/",
+        "what": "BLUMOTION 973A materials: 973A6000 zinc, nickel plated; the other 973A variants steel"
+      },
+      "181": {
+        "url": "https://publications.blum.com/2024/catalogue/en/181/",
+        "what": "BLUMOTION 973A overview: for normal door sizes one BLUMOTION 973A per hinge is required"
+      }
+    },
+    "dealers": {
+      "D01": {
+        "url": "https://www.cabinetparts.com/p/blum-hinges-european-cabinet-hinges-BH71B7550-p6672",
+        "what": "71B7550: cup drilling depth 11.7, cup 35, screw hole distance 45, bore distance 3 and 8, side +/-2, depth +3/-2"
+      },
+      "D02": {
+        "url": "https://www.hpponline.co.uk/product/71t7550/blum-155-degree-zero-protrusion-clip-top-hinge-straight-arm-hinge",
+        "what": "71T7550 (the 155 CLIP top sibling without BLUMOTION): minimum drilling distance 3, maximum 8"
+      },
+      "D03": {
+        "url": "https://www.fergusonhome.com/blum-71b7550/s1525012",
+        "what": "71B7550: door thickness up to 24 (15/16 in)"
+      },
+      "D04": {
+        "url": "https://d2.blum.com/services/BEC003/lit.hng4200.07.18.cliptopbmn155_ss_dok_bus_$sen-us_$aof_$v2.pdf",
+        "what": "Blum Inc. (US) sheet CLIP top BLUMOTION 155: 71B7550 screw-on, 71B7580 press-in, 71B7590 INSERTA, half-cranked 71B7650 and 71B7690; planning referred to the Concealed Hinges brochure"
+      },
+      "D05": {
+        "url": "https://s1.img-b.com/build.com/mediabase/specifications/blum/945935/71t7600ninstallation.pdf",
+        "what": "Blum technical sheet for 71T7600N (CLIP top 155, not the BLUMOTION article): doors up to 24 thick need no gap, trial application recommended above 22"
+      },
+      "D06": {
+        "url": "https://www.cabinetparts.com/p/blum-hinges-european-cabinet-hinges-BH71T6550-p6719",
+        "what": "71T6550: cup 35, cup depth 11, bore distance 3 and 8, boring pattern spread 45"
+      },
+      "D07": {
+        "url": "https://www.hafele.com.de/en/product/concealed-hinge-blum-clip-top-170-full-overlay-mounting/P-00898292/",
+        "what": "Hafele listing of the Blum CLIP top 170: minimum gap F none up to door thickness 21, trial mounting from 22; cup drilling depth 11; cup 35; drilling pattern 45/9.5"
+      },
+      "D08": {
+        "url": "https://www.sfs.ch/CH/en/dl/p/278269",
+        "what": "sfs.ch data sheet 71T6550: opening angle 170, screw-on, steel cup dia 35, nickel plated, sprung; the inner hinge of a dual application needs the centre hinge and a 9 mm raised mounting plate; the mounting plate screw-on position is set back by the door thickness plus 1.5 mm"
+      },
+      "D09": {
+        "url": "https://www.fergusonhome.com/blum-70t6550/s311381",
+        "what": "70T6550.TL (unsprung 170): cup 1-3/8 in, bore distance 1/8 to 5/16 in, cup depth 7/16 in, mount centres 1-3/4 in"
+      },
+      "D10": {
+        "url": "https://www.interfitco.com/blum-71t6550-170-degree-clip-top-hinge-overlay/",
+        "what": "71T6550: maximum overlay 19, maximum door thickness 24"
+      },
+      "D11": {
+        "url": "https://www.fergusonhome.com/blum-71t6550/s316693",
+        "what": "a dealer spec table in the 11.10 search gave 71T6550 a maximum cabinet door thickness of 26; the snippet did not pin the host, this is the listing whose table format matches"
+      },
+      "D12": {
+        "url": "https://www.interfitco.com/blumotion-device-973A6000/",
+        "what": "973A6000: clip-on BLUMOTION for 170 CLIP top hinges, attaches to the hinge arm by the clip system, one per hinge, quantity may vary with door size and weight, trial application recommended"
+      },
+      "D13": {
+        "url": "https://www.wurthwoodgroup.com/blum-clip-top-blumotion-110deg-hinges-cup-mount-screw-on-hinge-straight-arm-71b3550/",
+        "what": "71B3550: cup depth 13, bore 35, hinge screw spacing 45"
+      },
+      "D14": {
+        "url": "https://d2.blum.com/services/BEC003/cliptopbmn_fl_dok_bus_$sen-us_$aof_$v1.pdf",
+        "what": "Blum Inc. (US) brochure CLIP top BLUMOTION: boring distance range 3 to 7; all 35 mm and 8 mm holes a minimum of 13 deep; for door thicknesses up to 26, trial application above; mirror https://downloads.cabinetparts.com/auto/81eaed3cb5614dd865d2db54d037c816.pdf"
+      },
+      "D15": {
+        "url": "https://www.wurthwoodgroup.com/blum-clip-top-blumotion-95deg-thick-door-hinges-cup-mount-screw-on-hinge-straight-arm-71b9550/",
+        "what": "71B9550 / 71B9580 / 71B9590: cup 35, cup depth 13, boring pattern 45, boring distance 3 to 7"
+      },
+      "D16": {
+        "url": "https://www.blum.org.uk/products/bmotion-c-top-ovlay-hinge-95deg-scr",
+        "what": "Blum UK distributor listing 71B9550: thick and profiled doors up to 32; 16 to 32 citing Blum planning information"
+      },
+      "D17": {
+        "url": "https://www.fergusonhome.com/blum-71b9550/s876826",
+        "what": "71B9550: maximum door thickness 24"
+      },
+      "D18": {
+        "url": "https://www.hdlusa.com/b071b9550.html",
+        "what": "71B9550: doors up to 30 (1-3/16 in)"
+      },
+      "D19": {
+        "url": "https://www.wwhardware.com/media/installation/Blum-thick-door-softclose-install.pdf",
+        "what": "Blum Inc. 2012 thick door sheet: doors 30 or thicker need an angle restriction clip"
+      },
+      "D20": {
+        "url": "https://www.blum.org.uk/products/blum-cabinet-bi-fold-hinge-60deg-scr",
+        "what": "Blum UK distributor listing 79T8500: requires only a 13.5 deep hinge cup hole; door thickness 15 to 23, factory setting 19"
+      },
+      "D21": {
+        "url": "https://imperialglassandtimber.com/products/blum-clip-top-bi-fold-hinge-60-degree-boss-screw-on-79t8500",
+        "what": "79T8500: hinge boss drilling dia 35, distance between drillings 45, boss drilling depth 11, fixed dimension / factory setting 0"
+      },
+      "D22": {
+        "url": "https://www.cabinetparts.com/p/blum-hinges-european-cabinet-hinges-BH79T8500-p6790",
+        "what": "79T8500: use with 0 mm mounting plate; one listing names 175H7100; the plate attaches to the back of the other door; the hinge body needs a partial 35 mm borehole drilled at the back door edge"
+      },
+      "D23": {
+        "url": "https://www.bullerltd.co.uk/blum-corner-bi-fold-hinge-60-degree-cabinet-hinge-79t8500-with-mounting-plate.html",
+        "what": "79T8500 compatible plates named: 173H7100, 173L6100, 173L8100, 175H3100, 175H7100"
+      },
+      "D24": {
+        "url": "https://www.woodworkerexpress.com/answers/5898210/What-kind-of-adjustment-options-does-this-hinge-offer",
+        "what": "79T8500 adjustment: side +/-2, depth +3/-2, gap +7.2/-4.2 (spiral screw)"
+      },
+      "D25": {
+        "url": "https://www.cwberry.com/blum-79t8500-60-bifold-corner-hinge",
+        "what": "79T8500: front thickness 15 to 23, factory 19, used with a 155 or 170 hinge on the other door, 60 degree opening, sprung"
+      },
+      "D26": {
+        "url": "https://www.blumwarehouse.co.uk/products/71t6550",
+        "what": "Blum Warehouse UK stock codes (dealer codes, NOT Blum part numbers): 71T6550 = 03703643; 71T6650 = 03703563 (/products/71t6650); 79T8500 = 06466533 (/products/79t8500); 174E6100.01 = 9120278 (/products/174e6100n)"
+      },
+      "D27": {
+        "url": "https://mcfaddens.com/p-1043-blum-174e610001-cruciform-mounting-plate-spacing-0mm-height-85-2mm-expando.aspx",
+        "what": "174E6100.01: cruciform plate, spacing 0, height 8.5 +/-2, EXPANDO (pre-mounted dowels)"
+      },
+      "D28": {
+        "url": "https://www.interfitco.com/174e6100-01-clip-cruciform-mounting-plate-0mm/",
+        "what": "174E6100.01: fixing positions 37 from the cabinet front edge, 32 apart; holes 5 dia x 11.5 deep"
+      },
+      "D29": {
+        "url": "https://hardwarehut.com/products/blum-155degree-clip-top-blumotion-hinge-full-overlay-0-protrusion-screw-on-soft-close",
+        "what": "71B7550 angle restriction clips named in the 11.10 search (cabinetparts.com numbering): 110 degree clip B70T7553, 92 degree clip B70T7553.09"
+      },
+      "D30": {
+        "url": "https://www.dwironmongery.com/shop/blum-71b7550-clip-top-overlay-155-degree-cabinet-hinge/",
+        "what": "71B7550: door thickness 20 to 31 (the outlier against 24; one listing adds: up to 31 only with the 92 degree angle stop)"
+      },
+      "D31": {
+        "url": "https://downloads.cabinetparts.com/blum/hinges/1046_concealed_hinges.pdf",
+        "what": "Blum Inc. concealed hinges brochure: 71T6550 screw-on straight arm, 71T6580 press-in, both 170 with three-dimensional adjustment"
+      },
+      "D32": {
+        "url": "https://www.wwhardware.com/media/installation/170_hinge_applications.pdf",
+        "what": "Blum Inc. 2012 CLIP top 170 applications sheet: the 4.5 plate only for face frame cabinets, the 9 plate only for panel cabinets"
+      }
+    },
+    "restated_from": "reference/hardware/cliptop-hinges.json (the owner's 19 GLB rows and the thickness rule are copied, not retyped)",
+    "caveat": "A value with status owner to confirm is Blum's or a dealer's as the snippet printed it; a null value is NOT in any source this agent could read and the note says where it lives. Nothing here is invented. The hinge angle stays derived (T22 law): a family is chosen, the angle inside the family comes off the front thickness."
+  },
+  "rules": {
+    "hinge_by_front_thickness": [
+      {
+        "max": 25,
+        "angle": 110
+      },
+      {
+        "max": 32,
+        "angle": 95
+      }
+    ],
+    "hinge_wardrobe_inner_drawer": 155,
+    "plate_default": "plate_knockin5",
+    "plate_option": "plate_screw3",
+    "layers": {
+      "cup": "FRONT_HINGES_35MM",
+      "cup_screws": "FRONT_HINGES_3MM",
+      "plate_knockin5": "HINGES_5MM"
+    },
+    "hinge_family_default": "standard",
+    "hinge_family_options": [
+      "standard",
+      "wide"
+    ],
+    "families": {
+      "standard": {
+        "label": "CLIP top BLUMOTION 110 / 95 by front thickness (today's rule)",
+        "hinge_by_front_thickness": [
+          {
+            "max": 25,
+            "angle": 110
+          },
+          {
+            "max": 32,
+            "angle": 95
+          }
+        ]
+      },
+      "wide": {
+        "label": "wide-angle: CLIP top 170 up to the thickness Blum needs no gap for, CLIP top BLUMOTION 155 0-protrusion above it",
+        "hinge_by_front_thickness": [
+          {
+            "max": 21,
+            "angle": 170
+          },
+          {
+            "max": 24,
+            "angle": 155
+          }
+        ],
+        "proposed": true,
+        "confirmed": false,
+        "rationale": "T78 proposed, owner to confirm. The owner asked for the widest opening (180 stopni); 170 is the widest Blum publishes. Catalogue p. 89: the 170 needs no gap F up to FD 21 and a trial application above 22, so the rung stops at 21. Catalogue p. 84/85 and dealers D01/D03/D05: the 155 0-protrusion covers fronts to 24, so it takes 22 to 24. Above 24 the family has no rung and hingeAngleFor answers null (the BOM prints the spec, no article). Alternatives the owner may prefer: 170 everywhere to 24 with the trial note, or 155 everywhere (soft close integrated)."
+      }
+    },
+    "bifold_role": "hinge_bifold",
+    "opening_angles": {
+      "standard": [
+        110,
+        95
+      ],
+      "wide": [
+        155,
+        170
+      ],
+      "bifold": [
+        60
+      ]
+    },
+    "cup_pattern": {
+      "unchanged": true,
+      "diameter": 35,
+      "layer_cup": "FRONT_HINGES_35MM",
+      "layer_cup_screws": "FRONT_HINGES_3MM",
+      "layer_plate": "HINGES_5MM",
+      "screw_spacing_catalogue": {
+        "value": 45,
+        "dealers": [
+          "D07",
+          "D13",
+          "D21",
+          "D06"
+        ],
+        "status": "owner to confirm",
+        "note": "Blum boss pattern 45 (dealers D06, D07, D13, D21; catalogue p. 119 drawing text carries 45 beside 9.5, 13 and 5). The repo drills 2 x profile.hinges.cups.screwOffsetY 23 = 46; the owner reads the two beside each other, nothing moves this turn."
+      },
+      "screw_offset_x_catalogue": {
+        "value": 9.5,
+        "dealers": [
+          "D07"
+        ],
+        "status": "owner to confirm",
+        "note": "toward the door centre from the cup centre; equals profile.hinges.cups.screwOffsetX 9.5"
+      },
+      "repo_drilling_distance_tb": 4,
+      "repo_drilling_distance_note": "profile.hinges.cups.xFromHingeEdge 21.5 minus the cup radius 17.5 = TB 4, inside every family's TB range below (3 to 7 standard, 3 to 8 wide by the dealers; the catalogue planning tables are null here)",
+      "repo_cup_depth": 11,
+      "repo_cup_depth_note": "profile.hardware.hinge.cupDepth 11 and layer FRONT_HINGES_35MM depth 11 (profile.js). Dealers give 13 for the 110 and 95 (D13, D15; the Blum US brochure D14 says every 35 hole a minimum of 13 deep), 11.7 for the 155 (D01), 11 for the 170 (D06, D07) and 11 or 13.5 for the bi-fold (D21 vs D20). Not moved by this file; the owner decides."
+    }
+  },
+  "families": {
+    "standard": {
+      "label": "CLIP top BLUMOTION, integrated switchable soft close",
+      "chosen_by": "front thickness: up to 25 the 110, 25 to 32 the 95 (rules.hinge_by_front_thickness, cliptop-hinges.json, unchanged)",
+      "hinges": {
+        "95": {
+          "articles": {
+            "screw_on": {
+              "value": "71B9550",
+              "page": 100,
+              "url": "https://publications.blum.com/2024/catalogue/en/100/",
+              "status": "owner to confirm",
+              "note": "NI | ONS; the search listed p. 100 first and p. 98 beside it for the same text; owner to confirm the page"
+            },
+            "knock_in": {
+              "value": "71B9580",
+              "dealers": [
+                "D15"
+              ],
+              "status": "owner to confirm",
+              "note": "press-in"
+            },
+            "inserta": {
+              "value": "71B9590",
+              "dealers": [
+                "D15"
+              ],
+              "status": "owner to confirm",
+              "note": "the repo's GLB pack labels 71B9590 onyx (items below)"
+            }
+          },
+          "page_candidates": [
+            98,
+            100
+          ],
+          "opening_angle": {
+            "value": 95,
+            "page": 100,
+            "url": "https://publications.blum.com/2024/catalogue/en/100/",
+            "status": "owner to confirm"
+          },
+          "soft_close": {
+            "value": "integrated BLUMOTION",
+            "page": 100,
+            "url": "https://publications.blum.com/2024/catalogue/en/100/",
+            "status": "owner to confirm"
+          },
+          "cup": {
+            "diameter": {
+              "value": 35,
+              "dealers": [
+                "D15"
+              ],
+              "status": "owner to confirm"
+            },
+            "depth": {
+              "value": 13,
+              "dealers": [
+                "D15"
+              ],
+              "status": "owner to confirm"
+            }
+          },
+          "drilling_distance_tb": {
+            "catalogue": {
+              "value": null,
+              "page": 91,
+              "url": "https://publications.blum.com/2024/catalogue/en/91/",
+              "status": "owner to confirm",
+              "note": "the profile / thick door TB table keyed to FD is on p. 91 (and the thick door planning page); cells not legible"
+            },
+            "dealer": {
+              "value": "3 to 7",
+              "dealers": [
+                "D15"
+              ],
+              "status": "owner to confirm"
+            }
+          },
+          "boss_screws": {
+            "spacing": {
+              "value": 45,
+              "dealers": [
+                "D15"
+              ],
+              "status": "owner to confirm"
+            },
+            "offset_from_cup_centre": {
+              "value": 9.5,
+              "dealers": [
+                "D07"
+              ],
+              "status": "owner to confirm",
+              "note": "one pattern across the range"
+            }
+          },
+          "front_thickness_fd": {
+            "catalogue": {
+              "value": null,
+              "page": 100,
+              "url": "https://publications.blum.com/2024/catalogue/en/100/",
+              "status": "owner to confirm",
+              "note": "the thick door planning page did not come through; D16 cites Blum planning information for 16 to 32"
+            },
+            "dealer": {
+              "value": {
+                "blum_uk_distributor": "16 to 32",
+                "us_listings": "24 or 30"
+              },
+              "dealers": [
+                "D16",
+                "D17",
+                "D18"
+              ],
+              "status": "owner to confirm",
+              "note": "the sources conflict; the repo rung max 32 agrees with the UK distributor D16; D19: doors 30 or thicker need an angle restriction clip"
+            },
+            "repo_rung_max": 32
+          },
+          "overlay": {
+            "fa_table": {
+              "value": null,
+              "page": 100,
+              "url": "https://publications.blum.com/2024/catalogue/en/100/",
+              "status": "owner to confirm",
+              "note": "the thick door planning page and its TB / FA table did not come through any snippet"
+            },
+            "mounting_plate_position": {
+              "value": "move back the fixing position of the mounting plate by front thickness FD + 1.5",
+              "page": 91,
+              "url": "https://publications.blum.com/2024/catalogue/en/91/",
+              "status": "owner to confirm"
+            },
+            "rule": "FA(TB, MD) = FA(TB, 0) - MD: every millimetre of mounting plate spacing MD takes one millimetre off the front overlay; FA(TB, 0) is read off the planning page table (null here). Blum planning convention, the table is the law; owner to confirm."
+          },
+          "adjustment": {
+            "value": {
+              "side": "+/-2",
+              "depth": "+3 / -2"
+            },
+            "dealers": [
+              "D15"
+            ],
+            "status": "owner to confirm"
+          }
+        },
+        "110": {
+          "articles": {
+            "screw_on": {
+              "value": "71B3550",
+              "page": 76,
+              "url": "https://publications.blum.com/2024/catalogue/en/76/",
+              "status": "owner to confirm",
+              "note": "NI | ONS in the order table"
+            },
+            "knock_in": {
+              "value": "71B3580",
+              "page": 76,
+              "url": "https://publications.blum.com/2024/catalogue/en/76/",
+              "status": "owner to confirm",
+              "note": "the knock-in boss column is on the page; the number follows Blum's 50 / 80 / 90 boss suffix and the Blum US brochure D14 (press-in); owner to confirm against the page"
+            },
+            "inserta": {
+              "value": "71B3590",
+              "page": 76,
+              "url": "https://publications.blum.com/2024/catalogue/en/76/",
+              "status": "owner to confirm",
+              "note": "the INSERTA boss column is on the page; the repo's GLB pack labels 71B3590 onyx (items below); owner to confirm"
+            },
+            "inset": {
+              "value": "71B3750",
+              "page": 76,
+              "url": "https://publications.blum.com/2024/catalogue/en/76/",
+              "status": "owner to confirm"
+            }
+          },
+          "opening_angle": {
+            "value": 110,
+            "page": 76,
+            "url": "https://publications.blum.com/2024/catalogue/en/76/",
+            "status": "owner to confirm"
+          },
+          "soft_close": {
+            "value": "integrated, switchable BLUMOTION",
+            "page": 76,
+            "url": "https://publications.blum.com/2024/catalogue/en/76/",
+            "status": "owner to confirm"
+          },
+          "cup": {
+            "diameter": {
+              "value": 35,
+              "dealers": [
+                "D13",
+                "D14"
+              ],
+              "status": "owner to confirm"
+            },
+            "depth": {
+              "value": 13,
+              "dealers": [
+                "D13",
+                "D14"
+              ],
+              "status": "owner to confirm",
+              "note": "D14: all 35 mm and 8 mm holes a minimum of 13 deep. The repo drills 11 (rules.cup_pattern.repo_cup_depth)."
+            },
+            "depth_catalogue": {
+              "value": null,
+              "page": 91,
+              "url": "https://publications.blum.com/2024/catalogue/en/91/",
+              "status": "owner to confirm",
+              "note": "the catalogue boss dimension drawing (p. 91 Hinge boss dimensions, p. 119 drawing text 13) did not come through the snippet legibly"
+            }
+          },
+          "drilling_distance_tb": {
+            "min": {
+              "value": 3,
+              "page": 79,
+              "url": "https://publications.blum.com/2024/catalogue/en/79/",
+              "status": "owner to confirm"
+            },
+            "max": {
+              "value": 7,
+              "page": 79,
+              "url": "https://publications.blum.com/2024/catalogue/en/79/",
+              "status": "owner to confirm"
+            },
+            "dealer": {
+              "value": "3 to 7",
+              "dealers": [
+                "D14"
+              ],
+              "status": "owner to confirm"
+            }
+          },
+          "boss_screws": {
+            "spacing": {
+              "value": 45,
+              "dealers": [
+                "D13"
+              ],
+              "status": "owner to confirm"
+            },
+            "offset_from_cup_centre": {
+              "value": 9.5,
+              "dealers": [
+                "D07"
+              ],
+              "status": "owner to confirm",
+              "note": "the 45 / 9.5 pattern is one pattern across the CLIP top range (D07 for the 170; p. 119 drawing text)"
+            }
+          },
+          "knock_in_dowel_hole": {
+            "value": {
+              "diameter": 8,
+              "depth_min": 13
+            },
+            "dealers": [
+              "D14"
+            ],
+            "status": "owner to confirm",
+            "note": "for the knock-in and INSERTA bosses; the screw-on boss takes the 3 mm pilots of layer FRONT_HINGES_3MM"
+          },
+          "front_thickness_fd": {
+            "catalogue": {
+              "value": null,
+              "page": 79,
+              "url": "https://publications.blum.com/2024/catalogue/en/79/",
+              "status": "owner to confirm",
+              "note": "the p. 79 gap table is keyed to FD but its range did not come through the snippet"
+            },
+            "dealer_max": {
+              "value": 26,
+              "dealers": [
+                "D14"
+              ],
+              "status": "owner to confirm",
+              "note": "D14: for door thicknesses up to 26, trial application above"
+            },
+            "repo_rung_max": 25
+          },
+          "overlay": {
+            "planning_page": {
+              "value": "planning table TB against FA at MD 0",
+              "page": 79,
+              "url": "https://publications.blum.com/2024/catalogue/en/79/",
+              "status": "owner to confirm",
+              "note": "the snippet named p. 79 for the 110 planning (DQDFAM); the standard order page is 76, so the standard planning page may be 77; owner to confirm which"
+            },
+            "fa_table": {
+              "value": null,
+              "page": 79,
+              "url": "https://publications.blum.com/2024/catalogue/en/79/",
+              "status": "owner to confirm",
+              "note": "cells not legible in the snippet; the grid ran from about 5 to 20"
+            },
+            "mounting_plate_spacing_md": {
+              "value": 0,
+              "page": 79,
+              "url": "https://publications.blum.com/2024/catalogue/en/79/",
+              "status": "owner to confirm",
+              "note": "factory setting; plates of 0 / 3 / 9 / 18 spacing on p. 153"
+            },
+            "rule": "FA(TB, MD) = FA(TB, 0) - MD: every millimetre of mounting plate spacing MD takes one millimetre off the front overlay; FA(TB, 0) is read off the planning page table (null here). Blum planning convention, the table is the law; owner to confirm."
+          },
+          "adjustment": {
+            "value": {
+              "side": "+/-2",
+              "depth": "+3 / -2"
+            },
+            "dealers": [
+              "D01",
+              "D13"
+            ],
+            "status": "owner to confirm",
+            "note": "height adjustment comes from the plate (cam plates p. 150, 152)"
+          },
+          "plates": [
+            "173L6100",
+            "173L6130",
+            "174E6100.01",
+            "174E6130.01",
+            "175H7100",
+            "175H7130",
+            "175H7190",
+            "175H7190.22"
+          ]
+        }
+      }
+    },
+    "wide": {
+      "label": "wide-angle hinges: CLIP top BLUMOTION 155 (0-protrusion, soft close integrated) and CLIP top 170 (soft close by clip-on 973A6000)",
+      "chosen_by": "rules.families.wide.hinge_by_front_thickness (proposed): up to 21 the 170, 22 to 24 the 155, above 24 no rung",
+      "hinges": {
+        "155": {
+          "articles": {
+            "screw_on": {
+              "value": "71B7550",
+              "page": 84,
+              "url": "https://publications.blum.com/2024/catalogue/en/84/",
+              "status": "owner to confirm",
+              "note": "in the screw-on boss table"
+            },
+            "knock_in": {
+              "value": "71B7580",
+              "dealers": [
+                "D04"
+              ],
+              "status": "owner to confirm",
+              "note": "press-in; listed on p. 84 without its boss column coming through"
+            },
+            "inserta": {
+              "value": "71B7590",
+              "page": 84,
+              "url": "https://publications.blum.com/2024/catalogue/en/84/",
+              "status": "owner to confirm",
+              "note": "in the INSERTA boss table; the repo's GLB pack labels 71B7590 onyx (items below); the two readings are the owner's to reconcile"
+            },
+            "half_cranked": {
+              "value": [
+                "71B7650",
+                "71B7690"
+              ],
+              "dealers": [
+                "D04"
+              ],
+              "status": "owner to confirm",
+              "note": "dual application"
+            },
+            "onyx": {
+              "value": null,
+              "page": 84,
+              "url": "https://publications.blum.com/2024/catalogue/en/84/",
+              "status": "owner to confirm",
+              "note": "p. 84 lists NI | ONS for the 110 and the bi-fold rows; the 155 row's finish column did not come through. The repo's pack carries onyx 155 files as 71B7590 (items below)."
+            }
+          },
+          "opening_angle": {
+            "value": 155,
+            "page": 84,
+            "url": "https://publications.blum.com/2024/catalogue/en/84/",
+            "status": "owner to confirm"
+          },
+          "soft_close": {
+            "value": "integrated BLUMOTION",
+            "page": 84,
+            "url": "https://publications.blum.com/2024/catalogue/en/84/",
+            "status": "owner to confirm"
+          },
+          "protrusion": {
+            "value": "0-protrusion for overlay application (cabinets with inner pull-outs or pull-out shelves)",
+            "page": 84,
+            "url": "https://publications.blum.com/2024/catalogue/en/84/",
+            "status": "owner to confirm",
+            "note": "the 2022/2023 edition p. 82 said the 0-protrusion sentence in those words; the 2024 p. 84 lists the 0-protrusion application"
+          },
+          "cup": {
+            "diameter": {
+              "value": 35,
+              "dealers": [
+                "D01"
+              ],
+              "status": "owner to confirm"
+            },
+            "depth": {
+              "value": 11.7,
+              "dealers": [
+                "D01"
+              ],
+              "status": "owner to confirm",
+              "note": "other dealers print 11 or 7/16 in (11.1); the repo drills 11"
+            },
+            "depth_catalogue": {
+              "value": null,
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm",
+              "note": "the cup drilling depth is on the boss dimension drawing of the planning page, which did not come through any snippet"
+            }
+          },
+          "drilling_distance_tb": {
+            "catalogue": {
+              "value": null,
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm",
+              "note": "the p. 85 TB / FA table cells were not legible"
+            },
+            "dealer": {
+              "min": {
+                "value": 3,
+                "dealers": [
+                  "D01",
+                  "D02"
+                ],
+                "status": "owner to confirm"
+              },
+              "max": {
+                "value": 8,
+                "dealers": [
+                  "D01",
+                  "D02"
+                ],
+                "status": "owner to confirm"
+              }
+            }
+          },
+          "boss_screws": {
+            "spacing": {
+              "value": 45,
+              "dealers": [
+                "D01"
+              ],
+              "status": "owner to confirm"
+            },
+            "offset_from_cup_centre": {
+              "value": 9.5,
+              "dealers": [
+                "D07"
+              ],
+              "status": "owner to confirm",
+              "note": "one pattern across the range"
+            }
+          },
+          "front_thickness_fd": {
+            "catalogue": {
+              "value": null,
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm",
+              "note": "the p. 85 gap F table is keyed to FD (front radius 1); its range did not come through"
+            },
+            "dealer_max": {
+              "value": 24,
+              "dealers": [
+                "D03",
+                "D05"
+              ],
+              "status": "owner to confirm",
+              "note": "D05 (the 71T7600N sheet, the CLIP top 155 sibling): doors up to 24 need no gap, trial application recommended above 22. D30 prints 20 to 31 (31 only with the 92 degree angle stop), the outlier."
+            },
+            "proposed_rung": "22 to 24 (rules.families.wide)"
+          },
+          "overlay": {
+            "planning_page": {
+              "value": "planning on the factory setting, MD 0 or 9, measured at a 90 degree opening",
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm"
+            },
+            "fa_table": {
+              "value": null,
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm",
+              "note": "the p. 85 TB / FA table cells were garbled in the snippet"
+            },
+            "mounting_plate_spacing_md": {
+              "value": "0 or 9",
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm"
+            },
+            "mounting_plate_position": {
+              "value": "fixing position moved back by FD + 1.5",
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm"
+            },
+            "max_overlay_dealer": {
+              "value": 19,
+              "dealers": [
+                "D10"
+              ],
+              "status": "owner to confirm",
+              "note": "printed for the 170 (D10); one 155 listing printed the same 19; owner to confirm on p. 85"
+            },
+            "rule": "FA(TB, MD) = FA(TB, 0) - MD: every millimetre of mounting plate spacing MD takes one millimetre off the front overlay; FA(TB, 0) is read off the planning page table (null here). Blum planning convention, the table is the law; owner to confirm."
+          },
+          "plates": {
+            "cruciform": {
+              "value": [
+                "173L6100",
+                "173L6130",
+                "175H7100",
+                "175H7130",
+                "175H7190",
+                "175H7190.22"
+              ],
+              "page": 153,
+              "url": "https://publications.blum.com/2024/catalogue/en/153/",
+              "status": "owner to confirm"
+            },
+            "note_as_printed": {
+              "value": "Additional screw for wide angle- and 0-protrusion hinges (min. 20 mm)",
+              "page": 153,
+              "url": "https://publications.blum.com/2024/catalogue/en/153/",
+              "status": "owner to confirm",
+              "note": "the note stands beside the 173L rows; what the 20 mm measures (a screw length, a minimum distance) did not come through; owner to confirm"
+            }
+          },
+          "adjustment": {
+            "value": {
+              "side": "+/-2",
+              "depth": "+3 / -2"
+            },
+            "dealers": [
+              "D01"
+            ],
+            "status": "owner to confirm"
+          },
+          "angle_restriction_clips": {
+            "value": {
+              "92": "70T7553.09",
+              "110": "70T7553"
+            },
+            "dealers": [
+              "D29"
+            ],
+            "status": "owner to confirm",
+            "note": "dealer numbering with a B prefix; the catalogue page for the clips was not reached"
+          }
+        },
+        "170": {
+          "articles": {
+            "screw_on_sprung": {
+              "value": "71T6550",
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "NI"
+            },
+            "unsprung": {
+              "value": "70T6550.TL",
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "NI; no spring, needs a catch or the 973A"
+            },
+            "knock_in": {
+              "value": "71T6580",
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "NI; D31 press-in"
+            },
+            "dual_screw_on": {
+              "value": "71T6650",
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "NI; the centre hinge of a dual application"
+            },
+            "dual_knock_in": {
+              "value": "71T6680",
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "NI"
+            },
+            "other_on_page": {
+              "value": "71T6540B",
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "listed; its variant did not come through"
+            },
+            "onyx": {
+              "value": null,
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "only NI numbers came through for the 170 row on p. 88"
+            }
+          },
+          "opening_angle": {
+            "value": 170,
+            "page": 88,
+            "url": "https://publications.blum.com/2024/catalogue/en/88/",
+            "status": "owner to confirm"
+          },
+          "soft_close": {
+            "integrated": {
+              "value": false,
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "CLIP top with or without closing mechanism (spring); no CLIP top BLUMOTION 170 is listed"
+            },
+            "clip_on": {
+              "value": "973A6000",
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "BLUMOTION 973A version, clip-on; also p. 178 (applications overview against the 170), p. 180 (zinc, nickel plated), p. 181 (for normal door sizes one 973A per hinge)"
+            },
+            "not_this": {
+              "value": "973A0500.01 / 973A0600 / 973A0700",
+              "page": 82,
+              "url": "https://publications.blum.com/2024/catalogue/en/82/",
+              "status": "owner to confirm",
+              "note": "these clip-ons belong to the 100 / 107 / 110 / 95 aluminium frame hinges, not to the 170"
+            }
+          },
+          "cup": {
+            "diameter": {
+              "value": 35,
+              "dealers": [
+                "D06",
+                "D07",
+                "D08"
+              ],
+              "status": "owner to confirm"
+            },
+            "depth": {
+              "value": 11,
+              "dealers": [
+                "D06",
+                "D07"
+              ],
+              "status": "owner to confirm",
+              "note": "D09 prints 7/16 in (11.1); the repo drills 11"
+            },
+            "depth_catalogue": {
+              "value": null,
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm",
+              "note": "the cup drilling depth is on the boss dimension drawing of the planning page, which did not come through any snippet"
+            }
+          },
+          "drilling_distance_tb": {
+            "catalogue": {
+              "value": null,
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm",
+              "note": "the p. 89 TB / FA table cells were not legible"
+            },
+            "dealer": {
+              "min": {
+                "value": 3,
+                "dealers": [
+                  "D06",
+                  "D09"
+                ],
+                "status": "owner to confirm"
+              },
+              "max": {
+                "value": 8,
+                "dealers": [
+                  "D06",
+                  "D09"
+                ],
+                "status": "owner to confirm"
+              }
+            }
+          },
+          "boss_screws": {
+            "spacing": {
+              "value": 45,
+              "dealers": [
+                "D06",
+                "D07"
+              ],
+              "status": "owner to confirm"
+            },
+            "offset_from_cup_centre": {
+              "value": 9.5,
+              "dealers": [
+                "D07"
+              ],
+              "status": "owner to confirm",
+              "note": "D07: drilling pattern 45/9.5"
+            }
+          },
+          "front_thickness_fd": {
+            "no_gap_up_to": {
+              "value": 21,
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm",
+              "note": "for front thicknesses FD up to 21 no gap F is required"
+            },
+            "trial_above": {
+              "value": 22,
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm",
+              "note": "for FD in excess of 22 a trial application is recommended"
+            },
+            "dealer_max": {
+              "value": {
+                "interfitco": 24,
+                "other": 26
+              },
+              "dealers": [
+                "D10",
+                "D11"
+              ],
+              "status": "owner to confirm",
+              "note": "the dealers conflict; the catalogue says 21 clean, 22 and up on trial"
+            },
+            "proposed_rung": "up to 21 (rules.families.wide)"
+          },
+          "overlay": {
+            "planning_page": {
+              "value": "planning on the factory setting, MD 0 or 9",
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm"
+            },
+            "fa_table": {
+              "value": null,
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm",
+              "note": "cells not legible; the grid carried FA 5 to 19 and MD -4.5 to 9.5"
+            },
+            "mounting_plate_spacing_md": {
+              "value": "0 or 9",
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm",
+              "note": "D08: the inner hinge of a dual application takes the centre hinge 71T6650 on a 9 mm raised plate; D32 (Blum Inc. 2012): the 9 plate only for panel cabinets"
+            },
+            "mounting_plate_position": {
+              "value": "moved back by FD + 1.5",
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm",
+              "note": "D08 says the same: set back by the door thickness plus 1.5"
+            },
+            "min_gap_f": {
+              "value": "for fronts with a 1 mm radius, by TB and FD",
+              "page": 89,
+              "url": "https://publications.blum.com/2024/catalogue/en/89/",
+              "status": "owner to confirm",
+              "note": "values not legible"
+            },
+            "max_overlay_dealer": {
+              "value": 19,
+              "dealers": [
+                "D10"
+              ],
+              "status": "owner to confirm",
+              "note": "the p. 89 grid tops at FA 19, consistent"
+            },
+            "rule": "FA(TB, MD) = FA(TB, 0) - MD: every millimetre of mounting plate spacing MD takes one millimetre off the front overlay; FA(TB, 0) is read off the planning page table (null here). Blum planning convention, the table is the law; owner to confirm."
+          },
+          "plates": {
+            "cruciform": {
+              "value": [
+                "173L6100",
+                "173L6130",
+                "175H7100",
+                "175H7130",
+                "175H7190",
+                "175H7190.22"
+              ],
+              "page": 153,
+              "url": "https://publications.blum.com/2024/catalogue/en/153/",
+              "status": "owner to confirm",
+              "note": "the 9 mm spacing is 175H7190"
+            },
+            "note_as_printed": {
+              "value": "Additional screw for wide angle- and 0-protrusion hinges (min. 20 mm)",
+              "page": 153,
+              "url": "https://publications.blum.com/2024/catalogue/en/153/",
+              "status": "owner to confirm"
+            }
+          },
+          "adjustment": {
+            "side": {
+              "value": "+/-2",
+              "dealers": [
+                "D06"
+              ],
+              "status": "owner to confirm"
+            },
+            "depth": {
+              "value": "+3 / -2 with spiral screw",
+              "page": 88,
+              "url": "https://publications.blum.com/2024/catalogue/en/88/",
+              "status": "owner to confirm",
+              "note": "the page says depth adjustment with spiral screw; the numbers are the dealers' (D06)"
+            }
+          },
+          "dealer_stock_code_uk": {
+            "value": "03703643 (71T6550), 03703563 (71T6650)",
+            "dealers": [
+              "D26"
+            ],
+            "status": "owner to confirm",
+            "note": "Blum Warehouse UK codes, not Blum part numbers"
+          }
+        }
+      }
+    },
+    "bifold": {
+      "label": "CLIP top 60 degree bi-fold corner hinge (F8: leaf B hangs on leaf A's free edge)",
+      "chosen_by": "not a door's choice: corner_doors = bifold on the L (F8) hangs it between the two leaves; leaf A carries the family's carcass hinges (wide: 155 or 170 as the catalogue requires)",
+      "hinge": {
+        "articles": {
+          "screw_on": {
+            "value": "79T8500",
+            "page": 116,
+            "url": "https://publications.blum.com/2024/catalogue/en/116/",
+            "status": "owner to confirm",
+            "note": "NI | ONS, sprung"
+          },
+          "knock_in": {
+            "value": "79T8530",
+            "page": 116,
+            "url": "https://publications.blum.com/2024/catalogue/en/116/",
+            "status": "owner to confirm",
+            "note": "NI | ONS"
+          },
+          "onyx_part_numbers": {
+            "value": null,
+            "page": 116,
+            "url": "https://publications.blum.com/2024/catalogue/en/116/",
+            "status": "owner to confirm",
+            "note": "p. 116 prints NI | ONS on the row; whether the onyx article carries a suffix or its own number did not come through"
+          }
+        },
+        "description": {
+          "value": "special hinge for corner cabinets with bi-fold doors",
+          "page": 116,
+          "url": "https://publications.blum.com/2024/catalogue/en/116/",
+          "status": "owner to confirm"
+        },
+        "companion_hinge_on_leaf_a": {
+          "value": "155 or 170",
+          "page": 116,
+          "url": "https://publications.blum.com/2024/catalogue/en/116/",
+          "status": "owner to confirm",
+          "note": "for use in combination with 155 or 170 hinge (pages 84 and 88); so the bi-fold pair is a WIDE family door"
+        },
+        "opening_angle": {
+          "value": 60,
+          "page": 116,
+          "url": "https://publications.blum.com/2024/catalogue/en/116/",
+          "status": "owner to confirm",
+          "note": "leaf B against leaf A"
+        },
+        "closing": {
+          "value": "spring closing mechanism",
+          "page": 116,
+          "url": "https://publications.blum.com/2024/catalogue/en/116/",
+          "status": "owner to confirm"
+        },
+        "front_thickness_fd": {
+          "min": {
+            "value": 15,
+            "page": 116,
+            "url": "https://publications.blum.com/2024/catalogue/en/116/",
+            "status": "owner to confirm"
+          },
+          "max": {
+            "value": 23,
+            "page": 116,
+            "url": "https://publications.blum.com/2024/catalogue/en/116/",
+            "status": "owner to confirm"
+          },
+          "factory_setting": {
+            "value": 19,
+            "page": 116,
+            "url": "https://publications.blum.com/2024/catalogue/en/116/",
+            "status": "owner to confirm"
+          }
+        },
+        "adjustment": {
+          "catalogue": {
+            "value": "3-dimensional front adjustment",
+            "page": 116,
+            "url": "https://publications.blum.com/2024/catalogue/en/116/",
+            "status": "owner to confirm"
+          },
+          "dealer": {
+            "value": {
+              "side": "+/-2",
+              "depth": "+3 / -2",
+              "gap": "+7.2 / -4.2"
+            },
+            "dealers": [
+              "D24"
+            ],
+            "status": "owner to confirm",
+            "note": "spiral screw; the gap figure is the dealer's word for the third dimension"
+          }
+        },
+        "cup_on_leaf_b": {
+          "where": {
+            "value": "a 35 mm cup bored into the back face of leaf B at its hinge edge toward leaf A, as any cup; the plate screws to the inner face of leaf A",
+            "dealers": [
+              "D22"
+            ],
+            "status": "owner to confirm",
+            "note": "D22: the plate attaches to the back of the other door; the hinge body needs a partial 35 mm borehole at the back door edge"
+          },
+          "diameter": {
+            "value": 35,
+            "dealers": [
+              "D21",
+              "D22"
+            ],
+            "status": "owner to confirm"
+          },
+          "depth": {
+            "value": {
+              "imperialglassandtimber": 11,
+              "blum_uk_distributor": 13.5
+            },
+            "dealers": [
+              "D21",
+              "D20"
+            ],
+            "status": "owner to confirm",
+            "note": "the two conflict; the repo drills 11; owner to confirm on p. 117"
+          },
+          "depth_catalogue": {
+            "value": null,
+            "page": 117,
+            "url": "https://publications.blum.com/2024/catalogue/en/117/",
+            "status": "owner to confirm",
+            "note": "the bi-fold cup drilling depth is on the p. 117 planning drawing, which did not come through any snippet"
+          },
+          "drilling_distance_tb": {
+            "value": null,
+            "page": 117,
+            "url": "https://publications.blum.com/2024/catalogue/en/117/",
+            "status": "owner to confirm",
+            "note": "the p. 117 planning table did not come through; D21 prints fixed dimension / factory setting 0 which is the plate spacing, not the TB. Until the owner reads p. 117 the engine has no TB for leaf B and F8 cannot bore it: a line and a body, never a hole (T78 law)."
+          },
+          "boss_screws": {
+            "spacing": {
+              "value": 45,
+              "dealers": [
+                "D21"
+              ],
+              "status": "owner to confirm"
+            },
+            "offset_from_cup_centre": {
+              "value": null,
+              "page": 117,
+              "url": "https://publications.blum.com/2024/catalogue/en/117/",
+              "status": "owner to confirm",
+              "note": "not printed for the bi-fold; the CLIP top range pattern is 9.5 (D07)"
+            }
+          },
+          "layers": {
+            "cup": "FRONT_HINGES_35MM",
+            "cup_screws": "FRONT_HINGES_3MM"
+          }
+        },
+        "plate_on_leaf_a": {
+          "spacing": {
+            "value": "0 mm or 3 mm spaced standard mounting plate",
+            "page": 117,
+            "url": "https://publications.blum.com/2024/catalogue/en/117/",
+            "status": "owner to confirm"
+          },
+          "dealer_named": {
+            "value": [
+              "175H7100",
+              "173L6100",
+              "173H7100",
+              "173L8100",
+              "175H3100"
+            ],
+            "dealers": [
+              "D22",
+              "D23"
+            ],
+            "status": "owner to confirm",
+            "note": "D22: use with 0 mm mounting plate"
+          },
+          "position_on_leaf_a": {
+            "value": null,
+            "page": 117,
+            "url": "https://publications.blum.com/2024/catalogue/en/117/",
+            "status": "owner to confirm",
+            "note": "where the plate sits on leaf A's inner face (distance from leaf A's free edge, the row heights) is on p. 117 and did not come through; leaf A carries the plate holes on its inner face (F8) once the owner reads it"
+          },
+          "holes": {
+            "value": {
+              "diameter": 5,
+              "depth": 11.5
+            },
+            "dealers": [
+              "D28"
+            ],
+            "status": "owner to confirm",
+            "note": "for 174E6100.01 (EXPANDO); the 173L / 175H screw plates take wood screws; the repo's layer HINGES_5MM"
+          }
+        },
+        "planning_page": {
+          "value": "hinge dimensions and gap calculation on the factory setting",
+          "page": 117,
+          "url": "https://publications.blum.com/2024/catalogue/en/117/",
+          "status": "owner to confirm"
+        },
+        "dealer_stock_code_uk": {
+          "value": "06466533 (79T8500)",
+          "dealers": [
+            "D26"
+          ],
+          "status": "owner to confirm",
+          "note": "Blum Warehouse UK code, not a Blum part number"
+        }
+      }
+    }
+  },
+  "plates": {
+    "cruciform_37_32": {
+      "page": 153,
+      "url": "https://publications.blum.com/2024/catalogue/en/153/",
+      "status": "owner to confirm",
+      "pattern": {
+        "value": {
+          "from_front_edge": 37,
+          "hole_spacing": 32
+        },
+        "dealers": [
+          "D28"
+        ],
+        "status": "owner to confirm",
+        "note": "the 37/32 in the page title; the repo drills xFromFrontEdge 37 and holePairOffset 16 (2 x 16 = 32)"
+      },
+      "rows": [
+        {
+          "family": "173L6100",
+          "spacing": 0,
+          "height": 8.5,
+          "fixing": "screw-on (the repo's plate_screw3)",
+          "page": 153
+        },
+        {
+          "family": "173L6130",
+          "spacing": 3,
+          "height": 11.5,
+          "fixing": "screw-on",
+          "page": 153
+        },
+        {
+          "family": "175H7100",
+          "spacing": 0,
+          "height": 8.5,
+          "fixing": "system screws",
+          "page": 153
+        },
+        {
+          "family": "175H7130",
+          "spacing": 3,
+          "height": 11.5,
+          "fixing": "system screws",
+          "page": 153
+        },
+        {
+          "family": "175H7190",
+          "spacing": 9,
+          "height": 17.5,
+          "fixing": "system screws",
+          "page": 153
+        },
+        {
+          "family": "175H7190.22",
+          "spacing": 18,
+          "height": 26.5,
+          "fixing": "system screws",
+          "page": 153
+        },
+        {
+          "family": "175H9100",
+          "spacing": 0,
+          "height": null,
+          "height_note": "not legible",
+          "page": 153
+        },
+        {
+          "family": "175H9130",
+          "spacing": 3,
+          "height": null,
+          "height_note": "not legible",
+          "page": 153
+        },
+        {
+          "family": "175H9160",
+          "spacing": 6,
+          "height": null,
+          "height_note": "not legible",
+          "page": 153
+        },
+        {
+          "family": "175H9190",
+          "spacing": 9,
+          "height": null,
+          "height_note": "not legible",
+          "page": 153
+        },
+        {
+          "family": "175H9190.22",
+          "spacing": 18,
+          "height": null,
+          "height_note": "not legible",
+          "page": 153
+        }
+      ],
+      "note_as_printed": "Additional screw for wide angle- and 0-protrusion hinges (min. 20 mm)"
+    },
+    "knock_in_174E": {
+      "page": null,
+      "url": null,
+      "status": "owner to confirm",
+      "note": "the catalogue page of the 174E (EXPANDO) cruciform plates was not found in any snippet; the repo's plate_knockin5 is 174E6100.01 (0) and 174E6130.01 (3)",
+      "rows": [
+        {
+          "family": "174E6100.01",
+          "spacing": {
+            "value": 0,
+            "dealers": [
+              "D27"
+            ],
+            "status": "owner to confirm"
+          },
+          "height": {
+            "value": "8.5 +/-2 (elongated hole)",
+            "dealers": [
+              "D27"
+            ],
+            "status": "owner to confirm"
+          },
+          "fixing": {
+            "value": "EXPANDO, pre-mounted dowels",
+            "dealers": [
+              "D27"
+            ],
+            "status": "owner to confirm"
+          },
+          "holes": {
+            "value": {
+              "diameter": 5,
+              "depth": 11.5
+            },
+            "dealers": [
+              "D28"
+            ],
+            "status": "owner to confirm"
+          }
+        },
+        {
+          "family": "174E6130.01",
+          "spacing": 3,
+          "spacing_note": "the repo's own row (cliptop-hinges.json), no dealer snippet"
+        }
+      ]
+    },
+    "cam_plates": {
+      "horizontal_20_32": {
+        "value": "horizontal cam mounting plate 20/32, cam adjustment +/-2.0",
+        "page": 150,
+        "url": "https://publications.blum.com/2024/catalogue/en/150/",
+        "status": "owner to confirm"
+      },
+      "cruciform_cam_37_32": {
+        "value": "cruciform cam mounting plate 37/32",
+        "page": 152,
+        "url": "https://publications.blum.com/2024/catalogue/en/152/",
+        "status": "owner to confirm"
+      }
+    },
+    "overlay_rule": "FA(TB, MD) = FA(TB, 0) - MD: every millimetre of mounting plate spacing MD takes one millimetre off the front overlay; FA(TB, 0) is read off the planning page table (null here). Blum planning convention, the table is the law; owner to confirm."
+  },
+  "accessories": [
+    {
+      "part": "973A6000",
+      "role": "blumotion_addon",
+      "for": [
+        "71T6550",
+        "71T6580",
+        "71T6650",
+        "71T6680",
+        "70T6550.TL"
+      ],
+      "label": "BLUMOTION 973A clip-on for the 170 CLIP top",
+      "per_hinge": {
+        "value": 1,
+        "page": 181,
+        "url": "https://publications.blum.com/2024/catalogue/en/181/",
+        "status": "owner to confirm",
+        "note": "for normal door sizes one BLUMOTION 973A per hinge; D12: quantity may vary with door size and weight, trial application recommended"
+      },
+      "material": {
+        "value": "zinc, nickel plated",
+        "page": 180,
+        "url": "https://publications.blum.com/2024/catalogue/en/180/",
+        "status": "owner to confirm"
+      },
+      "fitting": {
+        "value": "clips onto the hinge arm (straight or half-cranked arm with the T-shaped adjustment hole); no drilling named by any source",
+        "dealers": [
+          "D12"
+        ],
+        "status": "owner to confirm"
+      },
+      "pages": [
+        88,
+        178,
+        180,
+        181
+      ],
+      "holes": 0,
+      "status": "owner to confirm"
+    },
+    {
+      "part": "70T7553 / 70T7553.09",
+      "role": "angle_restriction_clip",
+      "for": [
+        "71B7550",
+        "71B7580",
+        "71B7590"
+      ],
+      "label": "angle restriction clips for the 155: 110 and 92 degrees",
+      "source": {
+        "value": "dealer numbering with a B prefix",
+        "dealers": [
+          "D29"
+        ],
+        "status": "owner to confirm"
+      },
+      "holes": 0,
+      "status": "owner to confirm"
+    }
+  ],
+  "items": [
+    {
+      "file": "hardware/hinges/blum/cliptop/173L6100_44724390.glb",
+      "family": "173L6100",
+      "article": "44724390",
+      "role": "plate_screw3",
+      "angle": null,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/173L6100_46088242.glb",
+      "family": "173L6100",
+      "article": "46088242",
+      "role": "plate_screw3",
+      "angle": null,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/173L6130_44918665.glb",
+      "family": "173L6130",
+      "article": "44918665",
+      "role": "plate_screw3",
+      "angle": null,
+      "finish": "onyx"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/173L6130_48059017.glb",
+      "family": "173L6130",
+      "article": "48059017",
+      "role": "plate_screw3",
+      "angle": null,
+      "finish": "onyx"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/174E6100.01_42378433.glb",
+      "family": "174E6100.01",
+      "article": "42378433",
+      "role": "plate_knockin5",
+      "angle": null,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/174E6100.01_43593532.glb",
+      "family": "174E6100.01",
+      "article": "43593532",
+      "role": "plate_knockin5",
+      "angle": null,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/174E6130.01_41093467.glb",
+      "family": "174E6130.01",
+      "article": "41093467",
+      "role": "plate_knockin5",
+      "angle": null,
+      "finish": "onyx"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B3550_42542984.glb",
+      "family": "71B3550",
+      "article": "42542984",
+      "role": "hinge",
+      "angle": 110,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B3550_43192717.glb",
+      "family": "71B3550",
+      "article": "43192717",
+      "role": "hinge",
+      "angle": 110,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B3590_48445634.glb",
+      "family": "71B3590",
+      "article": "48445634",
+      "role": "hinge",
+      "angle": 110,
+      "finish": "onyx"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B3590_49491333.glb",
+      "family": "71B3590",
+      "article": "49491333",
+      "role": "hinge",
+      "angle": 110,
+      "finish": "onyx"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B7550_45588965.glb",
+      "family": "71B7550",
+      "article": "45588965",
+      "role": "hinge",
+      "angle": 155,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B7550_46597865.glb",
+      "family": "71B7550",
+      "article": "46597865",
+      "role": "hinge",
+      "angle": 155,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B7590_40074274.glb",
+      "family": "71B7590",
+      "article": "40074274",
+      "role": "hinge",
+      "angle": 155,
+      "finish": "onyx"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B7590_47406595.glb",
+      "family": "71B7590",
+      "article": "47406595",
+      "role": "hinge",
+      "angle": 155,
+      "finish": "onyx"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B9550_40331821.glb",
+      "family": "71B9550",
+      "article": "40331821",
+      "role": "hinge",
+      "angle": 95,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B9550_45165191.glb",
+      "family": "71B9550",
+      "article": "45165191",
+      "role": "hinge",
+      "angle": 95,
+      "finish": "nickel"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B9590_46350480.glb",
+      "family": "71B9590",
+      "article": "46350480",
+      "role": "hinge",
+      "angle": 95,
+      "finish": "onyx"
+    },
+    {
+      "file": "hardware/hinges/blum/cliptop/71B9590_47438994.glb",
+      "family": "71B9590",
+      "article": "47438994",
+      "role": "hinge",
+      "angle": 95,
+      "finish": "onyx"
+    },
+    {
+      "file": null,
+      "family": "71T6550",
+      "article": "71T6550",
+      "role": "hinge",
+      "angle": 170,
+      "finish": "nickel",
+      "t78": {
+        "page": 88,
+        "url": "https://publications.blum.com/2024/catalogue/en/88/",
+        "boss": "screw-on",
+        "sprung": true,
+        "soft_close": "973A6000 clip-on, one per hinge",
+        "family_group": "wide",
+        "status": "owner to confirm",
+        "article_note": "Blum part number, no GLB, no 8-digit pack id"
+      }
+    },
+    {
+      "file": null,
+      "family": "71T6580",
+      "article": "71T6580",
+      "role": "hinge",
+      "angle": 170,
+      "finish": "nickel",
+      "t78": {
+        "page": 88,
+        "url": "https://publications.blum.com/2024/catalogue/en/88/",
+        "boss": "knock-in",
+        "sprung": true,
+        "soft_close": "973A6000 clip-on, one per hinge",
+        "family_group": "wide",
+        "status": "owner to confirm",
+        "article_note": "Blum part number, no GLB, no 8-digit pack id"
+      }
+    },
+    {
+      "file": null,
+      "family": "79T8500",
+      "article": "79T8500",
+      "role": "hinge_bifold",
+      "angle": 60,
+      "finish": "nickel",
+      "t78": {
+        "page": 116,
+        "url": "https://publications.blum.com/2024/catalogue/en/116/",
+        "boss": "screw-on",
+        "sprung": true,
+        "companion": "155 or 170 on leaf A",
+        "fd": "15 to 23, factory 19",
+        "family_group": "bifold",
+        "status": "owner to confirm",
+        "article_note": "Blum part number, no GLB, no 8-digit pack id; role hinge_bifold so the per-door hinge dropdown never offers it (parseHingeCatalogue drops the role until the F13 patch adds it to ROLES)"
+      }
+    },
+    {
+      "file": null,
+      "family": "79T8530",
+      "article": "79T8530",
+      "role": "hinge_bifold",
+      "angle": 60,
+      "finish": "nickel",
+      "t78": {
+        "page": 116,
+        "url": "https://publications.blum.com/2024/catalogue/en/116/",
+        "boss": "knock-in",
+        "sprung": true,
+        "companion": "155 or 170 on leaf A",
+        "fd": "15 to 23, factory 19",
+        "family_group": "bifold",
+        "status": "owner to confirm",
+        "article_note": "Blum part number, no GLB, no 8-digit pack id"
+      }
+    }
+  ],
+  "nulls": [
+    {
+      "path": "families.standard.hinges.110.cup.depth_catalogue",
+      "where": "p. 91 Hinge boss dimensions / p. 119 drawing",
+      "why": "drawing text not legible in the snippet"
+    },
+    {
+      "path": "families.standard.hinges.110.front_thickness_fd.catalogue",
+      "where": "p. 79 gap table",
+      "why": "range not in the snippet"
+    },
+    {
+      "path": "families.standard.hinges.110.overlay.fa_table",
+      "where": "p. 79 (or 77)",
+      "why": "cells garbled"
+    },
+    {
+      "path": "families.standard.hinges.95.drilling_distance_tb.catalogue",
+      "where": "p. 91 / thick door planning page",
+      "why": "cells not legible"
+    },
+    {
+      "path": "families.standard.hinges.95.front_thickness_fd.catalogue",
+      "where": "p. 98 or 100",
+      "why": "page not reached; dealers conflict 24 / 30 / 32"
+    },
+    {
+      "path": "families.standard.hinges.95.overlay.fa_table",
+      "where": "p. 98 or 100",
+      "why": "not legible"
+    },
+    {
+      "path": "families.wide.hinges.155.articles.onyx",
+      "where": "p. 84",
+      "why": "finish column not in the snippet"
+    },
+    {
+      "path": "families.wide.hinges.155.cup.depth_catalogue",
+      "where": "p. 85",
+      "why": "not in any snippet"
+    },
+    {
+      "path": "families.wide.hinges.155.drilling_distance_tb.catalogue",
+      "where": "p. 85",
+      "why": "cells not legible"
+    },
+    {
+      "path": "families.wide.hinges.155.front_thickness_fd.catalogue",
+      "where": "p. 85",
+      "why": "range not in the snippet"
+    },
+    {
+      "path": "families.wide.hinges.155.overlay.fa_table",
+      "where": "p. 85",
+      "why": "not legible"
+    },
+    {
+      "path": "families.wide.hinges.170.articles.onyx",
+      "where": "p. 88",
+      "why": "only NI came through"
+    },
+    {
+      "path": "families.wide.hinges.170.cup.depth_catalogue",
+      "where": "p. 89",
+      "why": "not in any snippet"
+    },
+    {
+      "path": "families.wide.hinges.170.drilling_distance_tb.catalogue",
+      "where": "p. 89",
+      "why": "cells not legible"
+    },
+    {
+      "path": "families.wide.hinges.170.overlay.fa_table",
+      "where": "p. 89",
+      "why": "cells not legible (grid FA 5 to 19, MD -4.5 to 9.5)"
+    },
+    {
+      "path": "families.bifold.hinge.articles.onyx_part_numbers",
+      "where": "p. 116",
+      "why": "ONS numbering not in the snippet"
+    },
+    {
+      "path": "families.bifold.hinge.cup_on_leaf_b.depth_catalogue",
+      "where": "p. 117",
+      "why": "not in any snippet; dealers 11 vs 13.5"
+    },
+    {
+      "path": "families.bifold.hinge.cup_on_leaf_b.drilling_distance_tb",
+      "where": "p. 117",
+      "why": "table not in the snippet; F8 cannot bore leaf B until the owner reads it"
+    },
+    {
+      "path": "families.bifold.hinge.cup_on_leaf_b.boss_screws.offset_from_cup_centre",
+      "where": "p. 117",
+      "why": "not printed for the bi-fold"
+    },
+    {
+      "path": "families.bifold.hinge.plate_on_leaf_a.position_on_leaf_a",
+      "where": "p. 117",
+      "why": "not in the snippet"
+    },
+    {
+      "path": "plates.cruciform_37_32.rows[175H9xxx].height",
+      "where": "p. 153",
+      "why": "heights of the 175H9 rows not legible"
+    },
+    {
+      "path": "plates.knock_in_174E.page",
+      "where": "catalogue",
+      "why": "no snippet named the 174E page"
+    }
+  ]
+}

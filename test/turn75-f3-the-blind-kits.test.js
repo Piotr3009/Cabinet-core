@@ -72,7 +72,8 @@ test('F3 · the carcass is the parent\'s, hole for hole, at the same width', () 
     }, P);
     const carcass = (res) => res.drills.filter((d) => !String(d.panel).includes('-F') && !String(d.panel).includes('BLANK'));
     assert.deepEqual(carcass(r), carcass(q), `${id} is not drilled as ${parent}`);
-    const boards = (res) => res.panels.filter((x) => !['front', 'blind_blank'].includes(x.role)).map((x) => [x.id, x.w, x.h]);
+    // AMENDED BY T78 F10: the kit's own corner strip (role corner_post) is the blind kit's board, not the parent's.
+    const boards = (res) => res.panels.filter((x) => !['front', 'blind_blank', 'corner_post'].includes(x.role)).map((x) => [x.id, x.w, x.h]);
     assert.deepEqual(boards(r), boards(q), `${id}'s boards are not ${parent}'s`);
   }
 });

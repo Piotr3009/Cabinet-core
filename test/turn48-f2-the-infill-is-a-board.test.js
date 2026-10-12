@@ -247,7 +247,9 @@ test('one outline, one label, one row', () => {
   assert.equal(boards.filter((p) => p.cnc?.outline?.length === 4).length, 1);
 
   const labels = boards.map((p) => partLabelText(r.unitNum, p));
-  assert.deepEqual(labels, ['01 INFILL-T-FACE 620x60']);
+  // AMENDED BY T78 F21 (12.10.2026): the CNC part label carries the paint code
+  // beside the part number (the owner's spray law: a top infill is 1S + 1E).
+  assert.deepEqual(labels, ['01 INFILL-T-FACE 620x60 1S+1E']);
 
   const rows = buildBom([{ unit: { id: 'u1', params: {} }, result: r }])
     .units.flatMap((u) => u.rows).filter((row) => String(row.id).startsWith('INFILL-T'));

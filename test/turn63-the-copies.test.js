@@ -383,6 +383,12 @@ const T74_LICENSED = [
 // list and is held the way T72's three are: its `EXEMPT` entry with the
 // owner's words and its new hash, and its copy re-made by `scripts/t75-copy.mjs`.
 const T75_LICENSED = ['src/components/AddItems.jsx'];
+// CLAUDE.md T78 F5: *"Each gets its own clickable dimension (T73 F3 field):
+// `ARM A` and `ARM B`"*: the size window's two fields read ARM A and ARM B on
+// an L (`UnitSizeModal.jsx`). T78 F9: *"Add items ▸ `Carousel` on the L only"*
+// (`AddItems.jsx`). Both are CONTROLS, licensed in `EXEMPT` with the owner's
+// words and re-frozen, their copies re-made by `scripts/t78-copy.mjs`.
+const T78_LICENSED = ['src/components/UnitSizeModal.jsx', 'src/components/AddItems.jsx'];
 
 test('T72 · every PRO original that MOVED is licensed, and every licence is spent', () => {
   let base = null;
@@ -404,7 +410,7 @@ test('T72 · every PRO original that MOVED is licensed, and every licence is spe
   const exempt = freeze.slice(at, freeze.indexOf('\n};', at));
   for (const rel of moved) {
     assert.ok(exempt.includes(`'${rel}':`), `${rel} moved without a licence in the freeze table`);
-    assert.ok(T72_LICENSED.includes(rel) || T74_LICENSED.includes(rel),
+    assert.ok(T72_LICENSED.includes(rel) || T74_LICENSED.includes(rel) || T78_LICENSED.includes(rel),
       `${rel} moved and this test does not know about it`);
   }
   // T74 · …and tonight's machine names exactly tonight's licences (its list of
@@ -435,7 +441,7 @@ test('T63, amended by T67 and T72 · not one byte of the other FIFTEEN originals
   if (!base) return;
   // `WatchLayoutModal` is on BOTH lists — T67 renamed it, T72 gave it three
   // controls — so the set is de-duplicated rather than counted twice.
-  const licensed = [...new Set([...T67_RENAMED, ...T72_LICENSED, ...T74_LICENSED])];
+  const licensed = [...new Set([...T67_RENAMED, ...T72_LICENSED, ...T74_LICENSED, ...T78_LICENSED])];
   const unmoved = T63_COPIES.map((c) => c.pro).filter((p) => !licensed.includes(p));
   assert.equal(unmoved.length, 21 - licensed.length, 'the exemption grew beyond the files it names');
   const diff = execFileSync('git', ['diff', '--stat', base, '--', ...unmoved],
@@ -454,7 +460,12 @@ test('T63, amended by T67 and T72 · not one byte of the other FIFTEEN originals
     'a file left the rename-only list without being licensed for a control');
   const freeze = read('test/turn59-f1-the-switch.test.js');
   for (const rel of T75_LICENSED) {
-    assert.ok(freeze.includes(`'${rel}':\n    'T75 F`), `${rel} bought a control with no T75 licence in the freeze table`);
+    // AMENDED BY T78 F9: the entry is RENEWED above its T75 line (a later night
+    // argues first), so the T75 licence is read anywhere in the file's entry.
+    const at = freeze.indexOf(`'${rel}':`);
+    const end = freeze.indexOf("\n  '", at + 1);
+    const entry = freeze.slice(at, end < 0 ? undefined : end);
+    assert.match(entry, /T75 F\d/, `${rel} bought a control with no T75 licence in the freeze table`);
   }
   if (!renameOnly.length) return;
   const renamed = execFileSync('git', ['diff', '-U0', base, '--', ...renameOnly],

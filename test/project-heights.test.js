@@ -82,7 +82,12 @@ test('every unit type either has a height group or says why not', () => {
       assert.ok(['LOW_CABINET', 'OVEN_BASE', 'WARDROBE_TOP', 'FREE_PANEL', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK',
         // AMENDED BY T75 F18 · …and the wardrobe job's LOW UNIT, for the low
         // cabinet's own reason: lower is its whole point (500).
-        'WARDROBE_LOW'].includes(id), `${id} has no height group and no reason`);
+        'WARDROBE_LOW',
+        // AMENDED BY T78 F17 . and the two hoods whose height IS what they are:
+        // the canopy's own 500 and the short hood's 660 (the clearance's
+        // answer); the project's wall height would undo both. Their TOP meets
+        // the wall run's top line instead (types.js `topLine: 'wall'`).
+        'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT'].includes(id), `${id} has no height group and no reason`);
       continue;
     }
     assert.ok(known.has(group), `${id} points at a group that does not exist: ${group}`);

@@ -39,7 +39,9 @@
 // Pure functions and pure data. No React, no store, no three.js.
 
 import { getUnitType } from './types.js';
-import { paddedSpan, unitBase, unitTop, wallGapOf } from './runs.js';
+import {
+  cornerLAdjacentSpan, paddedSpan, unitBase, unitTop, wallGapOf,
+} from './runs.js';
 // T75 F5 · the corner rulebook: which two runs meet at a corner, and who is A.
 import { cornersOf } from './corners.js';
 
@@ -265,9 +267,18 @@ export function worktopsFor({
     // ─── T75 F4/F5 · ONE SLAB SHAPED LIKE THE L ────────────────────────────
     if (loneL) {
       const geometry = lSlabGeometry({
-        unit: mine[0], record, profile, units,
+        unit: mine[0], record, profile, units, walls,
       });
       if (geometry) out.push(withCutouts({ ...record, slabId: `${record.id}`, geometry }, mine, profile));
+      continue;
+    }
+    // ─── T78 F2 · THE L AND THE RUNS ALONG ITS ARMS ────────────────────────
+    const theL = mine.find(isCornerKit);
+    if (theL) {
+      const slabs = lRunSlabs({
+        theL, mine, record, profile, units, walls,
+      });
+      if (slabs) out.push(...slabs);
       continue;
     }
     // ─── T75 F5 · TWO WALLS: TWO SLABS AND ONE JOINT ───────────────────────
@@ -432,7 +443,7 @@ function cornerSlabs({
  * still draws something true) and `outline` is the L, in the wall's frame.
  */
 function lSlabGeometry({
-  unit, record = null, profile, units = [],
+  unit, record = null, profile, units = [], walls = null,
 }) {
   const spec = worktopSpec(profile);
   const W = Number(unit.params?.width) || 0;
@@ -447,10 +458,37 @@ function lSlabGeometry({
   const top = unitBase(unit, profile) + (Number(unit.params?.height) || 0);
   // T75 · the far end of the L's own arm BUTTS a neighbour standing there
   // (`sideTrim`'s law): no side overhang into its top.
-  const sideA = endMeets([unit], right ? 'left' : 'right', units, profile, top, top + slabThickness(record, spec)) ? 0 : side;
+  const thick = slabThickness(record, spec);
+  const sideA = endMeets([unit], right ? 'left' : 'right', units, profile, top, top + thick) ? 0 : side;
+  // ─── T78 F2 · FLUSH AT BOTH WALLS, AND THE ARM B END BUTTS ITS NEIGHBOUR ─
+  //
+  // The owner, 11.10.2026: *"worktop nie wycina sie w ksztalcie L."*  The
+  // probe (verify/t78/f02-probe.md, rows 4 and 5) found the lone L's slab
+  // started at the L's own x (10 mm off wall B, the wall gap left bare) while
+  // every straight slab is flush at its wall (`worktopGeometry`: "nothing hangs
+  // over a wall", z 0). So the edge along wall B runs to the wall: for the left
+  // hand that is x 0; for the right hand the wall's own end (handed in; with no
+  // walls the L's gap off it). And the arm B end takes the side overhang only
+  // where nothing stands against it on the adjacent wall at the slab's height,
+  // the law arm A's end already obeys (`cornerLAdjacentSpan` is the one span
+  // the plus, the placement and this read).
+  const wallA = Array.isArray(walls) ? walls[unit.position?.wall ?? 0] : null;
+  const toWallB = right
+    ? (wallA ? Math.max(0, (Number(wallA.width) || 0) - (x0 + W)) : wallGapOf(unit, profile))
+    : x0;
+  const adj = Array.isArray(walls) ? cornerLAdjacentSpan(unit, walls, profile) : null;
+  const armBMet = Boolean(adj) && (units || []).some((u) => {
+    if (u.id === unit.id || (u.position?.wall ?? 0) !== adj.wall) return false;
+    if (!(unitBase(u, profile) < top + thick && unitTop(u, profile) > top - 1)) return false;
+    const o = paddedSpan(u);
+    return adj.side === 'left' ? Math.abs(o.right - adj.x_mm) <= 1 : Math.abs(o.left - adj.x_mm) <= 1;
+  });
+  const sideB = armBMet ? 0 : side;
   // In the unit's frame with the room corner at x = 0 (corner_side 'left'),
   // mirrored for an L whose corner is on its right.
-  const local = [[0, 0], [W + sideA, 0], [W + sideA, reach], [reach, reach], [reach, D + side], [0, D + side]];
+  const local = [
+    [-toWallB, 0], [W + sideA, 0], [W + sideA, reach], [reach, reach], [reach, D + sideB], [-toWallB, D + sideB],
+  ];
   const outline = local.map(([x, z]) => [Math.round((x0 + (right ? W - x : x)) * 100) / 100, z]);
   const xs = outline.map((p) => p[0]);
   return {
@@ -458,18 +496,99 @@ function lSlabGeometry({
     x: Math.min(...xs),
     w: Math.max(...xs) - Math.min(...xs),
     y: top,
-    h: slabThickness(record, spec),
+    h: thick,
     z: 0,
-    d: D + side,
-    depth: D + side,
+    d: D + sideB,
+    depth: D + sideB,
     thickness: slabThickness(record, spec),
     decor: record?.decor ?? null,
-    overhang: { front: spec.frontOverhang, side: spec.sideOverhang, wall: 0 },
+    overhang: {
+      front: spec.frontOverhang, side: spec.sideOverhang, wall: 0, armA: sideA, armB: sideB,
+    },
     extensions: { left: 0, right: 0, front: Math.max(0, Number(record?.extendFront) || 0) },
     unitIds: [unit.id],
     outline: right ? [...outline].reverse() : outline,
     shape: 'L',
+    // T78 F2 · where each arm ends along its wall (the L's own stop), for the
+    // straight slab that butts it there.
+    armEnds: {
+      A: { wall: unit.position?.wall ?? 0, x: right ? x0 : x0 + W },
+      ...(adj ? { B: { wall: adj.wall, x: adj.x_mm } } : {}),
+    },
   };
+}
+
+/**
+ * T78 F2 · THE L SLAB AND THE RUNS ALONG ITS ARMS: ONE RECORD, SEVERAL SLABS.
+ *
+ * The owner, 11.10.2026: *"worktop nie wycina sie w ksztalcie L."*  The probe
+ * (verify/t78/f02-probe.md, rows 8 to 12): a record over the L and the
+ * cabinets beside it fell through to `worktopGeometry`, ONE rectangle as deep
+ * as the L (948 over a 558 Standard, the inner corner stone). Now the L is its
+ * own slab (its outline), and the cabinets along each arm are a straight slab
+ * of their own that BUTTS the L at the arm end with the joint record of T75
+ * F5 (a square butt, the connector bolts, the drawing's note); a straight end
+ * that does not reach the arm keeps its overhang. The client's left and right
+ * extensions are the free ends' (T75's corner pair zeroes them the same way).
+ */
+function lRunSlabs({
+  theL, mine, record, profile, units, walls,
+}) {
+  const spec = worktopSpec(profile);
+  const lGeometry = lSlabGeometry({
+    unit: theL, record, profile, units, walls,
+  });
+  if (!lGeometry) return null;
+  const out = [withCutouts({ ...record, slabId: `${record.id}-L`, geometry: lGeometry }, [theL], profile)];
+  const rest = mine.filter((u) => u.id !== theL.id);
+  const byWall = new Map();
+  for (const u of rest) {
+    const wi = u.position?.wall ?? 0;
+    if (!byWall.has(wi)) byWall.set(wi, []);
+    byWall.get(wi).push(u);
+  }
+  for (const [wi, group] of byWall) {
+    const geometry = worktopGeometry({ units: group, record: { ...record, extendLeft: 0, extendRight: 0 }, profile });
+    if (!geometry) continue;
+    sideTrim(geometry, group, units, profile);
+    const arm = Object.entries(lGeometry.armEnds).find(([, end]) => end.wall === wi);
+    let joint = null;
+    if (arm) {
+      const [name, end] = arm;
+      const spans = group.map((u) => paddedSpan(u));
+      const left = Math.min(...spans.map((s) => s.left));
+      const right = Math.max(...spans.map((s) => s.right));
+      // The group stands at the arm end on one side or the other: that end is
+      // set TO the arm end, overhang and all, and the joint is recorded there.
+      if (Math.abs(left - end.x) <= 1) {
+        const far = geometry.x + geometry.w;
+        geometry.x = end.x;
+        geometry.w = far - end.x;
+        geometry.overhang = { ...geometry.overhang, left: 0 };
+      } else if (Math.abs(right - end.x) <= 1) {
+        geometry.w = end.x - geometry.x;
+        geometry.overhang = { ...geometry.overhang, right: 0 };
+      }
+      if (Math.abs(left - end.x) <= 1 || Math.abs(right - end.x) <= 1) {
+        joint = {
+          kind: spec.joint.kind,
+          boltCount: spec.joint.boltCount,
+          at: { wall: wi, x: end.x, depth: geometry.d },
+          arm: name,
+          readiness: 'manual',
+          note: `Worktop joint: square butt, slab ${record.id}-w${wi} into the L slab ${record.id}-L at the arm ${name} end, `
+            + `${spec.joint.boltCount} connector bolts; bolt pockets cut by hand on site.`,
+        };
+      }
+    }
+    out.push(withCutouts({
+      ...record,
+      slabId: `${record.id}-w${wi}`,
+      geometry: { ...geometry, ...(joint ? { butts: 'L' } : {}) },
+      ...(joint ? { joint } : {}),
+    }, group, profile));
+  }
+  return out;
 }
 
 /**

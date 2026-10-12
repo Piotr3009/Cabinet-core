@@ -59,7 +59,8 @@ test('the categories are the ones CLAUDE.md asks for, with the two placeholders'
     // AMENDED BY T75 F12: the appliance towers, *"Fridge freezer"* and *"Washer + dryer"*.
     // AMENDED BY T75 F13: BUD_INT, *"Drawers behind doors"*.
     // AMENDED BY T75 F14: the hob drawer units, 2x and 3x.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'BLIND_WALL', 'CORNER_L_WALL',
+    // AMENDED BY T78 F17: the canopy hood and the short hood, beside the hood unit.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'BLIND_WALL', 'CORNER_L_WALL',
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);

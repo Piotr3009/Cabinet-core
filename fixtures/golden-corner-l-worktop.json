@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "name": "golden-corner-l-worktop.json",
+    "turn": "T78",
+    "F": "F2",
+    "source": "engine/worktop.js lSlabGeometry and lRunSlabs: the L slab flush at both walls, two straight slabs butting its arm ends",
+    "computed_by": "scripts/t78-goldens.mjs lWorktopScene()",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "scene": "lWorktopScene: a 4000 x 3000 room, CORNER_L_BASE in the left corner of wall 0, a BUD at each arm end, one record over the three"
+  },
+  "expected": [
+    {
+      "slabId": "worktop-L",
+      "wall": 0,
+      "shape": "L",
+      "x": 0,
+      "w": 910,
+      "y": 870,
+      "h": 38,
+      "d": 900,
+      "outline": [
+        [
+          0,
+          0
+        ],
+        [
+          910,
+          0
+        ],
+        [
+          910,
+          606
+        ],
+        [
+          616,
+          606
+        ],
+        [
+          616,
+          900
+        ],
+        [
+          0,
+          900
+        ]
+      ],
+      "overhang": {
+        "front": 20,
+        "side": 10,
+        "wall": 0,
+        "armA": 0,
+        "armB": 0
+      },
+      "butts": null,
+      "joint": null,
+      "cutouts": 0
+    },
+    {
+      "slabId": "worktop-w0",
+      "wall": 0,
+      "shape": "straight",
+      "x": 910,
+      "w": 610,
+      "y": 870,
+      "h": 38,
+      "d": 606,
+      "outline": null,
+      "overhang": {
+        "front": 20,
+        "side": 10,
+        "wall": 0,
+        "left": 0
+      },
+      "butts": "L",
+      "joint": {
+        "kind": "butt",
+        "boltCount": 3,
+        "at": {
+          "wall": 0,
+          "x": 910,
+          "depth": 606
+        },
+        "arm": "A"
+      },
+      "cutouts": 0
+    },
+    {
+      "slabId": "worktop-w3",
+      "wall": 3,
+      "shape": "straight",
+      "x": 1480,
+      "w": 610,
+      "y": 870,
+      "h": 38,
+      "d": 606,
+      "outline": null,
+      "overhang": {
+        "front": 20,
+        "side": 10,
+        "wall": 0,
+        "right": 0
+      },
+      "butts": "L",
+      "joint": {
+        "kind": "butt",
+        "boltCount": 3,
+        "at": {
+          "wall": 3,
+          "x": 2090,
+          "depth": 606
+        },
+        "arm": "B"
+      },
+      "cutouts": 0
+    }
+  ]
+}

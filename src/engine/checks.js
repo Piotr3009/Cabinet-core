@@ -701,6 +701,11 @@ export function runChecks({
     const rowsByPanel = result.drillSummary?.hinge_rows_by_panel || {};
     for (const panel of result.panels || []) {
       if (panel.part !== 'FRONT' || panel.role !== 'front' || panel.meta?.appliance) continue;
+      // T78 F18 · a LIFT-UP leaf (AVENTOS) hangs on its arms, not on cups: zero
+      // hinges is the design, and its weight is judged by the lift plan's own
+      // power-factor bands (LIFT_NO_UNIT / LIFT_FRONT_WEIGHT, in words). The
+      // CLIP top table has nothing to say about it.
+      if (panel.meta?.lift) continue;
       const rows = rowsByPanel[panel.id] || allRows;
       const material = resolvePanelMaterial(panel, unit, design, profile, materials);
       const weight = panelWeight({

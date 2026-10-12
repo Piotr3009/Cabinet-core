@@ -10,6 +10,8 @@ import DesignSettingsModal from '../components/DesignSettingsModal.jsx';
 import AuthModal from '../components/AuthModal.jsx';
 import CompanyDefaultsModal from '../components/CompanyDefaultsModal.jsx';
 import AssignMaterialsModal from '../components/AssignMaterialsModal.jsx';
+// T78 F21 (CLAUDE.md PART F): the Spraying page, Output > Spraying and the Spraying button.
+import SprayingPanel from '../components/SprayingPanel.jsx';
 import SaveAsModal from '../components/SaveAsModal.jsx';
 import SaveTemplateModal from '../components/SaveTemplateModal.jsx';
 import BomPanel from '../components/BomPanel.jsx';
@@ -627,6 +629,9 @@ export default function ConfiguratorPage() {
         {/* Turn 39 (CLAUDE.md F3): Assign materials — the layer between the
             engine's part names and the things a joiner buys. */}
         {modal === 'assign-materials' && <AssignMaterialsModal />}
+        {/* T78 F21 (CLAUDE.md PART F): the spray schedule, its cards and the
+            paint order, one page on the Production Core pattern. */}
+        {modal === 'spraying' && <SprayingPanel />}
         {modal === 'save-as' && <SaveAsModal onSave={onSaveAs} />}
         {modal === 'save-template' && <SaveTemplateModal />}
         {modal === 'render' && <RenderModal rig={renderRig} />}

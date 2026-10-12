@@ -80,9 +80,11 @@ const EXEMPT = {
   'src/components/SaveTemplateModal.jsx':
     'T75 F20 · right-clicked inside a selection of two or more, the modal saves a SET (templateStore.saveSet): the units left to right with the gaps between them. *"`lib/templates.js` grows `kind: \'set\'`: an ORDERED list of units (type + params, positions stripped as today) with the gaps between them."*',
   'src/components/TopBar.jsx':
-    'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*',
+    'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*'
+    + ' T78 F21 · the Output menu\'s Spraying placeholder becomes a live entry (onOpenSpraying): one page on the Production Core pattern, the spray schedule by colour, the cards and the paint order. *"cale sprayowanie jako osobne menu Cabinet Core."*',
   'src/components/WarehouseModal.jsx':
-    'T75 F21 · the three buttons read Import from JoineryCore (CSV), Export project list for JoineryCore (CSV) and Export for JoineryCore (CSV); the project list holds the rows THIS project\'s stock carries (projectUuids), not every uuid in the warehouse (the probe exported 3 of 3 for a project naming none). *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*.',
+    'T75 F21 · the three buttons read Import from JoineryCore (CSV), Export project list for JoineryCore (CSV) and Export for JoineryCore (CSV); the project list holds the rows THIS project\'s stock carries (projectUuids), not every uuid in the warehouse (the probe exported 3 of 3 for a project naming none). *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*.'
+    + ' T78 F21 · Database > Materials gains the Paints department: the warehouse\'s twelve columns plus the paint fields (topcoat | primer, sheen, coverage m2 per litre per coat, coats, tin sizes) on the card; litres and tins are the engine\'s arithmetic, never typed. *"cale sprayowanie jako osobne menu Cabinet Core."*',
   'src/components/LibraryPanel.jsx':
     'T75 F20 · the sets shelf: the Library\'s Sets category lists the five shipped sets (engine/sets.js) above the saved ones, a saved SET row names its units, and a click inserts the whole set through the store (insertSet) where a unit would go. *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."* '
     + 'T75 F10 · a plus on an empty island face opens the library ON that face and the unit is added there (addUnit with the face\'s index). *"A unit is added to a face as to a wall (addUnit with the face\'s index; the library\'s plus points on the plan show the faces)."*'
@@ -96,7 +98,8 @@ const EXEMPT = {
     + 'T75 F5 · the cut list and the BOM receive the room, so the worktop reaches them: its slabs (a corner is two, an L is one shaped like the L), the connector bolts as an order line, the joint and every cut-out as a NOTE. *"Done means the whole road ... lands in the cut list and the BOM."* One line: `room: project.room` handed to `buildBom`.'
     + ' DECOR F4: show the decorative construction and production status on each BOM row. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F5 · the row shows the construction label under the part and its state in the T75 State column, never a second status. *"the BOM panel shows the T75 State column and the construction label, not a second status."*'
-    + ' T76 F7 · the walk measured the State column past the 560 px panel (AM strips and their gluing NOTE): the material cell truncates at 160 and the state may wrap. *"Test the way the client clicks."*',
+    + ' T76 F7 · the walk measured the State column past the 560 px panel (AM strips and their gluing NOTE): the material cell truncates at 160 and the state may wrap. *"Test the way the client clicks."*'
+    + ' T78 F21 · the BOM\'s materials are the warehouse\'s rows with the Paints department beside them (withPaints), so the paint lines of the spray schedule reach the Purchase list with the material\'s price, or a missing price said. *"cale sprayowanie jako osobne menu Cabinet Core"*; waste *"10 percent."*',
   // ─── ADDED BY TURN 75 · F7, THE CORNER NOTCH ─────────────────────────────
   // CLAUDE.md T75, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file and re-frozen at its new hash in the
@@ -127,7 +130,8 @@ const EXEMPT = {
   // in the same commit."*  GPT's lines below are its own, as its patch wrote
   // them; the three files T75 also licensed (BomPanel, CncTree, RightPanel)
   // carry ONE entry above, T75's text and GPT's line.
-  'src/components/AssignMaterialsModal.jsx': 'DECOR F4: applied strip stock badges use the same thickness validation as purchasing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*',
+  'src/components/AssignMaterialsModal.jsx': 'DECOR F4: applied strip stock badges use the same thickness validation as purchasing. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
+    + ' T78 F21 · the sprayed set is assigned its PAINT here, in the same modal every other material is assigned in (withPaints: the Paints department rows beside the boards), not on the Spraying page. *"cale sprayowanie jako osobne menu Cabinet Core."*',
   'src/components/CncView.jsx': 'ORNATE, Piotr 10.10.2026: gotowy kod wlacznei z leyersami prosze do cnc. Shows canonical reference layers and relief depth readouts without changing production export approval. ' + 'DECOR F3: explicit front/back machining preview from shared export geometry. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*'
     + ' T76 F4 · the readout names a V groove for what it is: V, its width at the mouth, its centre line. *"The V groove is a V ... The DXF layer name and the `front-operations.json` entry say which."*'
     + ' T77 F7 · a ready Ornate leaf on the front face says "Proposed relief reference" in the colour of its reference contours, apart from the red blocked label (since F4 a relief that built is not a fault). *"The relief is a PROPOSAL and stays one ... The slab is cut; the relief ships as CAD/CAM reference files with the state `geometry`, never as approved machining, until the owner says otherwise."*',
@@ -216,7 +220,8 @@ const EXEMPT = {
     + 'DECOR F4: pass actual stock to decorative strip assignment checks. *"nie mam zreob default jak uwazasz najwyzej pozneij poprawimy jedz z koksem i koduj prosze"*. '
     + 'T71 F5: `<DrawingModal rig={renderRig} />`, and the menu path binds the '
     + 'same set with the same worktops and render. *"weź zakoduj"*.'
-    + ' T77 F3 · Output > CNC / DXF writes the Ornate reference files at the level the CNC panel chose. *"The CNC export offers two levels in the existing export options (no new numeric field): `Reference (default)` at `sampleMm` and `Full resolution` at `fullSampleMm`; the manifest records which one was written."*',
+    + ' T77 F3 · Output > CNC / DXF writes the Ornate reference files at the level the CNC panel chose. *"The CNC export offers two levels in the existing export options (no new numeric field): `Reference (default)` at `sampleMm` and `Full resolution` at `fullSampleMm`; the manifest records which one was written."*'
+    + ' T78 F21 · the Spraying page is mounted beside the other output windows (the modal layer\'s spraying entry). *"cale sprayowanie jako osobne menu Cabinet Core."*',
   // ─── RENEWED BY TURN 69 · THE SAME FILE, A SECOND LICENSED NIGHT ─────────
   // The exemption bought ONE night and not a standing permission — T67 said so
   // — so tonight's edit is argued here again, with tonight's quote and
@@ -250,6 +255,10 @@ const EXEMPT = {
   // the same commit."*
   'src/components/CompanyDefaultsModal.jsx':
     'T78 F19 · the Joints choice on the company defaults screen: the owner\'s four joint systems, Cabineo in its two variants, as ids (puzzle | dowel | biscuit | cabineo8 | cabineo12) through the same Choice select every other preference uses, written as joints_system; never a number (the validator refuses a typed pitch or diameter as it refuses the hinge angle, T22). *"mamy puzzle i dogbones w systemie i niech tak bedzie ale tez trzeba zrobic wybor laczenia i mamy 4: puzzle, dowels, Cabineo, ciastka"*; *"Cabineo 8 AND 12, chosen in the company\'s default settings."*',
+  // CLAUDE.md T78 F21: *"cale sprayowanie jako osobne menu Cabinet Core"*: a
+  // NEW PRO surface, licensed the night it is born and frozen at its hash.
+  'src/components/SprayingPanel.jsx':
+    'T78 F21 · Output > Spraying, one page on the Production Core pattern (mockup v2 of 11.10): the SPRAYING INFORMATION card, PART A ELEMENTS by colour, PART B CARDS open, PART C PAINT, Export PDF; every number the engine\'s (engine/spray.js off profile.spray), a typed note per line printed. *"cale sprayowanie jako osobne menu Cabinet Core"*; *"edges in m2 for the paint and in lm beside it; waste 10 percent."*',
 };
 
 /**
@@ -268,10 +277,11 @@ const FROZEN = {
   // T78 F11 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/AddItems.jsx': '9b041a2a65b2da27d66e9d1880683f31355b69c3aac023eb07ccda9201f3763f',
   'src/components/AddItemsModal.jsx': '952b9e52104d92a148ba00da6ba42166e44824e76aeda7ba0553b22f2633105e',
-  'src/components/AssignMaterialsModal.jsx': 'a5110598cd1393143d4a1ba0575ab0974f77390ead98d8213d218ca8551dc754',
+  // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/AssignMaterialsModal.jsx': '1f9d71d9af9b57ba7e8f77b38c99fda7368a657a3289b69be87ac166337cc82e',
   'src/components/AuthModal.jsx': 'b51d7a14910e89553528fe2e36f787502e4b4a77b6c408ebb24323510c164ddc',
-  // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
-  'src/components/BomPanel.jsx': '966d6494dfb42fa5e7e3bf35e6f25e9bc7514ef558e7eec4a96e1ed96d586733',
+  // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/BomPanel.jsx': 'ee8cf839b68c547c36a3f76de1edb89a5d44becddc4e04744c9f3242ca0af074',
   'src/components/CabinetEditorModal.jsx': '3d21bba5af9dc42fecbb620b6594b5a4be79be2e9ce5446cf4b53dc4b09b3ca4',
   'src/components/CanvasToolbar.jsx': 'ee85f7f7d4b3a64021f56cbea5fe36ff504136ace340216fdef71fcb316e2bd9',
   'src/components/CheckPanel.jsx': '65a991cbc4aed29b3c9a49ed613e715dd3d033106f8e5e9ded45e8125a8dc014',
@@ -326,27 +336,29 @@ const FROZEN = {
   'src/components/SaveTemplateModal.jsx': '5de923d96cd981fd785005716ea84b7288d77c9b4ea044763112e672c6d1ba24',
   'src/components/Section.jsx': 'f3f64ad9f4d024d31a508f469a1f816c2bf1c0ffcf7d9221e95e2ee42d2a1a56',
   'src/components/SettingsPanel.jsx': '29cbcb97665db6b448dae9d4cec84c69a7acf7416ccafcfe344aca51840b9329',
+  // T78 F21 · a NEW PRO component, frozen the night it is born: Output > Spraying, the spray schedule's one page. `EXEMPT` carries the owner's words.
+  'src/components/SprayingPanel.jsx': '7d8f7adb67d26f0402c123e78d4c785981a2a15113968c43ed3132e5ada9bb9f',
   'src/components/SheenSlider.jsx': 'ec09e0dd7ad835672e4c024dee3013e649dcfa8ad64a2da5c120ed78d5c94bfb',
   'src/components/ShelfHingeClash.jsx': 'd205a25f3f86278aef44b7b91bb1d19958cef84aadc333ec550cd47327fc9619',
   'src/components/StartScreen.jsx': '6a6de6d1667872a45d18bb5b8e9e42d3d4522ac99f8ef2d1e9a32ce54ab363aa',
-  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/TopBar.jsx': '31511deaa4fcbfee230c7ed1955e80c4945bac6c8278a0c4c07f3fa4c6a1de13',
+  // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/TopBar.jsx': '372dea5b1ea36b64c02f693bf27419c0939e3b467ee650b18dd98479291ac712',
   'src/components/UnitFinishModal.jsx': '64ef4ad294dea3ac69cea7a2b6a200f55d335b75e8ebce69fafe37a33eb2a819',
   // T78 F5 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
   'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
-  // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/WarehouseModal.jsx': '269eef79dba50c1472e87bd4e882dd87d9561154067bfdffca68cdc4ca348ab3',
+  // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/WarehouseModal.jsx': 'ec5b747982b65fd246016f43484247f83d64cac86678f750b63147f84572e5ea',
   // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/WatchLayoutModal.jsx': 'ca2f0acd8e432d5890a185ca15a9b0bdff565827464652e3826668981b0a35ee',
   'src/components/WizardHardware.jsx': 'd0de5ca0c32de92feffef65a1a091cc2d45eaeb02a446a73c5389c2d03c377a8',
   'src/components/WizardSettings.jsx': '60df82c8620ef9d6af4148293ea717cb1690335d3a71f5234f8087aef936e091',
   'src/components/WizardSummary.jsx': '949a0930f7179cc25aa0b3eb5ff85f92845dd70b51390df188c445f7beb8a506',
   'src/main.jsx': '843c4aefa30516162f32ebdede296fdc091288019da4bbab851f01765b786dbb',
-  // T76 F1 · re-frozen at the hash of BOTH edits (T75's and GPT's); `EXEMPT` above carries the reasons.
-  'src/pages/ConfiguratorPage.jsx': 'e6da4c0f4dd8f83196fb229215df0fb25fff8d916c59b4b1daee935d89a5e380',
+  // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/pages/ConfiguratorPage.jsx': '8a81a4024c60c7b2aad24e4325ecd322b58bff0c4487a36c8fdff390ccd019ea',
 };
 
 // ─── THE WALKER ────────────────────────────────────────────────────────────
@@ -469,7 +481,7 @@ const show = (abs) => relative(ROOT, abs);
 
 // ─── 1. THE PRO FROZEN-FILES ASSERTION ─────────────────────────────────────
 
-test('F1: the frozen surface, 67 files of PRO, byte for byte', () => {
+test('F1: the frozen surface, 68 files of PRO, byte for byte (T78 F21: the Spraying page joined)', () => {
   const moved = [];
   for (const [rel, want] of Object.entries(FROZEN)) {
     const path = join(ROOT, rel);
@@ -549,6 +561,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T75 F20 · *"`lib/templates.js` grows `kind: 'set'`"*: the modal saves a selection as a set.
     'src/components/SaveTemplateModal.jsx',
     'src/components/SettingsPanel.jsx',
+    // T78 F21 · *"cale sprayowanie jako osobne menu Cabinet Core"*: the Spraying page, a new PRO surface.
+    'src/components/SprayingPanel.jsx',
     // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets shelf"*.
     'src/components/TopBar.jsx',
     'src/components/UnitSizeModal.jsx',
@@ -576,7 +590,7 @@ test('F1 · the frozen surface — and git agrees, where git can answer', () => 
     // A tarball or a clone with no such ref. The manifest above already
     // answered; this assertion has nothing to add and says so out loud
     // rather than passing in silence.
-    assert.ok(Object.keys(FROZEN).length === 67, 'no base ref: the manifest is the whole proof here');
+    assert.ok(Object.keys(FROZEN).length === 68, 'no base ref: the manifest is the whole proof here');
     return;
   }
   // T67: the three exempted paths are excluded BY NAME — `:(exclude)` is git's

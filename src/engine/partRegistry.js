@@ -480,6 +480,22 @@ export const PART_REGISTRY = {
     id: 'cabineo_cap', name: 'Cabineo cover caps', group: G('consumable'), unit: 'pcs', materialType: 'consumable',
     note: 'One per Cabineo pocket under caps all, per fixed-shelf pocket under caps shelves; article owner to supply',
   },
+  // T78 F21 - THE PAINT OF THE SPRAYED SETS, by the LITRE (CLAUDE.md PART F).
+  // Set 1 is the fronts and every element of the spray law (doors, drawer
+  // fronts, end panels, plinths, infills, masks, posts, blanks, strips,
+  // pelmets, cornices, open shelves); set 2 is a veneer or sprayed CARCASS.
+  // The quantity is the spray schedule's (engine/spray.js paintPurchaseQtys:
+  // m2 x coats / coverage + the waste), never typed; the material is a row of
+  // the warehouse's Paints department, offered to the picker by
+  // engine/spray.js withPaints with `category: 'paint'`.
+  paint_fronts: {
+    id: 'paint_fronts', name: 'Paint, set 1 (fronts and run pieces)', group: G('consumable'), unit: 'L', materialType: 'paint',
+    note: 'Litres off the spray schedule for the fronts, the run pieces and every element of the spray law (T78 F21)',
+  },
+  paint_carcass: {
+    id: 'paint_carcass', name: 'Paint, set 2 (veneer or sprayed carcass)', group: G('consumable'), unit: 'L', materialType: 'paint',
+    note: 'Litres off the spray schedule for the inside faces of a veneer or sprayed carcass (T78 F21)',
+  },
   glue: {
     id: 'glue', name: 'Glue', group: G('consumable'), unit: 'L', materialType: 'consumable',
     note: 'A quantity the joiner types — there is no honest engine answer for it',

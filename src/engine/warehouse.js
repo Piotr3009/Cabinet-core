@@ -76,6 +76,58 @@ export const CSV_COLUMNS = [
 
 /** Where a price came from. The record says WHICH (CLAUDE.md F7). */
 export const PRICE_TYPED = 'typed';
+
+// === T78 F21 (CLAUDE.md PART F): THE PAINT AS A MATERIAL ======================
+//
+// The owner, 11.10.2026: *"Database > Materials gets a department Paints (the
+// warehouse's twelve columns plus: type topcoat | primer, sheen, coverage m2
+// per litre per coat, coats, tin sizes)."*  The department has stood in
+// CATEGORIES since T51; tonight a row of it carries its PAINT record. The five
+// fields ride the row and the table (`paint`, one jsonb column:
+// supabase/migrations/t78_warehouse_paint.sql), NOT the CSV: the CSV is PC's
+// twelve columns and *"the same columns as PC so the two files interchange"*
+// is the older law. The spray page reads them (engine/spray.js paintSpecOf)
+// for the litres and the tins; where a field is empty the profile's defaults
+// answer and the page says so.
+
+/** The two kinds of paint a row may be. */
+export const PAINT_TYPES = Object.freeze(['topcoat', 'primer']);
+
+/** The paint fields, in the order the card shows them. */
+export const PAINT_FIELDS = Object.freeze(['type', 'sheen', 'coverage_m2_per_l', 'coats', 'tin_sizes']);
+
+/** "1, 2.5, 5" (or an array) into litres, positive numbers only, sorted, no doubles. */
+export function parseTinSizes(value) {
+  const list = Array.isArray(value) ? value : String(value ?? '').split(/[,;\s]+/);
+  const out = [];
+  for (const v of list) {
+    const n = Number(String(v).trim().replace(',', '.'));
+    if (Number.isFinite(n) && n > 0 && !out.includes(n)) out.push(n);
+  }
+  return out.sort((a, b) => a - b);
+}
+
+/**
+ * The paint record of a row, normalised: `type` one of PAINT_TYPES or null,
+ * `sheen` text, `coverage_m2_per_l` and `coats` numbers or null, `tin_sizes`
+ * as typed and `tin_sizes_l` parsed. Null for a row that carries no paint
+ * field at all (every row that is not a paint).
+ */
+export function paintOf(material) {
+  const p = material?.paint;
+  if (!p || typeof p !== 'object') return null;
+  const num = (v) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
+  const type = PAINT_TYPES.includes(String(p.type || '').toLowerCase()) ? String(p.type).toLowerCase() : null;
+  const tins = p.tin_sizes ?? (Array.isArray(p.tin_sizes_l) ? p.tin_sizes_l.join(', ') : '');
+  return {
+    type,
+    sheen: str(p.sheen),
+    coverage_m2_per_l: num(p.coverage_m2_per_l),
+    coats: num(p.coats),
+    tin_sizes: str(tins),
+    tin_sizes_l: parseTinSizes(tins),
+  };
+}
 export const PRICE_IMPORT = 'import';
 
 const str = (v) => (v == null ? '' : String(v).trim());
@@ -166,6 +218,9 @@ export function migrateMaterial(raw, { rows = [] } = {}) {
     // OURS. Not in the CSV, because a file cannot tell you whether a number in
     // it was typed by a human.
     price_source: raw.price_source === PRICE_IMPORT ? PRICE_IMPORT : PRICE_TYPED,
+    // T78 F21 - OURS, and the Paints department's: kept as a record where the
+    // row has one, absent everywhere else (a shelf board carries no coats).
+    ...(paintOf(raw) ? { paint: paintOf(raw) } : {}),
   };
 }
 

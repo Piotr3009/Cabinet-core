@@ -4826,6 +4826,53 @@ export const DEFAULT_CABINET_PROFILE = {
     sheet: { width: 2800, height: 2070 },
   },
 
+  // === T78 F21 (CLAUDE.md PART F): THE SPRAY LAW =============================
+  //
+  // The owner, 11.10.2026, element by element: what of each sprayed element
+  // is painted. NUMBERS ONLY HERE; the arithmetic is engine/spray.js, the page
+  // components/SprayingPanel.jsx, the PDF engine/drawings/spraySheets.js.
+  // `wastePct`, `frameMm`, the strip's 8 and the twenty rows are the owner's
+  // decision of 11.10.2026; `defaults` (what a paint is assumed to do when its
+  // warehouse row says nothing) and row 19's partition code are T78 proposed,
+  // owner to confirm.
+  //
+  // The paint code grammar the page and the CNC label print: nS = n faces
+  // (sides), nE = n edges, F100 = a 100 mm frame on the back, 1S100 = a 100 mm
+  // strip of the face, 2E100 = two edges for 100 mm, TE = the top edge, FE =
+  // the front edge, 2E8 = both 8 mm sides of an applied strip, ALL = all around.
+  // Rows 8, 9 and 15 read `as:` the row they repeat (the owner: "as 7", "as 14").
+  spray: {
+    wastePct: 10,          // owner 11.10.2026, decided
+    edgesInM2: true,       // owner 11.10.2026, decided: edges count in the m2 for the paint, the lm beside is the work
+    frameMm: 100,          // owner 11.10.2026, decided: the end panel's back frame, the blind blank's strip
+    // T78 proposed, owner to confirm. Read only where the paint's warehouse row says nothing.
+    defaults: { coats: 2, coverageM2PerL: 10, tinSizesL: [1, 2.5, 5] },
+    rules: {
+      door:           { no: 1, faces: 2, edges: 4, grooves: 'inside the face', code: '2S + 4E' },
+      drawer_front:   { no: 2, faces: 2, edges: 4, code: '2S + 4E' },
+      false_front:    { no: 3, faces: 2, edges: 4, code: '2S + 4E' },
+      blind_blank:    { no: 4, faceStripMm: 100, doorSideEdge: 1, endEdgesMm: 100, code: '1S100 + 1E + 2E100' },
+      front_moulding: { no: 5, afterGluing: true, sides: 2, sideMm: 8, code: '2E8' },
+      inner_front:    { no: 6, faces: 2, edges: 4, code: '2S + 4E' },
+      end_panel:      { no: 7, faces: 1, edges: 4, backFrameMm: 100, code: '1S + F100 + 4E' },
+      island_end:     { no: 8, as: 'end_panel' },
+      back_panel:     { no: 9, as: 'end_panel' },
+      mask:           { no: 10, underside: 1, frontEdge: 1, code: '1S + FE' },
+      corner_post:    { no: 11, face: 1, longEdges: 2, topEdge: 1, code: '1S + 2E + TE' },
+      free_panel:     { no: 12, faces: 2, edges: 4, code: '2S + 4E' },
+      plinth:         { no: 13, face: 1, topEdge: 1, code: '1S + TE' },
+      infill:         { no: 14, face: 1, unitEdge: 1, code: '1S + 1E' },
+      top_infill:     { no: 15, as: 'infill' },
+      cornice:        { no: 16, all: true, perimeter: 'height + projection, both faces', code: 'ALL' },
+      pelmet:         { no: 17, all: true, code: 'ALL' },
+      upstand:        { no: 18, none: true, code: '' },
+      // 19: every face visible from inside (sides, top, bottom, the back's inside face), shelves all around;
+      // a partition is seen on both faces from inside: 2S + FE is T78 proposed, owner to confirm.
+      carcass_set2:   { no: 19, insideFaces: true, shelvesAll: true, codes: { side: '1S + FE', horizontal: '1S + FE', back: '1S', shelf: 'ALL', partition: '2S + FE' } },
+      open_shelf25:   { no: 20, all: true, thicknessMm: 25, code: 'ALL' },
+    },
+  },
+
   // ─── TURN 39 (CLAUDE.md F2/F4): THE WORKSHOP'S OWN MATERIAL ANSWERS ───────
   //
   // The owner: *"każdy jeden projekt powinien mieć Assign materials"* — so an
@@ -6211,6 +6258,16 @@ export function migrateCabinetProfile(profile) {
     csv: { ...D.csv, ...profile.csv, codes: { ...D.csv.codes, ...profile.csv?.codes } },
     // Turn 32 (CLAUDE.md F5): key by key, like every other nested block.
     bom: { ...D.bom, ...profile.bom, sheet: { ...D.bom.sheet, ...profile.bom?.sheet } },
+    // T78 F21 - the spray law. A profile saved before tonight gains the block
+    // whole; the ROWS are the app's (the law is the owner's and moves only by
+    // his word in this file, as the lighting spec does); the waste and the
+    // defaults merge key by key.
+    spray: {
+      ...D.spray,
+      ...profile.spray,
+      defaults: { ...D.spray.defaults, ...profile.spray?.defaults },
+      rules: { ...D.spray.rules },
+    },
     // Turn 39 (F2): the workshop's own answers survive a migration key by key,
     // the same merge every nested block above gets. `defaults` and `legRules`
     // are WORKSHOP VALUES, not app shape, so unlike `sheetOptions` they are NOT

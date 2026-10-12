@@ -1437,6 +1437,21 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
+   * T78 F21 - THE SPRAYING PAGE'S TYPED NOTE (Additional info), one per line
+   * key (engine/spray.js lineKeyOf: colour, rule, size, code), printed on the
+   * page and on the PDF. It rides `project.sprayNotes`, so it is saved and
+   * reloaded with the job; an emptied note is removed, not kept as ''.
+   */
+  setSprayNote: (lineKey, text) => set((s) => {
+    const key = String(lineKey || '');
+    if (!key) return {};
+    const notes = { ...(s.project.sprayNotes || {}) };
+    const t = String(text ?? '').trim();
+    if (t) notes[key] = t; else delete notes[key];
+    return { project: { ...s.project, sprayNotes: notes } };
+  }),
+
+  /**
    * Change the room. REFUSED when the new shape would leave a unit hanging off
    * a wall or under a lowered ceiling: shrinking the room is the one path that
    * can create an overlap with nobody dragging anything, so it is blocked at

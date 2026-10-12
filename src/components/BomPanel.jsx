@@ -23,6 +23,10 @@ import { READINESS_LABELS } from '../engine/readiness.js';
 import { migrateDesign, resolveFinishes } from '../engine/design.js';
 import { LAYER_CLASS } from '../lib/modalLayer.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
+// T78 F21 - the warehouse's paints beside the stock list, so the purchase
+// list prices the paint lines the spray schedule puts on it.
+import { useWarehouseStore } from '../stores/warehouseStore.js';
+import { withPaints } from '../engine/spray.js';
 
 // SPEC 4.11 — the BOM is computed LIVE from the current state at all times;
 // this panel only decides when to SHOW it. Exports are a snapshot of the same
@@ -35,7 +39,14 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
   const runElements = useProjectStore((s) => s.runElements);
   const units = useProjectStore((s) => s.units);   // the subscription that re-runs the BOM
   const assignments = useMaterialAssignmentStore((s) => s.assignments);
-  const materials = useMaterialAssignmentStore((s) => s.materials);
+  const ownMaterials = useMaterialAssignmentStore((s) => s.materials);
+  // T78 F21 - THE PAINT LINES (CLAUDE.md PART F): `purchaseBom` carries the
+  // paint of each sprayed set (engine/bom.js, through engine/spray.js
+  // paintPurchaseQtys), and the row it is priced by is a warehouse Paints row;
+  // it has to be in the list the BOM resolves against, or the line reads
+  // unassigned with a tin chosen. Same helper the Assign Materials modal uses.
+  const warehouseRows = useWarehouseStore((s) => s.rows);
+  const materials = useMemo(() => withPaints(ownMaterials, warehouseRows), [ownMaterials, warehouseRows]);
   const setAssignment = useMaterialAssignmentStore((s) => s.setAssignment);
   const setYield = useMaterialAssignmentStore((s) => s.setYield);
   const jcConnected = useMaterialAssignmentStore((s) => s.jcConnected);
@@ -133,7 +144,8 @@ export default function BomPanel({ onExportCsv, onExportPdf, onExportBom }) {
     [design, profile],
   );
 
-  const boardChoices = materials.filter((m) => m.category !== 'hardware');
+  // T78 F21 - a tin of paint is not a board: the Materials tab's board selects leave it out.
+  const boardChoices = materials.filter((m) => m.category !== 'hardware' && m.category !== 'paint');
   const hardwareChoices = materials.filter((m) => m.category === 'hardware');
 
   return (

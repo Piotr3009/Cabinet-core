@@ -178,6 +178,8 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     // AMENDED BY T78 F19 (12.10.2026): `CompanyDefaultsModal` (the Joints choice, *"Cabineo 8 AND 12,
     // chosen in the company's default settings"*), argued in the manifest, re-frozen. Not a widening file.
     'CompanyDefaultsModal',
+    // AMENDED BY T78 F21: `SprayingPanel` (Output > Spraying, a new PRO page, *"cale sprayowanie jako osobne menu Cabinet Core"*), argued, frozen. Not a widening file.
+    'SprayingPanel',
     // AMENDED BY T75 F22: `CncTree` (the readiness banner after an export). Not a widening file.
     'CncTree',
   ];

@@ -24,6 +24,8 @@ import { roomWalls } from './room.js';
 import { dowelNoteRow } from './dowels.js';
 // T78 F20 · a Cabineo unit's cut list says so in a NOTE row of the same grammar (OUTSIDE FACE UP, the gate).
 import { cabineoNoteRow } from './cabineo.js';
+// T78 F21 - the paint of the sprayed sets, litres off the spray schedule (CLAUDE.md PART F).
+import { paintPurchaseQtys } from './spray.js';
 
 /**
  * What ONE piece is finished in, as a name a workshop can order against
@@ -822,6 +824,18 @@ export function mergeUnitMaterials(unitsIn = [], {
     consume(lightingPartQtys(units, { design, profile }), null);
   }
 
+  // -- T78 F21 - THE PAINT, which is a PROJECT fact like the lighting --------
+  // *"lines go to BOM > Purchase list"*: litres per sprayed set (set 1 the
+  // fronts and the run pieces, set 2 a veneer or sprayed carcass), computed by
+  // the spray law over the whole job, through the SAME door every registry
+  // part takes: `paint_fronts` / `paint_carcass` under the base assignments,
+  // priced by the paint the Assign Materials modal chose, or an unassigned
+  // line that says so. The litres read the assigned paint's own coverage and
+  // coats, so the assignment is handed in.
+  if (design && profile && units.length) {
+    consume(paintPurchaseQtys(units, { design, profile, assignments: data, materials }), null);
+  }
+
   const carcassSheet = sheetSizeForFamily(profile, 'carcasses');
   const frontSheet = sheetSizeForFamily(profile, 'fronts');
 
@@ -908,6 +922,11 @@ export function projectPartUsage(entries = [], { profile = null, design = null }
     // Lighting is a project fact, so it belongs to no family — a project's own
     // base assignment is what covers it.
     for (const [partId, entry] of Object.entries(lightingPartQtys(rows, { design, profile }))) {
+      note(partId, entry, null);
+    }
+    // T78 F21 - and the paint, so the Assign Materials modal lists the two
+    // paint parts as "used by this job" the moment a door exists.
+    for (const [partId, entry] of Object.entries(paintPurchaseQtys(rows, { design, profile }))) {
       note(partId, entry, null);
     }
   }

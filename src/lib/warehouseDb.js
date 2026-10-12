@@ -26,8 +26,12 @@ import { CSV_COLUMNS, migrateMaterial } from '../engine/warehouse.js';
 
 const TABLE = 'cc_warehouse';
 
-/** The columns the table carries — the model's twelve, plus ours. */
-const COLUMNS = ['id', ...CSV_COLUMNS, 'price_source'].join(',');
+/**
+ * The columns the table carries — the model's twelve, plus ours.
+ * T78 F21 - `paint` (jsonb, the Paints department's five fields) is ours too:
+ * supabase/migrations/t78_warehouse_paint.sql, SQL PRZED push like T51's.
+ */
+const COLUMNS = ['id', ...CSV_COLUMNS, 'price_source', 'paint'].join(',');
 
 /** A row from the table, in the shape the app already speaks. */
 function rowOf(row) {
@@ -39,6 +43,8 @@ function payloadOf(material) {
   const out = {};
   for (const c of CSV_COLUMNS) out[c] = material[c] ?? null;
   out.price_source = material.price_source;
+  // T78 F21 - the paint record, null for every row that is not a paint.
+  out.paint = material.paint ?? null;
   return out;
 }
 

@@ -7,6 +7,9 @@ import { useUiStore } from '../stores/uiStore.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { useMaterialAssignmentStore } from '../stores/materialAssignmentStore.js';
+// T78 F21 - the warehouse's Paints department reaches the picker as stock rows.
+import { useWarehouseStore } from '../stores/warehouseStore.js';
+import { withPaints } from '../engine/spray.js';
 import {
   PART_GROUPS, partsInGroup, assignmentFor, familyLabel, VARIANT_ORDER,
 } from '../engine/partRegistry.js';
@@ -47,7 +50,14 @@ export default function AssignMaterialsModal() {
   const profile = useCabinetProfileStore((s) => s.profile);
 
   const data = useMaterialAssignmentStore((s) => s.data);
-  const materials = useMaterialAssignmentStore((s) => s.materials);
+  const ownMaterials = useMaterialAssignmentStore((s) => s.materials);
+  // T78 F21 - THE PAINT AS A MATERIAL (CLAUDE.md PART F): the warehouse's
+  // Paints rows stand beside the stock list with `category: 'paint'`, so the
+  // two paint parts of the Consumable group (set 1, set 2) pick a tin the way a
+  // shelf picks a board. The schedule's litres and tins read the chosen row's
+  // own coverage, coats and tin sizes (engine/spray.js withPaints).
+  const warehouseRows = useWarehouseStore((s) => s.rows);
+  const materials = useMemo(() => withPaints(ownMaterials, warehouseRows), [ownMaterials, warehouseRows]);
   const materialsSource = useMaterialAssignmentStore((s) => s.materialsSource);
   const setAssignment = useMaterialAssignmentStore((s) => s.setAssignment);
   const setYield = useMaterialAssignmentStore((s) => s.setYield);
@@ -168,8 +178,8 @@ export default function AssignMaterialsModal() {
         <>
           <span className="text-[11px] text-ink-400 mr-auto">
             {materialsSource === 'db'
-              ? `${materials.length} materials from this workshop’s stock list`
-              : `${materials.length} sample materials — Database ▸ Materials has not been loaded`}
+              ? `${ownMaterials.length} materials from this workshop’s stock list`
+              : `${ownMaterials.length} sample materials — Database ▸ Materials has not been loaded`}
           </span>
           <button
             type="button"

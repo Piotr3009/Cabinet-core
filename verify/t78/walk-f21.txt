@@ -1,0 +1,72 @@
+T78 F21 walk, 2026-10-12, HEAD f523b34
+(the app under the mouse: http://127.0.0.1:4190/, its build stamp is the first NOTE of f21a)
+
+CLAUDE.md T78 F21 (the spray schedule, its law, its page and the paint order),
+walked against npx vite preview of the branch (dist/), the hardware served
+from the silent showroom. Every gesture is a REAL mouse or key event at a DOM
+control's centre; the store is only READ. Line grammar:
+  PASS|FAIL  <section> | <gesture> | expect: <what was expected> | observed: <what was read>
+  NOTE       <section> | <reading> | <value>
+  FRAME      <section> | <file>  (the frame is beside this file)
+A FAIL is written down, never patched.
+
+=== f21a Output > Spraying... on Herbal Hill: every door, end panel and plinth, the hand sum, a card open
+NOTE       f21a | walked at | 2026-10-12 09:40 UTC, HEAD f523b34
+NOTE       f21a | the build under the mouse | null
+NOTE       f21a | the file | the T71 fixture (test/fixtures/t71-herbal-hill.js) with an end panel at each end of the base run (01 L, 07 R), saved by lib/projectLibrary.js saveLocalProject onto the browser shelf, 5491 bytes
+PASS       f21a | the project opened from All projects by a real click | expect: the room view | observed: opened
+NOTE       f21a | the store: units, doors, plinths, end panels, drawer fronts | {"units":13,"doors":13,"plinths":4,"ends":2,"drawerFronts":3}
+PASS       f21a | Output > Spraying... opens the Spraying window | expect: a shell window named spraying | observed: modal=spraying, window present
+PASS       f21a | the page built without an error line | expect: no [data-spray-error] | observed: none
+PASS       f21a | every door of the job is on the list | expect: 13 doors | observed: 13 on 7 lines
+PASS       f21a | both end panels are on the list | expect: 2 | observed: 2
+PASS       f21a | every plinth is on the list | expect: 4 | observed: 4
+PASS       f21a | every drawer front is on the list | expect: 3 | observed: 3
+PASS       f21a | every line carries a paint code | expect: a code on each line | observed: 2S + 4E | 1S + F100 + 4E | 1S + TE | 1S + 1E
+NOTE       f21a | the colour chips of the information card | Broken whiteset 1, 17.932 m2
+PASS       f21a | the information card says which sets are on | expect: set 1 only (an EGGER carcass) | observed: data-spray-sets=1
+PASS       f21a | the hand sum of three parts (door 2S+4E, end panel 1S+F100+4E, plinth 1S+TE) matches the page | expect: 0.8581 + 0.845 + 0.1841 = 1.8872 m2 | observed: 0.858 + 0.845 + 0.184 = 1.887 m2
+PASS       f21a | the total is the sum of the lines | expect: 17.932 | observed: 17.932
+PASS       f21a | the end-panel card is open under the list | expect: a card for rule 7, open | observed: [{"rule":"end_panel","open":"1"},{"rule":"plinth","open":"1"},{"rule":"infill","open":"1"}]
+PASS       f21a | the plinth card is open too | expect: a card for rule 13 | observed: ["end_panel","plinth","infill"]
+PASS       f21a | PART C names the paint per colour and says the missing paint | expect: litres and tins per colour | observed: [{"colour":"broken_white|set1","litres":"3.94","tins":"1x5","priceMissing":"1"}]
+FRAME      f21a | f21-walk-01-page.png
+FRAME      f21a | f21-walk-02-cards.png
+PASS       f21a | no runtime exception on the page | expect: none | observed: none
+
+=== f21b Export PDF: the browser saves a PDF
+NOTE       f21b | walked at | 2026-10-12 09:41 UTC, HEAD f523b34
+PASS       f21b | the Export PDF button is on the window | expect: a button [data-spray-export-pdf] | observed: present
+PASS       f21b | a file was saved | expect: one new file in the download folder | observed: 3-7-Herbal-Hill-1st-floor-spraying-1210-0941.pdf
+PASS       f21b | it is a PDF, named by the one naming law | expect: %PDF at the head, {project}-spraying-{DDMM-HHMM}.pdf | observed: 80627 bytes, head "%PDF", 3-7-Herbal-Hill-1st-floor-spraying-1210-0941.pdf
+PASS       f21b | the PDF has the sheets of the page (elements, cards, paint) | expect: at least 3 pages | observed: 3 pages
+FRAME      f21b | f21-walk-03-exported.png
+
+=== f21c the Spraying button of the bar opens the same window
+NOTE       f21c | walked at | 2026-10-12 09:42 UTC, HEAD f523b34
+PASS       f21c | the window closed by its own Close | expect: no modal | observed: modal=null
+PASS       f21c | the top-level Spraying button opens the Spraying window | expect: modal=spraying | observed: modal=spraying
+FRAME      f21c | f21-walk-04-from-the-bar.png
+
+=== f21d a note typed into a line rides the project
+NOTE       f21d | walked at | 2026-10-12 09:42 UTC, HEAD f523b34
+PASS       f21d | the first line has a note field | expect: an input [data-spray-note] | observed: present
+PASS       f21d | the typed note is in project.sprayNotes under the line key | expect: two coats, check the back | observed: two coats, check the back
+FRAME      f21d | f21-walk-05-note.png
+
+=== f21e a job with a veneer carcass shows Set 2
+NOTE       f21e | walked at | 2026-10-12 09:43 UTC, HEAD f523b34
+PASS       f21e | the veneer-carcass project opened | expect: the room view | observed: opened
+PASS       f21e | Set 2 is on in the information card | expect: data-spray-sets=12 | observed: data-spray-sets=12
+PASS       f21e | carcass lines are on the list with their own codes | expect: rule 19 lines, 1S + FE / 1S | observed: 1S | ALL | 1S + FE
+PASS       f21e | PART C has a paint line for set 2 | expect: two paint lines (set 1, set 2) | observed: 2
+FRAME      f21e | f21-walk-06-veneer-set2.png
+PASS       f21e | no runtime exception on the page | expect: none | observed: none
+
+SECTION f21a: 15 pass, 0 fail
+SECTION f21b: 4 pass, 0 fail
+SECTION f21c: 2 pass, 0 fail
+SECTION f21d: 2 pass, 0 fail
+SECTION f21e: 5 pass, 0 fail
+FRAMES (6): f21-walk-01-page.png, f21-walk-02-cards.png, f21-walk-03-exported.png, f21-walk-04-from-the-bar.png, f21-walk-05-note.png, f21-walk-06-veneer-set2.png
+F21: 28 steps, 28 pass, 0 fail

@@ -17,6 +17,14 @@ export const GATES = {
 };
 
 export const LICENSED = {
+  'src/engine/liftSystems.js': {
+    why: 'T78 F18: the lift plan off reference/hardware/aventos.json t78_f18 (`liftTakesKit`, `liftSystemOf`, `liftPlanFor`, `liftRiseMm`, `liftTravelAt`): read by computeCabinet only where `params.front_system` names a lift.',
+    gates: ['liftFront'],
+  },
+  'src/engine/liftChecks.js': {
+    why: "T78 F18: Check #35, the lift leaf's rise against the room, a cornice and the unit above; a reader of results, it cuts nothing and no golden reaches it.",
+    gates: [],
+  },
   'src/engine/cabinet.js': {
     why: 'T78 F18: `liftSystemOf` read beside `dropsForward`; `liftOn` makes `leafCount` 1 and `hingedLeafCount` 0; the lift leaf (or the HF '
       + 'pair F-UP / F-LOW, the lower carrying `meta.lift.parent`) is cut in place of the face leaves; the cup loop passes a `meta.lift` leaf '

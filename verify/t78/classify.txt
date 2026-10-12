@@ -1,0 +1,545 @@
+=== T78 . THE ENGINE/LIB DELTAS, AND WHAT THEY REACH ===
+
+  base: 16477df (the owner's commit, "tura spray i cabneo", origin/main before this turn)
+  fragments merged: f01.mjs, f02.mjs, f03.mjs, f04.mjs, f05.mjs, f06.mjs, f07.mjs, f08.mjs, f09.mjs, f10.mjs, f11.mjs, f12.mjs, f13.mjs, f14.mjs, f15.mjs, f16.mjs, f17.mjs, f18.mjs, f19.mjs, f20-biscuit.mjs, f20-cabineo.mjs, f21.mjs, f22.mjs
+  allow-unnamed: none (the strict run)
+
+  named     src/engine/biscuitJoints.js  (f20-biscuit.mjs)
+  named     src/engine/bom.js  (f02.mjs, f20-cabineo.mjs, f21.mjs)
+  named     src/engine/cabineo.js  (f20-cabineo.mjs)
+  named     src/engine/cabinet.js  (f02.mjs, f04.mjs, f07.mjs, f08.mjs, f09.mjs, f10.mjs, f11.mjs, f12.mjs, f13.mjs, f14.mjs, f15.mjs, f16.mjs, f17.mjs, f18.mjs, f20-biscuit.mjs, f20-cabineo.mjs)
+  named     src/engine/checks.js  (f02.mjs, f13.mjs, f17.mjs, f18.mjs, f20-cabineo.mjs)
+  named     src/engine/cnc/dxf.js  (f20-cabineo.mjs)
+  named     src/engine/cnc/frontOperations.js  (f20-cabineo.mjs)
+  named     src/engine/cnc/layers.js  (f20-cabineo.mjs)
+  named     src/engine/cnc/partLabel.js  (f20-cabineo.mjs, f21.mjs)
+  named     src/engine/companyDefaults.js  (f19.mjs)
+  named     src/engine/corners.js  (f05.mjs, f06.mjs, f07.mjs)
+  named     src/engine/decors.js  (f04.mjs)
+  named     src/engine/design.js  (f12.mjs, f19.mjs)
+  named     src/engine/doors.js  (f13.mjs)
+  named     src/engine/dowels.js  (f19.mjs, f20-biscuit.mjs, f20-cabineo.mjs)
+  named     src/engine/drawerMotion.js  (f07.mjs)
+  named     src/engine/drawings/spraySheets.js  (f21.mjs)
+  named     src/engine/frontClearance.js  (f13.mjs)
+  named     src/engine/frontDecoration.js  (f14.mjs)
+  named     src/engine/hardware3d.js  (f09.mjs, f18.mjs)
+  named     src/engine/hinges.js  (f08.mjs, f13.mjs)
+  named     src/engine/hoodCanopy.js  (f17.mjs)
+  named     src/engine/hoodClearance.js  (f17.mjs)
+  named     src/engine/innerDrawer.js  (f16.mjs)
+  named     src/engine/library.js  (f17.mjs)
+  named     src/engine/liftChecks.js  (f18.mjs)
+  named     src/engine/liftSystems.js  (f18.mjs)
+  named     src/engine/machining.js  (f20-cabineo.mjs)
+  named     src/engine/partRegistry.js  (f07.mjs, f08.mjs, f09.mjs, f11.mjs, f18.mjs, f20-cabineo.mjs, f21.mjs)
+  named     src/engine/profile.js  (f05.mjs, f07.mjs, f08.mjs, f09.mjs, f10.mjs, f11.mjs, f12.mjs, f15.mjs, f16.mjs, f17.mjs, f19.mjs, f20-cabineo.mjs, f21.mjs)
+  named     src/engine/recesses.js  (f20-cabineo.mjs)
+  named     src/engine/runs.js  (f01.mjs, f02.mjs, f10.mjs, f22.mjs)
+  named     src/engine/spray.js  (f21.mjs)
+  named     src/engine/types.js  (f07.mjs, f17.mjs)
+  named     src/engine/warehouse.js  (f21.mjs)
+  named     src/engine/worktop.js  (f02.mjs)
+  named     src/lib/checkFindings.js  (f17.mjs)
+  named     src/lib/cncExport.js  (f20-cabineo.mjs)
+  named     src/lib/hardwareCatalogue.js  (f13.mjs)
+  named     src/lib/modalLayer.js  (f21.mjs)
+  named     src/lib/outputMenu.js  (f21.mjs)
+  named     src/lib/sprayExport.js  (f21.mjs)
+  named     src/lib/warehouseDb.js  (f21.mjs)
+
+  43 engine/lib file(s) changed or added . 0 not named
+  named and unspent (licensed, not touched against the base): none
+  licensed beyond src/engine and src/lib (reported, not asked): src/stores/projectStore.js (touched), src/components/RightPanel.jsx (touched)
+  ok    FROZEN 4, lighting (7 files): not one line
+  ok    FROZEN 5, biscuits: gap 10, wideThreshold 700, edgeMin 50, markLength 70 . fixtures/golden-partition-biscuits.json unchanged
+
+  the LISP (*.lsp) against the base: 7 file(s) (of 23)
+  ok    reference/lisp/KIT_CORNER_L.lsp                EXISTING, amended: licensed by F4 (CLAUDE.md F4: the grain of the L boards, LISP first (section 10 gained)) . parens balanced
+  ok    reference/lisp/KIT_CORNER_L_BIFOLD.lsp         new (FROZEN 2: new files only) . parens balanced
+  ok    reference/lisp/KIT_CORNER_L_DRAWERS.lsp        new (FROZEN 2: new files only) . parens balanced
+  ok    reference/lisp/KIT_WUD_HOOD_CANOPY.lsp         new (FROZEN 2: new files only) . parens balanced
+  ok    reference/lisp/SKYLON_JOINTS_BISCUIT.lsp       new (FROZEN 2: new files only) . parens balanced
+  ok    reference/lisp/SKYLON_JOINTS_CABINEO.lsp       new (FROZEN 2: new files only) . parens balanced
+  ok    reference/lisp/SKYLON_JOINTS_DOWEL.lsp         EXISTING, amended: licensed by F19 (CLAUDE.md F19: T75's file amended to the owner's numbers (6 mm, every 250, min 2)) . parens balanced
+
+  each commit against its fragment (git show --name-only <commit> -- src/engine src/lib):
+  c5b95ba  probes -                              engine/lib: none
+  4f7a639  F1     f01.mjs                        engine/lib: engine/runs.js
+  22c3352  F2     f02.mjs                        engine/lib: engine/bom.js, engine/cabinet.js, engine/checks.js, engine/runs.js, engine/worktop.js
+  57d5387  probes -                              engine/lib: none
+  6617ae8  F3     f03.mjs                        engine/lib: none
+  6fc07be  F4     f04.mjs                        engine/lib: engine/cabinet.js, engine/decors.js
+  5a473ea  F5     f05.mjs                        engine/lib: engine/corners.js, engine/profile.js
+  0127323  F6     f06.mjs                        engine/lib: none
+  10cde40  F7     f07.mjs                        engine/lib: engine/cabinet.js, engine/corners.js, engine/drawerMotion.js, engine/partRegistry.js, engine/types.js
+  58c8940  F8     f08.mjs                        engine/lib: engine/cabinet.js, engine/hinges.js, lib/hardwareCatalogue.js
+  8bb4eee  F9     f09.mjs                        engine/lib: engine/cabinet.js, engine/hardware3d.js
+  9247e4f  F10    f10.mjs                        engine/lib: engine/cabinet.js, engine/profile.js, engine/runs.js
+  5b3827a  F11    f11.mjs                        engine/lib: engine/cabinet.js, engine/partRegistry.js, engine/profile.js
+  af1c5b0  sweep  -                              engine/lib: none
+  664a071  F12    f12.mjs                        engine/lib: engine/cabinet.js, engine/design.js, engine/profile.js
+  d5b85b7  F13    f13.mjs                        engine/lib: engine/cabinet.js, engine/checks.js, engine/doors.js, engine/frontClearance.js, engine/hinges.js
+  d4667c4  sweep  -                              engine/lib: none
+  afc67c7  F14    f14.mjs                        engine/lib: engine/cabinet.js, engine/frontDecoration.js
+  69bfbf0  F15    f15.mjs                        engine/lib: engine/cabinet.js, engine/profile.js
+  7cd3c04  F15    f15.mjs                        engine/lib: none
+  41ccf8c  F16    f16.mjs                        engine/lib: engine/cabinet.js, engine/innerDrawer.js, engine/profile.js, lib/hardwareCatalogue.js
+  7e92b89  sweep  -                              engine/lib: engine/cabinet.js, engine/hinges.js
+  e2ed1e3  F19    f19.mjs                        engine/lib: engine/companyDefaults.js, engine/design.js, engine/dowels.js, engine/profile.js
+  9a81e9a  F20    f20-biscuit.mjs, f20-cabineo.mjs engine/lib: engine/biscuitJoints.js, engine/bom.js, engine/cabineo.js, engine/cabinet.js, engine/checks.js, engine/cnc/dxf.js, engine/cnc/frontOperations.js, engine/cnc/layers.js, engine/cnc/partLabel.js, engine/dowels.js, engine/machining.js, engine/partRegistry.js, engine/profile.js, engine/recesses.js, lib/cncExport.js
+  70c8af6  F17    f17.mjs                        engine/lib: engine/cabinet.js, engine/checks.js, engine/hoodCanopy.js, engine/hoodClearance.js, engine/library.js, engine/profile.js, engine/types.js, lib/checkFindings.js
+  5cd02d9  F18    f18.mjs                        engine/lib: engine/cabinet.js, engine/checks.js, engine/hardware3d.js, engine/liftChecks.js, engine/liftSystems.js, engine/partRegistry.js
+  951176a  sweep  -                              engine/lib: engine/cabinet.js, engine/innerDrawer.js
+  180b0a1  sweep  -                              engine/lib: none
+  32e4147  F21    f21.mjs                        engine/lib: engine/bom.js, engine/cnc/partLabel.js, engine/drawings/spraySheets.js, engine/partRegistry.js, engine/profile.js, engine/spray.js, engine/warehouse.js, lib/modalLayer.js, lib/outputMenu.js, lib/sprayExport.js, lib/warehouseDb.js
+  58d1b5d  F22    f22.mjs                        engine/lib: engine/runs.js
+  engine/lib changes in the working tree, in no commit yet: none
+
+=== THE LICENCES, FILE BY FILE (WHAT EACH DELTA HANGS ON, AND WHO REACHES IT) ===
+  ok  src/components/RightPanel.jsx  (f17.mjs)
+        T78 F17: the Hob select (induction | gas) on a hob unit, written as `params.hob_kind` through `updateUnitParams`; PRO, the EXEMPT licence and the hash are the integrator's.
+        on computeCabinet's import graph: false; imported by 1 file(s)
+        gates: hoodCanopy [f17.mjs]; hoodShort [f17.mjs]
+        goldens that open them: golden-hood-canopy.json (hoodCanopy: own), golden-hood-short.json (hoodShort: own)
+  ok  src/engine/biscuitJoints.js  (f20-biscuit.mjs)
+        F20 · NEW: SKYLON_JOINTS_BISCUIT.lsp mirrored routine for routine (sections A to E, the set through engine/biscuits.js), and the engine half (Z): the verdict asked of the parent's puzzle cut, the strip of the side to TOP and side to BOTTOM joints only, the screws as drills, the marks in the fixed shelf's record shape, the summary with no gate. Every cut line is behind the joint system
+        on computeCabinet's import graph: true; imported by 3 file(s)
+        gates: biscuit [f20-biscuit.mjs]
+        goldens that open them: golden-biscuit-bud.json (biscuit: own)
+  ok  src/engine/bom.js  (f02.mjs, f20-cabineo.mjs, f21.mjs)
+        T78 F2: one worktop JOINT note per joint (the L's two arms are two), keyed where the joint is; T75's corner pair still collapses to one. A list, not a cut, and only with a design and a room. F20 · `buildBom` appends a Cabineo unit's NOTE row (OUTSIDE FACE UP, the gate) to its cut list rows. A note, not a cut. T78 F21: `paintPurchaseQtys` consumed into the purchase list (litres per sprayed set); the BOM adds lines, the cut list is what it was.
+        on computeCabinet's import graph: false; imported by 6 file(s)
+        gates: cornerL [f01.mjs]
+        goldens that open them: golden-corner-l-base.json (cornerL: held by its bytes), golden-corner-l-wall.json (cornerL: held by its bytes), golden-corner-l-wardrobe.json (cornerL: held by its bytes), golden-corner-l-mask.json (cornerL: held by its bytes), golden-corner-l-drawers.json (cornerL: held by its bytes), golden-corner-l-bifold.json (cornerL: held by its bytes)
+  ok  src/engine/cabineo.js  (f20-cabineo.mjs)
+        F20 · NEW: SKYLON_JOINTS_CABINEO.lsp mirrored routine for routine (sections A to F: the sheet, the set-out, the inverted side and the one reflection, the pockets, the recess, the side holes, the gate, the refusals, the BOM), and the engine half (Z): the verdict asked of the parent's puzzle cut with the skin check, the strip, the pockets onto the horizontal boards with machinedFace outside, the holes as drills, the order lines, the summary, the export refusal, the note row, the operations manifest. Every cut line is behind the joint system
+        on computeCabinet's import graph: true; imported by 5 file(s)
+        gates: cabineo [f20-cabineo.mjs]
+        goldens that open them: golden-cabineo8-bud.json (cabineo: own), golden-cabineo12-bud.json (cabineo: own)
+  ok  src/engine/cabinet.js  (f02.mjs, f04.mjs, f07.mjs, f08.mjs, f09.mjs, f10.mjs, f11.mjs, f12.mjs, f13.mjs, f14.mjs, f15.mjs, f16.mjs, f17.mjs, f18.mjs, f20-biscuit.mjs, f20-cabineo.mjs)
+        T78 F2: the bottom mask under an L (`lCorner` and `bottom_mask`) is ONE L board, MASK-L, the mask depth law on both arms, its outline in the cut list and its true area; every other mask keeps the rectangle (`!lCorner`). T78 F4: the L builder states `cnc.grain: 'w'` on TOP-L, BOTTOM-L and every SHELF-L (the drawn frame, T37 F7a), mirroring KIT_CORNER_L.lsp section 10; the CNC frame does not move (outline, bones, relief, area, box, CSV row), so the three L goldens hold byte for byte (T75's summary carries no lay) and the six never cut an L board. T78 F7: `cornerL.drawers` (rows two to four, one or more than four refused in words), the arm's parent is BUDR2 / BUDR / BUDR4 with the row fronts trimmed at the inner corner (A gap/2, B gap/2 + front_t: one L front a row, the pair law retired), the boxes and fronts placed by the one `placeBox` rule the doors use, box ids take the arm's letter, every part of a row carries `meta.slide` and `meta.travel_mm`, one SPACE CORNER line and body per row, zero holes. Nothing of it runs without a stack asked; the doors' `placeBox` is the same arithmetic moved into one helper. T78 F8: `cornerL.doorsMode`; in bifold leaf B's virtual parent hinges at the inner edge (its end side is the other one, so no plate row reaches SIDE-B), B's inner trim is front_t + 1.5 gap, its cups are dropped or moved to the catalogue's distance, A carries `bifold.child` and B `bifold.parent`, the parent's hinge line for B is not merged, one `bifold_hinges` line, CORNER_L_BIFOLD said once, `hinged_sides` SIDE-A only, `derived.corner_l.doors_mode / hinged_on`. The pair (`pair`, the default) is byte for byte what it was: `doors_mode` and `hinged_on` are two new keys on derived, nothing in a cut. T78 F9: behind `params.carousel` on an L: the adjustable SHELF-L boards step aside, one body in the inner-corner square (`assemblies.cornerKits`), one BOM line (role carousel), zero holes; a fixed shelf refuses in words (CAROUSEL_REFUSED). `CORNER_KIT_KINDS` exported for the store. T78 F10: the blind kit cuts `${unitNum}-POST` (front material, postMm x front_t, plinth line to top, in the adjacent run's front plane by `corner_post_at_mm` or the family's own); the new params are dropped from the L's virtual parents. T78 F11: `blindPullout` / `blindPulloutRefused` in normalizeParams (the shelf count 0 while fitted), the body into cornerKitBodies, BLIND_PULLOUT_REFUSED, the BOM label names the blind part, `BLIND_KIT_KINDS`. T78 F12: `meta.glass.kind` / `paneMm` on a glazed leaf and the glass order line per kind and aperture, named; the aperture cut and the frame did not move. T78 F13: `meta.hingeFamily` on every hinged leaf (a word), `meta.openAngleDeg` and HINGE_WIDE_NO_RUNG for the wide family only, the BOM hinge group keyed by the leaf's family; the cup pattern did not move. T78 F14: the decoration pass groups DRAWER-FRONT panels of one column into a stack and hands each its y; the pass over doors is unchanged. T78 F15: the wardrobe and the drawer-unit machines cut `${unitNum}-IF${i}` (part DRAWER-FRONT, role drawer_front, meta.inner) where they skipped an internal drawer's face; the roles `drawer_front` is front material and finish-exposed. T78 F16: `doubles` in the drawer-unit numbers (refused in words below Blum's stack minimum or with no file), the deep box capped under the inner runner, the inner box boards `D{i}I-*` keyed row + 0.5, the inner front `-DIF{i}`, the inner runner rows in the ladder and the BOM, the cutlery insert; `drawer_double` dropped from the L's parents; `double_rows` only where a row is double. T78 F17: the import of `applyCanopy` and one block guarded by `type.canopy` before the grain and the totals (the sides, the bottom and the new front), plus `derived.canopy` (and BUL's hanger summary moved with its frame) under the same guard. Nothing runs for a kit without the flag. T78 F18: `liftSystemOf` read beside `dropsForward`; `liftOn` makes `leafCount` 1 and `hingedLeafCount` 0; the lift leaf (or the HF pair F-UP / F-LOW, the lower carrying `meta.lift.parent`) is cut in place of the face leaves; the cup loop passes a `meta.lift` leaf by; `hw('lift_unit' | 'lift_arm' | 'lift_caps' | 'lift_bracket' | 'lift_hinges')` and the plan's sentences; `derived.lift` and `assemblies.liftKits` only where a lift is fitted. Every line of it is under `liftOn` / `liftPlan`, false and null on every other unit. F20 · the biscuit branch before the dowel verdict (`biscuitVerdict`, refused: the parent and JOINTS_REFUSED), `biscuitStrip` beside `dowelStrip`, `biscuitDrills` beside `dowelDrills`, the marks pushed into `shelfJointMarks` before its one writer, `derived.joints` from `biscuitSummary`. The fixed shelf's block is untouched. F20 · the Cabineo branch before the dowel verdict (`cabineoVerdict`, refused: the parent and JOINTS_REFUSED), `cabineoStrip` and `cabineoPocketsOnto` beside `dowelStrip`, `cabineoDrills` beside `dowelDrills`, the FIX shelf the plan owns gives up its biscuit set and side screws (`cabineoShelf`), the connector and cap order lines, `derived.joints` from `cabineoSummary` and CABINEO_GATE
+        on computeCabinet's import graph: true; imported by 9 file(s)
+        gates: lMask [f02.mjs]; cornerL [f01.mjs]; lDrawers [f07.mjs]; lBifold [f08.mjs]; carousel [f09.mjs]; blindKit [f10.mjs]; blindPullout [f11.mjs]; glassKind [f12.mjs]; wideHinges [f13.mjs]; archStack [f14.mjs]; innerFront [f15.mjs]; doubleDrawer [f16.mjs]; hoodCanopy [f17.mjs]; liftFront [f18.mjs]; biscuit [f20-biscuit.mjs]; cabineo [f20-cabineo.mjs]
+        goldens that open them: PANTRY (innerFront: re-pinned (named by f15.mjs)), golden-blind-base.json (blindKit: re-pinned (named by f10.mjs)), golden-blind-wall.json (blindKit: re-pinned (named by f10.mjs)), golden-blind-wardrobe.json (blindKit: re-pinned (named by f10.mjs)), golden-corner-l-base.json (cornerL: held by its bytes), golden-corner-l-wall.json (cornerL: held by its bytes), golden-corner-l-wardrobe.json (cornerL: held by its bytes), golden-bud-int.json (innerFront: re-pinned (named by f15.mjs)), decoration A (archStack: held by its bytes), decoration AH (archStack: held by its bytes), golden-corner-l-mask.json (cornerL: held by its bytes; lMask: own), golden-corner-l-drawers.json (cornerL: held by its bytes; lDrawers: own), golden-corner-l-bifold.json (cornerL: held by its bytes; lBifold: own; wideHinges: held by its bytes), golden-arch-stack.json (archStack: own), golden-double-drawer.json (doubleDrawer: own), golden-hood-canopy.json (hoodCanopy: own), golden-lift-hk.json (liftFront: own), golden-lift-hs.json (liftFront: own), golden-lift-hl.json (liftFront: own), golden-lift-hf.json (liftFront: own), golden-biscuit-bud.json (biscuit: own), golden-cabineo8-bud.json (cabineo: own), golden-cabineo12-bud.json (cabineo: own)
+  ok  src/engine/checks.js  (f02.mjs, f13.mjs, f17.mjs, f18.mjs, f20-cabineo.mjs)
+        T78 F2: the readiness line of a worktop joint, one per joint, keyed where it is. A Check, not a cut. T78 F13: Check #33, the wide swing into a neighbour, said in words; a Check, not a cut. T78 F17: Check #34 (the hood's clearance over the hob, yellow, one click), read off `engine/hoodClearance.js`; it adds a finding only where a hood stands over a hob, which no golden (one cabinet, no room) can. T78 F18: Check #35 (engine/liftChecks.js liftClearanceFindings), a lift leaf's rise at full opening against the ceiling, a cornice and the unit above; a Check, never a cut; it reads `meta.lift` and finds none on every other unit. F20 · Check #31 reads CABINEO_GATE beside DOWEL_GATE. Reads a result; cuts nothing
+        on computeCabinet's import graph: false; imported by 6 file(s)
+        gates: cornerL [f01.mjs]; wideHinges [f13.mjs]; hoodCanopy [f17.mjs]; hoodShort [f17.mjs]; liftFront [f18.mjs]
+        goldens that open them: golden-corner-l-base.json (cornerL: held by its bytes), golden-corner-l-wall.json (cornerL: held by its bytes), golden-corner-l-wardrobe.json (cornerL: held by its bytes), golden-corner-l-mask.json (cornerL: held by its bytes), golden-corner-l-drawers.json (cornerL: held by its bytes), golden-corner-l-bifold.json (cornerL: held by its bytes; wideHinges: held by its bytes), golden-hood-canopy.json (hoodCanopy: own), golden-hood-short.json (hoodShort: own), golden-lift-hk.json (liftFront: own), golden-lift-hs.json (liftFront: own), golden-lift-hl.json (liftFront: own), golden-lift-hf.json (liftFront: own)
+  ok  src/engine/cnc/dxf.js  (f20-cabineo.mjs)
+        F20 · a panel with meta.machinedFace outside is written reflected through `mirrorAboutVerticalAxis` (the whole part, in its own frame, before it is laid down; its slot found from the reflected geometry), a blind inside-face hole held out of that file and named; the file record says setup outside. Only a Cabineo unit carries the meta
+        on computeCabinet's import graph: false; imported by 6 file(s)
+        gates: cabineo [f20-cabineo.mjs]
+        goldens that open them: golden-cabineo8-bud.json (cabineo: own), golden-cabineo12-bud.json (cabineo: own)
+  ok  src/engine/cnc/frontOperations.js  (f20-cabineo.mjs)
+        F20 · T76's one reflection extracted as `mirrorAboutVerticalAxis` and used in place (the FRONT files and the strips' assembly points), so cabineo.js and dxf.js read the same helper. A refactor; every FRONT file is byte-identical
+        on computeCabinet's import graph: true; imported by 8 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/cnc/layers.js  (f20-cabineo.mjs)
+        F20 · the five layer names CABINEO_POCKET_15MM / _10MM / _12MM, CABINEO_RECESS, CABINEO_HOLE_5MM (ACI 47 to 51). A table of names, not a cut
+        on computeCabinet's import graph: true; imported by 13 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/cnc/partLabel.js  (f20-cabineo.mjs, f21.mjs)
+        F20 · `faceTag`: a board with meta.machinedFace outside prints OUTSIDE FACE UP in its label (the LISP's cabineo-face-label); every other label is unchanged. Only a Cabineo unit carries the meta. T78 F21: `paintTag`, the paint code beside the part number on the CNC label (`partLabelText` with set2 / openUnit); a label, never a cut; a carcass board prints nothing unless set 2.
+        on computeCabinet's import graph: false; imported by 3 file(s)
+        gates: cabineo [f20-cabineo.mjs]
+        goldens that open them: golden-cabineo8-bud.json (cabineo: own), golden-cabineo12-bud.json (cabineo: own)
+  ok  src/engine/companyDefaults.js  (f19.mjs)
+        F19 · `joints_system` on the row shape, `JOINT_SYSTEM_IDS`, the validator (an id and never a number: 250, "250", "6 mm", "90deg" refused in words naming the ids; the joints' pitches, diameters, depths and angle rule-owned by name), `hasCompanyDefaults`, `prefillDesignFromCompany` writing `design.joints.system`. A preference row; it reaches the engine only as `params.joints_system` through the store
+        on computeCabinet's import graph: true; imported by 6 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/corners.js  (f05.mjs, f06.mjs, f07.mjs)
+        T78 F5: `lArmMinMm` (the least an arm can be: its depth plus `profile.corner.leafMinMm`) and the two numbers in `cornerSpec`; read by the store's clamp and the Check, never by a cut. T78 F6: `lArmKinds` and `lLeafTrimMm` restate the L builder's own door trim so the store can hold a wall leaf at 700 by the same arithmetic; read by the store, never by a cut. T78 F7: `lClearanceView` hands the clearance family every front board of an arm, not the first one found; a view, not a cut
+        on computeCabinet's import graph: false; imported by 4 file(s)
+        gates: cornerL [f01.mjs]; lDrawers [f07.mjs]
+        goldens that open them: golden-corner-l-base.json (cornerL: held by its bytes), golden-corner-l-wall.json (cornerL: held by its bytes), golden-corner-l-wardrobe.json (cornerL: held by its bytes), golden-corner-l-mask.json (cornerL: held by its bytes), golden-corner-l-drawers.json (cornerL: held by its bytes; lDrawers: own), golden-corner-l-bifold.json (cornerL: held by its bytes)
+  ok  src/engine/decors.js  (f04.mjs)
+        T78 F4 (6fc07be): `decorMapping` breaks the square L face's tie by the cut's own axis (the grain the CNC cut decides, the 3D renders it): a picture, never a cut. Opens with the L grain gate only.
+        on computeCabinet's import graph: true; imported by 16 file(s)
+        gates: lGrain [f04.mjs]
+        goldens that open them: golden-corner-l-base.json (lGrain: held by its bytes), golden-corner-l-wall.json (lGrain: held by its bytes), golden-corner-l-wardrobe.json (lGrain: held by its bytes), golden-corner-l-mask.json (lGrain: held by its bytes), golden-corner-l-drawers.json (lGrain: held by its bytes), golden-corner-l-bifold.json (lGrain: held by its bytes)
+  ok  src/engine/design.js  (f12.mjs, f19.mjs)
+        T78 F12 / F13: `fronts.glassKind` and `fronts.hingeFamily` in the design's shape and migration (null = nobody said); the design layer, not a cut. F19 · `DEFAULT_DESIGN.joints = { system: null }` and its migrate line (a trimmed, lower-cased id or null). The project's storey of the ladder; cuts nothing, and a project saved before T78 comes back on null (the profile's own, the puzzle)
+        on computeCabinet's import graph: true; imported by 54 file(s)
+        gates: glassKind [f12.mjs]
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/doors.js  (f13.mjs)
+        T78 F13: `doorOpenAngle` takes `fullDeg` (a wide leaf's angle); without it the picture angle, as before
+        on computeCabinet's import graph: true; imported by 8 file(s)
+        gates: wideHinges [f13.mjs]
+        goldens that open them: golden-corner-l-bifold.json (wideHinges: held by its bytes)
+  ok  src/engine/dowels.js  (f19.mjs, f20-biscuit.mjs, f20-cabineo.mjs)
+        F19 · `dowelProfile` reads the owner's numbers (6, 250, minPerJoint 2, 50) and no `maxGapMm`; `dowelPositions` takes (L, e, p, nMin, dia) as `dowel-positions` does and spreads the dowels evenly between the two end offsets, never fewer than two; `dowelRefusal` says the pitch and the minimum in words. `resolveJointSystem` is the four-storey ladder (profile, company row, project, unit) and cuts nothing: the store hands its answer over as `params.joints_system`. F20 · `JOINT_SYSTEMS` gains 'biscuit' so `jointSystemOf` returns it. A list of names, not a cut. F20 · `JOINT_SYSTEMS` gains 'biscuit', 'cabineo8' and 'cabineo12' so `jointSystemOf` returns them; the bare 'cabineo' stays reserved and refused. A list of names, not a cut
+        on computeCabinet's import graph: true; imported by 6 file(s)
+        gates: dowelSetOut [f19.mjs]
+        goldens that open them: golden-dowel-bud.json (dowelSetOut: re-pinned (named by f19.mjs))
+  ok  src/engine/drawerMotion.js  (f07.mjs)
+        T78 F7: `drawerTravel` prefers `meta.travel_mm` where a part states it (a box turned onto the adjacent wall); a scene value
+        on computeCabinet's import graph: false; imported by 0 file(s)
+        gates: lDrawers [f07.mjs]
+        goldens that open them: golden-corner-l-drawers.json (lDrawers: own)
+  ok  src/engine/drawings/spraySheets.js  (f21.mjs)
+        T78 F21: the Spraying PDF sheets in the T71 report frame; drawing only.
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/frontClearance.js  (f13.mjs)
+        T78 F13: the clearance rows carry `openAngleDeg` and `hingeFamily`; a view for the Check
+        on computeCabinet's import graph: false; imported by 7 file(s)
+        gates: wideHinges [f13.mjs]
+        goldens that open them: golden-corner-l-bifold.json (wideHinges: held by its bytes)
+  ok  src/engine/frontDecoration.js  (f14.mjs)
+        T78 F14: `buildFrontDecoration` takes `stack` ({ heightMm, offsetMm }); with it and an arched style the arch is made on the stack's inner polygon and this front receives its band (`sliceToBand`, the frame's own half-plane clip); without it the code is byte for byte what T76 cut
+        on computeCabinet's import graph: true; imported by 6 file(s)
+        gates: archStack [f14.mjs]
+        goldens that open them: decoration A (archStack: held by its bytes), decoration AH (archStack: held by its bytes), golden-arch-stack.json (archStack: own)
+  ok  src/engine/hardware3d.js  (f09.mjs, f18.mjs)
+        T78 F9: `cornerKitInstances` reads `assemblies.cornerKits` into the scene's kit list; a picture, not a cut. T78 F18: `liftKitInstances` hands `assemblies.liftKits` to the scene in the kit grammar (KitBodies draws the walled placeholder); empty on every unit without `liftKits`
+        on computeCabinet's import graph: false; imported by 4 file(s)
+        gates: carousel [f09.mjs]; liftFront [f18.mjs]
+        goldens that open them: golden-lift-hk.json (liftFront: own), golden-lift-hs.json (liftFront: own), golden-lift-hl.json (liftFront: own), golden-lift-hf.json (liftFront: own)
+  ok  src/engine/hinges.js  (f08.mjs, f13.mjs)
+        T78 F8 / F13: `setBlumHingeFamilies`, `blumHingeFamilies`, `bifoldHingeSpec` read reference/hardware/blum-hinges.json; new exports, nothing of the CLIP top angle rule moved. T78 F13: `hingeAngleFor(..., family)` answers the wide family from reference/hardware/blum-hinges.json's rule, `resolveDoorHinge(..., family)` the article; the standard path returns what it did plus `hingeFamily`
+        on computeCabinet's import graph: true; imported by 15 file(s)
+        gates: lBifold [f08.mjs]; wideHinges [f13.mjs]
+        goldens that open them: golden-corner-l-bifold.json (lBifold: own; wideHinges: held by its bytes)
+  ok  src/engine/hoodCanopy.js  (f17.mjs)
+        T78 F17: the mirror of KIT_WUD_HOOD_CANOPY.lsp (`canopySpec`, `canopyGeometry`, `canopySidePoints`, `applyCanopy`): the trapezoid sides, the deeper bottom, the sloped front, run by computeCabinet only under `type.canopy`.
+        on computeCabinet's import graph: true; imported by 1 file(s)
+        gates: hoodCanopy [f17.mjs]
+        goldens that open them: golden-hood-canopy.json (hoodCanopy: own)
+  ok  src/engine/hoodClearance.js  (f17.mjs)
+        T78 F17: the ONE measure of the hood's clearance over the hob (Check #34 and the store's proposal read it); a reader of results, it cuts nothing and no golden reaches it.
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/innerDrawer.js  (f16.mjs)
+        T78 F16: a new reader of reference/hardware/blum-inner-drawer.json (setInnerDrawerCatalogue, innerDrawerSpec); null unloaded
+        on computeCabinet's import graph: true; imported by 2 file(s)
+        gates: doubleDrawer [f16.mjs]
+        goldens that open them: golden-double-drawer.json (doubleDrawer: own)
+  ok  src/engine/library.js  (f17.mjs)
+        T78 F17: two rows in the Kitchen wall-units group beside the hood unit; a list.
+        on computeCabinet's import graph: true; imported by 2 file(s)
+        gates: hoodCanopy [f17.mjs]; hoodShort [f17.mjs]
+        goldens that open them: golden-hood-canopy.json (hoodCanopy: own), golden-hood-short.json (hoodShort: own)
+  ok  src/engine/liftChecks.js  (f18.mjs)
+        T78 F18: Check #35, the lift leaf's rise against the room, a cornice and the unit above; a reader of results, it cuts nothing and no golden reaches it.
+        on computeCabinet's import graph: false; imported by 1 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/liftSystems.js  (f18.mjs)
+        T78 F18: the lift plan off reference/hardware/aventos.json t78_f18 (`liftTakesKit`, `liftSystemOf`, `liftPlanFor`, `liftRiseMm`, `liftTravelAt`): read by computeCabinet only where `params.front_system` names a lift.
+        on computeCabinet's import graph: true; imported by 4 file(s)
+        gates: liftFront [f18.mjs]
+        goldens that open them: golden-lift-hk.json (liftFront: own), golden-lift-hs.json (liftFront: own), golden-lift-hl.json (liftFront: own), golden-lift-hf.json (liftFront: own)
+  ok  src/engine/machining.js  (f20-cabineo.mjs)
+        F20 · the policy rows of the five Cabineo layers (the pockets and the recess bored blind to the record's depth; the dia 5 hole not bored, with its sentence: no depth on the sheet). What the scene draws, not a cut
+        on computeCabinet's import graph: true; imported by 5 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/partRegistry.js  (f07.mjs, f08.mjs, f09.mjs, f11.mjs, f18.mjs, f20-cabineo.mjs, f21.mjs)
+        T78 F7: the `kit_space_corner` row and the `space_corner` role; a list. T78 F8: the `hinge_bifold` row and the `bifold_hinges` role; a list. T78 F9: the `kit_carousel` row and the `carousel` role map, so the BOM files the line; a list, not a cut. T78 F11: the `kit_blind_pullout` row and the `blind_pullout` role; a list. T78 F18: five registry rows (lift_mechanism, lift_lever_arm, lift_cover_caps, lift_front_bracket, hinge_aventos_hf) and the five `lift_*` role mappings; a list. F20 · two consumable rows (cabineo_connector, cabineo_cap) and their role map entries, so the order lines are assignable. A registry, not a cut. T78 F21: two consumable rows, paint_fronts and paint_carcass (unit L, materialType paint); registry only.
+        on computeCabinet's import graph: true; imported by 8 file(s)
+        gates: lDrawers [f07.mjs]; lBifold [f08.mjs]; carousel [f09.mjs]; blindPullout [f11.mjs]; liftFront [f18.mjs]
+        goldens that open them: golden-corner-l-drawers.json (lDrawers: own), golden-corner-l-bifold.json (lBifold: own), golden-lift-hk.json (liftFront: own), golden-lift-hs.json (liftFront: own), golden-lift-hl.json (liftFront: own), golden-lift-hf.json (liftFront: own)
+  ok  src/engine/profile.js  (f05.mjs, f07.mjs, f08.mjs, f09.mjs, f10.mjs, f11.mjs, f12.mjs, f15.mjs, f16.mjs, f17.mjs, f19.mjs, f20-cabineo.mjs, f21.mjs)
+        T78 F5 / F6: `corner.leafMinMm` (200, T78 proposed) and `corner.wallLeafMaxMm` (700, the owner's) beside the post; no cut reads either (the store clamps and sizes with them). T78 F7: `corner.spaceCorner` (label, rowsMin 2, rowsMax 4, bracketMm 60), read only on an L with a stack. T78 F8: `corner.bifold` (angleDeg 60, label), the fallback while the catalogue file is not loaded; read only in bifold. T78 F9: `corner.carousel`, the placeholder's numbers (T78 proposed); read only behind `params.carousel`. T78 F10: `corner.postMm` 40, the owner's decided number (*"listwa narozinkowa musi miec 40 mm"*); read by the corner stop, the blind blank's width, the auto post and the kit's own strip. T78 F11: `corner.blindPullout` (label, trays 2, trayMm 20, clearMm 10), proposed, read only while fitted. T78 F12: `front.glass` (kinds, default smoke the owner's, paneMm 4 proposed, labels); read on a glazed leaf only. T78 F15: `wardrobe.drawers.innerFront` (overhangMm 0, heightMm the box side height), proposed, owner to confirm. T78 F16: the cutlery row of the insert catalogue (proposed); read only when an insert is ordered for a double row. T78 F17: `hoodCanopy.defaults`, `hoodShort.defaults` and `hood.clearance` (650 / 750), each `// T78 proposed, owner to confirm`, with their migrate lines; read only by the two kits and the clearance Check. F19 · `joints.dowel` carries the owner's four numbers, `minPerJoint` in, `maxGapMm` out; the migrate line lets the code win for the four and drops a saved max gap. Read only by a dowel unit; the six cut the puzzle by `joints.system`. F20 · `joints.cabineo` (mounting flushCap, machining cutter12, pitch 250, end offset 50, min 2, caps all, the gate `confirmed: false`, the five layer names) and its migrate line key by key, every choice T78 proposed; no Lamello number. The six cut the puzzle by it. T78 F21: the `spray` block (wastePct 10, edgesInM2, frameMm 100, the twenty rows, the proposed defaults) and its migrate; no cut reads it.
+        on computeCabinet's import graph: true; imported by 32 file(s)
+        gates: cornerL [f01.mjs]; lDrawers [f07.mjs]; lBifold [f08.mjs]; carousel [f09.mjs]; blindKit [f10.mjs]; autoPost [f10.mjs]; blindPullout [f11.mjs]; glassKind [f12.mjs]; innerFront [f15.mjs]; doubleDrawer [f16.mjs]; hoodCanopy [f17.mjs]; hoodShort [f17.mjs]; dowelSetOut [f19.mjs]; cabineo [f20-cabineo.mjs]
+        goldens that open them: PANTRY (innerFront: re-pinned (named by f15.mjs)), golden-blind-base.json (blindKit: re-pinned (named by f10.mjs)), golden-blind-wall.json (blindKit: re-pinned (named by f10.mjs)), golden-blind-wardrobe.json (blindKit: re-pinned (named by f10.mjs)), golden-corner-l-base.json (cornerL: held by its bytes), golden-corner-l-wall.json (cornerL: held by its bytes), golden-corner-l-wardrobe.json (cornerL: held by its bytes), golden-bud-int.json (innerFront: re-pinned (named by f15.mjs)), golden-dowel-bud.json (dowelSetOut: re-pinned (named by f19.mjs)), golden-corner-l-mask.json (cornerL: held by its bytes), golden-corner-l-drawers.json (cornerL: held by its bytes; lDrawers: own), golden-corner-l-bifold.json (cornerL: held by its bytes; lBifold: own), golden-double-drawer.json (doubleDrawer: own), golden-hood-canopy.json (hoodCanopy: own), golden-hood-short.json (hoodShort: own), golden-cabineo8-bud.json (cabineo: own), golden-cabineo12-bud.json (cabineo: own)
+  ok  src/engine/recesses.js  (f20-cabineo.mjs)
+        F20 · a pocket or hole record's `face` rides the recess record for the scene. Carried, not decided; absent on every puzzle unit
+        on computeCabinet's import graph: false; imported by 3 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/runs.js  (f01.mjs, f02.mjs, f10.mjs, f22.mjs)
+        T78 F1: `addPlusPoints` offers the L's second plus on the adjacent wall and keeps a run on that wall from offering one inside the L (`cornerLAdjacentSpan`, the one arithmetic the plus, the placement and the Wall select read). Read by the scene and the store, never by a cut: `computeCabinet` imports runs.js for `impliedLegHeight` and `maskDepthExtra` only. T78 F2: `maskSegments` closes a run's mask segment on both sides of an L and stands the L in one of its own. Read by the store (`runMaskParams` writes `params.run_mask`); a cut sees only that param, and only an L wall unit with a mask asks. T78 F10: a run stopping on a blind kit's strip ends there by the stop record `corner_butt_*_mm` (`runEnd`), and its door sees the strip as a rigid neighbour (`unitVerticals`); a design-layer read, never a cut. T78 F22: `infillCornerMitre` returns the 45 (the strip's own face height, the frame corner's number) at a `runEnd` of kind corner, not only against a side infill in the face plane; the T-joint tolerance and the room-for-the-cut cases stay; `runInfillParams` hands `sideMitre` to a side filler at an infill end only. Read by `runTopInfill` into `run_top_infill.mitre`, a RECORD on the part (`meta.corner`, T50-F11), never a cut
+        on computeCabinet's import graph: true; imported by 24 file(s)
+        gates: cornerL [f01.mjs]; lMask [f02.mjs]; blindKit [f10.mjs]; cornerEnd [f22.mjs]
+        goldens that open them: golden-blind-base.json (blindKit: re-pinned (named by f10.mjs)), golden-blind-wall.json (blindKit: re-pinned (named by f10.mjs)), golden-blind-wardrobe.json (blindKit: re-pinned (named by f10.mjs)), golden-corner-l-base.json (cornerL: held by its bytes), golden-corner-l-wall.json (cornerL: held by its bytes), golden-corner-l-wardrobe.json (cornerL: held by its bytes), golden-corner-l-mask.json (cornerL: held by its bytes; lMask: own), golden-corner-l-drawers.json (cornerL: held by its bytes), golden-corner-l-bifold.json (cornerL: held by its bytes)
+  ok  src/engine/spray.js  (f21.mjs)
+        T78 F21: the spray law worked on the engine's panels (`sprayRuleFor`, `sprayAreaFor`, `sprayScheduleFor`, the paint order, `withPaints`); a reader of results off profile.spray, it cuts nothing.
+        on computeCabinet's import graph: false; imported by 5 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/types.js  (f07.mjs, f17.mjs)
+        T78 F7: `supports.drawers: true` on CORNER_L_BASE, read only where a drawer is asked. T78 F17: two new kits beside WUD_HOOD (WUD_HOOD_CANOPY with `canopy: true`, `supports.doors: false`, its own LISP; WUD_HOOD_SHORT, WUD_HOOD's fields with `hoodShort.defaults`), both `heightGroup: null` and `topLine: 'wall'`; two ids in UNIT_TYPE_ORDER after WUD_HOOD, two HD prefixes. A kit written before tonight reads none of it.
+        on computeCabinet's import graph: true; imported by 46 file(s)
+        gates: lDrawers [f07.mjs]; hoodCanopy [f17.mjs]; hoodShort [f17.mjs]
+        goldens that open them: golden-corner-l-drawers.json (lDrawers: own), golden-hood-canopy.json (hoodCanopy: own), golden-hood-short.json (hoodShort: own)
+  ok  src/engine/warehouse.js  (f21.mjs)
+        T78 F21: the Paints department (PAINT_TYPES, PAINT_FIELDS, parseTinSizes, paintOf; migrateMaterial keeps `paint`); the CSV stays the twelve columns; no cut reads it.
+        on computeCabinet's import graph: false; imported by 5 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/engine/worktop.js  (f02.mjs)
+        T78 F2: the lone L slab runs to both walls and its arm B end butts a neighbour (`lSlabGeometry`); a record over the L and the cabinets along its arms is the L slab plus one straight slab per wall butting it at the arm end with the T75 F5 joint record (`lRunSlabs`). The design layer's, not a cut: `computeCabinet` never imports worktop.js
+        on computeCabinet's import graph: false; imported by 5 file(s)
+        gates: cornerL [f01.mjs]
+        goldens that open them: golden-corner-l-base.json (cornerL: held by its bytes), golden-corner-l-wall.json (cornerL: held by its bytes), golden-corner-l-wardrobe.json (cornerL: held by its bytes), golden-corner-l-mask.json (cornerL: held by its bytes), golden-corner-l-drawers.json (cornerL: held by its bytes), golden-corner-l-bifold.json (cornerL: held by its bytes)
+  ok  src/lib/checkFindings.js  (f17.mjs)
+        T78 F17: `useGoToSubject` runs a finding's `subject.store` action before the flight (Check #34's button); a subject without one flies exactly as before.
+        on computeCabinet's import graph: false; imported by 3 file(s)
+        gates: hoodCanopy [f17.mjs]; hoodShort [f17.mjs]
+        goldens that open them: golden-hood-canopy.json (hoodCanopy: own), golden-hood-short.json (hoodShort: own)
+  ok  src/lib/cncExport.js  (f20-cabineo.mjs)
+        F20 · THE GATE: each of the three exports throws "the Cabineo pattern is proposed, not confirmed by the owner" before `exportGate` when it would machine a Cabineo cut; the unit ZIP carries cabineo-operations.json for the OUTSIDE FACE UP boards. A refusal and a manifest, not a cut
+        on computeCabinet's import graph: false; imported by 3 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/lib/hardwareCatalogue.js  (f13.mjs)
+        T78 F8 / F13 / F16 (58c8940, d5b85b7, 41ccf8c): `loadHardwareCatalogues` hands reference/hardware/blum-hinges.json to `setBlumHingeFamilies` and blum-inner-drawer.json to `setInnerDrawerCatalogue`; a loader of files, not a cut; a bare kit call loads nothing and every golden is computed without it.
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/lib/modalLayer.js  (f21.mjs)
+        T78 F21: the spraying modal registered on the layer; UI plumbing.
+        on computeCabinet's import graph: false; imported by 21 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/lib/outputMenu.js  (f21.mjs)
+        T78 F21: the Output menu's Spraying entry goes live (onOpenSpraying); UI plumbing.
+        on computeCabinet's import graph: false; imported by 1 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/lib/sprayExport.js  (f21.mjs)
+        T78 F21: the Export PDF of the Spraying page; a download, no cut.
+        on computeCabinet's import graph: false; imported by 1 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/lib/warehouseDb.js  (f21.mjs)
+        T78 F21: the paint column of the warehouse row (supabase/migrations/t78_warehouse_paint.sql); persistence only.
+        on computeCabinet's import graph: false; imported by 2 file(s)
+        gates: none (cannot reach a cut)
+        goldens that open them: NONE, no golden can enter this path
+  ok  src/stores/projectStore.js  (f17.mjs)
+        T78 F17: `proposeHoodClearance` (the yellow with a button, T78 F6's grammar, at the end of `refreshAutoParts`), `raiseHoodToClearance` (the click: `mount_height`), and the `topLine: 'wall'` mount rule in `projectHeightParams` and `setProjectHeights`, read only by a kit that declares it.
+        on computeCabinet's import graph: false; imported by 80 file(s)
+        gates: hoodCanopy [f17.mjs]; hoodShort [f17.mjs]
+        goldens that open them: golden-hood-canopy.json (hoodCanopy: own), golden-hood-short.json (hoodShort: own)
+
+=== EVERY GATE (WHAT IT ASKS, WHO OWNS IT) ===
+  cornerL            [f01.mjs] an L corner kit (`type.corner`: CORNER_L_BASE / WALL / WARDROBE); the six and T75's goldens other than the three L goldens never are one
+  lMask              [f02.mjs] a bottom mask asked on an L wall unit (`params.bottom_mask` on a `type.corner` kit): the L mask board
+  lGrain             [f04.mjs] an L corner kit's TOP-L / BOTTOM-L / SHELF-L (cut by `type.corner` kits only)
+  lArms              [f05.mjs] an L corner kit whose width or depth is being typed (the store's clamp); a cut reads W and D as before
+  wallLFollows       [f06.mjs] a CORNER_L_WALL standing in a corner that holds a CORNER_L_BASE (the store's refreshAutoParts law); no cut
+  lDrawers           [f07.mjs] a drawer stack asked on an L (`params.drawers` or drawer items on a `type.corner` kit whose `supports.drawers` is on): the arms' virtual parents become the drawer unit of that split and the L joins their boxes and fronts
+  lBifold            [f08.mjs] `params.corner_doors === 'bifold'` on a `type.corner` kit with doors: leaf B hangs on leaf A, its cups the bi-fold hinge's (none while the catalogue page is unread), SIDE-B carries no plate, one bi-fold hinge line
+  carousel           [f09.mjs] a carousel asked on an L (`params.carousel === true` on a `type.corner` kit)
+  blindKit           [f10.mjs] a BLIND kit (`type.blind`): the kit cuts its blank and its 40 mm corner strip the moment it is placed; every other kit is untouched by F10 (the post of a plain corner stays the neighbour's auto-part, at 40 now)
+  autoPost           [f10.mjs] `params.corner_post_left_mm` / `corner_post_right_mm` on a plain unit (the store writes them at a corner stop): the auto post, 40 wide where it was 50 (the owner's number)
+  blindPullout       [f11.mjs] `params.blind_pullout === true` on a BLIND kit: the shelves step aside, one BOM line, a placeholder body of two wire trays behind the blank, zero holes; a fixed shelf refuses it in words
+  glassKind          [f12.mjs] a glazed leaf (`meta.glass`): its kind from `door_glass[id]`, `glass_kind` or the profile's default (smoke); the BOM line is named by kind. A leaf without glass is untouched
+  wideHinges         [f13.mjs] `hinge_family: 'wide'` or `door_hinge_family[id] === 'wide'` (or an L in bifold, whose leaf A takes the wide family): the leaf carries `meta.openAngleDeg`, the BOM hinge line takes the family's article; the standard family is byte for byte today's
+  archStack          [f14.mjs] a decoration recipe asked (`params.front_decoration`) with the arched styles A / AH on a unit whose drawer fronts stand in one column: the arch is computed on the stack and sliced per front. A door, a flat front and every other style pass through the same code untouched (no `stack`)
+  innerFront         [f15.mjs] a drawer behind doors (`cfg.internalDrawers`: the wardrobe's internal mount, PANTRY's and BUD_INT's kit-wide internal drawers, a drawer-unit row with `drawer_fronts: false`): it gets an INNER FRONT board. Every overlay drawer and every doorless kit is untouched
+  doubleDrawer       [f16.mjs] `params.drawer_double[row] === true` on a drawer unit (BUDR, the hob units): the row's deep box stops under an inner drawer on its own runners, an inner front, a cutlery insert, one more runner pair; without it the drawer unit is byte for byte today's
+  hoodCanopy         [f17.mjs] the canopy hood kit (`type.canopy`, WUD_HOOD_CANOPY only): the WUD carcass made a canopy by `engine/hoodCanopy.js applyCanopy` (trapezoid sides, the bottom deeper by `hoodCanopy.defaults.bottomProjectionMm`, the sloped front of the front material). No kit written before T78 F17 carries the flag.
+  hoodShort          [f17.mjs] the short hood kit (WUD_HOOD_SHORT): WUD_HOOD to the letter at `hoodShort.defaults` (660 high, hung at 1560); no engine line of its own, the kit and its defaults only.
+  liftFront          [f18.mjs] `params.front_system` naming one of hk | hs | hl | hf on a wall unit that takes a lift (engine/liftSystems.js liftTakesKit: WUD, WUD_GLASS, WARDROBE_WALL): ONE full-width leaf with no cups and no plate rows, `meta.lift` on it, the lift bought as lines (the set, the arm, the caps, the brackets, the HF hinge set), two placeholder bodies, zero holes; `hinged`, nothing, or any other kit is today's door byte for byte
+  dowelSetOut        [f19.mjs] a unit cut with dowels (`params.joints_system` 'dowel'): F19 moved `profile.joints.dowel` to the owner's numbers (dia 6, pitch 250, minPerJoint 2, end offset 50; `maxGapMm` gone) and `dowelPositions(L, e, p, nMin, dia)` to the even set-out between the two end offsets, never fewer than two, no gap over the pitch (SKYLON_JOINTS_DOWEL.lsp section B); a unit on any other system never reads either. No frozen golden names a joint system
+  jointSystemLadder  [f19.mjs] `params.joints_system` naming any system but the profile's own ('puzzle'): the ONLY road from the company row (`companyDefaults.js joints_system`), the project (`design.joints.system`) or PRO's Joints row to the engine, written by `projectStore.js paramsForEngine` off `resolveJointSystem` and only where the ladder's answer differs from `jointSystemOf(null, profile)`; a bare kit call and every frozen golden carry no key and cut the puzzle
+  biscuit            [f20-biscuit.mjs] a unit whose joint system is biscuit (`params.joints_system` 'biscuit'; F20: the Joints row writes it, no default carries it, the default profile says 'puzzle')
+  cabineo            [f20-cabineo.mjs] a unit whose joint system is Cabineo (`params.joints_system` 'cabineo8' | 'cabineo12', or the company default `joints.system`; F20: the Joints row writes it, no default carries it, the default profile says 'puzzle')
+  cornerEnd          [f22.mjs] a top infill whose RUN ends on a corner stop (`run_top_infill.ends.left|right === 'corner'`: the end unit carries `corner_post_*_mm` or a blind kit's `corner_butt_*_mm`, T75 F6 / T78 F10). The number reaches computeCabinet only as `run_top_infill.mitre`, the store's run element; a lone cabinet (the six, every golden) carries no run element
+
+=== EVERY GOLDEN, GATE BY GATE (THE SIX, T75'S 16, T76'S 6 RECORDS, T77'S 4 PROPOSALS, T78'S 15) ===
+  ok    WARDROBE                         the six       opens: none
+  ok    BUD                              the six       opens: none
+  ok    WUD                              the six       opens: none
+  ok    BUDR                             the six       opens: none
+  ok    BUDR4                            the six       opens: none
+  ok    PANTRY                           the six       opens: innerFront (re-pinned (named by f15.mjs))
+  ok    golden-blind-base.json           T75 F3        opens: blindKit (re-pinned (named by f10.mjs))
+  ok    golden-blind-wall.json           T75 F3        opens: blindKit (re-pinned (named by f10.mjs))
+  ok    golden-blind-wardrobe.json       T75 F3        opens: blindKit (re-pinned (named by f10.mjs))
+  ok    golden-notch.json                T75 F7        opens: none
+  ok    golden-corner-l-base.json        T75 F4        opens: cornerL (held by its bytes), lGrain (held by its bytes), lArms (held by its bytes)
+  ok    golden-corner-l-wall.json        T75 F4        opens: cornerL (held by its bytes), lGrain (held by its bytes), lArms (held by its bytes), wallLFollows (held by its bytes)
+  ok    golden-corner-l-wardrobe.json    T75 F4        opens: cornerL (held by its bytes), lGrain (held by its bytes), lArms (held by its bytes)
+  ok    golden-appliance-tall.json       T75 F12       opens: none
+  ok    golden-appliance-tall2.json      T75 F12       opens: none
+  ok    golden-bud-int.json              T75 F13       opens: innerFront (re-pinned (named by f15.mjs))
+  ok    golden-budr-hob.json             T75 F14       opens: none
+  ok    golden-pelmet.json               T75 F15       opens: none
+  ok    golden-wardrobe-chest.json       T75 F16       opens: none
+  ok    golden-wardrobe-desk.json        T75 F17       opens: none
+  ok    golden-wardrobe-low.json         T75 F18       opens: none
+  ok    golden-dowel-bud.json            T75 F23       opens: dowelSetOut (re-pinned (named by f19.mjs)), jointSystemLadder (re-pinned (named by f19.mjs))
+  ok    decoration G                     T76 record    opens: none
+  ok    decoration GF                    T76 record    opens: none
+  ok    decoration A                     T76 record    opens: archStack (held by its bytes)
+  ok    decoration AH                    T76 record    opens: archStack (held by its bytes)
+  ok    decoration FL                    T76 record    opens: none
+  ok    decoration AM                    T76 record    opens: none
+  ok    ornate ORNATE_A_1                T77 proposal  opens: none
+  ok    ornate ORNATE_A_2                T77 proposal  opens: none
+  ok    ornate ORNATE_A_3                T77 proposal  opens: none
+  ok    ornate ORNATE_A_4                T77 proposal  opens: none
+  ok    golden-corner-l-mask.json        T78 F2        opens: cornerL (held by its bytes), lMask (own), lGrain (held by its bytes), lArms (held by its bytes), wallLFollows (held by its bytes)
+  ok    golden-corner-l-worktop.json     T78 F2        opens: none
+  ok    golden-corner-l-drawers.json     T78 F7        opens: cornerL (held by its bytes), lGrain (held by its bytes), lArms (held by its bytes), lDrawers (own)
+  ok    golden-corner-l-bifold.json      T78 F8        opens: cornerL (held by its bytes), lGrain (held by its bytes), lArms (held by its bytes), lBifold (own), wideHinges (held by its bytes)
+  ok    golden-arch-stack.json           T78 F14       opens: archStack (own)
+  ok    golden-double-drawer.json        T78 F16       opens: doubleDrawer (own)
+  ok    golden-hood-canopy.json          T78 F17       opens: hoodCanopy (own)
+  ok    golden-hood-short.json           T78 F17       opens: hoodShort (own)
+  ok    golden-lift-hk.json              T78 F18       opens: liftFront (own)
+  ok    golden-lift-hs.json              T78 F18       opens: liftFront (own)
+  ok    golden-lift-hl.json              T78 F18       opens: liftFront (own)
+  ok    golden-lift-hf.json              T78 F18       opens: liftFront (own)
+  ok    golden-biscuit-bud.json          T78 F20       opens: jointSystemLadder (held by its bytes), biscuit (own)
+  ok    golden-cabineo8-bud.json         T78 F20       opens: jointSystemLadder (held by its bytes), cabineo (own)
+  ok    golden-cabineo12-bud.json        T78 F20       opens: jointSystemLadder (held by its bytes), cabineo (own)
+
+=== EACH GATE OPENED ON A CRAFTED CABINET: THE DELTA IS LIVE ===
+  live  cornerL            [f01.mjs] a left-hand L on wall 0: arm B on wall 3 ends 2090; plus points [[0,"right",910],[3,"left",2090]]
+  live  lMask              [f02.mjs] CORNER_L_WALL with a mask cuts MASK-L (6 vertices, 0.3321 m2); a WUD cuts MASK (4); the lone L slab is L with 6 vertices from x 0
+  live  lGrain             [f04.mjs] L boards grain ["w","w","w"], sheetTurn [90,90,90]; a BUD shelf grain h
+  live  lArms              [f05.mjs] a base L arm is at least 758 mm (arm 558 + leaf 200); the wall leaf max is 700
+  live  wallLFollows       [f06.mjs] arm A covered trims the leaf by 1.5, arm B overlap by 29.5 (gap 3, clearance.corner 3, front 25)
+  live  lDrawers           [f07.mjs] CORNER_L_BASE with drawers 3 cuts 6 front boards and 30 box boards, 3 SPACE CORNER lines, 0 doors
+  live  lBifold            [f08.mjs] CORNER_L_BASE in bifold: B hangs on CL01-A-F, 3 bi-fold hinges, hinged sides SIDE-A, SIDE-B hinge drills 0
+  live  carousel           [f09.mjs] an L with a carousel: 1 BOM line, 1 body, 0 shelf boards (plain 1), drills unchanged true
+  live  blindKit           [f10.mjs] BLIND_BASE alone cuts BB01-BLANK and BB01-POST (40 x 770 x 25)
+  live  autoPost           [f10.mjs] BUD with the auto post cuts CORNER-POST-L 40 wide
+  live  blindPullout       [f11.mjs] BLIND_BASE with the pull-out: Hafele blind corner pull-out · 608 x 522 mm blind part, 734 high · 2 trays, shelves cut 0
+  live  glassKind          [f12.mjs] WUD_GLASS: the leaf's glass is smoke, the line reads "Smoked glass 4 mm"
+  live  wideHinges         [f13.mjs] BUD with the wide family: the leaf is wide, its angle null (file not loaded here, or no rung)
+  live  archStack          [f14.mjs] BUDR with A: 3 of 3 fronts carry a slice of the one arch (stack 767 high); statuses blocked, blocked, ready
+  live  innerFront         [f15.mjs] BUD_INT cuts 2 inner fronts for 2 internal drawers (506 x 164, 506 x 164)
+  live  doubleDrawer       [f16.mjs] BUDR with row 1 double: 5 inner box boards, inner front 554 x 90.5, runner pairs 4
+  live  hoodCanopy         [f17.mjs] WUD_HOOD_CANOPY cuts BUL 532 x 500 (trapezoid), BOTTOM 564 x 532, CANOPY-FRONT 600 x 529.5153 of the front material at 16.6992 degrees, 0 doors
+  live  hoodShort          [f17.mjs] WUD_HOOD_SHORT is 660 high at 1560, its door 307 over the open aperture
+  live  liftFront          [f18.mjs] WUD 600 x 720 with front_system hk: 1 leaf (hk), AVENTOS HK top lift mechanism set 22K2700, 0 cups, 0 plate holes, 2 bodies
+  live  dowelSetOut        [f19.mjs] BUD with dowels cuts 26 dowels of 6 mm on 8 joints, every joint >= 2, no gap over 250; profile 6 / 250 / min 2 / 50, maxGapMm gone
+  live  jointSystemLadder  [f19.mjs] no row: a fresh BUD's engine params carry no joints_system and derived.joints is absent; row dowel: the project says null after reset, the BUD was cut dowel with the unit's own key undefined; a stale unit id falls to the project (biscuit); the six kits' defaults carry no joint system
+  live  biscuit            [f20-biscuit.mjs] BUD with biscuits cuts 16 through screws and 8 marks on the sides, BUL outline 34 points, TOP outline 24 points, 0 puzzle holes on the sides, 20 on the BACK (kept, bez ciastek na plecach)
+  live  cabineo            [f20-cabineo.mjs] BUD with Cabineo 12 cuts 12 pockets and 12 cap recesses from the outside face of the TOP and BOTTOM (machinedFace outside), 12 dia 5 holes in the sides, TOP outline 24 points, 0 puzzle holes on the sides, gate shut
+  live  cornerEnd          [f22.mjs] a BUDTALL on the corner stop: runEnd kind corner at 596; the 40 mm strip's corner mitre is 40
+
+=== THE SIX (sha256 against 16477df:verify/t70/goldens-base.json) ===
+  WARDROBE   IDENTICAL          f49a8c107dd6e66908412262c8c0c91613fe9d1523cce844b7ce68648a1f37c3
+  BUD        IDENTICAL          44d091b837b08075fd155719253b85b9cc8c65437395a1d8b2f31b80d3b2db4c
+  WUD        IDENTICAL          3b7ea2c4db6bce384bae7e3d1cd30d1a118179f78faa317a44dac65add1abfb7
+  BUDR       IDENTICAL          1919de3c261de0c14b0a4ac8d29e8575cb368c33cf0f4afe69c48094322252c2
+  BUDR4      IDENTICAL          583bdd7183cef63272186f3a6f8d4910cce8694c4feb93277f0826c29b2c2f17
+  PANTRY     RE-PINNED (named)  8eeee6a05c17d21d745b1e83e849b3a344d051ff76173c1e3a8eb98f20cea727  f15.mjs: T78 F15: PANTRY's three internal drawers each gain an inner front board (FROZEN 1 broken for the one of the six the owner's F15 names) . the working tree's verify/t70/goldens-base.json carries the new hash
+
+=== T75'S GOLDENS (CLAUDE.md NAMES NINE; THE REPO HOLDS 16) ===
+  ok    golden-blind-base.json             F3   byte-identical to its fixture . fixture RE-PINNED (named by f10.mjs)
+  ok    golden-blind-wall.json             F3   byte-identical to its fixture . fixture RE-PINNED (named by f10.mjs)
+  ok    golden-blind-wardrobe.json         F3   byte-identical to its fixture . fixture RE-PINNED (named by f10.mjs)
+  ok    golden-notch.json                  F7   byte-identical to its fixture
+  ok    golden-corner-l-base.json          F4   byte-identical to its fixture
+  ok    golden-corner-l-wall.json          F4   byte-identical to its fixture
+  ok    golden-corner-l-wardrobe.json      F4   byte-identical to its fixture
+  ok    golden-appliance-tall.json         F12  byte-identical to its fixture
+  ok    golden-appliance-tall2.json        F12  byte-identical to its fixture
+  ok    golden-bud-int.json                F13  byte-identical to its fixture . fixture RE-PINNED (named by f15.mjs)
+  ok    golden-budr-hob.json               F14  byte-identical to its fixture
+  ok    golden-pelmet.json                 F15  byte-identical to its fixture
+  ok    golden-wardrobe-chest.json         F16  byte-identical to its fixture
+  ok    golden-wardrobe-desk.json          F17  byte-identical to its fixture
+  ok    golden-wardrobe-low.json           F18  byte-identical to its fixture
+  ok    golden-dowel-bud.json              F23  byte-identical to its fixture . fixture RE-PINNED (named by f19.mjs)
+
+=== T76'S DECORATION GOLDEN FILE: fixtures/golden-decorative-fronts.json ===
+  ok    G          01-F 597 x 767 x 25, 6 op . sha256 92ecf47dcd6e6bca
+  ok    GF         01-F 597 x 767 x 25, 7 op . sha256 4b6aac9e3c1dd2c5
+  ok    A          01-F 597 x 767 x 25, 1 op . sha256 68e841766633f96c
+  ok    AH         01-F 597 x 767 x 25, 1 op . sha256 7cbd357561caacb3
+  ok    FL         01-F 597 x 767 x 25, 25 op . sha256 dc02d1f2df95b8a6
+  ok    AM         01-F 597 x 767 x 25; 01-F-MOULDING-BOTTOM 477 x 20 x 8; 01-F-MOULDING-RIGHT 647 x 20 x 8; 01-F-MOULDING-TOP 477 x 20 x 8; 01-F-MOULDING-LEFT 647 x 20 x 8 . sha256 ae924b04c7e9f83a
+  ok    the styles the engine offers with a recipe: G, GF, A, AH, FL, AM, ORNATE_A_1, ORNATE_A_2, ORNATE_A_3, ORNATE_A_4 . the styles the file pins: G, GF, A, AH, FL, AM . the proposals: ORNATE_A_1, ORNATE_A_2, ORNATE_A_3, ORNATE_A_4 . the engine's ORNATE_STYLE_IDS: ORNATE_A_1, ORNATE_A_2, ORNATE_A_3, ORNATE_A_4
+
+=== T77'S ORNATE RECORDS: THE FOUR PROPOSALS, NAMED AND NOT PINNED ===
+  ok    ORNATE_A_1 01-F 597 x 767 x 25, relief . ornament: procedural placeholder . proposed, not production approved . not pinned
+  ok    ORNATE_A_2 01-F 597 x 767 x 25, relief . ornament: procedural placeholder . proposed, not production approved . not pinned
+  ok    ORNATE_A_3 01-F 597 x 767 x 25, relief . ornament: procedural placeholder . proposed, not production approved . not pinned
+  ok    ORNATE_A_4 01-F 597 x 767 x 25, relief . ornament: none . proposed, not production approved . not pinned
+
+=== THE T78 GOLDENS (scripts/t78-goldens.mjs --check, the same comparison) ===
+  ok    golden-corner-l-mask.json          F2   byte-identical to its fixture . new since the base
+  ok    golden-corner-l-worktop.json       F2   byte-identical to its fixture . new since the base
+  ok    golden-corner-l-drawers.json       F7   byte-identical to its fixture . new since the base
+  ok    golden-corner-l-bifold.json        F8   byte-identical to its fixture . new since the base
+  ok    golden-arch-stack.json             F14  byte-identical to its fixture . new since the base
+  ok    golden-double-drawer.json          F16  byte-identical to its fixture . new since the base
+  ok    golden-hood-canopy.json            F17  byte-identical to its fixture . new since the base
+  ok    golden-hood-short.json             F17  byte-identical to its fixture . new since the base
+  ok    golden-lift-hk.json                F18  byte-identical to its fixture . new since the base
+  ok    golden-lift-hs.json                F18  byte-identical to its fixture . new since the base
+  ok    golden-lift-hl.json                F18  byte-identical to its fixture . new since the base
+  ok    golden-lift-hf.json                F18  byte-identical to its fixture . new since the base
+  ok    golden-biscuit-bud.json            F20  byte-identical to its fixture . new since the base
+  ok    golden-cabineo8-bud.json           F20  byte-identical to its fixture . new since the base
+  ok    golden-cabineo12-bud.json          F20  byte-identical to its fixture . new since the base
+
+=== FIXTURES AGAINST THE BASE (new golden . re-pinned, named . MOVED) ===
+  ok    fixtures/golden-arch-stack.json            new T78 golden (F14)
+  ok    fixtures/golden-biscuit-bud.json           new T78 golden (F20)
+  ok    fixtures/golden-blind-base.json            RE-PINNED (named): f10.mjs: T78 F10: the blind kit cuts its own CORNER-POST (40 x front_t); its blank is 10 narrower (postMm 50 to 40)
+  ok    fixtures/golden-blind-wall.json            RE-PINNED (named): f10.mjs: T78 F10: as golden-blind-base
+  ok    fixtures/golden-blind-wardrobe.json        RE-PINNED (named): f10.mjs: T78 F10: as golden-blind-base
+  ok    fixtures/golden-bud-int.json               RE-PINNED (named): f15.mjs: T78 F15: BUD_INT's two internal drawers gain inner fronts
+  ok    fixtures/golden-cabineo12-bud.json         new T78 golden (F20)
+  ok    fixtures/golden-cabineo8-bud.json          new T78 golden (F20)
+  ok    fixtures/golden-corner-l-bifold.json       new T78 golden (F8)
+  ok    fixtures/golden-corner-l-drawers.json      new T78 golden (F7)
+  ok    fixtures/golden-corner-l-mask.json         new T78 golden (F2)
+  ok    fixtures/golden-corner-l-worktop.json      new T78 golden (F2)
+  ok    fixtures/golden-double-drawer.json         new T78 golden (F16)
+  ok    fixtures/golden-dowel-bud.json             RE-PINNED (named): f19.mjs: T78 F19: the owner's numbers of 11.10.2026 (6 mm, every 250, min 2) replace T75's proposals; the cut moved with the LISP (SKYLON_JOINTS_DOWEL.lsp sections A, B and H: 26 dowels on the BUD 600 where T75's rule at pitch 32 cut 44)
+  ok    fixtures/golden-hood-canopy.json           new T78 golden (F17)
+  ok    fixtures/golden-hood-short.json            new T78 golden (F17)
+  ok    fixtures/golden-lift-hf.json               new T78 golden (F18)
+  ok    fixtures/golden-lift-hk.json               new T78 golden (F18)
+  ok    fixtures/golden-lift-hl.json               new T78 golden (F18)
+  ok    fixtures/golden-lift-hs.json               new T78 golden (F18)
+  ok    fixtures/t75-corner-kitchen.json           RE-PINNED (named): f10.mjs: T78 F10: every run on a corner stop stands 10 closer (postMm 40); the blind stop's run carries the stop record, the blind kit its own strip
+  ok    fixtures/t75-island.json                   RE-PINNED (named): f12.mjs: T78 F12 / F13 / F19: the saved design carries fronts.glassKind, fronts.hingeFamily and joints.system (null: nobody said), re-pinned through scripts/t75-fixtures.mjs after the full suite (7e92b89); no cabinet moved
+  ok    fixtures/t75-wardrobe-corner.json          RE-PINNED (named): f10.mjs: T78 F10: as t75-corner-kitchen
+  ok    verify/t70/goldens-base.json re-written in the tree: rows differing from the base PANTRY (RE-PINNED (named))
+
+=== THE COMMITS OF THE TURN (git log BASE..HEAD --oneline) ===
+        c5b95ba T78 PROBES: F1 and F2 tables, the fact and the line before any fix
+  F1    4f7a639 T78 F1: nothing could be added left of an L; the L stands on two walls
+  F2    22c3352 T78 F2: the L worktop and the L mask are L-shaped
+        57d5387 T78 PROBES: F3, F4 and F12 tables, the fact and the line before any fix
+  F3    6617ae8 T78 F3: an L door with a decorative front is front_t thick everywhere
+  F4    6fc07be T78 F4: the grain of the L boards turns 90 degrees, LISP first
+  F5    5a473ea T78 F5: the L grows left and right on its own, ARM A and ARM B
+  F6    0127323 T78 F6: the wall L follows the base L, and splits above 700
+  F7    10cde40 T78 F7: drawers in the L, Blum SPACE CORNER, two boxes a row and one L front
+  F8    58c8940 T78 F8: the bi-fold corner door, leaf B hangs on leaf A
+  F9    8bb4eee T78 F9: the carousel, a line and a body in the L's corner square
+  F10   9247e4f T78 F10: the 40 mm corner strip and the blank are the blind kit's own parts
+  F11   5b3827a T78 F11: the Hafele blind-corner pull-out, a line and a body behind the blank
+        af1c5b0 T78 PART A, after the full suite: four tests amended, none silenced
+  F12   664a071 T78 F12: the glass is in the door; smoke by default, with a choice
+  F13   d5b85b7 T78 F13: wide-angle hinges (155 / 170), a family the door chooses
+        d4667c4 T78 PART A, after the walk: the dead canvas (a temporal dead zone) and the L row's twin front
+  F14   afc67c7 T78 F14: the arch on small doors, and one arch across a drawer stack
+  F15   69bfbf0 T78 F15: internal drawers get fronts
+  F15   7cd3c04 T78 F15: the T75 F13 store road says inner fronts too
+  F16   41ccf8c T78 F16: the double drawer, a deep box with a cutlery inner drawer behind one front
+        7e92b89 T78 PART C, after the full suite: the hinge family's shadow, inner fronts behind doors only, the ridge map off the scene
+  F19   e2ed1e3 T78 F19: dowels 6 mm every 250, minimum two; the company chooses the joint system
+  F20   9a81e9a T78 F20: biscuits on the carcass, and Cabineo 8 / 12 cut from the outside face
+  F17   70c8af6 T78 F17: the hood, canopy or short, with the clearance over the hob proposed
+  F18   5cd02d9 T78 F18: lift-up wall units, Blum AVENTOS HK top / HS / HL / HF
+        951176a T78 PART D, after the sweep: two exports nothing imports
+        180b0a1 T78 PART D, after the full suite: three tests amended, none silenced
+  F21   32e4147 T78 F21: the spray schedule, its law, its page and the paint order
+  F22   58d1b5d T78 F22: the top infill is always mitred at a corner
+
+SUMMARY: six IDENTICAL=5 RE-PINNED(named)=1 MOVED=0 . engine/lib files changed: 43 . not named: 0 (allowed: 0) . named and unspent: 0 . unknown gates: 0 . licences a golden reaches unheld: 0/45 . goldens opening a gate unheld: 0 . every gate live: true (24/24) . T75 goldens: 16/16 . T76 decoration records: 6/6 (the styles agree) . T77 proposals: 4/4 . T78 goldens: 15/15 . fixtures moved and not named: 0 . LISP existing amended unlicensed: 0 . LISP unbalanced: 0 . lighting touched: 0 . biscuits frozen: true . fragment COMMITs mismatching: 0
+dump 5fd5b2f4502728f0
+GREEN: every delta is named, every gate is live, and what a golden reaches a golden holds

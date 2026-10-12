@@ -42,3 +42,8 @@ export const LIVENESS = {
 };
 
 export const GOLDENS = [];
+
+/** T78: the T75 store fixture the design's new keys moved; no cabinet moved. */
+export const REPINNED = [
+  { file: 'fixtures/t75-island.json', why: 'T78 F12 / F13 / F19: the saved design carries fronts.glassKind, fronts.hingeFamily and joints.system (null: nobody said), re-pinned through scripts/t75-fixtures.mjs after the full suite (7e92b89); no cabinet moved' },
+];

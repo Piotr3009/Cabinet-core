@@ -13,6 +13,10 @@ export const GATES = {
 };
 
 export const LICENSED = {
+  'src/lib/hardwareCatalogue.js': {
+    why: 'T78 F8 / F13 / F16 (58c8940, d5b85b7, 41ccf8c): `loadHardwareCatalogues` hands reference/hardware/blum-hinges.json to `setBlumHingeFamilies` and blum-inner-drawer.json to `setInnerDrawerCatalogue`; a loader of files, not a cut; a bare kit call loads nothing and every golden is computed without it.',
+    gates: [],
+  },
   'src/engine/hinges.js': {
     why: 'T78 F13: `hingeAngleFor(..., family)` answers the wide family from reference/hardware/blum-hinges.json\'s rule, '
       + '`resolveDoorHinge(..., family)` the article; the standard path returns what it did plus `hingeFamily`',

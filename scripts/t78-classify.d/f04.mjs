@@ -7,6 +7,10 @@ import { DEFAULT_CABINET_PROFILE as P } from '../../src/engine/profile.js';
 import { sheetTurn } from '../../src/engine/cnc/layout.js';
 
 export const LICENSED = {
+  'src/engine/decors.js': {
+    why: "T78 F4 (6fc07be): `decorMapping` breaks the square L face's tie by the cut's own axis (the grain the CNC cut decides, the 3D renders it): a picture, never a cut. Opens with the L grain gate only.",
+    gates: ['lGrain'],
+  },
   'src/engine/cabinet.js': {
     why: 'T78 F4: the L builder states `cnc.grain: \'w\'` on TOP-L, BOTTOM-L and every SHELF-L (the drawn frame, T37 F7a), '
       + 'mirroring KIT_CORNER_L.lsp section 10; the CNC frame does not move (outline, bones, relief, area, box, CSV row), so '

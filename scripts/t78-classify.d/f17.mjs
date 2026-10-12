@@ -21,6 +21,14 @@ export const GATES = {
 };
 
 export const LICENSED = {
+  'src/engine/hoodCanopy.js': {
+    why: 'T78 F17: the mirror of KIT_WUD_HOOD_CANOPY.lsp (`canopySpec`, `canopyGeometry`, `canopySidePoints`, `applyCanopy`): the trapezoid sides, the deeper bottom, the sloped front, run by computeCabinet only under `type.canopy`.',
+    gates: ['hoodCanopy'],
+  },
+  'src/engine/hoodClearance.js': {
+    why: "T78 F17: the ONE measure of the hood's clearance over the hob (Check #34 and the store's proposal read it); a reader of results, it cuts nothing and no golden reaches it.",
+    gates: [],
+  },
   'src/engine/cabinet.js': {
     why: 'T78 F17: the import of `applyCanopy` and one block guarded by `type.canopy` before the grain and the totals '
       + '(the sides, the bottom and the new front), plus `derived.canopy` (and BUL\'s hanger summary moved with its frame) '

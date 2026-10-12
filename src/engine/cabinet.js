@@ -419,7 +419,7 @@ export function internalDrawerSet(params, type, count, items = []) {
  *   `drawer_fronts: false`    T17 F8.1's "the fronts come off", a phase.
  * One reading in one place, so both drawer machines ask the same question.
  */
-export function innerFrontDrawerSet(params, type, count, items = []) {
+function innerFrontDrawerSet(params, type, count, items = []) {
   if (params?.drawer_fronts === false) return new Set();
   if (Array.isArray(params?.internal_drawers)) return new Set();
   return internalDrawerSet(params, type, count, items);

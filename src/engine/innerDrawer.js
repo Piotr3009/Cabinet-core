@@ -19,7 +19,7 @@ export function setInnerDrawerCatalogue(raw) {
 }
 
 /** The loaded file, or null. */
-export function innerDrawerCatalogue() {
+function innerDrawerCatalogue() {
   return CATALOGUE;
 }
 

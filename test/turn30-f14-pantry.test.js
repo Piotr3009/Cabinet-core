@@ -96,7 +96,11 @@ test('F14 the BOM buys the boxes and the runners, because they are really there'
 
 test('F14 the drawers are INTERNAL: boxes and runners, no faces', () => {
   const p = of('PANTRY', { drawers: 3 });
-  assert.equal(p.panels.filter((x) => x.part === 'DRAWER-FRONT').length, 0, 'no drawer faces');
+  // AMENDED BY T78 F15 (the owner, 11.10.2026: *"szuflady wewnetrzne powinny
+  // miec fronty"*): an internal drawer has no OVERLAY face (role front), and
+  // it has an INNER front on its box (part DRAWER-FRONT, role drawer_front).
+  assert.equal(p.panels.filter((x) => x.part === 'DRAWER-FRONT' && x.role === 'front').length, 0, 'no drawer faces');
+  assert.equal(p.panels.filter((x) => x.role === 'drawer_front' && x.meta.inner).length, 3, 'three inner fronts');
   // The unit's own face is its DOOR, and it is there.
   assert.equal(p.panels.filter((x) => x.part === 'FRONT').length, 1);
   assert.equal(p.drillSummary.hinge_centers.length, 6, 'on the tall kit’s own ladder');
@@ -109,11 +113,14 @@ test('F14 …and omitting a face changes NOTHING else — same holes, same boxes
   const faced = of('PANTRY', { drawers: 3, internal_drawers: [] });
   assert.equal(faced.panels.filter((x) => x.part === 'DRAWER-FRONT').length, 3);
   assert.deepEqual(holes(internal), holes(faced), 'not one hole differs');
+  // AMENDED BY T78 F15: the internal drawers carry inner fronts (DRAWER-FRONT,
+  // role drawer_front) in place of the overlay faces; the boxes are the same.
   assert.deepEqual(
-    parts(internal),
+    parts(internal).filter((x) => x !== 'DRAWER-FRONT'),
     parts(faced).filter((x) => x !== 'DRAWER-FRONT'),
     'the difference is three boards and nothing else',
   );
+  assert.equal(internal.panels.filter((x) => x.role === 'drawer_front').length, 3);
   assert.deepEqual(
     internal.hardware.map((h) => `${h.role}:${h.qty}`),
     faced.hardware.map((h) => `${h.role}:${h.qty}`),

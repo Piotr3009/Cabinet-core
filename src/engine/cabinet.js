@@ -1343,7 +1343,8 @@ export function notchedPlinth(w, h, at, span, cutFromTop) {
 // fixed face): both are seen from the room and both are front material.
 // T75 F14 · …and `false_front`, the hob unit's fixed dummy, the blank's sibling.
 // T75 F15 · …and `pelmet`, the strip under a run of wall units, front material.
-const FINISH_EXPOSED_ROLES = new Set(['front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
+// T78 F15 · `drawer_front` is the INNER front of a drawer behind doors (meta.inner).
+const FINISH_EXPOSED_ROLES = new Set(['front', 'drawer_front', 'infill', 'plinth', 'end_panel', 'mask', 'free_panel', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
 
 export function isFinishExposed(role) {
   return FINISH_EXPOSED_ROLES.has(role);
@@ -1373,7 +1374,7 @@ export function isFinishExposed(role) {
 // under the doors, in the plane the eye reads as the front of the run — so it
 // goes through the FRONT pipeline exactly as the plinth was given in turn 11.
 // FLAGGED FOR THE OWNER: this is the assumption, and it is one line to change.
-const FRONT_MATERIAL_ROLES = new Set(['front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
+const FRONT_MATERIAL_ROLES = new Set(['front', 'drawer_front', 'end_panel', 'infill', 'plinth', 'mask', 'corner_post', 'blind_blank', 'false_front', 'pelmet', 'back_panel']);
 
 export function wearsFrontMaterial(role) {
   return FRONT_MATERIAL_ROLES.has(role);
@@ -4936,7 +4937,30 @@ export function computeCabinet(params, profileOverride) {
     for (let i = 1; i <= numDrawers; i += 1) {
       // Turn 30 (CLAUDE.md F14/F20): an INTERNAL drawer is given no face. Its
       // box, its runners and its holes are above and are untouched.
-      if (cfg.internalDrawers.has(i)) continue;
+      if (cfg.internalDrawers.has(i)) {
+        // ─── T78 F15 · INTERNAL DRAWERS GET FRONTS ───────────────────────
+        // The owner: *"szuflady wewnetrzne powinny miec fronty."*  A drawer
+        // behind doors had a box and no face; it gets an INNER FRONT: a board
+        // of the front material, the box's width plus the profile's overhang,
+        // the box side's height, standing on the box front (the T34 shoe-box
+        // pattern: the box's own front fixing holds it), role `drawer_front`,
+        // `meta.inner`. It stands where the overlay front would (the box law
+        // already reserved front_t in front of the box), so the T33 F6 door
+        // setback is what it was, measured to this board's face.
+        const IF = DR.innerFront || {};
+        const over = Number(IF.overhangMm) || 0;
+        const w = szufSzer + over;
+        const h = boxSideH[i - 1];
+        const boxY = G + zoneOffsets[i - 1] + B.boxAboveRunner;
+        panels.push(panel({
+          id: `${unitNum}-IF${i}`, part: 'DRAWER-FRONT', role: 'drawer_front', w, h, thickness: frontT,
+          edgeCode: codes.all, edgeLen: metres(2 * w + 2 * h),
+          box: { x: boxLeftX - over / 2, y: boxY, z: boxZFront, w, h, d: frontT },
+          cnc: rectGeometry(w, h),
+          meta: { drawer: i, inner: true, frontType: cfg.frontType, fixing: 'box front screws (T34)' },
+        }));
+        continue;
+      }
       const zoneY = G + zoneOffsets[i - 1];
       const first = i === 1;
       // The bottom front is shortened to clear the base; the rest are the
@@ -5498,7 +5522,31 @@ export function computeCabinet(params, profileOverride) {
     // Turn 30 (CLAUDE.md F20): …and ONE of them can come off on its own, which
     // is the two-drawer front with a hidden drawer behind it.
     for (let i = 1; i <= budr.count; i += 1) {
-      if (cfg.internalDrawers.has(i)) continue;
+      if (cfg.internalDrawers.has(i)) {
+        // T78 F15 · the inner front of a drawer-unit row behind doors (see the
+        // wardrobe machine above): the box's width, the box side's height, on
+        // the box front, with the box's own front fixing screws.
+        const IF = P.wardrobe.drawers.innerFront || {};
+        const over = Number(IF.overhangMm) || 0;
+        const w = budr.boxW + over;
+        const h = budr.sideHs[i - 1];
+        const boxY = budr.runnerBottomY[i - 1] + B.boxAboveRunner;
+        const id = `${unitNum}-IF${i}`;
+        // The box's own front fixing (the overlay front's pattern, measured from the box side).
+        const sx = B.frontScrewFromSide + GB;
+        const geom = rectGeometry(w, h);
+        geom.holes = [sx, w - sx].map((x) => ({
+          layer: B.frontScrewLayer, kind: 'front_screw', x: roundTo(x, 4), y: roundTo(B.frontScrewFromBottom, 4), d: B.frontScrewDiameter,
+        }));
+        panels.push(panel({
+          id, part: 'DRAWER-FRONT', role: 'drawer_front', w, h, thickness: frontT,
+          edgeCode: codes.all, edgeLen: metres(2 * w + 2 * h),
+          box: { x: (W - budr.boxW) / 2 - over / 2, y: boxY, z: boxZFront, w, h, d: frontT },
+          cnc: geom,
+          meta: { drawer: i, inner: true, frontType: cfg.frontType, fixing: 'box front screws (T34)' },
+        }));
+        continue;
+      }
       // ─── TURN 30 (CLAUDE.md F20): THE FRONT ABOVE COVERS IT ───────────────
       // The two-drawer front with one hidden drawer behind it: this façade
       // takes in the run of internal drawers immediately below, and the gaps
@@ -10059,7 +10107,10 @@ export function computeCabinet(params, profileOverride) {
     // leaf A takes the wide family there): their word stands.
     if (lCorner && pnl.meta?.arm && pnl.meta?.hingeFamily) continue;
     const fam = hingeFamilyOf(pnl.id);
-    pnl.meta.hingeFamily = fam;
+    // The standard family leaves no mark on a leaf nobody chose for (the six
+    // goldens and T75's hold byte for byte); a choice, or the wide family, is written.
+    const chosen = params?.door_hinge_family?.[pnl.id] === 'standard' || params?.hinge_family === 'standard';
+    if (fam === 'wide' || chosen) pnl.meta.hingeFamily = fam;
     if (fam === 'wide') {
       const sp = resolveDoorHinge({
         frontThickness: pnl.thickness || frontT, innerDrawer, finish: cfg.hingeFinish, family: 'wide',

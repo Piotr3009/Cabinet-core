@@ -1,0 +1,137 @@
+{
+  "system": "legrabox_inner_front",
+  "units": "mm",
+  "status": "owner to confirm",
+  "source": {
+    "catalogue": "Blum Catalogue and technical manual 2024/2025, online at https://publications.blum.com/2024/catalogue/en/ (LEGRABOX pages p. 196 onward, CLAUDE.md T78 F15); the front piece and its fixing sets: en/204 and en/208",
+    "read": "T78 F15, 11.10.2026. From this container publications.blum.com, www.blum.com, d2.blum.com and every dealer host answer 403 to CONNECT at the egress proxy (recorded in the proxy's status, 22:26 UTC) and WebFetch cannot resolve them, so NO page was opened. Every value below was read from web-search result snippets of the named URL; `page` is the catalogue page the search index attaches to that URL. Nothing is taken from memory; a value nobody printed is null and the sentence beside it says so.",
+    "caveat": "three kinds of value: `printed` (as the snippet of the named URL shows it), null (not found, with a note), and `derived` (arithmetic on printed values, with `how`). Every one is owner to confirm against the catalogue page itself.",
+    "pages": {
+      "en/204": "LEGRABOX, standard cabinet, 'Inner drawer, M' (web code DQBPDA): the front fixing set ZI7.0MS0 (steel, colour) / ZI7.0MI0 (stainless steel); 'The set contains left and right front fixing pieces, external cover caps, a locking piece and screws'; latch set ZI7.0M07",
+      "en/208": "LEGRABOX, standard cabinet, 'Inner drawer, K' (web code DQGPIM, 'mid-height solid front piece'); the front piece ZV7.1043C01: 'For cutting to size', 'Suitable for cabinet width KB 1200 mm', internal cabinet width LW minus 126 mm (the snippet mixes the front-piece entry with fixing-set and chipboard-screw text); the 2022/2023 edition's en/208 prints the same part with the same 126",
+      "en/234": "glass design elements for LEGRABOX inner pull-out fronts (ZE7V488G and similar)",
+      "en/549": "AMBIA-LINE steel cross gallery for LEGRABOX high fronted pull-out and inner pull-out, height C and F, for cutting to size",
+      "en/596": "LEGRABOX front fixing bracket, fixing systems section: ZF7 series (ZF7N70T2, EXPANDO T for thin fronts), 'Front height FH > 380 mm: 1 pc'; the WOODEN front's bracket family, not the inner front's"
+    }
+  },
+  "what": {
+    "blum": "Blum's inner front for a LEGRABOX inner drawer / inner pull-out is an ALUMINIUM FRONT PIECE (ZV7.1043C01, 1043 long, cut to the cabinet width) clipped between two FRONT FIXING PIECES (the ZI7 set, left and right) that stand on the drawer sides; there is no wooden inner front in Blum's data.",
+    "engine": "CLAUDE.md T78 F15 wants a BOARD of the front material on the engine's wooden box ('a board of the front material, width = the box width plus the profile's inner-front overhang'). Blum prints no dimension for such a board; the engine's `profile.drawers.innerFront = { overhangMm: 0, heightMm: 'box side height' }` is T78's own proposal (owner to confirm) and is NOT a Blum number. What Blum does print, below, is the height of its front piece per box height and the width rule of its front piece against the cabinet."
+  },
+  "frontPiece": {
+    "withoutGroove": {
+      "article": "ZV7.1043C01",
+      "printed": "LEGRABOX front piece, for interior drawer and interior roll-out with cross gallery, CW=1200 mm, for cutting to size (mcfaddens.com, Blum's own description); Length: 1043mm Height: 98mm (interfitco.com); 98.35mm high (another dealer)",
+      "lengthMm": 1043,
+      "heightMm": {
+        "value": 98,
+        "printed": "Length: 1043mm Height: 98mm (interfitco.com); a second dealer prints 98.35",
+        "url": "https://www.interfitco.com/legrabox-cut-inner-front-1043mm-ZV7.1043C01/",
+        "note": "dealer listings, not Blum's page; the catalogue page en/208 was not readable for the height",
+        "status": "owner to confirm"
+      },
+      "material": "aluminium",
+      "colours": ["orion grey", "silk white", "carbon black", "stainless steel (anodised / brushed)"],
+      "suits": {
+        "printed": "Suits 'M' height or 'C' with cross gallery inner drawers (lincolnsentry.com.au); compatible with drawer heights M, K, and C (mcfaddens.com, a dealer's statement); interfitco.com lists the K bracket ZI7.0KS0 for the 98 mm cut-to-size inner front",
+        "heights": ["M", "K", "C with cross gallery"],
+        "status": "owner to confirm"
+      },
+      "catalogue2024": "en/208",
+      "url": "https://mcfaddens.com/p-137682-blum-zv71043c01-legrabox-front-section-without-groove-for-inner-drawer-1043mm-cut-to-size-silk-white-matte.aspx",
+      "status": "owner to confirm"
+    },
+    "withGroove": {
+      "article": "ZV7.1043MN1",
+      "printed": "LEGRABOX Cut to Size Inner Front - 48mm, ZV7.1043MN1 ... for constructing Legrabox internal drawers with design elements (interfitco.com); LEGRABOX FRONT ZV7.1043MN1 WITH GROOVE SUITS C HEIGHT (lincolnsentry.com.au)",
+      "lengthMm": 1043,
+      "heightMm": { "value": 48, "status": "owner to confirm" },
+      "suits": ["C with design element (glass or other, en/234)"],
+      "cutRule": { "value": null, "note": "no snippet prints the cut rule of the grooved piece; the ungrooved piece's LW minus 126 is NOT assumed for it" },
+      "url": "https://www.interfitco.com/legrabox-inner-front-48mm-ZV7.1043MN1/",
+      "status": "owner to confirm"
+    }
+  },
+  "widthRule": {
+    "frontPieceCutLength": {
+      "value": "LW - 126",
+      "printed": "cut the front X ^= Inside cabinet width minus 126 (5\") (Blum's installation sheet as quoted by dealers); Cutting: LW-126mm, LW = Internal Cabinet Width (lincolnsentry.com.au); cutting dimensions for inner drawer front = Internal cabinet width -126mm (interfitco.com); 2024/2025 catalogue en/208: internal cabinet width LW minus 126 mm",
+      "url": "https://publications.blum.com/2024/catalogue/en/208/",
+      "page": "en/208",
+      "status": "owner to confirm"
+    },
+    "maxCabinetWidthMm": {
+      "value": 1200,
+      "printed": "Suitable for cabinet width KB 1200 mm (en/208); CW=1200 mm (mcfaddens.com); a maximum inside cabinet width of 1168mm (46\") (US dealers)",
+      "note": "1200 is the cabinet width KB the catalogue prints; 1168 is the US dealers' inside width (46 in); both recorded, the catalogue's is the one to confirm",
+      "status": "owner to confirm"
+    },
+    "relativeToBoxWidth": {
+      "value": null,
+      "note": "Blum sizes the front piece against the CABINET (LW minus 126), with the ZI7 fixing pieces on the drawer sides taking up the rest; no source read prints the front piece's overhang over the LEGRABOX box itself. The LEGRABOX order specification prints inner width rules LW minus 38 and LW minus 35 (ldlonline.co.uk legrabox-pure.pdf) without saying which part each belongs to, so a derived overhang would be a guess and is not written."
+    },
+    "engineProposal": {
+      "overhangMm": 0,
+      "heightMm": "box side height",
+      "status": "T78 proposed, owner to confirm (CLAUDE.md T78 F15: profile.drawers.innerFront); not a Blum number"
+    }
+  },
+  "heightsPerBoxHeight": {
+    "M": {
+      "boxSideHeightMm": 90.5,
+      "frontPieceHeightMm": 98,
+      "innerDrawerOverallHeightMm": { "value": 98, "printed": "LEGRABOX Inner Front - M Height: drawer height 98mm, Height required in cabinet: 109mm (interfitco.com)", "url": "https://www.interfitco.com/legrabox-inner-front-m-height/", "status": "owner to confirm" },
+      "spaceRequirementInCabinetMm": 109,
+      "fixingSet": ["ZI7.0MS0", "ZI7.0MI0"],
+      "catalogue2024": "en/204",
+      "status": "owner to confirm"
+    },
+    "K": {
+      "boxSideHeightMm": 128.5,
+      "frontPieceHeightMm": { "value": 98, "printed": "interfitco.com lists ZI7.0KS0 'for use with LEGRABOX cut to size inner front 98mm'; the catalogue en/208 calls the K inner drawer's front a 'mid-height solid front piece'", "note": "a dealer's pairing; the catalogue page was not readable for K's own front height", "status": "owner to confirm" },
+      "innerDrawerOverallHeightMm": { "value": null, "note": "not printed in any snippet read" },
+      "spaceRequirementInCabinetMm": { "value": null, "note": "not printed in any snippet read" },
+      "fixingSet": ["ZI7.0KS0", "ZI7.0KI0"],
+      "catalogue2024": "en/208",
+      "status": "owner to confirm"
+    },
+    "C_crossGallery": {
+      "boxSideHeightMm": 177,
+      "frontPieceHeightMm": 98,
+      "innerDrawerOverallHeightMm": { "value": 185, "printed": "LEGRABOX Inner Front - C Height: Height: 185mm, height required in cabinet: 191mm (interfitco.com, with cross gallery)", "url": "https://www.interfitco.com/legrabox-inner-front-c-height/", "status": "owner to confirm" },
+      "spaceRequirementInCabinetMm": 191,
+      "fixingSet": ["ZI7.3CS0", "ZI7.3CI0"],
+      "crossGallery": "AMBIA-LINE steel cross gallery, cut to size (en/549)",
+      "status": "owner to confirm"
+    },
+    "C_designElement": {
+      "boxSideHeightMm": 177,
+      "frontPieceHeightMm": 48,
+      "fixingSet": ["ZI7.2CS0 (includes an adaptor piece for the low design element, not required with a high one)"],
+      "designElement": "glass or other design element, en/234 (ZE7V488G and similar)",
+      "innerDrawerOverallHeightMm": { "value": null, "note": "not printed in any snippet read" },
+      "status": "owner to confirm"
+    },
+    "N": { "value": null, "note": "no N inner front, fixing set (ZI7.0NS0 searched, not found) or height was found" },
+    "F": { "value": null, "note": "no F inner front data was found; the en/549 cross gallery names height F as suitable for the inner pull-out, which implies an F inner pull-out with a gallery front, but no front piece or fixing set for F was read" }
+  },
+  "fixing": {
+    "frontFixingPieces": {
+      "what": "the ZI7 set: left and right front fixing pieces standing on the drawer sides, external cover caps, a locking piece and screws (en/204); the aluminium front piece clips between them",
+      "sets": { "M": ["ZI7.0MS0", "ZI7.0MI0"], "K": ["ZI7.0KS0", "ZI7.0KI0"], "C_crossGallery": ["ZI7.3CS0", "ZI7.3CI0"], "C_designElement": ["ZI7.2CS0"], "N": null, "F": null },
+      "suffixes": "S0 steel in the box colour (silk white, orion grey, carbon black, terra black), I0 stainless steel (dealer listings); dealers also write ZI70MIA for an M stainless variant (imperialglassandtimber.com), not confirmed",
+      "status": "owner to confirm"
+    },
+    "drilling": {
+      "value": null,
+      "note": "no drilling pattern for the fixing pieces was read; by CLAUDE.md T78's law the inner front is a line and a body, never a hole, until the pattern is here with a page. For the ENGINE's wooden inner front CLAUDE.md F15 names the box's own front fixing (the T34 shoe-box pattern), which is the engine's, not Blum's."
+    },
+    "woodenFrontBrackets": {
+      "note": "the LEGRABOX wooden FRONT (the outer one) is fixed with the ZF7 front fixing brackets (EXPANDO T for thin fronts, ZF7N70T2, en/596; 'Front height FH > 380 mm: 1 pc' for the extra fixing); not the inner front's parts, recorded so nobody reaches for them by mistake"
+    }
+  },
+  "engineNotes": {
+    "whatF15Takes": "Blum's inner front for an M inner drawer is 98 high on a 90.5 side (overall 98, space 109); for a C inner pull-out with cross gallery 185 overall on a 177 side (space 191); the front piece is cut LW minus 126 against the cabinet; K's own numbers are null. The engine's wooden inner front keeps T78's proposal (overhang 0, height = box side height) until the owner confirms it; the BOM line for a LEGRABOX inner front is the front piece plus one ZI7 set per drawer.",
+    "notRead": "the catalogue's own print of the front piece height (en/208), K's and F's inner front data, the fixing pieces' drilling, the grooved piece's cut rule, any overhang of the front piece over the box"
+  }
+}

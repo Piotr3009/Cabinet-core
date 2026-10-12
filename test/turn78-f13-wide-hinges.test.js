@@ -82,7 +82,8 @@ test('F13 · the engine: the leaf carries its family and, for wide, its angle; t
   const wide = computeCabinet({ ...base, hinge_family: 'wide' }, P);
   const leavesStd = std.panels.filter((p) => p.part === 'FRONT');
   const leavesWide = wide.panels.filter((p) => p.part === 'FRONT');
-  assert.deepEqual(leavesStd.map((p) => [p.meta.hingeFamily, p.meta.openAngleDeg]), [['standard', undefined], ['standard', undefined]]);
+  // The standard family leaves no mark on a leaf nobody chose for: the six goldens hold.
+  assert.deepEqual(leavesStd.map((p) => [p.meta.hingeFamily, p.meta.openAngleDeg]), [[undefined, undefined], [undefined, undefined]]);
   assert.deepEqual(leavesWide.map((p) => [p.meta.hingeFamily, p.meta.openAngleDeg]), [['wide', 170], ['wide', 170]]);
   // The cups: same positions, same count, same layer.
   const cups = (r) => r.drills.filter((d) => d.kind === 'cup').map((d) => [d.panel, d.x, d.y, d.d]);
@@ -97,7 +98,7 @@ test('F13 · the engine: the leaf carries its family and, for wide, its angle; t
   assert.notEqual(hwWide[0].spec.article, hwStd[0].spec.article);
   // Per leaf: one wide, one standard, two lines.
   const mixed = computeCabinet({ ...base, door_hinge_family: { [leavesStd[0].id]: 'wide' } }, P);
-  assert.deepEqual(mixed.panels.filter((p) => p.part === 'FRONT').map((p) => p.meta.hingeFamily), ['wide', 'standard']);
+  assert.deepEqual(mixed.panels.filter((p) => p.part === 'FRONT').map((p) => p.meta.hingeFamily ?? 'standard'), ['wide', 'standard']);
   assert.equal(mixed.hardware.filter((h) => h.role === 'hinges').length, 2);
   // No rung: said in words, the leaf is cut, the standard family named.
   const thick = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: 'B1', doors: { count: 1 }, hinge_family: 'wide', front_t: 25 }, P);

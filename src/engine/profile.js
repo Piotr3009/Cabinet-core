@@ -1219,7 +1219,15 @@ export const DEFAULT_CABINET_PROFILE = {
       // change what the largest-that-fits is for a deep cabinet, which is why
       // every existing unit keeps today's runner — and there is a test that
       // says so rather than a sentence.
-      depthSteps: [250, 270, 300, 320, 350, 380, 390, 440, 490, 540, 590, 640, 690],
+      // ─── T78 F15 · INTERNAL DRAWERS GET FRONTS ───────────────────────────
+    // The owner, 11.10.2026: *"szuflady wewnetrzne powinny miec fronty."*  A
+    // board of the front material on the box front of every drawer behind
+    // doors: width = the box width plus this overhang (total), height = the
+    // box side height. Blum's own inner front is an aluminium piece
+    // (reference/hardware/blum-inner-front.json, owner to confirm); this is
+    // the wooden board the owner asked for. T78 proposed, owner to confirm.
+    innerFront: { overhangMm: 0, heightMm: 'box side height' },
+    depthSteps: [250, 270, 300, 320, 350, 380, 390, 440, 490, 540, 590, 640, 690],
       // usable depth = depth − G − setback − frontThickness − depthAllowance
       depthAllowance: 20,
       partitionClearance: 5,   // partition sits 5 mm above the top drawer front

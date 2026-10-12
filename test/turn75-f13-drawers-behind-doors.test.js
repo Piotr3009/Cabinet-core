@@ -105,7 +105,10 @@ test('F13 · its drawer rows are PANTRY\'s, hole for hole, at the same numbers',
 test('F13 · behind its door: no drawer front, the DP panel and fillers on the hinged side, the box set back', () => {
   const p = { ...defaultParamsFor('BUD_INT', P), unit_num: '01', doors: true };
   const r = computeCabinet(p, P);
-  assert.equal(r.panels.filter((x) => x.part === 'DRAWER-FRONT').length, 0, 'a drawer behind a door has no face');
+  // AMENDED BY T78 F15: a drawer behind a door has no OVERLAY face; it has an
+  // INNER front on its box (*"szuflady wewnetrzne powinny miec fronty"*).
+  assert.equal(r.panels.filter((x) => x.part === 'DRAWER-FRONT' && x.role === 'front').length, 0, 'a drawer behind a door has no overlay face');
+  assert.ok(r.panels.filter((x) => x.role === 'drawer_front' && x.meta.inner).length >= 1, 'and an inner front on its box');
   assert.equal(r.panels.filter((x) => x.role === 'front').length, 1, 'the one door, through the existing path');
   const hinge = r.panels.find((x) => x.role === 'front').meta.hinge;
   assert.ok(r.panels.some((x) => x.id === (hinge === 'L' ? 'DP-L' : 'DP-R')), 'no DP panel on the hinged side');

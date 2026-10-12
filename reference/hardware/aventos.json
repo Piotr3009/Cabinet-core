@@ -495,5 +495,1207 @@
     148.5
    ]
   }
- ]
+ ],
+ "t78_f18": {
+  "status": "owner to confirm",
+  "source": {
+   "catalogue": "Blum Catalogue and technical manual 2024/2025, online at https://publications.blum.com/2024/catalogue/en/ (Lift systems from p. 10, CLAUDE.md T78 F18)",
+   "read": "T78 F18, 11.10.2026, 22:43 to 23:15 UTC. From this container publications.blum.com, www.blum.com, e-services.blum.com, d2.blum.com, static.richelieu.com, xcart.wurthlac.com, www.cabinetparts.com and even example.com answer getaddrinfo ENOTFOUND in WebFetch, and curl through the egress proxy gets 403 to CONNECT (the proxy status at 22:43 UTC records connect_rejected for every outside host), so NO catalogue page and NO PDF was opened. Every value below was read from web-search result snippets of the named URL; `page` is the catalogue page the search index attaches to that URL. Nothing is taken from memory; a value nobody printed is null and the sentence beside it says so.",
+   "caveat": "three kinds of value: `printed` (as the snippet of the named URL shows it), null (not found, with a note) and `reading` (an inference across snippets, said so). The catalogue prints ranges with a dash; this file writes `to` or a two-number array in its place (CLAUDE.md law: no dash). Every number is owner to confirm against the catalogue page itself. The 2026 edition the index also returned prints `Catalogue 2027/2028` in its header; where a value exists only there it is marked `2026 edition`.",
+   "pages": {
+    "en/10": "Lift systems chapter start (CLAUDE.md); the index attaches the AVENTOS top overview (HF top, HS top, HL top, HK top with SERVO-DRIVE or TIP-ON) and the shared cover cap sets to it",
+    "en/22": "AVENTOS HF top, order information: cabinet height KH 480 to 1200, cabinet width KB up to 1800, web code DQDXLC, lift mechanism sets 22F2500 (LF 2700 to 13500) and 22F2800 (LF 10000 to 19300), lever arm sets 22F3200 (KH 480 to 610), 22F3500 (600 to 910), 22F3900 (840 to 1200), opening angle stop integrated and adjustable without tools, the taller front must go on top for asymmetrical applications",
+    "en/23": "AVENTOS HF top, planning: hinge planning tables for the CLIP top 120 degree hinge and the CLIP top centre hinge with their mounting plates; 3 hinges at KB 1200 and/or from FG 12 kg, 4 hinges at KB 1800 and/or from FG 20 kg; the CLIP top 120 degree special hinge for larger front overlays (FA always 2 mm larger)",
+    "en/25, en/26, en/27, en/30": "AVENTOS HF top, further planning pages the index returned (id/25 carries the hinge planning tables; the lift mechanism drilling table H / X / Y by KH 480 to 519 and 520 to 1200 is on one of these; the index did not say which)",
+    "en/34": "AVENTOS HS top, order information and planning: KH 350 to 800, KB up to 1800, internal cabinet depth LT min 264, web code DQDZPC, sets 22S2200 (KH 350 to 450 FG 2.00 to 11.50 kg; KH 450 to 540 FG 2.50 to 12.50 kg), 22S2500 (480 to 660, 2.75 to 15.25 kg), 22S2800 (650 to 800, 3.50 to 18.50 kg), FG +50 percent with a third lift mechanism, removable lever arm",
+    "en/40": "AVENTOS HL top: KH 300 to 580, KB up to 1800, LT min 264; SERVO-DRIVE sets 22L2210 (KH 300 to 389) and 22L2510 (390 to 580) with pre-mounted system screws; front fixing bracket 20S4200 (wooden fronts and wide alu frames) and 20S4200A (narrow alu frames); cover cap set 22.8000 and the SERVO-DRIVE set 23.8000",
+    "en/46": "AVENTOS HK top, standard and SERVO-DRIVE order page: a READING from the Italian (it/46) and Thai (th/46) editions, which print the standard sets 22K2300, 22K2500, 22K2700, 22K2900 on page 46 and the TIP-ON sets on page 50; the English page number itself was not returned by the index",
+    "en/50": "AVENTOS HK top TIP-ON: KH 205 to 600, KB up to 1800, max front weight FG 18 kg for two lift mechanisms, fixed position of the lift mechanism and front fixing brackets, integrated variable opening angle stop, fixing with pre-mounted system screws or with chipboard screws and positioning system (8 x chipboard screws diameter 4 x 35), LF +50 percent with a third lift mechanism (recommended for wide cabinets), the more powerful lift mechanism for overlapping areas, a trial application in a borderline area",
+    "en/54, en/56": "AVENTOS HK-S (returned for HK top queries; not this F)",
+    "en/62": "AVENTOS HK-XS (returned for HK top queries; not this F)",
+    "en/572": "opening support systems overview: SERVO-DRIVE for AVENTOS HF top, HS top, HL top and HK top; TIP-ON for AVENTOS HKi, HK top, HK-S and HK-XS",
+    "en/633, en/637, en/644, en/662, en/669, en/671, en/688, en/694": "Blum services pages (templates, assembly devices) the index attached to the planning queries; their text did not come through",
+    "en/636": "drilling head kits: a 35 x 57 mm right-hand fittings drill bit for AVENTOS HF (tooling, not a cup pattern)",
+    "en/673": "hinge drilling template 65.055A (65.059A with reducing bush) for AVENTOS HF top | AVENTOS HK-XS | CLIP top: door: boss drilling diameter 35 then the side holes; cabinet: pre-drill the mounting plate fixing positions, horizontal 20 mm or cruciform 37 mm; gauge template 65.7510.03 for measurement transfer",
+    "en/676": "drilling templates for the BLUMOTION and TIP-ON edge fixing (7.5 mm from the cabinet inner side to the centre drilling, diameter 10); AVENTOS HK top named among the assembly options; not a lift fixing",
+    "2022 en/22": "previous edition, AVENTOS HF: space requirement by opening angle stop: without stop Y = FHo x 0.44 + 38; 104 degree stop Y = FHo x 0.24 + 34; 83 degree stop: the Blum FAQ says no space requirement; telescopic arm bands 480 to 570 and 760 to 1040 (the 2024 edition calls it a lever arm)",
+    "2022 en/34": "previous edition, AVENTOS HS: space requirement with cornice or crown: gap F 3.0 / 2.0 / 1.5 gives X max 35 / 31 / 28 and Y max 101; dimensions depend on the tilt setting; wall application min gap 5",
+    "2022 zh-hant/46": "previous edition, AVENTOS HK top planning (Chinese edition): Y = FH x 0.29 + FD minus SOB; FD 16 / 19 / 22 / 26 / 28 gives X 68 / 57 / 47 / 33 / 27; minimum gap MF 2 mm; 261 mm with visible wall hanging bracket",
+    "2022 en/704": "the chapter front-weight table (density 680 kg per cubic metre named for the weight calculation; the table itself not read)",
+    "2026 edition": "https://publications.blum.com/2026/catalogue/en/ (header prints Catalogue 2027/2028): HF top minimum lever arm space LH 443 / 512 / 632 for 22F3200 / 22F3500 / 22F3900 at KH 520 to 1200; X max = FH x 0.9 + FD x 1.5 + 35; the same H / X / Y drilling table; HS top in four bands 350 to 450, 450 to 540, 480 to 660, 650 to 800; the 23.8000 SERVO-DRIVE cover cap set; HL top LT min 271 for recess and position (semi-integrated, concealed wall hanging brackets only)"
+   }
+  },
+  "generation_note": {
+   "printed": "the 2024/2025 catalogue orders the top generation as 22Kxxxx (HK top), 22Sxxxx (HS top), 22Lxxxx (HL top), 22Fxxxx (HF top); older catalogues and the Vietnam price lists use 20S2x00 for lift mechanisms and 20S3500 for the arm set",
+   "url": "https://publications.blum.com/2024/catalogue/en/34/",
+   "note": "the GLB `items` above (20K2B00.06, 20K2300T, 20F1228.42 and the rest) are the PREVIOUS generation as the configurator exported it; the 8-digit `articles` of power_units_hk_top are the configurator component ids, not order numbers. Nothing above this key moves (T19 test pins it)."
+  },
+  "shared": {
+   "powerFactor": {
+    "formula": "LF = cabinet height KH (mm) x front weight FG (kg) including double handle weight",
+    "printed": "Power factor LF, Cabinet height KH (mm) x front weight FG incl. double handle weight (kg)",
+    "url": "https://publications.blum.com/2024/catalogue/en/50/",
+    "page": "en/50",
+    "status": "owner to confirm"
+   },
+   "thirdMechanism": {
+    "printed": "The power factor LF can be increased by 50 % when a third lift mechanism is used. We recommend using a third lift mechanism for wide cabinets. (HK top, en/50); the front weight FG can be increased by 50 %, if you use a third lift mechanism (HS top, en/34)",
+    "pctIncrease": 50,
+    "url": "https://publications.blum.com/2024/catalogue/en/50/",
+    "page": "en/50, en/34",
+    "status": "owner to confirm"
+   },
+   "overlapRule": {
+    "printed": "We recommend the more powerful lift mechanism for overlapping areas! A trial application is recommended when you are in a borderline area",
+    "url": "https://publications.blum.com/2024/catalogue/en/50/",
+    "page": "en/50",
+    "engineConflict": "T19 F5.2 (test/turn19-lifts.test.js, an OVERLAP resolves to the SMALLER unit) says the opposite of the catalogue; the owner decides; this file changes nothing in `rules` and the engine keeps its pinned rule until he does",
+    "status": "owner to confirm"
+   },
+   "frontFixingBrackets": {
+    "woodAndWideAlu": {
+     "article": "20S4200",
+     "printed": "screw-on fixing for wooden fronts and wide aluminium frames; the kit includes 2 x Front fixing bracket; wooden fronts: chipboard screws (609.1x00), four per side; wide aluminium frames: countersunk self-tapping screws (660.0950)",
+     "url": "https://publications.blum.com/2024/catalogue/en/40/",
+     "page": "en/40 (also the HS top and HK top pages)"
+    },
+    "narrowAlu": {
+     "article": "20S4200A",
+     "printed": "the narrow aluminium frame version; 2 pieces per set for narrow alu frames of 19 to 22 mm (2026 Vietnam price list); for frame width 19 mm a side front overlay SFA of 11 to 18 mm is possible (2022 HK top)",
+     "url": "https://publications.blum.com/2024/catalogue/en/40/"
+    },
+    "expandoT": {
+     "article": "20S42T1",
+     "printed": "EXPANDO T variant on the Richelieu HK top planning sheet; thin fronts of just 8 mm or more with EXPANDO T (en/572 overview)",
+     "url": "https://static.richelieu.com/documents/docsGr/120/976/2/1209762/1479450.pdf",
+     "status": "owner to confirm"
+    },
+    "expando": {
+     "article": "20S42E1",
+     "printed": "AVENTOS HS HL HK front fixing bracket for wooden fronts, EXPANDO, sold individually, 2 required, 108 mm length (dealer)",
+     "url": "https://kitchenlibrary.au/collections/vendors/products/blum-aventos-overhead-stay-hs-hl-hk-lift-systems-front-fixing-bracket-for-wooden-fronts-expando-sold-individually-2-required-20s42e1",
+     "status": "owner to confirm"
+    },
+    "markingTemplate": {
+     "article": "ZML.2200",
+     "printed": "marking template for AVENTOS HS top | HL top | HK top front fixing bracket; set stop to desired front overlay, then position the front and mark the fixing positions with a light tap",
+     "url": "https://publications.blum.com/2024/catalogue/en/40/",
+     "status": "owner to confirm"
+    },
+    "holePositionsOnLeaf": {
+     "value": null,
+     "note": "no snippet prints the bracket hole positions on the leaf (they are marked through the bracket with ZML.2200 or the universal individual template); null until the owner reads the planning drawing"
+    },
+    "status": "owner to confirm"
+   },
+   "coverCapsTop": {
+    "standard": {
+     "article": "22.8000",
+     "printed": "cover cap set, nylon, silk white, light grey or dark grey: 1 x cover cap left, 1 x cover cap right, 2 x branding element stamped with the Blum logo; the linear cover caps are identical for AVENTOS HF top, HS top and HL top",
+     "url": "https://publications.blum.com/2024/catalogue/en/40/",
+     "page": "en/40",
+     "status": "owner to confirm"
+    },
+    "servoDrive": {
+     "article": "23.8000",
+     "printed": "left SERVO-DRIVE cover cap, right cover cap, 2 x branding element, 2 x SERVO-DRIVE switch, 6 x Blum distance bumper diameter 5 mm (2026 edition lists it as the separate SERVO-DRIVE set)",
+     "url": "https://publications.blum.com/2026/catalogue/en/",
+     "status": "owner to confirm"
+    },
+    "predecessor": {
+     "article": "21F8020",
+     "printed": "AVENTOS HF cover cap set, replaced by the 22.8000 set (dealer)",
+     "url": "https://www.lincolnsentry.com.au/aventos-hf-21f8020-cover-cap-set-light-grey-suits-servo-drive/p/7112382"
+    }
+   },
+   "templates": {
+    "hingeDrilling": {
+     "article": "65.055A",
+     "withReducingBush": "65.059A",
+     "printed": "drilling template for hinges, for AVENTOS HF top | AVENTOS HK-XS | CLIP top; door: boss drilling diameter 35 mm, then position the template and drill the side holes; cabinet: mark the hinge arm centre and pre-drill the fixing positions for horizontal (20 mm) or cruciform (37 mm) mounting plates",
+     "url": "https://publications.blum.com/2024/catalogue/en/673/",
+     "page": "en/673",
+     "status": "owner to confirm"
+    },
+    "gauge": {
+     "article": "65.7510.03",
+     "printed": "template for the transfer of measurements for hinge and mounting plate fixing positions",
+     "url": "https://publications.blum.com/2024/catalogue/en/673/"
+    },
+    "universalDrilling": {
+     "article": null,
+     "note": "Blum lists a universal drilling template for marking or pre-drilling fixing positions for lift, box and runner systems and a universal individual template; their article numbers did not come through in any snippet"
+    }
+   },
+   "openingSupport": {
+    "printed": "SERVO-DRIVE, the electronic motion support system for AVENTOS HF top, HS top, HL top and HK top. TIP-ON, the mechanical opening support system for AVENTOS HKi, HK top, HK-S and HK-XS",
+    "url": "https://publications.blum.com/2024/catalogue/en/572/",
+    "page": "en/572"
+   },
+   "fixedPositionLaw": {
+    "printed": "standardised fixing positions for lift mechanisms and front fixing brackets regardless of cabinet height (chapter introduction); Fixed position of the lift mechanism and front fixing brackets (HK top en/50, HL top en/40, HF top en/22)",
+    "url": "https://publications.blum.com/2024/catalogue/en/50/"
+   }
+  },
+  "systems": {
+   "hk": {
+    "label": "AVENTOS HK top, stay lift: one leaf pivots up on two lift mechanisms",
+    "catalogue2024": {
+     "order": "en/46 (reading, see source.pages)",
+     "tipOn": "en/50"
+    },
+    "cabinet": {
+     "heightKHMm": {
+      "value": [
+       205,
+       600
+      ],
+      "printed": "Cabinet height KH 205 to 600 mm (the catalogue prints a dash)",
+      "url": "https://publications.blum.com/2024/catalogue/en/50/",
+      "page": "en/50"
+     },
+     "widthKBMaxMm": {
+      "value": 1800,
+      "printed": "cabinet width KB up to 1800 mm",
+      "url": "https://publications.blum.com/2024/catalogue/en/50/",
+      "page": "en/50"
+     },
+     "internalDepthLTMinMm": {
+      "standard": {
+       "value": 187,
+       "printed": "AVENTOS HK top requires 187 mm internal cabinet depth (without SERVO-DRIVE) (blum.com programme page; Wurth 22K2300: interior cabinet depth minimum of 187; kitchenlibrary 22K2510: minimum internal cabinet depth 187mm; Blum order manual 2020)",
+       "url": "https://www.blum.com/in/en/products/liftsystems/aventos-hk-top/programme/"
+      },
+      "servoDrive": {
+       "value": 235,
+       "printed": "235 mm internal cabinet depth (with SERVO-DRIVE)",
+       "url": "https://www.blum.com/in/en/products/liftsystems/aventos-hk-top/programme/"
+      },
+      "visibleWallHangingBracket": {
+       "value": 261,
+       "printed": "261 mm with visible wall hanging bracket (2022 HK top planning; the Richelieu HK top sheet; eboss.co.nz)",
+       "url": "https://publications.blum.com/2022/catalogue/zh-hant/46/"
+      },
+      "wurth22K2700": {
+       "value": 175.5,
+       "printed": "minimum internal cabinet depth of 175.5 mm (Wurth spec sheet for 22K2700 only; every other source says 187)",
+       "url": "https://xcart.wurthlac.com/skin/common_files/files/specs/B22K2700_SpecSheet.pdf"
+      },
+      "existingKeyNote": "rules.hk_limits.inner_depth_min_mm above stays 261 (T19 test pins the words at least 261 mm inner depth); it is the visible-wall-hanging-bracket case of the three; the owner decides whether the engine should know the 187 / 235 cases",
+      "status": "owner to confirm"
+     }
+    },
+    "frontWeightMaxKg": {
+     "value": 18,
+     "printed": "Max. front weight FG 18 kg for two lift mechanisms!",
+     "url": "https://publications.blum.com/2024/catalogue/en/50/",
+     "page": "en/50",
+     "status": "owner to confirm"
+    },
+    "liftMechanismSets": [
+     {
+      "set": "22K2300",
+      "preMountedSystemScrews": "22K2310",
+      "tipOn": "22K2300T",
+      "powerFactorLF": [
+       420,
+       1610
+      ],
+      "existingUnit": 2300,
+      "printed": "AVENTOS HK top stay lift, lift mechanism (set), PF=420-1610 (Wurth 22K2310, two lift mechanisms per set; Lincoln Sentry TOP22K2300T)",
+      "url": "https://wurthlac.com/product/366773/Aventos-HK-Top-Stay-Lift-Mechanism-Power-Factor-420-1610-for-SERVO-DRIVE-Zinc-Plated"
+     },
+     {
+      "set": "22K2500",
+      "preMountedSystemScrews": "22K2510",
+      "tipOn": "22K2500T",
+      "powerFactorLF": [
+       930,
+       2800
+      ],
+      "existingUnit": 2500,
+      "printed": "Power factor: 930-2800 (with 2 pieces) for SERVO-DRIVE (Wurth); sfs.ch: AVENTOS HK top power reservoir 22K2500 LF 930-2800",
+      "url": "https://www.sfs.ch/CH/en/dl/p/707474"
+     },
+     {
+      "set": "22K2700",
+      "preMountedSystemScrews": "22K2710",
+      "tipOn": "22K2700T",
+      "powerFactorLF": [
+       1730,
+       5200
+      ],
+      "existingUnit": 2700,
+      "printed": "AVENTOS HK top lift mechanism with a power factor of 1730-5200, sold as a set of two (Wurth spec sheet 22K2700)",
+      "url": "https://xcart.wurthlac.com/skin/common_files/files/specs/B22K2700_SpecSheet.pdf"
+     },
+     {
+      "set": "22K2900",
+      "preMountedSystemScrews": "22K2910",
+      "tipOn": "22K2900T",
+      "powerFactorLF": [
+       3200,
+       9000
+      ],
+      "existingUnit": 2900,
+      "printed": "3200-9000 75 to 107 degrees 22K2900 (Blum technical data sheet AU); Lincoln Sentry 22K2900T power 3200-9000; Wurth 22K2910 PF=3200-9000 with 2 pieces, system screws",
+      "url": "https://d2.blum.com/services/BEC003/cme148001_td_dok_bau_$sen-au_$aof_$v1.pdf"
+     }
+    ],
+    "liftMechanismSetsNote": {
+     "verification": "the four ranges of power_units_hk_top above (420 to 1610, 930 to 2800, 1730 to 5200, 3200 to 9000) are the 2024 catalogue HK top sets 22K2300 / 22K2500 / 22K2700 / 22K2900 as the Italian edition prints them on it/46 and as the dealers quote them; the catalogue page itself (en/46 reading) was not opened. Dealer conflicts seen and not followed: Woodworker Express prints 150-450 for 22K2700 and 80-240 for 22K2500 (imperial power factors of another article); Wurth item B22K2900 and cabinetparts BA22K2900T print 270-781 beside 3200-9000.",
+     "url": "https://publications.blum.com/2024/catalogue/it/46/",
+     "page": "it/46 (en/46 reading)",
+     "status": "owner to confirm"
+    },
+    "openingAngleDeg": {
+     "value": [
+      75,
+      107
+     ],
+     "printed": "3200-9000 75 degrees to 107 degrees 22K2900 (Blum TD AU); 107 degree opening angle, infinitely adjustable (cabinetparts 22K2300); Integrated variable opening angle stop (en/50); the Benelux catalogue lists 107 degrees for 22K2310, 22K2510, 22K2710 and 22K2910",
+     "url": "https://d2.blum.com/services/BEC003/cme148001_td_dok_bau_$sen-au_$aof_$v1.pdf",
+     "status": "owner to confirm"
+    },
+    "fixingLiftMechanism": {
+     "rule": {
+      "printed": "Fixed position of the lift mechanism and front fixing brackets (en/50); Die Beschlagsposition ist bei AVENTOS HK top fuer jede Anwendung und Korpushoehe identisch (blum.com CH/DE)",
+      "url": "https://publications.blum.com/2024/catalogue/en/50/"
+     },
+     "preMountedSystemScrews": {
+      "printed": "the variant with pre-fitted screws mounts on the loose cabinet side using two symmetric system screws and two dowel pins; it needs vier Bohrungen im 32-mm-Raster (four holes on the 32 mm grid)",
+      "url": "https://www.blum.com/ch/de/produkte/klappensysteme/aventos-hk-top/verarbeitung-montage/",
+      "gridMm": 32,
+      "holePositions": {
+       "value": null,
+       "note": "the four holes on the 32 mm grid are not located in any snippet (distance from the cabinet front edge and from the top panel both unread); null"
+      }
+     },
+     "chipboardScrews": {
+      "printed": "the lift mechanism with position determination sits on the top panel and the front edge, so it can be fitted precisely without pre-drilling (blum.com); when pre-drilled with the positioning template: drilling depth 11.5 mm; cabinet height max. 600 mm (Richelieu HK top planning sheet); 8 x Chipboard screws diameter 4 x 35 mm (en/50)",
+      "url": "https://static.richelieu.com/documents/docsGr/120/976/2/1209762/1479450.pdf",
+      "drillingDepthMm": 11.5,
+      "screws": "diameter 4 x 35, 8 per set",
+      "holePositions": {
+       "value": null,
+       "note": "the positioning system locates the mechanism against the top panel and the front edge, so Blum prints no positions for it; the pre-drill positions of the template were not read"
+      }
+     },
+     "unlabelledNumbersSeen": {
+      "values": [
+       37,
+       32,
+       64,
+       36,
+       "diameter 5",
+       235,
+       187,
+       91,
+       30
+      ],
+      "printed": "numbers on the Richelieu-hosted Blum HK top planning drawings whose reference points the extraction did not label (187 and 235 are the LT minimums; 32 is the grid; the rest are unassigned)",
+      "url": "https://static.richelieu.com/documents/docsGr/120/976/2/1209762/1479448.pdf",
+      "note": "listed so the owner can match them on the drawing; the engine drills none of them (CLAUDE.md T78 law: a bought mechanism is a line and a body, never a hole)"
+     },
+     "status": "owner to confirm"
+    },
+    "frontFixingBracket": {
+     "see": "shared.frontFixingBrackets",
+     "articles": [
+      "20S4200",
+      "20S4200A",
+      "20S42T1",
+      "20S42E1"
+     ],
+     "screws": {
+      "wood": "4 x chipboard screws 609.1x00 per side (Richelieu HK top sheet)",
+      "wideAlu": "4 x countersunk self-tapping screws 660.0950 per side",
+      "url": "https://static.richelieu.com/documents/docsGr/120/976/2/1209762/1479450.pdf"
+     },
+     "holePositionsOnLeaf": {
+      "value": null,
+      "note": "not printed in any snippet; marked through the bracket with ZML.2200"
+     },
+     "status": "owner to confirm"
+    },
+    "coverCaps": {
+     "standard": {
+      "article": "22K8000",
+      "printed": "AVENTOS HK top stay lift cover cap set, left and right pair, nylon, silk white / light grey / dark grey; Richelieu: 22K8000 For Standard System (one publications snippet calls 22K8000 a set for SERVO-DRIVE with two branding elements; the dealers and Richelieu say standard; conflict recorded)",
+      "url": "https://www.richelieu.com/ca/en/category/hinges-slides-and-opening-systems/opening-systems/opening-system-accessories/covers-for-opening-system/aventos-hk-top-cover/1209764",
+      "status": "owner to confirm"
+     },
+     "servoDrive": {
+      "article": "23K8000",
+      "printed": "(1) SERVO-DRIVE left cover plate, (1) SERVO-DRIVE right cover plate, (2) non-handed cover cap, (2) SERVO-DRIVE switches, (6) diameter 5 Blum distance bumper (cabinetparts; Richelieu: 23K8000 For SERVO-DRIVE system)",
+      "url": "https://www.cabinetparts.com/p/blum-hinges-lid-and-flap-stays-BA23K8000NAHG-p131925",
+      "status": "owner to confirm"
+     }
+    },
+    "planning": {
+     "spaceRequirementY": {
+      "formula": "Y = FH x 0.29 + FD minus SOB",
+      "variables": "FH front height, FD front thickness, SOB top panel thickness",
+      "printed": "Y = FH x 0.29 + FD - SOB (Richelieu HK top planning sheet; 2022 HK top planning, Chinese edition)",
+      "url": "https://static.richelieu.com/documents/docsGr/120/976/2/1209762/1479450.pdf",
+      "reading": "the height the open front stands above the cabinet top at full opening (the collision clearance above); which edge Y is measured from was not labelled in the snippet",
+      "status": "owner to confirm"
+     },
+     "spaceRequirementXByFrontThickness": {
+      "table": {
+       "16": 68,
+       "19": 57,
+       "22": 47,
+       "26": 33,
+       "28": 27
+      },
+      "printed": "FD (mm) 16 19 22 26 28 X (mm) 68 57 47 33 27",
+      "url": "https://publications.blum.com/2022/catalogue/zh-hant/46/",
+      "page": "2022 zh-hant/46",
+      "reading": "X of the space requirement drawing by front thickness FD; what X measures was not labelled",
+      "status": "owner to confirm"
+     },
+     "minimumGapMFMm": {
+      "value": 2,
+      "printed": "Minimum gap MF 2 mm",
+      "url": "https://publications.blum.com/2022/catalogue/zh-hant/46/"
+     },
+     "wallApplicationMinGapMm": {
+      "value": 5,
+      "printed": "wall application requires a 5 mm minimum gap",
+      "url": "https://static.richelieu.com/documents/docsGr/120/976/2/1209762/1479450.pdf"
+     },
+     "upperFrontOverlayFAoMaxMm": {
+      "value": 25.4,
+      "printed": "the upper front overlay (FAo) is no more than 25.4 mm (Richelieu, a North American sheet; 25.4 is one inch)",
+      "url": "https://static.richelieu.com/documents/docsGr/120/976/2/1209762/1479450.pdf",
+      "status": "owner to confirm"
+     }
+    },
+    "animation": {
+     "model": "the leaf swings up about a horizontal axis near its top edge; the true pivot is the lift arm, not the leaf edge, so the top-edge rotation the 3D uses is an approximation the owner knows about (CLAUDE.md T78 F18: rotate about the top edge to the catalogue opening angle)",
+     "openDeg": {
+      "full": 107,
+      "stopMin": 75,
+      "printed": "75 to 107 degrees, variable stop",
+      "url": "https://d2.blum.com/services/BEC003/cme148001_td_dok_bau_$sen-au_$aof_$v1.pdf",
+      "status": "from the catalogue drawing (snippet), owner to confirm"
+     },
+     "riseAboveTopMm": {
+      "formula": "FH x 0.29 + FD minus SOB",
+      "status": "from the catalogue drawing (snippet), owner to confirm"
+     },
+     "keyframes": [
+      {
+       "t": 0,
+       "rotateDeg": 0
+      },
+      {
+       "t": 1,
+       "rotateDeg": 107
+      }
+     ],
+     "keyframesNote": "two keyframes, rotation only; the stop between 75 and 107 is the client choice, default the maximum"
+    }
+   },
+   "hs": {
+    "label": "AVENTOS HS top, up and over: one leaf swings up over the cabinet on parallel lever arms",
+    "catalogue2024": {
+     "order": "en/34",
+     "webCode": "DQDZPC"
+    },
+    "cabinet": {
+     "heightKHMm": {
+      "value": [
+       350,
+       800
+      ],
+      "printed": "Cabinet height KH 350 to 800 mm",
+      "url": "https://publications.blum.com/2024/catalogue/en/34/",
+      "page": "en/34"
+     },
+     "widthKBMaxMm": {
+      "value": 1800,
+      "printed": "cabinet width KB up to 1800 mm",
+      "url": "https://publications.blum.com/2024/catalogue/en/34/"
+     },
+     "internalDepthLTMinMm": {
+      "value": 264,
+      "printed": "internal cabinet depth LT min. 264 mm (HS top page; Blum TD me55579283)",
+      "url": "https://publications.blum.com/2024/catalogue/en/34/"
+     }
+    },
+    "selection": {
+     "printed": "choose the lift mechanism from cabinet height KH and front weight FG including the handle weight counted twice; the example uses KH 600 and FG 10 kg; the front weight FG can be increased by 50 % if you use a third lift mechanism, recommended for wide cabinets to stop the front sagging when open",
+     "url": "https://publications.blum.com/2024/catalogue/en/34/",
+     "status": "owner to confirm"
+    },
+    "liftMechanismSets": [
+     {
+      "set": "22S2200",
+      "bands": [
+       {
+        "cabinetHeightKHMm": [
+         350,
+         450
+        ],
+        "frontWeightFGKg": [
+         2,
+         11.5
+        ]
+       },
+       {
+        "cabinetHeightKHMm": [
+         450,
+         540
+        ],
+        "frontWeightFGKg": [
+         2.5,
+         12.5
+        ]
+       }
+      ],
+      "printed": "350-450 450-540 2.00-11.50 2.50-12.50 22S2200 (en/34; groheshop)",
+      "url": "https://publications.blum.com/2024/catalogue/en/34/",
+      "conflict": "the Wurth spec sheet B22S2200 prints CH=350-540 with FG 2 to 10.25 kg at 350 and 3 to 12.5 kg at 540; the catalogue reading is recorded",
+      "status": "owner to confirm"
+     },
+     {
+      "set": "22S2500",
+      "preMountedSystemScrews": "22S2510",
+      "bands": [
+       {
+        "cabinetHeightKHMm": [
+         480,
+         660
+        ],
+        "frontWeightFGKg": [
+         2.75,
+         15.25
+        ]
+       }
+      ],
+      "printed": "480-660 2.75-15.25 22S2500 (en/34; Blum TD via Lincoln Sentry: 22S2510 same ranges with pre-mounted screws)",
+      "url": "https://publications.blum.com/2024/catalogue/en/34/",
+      "status": "owner to confirm"
+     },
+     {
+      "set": "22S2800",
+      "preMountedSystemScrews": "22S2810",
+      "bands": [
+       {
+        "cabinetHeightKHMm": [
+         650,
+         800
+        ],
+        "frontWeightFGKg": [
+         3.5,
+         18.5
+        ]
+       }
+      ],
+      "printed": "650-800 3.50-18.50 22S2800 (en/34); sfs.ch: carcase height 650 to 800, front weight 3.5 to 18.5 kg, for use with or without SERVO-DRIVE, without cover caps",
+      "url": "https://publications.blum.com/2024/catalogue/en/34/",
+      "status": "owner to confirm"
+     }
+    ],
+    "liftMechanismSetContents": {
+     "printed": "each set: two symmetrical lift mechanisms with a positioning system and chipboard screws (2026 edition)",
+     "url": "https://publications.blum.com/2026/catalogue/en/"
+    },
+    "leverArm": {
+     "set": "22S3500",
+     "cabinetHeightKHMm": [
+      350,
+      800
+     ],
+     "printed": "lever arm set 22S3500: two symmetrical lever arms and a cover cap set, NI or ECS steel (2026 edition); zeg-holz: Hebelpaket KH=350-800 mm, symmetrisch, fuer SERVO-DRIVE geeignet; the HS top needs no cross stabiliser even at large cabinet widths",
+     "url": "https://publications.blum.com/2026/catalogue/en/",
+     "predecessor": "20S3500.06 (standard arm set HS 350 to 800, Lincoln Sentry)",
+     "status": "owner to confirm"
+    },
+    "frontFixingBracket": {
+     "see": "shared.frontFixingBrackets",
+     "articles": [
+      "20S4200",
+      "20S4200A"
+     ],
+     "markingTemplate": "ZML.2200",
+     "url": "https://publications.blum.com/2024/catalogue/en/34/"
+    },
+    "coverCaps": {
+     "see": "shared.coverCapsTop",
+     "standard": "22.8000",
+     "servoDrive": "23.8000"
+    },
+    "fixingLiftMechanism": {
+     "rule": "fixed position regardless of cabinet height (chapter introduction)",
+     "holePositions": {
+      "value": null,
+      "note": "no snippet prints the HS top lift mechanism hole positions; Blum lists a video on assembling it with chipboard screws and the integrated positioning system, and the universal marking and drilling templates; null"
+     },
+     "status": "owner to confirm"
+    },
+    "planning": {
+     "spaceRequirementCornice2022": {
+      "table": [
+       {
+        "gapFMm": 3,
+        "xMaxMm": 35,
+        "yMaxMm": 101
+       },
+       {
+        "gapFMm": 2,
+        "xMaxMm": 31,
+        "yMaxMm": 101
+       },
+       {
+        "gapFMm": 1.5,
+        "xMaxMm": 28,
+        "yMaxMm": 101
+       }
+      ],
+      "printed": "Gap F (mm) X max. (mm) Y max. (mm) 3.0 35 101 2.0 31 101 1.5 28 101; the dimensions depend on the tilt setting",
+      "url": "https://publications.blum.com/2022/catalogue/en/34/",
+      "page": "2022 en/34",
+      "reading": "the space the open front needs above and in front of a cornice or crown; the 2024 page carries a Space requirement section whose numbers did not come through",
+      "status": "owner to confirm"
+     },
+     "carpenterManualYMax": {
+      "value": 117,
+      "printed": "a table of X max and Y max values by gap width, with Y max at 117 mm for a 3 mm gap, for one cabinet height band (Blum Vietnam carpenter manual); the band and the tilt setting were not readable",
+      "url": "https://www.blum.com/corporate/media/dokumente/bvn/carpenter-manual-book25.pdf",
+      "status": "owner to confirm"
+     },
+     "formula2026": {
+      "value": null,
+      "note": "the 2026 edition snippet shows Y max = FH x 0.29 minus 32 + FD and A = FH x 0.26 + 28 minus FD under the HS top cornice heading, but the same two formulas are attributed to AVENTOS HKi by another snippet; not recorded as HS top numbers"
+     },
+     "wallApplicationMinGapMm": {
+      "value": 5,
+      "printed": "a minimum 5 mm gap for wall applications (Blum TD me55579283; 2022 en/34)",
+      "url": "https://d2.blum.com/services/BEC003/me55579283_td_dok_bau_$sen_$aof_$v4.pdf"
+     }
+    },
+    "openingAngleDeg": {
+     "value": null,
+     "note": "an up-and-over path; no opening angle is printed for HS top in any snippet (the lift is set by the tilt setting, not an angle stop)"
+    },
+    "animation": {
+     "model": "the leaf translates up and rotates over the cabinet top on parallel arms, ending roughly parallel to the top panel above the cabinet (CLAUDE.md T78 F18: translate and rotate per the catalogue path, two keyframes)",
+     "keyframes": {
+      "value": null,
+      "note": "no catalogue drawing numbers for the mid and full positions came through any snippet (the planning page Space requirement section is cut off in every extraction); the 2022 cornice table above (X max 35 / 31 / 28, Y max 101) is the only printed envelope and is owner to confirm; the 3D uses a placeholder path until the owner reads the drawing"
+     }
+    }
+   },
+   "hl": {
+    "label": "AVENTOS HL top, lift up: one leaf lifts parallel to the cabinet",
+    "catalogue2024": {
+     "order": "en/40"
+    },
+    "cabinet": {
+     "heightKHMm": {
+      "value": [
+       300,
+       580
+      ],
+      "printed": "Cabinet height KH 300 to 580 mm",
+      "url": "https://publications.blum.com/2024/catalogue/en/40/",
+      "page": "en/40"
+     },
+     "widthKBMaxMm": {
+      "value": 1800,
+      "printed": "Cabinet width KB up to 1800 mm (the US blum.com page prints 1828)",
+      "url": "https://publications.blum.com/2024/catalogue/en/40/"
+     },
+     "internalDepthLTMinMm": {
+      "value": 264,
+      "printed": "internal cabinet depth LT min. 264 mm (en/40; blum.com FAQ: A minimum 264 mm internal depth is required inside the cabinet to install the AVENTOS HL top)",
+      "url": "https://publications.blum.com/2024/catalogue/en/40/"
+     },
+     "recessPosition2026": {
+      "value": 271,
+      "printed": "Internal cabinet depth LT min 271 mm for a recess-and-position entry, semi-integrated, concealed wall hanging brackets only (2026 edition; the snippet does not say for certain this line is HL top)",
+      "url": "https://publications.blum.com/2026/catalogue/en/",
+      "status": "owner to confirm"
+     }
+    },
+    "liftMechanismSets": [
+     {
+      "set": "22L2200",
+      "preMountedSystemScrews": "22L2210",
+      "cabinetHeightKHMm": [
+       300,
+       389
+      ],
+      "frontWeightFGKg": [
+       1.5,
+       9
+      ],
+      "printed": "sfs.ch 22L2200: carcase height 300 to 389 mm, front weight 1.5 kg to 9 kg; en/40: 22L2210 (300-389) with pre-mounted system screws; cabinetparts BA22L2200: 11-3/4 to 15-1/4 inch, 3.3 to 22 lb",
+      "url": "https://www.sfs.ch/CH/en/dl/p/2032279",
+      "status": "owner to confirm"
+     },
+     {
+      "set": "22L2500",
+      "preMountedSystemScrews": "22L2510",
+      "cabinetHeightKHMm": [
+       390,
+       580
+      ],
+      "frontWeightFGKg": [
+       1.75,
+       10
+      ],
+      "printed": "sfs.ch 22L2510: carcase height 390 to 580 mm, front weight 1.75 kg to 10 kg; en/40: 22L2510 (390-580); cabinetparts BA22L2500: 15-1/4 to 22-3/4 inch, 4.4 to 30.9 lb",
+      "url": "https://www.sfs.ch/CH/en/dl/p/2032276",
+      "status": "owner to confirm"
+     }
+    ],
+    "liftMechanismCountNote": {
+     "printed": "the Blum TD-145/2 (07.24) lists 22L2201 and 22L2211 for 300 to 389 and 22L2501 and 22L2511 for 390 to 580; no 22L2800 exists in the top generation (the blum.com page Just 5 lift mechanisms and 4 lever arms describes the previous AVENTOS HL)",
+     "url": "https://d2.blum.com/services/BEC003/me55579287_td_dok_bau_$sde_$aof_$v2.pdf",
+     "status": "owner to confirm"
+    },
+    "frontWeightBandsTD145": {
+     "bands": [
+      {
+       "cabinetHeightKHMm": [
+        300,
+        339
+       ],
+       "frontWeightFGKg": [
+        1.5,
+        9
+       ]
+      },
+      {
+       "cabinetHeightKHMm": [
+        340,
+        389
+       ],
+       "frontWeightFGKg": [
+        1.75,
+        10
+       ]
+      },
+      {
+       "cabinetHeightKHMm": [
+        390,
+        540
+       ],
+       "frontWeightFGKg": [
+        2,
+        12.25
+       ]
+      },
+      {
+       "cabinetHeightKHMm": [
+        480,
+        580
+       ],
+       "frontWeightFGKg": [
+        2.5,
+        14
+       ]
+      }
+     ],
+     "printed": "Kraftspeicher for 300-339 mm (1.50-9.00 kg), 340-389 mm (1.75-10.00 kg), 390-540 mm (2.00-12.25 kg) and 480-580 mm (2.50-14.00 kg) (Blum TD-145/2, 07.24, German)",
+     "url": "https://d2.blum.com/services/BEC003/me55579287_td_dok_bau_$sde_$aof_$v2.pdf",
+     "reading": "the four bands match the four lever arm sets below; the pairing of lift set to band is a reading (the snippet is garbled); sfs.ch prints 1.75 to 10 for the whole 390 to 580 of 22L2510 where the TD prints 2.00 to 12.25 and 2.50 to 14.00; conflict recorded",
+     "status": "owner to confirm"
+    },
+    "leverArms": [
+     {
+      "set": "22L3200",
+      "cabinetHeightKHMm": [
+       300,
+       340
+      ],
+      "printed": "AVENTOS HL top lever arm set, cabinet height 300-340 mm (Lincoln Sentry; Woodworker Express: 300-339)",
+      "url": "https://lincolnsentry.com.au/aventos-hl-top-22l3200-lever-arm-set-cabinet-height-300-340mm/p/7115600"
+     },
+     {
+      "set": "22L3500",
+      "cabinetHeightKHMm": [
+       340,
+       390
+      ],
+      "printed": "AVENTOS HL TOP 22L3500 LEVER ARM SET CABINET HEIGHT 340-390MM; replaces 21L3500.01 (350-399)",
+      "url": "https://lincolnsentry.com.au/aventos-hl-top-22l3500-lever-arm-set-cabinet-height-340-390mm/p/7115601"
+     },
+     {
+      "set": "22L3800",
+      "cabinetHeightKHMm": [
+       390,
+       540
+      ],
+      "frontWeightMaxKg": 12.25,
+      "printed": "symmetrical lever arm set, cabinet height 390-540 mm (kitchenlibrary); kochfreiburg: KH=390-540 mm, symmetrisch, vernickelt, Frontgewicht maximum 12.25 kg",
+      "url": "https://portal.kochfreiburg.de/p/BL4800028"
+     },
+     {
+      "set": "22L3900",
+      "cabinetHeightKHMm": [
+       480,
+       580
+      ],
+      "printed": "AVENTOS HL TOP 22L3900 LEVER ARM SET CABINET HEIGHT 480-580MM; Wurth spec sheet B22L3900: non-handed, 480-580",
+      "url": "https://lincolnsentry.com.au/aventos-hl-top-22l3900-lever-arm-set-cabinet-height-480-580mm/p/7115603"
+     }
+    ],
+    "leverArmSetContents": {
+     "printed": "2 x Symmetrical lever arm, 2 x Cross stabiliser cover cap, 1 x Adapter for cross stabiliser rod, 1 x Length adapter for cross stabiliser (Lincoln Sentry); the cross stabiliser rod is sold separately; fixing to the lift mechanism and to the flap is clip-type, nickel-plated steel (kitchenlibrary)",
+     "url": "https://lincolnsentry.com.au/aventos-hl-top-22l3900-lever-arm-set-cabinet-height-480-580mm/p/7115603",
+     "status": "owner to confirm"
+    },
+    "easyOrderKit": {
+     "printed": "C HLT B 2200 3200 SW: AVENTOS HL top easy order kit (22L2200 with 22L3200), silk white (UK dealer)",
+     "url": "https://ldlonline.co.uk/c-hlt-b-2200-3200-sw-aventos-hl-top-easy-order-kit-silk-white"
+    },
+    "frontFixingBracket": {
+     "see": "shared.frontFixingBrackets",
+     "articles": [
+      "20S4200",
+      "20S4200A"
+     ],
+     "printed": "For HL top, the front fixing bracket set comes as 20S4200 for wooden fronts and wide alu frames, or 20S4200A for narrow alu frames",
+     "url": "https://publications.blum.com/2024/catalogue/en/40/",
+     "markingTemplate": "ZML.2200"
+    },
+    "coverCaps": {
+     "see": "shared.coverCapsTop",
+     "standard": "22.8000",
+     "servoDrive": "23.8000",
+     "url": "https://publications.blum.com/2024/catalogue/en/40/"
+    },
+    "fixingLiftMechanism": {
+     "rule": "Fixed position of the lift mechanism and front fixing brackets (en/40); the lift mechanism and front fixing bracket have a defined fixing position that does not change with cabinet height (blum.com)",
+     "holePositions": {
+      "value": null,
+      "note": "no snippet prints the HL top lift mechanism hole positions or screw size; null"
+     },
+     "status": "owner to confirm"
+    },
+    "planning": {
+     "spaceRequirementAboveMm": {
+      "value": null,
+      "note": "Blum states the requirement in words only: It requires space above as it opens the doors parallel to the cabinet (blum.com HL top page); no millimetre value, formula or lever arm space LH came through any snippet for HL top"
+     },
+     "frontGapsByKH": {
+      "value": null,
+      "note": "a 2024/2025 table of top gap Fo, middle gap Fm and bottom front overlay FAu keyed to KH 480 to 519 and 520 to 1200 was returned for the HL top query, but those bands are HF top bands (KH 480 to 1200); not recorded here"
+     }
+    },
+    "openingAngleDeg": {
+     "value": null,
+     "note": "a parallel lift; no angle is printed"
+    },
+    "animation": {
+     "model": "the leaf translates upward, staying parallel to the cabinet front, on two lever arms (CLAUDE.md T78 F18: translate and rotate per the catalogue path, two keyframes)",
+     "keyframes": {
+      "value": null,
+      "note": "no catalogue drawing numbers for the lift height at mid and full opening came through any snippet; the 3D uses a placeholder path (the leaf height as the full travel) until the owner reads the drawing"
+     }
+    }
+   },
+   "hf": {
+    "label": "AVENTOS HF top, bi-fold: a two-part front folds in the centre; the upper front hangs on the cabinet top panel, the lower front is pushed by the lever arms",
+    "catalogue2024": {
+     "order": "en/22",
+     "planning": "en/23 (hinges), en/25 to en/30",
+     "webCode": "DQDXLC"
+    },
+    "cabinet": {
+     "heightKHMm": {
+      "value": [
+       480,
+       1200
+      ],
+      "printed": "Cabinet height KH 480 to 1200 mm (en/22; Blum TD me55579279; the 2022 edition gave 480 to 1040)",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/",
+      "page": "en/22"
+     },
+     "widthKBMaxMm": {
+      "value": 1800,
+      "printed": "cabinet width up to 1800 mm",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/"
+     },
+     "internalDepthLTMinMm": {
+      "value": 264,
+      "printed": "an internal depth of at least 264 mm (Blum TD me55579279)",
+      "url": "https://d2.blum.com/services/BEC003/me55579279_td_dok_bau_$sen_$aof_$v3.pdf"
+     }
+    },
+    "liftMechanismSets": [
+     {
+      "set": "22F2200",
+      "powerFactorLF": [
+       1350,
+       6750
+      ],
+      "openingAngleDeg": [
+       81,
+       116
+      ],
+      "printed": "1350-6750 81 to 116 degrees 22F2211 (the newer Blum TD sheet; 22F2201 follows the same pattern); the 2024 en/22 snippet shows only the 2500 and 2800 bands; a UK dealer sells the kit C HFT B 2200 3200, so 22F2200 exists",
+      "url": "https://d2.blum.com/services/BEC003/me55579279_td_dok_bau_$sen_$aof_$v3.pdf",
+      "reading": "the LF band is read off the 22F2211 / 22F2201 lines",
+      "status": "owner to confirm"
+     },
+     {
+      "set": "22F2500",
+      "powerFactorLF": [
+       2700,
+       13500
+      ],
+      "openingAngleDeg": [
+       81,
+       116
+      ],
+      "printed": "2700-13500* 81 to 116 degrees 22F2500 (Blum TD; en/22)",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/",
+      "status": "owner to confirm"
+     },
+     {
+      "set": "22F2800",
+      "powerFactorLF": [
+       10000,
+       19300
+      ],
+      "openingAngleDeg": [
+       81,
+       116
+      ],
+      "printed": "10000-19300 81 to 116 degrees 22F2800 (Blum TD; en/22); Wurth: Aventos HF Top Bi-Fold Lift Mechanism Set, Power Factor 10000 - 19300",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/",
+      "status": "owner to confirm"
+     }
+    ],
+    "liftMechanismSetsNote": {
+     "printed": "the power factor LF can be increased by 50 % when a third lift mechanism is used (en/22); dealer imperial figures (238 to 1188, 880 to 1188 for 22F2500) are another unit basis and are not recorded",
+     "url": "https://publications.blum.com/2024/catalogue/en/22/"
+    },
+    "openingAngleDeg": {
+     "value": [
+      81,
+      116
+     ],
+     "printed": "81 to 116 degrees on every 22F2x00 line; an opening angle stop is already integrated in AVENTOS HF top and can be adjusted without tools",
+     "url": "https://publications.blum.com/2024/catalogue/en/22/",
+     "status": "owner to confirm"
+    },
+    "leverArms": [
+     {
+      "set": "22F3200",
+      "cabinetHeightKHMm": [
+       480,
+       610
+      ],
+      "minLeverArmSpaceLHMm": 443,
+      "printed": "480-610 22F3200 (en/22); LH min 443 (2026 edition, applies to KH 520 to 1200)",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/"
+     },
+     {
+      "set": "22F3500",
+      "cabinetHeightKHMm": [
+       600,
+       910
+      ],
+      "minLeverArmSpaceLHMm": 512,
+      "printed": "600-910 22F3500 (en/22); Wurth: AVENTOS HF top bi-fold lift system, lever (Set), CH=600-910 mm, non-handed, two telescopic arms; LH min 512 (2026 edition)",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/"
+     },
+     {
+      "set": "22F3900",
+      "cabinetHeightKHMm": [
+       840,
+       1200
+      ],
+      "minLeverArmSpaceLHMm": 632,
+      "printed": "840-1200 22F3900 (en/22); LH min 632 (2026 edition)",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/"
+     }
+    ],
+    "leverArmsNote": {
+     "printed": "the lever arms are symmetrical; a 22F3800 does not exist in the top generation (the previous generation had telescopic arms 20F3200.01 480 to 570, 20F3500.01 560 to 710, 20F3800.01 700 to 900); the LH minimums are from the 2026 edition and apply to cabinet heights of 520 to 1200 mm",
+     "url": "https://publications.blum.com/2026/catalogue/en/",
+     "status": "owner to confirm"
+    },
+    "drillingPositionsLiftMechanism": {
+     "systemScrews": {
+      "table": [
+       {
+        "cabinetHeightKHMm": [
+         480,
+         519
+        ],
+        "H": 93.5,
+        "X": 38.5,
+        "Y": 102
+       },
+       {
+        "cabinetHeightKHMm": [
+         520,
+         1200
+        ],
+        "H": 116,
+        "X": 38.5,
+        "Y": 124
+       }
+      ],
+      "printed": "Drilling position, system screws. Cabinet height KH (mm) H (mm) X (mm) Y (mm) 480-519 93.5 38.5 102 520-1200 116 38.5 124",
+      "url": "https://publications.blum.com/2024/catalogue/en/25/",
+      "page": "an HF top planning page (en/25 to en/30; the index returned the table for an HK top query, but the KH bands 480 to 1200 are HF top)",
+      "status": "owner to confirm"
+     },
+     "chipboardScrews": {
+      "table": [
+       {
+        "cabinetHeightKHMm": [
+         480,
+         519
+        ],
+        "H": 93,
+        "X": 38.5,
+        "Y": 102
+       },
+       {
+        "cabinetHeightKHMm": [
+         520,
+         1200
+        ],
+        "H": 115.5,
+        "X": 38.5,
+        "Y": 124
+       }
+      ],
+      "screws": "4 x chipboard screws diameter 4 x 35 mm",
+      "printed": "Drilling position, chipboard screws: H 93 and 115.5, X and Y as above; 4 x chipboard screws diameter 4 x 35 mm; the positioning system is listed only for the 520 to 1200 range",
+      "url": "https://publications.blum.com/2024/catalogue/en/25/",
+      "status": "owner to confirm"
+     },
+     "datum": {
+      "value": null,
+      "note": "which edges H, X and Y are measured from (front edge, top panel, cabinet side) was in no snippet; until the owner reads the drawing the engine drills nothing (CLAUDE.md T78 law) and these numbers are a record, not a pattern"
+     }
+    },
+    "hinges": {
+     "upperFrontToTopPanel": {
+      "what": "CLIP top 120 degree hinge, unsprung, cup in the upper front, mounting plate on the cabinet top panel",
+      "sets": {
+       "insertaEDowel": {
+        "article": "78Z5530T",
+        "printed": "AVENTOS CLIP-TOP 78Z553 HINGE SET INSERTA/E-DOWEL: 2 x CLIP TOP 120 degree unsprung hinges (INSERTA) and 2 x Centre hinges with safety feature (E-Dowel) (Lincoln Sentry supplier code 78Z5530T)",
+        "url": "https://lincolnsentry.com.au/aventos-clip-top-78z553-hinge-set-inserta-e-dowel/p/7102243",
+        "status": "owner to confirm"
+       },
+       "screwOn": {
+        "article": "78Z550 (dealer title 78Z5500T12)",
+        "printed": "AVENTOS CLIP-TOP 78Z550 HINGE SET SCREW-ON: 2 x CLIP top 120 degree unsprung hinges (screw-on) and 2 x CLIP top centre hinges (screw-on) (Lincoln Sentry); kitchenlibrary: CLIP top centre hinge set for AVENTOS bi-fold systems, 134 degree, unsprung, boss screw-on, 78Z5500T12",
+        "url": "https://www.lincolnsentry.com.au/aventos-clip-top-78z550-hinge-set-screw-on-edowel/p/7102242",
+        "status": "owner to confirm"
+       },
+       "singleHinge120": {
+        "article": "70T5590B.TL",
+        "printed": "CLIP top standard hinge 120 degree, unsprung, INSERTA, for use with AVENTOS (kitchenlibrary 70T5590BTL)",
+        "url": "https://kitchenlibrary.au/collections/vendors/products/blum-clip-top-standard-hinge-120-degrees-unsprung-inserta-70t5590btl-for-use-with-aventos",
+        "status": "owner to confirm"
+       }
+      },
+      "cup": {
+       "diameterMm": 35,
+       "printed": "door: a boss drilling (diameter 35 mm), then positioning the template and drilling the side holes (en/673, the hinge template for AVENTOS HF top | CLIP top)",
+       "url": "https://publications.blum.com/2024/catalogue/en/673/",
+       "drillingDistanceTB": {
+        "value": null,
+        "note": "the HF top planning table relates drilling distance, front overlay, horizontal gap and mounting plate spacing; the 2022 table shows 70/68 for KH 480 to 549 and 47/45 for KH 550 to 1040 with unclear column labels; not recorded as numbers"
+       },
+       "status": "owner to confirm"
+      },
+      "mountingPlates": {
+       "printed": "standard mounting plates whose spacing depends on the upper front overlay (Blum AVENTOS HF wooden-front planning sheet); the catalogue line reads CLIP top 120 degree hinge, centre hinge, unsprung 78Z553ET, screw-on, with a mounting plate of 78Z5500T (the snippet is ambiguous; the dealers say 78Z5500T is the screw-on hinge SET)",
+       "url": "https://publications.blum.com/2024/catalogue/en/23/",
+       "status": "owner to confirm"
+      },
+      "count": {
+       "default": 2,
+       "printed": "3 hinges at cabinet width KB 1200 mm and/or starting from 12 kg front weight FG; 4 hinges at cabinet width KB 1800 mm and/or starting from 20 kg front weight FG",
+       "url": "https://publications.blum.com/2024/catalogue/en/23/",
+       "page": "en/23",
+       "rule": {
+        "threeAt": {
+         "widthKBMm": 1200,
+         "frontWeightKg": 12
+        },
+        "fourAt": {
+         "widthKBMm": 1800,
+         "frontWeightKg": 20
+        }
+       },
+       "status": "owner to confirm"
+      },
+      "specialHinge": {
+       "printed": "a CLIP top 120 degree special hinge as an alternative for larger front overlays; with it the front overlay FA is always 2 mm larger",
+       "url": "https://publications.blum.com/2024/catalogue/en/23/"
+      }
+     },
+     "centreHinge": {
+      "what": "CLIP top centre hinge, unsprung, with finger safety feature, joining the lower front to the upper front",
+      "articles": {
+       "expando": {
+        "article": "78Z553ET",
+        "printed": "Blum CLIP top Centre Hinge for AVENTOS bi-fold lift systems, 134 degree, unsprung, boss EXPANDO 78Z553ET (kitchenlibrary; also 78Z553ET11)",
+        "url": "https://kitchenlibrary.au/products/blum-clip-top-centre-hinge-for-aventos-overhead-stay-bi-fold-lift-systems-134-degree-unsprung-boss-expando-78z553et",
+        "status": "owner to confirm"
+       },
+       "screwOn": {
+        "article": null,
+        "note": "the screw-on centre hinge single article was not printed alone; it comes in the 78Z550 set; CLAUDE.md names 78Z5530T, which the dealers print as the INSERTA / E-dowel SET, not a single hinge"
+       },
+       "usFaceFrame": {
+        "article": "78Z5530TA9",
+        "printed": "Aventos HF Bi Fold Door Lift Hinge and Mounting Plate Set for Face Frame Construction (cabinetparts; US, not for this shop)",
+        "url": "https://www.cabinetparts.com/p/blum-hinges-lid-and-flap-stays-BA78Z5530TA9-p132195"
+       }
+      },
+      "openingAngleDeg": {
+       "value": 134,
+       "printed": "134 Degree, Unsprung (kitchenlibrary, dealer)",
+       "url": "https://kitchenlibrary.au/products/blum-clip-top-centre-hinge-for-aventos-overhead-stay-bi-fold-lift-systems-134-degree-unsprung-boss-expando-78z553et",
+       "status": "owner to confirm"
+      },
+      "cupPattern": {
+       "cupDiameterMm": {
+        "value": 35,
+        "printed": "boss drilling (diameter 35 mm) for the CLIP top family (en/673); the drilling head kit for AVENTOS HF is a 35 x 57 mm bit (en/636)",
+        "url": "https://publications.blum.com/2024/catalogue/en/673/",
+        "status": "owner to confirm"
+       },
+       "screwHoleSpacingMm": {
+        "value": 45,
+        "printed": "a distance between drillings of 45mm, with minimum and maximum drilling distances of 3 mm and 6 mm (a third-party listing for the CLIP top centre hinge, not a Blum source)",
+        "url": "https://kitchenlibrary.au/products/blum-clip-top-centre-hinge-for-aventos-bi-fold-lift-systems-unsprung-boss-expando-78z553et11",
+        "status": "owner to confirm"
+       },
+       "drillingDistanceMm": {
+        "value": [
+         3,
+         6
+        ],
+        "printed": "minimum and maximum drilling distances of 3 mm and 6 mm (third-party listing)",
+        "url": "https://kitchenlibrary.au/products/blum-clip-top-centre-hinge-for-aventos-bi-fold-lift-systems-unsprung-boss-expando-78z553et11",
+        "status": "owner to confirm"
+       },
+       "cupDepthMm": {
+        "value": null,
+        "note": "not printed in any snippet; null"
+       },
+       "counterpartOnUpperFront": {
+        "value": null,
+        "note": "the centre hinge mounting plate side on the upper front (its holes) was not printed in any snippet; null"
+       }
+      }
+     }
+    },
+    "frontFixingBracketLowerFront": {
+     "see": "shared.frontFixingBrackets",
+     "articles": [
+      "20S4200",
+      "20S4200A"
+     ],
+     "printed": "Blum 20S4200 AVENTOS HK/HL/HF/HK Top Front Fixing Brackets for Wood Doors, Set of 2 (Ferguson title); the lever arm attaches to the lower front through it",
+     "url": "https://www.fergusonhome.com/blum-20s4200/s115531",
+     "holePositionsOnLeaf": {
+      "value": null,
+      "note": "not printed; marked with ZML.2200"
+     },
+     "status": "owner to confirm"
+    },
+    "coverCaps": {
+     "see": "shared.coverCapsTop",
+     "standard": "22.8000",
+     "servoDrive": "23.8000",
+     "predecessor": "21F8020"
+    },
+    "planning": {
+     "asymmetricFronts": {
+      "printed": "the taller front must go on top for asymmetrical applications",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/"
+     },
+     "frontGapsByKH": {
+      "value": null,
+      "note": "top gap Fo, middle gap Fm and bottom front overlay FAu are tabulated by KH 480 to 519 and 520 to 1200 on a 2024/2025 planning page; the values did not come through"
+     },
+     "spaceRequirementY2022": {
+      "withoutStop": "Y max = FHo x 0.44 + 38",
+      "stop104": "Y max = FHo x 0.24 + 34",
+      "stop83": "no space requirement",
+      "printed": "Space requirement KH Cabinet height Opening angle stop Y (mm) Without FHo x 0.44 + 38 104 degrees FHo x 0.24 + 34 83 degrees (2022 en/22); Blum FAQ: Y max = (top) front height x 0.44 + 38 mm; with an opening angle restriction (104 or 83 degrees) 104: front height x 0.24 + 34 mm, 83: no space requirement",
+      "url": "https://www.blum.com/gb/en/services/technical-faqs/faqs-aventos",
+      "page": "2022 en/22 and the Blum GB FAQ",
+      "reading": "FHo is the upper front height; Y is the height the open fold stands above the cabinet top (the collision clearance above the cabinet and against a cornice); the HF top (2024) has an integrated stop whose two reduced angles were not printed beside these formulas",
+      "status": "owner to confirm"
+     },
+     "formulas2024or2026": {
+      "yMax": "Y max = FH x 0.29 minus 32 + FD",
+      "a": "A = FH x 0.26 + 28 minus FD",
+      "xMax": "X max = FH x 0.9 + FD x 1.5 + 35",
+      "printed": "Y max = FH x 0.29 - 32 + FD, A = FH x 0.26 + 28 - FD (2024/2025 and 2026 snippets); X max = FH x 0.9 + FD x 1.5 + 35 with tabulated values by KH 480 to 519 and 520 to 1200 (2026 edition)",
+      "url": "https://publications.blum.com/2026/catalogue/en/",
+      "note": "one snippet attributes Y max and A to the HF top pages, another to AVENTOS HKi; what X max measures (a maximum internal cabinet height in one reading) was not labelled; recorded as text, owner to confirm before any use",
+      "status": "owner to confirm"
+     }
+    },
+    "animation": {
+     "model": "the upper leaf rotates about the top-panel hinge axis (its top edge) to the stop angle; the lower leaf hangs from the centre hinge and is pushed by the lever arms so the pair folds (CLAUDE.md T78 F18: the fold)",
+     "upperLeafOpenDeg": {
+      "full": 116,
+      "stopMin": 81,
+      "printed": "81 to 116 degrees, integrated stop adjustable without tools",
+      "url": "https://publications.blum.com/2024/catalogue/en/22/",
+      "status": "from the catalogue drawing (snippet), owner to confirm"
+     },
+     "reducedStops2022": {
+      "values": [
+       104,
+       83
+      ],
+      "printed": "opening angle restriction 104 degrees or 83 degrees (Blum FAQ, previous generation)",
+      "url": "https://www.blum.com/gb/en/services/technical-faqs/faqs-aventos",
+      "status": "owner to confirm"
+     },
+     "foldAngleDeg": {
+      "value": null,
+      "note": "the angle between the two leaves at full opening is printed nowhere; the centre hinge opens to 134 degrees (dealer), which is its limit, not the fold at rest; the 3D derives the fold from the upper leaf angle and the lever arm geometry as a placeholder until the owner reads the drawing"
+     },
+     "riseAboveTopMm": {
+      "formula": "FHo x 0.44 + 38 (no stop); FHo x 0.24 + 34 (104 degree stop); none (83 degree stop)",
+      "status": "from the catalogue drawing (2022 snippet and FAQ), owner to confirm"
+     },
+     "keyframes": [
+      {
+       "t": 0,
+       "upperRotateDeg": 0,
+       "foldDeg": 0
+      },
+      {
+       "t": 1,
+       "upperRotateDeg": 116,
+       "foldDeg": null
+      }
+     ],
+     "keyframesNote": "the fold at t = 1 is null (not printed); two keyframes for the upper leaf only"
+    }
+   }
+  },
+  "engineNotes": {
+   "noHoles": "CLAUDE.md T78 law: a bought mechanism is a line and a body, never a hole, until its manufacturer drilling is here with a page number. The only lift mechanism drilling with numbers is HF top (H / X / Y above) and its datum is unread, so every one of the four systems stays a BOM line and a body with zero holes; the leaves carry no hinge cups except the HF upper leaf (CLIP top 120 unsprung, cup 35) and the HF lower leaf (the centre hinge, cup 35, pattern owner to confirm).",
+   "selectLiftUnit": "engine/lifts.js selectLiftUnit reads power_units_hk_top and rules.hk_limits only (T19). HS top and HL top select by cabinet height AND front weight bands, not by a single LF; HF top selects by LF with its own three bands and by lever arm cabinet height. A kit builder must read systems.hs / systems.hl / systems.hf here and may not reuse the HK ladder for them.",
+   "overlap": "see shared.overlapRule: the catalogue recommends the MORE powerful mechanism in an overlap; the engine (T19 F5.2) picks the smaller; owner to decide.",
+   "weight18kg": "systems.hk.frontWeightMaxKg 18 for two mechanisms is a second cap beside the LF range; a front over 18 kg is refused in words even inside the 22K2900 range unless a third mechanism is fitted.",
+   "dashes": "no dash character anywhere in this key; ranges are `to` or arrays."
+  }
+ }
 }

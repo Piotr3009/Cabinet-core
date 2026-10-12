@@ -387,6 +387,33 @@ export const PART_REGISTRY = {
     id: 'kit_space_corner', name: 'SPACE CORNER kit', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought corner drawer mechanism (Blum SPACE CORNER): joins the two boxes of an L drawer row, zero holes',
   },
+  // ─── T78 F18 · THE LIFT-UP WALL UNIT'S BOUGHT LIFT (BLUM AVENTOS) ────────
+  // The owner: *"szafki poziome otwierane do gory system blum ... podwojne
+  // drzwi pojedyncze etc."*  Five lines a lift unit orders (engine/
+  // liftSystems.js liftPlanFor, off reference/hardware/aventos.json): the
+  // lift mechanism set, the lever arm set (HS, HL, HF), the cover cap set,
+  // the front fixing bracket set, and the HF top's hinge set. A line and a
+  // body, zero holes (the fixing patterns are null in the catalogue file).
+  lift_mechanism: {
+    id: 'lift_mechanism', name: 'AVENTOS lift mechanism set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'Blum AVENTOS HK / HS / HL / HF top lift mechanism set (two mechanisms), chosen off the catalogue file by power factor or by cabinet height and front weight; owner to confirm',
+  },
+  lift_lever_arm: {
+    id: 'lift_lever_arm', name: 'AVENTOS lever arm set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'The HS / HL / HF top lever arm set, by cabinet height; the HK top has none',
+  },
+  lift_cover_caps: {
+    id: 'lift_cover_caps', name: 'AVENTOS cover cap set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'One set per lift unit (22K8000 for the HK top, 22.8000 for HS / HL / HF top), owner to confirm',
+  },
+  lift_front_bracket: {
+    id: 'lift_front_bracket', name: 'AVENTOS front fixing bracket set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'One set (two brackets) per lift leaf; its holes on the leaf are marked with the ZML.2200 template, never bored here',
+  },
+  hinge_aventos_hf: {
+    id: 'hinge_aventos_hf', name: 'AVENTOS HF hinge set', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
+    note: 'CLIP top 120 degree unsprung hinge and centre hinge of the HF top bi-fold, counted per the catalogue rule; cup pattern not read, zero holes',
+  },
   kit_pulldown_rail: {
     id: 'kit_pulldown_rail', name: 'Pull-down rail', group: G('hardware'), unit: 'pcs', materialType: 'hardware',
     note: 'A bought wardrobe mechanism — T33 put it on the order form, zero holes',
@@ -657,6 +684,12 @@ export const HARDWARE_TO_PART_ID = {
   blind_pullout: 'kit_blind_pullout',
   // T78 F8 · `hw('bifold_hinges', …)`, leaf B's hinge rows.
   bifold_hinges: 'hinge_bifold',
+  // T78 F18 · `hw('lift_*', …)`, the lift-up wall unit's bought lift.
+  lift_unit: 'lift_mechanism',
+  lift_arm: 'lift_lever_arm',
+  lift_caps: 'lift_cover_caps',
+  lift_bracket: 'lift_front_bracket',
+  lift_hinges: 'hinge_aventos_hf',
 };
 
 /**

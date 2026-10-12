@@ -58,7 +58,9 @@ export function hardwareInstances(result, profile) {
     // grammar, per COLUMN, from the assemblies the engine measured.
     // T78 F9 · …and the L's bought corner mechanisms (the carousel), the same
     // placeholder grammar, from the body the L builder placed in its inner corner.
-    kits: [...kitInstances(result), ...wardrobeKitInstances(result), ...cornerKitInstances(result)],
+    // T78 F18 · …and the lift-up wall unit's two lift mechanisms, placeholder
+    // bodies at the top front of each side (a line and a body, never a hole).
+    kits: [...kitInstances(result), ...wardrobeKitInstances(result), ...cornerKitInstances(result), ...liftKitInstances(result)],
   };
 }
 
@@ -101,6 +103,37 @@ export function cornerKitInstances(result) {
  * the day the owner supplies files, a datum wrapper over `glbSource` replaces
  * the walls exactly as the cargo frame's slot is replaced.
  */
+/**
+ * ─── T78 F18 · THE LIFT MECHANISMS' PLACEHOLDERS ───────────────────────────
+ *
+ * The engine has already said where each one stands (`assemblies.liftKits`,
+ * engine/liftSystems.js: on the side's inner face at the top front of the
+ * box, the size of a mechanism housing); this hands the body to the scene in
+ * the kit grammar, so `KitBodies` draws the same walled placeholder it draws
+ * for every bought mechanism nobody has a model of. The day the owner drops
+ * a GLB in, a slot replaces the walls exactly as the cargo frame's did.
+ */
+export function liftKitInstances(result) {
+  const kits = result?.assemblies?.liftKits;
+  if (!Array.isArray(kits) || !kits.length) return [];
+  return kits.map((k) => ({
+    kind: 'kit',
+    id: k.id,
+    role: 'lift_unit',
+    body: k.kind,
+    label: k.label,
+    placeholder: true,
+    system: k.system,
+    side: k.side,
+    x: k.box.x,
+    y: k.box.y,
+    z: k.box.z,
+    w: k.box.w,
+    h: k.box.h,
+    d: k.box.d,
+  }));
+}
+
 export function wardrobeKitInstances(result) {
   const kits = result?.assemblies?.wardrobeKits;
   if (!Array.isArray(kits) || !kits.length) return [];

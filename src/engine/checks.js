@@ -68,6 +68,9 @@ import { roomFitFaults } from './roomFit.js';
 // report and the bore cannot disagree about the same door.
 import { cupBoreOf } from './doors.js';
 import { panelWeight } from './lifts.js';
+// T78 F18 · Check #35: a lift leaf at full opening against the ceiling, a
+// cornice and the unit above; said in words, never clipped.
+import { liftClearanceFindings } from './liftChecks.js';
 // Turn 38 (CLAUDE.md F9): the two guards on what a hand has drawn on a print.
 import { manualGeometryFaults } from './partEdits.js';
 import { resolvePanelMaterial } from './materials.js';
@@ -268,6 +271,14 @@ export const CHECKS = Object.freeze([
   // `raiseHoodToClearance`, run by the panel's flight). YELLOW: a proposal,
   // never a block: the client may leave it.
   { n: 34, level: 'yellow', label: 'Hood clearance over the hob' },
+  // ─── T78 F18 · THE LIFT-UP LEAF AT FULL OPENING ────────────────────────────
+  // The owner: *"szafki poziome otwierane do gory system blum."*  An AVENTOS
+  // leaf rises above its own top edge when open (the HK top's free edge by
+  // FH x 0.29 + FD at 107 degrees, the catalogue's own Y); where that reaches
+  // the ceiling, the cornice on its top or a wall unit hanging higher on the
+  // same span the Check says so, in words (engine/liftChecks.js). Never
+  // clipped: the leaf is cut as asked.
+  { n: 35, level: 'yellow', label: 'Lift-up leaf reaches the ceiling, a cornice or the unit above' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -1310,6 +1321,16 @@ export function runChecks({
   // one fault twice into a list a joiner works down. Two REAL faults on two
   // cabinets differ by `unitId` and both survive, which is the whole point of
   // keying on the id rather than on the message alone.
+  // ── #35 a lift-up leaf that would hit what stands over it (T78 F18) ──────
+  //
+  // Read off the leaf's own `meta.lift.riseMm` (engine/liftSystems.js, the
+  // ONE derivation the scene animates to) against the room height, the
+  // unit's cornice and any wall unit standing higher on the same wall span.
+  // Never a cut: the leaf is cut as asked and the sentence names the way out.
+  out.push(...liftClearanceFindings({
+    entries, units: list, room, profile,
+  }));
+
   const seen = new Set();
   const once = out.filter((f) => {
     const key = `${f.check}|${f.unitId}|${f.panelId ?? ''}|${f.message}`;

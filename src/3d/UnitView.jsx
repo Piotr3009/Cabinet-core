@@ -5,6 +5,9 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Edges, Line } from '@react-three/drei';
 import { mm, MM, COLORS } from './constants.js';
+// T78 F18 · where an HS / HL lift leaf is at t (the catalogue's keyframes, or
+// the placeholder rise): the ONE path the Check's rise is measured on too.
+import { liftTravelAt } from '../engine/liftSystems.js';
 import { chromeOn } from './chrome.js';
 
 // ─── Turn 30 (CLAUDE.md F21): how thick the PANE is drawn ────────────────────
@@ -830,6 +833,17 @@ export function MovingPanel({
   const alongZ = front === 'door' && !drops && p.meta?.swingZ;
   // T78 F8 · the bi-fold child leaf hangs on its NEAR end (toward the carrier leaf).
   const bifold = front === 'door' && !drops && p.meta?.bifold?.parent ? p.meta.bifold : null;
+  // ─── T78 F18 · A LIFT LEAF (BLUM AVENTOS) ─────────────────────────────────
+  // The owner: *"szafki poziome otwierane do gory system blum ... podwojne
+  // drzwi pojedyncze etc."*  Read off the PIECE (`meta.lift`, the drop
+  // front's own grammar): `hk` and the `hf` UPPER half pivot about their TOP
+  // edge (the drop front's bottom-edge law mirrored); `hs` and `hl` TRAVEL
+  // (two keyframes from the catalogue, or a plain rise of the leaf height
+  // while the data has none); the `hf` LOWER half is a child hung on the
+  // upper's bottom edge (the T78 F8 bifold nesting) and folds on it.
+  const lift = front === 'door' && !drops && p.meta?.lift ? p.meta.lift : null;
+  const liftPivotsTop = Boolean(lift) && (lift.system === 'hk' || lift.system === 'hf');
+  const liftTravels = Boolean(lift) && (lift.system === 'hs' || lift.system === 'hl');
   const faceX = front === 'drawer' && p.meta?.faceX ? Number(p.meta.faceX.dir) || 1 : 0;
   const turned = Boolean((alongZ || faceX) && (decoration || shaker));
   // eslint-disable-next-line no-nested-ternary
@@ -930,13 +944,21 @@ export function MovingPanel({
   // eslint-disable-next-line no-nested-ternary
   const pivot = bifold ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z)] : alongZ ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d)] : drops
     ? [mm(p.box.x + p.box.w / 2), mm(p.box.y), mm(p.box.z + p.box.d / 2)]
-    : (front === 'door'
-      ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
-      : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)]);
+    // T78 F18 · a lift leaf: its TOP edge (hk, the hf halves), or its own centre (hs, hl travel).
+    // eslint-disable-next-line no-nested-ternary
+    : (lift
+      ? (liftPivotsTop
+        ? [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h), mm(p.box.z + p.box.d / 2)]
+        : [mm(p.box.x + p.box.w / 2), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)])
+      : front === 'door'
+        ? [mm(hingeAtRight ? p.box.x + p.box.w : p.box.x), mm(p.box.y + p.box.h / 2), mm(p.box.z + p.box.d / 2)]
+        : [mm(centre.x + centre.w / 2), mm(centre.y + centre.h / 2), mm(centre.z + centre.d / 2)]);
   // eslint-disable-next-line no-nested-ternary
   const meshOffset = bifold ? [0, 0, mm(p.box.d / 2)] : alongZ ? [0, 0, mm(-p.box.d / 2)] : drops
     ? [0, mm(p.box.h / 2), 0]
-    : (front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0]);
+    // T78 F18 · a lift leaf hangs under its top-edge pivot (hk, hf); a travelling one sits at its centre.
+    // eslint-disable-next-line no-nested-ternary
+    : (lift ? (liftPivotsTop ? [0, mm(-p.box.h / 2), 0] : [0, 0, 0]) : front === 'door' ? [mm(hingeAtRight ? -p.box.w / 2 : p.box.w / 2), 0, 0] : [0, 0, 0]);
   // Where the group stands: at its pivot, or, nested in a carrier leaf's group,
   // at its pivot relative to the carrier's (T78 F8).
   const base = parentPivot
@@ -989,6 +1011,36 @@ export function MovingPanel({
         group.current.position.z = base[2] + off * Number(sv.z);
       } else {
         group.current.position.z = base[2] + off;
+      }
+      group.current.rotation.y = 0;
+    } else if (lift) {
+      // ─── T78 F18 · THE LIFT ─────────────────────────────────────────────
+      // The amount is POSITIVE and opens UPWARD, as the drop front's opens
+      // forward. A rotation by +theta about x carries the leaf hanging at -y
+      // from its top-edge pivot BACK into the carcass (the drop front's own
+      // arithmetic, read from the other end), so an upward swing is a
+      // NEGATIVE angle about x: at 107 degrees (HK top, the catalogue's full
+      // stop) the free edge stands FH x 0.29 above the pivot, which is the
+      // catalogue's own Y. `swing` carries the piece's angle (`swingFor`),
+      // for a child the fold it makes on its carrier.
+      const full = swing ?? (((Number(lift.angleDeg) || 90) * Math.PI) / 180);
+      if (liftTravels) {
+        // HS up and over, HL parallel: the catalogue's two keyframes, linear
+        // between them; without keyframes a plain rise of the leaf height.
+        const at = liftTravelAt(lift, p.box.h, a);
+        group.current.position.y = base[1] + mm(at.dy);
+        group.current.position.z = base[2] + mm(at.dz);
+        group.current.rotation.x = -((at.rotateDeg * Math.PI) / 180);
+      } else if (lift.parent) {
+        // The HF LOWER half, in its carrier's frame: it folds BACK toward
+        // plumb by the fold (the catalogue prints none; the placeholder is
+        // the upper's own angle, so the lower hangs plumb from the centre
+        // hinge at full opening, said on the piece as `placeholderPath`).
+        group.current.rotation.x = a * full;
+        group.current.position.z = base[2];
+      } else {
+        group.current.rotation.x = -(a * full);
+        group.current.position.z = base[2];
       }
       group.current.rotation.y = 0;
     } else if (drops) {
@@ -1056,7 +1108,11 @@ export function MovingPanel({
           parentPivot={pivot}
           front="door"
           open={open}
-          swing={((Number(bifoldChild.meta?.bifold?.angleDeg) || 60) * Math.PI) / 180}
+          // T78 F18 · an HF lower half folds by the catalogue's fold where it
+          // prints one, else by the upper's own angle (hangs plumb; placeholder).
+          swing={bifoldChild.meta?.lift
+            ? ((Number(bifoldChild.meta.lift.foldDeg) || Number(bifoldChild.meta.lift.angleDeg) || 90) * Math.PI) / 180
+            : ((Number(bifoldChild.meta?.bifold?.angleDeg) || 60) * Math.PI) / 180}
           surface={surface}
           outline={outline}
           outlines={outlines}
@@ -2223,6 +2279,12 @@ export default function UnitView({
     if (panel?.meta?.opening === 'drop') {
       return ((Number(panel.meta.openAngleDeg) || 45) * Math.PI) / 180;
     }
+    // T78 F18 · a lift leaf opens to its system's catalogue angle (HK top 107,
+    // HF top 116, owner to confirm); a travelling leaf (HS, HL) reads its
+    // path in MovingPanel and this number is only its fallback.
+    if (panel?.meta?.lift) {
+      return ((Number(panel.meta.lift.angleDeg) || 90) * Math.PI) / 180;
+    }
     const hinge = panel?.meta?.hinge;
     const gap = hinge === 'R' ? wallGaps?.right : wallGaps?.left;
     return doorOpenAngle({
@@ -2248,7 +2310,8 @@ export default function UnitView({
       if (p.part !== 'FRONT' || !p.box) continue;
       // A DROP FRONT has no hinge to fold (F5.2/F5.3): it is screwed to the
       // appliance's own door, and there is no carcass half to turn after it.
-      if (p.meta?.opening === 'drop') { out[p.id] = 0; continue; }
+      // T78 F18 · a LIFT leaf has no carcass hinge to fold either.
+      if (p.meta?.opening === 'drop' || p.meta?.lift) { out[p.id] = 0; continue; }
       const dir = p.meta?.hinge === 'R' ? 1 : -1;
       out[p.id] = dir * (openFronts?.[p.id] ?? 0) * swingFor(p);
     }
@@ -2644,6 +2707,8 @@ export default function UnitView({
       {result.panels.filter((p) => p.box && !p.meta?.frontDecorationParent
         && !(hideFronts && frontKind(p))
         // T78 F8 · a bi-fold child leaf is rendered inside its carrier's group, not here.
+        // T78 F18 · the HF lower half is rendered inside its upper half's group the same way.
+        && !p.meta?.lift?.parent
         && !p.meta?.bifold?.parent).map((p) => {
         const shelfId = p.part === 'SHELF' ? p.meta?.itemId : null;
         // ─── Turn 9 (CLAUDE.md F4.1) ───
@@ -2792,16 +2857,17 @@ export default function UnitView({
                 />
               ),
             } : {})}
-            {...(front === 'door' && p.meta?.bifold?.child ? (() => {
+            {...(front === 'door' && (p.meta?.bifold?.child || p.meta?.lift?.child) ? (() => {
               // T78 F8 · the carrier leaf: its child rides inside its group, and
               // the pair opens as one (either leaf's gesture opens both).
-              const child = result.panels.find((q) => q.id === p.meta.bifold.child && q.box) || null;
+              // T78 F18 · …or the HF upper half, whose lower half rides inside it the same way.
+              const child = result.panels.find((q) => q.id === (p.meta.bifold?.child || p.meta.lift?.child) && q.box) || null;
               return child ? {
                 bifoldChild: child,
                 open: Math.max(openFronts?.[p.id] ?? 0, openFronts?.[child.id] ?? 0),
               } : {};
             })() : {})}
-            {...(front === 'door' && p.meta?.bifold?.child ? {} : {
+            {...(front === 'door' && (p.meta?.bifold?.child || p.meta?.lift?.child) ? {} : {
               // T78 F7 (the PART A walk): the twin front board of an L drawer row rides the
               // row like its boxes do (either board's gesture opens both).
               // eslint-disable-next-line no-nested-ternary

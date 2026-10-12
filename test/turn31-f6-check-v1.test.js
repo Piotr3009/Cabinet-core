@@ -120,8 +120,11 @@ test('the rules, each with the owner’s colour', () => {
   // YELLOW (*"the Check says, in words, when the assigned front material is
   // thinner than the recipe's board ... The owner decides per job."*). The
   // twenty-eight before it are untouched.
-  assert.equal(CHECKS.length, 29);
-  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32]);
+  // AMENDED BY T78 (12.10.2026): three rules joined, all yellow: #33 the wide-angle
+  // door's swing (F13), #34 the hood's clearance over the hob (F17, a proposal),
+  // #35 the lift-up leaf at full opening (F18). Twenty-nine became thirty-two.
+  assert.equal(CHECKS.length, 32);
+  assert.deepEqual(CHECKS.map((c) => c.n), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]);
   // The owner's own colours, verbatim from CLAUDE.md F6.
   const colour = Object.fromEntries(CHECKS.map((c) => [c.n, c.level]));
   assert.deepEqual(colour, {
@@ -161,6 +164,11 @@ test('the rules, each with the owner’s colour', () => {
     31: 'red',
     // T76 F4 · the board the arch was drawn for: the leaf is cut, a person decides.
     32: 'yellow',
+    // T78 (12.10.2026): three proposals, all yellow: the wide-angle swing (F13),
+    // the hood's clearance (F17), the lift leaf's rise (F18). Never a gate.
+    33: 'yellow',
+    34: 'yellow',
+    35: 'yellow',
   });
   for (const c of CHECKS) assert.ok(c.label, `#${c.n} has no label`);
 });

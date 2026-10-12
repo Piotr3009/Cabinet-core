@@ -1,0 +1,223 @@
+{
+  "meta": {
+    "name": "golden-lift-hs.json",
+    "turn": "T78",
+    "F": "F18",
+    "source": "reference/hardware/aventos.json t78_f18.systems.hs (owner to confirm): one full-width leaf, no cups, no plate rows, the set chosen off the catalogue file (or refused in words), the arm, the caps, the brackets; two placeholder bodies, zero holes. No LISP: no cut geometry moved",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "WUD",
+    "width": 600,
+    "height": 720,
+    "depth": 400,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 0,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "mount_height": 1500,
+    "door_extend": false,
+    "unit_num": "01",
+    "front_system": "hs"
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,382,720,<,0.72,0.275",
+      "01,BUR,382,720,>,0.72,0.275",
+      "01,TOP,564,382,>,0.56,0.215",
+      "01,BOTTOM,564,382,>,0.56,0.215",
+      "01,BACK,600,720,,0,0.432",
+      "01,01-F,597,717,<>^v,2.63,0.428"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 382,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 720,
+          "d": 382
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 382,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 720,
+          "d": 382
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 382,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 702,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 382
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 382,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": 18,
+          "w": 564,
+          "h": 18,
+          "d": 382
+        },
+        "outline": 64,
+        "holes": 0,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 600,
+        "h": 720,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 600,
+          "h": 720,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 34,
+        "pockets": 12,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 717,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 403,
+          "w": 597,
+          "h": 717,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      }
+    ],
+    "drills": [
+      [
+        "HINGES_5MM|BUL",
+        2
+      ],
+      [
+        "HINGES_5MM|BUR",
+        2
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        20
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        14
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "lift_unit",
+        "qty": 1,
+        "label": "AVENTOS HS top lift mechanism set"
+      },
+      {
+        "role": "lift_arm",
+        "qty": 1,
+        "label": "AVENTOS HS top lever arm set"
+      },
+      {
+        "role": "lift_caps",
+        "qty": 1,
+        "label": "AVENTOS HS top cover cap set"
+      },
+      {
+        "role": "lift_bracket",
+        "qty": 1,
+        "label": "AVENTOS front fixing bracket set"
+      },
+      {
+        "role": "hangers",
+        "qty": 2,
+        "label": "Wall hangers"
+      }
+    ]
+  }
+}

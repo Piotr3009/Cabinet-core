@@ -9,6 +9,8 @@ import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
 import { corniceOption } from '../engine/cornice.js';
+// T78 F18 · the four lift systems a wall unit's front may open by, and which kits take one.
+import { LIFT_SYSTEMS, liftTakesKit } from '../engine/liftSystems.js';
 import { FRONT_STYLE_OPTIONS, frontStyleSelection, migrateDesign, projectHeights, resolveUnitDesign } from '../engine/design.js';
 import { drawerRows, hangerOf, shelfRows } from '../engine/items.js';
 import { isDuplicateName, unitName } from '../engine/naming.js';
@@ -562,6 +564,39 @@ export default function RightPanel() {
                 );
               })()}
             </div>
+            {/* ─── T78 F18 · FRONT OPENS: HINGED, OR A BLUM AVENTOS LIFT ──────
+                The owner, 11.10.2026: *"szafki poziome otwierane do gory system
+                blum ... podwojne drzwi pojedyncze etc."*  On a wall unit only
+                (WUD, WUD_GLASS, WARDROBE_WALL): hinged is today's door; HK top
+                lifts up about the top edge, HS swings up and over, HL lifts
+                parallel, HF folds up in two halves. A CHOICE, written as
+                `front_system` through updateUnitParams; the engine chooses the
+                set off the catalogue file and says what it bought and what it
+                does not bore (LIFT_NO_UNIT, LIFT_CABINET, LIFT_NO_PATTERN). No
+                number is typed here. */}
+            {liftTakesKit(type) && result.derived.doors > 0 && (
+              <div>
+                <span className="cc-label">Front opens</span>
+                <select
+                  className="cc-input"
+                  data-front-system="1"
+                  value={LIFT_SYSTEMS.includes(unit.params.front_system) ? unit.params.front_system : 'hinged'}
+                  title="Hinged: cup hinges. A Blum AVENTOS lift: one full-width leaf on two lift mechanisms, no cups; the set is chosen off the catalogue (owner to confirm), zero holes until its fixing pattern is in the catalogue file"
+                  onChange={(e) => updateUnitParams(unit.id, { front_system: LIFT_SYSTEMS.includes(e.target.value) ? e.target.value : null })}
+                >
+                  <option value="hinged">Hinged</option>
+                  <option value="hk">HK top (lift up)</option>
+                  <option value="hs">HS (up and over)</option>
+                  <option value="hl">HL (lift parallel)</option>
+                  <option value="hf">HF (bi-fold up)</option>
+                </select>
+                {result.derived.lift && (
+                  <p className="text-[11px] text-ink-400 mt-1" data-front-system-said="1">
+                    {result.derived.lift.said}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* ─── T78 F12 / F13 · PER LEAF: THE GLASS KIND AND THE HINGE FAMILY ─

@@ -175,6 +175,9 @@ import {
   bifoldHingeSpec, doorHingeAssignment, hingeSpecLabel, resolveDoorHinge,
 } from './hinges.js';
 import { innerDrawerSpec } from './innerDrawer.js';
+// T78 F18 · lift-up wall units (Blum AVENTOS HK / HS / HL / HF top): the
+// system a wall unit's front asked for, and the plan of its bought lift.
+import { liftPlanFor, liftSystemOf } from './liftSystems.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import {
   impliedLegHeight, maskDepthExtra, standsOnLegHeight, wallGapOf,
@@ -1746,6 +1749,15 @@ export function computeCabinet(params, profileOverride) {
   // every law that used to read "has this cabinet a door" as "does it hang on
   // cups" has to be asked the second question by name.
   const dropsForward = type.frontOpens === 'drop';
+  // ─── T78 F18 · A WALL UNIT'S FRONT MAY LIFT (BLUM AVENTOS) ───────────────
+  // The owner: *"szafki poziome otwierane do gory system blum ... podwojne
+  // drzwi pojedyncze etc."*  `params.front_system` names one of the four
+  // lift systems (hk | hs | hl | hf) on a kit that takes one (engine/
+  // liftSystems.js liftTakesKit: WUD, WUD_GLASS, WARDROBE_WALL); `hinged`,
+  // nothing, or any other kit is today's door, byte for byte. Read once,
+  // here, beside the drop front it most resembles: a face that hangs on no
+  // cup hinge.
+  const liftSystem = liftSystemOf(params, type);
 
   // ── Carcass geometry ───────────────────────────────────────────────────────
   const internalWidth = W - C.topWidthBoards * G;
@@ -7359,8 +7371,14 @@ export function computeCabinet(params, profileOverride) {
   // engine, the BOM or the export moves by a hundredth.
   // A drop front is ONE face however wide the kit is: 594 is a measured number
   // and there is no two-leaf appliance door.
-  const leafCount = dropsForward ? Math.min(1, doorCount) : (bayDoors.length || doorCount);
-  const hingedLeafCount = dropsForward ? 0 : (bayDoors.length || doorCount);
+  // ─── T78 F18 · A LIFT IS ONE LEAF ON NO CUPS ─────────────────────────────
+  // A lift front is ONE full-width leaf however wide the kit is (the lift
+  // arms carry it, two per set; the width rule that cuts two doors at 705 is
+  // a hinge rule), and it hangs on no cup hinge: the drop front's two numbers
+  // again. A kit with doors in its bays, or a drop front, is never a lift.
+  const liftOn = Boolean(liftSystem) && !dropsForward && !bayDoors.length && doorCount > 0;
+  const leafCount = dropsForward ? Math.min(1, doorCount) : (liftOn ? 1 : (bayDoors.length || doorCount));
+  const hingedLeafCount = dropsForward || liftOn ? 0 : (bayDoors.length || doorCount);
   // ─── TURN 46 (CLAUDE.md F4): OPTION A — THE FRONT IS CUT ON THE SLOPE ─────
   //
   // The owner's law, verbatim: *"tniemy po skosie, brak wyboru otwierania,
@@ -7753,7 +7771,79 @@ export function computeCabinet(params, profileOverride) {
     }));
   }
 
-  if (!dropsForward && !bayDoors.length && doorCount === 1) {
+  // ─── T78 F18 · THE LIFT LEAF: ONE FULL-WIDTH LEAF, NO CUPS, THE ARMS BOUGHT ─
+  //
+  // The owner, 11.10.2026: *"szafki poziome otwierane do gory system blum ...
+  // podwojne drzwi pojedyncze etc."*  CLAUDE.md T78 F18: four front motions,
+  // the leaf has NO hinge cups, the lift arms are the hardware, drilled
+  // NOTHING until the catalogue's fixing pattern is in aventos.json with its
+  // page (it is not, 11.10.2026: every `holePositions.value` is null, and the
+  // plan says so in words, LIFT_NO_PATTERN). The plan (engine/liftSystems.js
+  // liftPlanFor) reads every number off `reference/hardware/aventos.json`'s
+  // `t78_f18` key: the HK top set by T19's own `selectLiftUnit` against the
+  // power factor (a front no unit covers is refused in words, LIFT_NO_UNIT),
+  // the HS and HL sets by cabinet height AND front weight bands, the HF set
+  // by its own LF bands and the lever arm by cabinet height.
+  //
+  // The leaf takes the same `doorY`, `doorZ`, `frontH`, `frontT` and
+  // `codes.all` every leaf in the run takes (T27 F2.2); its width is the
+  // single-door width whatever `doorCount` said. Its `meta.lift` is what the
+  // scene animates (hk: about the top edge to the catalogue angle; hs / hl:
+  // the two keyframes, or a plain rise of the leaf height while the data has
+  // none; hf: the upper half about the carcass top, the lower folding on it)
+  // and what Check #35 measures against the ceiling, a cornice and the unit
+  // above. For `hf` the leaf is TWO panels, F-UP and F-LOW, the lower carrying
+  // `meta.lift.parent` (the T78 F8 bifold child grammar). No `meta.hinge`, so
+  // the hinge family pass, the plate rows and the cup loop below pass it by.
+  let liftPlan = null;
+  if (liftOn) {
+    const liftW = W - P.doors.gap;
+    liftPlan = liftPlanFor({
+      system: liftSystem,
+      cabinet: {
+        widthMm: W, heightMm: H, depthMm: D, innerDepthMm: internalDepth, boardMm: G,
+      },
+      leaf: { widthMm: liftW, heightMm: frontH, thicknessMm: frontT },
+      gapMm: P.doors.gap,
+      profile: P,
+    });
+    const liftLeaf = (id, y, h, lift) => panel({
+      id,
+      part: 'FRONT',
+      role: 'front',
+      w: liftW,
+      h,
+      thickness: frontT,
+      edgeCode: codes.all,
+      edgeLen: metres(2 * liftW + 2 * h),
+      box: {
+        x: P.doors.gap / 2, y, z: doorZ, w: liftW, h, d: frontT,
+      },
+      cnc: rectGeometry(liftW, h),
+      meta: {
+        frontType: cfg.frontType,
+        // HOW IT OPENS, on the piece (the drop front's own grammar): the
+        // scene reads this and never the unit type.
+        opening: 'lift',
+        frontSystem: liftSystem,
+        lift,
+      },
+    });
+    if (liftSystem === 'hf') {
+      // The bi-fold: the upper half hinged to the carcass top, the lower to
+      // the upper. Equal halves less the gap (the catalogue: the taller
+      // front goes on top for asymmetrical applications; none asked here).
+      const [hUp, hLow] = liftPlan.halves;
+      const upperId = `${unitNum}-F-UP`;
+      const lowerId = `${unitNum}-F-LOW`;
+      panels.push(liftLeaf(upperId, doorY + hLow + P.doors.gap, hUp, { ...liftPlan.lift, half: 'upper', child: lowerId }));
+      panels.push(liftLeaf(lowerId, doorY, hLow, { ...liftPlan.lift, half: 'lower', parent: upperId }));
+    } else {
+      panels.push(liftLeaf(`${unitNum}-F`, doorY, frontH, liftPlan.lift));
+    }
+  }
+
+  if (!dropsForward && !liftOn && !bayDoors.length && doorCount === 1) {
     panels.push(faceLeaf(`${unitNum}-F`, singleLeafX, cfg.hinge));
     // ─── T75 F3 · THE BLANK, A FIXED FRONT PIECE BESIDE THE DOOR ──────────
     //
@@ -7868,7 +7958,7 @@ export function computeCabinet(params, profileOverride) {
         }));
       }
     }
-  } else if (!dropsForward && !bayDoors.length && doorCount === 2) {
+  } else if (!dropsForward && !liftOn && !bayDoors.length && doorCount === 2) {
     panels.push(faceLeaf(`${unitNum}-FL`, P.doors.gap / 2, 'L'));
     panels.push(faceLeaf(`${unitNum}-FR`, W - P.doors.gap / 2 - frontW, 'R'));
   }
@@ -8967,7 +9057,9 @@ export function computeCabinet(params, profileOverride) {
   // the sheet — and in the one way that would be wrong here it is not a door,
   // so it is not drilled for one. Read off the piece's own `meta`, not off the
   // type, because it is a fact about the PART.
-  for (const pnl of panels.filter((x) => x.part === 'FRONT' && !x.meta?.appliance)) {
+  // T78 F18 · a LIFT leaf hangs on its arms, not on cups: no cup, no cup
+  // screw, said on the piece (`meta.lift`) exactly as the appliance face is.
+  for (const pnl of panels.filter((x) => x.part === 'FRONT' && !x.meta?.appliance && !x.meta?.lift)) {
     const hingeSide = pnl.meta?.hinge || cfg.hinge;
     const cupX = hingeSide === 'L' ? pnl.w - cups.xFromHingeEdge : cups.xFromHingeEdge;
     const holeX = hingeSide === 'L' ? cupX - cups.screwOffsetX : cupX + cups.screwOffsetX;
@@ -10662,6 +10754,24 @@ export function computeCabinet(params, profileOverride) {
       // their spec, and a washer and a dryer of one aperture are two machines.
       `${applianceLabelOf(row.role, P)}, ${roundTo(internalWidth, 0)} x ${roundTo(row.h, 0)} x ${roundTo(internalDepth, 0)} mm aperture`);
   }
+  // ─── T78 F18 · THE LIFT IS BOUGHT: THE SET, THE ARM, THE CAPS, THE BRACKETS ─
+  // One line each, the article from the catalogue file (or null, refused in
+  // words), the cover caps as a line, the front fixing brackets as a line
+  // (their holes on the leaf are marked with Blum's template, never bored),
+  // the HF hinge set as a line; NO cups, NO plate rows, zero holes. The
+  // sentences the plan wrote travel with the unit (the Doors section and
+  // the BOM read `result.warnings`).
+  if (liftPlan) {
+    const L = liftPlan.lines;
+    hw('lift_unit', L.unit.label, L.unit.qty, L.unit.unit, L.unit.spec, L.unit.specLabel);
+    if (L.arm) hw('lift_arm', L.arm.label, L.arm.qty, L.arm.unit, L.arm.spec, L.arm.specLabel);
+    hw('lift_caps', L.caps.label, L.caps.qty, L.caps.unit, L.caps.spec, L.caps.specLabel);
+    hw('lift_bracket', L.bracket.label, L.bracket.qty, L.bracket.unit, L.bracket.spec, L.bracket.specLabel);
+    if (L.hinges) hw('lift_hinges', L.hinges.label, L.hinges.qty, L.hinges.unit, L.hinges.spec, L.hinges.specLabel);
+    for (const w of liftPlan.warnings) {
+      warnings.push({ ...w, message: `${unitNum}: ${w.message}` });
+    }
+  }
   hw('hangers', 'Wall hangers', type.hangers ? P.wallUnit.hangers.count : 0, 'pcs',
     { hole_diameter_mm: P.wallUnit.hangers.holeDiameter }, `⌀${P.wallUnit.hangers.holeDiameter}`);
   // ─── Turn 22 (CLAUDE.md F1.4): THE CORNICE IS ORDERED, NOT CUT ───────────
@@ -10765,6 +10875,10 @@ export function computeCabinet(params, profileOverride) {
     // cabinet whose doors are in its bays it used to be 0, which was a cabinet
     // reporting that it had no doors while three of them hung on its partitions.
     doors: leafCount,
+    // T78 F18 · the lift, where one is fitted: the system, the article, the
+    // power factor, the rise, and the sentence the Doors section prints.
+    // Absent on every other unit, so no golden grows a key.
+    ...(liftPlan ? { lift: liftPlan.derived } : {}),
     // ─── TURN 33 (CLAUDE.md F6): THE DRAWER COUNTS, PUBLISHED AT LAST ──────
     // `derived.drawers` was read by the door modal and the 3-D hinge models
     // (hinges.js hingeSpecsFor) since turn 30 — and NEVER WRITTEN: the field
@@ -11088,6 +11202,9 @@ export function computeCabinet(params, profileOverride) {
     wardrobeKits: wardrobeKitBodies,
     // T78 F9 · the L's bought corner mechanisms, present only where one is fitted.
     ...(cornerKitBodies.length ? { cornerKits: cornerKitBodies } : {}),
+    // T78 F18 · the lift mechanisms' placeholder bodies, one per side (a line
+    // and a body, never a hole), present only where a lift is fitted.
+    ...(liftPlan ? { liftKits: liftPlan.bodies } : {}),
     // ─── TURN 40 (CLAUDE.md F3b): THE OVERLAY STACK, AS THE KIT MEASURED IT ─
     //
     // The key appears ONLY where a wardrobe actually carries one — the same

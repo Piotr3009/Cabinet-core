@@ -29,7 +29,14 @@ import { partLabelText, slopeNoteText } from './partLabel.js';
 import { labelBlock } from './annotation.js';
 import { turnPoint } from './layout.js';
 import { exportFileName, fileSafeName } from '../naming.js';
-import { frontDecorationOf, frontDecorationLayers, frontPanelEntities } from './frontOperations.js';
+import {
+  frontDecorationOf, frontDecorationLayers, frontPanelEntities, mirrorAboutVerticalAxis,
+} from './frontOperations.js';
+// T78 F20 · a board machined from the carcass's OUTSIDE face (a Cabineo top,
+// bottom or fixed shelf, `meta.machinedFace: 'outside'`) is written as seen
+// from that face: reflected through T76's one helper above, labelled OUTSIDE
+// FACE UP by partLabel.js. Only `isOutsideFace` is asked here.
+import { isOutsideFace } from '../cabineo.js';
 
 // ─── Low-level R12 serialiser (shape from production-core/dxfWriter.js) ───
 
@@ -357,6 +364,16 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
   const pz = profile.puzzle;
   const cnc = profile.cnc;
   const entities = [];
+  // ─── T78 F20 · OUTSIDE FACE UP ──────────────────────────────────────────
+  // The owner, 11.10.2026: a Cabineo pocket is cut from the OUTSIDE face of
+  // the top, the bottom and a fixed shelf ("ciecie nie od srodka korpusu
+  // tylko do zewnatrz"). Such a board's file is drawn as seen from that face:
+  // every entity below is built in the drawn (inside) frame as always, and
+  // the whole set is reflected once at the end, x' = W - x, through the SAME
+  // helper T76's FRONT files go through (`mirrorAboutVerticalAxis`), never a
+  // second formula. A board no plan marked is untouched, byte for byte.
+  const outside = isOutsideFace(panel);
+  const thick = Number(panel.thickness) || 0;
 
   const outline = panel.cnc?.outline || [];
   if (outline.length >= 2) {
@@ -423,6 +440,13 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
     // above and a circle here would plunge it through the face. It stays on
     // the sheet and the drawings, and never reaches the machine file.
     if (hole.face === 'edge') continue;
+    // T78 F20 · on an OUTSIDE FACE UP board a BLIND hole drilled from the
+    // inside face cannot be drilled in this setup (it would be bored into
+    // the wrong face); it is held out of this file and named in the
+    // operations JSON for a second setup. A through hole, and a hole the
+    // record says is from the outside face (the drill15 option's dia 15),
+    // is written, reflected with the rest.
+    if (outside && hole.face !== 'outside' && Number(hole.depth) > 0 && thick > 0 && Number(hole.depth) < thick - 1e-6) continue;
     entities.push({ type: 'circle', layer: hole.layer, cx: hole.x, cy: hole.y, r: hole.d / 2 });
   }
 
@@ -484,7 +508,37 @@ export function panelEntities(panel, drills, { unitNum, profile }) {
     });
   }
 
-  return entities;
+  // T78 F20 · the one reflection, applied once to the whole part.
+  return outside ? reflectEntities(entities, Number(w)) : entities;
+}
+
+/**
+ * T78 F20 · an entity list as seen from the part's other face: every point
+ * through T76's `mirrorAboutVerticalAxis(width)` (polyline points, circle
+ * and arc centres, text anchors; the label sits on the part's middle, so it
+ * stays where it is), and an arc's two angles swapped and turned, which is
+ * what a mirror does to a sweep. The closed flag and the layers are untouched:
+ * a reflected CCW contour is a CW pocket, as T76's FRONT files already say.
+ */
+export function reflectEntities(entities, width) {
+  const mirror = mirrorAboutVerticalAxis(width);
+  const deg = (a) => ((a % 360) + 360) % 360;
+  return entities.map((e) => {
+    if (e.type === 'poly') return { ...e, pts: e.pts.map(([x, y]) => mirror([x, y])) };
+    if (e.type === 'circle') {
+      const [cx, cy] = mirror([e.cx, e.cy]);
+      return { ...e, cx, cy };
+    }
+    if (e.type === 'arc') {
+      const [cx, cy] = mirror([e.cx, e.cy]);
+      return { ...e, cx, cy, start: deg(180 - e.end), end: deg(180 - e.start) };
+    }
+    if (e.type === 'text') {
+      const [x, y] = mirror([e.x, e.y]);
+      return { ...e, x, y };
+    }
+    return e;
+  });
 }
 
 /** Bounding box over every entity, so the header can state the real extents. */
@@ -541,6 +595,10 @@ export function buildUnitDxfFiles(result, profile, { userLayers = [] } = {}) {
       const files = [{
         name,
         panelId: panel.id,
+        // T78 F20 · an OUTSIDE FACE UP board's file says which setup it is
+        // (cabineo-operations.json lists it); every other file is the back
+        // setup it always was and says nothing new.
+        ...(isOutsideFace(panel) ? { setup: 'outside' } : {}),
         entities,
         dxf: writeDxf(entities, layers, entitiesExtents(entities)),
       }];
@@ -589,9 +647,33 @@ export function sheetEntities({
     const place = byId.get(panel.id);
     if (!place) continue;
     const turn = place.bounds.turn || 0;
+    const localEntities = setup === 'front' ? frontPanelEntities(panel)
+      : panelEntities(panel, drills, { unitNum, profile });
     // Sheet (y-down, origin top-left) → DXF (y-up, origin bottom-left).
-    const dx = place.x - place.bounds.minX;
-    const dy = (total - (offsetY + place.y) - place.h) - place.bounds.minY;
+    let dx = place.x - place.bounds.minX;
+    let dy = (total - (offsetY + place.y) - place.h) - place.bounds.minY;
+    // T78 F20 · an OUTSIDE FACE UP board was reflected in its own frame by
+    // `panelEntities`, so its back tenons now stand on the other side of its
+    // rectangle: the slot the layout measured is the same size, but the
+    // reflected geometry's own corner is what lands on it. Measured here from
+    // the entities themselves, turned as the layout turns them; a board no
+    // plan marked keeps the two lines above, byte for byte.
+    if (setup !== 'front' && isOutsideFace(panel)) {
+      let minX = Infinity; let minY = Infinity;
+      const hit = (x, y) => {
+        const [tx, ty] = turnPoint(x, y, turn);
+        if (tx < minX) minX = tx;
+        if (ty < minY) minY = ty;
+      };
+      for (const e of localEntities) {
+        if (e.type === 'poly') for (const [x, y] of e.pts) hit(x, y);
+        else if (e.type === 'circle' || e.type === 'arc') { hit(e.cx - e.r, e.cy - e.r); hit(e.cx + e.r, e.cy + e.r); }
+      }
+      if (Number.isFinite(minX)) {
+        dx = place.x - minX;
+        dy = (total - (offsetY + place.y) - place.h) - minY;
+      }
+    }
     // Turn 17 (CLAUDE.md F3): a part may be laid down TURNED, and the file has
     // to agree with the picture — so it is the SAME transform the preview uses
     // (engine/cnc/layout.js `turnPoint`), applied to the part's own geometry
@@ -600,8 +682,6 @@ export function sheetEntities({
       const [tx, ty] = turnPoint(x, y, turn);
       return [tx + dx, ty + dy];
     };
-    const localEntities = setup === 'front' ? frontPanelEntities(panel)
-      : panelEntities(panel, drills, { unitNum, profile });
     for (const e of localEntities) {
       if (e.type === 'poly') entities.push({ ...e, pts: e.pts.map(([x, y]) => at(x, y)) });
       else if (e.type === 'circle') {

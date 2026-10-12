@@ -616,6 +616,8 @@ export function runChecks({
       // T76 F4 · #32: the board the decoration was drawn for, yellow.
       const n = {
         SLOPE_DRAWER_CROSSES: 20, SLOPE_SHELF_CROSSES: 21, NOTCH_REFUSED: 28, DOWEL_GATE: 31, JOINTS_REFUSED: 31,
+        // T78 F20 · #31 again: the Cabineo gate (engine/cabineo.js CABINEO_GATE_CODE), the same law as the dowel's.
+        CABINEO_GATE: 31,
         FRONT_DECORATION_BOARD: 32,
       }[wn.code];
       if (!n) continue;

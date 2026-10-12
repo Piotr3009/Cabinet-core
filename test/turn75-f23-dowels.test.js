@@ -506,14 +506,21 @@ test('F23 · save and reload: the choice is a unit param and the reloaded unit c
   assert.equal(S().unitResult(id).drills.some((d) => d.kind === 'puzzle'), true);
 });
 
-test('F23 · the UI: PRO\'s Construction section offers Puzzle and Dowel, Cabineo refused, no typed number', () => {
+// 12.10.2026: T78 F20 made Cabineo real (cabineo8 / cabineo12 are cut); only the bare id 'cabineo' of T75 stays reserved, a paragraph and not a button.
+test('F23 · the UI: PRO\'s Construction section offers the five systems (T78 F19/F20: Puzzle, Dowel, Biscuit, Cabineo 8, Cabineo 12), the reserved id refused in words, no typed number', () => {
   const rp = read('src/components/RightPanel.jsx');
   const row = rp.split('function JointsRow(')[1].split('\n}\n')[0];
   assert.match(rp, /<JointsRow\n/);
   assert.match(rp, /updateUnitParams\(unit\.id, \{ joints_system: system \}\)/);
-  for (const k of ['puzzle', 'dowel', 'cabineo']) assert.match(row, new RegExp(`data-joints="${k}"`));
-  assert.match(row, /data-joints="cabineo"\n\s+disabled\n/);
-  assert.match(row, /title=\{CABINEO_REFUSAL\}/);
+  // The five buttons are mapped from JOINT_CHOICES, each carrying its id as data-joints.
+  const choices = Function(`return ${rp.split('const JOINT_CHOICES = ')[1].split(';\n')[0]}`)();
+  assert.deepEqual(choices.map((c) => c.id), ['puzzle', 'dowel', 'biscuit', 'cabineo8', 'cabineo12']);
+  assert.match(row, /JOINT_CHOICES\.map\(\(c\) => \{/);
+  assert.match(row, /data-joints=\{c\.id\}/);
+  for (const k of ['puzzle', 'dowel', 'biscuit', 'cabineo8', 'cabineo12']) assert.ok(choices.some((c) => c.id === k), `data-joints="${k}" is rendered`);
+  // The reserved id of T75: a paragraph under `asked === 'cabineo'`, in CABINEO_REFUSAL's words.
+  assert.match(row, /asked === 'cabineo' && <p [^>]*data-joints-cabineo="1">\{CABINEO_REFUSAL\}<\/p>/);
+  assert.doesNotMatch(row, /data-joints="cabineo"/, 'the reserved id is no longer a button');
   assert.doesNotMatch(row, /NumberField|<input/, 'a typed number in the joints row');
   // PRO only: the retail copy of the element panel never learns the key.
   assert.doesNotMatch(read('src/components/ElementProperties.jsx'), /joints_system/);

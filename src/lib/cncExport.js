@@ -18,6 +18,15 @@ import { getCabinetProfile } from '../engine/profile.js';
 // top of each export, BEFORE `exportGate`, so "Export anyway" cannot pass it.
 // Only an export that would machine a dowel hole is refused.
 import { dowelExportRefusal } from '../engine/dowels.js';
+// ─── T78 F20 · THE CABINEO GATE, THE SAME LAW ───────────────────────────
+// SKYLON_JOINTS_CABINEO.lsp: *"While `confirmed` is nil a kit or an export
+// that would MACHINE these pockets refuses, in these words: 'the Cabineo
+// pattern is proposed, not confirmed by the owner'."*  Thrown at the top of
+// each export, BEFORE `exportGate`, so "Export anyway" cannot pass it; only
+// an export that would machine a Cabineo pocket or hole is refused. And the
+// unit ZIP carries `cabineo-operations.json` for the OUTSIDE FACE UP boards
+// (which file is which setup, the pockets in both frames, the reflection).
+import { cabineoExportRefusal, cabineoOperationsManifest, hasOutsideFaceBoards } from '../engine/cabineo.js';
 import { download } from './exporters.js';
 // T75 F22 · *"the CNC export carries a banner counting the lines that are not
 // 'cut'"*: read off the parts that go, never written into them.
@@ -151,6 +160,8 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
 } = {}) {
   const dowelRefused = dowelExportRefusal([{ result }], profile);
   if (dowelRefused) throw new Error(dowelRefused);
+  const cabineoRefused = cabineoExportRefusal([{ result }], profile);
+  if (cabineoRefused) throw new Error(cabineoRefused);
   const gate = exportGate([{ result }], { profile });
   const held = new Set(gate.held.map((h) => h.panelId));
   const cut = grooved(result, {
@@ -181,6 +192,14 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
     files: [...files.map((f) => ({ name: f.name, setup: f.setup || 'back', panelId: f.panelId })), ...referenceFiles.map(fileRecord)],
     gate, exportAnyway,
   }), null, 2));
+  // T78 F20 · the OUTSIDE FACE UP boards' operations JSON rides the same ZIP:
+  // which DXF is the outside setup, the reflection it was written through,
+  // every pocket in both frames, the sides' holes, the gate.
+  const cabineoManifestName = 'cabineo-operations.json';
+  const outsideFace = hasOutsideFaceBoards([{ result: safe }]);
+  if (outsideFace) zip.file(cabineoManifestName, JSON.stringify(cabineoOperationsManifest([{ result: safe }], {
+    files: files.map((f) => ({ name: f.name, setup: f.setup || 'back', panelId: f.panelId })),
+  }), null, 2));
 
   // DEFLATE: the DXFs are ASCII group codes, so they compress ~10:1.
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
@@ -200,6 +219,7 @@ export async function exportUnitDxfZip(result, profile = getCabinetProfile(), {
     files: [...files.map((f) => f.name), ...referenceFiles.map((f) => f.name)],
     ...(referenceFiles.length ? { referenceFiles: referenceFiles.map((f) => f.name) } : {}),
     ...(decorated ? { operationManifest: manifestName } : {}),
+    ...(outsideFace ? { cabineoManifest: cabineoManifestName } : {}),
     held: exportAnyway ? [] : gate.held,
     gateMessage: exportAnyway ? null : gate.message,
     readinessBanner: ready.banner,
@@ -224,6 +244,8 @@ export function exportSheetDxf(result, selectedIds, profile = getCabinetProfile(
   if (!chosen.length) throw new Error('Nothing selected to export.');
   const dowelRefused = dowelExportRefusal([{ result, panels: chosen }], profile);
   if (dowelRefused) throw new Error(dowelRefused);
+  const cabineoRefused = cabineoExportRefusal([{ result, panels: chosen }], profile);
+  if (cabineoRefused) throw new Error(cabineoRefused);
   const gate = exportGate([{ result, panels: chosen }], { profile });
   const panels = panelsThatGo(chosen, { gate, unitId: result.unitId || null, exportAnyway });
   const referenceFiles = buildOrnateReferenceFiles([{ result, panels: chosen }], { level: referenceLevel, profile });
@@ -289,6 +311,8 @@ export function exportMaterialDxf(entries, {
 } = {}) {
   const dowelRefused = dowelExportRefusal(entries, profile);
   if (dowelRefused) throw new Error(dowelRefused);
+  const cabineoRefused = cabineoExportRefusal(entries, profile);
+  if (cabineoRefused) throw new Error(cabineoRefused);
   const gate = exportGate(entries, { profile });
   const requested = materialExportSection(entries, { key, design, profile, materials });
   const manifestEntries = (requested?.blocks || []).map((block) => ({

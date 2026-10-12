@@ -1,0 +1,437 @@
+{
+  "system": "cabineo",
+  "units": "mm",
+  "status": "owner to confirm",
+  "source": {
+    "file": "reference/hardware/cabineo/Operating_instructions_Cabineo.pdf",
+    "publisher": "Lamello AG, Verbindungstechnik, Hauptstrasse 149, CH-4416 Bubendorf (page 1, footer)",
+    "document": "Cabineo operating instructions DE/EN, Lamello Art.No. 986320VS, edition 02/24 (page 2, footer, rotated); PDF title 986320VS-BA-Cabineo_240226.indd, created 29.02.2024",
+    "pages": 2,
+    "pageOf": {
+      "1": "the product (Cabineo 8, Cabineo 12, Cabineo 8 M6 and their black versions, the isometric with 33.8 / 16.5 / 10), the machines, Assembly panels 1 to 6, Technical information, Applications (minimum panel thicknesses), the strength table, the 'No dowel necessary' box",
+      "2": "Machining: four mountings (On the surface, Flush with the surface, Flush cover cap, HPL on the surface), each a section drawing and three machining options (Option 1 drill dia 15, Option 2 cutter >= dia 10, Option 3 cutter dia 12)"
+    },
+    "read": "T78 F20, 11.10.2026: the text layer with pdftotext -layout and pypdf, both pages rendered at 400 dpi with pdftoppm and every drawing read at that scale; nothing fetched from the web",
+    "caveat": "every number below is as the sheet prints it; a value that is null is NOT on the sheet and the sentence beside it says what is missing; a value inside a 'derived' object is arithmetic on printed numbers and says which; a 'reading' is what the drawing shows without a printed number"
+  },
+  "connector": {
+    "sizeMm": {
+      "length": 33.8,
+      "width": 16.5,
+      "height": 10.8,
+      "pageOf": 1,
+      "drawing": "Technical information table: 'Groesse | Size 33.8 x 16.5 x 10.8 mm' (overall, collar included)"
+    },
+    "bodyHeightMm": {
+      "value": 10,
+      "pageOf": 1,
+      "drawing": "the isometric at the top of page 1: '33.8 mm' along the collar, '16.5 mm' across it, '10 mm' on the ribbed body below the collar"
+    },
+    "cutterMaxDiaMm": {
+      "value": 12,
+      "pageOf": 1,
+      "drawing": "Technical information table: 'Fraeser | Cutter <= dia 12 mm'"
+    },
+    "housing": {
+      "value": "fibreglass reinforced plastic (Glasfaserverstaerkter Kunststoff)",
+      "pageOf": 1,
+      "drawing": "Technical information table: 'Material housing'"
+    },
+    "installationToleranceMm": {
+      "longitudinal": 0.1,
+      "sign": "+/-",
+      "pageOf": 1,
+      "drawing": "Technical information table: 'Einbautoleranz | Installation tolerance: Laengs | Longitudinal +/- 0.1 mm'"
+    },
+    "torque": {
+      "valueNm": 2.5,
+      "qualifier": "ca.",
+      "speed": 1,
+      "pageOf": 1,
+      "drawing": "Assembly, panel 4 (the drill driver on the screw): 'Drehmoment ca. 2.5 Nm | Torque ca. 2.5 Nm', 'Geschwindigkeit 1 | Speed 1'"
+    },
+    "claims": {
+      "values": ["no edge drilling", "less drill holes", "less tool change", "no pre-assembly of dowel"],
+      "pageOf": 1,
+      "drawing": "the box at the foot of page 1: 'Keine Holzduebel notwendig! | No dowel necessary!' with the four lines"
+    },
+    "machines": {
+      "values": ["CNC processing centres with consoles", "CNC processing centres with nesting technology", "CNC processing centres vertical", "CNC router", "drilling and insertion machines"],
+      "pageOf": 1,
+      "drawing": "'Bearbeitung mit allen CNC-Maschinen | Machining with all CNC machines', five pictured machines"
+    }
+  },
+  "variants": {
+    "8": {
+      "label": "Cabineo 8",
+      "screwReachXMm": 8,
+      "screw": "black galvanised screw (Schwarz verzinkte Schraube)",
+      "pageOf": 2,
+      "drawing": "the caption beside the section drawing of On the surface, Flush with the surface and Flush cover cap: 'Cabineo 8: X = 8 mm'; X is dimensioned in the section as the screw's projection beyond the board's end, into the counterpart panel",
+      "colours": {
+        "values": ["standard", "black"],
+        "pageOf": 1,
+        "drawing": "page 1 pictures 'Cabineo 8' and 'Cabineo 8 black'"
+      },
+      "minPanelMm": {
+        "cornerJoint": {
+          "counterpartPanel": 9,
+          "connectorBoard": 12,
+          "pageOf": 1,
+          "drawing": "Applications, Cabineo 8, upper drawing (a corner joint, the screw into the end of an upright): '>= 9 mm' on the panel that takes the screw, '>= 12 mm' on the board that carries the connector"
+        },
+        "centreWall": {
+          "centrePanel": 16,
+          "connectorBoard": 12,
+          "pageOf": 1,
+          "drawing": "Applications, Cabineo 8, lower drawing (a centre wall with a connector screwed in from each side): '>= 16 mm' on the centre panel, '>= 12 mm' on the boards"
+        }
+      },
+      "strengthN": {
+        "panelMm": 19,
+        "F1_tensile": { "beech": 1530, "mdf": 610, "particleBoard": 520 },
+        "F2_shear": { "beech": 1430, "mdf": 680, "particleBoard": 530 },
+        "F3_shear": { "beech": 630, "mdf": 460, "particleBoard": 300 },
+        "unit": "N (the sheet: 10 N ~ 1 kg)",
+        "pageOf": 1,
+        "drawing": "the strength table, column Cabineo 8, rows F1 (Zugfestigkeit | Tensile strength), F2 and F3 (Scherfestigkeit | Shear strength), every value with an asterisk: 'Disclaimer regarding Load Limits on our website Lamello.com'"
+      },
+      "article": null,
+      "articleNote": "the sheet prints no article number for the connector on either page; CLAUDE.md T78 F20 expects 186310 'as the sheet's page 1 names it' and page 1 does not name it (the text layer was searched for '186' and 'Art', both pages were read); the owner supplies the article from Lamello's price list or the box label"
+    },
+    "12": {
+      "label": "Cabineo 12",
+      "screwReachXMm": 12,
+      "screw": "galvanised screw (Verzinkte Schraube)",
+      "pageOf": 2,
+      "drawing": "the caption beside the section drawing of On the surface, Flush with the surface and Flush cover cap: 'Cabineo 12: X = 12 mm'",
+      "colours": {
+        "values": ["standard", "black"],
+        "pageOf": 1,
+        "drawing": "page 1 pictures 'Cabineo 12' and 'Cabineo 12 black'"
+      },
+      "minPanelMm": {
+        "cornerJoint": {
+          "counterpartPanel": 13,
+          "connectorBoard": 12,
+          "pageOf": 1,
+          "drawing": "Applications, Cabineo 12, upper drawing: '>= 13 mm' on the panel that takes the screw, '>= 12 mm' on the board that carries the connector"
+        },
+        "centreWall": {
+          "centrePanel": 24,
+          "connectorBoard": 12,
+          "pageOf": 1,
+          "drawing": "Applications, Cabineo 12, lower drawing: '>= 24 mm' on the centre panel, '>= 12 mm' on the boards"
+        }
+      },
+      "strengthN": {
+        "panelMm": 19,
+        "F1_tensile": { "beech": 2250, "mdf": 980, "particleBoard": 820 },
+        "F2_shear": { "beech": 2350, "mdf": 1120, "particleBoard": 880 },
+        "F3_shear": { "beech": 840, "mdf": 490, "particleBoard": 330 },
+        "unit": "N (the sheet: 10 N ~ 1 kg)",
+        "pageOf": 1,
+        "drawing": "the strength table, column Cabineo 12, rows F1, F2, F3, every value with the asterisk"
+      },
+      "article": null,
+      "articleNote": "the sheet prints no article number for the connector; the owner supplies it"
+    },
+    "8M6": {
+      "label": "Cabineo 8 M6",
+      "screwReachXMm": 8,
+      "screw": "yellow galvanised screw, metric ISO thread DIN 13-1 (Gelb verzinkte Schraube, Metrisches ISO-Gewinde DIN 13-1)",
+      "pageOf": 2,
+      "drawing": "the caption beside the section drawing of all four mountings: 'Cabineo 8 M6: X = 8 mm'; HPL on the surface names this variant only",
+      "insert": {
+        "label": "with insert (mit Muffe)",
+        "lengthMm": 12.3,
+        "pageOf": 1,
+        "drawing": "Applications heading 'Cabineo 8 M6 mit Muffe | with insert 12.3 mm' and the strength table heading; the insert is the threaded sleeve in the counterpart panel that the M6 screw runs into"
+      },
+      "colours": {
+        "values": ["standard", "black"],
+        "pageOf": 1,
+        "drawing": "page 1 pictures 'Cabineo 8 M6' and 'Cabineo 8 M6 black'"
+      },
+      "minPanelMm": {
+        "cornerJoint": {
+          "counterpartPanel": 14,
+          "connectorBoard": 12,
+          "printed1mm": 1,
+          "pageOf": 1,
+          "drawing": "Applications, Cabineo 8 M6, upper drawing: '>= 14 mm' on the panel that takes the insert, '>= 12 mm' on the board that carries the connector, and '1 mm' drawn at the insert's mouth between the counterpart panel's face and a dashed line beside the insert; the sheet prints no caption for the 1 mm"
+        },
+        "centreWall": {
+          "centrePanelMin": 14,
+          "centrePanelMax": 16,
+          "connectorBoard": 12,
+          "printed1mm": 1,
+          "pageOf": 1,
+          "drawing": "Applications, Cabineo 8 M6, lower drawing (one insert through the centre panel, a connector from each side): '>= 14 mm' and '<= 16 mm' on the centre panel, '>= 12 mm' on the boards, '1 mm' at the insert's mouth as above"
+        }
+      },
+      "strengthN": {
+        "panelMm": 19,
+        "F1_tensile": { "beech": 2030, "mdf": 900, "particleBoard": 810 },
+        "F2_shear": { "beech": 2150, "mdf": 1500, "particleBoard": 1210 },
+        "F3_shear": { "beech": 690, "mdf": 490, "particleBoard": 350 },
+        "unit": "N (the sheet: 10 N ~ 1 kg)",
+        "pageOf": 1,
+        "drawing": "the strength table, column 'Cabineo 8M6 mit Muffe | with insert 12.3 mm', rows F1, F2, F3, every value with the asterisk"
+      },
+      "article": null,
+      "articleNote": "the sheet prints no article number for the connector or the insert; the owner supplies them"
+    }
+  },
+  "spacing": {
+    "edgeMinMm": 20,
+    "maxMm": 300,
+    "pageOf": 1,
+    "drawing": "Assembly, panel 1: 'min. 20 mm' from the board's edge to the first connector, 'max. 300 mm' between one connector and the next, drawn along the board's end that carries the pockets"
+  },
+  "counterpartHole": {
+    "diaMm": 5,
+    "depthMm": null,
+    "depthNote": "the sheet prints no depth for the 5 mm hole; it prints the screw's projection X beyond the board's end (variants.*.screwReachXMm: 8 / 12 / 8) and the counterpart panel's minimum thickness (variants.*.minPanelMm). 'D-5 mm', 'D-5.8 mm' and 'D-7.1 mm' on page 2 are NOT this hole's depth: each is the distance from the screw axis to the far face of the board that carries the connector (D is that board's thickness), printed in the pocket section",
+    "axis": "on the pocket's screw axis: 5 mm from the collar seat (mountings.*.axisFromCollarSeatMm); the collar seat is the face for On the surface and HPL, 0.8 below the face for Flush with the surface, 2.1 below the face for Flush cover cap (mountings.*.derived.axisFromSurfaceMm)",
+    "position": "in the FACE of the counterpart panel on the joint line, one hole per pocket, at the pocket's position along the joint (Assembly, panel 1 and panel 2: pockets along one board's end, matching holes in the other's face)",
+    "pageOf": 2,
+    "drawing": "every section drawing of page 2: 'dia 5 mm' on the counterpart panel (the hatched upright at the left), 'X' the screw's projection beyond the board's end"
+  },
+  "mountings": {
+    "surface": {
+      "label": "On the surface (Bund aufliegend): the collar lies on the board's face",
+      "variants": ["8", "12", "8M6"],
+      "pocketDepthMm": 11,
+      "axisFromCollarSeatMm": 5,
+      "axisToFarFace": "D-5",
+      "collarRecessDepthMm": null,
+      "collarRecessNote": "no recess: the section draws the collar on the face",
+      "floorDimensionMm": null,
+      "floorDimensionNote": "no dimension printed at the pocket floor in this band",
+      "derived": {
+        "axisFromSurfaceMm": 5,
+        "how": "the collar seat is the face, so the printed 5 mm is from the face; D - (D-5) agrees"
+      },
+      "pageOf": 2,
+      "drawing": "On the surface, section: 'dia 5 mm' (the hole in the counterpart panel), '5 mm' (the face to the screw axis), 'D-5 mm' (the axis to the far face), '11 mm' (the pocket depth), 'D' (the board's thickness), 'X' (the screw's projection)",
+      "recessOutline": null
+    },
+    "flush": {
+      "label": "Flush with the surface (Bund flaechenbuendig): the collar is let into the face",
+      "variants": ["8", "12", "8M6"],
+      "pocketDepthMm": 11.5,
+      "axisFromCollarSeatMm": 5,
+      "axisToFarFace": "D-5.8",
+      "collarRecessDepthMm": 0.8,
+      "floorDimensionMm": 0.7,
+      "floorDimensionNote": "printed at the pocket floor, from a dashed line drawn across the pocket to the floor; the sheet prints no caption for it",
+      "derived": {
+        "axisFromSurfaceMm": 5.8,
+        "how": "D - (D-5.8); equals the printed 5 mm plus the 0.8 mm collar recess"
+      },
+      "pageOf": 2,
+      "drawing": "Flush with the surface, section: 'dia 5 mm', '5 mm', 'D-5.8 mm', '11.5 mm' (the pocket depth from the face), '0.8 mm' (the collar recess), '0.7 mm' (at the floor), 'D', 'X'",
+      "recessOutline": {
+        "widthMm": 16.7,
+        "endRadiusMm": null,
+        "lengthMm": null,
+        "reading": "Options 1 to 3 of this band draw the collar recess around the three lobes with a rounded end concentric with the third lobe; only its width is printed",
+        "pageOf": 2,
+        "drawing": "Flush with the surface, Options 1, 2 and 3: '16.7 mm' across the recess outline"
+      }
+    },
+    "flushCap": {
+      "label": "Flush cover cap (Abdeckkappen flaechenbuendig): the cover cap sits flush in a deeper recess",
+      "variants": ["8", "12", "8M6"],
+      "pocketDepthMm": 13,
+      "axisFromCollarSeatMm": 5,
+      "axisToFarFace": "D-7.1",
+      "capRecessDepthMm": 2.1,
+      "floorDimensionMm": 0.95,
+      "floorDimensionNote": "printed at the pocket floor, from a dashed line drawn across the pocket to the floor; the sheet prints no caption for it",
+      "derived": {
+        "axisFromSurfaceMm": 7.1,
+        "how": "D - (D-7.1); equals the printed 5 mm plus the 2.1 mm cap recess"
+      },
+      "pageOf": 2,
+      "drawing": "Flush cover cap, section: 'dia 5 mm', '5 mm', 'D-7.1 mm', '13 mm' (the pocket depth from the face), '2.1 mm' (the cap recess), '0.95 mm' (at the floor), 'D', 'X'",
+      "recessOutline": {
+        "widthMm": 18.8,
+        "endRadiusMm": 9.4,
+        "endCentreBeyondThirdLobeMm": 0.25,
+        "endCentreFromEndMm": 26.25,
+        "lengthMm": 35.65,
+        "pageOf": 2,
+        "drawing": "Flush cover cap, Option 1: '18.8 mm' across the recess, '0.25 mm' from the third hole centre to the semicircle's centre, '9.4 mm = r'; Option 2: '26.25 mm' from the board's end to the semicircle's centre, '9.4 mm = r'; Option 3: '35.65 mm' the recess's full length from the board's end"
+      }
+    },
+    "hpl": {
+      "label": "HPL on the surface (HPL Bund aufliegend): the collar lies on an HPL faced board",
+      "variants": ["8M6"],
+      "variantsNote": "this band's caption names 'Cabineo 8 M6: X = 8 mm' only",
+      "pocketDepthMm": 11,
+      "axisFromCollarSeatMm": 5,
+      "axisToFarFace": "D-5",
+      "collarRecessDepthMm": null,
+      "collarRecessNote": "no recess: the section draws the collar on the face",
+      "floorDimensionMm": 1,
+      "floorDimensionNote": "printed at the pocket floor, from a dashed line drawn across the pocket to the floor; the sheet prints no caption for it",
+      "derived": {
+        "axisFromSurfaceMm": 5,
+        "how": "the collar seat is the face; D - (D-5) agrees"
+      },
+      "pageOf": 2,
+      "drawing": "HPL on the surface, section: 'dia 5 mm', '5 mm', 'D-5 mm', '11 mm', '1 mm' (at the floor), 'D', 'X'",
+      "recessOutline": null,
+      "machining": "the HPL band prints its own option numbers: machining.*.hpl"
+    }
+  },
+  "machining": {
+    "frame": "x from the board's END (the joint line) along the board, y across the board with y = 0 on the screw axis; the pocket is open at x = 0 (the channel runs out of the end). Every drawing shows the outline symmetric about the axis: the half-heights printed above the axis (6.6 or 6.8) and below it (5, 5.2 or 6) are measured at different x (the board's end, a waist, the straight channel), not an asymmetry",
+    "options": ["drill15", "cutter10", "cutter12"],
+    "standardBands": ["surface", "flush", "flushCap"],
+    "standardNote": "On the surface, Flush with the surface and Flush cover cap print the same option numbers; HPL on the surface prints its own, under 'hpl'",
+    "drill15": {
+      "label": "Option 1: Drill dia 15 mm (Bohrer dia 15 mm), three overlapping holes",
+      "tool": { "kind": "drill", "diaMm": 15 },
+      "standard": {
+        "holes": 3,
+        "diaMm": 15,
+        "firstCentreFromEndMm": 3.6,
+        "pitchMm": 11.2,
+        "derived": {
+          "centresFromEndMm": [3.6, 14.8, 26],
+          "how": "3.6, 3.6 + 11.2, 3.6 + 11.2 + 11.2; Options 2 and 3 print 14.8 and 26 directly"
+        },
+        "pageOf": 2,
+        "drawing": "Option 1 under On the surface, Flush with the surface and Flush cover cap: '3.6 mm' (the end to the first centre), '11.2 mm', '11.2 mm' (centre to centre), 'dia 15 mm (3x)'"
+      },
+      "hpl": {
+        "holes": 3,
+        "diaMm": 15.2,
+        "firstCentreFromEndMm": 3.5,
+        "pitchMm": 11.2,
+        "derived": {
+          "centresFromEndMm": [3.5, 14.7, 25.9],
+          "how": "3.5, 3.5 + 11.2, 3.5 + 11.2 + 11.2; the HPL Options 2 and 3 print 14.7 and 25.9 directly"
+        },
+        "pageOf": 2,
+        "drawing": "Option 1 under HPL on the surface: '3.5 mm', '11.2 mm', '11.2 mm', 'dia 15.2 mm (3x)'"
+      }
+    },
+    "cutter10": {
+      "label": "Option 2: Cutter >= dia 10 mm (Fraeser >= dia 10 mm): the three-lobe outline milled",
+      "tool": { "kind": "cutter", "diaMinMm": 10, "diaMaxMm": 12, "diaMaxNote": "page 1, Technical information: 'Cutter <= dia 12 mm'" },
+      "standard": {
+        "lobes": 3,
+        "lobeDiaMm": 15,
+        "lobeCentresFromEndMm": [3.6, 14.8, 26],
+        "waistsFromEndMm": [9.2, 20.4],
+        "halfHeightAtWaistMm": 5,
+        "halfHeightAtEndMm": 6.6,
+        "pageOf": 2,
+        "drawing": "Option 2 under On the surface, Flush with the surface and Flush cover cap: '26 mm' and '14.8 mm' (the end to the third and the second lobe centre), '3.6 mm' (the end to the first), 'dia 15 mm (3x)', '6.6 mm' (the axis to the outline where it meets the board's end), '5 mm' (the axis to the waist between two lobes), '9.2 mm' and '20.4 mm' (the end to the two waists)"
+      },
+      "hpl": {
+        "lobes": 3,
+        "lobeDiaMm": 15.2,
+        "lobeCentresFromEndMm": [3.5, 14.7, 25.9],
+        "waistsFromEndMm": [9.1, 20.3],
+        "halfHeightAtWaistMm": 5.2,
+        "halfHeightAtEndMm": 6.6,
+        "pageOf": 2,
+        "drawing": "Option 2 under HPL on the surface: '25.9 mm', '14.7 mm', '3.5 mm', 'dia 15.2 mm (3x)', '6.6 mm', '5.2 mm', '9.1 mm', '20.3 mm'"
+      }
+    },
+    "cutter12": {
+      "label": "Option 3: Cutter dia 12 mm (Fraeser dia 12 mm): the three lobes joined by a straight 12 mm channel, the cutter being too wide for the 10 mm waist",
+      "tool": { "kind": "cutter", "diaMm": 12 },
+      "standard": {
+        "lobes": 3,
+        "lobeDiaMm": 15,
+        "lobeCentresFromEndMm": [3.6, 14.8, 26],
+        "channelHeightMm": 12,
+        "halfHeightAtChannelMm": 6,
+        "halfHeightAtEndMm": 6.6,
+        "reliefs": [
+          { "fromEndMm": 8.1, "lengthMm": 2.2 },
+          { "fromEndMm": 19.3, "lengthMm": 2.2 }
+        ],
+        "reliefsNote": "the two straight sections of the outline between the lobes, where the channel's flat replaces the waist; printed as a start and a length on each side of the axis",
+        "shearStrengthF3": "-13 %",
+        "pageOf": 2,
+        "drawing": "Option 3 under On the surface, Flush with the surface and Flush cover cap: '26 mm', '14.8 mm', '3.6 mm', 'dia 15 mm (3x)', '6.6 mm' (the axis to the outline at the board's end), '6 mm' (the axis to the straight channel), '12 mm' (the channel's full height), '8.1 mm' then '2.2 mm' (the first straight section), '19.3 mm' then '2.2 mm' (the second); the footnote 'F3 Scherfestigkeit | Shear strength = -13%'"
+      },
+      "hpl": {
+        "lobes": 3,
+        "lobeDiaMm": 15.2,
+        "lobeCentresFromEndMm": [3.5, 14.7, 25.9],
+        "channelHeightMm": 12,
+        "halfHeightAtChannelMm": 6,
+        "halfHeightAtEndMm": 6.8,
+        "reliefs": [
+          { "fromEndMm": 8.2, "lengthMm": 1.8 },
+          { "fromEndMm": 19.3, "lengthMm": 1.8 }
+        ],
+        "shearStrengthF3": "-13 %",
+        "pageOf": 2,
+        "drawing": "Option 3 under HPL on the surface: '25.9 mm', '14.7 mm', '3.5 mm', 'dia 15.2 mm (3x)', '6.8 mm', '6 mm', '12 mm', '8.2 mm' then '1.8 mm', '19.3 mm' then '1.8 mm'; the footnote 'F3 Scherfestigkeit | Shear strength = -13%'"
+      }
+    },
+    "consistency": "a check, not a number: three dia 15 circles at 3.6 / 14.8 / 26 give a waist half-height of sqrt(7.5^2 - 5.6^2) = 5.0 (printed 5), a half-height at the board's end of sqrt(7.5^2 - 3.6^2) = 6.6 (printed 6.6), and meet a 12 mm channel 4.5 from each centre, at 8.1, 10.3, 19.3 and 21.5 (printed 8.1 + 2.2 and 19.3 + 2.2); the printed numbers agree with each other"
+  },
+  "cap": {
+    "article": null,
+    "sizeMm": null,
+    "note": "the sheet draws a cover cap (Assembly panels 5 and 6, and the Flush cover cap mounting with its 2.1 mm recess, 18.8 wide, 35.65 long) but prints no cap article number, colour or size; the owner supplies the cap article"
+  },
+  "articles": {
+    "connector8": null,
+    "connector12": null,
+    "connector8M6": null,
+    "insert8M6": null,
+    "cap": null,
+    "sheetPrints": "only its own document number, 'Cabineo 02/24 Art.No. 986320VS DE/EN' (page 2, footer, rotated)",
+    "note": "CLAUDE.md T78 F20 names article 186310 for Cabineo 8 'as the sheet's page 1 names it'; the sheet names no connector article on either page, so 186310 is not written here; every article is owner to supply"
+  },
+  "owner": {
+    "by": "the owner, 11.10.2026 (CLAUDE.md T78 F20, THE INVERTED SIDE); decided, not proposed",
+    "noEdgeDrilling": "Cabineo drills NO panel edge; the sheet's own claim 'no edge drilling' (page 1) says the same",
+    "pocket": "milled into the FACE of the horizontal board (top, bottom, fixed shelf) at its end, the channel open to the end (the sheet's x = 0)",
+    "pocketCutFrom": {
+      "top": "the OUTSIDE face, from above (under the worktop)",
+      "bottom": "the OUTSIDE face, from below (in the plinth void)",
+      "fixedShelf": "its underside (with the cap)"
+    },
+    "ownerWords": "ciecie nie od srodka korpusu tylko do zewnatrz",
+    "counterpartHole": "the screw passes through the board's end into a 5 mm hole drilled into the FACE of the side, from the inside (the face every hinge plate and shelf pin already lives on), on the joint line, at each pocket's position",
+    "consequence": "with the pocket cut from the OUTSIDE face, the side's 5 mm hole sits mountings.<chosen>.derived.axisFromSurfaceMm from the board's OUTSIDE face (On the surface 5, Flush 5.8, Flush cover cap 7.1): for a top, that far below its top face; for a bottom, that far above its underside; for a fixed shelf, that far above its underside",
+    "machinedFace": "outside",
+    "export": "the top, the bottom and a fixed shelf with Cabineo pockets carry machinedFace 'outside'; their DXF is drawn as seen from that face, x' = W - x, through the SAME reflection T76 built for the decorative fronts' FRONT files (cnc/frontOperations.js, frontX = partWidth - backX), never a second one; the operations JSON and the part label print 'OUTSIDE FACE UP'",
+    "setOut": "profile.joints.cabineo holds the set-out (endOffsetMm 50 from each end, then every pitchMm 250, T78 proposed, never fewer than two); the sheet's limits that bound it are spacing.edgeMinMm 20 and spacing.maxMm 300 above",
+    "skinCheck": "the T76 skin check (MIN_SKIN 3 mm between opposing blind cuts) runs between every outside-face pocket and every inside-face drilling of the same board; a clash is refused in words, naming the board and the two cuts"
+  },
+  "profileChoices": {
+    "note": "numbers and choices live in src/engine/profile.js, not here: profile.joints.cabineo.mounting (T78 proposed 'flushCap') and profile.joints.cabineo.machining (T78 proposed 'cutter12', the owner's Biesse mills; he decides), the variant (8 or 12, chosen in company defaults as joints.system 'cabineo8' or 'cabineo12'), pitchMm 250 and endOffsetMm 50 (T78 proposed), and the confirmed: false gate that blocks the CNC export until the owner confirms these numbers",
+    "ids": {
+      "variants": ["8", "12", "8M6"],
+      "mountings": ["surface", "flush", "flushCap", "hpl"],
+      "machining": ["drill15", "cutter10", "cutter12"]
+    }
+  },
+  "notes": [
+    "Articles: the sheet prints no connector, insert or cap article; CLAUDE.md's 186310 for Cabineo 8 is not on page 1 (or page 2). Written as null.",
+    "Corner joints: CLAUDE.md expects 'corner joints from 12 / 14'; the sheet prints, per variant, the counterpart panel (the one that takes the screw) >= 9 (Cabineo 8), >= 13 (Cabineo 12), >= 14 (Cabineo 8 M6) and the board that carries the connector >= 12 in every case. The sheet's numbers are written.",
+    "Centre wall: as CLAUDE.md expects, Cabineo 8 from 16 and Cabineo 12 from 24; Cabineo 8 M6 is 14 to 16 (a range, with the 12.3 insert).",
+    "Counterpart hole depth: CLAUDE.md reads 'its depth as the sheet gives it relative to the panel thickness D'; 'D-5 mm' (and D-5.8, D-7.1) is the screw axis to the far face of the board that carries the connector, not the hole's depth. The hole's depth is not printed: null.",
+    "Option 2: CLAUDE.md's '26 x 6.6 outline' is not how the sheet dimensions it: 26 is the end to the third lobe centre and 6.6 the half-height where the outline meets the board's end; the outline's full length is not printed for On the surface or Flush with the surface (a full dia 15 third lobe would end at 26 + 7.5); for the cap recess the sheet prints 35.65.",
+    "Option 3: CLAUDE.md's '26 x 6' is likewise 26 to the third centre and 6 the half-height of the straight 12 mm channel; 8.1 and 19.3 are where the two straight sections start, each 2.2 long.",
+    "Collar and cap recesses: Flush with the surface prints 0.8 (the collar recess) and 0.7 (at the pocket floor); Flush cover cap prints 2.1 (the cap recess) and 0.95 (at the floor); HPL prints 1 at the floor. The floor dimensions carry no caption on the sheet.",
+    "HPL on the surface is captioned for Cabineo 8 M6 only and prints its own option numbers (dia 15.2, 3.5, 14.7, 25.9, 9.1, 20.3, 5.2, 6.6, 6.8, 8.2, 19.3, 1.8).",
+    "Screw lengths are not printed, only the projection X beyond the board's end.",
+    "The strength table is for 19 mm panels only and every value carries the sheet's asterisk (disclaimer on lamello.com).",
+    "The sheet is the operating instructions; Lamello's CAD files the T75 README asked for are still not in the repo. Nothing here is taken from a CAD file.",
+    "No number in this file is invented: null where the sheet is silent."
+  ]
+}

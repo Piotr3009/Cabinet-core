@@ -440,10 +440,11 @@ export const PART_REGISTRY = {
     note: 'Counted from the biscuit / dowel joints the engine drilled',
   },
   // T78 F20 · the Cabineo connector and its cover cap: order lines of a
-  // Cabineo unit (engine/cabineo.js cabineoHardwareLines), counted off the
-  // engine's pockets, never recomputed. Articles are NOT on Lamello's sheet
-  // (reference/hardware/cabineo/cabineo.json: null), so the product is the
-  // workshop's assignment, as every hardware row here is.
+  // Cabineo unit (engine/cabineo.js cabineoHardwareLines, pushed by
+  // computeCabinet), counted off the engine's pockets, never recomputed. The
+  // articles are NOT on Lamello's sheet (reference/hardware/cabineo/
+  // cabineo.json: null), so the product is the workshop's assignment, as
+  // every hardware row here is.
   cabineo_connector: {
     id: 'cabineo_connector', name: 'Cabineo connectors', group: G('consumable'), unit: 'pcs', materialType: 'consumable',
     note: 'One per Cabineo pocket (8 or 12, the company default); article owner to supply',
@@ -614,7 +615,7 @@ export function partIdForElement(partName, { typeId = null } = {}) {
 // line nobody ever sees.
 export const HARDWARE_TO_PART_ID = {
   hinges: 'hinge',
-  // T78 F20 · the Cabineo order lines (engine/cabineo.js).
+  // T78 F20 · the Cabineo order lines (engine/cabineo.js, pushed by computeCabinet's `hw`).
   cabineo_connector: 'cabineo_connector',
   cabineo_cap: 'cabineo_cap',
   runner_pairs: 'runner',

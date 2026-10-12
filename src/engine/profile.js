@@ -550,6 +550,46 @@ export const DEFAULT_CABINET_PROFILE = {
       // and is the owner's call, named in the PR).
       layers: { face: 'DOWEL_8MM', edge: 'DOWEL_EDGE_8MM' },
     },
+    // ─── T78 F20 · CABINEO (reference/lisp/SKYLON_JOINTS_CABINEO.lsp) ──────
+    //
+    // The owner, 11.10.2026: Cabineo 8 AND 12, chosen in the company's default
+    // settings (`joints.system` 'cabineo8' | 'cabineo12'); the VARIANT is that
+    // choice and is not repeated here (one law, one path: engine/cabineo.js
+    // reads it off the system id). Lamello's numbers are not here either:
+    // they live in reference/hardware/cabineo/cabineo.json (the page and the
+    // drawing beside each, owner to confirm), and the LISP's section A
+    // restates them key for key. This block is the LISP's `cabineo-profile`:
+    // the CHOICES and the set-out, nothing of Lamello's. `mounting` and
+    // `machining` are T78 proposed (the owner's Biesse mills; he decides).
+    // `pitchMm` and `endOffsetMm` must sit inside the sheet's two limits (min.
+    // 20 from the board's edge, max. 300 between connectors, page 1 Assembly
+    // panel 1), which `cabineoRefusal` holds in words. `confirmed` is THE
+    // GATE, as the dowel's below: while false every CNC export that would
+    // machine a pocket refuses, in the LISP's sentence ("the Cabineo pattern
+    // is proposed, not confirmed by the owner").
+    //
+    // THE INVERTED SIDE (the owner, 11.10.2026, decided): the pocket is cut
+    // from the OUTSIDE face of the top, the bottom and a fixed shelf, the dia 5
+    // hole from the inside face of the side; those boards carry machinedFace
+    // 'outside' and are exported through T76's one reflection (the LISP,
+    // section C). No number of that is a profile number.
+    cabineo: {
+      mounting: 'flushCap',   // surface | flush | flushCap | hpl       T78 proposed, owner to confirm
+      machining: 'cutter12',  // drill15 | cutter10 | cutter12          T78 proposed, owner to confirm
+      pitchMm: 250,           // the widest gap between two pockets     T78 proposed, owner to confirm (never over the sheet's 300)
+      endOffsetMm: 50,        // first and last pocket from each end    T78 proposed, owner to confirm (never under the sheet's 20)
+      minPerJoint: 2,         // CLAUDE.md T78 F20: never fewer than two on one joint
+      caps: 'all',            // 'all' | 'shelves': which pockets get a cover cap   T78 proposed, owner to confirm
+      confirmed: false,       // THE GATE: false until the owner confirms the Cabineo pattern
+      // The CNC layers (engine/cnc/layers.js), the house grammar
+      // `{FEATURE}_{DIAMETER}MM`: the pocket by the tool that cuts it (the
+      // LISP's cabineo-pocket-layer), the recess, the side's hole.
+      layers: {
+        pocket: { drill15: 'CABINEO_POCKET_15MM', cutter10: 'CABINEO_POCKET_10MM', cutter12: 'CABINEO_POCKET_12MM' },
+        recess: 'CABINEO_RECESS',
+        hole: 'CABINEO_HOLE_5MM',
+      },
+    },
   },
 
   // ─── T75 F9 · THE ISLAND (CLAUDE.md T75 PART B) ────────────────────────────
@@ -6016,6 +6056,18 @@ export function migrateCabinetProfile(profile) {
       set: {
         ...D.drawings.set,
         company: { ...D.drawings.set.company, ...profile.drawings?.set?.company },
+      },
+      // T78 F20 · the Cabineo choices and the gate, key by key, so a profile
+      // saved before tonight cuts the puzzle and holds this gate shut too; the
+      // layer names nested one level deeper (the pocket's by machining option).
+      cabineo: {
+        ...D.joints.cabineo,
+        ...profile.joints?.cabineo,
+        layers: {
+          ...D.joints.cabineo.layers,
+          ...profile.joints?.cabineo?.layers,
+          pocket: { ...D.joints.cabineo.layers.pocket, ...profile.joints?.cabineo?.layers?.pocket },
+        },
       },
     },
     room: { ...D.room, ...profile.room },

@@ -325,6 +325,17 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     // beyond the LED groove's 44 and are unused by the LISP's own table.
     DOWEL_8MM: 45,
     DOWEL_EDGE_8MM: 46,
+    // ─── AMENDED BY T78 F20: FIVE NEW NAMES, THE CABINEO'S ─────────────────
+    // SKYLON_JOINTS_CABINEO.lsp D.9 (T78 proposed): the pocket by the tool
+    // that cuts it (Lamello's Option 1 drill 15, Option 2 cutter >= 10,
+    // Option 3 cutter 12), the cover cap's recess, the side's dia 5 hole.
+    // ACI 47 to 51 sit beyond the dowel's 46 and are unused by the LISP's
+    // own table.
+    CABINEO_POCKET_15MM: 47,
+    CABINEO_POCKET_10MM: 48,
+    CABINEO_POCKET_12MM: 49,
+    CABINEO_RECESS: 50,
+    CABINEO_HOLE_5MM: 51,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

@@ -22,6 +22,8 @@ import { worktopsFor } from './worktop.js';
 import { migrateDesign } from './design.js';
 import { roomWalls } from './room.js';
 import { dowelNoteRow } from './dowels.js';
+// T78 F20 · a Cabineo unit's cut list says so in a NOTE row of the same grammar (OUTSIDE FACE UP, the gate).
+import { cabineoNoteRow } from './cabineo.js';
 
 /**
  * What ONE piece is finished in, as a name a workshop can order against
@@ -117,6 +119,7 @@ export function buildBom(entries, {
     // T75 F23 · a dowel unit's cut list says so in a NOTE row (the gate while
     // it is shut); counted in nothing, merged with nothing.
     const dowelNote = dowelNoteRow(result);
+    const cabineoNote = cabineoNoteRow(result);
     // T76 F5 · a front with applied strips carries a NOTE for their gluing,
     // `manual`, in the same grammar: counted in nothing, merged with nothing.
     const stripNotes = appliedStripNotes(counted).map((n) => ({
@@ -137,7 +140,7 @@ export function buildBom(entries, {
       readiness: n.state,
     }));
     units.push({
-      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : [])], totals: result.totals, warnings: result.warnings,
+      unitId: unit.id, unitNum: result.unitNum, type: result.type, rows: [...rows, ...stripNotes, ...(dowelNote ? [dowelNote] : []), ...(cabineoNote ? [cabineoNote] : [])], totals: result.totals, warnings: result.warnings,
     });
 
     for (const r of rows) {

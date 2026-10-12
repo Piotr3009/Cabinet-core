@@ -443,6 +443,16 @@ export function dowelVerdict({
   parent, params, asked, type, profile,
 }) {
   if (asked === 'cabineo') return say(CABINEO_REFUSAL);
+  // T78 F20 · the other systems are not this verdict's: `computeCabinet`
+  // branches on 'biscuit' (engine/biscuitJoints.js) and on 'cabineo8' /
+  // 'cabineo12' (engine/cabineo.js) BEFORE it asks the dowel. A unit that
+  // still reaches here under one of those ids (a tree where the branch is not
+  // in yet) keeps the puzzle and says why, rather than being dowelled by a
+  // rule nobody chose for it.
+  if (asked !== 'dowel') {
+    return say(`${asked} is not the dowel system: computeCabinet branches on it before the dowel verdict `
+      + '(engine/biscuitJoints.js for biscuit, engine/cabineo.js for cabineo8 and cabineo12)');
+  }
   const kit = dowelKitRefusal(type);
   if (kit) return say(kit);
   if (parent?.params?.slope_cut) {
@@ -580,7 +590,9 @@ export function withJointsRefusal(parent, verdict, asked) {
     warnings: [...(parent.warnings || []), {
       code: JOINTS_REFUSED,
       ...(verdict.panel ? { panel: verdict.panel } : {}),
-      message: `${asked === 'cabineo' ? 'Cabineo' : 'Dowels'} refused: ${verdict.message}`,
+      // T78 F20 · the system the unit asked for names the refusal: Cabineo
+      // (T75's reserved id and the two variants), Biscuits, Dowels.
+      message: `${/^cabineo/.test(String(asked)) ? 'Cabineo' : (asked === 'biscuit' ? 'Biscuits' : 'Dowels')} refused: ${verdict.message}`,
     }],
     derived: { ...(parent.derived || {}), joints: { asked, system: 'puzzle', refused: verdict.message } },
   };

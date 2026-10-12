@@ -58,6 +58,30 @@ import {
   dowelDrills, dowelGateWarning, dowelStrip, dowelSummary, dowelVerdict, dowelledShelf,
   jointSystemOf, withJointsRefusal,
 } from './dowels.js';
+// T78 F20 · the fourth joint system, SKYLON_JOINTS_CABINEO.lsp's mirror
+// (engine/cabineo.js): Lamello Cabineo 8 / 12 on side to TOP, side to BOTTOM
+// and side to FIX shelf, never the BACK. The pocket is milled into the FACE of
+// the horizontal board at its end from the carcass's OUTSIDE face (the owner,
+// 11.10.2026: "ciecie nie od srodka korpusu tylko do zewnatrz"), the dia 5
+// hole into the side's inside face. Asked of the parent's puzzle cut, the
+// puzzle stripped joint by joint before the drilling, the pockets laid onto
+// the boards (marked machinedFace 'outside' for the reflected export), the
+// holes added after the copy loop, the connectors and caps counted as order
+// lines, THE GATE while the owner has not confirmed the pattern. Never
+// reached while the system is the puzzle.
+import {
+  cabineoDrills, cabineoGateWarning, cabineoHardwareLines, cabineoPocketsOnto, cabineoShelf, cabineoStrip,
+  cabineoSummary, cabineoVerdict, isCabineoSystem, withCabineoRefusal,
+} from './cabineo.js';
+// T78 F20 · the third joint system, SKYLON_JOINTS_BISCUIT.lsp's mirror: the
+// owner's own set ("zostaw jak bylo") on side to TOP and side to BOTTOM, the
+// fixed shelf's joint left to T24's code below, never the BACK ("bez ciastek
+// na plecach"). Asked of the parent's puzzle cut, stripped joint by joint
+// before the drilling, the screws added after it, the marks written where
+// the shelf's are. Never reached while the system is the puzzle.
+import {
+  biscuitDrills, biscuitMarkRecords, biscuitStrip, biscuitSummary, biscuitVerdict, withBiscuitRefusal,
+} from './biscuitJoints.js';
 // T58b (CLAUDE.md F2): the LED strip's own dimensions — thickness and width —
 // are the lighting spec's, so the strip the glass births is cut to the same
 // law every other strip in the project is. `ledStrips.js` reaches nothing in
@@ -1649,7 +1673,33 @@ export function computeCabinet(params, profileOverride) {
   // default, runs no line here and no line of the three hooks below.
   const jointsAsked = jointSystemOf(params, P);
   let dowelPlan = null;
-  if (jointsAsked !== 'puzzle') {
+  let cabineoPlan = null;
+  let biscuitPlan = null;
+  if (jointsAsked === 'biscuit') {
+    // ─── T78 F20 · BISCUITS, THE SAME WAY: ASKED OF THE PARENT FIRST ───────
+    // The owner's set on the side to TOP and side to BOTTOM joints; the BACK
+    // and the fixed shelf's joint are not the plan's to cut (biscuitJoints.js
+    // section Z). Refused, the puzzle cut goes with the sentence (Check #31).
+    const parent = computeCabinet({ ...params, joints_system: 'puzzle' }, profileOverride);
+    const verdict = biscuitVerdict({
+      parent, params, asked: jointsAsked, type: cfg.type, profile: P,
+    });
+    if (verdict.refused) return withBiscuitRefusal(parent, verdict, jointsAsked);
+    biscuitPlan = verdict.plan;
+  } else if (isCabineoSystem(jointsAsked)) {
+    // ─── T78 F20 · CABINEO 8 / 12, THE SAME WAY: ASKED OF THE PARENT FIRST ──
+    // The unit is cut with the puzzle and the pattern is judged against that
+    // cut (`cabineoVerdict`: the five-board carcass, the profile's refusals,
+    // the side holes against the kept drilling, THE SKIN CHECK between the
+    // outside-face pockets and the inside-face cuts of the same board).
+    // Refused, the puzzle cut goes with the sentence (Check #31).
+    const parent = computeCabinet({ ...params, joints_system: 'puzzle' }, profileOverride);
+    const verdict = cabineoVerdict({
+      parent, params, asked: jointsAsked, type: cfg.type, profile: P,
+    });
+    if (verdict.refused) return withCabineoRefusal(parent, verdict, jointsAsked);
+    cabineoPlan = verdict.plan;
+  } else if (jointsAsked !== 'puzzle') {
     const parent = computeCabinet({ ...params, joints_system: 'puzzle' }, profileOverride);
     const verdict = dowelVerdict({
       parent, params, asked: jointsAsked, type: cfg.type, profile: P,
@@ -8392,6 +8442,23 @@ export function computeCabinet(params, profileOverride) {
   // bones, the dia 7.5 holes and the joint's own dia 3 screw rows go, so the
   // pass below copies none of them. Null plan on every puzzle unit.
   if (dowelPlan) dowelStrip({ panels, plan: dowelPlan, profile: P });
+  // T78 F20 · a biscuit unit's sides give up the top and bottom sockets, their
+  // dia 7.5 holes and the dia 3 rows; its TOP and BOTTOM give up their END
+  // tenons and end dog bones (SKYLON_JOINTS_BISCUIT.lsp section F). The back
+  // tenons and the BACK stay as cut. Null plan on every puzzle unit.
+  if (biscuitPlan) biscuitStrip({ panels, plan: biscuitPlan, profile: P });
+  // ─── T78 F20 · A CABINEO UNIT: THE PUZZLE OFF, THE POCKETS ON ───────────
+  // SKYLON_JOINTS_CABINEO.lsp section F: on the switched joints the sides lose
+  // the sockets, their dia 7.5 holes and the dia 3 rows, the TOP and BOTTOM
+  // their END tenons and end dog bones (the back tenons and the BACK stay);
+  // then the pockets and the cap recesses go onto the horizontal boards in
+  // their own frame and each such board is marked `meta.machinedFace:
+  // 'outside'` (its DXF is reflected, its label says OUTSIDE FACE UP). Null
+  // plan on every puzzle unit.
+  if (cabineoPlan) {
+    cabineoStrip({ panels, plan: cabineoPlan, profile: P });
+    cabineoPocketsOnto({ panels, plan: cabineoPlan });
+  }
 
   // ─── T75 F7 · THE CORNER NOTCH, CUT BEFORE THE DRILLING ──────────────────
   // KIT_NOTCH.lsp: *"It runs AFTER the parent kit's carcass and BEFORE the
@@ -8456,6 +8523,15 @@ export function computeCabinet(params, profileOverride) {
   // T75 F23 · the dowel pairs: a face hole and an edge bore on both boards of
   // every joint the puzzle made (SKYLON_JOINTS_DOWEL.lsp section D).
   if (dowelPlan) drills.push(...dowelDrills(dowelPlan));
+  // T78 F20 · the set's two dia 3 through screws per set on the sides, at the
+  // TOP's and BOTTOM's joint lines (SKYLON_JOINTS_BISCUIT.lsp section D). The
+  // marks go in below, where the fixed shelf's marks are written.
+  if (biscuitPlan) drills.push(...biscuitDrills(biscuitPlan));
+  // T78 F20 · the Cabineo side holes (dia 5, on the joint line at the screw
+  // axis, depth NOT ON THE SHEET) and, under the drill15 option, the three
+  // dia 15 holes per pocket from the outside face (SKYLON_JOINTS_CABINEO.lsp
+  // section D.8 and D.4).
+  if (cabineoPlan) drills.push(...cabineoDrills(cabineoPlan));
 
   // ─── TURN 35 (CLAUDE.md F8): THE HINGE-PLATE PILOT, ⌀3 OR ⌀5 ─────────────
   //
@@ -8797,7 +8873,10 @@ export function computeCabinet(params, profileOverride) {
 
     // T75 F23 · one system per joint: a shelf the dowel plan owns gives up its
     // biscuit set and its through screws on both sides; the BACK's row stays.
-    for (const bearer of (dowelledShelf(dowelPlan, shelf.id) ? [] : bearers)) {
+    // T78 F20 · likewise a shelf the Cabineo plan owns: its pockets are in
+    // its underside and its holes in the sides (cabineoDrills), so the
+    // biscuit set and the through screws give way; the BACK's row stays.
+    for (const bearer of (dowelledShelf(dowelPlan, shelf.id) || cabineoShelf(cabineoPlan, shelf.id) ? [] : bearers)) {
       if (bearer.kind === 'side') {
         // The side's own frame: BUL's x runs from the FRONT of the cabinet
         // towards the back, BUR's runs with z (engine/joinery.js). A point at
@@ -8864,6 +8943,10 @@ export function computeCabinet(params, profileOverride) {
       }
     }
   }
+  // T78 F20 · the carcass joints' 70 marks on the sides, through the SAME
+  // writer the fixed shelf's marks go through: one record shape, one
+  // `cnc.marks`. The shelf's own set above is untouched ("polka stala to samo").
+  if (biscuitPlan) shelfJointMarks.push(...biscuitMarkRecords(biscuitPlan));
   for (const mark of shelfJointMarks) {
     const target = panels.find((x) => x.id === mark.panelId);
     if (!target) continue;
@@ -10029,6 +10112,18 @@ export function computeCabinet(params, profileOverride) {
     if (!(qty > 0)) return;
     hardware.push({ role, label, qty, unit, spec, spec_label: specLabel });
   };
+  // ─── T78 F20 · THE CABINEO CONNECTORS AND CAPS ARE ORDER LINES ──────────
+  // One connector per pocket, a cover cap per pocket (or per fixed-shelf
+  // pocket under caps 'shelves'); the articles are NOT on Lamello's sheet
+  // (cabineo.json: null, owner to supply), so the line names the variant,
+  // the mounting and the option and the workshop assigns the product.
+  if (cabineoPlan) {
+    const cabHw = cabineoHardwareLines(cabineoPlan);
+    const conn = cabHw.find((l) => l.role === 'cabineo_connector');
+    if (conn) hw('cabineo_connector', conn.label, conn.qty, conn.unit, conn.spec, conn.spec_label);
+    const cap = cabHw.find((l) => l.role === 'cabineo_cap');
+    if (cap) hw('cabineo_cap', cap.label, cap.qty, cap.unit, cap.spec, cap.spec_label);
+  }
 
   // Turn 32 (CLAUDE.md F4): the columns share the default ladder — the depth
   // is the cabinet's, so a column drawer snaps to the same length.
@@ -11235,6 +11330,16 @@ export function computeCabinet(params, profileOverride) {
     const gate = dowelGateWarning(derived.joints);
     if (gate) warnings.push(gate);
   }
+  // T78 F20 · what the Cabineo unit is (the variant, the mounting, the
+  // option, which boards are OUTSIDE FACE UP), and THE GATE while it is shut.
+  if (cabineoPlan) {
+    derived.joints = cabineoSummary(cabineoPlan);
+    const gate = cabineoGateWarning(derived.joints);
+    if (gate) warnings.push(gate);
+  }
+  // T78 F20 · what the biscuit unit is. No gate: the set is the owner's own
+  // ("zostaw jak bylo": the numbers of profile.biscuits, confirmed).
+  if (biscuitPlan) derived.joints = biscuitSummary(biscuitPlan);
   const cutDrills = (() => {
     if (!cut) return drills;
     const topOf = new Map(panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || Number(p.h) || 0]));

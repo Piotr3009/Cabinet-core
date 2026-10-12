@@ -23,6 +23,8 @@ import { notchApplies } from '../engine/notch.js';
 // T75 F4/F11 · the worktop row: who takes one alone, and the island's seating.
 import { takesWorktop, worktopEligible } from '../engine/worktop.js';
 import { CABINEO_REFUSAL, dowelKitRefusal, jointSystemOf } from '../engine/dowels.js';
+import { biscuitKitRefusal } from '../engine/biscuitJoints.js';
+import { cabineoKitRefusal, isCabineoSystem } from '../engine/cabineo.js';
 import FrontDecorationControls from './FrontDecorationControls.jsx';
 import MultiUnitPanel from './MultiUnitPanel.jsx';
 import AddItems from './AddItems.jsx';
@@ -1762,20 +1764,46 @@ function NotchRow({ unit }) {
 // What the unit is CUT with, read back off the engine's own answer
 // (`result.derived.joints`), so the row never claims a system the cut did not
 // take: a refusal shows in the engine's words and the puzzle stays lit.
+//
+// T78 F19 / F20 (CLAUDE.md T78 PART E): the owner's four systems, Cabineo in
+// its two variants (11.10.2026). The company row chooses the default
+// (`companyDefaults.js joints_system`), the project inherits it, this row is
+// the UNIT's override (`params.joints_system`), so a lit button that is not
+// the puzzle may be the company's choice as much as a click here. The
+// reserved id 'cabineo' of T75 is still refused in words when a saved unit
+// carries it. Not one number on this row: the numbers are the profile's.
+const JOINT_CHOICES = [
+  { id: 'puzzle', label: 'Puzzle', title: 'Skylon puzzle: tabs, sockets and dog bones' },
+  { id: 'dowel', label: 'Dowel', title: 'Dowel pairs on both boards of every joint (SKYLON_JOINTS_DOWEL.lsp)' },
+  { id: 'biscuit', label: 'Biscuit', title: 'The owner\'s biscuit set on side to top and side to bottom, never the back (SKYLON_JOINTS_BISCUIT.lsp)' },
+  { id: 'cabineo8', label: 'Cabineo 8', title: 'Lamello Cabineo 8: pockets from the outside face of the top, the bottom and a fixed shelf, the screw holes in the sides (SKYLON_JOINTS_CABINEO.lsp)' },
+  { id: 'cabineo12', label: 'Cabineo 12', title: 'Lamello Cabineo 12: pockets from the outside face of the top, the bottom and a fixed shelf, the screw holes in the sides (SKYLON_JOINTS_CABINEO.lsp)' },
+];
 function JointsRow({
   unit, type, result, profile, onSet,
 }) {
   const asked = jointSystemOf(unit.params, profile);
   const cut = result?.derived?.joints || null;
-  const kitRefusal = dowelKitRefusal(type);
+  const refusals = {
+    dowel: dowelKitRefusal(type),
+    biscuit: biscuitKitRefusal(type),
+    cabineo8: cabineoKitRefusal(type),
+    cabineo12: cabineoKitRefusal(type),
+  };
   let status = 'Skylon puzzle: tabs, sockets and dog bones';
   if (cut?.system === 'dowel') {
     status = `${cut.dowels} dowels, ${cut.edge_bores} edge bores by hand · `
       + `${cut.gate ? `${cut.gate}: the CNC export refuses it` : 'confirmed by the owner'}`;
+  } else if (cut?.system === 'biscuit') {
+    status = `${cut.sets} biscuit sets, ${cut.screws} screws, the marks on the sides · the owner's own set, no gate`;
+  } else if (isCabineoSystem(cut?.system)) {
+    status = `Cabineo ${cut.variant}: ${cut.pockets} pockets from the outside face, ${cut.holes} holes in the sides · `
+      + `${cut.gate ? `${cut.gate}: the CNC export refuses it` : 'confirmed by the owner'}`;
   } else if (cut?.refused) {
     status = `Kept the puzzle: ${cut.refused}`;
   }
-  const lit = cut?.system === 'dowel' ? 'dowel' : 'puzzle';
+  const lit = cut?.system && JOINT_CHOICES.some((c) => c.id === cut.system) ? cut.system : 'puzzle';
+  const askedRefusal = refusals[asked] || null;
   return (
     <div className="space-y-1" data-joints-row={unit.id}>
       <div className="cc-row">
@@ -1784,37 +1812,26 @@ function JointsRow({
           <span className="text-[11px] text-ink-400" data-joints-status="1">{status}</span>
         </div>
         <div className="flex items-center gap-1" data-joints-options="1">
-          <button
-            type="button"
-            data-joints="puzzle"
-            className={lit === 'puzzle' ? 'cc-btn-gold' : 'cc-btn'}
-            onClick={() => onSet('puzzle')}
-          >
-            Puzzle
-          </button>
-          <button
-            type="button"
-            data-joints="dowel"
-            disabled={Boolean(kitRefusal)}
-            title={kitRefusal || 'Dowel pairs on both boards of every joint (SKYLON_JOINTS_DOWEL.lsp)'}
-            className={`${lit === 'dowel' ? 'cc-btn-gold' : 'cc-btn'} ${kitRefusal ? 'opacity-50' : ''}`}
-            onClick={() => onSet('dowel')}
-          >
-            Dowel
-          </button>
-          <button
-            type="button"
-            data-joints="cabineo"
-            disabled
-            title={CABINEO_REFUSAL}
-            className="cc-btn opacity-50"
-          >
-            Cabineo
-          </button>
+          {JOINT_CHOICES.map((c) => {
+            const refusal = refusals[c.id] || null;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                data-joints={c.id}
+                disabled={Boolean(refusal)}
+                title={refusal || c.title}
+                className={`${lit === c.id ? 'cc-btn-gold' : 'cc-btn'} ${refusal ? 'opacity-50' : ''}`}
+                onClick={() => onSet(c.id)}
+              >
+                {c.label}
+              </button>
+            );
+          })}
         </div>
       </div>
-      {asked === 'dowel' && kitRefusal && <p className="text-[11px] text-ink-400">{kitRefusal}</p>}
-      <p className="text-[11px] text-ink-400" data-joints-cabineo="1">{CABINEO_REFUSAL}</p>
+      {askedRefusal && <p className="text-[11px] text-ink-400">{askedRefusal}</p>}
+      {asked === 'cabineo' && <p className="text-[11px] text-ink-400" data-joints-cabineo="1">{CABINEO_REFUSAL}</p>}
     </div>
   );
 }

@@ -557,9 +557,15 @@ function build({
       const shape = shapeOf(layer.pts);
       // A recess is cut from the machined face, so it belongs to every slab
       // its own depth reaches into — and to all three when it goes through.
+      // T78 F20 · a record that says `face: 'outside'` (a Cabineo pocket,
+      // engine/cabineo.js) is cut from the OPPOSITE face, so it belongs to the
+      // slabs its depth reaches into from z = thickness downward.
       for (const f of recesses) {
         const deep = f.through ? thickness : Number(f.depth) || 0;
-        if (deep > layer.z0 + SLAB_EPS) shape.holes.push(recessPath(f));
+        const reaches = f.face === 'outside' && !f.through
+          ? layer.z0 + layer.depth > thickness - deep + SLAB_EPS
+          : deep > layer.z0 + SLAB_EPS;
+        if (reaches) shape.holes.push(recessPath(f));
       }
       const g = new THREE.ExtrudeGeometry(shape, {
         depth: mm(layer.depth), bevelEnabled: false, curveSegments: 1,
@@ -714,6 +720,12 @@ function buildCuts({
 
   for (const f of recesses) {
     const deep = f.through ? t : mm(f.depth);
+    // T78 F20 · an outside-face record (a Cabineo pocket) opens at z = t and
+    // its floor sits at t - depth; every other record opens at the machined
+    // face, z = 0, with its floor at depth. A through feature has no floor.
+    const fromOutside = f.face === 'outside' && !f.through;
+    const zOpen = fromOutside ? t : 0;
+    const zFloor = fromOutside ? t - deep : deep;
     const ring = [];
     if (f.kind === 'round') {
       for (let i = 0; i < HOLE_SEGMENTS; i += 1) {
@@ -732,7 +744,7 @@ function buildCuts({
     for (let i = 0; i < ring.length; i += 1) {
       const [ax, ay] = ring[i];
       const [bx, by] = ring[(i + 1) % ring.length];
-      quad([ax, ay, 0], [bx, by, 0], [bx, by, deep], [ax, ay, deep]);
+      quad([ax, ay, zOpen], [bx, by, zOpen], [bx, by, zFloor], [ax, ay, zFloor]);
     }
 
     if (f.through) continue;
@@ -769,8 +781,8 @@ function buildCuts({
         ];
         // Both faces, exactly as the fan below does: the recess is open from
         // the machined side and the board is solid from the other.
-        positions.push(...tri[0], deep, ...tri[1], deep, ...tri[2], deep);
-        positions.push(...tri[0], deep, ...tri[2], deep, ...tri[1], deep);
+        positions.push(...tri[0], zFloor, ...tri[1], zFloor, ...tri[2], zFloor);
+        positions.push(...tri[0], zFloor, ...tri[2], zFloor, ...tri[1], zFloor);
       }
       flat.dispose();
       continue;
@@ -783,8 +795,8 @@ function buildCuts({
     for (let i = 0; i < ring.length; i += 1) {
       const [ax, ay] = ring[i];
       const [bx, by] = ring[(i + 1) % ring.length];
-      positions.push(cx, cy, deep, ax, ay, deep, bx, by, deep);
-      positions.push(cx, cy, deep, bx, by, deep, ax, ay, deep);
+      positions.push(cx, cy, zFloor, ax, ay, zFloor, bx, by, zFloor);
+      positions.push(cx, cy, zFloor, bx, by, zFloor, ax, ay, zFloor);
     }
   }
 

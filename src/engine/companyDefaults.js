@@ -69,7 +69,29 @@ export const DEFAULT_COMPANY_DEFAULTS = {
   // Per-family board defaults: what a wardrobe is built from in this shop, and
   // what a kitchen is. Thicknesses and stock ids — never a rule.
   boards: {},
+  // ─── T78 F19 (CLAUDE.md T78 PART E): THE JOINT SYSTEM ────────────────────
+  // The owner, 11.10.2026: *"mamy puzzle i dogbones w systemie i niech tak
+  // bedzie ale tez trzeba zrobic wybor laczenia i mamy 4: puzzle, dowels,
+  // Cabineo, ciastka"*, and Cabineo *"8 AND 12, chosen in the company's
+  // default settings"*. An ID from JOINT_SYSTEM_IDS, never a number: the
+  // dowel's pitch and diameter, the Cabineo's pocket, the biscuit's set are
+  // the profile's (`profile.joints.dowel`, `profile.joints.cabineo`,
+  // `profile.biscuits`) and the LISP's; a workshop that typed a pitch here is
+  // refused in words, as the hinge angle is. The ladder is the same four
+  // storeys: profile `joints.system` → this row → the project
+  // (`design.joints.system`, prefilled from here) → the unit
+  // (`params.joints_system`, the T75 F23 Joints row). Flat, as `hinge_system`
+  // is, because the row is flat. `null` is "the shop has not said" (puzzle).
+  joints_system: null,
 };
+
+/**
+ * T78 F19 · the five joint systems a company may choose, by id. The engine's
+ * own list (`engine/dowels.js JOINT_SYSTEMS`) also carries the reserved id
+ * 'cabineo' (T75: refused in words); it is not offered here. The VARIANT of a
+ * Cabineo is the id (8 or 12), as the owner said.
+ */
+export const JOINT_SYSTEM_IDS = Object.freeze(['puzzle', 'dowel', 'biscuit', 'cabineo8', 'cabineo12']);
 
 /** The families a `boards` entry may be keyed on — `engine/types.js` families. */
 export const BOARD_FAMILIES = ['kitchen', 'wardrobe'];
@@ -90,6 +112,11 @@ export const RULE_OWNED_KEYS = [
   'hinge_angle', 'hingeAngle', 'angle',
   'hinge_count', 'hinge_centres', 'hinge_positions', 'hingeStandard',
   'drilling', 'cup_diameter', 'cup_depth', 'cupDiameter',
+  // T78 F19: the joints' NUMBERS are the profile's and the LISP's (T22 law):
+  // a pitch, a diameter, a depth or a count typed into the company row is
+  // refused by name, as the hinge angle is. Only the SYSTEM id lives here.
+  'joints_pitch', 'joints_pitch_mm', 'dowel_pitch', 'dowel_pitch_mm', 'dowel_diameter', 'dowel_dia_mm',
+  'dowel_depth', 'dowels_per_joint', 'cabineo_pitch', 'cabineo_pitch_mm', 'biscuit_pitch', 'joints_angle',
 ];
 
 /**
@@ -186,6 +213,29 @@ export function validateCompanyDefaults(raw, profile) {
     normalise: (v) => String(v).trim().toUpperCase(),
   });
 
+  // ─── T78 F19: THE JOINT SYSTEM, AN ID AND NEVER A NUMBER ─────────────────
+  // A number (or a numeric string, or an angle) here is a workshop trying to
+  // tune the joint from a defaults screen; the numbers are the profile's and
+  // the LISP's, so it is SAID rather than obeyed, by the T22 law that refuses
+  // the hinge angle. An id this build does not cut is a stale field, said too.
+  {
+    const stated = source.joints_system;
+    if (stated != null && stated !== '') {
+      const text = String(stated).trim();
+      if (typeof stated === 'number' || /^[-+]?\d+(\.\d+)?\s*(mm|deg|°)?$/i.test(text)) {
+        rejected.push({
+          key: 'joints_system',
+          why: `"${stated}" is a number, and a joint system is an id (${JOINT_SYSTEM_IDS.join(', ')}): the pitch, the diameter and the angle are the profile's and the LISP's, never a preference`,
+        });
+      } else {
+        value.joints_system = pick('joints_system', {
+          allowed: new Set(JOINT_SYSTEM_IDS),
+          normalise: (v) => String(v).trim().toLowerCase().replace(/\s+/g, ''),
+        });
+      }
+    }
+  }
+
   // ─── TURN 30 (CLAUDE.md F5): THE SHELF-PIN SETBACK ───────────────────────
   // A distance rather than an id, so the gate is a RANGE rather than a menu:
   // anything from 20 to 200 is a setback somebody could actually drill, and a
@@ -265,6 +315,9 @@ export function hasCompanyDefaults(row) {
   // would be the storey silently not existing for the one shop that used it.
   if (Number(row.shelf_pin_setback_mm) > 0) return true;
   if (Number(row.hinge_two_below_mm) > 0) return true;
+  // T78 F19: a row whose only entry is the joint system is a row that is
+  // saying something (a workshop that dowels everything).
+  if (row.joints_system) return true;
   return Object.keys(row.boards || {}).length > 0;
 }
 
@@ -330,7 +383,12 @@ export function prefillDesignFromCompany(design, company, profile) {
     shelves.pinSetback = Number(row.shelf_pin_setback_mm);
   }
 
-  const next = { ...d, hinges, runners, shelves };
+  // T78 F19: the shop's joint system, prefilled the same way; the PROJECT
+  // still wins where it has said something of its own, and a unit above it.
+  const joints = { ...(d.joints || {}) };
+  if (joints.system == null && row.joints_system) joints.system = row.joints_system;
+
+  const next = { ...d, hinges, runners, shelves, joints };
   // Turn 30 (CLAUDE.md F11): and the shop's "two hinges under …", prefilled the
   // same way — the PROJECT still wins where it has said something of its own.
   if (next.hingeTwoBelow == null && Number(row.hinge_two_below_mm) > 0) {

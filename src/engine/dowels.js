@@ -16,6 +16,17 @@
 // `test/turn75-f23-dowels.test.js` holds them to the LISP's NUMBERS block
 // (section H, a BUD 600) board by board.
 //
+// T78 F19 (11.10.2026): the owner's numbers replace T75's proposals, in the
+// LISP first and here second. The owner: *"minimum 2 a kołki co mniej więcej
+// co 250 mm"*, dowels 6 mm, the end offset 50 kept as his. `dowelProfile`
+// reads `minPerJoint` and no longer `maxGapMm` (the pitch IS the widest gap
+// a joint may show, so T75's second maximum said nothing; the LISP, section
+// A); `dowelPositions` takes (L, e, p, nMin, dia) as `dowel-positions` does
+// and spreads the dowels EVENLY between the two end offsets, never fewer
+// than two, no gap over the pitch (section B). The depths (edge 20, face 12)
+// stay T75 proposed. `test/turn78-f19-dowels.test.js` holds the rule at six
+// lengths; the T75 test moves with the LISP's NUMBERS block, knowingly.
+//
 // Section Z is what the LISP leaves to the engine. The pattern is asked of the
 // PARENT's own puzzle cut first (`dowelVerdict`, F7's grammar: *"Room refuses
 // first: nothing is clipped silently"*), and refused in words where the kit
@@ -33,6 +44,9 @@
 // Pure: numbers in, numbers or records out. No store, no React, no three.js.
 
 import { roundTo } from './format.js';
+// T78 F19 · the company row's `joints_system` and the one cascade every
+// preference climbs (T22): profile → company row → project → unit.
+import { cascade, companyDefaults, levelsOf } from './companyDefaults.js';
 
 const EPS = 1e-6;
 
@@ -43,8 +57,16 @@ export const CABINEO_REFUSAL = 'Cabineo is reserved: its data is not in the repo
 /** The engine's warning codes. Check #31 reads both. */
 export const DOWEL_GATE_CODE = 'DOWEL_GATE';
 export const JOINTS_REFUSED = 'JOINTS_REFUSED';
-/** The joint systems a unit may name. 'cabineo' is reserved and refused. */
-export const JOINT_SYSTEMS = Object.freeze(['puzzle', 'dowel', 'cabineo']);
+/**
+ * The joint systems a unit may name. CLAUDE.md T78 F19: `puzzle | dowel |
+ * biscuit | cabineo8 | cabineo12`. 'biscuit' is SKYLON_JOINTS_BISCUIT.lsp's
+ * (engine/biscuitJoints.js), 'cabineo8' and 'cabineo12' are
+ * SKYLON_JOINTS_CABINEO.lsp's (engine/cabineo.js); `computeCabinet` branches
+ * on each before the dowel verdict. The bare 'cabineo' of T75 stays reserved
+ * and refused with CABINEO_REFUSAL: the owner chose the variant in the
+ * company's defaults, so the id must say which (8 or 12).
+ */
+export const JOINT_SYSTEMS = Object.freeze(['puzzle', 'dowel', 'biscuit', 'cabineo', 'cabineo8', 'cabineo12']);
 /** The five-board carcass the LISP's table (section D) is written for. */
 export const DOWEL_BOARDS = Object.freeze(['BUL', 'BUR', 'TOP', 'BOTTOM', 'BACK']);
 
@@ -60,13 +82,17 @@ export const DOWEL_BOARDS = Object.freeze(['BUL', 'BUR', 'TOP', 'BOTTOM', 'BACK'
 export function dowelProfile(profile = {}) {
   const d = profile?.joints?.dowel || {};
   const num = (v, fallback) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Number(v) : fallback);
+  // T78 F19: no `maxGapMm` any more. The owner, 11.10.2026: *"minimum 2 a
+  // kołki co mniej więcej co 250 mm"*: the pitch is the widest gap a joint
+  // may show, so T75's second maximum (128 = 4 pitches) is not part of the
+  // rule and is not read; a saved profile that still carries it is ignored.
   return {
-    diaMm: num(d.diaMm, 8),
-    edgeDepthMm: num(d.edgeDepthMm, 20),
-    faceDepthMm: num(d.faceDepthMm, 12),
-    pitchMm: num(d.pitchMm, 32),
-    endOffsetMm: num(d.endOffsetMm, 50),
-    maxGapMm: num(d.maxGapMm, 128),
+    diaMm: num(d.diaMm, 6),               // owner 11.10, decided ("6 mm")
+    edgeDepthMm: num(d.edgeDepthMm, 20),  // T75 proposed, owner to confirm
+    faceDepthMm: num(d.faceDepthMm, 12),  // T75 proposed, owner to confirm
+    pitchMm: num(d.pitchMm, 250),         // owner 11.10, decided ("co mniej więcej co 250 mm")
+    minPerJoint: num(d.minPerJoint, 2),   // owner 11.10, decided ("minimum 2")
+    endOffsetMm: num(d.endOffsetMm, 50),  // owner 11.10, decided
     confirmed: d.confirmed === true,
   };
 }
@@ -86,17 +112,29 @@ export function dowelCeil(x) {
   return x - n > 1e-9 ? n + 1 : n;
 }
 
-/** dowel-positions: the offsets along a joint of length L, from its reference end. */
-export function dowelPositions(L, e, p, M) {
-  L = Number(L); e = Number(e); p = Number(p); M = Number(M);
+/**
+ * dowel-positions: the offsets along a joint of length L, from its reference
+ * end (T78 F19, the LISP's section B, step for step):
+ *   1. L <= 0: none.
+ *   2. The two END dowels at e and L - e; the span S = L - 2e.
+ *   3. S < dia (the two ends would meet, closer than one diameter): ONE dowel
+ *      on the centre, L / 2, as T75's step 3 did on a short run. The only
+ *      case under the owner's minimum (L < 2e + dia = 106).
+ *   4. The COUNT n = max(nMin, 1 + ceil(S / p)): never fewer than two, one
+ *      more for every pitch the span holds.
+ *   5. The SPACING: n - 1 EQUAL gaps of S / (n - 1), the last offset written
+ *      as L - e so no floating remainder reaches the far end.
+ * Same arguments as the LISP, in its order; nMin is read whole (`fix`).
+ */
+export function dowelPositions(L, e, p, nMin, dia) {
+  L = Number(L); e = Number(e); p = Number(p); dia = Number(dia);
   if (L <= 0) return [];
-  if (L - e - e < p) return [L / 2];
+  if (L - e - e < dia) return [L / 2];
   const S = L - e - e;
-  const u = S / p;
-  const K = Math.max(1, Math.trunc(M / p + 1e-9));
-  const n = dowelCeil(u / K);
-  const out = [e];
-  for (let i = 1; i < n; i += 1) out.push(e + p * dowelCeil((i * u) / n));
+  const n = Math.trunc(Math.max(nMin, 1 + dowelCeil(S / p)));
+  const g = S / (n - 1);
+  const out = [];
+  for (let i = 0; i < n - 1; i += 1) out.push(e + i * g);
   out.push(L - e);
   return out;
 }
@@ -175,7 +213,8 @@ export function dowelJointHoles(jt, prof) {
     dowelJget(jt, 'len'),
     dowelGet(prof, 'endOffsetMm'),
     dowelGet(prof, 'pitchMm'),
-    dowelGet(prof, 'maxGapMm'),
+    dowelGet(prof, 'minPerJoint'),
+    dia,
   );
   return [
     offs,
@@ -257,16 +296,21 @@ export function dowelGate(prof) {
 
 const rtos2 = (v) => Number(v).toFixed(2);
 
-/** dowel-refusal: a profile that cannot make a sound joint, in words. */
+/**
+ * dowel-refusal: a profile that cannot make a sound joint, in words. T78 F19:
+ * the max-gap sentence went with `maxGapMm`; in its place the pitch must be
+ * a length and the minimum per joint the owner's two.
+ */
 export function dowelRefusal(prof, faceT, edgeT) {
   const dia = dowelGet(prof, 'diaMm');
   const fd = dowelGet(prof, 'faceDepthMm');
   const ed = dowelGet(prof, 'edgeDepthMm');
   const p = dowelGet(prof, 'pitchMm');
-  const M = dowelGet(prof, 'maxGapMm');
+  const nMin = dowelGet(prof, 'minPerJoint');
   const e = dowelGet(prof, 'endOffsetMm');
   const out = [];
-  if (p <= 0 || M < p) out.push(`the max gap ${rtos2(M)} is shorter than one pitch ${rtos2(p)}`);
+  if (p <= 0) out.push(`the pitch ${rtos2(p)} is not a positive length`);
+  if (nMin < 2) out.push(`fewer than two dowels per joint: the owner says minimum 2, the profile says ${Math.trunc(nMin)}`);
   if (fd >= faceT) out.push(`a face hole ${rtos2(fd)} deep would break through a ${rtos2(faceT)} board`);
   if (dia >= edgeT) out.push(`a dowel ${rtos2(dia)} wide does not fit a ${rtos2(edgeT)} edge`);
   if (e - dia / 2 <= ed) {
@@ -289,6 +333,35 @@ export function jointSystemOf(params, profile) {
   if (JOINT_SYSTEMS.includes(said)) return said;
   const p = profile?.joints?.system;
   return JOINT_SYSTEMS.includes(p) ? p : 'puzzle';
+}
+
+/**
+ * T78 F19 · THE FOUR-STOREY LADDER FOR THE JOINT SYSTEM, one cascade (T22):
+ * the profile's `joints.system`, then the company row's `joints_system`
+ * (`engine/companyDefaults.js`, the owner's choice: puzzle | dowel | biscuit |
+ * cabineo8 | cabineo12), then the project's `design.joints.system` (prefilled
+ * from the row), then the unit's own `params.joints_system` (the T75 F23
+ * Joints row); the LAST usable answer wins, an id this build does not cut is
+ * a stale field and the ladder carries on below it. The store hands the
+ * answer to the engine as `params.joints_system` (`projectStore.js
+ * paramsForEngine`), so `computeCabinet` keeps its one reader above and a
+ * bare kit call, every golden, still cuts the puzzle.
+ *
+ * `company` undefined reads the active row; null is "no row" (tests).
+ */
+export function resolveJointSystem({
+  params = null, design = null, profile = null, company = undefined,
+} = {}) {
+  const row = company === undefined ? companyDefaults() : company;
+  return cascade(levelsOf({
+    profile: profile?.joints?.system,
+    company: row?.joints_system,
+    project: design?.joints?.system,
+    element: params?.joints_system,
+  }), {
+    allowed: new Set(JOINT_SYSTEMS),
+    normalise: (v) => String(v).trim().toLowerCase(),
+  }) || 'puzzle';
 }
 
 /**

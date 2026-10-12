@@ -242,6 +242,11 @@ const EXEMPT = {
     + '`Sprayed` stands and `Veneer` never existed here. *"powinien mieć wysokość '
     + 'szuflady zaproponowaną, ten co jest default; usuń Veneer, dodaj materiałowe dno '
     + '… tylko te 4 kolory filcu."*',
+  // CLAUDE.md T78, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
+  // with the owner's words from this file and re-frozen at its final hash in
+  // the same commit."*
+  'src/components/CompanyDefaultsModal.jsx':
+    'T78 F19 · the Joints choice on the company defaults screen: the owner\'s four joint systems, Cabineo in its two variants, as ids (puzzle | dowel | biscuit | cabineo8 | cabineo12) through the same Choice select every other preference uses, written as joints_system; never a number (the validator refuses a typed pitch or diameter as it refuses the hinge angle, T22). *"mamy puzzle i dogbones w systemie i niech tak bedzie ale tez trzeba zrobic wybor laczenia i mamy 4: puzzle, dowels, Cabineo, ciastka"*; *"Cabineo 8 AND 12, chosen in the company\'s default settings."*',
 };
 
 /**
@@ -272,7 +277,8 @@ const FROZEN = {
   'src/components/CncTree.jsx': '4c07fee6c7b4768a6582366d652c093d5f6ade41aac80994be53cec544c25cb2',
   'src/components/CncView.jsx': '0bf751114210419aff2d9089869e88a8b62646af2e763e299e0eb5148b0e04da',
   'src/components/ColourPicker.jsx': '03775b851d5fef7d0803765f6f721d807b5b21bedfd8f0c49386db7047d8c33e',
-  'src/components/CompanyDefaultsModal.jsx': '90365da4e2e0bc285c652ec252c62a11da199853fdd9e31a899cb74464e2a896',
+  // T78 F19 re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/CompanyDefaultsModal.jsx': 'e365305d290ab32057544e05f83b068f1ef9414642fe00f429cfbedb84dbc917',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/ContextMenu.jsx': '9ecd6083c1808257a9c4f53ec9ff654304cfae671c1b923e9910ab5a55ca524c',
   'src/components/DecorPicker.jsx': '3ed5d2c75e1c7eb48b364f3b86cf9ec30fdad43acae9f1b30879f65f14e82e6a',
@@ -524,6 +530,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T75 F22 · *"the CNC export carries a banner counting the lines that are not 'cut'"*.
     'src/components/CncTree.jsx',
     'src/components/CncView.jsx',
+    // T78 F19 · *"Cabineo 8 AND 12, chosen in the company's default settings"*: the Joints choice on the company defaults screen.
+    'src/components/CompanyDefaultsModal.jsx',
     'src/components/ContextMenu.jsx',
     'src/components/DrawRoomModal.jsx',
     'src/components/DrawingModal.jsx',

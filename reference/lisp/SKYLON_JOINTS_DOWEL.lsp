@@ -6,6 +6,22 @@
 ;;;           because no drawing helper of it is called here.
 ;;;========================================
 ;;;
+;;; T78 F19 AMENDMENT (11.10.2026). The owner's own numbers replace T75's
+;;; proposals in section A: dowel 6 mm, pitch 250, never fewer than TWO on
+;;; one joint, end offset 50. The owner, 11.10.2026, verbatim (ASCII here, for
+;;; AutoCAD's loader): "minimum 2 a kolki co mniej wiecej co 250 mm", dowels
+;;; 6 mm. The spacing rule of section B is restated for them: the two end
+;;; dowels at the end offset, the rest spread EVENLY between them so the last
+;;; one lands at the end offset from the far end and no gap exceeds the pitch.
+;;; T75's `maxGapMm` (128 = 4 pitches) is NO LONGER PART OF THE RULE and is
+;;; removed from the profile here and in the engine: the owner's pitch IS the
+;;; widest gap a joint may show, so a second maximum would say nothing. The
+;;; two depths (edge 20, face 12) stay T75 proposed, owner to confirm. Section
+;;; H (NUMBERS, a BUD 600) is recomputed BY HAND under the new rule. Every
+;;; defun keeps its name; (dowel-positions) takes the minimum per joint and
+;;; the diameter where it took the max gap. The gate of section F stays shut
+;;; until the owner says the dowel is confirmed.
+;;;
 ;;; The owner, 9.10.2026: "lisp najpierw." This file is written BEFORE any
 ;;; engine code, and the engine mirrors it line for line. Nothing in it is
 ;;; invented in JS and backfilled here.
@@ -17,8 +33,10 @@
 ;;; one EDGE hole in the other, on the same axis, for every dowel. Never both
 ;;; systems on one joint.
 ;;;
-;;; THE GATE. Every number below is PROPOSED. While `confirmed` is nil a kit
-;;; or an export that would MACHINE these holes refuses, in these words:
+;;; THE GATE. The owner decided the dowel, the pitch, the minimum and the end
+;;; offset on 11.10.2026 (T78 F19); the two depths are still PROPOSED. While
+;;; `confirmed` is nil a kit or an export that would MACHINE these holes
+;;; refuses, in these words:
 ;;;   "the dowel pattern is proposed, not confirmed by the owner"
 ;;; (dowel-gate) below returns that sentence. This command only PRINTS the
 ;;; pattern so the owner can check it, and prints the gate above it.
@@ -32,59 +50,75 @@
 ;;;========================================
 ;;; profile.joints.dowel, as an assoc list. Passed IN to every function below,
 ;;; so each one is pure: same numbers in, same holes out.
+;;; T78 F19: four of the numbers are the owner's, decided 11.10.2026 ("minimum
+;;; 2 a kolki co mniej wiecej co 250 mm", dowels 6 mm, the end offset 50 kept
+;;; as his). The two depths stay T75 proposed. `maxGapMm` (T75: 128) is GONE:
+;;; the owner's pitch is the widest gap a joint may show, so the rule needs no
+;;; second maximum (section B).
 (defun dowel-profile ( / )
   (list
-    (cons "diaMm" 8.0)          ;; dowel diameter           T75 proposed, owner to confirm
-    (cons "edgeDepthMm" 20.0)   ;; edge hole depth          T75 proposed, owner to confirm
-    (cons "faceDepthMm" 12.0)   ;; face hole depth          T75 proposed, owner to confirm
-    (cons "pitchMm" 32.0)       ;; the grid the dowels sit on  T75 proposed, owner to confirm
-    (cons "endOffsetMm" 50.0)   ;; first and last dowel from each end  T75 proposed, owner to confirm
-    ;; NEW in this file, not in the CLAUDE.md table: the spacing rule below
-    ;; needs a stated maximum gap. 128 = 4 pitches.
-    (cons "maxGapMm" 128.0)     ;; widest gap between two dowels  T75 proposed, owner to confirm
-    (cons "confirmed" nil)))    ;; THE GATE: nil until the owner confirms  T75 proposed, owner to confirm
+    (cons "diaMm" 6.0)          ;; dowel diameter                       owner 11.10, decided ("6 mm")
+    (cons "edgeDepthMm" 20.0)   ;; edge hole depth                      T75 proposed, owner to confirm
+    (cons "faceDepthMm" 12.0)   ;; face hole depth                      T75 proposed, owner to confirm
+    (cons "pitchMm" 250.0)      ;; the widest gap between two dowels    owner 11.10, decided ("co mniej wiecej co 250 mm")
+    (cons "minPerJoint" 2)      ;; never fewer than this on one joint   owner 11.10, decided ("minimum 2")
+    (cons "endOffsetMm" 50.0)   ;; first and last dowel from each end   owner 11.10, decided
+    (cons "confirmed" nil)))    ;; THE GATE: nil until the owner says the dowel is confirmed
 
 ;;; Read one number (or the flag) off a profile list.
 (defun dowel-get (prof key)
   (cdr (assoc key prof)))
 
 ;;;========================================
-;;; B. THE SPACING RULE
+;;; B. THE SPACING RULE (T78 F19, the owner's: "minimum 2 a kolki co mniej
+;;;    wiecej co 250 mm")
 ;;;========================================
 ;;; Where the dowels go along ONE joint, as offsets from the joint's reference
-;;; end. Inputs: L the joint's length, e the end offset (50), p the pitch (32),
-;;; M the max gap (128). One answer per length, every step stated:
+;;; end. Inputs: L the joint's length, e the end offset (50), p the pitch
+;;; (250, the widest gap), nMin the fewest dowels on one joint (2), dia the
+;;; dowel diameter (6). One answer per length, every step stated:
 ;;;
 ;;;   1. L <= 0: no dowel.
 ;;;   2. The two END dowels stand e in from each end: at e and at L - e. Their
 ;;;      span is S = L - 2e.
-;;;   3. S < p (the two ends would stand closer than one pitch, or cross):
-;;;      ONE dowel, on the joint's centre, L / 2. The puzzle's own answer on a
-;;;      short run is the same: one joint on the centre line (turn 25).
-;;;   4. Otherwise the INTERMEDIATES. A gap may span at most K = floor(M / p)
-;;;      whole pitches (128 / 32 = 4). Counted in pitches the span is
-;;;      u = S / p, and the fewest gaps that keep every gap within K pitches
-;;;      is n = ceil(u / K). The n - 1 intermediates are the house's EVEN
-;;;      spread (engine/partEdits.js dowelPositions and the back screw run:
-;;;      the ends always drilled, the intermediates spread evenly so no gap
-;;;      exceeds the max), each one SNAPPED UP onto the pitch grid counted
-;;;      from the first dowel:
+;;;   3. S < dia (the two end dowels would MEET: closer than one diameter,
+;;;      which is (dowel-too-close)'s own measure): ONE dowel, on the joint's
+;;;      centre, L / 2. T75's step 3 gave this same answer on a short run, and
+;;;      so does the puzzle (one joint on the centre line, turn 25). It is the
+;;;      ONLY case under the owner's minimum: a joint that cannot hold two
+;;;      dowels at the end offsets at all (L < 2e + dia = 106). Two that CAN
+;;;      stand apart are always drilled (step 4), however short the joint: a
+;;;      wall unit's 282 side still takes two, at 50 and 232. (T75 fell to one
+;;;      dowel below one pitch of span; at a pitch of 250 that would have
+;;;      left every joint under 350 with one dowel, against "minimum 2".)
+;;;   4. Otherwise the COUNT: n = max(nMin, 1 + ceil(S / p)). The two ends,
+;;;      then one more dowel for every pitch the span holds; never fewer than
+;;;      nMin (2).
+;;;   5. The SPACING: the n dowels divide the span into n - 1 EQUAL gaps of
+;;;      g = S / (n - 1), the pitch stretched evenly so the last one lands
+;;;      exactly at e from the far end:
 ;;;
-;;;          t(i) = e + p * ceil(i * u / n)        i = 1 .. n - 1
+;;;          t(i) = e + i * S / (n - 1)        i = 0 .. n - 1
 ;;;
-;;;      So every dowel but the last sits on ONE 32 grid from the first, and
-;;;      only the last gap carries the remainder.
+;;;      "co mniej wiecej co 250": a gap is at most the pitch and usually a
+;;;      little under it, never over. The last offset is written as L - e,
+;;;      not as e + (n - 1) g, so no floating remainder reaches the far end.
 ;;;
-;;; WHY NO GAP EXCEEDS THE MAX. Between two grid dowels the gap is
-;;; ceil(i u/n) - ceil((i-1) u/n) <= ceil(u/n) <= K pitches; the last gap is
-;;; u - ceil((n-1) u/n) <= u/n <= K pitches.
-;;; WHY TWO NEVER MEET (with K = 4). n < u/4 + 1, so u/n > 2: every inner gap
-;;; is at least 2 pitches and the last is more than 1 pitch (32 > dia 8).
-;;; (dowel-too-close) below checks the result anyway, for any numbers.
+;;; WHY NO GAP EXCEEDS THE PITCH. n - 1 >= ceil(S / p) >= S / p, so
+;;; g = S / (n - 1) <= p.
+;;; WHY TWO NEVER MEET (with nMin = 2). When S < p: ceil(S / p) = 1, n = 2,
+;;; the one gap is S, and S >= dia (step 3 took the rest). When S >= p with
+;;; k = ceil(S / p): k = 1 gives S = p, one gap of p; k >= 2 gives
+;;; S > (k - 1) p, so g = S / k > (k - 1) p / k >= p / 2 = 125, far over dia.
+;;; A profile with nMin ABOVE 2 can put two dowels within a diameter on a
+;;; short joint; (dowel-too-close) below checks the result anyway, for any
+;;; numbers, and the engine refuses in words.
 ;;;
-;;; FLOATING NOISE. Every ceil and floor here takes 1e-9 of slack, so a value
-;;; that is an integer on paper is that integer: ceil(x) = ceil(x - 1e-9) and
-;;; floor(x) = floor(x + 1e-9). The engine mirrors the same 1e-9.
+;;; FLOATING NOISE. The ceil takes 1e-9 of slack, so a value that is an
+;;; integer on paper is that integer: ceil(x) = ceil(x - 1e-9). The gap g is
+;;; a plain real (670 / 3 = 223.333...); the engine rounds a hole to 0.0001
+;;; when it writes a drill, the LISP prints it to 0.01. The engine mirrors
+;;; the same 1e-9.
 
 ;;; ceil for x >= 0, with the 1e-9 slack (AutoLISP has no ceiling function).
 (defun dowel-ceil (x / n)
@@ -92,22 +126,22 @@
   (if (> (- x n) 1e-9) (1+ n) n))
 
 ;;; The offsets along a joint of length L, from its reference end.
-;;; (max 1 ...) only keeps the arithmetic defined; a max gap under one pitch
-;;; is refused by (dowel-refusal) before any pattern is used.
-(defun dowel-positions (L e p M / S u K n i out)
-  (setq L (float L) e (float e) p (float p) M (float M))
+;;; nMin is read as a whole number (fix); a pitch at or under zero and a
+;;; minimum under two are refused by (dowel-refusal) before any pattern is
+;;; used.
+(defun dowel-positions (L e p nMin dia / S n g i out)
+  (setq L (float L) e (float e) p (float p) dia (float dia))
   (cond
     ((<= L 0.0) nil)
-    ((< (- L e e) p) (list (/ L 2.0)))
+    ((< (- L e e) dia) (list (/ L 2.0)))
     (T
       (setq S (- L e e))
-      (setq u (/ S p))
-      (setq K (max 1 (fix (+ (/ M p) 1e-9))))
-      (setq n (dowel-ceil (/ u K)))
-      (setq out (list e))
-      (setq i 1)
-      (while (< i n)
-        (setq out (cons (+ e (* p (dowel-ceil (/ (* i u) n)))) out))
+      (setq n (fix (max nMin (1+ (dowel-ceil (/ S p))))))
+      (setq g (/ S (- n 1)))
+      (setq out nil)
+      (setq i 0)
+      (while (< i (- n 1))
+        (setq out (cons (+ e (* i g)) out))
         (setq i (1+ i)))
       (reverse (cons (- L e) out)))))
 
@@ -211,7 +245,8 @@
   (setq offs (dowel-positions (dowel-jget jt "len")
                               (dowel-get prof "endOffsetMm")
                               (dowel-get prof "pitchMm")
-                              (dowel-get prof "maxGapMm")))
+                              (dowel-get prof "minPerJoint")
+                              dia))
   (list offs
         (dowel-face-holes jt offs dia (dowel-get prof "faceDepthMm"))
         (dowel-edge-holes jt offs dia (dowel-get prof "edgeDepthMm"))))
@@ -333,8 +368,8 @@
 ;;;
 ;;; THE CORNER. At a board's corner the end dowel of one joint stands e = 50
 ;;; from the edge where the other joint's EDGE bores go in 20 deep. They stay
-;;; apart while e - dia / 2 > edgeDepth (50 - 4 = 46 > 20, a 26 mm web);
-;;; (dowel-refusal) refuses a profile that breaks it.
+;;; apart while e - dia / 2 > edgeDepth (50 - 3 = 47 > 20, a 27 mm web; T75's
+;;; dia 8 gave 26); (dowel-refusal) refuses a profile that breaks it.
 ;;;
 ;;; THE EDGE HOLES ARE HORIZONTAL BORES. A 3-axis bed drills the FACE holes
 ;;; from above; an EDGE hole needs a horizontal drilling head or a dowel jig at
@@ -357,12 +392,16 @@
 ;;; A profile that cannot make a sound joint, refused in words before any
 ;;; pattern is used. faceT and edgeT are the thinnest face and edge boards the
 ;;; job uses. Returns a list of sentences, or nil when there is nothing to say.
-(defun dowel-refusal (prof faceT edgeT / dia fd ed p M e out)
+;;; T78 F19: the max-gap sentence went with `maxGapMm`; in its place the pitch
+;;; must be a length and the minimum the owner's two.
+(defun dowel-refusal (prof faceT edgeT / dia fd ed p nMin e out)
   (setq dia (dowel-get prof "diaMm") fd (dowel-get prof "faceDepthMm")
         ed (dowel-get prof "edgeDepthMm") p (dowel-get prof "pitchMm")
-        M (dowel-get prof "maxGapMm") e (dowel-get prof "endOffsetMm"))
-  (if (or (<= p 0.0) (< M p))
-    (setq out (cons (strcat "the max gap " (rtos M 2 2) " is shorter than one pitch " (rtos p 2 2)) out)))
+        nMin (dowel-get prof "minPerJoint") e (dowel-get prof "endOffsetMm"))
+  (if (<= p 0.0)
+    (setq out (cons (strcat "the pitch " (rtos p 2 2) " is not a positive length") out)))
+  (if (< nMin 2)
+    (setq out (cons (strcat "fewer than two dowels per joint: the owner says minimum 2, the profile says " (itoa (fix nMin))) out)))
   (if (>= fd faceT)
     (setq out (cons (strcat "a face hole " (rtos fd 2 2) " deep would break through a " (rtos faceT 2 2) " board") out)))
   (if (>= dia edgeT)
@@ -429,57 +468,68 @@
   (princ))
 
 ;;;========================================
-;;; H. NUMBERS: a BUD 600 at KIT_BUD_FULL defaults
+;;; H. NUMBERS: a BUD 600 at KIT_BUD_FULL defaults (T78 F19, recomputed by hand)
 ;;;========================================
-;;; W 600, D 558, H 770, G 18, no shelf. Profile: dia 8, face 12, edge 20,
-;;; pitch 32, end 50, max gap 128 (K = 4 pitches). All proposed.
+;;; W 600, D 558, H 770, G 18, no shelf. Profile: dia 6, face 12, edge 20,
+;;; pitch 250, min 2, end 50 (the owner's, 11.10.2026; the depths proposed).
 ;;; Boards: BUL / BUR 540 x 770; TOP / BOTTOM 540 x 564 (drawn ROT90: x the
 ;;; depth from the back, y the width from the BUL end); BACK 600 x 770.
+;;; Per joint: S = L - 100; n = max(2, 1 + ceil(S / 250)); g = S / (n - 1);
+;;; offsets 50, 50 + g, ..., L - 50.
 ;;;
-;;; JOINT        LEN  REF     u        n  OFFSETS                     GAPS
-;;; BUL-TOP      540  FRONT   13.75    4  50 178 274 402 490          128 96 128 88
-;;; BUR-TOP      540  FRONT   13.75    4  50 178 274 402 490          128 96 128 88
-;;; BUL-BOTTOM   540  FRONT   13.75    4  50 178 274 402 490          128 96 128 88
-;;; BUR-BOTTOM   540  FRONT   13.75    4  50 178 274 402 490          128 96 128 88
-;;; BACK-BUL     770  BOTTOM  20.9375  6  50 178 274 402 498 626 720  128 96 128 96 128 94
-;;; BACK-BUR     770  BOTTOM  20.9375  6  50 178 274 402 498 626 720  128 96 128 96 128 94
-;;; BACK-TOP     564  LEFT    14.5     4  50 178 306 402 514          128 128 96 112
-;;; BACK-BOTTOM  564  LEFT    14.5     4  50 178 306 402 514          128 128 96 112
-;;; (The puzzle on the same joints today: 2 sockets at 95 / 445; 3 tenons at
-;;; 95 / 385 / 675; 2 tenons at 95 / 469.)
+;;; JOINT        LEN  REF     S    n  g       OFFSETS                 GAPS
+;;; BUL-TOP      540  FRONT   440  3  220     50 270 490              220 220
+;;; BUR-TOP      540  FRONT   440  3  220     50 270 490              220 220
+;;; BUL-BOTTOM   540  FRONT   440  3  220     50 270 490              220 220
+;;; BUR-BOTTOM   540  FRONT   440  3  220     50 270 490              220 220
+;;; BACK-BUL     770  BOTTOM  670  4  223.33  50 273.33 496.67 720    223.33 223.33 223.33
+;;; BACK-BUR     770  BOTTOM  670  4  223.33  50 273.33 496.67 720    223.33 223.33 223.33
+;;; BACK-TOP     564  LEFT    464  3  232     50 282 514              232 232
+;;; BACK-BOTTOM  564  LEFT    464  3  232     50 282 514              232 232
+;;; (440 / 250 = 1.76, ceil 2, n 3. 670 / 250 = 2.68, ceil 3, n 4. 464 / 250
+;;; = 1.856, ceil 2, n 3. 273.33 and 496.67 are 50 + 670 / 3 and 50 + 1340 / 3
+;;; exactly. T75's rule at dia 8 and pitch 32 gave 5, 7 and 5 dowels on the
+;;; same three lengths. The puzzle on the same joints today: 2 sockets at
+;;; 95 / 445; 3 tenons at 95 / 385 / 675; 2 tenons at 95 / 469.)
 ;;;
-;;; HOLES PER BOARD. FACE: dia 8, depth 12. EDGE: dia 8, depth 20, z 9 (the
+;;; HOLES PER BOARD. FACE: dia 6, depth 12. EDGE: dia 6, depth 20, z 9 (the
 ;;; centre of 18). (x, y) in the board's own frame, section C.
-;;; BUL     FACE  y 761 (BUL-TOP):     x 50 178 274 402 490
-;;;         FACE  y 9   (BUL-BOTTOM):  x 50 178 274 402 490
-;;;         EDGE  XW, x 540, bore -x (BACK-BUL):  y 50 178 274 402 498 626 720
-;;; BUR     FACE  y 761 (BUR-TOP):     x 490 362 266 138 50
-;;;         FACE  y 9   (BUR-BOTTOM):  x 490 362 266 138 50
-;;;         EDGE  X0, x 0, bore +x (BACK-BUR):    y 50 178 274 402 498 626 720
-;;; TOP     EDGE  Y0, y 0, bore +y (BUL-TOP):     x 490 362 266 138 50
-;;;         EDGE  YH, y 564, bore -y (BUR-TOP):   x 490 362 266 138 50
-;;;         EDGE  X0, x 0, bore +x (BACK-TOP):    y 50 178 306 402 514
-;;; BOTTOM  EDGE  Y0, y 0, bore +y (BUL-BOTTOM):  x 490 362 266 138 50
-;;;         EDGE  YH, y 564, bore -y (BUR-BOTTOM): x 490 362 266 138 50
-;;;         EDGE  X0, x 0, bore +x (BACK-BOTTOM): y 50 178 306 402 514
-;;; BACK    FACE  x 9   (BACK-BUL):    y 50 178 274 402 498 626 720
-;;;         FACE  x 591 (BACK-BUR):    y 50 178 274 402 498 626 720
-;;;         FACE  y 761 (BACK-TOP):    x 68 196 324 420 532
-;;;         FACE  y 9   (BACK-BOTTOM): x 68 196 324 420 532
+;;; BUL     FACE  y 761 (BUL-TOP):     x 50 270 490
+;;;         FACE  y 9   (BUL-BOTTOM):  x 50 270 490
+;;;         EDGE  XW, x 540, bore -x (BACK-BUL):  y 50 273.33 496.67 720
+;;; BUR     FACE  y 761 (BUR-TOP):     x 490 270 50
+;;;         FACE  y 9   (BUR-BOTTOM):  x 490 270 50
+;;;         EDGE  X0, x 0, bore +x (BACK-BUR):    y 50 273.33 496.67 720
+;;; TOP     EDGE  Y0, y 0, bore +y (BUL-TOP):     x 490 270 50
+;;;         EDGE  YH, y 564, bore -y (BUR-TOP):   x 490 270 50
+;;;         EDGE  X0, x 0, bore +x (BACK-TOP):    y 50 282 514
+;;; BOTTOM  EDGE  Y0, y 0, bore +y (BUL-BOTTOM):  x 490 270 50
+;;;         EDGE  YH, y 564, bore -y (BUR-BOTTOM): x 490 270 50
+;;;         EDGE  X0, x 0, bore +x (BACK-BOTTOM): y 50 282 514
+;;; BACK    FACE  x 9   (BACK-BUL):    y 50 273.33 496.67 720
+;;;         FACE  x 591 (BACK-BUR):    y 50 273.33 496.67 720
+;;;         FACE  y 761 (BACK-TOP):    x 68 300 532
+;;;         FACE  y 9   (BACK-BOTTOM): x 68 300 532
 ;;;
-;;; COUNTS. BUL 10 face + 7 edge; BUR 10 + 7; TOP 15 edge; BOTTOM 15 edge;
-;;; BACK 24 face. 44 face holes, 44 edge holes: 44 DOWELS for the BOM.
+;;; COUNTS. BUL 6 face + 4 edge; BUR 6 + 4; TOP 9 edge; BOTTOM 9 edge;
+;;; BACK 14 face. 26 face holes, 26 edge holes: 26 DOWELS for the BOM
+;;; (T75's rule: 44).
 ;;;
 ;;; WITH ONE FIX SHELF (KIT_BUD's one-shelf row: underside 385, 18 thick,
 ;;; front 20 behind the carcass front; shelf 520 deep x 564 wide):
-;;; BUL-SHELF-1  520  FRONT   13.125   4  50 178 274 370 470          128 96 96 100
-;;; BUR-SHELF-1  520  FRONT   13.125   4  50 178 274 370 470          128 96 96 100
-;;; BUL      FACE  y 394 (row + 18 / 2):  x 70 198 294 390 490
-;;; BUR      FACE  y 394:                 x 470 342 246 150 50
-;;; SHELF-1  EDGE  Y0, y 0, bore +y:      x 50 178 274 370 470
-;;;          EDGE  YH, y 564, bore -y:    x 50 178 274 370 470
-;;; 10 more dowels: 54 in all. The shelf's last face hole (x 490 on BUL, 50
-;;; from the back edge) stands 26 clear of BACK-BUL's edge bores (x 520 to 540).
+;;; BUL-SHELF-1  520  FRONT   420  3  210     50 260 470              210 210
+;;; BUR-SHELF-1  520  FRONT   420  3  210     50 260 470              210 210
+;;; BUL      FACE  y 394 (row + 18 / 2):  x 70 280 490
+;;; BUR      FACE  y 394:                 x 470 260 50
+;;; SHELF-1  EDGE  Y0, y 0, bore +y:      x 50 260 470
+;;;          EDGE  YH, y 564, bore -y:    x 50 260 470
+;;; 6 more dowels: 32 in all (T75's rule: 10 more, 54). The shelf's last face
+;;; hole (x 490 on BUL, 50 from the back edge, radius 3) stands 27 clear of
+;;; BACK-BUL's edge bores (x 520 to 540).
+;;;
+;;; A SHORT JOINT, for the record (not a BUD board): a wall unit 300 deep has
+;;; a 282 side; S = 182 < 250, n = max(2, 1 + 1) = 2: dowels at 50 and 232,
+;;; one gap of 182. Under 106 (S < 6) a joint gets one dowel on its centre.
 
 (princ "\nSKYLON_JOINTS_DOWEL loaded. Type DOWEL_JOINTS to print the pattern.")
 (princ)

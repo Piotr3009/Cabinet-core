@@ -521,20 +521,33 @@ export const DEFAULT_CABINET_PROFILE = {
   //
   // `dowel` is the LISP's `dowel-profile`, key for key. `confirmed` is THE
   // GATE: while it is false every CNC export that would machine a dowel hole
-  // refuses, and Check #31 says so. `maxGapMm` is the LISP's own addition to
-  // the CLAUDE.md table (the spacing rule needs a stated maximum gap).
+  // refuses, and Check #31 says so.
+  //
+  // T78 F19 (11.10.2026): four of the numbers are the OWNER'S, decided:
+  // *"minimum 2 a kołki co mniej więcej co 250 mm"*, dowels 6 mm, the end
+  // offset 50 kept as his. The two depths stay T75 proposed. T75's `maxGapMm`
+  // (128, the LISP's own addition: its spacing rule needed a stated maximum
+  // gap) is NO LONGER PART OF THE RULE: the dowels are set out at the end
+  // offset from each end and spread evenly, never fewer than two, no gap over
+  // the pitch, so the owner's pitch IS the widest gap. It is gone from here,
+  // from SKYLON_JOINTS_DOWEL.lsp and from `engine/dowels.js`; the migrate
+  // line drops it from a saved profile. The gate stays shut until the owner
+  // says the dowel is confirmed.
   joints: {
     system: 'puzzle',
     dowel: {
-      diaMm: 8,           // T75 proposed, owner to confirm
+      diaMm: 6,           // owner 11.10.2026, decided ("6 mm"), T78 F19
       edgeDepthMm: 20,    // T75 proposed, owner to confirm
       faceDepthMm: 12,    // T75 proposed, owner to confirm
-      pitchMm: 32,        // T75 proposed, owner to confirm
-      endOffsetMm: 50,    // T75 proposed, owner to confirm
-      maxGapMm: 128,      // T75 proposed, owner to confirm
-      confirmed: false,   // T75 proposed, owner to confirm
+      pitchMm: 250,       // owner 11.10.2026, decided ("kołki co mniej więcej co 250 mm"), T78 F19
+      minPerJoint: 2,     // owner 11.10.2026, decided ("minimum 2"), T78 F19
+      endOffsetMm: 50,    // owner 11.10.2026, decided, T78 F19
+      confirmed: false,   // THE GATE, T75: shut until the owner says the dowel is confirmed
       // The two CNC layers (engine/cnc/layers.js), named by the house grammar
       // `{FEATURE}_{DIAMETER}MM`: the face half, and the edge half by hand.
+      // T78 F19 leaves the names as T75 wrote them (the dowel is 6 now; a
+      // rename to DOWEL_6MM touches layers.js, machining.js and the DXF test
+      // and is the owner's call, named in the PR).
       layers: { face: 'DOWEL_8MM', edge: 'DOWEL_EDGE_8MM' },
     },
   },
@@ -5418,6 +5431,10 @@ export function migrateCabinetProfile(profile) {
     // Unknown/older shape: nothing user-set is safely transferable yet.
     if (!profile.carcass || !profile.puzzle || !profile.wardrobe) return { ...D };
   }
+  // T78 F19 · a profile saved under T75 carries `joints.dowel.maxGapMm` (128),
+  // a key that is no longer part of the dowel rule (the owner's pitch is the
+  // widest gap). It is dropped here, not spread back in below.
+  const { maxGapMm: _dowelMaxGapGone, ...savedDowel } = profile.joints?.dowel || {};
   return {
     ...D, ...profile,
     schema: PROFILE_SCHEMA,
@@ -6037,13 +6054,28 @@ export function migrateCabinetProfile(profile) {
     notch: { ...D.notch, ...profile.notch, defaults: { ...D.notch.defaults, ...profile.notch?.defaults } },
     // T75 F23 · the joint system and the dowel numbers, key by key, so a
     // profile saved before tonight cuts the puzzle and holds the gate shut.
+    //
+    // T78 F19 · THE CODE WINS for the owner's four numbers (dia 6, pitch 250,
+    // minPerJoint 2, endOffset 50), by the TURN 40 `plateBiteMm` law:
+    // `cc.profile.v1` is written whole on every `setProfile`, so a browser
+    // that saved a profile under T75 carries dia 8, pitch 32 and maxGapMm 128
+    // in it, and the plain spread would let that stale block outvote the
+    // owner for ever. Nothing in Settings edits these keys and nothing ever
+    // has, so a saved value can only be T75's persisted default, never a
+    // choice. The two depths (T75 proposed) and `confirmed` (the gate, the
+    // owner's to open) keep the saved value; `maxGapMm` was dropped above.
+    // Unconditional, so running the migration twice answers the same.
     joints: {
       ...D.joints,
       ...profile.joints,
       dowel: {
         ...D.joints.dowel,
-        ...profile.joints?.dowel,
-        layers: { ...D.joints.dowel.layers, ...profile.joints?.dowel?.layers },
+        ...savedDowel,
+        diaMm: D.joints.dowel.diaMm,
+        pitchMm: D.joints.dowel.pitchMm,
+        minPerJoint: D.joints.dowel.minPerJoint,
+        endOffsetMm: D.joints.dowel.endOffsetMm,
+        layers: { ...D.joints.dowel.layers, ...savedDowel.layers },
       },
     },
     // Turn 16 (F3): `annotation` is merged key by key, like every other nested

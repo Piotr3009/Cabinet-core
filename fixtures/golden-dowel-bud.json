@@ -159,31 +159,31 @@
     "drills": [
       [
         "DOWEL_8MM|BACK",
-        24
+        14
       ],
       [
         "DOWEL_8MM|BUL",
-        10
+        6
       ],
       [
         "DOWEL_8MM|BUR",
-        10
+        6
       ],
       [
         "DOWEL_EDGE_8MM|BOTTOM",
-        15
+        9
       ],
       [
         "DOWEL_EDGE_8MM|BUL",
-        7
+        4
       ],
       [
         "DOWEL_EDGE_8MM|BUR",
-        7
+        4
       ],
       [
         "DOWEL_EDGE_8MM|TOP",
-        15
+        9
       ],
       [
         "FRONT_HINGES_35MM|01-F",

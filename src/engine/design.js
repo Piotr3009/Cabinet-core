@@ -317,6 +317,15 @@ export const DEFAULT_DESIGN = {
   // identical for both, so nothing in the engine branches on it. It decides
   // which model the view loads and which article the BOM orders.
   runners: { system: null, variant: null },
+  // ─── T78 F19 (CLAUDE.md T78 PART E): WHICH JOINT SYSTEM THIS JOB IS CUT WITH
+  // The owner's four (11.10.2026): puzzle, dowels, biscuits, Cabineo (8 or
+  // 12). An ID, prefilled from the company row (`companyDefaults.js
+  // prefillDesignFromCompany`), overruled by a unit's own `joints_system`
+  // (the T75 F23 Joints row); `null` is the profile's own answer, the puzzle,
+  // so a project saved before this turn is cut exactly as it was. Not one
+  // number: the pitch, the diameter and the pocket are the profile's and the
+  // LISP's (`engine/dowels.js`, `engine/biscuitJoints.js`, `engine/cabineo.js`).
+  joints: { system: null },
   // ─── TURN 32 (CLAUDE.md F7): READY-MADE DRAWER BOXES ──────────────────────
   // The wizard's materials block asks ONCE per project: same board as the
   // carcass (the default — the engine's own behaviour since the 15.08 chat
@@ -465,6 +474,12 @@ export function migrateDesign(design) {
       variant: RUNNER_VARIANT_IDS.has(String(d.runners?.variant || '').toUpperCase())
         ? String(d.runners.variant).toUpperCase()
         : null,
+    },
+    // T78 F19: the joint system, an id or nothing; the engine's one reader
+    // (`dowels.js jointSystemOf` / `resolveJointSystem`) refuses an id it does
+    // not cut, so nothing is judged here beyond "a string".
+    joints: {
+      system: d.joints?.system ? String(d.joints.system).trim().toLowerCase() : null,
     },
     // Turn 30 (CLAUDE.md F5): the shelf-pin setback, migrated like the shaker
     // frame above it — a positive number or nothing at all.

@@ -525,10 +525,36 @@ function nearestVertical(verticals, side, { wall, carcassEdge, tolerance }) {
 // it is a very shallow angle. So the corner is mitred when the filler is at
 // least as wide as the gap is tall, and butted otherwise, and a test holds both.
 
+// --- T78 F22 . THE TOP INFILL IS ALWAYS MITRED AT A CORNER -------------------
+//
+// The owner, 11.10.2026, on the eye-test of T75 to T77: *"zawsze z mitra,
+// gorny infill to samo co boczny."*  T75 F6 gave `runEnd` its fifth answer,
+// 'corner': a run that stops on the corner post (or, since T78 F10, on a blind
+// kit's own 40 mm strip) ENDS there, square on the post's outer edge, in the
+// face plane of the run round the corner. So a top infill turning an INTERNAL
+// PLAN corner met the other run's strip with a square butt, while the frame
+// corner (the side infill, standing in the SAME face plane) has been mitred
+// since T15. The owner wants the one law: every internal corner a top infill
+// turns is a 45, whether the piece it meets stands in its own face plane (the
+// side infill) or across it (the corner post and the perpendicular run's strip).
+//
+// What the number means did not change. It is the record of the frame corner,
+// `faceH`, so every reader of it (`cabinet.js` meta.corner, `mitre.js`,
+// readiness) keeps one grammar; and since T50-F11 it is a RECORD on the part,
+// never a cut: both boards leave the machine square and the corner is cut on
+// site from the 20 mm allowance (in plan the leg of that cut is the strip's own
+// thickness). The T-joint keeps its tolerance case: a side filler standing
+// proud of the strip beyond `tolerance` is not a corner, and a filler too
+// narrow for the cut is still butted. A 'corner' end carries no filler top and
+// no filler width (the post runs to the unit top; the other run's strip is a
+// run's own piece), so neither question is asked of it.
+
 /**
  * The 45° mitre at one end of a top infill, or 0 for a square corner.
  *
- * THREE things have to be true, and each of them is a joiner's reason:
+ * At a 'corner' end (T75 F6 / T78 F10: the run stops on the corner post) the
+ * answer is the 45, always (T78 F22). At a side infill THREE things have to be
+ * true, and each of them is a joiner's reason:
  *
  *   1. the thing in the way is a SIDE INFILL. `blockedBy` is what separates the
  *      two answers that both call themselves 'infill': a ceiling-height filler
@@ -547,7 +573,12 @@ function nearestVertical(verticals, side, { wall, carcassEdge, tolerance }) {
 export function infillCornerMitre(end, faceH, elementTop, tolerance = 0) {
   const h = Math.max(0, Number(faceH) || 0);
   if (h <= 0) return 0;
-  if (!end || end.kind !== 'infill' || !end.blockedBy) return 0;
+  if (!end) return 0;
+  // T78 F22: the internal plan corner. The strip stops on the corner post and
+  // meets the other run's strip across its face plane: a 45, with no filler top
+  // to be flush with and no filler width to have room in.
+  if (end.kind === 'corner') return h;
+  if (end.kind !== 'infill' || !end.blockedBy) return 0;
   const flush = Math.abs((Number(end.blockerTop) || 0) - (Number(elementTop) || 0))
     <= Math.max(0, Number(tolerance) || 0);
   if (!flush) return 0;
@@ -1122,9 +1153,12 @@ export function runInfillParams(units, {
     // about its own corner, and everyone in the middle is told about neither.
     const first = run.units[0];
     const last = run.units[run.units.length - 1];
+    // T78 F22: the side filler carries the other half of a FRAME corner only.
+    // At a 'corner' end the other half is the perpendicular run's own strip,
+    // and no side filler is told about it (the number stays 0 there, as it was).
     const sideMitreFor = (u) => ({
-      left: u.id === first.id ? element.mitre.left : 0,
-      right: u.id === last.id ? element.mitre.right : 0,
+      left: u.id === first.id && element.ends.left === 'infill' ? element.mitre.left : 0,
+      right: u.id === last.id && element.ends.right === 'infill' ? element.mitre.right : 0,
     });
     out.set(first.id, { ...element, sideMitre: sideMitreFor(first) });
     for (const u of run.units.slice(1)) {

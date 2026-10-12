@@ -397,8 +397,22 @@ export const HEIGHT_KEYS = ['base', 'wall', 'tall', 'wallMount', 'toeKick'];
 
 const clone = (v) => JSON.parse(JSON.stringify(v));
 
+// Chat-fix 12.10.2026: the room view asked this several times per PANEL per
+// render (a deep copy each time). A stored design is replaced, never edited in
+// place, so its answer is remembered per object.
+const migrated = new WeakMap();
+
 /** Fill in anything a stored design predates, without touching user values. */
 export function migrateDesign(design) {
+  const keyed = design && typeof design === 'object';
+  const hit = keyed ? migrated.get(design) : null;
+  if (hit) return hit;
+  const out = migrateDesignFresh(design);
+  if (keyed) migrated.set(design, out);
+  return out;
+}
+
+function migrateDesignFresh(design) {
   const d = design && typeof design === 'object' ? design : {};
   const base = clone(DEFAULT_DESIGN);
   const types = Array.isArray(d.carcass?.types) && d.carcass.types.length

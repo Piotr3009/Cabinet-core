@@ -10,6 +10,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { buildHardwareEnv } from './hardwareEnv.js';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
+import FrameDemand from './frameDemand.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
 import AddPlus from './AddPlus.jsx';
 // Turn 50 (CLAUDE.md F2, decision 1): the share-out is offered AT THE GAP.
@@ -1654,6 +1655,8 @@ export default function Scene({
   // reason the wall and the floor are.
   const background = profile.appearance.room?.background || '#fafaf8';
   const [subject, setSubject] = useState(null);
+  // Chat-fix 12.10.2026: a drag or an orbit in progress (3d/frameDemand.jsx).
+  const [held, setHeld] = useState(false);
   // Chat-fix 25.08.2026: one bounds per RUN, so the showroom bands can hang one
   // tube along each — an L kitchen gets two, a straight wall one.
   const [runs, setRuns] = useState([]);
@@ -1702,7 +1705,10 @@ export default function Scene({
       // "soft" = PCFSoftShadowMap. A shadow with a hard edge under a cabinet
       // is a shadow from a point source, and there are none in a room.
       shadows="soft"
-      dpr={[1, 2]}
+      // Chat-fix 12.10.2026: drawn on demand (3d/frameDemand.jsx), and one
+      // pixel per CSS pixel while a drag or an orbit is in progress.
+      frameloop="demand"
+      dpr={held ? 1 : [1, 2]}
       // preserveDrawingBuffer: the PDF export reads this canvas back.
       // Tone mapping is ACES and is set by <ToneMapping> below rather than here,
       // because it is now one setting shared with the render pass (turn 8, F1).
@@ -1718,6 +1724,7 @@ export default function Scene({
       style={{ background }}
     >
       <color attach="background" args={[background]} />
+      <FrameDemand onHeld={setHeld} />
       <ToneMapping exposure={studio.exposure} />
       {/* ─── TURN 33 (CLAUDE.md F2): "TURN ON THE LIGHT" ─────────────────────
           ONE factor multiplies the whole rig and the environment together —

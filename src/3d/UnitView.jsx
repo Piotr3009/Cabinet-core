@@ -64,31 +64,8 @@ const PANE_BY_KIND = {
     ...PANE_ALPHA_GLASS, color: '#cfd8d6', opacity: 0.3, roughness: 0.35,
   },
 };
-export function paneMaterialFor(kind) {
+function paneMaterialFor(kind) {
   return PANE_BY_KIND[kind] || PANE_BY_KIND.smoke;
-}
-let reededNormal = null;
-function reededNormalMap() {
-  if (reededNormal || typeof document === 'undefined') return reededNormal;
-  const c = document.createElement('canvas');
-  c.width = 64; c.height = 4;
-  const ctx = c.getContext('2d');
-  if (!ctx) return null;
-  const img = ctx.createImageData(64, 4);
-  for (let x = 0; x < 64; x += 1) {
-    const nx = Math.sin((x / 64) * Math.PI * 8) * 0.6;
-    const r = Math.round((nx * 0.5 + 0.5) * 255);
-    for (let y = 0; y < 4; y += 1) {
-      const i = (y * 64 + x) * 4;
-      img.data[i] = r; img.data[i + 1] = 128; img.data[i + 2] = 255; img.data[i + 3] = 255;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  reededNormal = new THREE.CanvasTexture(c);
-  reededNormal.wrapS = THREE.RepeatWrapping;
-  reededNormal.wrapT = THREE.RepeatWrapping;
-  reededNormal.repeat.set(6, 1);
-  return reededNormal;
 }
 // The pane draws AFTER the opaque interior it is meant to be seen through.
 const PANE_RENDER_ORDER = 20;
@@ -153,6 +130,9 @@ import { shakerFrontGeometry } from './shakerSolid.js';
 import { frontDecorationGeometry } from './frontDecorationSolid.js';
 import { isShakerFront } from '../engine/shaker.js';
 import { panelRecesses } from '../engine/recesses.js';
+// T78 F12 · the reeded pane's ridge normal map, drawn in code in its own file so
+// this scene rasterises nothing but the dimension label (T27 F4.2).
+import { reededNormalMap } from './reededGlass.js';
 // T54-F1: the ghost line draws the CARCASS cut — the engine's own offset of
 // the ceiling — so the drag hint and the boards cannot disagree.
 import { carcassCutPts } from '../engine/puzzle.js';

@@ -44,7 +44,8 @@ test('F12 · the pane sits in the door\'s own frame, like the mirror: the leaf\'
   assert.match(block, /mm\(p\.meta\.glass\.paneMm \|\| GLASS_PANE_MM\)/);
   assert.match(block, /paneMaterialFor\(p\.meta\.glass\.kind\)/);
   assert.match(view, /reeded: \{/);
-  assert.match(view, /function reededNormalMap\(\)/, 'reeded: a ridge normal map drawn in code, no new dependency');
+  assert.match(view, /import \{ reededNormalMap \} from '\.\/reededGlass\.js';/, 'reeded: the ridge map is the view\'s, from its own file (T27 F4.2: the scene rasterises nothing)');
+  assert.match(read('src/3d/reededGlass.js'), /export function reededNormalMap\(\)/, 'reeded: a ridge normal map drawn in code, no new dependency');
 });
 
 test('F12 · the engine: smoke by default, the door\'s own kind wins over the unit\'s, the BOM line names the kind', () => {

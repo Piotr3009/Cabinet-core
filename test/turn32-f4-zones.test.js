@@ -131,8 +131,11 @@ test('an INTERNAL drawer is given no face — in a column and in the default zon
   store().addDrawers(id, 2, 'internal', 220, 1);
   const r = store().unitResult(id);
   assert.ok(r.panels.some((p) => p.id === 'Z2D1-SL'), 'the box exists');
-  assert.ok(!r.panels.some((p) => p.part === 'DRAWER-FRONT' && p.meta?.zone === 1),
-    'no face — the drawer lives behind the doors');
+  // AMENDED BY T78 F15 (12.10.2026): the owner, *"szuflady wewnetrzne powinny
+  // miec fronty"*: a drawer behind the doors carries an INNER front
+  // (meta.inner, on the box front); what it never gets is a FACADE.
+  assert.ok(!r.panels.some((p) => p.part === 'DRAWER-FRONT' && p.meta?.zone === 1 && !p.meta?.inner),
+    'no facade — the drawer lives behind the doors');
 
   // The default zone hears the same answer through the item's own `mount` —
   // the field T30 wrote and nothing ever read.
@@ -141,7 +144,7 @@ test('an INTERNAL drawer is given no face — in a column and in the default zon
   store().addDrawers(plain, 2, 'internal', 220);
   const pr = store().unitResult(plain);
   assert.ok(pr.assemblies.drawerZone, 'the default stack exists');
-  assert.ok(!pr.panels.some((p) => p.part === 'DRAWER-FRONT'), 'and has no faces');
+  assert.ok(!pr.panels.some((p) => p.part === 'DRAWER-FRONT' && !p.meta?.inner), 'and has no facades (T78 F15: inner fronts only)');
 });
 
 // ─── one rail per column ────────────────────────────────────────────────────

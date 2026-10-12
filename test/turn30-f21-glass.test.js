@@ -116,7 +116,10 @@ test('F21 the pane is ORDERED, to the aperture it fills — and never cut', () =
   const pane = glass.hardware.find((h) => h.role === 'glass_pane');
   assert.ok(pane, 'the pane is on the order form');
   assert.equal(pane.qty, 1);
-  assert.equal(pane.label, 'Glass pane');
+  // AMENDED BY T78 F12 (12.10.2026): the line names the glass KIND, smoke by
+  // default (the owner: *"domyslnie smoke ale z wyborem"*), so 'Glass pane'
+  // became 'Smoked glass 4 mm' (profile.front.glass.default / paneMm).
+  assert.equal(pane.label, 'Smoked glass 4 mm');
   assert.equal(pane.spec.aperture_w_mm, leaf(glass).meta.glass.aperture.w);
   assert.match(pane.spec_label, /mm aperture/);
   // Glass is not board: it reaches no panel, no sheet and no CSV line.

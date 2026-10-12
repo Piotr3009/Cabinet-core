@@ -459,10 +459,10 @@ export function resolveDoorHinge({
   assigned = null, frontThickness = null, innerDrawer = false, finish = null, family = 'standard',
 } = {}) {
   // T78 F13 · the door's FAMILY; the angle inside it is still derived (T22).
-  const hingeFamily = family === 'wide' ? 'wide' : 'standard';
-  const ruleAngle = hingeAngleFor({ frontThickness, innerDrawer, family: hingeFamily });
+  const familyChosen = family === 'wide' ? 'wide' : 'standard';
+  const ruleAngle = hingeAngleFor({ frontThickness, innerDrawer, family: familyChosen });
   const wantFinish = finish ? String(finish).toLowerCase() : null;
-  if (hingeFamily === 'wide' && !assigned) {
+  if (familyChosen === 'wide' && !assigned) {
     // The wide family is the Blum file's: its article (owner to confirm) when
     // the CLIP top catalogue has no row of that angle; no rung is said in words
     // by the BOM (`complete: false`, no article).
@@ -478,7 +478,7 @@ export function resolveDoorHinge({
       assigned: false,
       ruleAngle,
       complete: Boolean(article),
-      hingeFamily,
+      hingeFamily: familyChosen,
       page: ruleAngle != null ? wideHingePage(ruleAngle) : null,
       status: 'owner to confirm',
     };
@@ -497,7 +497,7 @@ export function resolveDoorHinge({
         assigned: true,
         ruleAngle,
         complete: Boolean(own.article),
-        hingeFamily,
+        hingeFamily: familyChosen,
       };
     }
   }
@@ -514,7 +514,7 @@ export function resolveDoorHinge({
       assigned: false,
       ruleAngle,
       complete: false,
-      hingeFamily,
+      hingeFamily: familyChosen,
     };
   }
   return {
@@ -530,7 +530,7 @@ export function resolveDoorHinge({
     assigned: false,
     ruleAngle,
     complete: Boolean(match.article),
-    hingeFamily,
+    hingeFamily: familyChosen,
   };
 }
 

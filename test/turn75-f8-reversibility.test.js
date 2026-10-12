@@ -39,7 +39,8 @@ test('F8 · the post, the plinth butt and the hinge flip: made on the stop, unma
   const { b } = corner();
   S().addDoors(b);
   S().refreshAutoParts();
-  assert.equal(U(b).params.corner_post_left_mm, 50, 'the post');
+  // AMENDED BY T78 F10 (12.10.2026): the post is the owner's 40 (profile.corner.postMm), decided.
+  assert.equal(U(b).params.corner_post_left_mm, P.corner.postMm, 'the post');
   assert.ok(S().unitResult(b).panels.find((p) => p.id === 'PLINTH').meta.corner, 'the plinth butt');
   const hinged = U(b).params.doors.hinge;
   S().moveUnit(b, 1500, 0);
@@ -48,7 +49,7 @@ test('F8 · the post, the plinth butt and the hinge flip: made on the stop, unma
   assert.equal(U(b).params.corner_hinge_auto ?? null, null, 'the automat\'s record of the flip went');
   // Back on the stop, all of it comes back: it is derived, not remembered.
   S().moveUnit(b, 0, 0);
-  assert.equal(U(b).params.corner_post_left_mm, 50);
+  assert.equal(U(b).params.corner_post_left_mm, P.corner.postMm);
   assert.equal(U(b).params.doors.hinge, hinged);
 });
 

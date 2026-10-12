@@ -107,6 +107,9 @@
         "system": null,
         "variant": null
       },
+      "joints": {
+        "system": null
+      },
       "shelves": {
         "pinSetback": null
       },
@@ -153,6 +156,8 @@
         "handle": null,
         "shakerFrame": 60,
         "handleOffsets": {},
+        "glassKind": null,
+        "hingeFamily": null,
         "types": []
       },
       "doorStyles": [],

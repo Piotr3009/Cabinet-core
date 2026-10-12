@@ -63,7 +63,12 @@ test('F14 with drawers, the drilling is the WARDROBE machinery, hole for hole', 
   const w = of('WARDROBE', { drawers: 3, drawer_fronts: false });
   assert.equal(p.drills.length, w.drills.length);
   assert.deepEqual(holes(p), holes(w));
-  assert.deepEqual(parts(p), parts(w));
+  // AMENDED BY T78 F15 (12.10.2026): the pantry's drawers are BEHIND DOORS, so
+  // each carries an inner front now (the owner: *"szuflady wewnetrzne powinny
+  // miec fronty"*); a wardrobe with its fronts OFF is a phase and carries none.
+  // The carcass, the boxes and every hole are still one string.
+  assert.deepEqual(parts(p).filter((n) => n !== 'DRAWER-FRONT'), parts(w));
+  assert.equal(p.panels.filter((x) => x.part === 'DRAWER-FRONT' && x.meta?.inner).length, 3, 'three inner fronts');
 });
 
 test('F14 …and the drawers really are drilled: MOVENTO rows on the runner layer', () => {
@@ -171,7 +176,10 @@ test('F14 the mechanism cannot reach a hole, a box or an order line', () => {
   ]) {
     const at = src.indexOf(stack);
     assert.ok(at > 0, stack);
-    const body = src.slice(at, at + 2500);
+    // AMENDED BY T78 F15 (12.10.2026): the inner-front block (a drawer behind
+    // doors gets a board on its box, `cfg.innerFrontDrawers`) now sits between
+    // the two uses, so the window is longer; the count is what it always was.
+    const body = src.slice(at, at + 4500);
     assert.equal(body.split('cfg.internalDrawers').length - 1, 2, stack);
   }
 });

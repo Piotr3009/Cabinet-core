@@ -78,10 +78,19 @@ test('F15 · the wardrobe\'s internal drawers (mount internal) and a drawer-unit
   assert.deepEqual(inner.map((p) => p.meta.drawer), [1]);
   assert.deepEqual(overlay.map((p) => p.meta.drawer), [2]);
   assert.ok(inner[0].w < overlay[0].w, 'the inner front is the box\'s width, the overlay the opening\'s');
-  // A drawer unit with its fronts off: every row behind a door-less face gets an inner front with the box's fixing screws.
-  const b = computeCabinet({ ...defaultParamsFor('BUDR', P), unit_num: 'D1', drawer_fronts: false }, P);
+  // A drawer unit whose rows the job declares internal (behind the doors it
+  // added): every row gets an inner front with the box's own fixing screws.
+  const b = computeCabinet({ ...defaultParamsFor('BUDR', P), unit_num: 'D1', internal_drawers: 'all' }, P);
   const bi = b.panels.filter((p) => p.role === 'drawer_front');
   assert.equal(bi.length, 3);
+  // AMENDED 12.10.2026, after the full suite: two ways of being internal are NOT
+  // behind doors and keep T30's bare box (engine/cabinet.js innerFrontDrawerSet):
+  // the fronts OFF (T17 F8.1, a phase) and T30 F20's hidden drawer, which the
+  // facade above covers.
+  assert.equal(computeCabinet({ ...defaultParamsFor('BUDR', P), unit_num: 'D2', drawer_fronts: false }, P)
+    .panels.filter((p) => p.role === 'drawer_front').length, 0, 'fronts off: a phase, no inner front');
+  assert.equal(computeCabinet({ ...defaultParamsFor('BUDR', P), unit_num: 'D3', internal_drawers: [2] }, P)
+    .panels.filter((p) => p.role === 'drawer_front').length, 0, 'a hidden drawer: the facade above covers it, no inner front');
   for (const f of bi) {
     const screws = b.drills.filter((d) => d.panel === f.id && d.kind === 'front_screw');
     assert.equal(screws.length, 2, 'the box\'s own front fixing, two screws');

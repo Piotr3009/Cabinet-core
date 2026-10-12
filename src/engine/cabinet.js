@@ -377,6 +377,24 @@ export function internalDrawerSet(params, type, count, items = []) {
   return new Set();
 }
 
+/**
+ * ─── T78 F15 · WHICH INTERNAL DRAWERS GET AN INNER FRONT ───────────────────
+ *
+ * The owner: *"szuflady wewnetrzne powinny miec fronty."*  A drawer BEHIND
+ * DOORS (a pantry's, BUD_INT's, a wardrobe item mounted internal, a job that
+ * says `internal_drawers: 'all'`) carries an inner front on its box. Two ways
+ * of being internal are NOT behind doors and keep T30's bare box:
+ *   `internal_drawers: [2]`   T30 F20's hidden drawer: the facade above grows
+ *                             over it, which is what makes it hidden;
+ *   `drawer_fronts: false`    T17 F8.1's "the fronts come off", a phase.
+ * One reading in one place, so both drawer machines ask the same question.
+ */
+export function innerFrontDrawerSet(params, type, count, items = []) {
+  if (params?.drawer_fronts === false) return new Set();
+  if (Array.isArray(params?.internal_drawers)) return new Set();
+  return internalDrawerSet(params, type, count, items);
+}
+
 /** Largest standard runner length that fits the usable depth, or null. */
 export function snapDrawerDepth(usableDepth, steps) {
   let best = null;
@@ -1071,6 +1089,8 @@ function normalizeParams(raw, profile) {
     // comes off. It is the same answer said the short way, so it is folded in
     // here rather than living as a second rule further down.
     internalDrawers: internalDrawerSet(p, type, drawers, drawerItems),
+    // T78 F15 · the internal rows that are behind doors (an inner front each).
+    innerFrontDrawers: innerFrontDrawerSet(p, type, drawers, drawerItems),
     drawerHeights,
     // TURN 40 (F3b): the overlay stack's own items, carried through so the
     // geometry pass can ask `overlayPlan` for the one line it needs.
@@ -5003,6 +5023,7 @@ export function computeCabinet(params, profileOverride) {
       // Turn 30 (CLAUDE.md F14/F20): an INTERNAL drawer is given no face. Its
       // box, its runners and its holes are above and are untouched.
       if (cfg.internalDrawers.has(i)) {
+        if (!cfg.innerFrontDrawers.has(i)) continue;
         // ─── T78 F15 · INTERNAL DRAWERS GET FRONTS ───────────────────────
         // The owner: *"szuflady wewnetrzne powinny miec fronty."*  A drawer
         // behind doors had a box and no face; it gets an INNER FRONT: a board
@@ -5661,6 +5682,7 @@ export function computeCabinet(params, profileOverride) {
     // is the two-drawer front with a hidden drawer behind it.
     for (let i = 1; i <= budr.count; i += 1) {
       if (cfg.internalDrawers.has(i)) {
+        if (!cfg.innerFrontDrawers.has(i)) continue;
         // T78 F15 · the inner front of a drawer-unit row behind doors (see the
         // wardrobe machine above): the box's width, the box side's height, on
         // the box front, with the box's own front fixing screws.

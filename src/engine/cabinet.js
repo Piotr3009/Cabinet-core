@@ -9695,10 +9695,33 @@ export function computeCabinet(params, profileOverride) {
   // Check opposing cuts after the existing cup drilling and J edge exist.
   if (params?.front_decoration) {
     const fronts = panels.filter((p) => p.role === 'front');
+    // ─── T78 F14 · ONE ARCH ACROSS A DRAWER STACK ──────────────────────────
+    // The owner: *"jak mamy szuflady to przez wszystkie szuflady przechodzi
+    // arch."*  The drawer fronts standing in one column (same x and width, the
+    // same zone and arm) are ONE stack: its height from the bottom front's
+    // bottom to the top front's top, the gaps included; each front gets its
+    // y within it and `frontDecoration.js` cuts its slice of the one arch.
+    const stackOf = new Map();
+    const columns = new Map();
+    for (const f of fronts) {
+      if (f.part !== 'DRAWER-FRONT' || !f.box) continue;
+      const key = `${roundTo(f.box.x, 2)}|${roundTo(f.box.w, 2)}|${f.meta?.zone ?? ''}|${f.meta?.arm ?? ''}`;
+      if (!columns.has(key)) columns.set(key, []);
+      columns.get(key).push(f);
+    }
+    for (const col of columns.values()) {
+      if (col.length < 2) continue;
+      const bottom = Math.min(...col.map((f) => f.box.y));
+      const top = Math.max(...col.map((f) => f.box.y + f.box.h));
+      for (const f of col) {
+        stackOf.set(f.id, { heightMm: roundTo(top - bottom, 4), offsetMm: roundTo(f.box.y - bottom, 4), fronts: col.length });
+      }
+    }
     for (const front of fronts) {
       const decoration = buildFrontDecoration({
         panel: front, config: params.front_decoration,
         style: front.meta?.frontType || cfg.frontType, drills, profile: P,
+        stack: stackOf.get(front.id) || null,
       });
       if (!decoration) continue;
       front.meta = { ...front.meta, frontDecoration: decoration };

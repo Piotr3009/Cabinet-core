@@ -444,7 +444,28 @@ export function boardRefusal(style, thicknessMm, profile = getCabinetProfile(), 
 }
 
 /** The one canonical record read by CNC, 3D, BOM and drawings. */
-export function buildFrontDecoration({ panel, config, style = config?.style, drills = [], profile = getCabinetProfile() }) {
+/**
+ * ─── T78 F14 · ONE ARCH ACROSS A DRAWER STACK ──────────────────────────────
+ * The owner, 11.10.2026: *"jak mamy arche to powinny byc na malych drzwiczkach
+ * tez zaaplikowane a jak mamy szuflady to przez wszystkie szuflady przechodzi
+ * arch."*  A small door takes the recipe at any leaf size (the refusal stays
+ * only where the semicircle truly cannot fit: `makeArch`). A drawer STACK is
+ * ONE arch: the recipe is computed on the stack's combined front (its width,
+ * the height from the bottom front's bottom to the top front's top, the gaps
+ * between the fronts included) and each front receives its SLICE of the
+ * contour, cut per front; the gaps leave the arch broken where the fronts
+ * part. `stack` = { heightMm, offsetMm }: the stack's height and this front's
+ * bottom within it. Horizontal clips are the half-plane clip the frame uses.
+ */
+function sliceToBand(points, y0, y1) {
+  let out = clipHalfPlane(points, [0, y0], [1, y0], 0);
+  out = clipHalfPlane(out, [1, y1], [0, y1], 0);
+  return out.length >= 3 && Math.abs(area(out)) > EPS ? out : [];
+}
+
+export function buildFrontDecoration({
+  panel, config, style = config?.style, drills = [], profile = getCabinetProfile(), stack = null,
+}) {
   if (ORNATE_STYLE_IDS.includes(style)) {
     if (!config) return null;
     const ornate = buildOrnateFront({ panel, config, style, profile });
@@ -498,9 +519,28 @@ export function buildFrontDecoration({ panel, config, style = config?.style, dri
       if (!inner.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The frame leaves no inner panel on this cut front.'));
       const b = bounds(inner);
       if (b.x2 - b.x1 < 12 || b.y2 - b.y1 < 12) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The frame must leave at least 12 mm of inner panel in both directions.'));
-      const arch = ['A', 'AH'].includes(style) ? makeArch(inner) : null;
-      if (arch?.problem) return fail(arch.problem);
-      const points = arch ? arch.points : roundedPolygon(inner, 3);
+      const stacked = ['A', 'AH'].includes(style) && stack && Number(stack.heightMm) > height + EPS
+        && Number.isFinite(Number(stack.offsetMm));
+      let points;
+      if (stacked) {
+        // T78 F14 · the arch of the WHOLE stack, this front's slice of it.
+        const stackOutline = ccw(rect(0, 0, width, Number(stack.heightMm)));
+        const innerStack = insetPolygon(stackOutline, parameters.frameMm);
+        if (!innerStack.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The frame leaves no inner panel on this drawer stack.'));
+        const arch = makeArch(innerStack);
+        if (arch?.problem) return fail(arch.problem);
+        const y0 = Number(stack.offsetMm);
+        const band = sliceToBand(arch.points, y0, y0 + height);
+        if (!band.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'This front\'s slice of the stack\'s arch is empty.'));
+        points = band.map(([x, y]) => [x, y - y0]);
+        result.stack = {
+          heightMm: Number(stack.heightMm), offsetMm: y0, slice: true, fronts: Number(stack.fronts) || null,
+        };
+      } else {
+        const arch = ['A', 'AH'].includes(style) ? makeArch(inner) : null;
+        if (arch?.problem) return fail(arch.problem);
+        points = arch ? arch.points : roundedPolygon(inner, 3);
+      }
       if (!points.length) return fail(problem('FRONT_DECORATION_TOO_SMALL', 'The complete recessed pattern does not fit inside this cut front.'));
       result.operations.push(pocket('panel-recess', points, parameters.recessDepthMm));
     }

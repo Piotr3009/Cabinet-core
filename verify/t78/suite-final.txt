@@ -1,0 +1,1 @@
+# tests 6668 # pass 6668 # fail 0 exit 0  on b029bd3, 2026-10-12 10:03 UTC, the machine otherwise idle (the walks' previews stopped)

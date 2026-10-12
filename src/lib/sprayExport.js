@@ -16,7 +16,7 @@ import { exportFileName } from '../engine/naming.js';
 import { spraySheets } from '../engine/drawings/spraySheets.js';
 
 /** `{ProjectName}-spraying-{DDMM-HHMM}.pdf`, by the one naming law (engine/naming.js). */
-export function sprayingFilename({ project, ext = 'pdf', now = new Date() } = {}) {
+function sprayingFilename({ project, ext = 'pdf', now = new Date() } = {}) {
   return exportFileName({ project, kind: 'spraying', ext, now });
 }
 
@@ -24,7 +24,7 @@ export function sprayingFilename({ project, ext = 'pdf', now = new Date() } = {}
  * The document, measured, without writing it anywhere: a node test counts its
  * pages the way turn 42's wall-set test does.
  */
-export function sprayingDoc({ schedule, project = {}, profile, date = '' }) {
+function sprayingDoc({ schedule, project = {}, profile, date = '' }) {
   const pages = spraySheets({ schedule, project, profile, date });
   const doc = bookletDoc(pages.map((p) => p.sheet));
   const measured = assertPdfBytes(pdfBytes(doc), {

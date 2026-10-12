@@ -36,7 +36,7 @@ const f3 = (v) => (Number(v) || 0).toFixed(3);
 const clip = (s, max) => { const t = String(s ?? ''); return t.length > max ? `${t.slice(0, Math.max(0, max - 1))}~` : t; };
 
 /** The columns of PART A, in paper mm from the table's left edge. */
-export const PART_A_COLUMNS = Object.freeze([
+const PART_A_COLUMNS = Object.freeze([
   { id: 'no', label: '#', w: 8, align: 'left' },
   { id: 'units', label: 'Unit no.', w: 24, align: 'left' },
   { id: 'element', label: 'Element', w: 44, align: 'left' },

@@ -962,6 +962,11 @@ export function unassignedInUse(entries = [], {
   }
   const out = [];
   for (const [partId, use] of Object.entries(usage)) {
+    // T78 F21 · the PAINT is not a cut part: a sprayed set with no paint
+    // assigned is said on the Spraying page (PART C) and in the purchase list
+    // (a missing price, the BOM law), never as a CNC assignment warning about
+    // a board nobody chose. The litres ride the usage for the purchase list only.
+    if (PART_REGISTRY[partId]?.materialType === 'paint') continue;
     const families = use.families.length ? use.families : [null];
     const missing = families.filter((f) => partId === 'front_moulding'
       ? missingMouldingFamilies.has(f)

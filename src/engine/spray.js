@@ -41,7 +41,7 @@ import { paintOf } from './warehouse.js';
 export const PAINT_PART_IDS = Object.freeze({ 1: 'paint_fronts', 2: 'paint_carcass' });
 
 /** The stock-list category a paint wears when it reaches a material picker. */
-export const PAINT_CATEGORY = 'paint';
+const PAINT_CATEGORY = 'paint';
 
 /** The rules whose paint is not "all around" and so get a CARD on the page (PART B). */
 export const CARD_RULES = Object.freeze([
@@ -54,7 +54,7 @@ export const CARD_RULES = Object.freeze([
  * @throws when neither carries the block, which is the T78 F21 profile patch
  *         not applied; the numbers are never invented here.
  */
-export function spraySettings(profile) {
+function spraySettings(profile) {
   const S = profile?.spray || DEFAULT_CABINET_PROFILE.spray;
   if (!S || !S.rules) throw new Error('profile.spray is missing: the T78 F21 profile patch (engine/profile.js spray block) is not applied.');
   return S;
@@ -66,7 +66,7 @@ export function sprayRules(profile) {
 }
 
 /** A rule record with `as:` resolved to the row it points at (8 and 9 read as 7, 15 as 14). */
-export function ruleRecord(ruleId, profile) {
+function ruleRecord(ruleId, profile) {
   const rules = sprayRules(profile);
   const own = rules[ruleId];
   if (!own) return null;
@@ -549,7 +549,7 @@ function buildCards(lines, profile) {
 // === THE PAINT (PART C) ======================================================
 
 /** The paint record a warehouse row carries, normalised; the defaults where it says nothing. */
-export function paintSpecOf(material, profile = null) {
+function paintSpecOf(material, profile = null) {
   const S = spraySettings(profile);
   const p = paintOf(material) || {};
   const coats = Number(p.coats) > 0 ? Number(p.coats) : S.defaults.coats;
@@ -594,7 +594,7 @@ export function tinsFor(litres, sizes) {
 }
 
 /** The paint material a set is assigned, out of the stock list, or null. */
-export function paintMaterialFor(set, { assignments = null, materials = [] } = {}) {
+function paintMaterialFor(set, { assignments = null, materials = [] } = {}) {
   const data = normalizeAssignments(assignments);
   const a = assignmentFor(data, PAINT_PART_IDS[set], null);
   if (!a?.material_id) return null;

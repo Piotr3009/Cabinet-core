@@ -94,7 +94,7 @@ export const PRICE_TYPED = 'typed';
 export const PAINT_TYPES = Object.freeze(['topcoat', 'primer']);
 
 /** The paint fields, in the order the card shows them. */
-export const PAINT_FIELDS = Object.freeze(['type', 'sheen', 'coverage_m2_per_l', 'coats', 'tin_sizes']);
+const PAINT_FIELDS = Object.freeze(['type', 'sheen', 'coverage_m2_per_l', 'coats', 'tin_sizes']);
 
 /** "1, 2.5, 5" (or an array) into litres, positive numbers only, sorted, no doubles. */
 export function parseTinSizes(value) {

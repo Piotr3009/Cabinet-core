@@ -67,7 +67,8 @@ test('the Kitchen list is the owner\'s catalogue, in the owner\'s groups', () =>
   // Turn 31 (CLAUDE.md F9): the HOOD unit joins the wall group.
   // T75 F3: the blind corner wall unit.
   // AMENDED BY T75 F4: the held-open 'l-shape-wall' opens as 'corner-l-wall'.
-  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'blind-corner-wall', 'corner-l-wall']);
+  // AMENDED BY T78 F17: the canopy hood and the short hood join the hood unit.
+  assert.deepEqual(idsOf('wall-units'), ['wall', 'glass-unit', 'hood-unit', 'hood-canopy', 'hood-unit-short', 'blind-corner-wall', 'corner-l-wall']);
   // The new group (F5.2): not cabinets — the pieces that finish a run.
   assert.deepEqual(idsOf('extras'), ['free-standing-panels', 'cornice-pelmet']);
 });
@@ -88,7 +89,8 @@ test('everything that worked before turn 15 is still wired to its kit', () => {
     // *"Washer + dryer"*; the small fridge is DW_PANEL, named once.
     // AMENDED BY T75 F13: BUD_INT, *"Drawers behind doors"*.
     // AMENDED BY T75 F14: the hob drawer units, 2x and 3x.
-    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'BLIND_WALL', 'CORNER_L_WALL',
+    // AMENDED BY T78 F17: the canopy hood and the short hood, beside the hood unit.
+    'BUD', 'BUDR2', 'BUDR', 'BUDR4', 'BUDR2_HOB', 'BUDR_HOB', 'BUD_INT', 'SINK', 'CORNER_L_BASE', 'BLIND_BASE', 'DW_PANEL', 'OVEN_BASE', 'BIN', 'WINE', 'TWIN', 'LOW_CABINET', 'BUDTALL', 'FRIDGE', 'CARGO', 'PANTRY', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'FRIDGE_US', 'WUD', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'BLIND_WALL', 'CORNER_L_WALL',
     // T74 F13 · the Extras row held open since turn 12 opens: the free panel.
     'FREE_PANEL',
   ]);
@@ -102,7 +104,8 @@ test('a group says how much of it can be placed today', () => {
   // Turn 31 (CLAUDE.md F9): three of four — the hood joins them.
   // T75 F3: four of five, the blind corner wall unit joins them.
   // AMENDED BY T75 F4: five of five, the held-open L row opened as the Corner L wall.
-  assert.deepEqual(groupCounts(wall, P), { total: 5, enabled: 5 });
+  // AMENDED BY T78 F17: seven of seven, the canopy hood and the short hood join them.
+  assert.deepEqual(groupCounts(wall, P), { total: 7, enabled: 7 });
   const extras = KITCHEN_LIBRARY.find((g) => g.id === 'extras');
   // T74 F13 · one of the two can be placed now: the free-standing panel.
   // AMENDED BY T75 F15: both now, *"The held-open row `cornice-pelmet` opens as

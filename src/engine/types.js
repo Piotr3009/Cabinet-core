@@ -619,6 +619,88 @@ export const UNIT_TYPES = {
     available: true,
   },
 
+  // --- T78 F17 . THE HOOD, TWO WAYS: THE CANOPY AND THE SHORT ONE -----------
+  //
+  // The owner, 11.10.2026: *"szafka na hood tradycyjna czyli wysunieta pod
+  // skosem albo normalna szafka tylko mniejsza zeby bylo 650 do 750 minimum
+  // nad blatem, nad hobem"*, and on the clearance: *"pozostaw to dla klienta,
+  // tylko proponuj."*  Two kits beside WUD_HOOD, both `appliance: 'extractor'`
+  // and `widthFixed` as it is, both with the extractor as today's hardware
+  // line and NOT ONE HOLE for it (T78 LAWS). Their height is their OWN
+  // (`heightGroup: null`: the project's wall height would undo what they are)
+  // and their TOP meets the wall run's top line (`topLine: 'wall'`, read by
+  // the store's `projectHeightParams`: mount = wallMount + wall - height).
+  // The CLEARANCE over the hob is Check #34 and a proposal
+  // (`engine/hoodClearance.js`), never a block.
+  //
+  //   WUD_HOOD_CANOPY  the traditional chimney canopy: a wall-unit carcass
+  //                    whose front slopes out from the top (depth D) to a
+  //                    deeper bottom (D + `hoodCanopy.defaults.bottomProjectionMm`);
+  //                    the sides are trapezoids, the bottom a board (deeper
+  //                    than the top), the sloped front a board of the FRONT
+  //                    material; no door. LISP FIRST: KIT_WUD_HOOD_CANOPY.lsp;
+  //                    the engine mirrors it in `engine/hoodCanopy.js`,
+  //                    wired by `canopy: true`.
+  //   WUD_HOOD_SHORT   WUD_HOOD to the letter (its open bottom, its shorter
+  //                    door, the same cups) at the height that leaves the
+  //                    clearance: `hoodShort.defaults` (660 high, hung at
+  //                    1560). KIT_WUD_FULL.lsp is its LISP as it is WUD_HOOD's.
+  WUD_HOOD_CANOPY: {
+    id: 'WUD_HOOD_CANOPY',
+    widthFixed: true,
+    heightGroup: null,
+    topLine: 'wall',
+    label: 'Hood canopy',
+    family: 'kitchen',
+    lisp: 'KIT_WUD_HOOD_CANOPY.lsp',
+    // WUD_HOOD's hinge and cup rules, mirrored; no leaf hangs here (supports.doors false).
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    appliance: 'extractor',
+    canopy: true,
+    legs: false,
+    legSource: null,
+    hangers: true,
+    doorExtend: false,
+    mount: 'wall',
+    // The bottom is a BOARD here (the deeper one); the top and the back are WUD's.
+    carcass: { top: 'panel', back: 'full' },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'hoodCanopy.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: false, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+  WUD_HOOD_SHORT: {
+    id: 'WUD_HOOD_SHORT',
+    widthFixed: true,
+    heightGroup: null,
+    topLine: 'wall',
+    label: 'Hood wall unit, short',
+    family: 'kitchen',
+    lisp: 'KIT_WUD_FULL.lsp',
+    hingeRule: 'base',
+    cupRule: 'baseOffsets',
+    appliance: 'extractor',
+    legs: false,
+    legSource: null,
+    hangers: true,
+    doorExtend: false,
+    mount: 'wall',
+    carcass: { top: 'panel', back: 'full', bottom: 'none' },
+    drawerStyle: null,
+    minHeightKey: null,
+    defaultsKey: 'hoodShort.defaults',
+    supports: {
+      drawers: false, shelves: false, rail: false, pulldown: false, partition: false, doors: true, topInfill: true,
+      cornice: true,
+    },
+    available: true,
+  },
+
   // ─── T75 F3 · THE BLIND KITS, THREE OF THEM ───────────────────────────────
   //
   // The owner, 9.10.2026: *"daj od razu narożniki przemyślane."*  CLAUDE.md
@@ -1531,7 +1613,7 @@ export function resolveTypeId(typeId) {
   return TYPE_ALIASES[id] || id;
 }
 
-export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
+export const UNIT_TYPE_ORDER = ['WARDROBE', 'WARDROBE_TOP', 'WARDROBE_WALL', 'BLIND_WARDROBE', 'WARDROBE_CHEST2', 'WARDROBE_CHEST3', 'WARDROBE_CHEST4', 'WARDROBE_DESK', 'WARDROBE_LOW', 'CORNER_L_WARDROBE', 'BUD', 'BLIND_BASE', 'BLIND_WALL', 'BUDR2', 'BUDR', 'BUDR4', 'WUD', 'BUDTALL', 'CARGO', 'PANTRY', 'LOW_CABINET', 'BIN', 'WINE', 'TWIN', 'CORNER_L_BASE', 'CORNER_L_WALL', 'WUD_GLASS', 'WUD_HOOD', 'WUD_HOOD_CANOPY', 'WUD_HOOD_SHORT', 'SINK', 'DW_PANEL', 'OVEN_BASE', 'FRIDGE', 'FRIDGE_US', 'APPLIANCE_TALL', 'APPLIANCE_TALL2', 'BUD_INT', 'BUDR2_HOB', 'BUDR_HOB', 'FREE_PANEL'];
 
 /**
  * How the Library is grouped (turn 4, BACKLOG #9): the menu offers a CATEGORY
@@ -1776,4 +1858,6 @@ export const UNIT_NUM_PREFIX = {
   // T75 F18 · the wardrobe job's low unit: WL01, apart from the kitchen's LC01.
   WARDROBE_LOW: 'WL',
   WARDROBE_WALL: 'WW', FREE_PANEL: 'FP', BUD: '', BUDR: 'DR', BUDR2: 'DR', BUDR4: 'DR', WUD: 'WU', BUDTALL: 'T', CARGO: 'CG', PANTRY: 'PY', LOW_CABINET: 'LC', SINK: 'S', DW_PANEL: 'DW', OVEN_BASE: 'OV', FRIDGE: 'F', FRIDGE_US: 'AF', BIN: 'BN', WINE: 'WR', TWIN: 'TW', WUD_GLASS: 'WG', WUD_HOOD: 'HD',
+  // T78 F17 . the hood's two new kits keep the hood's letter, as the hob variants keep DR.
+  WUD_HOOD_CANOPY: 'HD', WUD_HOOD_SHORT: 'HD',
 };

@@ -130,6 +130,9 @@ export default function RightPanel() {
   // KIT_FRIDGE with different envelopes, so the control asks the kit rather
   // than naming a type.
   const apertureDefault = type ? (profilePath(profile, type.defaultsKey)?.fridgeH ?? null) : null;
+  // T78 F17 . is this the hob's unit (T75 F14's flag, or the oven base)? Its
+  // hob KIND is a choice here; the hood's clearance Check (#34) reads it.
+  const isHob = unit ? (unit.params.hob === true || type?.appliance === 'oven') : false;
   // Turn 22 (CLAUDE.md F1.1): the per-unit cornice option, resolved. A stored
   // value this workshop does not buy reads as 'none' rather than as itself.
   const corniceValue = unit ? corniceOption(unit.params.cornice, profile) : 0;
@@ -626,7 +629,7 @@ export default function RightPanel() {
           )}
 
           {/* per-type parameters: only the ones this kit actually has */}
-          {(type.mount === 'wall' || type.doorExtend || apertureDefault != null) && (
+          {(type.mount === 'wall' || type.doorExtend || apertureDefault != null || isHob) && (
             <div className="grid grid-cols-2 gap-2">
               {type.mount === 'wall' && (
                 <div>
@@ -636,6 +639,24 @@ export default function RightPanel() {
                     value={unit.params.mount_height ?? profile.wallUnit.defaults.mountHeight}
                     onCommit={(v) => updateUnitParams(unit.id, { mount_height: v })}
                   />
+                </div>
+              )}
+              {/* T78 F17 . the hob kind, a CHOICE on the hob unit (induction the
+                  default, unwritten): the hood's clearance Check (#34) and the
+                  store's proposal read it (engine/hoodClearance.js). The numbers
+                  live in the profile (hood.clearance), never here. */}
+              {isHob && (
+                <div>
+                  <span className="cc-label">Hob</span>
+                  <select
+                    className="cc-input"
+                    title="Induction asks 650 mm of hood clearance over the worktop, gas 750 (profile.hood.clearance, proposed): the Check says the number, the client decides"
+                    value={unit.params.hob_kind === 'gas' ? 'gas' : 'induction'}
+                    onChange={(e) => updateUnitParams(unit.id, { hob_kind: e.target.value })}
+                  >
+                    <option value="induction">Induction</option>
+                    <option value="gas">Gas</option>
+                  </select>
                 </div>
               )}
               {/* Turn 30 (CLAUDE.md F15): the aperture is offered by any kit

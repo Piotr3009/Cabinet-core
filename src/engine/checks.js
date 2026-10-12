@@ -53,6 +53,9 @@ import { roomWalls } from './room.js';
 // T75 F22 · what the machine does not finish, by unit.
 import { notCutParts, readinessCheckMessage, readinessOf } from './readiness.js';
 import { worktopsFor } from './worktop.js';
+// T78 F17 . the hood's clearance over the hob: the one measure the store's
+// proposal reads too (Check #34 says it, the store's button fixes it).
+import { hoodClearanceMessage, hoodClearanceShortfalls } from './hoodClearance.js';
 import { migrateDesign } from './design.js';
 import { shelfTypeOf } from './shelfTypes.js';
 import { railObstruction } from './railDatum.js';
@@ -256,6 +259,15 @@ export const CHECKS = Object.freeze([
   // where that reaches the neighbour, the wall or the corner post on its hinge
   // side the Check says so, in words. Never clipped: the leaf is cut as asked.
   { n: 33, level: 'yellow', label: 'Door swing at 155 / 170 reaches a neighbour' },
+  // --- T78 F17 . THE HOOD OVER THE HOB ---------------------------------------
+  // The owner: *"zeby bylo 650 do 750 minimum nad blatem, nad hobem"*, and on
+  // the number: *"pozostaw to dla klienta, tylko proponuj."*  The gap from the
+  // worktop top to the hood's underside against `profile.hood.clearance` for
+  // the hob kind the client set (`engine/hoodClearance.js`, the one measure);
+  // the row says the number and carries ONE CLICK, raise the hood (the store's
+  // `raiseHoodToClearance`, run by the panel's flight). YELLOW: a proposal,
+  // never a block: the client may leave it.
+  { n: 34, level: 'yellow', label: 'Hood clearance over the hob' },
 ]);
 
 // ─── THE OWNER-TUNABLE NUMBERS (CLAUDE.md F6: "profile numbers marked as
@@ -881,6 +893,32 @@ export function runChecks({
         + `${what} stands ${round2(room)} mm away on that side. The leaf is cut as asked; a ${deg === 170 ? '155' : 'standard'} hinge, `
         + 'a gap or a filler clears it.',
       subject: front.panelId ? { unitId: front.unitId, panelId: front.panelId, editor: 'element' } : null,
+    }));
+  }
+  // -- #34 the hood over the hob (T78 F17) ----------------------------------
+  // Read off `engine/hoodClearance.js`, the one measure the store's proposal
+  // reads too; the button is a STORE ACTION the Check panel's flight runs
+  // (`lib/checkFindings.js useGoToSubject`, `subject.store`) before it opens
+  // the hood. Never a block: the client may leave it.
+  for (const row of hoodClearanceShortfalls({
+    units: list, profile, design, walls: room ? roomWalls(room) : null,
+  })) {
+    out.push(finding(34, 'yellow', {
+      unitId: row.hoodId,
+      unitNum: row.hoodNum,
+      panelId: null,
+      message: hoodClearanceMessage(row),
+      subject: { unitId: row.hoodId, editor: 'cabinet' },
+      actions: [{
+        id: 'raise-hood',
+        label: `Raise hood to ${row.raiseToMm} mm`,
+        title: `Set the hood's mount height to ${row.raiseToMm} mm: ${row.wantMm} mm over the worktop for `
+          + `${row.hobKind === 'induction' ? 'an' : 'a'} ${row.hobKind} hob (a proposal; the client may leave it)`,
+        subject: {
+          unitId: row.hoodId, editor: 'cabinet', store: { action: 'raiseHoodToClearance', args: [row.hoodId] },
+        },
+      }],
+      hoodClearance: row,
     }));
   }
   for (const row of frontGapRows(clearances, profile)) {

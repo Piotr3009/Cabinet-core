@@ -88,6 +88,9 @@ import {
 // here (its own imports are design/types/projectTypes/format/puzzle), so this
 // is a one-way read and not a cycle.
 import { lightingSpec } from './ledStrips.js';
+// T78 F17 . the canopy hood's boards (KIT_WUD_HOOD_CANOPY.lsp), applied on the
+// carcass cut as a WUD; a one-way read, nothing in there reaches back here.
+import { applyCanopy } from './hoodCanopy.js';
 // `slopeCutActive`, `slopeHeightAt`, `trimGeometryOnSlope` and
 // `trimOutlineOnSlope` are turn 46's (CLAUDE.md F3): the slope cut, ported 1:1
 // from SKYLON_COMMON's `SKY:slopeCutPts` — iron rule 3, the LISP states the
@@ -10030,6 +10033,23 @@ export function computeCabinet(params, profileOverride) {
       panels.push(...appliedFrontParts(front, P));
     }
   }
+  // --- T78 F17 . THE CANOPY HOOD: THE WUD CARCASS MADE A CANOPY --------------
+  // The owner: *"szafka na hood tradycyjna czyli wysunieta pod skosem."*
+  // LISP FIRST (KIT_WUD_HOOD_CANOPY.lsp, sections 3 and 4): the sides become
+  // trapezoids, the bottom grows by the projection at the front, the sloped
+  // front is a board of the FRONT material; the top and the back are WUD's.
+  // `engine/hoodCanopy.js` mirrors the LISP on the boards above and moves
+  // BUL's drilling with its frame (its x = 0 is the front edge). Before the
+  // grain and the totals, so the new board takes the house grain and the
+  // blanks are counted as cut. Guarded by the KIT (`type.canopy`): no kit
+  // written before tonight carries the flag, so no golden can reach it.
+  const canopy = type.canopy
+    ? applyCanopy({
+      panels, drills, W, H, D, G, frontT,
+      projection: Number(P.hoodCanopy?.defaults?.bottomProjectionMm) || 0,
+      codes, mkPanel: panel, rect: rectGeometry,
+    })
+    : null;
   applyGrainAxis(panels);
 
   // ── Totals ─────────────────────────────────────────────────────────────────
@@ -11340,6 +11360,14 @@ export function computeCabinet(params, profileOverride) {
   // T78 F20 · what the biscuit unit is. No gate: the set is the owner's own
   // ("zostaw jak bylo": the numbers of profile.biscuits, confirmed).
   if (biscuitPlan) derived.joints = biscuitSummary(biscuitPlan);
+  // T78 F17 . what the canopy is, for the drawing and the tests; BUL's hanger
+  // summary follows its drilling, which moved with the frame.
+  if (canopy) {
+    derived.canopy = canopy;
+    if (Array.isArray(derived.hanger_holes_bul)) {
+      derived.hanger_holes_bul = derived.hanger_holes_bul.map(([x, y]) => [roundTo(x + canopy.projection, 4), y]);
+    }
+  }
   const cutDrills = (() => {
     if (!cut) return drills;
     const topOf = new Map(panels.map((p) => [p.id, Number(p.cnc?.drawn_h) || Number(p.h) || 0]));

@@ -23,6 +23,7 @@ import { carcassCutLineOf, slopeCutActive } from '../engine/puzzle.js';
 import { applyMagnet, magnetCandidates } from '../engine/shelfMagnet.js';
 import {
   defaultParamsFor, getUnitType, isBesideWardrobe, isBlindKit, isCornerLKit, isDeskKit, isFreePanel, isWardrobeWallUnit,
+  profilePath,
   resolveTypeId, TYPE_ALIASES, UNIT_NUM_PREFIX, UNIT_TYPES,
 } from '../engine/types.js';
 // T74 F13 · the free panel's own arithmetic: a size read as meant, the board
@@ -33,6 +34,8 @@ import { freePanelFit, freePanelPatch, freePanelSnap } from '../engine/freePanel
 import { NOTCH_CORNERS, NOTCH_REFUSED, notchKitRefusal } from '../engine/notch.js';
 import { useMaterialAssignmentStore } from './materialAssignmentStore.js';
 import { formatMm, snap as snapTo } from '../engine/format.js';
+// T78 F17 . the hood's clearance over the hob: the one measure Check #34 reads too.
+import { hoodClearanceMessage, hoodClearanceRows, hoodRaiseTo } from '../engine/hoodClearance.js';
 // T37-F4a: `bandSegmentAt`/`bandSegments` — a split divider is an END of the
 // cabinet, so the band a shelf lives in is cut by the boards that cross it.
 // That law lives in one place and every path below reads it from there.
@@ -465,6 +468,15 @@ export function nextUnitNum(units, type, { except = null } = {}) {
  * is the answer to "did somebody set this by hand?", and the panel and the
  * project-wide push both read it.
  */
+/**
+ * T78 F17 . the mount height that puts a kit's TOP on the wall run's top line:
+ * wallMount + wall - the kit's own height (its default, or the height it has).
+ */
+function wallTopLineMount(type, heights, profile, ownHeight = null) {
+  const own = Number(ownHeight) > 0 ? Number(ownHeight) : Number(profilePath(profile, type.defaultsKey)?.height) || 0;
+  return (Number(heights.wallMount) || 0) + (Number(heights.wall) || 0) - own;
+}
+
 function projectHeightParams(type, design, profile) {
   const heights = projectHeights(design, profile);
   const group = type.heightGroup ?? null;
@@ -474,7 +486,12 @@ function projectHeightParams(type, design, profile) {
     // default, the floor): it is not a wall unit of the project's.
     // T75 F17 · …nor is a desk: it hangs at the 720 a person sits at
     // (`wardrobeDesk.defaults.mountHeight`), never the kitchen's wall line.
-    ...(type.mount === 'wall' && !type.freePanel && !type.desk ? { mount_height: heights.wallMount } : {}),
+    // T78 F17 . a kit whose TOP meets the wall run's top line (`topLine: 'wall'`,
+    // the two hoods whose height is their own) hangs at wallMount + wall less
+    // its own height, so a 660 or a 500 box sits level with the 720 run's top.
+    ...(type.mount === 'wall' && !type.freePanel && !type.desk
+      ? { mount_height: type.topLine === 'wall' ? wallTopLineMount(type, heights, profile) : heights.wallMount }
+      : {}),
     // ─── Turn 22 (CLAUDE.md F4.2) ───
     // A plinth-bearing type gets the project's toe kick whether or not it has
     // legs. The D/W panel has none — the machine stands where they would be —
@@ -2193,6 +2210,55 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    *
    * @returns {string[]} notices worth telling the user about
    */
+  // --- T78 F17 . THE HOOD OVER THE HOB: THE PROPOSAL AND THE CLICK -----------
+  //
+  // The owner: *"zeby bylo 650 do 750 minimum nad blatem, nad hobem"*, and:
+  // *"pozostaw to dla klienta, tylko proponuj."*  The measure is
+  // `engine/hoodClearance.js` (the one Check #34 reads); this says each short
+  // row ONCE as a yellow with a button (T78 F6's grammar: a level that waits
+  // for a person gets the button) and the button is `raiseHoodToClearance`.
+  // Never a block: the client may leave it.
+  proposeHoodClearance: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    const rows = hoodClearanceRows({
+      units: s.units, profile, design: s.project.design, walls: roomWalls(s.project.room),
+    });
+    const live = new Set();
+    for (const row of rows) {
+      if (!(row.shortMm > 0)) continue;
+      const key = `${row.hoodId}|${row.hobId}`;
+      live.add(key);
+      if (hoodClearanceSaid.get(key) === row.raiseToMm) continue;
+      hoodClearanceSaid.set(key, row.raiseToMm);
+      useUiStore.getState().notify(hoodClearanceMessage(row), 'warn', {
+        action: {
+          label: `Raise hood to ${formatMm(row.raiseToMm)} mm`,
+          run: () => {
+            const res = get().raiseHoodToClearance(row.hoodId);
+            if (res?.error) useUiStore.getState().notify(res.error, 'warn');
+          },
+        },
+      });
+    }
+    for (const key of [...hoodClearanceSaid.keys()]) if (!live.has(key)) hoodClearanceSaid.delete(key);
+    return rows;
+  },
+
+  /** T78 F17 . the one click: the hood's mount height set to the clearance over every hob under it. */
+  raiseHoodToClearance: (hoodUnitId) => {
+    const s = get();
+    const hood = s.units.find((u) => u.id === hoodUnitId);
+    if (!hood) return { error: 'No such hood.' };
+    const profile = getCabinetProfile();
+    const to = hoodRaiseTo(hoodUnitId, {
+      units: s.units, profile, design: s.project.design, walls: roomWalls(s.project.room),
+    });
+    if (to == null) return { error: `${hood.params?.unit_num || hoodUnitId}: the hood already clears every hob under it.` };
+    const res = get().updateUnitParams(hoodUnitId, { mount_height: to });
+    return { ...res, raisedTo: to };
+  },
+
   refreshAutoParts: (unitId = null) => {
     const s = get();
     const profile = getCabinetProfile();
@@ -2698,6 +2764,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // ends here, so an empty face is covered and a face a cabinet arrives on
     // is uncovered by one law (`engine/island.js islandPanelPlan`).
     get().settleIslandPanels();
+
+    // --- T78 F17 . THE HOOD OVER THE HOB, PROPOSED --------------------------
+    // The same choke point: every add, move, resize and room change ends
+    // here, so a hood short of its clearance is said ONCE, with the click
+    // that raises it (`proposeHoodClearance`). Never a block.
+    get().proposeHoodClearance();
 
     return notices;
   },
@@ -6445,7 +6517,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // its floor figure put it), as `projectHeightParams` births it: the
       // kitchen's wall-unit line never moves it.
       // T75 F17 · …and neither does a desk: 720 is a sitting height, not a wall line.
-      if (applied.wallMount != null && type.mount === 'wall' && !type.freePanel && !type.desk) changes.mount_height = resolved.wallMount;
+      // T78 F17 . a top-line kit follows the wall line AND the wall height: its top stays on the run's top.
+      if ((applied.wallMount != null || (applied.wall != null && type.topLine === 'wall'))
+        && type.mount === 'wall' && !type.freePanel && !type.desk) {
+        changes.mount_height = type.topLine === 'wall'
+          ? wallTopLineMount(type, resolved, profile, unit.params.height)
+          : resolved.wallMount;
+      }
       // Turn 22 (F4.2): every unit that STANDS on the run's legs follows the
       // toe kick, the D/W panel included — it is the unit the owner watched
       // ignore the field.
@@ -10528,6 +10606,8 @@ function cornerLHand(unit, walls, profile = getCabinetProfile()) {
 
 /** T78 F6 · the split proposals said so far, per wall L (the key names the remainders), so a pass does not repeat one. */
 const splitProposed = new Map();
+/** T78 F17 . the hood clearances said so far, per hood and hob (the value is the mount height asked), so a pass does not repeat one. */
+const hoodClearanceSaid = new Map();
 
 /** T75 F4 · the sentence an L is refused with, anywhere but a free room corner. */
 function cornerLRefusal(unit, wallIndex = null) {

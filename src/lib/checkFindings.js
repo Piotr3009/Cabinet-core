@@ -124,6 +124,13 @@ export function useGoToSubject() {
   const unitResult = useProjectStore((s) => s.unitResult);
 
   return (subject, e = null) => {
+    // T78 F17 . a finding's button may name a STORE ACTION (Check #34's
+    // "Raise hood to N mm"): run it first, then fly to the subject as ever.
+    // The finding names the action (engine/checks.js); the store owns it.
+    if (subject?.store?.action) {
+      const fn = useProjectStore.getState()[subject.store.action];
+      if (typeof fn === 'function') fn(...(Array.isArray(subject.store.args) ? subject.store.args : []));
+    }
     if (!subject?.unitId) return;
     const { unitId, panelId } = subject;
     if (panelId) {

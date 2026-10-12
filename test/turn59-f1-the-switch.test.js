@@ -117,7 +117,8 @@ const EXEMPT = {
     + ' T78 F8 · the Doors section\'s Corner doors choice on an L: Pair or Bi-fold, written as `corner_doors` through updateUnitParams; the engine\'s own sentence (CORNER_L_BIFOLD) under it; no number typed. *"zawiasy podwojne czyli jedne drzwiczki do carcasu a pozniej zawiasy od drzwiczek do drzwiczek."*'
     + ' T78 F12 / F13 · the Doors section\'s Per leaf rows: the glass kind of a glazed leaf (clear | smoke | reeded, the BOM line names it) and the hinge FAMILY of every hinged leaf (standard | wide), written per leaf as door_glass and door_hinge_family; the angle inside the family stays derived from the front thickness (T22), no number typed. *"domyslnie smoke ale z wyborem"*; *"otwieranie drzwi wiekszy kat otwarcia 180 stopni, zawiasy."*'
     + ' T78 F16 · the Drawers section\'s Double checkbox per drawer-unit row: a deep box below and an inner cutlery drawer above behind the one front, written as drawer_double[row] through updateUnitParams; the engine refuses a short row in words. *"podwojne szuflady szafki z szuflada na sztucce z bluma."*'
-    + ' T78 F19 / F20 · the Construction section\'s Joints row offers the owner\'s four systems, Cabineo in its two variants (Puzzle, Dowel, Biscuit, Cabineo 8, Cabineo 12), each disabled only by its kit refusal, the status read off the engine\'s own derived.joints (biscuit sets and screws, Cabineo pockets from the outside face and the gate); the company row chooses the default, this row is the unit\'s override, the reserved id of T75 stays a refusal in words, not one number typed. *"trzeba zrobic wybor laczenia i mamy 4: puzzle, dowels, Cabineo, ciastka"*; Cabineo *"8 AND 12, chosen in the company\'s default settings."*',
+    + ' T78 F19 / F20 · the Construction section\'s Joints row offers the owner\'s four systems, Cabineo in its two variants (Puzzle, Dowel, Biscuit, Cabineo 8, Cabineo 12), each disabled only by its kit refusal, the status read off the engine\'s own derived.joints (biscuit sets and screws, Cabineo pockets from the outside face and the gate); the company row chooses the default, this row is the unit\'s override, the reserved id of T75 stays a refusal in words, not one number typed. *"trzeba zrobic wybor laczenia i mamy 4: puzzle, dowels, Cabineo, ciastka"*; Cabineo *"8 AND 12, chosen in the company\'s default settings."*'
+    + ' T78 F17 · the Hob select on a hob unit (T75 F14\'s flag or the oven base): induction (the default, unwritten) or gas, written as hob_kind through updateUnitParams; the hood\'s clearance Check (#34) and the store\'s one-click proposal read it, the numbers stay in profile.hood.clearance. *"zeby bylo 650 do 750 minimum nad blatem, nad hobem"*; *"pozostaw to dla klienta, tylko proponuj."*',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -314,8 +315,8 @@ const FROZEN = {
   'src/components/PartDetailModal.jsx': '69a8764cdb984ec7c523a3cd97559f03ddc169778d1d997fa24905b8efce1a93',
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
-  // T78 F20 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RightPanel.jsx': '4e400e5eead89d6bf7c8b4fc29a131f0c34fbd0ee76670d27893f01a568cedfd',
+  // T78 F17 re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RightPanel.jsx': 'd24daa5b2c818aeb78dd4eac453bd81a0c0a779d46223f3400baf8a62fdd5567',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RoomModal.jsx': '29ffa1a4b710d3d3c7d168dfce23aa765fc76a3c9ba159b71b01964996dbd263',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',

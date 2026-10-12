@@ -1806,6 +1806,19 @@ export const DEFAULT_CABINET_PROFILE = {
     clearanceMm: 60,   // T75 proposed, owner to confirm
   },
 
+  // --- T78 F17 . THE HOOD'S CLEARANCE OVER THE HOB ----------------------------
+  //
+  // The owner, 11.10.2026: *"zeby bylo 650 do 750 minimum nad blatem, nad
+  // hobem"*, and on 650 or 750: *"tak jak mowisz ale pozostaw to dla klienta,
+  // tylko proponuj."*  The gap from the worktop top to the hood's underside,
+  // by the hob kind the client set on the hob unit (`hob_kind`, induction the
+  // default, a CHOICE). A Check (#34) and a proposal with one click
+  // (engine/hoodClearance.js, projectStore raiseHoodToClearance), never a
+  // block.
+  hood: {
+    clearance: { induction: 650, gas: 750 },   // T78 proposed, owner to confirm
+  },
+
   // ─── Base drawer unit, 3 drawers 4:3:2 (KIT_BUDR_FULL) ───
   baseDrawerUnit: {
     defaults: { width: 600, height: 770, depth: 558 },
@@ -2175,6 +2188,38 @@ export const DEFAULT_CABINET_PROFILE = {
   hoodWallUnit: {
     defaults: {
       width: 600, height: 720, depth: 400, mountHeight: 1500, aperture: 350,
+    },
+  },
+
+  // --- T78 F17 . THE CANOPY HOOD AND THE SHORT HOOD ---------------------------
+  //
+  // The owner, 11.10.2026: *"szafka na hood tradycyjna czyli wysunieta pod
+  // skosem albo normalna szafka tylko mniejsza zeby bylo 650 do 750 minimum
+  // nad blatem, nad hobem."*  Two kits beside WUD_HOOD (engine/types.js),
+  // LISP FIRST: reference/lisp/KIT_WUD_HOOD_CANOPY.lsp (sections 2, 3, 7).
+  //
+  // hoodCanopy: the KIT_WUD envelope (600 x 400 at the top) at the canopy's
+  // own height, with the bottom projecting `bottomProjectionMm` beyond the top
+  // depth; the slope is DERIVED (atan(150 / 500) = 16.7 degrees,
+  // engine/hoodCanopy.js canopyGeometry), never a setting. CLAUDE.md T78 F17
+  // names the height `heightMm`; the defaults block's own grammar (what
+  // defaultParamsFor and the store read) calls it `height`, so it is `height`
+  // here and the number is the same 500. mountHeight 1720 = the wall run's
+  // top line (1500 + 720) less 500: its top meets the run's (types.js
+  // `topLine: 'wall'`).
+  hoodCanopy: {
+    defaults: {
+      width: 600, height: 500, depth: 400, mountHeight: 1720, bottomProjectionMm: 150,   // T78 proposed, owner to confirm
+    },
+  },
+  // hoodShort: WUD_HOOD to the letter at the height that leaves the clearance.
+  // The wall unit hangs at 1500 over a worktop top of 908 (770 + 100 + 38):
+  // 592 of clearance; induction asks 650 (`hood.clearance`), 58 more; 720 -
+  // 58 = 662, rounded to 660 so the top line (2220) and the mount (1560) are
+  // whole tens. Gas (750) is Check #34's proposal, not a kit.
+  hoodShort: {
+    defaults: {
+      width: 600, height: 660, depth: 400, mountHeight: 1560, aperture: 350,   // T78 proposed, owner to confirm
     },
   },
 
@@ -5633,6 +5678,8 @@ export function migrateCabinetProfile(profile) {
     pelmet: { ...D.pelmet, ...profile.pelmet },
     // T75 F14 · the hob's clearance, key by key.
     hob: { ...D.hob, ...profile.hob },
+    // T78 F17 . the hood's clearance over the hob, key by key.
+    hood: { ...D.hood, ...profile.hood, clearance: { ...D.hood.clearance, ...profile.hood?.clearance } },
     // T75 F13 · the drawers-behind-doors base unit's defaults, key by key.
     baseInternalDrawerUnit: {
       ...D.baseInternalDrawerUnit,
@@ -5671,6 +5718,17 @@ export function migrateCabinetProfile(profile) {
     hoodWallUnit: {
       ...D.hoodWallUnit,
       defaults: { ...D.hoodWallUnit.defaults, ...profile.hoodWallUnit?.defaults },
+    },
+    // T78 F17 . the canopy hood and the short hood, each its own block like the hood's.
+    hoodCanopy: {
+      ...D.hoodCanopy,
+      ...profile.hoodCanopy,
+      defaults: { ...D.hoodCanopy.defaults, ...profile.hoodCanopy?.defaults },
+    },
+    hoodShort: {
+      ...D.hoodShort,
+      ...profile.hoodShort,
+      defaults: { ...D.hoodShort.defaults, ...profile.hoodShort?.defaults },
     },
     glassWallUnit: {
       ...D.glassWallUnit,

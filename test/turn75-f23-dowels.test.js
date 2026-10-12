@@ -440,7 +440,8 @@ test('F23 · THE GATE: each of the three exports refuses a dowel job, and Export
 });
 
 test('F23 · Check #31 says the same, red, per dowel unit; and a refusal in its own words', () => {
-  assert.deepEqual(CHECKS.find((c) => c.n === 31), { n: 31, level: 'red', label: 'Joint system: dowels not confirmed, or refused' });
+  // AMENDED BY T78 F20 (12.10.2026): the Cabineo gate shares the row, so the label names the joint system, not the dowel alone.
+  assert.deepEqual(CHECKS.find((c) => c.n === 31), { n: 31, level: 'red', label: 'Joint system: not confirmed (dowels, Cabineo), or refused' });
   const unit = { id: 'u1', type: 'BUD', params: DOWEL_BUD, position: { wall: 0, x_mm: 0 } };
   const found = runChecks({ entries: [{ unit, result: dowel }], profile: P }).filter((f) => f.check === 31);
   assert.equal(found.length, 1);

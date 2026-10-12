@@ -247,7 +247,8 @@ export const CHECKS = Object.freeze([
   // whose chosen system the engine refused and cut with the puzzle instead
   // (`JOINTS_REFUSED`: Cabineo reserved, a kit the LISP's table does not
   // describe, a dowel that meets a hole). RED: a person decides.
-  { n: 31, level: 'red', label: 'Joint system: dowels not confirmed, or refused' },
+  // T78 F20: the Cabineo pattern is gated as the dowel's is, so the row names the joint system, not one of them.
+  { n: 31, level: 'red', label: 'Joint system: not confirmed (dowels, Cabineo), or refused' },
   // ─── T76 F4 · THE BOARD THE ARCH WAS DRAWN FOR ───────────────────────────
   //
   // *"The A and AH recipes carry `boardMm: 30`, and the Check says, in words,

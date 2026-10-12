@@ -1867,7 +1867,8 @@ function JointsRow({
           <span className="text-sm text-ink-100">Joints</span>
           <span className="text-[11px] text-ink-400" data-joints-status="1">{status}</span>
         </div>
-        <div className="flex items-center gap-1" data-joints-options="1">
+        {/* five buttons on a 310 px panel: they wrap (the PART E walk read Cabineo 8 / 12 past the panel edge) */}
+        <div className="flex flex-wrap items-center justify-end gap-1 max-w-[180px]" data-joints-options="1">
           {JOINT_CHOICES.map((c) => {
             const refusal = refusals[c.id] || null;
             return (

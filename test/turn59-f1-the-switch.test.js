@@ -326,8 +326,8 @@ const FROZEN = {
   'src/components/PartDetailModal.jsx': '69a8764cdb984ec7c523a3cd97559f03ddc169778d1d997fa24905b8efce1a93',
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
-  // T78 F18 re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RightPanel.jsx': '1f6c176677c9d183108adaebec4995a020eec0449d116b65c30d62e82e81b60a',
+  // T78 PART E, after the walk re-frozen at the new hash; `EXEMPT` above carries the reason.
+  'src/components/RightPanel.jsx': '233e68fa089e502d92a59ba8ad8434039e99c72106cd81961356e46a388fcb9c',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RoomModal.jsx': '29ffa1a4b710d3d3c7d168dfce23aa765fc76a3c9ba159b71b01964996dbd263',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',

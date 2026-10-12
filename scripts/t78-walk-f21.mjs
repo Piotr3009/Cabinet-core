@@ -220,7 +220,9 @@ async function herbalHillPages() {
         end: m2(end.w * end.h + 2 * (end.w + end.h) * end.t + (end.w * end.h - (end.w - 200) * (end.h - 200))),
         plinth: m2(plinth.w * plinth.h + plinth.w * plinth.t),
       };
-      const lineOf = (rule, p) => now.lines.find((l) => l.rule === rule && l.size.startsWith(`${Math.round(p.w)} x ${Math.round(p.h)}`));
+      // The page prints a size to a tenth (515.5 x 770 x 25); a rounded 516 found no line in the first run.
+      const tenth = (v) => String(Math.round(Number(v) * 10) / 10);
+      const lineOf = (rule, p) => now.lines.find((l) => l.rule === rule && l.size.startsWith(`${tenth(p.w)} x ${tenth(p.h)}`));
       const ld = lineOf('door', door); const le = lineOf('end_panel', end); const lp = lineOf('plinth', plinth);
       const each = (l) => (l ? l.m2 / l.qty : NaN);
       const got = [each(ld), each(le), each(lp)];

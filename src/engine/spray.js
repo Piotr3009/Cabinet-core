@@ -377,8 +377,15 @@ export function sprayScheduleFor({
     const key = lineKeyOf({ colourKey: colour.key, ruleId: rule.id, kind: rule.kind, w, h, t, code });
     const unitNum = String(result?.unitNum ?? unit?.params?.unit_num ?? unit?.id ?? '');
     const qty = Number(panel.qty) || 1;
-    if (!colours.has(colour.key)) colours.set(colour.key, { ...colour, set, m2: 0, edgesLm: 0, lines: 0 });
-    const c = colours.get(colour.key);
+    // A GROUP is one colour of one SET: the fronts' topcoat and a veneer or
+    // sprayed carcass's coat are two paint lines even where the colour's key
+    // is the same (a carcass with no colour of its own falls to the job's
+    // label, which the fronts carry too; the PART F walk read one line where
+    // the owner's law asks two). The colour's own key stays on the group as
+    // `colourKey`; the group key carries the set.
+    const gkey = `${colour.key}|set${set}`;
+    if (!colours.has(gkey)) colours.set(gkey, { ...colour, key: gkey, colourKey: colour.key, set, m2: 0, edgesLm: 0, lines: 0 });
+    const c = colours.get(gkey);
     c.m2 = r4(c.m2 + area.m2Each * qty);
     c.edgesLm = r3(c.edgesLm + area.edgesLm * qty);
     const row = merged.get(key);
@@ -448,7 +455,7 @@ export function sprayScheduleFor({
     .sort((a, b) => a.set - b.set || String(a.label).localeCompare(String(b.label)))
     .map((c) => ({
       ...c,
-      lines: [...merged.values()].filter((l) => l.colour.key === c.key)
+      lines: [...merged.values()].filter((l) => l.colour.key === c.colourKey && l.set === c.set)
         .sort((a, b) => a.ruleNo - b.ruleNo || a.element.localeCompare(b.element) || b.h - a.h || b.w - a.w),
     }));
   let no = 0;

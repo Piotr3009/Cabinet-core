@@ -3283,12 +3283,32 @@ export default function UnitView({
           false ... the 3D and the cut list show it."*  One caption over a dowel
           unit while the gate is shut, the scene's own label; nothing else. */}
       {!contour && result?.derived?.joints?.gate && (
-        <group userData={{ ccHelper: true, ccDowelGate: unit.id }}>
-          <DimLabel
-            position={[mm(W / 2), mm(H) + 0.12, mm(D) + 0.05]}
-            text="Dowels: proposed, not confirmed"
-            tone="gold"
-          />
+        <group
+          userData={{
+            ccHelper: true,
+            ccDowelGate: unit.id,
+            // the caption's words, readable off the scene graph (the walk reads them)
+            text: String(result.derived.joints.system || '').startsWith('cabineo')
+              ? `Cabineo ${result.derived.joints.variant || ''}: proposed, not confirmed`
+              : 'Dowels: proposed, not confirmed',
+          }}
+        >
+          {/* T78 F20 · the caption names the system the gate holds: the dowel's
+              words as T75 wrote them, a Cabineo unit its variant (the PART E
+              walk read "Dowels" over a Cabineo 12). */}
+          {String(result.derived.joints.system || '').startsWith('cabineo') ? (
+            <DimLabel
+              position={[mm(W / 2), mm(H) + 0.12, mm(D) + 0.05]}
+              text={`Cabineo ${result.derived.joints.variant || ''}: proposed, not confirmed`}
+              tone="gold"
+            />
+          ) : (
+            <DimLabel
+              position={[mm(W / 2), mm(H) + 0.12, mm(D) + 0.05]}
+              text="Dowels: proposed, not confirmed"
+              tone="gold"
+            />
+          )}
         </group>
       )}
 

@@ -354,11 +354,17 @@ const put = (matrix, position, quaternion = null, scale = null) => matrix.compos
  * @returns {{urls:(string|null)[], models:Array<{model:Object3D|null, reason:string|null}>}}
  */
 function useHingeModels({
-  items, specs, kind, profile, storageBase,
+  items: itemsIn, specs, kind, profile, storageBase,
 }) {
   // A file arriving is not a state change anything else can see, so this is the
   // one re-render it causes.
   const [arrived, setArrived] = useState(0);
+
+  // Chat-fix 12.10.2026: the caller filters its hinges afresh on every render,
+  // which re-cloned every hinge model on every drag step. Same hinges, same array.
+  const itemsKey = JSON.stringify(itemsIn);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by content on purpose
+  const items = useMemo(() => itemsIn, [itemsKey]);
 
   // ─── TURN 21 (CLAUDE.md F2.1): THE URL, OR NOTHING ───
   // `hingeModelSrc` and not `hingeModelUrl`: a path with no host is not a URL,

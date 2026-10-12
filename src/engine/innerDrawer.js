@@ -18,8 +18,8 @@ export function setInnerDrawerCatalogue(raw) {
   return Boolean(CATALOGUE);
 }
 
-/** The loaded file, or null. */
-function innerDrawerCatalogue() {
+/** The loaded file, or null. Exported for the store's result cache. */
+export function innerDrawerCatalogue() {
   return CATALOGUE;
 }
 

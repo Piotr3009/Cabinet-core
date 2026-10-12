@@ -14,6 +14,7 @@ import {
 // everything else about a job.
 import { layerNameFault, makeUserLayer, normaliseUserLayers } from '../engine/partLayers.js';
 import { getCabinetProfile } from '../engine/profile.js';
+import { cachedResult, keepResultsOf } from './resultCache.js';
 import { shelfTypeEnabled, shelfTypeOf, shelfVariantForType } from '../engine/shelfTypes.js';
 import { doorBays, hingedBaySidesOf } from '../engine/doors.js';
 // T58-F4: the engine's own two readings — the cut LINE over this carcass, and
@@ -1015,6 +1016,17 @@ function paramsForEngine(unit, design = null) {
     rail_material_id: items.find((i) => i.kind === 'hanger')?.material_id ?? null,
     rail_material_label: items.find((i) => i.kind === 'hanger')?.material_label ?? null,
   };
+}
+
+/** One unit through the engine and the pencil, remembered (stores/resultCache.js). */
+function resultOf(unit, design) {
+  const params = paramsForEngine(unit, design);
+  const edits = unit.params?.part_edits || null;
+  return cachedResult(unit.id, params, edits, () => applyPartEdits(
+    computeCabinet(params, getCabinetProfile()),
+    edits,
+    getCabinetProfile(),
+  ));
 }
 
 /**
@@ -2750,7 +2762,18 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       const prevIds = Object.keys(prevElements);
       elementsMoved = prevIds.length !== Object.keys(runElements).length;
     }
-    set(elementsMoved ? { units: next, runElements } : { units: next });
+    // Chat-fix 12.10.2026: the same reference rule for the units. `next` is
+    // rebuilt for every unit on every pass, so one drag step handed all of
+    // them new objects and every view memo keyed on a unit ran again. A unit
+    // whose content did not change keeps its object; nothing changed, same list.
+    const before = get().units;
+    const prevUnits = new Map(before.map((u) => [u.id, u]));
+    const kept = next.map((u) => {
+      const prev = prevUnits.get(u.id);
+      return prev && prev !== u && JSON.stringify(prev) === JSON.stringify(u) ? prev : u;
+    });
+    const units = kept.length === before.length && kept.every((u, i) => u === before[i]) ? before : kept;
+    set(elementsMoved ? { units, runElements } : { units });
 
     // ─── TURN 32 (CLAUDE.md F3): THE GAPS FIX THEMSELVES ─────────────────────
     // This is the one choke point every unit-creation, neighbour change,
@@ -6644,7 +6667,7 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       })());
     const x = result.x - lead;
 
-    set((st) => ({
+    set((st) => {
       // T36 F7: …and every top box rides the main it stands on.
       //
       // T53 (F5): a dragged BOX writes its own OFFSET. The offset is the state
@@ -6652,11 +6675,14 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       // the offset, and `settleRiders` then agrees with the drag instead of
       // undoing it on the next pass. A main that moves carries its boxes along
       // by the same number, untouched.
-      units: settleRiders(
+      const units = settleRiders(
         st.units.map((u) => {
           if (u.id !== unitId) return u;
-          const moved = { ...u, position: { ...u.position, x_mm: x } };
           const type = getUnitType(u.type);
+          // Chat-fix 12.10.2026: a step that lands where the unit already
+          // stands (pressed against a neighbour) changes nothing.
+          if (!type.ridesOn && u.position?.x_mm === x) return u;
+          const moved = { ...u, position: { ...u.position, x_mm: x } };
           if (!type.ridesOn) return moved;
           const host = st.units.find((h) => h.id === u.params?.rides_on) || null;
           if (!host) return moved;
@@ -6669,8 +6695,9 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           };
         }),
         getCabinetProfile(),
-      ),
-    }));
+      );
+      return { units: units.length === st.units.length && units.every((u, i) => u === st.units[i]) ? st.units : units };
+    });
     // Moving changes which gaps exist — and a gap is a filler.
     get().refreshAutoParts();
     // ─── TURN 51 (CLAUDE.md F2 + F3): …AND A DRAG IS HOW HE REACHES THE GAP ─
@@ -9327,9 +9354,11 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
    * owner's own ruling — "1.5, 100 i 1.5 — bo tak jest w rzeczywistości" — is
    * exactly the three figures the app already drew.
    */
-  meetingDimensionsFor: (unitId) => {
+  // Chat-fix 12.10.2026: the Scene measures the room ONCE and hands the
+  // meetings in; one call per unit was one full room pass per unit (N x N).
+  meetingDimensionsFor: (unitId, measured = null) => {
     const s = get();
-    const meetings = s.meetingDimensions();
+    const meetings = measured || s.meetingDimensions();
     const rows = [];
     const suppress = new Set();
     for (const m of meetings) {
@@ -10173,24 +10202,20 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     return { ok: true, said: '', notch };
   }),
 
+  // Chat-fix 12.10.2026: both read through `resultOf`, which remembers each
+  // unit's answer until something the engine reads changes (stores/resultCache.js).
   unitResult: (unitId) => {
     const unit = get().units.find((u) => u.id === unitId);
     if (!unit) return null;
-    return applyPartEdits(
-      computeCabinet(paramsForEngine(unit, get().project.design), getCabinetProfile()),
-      unit.params?.part_edits || null,
-      getCabinetProfile(),
-    );
+    return resultOf(unit, get().project.design);
   },
 
-  allResults: () => get().units.map((u) => ({
-    unit: u,
-    result: applyPartEdits(
-      computeCabinet(paramsForEngine(u, get().project.design), getCabinetProfile()),
-      u.params?.part_edits || null,
-      getCabinetProfile(),
-    ),
-  })),
+  allResults: () => {
+    const { units, project } = get();
+    const out = units.map((u) => ({ unit: u, result: resultOf(u, project.design) }));
+    keepResultsOf(units);
+    return out;
+  },
 
   /**
    * ─── TURN 48 (CLAUDE.md F5): THE SAME UNIT, AS THE MACHINE SEES IT ────────

@@ -32,7 +32,8 @@ test('F9.2 — computeCabinet is never handed the edits, and cannot see them', (
   assert.doesNotMatch(cabinet, /partEdits|part_edits/, 'the engine does not know this feature exists');
   // …and the override step is applied in ONE place, which every surface reads.
   const store = src('stores/projectStore.js');
-  assert.equal((store.match(/applyPartEdits\(/g) || []).length, 2, 'unitResult and allResults, and nowhere else');
+  // Chat-fix 12.10.2026: unitResult and allResults both read `resultOf`, the one call.
+  assert.equal((store.match(/applyPartEdits\(/g) || []).length, 1, 'resultOf, which unitResult and allResults read, and nowhere else');
 });
 
 test('F9.2 — a project with no edits gets the SAME OBJECT back', () => {

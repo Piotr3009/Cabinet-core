@@ -1426,6 +1426,7 @@ export default function Scene({
   // Turn 34 (CLAUDE.md F5): the merged meeting-line figure, and the per-unit
   // edge figures it replaces.
   const meetingDimensionsFor = useProjectStore((s) => s.meetingDimensionsFor);
+  const meetingDimensions = useProjectStore((s) => s.meetingDimensions);
   const moveShelf = useProjectStore((s) => s.moveShelf);
   // T37-F1: …and the whole ticked set, across cabinets, in one drag.
   const moveShelfSet = useProjectStore((s) => s.moveShelfSet);
@@ -1668,10 +1669,11 @@ export default function Scene({
   // 16.08.2026). Computed at ROOM level because a cabinet cannot see the one
   // beside it, and off `frontClearances` so the figure the scene draws is the
   // figure the matrix healed. Recomputed with the units, like the wall gaps.
-  const meetingDims = useMemo(
-    () => Object.fromEntries(units.map((u) => [u.id, meetingDimensionsFor(u.id)])),
-    [units, meetingDimensionsFor],
-  );
+  // Chat-fix 12.10.2026: the room measured once, then read per unit.
+  const meetingDims = useMemo(() => {
+    const measured = meetingDimensions();
+    return Object.fromEntries(units.map((u) => [u.id, meetingDimensionsFor(u.id, measured)]));
+  }, [units, meetingDimensions, meetingDimensionsFor]);
 
   // "Nothing is selected" — one function, called from the two places a click can
   // land on nothing: empty space (the canvas's own miss) and the room's own

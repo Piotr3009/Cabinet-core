@@ -31,11 +31,25 @@ const SKIP = hasBase ? false
   : `the base commit ${BASE_COMMIT.slice(0, 7)} (the owner's "tura spray i cabneo") is not in this clone: `
     + 'the classifier has no base to diff against; fetch the full history (git fetch --unshallow) and run again';
 
+// The classifier is a 5 to 10 second child that reads the whole tree and
+// every golden. Under the full suite (four files at once on four cores) a
+// run once came back cut mid-table with no stderr, status null: a child the
+// runner's reaper reached. So the helper records status and signal, tries a
+// second time when the child did not END (a signal or a spawn error, never a
+// non-zero exit of its own), and puts the diagnosis in the output a failing
+// assertion prints.
 const run = (...args) => {
-  const r = spawnSync(process.execPath, [SCRIPT, ...args], {
-    cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...process.env, NODE_NO_WARNINGS: '1' },
-  });
-  return { status: r.status, out: `${r.stdout || ''}${r.stderr || ''}` };
+  let r = null;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    r = spawnSync(process.execPath, [SCRIPT, ...args], {
+      cwd: ROOT, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env: { ...process.env, NODE_NO_WARNINGS: '1' },
+    });
+    const ended = r.status != null && !r.signal && !r.error;
+    if (ended) break;
+    r.diagnosis = `attempt ${attempt}: the classifier did not end on its own (status ${r.status}, signal ${r.signal}, error ${r.error ? r.error.message : 'none'})`;
+  }
+  const out = `${r.stdout || ''}${r.stderr || ''}${r.diagnosis ? `\n[${r.diagnosis}]\n` : ''}`;
+  return { status: r.status, signal: r.signal, out };
 };
 
 test('T78 classify . the fragments are read from the directory by pattern, not listed by name', () => {

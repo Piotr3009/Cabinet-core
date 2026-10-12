@@ -37,6 +37,9 @@ import { setHingeCatalogue, setBlumHingeFamilies } from '../engine/hinges.js';
 // hinge), every number with its catalogue page, owner to confirm.
 import blumHinges from '../../reference/hardware/blum-hinges.json' with { type: 'json' };
 import { setAventosCatalogue } from '../engine/lifts.js';
+// T78 F16 · Blum's inner drawer behind a front (the double drawer), owner to confirm.
+import blumInnerDrawer from '../../reference/hardware/blum-inner-drawer.json' with { type: 'json' };
+import { setInnerDrawerCatalogue } from '../engine/innerDrawer.js';
 
 export const CLIPTOP_HINGE_CATALOGUE = cliptop;
 export const MOVENTO_CATALOGUE = movento;
@@ -61,6 +64,7 @@ export function loadHardwareCatalogues() {
   return {
     hinges: setHingeCatalogue(cliptop),
     hingeFamilies: setBlumHingeFamilies(blumHinges),
+    innerDrawer: setInnerDrawerCatalogue(blumInnerDrawer),
     lifts: setAventosCatalogue(aventos),
   };
 }

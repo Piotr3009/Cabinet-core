@@ -771,6 +771,28 @@ export default function RightPanel() {
                         {result.derived.drawer_box_side_h?.[num - 1] != null
                           && ` · box ${formatMm(result.derived.drawer_box_side_h[num - 1])}`}
                       </span>
+                      {/* ─── T78 F16 · THE DOUBLE DRAWER ──────────────────────
+                          The owner: *"podwojne szuflady szafki z szuflada na
+                          sztucce z bluma."*  A drawer-unit row may be DOUBLE:
+                          behind its one front a deep box and, above it, an
+                          inner cutlery drawer on its own runners (Blum's inner
+                          drawer behind a front, reference/hardware/
+                          blum-inner-drawer.json, owner to confirm). A choice,
+                          written as params.drawer_double[row]; the engine says
+                          in words where the row is too short (DOUBLE_DRAWER_REFUSED). */}
+                      {ratioDrawers && !lStack && (
+                        <label className="flex items-center gap-1 text-[11px] text-ink-300" title="Double: a deep box below and an inner cutlery drawer above, behind this one front">
+                          <input
+                            type="checkbox"
+                            data-drawer-double={num}
+                            checked={unit.params.drawer_double?.[num] === true}
+                            onChange={(e) => updateUnitParams(unit.id, {
+                              drawer_double: { ...(unit.params.drawer_double || {}), [num]: e.target.checked ? true : null },
+                            })}
+                          />
+                          <span>Double</span>
+                        </label>
+                      )}
                       {!ratioDrawers && (
                         <button
                           type="button" className="cc-btn-ghost" title="Remove this drawer"

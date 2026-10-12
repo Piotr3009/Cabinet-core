@@ -147,6 +147,7 @@ import {
 import {
   bifoldHingeSpec, doorHingeAssignment, hingeSpecLabel, resolveDoorHinge,
 } from './hinges.js';
+import { innerDrawerSpec } from './innerDrawer.js';
 import { endPanelDrop, endPanelHeightDefault } from './autoparts.js';
 import {
   impliedLegHeight, maskDepthExtra, standsOnLegHeight, wallGapOf,
@@ -2558,6 +2559,53 @@ export function computeCabinet(params, profileOverride) {
       ? runnerBottomY[i + 1]
       : (boxCeiling == null ? topOfBox : Math.min(topOfBox, boxCeiling)));
     const ceilingAbove = (i) => (dummy && i + 2 === dummy ? Math.min(kitCeiling(i), hobCeiling) : kitCeiling(i));
+    // ─── T78 F16 · THE DOUBLE DRAWER ────────────────────────────────────────
+    // The owner: *"podwojne szuflady szafki z szuflada na sztucce z bluma."*
+    // A row may be double (`params.drawer_double[row] === true`, the Drawers
+    // section): behind its ONE front a deep box below and, above it, a shallow
+    // inner drawer on its own runners, Blum's "inner drawer behind a front"
+    // (engine/innerDrawer.js reads reference/hardware/blum-inner-drawer.json,
+    // owner to confirm). The deep pull-out takes `deepSpaceMm` of the row from
+    // its runner bottom, the inner drawer the rest (at least `innerSpaceMm`);
+    // a row shorter than their sum, or no file loaded, is refused in words and
+    // cut as one box. The inner drawer carries an inner front (F15) and the
+    // cutlery insert (T33 F11's catalogue). Its parts are keyed `row + 0.5`:
+    // its own gesture, riding with nothing but itself.
+    const ID = innerDrawerSpec();
+    const doubleAsked = params?.drawer_double && typeof params.drawer_double === 'object' ? params.drawer_double : {};
+    const doubles = {};
+    for (let i = 0; i < heights.length; i += 1) {
+      const row = i + 1;
+      if (doubleAsked[row] !== true || overlay || (dummy && row === dummy)) continue;
+      if (!ID.loaded || ID.deepSpaceMm == null || ID.innerSpaceMm == null || ID.stackMinMm == null || ID.innerSideMm == null) {
+        warnings.push({
+          code: 'DOUBLE_DRAWER_REFUSED',
+          level: 'warn',
+          message: `Drawer ${row}: a double drawer needs Blum's inner-drawer numbers (reference/hardware/blum-inner-drawer.json, owner to confirm), and they are not loaded here. One box is cut.`,
+        });
+        continue;
+      }
+      const roomOfRow = kitCeiling(i) - runnerBottomY[i];
+      if (roomOfRow + 1e-6 < ID.stackMinMm) {
+        warnings.push({
+          code: 'DOUBLE_DRAWER_REFUSED',
+          level: 'warn',
+          message: `Drawer ${row}: a double drawer (a deep pull-out below, an inner drawer above) needs ${ID.stackMinMm} mm of the row `
+            + `(Blum: ${ID.deepSpaceMm} + ${ID.innerSpaceMm}, owner to confirm); this row has ${roundTo(roomOfRow, 0)} mm. One box is cut.`,
+        });
+        continue;
+      }
+      const innerRunnerBottomY = roundTo(runnerBottomY[i] + ID.deepSpaceMm, 4);
+      doubles[row] = {
+        row,
+        innerRunnerBottomY,
+        innerRunnerRow: roundTo(innerRunnerBottomY + B.firstRowFromBottom, 4),
+        innerBase: roundTo(innerRunnerBottomY + B.boxAboveRunner, 4),
+        innerCeiling: kitCeiling(i),
+        deepSpaceMm: ID.deepSpaceMm,
+        innerSpaceMm: ID.innerSpaceMm,
+      };
+    }
     const boxSides = heights.map((h, i) => {
       const wanted = lispRound(h * B.sideRatio);
       // Turn 18's own clamp under an appliance shelf stands, and stands FIRST:
@@ -2566,13 +2614,25 @@ export function computeCabinet(params, profileOverride) {
       const underShelf = boxCeiling == null
         ? wanted
         : Math.min(wanted, Math.max(0, boxCeiling - runnerRows[i]));
+      const dbl = doubles[i + 1];
+      // T78 F16 · the deep box of a double row stops under the inner drawer's runner.
+      const underInner = dbl
+        ? Math.min(underShelf, Math.max(0, dbl.innerRunnerBottomY - (runnerBottomY[i] + B.boxAboveRunner) - B.boxTopClearance))
+        : underShelf;
       return resolveBoxSide({
-        wanted: underShelf,
+        wanted: underInner,
         base: runnerBottomY[i] + B.boxAboveRunner,
-        ceiling: ceilingAbove(i),
+        ceiling: dbl ? dbl.innerRunnerBottomY : ceilingAbove(i),
         boxBoardT: GB,
       }, P);
     });
+    for (const d of Object.values(doubles)) {
+      const r = resolveBoxSide({
+        wanted: ID.innerSideMm, base: d.innerBase, ceiling: d.innerCeiling, boxBoardT: GB,
+      }, P);
+      d.innerSideH = r.height;
+      d.innerBoxFrontH = roundTo(r.height - B.boxFrontHeightDeduction - GB - B.boxFrontHeightExtra, 4);
+    }
     const sideHs = boxSides.map((r) => r.height);
     for (const [i, r] of boxSides.entries()) {
       if (r.capped) {
@@ -2646,6 +2706,9 @@ export function computeCabinet(params, profileOverride) {
       depth, maxDl, boxW, frontWidth, boxLen,
       bottomW: boxLen + B.bottomOversize,
       count: heights.length,
+      // T78 F16 · the double rows and their inner runner rows.
+      doubles,
+      innerRunnerRows: Object.values(doubles).map((d) => d.innerRunnerRow),
       stackTop: acc - B.gap,
       // TURN 40 (F3b): which offer this stack came from, so every reader below
       // — the fixed shelf, the published record, the BOM — asks the stack
@@ -3756,6 +3819,8 @@ export function computeCabinet(params, profileOverride) {
         'element_overrides', 'drawers', 'blind_mm', 'blind_mm_own', 'blind_side',
         // T78 F10 · the blind kit's own corner strip and the stop records.
         'corner_post_at_mm', 'corner_butt_left_mm', 'corner_butt_right_mm',
+        // T78 F16 · a double drawer row is the drawer unit's own.
+        'drawer_double',
       ];
       const arms = {};
       for (const arm of ['A', 'B']) {
@@ -5515,6 +5580,79 @@ export function computeCabinet(params, profileOverride) {
         // `runnerPocketWidth` above the sides' bottom edge.
         box: { x: boxLeftX + (budr.boxW - budr.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: budr.bottomW, h: GB, d: budr.depth },
         cnc: geom, meta: { drawer: i },
+      }));
+    }
+    // ─── T78 F16 · THE INNER DRAWER OF A DOUBLE ROW ──────────────────────────
+    // The same box (the house's wooden box on its own MOVENTO pair) at the
+    // inner side height the file gives (LEGRABOX M, 90.5, owner to confirm),
+    // standing on the inner runner row above the deep box, keyed `row + 0.5`,
+    // with an INNER FRONT (F15's grammar) on its box front.
+    for (const d of Object.values(budr.doubles || {})) {
+      const i = d.row;
+      const key = i + 0.5;
+      const sh = d.innerSideH;
+      const bfH = d.innerBoxFrontH;
+      const boxY = d.innerBase;
+      const metaInner = { drawer: key, inner: true, double: { row: i, half: 'inner' } };
+      for (const [suffix, x] of [['SL', boxLeftX], ['SR', boxLeftX + budr.boxW - GB]]) {
+        panels.push(panel({
+          id: `D${i}I-${suffix}`, part: 'DRAWER-SIDE', role: 'drawer_box', w: budr.depth, h: sh, ...common,
+          box: { x, y: boxY, z: boxZFront - budr.depth, w: GB, h: sh, d: budr.depth },
+          cnc: { rotated: true, drawn_w: sh, drawn_h: budr.depth, ...pocketedRect(sh, budr.depth, sidePockets(budr.depth)) },
+          meta: { ...metaInner, side: suffix === 'SL' ? 'L' : 'R' },
+        }));
+      }
+      for (const suffix of ['BF', 'BB']) {
+        const isFront = suffix === 'BF';
+        const geom = { rotated: true, drawn_w: bfH, drawn_h: budr.boxLen, ...rectGeometry(bfH, budr.boxLen) };
+        if (isFront) {
+          geom.holes = [
+            { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: B.boxScrewFromEdge, d: pz.screwDiameter },
+            { layer: pz.layers.screw, kind: 'screw', x: B.boxScrewFromEdge, y: budr.boxLen - B.boxScrewFromEdge, d: pz.screwDiameter },
+          ];
+        }
+        panels.push(panel({
+          id: `D${i}I-${suffix}`, part: isFront ? 'DRAWER-BOX-FRONT' : 'DRAWER-BOX-BACK', role: 'drawer_box',
+          w: budr.boxLen, h: bfH, ...common,
+          box: {
+            x: boxLeftX + GB, y: boxY + B.runnerPocketWidth + GB,
+            z: isFront ? boxZFront - GB : boxZFront - budr.depth,
+            w: budr.boxLen, h: bfH, d: GB,
+          },
+          cnc: geom,
+          meta: { ...metaInner },
+        }));
+      }
+      {
+        const geom = rectGeometry(budr.bottomW, budr.depth);
+        geom.holes = [];
+        for (const x of [B.bottomScrewFromSide, budr.bottomW - B.bottomScrewFromSide]) {
+          for (const y of [B.bottomScrewFromEnd, budr.depth - B.bottomScrewFromEnd]) {
+            geom.holes.push({ layer: pz.layers.screw, kind: 'screw', x, y, d: pz.screwDiameter });
+          }
+        }
+        panels.push(panel({
+          id: `D${i}I-DNO`, part: 'DRAWER-BOTTOM', role: 'drawer_box', w: budr.bottomW, h: budr.depth, ...common,
+          box: { x: boxLeftX + (budr.boxW - budr.bottomW) / 2, y: boxY + B.runnerPocketWidth, z: boxZFront - budr.depth, w: budr.bottomW, h: GB, d: budr.depth },
+          cnc: geom, meta: { ...metaInner },
+        }));
+      }
+      // The inner front (F15): the box's width, the box side's height, on the box front.
+      const IF = P.wardrobe.drawers.innerFront || {};
+      const over = Number(IF.overhangMm) || 0;
+      const fw = budr.boxW + over;
+      const fid = `${unitNum}-DIF${i}`;
+      const sx = B.frontScrewFromSide + GB;
+      const fgeom = rectGeometry(fw, sh);
+      fgeom.holes = [sx, fw - sx].map((x) => ({
+        layer: B.frontScrewLayer, kind: 'front_screw', x: roundTo(x, 4), y: roundTo(B.frontScrewFromBottom, 4), d: B.frontScrewDiameter,
+      }));
+      panels.push(panel({
+        id: fid, part: 'DRAWER-FRONT', role: 'drawer_front', w: fw, h: sh, thickness: frontT,
+        edgeCode: codes.all, edgeLen: metres(2 * fw + 2 * sh),
+        box: { x: boxLeftX - over / 2, y: boxY, z: boxZFront, w: fw, h: sh, d: frontT },
+        cnc: fgeom,
+        meta: { ...metaInner, frontType: cfg.frontType, fixing: 'box front screws (T34)' },
       }));
     }
     // Turn 17 (CLAUDE.md F8.1): with the fronts off, the loop simply does not
@@ -8946,7 +9084,8 @@ export function computeCabinet(params, profileOverride) {
     runnerCarcassSide = 'both';
     for (const sideId of ['BUL', 'BUR']) {
       // T75 F14 · the hob's dummy runs on nothing: its row is not drilled.
-      for (const rowY of budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy)) {
+      // T78 F16 · the inner drawers' runner rows join the ladder.
+      for (const rowY of [...budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy), ...(budr.innerRunnerRows || [])]) {
         for (const px of RN.holeXPattern) {
           const x = sideId === 'BUR' ? sideW - px : px;
           addDrill(sideId, 'runner', RN.layer, x, rowY, RN.holeDiameter);
@@ -9912,6 +10051,8 @@ export function computeCabinet(params, profileOverride) {
       shoe: 'Shoe drawer insert',
       belt_tie: 'Belt/tie divider insert',
       belt_tie_glass: 'Belt/tie divider insert',
+      // T78 F16 · the double drawer's cutlery insert (the owner: *"szuflada na sztucce z bluma"*).
+      cutlery: 'Cutlery insert',
     };
     const orderInsert = (variant, wInt, dInt) => {
       if (!variant) return;
@@ -9941,6 +10082,13 @@ export function computeCabinet(params, profileOverride) {
     for (const set of columnDrawerSets) {
       for (let i = 1; i <= set.heights.length; i += 1) {
         orderInsert(set.variants?.[i - 1], set.boxW - 2 * GB, set.dl - 2 * GB);
+      }
+    }
+    // T78 F16 · the inner drawer of every double row is the cutlery drawer: its insert, from the catalogue.
+    if (budr) {
+      for (const d of Object.values(budr.doubles || {})) {
+        void d;
+        orderInsert('cutlery', budr.boxW - 2 * GB, budr.depth - 2 * GB);
       }
     }
   }
@@ -10210,7 +10358,8 @@ export function computeCabinet(params, profileOverride) {
   // still gets the single line it has had since turn 3.
   const runnerDesign = { runners: { variant: params?.project_runner_variant ?? null } };
   const byVariant = new Map();
-  for (let i = 1; i <= numDrawers + columnDrawerCount; i += 1) {
+  // T78 F16 · each double row's inner drawer runs on a pair of its own.
+  for (let i = 1; i <= numDrawers + columnDrawerCount + Object.keys(budr?.doubles || {}).length; i += 1) {
     // Turn 32 (CLAUDE.md F4): a column drawer buys a pair exactly as a
     // full-width one does — same ladder, same variant resolution, counted
     // after the default stack so per-drawer overrides keep their indices.
@@ -10609,7 +10758,12 @@ export function computeCabinet(params, profileOverride) {
     shelf_screw_row_y: shelfScrewRows.map((r) => roundTo(r.y + r.thickness / 2, 4)),
     shelf_screw_x: [pz.screwFromEnd, sideW / 2, sideW - pz.screwFromEnd],
     runner_rows_dp_y: runnerRowsDp,
-    runner_rows_carcass_y: budr ? budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy) : runnerRowsCarcass,
+    runner_rows_carcass_y: budr
+      ? [...budr.runnerRows.filter((_, i) => i + 1 !== budr.dummy), ...(budr.innerRunnerRows || [])]
+      : runnerRowsCarcass,
+    // T78 F16 · the double rows (their inner drawers are keyed row + 0.5); the
+    // key appears only where a row is double, so no golden sees it.
+    ...(budr && Object.keys(budr.doubles || {}).length ? { double_rows: Object.keys(budr.doubles).map(Number) } : {}),
     // ─── TURN 21 (CLAUDE.md F1.1/F1.3) ────────────────────────────────────
     // The runner's own UNDERSIDE — not a drilling, which is why it is named
     // apart from every `*_rows_*` key beside it. Two readers: the drawer box

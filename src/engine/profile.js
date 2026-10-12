@@ -4812,6 +4812,9 @@ export const DEFAULT_CABINET_PROFILE = {
     catalogue: [
       { id: 'shoe', label: 'Shoe drawer insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
       { id: 'belt_tie', label: 'Belt/tie divider insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
+      // T78 F16 · the cutlery insert of the double drawer's inner drawer (the
+      // owner: *"szuflada na sztucce z bluma"*). T78 proposed, owner to confirm.
+      { id: 'cutlery', label: 'Cutlery insert', widths: [300, 350, 400, 450, 500, 550, 600, 700, 800, 900] },
     ],
   },
 

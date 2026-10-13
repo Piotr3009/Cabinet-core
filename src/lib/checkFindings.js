@@ -72,8 +72,14 @@ export function checkDependencies({
  *
  * @returns {Array} `engine/checks.js runChecks()` output
  */
+// Chat-fix 13.10.2026: one answer shared by every reader (the toolbar's count,
+// the Check panel, the BOM), and none recomputed while a drag is in progress:
+// the last findings stand until the hand lets go. The export gate is not this.
+let shared = null;
+
 export function useCheckFindings() {
   const runChecks = useProjectStore((s) => s.runChecks);
+  const gesture = useUiStore((s) => s.gestureActive);
   const units = useProjectStore((s) => s.units);
   const design = useProjectStore((s) => s.project.design);
   // The ceiling rule #5 measures against — missing from both old memos.
@@ -85,8 +91,14 @@ export function useCheckFindings() {
   const deps = checkDependencies({
     units, design, room, profile, materials,
   });
+  return useMemo(() => {
+    const same = shared && shared.runChecks === runChecks && shared.deps.every((d, i) => d === deps[i]);
+    if (shared && (same || gesture)) return shared.findings;
+    const findings = runChecks();
+    shared = { runChecks, deps, findings };
+    return findings;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the list IS `deps`, named once above
-  return useMemo(() => runChecks(), [runChecks, ...deps]);
+  }, [runChecks, gesture, ...deps]);
 }
 
 

@@ -194,7 +194,8 @@ const ASKED = ['src/engine', 'src/lib'];
 const LIGHTING = [
   'src/engine/ledStrips.js', 'src/engine/lighting.js', 'src/engine/lightRig.js',
   'src/components/LightingPanel.jsx', 'src/retail/design/lighting/LightingPanel.jsx',
-  'src/3d/LedStrips.jsx', 'src/3d/LedIcons.jsx',
+  'src/3d/LedStrips.jsx',
+  // 'src/3d/LedIcons.jsx' lifted by the owner, 12.10.2026: the icons show only while Lighting is open.
 ];
 /** FROZEN 5: "profile.biscuits stays gap 10, wideThreshold 700, edgeMin 50, markLength 70". */
 const BISCUITS = { gap: 10, wideThreshold: 700, edgeMin: 50, markLength: 70 };

@@ -28,6 +28,8 @@ import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
+import { setGesture } from '../stores/historyBatch.js';
+import { startPerfMeter } from './perfMeter.js';
 
 const ACTIVE_MS = 2000;
 const HOVER_MS = 400;
@@ -42,6 +44,7 @@ export default function FrameDemand({ onHeld = null }) {
   const gl = useThree((s) => s.gl);
   const invalidate = useThree((s) => s.invalidate);
   const clock = useThree((s) => s.clock);
+  const scene = useThree((s) => s.scene);
   const paused = useUiStore(hiddenIn);
 
   const until = useRef(0);
@@ -72,6 +75,8 @@ export default function FrameDemand({ onHeld = null }) {
       down = null;
       if (!held) return;
       held = false;
+      setGesture(false);
+      useUiStore.getState().setGestureActive(false);
       gl.shadowMap.autoUpdate = true;
       gl.shadowMap.needsUpdate = true;
       onHeldRef.current?.(false);
@@ -84,6 +89,8 @@ export default function FrameDemand({ onHeld = null }) {
       if (down && e.buttons && !held
         && Math.hypot(e.clientX - down.x, e.clientY - down.y) > HOLD_SLOP_PX) {
         held = true;
+        setGesture(true);
+        useUiStore.getState().setGestureActive(true);
         gl.shadowMap.autoUpdate = false;
         onHeldRef.current?.(true);
       }
@@ -121,8 +128,12 @@ export default function FrameDemand({ onHeld = null }) {
       window.removeEventListener('wheel', onAny);
       window.removeEventListener('resize', onAny);
       gl.shadowMap.autoUpdate = true;
+      if (held) { setGesture(false); useUiStore.getState().setGestureActive(false); }
     };
   }, [gl, invalidate, clock]);
+
+  // Chat-fix 13.10.2026: `?perf` in the address shows the room's live numbers.
+  useEffect(() => startPerfMeter({ gl, scene, unitCount: () => useProjectStore.getState().units.length }), [gl, scene]);
 
   // Leaving the CNC view or an editor: draw the room as it now is.
   useEffect(() => {

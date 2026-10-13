@@ -6105,6 +6105,12 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const s = get();
     const unit = s.units.find((u) => u.id === unitId);
     if (!unit) return { applied: {}, notices: [] };
+    // Chat-fix 13.10.2026: the same value again is not an edit: no write, no
+    // Undo step, nothing woken (a field committed twice, Enter then blur).
+    if (asked && typeof asked === 'object' && Object.keys(asked).length
+      && Object.entries(asked).every(([k, v]) => JSON.stringify(unit.params?.[k]) === JSON.stringify(v))) {
+      return { applied: { ...asked }, notices: [] };
+    }
     const profile = getCabinetProfile();
     // ─── T74 F13 · A SIZE TYPED ON A FREE PANEL, READ AS IT WAS MEANT ───────
     // Its box and its board are one: a width, a height or a depth typed on it

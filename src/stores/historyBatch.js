@@ -23,7 +23,7 @@ const listeners = new Set();
 
 /** Is a bulk action in progress? The watcher asks before it starts its timer. */
 export function isBatching() {
-  return depth > 0;
+  return depth > 0 || gesture;
 }
 
 /**
@@ -44,8 +44,19 @@ export function runBatch(fn) {
     depth -= 1;
     // Even if `fn` threw: a batch that never ends would swallow every edit
     // after it, which is a far worse failure than the one that got us here.
-    if (depth === 0) for (const cb of [...listeners]) cb();
+    if (depth === 0 && !gesture) for (const cb of [...listeners]) cb();
   }
+}
+
+// Chat-fix 13.10.2026: a pointer GESTURE (a drag, held and moving) is one
+// batch: every store action inside it closes its own runBatch, and without
+// this each drag step was its own Undo entry. 3d/frameDemand.jsx opens and
+// closes it; its end is a batch end like any other.
+let gesture = false;
+export function setGesture(on) {
+  const was = gesture;
+  gesture = Boolean(on);
+  if (was && !gesture && depth === 0) for (const cb of [...listeners]) cb();
 }
 
 /** Tell me when the outermost batch finishes. */

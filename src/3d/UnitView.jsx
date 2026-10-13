@@ -1867,8 +1867,14 @@ export default function UnitView({
     setDragging(true);
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
-    const move = (ev) => {
-      if (!drag.current) return;
+    // Chat-fix 13.10.2026: at most one move per frame; the newest pointer wins.
+    let pendingMove = null;
+    let moveFrame = 0;
+    const moveNow = () => {
+      moveFrame = 0;
+      const ev = pendingMove;
+      pendingMove = null;
+      if (!ev || !drag.current) return;
       // ─── Cross-wall drag REMOVED (owner verdict, 08.08) ───
       // Turn 11 re-homed a unit to whatever wall the floor ray said the hand
       // was in front of. With a perspective camera the drag plane and the
@@ -1884,7 +1890,12 @@ export default function UnitView({
       if (Math.hypot(ev.clientX - drag.current.x0, ev.clientY - drag.current.y0) >= 2) drag.current.moved = true;
       onMove(alongMm(p) - drag.current.offset, snapStep);
     };
+    const move = (ev) => {
+      pendingMove = ev;
+      if (!moveFrame) moveFrame = requestAnimationFrame(moveNow);
+    };
     const up = (ev) => {
+      if (moveFrame) { cancelAnimationFrame(moveFrame); moveNow(); }
       const moved = Boolean(drag.current?.moved);
       drag.current = null;
       setDragging(false);
@@ -2608,14 +2619,32 @@ export default function UnitView({
     const grabDelta = currentPosMm - (hit.y - originY) / MM;
     if (orbitRef?.current) orbitRef.current.enabled = false;
 
-    const move = (ev) => {
+    // Chat-fix 13.10.2026: at most one move per frame, and the drag readout
+    // (which every unit view hears) only when it says something new.
+    let pendingMove = null;
+    let moveFrame = 0;
+    let said = '';
+    const moveNow = () => {
+      moveFrame = 0;
+      const ev = pendingMove;
+      pendingMove = null;
+      if (!ev) return;
       const p = pointerToPlane(ev.clientX, ev.clientY);
       if (!p) return;
       const posMm = (p.y - originY) / MM + grabDelta;
       const state = onMoveShelf(itemId, posMm, snapStep);
-      if (state && onShelfDragState) onShelfDragState({ unitId: unit.id, itemId, ...state });
+      const key = state ? JSON.stringify(state) : '';
+      if (state && onShelfDragState && key !== said) {
+        said = key;
+        onShelfDragState({ unitId: unit.id, itemId, ...state });
+      }
+    };
+    const move = (ev) => {
+      pendingMove = ev;
+      if (!moveFrame) moveFrame = requestAnimationFrame(moveNow);
     };
     const up = () => {
+      if (moveFrame) { cancelAnimationFrame(moveFrame); moveNow(); }
       if (orbitRef?.current) orbitRef.current.enabled = true;
       if (onShelfDragState) onShelfDragState(null);
       window.removeEventListener('pointermove', move);

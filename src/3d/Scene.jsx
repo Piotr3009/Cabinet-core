@@ -11,6 +11,7 @@ import { buildHardwareEnv } from './hardwareEnv.js';
 import Room from './Room.jsx';
 import UnitView from './UnitView.jsx';
 import FrameDemand from './frameDemand.jsx';
+import IslandPlan from './IslandPlan.jsx';
 import DistanceArrows from './DistanceArrows.jsx';
 import AddPlus from './AddPlus.jsx';
 // Turn 50 (CLAUDE.md F2, decision 1): the share-out is offered AT THE GAP.
@@ -32,7 +33,7 @@ import { demoDimFactor, resolveLighting } from '../engine/ledStrips.js';
 // index; the ITEM is resolved by the engine's own helper, never guessed by y.
 import { drawerItemOf } from '../engine/watchDrawer.js';
 import { mm } from './constants.js';
-import { roomWalls, roomBounds } from '../engine/room.js';
+import { roomWalls, roomBounds, roomIslands } from '../engine/room.js';
 import {
   addPlusPoints, unitBase, unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
@@ -1192,7 +1193,7 @@ function FirstPlus({
 // With the props stable (subject is deduplicated by ShadowFit, profile is
 // the store's object) the shadow is baked once per real change of bounds.
 const FloorShadow = memo(FloorShadowView);
-function FloorShadowView({ subject, profile }) {
+function FloorShadowView({ subject, profile, revision = '' }) {
   const C = profile.appearance.contactShadow;
   const pad = mm(profile.appearance.studio.shadowPadding);
   const step = profile.editor.mmStep;
@@ -1228,8 +1229,9 @@ function FloorShadowView({ subject, profile }) {
 
   // On the workshop's own grid, and nothing finer: the fit is measured off world
   // matrices, and a raw float would re-bake the shadow on floating-point noise.
+  // 14.10.2026: `revision` names what is hidden, so a hidden island's shadow goes with it.
   const bake = [fit.width, fit.depth, fit.resolution]
-    .map((v) => Math.round(v / mm(step))).join('|');
+    .map((v) => Math.round(v / mm(step))).join('|') + revision;
 
   return (
     // In the picture, but it must never FRAME it: the blob reaches half a metre
@@ -1473,6 +1475,12 @@ export default function Scene({
   const shareOutView = useProjectStore((s) => s.shareOutView);
   const sideInfillToCeiling = useProjectStore((s) => s.sideInfillToCeiling);
   const selectedUnitId = useUiStore((s) => s.selectedUnitId);
+  // 14.10.2026 · the island plan window and the islands hidden from this view
+  // (the project keeps them). *"możliwość hide island żeby zobaczyć kuchnię bez islandu"*.
+  const islandPlanOpen = useUiStore((s) => Boolean(s.islandPlan));
+  const hiddenIslands = useUiStore((s) => s.hiddenIslands);
+  const toggleIslandHidden = useUiStore((s) => s.toggleIslandHidden);
+  const beginIslandPlan = useProjectStore((s) => s.beginIslandPlan);
   const selectUnit = useUiStore((s) => s.selectUnit);
   const selectedUnitIds = useUiStore((s) => s.selectedUnitIds);
   const openRightPanel = useUiStore((s) => s.openRightPanel);
@@ -1562,6 +1570,12 @@ export default function Scene({
   // already subscribed to above — the room needs it for the finishes — so this
   // is a dependency and not a second subscription.
   const results = useMemo(() => allResults(), [units, design, runElements, allResults]);
+  // 14.10.2026 · what the room draws: everything but the hidden islands
+  // (*"możliwość hide island żeby zobaczyć kuchnię bez islandu"*). The store's
+  // `results` stay whole: the BOM, the checks and the drawings keep the island.
+  const hiddenUnit = (u) => Boolean(u?.position?.island && hiddenIslands[u.position.island]);
+  const shown = useMemo(() => results.filter((r) => !hiddenUnit(r.unit)), [results, hiddenIslands]);
+  const hiddenKey = Object.keys(hiddenIslands).sort().join(',');
   // ─── TURN 28 (CLAUDE.md F8.2): A RUN OF IDENTICAL CABINETS DIMENSIONS ONCE ─
   //
   // Six identical base units in a row drew six identical chains of the same six
@@ -1587,11 +1601,11 @@ export default function Scene({
   // once, on the run's outer end.
   const sizeChainOn = useMemo(
     () => dimensionCarriers({
-      results,
+      results: shown,
       wanted: showDimensions && !contourView ? results.map((e) => e.unit.id) : [],
       profile,
     }),
-    [results, showDimensions, contourView, profile],
+    [shown, results, showDimensions, contourView, profile],
   );
   const walls = useMemo(() => roomWalls(room), [room]);
   const bounds = useMemo(() => roomBounds(room), [room]);
@@ -1600,7 +1614,7 @@ export default function Scene({
   // are drawn from, so an arrow cannot describe a unit that is somewhere else —
   // and a drag updates it frame by frame with no drag state of its own.
   const measured = useMemo(() => {
-    const rows = results.map(({ unit, result }) => {
+    const rows = shown.map(({ unit, result }) => {
       const base = result.assemblies.mount === 'wall'
         ? (result.assemblies.mountHeight || 0)
         : (result.assemblies.carcass.legHeight || 0);
@@ -1652,7 +1666,7 @@ export default function Scene({
       y: band.from + profile.dimensions.height,
     }));
     return [...rows, ...boards];
-  }, [results, units, profile]);
+  }, [shown, units, profile]);
   const roomW = mm(bounds.width);
   const roomH = mm(room.height ?? 2500);
   // What the project's sprayed surfaces are polished to, on Piotr's 0–25 scale.
@@ -1660,6 +1674,9 @@ export default function Scene({
   // Turn 30 (CLAUDE.md F8): the slabs this project carries, geometry resolved.
   const worktopsOf = useProjectStore((s) => s.worktopsOf);
   const worktops = useMemo(() => worktopsOf(), [units, design, worktopsOf]);
+  // 14.10.2026 · the worktops the room draws: not a hidden island's.
+  const shownWorktops = useMemo(() => worktops.filter((w) => !(w.island && hiddenIslands[w.island])), [worktops, hiddenIslands]);
+  const shownWalls = useMemo(() => walls.filter((w) => !(w.island && hiddenIslands[w.island])), [walls, hiddenIslands]);
   // Turn 30 (CLAUDE.md F12): neighbouring fronts that come closer than the
   // profile's minimum. Room level — across cabinets, which is the fault a
   // per-cabinet reader cannot see.
@@ -1718,6 +1735,14 @@ export default function Scene({
   const guardContext = useContextGuard('room');
 
   return (
+    <>
+    {islandPlanOpen && <IslandPlan />}
+    <IslandChips
+      room={room}
+      hiddenIslands={hiddenIslands}
+      onPlan={(id) => { const r = beginIslandPlan(id); if (!r.ok) notify(r.message, 'warn'); }}
+      onToggle={toggleIslandHidden}
+    />
     <Canvas
       // ─── Turn 20 (CLAUDE.md F10) ───
       // ONE context per surface, released on the way out rather than left for
@@ -1775,7 +1800,7 @@ export default function Scene({
         sceneScale={sceneScale}
       />
       <ShadowFit
-        signal={results}
+        signal={shown}
         unitsRef={unitGroups}
         onFit={setSubject}
         units={units}
@@ -1789,7 +1814,7 @@ export default function Scene({
       {/* Solid and Render only. Contour is a silhouette and X-ray is a look
           THROUGH the furniture — a shadow on the floor is furniture standing on
           it, which is the one thing neither mode is saying. */}
-      {!contourView && !xray && <FloorShadow subject={subject} profile={profile} />}
+      {!contourView && !xray && <FloorShadow subject={subject} profile={profile} revision={hiddenKey} />}
       {/* ─── Turn 11 (CLAUDE.md F1.1) ───
           `onPointerMissed` above only fires when the ray hits NOTHING, and the
           floor and the walls are something — so clicking them left the last
@@ -1832,7 +1857,7 @@ export default function Scene({
         scope={normaliseScope(design?.scope)}
       />
 
-      {results.map(({ unit, result }) => (
+      {shown.map(({ unit, result }) => (
         <UnitView
           key={unit.id}
           unit={unit}
@@ -2118,7 +2143,7 @@ export default function Scene({
           drawing is the machine's picture and a worktop is not cut on it. */}
       {!contourView && worktops.length > 0 && (
         <Worktops
-          worktops={worktops}
+          worktops={shownWorktops}
           walls={walls}
           roomCentre={bounds.centre}
           colour={profile.appearance.worktop.colour}
@@ -2129,7 +2154,7 @@ export default function Scene({
           Decision 1 at the top of CLAUDE.md, and the reason it is here rather
           than in the middle of the screen: it is read where the problem is,
           and ignoring it costs no click. */}
-      {!contourView && !shelfDrag && shareOutOffer && (
+      {!contourView && !shelfDrag && !islandPlanOpen && shareOutOffer && (
         <ShareOutBar
           walls={walls}
           roomCentre={bounds.centre}
@@ -2169,7 +2194,7 @@ export default function Scene({
       {!contourView && !shelfDrag && !onAddPlus && (
         <IslandFacePluses
           units={units}
-          walls={walls}
+          walls={shownWalls}
           roomCentre={bounds.centre}
           profile={profile}
           onPick={(wall) => {
@@ -2227,5 +2252,28 @@ export default function Scene({
       <CaptureRig onReady={onCaptureReady} background={background} />
       <RenderRig onReady={onRenderReady} unitsRef={unitGroups} />
     </Canvas>
+    </>
+  );
+}
+
+// ─── 14.10.2026 · THE ISLANDS' OWN STRIP: PLAN AGAIN, HIDE, SHOW ──────────────
+// One chip per island at the foot of the room canvas. *"później możliwość hide
+// island żeby zobaczyć kuchnię bez islandu"*: Hide takes the island and its
+// cabinets out of THIS view only; Plan… reopens the plan with what stands on it.
+function IslandChips({ room, hiddenIslands, onPlan, onToggle }) {
+  const islands = roomIslands(room);
+  if (!islands.length) return null;
+  return (
+    <div data-island-chips="1" className="absolute left-1/2 -translate-x-1/2 bottom-3 z-[34] flex gap-2">
+      {islands.map((i, k) => (
+        <div key={i.id} className="flex items-center gap-1 rounded bg-shell-800/90 border border-shell-600 px-2 py-1 text-xs text-ink-100">
+          <span className="mr-1">{`Island ${k + 1}`}</span>
+          <button type="button" className="cc-btn-ghost" data-island-plan={i.id} title="Change the island's plan: its size, place and cabinets" onClick={() => onPlan(i.id)}>Plan…</button>
+          <button type="button" className="cc-btn-ghost" data-island-hide={i.id} title="Hide or show the island in the 3D view (it stays in the project and the BOM)" onClick={() => onToggle(i.id)}>
+            {hiddenIslands[i.id] ? 'Show' : 'Hide'}
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }

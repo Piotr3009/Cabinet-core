@@ -367,6 +367,22 @@ export const useUiStore = create((set, get) => ({
   // Dimensions on the 3D canvas: each unit's own W/H/D captions AND the
   // distance arrows between units and to the walls (CLAUDE.md phase 8). One
   // switch, because they are one thing to Piotr: "show me the numbers".
+  // ─── THE ISLAND PLAN (owner, 14.10.2026): a draft, until it is inserted ──
+  // `{ islandId|null, cx, cy, w, d, rotation, cabs: [{ key, unitId, face, w, type }] }`
+  // or null. Opened by the project store (`beginIslandPlan`), drawn by
+  // 3d/IslandPlan.jsx over the room canvas, inserted by `insertIslandPlan`.
+  islandPlan: null,
+  openIslandPlan: (draft) => set({ islandPlan: draft || null }),
+  setIslandPlan: (patch) => set((s) => (s.islandPlan ? { islandPlan: { ...s.islandPlan, ...patch } } : {})),
+  closeIslandPlan: () => set({ islandPlan: null }),
+  // *"możliwość hide island żeby zobaczyć kuchnię bez islandu"*: hidden in the
+  // 3D view only; the project, the BOM and the drawings keep it. Session-only.
+  hiddenIslands: {},                 // { [islandId]: true }
+  toggleIslandHidden: (id) => set((s) => {
+    if (!id) return {};
+    const { [id]: on, ...rest } = s.hiddenIslands;
+    return { hiddenIslands: on ? rest : { ...rest, [id]: true } };
+  }),
   // Chat-fix 13.10.2026: a drag or orbit is in progress (3d/frameDemand.jsx).
   gestureActive: false,
   setGestureActive: (v) => set({ gestureActive: Boolean(v) }),

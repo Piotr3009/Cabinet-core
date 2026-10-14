@@ -15,7 +15,7 @@ import {
   islandCorners, rehomeIslandUnits, roomIslands,
 } from '../../../engine/room.js';
 // T75 F9 · the island: a new one at the profile's size, and what it would stand on.
-import { islandClash, newIsland } from '../../../engine/island.js';
+import { islandClash } from '../../../engine/island.js';
 import { wallCornerHeights, impliedProfilesOnWall } from '../../../lib/wallElements.js';
 import { formatMm, snap } from '../../../engine/format.js';
 import { anchorOfEvent } from '../../../lib/modalAnchor.js';
@@ -163,6 +163,7 @@ export default function RoomModal({
   const room = useProjectStore((s) => s.project.room);
   const units = useProjectStore((s) => s.units);
   const setRoom = useProjectStore((s) => s.setRoom);
+  const beginIslandPlan = useProjectStore((s) => s.beginIslandPlan);
   // T75 F9 · ADD ISLAND is a kitchen job's: the gate is the job's family,
   // which retail (a wardrobe job) never meets.
   const islandsAllowed = useProjectStore((s) => s.islandsAllowed?.() === true);
@@ -400,9 +401,25 @@ export default function RoomModal({
     setDraft(candidate);
     return true;
   };
+  // 14.10.2026 (owner): an island is planned from above first. *"przy
+  // dodaniu wyspy chciałbym żeby był widok z góry i proponowana na podłodze
+  // plan wyspy"*. The room as drawn here is applied (only the keys this
+  // window changed, as Apply sends them), then the plan opens over the canvas;
+  // the island reaches the room only when the plan is inserted.
   const addIsland = () => {
-    const island = newIsland(draft, getCabinetProfile(), `island_${Math.random().toString(36).slice(2, 9)}`);
-    if (setIslands([...islands, island])) setPicked({ kind: 'island', id: island.id });
+    if (shapeIssues.length) { notify(shapeIssues[0], 'warn'); return; }
+    const changed = Object.fromEntries(
+      Object.entries(draft).filter(([key, value]) => !Object.is(
+        JSON.stringify(value), JSON.stringify(base.current[key]),
+      )),
+    );
+    if (Object.keys(changed).length) {
+      const verdict = setRoom(changed);
+      if (!verdict.ok) { notify(verdict.message, 'error'); return; }
+    }
+    closeModal();
+    const began = beginIslandPlan(null);
+    if (!began.ok) notify(began.message, 'warn');
   };
   const changeIsland = (id, change) => setIslands(islands.map((i) => (i.id === id ? { ...i, ...change } : i)));
   const startIslandDrag = (e, id) => {

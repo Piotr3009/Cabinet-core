@@ -50,11 +50,13 @@ import {
   bandsOverlap, unitBand, bandSegmentAt, bandSegments,
 } from '../engine/collision.js';
 import {
-  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, islandCorners, migrateRoom, plasterPosition, rehomeIslandUnits, roomBoxes,
+  DEFAULT_ROOM as ENGINE_DEFAULT_ROOM, faceIndexOf, islandCorners, migrateRoom, plasterPosition, rehomeIslandUnits, roomBoxes,
   roomChangeGuard, roomIslands, roomWalls, wallName, wallPlanObstacles,
 } from '../engine/room.js';
 // T75 F9 · the island: what it would stand on (Room refuses first).
 import { islandClash, newIsland } from '../engine/island.js';
+// 14.10.2026 · the island planned from above, inserted whole (engine/islandPlan.js).
+import { islandPlanDraft, planCabinets } from '../engine/islandPlan.js';
 import { getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
 // T75 F20 · a set is a recipe: its layout and its reading are the engine's.
 import { setIsOneLevel, setLayout, setRecipe } from '../engine/sets.js';
@@ -1584,6 +1586,86 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     }
     return verdict;
   },
+
+  // ─── THE ISLAND PLAN (owner, 14.10.2026) ──────────────────────────────────
+  //
+  // *"przy dodaniu wyspy chciałbym żeby był widok z góry i proponowana na
+  // podłodze plan wyspy ... dopiero jak się wstawi to wtedy pokaże się cała
+  // wyspa."*  The plan is a DRAFT the ui store holds (`islandPlan`); nothing
+  // in the project changes until `insertIslandPlan`, which then goes through
+  // the same `setRoom` and `addUnit` every island and cabinet go through.
+  /** Open the plan: a new island, or an existing one with its cabinets. */
+  beginIslandPlan: (islandId = null) => {
+    const s = get();
+    if (!islandId && !get().islandsAllowed()) {
+      return { ok: false, message: 'An island belongs to a kitchen job: this job is not one.' };
+    }
+    const draft = islandPlanDraft({
+      room: s.project.room, units: s.units, profile: getCabinetProfile(), islandId,
+    });
+    if (!draft) return { ok: false, message: 'No such island.' };
+    useUiStore.getState().openIslandPlan(draft);
+    return { ok: true, message: '' };
+  },
+
+  /**
+   * Insert the plan: the island's geometry through `setRoom` (the room refuses
+   * first, in its own words), the cabinets it already had re-placed in plan
+   * order, the new ones added through `addUnit` on their faces. ONE batch, one
+   * undo step; a refusal anywhere puts the project back as it was.
+   */
+  insertIslandPlan: (plan) => runBatch(() => {
+    if (!plan) return { ok: false, message: 'There is no plan to insert.' };
+    if (!plan.islandId && !get().islandsAllowed()) {
+      return { ok: false, message: 'An island belongs to a kitchen job: this job is not one.' };
+    }
+    const before = { units: get().units, room: get().project.room };
+    const restore = () => set((st) => ({ units: before.units, project: { ...st.project, room: before.room } }));
+    const profile = getCabinetProfile();
+    const id = plan.islandId || uid('island');
+    const record = {
+      id, cx: Number(plan.cx), cy: Number(plan.cy), w: Number(plan.w), d: Number(plan.d), rotation: Number(plan.rotation) || 0,
+    };
+    const islands = roomIslands(get().project.room);
+    const next = plan.islandId ? islands.map((i) => (i.id === id ? { ...i, ...record } : i)) : [...islands, record];
+    const placed = planCabinets({ ...plan, islandId: id }, profile);
+    // Cabinets the plan struck leave first (so the resize is not refused for them).
+    const keep = new Set(placed.map((r) => r.cab.unitId).filter(Boolean));
+    for (const u of get().units) {
+      if (u.position?.island === id && !keep.has(u.id) && !getUnitType(u.type)?.freePanel) get().removeUnit(u.id);
+    }
+    // The kept ones stand where the plan puts them; a narrower width is taken
+    // now, a wider one after the island has grown.
+    set((st) => ({
+      units: st.units.map((u) => {
+        const row = placed.find((r) => r.cab.unitId === u.id);
+        if (!row) return u;
+        const width = Math.min(Number(u.params?.width) || row.width, row.width);
+        return { ...u, position: { ...u.position, island: id, face: row.face, x_mm: row.x }, params: { ...u.params, width } };
+      }),
+    }));
+    const verdict = get().setRoom({ islands: next });
+    if (!verdict.ok) { restore(); return { ...verdict, id: null }; }
+    for (const row of placed) {
+      if (!row.cab.unitId) continue;
+      const u = get().units.find((x) => x.id === row.cab.unitId);
+      if (u && Number(u.params?.width) !== row.width) {
+        const { applied } = get().updateUnitParams(u.id, { width: row.width });
+        if (Number(applied?.width) !== row.width) {
+          restore();
+          return { ok: false, message: `${u.params?.unit_num || 'A cabinet'} cannot be ${row.width} mm wide there.`, blocking: [], id: null };
+        }
+      }
+    }
+    const walls = roomWalls(get().project.room);
+    for (const row of placed) {
+      if (row.cab.unitId) continue;
+      const wall = faceIndexOf(walls, id, row.face);
+      const r = get().addUnit(row.cab.type || 'BUD', { wall, x: row.x, params: { width: row.width } });
+      if (!r || r.error) { restore(); return { ok: false, message: r?.error || 'The cabinet could not be placed.', blocking: [], id: null }; }
+    }
+    return { ok: true, message: '', blocking: [], id };
+  }),
 
   addOpening: (opening) => set((s) => ({
     project: {

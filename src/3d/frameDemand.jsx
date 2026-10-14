@@ -39,7 +39,7 @@ const HIDDEN_BEAT_MS = 1500;
 const HOLD_SLOP_PX = 4;
 
 // Under the CNC view or an editor window with its own canvas.
-const hiddenIn = (s) => s.viewMode === 'cnc' || s.modal === 'cabinet' || s.modal === 'part-detail';
+const hiddenIn = (s) => s.viewMode === 'cnc' || s.modal === 'cabinet' || s.modal === 'part-detail' || Boolean(s.islandPlan);
 
 export default function FrameDemand({ onHeld = null }) {
   const gl = useThree((s) => s.gl);

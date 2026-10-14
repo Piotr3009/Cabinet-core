@@ -1,5 +1,5 @@
 import {
-  useCallback, useRef, useEffect, useMemo, useState,
+  memo, useCallback, useRef, useEffect, useMemo, useState,
 } from 'react';
 import * as THREE from 'three';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
@@ -1184,7 +1184,15 @@ function FirstPlus({
  *     is in UV units — the same number is twice the softness on half the
  *     canvas, which is precisely how turn 9's shadow dissolved.
  */
-function FloorShadow({ subject, profile }) {
+// Chat-fix 14.10.2026: memoised. drei's ContactShadows keeps its "drawn
+// once" counter in a plain `let` that resets on EVERY re-render of the
+// component, so each Scene render (every drag step) re-baked the floor
+// shadow: a full depth pass of the whole room plus four blur passes.
+// Measured on the owner's machine: 62 re-bakes in 85 frames of one drag.
+// With the props stable (subject is deduplicated by ShadowFit, profile is
+// the store's object) the shadow is baked once per real change of bounds.
+const FloorShadow = memo(FloorShadowView);
+function FloorShadowView({ subject, profile }) {
   const C = profile.appearance.contactShadow;
   const pad = mm(profile.appearance.studio.shadowPadding);
   const step = profile.editor.mmStep;
@@ -1724,7 +1732,9 @@ export default function Scene({
       // Chat-fix 12.10.2026: drawn on demand (3d/frameDemand.jsx), and one
       // pixel per CSS pixel while a drag or an orbit is in progress.
       frameloop="demand"
-      dpr={held ? 1 : [1, 2]}
+      // 14.10.2026: on a 1x screen the drag runs at two thirds of the pixels,
+      // which is what the owner's integrated GPU needs to keep 60 fps.
+      dpr={held ? Math.max(0.6, Math.min(window.devicePixelRatio || 1, 1.5) * 0.67) : [1, 2]}
       // preserveDrawingBuffer: the PDF export reads this canvas back.
       // Tone mapping is ACES and is set by <ToneMapping> below rather than here,
       // because it is now one setting shared with the render pass (turn 8, F1).

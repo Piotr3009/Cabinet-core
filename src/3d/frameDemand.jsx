@@ -30,6 +30,7 @@ import { useProjectStore } from '../stores/projectStore.js';
 import { useUiStore } from '../stores/uiStore.js';
 import { setGesture } from '../stores/historyBatch.js';
 import { startPerfMeter } from './perfMeter.js';
+import { applyHardwareLod } from './hardwareLod.js';
 
 const ACTIVE_MS = 2000;
 const HOVER_MS = 400;
@@ -144,10 +145,15 @@ export default function FrameDemand({ onHeld = null }) {
     }
   }, [paused, clock, invalidate]);
 
+  const camera = useThree((s) => s.camera);
+  const lodBeat = useRef(0);
   useFrame(() => {
     const t = performance.now();
     lastFrame.current = t;
     if (t < until.current) invalidate();
+    // Chat-fix 14.10.2026: every sixth frame, the hardware's lite/full swap.
+    lodBeat.current += 1;
+    if (lodBeat.current % 6 === 0) applyHardwareLod(scene, camera);
   });
 
   return null;

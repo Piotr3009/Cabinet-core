@@ -129,6 +129,17 @@ function surfaceTriangles(operation, toMesh, half) {
  * A front-face decoration, including its back-face bores and existing J edge.
  * Metadata is opt-in. Legacy fronts retain their existing solid builders.
  */
+// The relief surface is the heavy part of a record (up to 180,000 triangles);
+// in the key it is replaced by its counts and a sparse sample of its depths.
+function surfaceKey(surface) {
+  const v = surface?.vertices; const t = surface?.triangles;
+  if (!Array.isArray(v) || !Array.isArray(t)) return surface;
+  let sample = 0;
+  for (let i = 0; i < v.length; i += 97) sample += (v[i][2] || 0) * (i + 1);
+  return { n: v.length, t: t.length, s: Math.round(sample * 1000) };
+}
+const decorationKey = (decoration) => JSON.stringify(decoration, (k, val) => (k === 'surface' ? surfaceKey(val) : val));
+
 export function frontDecorationGeometry(panel, bores = []) {
   const decoration = panel?.meta?.frontDecoration;
   const box = panel?.box;
@@ -138,7 +149,11 @@ export function frontDecorationGeometry(panel, bores = []) {
   if (!(w > 0 && h > 0 && thickness > 0)) return null;
   const rounds = bores.filter((b) => b?.kind === 'round' && Number(b.r) > 0
     && (b.through || Number(b.depth) > 0));
-  const key = JSON.stringify([w, h, thickness, decoration, panel.cnc?.jpull, rounds]);
+  // Chat-fix 14.10.2026: serialising an Ornate record whole (up to 6.7 MB
+  // of relief) cost 20-35 ms on EVERY lookup, i.e. every re-render of the
+  // front. The key still reads the record's content, with the surface
+  // reduced to its counts and a sparse sample (`surfaceKey`).
+  const key = JSON.stringify([w, h, thickness, decorationKey(decoration), panel.cnc?.jpull, rounds]);
   const hit = cache.get(key);
   if (hit) {
     cache.delete(key);

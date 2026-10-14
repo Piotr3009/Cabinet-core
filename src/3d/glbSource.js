@@ -29,6 +29,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { prepareHardwareLod, tagHardwareLod } from './hardwareLod.js';
 
 /** One decoded model per file, however many pieces wear it. */
 const sources = new Map();
@@ -67,6 +68,8 @@ export function glbSource(url) {
         // so what is kept is the BOX, and the caller aligns that box to the
         // drilled point.
         const box = new THREE.Box3().setFromObject(scene);
+        // Chat-fix 14.10.2026: the lite geometries, once per file (3d/hardwareLod.js).
+        prepareHardwareLod(scene);
         entry.scene = scene;
         entry.size = box.getSize(new THREE.Vector3());
         entry.centre = box.getCenter(new THREE.Vector3());
@@ -160,6 +163,7 @@ export function glbClone(url, { origin = null, datum = null, mirror = false } = 
   const entry = glbSource(url);
   if (!entry?.loaded || !entry.scene || entry.failed) return null;
   const clone = entry.scene.clone(true);
+  tagHardwareLod(clone);
   if (datum) {
     clone.position.set(-(datum.x || 0), -(datum.y || 0), -(datum.z || 0));
   } else {

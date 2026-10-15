@@ -51,6 +51,12 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   notchCarcass, notchDrills, notchSummary, notchVerdict, withNotchRefusal,
 } from './notch.js';
+// Chat-fix 15.10.2026 (the evening) · the recess extension, KIT_RECESS.lsp's
+// mirror: the notch's reverse (the carcass grows backward over a band), asked
+// of the parent's own cut, a pass before the drilling and a pass after it.
+import {
+  extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
+} from './extension.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
 // of the parent's own puzzle cut, the puzzle stripped before the drilling and
 // the pairs added after it. Never reached while the system is the puzzle.
@@ -1723,6 +1729,16 @@ export function computeCabinet(params, profileOverride) {
     const parent = computeCabinet({ ...params, notch: null }, profileOverride);
     const verdict = notchVerdict({ parent, params, type: cfg.type, profile: P });
     if (verdict) return withNotchRefusal(parent, verdict, params, P);
+  }
+  // ─── 15.10.2026 · THE RECESS EXTENSION IS ASKED OF THE PARENT FIRST ──────
+  // KIT_RECESS.lsp: the room derives the band (projectStore recessExtensionFor),
+  // the unit is cut WITHOUT it and the band is judged against that cut
+  // (recess-refusal, D4, D13, D14). Refused, the parent is what is cut and the
+  // sentence travels with it. No `params.extension`, no line here runs.
+  if (params?.extension) {
+    const parent = computeCabinet({ ...params, extension: null }, profileOverride);
+    const verdict = extensionVerdict({ parent, params, type: cfg.type, profile: P });
+    if (verdict) return withExtensionRefusal(parent, verdict, params);
   }
   const warnings = [...cfg.warnings];
 
@@ -8586,6 +8602,14 @@ export function computeCabinet(params, profileOverride) {
       params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
     })
     : null;
+  // 15.10.2026 · the recess extension, in the notch's own place (KIT_RECESS.lsp
+  // section 1: after the parent's carcass, before the drilling). Null on every
+  // unit with no extension.
+  const extensionCut = params?.extension && !notchCut
+    ? extensionCarcass({
+      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
+    })
+    : null;
 
   // ── Drills ─────────────────────────────────────────────────────────────────
   const drills = [];
@@ -11505,6 +11529,14 @@ export function computeCabinet(params, profileOverride) {
       cut: notchCut, panels, drills, legs,
     });
     derived.notch = notchSummary(notchCut);
+  }
+  // 15.10.2026 · BUR re-origined from its new back edge, the grown sides' back
+  // pin column stepped back over the band (KIT_RECESS.lsp D12).
+  if (extensionCut) {
+    extensionDrills({
+      cut: extensionCut, panels, drills, profile: P,
+    });
+    derived.extension = extensionSummary(extensionCut);
   }
   // T75 F23 · what the dowel unit is, and THE GATE while it is shut.
   if (dowelPlan) {

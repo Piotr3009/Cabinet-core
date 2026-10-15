@@ -208,14 +208,20 @@ test('F7 · NUMBERS: the STEP and the RETURN, outlines, places, the joiner\'s sc
   const ret = panelOf(cut, 'RETURN');
   const step = panelOf(cut, 'STEP');
   assert.equal(panelOf(cut, 'LID'), undefined, 'full height: no LID');
-  assert.deepEqual([ret.w, ret.h, ret.part, ret.role], [200, 770, 'NOTCH-RETURN', 'notch_box']);
-  assert.deepEqual([step.w, step.h, step.part], [200, 770, 'NOTCH-STEP']);
-  // RETURN carcass x 200..218, plan y 340..540 (z 18..218); STEP x 0..200, y 340..358 (z 200..218)
-  assert.deepEqual(ret.box, { x: 200, y: 0, z: 18, w: 18, h: 770, d: 200 });
-  assert.deepEqual(step.box, { x: 0, y: 0, z: 200, w: 200, h: 770, d: 18 });
+  // 15.10.2026 (the owner, the mockup "naroznik, krawedz"): the STEP covers the RETURN's end, as the
+  // back covers a side's end: the STEP a board wider (218), the RETURN a board shorter (182), so the
+  // open cabinet shows one whole face and the only end grain is the STEP's, seen from the side.
+  assert.deepEqual([ret.w, ret.h, ret.part, ret.role], [182, 770, 'NOTCH-RETURN', 'notch_box']);
+  assert.deepEqual([step.w, step.h, step.part], [218, 770, 'NOTCH-STEP']);
+  // RETURN carcass x 200..218, plan y 358..540 (z 18..200); STEP x 0..218, y 340..358 (z 200..218)
+  assert.deepEqual(ret.box, { x: 200, y: 0, z: 18, w: 18, h: 770, d: 182 });
+  assert.deepEqual(step.box, { x: 0, y: 0, z: 200, w: 218, h: 770, d: 18 });
   assert.deepEqual(N.notchBoxPlaces(600, 558, 770, 18, 200, 200, 0, 'BL'), {
-    RETURN: [200, 340, 0, 218, 540, 770], STEP: [0, 340, 0, 200, 358, 770],
+    RETURN: [200, 358, 0, 218, 540, 770], STEP: [0, 340, 0, 218, 358, 770],
   });
+  // A front corner has no STEP: its RETURN keeps the whole nd.
+  assert.deepEqual(N.notchBoxPlaces(600, 558, 770, 18, 200, 200, 0, 'FL'), { RETURN: [200, 0, 0, 218, 200, 770] });
+  assert.deepEqual(N.notchReturn(770, 18, 200, 200, 0, 'FL'), [200, 770]);
   // No puzzle joint, no machined hole: an outline, and the joiner's fixing.
   for (const p of [ret, step]) {
     assert.equal(p.cnc.outline.length, 4);
@@ -226,10 +232,12 @@ test('F7 · NUMBERS: the STEP and the RETURN, outlines, places, the joiner\'s sc
     assert.equal(p.meta.fixing, 'manual');
   }
   // THE BOX'S FIXING (the back screw row, stated, not drilled)
-  assert.deepEqual(step.meta.notch.screws, [[9, 50], [9, 385], [9, 720], [68, 9], [68, 761], [109, 9], [109, 761], [150, 9], [150, 761]]);
-  assert.deepEqual(ret.meta.notch.screws, [[50, 9], [50, 761], [100, 9], [100, 761], [150, 9], [150, 761], [9, 50], [9, 385], [9, 720]]);
-  assert.ok(cut.csvLines.includes('01,RETURN,200,770,,0,0.154'), 'the cut list shows the RETURN board');
-  assert.ok(cut.csvLines.includes('01,STEP,200,770,,0,0.154'));
+  // The STEP: a column into BUL's end (x 9) and one into the RETURN's end (x 209), the row into TOP and BOTTOM.
+  assert.deepEqual(step.meta.notch.screws, [[9, 50], [209, 50], [9, 385], [209, 385], [9, 720], [209, 720], [68, 9], [68, 761], [109, 9], [109, 761], [150, 9], [150, 761]]);
+  // The RETURN: its row into TOP and BOTTOM over its own 182; no column of its own into the STEP.
+  assert.deepEqual(ret.meta.notch.screws, [[50, 9], [50, 761], [91, 9], [91, 761], [132, 9], [132, 761]]);
+  assert.ok(cut.csvLines.includes('01,RETURN,182,770,,0,0.140'), 'the cut list shows the RETURN board');
+  assert.ok(cut.csvLines.includes('01,STEP,218,770,,0,0.168'));
   // The BOM row is the carcass board's (an unmapped part is a silent drop).
   assert.equal(ELEMENT_TO_PART_ID['NOTCH-RETURN'], 'carcase_side');
   assert.equal(ELEMENT_TO_PART_ID['NOTCH-STEP'], 'back');
@@ -452,7 +460,7 @@ test('F7 · the T71 drawings: the part detail draws the L, the cut list lists th
   const json = JSON.stringify(detail);
   assert.ok(json.includes('[200,200]') || json.includes('200,200'), 'the L\'s re-entrant corner is not on the drawing');
   const rows = cutRows(cut);
-  assert.deepEqual(rows.carcass.filter((r) => /NOTCH-/.test(r.part)).map((r) => [r.id, r.w, r.h]), [['RETURN', 200, 770], ['STEP', 200, 770]]);
+  assert.deepEqual(rows.carcass.filter((r) => /NOTCH-/.test(r.part)).map((r) => [r.id, r.w, r.h]), [['RETURN', 182, 770], ['STEP', 218, 770]]);
   assert.ok(buildUnitCard(cut, { unitNum: '01', frontType: 'S', profile: P }), 'the unit card did not build');
 });
 

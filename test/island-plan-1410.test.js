@@ -29,9 +29,10 @@ import { DEFAULT_CABINET_PROFILE as P } from '../src/engine/profile.js';
 import { rectCorners, roomIslands } from '../src/engine/room.js';
 import { wallGapOf } from '../src/engine/runs.js';
 import { defaultParamsFor } from '../src/engine/types.js';
+import { readFileSync } from 'node:fs';
 import {
   islandPlanDraft, planCabinets, planClearances, planFaceFree, planCabinet, clearanceLevel,
-  planBands, planCore, planCoreRefusal, CORE_MIN_MM,
+  planBands, planCore, planCoreRefusal, CORE_MIN_MM, turnCabinet, NEXT_FACE_CLOCKWISE,
 } from '../src/engine/islandPlan.js';
 
 const S = () => useProjectStore.getState();
@@ -216,4 +217,47 @@ test('the plan window pauses the room and the hidden flag is per island, session
   assert.deepEqual(UI().hiddenIslands, { island_x: true });
   UI().toggleIslandHidden('island_x');
   assert.deepEqual(UI().hiddenIslands, {});
+});
+
+// ─── 15.10.2026 (evening), the owner: the plan's numbers, the depth, the front, the turn ──
+//
+// *"liczby przy ustawianiu island nie moge wykasowac istniejacych i nie moge
+// zmienic; edycja szafki daj szerokosc na planie ale tez glebokosc; zeby bylo
+// wiadomo gdzie jest front, inny kolor krawedzi; daj mozliwosc przekrecania
+// szafkami."*
+
+test('a plan cabinet turns onto the next face clockwise, and the rows say which way the front is', () => {
+  kitchen();
+  assert.deepEqual(NEXT_FACE_CLOCKWISE, { A: 'E2', E2: 'B', B: 'E1', E1: 'A' });
+  let cab = planCabinet('A', 'BUD', 600);
+  const seen = [cab.face];
+  for (let i = 0; i < 4; i += 1) { cab = turnCabinet(cab); seen.push(cab.face); }
+  assert.deepEqual(seen, ['A', 'E2', 'B', 'E1', 'A'], 'four turns bring it round');
+  assert.equal(turnCabinet(cab).key, cab.key, 'the same cabinet, turned');
+  // The depth a plan cabinet carries is its own; the rows say the face's frame so the view can draw the front.
+  const draft = { ...islandPlanDraft({ room: S().project.room, units: [], profile: P }), d: 1200, cabs: [{ ...planCabinet('A', 'BUD', 600), depth: 400 }] };
+  const [row] = planCabinets(draft, P);
+  assert.equal(row.depth, 400, 'its own depth, not the type\'s');
+  assert.deepEqual([row.inward.x + 0, row.inward.y], [0, -1], 'face A\'s frame looks away from the core (-y): the cabinet stands that way, its front farthest out');
+  // The front edge is poly[2]-poly[3]: the two corners farthest from the core, at the island\'s top edge y = 900.
+  assert.ok(Math.abs(row.poly[2].y - 900) < 1e-6 && Math.abs(row.poly[3].y - 900) < 1e-6, JSON.stringify(row.poly));
+  assert.deepEqual(planBands(draft, P), { A: 410, E1: 0, B: 0, E2: 0 }, 'the band follows the cabinet\'s own depth');
+});
+
+test('the plan window: fields the hand can clear, a depth per cabinet, the front edge in gold, the turn button', () => {
+  const view = readFileSync(new URL('../src/3d/IslandPlan.jsx', import.meta.url), 'utf8');
+  assert.match(view, /function MmField\(\{ value, min = 50, onCommit, attrs = \{\}/);
+  assert.match(view, /onBlur=\{commit\}/);
+  assert.match(view, /if \(e\.key === 'Enter'\) \{ e\.preventDefault\(\); e\.currentTarget\.blur\(\); \}/);
+  assert.match(view, /if \(e\.key === 'Escape'\) \{ setDraft\(String\(value \?\? ''\)\); setEditing\(false\);/);
+  assert.match(view, /attrs=\{\{ 'data-plan-w': '1' \}\}/);
+  assert.match(view, /attrs=\{\{ 'data-plan-cab-w': c\.key \}\}/);
+  assert.match(view, /attrs=\{\{ 'data-plan-cab-d': c\.key \}\}/, 'a depth field per cabinet');
+  assert.match(view, /onCommit=\{\(n\) => changeCab\(c\.key, \{ depth: n \}\)\}/);
+  assert.match(view, /data-plan-cab-turn=\{c\.key\}/, 'the turn button');
+  assert.match(view, /const turnCab = \(key\) => setPlan\(\{ cabs: plan\.cabs\.map\(\(c\) => \(c\.key === key \? turnCabinet\(c\) : c\)\) \}\);/);
+  assert.match(view, /data-plan-cab-front=\{row\.cab\.key\}/, 'the front edge drawn apart');
+  // A `path`, not a `line`: a `line` in src/3d could be a scene object and R7 (test/turn23) forbids data-* on one.
+  assert.match(view, /d=\{`M\$\{X\(row\.poly\[2\]\.x\)\} \$\{Y\(row\.poly\[2\]\.y\)\} L\$\{X\(row\.poly\[3\]\.x\)\} \$\{Y\(row\.poly\[3\]\.y\)\}`\}/);
+  assert.match(view, /stroke="#E0B35A" strokeWidth="4"/);
 });

@@ -92,6 +92,12 @@ export const NEW_FILES = [
   'scripts/t78-classify.d/f26-owner-1510b.mjs',
   'scripts/chatfix-1510-dzien-walk.mjs',
   'test/turn77-f5-no-copyright-line.test.js',
+  // The evening of 15.10.2026 (the island plan's hand, the STEP over the RETURN, the recess extension)
+  'scripts/t78-classify.d/f27-owner-1510c.mjs',
+  'src/engine/extension.js',
+  'test/recess-extension-1510.test.js',
+  'scripts/t78-classify.d/f28-owner-1510d.mjs',
+  'scripts/chatfix-1510-wieczor-walk.mjs',
 ];
 
 test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {

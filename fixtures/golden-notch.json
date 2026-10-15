@@ -6,7 +6,8 @@
     "source": "KIT_NOTCH.lsp (the notch, its NUMBERS block) on KIT_BUD_FULL.lsp (the parent)",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t75-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "15.10.2026 (evening): the owner, the mockup \"naroznik, krawedz\": the STEP covers the RETURN's end (STEP 218 x 770, RETURN 182 x 770; the screws follow); the notch in TOP, BOTTOM and the shelf, the dog bone and every drilling unchanged"
   },
   "params": {
     "type": "BUD",
@@ -39,8 +40,8 @@
       "01,BACK,400,770,,0,0.308",
       "01,SHELF-1,560,520,>,0.56,0.251",
       "01,01-F,597,767,<>^v,2.73,0.458",
-      "01,RETURN,200,770,,0,0.154",
-      "01,STEP,200,770,,0,0.154"
+      "01,RETURN,182,770,,0,0.140",
+      "01,STEP,218,770,,0,0.168"
     ],
     "panels": [
       {
@@ -187,7 +188,7 @@
         "id": "RETURN",
         "part": "NOTCH-RETURN",
         "role": "notch_box",
-        "w": 200,
+        "w": 182,
         "h": 770,
         "thickness": 18,
         "box": {
@@ -196,7 +197,7 @@
           "z": 18,
           "w": 18,
           "h": 770,
-          "d": 200
+          "d": 182
         },
         "outline": 4,
         "holes": 0,
@@ -207,14 +208,14 @@
         "id": "STEP",
         "part": "NOTCH-STEP",
         "role": "notch_box",
-        "w": 200,
+        "w": 218,
         "h": 770,
         "thickness": 18,
         "box": {
           "x": 0,
           "y": 0,
           "z": 200,
-          "w": 200,
+          "w": 218,
           "h": 770,
           "d": 18
         },

@@ -74,6 +74,11 @@ import {
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
 // byte-for-byte tonight; see `setWallSlopes` below for the whole reasoning.
 import { migrateWallElement, oneSlopePerSide, wallElements } from '../lib/wallElements.js';
+// 15.10.2026 (the evening) · a recess's band (the floor and the ceiling unless
+// typed) and the extension's own refusal, asked of a derived band before the
+// engine ever sees it (KIT_RECESS.lsp D3, D4).
+import { recessBand } from '../lib/wallElements.js';
+import { recessRefusal } from '../engine/extension.js';
 // ─── TURN 46 (CLAUDE.md, "The slope, in numbers"): ONE ceilingAt ────────────
 // The store is where a cabinet meets a room, so it is where the ceiling line
 // becomes a number the engine and the clamp can use. Both come out of the same
@@ -922,6 +927,88 @@ function obstacleNotchFor(unit, state = useProjectStore.getState(), profile = ge
   return { corner: ask.side === 'L' ? 'BL' : 'BR', w: roundTo(nw, 4), d: roundTo(ask.nd, 4), h: 0, auto: true, for: span.label || 'an obstacle' };
 }
 
+// ─── CHAT-FIX 15.10.2026 (the evening): THE RECESS, READ LIKE THE CHIMNEY ───
+//
+// The owner: *"czy reces nie moze dzialac jak komin, czyli front zawsze trzyma
+// sie linii a jak wpada do reces to wtedy sie wydluza szafka?"* and his
+// answers: 2 tak, 3 glebszy karkas, 4 dowolny pas, 5 polki glebsze. The law is
+// KIT_RECESS.lsp (section 1, D1 to D14); its two halves here:
+//
+//   WHOLLY INSIDE  the cabinet's span (end panels included) within the recess's
+//                  span AND its carcass within the recess's band: a DEEPER
+//                  carcass (`depth` = `depth_full` + the recess depth) standing
+//                  against the recess's back wall (`recess_mm`, runs.js
+//                  wallGapOf), its front where it was. Written at the choke
+//                  point (settleRecesses), taken back when it leaves.
+//   PARTLY INSIDE  the carcass stays on the wall line and grows an EXTENSION
+//                  behind its back over the band it stands in: `params.extension`
+//                  { x0, x1, z0, z1, d } in the carcass frame, DERIVED here at
+//                  compute time and stored never, as the obstacle notch is. A
+//                  band the LISP refuses (under the minimum interior, a return
+//                  inside a side) is no extension: the cabinet stands as it is.
+//                  The kit's own refusals (a drawer unit, a hand notch, a hanger
+//                  in the window) are the engine's, in words.
+
+/** The recesses a cabinet standing back to its wall reads: none on an island, none rotated. */
+function recessesFor(unit, state = useProjectStore.getState()) {
+  if (!unit || unit.position?.wall == null || unit.position?.island) return [];
+  if ((Number(unit.position?.rotation_deg) || 0) % 360) return [];
+  return wallElements(state.project.wallSlopes).filter((e) => e.kind === 'recess' && (e.wall ?? 0) === unit.position.wall);
+}
+
+/** The recess this cabinet stands WHOLLY in (span, end panels included, and height), or null (KIT_RECESS.lsp D2). */
+function wholeRecessOf(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
+  const mine = recessesFor(unit, state);
+  if (!mine.length || !roomWalls(state.project.room)[unit.position.wall]) return null;
+  const pad = footprintPads(unit, unit.params.front_t, profile);
+  const x0 = (Number(unit.position.x_mm) || 0) - pad.left;
+  const x1 = (Number(unit.position.x_mm) || 0) + (Number(unit.params.width) || 0) + pad.right;
+  const base = unitBase(unit, profile);
+  const top = base + (Number(unit.params.height) || 0);
+  const roomH = Number(state.project.room?.height) || 2500;
+  return mine.find((e) => {
+    const [b, t] = recessBand(e, roomH);
+    return x0 >= Number(e.x_mm) - 1e-6 && x1 <= Number(e.x_mm) + Number(e.width) + 1e-6
+      && base >= b - 1e-6 && top <= t + 1e-6;
+  }) || null;
+}
+
+/** The extension the room asks of this unit where it stands (KIT_RECESS.lsp section 1), or null. */
+function recessExtensionFor(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
+  if (!unit || Number(unit.params?.recess_mm) > 0) return null;
+  const mine = recessesFor(unit, state);
+  if (!mine.length || !roomWalls(state.project.room)[unit.position.wall]) return null;
+  const K = notchProfile(profile);
+  const clr = notchP(K, 'notch.obstacleClearance');
+  const W = Number(unit.params.width) || 0;
+  const H = Number(unit.params.height) || 0;
+  const D = Number(unit.params.depth) || 0;
+  const G = Number(unit.params.board_t) || profile.board.thickness;
+  const cx = Number(unit.position.x_mm) || 0;
+  const base = unitBase(unit, profile);
+  const roomH = Number(state.project.room?.height) || 2500;
+  let best = null;
+  for (const e of mine) {
+    const rx0 = Number(e.x_mm) - cx;
+    const rx1 = rx0 + Number(e.width);
+    const [b, t] = recessBand(e, roomH);
+    const rz0 = e.bottom_mm == null ? -Infinity : b - base;
+    const rz1 = e.top_mm == null ? Infinity : t - base;
+    if (!(rx1 > 1e-6 && rx0 < W - 1e-6 && rz1 > 1e-6 && rz0 < H - 1e-6)) continue;
+    const x0 = rx0 <= 0 ? 0 : Math.max(G, rx0 + clr);
+    const x1 = rx1 >= W ? W : Math.min(W - G, rx1 - clr);
+    const z0 = rz0 <= 0 ? 0 : Math.max(G, rz0 + clr);
+    const z1 = rz1 >= H ? H : Math.min(H - G, rz1 - clr);
+    const d = Number(e.depth) || 0;
+    if (recessRefusal(W, D, H, G, x0, x1, z0, z1, d, false, K)) continue;
+    const area = (x1 - x0) * (z1 - z0);
+    if (!best || area > best.area) {
+      best = { area, ext: { x0: roundTo(x0, 4), x1: roundTo(x1, 4), z0: roundTo(z0, 4), z1: roundTo(z1, 4), d: roundTo(d, 4), for: 'a recess in this wall' } };
+    }
+  }
+  return best ? best.ext : null;
+}
+
 function paramsForEngine(unit, design = null) {
   // ─── T55 ("tnij"): THE FOSSIL HAS NO ROAD ────────────────────────────────
   // run_* are destructured OUT of the saved params before anything spreads,
@@ -941,12 +1028,16 @@ function paramsForEngine(unit, design = null) {
   const profile = getCabinetProfile();
   const slopeCut = slopeCutFor(unit, design);
   const obstacleNotch = p.notch ? null : obstacleNotchFor(unit);
+  // 15.10.2026 (the evening): the extension the room asks for (a recess the
+  // cabinet stands partly in), derived here and never stored.
+  const recessExtension = recessExtensionFor(unit);
   const elements = useProjectStore.getState().runElements?.[unit.id] || null;
   return {
     ...p,
     // 15.10.2026: the notch the room asks for (a chimney, a box), derived here
     // and never stored, on the same channel the hand's notch travels on.
     ...(obstacleNotch ? { notch: obstacleNotch } : {}),
+    ...(recessExtension ? { extension: recessExtension } : {}),
     ...(elements ? {
       run_top_infill: elements.top_infill,
       run_plinth: elements.plinth,
@@ -3090,50 +3181,42 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
   },
 
   /**
-   * ─── CHAT-FIX 15.10.2026: THE RECESS TAKES THE CABINET IN ─────────────────
+   * ─── CHAT-FIX 15.10.2026: THE RECESS MAKES THE CABINET DEEPER ─────────────
    *
-   * The owner: *"wneka zrobiona nie pozwala szafkom jakby wpasc w wneke."*  A
-   * recess is drawn as room behind the wall line (T45 F1b, Room.jsx cuts the
-   * wall open), but every cabinet stood on the wall line in front of it. Now a
-   * cabinet whose carcass span, end panels included, lies INSIDE one recess's
-   * span on its own wall carries `params.recess_mm` = that recess's depth, and
-   * `runs.js wallGapOf` takes it off the gap: the cabinet stands against the
-   * recess's own back wall, with the same gap off it the wall gets. A cabinet
-   * that stands half across the recess's edge stays on the wall line in front
-   * of it (it cannot go in), and a cabinet that leaves a recess loses the
-   * number. Derived at this one choke point, as the slope's settlers are, and
-   * written only when it changes, so a settled scene passes through untouched.
+   * The owner, the evening: *"front zawsze trzyma sie linii a jak wpada do
+   * reces to wtedy sie wydluza szafka"* and *"glebszy karkas tak jak
+   * proponujesz"*. (The night before, the recess took the cabinet IN and its
+   * front made a step in the run; that law is gone.) A cabinet whose span, end
+   * panels included, lies INSIDE one recess's span on its own wall AND whose
+   * carcass lies inside the recess's band (KIT_RECESS.lsp D2, D3) carries
+   * `params.recess_mm` = that recess's depth, its depth becomes its nominal
+   * depth (kept in `depth_full`) plus that, and `runs.js wallGapOf` takes the
+   * recess off the gap: the carcass stands against the recess's own back wall
+   * and its FRONT is exactly where it was. A cabinet partly in a recess keeps
+   * its depth and the wall line and grows an extension instead (paramsForEngine
+   * recessExtensionFor). Out of the recess the numbers are taken back. Derived
+   * at this one choke point, as the slope's settlers are, written only on
+   * change, so a settled scene passes through untouched.
    */
   settleRecesses: () => {
     const s = get();
-    const walls = roomWalls(s.project.room);
-    const recesses = wallElements(s.project.wallSlopes).filter((e) => e.kind === 'recess');
     const profile = getCabinetProfile();
     let changed = false;
     const next = s.units.map((u) => {
       const has = Number(u.params?.recess_mm) > 0;
-      if (u.position?.wall == null || u.position?.island || (Number(u.position?.rotation_deg) || 0) % 360) {
-        if (!has) return u;
+      const whole = wholeRecessOf(u, s, profile);
+      const depth = whole ? Math.max(0, Number(whole.depth) || 0) : 0;
+      if (depth > 0) {
+        const full = Number(u.params.depth_full ?? u.params.depth) || 0;
+        const want = roundTo(full + depth, 4);
+        if (Number(u.params.recess_mm) === depth && Number(u.params.depth) === want && Number(u.params.depth_full) === full) return u;
         changed = true;
-        const { recess_mm: _gone, ...rest } = u.params;
-        return { ...u, params: rest };
+        return { ...u, params: { ...u.params, recess_mm: depth, depth: want, depth_full: full } };
       }
-      const wall = walls[u.position.wall];
-      const mine = recesses.filter((e) => (e.wall ?? 0) === u.position.wall);
-      let depth = 0;
-      if (wall && mine.length) {
-        const pad = footprintPads(u, u.params.front_t, profile);
-        const x0 = (Number(u.position.x_mm) || 0) - pad.left;
-        const x1 = (Number(u.position.x_mm) || 0) + (Number(u.params.width) || 0) + pad.right;
-        const inside = mine.find((e) => x0 >= Number(e.x_mm) - 1e-6 && x1 <= Number(e.x_mm) + Number(e.width) + 1e-6);
-        if (inside) depth = Math.max(0, Number(inside.depth) || 0);
-      }
-      if (depth > 0 && Number(u.params.recess_mm) === depth) return u;
-      if (depth === 0 && !has) return u;
+      if (!has) return u;
       changed = true;
-      if (depth > 0) return { ...u, params: { ...u.params, recess_mm: depth } };
-      const { recess_mm: _gone, ...rest } = u.params;
-      return { ...u, params: rest };
+      const { recess_mm: _gone, depth_full: full, ...rest } = u.params;
+      return { ...u, params: full != null ? { ...rest, depth: Number(full) } : rest };
     });
     if (changed) set({ units: next });
   },
@@ -3158,6 +3241,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const profile = getCabinetProfile();
     let changed = false;
     const next = s.units.map((u) => {
+      // A cabinet standing in a recess (settleRecesses, its own depth_full) is never at an obstacle too.
+      if (Number(u.params?.recess_mm) > 0) return u;
       const hasStandoff = Number(u.params?.standoff_mm) > 0;
       const hasFull = u.params?.depth_full != null;
       const restore = () => {

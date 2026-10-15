@@ -150,6 +150,9 @@ export function planCabinets(draft, profile) {
     return {
       cab, face: face.face, x, width, depth,
       poly: unitFootprint({ wall: face, x, width, depth, backInset: gap }),
+      // 15.10.2026 (evening): the face's frame, so the view can draw the FRONT
+      // edge (the two corners farthest from the core, `poly[2]` and `poly[3]`).
+      inward: face.inward, along: face.along,
       overhang: Math.max(0, used[face.face] - face.width),
     };
   });
@@ -313,4 +316,15 @@ export function islandPlanDraft({ room, units = [], profile, islandId = null }) 
 /** A new plan cabinet, keyed so the view can tell them apart. */
 export function planCabinet(face, type = 'BUD', w = 600) {
   return { key: `plan_${Math.random().toString(36).slice(2, 9)}`, unitId: null, face, w, depth: null, type, label: null };
+}
+
+/**
+ * 15.10.2026 (evening), the owner: *"daj mozliwosc przekrecania szafkami"*.
+ * The island has four faces, so turning a cabinet is moving it to the NEXT
+ * face clockwise (seen from above: A, E2, B, E1); it joins that face's row
+ * at the end of the cabinets listed before it.
+ */
+export const NEXT_FACE_CLOCKWISE = Object.freeze({ A: 'E2', E2: 'B', B: 'E1', E1: 'A' });
+export function turnCabinet(cab) {
+  return { ...cab, face: NEXT_FACE_CLOCKWISE[cab?.face] || 'A' };
 }

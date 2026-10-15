@@ -193,6 +193,11 @@ const CLASSES = [
     draw: true,
     reason: 'the wall bracket’s cut-out in the back panel — the bracket passes through it.',
   },
+  {
+    layer: 'RECESS_WINDOW',
+    draw: true,
+    reason: 'the window through the BACK into a recess extension (KIT_RECESS.lsp D9); its record states the board’s own depth, so it is cut right through and the scene looks into the extension.',
+  },
   // T54-F7: the shoe box's two classes (SHOE_GROOVE_6MM, SHOE_RUNNER_5MM)
   // died with their world — the shoe is a standard drawer and its machining
   // is the drawer's own (licence 2; the grave is named in the verdict).

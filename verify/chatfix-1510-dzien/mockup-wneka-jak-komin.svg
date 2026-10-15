@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1120" font-family="Segoe UI, Arial, sans-serif" font-size="15">
+  <defs>
+    <pattern id="wall" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#b8b8b2" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="1240" height="1120" fill="#ffffff"/>
+  <text x="620" y="34" text-anchor="middle" font-size="22" font-weight="600">Wnęka jak komin odwrotnie: front trzyma linię, szafka rośnie w głąb</text>
+  <text x="620" y="58" text-anchor="middle" fill="#555">Plan (z góry): wnęka 600 szeroka, 150 głęboka. Trzy szafki po 600. Czerwona przerywana = linia frontów.</text>
+
+  <!-- ============ PANEL 1: TERAZ ============ -->
+  <g transform="translate(60,140)">
+    <text x="225" y="-56" text-anchor="middle" font-size="17" font-weight="600">TERAZ (noc 15.10): szafka cofa się do wnęki, front robi schodek</text>
+    <!-- wall band y -40..0 with recess pocket at x 150..300 depth 37 -->
+    <path d="M-20,-40 L470,-40 L470,0 L300,0 L300,-37 L150,-37 L150,0 L-20,0 Z" fill="url(#wall)" stroke="#888"/>
+    <text x="225" y="-18" text-anchor="middle" font-size="11" fill="#444">wnęka 600 x 150</text>
+    <!-- cab1: x 0..150, z 2.5..142 (gap 10 = 2.5) -->
+    <rect x="0" y="2.5" width="150" height="139.5" fill="#efe9dc" stroke="#555"/>
+    <rect x="0" y="142" width="150" height="6" fill="#c9a96e" stroke="#7a5c2e"/>
+    <!-- cab2 moved back into the recess: z -34.5..105 -->
+    <rect x="150" y="-34.5" width="150" height="139.5" fill="#efe9dc" stroke="#555"/>
+    <rect x="150" y="105" width="150" height="6" fill="#c9a96e" stroke="#7a5c2e"/>
+    <!-- cab3 -->
+    <rect x="300" y="2.5" width="150" height="139.5" fill="#efe9dc" stroke="#555"/>
+    <rect x="300" y="142" width="150" height="6" fill="#c9a96e" stroke="#7a5c2e"/>
+    <!-- front line -->
+    <line x1="-20" y1="148" x2="470" y2="148" stroke="#c0392b" stroke-dasharray="6 4" stroke-width="1.5"/>
+    <text x="225" y="128" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="600">front cofnięty o 150: schodek w linii frontów i w blacie</text>
+    <text x="75" y="80" text-anchor="middle" font-size="12" fill="#555">558</text>
+    <text x="225" y="40" text-anchor="middle" font-size="12" fill="#555">558</text>
+    <text x="375" y="80" text-anchor="middle" font-size="12" fill="#555">558</text>
+  </g>
+
+  <!-- ============ PANEL 2: PROPOZYCJA ============ -->
+  <g transform="translate(680,140)">
+    <text x="225" y="-56" text-anchor="middle" font-size="17" font-weight="600">PROPOZYCJA: front na linii, karkas o 150 głębszy</text>
+    <path d="M-20,-40 L470,-40 L470,0 L300,0 L300,-37 L150,-37 L150,0 L-20,0 Z" fill="url(#wall)" stroke="#888"/>
+    <text x="225" y="-18" text-anchor="middle" font-size="11" fill="#444">wnęka 600 x 150</text>
+    <rect x="0" y="2.5" width="150" height="139.5" fill="#efe9dc" stroke="#555"/>
+    <rect x="0" y="142" width="150" height="6" fill="#c9a96e" stroke="#7a5c2e"/>
+    <!-- cab2 deeper: z -34.5..142 (depth 708) -->
+    <rect x="150" y="-34.5" width="150" height="176.5" fill="#efe9dc" stroke="#555"/>
+    <rect x="150" y="-34.5" width="150" height="37" fill="#dcebf7" stroke="#2c5f8a" stroke-dasharray="3 2"/>
+    <rect x="150" y="142" width="150" height="6" fill="#c9a96e" stroke="#7a5c2e"/>
+    <rect x="300" y="2.5" width="150" height="139.5" fill="#efe9dc" stroke="#555"/>
+    <rect x="300" y="142" width="150" height="6" fill="#c9a96e" stroke="#7a5c2e"/>
+    <line x1="-20" y1="148" x2="470" y2="148" stroke="#c0392b" stroke-dasharray="6 4" stroke-width="1.5"/>
+    <text x="225" y="166" text-anchor="middle" font-size="12" fill="#2e7d32" font-weight="600">jedna linia frontów, jeden blat</text>
+    <text x="225" y="-10" text-anchor="middle" font-size="11" fill="#2c5f8a">+150 w głąb</text>
+    <text x="225" y="60" text-anchor="middle" font-size="12" fill="#555">708 (558 + 150)</text>
+    <text x="75" y="80" text-anchor="middle" font-size="12" fill="#555">558</text>
+    <text x="375" y="80" text-anchor="middle" font-size="12" fill="#555">558</text>
+  </g>
+
+  <!-- ============ PANEL 3: half in the recess ============ -->
+  <g transform="translate(60,470)">
+    <text x="225" y="-56" text-anchor="middle" font-size="17" font-weight="600">Szafka w połowie we wnęce: przedłużenie (lustro wycięcia)</text>
+    <path d="M-20,-40 L470,-40 L470,0 L300,0 L300,-37 L150,-37 L150,0 L-20,0 Z" fill="url(#wall)" stroke="#888"/>
+    <text x="225" y="-18" text-anchor="middle" font-size="11" fill="#444">wnęka 600 x 150</text>
+    <!-- cabinet x 900..1500 -> 225..375, standard part z 2.5..142; extension over x 225..300 into the recess z -34.5..2.5 -->
+    <path d="M225,-34.5 L300,-34.5 L300,2.5 L375,2.5 L375,142 L225,142 Z" fill="#efe9dc" stroke="#555"/>
+    <!-- extension boards: EXT BACK (blue) at the recess back, RETURN (blue) at x=1200 -->
+    <rect x="225" y="-34.5" width="75" height="4.5" fill="#9fc3e6" stroke="#2c5f8a"/>
+    <rect x="295.5" y="-34.5" width="4.5" height="37" fill="#9fc3e6" stroke="#2c5f8a"/>
+    <!-- the standard back of the part outside the recess -->
+    <rect x="300" y="2.5" width="75" height="4.5" fill="#e9e2d0" stroke="#555"/>
+    <rect x="225" y="142" width="150" height="6" fill="#c9a96e" stroke="#7a5c2e"/>
+    <line x1="-20" y1="148" x2="470" y2="148" stroke="#c0392b" stroke-dasharray="6 4" stroke-width="1.5"/>
+    <text x="262" y="24" text-anchor="middle" font-size="11" fill="#2c5f8a">plecy przedłużenia</text>
+    <text x="262" y="38" text-anchor="middle" font-size="11" fill="#2c5f8a">i RETURN (lustro STEP i RETURN)</text>
+    <text x="300" y="80" text-anchor="middle" font-size="12" fill="#555">półka w pasie wnęki: L (głębsza), jak przy wycięciu</text>
+    <text x="300" y="100" text-anchor="middle" font-size="12" fill="#555">płyty przedłużenia bez obróbki CNC, na wkręty (jak box wycięcia)</text>
+    <text x="225" y="166" text-anchor="middle" font-size="12" fill="#2e7d32" font-weight="600">front dalej na linii; mniej niż 100 mm we wnęce = bez przedłużenia (jak limit 100 przy kominie)</text>
+  </g>
+
+  <!-- ============ PANEL 4: side section, recess 0..1000 ============ -->
+  <g transform="translate(700,470)">
+    <text x="225" y="-56" text-anchor="middle" font-size="17" font-weight="600">Wnęka o wysokości: przekrój z boku, szafka wysoka 2150</text>
+    <!-- scale 0.25: wall face at x=60; room to the right; floor at y=560 (2150*0.25=537) -->
+    <!-- wall band x 20..60 full height, recess pocket x 22..60 for y (floor-250)..floor -->
+    <path d="M20,0 L60,0 L60,310 L22.5,310 L22.5,560 L20,560 Z" fill="url(#wall)" stroke="#888"/>
+    <text x="40" y="-2" text-anchor="middle" font-size="11" fill="#444">ściana</text>
+    <!-- floor -->
+    <line x1="0" y1="560" x2="470" y2="560" stroke="#333" stroke-width="2"/>
+    <text x="440" y="575" font-size="11" fill="#333">podłoga</text>
+    <!-- recess label: 0..1000 -> y 310..560 -->
+    <text x="38" y="440" text-anchor="middle" font-size="11" fill="#2c5f8a" transform="rotate(-90 38 440)">wnęka 0 do 1000, 150 głęboka</text>
+    <!-- tall unit profile: gap 10 -> 2.5; depth 558 -> 139.5; front at x = 60+2.5+139.5 = 202 -->
+    <!-- upper part y 23..310: back at x=62.5; lower part y 310..560: back at x=25 (recess back + gap) -->
+    <path d="M62.5,23 L202,23 L202,560 L25,560 L25,310 L62.5,310 Z" fill="#efe9dc" stroke="#555" stroke-width="1.5"/>
+    <!-- extension back (blue) and LID (orange) -->
+    <rect x="25" y="310" width="4.5" height="250" fill="#9fc3e6" stroke="#2c5f8a"/>
+    <rect x="25" y="310" width="37.5" height="4.5" fill="#f3c27a" stroke="#b36b00"/>
+    <!-- fronts (doors) at the front line -->
+    <rect x="202" y="23" width="6" height="537" fill="#c9a96e" stroke="#7a5c2e"/>
+    <line x1="205" y1="0" x2="205" y2="600" stroke="#c0392b" stroke-dasharray="6 4" stroke-width="1.5"/>
+    <text x="330" y="80" font-size="12" fill="#c0392b" font-weight="600">ta sama linia frontu</text>
+    <text x="330" y="100" font-size="12" fill="#c0392b" font-weight="600">na całej wysokości</text>
+    <text x="250" y="200" font-size="12" fill="#555">góra: głębokość 558</text>
+    <text x="250" y="450" font-size="12" fill="#555">dół (w pasie wnęki): 558 + 150</text>
+    <text x="250" y="470" font-size="12" fill="#2c5f8a">plecy przedłużenia w tylnej ścianie wnęki</text>
+    <text x="250" y="330" font-size="12" fill="#b36b00">LID na 1000: zamyka górę przedłużenia</text>
+    <text x="250" y="350" font-size="12" fill="#b36b00">(pod sklepieniem wnęki)</text>
+    <text x="250" y="530" font-size="12" fill="#555">półki poniżej 1000 głębsze, wyżej 558</text>
+  </g>
+
+  <text x="60" y="1082" font-size="13" fill="#333">Dół i góra wnęki ustawiane w oknie ściany od czoła (widok elewacji): domyślnie 0 do sufitu, czyli dziś. Szafka wisząca poza pasem wnęki: bez zmian.</text>
+  <text x="60" y="1104" font-size="13" fill="#333">Szafka sięgająca w pas wnęki mniej niż 100 mm (szerokością lub wysokością): bez przedłużenia, stoi normalnie. Blat, cokół, cornice: bez zmian, bo front się nie rusza.</text>
+</svg>

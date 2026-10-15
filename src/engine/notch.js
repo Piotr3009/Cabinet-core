@@ -449,25 +449,33 @@ export function notchBoxPlaces(cw, cd, ch, g, nw, nd, nh, corner) {
   const back = notchBackP(corner);
   const out = {};
   const [rx0, rx1] = left ? [nw, nw + g] : [cw - nw - g, cw - nw];
-  const [ry0, ry1] = back ? [cd - nd - g, cd - g] : [0, nd];
+  // 15.10.2026 (the owner, the mockup "naroznik, krawedz"): at a back corner
+  // the RETURN starts at the STEP's back face (cd - nd), a board shorter, and
+  // the STEP runs a board past the notch over the RETURN's end, as the back
+  // covers the sides' ends. The open cabinet shows one whole face.
+  const [ry0, ry1] = back ? [cd - nd, cd - g] : [0, nd];
   out.RETURN = [rx0, ry0, 0, rx1, ry1, hh];
   if (back) {
-    const [sx0, sx1] = left ? [0, nw] : [cw - nw, cw];
+    const [sx0, sx1] = left ? [0, nw + g] : [cw - nw - g, cw];
     out.STEP = [sx0, cd - nd - g, 0, sx1, cd - nd, hh];
   }
   if (!notchFullP(ch, nh)) {
     const [lx0, lx1] = left ? [g, nw + g] : [cw - nw - g, cw - g];
-    out.LID = [lx0, ry0, hh, lx1, ry1, hh + g];
+    out.LID = [lx0, back ? cd - nd - g : 0, hh, lx1, ry1, hh + g];
   }
   return out;
 }
 
-/** notch-step: [nw, hh], back corners only. */
+/** notch-step: [nw + g, hh], back corners only (15.10.2026: a board wider, over the RETURN's end). */
 export function notchStep(ch, g, nw, nh, corner) {
-  return notchBoxedP(nw, g) && notchBackP(corner) ? [nw, notchHh(ch, nh)] : null;
+  return notchBoxedP(nw, g) && notchBackP(corner) ? [nw + g, notchHh(ch, nh)] : null;
 }
 
-/** notch-step-screws: x from the STEP's own left end, y up. */
+/**
+ * notch-step-screws: x from the STEP's own left end, y up: a column into the
+ * side's end and one into the RETURN's end (S and nw + S), the row into the
+ * BOTTOM's (and at full height the TOP's) notch edge between them (g .. nw).
+ */
 export function notchStepScrews(ch, g, nw, nh, corner, K) {
   if (!notchStep(ch, g, nw, nh, corner)) return null;
   const S = notchScrewAxis(g);
@@ -475,34 +483,36 @@ export function notchStepScrews(ch, g, nw, nh, corner, K) {
   const sfe = notchP(K, 'puzzle.screwFromEnd');
   const full = notchFullP(ch, nh);
   const out = [];
-  const sideX = notchLeftP(corner) ? S : nw - S;
-  for (const y of notchScrewRow(hh, sfe)) out.push([sideX, y]);
-  const x0 = notchLeftP(corner) ? g : 0;
-  for (const x of notchShift(notchScrewRow(nw - g, sfe), x0)) {
+  for (const y of notchScrewRow(hh, sfe)) { out.push([S, y]); out.push([nw + S, y]); }
+  for (const x of notchShift(notchScrewRow(nw - g, sfe), g)) {
     out.push([x, S]);
     if (full) out.push([x, hh - S]);
   }
   return out;
 }
 
-/** notch-return: [nd, hh]. */
-export function notchReturn(ch, g, nw, nd, nh) {
-  return notchBoxedP(nw, g) ? [nd, notchHh(ch, nh)] : null;
+/** notch-return: [nd - g, hh] at a back corner (the STEP covers its end, 15.10.2026), [nd, hh] at a front one. */
+export function notchReturn(ch, g, nw, nd, nh, corner = 'BL') {
+  return notchBoxedP(nw, g) ? [notchBackP(corner) ? nd - g : nd, notchHh(ch, nh)] : null;
 }
 
-/** notch-return-screws: x along the depth from the RETURN's FRONT end, y up. */
+/**
+ * notch-return-screws: x along the depth from the RETURN's FRONT end, y up:
+ * the row into the BOTTOM's (and at full height the TOP's) notch edge along
+ * its own length. The STEP's column holds it at the back corner.
+ */
 export function notchReturnScrews(ch, g, nw, nd, nh, corner, K) {
-  if (!notchReturn(ch, g, nw, nd, nh)) return null;
+  const ret = notchReturn(ch, g, nw, nd, nh, corner);
+  if (!ret) return null;
   const S = notchScrewAxis(g);
   const hh = notchHh(ch, nh);
   const sfe = notchP(K, 'puzzle.screwFromEnd');
   const full = notchFullP(ch, nh);
   const out = [];
-  for (const x of notchScrewRow(nd, sfe)) {
+  for (const x of notchScrewRow(ret[0], sfe)) {
     out.push([x, S]);
     if (full) out.push([x, hh - S]);
   }
-  if (notchBackP(corner)) for (const y of notchScrewRow(hh, sfe)) out.push([S, y]);
   return out;
 }
 
@@ -511,18 +521,20 @@ export function notchLid(ch, g, nw, nd, nh) {
   return notchBoxedP(nw, g) && !notchFullP(ch, nh) ? [nw, nd] : null;
 }
 
-/** notch-lid-screws: x from the LID's left end, y along the depth from its FRONT end. */
+/**
+ * notch-lid-screws: x from the LID's left end, y along the depth from its
+ * FRONT end. 15.10.2026: at a back corner the RETURN lies under the LID from
+ * y = g (behind the STEP) and the STEP under its whole front edge (0 .. nw).
+ */
 export function notchLidScrews(ch, g, nw, nd, nh, corner, K) {
   if (!notchLid(ch, g, nw, nd, nh)) return null;
   const S = notchScrewAxis(g);
   const sfe = notchP(K, 'puzzle.screwFromEnd');
+  const back = notchBackP(corner);
   const out = [];
   const retX = notchLeftP(corner) ? nw - S : S;
-  for (const y of notchScrewRow(nd, sfe)) out.push([retX, y]);
-  if (notchBackP(corner)) {
-    const x0 = notchLeftP(corner) ? 0 : g;
-    for (const x of notchShift(notchScrewRow(nw - g, sfe), x0)) out.push([x, S]);
-  }
+  for (const y of (back ? notchShift(notchScrewRow(nd - g, sfe), g) : notchScrewRow(nd, sfe))) out.push([retX, y]);
+  if (back) for (const x of notchScrewRow(nw, sfe)) out.push([x, S]);
   return out;
 }
 
@@ -844,8 +856,10 @@ const near = (a, b) => Math.abs(a - b) < 1e-6;
  * The outline with its tabs: an anticlockwise polygon, and on each listed
  * straight edge the tab profile the puzzle draws there, in walk order.
  *   runs: [{ edge: 'right'|'left'|'top'|'bottom', at, centres }]
+ * Shared with the recess extension (engine/extension.js) since 15.10.2026, as
+ * are tabBones, dogboneHole, polygonArea and shiftGeom below.
  */
-function outlineWithTabs(pts, runs, G, pz) {
+export function outlineWithTabs(pts, runs, G, pz) {
   const out = [];
   const n = pts.length;
   for (let i = 0; i < n; i += 1) {
@@ -872,7 +886,7 @@ function outlineWithTabs(pts, runs, G, pz) {
 }
 
 /** The dog-bone relief pockets beside each tab (puzzle.js's own sizes). */
-function tabBones(runs, G, pz) {
+export function tabBones(runs, G, pz) {
   const bone = pz.dogboneHalfHeight;
   const out = [];
   for (const run of runs) {
@@ -887,12 +901,12 @@ function tabBones(runs, G, pz) {
 }
 
 /** The LISP's dog-bone circle as a hole the machine plunges (PUZZLE_DOG_BONES). */
-function dogboneHole(db, pz) {
+export function dogboneHole(db, pz) {
   return db ? { layer: pz.layers.dogbone, kind: 'notch_dogbone', x: roundTo(db[0], 4), y: roundTo(db[1], 4), d: roundTo(2 * db[2], 4) } : null;
 }
 
 /** Area of a simple polygon, mm². */
-function polygonArea(pts) {
+export function polygonArea(pts) {
   let a = 0;
   for (let i = 0; i < pts.length; i += 1) {
     const [x1, y1] = pts[i];
@@ -928,6 +942,9 @@ export function notchCornerOfOutline(pts, w, h) {
  */
 export function cutNotchCorner(outline, w, h, notch) {
   if (!notch || !Array.isArray(outline) || outline.length < 3) return outline;
+  // 15.10.2026 (the recess extension, KIT_RECESS.lsp): a board may lack TWO
+  // corners, the bump of a part-height band between them; `also` is the second.
+  if (notch.also) return cutNotchCorner(cutNotchCorner(outline, w, h, { ...notch, also: null }), w, h, notch.also);
   const { fc } = notch;
   const nw = Number(notch.nw) || 0;
   const nh = Number(notch.nh) || 0;
@@ -1158,7 +1175,7 @@ export function notchCarcass({
     };
     // A FRONT corner's RETURN and LID end at the carcass face, in the room:
     // their front edge is banded as a side's front edge is.
-    const ret = notchReturn(H, G, nw, nd, nh);
+    const ret = notchReturn(H, G, nw, nd, nh, corner);
     board('RETURN', 'NOTCH-RETURN', ret[0], ret[1], places.RETURN,
       notchReturnScrews(H, G, nw, nd, nh, corner, K), back ? null : { code: codes.left, len: ret[1] });
     const step = notchStep(H, G, nw, nh, corner);
@@ -1219,7 +1236,7 @@ export function notchCarcass({
   return cut;
 }
 
-function shiftGeom(geom, dx, dy) {
+export function shiftGeom(geom, dx, dy) {
   return {
     outline: (geom.outline || []).map(([x, y]) => [x + dx, y + dy]),
     pockets: (geom.pockets || []).map((pk) => ({

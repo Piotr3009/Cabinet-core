@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1000" font-family="Segoe UI, Arial, sans-serif" font-size="15">
+  <defs>
+    <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#9a9a94" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="1240" height="1000" fill="#ffffff"/>
+  <text x="620" y="34" text-anchor="middle" font-size="22" font-weight="600">Wycięcie narożnika BL (komin 200 x 200): która płyta kryje którą</text>
+  <text x="620" y="58" text-anchor="middle" fill="#555">Widok z góry (plan), ściana u góry, front szafki na dole. Czerwona kreska = krawędź płyty (18 mm, słoje), którą widać.</text>
+
+  <!-- ================= PLAN: TERAZ ================= -->
+  <g transform="translate(80,130)">
+    <text x="150" y="-40" text-anchor="middle" font-size="18" font-weight="600">TERAZ (jak jest w kodzie)</text>
+    <rect x="-40" y="-22" width="380" height="22" fill="#d8d8d2"/>
+    <text x="320" y="-6" font-size="12" fill="#555" text-anchor="end">ściana</text>
+    <rect x="0" y="0" width="100" height="100" fill="url(#hatch)" stroke="#777"/>
+    <text x="50" y="56" text-anchor="middle" font-size="13" fill="#333">komin</text>
+    <rect x="100" y="0" width="200" height="9" fill="#e9e2d0" stroke="#555"/>
+    <rect x="291" y="0" width="9" height="279" fill="#e9e2d0" stroke="#555"/>
+    <rect x="0" y="100" width="9" height="179" fill="#e9e2d0" stroke="#555"/>
+    <rect x="100" y="0" width="9" height="100" fill="#9fc3e6" stroke="#2c5f8a"/>
+    <rect x="0" y="91" width="100" height="9" fill="#f3c27a" stroke="#b36b00"/>
+    <line x1="100" y1="100" x2="109" y2="100" stroke="#c0392b" stroke-width="5"/>
+    <line x1="0" y1="279" x2="300" y2="279" stroke="#777" stroke-dasharray="4 3"/>
+    <text x="150" y="296" text-anchor="middle" font-size="12" fill="#555">front (drzwi otwarte)</text>
+    <path d="M150,322 l-9,-12 l18,0 z" fill="#c0392b"/>
+    <text x="150" y="340" text-anchor="middle" font-size="12" fill="#c0392b">patrzysz od frontu</text>
+    <text x="118" y="50" font-size="12" fill="#2c5f8a">RETURN (bok wycięcia), 200 długi,</text>
+    <text x="118" y="66" font-size="12" fill="#2c5f8a">biegnie do lica STEP</text>
+    <text x="12" y="126" font-size="12" fill="#b36b00">STEP (plecy części płytkiej), 200 szeroki,</text>
+    <text x="12" y="142" font-size="12" fill="#b36b00">dobija do boku RETURN</text>
+    <line x1="104" y1="104" x2="130" y2="180" stroke="#c0392b" stroke-width="1.5"/>
+    <text x="132" y="196" font-size="12" fill="#c0392b" font-weight="600">krawędź RETURN widoczna od frontu</text>
+  </g>
+
+  <!-- ================= PLAN: PROPOZYCJA ================= -->
+  <g transform="translate(700,130)">
+    <text x="150" y="-40" text-anchor="middle" font-size="18" font-weight="600">PROPOZYCJA (Twoja): STEP kryje koniec RETURN</text>
+    <rect x="-40" y="-22" width="380" height="22" fill="#d8d8d2"/>
+    <text x="320" y="-6" font-size="12" fill="#555" text-anchor="end">ściana</text>
+    <rect x="0" y="0" width="100" height="100" fill="url(#hatch)" stroke="#777"/>
+    <text x="50" y="56" text-anchor="middle" font-size="13" fill="#333">komin</text>
+    <rect x="100" y="0" width="200" height="9" fill="#e9e2d0" stroke="#555"/>
+    <rect x="291" y="0" width="9" height="279" fill="#e9e2d0" stroke="#555"/>
+    <rect x="0" y="100" width="9" height="179" fill="#e9e2d0" stroke="#555"/>
+    <rect x="100" y="0" width="9" height="91" fill="#9fc3e6" stroke="#2c5f8a"/>
+    <rect x="0" y="91" width="109" height="9" fill="#f3c27a" stroke="#b36b00"/>
+    <line x1="109" y1="91" x2="109" y2="100" stroke="#c0392b" stroke-width="5"/>
+    <line x1="0" y1="279" x2="300" y2="279" stroke="#777" stroke-dasharray="4 3"/>
+    <text x="150" y="296" text-anchor="middle" font-size="12" fill="#555">front (drzwi otwarte)</text>
+    <path d="M150,322 l-9,-12 l18,0 z" fill="#2e7d32"/>
+    <text x="150" y="340" text-anchor="middle" font-size="12" fill="#2e7d32">od frontu cała płyta STEP, bez krawędzi</text>
+    <text x="118" y="50" font-size="12" fill="#2c5f8a">RETURN 182 długi (200 minus 18)</text>
+    <text x="12" y="126" font-size="12" fill="#b36b00">STEP 218 szeroki (200 plus 18),</text>
+    <text x="12" y="142" font-size="12" fill="#b36b00">kryje koniec RETURN jak plecy kryją bok</text>
+    <line x1="112" y1="96" x2="140" y2="180" stroke="#c0392b" stroke-width="1.5"/>
+    <text x="142" y="196" font-size="12" fill="#c0392b" font-weight="600">krawędź STEP widać tylko z boku,</text>
+    <text x="142" y="212" font-size="12" fill="#c0392b" font-weight="600">od środka szafki (18 mm)</text>
+  </g>
+
+  <!-- ================= FRONT VIEWS ================= -->
+  <text x="620" y="505" text-anchor="middle" font-size="18" font-weight="600">Widok od frontu, drzwi otwarte (szafka 600 x 770, wycięcie na całą wysokość)</text>
+
+  <g transform="translate(80,540)">
+    <text x="150" y="-8" text-anchor="middle" font-size="15" font-weight="600">TERAZ</text>
+    <rect x="0" y="0" width="300" height="385" fill="#f4f1ea" stroke="#555"/>
+    <rect x="0" y="0" width="9" height="385" fill="#e9e2d0" stroke="#555"/>
+    <rect x="291" y="0" width="9" height="385" fill="#e9e2d0" stroke="#555"/>
+    <rect x="9" y="0" width="282" height="9" fill="#e9e2d0" stroke="#555"/>
+    <rect x="9" y="376" width="282" height="9" fill="#e9e2d0" stroke="#555"/>
+    <rect x="9" y="9" width="91" height="367" fill="#f3c27a" stroke="#b36b00"/>
+    <text x="54" y="200" text-anchor="middle" font-size="12" fill="#5a3600">STEP</text>
+    <rect x="100" y="9" width="9" height="367" fill="#c0392b"/>
+    <rect x="109" y="9" width="182" height="367" fill="#efe9dc" stroke="#777"/>
+    <text x="200" y="200" text-anchor="middle" font-size="12" fill="#555">plecy</text>
+    <text x="150" y="406" text-anchor="middle" font-size="12" fill="#c0392b" font-weight="600">czerwony pasek 18 mm: krawędź RETURN</text>
+  </g>
+
+  <g transform="translate(700,540)">
+    <text x="150" y="-8" text-anchor="middle" font-size="15" font-weight="600">PROPOZYCJA</text>
+    <rect x="0" y="0" width="300" height="385" fill="#f4f1ea" stroke="#555"/>
+    <rect x="0" y="0" width="9" height="385" fill="#e9e2d0" stroke="#555"/>
+    <rect x="291" y="0" width="9" height="385" fill="#e9e2d0" stroke="#555"/>
+    <rect x="9" y="0" width="282" height="9" fill="#e9e2d0" stroke="#555"/>
+    <rect x="9" y="376" width="282" height="9" fill="#e9e2d0" stroke="#555"/>
+    <rect x="9" y="9" width="100" height="367" fill="#f3c27a" stroke="#b36b00"/>
+    <text x="59" y="200" text-anchor="middle" font-size="12" fill="#5a3600">STEP (cała płyta)</text>
+    <rect x="109" y="9" width="182" height="367" fill="#efe9dc" stroke="#777"/>
+    <text x="200" y="200" text-anchor="middle" font-size="12" fill="#555">plecy</text>
+    <text x="150" y="406" text-anchor="middle" font-size="12" fill="#2e7d32" font-weight="600">od frontu nic nie widać, krawędź jest z boku</text>
+  </g>
+
+  <text x="80" y="965" font-size="13" fill="#333">Zmiana w płytach: STEP szerszy o 18 (200 do 218), RETURN krótszy o 18 (200 do 182). Wycięcie w wieńcu, dnie i półkach bez zmian (200 x 200), dog bone bez zmian.</text>
+  <text x="80" y="985" font-size="13" fill="#333">Wkręty: STEP w czoło RETURN (rząd jak plecy w bok). Lustrzanie dla narożnika BR i tak samo przy wycięciu niepełnej wysokości (LID bez zmian). LISP: KIT_NOTCH.lsp sekcja 2 i D1.</text>
+</svg>

@@ -182,6 +182,10 @@ test('F9 · there is ONE widening law, in the store, and no PRO exemption bought
     'SprayingPanel',
     // AMENDED BY T75 F22: `CncTree` (the readiness banner after an export). Not a widening file.
     'CncTree',
+    // AMENDED 15.10.2026 (the evening): `WallElevationModal` (the recess and the chimney drawn in the FRONT view, a recess's
+    // band typed; the owner: *"nie widze kresek, gdzie jest komin i gdzie wneka"*, *"dowolny"*), argued in the manifest under
+    // T78 F7's chat-fix, re-frozen. Not a widening file.
+    'WallElevationModal',
   ];
   const unargued = exempt.map(([n]) => n).filter((n) => !ARGUED.includes(n));
   assert.deepEqual(unargued, [], 'a file entered EXEMPT that no turn argued');

@@ -504,10 +504,20 @@ test('F2/F3, amended by T67 · the copies now carry NO addition at all', () => {
 // zmieniaj"*), the shell and the number field — are still asked for byte for
 // byte, here, where it matters most: they are what the docked window is made
 // of, and a copy that needed them changed would be a re-write.
-const UNMOVED = COPIES.map((c) => c[0]).filter((p) => p !== 'src/components/RoomModal.jsx');
+// ─── AMENDED 15.10.2026 (the evening) · THE ELEVATION EDITOR MOVED, BY NAME ─
+// The owner, the same evening: *"na setup room jak widze sciane od frontu nie
+// top tylko front to nie widze kresek, gdzie jest komin i gdzie wneka"* and
+// *"reces pionowy ... na wysokosci 1000 mm ... dowolny"*. PRO's
+// `WallElevationModal.jsx` draws the recess and the chimney in the front view
+// and types a recess's band; it is licensed in `turn59-f1`'s EXEMPT with those
+// words and re-frozen there, and the retail copy carries the same lines (the
+// copy test above holds it to PRO's). So it leaves this list, as RoomModal did
+// on T67: two originals are still asked for byte for byte.
+const UNMOVED = COPIES.map((c) => c[0])
+  .filter((p) => p !== 'src/components/RoomModal.jsx' && p !== 'src/components/WallElevationModal.jsx');
 
 test('F2/F3, amended by T67 · not one byte of the other three originals moved', () => {
-  assert.equal(UNMOVED.length, 3, 'the exemption grew beyond the one file tonight names');
+  assert.equal(UNMOVED.length, 2, 'the exemption grew beyond the files the owner named');
   let base = null;
   for (const ref of ['origin/main', 'main']) {
     try {

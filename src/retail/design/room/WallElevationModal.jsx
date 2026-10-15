@@ -14,7 +14,7 @@ import { getCabinetProfile } from '../../../engine/profile.js';
 import {
   CHIMNEY_DEFAULTS, MIN_ELEMENT_MM, PLAN_DEFAULTS, RECESS_DEFAULTS, SLOPE_DEFAULTS,
   clampPlanElement, dragSlope, elevationDimensionChains, elevationElements, moveOpening,
-  movePlanElement, newElementId, planElementsOnWall, slopePolygon, slopesOnWall, wallElevationIssues,
+  movePlanElement, newElementId, planElementsOnWall, recessBand, slopePolygon, slopesOnWall, wallElevationIssues,
   wallElements as normaliseWallElements, wallSlopes as normaliseSlopes,
 } from '../../../lib/wallElements.js';
 // ─── TURN 49 (CLAUDE.md F8): THE DIALOG'S OWN ARITHMETIC ────────────────────
@@ -327,6 +327,34 @@ export default function WallElevationModal({
     window.addEventListener('pointercancel', up);
   };
 
+  /**
+   * 15.10.2026: dragging a recess or a chimney in the FRONT view moves it
+   * along the wall only; its depth is the top view's axis and its band is typed.
+   */
+  const startFrontPlanDrag = (e, el) => {
+    e.stopPropagation();
+    if (e.button !== 0) return;
+    setPicked(el.id);
+    const from = { x: e.clientX };
+    const start = plan.find((v) => v.id === el.id) || null;
+    const move = (ev) => {
+      if (!scale || !start) return;
+      const dx = grid((ev.clientX - from.x) / scale);
+      if (!dx) return;
+      const patch = movePlanElement(start, { dxMm: dx, ddMm: 0 }, { wallWidth });
+      setWallSlopes(normaliseWallElements(useProjectStore.getState().project.wallSlopes)
+        .map((v) => (v.id === el.id ? { ...v, x_mm: patch.x_mm } : v)));
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+
   const startDrag = (e, el) => {
     e.stopPropagation();
     if (e.button !== 0) return;
@@ -373,7 +401,7 @@ export default function WallElevationModal({
 
   /** Where a small modal opens: BESIDE the element it is about (rule 15). */
   const anchorOfElement = (id) => {
-    const node = svgRef.current?.querySelector(`[data-elevation-element="${id}"]`);
+    const node = svgRef.current?.querySelector(`[data-elevation-element="${id}"], [data-elevation-plan="${id}"], [data-plan-element="${id}"]`);
     const r = node?.getBoundingClientRect();
     return r ? {
       x: r.left, y: r.top, width: r.width, height: r.height,
@@ -383,7 +411,8 @@ export default function WallElevationModal({
   const openElement = (el) => setEditing({ id: el.id, kind: el.kind, anchor: anchorOfElement(el.id) });
 
   // What this VIEW is a list of: the elevation's own elements, or the plan's.
-  const onThisWall = view === 'front' ? elements : plan;
+  // 15.10.2026: the front view lists the plan's two kinds as well, since it draws them.
+  const onThisWall = view === 'front' ? [...elements, ...plan] : plan;
   const editingElement = editing
     ? onThisWall.find((el) => el.id === editing.id) || null
     : null;
@@ -446,7 +475,8 @@ export default function WallElevationModal({
           <p className="pbi-re-t11 pbi-re-quiet">
             {view === 'front'
               ? 'The wall seen from the front. Type its width and height and the drawing follows; drop a door, a'
-                + ' window or a slope on it and drag it where it is. Double-click one to type its numbers.'
+                + ' window or a slope on it and drag it where it is. Double-click one to type its numbers. A recess'
+                + ' and a chimney from the top view show where they stand; double-click a recess for its band.'
               : 'The wall seen from above. The depth zone is where the units will stand; drop a recess or a'
                 + ' chimney on it and drag it — sideways along the wall, up and down for its depth.'}
           </p>
@@ -544,6 +574,45 @@ export default function WallElevationModal({
                   x1={sx(0) - 10} y1={sy(0)} x2={sx(wallWidth) + 10} y2={sy(0)}
                   stroke="#C7BCAF" strokeWidth="2"
                 />
+
+                {/* ─── 15.10.2026 (the owner: "na setup room jak widze sciane od
+                    frontu ... nie widze kresek, gdzie jest komin i gdzie wneka"):
+                    THE TOP VIEW'S TWO KINDS, SEEN FROM THE FRONT. A chimney stands
+                    floor to ceiling; a recess shows its BAND (lib/wallElements.js
+                    recessBand: the floor and the ceiling unless the owner typed a
+                    bottom and a top). Drawn behind the openings, dragged sideways
+                    only, double-clicked for their numbers. */}
+                {plan.map((el) => {
+                  const on = picked === el.id;
+                  const isRecess = el.kind === 'recess';
+                  const [bandLo, bandHi] = isRecess ? recessBand(el, wallHeight) : [0, wallHeight];
+                  return (
+                    <g key={`plan-${el.id}`}>
+                      <rect
+                        x={sx(el.x_mm)} y={sy(bandHi)}
+                        width={Math.max(1, el.width * scale)} height={Math.max(1, (bandHi - bandLo) * scale)}
+                        fill={isRecess ? '#F2EEE7' : '#D9D1C6'}
+                        stroke={on ? '#806A44' : (isRecess ? '#5C5B57' : '#090A09')}
+                        strokeWidth={on ? 2.5 : 1.5}
+                        strokeDasharray={isRecess ? '5 3' : undefined}
+                        className="pbi-re-ew"
+                        data-elevation-plan={el.id}
+                        data-elevation-kind={el.kind}
+                        onPointerDown={(e) => startFrontPlanDrag(e, el)}
+                        onDoubleClick={() => openElement(el)}
+                      />
+                      <text
+                        x={sx(el.x_mm + el.width / 2)} y={sy(bandHi) + 11}
+                        textAnchor="middle" fontSize="9" fill="#090A09"
+                        className="pbi-re-noptr"
+                      >
+                        {el.kind} {formatMm(el.width)}×{formatMm(el.depth)}
+                        {isRecess && (el.bottom_mm != null || el.top_mm != null)
+                          ? ` · ${formatMm(bandLo)} to ${formatMm(bandHi)}` : ''}
+                      </text>
+                    </g>
+                  );
+                })}
 
                 {elements.map((el) => {
                   const on = picked === el.id;
@@ -1014,11 +1083,44 @@ function ElementModal({
               />
               <span className="pbi-re-t11 pbi-re-quiet">mm</span>
             </label>
+            {element.kind === 'recess' && (
+              <>
+                {/* ─── 15.10.2026 (the owner: "na wysokosci 1000 mm ... dowolny"):
+                    THE BAND. A recess may stop short of the floor and the ceiling;
+                    the carcass standing in it grows into the part it stands in
+                    (KIT_RECESS.lsp D3). Blank, or 0 and the wall height, is the
+                    floor and the ceiling, which is every recess drawn before. */}
+                <label className="pbi-re-fieldrow">
+                  <span className="pbi-re-t11 pbi-re-quiet pbi-re-w24 pbi-re-nogrow">Bottom</span>
+                  <NumberField
+                    className="pbi-re-input pbi-re-w24 pbi-re-right"
+                    data-plan-bottom="1"
+                    value={element.bottom_mm ?? 0}
+                    min={0}
+                    max={Math.max(0, (element.top_mm ?? wallHeight) - MIN_ELEMENT_MM)}
+                    onCommit={(v) => onPlan({ bottom_mm: v > 0 ? v : null })}
+                  />
+                  <span className="pbi-re-t11 pbi-re-quiet">mm off the floor (0 = the floor)</span>
+                </label>
+                <label className="pbi-re-fieldrow">
+                  <span className="pbi-re-t11 pbi-re-quiet pbi-re-w24 pbi-re-nogrow">Top</span>
+                  <NumberField
+                    className="pbi-re-input pbi-re-w24 pbi-re-right"
+                    data-plan-top="1"
+                    value={element.top_mm ?? wallHeight}
+                    min={(element.bottom_mm ?? 0) + MIN_ELEMENT_MM}
+                    max={wallHeight}
+                    onCommit={(v) => onPlan({ top_mm: v < wallHeight ? v : null })}
+                  />
+                  <span className="pbi-re-t11 pbi-re-quiet">mm off the floor (the wall height = the ceiling)</span>
+                </label>
+              </>
+            )}
             <p className="pbi-re-t10 pbi-re-quiet">
               {element.kind === 'recess'
-                ? 'An alcove goes INTO the wall — a unit can sit back in it.'
+                ? 'An alcove goes INTO the wall. A unit wholly inside it is cut deeper; one partly in it keeps the'
+                  + ' line of fronts and grows an extension behind its back over the band it stands in.'
                 : 'A breast stands OUT of the wall — a unit has to come forward past it, or stop short.'}
-              {' '}Geometry for the eye this turn: nothing is cut from it yet.
             </p>
           </>
         )}

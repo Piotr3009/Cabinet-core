@@ -3,10 +3,11 @@
     "name": "golden-biscuit-bud.json",
     "turn": "T78",
     "F": "F20",
-    "source": "SKYLON_JOINTS_BISCUIT.lsp (the owner's set on the sides, its NUMBERS block, section H, the no-shelf case) on KIT_BUD_FULL.lsp (the parent); the BACK is the parent's",
+    "source": "SKYLON_JOINTS_BISCUIT.lsp (the owner's set on the sides, its NUMBERS block, section H, the no-shelf case) on KIT_BUD_FULL.lsp (the parent); the BACK is the parent's; since 15.10.2026 the BACK is screwed and no puzzle tenon, socket or dog bone is left (REPINNED)",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "15.10.2026: the owner's night turn (no dog bones under Cabineo or biscuits; the back screwed; Cabineo drill15 + 0.5 skim + dia 5 x X)"
   },
   "params": {
     "type": "BUD",
@@ -50,9 +51,9 @@
           "h": 770,
           "d": 540
         },
-        "outline": 34,
+        "outline": 4,
         "holes": 0,
-        "pockets": 3,
+        "pockets": 0,
         "readiness": null
       },
       {
@@ -70,9 +71,9 @@
           "h": 770,
           "d": 540
         },
-        "outline": 34,
+        "outline": 4,
         "holes": 0,
-        "pockets": 3,
+        "pockets": 0,
         "readiness": null
       },
       {
@@ -90,9 +91,9 @@
           "h": 18,
           "d": 540
         },
-        "outline": 24,
+        "outline": 4,
         "holes": 0,
-        "pockets": 2,
+        "pockets": 0,
         "readiness": null
       },
       {
@@ -110,9 +111,9 @@
           "h": 18,
           "d": 540
         },
-        "outline": 24,
+        "outline": 4,
         "holes": 0,
-        "pockets": 2,
+        "pockets": 0,
         "readiness": null
       },
       {
@@ -131,8 +132,8 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 34,
-        "pockets": 10,
+        "holes": 14,
+        "pockets": 0,
         "readiness": null
       },
       {
@@ -168,10 +169,6 @@
       [
         "HINGES_5MM|BUL",
         6
-      ],
-      [
-        "PUZZLE_HOLES_7_5MM|BACK",
-        20
       ],
       [
         "SCREWS_3MM|BACK",

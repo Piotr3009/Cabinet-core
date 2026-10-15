@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 
 import * as N from '../src/engine/notch.js';
 import { computeCabinet } from '../src/engine/cabinet.js';
-import { defaultParamsFor } from '../src/engine/types.js';
+import { defaultParamsFor, getUnitType } from '../src/engine/types.js';
 import { DEFAULT_CABINET_PROFILE as P, migrateCabinetProfile } from '../src/engine/profile.js';
 import { sidePanelGeometry } from '../src/engine/puzzle.js';
 import { ELEMENT_TO_PART_ID } from '../src/engine/partRegistry.js';
@@ -343,14 +343,51 @@ test('F7 · the LISP\'s refusals, each naming the board; the kits it does not co
   assert.match(N.notchRefusal(600, 558, 770, 18, 200, 200, 740, 'BR', K), /LID room under the TOP/);
   assert.match(N.notchRefusal(600, 558, 770, 18, 200, 200, 700, 'BR', K), /back edge of BUR above the notch cannot hold a tab/);
   assert.equal(N.notchRefusal(600, 558, 770, 18, 200, 200, 0, 'XX', K), 'NOTCH: the corner is BL, BR, FL or FR.');
-  for (const type of ['WUD', 'BUDR', 'SINK', 'FRIDGE']) {
+  for (const type of ['BUDR', 'SINK', 'FRIDGE']) {
     const r = computeCabinet({ ...defaultParamsFor(type, P), unit_num: '01', notch: NOTCH }, P);
     const w = r.warnings.find((x) => x.code === N.NOTCH_REFUSED);
     assert.ok(w, `${type} took a notch`);
-    assert.match(w.message, /KIT_BUD\) or a wardrobe \(KIT_WARDROBE\)/);
+    assert.match(w.message, /KIT_BUD\), a wardrobe \(KIT_WARDROBE\) or a wall unit \(KIT_WUD\)/);
     assert.ok(!/[\u2013\u2014]/.test(w.message), 'no long dash in a sentence');
   }
   assert.equal(N.notchApplies({ lisp: 'KIT_BUD_FULL.lsp', carcass: { top: 'panel', back: 'full' } }), true);
+  // THE WALL UNIT (the owner, 15.10.2026: "nie ma wogole mozliwosci wyciecia naroznika w szafkach wiszacych, a
+  // powinno byc"): KIT_WUD is a parent since that night (KIT_NOTCH.lsp section 1), its hangers carried.
+  assert.equal(N.notchApplies(getUnitType('WUD')), true);
+  assert.deepEqual([...N.NOTCH_PARENT_KITS], ['KIT_BUD_FULL.lsp', 'KIT_WARDROBE_FULL.lsp', 'KIT_WUD_FULL.lsp']);
+});
+
+test('F7 · THE WALL UNIT (15.10.2026): a WUD takes the notch; its hanger cut-out steps in beside a back notch and its hanger holes step forward with the shortened side', () => {
+  const base = { ...defaultParamsFor('WUD', P), unit_num: '05' };   // 600 x 720 x 400
+  const parent = computeCabinet(base, P);
+  assert.deepEqual(parent.panels.find((p) => p.id === 'BACK').cnc.pockets.filter((k) => k.layer === 'HANGER_HOLE').map((k) => [k.x1, k.y1, k.x2, k.y2]),
+    [[0, 662, 30, 720], [570, 662, 600, 720]], 'the parent\'s two cut-outs, in the top corners');
+  // A full-height back-left notch 200 x 200: the back is 400 wide, the BUL 182 deep.
+  const r = computeCabinet({ ...base, notch: { corner: 'BL', w: 200, d: 200, h: 0 } }, P);
+  assert.deepEqual(r.warnings.filter((w) => w.code === N.NOTCH_REFUSED), []);
+  assert.deepEqual(r.derived.notch.boards, ['RETURN', 'STEP']);
+  const back = r.panels.find((p) => p.id === 'BACK');
+  assert.equal(back.w, 400);
+  assert.deepEqual(back.cnc.pockets.filter((k) => k.layer === 'HANGER_HOLE').map((k) => [k.x1, k.y1, k.x2, k.y2]),
+    [[0, 662, 30, 720], [370, 662, 400, 720]], 'both cut-outs in the shortened back\'s own top corners: the left one stepped in by nw');
+  const bul = r.panels.find((p) => p.id === 'BUL');
+  assert.equal(bul.w, 182, 'the side loses nd');
+  assert.deepEqual(r.drills.filter((d) => d.kind === 'hanger' && d.panel === 'BUL').map((d) => [d.x, d.y]), [[161, 667], [129, 667]],
+    'the hanger holes 21 and 53 off the NEW back edge (182 - 21, 182 - 53), not dropped');
+  assert.deepEqual(r.drills.filter((d) => d.kind === 'hanger' && d.panel === 'BUR').map((d) => [d.x, d.y]), [[21, 667], [53, 667]], 'the other side as the parent');
+  assert.equal(r.hardware.find((h) => h.role === 'hangers').qty, 2, 'still two hangers');
+  // A part-height back-right notch leaves both cut-outs where they were (the notch is at the floor, the hangers at the top).
+  const r2 = computeCabinet({ ...base, notch: { corner: 'BR', w: 150, d: 100, h: 300 } }, P);
+  assert.deepEqual(r2.warnings.filter((w) => w.code === N.NOTCH_REFUSED), []);
+  assert.deepEqual(r2.derived.notch.boards, ['RETURN', 'STEP', 'LID']);
+  assert.deepEqual(r2.panels.find((p) => p.id === 'BACK').cnc.pockets.filter((k) => k.layer === 'HANGER_HOLE').map((k) => [k.x1, k.x2]), [[0, 30], [570, 600]]);
+  assert.deepEqual(r2.drills.filter((d) => d.kind === 'hanger' && d.panel === 'BUR').map((d) => [d.x, d.y]), [[21, 667], [53, 667]]);
+  // The pure routine: a cut-out the region does not reach stays; one it reaches steps in by nw.
+  const cuts = [{ layer: 'HANGER_HOLE', x1: 0, y1: 662, x2: 30, y2: 720 }, { layer: 'HANGER_HOLE', x1: 570, y1: 662, x2: 600, y2: 720 }, { layer: 'PUZZLE_SOCKET', x1: 0, y1: 0, x2: 10, y2: 10 }];
+  assert.deepEqual(N.notchHangerCutouts(cuts, 'HANGER_HOLE', 600, 720, 200, 720, 'x0y0').map((k) => [k.x1, k.x2]), [[200, 230], [570, 600]]);
+  assert.deepEqual(N.notchHangerCutouts(cuts, 'HANGER_HOLE', 600, 720, 200, 300, 'x1y0').map((k) => [k.x1, k.x2]), [[0, 30], [570, 600]], 'a notch 300 high does not reach a cut-out at 662');
+  assert.deepEqual(N.notchHangerCutouts(cuts, 'HANGER_HOLE', 600, 720, 200, 700, 'x1y0').map((k) => [k.x1, k.x2]), [[0, 30], [370, 400]], 'one 700 high does');
+  assert.deepEqual(N.notchHangerCutouts(cuts, null, 600, 720, 200, 720, 'x0y0'), [], 'no hanger layer: nothing to carry');
 });
 
 test('F7 · D8: a partition the notch would cross is refused, naming it', () => {

@@ -59,9 +59,14 @@ export const BISCUIT_SYSTEM = 'biscuit';
 /** The boards whose joints this system cuts (section C); the LISP's table has no other. */
 export const BISCUIT_BOARDS = Object.freeze(['BUL', 'BUR', 'TOP', 'BOTTOM']);
 /** The board the system never touches, by the owner's word. */
-export const BISCUIT_LEAVES = Object.freeze(['BACK']);
-/** THE BACK, the LISP's `biscuit-back-refusal`, word for word. */
-export const BISCUIT_BACK = 'no biscuits on the back (the owner, 11.10.2026: bez ciastek na plecach); the BACK keeps the joints its kit cuts';
+export const BISCUIT_LEAVES = Object.freeze([]);
+/**
+ * THE BACK, the LISP's `biscuit-back-refusal`, word for word. No biscuit goes
+ * into the back (11.10.2026) and, since 15.10.2026, no puzzle either: *"jak
+ * mamy cabineo to nie robimy dog bonsow, i to samo jak mamy biscuits"*; the
+ * back joint goes whole and the BACK is screwed (`screwedBack.js`).
+ */
+export const BISCUIT_BACK = 'no biscuits on the back (the owner, 11.10.2026: bez ciastek na plecach); the BACK is screwed on with the kit\'s own dia 3 rows, its puzzle joint goes whole (the owner, 15.10.2026: no dog bones)';
 /** Why there is no gate, the LISP's `biscuit-no-gate-reason`, word for word. */
 export const BISCUIT_NO_GATE = 'the biscuit set is the owner\'s own (09.08.2026, reaffirmed 11.10.2026): no gate, nothing to confirm';
 /** The drill kind of a carcass joint's through screw: T13's own kind, which `joinery.js` already draws as a screw. */
@@ -319,7 +324,7 @@ export function biscuitCarcassPlan({
     return boards[id];
   };
   for (const id of BISCUIT_BOARDS) board(id);
-  for (const id of BISCUIT_LEAVES) board(id).said = BISCUIT_BACK;
+  board('BACK').said = BISCUIT_BACK;
   for (const j of joints) {
     board(j.joint.face).marks.push(...j.marks);
     board(j.joint.face).screws.push(...j.screws);
@@ -684,7 +689,7 @@ export function biscuitNoteRow(result) {
     role: 'biscuit_note',
     material_role: 'note',
     material_label: `NOTE: biscuit joints, ${j.sets} sets (two dia 3 through screws and a 70 mark each) on the sides; `
-      + 'the slots in the TOP\'s and BOTTOM\'s ends are cut at the bench; the BACK keeps the puzzle (bez ciastek na plecach)',
+      + 'the slots in the TOP\'s and BOTTOM\'s ends are cut at the bench; the BACK is screwed on, no tenons and no dog bones (bez ciastek na plecach)',
     w: 0,
     h: 0,
     qty: 1,

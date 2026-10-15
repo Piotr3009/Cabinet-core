@@ -101,22 +101,25 @@ export const LICENSED = {
 };
 
 export const LIVENESS = {
+  // Amended 15.10.2026 with the owner's own machining (the LISP's head, H.0): three dia 15 holes per pocket from
+  // the outside face, the 0.5 skim, the dia 5 hole X deep; the back joint gone, the BACK screwed, no puzzle anywhere.
   cabineo: () => {
     const r = computeCabinet({ ...defaultParamsFor('BUD', P), unit_num: '01', joints_system: 'cabineo12' }, P);
     const top = r.panels.find((p) => p.id === 'TOP');
     const bul = r.panels.find((p) => p.id === 'BUL');
-    const pockets = r.panels.reduce((n, p) => n + (p.cnc?.pockets || []).filter((k) => k.kind === 'cabineo_pocket').length, 0);
-    const recesses = r.panels.reduce((n, p) => n + (p.cnc?.pockets || []).filter((k) => k.kind === 'cabineo_recess').length, 0);
-    const holes = r.drills.filter((d) => d.kind === 'cabineo_hole').length;
-    const puzzleOnSides = r.drills.filter((d) => d.kind === 'puzzle' && d.panel !== 'BACK').length;
+    const skims = r.panels.reduce((n, p) => n + (p.cnc?.pockets || []).filter((k) => k.kind === 'cabineo_recess').length, 0);
+    const d15 = r.drills.filter((d) => d.kind === 'cabineo_pocket' && d.d === 15 && d.face === 'outside').length;
+    const holes = r.drills.filter((d) => d.kind === 'cabineo_hole' && d.depth === 12).length;
+    const puzzle = r.drills.filter((d) => d.kind === 'puzzle').length
+      + r.panels.reduce((n, p) => n + (p.cnc?.pockets || []).filter((k) => /^PUZZLE/.test(k.layer)).length, 0);
     return {
-      live: r.derived?.joints?.system === 'cabineo12' && pockets === 12 && recesses === 12 && holes === 12
+      live: r.derived?.joints?.system === 'cabineo12' && r.derived?.joints?.pockets === 12 && skims === 12 && d15 === 36 && holes === 12
         && top?.meta?.machinedFace === 'outside' && bul?.meta?.machinedFace === undefined
-        && top?.cnc?.outline?.length === 24 && puzzleOnSides === 0
+        && top?.cnc?.outline?.length === 4 && bul?.cnc?.outline?.length === 4 && puzzle === 0
         && r.warnings.some((w) => w.code === 'CABINEO_GATE'),
-      said: `BUD with Cabineo 12 cuts ${pockets} pockets and ${recesses} cap recesses from the outside face of the TOP and BOTTOM `
-        + `(machinedFace ${top?.meta?.machinedFace}), ${holes} dia 5 holes in the sides, TOP outline ${top?.cnc?.outline?.length} points, `
-        + `${puzzleOnSides} puzzle holes on the sides, gate ${r.warnings.some((w) => w.code === 'CABINEO_GATE') ? 'shut' : 'open'}`,
+      said: `BUD with Cabineo 12 cuts ${d15} dia 15 holes and ${skims} skims from the outside face of the TOP and BOTTOM `
+        + `(machinedFace ${top?.meta?.machinedFace}), ${holes} dia 5 holes 12 deep in the sides, TOP outline ${top?.cnc?.outline?.length} points, `
+        + `BUL outline ${bul?.cnc?.outline?.length}, ${puzzle} puzzle cuts anywhere, gate ${r.warnings.some((w) => w.code === 'CABINEO_GATE') ? 'shut' : 'open'}`,
     };
   },
 };
@@ -125,16 +128,17 @@ export const GOLDENS = [
   {
     file: 'golden-cabineo8-bud.json',
     F: 'F20',
-    source: 'SKYLON_JOINTS_CABINEO.lsp (Cabineo 8, flush cover cap, cutter 12; its NUMBERS block, section H, the no-shelf case: '
-      + 'every coordinate the Cabineo 12 golden\'s, the variant decides the label and X only) on KIT_BUD_FULL.lsp (the parent); '
-      + 'the BACK is the parent\'s',
+    source: 'SKYLON_JOINTS_CABINEO.lsp (Cabineo 8, the owner\'s three layers of 15.10.2026: drill15, the 0.5 skim, the dia 5 hole '
+      + 'X deep; its NUMBERS block H.0, the no-shelf case: every coordinate the Cabineo 12 golden\'s, the variant decides the label '
+      + 'and X only) on KIT_BUD_FULL.lsp (the parent); the BACK screwed, no puzzle anywhere (re-pinned 15.10.2026)',
     params: () => ({ ...defaultParamsFor('BUD', P), unit_num: '01', joints_system: 'cabineo8' }),
   },
   {
     file: 'golden-cabineo12-bud.json',
     F: 'F20',
-    source: 'SKYLON_JOINTS_CABINEO.lsp (Cabineo 12, flush cover cap, cutter 12; its NUMBERS block, section H, the no-shelf case) '
-      + 'on KIT_BUD_FULL.lsp (the parent); the TOP and BOTTOM OUTSIDE FACE UP, reflected x\' = 540 - x; the BACK is the parent\'s',
+    source: 'SKYLON_JOINTS_CABINEO.lsp (Cabineo 12, the owner\'s three layers of 15.10.2026: drill15, the 0.5 skim, the dia 5 hole '
+      + 'X deep; its NUMBERS block H.0, the no-shelf case) on KIT_BUD_FULL.lsp (the parent); the TOP and BOTTOM OUTSIDE FACE UP, '
+      + 'reflected x\' = 540 - x; the BACK screwed, no puzzle anywhere (re-pinned 15.10.2026)',
     params: () => ({ ...defaultParamsFor('BUD', P), unit_num: '01', joints_system: 'cabineo12' }),
   },
 ];

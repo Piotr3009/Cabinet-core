@@ -54,6 +54,7 @@ import { JOINTS_REFUSED } from './dowels.js';
 import { bjPlainEnds } from './biscuitJoints.js';
 import { minSkinOf, skinShort } from './frontBoard.js';
 import { machiningFor } from './machining.js';
+import { SCREWED_BACK } from './screwedBack.js';
 import { mirrorAboutVerticalAxis } from './cnc/frontOperations.js';
 import SHEET from '../../reference/hardware/cabineo/cabineo.json' with { type: 'json' };
 
@@ -68,8 +69,14 @@ export const CABINEO_GATE_CODE = 'CABINEO_GATE';
 export const CABINEO_SYSTEMS = Object.freeze(['cabineo8', 'cabineo12']);
 /** The boards the LISP's table (section D.2) touches; the BACK is never one of them. */
 export const CABINEO_BOARDS = Object.freeze(['BUL', 'BUR', 'TOP', 'BOTTOM']);
-/** The board the system leaves as the kit cuts it, by the owner's sentence (top, bottom, fixed shelf, side). */
-export const CABINEO_LEAVES = Object.freeze(['BACK']);
+/**
+ * The boards the system leaves as the kit cuts them: NONE since 15.10.2026.
+ * The BACK is not a Cabineo board (the owner's sentence of 11.10.2026 names
+ * top, bottom, fixed shelf and side), but its puzzle joint goes too: *"jak
+ * mamy cabineo to nie robimy dog bonsow"*; the BACK is screwed on with the
+ * kit's own dia 3 rows (`screwedBack.js`, the LISP's head and section F).
+ */
+export const CABINEO_LEAVES = Object.freeze([]);
 /** What the operations JSON and the part label print for an 'outside' board, the LISP's `cabineo-face-label`. */
 export const OUTSIDE_FACE_LABEL = 'OUTSIDE FACE UP';
 /** The record kinds this system writes. */
@@ -82,8 +89,13 @@ export const CABINEO_LAYERS = Object.freeze({
   recess: 'CABINEO_RECESS',
   hole: 'CABINEO_HOLE_5MM',
 });
-/** The sentence for the dia 5 hole's depth, which the sheet does not print. */
-export const HOLE_DEPTH_NOTE = 'depth not on the sheet; the screw reaches X beyond the board\'s end, so the hole is at least that deep; the owner names it';
+/**
+ * The sentence for the dia 5 hole's depth, which the sheet does not print.
+ * Since 15.10.2026 the depth written is X, the screw's projection (8 / 12), as
+ * a dealer's technical sheet prints it (dia 5 x 8, dia 5 x 12), unless the
+ * profile names `holeDepthMm`; the owner: *"nie pamietam jakie"*.
+ */
+export const HOLE_DEPTH_NOTE = 'depth not on the sheet; the screw reaches X beyond the board\'s end, so the hole is X deep (8 / 12, DERIVED, a dealer\'s sheet prints the same) until the owner names it (joints.cabineo.holeDepthMm)';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // A. THE NUMBERS (cabineo-profile, cabineo-get, cabineo-path, cabineo-sheet,
@@ -118,11 +130,16 @@ export function cabineoProfile(profile = {}, system = null) {
   const num = (v, fallback) => (Number.isFinite(Number(v)) && v !== null && v !== '' ? Number(v) : fallback);
   const str = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
   const asked = system || (isCabineoSystem(profile?.joints?.system) ? profile.joints.system : null);
-  const machining = str(c.machining, ['drill15', 'cutter10', 'cutter12'], 'cutter12');
+  // The owner's own machining, 15.10.2026 (DECIDED, the LISP's head): three
+  // dia 15 holes (drill15), the collar skimmed 0.5 into the laminate (flush,
+  // skimMm 0.5), the side's dia 5 hole X deep unless he names a depth.
+  const machining = str(c.machining, ['drill15', 'cutter10', 'cutter12'], 'drill15');
   return {
     variant: cabineoVariantOf(asked) || '12',       // company defaults joints.system cabineo8 | cabineo12 (owner: both offered)
-    mounting: str(c.mounting, ['surface', 'flush', 'flushCap', 'hpl'], 'flushCap'),  // T78 proposed, owner to confirm
-    machining,                                       // T78 proposed, owner to confirm
+    mounting: str(c.mounting, ['surface', 'flush', 'flushCap', 'hpl'], 'flush'),  // the owner, 15.10.2026, DECIDED
+    machining,                                       // the owner, 15.10.2026, DECIDED ("cabineo 15 mm")
+    skimMm: num(c.skimMm, 0.5),                      // the owner, 15.10.2026, DECIDED ("zebranie 0.5 mm laminatu"; the sheet's flush collar prints 0.8)
+    holeDepthMm: num(c.holeDepthMm, null),           // null = X, the screw's projection (DERIVED); the owner names it when he remembers
     pitchMm: num(c.pitchMm, 250),                    // T78 proposed, owner to confirm
     endOffsetMm: num(c.endOffsetMm, 50),             // T78 proposed, owner to confirm
     minPerJoint: num(c.minPerJoint, 2),              // CLAUDE.md T78 F20: never fewer than two
@@ -358,9 +375,34 @@ export function cabineoReflectPt(pt, W) {
   return mirrorAboutVerticalAxis(W)([Number(pt[0]), Number(pt[1])]);
 }
 
-/** cabineo-axis-from-outside: the screw axis below the pocket face, by mounting: 5 / 5.8 / 7.1 / 5. */
+/** Is this the owner's skimmed flush collar (mounting 'flush' with a named `skimMm`)? */
+const skimmedFlush = (prof) => cabineoGet(prof, 'mounting') === 'flush' && Number.isFinite(Number(cabineoGet(prof, 'skimMm')))
+  && cabineoGet(prof, 'skimMm') !== null;
+
+/**
+ * cabineo-recess-depth: what the job really cuts. Under 'flush' the owner's
+ * skim (0.5, 15.10.2026) when he names one, else the sheet's; under every
+ * other mounting the sheet's (the cap needs its full 2.1; the surface bands
+ * have none). Null where the mounting draws no recess.
+ */
+export function cabineoRecessDepth(prof, sheet = cabineoSheet()) {
+  const m = cabineoMounting(prof, sheet);
+  if (!m) return null;
+  if (skimmedFlush(prof)) return Number(cabineoGet(prof, 'skimMm'));
+  return m.recessDepthMm ?? null;
+}
+
+/**
+ * cabineo-axis-from-outside: the screw axis below the pocket face, by
+ * mounting: 5 / 5.8 / 7.1 / 5 off the sheet; under 'flush' with the owner's
+ * skim it is 5 (from the collar seat, page 2) + the skim = 5.5 (DERIVED, the
+ * sheet's own arithmetic for its 5.8 = 5 + 0.8).
+ */
 export function cabineoAxisFromOutside(prof, sheet = cabineoSheet()) {
-  return cabineoMounting(prof, sheet)?.axisFromSurfaceMm ?? null;
+  const m = cabineoMounting(prof, sheet);
+  if (!m) return null;
+  if (skimmedFlush(prof)) return r4(Number(m.axisFromCollarSeatMm) + Number(cabineoGet(prof, 'skimMm')));
+  return m.axisFromSurfaceMm ?? null;
 }
 
 /** cabineo-skin-left: what is left between a pocket (outside) and an opposing blind cut (inside). */
@@ -565,8 +607,22 @@ export function cabineoOutlineArcs(opt, machining) {
  */
 export function cabineoRecess(prof, sheet = cabineoSheet()) {
   const m = cabineoMounting(prof, sheet);
-  if (m?.recessDepthMm == null) return null;
-  return [m.recessWidthMm, m.recessLengthMm, m.recessEndRadiusMm, m.recessEndCentreFromEndMm, m.recessDepthMm];
+  const d = cabineoRecessDepth(prof, sheet);
+  if (d == null) return null;
+  if (m.recessLengthMm != null) return [m.recessWidthMm, m.recessLengthMm, m.recessEndRadiusMm, m.recessEndCentreFromEndMm, d];
+  // Under flush the sheet prints the width only; its own reading of Options 1
+  // to 3 is "the collar recess around the three lobes with a rounded end
+  // concentric with the third lobe" (cabineo.json recessOutline.reading), so
+  // the rest is DERIVED from that sentence: end radius = half the width, end
+  // centre = the third lobe's centre, length = the two added. THE SKIM LAYER
+  // (the owner's second of three, 15.10.2026); before, this drew no outline.
+  if (m.recessWidthMm != null) {
+    const w = Number(m.recessWidthMm);
+    const c3 = cabineoLobeCentres(cabineoOption(prof, sheet))[2];
+    if (c3 == null) return [w, null, null, null, d];
+    return [w, r4(c3 + w / 2), r4(w / 2), c3, d];
+  }
+  return [null, null, null, null, d];
 }
 
 /** cabineo-recess-box: [0, -w/2, length, w/2], or null when the length is not on the sheet. */
@@ -580,9 +636,24 @@ export function cabineoRecessBox(rc) {
  * the screw axis: y = sideOut + sideIn * axisFromOutside. Depth: NOT ON THE
  * SHEET (null). Returns [{ side, x, y, dia, depth, joint, off }].
  */
+/**
+ * cabineo-hole-depth: the side's dia 5 hole depth. The profile's `holeDepthMm`
+ * when the owner names one; else the sheet's (it prints none); else X, the
+ * screw's projection (8 / 12), which is what a dealer's technical sheet
+ * prints ("drill hole dia 5 x 12" for Cabineo 12, "dia 5 x 8" for Cabineo 8).
+ * DERIVED; the owner, 15.10.2026: *"nie pamietam jakie"*.
+ */
+export function cabineoHoleDepth(prof, sheet = cabineoSheet()) {
+  const named = cabineoGet(prof, 'holeDepthMm');
+  if (Number.isFinite(Number(named)) && named !== null && named !== '') return Number(named);
+  const printed = cabineoPath(sheet, ['counterpartHole', 'depthMm']);
+  if (printed != null) return printed;
+  return cabineoVariant(prof, sheet)?.screwReachXMm ?? null;
+}
+
 export function cabineoSideHoles(jt, offs, prof, sheet = cabineoSheet()) {
   const dia = cabineoPath(sheet, ['counterpartHole', 'diaMm']);
-  const depth = cabineoPath(sheet, ['counterpartHole', 'depthMm']);
+  const depth = cabineoHoleDepth(prof, sheet);
   const ax = cabineoAxisFromOutside(prof, sheet);
   const y = cabineoJget(jt, 'sideOut') + cabineoJget(jt, 'sideIn') * ax;
   return offs.map((off) => ({
@@ -863,7 +934,8 @@ export function cabineoRefusal(prof, sheet, sideT, boardT) {
 // Cabineo both boards lose that joint's puzzle whole (the end tenons, the
 // sockets and their dia 7.5 holes, the dog bones, the dia 3 row); the FIX
 // shelf's biscuit set and side screws go the same way (`cabineoShelf`); the
-// joints into the BACK stay the kit's.
+// BACK's puzzle joint goes too and the BACK is screwed (`screwedBack.js`, the
+// owner, 15.10.2026: no dog bones under Cabineo).
 
 /**
  * cabineo-bom-lines: a connector per pocket (article NOT on the sheet, owner
@@ -941,7 +1013,7 @@ export function cabineoPlan({
     return boards[id];
   };
   for (const id of CABINEO_BOARDS) board(id);
-  for (const id of CABINEO_LEAVES) board(id).said = 'the BACK keeps the joints its kit cuts (the owner\'s sentence names top, bottom, fixed shelf and side)';
+  board('BACK').said = SCREWED_BACK;
   let nShelf = 0;
   for (const j of joints) {
     const b = board(j.joint.board);
@@ -959,7 +1031,7 @@ export function cabineoPlan({
   }
   const nPockets = joints.reduce((n, j) => n + j.offs.length, 0);
   return {
-    prof, sheet, gate: cabineoGate(prof), refused, joints, boards,
+    prof, sheet, gate: cabineoGate(prof), refused, joints, boards, back: SCREWED_BACK,
     counts: { pockets: nPockets, holes: nPockets, shelfPockets: nShelf },
     bom: cabineoBomLines(prof, sheet, nPockets, nShelf),
   };
@@ -1180,7 +1252,9 @@ export function cabineoVerdict({
     const mine = joints.filter((j) => j.joint.board === id).flatMap((j) => j.geometry.flatMap((g) => [g.pocket, g.recess, ...g.holes].filter(Boolean)));
     const insideCuts = [
       ...drills.filter((d) => d.panel === id && d.face !== 'outside').map((d) => ({ kind: 'hole', layer: d.layer, x: d.x, y: d.y, d: d.d, depth: d.depth ?? null })),
-      ...(p?.cnc?.pockets || []).filter((k) => !endPocketGoes(k, drawnH, pz))
+      // Every puzzle dog bone goes with the joint since 15.10.2026 (the end
+      // ones with the Cabineo joint, the back ones with the screwed back).
+      ...(p?.cnc?.pockets || []).filter((k) => k.layer !== pz?.layers?.dogbone)
         .map((k) => ({ kind: 'pocket', layer: k.layer, x1: k.x1, y1: k.y1, x2: k.x2, y2: k.y2, depth: k.depth ?? null })),
     ];
     const findings = cabineoSkinFindings(p, mine, insideCuts, profile);
@@ -1212,6 +1286,7 @@ export function cabineoVerdict({
       boards: CABINEO_BOARDS.filter((id) => byId.has(id)),
       outside: outsideBoards,
       leaves: [...CABINEO_LEAVES],
+      back: SCREWED_BACK,
       joints,
       shelves: new Set(fix.map((f) => f.id)),
       counts: { pockets: nPockets, holes: nPockets, shelfPockets: nShelf },
@@ -1235,13 +1310,14 @@ export function withCabineoRefusal(parent, verdict, asked) {
 
 /**
  * The LISP's section F, on the boards the plan names: each loses the puzzle of
- * the PLANNED joints and nothing else. A SIDE keeps its outline (the back
- * tenons are the BACK's joint) and loses, at each planned joint line, the
- * socket pocket, its two dia 7.5 holes and the dia 3 row. A TOP or BOTTOM
- * loses its END tenons (the outline re-traced with plain ends, its back-edge
- * tenons kept: `biscuitJoints.js bjPlainEnds`, one copy) and its end dog
- * bones. A FIX shelf's own board carries no puzzle. Run BEFORE the drilling
- * pass, so nothing of it is copied into the drills. The BACK is not in `boards`.
+ * the PLANNED joints and nothing else here. A SIDE keeps its outline for now
+ * and loses, at each planned joint line, the socket pocket, its two dia 7.5
+ * holes and the dia 3 row. A TOP or BOTTOM loses its END tenons (the outline
+ * re-traced with plain ends, its back-edge tenons kept for now:
+ * `biscuitJoints.js bjPlainEnds`, one copy) and its end dog bones. A FIX
+ * shelf's own board carries no puzzle. Run BEFORE the drilling pass, so
+ * nothing of it is copied into the drills. The BACK is not in `boards`: the
+ * back joint, on every board, is `screwedBackStrip`'s (15.10.2026), run next.
  */
 export function cabineoStrip({ panels, plan, profile }) {
   const pz = profile?.puzzle || {};
@@ -1365,6 +1441,7 @@ export function cabineoSummary(plan) {
     joints: plan.joints.map((j) => ({ name: j.joint.name, len: roundTo(j.joint.len, 4), pockets: j.offs.length, board: j.joint.board, side: j.joint.side })),
     machinedFace: Object.fromEntries([...plan.outside.map((id) => [id, 'outside']), ...plan.boards.filter((id) => !plan.outside.includes(id)).map((id) => [id, 'inside'])]),
     leaves: [...plan.leaves],
+    back: plan.back,
     confirmed: plan.prof.confirmed,
     gate: cabineoGate(plan.prof),
   };
@@ -1478,7 +1555,7 @@ export function cabineoOperationsManifest(entries = [], { files = [] } = {}) {
         })),
         holes: holes.map((d) => ({
           kind: d.kind, layer: d.layer, joint: d.meta?.joint, x: d.x, y: d.y, diaMm: d.d, depthMm: d.depth ?? null,
-          face: d.face || 'inside', ...(d.depth == null ? { depthNote: d.meta?.depthNote || HOLE_DEPTH_NOTE } : {}),
+          face: d.face || 'inside', ...(d.kind === CABINEO_HOLE_KIND ? { depthNote: d.meta?.depthNote || HOLE_DEPTH_NOTE } : {}),
           ...(d.face === 'outside' ? { export: d.meta?.export?.at ? { at: d.meta.export.at } : null } : {}),
         })),
       });

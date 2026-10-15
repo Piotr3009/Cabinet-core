@@ -20,9 +20,14 @@
 ;;;      TWO sets up to 700, THREE above it. Every number is profile.biscuits,
 ;;;      read here key for key (section A) and changed in no file but that one.
 ;;;   2. THE JOINTS IT APPLIES TO (section C): side to TOP, side to BOTTOM,
-;;;      fixed shelf to side. NEVER the back. The BACK keeps the joints its
-;;;      kit cuts today (the puzzle sockets, the dia 3 rows): a biscuit unit
-;;;      changes not one entity on it.
+;;;      fixed shelf to side. NEVER the back ("bez ciastek na plecach").
+;;;      Since 15.10.2026 THE BACK IS SCREWED (the owner: "jak mamy cabineo
+;;;      to nie robimy dog bonsow, i to samo jak mamy biscuits"): the puzzle
+;;;      joint into the back goes whole on a biscuit unit (the sides' and the
+;;;      TOP's and BOTTOM's back tenons with their dog bones, the BACK's
+;;;      sockets with their dia 7.5 holes) and drawBACK's own dia 3 screw
+;;;      rows through the back are what hold it. Before that day the BACK
+;;;      kept the puzzle and a biscuit unit changed not one entity on it.
 ;;;   3. THE FIXED SHELF JOINT OF T24/T26 IS UNTOUCHED ("polka stala to
 ;;;      samo"): it is this very set already, on the same boards, from the same
 ;;;      datum. Its rows are in the table (section C) so one command prints
@@ -37,8 +42,9 @@
 ;;; end is the joiner's, at the bench, as the shelf's is). Never both systems
 ;;; on one joint: the side's top and bottom sockets, their dia 7.5 holes and
 ;;; their dia 3 rows go; the TOP's and BOTTOM's end tenons and end dog bones
-;;; go. The back tenons of the sides and of the TOP and BOTTOM stay, because
-;;; the joints into the BACK are not biscuit joints (point 2).
+;;; go. The back tenons of the sides and of the TOP and BOTTOM go too, with
+;;; their dog bones, and the BACK's sockets with them (point 2, the owner's
+;;; 15.10.2026): no biscuit replaces them, the BACK's screw rows hold it.
 ;;;
 ;;; NO GATE. Every other new system of this house (dowels T75, Cabineo T78)
 ;;; is PROPOSED and gated until the owner confirms it. This one is not: the
@@ -165,10 +171,11 @@
 ;;;                  THIS set already, left as it is
 ;;;
 ;;; NOT IN THE TABLE, BY THE OWNER'S WORD: the BACK. "bez ciastek na plecach."
-;;; BACK to side, BACK to TOP and BACK to BOTTOM keep what the kit cuts today
-;;; (the puzzle's sockets in the back, the tenons on the sides' and the TOP's
-;;; and BOTTOM's back edges, the back's dia 3 rows). (biscuit-back-refusal)
-;;; is the sentence any request for a biscuit on the BACK is answered with.
+;;; BACK to side, BACK to TOP and BACK to BOTTOM are SCREWED (15.10.2026): the
+;;; back's dia 3 rows stay as drawBACK draws them, the puzzle's sockets in the
+;;; back and the tenons on the sides' and the TOP's and BOTTOM's back edges go
+;;; (section F). (biscuit-back-refusal) is the sentence any request for a
+;;; biscuit on the BACK is answered with.
 ;;;
 ;;; NOT IN THE TABLE EITHER: a FIX shelf on a PARTITION. The partition serves
 ;;; two bays and a through screw would surface in the neighbour's face, so
@@ -234,7 +241,7 @@
 
 ;;; THE BACK, in the owner's words. Returned for any joint that names it.
 (defun biscuit-back-refusal ( / )
-  "no biscuits on the back (the owner, 11.10.2026: bez ciastek na plecach); the BACK keeps the joints its kit cuts")
+  "no biscuits on the back (the owner, 11.10.2026: bez ciastek na plecach); the BACK is screwed on with the kit's own dia 3 rows, its puzzle joint goes whole (the owner, 15.10.2026: no dog bones)")
 
 ;;; The joint table for the five-board carcass every puzzle kit shares
 ;;; (KIT_BUD_FULL: BUL, BUR, TOP, BOTTOM, BACK) and its FIX shelves.
@@ -372,10 +379,14 @@
 ;;;   row goes because the set's own screws stand on that same line;
 ;;;   the TOP / BOTTOM loses the tenons on that END (the end goes back to a
 ;;;   straight line) and the end's dog bones (PUZZLE_DOG_BONES).
-;;; What is NOT one of these joints stays exactly as it is: the back tenons
-;;; of the sides and of the TOP and BOTTOM, the BACK whole (section C), the
-;;; hinge plate holes, the shelf pin ladders, the runner holes, the FIX
-;;; shelf's dia 3 row through the BACK (partitionBackScrewRun), the fronts.
+;;; THE BACK JOINT goes too (the owner, 15.10.2026, point 2 at the head): the
+;;;   sides' back tenons and dog bones (a plain D - G x H), the TOP's and
+;;;   BOTTOM's back tenons and dog bones (plain ends, plain back edge), the
+;;;   BACK's sockets and dia 7.5 holes (a plain W x H). The BACK keeps its dia
+;;;   3 screw rows and, on a wall unit, its hanger cut-outs.
+;;; What is NOT one of these joints stays exactly as it is: the hinge plate
+;;; holes, the shelf pin ladders, the runner holes, the FIX shelf's dia 3 row
+;;; through the BACK (partitionBackScrewRun), the fronts.
 ;;;
 ;;; THE CORNER. On a side the set's first screw stands at 51.5 from the FRONT
 ;;; and the last at (D - G) - 51.5, which is 51.5 from the back edge; the back
@@ -483,8 +494,10 @@
 ;;;   BUR-BOTTOM   y 9    SCREW x 488.5 395.5 144.5 51.5   MARK 477..407 133..63
 ;;;   BUR-SHELF-1  y 394  SCREW x 468.5 375.5 144.5 51.5   MARK 457..387 133..63
 ;;; TOP, BOTTOM, SHELF-1: nothing (plain ends; T26 F7.1).
-;;; BACK: nothing (the owner: bez ciastek na plecach). It keeps its 10 sockets,
-;;;       20 dia 7.5 holes and 14 dia 3 screws exactly as KIT_BUD_FULL cuts them.
+;;; BACK: no biscuit (the owner: bez ciastek na plecach). Since 15.10.2026 it
+;;;       loses its 10 sockets and 20 dia 7.5 holes and keeps its 14 dia 3
+;;;       screws (x 9 and 591 at y 50, 240, 530, 720; x 68, 300, 532 at
+;;;       y 9 and 761), a plain 600 x 770.
 ;;;
 ;;; THE SHELF ROWS ARE WHAT T24 CUTS TODAY, TO THE DECIMAL: engine marks on
 ;;; BUL from (83, 394) to (153, 394) and (407, 394) to (477, 394), shelf
@@ -498,10 +511,13 @@
 ;;;
 ;;; WHAT THE PUZZLE LOSES ON THE SAME BUD. Each side: 4 sockets (2 top, 2
 ;;; bottom), 8 dia 7.5 holes, 6 dia 3 screws (at x 50 270 490, y 761 and 9).
-;;; TOP and BOTTOM: the 4 end tenons each (the outline falls from 64 points to
-;;; 24: the 4 corners and the 2 back tenons' 20 points) and the 4 end dog
-;;; bones each (the 2 back-edge dog bones stay). The sides keep their 3 back
-;;; tenons (34 outline points) and 3 back dog bones. The BACK loses nothing.
+;;; TOP and BOTTOM: the 4 end tenons each and the 4 end dog bones each, and
+;;; since 15.10.2026 the 2 back tenons and 2 back dog bones each (the outline
+;;; falls from 64 points to the 4 corners). The sides lose their 3 back tenons
+;;; (34 outline points to 4) and 3 back dog bones. The BACK loses its 10
+;;; sockets and 20 dia 7.5 holes and keeps its 14 screws. No PUZZLE layer is
+;;; left on a biscuit BUD. (Before 15.10.2026 the back joint stayed: TOP and
+;;; BOTTOM 24 points, the sides 34, the BACK whole.)
 
 (princ "\nSKYLON_JOINTS_BISCUIT loaded. Type BISCUIT_JOINTS to print the pattern.")
 (princ)

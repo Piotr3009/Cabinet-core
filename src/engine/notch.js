@@ -62,6 +62,8 @@ export function notchProfile(profile = {}) {
     'notch.defaults.width': num(def.widthMm, 200),
     'notch.defaults.depth': num(def.depthMm, 200),
     'notch.defaults.height': num(def.heightMm, 0),
+    // 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR.
+    'notch.obstacleClearance': num(profile.notch?.obstacleClearanceMm, 10),
   };
 }
 
@@ -605,6 +607,18 @@ export function notchRebateEatsP(cd, ch, g, nw, nd, nh, corner, K) {
 // H. THE REFUSALS (Room refuses first; nothing is clipped silently)
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * notch-obstacle-limits (15.10.2026): the widest and the deepest FULL-HEIGHT
+ * back notch the refusals below allow on a carcass cw x cd of boards g, as
+ * [maxW, maxD]: the TOP and BOTTOM must still run across (cw - 2g - minEdge)
+ * and what is left of the side must hold a joint (cd - g - minEdge). The
+ * store's obstacle notch drives a cabinet into a chimney no further than this.
+ */
+export function notchObstacleLimits(cw, cd, g, bone) {
+  const minEdge = notchMinJointEdge(bone, g);
+  return [cw - 2 * g - minEdge, cd - g - minEdge];
+}
+
 export function notchRefusal(cw, cd, ch, g, nw, nd, nh, corner, K) {
   const bone = notchP(K, 'puzzle.dogboneHalfHeight');
   const minEdge = notchMinJointEdge(bone, g);
@@ -645,8 +659,32 @@ export function notchRefusal(cw, cd, ch, g, nw, nd, nh, corner, K) {
 /** The warning code every refusal carries (Check #28 reads it). */
 export const NOTCH_REFUSED = 'NOTCH_REFUSED';
 
-/** The LISP's two parents: "Parent kit [B=BUD / W=WARDROBE]". */
-export const NOTCH_PARENT_KITS = Object.freeze(['KIT_BUD_FULL.lsp', 'KIT_WARDROBE_FULL.lsp']);
+/**
+ * The LISP's parents: "Parent kit [B=BUD / W=WARDROBE / U=WUD wall unit]". The
+ * wall unit joined them on 15.10.2026 (the owner: *"nie ma wogole mozliwosci
+ * wyciecia naroznika w szafkach wiszacych, a powinno byc"*); its hangers are
+ * carried by `notchHangerCutouts` (the BACK) and `notchDrills` (the side).
+ */
+export const NOTCH_PARENT_KITS = Object.freeze(['KIT_BUD_FULL.lsp', 'KIT_WARDROBE_FULL.lsp', 'KIT_WUD_FULL.lsp']);
+
+/**
+ * KIT_NOTCH.lsp section 1, THE WALL UNIT: a hanger cut-out (a pocket on the
+ * hangers' cut-out layer, in a top corner of the BACK) that the notch's region
+ * reaches STEPS IN along the width by nw, so the bracket hangs beside the
+ * notch on the board that is there. Cut-outs the notch does not reach stay.
+ * `fc` is the BACK's corner code; the region is nw wide and hh high from the floor.
+ */
+export function notchHangerCutouts(pockets, cutoutLayer, W, H, nw, hh, fc) {
+  if (!cutoutLayer) return [];
+  const left = notchFcX0(fc);
+  return (pockets || []).filter((k) => k.layer === cutoutLayer).map((k) => {
+    const [rx0, rx1] = left ? [0, nw] : [W - nw, W];
+    const reached = k.x1 < rx1 - EPS && k.x2 > rx0 + EPS && k.y1 < hh - EPS;
+    if (!reached) return k;
+    const dx = left ? nw : -nw;
+    return { ...k, x1: roundTo(k.x1 + dx, 4), x2: roundTo(k.x2 + dx, 4) };
+  });
+}
 
 /**
  * The notch a unit asks for, read once, or null. Missing numbers fall back to
@@ -662,6 +700,9 @@ export function notchOf(params, profile = {}) {
     w: pick(n.w, 'notch.defaults.width'),
     d: pick(n.d, 'notch.defaults.depth'),
     h: pick(n.h, 'notch.defaults.height'),
+    // 15.10.2026: a notch the ROOM derived (a chimney, a box; projectStore
+    // obstacleNotchFor) says so, and what for; the hand's notch has neither.
+    ...(n.auto ? { auto: true, for: String(n.for || '') } : {}),
   };
 }
 
@@ -671,11 +712,11 @@ export function notchKitRefusal(type) {
   const ok = NOTCH_PARENT_KITS.includes(type?.lisp)
     && c.top === 'panel' && c.back === 'full'
     && (c.sides ?? 'panel') === 'panel' && (c.bottom ?? 'panel') === 'panel'
-    && !type?.hangers && !type?.corner;
+    && !type?.corner;
   if (ok) return null;
   // A kit's label may carry a long dash of its own; the sentence says it plain.
   const name = String(type?.label || type?.id || 'unit').replace(/\s*[\u2013\u2014]\s*/g, ', ');
-  return `NOTCH: a corner is cut from a base unit (KIT_BUD) or a wardrobe (KIT_WARDROBE) carcass; `
+  return `NOTCH: a corner is cut from a base unit (KIT_BUD), a wardrobe (KIT_WARDROBE) or a wall unit (KIT_WUD) carcass; `
     + `a ${name} is not one of them.`;
 }
 
@@ -1054,10 +1095,14 @@ export function notchCarcass({
     // away is dropped with the corner (it would be drilled into air).
     const holes = sockets.holes.filter((hl) => !(!boxed
       && notchHoleInP(hl.x, hl.y, (Number(hl.d) || 0) / 2, W, H, nw, hh, fc)));
+    // THE WALL UNIT (KIT_NOTCH.lsp section 1, 15.10.2026): the hanger cut-outs
+    // are the parent's pockets on the hangers' layer; one the notch reaches
+    // steps in by nw, the other stays.
+    const hangerCuts = notchHangerCutouts(bk.cnc?.pockets, profile.wallUnit?.hangers?.cutoutLayer, W, H, nw, hh, fc);
     bk.cnc = {
       ...bk.cnc,
       outline,
-      pockets: sockets.pockets,
+      pockets: [...sockets.pockets, ...hangerCuts],
       holes: [...holes, ...(db ? [dogboneHole(db, pz)] : [])],
       ...(full ? {} : { notch: notchCornerOfOutline(outline, W, H) }),
     };
@@ -1200,9 +1245,11 @@ export function notchDrills({ cut, panels, drills, legs }) {
     if (!rg || OWN_KINDS.has(d.kind)) { keep.push(d); continue; }
     const rad = (Number(d.d) || 0) / 2;
     if (!inRegion(rg, d.x, d.y, rad)) { keep.push(d); continue; }
-    if (d.kind === 'shelf' && d.panel === cut.sideId && cut.boxed) {
+    if ((d.kind === 'shelf' || d.kind === 'hanger') && d.panel === cut.sideId && cut.boxed) {
       // D7: the column nearest the notch is re-planned on the shortened run,
       // the parent's own setback from the NEW end: it steps off the notch by nd.
+      // THE WALL UNIT (15.10.2026): its hanger holes, measured off the back
+      // edge, step forward with that edge the same way, never dropped.
       const away = notchFcX0(rg.fc) ? cut.nd : -cut.nd;
       keep.push({ ...d, x: roundTo(d.x + away, 4) });
       continue;
@@ -1263,5 +1310,6 @@ export function notchSummary(cut) {
     boxed: cut.boxed,
     boards: [...cut.boards],
     dropped: cut.dropped || 0,
+    ...(cut.notch?.auto ? { auto: true, for: cut.notch.for } : {}),
   };
 }

@@ -88,8 +88,10 @@ test('F20 LISP: the gate sentence, verbatim, and the profile choices as CLAUDE.m
   assert.ok(text.includes('"the Cabineo pattern is proposed, not confirmed by the owner"'));
   const prof = text.slice(text.indexOf('(defun cabineo-profile'), text.indexOf('(defun cabineo-get'));
   assert.match(prof, /\(cons "variant" "12"\)/);
-  assert.match(prof, /\(cons "mounting" "flushCap"\)/);
-  assert.match(prof, /\(cons "machining" "cutter12"\)/);
+  assert.match(prof, /\(cons "mounting" "flush"\)/, 'the owner, 15.10.2026: the collar skimmed in');
+  assert.match(prof, /\(cons "machining" "drill15"\)/, 'the owner, 15.10.2026: three dia 15 holes');
+  assert.match(prof, /\(cons "skimMm" 0\.5\)/, 'the owner, 15.10.2026: zebranie 0.5 mm laminatu');
+  assert.match(prof, /\(cons "holeDepthMm" nil\)/, 'the owner names it when he remembers; X until then');
   assert.match(prof, /\(cons "pitchMm" 250\.0\)/);
   assert.match(prof, /\(cons "endOffsetMm" 50\.0\)/);
   assert.match(prof, /\(cons "minPerJoint" 2\)/);
@@ -193,9 +195,13 @@ test('F20 LISP: the inverted side, the owner\'s words, the one reflection, the l
   assert.match(text, /\(defun cabineo-reflect-x \(x W\)\s*\(- \(float W\) \(float x\)\)\)/);
   assert.match(text, /MIN_SKIN 3/);
   assert.match(text, /\(defun cabineo-skin-clash \(boardT pocketDepth otherDepth minSkin\)/);
-  // The back is left as the kit cuts it, and the owner is asked.
+  // The back: no Cabineo in it, and since 15.10.2026 no puzzle either: screwed.
   assert.match(flat, /joints into the BACK are NOT in the owner's sentence/);
-  assert.match(flat, /a Cabineo into the back is a question for the owner, named in the PR/);
+  assert.match(flat, /THE BACK IS SCREWED \(the owner, 15\.10\.2026, DECIDED/);
+  assert.match(flat, /jak mamy cabineo to nie robimy dog bonsow/);
+  assert.match(text, /\(defun cabineo-recess-depth \(prof sheet/);
+  assert.match(text, /\(defun cabineo-hole-depth \(prof sheet/);
+  assert.match(flat, /CABINEO_POCKET_15MM.*CABINEO_RECESS.*CABINEO_HOLE_5MM/, 'the three layers, in the owner\'s order');
   // The side's hole is not on the board's centre line.
   assert.match(flat, /1\.9 nearer the outside/);
 });

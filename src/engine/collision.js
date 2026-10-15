@@ -419,8 +419,10 @@ export function unitFootprint({ wall, x, width, depth, rotation = 0, backInset =
   // room, so the footprint starts there instead of at v = 0 and every plan
   // question — corners, depth clamps, distance arrows — answers from the real
   // rectangle rather than from the one the unit would occupy if it were pushed
-  // back against a wall that is not straight.
-  const near = Math.max(0, Number(backInset) || 0);
+  // back against a wall that is not straight. Since 15.10.2026 it may be
+  // NEGATIVE: a cabinet standing in a recess (runs.js wallGapOf, `recess_mm`)
+  // starts behind the wall line, where the recess is room.
+  const near = Number(backInset) || 0;
   // Local (u along the wall, v into the room) → plan, with the rotation applied
   // in the local frame first.
   const place = (u, v) => {
@@ -461,14 +463,28 @@ export function spanInWallFrame(points, wall) {
  * Its own function because two different questions ask it — the drag clamp
  * (through `wallObstacles`) and the PLACEMENT search, which takes bare spans.
  */
-export function boxSpansOnWall({ wall, depth, boxes = [] }) {
+export function boxSpansOnWall({ wall, depth, boxes = [], enter = null }) {
   const out = [];
   for (const box of boxes || []) {
     const span = spanInWallFrame(boxCorners(box), wall);
     if (span.far <= 0 || span.near >= (Number(depth) || 0)) continue;
     if (span.right <= 0 || span.left >= wall.width) continue;
+    // ─── CHAT-FIX 15.10.2026: THE OBSTACLE A NOTCH IS CUT FOR ─────────────
+    // The owner: *"komin nie ma mozliwosci automatycznego wycinania w szafce
+    // naroznika jak przesuwamy - patrz skos."*  `enter` (a number, or a
+    // function of the span) says how far along the wall a cabinet may drive
+    // INTO this obstacle: the store answers it from the widest notch the
+    // carcass can take (KIT_NOTCH.lsp notch-obstacle-limits), the obstacle's
+    // own width caps it (past its far edge the cabinet would stand in front
+    // of it, which is no corner), and 0 or nothing keeps the hard stop every
+    // box has had since turn 14. The span carries `near` and `far` too, so the
+    // store can read how deep the obstacle stands.
+    const asked = typeof enter === 'function' ? enter(span) : Number(enter);
+    const allowed = Math.max(0, Math.min(Number(asked) || 0, span.right - span.left));
     out.push({
-      left: span.left, right: span.right, label: box.label || 'a box in the plan', corner: false, box: true,
+      left: span.left, right: span.right, near: span.near, far: span.far,
+      label: box.label || 'a box in the plan', corner: false, box: true,
+      ...(allowed > 0 ? { enter: allowed } : {}),
     });
   }
   return out;
@@ -495,9 +511,9 @@ export function boxSpansOnWall({ wall, depth, boxes = [] }) {
  *            a chimney and a neighbour are the same fact.
  */
 export function wallObstacles({
-  wall, walls, depth, others = [], boxes = [],
+  wall, walls, depth, others = [], boxes = [], enter = null,
 }) {
-  const out = [...boxSpansOnWall({ wall, depth, boxes })];
+  const out = [...boxSpansOnWall({ wall, depth, boxes, enter })];
   for (const o of others) {
     if (o.wall === wall.index && !o.rotation) {
       out.push({ left: o.x_mm, right: o.x_mm + o.width, label: o.label, corner: false });
@@ -710,6 +726,18 @@ export function clampUnitX({
     if (Number.isFinite(Number(slopeLimit.max))) high = Math.min(high, Number(slopeLimit.max));
   }
   for (const o of others) {
+    // ─── CHAT-FIX 15.10.2026: AN OBSTACLE THE NOTCH IS CUT FOR ────────────
+    // A box or a chimney with `enter` (collision.js boxSpansOnWall) is a
+    // barrier the unit may drive INTO by that much along the wall, the slope's
+    // arrival law one obstacle at a time: the stop stands `enter` inside the
+    // obstacle's edge, with no clearance (the notch carries its own), and the
+    // side is read where the unit may legally be.
+    const enter = Math.max(0, Number(o.enter) || 0);
+    if (enter > 0) {
+      if (o.right - enter <= here) low = Math.max(low, o.right - enter);                 // on the left
+      else if (o.left + enter >= here + width) high = Math.min(high, o.left + enter - width); // on the right
+      continue;
+    }
     // Which side an obstacle is on is decided on the RAW footprints: a unit
     // standing flush against its neighbour is on that neighbour's right, not
     // "overlapping it". The clearance is then applied to the barrier itself —
@@ -798,6 +826,12 @@ export function unitIssues({ unit, wallWidth: wallW, roomHeight: roomH, others =
   const me = unitSpan(unit);
   for (const o of others) {
     if (o.right > me.left && me.right > o.left) {
+      // 15.10.2026: an overlap the notch is cut for is not an overlap: the
+      // obstacle sticks out past one of the unit's edges and the unit stands
+      // no deeper in it than `enter` allows (collision.js boxSpansOnWall).
+      const overlap = Math.min(o.right, me.right) - Math.max(o.left, me.left);
+      const atCorner = o.left <= me.left + 1e-6 || o.right >= me.right - 1e-6;
+      if ((Number(o.enter) || 0) > 0 && atCorner && overlap <= Number(o.enter) + 1e-6) continue;
       issues.push({
         level: 'error',
         code: 'UNIT_OVERLAP',

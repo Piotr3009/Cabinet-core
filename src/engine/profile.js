@@ -503,6 +503,12 @@ export const DEFAULT_CABINET_PROFILE = {
   // puzzle's and the cutter's own (KIT_NOTCH.lsp section A).
   notch: {
     defaults: { widthMm: 200, depthMm: 200, heightMm: 0 }, // T75 proposed, owner to confirm
+    // Chat-fix 15.10.2026 (the owner: *"komin nie ma mozliwosci automatycznego
+    // wycinania w szafce naroznika jak przesuwamy - patrz skos"*): a cabinet
+    // slid into a chimney breast or a box gets its corner notch derived from
+    // the overlap (projectStore obstacleNotchFor, KIT_NOTCH.lsp section 1); this
+    // is the scribe room added round the obstacle, on the width and the depth.
+    obstacleClearanceMm: 10,   // proposed, owner to confirm
   },
 
   // ─── T75 F23 · THE JOINT SYSTEM (reference/lisp/SKYLON_JOINTS_DOWEL.lsp) ──
@@ -573,9 +579,21 @@ export const DEFAULT_CABINET_PROFILE = {
     // hole from the inside face of the side; those boards carry machinedFace
     // 'outside' and are exported through T76's one reflection (the LISP,
     // section C). No number of that is a profile number.
+    //
+    // THE OWNER'S OWN MACHINING (15.10.2026, decided): *"musi byc 3 layery 1 to
+    // cabineo 15 mm, drugi to cabineo oblamowka, czyli zebranie 0.5 mm
+    // laminatu, 3 to przeciwlegle nawiercenie"*. Three layers: the pocket as
+    // three dia 15 holes (drill15, CABINEO_POCKET_15MM), the collar's skim 0.5
+    // into the laminate (flush, `skimMm`, CABINEO_RECESS; the sheet's flush
+    // band prints 0.8) and the side's dia 5 hole (CABINEO_HOLE_5MM), X deep
+    // (8 / 12, the screw's projection) until the owner names `holeDepthMm`.
+    // No dog bone anywhere on a Cabineo unit: the back joint is screwed
+    // (engine/screwedBack.js). The cutter options and the cap stay choosable.
     cabineo: {
-      mounting: 'flushCap',   // surface | flush | flushCap | hpl       T78 proposed, owner to confirm
-      machining: 'cutter12',  // drill15 | cutter10 | cutter12          T78 proposed, owner to confirm
+      mounting: 'flush',      // surface | flush | flushCap | hpl       the owner, 15.10.2026 (the collar skimmed in)
+      machining: 'drill15',   // drill15 | cutter10 | cutter12          the owner, 15.10.2026 ("cabineo 15 mm")
+      skimMm: 0.5,            // the collar's skim under 'flush'        the owner, 15.10.2026 ("zebranie 0.5 mm laminatu")
+      holeDepthMm: null,      // the side's dia 5 hole depth; null = X  DERIVED (8 / 12); the owner names it when he remembers
       pitchMm: 250,           // the widest gap between two pockets     T78 proposed, owner to confirm (never over the sheet's 300)
       endOffsetMm: 50,        // first and last pocket from each end    T78 proposed, owner to confirm (never under the sheet's 20)
       minPerJoint: 2,         // CLAUDE.md T78 F20: never fewer than two on one joint
@@ -6165,9 +6183,17 @@ export function migrateCabinetProfile(profile) {
       // T78 F20 · the Cabineo choices and the gate, key by key, so a profile
       // saved before tonight cuts the puzzle and holds this gate shut too; the
       // layer names nested one level deeper (the pocket's by machining option).
+      // Chat-fix 15.10.2026 · a snapshot saved under T78 carries the PROPOSED
+      // pair (flushCap, cutter12) and no `skimMm`; nobody chose it, so it is
+      // not spread back in: the owner's own three layers (drill15, flush, the
+      // 0.5 skim) are what such a profile cuts with. A block that names
+      // `skimMm` is one saved after tonight and keeps what it says.
       cabineo: {
         ...D.joints.cabineo,
-        ...profile.joints?.cabineo,
+        ...(profile.joints?.cabineo?.skimMm === undefined && profile.joints?.cabineo?.mounting === 'flushCap'
+          && profile.joints?.cabineo?.machining === 'cutter12'
+          ? (({ mounting: _m, machining: _o, ...rest }) => rest)(profile.joints.cabineo)
+          : profile.joints?.cabineo),
         layers: {
           ...D.joints.cabineo.layers,
           ...profile.joints?.cabineo?.layers,

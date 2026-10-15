@@ -21,6 +21,15 @@
 // f20-cabinet-cabineo.patch, f20-cnc-outside-face.patch,
 // f20-profile-cabineo.patch), the integrated cut, its DXF and its goldens. The
 // integrated group SKIPS, saying so, while the hooks are not in.
+//
+// CHAT-FIX 15.10.2026 (the owner, "OK TERAZ POWAZNIE"): *"musi byc 3 layery 1
+// to cabineo 15 mm, drugi to cabineo oblamowka, czyli zebranie 0.5 mm
+// laminatu, 3 to przeciwlegle nawiercenie ... jak mamy cabineo to nie robimy
+// dog bonsow."*  The DEFAULTS are his own machining now: drill15, flush, a
+// 0.5 skim, the side hole X deep; the NUMBERS block's cutter12 / flushCap case
+// is asked for by name below (`mounting`, `machining` on `cabineoPlan`) and
+// still holds to the decimal. The back joint goes whole (engine/screwedBack.js)
+// and the goldens were REPINNED to the owner's setup.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -37,6 +46,7 @@ import { machiningFor } from '../src/engine/machining.js';
 import { buildUnitDxfFiles } from '../src/engine/cnc/dxf.js';
 import { JOINT_SYSTEMS, jointSystemOf } from '../src/engine/dowels.js';
 import { goldenOf } from '../scripts/t75-golden.mjs';
+import { SCREWED_BACK, screwedBackStrip } from '../src/engine/screwedBack.js';
 
 const ROOT = new URL('../', import.meta.url).pathname;
 const read = (rel) => readFileSync(`${ROOT}${rel}`, 'utf8');
@@ -56,9 +66,9 @@ const has = (pts, q) => pts.some(([x, y]) => near(x, q[0]) && near(y, q[1]));
 test('F20 · cabineoProfile() is the LISP\'s cabineo-profile key for key; the variant is the system id\'s', () => {
   const prof = C.cabineoProfile({});
   assert.deepEqual({ ...prof, layers: undefined, minSkinMm: undefined }, {
-    variant: '12', mounting: 'flushCap', machining: 'cutter12', pitchMm: 250, endOffsetMm: 50, minPerJoint: 2,
+    variant: '12', mounting: 'flush', machining: 'drill15', skimMm: 0.5, holeDepthMm: null, pitchMm: 250, endOffsetMm: 50, minPerJoint: 2,
     maxSpacingMm: 300, minFromEdgeMm: 20, caps: 'all', confirmed: false, layers: undefined, minSkinMm: undefined,
-  });
+  }, 'the owner\'s own machining, 15.10.2026: three dia 15 holes, the collar skimmed 0.5, the hole X deep');
   assert.equal(prof.minSkinMm, 3, 'T76\'s one skin number');
   assert.deepEqual(prof.layers, {
     pocket: { drill15: 'CABINEO_POCKET_15MM', cutter10: 'CABINEO_POCKET_10MM', cutter12: 'CABINEO_POCKET_12MM' },
@@ -74,8 +84,10 @@ test('F20 · cabineoProfile() is the LISP\'s cabineo-profile key for key; the va
   assert.equal(SHEET.spacing.pageOf, 1);
   // The LISP's A.1 block says the same.
   const lispProf = LSP.slice(LSP.indexOf('(defun cabineo-profile'), LSP.indexOf('(defun cabineo-get'));
-  assert.match(lispProf, /\(cons "mounting" "flushCap"\)/);
-  assert.match(lispProf, /\(cons "machining" "cutter12"\)/);
+  assert.match(lispProf, /\(cons "mounting" "flush"\)/);
+  assert.match(lispProf, /\(cons "machining" "drill15"\)/);
+  assert.match(lispProf, /\(cons "skimMm" 0\.5\)/);
+  assert.match(lispProf, /\(cons "holeDepthMm" nil\)/);
   assert.match(lispProf, /\(cons "pitchMm" 250\.0\)/);
   assert.match(lispProf, /\(cons "endOffsetMm" 50\.0\)/);
   assert.match(lispProf, /\(cons "minPerJoint" 2\)/);
@@ -155,8 +167,8 @@ test('F20 · cabineoRefusal: the sheet\'s limits and the variant\'s minimums, in
   assert.match(C.cabineoRefusal(prof, sheet, 12, 18).join('; '), /the screw reaches X = 12\.00 into a side only 12\.00 thick/);
   assert.match(C.cabineoRefusal(C.cabineoProfile({}, 'cabineo8'), sheet, 8, 18).join('; '), /at least 9\.00 thick \(page 1, Applications\); the side is 8\.00.*X = 8\.00 into a side only 8\.00/);
   assert.deepEqual(C.cabineoRefusal(C.cabineoProfile({}, 'cabineo8'), sheet, 9, 18), [], 'Cabineo 8 on a 9 side: the sheet\'s minimum, and X 8 < 9');
-  assert.match(C.cabineoRefusal(prof, sheet, 18, 13)[0], /a pocket 13\.00 deep would break through a 13\.00 board/);
-  assert.match(C.cabineoRefusal(prof, sheet, 18, 15)[0], /leaves less than 3\.00 under it in a 15\.00 board/);
+  assert.match(C.cabineoRefusal({ ...prof, mounting: 'flushCap' }, sheet, 18, 13)[0], /a pocket 13\.00 deep would break through a 13\.00 board/);
+  assert.match(C.cabineoRefusal(prof, sheet, 18, 13)[0], /leaves less than 3\.00 under it in a 13\.00 board/);
   assert.match(C.cabineoRefusal({ ...prof, variant: '8M6' }, sheet, 18, 18).join('; '), /not a company default: the owner chose 8 and 12/);
   assert.match(C.cabineoRefusal({ ...prof, mounting: 'hpl' }, sheet, 18, 18).join('; '), /captions the mounting 'hpl' for other variants than Cabineo 12/);
 });
@@ -164,7 +176,7 @@ test('F20 · cabineoRefusal: the sheet\'s limits and the variant\'s minimums, in
 // ═══ C and D. THE INVERTED SIDE, THE ONE REFLECTION, THE NUMBERS BLOCK ═══════
 
 test('F20 · the LISP\'s NUMBERS block (section H): a BUD 600 x 770 x 558, Cabineo 12, flushCap, cutter12, board by board', () => {
-  const plan = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18 }, {});
+  const plan = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, mounting: 'flushCap', machining: 'cutter12' }, {});
   assert.deepEqual(plan.refused, []);
   assert.equal(plan.gate, C.CABINEO_GATE);
   assert.deepEqual(plan.counts, { pockets: 12, holes: 12, shelfPockets: 0 });
@@ -226,8 +238,9 @@ test('F20 · the LISP\'s NUMBERS block (section H): a BUD 600 x 770 x 558, Cabin
   assert.deepEqual(plan.boards.BOTTOM.pockets.map(box), top.pockets.map(box));
   assert.deepEqual(plan.boards.BOTTOM.recesses.map(box), top.recesses.map(box));
   // The sides' dia 5 holes: BUL (x from the FRONT) y 762.9 and 7.1 at x 50 270 490; BUR (x from the BACK) at x 490 270 50.
+  // The depth is X = 12 since 15.10.2026 (DERIVED, the screw's projection; the sheet prints none).
   assert.deepEqual(plan.boards.BUL.holes.map((h) => [h.x, h.y, h.d, h.depth ?? null]), [
-    [50, 762.9, 5, null], [270, 762.9, 5, null], [490, 762.9, 5, null], [50, 7.1, 5, null], [270, 7.1, 5, null], [490, 7.1, 5, null],
+    [50, 762.9, 5, 12], [270, 762.9, 5, 12], [490, 762.9, 5, 12], [50, 7.1, 5, 12], [270, 7.1, 5, 12], [490, 7.1, 5, 12],
   ]);
   assert.deepEqual(plan.boards.BUR.holes.map((h) => [h.x, h.y]), [[490, 762.9], [270, 762.9], [50, 762.9], [490, 7.1], [270, 7.1], [50, 7.1]]);
   assert.equal(plan.boards.BUL.holes[0].layer, 'CABINEO_HOLE_5MM');
@@ -244,7 +257,7 @@ test('F20 · the LISP\'s NUMBERS block (section H): a BUD 600 x 770 x 558, Cabin
 });
 
 test('F20 · THE REFLECTION: x\' = W - x, y\' = y, through T76\'s one helper; a pocket 3.6 from the end lands 3.6 from the end', () => {
-  const plan = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18 }, {});
+  const plan = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, mounting: 'flushCap', machining: 'cutter12' }, {});
   const top = plan.boards.TOP;
   const p490 = top.pockets.find((k) => k.meta.end === 'Y0' && near(k.meta.axis[0], 490));
   // EXPORT (OUTSIDE FACE UP): the pocket that stood at x 490 (50 from the FRONT) lands at x' 50.
@@ -281,7 +294,7 @@ test('F20 · THE REFLECTION: x\' = W - x, y\' = y, through T76\'s one helper; a 
 });
 
 test('F20 · with one FIX shelf (underside 385, 18 thick, 20 behind the front): the LISP\'s shelf rows', () => {
-  const plan = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, fixedShelfYs: [385] }, {});
+  const plan = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, fixedShelfYs: [385], mounting: 'flushCap', machining: 'cutter12' }, {});
   assert.deepEqual(plan.refused, []);
   assert.deepEqual(plan.joints.slice(4).map((j) => [j.joint.name, j.joint.len, j.offs, j.joint.board, j.joint.boardW]), [
     ['BUL-SHELF-1', 520, [50, 260, 470], 'SHELF-1', 520],
@@ -302,30 +315,63 @@ test('F20 · with one FIX shelf (underside 385, 18 thick, 20 behind the front): 
   assert.deepEqual(plan.boards.BUR.holes.filter((h) => /SHELF/.test(h.meta.joint)).map((h) => [h.x, h.y]), [[470, 392.1], [260, 392.1], [50, 392.1]]);
   assert.deepEqual(plan.counts, { pockets: 18, holes: 18, shelfPockets: 6 });
   assert.deepEqual(plan.bom.map((b) => b.qty), [18, 18]);
-  const shelvesOnly = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, fixedShelfYs: [385] }, { joints: { cabineo: { caps: 'shelves' } } });
+  const shelvesOnly = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, fixedShelfYs: [385], mounting: 'flushCap', machining: 'cutter12' }, { joints: { cabineo: { caps: 'shelves' } } });
   assert.deepEqual(shelvesOnly.bom.map((b) => b.qty), [18, 6], 'caps on the fixed shelves\' pockets only');
 });
 
-test('F20 · the other options: drill15 is three dia 15 holes per pocket from the outside face; cutter10 under flush draws no recess outline', () => {
-  const d15 = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, machining: 'drill15' }, {});
+test('F20 · THE OWNER\'S THREE LAYERS (15.10.2026): drill15 is three dia 15 holes per pocket from the outside face, 11.5 deep; the skim 0.5 deep, 16.7 wide, round the third hole; the side hole X deep on the axis 5.5 down', () => {
+  const d15 = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18 }, {});
+  assert.deepEqual(d15.refused, []);
+  assert.deepEqual([d15.prof.machining, d15.prof.mounting, d15.prof.skimMm, d15.prof.holeDepthMm], ['drill15', 'flush', 0.5, null]);
   assert.equal(d15.boards.TOP.pockets.length, 0, 'no polygon under Option 1');
   assert.equal(d15.boards.TOP.holes.length, 18, 'three holes per pocket, six pockets');
   assert.deepEqual(d15.boards.TOP.holes.slice(0, 3).map((h) => [h.x, h.y, h.d, h.depth, h.layer, h.face]), [
-    [490, 3.6, 15, 13, 'CABINEO_POCKET_15MM', 'outside'], [490, 14.8, 15, 13, 'CABINEO_POCKET_15MM', 'outside'], [490, 26, 15, 13, 'CABINEO_POCKET_15MM', 'outside'],
-  ]);
+    [490, 3.6, 15, 11.5, 'CABINEO_POCKET_15MM', 'outside'], [490, 14.8, 15, 11.5, 'CABINEO_POCKET_15MM', 'outside'], [490, 26, 15, 11.5, 'CABINEO_POCKET_15MM', 'outside'],
+  ], 'layer 1: CABINEO_POCKET_15MM, 11.5 deep from the OUTSIDE face (the flush band)');
   assert.deepEqual(d15.boards.TOP.holes[0].meta.export.at, [50, 3.6]);
-  assert.equal(d15.boards.TOP.recesses.length, 6, 'the cap recess is the mounting\'s, whatever the option');
+  // Layer 2: THE SKIM. 16.7 wide (the flush band's width), 0.5 deep (the owner's; the sheet prints 0.8),
+  // its end a semicircle r 8.35 centred on the third hole (26): 34.35 long. DERIVED from the sheet's own reading.
+  assert.equal(d15.boards.TOP.recesses.length, 6, 'one skim per pocket');
+  const sk = d15.boards.TOP.recesses.find((k) => k.meta.end === 'Y0' && near(k.meta.export.box[0], 41.65));
+  assert.deepEqual(box(sk), [481.65, 0, 498.35, 34.35]);
+  assert.equal(sk.depth, 0.5);
+  assert.equal(sk.layer, 'CABINEO_RECESS');
+  assert.deepEqual([sk.meta.widthMm, sk.meta.lengthMm, sk.meta.endRadiusMm, sk.meta.endCentreFromEndMm], [16.7, 34.35, 8.35, 26]);
+  assert.ok(has(sk.pts, [490, 34.35]) && has(sk.pts, [498.35, 26]) && has(sk.pts, [481.65, 0]));
+  assert.deepEqual(C.cabineoRecess(d15.prof, d15.sheet), [16.7, 34.35, 8.35, 26, 0.5]);
+  assert.equal(C.cabineoRecessDepth(d15.prof, d15.sheet), 0.5);
+  assert.equal(C.cabineoRecessDepth({ ...d15.prof, skimMm: null }, d15.sheet), 0.8, 'no skim named: the sheet\'s 0.8');
+  assert.equal(C.cabineoRecessDepth({ ...d15.prof, mounting: 'flushCap' }, d15.sheet), 2.1, 'the cap keeps its full 2.1 whatever the skim');
+  assert.equal(C.cabineoRecessDepth({ ...d15.prof, mounting: 'surface' }, d15.sheet), null);
+  // Layer 3: the side's dia 5 hole, X deep (12 for Cabineo 12, 8 for Cabineo 8), on the axis 5 + 0.5 below the pocket face.
+  assert.equal(C.cabineoAxisFromOutside(d15.prof, d15.sheet), 5.5);
+  assert.deepEqual(d15.boards.BUL.holes.slice(0, 3).map((h) => [h.x, h.y, h.d, h.depth, h.layer]), [[50, 764.5, 5, 12, 'CABINEO_HOLE_5MM'], [270, 764.5, 5, 12, 'CABINEO_HOLE_5MM'], [490, 764.5, 5, 12, 'CABINEO_HOLE_5MM']]);
+  assert.equal(C.cabineoHoleDepth(C.cabineoProfile({}, 'cabineo8'), d15.sheet), 8);
+  assert.equal(C.cabineoHoleDepth({ ...d15.prof, holeDepthMm: 10 }, d15.sheet), 10, 'the owner names it when he remembers');
+  assert.match(d15.boards.BUL.holes[0].meta.depthNote, /not on the sheet/);
+  assert.equal(C.cabineoAxisFromOutside({ ...d15.prof, skimMm: null }, d15.sheet), 5.8, 'no skim named: the sheet\'s 5.8');
+  assert.equal(C.cabineoAxisFromOutside({ ...d15.prof, mounting: 'flushCap' }, d15.sheet), 7.1);
+  // Three layers and nothing else; the BACK is screwed.
+  assert.deepEqual([C.cabineoPocketLayer(d15.prof), C.cabineoRecessLayer(d15.prof), C.cabineoHoleLayer(d15.prof)], ['CABINEO_POCKET_15MM', 'CABINEO_RECESS', 'CABINEO_HOLE_5MM']);
+  assert.equal(d15.back, C.CABINEO_LEAVES.length === 0 ? d15.boards.BACK.said : null);
+  assert.match(d15.back, /screwed on with the kit's own dia 3 rows: no tenons, no sockets, no dog bones/);
+  assert.deepEqual(d15.counts, { pockets: 12, holes: 12, shelfPockets: 0 });
+  // The cutter options stay on the sheet and stay choosable.
   const c10 = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, machining: 'cutter10', mounting: 'flush' }, {});
   const k = c10.boards.TOP.pockets[0];
   assert.equal(k.layer, 'CABINEO_POCKET_10MM');
   assert.equal(k.depth, 11.5);
   assert.ok(has(k.pts, [495, 9.2]) && has(k.pts, [485, 20.4]), 'the waists at 9.2 and 20.4, half-height 5');
-  assert.equal(c10.boards.TOP.recesses.length, 0, 'the flush collar recess has no printed length');
-  assert.match(c10.joints[0].geometry[0].recessNote, /16\.7 wide, 0\.8 deep; its length is not on the sheet/);
-  assert.equal(c10.boards.BUL.holes[0].y, 770 - 5.8, 'the axis 5.8 below the face under flush');
+  assert.equal(c10.boards.TOP.recesses.length, 6, 'the flush collar recess is drawn round the third lobe now (DERIVED), the owner\'s skim deep');
+  assert.equal(c10.boards.TOP.recesses[0].depth, 0.5);
+  assert.equal(c10.boards.BUL.holes[0].y, 770 - 5.5, 'the axis 5.5 below the face under the skimmed flush collar');
+  const cap = C.cabineoPlan({ W: 600, H: 770, D: 558, G: 18, machining: 'cutter12', mounting: 'flushCap' }, {});
+  assert.equal(cap.boards.TOP.pockets[0].layer, 'CABINEO_POCKET_12MM');
+  assert.equal(cap.boards.TOP.recesses[0].depth, 2.1);
   assert.equal(C.cabineoOutlineKeyPoints(C.cabineoOption(C.cabineoProfile({})), 'drill15'), null);
   assert.deepEqual(C.cabineoOutlineBox(C.cabineoOption(C.cabineoProfile({}))), [0, -7.5, 33.5, 7.5]);
-  assert.equal(C.cabineoPocketWidth(C.cabineoProfile({})), 18.8);
+  assert.equal(C.cabineoPocketWidth(C.cabineoProfile({})), 16.7);
+  assert.equal(C.cabineoPocketWidth({ ...C.cabineoProfile({}), mounting: 'flushCap' }), 18.8);
   assert.equal(C.cabineoPocketWidth({ ...C.cabineoProfile({}), mounting: 'surface' }), 15);
 });
 
@@ -427,32 +473,52 @@ test('F20 · cabineoVerdict on the BUD\'s puzzle cut: a plan with the NUMBERS bl
   assert.deepEqual(plan.boards, ['BUL', 'BUR', 'TOP', 'BOTTOM']);
   assert.deepEqual(plan.counts, { pockets: 12, holes: 12, shelfPockets: 0 });
   assert.deepEqual(plan.joints.map((j) => j.offs), [[50, 270, 490], [50, 270, 490], [50, 270, 490], [50, 270, 490]]);
-  // The strip, on a deep copy of the parent's panels: the puzzle of the four joints goes, the BACK's stays.
+  // The strip, on a deep copy of the parent's panels: the puzzle of the four joints goes with the Cabineo
+  // strip; the back joint goes with the SCREWED BACK (15.10.2026, engine/screwedBack.js), run next in computeCabinet.
   const panels = structuredClone(parent.panels);
   C.cabineoStrip({ panels, plan, profile: P });
   C.cabineoPocketsOnto({ panels, plan });
   const top = panels.find((p) => p.id === 'TOP');
   const bul = panels.find((p) => p.id === 'BUL');
   const back = panels.find((p) => p.id === 'BACK');
-  assert.equal(top.cnc.outline.length, 24, 'plain ends, the back tenons kept (64 points before)');
-  assert.deepEqual(top.cnc.pockets.filter((k) => k.layer === 'PUZZLE_DOG_BONES').map(box), [[-18, 65, 0, 125], [-18, 439, 0, 499]], 'the back dog bones stay, the end ones go');
-  assert.equal(top.cnc.pockets.filter((k) => k.kind === 'cabineo_pocket').length, 6);
-  assert.equal(top.cnc.pockets.filter((k) => k.kind === 'cabineo_recess').length, 6);
+  assert.equal(top.cnc.outline.length, 24, 'plain ends, the back tenons still there after the Cabineo strip alone (64 points before)');
+  assert.deepEqual(top.cnc.pockets.filter((k) => k.layer === 'PUZZLE_DOG_BONES').map(box), [[-18, 65, 0, 125], [-18, 439, 0, 499]], 'the end dog bones go with the joint; the back ones are the screwed back\'s');
+  assert.equal(top.cnc.pockets.filter((k) => k.kind === 'cabineo_pocket').length, 0, 'drill15: no polygon pocket, three dia 15 holes per pocket in the drills');
+  assert.equal(top.cnc.pockets.filter((k) => k.kind === 'cabineo_recess').length, 6, 'six skims');
   assert.equal(top.meta.machinedFace, 'outside');
   assert.equal(top.meta.machinedFaceLabel, 'OUTSIDE FACE UP');
-  assert.equal(bul.cnc.outline.length, 34, 'a side keeps its outline (the back tenons)');
-  assert.deepEqual(bul.cnc.pockets.map((k) => k.layer), ['PUZZLE_DOG_BONES', 'PUZZLE_DOG_BONES', 'PUZZLE_DOG_BONES'], 'the four sockets go, the three back dog bones stay');
+  assert.equal(bul.cnc.outline.length, 34, 'a side keeps its outline through the Cabineo strip alone');
   assert.deepEqual(bul.cnc.holes, [], 'the eight dia 7.5 and the six dia 3 go');
   assert.equal(bul.meta, undefined, 'a side is machined from its inside face as today');
-  assert.deepEqual(back, parent.panels.find((p) => p.id === 'BACK'), 'the BACK is untouched');
-  // The drills: twelve dia 5 holes at the LISP's coordinates, no depth.
+  assert.deepEqual(back, parent.panels.find((p) => p.id === 'BACK'), 'the Cabineo strip does not touch the BACK');
+  // THE SCREWED BACK: the back joint off every board; the BACK keeps its 14 dia 3 screws and is a plain 600 x 770.
+  screwedBackStrip({ panels, profile: P });
+  assert.deepEqual(top.cnc.outline, [[0, 0], [540, 0], [540, 564], [0, 564]], 'the four corners: plain ends and a plain back edge');
+  assert.equal(top.cnc.pockets.filter((k) => k.layer === 'PUZZLE_DOG_BONES').length, 0, 'no dog bone on the TOP');
+  assert.deepEqual(bul.cnc.outline, [[0, 0], [540, 0], [540, 770], [0, 770]], 'a plain side');
+  assert.deepEqual(bul.cnc.pockets, [], 'no dog bone on a side');
+  const bur = panels.find((p) => p.id === 'BUR');
+  assert.deepEqual(bur.cnc.outline, [[0, 0], [540, 0], [540, 770], [0, 770]]);
+  assert.deepEqual(back.cnc.outline, [[0, 0], [600, 0], [600, 770], [0, 770]]);
+  assert.equal(back.cnc.pockets.filter((k) => k.layer === 'PUZZLE_SOCKET').length, 0, 'the ten sockets go');
+  assert.equal(back.cnc.holes.filter((d) => d.kind === 'puzzle').length, 0, 'the twenty dia 7.5 go');
+  assert.deepEqual(back.cnc.holes.map((d) => [d.x, d.y, d.d]), [
+    [9, 50, 3], [591, 50, 3], [9, 240, 3], [591, 240, 3], [9, 530, 3], [591, 530, 3], [9, 720, 3], [591, 720, 3],
+    [68, 761, 3], [68, 9, 3], [300, 761, 3], [300, 9, 3], [532, 761, 3], [532, 9, 3],
+  ], 'the kit\'s own 14 dia 3 screws hold it: 4 + 4 down the sides, 3 + 3 across');
+  assert.equal(plan.back, SCREWED_BACK);
+  // The drills: twelve dia 5 holes at the LISP's coordinates, X = 12 deep (DERIVED), on the axis 5.5 down;
+  // and the TOP's and BOTTOM's three dia 15 holes per pocket from the outside face.
   const drills = C.cabineoDrills(plan);
-  assert.equal(drills.length, 12);
+  assert.equal(drills.length, 12 + 36);
   assert.deepEqual(drills.filter((d) => d.panel === 'BUL').map((d) => [d.x, d.y, d.d, d.depth ?? null, d.layer]), [
-    [50, 762.9, 5, null, 'CABINEO_HOLE_5MM'], [270, 762.9, 5, null, 'CABINEO_HOLE_5MM'], [490, 762.9, 5, null, 'CABINEO_HOLE_5MM'],
-    [50, 7.1, 5, null, 'CABINEO_HOLE_5MM'], [270, 7.1, 5, null, 'CABINEO_HOLE_5MM'], [490, 7.1, 5, null, 'CABINEO_HOLE_5MM'],
+    [50, 764.5, 5, 12, 'CABINEO_HOLE_5MM'], [270, 764.5, 5, 12, 'CABINEO_HOLE_5MM'], [490, 764.5, 5, 12, 'CABINEO_HOLE_5MM'],
+    [50, 5.5, 5, 12, 'CABINEO_HOLE_5MM'], [270, 5.5, 5, 12, 'CABINEO_HOLE_5MM'], [490, 5.5, 5, 12, 'CABINEO_HOLE_5MM'],
   ]);
-  assert.deepEqual(drills.filter((d) => d.panel === 'BUR').map((d) => d.x), [490, 270, 50, 490, 270, 50]);
+  assert.deepEqual(drills.filter((d) => d.panel === 'BUR' && d.kind === 'cabineo_hole').map((d) => d.x), [490, 270, 50, 490, 270, 50]);
+  assert.deepEqual(drills.filter((d) => d.panel === 'TOP').slice(0, 3).map((d) => [d.x, d.y, d.d, d.depth, d.layer, d.face]), [
+    [490, 3.6, 15, 11.5, 'CABINEO_POCKET_15MM', 'outside'], [490, 14.8, 15, 11.5, 'CABINEO_POCKET_15MM', 'outside'], [490, 26, 15, 11.5, 'CABINEO_POCKET_15MM', 'outside'],
+  ]);
   // The order lines and the summary.
   assert.deepEqual(C.cabineoHardwareLines(plan).map((h) => [h.role, h.label, h.qty, h.unit, h.spec.article]), [
     ['cabineo_connector', 'Cabineo 12', 12, 'pcs', null], ['cabineo_cap', 'Cabineo cover cap', 12, 'pcs', null],
@@ -462,11 +528,11 @@ test('F20 · cabineoVerdict on the BUD\'s puzzle cut: a plan with the NUMBERS bl
   assert.deepEqual(sum.machinedFace, { TOP: 'outside', BOTTOM: 'outside', BUL: 'inside', BUR: 'inside' });
   assert.equal(sum.gate, C.CABINEO_GATE);
   const note = C.cabineoNoteRow({ unitNum: '01', derived: { joints: sum } });
-  assert.match(note.material_label, /^NOTE: Cabineo 12 joints, 12 pockets \(flushCap, cutter12\) cut from the OUTSIDE face of TOP, BOTTOM \(OUTSIDE FACE UP\), 12 dia 5 holes in the sides' inside faces; the Cabineo pattern is proposed/);
+  assert.match(note.material_label, /^NOTE: Cabineo 12 joints, 12 pockets \(flush, drill15\) cut from the OUTSIDE face of TOP, BOTTOM \(OUTSIDE FACE UP\), 12 dia 5 holes in the sides' inside faces; the Cabineo pattern is proposed/);
   // Cabineo 8: the same coordinates, the label and X differ.
   const v8 = C.cabineoVerdict({ parent, params: CAB8, asked: 'cabineo8', type: getUnitType('BUD'), profile: P });
   assert.equal(v8.refused, false);
-  assert.deepEqual(v8.plan.joints.map((j) => j.geometry.map((g) => box(g.pocket))), plan.joints.map((j) => j.geometry.map((g) => box(g.pocket))));
+  assert.deepEqual(v8.plan.joints.map((j) => j.geometry.map((g) => [box(g.recess), g.holes.map((h) => [h.x, h.y])])), plan.joints.map((j) => j.geometry.map((g) => [box(g.recess), g.holes.map((h) => [h.x, h.y])])));
   assert.equal(C.cabineoHardwareLines(v8.plan)[0].label, 'Cabineo 8');
   assert.equal(C.cabineoHardwareLines(v8.plan)[0].spec.screwReachXMm, 8);
   // Refusals: a kit the table does not describe; the bare 'cabineo'.
@@ -496,13 +562,13 @@ test('F20 · the manifest: OUTSIDE FACE UP boards in both frames, the reflection
   assert.equal(top.reflected, true);
   assert.equal(top.widthMm, 540);
   assert.deepEqual(top.files, [{ name: '01-TOP.dxf', setup: 'outside' }]);
-  assert.equal(top.pockets.length, 12);
-  assert.deepEqual(top.pockets[0].own.box, [482.5, 0, 497.5, 33.5]);
-  assert.deepEqual(top.pockets[0].export.box, [42.5, 0, 57.5, 33.5]);
+  assert.equal(top.pockets.length, 6, 'drill15: the six skims are the polygons on the board; the pockets themselves are dia 15 holes');
+  assert.deepEqual(top.pockets[0].own.box, [481.65, 0, 498.35, 34.35]);
+  assert.deepEqual(top.pockets[0].export.box, [41.65, 0, 58.35, 34.35]);
   const bul = m.parts.find((p) => p.panelId === 'BUL');
   assert.equal(bul.label, '');
   assert.equal(bul.holes.length, 6);
-  assert.equal(bul.holes[0].depthMm, null);
+  assert.equal(bul.holes[0].depthMm, 12, 'X deep (DERIVED) since 15.10.2026');
   assert.match(bul.holes[0].depthNote, /not on the sheet/);
 });
 
@@ -517,7 +583,7 @@ const LIVE = (() => {
 })();
 const NOT_YET = 'computeCabinet does not carry the F20 Cabineo hooks yet (scratchpad patches f20-cabinet-cabineo.patch, f20-cnc-outside-face.patch, f20-profile-cabineo.patch)';
 
-test('F20 · a Cabineo 12 BUD: twelve pockets and recesses from the outside face, twelve holes, the puzzle off the four joints, the BACK the parent\'s, the gate shut', (t) => {
+test('F20 · a Cabineo 12 BUD: THE OWNER\'S THREE LAYERS and nothing else of the joint: 36 dia 15 holes and 12 skims from the outside face, 12 dia 5 holes, no puzzle anywhere, the BACK screwed, the gate shut', (t) => {
   if (!LIVE) { t.skip(NOT_YET); return; }
   const puzzle = computeCabinet(BUD, P);
   const r = computeCabinet(CAB12, P);
@@ -525,36 +591,47 @@ test('F20 · a Cabineo 12 BUD: twelve pockets and recesses from the outside face
   assert.deepEqual(r.warnings.filter((w) => w.code === 'CABINEO_GATE').map((w) => w.message), [C.cabineoGateWarning(r.derived.joints).message]);
   assert.equal(r.derived.joints.system, 'cabineo12');
   assert.deepEqual([r.derived.joints.pockets, r.derived.joints.holes], [12, 12]);
+  assert.deepEqual([r.derived.joints.machining, r.derived.joints.mounting, r.derived.joints.leaves, r.derived.joints.back], ['drill15', 'flush', [], SCREWED_BACK]);
   const top = r.panels.find((p) => p.id === 'TOP');
   const bottom = r.panels.find((p) => p.id === 'BOTTOM');
   const bul = r.panels.find((p) => p.id === 'BUL');
+  const back = r.panels.find((p) => p.id === 'BACK');
   assert.equal(top.meta.machinedFace, 'outside');
   assert.equal(bottom.meta.machinedFace, 'outside');
   assert.equal(bul.meta, undefined);
-  assert.equal(top.cnc.outline.length, 24);
-  assert.equal(top.cnc.pockets.filter((k) => k.kind === 'cabineo_pocket').length, 6);
-  assert.equal(top.cnc.pockets.filter((k) => k.kind === 'cabineo_recess').length, 6);
-  assert.deepEqual(top.cnc.pockets.filter((k) => k.kind === 'cabineo_pocket' && k.meta.end === 'Y0').map(box), [[482.5, 0, 497.5, 33.5], [262.5, 0, 277.5, 33.5], [42.5, 0, 57.5, 33.5]]);
-  assert.deepEqual(bul.cnc.pockets.map((k) => k.layer), ['PUZZLE_DOG_BONES', 'PUZZLE_DOG_BONES', 'PUZZLE_DOG_BONES']);
-  assert.deepEqual(r.drills.filter((d) => d.panel === 'BUL').map((d) => [d.kind, d.x, d.y]), [
-    ['cabineo_hole', 50, 762.9], ['cabineo_hole', 270, 762.9], ['cabineo_hole', 490, 762.9], ['cabineo_hole', 50, 7.1], ['cabineo_hole', 270, 7.1], ['cabineo_hole', 490, 7.1],
-    ['hinge', 37, 84], ['hinge', 37, 116], ['hinge', 37, 454], ['hinge', 37, 486], ['hinge', 37, 654], ['hinge', 37, 686],
+  // The owner, 15.10.2026: no dog bones with Cabineo. Plain boards: the four corners each.
+  assert.deepEqual(top.cnc.outline, [[0, 0], [540, 0], [540, 564], [0, 564]]);
+  assert.deepEqual(bul.cnc.outline, [[0, 0], [540, 0], [540, 770], [0, 770]]);
+  assert.deepEqual(back.cnc.outline, [[0, 0], [600, 0], [600, 770], [0, 770]]);
+  assert.deepEqual(top.cnc.pockets.map((k) => k.layer), Array(6).fill('CABINEO_RECESS'), 'the TOP carries the six skims and nothing else');
+  assert.deepEqual(top.cnc.pockets.filter((k) => k.meta.end === 'Y0').map(box), [[481.65, 0, 498.35, 34.35], [261.65, 0, 278.35, 34.35], [41.65, 0, 58.35, 34.35]]);
+  assert.deepEqual(bul.cnc.pockets, [], 'no dog bone on a side');
+  assert.deepEqual(back.cnc.pockets, [], 'no socket on the BACK');
+  assert.deepEqual(r.drills.filter((d) => d.panel === 'BUL').map((d) => [d.kind, d.x, d.y, d.depth]), [
+    ['cabineo_hole', 50, 764.5, 12], ['cabineo_hole', 270, 764.5, 12], ['cabineo_hole', 490, 764.5, 12], ['cabineo_hole', 50, 5.5, 12], ['cabineo_hole', 270, 5.5, 12], ['cabineo_hole', 490, 5.5, 12],
+    ['hinge', 37, 84, undefined], ['hinge', 37, 116, undefined], ['hinge', 37, 454, undefined], ['hinge', 37, 486, undefined], ['hinge', 37, 654, undefined], ['hinge', 37, 686, undefined],
   ]);
-  assert.equal(r.drills.filter((d) => d.kind === 'puzzle' && d.panel !== 'BACK').length, 0);
-  assert.deepEqual(r.panels.find((p) => p.id === 'BACK'), puzzle.panels.find((p) => p.id === 'BACK'));
-  assert.deepEqual(r.drills.filter((d) => d.panel === 'BACK'), puzzle.drills.filter((d) => d.panel === 'BACK'));
+  assert.deepEqual(r.drills.filter((d) => d.panel === 'TOP').map((d) => d.layer), Array(18).fill('CABINEO_POCKET_15MM'), 'three dia 15 holes per pocket, six pockets, from the outside face');
+  assert.ok(r.drills.filter((d) => d.panel === 'TOP').every((d) => d.face === 'outside' && d.depth === 11.5 && d.d === 15));
+  assert.equal(r.drills.filter((d) => d.kind === 'puzzle').length, 0, 'no puzzle hole on any board, the BACK included');
+  assert.deepEqual(r.drills.filter((d) => d.panel === 'BACK').map((d) => [d.kind, d.x, d.y]), puzzle.drills.filter((d) => d.panel === 'BACK' && d.kind === 'screw').map((d) => [d.kind, d.x, d.y]), 'the BACK keeps the kit\'s 14 screws and loses its 20 dia 7.5');
+  assert.equal(r.drills.filter((d) => d.panel === 'BACK').length, 14);
+  const layers = new Set([...r.panels.flatMap((p) => (p.cnc.pockets || []).map((k) => k.layer)), ...r.drills.map((d) => d.layer)]);
+  assert.deepEqual([...layers].filter((l) => /PUZZLE|CABINEO/.test(l)).sort(), ['CABINEO_HOLE_5MM', 'CABINEO_POCKET_15MM', 'CABINEO_RECESS'], 'three Cabineo layers, no puzzle layer');
   assert.deepEqual(r.csvLines, puzzle.csvLines, 'the boards and the cut list are the parent\'s');
   assert.deepEqual(r.hardware.filter((h) => /cabineo/.test(h.role)).map((h) => [h.role, h.label, h.qty, h.spec.article]), [['cabineo_connector', 'Cabineo 12', 12, null], ['cabineo_cap', 'Cabineo cover cap', 12, null]]);
   // Cabineo 8: the same cut, the connector's label and X apart.
   const r8 = computeCabinet(CAB8, P);
   assert.deepEqual(r8.panels.map((p) => p.cnc), r.panels.map((p) => p.cnc));
-  assert.deepEqual(r8.drills, r.drills);
+  const sansX = (d) => (d.kind === 'cabineo_hole' ? { ...d, depth: null } : d);
+  assert.deepEqual(r8.drills.map(sansX), r.drills.map(sansX));
+  assert.ok(r8.drills.filter((d) => d.kind === 'cabineo_hole').every((d) => d.depth === 8), 'Cabineo 8: the hole X = 8 deep');
   assert.equal(r8.hardware.find((h) => h.role === 'cabineo_connector').label, 'Cabineo 8');
   // The bare 'cabineo' of T75 is still refused with T75's sentence; a kit outside the table is refused in words.
   assert.match(computeCabinet({ ...BUD, joints_system: 'cabineo' }, P).warnings.find((w) => w.code === 'JOINTS_REFUSED').message, /Cabineo is reserved/);
   assert.match(computeCabinet({ ...defaultParamsFor('SINK', P), unit_num: '01', joints_system: 'cabineo12' }, P).warnings.find((w) => w.code === 'JOINTS_REFUSED').message, /^Cabineo 12 refused: SINK/);
   // The profile carries the block (f20-profile-cabineo.patch).
-  assert.deepEqual({ ...P.joints.cabineo, layers: undefined }, { mounting: 'flushCap', machining: 'cutter12', pitchMm: 250, endOffsetMm: 50, minPerJoint: 2, caps: 'all', confirmed: false, layers: undefined });
+  assert.deepEqual({ ...P.joints.cabineo, layers: undefined }, { mounting: 'flush', machining: 'drill15', skimMm: 0.5, holeDepthMm: null, pitchMm: 250, endOffsetMm: 50, minPerJoint: 2, caps: 'all', confirmed: false, layers: undefined });
 });
 
 test('F20 · with a FIX shelf: the shelf is OUTSIDE FACE UP too, its biscuit set and side screws give way, the BACK\'s row stays', (t) => {
@@ -562,11 +639,12 @@ test('F20 · with a FIX shelf: the shelf is OUTSIDE FACE UP too, its biscuit set
   const r = computeCabinet({ ...CAB12, ...FIX }, P);
   const sh = r.panels.find((p) => p.part === 'SHELF');
   assert.equal(sh.meta.machinedFace, 'outside');
-  assert.equal(sh.cnc.pockets.filter((k) => k.kind === 'cabineo_pocket').length, 6);
+  assert.equal(sh.cnc.pockets.filter((k) => k.kind === 'cabineo_recess').length, 6, 'six skims on the shelf\'s underside');
+  assert.equal(r.drills.filter((d) => d.panel === sh.id && d.kind === 'cabineo_pocket').length, 18, 'three dia 15 holes per pocket');
   assert.equal(r.drills.filter((d) => d.kind === 'shelf_screw').length, 0);
   assert.equal((r.panels.find((p) => p.id === 'BUL').cnc.marks || []).length, 0);
   assert.equal(r.drills.filter((d) => d.kind === 'shelf_back_screw').length, 3, 'the BACK\'s dia 3 row into the shelf\'s back edge stays');
-  assert.deepEqual(r.drills.filter((d) => d.kind === 'cabineo_hole' && d.panel === 'BUL' && near(d.y, 392.1)).map((d) => d.x), [70, 280, 490]);
+  assert.deepEqual(r.drills.filter((d) => d.kind === 'cabineo_hole' && d.panel === 'BUL' && near(d.y, 390.5)).map((d) => d.x), [70, 280, 490], 'the shelf row: 385 + 5.5');
   assert.deepEqual([r.derived.joints.pockets, r.hardware.find((h) => h.role === 'cabineo_cap').qty], [18, 18]);
 });
 
@@ -576,21 +654,30 @@ test('F20 · the DXF of an OUTSIDE FACE UP board is reflected through the one he
   const files = buildUnitDxfFiles(r, P);
   const topF = files.find((f) => f.panelId === 'TOP');
   assert.equal(topF.setup, 'outside');
-  const polys = topF.entities.filter((e) => e.type === 'poly' && e.layer === 'CABINEO_POCKET_12MM');
-  assert.equal(polys.length, 6);
+  // Layer 1 in the file: the dia 15 holes as circles, reflected: the pocket cut on the axis x 490 is written on x' 50.
+  const holes15 = topF.entities.filter((e) => e.type === 'circle' && e.layer === 'CABINEO_POCKET_15MM');
+  assert.equal(holes15.length, 18);
+  assert.deepEqual(holes15.filter((e) => near(e.cx, 50) && e.cy < 30).map((e) => [e.cx, e.cy, e.r]), [[50, 3.6, 7.5], [50, 14.8, 7.5], [50, 26, 7.5]], '3.6 / 14.8 / 26 from the end, y unchanged');
+  // Layer 2: the skims, polygons on CABINEO_RECESS, reflected with the rest.
+  const skims = topF.entities.filter((e) => e.type === 'poly' && e.layer === 'CABINEO_RECESS');
+  assert.equal(skims.length, 6);
   const xs = (pts) => [Math.min(...pts.map((p) => p[0])), Math.max(...pts.map((p) => p[0]))];
-  assert.deepEqual(polys.map((e) => xs(e.pts)).sort((a, b) => a[0] - b[0]).slice(0, 2), [[42.5, 57.5], [42.5, 57.5]], 'the pocket cut at x 482.5 .. 497.5 is written at 42.5 .. 57.5');
-  const first = polys.find((e) => near(xs(e.pts)[0], 42.5) && Math.min(...e.pts.map((p) => p[1])) < 1);
-  assert.ok(!has(first.pts, [50, 3.6]) && !has(first.pts, [50, 14.8]) && !has(first.pts, [50, 26]), 'the lobe centres are not outline points');
-  assert.ok(has(first.pts, [50, 33.5]), 'the far end (x\', 33.5): y unchanged');
-  assert.ok(has(first.pts, [42.5, 3.6]) && has(first.pts, [57.5, 3.6]), 'the first lobe\'s apexes at 3.6 from the end, both sides of the axis');
+  const r2 = (v) => Math.round(v * 100) / 100;
+  assert.deepEqual(skims.map((e) => xs(e.pts).map(r2)).sort((a, b) => a[0] - b[0]).slice(0, 2), [[41.65, 58.35], [41.65, 58.35]], 'the skim cut at x 481.65 .. 498.35 is written at 41.65 .. 58.35');
+  const first = skims.find((e) => near(xs(e.pts)[0], 41.65, 1e-6) && Math.min(...e.pts.map((p) => p[1])) < 1);
+  assert.ok(has(first.pts, [50, 34.35]), 'the far end (x\', 34.35): y unchanged');
+  assert.equal(topF.entities.filter((e) => e.type === 'poly' && /PUZZLE|CABINEO_POCKET/.test(e.layer)).length, 0, 'no puzzle polygon, no milled pocket polygon');
   const outline = topF.entities.find((e) => e.type === 'poly' && e.layer === 'OUTLINE');
-  assert.deepEqual(xs(outline.pts), [0, 558], 'the back tenons stand at 540 .. 558 now: the back is on the right, seen from above');
+  assert.deepEqual(xs(outline.pts), [0, 540], 'a plain board: no back tenon stands beyond 540 any more');
+  assert.equal(outline.pts.length, 4);
   assert.equal(topF.entities.filter((e) => e.type === 'text').map((e) => e.str).join(' '), '01 TOP 564x540 OUTSIDE FACE UP');
-  // The BUL file is the inside-face file it always was, plus the six circles.
+  // Layer 3: the BUL file is the inside-face file it always was, plus the six circles; its outline is plain too.
   const bulF = files.find((f) => f.panelId === 'BUL');
   assert.equal(bulF.setup, undefined);
-  assert.deepEqual(bulF.entities.filter((e) => e.type === 'circle' && e.layer === 'CABINEO_HOLE_5MM').map((e) => [e.cx, e.cy, e.r]), [[50, 762.9, 2.5], [270, 762.9, 2.5], [490, 762.9, 2.5], [50, 7.1, 2.5], [270, 7.1, 2.5], [490, 7.1, 2.5]]);
+  assert.deepEqual(bulF.entities.filter((e) => e.type === 'circle' && e.layer === 'CABINEO_HOLE_5MM').map((e) => [e.cx, e.cy, e.r]), [[50, 764.5, 2.5], [270, 764.5, 2.5], [490, 764.5, 2.5], [50, 5.5, 2.5], [270, 5.5, 2.5], [490, 5.5, 2.5]]);
+  assert.equal(bulF.entities.find((e) => e.type === 'poly' && e.layer === 'OUTLINE').pts.length, 4);
+  assert.equal(bulF.entities.filter((e) => /PUZZLE/.test(e.layer)).length, 0);
+  assert.deepEqual(new Set(files.flatMap((f) => f.entities.map((e) => e.layer))).has('PUZZLE_DOG_BONES'), false, 'no dog bone in any file of the unit');
   // The puzzle unit's files are byte-identical to what they were: no reflection without the meta.
   const puzzle = computeCabinet(BUD, P);
   const topP = buildUnitDxfFiles(puzzle, P).find((f) => f.panelId === 'TOP');
@@ -612,10 +699,11 @@ test('F20 · golden-cabineo8-bud.json and golden-cabineo12-bud.json: the BUD cut
     assert.deepEqual(goldenOf(g.params, P), g.expected);
     const top = g.expected.panels.find((p) => p.id === 'TOP');
     const bul = g.expected.panels.find((p) => p.id === 'BUL');
-    assert.deepEqual([top.outline, top.holes, top.pockets], [24, 0, 14], 'plain ends; 2 back dog bones + 6 pockets + 6 recesses');
-    assert.deepEqual([bul.outline, bul.holes, bul.pockets], [34, 0, 3]);
-    assert.deepEqual(g.expected.drills.filter(([k]) => k.startsWith('CABINEO')), [['CABINEO_HOLE_5MM|BUL', 6], ['CABINEO_HOLE_5MM|BUR', 6]]);
-    assert.deepEqual(g.expected.drills.filter(([k]) => k.startsWith('PUZZLE')), [['PUZZLE_HOLES_7_5MM|BACK', 20]]);
+    // REPINNED 15.10.2026 (the owner's three layers, the screwed back): plain boards, six skims, 36 dia 15 holes, no puzzle.
+    assert.deepEqual([top.outline, top.holes, top.pockets], [4, 0, 6], 'the four corners; 6 skims; the dia 15 holes are drills');
+    assert.deepEqual([bul.outline, bul.holes, bul.pockets], [4, 0, 0]);
+    assert.deepEqual(g.expected.drills.filter(([k]) => k.startsWith('CABINEO')), [['CABINEO_HOLE_5MM|BUL', 6], ['CABINEO_HOLE_5MM|BUR', 6], ['CABINEO_POCKET_15MM|BOTTOM', 18], ['CABINEO_POCKET_15MM|TOP', 18]]);
+    assert.deepEqual(g.expected.drills.filter(([k]) => k.startsWith('PUZZLE')), [], 'no puzzle hole on the BACK either');
   }
   assert.deepEqual({ ...f8.expected, hardware: null }, { ...f12.expected, hardware: null }, 'every coordinate the same: the mounting and the option decide the pocket, not the variant');
   assert.deepEqual(f8.expected.hardware.find((h) => h.role === 'cabineo_connector'), { role: 'cabineo_connector', qty: 12, label: 'Cabineo 8' });

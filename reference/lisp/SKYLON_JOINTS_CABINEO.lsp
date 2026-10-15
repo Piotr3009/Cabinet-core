@@ -35,10 +35,41 @@
 ;;; joint line, one per pocket. Never both systems on one joint: on those
 ;;; joints the puzzle's tenons, sockets, dia 7.5 holes, dog bones and dia 3
 ;;; screw rows go (section F). The joints into the BACK are NOT in the owner's
-;;; sentence of 11.10.2026 (top, bottom, fixed shelf, side) and this file
-;;; leaves them as the kit cuts them today (the puzzle's), exactly as
-;;; SKYLON_JOINTS_BISCUIT does; a Cabineo into the back is a question for the
-;;; owner, named in the PR.
+;;; sentence of 11.10.2026 (top, bottom, fixed shelf, side), so no Cabineo goes
+;;; into the back. THE BACK IS SCREWED (the owner, 15.10.2026, DECIDED: "jak
+;;; mamy cabineo to nie robimy dog bonsow, i to samo jak mamy biscuits czy
+;;; standardowe tradycyjne dowels"): a dog bone is the puzzle's relief, and
+;;; the only puzzle a Cabineo unit still carried was the back joint (the sides'
+;;; three back tenons, the TOP's and BOTTOM's two, each with its dog bone, and
+;;; the BACK's sockets with their dia 7.5 holes). That joint goes WHOLE and the
+;;; BACK is held by what already held it: drawBACK's own dia 3 screw rows
+;;; through the back, one on each side's centre line (x = G / 2 and W - G / 2)
+;;; and one on the TOP's and the BOTTOM's (y = H - G / 2 and G / 2). Section F
+;;; and the NUMBERS block say what each board loses. SKYLON_JOINTS_BISCUIT
+;;; does the same on the same day; the dowel system (SKYLON_JOINTS_DOWEL) has
+;;; its own BACK rows and never drew a dog bone.
+;;;
+;;; THE OWNER'S OWN MACHINING (15.10.2026, DECIDED): "musi byc 3 layery 1 to
+;;; cabineo 15 mm, drugi to cabineo oblamowka, czyli zebranie 0.5 mm laminatu,
+;;; 3 to przeciwlegle nawiercenie". Three layers and nothing else:
+;;;   1. CABINEO_POCKET_15MM  the pocket as Option 1 drills it: three dia 15
+;;;                           holes at 3.6 / 14.8 / 26 from the end, 11.5 deep
+;;;                           from the OUTSIDE face (the flush band's depth)
+;;;   2. CABINEO_RECESS       the skim: the collar's recess, 16.7 wide as the
+;;;                           flush band prints it, 0.5 deep (the owner's
+;;;                           number; the sheet prints 0.8), its rounded end
+;;;                           concentric with the third hole (DERIVED, D.7)
+;;;   3. CABINEO_HOLE_5MM     the counterpart's dia 5 hole in the side's inside
+;;;                           face, on the screw axis 5.5 below the pocket face
+;;;                           (5 from the collar seat + the 0.5 skim, DERIVED),
+;;;                           X deep: 8 for Cabineo 8, 12 for Cabineo 12
+;;;                           (DERIVED from the screw's projection; a dealer's
+;;;                           technical sheet prints dia 5 x 8 and dia 5 x 12;
+;;;                           the owner does not remember the depth and names
+;;;                           it in holeDepthMm when he does)
+;;; So the profile's defaults are machining "drill15", mounting "flush",
+;;; skimMm 0.5. The cutter options and the cap mounting stay on the sheet and
+;;; stay choosable; nothing of them is the default any more.
 ;;;
 ;;; THE INVERTED SIDE (the owner's own point, 11.10.2026, DECIDED): Cabineo
 ;;; drills NO panel edge. The pocket is milled into the FACE of the horizontal
@@ -68,17 +99,20 @@
 ;;; The variant is the company's choice (joints.system 'cabineo8' |
 ;;; 'cabineo12', CLAUDE.md T78 F19/F20: "Cabineo 8 AND 12, chosen in the
 ;;; company's default settings"); here it is the id the sheet uses ("8" |
-;;; "12"). The mounting and the machining option are T78 proposed (the owner's
-;;; Biesse mills; he decides). The pitch and the end offset are T78 proposed
-;;; and must sit inside the SHEET's two limits, restated here from page 1:
-;;; min. 20 from the board's edge to the first connector, max. 300 between
-;;; connectors (Assembly panel 1). Never fewer than TWO on one joint
+;;; "12"). The mounting and the machining option are the owner's own
+;;; (15.10.2026, DECIDED: he drills, three dia 15 holes, and skims 0.5 for the
+;;; collar; the head of this file). The pitch and the end offset are T78
+;;; proposed and must sit inside the SHEET's two limits, restated here from
+;;; page 1: min. 20 from the board's edge to the first connector, max. 300
+;;; between connectors (Assembly panel 1). Never fewer than TWO on one joint
 ;;; (CLAUDE.md T78 F20: "never fewer than two, never over the sheet's 300").
 (defun cabineo-profile ( / )
   (list
     (cons "variant" "12")          ;; "8" | "12": company defaults joints.system cabineo8 | cabineo12 (owner: both offered)
-    (cons "mounting" "flushCap")   ;; surface | flush | flushCap | hpl       T78 proposed, owner to confirm
-    (cons "machining" "cutter12")  ;; drill15 | cutter10 | cutter12          T78 proposed, owner to confirm
+    (cons "mounting" "flush")      ;; surface | flush | flushCap | hpl       the owner, 15.10.2026, DECIDED (the collar skimmed in)
+    (cons "machining" "drill15")   ;; drill15 | cutter10 | cutter12          the owner, 15.10.2026, DECIDED ("cabineo 15 mm": three dia 15 holes)
+    (cons "skimMm" 0.5)            ;; the collar's skim under "flush", 0.5   the owner, 15.10.2026, DECIDED ("zebranie 0.5 mm laminatu"; the sheet prints 0.8)
+    (cons "holeDepthMm" nil)       ;; the side's dia 5 hole depth; nil = X   DERIVED (8 / 12, the screw's projection); the owner names it when he remembers
     (cons "pitchMm" 250.0)         ;; the widest gap between two pockets     T78 proposed, owner to confirm
     (cons "endOffsetMm" 50.0)      ;; first and last pocket from each end    T78 proposed, owner to confirm
     (cons "minPerJoint" 2)         ;; never fewer than this on one joint     CLAUDE.md T78 F20
@@ -485,9 +519,26 @@
 (defun cabineo-reflect-pt (pt W)
   (list (cabineo-reflect-x (car pt) W) (cadr pt)))
 
-;;; The screw axis below the pocket face, by mounting: 5 / 5.8 / 7.1 / 5.
-(defun cabineo-axis-from-outside (prof sheet)
-  (cabineo-get (cabineo-mounting prof sheet) "axisFromSurfaceMm"))
+;;; The recess depth the job really cuts: under "flush" the owner's skim
+;;; (skimMm, 0.5, 15.10.2026) when he names one, else the sheet's; under every
+;;; other mounting the sheet's (the cap needs its full 2.1; the surface bands
+;;; have none). nil where the mounting draws no recess.
+(defun cabineo-recess-depth (prof sheet / m)
+  (setq m (cabineo-mounting prof sheet))
+  (cond
+    ((null m) nil)
+    ((and (= (cabineo-get prof "mounting") "flush") (cabineo-get prof "skimMm")) (cabineo-get prof "skimMm"))
+    (T (cabineo-get m "recessDepthMm"))))
+
+;;; The screw axis below the pocket face, by mounting: 5 / 5.8 / 7.1 / 5 off
+;;; the sheet; under "flush" with the owner's skim it is 5 (from the collar
+;;; seat, page 2) + the skim = 5.5 (DERIVED, the same arithmetic the sheet
+;;; does for its own 5.8 = 5 + 0.8).
+(defun cabineo-axis-from-outside (prof sheet / m)
+  (setq m (cabineo-mounting prof sheet))
+  (if (and (= (cabineo-get prof "mounting") "flush") (cabineo-get prof "skimMm"))
+    (+ (cabineo-get m "axisFromCollarSeatMm") (cabineo-get prof "skimMm"))
+    (cabineo-get m "axisFromSurfaceMm")))
 
 ;;; The skin left between a pocket (outside face) and an opposing blind cut
 ;;; (inside face) of the same board; a clash when it is under minSkin.
@@ -705,15 +756,27 @@
 ;;; sheet frame: (width length endRadius endCentre depth), nil where the
 ;;; mounting draws none. Under flushCap: 18.8 wide, 35.65 long, the end a
 ;;; semicircle r 9.4 centred 26.25 from the end, 2.1 deep. Under flush the
-;;; sheet prints the width (16.7) and the depth (0.8) only: length, radius and
-;;; centre are nil and the drawing command draws no recess for it.
-(defun cabineo-recess (prof sheet / m)
-  (setq m (cabineo-mounting prof sheet))
-  (if (cabineo-get m "recessDepthMm")
-    (list (cabineo-get m "recessWidthMm") (cabineo-get m "recessLengthMm")
-          (cabineo-get m "recessEndRadiusMm") (cabineo-get m "recessEndCentreFromEndMm")
-          (cabineo-get m "recessDepthMm"))
-    nil))
+;;; sheet prints the width (16.7) and the depth (0.8) only; the sheet's own
+;;; reading of its Options 1 to 3 (cabineo.json recessOutline.reading) is
+;;; "the collar recess around the three lobes with a rounded end concentric
+;;; with the third lobe", so the rest is DERIVED from that sentence: the end
+;;; radius is half the width (8.35), the end centre is the third lobe's centre
+;;; (26 standard, 25.9 hpl) and the length is the two added (34.35). The depth
+;;; is the owner's skim where he names one (cabineo-recess-depth: 0.5,
+;;; 15.10.2026). This is THE SKIM LAYER, CABINEO_RECESS, the owner's second of
+;;; three; before 15.10.2026 the flush recess drew no outline and the owner's
+;;; machine had nothing to skim with.
+(defun cabineo-recess (prof sheet / m o d w c3)
+  (setq m (cabineo-mounting prof sheet) d (cabineo-recess-depth prof sheet))
+  (cond
+    ((null d) nil)
+    ((cabineo-get m "recessLengthMm")
+      (list (cabineo-get m "recessWidthMm") (cabineo-get m "recessLengthMm")
+            (cabineo-get m "recessEndRadiusMm") (cabineo-get m "recessEndCentreFromEndMm") d))
+    ((cabineo-get m "recessWidthMm")
+      (setq o (cabineo-option prof sheet) w (cabineo-get m "recessWidthMm") c3 (nth 2 (cabineo-lobe-centres o)))
+      (list w (+ c3 (/ w 2.0)) (/ w 2.0) c3 d))   ;; DERIVED: concentric with the third lobe
+    (T (list nil nil nil nil d))))
 
 ;;; The recess's bounding box in the sheet frame, or nil when its length is
 ;;; not on the sheet: (0 -w/2 length w/2).
@@ -724,18 +787,28 @@
 
 ;;; D.8 THE SIDE'S HOLES of one joint: dia 5, in the side's FACE (inside), on
 ;;; the joint line at the screw axis: y = sideOut + sideIn * axisFromOutside.
-;;; Depth: NOT ON THE SHEET (nil). The screw reaches X beyond the board's end
-;;; (8 / 12 / 8), so the hole is at least that deep; the owner names the
-;;; depth. Returns ((side "FACE" x y dia depth) ...), in offset order.
-(defun cabineo-side-holes (jt offs prof sheet / dia ax y out off x)
+;;; Depth: NOT ON THE SHEET. The screw reaches X beyond the board's end
+;;; (8 / 12 / 8), so the hole is at least that deep; a dealer's technical sheet
+;;; (cnc-tool.com, Lamello Cabineo technical) prints "drill hole dia 5 x 12"
+;;; for Cabineo 12 and "dia 5 x 8" for Cabineo 8, which is X itself. So the
+;;; depth is the profile's holeDepthMm when the owner names one, else X
+;;; (DERIVED, cabineo-hole-depth; the owner, 15.10.2026: "nie pamietam
+;;; jakie"). Returns ((side "FACE" x y dia depth) ...), in offset order.
+(defun cabineo-hole-depth (prof sheet / v)
+  (setq v (cabineo-variant prof sheet))
+  (cond
+    ((cabineo-get prof "holeDepthMm") (cabineo-get prof "holeDepthMm"))
+    ((cabineo-path sheet (list "counterpartHole" "depthMm")) (cabineo-path sheet (list "counterpartHole" "depthMm")))
+    (v (cabineo-get v "screwReachXMm"))
+    (T nil)))
+(defun cabineo-side-holes (jt offs prof sheet / dia ax y out off x dp)
   (setq dia (cabineo-path sheet (list "counterpartHole" "diaMm"))
         ax  (cabineo-axis-from-outside prof sheet)
+        dp  (cabineo-hole-depth prof sheet)
         y   (+ (cabineo-jget jt "sideOut") (* (cabineo-jget jt "sideIn") ax)))
   (foreach off offs
     (setq x (+ (cabineo-jget jt "sideFrom") (* (cabineo-jget jt "sideDir") off)))
-    (setq out (cons (list (cabineo-jget jt "side") "FACE" x y dia
-                          (cabineo-path sheet (list "counterpartHole" "depthMm")))
-                    out)))
+    (setq out (cons (list (cabineo-jget jt "side") "FACE" x y dia dp) out)))
   (reverse out))
 
 ;;; One joint, whole: (offsets pockets sideHoles).
@@ -824,10 +897,17 @@
 ;;;   stand at 50 on the joint line and the screws at 50, middle, L - 50 on the
 ;;;   centre line G / 2, 1.9 apart on an 18 board, and one system per joint.
 ;;; On the FIX shelf to side joint the biscuit marks and the side's through
-;;; screws go the same way. The joints into the BACK stay the kit's (head of
-;;; this file). What is NOT a joint stays exactly as it is: hinge plate holes,
-;;; shelf pin ladders, runner holes, the FIX shelf's dia 3 row through the
-;;; BACK into its back edge, and everything on the fronts.
+;;; screws go the same way. THE BACK JOINT goes whole too (the owner,
+;;; 15.10.2026, head of this file: no dog bones under Cabineo): the sides'
+;;; back tenons and their dog bones (the side is a plain D - G x H), the TOP's
+;;; and BOTTOM's back tenons and dog bones (a plain D - G x W - 2G with plain
+;;; ends and a plain back edge), the BACK's sockets and their dia 7.5 holes
+;;; (a plain W x H). The BACK KEEPS drawBACK's dia 3 screw rows (x = G / 2
+;;; and W - G / 2 down the sides, y = G / 2 and H - G / 2 across) and, on a
+;;; wall unit, its hanger cut-outs: that is what holds it. What is NOT a joint
+;;; stays exactly as it is: hinge plate holes, shelf pin ladders, runner
+;;; holes, the FIX shelf's dia 3 row through the BACK into its back edge, and
+;;; everything on the fronts.
 ;;;
 ;;; THE BOM. A connector per pocket (the variant's label; its article is NOT
 ;;; on the sheet: CLAUDE.md T78 F20 names 186310 for Cabineo 8 "as the sheet's
@@ -1106,12 +1186,37 @@
 ;;; H. NUMBERS: a BUD 600 x 770 x 558, G 18, Cabineo 12, flushCap, cutter12
 ;;;========================================
 ;;; Computed BY HAND, 11.10.2026, from the sheet's numbers of section A and the
-;;; owner's law of section C. The engine mirrors these to the decimal; the
-;;; goldens golden-cabineo8-bud.json and golden-cabineo12-bud.json hold them
-;;; (the Cabineo 8 golden differs from this block ONLY in the BOM label, the
-;;; screw reach X = 8 and the side's minimum 9: every coordinate below is the
-;;; same, because the mounting and the machining option, not the variant,
-;;; decide the pocket).
+;;; owner's law of section C, for the cutter12 / flushCap OPTION (the T78
+;;; proposal; since 15.10.2026 an option a profile may still choose, not the
+;;; default). The engine mirrors these to the decimal when asked for that
+;;; option. THE GOLDENS golden-cabineo8-bud.json and golden-cabineo12-bud.json
+;;; hold the owner's own setup of H.0 below since 15.10.2026, not this block.
+;;;
+;;; H.0 THE OWNER'S SETUP (15.10.2026): the same BUD, machining drill15,
+;;; mounting flush, skim 0.5, Cabineo 12. The set-out, the joints, the frames
+;;; and the reflection are exactly those of the block below (the option does
+;;; not move an axis); only the cuts on each axis change:
+;;;   TOP / BOTTOM, own frame, each axis x = 490 270 50, BUL end at y = 0:
+;;;     CABINEO_POCKET_15MM   three dia 15 holes at (x, 3.6) (x, 14.8) (x, 26),
+;;;                           11.5 deep from the OUTSIDE face (flush band)
+;;;     CABINEO_RECESS        the skim: 16.7 wide (x -/+ 8.35), y 0 .. 34.35,
+;;;                           semicircle r 8.35 centred (x, 26), 0.5 deep
+;;;     no polygon pocket (drill15 draws none)
+;;;     BUR end (y = 564): (x, 560.4) (x, 549.2) (x, 538); skim y 529.65 .. 564
+;;;   EXPORT (OUTSIDE FACE UP), x' = 540 - x: the same three axes 50 270 490
+;;;   BUL / BUR, inside face:
+;;;     CABINEO_HOLE_5MM      dia 5, 12 deep (X; 8 deep for Cabineo 8), on the
+;;;                           axis 5.5 below the pocket face:
+;;;                           TOP row y 764.5 (= 770 - 5.5), BOTTOM row y 5.5
+;;;   THE BACK JOINT (section F): BUL and BUR lose 3 back tenons and 3 dog
+;;;   bones each (outline 4 points, 34 before); TOP and BOTTOM lose 2 back
+;;;   tenons and 2 dog bones each (outline 4 points, 24 with plain ends and
+;;;   back tenons before); the BACK loses 10 sockets and 20 dia 7.5 holes and
+;;;   keeps its 14 dia 3 screws (4 + 4 down the sides at x 9 and 591, y 50,
+;;;   240, 530, 720; 3 + 3 across at x 68, 300, 532, y 9 and 761). No PUZZLE
+;;;   layer is left on a Cabineo BUD: three Cabineo layers and nothing else
+;;;   of the joint.
+;;;   COUNTS: 12 pockets (36 dia 15 holes), 12 skims, 12 dia 5 holes.
 ;;;
 ;;; W 600, D 558, H 770, G 18, no shelf. Profile: variant 12 (X = 12, the
 ;;; side >= 13, the board >= 12), mounting flushCap (pocket 13 deep, cap
@@ -1201,9 +1306,12 @@
 ;;; WHAT THE PUZZLE LOSES ON THE SAME BUD. Each side: 4 sockets (2 top, 2
 ;;; bottom), 8 dia 7.5 holes, 6 dia 3 screws (at x 50 270 490, y 761 and 9:
 ;;; the screws stood where the pockets' axes now are, 1.9 away). TOP and
-;;; BOTTOM: the 4 end tenons each and the 4 end dog bones each; the 2 back
-;;; tenons and 2 back dog bones each STAY (the back's joints are the kit's).
-;;; The BACK loses nothing.
+;;; BOTTOM: the 4 end tenons each and the 4 end dog bones each. Since
+;;; 15.10.2026 the BACK JOINT goes too (section F, H.0): each side its 3 back
+;;; tenons and 3 dog bones, TOP and BOTTOM their 2 back tenons and 2 dog bones
+;;; each, the BACK its 10 sockets and 20 dia 7.5 holes; the BACK keeps its 14
+;;; dia 3 screws. (Before 15.10.2026 the back joint stayed the kit's and the
+;;; BACK lost nothing; the owner's "no dog bones" ended that.)
 ;;;
 ;;; WITH ONE FIX SHELF (KIT_BUD's one-shelf row: underside 385, 18 thick,
 ;;; front 20 behind the carcass front; shelf 520 deep x 564 wide, drawn from

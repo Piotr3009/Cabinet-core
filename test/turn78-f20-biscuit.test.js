@@ -142,7 +142,7 @@ test('F20 · section C: side to TOP, side to BOTTOM, FIX shelf to side; NEVER th
   assert.equal(Bj.bjBackRefusal(), Bj.BISCUIT_BACK);
   assert.ok(LSP.includes(`"${Bj.BISCUIT_BACK}"`), 'the back sentence is the LISP\'s');
   assert.match(Bj.BISCUIT_BACK, /bez ciastek na plecach/);
-  assert.deepEqual([...Bj.BISCUIT_LEAVES], ['BACK']);
+  assert.deepEqual([...Bj.BISCUIT_LEAVES], [], 'since 15.10.2026 nothing is left as the kit cuts it: the back joint goes, the BACK is screwed');
   assert.deepEqual([...Bj.BISCUIT_BOARDS], ['BUL', 'BUR', 'TOP', 'BOTTOM']);
 });
 
@@ -259,7 +259,7 @@ test('F20 · section Z: the verdict on a puzzle BUD parent, the strip and the re
   const { plan } = v;
   assert.equal(plan.system, 'biscuit');
   assert.deepEqual(plan.boards, ['BUL', 'BUR', 'TOP', 'BOTTOM']);
-  assert.deepEqual(plan.leaves, ['BACK']);
+  assert.deepEqual(plan.leaves, [], 'the back joint goes too (15.10.2026, engine/screwedBack.js)');
   assert.deepEqual(plan.joints.map((j) => j.joint.name), ['BUL-TOP', 'BUR-TOP', 'BUL-BOTTOM', 'BUR-BOTTOM']);
   assert.deepEqual(plan.layers, { mark: 'BISCUIT_4MM', screw: 'SCREWS_3MM' });
 
@@ -287,7 +287,7 @@ test('F20 · section Z: the verdict on a puzzle BUD parent, the strip and the re
     assert.deepEqual(now(board).pockets.map((k) => [k.x1, k.x2]), [[-18, 0], [-18, 0]], `${board}: only the back-edge dog bones`);
     assert.equal(was(board).pockets.length, 6);
   }
-  assert.deepEqual(now('BACK'), was('BACK'), 'the BACK is not touched');
+  assert.deepEqual(now('BACK'), was('BACK'), 'the biscuit strip alone does not touch the BACK; the screwed back does, next, in computeCabinet');
 
   // The records: the fixed shelf's mark shape, T13's screw kind.
   const marks = Bj.biscuitMarkRecords(plan);
@@ -403,7 +403,7 @@ const LIVE = (() => {
 })();
 const NOT_YET = 'computeCabinet does not carry the F20 hooks yet (scratchpad patch f20-cabinet-biscuit.patch, and JOINT_SYSTEMS must name biscuit)';
 
-test('F20 · a biscuit BUD: the set on the sides, plain ends on the TOP and BOTTOM, the BACK the puzzle\'s, the cut list the parent\'s', (t) => {
+test('F20 · a biscuit BUD: the set on the sides, plain boards everywhere, the BACK screwed (15.10.2026: no dog bones), the cut list the parent\'s', (t) => {
   if (!LIVE) { t.skip(NOT_YET); return; }
   const r = computeCabinet(BISCUIT_BUD, P);
   assert.deepEqual(r.warnings.filter((w) => w.code === 'JOINTS_REFUSED' || w.code === 'DOWEL_GATE'), []);
@@ -413,17 +413,23 @@ test('F20 · a biscuit BUD: the set on the sides, plain ends on the TOP and BOTT
   assert.equal(c['biscuit_screw@BUR'], 8);
   assert.equal(c['puzzle@BUL'], undefined);
   assert.equal(c['screw@BUL'], undefined);
-  assert.equal(c['puzzle@BACK'], 20, 'bez ciastek na plecach: the BACK keeps its puzzle');
-  assert.equal(c['screw@BACK'], 14);
+  assert.equal(c['puzzle@BACK'], undefined, 'bez ciastek na plecach, and since 15.10.2026 no puzzle either: the BACK is screwed');
+  assert.equal(c['screw@BACK'], 14, 'the kit\'s own 14 dia 3 screws hold it');
   assert.deepEqual(panelOf(r, 'BUL').cnc.marks.map((m) => [m.from[0], m.to[0], m.from[1]]), H.BUL.marks.slice(0, 4));
   assert.deepEqual(panelOf(r, 'BUR').cnc.marks.map((m) => [m.from[0], m.to[0], m.from[1]]), H.BUR.marks.slice(0, 4));
   assert.deepEqual(r.drills.filter((d) => d.kind === 'biscuit_screw' && d.panel === 'BUL').map((d) => [d.x, d.y]), H.BUL.screws.slice(0, 8));
-  assert.equal(panelOf(r, 'BUL').cnc.outline.length, 34);
-  assert.equal(panelOf(r, 'TOP').cnc.outline.length, 24);
-  assert.equal(panelOf(r, 'BOTTOM').cnc.outline.length, 24);
+  assert.deepEqual(panelOf(r, 'BUL').cnc.outline, [[0, 0], [540, 0], [540, 770], [0, 770]], 'a plain side: no back tenon, no dog bone');
+  assert.deepEqual(panelOf(r, 'BUL').cnc.pockets, []);
+  assert.deepEqual(panelOf(r, 'TOP').cnc.outline, [[0, 0], [540, 0], [540, 564], [0, 564]], 'the four corners');
+  assert.deepEqual(panelOf(r, 'BOTTOM').cnc.outline, [[0, 0], [540, 0], [540, 564], [0, 564]]);
+  assert.deepEqual(panelOf(r, 'TOP').cnc.pockets, [], 'no dog bone');
   assert.equal(panelOf(r, 'TOP').cnc.marks, undefined, 'the edge board carries nothing');
-  assert.deepEqual(panelOf(r, 'BACK'), panelOf(puzzle, 'BACK'));
-  assert.deepEqual(r.drills.filter((d) => d.panel === 'BACK'), puzzle.drills.filter((d) => d.panel === 'BACK'));
+  assert.deepEqual(panelOf(r, 'BACK').cnc.outline, [[0, 0], [600, 0], [600, 770], [0, 770]]);
+  assert.deepEqual(panelOf(r, 'BACK').cnc.pockets, [], 'the sockets go');
+  assert.deepEqual(r.drills.filter((d) => d.panel === 'BACK'), puzzle.drills.filter((d) => d.panel === 'BACK' && d.kind === 'screw'), 'the BACK keeps the screws and loses the dia 7.5');
+  const layers = new Set([...r.panels.flatMap((p) => (p.cnc.pockets || []).map((k) => k.layer)), ...r.drills.map((d) => d.layer)]);
+  assert.equal([...layers].some((l) => /PUZZLE/.test(l)), false, 'no puzzle layer on a biscuit unit');
+  assert.equal(r.derived.joints.back, Bj.BISCUIT_BACK);
   assert.deepEqual(r.csvLines, puzzle.csvLines, 'the boards and the cut list are the parent\'s');
   const keep = (x) => x.drills.filter((d) => !['puzzle', 'screw', 'biscuit_screw'].includes(d.kind));
   assert.deepEqual(keep(r), keep(puzzle), 'what is not a joint stays exactly as it was');
@@ -461,13 +467,13 @@ test('F20 · golden-biscuit-bud.json: the BUD cut with biscuits, held byte for b
   assert.equal(g.meta.F, 'F20');
   assert.equal(g.params.joints_system, 'biscuit');
   assert.deepEqual(goldenOf(g.params, P), g.expected);
-  // What the golden shows of the strip: BUL 34 points and 0 holes, TOP 24 points and 2 pockets.
+  // What the golden shows of the strip (REPINNED 15.10.2026, the screwed back): plain boards, no puzzle anywhere.
   const bul = g.expected.panels.find((p) => p.id === 'BUL');
   const top = g.expected.panels.find((p) => p.id === 'TOP');
-  assert.deepEqual([bul.outline, bul.holes, bul.pockets], [34, 0, 3]);
-  assert.deepEqual([top.outline, top.holes, top.pockets], [24, 0, 2]);
+  assert.deepEqual([bul.outline, bul.holes, bul.pockets], [4, 0, 0]);
+  assert.deepEqual([top.outline, top.holes, top.pockets], [4, 0, 0]);
   assert.deepEqual(g.expected.drills.filter(([k]) => k.startsWith('SCREWS_3MM|')), [['SCREWS_3MM|BACK', 14], ['SCREWS_3MM|BUL', 8], ['SCREWS_3MM|BUR', 8]]);
-  assert.deepEqual(g.expected.drills.filter(([k]) => k.startsWith('PUZZLE')), [['PUZZLE_HOLES_7_5MM|BACK', 20]]);
+  assert.deepEqual(g.expected.drills.filter(([k]) => k.startsWith('PUZZLE')), [], 'no puzzle hole: the BACK lost its 20 dia 7.5');
 });
 
 test('F20 · a refused unit is the puzzle unit plus the sentence, and the dowel unit is still the dowel unit', (t) => {

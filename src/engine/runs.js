@@ -55,9 +55,20 @@ import { getUnitType } from './types.js';
  * asked before the number is read or a saved job silently loses its ten.
  */
 export function wallGapOf(unit, profile) {
+  // ─── CHAT-FIX 15.10.2026: A CABINET STANDING IN A RECESS ─────────────────
+  // The owner: *"wneka zrobiona nie pozwala szafkom jakby wpasc w wneke."*  A
+  // recess (T45 F1b, lib/wallElements.js) is room BEHIND the wall line, and a
+  // cabinet whose whole span stands inside one stands against the recess's own
+  // back wall: `params.recess_mm` is how deep (the store derives it at its one
+  // choke point, projectStore settleRecesses, and clears it when the cabinet
+  // leaves; nobody types it). It comes OFF the gap, so the back line goes
+  // behind the wall by that much, and every reader of this one helper (the
+  // scene's placement, the drag's clamp, the worktop, the plan, the section)
+  // follows without a line of its own.
+  const recess = Math.max(0, Number(unit?.params?.recess_mm) || 0);
   const own = unit?.params?.wall_gap;
-  if (own != null && own !== '' && Number.isFinite(Number(own)) && Number(own) >= 0) return Number(own);
-  return Math.max(0, Number(profile?.room?.wallBackClearance) || 0);
+  if (own != null && own !== '' && Number.isFinite(Number(own)) && Number(own) >= 0) return Number(own) - recess;
+  return Math.max(0, Number(profile?.room?.wallBackClearance) || 0) - recess;
 }
 
 /** Height of a unit's top above the floor — where anything on top of it starts. */

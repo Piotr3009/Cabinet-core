@@ -73,6 +73,7 @@ import {
   cabineoDrills, cabineoGateWarning, cabineoHardwareLines, cabineoPocketsOnto, cabineoShelf, cabineoStrip,
   cabineoSummary, cabineoVerdict, isCabineoSystem, withCabineoRefusal,
 } from './cabineo.js';
+import { screwedBackStrip } from './screwedBack.js';
 // T78 F20 · the third joint system, SKYLON_JOINTS_BISCUIT.lsp's mirror: the
 // owner's own set ("zostaw jak bylo") on side to TOP and side to BOTTOM, the
 // fixed shelf's joint left to T24's code below, never the BACK ("bez ciastek
@@ -8542,6 +8543,15 @@ export function computeCabinet(params, profileOverride) {
     cabineoStrip({ panels, plan: cabineoPlan, profile: P });
     cabineoPocketsOnto({ panels, plan: cabineoPlan });
   }
+  // ─── CHAT-FIX 15.10.2026 · THE BACK JOINT GOES TOO; THE BACK IS SCREWED ──
+  // The owner: *"jak mamy cabineo to nie robimy dog bonsow, i to samo jak
+  // mamy biscuits czy standardowe tradycyjne dowels."*  On a Cabineo or a
+  // biscuit unit the sides' and the TOP's and BOTTOM's back tenons and their
+  // dog bones go, the BACK's sockets and dia 7.5 holes go, and the BACK is
+  // held by drawBACK's own dia 3 rows (SKYLON_JOINTS_CABINEO.lsp and
+  // SKYLON_JOINTS_BISCUIT.lsp, amended the same day). The dowel system has
+  // its own BACK rows (dowelStrip above) and never drew a dog bone.
+  if (cabineoPlan || biscuitPlan) screwedBackStrip({ panels, profile: P });
 
   // ─── T75 F7 · THE CORNER NOTCH, CUT BEFORE THE DRILLING ──────────────────
   // KIT_NOTCH.lsp: *"It runs AFTER the parent kit's carcass and BEFORE the

@@ -1,6 +1,7 @@
 ;;;========================================
 ;;; KIT_NOTCH.lsp
-;;; The CORNER NOTCH - a MODIFIER on the KIT_BUD and KIT_WARDROBE boards
+;;; The CORNER NOTCH - a MODIFIER on the KIT_BUD, KIT_WARDROBE and (since
+;;; 15.10.2026) KIT_WUD boards
 ;;; Command: NOTCH_FULL
 ;;; Turn 75 (CLAUDE.md PART A, F7) - LISP FIRST ("lisp najpierw")
 ;;; Derived from: KIT_BUD_FULL.lsp + KIT_WARDROBE_FULL.lsp + SKYLON_COMMON.lsp
@@ -39,6 +40,54 @@
 ;;; BOTTOM, BACK, plus SHELF) is set out exactly as the parent sets it out;
 ;;; the notch then cuts it, adds the boards that close the cut, and re-plans
 ;;; the joints the cut shortened.
+;;;
+;;; THE WALL UNIT (the owner, 15.10.2026: "nie ma wogole mozliwosci wyciecia
+;;; naroznika w szafkach wiszacych, a powinno byc"): KIT_WUD is the same five
+;;; boards and is a parent too, with two things of its own that the notch
+;;; must carry, THE HANGERS (KIT_WUD_FULL.lsp L258-260 and the side holes):
+;;;   - the BACK's two hanger cut-outs sit in its top corners (cutoutWidth x
+;;;     cutoutHeight, 30 x 58); a cut-out the notch's region reaches STEPS IN
+;;;     along the width by nw, so the bracket hangs beside the notch, on the
+;;;     board that is there (a full-height back notch: the cut-out stands at
+;;;     the shortened back's new corner);
+;;;   - the notched side's two hanger holes (fromBackEdge 21 / 53, fromTop
+;;;     53) are measured off the back edge; when a full-height back notch
+;;;     shortens the side by nd they step forward by nd with that edge, as the
+;;;     shelf-pin column does (D7), never dropped;
+;;;   - a notch from the floor on a wall unit rises from the unit's own
+;;;     underside, exactly as on a base unit: the bottom is cut, the top is
+;;;     closed by the LID.
+;;; THE OBSTACLE NOTCH (the owner, 15.10.2026: "komin nie ma mozliwosci
+;;; automatycznego wycinania w szafce naroznika jak przesuwamy - patrz skos,
+;;; w szafach to samo"): the room's CHIMNEY breasts and BOXES stand floor to
+;;; ceiling in the plan; a cabinet slid along the wall into one gets this notch
+;;; cut for it, derived and never stored, exactly as the slope cut is
+;;; (SKYLON_COMMON slope law, T46 F2's arrival law):
+;;;   corner  BL when the obstacle is on the cabinet's left, BR on its right
+;;;   nw      the overlap along the wall + notch.obstacleClearance
+;;;   nd      how far the obstacle stands past the cabinet's BACK LINE (its
+;;;           protrusion from the wall less the wall gap) + notch.obstacleClearance
+;;;   nh      0: FULL HEIGHT, a chimney and a box have no top
+;;; THE ARRIVAL LAW of the obstacle: the cabinet may drive INTO the obstacle's
+;;; span until the overlap reaches (notch-obstacle-limits): the widest notch
+;;; the refusals allow (cw - 2g - 2 (dogbone + g), the TOP and BOTTOM still
+;;; across), and never past the obstacle's far edge (then it would stand in
+;;; front of it, which is no corner); an obstacle deeper than the deepest
+;;; notch (cd - g - 2 (dogbone + g)) stays a hard stop as before. An obstacle
+;;; the cabinet covers from edge to edge, or a cabinet carrying a notch of
+;;; its own (the hand's), keeps the hard stop. The refusals (section 8) are
+;;; asked of the derived notch as of any other: a runner, a hinge or a shelf
+;;; in its way refuses in words and the parent is what is cut.
+(defun notch-obstacle-limits (cw cd g bone / minEdge)
+  (setq minEdge (notch-min-joint-edge bone g))
+  (list (- cw (* 2.0 g) minEdge) (- cd g minEdge)))   ;; (maxW maxD)
+;;;
+;;; A notch hanging from the TOP (a beam over a wall unit) and a WINDOW notch
+;;; (a box crossing the corner at mid height) are NOT in this file yet: the
+;;; owner asked for both the same night ("a co jak w poziomie mamy jakas
+;;; przeszkode box naprzyklad powinno byc tak mozliwosc"); they are named
+;;; in the PR as the next step, with their geometry (the TOP cut instead of
+;;; the BOTTOM, a FLOOR board under the box as the LID is over it).
 ;;;
 ;;; INPUTS
 ;;;   corner   the PLAN corner, seen from the front:
@@ -282,7 +331,8 @@
     ("cnc.toolDiameter"             . 8.0)
     ("notch.defaults.width"         . 200.0)
     ("notch.defaults.depth"         . 200.0)
-    ("notch.defaults.height"        . 0.0)))
+    ("notch.defaults.height"        . 0.0)
+    ("notch.obstacleClearance"      . 10.0)))   ;; 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR (proposed, owner to confirm)
 
 (defun notch-p (key / hit)
   (setq hit (assoc key (notch-profile)))
@@ -1152,8 +1202,8 @@
   (setvar "MEASUREMENT" 1)
 
   ;; === INPUT: the parent carcass ===
-  (initget "B W")
-  (setq kit (getkword "\nParent kit [B=BUD / W=WARDROBE] <B>: "))
+  (initget "B W U")
+  (setq kit (getkword "\nParent kit [B=BUD / W=WARDROBE / U=WUD wall unit] <B>: "))
   (if (null kit) (setq kit "B"))
 
   (setq g (getreal "\nBoard THICKNESS [mm] (18=standard, 22=heavy) <18>: "))
@@ -1286,7 +1336,7 @@
                 oldBack (notch-replan-sockets tw e below))
           (notch-say (strcat "NOTCH " corner " " (rtos nw 2 0) " x " (rtos nd 2 0) " x "
                              (if full "FULL" (rtos nh 2 0))
-                             " on " (if (= kit "W") "KIT_WARDROBE" "KIT_BUD") " "
+                             " on " (cond ((= kit "W") "KIT_WARDROBE") ((= kit "U") "KIT_WUD") (T "KIT_BUD")) " "
                              (rtos cw 2 0) " x " (rtos ch 2 0) " x " (rtos cd 2 0)
                              ", G=" (rtos g 2 0) ", r=" (rtos r 2 2)))
           (notch-say "---------")

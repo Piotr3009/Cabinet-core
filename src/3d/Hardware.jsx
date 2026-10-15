@@ -1572,6 +1572,21 @@ export function FrontHandle({
 
   const H = profile.handles;
   const box = panel.box;
+  // ─── 15.10.2026 · A LEAF STANDING ALONG Z (the L's door B, a drawer front on its arm B) ──
+  //
+  // The owner: *"klamki i orientacja drzwi na L shape w ogole nie ma sensu."*
+  // This read every front as facing +z, so on the L's door B (`meta.swingZ`:
+  // its face normal along x, its width along z, `engine/cabinet.js placeBox`)
+  // the handle stood at `box.z + box.d`: past the far END of the leaf, in the
+  // air beside the arm, and the posts pointed along the arm. The leaf's face
+  // normal is read here once (`nx`: +1 facing +x on the left hand, -1 on the
+  // right; a drawer front says it as `meta.faceX.dir`), and every point below
+  // goes through `sheetTo`, which puts the cut frame on whichever face the
+  // leaf shows the room. A front facing +z reads exactly as it did.
+  // eslint-disable-next-line no-nested-ternary
+  const nx = panel.meta?.swingZ
+    ? -(Number(panel.meta.swingZ.dir) || -1)
+    : (panel.meta?.faceX ? (Number(panel.meta.faceX.dir) || 1) : 0);
   // The front's OUTER face, in the cabinet's own frame — a handle stands proud
   // of the door it is screwed through.
   const faceZ = box.z + box.d;
@@ -1585,11 +1600,27 @@ export function FrontHandle({
   // said the other one; with F2b's law behind it, one mirror puts both on the
   // free stile. The scene works in the cabinet's frame, so the translation is
   // here and nothing downstream has to know there are two.
+  //
+  // On a leaf facing along x the room's RIGHT edge (a viewer facing the leaf)
+  // is its z = box.z end when it faces +x and its z = box.z + box.d end when it
+  // faces -x, and the cut frame's x runs away from that edge along the leaf.
   const sheetX = (x) => box.x + box.w - Number(x);
+  /** A cut-frame point (x along the leaf from its right edge, y up) standing `off` proud of the room face, in the cabinet's mm. */
+  const sheetTo = (x, y, off = 0) => {
+    if (nx > 0) return [box.x + box.w + off, box.y + Number(y), box.z + Number(x)];
+    if (nx < 0) return [box.x - off, box.y + Number(y), box.z + box.d - Number(x)];
+    return [sheetX(x), box.y + Number(y), faceZ + off];
+  };
   const wx = sheetX(spec.x);
   const wy = box.y + spec.y;
 
   const at = (x, y, z) => [mm(x) - pivot[0], mm(y) - pivot[1], mm(z) - pivot[2]];
+  const atSheet = (x, y, off) => at(...sheetTo(x, y, off));
+  // A stem, a post or a rod standing OFF the face: along z on a front facing
+  // z, along x on a leaf facing x (a cylinder's own axis is y).
+  const offFace = nx ? [0, 0, Math.PI / 2] : [Math.PI / 2, 0, 0];
+  // The knob's dome, toward the room.
+  const domeTo = nx ? [0, 0, -nx * (Math.PI / 2)] : [Math.PI / 2, 0, 0];
   const material = (
     <meshStandardMaterial color={metal.colour} metalness={metal.metalness} roughness={metal.roughness} />
   );
@@ -1632,13 +1663,16 @@ export function FrontHandle({
             side, and inside it the leaf's own nearest-edge distance shows in
             orange. */}
         <HoverAura
-          at={at(wx, wy, faceZ + stem / 2)}
-          size={{ w: H.knob.diameter, h: H.knob.diameter, d: stem + r }}
+          at={atSheet(spec.x, spec.y, stem / 2)}
+          size={nx
+            ? { w: stem + r, h: H.knob.diameter, d: H.knob.diameter }
+            : { w: H.knob.diameter, h: H.knob.diameter, d: stem + r }}
           subject={{ kind: 'handle', id: panel.id, panel }}
           profile={profile}
-          dims={cadDims([[wx, wy]])}
+          dims={nx ? null : cadDims([[wx, wy]])}
         />
-        <mesh position={at(wx, wy, faceZ + stem / 2)} userData={{ ccNoBounds: true }}>
+        {/* The stem stands OFF the face (a cylinder's own axis is y; it stood upright before 15.10.2026). */}
+        <mesh position={atSheet(spec.x, spec.y, stem / 2)} rotation={offFace} userData={{ ccNoBounds: true }}>
           <cylinderGeometry args={[mm(H.knob.stemDiameter / 2), mm(H.knob.stemDiameter / 2), mm(stem), 12]} />
           {material}
         </mesh>
@@ -1646,8 +1680,8 @@ export function FrontHandle({
             a dome on a stem, flat where it meets the shaft. A full sphere reads
             as a ball on a stick and catches the light in the wrong place. */}
         <mesh
-          position={at(wx, wy, faceZ + stem)}
-          rotation={[Math.PI / 2, 0, 0]}
+          position={atSheet(spec.x, spec.y, stem)}
+          rotation={domeTo}
           userData={{ ccNoBounds: true }}
         >
           <sphereGeometry args={[mm(r), 20, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
@@ -1672,7 +1706,17 @@ export function FrontHandle({
   const postAt = holes
     ? holes.map(([hx, hy]) => [sheetX(hx), box.y + hy])
     : [[wx, wy], [wx, wy]];
+  // The posts in the cut frame, for a leaf facing x (`sheetTo` turns them).
+  const postSheet = holes ? holes : [[spec.x, spec.y], [spec.x, spec.y]];
   const rodLen = centres + 2 * H.bar.overhang;
+  // A horizontal rod runs along the leaf: along x on a front facing z, along z on a leaf facing x.
+  // eslint-disable-next-line no-nested-ternary
+  const rodTurn = horizontal ? (nx ? [Math.PI / 2, 0, 0] : [0, 0, Math.PI / 2]) : [0, 0, 0];
+  const auraSize = (() => {
+    const across = H.bar.standoff + H.bar.rodDiameter;
+    if (nx) return horizontal ? { w: across, h: H.bar.rodDiameter, d: rodLen } : { w: across, h: rodLen, d: H.bar.rodDiameter };
+    return horizontal ? { w: rodLen, h: H.bar.rodDiameter, d: across } : { w: H.bar.rodDiameter, h: rodLen, d: across };
+  })();
 
   return (
     <group userData={{ ccHardware: true, ccHandle: panel.id }}>
@@ -1680,20 +1724,18 @@ export function FrontHandle({
           than round one post — "no more pixel-hunting a thin rail" is a rail
           you can point anywhere along. */}
       <HoverAura
-        at={at(sheetX(midX), box.y + midY, faceZ + H.bar.standoff)}
-        size={horizontal
-          ? { w: rodLen, h: H.bar.rodDiameter, d: H.bar.standoff + H.bar.rodDiameter }
-          : { w: H.bar.rodDiameter, h: rodLen, d: H.bar.standoff + H.bar.rodDiameter }}
+        at={atSheet(midX, midY, H.bar.standoff)}
+        size={auraSize}
         subject={{ kind: 'handle', id: panel.id, panel }}
         profile={profile}
-        dims={cadDims(holes ? postAt : [[wx, wy]])}
+        dims={nx ? null : cadDims(holes ? postAt : [[wx, wy]])}
       />
-      {postAt.map(([px, py], i) => (
+      {postSheet.map(([px, py], i) => (
         <mesh
           // eslint-disable-next-line react/no-array-index-key
           key={`post-${i}`}
-          position={at(px, py, faceZ + H.bar.standoff / 2)}
-          rotation={[Math.PI / 2, 0, 0]}
+          position={atSheet(px, py, H.bar.standoff / 2)}
+          rotation={offFace}
           userData={{ ccNoBounds: true }}
         >
           <cylinderGeometry args={[mm(H.bar.postDiameter / 2), mm(H.bar.postDiameter / 2), mm(H.bar.standoff), 12]} />
@@ -1701,8 +1743,8 @@ export function FrontHandle({
         </mesh>
       ))}
       <mesh
-        position={at(sheetX(midX), box.y + midY, faceZ + H.bar.standoff)}
-        rotation={horizontal ? [0, 0, Math.PI / 2] : [0, 0, 0]}
+        position={atSheet(midX, midY, H.bar.standoff)}
+        rotation={rodTurn}
         userData={{ ccNoBounds: true }}
       >
         <cylinderGeometry args={[mm(H.bar.rodDiameter / 2), mm(H.bar.rodDiameter / 2), mm(rodLen), 14]} />

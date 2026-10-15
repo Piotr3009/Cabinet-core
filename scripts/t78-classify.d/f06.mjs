@@ -22,9 +22,13 @@ export const LIVENESS = {
     const kinds = lArmKinds(P);
     const a = lLeafTrimMm(kinds.A, P, 25);
     const b = lLeafTrimMm(kinds.B, P, 25);
+    // 15.10.2026 (f26): the overlapping leaf's end clears the covered leaf's
+    // face by clearance.corner, so its trim carries the gap too: 3 + 25 + 3 + 1.5.
+    const bifold = lArmKinds(P, 'bifold');
     return {
-      live: kinds.B === 'overlap' && kinds.A === 'covered' && a === 1.5 && b === 25 + 3 - 1.5 + 3,
-      said: `arm A ${kinds.A} trims the leaf by ${a}, arm B ${kinds.B} by ${b} (gap 3, clearance.corner 3, front 25)`,
+      live: kinds.B === 'overlap' && kinds.A === 'covered' && a === 1.5 && b === 3 + 25 + 3 + 1.5
+        && bifold.B === 'bifold' && lLeafTrimMm('bifold', P, 25) === 3 + 25 + 4.5,
+      said: `arm A ${kinds.A} trims the leaf by ${a}, arm B ${kinds.B} by ${b} (gap 3, clearance.corner 3, front 25; the bi-fold B by ${lLeafTrimMm('bifold', P, 25)})`,
     };
   },
 };

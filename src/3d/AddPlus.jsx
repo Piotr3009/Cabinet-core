@@ -68,9 +68,13 @@ function plusTexture(colour, lit) {
  *   colour    the app's selection blue (profile.appearance.selection.colour)
  *   title     what the cursor says it will do
  *   onClick   open the library, carrying { near, side }
+ *   onHoverIn / onHoverOut   15.10.2026: the scene draws a plus only while the
+ *             hand is over the cabinet or the island face it belongs to, and
+ *             the plus itself has to count as that place, or it would vanish
+ *             under the hand on its way from the cabinet to the disc.
  */
 export default function AddPlus({
-  position, size, colour, title, onClick,
+  position, size, colour, title, onClick, onHoverIn = null, onHoverOut = null,
 }) {
   // TURN 59: the PBI retail mount draws the furniture and none of the tool.
   // PRO never calls `setProChrome`, so this is `true` and this line is a no-op.
@@ -107,8 +111,8 @@ export default function AddPlus({
           x: e.clientX, y: e.clientY, width: 0, height: 0,
         });
       }}
-      onPointerOver={(e) => { e.stopPropagation(); setHover(true); document.body.style.cursor = 'pointer'; }}
-      onPointerOut={() => { setHover(false); document.body.style.cursor = ''; }}
+      onPointerOver={(e) => { e.stopPropagation(); setHover(true); document.body.style.cursor = 'pointer'; onHoverIn?.(); }}
+      onPointerOut={() => { setHover(false); document.body.style.cursor = ''; onHoverOut?.(); }}
     >
       <spriteMaterial
         attach="material"

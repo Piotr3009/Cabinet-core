@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
 // ─── CHAT-FIX 14.10.2026: THE HARDWARE, LIGHTER WHEN THE CAMERA IS FAR ───────
 //
 // Measured on the owner's machine (Intel UHD, 14.10.2026): a plain base

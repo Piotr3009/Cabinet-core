@@ -56,8 +56,10 @@ test('the drawing REPLACES the orange number — the aura and the linger stay', 
   assert.match(aura, /hot && !dims/, 'no orange label while the drawing shows');
   assert.match(aura, /\{hot && dims\}/, 'the drawing shows only while the aura is hot');
   const hardware = readFileSync(new URL('../src/3d/Hardware.jsx', import.meta.url), 'utf8');
-  assert.match(hardware, /dims=\{cadDims\(\[\[wx, wy\]\]\)\}/, 'the knob carries its drawing');
-  assert.match(hardware, /dims=\{cadDims\(holes \? postAt : \[\[wx, wy\]\]\)\}/, 'the bar carries its drawing');
+  // 15.10.2026: a leaf facing along x (the L's door B) carries no drawing (the
+  // chain is drawn in the xy plane); every front facing the room as before does.
+  assert.match(hardware, /dims=\{nx \? null : cadDims\(\[\[wx, wy\]\]\)\}/, 'the knob carries its drawing');
+  assert.match(hardware, /dims=\{nx \? null : cadDims\(holes \? postAt : \[\[wx, wy\]\]\)\}/, 'the bar carries its drawing');
   assert.match(hardware, /dimensionStyle\(profile\)/, 'the drawing-office blue — the hover ink, never the orange');
 });
 

@@ -58,7 +58,7 @@ import {
 // T75 F9 · the island: what it would stand on (Room refuses first).
 import { islandClash, newIsland } from '../engine/island.js';
 // 14.10.2026 · the island planned from above, inserted whole (engine/islandPlan.js).
-import { islandPlanDraft, planCabinets } from '../engine/islandPlan.js';
+import { islandPlanDraft, planCabinets, planCore, planCoreRefusal } from '../engine/islandPlan.js';
 import { getProjectType, heightsForProjectType } from '../engine/projectTypes.js';
 // T75 F20 · a set is a recipe: its layout and its reading are the engine's.
 import { setIsOneLevel, setLayout, setRecipe } from '../engine/sets.js';
@@ -68,7 +68,7 @@ import { catalogueMoves, priceSnapshot } from '../engine/warehouse.js';
 // the hinge and every corner consumer below read.
 import {
   blindClearanceView, carcassReachMm, cornerEndOf, cornerFaceMm, cornersOf, cornerSpec, cornerStopMm,
-  isInternalCorner, lArmKinds, lArmMinMm, lClearanceView, lLeafTrimMm, occupantKind,
+  isInternalCorner, lArmKinds, lArmMinMm, lClearanceView, lDoorsModeOf, lLeafTrimMm, occupantKind,
 } from '../engine/corners.js';
 // Turn 44 (CLAUDE.md F1): the elevation's own element — a SLOPE. Its rules are
 // in lib/ rather than in the engine because iron rule 2 closes `src/engine/**`
@@ -794,76 +794,132 @@ function slopeCutFor(unit, design) {
 // The owner: *"komin nie ma mozliwosci automatycznego wycinania w szafce
 // naroznika jak przesuwamy - patrz skos, w szafach to samo."*  A chimney breast
 // or a box in the plan stopped a cabinet dead (turn 14); now a cabinet whose
-// kit takes a notch (KIT_BUD, KIT_WARDROBE, KIT_WUD) may drive INTO it, as far
-// as the widest notch its carcass can take (KIT_NOTCH.lsp notch-obstacle-limits),
-// and the notch is DERIVED from the overlap at compute time, never stored: a
-// BL or BR corner, the overlap plus the scribe clearance wide, the obstacle's
-// stand past the back line plus the clearance deep, full height. Move the
-// cabinet out and the notch is gone, exactly as the slope cut is. A notch the
-// hand set (`params.notch`) wins, and then the obstacle is the hard stop it
-// always was.
+// kit takes a notch (KIT_BUD, KIT_BUDTALL, KIT_WARDROBE, KIT_WUD) is never
+// stopped by one (KIT_NOTCH.lsp section 1, THE OBSTACLE NOTCH and PAST THE
+// NOTCH, the owner's morning of 15.10.2026):
+//
+//   notch     while the overlap leaves at least `notch.minInteriorMm` (100) of
+//             the interior beside it: a BL or BR corner, the overlap plus the
+//             scribe clearance wide, the obstacle's stand past the back line
+//             plus the clearance deep, full height; DERIVED at compute time,
+//             never stored (`obstacleNotchFor`);
+//   shallow   past that, or with the obstacle inside the cabinet's span: the
+//             WHOLE cabinet goes shallower by the obstacle's stand, its back on
+//             the obstacle's face, its front where it was (*"cala szafka sie
+//             robi plytsza"*), while that leaves 100 of interior in depth;
+//   standoff  a wall unit too shallow for that hangs on the obstacle's face at
+//             its full depth (a wall unit on a chimney breast);
+//   stop      what is left: the hard stop of turn 14 at the widest notch.
+//
+// The two placement numbers of `shallow` and `standoff` (`depth` with
+// `depth_full` beside it, `standoff_mm` read by runs.js wallGapOf) are written
+// at the one choke point (`settleObstacles`, refreshAutoParts) and taken back
+// when the cabinet leaves. A notch the hand set (`params.notch`) wins, and then
+// the obstacle is the hard stop it always was. An island's core is never
+// notched or passed: a cabinet does not stand in an island.
 
-/** The clearance round the obstacle and the widest / deepest notch this unit's carcass can take. */
+/** The cabinet's own numbers before any obstacle moved them. */
+function nominalOf(unit, profile = getCabinetProfile()) {
+  const depth = Number(unit.params?.depth_full ?? unit.params?.depth) || 0;
+  const gap = wallGapOf({ ...unit, params: { ...unit.params, standoff_mm: 0 } }, profile);
+  return { depth, gap };
+}
+
+/** The clearance round the obstacle, the interior the owner keeps, the widest / deepest notch this unit's carcass can take. */
 function notchRoomOf(unit, profile = getCabinetProfile()) {
   const K = notchProfile(profile);
   const W = Number(unit.params?.width) || 0;
-  const D = Number(unit.params?.depth) || 0;
   const G = Number(unit.params?.board_t) || 18;
-  const [maxW, maxD] = notchObstacleLimits(W, D, G, notchP(K, 'puzzle.dogboneHalfHeight'));
-  return { clearance: notchP(K, 'notch.obstacleClearance'), maxW, maxD, gap: wallGapOf(unit, profile) };
+  const { depth: D, gap } = nominalOf(unit, profile);
+  const minInterior = notchP(K, 'notch.minInterior');
+  const [maxW, maxD] = notchObstacleLimits(W, D, G, notchP(K, 'puzzle.dogboneHalfHeight'), minInterior);
+  return { clearance: notchP(K, 'notch.obstacleClearance'), minInterior, maxW, maxD, gap, depth: D, W, G };
 }
 
-/** May this unit be given an obstacle notch at all (its kit, no hand notch, square to its wall)? */
+/** May this unit be notched for an obstacle at all (its kit, no hand notch, square to its wall, not on an island)? */
 function notchable(unit) {
   if (!unit || unit.params?.notch) return false;
   if ((Number(unit.position?.rotation_deg) || 0) % 360) return false;
-  if (unit.position?.wall == null) return false;
+  if (unit.position?.wall == null || unit.position?.island) return false;
   return notchApplies(getUnitType(unit.type));
+}
+
+/** Is this obstacle one the notch law reads (a chimney or a box), not an island's core? */
+const notchableObstacle = (span) => span && span.kind !== 'island';
+
+/**
+ * What the room asks of this unit for ONE obstacle span where the unit now
+ * stands: `{ mode, nd, far, side }` with mode 'clear' (the obstacle does not
+ * reach past the back line, or does not overlap), 'notch', 'shallow',
+ * 'standoff' or 'stop'. The geometry is the carcass span along the wall.
+ */
+function obstacleModeFor(unit, span, room, profile = getCabinetProfile()) {
+  const x0 = Number(unit.position.x_mm) || 0;
+  const x1 = x0 + room.W;
+  const o = span;
+  const far = Number(o.far) || 0;
+  const nd = far - room.gap + room.clearance;
+  if (!(o.right > x0 + 1e-6 && o.left < x1 - 1e-6) || !(far - room.gap > 1e-6)) return { mode: 'clear', nd, far, side: null };
+  const onLeft = o.left <= x0 + 1e-6;
+  const onRight = o.right >= x1 - 1e-6;
+  const side = onLeft && !onRight ? 'L' : (onRight && !onLeft ? 'R' : null);
+  const overlap = side === 'L' ? o.right - x0 : (side === 'R' ? x1 - o.left : null);
+  if (side && overlap + room.clearance <= room.maxW + 1e-6 && nd <= room.maxD + 1e-6) return { mode: 'notch', nd, far, side, overlap };
+  const shallow = room.depth - far;
+  if (shallow - room.G >= room.minInterior - 1e-6) return { mode: 'shallow', nd, far, side, overlap };
+  if (getUnitType(unit.type).mount === 'wall') return { mode: 'standoff', nd, far, side, overlap };
+  return { mode: 'stop', nd, far, side, overlap };
 }
 
 /**
  * How far along the wall this unit may drive into a plan obstacle, as the
- * `enter` `collision.js boxSpansOnWall` reads: a function of the obstacle's
- * span, null for a unit the room stays hard for.
+ * `enter` `collision.js boxSpansOnWall` reads: Infinity where the cabinet
+ * passes it (shallower, or hung on it), the widest notch where only a notch
+ * can take it, 0 where it is the hard stop; null for a unit the room stays
+ * hard for altogether.
  */
 function notchEnterFor(unit, profile = getCabinetProfile()) {
   if (!notchable(unit)) return null;
   const room = notchRoomOf(unit, profile);
   return (span) => {
-    const nd = Number(span.far) - room.gap + room.clearance;
-    if (!(nd > 0) || nd > room.maxD) return 0;
+    if (!notchableObstacle(span)) return 0;
+    const far = Number(span.far) || 0;
+    if (!(far - room.gap > 1e-6)) return Infinity;                               // does not reach the carcass: not in the way
+    const nd = far - room.gap + room.clearance;
+    const passes = (room.depth - far - room.G >= room.minInterior - 1e-6) || getUnitType(unit.type).mount === 'wall';
+    if (passes) return Infinity;
+    if (nd > room.maxD) return 0;
     // The notch is the overlap plus the clearance, so the overlap stops short of the widest notch by that much.
     return Math.max(0, room.maxW - room.clearance);
   };
 }
 
-/** The notch the room asks of this unit where it stands, or null. */
-function obstacleNotchFor(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
+/** The obstacle span (a chimney, a box) that asks most of this unit where it stands, with its mode; null when none does. */
+function obstacleAsk(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
   if (!notchable(unit)) return null;
   const walls = roomWalls(state.project.room);
   const wall = walls[unit.position.wall];
   if (!wall) return null;
   const room = notchRoomOf(unit, profile);
-  const x0 = Number(unit.position.x_mm) || 0;
-  const x1 = x0 + (Number(unit.params.width) || 0);
-  const spans = boxSpansOnWall({ wall, depth: unit.params.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) });
+  const spans = boxSpansOnWall({ wall, depth: room.depth, boxes: planObstaclesOf(state.project.room, state.project.wallSlopes) })
+    .filter(notchableObstacle);
   let best = null;
   for (const o of spans) {
-    if (!(o.right > x0 + 1e-6 && o.left < x1 - 1e-6)) continue;
-    const onLeft = o.left <= x0 + 1e-6;
-    const onRight = o.right >= x1 - 1e-6;
-    if (onLeft === onRight) continue;                 // covers the unit, or stands inside its span: no corner
-    const nd = Number(o.far) - room.gap + room.clearance;
-    if (!(nd > 0) || nd > room.maxD) continue;
-    const overlap = onLeft ? o.right - x0 : x1 - o.left;
-    if (!(overlap > 0)) continue;
-    // Too wide a notch is not skipped here: the engine refuses it in words (Check #28), nothing is clipped silently.
-    const nw = overlap + room.clearance;
-    if (!best || nw > best.w) {
-      best = { corner: onLeft ? 'BL' : 'BR', w: roundTo(nw, 4), d: roundTo(nd, 4), h: 0, auto: true, for: o.label || 'an obstacle' };
-    }
+    const ask = obstacleModeFor(unit, o, room, profile);
+    if (ask.mode === 'clear') continue;
+    const rank = { shallow: 3, standoff: 3, stop: 2, notch: 1 }[ask.mode] || 0;
+    if (!best || rank > best.rank || (rank === best.rank && (ask.overlap || 0) > (best.ask.overlap || 0))) best = { rank, ask, span: o, room };
   }
   return best;
+}
+
+/** The notch the room asks of this unit where it stands, or null. */
+function obstacleNotchFor(unit, state = useProjectStore.getState(), profile = getCabinetProfile()) {
+  const best = obstacleAsk(unit, state, profile);
+  if (!best || best.ask.mode !== 'notch') return null;
+  const { ask, span } = best;
+  const nw = ask.overlap + best.room.clearance;
+  return { corner: ask.side === 'L' ? 'BL' : 'BR', w: roundTo(nw, 4), d: roundTo(ask.nd, 4), h: 0, auto: true, for: span.label || 'an obstacle' };
 }
 
 function paramsForEngine(unit, design = null) {
@@ -1706,9 +1762,13 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     const restore = () => set((st) => ({ units: before.units, project: { ...st.project, room: before.room } }));
     const profile = getCabinetProfile();
     const id = plan.islandId || uid('island');
-    const record = {
-      id, cx: Number(plan.cx), cy: Number(plan.cy), w: Number(plan.w), d: Number(plan.d), rotation: Number(plan.rotation) || 0,
-    };
+    // 15.10.2026: the plan's rectangle is the island's OUTER footprint; what the
+    // room keeps is the CORE it leaves between its cabinets (engine/islandPlan.js
+    // planCore). A rectangle too small for its cabinets is refused in words.
+    const tooSmall = planCoreRefusal(plan, profile);
+    if (tooSmall) return { ok: false, message: tooSmall, blocking: [], id: null };
+    const core = planCore(plan, profile);
+    const record = { id, cx: core.cx, cy: core.cy, w: core.w, d: core.d, rotation: Number(plan.rotation) || 0 };
     const islands = roomIslands(get().project.room);
     const next = plan.islandId ? islands.map((i) => (i.id === id ? { ...i, ...record } : i)) : [...islands, record];
     const placed = planCabinets({ ...plan, islandId: id }, profile);
@@ -2606,7 +2666,8 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           depth: Number(sameWall ? base.params.depth : base.params.width) || 0,
         };
         const arm = armOf(u);
-        const kinds = lArmKinds(profile);
+        // 15.10.2026: by THIS wall L's own doors (a bi-fold pair hangs B on A).
+        const kinds = lArmKinds(profile, lDoorsModeOf(params));
         const proposals = [];
         for (const key of ['width', 'depth']) {
           // The leaf by the L's own door law (`corners.js lLeafTrimMm`): the
@@ -2967,6 +3028,10 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
     // against the recess's back wall (`params.recess_mm`, derived here, read by
     // runs.js wallGapOf); out of it, it stands on the wall line again.
     get().settleRecesses();
+    // ...and a cabinet pushed past the widest notch along a chimney or a box
+    // goes shallower in front of it, or hangs on it (a wall unit); out of it,
+    // it is as it was (KIT_NOTCH.lsp PAST THE NOTCH).
+    get().settleObstacles();
 
     // --- T78 F17 . THE HOOD OVER THE HOB, PROPOSED --------------------------
     // The same choke point: every add, move, resize and room change ends
@@ -3069,6 +3134,52 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
       if (depth > 0) return { ...u, params: { ...u.params, recess_mm: depth } };
       const { recess_mm: _gone, ...rest } = u.params;
       return { ...u, params: rest };
+    });
+    if (changed) set({ units: next });
+  },
+
+  /**
+   * ─── CHAT-FIX 15.10.2026: PAST THE NOTCH, THE WHOLE CABINET GOES SHALLOWER ──
+   *
+   * The owner: *"przy bardzo waskim wcieciu zatrzymuje sie a ja bym chcial zeby
+   * sie wtedy szafka calkowicie sie skracala, nie zostawiala w srodku szafki
+   * mniej niz 100 mm, jezeli bedzie mniej to cala szafka sie robi plytsza ... w
+   * szafach to samo ... wysokie szafki i wiszace nie maja mozliwosci w kominie
+   * wciec."*  Where the room asks `shallow` the cabinet's depth becomes its
+   * nominal depth (kept in `depth_full`) less the obstacle's stand past the
+   * wall and it stands off the wall by that stand (`standoff_mm`), so its back
+   * is on the obstacle's face and its front where the run's front is; where it
+   * asks `standoff` (a wall unit too shallow to lose that much) the cabinet
+   * keeps its depth and hangs on the obstacle's face. Out of the obstacle, or
+   * back in notch reach, both numbers are taken back. Written only on change.
+   */
+  settleObstacles: () => {
+    const s = get();
+    const profile = getCabinetProfile();
+    let changed = false;
+    const next = s.units.map((u) => {
+      const hasStandoff = Number(u.params?.standoff_mm) > 0;
+      const hasFull = u.params?.depth_full != null;
+      const restore = () => {
+        if (!hasStandoff && !hasFull) return u;
+        changed = true;
+        const { standoff_mm: _s, depth_full: full, ...rest } = u.params;
+        return { ...u, params: full != null ? { ...rest, depth: Number(full) } : rest };
+      };
+      const best = obstacleAsk(u, s, profile);
+      if (!best || (best.ask.mode !== 'shallow' && best.ask.mode !== 'standoff')) return restore();
+      const far = roundTo(best.ask.far, 4);
+      const full = Number(u.params.depth_full ?? u.params.depth) || 0;
+      const depth = best.ask.mode === 'shallow' ? roundTo(full - far, 4) : full;
+      const same = Number(u.params.standoff_mm) === far && Number(u.params.depth) === depth
+        && (best.ask.mode === 'shallow' ? Number(u.params.depth_full) === full : u.params.depth_full == null);
+      if (same) return u;
+      changed = true;
+      const { depth_full: _f, ...rest } = u.params;
+      return {
+        ...u,
+        params: { ...rest, depth, standoff_mm: far, ...(best.ask.mode === 'shallow' ? { depth_full: full } : {}) },
+      };
     });
     if (changed) set({ units: next });
   },

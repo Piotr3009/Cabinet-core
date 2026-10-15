@@ -65,10 +65,16 @@ export function wallGapOf(unit, profile) {
   // behind the wall by that much, and every reader of this one helper (the
   // scene's placement, the drag's clamp, the worktop, the plan, the section)
   // follows without a line of its own.
+  // ...and A CABINET IN FRONT OF A CHIMNEY OR A BOX (the same day, the
+  // morning): `params.standoff_mm` is how far it stands off its wall on the
+  // obstacle's face (its depth shortened by the same, or a wall unit hung
+  // there at its full depth: projectStore settleObstacles). It ADDS to the
+  // gap, the recess comes off it; a cabinet is never in both.
   const recess = Math.max(0, Number(unit?.params?.recess_mm) || 0);
+  const standoff = Math.max(0, Number(unit?.params?.standoff_mm) || 0);
   const own = unit?.params?.wall_gap;
-  if (own != null && own !== '' && Number.isFinite(Number(own)) && Number(own) >= 0) return Number(own) - recess;
-  return Math.max(0, Number(profile?.room?.wallBackClearance) || 0) - recess;
+  if (own != null && own !== '' && Number.isFinite(Number(own)) && Number(own) >= 0) return Number(own) - recess + standoff;
+  return Math.max(0, Number(profile?.room?.wallBackClearance) || 0) - recess + standoff;
 }
 
 /** Height of a unit's top above the floor — where anything on top of it starts. */

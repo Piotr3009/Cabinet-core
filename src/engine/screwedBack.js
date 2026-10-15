@@ -1,4 +1,12 @@
-// ─── CHAT-FIX 15.10.2026 · THE SCREWED BACK UNDER CABINEO AND BISCUITS ──────
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
+// ─── CHAT-FIX 15.10.2026 · THE BACK JOINT OFF, UNDER CABINEO AND BISCUITS ───
 //
 // The owner, 15.10.2026: *"jak mamy cabineo to nie robimy dog bonsow, i to
 // samo jak mamy biscuits czy standardowe tradycyjne dowels."*  A dog bone is
@@ -7,10 +15,14 @@
 // three back tenons, the TOP's and BOTTOM's two, each with its dog bone, and
 // the BACK's sockets with their dia 7.5 holes. SKYLON_JOINTS_CABINEO.lsp and
 // SKYLON_JOINTS_BISCUIT.lsp (amended the same day, LISP first) say that joint
-// goes WHOLE and the BACK is held by what already held it: drawBACK's own
-// dia 3 screw rows through the back, one on each side's centre line and one
-// on the TOP's and the BOTTOM's. The dowel system (SKYLON_JOINTS_DOWEL.lsp)
-// has its own BACK rows and never drew a dog bone, so it is not touched here.
+// goes WHOLE. What holds the BACK then is the system's own answer:
+//   biscuits  drawBACK's own dia 3 screw rows through the back stay (no
+//             biscuit on the back, the owner), `screws: true`;
+//   Cabineo   the rows go too and the four back joints of the LISP's D.2b
+//             take their place (the owner, the morning of 15.10.2026: *"plecy
+//             tez na cabineo"*), `screws: false`.
+// The dowel system (SKYLON_JOINTS_DOWEL.lsp) has its own BACK rows and never
+// drew a dog bone, so it is not touched here.
 //
 // This runs on the planned unit AFTER the system's own strip and BEFORE the
 // drilling pass, in each board's own frame:
@@ -19,15 +31,16 @@
 //   TOP / BOTTOM the back tenons leave the outline (with the ends the system
 //                already made plain: the four corners), every puzzle dog
 //                bone goes;
-//   BACK         the sockets (PUZZLE_SOCKET) and their dia 7.5 holes go; the
-//                dia 3 screws and a wall unit's hanger cut-outs stay.
+//   BACK         the sockets (PUZZLE_SOCKET) and their dia 7.5 holes go, the
+//                dia 3 screws stay or go by `screws`; a wall unit's hanger
+//                cut-outs stay.
 // Board sizes do not move, so the BOM is what it was. Pure: boards in,
 // boards out; no store, no React.
 
 const EPS = 1e-6;
 
-/** The sentence `result.derived.joints.back` carries on such a unit. */
-export const SCREWED_BACK = 'the BACK is screwed on with the kit\'s own dia 3 rows: no tenons, no sockets, no dog bones under this joint system (the owner, 15.10.2026)';
+// What `result.derived.joints.back` says is each system's own sentence:
+// `BISCUIT_BACK` (biscuitJoints.js) and `CABINEO_BACK` (cabineo.js).
 
 /**
  * An outline without the tenons on one vertical edge x = edgeX: the points
@@ -54,7 +67,7 @@ function plainEdge(outline, edgeX, out, h) {
  * names the layers. Boards the unit does not have (a hood's BOTTOM) are
  * skipped; a board with no CNC record is left alone.
  */
-export function screwedBackStrip({ panels, profile }) {
+export function screwedBackStrip({ panels, profile, screws = true }) {
   const pz = profile?.puzzle || {};
   // A back tenon's dog bone is cut OUTSIDE the board, beyond the back edge.
   const boneBeyond = (edgeX, out) => (k) => k.layer === pz.layers?.dogbone
@@ -73,7 +86,8 @@ export function screwedBackStrip({ panels, profile }) {
       p.cnc = {
         ...p.cnc,
         pockets: (p.cnc.pockets || []).filter((k) => k.layer !== pz.layers?.socket),
-        holes: (p.cnc.holes || []).filter((d) => !(d.kind === 'puzzle' && d.layer === pz.layers?.socketHole)),
+        holes: (p.cnc.holes || []).filter((d) => !(d.kind === 'puzzle' && d.layer === pz.layers?.socketHole)
+          && !(!screws && d.kind === 'screw' && d.layer === pz.layers?.screw)),
       };
     }
   }

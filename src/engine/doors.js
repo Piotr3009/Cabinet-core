@@ -44,9 +44,11 @@ export function doorOpenAngle({
   doorWidth, hingeOffset = 0, gapToWall = null, fullDeg = null,
 }, profile) {
   // T78 F13 · a wide-angle family's door opens to its family's angle (the
-  // leaf's `meta.openAngleDeg`, 155 or 170); every other door to the
-  // profile's picture angle. The wall law below is unchanged: a door with a
-  // wall on its hinge side still stops square.
+  // leaf's `meta.openAngleDeg`, 155 or 170); since 15.10.2026 every hinged
+  // leaf carries its hinge's angle (the standard 155, the 110, the 95), so
+  // only a leaf with no catalogue behind it opens to the profile's picture
+  // angle. The wall law below is unchanged: a door with a wall on its hinge
+  // side still stops square.
   const full = (Number(fullDeg) > 0 ? Number(fullDeg) : (profile?.doors?.openAngle ?? 99)) * DEG;
   if (gapToWall == null) return full;
 

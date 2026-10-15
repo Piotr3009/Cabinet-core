@@ -253,14 +253,36 @@
 ;;;
 ;;; THE DOORS. They go through the engine's EXISTING door path, one per arm
 ;;; (the FRONTS boundary, CLAUDE.md). For the record, the law they follow:
-;;; door A hangs on SIDE-A (its hinge plate rows are on SIDE-A here, KIT_BUD's
-;;; BUL list) and runs to the inner corner with ZERO clearance on its inner
-;;; edge, because it is covered (neighbour kind CORNER_COVERED = 0); door B
-;;; hangs on SIDE-B (KIT_BUD's BUR list) and its inner edge stops
-;;; front_t + clearance.corner beyond the inner corner (CORNER_OVERLAP), so its
-;;; body stands in front of door A's inner strip. FLAT-FACE OVERLAP, NO 45
-;;; DEGREE CUTS: door B overlaps door A and DOOR B OPENS FIRST. B is the arm on
-;;; the ADJACENT wall (profile.corner.overlap 'adjacent', T75 proposed).
+;;;
+;;; THE BI-FOLD PAIR (the default since 15.10.2026; the owner: "l corner moja
+;;; propozycja to otwieranie drzwiczek razem, czyli drzwiczki polaczone ze
+;;; soba zawiasami"): door A hangs on SIDE-A (its hinge plate rows are on
+;;; SIDE-A here, KIT_BUD's BUL list) and runs to the inner corner with ZERO
+;;; clearance on its inner edge; door B hangs on DOOR A's free edge with Blum's
+;;; CLIP top 60 degree bi-fold corner hinge (reference/hardware/blum-hinges.json
+;;; families.bifold, catalogue p. 116, owner to confirm), its hinge edge its
+;;; INNER edge, and stands one door gap (3) off door A's face: its inner edge
+;;; stops front_t + 1.5 x gap beyond the inner corner line. SIDE-B carries no
+;;; plate. ONE HANDLE, on door B's free end: door A is carried and takes no
+;;; handle and no handle hole. Door A keeps the door's own hinge (the standard
+;;; 155 on a front to 24 mm, the 110 on the 25 mm shaker, where Blum's 155 and
+;;; 170 stop at 24 and 21; the catalogue pairs the bi-fold hinge with the 155
+;;; or 170, so the engine says so on a 110, owner to confirm). The pair opens
+;;; as one: door B folds toward door A's face by the bi-fold hinge's 60.
+;;;
+;;; THE PAIR OF TWO CARCASS-HUNG LEAVES (corner_doors null, the panel's
+;;; "Pair"): door A as above, covered (neighbour kind CORNER_COVERED = 0);
+;;; door B hangs on SIDE-B (KIT_BUD's BUR list) and its inner edge stops
+;;; gap + front_t + clearance.corner beyond the inner corner line, so its end
+;;; CLEARS door A's face by clearance.corner (3): door A stands `gap` off the
+;;; carcass, and T75's "front_t + clearance.corner" left door B's end ON
+;;; door A's face (amended 15.10.2026, the owner: the leaves must shorten with
+;;; the front). FLAT-FACE OVERLAP, NO 45 DEGREE CUTS: door B overlaps door A
+;;; and DOOR B OPENS FIRST. B is the arm on the ADJACENT wall
+;;; (profile.corner.overlap 'adjacent', T75 proposed).
+;;;
+;;; A THICKER FRONT SHORTENS DOOR B in both pairs: front_t is in its trim, so
+;;; a 40 mm front takes 15 off door B against a 25 mm one, never off door A.
 ;;;
 ;;; THE PLINTH, THE WORKTOP, THE CORNICE, THE TOP INFILL. They are the run's
 ;;; auto-parts (CLAUDE.md F5, F6), not this kit's boards.

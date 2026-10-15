@@ -48,7 +48,7 @@ test('F13 · the file: the wide family\'s rule and articles, every one with its 
 test('F13 · T22 held: the angle is derived inside the family; unloaded, the wide family has no rung and says so', () => {
   setBlumHingeFamilies(null);
   setHingeCatalogue(CLIPTOP);
-  assert.equal(hingeAngleFor({ frontThickness: 19 }), 110, 'standard, as always');
+  assert.equal(hingeAngleFor({ frontThickness: 19 }), 155, 'standard: the 155 since 15.10.2026');
   assert.equal(hingeAngleFor({ frontThickness: 28 }), 95);
   assert.equal(hingeAngleFor({ frontThickness: 19, family: 'wide' }), null, 'unloaded: no rung');
   assert.equal(wideHingeRule(), null);
@@ -59,7 +59,8 @@ test('F13 · T22 held: the angle is derived inside the family; unloaded, the wid
   assert.equal(hingeAngleFor({ frontThickness: 22, family: 'wide' }), 155);
   assert.equal(hingeAngleFor({ frontThickness: 24, family: 'wide' }), 155);
   assert.equal(hingeAngleFor({ frontThickness: 25, family: 'wide' }), null, 'the house 25 mm front: no rung in the file as read, owner to confirm p. 84');
-  assert.equal(hingeAngleFor({ frontThickness: 19 }), 110, 'the standard family did not move');
+  assert.equal(hingeAngleFor({ frontThickness: 19 }), 155, 'the standard family: the 155 since 15.10.2026 (the owner: standardowo zawiasy 155)');
+  assert.equal(hingeAngleFor({ frontThickness: 25 }), 110, 'the 25 mm shaker keeps the 110: Blum gives the 155 fronts to 24');
   assert.equal(wideHingeArticle(170), '71T6550');
   assert.equal(wideHingeArticle(155), '71B7550');
   const r170 = resolveDoorHinge({ frontThickness: 19, finish: 'nickel', family: 'wide' });
@@ -82,9 +83,13 @@ test('F13 · the engine: the leaf carries its family and, for wide, its angle; t
   const wide = computeCabinet({ ...base, hinge_family: 'wide' }, P);
   const leavesStd = std.panels.filter((p) => p.part === 'FRONT');
   const leavesWide = wide.panels.filter((p) => p.part === 'FRONT');
-  // The standard family leaves no mark on a leaf nobody chose for: the six goldens hold.
-  assert.deepEqual(leavesStd.map((p) => [p.meta.hingeFamily, p.meta.openAngleDeg]), [[undefined, undefined], [undefined, undefined]]);
+  // The standard family leaves no FAMILY mark on a leaf nobody chose for (the goldens read no meta);
+  // since 15.10.2026 every leaf carries its hinge's ANGLE, so the picture opens as far as the hinge.
+  assert.deepEqual(leavesStd.map((p) => [p.meta.hingeFamily, p.meta.openAngleDeg]), [[undefined, 155], [undefined, 155]]);
   assert.deepEqual(leavesWide.map((p) => [p.meta.hingeFamily, p.meta.openAngleDeg]), [['wide', 170], ['wide', 170]]);
+  // The house 25 mm shaker: the 110, carried too.
+  const shaker = computeCabinet({ ...base, front_t: 25 }, P);
+  assert.deepEqual(shaker.panels.filter((p) => p.part === 'FRONT').map((p) => p.meta.openAngleDeg), [110, 110]);
   // The cups: same positions, same count, same layer.
   const cups = (r) => r.drills.filter((d) => d.kind === 'cup').map((d) => [d.panel, d.x, d.y, d.d]);
   assert.deepEqual(cups(wide), cups(std), 'the cup pattern is unchanged in position');
@@ -92,7 +97,7 @@ test('F13 · the engine: the leaf carries its family and, for wide, its angle; t
   const hwStd = std.hardware.filter((h) => h.role === 'hinges');
   const hwWide = wide.hardware.filter((h) => h.role === 'hinges');
   assert.equal(hwWide.reduce((n, h) => n + h.qty, 0), hwStd.reduce((n, h) => n + h.qty, 0));
-  assert.equal(hwStd[0].spec.angle, 110);
+  assert.equal(hwStd[0].spec.angle, 155);
   assert.equal(hwWide[0].spec.angle, 170);
   assert.equal(hwWide[0].spec.article, '71T6550');
   assert.notEqual(hwWide[0].spec.article, hwStd[0].spec.article);
@@ -106,10 +111,20 @@ test('F13 · the engine: the leaf carries its family and, for wide, its angle; t
   assert.ok(said);
   assert.match(said.message, /no hinge for a 25 mm front/);
   assert.equal(thick.panels.filter((p) => p.part === 'FRONT').length, 1);
-  // The bi-fold pair's leaf A takes the wide family (p. 116), the owner's door choice wins.
+  // The bi-fold pair's leaf A: T78 forced the wide family on it (p. 116: the bi-fold hinge with the 155 or 170).
+  // Since 15.10.2026 the standard hinge IS the 155, so leaf A keeps the door's own family (the 155 on a 19 mm
+  // front); the owner's door choice still wins (the wide 170 where chosen).
   const bf = computeCabinet({ ...defaultParamsFor('CORNER_L_BASE', P), unit_num: 'CL01', doors: true, corner_doors: 'bifold', front_t: 19 }, P);
-  assert.equal(bf.panels.find((p) => p.id === 'CL01-A-F').meta.hingeFamily, 'wide');
-  assert.equal(bf.panels.find((p) => p.id === 'CL01-A-F').meta.openAngleDeg, 170);
+  assert.equal(bf.panels.find((p) => p.id === 'CL01-A-F').meta.hingeFamily, undefined);
+  assert.equal(bf.panels.find((p) => p.id === 'CL01-A-F').meta.openAngleDeg, 155);
+  const bfWide = computeCabinet({ ...defaultParamsFor('CORNER_L_BASE', P), unit_num: 'CL01', doors: true, corner_doors: 'bifold', front_t: 19, hinge_family: 'wide' }, P);
+  assert.equal(bfWide.panels.find((p) => p.id === 'CL01-A-F').meta.hingeFamily, 'wide');
+  assert.equal(bfWide.panels.find((p) => p.id === 'CL01-A-F').meta.openAngleDeg, 170);
+  // The 25 mm shaker: leaf A takes the 110 and the bi-fold line says the catalogue pairs the hinge with the 155 or 170.
+  const bf25 = computeCabinet({ ...defaultParamsFor('CORNER_L_BASE', P), unit_num: 'CL01', doors: true, corner_doors: 'bifold', front_t: 25 }, P);
+  assert.equal(bf25.panels.find((p) => p.id === 'CL01-A-F').meta.openAngleDeg, 110);
+  assert.match(bf25.warnings.find((w) => w.code === 'CORNER_L_BIFOLD').message, /here the 110: Blum's 155 and 170 stop at 24 and 21 mm fronts, owner to confirm/);
+  assert.equal(bf25.warnings.some((w) => w.code === 'HINGE_WIDE_NO_RUNG'), false, 'no forced wide family, no missing rung');
   setBlumHingeFamilies(null);
 });
 

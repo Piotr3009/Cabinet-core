@@ -347,14 +347,16 @@ test('F7 · the LISP\'s refusals, each naming the board; the kits it does not co
     const r = computeCabinet({ ...defaultParamsFor(type, P), unit_num: '01', notch: NOTCH }, P);
     const w = r.warnings.find((x) => x.code === N.NOTCH_REFUSED);
     assert.ok(w, `${type} took a notch`);
-    assert.match(w.message, /KIT_BUD\), a wardrobe \(KIT_WARDROBE\) or a wall unit \(KIT_WUD\)/);
+    assert.match(w.message, /KIT_BUD\), a tall unit \(KIT_BUDTALL\), a wardrobe \(KIT_WARDROBE\) or a wall unit \(KIT_WUD\)/);
     assert.ok(!/[\u2013\u2014]/.test(w.message), 'no long dash in a sentence');
   }
   assert.equal(N.notchApplies({ lisp: 'KIT_BUD_FULL.lsp', carcass: { top: 'panel', back: 'full' } }), true);
   // THE WALL UNIT (the owner, 15.10.2026: "nie ma wogole mozliwosci wyciecia naroznika w szafkach wiszacych, a
   // powinno byc"): KIT_WUD is a parent since that night (KIT_NOTCH.lsp section 1), its hangers carried.
   assert.equal(N.notchApplies(getUnitType('WUD')), true);
-  assert.deepEqual([...N.NOTCH_PARENT_KITS], ['KIT_BUD_FULL.lsp', 'KIT_WARDROBE_FULL.lsp', 'KIT_WUD_FULL.lsp']);
+  assert.deepEqual([...N.NOTCH_PARENT_KITS], ['KIT_BUD_FULL.lsp', 'KIT_WARDROBE_FULL.lsp', 'KIT_WUD_FULL.lsp', 'KIT_BUDTALL_FULL.lsp']);
+  assert.equal(N.notchApplies(getUnitType('BUDTALL')), true, 'the tall unit, 15.10.2026');
+  assert.equal(N.notchApplies(getUnitType('CARGO')), false, 'the Cargo shares the LISP, its pull-out frame fills the carcass');
 });
 
 test('F7 · THE WALL UNIT (15.10.2026): a WUD takes the notch; its hanger cut-out steps in beside a back notch and its hanger holes step forward with the shortened side', () => {

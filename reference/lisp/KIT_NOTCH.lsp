@@ -1,7 +1,7 @@
 ;;;========================================
 ;;; KIT_NOTCH.lsp
 ;;; The CORNER NOTCH - a MODIFIER on the KIT_BUD, KIT_WARDROBE and (since
-;;; 15.10.2026) KIT_WUD boards
+;;; 15.10.2026) KIT_WUD and KIT_BUDTALL boards
 ;;; Command: NOTCH_FULL
 ;;; Turn 75 (CLAUDE.md PART A, F7) - LISP FIRST ("lisp najpierw")
 ;;; Derived from: KIT_BUD_FULL.lsp + KIT_WARDROBE_FULL.lsp + SKYLON_COMMON.lsp
@@ -78,9 +78,9 @@
 ;;; its own (the hand's), keeps the hard stop. The refusals (section 8) are
 ;;; asked of the derived notch as of any other: a runner, a hinge or a shelf
 ;;; in its way refuses in words and the parent is what is cut.
-(defun notch-obstacle-limits (cw cd g bone / minEdge)
-  (setq minEdge (notch-min-joint-edge bone g))
-  (list (- cw (* 2.0 g) minEdge) (- cd g minEdge)))   ;; (maxW maxD)
+(defun notch-obstacle-limits (cw cd g bone / keep)
+  (setq keep (max (notch-min-joint-edge bone g) (notch-p "notch.minInterior")))
+  (list (- cw (* 2.0 g) keep) (- cd g keep)))   ;; (maxW maxD): the interior kept across and in depth, 100 since 15.10.2026 (96 held a joint before)
 ;;;
 ;;; A notch hanging from the TOP (a beam over a wall unit) and a WINDOW notch
 ;;; (a box crossing the corner at mid height) are NOT in this file yet: the
@@ -88,6 +88,29 @@
 ;;; przeszkode box naprzyklad powinno byc tak mozliwosc"); they are named
 ;;; in the PR as the next step, with their geometry (the TOP cut instead of
 ;;; the BOTTOM, a FLOOR board under the box as the LID is over it).
+;;;
+;;; PAST THE NOTCH (the owner, 15.10.2026, the morning): "przy bardzo waskim
+;;; wcieciu zatrzymuje sie a ja bym chcial zeby sie wtedy szafka calkowicie
+;;; sie skracala, nie zostawiala w srodku szafki mniej niz 100 mm, jezeli
+;;; bedzie mniej to cala szafka sie robi plytsza ... jak przejade na druga
+;;; strone komina to niech ponad 100 mm zaczyna sie pojawiac". So a cabinet
+;;; slid along a chimney or a box is never stopped by it:
+;;;   1. while the overlap leaves at least notch.minInterior of the INTERIOR
+;;;      beside the notch (cw - 2g - nw >= 100) the corner is notched (above);
+;;;   2. past that the WHOLE cabinet goes shallower: its depth is cd less the
+;;;      obstacle's stand past the wall, its back on the obstacle's face, its
+;;;      front where the run's front is; so for the obstacle inside the
+;;;      cabinet's span and for an overlap too wide to notch (the interior
+;;;      kept in depth, cd' - g >= 100, else the stop stands as before);
+;;;   3. a WALL UNIT too shallow for that hangs on the obstacle's face at its
+;;;      full depth (a wall unit on a chimney breast, which is what a wall
+;;;      unit does there);
+;;;   4. out on the far side, once the part of the cabinet past the obstacle
+;;;      has 100 of interior again, the notch comes back on that corner, and
+;;;      clear of it the cabinet is as it was.
+;;; The engine derives all of it from where the cabinet stands and stores none
+;;; of it but the two placement numbers (its shallower depth and its stand-off),
+;;; which it takes back when the cabinet leaves (projectStore settleObstacles).
 ;;;
 ;;; INPUTS
 ;;;   corner   the PLAN corner, seen from the front:
@@ -332,7 +355,8 @@
     ("notch.defaults.width"         . 200.0)
     ("notch.defaults.depth"         . 200.0)
     ("notch.defaults.height"        . 0.0)
-    ("notch.obstacleClearance"      . 10.0)))   ;; 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR (proposed, owner to confirm)
+    ("notch.obstacleClearance"      . 10.0)     ;; 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR (the owner: "dobrze")
+    ("notch.minInterior"            . 100.0)))  ;; 15.10.2026: the owner's "nie mniej niz 100 mm w srodku szafki": what a notch must leave of the interior, across and in depth
 
 (defun notch-p (key / hit)
   (setq hit (assoc key (notch-profile)))

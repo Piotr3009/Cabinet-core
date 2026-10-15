@@ -238,6 +238,10 @@
   "rules": {
     "hinge_by_front_thickness": [
       {
+        "max": 24,
+        "angle": 155
+      },
+      {
         "max": 25,
         "angle": 110
       },
@@ -261,8 +265,12 @@
     ],
     "families": {
       "standard": {
-        "label": "CLIP top BLUMOTION 110 / 95 by front thickness (today's rule)",
+        "label": "CLIP top BLUMOTION 155 to 24 mm (the owner, 15.10.2026: standardowo zawiasy 155), the 110 at 25, the 95 to 32",
         "hinge_by_front_thickness": [
+          {
+            "max": 24,
+            "angle": 155
+          },
           {
             "max": 25,
             "angle": 110
@@ -271,7 +279,8 @@
             "max": 32,
             "angle": 95
           }
-        ]
+        ],
+        "changed": "15.10.2026: the owner made the 155 the standard hinge (was 110 to 25 and 95 to 32, now in cliptop-hinges.json rules.hinge_by_front_thickness_note). The 155 zero-protrusion takes fronts to 24 (p. 84/85, dealers), so a 25 mm shaker front keeps the 110; owner to confirm the 155 at 25."
       },
       "wide": {
         "label": "wide-angle: CLIP top 170 up to the thickness Blum needs no gap for, CLIP top BLUMOTION 155 0-protrusion above it",
@@ -293,6 +302,7 @@
     "bifold_role": "hinge_bifold",
     "opening_angles": {
       "standard": [
+        155,
         110,
         95
       ],
@@ -338,7 +348,7 @@
   "families": {
     "standard": {
       "label": "CLIP top BLUMOTION, integrated switchable soft close",
-      "chosen_by": "front thickness: up to 25 the 110, 25 to 32 the 95 (rules.hinge_by_front_thickness, cliptop-hinges.json, unchanged)",
+      "chosen_by": "front thickness: to 24 the 155 (the owner, 15.10.2026: standardowo zawiasy 155), at 25 the 110, 25 to 32 the 95 (rules.hinge_by_front_thickness, cliptop-hinges.json)",
       "hinges": {
         "95": {
           "articles": {
@@ -662,6 +672,236 @@
             "175H7190",
             "175H7190.22"
           ]
+        },
+        "155": {
+          "articles": {
+            "screw_on": {
+              "value": "71B7550",
+              "page": 84,
+              "url": "https://publications.blum.com/2024/catalogue/en/84/",
+              "status": "owner to confirm",
+              "note": "in the screw-on boss table"
+            },
+            "knock_in": {
+              "value": "71B7580",
+              "dealers": [
+                "D04"
+              ],
+              "status": "owner to confirm",
+              "note": "press-in; listed on p. 84 without its boss column coming through"
+            },
+            "inserta": {
+              "value": "71B7590",
+              "page": 84,
+              "url": "https://publications.blum.com/2024/catalogue/en/84/",
+              "status": "owner to confirm",
+              "note": "in the INSERTA boss table; the repo's GLB pack labels 71B7590 onyx (items below); the two readings are the owner's to reconcile"
+            },
+            "half_cranked": {
+              "value": [
+                "71B7650",
+                "71B7690"
+              ],
+              "dealers": [
+                "D04"
+              ],
+              "status": "owner to confirm",
+              "note": "dual application"
+            },
+            "onyx": {
+              "value": null,
+              "page": 84,
+              "url": "https://publications.blum.com/2024/catalogue/en/84/",
+              "status": "owner to confirm",
+              "note": "p. 84 lists NI | ONS for the 110 and the bi-fold rows; the 155 row's finish column did not come through. The repo's pack carries onyx 155 files as 71B7590 (items below)."
+            }
+          },
+          "opening_angle": {
+            "value": 155,
+            "page": 84,
+            "url": "https://publications.blum.com/2024/catalogue/en/84/",
+            "status": "owner to confirm"
+          },
+          "soft_close": {
+            "value": "integrated BLUMOTION",
+            "page": 84,
+            "url": "https://publications.blum.com/2024/catalogue/en/84/",
+            "status": "owner to confirm"
+          },
+          "protrusion": {
+            "value": "0-protrusion for overlay application (cabinets with inner pull-outs or pull-out shelves)",
+            "page": 84,
+            "url": "https://publications.blum.com/2024/catalogue/en/84/",
+            "status": "owner to confirm",
+            "note": "the 2022/2023 edition p. 82 said the 0-protrusion sentence in those words; the 2024 p. 84 lists the 0-protrusion application"
+          },
+          "cup": {
+            "diameter": {
+              "value": 35,
+              "dealers": [
+                "D01"
+              ],
+              "status": "owner to confirm"
+            },
+            "depth": {
+              "value": 11.7,
+              "dealers": [
+                "D01"
+              ],
+              "status": "owner to confirm",
+              "note": "other dealers print 11 or 7/16 in (11.1); the repo drills 11"
+            },
+            "depth_catalogue": {
+              "value": null,
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm",
+              "note": "the cup drilling depth is on the boss dimension drawing of the planning page, which did not come through any snippet"
+            }
+          },
+          "drilling_distance_tb": {
+            "catalogue": {
+              "value": null,
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm",
+              "note": "the p. 85 TB / FA table cells were not legible"
+            },
+            "dealer": {
+              "min": {
+                "value": 3,
+                "dealers": [
+                  "D01",
+                  "D02"
+                ],
+                "status": "owner to confirm"
+              },
+              "max": {
+                "value": 8,
+                "dealers": [
+                  "D01",
+                  "D02"
+                ],
+                "status": "owner to confirm"
+              }
+            }
+          },
+          "boss_screws": {
+            "spacing": {
+              "value": 45,
+              "dealers": [
+                "D01"
+              ],
+              "status": "owner to confirm"
+            },
+            "offset_from_cup_centre": {
+              "value": 9.5,
+              "dealers": [
+                "D07"
+              ],
+              "status": "owner to confirm",
+              "note": "one pattern across the range"
+            }
+          },
+          "front_thickness_fd": {
+            "catalogue": {
+              "value": null,
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm",
+              "note": "the p. 85 gap F table is keyed to FD (front radius 1); its range did not come through"
+            },
+            "dealer_max": {
+              "value": 24,
+              "dealers": [
+                "D03",
+                "D05"
+              ],
+              "status": "owner to confirm",
+              "note": "D05 (the 71T7600N sheet, the CLIP top 155 sibling): doors up to 24 need no gap, trial application recommended above 22. D30 prints 20 to 31 (31 only with the 92 degree angle stop), the outlier."
+            },
+            "proposed_rung": "22 to 24 (rules.families.wide)"
+          },
+          "overlay": {
+            "planning_page": {
+              "value": "planning on the factory setting, MD 0 or 9, measured at a 90 degree opening",
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm"
+            },
+            "fa_table": {
+              "value": null,
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm",
+              "note": "the p. 85 TB / FA table cells were garbled in the snippet"
+            },
+            "mounting_plate_spacing_md": {
+              "value": "0 or 9",
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm"
+            },
+            "mounting_plate_position": {
+              "value": "fixing position moved back by FD + 1.5",
+              "page": 85,
+              "url": "https://publications.blum.com/2024/catalogue/en/85/",
+              "status": "owner to confirm"
+            },
+            "max_overlay_dealer": {
+              "value": 19,
+              "dealers": [
+                "D10"
+              ],
+              "status": "owner to confirm",
+              "note": "printed for the 170 (D10); one 155 listing printed the same 19; owner to confirm on p. 85"
+            },
+            "rule": "FA(TB, MD) = FA(TB, 0) - MD: every millimetre of mounting plate spacing MD takes one millimetre off the front overlay; FA(TB, 0) is read off the planning page table (null here). Blum planning convention, the table is the law; owner to confirm."
+          },
+          "plates": {
+            "cruciform": {
+              "value": [
+                "173L6100",
+                "173L6130",
+                "175H7100",
+                "175H7130",
+                "175H7190",
+                "175H7190.22"
+              ],
+              "page": 153,
+              "url": "https://publications.blum.com/2024/catalogue/en/153/",
+              "status": "owner to confirm"
+            },
+            "note_as_printed": {
+              "value": "Additional screw for wide angle- and 0-protrusion hinges (min. 20 mm)",
+              "page": 153,
+              "url": "https://publications.blum.com/2024/catalogue/en/153/",
+              "status": "owner to confirm",
+              "note": "the note stands beside the 173L rows; what the 20 mm measures (a screw length, a minimum distance) did not come through; owner to confirm"
+            }
+          },
+          "adjustment": {
+            "value": {
+              "side": "+/-2",
+              "depth": "+3 / -2"
+            },
+            "dealers": [
+              "D01"
+            ],
+            "status": "owner to confirm"
+          },
+          "angle_restriction_clips": {
+            "value": {
+              "92": "70T7553.09",
+              "110": "70T7553"
+            },
+            "dealers": [
+              "D29"
+            ],
+            "status": "owner to confirm",
+            "note": "dealer numbering with a B prefix; the catalogue page for the clips was not reached"
+          },
+          "standard_since": "15.10.2026, the owner: standardowo zawiasy 155"
         }
       }
     },

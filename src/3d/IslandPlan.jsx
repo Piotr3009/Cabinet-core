@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
 // ─── THE ISLAND PLAN: THE ROOM FROM ABOVE, THE ISLAND AS A DRAFT ────────────
 //
 // The owner, 14.10.2026: *"przy dodaniu wyspy chciałbym żeby był widok z
@@ -30,7 +38,7 @@ import { unitFootprint } from '../engine/collision.js';
 import { getUnitType, UNIT_TYPES } from '../engine/types.js';
 import { wallGapOf } from '../engine/runs.js';
 import {
-  PLAN_FACES, planFaces, planCabinets, planFaceFree, planClearances, clearanceLevel, planCabinet,
+  PLAN_FACES, planOuterFaces, planCabinets, planFaceFree, planClearances, clearanceLevel, planCabinet, planCore, planCoreRefusal,
 } from '../engine/islandPlan.js';
 
 const SNAP_MM = 10;
@@ -87,12 +95,17 @@ export default function IslandPlan() {
       };
     }).filter(Boolean), [units, walls, plan, profile]);
 
-  const faces = useMemo(() => (plan ? planFaces(plan) : []), [plan]);
+  // 15.10.2026: the rectangle on the floor is the island's OUTER footprint; the
+  // cabinets stand inside it and the CORE is what they leave (engine/islandPlan.js).
+  const faces = useMemo(() => (plan ? planOuterFaces(plan) : []), [plan]);
   const cabs = useMemo(() => (plan ? planCabinets(plan, profile) : []), [plan, profile]);
   const clearances = useMemo(() => (plan ? planClearances({
     room, units, elements: wallSlopes || [], draft: plan, profile,
   }) : []), [room, units, wallSlopes, plan, profile]);
-  const core = useMemo(() => (plan ? islandCorners({ ...plan, id: plan.islandId || 'draft' }) : []), [plan]);
+  const outer = useMemo(() => (plan ? islandCorners({ ...plan, id: plan.islandId || 'draft' }) : []), [plan]);
+  const core = useMemo(() => (plan ? planCore(plan, profile) : null), [plan, profile]);
+  const coreCorners = useMemo(() => (core && core.w > 0 && core.d > 0 ? islandCorners(core) : []), [core]);
+  const tooSmall = plan ? planCoreRefusal(plan, profile) : null;
 
   const toMm = useCallback((e) => {
     const svg = svgRef.current; if (!svg) return null;
@@ -131,15 +144,21 @@ export default function IslandPlan() {
     if (Number.isFinite(n) && n >= 50) setPlan({ [key]: Math.round(n) });
   };
   const addCab = () => {
-    const cab = planCabinet(face, type, 600);
+    // 15.10.2026: the new cabinet takes what the face has free, up to 600, so a
+    // click never overfills a face; a face with less than 150 free says so.
+    const free = planFaceFree(plan, face, profile);
+    if (free < 150) { setSaid(`Face ${face} has ${Math.max(0, free)} mm free: take a cabinet off it, or make the island bigger.`); return; }
+    const cab = planCabinet(face, type, Math.min(600, Math.floor(free / 10) * 10));
+    setSaid('');
     setPlan({ cabs: [...plan.cabs, cab] });
     setSel(cab.key);
   };
   const changeCab = (key, patch) => setPlan({ cabs: plan.cabs.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
   const removeCab = (key) => { setPlan({ cabs: plan.cabs.filter((c) => c.key !== key) }); if (sel === key) setSel(null); };
   const rotate = () => setPlan({ rotation: ((Number(plan.rotation) || 0) + 90) % 360 });
-  const overfull = PLAN_FACES.filter((f) => planFaceFree(plan, f) < 0);
+  const overfull = PLAN_FACES.filter((f) => planFaceFree(plan, f, profile) < 0);
   const insert = () => {
+    if (tooSmall) { setSaid(tooSmall); return; }
     if (overfull.length) { setSaid(`Face ${overfull.join(', ')} is overfilled: shorten a cabinet or lengthen the island.`); return; }
     const verdict = insertIslandPlan(plan);
     if (!verdict.ok) { setSaid(verdict.message); return; }
@@ -226,15 +245,18 @@ export default function IslandPlan() {
             ))}
             <polygon
               data-plan-core="1"
-              points={pts(core)}
-              fill="rgba(170,142,104,0.18)"
-              stroke="#C8A678"
+              points={pts(outer)}
+              fill="rgba(170,142,104,0.10)"
+              stroke={tooSmall ? INK.bad : '#C8A678'}
               strokeWidth="2"
               strokeDasharray="8 5"
               style={{ cursor: 'move' }}
               onPointerDown={onCoreDown}
             />
-            <text x={X(plan.cx)} y={Y(plan.cy)} fontSize="11" fontFamily="ui-monospace, monospace" fill="#C8A678" textAnchor="middle" dominantBaseline="middle">
+            {coreCorners.length === 4 && (
+              <polygon data-plan-core-left="1" points={pts(coreCorners)} fill="rgba(170,142,104,0.16)" stroke="#C8A678" strokeWidth="1" strokeDasharray="3 3" pointerEvents="none" />
+            )}
+            <text x={X(plan.cx)} y={Y(plan.cy)} fontSize="11" fontFamily="ui-monospace, monospace" fill="#C8A678" textAnchor="middle" dominantBaseline="middle" pointerEvents="none">
               {`${plan.w} × ${plan.d}`}
             </text>
             {faces.map((f) => {
@@ -255,6 +277,12 @@ export default function IslandPlan() {
             <input className="cc-input w-24 text-right font-mono" type="number" step="50" min="50" value={plan.d} data-plan-d="1" onChange={(e) => setNum('d', e.target.value)} />
           </label>
           <button type="button" className="cc-btn" data-plan-rotate="1" onClick={rotate}>Rotate 90°</button>
+          <span className="text-ink-400 text-xs" data-plan-core-size="1">
+            {core && core.w > 0 && core.d > 0
+              ? `The cabinets stand inside this rectangle; what they leave in the middle is ${Math.round(core.w)} × ${Math.round(core.d)} mm.`
+              : 'The cabinets stand inside this rectangle.'}
+          </span>
+          {tooSmall && <span className="text-xs" style={{ color: INK.bad }} data-plan-too-small="1">{tooSmall}</span>}
         </section>
 
         <section className="flex flex-col gap-1">
@@ -272,7 +300,7 @@ export default function IslandPlan() {
           <span className="cc-label">Cabinets on the plan</span>
           <div className="flex items-center gap-2">
             <select className="cc-input flex-1" value={face} data-plan-face="1" onChange={(e) => setFace(e.target.value)}>
-              {PLAN_FACES.map((f) => <option key={f} value={f}>{`Face ${f} · ${planFaceFree(plan, f)} free`}</option>)}
+              {PLAN_FACES.map((f) => <option key={f} value={f}>{`Face ${f} · ${planFaceFree(plan, f, profile)} free`}</option>)}
             </select>
             <select className="cc-input flex-1" value={type} data-plan-type="1" onChange={(e) => setType(e.target.value)}>
               {PLAN_TYPES.filter((t) => UNIT_TYPES?.[t] || getUnitType(t)).map((t) => <option key={t} value={t}>{getUnitType(t)?.label || t}</option>)}

@@ -2,7 +2,7 @@
 //
 // The owner, 11.10.2026: *"zawiasy podwojne czyli jedne drzwiczki do carcasu a
 // pozniej zawiasy od drzwiczek do drzwiczek."*  CLAUDE.md T78 F8: a per-unit
-// choice on the L (`corner_doors: 'pair' | 'bifold'`, default pair): in bifold
+// choice on the L (`corner_doors: 'pair' | 'bifold'`, default bifold since 15.10.2026): in bifold
 // leaf A hangs on SIDE-A with the family's hinges, leaf B hangs on leaf A's
 // free edge with Blum's bi-fold corner hinge (CLIP top 60 degree); leaf B
 // carries no carcass hinge, its cups are bored on its hinge edge toward leaf A
@@ -51,14 +51,21 @@ test('F8 · the numbers: profile.corner.bifold proposes the fallback; the catalo
   assert.equal(blumHingeFamilies(), null);
 });
 
-test('F8 · pair is the default and is what it was: A on SIDE-A, B on SIDE-B overlapping at the corner, six hinges', () => {
-  const r = L();
+test('F8 · the bi-fold is the default since 15.10.2026 (the owner\'s proposal); the pair is a choice and is what it was', () => {
+  // The owner, 15.10.2026: *"l corner moja propozycja to otwieranie drzwiczek razem, czyli drzwiczki
+  // polaczone ze soba zawiasami."*  A new L's defaults say bifold; the panel's "Pair" writes null.
+  assert.equal(defaultParamsFor('CORNER_L_BASE', P).corner_doors, 'bifold');
+  assert.equal(defaultParamsFor('CORNER_L_WALL', P).corner_doors, 'bifold');
+  assert.equal(defaultParamsFor('CORNER_L_WARDROBE', P).corner_doors, 'bifold');
+  assert.equal(L().derived.corner_l.doors_mode, 'bifold');
+  const r = L({ corner_doors: null });
   assert.equal(r.derived.corner_l.doors_mode, 'pair');
   const b = r.panels.find((p) => p.id === 'CL01-B-F');
   assert.equal(b.meta.hinge, 'L');
   assert.equal(b.meta.opensFirst, true);
   assert.equal(b.meta.bifold, undefined);
-  assert.ok(near(b.box.z, 586) && near(b.w, 312.5));
+  // 15.10.2026: B's end clears A's face by clearance.corner (3): 3 shorter than T75 cut it (312.5 at 586).
+  assert.ok(near(b.box.z, 589) && near(b.w, 309.5), `B ${b.w} at ${b.box.z}`);
   assert.equal(r.totals.hinges, 6);
   assert.deepEqual(r.drillSummary.hinged_sides, ['SIDE-A', 'SIDE-B']);
   assert.deepEqual(r.derived.corner_l.doors.map((d) => d.hinged_on), ['SIDE-A', 'SIDE-B']);

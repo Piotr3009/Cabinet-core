@@ -479,11 +479,19 @@ export function boxSpansOnWall({ wall, depth, boxes = [], enter = null }) {
     // of it, which is no corner), and 0 or nothing keeps the hard stop every
     // box has had since turn 14. The span carries `near` and `far` too, so the
     // store can read how deep the obstacle stands.
-    const asked = typeof enter === 'function' ? enter(span) : Number(enter);
+    const kind = box.kind || (Array.isArray(box.corners) && /^island/.test(String(box.label || '')) ? 'island' : 'box');
+    const asked = typeof enter === 'function' ? enter({ ...span, kind }) : Number(enter);
+    // Infinity: the cabinet goes shallower in front of this obstacle instead of
+    // stopping at it (KIT_NOTCH.lsp PAST THE NOTCH, 15.10.2026): not in its way.
+    if (asked === Infinity) continue;
     const allowed = Math.max(0, Math.min(Number(asked) || 0, span.right - span.left));
     out.push({
       left: span.left, right: span.right, near: span.near, far: span.far,
       label: box.label || 'a box in the plan', corner: false, box: true,
+      // What it is (15.10.2026): a chimney or a recess by its wall element's
+      // kind, an island core by its record, a room box otherwise; the store
+      // notches or passes a chimney and a box, never an island's core.
+      kind,
       ...(allowed > 0 ? { enter: allowed } : {}),
     });
   }

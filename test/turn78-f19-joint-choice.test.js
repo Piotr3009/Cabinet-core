@@ -313,7 +313,7 @@ test('F19 · THE ROAD, a row that says dowel: a NEW project inherits it and its 
   }
 });
 
-test('F19 · THE ROAD, every id the company may choose reaches the engine as that system (biscuit, cabineo8, cabineo12), the Cabineo gate shut', () => {
+test('F19 · THE ROAD, every id the company may choose reaches the engine as that system (biscuit, cabineo8, cabineo12); the Cabineo gate open since 15.10.2026', () => {
   clearCompanyDefaults();
   try {
     const want = {
@@ -325,12 +325,12 @@ test('F19 · THE ROAD, every id the company may choose reaches the engine as tha
       cabineo8: (r) => {
         assert.equal(r.derived.joints.system, 'cabineo8', r.derived.joints.refused);
         assert.equal(String(r.derived.joints.variant), '8');
-        assert.ok(r.warnings.some((w) => w.code === CABINEO_GATE_CODE), 'the Cabineo gate is shut');
+        assert.equal(r.warnings.some((w) => w.code === CABINEO_GATE_CODE), false, 'the Cabineo gate is open (the owner, 15.10.2026: otworz)');
       },
       cabineo12: (r) => {
         assert.equal(r.derived.joints.system, 'cabineo12', r.derived.joints.refused);
         assert.equal(String(r.derived.joints.variant), '12');
-        assert.ok(r.warnings.some((w) => w.code === CABINEO_GATE_CODE), 'the Cabineo gate is shut');
+        assert.equal(r.warnings.some((w) => w.code === CABINEO_GATE_CODE), false, 'the Cabineo gate is open (the owner, 15.10.2026: otworz)');
       },
     };
     for (const [id, check] of Object.entries(want)) {

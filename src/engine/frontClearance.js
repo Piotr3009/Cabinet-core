@@ -60,6 +60,8 @@ export const NEIGHBOUR = Object.freeze({
   // T75 F4 (FRONTS BOUNDARY licence 1): the L kit's two door edges at its inner corner.
   CORNER_COVERED: 'cornerCovered',
   CORNER_OVERLAP: 'cornerOverlap',
+  // 15.10.2026: the bi-fold pair's leaf B, hung on leaf A's free edge (T78 F8; the default since the owner's proposal).
+  CORNER_BIFOLD: 'cornerBifold',
 });
 
 /** Section A, as data. `null` is PARKED — never a guess. */
@@ -77,9 +79,15 @@ export function clearanceMatrix(profile) {
     // the number is the profile's (`doors.clearance.corner`, T75 proposed,
     // owner to confirm). A profile that names none keeps it PARKED.
     [NEIGHBOUR.CORNER]: n(c.corner, null),
-    // T75 F4: the covered leaf runs to the inner corner (0); the overlapping leaf stops front_t + rule 7 beyond it.
+    // T75 F4: the covered leaf runs to the inner corner (0); the overlapping
+    // leaf stops the door gap, front_t and rule 7 beyond it (15.10.2026: its
+    // end clears the covered leaf's face by rule 7; T75's front_t + rule 7 left
+    // it on the face, the covered leaf standing a gap off the carcass).
     [NEIGHBOUR.CORNER_COVERED]: 0,
-    [NEIGHBOUR.CORNER_OVERLAP]: c.corner == null ? null : n(profile?.front?.thickness, 0) + n(c.corner, 0),
+    [NEIGHBOUR.CORNER_OVERLAP]: c.corner == null ? null : n(profile?.doors?.gap, 3) + n(profile?.front?.thickness, 0) + n(c.corner, 0),
+    // The bi-fold leaf B stands one gap off leaf A's face: front_t and two gaps
+    // from the corner line (cabinet.js, the L builder: gap/2 + front_t + 1.5 gap).
+    [NEIGHBOUR.CORNER_BIFOLD]: n(profile?.front?.thickness, 0) + 2 * n(profile?.doors?.gap, 3),
   });
 }
 
@@ -221,7 +229,11 @@ function neighbourOn(front, side, {
   fronts, verticals, units, wallWidth, profile,
 }) {
   const reach = neighbourReachMm(profile);
-  if (front.cornerEdge?.side === side) return { kind: front.cornerEdge.kind === 'overlap' ? NEIGHBOUR.CORNER_OVERLAP : NEIGHBOUR.CORNER_COVERED, gapMm: null }; // T75 F4
+  if (front.cornerEdge?.side === side) { // T75 F4; 15.10.2026 the bi-fold kind
+    // eslint-disable-next-line no-nested-ternary
+    const kind = front.cornerEdge.kind === 'overlap' ? NEIGHBOUR.CORNER_OVERLAP : (front.cornerEdge.kind === 'bifold' ? NEIGHBOUR.CORNER_BIFOLD : NEIGHBOUR.CORNER_COVERED);
+    return { kind, gapMm: null };
+  }
   const edge = side === 'left' ? front.x : front.x + front.w;
   const dir = side === 'left' ? -1 : 1;
   let best = null;
@@ -629,6 +641,7 @@ export function labelOf(kind) {
     [NEIGHBOUR.APPLIANCE]: 'an appliance front',
     [NEIGHBOUR.WALL]: 'the wall',
     [NEIGHBOUR.CORNER_COVERED]: 'the L corner (covered)', [NEIGHBOUR.CORNER_OVERLAP]: 'the L corner (overlapping)', // T75 F4
+    [NEIGHBOUR.CORNER_BIFOLD]: 'the L corner (bi-fold, hung on leaf A)', // 15.10.2026
     [NEIGHBOUR.NONE]: 'the end of the run',
     [NEIGHBOUR.CORNER]: 'an L-shape corner',
   }[kind] || kind;

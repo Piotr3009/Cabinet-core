@@ -97,7 +97,7 @@ test('F20 LISP: the gate sentence, verbatim, and the profile choices as CLAUDE.m
   assert.match(prof, /\(cons "minPerJoint" 2\)/);
   assert.match(prof, /\(cons "maxSpacingMm" 300\.0\)/);
   assert.match(prof, /\(cons "minFromEdgeMm" 20\.0\)/);
-  assert.match(prof, /\(cons "confirmed" nil\)/);
+  assert.match(prof, /\(cons "confirmed" T\)/, 'THE GATE is open since 15.10.2026 (the owner: otworz)');
   assert.match(prof, /T78 proposed, owner to confirm/);
   // The sheet's two limits are marked as the sheet's, with the page.
   assert.match(prof, /maxSpacingMm.*page 1, Assembly panel 1/);
@@ -195,9 +195,14 @@ test('F20 LISP: the inverted side, the owner\'s words, the one reflection, the l
   assert.match(text, /\(defun cabineo-reflect-x \(x W\)\s*\(- \(float W\) \(float x\)\)\)/);
   assert.match(text, /MIN_SKIN 3/);
   assert.match(text, /\(defun cabineo-skin-clash \(boardT pocketDepth otherDepth minSkin\)/);
-  // The back: no Cabineo in it, and since 15.10.2026 no puzzle either: screwed.
+  // The back: the puzzle off it that night, Cabineo on it that morning (D.2b).
   assert.match(flat, /joints into the BACK are NOT in the owner's sentence/);
-  assert.match(flat, /THE BACK IS SCREWED \(the owner, 15\.10\.2026, DECIDED/);
+  assert.match(flat, /"plecy tez na cabineo" \(DECIDED\)/);
+  assert.match(text, /\(defun cabineo-back-joint \(name len ref hx0 hy0 hdx hdy board face endAt dirIn aFrom aDir bW bT\)/);
+  assert.match(text, /\(defun cabineo-back-table \(W D H G ax sideLen/);
+  assert.match(text, /\(defun cabineo-back-pockets \(jt offs/);
+  assert.match(text, /\(defun cabineo-back-holes \(jt offs prof sheet/);
+  assert.match(flat, /cut from the sides' INSIDE face/);
   assert.match(flat, /jak mamy cabineo to nie robimy dog bonsow/);
   assert.match(text, /\(defun cabineo-recess-depth \(prof sheet/);
   assert.match(text, /\(defun cabineo-hole-depth \(prof sheet/);

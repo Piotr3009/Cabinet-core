@@ -88,10 +88,16 @@ test('half an entry is dropped rather than guessed at', () => {
 // ─── the angle (F1.2) ───────────────────────────────────────────────────────
 
 test('the front’s thickness decides the angle, at every rung and its edge', () => {
-  const [thin, thick] = RULES.hinge_by_front_thickness;
+  // 15.10.2026, the owner: *"standardowo zawiasy 155 degree"*: three rungs now,
+  // the 155 to 24 (Blum's door thickness for the zero-protrusion hinge), the
+  // 110 at 25 (the house shaker), the 95 to 32.
+  const [thin, mid, thick] = RULES.hinge_by_front_thickness;
+  assert.deepEqual([thin, mid, thick], [{ max: 24, angle: 155 }, { max: 25, angle: 110 }, { max: 32, angle: 95 }]);
   assert.equal(hingeAngleFor({ frontThickness: 18 }), thin.angle);
   assert.equal(hingeAngleFor({ frontThickness: thin.max }), thin.angle, 'the edge is INSIDE the rung');
-  assert.equal(hingeAngleFor({ frontThickness: thin.max + 0.5 }), thick.angle);
+  assert.equal(hingeAngleFor({ frontThickness: thin.max + 0.5 }), mid.angle);
+  assert.equal(hingeAngleFor({ frontThickness: mid.max }), mid.angle, 'the 25 mm shaker keeps the 110');
+  assert.equal(hingeAngleFor({ frontThickness: mid.max + 0.5 }), thick.angle);
   assert.equal(hingeAngleFor({ frontThickness: thick.max }), thick.angle);
   // Thicker than anything the catalogue has a hinge for: no angle is the honest
   // answer, and the BOM then prints the spec with no article against it.
@@ -187,24 +193,24 @@ test('the plate that IS drilled for has a model in the catalogue, in both finish
 
 test('project → rule → door: the nearest answer wins', () => {
   const byRule = resolveDoorHinge({ frontThickness: 18, finish: 'nickel' });
-  assert.equal(byRule.angle, 110);
-  assert.equal(byRule.family, '71B3550');
+  assert.equal(byRule.angle, 155, 'the standard hinge since 15.10.2026');
+  assert.equal(byRule.family, '71B7550');
   assert.equal(byRule.assigned, false);
 
   const assigned = resolveDoorHinge({
-    assigned: '71B7590', frontThickness: 18, finish: 'nickel',
+    assigned: '71B3590', frontThickness: 18, finish: 'nickel',
   });
-  assert.equal(assigned.family, '71B7590', 'the door’s own answer');
-  assert.equal(assigned.angle, 155, 'and its angle comes off the family, not the rule');
+  assert.equal(assigned.family, '71B3590', 'the door’s own answer');
+  assert.equal(assigned.angle, 110, 'and its angle comes off the family, not the rule');
   assert.equal(assigned.finish, 'onyx', 'an exception may reach across the finish too');
   assert.equal(assigned.assigned, true);
-  assert.equal(assigned.ruleAngle, 110, 'while still reporting what the rule would have said');
+  assert.equal(assigned.ruleAngle, 155, 'while still reporting what the rule would have said');
 });
 
 test('an assignment the catalogue no longer has is a stale field, not an override', () => {
   const stale = resolveDoorHinge({ assigned: '71B0000', frontThickness: 18, finish: 'nickel' });
   assert.equal(stale.assigned, false);
-  assert.equal(stale.family, '71B3550', 'the rule answers instead');
+  assert.equal(stale.family, '71B7550', 'the rule answers instead');
 });
 
 test('the assignment is keyed on the engine’s own panel id', () => {
@@ -223,13 +229,15 @@ test('an ordinary cabinet keeps the ONE hinge line it has had since turn 3', () 
   assert.equal(rows.length, 1, 'two identical doors are one thing to buy');
   assert.equal(rows[0].qty, r.totals.hinges);
   assert.equal(rows[0].spec.doors, 2);
-  assert.equal(rows[0].spec.angle, 110, '18 mm fronts by default');
+  assert.equal(rows[0].spec.angle, 110, 'the house 25 mm shaker front: the 155 stops at 24 (15.10.2026)');
 });
 
 test('a THICK front resolves to the 95° and the article follows', () => {
   const thin = hingeRows(computeCabinet(base({ front_t: 18 }), P))[0];
+  const shaker = hingeRows(computeCabinet(base({ front_t: 25 }), P))[0];
   const thick = hingeRows(computeCabinet(base({ front_t: 32 }), P))[0];
-  assert.equal(thin.spec.angle, 110);
+  assert.equal(thin.spec.angle, 155);
+  assert.equal(shaker.spec.angle, 110, 'the 155 stops at 24: the 25 mm shaker takes the 110');
   assert.equal(thick.spec.angle, 95);
   assert.notEqual(thin.spec.article, thick.spec.article);
   assert.equal(thick.spec.family, '71B9550');
@@ -290,11 +298,11 @@ test('a board change that flips the angle says so, and never overrules a hand', 
     fromThickness: 18, toThickness: 32, assignedDoors: 2, totalDoors: 6,
   });
   assert.equal(flip.flipped, true);
-  assert.equal(flip.from, 110);
+  assert.equal(flip.from, 155);
   assert.equal(flip.to, 95);
   assert.equal(flip.reResolved, 4);
   assert.equal(flip.kept, 2);
-  assert.match(flip.message, /110° → 95°/);
+  assert.match(flip.message, /155° → 95°/);
   assert.match(flip.message, /4 doors follow the front/);
   assert.match(flip.message, /2 assigned doors keep/);
 });

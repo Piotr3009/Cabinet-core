@@ -64,6 +64,8 @@ export function notchProfile(profile = {}) {
     'notch.defaults.height': num(def.heightMm, 0),
     // 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR.
     'notch.obstacleClearance': num(profile.notch?.obstacleClearanceMm, 10),
+    // 15.10.2026: the owner's "nie mniej niz 100 mm w srodku szafki".
+    'notch.minInterior': num(profile.notch?.minInteriorMm, 100),
   };
 }
 
@@ -609,14 +611,16 @@ export function notchRebateEatsP(cd, ch, g, nw, nd, nh, corner, K) {
 
 /**
  * notch-obstacle-limits (15.10.2026): the widest and the deepest FULL-HEIGHT
- * back notch the refusals below allow on a carcass cw x cd of boards g, as
- * [maxW, maxD]: the TOP and BOTTOM must still run across (cw - 2g - minEdge)
- * and what is left of the side must hold a joint (cd - g - minEdge). The
- * store's obstacle notch drives a cabinet into a chimney no further than this.
+ * back notch an obstacle may ask of a carcass cw x cd of boards g, as
+ * [maxW, maxD]: the interior kept beside the notch (across) and beyond it (in
+ * depth) is the owner's `notch.minInterior` (100, *"nie mniej niz 100 mm w
+ * srodku szafki"*), never less than what a joint needs (minEdge, 96). Past
+ * maxW the whole cabinet goes shallower (KIT_NOTCH.lsp section 1, PAST THE
+ * NOTCH; projectStore settleObstacles).
  */
-export function notchObstacleLimits(cw, cd, g, bone) {
-  const minEdge = notchMinJointEdge(bone, g);
-  return [cw - 2 * g - minEdge, cd - g - minEdge];
+export function notchObstacleLimits(cw, cd, g, bone, minInterior = 100) {
+  const keep = Math.max(notchMinJointEdge(bone, g), Number(minInterior) || 0);
+  return [cw - 2 * g - keep, cd - g - keep];
 }
 
 export function notchRefusal(cw, cd, ch, g, nw, nd, nh, corner, K) {
@@ -665,7 +669,7 @@ export const NOTCH_REFUSED = 'NOTCH_REFUSED';
  * wyciecia naroznika w szafkach wiszacych, a powinno byc"*); its hangers are
  * carried by `notchHangerCutouts` (the BACK) and `notchDrills` (the side).
  */
-export const NOTCH_PARENT_KITS = Object.freeze(['KIT_BUD_FULL.lsp', 'KIT_WARDROBE_FULL.lsp', 'KIT_WUD_FULL.lsp']);
+export const NOTCH_PARENT_KITS = Object.freeze(['KIT_BUD_FULL.lsp', 'KIT_WARDROBE_FULL.lsp', 'KIT_WUD_FULL.lsp', 'KIT_BUDTALL_FULL.lsp']);
 
 /**
  * KIT_NOTCH.lsp section 1, THE WALL UNIT: a hanger cut-out (a pocket on the
@@ -709,14 +713,17 @@ export function notchOf(params, profile = {}) {
 /** Can this kit take a notch at all? null when it can, else the sentence. */
 export function notchKitRefusal(type) {
   const c = type?.carcass || {};
+  // The tall unit joined the parents on 15.10.2026 (the owner: *"wysokie
+  // szafki i wiszace nie maja mozliwosci w kominie wciec"*); the Cargo shares
+  // its LISP but its pull-out frame fills the carcass, so it is not one.
   const ok = NOTCH_PARENT_KITS.includes(type?.lisp)
     && c.top === 'panel' && c.back === 'full'
     && (c.sides ?? 'panel') === 'panel' && (c.bottom ?? 'panel') === 'panel'
-    && !type?.corner;
+    && !type?.corner && !type?.hardwareKit;
   if (ok) return null;
   // A kit's label may carry a long dash of its own; the sentence says it plain.
   const name = String(type?.label || type?.id || 'unit').replace(/\s*[\u2013\u2014]\s*/g, ', ');
-  return `NOTCH: a corner is cut from a base unit (KIT_BUD), a wardrobe (KIT_WARDROBE) or a wall unit (KIT_WUD) carcass; `
+  return `NOTCH: a corner is cut from a base unit (KIT_BUD), a tall unit (KIT_BUDTALL), a wardrobe (KIT_WARDROBE) or a wall unit (KIT_WUD) carcass; `
     + `a ${name} is not one of them.`;
 }
 

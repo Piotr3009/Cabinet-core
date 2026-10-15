@@ -35,7 +35,7 @@ import { drawerItemOf } from '../engine/watchDrawer.js';
 import { mm } from './constants.js';
 import { roomWalls, roomBounds, roomIslands } from '../engine/room.js';
 import {
-  addPlusPoints, unitBase, unitVerticals, verticalsInBand,
+  addPlusPoints, runMemberIds, unitBase, unitVerticals, verticalsInBand,
 } from '../engine/runs.js';
 import { dimensionCarriers } from '../engine/dimensions.js';
 // Turn 30 (CLAUDE.md F12): neighbouring fronts that come too close.
@@ -1007,13 +1007,15 @@ function WorktopOutline({ w, wall, roomCentre, colour }) {
  * never on top of the cabinet it is offered beside.
  */
 function AddPluses({
-  units, walls, roomCentre, profile, onPick,
+  units, walls, roomCentre, profile, onPick, shown = null, onHold = null, onDrop = null,
 }) {
   const points = useMemo(() => addPlusPoints(units, { walls }, profile), [units, walls, profile]);
   const byId = useMemo(() => new Map(units.map((u) => [u.id, u])), [units]);
   const size = mm(profile.ui.addPlusMinGapMm) * 0.9;
 
   return points.map((point) => {
+    // 15.10.2026: a plus waits for the hand (`shown`: the run under the pointer).
+    if (shown && !shown.has(point.unitId)) return null;
     const unit = byId.get(point.unitId);
     const wall = walls[point.wall] || walls[0];
     if (!unit || !wall) return null;
@@ -1042,9 +1044,70 @@ function AddPluses({
           ? `Add a unit beside ${unit.params?.unit_num ?? ''} on wall ${point.wall + 1}`
           : `Add a unit to the ${point.side} of ${unit.params?.unit_num ?? ''}`}
         onClick={() => onPick(point)}
+        onHoverIn={onHold ? () => onHold(point.unitId) : null}
+        onHoverOut={onDrop ? () => onDrop(point.unitId) : null}
       />
     );
   });
+}
+
+/**
+ * ─── 15.10.2026 · THE PLUSES WAIT FOR THE HAND ─────────────────────────────
+ *
+ * The owner: *"jak mamy wyspę, a nawet jak nie mamy szafek, to wszędzie w
+ * przestrzeni są plusiki denerwujące; pokaż plusiki dopiero jak najedziesz na
+ * szafkę, albo jak najedziesz na miejsce w którym ma być szafka na wyspie."*
+ *
+ * So a plus is drawn only while the pointer is over the run it stands beside
+ * (any cabinet of the run: `runMemberIds`), or over the empty island face it
+ * stands on (an invisible volume where the base unit would stand, `PlusZone`).
+ * The plus itself counts as that place (`AddPlus onHoverIn`), and the hold
+ * outlives the pointer by PLUS_GRACE_MS so the hand can travel from the
+ * cabinet's edge to the disc without the disc vanishing under it. Nothing is
+ * stored: the hover is this scene's own state, and PRO's retail mount, which
+ * passes `onAddPlus`, draws no pluses of its own either way.
+ */
+const PLUS_GRACE_MS = 700;
+
+/**
+ * Is this hit the first thing the ray meets? The island faces' hover volumes
+ * are air (`ccPlusZone`): a cabinet seen through one is still the first thing.
+ * A pointer-over reaches EVERY object on the ray, so without this the farthest
+ * cabinet would win the hold.
+ */
+function firstOnRay(e) {
+  for (const hit of e.intersections || []) {
+    if (hit.object?.userData?.ccPlusZone && hit.object !== e.object) continue;
+    let o = hit.object;
+    while (o) { if (o === e.eventObject) return true; o = o.parent; }
+    return false;
+  }
+  return true;
+}
+
+/** The invisible volume over an empty island face where its plus's cabinet would stand. */
+function PlusZone({ wall, roomCentre, depth, height, onHold, onDrop }) {
+  const key = `island:${wall.index}`;
+  const centre = new THREE.Vector3(
+    mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
+  )
+    .addScaledVector(new THREE.Vector3(wall.along.x, 0, wall.along.y), mm(wall.width / 2))
+    .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(depth / 2))
+    .setY(mm(height / 2));
+  return (
+    <mesh
+      userData={{ ccHelper: true, ccPlusZone: true }}
+      position={centre.toArray()}
+      rotation={[0, -Math.atan2(wall.along.y, wall.along.x), 0]}
+      visible={false}
+      onPointerOver={(e) => (firstOnRay(e) ? onHold(key) : onDrop(key))}
+      onPointerMove={(e) => (firstOnRay(e) ? onHold(key) : onDrop(key))}
+      onPointerOut={() => onDrop(key)}
+    >
+      <boxGeometry args={[mm(Math.max(wall.width, 1)), mm(height), mm(depth)]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+    </mesh>
+  );
 }
 
 /**
@@ -1057,7 +1120,7 @@ function AddPluses({
  * where a base unit would stand. The click opens the library ON that face.
  */
 function IslandFacePluses({
-  units, walls, roomCentre, profile, onPick,
+  units, walls, roomCentre, profile, onPick, hover = undefined, onHold = null, onDrop = null,
 }) {
   const size = mm(profile.ui.addPlusMinGapMm) * 0.9;
   const depth = Number(profile.baseUnit?.defaults?.depth) || 560;
@@ -1065,6 +1128,10 @@ function IslandFacePluses({
   return walls.filter((w) => w.island).map((wall) => {
     const taken = units.some((u) => (u.position?.wall ?? 0) === wall.index && !isFreePanel(u.type));
     if (taken) return null;
+    // 15.10.2026: the plus waits for the hand over the place its cabinet would stand.
+    if (onHold && hover !== `island:${wall.index}`) {
+      return <PlusZone key={`island-zone-${wall.index}`} wall={wall} roomCentre={roomCentre} depth={depth} height={height} onHold={onHold} onDrop={onDrop} />;
+    }
     const world = new THREE.Vector3(
       mm(wall.start.x - roomCentre.x), 0, mm(wall.start.y - roomCentre.y),
     )
@@ -1072,14 +1139,18 @@ function IslandFacePluses({
       .addScaledVector(new THREE.Vector3(wall.inward.x, 0, wall.inward.y), mm(depth / 2))
       .setY(mm(height / 2));
     return (
-      <AddPlus
-        key={`island-${wall.index}`}
-        position={world.toArray()}
-        size={size}
-        colour={profile.appearance.addPlus.run}
-        title={`Add a unit to face ${wall.face} of the island`}
-        onClick={() => onPick(wall)}
-      />
+      <group key={`island-${wall.index}`}>
+        {onHold && <PlusZone wall={wall} roomCentre={roomCentre} depth={depth} height={height} onHold={onHold} onDrop={onDrop} />}
+        <AddPlus
+          position={world.toArray()}
+          size={size}
+          colour={profile.appearance.addPlus.run}
+          title={`Add a unit to face ${wall.face} of the island`}
+          onClick={() => onPick(wall)}
+          onHoverIn={onHold ? () => onHold(`island:${wall.index}`) : null}
+          onHoverOut={onDrop ? () => onDrop(`island:${wall.index}`) : null}
+        />
+      </group>
     );
   });
 }
@@ -1448,6 +1519,16 @@ export default function Scene({
   const freePanelProposal = useProjectStore((s) => s.freePanelProposal);
   const acceptFreePanelSnap = useProjectStore((s) => s.acceptFreePanelSnap);
   const [snapProposal, setSnapProposal] = useState(null);
+  // 15.10.2026 · the pluses wait for the hand (see `PLUS_GRACE_MS` above): the
+  // unit id, or `island:<face index>`, the pointer is over, held a moment after.
+  const [plusHover, setPlusHover] = useState(null);
+  const plusHoverTimer = useRef(null);
+  const holdPlus = useCallback((key) => { clearTimeout(plusHoverTimer.current); setPlusHover(key); }, []);
+  const dropPlus = useCallback((key) => {
+    clearTimeout(plusHoverTimer.current);
+    plusHoverTimer.current = setTimeout(() => setPlusHover((h) => (h === key ? null : h)), PLUS_GRACE_MS);
+  }, []);
+  useEffect(() => () => clearTimeout(plusHoverTimer.current), []);
   const allResults = useProjectStore((s) => s.allResults);
   const wallGapsFor = useProjectStore((s) => s.wallGapsFor);
   // Turn 34 (CLAUDE.md F5): the merged meeting-line figure, and the per-unit
@@ -1550,6 +1631,10 @@ export default function Scene({
   const lightOn = useMemo(() => resolveLighting(design, profile).on, [design, profile]);
   useEffect(() => { setLightDemo(lightOn); }, [lightOn, setLightDemo]);
   const demoDim = demoDimFactor(lightOn, profile);
+  // 15.10.2026: the run under the hand, whose end pluses are the ones drawn.
+  const plusRun = useMemo(() => new Set(
+    plusHover && !String(plusHover).startsWith('island:') ? runMemberIds(units, plusHover, profile) : [],
+  ), [plusHover, units, profile]);
 
   // `units` is the subscription that drives the re-render; allResults() is a
   // stable store function, so deriving from it alone would never update.
@@ -1858,8 +1943,15 @@ export default function Scene({
       />
 
       {shown.map(({ unit, result }) => (
-        <UnitView
+        // 15.10.2026: the group around each cabinet is the hand's hold on its
+        // pluses (`plusHover`); it draws nothing and moves nothing.
+        <group
           key={unit.id}
+          onPointerOver={(e) => (firstOnRay(e) ? holdPlus(unit.id) : dropPlus(unit.id))}
+          onPointerMove={(e) => (firstOnRay(e) ? holdPlus(unit.id) : dropPlus(unit.id))}
+          onPointerOut={() => dropPlus(unit.id)}
+        >
+        <UnitView
           unit={unit}
           result={result}
           groupRef={(group) => {
@@ -2098,6 +2190,7 @@ export default function Scene({
             setPanelSection('add', true);
           }}
         />
+        </group>
       ))}
 
       {/* Contour view is for a render or a printout: the numbers would be
@@ -2197,6 +2290,9 @@ export default function Scene({
           walls={shownWalls}
           roomCentre={bounds.centre}
           profile={profile}
+          hover={plusHover}
+          onHold={holdPlus}
+          onDrop={dropPlus}
           onPick={(wall) => {
             closeContextMenu();
             openLibraryToInsert(categoryOf('BUD')?.id || null, { wall: wall.index });
@@ -2210,6 +2306,10 @@ export default function Scene({
           walls={walls}
           roomCentre={bounds.centre}
           profile={profile}
+          // 15.10.2026: only the run under the hand shows its pluses.
+          shown={plusRun}
+          onHold={holdPlus}
+          onDrop={dropPlus}
           onPick={(point) => {
             closeContextMenu();
             // T61 F1 (#2): the page's own route, when it has one. PRO has none.

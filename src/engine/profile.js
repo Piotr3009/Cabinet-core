@@ -426,6 +426,12 @@ export const DEFAULT_CABINET_PROFILE = {
     // double-click it: a little past square, which is what a hinge does and
     // what makes the inside of the cabinet readable.
     //
+    // 15.10.2026, the owner: *"standardowo zawiasy 155 degree ... teraz
+    // otwieraja sie na 90 i wyglada zle."*  Every hinged leaf now carries its
+    // hinge's own angle (`meta.openAngleDeg`: the 155 to 24 mm fronts, the 110
+    // at 25, the 95 to 32, reference/hardware/cliptop-hinges.json) and opens
+    // to it in the picture; this 99 is only the fallback with no catalogue.
+    //
     // `openAngleAtWall` is the answer when there is a WALL on the hinge side.
     // Past 90° a door starts to come BACK towards that wall — its free edge
     // crosses the hinge line — so a run of cabinets in a corner would animate
@@ -508,7 +514,12 @@ export const DEFAULT_CABINET_PROFILE = {
     // slid into a chimney breast or a box gets its corner notch derived from
     // the overlap (projectStore obstacleNotchFor, KIT_NOTCH.lsp section 1); this
     // is the scribe room added round the obstacle, on the width and the depth.
-    obstacleClearanceMm: 10,   // proposed, owner to confirm
+    obstacleClearanceMm: 10,   // the owner, 15.10.2026: "dobrze"
+    // The owner, 15.10.2026: *"nie zostawiala w srodku szafki mniej niz 100 mm,
+    // jezeli bedzie mniej to cala szafka sie robi plytsza"*: what a notch must
+    // leave of the interior beside it and beyond it; past that the whole
+    // cabinet goes shallower in front of the obstacle (settleObstacles).
+    minInteriorMm: 100,
   },
 
   // ─── T75 F23 · THE JOINT SYSTEM (reference/lisp/SKYLON_JOINTS_DOWEL.lsp) ──
@@ -598,7 +609,7 @@ export const DEFAULT_CABINET_PROFILE = {
       endOffsetMm: 50,        // first and last pocket from each end    T78 proposed, owner to confirm (never under the sheet's 20)
       minPerJoint: 2,         // CLAUDE.md T78 F20: never fewer than two on one joint
       caps: 'all',            // 'all' | 'shelves': which pockets get a cover cap   T78 proposed, owner to confirm
-      confirmed: false,       // THE GATE: false until the owner confirms the Cabineo pattern
+      confirmed: true,        // THE GATE: OPEN, the owner 15.10.2026 ("otworz"); false shuts the CNC export of Cabineo units again
       // The CNC layers (engine/cnc/layers.js), the house grammar
       // `{FEATURE}_{DIAMETER}MM`: the pocket by the tool that cuts it (the
       // LISP's cabineo-pocket-layer), the recess, the side's hole.

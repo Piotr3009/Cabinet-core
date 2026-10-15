@@ -304,7 +304,8 @@ test('F7 · a refused relief names its ornament, and its package claims no refer
 // L's panel (the parent's carried over, the L's own pass again): once now.
 test('F7 · on the L each decorated leaf says each finding once', () => {
   for (const style of ['ORNATE_A_2', 'A']) {
-    const r = computeCabinet({ ...defaultParamsFor('CORNER_L_BASE', P), front_type: style,
+    // 15.10.2026: a new L is a bi-fold pair; the "opens first" line is the PAIR's (corner_doors null).
+    const r = computeCabinet({ ...defaultParamsFor('CORNER_L_BASE', P), front_type: style, corner_doors: null,
       front_decoration: defaultFrontDecoration(style, P) }, P);
     const leaves = r.panels.filter((p) => p.meta?.frontDecoration).map((p) => p.id);
     assert.equal(leaves.length, 2, `${style}: both L leaves decorated`);

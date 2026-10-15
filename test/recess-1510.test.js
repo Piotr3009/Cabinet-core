@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
 // ─── THE RECESS TAKES THE CABINET IN (the owner, 15.10.2026) ────────────────
 //
 // *"wneka zrobiona nie pozwala szafkom jakby wpasc w wneke."*  A recess is room

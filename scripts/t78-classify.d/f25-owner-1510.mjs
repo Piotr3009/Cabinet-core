@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
 // After T78 · the owner's night turn of 15.10.2026 ("OK TERAZ POWAZNIE"), named here so the strict run says why.
 // *"musi byc 3 layery 1 to cabineo 15 mm, drugi to cabineo oblamowka, czyli zebranie 0.5 mm laminatu, 3 to
 // przeciwlegle nawiercenie ... jak mamy cabineo to nie robimy dog bonsow, i to samo jak mamy biscuits czy

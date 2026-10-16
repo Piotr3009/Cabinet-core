@@ -36,7 +36,7 @@ import { cornerEndOf, isInternalCorner } from '../../engine/corners.js';
 // T75 F7 · which kits take a corner notch (KIT_NOTCH.lsp's two parents).
 import { notchApplies } from '../../engine/notch.js';
 import { CHECKS, wideFrontMm } from '../../engine/checks.js';
-import { doorCountFor } from '../../engine/cabinet.js';
+import { doorCountFor, leafCountRefusal } from '../../engine/cabinet.js';
 // T65 F6: the engine's ONE visibility question, and the client's own
 // "permanent" record beside it.
 import { askedSides, sideIsVisible } from '../../engine/endPanelAuto.js';
@@ -1816,6 +1816,15 @@ export function doorCountRefusal(widthMm, count) {
   //   chip, in the engine's own words.
   if (count === 1 && doorCountFor(width, p) !== 1) {
     return REASONS.oneDoorTooWide({ width, max: p.doors.singleDoorMaxWidth });
+  }
+  // ─── CHAT FIX 15.10.2026: A PAIR UNDER THE MINIMUM LEAF ────────────────────
+  // The owner's pair on a narrow carcass (*"żebym miał możliwość podzielenia
+  // ich na 2"*) is allowed down to `profile.doors.minLeafWidth`; below it the
+  // chip is disabled in the engine's own words. ONE law for PRO's Leaves row
+  // and this chip: `engine/cabinet.js leafCountRefusal`.
+  if (count === 2) {
+    const said = leafCountRefusal(width, 2, p);
+    if (said) return said;
   }
   return '';
 }

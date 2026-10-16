@@ -4,7 +4,7 @@ import { anchorOfEvent } from '../lib/modalAnchor.js';
 import { useProjectStore, validateUnit } from '../stores/projectStore.js';
 import { useCabinetProfileStore } from '../stores/cabinetProfileStore.js';
 import { HEIGHT_GROUPS, getUnitType, profilePath } from '../engine/types.js';
-import { doorCountFor, minDrawerFrontHeight } from '../engine/cabinet.js';
+import { doorCountFor, leafCountRefusal, minDrawerFrontHeight } from '../engine/cabinet.js';
 import { endPanelDrop, takesPlinth } from '../engine/autoparts.js';
 import { roomWalls, wallLabel } from '../engine/room.js';
 import { hasBottomMask, hasTopInfill } from '../engine/runs.js';
@@ -1391,6 +1391,55 @@ export default function RightPanel() {
               ) : (
                 <button type="button" className="cc-btn-gold w-full" onClick={addDoors}>Add doors — finish unit</button>
               )}
+              {/* ─── CHAT FIX 15.10.2026: ONE LEAF OR TWO, BY CHOICE ─────────
+                  The owner: *"jak mamy małe drzwi, ale wciąż chcę zrobić 2, to
+                  żebym miał możliwość podzielenia ich na 2."*  The ladder
+                  (700) decides until a person chooses; the choice is the same
+                  `setDoors({ count })` pin retail's HOW MANY writes, so a
+                  resize keeps it (the 15.08 rule) and the engine cuts the pair
+                  by its own arithmetic. What may not be cut is said by ONE
+                  law, `leafCountRefusal`: a pair whose leaves fall under
+                  `doors.minLeafWidth`. A single leaf over 700 stays the
+                  person's own decision, as the 15.08 rule protects it (retail
+                  refuses it for a client on its own words). Not on kits whose
+                  count is their identity (TWIN, the blind kits, the L) nor on
+                  a bay-door layout, which is a different system. */}
+              {hasDoors && !type.doorCount && !type.blind && !type.corner && !bayDoorModes && (() => {
+                const pinned = unit.params.doors && typeof unit.params.doors === 'object'
+                  && Number.isFinite(Number(unit.params.doors.count))
+                  ? Number(unit.params.doors.count) : null;
+                const auto = doorCountFor(unit.params.width, profile);
+                const current = pinned ?? auto;
+                return (
+                  <div className="cc-row pt-1" data-leaf-count="1">
+                    <span
+                      className="text-xs text-ink-200 flex-1"
+                      title="One leaf or a pair. The 700 mm rule answers until you choose; your choice survives a resize."
+                    >
+                      Leaves
+                    </span>
+                    {[1, 2].map((n) => {
+                      const refusal = leafCountRefusal(unit.params.width, n, profile);
+                      return (
+                        <button
+                          key={n}
+                          type="button"
+                          data-leaf-count-chip={n}
+                          className={`${current === n ? 'cc-btn-gold' : 'cc-btn'} px-3`}
+                          disabled={Boolean(refusal)}
+                          title={refusal || (auto === n ? 'The 700 mm rule\'s own answer' : 'Your choice; a resize keeps it')}
+                          onClick={() => setDoors(unit.id, {
+                            ...(unit.params.doors && typeof unit.params.doors === 'object' ? unit.params.doors : {}),
+                            count: n,
+                          })}
+                        >
+                          {n}{auto === n ? ' (auto)' : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
               {/* ─── TURN 36 (CLAUDE.md F6): SPLIT DOORS ───────────────────
                   The owner types the TOP segment; the bottom is what is left
                   after the 3 mm between them. 0 = no split, and a number that

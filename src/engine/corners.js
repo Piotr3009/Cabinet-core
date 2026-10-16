@@ -89,7 +89,10 @@ export function lArmMinMm(unit, profile) {
  * arm on the ADJACENT wall (B) by default, 'own' turns it round. The other arm
  * is covered.
  */
-export function lArmKinds(profile) {
+export function lArmKinds(profile, doorsMode = 'pair') {
+  // 15.10.2026: a bi-fold L (the default since the owner's proposal) hangs leaf
+  // B on leaf A: A is covered, B is the bi-fold leaf (cabinet.js, the L builder).
+  if (doorsMode === 'bifold') return { A: 'covered', B: 'bifold' };
   const overlapArm = profile?.corner?.overlap === 'own' ? 'A' : 'B';
   return {
     A: overlapArm === 'A' ? 'overlap' : 'covered',
@@ -97,19 +100,28 @@ export function lArmKinds(profile) {
   };
 }
 
+/** The L's doors mode from its params: 'bifold' or 'pair' (cabinet.js reads the same key). */
+export function lDoorsModeOf(params) {
+  return params?.corner_doors === 'bifold' ? 'bifold' : 'pair';
+}
+
 /**
  * T78 F6 · HOW MUCH SHORTER THAN ITS OPENING AN L LEAF IS, by the L's own door
  * law (cabinet.js, the L builder): the parent's single leaf is the opening
  * less the door gap, and the corner edge is trimmed by `innerTrim`: a covered
- * leaf runs to the inner corner with zero clearance (minus half the gap), the
- * overlapping leaf stops the front thickness plus `clearance.corner` beyond it.
+ * leaf runs to the inner corner with zero clearance (minus half the gap); the
+ * overlapping leaf stops the gap, the front thickness and `clearance.corner`
+ * beyond it (15.10.2026: its end clears the covered leaf's face by the
+ * clearance; T75's trim left it on the face); a bi-fold leaf B stands one gap
+ * off leaf A's face (the front thickness and one and a half gaps).
  * So leaf = (arm length - arm depth) - this.
  */
 export function lLeafTrimMm(kind, profile, frontT = null) {
   const gap = num(profile?.doors?.gap);
   const clear = num(profile?.doors?.clearance?.corner);
   const t = num(frontT, num(profile?.front?.thickness));
-  const inner = kind === 'covered' ? -gap / 2 : t + clear - gap / 2;
+  // eslint-disable-next-line no-nested-ternary
+  const inner = kind === 'covered' ? -gap / 2 : (kind === 'bifold' ? t + 1.5 * gap : t + clear + gap / 2);
   return gap + inner;
 }
 

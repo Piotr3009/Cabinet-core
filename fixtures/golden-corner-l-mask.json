@@ -6,7 +6,8 @@
     "source": "KIT_CORNER_L.lsp (the carcass); the mask is the L plan with the mask depth law on both arms",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
-    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
+    "repinned": "15.10.2026: the owner (the L leaves must shorten with the front): the overlapping leaf B now clears leaf A's face by clearance.corner (3), where T75 left its end on A's face; B is 3 shorter (309.5 on the 900 L)"
   },
   "params": {
     "type": "CORNER_L_WALL",
@@ -39,7 +40,7 @@
       "01,BOTTOM-L,564,564,>,0.36,0.285",
       "01,MASK-L,610,610,<>^v,1.22,0.332",
       "01,01-A-F,199,717,<>^v,1.83,0.142",
-      "01,01-B-F,171,717,<>^v,1.78,0.122"
+      "01,01-B-F,168,717,<>^v,1.77,0.120"
     ],
     "panels": [
       {
@@ -206,16 +207,16 @@
         "id": "01-B-F",
         "part": "FRONT",
         "role": "front",
-        "w": 170.5,
+        "w": 167.5,
         "h": 717,
         "thickness": 25,
         "box": {
           "x": 403,
           "y": 0,
-          "z": 428,
+          "z": 431,
           "w": 25,
           "h": 717,
-          "d": 170.5
+          "d": 167.5
         },
         "outline": 4,
         "holes": 0,

@@ -1,0 +1,304 @@
+{
+  "meta": {
+    "name": "golden-recess.json",
+    "turn": "T78",
+    "F": "chat-fix 15.10.2026 (evening) C",
+    "source": "KIT_RECESS.lsp (CASE A of its NUMBERS block) on KIT_BUD_FULL.lsp: the band 310..600 x 0..770, 150 deep; BUR, TOP, BOTTOM and the shelf grow, the BACK is 328 wide, RETURN-L and EXT-BACK added",
+    "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
+    "status": "PENDING_OWNER_VERIFICATION",
+    "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back."
+  },
+  "params": {
+    "type": "BUD",
+    "width": 600,
+    "height": 770,
+    "depth": 558,
+    "board_t": 18,
+    "front_t": 25,
+    "front_type": "S",
+    "shelves": 1,
+    "drawers": 0,
+    "rail": false,
+    "rail_offset": null,
+    "hinge": "L",
+    "doors": null,
+    "unit_num": "01",
+    "extension": {
+      "x0": 310,
+      "x1": 600,
+      "z0": 0,
+      "z1": 770,
+      "d": 150
+    }
+  },
+  "expected": {
+    "csvLines": [
+      "01,BUL,540,770,<,0.77,0.416",
+      "01,BUR,690,770,>,0.77,0.531",
+      "01,TOP,564,690,>,0.56,0.343",
+      "01,BOTTOM,564,690,>,0.56,0.343",
+      "01,BACK,328,770,,0,0.253",
+      "01,SHELF-1,560,670,>,0.56,0.329",
+      "01,01-F,597,767,<>^v,2.73,0.458",
+      "01,RETURN-L,132,770,,0,0.102",
+      "01,EXT-BACK,290,770,,0,0.223"
+    ],
+    "panels": [
+      {
+        "id": "BUL",
+        "part": "BUL",
+        "role": "side",
+        "w": 540,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 18,
+          "w": 18,
+          "h": 770,
+          "d": 540
+        },
+        "outline": 34,
+        "holes": 14,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "BUR",
+        "part": "BUR",
+        "role": "side",
+        "w": 690,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 582,
+          "y": 0,
+          "z": -132,
+          "w": 18,
+          "h": 770,
+          "d": 690
+        },
+        "outline": 4,
+        "holes": 14,
+        "pockets": 4,
+        "readiness": null
+      },
+      {
+        "id": "TOP",
+        "part": "TOP",
+        "role": "top",
+        "w": 564,
+        "h": 690,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 752,
+          "z": -132,
+          "w": 564,
+          "h": 18,
+          "d": 690
+        },
+        "outline": 66,
+        "holes": 1,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BOTTOM",
+        "part": "BOTTOM",
+        "role": "bottom",
+        "w": 564,
+        "h": 690,
+        "thickness": 18,
+        "box": {
+          "x": 18,
+          "y": 0,
+          "z": -132,
+          "w": 564,
+          "h": 18,
+          "d": 690
+        },
+        "outline": 66,
+        "holes": 1,
+        "pockets": 6,
+        "readiness": null
+      },
+      {
+        "id": "BACK",
+        "part": "BACK",
+        "role": "back",
+        "w": 328,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 0,
+          "y": 0,
+          "z": 0,
+          "w": 328,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 27,
+        "pockets": 7,
+        "readiness": null
+      },
+      {
+        "id": "SHELF-1",
+        "part": "SHELF",
+        "role": "shelf",
+        "w": 560,
+        "h": 670,
+        "thickness": 18,
+        "box": {
+          "x": 20,
+          "y": 385,
+          "z": -132,
+          "w": 560,
+          "h": 18,
+          "d": 670
+        },
+        "outline": 6,
+        "holes": 1,
+        "pockets": 0,
+        "readiness": null
+      },
+      {
+        "id": "01-F",
+        "part": "FRONT",
+        "role": "front",
+        "w": 597,
+        "h": 767,
+        "thickness": 25,
+        "box": {
+          "x": 1.5,
+          "y": 0,
+          "z": 561,
+          "w": 597,
+          "h": 767,
+          "d": 25
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 1,
+        "readiness": null
+      },
+      {
+        "id": "RETURN-L",
+        "part": "RECESS-RETURN",
+        "role": "extension",
+        "w": 132,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 310,
+          "y": 0,
+          "z": -132,
+          "w": 18,
+          "h": 770,
+          "d": 132
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      },
+      {
+        "id": "EXT-BACK",
+        "part": "RECESS-BACK",
+        "role": "extension",
+        "w": 290,
+        "h": 770,
+        "thickness": 18,
+        "box": {
+          "x": 310,
+          "y": 0,
+          "z": -150,
+          "w": 290,
+          "h": 770,
+          "d": 18
+        },
+        "outline": 4,
+        "holes": 0,
+        "pockets": 0,
+        "readiness": "geometry"
+      }
+    ],
+    "drills": [
+      [
+        "FRONT_HINGES_35MM|01-F",
+        3
+      ],
+      [
+        "FRONT_HINGES_3MM|01-F",
+        6
+      ],
+      [
+        "HINGES_5MM|BUL",
+        6
+      ],
+      [
+        "PUZZLE_DOG_BONES|BOTTOM",
+        1
+      ],
+      [
+        "PUZZLE_DOG_BONES|SHELF-1",
+        1
+      ],
+      [
+        "PUZZLE_DOG_BONES|TOP",
+        1
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BACK",
+        14
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUL",
+        8
+      ],
+      [
+        "PUZZLE_HOLES_7_5MM|BUR",
+        8
+      ],
+      [
+        "SCREWS_3MM|BACK",
+        13
+      ],
+      [
+        "SCREWS_3MM|BUL",
+        6
+      ],
+      [
+        "SCREWS_3MM|BUR",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|BUL",
+        6
+      ],
+      [
+        "SHELVES_7_5MM|BUR",
+        6
+      ]
+    ],
+    "hardware": [
+      {
+        "role": "hinges",
+        "qty": 3,
+        "label": "Hinges"
+      },
+      {
+        "role": "legs",
+        "qty": 4,
+        "label": "Legs"
+      },
+      {
+        "role": "shelf_pins",
+        "qty": 4,
+        "label": "Shelf pins"
+      }
+    ]
+  }
+}

@@ -1,158 +1,120 @@
-// ─── T77 F5 · KASACJA: THE COPYRIGHT HEADERS ──────────────────────────────────
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
+// ─── T77 F5, REVERSED 15.10.2026 · THE COPYRIGHT HEADER IS THE OWNER'S RULE ──
 //
-// CLAUDE.md T77 F5: *"Eight new files open with `// Copyright [...] Ltd. All
-// rights reserved.` No file in this repo carries a copyright header, and that
-// company name is not one of the owner's. Delete the line from every file the
-// patch adds (`src/engine/ornateFront.js`, `ornateFrontProfile.js`,
-// `ornateFrontArt.js`, `engine/cnc/ornateExport.js`, the four `ornate-*`
-// scripts and tests that carry it) and from `docs/ornate-a-handoff-PL.md`. The
-// owner decides any notice for the whole repo separately; nothing is invented
-// in its place."*  And TESTS AND PROOF: *"`test/turn77-*.test.js` ... for F5
-// (no file under `src/` or `scripts/` starts with a copyright line)."*
-// (The company's name is elided in the quote and built from parts below, so a
-// search of the repo for it finds this file clean.)
+// T77 F5 deleted the copyright lines GPT's patch carried, on the premise that
+// *"that company name is not one of the owner's"*. The premise was wrong: the
+// owner's rule of 22.09.2026 (Petros, "ZASADA: nagłówek copyright w każdym
+// pliku kodu + LICENSE w repo", and the template "WZÓR: nagłówek copyright do
+// plików kodu + treść LICENSE") names Skylon Development Ltd as the owner of
+// every repo's code, and the owner reaffirmed it on 15.10.2026 (*"zasada:
+// wpisujesz prawa"*). So this file now holds the opposite of what it held:
 //
-// The F2 probe counted fourteen files in five spellings, not eight: four in
-// src/engine, five scripts (one a seven line "proprietary" block under the
-// shebang, one an HTML comment), GPT's four tests and the handoff doc. The
-// owner's own names (Skylon Joinery, the Skylon puzzle, SKYLON_COMMON.lsp) are
-// not a copyright line: nothing here matches them and nothing may touch them.
+//   1. the repo carries LICENSE at its root, the template's text verbatim;
+//   2. every NEW code file (the rule says "każdy nowy plik kodu") opens with
+//      the template's JS header verbatim; the list below names the files
+//      made since the rule and grows with every new file;
+//   3. the files that were there before the rule are not rewritten here: the
+//      frozen PRO surface (test/turn59-f1-the-switch.test.js) pins them byte
+//      for byte, and a sweep of four hundred files is the owner's call, named
+//      in the PR; T77's ornate files are among them.
+//
+// What stays of T77 F5: the owner's own names (Skylon Joinery, the Skylon
+// puzzle, SKYLON_COMMON.lsp) are untouched, and nothing but the template's own
+// words stands in a header.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const ROOT = new URL('../', import.meta.url);
 const at = (rel) => new URL(rel, ROOT);
 const read = (rel) => readFileSync(at(rel), 'utf8');
-const linesOf = (text) => text.split(/\r?\n/);
 
-// The company that is not the owner's, never written whole in this file.
-const COMPANY = ['Skylon', 'Development'].join(' ');
+const OWNER = 'Skylon Development Ltd';
 
-// A copyright line, as GPT spelled it five ways (and the sign, for good measure).
-// A copyright LINE: one whose text, once its comment marker (// /* * <!-- #)
-// is set aside, opens with the notice. A heading or a quotation that only
-// mentions the word (the F5 fragment of scripts/t77-classify.d quotes
-// CLAUDE.md T77 F5, line for line) is not a copyright line.
-const HEADER_NOTICE = /^\s*(?:\/\/+|\/\*+|\*+|<!--|#)?\s*(?:copyright\b|all rights reserved|\(c\)\s*\d{4}|©\s*\d{4})/i;
-// Anywhere in the files the patch added: no notice, and nothing in its place.
-const ANY_NOTICE = /copyright|all rights reserved|proprietary/i;
-const HEAD_LINES = 15;
+/** The template's JS / TS / CSS header, verbatim (Petros, 22.09.2026). */
+export const JS_HEADER = [
+  '/*',
+  ` * Copyright (c) 2026 ${OWNER}. All rights reserved.`,
+  ' *',
+  ' * This file is proprietary and confidential. Unauthorised copying,',
+  ' * modification, distribution or use of this file, in whole or in part,',
+  ' * by any means including automated tools and AI systems, is strictly',
+  ` * prohibited without prior written permission from ${OWNER}.`,
+  ' */',
+].join('\n');
 
-const TEXT_EXTENSIONS = new Set([
-  '.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx', '.html', '.css', '.json', '.md', '.txt', '.sh',
-]);
-const extensionOf = (name) => {
-  const dot = name.lastIndexOf('.');
-  return dot > 0 ? name.slice(dot).toLowerCase() : '';
-};
+/** The template's LICENSE, verbatim. */
+const LICENSE = [
+  `Copyright (c) 2026 ${OWNER}. All rights reserved.`,
+  '',
+  'This software and its source code are the proprietary and confidential',
+  `property of ${OWNER}, registered in England and Wales.`,
+  '',
+  'No part of this software may be reproduced, copied, modified, adapted,',
+  'distributed, published, transmitted, reverse engineered, or used to train',
+  'or prompt any machine learning or artificial intelligence system, in any',
+  'form or by any means, without the prior written permission of',
+  `${OWNER}.`,
+  '',
+  'Unauthorised use may result in civil and criminal liability.',
+  '',
+  'For licensing enquiries: piotr.t@skylonconstruction.com',
+].join('\n');
 
-// Every text file under a top-level directory, as repo-relative posix paths.
-function walk(dir) {
-  const out = [];
-  for (const entry of readdirSync(at(`${dir}/`), { withFileTypes: true })) {
-    if (entry.name === 'node_modules') continue;
-    const rel = `${dir}/${entry.name}`;
-    if (entry.isDirectory()) out.push(...walk(rel));
-    else if (entry.isFile() && TEXT_EXTENSIONS.has(extensionOf(entry.name))) out.push(rel);
-  }
-  return out;
-}
-
-const report = (hits) => hits.map((h) => `  ${h.path}:${h.line}: ${h.text}`).join('\n');
-// The whole line is tested; only the report is shortened (the preview HTML is
-// one long minified line, and a notice may sit far along it).
-const scan = (path, pattern, limit = Infinity) => linesOf(read(path))
-  .slice(0, limit)
-  .map((text, i) => ({ path, line: i + 1, full: text, text: text.trim().slice(0, 120) }))
-  .filter((h) => pattern.test(h.full));
-
-// The files the patch added that carried the line, and the doc.
-const PATCH_ADDED = [
-  'src/engine/ornateFront.js',
-  'src/engine/ornateFrontProfile.js',
-  'src/engine/ornateFrontArt.js',
-  'src/engine/cnc/ornateExport.js',
-  'scripts/ornate-classify.mjs',
-  'scripts/ornate-export-examples.mjs',
-  'scripts/ornate-render.mjs',
-  'scripts/ornate-preview.html',
-  'test/ornate-front-cnc.test.js',
-  'test/ornate-front-geometry.test.js',
-  'test/ornate-front-integration.test.js',
-  'test/ornate-front-solid.test.js',
-  'docs/ornate-a-handoff-PL.md',
+/** Every code file made since the rule: each opens with the header. The list grows with every new file. */
+export const NEW_FILES = [
+  // Chat-fix 12.10.2026 (the stutter)
+  'src/stores/resultCache.js',
+  'src/3d/frameDemand.jsx',
+  'src/3d/hardwareLod.js',
+  'src/3d/perfMeter.js',
+  // Chat-fix 14.10.2026 (the island plan)
+  'src/engine/islandPlan.js',
+  'src/3d/IslandPlan.jsx',
+  'test/island-plan-1410.test.js',
+  'scripts/t78-classify.d/f23-owner-1210.mjs',
+  'scripts/t78-classify.d/f24-owner-1410.mjs',
+  // The night and the day of 15.10.2026
+  'src/engine/screwedBack.js',
+  'test/notch-obstacle-1510.test.js',
+  'test/recess-1510.test.js',
+  'scripts/t78-classify.d/f25-owner-1510.mjs',
+  'test/pluses-on-hover-1510.test.js',
+  'test/l-corner-and-hinges-1510.test.js',
+  'scripts/t78-classify.d/f26-owner-1510b.mjs',
+  'scripts/chatfix-1510-dzien-walk.mjs',
+  'test/turn77-f5-no-copyright-line.test.js',
+  // The evening of 15.10.2026 (the island plan's hand, the STEP over the RETURN, the recess extension)
+  'scripts/t78-classify.d/f27-owner-1510c.mjs',
+  'src/engine/extension.js',
+  'test/recess-extension-1510.test.js',
+  'scripts/t78-classify.d/f28-owner-1510d.mjs',
+  'scripts/chatfix-1510-wieczor-walk.mjs',
 ];
-// GPT's walk is folded into scripts/t77-walk.mjs and deleted in F7: checked
-// only while it stands.
-const WALK = 'scripts/ornate-walk.mjs';
-const patchAddedStanding = () => [...PATCH_ADDED, ...(existsSync(at(WALK)) ? [WALK] : [])];
 
-test('F5 · the matcher knows the five spellings GPT used, and not the owner\'s own names', () => {
-  const gpt = [
-    `// Copyright ${COMPANY} Ltd. All rights reserved.`,
-    `// Copyright (c) 2026 ${COMPANY} Ltd.`,
-    `// Copyright (c) ${COMPANY} Ltd. All rights reserved.`,
-    ` * Copyright (c) 2026 ${COMPANY} Ltd. All rights reserved.`,
-    `<!-- Copyright ${COMPANY} Ltd. All rights reserved. --><html lang="en">`,
-    `Copyright (c) 2026 ${COMPANY} Ltd.`,
-  ];
-  for (const line of gpt) {
-    assert.match(line, HEADER_NOTICE, `the head scan would miss: ${line}`);
-    assert.match(line, ANY_NOTICE, `the body scan would miss: ${line}`);
-    assert.ok(line.toLowerCase().includes(COMPANY.toLowerCase()), `the company needle would miss: ${line}`);
-  }
-  assert.match(' * This file is proprietary and confidential. Unauthorised copying,', ANY_NOTICE);
-  const owners = [
-    "  label: 'Skylon Joinery',",
-    '// drill positions, the Skylon puzzle joint geometry and the drawer standard.',
-    '    // rake. The law is stated in `reference/lisp/SKYLON_COMMON.lsp`',
-  ];
-  for (const line of owners) {
-    assert.doesNotMatch(line, HEADER_NOTICE, `the owner's name is not a copyright line: ${line}`);
-    assert.doesNotMatch(line, ANY_NOTICE, `the owner's name is not a notice: ${line}`);
-    assert.ok(!line.toLowerCase().includes(COMPANY.toLowerCase()), `the needle caught the owner's name: ${line}`);
-  }
+test('F5 reversed · LICENSE stands at the repo root, the template\'s text verbatim', () => {
+  assert.ok(existsSync(at('LICENSE')), 'LICENSE is missing');
+  assert.equal(read('LICENSE').trim(), LICENSE);
 });
 
-test('F5 · no file under src/ or scripts/ starts with a copyright line (first 15 lines)', () => {
-  const files = [...walk('src'), ...walk('scripts')];
-  // The walk is real: it reaches the whole tree, and the patch's own files in it.
-  assert.ok(files.length > 300, `the walk found only ${files.length} text files under src/ and scripts/`);
-  for (const rel of patchAddedStanding().filter((p) => p.startsWith('src/') || p.startsWith('scripts/'))) {
-    assert.ok(files.includes(rel), `the walk did not reach ${rel}`);
-  }
-  const hits = files.flatMap((rel) => scan(rel, HEADER_NOTICE, HEAD_LINES));
-  assert.deepEqual(
-    hits.map((h) => `${h.path}:${h.line}`), [],
-    `${hits.length} copyright line(s) in the head of a file under src/ or scripts/:\n${report(hits)}`,
-  );
+test('F5 reversed · every new code file opens with the owner\'s header, verbatim', () => {
+  const missing = NEW_FILES.filter((rel) => !existsSync(at(rel)));
+  assert.deepEqual(missing, [], `a file the list names is gone: ${missing.join(', ')}`);
+  const bare = NEW_FILES.filter((rel) => !read(rel).startsWith(`${JS_HEADER}\n`));
+  assert.deepEqual(bare, [], `these new files do not open with the header:\n  ${bare.join('\n  ')}`);
 });
 
-test('F5 · the company line is gone from every file the patch added and from the doc', () => {
-  const missing = PATCH_ADDED.filter((rel) => !existsSync(at(rel)));
-  assert.deepEqual(missing, [], `a file F5 names is gone, so this test cannot read it: ${missing.join(', ')}`);
-  const needle = new RegExp(COMPANY, 'i');
-  const hits = patchAddedStanding().flatMap((rel) => scan(rel, needle));
-  assert.deepEqual(
-    hits.map((h) => `${h.path}:${h.line}`), [],
-    `the company that is not the owner's still stands in ${hits.length} line(s):\n${report(hits)}`,
-  );
-});
-
-test('F5 · nothing is invented in its place: no notice of any kind in those files', () => {
-  const hits = patchAddedStanding()
-    .filter((rel) => existsSync(at(rel)))
-    .flatMap((rel) => scan(rel, ANY_NOTICE));
-  assert.deepEqual(
-    hits.map((h) => `${h.path}:${h.line}`), [],
-    `a copyright, rights or proprietary notice stands in ${hits.length} line(s):\n${report(hits)}`,
-  );
-});
-
-test('F5 · the owner\'s own names stand: kasacja took the company line only', () => {
-  // *"that company name is not one of the owner's"*: the owner's are left whole.
+test('F5 reversed · the header names the owner and nothing else; the owner\'s other names stand', () => {
+  assert.match(JS_HEADER, /Copyright \(c\) 2026 Skylon Development Ltd\. All rights reserved\./);
+  assert.doesNotMatch(JS_HEADER, /Skylon Joinery|Skylon Construction/);
   assert.match(read('src/engine/profile.js'), /label:\s*'Skylon Joinery'/, 'the workshop profile lost the owner\'s name');
   assert.ok(existsSync(at('reference/lisp/SKYLON_COMMON.lsp')), 'the owner\'s LISP is gone');
   assert.match(read('src/components/RightPanel.jsx'), /Skylon puzzle/, 'the Skylon puzzle lost its name');

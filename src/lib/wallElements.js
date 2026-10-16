@@ -184,7 +184,32 @@ export function migratePlanElement(raw) {
     x_mm: round4(Math.max(0, num(raw.x_mm, 0))),
     width: round4(Math.max(MIN_ELEMENT_MM, num(raw.width, d.width))),
     depth: round4(Math.max(MIN_ELEMENT_MM, num(raw.depth, d.depth))),
+    // ─── 15.10.2026 (the owner: "na wysokosci 1000 mm ... dowolny"): THE BAND ─
+    // A RECESS has a bottom and a top off the floor, typed in the wall's own
+    // elevation window; null is the floor, null is the ceiling, which is every
+    // recess drawn before this day (floor to ceiling, as T51 drew it). A chimney
+    // stands floor to ceiling and carries neither. KIT_RECESS.lsp section 1
+    // reads them for the carcass that stands in the band.
+    ...(kind === 'recess' ? { bottom_mm: bandEdge(raw.bottom_mm), top_mm: bandEdge(raw.top_mm) } : {}),
   };
+}
+
+/** A band edge: a non-negative number, or null for "the floor" / "the ceiling". */
+function bandEdge(v) {
+  if (v == null || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? round4(n) : null;
+}
+
+/**
+ * The band a recess spans, up from the floor: [bottom, top] in mm, the floor
+ * and the ceiling standing in for a nil edge. A chimney is floor to ceiling.
+ */
+export function recessBand(el, wallHeight) {
+  const h = Math.max(0, num(wallHeight, 0));
+  const bottom = el?.kind === 'recess' && el.bottom_mm != null ? clamp(num(el.bottom_mm, 0), 0, h) : 0;
+  const top = el?.kind === 'recess' && el.top_mm != null ? clamp(num(el.top_mm, h), 0, h) : h;
+  return top > bottom ? [bottom, top] : [0, h];
 }
 
 /** One stored wall element, whatever kind it is. */

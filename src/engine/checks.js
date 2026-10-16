@@ -892,8 +892,13 @@ export function runChecks({
     profile,
   });
   // T78 F13 · the swing of a wide-angle door against what stands on its hinge side.
+  // 15.10.2026: every leaf carries its angle now and the standard hinge is the
+  // 155, so this reads only a leaf the owner CHOSE the wide family for (its
+  // `hingeFamily`): a 155 door swinging over its neighbour's closed front is
+  // what the zero-protrusion hinge is for, not a finding on every door.
   for (const front of clearances) {
     const deg = Number(front.openAngleDeg);
+    if (front.hingeFamily !== 'wide') continue;
     if (!(deg > 90) || !front.hinge) continue;
     const side = front.hinge === 'R' ? 'right' : 'left';
     const edge = front.edges?.[side];

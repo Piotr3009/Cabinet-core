@@ -222,7 +222,28 @@ export async function resolveHardwareCatalogue({
     return answer;
   };
 
-  const take = (raw, source, url, error = null) => {
+  const take = (fetched, source, url, error = null) => {
+    // ─── 15.10.2026 · THE ANGLE LADDER IS THE REPOSITORY'S, WHEREVER THE MODELS COME FROM ──
+    // The owner: *"standardowo zawiasy 155 degree."*  A manifest in the bucket
+    // or in the `cc_hardware` row names the MODELS and their articles; the rule
+    // which angle a front takes is the catalogue of record's
+    // (reference/hardware/cliptop-hinges.json, CLAUDE.md F0.3: "the catalogue
+    // is the rule"), so the manifest the owner published in T19 with the 110
+    // ladder cannot undo the 155 he decided. A manifest with no rules at all
+    // takes the record's whole rules block, as `parseHingeCatalogue` needs one.
+    const raw = family === 'hinges' && fetched && typeof fetched === 'object' && spec.fallback?.rules
+      ? {
+        ...fetched,
+        rules: {
+          ...(fetched.rules || {}),
+          hinge_by_front_thickness: spec.fallback.rules.hinge_by_front_thickness,
+          hinge_wardrobe_inner_drawer: spec.fallback.rules.hinge_wardrobe_inner_drawer,
+          layers: fetched.rules?.layers || spec.fallback.rules.layers,
+          plate_default: fetched.rules?.plate_default || spec.fallback.rules.plate_default,
+          plate_option: fetched.rules?.plate_option || spec.fallback.rules.plate_option,
+        },
+      }
+      : fetched;
     const parsed = spec.parse(raw);
     if (!parsed) return null;
     const rows = spec.rows(parsed).length;

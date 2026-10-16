@@ -54,7 +54,6 @@ import { JOINTS_REFUSED } from './dowels.js';
 import { bjPlainEnds } from './biscuitJoints.js';
 import { minSkinOf, skinShort } from './frontBoard.js';
 import { machiningFor } from './machining.js';
-import { SCREWED_BACK } from './screwedBack.js';
 import { mirrorAboutVerticalAxis } from './cnc/frontOperations.js';
 import SHEET from '../../reference/hardware/cabineo/cabineo.json' with { type: 'json' };
 
@@ -67,8 +66,10 @@ export const CABINEO_GATE = 'the Cabineo pattern is proposed, not confirmed by t
 export const CABINEO_GATE_CODE = 'CABINEO_GATE';
 /** The two system ids a unit (or the company default) may name. */
 export const CABINEO_SYSTEMS = Object.freeze(['cabineo8', 'cabineo12']);
-/** The boards the LISP's table (section D.2) touches; the BACK is never one of them. */
-export const CABINEO_BOARDS = Object.freeze(['BUL', 'BUR', 'TOP', 'BOTTOM']);
+/** The boards the LISP's table (sections D.2 and D.2b) touches: the five of the carcass since 15.10.2026. */
+export const CABINEO_BOARDS = Object.freeze(['BUL', 'BUR', 'TOP', 'BOTTOM', 'BACK']);
+/** The BACK's sentence since the morning of 15.10.2026 (*"plecy tez na cabineo"*). */
+export const CABINEO_BACK = 'the BACK is on Cabineo too: pockets at the sides\' back ends (inside face) and at the TOP\'s and BOTTOM\'s (outside face), dia 5 holes in the BACK; the puzzle joint and the dia 3 rows go (the owner, 15.10.2026)';
 /**
  * The boards the system leaves as the kit cuts them: NONE since 15.10.2026.
  * The BACK is not a Cabineo board (the owner's sentence of 11.10.2026 names
@@ -147,7 +148,7 @@ export function cabineoProfile(profile = {}, system = null) {
     minFromEdgeMm: num(SHEET.spacing?.edgeMinMm, 20), // THE SHEET's: page 1, Assembly panel 1, owner to confirm
     caps: str(c.caps, ['all', 'shelves'], 'all'),    // T78 proposed
     minSkinMm: minSkinOf(profile),                   // T76's MIN_SKIN between opposing blind cuts
-    confirmed: c.confirmed === true,                 // THE GATE
+    confirmed: c.confirmed !== false,                // THE GATE: OPEN since 15.10.2026 (the owner: "otworz"); false shuts it
     layers: {
       pocket: { ...CABINEO_LAYERS.pocket, ...(c.layers?.pocket || {}) },
       recess: c.layers?.recess || CABINEO_LAYERS.recess,
@@ -487,12 +488,62 @@ export function cabineoJointTable(W, D, H, G, fixShelves = []) {
 }
 
 /**
+ * cabineo-back-joint (D.2b, the owner 15.10.2026: *"plecy tez na cabineo"*):
+ * one of the BACK's four joints. The BACK is the counterpart (holes in its
+ * inside face at (hx0 + hdx off, hy0 + hdy off), the axis distance already in
+ * hx0 / hy0); the pocket board's channel runs ALONG ITS X from `endAt` in
+ * `dirIn`, at y = acrossFrom + acrossDir off; `face` is the face the pocket
+ * is cut from: 'inside' for a side, 'outside' for the TOP and BOTTOM.
+ */
+export function cabineoBackJoint(name, len, ref, hx0, hy0, hdx, hdy, board, face, endAt, dirIn, aFrom, aDir, bW, bT) {
+  return {
+    name, len: Number(len), ref, kind: 'back',
+    side: 'BACK', hx0: Number(hx0), hy0: Number(hy0), hdx: Number(hdx), hdy: Number(hdy),
+    board, face, endAt: Number(endAt), dirIn: Number(dirIn), acrossFrom: Number(aFrom), acrossDir: Number(aDir),
+    boardW: Number(bW), boardT: Number(bT),
+  };
+}
+
+/**
+ * cabineo-back-table: the four back joints. `ax` is the screw axis below the
+ * pocket face (`cabineoAxisFromOutside`), `sideLen` the sides' joint length
+ * (H, or less under a wall unit's hanger). BUL's pocket face is its inside
+ * face at x = G of the BACK, the axis ax toward the outer face: the hole at
+ * G - ax; BUR's at W - G + ax; the TOP's pocket face is its top face: the
+ * hole at y = H - ax; the BOTTOM's at y = ax.
+ */
+export function cabineoBackTable(W, D, H, G, ax, sideLen = H) {
+  W = Number(W); D = Number(D); H = Number(H); G = Number(G); ax = Number(ax);
+  const sideW = D - G;
+  const topW = W - G - G;
+  return [
+    cabineoBackJoint('BUL-BACK', sideLen, 'BOTTOM', G - ax, 0.0, 0.0, 1.0, 'BUL', 'inside', sideW, -1.0, 0.0, 1.0, sideW, G),
+    cabineoBackJoint('BUR-BACK', sideLen, 'BOTTOM', W - G + ax, 0.0, 0.0, 1.0, 'BUR', 'inside', 0.0, 1.0, 0.0, 1.0, sideW, G),
+    cabineoBackJoint('TOP-BACK', topW, 'LEFT', G, H - ax, 1.0, 0.0, 'TOP', 'outside', 0.0, 1.0, 0.0, 1.0, sideW, G),
+    cabineoBackJoint('BOTTOM-BACK', topW, 'LEFT', G, ax, 1.0, 0.0, 'BOTTOM', 'outside', 0.0, 1.0, 0.0, 1.0, sideW, G),
+  ];
+}
+
+/** Is this joint one of the BACK's (D.2b)? */
+export function isBackJoint(jt) {
+  return jt?.kind === 'back';
+}
+
+/**
  * cabineo-pockets: one record per offset, on the horizontal board, in ITS OWN
  * (inside) frame. The LISP's list (board x yEnd dirIn W T joint off) is an
  * object here under those names: `x` the screw axis along the depth, `yEnd`
  * the end the channel opens from, `dirIn` +1 (into +y, the BUL end) or -1.
+ * A BACK joint's pocket (cabineo-back-pockets) runs along x instead: `along:
+ * 'x'`, `xEnd` the end, `y` the across coordinate, and the face it is cut from.
  */
 export function cabineoPockets(jt, offs) {
+  if (isBackJoint(jt)) {
+    return offs.map((off) => ({
+      board: jt.board, along: 'x', xEnd: jt.endAt, dirIn: jt.dirIn,
+      y: jt.acrossFrom + jt.acrossDir * off, W: jt.boardW, T: jt.boardT, joint: jt.name, off, face: jt.face,
+    }));
+  }
   const dirIn = cabineoJget(jt, 'endName') === 'Y0' ? 1.0 : -1.0;
   return offs.map((off) => ({
     board: cabineoJget(jt, 'board'),
@@ -506,8 +557,9 @@ export function cabineoPockets(jt, offs) {
   }));
 }
 
-/** cabineo-board-pt: a sheet-frame point (s, t) of one pocket in the board's own frame. */
+/** cabineo-board-pt: a sheet-frame point (s, t) of one pocket in the board's own frame (cabineo-back-board-pt for an x-channel). */
 export function cabineoBoardPt(pk, s, t) {
+  if (pk.along === 'x') return [pk.xEnd + pk.dirIn * Number(s), pk.y + Number(t)];
   return [pk.x + Number(t), pk.yEnd + pk.dirIn * Number(s)];
 }
 
@@ -654,6 +706,12 @@ export function cabineoHoleDepth(prof, sheet = cabineoSheet()) {
 export function cabineoSideHoles(jt, offs, prof, sheet = cabineoSheet()) {
   const dia = cabineoPath(sheet, ['counterpartHole', 'diaMm']);
   const depth = cabineoHoleDepth(prof, sheet);
+  if (isBackJoint(jt)) {
+    // cabineo-back-holes: in the BACK's inside face, the axis distance already in hx0 / hy0.
+    return offs.map((off) => ({
+      side: 'BACK', x: jt.hx0 + jt.hdx * off, y: jt.hy0 + jt.hdy * off, dia, depth, joint: jt.name, off,
+    }));
+  }
   const ax = cabineoAxisFromOutside(prof, sheet);
   const y = cabineoJget(jt, 'sideOut') + cabineoJget(jt, 'sideIn') * ax;
   return offs.map((off) => ({
@@ -822,10 +880,16 @@ export function cabineoPocketGeometry(pk, prof, sheet = cabineoSheet()) {
   const own = (p) => cabineoBoardPt(pk, p[0], p[1]).map(r4);
   const exp = (p) => cabineoExportPt(pk, p[0], p[1]).map(r4);
   const lobes = cabineoLobeCentres(opt).map((s) => [s, 0]);
+  // The face the pocket is cut from: 'outside' (the TOP, the BOTTOM, a shelf,
+  // the LISP's section C) or 'inside' (a side's back pocket, D.2b). An
+  // 'inside' board is never reflected, so its export frame is its own.
+  const face = pk.face || 'outside';
+  const expOf = face === 'outside' ? exp : own;
+  const end = pk.along === 'x' ? (pk.dirIn > 0 ? 'X0' : 'XW') : (pk.dirIn > 0 ? 'Y0' : 'YH');
   const meta = {
-    joint: pk.joint, offset: r4(pk.off), end: pk.dirIn > 0 ? 'Y0' : 'YH', board: pk.board,
+    joint: pk.joint, offset: r4(pk.off), end, board: pk.board, face,
     axis: own([0, 0]), lobes: lobes.map(own),
-    export: { axis: exp([0, 0]), lobes: lobes.map(exp), W: pk.W },
+    export: { axis: expOf([0, 0]), lobes: lobes.map(expOf), W: pk.W },
   };
   const out = { pocket: null, recess: null, holes: [] };
   if (mch === 'drill15') {
@@ -833,20 +897,20 @@ export function cabineoPocketGeometry(pk, prof, sheet = cabineoSheet()) {
       const [x, y] = own([s, 0]);
       out.holes.push({
         panel: pk.board, kind: CABINEO_POCKET_KIND, layer: cabineoPocketLayer(prof), x, y, d: opt.lobeDiaMm,
-        ...(depth != null ? { depth } : {}), face: 'outside',
-        meta: { ...meta, lobe: i + 1, export: { ...meta.export, at: exp([s, 0]) } },
+        ...(depth != null ? { depth } : {}), face,
+        meta: { ...meta, lobe: i + 1, export: { ...meta.export, at: expOf([s, 0]) } },
       });
     }
   } else {
     const poly = cabineoOutlinePolygon(opt, mch);
     if (poly) {
       const pts = ccw(poly.map(own));
-      const ept = poly.map(exp);
+      const ept = poly.map(expOf);
       const [x1, y1, x2, y2] = boxOf(pts);
       out.pocket = {
-        layer: cabineoPocketLayer(prof), kind: CABINEO_POCKET_KIND, face: 'outside',
+        layer: cabineoPocketLayer(prof), kind: CABINEO_POCKET_KIND, face,
         ...(depth != null ? { depth } : {}), x1, y1, x2, y2, pts,
-        meta: { ...meta, export: { ...meta.export, pts: ccw(ept).reverse(), box: boxOf(ept) } },
+        meta: { ...meta, export: { ...meta.export, pts: face === 'outside' ? ccw(ept).reverse() : ccw(ept), box: boxOf(ept) } },
       };
     }
   }
@@ -854,13 +918,13 @@ export function cabineoPocketGeometry(pk, prof, sheet = cabineoSheet()) {
   const rpoly = cabineoRecessPolygon(rc);
   if (rpoly) {
     const pts = ccw(rpoly.map(own));
-    const ept = rpoly.map(exp);
+    const ept = rpoly.map(expOf);
     const [x1, y1, x2, y2] = boxOf(pts);
     out.recess = {
-      layer: cabineoRecessLayer(prof), kind: CABINEO_RECESS_KIND, face: 'outside', depth: rc[4], x1, y1, x2, y2, pts,
+      layer: cabineoRecessLayer(prof), kind: CABINEO_RECESS_KIND, face, depth: rc[4], x1, y1, x2, y2, pts,
       meta: {
-        joint: pk.joint, offset: r4(pk.off), end: meta.end, board: pk.board, widthMm: rc[0], lengthMm: rc[1],
-        endRadiusMm: rc[2], endCentreFromEndMm: rc[3], export: { pts: ccw(ept).reverse(), box: boxOf(ept), W: pk.W },
+        joint: pk.joint, offset: r4(pk.off), end: meta.end, board: pk.board, face, widthMm: rc[0], lengthMm: rc[1],
+        endRadiusMm: rc[2], endCentreFromEndMm: rc[3], export: { pts: face === 'outside' ? ccw(ept).reverse() : ccw(ept), box: boxOf(ept), W: pk.W },
       },
     };
   } else if (rc) {
@@ -994,7 +1058,10 @@ export function cabineoPlan({
   const sideT = Number(G);
   const boardT = Math.min(Number(G), ...fix.map((f) => f[1]));
   const refused = cabineoRefusal(prof, sheet, sideT, boardT);
-  const table = refused.length ? [] : cabineoJointTable(W, D, H, G, fix);
+  const table = refused.length ? [] : [
+    ...cabineoJointTable(W, D, H, G, fix),
+    ...cabineoBackTable(W, D, H, G, cabineoAxisFromOutside(prof, sheet), H),
+  ];
   const joints = table.map((jt) => {
     const cuts = cabineoJointCuts(jt, prof, sheet);
     return {
@@ -1013,7 +1080,7 @@ export function cabineoPlan({
     return boards[id];
   };
   for (const id of CABINEO_BOARDS) board(id);
-  board('BACK').said = SCREWED_BACK;
+  board('BACK').said = CABINEO_BACK;
   let nShelf = 0;
   for (const j of joints) {
     const b = board(j.joint.board);
@@ -1031,7 +1098,7 @@ export function cabineoPlan({
   }
   const nPockets = joints.reduce((n, j) => n + j.offs.length, 0);
   return {
-    prof, sheet, gate: cabineoGate(prof), refused, joints, boards, back: SCREWED_BACK,
+    prof, sheet, gate: cabineoGate(prof), refused, joints, boards, back: CABINEO_BACK,
     counts: { pockets: nPockets, holes: nPockets, shelfPockets: nShelf },
     bom: cabineoBomLines(prof, sheet, nPockets, nShelf),
   };
@@ -1164,7 +1231,7 @@ export function cabineoVerdict({
   const byId = new Map((parent.panels || []).map((p) => [p.id, p]));
   const dims = (p) => [Number(p?.cnc?.drawn_w ?? p?.w), Number(p?.cnc?.drawn_h ?? p?.h)];
   const want = {
-    BUL: [D - G, H], BUR: [D - G, H], TOP: [D - G, W - 2 * G], BOTTOM: [D - G, W - 2 * G],
+    BUL: [D - G, H], BUR: [D - G, H], TOP: [D - G, W - 2 * G], BOTTOM: [D - G, W - 2 * G], BACK: [W, H],
   };
   // The carcass must BE the LISP's: every board it names, where it names it.
   for (const id of CABINEO_BOARDS) {
@@ -1174,7 +1241,7 @@ export function cabineoVerdict({
       return say(`${id} is missing, so this is not the five-board carcass SKYLON_JOINTS_CABINEO.lsp is written for`, null);
     }
     const [w, h] = dims(p);
-    if (Math.abs(w - want[id][0]) > EPS || Math.abs(h - want[id][1]) > EPS) {
+    if (Math.abs(w - want[id][0]) > EPS || Math.abs(h - want[id][1]) > EPS || (id === 'BACK' && p.cnc?.rotated)) {
       return say(`${id} is ${fmt(w)} x ${fmt(h)}, not the ${fmt(want[id][0])} x ${fmt(want[id][1])} `
         + 'SKYLON_JOINTS_CABINEO.lsp\'s table cuts', id);
     }
@@ -1193,14 +1260,26 @@ export function cabineoVerdict({
   }
   const shelfIds = new Map(fix.map((f, i) => [`SHELF-${i + 1}`, f.id]));
   const rename = (s) => (shelfIds.has(s) ? shelfIds.get(s) : s);
-  const table = cabineoJointTable(W, D, H, G, fix.map((f) => [f.row, f.t, f.sb]))
-    .map((jt) => ({ ...jt, name: jt.name.replace(/SHELF-\d+$/, (m) => rename(m)), board: rename(jt.board) }))
-    .filter((jt) => byId.has(jt.side) && byId.has(jt.board));
+  // D.2b: the BACK's four joints. A wall unit's side joint stops below its
+  // hanger holes (the lowest one less its radius, the pocket's half width and 5).
+  const hangerYs = drills.filter((d) => d.kind === 'hanger' && (d.panel === 'BUL' || d.panel === 'BUR'));
+  const wide = cabineoPocketWidth(prof, sheet);
+  const sideLen = hangerYs.length
+    ? Math.min(...hangerYs.map((d) => Number(d.y) - (Number(d.d) || 0) / 2)) - wide / 2 - 5
+    : H;
+  const table = [
+    ...cabineoJointTable(W, D, H, G, fix.map((f) => [f.row, f.t, f.sb]))
+      .map((jt) => ({ ...jt, name: jt.name.replace(/SHELF-\d+$/, (m) => rename(m)), board: rename(jt.board) })),
+    ...cabineoBackTable(W, D, H, G, cabineoAxisFromOutside(prof, sheet), sideLen),
+  ].filter((jt) => byId.has(jt.side) && byId.has(jt.board));
 
-  // cabineo-refusal, at the thinnest side and the thinnest horizontal board the table uses.
+  // cabineo-refusal, at the thinnest counterpart and the thinnest pocket board the table uses.
   const tOf = (id) => Number(byId.get(id)?.thickness) || G;
   const sideT = Math.min(...table.map((jt) => tOf(jt.side)));
   const boardT = Math.min(...table.map((jt) => tOf(jt.board)));
+  if (sideLen < 2 * cabineoGet(prof, 'endOffsetMm') + wide) {
+    return say('a side\'s back joint has no room under the hanger for two pockets; SKYLON_JOINTS_CABINEO.lsp D.2b, so the unit keeps the puzzle', 'BUL');
+  }
   const bad = cabineoRefusal(prof, sheet, sideT, boardT);
   if (bad.length) return say(`the Cabineo profile cannot make a sound joint: ${bad.join('; ')}`);
 
@@ -1224,11 +1303,19 @@ export function cabineoVerdict({
   const keepsSideHole = (d) => {
     if (sideRows(d.panel).some((y) => sideHoleGoes(d, y, G, pz))) return false;
     if (d.kind === 'shelf_screw' && ownedShelfRows.some((y) => Math.abs(d.y - y) < EPS)) return false;
+    // The back joint's puzzle holes and the dia 3 rows go with it (screwedBack.js, 15.10.2026),
+    // on the BACK and on every side's back edge; the hanger cut-outs stay.
+    if (d.panel === 'BACK' && (d.kind === 'puzzle' || d.kind === 'screw')) return false;
     return true;
   };
+  // The puzzle's own pockets go with the joints (the sockets with the TOP's and
+  // BOTTOM's rows, the dog bones and the BACK's sockets with the back joint);
+  // what a board keeps is asked against every hole and pocket the plan adds.
+  const keptPocketsOf = (id) => (byId.get(id)?.cnc?.pockets || [])
+    .filter((k) => !sideRows(id).some((y) => sidePocketGoes(k, y, pz)))
+    .filter((k) => k.layer !== pz?.layers?.dogbone && k.layer !== pz?.layers?.socket);
   for (const j of joints) {
-    const side = byId.get(j.joint.side);
-    const keptPockets = (side?.cnc?.pockets || []).filter((k) => !sideRows(j.joint.side).some((y) => sidePocketGoes(k, y, pz)));
+    const keptPockets = keptPocketsOf(j.joint.side);
     for (const h of j.holes) {
       for (const d of drills) {
         if (d.panel !== j.joint.side || !keepsSideHole(d)) continue;
@@ -1244,8 +1331,32 @@ export function cabineoVerdict({
         }
       }
     }
+    // D.2b: a side's INSIDE pocket (its dia 15 holes, its skim) against every
+    // hole the side keeps on that same face: a hinge plate, a shelf pin, a
+    // hanger, the dia 5 holes of the TOP's and BOTTOM's joints.
+    if (isBackJoint(j.joint) && j.joint.face === 'inside') {
+      const cuts = j.geometry.flatMap((g) => [...g.holes, g.recess, g.pocket].filter(Boolean));
+      for (const c of cuts) {
+        const rect = c.x1 != null ? [c.x1, c.y1, c.x2, c.y2] : [c.x - c.d / 2, c.y - c.d / 2, c.x + c.d / 2, c.y + c.d / 2];
+        for (const d of drills) {
+          if (d.panel !== j.joint.board || !keepsSideHole(d)) continue;
+          const hit = c.x1 != null
+            ? circleMeetsRect(Number(d.x), Number(d.y), (Number(d.d) || 0) / 2, ...rect)
+            : Math.hypot(c.x - Number(d.x), c.y - Number(d.y)) < c.d / 2 + (Number(d.d) || 0) / 2 - EPS;
+          if (hit) {
+            return say(`the Cabineo pocket of ${j.joint.name} on ${j.joint.board} (x ${fmt(rect[0])} to ${fmt(rect[2])}, y ${fmt(rect[1])} to ${fmt(rect[3])}) `
+              + `meets the ${d.kind} hole at ${fmt(d.x)}, ${fmt(d.y)}; SKYLON_JOINTS_CABINEO.lsp has no answer for it yet, so the unit keeps the puzzle`, j.joint.board);
+          }
+        }
+        for (const k of keptPocketsOf(j.joint.board)) {
+          if (cabineoFootprintClash(rect, [k.x1, k.y1, k.x2, k.y2])) {
+            return say(`the Cabineo pocket of ${j.joint.name} on ${j.joint.board} meets the ${k.layer} pocket; the unit keeps the puzzle`, j.joint.board);
+          }
+        }
+      }
+    }
   }
-  const outsideBoards = [...new Set(joints.map((j) => j.joint.board))];
+  const outsideBoards = [...new Set(joints.filter((j) => (j.joint.face || 'outside') === 'outside').map((j) => j.joint.board))];
   for (const id of outsideBoards) {
     const p = byId.get(id);
     const [, drawnH] = dims(p);
@@ -1254,7 +1365,7 @@ export function cabineoVerdict({
       ...drills.filter((d) => d.panel === id && d.face !== 'outside').map((d) => ({ kind: 'hole', layer: d.layer, x: d.x, y: d.y, d: d.d, depth: d.depth ?? null })),
       // Every puzzle dog bone goes with the joint since 15.10.2026 (the end
       // ones with the Cabineo joint, the back ones with the screwed back).
-      ...(p?.cnc?.pockets || []).filter((k) => k.layer !== pz?.layers?.dogbone)
+      ...(p?.cnc?.pockets || []).filter((k) => k.layer !== pz?.layers?.dogbone && k.layer !== pz?.layers?.socket)
         .map((k) => ({ kind: 'pocket', layer: k.layer, x1: k.x1, y1: k.y1, x2: k.x2, y2: k.y2, depth: k.depth ?? null })),
     ];
     const findings = cabineoSkinFindings(p, mine, insideCuts, profile);
@@ -1286,7 +1397,7 @@ export function cabineoVerdict({
       boards: CABINEO_BOARDS.filter((id) => byId.has(id)),
       outside: outsideBoards,
       leaves: [...CABINEO_LEAVES],
-      back: SCREWED_BACK,
+      back: CABINEO_BACK,
       joints,
       shelves: new Set(fix.map((f) => f.id)),
       counts: { pockets: nPockets, holes: nPockets, shelfPockets: nShelf },
@@ -1356,14 +1467,22 @@ export function cabineoStrip({ panels, plan, profile }) {
  */
 export function cabineoPocketsOnto({ panels, plan }) {
   const byId = new Map(panels.map((p) => [p.id, p]));
-  for (const id of plan.outside) {
+  const boards = [...new Set(plan.joints.map((j) => j.joint.board))];
+  for (const id of boards) {
     const p = byId.get(id);
     if (!p?.cnc) continue;
     const mine = plan.joints.filter((j) => j.joint.board === id).flatMap((j) => j.geometry);
     const pockets = mine.map((g) => g.pocket).filter(Boolean);
     const recesses = mine.map((g) => g.recess).filter(Boolean);
     p.cnc = { ...p.cnc, pockets: [...(p.cnc.pockets || []), ...pockets, ...recesses] };
-    p.meta = { ...(p.meta || {}), machinedFace: 'outside', machinedFaceLabel: OUTSIDE_FACE_LABEL, cabineo: { pockets: mine.length } };
+    // A side's back pockets (D.2b) are cut from its INSIDE face, with the rest
+    // of its drilling: no reflection, no label; the outside boards keep theirs.
+    const outside = plan.outside.includes(id);
+    p.meta = {
+      ...(p.meta || {}),
+      ...(outside ? { machinedFace: 'outside', machinedFaceLabel: OUTSIDE_FACE_LABEL } : {}),
+      cabineo: { pockets: mine.length, face: outside ? 'outside' : 'inside' },
+    };
   }
 }
 
@@ -1440,6 +1559,7 @@ export function cabineoSummary(plan) {
     holes: plan.counts.holes,
     joints: plan.joints.map((j) => ({ name: j.joint.name, len: roundTo(j.joint.len, 4), pockets: j.offs.length, board: j.joint.board, side: j.joint.side })),
     machinedFace: Object.fromEntries([...plan.outside.map((id) => [id, 'outside']), ...plan.boards.filter((id) => !plan.outside.includes(id)).map((id) => [id, 'inside'])]),
+    backHoles: plan.joints.filter((j) => isBackJoint(j.joint)).reduce((n, j) => n + j.offs.length, 0),
     leaves: [...plan.leaves],
     back: plan.back,
     confirmed: plan.prof.confirmed,
@@ -1508,7 +1628,7 @@ export function cabineoNoteRow(result) {
     role: 'cabineo_note',
     material_role: 'note',
     material_label: `NOTE: Cabineo ${j.variant} joints, ${j.pockets} pockets (${j.mounting}, ${j.machining}) cut from the OUTSIDE face of `
-      + `${outside.join(', ')} (${OUTSIDE_FACE_LABEL}), ${j.holes} dia 5 holes in the sides' inside faces${gate}`,
+      + `${outside.join(', ')} (${OUTSIDE_FACE_LABEL}) and from the sides' inside faces at the back, ${j.holes} dia 5 holes in the sides and the BACK${gate}`,
     w: 0,
     h: 0,
     qty: 1,

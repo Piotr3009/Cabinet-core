@@ -51,6 +51,12 @@ import { areaM2, metres, roundTo, rtos } from './format.js';
 import {
   notchCarcass, notchDrills, notchSummary, notchVerdict, withNotchRefusal,
 } from './notch.js';
+// Chat-fix 15.10.2026 (the evening) · the recess extension, KIT_RECESS.lsp's
+// mirror: the notch's reverse (the carcass grows backward over a band), asked
+// of the parent's own cut, a pass before the drilling and a pass after it.
+import {
+  extensionCarcass, extensionDrills, extensionSummary, extensionVerdict, withExtensionRefusal,
+} from './extension.js';
 // T75 F23 · the second joint system, SKYLON_JOINTS_DOWEL.lsp's mirror: asked
 // of the parent's own puzzle cut, the puzzle stripped before the drilling and
 // the pairs added after it. Never reached while the system is the puzzle.
@@ -1723,6 +1729,16 @@ export function computeCabinet(params, profileOverride) {
     const parent = computeCabinet({ ...params, notch: null }, profileOverride);
     const verdict = notchVerdict({ parent, params, type: cfg.type, profile: P });
     if (verdict) return withNotchRefusal(parent, verdict, params, P);
+  }
+  // ─── 15.10.2026 · THE RECESS EXTENSION IS ASKED OF THE PARENT FIRST ──────
+  // KIT_RECESS.lsp: the room derives the band (projectStore recessExtensionFor),
+  // the unit is cut WITHOUT it and the band is judged against that cut
+  // (recess-refusal, D4, D13, D14). Refused, the parent is what is cut and the
+  // sentence travels with it. No `params.extension`, no line here runs.
+  if (params?.extension) {
+    const parent = computeCabinet({ ...params, extension: null }, profileOverride);
+    const verdict = extensionVerdict({ parent, params, type: cfg.type, profile: P });
+    if (verdict) return withExtensionRefusal(parent, verdict, params);
   }
   const warnings = [...cfg.warnings];
 
@@ -3917,8 +3933,14 @@ export function computeCabinet(params, profileOverride) {
         const h = bifold && arm === 'B' ? (innerSide === 'left' ? 'L' : 'R') : hPair;
         // eslint-disable-next-line no-nested-ternary
         const kind = bifold ? (arm === 'A' ? 'covered' : 'bifold') : (arm === overlapArm ? 'overlap' : 'covered');
+        // 15.10.2026: the overlapping leaf's end CLEARS the covered leaf's face
+        // by `clearance.corner`. The covered leaf stands `gap` off the carcass,
+        // so from B's untrimmed edge (gap/2 inside the corner line) the trim is
+        // the gap, the front and the clearance, less the half gap already
+        // there: T75's `frontT + cornerClear - gap/2` left B's end ON A's face
+        // (the owner, 15.10.2026: the leaves must shorten with the front).
         // eslint-disable-next-line no-nested-ternary
-        const innerTrim = kind === 'covered' ? -gap / 2 : (kind === 'bifold' ? frontT + 1.5 * gap : frontT + cornerClear - gap / 2);
+        const innerTrim = kind === 'covered' ? -gap / 2 : (kind === 'bifold' ? frontT + 1.5 * gap : frontT + cornerClear + gap / 2);
         const own = ownTrim[doorId] || {};
         const trim = {
           left: (innerSide === 'left' ? innerTrim : 0) + (Number(own.left) || 0),
@@ -3945,10 +3967,12 @@ export function computeCabinet(params, profileOverride) {
         }
         const vParams = {
           ...base,
-          // T78 F8 / F13 · in bifold leaf A takes the wide family (catalogue
-          // p. 116: the bi-fold hinge works with the 155 or 170) unless the
-          // door chose one itself.
-          ...(bifold && arm === 'A' && !base.hinge_family ? { hinge_family: 'wide' } : {}),
+          // T78 F8 / F13 made leaf A take the WIDE family in bifold (catalogue
+          // p. 116: the bi-fold hinge works with the 155 or 170). Since
+          // 15.10.2026 the standard hinge IS the 155 (to 24 mm), so leaf A keeps
+          // the door's own family: the 155 on the owner's 18 and 19 mm fronts,
+          // the 110 on a 25 mm shaker (Blum's wide hinges stop at 24; the
+          // CORNER_L_BIFOLD line says so), the wide 170 only where chosen.
           type: cl.drawers ? budrTypeFor(cl.drawers) : type.parentType,
           width: span,
           depth: d,
@@ -4229,6 +4253,18 @@ export function computeCabinet(params, profileOverride) {
           // All of them: the door joins after the box's own copy loop, so its
           // cups, cup screws and handle holes come over from the parent whole.
           let drills = a.v.drills.filter((x) => x.panel === a.doorId);
+          // 15.10.2026 · THE PAIR HAS ONE HANDLE, ON LEAF B. The owner: *"klamki
+          // i orientacja drzwi na L shape w ogole nie ma sensu ... otwieranie
+          // drzwiczek razem, czyli drzwiczki polaczone ze soba zawiasami."*  In
+          // a bi-fold the pair is pulled by leaf B's free end and leaf A is
+          // carried; a handle on A's inner edge would stand under B's hinge
+          // line. So the carrier leaf takes no handle and bores no handle hole;
+          // the parent made one, and it is not born into the L.
+          if (cl.doorsMode === 'bifold' && a.kind === 'covered' && door.meta?.handle) {
+            delete door.meta.handle;
+            door.meta.handleless = 'bi-fold carrier: the pair is pulled by leaf B';
+            drills = drills.filter((x) => x.kind !== 'handle');
+          }
           if (a.kind === 'bifold') {
             // T78 F8 · leaf B's cups are the BI-FOLD hinge's, by the catalogue's
             // cup pattern (its drilling distance from the hinge edge). The
@@ -8551,7 +8587,10 @@ export function computeCabinet(params, profileOverride) {
   // held by drawBACK's own dia 3 rows (SKYLON_JOINTS_CABINEO.lsp and
   // SKYLON_JOINTS_BISCUIT.lsp, amended the same day). The dowel system has
   // its own BACK rows (dowelStrip above) and never drew a dog bone.
-  if (cabineoPlan || biscuitPlan) screwedBackStrip({ panels, profile: P });
+  // Under Cabineo the BACK's dia 3 rows go too: the LISP's D.2b back joints
+  // take their place (the owner, the morning of 15.10.2026: "plecy tez na
+  // cabineo"); under biscuits the rows are what holds the back.
+  if (cabineoPlan || biscuitPlan) screwedBackStrip({ panels, profile: P, screws: !cabineoPlan });
 
   // ─── T75 F7 · THE CORNER NOTCH, CUT BEFORE THE DRILLING ──────────────────
   // KIT_NOTCH.lsp: *"It runs AFTER the parent kit's carcass and BEFORE the
@@ -8560,6 +8599,14 @@ export function computeCabinet(params, profileOverride) {
   // drops, re-plans and re-origins. Null on every unit with no notch.
   const notchCut = params?.notch
     ? notchCarcass({
+      params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
+    })
+    : null;
+  // 15.10.2026 · the recess extension, in the notch's own place (KIT_RECESS.lsp
+  // section 1: after the parent's carcass, before the drilling). Null on every
+  // unit with no extension.
+  const extensionCut = params?.extension && !notchCut
+    ? extensionCarcass({
       params, profile: P, panels, W, H, D, G, jointInset, codes, makePanel: panel,
     })
     : null;
@@ -10057,7 +10104,13 @@ export function computeCabinet(params, profileOverride) {
         level: 'info',
         panel: `${unitNum}-B-F`,
         message: `${unitNum}: door B hangs on door A's free edge (${sp.label}, ${sp.angleDeg} degrees, `
-          + `${lCorner.bifold.rows} hinge${lCorner.bifold.rows === 1 ? '' : 's'}; leaf A takes the ${sp.companion} family). `
+          + `${lCorner.bifold.rows} hinge${lCorner.bifold.rows === 1 ? '' : 's'}; the catalogue pairs it with the ${sp.companion} on leaf A`
+          + (() => {
+            // 15.10.2026: leaf A keeps its own hinge; say so when it is not one of the catalogue's companions.
+            const aDeg = Number(lCorner.doors.find((x) => x.arm === 'A')?.door?.meta?.openAngleDeg);
+            return aDeg > 0 && aDeg < 155 ? `, here the ${aDeg}: Blum's 155 and 170 stop at 24 and 21 mm fronts, owner to confirm` : '';
+          })()
+          + '; one handle, on leaf B). '
           + (Number.isFinite(sp.cupFromEdgeMm)
             ? `Cups bored ${sp.cupFromEdgeMm} mm from B's hinge edge (catalogue p. ${sp.page ?? '?'}, owner to confirm).`
             : 'A line and a body, no hole: the cup pattern waits for the catalogue page (reference/hardware/blum-hinges.json, owner to confirm).'),
@@ -10469,10 +10522,17 @@ export function computeCabinet(params, profileOverride) {
   const innerDrawer = type.family === 'wardrobe' && (numDrawers + columnDrawerCount) > 0;
   // ─── T78 F13 · THE DOOR CHOOSES A HINGE FAMILY ─────────────────────────────
   // `door_hinge_family[id]` (the leaf's own), else the unit's `hinge_family`,
-  // else `standard`. The angle inside the family is derived (T22 law): the
-  // leaf carries it as `meta.openAngleDeg` only for the wide family, where it
-  // drives the scene's swing and the Check (#33); the standard family keeps
-  // the picture angle of the profile. The cup pattern does not move.
+  // else `standard`. The angle inside the family is derived (T22 law) and the
+  // leaf carries it as `meta.openAngleDeg`: it drives the scene's swing (and,
+  // for the wide family, the Check #33). The cup pattern does not move.
+  //
+  // 15.10.2026, the owner: *"standardowo zawiasy 155 degree, prosze zmien to
+  // na 155 otwieranie, teraz otwieraja sie na 90 i wyglada zle."*  So the
+  // standard family's rung is the 155 to 24 mm (reference/hardware/
+  // cliptop-hinges.json rules.hinge_by_front_thickness, the 110 at 25, the 95
+  // to 32), and EVERY hinged leaf now carries its hinge's angle, not only a
+  // wide one: a door opens in the picture as far as its hinge opens. With no
+  // catalogue loaded the angle is null and the leaf carries nothing, as before.
   const hingeFamilyOf = (id) => {
     const per = params?.door_hinge_family?.[id];
     if (per === 'wide' || per === 'standard') return per;
@@ -10484,10 +10544,19 @@ export function computeCabinet(params, profileOverride) {
     // leaf A takes the wide family there): their word stands.
     if (lCorner && pnl.meta?.arm && pnl.meta?.hingeFamily) continue;
     const fam = hingeFamilyOf(pnl.id);
-    // The standard family leaves no mark on a leaf nobody chose for (the six
-    // goldens and T75's hold byte for byte); a choice, or the wide family, is written.
+    // The standard family leaves no FAMILY mark on a leaf nobody chose for (the
+    // goldens hold: they read no meta but readiness); a choice, or the wide
+    // family, is written. The ANGLE is written for every leaf (15.10.2026).
     const chosen = params?.door_hinge_family?.[pnl.id] === 'standard' || params?.hinge_family === 'standard';
     if (fam === 'wide' || chosen) pnl.meta.hingeFamily = fam;
+    if (fam !== 'wide' && !pnl.meta?.appliance) {
+      // The same resolution the BOM makes below: a per-door assignment wins, else the rung.
+      const sp = resolveDoorHinge({
+        assigned: doorHingeAssignment({ door_hinges: cfg.doorHinges }, pnl.id),
+        frontThickness: pnl.thickness || frontT, innerDrawer, finish: cfg.hingeFinish, family: 'standard',
+      });
+      if (sp.angle != null) pnl.meta.openAngleDeg = sp.angle;
+    }
     if (fam === 'wide') {
       const sp = resolveDoorHinge({
         frontThickness: pnl.thickness || frontT, innerDrawer, finish: cfg.hingeFinish, family: 'wide',
@@ -11460,6 +11529,14 @@ export function computeCabinet(params, profileOverride) {
       cut: notchCut, panels, drills, legs,
     });
     derived.notch = notchSummary(notchCut);
+  }
+  // 15.10.2026 · BUR re-origined from its new back edge, the grown sides' back
+  // pin column stepped back over the band (KIT_RECESS.lsp D12).
+  if (extensionCut) {
+    extensionDrills({
+      cut: extensionCut, panels, drills, profile: P,
+    });
+    derived.extension = extensionSummary(extensionCut);
   }
   // T75 F23 · what the dowel unit is, and THE GATE while it is shut.
   if (dowelPlan) {

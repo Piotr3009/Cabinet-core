@@ -35,19 +35,24 @@
 ;;; joint line, one per pocket. Never both systems on one joint: on those
 ;;; joints the puzzle's tenons, sockets, dia 7.5 holes, dog bones and dia 3
 ;;; screw rows go (section F). The joints into the BACK are NOT in the owner's
-;;; sentence of 11.10.2026 (top, bottom, fixed shelf, side), so no Cabineo goes
-;;; into the back. THE BACK IS SCREWED (the owner, 15.10.2026, DECIDED: "jak
-;;; mamy cabineo to nie robimy dog bonsow, i to samo jak mamy biscuits czy
-;;; standardowe tradycyjne dowels"): a dog bone is the puzzle's relief, and
-;;; the only puzzle a Cabineo unit still carried was the back joint (the sides'
-;;; three back tenons, the TOP's and BOTTOM's two, each with its dog bone, and
-;;; the BACK's sockets with their dia 7.5 holes). That joint goes WHOLE and the
-;;; BACK is held by what already held it: drawBACK's own dia 3 screw rows
-;;; through the back, one on each side's centre line (x = G / 2 and W - G / 2)
-;;; and one on the TOP's and the BOTTOM's (y = H - G / 2 and G / 2). Section F
-;;; and the NUMBERS block say what each board loses. SKYLON_JOINTS_BISCUIT
-;;; does the same on the same day; the dowel system (SKYLON_JOINTS_DOWEL) has
-;;; its own BACK rows and never drew a dog bone.
+;;; sentence of 11.10.2026 (top, bottom, fixed shelf, side); they were left
+;;; the puzzle's until 15.10.2026. THAT NIGHT the owner said "jak mamy cabineo
+;;; to nie robimy dog bonsow" (a dog bone is the puzzle's relief, and the only
+;;; puzzle a Cabineo unit still carried was the back joint: the sides' three
+;;; back tenons, the TOP's and BOTTOM's two, each with its dog bone, and the
+;;; BACK's sockets with their dia 7.5 holes), and THAT MORNING, asked whether
+;;; the BACK stays on drawBACK's dia 3 screws or goes on Cabineo: "plecy tez na
+;;; cabineo" (DECIDED). So the back joint goes WHOLE (tenons, sockets, dog
+;;; bones AND the screw rows) and is made with Cabineo like the rest, section
+;;; D.2b: the BACK is the counterpart (dia 5 holes in its inside face, the
+;;; face the sides and the TOP and BOTTOM stand against), the pockets sit in
+;;; the boards whose ENDS meet it: the TOP's and BOTTOM's back ends, cut from
+;;; their OUTSIDE face as their other pockets are, and the sides' back ends,
+;;; cut from the sides' INSIDE face, the face every hinge plate, shelf pin and
+;;; dia 5 hole of theirs already lives on, so that no board is machined from
+;;; two faces. SKYLON_JOINTS_BISCUIT keeps the BACK on the screws (no biscuit
+;;; on the back, the owner); the dowel system (SKYLON_JOINTS_DOWEL) has its
+;;; own BACK rows and never drew a dog bone.
 ;;;
 ;;; THE OWNER'S OWN MACHINING (15.10.2026, DECIDED): "musi byc 3 layery 1 to
 ;;; cabineo 15 mm, drugi to cabineo oblamowka, czyli zebranie 0.5 mm laminatu,
@@ -120,7 +125,7 @@
     (cons "minFromEdgeMm" 20.0)    ;; THE SHEET's: min. 20 from the board's edge page 1, Assembly panel 1, owner to confirm
     (cons "caps" "all")            ;; "all" | "shelves": which pockets get a cover cap (section F)  T78 proposed
     (cons "minSkinMm" 3.0)         ;; T76's MIN_SKIN between opposing blind cuts (engine/frontBoard.js minSkinOf)
-    (cons "confirmed" nil)))       ;; THE GATE: nil until the owner says the Cabineo pattern is confirmed
+    (cons "confirmed" T)))         ;; THE GATE: OPEN since 15.10.2026 (the owner: "otworz"); nil shuts it again
 
 ;;; Read one value off an assoc list.
 (defun cabineo-get (alist key)
@@ -587,7 +592,7 @@
   (cdr (assoc key jt)))
 
 ;;; D.2 THE JOINT TABLE: side to TOP, side to BOTTOM, side to every FIX shelf.
-;;; NOT the back (the head of this file says why). fixShelves: ((row shelfT
+;;; The BACK's four joints are D.2b below (15.10.2026). fixShelves: ((row shelfT
 ;;; setback) ...), row the shelf's UNDERSIDE from the floor, setback its front
 ;;; behind the carcass front (the LISP's 20); its depth is D - G - setback and
 ;;; its width the full clear light W - 2G (turn 24 F6).
@@ -629,6 +634,76 @@
                      (strcat "SHELF-" (itoa k)) "YH" topW 0.0 1.0 depthS st))))
     (setq k (1+ k)))
   out)
+
+;;; D.2b THE BACK JOINTS (the owner, 15.10.2026: "plecy tez na cabineo").
+;;; The BACK (W x H, x from the LEFT outer face, y up, its INSIDE face) is the
+;;; counterpart of four joints; the pocket board's channel runs ALONG ITS X
+;;; here (the back end of a side is x = sideW for BUL and x = 0 for BUR, the
+;;; back end of the TOP and BOTTOM, drawn ROT90, is x = 0), so a back joint
+;;; carries its own fields:
+;;;   name, len, ref     as D.1; ref "BOTTOM" (the sides, offsets up y) or
+;;;                      "LEFT" (the TOP and BOTTOM, offsets along the back edge)
+;;;   hole               "BACK"; the holes stand at (hx0 + hdx off, hy0 + hdy off)
+;;;                      with the axis distance already in hx0 / hy0:
+;;;                      BUL's pocket face is its inside face at x = G, the axis
+;;;                      ax below it toward the outer face: hx0 = G - ax;
+;;;                      BUR's: hx0 = W - G + ax; the TOP's pocket face is its
+;;;                      top face at y = H: hy0 = H - ax; the BOTTOM's: hy0 = ax
+;;;   board, face        the pocket board and the face it is cut from:
+;;;                      "inside" for a side, "outside" for the TOP and BOTTOM
+;;;   endAt, dirIn       the x of the end the channel opens at, and +1 / -1
+;;;   acrossFrom/Dir     the board's y of offset 0 and its direction
+;;;   boardW, boardT     as D.1 (the W of the reflection; the thickness)
+;;; LENGTHS: a side's joint runs the carcass height H; the TOP's and BOTTOM's
+;;; the clear light W - 2G. A WALL UNIT's side stops short of its hanger
+;;; (KIT_WUD_FULL.lsp): the engine shortens the side joint to below the hanger
+;;; holes (their lowest y less the hole's radius, the pocket's half width and
+;;; 5), so a pocket never meets the bracket.
+(defun cabineo-back-joint (name len ref hx0 hy0 hdx hdy board face endAt dirIn aFrom aDir bW bT)
+  (list
+    (cons "name" name) (cons "len" (float len)) (cons "ref" ref) (cons "kind" "back")
+    (cons "side" "BACK") (cons "hx0" (float hx0)) (cons "hy0" (float hy0))
+    (cons "hdx" (float hdx)) (cons "hdy" (float hdy))
+    (cons "board" board) (cons "face" face) (cons "endAt" (float endAt)) (cons "dirIn" (float dirIn))
+    (cons "acrossFrom" (float aFrom)) (cons "acrossDir" (float aDir))
+    (cons "boardW" (float bW)) (cons "boardT" (float bT))))
+
+;;; The four back joints. ax is the screw axis below the pocket face
+;;; (cabineo-axis-from-outside, 5.5 under the owner's skim); sideLen the
+;;; sides' joint length (H, or less under a hanger).
+(defun cabineo-back-table (W D H G ax sideLen / sideW topW)
+  (setq W (float W) D (float D) H (float H) G (float G) ax (float ax))
+  (setq sideW (- D G) topW (- W G G))
+  (list
+    ;;                  name          len      ref      hx0          hy0      hdx  hdy  BOARD    face      endAt  dirIn across  W      T
+    (cabineo-back-joint "BUL-BACK"    sideLen  "BOTTOM" (- G ax)     0.0      0.0  1.0  "BUL"    "inside"  sideW  -1.0  0.0 1.0 sideW  G)
+    (cabineo-back-joint "BUR-BACK"    sideLen  "BOTTOM" (+ (- W G) ax) 0.0    0.0  1.0  "BUR"    "inside"  0.0    1.0   0.0 1.0 sideW  G)
+    (cabineo-back-joint "TOP-BACK"    topW     "LEFT"   G            (- H ax) 1.0  0.0  "TOP"    "outside" 0.0    1.0   0.0 1.0 sideW  G)
+    (cabineo-back-joint "BOTTOM-BACK" topW     "LEFT"   G            ax       1.0  0.0  "BOTTOM" "outside" 0.0    1.0   0.0 1.0 sideW  G)))
+
+;;; A back joint's pockets: ((board along xEnd dirIn y W T joint off) ...),
+;;; the channel along x from xEnd, the across coordinate y = acrossFrom +
+;;; acrossDir * off; and its holes in the BACK: ((BACK "FACE" x y dia depth)).
+(defun cabineo-back-pockets (jt offs / out off)
+  (foreach off offs
+    (setq out (cons (list (cabineo-jget jt "board") "x" (cabineo-jget jt "endAt") (cabineo-jget jt "dirIn")
+                          (+ (cabineo-jget jt "acrossFrom") (* (cabineo-jget jt "acrossDir") off))
+                          (cabineo-jget jt "boardW") (cabineo-jget jt "boardT") (cabineo-jget jt "name") off)
+                    out)))
+  (reverse out))
+(defun cabineo-back-holes (jt offs prof sheet / out off)
+  (foreach off offs
+    (setq out (cons (list "BACK" "FACE"
+                          (+ (cabineo-jget jt "hx0") (* (cabineo-jget jt "hdx") off))
+                          (+ (cabineo-jget jt "hy0") (* (cabineo-jget jt "hdy") off))
+                          (cabineo-path sheet (list "counterpartHole" "diaMm"))
+                          (cabineo-hole-depth prof sheet))
+                    out)))
+  (reverse out))
+;;; A sheet-frame point (s t) of an x-channel pocket in the board's own frame:
+;;; s runs along x from the end, t across along y.
+(defun cabineo-back-board-pt (pk s t)
+  (list (+ (nth 2 pk) (* (nth 3 pk) (float s))) (+ (nth 4 pk) (float t))))
 
 ;;; D.3 THE POCKETS of one joint: one record per offset, on the horizontal
 ;;; board, in ITS OWN (inside) frame:
@@ -898,13 +973,12 @@
 ;;;   centre line G / 2, 1.9 apart on an 18 board, and one system per joint.
 ;;; On the FIX shelf to side joint the biscuit marks and the side's through
 ;;; screws go the same way. THE BACK JOINT goes whole too (the owner,
-;;; 15.10.2026, head of this file: no dog bones under Cabineo): the sides'
-;;; back tenons and their dog bones (the side is a plain D - G x H), the TOP's
-;;; and BOTTOM's back tenons and dog bones (a plain D - G x W - 2G with plain
-;;; ends and a plain back edge), the BACK's sockets and their dia 7.5 holes
-;;; (a plain W x H). The BACK KEEPS drawBACK's dia 3 screw rows (x = G / 2
-;;; and W - G / 2 down the sides, y = G / 2 and H - G / 2 across) and, on a
-;;; wall unit, its hanger cut-outs: that is what holds it. What is NOT a joint
+;;; 15.10.2026, head of this file): the sides' back tenons and their dog bones
+;;; (the side is a plain D - G x H), the TOP's and BOTTOM's back tenons and
+;;; dog bones (a plain D - G x W - 2G with plain ends and a plain back edge),
+;;; the BACK's sockets, their dia 7.5 holes AND drawBACK's dia 3 screw rows
+;;; (a plain W x H); the four back joints of D.2b take their place. A wall
+;;; unit's BACK keeps its hanger cut-outs. What is NOT a joint
 ;;; stays exactly as it is: hinge plate holes, shelf pin ladders, runner
 ;;; holes, the FIX shelf's dia 3 row through the BACK into its back edge, and
 ;;; everything on the fronts.
@@ -1208,15 +1282,30 @@
 ;;;     CABINEO_HOLE_5MM      dia 5, 12 deep (X; 8 deep for Cabineo 8), on the
 ;;;                           axis 5.5 below the pocket face:
 ;;;                           TOP row y 764.5 (= 770 - 5.5), BOTTOM row y 5.5
-;;;   THE BACK JOINT (section F): BUL and BUR lose 3 back tenons and 3 dog
-;;;   bones each (outline 4 points, 34 before); TOP and BOTTOM lose 2 back
-;;;   tenons and 2 dog bones each (outline 4 points, 24 with plain ends and
-;;;   back tenons before); the BACK loses 10 sockets and 20 dia 7.5 holes and
-;;;   keeps its 14 dia 3 screws (4 + 4 down the sides at x 9 and 591, y 50,
-;;;   240, 530, 720; 3 + 3 across at x 68, 300, 532, y 9 and 761). No PUZZLE
-;;;   layer is left on a Cabineo BUD: three Cabineo layers and nothing else
-;;;   of the joint.
-;;;   COUNTS: 12 pockets (36 dia 15 holes), 12 skims, 12 dia 5 holes.
+;;;   THE BACK JOINT (section F, D.2b): BUL and BUR lose 3 back tenons and 3
+;;;   dog bones each (outline 4 points, 34 before); TOP and BOTTOM lose 2 back
+;;;   tenons and 2 dog bones each (outline 4 points); the BACK loses 10
+;;;   sockets, 20 dia 7.5 holes and its 14 dia 3 screws (a plain 600 x 770).
+;;;   In their place, Cabineo (set-out as section B, ax = 5.5):
+;;;     BUL-BACK     L 770, S 670, n 4, g 223.33: offsets up 50, 273.33,
+;;;                  496.67, 720; pockets in BUL's INSIDE face, channel from
+;;;                  x = 540 into -x (three dia 15 at x 536.4, 525.2, 514;
+;;;                  skim x 505.65 .. 540), y the offset; BACK holes at
+;;;                  x = 18 - 5.5 = 12.5, y 50 / 273.33 / 496.67 / 720
+;;;     BUR-BACK     the same offsets; channel from x = 0 into +x (dia 15 at
+;;;                  3.6, 14.8, 26; skim 0 .. 34.35); BACK holes at x 587.5
+;;;     TOP-BACK     L 564, S 464, n 3, g 232: offsets 50, 282, 514 from the
+;;;                  BUL end; pockets in the TOP's OUTSIDE face, channel from
+;;;                  x = 0 (the back) into +x, y the offset; EXPORT x' = 540 - x
+;;;                  (the back end lands at x' 540); BACK holes at x = 18 +
+;;;                  offset = 68 / 300 / 532, y = 770 - 5.5 = 764.5
+;;;     BOTTOM-BACK  as the TOP's; BACK holes at y = 5.5
+;;;   The TOP's end pocket at x 50 (50 from the BACK, y 0 .. 34.35) and its
+;;;   back pocket at y 50 (x 0 .. 34.35) stand in different quadrants of the
+;;;   corner, 7.3 apart at the nearest. No PUZZLE layer is left on a Cabineo
+;;;   BUD: three Cabineo layers and nothing else of the joint.
+;;;   COUNTS: 12 + 14 = 26 pockets (78 dia 15 holes), 26 skims, 26 dia 5
+;;;   holes (12 in the sides, 14 in the BACK); 26 connectors, 26 caps.
 ;;;
 ;;; W 600, D 558, H 770, G 18, no shelf. Profile: variant 12 (X = 12, the
 ;;; side >= 13, the board >= 12), mounting flushCap (pocket 13 deep, cap
@@ -1309,9 +1398,10 @@
 ;;; BOTTOM: the 4 end tenons each and the 4 end dog bones each. Since
 ;;; 15.10.2026 the BACK JOINT goes too (section F, H.0): each side its 3 back
 ;;; tenons and 3 dog bones, TOP and BOTTOM their 2 back tenons and 2 dog bones
-;;; each, the BACK its 10 sockets and 20 dia 7.5 holes; the BACK keeps its 14
-;;; dia 3 screws. (Before 15.10.2026 the back joint stayed the kit's and the
-;;; BACK lost nothing; the owner's "no dog bones" ended that.)
+;;; each, the BACK its 10 sockets, 20 dia 7.5 holes and 14 dia 3 screws; the
+;;; four back joints of D.2b replace them. (Before 15.10.2026 the back joint
+;;; stayed the kit's and the BACK lost nothing; the owner's "no dog bones" and
+;;; "plecy tez na cabineo" ended that.)
 ;;;
 ;;; WITH ONE FIX SHELF (KIT_BUD's one-shelf row: underside 385, 18 thick,
 ;;; front 20 behind the carcass front; shelf 520 deep x 564 wide, drawn from

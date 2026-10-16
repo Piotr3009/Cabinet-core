@@ -1,3 +1,4 @@
+import { pointInPolygon } from '../room.js';
 // ─── THE DUPLICATE-EDGE GUARD (turn 25, CLAUDE.md F1) ───────────────────────
 //
 // ─── WHY THIS FILE EXISTS ───────────────────────────────────────────────────
@@ -269,8 +270,19 @@ function bounds(pts) {
 export function isInterior(loopPts, outlinePts, tolerance = EDGE_TOLERANCE) {
   const o = bounds(outlinePts);
   const b = bounds(loopPts);
-  return b.minX > o.minX + tolerance && b.maxX < o.maxX - tolerance
+  const inBounds = b.minX > o.minX + tolerance && b.maxX < o.maxX - tolerance
     && b.minY > o.minY + tolerance && b.maxY < o.maxY - tolerance;
+  if (!inBounds) return false;
+  // ─── 15.10.2026 (KIT_RECESS.lsp): A BOARD WITH A BUMP ─────────────────────
+  // The bounds were enough while every outline was a rectangle less a corner.
+  // A TOP grown into a recess is a rectangle WITH a bump, and the dog bones of
+  // its back tabs stand outside the board on the straight runs beside the bump,
+  // INSIDE the bounding box: they break the edge there exactly as before, so
+  // every corner of the loop is asked of the polygon before it is called a
+  // cut-out (its centre would not do: a dog bone's centre is the tab it
+  // relieves, which IS board).
+  const poly = outlinePts.map(([x, y]) => ({ x, y }));
+  return loopPts.every(([x, y]) => pointInPolygon({ x, y }, poly));
 }
 
 /**

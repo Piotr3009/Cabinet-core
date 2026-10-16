@@ -91,6 +91,14 @@ export const CNC_LAYERS = [
   { name: 'CABINEO_POCKET_12MM', aci: 49, screen: '#9775fa', label: 'Cabineo pocket (cutter ⌀12)', kind: 'pocket' },
   { name: 'CABINEO_RECESS',      aci: 50, screen: '#d0bfff', label: 'Cabineo cap recess', kind: 'pocket' },
   { name: 'CABINEO_HOLE_5MM',    aci: 51, screen: '#3bc9db', label: 'Cabineo ⌀5 (side)', kind: 'hole' },
+  // ─── 15.10.2026 (KIT_RECESS.lsp D9): THE WINDOW INTO THE RECESS ──────────
+  // The owner: *"front zawsze trzyma sie linii a jak wpada do reces to wtedy
+  // sie wydluza szafka."*  A cabinet partly in a recess grows an extension
+  // behind its BACK, and the BACK loses a WINDOW into it: a THROUGH pocket
+  // (its record states the board's own depth) on a layer of its own, so the
+  // cutter that clears it is matched by name as every other tool here is.
+  // ACI 52: beyond the Cabineo's 51, unused by COMMON's table.
+  { name: 'RECESS_WINDOW',       aci: 52, screen: '#2bb4a0', label: 'Recess window (through)', kind: 'pocket' },
   { name: 'SHELVES_7_5MM',      aci: 6,  screen: '#e599f7', label: 'Shelf pins ⌀7.5', kind: 'hole' },
   { name: 'RUNNERS_3MM',        aci: 5,  screen: '#ff922b', label: 'Runners ⌀3',     kind: 'hole' },
   { name: 'FRONT_HINGES_35MM',  aci: 3,  screen: '#38d9a9', label: 'Hinge cups ⌀35', kind: 'hole' },

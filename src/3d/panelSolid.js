@@ -8,6 +8,9 @@ import { panelPlacement } from '../engine/joinery.js';
 // T75 F7 · the corner notch: the engine states which corner a board lost, and
 // the solid is cut by the same arithmetic (`engine/notch.js cutNotchCorner`).
 import { cutNotchCorner } from '../engine/notch.js';
+// 15.10.2026 · the recess extension (KIT_RECESS.lsp): a BACK may lose a BITE
+// from one edge (the window reaching it), cut by the same arithmetic.
+import { cutEdgeBite } from '../engine/extension.js';
 import { panelRecesses, recessKey } from '../engine/recesses.js';
 import { jpullLayers, jpullKey } from './jpullProfile.js';
 
@@ -271,6 +274,9 @@ export function panelSolids(panel, layers, profile, drills = []) {
   // board's drawn frame). Its dog-bone circle stands in the waste, outside the
   // board, so it is the machine's and is not bored out of the solid.
   const notch = panel?.cnc?.notch && Number(panel.cnc.notch.nw) > 0 ? panel.cnc.notch : null;
+  // 15.10.2026 · the recess extension's BITE out of one edge of the BACK
+  // (`cnc.bite`, the engine's own rectangle in the board's drawn frame).
+  const bite = panel?.cnc?.bite && Number(panel.cnc.bite.x1) > Number(panel.cnc.bite.x0) ? panel.cnc.bite : null;
   const recesses = profile?.appearance?.cuts?.enabled
     ? panelRecesses(panel, notch ? drills.filter((d) => d.kind !== 'notch_dogbone') : drills, {
       thickness,
@@ -292,7 +298,7 @@ export function panelSolids(panel, layers, profile, drills = []) {
   if (!notches.length && !tabs.length && !recesses.length && !slopeCut && !bevel3d && !jpull) {
     // T75 F7 · …and a board whose only feature is the corner a notch took is
     // a shape too (a shelf has no joint of its own to make it one).
-    if (!notch) return NOTHING;
+    if (!notch && !bite) return NOTHING;
   }
 
   const key = [
@@ -313,7 +319,8 @@ export function panelSolids(panel, layers, profile, drills = []) {
     // Two leaves that differ only in where their J runs are two boards.
     jpullKey(jpull),
     // Two boards that differ only in the corner a notch took are two boards.
-    notch ? `notch:${notch.fc}:${notch.nw}:${notch.nh}` : '',
+    notch ? `notch:${notch.fc}:${notch.nw}:${notch.nh}${notch.also ? `+${notch.also.fc}:${notch.also.nw}:${notch.also.nh}` : ''}` : '',
+    bite ? `bite:${bite.x0}:${bite.y0}:${bite.x1}:${bite.y1}` : '',
     recessKey(recesses),
   ].join('|');
 
@@ -340,6 +347,7 @@ export function panelSolids(panel, layers, profile, drills = []) {
     bevel3d,
     jpull,
     notch,
+    bite,
   });
   cache.set(key, built);
   if (cache.size > CACHE_LIMIT) {
@@ -484,7 +492,7 @@ function thicknessOf(panel, placement) {
 
 function build({
   w, h, thickness, radius, notches, tabs = [], recesses = [], placement, box, slopeCut = null,
-  bevel3d = null, jpull = null, notch = null,
+  bevel3d = null, jpull = null, notch = null, bite = null,
 }) {
   const shapeOf = (points) => new THREE.Shape(points.map(([x, y]) => new THREE.Vector2(mm(x), mm(y))));
   const extrudeShape = (shape) => new THREE.ExtrudeGeometry(shape, {
@@ -511,6 +519,8 @@ function build({
     : { w, h, pts: [{ x: 0, y: h }, { x: w, y: h }] });
   // T75 F7 · the corner the notch took, out of the board's own polygon.
   const shaped = notch ? cutNotchCorner(outline, w, h, notch) : outline;
+  // 15.10.2026 · ...and the bite the recess window took out of one edge of it.
+  const bitten = cutEdgeBite(shaped, w, h, bite);
 
   // ─── TURN 20 (CLAUDE.md F8.1): THE MATERIAL IS ACTUALLY GONE ─────────────
   //
@@ -520,7 +530,7 @@ function build({
   // 11. A BLIND feature then gets its floor back as a separate cap at the true
   // depth (below), which is what makes 2 mm read as 2 mm rather than as a slot
   // straight through an 18 mm board.
-  const board = shapeOf(shaped);
+  const board = shapeOf(bitten);
   for (const f of recesses) board.holes.push(recessPath(f));
 
   // ─── TURN 57 (CLAUDE.md F3): THE J-PULL, AS THREE SLABS ──────────────────

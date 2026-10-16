@@ -25,7 +25,8 @@ const decorated = (type, style, over = {}) => computeCabinet({
 }, P);
 
 test('F1 · cabinet.js: the L\'s two leaves ARE decorated, and door B still opens first', () => {
-  const r = decorated('CORNER_L_BASE', 'G', { unit_num: 'CL01', doors: true });
+  // 15.10.2026: a new L is a bi-fold pair; this is the PAIR's word (corner_doors null).
+  const r = decorated('CORNER_L_BASE', 'G', { unit_num: 'CL01', doors: true, corner_doors: null });
   const a = r.panels.find((p) => p.id === 'CL01-A-F');
   const b = r.panels.find((p) => p.id === 'CL01-B-F');
   assert.ok(a && b, 'the L cut its two leaves');

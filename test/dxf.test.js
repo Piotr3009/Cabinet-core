@@ -336,6 +336,11 @@ test('layer table is a machine contract: names and ACI colours are the LISP ones
     CABINEO_POCKET_12MM: 49,
     CABINEO_RECESS: 50,
     CABINEO_HOLE_5MM: 51,
+    // ─── AMENDED 15.10.2026 (KIT_RECESS.lsp D9): ONE NEW NAME ─────────────
+    // The window through the BACK into a recess extension, a through pocket on
+    // its own layer. ACI 52 sits beyond the Cabineo's 51 and is unused by the
+    // LISP's own table.
+    RECESS_WINDOW: 52,
   };
   for (const [name, aci] of Object.entries(expected)) {
     assert.equal(cncLayer(name).aci, aci, `${name} ACI colour`);

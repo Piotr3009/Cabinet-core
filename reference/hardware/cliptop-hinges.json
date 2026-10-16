@@ -4,6 +4,10 @@
  "rules": {
   "hinge_by_front_thickness": [
    {
+    "max": 24,
+    "angle": 155
+   },
+   {
     "max": 25,
     "angle": 110
    },
@@ -12,6 +16,7 @@
     "angle": 95
    }
   ],
+  "hinge_by_front_thickness_note": "The owner, 15.10.2026: standardowo zawiasy 155 stopni (the CLIP top BLUMOTION 155 zero-protrusion, 71B7550 nickel / 71B7590 onyx, is the standard hinge). Blum gives the 155 a door thickness up to 24 mm (publications.blum.com 2024 catalogue p. 84/85; dealers: max door thickness 24, max overlay 19), so the rung stops at 24: the 25 mm shaker front keeps the 110 (71B3550 / 71B3590) and fronts to 32 the 95 (71B9550 / 71B9590). Before 15.10.2026 the ladder was 110 to 25 and 95 to 32. Owner to confirm the 155 on a 25 mm front (a trial application).",
   "hinge_wardrobe_inner_drawer": 155,
   "plate_default": "plate_knockin5",
   "plate_option": "plate_screw3",

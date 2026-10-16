@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
 // ─── THE ISLAND, PLANNED FROM ABOVE (owner, 14.10.2026) ─────────────────────
 //
 // The owner, 14.10.2026: *"przy dodaniu wyspy chciałbym żeby był widok z
@@ -6,13 +14,29 @@
 // dopiero jak się wstawi to wtedy pokaże się cała wyspa."*
 //
 // A PLAN is a draft that nothing in the project knows about: the island's
-// core (T75's record, `{cx, cy, w, d, rotation}`) and a list of cabinets on
-// its four faces, each a width and a type and nothing more. This module
-// answers the plan's questions as arithmetic on the room: where the cabinets
-// stand, how far each face is from whatever is in front of it. It computes no
-// cabinet and draws nothing; the store inserts the plan (`insertIslandPlan`)
-// through the same `setRoom` and `addUnit` every island and every cabinet
-// already go through, so nothing is cut differently for having been planned.
+// OUTER FOOTPRINT (`{cx, cy, w, d, rotation}`, the rectangle drawn on the
+// floor: the cabinets' fronts) and a list of cabinets on its four faces, each
+// a width and a type and nothing more. This module answers the plan's
+// questions as arithmetic on the room: where the cabinets stand, how far each
+// face is from whatever is in front of it. It computes no cabinet and draws
+// nothing; the store inserts the plan (`insertIslandPlan`) through the same
+// `setRoom` and `addUnit` every island and every cabinet already go through,
+// so nothing is cut differently for having been planned.
+//
+// ─── 15.10.2026: THE RECTANGLE IS THE ISLAND, THE CABINETS STAND INSIDE IT ──
+//
+// The owner: *"jak mam plan wyspy to nie dziala, wstawia mi szafki na zewnatrz
+// wyspy zamiast w srodku, to jest za trudne, powinno byc mega latwe."*  The
+// 14.10 plan held T75's CORE (the spine the cabinets stand against, outside
+// it), so a 1800 x 900 plan grew into a 1800 x 2036 island once two rows were
+// on it. Now the plan's rectangle is what the eye sees on the floor, and the
+// core is DERIVED from it (`planCore`): each face's cabinets take a BAND of
+// the rectangle (the wall gap plus their deepest cabinet) from that edge
+// inward, and the core is what is left in the middle. The faces the cabinets
+// stand on are the core's (T75's `islandFaces`, untouched), so the store
+// inserts exactly what it always inserted; only the numbers that reach it
+// are the core's. A rectangle too small for its cabinets (the bands meet, or
+// leave less than CORE_MIN_MM of core) is refused in words, never clipped.
 
 import {
   roomWalls, roomIslands, islandFaces, islandCorners, boxCorners, roomBoxes, realWalls,
@@ -26,16 +50,80 @@ import { newIsland } from './island.js';
 export const PLAN_FACES = ISLAND_FACES;
 /** The planned island's own id while it is only a draft. */
 const DRAFT_ISLAND_ID = 'island_draft';
+/** The least core a plan may leave between its bands, on either axis. */
+export const CORE_MIN_MM = 50;
 
 const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback);
 
-/** A face's record (start, along, inward, width) for the draft. */
-export function planFaces(draft) {
+/**
+ * The band each face's cabinets take of the rectangle, from that edge inward:
+ * the wall gap plus the deepest cabinet on the face; 0 where the face is bare.
+ */
+export function planBands(draft, profile) {
+  const gap = wallGapOf({ params: {} }, profile);
+  const out = Object.fromEntries(PLAN_FACES.map((f) => [f, 0]));
+  for (const cab of draft?.cabs || []) {
+    if (!(cab.face in out)) continue;
+    out[cab.face] = Math.max(out[cab.face], gap + planCabDepth(cab, profile));
+  }
+  return out;
+}
+
+/**
+ * THE CORE the plan's rectangle leaves: T75's island record, what the store
+ * inserts. In the island's own frame (u along w, v along d; A at v = -d/2, B
+ * at +d/2, E1 at u = -w/2, E2 at +w/2, `islandCorners`) the core spans
+ * [-w/2 + bandE1, w/2 - bandE2] by [-d/2 + bandA, d/2 - bandB]. Its `w` and
+ * `d` may come out small or negative: `planCoreRefusal` says so in words.
+ */
+export function planCore(draft, profile) {
+  const b = planBands(draft, profile);
+  const w = num(draft.w, 0) - b.E1 - b.E2;
+  const d = num(draft.d, 0) - b.A - b.B;
+  const uc = (b.E1 - b.E2) / 2;
+  const vc = (b.A - b.B) / 2;
+  const rad = (num(draft.rotation, 0) * Math.PI) / 180;
+  const cos = Math.cos(rad); const sin = Math.sin(rad);
+  return {
+    id: draft.islandId || DRAFT_ISLAND_ID,
+    cx: Math.round((num(draft.cx, 0) + uc * cos - vc * sin) * 10) / 10,
+    cy: Math.round((num(draft.cy, 0) + uc * sin + vc * cos) * 10) / 10,
+    w: Math.round(w * 10) / 10,
+    d: Math.round(d * 10) / 10,
+    rotation: num(draft.rotation, 0),
+    bands: b,
+  };
+}
+
+/** The sentence a rectangle too small for its cabinets is refused with, or null. */
+export function planCoreRefusal(draft, profile) {
+  const core = planCore(draft, profile);
+  const needW = num(draft.w, 0) - core.w + CORE_MIN_MM;
+  const needD = num(draft.d, 0) - core.d + CORE_MIN_MM;
+  if (core.w < CORE_MIN_MM && core.d < CORE_MIN_MM) {
+    return `The island is ${Math.round(num(draft.w, 0))} x ${Math.round(num(draft.d, 0))} mm; its cabinets need at least ${Math.ceil(needW)} x ${Math.ceil(needD)} mm. Make it bigger, or take a face off.`;
+  }
+  if (core.w < CORE_MIN_MM) {
+    return `The island is ${Math.round(num(draft.w, 0))} mm long; the cabinets on its ends need at least ${Math.ceil(needW)} mm. Make it longer, or take an end off.`;
+  }
+  if (core.d < CORE_MIN_MM) {
+    return `The island is ${Math.round(num(draft.d, 0))} mm deep; the cabinets on faces A and B need at least ${Math.ceil(needD)} mm. Make it deeper, or take a face off.`;
+  }
+  return null;
+}
+
+/** THE OUTER rectangle's faces (what the eye sees on the floor, what the clearances are measured from). */
+export function planOuterFaces(draft) {
   return islandFaces({ ...draft, id: draft.islandId || DRAFT_ISLAND_ID });
 }
 
-function planFace(draft, face) {
-  return planFaces(draft).find((f) => f.face === face) || null;
+/** The CORE's faces: the records the cabinets stand on (T75's `islandFaces`, untouched). */
+function planFaces(draft, profile) {
+  return islandFaces(planCore(draft, profile));
+}
+
+function planFace(draft, face, profile) {
+  return planFaces(draft, profile).find((f) => f.face === face) || null;
 }
 
 /** A cabinet's depth on the plan: its own, else the type's default. */
@@ -50,7 +138,7 @@ function planCabDepth(cab, profile) {
  * per cabinet with its `x` along the face and its plan footprint.
  */
 export function planCabinets(draft, profile) {
-  const faces = planFaces(draft);
+  const faces = planFaces(draft, profile);
   const gap = wallGapOf({ params: {} }, profile);
   const used = Object.fromEntries(PLAN_FACES.map((f) => [f, 0]));
   return (draft.cabs || []).map((cab) => {
@@ -62,14 +150,17 @@ export function planCabinets(draft, profile) {
     return {
       cab, face: face.face, x, width, depth,
       poly: unitFootprint({ wall: face, x, width, depth, backInset: gap }),
+      // 15.10.2026 (evening): the face's frame, so the view can draw the FRONT
+      // edge (the two corners farthest from the core, `poly[2]` and `poly[3]`).
+      inward: face.inward, along: face.along,
       overhang: Math.max(0, used[face.face] - face.width),
     };
   });
 }
 
-/** How much of a face is still free, in mm (negative when the plan overfills it). */
-export function planFaceFree(draft, face) {
-  const f = planFace(draft, face);
+/** How much of a face is still free, in mm (negative when the plan overfills it): the core's face, which the other faces' bands shorten. */
+export function planFaceFree(draft, face, profile) {
+  const f = planFace(draft, face, profile);
   if (!f) return 0;
   const used = (draft.cabs || []).filter((c) => c.face === face).reduce((s, c) => s + num(c.w, 600), 0);
   return Math.round(f.width - used);
@@ -134,13 +225,11 @@ function planObstacles({ room, units = [], elements = [], draft, profile }) {
  * thing in front of it, in millimetres, with the segment to draw it on.
  */
 export function planClearances({ room, units = [], elements = [], draft, profile }) {
-  const faces = planFaces(draft);
-  const cabs = planCabinets(draft, profile);
-  const gap = wallGapOf({ params: {} }, profile);
+  // Since 15.10.2026 the rectangle IS the outer edge: the clearances are measured from it, cabinets or not.
+  const faces = planOuterFaces(draft);
   const obstacles = planObstacles({ room, units, elements, draft, profile });
   return faces.map((f) => {
-    const mine = cabs.filter((c) => c.face === f.face);
-    const reach = mine.length ? Math.max(...mine.map((c) => gap + c.depth)) : 0;
+    const reach = 0;
     const n = f.inward;
     const back = { x: -n.x, y: -n.y };
     let best = null;
@@ -206,7 +295,19 @@ export function islandPlanDraft({ room, units = [], profile, islandId = null }) 
         key: u.id, unitId: u.id, face: u.position.face, w: num(u.params?.width, 600),
         depth: num(u.params?.depth, 0) || null, type: u.type, label: u.params?.unit_num || null,
       }));
-    return { islandId, cx: island.cx, cy: island.cy, w: island.w, d: island.d, rotation: island.rotation, cabs };
+    // The island's record is its CORE; the plan's rectangle is the core plus
+    // the bands its cabinets take (the inverse of `planCore`).
+    const b = planBands({ cabs }, profile);
+    const rad = ((island.rotation || 0) * Math.PI) / 180;
+    const cos = Math.cos(rad); const sin = Math.sin(rad);
+    const uc = (b.E1 - b.E2) / 2;
+    const vc = (b.A - b.B) / 2;
+    return {
+      islandId,
+      cx: Math.round((island.cx - (uc * cos - vc * sin)) * 10) / 10,
+      cy: Math.round((island.cy - (uc * sin + vc * cos)) * 10) / 10,
+      w: island.w + b.E1 + b.E2, d: island.d + b.A + b.B, rotation: island.rotation, cabs,
+    };
   }
   const fresh = newIsland(room, profile, DRAFT_ISLAND_ID);
   return { islandId: null, cx: fresh.cx, cy: fresh.cy, w: fresh.w, d: fresh.d, rotation: fresh.rotation, cabs: [] };
@@ -215,4 +316,15 @@ export function islandPlanDraft({ room, units = [], profile, islandId = null }) 
 /** A new plan cabinet, keyed so the view can tell them apart. */
 export function planCabinet(face, type = 'BUD', w = 600) {
   return { key: `plan_${Math.random().toString(36).slice(2, 9)}`, unitId: null, face, w, depth: null, type, label: null };
+}
+
+/**
+ * 15.10.2026 (evening), the owner: *"daj mozliwosc przekrecania szafkami"*.
+ * The island has four faces, so turning a cabinet is moving it to the NEXT
+ * face clockwise (seen from above: A, E2, B, E1); it joins that face's row
+ * at the end of the cabinets listed before it.
+ */
+export const NEXT_FACE_CLOCKWISE = Object.freeze({ A: 'E2', E2: 'B', B: 'E1', E1: 'A' });
+export function turnCabinet(cab) {
+  return { ...cab, face: NEXT_FACE_CLOCKWISE[cab?.face] || 'A' };
 }

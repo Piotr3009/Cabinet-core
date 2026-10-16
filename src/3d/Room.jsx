@@ -1,4 +1,4 @@
-import { wallElements as wallElementList } from '../lib/wallElements.js';
+import { recessBand, wallElements as wallElementList } from '../lib/wallElements.js';
 import { ceilingAt, ceilingPolyline } from '../lib/slopeLine.js';
 import { useProjectStore } from '../stores/projectStore.js';
 import { useCallback, useMemo, useRef } from 'react';
@@ -163,16 +163,23 @@ function Wall({
     // full height of the wall over its own stretch. The BACK of the alcove and
     // its two reveals are drawn below; without the hole they would be three
     // boards standing behind a wall nobody can see through.
+    // ─── 15.10.2026 (the owner: "na wysokosci 1000 mm ... dowolny") ────────
+    // ...and since this evening an alcove has a BAND: a bottom and a top off
+    // the floor (lib/wallElements.js recessBand), the floor and the ceiling
+    // unless the owner typed them. The hole spans the band; its head and sill
+    // are drawn below with the back and the reveals.
     for (const el of planElements) {
       if (el.kind !== 'recess') continue;
       const x1 = mm(Math.max(0, el.x_mm));
       const x2 = mm(Math.min(wall.width, el.x_mm + el.width));
       if (!(x2 > x1)) continue;
+      const [lo, hi] = recessBand(el, height);
+      if (!(hi > lo)) continue;
       const hole = new THREE.Path();
-      hole.moveTo(x1, 0);
-      hole.lineTo(x2, 0);
-      hole.lineTo(x2, mm(height));
-      hole.lineTo(x1, mm(height));
+      hole.moveTo(x1, mm(lo));
+      hole.lineTo(x2, mm(lo));
+      hole.lineTo(x2, mm(hi));
+      hole.lineTo(x1, mm(hi));
       hole.closePath();
       shape.holes.push(hole);
     }
@@ -295,7 +302,10 @@ function Wall({
         {planElements.map((el) => {
           const w = mm(Math.max(0, el.width));
           const d = mm(Math.max(0, el.depth));
-          const h = mm(height);
+          // 15.10.2026: a recess spans its BAND; a chimney the whole height.
+          const [bandLo, bandHi] = el.kind === 'recess' ? recessBand(el, height) : [0, height];
+          const h = mm(el.kind === 'recess' ? bandHi - bandLo : height);
+          const cy = mm(el.kind === 'recess' ? (bandLo + bandHi) / 2 : height / 2);
           const cx = mm(el.x_mm + el.width / 2);
           const colour = tone(profile, 'wall', COLORS.wall);
           const glow = bounce(tone(profile, 'wall', COLORS.wall), profile, 'wall');
@@ -322,14 +332,14 @@ function Wall({
           // there and an alcove is cut between them.
           return (
             <group key={el.id} userData={{ ccWallPlan: el.id }}>
-              <mesh position={[cx, h / 2, -d]} receiveShadow raycast={null}>
+              <mesh position={[cx, cy, -d]} receiveShadow raycast={null}>
                 <planeGeometry args={[w, h]} />
                 <meshLambertMaterial color={colour} emissive={glow} side={THREE.DoubleSide} allowOverride={false} />
               </mesh>
               {[-1, 1].map((sideSign) => (
                 <mesh
                   key={sideSign}
-                  position={[cx + (sideSign * w) / 2, h / 2, -d / 2]}
+                  position={[cx + (sideSign * w) / 2, cy, -d / 2]}
                   rotation={[0, Math.PI / 2, 0]}
                   receiveShadow
                   raycast={null}
@@ -338,8 +348,17 @@ function Wall({
                   <meshLambertMaterial color={colour} emissive={glow} side={THREE.DoubleSide} allowOverride={false} />
                 </mesh>
               ))}
+              {/* 15.10.2026: the alcove's head and sill, where its band stops
+                  short of the ceiling and the floor (nothing is needed where it
+                  does not: the ceiling and the floor are already there). */}
+              {[[bandLo > 0, mm(bandLo)], [bandHi < height, mm(bandHi)]].filter(([on]) => on).map(([, y]) => (
+                <mesh key={y} position={[cx, y, -d / 2]} rotation={[Math.PI / 2, 0, 0]} receiveShadow raycast={null}>
+                  <planeGeometry args={[w, d]} />
+                  <meshLambertMaterial color={colour} emissive={glow} side={THREE.DoubleSide} allowOverride={false} />
+                </mesh>
+              ))}
               {/* …and the arris where the alcove meets the wall face. */}
-              <lineSegments position={[cx, h / 2, 0.001]} raycast={null}>
+              <lineSegments position={[cx, cy, 0.001]} raycast={null}>
                 <edgesGeometry args={[new THREE.PlaneGeometry(w, h)]} />
                 <lineBasicMaterial color="#8a8a90" allowOverride={false} />
               </lineSegments>

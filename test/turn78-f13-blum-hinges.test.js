@@ -94,7 +94,9 @@ test('F13 · parseHingeCatalogue reads the new file and the rules are the old fi
   assert.ok(n && o);
   assert.equal(n.system, o.system, 'the same system id, so a swap of the import changes no test of turn 19');
   assert.deepEqual(n.rules.byThickness, o.rules.byThickness);
-  assert.deepEqual(n.rules.byThickness.map((r) => [r.max, r.angle]), [[25, 110], [32, 95]]);
+  // 15.10.2026, the owner: *"standardowo zawiasy 155 degree"*: the 155 to 24
+  // (Blum's door thickness for the zero-protrusion hinge), the 110 at 25, the 95 to 32.
+  assert.deepEqual(n.rules.byThickness.map((r) => [r.max, r.angle]), [[24, 155], [25, 110], [32, 95]]);
   assert.equal(n.rules.wardrobeInnerDrawer, 155);
   assert.equal(n.rules.plateDefault, o.rules.plateDefault);
   assert.equal(n.rules.plateOption, o.rules.plateOption);
@@ -125,7 +127,8 @@ test('F13 · hingeAngleFor answers the same for every front with either file (no
     const a = answers(OLD);
     const b = answers(NEW);
     assert.deepEqual(b, a);
-    assert.deepEqual(a.slice(0, 6), [110, 110, 110, 110, 110, 110]);
+    // THICKNESSES: 12, 16, 18, 19, 22 take the 155 (15.10.2026), 25 the 110, 25.5 to 32 the 95.
+    assert.deepEqual(a.slice(0, 6), [155, 155, 155, 155, 155, 110]);
     assert.deepEqual(a.slice(6, 10), [95, 95, 95, 95]);
     assert.deepEqual(a.slice(10, 14), [null, null, 155, null]);
   } finally {
@@ -212,7 +215,7 @@ test('F13 · the door chooses a FAMILY, standard by default; the wide ladder is 
   assert.equal(wide.confirmed, false);
   assert.match(wide.rationale, /T78 proposed, owner to confirm/);
   assert.match(wide.rationale, /p\. 89/);
-  assert.deepEqual(NEW.rules.opening_angles, { standard: [110, 95], wide: [155, 170], bifold: [60] });
+  assert.deepEqual(NEW.rules.opening_angles, { standard: [155, 110, 95], wide: [155, 170], bifold: [60] });
   // Company defaults never carry an angle: the file holds no key that is an angle choice.
   assert.ok(!('hinge_angle' in NEW.rules) && !('angle_default' in NEW.rules));
 });

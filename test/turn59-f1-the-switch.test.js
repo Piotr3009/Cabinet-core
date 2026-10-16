@@ -82,6 +82,18 @@ const EXEMPT = {
   'src/components/TopBar.jsx':
     'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*'
     + ' T78 F21 · the Output menu\'s Spraying placeholder becomes a live entry (onOpenSpraying): one page on the Production Core pattern, the spray schedule by colour, the cards and the paint order. *"cale sprayowanie jako osobne menu Cabinet Core."*',
+  // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
+  // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
+  // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
+  // ... na wysokosci 1000 mm ... dowolny"*. Licensed with his words, re-frozen
+  // at the new hash below; the engine's half is KIT_RECESS.lsp.
+  'src/components/WallElevationModal.jsx':
+    'T78 F7 chat-fix 15.10.2026 · the FRONT view draws the top view\'s recess and chimney where they stand (a recess as its BAND, '
+    + 'lib/wallElements.js recessBand), lists them, drags them sideways only and double-clicks them open; the element window of a '
+    + 'recess gains Bottom and Top (mm off the floor; 0 and the wall height are the floor and the ceiling), written as bottom_mm / '
+    + 'top_mm through onPlan; the recess sentence says the new law (deeper inside, an extension partly in). *"na setup room jak '
+    + 'widze sciane od frontu nie top tylko front to nie widze kresek, gdzie jest komin i gdzie wneka"*; *"reces pionowy ... czy '
+    + 'mozemy na niego spojrzec od czola i na przyklad zrobic go na wysokosc ... 1000 mm"*; *"4 - dowolny"*.',
   'src/components/WarehouseModal.jsx':
     'T75 F21 · the three buttons read Import from JoineryCore (CSV), Export project list for JoineryCore (CSV) and Export for JoineryCore (CSV); the project list holds the rows THIS project\'s stock carries (projectUuids), not every uuid in the warehouse (the probe exported 3 of 3 for a project naming none). *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*.'
     + ' T78 F21 · Database > Materials gains the Paints department: the warehouse\'s twelve columns plus the paint fields (topcoat | primer, sheen, coverage m2 per litre per coat, coats, tin sizes) on the card; litres and tins are the engine\'s arithmetic, never typed. *"cale sprayowanie jako osobne menu Cabinet Core."*',
@@ -349,7 +361,8 @@ const FROZEN = {
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
-  'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
+  // 15.10.2026 (the evening) re-frozen at the new hash; `EXEMPT` above carries the owner's words.
+  'src/components/WallElevationModal.jsx': '3d7ddd431bf11e925962317d943feb247c394fe709799a260ec96c88b4bdb6fc',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/WarehouseModal.jsx': 'ec5b747982b65fd246016f43484247f83d64cac86678f750b63147f84572e5ea',
   // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -567,6 +580,8 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets shelf"*.
     'src/components/TopBar.jsx',
     'src/components/UnitSizeModal.jsx',
+    // 15.10.2026 (the evening) · *"nie widze kresek, gdzie jest komin i gdzie wneka"*: the recess and the chimney seen from the front, the recess's band.
+    'src/components/WallElevationModal.jsx',
     'src/components/WarehouseModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/components/WizardSettings.jsx',

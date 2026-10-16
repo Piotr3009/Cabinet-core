@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Skylon Development Ltd. All rights reserved.
+ *
+ * This file is proprietary and confidential. Unauthorised copying,
+ * modification, distribution or use of this file, in whole or in part,
+ * by any means including automated tools and AI systems, is strictly
+ * prohibited without prior written permission from Skylon Development Ltd.
+ */
 // ─── THE ISLAND PLAN: THE ROOM FROM ABOVE, THE ISLAND AS A DRAFT ────────────
 //
 // The owner, 14.10.2026: *"przy dodaniu wyspy chciałbym żeby był widok z
@@ -27,10 +35,11 @@ import {
   normalizeRoom, realWalls, roomBoxes, boxCorners, roomIslands, islandCorners, roomWalls,
 } from '../engine/room.js';
 import { unitFootprint } from '../engine/collision.js';
-import { getUnitType, UNIT_TYPES } from '../engine/types.js';
+import { defaultParamsFor, getUnitType, UNIT_TYPES } from '../engine/types.js';
 import { wallGapOf } from '../engine/runs.js';
 import {
-  PLAN_FACES, planFaces, planCabinets, planFaceFree, planClearances, clearanceLevel, planCabinet,
+  PLAN_FACES, planOuterFaces, planCabinets, planFaceFree, planClearances, clearanceLevel, planCabinet, planCore, planCoreRefusal,
+  turnCabinet,
 } from '../engine/islandPlan.js';
 
 const SNAP_MM = 10;
@@ -40,6 +49,45 @@ const PLAN_TYPES = ['BUD', 'BUDR', 'BUDR2', 'SINK', 'BUDTALL'];
 
 const round = (v, step = SNAP_MM) => Math.round(v / step) * step;
 const fmt = (mm) => (mm == null ? '?' : `${Math.round(mm)}`);
+
+/**
+ * ─── 15.10.2026 (evening) · A NUMBER FIELD THE HAND CAN CLEAR ──────────────
+ * The owner: *"liczby przy ustawianiu island nie moge wykasowac istniejacych i
+ * nie moge zmienic."*  The fields were controlled by the plan's own number and
+ * refused anything under their minimum on every keystroke, so clearing the
+ * box to type a new number put the old one straight back. This field holds
+ * what is TYPED and hands the plan a number on Enter or on leaving the box;
+ * Escape puts the plan's number back. A number under `min` is not taken.
+ */
+function MmField({ value, min = 50, onCommit, attrs = {}, className = 'cc-input w-24 text-right font-mono', step = 10 }) {
+  const [draft, setDraft] = useState(String(value ?? ''));
+  const [editing, setEditing] = useState(false);
+  useEffect(() => { if (!editing) setDraft(String(value ?? '')); }, [value, editing]);
+  const commit = () => {
+    setEditing(false);
+    const n = Number(draft);
+    if (Number.isFinite(n) && n >= min && Math.round(n) !== Number(value)) onCommit(Math.round(n));
+    else setDraft(String(value ?? ''));
+  };
+  return (
+    <input
+      className={className}
+      type="number"
+      step={step}
+      min={min}
+      value={draft}
+      {...attrs}
+      onFocus={() => setEditing(true)}
+      onClick={(e) => e.stopPropagation()}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur(); }
+        if (e.key === 'Escape') { setDraft(String(value ?? '')); setEditing(false); e.currentTarget.blur(); }
+      }}
+    />
+  );
+}
 
 export default function IslandPlan() {
   const plan = useUiStore((s) => s.islandPlan);
@@ -87,12 +135,17 @@ export default function IslandPlan() {
       };
     }).filter(Boolean), [units, walls, plan, profile]);
 
-  const faces = useMemo(() => (plan ? planFaces(plan) : []), [plan]);
+  // 15.10.2026: the rectangle on the floor is the island's OUTER footprint; the
+  // cabinets stand inside it and the CORE is what they leave (engine/islandPlan.js).
+  const faces = useMemo(() => (plan ? planOuterFaces(plan) : []), [plan]);
   const cabs = useMemo(() => (plan ? planCabinets(plan, profile) : []), [plan, profile]);
   const clearances = useMemo(() => (plan ? planClearances({
     room, units, elements: wallSlopes || [], draft: plan, profile,
   }) : []), [room, units, wallSlopes, plan, profile]);
-  const core = useMemo(() => (plan ? islandCorners({ ...plan, id: plan.islandId || 'draft' }) : []), [plan]);
+  const outer = useMemo(() => (plan ? islandCorners({ ...plan, id: plan.islandId || 'draft' }) : []), [plan]);
+  const core = useMemo(() => (plan ? planCore(plan, profile) : null), [plan, profile]);
+  const coreCorners = useMemo(() => (core && core.w > 0 && core.d > 0 ? islandCorners(core) : []), [core]);
+  const tooSmall = plan ? planCoreRefusal(plan, profile) : null;
 
   const toMm = useCallback((e) => {
     const svg = svgRef.current; if (!svg) return null;
@@ -126,20 +179,27 @@ export default function IslandPlan() {
 
   if (!plan) return null;
 
-  const setNum = (key, v) => {
-    const n = Number(v);
-    if (Number.isFinite(n) && n >= 50) setPlan({ [key]: Math.round(n) });
-  };
+  const setNum = (key, n) => setPlan({ [key]: n });
+  /** The depth a plan cabinet stands at: its own, else its type's default. */
+  const depthOf = (c) => (Number(c.depth) > 0 ? Number(c.depth) : (Number(defaultParamsFor(c.type, profile)?.depth) || 560));
   const addCab = () => {
-    const cab = planCabinet(face, type, 600);
+    // 15.10.2026: the new cabinet takes what the face has free, up to 600, so a
+    // click never overfills a face; a face with less than 150 free says so.
+    const free = planFaceFree(plan, face, profile);
+    if (free < 150) { setSaid(`Face ${face} has ${Math.max(0, free)} mm free: take a cabinet off it, or make the island bigger.`); return; }
+    const cab = planCabinet(face, type, Math.min(600, Math.floor(free / 10) * 10));
+    setSaid('');
     setPlan({ cabs: [...plan.cabs, cab] });
     setSel(cab.key);
   };
   const changeCab = (key, patch) => setPlan({ cabs: plan.cabs.map((c) => (c.key === key ? { ...c, ...patch } : c)) });
   const removeCab = (key) => { setPlan({ cabs: plan.cabs.filter((c) => c.key !== key) }); if (sel === key) setSel(null); };
+  // 15.10.2026 (evening): turn a cabinet onto the next face clockwise (engine/islandPlan.js turnCabinet).
+  const turnCab = (key) => setPlan({ cabs: plan.cabs.map((c) => (c.key === key ? turnCabinet(c) : c)) });
   const rotate = () => setPlan({ rotation: ((Number(plan.rotation) || 0) + 90) % 360 });
-  const overfull = PLAN_FACES.filter((f) => planFaceFree(plan, f) < 0);
+  const overfull = PLAN_FACES.filter((f) => planFaceFree(plan, f, profile) < 0);
   const insert = () => {
+    if (tooSmall) { setSaid(tooSmall); return; }
     if (overfull.length) { setSaid(`Face ${overfull.join(', ')} is overfilled: shorten a cabinet or lengthen the island.`); return; }
     const verdict = insertIslandPlan(plan);
     if (!verdict.ok) { setSaid(verdict.message); return; }
@@ -219,22 +279,34 @@ export default function IslandPlan() {
                   stroke={sel === row.cab.key ? '#C8A678' : '#a8a8a2'}
                   strokeWidth={sel === row.cab.key ? 2 : 1}
                 />
+                {/* 15.10.2026 (evening), the owner: *"zeby bylo wiadomo gdzie jest front, inny kolor krawedzi"*:
+                    the FRONT edge (the two corners farthest from the core) in the house gold, thick. */}
+                {/* The FRONT edge: a path, not a line (R7, test/turn23: a `line` in
+                    src/3d could be a scene object, and a data-* on one throws). */}
+                <path
+                  data-plan-cab-front={row.cab.key}
+                  d={`M${X(row.poly[2].x)} ${Y(row.poly[2].y)} L${X(row.poly[3].x)} ${Y(row.poly[3].y)}`}
+                  fill="none" stroke="#E0B35A" strokeWidth="4" strokeLinecap="butt"
+                />
                 <text x={X((row.poly[0].x + row.poly[2].x) / 2)} y={Y((row.poly[0].y + row.poly[2].y) / 2)} fontSize="9" fontFamily="ui-monospace, monospace" fill="#f2f2f0" textAnchor="middle" dominantBaseline="middle">
-                  {row.cab.label ? `${row.cab.label} · ${row.width}` : `${row.width}`}
+                  {row.cab.label ? `${row.cab.label} · ${row.width}` : `${row.width} × ${row.depth}`}
                 </text>
               </g>
             ))}
             <polygon
               data-plan-core="1"
-              points={pts(core)}
-              fill="rgba(170,142,104,0.18)"
-              stroke="#C8A678"
+              points={pts(outer)}
+              fill="rgba(170,142,104,0.10)"
+              stroke={tooSmall ? INK.bad : '#C8A678'}
               strokeWidth="2"
               strokeDasharray="8 5"
               style={{ cursor: 'move' }}
               onPointerDown={onCoreDown}
             />
-            <text x={X(plan.cx)} y={Y(plan.cy)} fontSize="11" fontFamily="ui-monospace, monospace" fill="#C8A678" textAnchor="middle" dominantBaseline="middle">
+            {coreCorners.length === 4 && (
+              <polygon data-plan-core-left="1" points={pts(coreCorners)} fill="rgba(170,142,104,0.16)" stroke="#C8A678" strokeWidth="1" strokeDasharray="3 3" pointerEvents="none" />
+            )}
+            <text x={X(plan.cx)} y={Y(plan.cy)} fontSize="11" fontFamily="ui-monospace, monospace" fill="#C8A678" textAnchor="middle" dominantBaseline="middle" pointerEvents="none">
               {`${plan.w} × ${plan.d}`}
             </text>
             {faces.map((f) => {
@@ -249,12 +321,19 @@ export default function IslandPlan() {
         <section className="flex flex-col gap-2">
           <span className="cc-label">Island size (mm)</span>
           <label className="flex items-center justify-between gap-2"><span>Length (faces A, B)</span>
-            <input className="cc-input w-24 text-right font-mono" type="number" step="50" min="50" value={plan.w} data-plan-w="1" onChange={(e) => setNum('w', e.target.value)} />
+            <MmField value={plan.w} min={50} step={50} attrs={{ 'data-plan-w': '1' }} onCommit={(n) => setNum('w', n)} />
           </label>
           <label className="flex items-center justify-between gap-2"><span>Depth (faces E1, E2)</span>
-            <input className="cc-input w-24 text-right font-mono" type="number" step="50" min="50" value={plan.d} data-plan-d="1" onChange={(e) => setNum('d', e.target.value)} />
+            <MmField value={plan.d} min={50} step={50} attrs={{ 'data-plan-d': '1' }} onCommit={(n) => setNum('d', n)} />
           </label>
+          <span className="text-ink-400 text-xs">Type a number and press Enter (or click away). The gold edge on a cabinet is its front.</span>
           <button type="button" className="cc-btn" data-plan-rotate="1" onClick={rotate}>Rotate 90°</button>
+          <span className="text-ink-400 text-xs" data-plan-core-size="1">
+            {core && core.w > 0 && core.d > 0
+              ? `The cabinets stand inside this rectangle; what they leave in the middle is ${Math.round(core.w)} × ${Math.round(core.d)} mm.`
+              : 'The cabinets stand inside this rectangle.'}
+          </span>
+          {tooSmall && <span className="text-xs" style={{ color: INK.bad }} data-plan-too-small="1">{tooSmall}</span>}
         </section>
 
         <section className="flex flex-col gap-1">
@@ -272,7 +351,7 @@ export default function IslandPlan() {
           <span className="cc-label">Cabinets on the plan</span>
           <div className="flex items-center gap-2">
             <select className="cc-input flex-1" value={face} data-plan-face="1" onChange={(e) => setFace(e.target.value)}>
-              {PLAN_FACES.map((f) => <option key={f} value={f}>{`Face ${f} · ${planFaceFree(plan, f)} free`}</option>)}
+              {PLAN_FACES.map((f) => <option key={f} value={f}>{`Face ${f} · ${planFaceFree(plan, f, profile)} free`}</option>)}
             </select>
             <select className="cc-input flex-1" value={type} data-plan-type="1" onChange={(e) => setType(e.target.value)}>
               {PLAN_TYPES.filter((t) => UNIT_TYPES?.[t] || getUnitType(t)).map((t) => <option key={t} value={t}>{getUnitType(t)?.label || t}</option>)}
@@ -289,17 +368,16 @@ export default function IslandPlan() {
               tabIndex={0}
               onKeyDown={(e) => { if (e.key === 'Enter') setSel(c.key); }}
             >
-              <span className="text-ink-100 text-xs">{c.label ? `${c.label} · ` : ''}{getUnitType(c.type)?.label || c.type} · {c.face}</span>
-              <input
-                className="cc-input w-20 text-right font-mono"
-                type="number" step="50" min="100" value={c.w} data-plan-cab-w={c.key}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => { const n = Number(e.target.value); if (Number.isFinite(n) && n >= 100) changeCab(c.key, { w: Math.round(n) }); }}
-              />
+              <span className="text-ink-100 text-xs flex-1 min-w-0 truncate">{c.label ? `${c.label} · ` : ''}{getUnitType(c.type)?.label || c.type} · {c.face}</span>
+              <span className="text-ink-400 text-[10px]">W</span>
+              <MmField value={c.w} min={100} step={50} className="cc-input w-16 text-right font-mono" attrs={{ 'data-plan-cab-w': c.key }} onCommit={(n) => changeCab(c.key, { w: n })} />
+              <span className="text-ink-400 text-[10px]">D</span>
+              <MmField value={depthOf(c)} min={100} step={10} className="cc-input w-16 text-right font-mono" attrs={{ 'data-plan-cab-d': c.key }} onCommit={(n) => changeCab(c.key, { depth: n })} />
+              <button type="button" className="cc-btn-ghost text-xs" title="Turn it onto the next face (clockwise)" data-plan-cab-turn={c.key} onClick={(e) => { e.stopPropagation(); turnCab(c.key); }}>↻</button>
               <button type="button" className="cc-btn-ghost text-xs" title="Take it off the plan" data-plan-cab-remove={c.key} onClick={(e) => { e.stopPropagation(); removeCab(c.key); }}>×</button>
             </div>
           ))}
-          {selected && <span className="text-ink-400 text-xs">Selected: {getUnitType(selected.type)?.label || selected.type} on face {selected.face}, {selected.w} mm.</span>}
+          {selected && <span className="text-ink-400 text-xs">Selected: {getUnitType(selected.type)?.label || selected.type} on face {selected.face}, {selected.w} wide, {depthOf(selected)} deep. ↻ turns it onto the next face.</span>}
         </section>
 
         {said && <div className="text-status-danger text-xs" data-plan-said="1">{said}</div>}

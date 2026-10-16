@@ -3,11 +3,11 @@
     "name": "golden-cabineo12-bud.json",
     "turn": "T78",
     "F": "F20",
-    "source": "SKYLON_JOINTS_CABINEO.lsp (Cabineo 12, THE OWNER'S THREE LAYERS of 15.10.2026: three dia 15 holes, the 0.5 skim, the dia 5 hole 12 deep; its NUMBERS block H.0, the no-shelf case) on KIT_BUD_FULL.lsp (the parent); the TOP and BOTTOM OUTSIDE FACE UP, reflected x' = 540 - x; the BACK screwed, no puzzle anywhere (REPINNED 15.10.2026)",
+    "source": "SKYLON_JOINTS_CABINEO.lsp (Cabineo 12, THE OWNER'S THREE LAYERS of 15.10.2026: three dia 15 holes, the 0.5 skim, the dia 5 hole 12 deep; its NUMBERS block H.0, the no-shelf case) on KIT_BUD_FULL.lsp (the parent); the TOP and BOTTOM OUTSIDE FACE UP, reflected x' = 540 - x; the BACK on Cabineo too (D.2b: pockets at the sides' back ends from the inside face and at the TOP's and BOTTOM's from the outside, 14 dia 5 holes in the BACK), no puzzle anywhere, the gate open (REPINNED 15.10.2026, twice)",
     "computed_by": "scripts/t75-golden.mjs goldenSummary(computeCabinet(params, DEFAULT_CABINET_PROFILE))",
     "status": "PENDING_OWNER_VERIFICATION",
     "rule": "GOLDEN FIXTURE. Tests and scripts/t78-classify.mjs hold the engine to it byte for byte. If the engine differs, the ENGINE moved: name why, or put it back.",
-    "repinned": "15.10.2026: the owner's night turn (no dog bones under Cabineo or biscuits; the back screwed; Cabineo drill15 + 0.5 skim + dia 5 x X)"
+    "repinned": "15.10.2026: the owner's night turn (no dog bones; drill15 + 0.5 skim + dia 5 x X) and his morning (plecy tez na cabineo; the gate open)"
   },
   "params": {
     "type": "BUD",
@@ -53,7 +53,7 @@
         },
         "outline": 4,
         "holes": 0,
-        "pockets": 0,
+        "pockets": 4,
         "readiness": null
       },
       {
@@ -73,7 +73,7 @@
         },
         "outline": 4,
         "holes": 0,
-        "pockets": 0,
+        "pockets": 4,
         "readiness": null
       },
       {
@@ -93,7 +93,7 @@
         },
         "outline": 4,
         "holes": 0,
-        "pockets": 6,
+        "pockets": 9,
         "readiness": null
       },
       {
@@ -113,7 +113,7 @@
         },
         "outline": 4,
         "holes": 0,
-        "pockets": 6,
+        "pockets": 9,
         "readiness": null
       },
       {
@@ -132,7 +132,7 @@
           "d": 18
         },
         "outline": 4,
-        "holes": 14,
+        "holes": 0,
         "pockets": 0,
         "readiness": null
       },
@@ -159,6 +159,10 @@
     ],
     "drills": [
       [
+        "CABINEO_HOLE_5MM|BACK",
+        14
+      ],
+      [
         "CABINEO_HOLE_5MM|BUL",
         6
       ],
@@ -168,11 +172,19 @@
       ],
       [
         "CABINEO_POCKET_15MM|BOTTOM",
-        18
+        27
+      ],
+      [
+        "CABINEO_POCKET_15MM|BUL",
+        12
+      ],
+      [
+        "CABINEO_POCKET_15MM|BUR",
+        12
       ],
       [
         "CABINEO_POCKET_15MM|TOP",
-        18
+        27
       ],
       [
         "FRONT_HINGES_35MM|01-F",
@@ -185,21 +197,17 @@
       [
         "HINGES_5MM|BUL",
         6
-      ],
-      [
-        "SCREWS_3MM|BACK",
-        14
       ]
     ],
     "hardware": [
       {
         "role": "cabineo_connector",
-        "qty": 12,
+        "qty": 26,
         "label": "Cabineo 12"
       },
       {
         "role": "cabineo_cap",
-        "qty": 12,
+        "qty": 26,
         "label": "Cabineo cover cap"
       },
       {

@@ -1820,6 +1820,12 @@ export function defaultParamsFor(typeId, profile) {
     ...(type.corner ? {
       arm_mm: Number(profilePath(profile, type.armDepthKey)) || 558,
       corner_side: 'left',
+      // 15.10.2026, the owner: *"l corner moja propozycja to otwieranie
+      // drzwiczek razem, czyli drzwiczki polaczone ze soba zawiasami"*: a new
+      // L opens as a BI-FOLD pair (T78 F8, leaf B hung on leaf A with Blum's
+      // CLIP top 60 degree bi-fold corner hinge). The pair of two carcass-hung
+      // leaves stays a choice (`corner_doors: null`, the panel's "Pair").
+      corner_doors: 'bifold',
     } : {}),
     // ─── T75 F12 · THE TOWER'S APERTURES, EACH GIVEN ITS HEIGHT ──────────
     // Read off the kit's defaults block and written onto the unit, so a saved

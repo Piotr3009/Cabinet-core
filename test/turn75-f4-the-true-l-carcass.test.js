@@ -41,8 +41,11 @@ const KITS = [
   ['CORNER_L_WALL', 'WUD', 'CW', 'cornerWall'],
   ['CORNER_L_WARDROBE', 'WARDROBE', 'CX', 'cornerWardrobe'],
 ];
+// 15.10.2026: a new L opens as a BI-FOLD pair (the owner's proposal, T78 F8's
+// law, test/turn78-f08-the-bifold.test.js). This file is T75's law of the PAIR
+// of two carcass-hung leaves, which stays a choice (`corner_doors: null`).
 const L = (type = 'CORNER_L_BASE', over = {}) => computeCabinet({
-  ...defaultParamsFor(type, P), unit_num: 'CL01', doors: true, ...over,
+  ...defaultParamsFor(type, P), unit_num: 'CL01', doors: true, corner_doors: null, ...over,
 }, P);
 const panelOf = (r, id) => r.panels.find((p) => p.id === id);
 const pocketsOn = (p, layer) => (p.cnc.pockets || []).filter((k) => k.layer === layer);
@@ -381,8 +384,9 @@ test('DOORS · A covered (0 at the inner corner), B overlapping (front_t + rule 
   assert.equal(a.box.x + a.box.w, 900 - P.doors.gap / 2);
   assert.equal(a.meta.hinge, 'R');
   assert.deepEqual(a.meta.cornerEdge, { side: 'left', kind: 'covered' });
-  // B on arm B's front (it faces +x), its inner edge front_t + clearance.corner beyond the corner.
-  assert.equal(b.box.z, d + t + c);
+  // B on arm B's front (it faces +x), its inner edge gap + front_t + clearance.corner beyond the
+  // corner: its end CLEARS A's face by the clearance (15.10.2026; T75 left it ON the face).
+  assert.equal(b.box.z, d + P.doors.gap + t + c);
   assert.equal(b.box.z + b.box.d, 900 - P.doors.gap / 2);
   assert.equal(b.box.x, d + P.doors.gap, 'it stands in front of arm B as any door stands in front of its carcass');
   assert.equal(b.box.w, t);
@@ -397,7 +401,7 @@ test('DOORS · A covered (0 at the inner corner), B overlapping (front_t + rule 
   assert.match(line.message, /door B opens first/);
   // Its body stands in front of door A's inner strip: no 45, no clash.
   assert.ok(b.box.x >= a.box.x && b.box.x + b.box.w <= a.box.x + a.box.w);
-  assert.ok(b.box.z >= a.box.z + a.box.d, 'B begins where A\'s face is');
+  assert.equal(b.box.z - (a.box.z + a.box.d), c, 'B begins clearance.corner past A\'s face');
   // Two leaves, two hinge sets, the parent's own count.
   assert.equal(r.totals.fronts, 2);
   assert.equal(r.totals.hinges, 6);
@@ -409,7 +413,7 @@ test('DOORS · A covered (0 at the inner corner), B overlapping (front_t + rule 
 
 test('DOORS · through the EXISTING door path: each leaf is its parent\'s leaf, cup for cup', () => {
   const r = L();
-  for (const [arm, span, hinge, trim] of [['A', 342, 'R', { left: -1.5, right: 0 }], ['B', 342, 'L', { left: 0, right: 26.5 }]]) {
+  for (const [arm, span, hinge, trim] of [['A', 342, 'R', { left: -1.5, right: 0 }], ['B', 342, 'L', { left: 0, right: 29.5 }]]) {
     const id = `CL01-${arm}-F`;
     const parent = computeCabinet({
       ...defaultParamsFor('BUD', P), unit_num: `CL01-${arm}`, width: span, doors: { count: 1, hinge }, front_edge_trim: { [id]: trim },
@@ -424,7 +428,7 @@ test('DOORS · through the EXISTING door path: each leaf is its parent\'s leaf, 
 
 test('DOORS · the overlap arm is the profile\'s (corner.overlap): \'own\' turns it round', () => {
   const own = computeCabinet({
-    ...defaultParamsFor('CORNER_L_BASE', P), unit_num: 'CL01', doors: true,
+    ...defaultParamsFor('CORNER_L_BASE', P), unit_num: 'CL01', doors: true, corner_doors: null,
   }, { ...P, corner: { ...P.corner, overlap: 'own' } });
   assert.equal(panelOf(own, 'CL01-A-F').meta.cornerEdge.kind, 'overlap');
   assert.equal(panelOf(own, 'CL01-B-F').meta.cornerEdge.kind, 'covered');
@@ -442,7 +446,7 @@ test('DOORS · the right hand mirrors the leaves: A hinged on SIDE-A at x = 0, B
   assert.equal(a.box.x + a.box.w, 900 - 558);
   assert.equal(b.meta.hinge, 'R');
   assert.equal(b.box.x, 900 - 558 - P.doors.gap - P.front.thickness);
-  assert.equal(b.box.z, 558 + P.front.thickness + P.doors.clearance.corner);
+  assert.equal(b.box.z, 558 + P.doors.gap + P.front.thickness + P.doors.clearance.corner);
   assert.deepEqual(b.meta.swingZ, { dir: 1 });
   assert.deepEqual(panelOf(L(), 'CL01-B-F').meta.swingZ, { dir: -1 });
 });
@@ -457,12 +461,14 @@ test('DOORS · no doors asked: the carcass alone, still drilled as its parent', 
 
 // ═══ FRONTS BOUNDARY: the two licensed neighbour kinds ═════════════════════
 
-test('CLEARANCE · CORNER_COVERED = 0 and CORNER_OVERLAP = front_t + clearance.corner (licence 1)', () => {
+test('CLEARANCE · CORNER_COVERED = 0 and CORNER_OVERLAP = gap + front_t + clearance.corner (licence 1; the gap since 15.10.2026)', () => {
   assert.equal(NEIGHBOUR.CORNER_COVERED, 'cornerCovered');
   assert.equal(NEIGHBOUR.CORNER_OVERLAP, 'cornerOverlap');
+  assert.equal(NEIGHBOUR.CORNER_BIFOLD, 'cornerBifold');
   const m = clearanceMatrix(P);
   assert.equal(m[NEIGHBOUR.CORNER_COVERED], 0);
-  assert.equal(m[NEIGHBOUR.CORNER_OVERLAP], P.front.thickness + P.doors.clearance.corner);
+  assert.equal(m[NEIGHBOUR.CORNER_OVERLAP], P.doors.gap + P.front.thickness + P.doors.clearance.corner);
+  assert.equal(m[NEIGHBOUR.CORNER_BIFOLD], P.front.thickness + 2 * P.doors.gap, 'the bi-fold leaf B: one gap off leaf A\'s face');
   assert.equal(clearanceMatrix({ ...P, doors: { ...P.doors, clearance: {} } })[NEIGHBOUR.CORNER_OVERLAP], null,
     'a profile that names no corner clearance keeps it parked');
 });
@@ -470,7 +476,7 @@ test('CLEARANCE · CORNER_COVERED = 0 and CORNER_OVERLAP = front_t + clearance.c
 test('CLEARANCE · the view hands each arm on its own wall; the corner edges are the L\'s law', () => {
   const room = migrateRoom({ height: 2500, corners: rectCorners(4000, 3000) });
   const walls = roomWalls(room);
-  const params = { ...defaultParamsFor('CORNER_L_BASE', P), unit_num: 'CL01', doors: true };
+  const params = { ...defaultParamsFor('CORNER_L_BASE', P), unit_num: 'CL01', doors: true, corner_doors: null };
   const unit = {
     id: 'L', type: 'CORNER_L_BASE', params, position: { wall: 0, x_mm: 10, rotation_deg: 0 },
   };
@@ -485,7 +491,7 @@ test('CLEARANCE · the view hands each arm on its own wall; the corner edges are
   const a = rows.find((x) => x.panelId === 'CL01-A-F');
   const b = rows.find((x) => x.panelId === 'CL01-B-F');
   assert.deepEqual([a.edges.left.kind, a.edges.left.wantClearanceMm, a.edges.left.haveClearanceMm], ['cornerCovered', 0, 0]);
-  assert.deepEqual([b.edges.right.kind, b.edges.right.wantClearanceMm, b.edges.right.haveClearanceMm], ['cornerOverlap', 28, 28]);
+  assert.deepEqual([b.edges.right.kind, b.edges.right.wantClearanceMm, b.edges.right.haveClearanceMm], ['cornerOverlap', 31, 31]);
   assert.equal(a.edges.left.correctionMm, 0);
   assert.equal(b.edges.right.correctionMm, 0);
 });

@@ -1,7 +1,7 @@
 ;;;========================================
 ;;; KIT_NOTCH.lsp
 ;;; The CORNER NOTCH - a MODIFIER on the KIT_BUD, KIT_WARDROBE and (since
-;;; 15.10.2026) KIT_WUD boards
+;;; 15.10.2026) KIT_WUD and KIT_BUDTALL boards
 ;;; Command: NOTCH_FULL
 ;;; Turn 75 (CLAUDE.md PART A, F7) - LISP FIRST ("lisp najpierw")
 ;;; Derived from: KIT_BUD_FULL.lsp + KIT_WARDROBE_FULL.lsp + SKYLON_COMMON.lsp
@@ -78,9 +78,9 @@
 ;;; its own (the hand's), keeps the hard stop. The refusals (section 8) are
 ;;; asked of the derived notch as of any other: a runner, a hinge or a shelf
 ;;; in its way refuses in words and the parent is what is cut.
-(defun notch-obstacle-limits (cw cd g bone / minEdge)
-  (setq minEdge (notch-min-joint-edge bone g))
-  (list (- cw (* 2.0 g) minEdge) (- cd g minEdge)))   ;; (maxW maxD)
+(defun notch-obstacle-limits (cw cd g bone / keep)
+  (setq keep (max (notch-min-joint-edge bone g) (notch-p "notch.minInterior")))
+  (list (- cw (* 2.0 g) keep) (- cd g keep)))   ;; (maxW maxD): the interior kept across and in depth, 100 since 15.10.2026 (96 held a joint before)
 ;;;
 ;;; A notch hanging from the TOP (a beam over a wall unit) and a WINDOW notch
 ;;; (a box crossing the corner at mid height) are NOT in this file yet: the
@@ -88,6 +88,29 @@
 ;;; przeszkode box naprzyklad powinno byc tak mozliwosc"); they are named
 ;;; in the PR as the next step, with their geometry (the TOP cut instead of
 ;;; the BOTTOM, a FLOOR board under the box as the LID is over it).
+;;;
+;;; PAST THE NOTCH (the owner, 15.10.2026, the morning): "przy bardzo waskim
+;;; wcieciu zatrzymuje sie a ja bym chcial zeby sie wtedy szafka calkowicie
+;;; sie skracala, nie zostawiala w srodku szafki mniej niz 100 mm, jezeli
+;;; bedzie mniej to cala szafka sie robi plytsza ... jak przejade na druga
+;;; strone komina to niech ponad 100 mm zaczyna sie pojawiac". So a cabinet
+;;; slid along a chimney or a box is never stopped by it:
+;;;   1. while the overlap leaves at least notch.minInterior of the INTERIOR
+;;;      beside the notch (cw - 2g - nw >= 100) the corner is notched (above);
+;;;   2. past that the WHOLE cabinet goes shallower: its depth is cd less the
+;;;      obstacle's stand past the wall, its back on the obstacle's face, its
+;;;      front where the run's front is; so for the obstacle inside the
+;;;      cabinet's span and for an overlap too wide to notch (the interior
+;;;      kept in depth, cd' - g >= 100, else the stop stands as before);
+;;;   3. a WALL UNIT too shallow for that hangs on the obstacle's face at its
+;;;      full depth (a wall unit on a chimney breast, which is what a wall
+;;;      unit does there);
+;;;   4. out on the far side, once the part of the cabinet past the obstacle
+;;;      has 100 of interior again, the notch comes back on that corner, and
+;;;      clear of it the cabinet is as it was.
+;;; The engine derives all of it from where the cabinet stands and stores none
+;;; of it but the two placement numbers (its shallower depth and its stand-off),
+;;; which it takes back when the cabinet leaves (projectStore settleObstacles).
 ;;;
 ;;; INPUTS
 ;;;   corner   the PLAN corner, seen from the front:
@@ -152,16 +175,23 @@
 ;;; by the carcass's own logic, with boards standing INSIDE the carcass
 ;;; envelope so the obstacle gets the whole nw x nd:
 ;;;
-;;;   RETURN   nd x nh. The side of the FULL-DEPTH part, over the depth it
-;;;            has and the shallow part has not. Parallel to the sides, at
-;;;            x = nw .. nw + g (an L corner). It runs from the back's face
-;;;            to the STEP's inner face (a back corner) or from the front
-;;;            face to the shallow part's face (a front corner): nd long.
-;;;   STEP     nw x nh, BACK CORNERS ONLY. The SHALLOW part's own back. The
-;;;            nw x nh the BACK loses at the corner is not thrown away: it
-;;;            is this board, set FORWARD by nd, covering the shortened
-;;;            side's end exactly as the back covers a side's end, and
-;;;            butting the RETURN's outer face.
+;;;   RETURN   (nd - g) x nh at a back corner, nd x nh at a front one. The
+;;;            side of the FULL-DEPTH part, over the depth it has and the
+;;;            shallow part has not. Parallel to the sides, at x = nw ..
+;;;            nw + g (an L corner). It runs from the back's face to the
+;;;            STEP's BACK face (a back corner: the STEP covers its end, as
+;;;            the back covers a side's end) or from the front face to the
+;;;            shallow part's face (a front corner, nd long).
+;;;   STEP     (nw + g) x nh, BACK CORNERS ONLY. The SHALLOW part's own
+;;;            back. The nw x nh the BACK loses at the corner is not thrown
+;;;            away: it is this board, set FORWARD by nd and a board wider,
+;;;            covering the shortened side's end AND the RETURN's end exactly
+;;;            as the back covers the sides' ends. Seen from the front with
+;;;            the doors open it is ONE whole face; the only end grain in the
+;;;            box is the STEP's own, seen from the side, inside the carcass
+;;;            (the owner, 15.10.2026: "od przodu cala plyta, krawedz z
+;;;            boku"; before that day the RETURN ran to the STEP's inner face
+;;;            and its end grain showed from the front).
 ;;;   LID      nw x nd, PART-HEIGHT ONLY. It lies ON the STEP and the RETURN,
 ;;;            between the side and the back, and closes the notch's top.
 ;;;
@@ -186,8 +216,11 @@
 ;;;     back. Left open, that second face is a hole nw - g wide straight into
 ;;;     the carcass. The carcass's own logic closes it with the shallow part's
 ;;;     own back: the STEP. Every size F7 names is kept exactly (SIDE D - d,
-;;;     BACK W - w, TOP/BOTTOM w x d, RETURN d x h, LID w x d); the STEP is
-;;;     the one board added, and it is the BACK's own w x h, moved forward.
+;;;     BACK W - w, TOP/BOTTOM w x d, LID w x d); the STEP is the one board
+;;;     added, the BACK's own h, moved forward, w + g wide; the RETURN is
+;;;     d - g at a back corner. DECIDED by the owner 15.10.2026 (the mockup
+;;;     "naroznik, krawedz"): the STEP covers the RETURN's end, not the
+;;;     other way round, so the open cabinet shows one whole face.
 ;;; D2  THE BOX STANDS INSIDE THE ENVELOPE. The obstacle gets the full
 ;;;     nw x nd x nh; the box boards are the carcass's skin around it, as the
 ;;;     sides and the back are the skin of the whole. That is what makes the
@@ -332,7 +365,8 @@
     ("notch.defaults.width"         . 200.0)
     ("notch.defaults.depth"         . 200.0)
     ("notch.defaults.height"        . 0.0)
-    ("notch.obstacleClearance"      . 10.0)))   ;; 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR (proposed, owner to confirm)
+    ("notch.obstacleClearance"      . 10.0)     ;; 15.10.2026: the scribe room round a chimney or a box the notch is cut FOR (the owner: "dobrze")
+    ("notch.minInterior"            . 100.0)))  ;; 15.10.2026: the owner's "nie mniej niz 100 mm w srodku szafki": what a notch must leave of the interior, across and in depth
 
 (defun notch-p (key / hit)
   (setq hit (assoc key (notch-profile)))
@@ -800,30 +834,35 @@
             back (notch-back-p corner)
             out '())
       (if left (setq rx0 nw rx1 (+ nw g)) (setq rx0 (- cw nw g) rx1 (- cw nw)))
-      (if back (setq ry0 (- cd nd g) ry1 (- cd g)) (setq ry0 0.0 ry1 nd))
+      ;; 15.10.2026: at a back corner the RETURN starts at the STEP's back
+      ;; face (cd - nd), a board shorter: the STEP covers its end.
+      (if back (setq ry0 (- cd nd) ry1 (- cd g)) (setq ry0 0.0 ry1 nd))
       (setq out (cons (list "RETURN" rx0 ry0 0.0 rx1 ry1 hh) out))
       (if back
         (progn
-          (if left (setq sx0 0.0 sx1 nw) (setq sx0 (- cw nw) sx1 cw))
+          ;; ...and the STEP runs a board past the notch, over the RETURN's end.
+          (if left (setq sx0 0.0 sx1 (+ nw g)) (setq sx0 (- cw nw g) sx1 cw))
           (setq out (cons (list "STEP" sx0 (- cd nd g) 0.0 sx1 (- cd nd) hh) out))))
       (if (not (notch-full-p ch nh))
         (progn
           (if left (setq lx0 g lx1 (+ nw g)) (setq lx0 (- cw nw g) lx1 (- cw g)))
-          (setq out (cons (list "LID" lx0 ry0 hh lx1 ry1 (+ hh g)) out))))
+          (setq out (cons (list "LID" lx0 (- cd nd g) hh lx1 ry1 (+ hh g)) out))))
       (reverse out))))
 
-;;; THE STEP: nw x hh, back corners only.
+;;; THE STEP: (nw + g) x hh, back corners only (15.10.2026: a board wider,
+;;; over the RETURN's end).
 (defun notch-step (ch g nw nh corner)
   (if (and (notch-boxed-p nw g) (notch-back-p corner))
-    (list nw (notch-hh ch nh))
+    (list (+ nw g) (notch-hh ch nh))
     nil))
 
 ;;; Its screws, frame x along the carcass x from the STEP's own left end,
-;;; y up: into the side's end (the column G / 2 in from that end), and into
-;;; the BOTTOM's (and at full height the TOP's) notch edge over the span the
-;;; STEP covers between the side and its own end. A part-height STEP is
-;;; screwed DOWN INTO by the LID instead of into a TOP.
-(defun notch-step-screws (ch g nw nh corner / S hh sfe full out sideX x0)
+;;; y up: into the side's end and into the RETURN's end (a column G / 2 in
+;;; from each end: S and nw + S, whichever is which), and into the BOTTOM's
+;;; (and at full height the TOP's) notch edge over the span between them
+;;; (g .. nw). A part-height STEP is screwed DOWN INTO by the LID instead of
+;;; into a TOP.
+(defun notch-step-screws (ch g nw nh corner / S hh sfe full out)
   (if (null (notch-step ch g nw nh corner))
     nil
     (progn
@@ -832,39 +871,38 @@
             sfe (notch-p "puzzle.screwFromEnd")
             full (notch-full-p ch nh)
             out '())
-      (setq sideX (if (notch-left-p corner) S (- nw S)))
       (foreach y (notch-screw-row hh sfe)
-        (setq out (cons (list sideX y) out)))
-      (setq x0 (if (notch-left-p corner) g 0.0))
-      (foreach x (notch-shift (notch-screw-row (- nw g) sfe) x0)
+        (setq out (cons (list S y) out))
+        (setq out (cons (list (+ nw S) y) out)))
+      (foreach x (notch-shift (notch-screw-row (- nw g) sfe) g)
         (setq out (cons (list x S) out))
         (if full (setq out (cons (list x (- hh S)) out))))
       (reverse out))))
 
-;;; THE RETURN: nd x hh.
-(defun notch-return (ch g nw nd nh)
+;;; THE RETURN: (nd - g) x hh at a back corner (the STEP covers its end,
+;;; 15.10.2026), nd x hh at a front one.
+(defun notch-return (ch g nw nd nh corner)
   (if (notch-boxed-p nw g)
-    (list nd (notch-hh ch nh))
+    (list (if (notch-back-p corner) (- nd g) nd) (notch-hh ch nh))
     nil))
 
 ;;; Its screws, frame x along the depth from the RETURN's FRONT end, y up:
-;;; into the BOTTOM's (and at full height the TOP's) notch edge, and at a
-;;; back corner into the STEP's end, which occupies its front g.
-(defun notch-return-screws (ch g nw nd nh corner / S hh sfe full out)
-  (if (null (notch-return ch g nw nd nh))
+;;; into the BOTTOM's (and at full height the TOP's) notch edge along its
+;;; own length. It is held to the STEP by the STEP's own column into its
+;;; end (notch-step-screws), so it carries none of its own there.
+(defun notch-return-screws (ch g nw nd nh corner / S hh sfe full out len)
+  (if (null (notch-return ch g nw nd nh corner))
     nil
     (progn
       (setq S (notch-screw-axis g)
             hh (notch-hh ch nh)
             sfe (notch-p "puzzle.screwFromEnd")
             full (notch-full-p ch nh)
+            len (car (notch-return ch g nw nd nh corner))
             out '())
-      (foreach x (notch-screw-row nd sfe)
+      (foreach x (notch-screw-row len sfe)
         (setq out (cons (list x S) out))
         (if full (setq out (cons (list x (- hh S)) out))))
-      (if (notch-back-p corner)
-        (foreach y (notch-screw-row hh sfe)
-          (setq out (cons (list S y) out))))
       (reverse out))))
 
 ;;; THE LID: nw x nd, part height only, at z = nh .. nh + g.
@@ -876,21 +914,22 @@
 ;;; Its screws DOWN into the RETURN and (a back corner) the STEP. Frame: x
 ;;; along the carcass x from the LID's left end, y along the depth from its
 ;;; FRONT end. Its edges against the side and the back are the joiner's.
-(defun notch-lid-screws (ch g nw nd nh corner / S sfe out retX x0)
+;;; 15.10.2026: at a back corner the RETURN lies under the LID from y = g
+;;; (behind the STEP) and the STEP under its whole front edge (0 .. nw).
+(defun notch-lid-screws (ch g nw nd nh corner / S sfe out retX back)
   (if (null (notch-lid ch g nw nd nh))
     nil
     (progn
       (setq S (notch-screw-axis g)
             sfe (notch-p "puzzle.screwFromEnd")
+            back (notch-back-p corner)
             out '())
       (setq retX (if (notch-left-p corner) (- nw S) S))
-      (foreach y (notch-screw-row nd sfe)
+      (foreach y (if back (notch-shift (notch-screw-row (- nd g) sfe) g) (notch-screw-row nd sfe))
         (setq out (cons (list retX y) out)))
-      (if (notch-back-p corner)
-        (progn
-          (setq x0 (if (notch-left-p corner) 0.0 g))
-          (foreach x (notch-shift (notch-screw-row (- nw g) sfe) x0)
-            (setq out (cons (list x S) out)))))
+      (if back
+        (foreach x (notch-screw-row nw sfe)
+          (setq out (cons (list x S) out))))
       (reverse out))))
 
 ;;;----------------------------------------
@@ -1058,8 +1097,10 @@
 ;;; BACK       600 x 770    400 x 770, carcass x 200..600
 ;;;   original frame (200 0) (600 0) (600 770) (200 770)
 ;;;   own frame      (0 0) (400 0) (400 770) (0 770); no dog bone
-;;; STEP       -            200 x 770, carcass x 0..200, y 340..358, z 0..770
-;;; RETURN     -            200 x 770, carcass x 200..218, y 340..540, z 0..770
+;;; STEP       -            218 x 770, carcass x 0..218, y 340..358, z 0..770
+;;;                         (15.10.2026: a board wider, over the RETURN's end)
+;;; RETURN     -            182 x 770, carcass x 200..218, y 358..540, z 0..770
+;;;                         (15.10.2026: a board shorter, behind the STEP)
 ;;; LID        -            none (full height)
 ;;; SHELF-1    560 x 520    560 x 520 less 200 x 200 at the rear-left
 ;;;   shelf frame (2 clear of the RETURN as of BUL):
@@ -1093,11 +1134,13 @@
 ;;;
 ;;; THE BOX'S FIXING (manual, the back screw row, not drilled):
 ;;; STEP (x from its left end, y up)    into BUL's end: x 9, y 50 385 720
+;;;                                     into the RETURN's end: x 209, y 50 385 720
 ;;;                                     into TOP: x 68 109 150, y 761
 ;;;                                     into BOTTOM: x 68 109 150, y 9
-;;; RETURN (x from its front end, y up) into TOP: x 50 100 150, y 761
-;;;                                     into BOTTOM: x 50 100 150, y 9
-;;;                                     into the STEP's end: x 9, y 50 385 720
+;;; RETURN (x from its front end, y up) into TOP: x 50 91 132, y 761
+;;;                                     into BOTTOM: x 50 91 132, y 9
+;;;                                     (no column of its own into the STEP:
+;;;                                     the STEP's column holds it, 15.10.2026)
 ;;;
 ;;; The engine meets this with its own calls: sidePanelGeometry on w 340
 ;;; with backTabs off gives BUL's sockets and screws exactly; backPanelGeometry
@@ -1175,7 +1218,7 @@
 ;;; K. MAIN COMMAND
 ;;;========================================
 
-(defun c:NOTCH_FULL ( / kit g cw cd ch corner nw nd nh tool r pt x0 y0 cx odstep msg
+(defun c:NOTCH_FULL ( / kit g cw cd ch corner nw nd nh tool r pt x0 y0 cx odstep msg rl
                        sideW tw hh full boxed side bur e below inset one three
                        sj tj bj oldS oldTabs oldTop oldBack shelf sh
                        sumX sumY lineH
@@ -1301,14 +1344,15 @@
           ;; 4. THE BOX: STEP, RETURN, LID, with the joiner's screw marks
           (if (notch-step ch g nw nh corner)
             (progn
-              (notch-draw-board cx y0 nw hh (notch-plain-rect nw hh) nil "STEP")
+              (notch-draw-board cx y0 (+ nw g) hh (notch-plain-rect (+ nw g) hh) nil "STEP")
               (notch-draw-marks cx y0 (notch-step-screws ch g nw nh corner) 1.5)
-              (setq cx (+ cx nw odstep))))
-          (if (notch-return ch g nw nd nh)
+              (setq cx (+ cx nw g odstep))))
+          (if (notch-return ch g nw nd nh corner)
             (progn
-              (notch-draw-board cx y0 nd hh (notch-plain-rect nd hh) nil "RETURN")
+              (setq rl (car (notch-return ch g nw nd nh corner)))
+              (notch-draw-board cx y0 rl hh (notch-plain-rect rl hh) nil "RETURN")
               (notch-draw-marks cx y0 (notch-return-screws ch g nw nd nh corner) 1.5)
-              (setq cx (+ cx nd odstep))))
+              (setq cx (+ cx rl odstep))))
           (if (notch-lid ch g nw nd nh)
             (progn
               (notch-draw-board cx y0 nw nd (notch-plain-rect nw nd) nil "LID")
@@ -1358,9 +1402,9 @@
                                             (T (strcat (rtos cw 2 0) " x " (rtos ch 2 0) " less "
                                                        (rtos nw 2 0) " x " (rtos nh 2 0))))))
           (if (notch-step ch g nw nh corner)
-            (notch-say (strcat "STEP: " (rtos nw 2 0) " x " (rtos hh 2 0) " (fixing manual)")))
-          (if (notch-return ch g nw nd nh)
-            (notch-say (strcat "RETURN: " (rtos nd 2 0) " x " (rtos hh 2 0) " (fixing manual)")))
+            (notch-say (strcat "STEP: " (rtos (+ nw g) 2 0) " x " (rtos hh 2 0) " (fixing manual)")))
+          (if (notch-return ch g nw nd nh corner)
+            (notch-say (strcat "RETURN: " (rtos (car (notch-return ch g nw nd nh corner)) 2 0) " x " (rtos hh 2 0) " (fixing manual)")))
           (if (notch-lid ch g nw nd nh)
             (notch-say (strcat "LID: " (rtos nw 2 0) " x " (rtos nd 2 0) " (fixing manual)")))
           (notch-say "---------")

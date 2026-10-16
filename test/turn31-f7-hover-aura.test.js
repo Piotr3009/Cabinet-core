@@ -162,8 +162,11 @@ test('EVERY handle and EVERY hinge has one', () => {
   assert.match(hw, /subject=\{\{ kind: 'hinge'/);
   // A knob AND a bar — the two kinds of handle this app draws.
   assert.equal((hw.match(/subject=\{\{ kind: 'handle'/g) || []).length, 2);
-  // The bar's box is round the WHOLE rail, not round one post.
-  assert.match(hw, /size=\{horizontal[\s\S]{0,200}rodLen/);
+  // The bar's box is round the WHOLE rail, not round one post (15.10.2026: the
+  // box is built once for both ways a leaf can face, `auraSize`, and the rod's
+  // length is in it either way).
+  assert.match(hw, /const auraSize = \(\(\) => \{[\s\S]{0,400}rodLen/);
+  assert.match(hw, /size=\{auraSize\}/);
 });
 
 test('the hinge aura still opens the hinge’s own window', () => {

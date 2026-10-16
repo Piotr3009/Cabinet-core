@@ -58,7 +58,8 @@ test('the finish row is a table in the profile, and gold honestly buys nothing',
 
 test('angle + metal + soft-close → one row from the catalogue', () => {
   const std = hingeAutomat({ frontThickness: 18, metal: 'chrome', softClose: true }, { profile: P });
-  assert.equal(std.angle, 110, 'standard front → 110°');
+  assert.equal(std.angle, 155, 'standard front → 155° (the owner, 15.10.2026: standardowo zawiasy 155; the 110 at 25 mm)');
+  assert.equal(hingeAutomat({ frontThickness: 25, metal: 'chrome', softClose: true }, { profile: P }).angle, 110, 'the 25 mm shaker → 110°');
   assert.equal(std.finish, 'nickel');
   assert.equal(std.resolved, true);
   assert.match(std.family, /^71B/, 'a real Blum family');
@@ -80,23 +81,23 @@ test('what the registry does not know prints as a NAMED SPEC, never a number', (
   const gold = hingeAutomat({ frontThickness: 18, metal: 'gold', softClose: true }, { profile: P });
   assert.equal(gold.resolved, false);
   assert.equal(gold.article, null);
-  assert.equal(gold.spec_label, 'Hinge 110° · soft-close · gold');
+  assert.equal(gold.spec_label, 'Hinge 155° · soft-close · gold');
 
   // The catalogue is BLUMOTION — soft-close by construction — so "standard"
   // has no published article either.
   const std = hingeAutomat({ frontThickness: 18, metal: 'chrome', softClose: false }, { profile: P });
   assert.equal(std.resolved, false);
-  assert.equal(std.spec_label, 'Hinge 110° · standard · chrome');
+  assert.equal(std.spec_label, 'Hinge 155° · standard · chrome');
 });
 
 test('the REGISTRY is asked first, and its row wins over the catalogue', () => {
-  const lookup = (q) => (q.category === 'hinge' && q.angle === 110 && q.variant === 'soft'
+  const lookup = (q) => (q.category === 'hinge' && q.angle === 155 && q.variant === 'soft'
     ? {
-      family: 'OWN-110', article: 'W-001', articles: ['W-001'], source: 'registry',
+      family: 'OWN-155', article: 'W-001', articles: ['W-001'], source: 'registry',
     }
     : null);
   const own = hingeAutomat({ frontThickness: 18, metal: 'chrome', softClose: true }, { profile: P, lookup });
-  assert.equal(own.family, 'OWN-110');
+  assert.equal(own.family, 'OWN-155');
   assert.equal(own.article, 'W-001');
   assert.equal(own.source, 'registry');
 });

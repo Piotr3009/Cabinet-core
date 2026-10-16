@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
   clampDrawerFrontHeight, computeCabinet, doorCountFor, drawerSplitFor, isShelfLocked,
+  leafCountRefusal,
   minDrawerFrontHeight, SHELF_VARIANTS, CORNER_KIT_KINDS, BLIND_KIT_KINDS, WARDROBE_KIT_KINDS,
 } from '../engine/cabinet.js';
 import {
@@ -6750,6 +6751,25 @@ export const useProjectStore = create(dirtyGate((set, get) => ({
           if (auto !== Number(params.doors.count)) {
             params.doors = { ...params.doors, count: auto };
             notices.push(`Doors follow the width: ${auto} now (the 700 mm rule).`);
+          }
+        } else if (applied.width != null
+            && params.doors && typeof params.doors === 'object'
+            && !params.bay_doors
+            && Number(params.doors.count) === 2) {
+          // ─── CHAT FIX 15.10.2026: A CHOSEN PAIR THE NEW WIDTH CANNOT CUT ──
+          // The owner's pair on a narrow carcass (*"żebym miał możliwość
+          // podzielenia ich na 2"*) is a decision and survives a resize like
+          // the wide single leaf above does (15.08: a chosen count is never
+          // overruled by a resize, and a chosen SINGLE leaf is left alone here
+          // too). Room refuses first, though: narrowed until a leaf of the
+          // pair would fall under the profile's minimum, the pin is NOT cut
+          // silently: it returns to the ladder's own answer and says so, in
+          // the engine's own sentence (`leafCountRefusal`).
+          const said = leafCountRefusal(applied.width, 2, profile);
+          if (said) {
+            const auto = doorCountFor(applied.width, profile);
+            params.doors = { ...params.doors, count: auto };
+            notices.push(`Doors follow the width: ${auto} now. ${said}`);
           }
         }
         // ─── Turn 8 (CLAUDE.md F2.2) ───

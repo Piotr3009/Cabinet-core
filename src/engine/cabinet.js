@@ -375,6 +375,42 @@ export function doorCountFor(width, profile) {
 }
 
 /**
+ * ─── CHAT FIX 15.10.2026: A PAIR BY CHOICE, WHAT IS REFUSED ───────────────
+ *
+ * The owner: *"jak mamy małe drzwi, ale wciąż chcę zrobić 2, to żebym miał
+ * możliwość podzielenia ich na 2."*  `doorCountFor` above stays the DEFAULT
+ * and nothing in `computeCabinet` changes: the engine has honoured a pinned
+ * `doors.count` since turn 8. What was missing is the ONE place that says when
+ * a chosen PAIR may not be cut, so PRO's Leaves row and retail's HOW MANY ask
+ * the same question and get the same sentence: two leaves are allowed under
+ * the ladder while each leaf, cut by the pair arithmetic ((W − doubleTotalGap)
+ * / 2, the same line `frontW` uses), is at least `profile.doors.minLeafWidth`.
+ *
+ * Deliberately NOT here: a single leaf over 700. That is a decision the owner
+ * protected on 15.08.2026 (*"a count somebody CHOSE against the ladder is a
+ * decision a resize must not overrule"*, test/chatfix-1508-design.test.js);
+ * retail's T59 chip refuses it for a client on its own words, and PRO leaves
+ * it to the person. One law for the pair, the old law for the single.
+ *
+ * Returns '' when the count may be cut, otherwise the refusal in words. Pure:
+ * the number and the ladder are the profile's, nothing is typed anywhere.
+ */
+export function leafCountRefusal(width, count, profile) {
+  const d = profile.doors;
+  const W = Number(width) || 0;
+  if (Math.trunc(Number(count)) !== 2) return '';
+  const leaf = (W - d.doubleTotalGap) / 2;
+  const min = Number(d.minLeafWidth) || 0;
+  if (leaf < min) {
+    // A half millimetre is said as one: "200 mm each, under the 200 mm
+    // minimum" would read as a contradiction when the leaf is 199.5.
+    const shown = Number.isInteger(leaf) ? String(leaf) : leaf.toFixed(1);
+    return `Two doors would be ${shown} mm each, under the ${min} mm minimum leaf.`;
+  }
+  return '';
+}
+
+/**
  * ─── TURN 30 (CLAUDE.md F14 / F20): WHICH DRAWERS ARE INTERNAL ─────────────
  *
  * Which drawers in the stack get NO FRONT — 1-based, as a Set.

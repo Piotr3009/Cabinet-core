@@ -420,6 +420,14 @@ export const DEFAULT_CABINET_PROFILE = {
     singleDoorMaxWidth: 700,
     gap: 3,                    // overlay clearance: single front = (W−gap) × (H−gap)
     doubleTotalGap: 6,         // pair of fronts = ((W − doubleTotalGap)/2) × (H − gap)
+    // ─── CHAT FIX 15.10.2026: A PAIR ON A NARROW CARCASS, BY CHOICE ──────────
+    // The owner: *"jak mamy małe drzwi, ale wciąż chcę zrobić 2, to żebym miał
+    // możliwość podzielenia ich na 2."*  The ladder above stays the DEFAULT; a
+    // person may pin two leaves below it (PRO's Leaves row, retail's HOW MANY),
+    // and this is the narrowest leaf such a pin may cut. Read by ONE function,
+    // `engine/cabinet.js leafCountRefusal`, for both surfaces. The L corner's
+    // `corner.leafMinMm` is the same number for the same reason.
+    minLeafWidth: 200,         // proposed 15.10.2026, owner to confirm
     defaultHinge: 'L',
     // ─── How far a door opens in the 3D view (turn 8, CLAUDE.md F5) ───
     // `openAngle` is what a door in the middle of a run swings to when you

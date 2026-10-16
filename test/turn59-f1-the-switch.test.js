@@ -82,18 +82,6 @@ const EXEMPT = {
   'src/components/TopBar.jsx':
     'T75 F20 · the Library menu\'s Sets row says what is on the shelf instead of "0 types". *"the Library\'s `media` category (`soon`) becomes the sets shelf (saved sets and shipped sets on one list)."*'
     + ' T78 F21 · the Output menu\'s Spraying placeholder becomes a live entry (onOpenSpraying): one page on the Production Core pattern, the spray schedule by colour, the cards and the paint order. *"cale sprayowanie jako osobne menu Cabinet Core."*',
-  // ─── ADDED 15.10.2026 (the evening) · THE RECESS SEEN FROM THE FRONT ──────
-  // The owner: *"na setup room jak widze sciane od frontu nie top tylko front
-  // to nie widze kresek, gdzie jest komin i gdzie wneka"* and *"reces pionowy
-  // ... na wysokosci 1000 mm ... dowolny"*. Licensed with his words, re-frozen
-  // at the new hash below; the engine's half is KIT_RECESS.lsp.
-  'src/components/WallElevationModal.jsx':
-    'T78 F7 chat-fix 15.10.2026 · the FRONT view draws the top view\'s recess and chimney where they stand (a recess as its BAND, '
-    + 'lib/wallElements.js recessBand), lists them, drags them sideways only and double-clicks them open; the element window of a '
-    + 'recess gains Bottom and Top (mm off the floor; 0 and the wall height are the floor and the ceiling), written as bottom_mm / '
-    + 'top_mm through onPlan; the recess sentence says the new law (deeper inside, an extension partly in). *"na setup room jak '
-    + 'widze sciane od frontu nie top tylko front to nie widze kresek, gdzie jest komin i gdzie wneka"*; *"reces pionowy ... czy '
-    + 'mozemy na niego spojrzec od czola i na przyklad zrobic go na wysokosc ... 1000 mm"*; *"4 - dowolny"*.',
   'src/components/WarehouseModal.jsx':
     'T75 F21 · the three buttons read Import from JoineryCore (CSV), Export project list for JoineryCore (CSV) and Export for JoineryCore (CSV); the project list holds the rows THIS project\'s stock carries (projectUuids), not every uuid in the warehouse (the probe exported 3 of 3 for a project naming none). *"stock połączony z joinery core, na razie export import za pomocą csv coś jak production core, później api"*.'
     + ' T78 F21 · Database > Materials gains the Paints department: the warehouse\'s twelve columns plus the paint fields (topcoat | primer, sheen, coverage m2 per litre per coat, coats, tin sizes) on the card; litres and tins are the engine\'s arithmetic, never typed. *"cale sprayowanie jako osobne menu Cabinet Core."*',
@@ -134,8 +122,7 @@ const EXEMPT = {
     + ' T78 F16 · the Drawers section\'s Double checkbox per drawer-unit row: a deep box below and an inner cutlery drawer above behind the one front, written as drawer_double[row] through updateUnitParams; the engine refuses a short row in words. *"podwojne szuflady szafki z szuflada na sztucce z bluma."*'
     + ' T78 F19 / F20 · the Construction section\'s Joints row offers the owner\'s four systems, Cabineo in its two variants (Puzzle, Dowel, Biscuit, Cabineo 8, Cabineo 12), each disabled only by its kit refusal, the status read off the engine\'s own derived.joints (biscuit sets and screws, Cabineo pockets from the outside face and the gate); the company row chooses the default, this row is the unit\'s override, the reserved id of T75 stays a refusal in words, not one number typed. *"trzeba zrobic wybor laczenia i mamy 4: puzzle, dowels, Cabineo, ciastka"*; Cabineo *"8 AND 12, chosen in the company\'s default settings."*'
     + ' T78 F17 · the Hob select on a hob unit (T75 F14\'s flag or the oven base): induction (the default, unwritten) or gas, written as hob_kind through updateUnitParams; the hood\'s clearance Check (#34) and the store\'s one-click proposal read it, the numbers stay in profile.hood.clearance. *"zeby bylo 650 do 750 minimum nad blatem, nad hobem"*; *"pozostaw to dla klienta, tylko proponuj."*'
-    + ' T78 F18 · the Doors section\'s "Front opens" select on a wall unit that takes a lift (WUD, WUD_GLASS, WARDROBE_WALL): hinged (the default, no key) | HK top (lift up) | HS (up and over) | HL (lift parallel) | HF (bi-fold up), written as front_system through updateUnitParams, and under it the engine\'s own sentence of the set, the arm, the power unit and the zero holes; no number typed. *"szafki poziome otwierane do gory system blum ... podwojne drzwi pojedyncze etc."*'
-    + ' CHAT FIX 15.10.2026 · the Doors section\'s Leaves row: 1 or 2 by choice, the same setDoors({ count }) pin retail\'s HOW MANY writes, each chip disabled in the one law\'s words (engine/cabinet.js leafCountRefusal: a pair under doors.minLeafWidth; a chosen single wide leaf stays the 15.08 decision); not on kits whose count is their identity nor on bay doors. *"jak mamy male drzwi, ale wciaz chce zrobic 2, to zebym mial mozliwosc podzielenia ich na 2."*',
+    + ' T78 F18 · the Doors section\'s "Front opens" select on a wall unit that takes a lift (WUD, WUD_GLASS, WARDROBE_WALL): hinged (the default, no key) | HK top (lift up) | HS (up and over) | HL (lift parallel) | HF (bi-fold up), written as front_system through updateUnitParams, and under it the engine\'s own sentence of the set, the arm, the power unit and the zero holes; no number typed. *"szafki poziome otwierane do gory system blum ... podwojne drzwi pojedyncze etc."*',
   // ─── ADDED BY TURN 76 · GPT'S DECORATIVE FRONTS, LANDED AS A PATCH ─────────
   // CLAUDE.md T76, FROZEN 3: *"every PRO file edited is licensed in `EXEMPT`
   // with the owner's words from this file (or GPT's licence line, which quotes
@@ -341,7 +328,7 @@ const FROZEN = {
   'src/components/RailModal.jsx': '4981e3843fe4b6249db4d2a9c5fe96d428d2b4bbe4605e41db3834c5d5d6bccf',
   'src/components/RenderModal.jsx': '263c9fca6fdc1e0cfd27c2b185934e4232b9b3fb57d18bd57ee830cc533df2a0',
   // T78 PART E, after the walk re-frozen at the new hash; `EXEMPT` above carries the reason.
-  'src/components/RightPanel.jsx': 'edf30257599533056599d0f8cf429ee2a05ce888acbccdb04013466ee6a79e82',
+  'src/components/RightPanel.jsx': '233e68fa089e502d92a59ba8ad8434039e99c72106cd81961356e46a388fcb9c',
   // T75 · re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/RoomModal.jsx': '0f19b25df3ddbef168d3739d6e66faa2b1ec9455cf783bf8482d2e8960ed64d7',
   'src/components/SaveAsModal.jsx': '17bc0789ca392eda476dd34afa63a0c961da04b3dac4f32c8bab0bcb95dc6ad5',
@@ -362,8 +349,7 @@ const FROZEN = {
   'src/components/UnitSizeModal.jsx': 'e8b94789f07fffaeb5b66a2a8fd160c28d9d4f4b0ed56383ecc18532f7b06c1f',
   'src/components/UnitWarnings.jsx': 'f654c6abd287439ddd932fb8a4011784db34105312ce17bdc6416e701b5b74f8',
   'src/components/VeneerPicker.jsx': '05bbf6f2a8c54f546c3c7f19608c0193dc356323ff1a5a7e543ae57e039e9e7d',
-  // 15.10.2026 (the evening) re-frozen at the new hash; `EXEMPT` above carries the owner's words.
-  'src/components/WallElevationModal.jsx': '3d7ddd431bf11e925962317d943feb247c394fe709799a260ec96c88b4bdb6fc',
+  'src/components/WallElevationModal.jsx': '49d61b8d3530b1a3f1a92faf2b0e25773255a3e4dbb5053f235b2878a6cae168',
   // T78 F21 re-frozen at the new hash; `EXEMPT` above carries the reason.
   'src/components/WarehouseModal.jsx': 'ec5b747982b65fd246016f43484247f83d64cac86678f750b63147f84572e5ea',
   // T67 F9 — re-frozen at the new hash; `EXEMPT` above carries the reason.
@@ -581,8 +567,6 @@ test('T67 · the exemption names its files, each re-frozen, each with its reason
     // T75 F20 · *"the Library's `media` category (`soon`) becomes the sets shelf"*.
     'src/components/TopBar.jsx',
     'src/components/UnitSizeModal.jsx',
-    // 15.10.2026 (the evening) · *"nie widze kresek, gdzie jest komin i gdzie wneka"*: the recess and the chimney seen from the front, the recess's band.
-    'src/components/WallElevationModal.jsx',
     'src/components/WarehouseModal.jsx',
     'src/components/WatchLayoutModal.jsx',
     'src/components/WizardSettings.jsx',
